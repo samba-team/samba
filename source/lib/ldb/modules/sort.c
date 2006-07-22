@@ -43,10 +43,10 @@ struct opaque {
 	int result;
 };
 
-struct sort_async_context {
+struct sort_context {
 	struct ldb_module *module;
 	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
 
 	char *attributeName;
 	char *orderingRule;
@@ -63,14 +63,14 @@ struct sort_async_context {
 	int sort_result;
 };
 
-static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *module,
+static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
 					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *))
+					    int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
 {
-	struct sort_async_context *ac;
-	struct ldb_async_handle *h;
+	struct sort_context *ac;
+	struct ldb_handle *h;
 
-	h = talloc_zero(mem_ctx, struct ldb_async_handle);
+	h = talloc_zero(mem_ctx, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		return NULL;
@@ -78,7 +78,7 @@ static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *mo
 
 	h->module = module;
 
-	ac = talloc_zero(h, struct sort_async_context);
+	ac = talloc_zero(h, struct sort_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		talloc_free(h);
@@ -141,7 +141,7 @@ static int build_response(void *mem_ctx, struct ldb_control ***ctrls, int result
 
 static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, void *opaque)
 {
-	struct sort_async_context *ac = talloc_get_type(opaque, struct sort_async_context);
+	struct sort_context *ac = talloc_get_type(opaque, struct sort_context);
 	struct ldb_message_element *el1, *el2;
 
 	if (ac->sort_result != 0) {
@@ -166,16 +166,16 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 	return ac->h->comparison_fn(ac->module->ldb, ac, &el1->values[0], &el2->values[0]);
 }
 
-static int server_sort_search_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int server_sort_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct sort_async_context *ac = NULL;
+	struct sort_context *ac = NULL;
 	
  	if (!context || !ares) {
 		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
 		goto error;
 	}	
 
-       	ac = talloc_get_type(context, struct sort_async_context);
+       	ac = talloc_get_type(context, struct sort_context);
 
 	if (ares->type == LDB_REPLY_ENTRY) {
 		ac->msgs = talloc_realloc(ac, ac->msgs, struct ldb_message *, ac->num_msgs + 2);
@@ -231,8 +231,8 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 	struct ldb_control *control;
 	struct ldb_server_sort_control **sort_ctrls;
 	struct ldb_control **saved_controls;
-	struct sort_async_context *ac;
-	struct ldb_async_handle *h;
+	struct sort_context *ac;
+	struct ldb_handle *h;
 	int ret;
 
 	/* check if there's a paged request control */
@@ -253,7 +253,7 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct sort_async_context);
+	ac = talloc_get_type(h->private_data, struct sort_context);
 
 	sort_ctrls = talloc_get_type(control->data, struct ldb_server_sort_control *);
 	if (!sort_ctrls) {
@@ -265,9 +265,9 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 		
 	if (sort_ctrls[1] != NULL) {
 		if (control->critical) {
-			struct ldb_async_result *ares;
+			struct ldb_reply *ares;
 
-			ares = talloc_zero(req, struct ldb_async_result);
+			ares = talloc_zero(req, struct ldb_reply);
 			if (!ares)
 				return LDB_ERR_OPERATIONS_ERROR;
 
@@ -319,13 +319,13 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 	return ldb_next_request(module, ac->req);
 }
 
-static int server_sort_results(struct ldb_async_handle *handle)
+static int server_sort_results(struct ldb_handle *handle)
 {
-	struct sort_async_context *ac;
-	struct ldb_async_result *ares;
+	struct sort_context *ac;
+	struct ldb_reply *ares;
 	int i, ret;
 
-	ac = talloc_get_type(handle->private_data, struct sort_async_context);
+	ac = talloc_get_type(handle->private_data, struct sort_context);
 
 	ac->h = ldb_attrib_handler(ac->module->ldb, ac->attributeName);
 	ac->sort_result = 0;
@@ -335,7 +335,7 @@ static int server_sort_results(struct ldb_async_handle *handle)
 		  ac, (ldb_qsort_cmp_fn_t)sort_compare);
 
 	for (i = 0; i < ac->num_msgs; i++) {
-		ares = talloc_zero(ac, struct ldb_async_result);
+		ares = talloc_zero(ac, struct ldb_reply);
 		if (!ares) {
 			handle->status = LDB_ERR_OPERATIONS_ERROR;
 			return handle->status;
@@ -351,7 +351,7 @@ static int server_sort_results(struct ldb_async_handle *handle)
 	}
 
 	for (i = 0; i < ac->num_refs; i++) {
-		ares = talloc_zero(ac, struct ldb_async_result);
+		ares = talloc_zero(ac, struct ldb_reply);
 		if (!ares) {
 			handle->status = LDB_ERR_OPERATIONS_ERROR;
 			return handle->status;
@@ -366,7 +366,7 @@ static int server_sort_results(struct ldb_async_handle *handle)
 		}
 	}
 
-	ares = talloc_zero(ac, struct ldb_async_result);
+	ares = talloc_zero(ac, struct ldb_reply);
 	if (!ares) {
 		handle->status = LDB_ERR_OPERATIONS_ERROR;
 		return handle->status;
@@ -387,18 +387,18 @@ static int server_sort_results(struct ldb_async_handle *handle)
 	return LDB_SUCCESS;
 }
 
-static int server_sort_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int server_sort_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
-	struct sort_async_context *ac;
+	struct sort_context *ac;
 	int ret;
     
 	if (!handle || !handle->private_data) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac = talloc_get_type(handle->private_data, struct sort_async_context);
+	ac = talloc_get_type(handle->private_data, struct sort_context);
 
-	ret = ldb_async_wait(ac->req->async.handle, type);
+	ret = ldb_wait(ac->req->async.handle, type);
 
 	if (ret != LDB_SUCCESS) {
 		handle->status = ret;
@@ -447,7 +447,7 @@ static int server_sort_init(struct ldb_module *module)
 static const struct ldb_module_ops server_sort_ops = {
 	.name		   = "server_sort",
 	.search            = server_sort_search,
-	.async_wait        = server_sort_async_wait,
+	.wait              = server_sort_wait,
 	.init_context	   = server_sort_init
 };
 

@@ -134,7 +134,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	return ret;
 }
 
-struct rename_async_context {
+struct rename_context {
 
 	enum {RENAME_RENAME, RENAME_MODIFY} step;
 	struct ldb_request *orig_req;
@@ -144,8 +144,8 @@ struct rename_async_context {
 
 static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_async_handle *h;
-	struct rename_async_context *ac;
+	struct ldb_handle *h;
+	struct rename_context *ac;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_rename\n");
 
@@ -154,14 +154,14 @@ static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	h = talloc_zero(req, struct ldb_async_handle);
+	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	h->module = module;
 
-	ac = talloc_zero(h, struct rename_async_context);
+	ac = talloc_zero(h, struct rename_context);
 	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -187,13 +187,13 @@ static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, ac->down_req);
 }
 
-static int rdn_name_rename_do_mod(struct ldb_async_handle *h) {
+static int rdn_name_rename_do_mod(struct ldb_handle *h) {
 
-	struct rename_async_context *ac;
+	struct rename_context *ac;
 	struct ldb_dn_component *rdn;
 	struct ldb_message *msg;
 
-	ac = talloc_get_type(h->private_data, struct rename_async_context);
+	ac = talloc_get_type(h->private_data, struct rename_context);
 
 	rdn = ldb_dn_get_rdn(ac, ac->orig_req->op.rename.newdn);
 	if (rdn == NULL) {
@@ -234,9 +234,9 @@ static int rdn_name_rename_do_mod(struct ldb_async_handle *h) {
 	return ldb_request(h->module->ldb, ac->mod_req);
 }
 
-static int rename_async_wait(struct ldb_async_handle *handle)
+static int rename_wait(struct ldb_handle *handle)
 {
-	struct rename_async_context *ac;
+	struct rename_context *ac;
 	int ret;
     
 	if (!handle || !handle->private_data) {
@@ -250,11 +250,11 @@ static int rename_async_wait(struct ldb_async_handle *handle)
 	handle->state = LDB_ASYNC_PENDING;
 	handle->status = LDB_SUCCESS;
 
-	ac = talloc_get_type(handle->private_data, struct rename_async_context);
+	ac = talloc_get_type(handle->private_data, struct rename_context);
 
 	switch(ac->step) {
 	case RENAME_RENAME:
-		ret = ldb_async_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
@@ -272,7 +272,7 @@ static int rename_async_wait(struct ldb_async_handle *handle)
 		return rdn_name_rename_do_mod(handle);
 
 	case RENAME_MODIFY:
-		ret = ldb_async_wait(ac->mod_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->mod_req->async.handle, LDB_WAIT_NONE);
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
@@ -300,12 +300,12 @@ done:
 	return ret;
 }
 
-static int rename_async_wait_all(struct ldb_async_handle *handle) {
+static int rename_wait_all(struct ldb_handle *handle) {
 
 	int ret;
 
 	while (handle->state != LDB_ASYNC_DONE) {
-		ret = rename_async_wait(handle);
+		ret = rename_wait(handle);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -314,12 +314,12 @@ static int rename_async_wait_all(struct ldb_async_handle *handle) {
 	return handle->status;
 }
 
-static int rdn_name_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int rdn_name_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	if (type == LDB_WAIT_ALL) {
-		return rename_async_wait_all(handle);
+		return rename_wait_all(handle);
 	} else {
-		return rename_async_wait(handle);
+		return rename_wait(handle);
 	}
 }
 
@@ -327,7 +327,7 @@ static const struct ldb_module_ops rdn_name_ops = {
 	.name              = "rdn_name",
 	.add               = rdn_name_add,
 	.rename            = rdn_name_rename,
-	.async_wait        = rdn_name_async_wait
+	.wait              = rdn_name_wait
 };
 
 

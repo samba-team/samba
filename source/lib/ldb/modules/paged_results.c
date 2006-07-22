@@ -37,10 +37,10 @@
 #include "ldb/include/includes.h"
 
 struct message_store {
-	/* keep the whole ldb_async_result as an optimization
+	/* keep the whole ldb_reply as an optimization
 	 * instead of freeing and talloc-ing the container
 	 * on each result */
-	struct ldb_async_result *r;
+	struct ldb_reply *r;
 	struct message_store *next;
 };
 
@@ -122,24 +122,24 @@ static struct results_store *new_store(struct private_data *priv)
 	return new;
 }
 
-struct paged_async_context {
+struct paged_context {
 	struct ldb_module *module;
 	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
 
 	int size;
 
 	struct results_store *store;
 };
 
-static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *module,
+static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
 					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *))
+					    int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
 {
-	struct paged_async_context *ac;
-	struct ldb_async_handle *h;
+	struct paged_context *ac;
+	struct ldb_handle *h;
 
-	h = talloc_zero(mem_ctx, struct ldb_async_handle);
+	h = talloc_zero(mem_ctx, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		return NULL;
@@ -147,7 +147,7 @@ static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *mo
 
 	h->module = module;
 
-	ac = talloc_zero(h, struct paged_async_context);
+	ac = talloc_zero(h, struct paged_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		talloc_free(h);
@@ -166,16 +166,16 @@ static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *mo
 	return h;
 }
 
-static int paged_search_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int paged_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct paged_async_context *ac = NULL;
+	struct paged_context *ac = NULL;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
 		goto error;
 	}
 
-	ac = talloc_get_type(context, struct paged_async_context);
+	ac = talloc_get_type(context, struct paged_context);
 
 	if (ares->type == LDB_REPLY_ENTRY) {
 		if (ac->store->first == NULL) {
@@ -238,8 +238,8 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 	struct private_data *private_data;
 	struct ldb_paged_control *paged_ctrl;
 	struct ldb_control **saved_controls;
-	struct paged_async_context *ac;
-	struct ldb_async_handle *h;
+	struct paged_context *ac;
+	struct ldb_handle *h;
 	int ret;
 
 	/* check if there's a paged request control */
@@ -268,7 +268,7 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct paged_async_context);
+	ac = talloc_get_type(h->private_data, struct paged_context);
 
 	ac->size = paged_ctrl->size;
 
@@ -300,7 +300,7 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		ac->store->req->async.context = ac;
-		ac->store->req->async.callback = paged_search_async_callback;
+		ac->store->req->async.callback = paged_search_callback;
 		ldb_set_timeout_from_prev_req(module->ldb, req, ac->store->req);
 
 		ret = ldb_next_request(module, ac->store->req);
@@ -339,15 +339,15 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 
 }
 
-static int paged_results(struct ldb_async_handle *handle)
+static int paged_results(struct ldb_handle *handle)
 {
-	struct paged_async_context *ac;
+	struct paged_context *ac;
 	struct ldb_paged_control *paged;
-	struct ldb_async_result *ares;
+	struct ldb_reply *ares;
 	struct message_store *msg;
 	int i, num_ctrls, ret;
 
-	ac = talloc_get_type(handle->private_data, struct paged_async_context);
+	ac = talloc_get_type(handle->private_data, struct paged_context);
 
 	if (ac->store == NULL)
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -382,7 +382,7 @@ static int paged_results(struct ldb_async_handle *handle)
 		talloc_free(msg);
 	}
 
-	ares = talloc_zero(ac->store, struct ldb_async_result);
+	ares = talloc_zero(ac->store, struct ldb_reply);
 	if (ares == NULL) {
 		handle->status = LDB_ERR_OPERATIONS_ERROR;
 		return handle->status;
@@ -446,9 +446,9 @@ static int paged_results(struct ldb_async_handle *handle)
 	return ret;
 }
 
-static int paged_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int paged_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
-	struct paged_async_context *ac;
+	struct paged_context *ac;
 	int ret;
     
 	if (!handle || !handle->private_data) {
@@ -461,7 +461,7 @@ static int paged_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait
 
 	handle->state = LDB_ASYNC_PENDING;
 
-	ac = talloc_get_type(handle->private_data, struct paged_async_context);
+	ac = talloc_get_type(handle->private_data, struct paged_context);
 
 	if (ac->store->req->async.handle->state == LDB_ASYNC_DONE) {
 		/* if lower level is finished we do not need to call it anymore */
@@ -479,7 +479,7 @@ static int paged_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait
 
 	if (type == LDB_WAIT_ALL) {
 		while (ac->store->req->async.handle->state != LDB_ASYNC_DONE) {
-			ret = ldb_async_wait(ac->store->req->async.handle, type);
+			ret = ldb_wait(ac->store->req->async.handle, type);
 			if (ret != LDB_SUCCESS) {
 				handle->state = LDB_ASYNC_DONE;
 				handle->status = ret;
@@ -498,7 +498,7 @@ static int paged_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait
 		return ret;
 	}
 
-	ret = ldb_async_wait(ac->store->req->async.handle, type);
+	ret = ldb_wait(ac->store->req->async.handle, type);
 	if (ret != LDB_SUCCESS) {
 		handle->state = LDB_ASYNC_DONE;
 		handle->status = ret;
@@ -560,7 +560,7 @@ static int paged_request_init(struct ldb_module *module)
 static const struct ldb_module_ops paged_ops = {
 	.name           = "paged_results",
 	.search         = paged_search,
-	.async_wait     = paged_async_wait,
+	.wait           = paged_wait,
 	.init_context 	= paged_request_init
 };
 

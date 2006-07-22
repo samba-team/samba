@@ -44,7 +44,7 @@ struct partition_private_data {
 	struct partition **partitions;
 };
 
-struct partition_async_context {
+struct partition_context {
 	struct ldb_module *module;
 	struct ldb_request *orig_req;
 
@@ -53,12 +53,12 @@ struct partition_async_context {
 	int num_searches;
 };
 
-static struct ldb_async_handle *partition_init_handle(struct ldb_request *req, struct ldb_module *module)
+static struct ldb_handle *partition_init_handle(struct ldb_request *req, struct ldb_module *module)
 {
-	struct partition_async_context *ac;
-	struct ldb_async_handle *h;
+	struct partition_context *ac;
+	struct ldb_handle *h;
 
-	h = talloc_zero(req, struct ldb_async_handle);
+	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		return NULL;
@@ -66,7 +66,7 @@ static struct ldb_async_handle *partition_init_handle(struct ldb_request *req, s
 
 	h->module = module;
 
-	ac = talloc_zero(h, struct partition_async_context);
+	ac = talloc_zero(h, struct partition_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		talloc_free(h);
@@ -118,7 +118,7 @@ struct ldb_module *find_backend(struct ldb_module *module, struct ldb_request *r
 	return module;
 };
 
-static int partition_send_search(struct partition_async_context *ac, struct ldb_module *partition)
+static int partition_send_search(struct partition_context *ac, struct ldb_module *partition)
 {
 	int ret;
 	struct ldb_module *next = make_module_for_next_request(ac->module, ac->module->ldb, partition);
@@ -159,8 +159,8 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 	 * partitions (for 'invisible' partition behaviour */
 	if (ldb_get_opaque(module->ldb, "global_catalog")) {
 		int ret, i;
-		struct ldb_async_handle *h;
-		struct partition_async_context *ac;
+		struct ldb_handle *h;
+		struct partition_context *ac;
 		
 		h = partition_init_handle(req, module);
 		if (!h) {
@@ -169,7 +169,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		/* return our own handle to deal with this call */
 		req->async.handle = h;
 		
-		ac = talloc_get_type(h->private_data, struct partition_async_context);
+		ac = talloc_get_type(h->private_data, struct partition_context);
 		
 		ac->orig_req = req;
 		ac->num_searches = 0;
@@ -518,8 +518,8 @@ static int partition_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-static int partition_async_wait_none(struct ldb_async_handle *handle) {
-	struct partition_async_context *ac;
+static int partition_wait_none(struct ldb_handle *handle) {
+	struct partition_context *ac;
 	int ret;
 	int i;
     
@@ -534,10 +534,10 @@ static int partition_async_wait_none(struct ldb_async_handle *handle) {
 	handle->state = LDB_ASYNC_PENDING;
 	handle->status = LDB_SUCCESS;
 
-	ac = talloc_get_type(handle->private_data, struct partition_async_context);
+	ac = talloc_get_type(handle->private_data, struct partition_context);
 
 	for (i=0; i < ac->num_searches; i++) {
-		ret = ldb_async_wait(ac->search_req[i]->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->search_req[i]->async.handle, LDB_WAIT_NONE);
 		
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -561,12 +561,12 @@ done:
 }
 
 
-static int partition_async_wait_all(struct ldb_async_handle *handle) {
+static int partition_wait_all(struct ldb_handle *handle) {
 
 	int ret;
 
 	while (handle->state != LDB_ASYNC_DONE) {
-		ret = partition_async_wait_none(handle);
+		ret = partition_wait_none(handle);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -575,12 +575,12 @@ static int partition_async_wait_all(struct ldb_async_handle *handle) {
 	return handle->status;
 }
 
-static int partition_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int partition_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	if (type == LDB_WAIT_ALL) {
-		return partition_async_wait_all(handle);
+		return partition_wait_all(handle);
 	} else {
-		return partition_async_wait_none(handle);
+		return partition_wait_none(handle);
 	}
 }
 
@@ -596,7 +596,7 @@ static const struct ldb_module_ops partition_ops = {
 	.end_transaction   = partition_end_trans,
 	.del_transaction   = partition_del_trans,
 	.sequence_number   = partition_sequence_number,
-	.async_wait        = partition_async_wait
+	.wait              = partition_wait
 };
 
 int ldb_partition_init(void)

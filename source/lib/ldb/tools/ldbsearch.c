@@ -58,7 +58,7 @@ static int do_compare_msg(struct ldb_message **el1,
 	return ldb_dn_compare(ldb, (*el1)->dn, (*el2)->dn);
 }
 
-struct async_context {
+struct search_context {
 	struct ldb_control **req_ctrls;
 
 	int sort;
@@ -73,56 +73,56 @@ struct async_context {
 	int status;
 };
 
-static int store_message(struct ldb_message *msg, struct async_context *actx) {
+static int store_message(struct ldb_message *msg, struct search_context *sctx) {
 
-	actx->store = talloc_realloc(actx, actx->store, struct ldb_message *, actx->num_stored + 2);
-	if (!actx->store) {
+	sctx->store = talloc_realloc(sctx, sctx->store, struct ldb_message *, sctx->num_stored + 2);
+	if (!sctx->store) {
 		fprintf(stderr, "talloc_realloc failed while storing messages\n");
 		return -1;
 	}
 
-	actx->store[actx->num_stored] = talloc_steal(actx->store, msg);
-	if (!actx->store[actx->num_stored]) {
+	sctx->store[sctx->num_stored] = talloc_steal(sctx->store, msg);
+	if (!sctx->store[sctx->num_stored]) {
 		fprintf(stderr, "talloc_steal failed while storing messages\n");
 		return -1;
 	}
 
-	actx->num_stored++;
-	actx->store[actx->num_stored] = NULL;
+	sctx->num_stored++;
+	sctx->store[sctx->num_stored] = NULL;
 
 	return 0;
 }
 
-static int store_referral(char *referral, struct async_context *actx) {
+static int store_referral(char *referral, struct search_context *sctx) {
 
-	actx->refs_store = talloc_realloc(actx, actx->refs_store, char *, actx->refs + 2);
-	if (!actx->refs_store) {
+	sctx->refs_store = talloc_realloc(sctx, sctx->refs_store, char *, sctx->refs + 2);
+	if (!sctx->refs_store) {
 		fprintf(stderr, "talloc_realloc failed while storing referrals\n");
 		return -1;
 	}
 
-	actx->refs_store[actx->refs] = talloc_steal(actx->refs_store, referral);
-	if (!actx->refs_store[actx->refs]) {
+	sctx->refs_store[sctx->refs] = talloc_steal(sctx->refs_store, referral);
+	if (!sctx->refs_store[sctx->refs]) {
 		fprintf(stderr, "talloc_steal failed while storing referrals\n");
 		return -1;
 	}
 
-	actx->refs++;
-	actx->refs_store[actx->refs] = NULL;
+	sctx->refs++;
+	sctx->refs_store[sctx->refs] = NULL;
 
 	return 0;
 }
 
-static int display_message(struct ldb_context *ldb, struct ldb_message *msg, struct async_context *actx) {
+static int display_message(struct ldb_context *ldb, struct ldb_message *msg, struct search_context *sctx) {
 	struct ldb_ldif ldif;
 
-	actx->entries++;
-	printf("# record %d\n", actx->entries);
+	sctx->entries++;
+	printf("# record %d\n", sctx->entries);
 
 	ldif.changetype = LDB_CHANGETYPE_NONE;
 	ldif.msg = msg;
 
-       	if (actx->sort) {
+       	if (sctx->sort) {
 	/*
 	 * Ensure attributes are always returned in the same
 	 * order.  For testing, this makes comparison of old
@@ -136,41 +136,41 @@ static int display_message(struct ldb_context *ldb, struct ldb_message *msg, str
 	return 0;
 }
 
-static int display_referral(char *referral, struct async_context *actx) {
+static int display_referral(char *referral, struct search_context *sctx) {
 
-	actx->refs++;
+	sctx->refs++;
 	printf("# Referral\nref: %s\n\n", referral);
 
 	return 0;
 }
 
-static int search_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct async_context *actx = talloc_get_type(context, struct async_context);
+	struct search_context *sctx = talloc_get_type(context, struct search_context);
 	int ret;
 	
 	switch (ares->type) {
 
 	case LDB_REPLY_ENTRY:
-		if (actx->sort) {
-			ret = store_message(ares->message, actx);
+		if (sctx->sort) {
+			ret = store_message(ares->message, sctx);
 		} else {
-			ret = display_message(ldb, ares->message, actx);
+			ret = display_message(ldb, ares->message, sctx);
 		}
 		break;
 
 	case LDB_REPLY_REFERRAL:
-		if (actx->sort) {
-			ret = store_referral(ares->referral, actx);
+		if (sctx->sort) {
+			ret = store_referral(ares->referral, sctx);
 		} else {
-			ret = display_referral(ares->referral, actx);
+			ret = display_referral(ares->referral, sctx);
 		}
 		break;
 
 	case LDB_REPLY_DONE:
 		if (ares->controls) {
-			if (handle_controls_reply(ares->controls, actx->req_ctrls) == 1)
-				actx->pending = 1;
+			if (handle_controls_reply(ares->controls, sctx->req_ctrls) == 1)
+				sctx->pending = 1;
 		}
 		ret = 0;
 		break;
@@ -182,7 +182,7 @@ static int search_callback(struct ldb_context *ldb, void *context, struct ldb_as
 
 	if (talloc_free(ares) == -1) {
 		fprintf(stderr, "talloc_free failed\n");
-		actx->pending = 0;
+		sctx->pending = 0;
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -200,22 +200,22 @@ static int do_search(struct ldb_context *ldb,
 		     const char * const *attrs)
 {
 	struct ldb_request *req;
-	struct async_context *actx;
+	struct search_context *sctx;
 	int ret;
 
 	req = talloc(ldb, struct ldb_request);
 	if (!req) return -1;
 	
-	actx = talloc(req, struct async_context);
-	if (!actx) return -1;
+	sctx = talloc(req, struct search_context);
+	if (!sctx) return -1;
 
-	actx->sort = options->sorted;
-	actx->num_stored = 0;
-	actx->store = NULL;
-	actx->req_ctrls = parse_controls(ldb, options->controls);
-	if (options->controls != NULL &&  actx->req_ctrls== NULL) return -1;
-	actx->entries = 0;
-	actx->refs = 0;
+	sctx->sort = options->sorted;
+	sctx->num_stored = 0;
+	sctx->store = NULL;
+	sctx->req_ctrls = parse_controls(ldb, options->controls);
+	if (options->controls != NULL &&  sctx->req_ctrls== NULL) return -1;
+	sctx->entries = 0;
+	sctx->refs = 0;
 
 	req->operation = LDB_SEARCH;
 	req->op.search.base = basedn;
@@ -223,13 +223,13 @@ static int do_search(struct ldb_context *ldb,
 	req->op.search.tree = ldb_parse_tree(ldb, expression);
 	if (req->op.search.tree == NULL) return -1;
 	req->op.search.attrs = attrs;
-	req->controls = actx->req_ctrls;
-	req->async.context = actx;
+	req->controls = sctx->req_ctrls;
+	req->async.context = sctx;
 	req->async.callback = &search_callback;
 	ldb_set_timeout(ldb, req, 0); /* TODO: make this settable by command line */
 
 again:
-	actx->pending = 0;
+	sctx->pending = 0;
 
 	ret = ldb_request(ldb, req);
 	if (ret != LDB_SUCCESS) {
@@ -237,19 +237,19 @@ again:
 		return -1;
 	}
 
-	ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
+	ret = ldb_wait(req->async.handle, LDB_WAIT_ALL);
        	if (ret != LDB_SUCCESS) {
 		printf("search error - %s\n", ldb_errstring(ldb));
 		return -1;
 	}
 
-	if (actx->pending)
+	if (sctx->pending)
 		goto again;
 
-	if (actx->sort && actx->num_stored != 0) {
+	if (sctx->sort && sctx->num_stored != 0) {
 		int i;
 
-		ldb_qsort(actx->store, ret, sizeof(struct ldb_message *),
+		ldb_qsort(sctx->store, ret, sizeof(struct ldb_message *),
 			  ldb, (ldb_qsort_cmp_fn_t)do_compare_msg);
 
 		if (ret != 0) {
@@ -257,17 +257,17 @@ again:
 			exit(1);
 		}
 
-		for (i = 0; i < actx->num_stored; i++) {
-			display_message(ldb, actx->store[i], actx);
+		for (i = 0; i < sctx->num_stored; i++) {
+			display_message(ldb, sctx->store[i], sctx);
 		}
 
-		for (i = 0; i < actx->refs; i++) {
-			display_referral(actx->refs_store[i], actx);
+		for (i = 0; i < sctx->refs; i++) {
+			display_referral(sctx->refs_store[i], sctx);
 		}
 	}
 
 	printf("# returned %d records\n# %d entries\n# %d referrals\n",
-		actx->entries + actx->refs, actx->entries, actx->refs);
+		sctx->entries + sctx->refs, sctx->entries, sctx->refs);
 
 	talloc_free(req);
 

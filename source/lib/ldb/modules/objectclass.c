@@ -36,7 +36,7 @@
 #include "includes.h"
 #include "ldb/include/includes.h"
 
-struct oc_async_context {
+struct oc_context {
 
 	enum oc_step {OC_DO_REQ, OC_SEARCH_SELF, OC_DO_MOD} step;
 
@@ -46,7 +46,7 @@ struct oc_async_context {
 	struct ldb_request *down_req;
 
 	struct ldb_request *search_req;
-	struct ldb_async_result *search_res;
+	struct ldb_reply *search_res;
 
 	struct ldb_request *mod_req;
 };
@@ -56,12 +56,12 @@ struct class_list {
 	const char *objectclass;
 };
 
-static struct ldb_async_handle *oc_init_handle(struct ldb_request *req, struct ldb_module *module)
+static struct ldb_handle *oc_init_handle(struct ldb_request *req, struct ldb_module *module)
 {
-	struct oc_async_context *ac;
-	struct ldb_async_handle *h;
+	struct oc_context *ac;
+	struct ldb_handle *h;
 
-	h = talloc_zero(req, struct ldb_async_handle);
+	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		return NULL;
@@ -69,7 +69,7 @@ static struct ldb_async_handle *oc_init_handle(struct ldb_request *req, struct l
 
 	h->module = module;
 
-	ac = talloc_zero(h, struct oc_async_context);
+	ac = talloc_zero(h, struct oc_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		talloc_free(h);
@@ -389,14 +389,14 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	}
 
 	{
-		struct ldb_async_handle *h;
-		struct oc_async_context *ac;
+		struct ldb_handle *h;
+		struct oc_context *ac;
 		
 		h = oc_init_handle(req, module);
 		if (!h) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		ac = talloc_get_type(h->private_data, struct oc_async_context);
+		ac = talloc_get_type(h->private_data, struct oc_context);
 		
 		/* return or own handle to deal with this call */
 		req->async.handle = h;
@@ -420,16 +420,16 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	}
 }
 
-static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct oc_async_context *ac;
+	struct oc_context *ac;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac = talloc_get_type(context, struct oc_async_context);
+	ac = talloc_get_type(context, struct oc_context);
 
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
@@ -447,12 +447,12 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 	return LDB_SUCCESS;
 }
 
-static int objectclass_search_self(struct ldb_async_handle *h) {
+static int objectclass_search_self(struct ldb_handle *h) {
 
-	struct oc_async_context *ac;
+	struct oc_context *ac;
 	static const char * const attrs[] = { "objectClass", NULL };
 
-	ac = talloc_get_type(h->private_data, struct oc_async_context);
+	ac = talloc_get_type(h->private_data, struct oc_context);
 
 	/* prepare the search operation */
 	ac->search_req = talloc_zero(ac, struct ldb_request);
@@ -480,16 +480,16 @@ static int objectclass_search_self(struct ldb_async_handle *h) {
 	return ldb_next_request(ac->module, ac->search_req);
 }
 
-static int objectclass_do_mod(struct ldb_async_handle *h) {
+static int objectclass_do_mod(struct ldb_handle *h) {
 
-	struct oc_async_context *ac;
+	struct oc_context *ac;
 	struct ldb_message_element *objectclass_element;
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
 	struct class_list *sorted, *current;
 	int ret;
       
-	ac = talloc_get_type(h->private_data, struct oc_async_context);
+	ac = talloc_get_type(h->private_data, struct oc_context);
 
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
@@ -571,8 +571,8 @@ static int objectclass_do_mod(struct ldb_async_handle *h) {
 	return ldb_next_request(ac->module, ac->mod_req);
 }
 
-static int oc_async_wait(struct ldb_async_handle *handle) {
-	struct oc_async_context *ac;
+static int oc_wait(struct ldb_handle *handle) {
+	struct oc_context *ac;
 	int ret;
     
 	if (!handle || !handle->private_data) {
@@ -586,11 +586,11 @@ static int oc_async_wait(struct ldb_async_handle *handle) {
 	handle->state = LDB_ASYNC_PENDING;
 	handle->status = LDB_SUCCESS;
 
-	ac = talloc_get_type(handle->private_data, struct oc_async_context);
+	ac = talloc_get_type(handle->private_data, struct oc_context);
 
 	switch (ac->step) {
 	case OC_DO_REQ:
-		ret = ldb_async_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -609,7 +609,7 @@ static int oc_async_wait(struct ldb_async_handle *handle) {
 		return objectclass_search_self(handle);
 
 	case OC_SEARCH_SELF:
-		ret = ldb_async_wait(ac->search_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->search_req->async.handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -628,7 +628,7 @@ static int oc_async_wait(struct ldb_async_handle *handle) {
 		return objectclass_do_mod(handle);
 
 	case OC_DO_MOD:
-		ret = ldb_async_wait(ac->mod_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->mod_req->async.handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -657,12 +657,12 @@ done:
 	return ret;
 }
 
-static int oc_async_wait_all(struct ldb_async_handle *handle) {
+static int oc_wait_all(struct ldb_handle *handle) {
 
 	int ret;
 
 	while (handle->state != LDB_ASYNC_DONE) {
-		ret = oc_async_wait(handle);
+		ret = oc_wait(handle);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -671,12 +671,12 @@ static int oc_async_wait_all(struct ldb_async_handle *handle) {
 	return handle->status;
 }
 
-static int objectclass_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int objectclass_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	if (type == LDB_WAIT_ALL) {
-		return oc_async_wait_all(handle);
+		return oc_wait_all(handle);
 	} else {
-		return oc_async_wait(handle);
+		return oc_wait(handle);
 	}
 }
 
@@ -684,7 +684,7 @@ static const struct ldb_module_ops objectclass_ops = {
 	.name		   = "objectclass",
 	.add           = objectclass_add,
 	.modify        = objectclass_modify,
-	.async_wait    = objectclass_async_wait
+	.wait          = objectclass_wait
 };
 
 int ldb_objectclass_init(void)

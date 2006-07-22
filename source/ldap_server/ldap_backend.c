@@ -113,7 +113,7 @@ NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	return NT_STATUS_OK;
 }
 
-static int ldapsrv_SearchCallback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int ldapsrv_SearchCallback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct ldb_result *res;
 	int n;
@@ -262,7 +262,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		goto reply;
 	}
 
-	ldb_ret = ldb_async_wait(lreq->async.handle, LDB_WAIT_ALL);
+	ldb_ret = ldb_wait(lreq->async.handle, LDB_WAIT_ALL);
 
 	if (ldb_ret == LDB_SUCCESS) {
 		for (i = 0; i < res->count; i++) {

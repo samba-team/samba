@@ -33,7 +33,7 @@ struct ltdb_private {
   the async local context
   holds also internal search state during a full db search
 */
-struct ltdb_async_context {
+struct ltdb_context {
 	struct ldb_module *module;
 
 	/* search stuff */
@@ -44,7 +44,7 @@ struct ltdb_async_context {
 
 	/* async stuff */
 	void *context;
-	int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
 };
 
 /* special record types */
@@ -71,7 +71,7 @@ int ltdb_check_at_attributes_values(const struct ldb_val *value);
 
 struct ldb_parse_tree;
 
-int ltdb_search_indexed(struct ldb_async_handle *handle);
+int ltdb_search_indexed(struct ldb_handle *handle);
 int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_reindex(struct ldb_module *module);
@@ -103,9 +103,9 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs);
 int ltdb_search(struct ldb_module *module, struct ldb_request *req);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
-struct ldb_async_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
+struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
 					  void *context,
-					  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *));
+					  int (*callback)(struct ldb_context *, void *, struct ldb_reply *));
 struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn);

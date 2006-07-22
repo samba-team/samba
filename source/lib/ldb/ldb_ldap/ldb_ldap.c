@@ -49,13 +49,13 @@ struct lldb_private {
 	LDAP *ldap;
 };
 
-struct lldb_async_context {
+struct lldb_context {
 	struct ldb_module *module;
 	int msgid;
 	int timeout;
 	time_t starttime;
 	void *context;
-	int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
 };
 
 static int lldb_ldap_to_ldb(int err) {
@@ -63,15 +63,15 @@ static int lldb_ldap_to_ldb(int err) {
 	return err;
 }
 
-static struct ldb_async_handle *init_handle(struct lldb_private *lldb, struct ldb_module *module,
+static struct ldb_handle *init_handle(struct lldb_private *lldb, struct ldb_module *module,
 					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
+					    int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
 					    int timeout, time_t starttime)
 {
-	struct lldb_async_context *ac;
-	struct ldb_async_handle *h;
+	struct lldb_context *ac;
+	struct ldb_handle *h;
 
-	h = talloc_zero(lldb, struct ldb_async_handle);
+	h = talloc_zero(lldb, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		return NULL;
@@ -79,7 +79,7 @@ static struct ldb_async_handle *init_handle(struct lldb_private *lldb, struct ld
 
 	h->module = module;
 
-	ac = talloc(h, struct lldb_async_context);
+	ac = talloc(h, struct lldb_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		talloc_free(h);
@@ -229,7 +229,7 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 static int lldb_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
-	struct lldb_async_context *lldb_ac;
+	struct lldb_context *lldb_ac;
 	struct timeval tv;
 	int ldap_scope;
 	char *search_base;
@@ -255,7 +255,7 @@ static int lldb_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	lldb_ac = talloc_get_type(req->async.handle->private_data, struct lldb_async_context);
+	lldb_ac = talloc_get_type(req->async.handle->private_data, struct lldb_context);
 
 	search_base = ldb_dn_linearize(lldb_ac, req->op.search.base);
 	if (req->op.search.base == NULL) {
@@ -308,7 +308,7 @@ static int lldb_search(struct ldb_module *module, struct ldb_request *req)
 static int lldb_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
-	struct lldb_async_context *lldb_ac;
+	struct lldb_context *lldb_ac;
 	LDAPMod **mods;
 	char *dn;
 	int ret;
@@ -323,7 +323,7 @@ static int lldb_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	lldb_ac = talloc_get_type(req->async.handle->private_data, struct lldb_async_context);
+	lldb_ac = talloc_get_type(req->async.handle->private_data, struct lldb_context);
 
 	mods = lldb_msg_to_mods(lldb_ac, req->op.add.message, 0);
 	if (mods == NULL) {
@@ -353,7 +353,7 @@ static int lldb_add(struct ldb_module *module, struct ldb_request *req)
 static int lldb_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
-	struct lldb_async_context *lldb_ac;
+	struct lldb_context *lldb_ac;
 	LDAPMod **mods;
 	char *dn;
 	int ret;
@@ -368,7 +368,7 @@ static int lldb_modify(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	lldb_ac = talloc_get_type(req->async.handle->private_data, struct lldb_async_context);
+	lldb_ac = talloc_get_type(req->async.handle->private_data, struct lldb_context);
 
 	mods = lldb_msg_to_mods(lldb_ac, req->op.mod.message, 1);
 	if (mods == NULL) {
@@ -398,7 +398,7 @@ static int lldb_modify(struct ldb_module *module, struct ldb_request *req)
 static int lldb_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
-	struct lldb_async_context *lldb_ac;
+	struct lldb_context *lldb_ac;
 	char *dnstr;
 	int ret;
 	
@@ -412,7 +412,7 @@ static int lldb_delete(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	lldb_ac = talloc_get_type(req->async.handle->private_data, struct lldb_async_context);
+	lldb_ac = talloc_get_type(req->async.handle->private_data, struct lldb_context);
 
 	dnstr = ldb_dn_linearize(lldb_ac, req->op.del.dn);
 
@@ -434,7 +434,7 @@ static int lldb_delete(struct ldb_module *module, struct ldb_request *req)
 static int lldb_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
-	struct lldb_async_context *lldb_ac;
+	struct lldb_context *lldb_ac;
 	char *old_dn;
        	char *newrdn;
 	char *parentdn;
@@ -450,7 +450,7 @@ static int lldb_rename(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	lldb_ac = talloc_get_type(req->async.handle->private_data, struct lldb_async_context);
+	lldb_ac = talloc_get_type(req->async.handle->private_data, struct lldb_context);
 
 	old_dn = ldb_dn_linearize(lldb_ac, req->op.rename.olddn);
 	if (old_dn == NULL) {
@@ -480,11 +480,11 @@ static int lldb_rename(struct ldb_module *module, struct ldb_request *req)
 	return lldb_ldap_to_ldb(ret);
 }
 
-static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *result)
+static int lldb_parse_result(struct ldb_handle *handle, LDAPMessage *result)
 {
-	struct lldb_async_context *ac = talloc_get_type(handle->private_data, struct lldb_async_context);
+	struct lldb_context *ac = talloc_get_type(handle->private_data, struct lldb_context);
 	struct lldb_private *lldb = talloc_get_type(ac->module->private_data, struct lldb_private);
-	struct ldb_async_result *ares = NULL;
+	struct ldb_reply *ares = NULL;
 	LDAPMessage *msg;
 	int type;
 	char *matcheddnp = NULL;
@@ -503,7 +503,7 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 			BerElement *berptr = NULL;
 			char *attr, *dn;
 
-			ares = talloc_zero(ac, struct ldb_async_result);
+			ares = talloc_zero(ac, struct ldb_reply);
 			if (!ares) {
 				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto error;
@@ -566,7 +566,7 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 			goto error;
 		}
 
-		ares = talloc_zero(ac, struct ldb_async_result);
+		ares = talloc_zero(ac, struct ldb_reply);
 		if (!ares) {
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			goto error;
@@ -586,7 +586,7 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 			goto error;
 		}
 
-		ares = talloc_zero(ac, struct ldb_async_result);
+		ares = talloc_zero(ac, struct ldb_reply);
 		if (!ares) {
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			goto error;
@@ -642,9 +642,9 @@ error:
 	return ret;
 }
 
-static int lldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int lldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
-	struct lldb_async_context *ac = talloc_get_type(handle->private_data, struct lldb_async_context);
+	struct lldb_context *ac = talloc_get_type(handle->private_data, struct lldb_context);
 	struct lldb_private *lldb = talloc_get_type(handle->module->private_data, struct lldb_private);
 	struct timeval timeout;
 	LDAPMessage *result;
@@ -758,7 +758,7 @@ static const struct ldb_module_ops lldb_ops = {
 	.start_transaction = lldb_start_trans,
 	.end_transaction   = lldb_end_trans,
 	.del_transaction   = lldb_del_trans,
-	.async_wait        = lldb_async_wait
+	.wait              = lldb_wait
 };
 
 

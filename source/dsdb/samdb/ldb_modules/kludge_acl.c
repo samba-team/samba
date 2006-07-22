@@ -102,12 +102,12 @@ struct kludge_acl_async_context {
 
 	struct ldb_module *module;
 	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
 
 	enum user_is user_type;
 };
 
-static int kludge_acl_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int kludge_acl_async_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct kludge_acl_async_context *ac;
 	struct kludge_private_data *data;

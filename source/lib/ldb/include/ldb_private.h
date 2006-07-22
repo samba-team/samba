@@ -66,7 +66,7 @@ struct ldb_module_ops {
 	int (*start_transaction)(struct ldb_module *);
 	int (*end_transaction)(struct ldb_module *);
 	int (*del_transaction)(struct ldb_module *);
-	int (*async_wait)(struct ldb_async_handle *, enum ldb_async_wait_type);
+	int (*wait)(struct ldb_handle *, enum ldb_wait_type);
 	int (*sequence_number)(struct ldb_module *, struct ldb_request *);
 };
 
