@@ -544,7 +544,7 @@ NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL
 	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
 
 	if(!se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted, &status)) {
-		if (geteuid() != 0) {
+		if (p->pipe_user.ut.uid != sec_initial_uid()) {
 			return status;
 		}
 		DEBUG(4,("ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
@@ -554,7 +554,7 @@ NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL
 
 	/* This is needed for lsa_open_account and rpcclient .... :-) */
 
-	if (geteuid() == 0)
+	if (p->pipe_user.ut.uid == sec_initial_uid())
 		acc_granted = POLICY_ALL_ACCESS;
 
 	/* associate the domain SID with the (unique) handle. */
