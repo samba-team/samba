@@ -28,7 +28,6 @@
 #include "lib/socket/socket.h"
 #include "lib/stream/packet.h"
 
-
 struct packet_context {
 	packet_callback_fn_t callback;
 	packet_full_request_fn_t full_request;
@@ -53,6 +52,8 @@ struct packet_context {
 		struct send_element *next, *prev;
 		DATA_BLOB blob;
 		size_t nsent;
+		packet_send_callback_fn_t send_callback;
+		void *send_callback_private;
 	} *send_queue;
 };
 
@@ -374,6 +375,7 @@ next_partial:
 		return;
 	}
 
+	/* Have we consumed the whole buffer yet? */
 	if (pc->partial.length == 0) {
 		return;
 	}
@@ -436,7 +438,7 @@ _PUBLIC_ void packet_queue_run(struct packet_context *pc)
 		status = socket_send(pc->sock, &blob, &nwritten);
 
 		if (NT_STATUS_IS_ERR(status)) {
-			packet_error(pc, NT_STATUS_NET_WRITE_FAULT);
+			packet_error(pc, status);
 			return;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
@@ -445,6 +447,9 @@ _PUBLIC_ void packet_queue_run(struct packet_context *pc)
 		el->nsent += nwritten;
 		if (el->nsent == el->blob.length) {
 			DLIST_REMOVE(pc->send_queue, el);
+			if (el->send_callback) {
+				el->send_callback(el->send_callback_private);
+			}
 			talloc_free(el);
 		}
 	}
@@ -455,9 +460,15 @@ _PUBLIC_ void packet_queue_run(struct packet_context *pc)
 }
 
 /*
-  put a packet in the send queue
+  put a packet in the send queue.  When the packet is actually sent,
+  call send_callback.  
+
+  Useful for operations that must occour after sending a message, such
+  as the switch to SASL encryption after as sucessful LDAP bind relpy.
 */
-_PUBLIC_ NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
+_PUBLIC_ NTSTATUS packet_send_callback(struct packet_context *pc, DATA_BLOB blob,
+				       packet_send_callback_fn_t send_callback, 
+				       void *private)
 {
 	struct send_element *el;
 	el = talloc(pc, struct send_element);
@@ -466,6 +477,8 @@ _PUBLIC_ NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
 	DLIST_ADD_END(pc->send_queue, el, struct send_element *);
 	el->blob = blob;
 	el->nsent = 0;
+	el->send_callback = send_callback;
+	el->send_callback_private = private;
 
 	/* if we aren't going to free the packet then we must reference it
 	   to ensure it doesn't disappear before going out */
@@ -477,9 +490,21 @@ _PUBLIC_ NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
 		talloc_steal(el, blob.data);
 	}
 
+	if (private && !talloc_reference(el, private)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	EVENT_FD_WRITEABLE(pc->fde);
 
 	return NT_STATUS_OK;
+}
+
+/*
+  put a packet in the send queue
+*/
+_PUBLIC_ NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
+{
+	return packet_send_callback(pc, blob, NULL, NULL);
 }
 
 

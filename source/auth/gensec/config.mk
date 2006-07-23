@@ -67,3 +67,14 @@ OBJ_FILES = \
 # End SUBSYSTEM SCHANNELDB
 ################################################
 
+################################################
+# Start SUBSYSTEM GENSEC_SOCKET
+[SUBSYSTEM::GENSEC_SOCKET]
+OBJ_FILES = \
+		socket.o
+PUBLIC_DEPENDENCIES = samba-socket
+#PUBLIC_DEPENDENCIES =  gensec
+#
+# End SUBSYSTEM GENSEC_SOCKET
+################################################
+

@@ -80,9 +80,6 @@ struct ldap_connection {
 	/* Let's support SASL */
 	struct gensec_security *gensec;
 
-	/* set if we are wrapping requests */
-	BOOL enable_wrap;
-
 	/* the default timeout for messages */
 	int timeout;
 

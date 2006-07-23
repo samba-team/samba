@@ -189,15 +189,9 @@ _PUBLIC_ NTSTATUS socket_recv(struct socket_context *sock, void *buf,
 	if ((sock->flags & SOCKET_FLAG_TESTNONBLOCK) 
 	    && wantlen > 1) {
 
-		/* The returning of 0 and MORE_ENTRIES is incompatible
-		   with TLS and SASL sockets, as there is not a
-		   constant event source to re-trigger the reads */
-
-		if (!(sock->flags & SOCKET_FLAG_FAKE)) {
-			if (random() % 10 == 0) {
-				*nread = 0;
-				return STATUS_MORE_ENTRIES;
-			}
+		if (random() % 10 == 0) {
+			*nread = 0;
+			return STATUS_MORE_ENTRIES;
 		}
 		return sock->ops->fn_recv(sock, buf, 1+(random() % wantlen), nread);
 	}
@@ -240,17 +234,22 @@ _PUBLIC_ NTSTATUS socket_send(struct socket_context *sock,
 	
 	if ((sock->flags & SOCKET_FLAG_TESTNONBLOCK)
 	    && blob->length > 1) {
+		DATA_BLOB blob2 = *blob;
 		if (random() % 10 == 0) {
 			*sendlen = 0;
 			return STATUS_MORE_ENTRIES;
 		}
-		/* The variable size sends are incompatilbe with TLS and SASL
+		/* The random size sends are incompatible with TLS and SASL
 		 * sockets, which require re-sends to be consistant */
-		if (!(sock->flags & SOCKET_FLAG_FAKE)) {
-			DATA_BLOB blob2 = *blob;
+		if (!(sock->flags & SOCKET_FLAG_ENCRYPT)) {
 			blob2.length = 1+(random() % blob2.length);
-			return sock->ops->fn_send(sock, &blob2, sendlen);
+		} else {
+			/* This is particularly stressful on buggy
+			 * LDAP clients, that don't expect on LDAP
+			 * packet in many SASL packets */
+			blob2.length = 1 + blob2.length/2;
 		}
+		return sock->ops->fn_send(sock, &blob2, sendlen);
 	}
 	return sock->ops->fn_send(sock, blob, sendlen);
 }
