@@ -27,22 +27,16 @@
   Make a connection, given the snum to connect to, and the vuser of the
   connecting user if appropriate.
 ****************************************************************************/
-static NTSTATUS make_connection_snum(struct smbsrv_request *req,
-				     int snum, enum ntvfs_type type,
+static NTSTATUS make_connection_scfg(struct smbsrv_request *req,
+				     struct share_config *scfg,
+				     enum ntvfs_type type,
 				     DATA_BLOB password, 
 				     const char *dev)
 {
 	struct smbsrv_tcon *tcon;
 	NTSTATUS status;
 
-	if (!socket_check_access(req->smb_conn->connection->socket, 
-				 lp_servicename(snum), 
-				 lp_hostsallow(snum), 
-				 lp_hostsdeny(snum))) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	tcon = smbsrv_smb_tcon_new(req->smb_conn, lp_servicename(snum));
+	tcon = smbsrv_smb_tcon_new(req->smb_conn, scfg->name);
 	if (!tcon) {
 		DEBUG(0,("Couldn't find free connection.\n"));
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
@@ -50,15 +44,15 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	req->tcon = tcon;
 
 	/* init ntvfs function pointers */
-	status = ntvfs_init_connection(tcon, snum, type,
+	status = ntvfs_init_connection(tcon, scfg, type,
 				       req->smb_conn->negotiate.protocol,
 				       req->smb_conn->connection->event.ctx,
 				       req->smb_conn->connection->msg_ctx,
 				       req->smb_conn->connection->server_id,
 				       &tcon->ntvfs);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("ntvfs_init_connection failed for service %s\n", 
-			  lp_servicename(snum)));
+		DEBUG(0, ("make_connection_scfg: connection failed for service %s\n", 
+			  scfg->name));
 		goto failed;
 	}
 
@@ -97,7 +91,7 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	}
 
 	/* Invoke NTVFS connection hook */
-	status = ntvfs_connect(req->ntvfs, lp_servicename(snum));
+	status = ntvfs_connect(req->ntvfs, scfg->name);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("make_connection: NTVFS make connection failed!\n"));
 		goto failed;
@@ -120,11 +114,11 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 				const char *service, DATA_BLOB password, 
 				const char *dev)
 {
-	int snum;
+	NTSTATUS status;
 	enum ntvfs_type type;
 	const char *type_str;
-
-	/* TODO: check the password, when it's share level security! */
+	struct share_config *scfg;
+	const char *sharetype;
 
 	/* the service might be of the form \\SERVER\SHARE. Should we put
 	   the server name we get from this somewhere? */
@@ -135,17 +129,27 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 		}
 	}
 
-	snum = lp_find_valid_service(service);
-	if (snum == -1) {
-		DEBUG(0,("couldn't find service %s\n", service));
+	status = share_get_config(req, req->smb_conn->share_context, service, &scfg);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("make_connection: couldn't find service %s\n", service));
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
+	/* TODO: check the password, when it's share level security! */
+
+	if (!socket_check_access(req->smb_conn->connection->socket, 
+				 scfg->name, 
+				 share_string_list_option(req, scfg, SHARE_HOSTS_ALLOW), 
+				 share_string_list_option(req, scfg, SHARE_HOSTS_DENY))) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/* work out what sort of connection this is */
-	if (strcmp(lp_fstype(snum), "IPC") == 0) {
+	sharetype = share_string_option(scfg, "type", "DISK");
+	if (sharetype && strcmp(sharetype, "IPC") == 0) {
 		type = NTVFS_IPC;
 		type_str = "IPC";
-	} else if (lp_print_ok(snum)) {
+	} else if (sharetype && strcmp(sharetype, "PRINTER") == 0) {
 		type = NTVFS_PRINT;
 		type_str = "LPT:";
 	} else {
@@ -158,7 +162,7 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 		return NT_STATUS_BAD_DEVICE_TYPE;
 	}
 
-	return make_connection_snum(req, snum, type, password, dev);
+	return make_connection_scfg(req, scfg, type, password, dev);
 }
 
 /*
@@ -167,7 +171,6 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 NTSTATUS smbsrv_tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 {
 	NTSTATUS status;
-	int snum;
 
 	if (con->generic.level == RAW_TCON_TCON) {
 		DATA_BLOB password;
@@ -191,13 +194,11 @@ NTSTATUS smbsrv_tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 		return status;
 	}
 
-	snum = req->tcon->ntvfs->config.snum;
-
 	con->tconx.out.tid = req->tcon->tid;
 	con->tconx.out.dev_type = talloc_strdup(req, req->tcon->ntvfs->dev_type);
 	con->tconx.out.fs_type = talloc_strdup(req, req->tcon->ntvfs->fs_type);
-	con->tconx.out.options = SMB_SUPPORT_SEARCH_BITS | (lp_csc_policy(snum) << 2);
-	if (lp_msdfs_root(snum) && lp_host_msdfs()) {
+	con->tconx.out.options = SMB_SUPPORT_SEARCH_BITS | (share_int_option(req->tcon->ntvfs->config, SHARE_CSC_POLICY, SHARE_CSC_POLICY_DEFAULT) << 2);
+	if (share_bool_option(req->tcon->ntvfs->config, SHARE_MSDFS_ROOT, SHARE_MSDFS_ROOT_DEFAULT) && lp_host_msdfs()) {
 		con->tconx.out.options |= SMB_SHARE_IN_DFS;
 	}
 

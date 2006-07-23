@@ -372,6 +372,8 @@ struct smbsrv_connection {
 		/* the time when the last request comes in */
 		struct timeval last_request_time;
 	} statistics;
+
+	struct share_context *share_context;
 };
 
 #include "smb_server/smb_server_proto.h"

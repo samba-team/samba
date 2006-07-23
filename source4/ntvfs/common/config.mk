@@ -7,6 +7,6 @@ OBJ_FILES = \
 		brlock.o \
 		opendb.o \
 		notify.o
-PUBLIC_DEPENDENCIES = NDR_OPENDB NDR_NOTIFY sys_notify
+PUBLIC_DEPENDENCIES = NDR_OPENDB NDR_NOTIFY sys_notify share
 # End LIBRARY ntvfs_common
 ################################################

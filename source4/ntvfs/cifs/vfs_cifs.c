@@ -74,6 +74,19 @@ struct async_info {
 	SETUP_FILE; \
 } while (0)
 
+#define CIFS_SERVER		"cifs:server"
+#define CIFS_USER		"cifs:user"
+#define CIFS_PASSWORD		"cifs:password"
+#define CIFS_DOMAIN		"cifs:domain"
+#define CIFS_SHARE		"cifs:share"
+#define CIFS_USE_MACHINE_ACCT	"cifs:use-machine-account"
+#define CIFS_MAP_GENERIC	"cifs:map-generic"
+#define CIFS_MAP_TRANS2		"cifs:map-trans2"
+
+#define CIFS_USE_MACHINE_ACCT_DEFAULT	False
+#define CIFS_MAP_GENERIC_DEFAULT	False
+#define CIFS_MAP_TRANS2_DEFAULT		True
+
 /*
   a handler for oplock break events from the server - these need to be passed
   along to the client
@@ -113,7 +126,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	const char *host, *user, *pass, *domain, *remote_share;
 	struct smb_composite_connect io;
 	struct composite_context *creq;
-	int snum = ntvfs->ctx->config.snum;
+	struct share_config *scfg = ntvfs->ctx->config;
 
 	struct cli_credentials *credentials;
 	BOOL machine_account;
@@ -122,16 +135,16 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	 * For now we use parametric options, type cifs.
 	 * Later we will use security=server and auth_server.c.
 	 */
-	host = lp_parm_string(snum, "cifs", "server");
-	user = lp_parm_string(snum, "cifs", "user");
-	pass = lp_parm_string(snum, "cifs", "password");
-	domain = lp_parm_string(snum, "cifs", "domain");
-	remote_share = lp_parm_string(snum, "cifs", "share");
+	host = share_string_option(scfg, CIFS_SERVER, NULL);
+	user = share_string_option(scfg, CIFS_USER, NULL);
+	pass = share_string_option(scfg, CIFS_PASSWORD, NULL);
+	domain = share_string_option(scfg, CIFS_DOMAIN, NULL);
+	remote_share = share_string_option(scfg, CIFS_SHARE, NULL);
 	if (!remote_share) {
 		remote_share = sharename;
 	}
 
-	machine_account = lp_parm_bool(snum, "cifs", "use_machine_account", False);
+	machine_account = share_bool_option(scfg, CIFS_USE_MACHINE_ACCT, CIFS_USE_MACHINE_ACCT_DEFAULT);
 
 	private = talloc_zero(ntvfs, struct cvfs_private);
 	if (!private) {
@@ -204,11 +217,9 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	/* we need to receive oplock break requests from the server */
 	smbcli_oplock_handler(private->transport, oplock_handler, private);
 
-	private->map_generic = lp_parm_bool(ntvfs->ctx->config.snum, 
-					    "cifs", "mapgeneric", False);
+	private->map_generic = share_bool_option(scfg, CIFS_MAP_GENERIC, CIFS_MAP_GENERIC_DEFAULT);
 
-	private->map_trans2 = lp_parm_bool(ntvfs->ctx->config.snum,
-					   "cifs", "maptrans2", True);
+	private->map_trans2 = share_bool_option(scfg, CIFS_MAP_TRANS2, CIFS_MAP_TRANS2_DEFAULT);
 
 	return NT_STATUS_OK;
 }

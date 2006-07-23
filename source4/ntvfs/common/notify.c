@@ -56,6 +56,9 @@ struct notify_list {
 
 #define NOTIFY_KEY "notify array"
 
+#define NOTIFY_ENABLE		"notify:enable"
+#define NOTIFY_ENABLE_DEFAULT	True
+
 static NTSTATUS notify_remove_all(struct notify_context *notify);
 static void notify_handler(struct messaging_context *msg_ctx, void *private, 
 			   uint32_t msg_type, uint32_t server_id, DATA_BLOB *data);
@@ -77,12 +80,13 @@ static int notify_destructor(struct notify_context *notify)
 */
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server, 
 				   struct messaging_context *messaging_ctx,
-				   struct event_context *ev, int snum)
+				   struct event_context *ev,
+				   struct share_config *scfg)
 {
 	char *path;
 	struct notify_context *notify;
 
-	if (lp_parm_bool(snum, "notify", "enable", True) != True) {
+	if (share_bool_option(scfg, NOTIFY_ENABLE, NOTIFY_ENABLE_DEFAULT) != True) {
 		return NULL;
 	}
 
@@ -114,7 +118,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server,
 	messaging_register(notify->messaging_ctx, notify, 
 			   MSG_PVFS_NOTIFY, notify_handler);
 
-	notify->sys_notify_ctx = sys_notify_context_create(snum, notify, ev);
+	notify->sys_notify_ctx = sys_notify_context_create(scfg, notify, ev);
 
 	return notify;
 }

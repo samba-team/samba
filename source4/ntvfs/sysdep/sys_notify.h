@@ -19,6 +19,7 @@
 */
 
 #include "librpc/gen_ndr/notify.h"
+#include "param/share.h"
 
 struct sys_notify_context;
 
@@ -43,7 +44,7 @@ struct sys_notify_backend {
 };
 
 NTSTATUS sys_notify_register(struct sys_notify_backend *backend);
-struct sys_notify_context *sys_notify_context_create(int snum,
+struct sys_notify_context *sys_notify_context_create(struct share_config *scfg,
 						     TALLOC_CTX *mem_ctx, 
 						     struct event_context *ev);
 NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, struct notify_entry *e,

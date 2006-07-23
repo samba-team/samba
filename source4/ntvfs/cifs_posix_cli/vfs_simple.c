@@ -43,7 +43,7 @@
 #define O_DIRECTORY 0
 #endif
 
-#define CHECK_READ_ONLY(req) do { if (lp_readonly(ntvfs->ctx->config.snum)) return NT_STATUS_ACCESS_DENIED; } while (0)
+#define CHECK_READ_ONLY(req) do { if (share_bool_option(ntvfs->ctx->config, SHARE_READONLY, True)) return NT_STATUS_ACCESS_DENIED; } while (0)
 
 /*
   connect to a share - used when a tree_connect operation comes
@@ -56,12 +56,11 @@ static NTSTATUS svfs_connect(struct ntvfs_module_context *ntvfs,
 {
 	struct stat st;
 	struct svfs_private *private;
-	int snum = ntvfs->ctx->config.snum;
 
 	private = talloc(ntvfs, struct svfs_private);
 
 	private->next_search_handle = 0;
-	private->connectpath = talloc_strdup(private, lp_pathname(snum));
+	private->connectpath = talloc_strdup(private, share_string_option(ntvfs->ctx->config, SHARE_PATH, ""));
 	private->open_files = NULL;
 	private->search = NULL;
 
@@ -317,7 +316,7 @@ static NTSTATUS svfs_open(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_open(ntvfs, req, io);
 	}
 
-	readonly = lp_readonly(ntvfs->ctx->config.snum);
+	readonly = share_bool_option(ntvfs->ctx->config, SHARE_READONLY, True);
 	if (readonly) {
 		create_flags = 0;
 		rdwr_flags = O_RDONLY;
@@ -728,7 +727,7 @@ static NTSTATUS svfs_fsinfo(struct ntvfs_module_context *ntvfs,
 	fs->generic.out.quota_soft = 0;
 	fs->generic.out.quota_hard = 0;
 	fs->generic.out.quota_flags = 0;
-	fs->generic.out.volume_name = talloc_strdup(req, lp_servicename(ntvfs->ctx->config.snum));
+	fs->generic.out.volume_name = talloc_strdup(req, ntvfs->ctx->config->name);
 	fs->generic.out.fs_type = ntvfs->ctx->fs_type;
 
 	return NT_STATUS_OK;
