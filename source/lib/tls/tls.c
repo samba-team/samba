@@ -444,7 +444,7 @@ struct socket_context *tls_init_server(struct tls_params *params,
 	
 	nt_status = socket_create_with_ops(socket, &tls_socket_ops, &new_sock, 
 					   SOCKET_TYPE_STREAM, 
-					   socket->flags | SOCKET_FLAG_FAKE);
+					   socket->flags | SOCKET_FLAG_ENCRYPT);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
@@ -524,7 +524,7 @@ struct socket_context *tls_init_client(struct socket_context *socket,
 	
 	nt_status = socket_create_with_ops(socket, &tls_socket_ops, &new_sock, 
 					   SOCKET_TYPE_STREAM, 
-					   socket->flags | SOCKET_FLAG_FAKE);
+					   socket->flags | SOCKET_FLAG_ENCRYPT);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}

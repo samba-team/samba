@@ -165,25 +165,13 @@ static void ldap_match_message(struct ldap_connection *conn, struct ldap_message
 
 
 /*
-  check if a blob is a complete ldap packet
-  handle wrapper or unwrapped connections
+  decode/process LDAP data
 */
-NTSTATUS ldap_complete_packet(void *private_data, DATA_BLOB blob, size_t *size)
-{
-	struct ldap_connection *conn = talloc_get_type(private_data,
-						       struct ldap_connection);
-	if (conn->enable_wrap) {
-		return packet_full_request_u32(private_data, blob, size);
-	}
-	return ldap_full_packet(private_data, blob, size);
-}
-
-/*
-  decode/process plain data
-*/
-static NTSTATUS ldap_decode_plain(struct ldap_connection *conn, DATA_BLOB blob)
+static NTSTATUS ldap_recv_handler(void *private_data, DATA_BLOB blob)
 {
 	struct asn1_data asn1;
+	struct ldap_connection *conn = talloc_get_type(private_data, 
+						       struct ldap_connection);
 	struct ldap_message *msg = talloc(conn, struct ldap_message);
 
 	if (msg == NULL) {
@@ -205,59 +193,13 @@ static NTSTATUS ldap_decode_plain(struct ldap_connection *conn, DATA_BLOB blob)
 	return NT_STATUS_OK;
 }
 
-/*
-  decode/process wrapped data
-*/
-static NTSTATUS ldap_decode_wrapped(struct ldap_connection *conn, DATA_BLOB blob)
-{
-	DATA_BLOB wrapped, unwrapped;
-	struct asn1_data asn1;
-	struct ldap_message *msg = talloc(conn, struct ldap_message);
-	NTSTATUS status;
-
-	if (msg == NULL) {
-		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
-	}
-
-	wrapped = data_blob_const(blob.data+4, blob.length-4);
-
-	status = gensec_unwrap(conn->gensec, msg, &wrapped, &unwrapped);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
-	}
-
-	data_blob_free(&blob);
-
-	if (!asn1_load(&asn1, unwrapped)) {
-		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
-	}
-
-	while (ldap_decode(&asn1, msg)) {
-		ldap_match_message(conn, msg);
-		msg = talloc(conn, struct ldap_message);
-	}
-		
-	talloc_free(msg);
-	asn1_free(&asn1);
-
-	return NT_STATUS_OK;
-}
-
-
-/*
-  handle ldap recv events
-*/
-static NTSTATUS ldap_recv_handler(void *private_data, DATA_BLOB blob)
+/* Handle read events, from the GENSEC socket callback, or real events */
+void ldap_read_io_handler(void *private_data, uint16_t flags) 
 {
 	struct ldap_connection *conn = talloc_get_type(private_data, 
 						       struct ldap_connection);
-	if (conn->enable_wrap) {
-		return ldap_decode_wrapped(conn, blob);
-	}
-
-	return ldap_decode_plain(conn, blob);
+	packet_recv(conn->packet);
 }
-
 
 /*
   handle ldap socket events
@@ -272,7 +214,7 @@ static void ldap_io_handler(struct event_context *ev, struct fd_event *fde,
 		if (!tls_enabled(conn->sock)) return;
 	}
 	if (flags & EVENT_FD_READ) {
-		packet_recv(conn->packet);
+		ldap_read_io_handler(private_data, flags);
 	}
 }
 
@@ -417,7 +359,7 @@ static void ldap_connect_recv_conn(struct composite_context *ctx)
 	packet_set_private(conn->packet, conn);
 	packet_set_socket(conn->packet, conn->sock);
 	packet_set_callback(conn->packet, ldap_recv_handler);
-	packet_set_full_request(conn->packet, ldap_complete_packet);
+	packet_set_full_request(conn->packet, ldap_full_packet);
 	packet_set_error_handler(conn->packet, ldap_error_handler);
 	packet_set_event_context(conn->packet, conn->event.event_ctx);
 	packet_set_fde(conn->packet, conn->event.fde);
@@ -559,24 +501,6 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 
 	if (!ldap_encode(msg, &req->data, req)) {
 		goto failed;		
-	}
-
-	/* possibly encrypt/sign the request */
-	if (conn->enable_wrap) {
-		DATA_BLOB wrapped;
-
-		status = gensec_wrap(conn->gensec, req, &req->data, &wrapped);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto failed;
-		}
-		data_blob_free(&req->data);
-		req->data = data_blob_talloc(req, NULL, wrapped.length + 4);
-		if (req->data.data == NULL) {
-			goto failed;
-		}
-		RSIVAL(req->data.data, 0, wrapped.length);
-		memcpy(req->data.data+4, wrapped.data, wrapped.length);
-		data_blob_free(&wrapped);
 	}
 
 	status = packet_send(conn->packet, req->data);

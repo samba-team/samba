@@ -22,10 +22,11 @@
 #include "ldap_server/ldap_server.h"
 #include "auth/auth.h"
 #include "libcli/ldap/ldap.h"
-#include "smbd/service_stream.h"
+#include "smbd/service.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
+#include "auth/gensec/socket.h"
 
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 {
@@ -87,6 +88,23 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 
 	ldapsrv_queue_reply(call, reply);
 	return NT_STATUS_OK;
+}
+
+static void ldapsrv_set_sasl(void *private) 
+{
+	struct ldapsrv_connection *conn = talloc_get_type(private, struct ldapsrv_connection);
+	struct socket_context *socket = gensec_socket_init(conn->gensec, 
+							   conn->connection->socket,
+							   conn->connection->event.ctx, 
+							   stream_io_handler_callback,
+							   conn->connection);
+	if (socket) {
+		conn->connection->socket = socket;
+		talloc_steal(conn->connection->socket, socket);
+		packet_set_socket(conn->packet, socket);
+	} else {
+		ldapsrv_terminate_connection(conn, "Failed to setup SASL wrapping on socket");
+	}
 }
 
 static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
@@ -175,10 +193,10 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 
 		result = LDAP_SUCCESS;
 		errstr = NULL;
-		if (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL) ||
-		    gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN)) {
-			conn->enable_wrap = True;
-		}
+
+		call->send_callback = ldapsrv_set_sasl;
+		call->send_private = conn;
+		
 		old_session_info = conn->session_info;
 		conn->session_info = NULL;
 		status = gensec_session_info(conn->gensec, &conn->session_info);

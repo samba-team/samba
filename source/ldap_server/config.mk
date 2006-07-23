@@ -11,6 +11,6 @@ OBJ_FILES = \
 		ldap_backend.o \
 		ldap_bind.o
 PUBLIC_DEPENDENCIES = \
-		LIBCLI_LDAP SAMDB process_model auth
+		LIBCLI_LDAP SAMDB process_model auth GENSEC_SOCKET
 # End SUBSYSTEM SMB
 #######################

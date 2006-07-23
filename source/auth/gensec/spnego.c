@@ -211,6 +211,30 @@ static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security, si
 	return gensec_sig_size(spnego_state->sub_sec_security, data_size);
 }
 
+static size_t gensec_spnego_max_input_size(struct gensec_security *gensec_security) 
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+
+	if (spnego_state->state_position != SPNEGO_DONE 
+	    && spnego_state->state_position != SPNEGO_FALLBACK) {
+		return 0;
+	}
+	
+	return gensec_max_input_size(spnego_state->sub_sec_security);
+}
+
+static size_t gensec_spnego_max_wrapped_size(struct gensec_security *gensec_security) 
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+
+	if (spnego_state->state_position != SPNEGO_DONE 
+	    && spnego_state->state_position != SPNEGO_FALLBACK) {
+		return 0;
+	}
+	
+	return gensec_max_wrapped_size(spnego_state->sub_sec_security);
+}
+
 static NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_security, 
 					  DATA_BLOB *session_key)
 {
@@ -938,24 +962,26 @@ static const char *gensec_spnego_oids[] = {
 };
 
 static const struct gensec_security_ops gensec_spnego_security_ops = {
-	.name		= "spnego",
-	.sasl_name	= "GSS-SPNEGO",
-	.auth_type	= DCERPC_AUTH_TYPE_SPNEGO,
-	.oid            = gensec_spnego_oids,
-	.client_start   = gensec_spnego_client_start,
-	.server_start   = gensec_spnego_server_start,
-	.update 	= gensec_spnego_update,
-	.seal_packet	= gensec_spnego_seal_packet,
-	.sign_packet	= gensec_spnego_sign_packet,
-	.sig_size	= gensec_spnego_sig_size,
-	.check_packet	= gensec_spnego_check_packet,
-	.unseal_packet	= gensec_spnego_unseal_packet,
-	.wrap           = gensec_spnego_wrap,
-	.unwrap         = gensec_spnego_unwrap,
-	.session_key	= gensec_spnego_session_key,
-	.session_info   = gensec_spnego_session_info,
-	.have_feature   = gensec_spnego_have_feature,
-	.enabled        = True,
+	.name		  = "spnego",
+	.sasl_name	  = "GSS-SPNEGO",
+	.auth_type	  = DCERPC_AUTH_TYPE_SPNEGO,
+	.oid              = gensec_spnego_oids,
+	.client_start     = gensec_spnego_client_start,
+	.server_start     = gensec_spnego_server_start,
+	.update 	  = gensec_spnego_update,
+	.seal_packet	  = gensec_spnego_seal_packet,
+	.sign_packet	  = gensec_spnego_sign_packet,
+	.sig_size	  = gensec_spnego_sig_size,
+	.max_wrapped_size = gensec_spnego_max_wrapped_size,
+	.max_input_size	  = gensec_spnego_max_input_size,
+	.check_packet	  = gensec_spnego_check_packet,
+	.unseal_packet	  = gensec_spnego_unseal_packet,
+	.wrap             = gensec_spnego_wrap,
+	.unwrap           = gensec_spnego_unwrap,
+	.session_key	  = gensec_spnego_session_key,
+	.session_info     = gensec_spnego_session_info,
+	.have_feature     = gensec_spnego_have_feature,
+	.enabled          = True,
 };
 
 NTSTATUS gensec_spnego_init(void)

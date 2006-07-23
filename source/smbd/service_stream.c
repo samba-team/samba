@@ -100,6 +100,11 @@ static void stream_io_handler(struct event_context *ev, struct fd_event *fde,
 	}
 }
 
+void stream_io_handler_callback(void *conn, uint16_t flags) 
+{
+	stream_io_handler(NULL, NULL, flags, conn);
+}
+
 /*
   this creates a stream_connection from an already existing connection,
   used for protocols, where a client connection needs to switched into

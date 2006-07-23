@@ -20,6 +20,8 @@
 */
 
 #include "libcli/ldap/ldap.h"
+#include "lib/socket/socket.h"
+#include "lib/stream/packet.h"
 
 struct ldapsrv_connection {
 	struct stream_connection *connection;
@@ -28,9 +30,6 @@ struct ldapsrv_connection {
 	struct ldapsrv_service *service;
 	struct cli_credentials *server_credentials;
 	struct ldb_context *ldb;
-
-	/* are we using gensec wrapping? */
-	BOOL enable_wrap;
 
 	BOOL global_catalog;
 
@@ -54,6 +53,8 @@ struct ldapsrv_call {
 		struct ldapsrv_reply *prev, *next;
 		struct ldap_message *msg;
 	} *replies;
+	packet_send_callback_fn_t send_callback;
+	void *send_private;
 };
 
 struct ldapsrv_service;

@@ -24,6 +24,9 @@
 typedef NTSTATUS (*packet_full_request_fn_t)(void *private, 
 					     DATA_BLOB blob, size_t *packet_size);
 typedef NTSTATUS (*packet_callback_fn_t)(void *private, DATA_BLOB blob);
+
+/* Used to notify that a packet has been sent, and is on the wire */
+typedef void (*packet_send_callback_fn_t)(void *private);
 typedef void (*packet_error_handler_fn_t)(void *private, NTSTATUS status);
 
 
@@ -43,6 +46,9 @@ void packet_recv(struct packet_context *pc);
 void packet_recv_disable(struct packet_context *pc);
 void packet_recv_enable(struct packet_context *pc);
 NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob);
+NTSTATUS packet_send_callback(struct packet_context *pc, DATA_BLOB blob,
+			      packet_send_callback_fn_t send_callback, 
+			      void *private);
 void packet_queue_run(struct packet_context *pc);
 
 /*
