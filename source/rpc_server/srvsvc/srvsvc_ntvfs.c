@@ -20,10 +20,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 #include "includes.h"
+#include "ntvfs/ntvfs.h"
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "rpc_server/common/common.h"
-#include "ntvfs/ntvfs.h"
 #include "rpc_server/srvsvc/proto.h"
 #include "lib/socket/socket.h"
 
@@ -58,27 +58,35 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	struct srvsvc_ntvfs_ctx	*c;
 	struct ntvfs_request *ntvfs_req;
 	enum ntvfs_type type;
-	int snum;
+	struct share_context *sctx;
+	struct share_config *scfg;
+	const char *sharetype;
 
-	snum = lp_find_valid_service(share);
-	if (snum == -1) {
+	status = share_get_context(mem_ctx, &sctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = share_get_config(mem_ctx, sctx, share, &scfg);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("srvsvc_create_ntvfs_context: couldn't find service %s\n", share));
-		return NT_STATUS_BAD_NETWORK_NAME;
+		return status;
 	}
 
 #if 0 /* TODO: fix access cecking */
 	if (!socket_check_access(dce_call->connection->socket, 
-				 lp_servicename(snum), 
-				 lp_hostsallow(snum), 
-				 lp_hostsdeny(snum))) {
+				 scfg->name, 
+				 share_string_list_option(scfg, SHARE_HOSTS_ALLOW), 
+				 share_string_list_option(scfg, SHARE_HOSTS_DENY))) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 #endif
 
 	/* work out what sort of connection this is */
-	if (strcmp(lp_fstype(snum), "IPC") == 0) {
+	sharetype = share_string_option(scfg, SHARE_TYPE, SHARE_TYPE_DEFAULT);
+	if (sharetype && strcmp(sharetype, "IPC") == 0) {
 		type = NTVFS_IPC;
-	} else if (lp_print_ok(snum)) {
+	} else if (sharetype && strcmp(sharetype, "PRINTER")) {
 		type = NTVFS_PRINT;
 	} else {
 		type = NTVFS_DISK;
@@ -88,7 +96,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	NT_STATUS_HAVE_NO_MEMORY(c);
 	
 	/* init ntvfs function pointers */
-	status = ntvfs_init_connection(c, snum, type,
+	status = ntvfs_init_connection(c, scfg, type,
 				       PROTOCOL_NT1,
 				       dce_call->event_ctx,
 				       dce_call->conn->msg_ctx,
@@ -96,7 +104,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 				       &c->ntvfs);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("srvsvc_create_ntvfs_context: ntvfs_init_connection failed for service %s\n", 
-			  lp_servicename(snum)));
+			  scfg->name));
 		return status;
 	}
 	talloc_set_destructor(c, srvsvc_ntvfs_ctx_destructor);
@@ -118,7 +126,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs_req);
 
 	/* Invoke NTVFS connection hook */
-	status = ntvfs_connect(ntvfs_req, lp_servicename(snum));
+	status = ntvfs_connect(ntvfs_req, scfg->name);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("srvsvc_create_ntvfs_context: NTVFS ntvfs_connect() failed!\n"));
 		return status;

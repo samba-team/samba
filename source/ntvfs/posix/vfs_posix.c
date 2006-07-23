@@ -38,35 +38,46 @@
 */
 static void pvfs_setup_options(struct pvfs_state *pvfs)
 {
-	int snum = pvfs->ntvfs->ctx->config.snum;
+	struct share_config *scfg = pvfs->ntvfs->ctx->config;
 	const char *eadb;
 
-	if (lp_map_hidden(snum))     pvfs->flags |= PVFS_FLAG_MAP_HIDDEN;
-	if (lp_map_archive(snum))    pvfs->flags |= PVFS_FLAG_MAP_ARCHIVE;
-	if (lp_map_system(snum))     pvfs->flags |= PVFS_FLAG_MAP_SYSTEM;
-	if (lp_readonly(snum))       pvfs->flags |= PVFS_FLAG_READONLY;
-	if (lp_strict_sync(snum))    pvfs->flags |= PVFS_FLAG_STRICT_SYNC;
-	if (lp_strict_locking(snum)) pvfs->flags |= PVFS_FLAG_STRICT_LOCKING;
-	if (lp_ci_filesystem(snum))  pvfs->flags |= PVFS_FLAG_CI_FILESYSTEM;
-
-	if (lp_parm_bool(snum, "posix", "fakeoplocks", False)) {
+	if (share_bool_option(scfg, SHARE_MAP_HIDDEN, SHARE_MAP_HIDDEN_DEFAULT))
+		pvfs->flags |= PVFS_FLAG_MAP_HIDDEN;
+	if (share_bool_option(scfg, SHARE_MAP_ARCHIVE, SHARE_MAP_ARCHIVE_DEFAULT))
+		pvfs->flags |= PVFS_FLAG_MAP_ARCHIVE;
+	if (share_bool_option(scfg, SHARE_MAP_SYSTEM, SHARE_MAP_SYSTEM_DEFAULT))
+		pvfs->flags |= PVFS_FLAG_MAP_SYSTEM;
+	if (share_bool_option(scfg, SHARE_READONLY, SHARE_READONLY_DEFAULT))
+		pvfs->flags |= PVFS_FLAG_READONLY;
+	if (share_bool_option(scfg, SHARE_STRICT_SYNC, SHARE_STRICT_SYNC_DEFAULT))
+		pvfs->flags |= PVFS_FLAG_STRICT_SYNC;
+	if (share_bool_option(scfg, SHARE_STRICT_LOCKING, SHARE_STRICT_LOCKING_DEFAULT))
+		pvfs->flags |= PVFS_FLAG_STRICT_LOCKING;
+	if (share_bool_option(scfg, SHARE_CI_FILESYSTEM, SHARE_CI_FILESYSTEM_DEFAULT))
+		pvfs->flags |= PVFS_FLAG_CI_FILESYSTEM;
+	if (share_bool_option(scfg, PVFS_FAKE_OPLOCKS, PVFS_FAKE_OPLOCKS_DEFAULT)) {
 		pvfs->flags |= PVFS_FLAG_FAKE_OPLOCKS;
 	}
 
 	/* this must be a power of 2 */
-	pvfs->alloc_size_rounding = lp_parm_int(snum, 
-						"posix", "allocationrounding", 512);
+	pvfs->alloc_size_rounding = share_int_option(scfg,
+							PVFS_ALLOCATION_ROUNDING,
+							PVFS_ALLOCATION_ROUNDING_DEFAULT);
 
-	pvfs->search.inactivity_time = lp_parm_int(snum, 
-						   "posix", "searchinactivity", 300);
+	pvfs->search.inactivity_time = share_int_option(scfg,
+							PVFS_SEARCH_INACTIVITY,
+							PVFS_SEARCH_INACTIVITY_DEFAULT);
 
 #if HAVE_XATTR_SUPPORT
-	if (lp_parm_bool(snum, "posix", "xattr", True)) pvfs->flags |= PVFS_FLAG_XATTR_ENABLE;
+	if (share_bool_option(scfg, PVFS_XATTR, PVFS_XATTR_DEFAULT))
+		pvfs->flags |= PVFS_FLAG_XATTR_ENABLE;
 #endif
 
-	pvfs->sharing_violation_delay = lp_parm_int(snum, "posix", "sharedelay", 1000000);
+	pvfs->sharing_violation_delay = share_int_option(scfg,
+							PVFS_SHARE_DELAY,
+							PVFS_SHARE_DELAY_DEFAULT);
 
-	pvfs->share_name = talloc_strdup(pvfs, lp_servicename(snum));
+	pvfs->share_name = talloc_strdup(pvfs, scfg->name);
 
 	pvfs->fs_attribs = 
 		FS_ATTR_CASE_SENSITIVE_SEARCH | 
@@ -75,7 +86,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 		FS_ATTR_SPARSE_FILES;
 
 	/* allow xattrs to be stored in a external tdb */
-	eadb = lp_parm_string(snum, "posix", "eadb");
+	eadb = share_string_option(scfg, PVFS_EADB, NULL);
 	if (eadb != NULL) {
 		pvfs->ea_db = tdb_wrap_open(pvfs, eadb, 50000,  
 					    TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
@@ -144,7 +155,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_HAVE_NO_MEMORY(pvfs);
 
 	/* for simplicity of path construction, remove any trailing slash now */
-	base_directory = talloc_strdup(pvfs, lp_pathname(ntvfs->ctx->config.snum));
+	base_directory = talloc_strdup(pvfs, share_string_option(ntvfs->ctx->config, SHARE_PATH, ""));
 	NT_STATUS_HAVE_NO_MEMORY(base_directory);
 	if (strcmp(base_directory, "/") != 0) {
 		trim_string(base_directory, NULL, "/");
@@ -186,7 +197,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 					   pvfs->ntvfs->ctx->server_id,  
 					   pvfs->ntvfs->ctx->msg_ctx, 
 					   event_context_find(pvfs),
-					   pvfs->ntvfs->ctx->config.snum);
+					   pvfs->ntvfs->ctx->config);
 
 	pvfs->sidmap = sidmap_open(pvfs);
 	if (pvfs->sidmap == NULL) {

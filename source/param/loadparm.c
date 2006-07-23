@@ -107,6 +107,7 @@ typedef struct
 	char *szAutoServices;
 	char *szPasswdChat;
 	char *szConfigFile;
+	char *szShareBackend;
 	char *szSAM_URL;
 	char *szSPOOLSS_URL;
 	char *szWINS_CONFIG_URL;
@@ -531,6 +532,7 @@ static struct parm_struct parm_table[] = {
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
 	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
+	{"share backend", P_STRING, P_GLOBAL, &Globals.szShareBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"lock dir", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, FLAG_HIDE}, 
@@ -591,6 +593,8 @@ static void init_globals(void)
 
 	do_parameter("config file", dyn_CONFIGFILE, NULL);
 
+	do_parameter("share backend", "classic", NULL);
+	
 	do_parameter("server role", "standalone", NULL);
 
 	/* options that can be set on the command line must be initialised via
@@ -829,6 +833,7 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_tls_crlfile, &Globals.tls_crlfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_share_backend, &Globals.szShareBackend)
 _PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, &Globals.szSAM_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_spoolss_url, &Globals.szSPOOLSS_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_wins_config_url, &Globals.szWINS_CONFIG_URL)
@@ -1711,6 +1716,7 @@ static void init_copymap(service * pservice)
 			pservice->copymap[i] = True;
 }
 
+#if 0 /* not used anywhere */
 /***************************************************************************
  Return the local pointer to a parameter given the service number and the 
  pointer into the default structure.
@@ -1720,7 +1726,7 @@ void *lp_local_ptr(int snum, void *ptr)
 {
 	return (void *)(((char *)ServicePtrs[snum]) + PTR_DIFF(ptr, &sDefault));
 }
-
+#endif
 
 /***************************************************************************
  Process a parametric option

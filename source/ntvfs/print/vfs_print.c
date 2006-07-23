@@ -75,7 +75,6 @@ static NTSTATUS print_ioctl(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (io->ioctl.in.request == IOCTL_QUERY_JOB_INFO) {
-		int snum = ntvfs->ctx->config.snum;
 
 		/* a request for the print job id of an open print job */
 		io->ioctl.out.blob = data_blob_talloc(req, NULL, 32);
@@ -85,7 +84,7 @@ static NTSTATUS print_ioctl(struct ntvfs_module_context *ntvfs,
 		p = (char *)io->ioctl.out.blob.data;
 		SSVAL(p,0, 1 /* REWRITE: fsp->rap_print_jobid */);
 		push_string(p+2, lp_netbios_name(), 15, STR_TERMINATE|STR_ASCII);
-		push_string(p+18, lp_servicename(snum), 13, STR_TERMINATE|STR_ASCII);
+		push_string(p+18, ntvfs->ctx->config->name, 13, STR_TERMINATE|STR_ASCII);
 		return NT_STATUS_OK;
 	}
 

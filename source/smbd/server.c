@@ -239,6 +239,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	ldb_global_init(); /* FIXME: */
 
+	share_init();
+
 	gensec_init(); /* FIXME: */
 
 	registry_init(); /* FIXME: maybe run this in the initialization function 

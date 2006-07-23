@@ -20,6 +20,7 @@
 */
 
 #include "libcli/raw/interfaces.h"
+#include "param/share.h"
 
 /* modules can use the following to determine if the interface has changed */
 /* version 1 -> 0 - make module stacking easier -- metze */
@@ -181,9 +182,7 @@ struct ntvfs_context {
 	 */
 	struct ntvfs_module_context *modules;
 
-	struct {
-		int snum;
-	} config;
+	struct share_config *config;
 
 	uint32_t server_id;
 	struct event_context *event_ctx;
