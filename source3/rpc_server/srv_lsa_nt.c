@@ -873,7 +873,12 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 
 		if (name->type == SID_NAME_UNKNOWN) {
 			name->dom_idx = -1;
-			/* unknown sids should return the string representation of the SID */
+			/* Unknown sids should return the string
+			 * representation of the SID. Windows 2003 behaves
+			 * rather erratic here, in many cases it returns the
+			 * RID as 8 bytes hex, in others it returns the full
+			 * SID. We (Jerry/VL) could not figure out which the
+			 * hard cases are, so leave it with the SID.  */
 			name->name = talloc_asprintf(p->mem_ctx, "%s", 
 			                             sid_string_static(sids[i]));
 			if (name->name == NULL) {
