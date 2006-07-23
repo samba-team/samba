@@ -40,7 +40,7 @@ sub show($$)
 
 	print "Summary:\n\n";
 	showitem($output, "GTK+ frontends", ["gtk","gconf"]);
-	showitem($output, "SSL in SWAT", ["GNUTLS"]);
+	showitem($output, "SSL in SWAT and LDAP", ["GNUTLS"]);
 	showitem($output, "threads in smbd (see --with-pthread)", ["PTHREAD"]);
 	showitem($output, "intelligent command line editing", ["READLINE"]);
 	showitem($output, "changing process titles (see --with-setproctitle)", ["SETPROCTITLE"]);
