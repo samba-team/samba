@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "param/share.h"
 #include "libcli/rap/rap.h"
 #include "librpc/gen_ndr/srvsvc.h"
 #include "rpc_server/common/common.h"
@@ -30,21 +31,45 @@
 NTSTATUS rap_netshareenum(TALLOC_CTX *mem_ctx,
 			  struct rap_NetShareEnum *r)
 {
-	int i;
+	NTSTATUS nterr;
+	const char **snames;
+	struct share_context *sctx;
+	struct share_config *scfg;
+	int i, j, count;
+
 	r->out.status = 0;
-	r->out.available = dcesrv_common_get_count_of_shares(mem_ctx, NULL);
+	r->out.available = 0;
+	r->out.info = NULL;
+
+	nterr = share_get_context(mem_ctx, &sctx);
+	if (!NT_STATUS_IS_OK(nterr)) {
+		return nterr;
+	}
+
+	nterr = share_list_all(mem_ctx, sctx, &count, &snames);
+	if (!NT_STATUS_IS_OK(nterr)) {
+		return nterr;
+	}
+
+	r->out.available = count;
 	r->out.info = talloc_array(mem_ctx,
 				   union rap_shareenum_info, r->out.available);
 
-	for (i=0;i<r->out.available;i++) {
-		strncpy(r->out.info[i].info1.name, 
-			dcesrv_common_get_share_name(mem_ctx, NULL, i),
+	for (i = 0, j = 0; i < r->out.available; i++) {
+		if (!NT_STATUS_IS_OK(share_get_config(mem_ctx, sctx, snames[i], &scfg))) {
+			DEBUG(3, ("WARNING: Service [%s] disappeared after enumeration!\n", snames[i]));
+			continue;
+		}
+		strncpy(r->out.info[j].info1.name,
+			snames[i],
 			sizeof(r->out.info[0].info1.name));
 		r->out.info[i].info1.pad = 0;
-		r->out.info[i].info1.type = dcesrv_common_get_share_type(mem_ctx, NULL, i);
-		r->out.info[i].info1.comment = talloc_strdup(mem_ctx, 
-							     dcesrv_common_get_share_comment(mem_ctx, NULL, i));
+		r->out.info[i].info1.type = dcesrv_common_get_share_type(mem_ctx, NULL, scfg);
+		r->out.info[i].info1.comment = talloc_strdup(mem_ctx, share_string_option(scfg, SHARE_COMMENT, ""));
+		talloc_free(scfg);
+		j++;
 	}
+	r->out.available = j;
 	
 	return NT_STATUS_OK;
 }

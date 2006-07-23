@@ -367,6 +367,7 @@ function provision_default_paths(subobj)
 	var lp = loadparm_init();
 	var paths = new Object();
 	paths.smbconf = lp.get("config file");
+	paths.shareconf = lp.get("private dir") + "/" + "share.ldb";
 	paths.hklm = "hklm.ldb";
 	paths.hkcu = "hkcu.ldb";
 	paths.hkcr = "hkcr.ldb";
@@ -463,6 +464,12 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 		message("Setting up smb.conf\n");
 		setup_file("provision.smb.conf", info.message, paths.smbconf, subobj);
 		lp.reload();
+	}
+	/* only install a new shares config db if there is none */
+	st = sys.stat(paths.shareconf);
+	if (st == undefined) {
+		message("Setting up sconf.ldb\n");
+		setup_ldb("share.ldif", info, paths.shareconf);
 	}
 	message("Setting up secrets.ldb\n");
 	setup_ldb("secrets.ldif", info, paths.secrets);

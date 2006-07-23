@@ -31,6 +31,7 @@
 #include "smb_server/smb2/smb2_server.h"
 #include "system/network.h"
 #include "netif/netif.h"
+#include "param/share.h"
 
 static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
 {
@@ -155,6 +156,11 @@ static void smbsrv_accept(struct stream_connection *conn)
 	smb_conn->statistics.connect_time = timeval_current();
 
 	smbsrv_management_init(smb_conn);
+
+	if (!NT_STATUS_IS_OK(share_get_context(smb_conn, &(smb_conn->share_context)))) {
+		smbsrv_terminate_connection(smb_conn, "share_init failed!");
+		return;
+	}
 }
 
 static const struct stream_server_ops smb_stream_ops = {

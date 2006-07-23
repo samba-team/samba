@@ -56,7 +56,7 @@ OBJ_FILES = \
 		srvsvc/dcesrv_srvsvc.o \
 		srvsvc/srvsvc_ntvfs.o
 PUBLIC_DEPENDENCIES = \
-		DCERPC_COMMON NDR_SRVSVC
+		DCERPC_COMMON NDR_SRVSVC share
 # End MODULE dcerpc_srvsvc
 ################################################
 

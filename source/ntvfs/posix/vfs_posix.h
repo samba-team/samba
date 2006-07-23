@@ -222,6 +222,19 @@ struct pvfs_dir;
 /* types of notification for pvfs wait events */
 enum pvfs_wait_notice {PVFS_WAIT_EVENT, PVFS_WAIT_TIMEOUT, PVFS_WAIT_CANCEL};
 
+#define PVFS_EADB			"posix:eadb"
+#define PVFS_XATTR			"posix:xattr"
+#define PVFS_FAKE_OPLOCKS		"posix:fakeoplocks"
+#define PVFS_SHARE_DELAY		"posix:sharedelay"
+#define PVFS_ALLOCATION_ROUNDING	"posix:allocationrounding"
+#define PVFS_SEARCH_INACTIVITY		"posix:searchinactivity"
+
+#define PVFS_XATTR_DEFAULT			True
+#define PVFS_FAKE_OPLOCKS_DEFAULT		False
+#define PVFS_SHARE_DELAY_DEFAULT		1000000
+#define PVFS_ALLOCATION_ROUNDING_DEFAULT	512
+#define PVFS_SEARCH_INACTIVITY_DEFAULT		300
+
 #include "ntvfs/posix/vfs_posix_proto.h"
 
 #endif /* _VFS_POSIX_H_ */

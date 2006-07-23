@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "param/share.h"
 #include "librpc/gen_ndr/srvsvc.h"
 #include "rpc_server/dcerpc_server.h"
 
@@ -29,42 +30,19 @@
 */
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_count_of_shares(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
-{
-	/* what's about int -> uint32_t overflow */
-	return lp_numservices();
-}
-
-_PUBLIC_ const char *dcesrv_common_get_share_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
-{
-	return talloc_strdup(mem_ctx, lp_servicename(snum));
-}
-
-const char *dcesrv_common_get_share_comment(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
-{
-	return talloc_strdup(mem_ctx, lp_comment(snum));
-}
-
-/* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_share_permissions(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
+uint32_t dcesrv_common_get_share_permissions(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg)
 {
 	return 0;
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_share_max_users(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
-{
-	return lp_max_connections(snum);
-}
-
-/* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_share_current_users(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
+uint32_t dcesrv_common_get_share_current_users(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg)
 {
 	return 1;
 }
 
 /* This hardcoded value should go into a ldb database! */
-enum srvsvc_ShareType dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
+enum srvsvc_ShareType dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg)
 {
 	/* for disk share	0x00000000
 	 * for print share	0x00000001
@@ -75,17 +53,19 @@ enum srvsvc_ShareType dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct d
 	 * this ones are hidden in NetShareEnum, but shown in NetShareEnumAll
 	 */
 	enum srvsvc_ShareType share_type = 0;
+	const char *sharetype;
 
-	if (!lp_browseable(snum)) {
+	if (!share_bool_option(scfg, SHARE_BROWSEABLE, SHARE_BROWSEABLE_DEFAULT)) {
 		share_type |= STYPE_HIDDEN;
 	}
 
-	if (strcasecmp(lp_fstype(snum), "IPC") == 0) {
+	sharetype = share_string_option(scfg, SHARE_TYPE, SHARE_TYPE_DEFAULT);
+	if (sharetype && strcasecmp(sharetype, "IPC") == 0) {
 		share_type |= STYPE_IPC;
 		return share_type;
 	}
 
-	if (lp_print_ok(snum)) {
+	if (sharetype && strcasecmp(sharetype, "PRINTER") == 0) {
 		share_type |= STYPE_PRINTQ;
 		return share_type;
 	}
@@ -96,40 +76,32 @@ enum srvsvc_ShareType dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct d
 }
 
 /* This hardcoded value should go into a ldb database! */
-const char *dcesrv_common_get_share_path(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
+const char *dcesrv_common_get_share_path(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg)
 {
-	if (strcasecmp(lp_fstype(snum), "IPC") == 0) {
+	const char *sharetype;
+	
+	sharetype = share_string_option(scfg, SHARE_TYPE, SHARE_TYPE_DEFAULT);
+	
+	if (sharetype && strcasecmp(sharetype, "IPC") == 0) {
 		return talloc_strdup(mem_ctx, "");
 	}
 	return talloc_strdup(mem_ctx, "C:\\");
 }
 
 /* This hardcoded value should go into a ldb database! */
-const char *dcesrv_common_get_share_password(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
-{
-	return NULL;
-}
-
-/* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_share_csc_policy(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
+uint32_t dcesrv_common_get_share_dfs_flags(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg)
 {
 	return 0;
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_share_dfs_flags(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
+uint32_t dcesrv_common_get_share_unknown(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg)
 {
 	return 0;
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_share_unknown(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
-{
-	return 0;
-}
-
-/* This hardcoded value should go into a ldb database! */
-struct security_descriptor *dcesrv_common_get_security_descriptor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
+struct security_descriptor *dcesrv_common_get_security_descriptor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg)
 {
 	return NULL;
 }

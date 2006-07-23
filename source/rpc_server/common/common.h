@@ -60,4 +60,5 @@
 
 struct dcesrv_context;
 
+#include "param/share.h"
 #include "rpc_server/common/proto.h"

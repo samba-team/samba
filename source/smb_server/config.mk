@@ -18,6 +18,7 @@ OBJ_FILES = \
 		management.o
 PRIVATE_PROTO_HEADER = smb_server_proto.h
 PUBLIC_DEPENDENCIES = \
+		share \
 		LIBPACKET \
 		SMB_PROTOCOL \
 		SMB2_PROTOCOL

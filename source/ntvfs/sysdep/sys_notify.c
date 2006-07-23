@@ -34,10 +34,12 @@
 static struct sys_notify_backend *backends;
 static uint32_t num_backends;
 
+#define NOTIFY_BACKEND	"notify-backend"
+
 /*
   initialise a system change notify backend
 */
-_PUBLIC_ struct sys_notify_context *sys_notify_context_create(int snum,
+_PUBLIC_ struct sys_notify_context *sys_notify_context_create(struct share_config *scfg,
 							      TALLOC_CTX *mem_ctx, 
 							      struct event_context *ev)
 {
@@ -60,7 +62,7 @@ _PUBLIC_ struct sys_notify_context *sys_notify_context_create(int snum,
 
 	ctx->ev = ev;
 
-	bname = lp_parm_string(snum, "notify", "backend");
+	bname = share_string_option(scfg, NOTIFY_BACKEND, NULL);
 	if (!bname) {
 		if (num_backends) {
 			bname = backends[0].name;

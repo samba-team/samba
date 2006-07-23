@@ -148,16 +148,15 @@ _PUBLIC_ BOOL ntvfs_interface_differs(const struct ntvfs_critical_sizes *const i
 #undef FIELD_DIFFERS
 }
 
-
 /*
   initialise a connection structure to point at a NTVFS backend
 */
-NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, int snum, enum ntvfs_type type,
+NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, struct share_config *scfg, enum ntvfs_type type,
 			       enum protocol_types protocol,
 			       struct event_context *ev, struct messaging_context *msg,
 			       uint32_t server_id, struct ntvfs_context **_ctx)
 {
-	const char **handlers = lp_ntvfs_handler(snum);
+	const char **handlers = share_string_list_option(mem_ctx, scfg, SHARE_NTVFS_HANDLER);
 	int i;
 	struct ntvfs_context *ctx;
 
@@ -169,7 +168,7 @@ NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, int snum, enum ntvfs_type ty
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 	ctx->protocol		= protocol;
 	ctx->type		= type;
-	ctx->config.snum	= snum;
+	ctx->config		= talloc_steal(ctx, scfg);
 	ctx->event_ctx		= ev;
 	ctx->msg_ctx		= msg;
 	ctx->server_id		= server_id;

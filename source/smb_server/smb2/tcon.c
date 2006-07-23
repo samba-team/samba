@@ -157,8 +157,9 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	enum ntvfs_type type;
 	uint16_t type_smb2;
 	uint32_t unknown2;
-	int snum;
 	const char *service = io->smb2.in.path;
+	struct share_config *scfg;
+	const char *sharetype;
 
 	if (strncmp(service, "\\\\", 2) == 0) {
 		const char *p = strchr(service+2, '\\');
@@ -167,25 +168,26 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 		}
 	}
 
-	snum = lp_find_valid_service(service);
-	if (snum == -1) {
+	status = share_get_config(req, req->smb_conn->share_context, service, &scfg);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("smb2srv_tcon_backend: couldn't find service %s\n", service));
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
 	if (!socket_check_access(req->smb_conn->connection->socket, 
-				 lp_servicename(snum), 
-				 lp_hostsallow(snum), 
-				 lp_hostsdeny(snum))) {
+				 scfg->name, 
+				 share_string_list_option(req, scfg, SHARE_HOSTS_ALLOW), 
+				 share_string_list_option(req, scfg, SHARE_HOSTS_DENY))) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* work out what sort of connection this is */
-	if (strcmp(lp_fstype(snum), "IPC") == 0) {
+	sharetype = share_string_option(scfg, SHARE_TYPE, "DISK");
+	if (sharetype && strcmp(sharetype, "IPC") == 0) {
 		type = NTVFS_IPC;
 		type_smb2 = 0x0002;
 		unknown2 = 0x00000030;
-	} else if (lp_print_ok(snum)) {
+	} else if (sharetype && strcmp(sharetype, "PRINTER") == 0) {
 		type = NTVFS_PRINT;
 		type_smb2 = 0x0003;
 		unknown2 = 0x00000000;
@@ -195,7 +197,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 		unknown2 = 0x00000800;
 	}
 
-	tcon = smbsrv_smb2_tcon_new(req->session, lp_servicename(snum));
+	tcon = smbsrv_smb2_tcon_new(req->session, scfg->name);
 	if (!tcon) {
 		DEBUG(0,("smb2srv_tcon_backend: Couldn't find free connection.\n"));
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
@@ -203,7 +205,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	req->tcon = tcon;
 
 	/* init ntvfs function pointers */
-	status = ntvfs_init_connection(tcon, snum, type,
+	status = ntvfs_init_connection(tcon, scfg, type,
 				       req->smb_conn->negotiate.protocol,
 				       req->smb_conn->connection->event.ctx,
 				       req->smb_conn->connection->msg_ctx,
@@ -211,7 +213,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 				       &tcon->ntvfs);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smb2srv_tcon_backend: ntvfs_init_connection failed for service %s\n", 
-			  lp_servicename(snum)));
+			  scfg->name));
 		goto failed;
 	}
 
@@ -250,7 +252,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	}
 
 	/* Invoke NTVFS connection hook */
-	status = ntvfs_connect(req->ntvfs, lp_servicename(snum));
+	status = ntvfs_connect(req->ntvfs, scfg->name);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("smb2srv_tcon_backend: NTVFS ntvfs_connect() failed!\n"));
 		goto failed;
@@ -279,7 +281,6 @@ static void smb2srv_tcon_send(struct smb2srv_request *req, union smb_tcon *io)
 		smb2srv_send_error(req, req->status);
 		return;
 	}
-
 	if (io->smb2.out.unknown1 == 0x0002) {
 		/* if it's an IPC share vista returns 0x0005 */
 		unknown1 = 0x0005;
