@@ -33,3 +33,13 @@ PUBLIC_DEPENDENCIES = LIBSAMBA-UTIL
 # End MODULE share_classic
 ################################################
 
+################################################
+# Start MODULE share_ldb
+[MODULE::share_ldb]
+SUBSYSTEM = share
+INIT_FUNCTION = share_ldb_init
+OBJ_FILES = share_ldb.o 
+PUBLIC_DEPENDENCIES = ldb
+# End MODULE share_ldb
+################################################
+
