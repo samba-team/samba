@@ -139,7 +139,7 @@ BOOL sclassic_bool_option(struct share_config *scfg, const char *opt_name, BOOL 
 	if (strchr(opt_name, ':')) {
 		parm = talloc_strdup(scfg, opt_name);
 		if(!parm) {
-			return NULL;
+			return False;
 		}
 		val = strchr(parm, ':');
 		*val = '\0';
