@@ -32,6 +32,8 @@
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
+#include "librpc/gen_ndr/ndr_spoolss.h"
+#include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
@@ -1355,17 +1357,18 @@ BOOL torture_samba3_sessionkey(struct torture_context *torture)
  * open pipe and bind, given an IPC$ context
  */
 
-static struct dcerpc_pipe *pipe_bind_smb(TALLOC_CTX *mem_ctx,
-					 struct smbcli_tree *tree,
-					 const char *pipe_name,
-					 const struct dcerpc_interface_table *iface)
+static NTSTATUS pipe_bind_smb(TALLOC_CTX *mem_ctx,
+			      struct smbcli_tree *tree,
+			      const char *pipe_name,
+			      const struct dcerpc_interface_table *iface,
+			      struct dcerpc_pipe **p)
 {
 	struct dcerpc_pipe *result;
 	NTSTATUS status;
 
 	if (!(result = dcerpc_pipe_init(
 		      mem_ctx, tree->session->transport->socket->event.ctx))) {
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = dcerpc_pipe_open_smb(result->conn, tree, pipe_name);
@@ -1373,17 +1376,18 @@ static struct dcerpc_pipe *pipe_bind_smb(TALLOC_CTX *mem_ctx,
 		d_printf("dcerpc_pipe_open_smb failed: %s\n",
 			 nt_errstr(status));
 		talloc_free(result);
-		return NULL;
+		return status;
 	}
 
 	status = dcerpc_bind_auth_none(result, iface);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("schannel bind failed: %s\n", nt_errstr(status));
 		talloc_free(result);
-		return NULL;
+		return status;
 	}
 
-	return result;
+	*p = result;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -1486,9 +1490,11 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree)
 	struct lsa_StringPointer authority_name_p;
 	struct dom_sid *result;
 
-	if (!(lsa = pipe_bind_smb(mem_ctx, tree, "\\pipe\\lsarpc",
-				  &dcerpc_table_lsarpc))) {
-		d_printf("Could not bind to LSA\n");
+	status = pipe_bind_smb(mem_ctx, tree, "\\pipe\\lsarpc",
+			       &dcerpc_table_lsarpc, &lsa);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) Could not bind to LSA: %s\n",
+			 __location__, nt_errstr(status));
 		return NULL;
 	}
 
@@ -1800,6 +1806,7 @@ BOOL torture_samba3_rpc_srvsvc(struct torture_context *torture)
 	BOOL ret = True;
 	const char *sharename = NULL;
 	struct smbcli_state *cli;
+	NTSTATUS status;
 
 	if (!(mem_ctx = talloc_new(torture))) {
 		return False;
@@ -1812,9 +1819,11 @@ BOOL torture_samba3_rpc_srvsvc(struct torture_context *torture)
 		return False;
 	}
 
-	if (!(p = pipe_bind_smb(mem_ctx, cli->tree, "\\pipe\\srvsvc",
-				&dcerpc_table_srvsvc))) {
-		d_printf("could not bind to srvsvc pipe\n");
+	status = pipe_bind_smb(mem_ctx, cli->tree, "\\pipe\\srvsvc",
+			       &dcerpc_table_srvsvc, &p);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) could not bind to srvsvc pipe: %s\n",
+			 __location__, nt_errstr(status));
 		ret = False;
 		goto done;
 	}
@@ -1853,9 +1862,11 @@ static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!(p = pipe_bind_smb(mem_ctx, tree, "\\pipe\\srvsvc",
-				&dcerpc_table_srvsvc))) {
-		d_printf("could not bind to srvsvc pipe\n");
+	status = pipe_bind_smb(mem_ctx, tree, "\\pipe\\srvsvc",
+			       &dcerpc_table_srvsvc, &p);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) could not bind to srvsvc pipe: %s\n",
+			 __location__, nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return NULL;
 	}
@@ -1906,9 +1917,11 @@ static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!(p = pipe_bind_smb(mem_ctx, tree, "\\pipe\\srvsvc",
-				&dcerpc_table_srvsvc))) {
-		d_printf("could not bind to srvsvc pipe\n");
+	status = pipe_bind_smb(mem_ctx, tree, "\\pipe\\srvsvc",
+			       &dcerpc_table_srvsvc, &p);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) could not bind to srvsvc pipe: %s\n",
+			 __location__, nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -2094,10 +2107,11 @@ BOOL torture_samba3_rpc_lsa(struct torture_context *torture)
 		return False;
 	}
 
-	p = pipe_bind_smb(mem_ctx, cli->tree, "\\lsarpc",
-			  &dcerpc_table_lsarpc);
-	if (p == NULL) {
-		d_printf("(%s) pipe_bind_smb failed\n", __location__);
+	status = pipe_bind_smb(mem_ctx, cli->tree, "\\lsarpc",
+			       &dcerpc_table_lsarpc, &p);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) pipe_bind_smb failed: %s\n", __location__,
+			 nt_errstr(status));
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2145,6 +2159,275 @@ BOOL torture_samba3_rpc_lsa(struct torture_context *torture)
 			}
 		}
 	}
+
+	return ret;
+}
+
+static NTSTATUS find_printers(TALLOC_CTX *ctx, struct smbcli_tree *tree,
+			      const char ***printers, int *num_printers)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
+	struct srvsvc_NetShareEnum r;
+	struct srvsvc_NetShareCtr1 c1_in;
+	struct srvsvc_NetShareCtr1 *c1;
+	int i;
+
+	mem_ctx = talloc_new(ctx);
+	if (mem_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = pipe_bind_smb(mem_ctx, tree, "\\srvsvc", &dcerpc_table_srvsvc,
+			       &p);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("could not bind to srvsvc pipe\n");
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	r.in.server_unc = talloc_asprintf(
+		mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.level = 1;
+	ZERO_STRUCT(c1_in);
+	r.in.ctr.ctr1 = &c1_in;
+	r.in.max_buffer = (uint32_t)-1;
+	r.in.resume_handle = NULL;
+
+	status = dcerpc_srvsvc_NetShareEnum(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("NetShareEnum level %u failed - %s\n",
+			 r.in.level, nt_errstr(status));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	*printers = NULL;
+	*num_printers = 0;
+	c1 = r.out.ctr.ctr1;
+	for (i=0; i<c1->count; i++) {
+		if (c1->array[i].type != STYPE_PRINTQ) {
+			continue;
+		}
+		if (!add_string_to_array(ctx, c1->array[i].name,
+					 printers, num_printers)) {
+			talloc_free(ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *pipe,
+			       struct policy_handle *handle, int level,
+			       union spoolss_PrinterInfo **res)
+{
+	TALLOC_CTX *mem_ctx;
+	struct spoolss_GetPrinter r;
+	DATA_BLOB blob;
+	NTSTATUS status;
+
+	mem_ctx = talloc_new(ctx);
+	if (mem_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r.in.handle = handle;
+	r.in.level = level;
+	r.in.buffer = NULL;
+	r.in.offered = 0;
+
+	status = dcerpc_spoolss_GetPrinter(pipe, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) dcerpc_spoolss_GetPrinter failed: %s\n",
+			 __location__, nt_errstr(status));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		printf("GetPrinter unexpected return code %s, should "
+		       "be WERR_INSUFFICIENT_BUFFER\n",
+		       win_errstr(r.out.result));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	r.in.handle = handle;
+	r.in.level = level;
+	blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+	if (blob.data == NULL) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	memset(blob.data, 0, blob.length);
+	r.in.buffer = &blob;
+	r.in.offered = r.out.needed;
+
+	status = dcerpc_spoolss_GetPrinter(pipe, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		d_printf("(%s) dcerpc_spoolss_GetPrinter failed: %s, "
+			 "%s\n", __location__, nt_errstr(status),
+			 win_errstr(r.out.result));
+		talloc_free(mem_ctx);
+		return NT_STATUS_IS_OK(status) ?
+			NT_STATUS_UNSUCCESSFUL : status;
+	}
+
+	if (res != NULL) {
+		*res = talloc_steal(ctx, r.out.info);
+	}
+
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
+}
+	
+
+BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+	struct smbcli_state *cli;
+	struct dcerpc_pipe *p;
+	NTSTATUS status;
+	struct policy_handle server_handle, printer_handle;
+	const char **printers;
+	int num_printers;
+	struct spoolss_UserLevel1 userlevel1;
+
+	if (!(mem_ctx = talloc_new(torture))) {
+		return False;
+	}
+
+	if (!(torture_open_connection_share(
+		      mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		      "IPC$", NULL))) {
+		d_printf("IPC$ connection failed\n");
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	if (!NT_STATUS_IS_OK(find_printers(mem_ctx, cli->tree,
+					   &printers, &num_printers))) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	if (num_printers == 0) {
+		d_printf("Did not find printers\n");
+		talloc_free(mem_ctx);
+		return True;
+	}
+
+	status = pipe_bind_smb(mem_ctx, cli->tree, "\\spoolss",
+			       &dcerpc_table_spoolss, &p);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) pipe_bind_smb failed: %s\n", __location__,
+			 nt_errstr(status));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	ZERO_STRUCT(userlevel1);
+	userlevel1.client = talloc_asprintf(
+		mem_ctx, "\\\\%s", lp_netbios_name());
+	userlevel1.user = cli_credentials_get_username(cmdline_credentials);
+	userlevel1.build = 2600;
+	userlevel1.major = 3;
+	userlevel1.minor = 0;
+	userlevel1.processor = 0;
+
+	{
+		struct spoolss_OpenPrinterEx r;
+
+		ZERO_STRUCT(r);
+		r.in.printername = talloc_asprintf(
+			mem_ctx, "\\\\%s", dcerpc_server_name(p));
+		r.in.datatype = NULL;
+		r.in.access_mask = 0;
+		r.in.level = 1;
+		r.in.userlevel.level1 = &userlevel1;
+		r.out.handle = &server_handle;
+
+		status = dcerpc_spoolss_OpenPrinterEx(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
+				 "%s\n", __location__, nt_errstr(status));
+			talloc_free(mem_ctx);
+			return False;
+		}
+	}
+
+	{
+		struct spoolss_ClosePrinter r;
+
+		r.in.handle = &server_handle;
+		r.out.handle = &server_handle;
+
+		status = dcerpc_spoolss_ClosePrinter(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("(%s) dcerpc_spoolss_ClosePrinter failed: "
+				 "%s\n", __location__, nt_errstr(status));
+			talloc_free(mem_ctx);
+			return False;
+		}
+	}
+
+	{
+		struct spoolss_OpenPrinterEx r;
+
+		ZERO_STRUCT(r);
+		r.in.printername = talloc_asprintf(
+			mem_ctx, "\\\\%s\\%s", dcerpc_server_name(p),
+			printers[0]);
+		r.in.datatype = NULL;
+		r.in.access_mask = 0;
+		r.in.level = 1;
+		r.in.userlevel.level1 = &userlevel1;
+		r.out.handle = &printer_handle;
+
+		status = dcerpc_spoolss_OpenPrinterEx(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
+				 "%s\n", __location__, nt_errstr(status));
+			talloc_free(mem_ctx);
+			return False;
+		}
+	}
+
+	{
+		int i;
+
+		for (i=0; i<8; i++) {
+			status = getprinterinfo(mem_ctx, p, &printer_handle,
+						i, NULL);
+			if (!NT_STATUS_IS_OK(status)) {
+				d_printf("(%s) getprinterinfo %d failed: %s\n",
+					 __location__, i, nt_errstr(status));
+				ret = False;
+			}
+		}
+	}
+
+	{
+		struct spoolss_ClosePrinter r;
+
+		r.in.handle = &printer_handle;
+		r.out.handle = &printer_handle;
+
+		status = dcerpc_spoolss_ClosePrinter(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("(%s) dcerpc_spoolss_ClosePrinter failed: "
+				 "%s\n", __location__, nt_errstr(status));
+			talloc_free(mem_ctx);
+			return False;
+		}
+	}
+
+	talloc_free(mem_ctx);
 
 	return ret;
 }
