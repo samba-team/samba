@@ -41,6 +41,7 @@ PRIVATE_DEPENDENCIES = \
 		gensec \
 		registry \
 		ntptr \
-		ntvfs
+		ntvfs \
+		share
 # End BINARY smbd
 #################################
