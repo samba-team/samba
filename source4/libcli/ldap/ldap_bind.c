@@ -27,6 +27,8 @@
 #include "libcli/ldap/ldap_client.h"
 #include "lib/tls/tls.h"
 #include "auth/auth.h"
+#include "auth/gensec/socket.h"
+#include "lib/stream/packet.h"
 
 struct ldap_simple_creds {
 	const char *dn;
@@ -365,15 +367,23 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 		}
 	}
 
-	if (NT_STATUS_IS_OK(status) &&
-	    (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL) ||
-	     gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN))) {
-		conn->enable_wrap = True;
-	}
-
 	talloc_free(tmp_ctx);
 
 	if (NT_STATUS_IS_OK(status)) {
+		struct socket_context *socket = gensec_socket_init(conn->gensec, 
+								   conn->sock,
+								   conn->event.event_ctx, 
+								   ldap_read_io_handler,
+								   conn);
+		if (socket) {
+			conn->sock = socket;
+			talloc_steal(conn->sock, socket);
+			packet_set_socket(conn->packet, socket);
+		} else {
+			status = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
+		
 		conn->bind.type = LDAP_BIND_SASL;
 		conn->bind.creds = creds;
 	}

@@ -31,10 +31,8 @@
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
 #include "smbd/service.h"
-#include "lib/socket/socket.h"
 #include "lib/tls/tls.h"
 #include "lib/messaging/irpc.h"
-#include "lib/stream/packet.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "system/network.h"
@@ -43,7 +41,7 @@
 /*
   close the socket and shutdown a server_context
 */
-static void ldapsrv_terminate_connection(struct ldapsrv_connection *conn, 
+void ldapsrv_terminate_connection(struct ldapsrv_connection *conn, 
 					 const char *reason)
 {
 	stream_terminate_connection(conn->connection, reason);
@@ -68,7 +66,6 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 	struct ldapsrv_call *call;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	BOOL enable_wrap = conn->enable_wrap;
 
 	call = talloc(conn, struct ldapsrv_call);
 	if (!call) {
@@ -79,11 +76,14 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 	call->request = talloc_steal(call, msg);
 	call->conn = conn;
 	call->replies = NULL;
-
+	call->send_callback = NULL;
+	call->send_private = NULL;
+	
 	/* make the call */
 	status = ldapsrv_do_call(call);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
+		talloc_free(call);
+		return;
 	}
 	
 	blob = data_blob(NULL, 0);
@@ -100,49 +100,36 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 		msg = call->replies->msg;
 		if (!ldap_encode(msg, &b, call)) {
 			DEBUG(0,("Failed to encode ldap reply of type %d\n", msg->type));
-			goto failed;
+			talloc_free(call);
+			return;
 		}
 
 		status = data_blob_append(call, &blob, b.data, b.length);
 		data_blob_free(&b);
 
-		if (!NT_STATUS_IS_OK(status)) goto failed;
+		talloc_set_name_const(blob.data, "Outgoing, encoded LDAP packet");
+
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(call);
+			return;
+		}
 
 		DLIST_REMOVE(call->replies, call->replies);
 	}
 
-	/* possibly encrypt/sign the reply */
-	if (enable_wrap) {
-		DATA_BLOB wrapped;
-
-		status = gensec_wrap(conn->gensec, call, &blob, &wrapped);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto failed;
-		}
-		data_blob_free(&blob);
-		blob = data_blob_talloc(call, NULL, wrapped.length + 4);
-		if (blob.data == NULL) {
-			goto failed;
-		}
-		RSIVAL(blob.data, 0, wrapped.length);
-		memcpy(blob.data+4, wrapped.data, wrapped.length);
-		data_blob_free(&wrapped);
-	}
-
-	packet_send(conn->packet, blob);
+	packet_send_callback(conn->packet, blob, 
+			     call->send_callback, call->send_private);
 	talloc_free(call);
 	return;
-
-failed:
-	talloc_free(call);
 }
 
-
 /*
-  decode the input buffer
+  decode/process data
 */
-static NTSTATUS ldapsrv_decode_plain(struct ldapsrv_connection *conn, DATA_BLOB blob)
+static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
 {
+	struct ldapsrv_connection *conn = talloc_get_type(private, 
+							  struct ldapsrv_connection);
 	struct asn1_data asn1;
 	struct ldap_message *msg = talloc(conn, struct ldap_message);
 
@@ -165,63 +152,6 @@ static NTSTATUS ldapsrv_decode_plain(struct ldapsrv_connection *conn, DATA_BLOB 
 	return NT_STATUS_OK;
 }
 
-
-/*
-  decode/process wrapped data
-*/
-static NTSTATUS ldapsrv_decode_wrapped(struct ldapsrv_connection *conn, 
-				       DATA_BLOB blob)
-{
-	DATA_BLOB wrapped, unwrapped;
-	struct asn1_data asn1;
-	struct ldap_message *msg = talloc(conn, struct ldap_message);
-	NTSTATUS status;
-
-	if (msg == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	wrapped = data_blob_const(blob.data+4, blob.length-4);
-
-	status = gensec_unwrap(conn->gensec, msg, &wrapped, &unwrapped);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
-	}
-
-	data_blob_free(&blob);
-
-	if (!asn1_load(&asn1, unwrapped)) {
-		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
-	}
-
-	while (ldap_decode(&asn1, msg)) {
-		ldapsrv_process_message(conn, msg);
-		msg = talloc(conn, struct ldap_message);
-	}
-
-	if (asn1.ofs < asn1.length) {
-		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
-	}
-		
-	talloc_free(msg);
-	asn1_free(&asn1);
-
-	return NT_STATUS_OK;
-}
-
-/*
-  decode/process data
-*/
-static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
-{
-	struct ldapsrv_connection *conn = talloc_get_type(private, 
-							  struct ldapsrv_connection);
-	if (conn->enable_wrap) {
-		return ldapsrv_decode_wrapped(conn, blob);
-	}
-	return ldapsrv_decode_plain(conn, blob);
-}
-
 /*
  Idle timeout handler
 */
@@ -238,7 +168,7 @@ static void ldapsrv_conn_idle_timeout(struct event_context *ev,
 /*
   called when a LDAP socket becomes readable
 */
-static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
+void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 {
 	struct ldapsrv_connection *conn = 
 		talloc_get_type(c->private, struct ldapsrv_connection);
@@ -261,20 +191,6 @@ static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 					   ldapsrv_conn_idle_timeout, conn);
 }
 
-/*
-  check if a blob is a complete ldap packet
-  handle wrapper or unwrapped connections
-*/
-NTSTATUS ldapsrv_complete_packet(void *private, DATA_BLOB blob, size_t *size)
-{
-	struct ldapsrv_connection *conn = talloc_get_type(private, 
-							  struct ldapsrv_connection);
-	if (conn->enable_wrap) {
-		return packet_full_request_u32(private, blob, size);
-	}
-	return ldap_full_packet(private, blob, size);
-}
-	
 /*
   called when a LDAP socket becomes writable
 */
@@ -411,7 +327,6 @@ static void ldapsrv_accept(struct stream_connection *c)
 		return;
 	}
 
-	conn->enable_wrap = False;
 	conn->packet      = NULL;
 	conn->connection  = c;
 	conn->service     = ldapsrv_service;
@@ -445,7 +360,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	packet_set_private(conn->packet, conn);
 	packet_set_socket(conn->packet, c->socket);
 	packet_set_callback(conn->packet, ldapsrv_decode);
-	packet_set_full_request(conn->packet, ldapsrv_complete_packet);
+	packet_set_full_request(conn->packet, ldap_full_packet);
 	packet_set_error_handler(conn->packet, ldapsrv_error_handler);
 	packet_set_event_context(conn->packet, c->event.ctx);
 	packet_set_fde(conn->packet, c->event.fde);
