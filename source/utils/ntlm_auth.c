@@ -621,6 +621,10 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 					 char *buf, int length) 
 {
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
+	static char* want_feature_list = NULL;
+	static uint32 neg_flags = 0;
+	static BOOL have_session_key = False;
+	static DATA_BLOB session_key;
 	DATA_BLOB request, reply;
 	NTSTATUS nt_status;
 
@@ -631,6 +635,13 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	}
 
 	if (strlen(buf) > 3) {
+		if(strncmp(buf, "SF ", 3) == 0){
+			DEBUG(10, ("Setting flags to negotioate\n"));
+			SAFE_FREE(want_feature_list);
+			want_feature_list = SMB_STRNDUP(buf+3, strlen(buf)-3);
+			x_fprintf(x_stdout, "OK\n");
+			return;
+		}
 		request = base64_decode_data_blob(buf + 3);
 	} else {
 		request = data_blob(NULL, 0);
@@ -658,6 +669,20 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 			ntlmssp_end(&ntlmssp_state);
 	} else if (strncmp(buf, "KK", 2) == 0) {
 		
+	} else if (strncmp(buf, "GF", 2) == 0) {
+		DEBUG(10, ("Requested negotiated NTLMSSP flags\n"));
+		x_fprintf(x_stdout, "GF 0x%08lx\n", have_session_key?neg_flags:0l);
+		data_blob_free(&request);
+		return;
+	} else if (strncmp(buf, "GK", 2) == 0) {
+		DEBUG(10, ("Requested NTLMSSP session key\n"));
+		if(have_session_key)
+			x_fprintf(x_stdout, "GK %s\n", base64_encode_data_blob(session_key));
+		else
+			x_fprintf(x_stdout, "BH\n");
+			
+		data_blob_free(&request);
+		return;
 	} else {
 		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
@@ -669,6 +694,7 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 			x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 			return;
 		}
+		ntlmssp_want_feature_list(ntlmssp_state, want_feature_list);
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
@@ -693,6 +719,13 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	} else {
 		x_fprintf(x_stdout, "AF %s\n", (char *)ntlmssp_state->auth_context);
 		DEBUG(10, ("NTLMSSP OK!\n"));
+		
+		if(have_session_key)
+			data_blob_free(&session_key);
+		session_key = data_blob(ntlmssp_state->session_key.data, 
+				ntlmssp_state->session_key.length);
+		neg_flags = ntlmssp_state->neg_flags;
+		have_session_key = True;
 	}
 
 	data_blob_free(&request);
@@ -702,6 +735,10 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 					 char *buf, int length) 
 {
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
+	static char* want_feature_list = NULL;
+	static uint32 neg_flags = 0;
+	static BOOL have_session_key = False;
+	static DATA_BLOB session_key;
 	DATA_BLOB request, reply;
 	NTSTATUS nt_status;
 	BOOL first = False;
@@ -713,6 +750,13 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 	}
 
 	if (strlen(buf) > 3) {
+		if(strncmp(buf, "SF ", 3) == 0) {
+			DEBUG(10, ("Looking for flags to negotiate\n"));
+			SAFE_FREE(want_feature_list);
+			want_feature_list = SMB_STRNDUP(buf+3, strlen(buf)-3);
+			x_fprintf(x_stdout, "OK\n");
+			return;
+		}
 		request = base64_decode_data_blob(buf + 3);
 	} else {
 		request = data_blob(NULL, 0);
@@ -750,6 +794,23 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 			ntlmssp_end(&ntlmssp_state);
 	} else if (strncmp(buf, "TT", 2) == 0) {
 		
+	} else if (strncmp(buf, "GF", 2) == 0) {
+		DEBUG(10, ("Requested negotiated NTLMSSP flags\n"));
+		x_fprintf(x_stdout, "GF 0x%08lx\n", have_session_key?neg_flags:0l);
+		data_blob_free(&request);
+		return;
+	} else if (strncmp(buf, "GK", 2) == 0 ) {
+		DEBUG(10, ("Requested session key\n"));
+
+		if(have_session_key) {
+			x_fprintf(x_stdout, "GK %s\n", base64_encode_data_blob(session_key));
+		}
+		else {
+			x_fprintf(x_stdout, "BH\n");
+		}
+
+		data_blob_free(&request);
+		return;
 	} else {
 		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
@@ -761,6 +822,7 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 			x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 			return;
 		}
+		ntlmssp_want_feature_list(ntlmssp_state, want_feature_list);
 		first = True;
 	}
 
@@ -783,6 +845,15 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		char *reply_base64 = base64_encode_data_blob(reply);
 		x_fprintf(x_stdout, "AF %s\n", reply_base64);
 		SAFE_FREE(reply_base64);
+
+		if(have_session_key)
+			data_blob_free(&session_key);
+
+		session_key = data_blob(ntlmssp_state->session_key.data, 
+				ntlmssp_state->session_key.length);
+		neg_flags = ntlmssp_state->neg_flags;
+		have_session_key = True;
+
 		DEBUG(10, ("NTLMSSP OK!\n"));
 		if (ntlmssp_state)
 			ntlmssp_end(&ntlmssp_state);
