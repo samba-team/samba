@@ -211,6 +211,50 @@ NTSTATUS ntlmssp_store_response(NTLMSSP_STATE *ntlmssp_state,
 }
 
 /**
+ * Request features for the NTLMSSP negotiation
+ *
+ * @param ntlmssp_state NTLMSSP state
+ * @param feature_list List of space seperated features requested from NTLMSSP.
+ */
+void ntlmssp_want_feature_list(NTLMSSP_STATE *ntlmssp_state, char *feature_list)
+{
+	/*
+	 * We need to set this to allow a later SetPassword
+	 * via the SAMR pipe to succeed. Strange.... We could
+	 * also add  NTLMSSP_NEGOTIATE_SEAL here. JRA.
+	 */
+	if (in_list("NTLMSSP_FEATURE_SESSION_KEY", feature_list, True)) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+	if (in_list("NTLMSSP_FEATURE_SIGN", feature_list, True)) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+	if(in_list("NTLMSSP_FEATURE_SEAL", feature_list, True)) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	}
+}
+
+/**
+ * Request a feature for the NTLMSSP negotiation
+ *
+ * @param ntlmssp_state NTLMSSP state
+ * @param feature Bit flag specifying the requested feature
+ */
+void ntlmssp_want_feature(NTLMSSP_STATE *ntlmssp_state, uint32 feature)
+{
+	/* As per JRA's comment above */
+	if (feature & NTLMSSP_FEATURE_SESSION_KEY) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+	if (feature & NTLMSSP_FEATURE_SIGN) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+	if (feature & NTLMSSP_FEATURE_SEAL) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	}
+}
+ 
+/**
  * Next state function for the NTLMSSP state machine
  * 
  * @param ntlmssp_state NTLMSSP State
@@ -1163,12 +1207,6 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_NEGOTIATE_NTLM2 |
 		NTLMSSP_NEGOTIATE_KEY_EXCH |
-		/*
-		 * We need to set this to allow a later SetPassword
-		 * via the SAMR pipe to succeed. Strange.... We could
-		 * also add  NTLMSSP_NEGOTIATE_SEAL here. JRA.
-		 * */
-		NTLMSSP_NEGOTIATE_SIGN |
 		NTLMSSP_REQUEST_TARGET;
 
 	return NT_STATUS_OK;
