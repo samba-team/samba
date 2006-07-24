@@ -90,21 +90,17 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 	return NT_STATUS_OK;
 }
 
+struct ldapsrv_sasl_context {
+	struct ldapsrv_connection *conn;
+	struct socket_context *sasl_socket;
+};
+
 static void ldapsrv_set_sasl(void *private) 
 {
-	struct ldapsrv_connection *conn = talloc_get_type(private, struct ldapsrv_connection);
-	struct socket_context *socket = gensec_socket_init(conn->gensec, 
-							   conn->connection->socket,
-							   conn->connection->event.ctx, 
-							   stream_io_handler_callback,
-							   conn->connection);
-	if (socket) {
-		conn->connection->socket = socket;
-		talloc_steal(conn->connection->socket, socket);
-		packet_set_socket(conn->packet, socket);
-	} else {
-		ldapsrv_terminate_connection(conn, "Failed to setup SASL wrapping on socket");
-	}
+	struct ldapsrv_sasl_context *ctx = talloc_get_type(private, struct ldapsrv_sasl_context);
+	ctx->conn->connection->socket = ctx->sasl_socket;
+	talloc_steal(ctx->conn->connection->socket, ctx->sasl_socket);
+	packet_set_socket(ctx->conn->packet, ctx->sasl_socket);
 }
 
 static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
@@ -190,32 +186,58 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		errstr = NULL;
 	} else if (NT_STATUS_IS_OK(status)) {
 		struct auth_session_info *old_session_info;
+		struct ldapsrv_sasl_context *ctx;
 
 		result = LDAP_SUCCESS;
 		errstr = NULL;
 
-		call->send_callback = ldapsrv_set_sasl;
-		call->send_private = conn;
-		
-		old_session_info = conn->session_info;
-		conn->session_info = NULL;
-		status = gensec_session_info(conn->gensec, &conn->session_info);
-		if (!NT_STATUS_IS_OK(status)) {
+		ctx = talloc(call, struct ldapsrv_sasl_context); 
+
+		if (ctx) {
+			ctx->conn = conn;
+			ctx->sasl_socket = gensec_socket_init(conn->gensec, 
+							      conn->connection->socket,
+							      conn->connection->event.ctx, 
+							      stream_io_handler_callback,
+							      conn->connection);
+		}
+
+		if (!ctx || !ctx->sasl_socket) {
 			conn->session_info = old_session_info;
 			result = LDAP_OPERATIONS_ERROR;
-			errstr = talloc_asprintf(reply, "SASL:[%s]: Failed to get session info: %s", req->creds.SASL.mechanism, nt_errstr(status));
+			errstr = talloc_asprintf(reply, 
+						 "SASL:[%s]: Failed to setup SASL socket (out of memory)", 
+						 req->creds.SASL.mechanism);
 		} else {
-			talloc_free(old_session_info);
-			talloc_steal(conn, conn->session_info);
 
-			/* don't leak the old LDB */
-			talloc_free(conn->ldb);
-
-			status = ldapsrv_backend_Init(conn);		
-			
+			call->send_callback = ldapsrv_set_sasl;
+			call->send_private = ctx;
+		
+			old_session_info = conn->session_info;
+			conn->session_info = NULL;
+			status = gensec_session_info(conn->gensec, &conn->session_info);
 			if (!NT_STATUS_IS_OK(status)) {
+				conn->session_info = old_session_info;
 				result = LDAP_OPERATIONS_ERROR;
-				errstr = talloc_asprintf(reply, "SASL:[%s]: Failed to advise samdb of new credentials: %s", req->creds.SASL.mechanism, nt_errstr(status));
+				errstr = talloc_asprintf(reply, 
+							 "SASL:[%s]: Failed to get session info: %s", 
+							 req->creds.SASL.mechanism, nt_errstr(status));
+			} else {
+				talloc_free(old_session_info);
+				talloc_steal(conn, conn->session_info);
+				
+				/* don't leak the old LDB */
+				talloc_free(conn->ldb);
+				
+				status = ldapsrv_backend_Init(conn);		
+				
+				if (!NT_STATUS_IS_OK(status)) {
+					result = LDAP_OPERATIONS_ERROR;
+					errstr = talloc_asprintf(reply, 
+								 "SASL:[%s]: Failed to advise samdb of new credentials: %s", 
+								 req->creds.SASL.mechanism, 
+								 nt_errstr(status));
+				}
 			}
 		}
 	} else {
