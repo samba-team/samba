@@ -279,7 +279,7 @@ NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dns_rr_sr
 	DEBUG(4,("ads_dns_lookup_srv: %d records returned in the answer section.\n", 
 		answer_count));
 		
-	if ( (dcs = TALLOC_ARRAY(ctx, struct dns_rr_srv, answer_count)) == NULL ) {
+	if ( (dcs = TALLOC_ZERO_ARRAY(ctx, struct dns_rr_srv, answer_count)) == NULL ) {
 		DEBUG(0,("ads_dns_lookup_srv: talloc() failure for %d char*'s\n", 
 			answer_count));
 		return NT_STATUS_NO_MEMORY;
