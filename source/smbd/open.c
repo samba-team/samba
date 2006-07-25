@@ -39,10 +39,10 @@ struct deferred_open_record {
 ****************************************************************************/
 
 static BOOL fd_open(struct connection_struct *conn,
-			const char *fname, 
-			files_struct *fsp,
-			int flags,
-			mode_t mode)
+		    const char *fname, 
+		    files_struct *fsp,
+		    int flags,
+		    mode_t mode)
 {
 	int sav;
 
@@ -68,7 +68,7 @@ static BOOL fd_open(struct connection_struct *conn,
 ****************************************************************************/
 
 int fd_close(struct connection_struct *conn,
-		files_struct *fsp)
+	     files_struct *fsp)
 {
 	if (fsp->fh->fd == -1) {
 		return 0; /* What we used to call a stat open. */
@@ -85,9 +85,9 @@ int fd_close(struct connection_struct *conn,
 ****************************************************************************/
 
 void change_owner_to_parent(connection_struct *conn,
-				files_struct *fsp,
-				const char *fname,
-				SMB_STRUCT_STAT *psbuf)
+			    files_struct *fsp,
+			    const char *fname,
+			    SMB_STRUCT_STAT *psbuf)
 {
 	const char *parent_path = parent_dirname(fname);
 	SMB_STRUCT_STAT parent_st;
@@ -185,13 +185,13 @@ void change_owner_to_parent(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS open_file(files_struct *fsp,
-			connection_struct *conn,
-			const char *fname,
-			SMB_STRUCT_STAT *psbuf,
-			int flags,
-			mode_t unx_mode,
-			uint32 access_mask, /* client requested access mask. */
-			uint32 open_access_mask) /* what we're actually using in the open. */
+			  connection_struct *conn,
+			  const char *fname,
+			  SMB_STRUCT_STAT *psbuf,
+			  int flags,
+			  mode_t unx_mode,
+			  uint32 access_mask, /* client requested access mask. */
+			  uint32 open_access_mask) /* what we're actually using in the open. */
 {
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
@@ -335,7 +335,8 @@ static NTSTATUS open_file(files_struct *fsp,
 	if (!CAN_WRITE(conn)) {
 		fsp->can_write = False;
 	} else {
-		fsp->can_write = (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ? True : False;
+		fsp->can_write = (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ?
+			True : False;
 	}
 	fsp->print_file = False;
 	fsp->modified = False;
@@ -351,7 +352,8 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->wcp = NULL; /* Write cache pointer. */
 
 	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
-		 *current_user_info.smb_name ? current_user_info.smb_name : conn->user,fsp->fsp_name,
+		 *current_user_info.smb_name ?
+		 current_user_info.smb_name : conn->user,fsp->fsp_name,
 		 BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
 		 conn->num_files_open + 1));
 
@@ -614,9 +616,9 @@ static BOOL is_delete_request(files_struct *fsp) {
  */
 
 static BOOL delay_for_oplocks(struct share_mode_lock *lck,
-				files_struct *fsp,
-				int pass_number,
-				int oplock_request)
+			      files_struct *fsp,
+			      int pass_number,
+			      int oplock_request)
 {
 	int i;
 	struct share_mode_entry *exclusive = NULL;
@@ -805,12 +807,12 @@ static void kernel_flock(files_struct *fsp, uint32 share_mode)
 ****************************************************************************/
 
 static BOOL open_match_attributes(connection_struct *conn,
-				const char *path,
-				uint32 old_dos_attr,
-				uint32 new_dos_attr,
-				mode_t existing_unx_mode,
-				mode_t new_unx_mode,
-				mode_t *returned_unx_mode)
+				  const char *path,
+				  uint32 old_dos_attr,
+				  uint32 new_dos_attr,
+				  mode_t existing_unx_mode,
+				  mode_t new_unx_mode,
+				  mode_t *returned_unx_mode)
 {
 	uint32 noarch_old_dos_attr, noarch_new_dos_attr;
 
@@ -915,10 +917,10 @@ static files_struct *fcb_or_dos_open(connection_struct *conn,
 ****************************************************************************/
 
 BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func,
-				uint32 *paccess_mask,
-				uint32 *pshare_mode,
-				uint32 *pcreate_disposition,
-				uint32 *pcreate_options)
+				 uint32 *paccess_mask,
+				 uint32 *pshare_mode,
+				 uint32 *pcreate_disposition,
+				 uint32 *pcreate_options)
 {
 	uint32 access_mask;
 	uint32 share_mode;
@@ -1090,17 +1092,17 @@ static void schedule_defer_open(struct share_mode_lock *lck, struct timeval requ
 ****************************************************************************/
 
 NTSTATUS open_file_ntcreate(connection_struct *conn,
-				 const char *fname,
-				 SMB_STRUCT_STAT *psbuf,
-				 uint32 access_mask,		/* access bits (FILE_READ_DATA etc.) */
-				 uint32 share_access,		/* share constants (FILE_SHARE_READ etc). */
-				 uint32 create_disposition,	/* FILE_OPEN_IF etc. */
-				 uint32 create_options,		/* options such as delete on close. */
-				 uint32 new_dos_attributes,	/* attributes used for new file. */
-				 int oplock_request, 		/* internal Samba oplock codes. */
-				 				/* Information (FILE_EXISTS etc.) */
-				 int *pinfo,
-				 files_struct **result)
+			    const char *fname,
+			    SMB_STRUCT_STAT *psbuf,
+			    uint32 access_mask,		/* access bits (FILE_READ_DATA etc.) */
+			    uint32 share_access,	/* share constants (FILE_SHARE_READ etc) */
+			    uint32 create_disposition,	/* FILE_OPEN_IF etc. */
+			    uint32 create_options,	/* options such as delete on close. */
+			    uint32 new_dos_attributes,	/* attributes used for new file. */
+			    int oplock_request, 	/* internal Samba oplock codes. */
+				 			/* Information (FILE_EXISTS etc.) */
+			    int *pinfo,
+			    files_struct **result)
 {
 	int flags=0;
 	int flags2=0;
@@ -1849,14 +1851,14 @@ int close_file_fchmod(files_struct *fsp)
 ****************************************************************************/
 
 NTSTATUS open_directory(connection_struct *conn,
-				const char *fname,
-				SMB_STRUCT_STAT *psbuf,
-				uint32 access_mask,
-				uint32 share_access,
-				uint32 create_disposition,
-				uint32 create_options,
-				int *pinfo,
-				files_struct **result)
+			const char *fname,
+			SMB_STRUCT_STAT *psbuf,
+			uint32 access_mask,
+			uint32 share_access,
+			uint32 create_disposition,
+			uint32 create_options,
+			int *pinfo,
+			files_struct **result)
 {
 	files_struct *fsp = NULL;
 	BOOL dir_existed = VALID_STAT(*psbuf) ? True : False;
@@ -1993,8 +1995,8 @@ NTSTATUS open_directory(connection_struct *conn,
 	string_set(&fsp->fsp_name,fname);
 
 	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode,
-				conn->connectpath,
-				fname);
+				  conn->connectpath,
+				  fname);
 
 	if (lck == NULL) {
 		DEBUG(0, ("open_directory: Could not get share mode lock for %s\n", fname));
