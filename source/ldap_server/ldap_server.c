@@ -342,12 +342,16 @@ static void ldapsrv_accept(struct stream_connection *c)
 	talloc_free(socket_address);
 
 	if (port == 636) {
-		c->socket = tls_init_server(ldapsrv_service->tls_params, c->socket, 
-					    c->event.fde, NULL);
-		if (!c->socket) {
+		struct socket_context *tls_socket = tls_init_server(ldapsrv_service->tls_params, c->socket, 
+								    c->event.fde, NULL);
+		if (!tls_socket) {
 			ldapsrv_terminate_connection(conn, "ldapsrv_accept: tls_init_server() failed");
 			return;
 		}
+		talloc_unlink(c, c->socket);
+		talloc_steal(c, tls_socket);
+		c->socket = tls_socket;
+
 	} else if (port == 3268) /* Global catalog */ {
 		conn->global_catalog = True;
 	}

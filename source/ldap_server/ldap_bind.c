@@ -98,9 +98,11 @@ struct ldapsrv_sasl_context {
 static void ldapsrv_set_sasl(void *private) 
 {
 	struct ldapsrv_sasl_context *ctx = talloc_get_type(private, struct ldapsrv_sasl_context);
+	talloc_steal(ctx->conn->connection, ctx->sasl_socket);
+	talloc_unlink(ctx->conn->connection, ctx->conn->connection->socket);
+
 	ctx->conn->connection->socket = ctx->sasl_socket;
-	talloc_steal(ctx->conn->connection->socket, ctx->sasl_socket);
-	packet_set_socket(ctx->conn->packet, ctx->sasl_socket);
+	packet_set_socket(ctx->conn->packet, ctx->conn->connection->socket);
 }
 
 static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
@@ -193,21 +195,24 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 
 		ctx = talloc(call, struct ldapsrv_sasl_context); 
 
-		if (ctx) {
+		if (!ctx) {
+			status = NT_STATUS_NO_MEMORY;
+		} else {
 			ctx->conn = conn;
-			ctx->sasl_socket = gensec_socket_init(conn->gensec, 
-							      conn->connection->socket,
-							      conn->connection->event.ctx, 
-							      stream_io_handler_callback,
-							      conn->connection);
-		}
+			status = gensec_socket_init(conn->gensec, 
+						    conn->connection->socket,
+						    conn->connection->event.ctx, 
+						    stream_io_handler_callback,
+						    conn->connection,
+						    &ctx->sasl_socket);
+		} 
 
-		if (!ctx || !ctx->sasl_socket) {
+		if (!ctx || !NT_STATUS_IS_OK(status)) {
 			conn->session_info = old_session_info;
 			result = LDAP_OPERATIONS_ERROR;
 			errstr = talloc_asprintf(reply, 
-						 "SASL:[%s]: Failed to setup SASL socket (out of memory)", 
-						 req->creds.SASL.mechanism);
+						 "SASL:[%s]: Failed to setup SASL socket: %s", 
+						 req->creds.SASL.mechanism, nt_errstr(status));
 		} else {
 
 			call->send_callback = ldapsrv_set_sasl;

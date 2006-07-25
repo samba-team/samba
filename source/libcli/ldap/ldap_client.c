@@ -320,7 +320,6 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 
 static void ldap_connect_recv_conn(struct composite_context *ctx)
 {
-	struct socket_context *initial_socket;
 	struct ldap_connect_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct ldap_connect_state);
@@ -341,13 +340,15 @@ static void ldap_connect_recv_conn(struct composite_context *ctx)
 	}
 
 	talloc_steal(conn, conn->sock);
-	initial_socket = conn->sock;
 	if (conn->ldaps) {
-		conn->sock = tls_init_client(conn->sock, conn->event.fde);
-		if (conn->sock == NULL) {
-			talloc_free(initial_socket);
+		struct socket_context *tls_socket = tls_init_client(conn->sock, conn->event.fde);
+		if (tls_socket == NULL) {
+			talloc_free(conn->sock);
 			return;
 		}
+		talloc_unlink(conn, conn->sock);
+		conn->sock = tls_socket;
+		talloc_steal(conn, conn->sock);
 	}
 
 	conn->packet = packet_init(conn);

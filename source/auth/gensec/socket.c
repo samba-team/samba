@@ -41,6 +41,7 @@ struct gensec_socket {
 	void (*recv_handler)(void *, uint16_t);
 	void *recv_private;
 	int in_extra_read;
+	BOOL wrap; /* Should we be wrapping on this socket at all? */
 };
 
 static NTSTATUS gensec_socket_init_fn(struct socket_context *sock)
@@ -61,6 +62,10 @@ static NTSTATUS gensec_socket_init_fn(struct socket_context *sock)
 static NTSTATUS gensec_socket_pending(struct socket_context *sock, size_t *npending) 
 {
 	struct gensec_socket *gensec_socket = talloc_get_type(sock->private_data, struct gensec_socket);
+	if (!gensec_socket->wrap) {
+		return socket_pending(gensec_socket->socket, npending);
+	}
+
 	if (gensec_socket->read_buffer.length > 0) {
 		*npending = gensec_socket->read_buffer.length;
 		return NT_STATUS_OK;
@@ -111,6 +116,10 @@ static NTSTATUS gensec_socket_recv(struct socket_context *sock, void *buf,
 				   size_t wantlen, size_t *nread) 
 {
 	struct gensec_socket *gensec_socket = talloc_get_type(sock->private_data, struct gensec_socket);
+
+	if (!gensec_socket->wrap) {
+		return socket_recv(gensec_socket->socket, buf, wantlen, nread);
+	}
 
 	gensec_socket->error = NT_STATUS_OK;
 
@@ -237,6 +246,10 @@ static NTSTATUS gensec_socket_send(struct socket_context *sock,
 	TALLOC_CTX *mem_ctx;
 	size_t max_input_size;
 
+	if (!gensec_socket->wrap) {
+		return socket_send(gensec_socket->socket, blob, sendlen);
+	}
+
 	*sendlen = 0;
 
 	/* We have have been interupted, so the caller should be
@@ -309,58 +322,73 @@ static NTSTATUS gensec_socket_send(struct socket_context *sock,
 	}
 }
 
-struct socket_context *gensec_socket_init(struct gensec_security *gensec_security,
-					  struct socket_context *socket,
-					  struct event_context *ev,
-					  void (*recv_handler)(void *, uint16_t),
-					  void *recv_private)
+/* Turn a normal socket into a potentially GENSEC wrapped socket */
+
+NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
+			    struct socket_context *current_socket,
+			    struct event_context *ev,
+			    void (*recv_handler)(void *, uint16_t),
+			    void *recv_private,
+			    struct socket_context **new_socket)
 {
 	struct gensec_socket *gensec_socket;
 	struct socket_context *new_sock;
 	NTSTATUS nt_status;
 
-	/* Nothing to do here, if we are not actually wrapping on this socket */
-	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL) &&
-	    !gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-		return socket;
+	nt_status = socket_create_with_ops(current_socket, &gensec_socket_ops, &new_sock, 
+					   SOCKET_TYPE_STREAM, current_socket->flags | SOCKET_FLAG_ENCRYPT);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		*new_socket = NULL;
+		return nt_status;
 	}
 
-	nt_status = socket_create_with_ops(socket, &gensec_socket_ops, &new_sock, 
-					   SOCKET_TYPE_STREAM, socket->flags | SOCKET_FLAG_ENCRYPT);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return NULL;
-	}
+	new_sock->state = current_socket->state;
 
 	gensec_socket = talloc(new_sock, struct gensec_socket);
 	if (gensec_socket == NULL) {
-		return NULL;
+		*new_socket = NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	gensec_socket->eof = False;
-	gensec_socket->error = NT_STATUS_OK;
-	gensec_socket->interrupted = False;
-	gensec_socket->in_extra_read = 0;
+	new_sock->private_data       = gensec_socket;
+	gensec_socket->socket        = current_socket;
 
-	gensec_socket->read_buffer = data_blob(NULL, 0);
+	if (talloc_reference(gensec_socket, current_socket) == NULL) {
+		*new_socket = NULL;
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Nothing to do here, if we are not actually wrapping on this socket */
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL) &&
+	    !gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+		
+		gensec_socket->wrap = False;
+		*new_socket = new_sock;
+		return NT_STATUS_OK;
+	}
 
 	gensec_socket->gensec_security = gensec_security;
-	gensec_socket->socket          = socket;
-	if (talloc_reference(gensec_socket, socket) == NULL) {
-		return NULL;
-	}
-	gensec_socket->recv_handler    = recv_handler;
-	gensec_socket->recv_private    = recv_private;
-	gensec_socket->ev              = ev;
 
-	new_sock->private_data    = gensec_socket;
+	gensec_socket->wrap          = True;
+	gensec_socket->eof           = False;
+	gensec_socket->error         = NT_STATUS_OK;
+	gensec_socket->interrupted   = False;
+	gensec_socket->in_extra_read = 0;
+
+	gensec_socket->read_buffer   = data_blob(NULL, 0);
+
+	gensec_socket->recv_handler  = recv_handler;
+	gensec_socket->recv_private  = recv_private;
+	gensec_socket->ev            = ev;
 
 	gensec_socket->packet = packet_init(gensec_socket);
 	if (gensec_socket->packet == NULL) {
-		return NULL;
+		*new_socket = NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	packet_set_private(gensec_socket->packet, gensec_socket);
-	packet_set_socket(gensec_socket->packet, socket);
+	packet_set_socket(gensec_socket->packet, gensec_socket->socket);
 	packet_set_callback(gensec_socket->packet, gensec_socket_unwrap);
 	packet_set_full_request(gensec_socket->packet, packet_full_request_u32);
 	packet_set_error_handler(gensec_socket->packet, gensec_socket_error_handler);
@@ -368,9 +396,8 @@ struct socket_context *gensec_socket_init(struct gensec_security *gensec_securit
 
 	/* TODO: full-request that knows about maximum packet size */
 
-	new_sock->state = socket->state;
-
-	return new_sock;
+	*new_socket = new_sock;
+	return NT_STATUS_OK;
 }
 
 

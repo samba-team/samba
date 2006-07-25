@@ -433,9 +433,9 @@ init_failed:
   setup for a new connection
 */
 struct socket_context *tls_init_server(struct tls_params *params, 
-				    struct socket_context *socket,
-				    struct fd_event *fde, 
-				    const char *plain_chars)
+				       struct socket_context *socket,
+				       struct fd_event *fde, 
+				       const char *plain_chars)
 {
 	struct tls_context *tls;
 	int ret;
@@ -457,17 +457,19 @@ struct socket_context *tls_init_server(struct tls_params *params,
 	tls->socket          = socket;
 	tls->fde             = fde;
 	if (talloc_reference(tls, fde) == NULL) {
+		talloc_free(new_sock);
 		return NULL;
 	}
 	if (talloc_reference(tls, socket) == NULL) {
+		talloc_free(new_sock);
 		return NULL;
 	}
 
 	new_sock->private_data    = tls;
 
 	if (!params->tls_enabled) {
-		tls->tls_enabled = False;
-		return new_sock;
+		talloc_free(new_sock);
+		return NULL;
 	}
 
 	TLSCHECK(gnutls_init(&tls->session, GNUTLS_SERVER));
@@ -503,9 +505,8 @@ struct socket_context *tls_init_server(struct tls_params *params,
 
 failed:
 	DEBUG(0,("TLS init connection failed - %s\n", gnutls_strerror(ret)));
-	tls->tls_enabled = False;
-	params->tls_enabled = False;
-	return new_sock;
+	talloc_free(new_sock);
+	return NULL;
 }
 
 
@@ -649,7 +650,10 @@ struct socket_context *tls_init_server(struct tls_params *params,
 				    struct fd_event *fde, 
 				    const char *plain_chars)
 {
-	return socket;
+	if (plain_chars) {
+		return socket;
+	}
+	return NULL;
 }
 
 
@@ -659,7 +663,7 @@ struct socket_context *tls_init_server(struct tls_params *params,
 struct socket_context *tls_init_client(struct socket_context *socket,
 				       struct fd_event *fde)
 {
-	return socket;
+	return NULL;
 }
 
 BOOL tls_support(struct tls_params *params)
