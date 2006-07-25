@@ -370,15 +370,18 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	talloc_free(tmp_ctx);
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct socket_context *socket = gensec_socket_init(conn->gensec, 
-								   conn->sock,
-								   conn->event.event_ctx, 
-								   ldap_read_io_handler,
-								   conn);
-		if (socket) {
-			conn->sock = socket;
-			talloc_steal(conn->sock, socket);
-			packet_set_socket(conn->packet, socket);
+		struct socket_context *sasl_socket;
+		status = gensec_socket_init(conn->gensec, 
+					    conn->sock,
+					    conn->event.event_ctx, 
+					    ldap_read_io_handler,
+					    conn,
+					    &sasl_socket);
+		if (NT_STATUS_IS_OK(status)) {
+			talloc_steal(conn->sock, sasl_socket);
+			talloc_unlink(conn, conn->sock);
+			conn->sock = sasl_socket;
+			packet_set_socket(conn->packet, conn->sock);
 		} else {
 			status = NT_STATUS_NO_MEMORY;
 			goto failed;

@@ -270,6 +270,16 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 		return;
 	}
 
+	if (npending + pc->num_read < npending) {
+		packet_error(pc, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	if (npending + pc->num_read < pc->num_read) {
+		packet_error(pc, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
 	/* possibly expand the partial packet buffer */
 	if (npending + pc->num_read > pc->partial.length) {
 		status = data_blob_realloc(pc, &pc->partial, npending+pc->num_read);
@@ -277,6 +287,20 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 			packet_error(pc, status);
 			return;
 		}
+	}
+
+	if (pc->partial.length < pc->num_read + npending) {
+		packet_error(pc, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	if ((uint8_t *)pc->partial.data + pc->num_read < (uint8_t *)pc->partial.data) {
+		packet_error(pc, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+	if ((uint8_t *)pc->partial.data + pc->num_read + npending < (uint8_t *)pc->partial.data) {
+		packet_error(pc, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	status = socket_recv(pc->sock, pc->partial.data + pc->num_read, 
@@ -337,6 +361,7 @@ next_partial:
 			packet_error(pc, NT_STATUS_NO_MEMORY);
 			return;
 		}
+		/* Trunate the blob sent to the caller to only the packet length */
 		status = data_blob_realloc(pc, &blob, pc->packet_size);
 		if (!NT_STATUS_IS_OK(status)) {
 			packet_error(pc, status);
