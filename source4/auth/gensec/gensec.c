@@ -927,11 +927,9 @@ _PUBLIC_ BOOL gensec_have_feature(struct gensec_security *gensec_security,
 		return False;
 	}
 	
-	/* Can only 'have' a feature if you already 'want'ed it */
-	if (gensec_security->want_features & feature) {
-		return gensec_security->ops->have_feature(gensec_security, feature);
-	}
-	return False;
+	/* We might 'have' features that we don't 'want', because the
+	 * other end demanded them, or we can't neotiate them off */
+	return gensec_security->ops->have_feature(gensec_security, feature);
 }
 
 /** 
