@@ -1361,7 +1361,9 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	fsp->inode = psbuf->st_ino;
 	fsp->share_access = share_access;
 	fsp->fh->private_options = create_options;
-	fsp->access_mask = open_access_mask; /* We change this to the requested access_mask after the open is done. */
+	fsp->access_mask = open_access_mask; /* We change this to the
+					      * requested access_mask after
+					      * the open is done. */
 	/* Ensure no SAMBA_PRIVATE bits can be set. */
 	fsp->oplock_type = (oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
 
@@ -1374,8 +1376,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		inode = psbuf->st_ino;
 
 		lck = get_share_mode_lock(NULL, dev, inode,
-					conn->connectpath,
-					fname);
+					  conn->connectpath,
+					  fname);
 
 		if (lck == NULL) {
 			file_free(fsp);
@@ -1391,14 +1393,17 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
-		/* Use the client requested access mask here, not the one we open with. */
+		/* Use the client requested access mask here, not the one we
+		 * open with. */
 		status = open_mode_check(conn, fname, lck,
 					 access_mask, share_access,
 					 create_options, &file_existed);
 
 		if (NT_STATUS_IS_OK(status)) {
-			/* We might be going to allow this open. Check oplock status again. */
-			/* Second pass - send break for both batch or exclusive oplocks. */
+			/* We might be going to allow this open. Check oplock
+			 * status again. */
+			/* Second pass - send break for both batch or
+			 * exclusive oplocks. */
 			if (delay_for_oplocks(lck, fsp, 2, oplock_request)) {
 				schedule_defer_open(lck, request_time);
 				TALLOC_FREE(lck);
@@ -1427,7 +1432,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
 				files_struct *fsp_dup;
 
-				/* Use the client requested access mask here, not the one we open with. */
+				/* Use the client requested access mask here,
+				 * not the one we open with. */
 				fsp_dup = fcb_or_dos_open(conn, fname, dev,
 							  inode, access_mask,
 							  share_access,
@@ -1462,7 +1468,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			}
 
 			if (((flags & O_RDWR) && !CAN_WRITE(conn)) ||
-					!can_access_file(conn,fname,psbuf,can_access_mask)) {
+			    !can_access_file(conn,fname,psbuf,can_access_mask)) {
 				can_access = False;
 			}
 
@@ -1549,7 +1555,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
 	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,unx_mode,
-				access_mask, open_access_mask);
+			     access_mask, open_access_mask);
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
 		if (lck != NULL) {
@@ -1580,11 +1586,12 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		inode = fsp->inode;
 
 		lck = get_share_mode_lock(NULL, dev, inode,
-					conn->connectpath,
-					fname);
+					  conn->connectpath,
+					  fname);
 
 		if (lck == NULL) {
-			DEBUG(0, ("open_file_ntcreate: Could not get share mode lock for %s\n", fname));
+			DEBUG(0, ("open_file_ntcreate: Could not get share "
+				  "mode lock for %s\n", fname));
 			fd_close(conn, fsp);
 			file_free(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
@@ -1703,7 +1710,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	set_share_mode(lck, fsp, current_user.ut.uid, 0, fsp->oplock_type);
 
 	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
-				info == FILE_WAS_SUPERSEDED) {
+	    info == FILE_WAS_SUPERSEDED) {
 
 		/* Handle strange delete on close create semantics. */
 		if (create_options & FILE_DELETE_ON_CLOSE) {
@@ -1743,8 +1750,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		int saved_errno = errno; /* We might get ENOSYS in the next
 					  * call.. */
 
-		if (SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd, unx_mode) == -1
-		    && errno == ENOSYS) {
+		if (SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd, unx_mode) == -1 &&
+		    errno == ENOSYS) {
 			errno = saved_errno; /* Ignore ENOSYS */
 		}
 
@@ -1765,7 +1772,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			} else {
 				DEBUG(5, ("open_file_ntcreate: reset "
 					  "attributes of file %s to 0%o\n",
-					fname, (unsigned int)new_unx_mode));
+					  fname, (unsigned int)new_unx_mode));
 				ret = 0; /* Don't do the fchmod below. */
 			}
 		}
@@ -1774,7 +1781,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		    (SMB_VFS_FCHMOD(fsp, fsp->fh->fd, new_unx_mode) == -1))
 			DEBUG(5, ("open_file_ntcreate: failed to reset "
 				  "attributes of file %s to 0%o\n",
-				fname, (unsigned int)new_unx_mode));
+				  fname, (unsigned int)new_unx_mode));
 	}
 
 	/* If this is a successful open, we must remove any deferred open
