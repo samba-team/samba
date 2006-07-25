@@ -199,7 +199,7 @@ void gfree_all( void )
 	gfree_case_tables();
 	gfree_debugsyms();
 	gfree_charcnv();
-	gfree_messsges();
+	gfree_messages();
 
 	/* release the talloc null_context memory last */
 	talloc_nc_free();
