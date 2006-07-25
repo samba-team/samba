@@ -73,7 +73,7 @@ static struct dispatch_fns {
  Free global objects.
 ****************************************************************************/
 
-void gfree_messsges(void)
+void gfree_messages(void)
 {
 	struct dispatch_fns *dfn, *next;
 
