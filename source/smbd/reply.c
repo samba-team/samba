@@ -2807,6 +2807,10 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		}
 
 		nwritten = write_file(fsp,inbuf+4,startpos+nwritten,numtowrite);
+		if (nwritten == -1) {
+			END_PROFILE(SMBwritebraw);
+			return(UNIXERROR(ERRHRD,ERRdiskfull));
+		}
 
 		if (nwritten < (ssize_t)numtowrite) {
 			SCVAL(outbuf,smb_rcls,ERRHRD);

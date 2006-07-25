@@ -214,7 +214,7 @@ ssize_t write_file(files_struct *fsp, const char *data, SMB_OFF_T pos, size_t n)
 
 	if (!fsp->can_write) {
 		errno = EPERM;
-		return(0);
+		return -1;
 	}
 
 	if (!fsp->modified) {
