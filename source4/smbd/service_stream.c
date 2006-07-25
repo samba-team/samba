@@ -81,12 +81,8 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 /*
   the select loop has indicated that a stream is ready for IO
 */
-static void stream_io_handler(struct event_context *ev, struct fd_event *fde, 
-			      uint16_t flags, void *private)
+static void stream_io_handler(struct stream_connection *conn, uint16_t flags)
 {
-	struct stream_connection *conn = talloc_get_type(private, 
-							 struct stream_connection);
-
 	conn->processing = True;
 	if (flags & EVENT_FD_WRITE) {
 		conn->ops->send_handler(conn, flags);
@@ -100,9 +96,19 @@ static void stream_io_handler(struct event_context *ev, struct fd_event *fde,
 	}
 }
 
-void stream_io_handler_callback(void *conn, uint16_t flags) 
+static void stream_io_handler_fde(struct event_context *ev, struct fd_event *fde, 
+				  uint16_t flags, void *private)
 {
-	stream_io_handler(NULL, NULL, flags, conn);
+	struct stream_connection *conn = talloc_get_type(private, 
+							 struct stream_connection);
+	stream_io_handler(conn, flags);
+}
+
+void stream_io_handler_callback(void *private, uint16_t flags) 
+{
+	struct stream_connection *conn = talloc_get_type(private, 
+							 struct stream_connection);
+	stream_io_handler(conn, flags);
 }
 
 /*
@@ -134,7 +140,7 @@ NTSTATUS stream_new_connection_merge(struct event_context *ev,
 	srv_conn->event.ctx	= ev;
 	srv_conn->event.fde	= event_add_fd(ev, srv_conn, socket_get_fd(sock),
 					       EVENT_FD_READ, 
-					       stream_io_handler, srv_conn);
+					       stream_io_handler_fde, srv_conn);
 	*_srv_conn = srv_conn;
 	return NT_STATUS_OK;
 }
@@ -167,7 +173,7 @@ static void stream_new_connection(struct event_context *ev,
 	srv_conn->event.ctx	= ev;
 	srv_conn->event.fde	= event_add_fd(ev, srv_conn, socket_get_fd(sock),
 					       EVENT_FD_READ, 
-					       stream_io_handler, srv_conn);
+					       stream_io_handler_fde, srv_conn);
 
 	if (!socket_check_access(sock, "smbd", lp_hostsallow(-1), lp_hostsdeny(-1))) {
 		stream_terminate_connection(srv_conn, "denied by access rules");
