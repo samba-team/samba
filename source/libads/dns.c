@@ -204,17 +204,11 @@ static BOOL ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 
 static int dnssrvcmp( struct dns_rr_srv *a, struct dns_rr_srv *b )
 {
-	BOOL init = False;
-
-	if ( !init ) {
-		srand( (uint32)time(NULL) );
-	}
-
 	if ( a->priority == b->priority ) {
 
 		/* randomize entries with an equal weight and priority */
 		if ( a->weight == b->weight ) 
-			return rand() % 2 ? -1 : 1;
+			return 0;
 
 		/* higher weights should be sorted lower */ 
 		if ( a->weight > b->weight )
