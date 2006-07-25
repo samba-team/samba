@@ -441,7 +441,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	const char *servername;
 	fstring sname;
 	BOOL found=False;
-	NT_PRINTER_INFO_LEVEL *printer;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	WERROR result;
 	
 	DEBUG(4,("Setting printer name=%s (len=%lu)\n", handlename, (unsigned long)strlen(handlename)));
@@ -532,6 +532,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		printername++;
 		
 		if ( strequal(printername, aprinter) ) {
+			free_a_printer( &printer, 2);
 			found = True;
 			break;
 		}
@@ -540,6 +541,8 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		
 		free_a_printer( &printer, 2);
 	}
+
+	free_a_printer( &printer, 2);
 
 	if ( !found ) {
 		DEBUGADD(4,("Printer not found\n"));
@@ -3551,6 +3554,7 @@ static BOOL construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY
 
 		if((info->data=SMB_REALLOC_ARRAY(info->data, SPOOL_NOTIFY_INFO_DATA, info->count+1)) == NULL) {
 			DEBUG(2,("construct_notify_printer_info: failed to enlarge buffer info->data!\n"));
+			free_a_printer(&printer, 2);
 			return False;
 		}
 
@@ -4181,6 +4185,7 @@ static BOOL construct_printer_info_3(Printer_entry *print_hnd, PRINTER_INFO_3 **
 	*pp_printer = NULL;
 	if ((printer = SMB_MALLOC_P(PRINTER_INFO_3)) == NULL) {
 		DEBUG(2,("construct_printer_info_3: malloc fail.\n"));
+		free_a_printer(&ntprinter, 2);
 		return False;
 	}
 
@@ -4983,8 +4988,10 @@ static WERROR construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, fst
 	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum))))
 		return WERR_INVALID_PRINTER_NAME;
 
-	if (!W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version)))
+	if (!W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version))) {
+		free_a_printer(&printer, 2);
 		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
 
 	fill_printer_driver_info_1(info, driver, servername, architecture);
 
@@ -5043,8 +5050,10 @@ static WERROR construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fst
 	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum))))
 		return WERR_INVALID_PRINTER_NAME;
 
-	if (!W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version)))
+	if (!W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version))) {
+		free_a_printer(&printer, 2);
 		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
 
 	fill_printer_driver_info_2(info, driver, servername);
 
@@ -6611,22 +6620,24 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 
 	if (*returned == 0) {
 		SAFE_FREE(queue);
+		free_a_printer(&ntprinter, 2);
 		return WERR_OK;
 	}
 
 	switch (level) {
 	case 1:
 		wret = enumjobs_level1(queue, snum, ntprinter, buffer, offered, needed, returned);
-		return wret;
+		break;
 	case 2:
 		wret = enumjobs_level2(queue, snum, ntprinter, buffer, offered, needed, returned);
-		return wret;
+		break;
 	default:
-		SAFE_FREE(queue);
 		*returned=0;
 		wret = WERR_UNKNOWN_LEVEL;
+		break;
 	}
 	
+	SAFE_FREE(queue);
 	free_a_printer( &ntprinter, 2 );
 	return wret;
 }
