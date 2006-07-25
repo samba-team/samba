@@ -747,6 +747,7 @@ static void ldapsrv_start_tls(void *private)
 	talloc_steal(ctx->conn->connection, ctx->tls_socket);
 	talloc_unlink(ctx->conn->connection, ctx->conn->connection->socket);
 
+	ctx->conn->sockets.tls = ctx->tls_socket;
 	ctx->conn->connection->socket = ctx->tls_socket;
 	packet_set_socket(ctx->conn->packet, ctx->conn->connection->socket);
 }
@@ -767,7 +768,6 @@ static NTSTATUS ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
 
 	/* check if we have a START_TLS call */
 	if (strcmp(req->oid, LDB_EXTENDED_START_TLS_OID) == 0) {
-		NTSTATUS status;
 		struct ldapsrv_starttls_context *ctx;
 		int result = 0;
 		const char *errstr;

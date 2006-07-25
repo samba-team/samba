@@ -330,6 +330,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->packet      = NULL;
 	conn->connection  = c;
 	conn->service     = ldapsrv_service;
+	conn->sockets.raw = c->socket;
 
 	c->private        = conn;
 
@@ -351,6 +352,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 		talloc_unlink(c, c->socket);
 		talloc_steal(c, tls_socket);
 		c->socket = tls_socket;
+		conn->sockets.tls = tls_socket;
 
 	} else if (port == 3268) /* Global catalog */ {
 		conn->global_catalog = True;

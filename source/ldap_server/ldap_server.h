@@ -31,6 +31,12 @@ struct ldapsrv_connection {
 	struct cli_credentials *server_credentials;
 	struct ldb_context *ldb;
 
+	struct {
+		struct socket_context *raw;
+		struct socket_context *tls;
+		struct socket_context *sasl;
+	} sockets;
+
 	BOOL global_catalog;
 
 	struct packet_context *packet;
@@ -56,8 +62,6 @@ struct ldapsrv_call {
 	packet_send_callback_fn_t send_callback;
 	void *send_private;
 };
-
-struct ldapsrv_service;
 
 struct ldapsrv_service {
 	struct tls_params *tls_params;
