@@ -779,7 +779,11 @@ static const struct {
 	{ERRHRD,	ERRlock,	NT_STATUS_FILE_LOCK_CONFLICT},
 	{ERRHRD,	ERRwrongdisk,	NT_STATUS_WRONG_VOLUME},
 	{ERRHRD,	38,	NT_STATUS_END_OF_FILE},
+#if defined(WITH_QUOTAS) && defined(EDQUOT)
+	{ERRHRD,	ERRdiskfull,	NT_STATUS_QUOTA_EXCEEDED},
+#else
 	{ERRHRD,	ERRdiskfull,	NT_STATUS_DISK_FULL},
+#endif
 	{ERRHRD,	50,	NT_STATUS_CTL_FILE_NOT_SUPPORTED},
 	{ERRHRD,	51,	NT_STATUS_REMOTE_NOT_LISTENING},
 	{ERRHRD,	52,	NT_STATUS_DUPLICATE_NAME},
@@ -1522,7 +1526,7 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 	{ EISDIR, ERRDOS, ERRnoaccess, NT_STATUS_FILE_IS_A_DIRECTORY},
 	{ EMLINK, ERRDOS, ERRgeneral, NT_STATUS_TOO_MANY_LINKS },
 #ifdef EDQUOT
-	{ EDQUOT, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
+	{ EDQUOT, ERRHRD, ERRdiskfull, NT_STATUS_QUOTA_EXCEEDED },
 #endif
 #ifdef ENOTEMPTY
 	{ ENOTEMPTY, ERRDOS, ERRnoaccess, NT_STATUS_DIRECTORY_NOT_EMPTY },
@@ -1538,6 +1542,9 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 #endif
 #ifdef EFBIG
 	{ EFBIG, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
+#endif
+#ifdef ENOBUFS
+	{ ENOBUFS, ERRDOS, ERRnomem, NT_STATUS_INSUFFICIENT_RESOURCES },
 #endif
 	{ 0, 0, 0, NT_STATUS_OK }
 };
