@@ -125,6 +125,12 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	
 	conn = call->conn;
 
+	/* 
+	 * TODO: a SASL bind with a different mechanism
+	 *       should cancel an inprogress SASL bind.
+	 *       (see RFC 4513)
+	 */
+
 	if (!conn->gensec) {
 		conn->session_info = NULL;
 
@@ -268,6 +274,14 @@ NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 
+	/* 
+	 * TODO: we should fail the bind request
+	 *       if there're any pending requests.
+	 *
+	 *       also a simple bind should cancel an
+	 *       inprogress SASL bind.
+	 *       (see RFC 4513)
+	 */
 	switch (req->mechanism) {
 		case LDAP_AUTH_MECH_SIMPLE:
 			return ldapsrv_BindSimple(call);
