@@ -20,8 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct socket_context *gensec_socket_init(struct gensec_security *gensec_security,
-					  struct socket_context *socket,
-					  struct event_context *ev,
-					  void (*recv_handler)(void *, uint16_t),
-					  void *recv_private);
+NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
+			    struct socket_context *current_socket,
+			    struct event_context *ev,
+			    void (*recv_handler)(void *, uint16_t),
+			    void *recv_private,
+			    struct socket_context **new_socket);
