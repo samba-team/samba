@@ -6411,9 +6411,9 @@ WERROR _spoolss_addjob(pipes_struct *p, SPOOL_Q_ADDJOB *q_u, SPOOL_R_ADDJOB *r_u
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
+static void fill_job_info_1(JOB_INFO_1 *job_info, const print_queue_struct *queue,
                             int position, int snum, 
-                            NT_PRINTER_INFO_LEVEL *ntprinter)
+                            const NT_PRINTER_INFO_LEVEL *ntprinter)
 {
 	struct tm *t;
 	
@@ -6438,9 +6438,9 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
+static BOOL fill_job_info_2(JOB_INFO_2 *job_info, const print_queue_struct *queue,
                             int position, int snum, 
-			    NT_PRINTER_INFO_LEVEL *ntprinter,
+			    const NT_PRINTER_INFO_LEVEL *ntprinter,
 			    DEVICEMODE *devmode)
 {
 	struct tm *t;
@@ -6483,8 +6483,8 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
  Enumjobs at level 1.
 ****************************************************************************/
 
-static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
-                              NT_PRINTER_INFO_LEVEL *ntprinter,
+static WERROR enumjobs_level1(const print_queue_struct *queue, int snum,
+                              const NT_PRINTER_INFO_LEVEL *ntprinter,
 			      RPC_BUFFER *buffer, uint32 offered,
 			      uint32 *needed, uint32 *returned)
 {
@@ -6494,15 +6494,12 @@ static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
 	
 	info=SMB_MALLOC_ARRAY(JOB_INFO_1,*returned);
 	if (info==NULL) {
-		SAFE_FREE(queue);
 		*returned=0;
 		return WERR_NOMEM;
 	}
 	
 	for (i=0; i<*returned; i++)
 		fill_job_info_1( &info[i], &queue[i], i, snum, ntprinter );
-
-	SAFE_FREE(queue);
 
 	/* check the required size. */	
 	for (i=0; i<*returned; i++)
@@ -6536,8 +6533,8 @@ out:
  Enumjobs at level 2.
 ****************************************************************************/
 
-static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
-                              NT_PRINTER_INFO_LEVEL *ntprinter,
+static WERROR enumjobs_level2(const print_queue_struct *queue, int snum,
+                              const NT_PRINTER_INFO_LEVEL *ntprinter,
 			      RPC_BUFFER *buffer, uint32 offered,
 			      uint32 *needed, uint32 *returned)
 {
@@ -6557,9 +6554,6 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 
 	for (i=0; i<*returned; i++)
 		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter, devmode);
-
-	free_a_printer(&ntprinter, 2);
-	SAFE_FREE(queue);
 
 	/* check the required size. */	
 	for (i=0; i<*returned; i++)
