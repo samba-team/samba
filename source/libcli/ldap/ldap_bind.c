@@ -377,16 +377,13 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 					    ldap_read_io_handler,
 					    conn,
 					    &sasl_socket);
-		if (NT_STATUS_IS_OK(status)) {
-			talloc_steal(conn->sock, sasl_socket);
-			talloc_unlink(conn, conn->sock);
-			conn->sock = sasl_socket;
-			packet_set_socket(conn->packet, conn->sock);
-		} else {
-			status = NT_STATUS_NO_MEMORY;
-			goto failed;
-		}
-		
+		if (!NT_STATUS_IS_OK(status)) goto failed;
+
+		talloc_steal(conn->sock, sasl_socket);
+		talloc_unlink(conn, conn->sock);
+		conn->sock = sasl_socket;
+		packet_set_socket(conn->packet, conn->sock);
+
 		conn->bind.type = LDAP_BIND_SASL;
 		conn->bind.creds = creds;
 	}
