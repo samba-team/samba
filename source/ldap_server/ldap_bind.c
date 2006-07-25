@@ -101,6 +101,7 @@ static void ldapsrv_set_sasl(void *private)
 	talloc_steal(ctx->conn->connection, ctx->sasl_socket);
 	talloc_unlink(ctx->conn->connection, ctx->conn->connection->socket);
 
+	ctx->conn->sockets.sasl = ctx->sasl_socket;
 	ctx->conn->connection->socket = ctx->sasl_socket;
 	packet_set_socket(ctx->conn->packet, ctx->conn->connection->socket);
 }
