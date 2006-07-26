@@ -27,7 +27,7 @@
 #include "lib/stream/packet.h"
 
 /*
-  work out if a packet is complete for protocols that use a 32 bit network byte
+  work out if a packet is complete for protocols that use a 32 bit host byte
   order length
 */
 NTSTATUS wbsrv_samba3_packet_full_request(void *private, DATA_BLOB blob, size_t *size)
