@@ -1307,6 +1307,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
 	se_map_generic(&access_mask, &file_generic_mapping);
+	open_access_mask = access_mask;
 
 	DEBUG(10, ("open_file_ntcreate: fname=%s, after mapping "
 		   "access_mask=0x%x\n", fname, access_mask ));
@@ -1548,9 +1549,11 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		unx_mode = 0777;
 	}
 
-	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
+	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o, "
+		"access_mask = 0x%x, open_access_mask = 0x%x\n",
 		 (unsigned int)flags, (unsigned int)flags2,
-		 (unsigned int)unx_mode));
+		 (unsigned int)unx_mode, (unsigned int)access_mask,
+		 (unsigned int)open_access_mask));
 
 	/*
 	 * open_file strips any O_TRUNC flags itself.
