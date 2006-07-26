@@ -1204,14 +1204,12 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
 			flags2 |= (O_CREAT | O_TRUNC);
-			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_OVERWRITE_IF:
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
 			flags2 |= (O_CREAT | O_TRUNC);
-			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_OPEN:
@@ -1238,7 +1236,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				return NULL;
 			}
 			flags2 |= O_TRUNC;
-			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_CREATE:
