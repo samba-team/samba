@@ -1292,9 +1292,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	/* This is a nasty hack - must fix... JRA. */
 	if (access_mask == MAXIMUM_ALLOWED_ACCESS) {
 		open_access_mask = access_mask = FILE_GENERIC_ALL;
-		if (flags2 & O_TRUNC) {
-			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
-		}
 	}
 
 	/*
@@ -1303,6 +1300,10 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 	se_map_generic(&access_mask, &file_generic_mapping);
 	open_access_mask = access_mask;
+
+	if (flags2 & O_TRUNC) {
+		open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
+	}
 
 	DEBUG(10, ("open_file_ntcreate: fname=%s, after mapping "
 		   "access_mask=0x%x\n", fname, access_mask ));
