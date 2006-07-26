@@ -1212,14 +1212,12 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
 			flags2 |= (O_CREAT | O_TRUNC);
-			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_OVERWRITE_IF:
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
 			flags2 |= (O_CREAT | O_TRUNC);
-			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_OPEN:
@@ -1244,7 +1242,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
 			flags2 |= O_TRUNC;
-			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_CREATE:
