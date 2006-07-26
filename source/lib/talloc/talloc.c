@@ -37,22 +37,12 @@
 #include <string.h>
 #include <errno.h>
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#ifdef HAVE_STDARG_H
+#if defined(HAVE_STDARG_H)
 #include <stdarg.h>
-#else
+#elif defined (HAVE_VARARGS_H)
 #include <varargs.h>
-#endif
-
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
+#else
+#error "no var arg header"
 #endif
 
 #include "talloc.h"
