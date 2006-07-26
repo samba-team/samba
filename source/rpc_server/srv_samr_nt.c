@@ -3758,7 +3758,9 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 
 	DEBUG(10, ("sid is %s\n", sid_string_static(&alias_sid)));
 
+	become_root();
 	status = pdb_enum_aliasmem(&alias_sid, &sids, &num_sids);
+	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4589,7 +4591,11 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 
 	/* get the current group information */
 
-	if ( !pdb_get_aliasinfo( &group_sid, &info ) ) {
+	become_root();
+	ret = pdb_get_aliasinfo( &group_sid, &info );
+	unbecome_root();
+
+	if ( !ret ) {
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 

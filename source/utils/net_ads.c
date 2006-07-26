@@ -28,39 +28,34 @@
 
 int net_ads_usage(int argc, const char **argv)
 {
-	d_printf(
-"\nnet ads join <org_unit>"\
-"\n\tjoins the local machine to a ADS realm\n"\
-"\nnet ads leave"\
-"\n\tremoves the local machine from a ADS realm\n"\
-"\nnet ads testjoin"\
-"\n\ttests that an exiting join is OK\n"\
-"\nnet ads user"\
-"\n\tlist, add, or delete users in the realm\n"\
-"\nnet ads group"\
-"\n\tlist, add, or delete groups in the realm\n"\
-"\nnet ads info"\
-"\n\tshows some info on the server\n"\
-"\nnet ads status"\
-"\n\tdump the machine account details to stdout\n"
-"\nnet ads lookup"\
-"\n\tperform a CLDAP search on the server\n"
-"\nnet ads password <username@realm> <password> -Uadmin_username@realm%%admin_pass"\
-"\n\tchange a user's password using an admin account"\
-"\n\t(note: use realm in UPPERCASE, prompts if password is obmitted)\n"\
-"\nnet ads changetrustpw"\
-"\n\tchange the trust account password of this machine in the AD tree\n"\
-"\nnet ads printer [info | publish | remove] <printername> <servername>"\
-"\n\t lookup, add, or remove directory entry for a printer\n"\
-"\nnet ads search"\
-"\n\tperform a raw LDAP search and dump the results\n"
-"\nnet ads dn"\
-"\n\tperform a raw LDAP search and dump attributes of a particular DN\n"
-"\nnet ads sid"\
-"\n\tperform a raw LDAP search and dump attributes of a particular SID\n"
-"\nnet ads keytab"\
-"\n\tcreates and updates the kerberos system keytab file\n"
-		);
+	d_printf("join [createupn[=principal]] [createcomputer=<org_unit>]\n");
+	d_printf("    Join the local machine to a ADS realm\n");
+	d_printf("leave\n");
+	d_printf("    Remove the local machine from a ADS realm\n");
+	d_printf("testjoin\n");
+	d_printf("    Validates the machine account in the domain\n");
+	d_printf("user\n");
+	d_printf("    List, add, or delete users in the realm\n");
+	d_printf("group\n");
+	d_printf("    List, add, or delete groups in the realm\n");
+	d_printf("info\n");
+	d_printf("    Displays details regarding a specific AD server\n");
+	d_printf("status\n");
+	d_printf("    Display details regarding the machine's account in AD\n");
+	d_printf("lookup\n");
+	d_printf("    Performs CLDAP query of AD domain controllers\n");
+	d_printf("password <username@realm> <password> -Uadmin_username@realm%%admin_pass\n");
+	d_printf("    Change a user's password using an admin account\n");
+	d_printf("    (note: use realm in UPPERCASE, prompts if password is obmitted)\n");
+	d_printf("changetrustpw\n");
+	d_printf("    Change the trust account password of this machine in the AD tree\n");
+	d_printf("printer [info | publish | remove] <printername> <servername>\n");
+	d_printf("    Lookup, add, or remove directory entry for a printer\n");
+	d_printf("{search,dn,sid}\n");
+	d_printf("    Issue LDAP search queries using a general filter, by DN, or by SID\n");
+	d_printf("keytab\n");
+	d_printf("    Manage a local keytab file based on the machine account in AD\n");
+	
 	return -1;
 }
 
@@ -1152,8 +1147,24 @@ static char* get_string_param( const char* param )
 		
 	return (p+1);
 }
+
 /*******************************************************************
-  join a domain using ADS (LDAP mods)
+ ********************************************************************/
+ 
+static int net_ads_join_usage(int argc, const char **argv)
+{
+	d_printf("net ads join [options]\n");
+	d_printf("Valid options:\n");
+	d_printf("   createupn[=UPN]    Set the userPrincipalName attribute during the join.\n");
+	d_printf("                      The deault UPN is in the form host/netbiosname@REALM.\n");
+	d_printf("   createcomputer=OU  Precreate the computer account in a specific OU.\n");
+	d_printf("                      The OU string read from top to bottom without RDNs and delimited by a '/'.\n");
+	d_printf("                      E.g. \"createcomputer=Computers/Servers/Unix\"\n");
+
+	return -1;
+}
+
+/*******************************************************************
  ********************************************************************/
  
 int net_ads_join(int argc, const char **argv)
@@ -1991,7 +2002,7 @@ int net_ads_help(int argc, const char **argv)
 		{"PRINTER", net_ads_printer_usage},
 		{"SEARCH", net_ads_search_usage},
 		{"INFO", net_ads_info},
-		{"JOIN", net_ads_join},
+		{"JOIN", net_ads_join_usage},
 		{"LEAVE", net_ads_leave},
 		{"STATUS", net_ads_status},
 		{"PASSWORD", net_ads_password},

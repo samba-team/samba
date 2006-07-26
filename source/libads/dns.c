@@ -204,17 +204,11 @@ static BOOL ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 
 static int dnssrvcmp( struct dns_rr_srv *a, struct dns_rr_srv *b )
 {
-	BOOL init = False;
-
-	if ( !init ) {
-		srand( (uint32)time(NULL) );
-	}
-
 	if ( a->priority == b->priority ) {
 
 		/* randomize entries with an equal weight and priority */
 		if ( a->weight == b->weight ) 
-			return rand() % 2 ? -1 : 1;
+			return 0;
 
 		/* higher weights should be sorted lower */ 
 		if ( a->weight > b->weight )
@@ -285,7 +279,7 @@ NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dns_rr_sr
 	DEBUG(4,("ads_dns_lookup_srv: %d records returned in the answer section.\n", 
 		answer_count));
 		
-	if ( (dcs = TALLOC_ARRAY(ctx, struct dns_rr_srv, answer_count)) == NULL ) {
+	if ( (dcs = TALLOC_ZERO_ARRAY(ctx, struct dns_rr_srv, answer_count)) == NULL ) {
 		DEBUG(0,("ads_dns_lookup_srv: talloc() failure for %d char*'s\n", 
 			answer_count));
 		return NT_STATUS_NO_MEMORY;

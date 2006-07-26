@@ -1204,14 +1204,12 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
 			flags2 |= (O_CREAT | O_TRUNC);
-			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_OVERWRITE_IF:
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
 			flags2 |= (O_CREAT | O_TRUNC);
-			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_OPEN:
@@ -1238,7 +1236,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				return NULL;
 			}
 			flags2 |= O_TRUNC;
-			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_CREATE:
@@ -1292,9 +1289,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	/* This is a nasty hack - must fix... JRA. */
 	if (access_mask == MAXIMUM_ALLOWED_ACCESS) {
 		open_access_mask = access_mask = FILE_GENERIC_ALL;
-		if (flags2 & O_TRUNC) {
-			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
-		}
 	}
 
 	/*
@@ -1302,6 +1296,11 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	 */
 
 	se_map_generic(&access_mask, &file_generic_mapping);
+	open_access_mask = access_mask;
+
+	if (flags2 & O_TRUNC) {
+		open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
+	}
 
 	DEBUG(10, ("open_file_ntcreate: fname=%s, after mapping "
 		   "access_mask=0x%x\n", fname, access_mask ));
@@ -1539,9 +1538,11 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		unx_mode = 0777;
 	}
 
-	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
+	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o, "
+		"access_mask = 0x%x, open_access_mask = 0x%x\n",
 		 (unsigned int)flags, (unsigned int)flags2,
-		 (unsigned int)unx_mode));
+		 (unsigned int)unx_mode, (unsigned int)access_mask,
+		 (unsigned int)open_access_mask));
 
 	/*
 	 * open_file strips any O_TRUNC flags itself.
