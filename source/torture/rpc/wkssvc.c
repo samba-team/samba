@@ -30,11 +30,13 @@ static BOOL test_NetWkstaGetInfo(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct wkssvc_NetWkstaGetInfo r;
+	union wkssvc_NetWkstaInfo info;
 	uint16_t levels[] = {100, 101, 102, 502};
 	int i;
 	BOOL ret = True;
 
 	r.in.server_name = dcerpc_server_name(p);
+	r.out.info = &info;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.level = levels[i];
@@ -71,6 +73,7 @@ static BOOL test_NetWkstaTransportEnum(struct dcerpc_pipe *p,
 	r.in.ctr = &ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = &resume_handle;
+	r.out.ctr = &ctr;
 	r.out.resume_handle = &resume_handle;
 
 	printf("testing NetWkstaTransportEnum\n");
