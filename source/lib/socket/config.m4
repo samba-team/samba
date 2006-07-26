@@ -1,5 +1,8 @@
 AC_CHECK_HEADERS(sys/socket.h sys/sockio.h sys/un.h)
 
+AC_CHECK_FUNCS(writev)
+AC_CHECK_FUNCS(readv)
+
 AC_CACHE_CHECK([for sin_len in sock],samba_cv_HAVE_SOCK_SIN_LEN,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <sys/socket.h>
