@@ -117,6 +117,7 @@ void talloc_report_depth(const void *ptr, FILE *f, int depth);
 void *talloc_parent(const void *ptr);
 void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
 int talloc_free(void *ptr);
+void talloc_free_children(void *ptr);
 void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *name);
 void *_talloc_steal(const void *new_ctx, const void *ptr);
 size_t talloc_total_size(const void *ptr);
