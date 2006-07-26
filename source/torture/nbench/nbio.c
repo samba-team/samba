@@ -619,7 +619,8 @@ void nb_findfirst(const char *mask, int level, int maxcnt, int count, NTSTATUS s
 
 	mem_ctx = talloc_init("smbcli_dskattr");
 
-	io.t2ffirst.level = level;
+	io.t2ffirst.level = RAW_SEARCH_TRANS2;
+	io.t2ffirst.data_level = level;
 	io.t2ffirst.in.max_count = maxcnt;
 	io.t2ffirst.in.search_attrib = FILE_ATTRIBUTE_DIRECTORY;
 	io.t2ffirst.in.pattern = mask;
