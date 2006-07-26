@@ -625,6 +625,8 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 	BOOL valid_entry = False;
 	BOOL delay_it = False;
 	BOOL have_level2 = False;
+	BOOL ret;
+	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
 
 	if (oplock_request & INTERNAL_OPEN_ONLY) {
 		fsp->oplock_type = NO_OPLOCK;
@@ -688,34 +690,38 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 		fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
 	}
 
-	if (delay_it) {
-		BOOL ret;
-		char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
-
-		DEBUG(10, ("Sending break request to PID %s\n",
-			   procid_str_static(&exclusive->pid)));
-		exclusive->op_mid = get_current_mid();
-
-		/* Create the message. */
-		share_mode_entry_to_message(msg, exclusive);
-
-		/* Add in the FORCE_OPLOCK_BREAK_TO_NONE bit in the message if set. We don't
-		   want this set in the share mode struct pointed to by lck. */
-
-		if (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE) {
-			SSVAL(msg,6,exclusive->op_type | FORCE_OPLOCK_BREAK_TO_NONE);
-		}
-
-		become_root();
-		ret = message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
-				       msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
-		unbecome_root();
-		if (!ret) {
-			DEBUG(3, ("Could not send oplock break message\n"));
-		}
+	if (!delay_it) {
+		return False;
 	}
 
-	return delay_it;
+	/*
+	 * Send a break message to the oplock holder and delay the open for
+	 * our client.
+	 */
+
+	DEBUG(10, ("Sending break request to PID %s\n",
+		   procid_str_static(&exclusive->pid)));
+	exclusive->op_mid = get_current_mid();
+
+	/* Create the message. */
+	share_mode_entry_to_message(msg, exclusive);
+
+	/* Add in the FORCE_OPLOCK_BREAK_TO_NONE bit in the message if set. We
+	   don't want this set in the share mode struct pointed to by lck. */
+
+	if (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE) {
+		SSVAL(msg,6,exclusive->op_type | FORCE_OPLOCK_BREAK_TO_NONE);
+	}
+
+	become_root();
+	ret = message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
+			       msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
+	unbecome_root();
+	if (!ret) {
+		DEBUG(3, ("Could not send oplock break message\n"));
+	}
+
+	return True;
 }
 
 static BOOL request_timed_out(struct timeval request_time,
