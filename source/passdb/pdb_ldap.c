@@ -5489,14 +5489,14 @@ NTSTATUS pdb_init_ldapsam_compat(struct pdb_methods **pdb_method, const char *lo
 	struct ldapsam_privates *ldap_state;
 	char *uri = talloc_strdup( NULL, location );
 
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam_common( pdb_method, uri ))) {
-		return nt_status;
-	}
-
-	/* the module itself stores a copy of the location so throw this one away */
-
+	trim_char( uri, '\"', '\"' );
+	nt_status = pdb_init_ldapsam_common( pdb_method, uri );
 	if ( uri )
 		TALLOC_FREE( uri );
+
+	if ( !NT_STATUS_IS_OK(nt_status) ) {
+		return nt_status;
+	}
 
 	(*pdb_method)->name = "ldapsam_compat";
 
@@ -5524,8 +5524,13 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 	DOM_SID secrets_domain_sid;
 	pstring domain_sid_string;
 	char *dn;
+	char *uri = talloc_strdup( NULL, location );
 
-	nt_status = pdb_init_ldapsam_common(pdb_method, location);
+	trim_char( uri, '\"', '\"' );
+	nt_status = pdb_init_ldapsam_common(pdb_method, uri);
+	if ( uri )
+		TALLOC_FREE( uri );
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
