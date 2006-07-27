@@ -773,19 +773,25 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
  *
  **/
 
+static NTSTATUS authunix_want_check(struct auth_method_context *ctx,
+				    TALLOC_CTX *mem_ctx,
+				    const struct auth_usersupplied_info *user_info)
+{
+	if (!user_info->mapped.account_name || !*user_info->mapped.account_name) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 					TALLOC_CTX *mem_ctx,
 					const struct auth_usersupplied_info *user_info,
-					struct  auth_serversupplied_info **server_info)
+					struct auth_serversupplied_info **server_info)
 {
 	TALLOC_CTX *check_ctx;
 	NTSTATUS nt_status;
 	struct passwd *pwd;
-
-	if (! user_info->mapped.account_name || ! *user_info->mapped.account_name) {
-		/* 'not for me' */
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
 
 	if (user_info->password_state != AUTH_PASSWORD_PLAIN) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -797,13 +803,13 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 	}
 
 	nt_status = check_unix_password(check_ctx, user_info, &pwd);
-	if ( ! NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(check_ctx);
 		return nt_status;
 	}
 
 	nt_status = authunix_make_server_info(mem_ctx, user_info, pwd, server_info);
-	if ( ! NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(check_ctx);
 		return nt_status;
 	}
@@ -815,7 +821,8 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 static const struct auth_operations unix_ops = {
 	.name		= "unix",
 	.get_challenge	= auth_get_challenge_not_implemented,
-	.check_password = authunix_check_password
+	.want_check	= authunix_want_check,
+	.check_password	= authunix_check_password
 };
 
 NTSTATUS auth_unix_init(void)

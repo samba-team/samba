@@ -35,7 +35,8 @@
 /* version 2 - initial samba4 version - metze */
 /* version 3 - subsequent samba4 version - abartlet */
 /* version 4 - subsequent samba4 version - metze */
-#define AUTH_INTERFACE_VERSION 4
+/* version 0 - till samba4 is stable - metze */
+#define AUTH_INTERFACE_VERSION 0
 
 #define USER_INFO_CASE_INSENSITIVE_USERNAME 0x01 /* username may be in any case */
 #define USER_INFO_CASE_INSENSITIVE_PASSWORD 0x02 /* password may be in any case */
@@ -133,6 +134,11 @@ struct auth_operations {
 	 * that.  It is not compatible with being a PDC.  */
 
 	NTSTATUS (*get_challenge)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, DATA_BLOB *challenge);
+
+	/* Given the user supplied info, check if this backend want to handle the password checking */
+
+	NTSTATUS (*want_check)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx,
+			       const struct auth_usersupplied_info *user_info);
 
 	/* Given the user supplied info, check a password */
 

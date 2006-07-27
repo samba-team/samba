@@ -334,6 +334,17 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS authsam_ignoredomain_want_check(struct auth_method_context *ctx,
+						TALLOC_CTX *mem_ctx,
+						const struct auth_usersupplied_info *user_info)
+{
+	if (!user_info->mapped.account_name || !*user_info->mapped.account_name) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS authsam_ignoredomain_check_password(struct auth_method_context *ctx,
 						    TALLOC_CTX *mem_ctx,
 						    const struct auth_usersupplied_info *user_info, 
@@ -345,13 +356,15 @@ static NTSTATUS authsam_ignoredomain_check_password(struct auth_method_context *
 /****************************************************************************
 Check SAM security (above) but with a few extra checks.
 ****************************************************************************/
-static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
-				       TALLOC_CTX *mem_ctx,
-				       const struct auth_usersupplied_info *user_info, 
-				       struct auth_serversupplied_info **server_info)
+static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
+				   TALLOC_CTX *mem_ctx,
+				   const struct auth_usersupplied_info *user_info)
 {
-	const char *domain;
 	BOOL is_local_name, is_my_domain;
+
+	if (!user_info->mapped.account_name || !*user_info->mapped.account_name) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 
 	is_local_name = is_myname(user_info->mapped.domain_name);
 	is_my_domain  = strequal(user_info->mapped.domain_name, lp_workgroup());
@@ -359,17 +372,16 @@ static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
 	/* check whether or not we service this domain/workgroup name */
 	switch (lp_server_role()) {
 		case ROLE_STANDALONE:
-			domain = lp_netbios_name();
-			break;
+			return NT_STATUS_OK;
+
 		case ROLE_DOMAIN_MEMBER:
 			if (!is_local_name) {
-				DEBUG(6,("authsam_check_password: %s is not one of my local names (%s)\n",
-					user_info->mapped.domain_name, (lp_server_role() == ROLE_DOMAIN_MEMBER 
-					? "ROLE_DOMAIN_MEMBER" : "ROLE_STANDALONE") ));
+				DEBUG(6,("authsam_check_password: %s is not one of my local names (DOMAIN_MEMBER)\n",
+					user_info->mapped.domain_name));
 				return NT_STATUS_NOT_IMPLEMENTED;
 			}
-			domain = lp_netbios_name();
-			break;
+			return NT_STATUS_OK;
+
 		case ROLE_DOMAIN_PDC:
 		case ROLE_DOMAIN_BDC:
 			if (!is_local_name && !is_my_domain) {
@@ -377,11 +389,37 @@ static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
 					user_info->mapped.domain_name));
 				return NT_STATUS_NOT_IMPLEMENTED;
 			}
+			return NT_STATUS_OK;
+	}
+
+	DEBUG(6,("authsam_check_password: lp_server_role() has an undefined value\n"));
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************************
+Check SAM security (above) but with a few extra checks.
+****************************************************************************/
+static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
+				       TALLOC_CTX *mem_ctx,
+				       const struct auth_usersupplied_info *user_info, 
+				       struct auth_serversupplied_info **server_info)
+{
+	const char *domain;
+
+	/* check whether or not we service this domain/workgroup name */
+	switch (lp_server_role()) {
+		case ROLE_STANDALONE:
+		case ROLE_DOMAIN_MEMBER:
+			domain = lp_netbios_name();
+			break;
+
+		case ROLE_DOMAIN_PDC:
+		case ROLE_DOMAIN_BDC:
 			domain = lp_workgroup();
 			break;
+
 		default:
-			DEBUG(6,("authsam_check_password: lp_server_role() has an undefined value\n"));
-			return NT_STATUS_NOT_IMPLEMENTED;
+			return NT_STATUS_NO_SUCH_USER;
 	}
 
 	return authsam_check_password_internals(ctx, mem_ctx, domain, user_info, server_info);
@@ -390,12 +428,14 @@ static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
 static const struct auth_operations sam_ignoredomain_ops = {
 	.name		= "sam_ignoredomain",
 	.get_challenge	= auth_get_challenge_not_implemented,
+	.want_check	= authsam_ignoredomain_want_check,
 	.check_password	= authsam_ignoredomain_check_password
 };
 
 static const struct auth_operations sam_ops = {
 	.name		= "sam",
 	.get_challenge	= auth_get_challenge_not_implemented,
+	.want_check	= authsam_want_check,
 	.check_password	= authsam_check_password
 };
 
