@@ -124,6 +124,7 @@ struct auth_session_info {
 };
 
 struct auth_method_context;
+struct auth_check_password_request;
 
 struct auth_operations {
 	const char *name;
