@@ -904,6 +904,83 @@ _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_
 	return gensec_security->ops->update(gensec_security, out_mem_ctx, in, out);
 }
 
+struct gensec_update_request {
+	struct gensec_security *gensec_security;
+	DATA_BLOB in;
+	DATA_BLOB out;
+	NTSTATUS status;
+	void (*callback)(struct gensec_update_request *req, void *private_data);
+	void *private_data;
+};
+
+static void gensec_update_async_timed_handler(struct event_context *ev, struct timed_event *te,
+					      struct timeval t, void *ptr)
+{
+	struct gensec_update_request *req = talloc_get_type(ptr, struct gensec_update_request);
+	req->status = req->gensec_security->ops->update(req->gensec_security, req, req->in, &req->out);
+	req->callback(req, req->private_data);
+}
+
+/**
+ * Next state function for the GENSEC state machine async version
+ * 
+ * @param gensec_security GENSEC State
+ * @param in The request, as a DATA_BLOB
+ * @param callback The function that will be called when the operation is
+ *                 finished, it should return gensec_update_recv() to get output
+ * @param private_data A private pointer that will be passed to the callback function
+ */
+
+_PUBLIC_ void gensec_update_send(struct gensec_security *gensec_security, const DATA_BLOB in,
+				 void (*callback)(struct gensec_update_request *req, void *private_data),
+				 void *private_data)
+{
+	struct gensec_update_request *req = NULL;
+	struct timed_event *te = NULL;
+
+	req = talloc(gensec_security, struct gensec_update_request);
+	if (!req) goto failed;
+	req->gensec_security	= gensec_security;
+	req->in			= in;
+	req->out		= data_blob(NULL, 0);
+	req->callback		= callback;
+	req->private_data	= private_data;
+
+	te = event_add_timed(gensec_security->event_ctx, req,
+			     timeval_zero(),
+			     gensec_update_async_timed_handler, req);
+	if (!te) goto failed;
+
+	return;
+
+failed:
+	talloc_free(req);
+	callback(NULL, private_data);
+}
+
+/**
+ * Next state function for the GENSEC state machine
+ * 
+ * @param req GENSEC update request state
+ * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
+ * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
+ * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent, 
+ *                or NT_STATUS_OK if the user is authenticated. 
+ */
+_PUBLIC_ NTSTATUS gensec_update_recv(struct gensec_update_request *req, TALLOC_CTX *out_mem_ctx, DATA_BLOB *out)
+{
+	NTSTATUS status;
+
+	NT_STATUS_HAVE_NO_MEMORY(req);
+
+	*out = req->out;
+	talloc_steal(out_mem_ctx, out->data);
+	status = req->status;
+
+	talloc_free(req);
+	return status;
+}
+
 /** 
  * Set the requirement for a certain feature on the connection
  *
