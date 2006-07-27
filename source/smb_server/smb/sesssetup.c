@@ -271,8 +271,8 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 				 &sess->spnego.out.workgroup);
 
 	if (!req->smb_conn->negotiate.done_sesssetup) {
-		req->smb_conn->negotiate.max_send = sess->nt1.in.bufsize;
-		req->smb_conn->negotiate.client_caps = sess->nt1.in.capabilities;
+		req->smb_conn->negotiate.max_send = sess->spnego.in.bufsize;
+		req->smb_conn->negotiate.client_caps = sess->spnego.in.capabilities;
 	}
 
 	vuid = SVAL(req->in.hdr,HDR_UID);
