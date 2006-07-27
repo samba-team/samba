@@ -909,8 +909,10 @@ struct gensec_update_request {
 	DATA_BLOB in;
 	DATA_BLOB out;
 	NTSTATUS status;
-	void (*callback)(struct gensec_update_request *req, void *private_data);
-	void *private_data;
+	struct {
+		void (*fn)(struct gensec_update_request *req, void *private_data);
+		void *private_data;
+	} callback;
 };
 
 static void gensec_update_async_timed_handler(struct event_context *ev, struct timed_event *te,
@@ -918,7 +920,7 @@ static void gensec_update_async_timed_handler(struct event_context *ev, struct t
 {
 	struct gensec_update_request *req = talloc_get_type(ptr, struct gensec_update_request);
 	req->status = req->gensec_security->ops->update(req->gensec_security, req, req->in, &req->out);
-	req->callback(req, req->private_data);
+	req->callback.fn(req, req->callback.private_data);
 }
 
 /**
@@ -940,11 +942,11 @@ _PUBLIC_ void gensec_update_send(struct gensec_security *gensec_security, const 
 
 	req = talloc(gensec_security, struct gensec_update_request);
 	if (!req) goto failed;
-	req->gensec_security	= gensec_security;
-	req->in			= in;
-	req->out		= data_blob(NULL, 0);
-	req->callback		= callback;
-	req->private_data	= private_data;
+	req->gensec_security		= gensec_security;
+	req->in				= in;
+	req->out			= data_blob(NULL, 0);
+	req->callback.fn		= callback;
+	req->callback.private_data	= private_data;
 
 	te = event_add_timed(gensec_security->event_ctx, req,
 			     timeval_zero(),
