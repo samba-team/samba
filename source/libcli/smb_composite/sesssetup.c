@@ -462,7 +462,7 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 	/* no session setup at all in earliest protocol varients */
 	if (session->transport->negotiate.protocol < PROTOCOL_LANMAN1) {
 		ZERO_STRUCT(io->out);
-		c->state = COMPOSITE_STATE_DONE;
+		composite_done(c);
 		return c;
 	}
 
