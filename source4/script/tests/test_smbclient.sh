@@ -16,7 +16,9 @@ shift 5
 failed=0
 
 runcmd() {
-	testit "$1" bin/smbclient //$SERVER/tmp -W "$DOMAIN "-U"$USERNAME"%"$PASSWORD"
+	name="$1"
+	shift
+	testit "$name" bin/smbclient //$SERVER/tmp -W "$DOMAIN "-U"$USERNAME"%"$PASSWORD" $@
 }
 
 incdir=`dirname $0`
@@ -78,6 +80,10 @@ echo get tmpfilex | runcmd "Getting file again" || failed=`expr $failed + 1`
 testit "Comparing files" diff tmpfilex tmpfile || failed=`expr $failed + 1`
 # remove that file
 echo rm tmpfilex | runcmd "Removing file" || failed=`expr $failed + 1`
+
+# do some simple operations using old protocol versions
+echo ls | runcmd "List directory with LANMAN1" -m LANMAN1 || failed=`expr $failed + 1`
+echo ls | runcmd "List directory with LANMAN2" -m LANMAN2 || failed=`expr $failed + 1`
 
 rm -f tmpfile tmpfile-old tmpfilex
 
