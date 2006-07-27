@@ -118,7 +118,7 @@ static void popt_common_callback(poptContext con,
 		break;
 
 	case 'm':
-		lp_set_cmdline("max protocol", arg);
+		lp_set_cmdline("client max protocol", arg);
 		break;
 
 	case 'R':
