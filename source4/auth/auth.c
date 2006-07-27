@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "dlinklist.h"
-#include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
 #include "lib/events/events.h"
 #include "build.h"
@@ -104,8 +103,25 @@ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal
 	return NT_STATUS_OK;
 }
 
+struct auth_check_password_sync_state {
+	BOOL finished;
+	NTSTATUS status;
+	struct auth_serversupplied_info *server_info;
+};
+
+static void auth_check_password_sync_callback(struct auth_check_password_request *req,
+					      void *private_data)
+{
+	struct auth_check_password_sync_state *s = talloc_get_type(private_data,
+						   struct auth_check_password_sync_state);
+
+	s->finished = True;
+	s->status = auth_check_password_recv(req, s, &s->server_info);
+}
+
 /**
  * Check a user's Plaintext, LM or NTLM password.
+ * (sync version)
  *
  * Check a user's password, as given in the user_info struct and return various
  * interesting details in the server_info struct.
@@ -114,12 +130,14 @@ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal
  * struct.  When the return is other than NT_STATUS_OK the contents 
  * of that structure is undefined.
  *
- * @param user_info Contains the user supplied components, including the passwords.
- *
- * @param auth_context Supplies the challenges and some other data. 
- *                  Must be created with make_auth_context(), and the challenges should be 
+ * @param auth_ctx Supplies the challenges and some other data. 
+ *                  Must be created with auth_context_create(), and the challenges should be 
  *                  filled in, either at creation or by calling the challenge geneation 
  *                  function auth_get_challenge().  
+ *
+ * @param user_info Contains the user supplied components, including the passwords.
+ *
+ * @param mem_ctx The parent memory context for the server_info structure
  *
  * @param server_info If successful, contains information about the authentication, 
  *                    including a SAM_ACCOUNT struct describing the user.
@@ -133,74 +151,209 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 			     const struct auth_usersupplied_info *user_info, 
 			     struct auth_serversupplied_info **server_info)
 {
-	/* if all the modules say 'not for me' this is reasonable */
-	NTSTATUS nt_status;
-	struct auth_method_context *method;
-	const char *method_name = "NO METHOD";
-	const uint8_t *challenge;
-	struct auth_usersupplied_info *user_info_tmp; 
+	struct auth_check_password_sync_state *sync_state;
+	NTSTATUS status;
 
 	DEBUG(3,   ("auth_check_password:  Checking password for unmapped user [%s]\\[%s]@[%s]\n", 
 		    user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
 
-	if (!user_info->mapped_state) {
-		nt_status = map_user_info(mem_ctx, user_info, &user_info_tmp);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
-		user_info = user_info_tmp;
+	sync_state = talloc_zero(auth_ctx, struct auth_check_password_sync_state);
+	NT_STATUS_HAVE_NO_MEMORY(sync_state);
+
+	auth_check_password_send(auth_ctx, user_info, auth_check_password_sync_callback, sync_state);
+
+	while (!sync_state->finished) {
+		event_loop_once(auth_ctx->event_ctx);
 	}
 
-	DEBUGADD(3,("auth_check_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
+	status = sync_state->status;
+
+	if (NT_STATUS_IS_OK(status)) {
+		*server_info = talloc_steal(mem_ctx, sync_state->server_info);
+
+		DEBUG(5,("auth_check_password: authentication for user [%s\\%s] succeeded\n",
+			 (*server_info)->domain_name, (*server_info)->account_name));
+	} else {
+		DEBUG(2,("auth_check_password: authentication for user [%s\\%s] FAILED with error %s\n", 
+			 user_info->mapped.domain_name, user_info->mapped.account_name, 
+			 nt_errstr(status)));
+	}
+
+	talloc_free(sync_state);
+	return status;
+}
+
+struct auth_check_password_request {
+	struct auth_context *auth_ctx;
+	const struct auth_usersupplied_info *user_info;
+	struct auth_serversupplied_info *server_info;
+	struct auth_method_context *method;
+	NTSTATUS status;
+	struct {
+		void (*fn)(struct auth_check_password_request *req, void *private_data);
+		void *private_data;
+	} callback;
+};
+
+static void auth_check_password_async_timed_handler(struct event_context *ev, struct timed_event *te,
+						    struct timeval t, void *ptr)
+{
+	struct auth_check_password_request *req = talloc_get_type(ptr, struct auth_check_password_request);
+	req->status = req->method->ops->check_password(req->method, req, req->user_info, &req->server_info);
+	req->callback.fn(req, req->callback.private_data);
+}
+
+/**
+ * Check a user's Plaintext, LM or NTLM password.
+ * async send hook
+ *
+ * Check a user's password, as given in the user_info struct and return various
+ * interesting details in the server_info struct.
+ *
+ * The return value takes precedence over the contents of the server_info 
+ * struct.  When the return is other than NT_STATUS_OK the contents 
+ * of that structure is undefined.
+ *
+ * @param auth_ctx Supplies the challenges and some other data. 
+ *                  Must be created with make_auth_context(), and the challenges should be 
+ *                  filled in, either at creation or by calling the challenge geneation 
+ *                  function auth_get_challenge().  
+ *
+ * @param user_info Contains the user supplied components, including the passwords.
+ *
+ * @param callback A callback function which will be called when the operation is finished.
+ *                 The callback function needs to call auth_check_password_recv() to get the return values
+ *
+ * @param private_data A private pointer which will ba passed to the callback function
+ *
+ **/
+
+void auth_check_password_send(struct auth_context *auth_ctx,
+			      const struct auth_usersupplied_info *user_info,
+			      void (*callback)(struct auth_check_password_request *req, void *private_data),
+			      void *private_data)
+{
+	/* if all the modules say 'not for me' this is reasonable */
+	NTSTATUS nt_status;
+	struct auth_method_context *method;
+	const uint8_t *challenge;
+	struct auth_usersupplied_info *user_info_tmp;
+	struct auth_check_password_request *req = NULL;
+
+	DEBUG(3,   ("auth_check_password_send:  Checking password for unmapped user [%s]\\[%s]@[%s]\n", 
+		    user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
+
+	req = talloc_zero(auth_ctx, struct auth_check_password_request);
+	if (!req) {
+		callback(NULL, private_data);
+		return;
+	}
+	req->auth_ctx			= auth_ctx;
+	req->user_info			= user_info;
+	req->callback.fn		= callback;
+	req->callback.private_data	= private_data;
+
+	if (!user_info->mapped_state) {
+		nt_status = map_user_info(req, user_info, &user_info_tmp);
+		if (!NT_STATUS_IS_OK(nt_status)) goto failed;
+		user_info = user_info_tmp;
+		req->user_info	= user_info_tmp;
+	}
+
+	DEBUGADD(3,("auth_check_password_send:  mapped user is: [%s]\\[%s]@[%s]\n", 
 		    user_info->mapped.domain_name, user_info->mapped.account_name, user_info->workstation_name));
 
 	nt_status = auth_get_challenge(auth_ctx, &challenge);
-
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("auth_check_password:  Invalid challenge (length %u) stored for this auth context set_by %s - cannot continue: %s\n",
+		DEBUG(0, ("auth_check_password_send:  Invalid challenge (length %u) stored for this auth context set_by %s - cannot continue: %s\n",
 			(unsigned)auth_ctx->challenge.data.length, auth_ctx->challenge.set_by, nt_errstr(nt_status)));
-		return nt_status;
+		goto failed;
 	}
 
 	if (auth_ctx->challenge.set_by) {
-		DEBUG(10, ("auth_check_password: auth_context challenge created by %s\n",
+		DEBUG(10, ("auth_check_password_send: auth_context challenge created by %s\n",
 					auth_ctx->challenge.set_by));
 	}
 
-	DEBUG(10, ("challenge is: \n"));
+	DEBUG(10, ("auth_check_password_send: challenge is: \n"));
 	dump_data(5, auth_ctx->challenge.data.data, auth_ctx->challenge.data.length);
 
 	nt_status = NT_STATUS_NO_SUCH_USER; /* If all the modules say 'not for me', then this is reasonable */
 	for (method = auth_ctx->methods; method; method = method->next) {
 		NTSTATUS result;
+		struct timed_event *te = NULL;
 
 		/* check if the module wants to chek the password */
-		result = method->ops->want_check(method, mem_ctx, user_info);
+		result = method->ops->want_check(method, req, user_info);
 		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
-			DEBUG(11,("auth_check_password: %s had nothing to say\n", method->ops->name));
+			DEBUG(11,("auth_check_password_send: %s had nothing to say\n", method->ops->name));
 			continue;
 		}
 
-		method_name = method->ops->name;
 		nt_status = result;
+		req->method	= method;
 
 		if (!NT_STATUS_IS_OK(nt_status)) break;
 
-		nt_status = method->ops->check_password(method, mem_ctx, user_info, server_info);
-		break;
+		te = event_add_timed(auth_ctx->event_ctx, req,
+				     timeval_zero(),
+				     auth_check_password_async_timed_handler, req);
+		if (!te) {
+			nt_status = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
+		return;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+failed:
+	req->status = nt_status;
+	req->callback.fn(req, req->callback.private_data);
+}
+
+/**
+ * Check a user's Plaintext, LM or NTLM password.
+ * async receive function
+ *
+ * The return value takes precedence over the contents of the server_info 
+ * struct.  When the return is other than NT_STATUS_OK the contents 
+ * of that structure is undefined.
+ *
+ *
+ * @param req The async auth_check_password state, passes to the callers callback function
+ *
+ * @param mem_ctx The parent memory context for the server_info structure
+ *
+ * @param server_info If successful, contains information about the authentication, 
+ *                    including a SAM_ACCOUNT struct describing the user.
+ *
+ * @return An NTSTATUS with NT_STATUS_OK or an appropriate error.
+ *
+ **/
+
+NTSTATUS auth_check_password_recv(struct auth_check_password_request *req,
+				  TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info **server_info)
+{
+	NTSTATUS status;
+
+	NT_STATUS_HAVE_NO_MEMORY(req);
+
+	if (NT_STATUS_IS_OK(req->status)) {
+		DEBUG(5,("auth_check_password: %s authentication for user [%s\\%s] succeeded\n",
+			 req->method->ops->name, req->server_info->domain_name, req->server_info->account_name));
+
+		*server_info = talloc_steal(mem_ctx, req->server_info);
+	} else {
 		DEBUG(2,("auth_check_password: %s authentication for user [%s\\%s] FAILED with error %s\n", 
-			 method_name, user_info->mapped.domain_name, user_info->mapped.account_name, 
-			 nt_errstr(nt_status)));
-		return nt_status;
+			 (req->method ? req->method->ops->name : "NO_METHOD"),
+			 req->user_info->mapped.domain_name,
+			 req->user_info->mapped.account_name, 
+			 nt_errstr(req->status)));
 	}
 
-	DEBUG(5,("auth_check_password: %s authentication for user [%s\\%s] succeeded\n",
-		 method_name, (*server_info)->domain_name, (*server_info)->account_name));
-
-	return nt_status;
+	status = req->status;
+	talloc_free(req);
+	return status;
 }
 
 /***************************************************************************
