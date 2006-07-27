@@ -35,15 +35,28 @@
 
 static const struct ntlmssp_callbacks {
 	enum ntlmssp_role role;
-	enum ntlmssp_message_type ntlmssp_command;
-	NTSTATUS (*fn)(struct gensec_security *gensec_security, 
-		       TALLOC_CTX *out_mem_ctx, 
-		       DATA_BLOB in, DATA_BLOB *out);
+	enum ntlmssp_message_type command;
+	NTSTATUS (*sync_fn)(struct gensec_security *gensec_security,
+			    TALLOC_CTX *out_mem_ctx,
+			    DATA_BLOB in, DATA_BLOB *out);
 } ntlmssp_callbacks[] = {
-	{NTLMSSP_CLIENT, NTLMSSP_INITIAL, ntlmssp_client_initial},
-	{NTLMSSP_SERVER, NTLMSSP_NEGOTIATE, ntlmssp_server_negotiate},
-	{NTLMSSP_CLIENT, NTLMSSP_CHALLENGE, ntlmssp_client_challenge},
-	{NTLMSSP_SERVER, NTLMSSP_AUTH, ntlmssp_server_auth},
+	{
+		.role		= NTLMSSP_CLIENT,
+		.command	= NTLMSSP_INITIAL,
+		.sync_fn	= ntlmssp_client_initial,
+	},{
+		.role		= NTLMSSP_SERVER,
+		.command	= NTLMSSP_NEGOTIATE,
+		.sync_fn	= ntlmssp_server_negotiate,
+	},{
+		.role		= NTLMSSP_CLIENT,
+		.command	= NTLMSSP_CHALLENGE,
+		.sync_fn	= ntlmssp_client_challenge,
+	},{
+		.role		= NTLMSSP_SERVER,
+		.command	= NTLMSSP_AUTH,
+		.sync_fn	= ntlmssp_server_auth,
+	}
 };
 
 
@@ -158,7 +171,7 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_ntlmssp_state *gensec_n
 
 	for (i=0; i < ARRAY_SIZE(ntlmssp_callbacks); i++) {
 		if (ntlmssp_callbacks[i].role == gensec_ntlmssp_state->role &&
-		    ntlmssp_callbacks[i].ntlmssp_command == ntlmssp_command) {
+		    ntlmssp_callbacks[i].command == ntlmssp_command) {
 			*idx = i;
 			return NT_STATUS_OK;
 		}
@@ -200,7 +213,7 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	status = gensec_ntlmssp_update_find(gensec_ntlmssp_state, input, &i);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = ntlmssp_callbacks[i].fn(gensec_security, out_mem_ctx, input, out);
+	status = ntlmssp_callbacks[i].sync_fn(gensec_security, out_mem_ctx, input, out);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
 	return NT_STATUS_OK;
