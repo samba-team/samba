@@ -24,6 +24,13 @@
 #include "auth/auth.h"
 #include "libcli/security/security.h"
 
+static NTSTATUS name_to_ntstatus_want_check(struct auth_method_context *ctx,
+			      		    TALLOC_CTX *mem_ctx,
+					    const struct auth_usersupplied_info *user_info)
+{
+	return NT_STATUS_OK;
+}
+
 /** 
  * Return an error based on username
  *
@@ -56,10 +63,7 @@ static NTSTATUS name_to_ntstatus_check_password(struct auth_method_context *ctx,
 		DEBUG(5,("name_to_ntstatus_check_password: Error for user %s was 0x%08X\n", user, error_num));
 		nt_status = NT_STATUS(error_num);
 	}
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(server_info);
@@ -128,6 +132,7 @@ static NTSTATUS name_to_ntstatus_check_password(struct auth_method_context *ctx,
 static struct auth_operations name_to_ntstatus_auth_ops = {
 	.name		= "name_to_ntstatus",
 	.get_challenge	= auth_get_challenge_not_implemented,
+	.want_check	= name_to_ntstatus_want_check,
 	.check_password	= name_to_ntstatus_check_password
 };
 
@@ -157,18 +162,27 @@ static NTSTATUS fixed_challenge_get_challenge(struct auth_method_context *ctx, T
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS fixed_challenge_want_check(struct auth_method_context *ctx,
+			      		   TALLOC_CTX *mem_ctx,
+					   const struct auth_usersupplied_info *user_info)
+{
+	/* don't handle any users */
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 static NTSTATUS fixed_challenge_check_password(struct auth_method_context *ctx,
 			      		       TALLOC_CTX *mem_ctx,
 					       const struct auth_usersupplied_info *user_info,
 					       struct auth_serversupplied_info **_server_info)
 {
 	/* don't handle any users */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return NT_STATUS_NO_SUCH_USER;
 }
 
 static struct auth_operations fixed_challenge_auth_ops = {
 	.name		= "fixed_challenge",
 	.get_challenge	= fixed_challenge_get_challenge,
+	.want_check	= fixed_challenge_want_check,
 	.check_password	= fixed_challenge_check_password
 };
 

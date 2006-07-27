@@ -174,16 +174,20 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 	for (method = auth_ctx->methods; method; method = method->next) {
 		NTSTATUS result;
 
-		result = method->ops->check_password(method, mem_ctx, user_info, server_info);
-
-		/* check if the module did anything */
-		if (!NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
-			method_name = method->ops->name;
-			nt_status = result;
-			break;
+		/* check if the module wants to chek the password */
+		result = method->ops->want_check(method, mem_ctx, user_info);
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
+			DEBUG(11,("auth_check_password: %s had nothing to say\n", method->ops->name));
+			continue;
 		}
 
-		DEBUG(11,("auth_check_password: %s had nothing to say\n", method->ops->name));
+		method_name = method->ops->name;
+		nt_status = result;
+
+		if (!NT_STATUS_IS_OK(nt_status)) break;
+
+		nt_status = method->ops->check_password(method, mem_ctx, user_info, server_info);
+		break;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
