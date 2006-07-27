@@ -28,95 +28,6 @@
 #include "smb_server/smb2/smb2_server.h"
 #include "smbd/service_stream.h"
 
-static NTSTATUS smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_sesssetup *io)
-{
-	NTSTATUS status;
-	struct smbsrv_session *smb_sess = NULL;
-	struct auth_session_info *session_info = NULL;
-	uint64_t vuid;
-
-	io->smb2.out._pad	= 0;
-	io->smb2.out.uid	= 0;
-	io->smb2.out.secblob = data_blob(NULL, 0);
-
-	vuid = BVAL(req->in.hdr, SMB2_HDR_UID);
-
-	/*
-	 * only when we got '0' we should allocate a new session
-	 */
-	if (vuid == 0) {
-		struct gensec_security *gensec_ctx;
-
-		status = gensec_server_start(req, &gensec_ctx,
-					     req->smb_conn->connection->event.ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
-			return status;
-		}
-
-		gensec_set_credentials(gensec_ctx, req->smb_conn->negotiate.server_credentials);
-
-		gensec_set_target_service(gensec_ctx, "cifs");
-
-		gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SESSION_KEY);
-
-		status = gensec_start_mech_by_oid(gensec_ctx, GENSEC_OID_SPNEGO);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to start GENSEC SPNEGO server code: %s\n", nt_errstr(status)));
-			return status;
-		}
-
-		/* allocate a new session */
-		smb_sess = smbsrv_session_new(req->smb_conn, gensec_ctx);
-		NT_STATUS_HAVE_NO_MEMORY(smb_sess);
-		status = smbsrv_smb2_init_tcons(smb_sess);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto failed;
-		}
-	} else {
-		/* lookup an existing session */
-		smb_sess = smbsrv_session_find_sesssetup(req->smb_conn, vuid);
-	}
-
-	if (!smb_sess) {
-		return NT_STATUS_USER_SESSION_DELETED;
-	}
-
-	if (!smb_sess->gensec_ctx) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		DEBUG(1, ("Internal ERROR: no gensec_ctx on session: %s\n", nt_errstr(status)));
-		goto failed;
-	}
-
-	status = gensec_update(smb_sess->gensec_ctx, req, io->smb2.in.secblob, &io->smb2.out.secblob);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		io->smb2.out.uid = smb_sess->vuid;
-		return status;
-	} else if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
-
-	status = gensec_session_info(smb_sess->gensec_ctx, &session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
-		
-	/* Ensure this is marked as a 'real' vuid, not one
-	 * simply valid for the session setup leg */
-	status = smbsrv_session_sesssetup_finished(smb_sess, session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
-	req->session = smb_sess;
-
-	io->smb2.out.uid = smb_sess->vuid;
-	return status;
-
-failed:
-	talloc_free(smb_sess);
-	return auth_nt_status_squash(status);
-}
-
 static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sesssetup *io)
 {
 	uint16_t unknown1;
@@ -141,6 +52,130 @@ static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sessse
 	smb2srv_send_reply(req);
 }
 
+struct smb2srv_sesssetup_callback_ctx {
+	struct smb2srv_request *req;
+	union smb_sesssetup *io;
+	struct smbsrv_session *smb_sess;
+};
+
+static void smb2srv_sesssetup_callback(struct gensec_update_request *greq, void *private_data)
+{
+	struct smb2srv_sesssetup_callback_ctx *ctx = talloc_get_type(private_data,
+						     struct smb2srv_sesssetup_callback_ctx);
+	struct smb2srv_request *req = ctx->req;
+	union smb_sesssetup *io = ctx->io;
+	struct smbsrv_session *smb_sess = ctx->smb_sess;;
+	struct auth_session_info *session_info = NULL;
+	NTSTATUS status;
+
+	status = gensec_update_recv(greq, req, &io->smb2.out.secblob);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		goto done;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	status = gensec_session_info(smb_sess->gensec_ctx, &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	/* Ensure this is marked as a 'real' vuid, not one
+	 * simply valid for the session setup leg */
+	status = smbsrv_session_sesssetup_finished(smb_sess, session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+	req->session = smb_sess;
+
+done:
+	io->smb2.out.uid = smb_sess->vuid;
+failed:
+	req->status = auth_nt_status_squash(status);
+	smb2srv_sesssetup_send(req, io);
+}
+
+static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_sesssetup *io)
+{
+	NTSTATUS status;
+	struct smb2srv_sesssetup_callback_ctx *callback_ctx;
+	struct smbsrv_session *smb_sess = NULL;
+	uint64_t vuid;
+
+	io->smb2.out._pad	= 0;
+	io->smb2.out.uid	= 0;
+	io->smb2.out.secblob = data_blob(NULL, 0);
+
+	vuid = BVAL(req->in.hdr, SMB2_HDR_UID);
+
+	/*
+	 * only when we got '0' we should allocate a new session
+	 */
+	if (vuid == 0) {
+		struct gensec_security *gensec_ctx;
+
+		status = gensec_server_start(req, &gensec_ctx,
+					     req->smb_conn->connection->event.ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
+			goto failed;
+		}
+
+		gensec_set_credentials(gensec_ctx, req->smb_conn->negotiate.server_credentials);
+
+		gensec_set_target_service(gensec_ctx, "cifs");
+
+		gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SESSION_KEY);
+
+		status = gensec_start_mech_by_oid(gensec_ctx, GENSEC_OID_SPNEGO);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to start GENSEC SPNEGO server code: %s\n", nt_errstr(status)));
+			goto failed;
+		}
+
+		/* allocate a new session */
+		smb_sess = smbsrv_session_new(req->smb_conn, gensec_ctx);
+		if (!smb_sess) {
+			status = NT_STATUS_INSUFFICIENT_RESOURCES;
+			goto failed;
+		}
+		status = smbsrv_smb2_init_tcons(smb_sess);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto failed;
+		}
+	} else {
+		/* lookup an existing session */
+		smb_sess = smbsrv_session_find_sesssetup(req->smb_conn, vuid);
+	}
+
+	if (!smb_sess) {
+		status = NT_STATUS_USER_SESSION_DELETED;
+		goto failed;
+	}
+
+	if (!smb_sess->gensec_ctx) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		DEBUG(1, ("Internal ERROR: no gensec_ctx on session: %s\n", nt_errstr(status)));
+		goto failed;
+	}
+
+	callback_ctx = talloc(req, struct smb2srv_sesssetup_callback_ctx);
+	if (!callback_ctx) goto nomem;
+	callback_ctx->req	= req;
+	callback_ctx->io	= io;
+	callback_ctx->smb_sess	= smb_sess;
+
+	gensec_update_send(smb_sess->gensec_ctx, io->smb2.in.secblob,
+			   smb2srv_sesssetup_callback, callback_ctx);
+	return;
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+failed:
+	talloc_free(smb_sess);
+	req->status = auth_nt_status_squash(status);
+	smb2srv_sesssetup_send(req, io);
+}
+
 void smb2srv_sesssetup_recv(struct smb2srv_request *req)
 {
 	union smb_sesssetup *io;
@@ -155,12 +190,7 @@ void smb2srv_sesssetup_recv(struct smb2srv_request *req)
 	SMB2SRV_CHECK(smb2_pull_o16s16_blob(&req->in, io, req->in.body+0x0C, &io->smb2.in.secblob));
 	io->smb2.in.unknown4	= BVAL(req->in.body, 0x10);
 
-	req->status = smb2srv_sesssetup_backend(req, io);
-	if (req->control_flags & SMB2SRV_REQ_CTRL_FLAG_NOT_REPLY) {
-		talloc_free(req);
-		return;
-	}
-	smb2srv_sesssetup_send(req, io);
+	smb2srv_sesssetup_backend(req, io);
 }
 
 static NTSTATUS smb2srv_logoff_backend(struct smb2srv_request *req)
