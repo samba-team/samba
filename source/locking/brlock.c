@@ -1326,8 +1326,8 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 		}
 	}
 
-	if (num_deleted_windows_locks) {
-		/* Reduce the Windows lock reference count on this dev/ino pair. */
+	if(lp_posix_locking(fsp->conn->cnum) && num_deleted_windows_locks) {
+		/* Reduce the Windows lock POSIX reference count on this dev/ino pair. */
 		reduce_windows_lock_ref_count(fsp, num_deleted_windows_locks);
 	}
 }
