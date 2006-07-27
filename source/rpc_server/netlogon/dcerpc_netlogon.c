@@ -55,9 +55,7 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 	}
 	
 	pipe_state = talloc(dce_call->context, struct server_pipe_state);
-	if (!pipe_state) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(pipe_state);
 
 	pipe_state->client_challenge = *r->in.credentials;
 
@@ -152,9 +150,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	}
 
 	creds = talloc(mem_ctx, struct creds_CredentialState);
-	if (!creds) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(creds);
 
 	creds_server_init(creds, &pipe_state->client_challenge, 
 			  &pipe_state->server_challenge, mach_pwd,
@@ -412,9 +408,7 @@ static NTSTATUS netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALL
 	struct netr_SamInfo6 *sam6;
 	
 	user_info = talloc(mem_ctx, struct auth_usersupplied_info);
-	if (!user_info) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(user_info);
 
 	user_info->flags = 0;
 	user_info->mapped_state = False;
@@ -446,22 +440,18 @@ static NTSTATUS netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALL
 		user_info->client.domain_name = r->in.logon.password->identity_info.domain_name.string;
 		user_info->workstation_name = r->in.logon.password->identity_info.workstation.string;
 		
+		user_info->flags |= USER_INFO_INTERACTIVE_LOGON;
 		user_info->password_state = AUTH_PASSWORD_HASH;
+
 		user_info->password.hash.lanman = talloc(user_info, struct samr_Password);
-		if (!user_info->password.hash.lanman) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(user_info->password.hash.lanman);
 		*user_info->password.hash.lanman = r->in.logon.password->lmpassword;
 
 		user_info->password.hash.nt = talloc(user_info, struct samr_Password);
-		if (!user_info->password.hash.nt) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(user_info->password.hash.nt);
 		*user_info->password.hash.nt = r->in.logon.password->ntpassword;
 
-		user_info->flags |= USER_INFO_INTERACTIVE_LOGON;
-
-		break;		
+		break;
 	case 2:
 	case 6:
 
@@ -491,15 +481,12 @@ static NTSTATUS netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALL
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	nt_status = auth_convert_server_info_sambaseinfo(mem_ctx, server_info, &sam);
-
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
 	/* It appears that level 6 is not individually encrypted */
-	if ((r->in.validation_level != 6) 
-	    && memcmp(sam->key.key, zeros,  
-		      sizeof(sam->key.key)) != 0) {
-
+	if ((r->in.validation_level != 6) &&
+	    memcmp(sam->key.key, zeros, sizeof(sam->key.key)) != 0) {
 		/* This key is sent unencrypted without the ARCFOUR flag set */
 		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			creds_arcfour_crypt(creds, 
@@ -510,9 +497,8 @@ static NTSTATUS netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALL
 
 	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
 	/* It appears that level 6 is not individually encrypted */
-	if ((r->in.validation_level != 6) 
-	    && memcmp(sam->LMSessKey.key, zeros,  
-		      sizeof(sam->LMSessKey.key)) != 0) {
+	if ((r->in.validation_level != 6) &&
+	    memcmp(sam->LMSessKey.key, zeros, sizeof(sam->LMSessKey.key)) != 0) {
 		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			creds_arcfour_crypt(creds, 
 					    sam->LMSessKey.key, 
@@ -571,8 +557,8 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 		return nt_status;
 	}
 
-	if (!dce_call->conn->auth_state.auth_info
-	    || dce_call->conn->auth_state.auth_info->auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+	if (!dce_call->conn->auth_state.auth_info ||
+	    dce_call->conn->auth_state.auth_info->auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 	return netr_LogonSamLogon_base(dce_call, mem_ctx, r, creds);
@@ -909,9 +895,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 					      r->in.credential, 
 					      r->out.return_authenticator,
 					      NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
@@ -945,35 +929,25 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	}
 
 	info1 = talloc(mem_ctx, struct netr_DomainInfo1);
-	if (info1 == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(info1);
 
 	ZERO_STRUCTP(info1);
 
 	info1->num_trusts = ret2 + 1;
 	info1->trusts = talloc_array(mem_ctx, struct netr_DomainTrustInfo, 
 				       info1->num_trusts);
-	if (info1->trusts == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(info1->trusts);
 
 	status = fill_domain_primary_info(mem_ctx, res1[0], &info1->domaininfo, local_domain);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	for (i=0;i<ret2;i++) {
 		status = fill_domain_trust_info(mem_ctx, res2[i], &info1->trusts[i], NULL, False);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
 	status = fill_domain_trust_info(mem_ctx, res1[0], &info1->trusts[i], local_domain, True);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	r->out.info.info1 = info1;
 
@@ -1038,22 +1012,24 @@ static WERROR netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CT
 	}
 
 	r->out.info = talloc(mem_ctx, struct netr_DsRGetDCNameInfo);
-	if (!r->out.info) {
-		return WERR_NOMEM;
-	}
+	W_ERROR_HAVE_NO_MEMORY(r->out.info);
 
 	/* TODO: - return real IP address
 	 *       - check all r->in.* parameters (server_unc is ignored by w2k3!)
 	 */
 	r->out.info->dc_unc		= talloc_asprintf(mem_ctx, "\\\\%s.%s", lp_netbios_name(),lp_realm());
-	r->out.info->dc_address	= talloc_strdup(mem_ctx, "\\\\0.0.0.0");
+	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_unc);
+	r->out.info->dc_address		= talloc_strdup(mem_ctx, "\\\\0.0.0.0");
+	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_address);
 	r->out.info->dc_address_type	= 1;
 	r->out.info->domain_guid	= samdb_result_guid(res[0], "objectGUID");
 	r->out.info->domain_name	= samdb_result_string(res[0], "dnsDomain", NULL);
 	r->out.info->forest_name	= samdb_result_string(res[0], "dnsDomain", NULL);
 	r->out.info->dc_flags		= 0xE00001FD;
 	r->out.info->dc_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
+	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_site_name);
 	r->out.info->client_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
+	W_ERROR_HAVE_NO_MEMORY(r->out.info->client_site_name);
 
 	return WERR_OK;
 }
@@ -1178,7 +1154,6 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 	if (ret == -1) {
 		return WERR_GENERAL_FAILURE;		
 	}
-
 	if (ret != 1) {
 		return WERR_GENERAL_FAILURE;
 	}
@@ -1189,17 +1164,12 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 	if (ret == -1) {
 		return WERR_GENERAL_FAILURE;
 	}
-
 	if (ret != 1) {
 		return WERR_GENERAL_FAILURE;
 	}
 
-
-
 	trusts = talloc_array(mem_ctx, struct netr_DomainTrust, ret);
-	if (trusts == NULL) {
-		return WERR_NOMEM;
-	}
+	W_ERROR_HAVE_NO_MEMORY(trusts);
 	
 	r->out.count = 1;
 	r->out.trusts = trusts;
