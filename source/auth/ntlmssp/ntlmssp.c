@@ -108,28 +108,12 @@ static NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security,
 	}
 }
 
-/**
- * Next state function for the wrapped NTLMSSP state machine
- * 
- * @param gensec_security GENSEC state, initialised to NTLMSSP
- * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
- * @param in The request, as a DATA_BLOB
- * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
- * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent, 
- *                or NT_STATUS_OK if the user is authenticated. 
- */
-
-static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, 
-				      TALLOC_CTX *out_mem_ctx, 
-				      const DATA_BLOB input, DATA_BLOB *out) 
+static NTSTATUS gensec_ntlmssp_update_find(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
+					   const DATA_BLOB input, uint32_t *idx)
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
-	NTSTATUS status;
-
+	struct gensec_security *gensec_security = gensec_ntlmssp_state->gensec_security;
 	uint32_t ntlmssp_command;
-	int i;
-
-	*out = data_blob(NULL, 0);
+	uint32_t i;
 
 	if (gensec_ntlmssp_state->expected_state == NTLMSSP_DONE) {
 		/* We are strict here because other modules, which we
@@ -138,12 +122,6 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 
 		DEBUG(1, ("Called NTLMSSP after state machine was 'done'\n"));
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!out_mem_ctx) {
-		/* if the caller doesn't want to manage/own the memory, 
-		   we can put it on our context */
-		out_mem_ctx = gensec_ntlmssp_state;
 	}
 
 	if (!input.length) {
@@ -179,27 +157,53 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	}
 
 	for (i=0; i < ARRAY_SIZE(ntlmssp_callbacks); i++) {
-		if (ntlmssp_callbacks[i].role == gensec_ntlmssp_state->role 
-		    && ntlmssp_callbacks[i].ntlmssp_command == ntlmssp_command) {
-			status = ntlmssp_callbacks[i].fn(gensec_security, out_mem_ctx, input, out);
-			break;
+		if (ntlmssp_callbacks[i].role == gensec_ntlmssp_state->role &&
+		    ntlmssp_callbacks[i].ntlmssp_command == ntlmssp_command) {
+			*idx = i;
+			return NT_STATUS_OK;
 		}
 	}
 
-	if (i == ARRAY_SIZE(ntlmssp_callbacks)) {
+	DEBUG(1, ("failed to find NTLMSSP callback for NTLMSSP mode %u, command %u\n", 
+		  gensec_ntlmssp_state->role, ntlmssp_command)); 
 		
-		DEBUG(1, ("failed to find NTLMSSP callback for NTLMSSP mode %u, command %u\n", 
-			  gensec_ntlmssp_state->role, ntlmssp_command)); 
-		
-		return NT_STATUS_INVALID_PARAMETER;
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
+/**
+ * Next state function for the wrapped NTLMSSP state machine
+ * 
+ * @param gensec_security GENSEC state, initialised to NTLMSSP
+ * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
+ * @param in The request, as a DATA_BLOB
+ * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
+ * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent, 
+ *                or NT_STATUS_OK if the user is authenticated. 
+ */
+
+static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, 
+				      TALLOC_CTX *out_mem_ctx, 
+				      const DATA_BLOB input, DATA_BLOB *out)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	NTSTATUS status;
+	uint32_t i;
+
+	*out = data_blob(NULL, 0);
+
+	if (!out_mem_ctx) {
+		/* if the caller doesn't want to manage/own the memory, 
+		   we can put it on our context */
+		out_mem_ctx = gensec_ntlmssp_state;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		/* error or more processing required */
-		return status;
-	}
+	status = gensec_ntlmssp_update_find(gensec_ntlmssp_state, input, &i);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = ntlmssp_callbacks[i].fn(gensec_security, out_mem_ctx, input, out);
+	NT_STATUS_NOT_OK_RETURN(status);
 	
-	return status;
+	return NT_STATUS_OK;
 }
 
 /**
