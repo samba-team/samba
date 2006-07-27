@@ -274,6 +274,7 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	state.mem_ctx = talloc_init("smbcli_list_old");
 	state.dirlist_len = 0;
 	state.total_received = 0;
+	state.data_level = RAW_SEARCH_DATA_SEARCH;
 
 	state.dirlist = talloc_new(state.mem_ctx);
 	mask = talloc_strdup(state.mem_ctx, Mask);
