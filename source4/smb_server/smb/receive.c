@@ -501,16 +501,19 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	/* see if the vuid is valid */
 	if ((flags & NEED_SESS) && !req->session) {
+		status = NT_STATUS_DOS(ERRSRV, ERRbaduid);
 		/* amazingly, the error code depends on the command */
 		switch (type) {
-			case SMBntcreateX:
-			case SMBntcancel:
-			case SMBulogoffX:
-				status = NT_STATUS_DOS(ERRSRV, ERRbaduid);
-				break;
-			default:
+		case SMBntcreateX:
+		case SMBntcancel:
+		case SMBulogoffX:
+			break;
+		default:
+			if (req->smb_conn->config.nt_status_support &&
+			    req->smb_conn->negotiate.client_caps & CAP_STATUS32) {
 				status = NT_STATUS_INVALID_HANDLE;
-				break;
+			}
+			break;
 		}
 		/* 
 		 * TODO:
@@ -530,16 +533,19 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	/* does this protocol need a valid tree connection? */
 	if ((flags & NEED_TCON) && !req->tcon) {
+		status = NT_STATUS_DOS(ERRSRV, ERRinvnid);
 		/* amazingly, the error code depends on the command */
 		switch (type) {
-			case SMBntcreateX:
-			case SMBntcancel:
-			case SMBtdis:
-				status = NT_STATUS_DOS(ERRSRV, ERRinvnid);
-				break;
-			default:
+		case SMBntcreateX:
+		case SMBntcancel:
+		case SMBtdis:
+			break;
+		default:
+			if (req->smb_conn->config.nt_status_support &&
+			    req->smb_conn->negotiate.client_caps & CAP_STATUS32) {
 				status = NT_STATUS_INVALID_HANDLE;
-				break;
+			}
+			break;
 		}
 		/* 
 		 * TODO:
