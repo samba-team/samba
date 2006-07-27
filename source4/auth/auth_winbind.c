@@ -46,6 +46,18 @@ static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response
 	}
 }
 
+static NTSTATUS winbind_want_check(struct auth_method_context *ctx,
+				   TALLOC_CTX *mem_ctx,
+				   const struct auth_usersupplied_info *user_info)
+{
+	if (!user_info->mapped.account_name || !*user_info->mapped.account_name) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	/* TODO: maybe limit the user scope to remote users only */
+	return NT_STATUS_OK;
+}
+
 /* Authenticate a user with a challenge/response */
 static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 				       TALLOC_CTX *mem_ctx,
@@ -129,6 +141,7 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 static const struct auth_operations winbind_ops = {
 	.name		= "winbind",
 	.get_challenge	= auth_get_challenge_not_implemented,
+	.want_check	= winbind_want_check,
 	.check_password	= winbind_check_password
 };
 

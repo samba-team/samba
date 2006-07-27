@@ -30,21 +30,36 @@
  * anonymou logons to be dealt with in one place.  Non-anonymou logons 'fail'
  * and pass onto the next module.
  **/
-static NTSTATUS anonymous_check_password(struct auth_method_context *ctx,
-			      		 TALLOC_CTX *mem_ctx,
-					 const struct auth_usersupplied_info *user_info, 
-					 struct auth_serversupplied_info **_server_info)
+static NTSTATUS anonymous_want_check(struct auth_method_context *ctx,
+			      	     TALLOC_CTX *mem_ctx,
+				     const struct auth_usersupplied_info *user_info)
 {
 	if (user_info->client.account_name && *user_info->client.account_name) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
+	return NT_STATUS_OK;
+}
+
+/**
+ * Return a anonymous logon for anonymous users (username = "")
+ *
+ * Typically used as the first module in the auth chain, this allows
+ * anonymou logons to be dealt with in one place.  Non-anonymou logons 'fail'
+ * and pass onto the next module.
+ **/
+static NTSTATUS anonymous_check_password(struct auth_method_context *ctx,
+			      		 TALLOC_CTX *mem_ctx,
+					 const struct auth_usersupplied_info *user_info, 
+					 struct auth_serversupplied_info **_server_info)
+{
 	return auth_anonymous_server_info(mem_ctx, _server_info);
 }
 
 static struct auth_operations anonymous_auth_ops = {
 	.name		= "anonymous",
 	.get_challenge	= auth_get_challenge_not_implemented,
+	.want_check	= anonymous_want_check,
 	.check_password	= anonymous_check_password
 };
 
