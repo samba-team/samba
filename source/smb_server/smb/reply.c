@@ -1776,25 +1776,106 @@ void smbsrv_reply_getattrE(struct smbsrv_request *req)
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_qfileinfo(req->ntvfs, info));
 }
 
+void smbsrv_reply_sesssetup_send(struct smbsrv_request *req,
+				 union smb_sesssetup *io,
+				 NTSTATUS status)
+{
+	switch (io->old.level) {
+	case RAW_SESSSETUP_OLD:
+		if (!NT_STATUS_IS_OK(status)) {
+			smbsrv_send_error(req, status);
+			return;
+		}
+
+		/* construct reply */
+		smbsrv_setup_reply(req, 3, 0);
+
+		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
+		SSVAL(req->out.vwv, VWV(1), 0);
+		SSVAL(req->out.vwv, VWV(2), io->old.out.action);
+
+		SSVAL(req->out.hdr, HDR_UID, io->old.out.vuid);
+
+		smbsrv_chain_reply(req);
+		return;
+
+	case RAW_SESSSETUP_NT1:
+		if (!NT_STATUS_IS_OK(status)) {
+			smbsrv_send_error(req, status);
+			return;
+		}
+
+		/* construct reply */
+		smbsrv_setup_reply(req, 3, 0);
+
+		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
+		SSVAL(req->out.vwv, VWV(1), 0);
+		SSVAL(req->out.vwv, VWV(2), io->nt1.out.action);
+
+		SSVAL(req->out.hdr, HDR_UID, io->nt1.out.vuid);
+
+		req_push_str(req, NULL, io->nt1.out.os, -1, STR_TERMINATE);
+		req_push_str(req, NULL, io->nt1.out.lanman, -1, STR_TERMINATE);
+		req_push_str(req, NULL, io->nt1.out.domain, -1, STR_TERMINATE);
+
+		smbsrv_chain_reply(req);
+		return;
+
+	case RAW_SESSSETUP_SPNEGO:
+		if (!NT_STATUS_IS_OK(status) && 
+		    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			smbsrv_send_error(req, status);
+			return;
+		}
+
+		/* construct reply */
+		smbsrv_setup_reply(req, 4, io->spnego.out.secblob.length);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			smbsrv_setup_error(req, status);
+		}
+
+		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
+		SSVAL(req->out.vwv, VWV(1), 0);
+		SSVAL(req->out.vwv, VWV(2), io->spnego.out.action);
+		SSVAL(req->out.vwv, VWV(3), io->spnego.out.secblob.length);
+
+		SSVAL(req->out.hdr, HDR_UID, io->spnego.out.vuid);
+
+		memcpy(req->out.data, io->spnego.out.secblob.data, io->spnego.out.secblob.length);
+		req_push_str(req, NULL, io->spnego.out.os,        -1, STR_TERMINATE);
+		req_push_str(req, NULL, io->spnego.out.lanman,    -1, STR_TERMINATE);
+		req_push_str(req, NULL, io->spnego.out.workgroup, -1, STR_TERMINATE);
+
+		smbsrv_chain_reply(req);
+		return;
+
+	case RAW_SESSSETUP_SMB2:
+		break;
+	}
+
+	smbsrv_send_error(req, NT_STATUS_INTERNAL_ERROR);
+}
 
 /****************************************************************************
 reply to an old style session setup command
 ****************************************************************************/
 static void reply_sesssetup_old(struct smbsrv_request *req)
 {
-	NTSTATUS status;
-	union smb_sesssetup sess;
 	uint8_t *p;
 	uint16_t passlen;
+	union smb_sesssetup *io;
 
-	sess.old.level = RAW_SESSSETUP_OLD;
+	SMBSRV_TALLOC_IO_PTR(io, union smb_sesssetup);
+
+	io->old.level = RAW_SESSSETUP_OLD;
 
 	/* parse request */
-	sess.old.in.bufsize = SVAL(req->in.vwv, VWV(2));
-	sess.old.in.mpx_max = SVAL(req->in.vwv, VWV(3));
-	sess.old.in.vc_num  = SVAL(req->in.vwv, VWV(4));
-	sess.old.in.sesskey = IVAL(req->in.vwv, VWV(5));
-	passlen             = SVAL(req->in.vwv, VWV(7));
+	io->old.in.bufsize = SVAL(req->in.vwv, VWV(2));
+	io->old.in.mpx_max = SVAL(req->in.vwv, VWV(3));
+	io->old.in.vc_num  = SVAL(req->in.vwv, VWV(4));
+	io->old.in.sesskey = IVAL(req->in.vwv, VWV(5));
+	passlen            = SVAL(req->in.vwv, VWV(7));
 
 	/* check the request isn't malformed */
 	if (req_data_oob(req, req->in.data, passlen)) {
@@ -1803,58 +1884,42 @@ static void reply_sesssetup_old(struct smbsrv_request *req)
 	}
 	
 	p = req->in.data;
-	if (!req_pull_blob(req, p, passlen, &sess.old.in.password)) {
+	if (!req_pull_blob(req, p, passlen, &io->old.in.password)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += passlen;
 	
-	p += req_pull_string(req, &sess.old.in.user,   p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &sess.old.in.domain, p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &sess.old.in.os,     p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &sess.old.in.lanman, p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &io->old.in.user,   p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &io->old.in.domain, p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &io->old.in.os,     p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &io->old.in.lanman, p, -1, STR_TERMINATE);
 
 	/* call the generic handler */
-	status = smbsrv_sesssetup_backend(req, &sess);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_send_error(req, status);
-		return;
-	}
-
-	/* construct reply */
-	smbsrv_setup_reply(req, 3, 0);
-
-	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
-	SSVAL(req->out.vwv, VWV(1), 0);
-	SSVAL(req->out.vwv, VWV(2), sess.old.out.action);
-
-	SSVAL(req->out.hdr, HDR_UID, sess.old.out.vuid);
-
-	smbsrv_chain_reply(req);
+	smbsrv_sesssetup_backend(req, io);
 }
-
 
 /****************************************************************************
 reply to an NT1 style session setup command
 ****************************************************************************/
 static void reply_sesssetup_nt1(struct smbsrv_request *req)
 {
-	NTSTATUS status;
-	union smb_sesssetup sess;
 	uint8_t *p;
 	uint16_t passlen1, passlen2;
+	union smb_sesssetup *io;
 
-	sess.nt1.level = RAW_SESSSETUP_NT1;
+	SMBSRV_TALLOC_IO_PTR(io, union smb_sesssetup);
+
+	io->nt1.level = RAW_SESSSETUP_NT1;
 
 	/* parse request */
-	sess.nt1.in.bufsize      = SVAL(req->in.vwv, VWV(2));
-	sess.nt1.in.mpx_max      = SVAL(req->in.vwv, VWV(3));
-	sess.nt1.in.vc_num       = SVAL(req->in.vwv, VWV(4));
-	sess.nt1.in.sesskey      = IVAL(req->in.vwv, VWV(5));
-	passlen1                 = SVAL(req->in.vwv, VWV(7));
-	passlen2                 = SVAL(req->in.vwv, VWV(8));
-	sess.nt1.in.capabilities = IVAL(req->in.vwv, VWV(11));
+	io->nt1.in.bufsize      = SVAL(req->in.vwv, VWV(2));
+	io->nt1.in.mpx_max      = SVAL(req->in.vwv, VWV(3));
+	io->nt1.in.vc_num       = SVAL(req->in.vwv, VWV(4));
+	io->nt1.in.sesskey      = IVAL(req->in.vwv, VWV(5));
+	passlen1                = SVAL(req->in.vwv, VWV(7));
+	passlen2                = SVAL(req->in.vwv, VWV(8));
+	io->nt1.in.capabilities = IVAL(req->in.vwv, VWV(11));
 
 	/* check the request isn't malformed */
 	if (req_data_oob(req, req->in.data, passlen1) ||
@@ -1864,44 +1929,24 @@ static void reply_sesssetup_nt1(struct smbsrv_request *req)
 	}
 	
 	p = req->in.data;
-	if (!req_pull_blob(req, p, passlen1, &sess.nt1.in.password1)) {
+	if (!req_pull_blob(req, p, passlen1, &io->nt1.in.password1)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += passlen1;
-	if (!req_pull_blob(req, p, passlen2, &sess.nt1.in.password2)) {
+	if (!req_pull_blob(req, p, passlen2, &io->nt1.in.password2)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += passlen2;
 	
-	p += req_pull_string(req, &sess.nt1.in.user,   p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &sess.nt1.in.domain, p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &sess.nt1.in.os,     p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &sess.nt1.in.lanman, p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &io->nt1.in.user,   p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &io->nt1.in.domain, p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &io->nt1.in.os,     p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &io->nt1.in.lanman, p, -1, STR_TERMINATE);
 
 	/* call the generic handler */
-	status = smbsrv_sesssetup_backend(req, &sess);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_send_error(req, status);
-		return;
-	}
-
-	/* construct reply */
-	smbsrv_setup_reply(req, 3, 0);
-
-	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
-	SSVAL(req->out.vwv, VWV(1), 0);
-	SSVAL(req->out.vwv, VWV(2), sess.nt1.out.action);
-
-	SSVAL(req->out.hdr, HDR_UID, sess.nt1.out.vuid);
-
-	req_push_str(req, NULL, sess.nt1.out.os, -1, STR_TERMINATE);
-	req_push_str(req, NULL, sess.nt1.out.lanman, -1, STR_TERMINATE);
-	req_push_str(req, NULL, sess.nt1.out.domain, -1, STR_TERMINATE);
-
-	smbsrv_chain_reply(req);
+	smbsrv_sesssetup_backend(req, io);
 }
 
 
@@ -1910,61 +1955,35 @@ reply to an SPNEGO style session setup command
 ****************************************************************************/
 static void reply_sesssetup_spnego(struct smbsrv_request *req)
 {
-	NTSTATUS status;
-	union smb_sesssetup sess;
 	uint8_t *p;
 	uint16_t blob_len;
+	union smb_sesssetup *io;
 
-	sess.spnego.level = RAW_SESSSETUP_SPNEGO;
+	SMBSRV_TALLOC_IO_PTR(io, union smb_sesssetup);
+
+	io->spnego.level = RAW_SESSSETUP_SPNEGO;
 
 	/* parse request */
-	sess.spnego.in.bufsize      = SVAL(req->in.vwv, VWV(2));
-	sess.spnego.in.mpx_max      = SVAL(req->in.vwv, VWV(3));
-	sess.spnego.in.vc_num       = SVAL(req->in.vwv, VWV(4));
-	sess.spnego.in.sesskey      = IVAL(req->in.vwv, VWV(5));
-	blob_len                    = SVAL(req->in.vwv, VWV(7));
-	sess.spnego.in.capabilities = IVAL(req->in.vwv, VWV(10));
+	io->spnego.in.bufsize      = SVAL(req->in.vwv, VWV(2));
+	io->spnego.in.mpx_max      = SVAL(req->in.vwv, VWV(3));
+	io->spnego.in.vc_num       = SVAL(req->in.vwv, VWV(4));
+	io->spnego.in.sesskey      = IVAL(req->in.vwv, VWV(5));
+	blob_len                   = SVAL(req->in.vwv, VWV(7));
+	io->spnego.in.capabilities = IVAL(req->in.vwv, VWV(10));
 
 	p = req->in.data;
-	if (!req_pull_blob(req, p, blob_len, &sess.spnego.in.secblob)) {
+	if (!req_pull_blob(req, p, blob_len, &io->spnego.in.secblob)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += blob_len;
 	
-	p += req_pull_string(req, &sess.spnego.in.os,        p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &sess.spnego.in.lanman,    p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &sess.spnego.in.workgroup, p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &io->spnego.in.os,        p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &io->spnego.in.lanman,    p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &io->spnego.in.workgroup, p, -1, STR_TERMINATE);
 
 	/* call the generic handler */
-	status = smbsrv_sesssetup_backend(req, &sess);
-
-	if (!NT_STATUS_IS_OK(status) && 
-	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		smbsrv_send_error(req, status);
-		return;
-	}
-
-	/* construct reply */
-	smbsrv_setup_reply(req, 4, sess.spnego.out.secblob.length);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		smbsrv_setup_error(req, status);
-	}
-
-	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
-	SSVAL(req->out.vwv, VWV(1), 0);
-	SSVAL(req->out.vwv, VWV(2), sess.spnego.out.action);
-	SSVAL(req->out.vwv, VWV(3), sess.spnego.out.secblob.length);
-
-	SSVAL(req->out.hdr, HDR_UID, sess.spnego.out.vuid);
-
-	memcpy(req->out.data, sess.spnego.out.secblob.data, sess.spnego.out.secblob.length);
-	req_push_str(req, NULL, sess.spnego.out.os,        -1, STR_TERMINATE);
-	req_push_str(req, NULL, sess.spnego.out.lanman,    -1, STR_TERMINATE);
-	req_push_str(req, NULL, sess.spnego.out.workgroup, -1, STR_TERMINATE);
-
-	smbsrv_chain_reply(req);
+	smbsrv_sesssetup_backend(req, io);
 }
 
 
