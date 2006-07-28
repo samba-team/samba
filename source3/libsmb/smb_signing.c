@@ -23,9 +23,10 @@
 
 /* Lookup a packet's MID (multiplex id) and figure out it's sequence number */
 struct outstanding_packet_lookup {
+	struct outstanding_packet_lookup *prev, *next;
 	uint16 mid;
 	uint32 reply_seq_num;
-	struct outstanding_packet_lookup *prev, *next;
+	BOOL can_delete; /* Set to False in trans state. */
 };
 
 struct smb_basic_signing_context {
@@ -51,6 +52,7 @@ static BOOL store_sequence_for_reply(struct outstanding_packet_lookup **list,
 
 	t->mid = mid;
 	t->reply_seq_num = reply_seq_num;
+	t->can_delete = True;
 
 	/*
 	 * Add to the *start* of the list not the end of the list.
@@ -77,8 +79,23 @@ static BOOL get_sequence_for_reply(struct outstanding_packet_lookup **list,
 			*reply_seq_num = t->reply_seq_num;
 			DEBUG(10,("get_sequence_for_reply: found seq = %u mid = %u\n",
 				(unsigned int)t->reply_seq_num, (unsigned int)t->mid ));
-			DLIST_REMOVE(*list, t);
-			SAFE_FREE(t);
+			if (t->can_delete) {
+				DLIST_REMOVE(*list, t);
+				SAFE_FREE(t);
+			}
+			return True;
+		}
+	}
+	return False;
+}
+
+static BOOL set_sequence_can_delete_flag(struct outstanding_packet_lookup **list, uint16 mid, BOOL can_delete_entry)
+{
+	struct outstanding_packet_lookup *t;
+
+	for (t = *list; t; t = t->next) {
+		if (t->mid == mid) {
+			t->can_delete = can_delete_entry;
 			return True;
 		}
 	}
@@ -576,6 +593,52 @@ BOOL cli_check_sign_mac(struct cli_state *cli)
 		free_signing_context(&cli->sign_info);	
 		return False;
 	}
+	return True;
+}
+
+/***********************************************************
+ Enter trans/trans2/nttrans state.
+************************************************************/
+
+BOOL client_set_trans_sign_state_on(struct cli_state *cli, uint16 mid)
+{
+	struct smb_sign_info *si = &cli->sign_info;
+	struct smb_basic_signing_context *data = (struct smb_basic_signing_context *)si->signing_context;
+
+	if (!si->doing_signing) {
+		return True;
+	}
+
+	if (!set_sequence_can_delete_flag(&data->outstanding_packet_list, mid, False)) {
+		return False;
+	}
+
+	return True;
+}
+
+/***********************************************************
+ Leave trans/trans2/nttrans state.
+************************************************************/
+
+BOOL client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid)
+{
+	uint32 reply_seq_num;
+	struct smb_sign_info *si = &cli->sign_info;
+	struct smb_basic_signing_context *data = (struct smb_basic_signing_context *)si->signing_context;
+
+	if (!si->doing_signing) {
+		return True;
+	}
+
+	if (!set_sequence_can_delete_flag(&data->outstanding_packet_list, mid, True)) {
+		return False;
+	}
+
+	/* Now delete the stored mid entry. */
+	if (!get_sequence_for_reply(&data->outstanding_packet_list, mid, &reply_seq_num)) {
+		return False;
+	}
+
 	return True;
 }
 
