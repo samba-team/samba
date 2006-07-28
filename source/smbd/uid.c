@@ -420,4 +420,3 @@ BOOL unbecome_user(void)
 	pop_conn_ctx();
 	return True;
 }
-
