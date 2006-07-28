@@ -64,7 +64,7 @@ static void smb2srv_sesssetup_callback(struct gensec_update_request *greq, void 
 						     struct smb2srv_sesssetup_callback_ctx);
 	struct smb2srv_request *req = ctx->req;
 	union smb_sesssetup *io = ctx->io;
-	struct smbsrv_session *smb_sess = ctx->smb_sess;;
+	struct smbsrv_session *smb_sess = ctx->smb_sess;
 	struct auth_session_info *session_info = NULL;
 	NTSTATUS status;
 
