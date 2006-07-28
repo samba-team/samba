@@ -713,12 +713,14 @@ BOOL cli_check_msdfs_proxy( struct cli_state *cli, const char *sharename,
 	res = cli_dfs_get_referral(cli, fullpath, &refs, &num_refs, &consumed);
 
 	if (!cli_tdis(cli)) {
+		SAFE_FREE( refs );
 		return False;
 	}
 
 	cli->cnum = cnum;
 		
 	if (!res || !num_refs ) {
+		SAFE_FREE( refs );
 		return False;
 	}
 	
@@ -726,8 +728,10 @@ BOOL cli_check_msdfs_proxy( struct cli_state *cli, const char *sharename,
 
 	/* check that this is not a self-referral */
 
-	if ( strequal( cli->desthost, newserver ) && strequal( sharename, newshare ) )
+	if ( strequal( cli->desthost, newserver ) && strequal( sharename, newshare ) ) {
+		SAFE_FREE( refs );
 		return False;
+	}
 	
 	SAFE_FREE( refs );
 	
