@@ -634,8 +634,8 @@ BOOL tls_support(struct tls_params *params)
 
 #else
 
-/* for systems without tls we just map the tls socket calls to the
-   normal socket calls */
+/* for systems without tls we just fail the operations, and the caller
+ * will retain the original socket */
 
 struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 {
@@ -650,9 +650,6 @@ struct socket_context *tls_init_server(struct tls_params *params,
 				    struct fd_event *fde, 
 				    const char *plain_chars)
 {
-	if (plain_chars) {
-		return socket;
-	}
 	return NULL;
 }
 
