@@ -37,6 +37,7 @@ struct pam_auth_crap_state {
 	uint32_t logon_parameters;
 	const char *domain_name;
 	const char *user_name;
+	const char *unix_username;
 	const char *workstation;
 	DATA_BLOB chal, nt_resp, lm_resp;
 
@@ -88,6 +89,8 @@ struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 
 	state->user_name = talloc_strdup(state, user);
 	if (state->user_name == NULL) goto failed;
+
+	state->unix_username = NULL;
 
 	state->workstation = talloc_strdup(state, workstation);
 	if (state->workstation == NULL) goto failed;
@@ -255,6 +258,12 @@ static void pam_auth_crap_recv_samlogon(struct rpc_request *req)
 		talloc_steal(state, base->domain.string);
 	}
 
+	state->unix_username = talloc_asprintf(state, "%s%s%s", 
+					       state->domain_name,
+					       lp_winbind_separator(),
+					       state->user_name);
+	if (composite_nomem(state->unix_username, state->ctx)) return;
+
 	composite_done(state->ctx);
 }
 
@@ -273,13 +282,7 @@ NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
 		info3->data = talloc_steal(mem_ctx, state->info3.data);
 		*user_session_key = state->user_session_key;
 		*lm_key = state->lm_key;
-		*unix_username = talloc_asprintf(mem_ctx, "%s%s%s", 
-						 state->domain_name,
-						 lp_winbind_separator(),
-						 state->user_name);
-		if (!*unix_username) {
-			status = NT_STATUS_NO_MEMORY;
-		}
+		*unix_username = talloc_steal(mem_ctx, state->unix_username);
 	}
 	talloc_free(state);
 	return status;
