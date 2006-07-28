@@ -194,6 +194,7 @@ static void websrv_accept(struct stream_connection *conn)
 	struct task_server *task = talloc_get_type(conn->private, struct task_server);
 	struct esp_data *edata = talloc_get_type(task->private, struct esp_data);
 	struct websrv_context *web;
+	struct socket_context *tls_socket;
 
 	web = talloc_zero(conn, struct websrv_context);
 	if (web == NULL) goto failed;
@@ -209,9 +210,16 @@ static void websrv_accept(struct stream_connection *conn)
 			websrv_timeout, web);
 
 	/* Overwrite the socket with a (possibly) TLS socket */
-	conn->socket = tls_init_server(edata->tls_params, conn->socket, 
-				       conn->event.fde, "GPHO");
-	if (conn->socket == NULL) goto failed;
+	tls_socket = tls_init_server(edata->tls_params, conn->socket, 
+				     conn->event.fde, "GPHO");
+	/* We might not have TLS, or it might not have initilised */
+	if (tls_socket) {
+		talloc_unlink(conn, conn->socket);
+		talloc_steal(conn, tls_socket);
+		conn->socket = tls_socket;
+	} else {
+		DEBUG(3, ("TLS not available for web_server connections\n"));
+	}
 
 	return;
 
