@@ -44,10 +44,8 @@ void msg_pool_usage(int msg_type, struct process_id src_pid,
 		return;
 	}
 	
-	become_root();
 	message_send_pid(src_pid, MSG_POOL_USAGE,
 			 reply, strlen(reply)+1, True);
-	unbecome_root();
 
 	SAFE_FREE(reply);
 }

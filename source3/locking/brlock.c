@@ -816,11 +816,9 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
 				procid_str_static(&pend_lock->context.pid )));
 
-			become_root();
 			message_send_pid(pend_lock->context.pid,
 					MSG_SMB_UNLOCK,
 					NULL, 0, True);
-			unbecome_root();
 		}
 	}
 
@@ -985,11 +983,9 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
 				procid_str_static(&pend_lock->context.pid )));
 
-			become_root();
 			message_send_pid(pend_lock->context.pid,
 					MSG_SMB_UNLOCK,
 					NULL, 0, True);
-			unbecome_root();
 		}
 	}
 
@@ -1306,11 +1302,9 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 
 				/* We could send specific lock info here... */
 				if (brl_pending_overlap(lock, pend_lock)) {
-					become_root();
 					message_send_pid(pend_lock->context.pid,
 							MSG_SMB_UNLOCK,
 							NULL, 0, True);
-					unbecome_root();
 				}
 			}
 
