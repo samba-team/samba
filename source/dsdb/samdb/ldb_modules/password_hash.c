@@ -44,6 +44,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "ads.h"
 #include "hdb.h"
+#include "dsdb/samdb/ldb_modules/password_modules.h"
 
 /* If we have decided there is reason to work on this request, then
  * setup all the password hash types correctly.
@@ -571,6 +572,13 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+	/* If the caller is manipulating the local passwords directly, let them pass */
+	if (ldb_dn_compare_base(module->ldb, 
+				ldb_dn_explode(req, LOCAL_BASE),
+				req->op.add.message->dn) == 0) {
+		return ldb_next_request(module, req);
+	}
+
 	/* nobody must touch password Histories */
 	if (ldb_msg_find_element(req->op.add.message, "sambaNTPwdHistory") ||
 	    ldb_msg_find_element(req->op.add.message, "sambaLMPwdHistory")) {
@@ -740,6 +748,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	struct ldb_message_element *sambaAttr;
 	struct ldb_message_element *ntAttr;
 	struct ldb_message_element *lmAttr;
+	struct ldb_message *msg;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "password_hash_modify\n");
 
@@ -747,6 +756,13 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		return ldb_next_request(module, req);
 	}
 	
+	/* If the caller is manipulating the local passwords directly, let them pass */
+	if (ldb_dn_compare_base(module->ldb, 
+				ldb_dn_explode(req, LOCAL_BASE),
+				req->op.mod.message->dn) == 0) {
+		return ldb_next_request(module, req);
+	}
+
 	/* nobody must touch password Histories */
 	if (ldb_msg_find_element(req->op.mod.message, "sambaNTPwdHistory") ||
 	    ldb_msg_find_element(req->op.mod.message, "sambaLMPwdHistory")) {
@@ -799,16 +815,16 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	*(ac->down_req) = *req; /* copy the request */
 
 	/* use a new message structure so that we can modify it */
-	ac->down_req->op.mod.message = ldb_msg_copy_shallow(ac->down_req, req->op.mod.message);
+	ac->down_req->op.mod.message = msg = ldb_msg_copy_shallow(ac->down_req, req->op.mod.message);
 
 	/* - remove any imodification to the password from the first commit
 	 *   we will make the real modification later */
-	if (sambaAttr) ldb_msg_remove_attr(ac->down_req->op.mod.message, "sambaPassword");
-	if (ntAttr) ldb_msg_remove_attr(ac->down_req->op.mod.message, "ntPwdHash");
-	if (lmAttr) ldb_msg_remove_attr(ac->down_req->op.mod.message, "lmPwdHash");
+	if (sambaAttr) ldb_msg_remove_attr(msg, "sambaPassword");
+	if (ntAttr) ldb_msg_remove_attr(msg, "ntPwdHash");
+	if (lmAttr) ldb_msg_remove_attr(msg, "lmPwdHash");
 
 	/* if there was nothing else to be modify skip to next step */
-	if (ac->down_req->op.mod.message->num_elements == 0) {
+	if (msg->num_elements == 0) {
 		talloc_free(ac->down_req);
 		ac->down_req = NULL;
 		return password_hash_mod_search_self(h);
