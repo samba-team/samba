@@ -258,10 +258,9 @@ void save_re_uid(void)
 /****************************************************************************
  and restore them!
 ****************************************************************************/
-void restore_re_uid(void)
-{
-	set_effective_uid(0);
 
+static void restore_re_uid_fromroot(void)
+{
 #if USE_SETRESUID
 	setresuid(saved_ruid, saved_euid, -1);
 #elif USE_SETREUID
@@ -280,6 +279,33 @@ void restore_re_uid(void)
 	assert_uid(saved_ruid, saved_euid);
 }
 
+void restore_re_uid(void)
+{
+	set_effective_uid(0);
+	restore_re_uid_fromroot();
+}
+
+/****************************************************************************
+ Lightweight become root - no group change.
+****************************************************************************/
+
+void become_root_uid_only(void)
+{
+	save_re_uid();
+	set_effective_uid(0);
+}
+
+/****************************************************************************
+ Lightweight unbecome root - no group change. Expects we are root already,
+ saves errno across call boundary.
+****************************************************************************/
+
+void unbecome_root_uid_only(void)
+{
+	int saved_errno = errno;
+	restore_re_uid_fromroot();
+	errno = saved_errno;
+}
 
 /****************************************************************************
  save the real and effective gid for later restoration. Used by the 

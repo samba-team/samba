@@ -2458,9 +2458,9 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 				DEBUG(5,("set_canon_ace_list: acl group control on and current user in file %s primary group.\n",
 					fsp->fsp_name ));
 
-				become_root();
+				become_root_uid_only();
 				sret = SMB_VFS_SYS_ACL_SET_FILE(conn, fsp->fsp_name, the_acl_type, the_acl);
-				unbecome_root();
+				unbecome_root_uid_only();
 				if (sret == 0) {
 					ret = True;	
 				}
@@ -2489,9 +2489,9 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 				DEBUG(5,("set_canon_ace_list: acl group control on and current user in file %s primary group.\n",
 					fsp->fsp_name ));
 
-				become_root();
+				become_root_uid_only();
 				sret = SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, the_acl);
-				unbecome_root();
+				unbecome_root_uid_only();
 				if (sret == 0) {
 					ret = True;
 				}
@@ -3018,10 +3018,10 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 		/* Case (3) */
 		     ( has_restore_priv ) ) {
 
-			become_root();
+			become_root_uid_only();
 			/* Keep the current file gid the same - take ownership doesn't imply group change. */
 			ret = SMB_VFS_CHOWN(conn, fname, uid, (gid_t)-1);
-			unbecome_root();
+			unbecome_root_uid_only();
 			return ret;
 		}
 	}
@@ -3045,10 +3045,10 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 	*/
 	uid = current_user.ut.uid;
 
-	become_root();
+	become_root_uid_only();
 	/* Keep the current file gid the same. */
 	ret = SMB_VFS_FCHOWN(fsp, fsp->fh->fd, uid, (gid_t)-1);
-	unbecome_root();
+	unbecome_root_uid_only();
 
 	close_file_fchmod(fsp);
 
@@ -3226,9 +3226,9 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 								"current user in file %s primary group. Override delete_def_acl\n",
 								fsp->fsp_name ));
 
-							become_root();
+							become_root_uid_only();
 							sret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, fsp->fsp_name);
-							unbecome_root();
+							unbecome_root_uid_only();
 						}
 
 						if (sret == -1) {
@@ -3273,9 +3273,9 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 								"current user in file %s primary group. Override chmod\n",
 								fsp->fsp_name ));
 
-							become_root();
+							become_root_uid_only();
 							sret = SMB_VFS_CHMOD(conn,fsp->fsp_name, posix_perms);
-							unbecome_root();
+							unbecome_root_uid_only();
 						}
 
 						if (sret == -1) {

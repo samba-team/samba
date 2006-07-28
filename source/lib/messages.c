@@ -167,7 +167,6 @@ static TDB_DATA message_key_pid(struct process_id pid)
 static BOOL message_notify(struct process_id procid)
 {
 	pid_t pid = procid.pid;
-	int saved_errno;
 	int ret;
 	uid_t euid = geteuid();
 
@@ -179,23 +178,21 @@ static BOOL message_notify(struct process_id procid)
 	SMB_ASSERT(pid > 0);
 
 	if (euid != 0) {
-	        save_re_uid();
-		set_effective_uid(0);
+		become_root_uid_only();
 	}
 
 	ret = kill(pid, SIGUSR1);
-	saved_errno = errno;
 
 	if (euid != 0) {
-		restore_re_uid();
+		unbecome_root_uid_only();
 	}
 
 	if (ret == -1) {
-		if (saved_errno == ESRCH) {
+		if (errno == ESRCH) {
 			DEBUG(2,("pid %d doesn't exist - deleting messages record\n", (int)pid));
 			tdb_delete(tdb, message_key_pid(procid));
 		} else {
-			DEBUG(2,("message to process %d failed - %s\n", (int)pid, strerror(saved_errno)));
+			DEBUG(2,("message to process %d failed - %s\n", (int)pid, strerror(errno)));
 		}
 		return False;
 	}
