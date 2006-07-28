@@ -52,10 +52,16 @@ static gid_t initial_gid;
 remember what uid we got started as - this allows us to run correctly
 as non-root while catching trapdoor systems
 ****************************************************************************/
+
 void sec_init(void)
 {
-	initial_uid = geteuid();
-	initial_gid = getegid();
+	static int initialized;
+
+	if (!initialized) {
+		initial_uid = geteuid();
+		initial_gid = getegid();
+		initialized = 1;
+	}
 }
 
 /****************************************************************************

@@ -1303,7 +1303,6 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 	int num_sessions, snum;
 	fstring username;
 	fstring machine;
-	BOOL not_root = False;
 
 	rpcstr_pull_unistr2_fstring(username, &q_u->uni_user_name);
 	rpcstr_pull_unistr2_fstring(machine, &q_u->uni_cli_name);
@@ -1332,16 +1331,8 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 		if ((strequal(session_list[snum].username, username) || username[0] == '\0' ) &&
 		    strequal(session_list[snum].remote_machine, machine)) {
 		
-			if (p->pipe_user.ut.uid != sec_initial_uid()) {
-				not_root = True;
-				become_root();
-			}
-
 			if (message_send_pid(pid_to_procid(session_list[snum].pid), MSG_SHUTDOWN, NULL, 0, False))
 				r_u->status = WERR_OK;
-
-			if (not_root) 
-				unbecome_root();
 		}
 	}
 
