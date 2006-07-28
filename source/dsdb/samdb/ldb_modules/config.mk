@@ -65,11 +65,21 @@ OBJ_FILES = password_hash.o
 PUBLIC_DEPENDENCIES = HEIMDAL_KRB5
 PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS
 #
-# End MODULE ldb_rootdse
+# End MODULE ldb_password_hash
 ################################################
 
 ################################################
-# Start MODULE ldb_cludge_acl
+# Start MODULE ldb_password_sync
+[MODULE::ldb_password_sync]
+SUBSYSTEM = ldb
+INIT_FUNCTION = password_sync_module_init
+OBJ_FILES = password_sync.o
+
+# End MODULE ldb_password_sync
+################################################
+
+################################################
+# Start MODULE ldb_kludge_acl
 [MODULE::ldb_kludge_acl]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_kludge_acl_init
@@ -78,7 +88,7 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = \
 		LIBSECURITY
 #
-# End MODULE ldb_rootdse
+# End MODULE ldb_kludge_acl
 ################################################
 
 ################################################
