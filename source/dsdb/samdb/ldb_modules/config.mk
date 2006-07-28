@@ -69,16 +69,6 @@ PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS
 ################################################
 
 ################################################
-# Start MODULE ldb_password_sync
-[MODULE::ldb_password_sync]
-SUBSYSTEM = ldb
-INIT_FUNCTION = password_sync_module_init
-OBJ_FILES = password_sync.o
-
-# End MODULE ldb_password_sync
-################################################
-
-################################################
 # Start MODULE ldb_kludge_acl
 [MODULE::ldb_kludge_acl]
 SUBSYSTEM = ldb
