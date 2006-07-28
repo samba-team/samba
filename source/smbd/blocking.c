@@ -837,9 +837,6 @@ BOOL blocking_lock_cancel(files_struct *fsp,
 	memcpy(msg, &blr, sizeof(blr));
 	memcpy(&msg[sizeof(blr)], &err, sizeof(NTSTATUS));
 
-	/* Don't need to be root here as we're only ever
-		sending to ourselves. */
-
 	message_send_pid(pid_to_procid(sys_getpid()),
 			MSG_SMB_BLOCKING_LOCK_CANCEL,
 			&msg, sizeof(msg), True);

@@ -851,10 +851,8 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 			(unsigned int)lck->dev, (double)lck->ino,
 			lck->servicepath, lck->filename ));
 
-		become_root();
 		message_send_pid(se->pid, MSG_SMB_FILE_RENAME,
 				frm, msg_len, True);
-		unbecome_root();
 	}
 
 	return True;
