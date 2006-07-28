@@ -69,6 +69,16 @@ PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS
 ################################################
 
 ################################################
+# Start MODULE ldb_local_password
+[MODULE::ldb_local_password]
+SUBSYSTEM = ldb
+INIT_FUNCTION = local_password_module_init
+OBJ_FILES = local_password.o
+#
+# End MODULE ldb_local_password
+################################################
+
+################################################
 # Start MODULE ldb_kludge_acl
 [MODULE::ldb_kludge_acl]
 SUBSYSTEM = ldb
