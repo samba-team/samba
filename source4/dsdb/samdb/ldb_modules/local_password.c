@@ -64,7 +64,7 @@ static const char * const password_attrs[] = {
 
 /* And we merge them back into search requests when asked to do so */
 
-struct lpdb_async_context {
+struct lpdb_context {
 
 	enum lpdb_type {LPDB_ADD, LPDB_MOD, LPDB_SEARCH} type;
 	enum lpdb_step {LPDB_ADD_REMOTE, LPDB_MOD_REMOTE, LPDB_MOD_SEARCH_SELF, LPDB_LOCAL, LPDB_SEARCH_REMOTE} step;
@@ -80,21 +80,21 @@ struct lpdb_async_context {
 	BOOL added_objectGUID;
 	BOOL added_objectClass;
 
-	struct ldb_async_result *search_res;
+	struct ldb_reply *search_res;
 };
 
-struct lpdb_async_local_search_context {
-	struct lpdb_async_context *ac;
-	struct ldb_async_result *remote_res;
-	struct ldb_async_result *local_res;
+struct lpdb_local_search_context {
+	struct lpdb_context *ac;
+	struct ldb_reply *remote_res;
+	struct ldb_reply *local_res;
 };
 
-static struct ldb_async_handle *lpdb_init_handle(struct ldb_request *req, struct ldb_module *module, enum lpdb_type type)
+static struct ldb_handle *lpdb_init_handle(struct ldb_request *req, struct ldb_module *module, enum lpdb_type type)
 {
-	struct lpdb_async_context *ac;
-	struct ldb_async_handle *h;
+	struct lpdb_context *ac;
+	struct ldb_handle *h;
 
-	h = talloc_zero(req, struct ldb_async_handle);
+	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		return NULL;
@@ -102,7 +102,7 @@ static struct ldb_async_handle *lpdb_init_handle(struct ldb_request *req, struct
 
 	h->module = module;
 
-	ac = talloc_zero(h, struct lpdb_async_context);
+	ac = talloc_zero(h, struct lpdb_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		talloc_free(h);
@@ -126,8 +126,8 @@ static struct ldb_async_handle *lpdb_init_handle(struct ldb_request *req, struct
 
 static int local_password_add(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_async_handle *h;
-	struct lpdb_async_context *ac;
+	struct ldb_handle *h;
+	struct lpdb_context *ac;
 	struct ldb_message *remote_message;
 	struct ldb_message *local_message;
 	struct GUID objectGUID;
@@ -169,7 +169,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct lpdb_async_context);
+	ac = talloc_get_type(h->private_data, struct lpdb_context);
 
 	ac->orig_req = req;
 
@@ -192,8 +192,8 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 
 	ac->remote_req->op.add.message = remote_message;
 
-	ac->remote_req->async.context = NULL;
-	ac->remote_req->async.callback = NULL;
+	ac->remote_req->context = NULL;
+	ac->remote_req->callback = NULL;
 
 	ac->local_req = talloc(ac, struct ldb_request);
 	if (ac->local_req == NULL) {
@@ -231,22 +231,22 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 
 	ac->local_req->op.add.message = local_message;
 
-	ac->local_req->async.context = NULL;
-	ac->local_req->async.callback = NULL;
+	ac->local_req->context = NULL;
+	ac->local_req->callback = NULL;
 
 	ac->step = LPDB_ADD_REMOTE;
 
 	/* Return our own handle do deal with this call */
-	req->async.handle = h;
+	req->handle = h;
 
 	return ldb_next_request(module, ac->remote_req);
 }
 
 /* After adding the remote entry, add the local one */
-static int local_password_add_local(struct ldb_async_handle *h) {
+static int local_password_add_local(struct ldb_handle *h) {
 
-	struct lpdb_async_context *ac;
-	ac = talloc_get_type(h->private_data, struct lpdb_async_context);
+	struct lpdb_context *ac;
+	ac = talloc_get_type(h->private_data, struct lpdb_context);
 
 	h->state = LDB_ASYNC_INIT;
 	h->status = LDB_SUCCESS;
@@ -259,12 +259,12 @@ static int local_password_add_local(struct ldb_async_handle *h) {
 	return ldb_next_request(ac->module, ac->local_req);
 }
 
-static int local_password_mod_search_self(struct ldb_async_handle *h);
+static int local_password_mod_search_self(struct ldb_handle *h);
 
 static int local_password_modify(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_async_handle *h;
-	struct lpdb_async_context *ac;
+	struct ldb_handle *h;
+	struct lpdb_context *ac;
 	struct ldb_message *remote_message;
 	struct ldb_message *local_message;
 	int i;
@@ -298,7 +298,7 @@ static int local_password_modify(struct ldb_module *module, struct ldb_request *
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct lpdb_async_context);
+	ac = talloc_get_type(h->private_data, struct lpdb_context);
 
 	ac->orig_req = req;
 
@@ -320,8 +320,8 @@ static int local_password_modify(struct ldb_module *module, struct ldb_request *
 
 	ac->remote_req->op.mod.message = remote_message;
 
-	ac->remote_req->async.context = NULL;
-	ac->remote_req->async.callback = NULL;
+	ac->remote_req->context = NULL;
+	ac->remote_req->callback = NULL;
 
 	ac->local_req = talloc(ac, struct ldb_request);
 	if (ac->local_req == NULL) {
@@ -343,29 +343,29 @@ static int local_password_modify(struct ldb_module *module, struct ldb_request *
 	ac->local_req->op.mod.message = local_message;
 	ac->local_message = local_message;
 
-	ac->local_req->async.context = NULL;
-	ac->local_req->async.callback = NULL;
+	ac->local_req->context = NULL;
+	ac->local_req->callback = NULL;
 
 	ac->step = LPDB_MOD_REMOTE;
 
 	/* Return our own handle do deal with this call */
-	req->async.handle = h;
+	req->handle = h;
 
 	return ldb_next_request(module, ac->remote_req);
 }
 
 /* Called when we search for our oen entry.  Stores the one entry we
  * expect (as it is a base search) on the context pointer */
-static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct lpdb_async_context *ac;
+	struct lpdb_context *ac;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac = talloc_get_type(context, struct lpdb_async_context);
+	ac = talloc_get_type(context, struct lpdb_context);
 
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
@@ -385,12 +385,12 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 
 /* On a modify, we don't have the objectGUID handy, so we need to
  * search our DN for it */
-static int local_password_mod_search_self(struct ldb_async_handle *h) {
+static int local_password_mod_search_self(struct ldb_handle *h) {
 
-	struct lpdb_async_context *ac;
+	struct lpdb_context *ac;
 	static const char * const attrs[] = { "objectGUID", "objectClass", NULL };
 
-	ac = talloc_get_type(h->private_data, struct lpdb_async_context);
+	ac = talloc_get_type(h->private_data, struct lpdb_context);
 
 	/* prepare the search operation */
 	ac->search_req = talloc_zero(ac, struct ldb_request);
@@ -409,8 +409,8 @@ static int local_password_mod_search_self(struct ldb_async_handle *h) {
 	}
 	ac->search_req->op.search.attrs = attrs;
 	ac->search_req->controls = NULL;
-	ac->search_req->async.context = ac;
-	ac->search_req->async.callback = get_self_callback;
+	ac->search_req->context = ac;
+	ac->search_req->callback = get_self_callback;
 	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->search_req);
 
 	ac->step = LPDB_MOD_SEARCH_SELF;
@@ -420,11 +420,11 @@ static int local_password_mod_search_self(struct ldb_async_handle *h) {
 
 /* After we find out the objectGUID for the entry, modify the local
  * password database as required */
-static int local_password_mod_local(struct ldb_async_handle *h) {
+static int local_password_mod_local(struct ldb_handle *h) {
 
-	struct lpdb_async_context *ac;
+	struct lpdb_context *ac;
 	struct GUID objectGUID;
-	ac = talloc_get_type(h->private_data, struct lpdb_async_context);
+	ac = talloc_get_type(h->private_data, struct lpdb_context);
 
 	/* if it is not an entry of type person this is an error */
 	/* TODO: remove this when sambaPassword will be in schema */
@@ -465,16 +465,16 @@ static int local_password_mod_local(struct ldb_async_handle *h) {
 }
 
 
-static int lpdb_local_search_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int lpdb_local_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct lpdb_async_local_search_context *local_context;
+	struct lpdb_local_search_context *local_context;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	local_context = talloc_get_type(context, struct lpdb_async_local_search_context);
+	local_context = talloc_get_type(context, struct lpdb_local_search_context);
 
 	/* we are interested only in the single reply (base search) we receive here */
 	switch (ares->type) {
@@ -509,18 +509,20 @@ static int lpdb_local_search_async_callback(struct ldb_context *ldb, void *conte
 				*el = ares->message->elements[i];
 			}
 		}
-		return local_context->ac->orig_req->async.callback(ldb, 
-								   local_context->ac->orig_req->async.context,
+		return local_context->ac->orig_req->callback(ldb, 
+								   local_context->ac->orig_req->context,
 								   local_context->remote_res);
 	} 
 	case LDB_REPLY_DONE:
 	{
 		/* Fire off the callback if there was no local entry, so we get the rest returned */
 		if (local_context->local_res == NULL) {
-			return local_context->ac->orig_req->async.callback(ldb, 
-									   local_context->ac->orig_req->async.context,
+			return local_context->ac->orig_req->callback(ldb, 
+									   local_context->ac->orig_req->context,
 									   local_context->remote_res);
 		}
+		return LDB_SUCCESS;
+		break;
 	}
 	default:
 	{
@@ -533,20 +535,20 @@ static int lpdb_local_search_async_callback(struct ldb_context *ldb, void *conte
 
 /* For each entry returned in a remote search, do a local base search,
  * based on the objectGUID we asked for as an additional attribute */
-static int lpdb_remote_search_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int lpdb_remote_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct lpdb_async_context *ac;
+	struct lpdb_context *ac;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
 		goto error;
 	}
 
-	ac = talloc_get_type(context, struct lpdb_async_context);
+	ac = talloc_get_type(context, struct lpdb_context);
 
 	if (ares->type == LDB_REPLY_ENTRY) {
 		struct ldb_request *req;
-		struct lpdb_async_local_search_context *local_context;
+		struct lpdb_local_search_context *local_context;
 		struct GUID objectGUID;
 
 		/* No point searching further if it's not a 'person' entry */
@@ -561,7 +563,7 @@ static int lpdb_remote_search_async_callback(struct ldb_context *ldb, void *cont
 				ldb_msg_remove_attr(ares->message, "objectClass");
 			}
 			
-			return ac->orig_req->async.callback(ldb, ac->orig_req->async.context, ares);
+			return ac->orig_req->callback(ldb, ac->orig_req->context, ares);
 		}
 
 		if (ldb_msg_find_ldb_val(ares->message, "objectGUID") == NULL) {
@@ -586,7 +588,7 @@ static int lpdb_remote_search_async_callback(struct ldb_context *ldb, void *cont
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		local_context = talloc(ac, struct lpdb_async_local_search_context);
+		local_context = talloc(ac, struct lpdb_local_search_context);
 		if (!local_context) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -609,17 +611,17 @@ static int lpdb_remote_search_async_callback(struct ldb_context *ldb, void *cont
 		}
 		req->op.search.attrs = ac->orig_req->op.search.attrs;
 		req->controls = NULL;
-		req->async.context = ac;
-		req->async.callback = get_self_callback;
+		req->context = ac;
+		req->callback = get_self_callback;
 
 		ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, req);
 		
-		req->async.context = local_context;
-		req->async.callback = lpdb_local_search_async_callback;
+		req->context = local_context;
+		req->callback = lpdb_local_search_callback;
 
 		return ldb_next_request(ac->module, req);
 	} else {
-		return ac->orig_req->async.callback(ldb, ac->orig_req->async.context, ares);
+		return ac->orig_req->callback(ldb, ac->orig_req->context, ares);
 	}
 error:
 	talloc_free(ares);
@@ -632,8 +634,8 @@ error:
 
 static int local_password_search(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_async_handle *h;
-	struct lpdb_async_context *ac;
+	struct ldb_handle *h;
+	struct lpdb_context *ac;
 	int i;
 	int ret;
 	const char * const *search_attrs = NULL;
@@ -669,7 +671,7 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
-	ac = talloc_get_type(h->private_data, struct lpdb_async_context);
+	ac = talloc_get_type(h->private_data, struct lpdb_context);
 
 	ac->orig_req = req;
 
@@ -682,10 +684,10 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 	*(ac->remote_req) = *(ac->orig_req);
 
 	/* Return our own handle do deal with this call */
-	ac->remote_req->async.handle = h;
+	ac->remote_req->handle = h;
 	
-	ac->remote_req->async.context = ac;
-	ac->remote_req->async.callback = lpdb_remote_search_async_callback;
+	ac->remote_req->context = ac;
+	ac->remote_req->callback = lpdb_remote_search_callback;
 
 	if (req->op.search.attrs && !ldb_attr_in_list(req->op.search.attrs, "*")) {
 		if (!ldb_attr_in_list(req->op.search.attrs, "objectGUID")) {
@@ -721,14 +723,14 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 	ret = ldb_next_request(module, ac->remote_req);
 
 	if (ret == LDB_SUCCESS) {
-		req->async.handle = ac->remote_req->async.handle;
+		req->handle = ac->remote_req->handle;
 	}
 
 	return ret;
 }
 
-static int lpdb_async_wait(struct ldb_async_handle *handle) {
-	struct lpdb_async_context *ac;
+static int lpdb_wait(struct ldb_handle *handle) {
+	struct lpdb_context *ac;
 	int ret;
     
 	if (!handle || !handle->private_data) {
@@ -742,22 +744,22 @@ static int lpdb_async_wait(struct ldb_async_handle *handle) {
 	handle->state = LDB_ASYNC_PENDING;
 	handle->status = LDB_SUCCESS;
 
-	ac = talloc_get_type(handle->private_data, struct lpdb_async_context);
+	ac = talloc_get_type(handle->private_data, struct lpdb_context);
 
 	switch (ac->step) {
 	case LPDB_ADD_REMOTE:
-		ret = ldb_async_wait(ac->remote_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->remote_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->remote_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->remote_req->async.handle->status;
+		if (ac->remote_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->remote_req->handle->status;
 			goto done;
 		}
 
-		if (ac->remote_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->remote_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
@@ -765,18 +767,18 @@ static int lpdb_async_wait(struct ldb_async_handle *handle) {
 		return local_password_add_local(handle);
 		
 	case LPDB_MOD_REMOTE:
-		ret = ldb_async_wait(ac->remote_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->remote_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->remote_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->remote_req->async.handle->status;
+		if (ac->remote_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->remote_req->handle->status;
 			goto done;
 		}
 
-		if (ac->remote_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->remote_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
@@ -784,18 +786,18 @@ static int lpdb_async_wait(struct ldb_async_handle *handle) {
 		return local_password_mod_search_self(handle);
 		
 	case LPDB_MOD_SEARCH_SELF:
-		ret = ldb_async_wait(ac->search_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->search_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->search_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->search_req->async.handle->status;
+		if (ac->search_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->search_req->handle->status;
 			goto done;
 		}
 
-		if (ac->search_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->search_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
@@ -803,36 +805,36 @@ static int lpdb_async_wait(struct ldb_async_handle *handle) {
 		return local_password_mod_local(handle);
 		
 	case LPDB_LOCAL:
-		ret = ldb_async_wait(ac->local_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->local_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->local_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->local_req->async.handle->status;
+		if (ac->local_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->local_req->handle->status;
 			goto done;
 		}
 
-		if (ac->local_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->local_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
 		break;
 		
 	case LPDB_SEARCH_REMOTE:
-		ret = ldb_async_wait(ac->remote_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->remote_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->remote_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->remote_req->async.handle->status;
+		if (ac->remote_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->remote_req->handle->status;
 			goto done;
 		}
 
-		if (ac->remote_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->remote_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
@@ -850,12 +852,12 @@ done:
 	return ret;
 }
 
-static int lpdb_async_wait_all(struct ldb_async_handle *handle) {
+static int lpdb_wait_all(struct ldb_handle *handle) {
 
 	int ret;
 
 	while (handle->state != LDB_ASYNC_DONE) {
-		ret = lpdb_async_wait(handle);
+		ret = lpdb_wait(handle);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -864,12 +866,12 @@ static int lpdb_async_wait_all(struct ldb_async_handle *handle) {
 	return handle->status;
 }
 
-static int local_password_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int local_password_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	if (type == LDB_WAIT_ALL) {
-		return lpdb_async_wait_all(handle);
+		return lpdb_wait_all(handle);
 	} else {
-		return lpdb_async_wait(handle);
+		return lpdb_wait(handle);
 	}
 }
 
@@ -878,7 +880,7 @@ static const struct ldb_module_ops local_password_ops = {
 	.add           = local_password_add,
 	.modify        = local_password_modify,
 	.search        = local_password_search,
-	.async_wait    = local_password_async_wait
+	.wait          = local_password_wait
 };
 
 
