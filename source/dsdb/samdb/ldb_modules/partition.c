@@ -164,6 +164,11 @@ static int partition_other_callback(struct ldb_context *ldb, void *context, stru
 
 	ac = talloc_get_type(context, struct partition_context);
 
+	if (!ac->orig_req->callback) {
+		talloc_free(ares);
+		return LDB_SUCCESS;
+	}
+
 	if (!ares 
 	    || (ares->type == LDB_REPLY_EXTENDED 
 		&& strcmp(ares->response->oid, LDB_EXTENDED_START_TLS_OID))) {
@@ -271,7 +276,7 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 	/* Otherwise, we need to find the backend to fire it to */
 
 	/* Find backend */
-	backend = find_backend(module, req, req->op.add.message->dn);
+	backend = find_backend(module, req, dn);
 	
 	/* issue request */
 	return ldb_next_request(backend, req);
