@@ -360,6 +360,11 @@ static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	if (!req->conn) {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "connection to remote LDAP server dropped?"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	ildb_ac->req = talloc_steal(ildb_ac, req);
 	ildb_ac->module = module;
 	ildb_ac->context = context;
@@ -802,7 +807,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 		goto failed;
 	}
 
-	if (flags == LDB_FLG_RECONNECT) {
+	if (flags & LDB_FLG_RECONNECT) {
 		ldap_set_reconn_params(ildb->ldap, 10);
 	}
 
