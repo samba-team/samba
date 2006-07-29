@@ -1159,7 +1159,7 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	fprintf(add_fd, "sambaKickoffTime: 2147483647\n");
 	fprintf(add_fd, "sambaPwdCanChange: 0\n");
 	fprintf(add_fd, "sambaPwdMustChange: 2147483647\n");
-	fprintf(add_fd, "sambaHomePath: \\\\PDC-SRV\root\n");
+	fprintf(add_fd, "sambaHomePath: \\\\PDC-SRV\\root\n");
 	fprintf(add_fd, "sambaHomeDrive: H:\n");
 	fprintf(add_fd, "sambaProfilePath: \\\\PDC-SRV\\profiles\\root\n");
 	fprintf(add_fd, "sambaprimaryGroupSID: %s-512\n", sid);
@@ -1422,6 +1422,50 @@ static NTSTATUS map_populate_groups(GROUPMAP *groupmap, ACCOUNTMAP *accountmap, 
 	return NT_STATUS_OK;
 }
 
+/*
+ * This is a crap routine, but I think it's the quickest way to solve the
+ * UTF8->base64 problem.
+ */
+
+static int fprintf_attr(FILE *add_fd, const char *attr_name,
+			const char *fmt, ...)
+{
+	va_list ap;
+	char *value, *p, *base64;
+	DATA_BLOB base64_blob;
+	int res;
+
+	va_start(ap, fmt);
+	value = talloc_vasprintf(NULL, fmt, ap);
+	va_end(ap);
+
+	SMB_ASSERT(value != NULL);
+
+	for (p=value; *p; p++) {
+		if (*p & 0x80) {
+			break;
+		}
+	}
+
+	if (*p == 0) {
+		/* Found no high bit set */
+		res = fprintf(add_fd, "%s: %s\n", attr_name, value);
+		TALLOC_FREE(value);
+		return res;
+	}
+
+	base64_blob.data = (unsigned char *)value;
+	base64_blob.length = strlen(value);
+
+	base64 = base64_encode_data_blob(base64_blob);
+	SMB_ASSERT(base64 != NULL);
+
+	res = fprintf(add_fd, "%s:: %s\n", attr_name, base64);
+	TALLOC_FREE(value);
+	SAFE_FREE(base64);
+	return res;
+}
+
 static NTSTATUS fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
 			 FILE *add_fd, fstring sid, char *suffix)
 {
@@ -1464,15 +1508,15 @@ static NTSTATUS fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 	/* Write the data to the temporary add ldif file */
 	fprintf(add_fd, "# %s, %s, %s\n", groupname, group_attr,
 		suffix);
-	fprintf(add_fd, "dn: cn=%s,ou=%s,%s\n", groupname, group_attr,
-		suffix);
+	fprintf_attr(add_fd, "dn", "cn=%s,ou=%s,%s", groupname, group_attr,
+		     suffix);
 	fprintf(add_fd, "objectClass: posixGroup\n");
 	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
-	fprintf(add_fd, "cn: %s\n", groupname);
+	fprintf_attr(add_fd, "cn", "%s", groupname);
 	fprintf(add_fd, "gidNumber: %d\n", ldif_gid);
 	fprintf(add_fd, "sambaSID: %s\n", groupmap->sambaSID);
 	fprintf(add_fd, "sambaGroupType: %d\n", grouptype);
-	fprintf(add_fd, "displayName: %s\n", groupname);
+	fprintf_attr(add_fd, "displayName", "%s", groupname);
 	fprintf(add_fd, "\n");
 	fflush(add_fd);
 
@@ -1591,34 +1635,35 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	/* this isn't quite right...we can't assume there's just OU=. jmcd */
 	user_rdn = sstring_sub(lp_ldap_user_suffix(), '=', ',');
 	fprintf(add_fd, "# %s, %s, %s\n", username, user_rdn, suffix);
-	fprintf(add_fd, "dn: uid=%s,ou=%s,%s\n", username, user_rdn, suffix);
+	fprintf_attr(add_fd, "dn", "uid=%s,ou=%s,%s", username, user_rdn,
+		     suffix);
 	SAFE_FREE(user_rdn);
 	fprintf(add_fd, "ObjectClass: top\n");
 	fprintf(add_fd, "objectClass: inetOrgPerson\n");
 	fprintf(add_fd, "objectClass: posixAccount\n");
 	fprintf(add_fd, "objectClass: shadowAccount\n");
 	fprintf(add_fd, "objectClass: sambaSamAccount\n");
-	fprintf(add_fd, "cn: %s\n", username);
-	fprintf(add_fd, "sn: %s\n", username);
-	fprintf(add_fd, "uid: %s\n", username);
+	fprintf_attr(add_fd, "cn", "%s", username);
+	fprintf_attr(add_fd, "sn", "%s", username);
+	fprintf_attr(add_fd, "uid" "%s", username);
 	fprintf(add_fd, "uidNumber: %d\n", ldif_uid);
 	fprintf(add_fd, "gidNumber: %d\n", gidNumber);
-	fprintf(add_fd, "homeDirectory: %s\n", homedir);
+	fprintf_attr(add_fd, "homeDirectory", "%s\n", homedir);
 	if (*homepath)
-		fprintf(add_fd, "SambaHomePath: %s\n", homepath);
+		fprintf_attr(add_fd, "sambaHomePath", "%s", homepath);
         if (*homedrive)
-                fprintf(add_fd, "SambaHomeDrive: %s\n", homedrive);
+                fprintf_attr(add_fd, "sambaHomeDrive", "%s", homedrive);
         if (*logonscript)
-                fprintf(add_fd, "SambaLogonScript: %s\n", logonscript);
+                fprintf_attr(add_fd, "sambaLogonScript", "%s", logonscript);
 	fprintf(add_fd, "loginShell: %s\n", 
 		((delta->account_info.acb_info & ACB_NORMAL) ?
 		 "/bin/bash" : "/bin/false"));
 	fprintf(add_fd, "gecos: System User\n");
-	fprintf(add_fd, "description: %s\n", description);
+	fprintf_attr(add_fd, "description", "%s", description);
 	fprintf(add_fd, "sambaSID: %s-%d\n", sid, rid);
 	fprintf(add_fd, "sambaPrimaryGroupSID: %s\n", sambaSID);
 	if(*fullname)
-		fprintf(add_fd, "displayName: %s\n", fullname);
+		fprintf_attr(add_fd, "displayName", "%s", fullname);
 	if (strcmp(nopasswd, hex_lm_passwd) != 0)
 		fprintf(add_fd, "sambaLMPassword: %s\n", hex_lm_passwd);
 	if (strcmp(nopasswd, hex_nt_passwd) != 0)
