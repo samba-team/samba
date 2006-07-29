@@ -55,8 +55,10 @@ const char *lock_type_name(enum brl_type lock_type)
 			return "READ";
 		case WRITE_LOCK:
 			return "WRITE";
-		case PENDING_LOCK:
-			return "PENDING";
+		case PENDING_READ_LOCK:
+			return "PENDING_READ";
+		case PENDING_WRITE_LOCK:
+			return "PENDING_WRITE";
 		default:
 			return "other";
 	}

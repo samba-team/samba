@@ -98,7 +98,7 @@ static BOOL brl_conflict(const struct lock_struct *lck1,
 			 const struct lock_struct *lck2)
 {
 	/* Ignore PENDING locks. */
-	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
 		return False;
 
 	/* Read locks never conflict. */
@@ -129,7 +129,7 @@ static BOOL brl_conflict_posix(const struct lock_struct *lck1,
 #endif
 
 	/* Ignore PENDING locks. */
-	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
 		return False;
 
 	/* Read locks never conflict. */
@@ -151,7 +151,7 @@ static BOOL brl_conflict_posix(const struct lock_struct *lck1,
 static BOOL brl_conflict1(const struct lock_struct *lck1, 
 			 const struct lock_struct *lck2)
 {
-	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
 		return False;
 
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
@@ -184,7 +184,7 @@ static BOOL brl_conflict1(const struct lock_struct *lck1,
 
 static BOOL brl_conflict_other(const struct lock_struct *lck1, const struct lock_struct *lck2)
 {
-	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
 		return False;
 
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
@@ -209,6 +209,19 @@ static BOOL brl_conflict_other(const struct lock_struct *lck1, const struct lock
 
 	return brl_overlap(lck1, lck2);
 } 
+
+/****************************************************************************
+ Check if an unlock overlaps a pending lock.
+****************************************************************************/
+
+static BOOL brl_pending_overlap(const struct lock_struct *lock, const struct lock_struct *pend_lock)
+{
+	if ((lock->start <= pend_lock->start) && (lock->start + lock->size > pend_lock->start))
+		return True;
+	if ((lock->start >= pend_lock->start) && (lock->start <= pend_lock->start + pend_lock->size))
+		return True;
+	return False;
+}
 
 /****************************************************************************
  Amazingly enough, w2k3 "remembers" whether the last lock failure on a fnum
@@ -320,7 +333,7 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	   be mapped into a lower level POSIX one, and if so can
 	   we get it ? */
 
-	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(fsp->conn))) {
+	if (!IS_PENDING_LOCK(plock->lock_type) && lp_posix_locking(SNUM(fsp->conn))) {
 		int errno_ret;
 		if (!set_posix_lock_windows_flavour(fsp,
 				plock->start,
@@ -575,6 +588,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	struct lock_struct *tp;
 	BOOL lock_was_added = False;
+	BOOL signal_pending_read = False;
 
 	/* No zero-zero locks for POSIX. */
 	if (plock->start == 0 && plock->size == 0) {
@@ -598,19 +612,28 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	
 	count = 0;
 	for (i=0; i < br_lck->num_locks; i++) {
-		if (locks[i].lock_flav == WINDOWS_LOCK) {
+		struct lock_struct *curr_lock = &locks[i];
+
+		/* If we have a pending read lock, a lock downgrade should
+		   trigger a lock re-evaluation. */
+		if (curr_lock->lock_type == PENDING_READ_LOCK &&
+				brl_pending_overlap(plock, curr_lock)) {
+			signal_pending_read = True;
+		}
+
+		if (curr_lock->lock_flav == WINDOWS_LOCK) {
 			/* Do any Windows flavour locks conflict ? */
-			if (brl_conflict(&locks[i], plock)) {
+			if (brl_conflict(curr_lock, plock)) {
 				/* No games with error messages. */
 				SAFE_FREE(tp);
 				return NT_STATUS_FILE_LOCK_CONFLICT;
 			}
 			/* Just copy the Windows lock into the new array. */
-			memcpy(&tp[count], &locks[i], sizeof(struct lock_struct));
+			memcpy(&tp[count], curr_lock, sizeof(struct lock_struct));
 			count++;
 		} else {
 			/* POSIX conflict semantics are different. */
-			if (brl_conflict_posix(&locks[i], plock)) {
+			if (brl_conflict_posix(curr_lock, plock)) {
 				/* Can't block ourselves with POSIX locks. */
 				/* No games with error messages. */
 				SAFE_FREE(tp);
@@ -618,7 +641,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 			}
 
 			/* Work out overlaps. */
-			count += brlock_posix_split_merge(&tp[count], &locks[i], plock, &lock_was_added);
+			count += brlock_posix_split_merge(&tp[count], curr_lock, plock, &lock_was_added);
 		}
 	}
 
@@ -631,7 +654,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	   be mapped into a lower level POSIX one, and if so can
 	   we get it ? */
 
-	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(br_lck->fsp->conn))) {
+	if (!IS_PENDING_LOCK(plock->lock_type) && lp_posix_locking(SNUM(br_lck->fsp->conn))) {
 		int errno_ret;
 
 		/* The lower layer just needs to attempt to
@@ -661,7 +684,34 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
 	br_lck->lock_data = (void *)tp;
+	locks = tp;
 	br_lck->modified = True;
+
+	/* A successful downgrade from write to read lock can trigger a lock
+	   re-evalutation where waiting readers can now proceed. */
+
+	if (signal_pending_read) {
+		/* Send unlock messages to any pending read waiters that overlap. */
+		for (i=0; i < br_lck->num_locks; i++) {
+			struct lock_struct *pend_lock = &locks[i];
+
+			/* Ignore non-pending locks. */
+			if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
+				continue;
+			}
+
+			if (pend_lock->lock_type == PENDING_READ_LOCK &&
+					brl_pending_overlap(plock, pend_lock)) {
+				DEBUG(10,("brl_lock_posix: sending unlock message to pid %s\n",
+					procid_str_static(&pend_lock->context.pid )));
+
+				message_send_pid(pend_lock->context.pid,
+						MSG_SMB_UNLOCK,
+						NULL, 0, True);
+			}
+		}
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -708,19 +758,6 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 #endif
 
 	return ret;
-}
-
-/****************************************************************************
- Check if an unlock overlaps a pending lock.
-****************************************************************************/
-
-static BOOL brl_pending_overlap(const struct lock_struct *lock, const struct lock_struct *pend_lock)
-{
-	if ((lock->start <= pend_lock->start) && (lock->start + lock->size > pend_lock->start))
-		return True;
-	if ((lock->start >= pend_lock->start) && (lock->start <= pend_lock->start + pend_lock->size))
-		return True;
-	return False;
 }
 
 /****************************************************************************
@@ -807,7 +844,7 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		struct lock_struct *pend_lock = &locks[j];
 
 		/* Ignore non-pending locks. */
-		if (pend_lock->lock_type != PENDING_LOCK) {
+		if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
 			continue;
 		}
 
@@ -866,7 +903,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		unsigned int tmp_count;
 
 		/* Only remove our own locks - ignore fnum. */
-		if (lock->lock_type == PENDING_LOCK ||
+		if (IS_PENDING_LOCK(lock->lock_type) ||
 				!brl_same_context(&lock->context, &plock->context)) {
 			memcpy(&tp[count], lock, sizeof(struct lock_struct));
 			count++;
@@ -974,7 +1011,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		struct lock_struct *pend_lock = &locks[j];
 
 		/* Ignore non-pending locks. */
-		if (pend_lock->lock_type != PENDING_LOCK) {
+		if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
 			continue;
 		}
 
@@ -1173,7 +1210,7 @@ BOOL brl_lock_cancel(struct byte_range_lock *br_lck,
 		/* For pending locks we *always* care about the fnum. */
 		if (brl_same_context(&lock->context, &context) &&
 				lock->fnum == br_lck->fsp->fnum &&
-				lock->lock_type == PENDING_LOCK &&
+				IS_PENDING_LOCK(lock->lock_type) &&
 				lock->lock_flav == lock_flav &&
 				lock->start == start &&
 				lock->size == size) {
@@ -1288,7 +1325,7 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 				struct lock_struct *pend_lock = &locks[j];
 
 				/* Ignore our own or non-pending locks. */
-				if (pend_lock->lock_type != PENDING_LOCK) {
+				if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
 					continue;
 				}
 
