@@ -101,6 +101,16 @@ partition: cn=Sub,cn=Sub,cn=PartTest:" + prefix +  "testsubsub.ldb
 function modules_test(ldb) 
 {
         println("Running modules tests");
+
+        ok = ldb.add("
+dn: @ATTRIBUTES
+caseattr: CASE_INSENSITIVE
+");
+	if (!ok) {
+		println("Failed to add: " + ldb.errstring());
+		assert(ok);
+	}
+
 	ok = ldb.add("
 dn: cn=x8,cn=PartTest
 objectClass: foo
@@ -207,6 +217,57 @@ x: 11
 	assert(res8[0].name == "x11");
 	assert(res8[0].cn == "x11");
 
+	ok = ldb.add("
+dn: caseattr=XY,cn=PartTest
+objectClass: foo
+x: Y
+");
+	if (!ok) {
+		println("Failed to add: " + ldb.errstring());
+		assert(ok);
+	}
+
+	ok = ldb.add("
+dn: caseattr=XZ,cn=PartTest
+objectClass: foo
+x: Z
+caseattr: XZ
+");
+	if (!ok) {
+		println("Failed to add: " + ldb.errstring());
+		assert(ok);
+	}
+
+	ok = ldb.add("
+dn: caseattr2=XZ,cn=PartTest
+objectClass: foo
+x: Z
+caseattr2: XZ
+");
+	if (!ok) {
+		println("Failed to add: " + ldb.errstring());
+		assert(ok);
+	}
+
+	var resX = ldb.search("caseattr=xz", "cn=parttest", ldb.SCOPE_DEFAULT, attrs);
+	assert(resX.length == 1); 
+	assert(resX[0].objectGUID != undefined);
+	assert(resX[0].createTimestamp != undefined);
+	assert(resX[0].whenCreated != undefined);
+	assert(resX[0].name == "XZ");
+
+	var rescount = ldb.search("(|(caseattr=*)(cn=*))", "cn=parttest", ldb.SCOPE_DEFAULT, attrs);
+	assert(rescount.length == 5); 
+
+	/* Check this attribute is *not* case sensitive */
+	var resXcount = ldb.search("caseattr=x*", "cn=parttest", ldb.SCOPE_DEFAULT, attrs);
+	assert(resXcount.length == 2); 
+	
+	/* Check that this attribute *is* case sensitive */
+	var resXcount2 = ldb.search("caseattr2=xz", "cn=parttest", ldb.SCOPE_DEFAULT, attrs);
+	assert(resXcount2.length == 0); 
+	
+
 	/* Now abort the transaction to show that even with
 	 * partitions, it is aborted everywhere */
 	ok = ldb.transaction_cancel();
@@ -228,6 +289,10 @@ x: 11
 	var attrs = new Array("*");
 	var res11 = ldb.search("x=10", "cn=parttest", ldb.SCOPE_DEFAULT, attrs);
 	assert(res11.length == 0);
+
+	var attrs = new Array("*");
+	var res12 = ldb.search("caseattr=*", "cn=parttest", ldb.SCOPE_DEFAULT, attrs);
+	assert(res12.length == 0);
 
 }
 
