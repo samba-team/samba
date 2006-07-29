@@ -137,7 +137,7 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 			procid_self(),
 			offset,
 			count,
-			PENDING_LOCK,
+			lock_type == READ_LOCK ? PENDING_READ_LOCK : PENDING_WRITE_LOCK,
 			blr->lock_flav,
 			lock_timeout ? True : False); /* blocking_lock. */
 
