@@ -611,6 +611,28 @@ const char **ldb_attr_list_copy(TALLOC_CTX *mem_ctx, const char * const *attrs)
 
 
 /*
+  copy an attribute list. This only copies the array, not the elements
+  (ie. the elements are left as the same pointers)
+*/
+const char **ldb_attr_list_copy_add(TALLOC_CTX *mem_ctx, const char * const *attrs, const char *new_attr)
+{
+	const char **ret;
+	int i;
+	for (i=0;attrs[i];i++) /* noop */ ;
+	ret = talloc_array(mem_ctx, const char *, i+2);
+	if (ret == NULL) {
+		return NULL;
+	}
+	for (i=0;attrs[i];i++) {
+		ret[i] = attrs[i];
+	}
+	ret[i] = new_attr;
+	ret[i+1] = NULL;
+	return ret;
+}
+
+
+/*
   return 1 if an attribute is in a list of attributes, or 0 otherwise
 */
 int ldb_attr_in_list(const char * const *attrs, const char *attr)
