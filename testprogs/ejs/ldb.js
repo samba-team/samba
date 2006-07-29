@@ -92,24 +92,32 @@ partition: cn=SideTest:" + prefix +  "testside.ldb
 partition: cn=Sub,cn=PartTest:" + prefix +  "testsub.ldb
 partition: cn=PartTest:" + prefix +  "testpartition.ldb
 partition: cn=Sub,cn=Sub,cn=PartTest:" + prefix +  "testsubsub.ldb
+replicateEntries: @SUBCLASSES
+replicateEntries: @ATTRIBUTES
+replicateEntries: @INDEXLIST
 ");
 }
 
 /* Test the basic operation of the timestamps,objectguid and name_rdn
    modules */
 
-function modules_test(ldb) 
+function modules_test(ldb, parttestldb) 
 {
         println("Running modules tests");
 
         ok = ldb.add("
 dn: @ATTRIBUTES
+cn: CASE_INSENSITIVE
 caseattr: CASE_INSENSITIVE
 ");
 	if (!ok) {
 		println("Failed to add: " + ldb.errstring());
 		assert(ok);
 	}
+
+	/* Confirm that the attributes were replicated */
+	var res_attrs =  parttestldb.search("cn=*", "@ATTRIBUTES",  parttestldb.SCOPE_BASE);
+	assert(res_attrs[0].cn == "CASE_INSENSITIVE");
 
 	ok = ldb.add("
 dn: cn=x8,cn=PartTest
@@ -132,12 +140,31 @@ cn: X9
 		assert(ok);
 	}
 
+	ok = ldb.add("
+dn: cn=X9,cn=PartTest
+objectClass: foo
+x: 9
+cn: X9
+");
+	if (ok) {
+		println("Should have failed to add cn=X9,cn=PartTest");
+		assert(!ok);
+	}
+
 	var res = ldb.search("x=8", "cn=PartTest", ldb.SCOPE_DEFAULT);
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].createTimestamp == undefined);
 	assert(res[0].whenCreated != undefined);
 	assert(res[0].name == "x8");
 	assert(res[0].cn == "x8");
+
+	/* Confirm that this ended up in the correct LDB */
+	var res_otherldb =  parttestldb.search("x=8", "cn=PartTest",  parttestldb.SCOPE_DEFAULT);
+	assert(res_otherldb[0].objectGUID != undefined);
+	assert(res_otherldb[0].createTimestamp == undefined);
+	assert(res_otherldb[0].whenCreated != undefined);
+	assert(res_otherldb[0].name == "x8");
+	assert(res_otherldb[0].cn == "x8");
 
 	var attrs = new Array("*", "createTimestamp");
 	var res2 = ldb.search("x=9", "cn=PartTest", ldb.SCOPE_DEFAULT, attrs);
@@ -239,10 +266,32 @@ caseattr: XZ
 	}
 
 	ok = ldb.add("
+dn: caseattr=xz,cn=PartTest
+objectClass: foo
+x: Z
+caseattr: xz
+");
+	if (ok) {
+		println("Should have failed to add caseattr=xz,cn=PartTest");
+		assert(!ok);
+	}
+
+	ok = ldb.add("
 dn: caseattr2=XZ,cn=PartTest
 objectClass: foo
 x: Z
 caseattr2: XZ
+");
+	if (!ok) {
+		println("Failed to add: " + ldb.errstring());
+		assert(ok);
+	}
+
+	ok = ldb.add("
+dn: caseattr2=Xz,cn=PartTest
+objectClass: foo
+x: Z
+caseattr2: Xz
 ");
 	if (!ok) {
 		println("Failed to add: " + ldb.errstring());
@@ -315,7 +364,11 @@ ldb = ldb_init();
 var ok = ldb.connect("tdb://" + prefix + dbfile);
 assert(ok);
 
-modules_test(ldb);
+parttestldb = ldb_init();
+var ok = parttestldb.connect("tdb://" + prefix + "testpartition.ldb");
+assert(ok);
+
+modules_test(ldb, parttestldb);
 
 sys.unlink(prefix + dbfile);
 sys.unlink(prefix + "testpartition.ldb");
