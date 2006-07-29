@@ -76,6 +76,7 @@ CONFIGLIBDIR = $(LIBDIR)/config
 CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
+datarootdir = @datarootdir@
 DATADIR = @datadir@
 
 # The permissions to give the executables
