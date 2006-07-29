@@ -37,7 +37,7 @@ struct pam_auth_crap_state {
 	uint32_t logon_parameters;
 	const char *domain_name;
 	const char *user_name;
-	const char *unix_username;
+	char *unix_username;
 	const char *workstation;
 	DATA_BLOB chal, nt_resp, lm_resp;
 
