@@ -1481,9 +1481,12 @@ static NTSTATUS fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
-		   	   ACCOUNTMAP *accountmap, FILE *add_fd,
-			   fstring sid, char *suffix, int alloced)
+static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
+					   GROUPMAP *groupmap,
+					   ACCOUNTMAP *accountmap,
+					   FILE *add_fd,
+					   fstring sid, char *suffix,
+					   int alloced)
 {
 	fstring username, logonscript, homedrive, homepath = "", homedir = "";
 	fstring hex_nt_passwd, hex_lm_passwd;
@@ -1521,11 +1524,11 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *group
 
         /* Get the logon script */
         unistr2_to_ascii(logonscript, &(delta->account_info.uni_logon_script),
-                        sizeof(logonscript)-1);
+			 sizeof(logonscript)-1);
 
         /* Get the home drive */
         unistr2_to_ascii(homedrive, &(delta->account_info.uni_dir_drive),
-                        sizeof(homedrive)-1);
+			 sizeof(homedrive)-1);
 
 	/* Get the description */
 	unistr2_to_ascii(description, &(delta->account_info.uni_acct_desc),
@@ -1551,7 +1554,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *group
 	if (memcmp(delta->account_info.pass.buf_nt_pwd, zero_buf, 16) != 0) {
 		sam_pwd_hash(delta->account_info.user_rid, 
 			     delta->account_info.pass.buf_nt_pwd, 
-                                     nt_passwd, 0);
+			     nt_passwd, 0);
 		pdb_sethexpwd(hex_nt_passwd, nt_passwd, 
 			      delta->account_info.acb_info);
 	} else {
@@ -1629,9 +1632,11 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *group
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
-			 FILE *add_fd, fstring sid, char *suffix, 
-			 unsigned db_type)
+static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta,
+					 GROUPMAP *groupmap,
+					 FILE *add_fd, fstring sid,
+					 char *suffix, 
+					 unsigned db_type)
 {
 	fstring aliasname, description;
 	uint32 grouptype = 0, g_rid = 0;
@@ -1647,21 +1652,21 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 
 	/* Set up the group type */
 	switch (db_type) {
-		case SAM_DATABASE_DOMAIN:
-			grouptype = 4;
-			break;
-		case SAM_DATABASE_BUILTIN:
-			grouptype = 5;
-			break;
-		default:
-			grouptype = 4;
-			break;
+	case SAM_DATABASE_DOMAIN:
+		grouptype = 4;
+		break;
+	case SAM_DATABASE_BUILTIN:
+		grouptype = 5;
+		break;
+	default:
+		grouptype = 4;
+		break;
 	}
 
 	/*
-	These groups are entered by populate_ldap_for_ldif
-	Note that populate creates a group called Relicators, 
-	but NT returns a group called Replicator
+	  These groups are entered by populate_ldap_for_ldif
+	  Note that populate creates a group called Relicators, 
+	  but NT returns a group called Replicator
 	*/
 	if (strcmp(aliasname, "Domain Admins") == 0 ||
 	    strcmp(aliasname, "Domain Users") == 0 ||
@@ -1704,9 +1709,11 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta, SAM_DELTA_HDR *hdr_delta,
-			    GROUPMAP *groupmap, ACCOUNTMAP *accountmap, 
-			    FILE *mod_fd, int alloced)
+static NTSTATUS fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta,
+					    SAM_DELTA_HDR *hdr_delta,
+					    GROUPMAP *groupmap,
+					    ACCOUNTMAP *accountmap, 
+					    FILE *mod_fd, int alloced)
 {
 	fstring group_dn;
 	uint32 group_rid = 0, rid = 0;
@@ -1733,7 +1740,8 @@ static NTSTATUS fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta, SAM_DELTA_HDR 
 				if (accountmap[k].rid == rid) break;
 			}
 			if (k == alloced){
-				DEBUG(1, ("Could not find rid %d in accountmap array\n", rid));
+				DEBUG(1, ("Could not find rid %d in "
+					  "accountmap array\n", rid));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			fprintf(mod_fd, "memberUid: %s\n", accountmap[k].cn);
@@ -1747,9 +1755,9 @@ static NTSTATUS fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta, SAM_DELTA_HDR 
 }
 
 static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
-					uint32 db_type,
-					DOM_SID dom_sid,
-					const char *user_file)
+				       uint32 db_type,
+				       DOM_SID dom_sid,
+				       const char *user_file)
 {
 	char *suffix;
 	const char *builtin_sid = "S-1-5-32";
@@ -1847,7 +1855,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		/* Initial database population */
 		populate_ldap_for_ldif(sid, suffix, builtin_sid, add_file);
 		map_populate_groups(groupmap, accountmap, sid, suffix,
-			    builtin_sid);
+				    builtin_sid);
 
 		/* Don't do this again */
 		init_ldap = 0;
@@ -1855,27 +1863,27 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 	/* Announce what we are doing */
 	switch( db_type ) {
-		case SAM_DATABASE_DOMAIN:
-			d_fprintf(stderr, "Fetching DOMAIN database\n");
-			break;
-		case SAM_DATABASE_BUILTIN:
-			d_fprintf(stderr, "Fetching BUILTIN database\n");
-			break;
-		case SAM_DATABASE_PRIVS:
-			d_fprintf(stderr, "Fetching PRIVS databases\n");
-			break;
-		default:
-			d_fprintf(stderr, 
-				  "Fetching unknown database type %u\n", 
-				  db_type );
-			break;
+	case SAM_DATABASE_DOMAIN:
+		d_fprintf(stderr, "Fetching DOMAIN database\n");
+		break;
+	case SAM_DATABASE_BUILTIN:
+		d_fprintf(stderr, "Fetching BUILTIN database\n");
+		break;
+	case SAM_DATABASE_PRIVS:
+		d_fprintf(stderr, "Fetching PRIVS databases\n");
+		break;
+	default:
+		d_fprintf(stderr, 
+			  "Fetching unknown database type %u\n", 
+			  db_type );
+		break;
 	}
 
 	do {
 		result = rpccli_netlogon_sam_sync(pipe_hnd, mem_ctx,
-					       db_type, sync_context,
-					       &num_deltas, &hdr_deltas, 
-					       &deltas);
+						  db_type, sync_context,
+						  &num_deltas, &hdr_deltas, 
+						  &deltas);
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
 			ret = NT_STATUS_OK;
@@ -1884,9 +1892,9 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 		/* Re-allocate memory for groupmap and accountmap arrays */
 		groupmap = SMB_REALLOC_ARRAY(groupmap, GROUPMAP,
-					num_deltas+num_alloced);
+					     num_deltas+num_alloced);
 		accountmap = SMB_REALLOC_ARRAY(accountmap, ACCOUNTMAP,
-					num_deltas+num_alloced);
+					       num_deltas+num_alloced);
 		if (groupmap == NULL || accountmap == NULL) {
 			DEBUG(1,("GROUPMAP malloc failed\n"));
 			ret = NT_STATUS_NO_MEMORY;
@@ -1905,72 +1913,73 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		/* Loop through the deltas */
 		for (k=0; k<num_deltas; k++) {
 			switch(hdr_deltas[k].type) {
-				case SAM_DELTA_DOMAIN_INFO:
-					/* Is this case needed? */
-					unistr2_to_ascii(domainname, 
-				    	&deltas[k].domain_info.uni_dom_name,
-					    	sizeof(domainname)-1);
-					break;
+			case SAM_DELTA_DOMAIN_INFO:
+				/* Is this case needed? */
+				unistr2_to_ascii(
+					domainname, 
+					&deltas[k].domain_info.uni_dom_name,
+					sizeof(domainname)-1);
+				break;
 
-				case SAM_DELTA_GROUP_INFO:
-					fetch_group_info_to_ldif(
-						&deltas[k], &groupmap[g_index],
-						add_file, sid, suffix);
-					g_index++;
-					break;
+			case SAM_DELTA_GROUP_INFO:
+				fetch_group_info_to_ldif(
+					&deltas[k], &groupmap[g_index],
+					add_file, sid, suffix);
+				g_index++;
+				break;
 
-				case SAM_DELTA_ACCOUNT_INFO:
-					fetch_account_info_to_ldif(
-						&deltas[k], groupmap, 
-						&accountmap[a_index], add_file,
-						sid, suffix, num_alloced);
-					a_index++;
-					break;
+			case SAM_DELTA_ACCOUNT_INFO:
+				fetch_account_info_to_ldif(
+					&deltas[k], groupmap, 
+					&accountmap[a_index], add_file,
+					sid, suffix, num_alloced);
+				a_index++;
+				break;
 
-				case SAM_DELTA_ALIAS_INFO:
-					fetch_alias_info_to_ldif(
-						&deltas[k], &groupmap[g_index],
-						add_file, sid, suffix, db_type);
-					g_index++;
-					break;
+			case SAM_DELTA_ALIAS_INFO:
+				fetch_alias_info_to_ldif(
+					&deltas[k], &groupmap[g_index],
+					add_file, sid, suffix, db_type);
+				g_index++;
+				break;
 
-				case SAM_DELTA_GROUP_MEM:
-					fetch_groupmem_info_to_ldif(
-						&deltas[k], &hdr_deltas[k], 
-						groupmap, accountmap, 
-						mod_file, num_alloced);
-					break;
+			case SAM_DELTA_GROUP_MEM:
+				fetch_groupmem_info_to_ldif(
+					&deltas[k], &hdr_deltas[k], 
+					groupmap, accountmap, 
+					mod_file, num_alloced);
+				break;
 
-				case SAM_DELTA_ALIAS_MEM:
-					break;
-				case SAM_DELTA_POLICY_INFO:
-					break;
-				case SAM_DELTA_PRIVS_INFO:
-					break;
-				case SAM_DELTA_TRUST_DOMS:
-					/* Implemented but broken */
-					break;
-				case SAM_DELTA_SECRET_INFO:
-					/* Implemented but broken */
-					break;
-				case SAM_DELTA_RENAME_GROUP:
-					/* Not yet implemented */
-					break;
-				case SAM_DELTA_RENAME_USER:
-					/* Not yet implemented */
-					break;
-				case SAM_DELTA_RENAME_ALIAS:
-					/* Not yet implemented */
-					break;
-				case SAM_DELTA_DELETE_GROUP:
-					/* Not yet implemented */
-					break;
-				case SAM_DELTA_DELETE_USER:
-					/* Not yet implemented */
-					break;
-				case SAM_DELTA_MODIFIED_COUNT:
-					break;
-				default:
+			case SAM_DELTA_ALIAS_MEM:
+				break;
+			case SAM_DELTA_POLICY_INFO:
+				break;
+			case SAM_DELTA_PRIVS_INFO:
+				break;
+			case SAM_DELTA_TRUST_DOMS:
+				/* Implemented but broken */
+				break;
+			case SAM_DELTA_SECRET_INFO:
+				/* Implemented but broken */
+				break;
+			case SAM_DELTA_RENAME_GROUP:
+				/* Not yet implemented */
+				break;
+			case SAM_DELTA_RENAME_USER:
+				/* Not yet implemented */
+				break;
+			case SAM_DELTA_RENAME_ALIAS:
+				/* Not yet implemented */
+				break;
+			case SAM_DELTA_DELETE_GROUP:
+				/* Not yet implemented */
+				break;
+			case SAM_DELTA_DELETE_USER:
+				/* Not yet implemented */
+				break;
+			case SAM_DELTA_MODIFIED_COUNT:
+				break;
+			default:
 				break;
 			} /* end of switch */
 		} /* end of for loop */
@@ -2014,13 +2023,14 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	transfer_file(fileno(mod_file), fileno(ldif_file), (size_t) -1);
 
 
-  done:
+ done:
 	/* Close and delete the ldif files */
 	if (add_file) {
 		fclose(add_file);
 	}
 
-	if ((add_name != NULL) && strcmp(add_name, add_template) && (unlink(add_name))) {
+	if ((add_name != NULL) &&
+	    strcmp(add_name, add_template) && (unlink(add_name))) {
 		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
 			 add_name, strerror(errno)));
 	}
@@ -2029,7 +2039,8 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		fclose(mod_file);
 	}
 
-	if ((mod_name != NULL) && strcmp(mod_name, mod_template) && (unlink(mod_name))) {
+	if ((mod_name != NULL) &&
+	    strcmp(mod_name, mod_template) && (unlink(mod_name))) {
 		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
 			 mod_name, strerror(errno)));
 	}
@@ -2056,10 +2067,11 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 int rpc_vampire_usage(int argc, const char **argv) 
 {	
-	d_printf("net rpc vampire [ldif [<ldif-filename>] [options]\n"\
-		 "\t to pull accounts from a remote PDC where we are a BDC\n"\
-		 "\t\t no args puts accounts in local passdb from smb.conf\n"\
-		 "\t\t ldif - put accounts in ldif format (file defaults to /tmp/tmp.ldif\n");
+	d_printf("net rpc vampire [ldif [<ldif-filename>] [options]\n"
+		 "\t to pull accounts from a remote PDC where we are a BDC\n"
+		 "\t\t no args puts accounts in local passdb from smb.conf\n"
+		 "\t\t ldif - put accounts in ldif format (file defaults to "
+		 "/tmp/tmp.ldif\n");
 
 	net_common_flags_usage(argc, argv);
 	return -1;
@@ -2083,47 +2095,52 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 		d_printf("Cannot import users from %s at this time, "
 			 "as the current domain:\n\t%s: %s\nconflicts "
 			 "with the remote domain\n\t%s: %s\n"
-			 "Perhaps you need to set: \n\n\tsecurity=user\n\tworkgroup=%s\n\n in your smb.conf?\n",
+			 "Perhaps you need to set: \n\n\tsecurity=user\n\t"
+			 "workgroup=%s\n\n in your smb.conf?\n",
 			 domain_name,
-			 get_global_sam_name(), sid_to_string(my_dom_sid_str, 
-							      get_global_sam_sid()),
-			 domain_name, sid_to_string(rem_dom_sid_str, domain_sid),
+			 get_global_sam_name(),
+			 sid_to_string(my_dom_sid_str, 
+				       get_global_sam_sid()),
+			 domain_name, sid_to_string(rem_dom_sid_str,
+						    domain_sid),
 			 domain_name);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
         if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
 		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_DOMAIN,
-					*domain_sid, argv[1]);
+						*domain_sid, argv[1]);
         } else {
-		result = fetch_database(pipe_hnd, SAM_DATABASE_DOMAIN, *domain_sid);
+		result = fetch_database(pipe_hnd, SAM_DATABASE_DOMAIN,
+					*domain_sid);
         }
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Failed to fetch domain database: %s\n",
-			 nt_errstr(result));
+			  nt_errstr(result));
 		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED))
-			d_fprintf(stderr, "Perhaps %s is a Windows 2000 native "
-				 "mode domain?\n", domain_name);
+			d_fprintf(stderr, "Perhaps %s is a Windows 2000 "
+				  "native mode domain?\n", domain_name);
 		goto fail;
 	}
 
         if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
-		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_BUILTIN, 
-					global_sid_Builtin, argv[1]);
+		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_BUILTIN,
+						global_sid_Builtin, argv[1]);
         } else {
-		result = fetch_database(pipe_hnd, SAM_DATABASE_BUILTIN, global_sid_Builtin);
+		result = fetch_database(pipe_hnd, SAM_DATABASE_BUILTIN,
+					global_sid_Builtin);
         }
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Failed to fetch builtin database: %s\n",
-			 nt_errstr(result));
+			  nt_errstr(result));
 		goto fail;
 	}
 
 	/* Currently we crash on PRIVS somewhere in unmarshalling */
 	/* Dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds); */
 
-fail:
+ fail:
 	return result;
 }
