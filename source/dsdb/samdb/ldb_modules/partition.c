@@ -128,7 +128,7 @@ static int partition_search_callback(struct ldb_context *ldb, void *context, str
 	struct partition_context *ac;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, talloc_asprintf(ldb, "partition_search_callback: NULL Context or Result in 'search' callback"));
 		goto error;
 	}
 
@@ -157,14 +157,16 @@ static int partition_other_callback(struct ldb_context *ldb, void *context, stru
 {
 	struct partition_context *ac;
 
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+	if (!context) {
+		ldb_set_errstring(ldb, talloc_asprintf(ldb, "partition_other_callback: NULL Context in 'other' callback"));
 		goto error;
 	}
 
 	ac = talloc_get_type(context, struct partition_context);
 
-	if (ares->type == LDB_REPLY_EXTENDED && strcmp(ares->response->oid, LDB_EXTENDED_START_TLS_OID)) {
+	if (!ares 
+	    || (ares->type == LDB_REPLY_EXTENDED 
+		&& strcmp(ares->response->oid, LDB_EXTENDED_START_TLS_OID))) {
 		ac->finished_requests++;
 		if (ac->finished_requests == ac->num_requests) {
 			return ac->orig_req->callback(ldb, ac->orig_req->context, ares);
@@ -621,7 +623,7 @@ static int partition_init(struct ldb_module *module)
 		}
 		
 		for (i=0; i < replicate_attributes->num_values; i++) {
-			data->replicate[i] = ldb_dn_explode(data->replicate[i], replicate_attributes->values[i].data);
+			data->replicate[i] = ldb_dn_explode(data->replicate, replicate_attributes->values[i].data);
 			if (!data->replicate[i]) {
 				ldb_set_errstring(module->ldb, 
 						  talloc_asprintf(module, "partition_init: "
