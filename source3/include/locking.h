@@ -23,10 +23,14 @@
 #define _LOCKING_H
 
 /* passed to br lock code - the UNLOCK_LOCK should never be stored into the tdb
-   and is used in calculating POSIX unlock ranges only. */
+   and is used in calculating POSIX unlock ranges only. We differentiate between
+   PENDING read and write locks to allow posix lock downgrades to trigger a lock
+   re-evaluation. */
 
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK, UNLOCK_LOCK};
+enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK, UNLOCK_LOCK};
 enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
+
+#define IS_PENDING_LOCK(type) ((type) == PENDING_READ_LOCK || (type) == PENDING_WRITE_LOCK)
 
 /* This contains elements that differentiate locks. The smbpid is a
    client supplied pid, and is essentially the locking context for
