@@ -384,7 +384,6 @@ static NTSTATUS smb_session_key(struct dcerpc_connection *c, DATA_BLOB *session_
 struct pipe_open_smb_state {
 	union smb_open *open;
 	struct dcerpc_connection *c;
-	struct smbcli_request *req;
 	struct smbcli_tree *tree;
 	struct composite_context *ctx;
 };
@@ -397,21 +396,21 @@ struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_connection *c,
 {
 	struct composite_context *ctx;
 	struct pipe_open_smb_state *state;
+	struct smbcli_request *req;
 
-	ctx = talloc_zero(NULL, struct composite_context);
-	if (ctx == NULL) goto failed;
-	ctx->state = COMPOSITE_STATE_IN_PROGRESS;
-	ctx->event_ctx = talloc_reference(c, c->event_ctx);
+	ctx = composite_create(c, c->event_ctx);
+	if (ctx == NULL) return NULL;
 
 	state = talloc(ctx, struct pipe_open_smb_state);
-	if (state == NULL) goto failed;
+	if (composite_nomem(state, ctx)) return ctx;
+	ctx->private_data = state;
 
 	state->c = c;
 	state->tree = tree;
 	state->ctx = ctx;
 
 	state->open = talloc(state, union smb_open);
-	if (state->open == NULL) goto failed;
+	if (composite_nomem(state->open, ctx)) return ctx;
 
 	state->open->ntcreatex.level = RAW_OPEN_NTCREATEX;
 	state->open->ntcreatex.in.flags = 0;
@@ -441,32 +440,23 @@ struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_connection *c,
 		(pipe_name[0] == '\\') ?
 		talloc_strdup(state->open, pipe_name) :
 		talloc_asprintf(state->open, "\\%s", pipe_name);
-	if (state->open->ntcreatex.in.fname == NULL) goto failed;
+	if (composite_nomem(state->open->ntcreatex.in.fname, ctx)) return ctx;
 
-	state->req = smb_raw_open_send(tree, state->open);
-	if (state->req == NULL) goto failed;
-
-	state->req->async.fn = pipe_open_recv;
-	state->req->async.private = state;
-
+	req = smb_raw_open_send(tree, state->open);
+	composite_continue_smb(ctx, req, pipe_open_recv, state);
 	return ctx;
-
- failed:
-	talloc_free(ctx);
-	return NULL;
 }
 
 static void pipe_open_recv(struct smbcli_request *req)
 {
-	struct pipe_open_smb_state *state =
-		talloc_get_type(req->async.private,
-				struct pipe_open_smb_state);
+	struct pipe_open_smb_state *state = talloc_get_type(req->async.private,
+					    struct pipe_open_smb_state);
 	struct composite_context *ctx = state->ctx;
 	struct dcerpc_connection *c = state->c;
 	struct smb_private *smb;
 	
 	ctx->status = smb_raw_open_recv(req, state, state->open);
-	if (!NT_STATUS_IS_OK(ctx->status)) goto done;
+	if (!composite_is_ok(ctx)) return;
 
 	/*
 	  fill in the transport methods
@@ -485,32 +475,16 @@ static void pipe_open_recv(struct smbcli_request *req)
 	c->security_state.session_key = smb_session_key;
 
 	smb = talloc(c, struct smb_private);
-	if (smb == NULL) {
-		ctx->status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
+	if (composite_nomem(smb, ctx)) return;
 
 	smb->fnum	= state->open->ntcreatex.out.file.fnum;
 	smb->tree	= talloc_reference(smb, state->tree);
-	smb->server_name= strupper_talloc(
-		smb, state->tree->session->transport->called.name);
-	if (smb->server_name == NULL) {
-		ctx->status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
+	smb->server_name= strupper_talloc(smb,
+			  state->tree->session->transport->called.name);
+	if (composite_nomem(smb->server_name, ctx)) return;
 	c->transport.private = smb;
 
-	ctx->status = NT_STATUS_OK;
-	ctx->state = COMPOSITE_STATE_DONE;
-
- done:
-	if (!NT_STATUS_IS_OK(ctx->status)) {
-		ctx->state = COMPOSITE_STATE_ERROR;
-	}
-	if ((ctx->state >= COMPOSITE_STATE_DONE) &&
-	    (ctx->async.fn != NULL)) {
-		ctx->async.fn(ctx);
-	}
+	composite_done(ctx);
 }
 
 NTSTATUS dcerpc_pipe_open_smb_recv(struct composite_context *c)
@@ -534,11 +508,12 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_connection *c,
 */
 struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_connection *c)
 {
-	struct smb_private *smb = c->transport.private;
+	struct smb_private *smb;
 
-	if (c->transport.transport != NCACN_NP) {
-		return NULL;
-	}
+	if (c->transport.transport != NCACN_NP) return NULL;
+
+	smb = talloc_get_type(c->transport.private, struct smb_private);
+	if (!smb) return NULL;
 
 	return smb->tree;
 }
