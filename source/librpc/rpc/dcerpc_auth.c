@@ -40,7 +40,7 @@ struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 
 	struct composite_context *c;
 
-	c = talloc_zero(mem_ctx, struct composite_context);
+	c = composite_create(mem_ctx, p->conn->event_ctx);
 	if (c == NULL) return NULL;
 
 	c->status = dcerpc_init_syntaxes(table,
@@ -207,22 +207,19 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	struct dcerpc_syntax_id syntax, transfer_syntax;
 
 	/* composite context allocation and setup */
-	c = talloc_zero(mem_ctx, struct composite_context);
+	c = composite_create(mem_ctx, p->conn->event_ctx);
 	if (c == NULL) return NULL;
 
 	state = talloc(c, struct bind_auth_state);
 	if (composite_nomem(state, c)) return c;
-
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = state;
-	c->event_ctx = p->conn->event_ctx;
 
 	state->pipe = p;
 
 	c->status = dcerpc_init_syntaxes(table,
 					 &syntax,
 					 &transfer_syntax);
-	if (!NT_STATUS_IS_OK(c->status)) goto failed;
+	if (!composite_is_ok(c)) return c;
 
 	sec = &p->conn->security_state;
 
@@ -231,22 +228,25 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n",
 			  nt_errstr(c->status)));
-		goto failed;
+		composite_error(c, c->status);
+		return c;
 	}
 
 	c->status = gensec_set_credentials(sec->generic_state, credentials);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(1, ("Failed to set GENSEC client credentails: %s\n",
 			  nt_errstr(c->status)));
-		goto failed;
+		composite_error(c, c->status);
+		return c;
 	}
 
-	c->status = gensec_set_target_hostname(
-		sec->generic_state, p->conn->transport.target_hostname(p->conn));
+	c->status = gensec_set_target_hostname(sec->generic_state,
+					       p->conn->transport.target_hostname(p->conn));
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(1, ("Failed to set GENSEC target hostname: %s\n", 
 			  nt_errstr(c->status)));
-		goto failed;
+		composite_error(c, c->status);
+		return c;
 	}
 
 	if (service != NULL) {
@@ -255,7 +255,8 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(c->status)) {
 			DEBUG(1, ("Failed to set GENSEC target service: %s\n",
 				  nt_errstr(c->status)));
-			goto failed;
+			composite_error(c, c->status);
+			return c;
 		}
 	}
 
@@ -265,7 +266,8 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 		DEBUG(1, ("Failed to start GENSEC client mechanism %s: %s\n",
 			  gensec_get_name_by_authtype(auth_type),
 			  nt_errstr(c->status)));
-		goto failed;
+		composite_error(c, c->status);
+		return c;
 	}
 
 	sec->auth_info = talloc(p, struct dcerpc_auth);
@@ -293,11 +295,12 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 				  &state->credentials);
 	if (!NT_STATUS_IS_OK(c->status) &&
 	    !NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		goto failed;
+		composite_error(c, c->status);
+		return c;
 	}
 
-	state->more_processing =
-		NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED);
+	state->more_processing = NT_STATUS_EQUAL(c->status,
+						 NT_STATUS_MORE_PROCESSING_REQUIRED);
 
 	if (state->credentials.length == 0) {
 		composite_done(c);
@@ -312,10 +315,6 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	if (composite_nomem(creq, c)) return c;
 
 	composite_continue(c, creq, bind_auth_recv_bindreply, c);
-	return c;
-	
-failed:
-	composite_error(c, c->status);
 	return c;
 }
 
