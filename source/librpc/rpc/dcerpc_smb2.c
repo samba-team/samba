@@ -371,13 +371,12 @@ struct composite_context *dcerpc_pipe_open_smb2_send(struct dcerpc_connection *c
 	struct smb2_create io;
 	struct smb2_request *req;
 
-	ctx = talloc_zero(NULL, struct composite_context);
-	if (ctx == NULL) goto failed;
-	ctx->state = COMPOSITE_STATE_IN_PROGRESS;
-	ctx->event_ctx = talloc_reference(c, c->event_ctx);
+	ctx = composite_create(c, c->event_ctx);
+	if (ctx == NULL) return NULL;
 
 	state = talloc(ctx, struct pipe_open_smb2_state);
-	if (state == NULL) goto failed;
+	if (composite_nomem(state, ctx)) return ctx;
+	ctx->private_data = state;
 
 	state->c = c;
 	state->ctx = ctx;
@@ -409,16 +408,8 @@ struct composite_context *dcerpc_pipe_open_smb2_send(struct dcerpc_connection *c
 	io.in.fname = pipe_name;
 
 	req = smb2_create_send(tree, &io);
-	if (req == NULL) goto failed;
-
-	req->async.fn = pipe_open_recv;
-	req->async.private = state;
-
+	composite_continue_smb2(ctx, req, pipe_open_recv, state);
 	return ctx;
-
- failed:
-	talloc_free(ctx);
-	return NULL;
 }
 
 static void pipe_open_recv(struct smb2_request *req)

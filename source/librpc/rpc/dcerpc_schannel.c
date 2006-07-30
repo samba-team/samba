@@ -232,15 +232,12 @@ struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *epm_map_req;
 	
 	/* composite context allocation and setup */
-	c = talloc_zero(mem_ctx, struct composite_context);
+	c = composite_create(mem_ctx, p->conn->event_ctx);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct schannel_key_state);
 	if (composite_nomem(s, c)) return c;
-
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
-	c->event_ctx = p->conn->event_ctx;
 
 	/* store parameters in the state structure */
 	s->pipe        = p;
@@ -357,16 +354,13 @@ struct composite_context *dcerpc_bind_auth_schannel_send(TALLOC_CTX *tmp_ctx,
 	struct composite_context *schan_key_req;
 
 	/* composite context allocation and setup */
-	c = talloc_zero(tmp_ctx, struct composite_context);
+	c = composite_create(tmp_ctx, p->conn->event_ctx);
 	if (c == NULL) return NULL;
 	
 	s = talloc_zero(c, struct auth_schannel_state);
 	if (composite_nomem(s, c)) return c;
-	
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
-	c->event_ctx = p->conn->event_ctx;
-	
+
 	/* store parameters in the state structure */
 	s->pipe        = p;
 	s->credentials = credentials;
