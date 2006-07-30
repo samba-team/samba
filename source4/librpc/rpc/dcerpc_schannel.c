@@ -67,9 +67,10 @@ static void continue_epm_map_binding(struct composite_context *ctx)
 
 	/* receive endpoint mapping */
 	c->status = dcerpc_epm_map_binding_recv(ctx);
-	if (!composite_is_ok(c)) {
+	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n",
 			 DCERPC_NETLOGON_UUID, nt_errstr(c->status)));
+		composite_error(c, c->status);
 		return;
 	}
 
@@ -99,6 +100,8 @@ static void continue_secondary_connection(struct composite_context *ctx)
 	c->status = dcerpc_secondary_connection_recv(ctx, &s->pipe2);
 	if (!composite_is_ok(c)) return;
 
+	talloc_steal(s, s->pipe2);
+
 	/* initiate a non-authenticated bind */
 	auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe2, &dcerpc_table_netlogon);
 	if (composite_nomem(auth_none_req, c)) return;
@@ -122,10 +125,7 @@ static void continue_bind_auth_none(struct composite_context *ctx)
 
 	/* receive result of non-authenticated bind request */
 	c->status = dcerpc_bind_auth_none_recv(ctx);
-	if (!composite_is_ok(c)) {
-		talloc_free(s->pipe2);
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 	
 	/* prepare a challenge request */
 	s->r.in.server_name   = talloc_asprintf(c, "\\\\%s", dcerpc_server_name(s->pipe));
@@ -214,8 +214,7 @@ static void continue_srv_auth2(struct rpc_request *req)
 
 	/* setup current netlogon credentials */
 	cli_credentials_set_netlogon_creds(s->credentials, s->creds);
-	talloc_free(s->pipe2);
-	
+
 	composite_done(c);
 }
 
