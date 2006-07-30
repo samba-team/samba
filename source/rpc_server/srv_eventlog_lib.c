@@ -90,7 +90,7 @@ struct trav_size_struct {
 static int eventlog_tdb_size_fn( TDB_CONTEXT * tdb, TDB_DATA key, TDB_DATA data,
 			  void *state )
 {
-	struct trav_size_struct	 *tsize = state;
+	struct trav_size_struct	 *tsize = (struct trav_size_struct *)state;
 	
 	tsize->size += data.dsize;
 	tsize->rec_count++;
@@ -486,7 +486,7 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	}
 
 	/* alloc mem for the packed version */
-	packed_ee = TALLOC( mem_ctx, ee->record.length + MARGIN );
+	packed_ee = (uint8 *)TALLOC( mem_ctx, ee->record.length + MARGIN );
 	if ( !packed_ee ) {
 		talloc_destroy( mem_ctx );
 		return 0;

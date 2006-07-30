@@ -88,10 +88,12 @@ void load_case_tables(void)
 	}
 	initialised = 1;
 
-	upcase_table = map_file(lib_path("upcase.dat"), 0x20000);
+	upcase_table = (smb_ucs2_t *)map_file(lib_path("upcase.dat"),
+					      0x20000);
 	upcase_table_use_unmap = ( upcase_table != NULL );
 
-	lowcase_table = map_file(lib_path("lowcase.dat"), 0x20000);
+	lowcase_table = (smb_ucs2_t *)map_file(lib_path("lowcase.dat"),
+					       0x20000);
 	lowcase_table_use_unmap = ( lowcase_table != NULL );
 
 #ifdef HAVE_SETLOCALE
@@ -111,7 +113,7 @@ void load_case_tables(void)
 	   not available */
 	if (!upcase_table) {
 		DEBUG(1,("creating lame upcase table\n"));
-		upcase_table = SMB_MALLOC(0x20000);
+		upcase_table = (smb_ucs2_t *)SMB_MALLOC(0x20000);
 		for (i=0;i<0x10000;i++) {
 			smb_ucs2_t v;
 			SSVAL(&v, 0, i);
@@ -126,7 +128,7 @@ void load_case_tables(void)
 
 	if (!lowcase_table) {
 		DEBUG(1,("creating lame lowcase table\n"));
-		lowcase_table = SMB_MALLOC(0x20000);
+		lowcase_table = (smb_ucs2_t *)SMB_MALLOC(0x20000);
 		for (i=0;i<0x10000;i++) {
 			smb_ucs2_t v;
 			SSVAL(&v, 0, i);
@@ -228,7 +230,7 @@ void init_valid_table(void)
 		return;
 	}
 
-	valid_file = map_file(lib_path("valid.dat"), 0x10000);
+	valid_file = (uint8 *)map_file(lib_path("valid.dat"), 0x10000);
 	if (valid_file) {
 		valid_table = valid_file;
 		mapped_file = 1;
@@ -247,7 +249,7 @@ void init_valid_table(void)
 	valid_table_use_unmap = False;
 
 	DEBUG(2,("creating default valid table\n"));
-	valid_table = SMB_MALLOC(0x10000);
+	valid_table = (uint8 *)SMB_MALLOC(0x10000);
 	for (i=0;i<128;i++) {
 		valid_table[i] = isalnum(i) || strchr(allowed,i);
 	}

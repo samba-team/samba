@@ -52,7 +52,7 @@ static char *nttrans_realloc(char **ptr, size_t size)
 		smb_panic("nttrans_realloc() called with NULL ptr\n");
 	}
 		
-	*ptr = SMB_REALLOC(*ptr, size);
+	*ptr = (char *)SMB_REALLOC(*ptr, size);
 	if(*ptr == NULL) {
 		return NULL;
 	}
@@ -2908,7 +2908,7 @@ int reply_nttrans(connection_struct *conn,
 	if (state->total_data)  {
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
-		if ((state->data = SMB_MALLOC(state->total_data)) == NULL) {
+		if ((state->data = (char *)SMB_MALLOC(state->total_data)) == NULL) {
 			DEBUG(0,("reply_nttrans: data malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_data));
 			TALLOC_FREE(state);
@@ -2927,7 +2927,7 @@ int reply_nttrans(connection_struct *conn,
 	if (state->total_param) {
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
-		if ((state->param = SMB_MALLOC(state->total_param)) == NULL) {
+		if ((state->param = (char *)SMB_MALLOC(state->total_param)) == NULL) {
 			DEBUG(0,("reply_nttrans: param malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_param));
 			SAFE_FREE(state->data);
@@ -2950,7 +2950,7 @@ int reply_nttrans(connection_struct *conn,
 	if(state->setup_count > 0) {
 		DEBUG(10,("reply_nttrans: state->setup_count = %d\n",
 			  state->setup_count));
-		state->setup = TALLOC(state, state->setup_count);
+		state->setup = (uint16 *)TALLOC(state, state->setup_count);
 		if (state->setup == NULL) {
 			DEBUG(0,("reply_nttrans : Out of memory\n"));
 			SAFE_FREE(state->data);

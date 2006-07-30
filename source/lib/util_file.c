@@ -353,7 +353,7 @@ char *file_pload(char *syscmd, size_t *size)
 	total = 0;
 
 	while ((n = read(fd, buf, sizeof(buf))) > 0) {
-		p = SMB_REALLOC(p, total + n + 1);
+		p = (char *)SMB_REALLOC(p, total + n + 1);
 		if (!p) {
 		        DEBUG(0,("file_pload: failed to expand buffer!\n"));
 			close(fd);

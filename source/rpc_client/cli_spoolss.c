@@ -1609,7 +1609,7 @@ WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *me
 
 	/* Return output parameters */
 
-	value->data_p = TALLOC_MEMDUP(mem_ctx, out.data, out.needed);
+	value->data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, out.data, out.needed);
 	value->type = out.type;
 	value->size = out.size;
 
@@ -1662,7 +1662,7 @@ WERROR rpccli_spoolss_getprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *
 
 	/* Return output parameters */
 
-	value->data_p = TALLOC_MEMDUP(mem_ctx, out.data, out.needed);
+	value->data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, out.data, out.needed);
 	value->type = out.type;
 	value->size = out.needed;
 	
@@ -1758,7 +1758,8 @@ WERROR rpccli_spoolss_enumprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	if (value) {
 		rpcstr_pull(value->valuename, out.value, sizeof(value->valuename), -1,
 			    STR_TERMINATE);
-		value->data_p = TALLOC_MEMDUP(mem_ctx, out.data, out.realdatasize);
+		value->data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, out.data,
+						       out.realdatasize);
 		value->type = out.type;
 		value->size = out.realdatasize;
 	}
