@@ -531,7 +531,7 @@ char *sid_binstring(const DOM_SID *sid)
 {
 	char *buf, *s;
 	int len = sid_size(sid);
-	buf = SMB_MALLOC(len);
+	buf = (char *)SMB_MALLOC(len);
 	if (!buf)
 		return NULL;
 	sid_linearize(buf, len, sid);
@@ -549,7 +549,7 @@ char *sid_binstring_hex(const DOM_SID *sid)
 {
 	char *buf, *s;
 	int len = sid_size(sid);
-	buf = SMB_MALLOC(len);
+	buf = (char *)SMB_MALLOC(len);
 	if (!buf)
 		return NULL;
 	sid_linearize(buf, len, sid);

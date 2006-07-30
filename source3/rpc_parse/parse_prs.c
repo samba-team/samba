@@ -158,7 +158,8 @@ char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count)
 
 	if (size) {
 		/* We can't call the type-safe version here. */
-		ret = _talloc_zero_array(ps->mem_ctx, size, count, "parse_prs");
+		ret = (char *)_talloc_zero_array(ps->mem_ctx, size, count,
+						 "parse_prs");
 	}
 	return ret;
 }
@@ -213,7 +214,7 @@ BOOL prs_set_buffer_size(prs_struct *ps, uint32 newsize)
 		if (newsize == 0) {
 			SAFE_FREE(ps->data_p);
 		} else {
-			ps->data_p = SMB_REALLOC(ps->data_p, newsize);
+			ps->data_p = (char *)SMB_REALLOC(ps->data_p, newsize);
 
 			if (ps->data_p == NULL) {
 				DEBUG(0,("prs_set_buffer_size: Realloc failure for size %u.\n",
@@ -265,7 +266,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 
 		new_size = MAX(RPC_MAX_PDU_FRAG_LEN,extra_space);
 
-		if((ps->data_p = SMB_MALLOC(new_size)) == NULL) {
+		if((ps->data_p = (char *)SMB_MALLOC(new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
 			return False;
 		}
@@ -277,7 +278,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 		 */
 		new_size = MAX(ps->buffer_size*2, ps->buffer_size + extra_space);		
 
-		if ((ps->data_p = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
+		if ((ps->data_p = (char *)SMB_REALLOC(ps->data_p, new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Realloc failure for size %u.\n",
 				(unsigned int)new_size));
 			return False;
@@ -306,7 +307,7 @@ BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 		return False;
 	}
 
-	if((ps->data_p = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
+	if((ps->data_p = (char *)SMB_REALLOC(ps->data_p, new_size)) == NULL) {
 		DEBUG(0,("prs_force_grow: Realloc failure for size %u.\n",
 			(unsigned int)new_size));
 		return False;
@@ -1816,7 +1817,7 @@ return the contents of a prs_struct in a DATA_BLOB
 BOOL prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	blob->length = prs_offset(prs);
-	blob->data = talloc_zero_size(mem_ctx, blob->length);
+	blob->data = (uint8 *)talloc_zero_size(mem_ctx, blob->length);
 
 	if (!prs_copy_all_data_out((char *)blob->data, prs))
 		return False;

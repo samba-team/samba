@@ -104,7 +104,7 @@ static void sig_usr1(void)
 static void ping_message(int msg_type, struct process_id src,
 			 void *buf, size_t len)
 {
-	const char *msg = buf ? buf : "none";
+	const char *msg = buf ? (const char *)buf : "none";
 
 	DEBUG(1,("INFO: Received PING message from PID %s [%s]\n",
 		 procid_str_static(&src), msg));
@@ -236,7 +236,7 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 
 	kbuf = message_key_pid(pid);
 
-	dbuf.dptr = (void *)SMB_MALLOC(len + sizeof(rec));
+	dbuf.dptr = (char *)SMB_MALLOC(len + sizeof(rec));
 	if (!dbuf.dptr)
 		return False;
 
