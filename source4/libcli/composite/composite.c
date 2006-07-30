@@ -24,10 +24,28 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/smb2/smb2.h"
 #include "libcli/composite/composite.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "libcli/nbt/libnbt.h"
+
+/*
+ create a new composite_context structure
+ and initialize it
+*/
+_PUBLIC_ struct composite_context *composite_create(TALLOC_CTX *mem_ctx,
+						    struct event_context *ev)
+{
+	struct composite_context *c;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (!c) return NULL;
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->event_ctx = ev;
+
+	return c;
+}
 
 /*
   block until a composite function has completed, then return the status
@@ -150,6 +168,16 @@ _PUBLIC_ void composite_continue_smb(struct composite_context *ctx,
 				     struct smbcli_request *new_req,
 				     void (*continuation)(struct smbcli_request *),
 				     void *private_data)
+{
+	if (composite_nomem(new_req, ctx)) return;
+	new_req->async.fn = continuation;
+	new_req->async.private = private_data;
+}
+
+_PUBLIC_ void composite_continue_smb2(struct composite_context *ctx,
+				      struct smb2_request *new_req,
+				      void (*continuation)(struct smb2_request *),
+				      void *private_data)
 {
 	if (composite_nomem(new_req, ctx)) return;
 	new_req->async.fn = continuation;
