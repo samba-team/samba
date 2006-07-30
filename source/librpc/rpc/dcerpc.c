@@ -632,18 +632,10 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	DATA_BLOB blob;
 	struct rpc_request *req;
 
-	/* we allocate a dcerpc_request so we can be in the same
-	   request queue as normal requests, but most of the request
-	   fields are not used as there is no call id */
-	req = talloc_zero(mem_ctx, struct rpc_request);
-	if (req == NULL) return NULL;
-
-	c = talloc_zero(mem_ctx, struct composite_context);
+	c = composite_create(mem_ctx,p->conn->event_ctx);
 	if (c == NULL) return NULL;
 
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = p;
-	c->event_ctx = p->conn->event_ctx;
 
 	p->syntax = *syntax;
 	p->transfer_syntax = *transfer_syntax;
@@ -659,12 +651,8 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	pkt.u.bind.max_recv_frag = 5840;
 	pkt.u.bind.assoc_group_id = 0;
 	pkt.u.bind.num_contexts = 1;
-	pkt.u.bind.ctx_list =
-		talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
-	if (pkt.u.bind.ctx_list == NULL) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
+	pkt.u.bind.ctx_list = talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
+	if (composite_nomem(pkt.u.bind.ctx_list, c)) return c;
 	pkt.u.bind.ctx_list[0].context_id = p->context_id;
 	pkt.u.bind.ctx_list[0].num_transfer_syntaxes = 1;
 	pkt.u.bind.ctx_list[0].abstract_syntax = p->syntax;
@@ -674,11 +662,16 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	/* construct the NDR form of the packet */
 	c->status = ncacn_push_auth(&blob, c, &pkt,
 				    p->conn->security_state.auth_info);
-	if (!NT_STATUS_IS_OK(c->status)) {
-		goto failed;
-	}
+	if (!composite_is_ok(c)) return c;
 
 	p->conn->transport.recv_data = dcerpc_recv_data;
+
+	/*
+	 * we allocate a dcerpc_request so we can be in the same
+	 * request queue as normal requests
+	 */
+	req = talloc_zero(c, struct rpc_request);
+	if (composite_nomem(req, c)) return c;
 
 	req->state = RPC_REQUEST_PENDING;
 	req->call_id = pkt.call_id;
@@ -686,23 +679,16 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	req->async.callback = dcerpc_composite_fail;
 	req->p = p;
 	req->recv_handler = dcerpc_bind_recv_handler;
-
 	DLIST_ADD_END(p->conn->pending, req, struct rpc_request *);
 
 	c->status = p->conn->transport.send_request(p->conn, &blob,
 						    True);
-	if (!NT_STATUS_IS_OK(c->status)) {
-		goto failed;
-	}
+	if (!composite_is_ok(c)) return c;
 
 	event_add_timed(c->event_ctx, req,
 			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
 			dcerpc_timeout_handler, req);
 
-	return c;
-
- failed:
-	composite_error(c, c->status);
 	return c;
 }
 
@@ -1559,18 +1545,10 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	DATA_BLOB blob;
 	struct rpc_request *req;
 
-	/* we allocate a dcerpc_request so we can be in the same
-	   request queue as normal requests, but most of the request
-	   fields are not used as there is no call id */
-	req = talloc_zero(mem_ctx, struct rpc_request);
-	if (req == NULL) return NULL;
-
-	c = talloc_zero(req, struct composite_context);
+	c = composite_create(mem_ctx, p->conn->event_ctx);
 	if (c == NULL) return NULL;
 
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = p;
-	c->event_ctx = p->conn->event_ctx;
 
 	p->syntax = *syntax;
 	p->transfer_syntax = *transfer_syntax;
@@ -1586,12 +1564,8 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	pkt.u.alter.max_recv_frag = 5840;
 	pkt.u.alter.assoc_group_id = 0;
 	pkt.u.alter.num_contexts = 1;
-	pkt.u.alter.ctx_list = talloc_array(mem_ctx,
-						   struct dcerpc_ctx_list, 1);
-	if (pkt.u.alter.ctx_list == NULL) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
+	pkt.u.alter.ctx_list = talloc_array(c, struct dcerpc_ctx_list, 1);
+	if (composite_nomem(pkt.u.alter.ctx_list, c)) return c;
 	pkt.u.alter.ctx_list[0].context_id = p->context_id;
 	pkt.u.alter.ctx_list[0].num_transfer_syntaxes = 1;
 	pkt.u.alter.ctx_list[0].abstract_syntax = p->syntax;
@@ -1601,11 +1575,16 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	/* construct the NDR form of the packet */
 	c->status = ncacn_push_auth(&blob, mem_ctx, &pkt,
 				    p->conn->security_state.auth_info);
-	if (!NT_STATUS_IS_OK(c->status)) {
-		goto failed;
-	}
+	if (!composite_is_ok(c)) return c;
 
 	p->conn->transport.recv_data = dcerpc_recv_data;
+
+	/*
+	 * we allocate a dcerpc_request so we can be in the same
+	 * request queue as normal requests
+	 */
+	req = talloc_zero(c, struct rpc_request);
+	if (composite_nomem(req, c)) return c;
 
 	req->state = RPC_REQUEST_PENDING;
 	req->call_id = pkt.call_id;
@@ -1613,22 +1592,15 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	req->async.callback = dcerpc_composite_fail;
 	req->p = p;
 	req->recv_handler = dcerpc_alter_recv_handler;
-
 	DLIST_ADD_END(p->conn->pending, req, struct rpc_request *);
 
 	c->status = p->conn->transport.send_request(p->conn, &blob, True);
-	if (!NT_STATUS_IS_OK(c->status)) {
-		goto failed;
-	}
+	if (!composite_is_ok(c)) return c;
 
 	event_add_timed(c->event_ctx, req,
 			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
 			dcerpc_timeout_handler, req);
 
-	return c;
-
- failed:
-	composite_error(c, c->status);
 	return c;
 }
 
