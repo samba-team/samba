@@ -576,7 +576,7 @@ static void dcerpc_bind_recv_handler(struct rpc_request *req,
 	if ((pkt->ptype != DCERPC_PKT_BIND_ACK) ||
 	    (pkt->u.bind_ack.num_results == 0) ||
 	    (pkt->u.bind_ack.ctx_list[0].result != 0)) {
-		composite_error(c, NT_STATUS_UNSUCCESSFUL);
+		composite_error(c, NT_STATUS_NET_WRITE_FAULT);
 		return;
 	}
 
@@ -1529,7 +1529,7 @@ static void dcerpc_alter_recv_handler(struct rpc_request *req,
 	if (pkt->ptype != DCERPC_PKT_ALTER_RESP ||
 	    pkt->u.alter_resp.num_results == 0 ||
 	    pkt->u.alter_resp.ctx_list[0].result != 0) {
-		composite_error(c, NT_STATUS_UNSUCCESSFUL);
+		composite_error(c, NT_STATUS_NET_WRITE_FAULT);
 		return;
 	}
 
