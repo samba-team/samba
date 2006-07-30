@@ -171,38 +171,24 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	struct nbt_name name;
 	struct composite_context *creq;
 
-	c = talloc_zero(mem_ctx, struct composite_context);
+	c = composite_create(mem_ctx, ev);
 	if (c == NULL) return NULL;
 
 	state = talloc(c, struct smb2_connect_state);
-	if (state == NULL) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	if (composite_nomem(state, c)) return c;
 	c->private_data = state;
-	c->event_ctx = ev;
 
 	state->credentials = credentials;
 	state->host = talloc_strdup(c, host);
+	if (composite_nomem(state->host, c)) return c;
 	state->share = talloc_strdup(c, share);
-	if (state->host == NULL || state->share == NULL) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
+	if (composite_nomem(state->share, c)) return c;
 
 	ZERO_STRUCT(name);
 	name.name = host;
 
 	creq = resolve_name_send(&name, c->event_ctx, lp_name_resolve_order());
-
 	composite_continue(c, creq, continue_resolve, c);
-
-	return c;
-
-failed:
-	composite_error(c, c->status);
 	return c;
 }
 
