@@ -209,7 +209,7 @@ int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int
 	int32 v_store;
 
 	SIVAL(&v_store,0,v);
-	data.dptr = (void *)&v_store;
+	data.dptr = (char *)&v_store;
 	data.dsize = sizeof(int32);
 
 	return tdb_store(tdb, key, data, TDB_REPLACE);
@@ -269,7 +269,7 @@ BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, u
 	BOOL ret = True;
 
 	SIVAL(&v_store, 0, value);
-	data.dptr = (void *)&v_store;
+	data.dptr = (char *)&v_store;
 	data.dsize = sizeof(uint32);
 
 	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1)

@@ -355,9 +355,10 @@ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 	dbuf = tdb_fetch(tdb, key);
 
 	if (dbuf.dptr == NULL) {
-		dbuf.dptr = malloc(new_dbuf.dsize);
+		dbuf.dptr = (char *)malloc(new_dbuf.dsize);
 	} else {
-		dbuf.dptr = realloc(dbuf.dptr, dbuf.dsize + new_dbuf.dsize);
+		dbuf.dptr = (char *)realloc(dbuf.dptr,
+					    dbuf.dsize + new_dbuf.dsize);
 	}
 
 	if (dbuf.dptr == NULL) {

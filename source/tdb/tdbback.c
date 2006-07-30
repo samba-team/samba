@@ -63,7 +63,7 @@ char *add_suffix(const char *name, const char *suffix)
 {
 	char *ret;
 	int len = strlen(name) + strlen(suffix) + 1;
-	ret = malloc(len);
+	ret = (char *)malloc(len);
 	if (!ret) {
 		fprintf(stderr,"Out of memory!\n");
 		exit(1);
