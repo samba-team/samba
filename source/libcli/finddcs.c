@@ -66,44 +66,36 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 				       struct event_context *event_ctx,
 				       struct messaging_context *msg_ctx)
 {
-	struct composite_context *result, *ctx;
+	struct composite_context *c, *creq;
 	struct finddcs_state *state;
 	struct nbt_name name;
 
-	result = talloc_zero(mem_ctx, struct composite_context);
-	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = event_ctx;
+	c = composite_create(mem_ctx, event_ctx);
+	if (c == NULL) return NULL;
 
-	state = talloc(result, struct finddcs_state);
-	if (state == NULL) goto failed;
-	state->ctx = result;
-	result->private_data = state;
+	state = talloc(c, struct finddcs_state);
+	if (composite_nomem(state, c)) return c;
+	c->private_data = state;
+
+	state->ctx = c;
 
 	state->domain_name = talloc_strdup(state, domain_name);
-	if (state->domain_name == NULL) goto failed;
-	state->domain_sid = domain_sid;
-	if (domain_sid != NULL) {
-		if (talloc_reference(state, domain_sid) == NULL) {
-			goto failed;
-		}
+	if (composite_nomem(state->domain_name, c)) return c;
+
+	if (domain_sid) {
+		state->domain_sid = talloc_reference(state, domain_sid);
+		if (composite_nomem(state->domain_sid, c)) return c;
+	} else {
+		state->domain_sid = NULL;
 	}
+
 	state->msg_ctx = msg_ctx;
 
 	make_nbt_name(&name, state->domain_name, name_type);
-	ctx = resolve_name_send(&name, result->event_ctx,
-				methods);
-
-	if (ctx == NULL) goto failed;
-	ctx->async.fn = finddcs_name_resolved;
-	ctx->async.private_data = state;
-
-	return result;
-
-failed:
-	talloc_free(result);
-	return NULL;
+	creq = resolve_name_send(&name, event_ctx,
+				 methods);
+	composite_continue(c, creq, finddcs_name_resolved, state);
+	return c;
 }
 
 /* Having got an name query answer, fire off a GetDC request, so we
