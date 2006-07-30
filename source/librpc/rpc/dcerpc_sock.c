@@ -386,7 +386,10 @@ void continue_ipv6_open_socket(struct composite_context *ctx)
 
 	/* receive result of socket open request */
 	c->status = dcerpc_pipe_open_socket_recv(ctx);
-	if (NT_STATUS_IS_OK(c->status)) return;
+	if (NT_STATUS_IS_OK(c->status)) {
+		composite_done(c);
+		return;
+	}
 
 	talloc_free(s->srvaddr);
 
