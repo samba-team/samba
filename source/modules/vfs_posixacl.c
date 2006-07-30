@@ -172,7 +172,7 @@ static BOOL smb_ace_to_internal(acl_entry_t posix_ace,
 	}
 	switch(ace->a_type) {
 	case SMB_ACL_USER: {
-		uid_t *puid = acl_get_qualifier(posix_ace);
+		uid_t *puid = (uid_t *)acl_get_qualifier(posix_ace);
 		if (puid == NULL) {
 			DEBUG(0, ("smb_acl_get_qualifier failed\n"));
 			return False;
@@ -183,7 +183,7 @@ static BOOL smb_ace_to_internal(acl_entry_t posix_ace,
 	}
 		
 	case SMB_ACL_GROUP: {
-		gid_t *pgid = acl_get_qualifier(posix_ace);
+		gid_t *pgid = (uid_t *)acl_get_qualifier(posix_ace);
 		if (pgid == NULL) {
 			DEBUG(0, ("smb_acl_get_qualifier failed\n"));
 			return False;
@@ -219,9 +219,9 @@ static struct smb_acl_t *smb_acl_to_internal(acl_t acl)
 
 		entry_id = ACL_NEXT_ENTRY;
 
-		result = SMB_REALLOC(result, sizeof(struct smb_acl_t) +
-				     (sizeof(struct smb_acl_entry) *
-				      (result->count+1)));
+		result = (struct smb_acl_t *)SMB_REALLOC(
+			result, sizeof(struct smb_acl_t) +
+			(sizeof(struct smb_acl_entry) * (result->count+1)));
 		if (result == NULL) {
 			DEBUG(0, ("SMB_REALLOC failed\n"));
 			errno = ENOMEM;

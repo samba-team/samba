@@ -1074,7 +1074,7 @@ char *realloc_string_sub(char *string, const char *pattern,
 	while ((p = strstr_m(s,pattern))) {
 		if (ld > 0) {
 			int offset = PTR_DIFF(s,string);
-			string = SMB_REALLOC(string, ls + ld + 1);
+			string = (char *)SMB_REALLOC(string, ls + ld + 1);
 			if (!string) {
 				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
 				SAFE_FREE(in);
@@ -1143,7 +1143,8 @@ char *talloc_string_sub(TALLOC_CTX *mem_ctx, const char *src,
 	while ((p = strstr_m(s,pattern))) {
 		if (ld > 0) {
 			int offset = PTR_DIFF(s,string);
-			string = TALLOC_REALLOC(mem_ctx, string, ls + ld + 1);
+			string = (char *)TALLOC_REALLOC(mem_ctx, string,
+							ls + ld + 1);
 			if (!string) {
 				DEBUG(0, ("talloc_string_sub: out of "
 					  "memory!\n"));
@@ -1602,7 +1603,7 @@ char *binary_string_rfc2254(char *buf, int len)
 	char *s;
 	int i, j;
 	const char *hex = "0123456789ABCDEF";
-	s = SMB_MALLOC(len * 3 + 1);
+	s = (char *)SMB_MALLOC(len * 3 + 1);
 	if (!s)
 		return NULL;
 	for (j=i=0;i<len;i++) {
@@ -1620,7 +1621,7 @@ char *binary_string(char *buf, int len)
 	char *s;
 	int i, j;
 	const char *hex = "0123456789ABCDEF";
-	s = SMB_MALLOC(len * 2 + 1);
+	s = (char *)SMB_MALLOC(len * 2 + 1);
 	if (!s)
 		return NULL;
 	for (j=i=0;i<len;i++) {
@@ -2242,7 +2243,7 @@ char * base64_encode_data_blob(DATA_BLOB data)
 	out_cnt = 0;
 	len = data.length;
 	output_len = data.length * 2;
-	result = SMB_MALLOC(output_len); /* get us plenty of space */
+	result = (char *)SMB_MALLOC(output_len); /* get us plenty of space */
 
 	while (len-- && out_cnt < (data.length * 2) - 5) {
 		int c = (unsigned char) *(data.data++);
@@ -2376,11 +2377,11 @@ void string_append(char **left, const char *right)
 	int new_len = strlen(right) + 1;
 
 	if (*left == NULL) {
-		*left = SMB_MALLOC(new_len);
+		*left = (char *)SMB_MALLOC(new_len);
 		*left[0] = '\0';
 	} else {
 		new_len += strlen(*left);
-		*left = SMB_REALLOC(*left, new_len);
+		*left = (char *)SMB_REALLOC(*left, new_len);
 	}
 
 	if (*left == NULL) {

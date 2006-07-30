@@ -518,7 +518,7 @@ BOOL smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
 
 size_t create_rpc_blob(RPC_DATA_BLOB *str, size_t len)
 {
-	str->buffer = TALLOC_ZERO(get_talloc_ctx(), len);
+	str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(), len);
 	if (str->buffer == NULL)
 		smb_panic("create_rpc_blob: talloc fail\n");
 	return len;
@@ -617,7 +617,8 @@ void init_regval_buffer(REGVAL_BUFFER *str, const uint8 *buf, size_t len)
 
 	if (buf != NULL) {
 		SMB_ASSERT(str->buf_max_len >= str->buf_len);
-		str->buffer = TALLOC_ZERO(get_talloc_ctx(), str->buf_max_len);
+		str->buffer = (uint16 *)TALLOC_ZERO(get_talloc_ctx(),
+						    str->buf_max_len);
 		if (str->buffer == NULL)
 			smb_panic("init_regval_buffer: talloc fail\n");
 		memcpy(str->buffer, buf, str->buf_len);
@@ -723,7 +724,8 @@ void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len)
 
 	/* store the string */
 	if(str_len != 0) {
-		str->buffer = TALLOC_ZERO(get_talloc_ctx(), str->str_max_len);
+		str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(),
+						   str->str_max_len);
 		if (str->buffer == NULL)
 			smb_panic("init_string2: malloc fail\n");
 		memcpy(str->buffer, buf, str_len);
