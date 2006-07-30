@@ -1022,30 +1022,29 @@ static void continue_auth_auto(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
+	struct pipe_auth_state *s = talloc_get_type(c->private_data, struct pipe_auth_state);
+	struct composite_context *sec_conn_req;
 
 	c->status = dcerpc_bind_auth_recv(ctx);
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_INVALID_PARAMETER)) {
-		struct pipe_auth_state *s = talloc_get_type(c->private_data, struct pipe_auth_state);
-		struct composite_context *sec_conn_req;
-
-		/* send a request for secondary rpc connection */
+		/*
+		 * Retry with NTLMSSP auth as fallback
+		 * send a request for secondary rpc connection
+		 */
 		sec_conn_req = dcerpc_secondary_connection_send(s->pipe,
 								s->binding);
-		if (composite_nomem(sec_conn_req, c)) return;
-		
 		composite_continue(c, sec_conn_req, continue_ntlmssp_connection, c);
-		
 		return;
 	} else if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
-		struct pipe_auth_state *s = talloc_get_type(c->private_data, struct pipe_auth_state);
-		struct composite_context *sec_conn_req;
 		if (cli_credentials_wrong_password(s->credentials)) {
-			/* send a request for secondary rpc connection */
+			/*
+			 * Retry SPNEGO with a better password
+			 * send a request for secondary rpc connection
+			 */
 			sec_conn_req = dcerpc_secondary_connection_send(s->pipe,
 									s->binding);
-			if (composite_nomem(sec_conn_req, c)) return;
-			
 			composite_continue(c, sec_conn_req, continue_spnego_after_wrong_pass, c);
+			return;
 		}
 	}
 
