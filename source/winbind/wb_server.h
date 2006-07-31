@@ -145,6 +145,7 @@ struct wbsrv_samba3_call {
 
 struct netr_LMSessionKey;
 struct netr_UserSessionKey;
+struct winbind_SamLogon;
 
 #include "winbind/wb_async_helpers.h"
 #include "winbind/wb_proto.h"

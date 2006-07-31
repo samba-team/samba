@@ -177,11 +177,19 @@ static void winbind_task_init(struct task_server *task)
 				     listen_socket);
 	if (!NT_STATUS_IS_OK(status)) goto listen_failed;
 
+	status = wbsrv_init_irpc(service);
+	if (!NT_STATUS_IS_OK(status)) goto irpc_failed;
+
 	return;
 
 listen_failed:
 	DEBUG(0,("stream_setup_socket(path=%s) failed - %s\n",
 		 listen_socket->socket_path, nt_errstr(status)));
+	task_server_terminate(task, nt_errstr(status));
+	return;
+irpc_failed:
+	DEBUG(0,("wbsrv_init_irpc() failed - %s\n",
+		 nt_errstr(status)));
 	task_server_terminate(task, nt_errstr(status));
 	return;
 nomem:

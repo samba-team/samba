@@ -8,6 +8,7 @@ SUBSYSTEM = service
 PRIVATE_PROTO_HEADER = wb_proto.h
 OBJ_FILES = \
 		wb_server.o \
+		wb_irpc.o \
 		wb_samba3_protocol.o \
 		wb_samba3_cmd.o \
 		wb_init_domain.o \
@@ -22,9 +23,15 @@ OBJ_FILES = \
 		wb_cmd_userdomgroups.o \
 		wb_cmd_usersids.o \
 		wb_cmd_list_trustdom.o \
-		wb_pam_auth.o
-PUBLIC_DEPENDENCIES = WB_HELPER RPC_NDR_LSA RPC_NDR_SAMR process_model \
-					  PAM_ERRORS 
+		wb_pam_auth.o \
+		wb_sam_logon.o
+PUBLIC_DEPENDENCIES = \
+		WB_HELPER \
+		NDR_WINBIND \
+		process_model \
+		RPC_NDR_LSA \
+		RPC_NDR_SAMR \
+		PAM_ERRORS
 # End SUBSYSTEM WINBIND
 #######################
 

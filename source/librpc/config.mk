@@ -329,6 +329,13 @@ SO_VERSION = 0
 OBJ_FILES = gen_ndr/ndr_winsrepl.o
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT
 
+[LIBRARY::NDR_WINBIND]
+VERSION = 0.0.1
+SO_VERSION = 0
+OBJ_FILES = gen_ndr/ndr_winbind.o
+PUBLIC_HEADERS = gen_ndr/winbind.h
+PUBLIC_DEPENDENCIES = LIBNDR NDR_NETLOGON
+
 librpc/gen_ndr/tables.c: $(IDL_NDR_PARSE_H_FILES)
 	@echo Generating librpc/gen_ndr/tables.c
 	@$(PERL) $(srcdir)/librpc/tables.pl --output=librpc/gen_ndr/tables.c $(IDL_NDR_PARSE_H_FILES) > librpc/gen_ndr/tables.x
