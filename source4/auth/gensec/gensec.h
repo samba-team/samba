@@ -33,7 +33,6 @@
 #define GENSEC_OID_KERBEROS5_USER2USER "1 2 840 113554 1 2 2 3"
 
 struct gensec_security;
-struct gensec_update_request;
 struct gensec_target {
 	const char *principal;
 	const char *hostname;
@@ -55,6 +54,18 @@ enum gensec_role
 };
 
 struct auth_session_info;
+
+struct gensec_update_request {
+	struct gensec_security *gensec_security;
+	void *private_data;
+	DATA_BLOB in;
+	DATA_BLOB out;
+	NTSTATUS status;
+	struct {
+		void (*fn)(struct gensec_update_request *req, void *private_data);
+		void *private_data;
+	} callback;
+};
 
 struct gensec_security_ops {
 	const char *name;
