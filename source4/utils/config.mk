@@ -31,7 +31,9 @@ PRIVATE_DEPENDENCIES = \
 		POPT_CREDENTIALS \
 		gensec \
 		LIBCLI_RESOLVE \
-		auth
+		auth \
+		MESSAGING \
+		LIBEVENTS
 MANPAGE = man/ntlm_auth.1
 # End BINARY ntlm_auth
 #################################

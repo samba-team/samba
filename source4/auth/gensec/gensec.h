@@ -122,6 +122,7 @@ struct gensec_security {
 	BOOL subcontext;
 	uint32_t want_features;
 	struct event_context *event_ctx;
+	struct messaging_context *msg_ctx; /* only valid as server */
 	struct socket_address *my_addr, *peer_addr;
 };
 

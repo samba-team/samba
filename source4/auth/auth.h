@@ -171,6 +171,9 @@ struct auth_context {
 
 	/* the event context to use for calls that can block */
 	struct event_context *event_ctx;
+
+	/* the messaging context which can be used by backends */
+	struct messaging_context *msg_ctx;
 };
 
 /* this structure is used by backends to determine the size of some critical types */

@@ -114,8 +114,10 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 	if (vuid == 0) {
 		struct gensec_security *gensec_ctx;
 
-		status = gensec_server_start(req, &gensec_ctx,
-					     req->smb_conn->connection->event.ctx);
+		status = gensec_server_start(req,
+					     req->smb_conn->connection->event.ctx,
+					     req->smb_conn->connection->msg_ctx,
+					     &gensec_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
 			goto failed;
