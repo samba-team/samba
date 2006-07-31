@@ -177,7 +177,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	}
 	/* First encode the name_index */
 	working_size = (kbuf.dsize + 1)*sizeof(uint16);
-	buf1 = SMB_REALLOC(buf1, buffer_size + working_size);
+	buf1 = (char *)SMB_REALLOC(buf1, buffer_size + working_size);
 	if(!buf1) {
 		buffer_size = 0;
 		return buffer_size;
@@ -187,7 +187,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	buffer_size += working_size;
 	/* Now encode the actual name */
 	working_size = (dbuf.dsize + 1)*sizeof(uint16);
-	buf1 = SMB_REALLOC(buf1, buffer_size + working_size);
+	buf1 = (char *)SMB_REALLOC(buf1, buffer_size + working_size);
 	if(!buf1) {
 		buffer_size = 0;
 		return buffer_size;
@@ -234,7 +234,7 @@ uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
 
 	/* Now terminate the MULTI_SZ with a double unicode NULL */
 	buf1 = *retbuf;
-	buf1 = SMB_REALLOC(buf1, buffer_size + 2);
+	buf1 = (char *)SMB_REALLOC(buf1, buffer_size + 2);
 	if(!buf1) {
 		buffer_size = 0;
 	} else {
@@ -279,7 +279,7 @@ uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf)
 
 	/* Now terminate the MULTI_SZ with a double unicode NULL */
 	buf1 = *retbuf;
-	buf1 = SMB_REALLOC(buf1, buffer_size + 2);
+	buf1 = (char *)SMB_REALLOC(buf1, buffer_size + 2);
 	if(!buf1) {
 		buffer_size = 0;
 	} else {
