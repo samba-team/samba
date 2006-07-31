@@ -196,7 +196,7 @@ BOOL torture_trans2_scan(int dummy)
 
 	printf("starting trans2 scan test\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -398,7 +398,7 @@ BOOL torture_nttrans_scan(int dummy)
 
 	printf("starting nttrans scan test\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

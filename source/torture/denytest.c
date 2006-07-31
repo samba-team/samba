@@ -1412,7 +1412,7 @@ BOOL torture_denytest1(int dummy)
 	BOOL correct = True;
 	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
 
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
 
@@ -1498,7 +1498,7 @@ BOOL torture_denytest2(int dummy)
 	BOOL correct = True;
 	const char *fnames[2] = {"\\denytest2.dat", "\\denytest2.exe"};
 
-	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
