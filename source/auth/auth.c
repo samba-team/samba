@@ -360,8 +360,9 @@ NTSTATUS auth_check_password_recv(struct auth_check_password_request *req,
  Make a auth_info struct for the auth subsystem
 ***************************************************************************/
 NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, const char **methods, 
-			     struct auth_context **auth_ctx,
-			     struct event_context *ev) 
+			     struct event_context *ev,
+			     struct messaging_context *msg,
+			     struct auth_context **auth_ctx)
 {
 	int i;
 	struct auth_context *ctx;
@@ -371,22 +372,24 @@ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, const char **methods,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	if (!ev) {
+		DEBUG(0,("auth_context_create: called with out event context\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (!msg) {
+		DEBUG(0,("auth_context_create: called with out messaging context\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	ctx = talloc(mem_ctx, struct auth_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 	ctx->challenge.set_by		= NULL;
 	ctx->challenge.may_be_modified	= False;
 	ctx->challenge.data		= data_blob(NULL, 0);
 	ctx->methods			= NULL;
-	
-	if (ev == NULL) {
-		ev = event_context_init(ctx);
-		if (ev == NULL) {
-			talloc_free(ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	ctx->event_ctx = ev;
+	ctx->event_ctx			= ev;
+	ctx->msg_ctx			= msg;
 
 	for (i=0; methods[i] ; i++) {
 		struct auth_method_context *method;

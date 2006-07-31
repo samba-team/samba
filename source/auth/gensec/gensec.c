@@ -465,8 +465,9 @@ const char **gensec_security_oids(struct gensec_security *gensec_security,
   @note  The mem_ctx is only a parent and may be NULL.
 */
 static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, 
-			     struct gensec_security **gensec_security,
-			     struct event_context *ev) 
+			     struct event_context *ev,
+			     struct messaging_context *msg,
+			     struct gensec_security **gensec_security)
 {
 	(*gensec_security) = talloc(mem_ctx, struct gensec_security);
 	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
@@ -489,6 +490,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	}
 
 	(*gensec_security)->event_ctx = ev;
+	(*gensec_security)->msg_ctx = msg;
 
 	return NT_STATUS_OK;
 }
@@ -514,6 +516,7 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 
 	(*gensec_security)->subcontext = True;
 	(*gensec_security)->event_ctx = parent->event_ctx;
+	(*gensec_security)->msg_ctx = parent->msg_ctx;
 
 	return NT_STATUS_OK;
 }
@@ -529,10 +532,20 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
 			     struct event_context *ev)
 {
 	NTSTATUS status;
-	status = gensec_start(mem_ctx, gensec_security, ev);
+	struct event_context *new_ev = NULL;
+
+	if (ev == NULL) {
+		new_ev = event_context_init(mem_ctx);
+		NT_STATUS_HAVE_NO_MEMORY(new_ev);
+		ev = new_ev;
+	}
+
+	status = gensec_start(mem_ctx, ev, NULL, gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(new_ev);
 		return status;
 	}
+	talloc_steal((*gensec_security), new_ev);
 	(*gensec_security)->gensec_role = GENSEC_CLIENT;
 
 	return status;
@@ -545,11 +558,23 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
   @note  The mem_ctx is only a parent and may be NULL.
 */
 NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
-			     struct gensec_security **gensec_security,
-			     struct event_context *ev)
+			     struct event_context *ev,
+			     struct messaging_context *msg,
+			     struct gensec_security **gensec_security)
 {
 	NTSTATUS status;
-	status = gensec_start(mem_ctx, gensec_security, ev);
+
+	if (!ev) {
+		DEBUG(0,("gensec_server_start: no event context given!\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (!msg) {
+		DEBUG(0,("gensec_server_start: no messaging context given!\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = gensec_start(mem_ctx, ev, msg, gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

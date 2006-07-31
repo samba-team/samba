@@ -26,6 +26,7 @@
 #include "auth/auth.h"
 #include "scripting/ejs/smbcalls.h"
 #include "lib/events/events.h"
+#include "lib/messaging/irpc.h"
 
 static int ejs_doauth(MprVarHandle eid,
 		      TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, 
@@ -41,17 +42,20 @@ static int ejs_doauth(MprVarHandle eid,
 
 	struct smbcalls_context *c;
 	struct event_context *ev;
+	struct messaging_context *msg;
 
 	/* Hope we can find an smbcalls_context somewhere up there... */
 	c = talloc_find_parent_bytype(tmp_ctx, struct smbcalls_context);
 	if (c) {
 		ev = c->event_ctx;
+		msg = c->msg_ctx;
 	} else {
 		/* Hope we can find the event context somewhere up there... */
 		ev = event_context_find(tmp_ctx);
+		msg = messaging_client_init(tmp_ctx, ev);
 	}
 
-	nt_status = auth_context_create(tmp_ctx, auth_types, &auth_context, ev);
+	nt_status = auth_context_create(tmp_ctx, auth_types, ev, msg, &auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
 		mprSetPropertyValue(auth, "report", mprString("Auth System Failure"));
