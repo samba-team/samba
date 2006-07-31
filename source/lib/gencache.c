@@ -260,7 +260,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		int status;
 		char *fmt;
 
-		v = SMB_MALLOC(databuf.dsize + 1 - TIMEOUT_LEN);
+		v = (char *)SMB_MALLOC(databuf.dsize + 1 - TIMEOUT_LEN);
 		if (!v) {
 			return False;
 		}
@@ -372,7 +372,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 
 		SAFE_FREE(databuf.dptr);
 
-		valstr = SMB_MALLOC(databuf.dsize + 1 - TIMEOUT_LEN);
+		valstr = (char *)SMB_MALLOC(databuf.dsize + 1 - TIMEOUT_LEN);
 		if (!valstr) {
 			SAFE_FREE(entry);
 			SAFE_FREE(keystr);
