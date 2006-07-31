@@ -259,7 +259,8 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	TALLOC_FREE(ctx_p->token);
 	
 	if (ngroups) {
-		ctx_p->ut.groups = memdup(groups, sizeof(gid_t) * ngroups);
+		ctx_p->ut.groups = (gid_t *)memdup(groups,
+						   sizeof(gid_t) * ngroups);
 		if (!ctx_p->ut.groups) {
 			smb_panic("memdup failed");
 		}

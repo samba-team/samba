@@ -206,8 +206,8 @@ void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle, files_struct *fsp,
 		return ext_data;
 	}
 
-	ext = TALLOC_ZERO(handle->conn->mem_ctx,
-			    sizeof(struct vfs_fsp_data) + ext_size);
+	ext = (struct vfs_fsp_data *)TALLOC_ZERO(
+		handle->conn->mem_ctx, sizeof(struct vfs_fsp_data) + ext_size);
 	if (ext == NULL) {
 		return NULL;
 	}
@@ -647,7 +647,7 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 	if (!p)
 		return(NULL);
 
-	ptr = SMB_VFS_READDIR(conn,p);
+	ptr = SMB_VFS_READDIR(conn, (DIR *)p);
 	if (!ptr)
 		return(NULL);
 

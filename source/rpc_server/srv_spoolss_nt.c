@@ -719,7 +719,8 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 	}
 
 	data->notify_data.data.length = prs_offset(&ps);
-	data->notify_data.data.string = TALLOC(mem_ctx, prs_offset(&ps));
+	data->notify_data.data.string = (uint16 *)
+		TALLOC(mem_ctx, prs_offset(&ps));
 	if (!data->notify_data.data.string) {
 		prs_mem_free(&ps);
 		return;
@@ -911,7 +912,8 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 	/* need to allocate own copy of data */
 	
 	if ( msg->len != 0 ) 
-		msg_grp->msgs[new_slot].notify.data = TALLOC_MEMDUP( ctr->ctx, msg->notify.data, msg->len );
+		msg_grp->msgs[new_slot].notify.data = (char *)
+			TALLOC_MEMDUP( ctr->ctx, msg->notify.data, msg->len );
 	
 	return ctr->num_groups;
 }
@@ -1220,7 +1222,7 @@ void do_drv_upgrade_printer(int msg_type, struct process_id src, void *buf, size
 	int n_services = lp_numservices();
 	
 	len = MIN(len,sizeof(drivername)-1);
-	strncpy(drivername, buf, len);
+	strncpy(drivername, (const char *)buf, len);
 	
 	DEBUG(10,("do_drv_upgrade_printer: Got message for new driver [%s]\n", drivername ));
 
@@ -1318,7 +1320,7 @@ void reset_all_printerdata(int msg_type, struct process_id src,
 	int n_services = lp_numservices();
 	
 	len = MIN( len, sizeof(drivername)-1 );
-	strncpy( drivername, buf, len );
+	strncpy( drivername, (const char *)buf, len );
 	
 	DEBUG(10,("reset_all_printerdata: Got message for new driver [%s]\n", drivername ));
 
@@ -1381,7 +1383,7 @@ static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
 	
 	/* bulk copy first */
 	
-	d = TALLOC_MEMDUP(ctx, devmode, sizeof(DEVICEMODE));
+	d = (DEVICEMODE *)TALLOC_MEMDUP(ctx, devmode, sizeof(DEVICEMODE));
 	if (!d)
 		return NULL;
 		
@@ -1408,7 +1410,8 @@ static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
 			return NULL;
 	}
 
-	d->dev_private = TALLOC_MEMDUP(ctx, devmode->dev_private, devmode->driverextra);
+	d->dev_private = (uint8 *)TALLOC_MEMDUP(ctx, devmode->dev_private,
+						devmode->driverextra);
 	if (!d->dev_private) {
 		return NULL;
 	}	
@@ -9046,7 +9049,8 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 			 */
 		 
 			set_printer_dataex( printer, keyname, valuename, 
-			                    REG_SZ, (void*)oid_string, strlen(oid_string)+1 );		
+			                    REG_SZ, (uint8 *)oid_string,
+					    strlen(oid_string)+1 );
 		}
 	
 		status = mod_a_printer(printer, 2);
@@ -9336,7 +9340,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 		
 		data_len = regval_size( val );
 		if ( data_len ) {
-			if ( !(enum_values[i].data = TALLOC_MEMDUP(p->mem_ctx, regval_data_p(val), data_len)) ) 
+			if ( !(enum_values[i].data = (uint8 *)TALLOC_MEMDUP(p->mem_ctx, regval_data_p(val), data_len)) ) 
 			{
 				DEBUG(0,("talloc_memdup failed to allocate memory [data_len=%d] for data!\n", 
 					data_len ));
