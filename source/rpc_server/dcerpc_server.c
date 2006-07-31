@@ -745,10 +745,6 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	NTSTATUS status;
 	struct dcesrv_connection_context *context;
 
-	call->fault_code	= 0;
-	call->state_flags	= call->conn->state_flags;
-	call->time		= timeval_current();
-
 	/* if authenticated, and the mech we use can't do async replies, don't use them... */
 	if (call->conn->auth_state.gensec_security && 
 	    !gensec_have_feature(call->conn->auth_state.gensec_security, GENSEC_FEATURE_ASYNC_REPLIES)) {
@@ -766,7 +762,6 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 	call->context	= context;
-	call->event_ctx	= context->conn->event_ctx;
 	call->ndr_pull	= pull;
 
 	if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_ORPC) {
@@ -963,15 +958,16 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	struct dcesrv_call_state *call;
 	DATA_BLOB blob;
 
-	call = talloc(dce_conn, struct dcesrv_call_state);
+	call = talloc_zero(dce_conn, struct dcesrv_call_state);
 	if (!call) {
 		talloc_free(dce_conn->partial_input.data);
 		return NT_STATUS_NO_MEMORY;
 	}
-	call->conn      = dce_conn;
-	call->replies   = NULL;
-	call->context   = NULL;
-	call->event_ctx = dce_conn->event_ctx;
+	call->conn		= dce_conn;
+	call->event_ctx		= dce_conn->event_ctx;
+	call->msg_ctx		= dce_conn->msg_ctx;
+	call->state_flags	= call->conn->state_flags;
+	call->time		= timeval_current();
 
 	blob = dce_conn->partial_input;
 	blob.length = dcerpc_get_frag_length(&blob);
