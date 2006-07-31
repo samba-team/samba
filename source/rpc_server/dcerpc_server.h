@@ -99,10 +99,17 @@ struct dcesrv_call_state {
 	/* the backend can use this event context for async replies */
 	struct event_context *event_ctx;
 
+	/* the message_context that will be used for async replies */
+	struct messaging_context *msg_ctx;
+
 	/* this is the pointer to the allocated function struct */
 	void *r;
 
-	/* that's the ndr push context used in dcesrv_request */
+	/*
+	 * that's the ndr pull context used in dcesrv_request()
+	 * needed by dcesrv_reply() to carry over information
+	 * for full pointer support.
+	 */
 	struct ndr_pull *ndr_pull;
 
 	DATA_BLOB input;
