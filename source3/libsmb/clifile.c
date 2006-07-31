@@ -1509,7 +1509,7 @@ static BOOL cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigne
 
 	if (ea_namelen == 0 && ea_len == 0) {
 		data_len = 4;
-		data = SMB_MALLOC(data_len);
+		data = (char *)SMB_MALLOC(data_len);
 		if (!data) {
 			return False;
 		}
@@ -1517,7 +1517,7 @@ static BOOL cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigne
 		SIVAL(p,0,data_len);
 	} else {
 		data_len = 4 + 4 + ea_namelen + 1 + ea_len;
-		data = SMB_MALLOC(data_len);
+		data = (char *)SMB_MALLOC(data_len);
 		if (!data) {
 			return False;
 		}

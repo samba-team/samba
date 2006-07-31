@@ -79,7 +79,7 @@ REGISTRY_HOOK* reghook_cache_find( const char *keyname )
 	/* prepend the string with a '\' character */
 	
 	len = strlen( keyname );
-	if ( !(key = SMB_MALLOC( len + 2 )) ) {
+	if ( !(key = (char *)SMB_MALLOC( len + 2 )) ) {
 		DEBUG(0,("reghook_cache_find: malloc failed for string [%s] !?!?!\n",
 			keyname));
 		return NULL;
@@ -94,7 +94,7 @@ REGISTRY_HOOK* reghook_cache_find( const char *keyname )
 		
 	DEBUG(10,("reghook_cache_find: Searching for keyname [%s]\n", key));
 	
-	hook = pathtree_find( cache_tree, key ) ;
+	hook = (REGISTRY_HOOK *)pathtree_find( cache_tree, key ) ;
 	
 	SAFE_FREE( key );
 	

@@ -922,7 +922,7 @@ static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL
 			
 			length = strlen(filename);
 		
-			buffer = SMB_REALLOC( buffer, buffer_size + (length + 1)*sizeof(uint16) );
+			buffer = (char *)SMB_REALLOC( buffer, buffer_size + (length + 1)*sizeof(uint16) );
 			if ( !buffer ) {
 				break;
 			}
@@ -935,7 +935,7 @@ static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL
 		
 		/* terminated by double NULL.  Add the final one here */
 		
-		buffer = SMB_REALLOC( buffer, buffer_size + 2 );
+		buffer = (char *)SMB_REALLOC( buffer, buffer_size + 2 );
 		if ( !buffer ) {
 			buffer_size = 0;
 		} else {
