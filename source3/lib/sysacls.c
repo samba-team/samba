@@ -141,7 +141,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 	 */
 	len	= 0;
 	maxlen	= 20 * acl_d->count;
-	if ((text = SMB_MALLOC(maxlen)) == NULL) {
+	if ((text = (char *)SMB_MALLOC(maxlen)) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -212,7 +212,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 		 */
 		if ((len + nbytes) > maxlen) {
 			maxlen += nbytes + 20 * (acl_d->count - i);
-			if ((text = SMB_REALLOC(text, maxlen)) == NULL) {
+			if ((text = (char *)SMB_REALLOC(text, maxlen)) == NULL) {
 			errno = ENOMEM;
 				return NULL;
 		}
@@ -243,8 +243,9 @@ SMB_ACL_T sys_acl_init(int count)
 	 * acl[] array, this actually allocates an ACL with room
 	 * for (count+1) entries
 	 */
-	if ((a = SMB_MALLOC(sizeof(struct smb_acl_t) +
-			    count * sizeof(struct smb_acl_entry))) == NULL) {
+	if ((a = (struct smb_acl_t *)SMB_MALLOC(
+		     sizeof(struct smb_acl_t) +
+		     count * sizeof(struct smb_acl_entry))) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}

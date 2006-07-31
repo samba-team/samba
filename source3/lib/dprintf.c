@@ -54,7 +54,7 @@
 	   charset, but beware of it growing */
 	maxlen = ret*2;
 again:
-	p2 = SMB_MALLOC(maxlen);
+	p2 = (char *)SMB_MALLOC(maxlen);
 	if (!p2) {
 		SAFE_FREE(p);
 		return -1;

@@ -841,7 +841,8 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 					  ber_tag_t request,
 					  ber_int_t msgid, void *arg)
 {
-	struct smbldap_state *ldap_state = arg;
+	struct smbldap_state *ldap_state =
+		(struct smbldap_state *)arg;
 	int rc;
 	int version;
 
@@ -1289,7 +1290,7 @@ int smbldap_search_paged(struct smbldap_state *ldap_state,
 	/* construct cookie */
 	if (*cookie != NULL) {
 		ber_printf(cookie_be, "{iO}", (ber_int_t) pagesize, *cookie);
-		ber_bvfree(*cookie); /* don't need it from last time */
+		ber_bvfree((struct berval *)*cookie); /* don't need it from last time */
 		*cookie = NULL;
 	} else {
 		ber_printf(cookie_be, "{io}", (ber_int_t) pagesize, "", 0);
