@@ -152,7 +152,7 @@ static void enum_file_fn( const struct share_mode_entry *e,
 		fsp.dev   = e->dev;
 		fsp.inode = e->inode;
 		
-		if ( (brl = brl_get_locks(NULL,&fsp)) != NULL ) {
+		if ( (brl = brl_get_locks_readonly(NULL,&fsp)) != NULL ) {
 			num_locks = brl->num_locks;
 			TALLOC_FREE( brl );
 		}
