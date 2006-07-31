@@ -313,7 +313,7 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 
 	/* allocate some initial memory */
 		
-	if (!(buffer = SMB_MALLOC(sizeof(pstring)))) {
+	if (!(buffer = (char *)SMB_MALLOC(sizeof(pstring)))) {
 		return False;
 	}
 	buflen = sizeof(pstring);
@@ -329,7 +329,7 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 		len += tdb_pack( buffer+len, buflen-len, "f", regsubkey_ctr_specific_key(ctr, i) );
 		if ( len > buflen ) {
 			/* allocate some extra space */
-			if ((buffer = SMB_REALLOC( buffer, len*2 )) == NULL) {
+			if ((buffer = (char *)SMB_REALLOC( buffer, len*2 )) == NULL) {
 				DEBUG(0,("regdb_store_keys: Failed to realloc memory of size [%d]\n", len*2));
 				ret = False;
 				goto done;

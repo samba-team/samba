@@ -49,10 +49,10 @@ size_t clistr_pull_fn(const char *function, unsigned int line,
 
 size_t clistr_align_out(struct cli_state *cli, const void *p, int flags)
 {
-	return align_string(cli->outbuf, p, flags);
+	return align_string(cli->outbuf, (const char *)p, flags);
 }
 
 size_t clistr_align_in(struct cli_state *cli, const void *p, int flags)
 {
-	return align_string(cli->inbuf, p, flags);
+	return align_string(cli->inbuf, (const char *)p, flags);
 }

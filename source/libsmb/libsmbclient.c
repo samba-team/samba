@@ -1281,7 +1281,7 @@ smbc_read_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
 	
-	ret = cli_read(targetcli, file->cli_fd, buf, offset, count);
+	ret = cli_read(targetcli, file->cli_fd, (char *)buf, offset, count);
 
 	if (ret < 0) {
 
@@ -1365,7 +1365,7 @@ smbc_write_ctx(SMBCCTX *context,
 	/*d_printf(">>>write: resolved path as %s\n", targetpath);*/
 
 
-	ret = cli_write(targetcli, file->cli_fd, 0, buf, offset, count);
+	ret = cli_write(targetcli, file->cli_fd, 0, (char *)buf, offset, count);
 
 	if (ret <= 0) {
 
@@ -2246,7 +2246,7 @@ add_dirent(SMBCFILE *dir,
 
 	size = sizeof(struct smbc_dirent) + name_length + comment_len + 2;
     
-	dirent = SMB_MALLOC(size);
+	dirent = (struct smbc_dirent *)SMB_MALLOC(size);
 
 	if (!dirent) {
 
@@ -6230,7 +6230,7 @@ smbc_init_context(SMBCCTX *context)
                          * lazy for the moment
                          */
                         pid = sys_getpid();
-                        context->netbios_name = SMB_MALLOC(17);
+                        context->netbios_name = (char *)SMB_MALLOC(17);
                         if (!context->netbios_name) {
                                 errno = ENOMEM;
                                 return NULL;

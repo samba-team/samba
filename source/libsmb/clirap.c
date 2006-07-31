@@ -847,7 +847,7 @@ BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char **poutd
 		return False;
 	}
 
-	*poutdata = memdup(rdata, data_len);
+	*poutdata = (char *)memdup(rdata, data_len);
 	if (!*poutdata) {
 		SAFE_FREE(rdata);
 		SAFE_FREE(rparam);
