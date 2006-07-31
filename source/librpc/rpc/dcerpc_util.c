@@ -852,6 +852,8 @@ static void continue_epm_map(struct rpc_request *req)
 	/* get received endpoint */
 	s->binding->endpoint = talloc_reference(s->binding,
 						dcerpc_floor_get_rhs_data(c, &s->twr_r->tower.floors[3]));
+	if (composite_nomem(s->binding->endpoint, c)) return;
+
 	composite_done(c);
 }
 
@@ -869,30 +871,37 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	struct epm_map_binding_state *s;
 	struct composite_context *pipe_connect_req;
 	struct cli_credentials *anon_creds;
+	struct event_context *new_ev = NULL;
 
 	NTSTATUS status;
 	struct dcerpc_binding *epmapper_binding;
 	int i;
 
-	/* composite context allocation and setup */
-	c = talloc_zero(mem_ctx, struct composite_context);
-	if (c == NULL) return NULL;
-
-	s = talloc_zero(c, struct epm_map_binding_state);
-	if (composite_nomem(s, c)) return c;
-
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->private_data = s;
-	c->event_ctx = ev;
-
 	/* Try to find event context in memory context in case passed
 	 * event_context (argument) was NULL. If there's none, just
 	 * create a new one.
 	 */
-	if (c->event_ctx == NULL) {
-		c->event_ctx = event_context_find(mem_ctx);
+	if (ev == NULL) {
+		ev = event_context_find(mem_ctx);
+		if (ev == NULL) {
+			new_ev = event_context_init(mem_ctx);
+			if (new_ev == NULL) return NULL;
+			ev = new_ev;
+		}
 	}
-	
+
+	/* composite context allocation and setup */
+	c = composite_create(mem_ctx, ev);
+	if (c == NULL) {
+		talloc_free(new_ev);
+		return NULL;
+	}
+	talloc_steal(c, new_ev);
+
+	s = talloc_zero(c, struct epm_map_binding_state);
+	if (composite_nomem(s, c)) return c;
+	c->private_data = s;
+
 	s->binding = binding;
 	s->table   = table;
 
@@ -1049,7 +1058,7 @@ static void continue_auth_auto(struct composite_context *ctx)
 	}
 
 	if (!composite_is_ok(c)) return;
-	
+
 	composite_done(c);
 }
 
@@ -1070,19 +1079,17 @@ static void continue_ntlmssp_connection(struct composite_context *ctx)
 
 	/* receive secondary rpc connection */
 	c->status = dcerpc_secondary_connection_recv(ctx, &p2);
+	if (!composite_is_ok(c)) return;
+
 	talloc_steal(s, p2);
 	talloc_steal(p2, s->pipe);
 	s->pipe = p2;
-
-	if (!composite_is_ok(c)) return;
 
 	/* initiate a authenticated bind */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
 					 s->credentials, DCERPC_AUTH_TYPE_NTLMSSP,
 					 dcerpc_auth_level(s->pipe->conn),
 					 s->table->authservices->names[0]);
-	if (composite_nomem(auth_req, c)) return;
-		
 	composite_continue(c, auth_req, continue_auth, c);
 }
 
@@ -1103,19 +1110,17 @@ static void continue_spnego_after_wrong_pass(struct composite_context *ctx)
 
 	/* receive secondary rpc connection */
 	c->status = dcerpc_secondary_connection_recv(ctx, &p2);
+	if (!composite_is_ok(c)) return;
+
 	talloc_steal(s, p2);
 	talloc_steal(p2, s->pipe);
 	s->pipe = p2;
-
-	if (!composite_is_ok(c)) return;
 
 	/* initiate a authenticated bind */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
 					 s->credentials, DCERPC_AUTH_TYPE_SPNEGO,
 					 dcerpc_auth_level(s->pipe->conn),
 					 s->table->authservices->names[0]);
-	if (composite_nomem(auth_req, c)) return;
-		
 	composite_continue(c, auth_req, continue_auth, c);
 }
 
@@ -1153,15 +1158,12 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	uint8_t auth_type;
 
 	/* composite context allocation and setup */
-	c = talloc_zero(NULL, struct composite_context);
+	c = composite_create(p, p->conn->event_ctx);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_auth_state);
 	if (composite_nomem(s, c)) return c;
-
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
-	c->event_ctx = p->conn->event_ctx;
 
 	/* store parameters in state structure */
 	s->binding      = binding;
