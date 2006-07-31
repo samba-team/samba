@@ -479,8 +479,11 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	message("Setting up hklm.ldb\n");
 	setup_ldb("hklm.ldif", info, paths.hklm);
 
+	message("Setting up sam.ldb partitions\n");
+	setup_ldb("provision_partitions.ldif", info, paths.samdb);
+
 	message("Setting up sam.ldb attributes\n");
-	setup_ldb("provision_init.ldif", info, paths.samdb);
+	setup_ldb("provision_init.ldif", info, paths.samdb, NULL, false);
 	message("Erasing data from partitions\n");
 	ldb_erase_partitions(info, paths.samdb);
 	
