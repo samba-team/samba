@@ -324,7 +324,7 @@ static int winbind_open_pipe_sock(int recursing)
 	request.flags = WBFLAG_RECURSE;
 	if (winbindd_request_response(WINBINDD_PRIV_PIPE_DIR, &request, &response) == NSS_STATUS_SUCCESS) {
 		int fd;
-		if ((fd = winbind_named_pipe_sock(response.extra_data.data)) != -1) {
+		if ((fd = winbind_named_pipe_sock((char *)response.extra_data.data)) != -1) {
 			close(winbindd_fd);
 			winbindd_fd = fd;
 		}
