@@ -66,7 +66,8 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	message_init();
 
 	if (argc != 3) {
-		fprintf(stderr, "%s: Usage - %s pid count\n", argv[0], argv[0]);
+		fprintf(stderr, "%s: Usage - %s pid count\n", argv[0],
+			argv[0]);
 		exit(1);
 	}
 
@@ -115,11 +116,11 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 		size_t ping_count = 0;
 
 		printf("Sending pings for %d seconds\n", (int)timelimit);
-		while (timeval_elapsed(&tv) < timelimit) {				
+		while (timeval_elapsed(&tv) < timelimit) {		
 			if(message_send_pid(pid_to_procid(pid), MSG_PING,
-								buf, 11, False)) ping_count++;
+					    buf, 11, False)) ping_count++;
 			if(message_send_pid(pid_to_procid(pid), MSG_PING,
-								NULL, 0, False)) ping_count++;
+					    NULL, 0, False)) ping_count++;
 
 			while (ping_count > pong_count + 20) {
 				message_dispatch();
@@ -138,7 +139,7 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 		}
 		
 		printf("ping rate of %.0f messages/sec\n", 
-			   (ping_count+pong_count)/timeval_elapsed(&tv));
+		       (ping_count+pong_count)/timeval_elapsed(&tv));
 	}
 
 	return (0);
