@@ -1043,7 +1043,7 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 ****************************************************************************/
 
 static BOOL get_lanman2_dir_entry(connection_struct *conn,
-				  void *inbuf, void *outbuf,
+				  void *inbuf, char *outbuf,
 				 char *path_mask,uint32 dirtype,int info_level,
 				 int requires_resume_key,
 				 BOOL dont_descend,char **ppdata, 
@@ -1751,7 +1751,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 	}
 
-	*ppdata = SMB_REALLOC(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
+	*ppdata = (char *)SMB_REALLOC(
+		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(*ppdata == NULL ) {
 		talloc_destroy(ea_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -1759,7 +1760,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	pdata = *ppdata;
 
 	/* Realloc the params space */
-	*pparams = SMB_REALLOC(*pparams, 10);
+	*pparams = (char *)SMB_REALLOC(*pparams, 10);
 	if (*pparams == NULL) {
 		talloc_destroy(ea_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -2002,7 +2003,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 	}
 
-	*ppdata = SMB_REALLOC( *ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
+	*ppdata = (char *)SMB_REALLOC(
+		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(*ppdata == NULL) {
 		talloc_destroy(ea_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -2011,7 +2013,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	pdata = *ppdata;
 
 	/* Realloc the params space */
-	*pparams = SMB_REALLOC(*pparams, 6*SIZEOFWORD);
+	*pparams = (char *)SMB_REALLOC(*pparams, 6*SIZEOFWORD);
 	if(*pparams == NULL ) {
 		talloc_destroy(ea_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -2175,7 +2177,8 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		return ERROR_DOS(ERRSRV,ERRinvdevice);
 	}
 
-	*ppdata = SMB_REALLOC(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
+	*ppdata = (char *)SMB_REALLOC(
+		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if (*ppdata == NULL ) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -3016,7 +3019,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 
 			/* Copy the lock range data. */
-			lock_data = talloc_memdup(data_ctx, pdata, total_data);
+			lock_data = (char *)talloc_memdup(
+				data_ctx, pdata, total_data);
 			if (!lock_data) {
 				talloc_destroy(data_ctx);
 				return ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -3026,7 +3030,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			break;
 	}
 
-	*pparams = SMB_REALLOC(*pparams,2);
+	*pparams = (char *)SMB_REALLOC(*pparams,2);
 	if (*pparams == NULL) {
 		talloc_destroy(data_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -3034,7 +3038,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	params = *pparams;
 	SSVAL(params,0,0);
 	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
-	*ppdata = SMB_REALLOC(*ppdata, data_size); 
+	*ppdata = (char *)SMB_REALLOC(*ppdata, data_size); 
 	if (*ppdata == NULL ) {
 		talloc_destroy(data_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -3841,7 +3845,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		tran_call,fname, fsp ? fsp->fnum : -1, info_level,total_data));
 
 	/* Realloc the parameter size */
-	*pparams = SMB_REALLOC(*pparams,2);
+	*pparams = (char *)SMB_REALLOC(*pparams,2);
 	if (*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -4822,7 +4826,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	}
 
 	/* Realloc the parameter and data sizes */
-	*pparams = SMB_REALLOC(*pparams,2);
+	*pparams = (char *)SMB_REALLOC(*pparams,2);
 	if(*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -4864,7 +4868,7 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
 	}
 
 	/* Realloc the parameter and data sizes */
-	*pparams = SMB_REALLOC(*pparams,6);
+	*pparams = (char *)SMB_REALLOC(*pparams,6);
 	if (*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -4898,7 +4902,7 @@ static int call_trans2findnotifynext(connection_struct *conn, char *inbuf, char 
 	DEBUG(3,("call_trans2findnotifynext\n"));
 
 	/* Realloc the parameter and data sizes */
-	*pparams = SMB_REALLOC(*pparams,4);
+	*pparams = (char *)SMB_REALLOC(*pparams,4);
 	if (*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -4967,7 +4971,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 
 	if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
 			(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
-		*ppdata = SMB_REALLOC(*ppdata, 32);
+		*ppdata = (char *)SMB_REALLOC(*ppdata, 32);
 		if (*ppdata == NULL) {
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}
@@ -5289,7 +5293,7 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 	if (state->total_data) {
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
-		state->data = SMB_MALLOC(state->total_data);
+		state->data = (char *)SMB_MALLOC(state->total_data);
 		if (state->data == NULL) {
 			DEBUG(0,("reply_trans2: data malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_data));
@@ -5309,7 +5313,7 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 	if (state->total_param) {
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
-		state->param = SMB_MALLOC(state->total_param);
+		state->param = (char *)SMB_MALLOC(state->total_param);
 		if (state->param == NULL) {
 			DEBUG(0,("reply_trans: param malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_param));
