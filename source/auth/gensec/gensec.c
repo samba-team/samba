@@ -929,17 +929,6 @@ _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_
 	return gensec_security->ops->update(gensec_security, out_mem_ctx, in, out);
 }
 
-struct gensec_update_request {
-	struct gensec_security *gensec_security;
-	DATA_BLOB in;
-	DATA_BLOB out;
-	NTSTATUS status;
-	struct {
-		void (*fn)(struct gensec_update_request *req, void *private_data);
-		void *private_data;
-	} callback;
-};
-
 static void gensec_update_async_timed_handler(struct event_context *ev, struct timed_event *te,
 					      struct timeval t, void *ptr)
 {
