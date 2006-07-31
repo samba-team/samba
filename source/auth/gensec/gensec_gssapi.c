@@ -135,7 +135,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	}
 	
 	gensec_gssapi_state->max_wrap_buf_size
-		= lp_parm_int(-1, "gensec_gssapi", "max wrap buf size", 65535);
+		= lp_parm_int(-1, "gensec_gssapi", "max wrap buf size", 65536);
 		
 	gensec_gssapi_state->sasl = False;
 	gensec_gssapi_state->sasl_state = STAGE_GSS_NEG;
