@@ -167,7 +167,7 @@ BOOL torture_mangle(int dummy)
 
 	printf("starting mangle test\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
