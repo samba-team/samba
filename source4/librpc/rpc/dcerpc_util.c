@@ -1150,6 +1150,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	struct composite_context *auth_req;
 	struct composite_context *auth_none_req;
 	struct dcerpc_connection *conn;
+	uint8_t auth_type;
 
 	/* composite context allocation and setup */
 	c = talloc_zero(NULL, struct composite_context);
@@ -1174,81 +1175,76 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	/* remember the binding string for possible secondary connections */
 	conn->binding_string = dcerpc_binding_string(p, binding);
 
-	if (!cli_credentials_is_anonymous(s->credentials) &&
-	    (binding->flags & DCERPC_SCHANNEL) &&
-	    !cli_credentials_get_netlogon_creds(s->credentials)) {
+	if (cli_credentials_is_anonymous(s->credentials)) {
+		auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe, s->table);
+		composite_continue(c, auth_none_req, continue_auth_none, c);
+		return c;
+	}
 
+	if ((binding->flags & DCERPC_SCHANNEL) &&
+	    !cli_credentials_get_netlogon_creds(s->credentials)) {
 		/* If we don't already have netlogon credentials for
 		 * the schannel bind, then we have to get these
 		 * first */
 		auth_schannel_req = dcerpc_bind_auth_schannel_send(c, s->pipe, s->table,
 								   s->credentials,
 								   dcerpc_auth_level(conn));
-		if (composite_nomem(auth_schannel_req, c)) return c;
-
 		composite_continue(c, auth_schannel_req, continue_auth_schannel, c);
-
-	} else if (!cli_credentials_is_anonymous(s->credentials) &&
-		   !(conn->transport.transport == NCACN_NP &&
-		     !(s->binding->flags & DCERPC_SIGN) &&
-		     !(s->binding->flags & DCERPC_SEAL))) {
-
-		/* Perform an authenticated DCE-RPC bind, except where
-		 * we ask for a connection on NCACN_NP, and that
-		 * connection is not signed or sealed.  For that case
-		 * we rely on the already authenticated CIFS connection
-		 */
-		
-		uint8_t auth_type;
-
-		if ((conn->flags & (DCERPC_SIGN|DCERPC_SEAL)) == 0) {
-			/*
-			  we are doing an authenticated connection,
-			  but not using sign or seal. We must force
-			  the CONNECT dcerpc auth type as a NONE auth
-			  type doesn't allow authentication
-			  information to be passed.
-			*/
-			conn->flags |= DCERPC_CONNECT;
-		}
-
-		if (s->binding->flags & DCERPC_AUTH_SPNEGO) {
-			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-
-		} else if (s->binding->flags & DCERPC_AUTH_KRB5) {
-			auth_type = DCERPC_AUTH_TYPE_KRB5;
-
-		} else if (s->binding->flags & DCERPC_SCHANNEL) {
-			auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
-
-		} else if (s->binding->flags & DCERPC_AUTH_NTLM) {
-			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
-		} else {
-			auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-							 s->credentials, DCERPC_AUTH_TYPE_SPNEGO,
-							 dcerpc_auth_level(conn),
-							 s->table->authservices->names[0]);
-			if (composite_nomem(auth_req, c)) return c;
-			
-			composite_continue(c, auth_req, continue_auth_auto, c);
-			return c;
-		}
-		
-		auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-						 s->credentials, auth_type,
-						 dcerpc_auth_level(conn),
-						 s->table->authservices->names[0]);
-		if (composite_nomem(auth_req, c)) return c;
-		
-		composite_continue(c, auth_req, continue_auth, c);
-
-	} else {
-		auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe, s->table);
-		if (composite_nomem(auth_none_req, c)) return c;
-
-		composite_continue(c, auth_none_req, continue_auth_none, c);
+		return c;
 	}
 
+	/*
+	 * we rely on the already authenticated CIFS connection
+	 * if not doing sign or seal
+	 */
+	if (conn->transport.transport == NCACN_NP &&
+	    !(s->binding->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
+		auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe, s->table);
+		composite_continue(c, auth_none_req, continue_auth_none, c);
+		return c;
+	}
+
+
+	/* Perform an authenticated DCE-RPC bind
+	 */
+	if (!(conn->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
+		/*
+		  we are doing an authenticated connection,
+		  but not using sign or seal. We must force
+		  the CONNECT dcerpc auth type as a NONE auth
+		  type doesn't allow authentication
+		  information to be passed.
+		*/
+		conn->flags |= DCERPC_CONNECT;
+	}
+
+	if (s->binding->flags & DCERPC_AUTH_SPNEGO) {
+		auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+
+	} else if (s->binding->flags & DCERPC_AUTH_KRB5) {
+		auth_type = DCERPC_AUTH_TYPE_KRB5;
+
+	} else if (s->binding->flags & DCERPC_SCHANNEL) {
+		auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
+
+	} else if (s->binding->flags & DCERPC_AUTH_NTLM) {
+		auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+
+	} else {
+		/* try SPNEGO with fallback to NTLMSSP */
+		auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
+						 s->credentials, DCERPC_AUTH_TYPE_SPNEGO,
+						 dcerpc_auth_level(conn),
+						 s->table->authservices->names[0]);
+		composite_continue(c, auth_req, continue_auth_auto, c);
+		return c;
+	}
+
+	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
+					 s->credentials, auth_type,
+					 dcerpc_auth_level(conn),
+					 s->table->authservices->names[0]);
+	composite_continue(c, auth_req, continue_auth, c);
 	return c;
 }
 
