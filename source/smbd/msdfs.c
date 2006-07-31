@@ -655,7 +655,7 @@ static int setup_ver2_dfs_referral(char *pathname, char **ppdata,
 	/* add the unexplained 0x16 bytes */
 	reply_size += 0x16;
 
-	pdata = SMB_REALLOC(pdata,reply_size);
+	pdata = (char *)SMB_REALLOC(pdata,reply_size);
 	if(pdata == NULL) {
 		DEBUG(0,("malloc failed for Realloc!\n"));
 		return -1;
@@ -740,7 +740,7 @@ static int setup_ver3_dfs_referral(char *pathname, char **ppdata,
 		reply_size += (strlen(junction->referral_list[i].alternate_path)+1)*2;
 	}
 
-	pdata = SMB_REALLOC(pdata,reply_size);
+	pdata = (char *)SMB_REALLOC(pdata,reply_size);
 	if(pdata == NULL) {
 		DEBUG(0,("version3 referral setup: malloc failed for Realloc!\n"));
 		return -1;
