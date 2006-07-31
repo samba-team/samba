@@ -94,7 +94,7 @@ char *account_policy_names_list(void)
 		len += strlen(account_policy_names[i].string) + 1;
 	}
 	len++;
-	nl = SMB_MALLOC(len);
+	nl = (char *)SMB_MALLOC(len);
 	if (!nl) {
 		return NULL;
 	}

@@ -473,7 +473,7 @@ BOOL get_privileges_for_sids(SE_PRIV *privileges, DOM_SID *slist, int scount)
 
 static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *state)
 {
-	PRIV_SID_LIST *priv = state;
+	PRIV_SID_LIST *priv = (PRIV_SID_LIST *)state;
 	int  prefixlen = strlen(PRIVPREFIX);
 	DOM_SID sid;
 	fstring sid_string;
