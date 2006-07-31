@@ -197,7 +197,7 @@ const char *lang_msg(const char *msgid)
 			count++;
 	}
 
-	if (!(msgid_quoted = SMB_MALLOC(strlen(msgid) + count + 1)))
+	if (!(msgid_quoted = (char *)SMB_MALLOC(strlen(msgid) + count + 1)))
 		return msgid;
 
 	/* string_sub() is unsuitable here as it replaces some punctuation

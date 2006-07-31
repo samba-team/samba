@@ -172,7 +172,7 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	p = response.extra_data.data;
+	p = (char *)response.extra_data.data;
 
 	for (i=0; i<num_rids; i++) {
 		char *q;
