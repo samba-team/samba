@@ -169,7 +169,7 @@ static char *create_pai_buf(canon_ace *file_ace_list, canon_ace *dir_ace_list, B
 
 	*store_size = PAI_ENTRIES_BASE + ((num_entries + num_def_entries)*PAI_ENTRY_LENGTH);
 
-	pai_buf = SMB_MALLOC(*store_size);
+	pai_buf = (char *)SMB_MALLOC(*store_size);
 	if (!pai_buf) {
 		return NULL;
 	}
@@ -441,7 +441,7 @@ static struct pai_val *load_inherited_info(files_struct *fsp)
 	if (!lp_map_acl_inherit(SNUM(fsp->conn)))
 		return NULL;
 
-	if ((pai_buf = SMB_MALLOC(pai_buf_size)) == NULL)
+	if ((pai_buf = (char *)SMB_MALLOC(pai_buf_size)) == NULL)
 		return NULL;
 
 	do {
@@ -462,7 +462,7 @@ static struct pai_val *load_inherited_info(files_struct *fsp)
 			if (pai_buf_size > 1024*1024) {
 				return NULL; /* Limit malloc to 1mb. */
 			}
-			if ((pai_buf = SMB_MALLOC(pai_buf_size)) == NULL)
+			if ((pai_buf = (char *)SMB_MALLOC(pai_buf_size)) == NULL)
 				return NULL;
 		}
 	} while (ret == -1);
