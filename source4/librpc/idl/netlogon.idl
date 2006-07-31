@@ -118,7 +118,7 @@ interface netlogon
 		netr_ChallengeResponse lm;
 	} netr_NetworkInfo;
 
-	typedef [switch_type(uint16)] union {
+	typedef [public,switch_type(uint16)] union {
 		[case(1)] netr_PasswordInfo *password;
 		[case(2)] netr_NetworkInfo  *network;
 		[case(3)] netr_PasswordInfo *password;
@@ -221,7 +221,7 @@ interface netlogon
 		lsa_String unknown4;
 	} netr_PacInfo;
 
-	typedef [switch_type(uint16)] union {
+	typedef [public,switch_type(uint16)] union {
 		[case(2)] netr_SamInfo2 *sam2;
 		[case(3)] netr_SamInfo3 *sam3;
 		[case(4)] netr_PacInfo  *pac;
