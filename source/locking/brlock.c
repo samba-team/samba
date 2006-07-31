@@ -1500,6 +1500,10 @@ static int byte_range_lock_destructor(void *p)
 	key.dptr = (char *)&br_lck->key;
 	key.dsize = sizeof(struct lock_key);
 
+	if (br_lck->read_only) {
+		SMB_ASSERT(!br_lck->modified);
+	}
+
 	if (!br_lck->modified) {
 		goto done;
 	}
@@ -1521,7 +1525,9 @@ static int byte_range_lock_destructor(void *p)
 
  done:
 
-	tdb_chainunlock(tdb, key);
+	if (!br_lck->read_only) {
+		tdb_chainunlock(tdb, key);
+	}
 	SAFE_FREE(br_lck->lock_data);
 	return 0;
 }
@@ -1532,8 +1538,8 @@ static int byte_range_lock_destructor(void *p)
  TALLOC_FREE(brl) will release the lock in the destructor.
 ********************************************************************/
 
-struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
-					files_struct *fsp)
+static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
+					files_struct *fsp, BOOL read_only)
 {
 	TDB_DATA key;
 	TDB_DATA data;
@@ -1553,10 +1559,21 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 	key.dptr = (char *)&br_lck->key;
 	key.dsize = sizeof(struct lock_key);
 
-	if (tdb_chainlock(tdb, key) != 0) {
-		DEBUG(3, ("Could not lock byte range lock entry\n"));
-		TALLOC_FREE(br_lck);
-		return NULL;
+	if (!fsp->lockdb_clean) {
+		/* We must be read/write to clean
+		   the dead entries. */
+		read_only = False;
+	}
+
+	if (read_only) {
+		br_lck->read_only = True;
+	} else {
+		if (tdb_chainlock(tdb, key) != 0) {
+			DEBUG(3, ("Could not lock byte range lock entry\n"));
+			TALLOC_FREE(br_lck);
+			return NULL;
+		}
+		br_lck->read_only = False;
 	}
 
 	talloc_set_destructor(br_lck, byte_range_lock_destructor);
@@ -1594,7 +1611,7 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 	if (DEBUGLEVEL >= 10) {
 		unsigned int i;
 		struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
-		DEBUG(10,("brl_get_locks: %u current locks on dev=%.0f, inode=%.0f\n",
+		DEBUG(10,("brl_get_locks_internal: %u current locks on dev=%.0f, inode=%.0f\n",
 			br_lck->num_locks,
 			(double)fsp->dev, (double)fsp->inode ));
 		for( i = 0; i < br_lck->num_locks; i++) {
@@ -1602,4 +1619,16 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 		}
 	}
 	return br_lck;
+}
+
+struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
+					files_struct *fsp)
+{
+	return brl_get_locks_internal(mem_ctx, fsp, False);
+}
+
+struct byte_range_lock *brl_get_locks_readonly(TALLOC_CTX *mem_ctx,
+					files_struct *fsp)
+{
+	return brl_get_locks_internal(mem_ctx, fsp, True);
 }
