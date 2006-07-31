@@ -1537,6 +1537,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	fstring description, fullname, sambaSID;
 	uchar lm_passwd[16], nt_passwd[16];
 	char *flags, *user_rdn;
+	const char *ou;
 	const char* nopasswd = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 	static uchar zero_buf[16];
 	uint32 rid = 0, group_rid = 0, gidNumber = 0;
@@ -1564,7 +1565,11 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 		} else {
 			pstr_sprintf(homedir, "/nobodyshomedir");
 		}
-	}	
+		ou = lp_ldap_user_suffix();
+	} else {
+		ou = lp_ldap_machine_suffix();
+		pstr_sprintf(homedir, "/machinehomedir");
+	}
 
         /* Get the logon script */
         unistr2_to_ascii(logonscript, &(delta->account_info.uni_logon_script),
@@ -1633,7 +1638,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 
 	/* Add the user to the temporary add ldif file */
 	/* this isn't quite right...we can't assume there's just OU=. jmcd */
-	user_rdn = sstring_sub(lp_ldap_user_suffix(), '=', ',');
+	user_rdn = sstring_sub(ou, '=', ',');
 	fprintf(add_fd, "# %s, %s, %s\n", username, user_rdn, suffix);
 	fprintf_attr(add_fd, "dn", "uid=%s,ou=%s,%s", username, user_rdn,
 		     suffix);
@@ -1645,10 +1650,10 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	fprintf(add_fd, "objectClass: sambaSamAccount\n");
 	fprintf_attr(add_fd, "cn", "%s", username);
 	fprintf_attr(add_fd, "sn", "%s", username);
-	fprintf_attr(add_fd, "uid" "%s", username);
+	fprintf_attr(add_fd, "uid", "%s", username);
 	fprintf(add_fd, "uidNumber: %d\n", ldif_uid);
 	fprintf(add_fd, "gidNumber: %d\n", gidNumber);
-	fprintf_attr(add_fd, "homeDirectory", "%s\n", homedir);
+	fprintf_attr(add_fd, "homeDirectory", "%s", homedir);
 	if (*homepath)
 		fprintf_attr(add_fd, "sambaHomePath", "%s", homepath);
         if (*homedrive)
@@ -1736,16 +1741,17 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta,
 	/* Write the data to the temporary add ldif file */
 	fprintf(add_fd, "# %s, %s, %s\n", aliasname, group_attr,
 		suffix);
-	fprintf(add_fd, "dn: cn=%s,ou=%s,%s\n", aliasname, group_attr,
-		suffix);
+	fprintf_attr(add_fd, "dn", "cn=%s,ou=%s,%s", aliasname, group_attr,
+		     suffix);
 	fprintf(add_fd, "objectClass: posixGroup\n");
 	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
 	fprintf(add_fd, "cn: %s\n", aliasname);
 	fprintf(add_fd, "gidNumber: %d\n", ldif_gid);
 	fprintf(add_fd, "sambaSID: %s\n", groupmap->sambaSID);
 	fprintf(add_fd, "sambaGroupType: %d\n", grouptype);
-	fprintf(add_fd, "displayName: %s\n", aliasname);
-	fprintf(add_fd, "description: %s\n", description);
+	fprintf_attr(add_fd, "displayName", "%s", aliasname);
+	if (description[0])
+		fprintf_attr(add_fd, "description", "%s", description);
 	fprintf(add_fd, "\n");
 	fflush(add_fd);
 
