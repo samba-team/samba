@@ -55,6 +55,7 @@ struct byte_range_lock {
 	struct files_struct *fsp;
 	unsigned int num_locks;
 	BOOL modified;
+	BOOL read_only;
 	struct lock_key key;
 	void *lock_data;
 };

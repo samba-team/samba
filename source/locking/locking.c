@@ -102,7 +102,7 @@ BOOL is_locked(files_struct *fsp,
 			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp->fsp_name ));
 			ret = False;
 		} else {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks_readonly(NULL, fsp);
 			if (!br_lck) {
 				return False;
 			}
@@ -116,7 +116,7 @@ BOOL is_locked(files_struct *fsp,
 			TALLOC_FREE(br_lck);
 		}
 	} else {
-		struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+		struct byte_range_lock *br_lck = brl_get_locks_readonly(NULL, fsp);
 		if (!br_lck) {
 			return False;
 		}
@@ -160,7 +160,7 @@ NTSTATUS query_lock(files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	br_lck = brl_get_locks(NULL, fsp);
+	br_lck = brl_get_locks_readonly(NULL, fsp);
 	if (!br_lck) {
 		return NT_STATUS_NO_MEMORY;
 	}
