@@ -830,8 +830,9 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	}
 
 	nt_status = auth_context_create(gensec_ntlmssp_state, lp_auth_methods(), 
-					&gensec_ntlmssp_state->auth_context,
-					gensec_security->event_ctx);
+					gensec_security->event_ctx,
+					gensec_security->msg_ctx,
+					&gensec_ntlmssp_state->auth_context);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	gensec_ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;

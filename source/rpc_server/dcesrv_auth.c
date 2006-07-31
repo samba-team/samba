@@ -57,7 +57,7 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return False;
 	}
 
-	status = gensec_server_start(dce_conn, &auth->gensec_security, call->event_ctx);
+	status = gensec_server_start(dce_conn, call->event_ctx, call->msg_ctx, &auth->gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC for DCERPC server: %s\n", nt_errstr(status)));
 		return False;

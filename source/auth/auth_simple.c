@@ -26,11 +26,13 @@
 #include "auth/auth.h"
 #include "lib/events/events.h"
 
-_PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx, 
-				  const char *nt4_domain, 
-				  const char *nt4_username, 
-				  const char *password, 
-				  struct auth_session_info **session_info) 
+_PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
+					   struct event_context *ev,
+					   struct messaging_context *msg,
+					   const char *nt4_domain,
+					   const char *nt4_username,
+					   const char *password,
+					   struct auth_session_info **session_info) 
 {
 	struct auth_context *auth_context;
 	struct auth_usersupplied_info *user_info;
@@ -42,8 +44,9 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = auth_context_create(tmp_ctx, lp_auth_methods(), &auth_context, 
-					event_context_find(mem_ctx));
+	nt_status = auth_context_create(tmp_ctx, lp_auth_methods(),
+					ev, msg,
+					&auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;

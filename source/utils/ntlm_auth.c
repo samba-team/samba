@@ -31,6 +31,9 @@
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/events/events.h"
+#include "lib/messaging/messaging.h"
+#include "lib/messaging/irpc.h"
 
 #define SQUID_BUFFER_SIZE 2010
 
@@ -329,6 +332,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		const char *set_password;
 	};
 	struct gensec_ntlm_state *state;
+	struct event_context *ev;
+	struct messaging_context *msg;
 
 	NTSTATUS nt_status;
 	BOOL first = False;
@@ -399,7 +404,15 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			break;
 		case GSS_SPNEGO_SERVER:
 		case SQUID_2_5_NTLMSSP:
-			if (!NT_STATUS_IS_OK(gensec_server_start(NULL, &state->gensec_state, NULL))) {
+			ev = event_context_init(state);
+			if (!ev) {
+				exit(1);
+			}
+			msg = messaging_client_init(state, ev);
+			if (!msg) {
+				exit(1);
+			}
+			if (!NT_STATUS_IS_OK(gensec_server_start(state, ev, msg, &state->gensec_state))) {
 				exit(1);
 			}
 			break;

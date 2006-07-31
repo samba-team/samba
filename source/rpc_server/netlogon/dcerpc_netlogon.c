@@ -431,8 +431,9 @@ static NTSTATUS netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALL
 		}
 
 		/* TODO: we need to deny anonymous access here */
-		nt_status = auth_context_create(mem_ctx, lp_auth_methods(), &auth_context,
-						dce_call->event_ctx);
+		nt_status = auth_context_create(mem_ctx, lp_auth_methods(),
+						dce_call->event_ctx, dce_call->msg_ctx,
+						&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
 		user_info->logon_parameters = r->in.logon.password->identity_info.parameter_control;
@@ -456,8 +457,9 @@ static NTSTATUS netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALL
 	case 6:
 
 		/* TODO: we need to deny anonymous access here */
-		nt_status = auth_context_create(mem_ctx, lp_auth_methods(), &auth_context,
-						dce_call->event_ctx);
+		nt_status = auth_context_create(mem_ctx, lp_auth_methods(),
+						dce_call->event_ctx, dce_call->msg_ctx,
+						&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
 		nt_status = auth_context_set_challenge(auth_context, r->in.logon.network->challenge, "netr_LogonSamLogonWithFlags");

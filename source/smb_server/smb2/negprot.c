@@ -36,8 +36,10 @@ static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *
 	NTSTATUS nt_status;
 	struct cli_credentials *server_credentials;
 
-	nt_status = gensec_server_start(req, &gensec_security,
-					req->smb_conn->connection->event.ctx);
+	nt_status = gensec_server_start(req,
+					req->smb_conn->connection->event.ctx,
+					req->smb_conn->connection->msg_ctx,
+					&gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Failed to start GENSEC: %s\n", nt_errstr(nt_status)));
 		smbsrv_terminate_connection(req->smb_conn, "Failed to start GENSEC\n");

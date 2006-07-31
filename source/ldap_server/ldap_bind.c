@@ -46,8 +46,12 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 
 	status = crack_dn_to_nt4_name(call, req->dn, &nt4_domain, &nt4_account);
 	if (NT_STATUS_IS_OK(status)) {
-		status = authenticate_username_pw(call, nt4_domain, nt4_account, 
-						  req->creds.password, &session_info);
+		status = authenticate_username_pw(call,
+						  call->conn->connection->event.ctx,
+						  call->conn->connection->msg_ctx,
+						  nt4_domain, nt4_account, 
+						  req->creds.password,
+						  &session_info);
 	}
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
@@ -135,8 +139,10 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	if (!conn->gensec) {
 		conn->session_info = NULL;
 
-		status = gensec_server_start(conn, &conn->gensec,
-					     conn->connection->event.ctx);
+		status = gensec_server_start(conn,
+					     conn->connection->event.ctx,
+					     conn->connection->msg_ctx,
+					     &conn->gensec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
 			result = LDAP_OPERATIONS_ERROR;

@@ -43,8 +43,9 @@ static NTSTATUS get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8
 	DEBUG(10, ("get challenge: creating negprot_global_auth_context\n"));
 
 	nt_status = auth_context_create(smb_conn, lp_auth_methods(), 
-					&smb_conn->negotiate.auth_context,
-					smb_conn->connection->event.ctx);
+					smb_conn->connection->event.ctx,
+					smb_conn->connection->msg_ctx,
+					&smb_conn->negotiate.auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("auth_context_create() returned %s", nt_errstr(nt_status)));
 		return nt_status;
@@ -340,10 +341,12 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		DATA_BLOB null_data_blob = data_blob(NULL, 0);
 		DATA_BLOB blob;
 		const char *oid;
-		NTSTATUS nt_status = gensec_server_start(req->smb_conn, 
-							 &gensec_security,
-							 req->smb_conn->connection->event.ctx);
-		
+		NTSTATUS nt_status;
+
+		nt_status = gensec_server_start(req->smb_conn,
+						req->smb_conn->connection->event.ctx,
+						req->smb_conn->connection->msg_ctx,
+						&gensec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("Failed to start GENSEC: %s\n", nt_errstr(nt_status)));
 			smbsrv_terminate_connection(req->smb_conn, "Failed to start GENSEC\n");
