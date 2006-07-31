@@ -32,7 +32,7 @@ BOOL torture_utable(int dummy)
 
 	printf("starting utable\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -121,7 +121,7 @@ BOOL torture_casetable(int dummy)
 	smb_ucs2_t equiv[0x10000][MAX_EQUIVALENCE];
 	printf("starting casetable\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
