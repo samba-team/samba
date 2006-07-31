@@ -755,8 +755,9 @@ static const struct Esp esp_control = {
 void http_process_input(struct websrv_context *web)
 {
 	NTSTATUS status;
-	struct esp_state *esp;
+	struct esp_state *esp = NULL;
 	struct esp_data *edata = talloc_get_type(web->task->private, struct esp_data);
+	struct smbcalls_context *smbcalls_ctx;
 	char *p;
 	void *save_mpr_ctx = mprMemCtx();
 	void *ejs_save = ejs_save_state();
@@ -777,7 +778,16 @@ void http_process_input(struct websrv_context *web)
 		{"esp",  "text/html", True}
 	};
 
-	esp = talloc_zero(web, struct esp_state);
+	/*
+	 * give the smbcalls a chance to find the event context
+	 * and messaging context 
+	 */
+	smbcalls_ctx = talloc(web, struct smbcalls_context);
+	if (smbcalls_ctx == NULL) goto internal_error;
+	smbcalls_ctx->event_ctx = web->conn->event.ctx;
+	smbcalls_ctx->msg_ctx = web->conn->msg_ctx;
+
+	esp = talloc_zero(smbcalls_ctx, struct esp_state);
 	if (esp == NULL) goto internal_error;
 
 	esp->web = web;

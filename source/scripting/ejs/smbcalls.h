@@ -29,6 +29,11 @@ void mprAddArray(struct MprVar *var, int i, struct MprVar v);
 void mprSetCFunction(struct MprVar *obj, const char *name, MprCFunction fn);
 void mprSetStringCFunction(struct MprVar *obj, const char *name, MprStringCFunction fn);
 
+struct smbcalls_context {
+	struct event_context *event_ctx;
+	struct messaging_context *msg_ctx;
+};
+
 struct ldb_context;
 struct ldb_message;
 struct cli_credentials;
