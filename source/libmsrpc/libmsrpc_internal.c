@@ -252,7 +252,8 @@ REG_VALUE_DATA *cac_MakeRegValueData(TALLOC_CTX *mem_ctx, uint32 data_type, REGV
 
          data->reg_binary.data_length = size;
 
-         data->reg_binary.data = talloc_memdup(mem_ctx, buf.buffer, size);
+         data->reg_binary.data = (uint8 *)talloc_memdup(mem_ctx, buf.buffer,
+							size);
          if(!data->reg_binary.data) {
             TALLOC_FREE(data);
             errno = ENOMEM;
@@ -499,7 +500,8 @@ CacUserInfo *cac_MakeUserInfo(TALLOC_CTX *mem_ctx, SAM_USERINFO_CTR *ctr) {
    memcpy(info->nt_password, id21->nt_pwd, 8);
    memcpy(info->lm_password, id21->lm_pwd, 8);
    
-   info->logon_hours = talloc_memdup(mem_ctx, &(id21->logon_hrs), sizeof(LOGON_HRS));
+   info->logon_hours = (LOGON_HRS *)talloc_memdup(mem_ctx, &(id21->logon_hrs),
+						  sizeof(LOGON_HRS));
    if(!info->logon_hours)
       return NULL;
 

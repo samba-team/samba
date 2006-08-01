@@ -370,7 +370,8 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 
 	return_result:
 
-		pw_cache = getpwent_response.extra_data.data;
+		pw_cache = (struct winbindd_pw *)
+			getpwent_response.extra_data.data;
 
 		/* Check data is valid */
 
@@ -613,7 +614,8 @@ winbind_getgrent(enum winbindd_cmd cmd,
 
 	return_result:
 
-		gr_cache = getgrent_response.extra_data.data;
+		gr_cache = (struct winbindd_gr *)
+			getgrent_response.extra_data.data;
 
 		/* Check data is valid */
 
@@ -704,7 +706,7 @@ _nss_winbind_getgrnam_r(const char *name,
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_grent(result, &response.data.gr, 
-					 response.extra_data.data,
+					 (char *)response.extra_data.data,
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
@@ -719,7 +721,8 @@ _nss_winbind_getgrnam_r(const char *name,
 		/* We've been called again */
 		
 		ret = fill_grent(result, &response.data.gr, 
-				 response.extra_data.data, &buffer, &buflen);
+				 (char *)response.extra_data.data, &buffer,
+				 &buflen);
 		
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
@@ -767,7 +770,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 		if (ret == NSS_STATUS_SUCCESS) {
 
 			ret = fill_grent(result, &response.data.gr, 
-					 response.extra_data.data, 
+					 (char *)response.extra_data.data, 
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
@@ -782,7 +785,8 @@ _nss_winbind_getgrgid_r(gid_t gid,
 		/* We've been called again */
 
 		ret = fill_grent(result, &response.data.gr, 
-				 response.extra_data.data, &buffer, &buflen);
+				 (char *)response.extra_data.data, &buffer,
+				 &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
@@ -853,7 +857,9 @@ _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
 					}
 				}
 
-				newgroups = realloc((*groups), newsize * sizeof(**groups));
+				newgroups = (gid_t *)
+					realloc((*groups),
+						newsize * sizeof(**groups));
 				if (!newgroups) {
 					*errnop = ENOMEM;
 					ret = NSS_STATUS_NOTFOUND;

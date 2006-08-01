@@ -325,7 +325,7 @@ BOOL netdfs_io_dfs_Info3_d(const char *desc, NETDFS_DFS_INFO3 *v, prs_struct *ps
 			return False;
 		
 		if (UNMARSHALLING(ps)) {
-			v->stores = (void *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->stores)*v->num_stores);
+			v->stores = (NETDFS_DFS_STORAGEINFO *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->stores)*v->num_stores);
 		}
 		for (i_stores_1=0; i_stores_1<v->num_stores;i_stores_1++) {
 			if (!netdfs_io_dfs_StorageInfo_p("stores", &v->stores[i_stores_1], ps, depth))
@@ -447,7 +447,7 @@ BOOL netdfs_io_dfs_Info4_d(const char *desc, NETDFS_DFS_INFO4 *v, prs_struct *ps
 			return False;
 		
 		if (UNMARSHALLING(ps)) {
-			v->stores = (void *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->stores)*v->num_stores);
+			v->stores = (NETDFS_DFS_STORAGEINFO *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->stores)*v->num_stores);
 		}
 		for (i_stores_1=0; i_stores_1<v->num_stores;i_stores_1++) {
 			if (!netdfs_io_dfs_StorageInfo_p("stores", &v->stores[i_stores_1], ps, depth))
@@ -920,7 +920,7 @@ BOOL netdfs_io_dfs_EnumArray1_d(const char *desc, NETDFS_DFS_ENUMARRAY1 *v, prs_
 			return False;
 		
 		if (UNMARSHALLING(ps)) {
-			v->s = (void *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
+			v->s = (NETDFS_DFS_INFO1 *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
 		}
 		for (i_s_1=0; i_s_1<v->count;i_s_1++) {
 			if (!netdfs_io_dfs_Info1_p("s", &v->s[i_s_1], ps, depth))
@@ -986,7 +986,7 @@ BOOL netdfs_io_dfs_EnumArray2_d(const char *desc, NETDFS_DFS_ENUMARRAY2 *v, prs_
 			return False;
 		
 		if (UNMARSHALLING(ps)) {
-			v->s = (void *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
+			v->s = (NETDFS_DFS_INFO2 *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
 		}
 		for (i_s_1=0; i_s_1<v->count;i_s_1++) {
 			if (!netdfs_io_dfs_Info2_p("s", &v->s[i_s_1], ps, depth))
@@ -1052,7 +1052,7 @@ BOOL netdfs_io_dfs_EnumArray3_d(const char *desc, NETDFS_DFS_ENUMARRAY3 *v, prs_
 			return False;
 		
 		if (UNMARSHALLING(ps)) {
-			v->s = (void *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
+			v->s = (NETDFS_DFS_INFO3 *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
 		}
 		for (i_s_1=0; i_s_1<v->count;i_s_1++) {
 			if (!netdfs_io_dfs_Info3_p("s", &v->s[i_s_1], ps, depth))
@@ -1118,7 +1118,7 @@ BOOL netdfs_io_dfs_EnumArray4_d(const char *desc, NETDFS_DFS_ENUMARRAY4 *v, prs_
 			return False;
 		
 		if (UNMARSHALLING(ps)) {
-			v->s = (void *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
+			v->s = (NETDFS_DFS_INFO4 *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
 		}
 		for (i_s_1=0; i_s_1<v->count;i_s_1++) {
 			if (!netdfs_io_dfs_Info4_p("s", &v->s[i_s_1], ps, depth))
@@ -1184,7 +1184,7 @@ BOOL netdfs_io_dfs_EnumArray200_d(const char *desc, NETDFS_DFS_ENUMARRAY200 *v, 
 			return False;
 		
 		if (UNMARSHALLING(ps)) {
-			v->s = (void *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
+			v->s = (NETDFS_DFS_INFO200 *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
 		}
 		for (i_s_1=0; i_s_1<v->count;i_s_1++) {
 			if (!netdfs_io_dfs_Info200_p("s", &v->s[i_s_1], ps, depth))
@@ -1250,7 +1250,7 @@ BOOL netdfs_io_dfs_EnumArray300_d(const char *desc, NETDFS_DFS_ENUMARRAY300 *v, 
 			return False;
 		
 		if (UNMARSHALLING(ps)) {
-			v->s = (void *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
+			v->s = (NETDFS_DFS_INFO300 *)PRS_ALLOC_MEM_VOID(ps,sizeof(*v->s)*v->count);
 		}
 		for (i_s_1=0; i_s_1<v->count;i_s_1++) {
 			if (!netdfs_io_dfs_Info300_p("s", &v->s[i_s_1], ps, depth))
