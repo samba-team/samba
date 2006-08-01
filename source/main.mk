@@ -188,8 +188,6 @@ installpidl: pidl/Makefile
 uninstallpidl: pidl/Makefile
 	$(MAKE) -C pidl uninstall
 
-include heimdal_build/perl_path_wrapper.sh ../librpc/idl-deps.pl librpc/idl/*.idl|
-
 $(IDL_HEADER_FILES) \
 	$(IDL_NDR_PARSE_H_FILES) $(IDL_NDR_PARSE_C_FILES) \
 	$(IDL_NDR_CLIENT_C_FILES) $(IDL_NDR_CLIENT_H_FILES) \
