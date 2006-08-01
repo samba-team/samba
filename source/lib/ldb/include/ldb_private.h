@@ -171,8 +171,8 @@ int ldb_tdb_init(void);
 int ldb_sqlite3_init(void);
 
 int ldb_match_msg(struct ldb_context *ldb,
-		  struct ldb_message *msg,
-		  struct ldb_parse_tree *tree,
+		  const struct ldb_message *msg,
+		  const struct ldb_parse_tree *tree,
 		  const struct ldb_dn *base,
 		  enum ldb_scope scope);
 
