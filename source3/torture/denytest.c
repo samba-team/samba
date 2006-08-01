@@ -1447,10 +1447,10 @@ BOOL torture_denytest1(int dummy)
 		} else {
 			char x = 1;
 			res = A_0;
-			if (cli_read(cli1, fnum2, (void *)&x, 0, 1) == 1) {
+			if (cli_read(cli1, fnum2, (char *)&x, 0, 1) == 1) {
 				res += A_R;
 			}
-			if (cli_write(cli1, fnum2, 0, (void *)&x, 0, 1) == 1) {
+			if (cli_write(cli1, fnum2, 0, (char *)&x, 0, 1) == 1) {
 				res += A_W;
 			}
 		}
@@ -1531,10 +1531,10 @@ BOOL torture_denytest2(int dummy)
 		} else {
 			char x = 1;
 			res = A_0;
-			if (cli_read(cli2, fnum2, (void *)&x, 0, 1) == 1) {
+			if (cli_read(cli2, fnum2, (char *)&x, 0, 1) == 1) {
 				res += A_R;
 			}
-			if (cli_write(cli2, fnum2, 0, (void *)&x, 0, 1) == 1) {
+			if (cli_write(cli2, fnum2, 0, (char *)&x, 0, 1) == 1) {
 				res += A_W;
 			}
 		}

@@ -291,9 +291,9 @@ int main(int argc, char **argv)
 
 	pdb_get_account_policy(AP_PASSWORD_HISTORY, &history);
 	if (history * PW_HISTORY_ENTRY_LEN < NT_HASH_LEN) {
-		buf = TALLOC(ctx, NT_HASH_LEN);
+		buf = (uint8 *)TALLOC(ctx, NT_HASH_LEN);
 	} else {
-		buf = TALLOC(ctx, history * PW_HISTORY_ENTRY_LEN);
+		buf = (uint8 *)TALLOC(ctx, history * PW_HISTORY_ENTRY_LEN);
 	}
 
 	/* Generate some random hashes */
