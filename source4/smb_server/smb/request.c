@@ -668,6 +668,17 @@ struct ntvfs_handle *smbsrv_pull_fnum(struct smbsrv_request *req, const uint8_t 
 		return NULL;
 	}
 
+	/*
+	 * For SMB tcons and sessions can be mixed!
+	 * But we need to make sure that file handles
+	 * are only accessed by the opening session!
+	 *
+	 * So check if the handle is valid for the given session!
+	 */
+	if (handle->session != req->session) {
+		return NULL;
+	}
+
 	return handle->ntvfs;
 }
 
