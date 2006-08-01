@@ -485,13 +485,27 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 	/* save the CIFS homedir for pam_cifs / pam_mount */
 	if (response.data.auth.info3.home_dir[0] != '\0') {
-		char *buf;
 
-		if (!asprintf(&buf, "%s", response.data.auth.info3.home_dir)) {
-			return PAM_BUF_ERR;
+		int ret2 = pam_set_data(pamh, PAM_WINBIND_HOMEDIR,
+					(void *) strdup(response.data.auth.info3.home_dir),
+					_pam_winbind_cleanup_func);
+		if (ret2) {
+			_pam_log_debug(ctrl, LOG_DEBUG, "Could not set data: %s", 
+				       pam_strerror(pamh, ret2));
 		}
 
-		pam_set_data( pamh, PAM_WINBIND_HOMEDIR, (void *)buf, _pam_winbind_cleanup_func);
+	}
+
+	/* save the logon script path for other PAM modules */
+	if (response.data.auth.info3.logon_script[0] != '\0') {
+
+		int ret2 = pam_set_data(pamh, PAM_WINBIND_LOGONSCRIPT, 
+					(void *) strdup(response.data.auth.info3.logon_script), 
+					_pam_winbind_cleanup_func);
+		if (ret2) {
+			_pam_log_debug(ctrl, LOG_DEBUG, "Could not set data: %s", 
+				       pam_strerror(pamh, ret2));
+		}
 	}
 
 	return ret;
