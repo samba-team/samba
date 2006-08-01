@@ -502,6 +502,22 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_EXTENDED_START_TLS_OID	"1.3.6.1.4.1.1466.20037"
 
+/**
+   OID for LDAP Extended Operation START_TLS.
+
+   This Extended operation is used to start a new TLS
+   channel on top of a clear text channel.
+*/
+#define LDB_EXTENDED_DYNAMIC_OID	"1.3.6.1.4.1.1466.101.119.1"
+
+/**
+   OID for LDAP Extended Operation START_TLS.
+
+   This Extended operation is used to start a new TLS
+   channel on top of a clear text channel.
+*/
+#define LDB_EXTENDED_FAST_BIND_OID	"1.2.840.113556.1.4.1781"
+
 struct ldb_paged_control {
 	int size;
 	int cookie_len;
