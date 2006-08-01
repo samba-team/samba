@@ -1579,6 +1579,10 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
         unistr2_to_ascii(homedrive, &(delta->account_info.uni_dir_drive),
 			 sizeof(homedrive)-1);
 
+        /* Get the home path */
+        unistr2_to_ascii(homepath, &(delta->account_info.uni_home_dir),
+			 sizeof(homepath)-1);
+
 	/* Get the description */
 	unistr2_to_ascii(description, &(delta->account_info.uni_acct_desc),
 			 sizeof(description)-1);
