@@ -81,9 +81,9 @@ static int ldb_match_scope(struct ldb_context *ldb,
   match if node is present
 */
 static int ldb_match_present(struct ldb_context *ldb, 
-			    struct ldb_message *msg,
-			    struct ldb_parse_tree *tree,
-			    enum ldb_scope scope)
+			     const struct ldb_message *msg,
+			     const struct ldb_parse_tree *tree,
+			     enum ldb_scope scope)
 {
 	if (ldb_attr_dn(tree->u.present.attr) == 0) {
 		return 1;
@@ -97,8 +97,8 @@ static int ldb_match_present(struct ldb_context *ldb,
 }
 
 static int ldb_match_comparison(struct ldb_context *ldb, 
-				struct ldb_message *msg,
-				struct ldb_parse_tree *tree,
+				const struct ldb_message *msg,
+				const struct ldb_parse_tree *tree,
 				enum ldb_scope scope,
 				enum ldb_parse_op comp_op)
 {
@@ -138,8 +138,8 @@ static int ldb_match_comparison(struct ldb_context *ldb,
   match a simple leaf node
 */
 static int ldb_match_equality(struct ldb_context *ldb, 
-			      struct ldb_message *msg,
-			      struct ldb_parse_tree *tree,
+			      const struct ldb_message *msg,
+			      const struct ldb_parse_tree *tree,
 			      enum ldb_scope scope)
 {
 	unsigned int i;
@@ -183,7 +183,7 @@ static int ldb_match_equality(struct ldb_context *ldb,
 }
 
 static int ldb_wildcard_compare(struct ldb_context *ldb,
-				struct ldb_parse_tree *tree,
+				const struct ldb_parse_tree *tree,
 				const struct ldb_val value)
 {
 	const struct ldb_attrib_handler *h;
@@ -254,8 +254,8 @@ failed:
   match a simple leaf node
 */
 static int ldb_match_substring(struct ldb_context *ldb, 
-			       struct ldb_message *msg,
-			       struct ldb_parse_tree *tree,
+			       const struct ldb_message *msg,
+			       const struct ldb_parse_tree *tree,
 			       enum ldb_scope scope)
 {
 	unsigned int i;
@@ -279,7 +279,7 @@ static int ldb_match_substring(struct ldb_context *ldb,
 /*
   bitwise-and comparator
 */
-static int ldb_comparator_and(struct ldb_val *v1, struct ldb_val *v2)
+static int ldb_comparator_and(const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	uint64_t i1, i2;
 	i1 = strtoull((char *)v1->data, NULL, 0);
@@ -290,7 +290,7 @@ static int ldb_comparator_and(struct ldb_val *v1, struct ldb_val *v2)
 /*
   bitwise-or comparator
 */
-static int ldb_comparator_or(struct ldb_val *v1, struct ldb_val *v2)
+static int ldb_comparator_or(const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	uint64_t i1, i2;
 	i1 = strtoull((char *)v1->data, NULL, 0);
@@ -303,19 +303,19 @@ static int ldb_comparator_or(struct ldb_val *v1, struct ldb_val *v2)
   extended match, handles things like bitops
 */
 static int ldb_match_extended(struct ldb_context *ldb, 
-			      struct ldb_message *msg,
-			      struct ldb_parse_tree *tree,
+			      const struct ldb_message *msg,
+			      const struct ldb_parse_tree *tree,
 			      enum ldb_scope scope)
 {
 	int i;
 	const struct {
 		const char *oid;
-		int (*comparator)(struct ldb_val *, struct ldb_val *);
+		int (*comparator)(const struct ldb_val *, const struct ldb_val *);
 	} rules[] = {
 		{ LDB_OID_COMPARATOR_AND, ldb_comparator_and},
 		{ LDB_OID_COMPARATOR_OR, ldb_comparator_or}
 	};
-	int (*comp)(struct ldb_val *, struct ldb_val *) = NULL;
+	int (*comp)(const struct ldb_val *, const struct ldb_val *) = NULL;
 	struct ldb_message_element *el;
 
 	if (tree->u.extended.dnAttributes) {
@@ -366,8 +366,8 @@ static int ldb_match_extended(struct ldb_context *ldb,
   this is a recursive function, and does short-circuit evaluation
  */
 static int ldb_match_message(struct ldb_context *ldb, 
-			     struct ldb_message *msg,
-			     struct ldb_parse_tree *tree,
+			     const struct ldb_message *msg,
+			     const struct ldb_parse_tree *tree,
 			     enum ldb_scope scope)
 {
 	unsigned int i;
@@ -418,8 +418,8 @@ static int ldb_match_message(struct ldb_context *ldb,
 }
 
 int ldb_match_msg(struct ldb_context *ldb,
-		  struct ldb_message *msg,
-		  struct ldb_parse_tree *tree,
+		  const struct ldb_message *msg,
+		  const struct ldb_parse_tree *tree,
 		  const struct ldb_dn *base,
 		  enum ldb_scope scope)
 {
