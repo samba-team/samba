@@ -62,8 +62,13 @@ NTSTATUS pvfs_flush(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_OK;
 		}
 
-		/* they are asking to flush all open files */
+		/* 
+		 * they are asking to flush all open files
+		 * for the given SMBPID
+		 */
 		for (f=pvfs->files.list;f;f=f->next) {
+			if (f->smbpid != req->smbpid) continue;
+
 			pvfs_flush_file(pvfs, f);
 		}
 
