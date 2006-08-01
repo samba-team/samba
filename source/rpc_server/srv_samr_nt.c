@@ -3338,13 +3338,20 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx, SAM_USER_INFO_25 *id25,
 
 	copy_id25_to_sam_passwd(pwd, id25);
  
+	/* write the change out */
+	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
+		TALLOC_FREE(pwd);
+		return status;
+ 	}
+
 	/*
-	 * The funny part about the previous two calls is
-	 * that pwd still has the password hashes from the
-	 * passdb entry.  These have not been updated from
-	 * id21.  I don't know if they need to be set.    --jerry
+	 * We need to "pdb_update_sam_account" before the unix primary group
+	 * is set, because the idealx scripts would also change the
+	 * sambaPrimaryGroupSid using the ldap replace method. pdb_ldap uses
+	 * the delete explicit / add explicit, which would then fail to find
+	 * the previous primaryGroupSid value.
 	 */
- 
+
 	if ( IS_SAM_CHANGED(pwd, PDB_GROUPSID) ) {
 		status = pdb_set_unix_primary_group(mem_ctx, pwd);
 		if ( !NT_STATUS_IS_OK(status) ) {
@@ -3352,16 +3359,6 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx, SAM_USER_INFO_25 *id25,
 		}
 	}
 	
-	/* Don't worry about writing out the user account since the
-	   primary group SID is generated solely from the user's Unix 
-	   primary group. */
-
-	/* write the change out */
-	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
-		TALLOC_FREE(pwd);
-		return status;
- 	}
-
 	/* WARNING: No TALLOC_FREE(pwd), we are about to set the password
 	 * hereafter! */
 
