@@ -161,14 +161,6 @@ struct pvfs_file {
 	uint32_t share_access;
 	uint32_t access_mask;
 
-	/* we need to remember the session it was opened on,
-	   as it is illegal to operate on someone elses fnum */
-	struct auth_session_info *session_info;
-
-	/* we need to remember the client pid that 
-	   opened the file so SMBexit works */
-	uint16_t smbpid;
-
 	/* a list of pending locks - used for locking cancel operations */
 	struct pvfs_pending_lock *pending_list;
 

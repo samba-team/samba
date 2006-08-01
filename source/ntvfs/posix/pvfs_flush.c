@@ -67,7 +67,7 @@ NTSTATUS pvfs_flush(struct ntvfs_module_context *ntvfs,
 		 * for the given SMBPID
 		 */
 		for (f=pvfs->files.list;f;f=f->next) {
-			if (f->smbpid != req->smbpid) continue;
+			if (f->ntvfs->smbpid != req->smbpid) continue;
 
 			pvfs_flush_file(pvfs, f);
 		}

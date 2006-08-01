@@ -43,11 +43,6 @@ struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs,
 	f = talloc_get_type(p, struct pvfs_file);
 	if (!f) return NULL;
 
-	if (req->session_info != f->session_info) {
-		DEBUG(2,("pvfs_find_fd: attempt to use wrong session for handle %p\n",h));
-		return NULL;
-	}
-
 	return f;
 }
 
@@ -256,8 +251,6 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	}
 
 	f->ntvfs         = h;
-	f->session_info  = req->session_info;
-	f->smbpid        = req->smbpid;
 	f->pvfs          = pvfs;
 	f->pending_list  = NULL;
 	f->lock_count    = 0;
@@ -690,8 +683,6 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 
 	f->ntvfs             = h;
-	f->session_info      = req->session_info;
-	f->smbpid            = req->smbpid;
 	f->pvfs              = pvfs;
 	f->pending_list      = NULL;
 	f->lock_count        = 0;
@@ -861,8 +852,8 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
 	*/
 	for (f2=pvfs->files.list;f2;f2=f2->next) {
 		if (f2 != f &&
-		    f2->session_info == req->session_info &&
-		    f2->smbpid == req->smbpid &&
+		    f2->ntvfs->session_info == req->session_info &&
+		    f2->ntvfs->smbpid == req->smbpid &&
 		    (f2->handle->create_options & 
 		     (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
 		      NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
@@ -1120,8 +1111,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	f->ntvfs         = h;
-	f->session_info  = req->session_info;
-	f->smbpid        = req->smbpid;
 	f->pvfs          = pvfs;
 	f->pending_list  = NULL;
 	f->lock_count    = 0;
@@ -1344,7 +1333,7 @@ NTSTATUS pvfs_logoff(struct ntvfs_module_context *ntvfs,
 
 	for (f=pvfs->files.list;f;f=next) {
 		next = f->next;
-		if (f->session_info == req->session_info) {
+		if (f->ntvfs->session_info == req->session_info) {
 			talloc_free(f);
 		}
 	}
@@ -1364,8 +1353,8 @@ NTSTATUS pvfs_exit(struct ntvfs_module_context *ntvfs,
 
 	for (f=pvfs->files.list;f;f=next) {
 		next = f->next;
-		if (f->session_info == req->session_info &&
-		    f->smbpid == req->smbpid) {
+		if (f->ntvfs->session_info == req->session_info &&
+		    f->ntvfs->smbpid == req->smbpid) {
 			talloc_free(f);
 		}
 	}
