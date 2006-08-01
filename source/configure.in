@@ -3076,6 +3076,28 @@ if test x"$samba_cv_WITH_AFS" != x"no" && test x"$have_afs_headers" = x"yes"; th
 fi
 
 #################################################
+# check whether to compile GPFS/NT ACL mapping module
+samba_cv_WITH_VFS_GPFSACL=no
+AC_MSG_CHECKING(whether to use GPFS acl module)
+AC_ARG_WITH(vfs-gpfsacl,
+[  --with-vfs-gpfsacl      Include GPFS to NT ACL mapping module (default=no) ],
+[ case "$withval" in
+  yes|auto)
+    AC_MSG_RESULT($withval)
+    samba_cv_WITH_VFS_GPFSACL=yes
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+if test x"$samba_cv_WITH_VFS_GPFSACL" = x"yes"; then
+   default_shared_modules="$default_shared_modules vfs_gpfsacl"
+fi
+	
+#################################################
 # check for the DFS clear-text auth system
 AC_MSG_CHECKING(whether to use DFS clear-text auth)
 AC_ARG_WITH(dfs,
@@ -5590,8 +5612,10 @@ SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_expand_msdfs, \$(VFS_EXPAND_MSDFS_OBJ), "bin/expand_msdfs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_shadow_copy, \$(VFS_SHADOW_COPY_OBJ), "bin/shadow_copy.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_afsacl, \$(VFS_AFSACL_OBJ), "bin/afsacl.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_gpfsacl, \$(VFS_GPFSACL_OBJ), "bin/gpfsacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_posixacl, \$(VFS_POSIXACL_OBJ), "bin/posixacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_aixacl, \$(VFS_AIXACL_OBJ), "bin/aixacl.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_aixacl2, \$(VFS_AIXACL2_OBJ), "bin/aixacl2.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_solarisacl, \$(VFS_SOLARISACL_OBJ), "bin/solarisacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_irixacl, \$(VFS_IRIXACL_OBJ), "bin/irixacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_hpuxacl, \$(VFS_HPUXACL_OBJ), "bin/hpuxacl.$SHLIBEXT", VFS)
