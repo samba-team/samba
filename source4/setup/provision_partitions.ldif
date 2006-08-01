@@ -1,7 +1,6 @@
 dn: @PARTITION
 partition: CN=Schema,CN=Configuration,${BASEDN}:schema.ldb
 partition: CN=Configuration,${BASEDN}:configuration.ldb
-partition: CN=Templates,${BASEDN}:templates.ldb
 partition: ${BASEDN}:${LDAPBACKEND}
 replicateEntries: @SUBCLASSES
 replicateEntries: @ATTRIBUTES
