@@ -156,7 +156,8 @@ DOM_SID *cac_get_domain_sid(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, uint32 de
    if(!fs.out.domain_sid)
       return NULL;
 
-   sid = talloc_memdup(mem_ctx, &(fs.out.domain_sid->sid), sizeof(DOM_SID));
+   sid = (DOM_SID *)talloc_memdup(mem_ctx, &(fs.out.domain_sid->sid),
+				  sizeof(DOM_SID));
 
    if(!sid) {
       hnd->status = NT_STATUS_NO_MEMORY;
