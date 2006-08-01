@@ -270,35 +270,42 @@ static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message
 	}
 
 	ret = ltdb_store(module, msg, TDB_INSERT);
-	if (ret != LDB_SUCCESS) {
-		switch (ret) {
-		case LDB_ERR_ENTRY_ALREADY_EXISTS:
-		{
-			TALLOC_CTX *mem_ctx = talloc_new(module);
-			char *errstring, *dn;
-			if (!mem_ctx) {
-				break;
-			}
-			dn = ldb_dn_linearize(mem_ctx, msg->dn);
-			if (!dn) {
-				break;
-			}
-			errstring = talloc_asprintf(mem_ctx, "Entry %s already exists",
-						    dn);
-			ldb_set_errstring(module->ldb, errstring);
-			talloc_free(mem_ctx);
+	switch (ret) {
+	case LDB_SUCCESS:
+	{
+		TALLOC_CTX *mem_ctx = talloc_new(module);
+		char *dn;
+		dn = ldb_dn_linearize(mem_ctx, msg->dn);
+		if (!dn) {
 			break;
 		}
+		ret = ltdb_modified(module, msg->dn);
+		if (ret != LDB_SUCCESS) {
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		return ret;
+		break;
 	}
-
-	ret = ltdb_modified(module, msg->dn);
-	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	case LDB_ERR_ENTRY_ALREADY_EXISTS:
+	{
+		TALLOC_CTX *mem_ctx = talloc_new(module);
+		char *errstring, *dn;
+		if (!mem_ctx) {
+			break;
+		}
+		dn = ldb_dn_linearize(mem_ctx, msg->dn);
+		if (!dn) {
+			break;
+		}
+		errstring = talloc_asprintf(mem_ctx, "Entry %s already exists",
+					    dn);
+		ldb_set_errstring(module->ldb, errstring);
+		talloc_free(mem_ctx);
+		break;
 	}
-
-	return LDB_SUCCESS;
+	default:
+		break;
+	}
+	return ret;
 }
 
 /*
