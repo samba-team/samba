@@ -4,5 +4,6 @@
 dn: ${BASEDN}
 objectClass: top
 objectClass: domain
+objectClass: domainDNS
 dc: ${RDN_DC}
 

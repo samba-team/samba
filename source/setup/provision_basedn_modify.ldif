@@ -3,11 +3,6 @@
 ###############################
 dn: ${BASEDN}
 changetype: modify
-replace: objectClass
-objectClass: top
-objectClass: domain
-objectClass: domainDNS
--
 replace: dnsDomain
 dnsDomain: ${DNSDOMAIN}
 -
