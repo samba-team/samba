@@ -49,7 +49,7 @@ struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint
 	tid = IVAL(base, offset + 8);
 	pad = IVAL(base, offset + 12);
 
-	if (pad != 0xFFFFFFFF) {
+	if (pad != UINT32_MAX) {
 		return NULL;
 	}
 
@@ -58,7 +58,15 @@ struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint
 		return NULL;
 	}
 
-/* TODO: add comments */
+	/*
+	 * the handle can belong to a different tcon
+	 * as that TID in the SMB2 header says, but
+	 * the request should succeed nevertheless!
+	 *
+	 * because if this we put the 32 bit TID into the
+	 * 128 bit handle, so that we can extract the tcon from the
+	 * handle
+	 */
 	tcon = req->tcon;
 	if (tid != req->tcon->tid) {
 		tcon = smbsrv_smb2_tcon_find(req->session, tid, req->request_time);
@@ -72,6 +80,18 @@ struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint
 		return NULL;
 	}
 
+	/*
+	 * as the smb2srv_tcon is a child object of the smb2srv_session
+	 * the handle belongs to the correct session!
+	 *
+	 * Note: no check is needed here for SMB2
+	 */
+
+	/*
+	 * as the handle may have overwritten the tcon
+	 * we need to set it on the request so that the
+	 * correct ntvfs context will be used for the ntvfs_*() request
+	 */
 	req->tcon = tcon;
 	return handle->ntvfs;
 }
@@ -86,7 +106,7 @@ void smb2srv_push_handle(uint8_t *base, uint_t offset, struct ntvfs_handle *ntvf
 	 */
 	SBVAL(base, offset,	handle->hid);
 	SIVAL(base, offset + 8,	handle->tcon->tid);
-	SIVAL(base, offset + 12,0xFFFFFFFF);
+	SIVAL(base, offset + 12,UINT32_MAX);
 }
 
 static NTSTATUS smb2srv_handle_create_new(void *private_data, struct ntvfs_request *ntvfs, struct ntvfs_handle **_h)
