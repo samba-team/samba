@@ -336,6 +336,8 @@ OBJ_FILES = gen_ndr/ndr_winbind.o
 PUBLIC_HEADERS = gen_ndr/winbind.h
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NETLOGON
 
+include ../heimdal_build/perl_path_wrapper.sh ../librpc/idl-deps.pl librpc/idl/*.idl|
+
 librpc/gen_ndr/tables.c: $(IDL_NDR_PARSE_H_FILES)
 	@echo Generating librpc/gen_ndr/tables.c
 	@$(PERL) $(srcdir)/librpc/tables.pl --output=librpc/gen_ndr/tables.c $(IDL_NDR_PARSE_H_FILES) > librpc/gen_ndr/tables.x
@@ -356,7 +358,7 @@ PUBLIC_DEPENDENCIES = \
 	NDR_NETLOGON NDR_TRKWKS NDR_KEYSVC NDR_KRB5PAC NDR_XATTR NDR_SCHANNEL \
 	NDR_ROT NDR_DRSBLOBS NDR_SVCCTL NDR_NBT NDR_WINSREPL NDR_SECURITY \
 	NDR_INITSHUTDOWN NDR_DNSSERVER NDR_WINSTATION NDR_IRPC NDR_DCOM NDR_OPENDB \
-	NDR_SASL_HELPERS NDR_NOTIFY
+	NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND
 
 [LIBRARY::RPC_NDR_ROT]
 VERSION = 0.0.1
