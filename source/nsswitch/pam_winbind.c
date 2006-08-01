@@ -227,12 +227,15 @@ static int _make_remark_format(pam_handle_t * pamh, int type, const char *format
 {
 	va_list args;
 	char *var;
+	int ret;
 
 	va_start(args, format);
 	vasprintf(&var, format, args);
 	va_end(args);
 
-	return _make_remark(pamh, type, var);
+	ret = _make_remark(pamh, type, var);
+	SAFE_FREE(var);
+	return ret;
 }
 
 static int pam_winbind_request(pam_handle_t * pamh, int ctrl,
