@@ -1534,7 +1534,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 {
 	fstring username, logonscript, homedrive, homepath = "", homedir = "";
 	fstring hex_nt_passwd, hex_lm_passwd;
-	fstring description, fullname, sambaSID;
+	fstring description, profilepath, fullname, sambaSID;
 	uchar lm_passwd[16], nt_passwd[16];
 	char *flags, *user_rdn;
 	const char *ou;
@@ -1586,13 +1586,14 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	/* Get the description */
 	unistr2_to_ascii(description, &(delta->account_info.uni_acct_desc),
 			 sizeof(description)-1);
-	if (!*description) {
-		pstr_sprintf(description, "System User");
-	}
 
 	/* Get the display name */
 	unistr2_to_ascii(fullname, &(delta->account_info.uni_full_name),
 			 sizeof(fullname)-1);
+
+	/* Get the profile path */
+	unistr2_to_ascii(profilepath, &(delta->account_info.uni_profile),
+			 sizeof(profilepath)-1);
 
 	/* Get lm and nt password data */
 	if (memcmp(delta->account_info.pass.buf_lm_pwd, zero_buf, 16) != 0) {
@@ -1668,11 +1669,14 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 		((delta->account_info.acb_info & ACB_NORMAL) ?
 		 "/bin/bash" : "/bin/false"));
 	fprintf(add_fd, "gecos: System User\n");
-	fprintf_attr(add_fd, "description", "%s", description);
+	if (*description)
+		fprintf_attr(add_fd, "description", "%s", description);
 	fprintf(add_fd, "sambaSID: %s-%d\n", sid, rid);
 	fprintf(add_fd, "sambaPrimaryGroupSID: %s\n", sambaSID);
 	if(*fullname)
 		fprintf_attr(add_fd, "displayName", "%s", fullname);
+	if(*profilepath)
+		fprintf_attr(add_fd, "sambaProfilePath", "%s", profilepath);
 	if (strcmp(nopasswd, hex_lm_passwd) != 0)
 		fprintf(add_fd, "sambaLMPassword: %s\n", hex_lm_passwd);
 	if (strcmp(nopasswd, hex_nt_passwd) != 0)
