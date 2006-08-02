@@ -1433,6 +1433,7 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 	va_list ap;
 	char *value, *p, *base64;
 	DATA_BLOB base64_blob;
+	BOOL do_base64 = False;
 	int res;
 
 	va_start(ap, fmt);
@@ -1443,12 +1444,29 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 
 	for (p=value; *p; p++) {
 		if (*p & 0x80) {
+			do_base64 = True;
 			break;
 		}
 	}
 
-	if (*p == 0) {
-		/* Found no high bit set */
+	if (!do_base64) {
+		BOOL only_whitespace = True;
+		for (p=value; *p; p++) {
+			/*
+			 * I know that this not multibyte safe, but we break
+			 * on the first non-whitespace character anyway.
+			 */
+			if (!isspace(*p)) {
+				only_whitespace = False;
+				break;
+			}
+		}
+		if (only_whitespace) {
+			do_base64 = True;
+		}
+	}
+
+	if (!do_base64) {
 		res = fprintf(add_fd, "%s: %s\n", attr_name, value);
 		TALLOC_FREE(value);
 		return res;
