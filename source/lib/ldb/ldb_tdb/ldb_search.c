@@ -478,6 +478,7 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
 	struct ltdb_context *ltdb_ac;
+	struct ldb_reply *ares;
 	int ret;
 
 	if ((req->op.search.base == NULL || req->op.search.base->comp_num == 0) &&
@@ -520,6 +521,20 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 		req->handle->state = LDB_ASYNC_DONE;
 		req->handle->status = ret;
 	}
+
+	/* Finally send an LDB_REPLY_DONE packet when searching is finished */
+
+	ares = talloc_zero(req, struct ldb_reply);
+	if (!ares) {
+		ltdb_unlock_read(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	req->handle->state = LDB_ASYNC_DONE;
+	ares->type = LDB_REPLY_DONE;
+
+	ret = req->callback(module->ldb, req->context, ares);
+	req->handle->status = ret;
 
 	ltdb_unlock_read(module);
 
