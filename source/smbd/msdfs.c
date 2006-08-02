@@ -517,13 +517,10 @@ BOOL get_referred_path(TALLOC_CTX *ctx, char *pathname, struct junction_map *juc
 	parse_dfs_path(pathname, &dp);
 
 	/* Verify hostname in path */
-	if ( !strequal(get_local_machine_name(), dp.hostname) ) {
-		/* Hostname mismatch, check if one of our IP addresses */
-		if (!ismyip(*interpret_addr2(dp.hostname))) {
-			DEBUG(3, ("get_referred_path: Invalid hostname %s in path %s\n",
-				dp.hostname, pathname));
-			return False;
-		}
+	if (!is_myname_or_ipaddr(dp.hostname)) {
+		DEBUG(3, ("get_referred_path: Invalid hostname %s in path %s\n",
+			dp.hostname, pathname));
+		return False;
 	}
 
 	pstrcpy(jucn->service_name, dp.servicename);
@@ -890,13 +887,10 @@ BOOL create_junction(char *pathname, struct junction_map *jucn)
         parse_dfs_path(pathname,&dp);
 
         /* check if path is dfs : validate first token */
-        if ( !strequal(get_local_machine_name(),dp.hostname) ) {
-		/* Hostname mismatch, check if one of our IP addresses */
-		if (!ismyip(*interpret_addr2(dp.hostname))) {
-			DEBUG(4,("create_junction: Invalid hostname %s in dfs path %s\n",
-				dp.hostname, pathname));
-			return False;
-		}
+	if (!is_myname_or_ipaddr(dp.hostname)) {
+		DEBUG(4,("create_junction: Invalid hostname %s in dfs path %s\n",
+			dp.hostname, pathname));
+		return False;
 	}
 
 	/* Check for a non-DFS share */
