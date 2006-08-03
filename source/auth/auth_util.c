@@ -955,8 +955,8 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (((lp_server_role() == ROLE_DOMAIN_MEMBER) && !winbind_ping()) || 
-		server_info->was_mapped) {
+	if ((lp_server_role() == ROLE_DOMAIN_MEMBER) &&
+			(server_info->was_mapped || !winbind_ping())) {
 		status = create_token_from_username(server_info,
 						    server_info->unix_name,
 						    server_info->guest,
