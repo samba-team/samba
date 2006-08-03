@@ -356,6 +356,7 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 	const char *certfile = private_path(tmp_ctx, lp_tls_certfile());
 	const char *cafile = private_path(tmp_ctx, lp_tls_cafile());
 	const char *crlfile = private_path(tmp_ctx, lp_tls_crlfile());
+	const char *dhpfile = private_path(tmp_ctx, lp_tls_dhpfile());
 	void tls_cert_generate(TALLOC_CTX *, const char *, const char *, const char *);
 
 	params = talloc(mem_ctx, struct tls_params);
@@ -408,12 +409,25 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 		goto init_failed;
 	}
 	
+	
 	ret = gnutls_dh_params_init(&params->dh_params);
 	if (ret < 0) goto init_failed;
 
-	ret = gnutls_dh_params_generate2(params->dh_params, DH_BITS);
-	if (ret < 0) goto init_failed;
+	if (dhpfile) {
+		gnutls_datum_t dhparms;
+		dhparms.data = (uint8_t *)file_load(dhpfile, &dhparms.size, mem_ctx);
 
+		if (!dhparms.data) {
+			goto init_failed;
+		}
+			
+		ret = gnutls_dh_params_import_pkcs3(params->dh_params, &dhparms, GNUTLS_X509_FMT_PEM);
+		if (ret < 0) goto init_failed;
+	} else {
+		ret = gnutls_dh_params_generate2(params->dh_params, DH_BITS);
+		if (ret < 0) goto init_failed;
+	}
+		
 	gnutls_certificate_set_dh_params(params->x509_cred, params->dh_params);
 
 	params->tls_enabled = True;

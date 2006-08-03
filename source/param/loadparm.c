@@ -139,6 +139,7 @@ typedef struct
 	char *tls_certfile;
 	char *tls_cafile;
 	char *tls_crlfile;
+	char *tls_dhpfile;
 	int max_mux;
 	int max_xmit;
 	int pwordlevel;
@@ -451,6 +452,7 @@ static struct parm_struct parm_table[] = {
 	{"tls certfile", P_STRING, P_GLOBAL, &Globals.tls_certfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"tls cafile", P_STRING, P_GLOBAL, &Globals.tls_cafile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"tls crlfile", P_STRING, P_GLOBAL, &Globals.tls_crlfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls dh params file", P_STRING, P_GLOBAL, &Globals.tls_dhpfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"swat directory", P_STRING, P_GLOBAL, &Globals.swat_directory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_DEVELOPER},
 	{"server max protocol", P_ENUM, P_GLOBAL, &Globals.srv_maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
@@ -830,6 +832,7 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_tls_keyfile, &Globals.tls_keyfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_certfile, &Globals.tls_certfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_cafile, &Globals.tls_cafile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_crlfile, &Globals.tls_crlfile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_tls_dhpfile, &Globals.tls_dhpfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)

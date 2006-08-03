@@ -47,6 +47,7 @@ PRIVATEDIR=$PREFIX_ABS/private
 NCALRPCDIR=$PREFIX_ABS/ncalrpc
 LOCKDIR=$PREFIX_ABS/lockdir
 TLSDIR=$PRIVATEDIR/tls
+DHFILE=$TLSDIR/dhparms.pem
 WINBINDD_SOCKET_DIR=$PREFIX_ABS/winbind_socket
 CONFIGURATION="--configfile=$CONFFILE"
 export CONFIGURATION
@@ -71,6 +72,7 @@ cat >$CONFFILE<<EOF
 	name resolve order = bcast
 	interfaces = 127.0.0.1/8
 	tls enabled = $TLS_ENABLED
+        tls dh params file = $DHFILE
 	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
 	wins support = yes
 	server role = pdc
@@ -110,6 +112,15 @@ cat >$KRB5_CONFIG<<EOF
  }
 [domain_realm]
  .samba.example.com = SAMBA.EXAMPLE.COM
+EOF
+
+cat >$DHFILE<<EOF 
+-----BEGIN DH PARAMETERS-----
+MGYCYQC/eWD2xkb7uELmqLi+ygPMKyVcpHUo2yCluwnbPutEueuxrG/Cys8j8wLO
+svCN/jYNyR2NszOmg7ZWcOC/4z/4pWDVPUZr8qrkhj5MRKJc52MncfaDglvEdJrv
+YX70obsCAQI=
+-----END DH PARAMETERS-----
+
 EOF
 
 export KRB5_CONFIG
