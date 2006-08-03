@@ -1169,7 +1169,7 @@ static int net_ads_join_usage(int argc, const char **argv)
  
 int net_ads_join(int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	char *machine_account = NULL;
 	const char *short_domain_name = NULL;
@@ -1184,24 +1184,23 @@ int net_ads_join(int argc, const char **argv)
 	
 	if ( check_ads_config() != 0 ) {
 		d_fprintf(stderr, "Invalid configuration.  Exiting....\n");
-		return -1;
+		goto fail;
 	}
 
 	if ( (ads = ads_startup(True)) == NULL ) {
-		return -1;
+		goto fail;
 	}
 
 	if (strcmp(ads->config.realm, lp_realm()) != 0) {
 		d_fprintf(stderr, "realm of remote server (%s) and realm in smb.conf "
 			"(%s) DO NOT match.  Aborting join\n", ads->config.realm, 
 			lp_realm());
-		ads_destroy(&ads);
-		return -1;
+		goto fail;
 	}
 
 	if (!(ctx = talloc_init("net_ads_join"))) {
 		DEBUG(0, ("Could not initialise talloc context\n"));
-		return -1;
+		goto fail;
 	}
 
 	/* process additional command line args */
@@ -1214,12 +1213,12 @@ int net_ads_join(int argc, const char **argv)
 		else if ( !StrnCaseCmp(argv[i], "createcomputer", strlen("createcomputer")) ) {
 			if ( (create_in_ou = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, "Please supply a valid OU path\n");
-				return -1;
+				goto fail;
 			}		
 		}
 		else {
 			d_fprintf(stderr, "Bad option: %s\n", argv[i]);
-			return -1;
+			goto fail;
 		}
 	}
 
@@ -1231,8 +1230,7 @@ int net_ads_join(int argc, const char **argv)
 		if ( !ADS_ERR_OK(status) ) {
 			d_fprintf( stderr, "Failed to pre-create the machine object "
 				"in OU %s.\n", argv[0]);
-			ads_destroy( &ads );
-			return -1;
+			goto fail;
 		}
 	}
 
@@ -1243,7 +1241,7 @@ int net_ads_join(int argc, const char **argv)
 	
 	if ( net_join_domain( ctx, ads->config.ldap_server_name, &ads->ldap_ip, &domain_sid, password ) != 0 ) {
 		d_fprintf(stderr, "Failed to join domain!\n");
-		return -1;
+		goto fail;
 	}
 	
 	/* Check the short name of the domain */
@@ -1274,15 +1272,14 @@ int net_ads_join(int argc, const char **argv)
 	if ( (netdom_store_machine_account( lp_workgroup(), domain_sid, password ) == -1)
 		|| (netdom_store_machine_account( short_domain_name, domain_sid, password ) == -1) )
 	{
-		ads_destroy(&ads);
-		return -1;
+		goto fail;
 	}
 
 	/* Verify that everything is ok */
 
 	if ( net_rpc_join_ok(short_domain_name, ads->config.ldap_server_name, &ads->ldap_ip) != 0 ) {
 		d_fprintf(stderr, "Failed to verify membership in domain!\n");
-		return -1;
+		goto fail;
 	}	
 
 	/* create the dNSHostName & servicePrincipalName values */
@@ -1306,13 +1303,12 @@ int net_ads_join(int argc, const char **argv)
 		netdom_store_machine_account( lp_workgroup(), domain_sid, "" ); 
 		netdom_store_machine_account( short_domain_name, domain_sid, "" );
 		
-		return -1;
+		goto fail;
 	}
 
 	if ( !net_derive_salting_principal( ctx, ads ) ) {
 		DEBUG(1,("Failed to determine salting principal\n"));
-		ads_destroy(&ads);
-		return -1;
+		goto fail;
 	}
 
 	if ( createupn ) {
@@ -1343,6 +1339,10 @@ int net_ads_join(int argc, const char **argv)
 	ads_destroy(&ads);
 	
 	return 0;
+
+fail:
+	ads_destroy(&ads);
+	return -1;
 }
 
 /*******************************************************************
