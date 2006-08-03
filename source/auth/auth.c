@@ -154,9 +154,6 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 	struct auth_check_password_sync_state *sync_state;
 	NTSTATUS status;
 
-	DEBUG(3,   ("auth_check_password:  Checking password for unmapped user [%s]\\[%s]@[%s]\n", 
-		    user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
-
 	sync_state = talloc_zero(auth_ctx, struct auth_check_password_sync_state);
 	NT_STATUS_HAVE_NO_MEMORY(sync_state);
 
@@ -170,13 +167,6 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 
 	if (NT_STATUS_IS_OK(status)) {
 		*server_info = talloc_steal(mem_ctx, sync_state->server_info);
-
-		DEBUG(5,("auth_check_password: authentication for user [%s\\%s] succeeded\n",
-			 (*server_info)->domain_name, (*server_info)->account_name));
-	} else {
-		DEBUG(2,("auth_check_password: authentication for user [%s\\%s] FAILED with error %s\n", 
-			 user_info->mapped.domain_name, user_info->mapped.account_name, 
-			 nt_errstr(status)));
 	}
 
 	talloc_free(sync_state);
@@ -339,12 +329,12 @@ NTSTATUS auth_check_password_recv(struct auth_check_password_request *req,
 	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	if (NT_STATUS_IS_OK(req->status)) {
-		DEBUG(5,("auth_check_password: %s authentication for user [%s\\%s] succeeded\n",
+		DEBUG(5,("auth_check_password_recv: %s authentication for user [%s\\%s] succeeded\n",
 			 req->method->ops->name, req->server_info->domain_name, req->server_info->account_name));
 
 		*server_info = talloc_steal(mem_ctx, req->server_info);
 	} else {
-		DEBUG(2,("auth_check_password: %s authentication for user [%s\\%s] FAILED with error %s\n", 
+		DEBUG(2,("auth_check_password_recv: %s authentication for user [%s\\%s] FAILED with error %s\n", 
 			 (req->method ? req->method->ops->name : "NO_METHOD"),
 			 req->user_info->mapped.domain_name,
 			 req->user_info->mapped.account_name, 
