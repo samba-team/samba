@@ -331,7 +331,7 @@ WERROR delete_printer_hook( NT_USER_TOKEN *token, const char *sharename )
 	/* go ahead and re-read the services immediately */
 	reload_services( False );
 	
-	if ( !share_defined( sharename ) )
+	if ( share_defined( sharename ) )
 		return WERR_ACCESS_DENIED;
 		
 	return WERR_OK;
