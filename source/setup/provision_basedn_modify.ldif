@@ -12,9 +12,6 @@ dc: ${RDN_DC}
 replace: objectGUID
 objectGUID: ${DOMAINGUID}
 -
-replace: creationTime
-creationTime: ${NTTIME}
--
 replace: forceLogoff
 forceLogoff: 9223372036854775808
 -
