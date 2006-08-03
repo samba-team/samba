@@ -599,6 +599,14 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	 * simple first. */
 	TALLOC_FREE(gids);
 
+	/* For a local user the real primary group sid is the result->sids[0] */
+
+	if (!pdb_set_group_sid(sampass, &result->sids[0], PDB_CHANGED)) {
+		result->sam_account = NULL; /* Don't free on error exit. */
+		TALLOC_FREE(result);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	DEBUG(5,("make_server_info_sam: made server info for user %s -> %s\n",
 		 pdb_get_username(sampass), result->unix_name));
 
@@ -1089,7 +1097,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		gr_sid = pdb_get_group_sid(sam_acct);
 		if (!gr_sid) {
-			goto unix_user;
+			goto unix_group;
 		}
 
 		sid_copy(&primary_group_sid, gr_sid);
@@ -1097,8 +1105,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		if (!sid_to_gid(&primary_group_sid, gid)) {
 			DEBUG(1, ("sid_to_gid(%s) failed\n",
 				  sid_string_static(&primary_group_sid)));
-			DEBUGADD(1, ("Fall back to unix user %s\n", username));
-			goto unix_user;
+			DEBUGADD(1, ("Fall back to unix group %s\n", username));
+			goto unix_group;
 		}
 
 		result = pdb_enum_group_memberships(tmp_ctx, sam_acct,
@@ -1107,8 +1115,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10, ("enum_group_memberships failed for %s\n",
 				   username));
-			DEBUGADD(1, ("Fall back to unix user %s\n", username));
-			goto unix_user;
+			DEBUGADD(1, ("Fall back to unix group %s\n", username));
+			goto unix_group;
 		}
 
 		*found_username = talloc_strdup(mem_ctx,
@@ -1131,6 +1139,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	unix_user:
 
 		uid_to_unix_users_sid(*uid, &user_sid);
+
+	unix_group:
 
 		pass = getpwuid_alloc(tmp_ctx, *uid);
 		if (pass == NULL) {
@@ -1315,6 +1325,14 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 	 * later. This needs fixing, but I'd like to get the code straight and
 	 * simple first. */
 	TALLOC_FREE(gids);
+
+	/* For a local user the real primary group sid is the result->sids[0] */
+
+	if (!pdb_set_group_sid(sampass, &result->sids[0], PDB_CHANGED)) {
+		result->sam_account = NULL; /* Don't free on error exit. */
+		TALLOC_FREE(sampass);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	*server_info = result;
 
