@@ -29,7 +29,6 @@
 
 static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 						   const DOM_SID *user_sid,
-						   const DOM_SID *group_sid,
 						   BOOL is_guest,
 						   int num_groupsids,
 						   const DOM_SID *groupsids);
@@ -509,7 +508,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
 	uid_to_sid(&u_sid, pw->pw_uid);
 	gid_to_sid(&g_sid, pw->pw_gid);
 
-	token = create_local_nt_token(NULL, &u_sid, &g_sid, False,
+	token = create_local_nt_token(NULL, &u_sid, False,
 				      1, &global_sid_Builtin_Administrators);
 	return token;
 }
@@ -811,7 +810,6 @@ static NTSTATUS create_builtin_administrators( void )
 
 static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 						   const DOM_SID *user_sid,
-						   const DOM_SID *group_sid,
 						   BOOL is_guest,
 						   int num_groupsids,
 						   const DOM_SID *groupsids)
@@ -830,7 +828,9 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 
 	add_sid_to_array(result, user_sid,
 			 &result->user_sids, &result->num_sids);
-	add_sid_to_array(result, group_sid,
+
+	SMB_ASSERT(num_groupsids > 0);
+	add_sid_to_array(result, &groupsids[0],
 			 &result->user_sids, &result->num_sids);
 			 
 	/* Add in BUILTIN sids */
@@ -850,9 +850,11 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	
 	/* Now the SIDs we got from authentication. These are the ones from
 	 * the info3 struct or from the pdb_enum_group_memberships, depending
-	 * on who authenticated the user. */
+	 * on who authenticated the user.
+	 * Note that we start the for loop at "1" here, we already added the
+	 * first group sid as primary above. */
 
-	for (i=0; i<num_groupsids; i++) {
+	for (i=1; i<num_groupsids; i++) {
 		add_sid_to_array_unique(result, &groupsids[i],
 					&result->user_sids, &result->num_sids);
 	}
@@ -956,8 +958,8 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 	 * mapped to some local unix user.
 	 */
 
-	if ((lp_server_role() == ROLE_DOMAIN_MEMBER) && 
-			(server_info->was_mapped || !winbind_ping())) {
+	if (((lp_server_role() == ROLE_DOMAIN_MEMBER) && !winbind_ping()) ||
+	    (server_info->was_mapped)) {
 		status = create_token_from_username(server_info,
 						    server_info->unix_name,
 						    server_info->guest,
@@ -970,7 +972,6 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 		server_info->ptok = create_local_nt_token(
 			server_info,
 			pdb_get_user_sid(server_info->sam_account),
-			pdb_get_group_sid(server_info->sam_account),
 			server_info->guest,
 			server_info->num_sids, server_info->sids);
 		status = server_info->ptok ?
@@ -1073,7 +1074,6 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		/* This is a passdb user, so ask passdb */
 
 		struct samu *sam_acct = NULL;
-		const DOM_SID *gr_sid = NULL;
 
 		if ( !(sam_acct = samu_new( tmp_ctx )) ) {
 			result = NT_STATUS_NO_MEMORY;
@@ -1083,20 +1083,6 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		if (!pdb_getsampwsid(sam_acct, &user_sid)) {
 			DEBUG(1, ("pdb_getsampwsid(%s) for user %s failed\n",
 				  sid_string_static(&user_sid), username));
-			DEBUGADD(1, ("Fall back to unix user %s\n", username));
-			goto unix_user;
-		}
-
-		gr_sid = pdb_get_group_sid(sam_acct);
-		if (!gr_sid) {
-			goto unix_user;
-		}
-
-		sid_copy(&primary_group_sid, gr_sid);
-
-		if (!sid_to_gid(&primary_group_sid, gid)) {
-			DEBUG(1, ("sid_to_gid(%s) failed\n",
-				  sid_string_static(&primary_group_sid)));
 			DEBUGADD(1, ("Fall back to unix user %s\n", username));
 			goto unix_user;
 		}
@@ -1111,6 +1097,10 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			goto unix_user;
 		}
 
+		/* see the smb_panic() in pdb_default_enum_group_memberships */
+		SMB_ASSERT(num_group_sids > 0); 
+
+		*gid = gids[0];
 		*found_username = talloc_strdup(mem_ctx,
 						pdb_get_username(sam_acct));
 
@@ -1139,9 +1129,6 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			goto done;
 		}
 
-		*gid = pass->pw_gid;
-		gid_to_sid(&primary_group_sid, pass->pw_gid);
-
 		if (!getgroups_unix_user(tmp_ctx, username, pass->pw_gid,
 					 &gids, &num_group_sids)) {
 			DEBUG(1, ("getgroups_unix_user for user %s failed\n",
@@ -1159,6 +1146,11 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		for (i=0; i<num_group_sids; i++) {
 			gid_to_sid(&group_sids[i], gids[i]);
 		}
+
+		/* In getgroups_unix_user we always set the primary gid */
+		SMB_ASSERT(num_group_sids > 0); 
+
+		*gid = gids[0];
 		*found_username = talloc_strdup(mem_ctx, pass->pw_name);
 
 	} else {
@@ -1182,13 +1174,13 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			goto done;
 		}
 
-		num_group_sids = 0;
-		group_sids = NULL;
+		num_group_sids = 1;
+		group_sids = &primary_group_sid;
 
 		*found_username = talloc_strdup(mem_ctx, username);
 	}
 
-	*token = create_local_nt_token(mem_ctx, &user_sid, &primary_group_sid,
+	*token = create_local_nt_token(mem_ctx, &user_sid,
 				       is_guest, num_group_sids, group_sids);
 
 	if ((*token == NULL) || (*found_username == NULL)) {
