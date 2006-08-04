@@ -446,10 +446,10 @@ static NTSTATUS find_forced_group(BOOL force_user,
 	groupname = talloc_string_sub(mem_ctx, groupname,
 				      "%S", lp_servicename(snum));
 
-	if (!lookup_name(mem_ctx, groupname,
+	if (!lookup_name_smbconf(mem_ctx, groupname,
 			 LOOKUP_NAME_ALL|LOOKUP_NAME_GROUP,
 			 NULL, NULL, &group_sid, &type)) {
-		DEBUG(10, ("lookup_name(%s) failed\n",
+		DEBUG(10, ("lookup_name_smbconf(%s) failed\n",
 			   groupname));
 		goto done;
 	}
