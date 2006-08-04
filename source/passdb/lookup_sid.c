@@ -61,6 +61,9 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		name = talloc_strdup(tmp_ctx, full_name);
 	}
 
+	DEBUG(10,("lookup_name: %s => %s (domain), %s (name)\n", 
+		full_name, domain, name));
+
 	if ((domain == NULL) || (name == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
 		return False;
