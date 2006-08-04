@@ -1382,8 +1382,8 @@ static auth_serversupplied_info *copy_serverinfo(auth_serversupplied_info *src)
 	dst->gid = src->gid;
 	dst->n_groups = src->n_groups;
 	if (src->n_groups != 0) {
-		dst->groups = talloc_memdup(dst, src->groups,
-					    sizeof(gid_t)*dst->n_groups);
+		dst->groups = (gid_t *)talloc_memdup(
+			dst, src->groups, sizeof(gid_t)*dst->n_groups);
 	} else {
 		dst->groups = NULL;
 	}
@@ -1444,7 +1444,8 @@ BOOL copy_current_user(struct current_user *dst, struct current_user *src)
 	gid_t *groups;
 	NT_USER_TOKEN *nt_token;
 
-	groups = memdup(src->ut.groups, sizeof(gid_t) * src->ut.ngroups);
+	groups = (gid_t *)memdup(src->ut.groups,
+				 sizeof(gid_t) * src->ut.ngroups);
 	if ((src->ut.ngroups != 0) && (groups == NULL)) {
 		return False;
 	}
@@ -1470,8 +1471,8 @@ BOOL set_current_user_guest(struct current_user *dst)
 	gid_t *groups;
 	NT_USER_TOKEN *nt_token;
 
-	groups = memdup(guest_info->groups,
-			sizeof(gid_t) * guest_info->n_groups);
+	groups = (gid_t *)memdup(guest_info->groups,
+				 sizeof(gid_t) * guest_info->n_groups);
 	if (groups == NULL) {
 		return False;
 	}
@@ -1937,8 +1938,8 @@ NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, NT_USER_TOKEN *ptoken)
 		return NULL;
 	}
 
-	token->user_sids = talloc_memdup(token, ptoken->user_sids,
-					 sizeof(DOM_SID) * ptoken->num_sids );
+	token->user_sids = (DOM_SID *)talloc_memdup(
+		token, ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids );
 
 	if ((ptoken->user_sids != NULL) && (token->user_sids == NULL)) {
 		DEBUG(0, ("talloc_memdup failed\n"));
