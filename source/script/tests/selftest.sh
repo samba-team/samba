@@ -8,7 +8,7 @@ then
 fi
 
 if [ -z "$TORTURE_MAXTIME" ]; then
-    TORTURE_MAXTIME=300
+    TORTURE_MAXTIME=450
 fi
 
 OLD_PWD=`pwd`
