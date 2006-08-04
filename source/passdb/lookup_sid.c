@@ -358,7 +358,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 /************************************************************************
  Names from smb.conf can be unqualified. eg. valid users = foo
- These names should never map to a remote name. Try lp_workgroup()\foo,
+ These names should never map to a remote name. Try global_sam_name()\foo,
  and then "Unix Users"\foo (or "Unix Groups"\foo).
 ************************************************************************/
 
@@ -377,9 +377,9 @@ BOOL lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 				ret_sid, ret_type);
 	}
 
-	/* Try with our own domain name. */
+	/* Try with our own SAM name. */
 	qualified_name = talloc_asprintf(mem_ctx, "%s\\%s",
-				lp_workgroup(),
+				get_global_sam_name(),
 				full_name );
 	if (!qualified_name) {
 		return False;
