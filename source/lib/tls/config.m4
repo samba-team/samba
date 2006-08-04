@@ -17,6 +17,9 @@ if test x$SMB_ENABLE_GNUTLS = xNO; then
 	SMB_EXT_LIB(GNUTLS, $GNUTLS_LIBS)
 fi
 if test x$SMB_ENABLE_GNUTLS = xYES; then
+	#Some older versions have a different type name
+	AC_CHECK_TYPES([gnutls_datum],,,[#include "gnutls/gnutls.h"])
+	AC_CHECK_TYPES([gnutls_datum_t],,,[#include "gnutls/gnutls.h"])
 	AC_DEFINE(HAVE_LIBGNUTLS,1,[Whether we have gnutls support (SSL)])
 fi
 # end SMB_EXT_LIB_GNUTLS
