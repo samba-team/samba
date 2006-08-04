@@ -393,14 +393,15 @@ BOOL lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 		 DOM_SID *ret_sid, enum SID_NAME_USE *ret_type)
 {
 	char *qualified_name;
+	const char *p;
 
 	/* NB. No winbindd_separator here as lookup_name needs \\' */
-	if (strchr_m(full_name, *lp_winbind_separator())) {
+	if ((p = strchr_m(full_name, *lp_winbind_separator())) != NULL) {
 
 		/* The name is already qualified with a domain. */
 
 		if (*lp_winbind_separator() != '\\') {
-			char *p, *tmp;
+			char *tmp;
 
 			/* lookup_name() needs '\\' as a separator */
 
@@ -408,9 +409,7 @@ BOOL lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 			if (!tmp) {
 				return False;
 			}
-			p = strchr_m(tmp, *lp_winbind_separator());
-			SMB_ASSERT(p != NULL);
-			*p = '\\';
+			tmp[p - full_name] = '\\';
 			full_name = tmp;
 		}
 
