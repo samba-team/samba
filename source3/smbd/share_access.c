@@ -97,7 +97,7 @@ static BOOL token_contains_name(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!do_group_checks(&name, &prefix)) {
-		if (!lookup_name(mem_ctx, name, LOOKUP_NAME_ALL,
+		if (!lookup_name_smbconf(mem_ctx, name, LOOKUP_NAME_ALL,
 				 NULL, NULL, &sid, &type)) {
 			DEBUG(5, ("lookup_name %s failed\n", name));
 			return False;
@@ -112,7 +112,7 @@ static BOOL token_contains_name(TALLOC_CTX *mem_ctx,
 
 	for (/* initialized above */ ; *prefix != '\0'; prefix++) {
 		if (*prefix == '+') {
-			if (!lookup_name(mem_ctx, name,
+			if (!lookup_name_smbconf(mem_ctx, name,
 					 LOOKUP_NAME_ALL|LOOKUP_NAME_GROUP,
 					 NULL, NULL, &sid, &type)) {
 				DEBUG(5, ("lookup_name %s failed\n", name));
