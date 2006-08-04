@@ -261,17 +261,17 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	if ((modules == NULL) && (strcmp("ldap", ldb->modules->ops->name) != 0)) { 
 		int ret;
 		const char * const attrs[] = { "@LIST" , NULL};
-		struct ldb_result *res;
-		struct ldb_dn *mods;
+		struct ldb_result *res = NULL;
+		struct ldb_dn *mods_dn;
 
-		mods = ldb_dn_explode(mem_ctx, "@MODULES");
-		if (mods == NULL) {
+		mods_dn = ldb_dn_explode(mem_ctx, "@MODULES");
+		if (mods_dn == NULL) {
 			talloc_free(mem_ctx);
 			return -1;
 		}
 
-		ret = ldb_search(ldb, mods, LDB_SCOPE_BASE, "", attrs, &res);
-		talloc_free(mods);
+		ret = ldb_search(ldb, mods_dn, LDB_SCOPE_BASE, "", attrs, &res);
+		if (res) talloc_steal(mods_dn, res);
 		if (ret == LDB_SUCCESS && (res->count == 0 || res->msgs[0]->num_elements == 0)) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db\n");
 		} else {
@@ -282,7 +282,6 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			}
 			if (res->count > 1) {
 				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%d), bailing out\n", res->count);
-				talloc_free(res);
 				talloc_free(mem_ctx);
 				return -1;
 			}
@@ -290,8 +289,9 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			modules = ldb_modules_list_from_string(ldb, mem_ctx,
 							       (const char *)res->msgs[0]->elements[0].values[0].data);
 
-			talloc_free(res);
 		}
+
+		talloc_free(mods_dn);
 	}
 
 	if (modules != NULL) {
