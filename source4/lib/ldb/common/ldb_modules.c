@@ -73,19 +73,20 @@ static char *talloc_strdup_no_spaces(struct ldb_context *ldb, const char *string
 /* modules are called in inverse order on the stack.
    Lets place them as an admin would think the right order is.
    Modules order is important */
-static char **ldb_modules_list_from_string(struct ldb_context *ldb, const char *string)
+static const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *string)
 {
 	char **modules = NULL;
+	const char **m;
 	char *modstr, *p;
 	int i;
 
 	/* spaces not admitted */
-	modstr = talloc_strdup_no_spaces(ldb, string);
+	modstr = talloc_strdup_no_spaces(mem_ctx, string);
 	if ( ! modstr) {
 		return NULL;
 	}
 
-	modules = talloc_realloc(ldb, modules, char *, 2);
+	modules = talloc_realloc(mem_ctx, modules, char *, 2);
 	if ( ! modules ) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_modules_list_from_string()\n");
 		talloc_free(modstr);
@@ -100,7 +101,7 @@ static char **ldb_modules_list_from_string(struct ldb_context *ldb, const char *
 		modules[i] = p;
 
 		i++;
-		modules = talloc_realloc(ldb, modules, char *, i + 2);
+		modules = talloc_realloc(mem_ctx, modules, char *, i + 2);
 		if ( ! modules ) {
 			ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_modules_list_from_string()\n");
 			return NULL;
@@ -111,7 +112,9 @@ static char **ldb_modules_list_from_string(struct ldb_context *ldb, const char *
 
 	modules[i + 1] = NULL;
 
-	return modules;
+	m = (const char **)modules;
+
+	return m;
 }
 
 static struct ops_list_entry {
@@ -235,16 +238,21 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 
 int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 {
-	char **modules = NULL;
+	const char **modules = NULL;
 	struct ldb_module *module;
 	int i;
+	TALLOC_CTX *mem_ctx = talloc_new(ldb);
+	if (!mem_ctx) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	/* find out which modules we are requested to activate */
 
 	/* check if we have a custom module list passd as ldb option */
 	if (options) {
 		for (i = 0; options[i] != NULL; i++) {
 			if (strncmp(options[i], LDB_MODULE_PREFIX, LDB_MODULE_PREFIX_LEN) == 0) {
-				modules = ldb_modules_list_from_string(ldb, &options[i][LDB_MODULE_PREFIX_LEN]);
+				modules = ldb_modules_list_from_string(ldb, mem_ctx, &options[i][LDB_MODULE_PREFIX_LEN]);
 			}
 		}
 	}
@@ -253,11 +261,12 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	if ((modules == NULL) && (strcmp("ldap", ldb->modules->ops->name) != 0)) { 
 		int ret;
 		const char * const attrs[] = { "@LIST" , NULL};
-		struct ldb_result *res = NULL;
+		struct ldb_result *res;
 		struct ldb_dn *mods;
 
-		mods = ldb_dn_explode(ldb, "@MODULES");
+		mods = ldb_dn_explode(mem_ctx, "@MODULES");
 		if (mods == NULL) {
+			talloc_free(mem_ctx);
 			return -1;
 		}
 
@@ -268,20 +277,21 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		} else {
 			if (ret != LDB_SUCCESS) {
 				ldb_debug(ldb, LDB_DEBUG_FATAL, "ldb error (%s) occurred searching for modules, bailing out\n", ldb_errstring(ldb));
+				talloc_free(mem_ctx);
 				return -1;
 			}
 			if (res->count > 1) {
 				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%d), bailing out\n", res->count);
 				talloc_free(res);
+				talloc_free(mem_ctx);
 				return -1;
 			}
 
-			modules = ldb_modules_list_from_string(ldb, 
+			modules = ldb_modules_list_from_string(ldb, mem_ctx,
 							       (const char *)res->msgs[0]->elements[0].values[0].data);
 
+			talloc_free(res);
 		}
-
-		talloc_free(res);
 	}
 
 	if (modules != NULL) {
