@@ -829,9 +829,11 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	add_sid_to_array(result, user_sid,
 			 &result->user_sids, &result->num_sids);
 
-	SMB_ASSERT(num_groupsids > 0);
-	add_sid_to_array(result, &groupsids[0],
-			 &result->user_sids, &result->num_sids);
+	/* For guest, num_groupsids may be zero. */
+	if (num_groupsids) {
+		add_sid_to_array(result, &groupsids[0],
+				 &result->user_sids, &result->num_sids);
+	}
 			 
 	/* Add in BUILTIN sids */
 	
