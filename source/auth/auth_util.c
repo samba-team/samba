@@ -1052,9 +1052,9 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!lookup_name(tmp_ctx, username, LOOKUP_NAME_ALL,
+	if (!lookup_name_smbconf(tmp_ctx, username, LOOKUP_NAME_ALL,
 			 NULL, NULL, &user_sid, &type)) {
-		DEBUG(1, ("lookup_name for %s failed\n", username));
+		DEBUG(1, ("lookup_name_smbconf for %s failed\n", username));
 		goto done;
 	}
 

@@ -353,6 +353,56 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+/************************************************************************
+ Names from smb.conf can be unqualified. eg. valid users = foo
+ These names should never map to a remote name. Try lp_workgroup()\foo,
+ and then "Unix Users"\foo (or "Unix Groups"\foo).
+************************************************************************/
+
+BOOL lookup_name_smbconf(TALLOC_CTX *mem_ctx,
+		 const char *full_name, int flags,
+		 const char **ret_domain, const char **ret_name,
+		 DOM_SID *ret_sid, enum SID_NAME_USE *ret_type)
+{
+	char *qualified_name;
+
+	/* NB. No winbindd_separator here as lookup_name needs \\' */
+	if (strchr_m(full_name, '\\')) {
+		/* The name is already qualified with a domain. */
+		return lookup_name(mem_ctx, full_name, flags,
+				ret_domain, ret_name,
+				ret_sid, ret_type);
+	}
+
+	/* Try with our own domain name. */
+	qualified_name = talloc_asprintf(mem_ctx, "%s\\%s",
+				lp_workgroup(),
+				full_name );
+	if (!qualified_name) {
+		return False;
+	}
+
+	if (lookup_name(mem_ctx, qualified_name, flags,
+				ret_domain, ret_name,
+				ret_sid, ret_type)) {
+		return True;
+	}
+
+	/* Finally try with "Unix Users" or "Unix Group" */
+	qualified_name = talloc_asprintf(mem_ctx, "%s\\%s",
+				flags & LOOKUP_NAME_GROUP ?
+					unix_groups_domain_name() :
+					unix_users_domain_name(),
+				full_name );
+	if (!qualified_name) {
+		return False;
+	}
+
+	return lookup_name(mem_ctx, qualified_name, flags,
+				ret_domain, ret_name,
+				ret_sid, ret_type);
+}
+
 static BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 				const DOM_SID *domain_sid,
 				int num_rids, uint32 *rids,
