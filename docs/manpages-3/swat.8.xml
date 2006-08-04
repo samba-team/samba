@@ -61,8 +61,8 @@
 
 		<varlistentry>
 		<term>-a</term>
-		<listitem><para>This option disables authentication and puts 
-		<command>swat</command> in demo mode. In that mode anyone will be able to modify 
+		<listitem><para>This option disables authentication and 
+		places <command>swat</command> in demo mode. In that mode anyone will be able to modify 
 		the <filename>smb.conf</filename> file. </para>
 		
 		<para><emphasis>WARNING: Do NOT enable this option on a production 
