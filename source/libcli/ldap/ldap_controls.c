@@ -213,6 +213,37 @@ static BOOL decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return True;
 }
 
+static BOOL decode_search_options_request(void *mem_ctx, DATA_BLOB in, void **out)
+{
+	struct asn1_data data;
+	struct ldb_search_options_control *lsoc;
+
+	if (!asn1_load(&data, in)) {
+		return False;
+	}
+
+	lsoc = talloc(mem_ctx, struct ldb_search_options_control);
+	if (!lsoc) {
+		return False;
+	}
+
+	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+		return False;
+	}
+
+	if (!asn1_read_Integer(&data, &(lsoc->search_options))) {
+		return False;
+	}
+
+	if (!asn1_end_tag(&data)) {
+		return False;
+	}
+
+	*out = lsoc;
+
+	return True;
+}
+
 static BOOL decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out)
 {
 	DATA_BLOB cookie;
@@ -689,6 +720,33 @@ static BOOL encode_sd_flags_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	return True;
 }
 
+static BOOL encode_search_options_request(void *mem_ctx, void *in, DATA_BLOB *out)
+{
+	struct ldb_search_options_control *lsoc = talloc_get_type(in, struct ldb_search_options_control);
+	struct asn1_data data;
+
+	ZERO_STRUCT(data);
+
+	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+		return False;
+	}
+
+	if (!asn1_write_Integer(&data, lsoc->search_options)) {
+		return False;
+	}
+
+	if (!asn1_pop_tag(&data)) {
+		return False;
+	}
+
+	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	if (out->data == NULL) {
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL encode_paged_results_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_paged_control *lprc = talloc_get_type(in, struct ldb_paged_control);
@@ -937,6 +995,7 @@ struct control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.841", decode_dirsync_request, encode_dirsync_request },
 	{ "1.2.840.113556.1.4.528", decode_notification_request, encode_notification_request },
 	{ "1.2.840.113556.1.4.801", decode_sd_flags_request, encode_sd_flags_request },
+	{ "1.2.840.113556.1.4.1340", decode_search_options_request, encode_search_options_request },
 	{ "2.16.840.1.113730.3.4.2", decode_manageDSAIT_request, encode_manageDSAIT_request },
 	{ "2.16.840.1.113730.3.4.9", decode_vlv_request, encode_vlv_request },
 	{ "2.16.840.1.113730.3.4.10", decode_vlv_response, encode_vlv_response },

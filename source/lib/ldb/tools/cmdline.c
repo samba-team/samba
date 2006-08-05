@@ -406,6 +406,31 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			continue;
 		}
 
+		if (strncmp(control_strings[i], "search_options:", 15) == 0) {
+			struct ldb_search_options_control *control;
+			const char *p;
+			int crit, ret;
+			unsigned search_options;
+
+			p = &(control_strings[i][15]);
+			ret = sscanf(p, "%d:%u", &crit, &search_options);
+			if ((ret != 2) || (crit < 0) || (crit > 1) || (search_options < 0) || (search_options > 0x0FFFFFFFF)) {
+				fprintf(stderr, "invalid sd_flags control syntax\n");
+				fprintf(stderr, " syntax: crit(b):search_options(n)\n");
+				fprintf(stderr, "   note: b = boolean, n = number\n");
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_SEARCH_OPTIONS_OID;
+			ctrl[i]->critical = crit;
+			control = talloc(ctrl[i], struct ldb_search_options_control);
+			control->search_options = search_options;
+			ctrl[i]->data = control;
+
+			continue;
+		}
+
 		if (strncmp(control_strings[i], "paged_results:", 14) == 0) {
 			struct ldb_paged_control *control;
 			const char *p;
