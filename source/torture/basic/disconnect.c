@@ -155,6 +155,16 @@ BOOL torture_disconnect(struct torture_context *torture)
 		if (!torture_open_connection(&cli, 0)) {
 			return False;
 		}
+
+		if (lp_parm_bool(-1, "target", "samba3", False)) {
+			/*
+			 * In Samba3 it might happen that the old smbd from
+			 * test_disconnect_lock is not scheduled before the
+			 * new process comes in. Try to get rid of the random
+			 * failures in the build farm.
+			 */
+			msleep(200);
+		}
 	}
 
 	smb_raw_exit(cli->session);
