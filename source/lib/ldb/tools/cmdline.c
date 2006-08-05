@@ -534,6 +534,27 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			continue;
 		}
 
+		if (strncmp(control_strings[i], "show_deleted:", 13) == 0) {
+			const char *p;
+			int crit, ret;
+
+			p = &(control_strings[i][13]);
+			ret = sscanf(p, "%d", &crit);
+			if ((ret != 1) || (crit < 0) || (crit > 1)) {
+				fprintf(stderr, "invalid show_deleted control syntax\n");
+				fprintf(stderr, " syntax: crit(b)\n");
+				fprintf(stderr, "   note: b = boolean\n");
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_SHOW_DELETED_OID;
+			ctrl[i]->critical = crit;
+			ctrl[i]->data = NULL;
+
+			continue;
+		}
+
 		/* no controls matched, throw an error */
 		fprintf(stderr, "Invalid control name: '%s'\n", control_strings[i]);
 		return NULL;
