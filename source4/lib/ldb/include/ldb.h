@@ -523,6 +523,14 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 #define LDB_CONTROL_VLV_RESP_OID	"2.16.840.1.113730.3.4.10"
 
 /**
+   OID to let modifies don't give an error when adding an existing
+   attribute with the same value or deleting an nonexisting one attribute
+
+   \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_permissive_modify_oid.asp">Microsoft documentation of this OID</a>
+*/
+#define LDB_CONTROL_PERMISSIVE_MODIFY_OID	"1.2.840.113556.1.4.1413"
+
+/**
    OID for LDAP Extended Operation START_TLS.
 
    This Extended operation is used to start a new TLS
