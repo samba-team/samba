@@ -451,6 +451,13 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 #define LDB_CONTROL_NOTIFICATION_OID	"1.2.840.113556.1.4.528"
 
 /**
+   OID for getting deleted objects
+
+   \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_show_deleted_oid.asp">Microsoft documentation of this OID</a>
+*/
+#define LDB_CONTROL_SHOW_DELETED_OID	"1.2.840.113556.1.4.417"
+
+/**
    OID for extended DN
 
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_extended_dn_oid.asp">Microsoft documentation of this OID</a>

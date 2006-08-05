@@ -419,6 +419,15 @@ static BOOL decode_notification_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return True;
 }
 
+static BOOL decode_show_deleted_request(void *mem_ctx, DATA_BLOB in, void **out)
+{
+	if (in.length != 0) {
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL decode_manageDSAIT_request(void *mem_ctx, DATA_BLOB in, void **out)
 {
 	if (in.length != 0) {
@@ -879,6 +888,16 @@ static BOOL encode_notification_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	return True;
 }
 
+static BOOL encode_show_deleted_request(void *mem_ctx, void *in, DATA_BLOB *out)
+{
+	if (in) {
+		return False;
+	}
+
+	*out = data_blob(NULL, 0);
+	return True;
+}
+
 static BOOL encode_manageDSAIT_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	if (in) {
@@ -1013,6 +1032,7 @@ struct control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.1504", decode_asq_control, encode_asq_control },
 	{ "1.2.840.113556.1.4.841", decode_dirsync_request, encode_dirsync_request },
 	{ "1.2.840.113556.1.4.528", decode_notification_request, encode_notification_request },
+	{ "1.2.840.113556.1.4.417", decode_show_deleted_request, encode_show_deleted_request },
 	{ "1.2.840.113556.1.4.801", decode_sd_flags_request, encode_sd_flags_request },
 	{ "1.2.840.113556.1.4.1339", decode_domain_scope_request, encode_domain_scope_request },
 	{ "1.2.840.113556.1.4.1340", decode_search_options_request, encode_search_options_request },
