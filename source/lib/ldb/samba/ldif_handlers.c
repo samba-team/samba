@@ -245,11 +245,8 @@ static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx
 {
 	struct security_descriptor *sd;
 	NTSTATUS status;
-	const struct dom_sid *domain_sid = samdb_domain_sid(ldb);
-	if (domain_sid == NULL) {
-		return ldb_handler_copy(ldb, mem_ctx, in, out);
-	}
-	sd = sddl_decode(mem_ctx, (const char *)in->data, domain_sid);
+
+	sd = sddl_decode(mem_ctx, (const char *)in->data, NULL);
 	if (sd == NULL) {
 		return -1;
 	}
@@ -270,11 +267,6 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 {
 	struct security_descriptor *sd;
 	NTSTATUS status;
-	const struct dom_sid *domain_sid = samdb_domain_sid(ldb);
-
-	if (domain_sid == NULL) {
-		return ldb_handler_copy(ldb, mem_ctx, in, out);
-	}
 
 	sd = talloc(mem_ctx, struct security_descriptor);
 	if (sd == NULL) {
@@ -286,7 +278,7 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 		talloc_free(sd);
 		return -1;
 	}
-	out->data = (uint8_t *)sddl_encode(mem_ctx, sd, domain_sid);
+	out->data = (uint8_t *)sddl_encode(mem_ctx, sd, NULL);
 	talloc_free(sd);
 	if (out->data == NULL) {
 		return -1;
