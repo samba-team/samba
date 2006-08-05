@@ -430,6 +430,13 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 #define LDB_CONTROL_SD_FLAGS_OID	"1.2.840.113556.1.4.801"
 
 /**
+   OID for specifying an advanced scope for a search
+
+   \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_search_options_oid.asp">Microsoft documentation of this OID</a>
+*/
+#define LDB_CONTROL_SEARCH_OPTIONS_OID	"1.2.840.113556.1.4.1340"
+
+/**
    OID for notification
 
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_notification_oid.asp">Microsoft documentation of this OID</a>
@@ -533,6 +540,23 @@ struct ldb_sd_flags_control {
 	 * request the SACL	0x00000008
 	 */
 	unsigned secinfo_flags;
+};
+
+struct ldb_search_options_control {
+	/*
+	 * DOMAIN_SCOPE		0x00000001
+	 * this limits the search to one partition,
+	 * and no referrals will be returned.
+	 * (Note this doesn't limit the entries by there
+	 *  objectSid belonging to a domain! Builtin and Foreign Sids
+	 *  are still returned)
+	 *
+	 * PHANTOM_ROOT		0x00000002
+	 * this search on the whole tree on a domain controller
+	 * over multiple partitions without referrals.
+	 * (This is the default behavior on the Global Catalog Port)
+	 */
+	unsigned search_options;
 };
 
 struct ldb_paged_control {
