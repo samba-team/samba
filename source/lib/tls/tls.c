@@ -32,7 +32,7 @@
 #define DH_BITS 1024
 
 #if defined(HAVE_GNUTLS_DATUM) && !defined(HAVE_GNUTLS_DATUM_T)
-typedef gnutls_datum gnutls_datum_t
+typedef gnutls_datum gnutls_datum_t;
 #endif
 
 /* hold persistent tls data */
