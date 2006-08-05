@@ -414,8 +414,8 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 
 			p = &(control_strings[i][15]);
 			ret = sscanf(p, "%d:%u", &crit, &search_options);
-			if ((ret != 2) || (crit < 0) || (crit > 1) || (search_options < 0) || (search_options > 0x0FFFFFFFF)) {
-				fprintf(stderr, "invalid sd_flags control syntax\n");
+			if ((ret != 2) || (crit < 0) || (crit > 1) || (search_options < 0) || (search_options > 0xF)) {
+				fprintf(stderr, "invalid search_options control syntax\n");
 				fprintf(stderr, " syntax: crit(b):search_options(n)\n");
 				fprintf(stderr, "   note: b = boolean, n = number\n");
 				return NULL;
@@ -427,6 +427,27 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			control = talloc(ctrl[i], struct ldb_search_options_control);
 			control->search_options = search_options;
 			ctrl[i]->data = control;
+
+			continue;
+		}
+
+		if (strncmp(control_strings[i], "domain_scope:", 13) == 0) {
+			const char *p;
+			int crit, ret;
+
+			p = &(control_strings[i][13]);
+			ret = sscanf(p, "%d", &crit);
+			if ((ret != 1) || (crit < 0) || (crit > 1)) {
+				fprintf(stderr, "invalid domain_scope control syntax\n");
+				fprintf(stderr, " syntax: crit(b)\n");
+				fprintf(stderr, "   note: b = boolean\n");
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_DOMAIN_SCOPE_OID;
+			ctrl[i]->critical = crit;
+			ctrl[i]->data = NULL;
 
 			continue;
 		}
