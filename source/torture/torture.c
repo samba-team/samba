@@ -4797,6 +4797,169 @@ static BOOL run_local_substitute(int dummy)
 	return (diff == 0);
 }
 
+static char **key_fn(TALLOC_CTX *mem_ctx, TDB_DATA data,
+		     void *private_data)
+{
+	fstring key, value;
+	char **result;
+
+	result = TALLOC_ARRAY(mem_ctx, char *, 3);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	if (tdb_unpack(data.dptr, data.dsize, "ff", key, value) < 0) {
+		d_fprintf(stderr, "tdb_unpack failed\n");
+		TALLOC_FREE(result);
+		return NULL;
+	}
+	result[0] = talloc_strdup(result, key);
+	result[1] = talloc_strdup(result, value);
+	result[2] = NULL;
+
+	if ((result[0] == NULL) || (result[1] == NULL)) {
+		d_fprintf(stderr, "talloc_strdup failed\n");
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	return result;
+}
+
+static NTSTATUS multikey_add(struct tdb_context *tdb, const char *key,
+			     const char *value)
+{
+	NTSTATUS status;
+	TDB_DATA data;
+
+	data.dptr = NULL;
+	data.dsize = 0;
+
+	if (!tdb_pack_append(NULL, &data.dptr, &data.dsize,
+			     "ff", key, value)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = tdb_add_keyed(tdb, key_fn, data, NULL);
+	TALLOC_FREE(data.dptr);
+	return status;
+}
+
+#define CHECK_STATUS(_status, _expected) do { \
+	if (!NT_STATUS_EQUAL(_status, _expected)) { \
+		printf("(%d) Incorrect status %s - should be %s\n", \
+		       __LINE__, nt_errstr(status), nt_errstr(_expected)); \
+		ret = False; \
+		goto fail; \
+	}} while (0)
+
+static BOOL run_local_multikey(int dummy)
+{
+	TALLOC_CTX *mem_ctx;
+	char *prim;
+	const char *tdbname = "multi_key_test.tdb";
+	struct tdb_context *tdb = NULL;
+	NTSTATUS status;
+	BOOL ret = False;
+	TDB_DATA data;
+	int i;
+	fstring key,value;
+
+	unlink(tdbname);
+
+	mem_ctx = talloc_init("run_local_multikey");
+	if (mem_ctx == NULL) {
+		d_fprintf(stderr, "talloc_init failed\n");
+		return False;
+	}
+
+	tdb = tdb_open(tdbname, 0, 0, O_CREAT|O_RDWR, 0644);
+	if (tdb == NULL) {
+		d_fprintf(stderr, "tdb_open failed: %s\n", strerror(errno));
+		goto fail;
+	}
+
+	for (i=0; i<200; i++) {
+		fstr_sprintf(key, "KEY%d", i);
+		fstr_sprintf(value, "VAL%d", i);
+
+		status = multikey_add(tdb, key, value);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "tdb_add_keyed failed: %s\n",
+				  nt_errstr(status));
+			goto fail;
+		}
+	}
+
+	status = multikey_add(tdb, "KEY35", "FOOO");
+	CHECK_STATUS(status, NT_STATUS_OBJECTID_EXISTS);
+	status = multikey_add(tdb, "KEY42", "VAL45");
+	CHECK_STATUS(status, NT_STATUS_OBJECTID_EXISTS);
+	status = multikey_add(tdb, "FOO", "VAL45");
+	CHECK_STATUS(status, NT_STATUS_OBJECTID_EXISTS);
+
+	for (i=0; i<200; i++) {
+		fstr_sprintf(key, "KEY%d", i);
+		fstr_sprintf(value, "VAL%d", i);
+
+		status = tdb_find_keyed(mem_ctx, tdb, 0, key, &data, &prim);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		status = tdb_find_keyed(mem_ctx, tdb, 1, value, &data, &prim);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		status = tdb_find_keyed(mem_ctx, tdb, 1, key, &data, &prim);
+		CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+		status = tdb_find_keyed(mem_ctx, tdb, 0, value, &data, &prim);
+		CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+	}
+
+	status = tdb_find_keyed(mem_ctx, tdb, 0, "FOO", &data, &prim);
+	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+	status = tdb_find_keyed(mem_ctx, tdb, 1, "BAR", &data, &prim);
+	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+
+	status = tdb_find_keyed(mem_ctx, tdb, 0, "KEY0", &data, &prim);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(data);
+	if (tdb_pack_append(mem_ctx, &data.dptr, &data.dsize, "ff",
+			    "NEWKEY", "NEWVAL") < 0) {
+		d_printf("tdb_pack_alloc failed\n");
+		goto fail;
+	}
+
+	status = tdb_update_keyed(tdb, prim, key_fn, data, NULL);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = tdb_find_keyed(mem_ctx, tdb, 0, "KEY0", &data, &prim);
+	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+	status = tdb_find_keyed(mem_ctx, tdb, 1, "VAL0", &data, &prim);
+	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+	status = tdb_find_keyed(mem_ctx, tdb, 0, "NEWKEY", &data, &prim);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = tdb_find_keyed(mem_ctx, tdb, 1, "NEWVAL", &data, &prim);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = tdb_del_keyed(tdb, key_fn, prim, NULL);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	for (i=1; i<200; i++) {
+		fstr_sprintf(key, "KEY%d", i);
+		status = tdb_find_keyed(mem_ctx, tdb, 0, key, &data, &prim);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		status = tdb_del_keyed(tdb, key_fn, prim, NULL);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
+
+	ret = True;
+ fail:
+	if (tdb != NULL) {
+		tdb_close(tdb);
+	}
+	unlink(tdbname);
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
 static double create_procs(BOOL (*fn)(int), BOOL *result)
 {
 	int i, status;
@@ -4948,6 +5111,7 @@ static struct {
 	{"FDSESS", run_fdsesstest, 0},
 	{ "EATEST", run_eatest, 0},
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
+	{ "LOCAL-MULTIKEY", run_local_multikey, 0},
 	{NULL, NULL, 0}};
 
 

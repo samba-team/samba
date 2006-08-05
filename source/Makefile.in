@@ -225,7 +225,7 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/md5.o lib/hmacmd5.o lib/arc4.o lib/iconv.o \
 	  nsswitch/wb_client.o $(WBCOMMON_OBJ) \
 	  lib/pam_errors.o intl/lang_tdb.o \
-	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
+	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) lib/tdb_multikey.o \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o @SOCKWRAP@ \
 	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o
