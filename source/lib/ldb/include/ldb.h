@@ -423,6 +423,13 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 #define LDB_CONTROL_PAGED_RESULTS_OID	"1.2.840.113556.1.4.319"
 
 /**
+   OID for specifying the returned elements of the ntSecurityDescriptor
+
+   \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_sd_flags_oid.asp">Microsoft documentation of this OID</a>
+*/
+#define LDB_CONTROL_SD_FLAGS_OID	"1.2.840.113556.1.4.801"
+
+/**
    OID for notification
 
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_notification_oid.asp">Microsoft documentation of this OID</a>
@@ -517,6 +524,16 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    channel on top of a clear text channel.
 */
 #define LDB_EXTENDED_FAST_BIND_OID	"1.2.840.113556.1.4.1781"
+
+struct ldb_sd_flags_control {
+	/*
+	 * request the owner	0x00000001
+	 * request the group	0x00000002
+	 * request the DACL	0x00000004
+	 * request the SACL	0x00000008
+	 */
+	unsigned secinfo_flags;
+};
 
 struct ldb_paged_control {
 	int size;

@@ -381,6 +381,31 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			continue;
 		}
 
+		if (strncmp(control_strings[i], "sd_flags:", 9) == 0) {
+			struct ldb_sd_flags_control *control;
+			const char *p;
+			int crit, ret;
+			unsigned secinfo_flags;
+
+			p = &(control_strings[i][9]);
+			ret = sscanf(p, "%d:%u", &crit, &secinfo_flags);
+			if ((ret != 2) || (crit < 0) || (crit > 1) || (secinfo_flags < 0) || (secinfo_flags > 0xF)) {
+				fprintf(stderr, "invalid sd_flags control syntax\n");
+				fprintf(stderr, " syntax: crit(b):secinfo_flags(n)\n");
+				fprintf(stderr, "   note: b = boolean, n = number\n");
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_SD_FLAGS_OID;
+			ctrl[i]->critical = crit;
+			control = talloc(ctrl[i], struct ldb_sd_flags_control);
+			control->secinfo_flags = secinfo_flags;
+			ctrl[i]->data = control;
+
+			continue;
+		}
+
 		if (strncmp(control_strings[i], "paged_results:", 14) == 0) {
 			struct ldb_paged_control *control;
 			const char *p;
@@ -464,7 +489,7 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 		}
 
 		/* no controls matched, throw an error */
-		fprintf(stderr, "Invalid control name\n");
+		fprintf(stderr, "Invalid control name: '%s'\n", control_strings[i]);
 		return NULL;
 	}
 
