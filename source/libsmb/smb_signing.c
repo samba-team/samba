@@ -852,6 +852,9 @@ void srv_cancel_sign_response(uint16 mid)
 
 	while (get_sequence_for_reply(&data->outstanding_packet_list, mid, &dummy_seq))
 		;
+
+	/* cancel doesn't send a reply so doesn't burn a sequence number. */
+	data->send_seq_num -= 1;
 }
 
 /***********************************************************
