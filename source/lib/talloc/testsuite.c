@@ -95,6 +95,19 @@ static double timeval_elapsed(struct timeval *tv)
 	} \
 } while (0)
 
+#define CHECK_PARENT(ptr, parent) do { \
+	if (talloc_parent(ptr) != (parent)) { \
+		printf(__location__ " failed: '%s' has wrong parent: got %p  expected %p\n", \
+		       #ptr, \
+		       talloc_parent(ptr), \
+		       (parent)); \
+		talloc_report_full(ptr, stdout); \
+		talloc_report_full(parent, stdout); \
+		talloc_report_full(NULL, stdout); \
+		return False; \
+	} \
+} while (0)
+
 
 /*
   test references 
@@ -771,7 +784,12 @@ static BOOL test_unref_reparent(void)
 	c1 = talloc_named_const(p1, 1, "child");
 	talloc_reference(p2, c1);
 
+	CHECK_PARENT(c1, p1);
+
 	talloc_free(p1);
+
+	CHECK_PARENT(c1, p2);
+
 	talloc_unlink(p2, c1);
 
 	CHECK_SIZE(root, 1);
@@ -888,6 +906,28 @@ static BOOL test_loop(void)
 	return True;
 }
 
+static BOOL test_free_parent_deny_child(void)
+{
+	char *top = talloc_new(NULL);
+	char *level1;
+	char *level2;
+	char *level3;
+
+	printf("TESTING TALLOC FREE PARENT DENY CHILD\n");
+	level1 = talloc_strdup(top, "level1");
+	level2 = talloc_strdup(level1, "level2");
+	level3 = talloc_strdup(level2, "level3");
+
+	talloc_set_destructor(level3, fail_destructor);
+	talloc_free(level1);
+	talloc_set_destructor(level3, NULL);
+
+	CHECK_PARENT(level3, top);
+
+	talloc_free(top);
+
+	return True;
+}
 
 BOOL torture_local_talloc(struct torture_context *torture) 
 {
@@ -909,6 +949,7 @@ BOOL torture_local_talloc(struct torture_context *torture)
 	ret &= test_type();
 	ret &= test_lifeless();
 	ret &= test_loop();
+	ret &= test_free_parent_deny_child();
 	if (ret) {
 		ret &= test_speed();
 	}
