@@ -414,6 +414,54 @@ static const struct ldb_attrib_handler samba_handlers[] = {
 		.comparison_fn   = ldb_comparison_objectGUID
 	},
 	{ 
+		.attr            = "parentGUID",
+		.flags           = 0,
+		.ldif_read_fn    = ldif_read_objectGUID,
+		.ldif_write_fn   = ldif_write_objectGUID,
+		.canonicalise_fn = ldb_canonicalise_objectGUID,
+		.comparison_fn   = ldb_comparison_objectGUID
+	},
+	{ 
+		.attr            = "siteGUID",
+		.flags           = 0,
+		.ldif_read_fn    = ldif_read_objectGUID,
+		.ldif_write_fn   = ldif_write_objectGUID,
+		.canonicalise_fn = ldb_canonicalise_objectGUID,
+		.comparison_fn   = ldb_comparison_objectGUID
+	},
+	{ 
+		.attr            = "pKTGUID",
+		.flags           = 0,
+		.ldif_read_fn    = ldif_read_objectGUID,
+		.ldif_write_fn   = ldif_write_objectGUID,
+		.canonicalise_fn = ldb_canonicalise_objectGUID,
+		.comparison_fn   = ldb_comparison_objectGUID
+	},
+	{ 
+		.attr            = "fRSVersionGUID",
+		.flags           = 0,
+		.ldif_read_fn    = ldif_read_objectGUID,
+		.ldif_write_fn   = ldif_write_objectGUID,
+		.canonicalise_fn = ldb_canonicalise_objectGUID,
+		.comparison_fn   = ldb_comparison_objectGUID
+	},
+	{ 
+		.attr            = "fRSReplicaSetGUID",
+		.flags           = 0,
+		.ldif_read_fn    = ldif_read_objectGUID,
+		.ldif_write_fn   = ldif_write_objectGUID,
+		.canonicalise_fn = ldb_canonicalise_objectGUID,
+		.comparison_fn   = ldb_comparison_objectGUID
+	},
+	{ 
+		.attr            = "netbootGUID",
+		.flags           = 0,
+		.ldif_read_fn    = ldif_read_objectGUID,
+		.ldif_write_fn   = ldif_write_objectGUID,
+		.canonicalise_fn = ldb_canonicalise_objectGUID,
+		.comparison_fn   = ldb_comparison_objectGUID
+	},
+	{ 
 		.attr            = "objectCategory",
 		.flags           = 0,
 		.ldif_read_fn    = ldb_handler_copy,
