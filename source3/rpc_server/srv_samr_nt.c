@@ -1645,7 +1645,7 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, enum SID_NAME_USE, num_rids);
 	wire_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids);
 
-	if ((num_rids != 0) && ((names == NULL) || (attrs == NULL) || wire_attrs))
+	if ((num_rids != 0) && ((names == NULL) || (attrs == NULL) || (wire_attrs==NULL)))
 		return NT_STATUS_NO_MEMORY;
 
 	become_root();  /* lookup_sid can require root privs */
