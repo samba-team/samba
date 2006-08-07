@@ -296,6 +296,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 {
 	NTSTATUS status;
 	const char *binding;
+	struct dcerpc_binding *bind;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *prep_mem_ctx, *mem_ctx;
 	struct policy_handle h;
@@ -303,6 +304,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	const char *name = TEST_USERNAME;
 	struct libnet_context *ctx;
 	struct libnet_ModifyUser req;
+	struct timeval allow_pass_chg;
 	BOOL ret = True;
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
@@ -331,10 +333,21 @@ BOOL torture_modifyuser(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_modifyuser");
 
+	status = dcerpc_parse_binding(mem_ctx, binding, &bind);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = False;
+		goto done;
+	}
+
 	ZERO_STRUCT(req);
 	req.in.user_name = TEST_USERNAME;
 	req.in.domain_name = lp_workgroup();
 	req.in.account_name = TEST_CHANGEDUSERNAME;
+	req.in.logon_script = "start_login.cmd";
+	
+	if (gettimeofday(&allow_pass_chg, NULL) == 0) {
+		req.in.allow_password_change = &allow_pass_chg;
+	}
 
 	status = libnet_ModifyUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
