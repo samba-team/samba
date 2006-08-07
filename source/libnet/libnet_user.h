@@ -82,7 +82,8 @@ struct libnet_ModifyUser {
 	if (new.field != 0) { \
 		NTTIME newval = timeval_to_nttime(new.field); \
 		if (newval != current->field) {	\
-			mod->field   = talloc_memdup(mem_ctx, new.field, sizeof(*new.field)); \
+			mod->field = talloc_memdup(mem_ctx, new.field, sizeof(*new.field)); \
+			if (mod->field == NULL) return NT_STATUS_NO_MEMORY; \
 			mod->fields |= flag; \
 		} \
 	}
