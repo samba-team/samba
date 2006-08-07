@@ -1,6 +1,6 @@
                    ===============================
-                   Release Notes for Samba 3.0.23a
-                             Jul 21, 2006
+                   Release Notes for Samba 3.0.23b
+                             Aug 7, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version 
@@ -8,6 +8,123 @@ that production Samba servers should be running for all current
 bug-fixes.  Please read the changes in this section and for the 
 original 3.0.23 release regarding new features and difference 
 in behavior from previous releases.
+
+Common bugs fixed in 3.0.23b include:
+
+  o Ambiguity with unqualified names in smb.conf parameters
+    such as "force user" and "valid users".
+  o Errors in 'net ads join' caused by bad IP address in the list
+    of domain controllers.
+  o SMB signing errors in the client and server code.
+  o Domain join failures when using smbpasswd on a Samba PDC.
+
+
+Member servers, domain accounts, and smb.conf
+=============================================
+
+Since Samba 3.0.8, it has been recommended that all domain accounts 
+listed in smb.conf on a member server be fully qualified with 
+the domain name.  This is now a requirement.  All unqualified names 
+are assumed to be local to the Unix host, either as part of the 
+server's local passdb or in the local system list of accounts
+(e.g. /etc/passwd or /etc/group).
+
+The reason for this change is that smbd has transitioned from
+access checks based on string comparisons to token based
+authorization.  All names are resolved to a SID and they verified
+against the logged on user's NT user token.  Local names will
+resolve to a local SID, while qualified domain names will resolve
+to the appropriate domain SID.  
+
+If the member server is not running winbindd at all, domain 
+accounts will be implicitly mapped to local accounts and their
+tokens will be modified appropriately to reflect the local 
+SID and group membership.
+
+For example, the following share will restrict access to the
+domain group "Linux Admins" and the local group srvadmin.
+
+[restricted]
+	path = /data
+	valid users = +"DOMAIN\Linux Admins" +srvadmin
+
+Note that to restrict the [homes] share on a member server, it 
+is necessary to prefix the %S valid to "valid users".
+
+[global]
+	security = {domain,ads}
+	workgroup = DOM
+	winbind separator = +
+[homes]
+	valid users = DOM+%S
+
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.23
+--------------------
+
+commits
+-------
+o   Michael Adams <ma@sernet.de>
+    * Fix memory leaks on error paths in 'net ads join'.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 3962: Fix memory leak when enumerating print jobs.
+    * Fix file access flags for the Linux CIFS fs client.
+    * Fix memory leaks in the smbclient DFS code.
+    * BUG 3967: Fix SMB signing client bug in trans calls.
+    * BUG 3985: Ensure in msdfs we check for our NetBIOS aliases.
+    * Added lookup_name_smbconf() to be called when looking up names 
+      from smb.conf.  Unqualified names are assumed to be local.
+    * BUG 4003: Fix SMB signing server error in NTcancel reply.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix a few "smbldap_open(): Cannot open when not root" bugs when 
+      viewing or modifying local group membership.
+    * Make LsaLookupSids() reply include the full SID of unresolved 
+      SIDs.
+    * BUG 3957: Prevent returning strange DC IP addresses by zeroing 
+      memory in the SRV hostlist in case there is not an A record for 
+      each SRV name.
+    * BUG 3964: normalize the case of usernames prior to getpwnam() 
+      call in the smbpasswd backend.
+    * Cleanup the 'net ads help join' output and document createupn 
+      and createcomputer options.
+    * Fix a regression in the ldapsam URI syntax.  Allow multiple 
+      LDAP URIs to be grouped by  "".
+
+
+o   William Charles <william@charles.name>
+    * BUG 3959: Remove rand() from SRV RR comparison to fix crashes 
+      in qsort().
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Fix memory leaks in pam_winbind.
+    * Save the logon script path from the info3 in the PAM session 
+      allowing other PAM modules to pick it up from there.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 3991: Fix problem with user tokens on standalone systems
+      configured to use a username map.
+    * Fix bug where qualified user or group names in smb.conf
+      were assumed to use the '\' character as the winbind separator.
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ===============================
+                   Release Notes for Samba 3.0.23a
+                             Jul 21, 2006
+                   ===============================
 
 Common bugs fixed in 3.0.23a include:
 
@@ -556,7 +673,7 @@ o   Guenther Deschner <gd@samba.org>
     * Wrap the samr_query_domain_info2() call around 
       samr_query_domain_info().
     * Fix segv in smbctool.
-    * Honour the time_offset also when verifying Kerberos tickets.
+    * Honor the time_offset also when verifying Kerberos tickets.
     * Prevent unnecessary longstanding LDAP connection to eDirectory.
     * Fix segv in smbspool.
     * BUG 1914: Allow to store 24 password history entries in ldapsam.
