@@ -543,41 +543,38 @@ static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod
 	user = &info->out.info.info21;
 	mod->fields = 0;        /* reset flag field before setting individual flags */
 
-	/*
-	 * account name change
-	 */
-	if (r->in.account_name != NULL &&
-	    !strequal_w(user->account_name.string, r->in.account_name)) {
+	/* account name change */
+	SET_FIELD_LSA_STRING(r->in, user, mod, account_name, USERMOD_FIELD_ACCOUNT_NAME);
 
-		mod->account_name = talloc_strdup(mem_ctx, r->in.account_name);
-		if (mod->account_name == NULL) return NT_STATUS_NO_MEMORY;
+	/* full name change */
+	SET_FIELD_LSA_STRING(r->in, user, mod, full_name, USERMOD_FIELD_FULL_NAME);
 
-		mod->fields |= USERMOD_FIELD_ACCOUNT_NAME;
-	}
+	/* description change */
+	SET_FIELD_LSA_STRING(r->in, user, mod, comment, USERMOD_FIELD_DESCRIPTION);
 
-	/*
-	 * full name change
-	 */
-	if (r->in.full_name != NULL &&
-	    !strequal_w(user->full_name.string, r->in.full_name)) {
-		
-		mod->full_name = talloc_strdup(mem_ctx, r->in.full_name);
-		if (mod->full_name == NULL) return NT_STATUS_NO_MEMORY;
+	/* comment change */
+	SET_FIELD_LSA_STRING(r->in, user, mod, comment, USERMOD_FIELD_COMMENT);
 
-		mod->fields |= USERMOD_FIELD_FULL_NAME;
-	}
+	/* home directory change */
+	SET_FIELD_LSA_STRING(r->in, user, mod, home_directory, USERMOD_FIELD_HOME_DIRECTORY);
 
-	/*
-	 * description change
-	 */
-	if (r->in.description != NULL &&
-	    !strequal_w(user->description.string, r->in.description)) {
+	/* home drive change */
+	SET_FIELD_LSA_STRING(r->in, user, mod, home_drive, USERMOD_FIELD_HOME_DRIVE);
 
-		mod->description = talloc_strdup(mem_ctx, r->in.description);
-		if (mod->description == NULL) return NT_STATUS_NO_MEMORY;
+	/* logon script change */
+	SET_FIELD_LSA_STRING(r->in, user, mod, logon_script, USERMOD_FIELD_LOGON_SCRIPT);
 
-		mod->fields |= USERMOD_FIELD_DESCRIPTION;
-	}
+	/* profile path change */
+	SET_FIELD_LSA_STRING(r->in, user, mod, profile_path, USERMOD_FIELD_PROFILE_PATH);
+
+	/* allow password change time */
+	SET_FIELD_NTTIME(r->in, user, mod, allow_password_change, USERMOD_FIELD_ALLOW_PASS_CHG);
+
+	/* force password change time */
+	SET_FIELD_NTTIME(r->in, user, mod, force_password_change, USERMOD_FIELD_FORCE_PASS_CHG);
+
+	/* account expiry change */
+	SET_FIELD_NTTIME(r->in, user, mod, acct_expiry, USERMOD_FIELD_ACCT_EXPIRY);
 
 	return NT_STATUS_OK;
 }

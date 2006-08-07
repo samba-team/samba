@@ -49,15 +49,40 @@ struct libnet_ModifyUser {
 		const char *account_name;
 		const char *full_name;
 		const char *description;
+		const char *home_directory;
+		const char *home_drive;
 		const char *comment;
 		const char *logon_script;
 		const char *profile_path;
 		struct timeval *acct_expiry;
 		struct timeval *allow_password_change;
 		struct timeval *force_password_change;
+		struct timeval *last_logon;
+		struct timeval *last_logoff;
+		struct timeval *last_password_change;
 		uint32_t acct_flags;
 	} in;
 	struct {
 		const char *error_string;
 	} out;
 };
+
+
+#define SET_FIELD_LSA_STRING(new, current, mod, field, flag) \
+	if (new.field != NULL && \
+	    !strequal_w(current->field.string, new.field)) { \
+		\
+		mod->field = talloc_strdup(mem_ctx, new.field);	\
+		if (mod->field == NULL) return NT_STATUS_NO_MEMORY; \
+		\
+		mod->fields |= flag; \
+	}
+
+#define SET_FIELD_NTTIME(new, current, mod, field, flag) \
+	if (new.field != 0) { \
+		NTTIME newval = timeval_to_nttime(new.field); \
+		if (newval != current->field) {	\
+			mod->field   = talloc_memdup(mem_ctx, new.field, sizeof(*new.field)); \
+			mod->fields |= flag; \
+		} \
+	}
