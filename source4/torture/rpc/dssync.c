@@ -335,6 +335,24 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 			case DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber:
 				name	= "msDS-KeyVersionNumber";
 				break;
+			case DRSUAPI_ATTRIBUTE_priorValue:
+				name	= "priorValue";
+				break;
+			case DRSUAPI_ATTRIBUTE_currentValue:
+				name	= "currentValue";
+				break;
+			case DRSUAPI_ATTRIBUTE_trustAuthOutgoing:
+				name	= "trustAuthOutgoing";
+				break;
+			case DRSUAPI_ATTRIBUTE_trustAuthIncoming:
+				name	= "trustAuthIncoming";
+				break;
+			case DRSUAPI_ATTRIBUTE_initialAuthOutgoing:
+				name	= "initialAuthOutgoing";
+				break;
+			case DRSUAPI_ATTRIBUTE_initialAuthIncoming:
+				name	= "initialAuthIncoming";
+				break;
 			default:
 				continue;
 			}
