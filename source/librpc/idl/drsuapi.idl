@@ -386,14 +386,21 @@ interface drsuapi
 		DRSUAPI_ATTRIBUTE_invocationId			= 0x00020073,
 		DRSUAPI_ATTRIBUTE_dMDLocation			= 0x00020024,
 		DRSUAPI_ATTRIBUTE_ntSecurityDescriptor		= 0x00020119,
+		DRSUAPI_ATTRIBUTE_currentValue			= 0x0009001b,
 		DRSUAPI_ATTRIBUTE_objectSid			= 0x00090092,
 		DRSUAPI_ATTRIBUTE_dBCSPwd			= 0x00090037,/* lmPwdHash */
 		DRSUAPI_ATTRIBUTE_unicodePwd			= 0x0009005a,/* ntPwdHash */
 		DRSUAPI_ATTRIBUTE_ntPwdHistory			= 0x0009005e,
+		DRSUAPI_ATTRIBUTE_priorValue			= 0x00090064,
 		DRSUAPI_ATTRIBUTE_lmPwdHistory			= 0x000900a0,
 		DRSUAPI_ATTRIBUTE_supplementalCredentials	= 0x0009007d,
+		DRSUAPI_ATTRIBUTE_trustAuthIncoming		= 0x00090081,
+		DRSUAPI_ATTRIBUTE_trustAuthOutgoing		= 0x00090087,
 		DRSUAPI_ATTRIBUTE_systemFlags			= 0x00090177,
 		DRSUAPI_ATTRIBUTE_serverReference		= 0x00090203,
+		DRSUAPI_ATTRIBUTE_serverReferenceBL		= 0x00090204,
+		DRSUAPI_ATTRIBUTE_initialAuthIncoming		= 0x0009021b,
+		DRSUAPI_ATTRIBUTE_initialAuthOutgoing		= 0x0009021c,
 		DRSUAPI_ATTRIBUTE_objectCategory		= 0x0009030e,
 		DRSUAPI_ATTRIBUTE_msDS_Behavior_Version		= 0x000905b3,
 		DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber		= 0x000906f6,		
@@ -543,6 +550,7 @@ interface drsuapi
 		[case(0x0009072c)]				drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(0x0009026a)]				drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(0x00090203)]				drsuapi_DsAttributeValueCtrDNString dn_string;
+		[case(0x00090204)]				drsuapi_DsAttributeValueCtrDNString dn_string;
 
 		/* NTTIME_1sec */
 		[case(0x00020002)] drsuapi_DsAttributeValueCtrNTTIME_1sec nttime_1sec;
