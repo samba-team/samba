@@ -83,7 +83,8 @@ static BOOL string_match(const char *tok,const char *s, char *invalid_char)
 			yp_get_default_domain(&mydomain);
 
 		if (!mydomain) {
-			DEBUG(0,("Unable to get default yp domain. Try without it.\n"));
+			DEBUG(0,("Unable to get default yp domain.\n"));
+			return False;
 		}
 		if (!(hostname = SMB_STRDUP(s))) {
 			DEBUG(1,("out of memory for strdup!\n"));
@@ -94,7 +95,7 @@ static BOOL string_match(const char *tok,const char *s, char *invalid_char)
 		
 		DEBUG(5,("looking for %s of domain %s in netgroup %s gave %s\n", 
 			 hostname,
-			 mydomain?mydomain:"(ANY)", 
+			 mydomain, 
 			 tok+1,
 			 BOOLSTR(netgroup_ok)));
 
