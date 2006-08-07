@@ -104,6 +104,8 @@ interface drsuapi
 	const char *DRSUAPI_DS_BIND_GUID = "e24d201a-4fd6-11d1-a3da-0000f875ae0d";
 	/* 
 	 * this magic guid are needed to fetch the whole tree with drsuapi_DsGetNCChanges()
+	 * as administrator and this values are also used in the destination_dsa_guid field
+	 * of drsuapi_DsGetNCChangesReq5/8 and the source_dsa_guid is zero.
 	 */
 	const char *DRSUAPI_DS_BIND_GUID_W2K	= "6abec3d1-3054-41c8-a362-5a0c5b7d5d71";
 	const char *DRSUAPI_DS_BIND_GUID_W2K3	= "6afab99c-6e26-464a-975f-f58f105218bc";
