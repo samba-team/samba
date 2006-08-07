@@ -23,11 +23,11 @@ Member servers, domain accounts, and smb.conf
 =============================================
 
 Since Samba 3.0.8, it has been recommended that all domain accounts 
-listed in smb.conf on a member server be fully qualified with 
-the domain name.  This is now a requirement.  All unqualified names 
-are assumed to be local to the Unix host, either as part of the 
-server's local passdb or in the local system list of accounts
-(e.g. /etc/passwd or /etc/group).
+listed in smb.conf on a member server be fully qualified with the 
+domain name.  This is now a requirement.  All unqualified names are 
+assumed to be local to the Unix host, either as part of the server's 
+local passdb or in the local system list of accounts (e.g. /etc/passwd 
+or /etc/group).
 
 The reason for this change is that smbd has transitioned from
 access checks based on string comparisons to token based
@@ -48,8 +48,9 @@ domain group "Linux Admins" and the local group srvadmin.
 	path = /data
 	valid users = +"DOMAIN\Linux Admins" +srvadmin
 
-Note that to restrict the [homes] share on a member server, it 
-is necessary to prefix the %S valid to "valid users".
+Note that to restrict the [homes] share on a member server to the 
+owner of that directory, it is necessary to prefix the %S value 
+to "valid users".
 
 [global]
 	security = {domain,ads}
