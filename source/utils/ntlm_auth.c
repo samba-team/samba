@@ -676,10 +676,13 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 		return;
 	} else if (strncmp(buf, "GK", 2) == 0) {
 		DEBUG(10, ("Requested NTLMSSP session key\n"));
-		if(have_session_key)
-			x_fprintf(x_stdout, "GK %s\n", base64_encode_data_blob(session_key));
-		else
+		if(have_session_key) {
+			char *key64 = base64_encode_data_blob(session_key);
+			x_fprintf(x_stdout, "GK %s\n", key64?key64:"<NULL>");
+			SAFE_FREE(key64);
+		} else {
 			x_fprintf(x_stdout, "BH\n");
+		}
 			
 		data_blob_free(&request);
 		return;
@@ -803,7 +806,9 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		DEBUG(10, ("Requested session key\n"));
 
 		if(have_session_key) {
-			x_fprintf(x_stdout, "GK %s\n", base64_encode_data_blob(session_key));
+			char *key64 = base64_encode_data_blob(session_key);
+			x_fprintf(x_stdout, "GK %s\n", key64?key64:"<NULL>");
+			SAFE_FREE(key64);
 		}
 		else {
 			x_fprintf(x_stdout, "BH\n");
@@ -873,7 +878,7 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 	char *user, *pass;	
 	user=buf;
 	
-	pass=memchr(buf,' ',length);
+	pass=(char *)memchr(buf,' ',length);
 	if (!pass) {
 		DEBUG(2, ("Password not found. Denying access\n"));
 		x_fprintf(x_stdout, "ERR\n");
@@ -1318,7 +1323,8 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 		return False;
 	}
 
-	principal = SMB_MALLOC(spnego.negTokenInit.mechListMIC.length+1);
+	principal = (char *)SMB_MALLOC(
+		spnego.negTokenInit.mechListMIC.length+1);
 
 	if (principal == NULL) {
 		DEBUG(1, ("Could not malloc principal\n"));
@@ -1963,7 +1969,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helpe
 		exit(0);
 	}
     
-	c=memchr(buf,'\n',sizeof(buf)-1);
+	c=(char *)memchr(buf,'\n',sizeof(buf)-1);
 	if (c) {
 		*c = '\0';
 		length = c-buf;
