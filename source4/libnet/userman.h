@@ -51,9 +51,20 @@ struct libnet_rpc_userdel {
 #define USERMOD_FIELD_COMMENT         ( 0x00000020 )
 #define USERMOD_FIELD_LOGON_SCRIPT    ( 0x00000100 )
 #define USERMOD_FIELD_PROFILE_PATH    ( 0x00000200 )
+#define USERMOD_FIELD_WORKSTATIONS    ( 0x00000400 )
+#define USERMOD_FIELD_HOME_DIRECTORY  ( 0x00000800 )
+#define USERMOD_FIELD_HOME_DRIVE      ( 0x00001000 )
+#define USERMOD_FIELD_LOGON_HOURS     ( 0x00002000 )
 #define USERMOD_FIELD_ACCT_EXPIRY     ( 0x00004000 )
 #define USERMOD_FIELD_ALLOW_PASS_CHG  ( 0x00008000 )
 #define USERMOD_FIELD_FORCE_PASS_CHG  ( 0x00010000 )
+#define USERMOD_FIELD_LAST_LOGON      ( 0x00020000 )
+#define USERMOD_FIELD_LAST_LOGOFF     ( 0x00040000 )
+#define USERMOD_FIELD_LAST_PASS_CHG   ( 0x00080000 )
+#define USERMOD_FIELD_ACCT_FLAGS      ( 0x00100000 )
+#define USERMOD_FIELD_PARAMETERS      ( 0x00200000 )
+#define USERMOD_FIELD_COUNTRY_CODE    ( 0x00400000 )
+#define USERMOD_FIELD_CODE_PAGE       ( 0x00800000 )
 #define USERMOD_FIELD_ACCT_FLAGS      ( 0x00100000 )
 
 struct libnet_rpc_usermod {
@@ -70,9 +81,15 @@ struct libnet_rpc_usermod {
 			const char *comment;
 			const char *logon_script;
 			const char *profile_path;
+			const char *home_directory;
+			const char *home_drive;
+			const char *workstations;
 			struct timeval *acct_expiry;
 			struct timeval *allow_password_change;
 			struct timeval *force_password_change;
+			struct timeval *last_logon;
+			struct timeval *last_logoff;
+			struct timeval *last_password_change;
 			uint32_t acct_flags;
 		} change;
 	} in;
