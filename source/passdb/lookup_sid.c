@@ -61,6 +61,9 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		name = talloc_strdup(tmp_ctx, full_name);
 	}
 
+	DEBUG(10,("lookup_name: %s => %s (domain), %s (name)\n", 
+		full_name, domain, name));
+
 	if ((domain == NULL) || (name == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
 		return False;
@@ -351,6 +354,72 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(tmp_ctx);
 	return True;
+}
+
+/************************************************************************
+ Names from smb.conf can be unqualified. eg. valid users = foo
+ These names should never map to a remote name. Try global_sam_name()\foo,
+ and then "Unix Users"\foo (or "Unix Groups"\foo).
+************************************************************************/
+
+BOOL lookup_name_smbconf(TALLOC_CTX *mem_ctx,
+		 const char *full_name, int flags,
+		 const char **ret_domain, const char **ret_name,
+		 DOM_SID *ret_sid, enum SID_NAME_USE *ret_type)
+{
+	char *qualified_name;
+	const char *p;
+
+	/* NB. No winbindd_separator here as lookup_name needs \\' */
+	if ((p = strchr_m(full_name, *lp_winbind_separator())) != NULL) {
+
+		/* The name is already qualified with a domain. */
+
+		if (*lp_winbind_separator() != '\\') {
+			char *tmp;
+
+			/* lookup_name() needs '\\' as a separator */
+
+			tmp = talloc_strdup(mem_ctx, full_name);
+			if (!tmp) {
+				return False;
+			}
+			tmp[p - full_name] = '\\';
+			full_name = tmp;
+		}
+
+		return lookup_name(mem_ctx, full_name, flags,
+				ret_domain, ret_name,
+				ret_sid, ret_type);
+	}
+
+	/* Try with our own SAM name. */
+	qualified_name = talloc_asprintf(mem_ctx, "%s\\%s",
+				get_global_sam_name(),
+				full_name );
+	if (!qualified_name) {
+		return False;
+	}
+
+	if (lookup_name(mem_ctx, qualified_name, flags,
+				ret_domain, ret_name,
+				ret_sid, ret_type)) {
+		return True;
+	}
+
+	/* Finally try with "Unix Users" or "Unix Group" */
+	qualified_name = talloc_asprintf(mem_ctx, "%s\\%s",
+				flags & LOOKUP_NAME_GROUP ?
+					unix_groups_domain_name() :
+					unix_users_domain_name(),
+				full_name );
+	if (!qualified_name) {
+		return False;
+	}
+
+	return lookup_name(mem_ctx, qualified_name, flags,
+				ret_domain, ret_name,
+				ret_sid, ret_type);
 }
 
 static BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
