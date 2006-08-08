@@ -243,8 +243,6 @@ typedef struct netdfs_q_dfs_Enum {
 	uint32 bufsize;
 	uint32 ptr0_info;
 	NETDFS_DFS_ENUMSTRUCT info;
-	uint32 ptr0_unknown;
-	uint32 unknown;
 	uint32 ptr0_total;
 	uint32 total;
 } NETDFS_Q_DFS_ENUM;

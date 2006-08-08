@@ -200,6 +200,7 @@ static BOOL init_reply_dfs_info_2(struct junction_map* j, NETDFS_DFS_INFO2* dfs2
 		j->service_name, j->volume_name);
 	init_unistr2(&dfs2->path, str, UNI_STR_TERMINATE);
 	dfs2->ptr0_comment = 0;
+	init_unistr2(&dfs2->comment, j->comment, UNI_STR_TERMINATE);
 	dfs2->state = 1; /* set up state of dfs junction as OK */
 	dfs2->num_stores = j->referral_count;
 	return True;
@@ -219,7 +220,7 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, NETDF
 
 	init_unistr2(&dfs3->path, str, UNI_STR_TERMINATE);
 	dfs3->ptr0_comment = 1;
-	init_unistr2(&dfs3->comment, "", UNI_STR_TERMINATE);
+	init_unistr2(&dfs3->comment, j->comment, UNI_STR_TERMINATE);
 	dfs3->state = 1;
 	dfs3->num_stores = dfs3->size_stores = j->referral_count;
 	dfs3->ptr0_stores = 1;
@@ -254,6 +255,14 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, NETDF
 	return True;
 }
 
+static BOOL init_reply_dfs_info_100(struct junction_map* j, NETDFS_DFS_INFO100* dfs100)
+{
+	dfs100->ptr0_comment = 1;
+	init_unistr2(&dfs100->comment, j->comment, UNI_STR_TERMINATE);
+	return True;
+}
+
+
 WERROR _dfs_Enum(pipes_struct *p, NETDFS_Q_DFS_ENUM *q_u, NETDFS_R_DFS_ENUM *r_u)
 {
 	uint32 level = q_u->level;
@@ -264,7 +273,7 @@ WERROR _dfs_Enum(pipes_struct *p, NETDFS_Q_DFS_ENUM *q_u, NETDFS_R_DFS_ENUM *r_u
 	num_jn = enum_msdfs_links(p->mem_ctx, jn, ARRAY_SIZE(jn));
 	vfs_ChDir(p->conn,p->conn->connectpath);
     
-	DEBUG(5,("make_reply_dfs_enum: %d junctions found in Dfs, doing level %d\n", num_jn, level));
+	DEBUG(5,("_dfs_Enum: %d junctions found in Dfs, doing level %d\n", num_jn, level));
 
 	r_u->ptr0_info = q_u->ptr0_info;
 	r_u->ptr0_total = q_u->ptr0_total;
@@ -330,7 +339,7 @@ WERROR _dfs_GetInfo(pipes_struct *p, NETDFS_Q_DFS_GETINFO *q_u,
 	uint32 level = q_u->level;
 	int consumedcnt = sizeof(pstring);
 	pstring path;
-	BOOL ret;
+	BOOL ret = False;
 	struct junction_map jn;
 
 	unistr2_to_ascii(path, uni_path, sizeof(path)-1);
@@ -352,8 +361,12 @@ WERROR _dfs_GetInfo(pipes_struct *p, NETDFS_Q_DFS_GETINFO *q_u,
 		case 1: ret = init_reply_dfs_info_1(&jn, &r_u->info.u.info1); break;
 		case 2: ret = init_reply_dfs_info_2(&jn, &r_u->info.u.info2); break;
 		case 3: ret = init_reply_dfs_info_3(p->mem_ctx, &jn, &r_u->info.u.info3); break;
+		case 100: ret = init_reply_dfs_info_100(&jn, &r_u->info.u.info100); break;
 		default:
-			ret = False;
+			r_u->info.ptr0 = 1;
+			r_u->info.switch_value = 0;
+			r_u->status = WERR_OK;
+			ret = True;
 			break;
 	}
 
