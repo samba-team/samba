@@ -2569,9 +2569,32 @@ BOOL netdfs_io_r_dfs_Remove2(const char *desc, NETDFS_R_DFS_REMOVE2 *v, prs_stru
 	return True;
 }
 
-BOOL init_netdfs_q_dfs_EnumEx(NETDFS_Q_DFS_ENUMEX *v)
+BOOL init_netdfs_q_dfs_EnumEx(NETDFS_Q_DFS_ENUMEX *v, uint32 level, uint32 bufsize, NETDFS_DFS_ENUMSTRUCT *info, uint32 *total, const char *dfs_name)
 {
 	DEBUG(5,("init_netdfs_q_dfs_EnumEx\n"));
+
+	if (!dfs_name)
+		return False;
+	
+	init_unistr2(&v->dfs_name, dfs_name, UNI_FLAGS_NONE|UNI_STR_TERMINATE);
+
+	v->level = level;
+	
+	v->bufsize = bufsize;
+	
+	if (info) {
+		v->ptr0_info = 1;
+		v->info = *info;
+	} else {
+		v->ptr0_info = 0;
+	}
+	
+	if (total) {
+		v->ptr0_total = 1;
+		v->total = *total;
+	} else {
+		v->ptr0_total = 0;
+	}
 	
 	return True;
 }
@@ -2583,6 +2606,42 @@ BOOL netdfs_io_q_dfs_EnumEx(const char *desc, NETDFS_Q_DFS_ENUMEX *v, prs_struct
 	
 	prs_debug(ps, depth, desc, "netdfs_io_q_dfs_EnumEx");
 	depth++;
+	if (!prs_align_custom(ps, 4))
+		return False;
+	
+	if (!smb_io_unistr2("dfs_name", &v->dfs_name, 1, ps, depth))
+		return False;
+	
+	if (!prs_align_custom(ps, 4))
+		return False;
+	
+	if (!prs_uint32("level", ps, depth, &v->level))
+		return False;
+	
+	if (!prs_uint32("bufsize", ps, depth, &v->bufsize))
+		return False;
+	
+	if (!prs_uint32("ptr0_info", ps, depth, &v->ptr0_info))
+		return False;
+	
+	if (v->ptr0_info) {
+		if (!netdfs_io_dfs_EnumStruct_p("info", &v->info, ps, depth))
+			return False;
+		if (!netdfs_io_dfs_EnumStruct_d("info", &v->info, ps, depth))
+			return False;
+	}
+	
+	if (!prs_align_custom(ps, 4))
+		return False;
+	
+	if (!prs_uint32("ptr0_total", ps, depth, &v->ptr0_total))
+		return False;
+	
+	if (v->ptr0_total) {
+		if (!prs_uint32("total", ps, depth, &v->total))
+			return False;
+	}
+	
 	return True;
 }
 
@@ -2602,6 +2661,35 @@ BOOL netdfs_io_r_dfs_EnumEx(const char *desc, NETDFS_R_DFS_ENUMEX *v, prs_struct
 	
 	prs_debug(ps, depth, desc, "netdfs_io_r_dfs_EnumEx");
 	depth++;
+	if (!prs_uint32("ptr0_info", ps, depth, &v->ptr0_info))
+		return False;
+	
+	if (v->ptr0_info) {
+		if (!netdfs_io_dfs_EnumStruct_p("info", &v->info, ps, depth))
+			return False;
+		if (!netdfs_io_dfs_EnumStruct_d("info", &v->info, ps, depth))
+			return False;
+	}
+	
+	if (!prs_align_custom(ps, 4))
+		return False;
+	
+	if (!prs_uint32("ptr0_total", ps, depth, &v->ptr0_total))
+		return False;
+	
+	if (v->ptr0_total) {
+		if (!prs_uint32("total", ps, depth, &v->total))
+			return False;
+	}
+	
+	if (!prs_align_custom(ps, 4))
+		return False;
+	
+	if (!prs_werror("status", ps, depth, &v->status))
+		return False;
+	
+	return True;
+
 	if (!prs_werror("status", ps, depth, &v->status))
 		return False;
 	

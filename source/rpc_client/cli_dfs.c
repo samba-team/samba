@@ -576,7 +576,7 @@ NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	return werror_to_ntstatus(r.status);
 }
 
-NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32 level, uint32 bufsize, NETDFS_DFS_ENUMSTRUCT *info, uint32 *total, const char *dfs_name)
 {
 	prs_struct qbuf, rbuf;
 	NETDFS_Q_DFS_ENUMEX q;
@@ -587,7 +587,7 @@ NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	
 	/* Marshall data and send request */
 	
-	if (!init_netdfs_q_dfs_EnumEx(&q))
+	if (!init_netdfs_q_dfs_EnumEx(&q, level, bufsize, info, total, dfs_name))
 		return NT_STATUS_INVALID_PARAMETER;
 	
 	CLI_DO_RPC(cli, mem_ctx, PI_NETDFS, DFS_ENUMEX,
