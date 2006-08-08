@@ -31,7 +31,7 @@ or /etc/group).
 
 The reason for this change is that smbd has transitioned from
 access checks based on string comparisons to token based
-authorization.  All names are resolved to a SID and they verified
+authorization.  All names are resolved to a SID and then verified
 against the logged on user's NT user token.  Local names will
 resolve to a local SID, while qualified domain names will resolve
 to the appropriate domain SID.  
