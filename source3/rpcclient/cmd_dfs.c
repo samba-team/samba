@@ -212,6 +212,38 @@ static NTSTATUS cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Enumerate dfs shares */
+
+static NTSTATUS cmd_dfs_enumex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+			       int argc, const char **argv)
+{
+	NETDFS_DFS_ENUMSTRUCT str;
+	NETDFS_DFS_ENUMINFO_CTR ctr;
+	NTSTATUS result;
+	uint32 info_level = 1;
+	uint32 total = 0;
+
+	if (argc < 2 || argc > 3) {
+		printf("Usage: %s dfs_name [info_level]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (argc == 3)
+		info_level = atoi(argv[2]);
+
+	ZERO_STRUCT(ctr);
+	init_netdfs_dfs_EnumStruct(&str, info_level, ctr);
+	str.e.ptr0 = 1;
+
+	result = rpccli_dfs_EnumEx(cli, mem_ctx, info_level, 0xFFFFFFFF, &str, &total, argv[1]);
+
+	if (NT_STATUS_IS_OK(result))
+		display_dfs_enumstruct(&str);
+
+	return result;
+}
+
+
 static NTSTATUS cmd_dfs_getinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                 int argc, const char **argv)
 {
@@ -253,6 +285,7 @@ struct cmd_set dfs_commands[] = {
 	{ "dfsremove", RPC_RTYPE_NTSTATUS, cmd_dfs_remove,  NULL, PI_NETDFS, NULL, "Remove a DFS share",   "" },
 	{ "dfsgetinfo",RPC_RTYPE_NTSTATUS, cmd_dfs_getinfo, NULL, PI_NETDFS, NULL, "Query DFS share info", "" },
 	{ "dfsenum",   RPC_RTYPE_NTSTATUS, cmd_dfs_enum,    NULL, PI_NETDFS, NULL, "Enumerate dfs shares", "" },
+	{ "dfsenumex", RPC_RTYPE_NTSTATUS, cmd_dfs_enumex,  NULL, PI_NETDFS, NULL, "Enumerate dfs shares", "" },
 
 	{ NULL }
 };

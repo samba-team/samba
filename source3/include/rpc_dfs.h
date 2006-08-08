@@ -376,10 +376,21 @@ typedef struct netdfs_r_dfs_Remove2 {
 } NETDFS_R_DFS_REMOVE2;
 
 typedef struct netdfs_q_dfs_EnumEx {
-	uint32 dummy;
+	uint32 ptr0_dfs_name;
+	UNISTR2 dfs_name;
+	uint32 level;
+	uint32 bufsize;
+	uint32 ptr0_info;
+	NETDFS_DFS_ENUMSTRUCT info;
+	uint32 ptr0_total;
+	uint32 total;
 } NETDFS_Q_DFS_ENUMEX;
 
 typedef struct netdfs_r_dfs_EnumEx {
+	uint32 ptr0_info;
+	NETDFS_DFS_ENUMSTRUCT info;
+	uint32 ptr0_total;
+	uint32 total;
 	WERROR status;
 } NETDFS_R_DFS_ENUMEX;
 
