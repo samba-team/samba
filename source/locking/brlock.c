@@ -1002,7 +1002,8 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
-	locks = br_lck->lock_data = (void *)tp;
+	locks = tp;
+	br_lck->lock_data = (void *)tp;
 	br_lck->modified = True;
 
 	/* Send unlock messages to any pending waiters that overlap. */
@@ -1279,7 +1280,7 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 			unsigned int num_locks_copy;
 
 			/* Copy the current lock array. */
-			locks_copy = TALLOC_MEMDUP(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
+			locks_copy = (struct lock_struct *)TALLOC_MEMDUP(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
 			if (!locks_copy) {
 				smb_panic("brl_close_fnum: talloc fail.\n");
 			}

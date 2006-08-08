@@ -573,7 +573,7 @@ static void add_fd_to_close_entry(files_struct *fsp)
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
-	dbuf.dptr = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
+	dbuf.dptr = (char *)SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
 	if (!dbuf.dptr) {
 		smb_panic("add_fd_to_close_entry: Realloc fail !\n");
 	}
