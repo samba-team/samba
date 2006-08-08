@@ -346,7 +346,7 @@ static void oplock_timeout_handler(struct timed_event *te,
 				   const struct timeval *now,
 				   void *private_data)
 {
-	files_struct *fsp = private_data;
+	files_struct *fsp = (files_struct *)private_data;
 
 	DEBUG(0, ("Oplock break failed for file %s -- replying anyway\n", fsp->fsp_name));
 	global_client_failed_oplock_break = True;
@@ -403,7 +403,7 @@ static void process_oplock_async_level2_break_message(int msg_type, struct proce
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got oplock async level 2 break message from pid %d: 0x%x/%.0f/%lu\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
@@ -490,7 +490,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got oplock break message from pid %d: 0x%x/%.0f/%lu\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
@@ -685,7 +685,7 @@ static void process_oplock_break_response(int msg_type, struct process_id src,
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got oplock break response from pid %d: 0x%x/%.0f/%lu mid %u\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
@@ -712,7 +712,7 @@ static void process_open_retry_message(int msg_type, struct process_id src,
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got open retry msg from pid %d: 0x%x/%.0f/%lu mid %u\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
