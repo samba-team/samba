@@ -1595,6 +1595,12 @@ static void winbindd_gid2sid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("gid2sid returned an error\n"));
+		cont(private_data, False, NULL);
+		return;
+	}
+
 	cont(private_data, True, response->data.sid.sid);
 }
 
