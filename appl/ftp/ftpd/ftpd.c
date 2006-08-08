@@ -1901,11 +1901,11 @@ dologout(int status)
     transflag = 0;
     urgflag = 0;
     if (logged_in) {
-	seteuid((uid_t)0);
-	ftpd_logwtmp(ttyline, "", "");
 #if KRB4 || KRB5
 	cond_kdestroy();
 #endif
+	seteuid((uid_t)0); /* No need to check, we call exit() below */
+	ftpd_logwtmp(ttyline, "", "");
     }
     /* beware of flushing buffers after a SIGPIPE */
 #ifdef XXX
