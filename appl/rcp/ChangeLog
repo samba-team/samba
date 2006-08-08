@@ -1,3 +1,9 @@
+2006-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rcp.c: Check return values from seteuid, prompted by MIT
+	advisory.  Thanks to Tom Yu at MIT, and Michael Calmer and Marcus
+	Meissner at SUSE.  Either of CVE-2006-3083 or CVE-2006-3084.
+	
 2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rcp.c: Check return value from asprintf instead of string !=
