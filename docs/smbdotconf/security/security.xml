@@ -201,13 +201,13 @@
 </para>
 
 	<note><para>This mode of operation has
-    significant pitfalls, due to the fact that is activly initiates a
-    man-in-the-middle attack on the remote SMB server.  In particular,
+    significant pitfalls since it is more vulnerable to
+    man-in-the-middle attacks and server impersonation.  In particular,
     this mode of operation can cause significant resource consuption on
     the PDC, as it must maintain an active connection for the duration
     of the user's session.  Furthermore, if this connection is lost,
-    there is no way to reestablish it, and futher authenticaions to the
-    Samba server may fail.  (From a single client, till it disconnects).
+    there is no way to reestablish it, and futher authentications to the
+    Samba server may fail (from a single client, till it disconnects).
 	</para></note>
 
 	<note><para>From the client's point of 
