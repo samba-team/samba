@@ -901,6 +901,7 @@ BOOL create_junction(char *pathname, struct junction_map *jucn)
 
 	pstrcpy(jucn->service_name,dp.servicename);
 	pstrcpy(jucn->volume_name,dp.reqpath);
+	pstrcpy(jucn->comment, lp_comment(lp_servicenumber(dp.servicename)));
 	return True;
 }
 

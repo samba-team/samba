@@ -53,6 +53,7 @@ struct referral {
 struct junction_map {
 	pstring service_name;
 	pstring volume_name;
+	pstring comment;
 	int referral_count;
 	struct referral* referral_list;
 };
