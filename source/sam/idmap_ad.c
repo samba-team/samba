@@ -139,12 +139,12 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 }
 
 /* no op */
-static NTSTATUS ad_idmap_init(const char *uri)
+static NTSTATUS ad_idmap_init(char *uri)
 {
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ad_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, int id_type, int flags)
+static NTSTATUS ad_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, int id_type)
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
