@@ -142,7 +142,7 @@ NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, co
 	return werror_to_ntstatus(r.status);
 }
 
-NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32 level, uint32 bufsize, NETDFS_DFS_ENUMSTRUCT *info, uint32 *unknown, uint32 *total)
+NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32 level, uint32 bufsize, NETDFS_DFS_ENUMSTRUCT *info, uint32 *total)
 {
 	prs_struct qbuf, rbuf;
 	NETDFS_Q_DFS_ENUM q;
@@ -153,7 +153,7 @@ NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint3
 	
 	/* Marshall data and send request */
 	
-	if (!init_netdfs_q_dfs_Enum(&q, level, bufsize, info, unknown, total))
+	if (!init_netdfs_q_dfs_Enum(&q, level, bufsize, info, total))
 		return NT_STATUS_INVALID_PARAMETER;
 	
 	CLI_DO_RPC(cli, mem_ctx, PI_NETDFS, DFS_ENUM,
