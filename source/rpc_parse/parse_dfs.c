@@ -1862,7 +1862,7 @@ BOOL netdfs_io_r_dfs_GetInfo(const char *desc, NETDFS_R_DFS_GETINFO *v, prs_stru
 	return True;
 }
 
-BOOL init_netdfs_q_dfs_Enum(NETDFS_Q_DFS_ENUM *v, uint32 level, uint32 bufsize, NETDFS_DFS_ENUMSTRUCT *info, uint32 *unknown, uint32 *total)
+BOOL init_netdfs_q_dfs_Enum(NETDFS_Q_DFS_ENUM *v, uint32 level, uint32 bufsize, NETDFS_DFS_ENUMSTRUCT *info, uint32 *total)
 {
 	DEBUG(5,("init_netdfs_q_dfs_Enum\n"));
 	
@@ -1875,13 +1875,6 @@ BOOL init_netdfs_q_dfs_Enum(NETDFS_Q_DFS_ENUM *v, uint32 level, uint32 bufsize, 
 		v->info = *info;
 	} else {
 		v->ptr0_info = 0;
-	}
-	
-	if (unknown) {
-		v->ptr0_unknown = 1;
-		v->unknown = *unknown;
-	} else {
-		v->ptr0_unknown = 0;
 	}
 	
 	if (total) {
@@ -1914,17 +1907,6 @@ BOOL netdfs_io_q_dfs_Enum(const char *desc, NETDFS_Q_DFS_ENUM *v, prs_struct *ps
 		if (!netdfs_io_dfs_EnumStruct_p("info", &v->info, ps, depth))
 			return False;
 		if (!netdfs_io_dfs_EnumStruct_d("info", &v->info, ps, depth))
-			return False;
-	}
-	
-	if (!prs_align_custom(ps, 4))
-		return False;
-	
-	if (!prs_uint32("ptr0_unknown", ps, depth, &v->ptr0_unknown))
-		return False;
-	
-	if (v->ptr0_unknown) {
-		if (!prs_uint32("unknown", ps, depth, &v->unknown))
 			return False;
 	}
 	
