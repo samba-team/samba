@@ -71,7 +71,7 @@
 #endif
 
 #ifdef __hpux
-#define seteuid(A)		setresuid(-1,A,-1);
+#define seteuid(A)		setresuid(-1,A,-1)
 #endif
 
 
@@ -549,7 +549,8 @@ int k5dcecreate(luid, luser, pname, krbtgt)
 	 */
 
 	if (uid == 0) {
-		seteuid(luid);
+		if (seteuid(luid) < 0)
+			goto abort;
 	}  
 
 	cp = strchr(pname,'@');
