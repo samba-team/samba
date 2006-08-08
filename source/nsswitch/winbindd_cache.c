@@ -269,7 +269,38 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
-/* pull a string from a cache entry, using the supplied
+/* pull a hash16 from a cache entry, using the supplied
+   talloc context 
+*/
+static char *centry_hash16(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
+{
+	uint32 len;
+	char *ret;
+
+	len = centry_uint8(centry);
+
+	if (len != 16) {
+		DEBUG(0,("centry corruption? hash len (%u) != 16\n", 
+			len ));
+		smb_panic("centry_hash16");
+	}
+
+	if (centry->len - centry->ofs < 16) {
+		DEBUG(0,("centry corruption? needed 16 bytes, have %d\n", 
+			 centry->len - centry->ofs));
+		smb_panic("centry_hash16");
+	}
+
+	ret = TALLOC_ARRAY(mem_ctx, char, 16);
+	if (!ret) {
+		smb_panic("centry_hash out of memory\n");
+	}
+	memcpy(ret,centry->data + centry->ofs, 16);
+	centry->ofs += 16;
+	return ret;
+}
+
+/* pull a sid from a cache entry, using the supplied
    talloc context 
 */
 static BOOL centry_sid(struct cache_entry *centry, TALLOC_CTX *mem_ctx, DOM_SID *sid)
@@ -630,6 +661,17 @@ static void centry_put_string(struct cache_entry *centry, const char *s)
 	centry->ofs += len;
 }
 
+/* 
+   push a 16 byte hash into a centry - treat as 16 byte string.
+ */
+static void centry_put_hash16(struct cache_entry *centry, const uint8 val[16])
+{
+	centry_put_uint8(centry, 16);
+	centry_expand(centry, 16);
+	memcpy(centry->data + centry->ofs, val, 16);
+	centry->ofs += 16;
+}
+
 static void centry_put_sid(struct cache_entry *centry, const DOM_SID *sid) 
 {
 	fstring sid_string;
@@ -865,7 +907,7 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	}
 
 	t = centry_time(centry);
-	*cached_nt_pass = (const uint8 *)centry_string(centry, mem_ctx);
+	*cached_nt_pass = (const uint8 *)centry_hash16(centry, mem_ctx);
 
 #if DEBUG_PASSWORD
 	dump_data(100, (const char *)cached_nt_pass, NT_HASH_LEN);
@@ -906,7 +948,7 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 #endif
 
 	centry_put_time(centry, time(NULL));
-	centry_put_string(centry, (const char *)nt_pass);
+	centry_put_hash16(centry, nt_pass);
 	centry_end(centry, "CRED/%s", sid_to_string(sid_string, sid));
 
 	DEBUG(10,("wcache_save_creds: %s\n", sid_string));
