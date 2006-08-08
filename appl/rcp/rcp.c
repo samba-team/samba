@@ -272,7 +272,8 @@ tolocal(int argc, char **argv)
 		}
 		free(bp);
 		sink(1, argv + argc - 1);
-		seteuid(0);
+		if (seteuid(0) < 0)
+			exit(1);
 		close(remin);
 		remin = remout = -1;
 	}
