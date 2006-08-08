@@ -212,16 +212,18 @@ BOOL run_local_groupmap(int dummy)
 		string_to_sid(&sid, "S-1-5-32-545");
 
 		ZERO_STRUCT(map);
-		if (!pdb_getgrsid(&map, &sid)) {
-			d_fprintf(stderr, "(%s) pdb_getgrsid failed\n",
-				  __location__);
+		status = pdb_getgrsid(&map, &sid);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "(%s) pdb_getgrsid failed: %s\n",
+				  __location__, nt_errstr(status));
 			goto fail;
 		}
 
 		ZERO_STRUCT(map1);
-		if (!pdb_getgrgid(&map1, map.gid)) {
-			d_fprintf(stderr, "(%s) pdb_getgrgid failed\n",
-				  __location__);
+		status = pdb_getgrgid(&map1, map.gid);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "(%s) pdb_getgrgid failed: %s\n",
+				  __location__, nt_errstr(status));
 			goto fail;
 		}
 
@@ -232,9 +234,10 @@ BOOL run_local_groupmap(int dummy)
 		}
 			
 		ZERO_STRUCT(map1);
-		if (!pdb_getgrnam(&map1, map.nt_name)) {
-			d_fprintf(stderr, "(%s) pdb_getgrnam failed\n",
-				  __location__);
+		status = pdb_getgrnam(&map1, map.nt_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "(%s) pdb_getgrnam failed: %s\n",
+				  __location__, nt_errstr(status));
 			goto fail;
 		}
 
@@ -252,9 +255,10 @@ BOOL run_local_groupmap(int dummy)
 		GROUP_MAP map, map1;
 		string_to_sid(&sid, "S-1-5-32-545");
 
-		if (!pdb_getgrsid(&map, &sid)) {
-			d_fprintf(stderr, "(%s) did not find S-1-5-32-545\n",
-				  __location__);
+		status = pdb_getgrsid(&map, &sid);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "(%s) did not find S-1-5-32-545: "
+				  "%s\n", __location__, nt_errstr(status));
 			goto fail;
 		}
 
@@ -267,19 +271,19 @@ BOOL run_local_groupmap(int dummy)
 		CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
 #endif
 
-		if (pdb_getgrsid(&map1, &sid)) {
+		if (NT_STATUS_IS_OK(pdb_getgrsid(&map1, &sid))) {
 			d_fprintf(stderr, "(%s) getgrsid found deleted "
 				  "entry\n", __location__);
 			goto fail;
 		}
 
-		if (pdb_getgrgid(&map1, map.gid)) {
+		if (NT_STATUS_IS_OK(pdb_getgrgid(&map1, map.gid))) {
 			d_fprintf(stderr, "(%s) getgrgid found deleted "
 				  "entry\n", __location__);
 			goto fail;
 		}
 
-		if (pdb_getgrnam(&map1, map.nt_name)) {
+		if (NT_STATUS_IS_OK(pdb_getgrnam(&map1, map.nt_name))) {
 			d_fprintf(stderr, "(%s) getgrnam found deleted "
 				  "entry\n", __location__);
 			goto fail;
@@ -295,9 +299,10 @@ BOOL run_local_groupmap(int dummy)
 		GROUP_MAP map, map1;
 		string_to_sid(&sid, "S-1-5-32-544");
 
-		if (!pdb_getgrsid(&map, &sid)) {
-			d_fprintf(stderr, "(%s) did not find S-1-5-32-544\n",
-				  __location__);
+		status = pdb_getgrsid(&map, &sid);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "(%s) did not find S-1-5-32-544: "
+				  "%s\n", __location__, nt_errstr(status));
 			goto fail;
 		}
 
@@ -307,7 +312,7 @@ BOOL run_local_groupmap(int dummy)
 		status = pdb_update_group_mapping_entry(&map);
 		CHECK_STATUS(status, NT_STATUS_OK);
 
-		if (pdb_getgrgid(&map1, oldgid)) {
+		if (NT_STATUS_IS_OK(pdb_getgrgid(&map1, oldgid))) {
 			d_fprintf(stderr, "(%s) getgrgid found outdated "
 				  "entry\n", __location__);
 			goto fail;

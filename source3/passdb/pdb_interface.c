@@ -561,22 +561,22 @@ NTSTATUS pdb_update_login_attempts(struct samu *sam_acct, BOOL success)
 	return pdb->update_login_attempts(pdb, sam_acct, success);
 }
 
-BOOL pdb_getgrsid(GROUP_MAP *map, const DOM_SID *sid)
+NTSTATUS pdb_getgrsid(GROUP_MAP *map, const DOM_SID *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return NT_STATUS_IS_OK(pdb->getgrsid(pdb, map, sid));
+	return pdb->getgrsid(pdb, map, sid);
 }
 
-BOOL pdb_getgrgid(GROUP_MAP *map, gid_t gid)
+NTSTATUS pdb_getgrgid(GROUP_MAP *map, gid_t gid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return NT_STATUS_IS_OK(pdb->getgrgid(pdb, map, gid));
+	return pdb->getgrgid(pdb, map, gid);
 }
 
-BOOL pdb_getgrnam(GROUP_MAP *map, const char *name)
+NTSTATUS pdb_getgrnam(GROUP_MAP *map, const char *name)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return NT_STATUS_IS_OK(pdb->getgrnam(pdb, map, name));
+	return pdb->getgrnam(pdb, map, name);
 }
 
 static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
@@ -918,12 +918,6 @@ NTSTATUS pdb_del_groupmem(TALLOC_CTX *mem_ctx, uint32 group_rid,
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->del_groupmem(pdb, mem_ctx, group_rid, member_rid);
-}
-
-BOOL pdb_find_alias(const char *name, DOM_SID *sid)
-{
-	struct pdb_methods *pdb = pdb_get_methods();
-	return NT_STATUS_IS_OK(pdb->find_alias(pdb, name, sid));
 }
 
 NTSTATUS pdb_create_alias(const char *name, uint32 *rid)
@@ -1522,7 +1516,7 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 	}
 	TALLOC_FREE(sam_account);
 	
-	ret = pdb_getgrsid(&map, &sid);
+	ret = NT_STATUS_IS_OK(pdb_getgrsid(&map, &sid));
 	unbecome_root();
 	/* END BECOME_ROOT BLOCK */
   
@@ -2032,7 +2026,6 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->set_unix_primary_group = pdb_default_set_unix_primary_group;
 	(*methods)->add_groupmem = pdb_default_add_groupmem;
 	(*methods)->del_groupmem = pdb_default_del_groupmem;
-	(*methods)->find_alias = pdb_default_find_alias;
 	(*methods)->create_alias = pdb_default_create_alias;
 	(*methods)->delete_alias = pdb_default_delete_alias;
 	(*methods)->get_aliasinfo = pdb_default_get_aliasinfo;
