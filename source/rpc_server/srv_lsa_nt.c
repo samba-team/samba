@@ -1730,7 +1730,7 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 		return NT_STATUS_ACCESS_DENIED;
 
-	if (!pdb_getgrsid(&map, &info->sid))
+	if (!NT_STATUS_IS_OK(pdb_getgrsid(&map, &info->sid)))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	return pdb_update_group_mapping_entry(&map);
