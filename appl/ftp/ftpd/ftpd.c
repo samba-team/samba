@@ -138,9 +138,9 @@ static int	 handleoobcmd(void);
 static int	 checkuser (char *, char *);
 static int	 checkaccess (char *);
 static FILE	*dataconn (const char *, off_t, const char *);
-static void	 dolog (struct sockaddr *sa, int len);
+static void	 dolog (struct sockaddr *, int);
 static void	 end_login (void);
-static FILE	*getdatasock (const char *);
+static FILE	*getdatasock (const char *, int);
 static char	*gunique (char *);
 static RETSIGTYPE	 lostconn (int);
 static int	 receive_data (FILE *, FILE *);
@@ -835,7 +835,8 @@ static void
 end_login(void)
 {
 
-	seteuid((uid_t)0);
+	if (seteuid((uid_t)0) < 0)
+		fatal("Failed to seteuid");
 	if (logged_in)
 		ftpd_logwtmp(ttyline, "", "");
 	pw = NULL;
@@ -1208,14 +1209,15 @@ done:
 }
 
 static FILE *
-getdatasock(const char *mode)
+getdatasock(const char *mode, int domain)
 {
 	int s, t, tries;
 
 	if (data >= 0)
 		return (fdopen(data, mode));
-	seteuid(0);
-	s = socket(ctrl_addr->sa_family, SOCK_STREAM, 0);
+	if (seteuid(0) < 0)
+		fatal("Failed to seteuid");
+	s = socket(domain, SOCK_STREAM, 0);
 	if (s < 0)
 		goto bad;
 	socket_set_reuseaddr (s, 1);
@@ -1232,7 +1234,8 @@ getdatasock(const char *mode)
 			goto bad;
 		sleep(tries);
 	}
-	seteuid(pw->pw_uid);
+	if (seteuid(pw->pw_uid) < 0)
+		fatal("Failed to seteuid");
 #ifdef IPTOS_THROUGHPUT
 	socket_set_tos (s, IPTOS_THROUGHPUT);
 #endif
@@ -1240,7 +1243,8 @@ getdatasock(const char *mode)
 bad:
 	/* Return the real value of errno (close may change it) */
 	t = errno;
-	seteuid((uid_t)pw->pw_uid);
+	if (seteuid((uid_t)pw->pw_uid) < 0)
+		fatal("Failed to seteuid");
 	close(s);
 	errno = t;
 	return (NULL);
@@ -1271,7 +1275,7 @@ dataconn(const char *name, off_t size, const char *mode)
 {
 	char sizebuf[32];
 	FILE *file;
-	int retry = 0;
+	int domain, retry = 0;
 
 	file_size = size;
 	byte_count = 0;
@@ -1318,7 +1322,15 @@ dataconn(const char *name, off_t size, const char *mode)
 	if (usedefault)
 		data_dest = his_addr;
 	usedefault = 1;
-	file = getdatasock(mode);
+	/* 
+	 * Default to using the same socket type as the ctrl address,
+	 * unless we know the type of the data address.
+	 */
+	domain = data_dest->sa_family;
+	if (domain == PF_UNSPEC)
+	    domain = ctrl_addr->sa_family;
+
+	file = getdatasock(mode, domain);
 	if (file == NULL) {
 		char data_addr[256];
 
@@ -2006,12 +2018,15 @@ pasv(void)
 				     0);
 	socket_set_portrange(pdata, restricted_data_ports, 
 	    pasv_addr->sa_family); 
-	seteuid(0);
+	if (seteuid(0) < 0)
+		fatal("Failed to seteuid");
 	if (bind(pdata, pasv_addr, socket_sockaddr_size (pasv_addr)) < 0) {
-		seteuid(pw->pw_uid);
+		if (seteuid(pw->pw_uid) < 0)
+			fatal("Failed to seteuid");
 		goto pasv_error;
 	}
-	seteuid(pw->pw_uid);
+	if (seteuid(pw->pw_uid) < 0)
+		fatal("Failed to seteuid");
 	len = sizeof(pasv_addr_ss);
 	if (getsockname(pdata, pasv_addr, &len) < 0)
 		goto pasv_error;
@@ -2050,12 +2065,15 @@ epsv(char *proto)
 				     0);
 	socket_set_portrange(pdata, restricted_data_ports, 
 	    pasv_addr->sa_family); 
-	seteuid(0);
+	if (seteuid(0) < 0)
+		fatal("Failed to seteuid");
 	if (bind(pdata, pasv_addr, socket_sockaddr_size (pasv_addr)) < 0) {
-		seteuid(pw->pw_uid);
+		if (seteuid(pw->pw_uid))
+			fatal("Failed to seteuid");
 		goto pasv_error;
 	}
-	seteuid(pw->pw_uid);
+	if (seteuid(pw->pw_uid) < 0)
+		fatal("Failed to seteuid");
 	len = sizeof(pasv_addr_ss);
 	if (getsockname(pdata, pasv_addr, &len) < 0)
 		goto pasv_error;
