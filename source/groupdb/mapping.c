@@ -220,7 +220,7 @@ NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *pmap)
  Return the sid and the type of the unix group.
 ****************************************************************************/
 
-static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
+static BOOL get_group_map_from_sid(const DOM_SID *sid, GROUP_MAP *map)
 {
 	TDB_DATA kbuf, dbuf;
 	pstring key;
@@ -234,7 +234,7 @@ static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 	/* the key is the SID, retrieving is direct */
 
-	sid_to_string(string_sid, &sid);
+	sid_to_string(string_sid, sid);
 	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
 
 	kbuf.dptr = key;
@@ -254,7 +254,7 @@ static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 		return False;
 	}
 	
-	sid_copy(&map->sid, &sid);
+	sid_copy(&map->sid, sid);
 	
 	return True;
 }
@@ -588,7 +588,7 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!get_group_map_from_sid(*alias, &map))
+	if (!get_group_map_from_sid(alias, &map))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	if ( (map.sid_name_use != SID_NAME_ALIAS) &&
@@ -691,7 +691,7 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!get_group_map_from_sid(*alias, &map))
+	if (!get_group_map_from_sid(alias, &map))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	if ( (map.sid_name_use != SID_NAME_ALIAS) &&
@@ -796,7 +796,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 /* get a domain group from it's SID */
 
-BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
+BOOL get_domain_group_from_sid(const DOM_SID *sid, GROUP_MAP *map)
 {
 	struct group *grp;
 	BOOL ret;
@@ -819,12 +819,12 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 	if ( !ret ) {
 		uint32 rid;
 		
-		sid_peek_rid( &sid, &rid );
+		sid_peek_rid( sid, &rid );
 		
 		if ( rid == DOMAIN_GROUP_RID_USERS ) {
 			fstrcpy( map->nt_name, "None" );
 			fstrcpy( map->comment, "Ordinary Users" );
-			sid_copy( &map->sid, &sid );
+			sid_copy( &map->sid, sid );
 			map->sid_name_use = SID_NAME_DOM_GRP;
 			
 			return True;
@@ -998,7 +998,7 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 
 
 NTSTATUS pdb_default_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
-				 DOM_SID sid)
+			      const DOM_SID *sid)
 {
 	return get_group_map_from_sid(sid, map) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
@@ -1138,7 +1138,7 @@ NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
 {
 	GROUP_MAP map;
 
-	if (!pdb_getgrsid(&map, *sid))
+	if (!pdb_getgrsid(&map, sid))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	if ((map.sid_name_use != SID_NAME_ALIAS) &&
@@ -1161,7 +1161,7 @@ NTSTATUS pdb_default_set_aliasinfo(struct pdb_methods *methods,
 {
 	GROUP_MAP map;
 
-	if (!pdb_getgrsid(&map, *sid))
+	if (!pdb_getgrsid(&map, sid))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	fstrcpy(map.nt_name, info->acct_name);
@@ -1285,7 +1285,7 @@ BOOL pdb_get_dom_grp_info(const DOM_SID *sid, struct acct_info *info)
 	BOOL res;
 
 	become_root();
-	res = get_domain_group_from_sid(*sid, &map);
+	res = get_domain_group_from_sid(sid, &map);
 	unbecome_root();
 
 	if (!res)
@@ -1301,7 +1301,7 @@ BOOL pdb_set_dom_grp_info(const DOM_SID *sid, const struct acct_info *info)
 {
 	GROUP_MAP map;
 
-	if (!get_domain_group_from_sid(*sid, &map))
+	if (!get_domain_group_from_sid(sid, &map))
 		return False;
 
 	fstrcpy(map.nt_name, info->acct_name);

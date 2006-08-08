@@ -153,7 +153,7 @@ static int net_groupmap_list(int argc, const char **argv)
 		}
 
 		/* Get the current mapping from the database */
-		if(!pdb_getgrsid(&map, sid)) {
+		if(!pdb_getgrsid(&map, &sid)) {
 			d_fprintf(stderr, "Failure to local group SID in the database\n");
 			return -1;
 		}
@@ -404,7 +404,7 @@ static int net_groupmap_modify(int argc, const char **argv)
 	}	
 
 	/* Get the current mapping from the database */
-	if(!pdb_getgrsid(&map, sid)) {
+	if(!pdb_getgrsid(&map, &sid)) {
 		d_fprintf(stderr, "Failure to local group SID in the database\n");
 		return -1;
 	}
@@ -539,7 +539,7 @@ static int net_groupmap_set(int argc, const char **argv)
 		DOM_SID sid;
 		have_map = ( (strncmp(ntgroup, "S-", 2) == 0) &&
 			     string_to_sid(&sid, ntgroup) &&
-			     pdb_getgrsid(&map, sid) );
+			     pdb_getgrsid(&map, &sid) );
 	}
 
 	if (!have_map) {

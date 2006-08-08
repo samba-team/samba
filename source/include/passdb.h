@@ -244,7 +244,7 @@ struct pdb_search {
  * enum SID_NAME_USE rather than uint32.
  */
 
-#define PASSDB_INTERFACE_VERSION 14
+#define PASSDB_INTERFACE_VERSION 15
 
 struct pdb_methods 
 {
@@ -277,7 +277,8 @@ struct pdb_methods
 	
 	NTSTATUS (*update_login_attempts)(struct pdb_methods *methods, struct samu *sam_acct, BOOL success);
 
-	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map, DOM_SID sid);
+	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map,
+			     const DOM_SID *sid);
 
 	NTSTATUS (*getgrgid)(struct pdb_methods *methods, GROUP_MAP *map, gid_t gid);
 
