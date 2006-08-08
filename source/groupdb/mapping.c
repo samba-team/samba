@@ -168,7 +168,7 @@ NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *pmap)
 	const char *grpname, *dom, *name;
 	uint32 rid;
 
-	if (pdb_getgrgid(&map, grp->gr_gid)) {
+	if (NT_STATUS_IS_OK(pdb_getgrgid(&map, grp->gr_gid))) {
 		return NT_STATUS_GROUP_EXISTS;
 	}
 
@@ -811,7 +811,7 @@ BOOL get_domain_group_from_sid(const DOM_SID *sid, GROUP_MAP *map)
 	/* if the group is NOT in the database, it CAN NOT be a domain group */
 	
 	become_root();
-	ret = pdb_getgrsid(map, sid);
+	ret = NT_STATUS_IS_OK(pdb_getgrsid(map, sid));
 	unbecome_root();
 	
 	/* special case check for rid 513 */
@@ -1048,22 +1048,6 @@ NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-NTSTATUS pdb_default_find_alias(struct pdb_methods *methods,
-				const char *name, DOM_SID *sid)
-{
-	GROUP_MAP map;
-
-	if (!pdb_getgrnam(&map, name))
-		return NT_STATUS_NO_SUCH_ALIAS;
-
-	if ((map.sid_name_use != SID_NAME_WKN_GRP) &&
-	    (map.sid_name_use != SID_NAME_ALIAS))
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
-
-	sid_copy(sid, &map.sid);
-	return NT_STATUS_OK;
-}
-
 NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 				  const char *name, uint32 *rid)
 {
@@ -1138,7 +1122,7 @@ NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
 {
 	GROUP_MAP map;
 
-	if (!pdb_getgrsid(&map, sid))
+	if (!NT_STATUS_IS_OK(pdb_getgrsid(&map, sid)))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	if ((map.sid_name_use != SID_NAME_ALIAS) &&
@@ -1161,7 +1145,7 @@ NTSTATUS pdb_default_set_aliasinfo(struct pdb_methods *methods,
 {
 	GROUP_MAP map;
 
-	if (!pdb_getgrsid(&map, sid))
+	if (!NT_STATUS_IS_OK(pdb_getgrsid(&map, sid)))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	fstrcpy(map.nt_name, info->acct_name);
@@ -1226,54 +1210,6 @@ NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 	SAFE_FREE(alias_sids);
 
 	return NT_STATUS_OK;
-}
-
-/**********************************************************************
- no ops for passdb backends that don't implement group mapping
- *********************************************************************/
-
-NTSTATUS pdb_nop_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
-				 DOM_SID sid)
-{
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-NTSTATUS pdb_nop_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
-				 gid_t gid)
-{
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-NTSTATUS pdb_nop_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
-				 const char *name)
-{
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-NTSTATUS pdb_nop_add_group_mapping_entry(struct pdb_methods *methods,
-						GROUP_MAP *map)
-{
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-NTSTATUS pdb_nop_update_group_mapping_entry(struct pdb_methods *methods,
-						   GROUP_MAP *map)
-{
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-NTSTATUS pdb_nop_delete_group_mapping_entry(struct pdb_methods *methods,
-						   DOM_SID sid)
-{
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
-					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **rmap, size_t *num_entries,
-					   BOOL unix_only)
-{
-	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************

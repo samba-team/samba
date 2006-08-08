@@ -66,7 +66,7 @@ static BOOL get_sid_from_input(DOM_SID *sid, char *input)
 
 	if (StrnCaseCmp( input, "S-", 2)) {
 		/* Perhaps its the NT group name? */
-		if (!pdb_getgrnam(&map, input)) {
+		if (!NT_STATUS_IS_OK(pdb_getgrnam(&map, input))) {
 			printf("NT Group %s doesn't exist in mapping DB\n", input);
 			return False;
 		} else {
@@ -153,7 +153,7 @@ static int net_groupmap_list(int argc, const char **argv)
 		}
 
 		/* Get the current mapping from the database */
-		if(!pdb_getgrsid(&map, &sid)) {
+		if(!NT_STATUS_IS_OK(pdb_getgrsid(&map, &sid))) {
 			d_fprintf(stderr, "Failure to local group SID in the database\n");
 			return -1;
 		}
@@ -265,7 +265,7 @@ static int net_groupmap_add(int argc, const char **argv)
 
 	{
 		GROUP_MAP map;
-		if (pdb_getgrgid(&map, gid)) {
+		if (NT_STATUS_IS_OK(pdb_getgrgid(&map, gid))) {
 			d_printf("Unix group %s already mapped to SID %s\n",
 				 unixgrp, sid_string_static(&map.sid));
 			return -1;
@@ -404,7 +404,7 @@ static int net_groupmap_modify(int argc, const char **argv)
 	}	
 
 	/* Get the current mapping from the database */
-	if(!pdb_getgrsid(&map, &sid)) {
+	if(!NT_STATUS_IS_OK(pdb_getgrsid(&map, &sid))) {
 		d_fprintf(stderr, "Failure to local group SID in the database\n");
 		return -1;
 	}
@@ -533,13 +533,13 @@ static int net_groupmap_set(int argc, const char **argv)
 		}
 	}
 
-	have_map = pdb_getgrnam(&map, ntgroup);
+	have_map = NT_STATUS_IS_OK(pdb_getgrnam(&map, ntgroup));
 
 	if (!have_map) {
 		DOM_SID sid;
 		have_map = ( (strncmp(ntgroup, "S-", 2) == 0) &&
 			     string_to_sid(&sid, ntgroup) &&
-			     pdb_getgrsid(&map, &sid) );
+			     NT_STATUS_IS_OK(pdb_getgrsid(&map, &sid)) );
 	}
 
 	if (!have_map) {

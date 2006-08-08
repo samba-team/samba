@@ -588,7 +588,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 
 	group_sid = *pdb_get_group_sid(sam_account);
 
-	if (!pdb_getgrsid(&map, &group_sid)) {
+	if (!NT_STATUS_IS_OK(pdb_getgrsid(&map, &group_sid))) {
 		DEBUG(0, ("Primary group of %s has no mapping!\n",
 			  pdb_get_username(sam_account)));
 	} else {
@@ -630,7 +630,7 @@ static NTSTATUS fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	sid_append_rid(&group_sid, rid);
 	sid_to_string(sid_string, &group_sid);
 
-	if (pdb_getgrsid(&map, &group_sid)) {
+	if (NT_STATUS_IS_OK(pdb_getgrsid(&map, &group_sid))) {
 		if ( map.gid != -1 )
 			grp = getgrgid(map.gid);
 		insert = False;
@@ -815,7 +815,7 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	sid_copy(&alias_sid, &dom_sid);
 	sid_append_rid(&alias_sid, rid);
 
-	if (pdb_getgrsid(&map, &alias_sid)) {
+	if (NT_STATUS_IS_OK(pdb_getgrsid(&map, &alias_sid))) {
 		grp = getgrgid(map.gid);
 		insert = False;
 	}

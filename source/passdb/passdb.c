@@ -604,7 +604,7 @@ BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 	 */
 
 	become_root();
-	ret = pdb_getgrnam(&map, user);
+	ret = NT_STATUS_IS_OK(pdb_getgrnam(&map, user));
 	unbecome_root();
 
  	if (!ret) {
