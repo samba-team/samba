@@ -561,7 +561,7 @@ NTSTATUS pdb_update_login_attempts(struct samu *sam_acct, BOOL success)
 	return pdb->update_login_attempts(pdb, sam_acct, success);
 }
 
-BOOL pdb_getgrsid(GROUP_MAP *map, DOM_SID sid)
+BOOL pdb_getgrsid(GROUP_MAP *map, const DOM_SID *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return NT_STATUS_IS_OK(pdb->getgrsid(pdb, map, sid));
@@ -636,7 +636,7 @@ static NTSTATUS pdb_default_delete_dom_group(struct pdb_methods *methods,
 
 	sid_compose(&group_sid, get_global_sam_sid(), rid);
 
-	if (!get_domain_group_from_sid(group_sid, &map)) {
+	if (!get_domain_group_from_sid(&group_sid, &map)) {
 		DEBUG(10, ("Could not find group for rid %d\n", rid));
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -812,7 +812,7 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
 
-	if (!get_domain_group_from_sid(group_sid, &map) ||
+	if (!get_domain_group_from_sid(&group_sid, &map) ||
 	    (map.gid == (gid_t)-1) ||
 	    ((grp = getgrgid(map.gid)) == NULL)) {
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -874,7 +874,7 @@ static NTSTATUS pdb_default_del_groupmem(struct pdb_methods *methods,
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
 
-	if (!get_domain_group_from_sid(group_sid, &map) ||
+	if (!get_domain_group_from_sid(&group_sid, &map) ||
 	    (map.gid == (gid_t)-1) ||
 	    ((grp = getgrgid(map.gid)) == NULL)) {
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -1276,7 +1276,7 @@ static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 	if (sid_peek_check_rid(&global_sid_Builtin, sid, &rid)) {
 		/* Here we only have aliases */
 		GROUP_MAP map;
-		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, &map, *sid))) {
+		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, &map, sid))) {
 			DEBUG(10, ("Could not find map for sid %s\n",
 				   sid_string_static(sid)));
 			goto done;
@@ -1522,7 +1522,7 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 	}
 	TALLOC_FREE(sam_account);
 	
-	ret = pdb_getgrsid(&map, sid);
+	ret = pdb_getgrsid(&map, &sid);
 	unbecome_root();
 	/* END BECOME_ROOT BLOCK */
   

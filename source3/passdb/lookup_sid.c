@@ -1352,7 +1352,7 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 
 	if ((sid_check_is_in_builtin(psid) ||
 	     sid_check_is_in_wellknown_domain(psid))) {
-		if (pdb_getgrsid(&map, *psid)) {
+		if (pdb_getgrsid(&map, psid)) {
 			*pgid = map.gid;
 			goto done;
 		}

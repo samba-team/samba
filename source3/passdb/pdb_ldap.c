@@ -2245,14 +2245,14 @@ static NTSTATUS ldapsam_getgroup(struct pdb_methods *methods,
  *********************************************************************/
 
 static NTSTATUS ldapsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
-				 DOM_SID sid)
+				 const DOM_SID *sid)
 {
 	pstring filter;
 
 	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))",
 		LDAP_OBJ_GROUPMAP, 
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GROUP_SID),
-		sid_string_static(&sid));
+		sid_string_static(sid));
 
 	return ldapsam_getgroup(methods, filter, map);
 }
