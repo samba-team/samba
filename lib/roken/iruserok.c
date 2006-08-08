@@ -250,7 +250,8 @@ again:
 		 * are protected read/write owner only.
 		 */
 		uid = geteuid();
-		seteuid(pwd->pw_uid);
+		if (seteuid(pwd->pw_uid) < 0)
+			return (-1);
 		hostf = fopen(pbuf, "r");
 		seteuid(uid);
 
