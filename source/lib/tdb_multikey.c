@@ -34,7 +34,7 @@ static struct { enum TDB_ERROR t; NTSTATUS n; } tdb_to_ntstatus_map[] = {
 	{ 0, NT_STATUS_OK },
 };	
 
-static NTSTATUS map_ntstatus_from_tdb(struct tdb_context *t)
+NTSTATUS map_ntstatus_from_tdb(struct tdb_context *t)
 {
 	enum TDB_ERROR err = tdb_error(t);
 	int i = 0;
@@ -474,7 +474,7 @@ NTSTATUS tdb_update_keyed(struct tdb_context *tdb, const char *primary_key,
 
 	if ((primary_key == NULL) ||
 	    (strlen(primary_key) != PRIMARY_KEY_LENGTH) ||
-	    (strncmp(primary_key, "KEYPRIM/", 7) != 0)) {
+	    (strncmp(primary_key, "KEYPRIM/", 8) != 0)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -527,4 +527,59 @@ NTSTATUS tdb_update_keyed(struct tdb_context *tdb, const char *primary_key,
 	}
 
 	return status;
+}
+
+static int iterator_destructor(void *p)
+{
+	struct tdb_keyed_iterator *i = (struct tdb_keyed_iterator *)p;
+	SAFE_FREE(i->key.dptr);
+	return 0;
+}
+
+struct tdb_keyed_iterator *tdb_enum_keyed(TALLOC_CTX *mem_ctx,
+					  struct tdb_context *tdb)
+{
+	struct tdb_keyed_iterator *result = TALLOC_P(
+		mem_ctx, struct tdb_keyed_iterator);
+
+	if (result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return result;
+	}
+
+	result->tdb = tdb;
+	result->key = tdb_firstkey(tdb);
+	talloc_set_destructor(result, iterator_destructor);
+	return result;
+}
+
+BOOL tdb_next_keyed(struct tdb_keyed_iterator *it, TDB_DATA *data)
+{
+	if (it->key.dptr == NULL) {
+		return False;
+	}
+
+	while (True) {
+		TDB_DATA tmp;
+
+		if ((it->key.dsize == PRIMARY_KEY_LENGTH+1) &&
+		    (strncmp(it->key.dptr, "KEYPRIM/", 8) == 0)) {
+
+			*data = tdb_fetch(it->tdb, it->key);
+
+			tmp = tdb_nextkey(it->tdb, it->key);
+			SAFE_FREE(it->key.dptr);
+			it->key = tmp;
+
+			return (data->dptr != NULL);
+		}
+
+		tmp = tdb_nextkey(it->tdb, it->key);
+		SAFE_FREE(it->key.dptr);
+		it->key = tmp;
+
+		if (it->key.dptr == NULL) {
+			return False;
+		}
+	}
 }
