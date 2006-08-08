@@ -134,31 +134,6 @@ static BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 }
 
 /****************************************************************************
-initialise first time the mapping list
-****************************************************************************/
-NTSTATUS add_initial_entry(gid_t gid, const char *sid, enum SID_NAME_USE sid_name_use, const char *nt_name, const char *comment)
-{
-	GROUP_MAP map;
-
-	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	map.gid=gid;
-	if (!string_to_sid(&map.sid, sid)) {
-		DEBUG(0, ("string_to_sid failed: %s", sid));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	map.sid_name_use=sid_name_use;
-	fstrcpy(map.nt_name, nt_name);
-	fstrcpy(map.comment, comment);
-
-	return pdb_add_group_mapping_entry(&map);
-}
-
-/****************************************************************************
  Map a unix group to a newly created mapping
 ****************************************************************************/
 NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *pmap)
