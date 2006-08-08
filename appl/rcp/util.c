@@ -112,7 +112,8 @@ susystem(s, userid)
 		return (127);
 
 	case 0:
-		(void)setuid(userid);
+		if (setuid(userid) < 0)
+			_exit(127);
 		execl(_PATH_BSHELL, "sh", "-c", s, NULL);
 		_exit(127);
 	}

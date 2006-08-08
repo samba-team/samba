@@ -119,13 +119,15 @@ main(int argc, char **argv)
 
 	if (fflag) {			/* Follow "protocol", send data. */
 		response();
-		setuid(userid);
+		if (setuid(userid) < 0)
+			errx(1, "setuid failed");
 		source(argc, argv);
 		exit(errs);
 	}
 
 	if (tflag) {			/* Receive data. */
-		setuid(userid);
+		if (setuid(userid) < 0)
+			errx(1, "setuid failed");
 		sink(argc, argv);
 		exit(errs);
 	}
@@ -221,7 +223,8 @@ toremote(char *targ, int argc, char **argv)
 				if (response() < 0)
 					exit(1);
 				free(bp);
-				setuid(userid);
+				if (setuid(userid) < 0)
+					errx(1, "setuid failed");
 			}
 			source(1, argv+i);
 		}
