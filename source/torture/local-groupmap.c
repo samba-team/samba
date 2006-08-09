@@ -151,8 +151,6 @@ static BOOL groupmap_diff(const GROUP_MAP *m1, const GROUP_MAP *m2)
 		(strcmp(m1->comment, m2->comment) != 0));
 }
 
-#undef GROUPDB_V3
-
 BOOL run_local_groupmap(int dummy)
 {
 	TALLOC_CTX *mem_ctx;
@@ -168,7 +166,6 @@ BOOL run_local_groupmap(int dummy)
 		return False;
 	}
 
-#ifdef GROUPDB_V3
 	status = create_v2_db(True);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -176,13 +173,12 @@ BOOL run_local_groupmap(int dummy)
 
 	{
 		GROUP_MAP map;
-		if (pdb_getgrgid(&map, 10001)) {
+		if (NT_STATUS_IS_OK(pdb_getgrgid(&map, 10001))) {
 			d_fprintf(stderr, "(%s) upgrading an invalid group db "
 				  "worked\n", __location__);
 			goto fail;
 		}
 	}
-#endif
 
 	status = create_v2_db(False);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -266,11 +262,7 @@ BOOL run_local_groupmap(int dummy)
 		status = pdb_delete_group_mapping_entry(sid);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		status = pdb_delete_group_mapping_entry(sid);
-#ifdef GROUPDB_V3
 		CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
-#else
-		CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
-#endif
 
 		if (NT_STATUS_IS_OK(pdb_getgrsid(&map1, &sid))) {
 			d_fprintf(stderr, "(%s) getgrsid found deleted "
@@ -323,16 +315,12 @@ BOOL run_local_groupmap(int dummy)
 
 		map.gid = 1000;
 		status = pdb_update_group_mapping_entry(&map);
-#ifdef GROUPDB_V3
 		CHECK_STATUS(status, NT_STATUS_OBJECTID_EXISTS);
-		if (!pdb_getgrgid(&map1, 4711)) {
+		if (!NT_STATUS_IS_OK(pdb_getgrgid(&map1, 4711))) {
 			d_fprintf(stderr, "(%s) update_group changed entry "
 				  "upon failure\n", __location__);
 			goto fail;
 		}
-#else
-		CHECK_STATUS(status, NT_STATUS_OK);
-#endif
 	}
 
 	ret = True;
