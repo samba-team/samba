@@ -2,7 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
- *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  Copyright (C) Jean Francois Micouleau      1998-2001.
  *  Copyright (C) Volker Lendecke              2006.
  *  Copyright (C) Gerald Carter                2006.
  *  
@@ -27,6 +27,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 #define DATABASE_VERSION_V1 1 /* native byte format. */
 #define DATABASE_VERSION_V2 2 /* le format. */
+#define DATABASE_VERSION_V3 3 /* Indexed format */
 
 #define GROUP_PREFIX "UNIXGROUP/"
 
@@ -37,12 +38,164 @@ static TDB_CONTEXT *tdb; /* used for driver files */
  */
 #define MEMBEROF_PREFIX "MEMBEROF/"
 
+static BOOL pack_group_map(TALLOC_CTX *mem_ctx, const GROUP_MAP *map,
+			   TDB_DATA *data)
+{
+	return tdb_pack_append(mem_ctx, &data->dptr, &data->dsize, "fddff",
+			       sid_string_static(&map->sid), map->gid,
+			       map->sid_name_use, map->nt_name, map->comment);
+}
 
-static NTSTATUS enum_group_mapping(const DOM_SID *sid,
-				   enum SID_NAME_USE sid_name_use,
-				   GROUP_MAP **pp_rmap,
-				   size_t *p_num_entries, BOOL unix_only);
-static BOOL group_map_remove(const DOM_SID *sid);
+static BOOL unpack_group_map(TDB_DATA data, GROUP_MAP *map)
+{
+	fstring sidstr;
+
+	if (!tdb_unpack(data.dptr, data.dsize, "fddff", sidstr, &map->gid,
+			&map->sid_name_use, &map->nt_name, &map->comment)) {
+		DEBUG(0, ("tdb_unpack failed\n"));
+		return False;
+	}
+
+	if (!string_to_sid(&map->sid, sidstr)) {
+		DEBUG(0, ("sid_string %s invalid\n", sidstr));
+		return False;
+	}
+
+	return True;
+}
+
+/*
+ * Calculate keys from the group mapping record
+ *
+ * We've got 3 keys: SID, Name (uppercased) and gid
+ */
+
+#define KEYNUM_SID (0)
+#define KEYNUM_NAME (1)
+#define KEYNUM_GID (2)
+
+static char **group_mapping_keys(TALLOC_CTX *mem_ctx, TDB_DATA data,
+				 void *private_data)
+{
+	char **result;
+	GROUP_MAP map;
+	GROUP_MAP *mapp = (GROUP_MAP *)private_data;
+
+	if (mapp == NULL) {
+		if (!unpack_group_map(data, &map)) {
+			DEBUG(0, ("unpack_groupmap failed\n"));
+			return NULL;
+		}
+		mapp = &map;
+	}
+
+	result = TALLOC_ARRAY(mem_ctx, char *, 4);
+	if (result == NULL) {
+		DEBUG(0, ("talloc_array failed\n"));
+		return NULL;
+	}
+
+	result[KEYNUM_SID]  = talloc_strdup(mem_ctx,
+					    sid_string_static(&mapp->sid));
+	result[KEYNUM_NAME] = talloc_strdup(mem_ctx, mapp->nt_name);
+	result[KEYNUM_GID]  = talloc_asprintf(mem_ctx, "%d", (int)mapp->gid);
+	result[3] = NULL;
+
+	if ((result[0] == NULL) || (result[1] == NULL) ||
+	    (result[2] == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	/* name lookups are case insensitive, store the key in upper case */
+	strupper_m(result[1]);
+
+	return result;
+}
+
+static NTSTATUS upgrade_groupdb_to_v3(struct tdb_context *groupdb)
+{
+	TDB_DATA kbuf, newkey;
+	NTSTATUS status;
+
+	for (kbuf = tdb_firstkey(groupdb); 
+	     kbuf.dptr; 
+	     newkey = tdb_nextkey(groupdb, kbuf), safe_free(kbuf.dptr),
+		     kbuf=newkey) {
+
+		fstring string_sid;
+		TDB_DATA data, newdata;
+		GROUP_MAP map;
+		int ret;
+
+		if (strncmp(kbuf.dptr, GROUP_PREFIX,
+			    strlen(GROUP_PREFIX)) != 0) {
+			continue;
+		}
+
+		data = tdb_fetch(groupdb, kbuf);
+		if (!data.dptr) {
+			continue;
+		}
+
+		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
+				
+		ret = tdb_unpack(data.dptr, data.dsize, "ddff",
+				 &map.gid, &map.sid_name_use, &map.nt_name,
+				 &map.comment);
+		SAFE_FREE(data.dptr);
+
+		if ( ret == -1 ) {
+			DEBUG(3,("upgrade_groupdb_to_v3: tdb_unpack "
+				 "failure\n"));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		if (!string_to_sid(&map.sid, string_sid)) {
+			DEBUG(3, ("Got invalid sid: %s\n", string_sid));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		if (tdb_delete(groupdb, kbuf) < 0) {
+			status = map_ntstatus_from_tdb(groupdb);
+			DEBUG(3, ("tdb_delete failed: %s\n",
+				  nt_errstr(status)));
+			return status;
+		}
+
+		if (map.gid == -1) {
+			DEBUG(3, ("Deleting umapped group %s\n", map.nt_name));
+			continue;
+		}
+
+		ZERO_STRUCT(newdata);
+
+		if (!pack_group_map(NULL, &map, &newdata)) {
+			DEBUG(0, ("pack_group_map_failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = tdb_add_keyed(groupdb, group_mapping_keys,
+				       newdata, &map);
+		TALLOC_FREE(newdata.dptr);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECTID_EXISTS)) {
+			DEBUG(0, ("mapping for gid %d / name %s maps to "
+				  "multiple SIDs -- rejected\n",
+				  map.gid, map.nt_name));
+			return status;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(5, ("tdb_add_keyed failed: %s\n",
+				  nt_errstr(status)));
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
 			
 /****************************************************************************
  Open the group mapping tdb.
@@ -52,8 +205,7 @@ static NTSTATUS init_group_mapping(void)
 {
 	const char *vstring = "INFO/version";
 	int32 vers_id;
-	GROUP_MAP *map_table = NULL;
-	size_t num_entries = 0;
+	NTSTATUS status;
 	
 	if (tdb)
 		return NT_STATUS_OK;
@@ -61,86 +213,68 @@ static NTSTATUS init_group_mapping(void)
 	tdb = tdb_open_log(lock_path("group_mapping.tdb"), 0, TDB_DEFAULT,
 			   O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
-		DEBUG(0,("Failed to open group mapping database\n"));
+		DEBUG(0,("Failed to open group mapping database: %s\n",
+			 strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
 
-	/* handle a Samba upgrade */
-	tdb_lock_bystring(tdb, vstring);
+	if (tdb_transaction_start(tdb) < 0) {
+		status = map_ntstatus_from_tdb(tdb);
+		DEBUG(5, ("Could not start transaction: %s\n",
+			  nt_errstr(status)));
+		tdb_close(tdb);
+		tdb = NULL;
+		return status;
+	}
 
 	/* Cope with byte-reversed older versions of the db. */
 	vers_id = tdb_fetch_int32(tdb, vstring);
-	if ((vers_id == DATABASE_VERSION_V1) || (IREV(vers_id) == DATABASE_VERSION_V1)) {
-		/* Written on a bigendian machine with old fetch_int code. Save as le. */
+
+	if (vers_id == DATABASE_VERSION_V3) {
+		if (tdb_transaction_cancel(tdb) < 0) {
+			smb_panic("tdb_cancel_transaction failed\n");
+		}
+		return NT_STATUS_OK;
+	}
+
+	if (vers_id < 0) {
+		tdb_store_int32(tdb, vstring, DATABASE_VERSION_V3);
+	}		
+
+	if ((vers_id == DATABASE_VERSION_V1) ||
+	    (IREV(vers_id) == DATABASE_VERSION_V1)) {
+
+		/* Written on a bigendian machine with old fetch_int
+		 * code. Save as le. */
 		tdb_store_int32(tdb, vstring, DATABASE_VERSION_V2);
 		vers_id = DATABASE_VERSION_V2;
 	}
 
-	/* if its an unknown version we remove everthing in the db */
-	
-	if (vers_id != DATABASE_VERSION_V2) {
-		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
-		tdb_store_int32(tdb, vstring, DATABASE_VERSION_V2);
-	}
-
-	tdb_unlock_bystring(tdb, vstring);
-
-	/* cleanup any map entries with a gid == -1 */
-	
-	if ( NT_STATUS_IS_OK(enum_group_mapping( NULL, SID_NAME_UNKNOWN,
-						 &map_table, &num_entries,
-						 False ))) {
-		int i;
-		
-		for ( i=0; i<num_entries; i++ ) {
-			if ( map_table[i].gid == -1 ) {
-				group_map_remove( &map_table[i].sid );
-			}
+	if (vers_id == DATABASE_VERSION_V2) {
+		status = upgrade_groupdb_to_v3(tdb);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
 		}
-		
-		SAFE_FREE( map_table );
+		tdb_store_int32(tdb, vstring, DATABASE_VERSION_V3);
 	}
 
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
-****************************************************************************/
-static NTSTATUS add_mapping_entry(GROUP_MAP *map, int flag)
-{
-	TDB_DATA kbuf, dbuf;
-	pstring key, buf;
-	fstring string_sid="";
-	int len;
-	NTSTATUS status;
-
-	status = init_group_mapping();
-	if(!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("failed to initialize group mapping: %s\n",
-			 nt_errstr(status)));
-		return status;
-	}
-	
-	sid_to_string(string_sid, &map->sid);
-
-	len = tdb_pack(buf, sizeof(buf), "ddff",
-			map->gid, map->sid_name_use, map->nt_name, map->comment);
-
-	if (len > sizeof(buf))
-		return NT_STATUS_NO_MEMORY;
-
-	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
-
-	kbuf.dsize = strlen(key)+1;
-	kbuf.dptr = key;
-	dbuf.dsize = len;
-	dbuf.dptr = buf;
-	if (tdb_store(tdb, kbuf, dbuf, flag) != 0) {
-		return map_ntstatus_from_tdb(tdb);
+	if (tdb_transaction_commit(tdb) < 0) {
+		status = map_ntstatus_from_tdb(tdb);
+		DEBUG(5, ("tdb_transaction_commit failed: %s\n",
+			  nt_errstr(status)));
+		goto fail;
 	}
 
 	return NT_STATUS_OK;
+
+ fail:
+	if (tdb_transaction_cancel(tdb) < 0) {
+		smb_panic("tdb_cancel_transaction failed\n");
+	}
+	tdb_close(tdb);
+	tdb = NULL;
+
+	return status;
 }
 
 /****************************************************************************
@@ -207,45 +341,26 @@ NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *pmap)
 
 static NTSTATUS get_group_map_from_sid(const DOM_SID *sid, GROUP_MAP *map)
 {
-	TDB_DATA kbuf, dbuf;
-	pstring key;
-	fstring string_sid;
-	int ret = 0;
+	TDB_DATA data;
 	NTSTATUS status;
-	
+
 	status = init_group_mapping();
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("failed to initialize group mapping: %s\n",
-			  nt_errstr(status)));
+	if(!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return status;
 	}
 
-	/* the key is the SID, retrieving is direct */
-
-	sid_to_string(string_sid, sid);
-	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-		
-	dbuf = tdb_fetch(tdb, kbuf);
-	if (!dbuf.dptr) {
-		return NT_STATUS_NOT_FOUND;
+	status = tdb_find_keyed(NULL, tdb, KEYNUM_SID, sid_string_static(sid),
+				&data, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
-				&map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
+	status = unpack_group_map(data, map) ?
+		NT_STATUS_OK : NT_STATUS_INTERNAL_DB_CORRUPTION;
 
-	SAFE_FREE(dbuf.dptr);
-	
-	if ( ret == -1 ) {
-		DEBUG(3,("get_group_map_from_sid: tdb_unpack failure\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	
-	sid_copy(&map->sid, sid);
-	
-	return NT_STATUS_OK;
+	TALLOC_FREE(data.dptr);
+	return status;
 }
 
 /****************************************************************************
@@ -254,51 +369,33 @@ static NTSTATUS get_group_map_from_sid(const DOM_SID *sid, GROUP_MAP *map)
 
 static NTSTATUS get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 {
-	TDB_DATA kbuf, dbuf, newkey;
-	fstring string_sid;
-	int ret;
+	TDB_DATA data;
 	NTSTATUS status;
+	char *gidstr;
 
 	status = init_group_mapping();
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("failed to initialize group mapping: %s\n",
-			  nt_errstr(status)));
+	if(!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return status;
 	}
 
-	/* we need to enumerate the TDB to find the GID */
-
-	for (kbuf = tdb_firstkey(tdb); 
-	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
-
-		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
-		
-		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr)
-			continue;
-
-		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
-
-		string_to_sid(&map->sid, string_sid);
-		
-		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
-				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
-
-		SAFE_FREE(dbuf.dptr);
-
-		if ( ret == -1 ) {
-			DEBUG(3,("get_group_map_from_gid: tdb_unpack failure\n"));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-	
-		if (gid==map->gid) {
-			SAFE_FREE(kbuf.dptr);
-			return NT_STATUS_OK;
-		}
+	if (asprintf(&gidstr, "%d", (int)gid) < 0) {
+		DEBUG(0, ("asprintf failed\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	return NT_STATUS_NOT_FOUND;
+	status = tdb_find_keyed(NULL, tdb, KEYNUM_GID, gidstr, &data, NULL);
+	SAFE_FREE(gidstr);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = unpack_group_map(data, map) ?
+		NT_STATUS_OK : NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+	TALLOC_FREE(data.dptr);
+	return status;
 }
 
 /****************************************************************************
@@ -307,86 +404,40 @@ static NTSTATUS get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 
 static NTSTATUS get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 {
-	TDB_DATA kbuf, dbuf, newkey;
-	fstring string_sid;
-	int ret;
+	TDB_DATA data;
 	NTSTATUS status;
+	char *tmp;
 
 	status = init_group_mapping();
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("get_group_map_from_ntname: failed to initialize "
-			  "group mapping: %s\n", nt_errstr(status)));
+	if(!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return status;
 	}
 
-	/* we need to enumerate the TDB to find the name */
-
-	for (kbuf = tdb_firstkey(tdb); 
-	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
-
-		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
-		
-		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr)
-			continue;
-
-		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
-
-		string_to_sid(&map->sid, string_sid);
-		
-		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
-				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
-
-		SAFE_FREE(dbuf.dptr);
-		
-		if ( ret == -1 ) {
-			DEBUG(3,("get_group_map_from_ntname: tdb_unpack failure\n"));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
-		if ( strequal(name, map->nt_name) ) {
-			SAFE_FREE(kbuf.dptr);
-			return NT_STATUS_OK;
-		}
+	tmp = SMB_STRDUP(name);
+	if (tmp == NULL) {
+		DEBUG(0, ("strdup failed\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	return NT_STATUS_NOT_FOUND;
-}
+	/*
+	 * The name is stored uppercase to make the search case insensitive
+	 */
 
-/****************************************************************************
- Remove a group mapping entry.
-****************************************************************************/
+	strupper_m(tmp);
 
-static BOOL group_map_remove(const DOM_SID *sid)
-{
-	TDB_DATA kbuf, dbuf;
-	pstring key;
-	fstring string_sid;
-	
-	if(!NT_STATUS_IS_OK(init_group_mapping())) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return(False);
+	status = tdb_find_keyed(NULL, tdb, KEYNUM_NAME, tmp, &data, NULL);
+	SAFE_FREE(tmp);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	/* the key is the SID, retrieving is direct */
+	status = unpack_group_map(data, map) ?
+		NT_STATUS_OK : NT_STATUS_INTERNAL_DB_CORRUPTION;
 
-	sid_to_string(string_sid, sid);
-	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-		
-	dbuf = tdb_fetch(tdb, kbuf);
-	if (!dbuf.dptr)
-		return False;
-	
-	SAFE_FREE(dbuf.dptr);
-
-	if(tdb_delete(tdb, kbuf) != TDB_SUCCESS)
-		return False;
-
-	return True;
+	TALLOC_FREE(data.dptr);
+	return status;
 }
 
 /****************************************************************************
@@ -398,70 +449,62 @@ static NTSTATUS enum_group_mapping(const DOM_SID *domsid,
 				   GROUP_MAP **pp_rmap,
 				   size_t *p_num_entries, BOOL unix_only)
 {
-	TDB_DATA kbuf, dbuf, newkey;
-	fstring string_sid;
-	GROUP_MAP map;
-	GROUP_MAP *mapt;
-	int ret;
-	size_t entries=0;
-	DOM_SID grpsid;
-	uint32 rid;
+	struct tdb_keyed_iterator *iterator;
+	TDB_DATA dbuf;
 	NTSTATUS status;
 
 	status = init_group_mapping();
-	if(!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("failed to initialize group mapping: %s\n",
-			  nt_errstr(status)));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return status;
 	}
 
 	*p_num_entries=0;
 	*pp_rmap=NULL;
 
-	for (kbuf = tdb_firstkey(tdb); 
-	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	iterator = tdb_enum_keyed(NULL, tdb);
+	if (iterator == NULL) {
+		DEBUG(0, ("tdb_enum_keyed failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
-		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0)
+	while (tdb_next_keyed(iterator, &dbuf)) {
+
+		GROUP_MAP map;
+		DOM_SID grpsid;
+		uint32 rid;
+
+		if (!unpack_group_map(dbuf, &map)) {
+			DEBUG(5, ("Got invalid group mapping entry\n"));
+			TALLOC_FREE(dbuf.dptr);
 			continue;
-
-		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr)
-			continue;
-
-		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
-				
-		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
-				 &map.gid, &map.sid_name_use, &map.nt_name, &map.comment);
+		}
 
 		SAFE_FREE(dbuf.dptr);
 
-		if ( ret == -1 ) {
-			DEBUG(3,("enum_group_mapping: tdb_unpack failure\n"));
-			continue;
-		}
-	
 		/* list only the type or everything if UNKNOWN */
-		if (sid_name_use!=SID_NAME_UNKNOWN  && sid_name_use!=map.sid_name_use) {
-			DEBUG(11,("enum_group_mapping: group %s is not of the requested type\n", map.nt_name));
+		if (sid_name_use!=SID_NAME_UNKNOWN &&
+		    sid_name_use!=map.sid_name_use) {
+			DEBUG(11,("enum_group_mapping: group %s is not of the "
+				  "requested type\n", map.nt_name));
 			continue;
 		}
 
 		if (unix_only==ENUM_ONLY_MAPPED && map.gid==-1) {
-			DEBUG(11,("enum_group_mapping: group %s is non mapped\n", map.nt_name));
+			DEBUG(11,("enum_group_mapping: group %s is non "
+				  "mapped\n", map.nt_name));
 			continue;
 		}
 
-		string_to_sid(&grpsid, string_sid);
-		sid_copy( &map.sid, &grpsid );
-		
+		sid_copy( &grpsid, &map.sid );
 		sid_split_rid( &grpsid, &rid );
 
 		/* Only check the domain if we were given one */
 
 		if ( domsid && !sid_equal( domsid, &grpsid ) ) {
-			DEBUG(11,("enum_group_mapping: group %s is not in domain %s\n", 
-				string_sid, sid_string_static(domsid)));
+			DEBUG(11,("enum_group_mapping: group %s is not in "
+				  "domain %s\n", sid_string_static(&map.sid),
+				  sid_string_static(domsid)));
 			continue;
 		}
 
@@ -469,25 +512,12 @@ static NTSTATUS enum_group_mapping(const DOM_SID *domsid,
 			  "type %s\n", map.nt_name,
 			  sid_type_lookup(map.sid_name_use)));
 
-		(*pp_rmap) = SMB_REALLOC_ARRAY((*pp_rmap), GROUP_MAP, entries+1);
-		if (!(*pp_rmap)) {
-			DEBUG(0,("enum_group_mapping: Unable to enlarge group map!\n"));
+		ADD_TO_ARRAY(NULL, GROUP_MAP, map, pp_rmap, p_num_entries);
+		if (*pp_rmap == NULL) {
+			DEBUG(0, ("ADD_TO_ARRAY failed\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
-
-		mapt = (*pp_rmap);
-
-		mapt[entries].gid = map.gid;
-		sid_copy( &mapt[entries].sid, &map.sid);
-		mapt[entries].sid_name_use = map.sid_name_use;
-		fstrcpy(mapt[entries].nt_name, map.nt_name);
-		fstrcpy(mapt[entries].comment, map.comment);
-
-		entries++;
-
 	}
-
-	*p_num_entries=entries;
 
 	return NT_STATUS_OK;
 }
@@ -581,22 +611,41 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	pstring key;
 	fstring string_sid;
 	char *new_memberstring;
-	int result;
+	NTSTATUS status;
 
-	if(!NT_STATUS_IS_OK(init_group_mapping())) {
+	status = init_group_mapping();
+	if(!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("failed to initialize group mapping\n"));
-		return NT_STATUS_ACCESS_DENIED;
+		return status;
 	}
 
-	if (!NT_STATUS_IS_OK(get_group_map_from_sid(alias, &map)))
-		return NT_STATUS_NO_SUCH_ALIAS;
+	if (tdb_transaction_start(tdb) < 0) {
+		status = map_ntstatus_from_tdb(tdb);
+		DEBUG(5, ("Could not start transaction: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	status = get_group_map_from_sid(alias, &map);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		status = NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
 
 	if ( (map.sid_name_use != SID_NAME_ALIAS) &&
-	     (map.sid_name_use != SID_NAME_WKN_GRP) )
-		return NT_STATUS_NO_SUCH_ALIAS;
+	     (map.sid_name_use != SID_NAME_WKN_GRP) ) {
+		status = NT_STATUS_NO_SUCH_ALIAS;
+		goto fail;
+	}
 
-	if (is_aliasmem(alias, member))
-		return NT_STATUS_MEMBER_IN_ALIAS;
+	if (is_aliasmem(alias, member)) {
+		status =  NT_STATUS_MEMBER_IN_ALIAS;
+		goto fail;
+	}
 
 	sid_to_string(string_sid, member);
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX, string_sid);
@@ -615,18 +664,38 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 		new_memberstring = SMB_STRDUP(string_sid);
 	}
 
-	if (new_memberstring == NULL)
-		return NT_STATUS_NO_MEMORY;
+	if (new_memberstring == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
 
 	SAFE_FREE(dbuf.dptr);
 	dbuf.dsize = strlen(new_memberstring)+1;
 	dbuf.dptr = new_memberstring;
 
-	result = tdb_store(tdb, kbuf, dbuf, 0);
+	if (tdb_store(tdb, kbuf, dbuf, 0) < 0) {
+		status = map_ntstatus_from_tdb(tdb);
+		DEBUG(5, ("tdb_store failed: %s\n", nt_errstr(status)));
+		SAFE_FREE(new_memberstring);
+		goto fail;
+	}
 
 	SAFE_FREE(new_memberstring);
 
-	return (result == 0 ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED);
+	if (tdb_transaction_commit(tdb) < 0) {
+		status = map_ntstatus_from_tdb(tdb);
+		DEBUG(5, ("tdb_transaction_commit failed: %s\n",
+			  nt_errstr(status)));
+		goto fail;
+	}
+
+	return NT_STATUS_OK;
+
+ fail:
+	if (tdb_transaction_cancel(tdb) < 0) {
+		smb_panic("tdb_cancel_transaction failed\n");
+	}
+	return status;
 }
 
 struct aliasmem_closure {
@@ -681,7 +750,8 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 	return 0;
 }
 
-static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
+static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids,
+			      size_t *num)
 {
 	GROUP_MAP map;
 	struct aliasmem_closure closure;
@@ -711,19 +781,33 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 
 static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
-	NTSTATUS result;
-	DOM_SID *sids;
+	NTSTATUS status;
+	DOM_SID *sids = NULL;
 	size_t i, num;
 	BOOL found = False;
-	char *member_string;
+	char *member_string = NULL;
 	TDB_DATA kbuf, dbuf;
 	pstring key;
 	fstring sid_string;
 
-	result = alias_memberships(member, 1, &sids, &num);
+	status = init_group_mapping();
+	if(!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return status;
+	}
 
-	if (!NT_STATUS_IS_OK(result))
-		return result;
+	if (tdb_transaction_start(tdb) < 0) {
+		status = map_ntstatus_from_tdb(tdb);
+		DEBUG(5, ("Could not start transaction: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	status = alias_memberships(member, 1, &sids, &num);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
 
 	for (i=0; i<num; i++) {
 		if (sid_compare(&sids[i], alias) == 0) {
@@ -734,7 +818,8 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 	if (!found) {
 		SAFE_FREE(sids);
-		return NT_STATUS_MEMBER_NOT_IN_ALIAS;
+		status = NT_STATUS_MEMBER_NOT_IN_ALIAS;
+		goto fail;
 	}
 
 	if (i < num)
@@ -748,15 +833,21 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	kbuf.dsize = strlen(key)+1;
 	kbuf.dptr = key;
 
-	if (num == 0)
-		return tdb_delete(tdb, kbuf) == 0 ?
-			NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	if (num == 0) {
+		if (tdb_delete(tdb, kbuf) < 0) {
+			status = map_ntstatus_from_tdb(tdb);
+			DEBUG(5, ("tdb_delete failed: %s\n",
+				  nt_errstr(status)));
+			goto fail;
+		}
+		goto ok;
+	}
 
 	member_string = SMB_STRDUP("");
 
 	if (member_string == NULL) {
 		SAFE_FREE(sids);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<num; i++) {
@@ -768,20 +859,43 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 		SAFE_FREE(s);
 		if (member_string == NULL) {
 			SAFE_FREE(sids);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
 		}
 	}
 
 	dbuf.dsize = strlen(member_string)+1;
 	dbuf.dptr = member_string;
 
-	result = tdb_store(tdb, kbuf, dbuf, 0) == 0 ?
-		NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+	if (tdb_store(tdb, kbuf, dbuf, 0) < 0) {
+		status = map_ntstatus_from_tdb(tdb);
+		DEBUG(5, ("tdb_store failed: %s\n", nt_errstr(status)));
+		SAFE_FREE(sids);
+		SAFE_FREE(member_string);
+		goto fail;
+	}
 
+ ok:
+	SAFE_FREE(sids);
+	SAFE_FREE(member_string);
+	
+	if (tdb_transaction_commit(tdb) < 0) {
+		status = map_ntstatus_from_tdb(tdb);
+		DEBUG(5, ("tdb_transaction_commit failed: %s\n",
+			  nt_errstr(status)));
+		goto fail;
+	}
+
+	return NT_STATUS_OK;
+
+ fail:
 	SAFE_FREE(sids);
 	SAFE_FREE(member_string);
 
-	return result;
+	if (tdb_transaction_cancel(tdb) < 0) {
+		smb_panic("tdb_cancel_transaction failed\n");
+	}
+	return status;
 }
 
 /*
@@ -848,15 +962,18 @@ NTSTATUS get_domain_group_from_sid(const DOM_SID *sid, GROUP_MAP *map)
 		return NT_STATUS_NOT_FOUND;
 	}
 
-	DEBUG(10, ("get_domain_group_from_sid: SID is mapped to gid:%lu\n",(unsigned long)map->gid));
+	DEBUG(10, ("get_domain_group_from_sid: SID is mapped to gid:%lu\n",
+		   (unsigned long)map->gid));
 	
 	grp = getgrgid(map->gid);
 	if ( !grp ) {
-		DEBUG(10, ("get_domain_group_from_sid: gid DOESN'T exist in UNIX security\n"));
+		DEBUG(10, ("get_domain_group_from_sid: gid DOESN'T exist in "
+			   "UNIX security\n"));
 		return NT_STATUS_NOT_FOUND;
 	}
 
-	DEBUG(10, ("get_domain_group_from_sid: gid exists in UNIX security\n"));
+	DEBUG(10, ("get_domain_group_from_sid: gid exists in UNIX "
+		   "security\n"));
 
 	return NT_STATUS_OK;
 }
@@ -1018,22 +1135,85 @@ NTSTATUS pdb_default_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 }
 
 NTSTATUS pdb_default_add_group_mapping_entry(struct pdb_methods *methods,
-						GROUP_MAP *map)
+					     GROUP_MAP *map)
 {
-	return add_mapping_entry(map, TDB_INSERT);
+	TDB_DATA data;
+	NTSTATUS status;
+
+	status = init_group_mapping();
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return status;
+	}
+
+	ZERO_STRUCT(data);
+	if (!pack_group_map(NULL, map, &data)) {
+		DEBUG(0, ("pack_group_map failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = tdb_add_keyed(tdb, group_mapping_keys, data, map);
+	TALLOC_FREE(data.dptr);
+
+	return status;
 }
 
 NTSTATUS pdb_default_update_group_mapping_entry(struct pdb_methods *methods,
-						   GROUP_MAP *map)
+						GROUP_MAP *map)
 {
-	return add_mapping_entry(map, TDB_REPLACE);
+	TDB_DATA data;
+	char *primary_key;
+	NTSTATUS status;
+
+	status = tdb_find_keyed(NULL, tdb, KEYNUM_SID,
+				sid_string_static(&map->sid),
+				&data, &primary_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	TALLOC_FREE(data.dptr);
+	ZERO_STRUCT(data);
+
+	if (!pack_group_map(NULL, map, &data)) {
+		DEBUG(0, ("pack_group_map failed\n"));
+		SAFE_FREE(primary_key);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = tdb_update_keyed(tdb, primary_key, group_mapping_keys,
+				  data, NULL);
+	TALLOC_FREE(data.dptr);
+	TALLOC_FREE(primary_key);
+	return status;
 }
 
 NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
-						   DOM_SID sid)
+						DOM_SID sid)
 {
-	return group_map_remove(&sid) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	TDB_DATA data;
+	char *primary_key;
+	NTSTATUS status;
+	GROUP_MAP map;
+
+	status = tdb_find_keyed(NULL, tdb, KEYNUM_SID, sid_string_static(&sid),
+				&data, &primary_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!unpack_group_map(data, &map)) {
+		DEBUG(0, ("unpack_group_map failed\n"));
+		TALLOC_FREE(data.dptr);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	TALLOC_FREE(data.dptr);
+
+	status = tdb_del_keyed(tdb, group_mapping_keys, primary_key, &map);
+
+	TALLOC_FREE(primary_key);
+	return status;
 }
 
 NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
