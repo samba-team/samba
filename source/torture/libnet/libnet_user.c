@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/time.h"
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
@@ -28,8 +29,6 @@
 
 
 #define TEST_USERNAME        "libnetusertest"
-#define TEST_CHANGEDUSERNAME "newlibnetusertest"
-
 
 static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle, const char *username)
@@ -292,6 +291,125 @@ done:
 }
 
 
+/*
+  Generate testing set of random changes
+*/
+
+#define TEST_CHG_ACCOUNTNAME   "newlibnetusertest%02d"
+#define TEST_CHG_DESCRIPTION   "Sample description %ld"
+#define TEST_CHG_FULLNAME      "First%04x Last%04x"
+#define TEST_CHG_COMMENT       "Comment[%04lu%04lu]"
+#define TEST_CHG_PROFILEPATH   "\\\\srv%04ld\\profile%02u\\prof"
+
+void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_changes)
+{
+	const char* logon_scripts[] = { "start_login.cmd", "login.bat", "start.cmd" };
+	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
+	const char* home_drives[] = { "H:", "z:", "I:", "J:", "n:" };
+	struct timeval now;
+
+	srandom((unsigned)time(NULL));
+
+	if (num_changes &&
+	    (num_changes > 13 || ((random() % 10) < 4))) {
+		r->in.account_name   = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
+						       (int)random());
+		num_changes--;
+	}
+	
+	if (num_changes &&
+	    (num_changes > 12 || ((random() % 10) < 4))) {
+		r->in.full_name      = talloc_asprintf(mem_ctx, TEST_CHG_FULLNAME,
+						       (unsigned int)random(), (unsigned int)random());
+		num_changes--;
+	}
+
+	if (num_changes &&
+	    (num_changes > 11 || ((random() % 10) < 4))) {
+		r->in.description    = talloc_asprintf(mem_ctx, TEST_CHG_DESCRIPTION,
+						       (long)random());
+		num_changes--;
+	}
+
+	if (num_changes &&
+	    (num_changes > 10 || ((random() % 10) < 4))) {
+		const char *home_dir = home_dirs[random() % (sizeof(home_dirs)/sizeof(char*))];
+		r->in.home_directory = talloc_strdup(mem_ctx, home_dir);
+		num_changes--;
+	}
+
+	if (num_changes &&
+	    (num_changes > 9 || ((random() % 10) < 4))) {
+		const char *home_drive = home_drives[random() % (sizeof(home_drives)/sizeof(char*))];
+		r->in.home_drive = talloc_strdup(mem_ctx, home_drive);
+		num_changes--;
+	}
+
+	if (num_changes &&
+	    (num_changes > 8 || ((random() % 10) < 4))) {
+		r->in.comment = talloc_asprintf(mem_ctx, TEST_CHG_COMMENT,
+						(unsigned long)random(), (unsigned long)random());
+		num_changes--;
+	}
+
+	if (num_changes &&
+	    (num_changes > 7 || ((random() % 10) < 4))) {
+		const char *logon_script = logon_scripts[random() % (sizeof(logon_scripts)/sizeof(char*))];
+		r->in.logon_script   = talloc_strdup(mem_ctx, logon_script);
+		num_changes--;
+	}
+
+	if (num_changes &&
+	    (num_changes > 6 || ((random() % 10) < 4))) {
+		r->in.profile_path = talloc_asprintf(mem_ctx, TEST_CHG_PROFILEPATH,
+						     (unsigned long)random(), (unsigned int)random());
+		num_changes--;
+	}
+
+	if (num_changes &&
+	    (num_changes > 5 || ((random() % 10) < 4))) {
+		gettimeofday(&now, NULL);
+		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+		r->in.acct_expiry = talloc_memdup(mem_ctx, &now, sizeof(now));
+	}
+
+	if (num_changes &&
+	    (num_changes > 4 || ((random() % 10) < 4))) {
+		gettimeofday(&now, NULL);
+		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+		r->in.allow_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
+	}
+
+	if (num_changes &&
+	    (num_changes > 3 || ((random() % 10) < 4))) {
+		gettimeofday(&now, NULL);
+		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+		r->in.force_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
+	}
+
+	if (num_changes &&
+	    (num_changes > 2 || ((random() % 10) < 4))) {
+		gettimeofday(&now, NULL);
+		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+		r->in.last_logon = talloc_memdup(mem_ctx, &now, sizeof(now));
+	}
+
+	if (num_changes &&
+	    (num_changes > 1 || ((random() % 10) < 4))) {
+		gettimeofday(&now, NULL);
+		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+		r->in.last_logoff = talloc_memdup(mem_ctx, &now, sizeof(now));
+	}
+
+	if (num_changes &&
+	    (num_changes > 0 || ((random() % 10) < 4))) {
+		gettimeofday(&now, NULL);
+		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+		r->in.last_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
+	}
+}
+
+
 BOOL torture_modifyuser(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -304,7 +422,6 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	const char *name = TEST_USERNAME;
 	struct libnet_context *ctx;
 	struct libnet_ModifyUser req;
-	struct timeval allow_pass_chg;
 	BOOL ret = True;
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
@@ -342,12 +459,11 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	ZERO_STRUCT(req);
 	req.in.user_name = TEST_USERNAME;
 	req.in.domain_name = lp_workgroup();
-	req.in.account_name = TEST_CHANGEDUSERNAME;
-	req.in.logon_script = "start_login.cmd";
-	
-	if (gettimeofday(&allow_pass_chg, NULL) == 0) {
-		req.in.allow_password_change = &allow_pass_chg;
-	}
+
+	/* Testing change of a single field */
+	set_test_changes(mem_ctx, &req, 1);
+
+	printf("Testing change of a single field\n");
 
 	status = libnet_ModifyUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -355,7 +471,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 		return False;
 	}
 
-	if (!test_cleanup(ctx->samr_pipe, mem_ctx, &ctx->domain.handle, TEST_CHANGEDUSERNAME)) {
+	if (!test_cleanup(ctx->samr_pipe, mem_ctx, &ctx->domain.handle, TEST_USERNAME)) {
 		printf("cleanup failed\n");
 		return False;
 	}
