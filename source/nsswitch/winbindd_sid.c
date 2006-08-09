@@ -447,7 +447,6 @@ void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS status;
-	struct gid2sid_state *gid2sid_state;
 
 	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.gid));
