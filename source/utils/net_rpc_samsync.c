@@ -689,7 +689,7 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 	sid_copy(&group_sid, get_global_sam_sid());
 	sid_append_rid(&group_sid, rid);
 
-	if (!get_domain_group_from_sid(&group_sid, &map)) {
+	if (!NT_STATUS_IS_OK(get_domain_group_from_sid(&group_sid, &map))) {
 		DEBUG(0, ("Could not find global group %d\n", rid));
 		return NT_STATUS_NO_SUCH_GROUP;
 	}

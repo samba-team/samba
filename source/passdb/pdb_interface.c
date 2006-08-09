@@ -638,7 +638,7 @@ static NTSTATUS pdb_default_delete_dom_group(struct pdb_methods *methods,
 
 	sid_compose(&group_sid, get_global_sam_sid(), rid);
 
-	if (!get_domain_group_from_sid(&group_sid, &map)) {
+	if (!NT_STATUS_IS_OK(get_domain_group_from_sid(&group_sid, &map))) {
 		DEBUG(10, ("Could not find group for rid %d\n", rid));
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -698,12 +698,14 @@ NTSTATUS pdb_delete_group_mapping_entry(DOM_SID sid)
 	return pdb->delete_group_mapping_entry(pdb, sid);
 }
 
-BOOL pdb_enum_group_mapping(const DOM_SID *sid, enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
-			    size_t *p_num_entries, BOOL unix_only)
+NTSTATUS pdb_enum_group_mapping(const DOM_SID *sid,
+				enum SID_NAME_USE sid_name_use,
+				GROUP_MAP **pp_rmap,
+				size_t *p_num_entries, BOOL unix_only)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return NT_STATUS_IS_OK(pdb-> enum_group_mapping(pdb, sid, sid_name_use,
-		pp_rmap, p_num_entries, unix_only));
+	return pdb->enum_group_mapping(pdb, sid, sid_name_use,
+				       pp_rmap, p_num_entries, unix_only);
 }
 
 NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
@@ -814,7 +816,7 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
 
-	if (!get_domain_group_from_sid(&group_sid, &map) ||
+	if (!NT_STATUS_IS_OK(get_domain_group_from_sid(&group_sid, &map)) ||
 	    (map.gid == (gid_t)-1) ||
 	    ((grp = getgrgid(map.gid)) == NULL)) {
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -876,7 +878,7 @@ static NTSTATUS pdb_default_del_groupmem(struct pdb_methods *methods,
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
 
-	if (!get_domain_group_from_sid(&group_sid, &map) ||
+	if (!NT_STATUS_IS_OK(get_domain_group_from_sid(&group_sid, &map)) ||
 	    (map.gid == (gid_t)-1) ||
 	    ((grp = getgrgid(map.gid)) == NULL)) {
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -1848,8 +1850,9 @@ static BOOL pdb_search_grouptype(struct pdb_search *search,
 		return False;
 	}
 
-	if (!pdb_enum_group_mapping(sid, type, &state->groups, &state->num_groups,
-				    True)) {
+	if (!NT_STATUS_IS_OK(pdb_enum_group_mapping(sid, type, &state->groups,
+						    &state->num_groups,
+						    True))) {
 		DEBUG(0, ("Could not enum groups\n"));
 		return False;
 	}
