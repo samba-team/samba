@@ -163,7 +163,7 @@ static int net_groupmap_list(int argc, const char **argv)
 	else {
 		GROUP_MAP *map=NULL;
 		/* enumerate all group mappings */
-		if (!pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries, ENUM_ALL_MAPPED))
+		if (!NT_STATUS_IS_OK(pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries, ENUM_ALL_MAPPED)))
 			return -1;
 	
 		for (i=0; i<entries; i++) {
@@ -612,8 +612,8 @@ static int net_groupmap_cleanup(int argc, const char **argv)
 	GROUP_MAP *map = NULL;
 	size_t i, entries;
 
-	if (!pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries,
-				    ENUM_ALL_MAPPED)) {
+	if (!NT_STATUS_IS_OK(pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries,
+						    ENUM_ALL_MAPPED))) {
 		d_fprintf(stderr, "Could not list group mappings\n");
 		return -1;
 	}
