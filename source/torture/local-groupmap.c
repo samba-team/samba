@@ -191,8 +191,9 @@ BOOL run_local_groupmap(int dummy)
 
 	/* This tests upgrading the database, as well as listing */
 
-	if (!pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &maps, &num_maps,
-				    False)) {
+	if (!NT_STATUS_IS_OK(pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN,
+						    &maps, &num_maps,
+						    False))) {
 		d_fprintf(stderr, "(%s) pdb_enum_group_mapping failed\n",
 			  __location__);
 		goto fail;

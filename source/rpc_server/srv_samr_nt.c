@@ -4438,7 +4438,7 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 	}
 		
 	become_root();
-	ret = get_domain_group_from_sid(&group_sid, &map);
+	ret = NT_STATUS_IS_OK(get_domain_group_from_sid(&group_sid, &map));
 	unbecome_root();
 	if (!ret)
 		return NT_STATUS_INVALID_HANDLE;
@@ -4535,7 +4535,7 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	}
 
 	become_root();
-	result = get_domain_group_from_sid(&group_sid, &map);
+	result = NT_STATUS_IS_OK(get_domain_group_from_sid(&group_sid, &map));
 	unbecome_root();
 	if (!result)
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -4754,7 +4754,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 
 	/* check if that group really exists */
 	become_root();
-	ret = get_domain_group_from_sid(&info->sid, &map);
+	ret = NT_STATUS_IS_OK(get_domain_group_from_sid(&info->sid, &map));
 	unbecome_root();
 	if (!ret)
 		return NT_STATUS_NO_SUCH_GROUP;
