@@ -28,8 +28,7 @@ SAMBA_VERSION_MINOR=0
 SAMBA_VERSION_RELEASE=23
 
 ########################################################
-# If a official release has a serious bug              #
-# a security release will have 'a' sufffix             #
+# Bug fix releases use a letter for the patch revision #
 #                                                      #
 # so SAMBA's version will be                           #
 # <MAJOR>.<MINOR>.<RELEASE><REVISION>                  #
@@ -37,7 +36,7 @@ SAMBA_VERSION_RELEASE=23
 # e.g. SAMBA_VERSION_REVISION=a                        #
 #  ->  "2.2.8a"                                        #
 ########################################################
-SAMBA_VERSION_REVISION=b
+SAMBA_VERSION_REVISION=c
 
 ########################################################
 # For 'pre' releases the version will be               #
