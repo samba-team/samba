@@ -107,7 +107,6 @@ static void continue_pipe_connect(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct rpc_connect_srv_state *s;
-	struct composite_context *pipe_connect_req;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_srv_state);
