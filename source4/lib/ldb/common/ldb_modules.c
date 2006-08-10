@@ -73,7 +73,7 @@ static char *talloc_strdup_no_spaces(struct ldb_context *ldb, const char *string
 /* modules are called in inverse order on the stack.
    Lets place them as an admin would think the right order is.
    Modules order is important */
-static const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *string)
+const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *string)
 {
 	char **modules = NULL;
 	const char **m;
@@ -95,6 +95,7 @@ static const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC
 	talloc_steal(modules, modstr);
 
 	i = 0;
+	/* The str*r*chr walks backwards:  This is how we get the inverse order mentioned above */
 	while ((p = strrchr(modstr, ',')) != NULL) {
 		*p = '\0';
 		p++;
@@ -236,10 +237,10 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 #endif
 }
 
-static int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, struct ldb_module *backend, struct ldb_module **out)
+int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, struct ldb_module *backend, struct ldb_module **out)
 {
 	struct ldb_module *module;
-	int i, ret;
+	int i;
 	
 	module = backend;
 
@@ -274,7 +275,7 @@ static int ldb_load_modules_list(struct ldb_context *ldb, const char **module_li
 	return LDB_SUCCESS;
 }
 
-static int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module) 
+int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module) 
 {
 	while (module && module->ops->init_context == NULL) 
 		module = module->next;
