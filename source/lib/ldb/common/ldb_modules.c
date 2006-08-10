@@ -236,11 +236,63 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 #endif
 }
 
+static int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, struct ldb_module *backend, struct ldb_module **out)
+{
+	struct ldb_module *module;
+	int i, ret;
+	
+	module = backend;
+
+	for (i = 0; module_list[i] != NULL; i++) {
+		struct ldb_module *current;
+		const struct ldb_module_ops *ops;
+		
+		ops = ldb_find_module_ops(module_list[i]);
+		if (ops == NULL) {
+			if (ldb_try_load_dso(ldb, module_list[i]) == 0) {
+				ops = ldb_find_module_ops(module_list[i]);
+			}
+		}
+		
+		if (ops == NULL) {
+			ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", 
+				  module_list[i]);
+			continue;
+		}
+		
+		current = talloc_zero(ldb, struct ldb_module);
+		if (current == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		current->ldb = ldb;
+		current->ops = ops;
+		
+		DLIST_ADD(module, current);
+	}
+	*out = module;
+	return LDB_SUCCESS;
+}
+
+static int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module) 
+{
+	while (module && module->ops->init_context == NULL) 
+		module = module->next;
+
+	if (module && module->ops->init_context &&
+		module->ops->init_context(module) != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "module initialization failed\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return LDB_SUCCESS;
+}
+
 int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 {
 	const char **modules = NULL;
-	struct ldb_module *module;
 	int i;
+	int ret;
 	TALLOC_CTX *mem_ctx = talloc_new(ldb);
 	if (!mem_ctx) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -259,7 +311,6 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 
 	/* if not overloaded by options and the backend is not ldap try to load the modules list from ldb */
 	if ((modules == NULL) && (strcmp("ldap", ldb->modules->ops->name) != 0)) { 
-		int ret;
 		const char * const attrs[] = { "@LIST" , NULL};
 		struct ldb_result *res = NULL;
 		struct ldb_dn *mods_dn;
@@ -295,51 +346,16 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	}
 
 	if (modules != NULL) {
-		for (i = 0; modules[i] != NULL; i++) {
-			struct ldb_module *current;
-			const struct ldb_module_ops *ops;
-				
-			ops = ldb_find_module_ops(modules[i]);
-			if (ops == NULL) {
-				if (ldb_try_load_dso(ldb, modules[i]) == 0) {
-					ops = ldb_find_module_ops(modules[i]);
-				}
-			}
-			
-			if (ops == NULL) {
-				ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", 
-					  modules[i]);
-				continue;
-			}
-
-			current = talloc_zero(ldb, struct ldb_module);
-			if (current == NULL) {
-				return -1;
-			}
-
-			current->ldb = ldb;
-			current->ops = ops;
-		
-			DLIST_ADD(ldb->modules, current);
-		}
-
+		ret = ldb_load_modules_list(ldb, modules, ldb->modules, &ldb->modules);
 		talloc_free(modules);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	} else {
 		ldb_debug(ldb, LDB_DEBUG_TRACE, "No modules specified for this database\n");
 	}
 
-	module = ldb->modules;
-
-	while (module && module->ops->init_context == NULL) 
-		module = module->next;
-
-	if (module && module->ops->init_context &&
-		module->ops->init_context(module) != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "module initialization failed\n");
-		return -1;
-	}
-
-	return 0; 
+	return ldb_init_module_chain(ldb, ldb->modules);
 }
 
 /*
