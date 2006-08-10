@@ -301,112 +301,141 @@ done:
 #define TEST_CHG_COMMENT       "Comment[%04lu%04lu]"
 #define TEST_CHG_PROFILEPATH   "\\\\srv%04ld\\profile%02u\\prof"
 
+#define continue_if_field_set(field) \
+	if (field != 0) { \
+		i--; \
+		continue; \
+	}
+
 void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_changes)
 {
+	enum fields { account_name = 0, full_name, description, home_directory, home_drive,
+		      comment, logon_script, profile_path, acct_expiry, allow_password_change,
+		      force_password_change, last_logon, last_logoff, last_password_change };
+	const int num_fields = 14;
+
 	const char* logon_scripts[] = { "start_login.cmd", "login.bat", "start.cmd" };
 	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
 	const char* home_drives[] = { "H:", "z:", "I:", "J:", "n:" };
+	const char *homedir, *homedrive, *logonscript;
 	struct timeval now;
+	int i, randval;
 
 	srandom((unsigned)time(NULL));
 
-	if (num_changes &&
-	    (num_changes > 13 || ((random() % 10) < 4))) {
-		r->in.account_name   = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
-						       (int)random());
-		num_changes--;
-	}
-	
-	if (num_changes &&
-	    (num_changes > 12 || ((random() % 10) < 4))) {
-		r->in.full_name      = talloc_asprintf(mem_ctx, TEST_CHG_FULLNAME,
-						       (unsigned int)random(), (unsigned int)random());
-		num_changes--;
-	}
+	printf("Fields to change: [");
 
-	if (num_changes &&
-	    (num_changes > 11 || ((random() % 10) < 4))) {
-		r->in.description    = talloc_asprintf(mem_ctx, TEST_CHG_DESCRIPTION,
-						       (long)random());
-		num_changes--;
-	}
+	for (i = 0; i < num_changes && i < num_fields; i++) {
+		const char *fldname;
+		randval = random() % num_fields;
 
-	if (num_changes &&
-	    (num_changes > 10 || ((random() % 10) < 4))) {
-		const char *home_dir = home_dirs[random() % (sizeof(home_dirs)/sizeof(char*))];
-		r->in.home_directory = talloc_strdup(mem_ctx, home_dir);
-		num_changes--;
-	}
-
-	if (num_changes &&
-	    (num_changes > 9 || ((random() % 10) < 4))) {
-		const char *home_drive = home_drives[random() % (sizeof(home_drives)/sizeof(char*))];
-		r->in.home_drive = talloc_strdup(mem_ctx, home_drive);
-		num_changes--;
-	}
-
-	if (num_changes &&
-	    (num_changes > 8 || ((random() % 10) < 4))) {
-		r->in.comment = talloc_asprintf(mem_ctx, TEST_CHG_COMMENT,
-						(unsigned long)random(), (unsigned long)random());
-		num_changes--;
-	}
-
-	if (num_changes &&
-	    (num_changes > 7 || ((random() % 10) < 4))) {
-		const char *logon_script = logon_scripts[random() % (sizeof(logon_scripts)/sizeof(char*))];
-		r->in.logon_script   = talloc_strdup(mem_ctx, logon_script);
-		num_changes--;
-	}
-
-	if (num_changes &&
-	    (num_changes > 6 || ((random() % 10) < 4))) {
-		r->in.profile_path = talloc_asprintf(mem_ctx, TEST_CHG_PROFILEPATH,
-						     (unsigned long)random(), (unsigned int)random());
-		num_changes--;
-	}
-
-	if (num_changes &&
-	    (num_changes > 5 || ((random() % 10) < 4))) {
+		/* get one in case we hit time field this time */
 		gettimeofday(&now, NULL);
-		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-		r->in.acct_expiry = talloc_memdup(mem_ctx, &now, sizeof(now));
+		
+		switch (randval) {
+		case account_name:
+			continue_if_field_set(r->in.account_name);
+			r->in.account_name = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
+							     (int)random());
+			fldname = "account_name";
+			break;
+
+		case full_name:
+			continue_if_field_set(r->in.full_name);
+			r->in.full_name = talloc_asprintf(mem_ctx, TEST_CHG_FULLNAME,
+							  (unsigned int)random(), (unsigned int)random());
+			fldname = "full_name";
+			break;
+
+		case description:
+			continue_if_field_set(r->in.description);
+			r->in.description = talloc_asprintf(mem_ctx, TEST_CHG_DESCRIPTION,
+							    (long)random());
+			fldname = "description";
+			break;
+
+		case home_directory:
+			continue_if_field_set(r->in.home_directory);
+			homedir = home_dirs[random() % (sizeof(home_dirs)/sizeof(char*))];
+			r->in.home_directory = talloc_strdup(mem_ctx, homedir);
+			fldname = "home_dir";
+			break;
+
+		case home_drive:
+			continue_if_field_set(r->in.home_drive);
+			homedrive = home_drives[random() % (sizeof(home_drives)/sizeof(char*))];
+			r->in.home_drive = talloc_strdup(mem_ctx, homedrive);
+			fldname = "home_drive";
+			break;
+
+		case comment:
+			continue_if_field_set(r->in.comment);
+			r->in.comment = talloc_asprintf(mem_ctx, TEST_CHG_COMMENT,
+							(unsigned long)random(), (unsigned long)random());
+			fldname = "comment";
+			break;
+
+		case logon_script:
+			continue_if_field_set(r->in.logon_script);
+			logonscript = logon_scripts[random() % (sizeof(logon_scripts)/sizeof(char*))];
+			r->in.logon_script = talloc_strdup(mem_ctx, logonscript);
+			fldname = "logon_script";
+			break;
+			
+		case profile_path:
+			continue_if_field_set(r->in.profile_path);
+			r->in.profile_path = talloc_asprintf(mem_ctx, TEST_CHG_PROFILEPATH,
+							     (unsigned long)random(), (unsigned int)random());
+			fldname = "profile_path";
+			break;
+
+		case acct_expiry:
+			continue_if_field_set(r->in.acct_expiry);
+			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+			r->in.acct_expiry = talloc_memdup(mem_ctx, &now, sizeof(now));
+			fldname = "acct_expiry";
+			break;
+
+		case allow_password_change:
+			continue_if_field_set(r->in.allow_password_change);
+			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+			r->in.allow_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
+			fldname = "allow_password_change";
+			break;
+
+		case force_password_change:
+			continue_if_field_set(r->in.force_password_change);
+			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+			r->in.force_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
+			fldname = "force_password_change";
+			break;
+
+		case last_logon:
+			continue_if_field_set(r->in.last_logon);
+			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+			r->in.last_logon = talloc_memdup(mem_ctx, &now, sizeof(now));
+			fldname = "last_logon";
+			break;
+
+		case last_logoff:
+			continue_if_field_set(r->in.last_logoff);
+			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+			r->in.last_logoff = talloc_memdup(mem_ctx, &now, sizeof(now));
+			fldname = "last_logoff";
+			break;
+
+		case last_password_change:
+			continue_if_field_set(r->in.last_password_change);
+			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
+			r->in.last_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
+			fldname = "last_password_change";
+			break;
+		}
+		
+		printf(((i < num_changes - 1) ? "%s," : "%s"), fldname);
 	}
 
-	if (num_changes &&
-	    (num_changes > 4 || ((random() % 10) < 4))) {
-		gettimeofday(&now, NULL);
-		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-		r->in.allow_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-	}
-
-	if (num_changes &&
-	    (num_changes > 3 || ((random() % 10) < 4))) {
-		gettimeofday(&now, NULL);
-		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-		r->in.force_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-	}
-
-	if (num_changes &&
-	    (num_changes > 2 || ((random() % 10) < 4))) {
-		gettimeofday(&now, NULL);
-		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-		r->in.last_logon = talloc_memdup(mem_ctx, &now, sizeof(now));
-	}
-
-	if (num_changes &&
-	    (num_changes > 1 || ((random() % 10) < 4))) {
-		gettimeofday(&now, NULL);
-		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-		r->in.last_logoff = talloc_memdup(mem_ctx, &now, sizeof(now));
-	}
-
-	if (num_changes &&
-	    (num_changes > 0 || ((random() % 10) < 4))) {
-		gettimeofday(&now, NULL);
-		now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-		r->in.last_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-	}
+	printf("]\n");
 }
 
 
@@ -460,10 +489,8 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	req.in.user_name = TEST_USERNAME;
 	req.in.domain_name = lp_workgroup();
 
-	/* Testing change of a single field */
-	set_test_changes(mem_ctx, &req, 1);
-
 	printf("Testing change of a single field\n");
+	set_test_changes(mem_ctx, &req, 1);
 
 	status = libnet_ModifyUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
