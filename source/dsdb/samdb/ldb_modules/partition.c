@@ -502,11 +502,12 @@ static int partition_init(struct ldb_module *module)
 {
 	int ret, i;
 	TALLOC_CTX *mem_ctx = talloc_new(module);
-	static const char *attrs[] = { "partition", "replicateEntries", NULL };
+	static const char *attrs[] = { "partition", "replicateEntries", "modules", NULL };
 	struct ldb_result *res;
 	struct ldb_message *msg;
 	struct ldb_message_element *partition_attributes;
 	struct ldb_message_element *replicate_attributes;
+	struct ldb_message_element *modules_attributes;
 
 	struct partition_private_data *data;
 
@@ -545,6 +546,7 @@ static int partition_init(struct ldb_module *module)
 		ldb_set_errstring(module->ldb, 
 				  talloc_asprintf(module, "partition_init: "
 						  "no partitions specified"));
+		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	data->partitions = talloc_array(data, struct partition *, partition_attributes->num_values + 1);
@@ -559,6 +561,7 @@ static int partition_init(struct ldb_module *module)
 			ldb_set_errstring(module->ldb, 
 					  talloc_asprintf(module, "partition_init: "
 							  "invalid form for partition record (missing ':'): %s", base));
+			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		p[0] = '\0';
@@ -567,6 +570,7 @@ static int partition_init(struct ldb_module *module)
 			ldb_set_errstring(module->ldb, 
 					  talloc_asprintf(module, "partition_init: "
 							  "invalid form for partition record (missing backend database): %s", base));
+			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		data->partitions[i] = talloc(data->partitions, struct partition);
@@ -580,12 +584,14 @@ static int partition_init(struct ldb_module *module)
 			ldb_set_errstring(module->ldb, 
 					  talloc_asprintf(module, "partition_init: "
 							  "invalid DN in partition record: %s", base));
+			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
 		data->partitions[i]->backend = private_path(data->partitions[i], p);
 		ret = ldb_connect_backend(module->ldb, data->partitions[i]->backend, NULL, &data->partitions[i]->module);
 		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
 			return ret;
 		}
 	}
@@ -600,6 +606,7 @@ static int partition_init(struct ldb_module *module)
 		req = talloc_zero(mem_ctx, struct ldb_request);
 		if (req == NULL) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "partition: Out of memory!\n");
+			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
@@ -609,6 +616,7 @@ static int partition_init(struct ldb_module *module)
 		ret = ldb_request(module->ldb, req);
 		if (ret != LDB_SUCCESS) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "partition: Unable to register partition with rootdse!\n");
+			talloc_free(mem_ctx);
 			return LDB_ERR_OTHER;
 		}
 		talloc_free(req);
@@ -616,9 +624,6 @@ static int partition_init(struct ldb_module *module)
 
 	replicate_attributes = ldb_msg_find_element(msg, "replicateEntries");
 	if (!replicate_attributes) {
-		ldb_set_errstring(module->ldb, 
-				  talloc_asprintf(module, "partition_init: "
-						  "no entries to replicate specified"));
 		data->replicate = NULL;
 	} else {
 		data->replicate = talloc_array(data, struct ldb_dn *, replicate_attributes->num_values + 1);
@@ -634,10 +639,76 @@ static int partition_init(struct ldb_module *module)
 						  talloc_asprintf(module, "partition_init: "
 								  "invalid DN in partition replicate record: %s", 
 								  replicate_attributes->values[i].data));
+				talloc_free(mem_ctx);
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 		}
 		data->replicate[i] = NULL;
+	}
+
+	modules_attributes = ldb_msg_find_element(msg, "modules");
+	if (modules_attributes) {
+		for (i=0; i < modules_attributes->num_values; i++) {
+			struct ldb_dn *base_dn;
+			int partition_idx;
+			struct partition *partition = NULL;
+			const char **modules = NULL;
+
+			char *base = talloc_strdup(data->partitions, (char *)modules_attributes->values[i].data);
+			char *p = strchr(base, ':');
+			if (!p) {
+				ldb_set_errstring(module->ldb, 
+						  talloc_asprintf(mem_ctx, "partition_init: "
+								  "invalid form for partition module record (missing ':'): %s", base));
+				talloc_free(mem_ctx);
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+			p[0] = '\0';
+			p++;
+			if (!p[0]) {
+				ldb_set_errstring(module->ldb, 
+						  talloc_asprintf(mem_ctx, "partition_init: "
+								  "invalid form for partition module record (missing backend database): %s", base));
+				talloc_free(mem_ctx);
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+
+			modules = ldb_modules_list_from_string(module->ldb, mem_ctx,
+							       p);
+			
+			base_dn = ldb_dn_explode(mem_ctx, base);
+			if (!base_dn) {
+				talloc_free(mem_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			
+			for (partition_idx = 0; data->partitions[partition_idx]; partition_idx++) {
+				if (ldb_dn_compare(module->ldb, data->partitions[partition_idx]->dn, 
+						   base_dn) == 0) {
+					partition = data->partitions[partition_idx];
+					break;
+				}
+			}
+			
+			if (!partition) {
+				ldb_set_errstring(module->ldb, 
+						  talloc_asprintf(mem_ctx, "partition_init: "
+								  "invalid form for partition module record (no such partition): %s", base));
+				talloc_free(mem_ctx);
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+			
+			ret = ldb_load_modules_list(module->ldb, modules, partition->module, &partition->module);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(mem_ctx);
+				return ret;
+			}
+			ret = ldb_init_module_chain(module->ldb, partition->module);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(mem_ctx);
+				return ret;
+			}
+		}
 	}
 
 	module->private_data = data;
