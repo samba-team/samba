@@ -140,13 +140,14 @@ NTSTATUS tdb_find_keyed(TALLOC_CTX *ctx, struct tdb_context *tdb,
 
 	prim.dptr = data.dptr = NULL;
 
-	key.dptr = talloc_asprintf(ctx, "KEY/%d/%s", keynumber, value);
+	key.dsize = talloc_asprintf_len(ctx, &key.dptr, "KEY/%d/%s", keynumber,
+					value);
 	if (key.dptr == NULL) {
 		DEBUG(0, ("talloc_asprintf failed\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-	key.dsize = strlen(key.dptr)+1;
+	key.dsize += 1;
 
 	prim = tdb_fetch(tdb, key);
 	if (prim.dptr == NULL) {
@@ -214,13 +215,14 @@ static NTSTATUS set_keys(struct tdb_context *tdb,
 		NTSTATUS status;
 		TDB_DATA key;
 
-		key.dptr = talloc_asprintf(keys, "KEY/%d/%s", i, keys[i]);
+		key.dsize = talloc_asprintf_len(keys, &key.dptr, "KEY/%d/%s",
+						i, keys[i]);
 		if (key.dptr == NULL) {
 			DEBUG(0, ("talloc_asprintf failed\n"));
 			TALLOC_FREE(keys);
 			return NT_STATUS_NO_MEMORY;
 		}
-		key.dsize = strlen(key.dptr)+1;
+		key.dsize += 1;
 
 		if (tdb_store(tdb, key, primary_key, TDB_INSERT) < 0) {
 			status = map_ntstatus_from_tdb(tdb);
@@ -273,13 +275,14 @@ static NTSTATUS del_keys(struct tdb_context *tdb,
 		NTSTATUS status;
 		TDB_DATA key;
 
-		key.dptr = talloc_asprintf(keys, "KEY/%d/%s", i, keys[i]);
+		key.dsize = talloc_asprintf_len(keys, &key.dptr, "KEY/%d/%s",
+						i, keys[i]);
 		if (key.dptr == NULL) {
 			DEBUG(0, ("talloc_asprintf failed\n"));
 			TALLOC_FREE(keys);
 			return NT_STATUS_NO_MEMORY;
 		}
-		key.dsize = strlen(key.dptr)+1;
+		key.dsize += 1;
 
 		if (tdb_delete(tdb, key) < 0) {
 			status = map_ntstatus_from_tdb(tdb);
