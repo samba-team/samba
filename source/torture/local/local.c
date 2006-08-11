@@ -51,6 +51,8 @@ NTSTATUS torture_local_init(void)
 	TALLOC_CTX *mem_ctx = talloc_autofree_context();
 
 	register_torture_op("LOCAL-TALLOC", torture_local_talloc);
+	register_torture_op("LOCAL-CRYPTO-SHA1", torture_local_crypto_sha1);
+	register_torture_op("LOCAL-CRYPTO-HMACSHA1", torture_local_crypto_hmacsha1);
 	for (i = 0; suite_generators[i]; i++)
 		torture_register_suite(suite_generators[i](mem_ctx));
 
