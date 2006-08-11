@@ -188,7 +188,14 @@ static int net_groupmap_add(int argc, const char **argv)
 	uint32 rid = 0;	
 	int i;
 	GROUP_MAP map;
-	
+	const char *name_type;
+
+	ZERO_STRUCT(map);
+
+	/* Default is domain group. */
+	map.sid_name_use = SID_NAME_DOM_GRP;
+	name_type = "domain group";
+
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
 		if ( !StrnCaseCmp(argv[i], "rid", strlen("rid")) ) {
@@ -237,15 +244,21 @@ static int net_groupmap_add(int argc, const char **argv)
 				case 'b':
 				case 'B':
 					map.sid_name_use = SID_NAME_WKN_GRP;
+					name_type = "wellknown group";
 					break;
 				case 'd':
 				case 'D':
 					map.sid_name_use = SID_NAME_DOM_GRP;
+					name_type = "domain group";
 					break;
 				case 'l':
 				case 'L':
 					map.sid_name_use = SID_NAME_ALIAS;
+					name_type = "alias (local) group";
 					break;
+				default:
+					d_fprintf(stderr, "unknown group type %s\n", type);
+					return -1;
 			}
 		}
 		else {
@@ -316,8 +329,8 @@ static int net_groupmap_add(int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("Successfully added group %s to the mapping db\n",
-		 map.nt_name);
+	d_printf("Successfully added group %s to the mapping db as a %s\n",
+		 map.nt_name, name_type);
 	return 0;
 }
 
@@ -413,14 +426,18 @@ static int net_groupmap_modify(int argc, const char **argv)
 	 * Allow changing of group type only between domain and local
 	 * We disallow changing Builtin groups !!! (SID problem)
 	 */ 
-	if (sid_type != SID_NAME_UNKNOWN) { 
-		if (map.sid_name_use == SID_NAME_WKN_GRP) {
-			d_fprintf(stderr, "You can only change between domain and local groups.\n");
-			return -1;
-		}
-		
-		map.sid_name_use=sid_type;
+
+	if (sid_type == SID_NAME_UNKNOWN) {
+		d_fprintf(stderr, "Can't map to an unknown group type.\n");
+		return -1;
 	}
+
+	if (map.sid_name_use == SID_NAME_WKN_GRP) {
+		d_fprintf(stderr, "You can only change between domain and local groups.\n");
+		return -1;
+	}
+		
+	map.sid_name_use=sid_type;
 
 	/* Change comment if new one */
 	if ( ntcomment[0] )
