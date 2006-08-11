@@ -75,7 +75,7 @@ BOOL torture_local_crypto_md5(struct torture_context *torture)
 			   md5,
 			   MIN(testarray[i].md5.length, sizeof(md5)));
 		if (e != 0) {
-			printf("hmacsha1 test[%u]: failed\n", i);
+			printf("md5 test[%u]: failed\n", i);
 			dump_data(0, testarray[i].data.data, testarray[i].data.length);
 			dump_data(0, testarray[i].md5.data, testarray[i].md5.length);
 			dump_data(0, md5, sizeof(md5));
