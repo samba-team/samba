@@ -1,0 +1,149 @@
+#
+# Schema elements which do not exist in AD, but which we use in Samba4
+#
+## Samba4 OID allocation from Samba3's examples/LDAP/samba.schema
+## 1.3.6.1.4.1.7165.4.1.x - attributetypes
+## 1.3.6.1.4.1.7165.4.2.x - objectclasses
+#
+#
+
+
+dn: cn=ntpwdHash,CN=Schema,CN=Configuration,${BASEDN}
+cn: ntpwdHash
+name: NTPWDHash
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: ntpwdhash
+isSingleValued: TRUE
+systemFlags: 17
+systemOnly: TRUE
+schemaIDGUID: E961130F-5084-458C-9E9C-DEC16DA08592
+adminDisplayName: NT-PWD-Hash
+attributeID: 1.3.6.1.4.1.7165.4.1.1
+attributeSyntax: 2.5.5.10
+
+dn: cn=lmpwdHash,CN=Schema,CN=Configuration,${BASEDN}
+cn: lmpwdHash
+name: lmpwdHash
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: lmpwdhash
+isSingleValued: TRUE
+systemFlags: 17
+systemOnly: TRUE
+schemaIDGUID: CBD0D18C-9C54-4A77-87C4-5CEEAF781253
+adminDisplayName: LM-PWD-Hash
+attributeID: 1.3.6.1.4.1.7165.4.1.2
+attributeSyntax: 2.5.5.10
+
+dn: cn=sambaNtPwdHistory,CN=Schema,CN=Configuration,${BASEDN}
+cn: sambaNtPwdHistory
+name: sambaNtPwdHistory
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: sambaNtPwdHistory
+isSingleValued: TRUE
+systemFlags: 17
+systemOnly: TRUE
+schemaIDGUID: 8CCD7658-C574-4435-A38C-99572E349E6B
+adminDisplayName: SAMBA-NT-PWD-History
+attributeID: 1.3.6.1.4.1.7165.4.1.3
+attributeSyntax: 2.5.5.10
+
+dn: cn=sambaLmPwdHistory,CN=Schema,CN=Configuration,${BASEDN}
+cn: sambaLmPwdHistory
+name: sambaLmPwdHistory
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: sambaLmPwdHistory
+isSingleValued: FALSE
+systemFlags: 17
+systemOnly: TRUE
+schemaIDGUID: 0EAFE3DD-0F53-495E-8A34-97BB28AF17A4
+adminDisplayName: SAMBA-LM-PWDHistory
+attributeID: 1.3.6.1.4.1.7165.4.1.4
+attributeSyntax: 2.5.5.10
+
+dn: cn=sambaPassword,CN=Schema,CN=Configuration,${BASEDN}
+cn: sambaPassword
+name: sambaPassword
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: sambaPassword
+isSingleValued: FALSE
+systemFlags: 17
+systemOnly: TRUE
+schemaIDGUID: 87F10301-229A-4E69-B63A-998339ADA37A
+adminDisplayName: SAMBA-Password
+attributeID: 1.3.6.1.4.1.7165.4.1.5
+attributeSyntax: 2.5.5.5
+
+dn: cn=dnsDomain,CN=Schema,CN=Configuration,${BASEDN}
+cn: dnsDomain
+name: dnsDomain
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: dnsDomain
+isSingleValued: FALSE
+systemFlags: 17
+systemOnly: TRUE
+schemaIDGUID: A40165E6-5E45-44A7-A8FA-186C94333018
+adminDisplayName: SAMBA-Password
+attributeID: 1.3.6.1.4.1.7165.4.1.6
+attributeSyntax: 2.5.5.4
+
+dn: cn=privilege,CN=Schema,CN=Configuration,${BASEDN}
+cn: privilege
+name: privilege
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: privilege
+isSingleValued: FALSE
+systemFlags: 17
+systemOnly: TRUE
+schemaIDGUID: 7429BC94-CC6A-4481-8B2C-A97E316EB182
+adminDisplayName: Privilege
+attributeID: 1.3.6.1.4.1.7165.4.1.7
+attributeSyntax: 2.5.5.4
+
+dn: CN=middleName,CN=Schema,CN=Configuration,${BASEDN}
+cn: middleName
+name: middleName
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: middleName
+sSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: bf9679f2-0de6-11d0-a285-00aa003049e2
+adminDisplayName: Other-Name
+attributeID: 1.3.6.1.4.1.7165.4.1.8
+attributeSyntax: 2.5.5.12
+
+dn: CN=unixName,CN=Schema,CN=Configuration,${BASEDN}
+cn: unixName
+name: unixName
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: unixName
+sSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: bf9679f2-0de6-11d0-a285-00aa003049e2
+adminDisplayName: Unix-Name
+attributeID: 1.3.6.1.4.1.7165.4.1.9
+attributeSyntax: 2.5.5.4
+
+dn: cn=krb5Key,CN=Schema,CN=Configuration,${BASEDN}
+cn: krb5Key
+name: krb5Key
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: krb5Key
+isSingleValued: FALSE
+systemFlags: 17
+systemOnly: TRUE
+schemaIDGUID: 0EAFE3DD-0F53-495E-8A34-97BB28AF17A4
+adminDisplayName: krb5-Key
+attributeID: 1.3.6.1.4.1.5322.10.1.10
+attributeSyntax: 2.5.5.10

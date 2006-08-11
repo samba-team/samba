@@ -189,23 +189,11 @@ function ldb_erase(ldb)
 /*
   erase an ldb, removing all records
 */
-function ldb_erase_partitions(info, dbname)
+function ldb_erase_partitions(info, ldb)
 {
 	var rootDSE_attrs = new Array("namingContexts");
-	var ldb = ldb_init();
 	var lp = loadparm_init();
 	var j;
-
-	ldb.session_info = info.session_info;
-	ldb.credentials = info.credentials;
-
-
-	ldb.filename = dbname;
-
-	var connect_ok = ldb.connect(dbname);
-	assert(connect_ok);
-
-	ldb.transaction_start();
 
 	var res = ldb.search("(objectClass=*)", "", ldb.SCOPE_BASE, rootDSE_attrs);
 	assert(typeof(res) != "undefined");
@@ -237,45 +225,13 @@ function ldb_erase_partitions(info, dbname)
 			}
 		}
 	}
-
-	var commit_ok = ldb.transaction_commit();
-	if (!commit_ok) {
-		info.message("ldb commit failed: " + ldb.errstring() + "\n");
-		assert(add_ok);
-	}
 }
 
-/*
-  setup a ldb in the private dir
- */
-function setup_ldb(ldif, info, dbname)
+function open_ldb(info, dbname, erase)
 {
-	var erase = true;
-	var extra = "";
-	var failok = false;
 	var ldb = ldb_init();
-	var lp = loadparm_init();
 	ldb.session_info = info.session_info;
 	ldb.credentials = info.credentials;
-
-	if (arguments.length >= 4) {
-		extra = arguments[3];
-	}
-
-	if (arguments.length >= 5) {
-	        erase = arguments[4];
-        }
-
-	if (arguments.length == 6) {
-	        failok = arguments[5];
-        }
-
-	var src = lp.get("setup directory") + "/" + ldif;
-
-	var data = sys.file_load(src);
-	data = data + extra;
-	data = substitute_var(data, info.subobj);
-
 	ldb.filename = dbname;
 
 	var connect_ok = ldb.connect(dbname);
@@ -290,6 +246,20 @@ function setup_ldb(ldif, info, dbname)
 	if (erase) {
 		ldb_erase(ldb);	
 	}
+	return ldb;
+}
+
+
+/*
+  setup a ldb in the private dir
+ */
+function setup_add_ldif(ldif, info, ldb, failok)
+{
+	var lp = loadparm_init();
+	var src = lp.get("setup directory") + "/" + ldif;
+
+	var data = sys.file_load(src);
+	data = substitute_var(data, info.subobj);
 
 	var add_ok = ldb.add(data);
 	if (!add_ok) {
@@ -298,7 +268,22 @@ function setup_ldb(ldif, info, dbname)
 			assert(add_ok);
 	        }
 	}
-	if (add_ok) {
+	return add_ok;
+}
+
+function setup_ldb(ldif, info, dbname) 
+{
+	var erase = true;
+	var failok = false;
+
+	if (arguments.length >= 4) {
+	        erase = arguments[3];
+        }
+	if (arguments.length == 5) {
+	        failok = arguments[4];
+        }
+	var ldb = open_ldb(info, dbname, erase);
+	if (setup_add_ldif(ldif, info, ldb, erase, failok)) {
 		var commit_ok = ldb.transaction_commit();
 		if (!commit_ok) {
 			info.message("ldb commit failed: " + ldb.errstring() + "\n");
@@ -310,34 +295,19 @@ function setup_ldb(ldif, info, dbname)
 /*
   setup a ldb in the private dir
  */
-function setup_ldb_modify(ldif, info, dbname)
+function setup_ldb_modify(ldif, info, ldb)
 {
-	var ldb = ldb_init();
 	var lp = loadparm_init();
-	ldb.session_info = info.session_info;
-	ldb.credentials = info.credentials;
 
 	var src = lp.get("setup directory") + "/" + ldif;
 
 	var data = sys.file_load(src);
 	data = substitute_var(data, info.subobj);
 
-	ldb.filename = dbname;
-
-	var connect_ok = ldb.connect(dbname);
-	assert(connect_ok);
-
-	ldb.transaction_start();
-
 	var mod_ok = ldb.modify(data);
 	if (!mod_ok) {
 		info.message("ldb load failed: " + ldb.errstring() + "\n");
 		assert(mod_ok);
-	}
-	var commit_ok = ldb.transaction_commit();
-	if (!commit_ok) {
-		info.message("ldb commit failed: " + ldb.errstring() + "\n");
-		assert(commit_ok);
 	}
 }
 
@@ -386,16 +356,9 @@ function provision_default_paths(subobj)
 /*
   setup reasonable name mappings for sam names to unix names
 */
-function setup_name_mappings(info, subobj, session_info, credentials)
+function setup_name_mappings(info, subobj, ldb)
 {
 	var lp = loadparm_init();
-	var ldb = ldb_init();
-	ldb.session_info = session_info;
-	ldb.credentials = credentials;
-	var ok = ldb.connect(lp.get("sam database"));
-	if (!ok) {
-		return false;
-	}
 	var attrs = new Array("objectSid");
 	res = ldb.search("objectSid=*", subobj.BASEDN, ldb.SCOPE_BASE, attrs);
 	assert(res.length == 1 && res[0].objectSid != undefined);
@@ -436,7 +399,6 @@ function setup_name_mappings(info, subobj, session_info, credentials)
 */
 function provision(subobj, message, blank, paths, session_info, credentials)
 {
-	var data = "";
 	var lp = loadparm_init();
 	var sys = sys_init();
 	var info = new Object();
@@ -480,36 +442,52 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	setup_ldb("hklm.ldif", info, paths.hklm);
 
 	message("Setting up sam.ldb partitions\n");
+	/* Also wipes the database */
 	setup_ldb("provision_partitions.ldif", info, paths.samdb);
 
-	message("Setting up sam.ldb attributes\n");
-	setup_ldb("provision_init.ldif", info, paths.samdb, NULL, false);
-	message("Erasing data from partitions\n");
-	ldb_erase_partitions(info, paths.samdb);
-	
-	message("Adding baseDN: " + subobj.BASEDN + "\n");
-	setup_ldb("provision_basedn.ldif", info, paths.samdb, NULL, false, true);
-	message("Modifying baseDN: " + subobj.BASEDN + "\n");
-	setup_ldb_modify("provision_basedn_modify.ldif", info, paths.samdb)
+	var samdb = open_ldb(info, paths.samdb, false);
 
-	message("Setting up sam.ldb schema\n");
-	setup_ldb("schema.ldif", info, paths.samdb, NULL, false);
+	message("Setting up sam.ldb attributes\n");
+	setup_add_ldif("provision_init.ldif", info, samdb, false);
+	message("Erasing data from partitions\n");
+	ldb_erase_partitions(info, samdb);
+	
+	message("Adding baseDN: " + subobj.BASEDN + " (permitted to fail)\n");
+	setup_add_ldif("provision_basedn.ldif", info, samdb, true);
+	message("Modifying baseDN: " + subobj.BASEDN + "\n");
+	setup_ldb_modify("provision_basedn_modify.ldif", info, samdb);
+
+	message("Setting up sam.ldb Samba4 schema\n");
+	setup_add_ldif("schema_samba4.ldif", info, samdb, false);
+	message("Setting up sam.ldb AD schema\n");
+	setup_add_ldif("schema.ldif", info, samdb, false);
 	message("Setting up display specifiers\n");
-	setup_ldb("display_specifiers.ldif", info, paths.samdb, NULL, false);
+	setup_add_ldif("display_specifiers.ldif", info, samdb, false);
 	message("Setting up sam.ldb templates\n");
-	setup_ldb("provision_templates.ldif", info, paths.samdb, NULL, false);
+	setup_add_ldif("provision_templates.ldif", info, samdb, false);
 	message("Setting up sam.ldb data\n");
-	setup_ldb("provision.ldif", info, paths.samdb, NULL, false);
+	setup_add_ldif("provision.ldif", info, samdb, false);
 
 	if (blank != false) {
+		var commit_ok = samdb.transaction_commit();
+		if (!commit_ok) {
+			info.message("ldb commit failed: " + samdb.errstring() + "\n");
+			assert(commit_ok);
+		}
 		return true;
 	}
 
 	message("Setting up sam.ldb users and groups\n");
-	setup_ldb("provision_users.ldif", info, paths.samdb, data, false);
+	setup_add_ldif("provision_users.ldif", info, samdb, false);
 
-	if (setup_name_mappings(info, subobj, session_info, credentials) == false) {
+	if (setup_name_mappings(info, subobj, samdb) == false) {
 		return false;
+	}
+
+	var commit_ok = samdb.transaction_commit();
+	if (!commit_ok) {
+		info.message("samdb commit failed: " + samdb.errstring() + "\n");
+		assert(commit_ok);
 	}
 
 	return true;
