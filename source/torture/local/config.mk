@@ -8,6 +8,7 @@ PRIVATE_PROTO_HEADER = \
 OBJ_FILES = \
 		iconv.o \
 		../../lib/talloc/testsuite.o \
+		../../lib/crypto/md4test.o \
 		../../lib/crypto/md5test.o \
 		../../lib/crypto/sha1test.o \
 		../../lib/crypto/hmacsha1test.o \
