@@ -3,7 +3,7 @@
 local_tests="LOCAL-NTLMSSP LOCAL-TALLOC LOCAL-MESSAGING LOCAL-IRPC"
 local_tests="$local_tests LOCAL-BINDING LOCAL-IDTREE LOCAL-SOCKET"
 local_tests="$local_tests LOCAL-PAC LOCAL-STRLIST LOCAL-SDDL LOCAL-NDR"
-local_tests="$local_tests LOCAL-EVENT"
+local_tests="$local_tests LOCAL-EVENT LOCAL-CRYPTO-SHA1 LOCAL-CRYPTO-HMACSHA1"
 
 if [ $# -lt 0 ]; then
 cat <<EOF
