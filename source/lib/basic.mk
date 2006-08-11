@@ -36,7 +36,9 @@ OBJ_FILES = \
 		crypto/md5.o \
 		crypto/hmacmd5.o \
 		crypto/md4.o \
-		crypto/arcfour.o
+		crypto/arcfour.o \
+		crypto/sha1.o \
+		crypto/hmacsha1.o
 # End SUBSYSTEM LIBCRYPTO
 ##############################
 

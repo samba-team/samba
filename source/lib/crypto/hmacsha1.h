@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
-
-   Copyright (C) Andrew Tridgell 2004
+   Interface header:    HMAC SHA1 code
+   Copyright (C) Stefan Metzmacher 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,21 +18,17 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "lib/crypto/crc32.h"
-#include "lib/crypto/md4.h"
-#include "lib/crypto/md5.h"
-#include "lib/crypto/hmacmd5.h"
-#include "lib/crypto/sha1.h"
-#include "lib/crypto/hmacsha1.h"
+#ifndef _HMAC_SHA1_H
 
-struct arcfour_state {
-	uint8_t sbox[256];
-	uint8_t index_i;
-	uint8_t index_j;
+struct HMACSHA1Context {
+        struct SHA1Context ctx;
+        uint8_t k_ipad[65];    
+        uint8_t k_opad[65];
+
 };
 
-void arcfour_init(struct arcfour_state *state, const DATA_BLOB *key);
-void arcfour_crypt_sbox(struct arcfour_state *state, uint8_t *data, int len);
-void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key);
-void arcfour_crypt(uint8_t *data, const uint8_t keystr[16], int len);
+void hmac_sha1_init(const uint8_t *key, size_t key_len, struct HMACSHA1Context *ctx);
+void hmac_sha1_update(const uint8_t *data, size_t data_len, struct HMACSHA1Context *ctx);
+void hmac_sha1_final(uint8_t digest[20], struct HMACSHA1Context *ctx);
 
+#endif /* _HMAC_SHA1_H */
