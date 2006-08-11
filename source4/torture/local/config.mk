@@ -8,6 +8,8 @@ PRIVATE_PROTO_HEADER = \
 OBJ_FILES = \
 		iconv.o \
 		../../lib/talloc/testsuite.o \
+		../../lib/crypto/sha1test.o \
+		../../lib/crypto/hmacsha1test.o \
 		messaging.o \
 		binding_string.o \
 		idtree.o \
@@ -28,6 +30,7 @@ PUBLIC_DEPENDENCIES = \
 		MESSAGING \
 		ICONV \
 		registry \
+		LIBCRYPTO \
 		POPT_CREDENTIALS \
 		TORTURE_UI
 # End SUBSYSTEM TORTURE_LOCAL
