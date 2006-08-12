@@ -5,7 +5,8 @@ dn: @INDEXLIST
 @IDXATTR: objectClass
 @IDXATTR: objectCategory
 @IDXATTR: member
-@IDXATTR: unixID
+@IDXATTR: uidNumber
+@IDXATTR: gidNumber
 @IDXATTR: unixName
 @IDXATTR: privilege
 @IDXATTR: nCName
