@@ -377,6 +377,19 @@ const char *ldb_msg_find_string(const struct ldb_message *msg,
 	return (const char *)v->data;
 }
 
+struct ldb_dn *ldb_msg_find_dn(void *mem_ctx,
+				const struct ldb_message *msg,
+				const char *attr_name)
+{
+	const struct ldb_val *v;
+
+	v = ldb_msg_find_ldb_val(msg, attr_name);
+	if (!v || !v->data) {
+		return NULL;
+	}
+	return ldb_dn_explode(mem_ctx, (const char *)v->data);
+}
+
 /*
   sort the elements of a message by name
 */
