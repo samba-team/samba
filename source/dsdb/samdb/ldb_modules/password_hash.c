@@ -512,7 +512,6 @@ static int build_domain_data_request(struct ph_context *ac)
 	ac->dom_req->controls = NULL;
 	ac->dom_req->context = ac;
 	ac->dom_req->callback = get_domain_data_callback;
-	ac->dom_req->timeout = ac->orig_req->timeout;
 	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->dom_req);
 
 	return LDB_SUCCESS;
