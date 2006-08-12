@@ -126,8 +126,8 @@ static NTSTATUS sidmap_primary_domain_sid(struct sidmap_context *sidmap,
 _PUBLIC_ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap, 
 					struct dom_sid *sid, uid_t *uid)
 {
-	const char *attrs[] = { "sAMAccountName", "unixID", 
-				"unixName", "sAMAccountType", NULL };
+	const char *attrs[] = { "sAMAccountName", "uidNumber", 
+				"sAMAccountType", NULL };
 	int ret;
 	const char *s;
 	TALLOC_CTX *tmp_ctx;
@@ -152,7 +152,7 @@ _PUBLIC_ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap,
 	}
 
 	/* first try to get the uid directly */
-	s = samdb_result_string(res[0], "unixID", NULL);
+	s = samdb_result_string(res[0], "uidNumber", NULL);
 	if (s != NULL) {
 		*uid = strtoul(s, NULL, 0);
 		talloc_free(tmp_ctx);
@@ -208,7 +208,7 @@ allocated_sid:
 	}
 	
 
-	DEBUG(0,("sid_to_unixuid: no unixID, unixName or sAMAccountName for sid %s\n", 
+	DEBUG(0,("sid_to_unixuid: no uidNumber, unixName or sAMAccountName for sid %s\n", 
 		 dom_sid_string(tmp_ctx, sid)));
 
 	talloc_free(tmp_ctx);
@@ -222,7 +222,7 @@ allocated_sid:
 _PUBLIC_ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
 					struct dom_sid *sid, gid_t *gid)
 {
-	const char *attrs[] = { "sAMAccountName", "unixID", 
+	const char *attrs[] = { "sAMAccountName", "gidNumber", 
 				"unixName", "sAMAccountType", NULL };
 	int ret;
 	const char *s;
@@ -248,7 +248,7 @@ _PUBLIC_ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
 	}
 
 	/* first try to get the gid directly */
-	s = samdb_result_string(res[0], "unixID", NULL);
+	s = samdb_result_string(res[0], "gidNumber", NULL);
 	if (s != NULL) {
 		*gid = strtoul(s, NULL, 0);
 		talloc_free(tmp_ctx);
@@ -300,7 +300,7 @@ allocated_sid:
 		}
 	}
 
-	DEBUG(0,("sid_to_unixgid: no unixID, unixName or sAMAccountName for sid %s\n", 
+	DEBUG(0,("sid_to_unixgid: no gidNumber, unixName or sAMAccountName for sid %s\n", 
 		 dom_sid_string(tmp_ctx, sid)));
 
 	talloc_free(tmp_ctx);
@@ -330,7 +330,7 @@ _PUBLIC_ NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
 	    - check if the uid is in the dynamic uid range assigned for winbindd
 	      use. If it is, then look in winbindd sid mapping
 	      database (not implemented yet)
-	    - look for a user account in samdb that has unixID set to the
+	    - look for a user account in samdb that has uidNumber set to the
 	      given uid
 	    - look for a user account in samdb that has unixName or
 	      sAMAccountName set to the name given by getpwuid()
@@ -343,12 +343,12 @@ _PUBLIC_ NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
 
 
 	/*
-	  step 2: look for a user account in samdb that has unixID set to the
+	  step 2: look for a user account in samdb that has uidNumber set to the
                   given uid
 	*/
 
 	ret = gendb_search(sidmap->samctx, tmp_ctx, samdb_base_dn(tmp_ctx), &res, attrs, 
-			   "unixID=%u", (unsigned int)uid);
+			   "uidNumber=%u", (unsigned int)uid);
 	for (i=0;i<ret;i++) {
 		if (!is_user_account(res[i])) continue;
 
@@ -428,7 +428,7 @@ _PUBLIC_ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
 	    - check if the gid is in the dynamic gid range assigned for winbindd
 	      use. If it is, then look in winbindd sid mapping
 	      database (not implemented yet)
-	    - look for a group account in samdb that has unixID set to the
+	    - look for a group account in samdb that has gidNumber set to the
 	      given gid
 	    - look for a group account in samdb that has unixName or
 	      sAMAccountName set to the name given by getgrgid()
@@ -441,12 +441,12 @@ _PUBLIC_ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
 
 
 	/*
-	  step 2: look for a group account in samdb that has unixID set to the
+	  step 2: look for a group account in samdb that has gidNumber set to the
                   given gid
 	*/
 
 	ret = gendb_search(sidmap->samctx, tmp_ctx, samdb_base_dn(tmp_ctx), &res, attrs, 
-			   "unixID=%u", (unsigned int)gid);
+			   "gidNumber=%u", (unsigned int)gid);
 	for (i=0;i<ret;i++) {
 		if (!is_group_account(res[i])) continue;
 

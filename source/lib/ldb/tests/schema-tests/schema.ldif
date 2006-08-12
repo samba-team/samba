@@ -4,7 +4,8 @@ dn: @INDEXLIST
 @IDXATTR: objectSid
 @IDXATTR: objectClass
 @IDXATTR: member
-@IDXATTR: unixID
+@IDXATTR: uidNumber
+@IDXATTR: gidNumber
 @IDXATTR: unixName
 @IDXATTR: privilege
 @IDXATTR: lDAPDisplayName
