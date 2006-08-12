@@ -1269,6 +1269,10 @@ const char *ldb_msg_find_string(const struct ldb_message *msg,
 				const char *attr_name,
 				const char *default_value);
 
+struct ldb_dn *ldb_msg_find_dn(void *mem_ctx,
+				   const struct ldb_message *msg,
+				   const char *attr_name);
+
 void ldb_msg_sort_elements(struct ldb_message *msg);
 
 struct ldb_message *ldb_msg_copy_shallow(void *mem_ctx, 
