@@ -147,7 +147,8 @@ int ldb_next_end_trans(struct ldb_module *module);
 int ldb_next_del_trans(struct ldb_module *module);
 int ldb_next_init(struct ldb_module *module);
 
-void ldb_set_errstring(struct ldb_context *ldb, char *err_string);
+void ldb_set_errstring(struct ldb_context *ldb, const char *err_string);
+void ldb_asprintf_errstring(struct ldb_context *ldb, const char *format, ...);
 void ldb_reset_err_string(struct ldb_context *ldb);
 
 int ldb_register_module(const struct ldb_module_ops *);

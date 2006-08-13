@@ -87,7 +87,7 @@ struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module
 
 	h = talloc_zero(ltdb, struct ldb_handle);
 	if (h == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return NULL;
 	}
 
@@ -95,7 +95,7 @@ struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module
 
 	ac = talloc_zero(h, struct ltdb_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		talloc_free(h);
 		return NULL;
 	}
@@ -181,10 +181,7 @@ int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *m
 	for (i = 0; i < msg->num_elements; i++) {
 		for (j = 0; j < msg->elements[i].num_values; j++) {
 			if (ltdb_check_at_attributes_values(&msg->elements[i].values[j]) != 0) {
-				char *err_string = talloc_strdup(module, "Invalid attribute value in an @ATTRIBUTES entry");
-				if (err_string) {
-					ldb_set_errstring(module->ldb, err_string);
-				}
+				ldb_set_errstring(module->ldb, "Invalid attribute value in an @ATTRIBUTES entry");
 				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 			}
 		}
@@ -258,6 +255,7 @@ done:
 
 static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message *msg)
 {
+	char *err;
 	int ret;
 	
 	ret = ltdb_check_special_dn(module, msg);
@@ -278,7 +276,7 @@ static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message
 		if (!dn) {
 			return ret;
 		}
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Entry %s already exists", dn));
+		ldb_asprintf_errstring(module->ldb, "Entry %s already exists", dn);
 		talloc_free(dn);
 		return ret;
 	}
@@ -629,7 +627,6 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		struct ldb_message_element *el = &msg->elements[i];
 		struct ldb_message_element *el2;
 		struct ldb_val *vals;
-		char *err_string;
 		char *dn;
 
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
@@ -654,8 +651,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 
 			for (j=0;j<el->num_values;j++) {
 				if (ldb_msg_find_val(el2, &el->values[j])) {
-					err_string = talloc_strdup(module, "Type or value exists");
-					if (err_string) ldb_set_errstring(module->ldb, err_string);
+					ldb_set_errstring(module->ldb, "Type or value exists");
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					goto failed;
 				}
@@ -705,9 +701,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			if (msg->elements[i].num_values == 0) {
 				if (msg_delete_attribute(module, ldb, msg2, 
 							 msg->elements[i].name) != 0) {
-					err_string = talloc_asprintf(module, "No such attribute: %s for delete on %s", 
-								     msg->elements[i].name, dn);
-					if (err_string) ldb_set_errstring(module->ldb, err_string);
+					ldb_asprintf_errstring(module->ldb, "No such attribute: %s for delete on %s", msg->elements[i].name, dn);
 					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
 				}
@@ -718,9 +712,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 						       msg2, 
 						       msg->elements[i].name,
 						       &msg->elements[i].values[j]) != 0) {
-					err_string = talloc_asprintf(module, "No matching attribute value when deleting attribute: %s on %s", 
-								     msg->elements[i].name, dn);
-					if (err_string) ldb_set_errstring(module->ldb, err_string);
+					ldb_asprintf_errstring(module->ldb, "No matching attribute value when deleting attribute: %s on %s", msg->elements[i].name, dn);
 					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
 				}
@@ -731,10 +723,9 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			}
 			break;
 		default:
-			err_string = talloc_asprintf(module, "Invalid ldb_modify flags on %s: 0x%x", 
-						     msg->elements[i].name, 
-						     msg->elements[i].flags & LDB_FLAG_MOD_MASK);
-			if (err_string) ldb_set_errstring(module->ldb, err_string);
+			ldb_asprintf_errstring(module->ldb, "Invalid ldb_modify flags on %s: 0x%x", 
+							     msg->elements[i].name, 
+							     msg->elements[i].flags & LDB_FLAG_MOD_MASK);
 			ret = LDB_ERR_PROTOCOL_ERROR;
 			goto failed;
 		}

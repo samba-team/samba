@@ -174,12 +174,25 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 	return LDB_SUCCESS;
 }
 
-void ldb_set_errstring(struct ldb_context *ldb, char *err_string)
+void ldb_set_errstring(struct ldb_context *ldb, const char *err_string)
 {
 	if (ldb->err_string) {
 		talloc_free(ldb->err_string);
 	}
-	ldb->err_string = talloc_steal(ldb, err_string);
+	ldb->err_string = talloc_strdup(ldb, err_string);
+}
+
+void ldb_asprintf_errstring(struct ldb_context *ldb, const char *format, ...)
+{
+	va_list ap;
+
+	if (ldb->err_string) {
+		talloc_free(ldb->err_string);
+	}
+
+	va_start(ap, format);
+	ldb->err_string = talloc_vasprintf(ldb, format, ap);
+	va_end(ap);
 }
 
 void ldb_reset_err_string(struct ldb_context *ldb)
@@ -194,8 +207,7 @@ void ldb_reset_err_string(struct ldb_context *ldb)
 	module = ldb->modules;					\
 	while (module && module->ops->op == NULL) module = module->next; \
 	if (module == NULL) {						\
-		ldb_set_errstring(ldb, \
-				  talloc_asprintf(ldb, "unable to find module or backend to handle operation: " #op)); \
+		ldb_asprintf_errstring(ldb, "unable to find module or backend to handle operation: " #op); \
 		return LDB_ERR_OPERATIONS_ERROR;			\
 	} \
 } while (0)
@@ -215,10 +227,10 @@ static int ldb_transaction_start_internal(struct ldb_context *ldb)
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
-			ldb_set_errstring(ldb, 
-					  talloc_asprintf(ldb, "ldb transaction start: %s (%d)", 
-							  ldb_strerror(status), 
-							  status));
+			ldb_asprintf_errstring(ldb,
+						"ldb transaction start: %s (%d)", 
+						ldb_strerror(status), 
+						status);
 		}
 	}
 	return status;
@@ -239,10 +251,10 @@ static int ldb_transaction_commit_internal(struct ldb_context *ldb)
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
-			ldb_set_errstring(ldb, 
-					  talloc_asprintf(ldb, "ldb transaction commit: %s (%d)", 
-							  ldb_strerror(status), 
-							  status));
+			ldb_asprintf_errstring(ldb, 
+						"ldb transaction commit: %s (%d)", 
+						ldb_strerror(status), 
+						status);
 		}
 	}
 	return status;
@@ -261,10 +273,10 @@ static int ldb_transaction_cancel_internal(struct ldb_context *ldb)
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
-			ldb_set_errstring(ldb, 
-					  talloc_asprintf(ldb, "ldb transaction cancel: %s (%d)", 
-							  ldb_strerror(status), 
-							  status));
+			ldb_asprintf_errstring(ldb, 
+						"ldb transaction cancel: %s (%d)", 
+						ldb_strerror(status), 
+						status);
 		}
 	}
 	return status;
@@ -345,9 +357,7 @@ static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_reque
 
 	if (ldb->err_string == NULL) {
 		/* no error string was setup by the backend */
-		ldb_set_errstring(ldb, 
-				  talloc_asprintf(ldb, "%s (%d)", 
-						  ldb_strerror(ret), ret));
+		ldb_asprintf_errstring(ldb, "%s (%d)", ldb_strerror(ret), ret);
 	}
 
 	return ret;
@@ -460,7 +470,7 @@ static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ld
 	int n;
 	
  	if (!context) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context in callback"));
+		ldb_set_errstring(ldb, "NULL Context in callback");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}	
 
@@ -533,7 +543,7 @@ int ldb_search(struct ldb_context *ldb,
 	
 	req = talloc(ldb, struct ldb_request);
 	if (req == NULL) {
-		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -543,7 +553,7 @@ int ldb_search(struct ldb_context *ldb,
 
 	req->op.search.tree = ldb_parse_tree(req, expression);
 	if (req->op.search.tree == NULL) {
-		ldb_set_errstring(ldb, talloc_strdup(ldb, "Unable to parse search expression"));
+		ldb_set_errstring(ldb, "Unable to parse search expression");
 		talloc_free(req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -593,7 +603,7 @@ int ldb_add(struct ldb_context *ldb,
 		
 	req = talloc(ldb, struct ldb_request);
 	if (req == NULL) {
-		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -625,7 +635,7 @@ int ldb_modify(struct ldb_context *ldb,
 
 	req = talloc(ldb, struct ldb_request);
 	if (req == NULL) {
-		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		ldb_set_errstring(ldb, "Out of Memory!");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -654,7 +664,7 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 
 	req = talloc(ldb, struct ldb_request);
 	if (req == NULL) {
-		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		ldb_set_errstring(ldb, "Out of Memory!");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -682,7 +692,7 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 
 	req = talloc(ldb, struct ldb_request);
 	if (req == NULL) {
-		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		ldb_set_errstring(ldb, "Out of Memory!");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -712,7 +722,7 @@ int ldb_sequence_number(struct ldb_context *ldb, uint64_t *seq_num)
 
 	req = talloc(ldb, struct ldb_request);
 	if (req == NULL) {
-		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

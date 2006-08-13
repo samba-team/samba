@@ -152,7 +152,7 @@ static int rootdse_callback(struct ldb_context *ldb, void *context, struct ldb_r
 	struct rootdse_context *ac;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		goto error;
 	}
 

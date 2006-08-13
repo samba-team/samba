@@ -96,7 +96,7 @@ static struct ldb_handle *lpdb_init_handle(struct ldb_request *req, struct ldb_m
 
 	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return NULL;
 	}
 
@@ -104,7 +104,7 @@ static struct ldb_handle *lpdb_init_handle(struct ldb_request *req, struct ldb_m
 
 	ac = talloc_zero(h, struct lpdb_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		talloc_free(h);
 		return NULL;
 	}
@@ -159,8 +159,9 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 
 	/* TODO: remove this when sambaPassword will be in schema */
 	if (!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "person")) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Cannot relocate a password on entry: %s, does not have objectClass 'person'",
-							       ldb_dn_linearize(req, req->op.add.message->dn)));
+		ldb_asprintf_errstring(module->ldb,
+					"Cannot relocate a password on entry: %s, does not have objectClass 'person'",
+					ldb_dn_linearize(req, req->op.add.message->dn));
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
@@ -217,8 +218,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 	 * search', to allow the directory to create the objectGUID */
 	if (ldb_msg_find_ldb_val(ac->orig_req->op.add.message, "objectGUID") == NULL) {
 		ldb_set_errstring(module->ldb, 
-				  talloc_asprintf(req,
-						  "no objectGUID found in search: local_password module must be configured below objectGUID module!\n"));
+				  "no objectGUID found in search: local_password module must be configured below objectGUID module!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -361,7 +361,7 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 	struct lpdb_context *ac;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -370,7 +370,7 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
 		if (ac->search_res != NULL) {
-			ldb_set_errstring(ldb, talloc_asprintf(ldb, "Too many results"));
+			ldb_set_errstring(ldb, "Too many results");
 			talloc_free(ares);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -404,7 +404,7 @@ static int local_password_mod_search_self(struct ldb_handle *h) {
 	ac->search_req->op.search.scope = LDB_SCOPE_BASE;
 	ac->search_req->op.search.tree = ldb_parse_tree(ac->module->ldb, NULL);
 	if (ac->search_req->op.search.tree == NULL) {
-		ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac, "Invalid search filter"));
+		ldb_set_errstring(ac->module->ldb, "Invalid search filter");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ac->search_req->op.search.attrs = attrs;
@@ -429,10 +429,9 @@ static int local_password_mod_local(struct ldb_handle *h) {
 	/* if it is not an entry of type person this is an error */
 	/* TODO: remove this when sambaPassword will be in schema */
 	if (!ac->search_res) {
-		ldb_set_errstring(ac->module->ldb, 
-				  talloc_asprintf(ac,
-						  "entry just modified (%s) not found!",
-						  ldb_dn_linearize(ac, ac->remote_req->op.mod.message->dn)));
+		ldb_asprintf_errstring(ac->module->ldb, 
+					"entry just modified (%s) not found!",
+					ldb_dn_linearize(ac, ac->remote_req->op.mod.message->dn));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	if (!ldb_msg_check_string_attribute(ac->search_res->message, "objectClass", "person")) {
@@ -442,8 +441,7 @@ static int local_password_mod_local(struct ldb_handle *h) {
 	
 	if (ldb_msg_find_ldb_val(ac->search_res->message, "objectGUID") == NULL) {
 		ldb_set_errstring(ac->module->ldb, 
-				  talloc_asprintf(ac,
-						  "no objectGUID found in search: local_password module must be configured below objectGUID module!\n"));
+				  "no objectGUID found in search: local_password module must be configured below objectGUID module!\n");
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 	
@@ -470,7 +468,7 @@ static int lpdb_local_search_callback(struct ldb_context *ldb, void *context, st
 	struct lpdb_local_search_context *local_context;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -482,7 +480,7 @@ static int lpdb_local_search_callback(struct ldb_context *ldb, void *context, st
 	{
 		int i;
 		if (local_context->local_res != NULL) {
-			ldb_set_errstring(ldb, talloc_asprintf(ldb, "Too many results to base search for password entry!"));
+			ldb_set_errstring(ldb, "Too many results to base search for password entry!");
 			talloc_free(ares);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -527,7 +525,7 @@ static int lpdb_local_search_callback(struct ldb_context *ldb, void *context, st
 	default:
 	{
 		talloc_free(ares);
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "Unexpected result type in base search for password entry!"));
+		ldb_set_errstring(ldb, "Unexpected result type in base search for password entry!");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	}
@@ -540,7 +538,7 @@ static int lpdb_remote_search_callback(struct ldb_context *ldb, void *context, s
 	struct lpdb_context *ac;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		goto error;
 	}
 
@@ -568,8 +566,7 @@ static int lpdb_remote_search_callback(struct ldb_context *ldb, void *context, s
 
 		if (ldb_msg_find_ldb_val(ares->message, "objectGUID") == NULL) {
 			ldb_set_errstring(ac->module->ldb, 
-					  talloc_asprintf(ac,
-							  "no objectGUID found in search: local_password module must be configured below objectGUID module!\n"));
+					  "no objectGUID found in search: local_password module must be configured below objectGUID module!\n");
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	
@@ -606,7 +603,7 @@ static int lpdb_remote_search_callback(struct ldb_context *ldb, void *context, s
 		req->op.search.scope = LDB_SCOPE_BASE;
 		req->op.search.tree = ldb_parse_tree(ac->module->ldb, NULL);
 		if (req->op.search.tree == NULL) {
-			ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac, "out of memory"));
+			ldb_set_errstring(ac->module->ldb, "Out of Memory");
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		req->op.search.attrs = ac->orig_req->op.search.attrs;

@@ -184,7 +184,7 @@ static int extended_callback(struct ldb_context *ldb, void *context, struct ldb_
 	struct extended_context *ac;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		goto error;
 	}
 

@@ -138,9 +138,9 @@ static int samldb_find_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 
 	str = ldb_msg_find_string(res->msgs[0], "nextRid", NULL);
 	if (str == NULL) {
-		ldb_set_errstring(module->ldb,
-				  talloc_asprintf(mem_ctx, "attribute nextRid not found in %s\n",
-						  ldb_dn_linearize(res, dn)));
+		ldb_asprintf_errstring(module->ldb,
+					"attribute nextRid not found in %s\n",
+					ldb_dn_linearize(res, dn));
 		talloc_free(res);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -177,7 +177,9 @@ static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_c
 		 * This is a critical situation it means that someone messed up with
 		 * the DB and nextRid is not returning free RIDs, report an error
 		 * and refuse to create any user until the problem is fixed */
-		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "Critical Error: unconsistent DB, unable to retireve an unique RID to generate a new SID: %s", ldb_errstring(module->ldb)));
+		ldb_asprintf_errstring(module->ldb,
+					"Critical Error: unconsistent DB, unable to retireve an unique RID to generate a new SID: %s",
+					ldb_errstring(module->ldb));
 		return ret;
 	}
 	return ret;
@@ -233,7 +235,9 @@ static int samldb_get_new_sid(struct ldb_module *module,
 
 	dom_dn = samldb_search_domain(module, mem_ctx, obj_dn);
 	if (dom_dn == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "Invalid dn (%s) not child of a domain object!\n", ldb_dn_linearize(mem_ctx, obj_dn)));
+		ldb_asprintf_errstring(module->ldb,
+					"Invalid dn (%s) not child of a domain object!\n",
+					ldb_dn_linearize(mem_ctx, obj_dn));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -241,22 +245,24 @@ static int samldb_get_new_sid(struct ldb_module *module,
 
 	ret = ldb_search(module->ldb, dom_dn, LDB_SCOPE_BASE, "objectSid=*", attrs, &res);
 	if (ret != LDB_SUCCESS) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_get_new_sid: error retrieving domain sid from %s: %s!\n",
-							       ldb_dn_linearize(mem_ctx, dom_dn),
-							       ldb_errstring(module->ldb)));
+		ldb_asprintf_errstring(module->ldb,
+					"samldb_get_new_sid: error retrieving domain sid from %s: %s!\n",
+					ldb_dn_linearize(mem_ctx, dom_dn),
+					ldb_errstring(module->ldb));
 		talloc_free(res);
 		return ret;
 	}
 
 	if (res->count != 1) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_get_new_sid: error retrieving domain sid from %s: not found!\n",
-							       ldb_dn_linearize(mem_ctx, dom_dn)));
+		ldb_asprintf_errstring(module->ldb,
+					"samldb_get_new_sid: error retrieving domain sid from %s: not found!\n",
+					ldb_dn_linearize(mem_ctx, dom_dn));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	dom_sid = samdb_result_dom_sid(res, res->msgs[0], "objectSid");
 	if (dom_sid == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_get_new_sid: error parsing domain sid!\n"));
+		ldb_set_errstring(module->ldb, "samldb_get_new_sid: error parsing domain sid!\n");
 		talloc_free(res);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -299,19 +305,19 @@ int samldb_notice_sid(struct ldb_module *module,
 	if (ret == LDB_SUCCESS) {
 		if (res->count > 0) {
 			talloc_free(res);
-			ldb_set_errstring(module->ldb,
-					  talloc_asprintf(mem_ctx,
-							  "Attempt to add record with SID %s rejected,"
-							  " because this SID is already in the database",
-							  dom_sid_string(mem_ctx, sid)));
+			ldb_asprintf_errstring(module->ldb,
+						"Attempt to add record with SID %s rejected,"
+						" because this SID is already in the database",
+						dom_sid_string(mem_ctx, sid));
 			/* We have a duplicate SID, we must reject the add */
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		talloc_free(res);
 	} else {
-		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "samldb_notice_sid: error searching to see if sid %s is in use: %s\n", 
-							       dom_sid_string(mem_ctx, sid), 
-							       ldb_errstring(module->ldb)));
+		ldb_asprintf_errstring(module->ldb,
+					"samldb_notice_sid: error searching to see if sid %s is in use: %s\n", 
+					dom_sid_string(mem_ctx, sid), 
+					ldb_errstring(module->ldb));
 		return ret;
 	}
 
@@ -338,14 +344,16 @@ int samldb_notice_sid(struct ldb_module *module,
 
 		if (dom_res->count > 1) {
 			talloc_free(dom_res);
-			ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_notice_sid: error retrieving domain from sid: duplicate (found %d) domain: %s!\n", 
-								       dom_res->count, dom_sid_string(dom_res, dom_sid)));
+			ldb_asprintf_errstring(module->ldb,
+					"samldb_notice_sid: error retrieving domain from sid: duplicate (found %d) domain: %s!\n", 
+					dom_res->count, dom_sid_string(dom_res, dom_sid));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	} else {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_notice_sid: error retrieving domain from sid: %s: %s\n", 
-							       dom_sid_string(dom_res, dom_sid), 
-							       ldb_errstring(module->ldb)));
+		ldb_asprintf_errstring(module->ldb,
+					"samldb_notice_sid: error retrieving domain from sid: %s: %s\n", 
+					dom_sid_string(dom_res, dom_sid), 
+					ldb_errstring(module->ldb));
 		return ret;
 	}
 
@@ -537,7 +545,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
 
 	if (strcasecmp(rdn->name, "cn") != 0) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Bad RDN (%s=) for user/computer, should be CN=!\n", rdn->name));
+		ldb_asprintf_errstring(module->ldb, "Bad RDN (%s=) for user/computer, should be CN=!\n", rdn->name);
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -606,7 +614,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
 
 	if (strcasecmp(rdn->name, "cn") != 0) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Bad RDN (%s=) for ForeignSecurityPrincipal, should be CN=!", rdn->name));
+		ldb_asprintf_errstring(module->ldb, "Bad RDN (%s=) for ForeignSecurityPrincipal, should be CN=!", rdn->name);
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -617,7 +625,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 
 	sid = dom_sid_parse_talloc(msg2, (const char *)rdn->value.data);
 	if (!sid) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "No valid found SID in ForeignSecurityPrincipal CN!"));
+		ldb_set_errstring(module->ldb, "No valid found SID in ForeignSecurityPrincipal CN!");
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -647,9 +655,9 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "NOTE (strange but valid): Adding foreign SID record with SID %s, but this domian (%s) is already in the database", 
 			  dom_sid_string(mem_ctx, sid), name); 
 	} else if (ret == -1) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, 
-							       "samldb_fill_foreignSecurityPrincipal_object: error searching for a domain with this sid: %s\n", 
-							       dom_sid_string(mem_ctx, dom_sid)));
+		ldb_asprintf_errstring(module->ldb,
+					"samldb_fill_foreignSecurityPrincipal_object: error searching for a domain with this sid: %s\n", 
+					dom_sid_string(mem_ctx, dom_sid));
 		talloc_free(dom_msgs);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

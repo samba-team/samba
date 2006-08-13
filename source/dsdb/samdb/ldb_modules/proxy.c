@@ -298,7 +298,7 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 	newreq->controls = req->controls;
 	ret = ldb_request(proxy->upstream, newreq);
 	if (ret != LDB_SUCCESS) {
-		ldb_set_errstring(module->ldb, talloc_strdup(module, ldb_errstring(proxy->upstream)));
+		ldb_set_errstring(module->ldb, ldb_errstring(proxy->upstream));
 		talloc_free(newreq);
 		return -1;
 	}

@@ -42,7 +42,6 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req)
 	struct winsdb_handle *h = talloc_get_type(ldb_get_opaque(module->ldb, "winsdb_handle"),
 						  struct winsdb_handle);
 	const struct ldb_message *msg;
-	char *error = NULL;
 
 	switch (req->operation) {
 	case LDB_ADD:
@@ -63,9 +62,7 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (!h) {
-		error = talloc_strdup(module, "WINS_LDB: INTERNAL ERROR: no winsdb_handle present!");
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "%s", error);
-		ldb_set_errstring(module->ldb, error);
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL, "%s", "WINS_LDB: INTERNAL ERROR: no winsdb_handle present!");
 		return LDB_ERR_OTHER;
 	}
 
@@ -76,8 +73,7 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 
 	case WINSDB_HANDLE_CALLER_ADMIN:
-		error = talloc_strdup(module, "WINS_LDB: TODO verify add/modify for WINSDB_HANDLE_CALLER_ADMIN");
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "%s\n", error);
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "%s\n", "WINS_LDB: TODO verify add/modify for WINSDB_HANDLE_CALLER_ADMIN");
 		return ldb_next_request(module, req);
 	}
 

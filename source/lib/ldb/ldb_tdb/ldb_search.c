@@ -517,7 +517,7 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 		ret = ltdb_search_full(req->handle);
 	}
 	if (ret != LDB_SUCCESS) {
-		ldb_set_errstring(module->ldb, talloc_strdup(module->ldb, "Indexed and full searches both failed!\n"));
+		ldb_set_errstring(module->ldb, "Indexed and full searches both failed!\n");
 		req->handle->state = LDB_ASYNC_DONE;
 		req->handle->status = ret;
 	}
