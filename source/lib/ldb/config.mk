@@ -81,13 +81,16 @@ PUBLIC_DEPENDENCIES = \
 # End MODULE ldb_ildap
 ################################################
 
-# ################################################
-# # Start MODULE ldb_map
-# [SUBSYSTEM::ldb_map]
-# PUBLIC_DEPENDENCIES = ldb
-# OBJ_FILES = modules/ldb_map.o
-# # End MODULE ldb_map
-# ################################################
+################################################
+# Start MODULE ldb_map
+[MODULE::ldb_map]
+SUBSYSTEM = ldb
+OBJ_FILES = \
+		modules/ldb_map_inbound.o \
+		modules/ldb_map_outbound.o \
+		modules/ldb_map.o
+# End MODULE ldb_map
+################################################
 
 ################################################
 # Start MODULE ldb_skel

@@ -1,19 +1,19 @@
-dn: sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: sambaDomainName=TESTS,${BASEDN}
 objectclass: sambaDomain
 objectclass: top
 sambaSID: S-1-5-21-4231626423-2410014848-2360679739
 sambaNextRid: 2000
 sambaDomainName: TESTS
 
-dn: ou=Users,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: ou=Users,sambaDomainName=TESTS,${BASEDN}
 objectClass: organizationalUnit
 ou: Users
 
-dn: ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: organizationalUnit
 ou: Groups
 
-dn: uid=nobody,ou=Users,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: uid=nobody,ou=Users,sambaDomainName=TESTS,${BASEDN}
 cn: nobody
 sn: nobody
 objectClass: inetOrgPerson
@@ -40,7 +40,7 @@ sambaAcctFlags: [NU         ]
 sambaSID: S-1-5-21-4231626423-2410014848-2360679739-2998
 loginShell: /bin/false
 
-dn: cn=Domain Admins,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Domain Admins,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 512
@@ -51,7 +51,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-512
 sambaGroupType: 2
 displayName: Domain Admins
 
-dn: cn=Domain Users,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Domain Users,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 513
@@ -61,7 +61,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-513
 sambaGroupType: 2
 displayName: Domain Users
 
-dn: cn=Domain Guests,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Domain Guests,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 514
@@ -71,7 +71,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-514
 sambaGroupType: 2
 displayName: Domain Guests
 
-dn: cn=Print Operators,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Print Operators,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 550
@@ -81,7 +81,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-550
 sambaGroupType: 2
 displayName: Print Operators
 
-dn: cn=Backup Operators,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Backup Operators,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 551
@@ -91,7 +91,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-551
 sambaGroupType: 2
 displayName: Backup Operators
 
-dn: cn=Replicator,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Replicator,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 552
@@ -101,7 +101,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-552
 sambaGroupType: 2
 displayName: Replicator
 
-dn: cn=Domain Computers,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Domain Computers,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 553
@@ -111,7 +111,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-553
 sambaGroupType: 2
 displayName: Domain Computers
 
-dn: cn=Administrators,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Administrators,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 544
@@ -121,7 +121,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-544
 sambaGroupType: 2
 displayName: Administrators
 
-dn: cn=Users,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Users,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 545
@@ -131,7 +131,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-545
 sambaGroupType: 2
 displayName: users
 
-dn: cn=Guests,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Guests,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 546
@@ -142,7 +142,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-546
 sambaGroupType: 2
 displayName: Guests
 
-dn: cn=Power Users,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Power Users,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 547
@@ -152,7 +152,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-547
 sambaGroupType: 2
 displayName: Power Users
 
-dn: cn=Account Operators,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Account Operators,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 548
@@ -162,7 +162,7 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-548
 sambaGroupType: 2
 displayName: Account Operators
 
-dn: cn=Server Operators,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Server Operators,ou=Groups,sambaDomainName=TESTS,${BASEDN}
 objectClass: posixGroup
 objectClass: sambaGroupMapping
 gidNumber: 549
@@ -172,11 +172,11 @@ sambaSID: S-1-5-21-4231626423-2410014848-2360679739-549
 sambaGroupType: 2
 displayName: Server Operators
 
-dn: ou=Computers,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: ou=Computers,sambaDomainName=TESTS,${BASEDN}
 objectClass: organizationalUnit
 ou: Computers
 
-dn: uid=Administrator,ou=Users,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: uid=Administrator,ou=Users,sambaDomainName=TESTS,${BASEDN}
 cn: Administrator
 sn: Administrator
 objectClass: inetOrgPerson

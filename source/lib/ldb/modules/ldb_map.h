@@ -2,7 +2,8 @@
    ldb database library - map backend
 
    Copyright (C) Jelmer Vernooij 2005
-   	Development sponsored by the Google Summer of Code program
+   Copyright (C) Martin Kuehl <mkhl@samba.org> 2006
+	Development sponsored by the Google Summer of Code program
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -15,12 +16,12 @@
 
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
    Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307	 USA
 */
 
 #ifndef __LDB_MAP_H__
@@ -39,10 +40,21 @@
  * while returning too many attributes in ldb_search() doesn't)
  */
 
+
+/* Name of the internal attribute pointing from the local to the
+ * remote part of a record */
+#define IS_MAPPED "isMapped"
+
+
 struct ldb_map_context;
 
-struct ldb_map_attribute 
-{
+/* convert a local ldb_val to a remote ldb_val */
+typedef struct ldb_val (*ldb_map_convert_func) (struct ldb_module *module, void *mem_ctx, const struct ldb_val *val);
+
+#define LDB_MAP_MAX_REMOTE_NAMES 10
+
+/* map from local to remote attribute */
+struct ldb_map_attribute {
 	const char *local_name; /* local name */
 
 	enum ldb_map_attr_type { 
@@ -55,8 +67,8 @@ struct ldb_map_attribute
 						multiple remote attributes. */
 	} type;
 	
-	/* if set, will be called for expressions that contain this attribute */
-	struct ldb_parse_tree *(*convert_operator) (struct ldb_map_context *, TALLOC_CTX *ctx, const struct ldb_parse_tree *);	
+	/* if set, will be called for search expressions that contain this attribute */
+	struct ldb_parse_tree *(*convert_operator)(const struct ldb_map_context *, TALLOC_CTX *ctx, const struct ldb_parse_tree *);
 
 	union { 
 		struct {
@@ -65,43 +77,46 @@ struct ldb_map_attribute
 		
 		struct {
 			const char *remote_name;
-			struct ldb_val (*convert_local) (struct ldb_module *, TALLOC_CTX *, const struct ldb_val *);
-			
+
+			/* Convert local to remote data */
+			ldb_map_convert_func convert_local;
+
+			/* Convert remote to local data */
 			/* an entry can have convert_remote set to NULL, as long as there as an entry with the same local_name 
 			 * that is non-NULL before it. */
-			struct ldb_val (*convert_remote) (struct ldb_module *, TALLOC_CTX *, const struct ldb_val *);
+			ldb_map_convert_func convert_remote;
 		} convert;
 	
 		struct {
 			/* Generate the local attribute from remote message */
-			struct ldb_message_element *(*generate_local) (
-					struct ldb_module *, 
-					TALLOC_CTX *ctx, 
-					const char *attr,
-					const struct ldb_message *remote);
+			struct ldb_message_element *(*generate_local)(struct ldb_module *, TALLOC_CTX *mem_ctx, const char *remote_attr, const struct ldb_message *remote);
 
 			/* Update remote message with information from local message */
-			void (*generate_remote) (
-					struct ldb_module *, 
-					const char *local_attr,
-					const struct ldb_message *local, 
-					struct ldb_message *remote_mp,
-					struct ldb_message *remote_fb);
+			void (*generate_remote)(struct ldb_module *, const char *local_attr, const struct ldb_message *old, struct ldb_message *remote, struct ldb_message *local);
 
 			/* Name(s) for this attribute on the remote server. This is an array since 
 			 * one local attribute's data can be split up into several attributes 
 			 * remotely */
-#define LDB_MAP_MAX_REMOTE_NAMES 10
 			const char *remote_names[LDB_MAP_MAX_REMOTE_NAMES];
+
+			/* Names of additional remote attributes
+			 * required for the generation.	 NULL
+			 * indicates that `local_attr' suffices. */
+			/*
+#define LDB_MAP_MAX_SELF_ATTRIBUTES 10
+			const char *self_attrs[LDB_MAP_MAX_SELF_ATTRIBUTES];
+			*/
 		} generate;
 	} u;
 };
 
-#define LDB_MAP_MAX_SUBCLASSES 	10
-#define LDB_MAP_MAX_MUSTS 		10
-#define LDB_MAP_MAX_MAYS 		50
-struct ldb_map_objectclass 
-{
+
+#define LDB_MAP_MAX_SUBCLASSES	10
+#define LDB_MAP_MAX_MUSTS		10
+#define LDB_MAP_MAX_MAYS		50
+
+/* map from local to remote objectClass */
+struct ldb_map_objectclass {
 	const char *local_name;
 	const char *remote_name;
 	const char *base_classes[LDB_MAP_MAX_SUBCLASSES];
@@ -109,12 +124,26 @@ struct ldb_map_objectclass
 	const char *mays[LDB_MAP_MAX_MAYS];
 };
 
-struct ldb_map_context
-{
+
+/* private context data */
+struct ldb_map_context {
 	struct ldb_map_attribute *attribute_maps;
 	/* NOTE: Always declare base classes first here */
 	const struct ldb_map_objectclass *objectclass_maps;
-	struct ldb_context *mapped_ldb;
+	/* struct ldb_context *mapped_ldb; */
+	const struct ldb_dn *local_base_dn;
+	const struct ldb_dn *remote_base_dn;
 };
+
+/* initialization function */
+int
+ldb_map_init(struct ldb_module *module,
+	     const struct ldb_map_attribute *attrs,
+	     const struct ldb_map_objectclass *ocls,
+	     const char *name);
+
+/* get copy of map_ops */
+struct ldb_module_ops
+ldb_map_get_ops(void);
 
 #endif /* __LDB_MAP_H__ */

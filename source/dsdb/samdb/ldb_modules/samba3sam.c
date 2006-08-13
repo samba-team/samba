@@ -5,10 +5,16 @@
 */
 
 #include "includes.h"
-#include "ldb/modules/ldb_map.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include "ldb/include/ldb_errors.h"
+#include "ldb/modules/ldb_map.h"
 #include "system/passwd.h"
+
+#include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/ndr/libndr.h"
+#include "libcli/security/security.h"
+#include "libcli/security/proto.h"
 
 /* 
  * sambaSID -> member  (dn!)
@@ -855,8 +861,33 @@ const struct ldb_map_attribute samba3_attributes[] =
 	}
 };
 
+/* the context init function */
+static int samba3sam_init(struct ldb_module *module)
+{
+        int ret;
+
+	ret = ldb_map_init(module, samba3_attributes, samba3_objectclasses, "samba3sam");
+        if (ret != LDB_SUCCESS)
+                return ret;
+
+        return ldb_next_init(module);
+}
+
+static struct ldb_module_ops samba3sam_ops = {
+	.name		   = "samba3sam",
+	.init_context	   = samba3sam_init,
+};
+
 /* the init function */
 int ldb_samba3sam_module_init(void)
 {
-	return ldb_map_init(ldb, samba3_attributes, samba3_objectclasses, "samba3sam");
+	struct ldb_module_ops ops = ldb_map_get_ops();
+	samba3sam_ops.add	= ops.add;
+	samba3sam_ops.modify	= ops.modify;
+	samba3sam_ops.del	= ops.del;
+	samba3sam_ops.rename	= ops.rename;
+	samba3sam_ops.search	= ops.search;
+	samba3sam_ops.wait	= ops.wait;
+
+	return ldb_register_module(&samba3sam_ops);
 }

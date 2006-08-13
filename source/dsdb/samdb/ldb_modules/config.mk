@@ -33,6 +33,18 @@ OBJ_FILES = \
 # End MODULE ldb_samldb
 ################################################
 
+################################################
+# Start MODULE ldb_entryUUID
+[MODULE::ldb_entryUUID]
+SUBSYSTEM = ldb
+INIT_FUNCTION = ldb_entryUUID_module_init
+ENABLE = YES
+OBJ_FILES = \
+		entryUUID.o
+#
+# End MODULE ldb_entryUUID
+################################################
+
 # ################################################
 # # Start MODULE ldb_proxy
 # [MODULE::ldb_proxy]
