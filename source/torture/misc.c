@@ -439,14 +439,14 @@ static BOOL torture_ioctl_test(struct torture_context *torture)
 */
 int init_benchrw_params(TALLOC_CTX *mem_ctx,struct params *lpar)
 {
+	char **unc_list = NULL;
+	int num_unc_names = 0, conn_index=0, empty_lines=0;
+	const char *p;
 	lpar->retry = lp_parm_int(-1, "torture", "retry",3);
 	lpar->blocksize = lp_parm_int(-1, "torture", "blocksize",65535);
 	lpar->writeblocks = lp_parm_int(-1, "torture", "writeblocks",15);
 	lpar->writeratio = lp_parm_int(-1, "torture", "writeratio",5);
 	lpar->workgroup = lp_workgroup();
-	char **unc_list = NULL;
-	int num_unc_names = 0, conn_index=0, empty_lines=0;
-	const char *p;
 	
 	p = lp_parm_string(-1, "torture", "unclist");
 	if (p) {
