@@ -8,75 +8,92 @@ libinclude("base.js");
 var mypath = substr(ARGV[0], 0, -strlen("samba3sam"));
 
 var sys = sys_init();
-var s3url;
+var s3url = "tdb://samba3.ldb";
+var s4url = "tdb://samba4.ldb";
 var s3 = ldb_init();
+var s4 = ldb_init();
+var msg;
 var ok;
 
-if (ARGV.length == 2) {
-	s3url = ARGV[1];
-	ok = s3.connect(s3url);
-	assert(ok);
-} else {
-	s3url = "tdb://samba3.ldb";
-	sys.unlink("samba3.ldb");
-	println("Adding samba3 LDIF...");
-	var s3 = ldb_init();
-	ok = s3.connect(s3url);
-	assert(ok);
-	var ldif = sys.file_load(mypath + "../../testdata/samba3/samba3.ldif");
-	assert(ldif != undefined);
-	ok = s3.add(ldif);
-	assert(ok);
-}
+var local = new Object();
+local.BASEDN = "dc=vernstok,dc=nl";
+var remote = new Object();
+remote.BASEDN = "CN=Samba3Sam," + local.BASEDN;
 
-println("Initial samba4 LDIF...");
-var s4 = ldb_init();
+var prt_ldif = sprintf("dn: @PARTITION
+partition: %s:%s
+partition: %s:%s", remote.BASEDN, s3url, local.BASEDN, s4url);
+
+var map_ldif = sprintf("dn: @MAP=samba3sam
+@FROM: %s
+@TO: %s", local.BASEDN, remote.BASEDN);
+
+var mod_ldif = "dn: @MODULES
+@LIST: rootdse,paged_results,server_sort,extended_dn,asq,samldb,objectclass,password_hash,operational,objectguid,rdn_name,samba3sam,partition";
+
+sys.unlink("samba3.ldb");
+ok = s3.connect(s3url);
+assert(ok);
+
+println("Initial samba3 LDIF...");
+var path = "../../testdata/samba3/samba3.ldif"
+var ldif = sys.file_load(mypath + path);
+ldif = substitute_var(ldif, remote);
+assert(ldif != undefined);
+ok = s3.add(ldif);
+assert(ok);
+
 sys.unlink("samba4.ldb");
 ok = s4.connect("tdb://samba4.ldb");
 assert(ok);
 
-var ldif = sys.file_load(mypath + "../../source/setup/provision_init.ldif");
+println("Initial samba4 LDIF...");
+var path = "../../source/setup/provision_init.ldif";
+var ldif = sys.file_load(mypath + path);
+ldif = substitute_var(ldif, local);
 assert(ldif != undefined);
 ok = s4.add(ldif);
 assert(ok);
 
-var ldif = sys.file_load(mypath + "../../source/setup/provision_templates.ldif");
-var subobj = new Object();
-subobj.BASEDN = "dc=vernstok,dc=nl";
-ldif = substitute_var(ldif, subobj);
+var path = "../../source/setup/provision_templates.ldif";
+var ldif = sys.file_load(mypath + path);
+ldif = substitute_var(ldif, local);
 assert(ldif != undefined);
 ok = s4.add(ldif);
 assert(ok);
 
-
-
-ok = s4.add(sprintf("dn: @MAP=samba3sam
-@MAP_URL: %s", s3url));
+println("Registering partitions...");
+var ldif = substitute_var(prt_ldif, local);
+assert(ldif != undefined);
+ok = s4.add(ldif);
 assert(ok);
 
-ok = s4.modify("
-dn: @MODULES
-replace: @LIST
-@LIST: samldb,timestamps,objectguid,rdn_name,samba3sam");
+println("Registering mapping...");
+var ldif = substitute_var(map_ldif, local);
+assert(ldif != undefined);
+ok = s4.add(ldif);
 assert(ok);
 
-println("Reconnecting to LDB database");
+println("Registering modules...");
+var ldif = substitute_var(mod_ldif, local);
+assert(ldif != undefined);
+ok = s4.add(ldif);
+assert(ok);
+
+println("Reconnecting to LDB database...");
 s4 = ldb_init();
-ok = s4.connect("tdb://samba4.ldb");
+ok = s4.connect(s4url);
 assert(ok);
-
-msg = s4.search("(ou=Users)");
-assert(msg.length == 1);
 
 println("Looking up by non-mapped attribute");
 msg = s4.search("(cn=Administrator)");
-assert(msg[0].cn == "Administrator");
 assert(msg.length == 1);
+assert(msg[0].cn == "Administrator");
 
 println("Looking up by mapped attribute");
 msg = s4.search("(name=Backup Operators)");
-assert(msg[0].name == "Backup Operators");
 assert(msg.length == 1);
+assert(msg[0].name == "Backup Operators");
 
 println("Looking up by old name of renamed attribute");
 msg = s4.search("(displayName=Backup Operators)");
@@ -88,8 +105,9 @@ assert(msg.length == 1);
 assert(msg[0].dn == "cn=Replicator,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl");
 assert(msg[0].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
 
-println("Checking mapping of objectclass");
-var oc = msg[0].objectclass;
+println("Checking mapping of objectClass");
+var oc = msg[0].objectClass;
+assert(oc != undefined);
 for (var i in oc) {
 	assert(oc[i] == "posixGroup" || oc[i] == "group");
 }
@@ -104,8 +122,13 @@ showInAdvancedViewOnly: TRUE
 ");
 assert(ok);
 
-println("Checking for existance of record");
+println("Checking for existence of record (local)");
+/* TODO: This record must be searched in the local database, which is currently only supported for base searches
 msg = s4.search("(cn=Foo)", new Array('foo','blah','cn','showInAdvancedViewOnly'));
+TODO: Actually, this version should work as well but doesn't...
+msg = s4.search("(cn=Foo)", "dc=idealx,dc=org", s4.LDB_SCOPE_SUBTREE new Array('foo','blah','cn','showInAdvancedViewOnly'));
+*/
+msg = s4.search("", "cn=Foo,dc=idealx,dc=org", s4.LDB_SCOPE_BASE new Array('foo','blah','cn','showInAdvancedViewOnly'));
 assert(msg.length == 1);
 assert(msg[0].showInAdvancedViewOnly == "TRUE");
 assert(msg[0].foo == "bar");
@@ -121,10 +144,24 @@ cn: Niemand
 ");
 assert(ok);
 
-println("Checking for existance of record (mapped)");
-msg = s4.search("(unixName=bin)", new Array('unixName','cn','dn'));
+println("Checking for existence of record (remote)");
+msg = s4.search("(unixName=bin)", new Array('unixName','cn','dn', 'unicodePwd'));
 assert(msg.length == 1);
+assert(msg[0].cn == "Niemand"); 
+assert(msg[0].unicodePwd == "geheim");
+
+println("Checking for existence of record (local && remote)");
+msg = s4.search("(&(unixName=bin)(unicodePwd=geheim))", new Array('unixName','cn','dn', 'unicodePwd'));
+assert(msg.length == 1);                // TODO: should check with more records
 assert(msg[0].cn == "Niemand");
+assert(msg[0].unixName == "bin");
+assert(msg[0].unicodePwd == "geheim");
+
+println("Checking for existence of record (local || remote)");
+msg = s4.search("(|(unixName=bin)(unicodePwd=geheim))", new Array('unixName','cn','dn', 'unicodePwd'));
+assert(msg.length == 1);                // TODO: should check with more records
+assert(msg[0].cn == "Niemand");
+assert(msg[0].unixName == "bin" || msg[0].unicodePwd == "geheim");
 
 println("Checking for data in destination database");
 msg = s3.search("(cn=Niemand)");
