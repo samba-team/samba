@@ -240,7 +240,7 @@ static int operational_callback(struct ldb_context *ldb, void *context, struct l
 	struct operational_context *ac;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		goto error;
 	}
 

@@ -73,7 +73,7 @@ static struct ldb_handle *init_handle(struct lldb_private *lldb, struct ldb_modu
 
 	h = talloc_zero(lldb, struct ldb_handle);
 	if (h == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return NULL;
 	}
 
@@ -81,7 +81,7 @@ static struct ldb_handle *init_handle(struct lldb_private *lldb, struct ldb_modu
 
 	ac = talloc(h, struct lldb_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		talloc_free(h);
 		return NULL;
 	}
@@ -237,12 +237,12 @@ static int lldb_search(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 
 	if (!req->callback || !req->context) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Async interface called with NULL callback function or NULL context"));
+		ldb_set_errstring(module->ldb, "Async interface called with NULL callback function or NULL context");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (req->op.search.tree == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Invalid expression parse tree"));
+		ldb_set_errstring(module->ldb, "Invalid expression parse tree");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -296,7 +296,7 @@ static int lldb_search(struct ldb_module *module, struct ldb_request *req)
 			    &lldb_ac->msgid);
 
 	if (ret != LDAP_SUCCESS) {
-		ldb_set_errstring(module->ldb, talloc_strdup(module, ldap_err2string(ret)));
+		ldb_set_errstring(module->ldb, ldap_err2string(ret));
 	}
 
 	return lldb_ldap_to_ldb(ret);
@@ -341,7 +341,7 @@ static int lldb_add(struct ldb_module *module, struct ldb_request *req)
 			   &lldb_ac->msgid);
 
 	if (ret != LDAP_SUCCESS) {
-		ldb_set_errstring(module->ldb, talloc_strdup(module, ldap_err2string(ret)));
+		ldb_set_errstring(module->ldb, ldap_err2string(ret));
 	}
 
 	return lldb_ldap_to_ldb(ret);
@@ -386,7 +386,7 @@ static int lldb_modify(struct ldb_module *module, struct ldb_request *req)
 			      &lldb_ac->msgid);
 
 	if (ret != LDAP_SUCCESS) {
-		ldb_set_errstring(module->ldb, talloc_strdup(module, ldap_err2string(ret)));
+		ldb_set_errstring(module->ldb, ldap_err2string(ret));
 	}
 
 	return lldb_ldap_to_ldb(ret);
@@ -422,7 +422,7 @@ static int lldb_delete(struct ldb_module *module, struct ldb_request *req)
 			      &lldb_ac->msgid);
 
 	if (ret != LDAP_SUCCESS) {
-		ldb_set_errstring(module->ldb, talloc_strdup(module, ldap_err2string(ret)));
+		ldb_set_errstring(module->ldb, ldap_err2string(ret));
 	}
 
 	return lldb_ldap_to_ldb(ret);
@@ -474,7 +474,7 @@ static int lldb_rename(struct ldb_module *module, struct ldb_request *req)
 			  &lldb_ac->msgid);
 
 	if (ret != LDAP_SUCCESS) {
-		ldb_set_errstring(module->ldb, talloc_strdup(module, ldap_err2string(ret)));
+		ldb_set_errstring(module->ldb, ldap_err2string(ret));
 	}
 
 	return lldb_ldap_to_ldb(ret);
@@ -627,7 +627,7 @@ static int lldb_parse_result(struct ldb_handle *handle, LDAPMessage *result)
 
 	if (matcheddnp) ldap_memfree(matcheddnp);
 	if (errmsgp) {
-		ldb_set_errstring(ac->module->ldb, talloc_strdup(ac->module, errmsgp));
+		ldb_set_errstring(ac->module->ldb, errmsgp);
 		ldap_memfree(errmsgp);
 	}
 	if (referralsp) ldap_value_free(referralsp);

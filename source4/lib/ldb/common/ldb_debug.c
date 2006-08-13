@@ -100,5 +100,6 @@ void ldb_debug_set(struct ldb_context *ldb, enum ldb_debug_level level,
 		ldb_set_errstring(ldb, msg);
 		ldb_debug(ldb, level, "%s", msg);
 	}
+	talloc_free(msg);
 }
 

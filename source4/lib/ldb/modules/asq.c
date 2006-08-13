@@ -72,7 +72,7 @@ static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
 
 	h = talloc_zero(mem_ctx, struct ldb_handle);
 	if (h == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return NULL;
 	}
 
@@ -80,7 +80,7 @@ static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
 
 	ac = talloc_zero(h, struct asq_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		talloc_free(h);
 		return NULL;
 	}
@@ -154,7 +154,7 @@ static int asq_base_callback(struct ldb_context *ldb, void *context, struct ldb_
 	struct asq_context *ac;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		goto error;
 	}
 
@@ -178,7 +178,7 @@ static int asq_reqs_callback(struct ldb_context *ldb, void *context, struct ldb_
 	struct asq_context *ac;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		goto error;
 	}
 
@@ -220,8 +220,8 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 	req->handle = NULL;
 
 	if (!req->callback || !req->context) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module,
-				  "Async interface called with NULL callback function or NULL context"));
+		ldb_set_errstring(module->ldb,
+				  "Async interface called with NULL callback function or NULL context");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	

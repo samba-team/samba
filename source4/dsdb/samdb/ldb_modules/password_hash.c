@@ -156,10 +156,10 @@ static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_mes
 		char *name = talloc_strdup(msg, samAccountName);
 		char *saltbody;
 		if (name == NULL) {
-			ldb_set_errstring(module->ldb,
-					  talloc_asprintf(msg, "password_hash_handle: "
-							  "generation of new kerberos keys failed: %s is a computer without a samAccountName",
-							  ldb_dn_linearize(msg, msg->dn)));
+			ldb_asprintf_errstring(module->ldb,
+						"password_hash_handle: "
+						"generation of new kerberos keys failed: %s is a computer without a samAccountName",
+						ldb_dn_linearize(msg, msg->dn));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		if (name[strlen(name)-1] == '$') {
@@ -187,10 +187,10 @@ static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_mes
 		} 
 	} else {
 		if (!samAccountName) {
-			ldb_set_errstring(module->ldb,
-					  talloc_asprintf(msg, "password_hash_handle: "
-							  "generation of new kerberos keys failed: %s has no samAccountName",
-							  ldb_dn_linearize(msg, msg->dn)));
+			ldb_asprintf_errstring(module->ldb,
+						"password_hash_handle: "
+						"generation of new kerberos keys failed: %s has no samAccountName",
+						ldb_dn_linearize(msg, msg->dn));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		krb5_ret = krb5_make_principal(smb_krb5_context->krb5_context,
@@ -200,11 +200,10 @@ static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_mes
 	}
 
 	if (krb5_ret) {
-		ldb_set_errstring(module->ldb,
-				  talloc_asprintf(msg, "password_hash_handle: "
-						  "generation of a saltking principal failed: %s",
-						  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
-									     krb5_ret, msg)));
+		ldb_asprintf_errstring(module->ldb,
+					"password_hash_handle: "
+					"generation of a saltking principal failed: %s",
+					smb_get_krb5_error_message(smb_krb5_context->krb5_context, krb5_ret, msg));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -214,11 +213,10 @@ static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_mes
 	krb5_free_principal(smb_krb5_context->krb5_context, salt_principal);
 
 	if (krb5_ret) {
-		ldb_set_errstring(module->ldb,
-				  talloc_asprintf(msg, "password_hash_handle: "
-						  "generation of new kerberos keys failed: %s",
-						  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
-									     krb5_ret, msg)));
+		ldb_asprintf_errstring(module->ldb,
+					"password_hash_handle: "
+					"generation of new kerberos keys failed: %s",
+					smb_get_krb5_error_message(smb_krb5_context->krb5_context, krb5_ret, msg));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -426,7 +424,7 @@ static struct ldb_handle *ph_init_handle(struct ldb_request *req, struct ldb_mod
 
 	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return NULL;
 	}
 
@@ -434,7 +432,7 @@ static struct ldb_handle *ph_init_handle(struct ldb_request *req, struct ldb_mod
 
 	ac = talloc_zero(h, struct ph_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		talloc_free(h);
 		return NULL;
 	}
@@ -456,7 +454,7 @@ static int get_domain_data_callback(struct ldb_context *ldb, void *context, stru
 	struct ph_context *ac;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -465,7 +463,7 @@ static int get_domain_data_callback(struct ldb_context *ldb, void *context, stru
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
 		if (ac->dom_res != NULL) {
-			ldb_set_errstring(ldb, talloc_asprintf(ldb, "Too many results"));
+			ldb_set_errstring(ldb, "Too many results");
 			talloc_free(ares);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -504,7 +502,7 @@ static int build_domain_data_request(struct ph_context *ac)
 
 	ac->dom_req->op.search.tree = ldb_parse_tree(ac->module->ldb, filter);
 	if (ac->dom_req->op.search.tree == NULL) {
-		ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac, "Invalid search filter"));
+		ldb_set_errstring(ac->module->ldb, "Invalid search filter");
 		talloc_free(ac->dom_req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -598,29 +596,23 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	/* if it is not an entry of type person its an error */
 	/* TODO: remove this when sambaPassword will be in schema */
 	if (!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "person")) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Cannot set a password on entry that does not have objectClass 'person'"));
+		ldb_set_errstring(module->ldb, "Cannot set a password on entry that does not have objectClass 'person'");
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
 	/* check sambaPassword is single valued here */
 	/* TODO: remove this when sambaPassword will be single valued in schema */
 	if (sambaAttr && sambaAttr->num_values > 1) {
-		ldb_set_errstring(module->ldb, 
-				  talloc_asprintf(req,
-						  "mupltiple values for sambaPassword not allowed!\n"));
+		ldb_set_errstring(module->ldb, "mupltiple values for sambaPassword not allowed!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	if (ntAttr && (ntAttr->num_values > 1)) {
-		ldb_set_errstring(module->ldb, 
-				  talloc_asprintf(req,
-						  "mupltiple values for lmPwdHash not allowed!\n"));
+		ldb_set_errstring(module->ldb, "mupltiple values for lmPwdHash not allowed!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	if (lmAttr && (lmAttr->num_values > 1)) {
-		ldb_set_errstring(module->ldb, 
-				  talloc_asprintf(req,
-						  "mupltiple values for lmPwdHash not allowed!\n"));
+		ldb_set_errstring(module->ldb, "mupltiple values for lmPwdHash not allowed!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -807,7 +799,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	/* prepare the first operation */
 	ac->down_req = talloc_zero(ac, struct ldb_request);
 	if (ac->down_req == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module->ldb, "Out of memory!"));
+		ldb_set_errstring(module->ldb, "Out of memory!");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -844,7 +836,7 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 	struct ph_context *ac;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -853,7 +845,7 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
 		if (ac->search_res != NULL) {
-			ldb_set_errstring(ldb, talloc_asprintf(ldb, "Too many results"));
+			ldb_set_errstring(ldb, "Too many results");
 			talloc_free(ares);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -861,7 +853,7 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 		/* if it is not an entry of type person this is an error */
 		/* TODO: remove this when sambaPassword will be in schema */
 		if (!ldb_msg_check_string_attribute(ares->message, "objectClass", "person")) {
-			ldb_set_errstring(ldb, talloc_asprintf(ldb, "Object class violation"));
+			ldb_set_errstring(ldb, "Object class violation");
 			talloc_free(ares);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
@@ -899,7 +891,7 @@ static int password_hash_mod_search_self(struct ldb_handle *h) {
 	ac->search_req->op.search.scope = LDB_SCOPE_BASE;
 	ac->search_req->op.search.tree = ldb_parse_tree(ac->module->ldb, NULL);
 	if (ac->search_req->op.search.tree == NULL) {
-		ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac, "Invalid search filter"));
+		ldb_set_errstring(ac->module->ldb, "Invalid search filter");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ac->search_req->op.search.attrs = attrs;

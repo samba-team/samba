@@ -369,7 +369,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	module = module->next; \
 	while (module && module->ops->op == NULL) module = module->next; \
 	if (module == NULL) { \
-		ldb_set_errstring(ldb, talloc_strdup(ldb, "Unable to find backend operation for " #op )); \
+		ldb_asprintf_errstring(ldb, "Unable to find backend operation for " #op ); \
 		return LDB_ERR_OPERATIONS_ERROR;	\
 	}						\
 } while (0)
