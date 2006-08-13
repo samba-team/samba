@@ -220,16 +220,16 @@ interface IRemUnknown2 : IRemUnknown
 
 	typedef struct {
 		uint16 vartype;
-		uint16 FIXME;
+		uint16 unknown /* FIXME */;
 	} VARIANT;
 
 	typedef struct {
-		uint16 FIXME;
+		uint16 unknown /* FIXME */;
 	} DISPPARAMS;
 
 	/* Exception ? */
 	typedef struct {
-		uint16 FIXME;
+		uint16 unknown /* FIXME */;
 	} EXCEPINFO;
 
 	/*****************/
