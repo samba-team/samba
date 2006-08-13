@@ -614,6 +614,7 @@ NTSTATUS benchrw_mkdir(struct smbcli_request *req,
 				struct benchrw_state *state)
 {
 	union smb_open *open_parms;	
+	uint8_t *writedata;	
 		
 	NT_STATUS_NOT_OK_RETURN(req->status);
 	
@@ -633,7 +634,6 @@ NTSTATUS benchrw_mkdir(struct smbcli_request *req,
 	open_parms->openx.in.timeout = 0;
 	open_parms->openx.in.fname = state->fname;
 		
-	uint8_t *writedata;	
 	writedata = talloc_size(state->mem_ctx,state->lp_params->blocksize);
 	NT_STATUS_HAVE_NO_MEMORY(writedata);
 	generate_random_buffer(writedata,state->lp_params->blocksize);
