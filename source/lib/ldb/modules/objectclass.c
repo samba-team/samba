@@ -63,7 +63,7 @@ static struct ldb_handle *oc_init_handle(struct ldb_request *req, struct ldb_mod
 
 	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return NULL;
 	}
 
@@ -71,7 +71,7 @@ static struct ldb_handle *oc_init_handle(struct ldb_request *req, struct ldb_mod
 
 	ac = talloc_zero(h, struct oc_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		talloc_free(h);
 		return NULL;
 	}
@@ -129,7 +129,7 @@ static int objectclass_sort(struct ldb_module *module,
 	for (i=0; i < objectclass_element->num_values; i++) {
 		current = talloc(mem_ctx, struct class_list);
 		if (!current) {
-			ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "objectclass: out of memory allocating objectclass list"));
+			ldb_set_errstring(module->ldb, "objectclass: out of memory allocating objectclass list");
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -235,7 +235,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	/* prepare the first operation */
 	down_req = talloc(req, struct ldb_request);
 	if (down_req == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module->ldb, "Out of memory!"));
+		ldb_set_errstring(module->ldb, "Out of memory!");
 		talloc_free(mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -264,7 +264,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	for (current = sorted; current; current = current->next) {
 		ret = ldb_msg_add_string(msg, "objectClass", current->objectclass);
 		if (ret != LDB_SUCCESS) {
-			ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "objectclass: could not re-add sorted objectclass to modify msg"));
+			ldb_set_errstring(module->ldb, "objectclass: could not re-add sorted objectclass to modify msg");
 			talloc_free(mem_ctx);
 			return ret;
 		}
@@ -328,7 +328,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		/* prepare the first operation */
 		down_req = talloc(req, struct ldb_request);
 		if (down_req == NULL) {
-			ldb_set_errstring(module->ldb, talloc_asprintf(module->ldb, "Out of memory!"));
+			ldb_set_errstring(module->ldb, "Out of memory!");
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -362,7 +362,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		for (current = sorted; current; current = current->next) {
 			ret = ldb_msg_add_string(msg, "objectClass", current->objectclass);
 			if (ret != LDB_SUCCESS) {
-				ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "objectclass: could not re-add sorted objectclass to modify msg"));
+				ldb_set_errstring(module->ldb, "objectclass: could not re-add sorted objectclass to modify msg");
 				talloc_free(mem_ctx);
 				return ret;
 			}
@@ -404,7 +404,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		/* prepare the first operation */
 		ac->down_req = talloc(ac, struct ldb_request);
 		if (ac->down_req == NULL) {
-			ldb_set_errstring(module->ldb, talloc_asprintf(module->ldb, "Out of memory!"));
+			ldb_set_errstring(module->ldb, "Out of memory!");
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
@@ -425,7 +425,7 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 	struct oc_context *ac;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -434,7 +434,7 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
 		if (ac->search_res != NULL) {
-			ldb_set_errstring(ldb, talloc_asprintf(ldb, "Too many results"));
+			ldb_set_errstring(ldb, "Too many results");
 			talloc_free(ares);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -466,7 +466,7 @@ static int objectclass_search_self(struct ldb_handle *h) {
 	ac->search_req->op.search.scope = LDB_SCOPE_BASE;
 	ac->search_req->op.search.tree = ldb_parse_tree(ac->module->ldb, NULL);
 	if (ac->search_req->op.search.tree == NULL) {
-		ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac, "objectclass: Internal error producing null search"));
+		ldb_set_errstring(ac->module->ldb, "objectclass: Internal error producing null search");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ac->search_req->op.search.attrs = attrs;
@@ -511,7 +511,7 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 	/* use a new message structure */
 	ac->mod_req->op.mod.message = msg = ldb_msg_new(ac->mod_req);
 	if (msg == NULL) {
-		ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac, "objectclass: could not create new modify msg"));
+		ldb_set_errstring(ac->module->ldb, "objectclass: could not create new modify msg");
 		talloc_free(mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -539,7 +539,7 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 
 	ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE);
 	if (ret != LDB_SUCCESS) {
-		ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac, "objectclass: could not clear objectclass in modify msg"));
+		ldb_set_errstring(ac->module->ldb, "objectclass: could not clear objectclass in modify msg");
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -548,7 +548,7 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 	for (current = sorted; current; current = current->next) {
 		ret = ldb_msg_add_string(msg, "objectClass", current->objectclass);
 		if (ret != LDB_SUCCESS) {
-			ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac, "objectclass: could not re-add sorted objectclass to modify msg"));
+			ldb_set_errstring(ac->module->ldb, "objectclass: could not re-add sorted objectclass to modify msg");
 			talloc_free(mem_ctx);
 			return ret;
 		}

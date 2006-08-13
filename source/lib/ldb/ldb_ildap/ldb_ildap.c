@@ -257,7 +257,7 @@ static void ildb_callback(struct ldap_request *req)
 				}
 				if (msg->r.SearchResultDone.resultcode) {
 					if (msg->r.SearchResultDone.errormessage) {
-						ldb_set_errstring(ac->module->ldb, talloc_strdup(ac->module, msg->r.SearchResultDone.errormessage));
+						ldb_set_errstring(ac->module->ldb, msg->r.SearchResultDone.errormessage);
 					}
 				}
 
@@ -333,7 +333,7 @@ static struct ldb_handle *init_ildb_handle(struct ldb_module *module,
 
 	h = talloc_zero(ildb->ldap, struct ldb_handle);
 	if (h == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return NULL;
 	}
 
@@ -341,7 +341,7 @@ static struct ldb_handle *init_ildb_handle(struct ldb_module *module,
 
 	ildb_ac = talloc(h, struct ildb_context);
 	if (ildb_ac == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		talloc_free(h);
 		return NULL;
 	}
@@ -377,12 +377,12 @@ static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg
 
 	req = ldap_request_send(ildb->ldap, msg);
 	if (req == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "async send request failed"));
+		ldb_set_errstring(module->ldb, "async send request failed");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (!req->conn) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "connection to remote LDAP server dropped?"));
+		ldb_set_errstring(module->ldb, "connection to remote LDAP server dropped?");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -435,18 +435,18 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 	req->handle = NULL;
 
 	if (!req->callback || !req->context) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Async interface called with NULL callback function or NULL context"));
+		ldb_set_errstring(module->ldb, "Async interface called with NULL callback function or NULL context");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
 	if (req->op.search.tree == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Invalid expression parse tree"));
+		ldb_set_errstring(module->ldb, "Invalid expression parse tree");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	msg = new_ldap_message(ildb);
 	if (msg == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		ldb_set_errstring(module->ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -463,7 +463,7 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 		msg->r.SearchRequest.basedn  = ldb_dn_linearize(msg, req->op.search.base);
 	}
 	if (msg->r.SearchRequest.basedn == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Unable to determine baseDN"));
+		ldb_set_errstring(module->ldb, "Unable to determine baseDN");
 		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -733,7 +733,7 @@ static int ildb_rootdse_callback(struct ldb_context *ldb, void *context, struct 
 	struct ildb_private *ildb;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		goto error;
 	}
 
@@ -783,7 +783,7 @@ static int ildb_init(struct ldb_module *module)
 	req->operation = LDB_SEARCH;
 	req->op.search.base = ldb_dn_new(req);
 	req->op.search.scope = LDB_SCOPE_BASE;
-	req->op.search.tree = ldb_parse_tree(req, "dn=dc=rootDSE");
+	req->op.search.tree = ldb_parse_tree(req, "(objectClass=*)");
 	req->op.search.attrs = NULL;
 	req->controls = NULL;
 	req->context = ildb;

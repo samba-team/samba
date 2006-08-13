@@ -114,7 +114,7 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 	int i;
 
 	if (!context || !ares) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		ldb_set_errstring(ldb, "NULL Context or Result in callback");
 		goto error;
 	}
 
@@ -199,10 +199,11 @@ static int kludge_acl_change(struct ldb_module *module, struct ldb_request *req)
 	case ADMINISTRATOR:
 		return ldb_next_request(module, req);
 	default:
-		ldb_set_errstring(module->ldb, 
-				  talloc_asprintf(req, "kludge_acl_change: "
-						  "attempted database modify not permitted. User %s is not SYSTEM or an administrator",
-						  user_name(req, module)));
+		ldb_asprintf_errstring(module->ldb,
+				       "kludge_acl_change: "
+				       "attempted database modify not permitted. "
+				       "User %s is not SYSTEM or an administrator",
+				       user_name(req, module));
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 	}
 }
