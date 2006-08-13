@@ -39,19 +39,22 @@ static NTSTATUS pvfs_blkid_fs_uuid(struct pvfs_state *pvfs, struct stat *st, str
 
 	devname = blkid_devno_to_devname(st->st_dev);
 	if (!devname) {
-		return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
+		ZERO_STRUCTP(uuid);
+		return NT_STATUS_OK;
 	}
 
 	uuid_value = blkid_get_tag_value(NULL, "UUID", devname);
 	free(devname);
 	if (!uuid_value) {
-		return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
+		ZERO_STRUCTP(uuid);
+		return NT_STATUS_OK;
 	}
 
 	status = GUID_from_string(uuid_value, uuid);
 	free(uuid_value);
 	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
+		ZERO_STRUCTP(uuid);
+		return NT_STATUS_OK;
 	}
 	return NT_STATUS_OK;
 #else
