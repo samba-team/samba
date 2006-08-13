@@ -42,8 +42,8 @@ static int ldb_free_hive (struct registry_hive *hive)
 static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, char **name, uint32_t *type, DATA_BLOB *data)
 {
 	const struct ldb_val *val;
-	*name = talloc_strdup(mem_ctx, ldb_msg_find_string(msg, "value", NULL));
-	*type = ldb_msg_find_uint(msg, "type", 0);
+	*name = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "value", NULL));
+	*type = ldb_msg_find_attr_as_uint(msg, "type", 0);
 	val = ldb_msg_find_ldb_val(msg, "data");
 
 	switch (*type)

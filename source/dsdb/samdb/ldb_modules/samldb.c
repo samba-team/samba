@@ -136,7 +136,7 @@ static int samldb_find_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	str = ldb_msg_find_string(res->msgs[0], "nextRid", NULL);
+	str = ldb_msg_find_attr_as_string(res->msgs[0], "nextRid", NULL);
 	if (str == NULL) {
 		ldb_asprintf_errstring(module->ldb,
 					"attribute nextRid not found in %s\n",

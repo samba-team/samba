@@ -1250,28 +1250,28 @@ int ldb_msg_element_compare(struct ldb_message_element *el1,
    single valued.
 */
 const struct ldb_val *ldb_msg_find_ldb_val(const struct ldb_message *msg, const char *attr_name);
-int ldb_msg_find_int(const struct ldb_message *msg, 
-		     const char *attr_name,
-		     int default_value);
-unsigned int ldb_msg_find_uint(const struct ldb_message *msg, 
-			       const char *attr_name,
-			       unsigned int default_value);
-int64_t ldb_msg_find_int64(const struct ldb_message *msg, 
-			   const char *attr_name,
-			   int64_t default_value);
-uint64_t ldb_msg_find_uint64(const struct ldb_message *msg, 
+int ldb_msg_find_attr_as_int(const struct ldb_message *msg, 
 			     const char *attr_name,
-			     uint64_t default_value);
-double ldb_msg_find_double(const struct ldb_message *msg, 
-			   const char *attr_name,
-			   double default_value);
-const char *ldb_msg_find_string(const struct ldb_message *msg, 
-				const char *attr_name,
-				const char *default_value);
+			     int default_value);
+unsigned int ldb_msg_find_attr_as_uint(const struct ldb_message *msg, 
+				       const char *attr_name,
+				       unsigned int default_value);
+int64_t ldb_msg_find_attr_as_int64(const struct ldb_message *msg, 
+				   const char *attr_name,
+				   int64_t default_value);
+uint64_t ldb_msg_find_attr_as_uint64(const struct ldb_message *msg, 
+				     const char *attr_name,
+				     uint64_t default_value);
+double ldb_msg_find_attr_as_double(const struct ldb_message *msg, 
+				   const char *attr_name,
+				   double default_value);
+const char *ldb_msg_find_attr_as_string(const struct ldb_message *msg, 
+					const char *attr_name,
+					const char *default_value);
 
-struct ldb_dn *ldb_msg_find_dn(void *mem_ctx,
-				   const struct ldb_message *msg,
-				   const char *attr_name);
+struct ldb_dn *ldb_msg_find_attr_as_dn(void *mem_ctx,
+				       const struct ldb_message *msg,
+				        const char *attr_name);
 
 void ldb_msg_sort_elements(struct ldb_message *msg);
 

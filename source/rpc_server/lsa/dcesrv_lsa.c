@@ -1167,9 +1167,9 @@ static NTSTATUS lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX *mem_c
 	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
 			   "objectSid=%s", ldap_encode_ndr_dom_sid(mem_ctx, sid));
 	if (ret == 1) {
-		*name = ldb_msg_find_string(res[0], "sAMAccountName", NULL);
+		*name = ldb_msg_find_attr_as_string(res[0], "sAMAccountName", NULL);
 		if (!*name) {
-			*name = ldb_msg_find_string(res[0], "name", NULL);
+			*name = ldb_msg_find_attr_as_string(res[0], "name", NULL);
 			if (!*name) {
 				*name = talloc_strdup(mem_ctx, sid_str);
 				NT_STATUS_HAVE_NO_MEMORY(*name);
@@ -2133,7 +2133,7 @@ static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 			}
 
 			new_val = ldb_msg_find_ldb_val(res[0], "secret");
-			last_set_time = ldb_msg_find_uint64(res[0], "lastSetTime", 0);
+			last_set_time = ldb_msg_find_attr_as_uint64(res[0], "lastSetTime", 0);
 			
 			if (new_val) {
 				/* set value */
@@ -2237,7 +2237,7 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		if (!r->out.old_mtime) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		*r->out.old_mtime = ldb_msg_find_uint64(res[0], "priorSetTime", 0);
+		*r->out.old_mtime = ldb_msg_find_attr_as_uint64(res[0], "priorSetTime", 0);
 	}
 	
 	if (r->in.new_val) {
@@ -2273,7 +2273,7 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		if (!r->out.new_mtime) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		*r->out.new_mtime = ldb_msg_find_uint64(res[0], "lastSetTime", 0);
+		*r->out.new_mtime = ldb_msg_find_attr_as_uint64(res[0], "lastSetTime", 0);
 	}
 	
 	return NT_STATUS_OK;

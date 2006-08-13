@@ -186,7 +186,7 @@ static NTSTATUS sldb_list_all(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0, j = 0; i < res->count; i++) {
-		n[j] = talloc_strdup(n, ldb_msg_find_string(res->msgs[i], "name", NULL));
+		n[j] = talloc_strdup(n, ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL));
 		if (!n[j]) {
 			DEBUG(0,("WARNING: Malformed share object in share database\n!"));
 			continue;
@@ -241,7 +241,7 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	s->name = talloc_strdup(s, ldb_msg_find_string(res->msgs[0], "name", NULL));
+	s->name = talloc_strdup(s, ldb_msg_find_attr_as_string(res->msgs[0], "name", NULL));
 	if (!s->name) {
 		DEBUG(0,("ERROR: Invalid share object!\n"));
 		talloc_free(tmp_ctx);

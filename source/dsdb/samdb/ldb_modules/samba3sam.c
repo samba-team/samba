@@ -49,7 +49,7 @@
 static struct ldb_message_element *generate_primaryGroupID(struct ldb_module *module, TALLOC_CTX *ctx, const char *attr, const struct ldb_message *remote)
 {
 	struct ldb_message_element *el;
-	const char *sid = ldb_msg_find_string(remote, attr, NULL);
+	const char *sid = ldb_msg_find_attr_as_string(remote, attr, NULL);
 
 	if (!sid)
 		return NULL;
@@ -96,7 +96,7 @@ static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char 
 
 	sidstring = dom_sid_string(remote_mp, sid);
 	talloc_free(sid);
-	ldb_msg_add_fmt(remote_mp, "sambaPrimaryGroupSID", "%s-%d", sidstring, ldb_msg_find_uint(local, "primaryGroupID", 0));
+	ldb_msg_add_fmt(remote_mp, "sambaPrimaryGroupSID", "%s-%d", sidstring, ldb_msg_find_attr_as_uint(local, "primaryGroupID", 0));
 	talloc_free(sidstring);
 }
 

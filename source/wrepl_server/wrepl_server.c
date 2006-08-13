@@ -58,7 +58,7 @@ static uint64_t wins_config_db_get_seqnumber(struct ldb_context *ldb)
 	if (res->count > 1) goto failed;
 
 	if (res->count == 1) {
-		seqnumber = ldb_msg_find_uint64(res->msgs[0], "sequenceNumber", 0);
+		seqnumber = ldb_msg_find_attr_as_uint64(res->msgs[0], "sequenceNumber", 0);
 	}
 
 failed:
@@ -154,7 +154,7 @@ NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 	for (i=0; i < res->count; i++) {
 		const char *address;
 
-		address	= ldb_msg_find_string(res->msgs[i], "address", NULL);
+		address	= ldb_msg_find_attr_as_string(res->msgs[i], "address", NULL);
 		if (!address) {
 			goto failed;
 		}
@@ -181,19 +181,19 @@ NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 			DLIST_ADD_END(service->partners, partner, struct wreplsrv_partner *);
 		}
 
-		partner->name			= ldb_msg_find_string(res->msgs[i], "name", partner->address);
+		partner->name			= ldb_msg_find_attr_as_string(res->msgs[i], "name", partner->address);
 		talloc_steal(partner, partner->name);
-		partner->our_address		= ldb_msg_find_string(res->msgs[i], "ourAddress", NULL);
+		partner->our_address		= ldb_msg_find_attr_as_string(res->msgs[i], "ourAddress", NULL);
 		talloc_steal(partner, partner->our_address);
 
-		partner->type			= ldb_msg_find_uint(res->msgs[i], "type", WINSREPL_PARTNER_BOTH);
-		partner->pull.interval		= ldb_msg_find_uint(res->msgs[i], "pullInterval",
+		partner->type			= ldb_msg_find_attr_as_uint(res->msgs[i], "type", WINSREPL_PARTNER_BOTH);
+		partner->pull.interval		= ldb_msg_find_attr_as_uint(res->msgs[i], "pullInterval",
 								    WINSREPL_DEFAULT_PULL_INTERVAL);
-		partner->pull.retry_interval	= ldb_msg_find_uint(res->msgs[i], "pullRetryInterval",
+		partner->pull.retry_interval	= ldb_msg_find_attr_as_uint(res->msgs[i], "pullRetryInterval",
 								    WINSREPL_DEFAULT_PULL_RETRY_INTERVAL);
-		partner->push.change_count	= ldb_msg_find_uint(res->msgs[i], "pushChangeCount",
+		partner->push.change_count	= ldb_msg_find_attr_as_uint(res->msgs[i], "pushChangeCount",
 								    WINSREPL_DEFAULT_PUSH_CHANGE_COUNT);
-		partner->push.use_inform	= ldb_msg_find_uint(res->msgs[i], "pushUseInform", False);
+		partner->push.use_inform	= ldb_msg_find_attr_as_uint(res->msgs[i], "pushUseInform", False);
 
 		DEBUG(3,("wreplsrv_load_partners: found partner: %s type: 0x%X\n",
 			partner->address, partner->type));
@@ -381,8 +381,8 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 	talloc_steal(tmp_ctx, res);
 
 	for (i=0; i < res->count; i++) {
-		wins_owner     = ldb_msg_find_string(res->msgs[i], "winsOwner", NULL);
-		version        = ldb_msg_find_uint64(res->msgs[i], "versionID", 0);
+		wins_owner     = ldb_msg_find_attr_as_string(res->msgs[i], "winsOwner", NULL);
+		version        = ldb_msg_find_attr_as_uint64(res->msgs[i], "versionID", 0);
 
 		status = wreplsrv_add_table(service,
 					    service, &service->table,

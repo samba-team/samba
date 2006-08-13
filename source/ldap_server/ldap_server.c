@@ -248,7 +248,7 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		goto failed;
 	}
 
-	conf_dn_s = ldb_msg_find_string(res->msgs[0], "configurationNamingContext", NULL);
+	conf_dn_s = ldb_msg_find_attr_as_string(res->msgs[0], "configurationNamingContext", NULL);
 	if (conf_dn_s == NULL) {
 		goto failed;
 	}

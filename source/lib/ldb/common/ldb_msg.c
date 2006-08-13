@@ -311,9 +311,9 @@ const struct ldb_val *ldb_msg_find_ldb_val(const struct ldb_message *msg, const 
 	return &el->values[0];
 }
 
-int ldb_msg_find_int(const struct ldb_message *msg, 
-		     const char *attr_name,
-		     int default_value)
+int ldb_msg_find_attr_as_int(const struct ldb_message *msg, 
+			     const char *attr_name,
+			     int default_value)
 {
 	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
 	if (!v || !v->data) {
@@ -322,9 +322,9 @@ int ldb_msg_find_int(const struct ldb_message *msg,
 	return strtol((const char *)v->data, NULL, 0);
 }
 
-unsigned int ldb_msg_find_uint(const struct ldb_message *msg, 
-			       const char *attr_name,
-			       unsigned int default_value)
+unsigned int ldb_msg_find_attr_as_uint(const struct ldb_message *msg, 
+				       const char *attr_name,
+				       unsigned int default_value)
 {
 	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
 	if (!v || !v->data) {
@@ -333,9 +333,9 @@ unsigned int ldb_msg_find_uint(const struct ldb_message *msg,
 	return strtoul((const char *)v->data, NULL, 0);
 }
 
-int64_t ldb_msg_find_int64(const struct ldb_message *msg, 
-			   const char *attr_name,
-			   int64_t default_value)
+int64_t ldb_msg_find_attr_as_int64(const struct ldb_message *msg, 
+				   const char *attr_name,
+				   int64_t default_value)
 {
 	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
 	if (!v || !v->data) {
@@ -344,9 +344,9 @@ int64_t ldb_msg_find_int64(const struct ldb_message *msg,
 	return strtoll((const char *)v->data, NULL, 0);
 }
 
-uint64_t ldb_msg_find_uint64(const struct ldb_message *msg, 
-			     const char *attr_name,
-			     uint64_t default_value)
+uint64_t ldb_msg_find_attr_as_uint64(const struct ldb_message *msg, 
+				     const char *attr_name,
+				     uint64_t default_value)
 {
 	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
 	if (!v || !v->data) {
@@ -355,9 +355,9 @@ uint64_t ldb_msg_find_uint64(const struct ldb_message *msg,
 	return strtoull((const char *)v->data, NULL, 0);
 }
 
-double ldb_msg_find_double(const struct ldb_message *msg, 
-			   const char *attr_name,
-			   double default_value)
+double ldb_msg_find_attr_as_double(const struct ldb_message *msg, 
+				   const char *attr_name,
+				   double default_value)
 {
 	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
 	if (!v || !v->data) {
@@ -366,9 +366,9 @@ double ldb_msg_find_double(const struct ldb_message *msg,
 	return strtod((const char *)v->data, NULL);
 }
 
-const char *ldb_msg_find_string(const struct ldb_message *msg, 
-				const char *attr_name,
-				const char *default_value)
+const char *ldb_msg_find_attr_as_string(const struct ldb_message *msg, 
+					const char *attr_name,
+					const char *default_value)
 {
 	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
 	if (!v || !v->data) {
@@ -377,9 +377,9 @@ const char *ldb_msg_find_string(const struct ldb_message *msg,
 	return (const char *)v->data;
 }
 
-struct ldb_dn *ldb_msg_find_dn(void *mem_ctx,
-				const struct ldb_message *msg,
-				const char *attr_name)
+struct ldb_dn *ldb_msg_find_attr_as_dn(void *mem_ctx,
+				       const struct ldb_message *msg,
+				       const char *attr_name)
 {
 	const struct ldb_val *v;
 

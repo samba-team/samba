@@ -165,7 +165,7 @@ krb5_error_code hdb_ldb_authz_data_as_req(krb5_context context, struct hdb_entry
 	struct hdb_ldb_private *private = talloc_get_type(entry_ex->ctx, struct hdb_ldb_private);
 	
 	/* The user account may be set not to want the PAC */
-	userAccountControl = ldb_msg_find_uint(private->msg, "userAccountControl", 0);
+	userAccountControl = ldb_msg_find_attr_as_uint(private->msg, "userAccountControl", 0);
 	if (userAccountControl & UF_NO_AUTH_DATA_REQUIRED) {
 		*out = NULL;
 		return 0;
@@ -235,7 +235,7 @@ krb5_error_code hdb_ldb_authz_data_tgs_req(krb5_context context, struct hdb_entr
 	TALLOC_CTX *mem_ctx;
 	
 	/* The service account may be set not to want the PAC */
-	userAccountControl = ldb_msg_find_uint(private->msg, "userAccountControl", 0);
+	userAccountControl = ldb_msg_find_attr_as_uint(private->msg, "userAccountControl", 0);
 	if (userAccountControl & UF_NO_AUTH_DATA_REQUIRED) {
 		*out = NULL;
 		return 0;

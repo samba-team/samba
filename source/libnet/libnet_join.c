@@ -249,7 +249,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	}
 
 	/* If we have a kvno recorded in AD, we need it locally as well */
-	kvno = ldb_msg_find_uint(res->msgs[0], "msDS-KeyVersionNumber", 0);
+	kvno = ldb_msg_find_attr_as_uint(res->msgs[0], "msDS-KeyVersionNumber", 0);
 
 	/* Prepare a new message, for the modify */
 	msg = ldb_msg_new(tmp_ctx);

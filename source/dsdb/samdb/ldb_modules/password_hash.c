@@ -99,7 +99,7 @@ static int add_password_hashes(struct ldb_module *module, struct ldb_message *ms
 	const char *sambaPassword;
 	struct samr_Password tmp_hash;
 	
-	sambaPassword = ldb_msg_find_string(msg, "sambaPassword", NULL);
+	sambaPassword = ldb_msg_find_attr_as_string(msg, "sambaPassword", NULL);
 	if (sambaPassword == NULL) { /* impossible, what happened ?! */
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -146,7 +146,7 @@ static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_mes
 	 * algorithm, described in his Nov 10 2004 mail to
 	 * samba-technical@samba.org */
 
-	sambaPassword = ldb_msg_find_string(msg, "sambaPassword", NULL);
+	sambaPassword = ldb_msg_find_attr_as_string(msg, "sambaPassword", NULL);
 	if (sambaPassword == NULL) { /* impossible, what happened ?! */
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -536,7 +536,7 @@ static struct domain_data *get_domain_data(struct ldb_module *module, void *ctx,
 
 	data->pwdProperties = samdb_result_uint(res->message, "pwdProperties", 0);
 	data->pwdHistoryLength = samdb_result_uint(res->message, "pwdHistoryLength", 0);
-	tmp = ldb_msg_find_string(res->message, "dnsDomain", NULL);
+	tmp = ldb_msg_find_attr_as_string(res->message, "dnsDomain", NULL);
 
 	if (tmp != NULL) {
 		data->dnsDomain = talloc_strdup(data, tmp);
@@ -684,8 +684,8 @@ static int password_hash_add_do_add(struct ldb_handle *h) {
 		
 		/* now add krb5 keys based on unicode password */
 		ret = add_krb5_keys_from_password(ac->module, msg, smb_krb5_context, domain,
-						  ldb_msg_find_string(msg, "samAccountName", NULL),
-						  ldb_msg_find_string(msg, "userPrincipalName", NULL),
+						  ldb_msg_find_attr_as_string(msg, "samAccountName", NULL),
+						  ldb_msg_find_attr_as_string(msg, "userPrincipalName", NULL),
 						  ldb_msg_check_string_attribute(msg, "objectClass", "computer"));
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -700,13 +700,13 @@ static int password_hash_add_do_add(struct ldb_handle *h) {
 		/* if both the domain properties and the user account controls do not permit
 		 * clear text passwords then wipe out the sambaPassword */
 		if ((!(domain->pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT)) ||
-		    (!(ldb_msg_find_uint(msg, "userAccountControl", 0) & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED))) {
+		    (!(ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0) & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED))) {
 			ldb_msg_remove_attr(msg, "sambaPassword");
 		}
 	}
 
 	/* don't touch it if a value is set. It could be an incoming samsync */
-	if (ldb_msg_find_uint64(msg, "pwdLastSet", 0) == 0) {
+	if (ldb_msg_find_attr_as_uint64(msg, "pwdLastSet", 0) == 0) {
 		if (set_pwdLastSet(ac->module, msg, 0) != LDB_SUCCESS) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -996,8 +996,8 @@ static int password_hash_mod_do_mod(struct ldb_handle *h) {
 
 			/* now add krb5 keys based on unicode password */
 			ret = add_krb5_keys_from_password(ac->module, msg, smb_krb5_context, domain,
-							  ldb_msg_find_string(ac->search_res->message, "samAccountName", NULL),
-							  ldb_msg_find_string(ac->search_res->message, "userPrincipalName", NULL),
+							  ldb_msg_find_attr_as_string(ac->search_res->message, "samAccountName", NULL),
+							  ldb_msg_find_attr_as_string(ac->search_res->message, "userPrincipalName", NULL),
 							  ldb_msg_check_string_attribute(ac->search_res->message, "objectClass", "computer"));
 
 			if (ret != LDB_SUCCESS) {
@@ -1007,7 +1007,7 @@ static int password_hash_mod_do_mod(struct ldb_handle *h) {
 			/* if the domain properties or the user account controls do not permit
 			 * clear text passwords then wipe out the sambaPassword */
 			if ((!(domain->pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT)) ||
-			    (!(ldb_msg_find_uint(ac->search_res->message, "userAccountControl", 0) & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED))) {
+			    (!(ldb_msg_find_attr_as_uint(ac->search_res->message, "userAccountControl", 0) & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED))) {
 				ldb_msg_remove_attr(msg, "sambaPassword");
 			}
 
@@ -1043,7 +1043,7 @@ static int password_hash_mod_do_mod(struct ldb_handle *h) {
 	if (!ldb_msg_find_element(ac->orig_req->op.mod.message, 
 				 "msDS-KeyVersionNumber")) {
 		if (add_keyVersionNumber(ac->module, msg,
-					 ldb_msg_find_uint(ac->search_res->message, 
+					 ldb_msg_find_attr_as_uint(ac->search_res->message, 
 							   "msDS-KeyVersionNumber", 0)
 			    ) != LDB_SUCCESS) {
 			return LDB_ERR_OPERATIONS_ERROR;

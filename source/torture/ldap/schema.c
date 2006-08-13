@@ -129,13 +129,13 @@ static BOOL test_search_rootDSE(struct ldb_context *ldb, struct test_rootDSE *ro
 
 	msg = r->msgs[0];
 
-	root->defaultdn	= ldb_msg_find_string(msg, "defaultNamingContext", NULL);
+	root->defaultdn	= ldb_msg_find_attr_as_string(msg, "defaultNamingContext", NULL);
 	talloc_steal(ldb, root->defaultdn);
-	root->rootdn	= ldb_msg_find_string(msg, "rootDomainNamingContext", NULL);
+	root->rootdn	= ldb_msg_find_attr_as_string(msg, "rootDomainNamingContext", NULL);
 	talloc_steal(ldb, root->rootdn);
-	root->configdn	= ldb_msg_find_string(msg, "configurationNamingContext", NULL);
+	root->configdn	= ldb_msg_find_attr_as_string(msg, "configurationNamingContext", NULL);
 	talloc_steal(ldb, root->configdn);
-	root->schemadn	= ldb_msg_find_string(msg, "schemaNamingContext", NULL);
+	root->schemadn	= ldb_msg_find_attr_as_string(msg, "schemaNamingContext", NULL);
 	talloc_steal(ldb, root->schemadn);
 
 	talloc_free(r);
