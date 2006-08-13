@@ -27,7 +27,6 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_private.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "libcli/security/security.h"
 #include "auth/credentials/credentials.h"
@@ -690,7 +689,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 		return ret;
 	}
 	if (res->count != 1) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "samdb_copy_template: ERROR: template '%s' matched %d records, expected 1\n", filter, 
+		DEBUG(1, ("samdb_copy_template: ERROR: template '%s' matched %d records, expected 1\n", filter, 
 						       res->count));
 		talloc_free(res);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -720,7 +719,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 				ret = samdb_find_or_add_value(ldb, msg, el->name, 
 							      (char *)el->values[j].data);
 				if (ret) {
-					ldb_set_errstring(ldb, talloc_asprintf(ldb, "Adding objectClass %s failed.\n", el->values[j].data));
+					DEBUG(1, ( "Adding objectClass %s failed.\n", el->values[j].data));
 					talloc_free(res);
 					return ret;
 				}
@@ -728,7 +727,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 				ret = samdb_find_or_add_attribute(ldb, msg, el->name, 
 								  (char *)el->values[j].data);
 				if (ret) {
-					ldb_set_errstring(ldb, talloc_asprintf(ldb, "Adding attribute %s failed.\n", el->name));
+					DEBUG(1, ("Adding attribute %s failed.\n", el->name));
 					talloc_free(res);
 					return ret;
 				}
