@@ -231,15 +231,15 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 	}
 	memcpy((*creds)->server.data, val->data, 8);
 
-	(*creds)->negotiate_flags = ldb_msg_find_int(res->msgs[0], "negotiateFlags", 0);
+	(*creds)->negotiate_flags = ldb_msg_find_attr_as_int(res->msgs[0], "negotiateFlags", 0);
 
-	(*creds)->secure_channel_type = ldb_msg_find_int(res->msgs[0], "secureChannelType", 0);
+	(*creds)->secure_channel_type = ldb_msg_find_attr_as_int(res->msgs[0], "secureChannelType", 0);
 
-	(*creds)->account_name = talloc_reference(*creds, ldb_msg_find_string(res->msgs[0], "accountName", NULL));
+	(*creds)->account_name = talloc_reference(*creds, ldb_msg_find_attr_as_string(res->msgs[0], "accountName", NULL));
 
-	(*creds)->computer_name = talloc_reference(*creds, ldb_msg_find_string(res->msgs[0], "computerName", NULL));
+	(*creds)->computer_name = talloc_reference(*creds, ldb_msg_find_attr_as_string(res->msgs[0], "computerName", NULL));
 
-	(*creds)->domain = talloc_reference(*creds, ldb_msg_find_string(res->msgs[0], "flatname", NULL));
+	(*creds)->domain = talloc_reference(*creds, ldb_msg_find_attr_as_string(res->msgs[0], "flatname", NULL));
 
 	(*creds)->sid = samdb_result_dom_sid(*creds, res->msgs[0], "objectSid");
 

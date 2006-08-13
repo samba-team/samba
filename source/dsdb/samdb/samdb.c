@@ -331,7 +331,7 @@ int samdb_search_string_multiple(struct ldb_context *sam_ldb,
 */
 uint_t samdb_result_uint(const struct ldb_message *msg, const char *attr, uint_t default_value)
 {
-	return ldb_msg_find_uint(msg, attr, default_value);
+	return ldb_msg_find_attr_as_uint(msg, attr, default_value);
 }
 
 /*
@@ -339,7 +339,7 @@ uint_t samdb_result_uint(const struct ldb_message *msg, const char *attr, uint_t
 */
 int64_t samdb_result_int64(const struct ldb_message *msg, const char *attr, int64_t default_value)
 {
-	return ldb_msg_find_int64(msg, attr, default_value);
+	return ldb_msg_find_attr_as_int64(msg, attr, default_value);
 }
 
 /*
@@ -348,7 +348,7 @@ int64_t samdb_result_int64(const struct ldb_message *msg, const char *attr, int6
 const char *samdb_result_string(const struct ldb_message *msg, const char *attr, 
 				const char *default_value)
 {
-	return ldb_msg_find_string(msg, attr, default_value);
+	return ldb_msg_find_attr_as_string(msg, attr, default_value);
 }
 
 struct ldb_dn *samdb_result_dn(TALLOC_CTX *mem_ctx, const struct ldb_message *msg,
@@ -448,7 +448,7 @@ struct dom_sid *samdb_result_sid_prefix(TALLOC_CTX *mem_ctx, const struct ldb_me
 */
 NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, NTTIME default_value)
 {
-	const char *str = ldb_msg_find_string(msg, attr, NULL);
+	const char *str = ldb_msg_find_attr_as_string(msg, attr, NULL);
 	if (!str) return default_value;
 	return nttime_from_string(str);
 }
@@ -458,7 +458,7 @@ NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, NTTIME def
 */
 uint64_t samdb_result_uint64(struct ldb_message *msg, const char *attr, uint64_t default_value)
 {
-	return ldb_msg_find_uint64(msg, attr, default_value);
+	return ldb_msg_find_attr_as_uint64(msg, attr, default_value);
 }
 
 
@@ -619,7 +619,7 @@ struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_
 */
 uint16_t samdb_result_acct_flags(struct ldb_message *msg, const char *attr)
 {
-	uint_t userAccountControl = ldb_msg_find_uint(msg, attr, 0);
+	uint_t userAccountControl = ldb_msg_find_attr_as_uint(msg, attr, 0);
 	return samdb_uf2acb(userAccountControl);
 }
 
@@ -1090,7 +1090,7 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	basedn_s = ldb_msg_find_string(res->msgs[0], "rootDomainNamingContext", NULL);
+	basedn_s = ldb_msg_find_attr_as_string(res->msgs[0], "rootDomainNamingContext", NULL);
 	if (basedn_s == NULL) {
 		goto failed;
 	}

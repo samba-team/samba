@@ -391,13 +391,13 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 				   "(&(&(nETBIOSName=*)(objectclass=crossRef))(ncName=%s))", 
 				   ldb_dn_linearize(mem_ctx, dom_msgs[0]->dn));
 		if (ret == 0) {
-			domain_name = ldb_msg_find_string(dom_msgs[0], "cn", NULL);
+			domain_name = ldb_msg_find_attr_as_string(dom_msgs[0], "cn", NULL);
 			if (domain_name == NULL) {
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
 		} else if (ret == 1) {
 		
-			domain_name = ldb_msg_find_string(ref_msgs[0], "nETBIOSName", NULL);
+			domain_name = ldb_msg_find_attr_as_string(ref_msgs[0], "nETBIOSName", NULL);
 			if (domain_name == NULL) {
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
@@ -464,7 +464,7 @@ static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo2 *info)
 {
-	info->force_logoff_time = ldb_msg_find_uint64(dom_msgs[0], "forceLogoff", 
+	info->force_logoff_time = ldb_msg_find_attr_as_uint64(dom_msgs[0], "forceLogoff", 
 							    0x8000000000000000LL);
 
 	info->comment.string = samdb_result_string(dom_msgs[0], "comment", NULL);
@@ -472,7 +472,7 @@ static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *
 
 	/* FIXME:  We should find the name of the real PDC emulator */
 	info->primary.string = lp_netbios_name();
-	info->sequence_num = ldb_msg_find_uint64(dom_msgs[0], "modifiedCount", 
+	info->sequence_num = ldb_msg_find_attr_as_uint64(dom_msgs[0], "modifiedCount", 
 						 0);
 
 	info->role = lp_server_role();
@@ -498,7 +498,7 @@ static NTSTATUS samr_info_DomInfo3(struct samr_domain_state *state,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo3 *info)
 {
-	info->force_logoff_time = ldb_msg_find_uint64(dom_msgs[0], "forceLogoff", 
+	info->force_logoff_time = ldb_msg_find_attr_as_uint64(dom_msgs[0], "forceLogoff", 
 						      0x8000000000000000LL);
 
 	return NT_STATUS_OK;
@@ -566,10 +566,10 @@ static NTSTATUS samr_info_DomInfo8(struct samr_domain_state *state,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo8 *info)
 {
-	info->sequence_num = ldb_msg_find_uint64(dom_msgs[0], "modifiedCount", 
+	info->sequence_num = ldb_msg_find_attr_as_uint64(dom_msgs[0], "modifiedCount", 
 					       time(NULL));
 
-	info->domain_create_time = ldb_msg_find_uint(dom_msgs[0], "creationTime",
+	info->domain_create_time = ldb_msg_find_attr_as_uint(dom_msgs[0], "creationTime",
 						     0x0LL);
 
 	return NT_STATUS_OK;
@@ -602,11 +602,11 @@ static NTSTATUS samr_info_DomInfo11(struct samr_domain_state *state,
 		return status;
 	}
 	
-	info->lockout_duration = ldb_msg_find_int64(dom_msgs[0], "lockoutDuration", 
+	info->lockout_duration = ldb_msg_find_attr_as_int64(dom_msgs[0], "lockoutDuration", 
 						    -18000000000LL);
-	info->lockout_window = ldb_msg_find_int64(dom_msgs[0], "lockOutObservationWindow",
+	info->lockout_window = ldb_msg_find_attr_as_int64(dom_msgs[0], "lockOutObservationWindow",
 						    -18000000000LL);
-	info->lockout_threshold = ldb_msg_find_int64(dom_msgs[0], "lockoutThreshold", 0);
+	info->lockout_threshold = ldb_msg_find_attr_as_int64(dom_msgs[0], "lockoutThreshold", 0);
 
 	return NT_STATUS_OK;
 }
@@ -619,11 +619,11 @@ static NTSTATUS samr_info_DomInfo12(struct samr_domain_state *state,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo12 *info)
 {
-	info->lockout_duration = ldb_msg_find_int64(dom_msgs[0], "lockoutDuration", 
+	info->lockout_duration = ldb_msg_find_attr_as_int64(dom_msgs[0], "lockoutDuration", 
 						    -18000000000LL);
-	info->lockout_window = ldb_msg_find_int64(dom_msgs[0], "lockOutObservationWindow",
+	info->lockout_window = ldb_msg_find_attr_as_int64(dom_msgs[0], "lockOutObservationWindow",
 						    -18000000000LL);
-	info->lockout_threshold = ldb_msg_find_int64(dom_msgs[0], "lockoutThreshold", 0);
+	info->lockout_threshold = ldb_msg_find_attr_as_int64(dom_msgs[0], "lockoutThreshold", 0);
 
 	return NT_STATUS_OK;
 }
@@ -636,10 +636,10 @@ static NTSTATUS samr_info_DomInfo13(struct samr_domain_state *state,
 				    struct ldb_message **dom_msgs,
 				    struct samr_DomInfo13 *info)
 {
-	info->sequence_num = ldb_msg_find_uint64(dom_msgs[0], "modifiedCount", 
+	info->sequence_num = ldb_msg_find_attr_as_uint64(dom_msgs[0], "modifiedCount", 
 					       time(NULL));
 
-	info->domain_create_time = ldb_msg_find_uint(dom_msgs[0], "creationTime",
+	info->domain_create_time = ldb_msg_find_attr_as_uint(dom_msgs[0], "creationTime",
 						     0x0LL);
 
 	info->unknown1 = 0;

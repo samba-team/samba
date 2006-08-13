@@ -238,10 +238,10 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 	
-	password = ldb_msg_find_string(msgs[0], "secret", NULL);
-	old_password = ldb_msg_find_string(msgs[0], "priorSecret", NULL);
+	password = ldb_msg_find_attr_as_string(msgs[0], "secret", NULL);
+	old_password = ldb_msg_find_attr_as_string(msgs[0], "priorSecret", NULL);
 
-	machine_account = ldb_msg_find_string(msgs[0], "samAccountName", NULL);
+	machine_account = ldb_msg_find_attr_as_string(msgs[0], "samAccountName", NULL);
 
 	if (!machine_account) {
 		DEBUG(1, ("Could not find 'samAccountName' in join record to domain: %s\n",
@@ -252,10 +252,10 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	salt_principal = ldb_msg_find_string(msgs[0], "saltPrincipal", NULL);
+	salt_principal = ldb_msg_find_attr_as_string(msgs[0], "saltPrincipal", NULL);
 	cli_credentials_set_salt_principal(cred, salt_principal);
 	
-	sct = ldb_msg_find_int(msgs[0], "secureChannelType", 0);
+	sct = ldb_msg_find_attr_as_int(msgs[0], "secureChannelType", 0);
 	if (sct) { 
 		cli_credentials_set_secure_channel_type(cred, sct);
 	}
@@ -277,28 +277,28 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	}
 
 	
-	domain = ldb_msg_find_string(msgs[0], "flatname", NULL);
+	domain = ldb_msg_find_attr_as_string(msgs[0], "flatname", NULL);
 	if (domain) {
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
 	}
 
-	realm = ldb_msg_find_string(msgs[0], "realm", NULL);
+	realm = ldb_msg_find_attr_as_string(msgs[0], "realm", NULL);
 	if (realm) {
 		cli_credentials_set_realm(cred, realm, CRED_SPECIFIED);
 	}
 
 	cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
 
-	cli_credentials_set_kvno(cred, ldb_msg_find_int(msgs[0], "msDS-KeyVersionNumber", 0));
+	cli_credentials_set_kvno(cred, ldb_msg_find_attr_as_int(msgs[0], "msDS-KeyVersionNumber", 0));
 
 	/* If there was an external keytab specified by reference in
 	 * the LDB, then use this.  Otherwise we will make one up
 	 * (chewing CPU time) from the password */
-	keytab = ldb_msg_find_string(msgs[0], "krb5Keytab", NULL);
+	keytab = ldb_msg_find_attr_as_string(msgs[0], "krb5Keytab", NULL);
 	if (keytab) {
 		cli_credentials_set_keytab_name(cred, keytab, CRED_SPECIFIED);
 	} else {
-		keytab = ldb_msg_find_string(msgs[0], "privateKeytab", NULL);
+		keytab = ldb_msg_find_attr_as_string(msgs[0], "privateKeytab", NULL);
 		if (keytab) {
 			keytab = talloc_asprintf(mem_ctx, "FILE:%s", private_path(mem_ctx, keytab));
 			if (keytab) {

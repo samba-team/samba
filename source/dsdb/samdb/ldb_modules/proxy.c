@@ -81,13 +81,13 @@ static int load_proxy_info(struct ldb_module *module)
 		goto failed;
 	}
 
-	url      = ldb_msg_find_string(res->msgs[0], "url", NULL);
-	olddn    = ldb_msg_find_string(res->msgs[0], "olddn", NULL);
-	newdn    = ldb_msg_find_string(res->msgs[0], "newdn", NULL);
-	username = ldb_msg_find_string(res->msgs[0], "username", NULL);
-	password = ldb_msg_find_string(res->msgs[0], "password", NULL);
-	oldstr   = ldb_msg_find_string(res->msgs[0], "oldstr", NULL);
-	newstr   = ldb_msg_find_string(res->msgs[0], "newstr", NULL);
+	url      = ldb_msg_find_attr_as_string(res->msgs[0], "url", NULL);
+	olddn    = ldb_msg_find_attr_as_string(res->msgs[0], "olddn", NULL);
+	newdn    = ldb_msg_find_attr_as_string(res->msgs[0], "newdn", NULL);
+	username = ldb_msg_find_attr_as_string(res->msgs[0], "username", NULL);
+	password = ldb_msg_find_attr_as_string(res->msgs[0], "password", NULL);
+	oldstr   = ldb_msg_find_attr_as_string(res->msgs[0], "oldstr", NULL);
+	newstr   = ldb_msg_find_attr_as_string(res->msgs[0], "newstr", NULL);
 
 	if (url == NULL || olddn == NULL || newdn == NULL || username == NULL || password == NULL) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Need url, olddn, newdn, oldstr, newstr, username and password in @PROXYINFO\n");

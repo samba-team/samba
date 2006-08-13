@@ -953,7 +953,7 @@ static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *r
 		return LDB_SUCCESS;
 	}
 
-	req->op.seq_num.seq_num = ldb_msg_find_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
+	req->op.seq_num.seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
