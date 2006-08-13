@@ -82,7 +82,7 @@ static KerberosTime ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, con
     const char *gentime;
     struct tm tm;
 
-    gentime = ldb_msg_find_string(msg, attr, NULL);
+    gentime = ldb_msg_find_attr_as_string(msg, attr, NULL);
     if (!gentime)
 	return default_val;
 
@@ -208,7 +208,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	int i;
 	krb5_error_code ret = 0;
 	krb5_boolean is_computer = FALSE;
-	const char *dnsdomain = ldb_msg_find_string(realm_ref_msg, "dnsRoot", NULL);
+	const char *dnsdomain = ldb_msg_find_attr_as_string(realm_ref_msg, "dnsRoot", NULL);
 	char *realm = strupper_talloc(mem_ctx, dnsdomain);
 	struct ldb_dn *domain_dn = samdb_result_dn(mem_ctx, realm_ref_msg, "nCName", ldb_dn_new(mem_ctx));
 
@@ -248,18 +248,18 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	entry_ex->ctx = private;
 	entry_ex->free_entry = hdb_ldb_free_entry;
 
-	userAccountControl = ldb_msg_find_uint(msg, "userAccountControl", 0);
+	userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
 
 	
 	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
 	if (ent_type == HDB_LDB_ENT_TYPE_ANY && principal == NULL) {
-		const char *samAccountName = ldb_msg_find_string(msg, "samAccountName", NULL);
+		const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 		if (!samAccountName) {
 			krb5_set_error_string(context, "LDB_message2entry: no samAccountName present");
 			ret = ENOENT;
 			goto out;
 		}
-		samAccountName = ldb_msg_find_string(msg, "samAccountName", NULL);
+		samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 		krb5_make_principal(context, &entry_ex->entry.principal, realm, samAccountName, NULL);
 	} else {
 		char *strdup_realm;
@@ -286,7 +286,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		krb5_princ_set_realm(context, entry_ex->entry.principal, &strdup_realm);
 	}
 
-	entry_ex->entry.kvno = ldb_msg_find_int(msg, "msDS-KeyVersionNumber", 0);
+	entry_ex->entry.kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
 
 	entry_ex->entry.flags = uf2HDBFlags(context, userAccountControl, ent_type);
 
@@ -298,7 +298,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	}
 
 	if (lp_parm_bool(-1, "kdc", "require spn for service", True)) {
-		if (!is_computer && !ldb_msg_find_string(msg, "servicePrincipalName", NULL)) {
+		if (!is_computer && !ldb_msg_find_attr_as_string(msg, "servicePrincipalName", NULL)) {
 			entry_ex->entry.flags.server = 0;
 		}
 	}
@@ -648,7 +648,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 		 * is in our db, then direct the caller at our primary
 		 * krgtgt */
 		
-		const char *dnsdomain = ldb_msg_find_string(realm_ref_msg[0], "dnsRoot", NULL);
+		const char *dnsdomain = ldb_msg_find_attr_as_string(realm_ref_msg[0], "dnsRoot", NULL);
 		char *realm_fixed = strupper_talloc(mem_ctx, dnsdomain);
 		if (!realm_fixed) {
 			krb5_set_error_string(context, "strupper_talloc: out of memory");

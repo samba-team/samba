@@ -52,7 +52,7 @@ uint64_t winsdb_get_maxVersion(struct winsdb_handle *h)
 	if (res->count > 1) goto failed;
 
 	if (res->count == 1) {
-		maxVersion = ldb_msg_find_uint64(res->msgs[0], "maxVersion", 0);
+		maxVersion = ldb_msg_find_attr_as_uint64(res->msgs[0], "maxVersion", 0);
 	}
 
 failed:
@@ -90,7 +90,7 @@ uint64_t winsdb_set_maxVersion(struct winsdb_handle *h, uint64_t newMaxVersion)
 	talloc_steal(tmp_ctx, res);
 
 	if (res->count == 1) {
-		oldMaxVersion = ldb_msg_find_uint64(res->msgs[0], "maxVersion", 0);
+		oldMaxVersion = ldb_msg_find_attr_as_uint64(res->msgs[0], "maxVersion", 0);
 	}
 
 	if (newMaxVersion == 0) {
@@ -149,7 +149,7 @@ uint64_t winsdb_get_seqnumber(struct winsdb_handle *h)
 	if (res->count > 1) goto failed;
 
 	if (res->count == 1) {
-		seqnumber = ldb_msg_find_uint64(res->msgs[0], "sequenceNumber", 0);
+		seqnumber = ldb_msg_find_attr_as_uint64(res->msgs[0], "sequenceNumber", 0);
 	}
 
 failed:
@@ -639,14 +639,14 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 
 	/* parse it into a more convenient winsdb_record structure */
 	rec->name		= name;
-	rec->type		= ldb_msg_find_int(msg, "recordType", WREPL_TYPE_UNIQUE);
-	rec->state		= ldb_msg_find_int(msg, "recordState", WREPL_STATE_RELEASED);
-	rec->node		= ldb_msg_find_int(msg, "nodeType", WREPL_NODE_B);
-	rec->is_static		= ldb_msg_find_int(msg, "isStatic", 0);
-	rec->expire_time	= ldb_string_to_time(ldb_msg_find_string(msg, "expireTime", NULL));
-	rec->version		= ldb_msg_find_uint64(msg, "versionID", 0);
-	rec->wins_owner		= ldb_msg_find_string(msg, "winsOwner", NULL);
-	rec->registered_by	= ldb_msg_find_string(msg, "registeredBy", NULL);
+	rec->type		= ldb_msg_find_attr_as_int(msg, "recordType", WREPL_TYPE_UNIQUE);
+	rec->state		= ldb_msg_find_attr_as_int(msg, "recordState", WREPL_STATE_RELEASED);
+	rec->node		= ldb_msg_find_attr_as_int(msg, "nodeType", WREPL_NODE_B);
+	rec->is_static		= ldb_msg_find_attr_as_int(msg, "isStatic", 0);
+	rec->expire_time	= ldb_string_to_time(ldb_msg_find_attr_as_string(msg, "expireTime", NULL));
+	rec->version		= ldb_msg_find_attr_as_uint64(msg, "versionID", 0);
+	rec->wins_owner		= ldb_msg_find_attr_as_string(msg, "winsOwner", NULL);
+	rec->registered_by	= ldb_msg_find_attr_as_string(msg, "registeredBy", NULL);
 	talloc_steal(rec, rec->wins_owner);
 	talloc_steal(rec, rec->registered_by);
 

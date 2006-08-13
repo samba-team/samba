@@ -455,7 +455,7 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 	if (req->op.search.base == NULL) {
 		if (ildb->rootDSE != NULL) {
 			msg->r.SearchRequest.basedn =
-				talloc_strdup(msg, ldb_msg_find_string(ildb->rootDSE, "defaultNamingContext", ""));
+				talloc_strdup(msg, ldb_msg_find_attr_as_string(ildb->rootDSE, "defaultNamingContext", ""));
 		} else {
 			msg->r.SearchRequest.basedn = talloc_strdup(msg, "");
 		}
