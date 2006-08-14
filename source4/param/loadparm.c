@@ -59,6 +59,7 @@
 #include "pstring.h"
 #include "system/time.h"
 #include "system/locale.h"
+#include "system/network.h" /* needed for TCP_NODELAY */
 #include "librpc/gen_ndr/svcctl.h"
 #include "librpc/gen_ndr/samr.h"
 #include "smb_server/smb_server.h"
