@@ -111,6 +111,12 @@ for (r in options) {
 	subobj[key] = options[r];
 }
 
+if (options["ldap-backend"] != undefined) {
+	subobj["LDAPMODULES"] = "entryUUID";
+} else {
+	subobj["LDAPMODULES"] = "objectguid";
+}
+
 var blank = (options["blank"] != undefined);
 var ldapbase = (options["ldap-base"] != undefined);
 
