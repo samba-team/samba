@@ -674,11 +674,14 @@ int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg
   copy from a template record to a message
 */
 int samdb_copy_template(struct ldb_context *ldb, 
-			struct ldb_message *msg, const char *filter)
+			struct ldb_message *msg, const char *filter,
+			char **errstring)
 {
 	struct ldb_result *res;
 	struct ldb_message *t;
 	int ret, i, j;
+
+	*errstring = NULL;
 	
 	struct ldb_dn *basedn = ldb_dn_explode(ldb, "cn=Templates");
 
@@ -686,11 +689,12 @@ int samdb_copy_template(struct ldb_context *ldb,
 	ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
+		*errstring = talloc_steal(msg, ldb_errstring(ldb));
 		return ret;
 	}
 	if (res->count != 1) {
-		DEBUG(1, ("samdb_copy_template: ERROR: template '%s' matched %d records, expected 1\n", filter, 
-						       res->count));
+		*errstring = talloc_asprintf(msg, "samdb_copy_template: ERROR: template '%s' matched %d records, expected 1\n", filter, 
+					     res->count);
 		talloc_free(res);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -719,7 +723,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 				ret = samdb_find_or_add_value(ldb, msg, el->name, 
 							      (char *)el->values[j].data);
 				if (ret) {
-					DEBUG(1, ( "Adding objectClass %s failed.\n", el->values[j].data));
+					*errstring = talloc_asprintf(msg, "Adding objectClass %s failed.\n", el->values[j].data);
 					talloc_free(res);
 					return ret;
 				}
@@ -727,7 +731,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 				ret = samdb_find_or_add_attribute(ldb, msg, el->name, 
 								  (char *)el->values[j].data);
 				if (ret) {
-					DEBUG(1, ("Adding attribute %s failed.\n", el->name));
+					*errstring = talloc_asprintf(msg, "Adding attribute %s failed.\n", el->name);
 					talloc_free(res);
 					return ret;
 				}
