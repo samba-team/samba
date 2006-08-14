@@ -261,6 +261,7 @@ TDB_DATA tdb_firstkey(struct tdb_context *tdb)
 	if (tdb_unlock_record(tdb, tdb->travlocks.off) != 0)
 		return tdb_null;
 	tdb->travlocks.off = tdb->travlocks.hash = 0;
+	tdb->travlocks.lock_rw = F_RDLCK;
 
 	if (tdb_next_lock(tdb, &tdb->travlocks, &rec) <= 0)
 		return tdb_null;
