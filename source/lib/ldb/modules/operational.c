@@ -170,35 +170,6 @@ failed:
 }
 
 /*
-  add a time element to a record
-*/
-static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
-{
-	struct ldb_message_element *el;
-	char *s;
-
-	if (ldb_msg_find_element(msg, attr) != NULL) {
-		return 0;
-	}
-
-	s = ldb_timestring(msg, t);
-	if (s == NULL) {
-		return -1;
-	}
-
-	if (ldb_msg_add_string(msg, attr, s) != 0) {
-		return -1;
-	}
-
-	el = ldb_msg_find_element(msg, attr);
-	/* always set as replace. This works because on add ops, the flag
-	   is ignored */
-	el->flags = LDB_FLAG_MOD_REPLACE;
-
-	return 0;
-}
-
-/*
   add a uint64_t element to a record
 */
 static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_t v)
@@ -348,7 +319,6 @@ static int operational_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
-	time_t t = time(NULL);
 	uint64_t seq_num;
 	int ret;
 
@@ -366,11 +336,6 @@ static int operational_add(struct ldb_module *module, struct ldb_request *req)
 	/* we have to copy the message as the caller might have it as a const */
 	down_req->op.mod.message = msg = ldb_msg_copy_shallow(down_req, req->op.mod.message);
 	if (msg == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	if (add_time_element(msg, "whenCreated", t) != 0 ||
-	    add_time_element(msg, "whenChanged", t) != 0) {
-		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -405,7 +370,6 @@ static int operational_modify(struct ldb_module *module, struct ldb_request *req
 {
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
-	time_t t = time(NULL);
 	uint64_t seq_num;
 	int ret;
 
@@ -425,11 +389,6 @@ static int operational_modify(struct ldb_module *module, struct ldb_request *req
 	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (add_time_element(msg, "whenChanged", t) != 0) {
-		talloc_free(down_req);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	/* Get a sequence number from the backend */
 	ret = ldb_sequence_number(module->ldb, &seq_num);
 	if (ret == LDB_SUCCESS) {
