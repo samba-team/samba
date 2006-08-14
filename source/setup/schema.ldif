@@ -126,6 +126,26 @@ adminDisplayName: Security-Identifier
 attributeID: 1.2.840.113556.1.4.121
 attributeSyntax: 2.5.5.17
 
+
+dn: CN=Foreign-Identifier,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: attributeSchema
+cn: Foreign-Identifier
+instanceType: 4
+attributeID: 1.2.840.113556.1.4.356
+attributeSyntax: 2.5.5.10
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Foreign-Identifier
+adminDescription: Foreign-Identifier
+oMSyntax: 4
+searchFlags: 0
+lDAPDisplayName: foreignIdentifier
+name: Foreign-Identifier
+schemaIDGUID: 3e97891e-8c01-11d0-afda-00c04fd930c9
+systemOnly: FALSE
+systemFlags: 16
+
 dn: CN=msDS-KeyVersionNumber,CN=Schema,CN=Configuration,${BASEDN}
 cn: msDS-KeyVersionNumber
 name: msDS-KeyVersionNumber
@@ -8039,6 +8059,7 @@ objectClasses: ( 1.2.840.113556.1.5.31 NAME 'site' SUP top STRUCTURAL MAY ( noti
 objectClasses: ( 2.5.6.4 NAME 'organization' SUP top STRUCTURAL MUST ( o ) MAY ( x121Address $ userPassword $ telexNumber $ teletexTerminalIdentifier $ telephoneNumber $ street $ st $ seeAlso $ searchGuide $ registeredAddress $ preferredDeliveryMethod $ postalCode $ postalAddress $ postOfficeBox $ physicalDeliveryOfficeName $ l $ internationalISDNNumber $ facsimileTelephoneNumber $ destinationIndicator $ businessCategory ) )
 objectClasses: ( 1.2.840.113556.1.5.234 NAME 'msDS-AzAdminManager' SUP top STRUCTURAL MAY ( msDS-AzMinorVersion $ msDS-AzMajorVersion $ msDS-AzApplicationData $ msDS-AzGenerateAudits $ msDS-AzScriptTimeout $ msDS-AzScriptEngineCacheMax $ msDS-AzDomainTimeout $ description ) )
 objectClasses: ( 1.2.840.113556.1.5.6 NAME 'securityPrincipal' SUP top AUXILIARY MUST ( sAMAccountName $ objectSid ) MAY ( supplementalCredentials $ sIDHistory $ securityIdentifier $ sAMAccountType $ rid $ tokenGroupsNoGCAcceptable $ tokenGroupsGlobalAndUniversal $ tokenGroups $ nTSecurityDescriptor $ msDS-KeyVersionNumber $ altSecurityIdentities $ accountNameHistory ) )
+objectClasses: ( 1.2.840.113556.1.5.76 NAME 'foreignSecurityPrincipal' SUP top STRUCTURAL MUST (objectSid ) MAY (foreignIdentifier ) )
 objectClasses: ( 1.2.840.113556.1.5.7000.49 NAME 'applicationSettings' SUP top ABSTRACT MAY ( notificationList $ msDS-Settings $ applicationName ) )
 objectClasses: ( 1.2.840.113556.1.3.13 NAME 'classSchema' SUP top STRUCTURAL MUST ( subClassOf $ schemaIDGUID $ objectClassCategory $ governsID $ defaultObjectCategory $ cn ) MAY ( systemPossSuperiors $ systemOnly $ systemMustContain $ systemMayContain $ systemAuxiliaryClass $ schemaFlagsEx $ rDNAttID $ possSuperiors $ mustContain $ msDs-Schema-Extensions $ msDS-IntId $ mayContain $ lDAPDisplayName $ isDefunct $ defaultSecurityDescriptor $ defaultHidingValue $ classDisplayName $ auxiliaryClass ) )
 objectClasses: ( 1.2.840.113556.1.5.9 NAME 'user' SUP organizationalPerson STRUCTURAL MAY ( pager $ o $ mobile $ manager $ mail $ initials $ homePhone $ businessCategory $ userCertificate $ userWorkstations $ userSharedFolderOther $ userSharedFolder $ userPrincipalName $ userParameters $ userAccountControl $ unicodePwd $ terminalServer $ servicePrincipalName $ scriptPath $ pwdLastSet $ profilePath $ primaryGroupID $ preferredOU $ otherLoginWorkstations $ operatorCount $ ntPwdHistory $ networkAddress $ msRASSavedFramedRoute $ msRASSavedFramedIPAddress $ msRASSavedCallbackNumber $ msRADIUSServiceType $ msRADIUSFramedRoute $ msRADIUSFramedIPAddress $ msRADIUSCallbackNumber $ msNPSavedCallingStationID $ msNPCallingStationID $ msNPAllowDialin $ mSMQSignCertificatesMig $ mSMQSignCertificates $ mSMQDigestsMig $ mSMQDigests $ msIIS-FTPRoot $ msIIS-FTPDir $ msDS-User-Account-Control-Computed $ msDS-Site-Affinity $ mS-DS-CreatorSID $ msDS-Cached-Membership-Time-Stamp $ msDS-Cached-Membership $ msDRM-IdentityCertificate $ msCOM-UserPartitionSetLink $ maxStorage $ logonWorkstation $ logonHours $ logonCount $ lockoutTime $ localeID $ lmPwdHistory $ lastLogonTimestamp $ lastLogon $ lastLogoff $ homeDrive $ homeDirectory $ groupsToIgnore $ groupPriority $ groupMembershipSAM $ dynamicLDAPServer $ desktopProfile $ defaultClassStore $ dBCSPwd $ controlAccessRights $ codePage $ badPwdCount $ badPasswordTime $ adminCount $ aCSPolicyName $ accountExpires $ x500uniqueIdentifier $ userSMIMECertificate $ userPKCS12 $ uid $ secretary $ roomNumber $ preferredLanguage $ photo $ labeledURI $ jpegPhoto $ homePostalAddress $ givenName $ employeeType $ employeeNumber $ displayName $ departmentNumber $ carLicense $ audio ) )
