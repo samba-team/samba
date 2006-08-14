@@ -47,28 +47,28 @@ static SIG_ATOMIC_T gotalarm;
 /***************************************************************
  Signal function to tell us we timed out.
 ****************************************************************/
-                                                                                                                   
+
 static void gotalarm_sig(void)
 {
 	gotalarm = 1;
 }
-                                                                                                                   
+
  LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to)
 {
 	LDAP *ldp = NULL;
-                                                                                                                   
+
 	/* Setup timeout */
 	gotalarm = 0;
 	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
 	alarm(to);
 	/* End setup timeout. */
-                                                                                                                   
+
 	ldp = ldap_open(server, port);
-                                                                                                                   
+
 	/* Teardown timeout. */
 	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 	alarm(0);
-                                                                                                                   
+
 	return ldp;
 }
 
