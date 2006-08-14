@@ -65,6 +65,11 @@ static void gotalarm_sig(void)
 
 	ldp = ldap_open(server, port);
 
+	if (ldp == NULL) {
+		DEBUG(2,("Could not open LDAP connection to %s:%d: %s\n",
+			 server, port, strerror(errno)));
+	}
+
 	/* Teardown timeout. */
 	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 	alarm(0);
