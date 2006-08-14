@@ -26,7 +26,7 @@ AC_ARG_WITH(fhs,
     logfilebase="${localstatedir}/log/samba"
     privatedir="${localstatedir}/lib/samba/private"
     sysconfdir="${sysconfdir}/samba"
-	modulesdir="${libdir}/samba"
+    modulesdir="${libdir}/samba"
     datadir="${datadir}/samba"
     includedir="${includedir}/samba-4.0"
     winbindd_socket_dir="${localstatedir}/run/samba/winbind_pipe"
