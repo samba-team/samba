@@ -7,17 +7,22 @@ then
 	exit
 fi
 
+ARG0=$0
+ARG1=$1
+ARG2=$2
+ARG3=$3
+
 if [ -z "$TORTURE_MAXTIME" ]; then
     TORTURE_MAXTIME=600
 fi
 
 OLD_PWD=`pwd`
-PREFIX=$1
+PREFIX=$ARG1
 PREFIX=`echo $PREFIX | sed s+//+/+`
 export PREFIX
 
 # allow selection of the test lists
-TESTS=$2
+TESTS=$ARG2
 
 if [ $TESTS = "all" ]; then
     TLS_ENABLED="yes"
@@ -29,7 +34,7 @@ export TLS_ENABLED
 LD_LIBRARY_PATH=$OLD_PWD/bin:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH
 
-incdir=`dirname $0`
+incdir=`dirname $ARG0`
 echo -n "PROVISIONING..."
 . $incdir/mktestsetup.sh $PREFIX || exit 1
 echo "DONE"
@@ -37,14 +42,16 @@ echo "DONE"
 PATH=bin:$PATH
 export PATH
 
-DO_SOCKET_WRAPPER=$3
+DO_SOCKET_WRAPPER=$ARG3
 if [ x"$DO_SOCKET_WRAPPER" = x"SOCKET_WRAPPER" ];then
 	SOCKET_WRAPPER_DIR="$PREFIX/sw"
 	export SOCKET_WRAPPER_DIR
 	echo "SOCKET_WRAPPER_DIR=$SOCKET_WRAPPER_DIR"
+else
+	echo "NOT USING SOCKET_WRAPPER"
 fi
 
-incdir=`dirname $0`
+incdir=`dirname $ARG0`
 . $incdir/test_functions.sh
 
 SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
@@ -94,8 +101,8 @@ failed=$?
 kill `cat $PIDDIR/smbd.pid`
 
 END=`date`
-echo "START: $START ($0)";
-echo "END:   $END ($0)";
+echo "START: $START ($ARG0)";
+echo "END:   $END ($ARG0)";
 
 # if there were any valgrind failures, show them
 count=`find $PREFIX -name 'valgrind.log*' | wc -l`
@@ -109,4 +116,4 @@ if [ "$count" != 0 ]; then
     done
 fi
 
-teststatus $0 $failed
+teststatus $ARG0 $failed
