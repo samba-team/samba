@@ -44,6 +44,7 @@
 #define ERRnomem 8 /* Out of memory */
 #define ERRbadmem 9 /* Invalid memory block address */
 #define ERRbadenv 10 /* Invalid environment */
+#define ERRbadformat 11 /* Bad Format */
 #define ERRbadaccess 12 /* Invalid open mode */
 #define ERRbaddata 13 /* Invalid data (only from ioctl call) */
 #define ERRres 14 /* reserved */
@@ -60,6 +61,7 @@
 #define ERRfilexists 80 /* File in operation already exists */
 #define ERRinvalidparam 87
 #define ERRcannotopen 110 /* Cannot open the file specified */
+#define ERRbufferoverflow 111
 #define ERRinsufficientbuffer 122
 #define ERRinvalidname 123 /* Invalid name */
 #define ERRunknownlevel 124
