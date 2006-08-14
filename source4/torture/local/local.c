@@ -53,6 +53,7 @@ NTSTATUS torture_local_init(void)
 	register_torture_op("LOCAL-TALLOC", torture_local_talloc);
 	register_torture_op("LOCAL-CRYPTO-MD4", torture_local_crypto_md4);
 	register_torture_op("LOCAL-CRYPTO-MD5", torture_local_crypto_md5);
+	register_torture_op("LOCAL-CRYPTO-HMACMD5", torture_local_crypto_hmacmd5);
 	register_torture_op("LOCAL-CRYPTO-SHA1", torture_local_crypto_sha1);
 	register_torture_op("LOCAL-CRYPTO-HMACSHA1", torture_local_crypto_hmacsha1);
 	for (i = 0; suite_generators[i]; i++)
