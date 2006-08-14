@@ -3,7 +3,8 @@
 local_tests="LOCAL-NTLMSSP LOCAL-TALLOC LOCAL-MESSAGING LOCAL-IRPC"
 local_tests="$local_tests LOCAL-BINDING LOCAL-IDTREE LOCAL-SOCKET"
 local_tests="$local_tests LOCAL-PAC LOCAL-STRLIST LOCAL-SDDL LOCAL-NDR"
-local_tests="$local_tests LOCAL-EVENT LOCAL-CRYPTO-MD4 LOCAL-CRYPTO-MD5"
+local_tests="$local_tests LOCAL-EVENT LOCAL-CRYPTO-MD4"
+local_tests="$local_tests LOCAL-CRYPTO-MD5 LOCAL-CRYPTO-HMACMD5"
 local_tests="$local_tests LOCAL-CRYPTO-SHA1 LOCAL-CRYPTO-HMACSHA1"
 
 if [ $# -lt 0 ]; then
