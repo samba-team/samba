@@ -572,7 +572,7 @@ function provision_guess()
 	subobj.ROOT         = findnss(nss.getpwnam, "root");
 	subobj.NOBODY       = findnss(nss.getpwnam, "nobody");
 	subobj.NOGROUP      = findnss(nss.getgrnam, "nogroup", "nobody");
-	subobj.WHEEL        = findnss(nss.getgrnam, "wheel", "root", "staff");
+	subobj.WHEEL        = findnss(nss.getgrnam, "wheel", "root", "staff", "adm");
 	subobj.BACKUP       = findnss(nss.getgrnam, "backup", "wheel", "root", "staff");
 	subobj.USERS        = findnss(nss.getgrnam, "users", "guest", "other", "unknown");
 	subobj.DNSDOMAIN    = strlower(subobj.REALM);
