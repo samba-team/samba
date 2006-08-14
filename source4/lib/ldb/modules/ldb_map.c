@@ -798,7 +798,27 @@ static struct ldb_message_element *map_objectclass_generate_local(struct ldb_mod
 	return el;
 }
 
+/* Mappings for searches on objectClass= assuming a one-to-one
+ * mapping.  Needed because this is a generate operator for the
+ * add/modify code */
+static int map_objectclass_convert_operator(struct ldb_module *module, void *mem_ctx, 
+					    struct ldb_parse_tree **new, const struct ldb_parse_tree *tree) 
+{
+	
+	static const struct ldb_map_attribute objectclass_map = {
+		.local_name = "objectclass",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "objectclass",
+				 .convert_local = map_objectclass_convert_local,
+				 .convert_remote = map_objectclass_convert_remote,
+			 },
+		},
+	};
 
+	return map_subtree_collect_remote_simple(module, mem_ctx, new, tree, &objectclass_map);
+}
 
 /* Auxiliary request construction
  * ============================== */
@@ -1142,6 +1162,7 @@ static const struct ldb_map_attribute builtin_attribute_maps[] = {
 	{
 		.local_name = "objectclass",
 		.type = MAP_GENERATE,
+		.convert_operator = map_objectclass_convert_operator,
 		.u = {
 			.generate = {
 				 .remote_names = { "objectclass", NULL },
