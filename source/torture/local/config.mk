@@ -10,6 +10,7 @@ OBJ_FILES = \
 		../../lib/talloc/testsuite.o \
 		../../lib/crypto/md4test.o \
 		../../lib/crypto/md5test.o \
+		../../lib/crypto/hmacmd5test.o \
 		../../lib/crypto/sha1test.o \
 		../../lib/crypto/hmacsha1test.o \
 		messaging.o \
