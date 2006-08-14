@@ -48,14 +48,7 @@ ok = s4.connect("tdb://samba4.ldb");
 assert(ok);
 
 println("Initial samba4 LDIF...");
-var path = "../../source/setup/provision_init.ldif";
-var ldif = sys.file_load(mypath + path);
-ldif = substitute_var(ldif, local);
-assert(ldif != undefined);
-ok = s4.add(ldif);
-assert(ok);
-
-var path = "../../source/setup/provision_templates.ldif";
+var path = "../../testdata/samba3/provision_samba3sam.ldif"
 var ldif = sys.file_load(mypath + path);
 ldif = substitute_var(ldif, local);
 assert(ldif != undefined);
@@ -110,6 +103,24 @@ var oc = msg[0].objectClass;
 assert(oc != undefined);
 for (var i in oc) {
 	assert(oc[i] == "posixGroup" || oc[i] == "group");
+}
+
+println("Looking up by objectClass");
+msg = s4.search("(|(objectClass=user)(cn=Administrator))");
+assert(msg != undefined);
+assert(msg.length == 2);
+for (var i = 0; i < msg.length; i++) {
+    assert((msg[i].dn == "unixName=Administrator,ou=Users,sambaDomainName=TESTS,dc=vernstok,dc=nl") ||
+           (msg[i].dn == "unixName=nobody,ou=Users,sambaDomainName=TESTS,dc=vernstok,dc=nl"));
+}
+
+println("Looking up by objectClass");
+msg = s4.search("(|(objectClass=user)(cn=Administrator))");
+assert(msg != undefined);
+assert(msg.length == 2);
+for (var i = 0; i < msg.length; i++) {
+    assert((msg[i].dn == "unixName=Administrator,ou=Users,sambaDomainName=TESTS,dc=vernstok,dc=nl") ||
+           (msg[i].dn == "unixName=nobody,ou=Users,sambaDomainName=TESTS,dc=vernstok,dc=nl"));
 }
 
 println("Adding a record that will be fallbacked");

@@ -16,6 +16,7 @@ incdir=`dirname $0`
 . $incdir/test_functions.sh
 
 SCRIPTDIR=../testprogs/ejs
+DATADIR=../testdata
 
 PATH=bin:$PATH
 export PATH
@@ -27,6 +28,8 @@ done
 testit "ejsnet.js" $SCRIPTDIR/ejsnet.js $CONFIGURATION -U$USERNAME%$PASSWORD $DOMAIN ejstestuser || failed=`expr $failed + 1`
 
 testit "ldb.js" $SCRIPTDIR/ldb.js `pwd` $CONFIGURATION || failed=`expr $failed + 1`
+
+testit "samba3sam.js" $SCRIPTDIR/samba3sam.js `pwd` $DATADIR/samba3/ || failed=`expr $failed + 1`
 
 testit "winreg" scripting/bin/winreg $CONFIGURATION ncalrpc: 'HKLM' -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
 
