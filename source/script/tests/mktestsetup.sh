@@ -12,6 +12,10 @@ if test -z "$TLS_ENABLED"; then
 	TLS_ENABLED=false
 fi
 
+if test -z "$SHARE_BACKEND"; then
+	SHARE_BACKEND=classic
+fi
+
 DOMAIN=SAMBADOMAIN
 USERNAME=administrator
 REALM=SAMBA.EXAMPLE.COM
@@ -69,6 +73,7 @@ cat >$CONFFILE<<EOF
 	pid directory = $PIDDIR
 	ncalrpc dir = $NCALRPCDIR
 	lock dir = $LOCKDIR
+	share backend = $SHARE_BACKEND
 	setup directory = $SRCDIR/setup
 	js include = $SRCDIR/scripting/libjs
         winbindd socket directory = $WINBINDD_SOCKET_DIR
@@ -98,6 +103,85 @@ cat >$CONFFILE<<EOF
 	cifs:domain = $DOMAIN
 	cifs:share = tmp
 EOF
+
+## Override default srahes_config.ldb file
+rm -f $PRIVATEDIR/share.ldb
+cat >$PRIVATEDIR/share.ldif<<EOF
+### Shares basedn
+dn: @INDEXLIST
+@IDXATTR: name
+
+dn: @ATTRIBUTES
+cn: CASE_INSENSITIVE
+dc: CASE_INSENSITIVE
+name: CASE_INSENSITIVE
+dn: CASE_INSENSITIVE
+objectClass: CASE_INSENSITIVE
+
+dn: CN=Shares
+objectClass: top
+objectClass: organizationalUnit
+cn: Shares
+
+### Default IPC$ Share
+dn: CN=IPC$,CN=Shares
+objectClass: top
+objectClass: share
+cn: IPC$
+name: IPC$
+type: IPC
+path: /tmp
+comment: Remote IPC
+max-connections: -1
+available: True
+readonly: True
+browseable: False
+ntvfs-handler: default
+
+### Default ADMIN$ Share
+dn: CN=ADMIN$,CN=Shares
+objectClass: top
+objectClass: share
+cn: ADMIN$
+name: ADMIN$
+type: DISK
+path: /tmp
+comment: Remote Admin
+max-connections: -1
+available: True
+readonly: True
+browseable: False
+ntvfs-handler: default
+
+dn: CN=tmp,CN=Shares
+objectClass: top
+objectClass: share
+cn: tmp
+name: tmp
+type: DISK
+path: $TMPDIR
+comment: Temp Dir for Tests
+readonly: False
+ntvfs-handler: posix
+posix-sharedelay: 100000
+posix-eadb: $LOCKDIR/eadb.tdb
+
+dn: CN=cifs,CN=Shares
+objectClass: top
+objectClass: share
+cn: cifs
+name: cifs
+type: DISK
+readonly: False
+ntvfs-handler: cifs
+cifs-server: $SERVER
+cifs-user: $USERNAME
+cifs-password: $PASSWORD
+cifs-domain: $DOMAIN
+cifs-share: tmp
+EOF
+
+$srcdir/bin/ldbadd -H $PRIVATEDIR/share.ldb < $PRIVATEDIR/share.ldif >/dev/null || exit 1
 
 cat >$KRB5_CONFIG<<EOF
 [libdefaults]
