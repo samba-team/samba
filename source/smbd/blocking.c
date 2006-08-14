@@ -458,7 +458,8 @@ static BOOL process_trans2(blocking_lock_record *blr)
 	construct_reply_common(inbuf, outbuf);
 	SCVAL(outbuf,smb_com,SMBtrans2);
 	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, max_send, params, 2, NULL, 0);
+	/* Fake up max_data_bytes here - we know it fits. */
+	send_trans2_replies(outbuf, max_send, params, 2, NULL, 0, 0xffff);
 	return True;
 }
 

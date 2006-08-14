@@ -81,9 +81,8 @@ BOOL use_nt_status(void)
  If the override errors are set they take precedence over any passed in values.
 ****************************************************************************/
 
-int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
+void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
 {
-	int outsize = set_message(outbuf,0,0,True);
 	BOOL force_nt_status = False;
 	BOOL force_dos_status = False;
 
@@ -125,6 +124,11 @@ int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, in
 			  eclass,
 			  ecode));
 	}
+}
 
+int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
+{
+	int outsize = set_message(outbuf,0,0,True);
+	error_packet_set(outbuf, eclass, ecode, ntstatus, line, file);
 	return outsize;
 }

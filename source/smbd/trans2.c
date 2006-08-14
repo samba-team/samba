@@ -573,7 +573,8 @@ int send_trans2_replies(char *outbuf,
 			char *params, 
 			int paramsize,
 			char *pdata,
-			int datasize)
+			int datasize,
+			int max_data_bytes)
 {
 	/* As we are using a protocol > LANMAN1 then the max_send
 	 variable must have been set in the sessetupX call.
@@ -593,6 +594,18 @@ int send_trans2_replies(char *outbuf,
 	/* Initially set the wcnt area to be 10 - this is true for all trans2 replies */
 	
 	set_message(outbuf,10,0,True);
+
+	/* Modify the data_to_send and datasize and set the error if
+	   we're trying to send more than max_data_bytes. We still send
+	   the part of the packet(s) that fit. Strange, but needed
+	   for OS/2. */
+
+	if (max_data_bytes > 0 && datasize > max_data_bytes) {
+		DEBUG(5,("send_trans2_replies: max_data_bytes %d exceeded by data %d\n",
+			max_data_bytes, datasize ));
+		datasize = data_to_send = max_data_bytes;
+		error_packet_set(outbuf,ERRDOS,ERRbufferoverflow,STATUS_BUFFER_OVERFLOW,__LINE__,__FILE__);
+	}
 
 	/* If there genuinely are no parameters or data to send just send the empty packet */
 
@@ -932,7 +945,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	/* Send the required number of replies */
-	send_trans2_replies(outbuf, bufsize, params, 30, *ppdata, 0);
+	send_trans2_replies(outbuf, bufsize, params, 30, *ppdata, 0, max_data_bytes);
 
 	return -1;
 }
@@ -1858,7 +1871,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,6,0); /* Never an EA error */
 	SSVAL(params,8,last_entry_off);
 
-	send_trans2_replies( outbuf, bufsize, params, 10, pdata, PTR_DIFF(p,pdata));
+	send_trans2_replies( outbuf, bufsize, params, 10, pdata, PTR_DIFF(p,pdata), max_data_bytes);
 
 	if ((! *directory) && dptr_path(dptr_num))
 		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
@@ -2140,7 +2153,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,4,0); /* Never an EA error */
 	SSVAL(params,6,last_entry_off);
 
-	send_trans2_replies( outbuf, bufsize, params, 8, pdata, PTR_DIFF(p,pdata));
+	send_trans2_replies( outbuf, bufsize, params, 8, pdata, PTR_DIFF(p,pdata), max_data_bytes);
 
 	if ((! *directory) && dptr_path(dptr_num))
 		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
@@ -2503,7 +2516,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 	}
 
 
-	send_trans2_replies( outbuf, bufsize, params, 0, pdata, data_len);
+	send_trans2_replies( outbuf, bufsize, params, 0, pdata, data_len, max_data_bytes);
 
 	DEBUG( 4, ( "%s info_level = %d\n", smb_fn_name(CVAL(inbuf,smb_com)), info_level) );
 
@@ -3633,7 +3646,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
-	send_trans2_replies(outbuf, bufsize, params, param_size, *ppdata, data_size);
+	send_trans2_replies(outbuf, bufsize, params, param_size, *ppdata, data_size, max_data_bytes);
 
 	return(-1);
 }
@@ -3782,7 +3795,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
 	
 				SSVAL(params,0,0);
-				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 				return(-1);
 			} else
 				return (UNIXERROR(ERRDOS,ERRbadpath));
@@ -3894,7 +3907,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				if ((total_data == 4) && (IVAL(pdata,0) == 4)) {
 					/* We're done. We only get EA info in this call. */
 					SSVAL(params,0,0);
-					send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+					send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 					return(-1);
 				}
 
@@ -3925,7 +3938,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 			/* We're done. We only get EA info in this call. */
 			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 			return(-1);
 		}
 
@@ -4117,7 +4130,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			}
 
 			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 			return(-1);
 		}
 
@@ -4146,7 +4159,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 			/* We're done. We only get position info in this call. */
 			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 			return(-1);
 		}
 
@@ -4170,7 +4183,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 			/* We're done. We only get mode info in this call. */
 			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 			return(-1);
 		}
 
@@ -4285,7 +4298,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				inherit_access_acl(conn, fname, unixmode);
 
 				SSVAL(params,0,0);
-				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 				return(-1);
 			}
 
@@ -4368,7 +4381,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if (SMB_VFS_SYMLINK(conn,link_target,newname) != 0)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 			return(-1);
 		}
 
@@ -4392,7 +4405,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			}
 
 			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 			return(-1);
 		}
 
@@ -4446,7 +4459,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			}
 			process_pending_change_notify_queue((time_t)0);
 			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 			return(-1);
 		}
 
@@ -4497,7 +4510,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			}
 
 			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 			return(-1);
 		}
 #endif
@@ -4603,7 +4616,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			}
 
 			SSVAL(params,0,0);
-			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
 			return(-1);
 		}
 
@@ -4729,7 +4742,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	}
 
 	SSVAL(params,0,0);
-	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
   
 	return(-1);
 }
@@ -4834,7 +4847,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 
 	SSVAL(params,0,0);
 
-	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
   
 	return(-1);
 }
@@ -4883,7 +4896,7 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
 	if(fnf_handle == 0)
 		fnf_handle = 257;
 
-	send_trans2_replies(outbuf, bufsize, params, 6, *ppdata, 0);
+	send_trans2_replies(outbuf, bufsize, params, 6, *ppdata, 0, max_data_bytes);
   
 	return(-1);
 }
@@ -4911,7 +4924,7 @@ static int call_trans2findnotifynext(connection_struct *conn, char *inbuf, char 
 	SSVAL(params,0,0); /* No changes */
 	SSVAL(params,2,0); /* No EA errors */
 
-	send_trans2_replies(outbuf, bufsize, params, 4, *ppdata, 0);
+	send_trans2_replies(outbuf, bufsize, params, 4, *ppdata, 0, max_data_bytes);
   
 	return(-1);
 }
@@ -4945,7 +4958,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
 		return UNIXERROR(ERRDOS,ERRbadfile);
     
 	SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
-	send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size);
+	send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size, max_data_bytes);
 
 	return(-1);
 }
@@ -4983,7 +4996,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 		SSVAL(pdata,0,fsp->rap_print_jobid);                     /* Job number */
 		srvstr_push( outbuf, pdata + 2, global_myname(), 15, STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
 		srvstr_push( outbuf, pdata+18, lp_servicename(SNUM(conn)), 13, STR_ASCII|STR_TERMINATE); /* Service name */
-		send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32);
+		send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32, max_data_bytes);
 		return(-1);
 	} else {
 		DEBUG(2,("Unknown TRANS2_IOCTL\n"));
