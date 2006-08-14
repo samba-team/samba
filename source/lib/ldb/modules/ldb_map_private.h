@@ -92,6 +92,7 @@ struct ldb_request *map_search_base_req(struct map_context *ac, const struct ldb
 struct ldb_request *map_search_self_req(struct map_context *ac, const struct ldb_dn *dn);
 struct ldb_request *map_build_fixup_req(struct map_context *ac, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
 
+int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, struct ldb_parse_tree **new, const struct ldb_parse_tree *tree, const struct ldb_map_attribute *map);
 
 /* LDB Requests
  * ============ */

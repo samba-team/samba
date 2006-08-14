@@ -679,7 +679,7 @@ static int map_subtree_collect_remote_list(struct ldb_module *module, void *mem_
 }
 
 /* Collect a simple subtree that queries attributes in the remote partition */
-static int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, struct ldb_parse_tree **new, const struct ldb_parse_tree *tree, const struct ldb_map_attribute *map)
+int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, struct ldb_parse_tree **new, const struct ldb_parse_tree *tree, const struct ldb_map_attribute *map)
 {
 	const char *attr;
 	struct ldb_val val;
@@ -757,8 +757,7 @@ static int map_subtree_collect_remote(struct ldb_module *module, void *mem_ctx, 
 
 	map = map_attr_find_local(data, tree->u.equality.attr);
 	if (map->convert_operator) {
-		*new = map->convert_operator(data, mem_ctx, tree);
-		return 0;
+		return map->convert_operator(module, mem_ctx, new, tree);
 	}
 
 	if (map->type == MAP_GENERATE) {
@@ -1084,7 +1083,7 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 		goto failed;
 	}
 
-	if (((local_tree == NULL) ^ (remote_tree == NULL)) &&
+	if (((local_tree != NULL) && (remote_tree != NULL)) &&
 	    (!ldb_parse_tree_check_splittable(req->op.search.tree))) {
 		/* The query can't safely be split, enumerate the remote partition */
 		local_tree = NULL;
