@@ -1769,6 +1769,7 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct lsa_secret_state *secret_state;
 	struct dcesrv_handle *handle;
 	struct ldb_message **msgs, *msg;
+	char *errstr;
 	const char *attrs[] = {
 		NULL
 	};
@@ -1861,10 +1862,10 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	/* pull in all the template attributes.  Note this is always from the global samdb */
 	ret = samdb_copy_template(secret_state->policy->sam_ldb, msg, 
-				  "(&(cn=TemplateSecret)(objectclass=secretTemplate))");
+				  "(&(cn=TemplateSecret)(objectclass=secretTemplate))", &errstr);
 	if (ret != 0) {
-		DEBUG(0,("Failed to load TemplateSecret from samdb: %s\n", 
-			 ldb_errstring(secret_state->policy->sam_ldb)));
+		DEBUG(0,("Failed to load TemplateSecret from samdb: %s\n",
+			 errstr));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
