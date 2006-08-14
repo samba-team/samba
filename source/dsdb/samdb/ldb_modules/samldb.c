@@ -435,6 +435,7 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 	struct ldb_message *msg2;
 	struct ldb_dn_component *rdn;
 	TALLOC_CTX *mem_ctx = talloc_new(msg);
+	char *errstr;
 	if (!mem_ctx) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -447,8 +448,11 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = samdb_copy_template(module->ldb, msg2, "(&(CN=TemplateGroup)(objectclass=groupTemplate))");
+	ret = samdb_copy_template(module->ldb, msg2, 
+				  "(&(CN=TemplateGroup)(objectclass=groupTemplate))",
+				  &errstr);
 	if (ret != 0) {
+		
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -494,6 +498,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	struct ldb_message *msg2;
 	struct ldb_dn_component *rdn;
 	TALLOC_CTX *mem_ctx = talloc_new(msg);
+	char *errstr;
 	if (!mem_ctx) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -508,9 +513,14 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 
 	if (samdb_find_attribute(module->ldb, msg, "objectclass", "computer") != NULL) {
 
-		ret = samdb_copy_template(module->ldb, msg2, "(&(CN=TemplateComputer)(objectclass=userTemplate))");
+		ret = samdb_copy_template(module->ldb, msg2, 
+					  "(&(CN=TemplateComputer)(objectclass=userTemplate))", 
+					  &errstr);
 		if (ret) {
-			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying computer template!\n");
+			ldb_asprintf_errstring(module->ldb, 
+					       "samldb_fill_user_or_computer_object: "
+					       "Error copying computer template: %s",
+					       errstr);
 			talloc_free(mem_ctx);
 			return ret;
 		}
@@ -528,9 +538,13 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		}
 		
 	} else {
-		ret = samdb_copy_template(module->ldb, msg2, "(&(CN=TemplateUser)(objectclass=userTemplate))");
+		ret = samdb_copy_template(module->ldb, msg2, 
+					  "(&(CN=TemplateUser)(objectclass=userTemplate))", 
+					  &errstr);
 		if (ret) {
-			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying user template!\n");
+			ldb_asprintf_errstring(module->ldb, 
+					       "samldb_fill_user_or_computer_object: Error copying user template: %s\n",
+					       errstr);
 			talloc_free(mem_ctx);
 			return ret;
 		}
@@ -581,7 +595,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 }
 	
 static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module, const struct ldb_message *msg, 
-								       struct ldb_message **ret_msg)
+						       struct ldb_message **ret_msg)
 {
 	struct ldb_message *msg2;
 	struct ldb_dn_component *rdn;
@@ -589,6 +603,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 	struct dom_sid *sid;
 	const char *dom_attrs[] = { "name", NULL };
 	struct ldb_message **dom_msgs;
+	char *errstr;
 	int ret;
 
 	TALLOC_CTX *mem_ctx = talloc_new(msg);
@@ -604,9 +619,14 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = samdb_copy_template(module->ldb, msg2, "(&(CN=TemplateForeignSecurityPrincipal)(objectclass=foreignSecurityPrincipalTemplate))");
+	ret = samdb_copy_template(module->ldb, msg2, 
+				  "(&(CN=TemplateForeignSecurityPrincipal)(objectclass=foreignSecurityPrincipalTemplate))",
+				  &errstr);
 	if (ret != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_foreignSecurityPrincipal_object: Error copying template!\n");
+		ldb_asprintf_errstring(module->ldb, 
+				       "samldb_fill_foreignSecurityPrincipal_object: "
+				       "Error copying template: %s",
+				    errstr);
 		talloc_free(mem_ctx);
 		return ret;
 	}
