@@ -307,7 +307,7 @@ done:
 		continue; \
 	}
 
-void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_changes)
+static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_changes)
 {
 	enum fields { account_name = 0, full_name, description, home_directory, home_drive,
 		      comment, logon_script, profile_path, acct_expiry, allow_password_change,
