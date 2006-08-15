@@ -1,0 +1,201 @@
+dn: @INDEXLIST
+@IDXATTR: name
+@IDXATTR: sAMAccountName
+@IDXATTR: objectSid
+@IDXATTR: objectClass
+@IDXATTR: objectCategory
+@IDXATTR: member
+@IDXATTR: uidNumber
+@IDXATTR: gidNumber
+@IDXATTR: unixName
+@IDXATTR: privilege
+@IDXATTR: nCName
+
+dn: @ATTRIBUTES
+userPrincipalName: CASE_INSENSITIVE
+servicePrincipalName: CASE_INSENSITIVE
+dnsDomain: CASE_INSENSITIVE
+dnsRoot: CASE_INSENSITIVE
+nETBIOSName: CASE_INSENSITIVE
+cn: CASE_INSENSITIVE
+dc: CASE_INSENSITIVE
+name: CASE_INSENSITIVE
+dn: CASE_INSENSITIVE
+sAMAccountName: CASE_INSENSITIVE
+objectClass: CASE_INSENSITIVE
+sambaPassword: HIDDEN
+krb5Key: HIDDEN
+ntPwdHash: HIDDEN
+sambaNTPwdHistory: HIDDEN
+lmPwdHash: HIDDEN
+sambaLMPwdHistory: HIDDEN
+createTimestamp: HIDDEN
+modifyTimestamp: HIDDEN
+groupType: INTEGER
+sAMAccountType: INTEGER
+systemFlags: INTEGER
+userAccountControl: INTEGER
+
+dn: @SUBCLASSES
+top: domain
+top: person
+top: group
+domain: domainDNS
+domain: builtinDomain
+person: organizationalPerson
+organizationalPerson: user
+user: computer
+template: userTemplate
+template: groupTemplate
+
+dn: @KLUDGEACL
+passwordAttribute: sambaPassword
+passwordAttribute: ntPwdHash
+passwordAttribute: sambaNTPwdHistory
+passwordAttribute: lmPwdHash
+passwordAttribute: sambaLMPwdHistory
+passwordAttribute: krb5key
+
+# the rootDSE module looks in this record for its base data
+dn: cn=ROOTDSE
+subschemaSubentry: CN=Aggregate,CN=Schema,CN=Configuration,${BASEDN}
+dsServiceName: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,${BASEDN}
+defaultNamingContext: ${BASEDN}
+rootDomainNamingContext: ${BASEDN}
+configurationNamingContext: CN=Configuration,${BASEDN}
+schemaNamingContext: CN=Schema,CN=Configuration,${BASEDN}
+supportedLDAPVersion: 3
+dnsHostName: ${DNSNAME}
+ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${REALM}
+serverName: CN=${NETBIOSNAME},CN=Servers,CN=Default-First-Site,CN=Sites,CN=Configuration,${BASEDN}
+domainFunctionality: 0
+forestFunctionality: 0
+domainControllerFunctionality: 2
+isSynchronized: TRUE
+vendorName: Samba Team (http://samba.org)
+vendorVersion: ${VERSION}
+
+dn: CN=Templates
+objectClass: top
+objectClass: container
+cn: Templates
+description: Container for SAM account templates
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+systemFlags: 2348810240
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+###
+# note! the template users must not match normal searches. Be careful
+# with what classes you put them in
+###
+
+dn: CN=TemplateUser,CN=Templates
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: Template
+objectClass: userTemplate
+cn: TemplateUser
+instanceType: 4
+userAccountControl: 514
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 0
+pwdLastSet: 0
+primaryGroupID: 513
+accountExpires: -1
+logonCount: 0
+sAMAccountType: 805306368
+objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=TemplateComputer,CN=Templates
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: Template
+objectClass: userTemplate
+cn: TemplateComputer
+instanceType: 4
+userAccountControl: 4098
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 0
+pwdLastSet: 0
+primaryGroupID: 513
+accountExpires: -1
+logonCount: 0
+sAMAccountType: 805306369
+objectCategory: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=TemplateTrustingDomain,CN=Templates
+objectClass: top
+objectClass: Template
+objectClass: userTemplate
+cn: TemplateTrustingDomain
+instanceType: 4
+userAccountControl: 2080
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 0
+primaryGroupID: 513
+accountExpires: -1
+logonCount: 0
+sAMAccountType: 805306370
+
+dn: CN=TemplateGroup,CN=Templates
+objectClass: top
+objectClass: Template
+objectClass: groupTemplate
+cn: TemplateGroup
+instanceType: 4
+groupType: -2147483646
+sAMAccountType: 268435456
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+
+# Currently this isn't used, we don't have a way to detect it different from an incoming alias
+#
+# dn: CN=TemplateAlias,CN=Templates
+# objectClass: top
+# objectClass: Template
+# objectClass: aliasTemplate
+# cn: TemplateAlias
+# instanceType: 4
+# groupType: -2147483644
+# sAMAccountType: 268435456
+
+dn: CN=TemplateForeignSecurityPrincipal,CN=Templates
+objectClass: top
+objectClass: Template
+objectClass: foreignSecurityPrincipalTemplate
+cn: TemplateForeignSecurityPrincipal
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=TemplateSecret,CN=Templates
+objectClass: top
+objectClass: leaf
+objectClass: Template
+objectClass: secretTemplate
+cn: TemplateSecret
+instanceType: 4
+
+dn: CN=TemplateTrustedDomain,CN=Templates
+objectClass: top
+objectClass: leaf
+objectClass: Template
+objectClass: trustedDomainTemplate
+cn: TemplateTrustedDomain
+instanceType: 4
+
