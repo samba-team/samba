@@ -887,27 +887,26 @@ static int check_ads_config( void )
  Do the domain join
  ********************************************************************/
 
-static int net_join_domain( TALLOC_CTX *ctx, const char *servername, 
-                            struct in_addr *ip, DOM_SID **dom_sid, const char *password )
+static NTSTATUS net_join_domain(TALLOC_CTX *ctx, const char *servername, 
+				struct in_addr *ip, DOM_SID **dom_sid, 
+				const char *password)
 {
-	int ret = -1;
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	struct cli_state *cli = NULL;
 
-	if ( !NT_STATUS_IS_OK(connect_to_ipc_krb5(&cli, ip, servername)) )
-		goto done;
-	
-	saf_store( cli->server_domain, cli->desthost );
-
-	if ( !NT_STATUS_IS_OK(netdom_get_domain_sid( ctx, cli, dom_sid )) )
-		goto done;
-
-	if ( !NT_STATUS_IS_OK(netdom_join_domain( ctx, cli, *dom_sid, 
-		password, ND_TYPE_AD )) )
-	{
+	ret = connect_to_ipc_krb5(&cli, ip, servername);
+	if ( !NT_STATUS_IS_OK(ret) ) {
 		goto done;
 	}
 	
-	ret = 0;
+	saf_store( cli->server_domain, cli->desthost );
+
+	ret = netdom_get_domain_sid( ctx, cli, dom_sid );
+	if ( !NT_STATUS_IS_OK(ret) ) {
+		goto done;
+	}
+
+	ret = netdom_join_domain( ctx, cli, *dom_sid, password, ND_TYPE_AD );
 
 done:
 	if ( cli ) 
@@ -1171,6 +1170,7 @@ int net_ads_join(int argc, const char **argv)
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
+	NTSTATUS nt_status;
 	char *machine_account = NULL;
 	const char *short_domain_name = NULL;
 	char *tmp_password, *password;
@@ -1239,9 +1239,10 @@ int net_ads_join(int argc, const char **argv)
 	tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 	password = talloc_strdup(ctx, tmp_password);
 	
-	if ( net_join_domain( ctx, ads->config.ldap_server_name, &ads->ldap_ip, &domain_sid, password ) != 0 ) {
-		/* There should be more detailed output here... */
-		d_fprintf(stderr, "call of net_join_domain failed\n");
+	nt_status = net_join_domain(ctx, ads->config.ldap_server_name, 
+				    &ads->ldap_ip, &domain_sid, password);
+	if ( !NT_STATUS_IS_OK(nt_status) ) {
+		d_fprintf(stderr, "call of net_join_domain failed: %s\n", nt_errstr(nt_status));
 		goto fail;
 	}
 	
