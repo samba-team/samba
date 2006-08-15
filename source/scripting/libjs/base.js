@@ -72,7 +72,7 @@ function substitute_var(str, subobj)
 	var i;
 	for (i=1;i<list.length;i++) {
 		var list2 = split("}", list[i], 1);
-		if (list2.length < 2) {
+		if ((list2.length < 2) && (list2[0] + "}" != list[i])) {
 			return undefined;
 		}
 		var key = list2[0];
