@@ -1853,9 +1853,4 @@ enum usershare_err {
 /* Different reasons for closing a file. */
 enum file_close_type {NORMAL_CLOSE=0,SHUTDOWN_CLOSE,ERROR_CLOSE};
 
-struct tdb_keyed_iterator {
-	struct tdb_context *tdb;
-	TDB_DATA key;
-};
-
 #endif /* _SMB_H */
