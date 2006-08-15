@@ -26,7 +26,6 @@ OBJ_FILES = \
 [MODULE::ldb_samba3sam]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_samba3sam_module_init
-ENABLE = NO
 OBJ_FILES = \
 		samba3sam.o
 #
