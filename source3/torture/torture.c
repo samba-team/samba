@@ -4948,8 +4948,6 @@ static struct {
 	{"FDSESS", run_fdsesstest, 0},
 	{ "EATEST", run_eatest, 0},
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
-	{ "LOCAL-MULTIKEY", run_local_multikey, 0},
-	{ "LOCAL-GROUPMAP", run_local_groupmap, 0},
 	{NULL, NULL, 0}};
 
 
@@ -5098,16 +5096,13 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ld:Ac:ks:b:S:")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ld:Ac:ks:b:")) != EOF) {
 		switch (opt) {
 		case 'p':
 			port_to_use = atoi(optarg);
 			break;
 		case 's':
 			srandom(atoi(optarg));
-			break;
-		case 'S':
-			lp_load(optarg,True,False,False,True);
 			break;
 		case 'W':
 			fstrcpy(workgroup,optarg);

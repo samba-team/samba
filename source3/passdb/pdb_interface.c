@@ -561,22 +561,22 @@ NTSTATUS pdb_update_login_attempts(struct samu *sam_acct, BOOL success)
 	return pdb->update_login_attempts(pdb, sam_acct, success);
 }
 
-NTSTATUS pdb_getgrsid(GROUP_MAP *map, const DOM_SID *sid)
+BOOL pdb_getgrsid(GROUP_MAP *map, DOM_SID sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->getgrsid(pdb, map, sid);
+	return NT_STATUS_IS_OK(pdb->getgrsid(pdb, map, sid));
 }
 
-NTSTATUS pdb_getgrgid(GROUP_MAP *map, gid_t gid)
+BOOL pdb_getgrgid(GROUP_MAP *map, gid_t gid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->getgrgid(pdb, map, gid);
+	return NT_STATUS_IS_OK(pdb->getgrgid(pdb, map, gid));
 }
 
-NTSTATUS pdb_getgrnam(GROUP_MAP *map, const char *name)
+BOOL pdb_getgrnam(GROUP_MAP *map, const char *name)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->getgrnam(pdb, map, name);
+	return NT_STATUS_IS_OK(pdb->getgrnam(pdb, map, name));
 }
 
 static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
@@ -584,7 +584,7 @@ static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
 					     const char *name,
 					     uint32 *rid)
 {
-	GROUP_MAP map;
+	DOM_SID group_sid;
 	struct group *grp;
 
 	grp = getgrnam(name);
@@ -611,12 +611,10 @@ static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
 		}
 	}
 
-	map.gid = grp->gr_gid;
-	map.sid_name_use = SID_NAME_DOM_GRP;
-	sid_compose(&map.sid, get_global_sam_sid(), *rid);
-	fstrcpy(map.nt_name, name);
-	map.comment[0] = '\0';
-	return pdb_add_group_mapping_entry(&map);
+	sid_compose(&group_sid, get_global_sam_sid(), *rid);
+		
+	return add_initial_entry(grp->gr_gid, sid_string_static(&group_sid),
+				 SID_NAME_DOM_GRP, name, NULL);
 }
 
 NTSTATUS pdb_create_dom_group(TALLOC_CTX *mem_ctx, const char *name,
@@ -638,7 +636,7 @@ static NTSTATUS pdb_default_delete_dom_group(struct pdb_methods *methods,
 
 	sid_compose(&group_sid, get_global_sam_sid(), rid);
 
-	if (!NT_STATUS_IS_OK(get_domain_group_from_sid(&group_sid, &map))) {
+	if (!get_domain_group_from_sid(group_sid, &map)) {
 		DEBUG(10, ("Could not find group for rid %d\n", rid));
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -698,14 +696,12 @@ NTSTATUS pdb_delete_group_mapping_entry(DOM_SID sid)
 	return pdb->delete_group_mapping_entry(pdb, sid);
 }
 
-NTSTATUS pdb_enum_group_mapping(const DOM_SID *sid,
-				enum SID_NAME_USE sid_name_use,
-				GROUP_MAP **pp_rmap,
-				size_t *p_num_entries, BOOL unix_only)
+BOOL pdb_enum_group_mapping(const DOM_SID *sid, enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
+			    size_t *p_num_entries, BOOL unix_only)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->enum_group_mapping(pdb, sid, sid_name_use,
-				       pp_rmap, p_num_entries, unix_only);
+	return NT_STATUS_IS_OK(pdb-> enum_group_mapping(pdb, sid, sid_name_use,
+		pp_rmap, p_num_entries, unix_only));
 }
 
 NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
@@ -816,7 +812,7 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
 
-	if (!NT_STATUS_IS_OK(get_domain_group_from_sid(&group_sid, &map)) ||
+	if (!get_domain_group_from_sid(group_sid, &map) ||
 	    (map.gid == (gid_t)-1) ||
 	    ((grp = getgrgid(map.gid)) == NULL)) {
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -878,7 +874,7 @@ static NTSTATUS pdb_default_del_groupmem(struct pdb_methods *methods,
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
 
-	if (!NT_STATUS_IS_OK(get_domain_group_from_sid(&group_sid, &map)) ||
+	if (!get_domain_group_from_sid(group_sid, &map) ||
 	    (map.gid == (gid_t)-1) ||
 	    ((grp = getgrgid(map.gid)) == NULL)) {
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -922,6 +918,12 @@ NTSTATUS pdb_del_groupmem(TALLOC_CTX *mem_ctx, uint32 group_rid,
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->del_groupmem(pdb, mem_ctx, group_rid, member_rid);
+}
+
+BOOL pdb_find_alias(const char *name, DOM_SID *sid)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return NT_STATUS_IS_OK(pdb->find_alias(pdb, name, sid));
 }
 
 NTSTATUS pdb_create_alias(const char *name, uint32 *rid)
@@ -1274,7 +1276,7 @@ static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 	if (sid_peek_check_rid(&global_sid_Builtin, sid, &rid)) {
 		/* Here we only have aliases */
 		GROUP_MAP map;
-		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, &map, sid))) {
+		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, &map, *sid))) {
 			DEBUG(10, ("Could not find map for sid %s\n",
 				   sid_string_static(sid)));
 			goto done;
@@ -1520,7 +1522,7 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 	}
 	TALLOC_FREE(sam_account);
 	
-	ret = NT_STATUS_IS_OK(pdb_getgrsid(&map, &sid));
+	ret = pdb_getgrsid(&map, sid);
 	unbecome_root();
 	/* END BECOME_ROOT BLOCK */
   
@@ -1850,9 +1852,8 @@ static BOOL pdb_search_grouptype(struct pdb_search *search,
 		return False;
 	}
 
-	if (!NT_STATUS_IS_OK(pdb_enum_group_mapping(sid, type, &state->groups,
-						    &state->num_groups,
-						    True))) {
+	if (!pdb_enum_group_mapping(sid, type, &state->groups, &state->num_groups,
+				    True)) {
 		DEBUG(0, ("Could not enum groups\n"));
 		return False;
 	}
@@ -2031,6 +2032,7 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->set_unix_primary_group = pdb_default_set_unix_primary_group;
 	(*methods)->add_groupmem = pdb_default_add_groupmem;
 	(*methods)->del_groupmem = pdb_default_del_groupmem;
+	(*methods)->find_alias = pdb_default_find_alias;
 	(*methods)->create_alias = pdb_default_create_alias;
 	(*methods)->delete_alias = pdb_default_delete_alias;
 	(*methods)->get_aliasinfo = pdb_default_get_aliasinfo;

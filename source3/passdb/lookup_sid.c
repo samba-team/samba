@@ -142,7 +142,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 		GROUP_MAP map;
 
-		if (NT_STATUS_IS_OK(pdb_getgrgid(&map, grp->gr_gid))) {
+		if (pdb_getgrgid(&map, grp->gr_gid)) {
 			/* The hack gets worse. Handle the case where we have
 			 * 'force group = +unixgroup' but "unixgroup" has a
 			 * group mapping */
@@ -1352,7 +1352,7 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 
 	if ((sid_check_is_in_builtin(psid) ||
 	     sid_check_is_in_wellknown_domain(psid))) {
-		if (NT_STATUS_IS_OK(pdb_getgrsid(&map, psid))) {
+		if (pdb_getgrsid(&map, *psid)) {
 			*pgid = map.gid;
 			goto done;
 		}
