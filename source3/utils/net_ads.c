@@ -278,7 +278,7 @@ retry:
 			second_time = True;
 			goto retry;
 		} else {
-			DEBUG(0,("ads_connect: %s\n", ads_errstr(status)));
+			d_printf("%s.\n", ads_errstr(status));
 			ads_destroy(&ads);
 			return NULL;
 		}
@@ -542,7 +542,7 @@ static int ads_user_delete(int argc, const char **argv)
 
 	rc = ads_find_user_acct(ads, &res, argv[0]);
 	if (!ADS_ERR_OK(rc)) {
-		DEBUG(0, ("User %s does not exist\n", argv[0]));
+		d_printf("User %s does not exist.\n", argv[0]);
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -668,7 +668,7 @@ static int ads_group_delete(int argc, const char **argv)
 
 	rc = ads_find_user_acct(ads, &res, argv[0]);
 	if (!ADS_ERR_OK(rc)) {
-		DEBUG(0, ("Group %s does not exist\n", argv[0]));
+		d_printf("Group %s does not exist.\n", argv[0]);
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -769,7 +769,7 @@ static int net_ads_leave(int argc, const char **argv)
 	}
 
 	if (!(ctx = talloc_init("net_ads_leave"))) {
-		DEBUG(0, ("Could not initialise talloc context\n"));
+		d_fprintf(stderr, "Could not initialise talloc context.\n");
 		return -1;
 	}
 
@@ -1100,7 +1100,7 @@ static BOOL net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 	/* go ahead and setup the default salt */
 
 	if ( (std_salt = kerberos_standard_des_salt()) == NULL ) {
-		DEBUG(0,("net_derive_salting_principal: failed to obtain stanard DES salt\n"));
+		d_fprintf(stderr, "net_derive_salting_principal: failed to obtain stanard DES salt\n");
 		return False;
 	}
 
@@ -1199,7 +1199,7 @@ int net_ads_join(int argc, const char **argv)
 	}
 
 	if (!(ctx = talloc_init("net_ads_join"))) {
-		DEBUG(0, ("Could not initialise talloc context\n"));
+		d_fprintf(stderr, "Could not initialise talloc context.\n");
 		goto fail;
 	}
 
@@ -1240,7 +1240,8 @@ int net_ads_join(int argc, const char **argv)
 	password = talloc_strdup(ctx, tmp_password);
 	
 	if ( net_join_domain( ctx, ads->config.ldap_server_name, &ads->ldap_ip, &domain_sid, password ) != 0 ) {
-		d_fprintf(stderr, "Failed to join domain!\n");
+		/* There should be more detailed output here... */
+		d_fprintf(stderr, "call of net_join_domain failed\n");
 		goto fail;
 	}
 	
@@ -1341,6 +1342,8 @@ int net_ads_join(int argc, const char **argv)
 	return 0;
 
 fail:
+	/* issue an overall failure message at the end. */
+	d_printf("Failed to join domain!\n");
 	ads_destroy(&ads);
 	return -1;
 }
