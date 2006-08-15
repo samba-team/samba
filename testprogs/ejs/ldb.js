@@ -82,7 +82,7 @@ function setup_modules(ldb)
 {
 	ok = ldb.add("
 dn: @MODULES
-@LIST: rootdse,operational,objectguid,rdn_name,partition
+@LIST: rootdse,operational,rdn_name,partition
 
 dn: cn=ROOTDSE
 defaultNamingContext: cn=Test
@@ -95,6 +95,7 @@ partition: cn=Sub,cn=Sub,cn=PartTest:" + prefix +  "testsubsub.ldb
 replicateEntries: @SUBCLASSES
 replicateEntries: @ATTRIBUTES
 replicateEntries: @INDEXLIST
+modules: cn=PartTest:objectguid
 ");
 }
 
@@ -238,9 +239,9 @@ x: 11
 	assert(res7.length == 0);
 
 	var res8 = ldb.search("x=11", "cn=sub,cn=parttest", ldb.SCOPE_DEFAULT, attrs);
-	assert(res8[0].objectGUID != undefined);
-	assert(res8[0].createTimestamp != undefined);
-	assert(res8[0].whenCreated != undefined);
+	
+	assert(res8[0].objectGUID == undefined); /* The objectGUID module is not loaded here */
+	assert(res8[0].uSNCreated != undefined);
 	assert(res8[0].name == "x11");
 	assert(res8[0].cn == "x11");
 
