@@ -159,7 +159,7 @@ NTSTATUS tdb_find_keyed(TALLOC_CTX *ctx, struct tdb_context *tdb,
 	if (data.dptr == NULL) {
 		DEBUG(1, ("Did not find record %s for key %s\n",
 			  prim.dptr, key.dptr));
-		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		status = NT_STATUS_NOT_FOUND;
 		goto fail;
 	}
 
