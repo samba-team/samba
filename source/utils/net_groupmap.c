@@ -66,7 +66,7 @@ static BOOL get_sid_from_input(DOM_SID *sid, char *input)
 
 	if (StrnCaseCmp( input, "S-", 2)) {
 		/* Perhaps its the NT group name? */
-		if (!NT_STATUS_IS_OK(pdb_getgrnam(&map, input))) {
+		if (!pdb_getgrnam(&map, input)) {
 			printf("NT Group %s doesn't exist in mapping DB\n", input);
 			return False;
 		} else {
@@ -153,7 +153,7 @@ static int net_groupmap_list(int argc, const char **argv)
 		}
 
 		/* Get the current mapping from the database */
-		if(!NT_STATUS_IS_OK(pdb_getgrsid(&map, &sid))) {
+		if(!pdb_getgrsid(&map, sid)) {
 			d_fprintf(stderr, "Failure to local group SID in the database\n");
 			return -1;
 		}
@@ -163,7 +163,7 @@ static int net_groupmap_list(int argc, const char **argv)
 	else {
 		GROUP_MAP *map=NULL;
 		/* enumerate all group mappings */
-		if (!NT_STATUS_IS_OK(pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries, ENUM_ALL_MAPPED)))
+		if (!pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries, ENUM_ALL_MAPPED))
 			return -1;
 	
 		for (i=0; i<entries; i++) {
@@ -182,12 +182,18 @@ static int net_groupmap_list(int argc, const char **argv)
 
 static int net_groupmap_add(int argc, const char **argv)
 {
+	DOM_SID sid;
+	fstring ntgroup = "";
 	fstring unixgrp = "";
 	fstring string_sid = "";
 	fstring type = "";
+	fstring ntcomment = "";
+	enum SID_NAME_USE sid_type = SID_NAME_DOM_GRP;
 	uint32 rid = 0;	
+	gid_t gid;
 	int i;
 	GROUP_MAP map;
+	
 	const char *name_type;
 
 	ZERO_STRUCT(map);
@@ -213,8 +219,8 @@ static int net_groupmap_add(int argc, const char **argv)
 			}		
 		}
 		else if ( !StrnCaseCmp(argv[i], "ntgroup", strlen("ntgroup")) ) {
-			fstrcpy( map.nt_name, get_string_param( argv[i] ) );
-			if ( !map.nt_name[0] ) {
+			fstrcpy( ntgroup, get_string_param( argv[i] ) );
+			if ( !ntgroup[0] ) {
 				d_fprintf(stderr, "must supply a name\n");
 				return -1;
 			}		
@@ -224,16 +230,11 @@ static int net_groupmap_add(int argc, const char **argv)
 			if ( !string_sid[0] ) {
 				d_fprintf(stderr, "must supply a SID\n");
 				return -1;
-			}
-			if (!string_to_sid(&map.sid, string_sid)) {
-				d_fprintf(stderr, "%s is not a valid SID\n",
-					  string_sid);
-				return -1;
-			}
+			}		
 		}
 		else if ( !StrnCaseCmp(argv[i], "comment", strlen("comment")) ) {
-			fstrcpy( map.comment, get_string_param( argv[i] ) );
-			if ( !map.comment[0] ) {
+			fstrcpy( ntcomment, get_string_param( argv[i] ) );
+			if ( !ntcomment[0] ) {
 				d_fprintf(stderr, "must supply a comment string\n");
 				return -1;
 			}				
@@ -243,17 +244,17 @@ static int net_groupmap_add(int argc, const char **argv)
 			switch ( type[0] ) {
 				case 'b':
 				case 'B':
-					map.sid_name_use = SID_NAME_WKN_GRP;
+					sid_type = SID_NAME_WKN_GRP;
 					name_type = "wellknown group";
 					break;
 				case 'd':
 				case 'D':
-					map.sid_name_use = SID_NAME_DOM_GRP;
+					sid_type = SID_NAME_DOM_GRP;
 					name_type = "domain group";
 					break;
 				case 'l':
 				case 'L':
-					map.sid_name_use = SID_NAME_ALIAS;
+					sid_type = SID_NAME_ALIAS;
 					name_type = "alias (local) group";
 					break;
 				default:
@@ -272,13 +273,13 @@ static int net_groupmap_add(int argc, const char **argv)
 		return -1;
 	}
 	
-	if ( (map.gid = nametogid(unixgrp)) == (gid_t)-1 ) {
+	if ( (gid = nametogid(unixgrp)) == (gid_t)-1 ) {
 		d_fprintf(stderr, "Can't lookup UNIX group %s\n", unixgrp);
 		return -1;
 	}
 
 	{
-		if (NT_STATUS_IS_OK(pdb_getgrgid(&map, map.gid))) {
+		if (pdb_getgrgid(&map, gid)) {
 			d_printf("Unix group %s already mapped to SID %s\n",
 				 unixgrp, sid_string_static(&map.sid));
 			return -1;
@@ -288,7 +289,7 @@ static int net_groupmap_add(int argc, const char **argv)
 	if ( (rid == 0) && (string_sid[0] == '\0') ) {
 		d_printf("No rid or sid specified, choosing a RID\n");
 		if (pdb_rid_algorithm()) {
-			rid = pdb_gid_to_group_rid(map.gid);
+			rid = pdb_gid_to_group_rid(gid);
 		} else {
 			if (!pdb_new_rid(&rid)) {
 				d_printf("Could not get new RID\n");
@@ -299,38 +300,39 @@ static int net_groupmap_add(int argc, const char **argv)
 
 	/* append the rid to our own domain/machine SID if we don't have a full SID */
 	if ( !string_sid[0] ) {
-		sid_copy(&map.sid, get_global_sam_sid());
-		sid_append_rid(&map.sid, rid);
+		sid_copy(&sid, get_global_sam_sid());
+		sid_append_rid(&sid, rid);
+		sid_to_string(string_sid, &sid);
 	}
 
-	if (!map.comment[0]) {
-		switch (map.sid_name_use) {
+	if (!ntcomment[0]) {
+		switch (sid_type) {
 		case SID_NAME_WKN_GRP:
-			fstrcpy(map.comment, "Wellknown Unix group");
+			fstrcpy(ntcomment, "Wellknown Unix group");
 			break;
 		case SID_NAME_DOM_GRP:
-			fstrcpy(map.comment, "Domain Unix group");
+			fstrcpy(ntcomment, "Domain Unix group");
 			break;
 		case SID_NAME_ALIAS:
-			fstrcpy(map.comment, "Local Unix group");
+			fstrcpy(ntcomment, "Local Unix group");
 			break;
 		default:
-			fstrcpy(map.comment, "Unix group");
+			fstrcpy(ntcomment, "Unix group");
 			break;
 		}
 	}
 		
-	if (!map.nt_name[0] )
-		fstrcpy( map.nt_name, unixgrp );
-
-	if (!NT_STATUS_IS_OK(pdb_add_group_mapping_entry(&map))) {
-		d_fprintf(stderr, "adding entry for group %s failed!\n",
-			  map.nt_name);
+	if (!ntgroup[0] )
+		fstrcpy( ntgroup, unixgrp );
+		
+	
+	if (!NT_STATUS_IS_OK(add_initial_entry(gid, string_sid, sid_type, ntgroup, ntcomment))) {
+		d_fprintf(stderr, "adding entry for group %s failed!\n", ntgroup);
 		return -1;
 	}
 
 	d_printf("Successfully added group %s to the mapping db as a %s\n",
-		 map.nt_name, name_type);
+		 ntgroup, name_type);
 	return 0;
 }
 
@@ -417,7 +419,7 @@ static int net_groupmap_modify(int argc, const char **argv)
 	}	
 
 	/* Get the current mapping from the database */
-	if(!NT_STATUS_IS_OK(pdb_getgrsid(&map, &sid))) {
+	if(!pdb_getgrsid(&map, sid)) {
 		d_fprintf(stderr, "Failure to local group SID in the database\n");
 		return -1;
 	}
@@ -426,17 +428,16 @@ static int net_groupmap_modify(int argc, const char **argv)
 	 * Allow changing of group type only between domain and local
 	 * We disallow changing Builtin groups !!! (SID problem)
 	 */ 
-
 	if (sid_type == SID_NAME_UNKNOWN) {
 		d_fprintf(stderr, "Can't map to an unknown group type.\n");
 		return -1;
-	}
+        }
 
 	if (map.sid_name_use == SID_NAME_WKN_GRP) {
 		d_fprintf(stderr, "You can only change between domain and local groups.\n");
 		return -1;
 	}
-		
+
 	map.sid_name_use=sid_type;
 
 	/* Change comment if new one */
@@ -550,13 +551,13 @@ static int net_groupmap_set(int argc, const char **argv)
 		}
 	}
 
-	have_map = NT_STATUS_IS_OK(pdb_getgrnam(&map, ntgroup));
+	have_map = pdb_getgrnam(&map, ntgroup);
 
 	if (!have_map) {
 		DOM_SID sid;
 		have_map = ( (strncmp(ntgroup, "S-", 2) == 0) &&
 			     string_to_sid(&sid, ntgroup) &&
-			     NT_STATUS_IS_OK(pdb_getgrsid(&map, &sid)) );
+			     pdb_getgrsid(&map, sid) );
 	}
 
 	if (!have_map) {
@@ -629,8 +630,8 @@ static int net_groupmap_cleanup(int argc, const char **argv)
 	GROUP_MAP *map = NULL;
 	size_t i, entries;
 
-	if (!NT_STATUS_IS_OK(pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries,
-						    ENUM_ALL_MAPPED))) {
+	if (!pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries,
+				    ENUM_ALL_MAPPED)) {
 		d_fprintf(stderr, "Could not list group mappings\n");
 		return -1;
 	}

@@ -151,6 +151,8 @@ static BOOL groupmap_diff(const GROUP_MAP *m1, const GROUP_MAP *m2)
 		(strcmp(m1->comment, m2->comment) != 0));
 }
 
+#undef GROUPDB_V3
+
 BOOL run_local_groupmap(int dummy)
 {
 	TALLOC_CTX *mem_ctx;
@@ -166,6 +168,7 @@ BOOL run_local_groupmap(int dummy)
 		return False;
 	}
 
+#ifdef GROUPDB_V3
 	status = create_v2_db(True);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -173,12 +176,13 @@ BOOL run_local_groupmap(int dummy)
 
 	{
 		GROUP_MAP map;
-		if (NT_STATUS_IS_OK(pdb_getgrgid(&map, 10001))) {
+		if (pdb_getgrgid(&map, 10001)) {
 			d_fprintf(stderr, "(%s) upgrading an invalid group db "
 				  "worked\n", __location__);
 			goto fail;
 		}
 	}
+#endif
 
 	status = create_v2_db(False);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -187,9 +191,8 @@ BOOL run_local_groupmap(int dummy)
 
 	/* This tests upgrading the database, as well as listing */
 
-	if (!NT_STATUS_IS_OK(pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN,
-						    &maps, &num_maps,
-						    False))) {
+	if (!pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &maps, &num_maps,
+				    False)) {
 		d_fprintf(stderr, "(%s) pdb_enum_group_mapping failed\n",
 			  __location__);
 		goto fail;
@@ -209,18 +212,16 @@ BOOL run_local_groupmap(int dummy)
 		string_to_sid(&sid, "S-1-5-32-545");
 
 		ZERO_STRUCT(map);
-		status = pdb_getgrsid(&map, &sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "(%s) pdb_getgrsid failed: %s\n",
-				  __location__, nt_errstr(status));
+		if (!pdb_getgrsid(&map, &sid)) {
+			d_fprintf(stderr, "(%s) pdb_getgrsid failed\n",
+				  __location__);
 			goto fail;
 		}
 
 		ZERO_STRUCT(map1);
-		status = pdb_getgrgid(&map1, map.gid);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "(%s) pdb_getgrgid failed: %s\n",
-				  __location__, nt_errstr(status));
+		if (!pdb_getgrgid(&map1, map.gid)) {
+			d_fprintf(stderr, "(%s) pdb_getgrgid failed\n",
+				  __location__);
 			goto fail;
 		}
 
@@ -231,10 +232,9 @@ BOOL run_local_groupmap(int dummy)
 		}
 			
 		ZERO_STRUCT(map1);
-		status = pdb_getgrnam(&map1, map.nt_name);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "(%s) pdb_getgrnam failed: %s\n",
-				  __location__, nt_errstr(status));
+		if (!pdb_getgrnam(&map1, map.nt_name)) {
+			d_fprintf(stderr, "(%s) pdb_getgrnam failed\n",
+				  __location__);
 			goto fail;
 		}
 
@@ -252,31 +252,34 @@ BOOL run_local_groupmap(int dummy)
 		GROUP_MAP map, map1;
 		string_to_sid(&sid, "S-1-5-32-545");
 
-		status = pdb_getgrsid(&map, &sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "(%s) did not find S-1-5-32-545: "
-				  "%s\n", __location__, nt_errstr(status));
+		if (!pdb_getgrsid(&map, &sid)) {
+			d_fprintf(stderr, "(%s) did not find S-1-5-32-545\n",
+				  __location__);
 			goto fail;
 		}
 
 		status = pdb_delete_group_mapping_entry(sid);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		status = pdb_delete_group_mapping_entry(sid);
+#ifdef GROUPDB_V3
 		CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+#else
+		CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+#endif
 
-		if (NT_STATUS_IS_OK(pdb_getgrsid(&map1, &sid))) {
+		if (pdb_getgrsid(&map1, &sid)) {
 			d_fprintf(stderr, "(%s) getgrsid found deleted "
 				  "entry\n", __location__);
 			goto fail;
 		}
 
-		if (NT_STATUS_IS_OK(pdb_getgrgid(&map1, map.gid))) {
+		if (pdb_getgrgid(&map1, map.gid)) {
 			d_fprintf(stderr, "(%s) getgrgid found deleted "
 				  "entry\n", __location__);
 			goto fail;
 		}
 
-		if (NT_STATUS_IS_OK(pdb_getgrnam(&map1, map.nt_name))) {
+		if (pdb_getgrnam(&map1, map.nt_name)) {
 			d_fprintf(stderr, "(%s) getgrnam found deleted "
 				  "entry\n", __location__);
 			goto fail;
@@ -292,10 +295,9 @@ BOOL run_local_groupmap(int dummy)
 		GROUP_MAP map, map1;
 		string_to_sid(&sid, "S-1-5-32-544");
 
-		status = pdb_getgrsid(&map, &sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "(%s) did not find S-1-5-32-544: "
-				  "%s\n", __location__, nt_errstr(status));
+		if (!pdb_getgrsid(&map, &sid)) {
+			d_fprintf(stderr, "(%s) did not find S-1-5-32-544\n",
+				  __location__);
 			goto fail;
 		}
 
@@ -305,7 +307,7 @@ BOOL run_local_groupmap(int dummy)
 		status = pdb_update_group_mapping_entry(&map);
 		CHECK_STATUS(status, NT_STATUS_OK);
 
-		if (NT_STATUS_IS_OK(pdb_getgrgid(&map1, oldgid))) {
+		if (pdb_getgrgid(&map1, oldgid)) {
 			d_fprintf(stderr, "(%s) getgrgid found outdated "
 				  "entry\n", __location__);
 			goto fail;
@@ -315,12 +317,16 @@ BOOL run_local_groupmap(int dummy)
 
 		map.gid = 1000;
 		status = pdb_update_group_mapping_entry(&map);
+#ifdef GROUPDB_V3
 		CHECK_STATUS(status, NT_STATUS_OBJECTID_EXISTS);
-		if (!NT_STATUS_IS_OK(pdb_getgrgid(&map1, 4711))) {
+		if (!pdb_getgrgid(&map1, 4711)) {
 			d_fprintf(stderr, "(%s) update_group changed entry "
 				  "upon failure\n", __location__);
 			goto fail;
 		}
+#else
+		CHECK_STATUS(status, NT_STATUS_OK);
+#endif
 	}
 
 	ret = True;

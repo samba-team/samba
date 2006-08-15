@@ -244,7 +244,7 @@ struct pdb_search {
  * enum SID_NAME_USE rather than uint32.
  */
 
-#define PASSDB_INTERFACE_VERSION 15
+#define PASSDB_INTERFACE_VERSION 14
 
 struct pdb_methods 
 {
@@ -277,8 +277,7 @@ struct pdb_methods
 	
 	NTSTATUS (*update_login_attempts)(struct pdb_methods *methods, struct samu *sam_acct, BOOL success);
 
-	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map,
-			     const DOM_SID *sid);
+	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map, DOM_SID sid);
 
 	NTSTATUS (*getgrgid)(struct pdb_methods *methods, GROUP_MAP *map, gid_t gid);
 
@@ -328,6 +327,9 @@ struct pdb_methods
 	NTSTATUS (*del_groupmem)(struct pdb_methods *methods,
 				 TALLOC_CTX *mem_ctx,
 				 uint32 group_rid, uint32 member_rid);
+
+	NTSTATUS (*find_alias)(struct pdb_methods *methods,
+			       const char *name, DOM_SID *sid);
 
 	NTSTATUS (*create_alias)(struct pdb_methods *methods,
 				 const char *name, uint32 *rid);

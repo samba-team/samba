@@ -330,7 +330,7 @@ static int net_sam_set_comment(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(pdb_getgrsid(&map, &sid))) {
+	if (!pdb_getgrsid(&map, sid)) {
 		d_fprintf(stderr, "Could not load group %s\n", argv[0]);
 		return -1;
 	}
@@ -882,7 +882,7 @@ static int net_sam_provision(int argc, const char **argv)
 
 	sid_compose(&gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_USERS);
 
-	if (!NT_STATUS_IS_OK(pdb_getgrsid(&gmap, &gsid))) {
+	if (!pdb_getgrsid(&gmap, gsid)) {
 		LDAPMod **mods = NULL;
 		char *dn;
 		char *uname;
@@ -935,7 +935,7 @@ domu_done:
 
 	sid_compose(&gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_ADMINS);
 
-	if (!NT_STATUS_IS_OK(pdb_getgrsid(&gmap, &gsid))) {
+	if (!pdb_getgrsid(&gmap, gsid)) {
 		LDAPMod **mods = NULL;
 		char *dn;
 		char *uname;
@@ -1153,7 +1153,7 @@ doma_done:
 		goto done;
 	}
 
-	if (!NT_STATUS_IS_OK(pdb_getgrgid(&gmap, pwd->pw_gid))) {
+	if (!pdb_getgrgid(&gmap, pwd->pw_gid)) {
 		LDAPMod **mods = NULL;
 		char *dn;
 		char *uname;

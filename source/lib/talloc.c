@@ -1136,46 +1136,6 @@ char *talloc_asprintf(const void *t, const char *fmt, ...)
 	return ret;
 }
 
-int talloc_vasprintf_len(const void *t, char **res, const char *fmt,
-			 va_list ap)
-{	
-	int len;
-	va_list ap2;
-	char c;
-	
-	VA_COPY(ap2, ap);
-
-	/* this call looks strange, but it makes it work on older solaris boxes */
-	if ((len = vsnprintf(&c, 1, fmt, ap2)) < 0) {
-		return len;
-	}
-
-	*res = (char *)_talloc(t, len+1);
-	if (*res) {
-		VA_COPY(ap2, ap);
-		vsnprintf(*res, len+1, fmt, ap2);
-		talloc_set_name_const(*res, *res);
-	}
-
-	return len;
-}
-
-
-/*
-  Perform string formatting, and return a pointer to newly allocated
-  memory holding the result, inside a memory pool.
- */
-int talloc_asprintf_len(const void *t, char **res, const char *fmt, ...)
-{
-	va_list ap;
-	int len;
-
-	va_start(ap, fmt);
-	len = talloc_vasprintf_len(t, res, fmt, ap);
-	va_end(ap);
-	return len;
-}
-
 
 /**
  * Realloc @p s to append the formatted result of @p fmt and @p ap,

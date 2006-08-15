@@ -54,8 +54,6 @@ struct tdb_context *tdb_open_log(const char *name, int hash_size,
 				 int tdb_flags, int open_flags, mode_t mode);
 int tdb_unpack(char *buf, int bufsize, const char *fmt, ...);
 size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...);
-BOOL tdb_pack_append(void *_mem_ctx, char **buf, size_t *len,
-		     const char *fmt, ...);
 TDB_DATA make_tdb_data(const char *dptr, size_t dsize);
 TDB_DATA string_tdb_data(const char *string);
 int tdb_trans_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
