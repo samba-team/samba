@@ -95,10 +95,10 @@ static char **group_mapping_keys(TALLOC_CTX *mem_ctx, TDB_DATA data,
 		return NULL;
 	}
 
-	result[KEYNUM_SID]  = talloc_strdup(mem_ctx,
+	result[KEYNUM_SID]  = talloc_strdup(result,
 					    sid_string_static(&mapp->sid));
-	result[KEYNUM_NAME] = talloc_strdup(mem_ctx, mapp->nt_name);
-	result[KEYNUM_GID]  = talloc_asprintf(mem_ctx, "%d", (int)mapp->gid);
+	result[KEYNUM_NAME] = talloc_strdup(result, mapp->nt_name);
+	result[KEYNUM_GID]  = talloc_asprintf(result, "%d", (int)mapp->gid);
 	result[3] = NULL;
 
 	if ((result[0] == NULL) || (result[1] == NULL) ||
@@ -109,7 +109,7 @@ static char **group_mapping_keys(TALLOC_CTX *mem_ctx, TDB_DATA data,
 	}
 
 	/* name lookups are case insensitive, store the key in upper case */
-	strupper_m(result[1]);
+	strupper_m(result[KEYNUM_NAME]);
 
 	return result;
 }
