@@ -21,6 +21,8 @@ DATADIR=../testdata
 PATH=bin:$PATH
 export PATH
 
+testit "base.js" $SCRIPTDIR/base.js || failed=`expr $failed + 1`
+
 for f in samr.js echo.js; do
     testit "$f" $SCRIPTDIR/$f $CONFIGURATION ncalrpc: -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
 done
