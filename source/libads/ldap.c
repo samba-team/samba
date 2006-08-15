@@ -287,7 +287,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		goto got_connection;
 	}
 
-	return ADS_ERROR_SYSTEM(errno?errno:ENOENT);
+	return ADS_ERROR_NT(NT_STATUS_NO_LOGON_SERVERS);
 
 got_connection:
 	DEBUG(3,("Connected to LDAP server %s\n", inet_ntoa(ads->ldap_ip)));
