@@ -211,14 +211,14 @@ static struct cli_state *do_connection(char *the_service)
 		c->force_dos_errors = True;
 	}
 
-	if (!cli_session_setup(c, username, 
-			       password, strlen(password),
-			       password, strlen(password),
-			       workgroup)) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(c, username, 
+					       password, strlen(password),
+					       password, strlen(password),
+					       workgroup))) {
 		/* if a password was not supplied then try again with a
 			null username */
 		if (password[0] || !username[0] ||
-				!cli_session_setup(c, "", "", 0, "", 0, workgroup)) {
+		    !NT_STATUS_IS_OK(cli_session_setup(c, "", "", 0, "", 0, workgroup))) {
 			DEBUG(0,("%d: session setup failed: %s\n",
 				sys_getpid(), cli_errstr(c)));
 			cli_shutdown(c);
