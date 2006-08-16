@@ -127,13 +127,14 @@ static struct cli_state *do_connect( const char *server, const char *share,
 		}
 	}
 
-	if (!cli_session_setup(c, username, 
-			       password, strlen(password),
-			       password, strlen(password),
-			       lp_workgroup())) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(c, username, 
+					       password, strlen(password),
+					       password, strlen(password),
+					       lp_workgroup()))) {
 		/* if a password was not supplied then try again with a null username */
 		if (password[0] || !username[0] || use_kerberos ||
-		    !cli_session_setup(c, "", "", 0, "", 0, lp_workgroup())) { 
+		    !NT_STATUS_IS_OK(cli_session_setup(c, "", "", 0, "", 0,
+						       lp_workgroup()))) { 
 			d_printf("session setup failed: %s\n", cli_errstr(c));
 			if (NT_STATUS_V(cli_nt_error(c)) == 
 			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))

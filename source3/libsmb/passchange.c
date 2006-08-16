@@ -80,28 +80,26 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
   
 	/* Given things like SMB signing, restrict anonymous and the like, 
 	   try an authenticated connection first */
-	if (!cli_session_setup(cli, user_name, old_passwd, strlen(old_passwd)+1, old_passwd, strlen(old_passwd)+1, "")) {
+	result = cli_session_setup(cli, user_name,
+				   old_passwd, strlen(old_passwd)+1,
+				   old_passwd, strlen(old_passwd)+1, "");
 
-		result = cli_nt_error(cli);
+	if (!NT_STATUS_IS_OK(result)) {
 
-		if (!NT_STATUS_IS_OK(result)) {
+		/* Password must change is the only valid error condition here
+		 * from where we can proceed, the rest like account locked out
+		 * or logon failure will lead to errors later anyway */
 
-			/* Password must change is the only valid error
-			 * condition here from where we can proceed, the rest
-			 * like account locked out or logon failure will lead
-			 * to errors later anyway */
-
-			if (!NT_STATUS_EQUAL(result,
-					     NT_STATUS_PASSWORD_MUST_CHANGE)) {
-				slprintf(err_str, err_str_len-1, "Could not "
-					 "connect to machine %s: %s\n",
-					 remote_machine, cli_errstr(cli));
-				cli_shutdown(cli);
-				return result;
-			}
-
-			pass_must_change = True;
+		if (!NT_STATUS_EQUAL(result,
+				     NT_STATUS_PASSWORD_MUST_CHANGE)) {
+			slprintf(err_str, err_str_len-1, "Could not "
+				 "connect to machine %s: %s\n",
+				 remote_machine, cli_errstr(cli));
+			cli_shutdown(cli);
+			return result;
 		}
+
+		pass_must_change = True;
 
 		/*
 		 * We should connect as the anonymous user here, in case
@@ -109,10 +107,11 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		 * Thanks to <Nicholas.S.Jenkins@cdc.com> for this fix.
 		 */
 
-		if (!cli_session_setup(cli, "", "", 0, "", 0, "")) {
+		result = cli_session_setup(cli, "", "", 0, "", 0, "");
+
+		if (!NT_STATUS_IS_OK(result)) {
 			slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",        
 				 remote_machine, cli_errstr(cli) );
-			result = cli_nt_error(cli);
 			cli_shutdown(cli);
 			return result;
 		}

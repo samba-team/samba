@@ -284,7 +284,10 @@ BOOL torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 
 	fstrcpy(old_user_name, cli->user_name);
 	cli->vuid = 0;
-	ret = cli_session_setup(cli, username, password, passlen, password, passlen, workgroup);
+	ret = NT_STATUS_IS_OK(cli_session_setup(cli, username,
+						password, passlen,
+						password, passlen,
+						workgroup));
 	*new_vuid = cli->vuid;
 	cli->vuid = old_vuid;
 	fstrcpy(cli->user_name, old_user_name);
@@ -4682,8 +4685,8 @@ static BOOL run_error_map_extract(int dummy) {
 		return False;
 	}
 
-	if (!cli_session_setup(c_nt, "", "", 0, "", 0,
-			       workgroup)) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(c_nt, "", "", 0, "", 0,
+					       workgroup))) {
 		printf("%s rejected the NT-error initial session setup (%s)\n",host, cli_errstr(c_nt));
 		return False;
 	}
@@ -4703,8 +4706,8 @@ static BOOL run_error_map_extract(int dummy) {
 		return False;
 	}
 
-	if (!cli_session_setup(c_dos, "", "", 0, "", 0,
-			       workgroup)) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(c_dos, "", "", 0, "", 0,
+					       workgroup))) {
 		printf("%s rejected the DOS-error initial session setup (%s)\n",host, cli_errstr(c_dos));
 		return False;
 	}
@@ -4712,10 +4715,10 @@ static BOOL run_error_map_extract(int dummy) {
 	for (error=(0xc0000000 | 0x1); error < (0xc0000000| 0xFFF); error++) {
 		fstr_sprintf(user, "%X", error);
 
-		if (cli_session_setup(c_nt, user, 
-				       password, strlen(password),
-				       password, strlen(password),
-				      workgroup)) {
+		if (NT_STATUS_IS_OK(cli_session_setup(c_nt, user, 
+						      password, strlen(password),
+						      password, strlen(password),
+						      workgroup))) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
 		
@@ -4730,10 +4733,10 @@ static BOOL run_error_map_extract(int dummy) {
 			nt_status = NT_STATUS(0xc0000000);
 		}
 
-		if (cli_session_setup(c_dos, user, 
-				       password, strlen(password),
-				       password, strlen(password),
-				       workgroup)) {
+		if (NT_STATUS_IS_OK(cli_session_setup(c_dos, user, 
+						      password, strlen(password),
+						      password, strlen(password),
+						      workgroup))) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
 		flgs2 = SVAL(c_dos->inbuf,smb_flg2), errnum;

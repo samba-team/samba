@@ -802,11 +802,11 @@ ntlmssp:
  password is in plaintext, the same should be done.
 ****************************************************************************/
 
-BOOL cli_session_setup(struct cli_state *cli, 
-		       const char *user, 
-		       const char *pass, int passlen,
-		       const char *ntpass, int ntpasslen,
-		       const char *workgroup)
+NTSTATUS cli_session_setup(struct cli_state *cli, 
+			   const char *user, 
+			   const char *pass, int passlen,
+			   const char *ntpass, int ntpasslen,
+			   const char *workgroup)
 {
 	char *p;
 	fstring user2;
@@ -820,8 +820,9 @@ BOOL cli_session_setup(struct cli_state *cli,
 		workgroup = user2;
 	}
 
-	if (cli->protocol < PROTOCOL_LANMAN1)
-		return True;
+	if (cli->protocol < PROTOCOL_LANMAN1) {
+		return NT_STATUS_OK;
+	}
 
 	/* now work out what sort of session setup we are going to
            do. I have split this into separate functions to make the
@@ -833,31 +834,34 @@ BOOL cli_session_setup(struct cli_state *cli,
 		if (!lp_client_lanman_auth() && passlen != 24 && (*pass)) {
 			DEBUG(1, ("Server requested LM password but 'client lanman auth'"
 				  " is disabled\n"));
-			return False;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
 		    !lp_client_plaintext_auth() && (*pass)) {
 			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
 				  " is disabled\n"));
-			return False;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		return cli_session_setup_lanman2(cli, user, pass, passlen, workgroup);
+		return cli_session_setup_lanman2(cli, user, pass, passlen, workgroup) ?
+			NT_STATUS_OK : cli_nt_error(cli);
 	}
 
 	/* if no user is supplied then we have to do an anonymous connection.
 	   passwords are ignored */
 
 	if (!user || !*user)
-		return cli_session_setup_guest(cli);
+		return cli_session_setup_guest(cli) ?
+			NT_STATUS_OK : cli_nt_error(cli);
 
 	/* if the server is share level then send a plaintext null
            password at this point. The password is sent in the tree
            connect */
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0) 
-		return cli_session_setup_plaintext(cli, user, "", workgroup);
+		return cli_session_setup_plaintext(cli, user, "", workgroup) ?
+                        NT_STATUS_OK : cli_nt_error(cli);
 
 	/* if the server doesn't support encryption then we have to use 
 	   plaintext. The second password is ignored */
@@ -866,9 +870,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 		if (!lp_client_plaintext_auth() && (*pass)) {
 			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
 				  " is disabled\n"));
-			return False;
+			return NT_STATUS_ACCESS_DENIED;
 		}
-		return cli_session_setup_plaintext(cli, user, pass, workgroup);
+		return cli_session_setup_plaintext(cli, user, pass, workgroup) ?
+                        NT_STATUS_OK : cli_nt_error(cli);
 	}
 
 	/* if the server supports extended security then use SPNEGO */
@@ -877,13 +882,13 @@ BOOL cli_session_setup(struct cli_state *cli,
 		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass, workgroup);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(3, ("SPNEGO login failed: %s\n", ads_errstr(status)));
-			return False;
+			return ads_ntstatus(status);
 		}
 	} else {
 		/* otherwise do a NT1 style session setup */
 		if ( !cli_session_setup_nt1(cli, user, pass, passlen, ntpass, ntpasslen, workgroup) ) {
 			DEBUG(3,("cli_session_setup: NT1 session setup failed!\n"));
-			return False;
+			return cli_nt_error(cli);
 		}
 	}
 
@@ -891,7 +896,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		cli->is_samba = True;
 	}
 
-	return True;
+	return NT_STATUS_OK;
 
 }
 
@@ -1510,20 +1515,26 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 		return nt_status;
 	}
 
-	if (!cli_session_setup(cli, user, password, pw_len, password, pw_len, domain)) {
-		if ((flags & CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK)
-		    && cli_session_setup(cli, "", "", 0, "", 0, domain)) {
-		} else {
-			nt_status = cli_nt_error(cli);
-			DEBUG(1,("failed session setup with %s\n", nt_errstr(nt_status)));
+	nt_status = cli_session_setup(cli, user, password, pw_len, password,
+				      pw_len, domain);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+
+		if (!(flags & CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK)) {
+			DEBUG(1,("failed session setup with %s\n",
+				 nt_errstr(nt_status)));
 			cli_shutdown(cli);
-			if (NT_STATUS_IS_OK(nt_status)) {
-				nt_status = NT_STATUS_UNSUCCESSFUL;
-			}
 			return nt_status;
 		}
-	} 
 
+		nt_status = cli_session_setup(cli, "", "", 0, "", 0, domain);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(1,("anonymous failed session setup with %s\n",
+				 nt_errstr(nt_status)));
+			cli_shutdown(cli);
+			return nt_status;
+		}
+	}
+	
 	if (service) {
 		if (!cli_send_tconX(cli, service, service_type, password, pw_len)) {
 			nt_status = cli_nt_error(cli);

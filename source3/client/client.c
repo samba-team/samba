@@ -432,7 +432,7 @@ static void init_do_list_queue(void)
 {
 	reset_do_list_queue();
 	do_list_queue_size = 1024;
-	do_list_queue = SMB_MALLOC(do_list_queue_size);
+	do_list_queue = (char *)SMB_MALLOC(do_list_queue_size);
 	if (do_list_queue == 0) { 
 		d_printf("malloc fail for size %d\n",
 			 (int)do_list_queue_size);
@@ -476,7 +476,7 @@ static void add_to_do_list_queue(const char* entry)
 		do_list_queue_size *= 2;
 		DEBUG(4,("enlarging do_list_queue to %d\n",
 			 (int)do_list_queue_size));
-		do_list_queue = SMB_REALLOC(do_list_queue, do_list_queue_size);
+		do_list_queue = (char *)SMB_REALLOC(do_list_queue, do_list_queue_size);
 		if (! do_list_queue) {
 			d_printf("failure enlarging do_list_queue to %d bytes\n",
 				 (int)do_list_queue_size);
@@ -2879,10 +2879,10 @@ static int cmd_logon(void)
 	else
 		pstrcpy(l_password, buf2);
 
-	if (!cli_session_setup(cli, l_username, 
-			       l_password, strlen(l_password),
-			       l_password, strlen(l_password),
-			       lp_workgroup())) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(cli, l_username, 
+					       l_password, strlen(l_password),
+					       l_password, strlen(l_password),
+					       lp_workgroup()))) {
 		d_printf("session setup failed: %s\n", cli_errstr(cli));
 		return -1;
 	}
@@ -3198,7 +3198,7 @@ static char **remote_completion(const char *text, int len)
 	if (info.count == 2)
 		info.matches[0] = SMB_STRDUP(info.matches[1]);
 	else {
-		info.matches[0] = SMB_MALLOC(info.samelen+1);
+		info.matches[0] = (char *)SMB_MALLOC(info.samelen+1);
 		if (!info.matches[0])
 			goto cleanup;
 		strncpy(info.matches[0], info.matches[1], info.samelen);
@@ -3282,7 +3282,7 @@ static char **completion_fn(const char *text, int start, int end)
 			matches[0] = SMB_STRDUP(matches[1]);
 			break;
 		default:
-			matches[0] = SMB_MALLOC(samelen+1);
+			matches[0] = (char *)SMB_MALLOC(samelen+1);
 			if (!matches[0])
 				goto cleanup;
 			strncpy(matches[0], matches[1], samelen);
