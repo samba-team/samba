@@ -1032,60 +1032,6 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 /****************************************************************************
- Keep track of the number of running smbd's. This functionality is used to
- 'hard' limit Samba overhead on resource constrained systems. 
-****************************************************************************/
-
-static BOOL process_count_update_successful = False;
-
-static int32 increment_smbd_process_count(void)
-{
-	int32 total_smbds;
-
-	if (lp_max_smbd_processes()) {
-		total_smbds = 0;
-		if (tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
-			return 1;
-		process_count_update_successful = True;
-		return total_smbds + 1;
-	}
-	return 1;
-}
-
-void decrement_smbd_process_count(void)
-{
-	int32 total_smbds;
-
-	if (lp_max_smbd_processes() && process_count_update_successful) {
-		total_smbds = 1;
-		tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
-	}
-}
-
-static BOOL smbd_process_limit(void)
-{
-	int32  total_smbds;
-	
-	if (lp_max_smbd_processes()) {
-
-		/* Always add one to the smbd process count, as exit_server() always
-		 * subtracts one.
-		 */
-
-		if (!conn_tdb_ctx()) {
-			DEBUG(0,("smbd_process_limit: max smbd processes parameter set with status parameter not \
-set. Ignoring max smbd restriction.\n"));
-			return False;
-		}
-
-		total_smbds = increment_smbd_process_count();
-		return total_smbds > lp_max_smbd_processes();
-	}
-	else
-		return False;
-}
-
-/****************************************************************************
  Process an smb from the client
 ****************************************************************************/
 
@@ -1103,8 +1049,8 @@ static void process_smb(char *inbuf, char *outbuf)
 		deny parameters before doing any parsing of the packet
 		passed to us by the client.  This prevents attacks on our
 		parsing code from hosts not in the hosts allow list */
-		if (smbd_process_limit() ||
-				!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))) {
+		if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
+				  lp_hostsdeny(-1))) {
 			/* send a negative session response "not listening on calling name" */
 			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 			DEBUG( 1, ( "Connection denied from %s\n", client_addr() ) );

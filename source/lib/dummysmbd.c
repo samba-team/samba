@@ -24,11 +24,6 @@
 
 #include "includes.h"
 
-void decrement_smbd_process_count( void )
-{
-	return;
-}
-
 int find_service(fstring service)
 {
 	return -1;
