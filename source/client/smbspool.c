@@ -429,9 +429,10 @@ static struct cli_state
   }
    
    
-  if (!cli_session_setup(cli, username, password, strlen(password)+1, 
-                         password, strlen(password)+1,
-                         workgroup)) 
+  if (!NT_STATUS_IS_OK(cli_session_setup(cli, username,
+					 password, strlen(password)+1, 
+					 password, strlen(password)+1,
+					 workgroup)))
   {
     fprintf(stderr,"ERROR: Session setup failed: %s\n", cli_errstr(cli));
     if (NT_STATUS_V(cli_nt_error(cli)) == 

@@ -220,10 +220,12 @@ static struct cli_state *connect_one(char *share, int snum)
 		fstrcpy(username[1], username[0]);
 	}
 
-	if (!cli_session_setup(c, username[snum], 
-			       password[snum], strlen(password[snum]),
-			       password[snum], strlen(password[snum]),
-			       lp_workgroup())) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(c, username[snum], 
+					       password[snum],
+					       strlen(password[snum]),
+					       password[snum],
+					       strlen(password[snum]),
+					       lp_workgroup()))) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 		return NULL;
 	}

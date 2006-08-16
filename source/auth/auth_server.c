@@ -120,8 +120,8 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	   this one... 
 	*/
 
-	if (!cli_session_setup(cli, "", "", 0, "", 0,
-			       "")) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(cli, "", "", 0, "", 0,
+					       ""))) {
 		DEBUG(0,("%s rejected the initial session setup (%s)\n",
 			 desthost, cli_errstr(cli)));
 		release_server_mutex();
@@ -241,7 +241,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 		return nt_status;
 	}
 
-	cli = my_private_data;
+	cli = (struct cli_state *)my_private_data;
 	
 	if (cli) {
 	} else {
@@ -296,8 +296,12 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	 */
 
 	if ((!tested_password_server) && (lp_paranoid_server_security())) {
-		if (cli_session_setup(cli, baduser, (char *)badpass, sizeof(badpass), 
-					(char *)badpass, sizeof(badpass), user_info->domain)) {
+		if (NT_STATUS_IS_OK(cli_session_setup(cli, baduser,
+						      (char *)badpass,
+						      sizeof(badpass), 
+						      (char *)badpass,
+						      sizeof(badpass),
+						      user_info->domain))) {
 
 			/*
 			 * We connected to the password server so we
@@ -343,30 +347,25 @@ use this machine as the password server.\n"));
 
 	if (!user_info->encrypted) {
 		/* Plaintext available */
-		if (!cli_session_setup(cli, user_info->smb_name, 
-				       (char *)user_info->plaintext_password.data, 
-				       user_info->plaintext_password.length, 
-				       NULL, 0,
-				       user_info->domain)) {
-			DEBUG(1,("password server %s rejected the password\n", cli->desthost));
-			/* Make this cli_nt_error() when the conversion is in */
-			nt_status = cli_nt_error(cli);
-		} else {
-			nt_status = NT_STATUS_OK;
-		}
+		nt_status = cli_session_setup(
+			cli, user_info->smb_name, 
+			(char *)user_info->plaintext_password.data, 
+			user_info->plaintext_password.length, 
+			NULL, 0, user_info->domain);
+
 	} else {
-		if (!cli_session_setup(cli, user_info->smb_name, 
-				       (char *)user_info->lm_resp.data, 
-				       user_info->lm_resp.length, 
-				       (char *)user_info->nt_resp.data, 
-				       user_info->nt_resp.length, 
-				       user_info->domain)) {
-			DEBUG(1,("password server %s rejected the password\n", cli->desthost));
-			/* Make this cli_nt_error() when the conversion is in */
-			nt_status = cli_nt_error(cli);
-		} else {
-			nt_status = NT_STATUS_OK;
-		}
+		nt_status = cli_session_setup(
+			cli, user_info->smb_name, 
+			(char *)user_info->lm_resp.data, 
+			user_info->lm_resp.length, 
+			(char *)user_info->nt_resp.data, 
+			user_info->nt_resp.length, 
+			user_info->domain);
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1,("password server %s rejected the password: %s\n",
+			 cli->desthost, nt_errstr(nt_status)));
 	}
 
 	/* if logged in as guest then reject */
