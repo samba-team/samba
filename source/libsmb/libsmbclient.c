@@ -814,19 +814,19 @@ smbc_server(SMBCCTX *context,
 
         username_used = username;
 
-	if (!cli_session_setup(c, username_used, 
-			       password, strlen(password),
-			       password, strlen(password),
-			       workgroup)) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(c, username_used, 
+					       password, strlen(password),
+					       password, strlen(password),
+					       workgroup))) {
                 
                 /* Failed.  Try an anonymous login, if allowed by flags. */
                 username_used = "";
 
                 if ((context->flags & SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON) ||
-                     !cli_session_setup(c, username_used,
-                                        password, 1,
-                                        password, 0,
-                                        workgroup)) {
+                     !NT_STATUS_IS_OK(cli_session_setup(c, username_used,
+							password, 1,
+							password, 0,
+							workgroup))) {
 
                         cli_shutdown(c);
                         errno = EPERM;
