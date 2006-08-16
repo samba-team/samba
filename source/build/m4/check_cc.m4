@@ -26,6 +26,8 @@ fi
 dnl needed before AC_TRY_COMPILE
 AC_ISC_POSIX
 
+AC_C_INLINE
+
 AC_CACHE_CHECK([that the C compiler can precompile header files],samba_cv_precompiled_headers, [
 	dnl Check whether the compiler can generate precompiled headers
 	touch conftest.h
