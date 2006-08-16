@@ -450,7 +450,8 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			if (smbd_server_fd() != -1 && interactive)
 				return True;
 			
-			if (allowable_number_of_smbd_processes() && smbd_server_fd() != -1 && sys_fork()==0) {
+			if (allowable_number_of_smbd_processes() &&
+			    smbd_server_fd() != -1 && sys_fork()==0) {
 				/* Child code ... */
 				
 				/* close the listening socket(s) */
@@ -467,7 +468,8 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				
 				/* this is needed so that we get decent entries
 				   in smbstatus for port 445 connects */
-				set_remote_machine_name(get_peer_addr(smbd_server_fd()), False);
+				set_remote_machine_name(get_peer_addr(smbd_server_fd()),
+							False);
 				
 				/* Reset the state of the random
 				 * number generation system, so
@@ -475,7 +477,8 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				 * numbers as each other */
 
 				set_need_random_reseed();
-				/* tdb needs special fork handling - remove CLEAR_IF_FIRST flags */
+				/* tdb needs special fork handling - remove
+				 * CLEAR_IF_FIRST flags */
 				if (tdb_reopen_all(1) == -1) {
 					DEBUG(0,("tdb_reopen_all failed.\n"));
 					smb_panic("tdb_reopen_all failed.");
