@@ -36,6 +36,7 @@ extern struct auth_context *negprot_global_auth_context;
 extern pstring user_socket_options;
 extern SIG_ATOMIC_T got_sig_term;
 extern SIG_ATOMIC_T reload_after_sighup;
+static SIG_ATOMIC_T got_sig_cld;
 
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
@@ -90,6 +91,15 @@ static void sig_hup(int sig)
 {
 	reload_after_sighup = 1;
 	sys_select_signal(SIGHUP);
+}
+
+/****************************************************************************
+ Catch a sigcld
+****************************************************************************/
+static void sig_cld(int sig)
+{
+	got_sig_cld = 1;
+	sys_select_signal(SIGCLD);
 }
 
 /****************************************************************************
@@ -189,6 +199,54 @@ static void msg_inject_fault(int msg_type, struct process_id src,
 }
 #endif /* DEVELOPER */
 
+struct child_pid {
+	struct child_pid *prev, *next;
+	pid_t pid;
+};
+
+static struct child_pid *children;
+static int num_children;
+
+static void add_child_pid(pid_t pid)
+{
+	struct child_pid *child;
+
+	if (lp_max_smbd_processes() == 0) {
+		/* Don't bother with the child list if we don't care anyway */
+		return;
+	}
+
+	child = SMB_MALLOC_P(struct child_pid);
+	if (child == NULL) {
+		DEBUG(0, ("Could not add child struct -- malloc failed\n"));
+		return;
+	}
+	child->pid = pid;
+	DLIST_ADD(children, child);
+	num_children += 1;
+}
+
+static void remove_child_pid(pid_t pid)
+{
+	struct child_pid *child;
+
+	if (lp_max_smbd_processes() == 0) {
+		/* Don't bother with the child list if we don't care anyway */
+		return;
+	}
+
+	for (child = children; child != NULL; child = child->next) {
+		if (child->pid == pid) {
+			struct child_pid *tmp = child;
+			DLIST_REMOVE(children, child);
+			SAFE_FREE(tmp);
+			num_children -= 1;
+			return;
+		}
+	}
+
+	DEBUG(0, ("Could not find child %d -- ignoring\n", (int)pid));
+}
 
 /****************************************************************************
  Have we reached the process limit ?
@@ -201,27 +259,7 @@ static BOOL allowable_number_of_smbd_processes(void)
 	if (!max_processes)
 		return True;
 
-	{
-		TDB_CONTEXT *tdb = conn_tdb_ctx();
-		int32 val;
-		if (!tdb) {
-			DEBUG(0,("allowable_number_of_smbd_processes: can't open connection tdb.\n" ));
-			return False;
-		}
-
-		val = tdb_fetch_int32(tdb, "INFO/total_smbds");
-		if (val == -1 && (tdb_error(tdb) != TDB_ERR_NOEXIST)) {
-			DEBUG(0,("allowable_number_of_smbd_processes: can't fetch INFO/total_smbds. Error %s\n",
-				tdb_errorstr(tdb) ));
-			return False;
-		}
-		if (val > max_processes) {
-			DEBUG(0,("allowable_number_of_smbd_processes: number of processes (%d) is over allowed limit (%d)\n",
-				val, max_processes ));
-			return False;
-		}
-	}
-	return True;
+	return num_children < max_processes;
 }
 
 /****************************************************************************
@@ -255,7 +293,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 #endif
 
 	/* Stop zombies */
-	CatchChild();
+	CatchSignal(SIGCLD, sig_cld);
 				
 	FD_ZERO(&listen_set);
 
@@ -392,6 +430,15 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		/* Ensure we respond to PING and DEBUG messages from the main smbd. */
 		message_dispatch();
 
+		if (got_sig_cld) {
+			pid_t pid;
+			got_sig_cld = False;
+
+			while ((pid = sys_waitpid(-1, NULL, WNOHANG)) > 0) {
+				remove_child_pid(pid);
+			}
+		}
+
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
@@ -421,6 +468,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		for( ; num > 0; num--) {
 			struct sockaddr addr;
 			socklen_t in_addrlen = sizeof(addr);
+			pid_t child = 0;
 
 			s = -1;
 			for(i = 0; i < num_sockets; i++) {
@@ -451,7 +499,8 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				return True;
 			
 			if (allowable_number_of_smbd_processes() &&
-			    smbd_server_fd() != -1 && sys_fork()==0) {
+			    smbd_server_fd() != -1 &&
+			    ((child = sys_fork())==0)) {
 				/* Child code ... */
 				
 				/* close the listening socket(s) */
@@ -498,6 +547,10 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			*/
 
 			smbd_set_server_fd(-1);
+
+			if (child != 0) {
+				add_child_pid(child);
+			}
 
 			/* Force parent to check log size after
 			 * spawning child.  Fix from
@@ -640,7 +693,6 @@ static void exit_server_common(enum server_exit_reason how,
 	yield_connection(NULL,"");
 
 	respond_to_all_remaining_local_messages();
-	decrement_smbd_process_count();
 
 #ifdef WITH_DFS
 	if (dcelogin_atmost_once) {
