@@ -1,0 +1,50 @@
+[ 
+  uuid("d049b186-814f-11d1-9a3c-00c04fc9b232"),
+  version(1.1),
+  endpoint("ncacn_ip_tcp:", "ncalrpc:"),
+  helpstring("File Replication API"),
+  pointer_default(unique),
+  keepref
+] 
+interface frsapi
+{
+	/****************/
+	/* Function 0x00 */
+	void FRSAPI_VERIFY_PROMOTION();
+
+	/****************/
+	/* Function 0x01 */
+	void FRSAPI_PROMOTION_STATUS();
+
+	/****************/
+	/* Function 0x02 */
+	void FRSAPI_START_DEMOTION();
+
+	/****************/
+	/* Function 0x03 */
+	void FRSAPI_COMMIT_DEMOTION();
+
+	/****************/
+	/* Function 0x04 */
+	void FRSAPI_SET_DS_POLLING_INTERVAL_W();
+
+	/****************/
+	/* Function 0x05 */
+	void FRSAPI_GET_DS_POLLING_INTERVAL_W();
+
+	/****************/
+	/* Function 0x06 */
+	void FRSAPI_VERIFY_PROMOTION_W();
+
+	/****************/
+	/* Function 0x07 */
+	void FRSAPI_INFO_W();
+
+	/****************/
+	/* Function 0x08 */
+	void FRSAPI_IS_PATH_REPLICATED();
+
+	/****************/
+	/* Function 0x09 */
+	void FRSAPI_WRITER_COMMAND();
+}
