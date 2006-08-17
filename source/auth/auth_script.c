@@ -69,7 +69,7 @@ static NTSTATUS script_check_user_credentials(const struct auth_context *auth_co
 			48 + 1 + /* 24 bytes of challenge going to 48 */
 			48 + 1;
 
-	secret_str = malloc(secret_str_len);
+	secret_str = (char *)malloc(secret_str_len);
 	if (!secret_str) {
 		return NT_STATUS_NO_MEMORY;
 	}

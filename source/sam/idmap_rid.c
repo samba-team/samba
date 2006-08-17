@@ -196,9 +196,9 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	}
 
 	/* open a connection to the dc */
-	username = secrets_fetch(SECRETS_AUTH_USER, NULL);
-	password = secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
-	domain =   secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
+	username = (char *)secrets_fetch(SECRETS_AUTH_USER, NULL);
+	password = (char *)secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
+	domain =   (char *)secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
 
 	if (username) {
 

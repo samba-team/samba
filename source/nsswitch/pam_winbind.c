@@ -1036,7 +1036,7 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 	case 0:
 		pam_get_data( pamh, PAM_WINBIND_NEW_AUTHTOK_REQD, (const void **)&tmp);
 		if (tmp != NULL) {
-			retval = atoi(tmp);
+			retval = atoi((const char *)tmp);
 			switch (retval) {
 			case PAM_AUTHTOK_EXPIRED:
 				/* fall through, since new token is required in this case */
