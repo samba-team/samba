@@ -1168,11 +1168,10 @@ int net_ads_join(int argc, const char **argv)
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	char *machine_account = NULL;
 	const char *short_domain_name = NULL;
 	char *tmp_password, *password;
 	struct cldap_netlogon_reply cldap_reply;
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *ctx = NULL;
 	DOM_SID *domain_sid = NULL;
 	BOOL createupn = False;
 	const char *machineupn = NULL;
@@ -1342,7 +1341,6 @@ int net_ads_join(int argc, const char **argv)
 
 	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->config.realm);
 
-	SAFE_FREE(machine_account);
 	TALLOC_FREE( ctx );
 	ads_destroy(&ads);
 	
@@ -1353,6 +1351,7 @@ fail:
 	d_printf("Failed to join domain: %s\n", 
 	         get_friendly_nt_error_msg(nt_status));
 	ads_destroy(&ads);
+	TALLOC_FREE( ctx );
 	return -1;
 }
 
