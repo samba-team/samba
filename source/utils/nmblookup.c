@@ -27,7 +27,7 @@
 #include "lib/socket/socket.h"
 #include "system/network.h"
 #include "system/locale.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 #include "librpc/gen_ndr/nbt.h"
 #include "libcli/nbt/libnbt.h"
 

@@ -31,7 +31,7 @@
 #include "wrepl_server/wrepl_server.h"
 #include "smbd/process_model.h"
 #include "system/network.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 
 void wreplsrv_terminate_in_connection(struct wreplsrv_in_connection *wreplconn, const char *reason)
 {

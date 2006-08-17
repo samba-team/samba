@@ -30,7 +30,7 @@
 #include "libcli/smb2/smb2.h"
 #include "smb_server/smb2/smb2_server.h"
 #include "system/network.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 #include "param/share.h"
 
 static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)

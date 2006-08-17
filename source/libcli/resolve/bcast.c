@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 
 /*
   broadcast name resolution method - async send

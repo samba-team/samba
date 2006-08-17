@@ -30,7 +30,7 @@
 #include "torture/rpc/rpc.h"
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 
 #define TEST_NAME "TORTURE_TEST"
 

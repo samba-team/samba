@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "system/network.h"
-#include "lib/netif/netif.h"
+#include "lib/socket/netif.h"
 #include "dlinklist.h"
 
 /** used for network interfaces */
