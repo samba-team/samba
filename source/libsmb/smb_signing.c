@@ -108,6 +108,10 @@ static BOOL set_sequence_can_delete_flag(struct outstanding_packet_lookup **list
 
 static BOOL cli_set_smb_signing_common(struct cli_state *cli) 
 {
+	if (!cli->sign_info.allow_smb_signing) {
+		return False;
+	}
+
 	if (!cli->sign_info.negotiated_smb_signing 
 	    && !cli->sign_info.mandatory_signing) {
 		return False;
