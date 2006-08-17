@@ -114,7 +114,7 @@ bin/ldbtest: tools/ldbtest.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/ldbtest tools/ldbtest.o tools/cmdline.o $(LIB_FLAGS)
 
 bin/oLschema2ldif: tools/oLschema2ldif.o tools/cmdline.o $(LIBS)
-	$(CC) -o bin/oLschema2ldif tools/oLschema2ldif.o tools/cmdline.o $(LIB_FLAGS)
+	$(CC) -o bin/oLschema2ldif tools/oLschema2ldif.o tools/cmdline.o tools/convert.o $(LIB_FLAGS)
 
 examples/ldbreader: examples/ldbreader.o $(LIBS)
 	$(CC) -o examples/ldbreader examples/ldbreader.o $(LIB_FLAGS)

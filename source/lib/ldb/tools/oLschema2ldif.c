@@ -25,16 +25,17 @@
 /*
  *  Name: ldb
  *
- *  Component: ldbdel
+ *  Component: oLschema2ldif
  *
- *  Description: utility to delete records - modelled on ldapdelete
+ *  Description: utility to convert an OpenLDAP schema into AD LDIF
  *
- *  Author: Andrew Tridgell
+ *  Author: Simo Sorce
  */
 
 #include "includes.h"
 #include "ldb/include/includes.h"
 #include "ldb/tools/cmdline.h"
+#include "ldb/tools/convert.h"
 
 #define SCHEMA_UNKNOWN 0
 #define SCHEMA_NAME 1
@@ -50,33 +51,6 @@
 #define SCHEMA_SUBSTR 11
 #define SCHEMA_SYNTAX 12
 #define SCHEMA_DESC 13
-
-struct syntax_map {
-	const char *Standard_OID;
-	const char *AD_OID;
-	const char *comment;
-} syntax_map[] = {
-	{ "1.3.6.1.4.1.1466.115.121.1.12", "2.5.5.1", "Object(DS-DN) == a DN" },
-	{ "1.3.6.1.4.1.1466.115.121.1.38", "2.5.5.2", "OID String" },
-	{ "1.2.840.113556.1.4.905", "2.5.5.4", "Case Insensitive String" },
-	{ "1.3.6.1.4.1.1466.115.121.1.44", "2.5.5.5", "Printable String" },
-	{ "1.3.6.1.4.1.1466.115.121.1.36", "2.5.5.6", "Numeric String" },
-	{ "1.2.840.113556.1.4.903", "2.5.5.7", "OctetString: Binary+DN" },
-	{ "1.3.6.1.4.1.1466.115.121.1.7", "2.5.5.8", "Boolean" },
-	{ "1.3.6.1.4.1.1466.115.121.1.27", "2.5.5.9", "Integer" },
-	{ "1.3.6.1.4.1.1466.115.121.1.40", "2.5.5.10", "Octet String" },
-	{ "1.3.6.1.4.1.1466.115.121.1.24", "2.5.5.11", "Generalized Time" },
-	{ "1.3.6.1.4.1.1466.115.121.1.53", "2.5.5.11", "UTC Time" },
-	{ "1.3.6.1.4.1.1466.115.121.1.15", "2.5.5.12", "Directory String" },
-	{ "1.3.6.1.4.1.1466.115.121.1.43", "2.5.5.13", "Presentation Address" },
-	{ "Not Found Yet", "2.5.5.14", "OctetString: String+DN" },
-	{ "1.2.840.113556.1.4.907", "2.5.5.15", "NT Security Descriptor" },
-	{ "1.2.840.113556.1.4.906", "2.5.5.16", "Interval" },
-	{ "1.3.6.1.4.1.1466.115.121.1.40", "2.5.5.17", "Octet String - Security Identifier (SID)" },
-	{ "1.3.6.1.4.1.1466.115.121.1.26", "2.5.5.5", "IA5 String" },
-	{ NULL, NULL }
-};
-
 
 struct schema_conv {
 	int count;
@@ -460,9 +434,15 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 			break;
 
 		case SCHEMA_SYNTAX:
-			MSG_ADD_STRING("attributeSyntax", token->value);
+		{
+			const struct syntax_map *map = 
+				find_syntax_map_by_standard_oid(token->value);
+			if (!map) {
+				break;
+			}
+			MSG_ADD_STRING("attributeSyntax", map->AD_OID);
 			break;
-
+		}
 		case SCHEMA_DESC:
 			MSG_ADD_STRING("description", token->value);
 			break;
@@ -564,9 +544,10 @@ static struct schema_conv process_file(FILE *in, FILE *out)
 
 static void usage(void)
 {
-	printf("Usage: oLschema2ldif <options>\n");
+	printf("Usage: oLschema2ldif -H NONE <options>\n");
+	printf("\nConvert OpenLDAP schema to AD-like LDIF format\n\n");
 	printf("Options:\n");
-	printf("  -I inputfile     inputfile otherwise STDIN\n");
+	printf("  -I inputfile     inputfile of OpenLDAP style schema otherwise STDIN\n");
 	printf("  -O outputfile    outputfile otherwise STDOUT\n");
 	printf("  -o options       pass options like modules to activate\n");
 	printf("              e.g: -o modules:timestamps\n");
@@ -582,7 +563,6 @@ static void usage(void)
 	struct ldb_cmdline *options;
 	FILE *in = stdin;
 	FILE *out = stdout;
-
 	ldb_global_init();
 
 	ctx = talloc_new(NULL);

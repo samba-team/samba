@@ -271,10 +271,24 @@ PRIVATE_DEPENDENCIES = \
 INSTALLDIR = BINDIR
 MANPAGE = man/oLschema2ldif.1
 OBJ_FILES= \
+		tools/convert.o \
 		tools/oLschema2ldif.o
 PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
 # End BINARY oLschema2ldif
+################################################
+
+################################################
+# Start BINARY  ad2oLschema
+[BINARY::ad2oLschema]
+INSTALLDIR = BINDIR
+MANPAGE = man/ad2oLschema.1
+OBJ_FILES= \
+		tools/convert.o \
+		tools/ad2oLschema.o
+PRIVATE_DEPENDENCIES = \
+		LIBLDB_CMDLINE
+# End BINARY ad2oLschema
 ################################################
 
 #######################
