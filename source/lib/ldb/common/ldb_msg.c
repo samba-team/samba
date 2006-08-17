@@ -366,6 +366,23 @@ double ldb_msg_find_attr_as_double(const struct ldb_message *msg,
 	return strtod((const char *)v->data, NULL);
 }
 
+int ldb_msg_find_attr_as_bool(const struct ldb_message *msg, 
+			      const char *attr_name,
+			      int default_value)
+{
+	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
+	if (!v || !v->data) {
+		return default_value;
+	}
+	if (strcasecmp(v->data, "FALSE") == 0) {
+		return 0;
+	}
+	if (strcasecmp(v->data, "TRUE") == 0) {
+		return 1;
+	}
+	return default_value;
+}
+
 const char *ldb_msg_find_attr_as_string(const struct ldb_message *msg, 
 					const char *attr_name,
 					const char *default_value)

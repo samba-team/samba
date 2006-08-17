@@ -1265,6 +1265,9 @@ uint64_t ldb_msg_find_attr_as_uint64(const struct ldb_message *msg,
 double ldb_msg_find_attr_as_double(const struct ldb_message *msg, 
 				   const char *attr_name,
 				   double default_value);
+int ldb_msg_find_attr_as_bool(const struct ldb_message *msg, 
+			      const char *attr_name,
+			      int default_value);
 const char *ldb_msg_find_attr_as_string(const struct ldb_message *msg, 
 					const char *attr_name,
 					const char *default_value);
