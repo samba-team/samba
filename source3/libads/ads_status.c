@@ -72,6 +72,9 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 	if (status.error_type == ENUM_ADS_ERROR_NT){
 		return status.err.nt_status;	
 	}
+	if (status.error_type == ENUM_ADS_ERROR_SYSTEM) {
+		return map_nt_error_from_unix(status.err.rc);
+	}
 #ifdef HAVE_LDAP
 	if ((status.error_type == ENUM_ADS_ERROR_LDAP) 
 	    && (status.err.rc == LDAP_NO_MEMORY)) {
@@ -84,6 +87,8 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 			return NT_STATUS_LOGON_FAILURE;
 		} else if (status.err.rc == KRB5_KDC_UNREACH) {
 			return NT_STATUS_NO_LOGON_SERVERS;
+		} else if (status.err.rc == KRB5KRB_AP_ERR_SKEW) {
+			return NT_STATUS_TIME_DIFFERENCE_AT_DC;
 		}
 	}
 #endif
