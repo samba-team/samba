@@ -681,34 +681,34 @@ static struct ldb_dn_component ldb_dn_copy_component(void *mem_ctx, struct ldb_d
 */
 struct ldb_dn *ldb_dn_copy_partial(void *mem_ctx, const struct ldb_dn *dn, int num_el)
 {
-	struct ldb_dn *new;
+	struct ldb_dn *newdn;
 	int i, n, e;
 
 	if (dn == NULL) return NULL;
 	if (num_el <= 0) return NULL;
 
-	new = ldb_dn_new(mem_ctx);
-	LDB_DN_NULL_FAILED(new);
+	newdn = ldb_dn_new(mem_ctx);
+	LDB_DN_NULL_FAILED(newdn);
 
-	new->comp_num = num_el;
-	n = new->comp_num - 1;
-	new->components = talloc_array(new, struct ldb_dn_component, new->comp_num);
+	newdn->comp_num = num_el;
+	n = newdn->comp_num - 1;
+	newdn->components = talloc_array(newdn, struct ldb_dn_component, newdn->comp_num);
 
-	if (dn->comp_num == 0) return new;
+	if (dn->comp_num == 0) return newdn;
 	e = dn->comp_num - 1;
 
-	for (i = 0; i < new->comp_num; i++) {
-		new->components[n - i] = ldb_dn_copy_component(new->components,
+	for (i = 0; i < newdn->comp_num; i++) {
+		newdn->components[n - i] = ldb_dn_copy_component(newdn->components,
 								&(dn->components[e - i]));
 		if ((e - i) == 0) {
-			return new;
+			return newdn;
 		}
 	}
 
-	return new;
+	return newdn;
 
 failed:
-	talloc_free(new);
+	talloc_free(newdn);
 	return NULL;
 }
 
@@ -755,32 +755,32 @@ struct ldb_dn *ldb_dn_build_child(void *mem_ctx, const char *attr,
 						 const char * value,
 						 const struct ldb_dn *base)
 {
-	struct ldb_dn *new;
+	struct ldb_dn *newdn;
 	if (! ldb_valid_attr_name(attr)) return NULL;
 	if (value == NULL || value == '\0') return NULL; 
 
 	if (base != NULL) {
-		new = ldb_dn_copy_partial(mem_ctx, base, base->comp_num + 1);
-		LDB_DN_NULL_FAILED(new);
+		newdn = ldb_dn_copy_partial(mem_ctx, base, base->comp_num + 1);
+		LDB_DN_NULL_FAILED(newdn);
 	} else {
-		new = ldb_dn_new(mem_ctx);
-		LDB_DN_NULL_FAILED(new);
+		newdn = ldb_dn_new(mem_ctx);
+		LDB_DN_NULL_FAILED(newdn);
 
-		new->comp_num = 1;
-		new->components = talloc_array(new, struct ldb_dn_component, new->comp_num);
+		newdn->comp_num = 1;
+		newdn->components = talloc_array(newdn, struct ldb_dn_component, newdn->comp_num);
 	}
 
-	new->components[0].name = talloc_strdup(new->components, attr);
-	LDB_DN_NULL_FAILED(new->components[0].name);
+	newdn->components[0].name = talloc_strdup(newdn->components, attr);
+	LDB_DN_NULL_FAILED(newdn->components[0].name);
 
-	new->components[0].value.data = (uint8_t *)talloc_strdup(new->components, value);
-	LDB_DN_NULL_FAILED(new->components[0].value.data);
-	new->components[0].value.length = strlen((char *)new->components[0].value.data);
+	newdn->components[0].value.data = (uint8_t *)talloc_strdup(newdn->components, value);
+	LDB_DN_NULL_FAILED(newdn->components[0].value.data);
+	newdn->components[0].value.length = strlen((char *)newdn->components[0].value.data);
 
-	return new;
+	return newdn;
 
 failed:
-	talloc_free(new);
+	talloc_free(newdn);
 	return NULL;
 
 }
@@ -797,37 +797,37 @@ struct ldb_dn *ldb_dn_make_child(void *mem_ctx, const struct ldb_dn_component *c
 struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const struct ldb_dn *dn2)
 {
 	int i;
-	struct ldb_dn *new;
+	struct ldb_dn *newdn;
 
 	if (dn2 == NULL && dn1 == NULL) {
 		return NULL;
 	}
 
 	if (dn2 == NULL) {
-		new = ldb_dn_new(mem_ctx);
-		LDB_DN_NULL_FAILED(new);
+		newdn = ldb_dn_new(mem_ctx);
+		LDB_DN_NULL_FAILED(newdn);
 
-		new->comp_num = dn1->comp_num;
-		new->components = talloc_array(new, struct ldb_dn_component, new->comp_num);
+		newdn->comp_num = dn1->comp_num;
+		newdn->components = talloc_array(newdn, struct ldb_dn_component, newdn->comp_num);
 	} else {
 		int comp_num = dn2->comp_num;
 		if (dn1 != NULL) comp_num += dn1->comp_num;
-		new = ldb_dn_copy_partial(mem_ctx, dn2, comp_num);
+		newdn = ldb_dn_copy_partial(mem_ctx, dn2, comp_num);
 	}
 
 	if (dn1 == NULL) {
-		return new;
+		return newdn;
 	}
 
 	for (i = 0; i < dn1->comp_num; i++) {
-		new->components[i] = ldb_dn_copy_component(new->components,
+		newdn->components[i] = ldb_dn_copy_component(newdn->components,
 							   &(dn1->components[i]));
 	}
 
-	return new;
+	return newdn;
 
 failed:
-	talloc_free(new);
+	talloc_free(newdn);
 	return NULL;
 }
 

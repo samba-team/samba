@@ -191,9 +191,9 @@ int ldb_set_attrib_handler_syntax(struct ldb_context *ldb,
 				  const char *attr, const char *syntax);
 
 /* The following definitions come from lib/ldb/common/ldb_attributes.c  */
-const char **ldb_subclass_list(struct ldb_context *ldb, const char *class);
-void ldb_subclass_remove(struct ldb_context *ldb, const char *class);
-int ldb_subclass_add(struct ldb_context *ldb, const char *class, const char *subclass);
+const char **ldb_subclass_list(struct ldb_context *ldb, const char *classname);
+void ldb_subclass_remove(struct ldb_context *ldb, const char *classname);
+int ldb_subclass_add(struct ldb_context *ldb, const char *classname, const char *subclass);
 
 int ldb_handler_copy(struct ldb_context *ldb, void *mem_ctx,
 		     const struct ldb_val *in, struct ldb_val *out);
