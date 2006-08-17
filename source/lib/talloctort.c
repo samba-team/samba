@@ -403,7 +403,7 @@ static BOOL test_misc(void)
 	talloc_report(root, stdout);
 
 
-	p2 = talloc_zero_size(p1, 20);
+	p2 = (char *)talloc_zero_size(p1, 20);
 	if (p2[19] != 0) {
 		printf("Failed to give zero memory\n");
 		return False;
@@ -465,7 +465,7 @@ static BOOL test_misc(void)
 	talloc_unlink(NULL, p1);
 
 	p1 = talloc_named_const(root, 10, "p1");
-	p2 = talloc_named_const(root, 20, "p2");
+	p2 = (char *)talloc_named_const(root, 20, "p2");
 	talloc_reference(p1, p2);
 	talloc_report_full(root, stdout);
 	talloc_unlink(root, p2);
@@ -477,7 +477,7 @@ static BOOL test_misc(void)
 	talloc_unlink(root, p1);
 
 	p1 = talloc_named_const(root, 10, "p1");
-	p2 = talloc_named_const(root, 20, "p2");
+	p2 = (char *)talloc_named_const(root, 20, "p2");
 	talloc_reference(NULL, p2);
 	talloc_report_full(root, stdout);
 	talloc_unlink(root, p2);
