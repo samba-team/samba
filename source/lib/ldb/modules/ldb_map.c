@@ -806,11 +806,11 @@ static int map_objectclass_convert_operator(struct ldb_module *module, void *mem
 {
 	
 	static const struct ldb_map_attribute objectclass_map = {
-		.local_name = "objectclass",
+		.local_name = "objectClass",
 		.type = MAP_CONVERT,
 		.u = {
 			.convert = {
-				 .remote_name = "objectclass",
+				 .remote_name = "objectClass",
 				 .convert_local = map_objectclass_convert_local,
 				 .convert_remote = map_objectclass_convert_remote,
 			 },
@@ -1160,12 +1160,12 @@ static const struct ldb_map_attribute builtin_attribute_maps[] = {
 		},
 	},
 	{
-		.local_name = "objectclass",
+		.local_name = "objectClass",
 		.type = MAP_GENERATE,
 		.convert_operator = map_objectclass_convert_operator,
 		.u = {
 			.generate = {
-				 .remote_names = { "objectclass", NULL },
+				 .remote_names = { "objectClass", NULL },
 				 .generate_local = map_objectclass_generate_local,
 				 .generate_remote = map_objectclass_generate_remote,
 			 },
