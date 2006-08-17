@@ -28,7 +28,7 @@
 #include "smbd/service.h"
 #include "cldap_server/cldap_server.h"
 #include "system/network.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 
 /*
   handle incoming cldap requests

@@ -30,7 +30,7 @@
 #include "smbd/service.h"
 #include "lib/messaging/irpc.h"
 #include "system/network.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 #include "auth/auth.h"
 
 struct dcesrv_socket_context {

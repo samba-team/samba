@@ -25,7 +25,7 @@
 #include "lib/socket/socket.h"
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 #include "torture/torture.h"
 
 struct wins_state {

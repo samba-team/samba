@@ -35,7 +35,7 @@
 #include "lib/messaging/irpc.h"
 #include "lib/stream/packet.h"
 #include "librpc/gen_ndr/samr.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 
 /* hold all the info needed to send a reply */
 struct kdc_reply {

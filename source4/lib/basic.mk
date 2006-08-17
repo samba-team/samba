@@ -18,17 +18,6 @@ include util/config.mk
 include tdr/config.mk
 
 ##############################
-# Start SUBSYSTEM LIBNETIF
-[SUBSYSTEM::LIBNETIF]
-PRIVATE_PROTO_HEADER = netif/proto.h
-OBJ_FILES = \
-		netif/interface.o \
-		netif/netif.o
-PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL EXT_NSL
-# End SUBSYSTEM LIBNETIF
-##############################
-
-##############################
 # Start SUBSYSTEM LIBCRYPTO
 [SUBSYSTEM::LIBCRYPTO]
 OBJ_FILES = \

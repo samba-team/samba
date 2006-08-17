@@ -27,7 +27,7 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "system/network.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "libcli/nbt/libnbt.h"
 
