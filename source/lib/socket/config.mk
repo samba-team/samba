@@ -1,3 +1,13 @@
+##############################
+# Start SUBSYSTEM LIBNETIF
+[SUBSYSTEM::LIBNETIF]
+PRIVATE_PROTO_HEADER = netif_proto.h
+OBJ_FILES = \
+		interface.o \
+		netif.o
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL EXT_SOCKET EXT_NSL
+# End SUBSYSTEM LIBNETIF
+##############################
 
 ################################################
 # Start MODULE socket_ipv4

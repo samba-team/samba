@@ -28,7 +28,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "system/network.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 #include "lib/tls/tls.h"
 
 /* don't allow connections to hang around forever */

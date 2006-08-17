@@ -26,7 +26,7 @@
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsserver.h"
 #include "system/network.h"
-#include "netif/netif.h"
+#include "lib/socket/netif.h"
 
 /*
   startup the nbtd task
