@@ -185,11 +185,11 @@ int ldb_setup_wellknown_attributes(struct ldb_context *ldb)
 /*
   return the list of subclasses for a class
 */
-const char **ldb_subclass_list(struct ldb_context *ldb, const char *class)
+const char **ldb_subclass_list(struct ldb_context *ldb, const char *classname)
 {
 	int i;
 	for (i=0;i<ldb->schema.num_classes;i++) {
-		if (ldb_attr_cmp(class, ldb->schema.classes[i].name) == 0) {
+		if (ldb_attr_cmp(classname, ldb->schema.classes[i].name) == 0) {
 			return (const char **)ldb->schema.classes[i].subclasses;
 		}
 	}
@@ -200,7 +200,7 @@ const char **ldb_subclass_list(struct ldb_context *ldb, const char *class)
 /*
   add a new subclass
 */
-static int ldb_subclass_new(struct ldb_context *ldb, const char *class, const char *subclass)
+static int ldb_subclass_new(struct ldb_context *ldb, const char *classname, const char *subclass)
 {
 	struct ldb_subclass *s, *c;
 	s = talloc_realloc(ldb, ldb->schema.classes, struct ldb_subclass, ldb->schema.num_classes+1);
@@ -208,7 +208,7 @@ static int ldb_subclass_new(struct ldb_context *ldb, const char *class, const ch
 
 	ldb->schema.classes = s;
 	c = &s[ldb->schema.num_classes];
-	c->name = talloc_strdup(s, class);
+	c->name = talloc_strdup(s, classname);
 	if (c->name == NULL) goto failed;
 
 	c->subclasses = talloc_array(s, char *, 2);
@@ -229,19 +229,19 @@ failed:
 /*
   add a subclass
 */
-int ldb_subclass_add(struct ldb_context *ldb, const char *class, const char *subclass)
+int ldb_subclass_add(struct ldb_context *ldb, const char *classname, const char *subclass)
 {
 	int i, n;
 	struct ldb_subclass *c;
 	char **s;
 
 	for (i=0;i<ldb->schema.num_classes;i++) {
-		if (ldb_attr_cmp(class, ldb->schema.classes[i].name) == 0) {
+		if (ldb_attr_cmp(classname, ldb->schema.classes[i].name) == 0) {
 			break;
 		}
 	}
 	if (i == ldb->schema.num_classes) {
-		return ldb_subclass_new(ldb, class, subclass);
+		return ldb_subclass_new(ldb, classname, subclass);
 	}
 	c = &ldb->schema.classes[i];
 	
@@ -267,13 +267,13 @@ int ldb_subclass_add(struct ldb_context *ldb, const char *class, const char *sub
 /*
   remove a set of subclasses for a class
 */
-void ldb_subclass_remove(struct ldb_context *ldb, const char *class)
+void ldb_subclass_remove(struct ldb_context *ldb, const char *classname)
 {
 	int i;
 	struct ldb_subclass *c;
 
 	for (i=0;i<ldb->schema.num_classes;i++) {
-		if (ldb_attr_cmp(class, ldb->schema.classes[i].name) == 0) {
+		if (ldb_attr_cmp(classname, ldb->schema.classes[i].name) == 0) {
 			break;
 		}
 	}

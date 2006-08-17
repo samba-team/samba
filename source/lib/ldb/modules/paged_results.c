@@ -85,41 +85,41 @@ int store_destructor(struct results_store *store)
 
 static struct results_store *new_store(struct private_data *priv)
 {
-	struct results_store *new;
+	struct results_store *newr;
 	int new_id = priv->next_free_id++;
 
 	/* TODO: we should have a limit on the number of
 	 * outstanding paged searches
 	 */
 
-	new = talloc(priv, struct results_store);
-	if (!new) return NULL;
+	newr = talloc(priv, struct results_store);
+	if (!newr) return NULL;
 
-	new->cookie = talloc_asprintf(new, "%d", new_id);
-	if (!new->cookie) {
-		talloc_free(new);
+	newr->cookie = talloc_asprintf(newr, "%d", new_id);
+	if (!newr->cookie) {
+		talloc_free(newr);
 		return NULL;
 	}
 
-	new->timestamp = time(NULL);
+	newr->timestamp = time(NULL);
 
-	new->num_sent = 0; /* To be removed */
-	new->result = NULL; /* To be removed */
+	newr->num_sent = 0; /* To be removed */
+	newr->result = NULL; /* To be removed */
 
-	new->first = NULL;
-	new->num_entries = 0;
-	new->first_ref = NULL;
-	new->controls = NULL;
+	newr->first = NULL;
+	newr->num_entries = 0;
+	newr->first_ref = NULL;
+	newr->controls = NULL;
 
 	/* put this entry as first */
-	new->prev = NULL;
-	new->next = priv->store;
-	if (priv->store != NULL) priv->store->prev = new;
-	priv->store = new;
+	newr->prev = NULL;
+	newr->next = priv->store;
+	if (priv->store != NULL) priv->store->prev = newr;
+	priv->store = newr;
 
-	talloc_set_destructor(new, store_destructor);
+	talloc_set_destructor(newr, store_destructor);
 
-	return new;
+	return newr;
 }
 
 struct paged_context {
