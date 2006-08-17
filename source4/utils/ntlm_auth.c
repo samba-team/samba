@@ -34,6 +34,7 @@
 #include "lib/events/events.h"
 #include "lib/messaging/messaging.h"
 #include "lib/messaging/irpc.h"
+#include "auth/ntlmssp/ntlmssp.h"
 
 #define SQUID_BUFFER_SIZE 2010
 
@@ -319,6 +320,22 @@ static const char *get_password(struct cli_credentials *credentials)
 	return password;
 }
 
+static void gensec_want_feature_list(struct gensec_security *state, char* feature_list)
+{
+	if (in_list("NTLMSSP_FEATURE_SESSION_KEY", feature_list, True)) {
+		DEBUG(10, ("want GENSEC_FEATURE_SESSION_KEY\n"));
+		gensec_want_feature(state, GENSEC_FEATURE_SESSION_KEY);
+	}
+	if (in_list("NTLMSSP_FEATURE_SIGN", feature_list, True)) {
+		DEBUG(10, ("want GENSEC_FEATURE_SIGN\n"));
+		gensec_want_feature(state, GENSEC_FEATURE_SIGN);
+	}
+	if (in_list("NTLMSSP_FEATURE_SEAL", feature_list, True)) {
+		DEBUG(10, ("want GENSEC_FEATURE_SEAL\n"));
+		gensec_want_feature(state, GENSEC_FEATURE_SEAL);
+	}
+}
+
 static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode, 
 				  char *buf, int length, void **private,
 				  unsigned int mux_id, void **private2) 
@@ -339,6 +356,9 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	BOOL first = False;
 	const char *reply_code;
 	struct cli_credentials *creds;
+
+	static char *want_feature_list = NULL;
+	static DATA_BLOB session_key;
 
 	TALLOC_CTX *mem_ctx;
 
@@ -363,6 +383,13 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	}
 
 	if (strlen(buf) > 3) {
+		if(strncmp(buf, "SF ", 3) == 0) {
+			DEBUG(10, ("Setting flags to negotiate\n"));
+			talloc_free(want_feature_list);
+			want_feature_list = talloc_strndup(state, buf+3, strlen(buf)-3);
+			mux_printf(mux_id, "OK\n");
+			return;
+		}
 		in = base64_decode_data_blob(NULL, buf + 3);
 	} else {
 		in = data_blob(NULL, 0);
@@ -382,7 +409,9 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		    (strncmp(buf, "AF ", 3) != 0) &&
 		    (strncmp(buf, "NA ", 3) != 0) && 
 		    (strncmp(buf, "UG", 2) != 0) && 
-		    (strncmp(buf, "PW ", 3) != 0)) {
+		    (strncmp(buf, "PW ", 3) != 0) &&
+		    (strncmp(buf, "GK", 2) != 0) &&
+		    (strncmp(buf, "GF", 2) != 0)) {
 		DEBUG(1, ("SPNEGO request [%s] invalid\n", buf));
 		mux_printf(mux_id, "BH\n");
 		data_blob_free(&in);
@@ -448,6 +477,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		}
 
 		gensec_set_credentials(state->gensec_state, creds);
+		gensec_want_feature_list(state->gensec_state, want_feature_list);
 
 		switch (stdio_helper_mode) {
 		case GSS_SPNEGO_CLIENT:
@@ -522,6 +552,37 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		talloc_free(session_info);
 		data_blob_free(&in);
 		talloc_free(mem_ctx);
+		return;
+	}
+
+	if (strncmp(buf, "GK", 2) == 0) {
+		char *base64_key;
+		DEBUG(10, ("Requested session key\n"));
+		nt_status = gensec_session_key(state->gensec_state, &session_key);
+		if(!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(1, ("gensec_session_key failed: %s\n", nt_errstr(nt_status)));
+			mux_printf(mux_id, "BH No session key\n");
+			talloc_free(mem_ctx);
+			return;
+		} else {
+			base64_key = base64_encode_data_blob(state, session_key);
+			mux_printf(mux_id, "GK %s\n", base64_key);
+			talloc_free(base64_key);
+		}
+		talloc_free(mem_ctx);
+		return;
+	}
+
+	if (strncmp(buf, "GF", 2) == 0) {
+		struct gensec_ntlmssp_state *gensec_ntlmssp_state;
+		uint32_t neg_flags;
+
+		gensec_ntlmssp_state = talloc_get_type(state->gensec_state->private_data, 
+				struct gensec_ntlmssp_state);
+		neg_flags = gensec_ntlmssp_state->neg_flags;
+
+		DEBUG(10, ("Requested negotiated feature flags\n"));
+		mux_printf(mux_id, "GF 0x%08x\n", neg_flags);
 		return;
 	}
 
