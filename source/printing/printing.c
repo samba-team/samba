@@ -271,7 +271,7 @@ static TDB_DATA print_key(uint32 jobid)
 	TDB_DATA ret;
 
 	SIVAL(&j, 0, jobid);
-	ret.dptr = (void *)&j;
+	ret.dptr = (char *)&j;
 	ret.dsize = sizeof(j);
 	return ret;
 }
@@ -917,7 +917,7 @@ static void set_updating_pid(const fstring sharename, BOOL updating)
 	}
 	
 	SIVAL( buffer, 0, updating_pid);
-	data.dptr = (void *)buffer;
+	data.dptr = (char *)buffer;
 	data.dsize = 4;		/* we always assume this is a 4 byte value */
 
 	tdb_store(pdb->tdb, key, data, TDB_REPLACE);	
@@ -984,7 +984,7 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 				queue[i].fs_file);
 	}
 
-	if ((data.dptr = SMB_MALLOC(data.dsize)) == NULL)
+	if ((data.dptr = (char *)SMB_MALLOC(data.dsize)) == NULL)
 		return;
 
         len = 0;
@@ -1235,7 +1235,7 @@ static void print_queue_update_internal( const char *sharename,
 	key.dsize = strlen(keystr);
 
 	status.qcount = qcount;
-	data.dptr = (void *)&status;
+	data.dptr = (char *)&status;
 	data.dsize = sizeof(status);
 	tdb_store(pdb->tdb, key, data, TDB_REPLACE);	
 
@@ -1357,7 +1357,7 @@ static void print_queue_receive(int msg_type, struct process_id src,
 	int printing_type;
 	size_t len;
 
-	len = tdb_unpack( buf, msglen, "fdPP",
+	len = tdb_unpack( (char *)buf, msglen, "fdPP",
 		sharename,
 		&printing_type,
 		lpqcommand,
@@ -1605,7 +1605,7 @@ BOOL print_notify_register_pid(int snum)
 
 	if (i == data.dsize) {
 		/* We weren't in the list. Realloc. */
-		data.dptr = SMB_REALLOC(data.dptr, data.dsize + 8);
+		data.dptr = (char *)SMB_REALLOC(data.dptr, data.dsize + 8);
 		if (!data.dptr) {
 			DEBUG(0,("print_notify_register_pid: Relloc fail for printer %s\n",
 						printername));
