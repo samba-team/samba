@@ -1035,7 +1035,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	char    *buf = NULL;
 	ssize_t byte_count;
 
-	if ((buf=SMB_MALLOC(PE_HEADER_SIZE)) == NULL) {
+	if ((buf=(char *)SMB_MALLOC(PE_HEADER_SIZE)) == NULL) {
 		DEBUG(0,("get_file_version: PE file [%s] PE Header malloc failed bytes = %d\n",
 				fname, PE_HEADER_SIZE));
 		goto error_exit;
@@ -1091,7 +1091,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 			goto error_exit;
 
 		SAFE_FREE(buf);
-		if ((buf=SMB_MALLOC(section_table_bytes)) == NULL) {
+		if ((buf=(char *)SMB_MALLOC(section_table_bytes)) == NULL) {
 			DEBUG(0,("get_file_version: PE file [%s] section table malloc failed bytes = %d\n",
 					fname, section_table_bytes));
 			goto error_exit;
@@ -1115,7 +1115,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 					goto error_exit;
 
 				SAFE_FREE(buf);
-				if ((buf=SMB_MALLOC(section_bytes)) == NULL) {
+				if ((buf=(char *)SMB_MALLOC(section_bytes)) == NULL) {
 					DEBUG(0,("get_file_version: PE file [%s] version malloc failed bytes = %d\n",
 							fname, section_bytes));
 					goto error_exit;
@@ -1175,7 +1175,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 
 		/* Allocate a bit more space to speed up things */
 		SAFE_FREE(buf);
-		if ((buf=SMB_MALLOC(VS_NE_BUF_SIZE)) == NULL) {
+		if ((buf=(char *)SMB_MALLOC(VS_NE_BUF_SIZE)) == NULL) {
 			DEBUG(0,("get_file_version: NE file [%s] malloc failed bytes  = %d\n",
 					fname, PE_HEADER_SIZE));
 			goto error_exit;
@@ -2083,7 +2083,7 @@ static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 	memset(info.dependentfiles, '\0', 2*sizeof(fstring));
 	fstrcpy(info.dependentfiles[0], "");
 
-	*info_ptr = memdup(&info, sizeof(info));
+	*info_ptr = (NT_PRINTER_DRIVER_INFO_LEVEL_3 *)memdup(&info, sizeof(info));
 	if (!*info_ptr) {
 		SAFE_FREE(info.dependentfiles);
 		return WERR_NOMEM;
@@ -2555,7 +2555,7 @@ NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode)
 
 	new_nt_devicemode->nt_dev_private = NULL;
 	if (nt_devicemode->nt_dev_private != NULL) {
-		if ((new_nt_devicemode->nt_dev_private = memdup(nt_devicemode->nt_dev_private, nt_devicemode->driverextra)) == NULL) {
+		if ((new_nt_devicemode->nt_dev_private = (uint8 *)memdup(nt_devicemode->nt_dev_private, nt_devicemode->driverextra)) == NULL) {
 			SAFE_FREE(new_nt_devicemode);
 			DEBUG(0,("dup_nt_devicemode: malloc fail.\n"));
 			return NULL;
@@ -3039,7 +3039,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	/* We use ldap_get_dn here as we need the answer
 	 * in utf8 to call ldap_explode_dn(). JRA. */
 
-	srv_dn_utf8 = ldap_get_dn(ads->ld, res);
+	srv_dn_utf8 = ldap_get_dn((LDAP *)ads->ld, (LDAPMessage *)res);
 	if (!srv_dn_utf8) {
 		ads_destroy(&ads);
 		return WERR_SERVER_UNAVAILABLE;
