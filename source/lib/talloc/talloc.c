@@ -36,6 +36,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
 
 #if defined(HAVE_STDARG_H)
 #include <stdarg.h>
