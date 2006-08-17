@@ -64,6 +64,52 @@ struct smbpasswd_privates
 
 enum pwf_access_type { PWF_READ, PWF_UPDATE, PWF_CREATE };
 
+static SIG_ATOMIC_T gotalarm;
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+
+static void gotalarm_sig(void)
+{
+	gotalarm = 1;
+}
+
+/***************************************************************
+ Lock or unlock a fd for a known lock type. Abandon after waitsecs 
+ seconds.
+****************************************************************/
+
+static BOOL do_file_lock(int fd, int waitsecs, int type)
+{
+	SMB_STRUCT_FLOCK lock;
+	int             ret;
+	void (*oldsig_handler)(int);
+
+	gotalarm = 0;
+	oldsig_handler = CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+
+	lock.l_type = type;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 1;
+	lock.l_pid = 0;
+
+	alarm(waitsecs);
+	/* Note we must *NOT* use sys_fcntl here ! JRA */
+	ret = fcntl(fd, SMB_F_SETLKW, &lock);
+	alarm(0);
+	CatchSignal(SIGALRM, SIGNAL_CAST oldsig_handler);
+
+	if (gotalarm) {
+		DEBUG(0, ("do_file_lock: failed to %s file.\n",
+			type == F_UNLCK ? "unlock" : "lock"));
+		return False;
+	}
+
+	return (ret == 0);
+}
+
 /***************************************************************
  Lock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
