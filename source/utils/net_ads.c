@@ -216,9 +216,8 @@ static void use_in_memory_ccache(void) {
 	setenv(KRB5_ENV_CCNAME, "MEMORY:net_ads", 1);
 }
 
-static ADS_STRUCT *ads_startup(BOOL only_own_domain)
+static ADS_STATUS ads_startup(BOOL only_own_domain, ADS_STRUCT **ads)
 {
-	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	BOOL need_password = False;
 	BOOL second_time = False;
@@ -234,7 +233,7 @@ static ADS_STRUCT *ads_startup(BOOL only_own_domain)
 		realm = lp_realm();
 	}
    
-	ads = ads_init(realm, opt_target_workgroup, opt_host);
+	*ads = ads_init(realm, opt_target_workgroup, opt_host);
 
 	if (!opt_user_name) {
 		opt_user_name = "administrator";
@@ -254,23 +253,23 @@ retry:
 
 	if (opt_password) {
 		use_in_memory_ccache();
-		ads->auth.password = smb_xstrdup(opt_password);
+		(*ads)->auth.password = smb_xstrdup(opt_password);
 	}
 
-	ads->auth.user_name = smb_xstrdup(opt_user_name);
+	(*ads)->auth.user_name = smb_xstrdup(opt_user_name);
 
        /*
         * If the username is of the form "name@realm", 
         * extract the realm and convert to upper case.
         * This is only used to establish the connection.
         */
-       if ((cp = strchr_m(ads->auth.user_name, '@'))!=0) {
+       if ((cp = strchr_m((*ads)->auth.user_name, '@'))!=0) {
                *cp++ = '\0';
-               ads->auth.realm = smb_xstrdup(cp);
-               strupper_m(ads->auth.realm);
+               (*ads)->auth.realm = smb_xstrdup(cp);
+               strupper_m((*ads)->auth.realm);
        }
 
-	status = ads_connect(ads);
+	status = ads_connect(*ads);
 
 	if (!ADS_ERR_OK(status)) {
 		if (!need_password && !second_time) {
@@ -278,12 +277,10 @@ retry:
 			second_time = True;
 			goto retry;
 		} else {
-			d_printf("%s.\n", ads_errstr(status));
-			ads_destroy(&ads);
-			return NULL;
+			ads_destroy(ads);
 		}
 	}
-	return ads;
+	return status;
 }
 
 
@@ -404,7 +401,7 @@ static int ads_user_add(int argc, const char **argv)
 
 	if (argc < 1) return net_ads_user_usage(argc, argv);
 	
-	if (!(ads = ads_startup(False))) {
+	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		return -1;
 	}
 
@@ -489,7 +486,7 @@ static int ads_user_info(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!(ads = ads_startup(False))) {
+	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		SAFE_FREE(escaped_user);
 		return -1;
 	}
@@ -536,7 +533,7 @@ static int ads_user_delete(int argc, const char **argv)
 		return net_ads_user_usage(argc, argv);
 	}
 	
-	if (!(ads = ads_startup(False))) {
+	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		return -1;
 	}
 
@@ -576,7 +573,7 @@ int net_ads_user(int argc, const char **argv)
 	char *disp_fields[2] = {NULL, NULL};
 	
 	if (argc == 0) {
-		if (!(ads = ads_startup(False))) {
+		if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 			return -1;
 		}
 
@@ -613,7 +610,7 @@ static int ads_group_add(int argc, const char **argv)
 		return net_ads_group_usage(argc, argv);
 	}
 	
-	if (!(ads = ads_startup(False))) {
+	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		return -1;
 	}
 
@@ -662,7 +659,7 @@ static int ads_group_delete(int argc, const char **argv)
 		return net_ads_group_usage(argc, argv);
 	}
 	
-	if (!(ads = ads_startup(False))) {
+	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		return -1;
 	}
 
@@ -701,7 +698,7 @@ int net_ads_group(int argc, const char **argv)
 	char *disp_fields[2] = {NULL, NULL};
 
 	if (argc == 0) {
-		if (!(ads = ads_startup(False))) {
+		if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 			return -1;
 		}
 
@@ -727,7 +724,7 @@ static int net_ads_status(int argc, const char **argv)
 	ADS_STATUS rc;
 	void *res;
 
-	if (!(ads = ads_startup(True))) {
+	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
 	}
 
@@ -776,7 +773,7 @@ static int net_ads_leave(int argc, const char **argv)
 	/* The finds a DC and takes care of getting the 
 	   user creds if necessary */
 
-	if (!(ads = ads_startup(True))) {
+	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
 	}
 
@@ -826,7 +823,7 @@ static int net_ads_join_ok(void)
 
 	net_use_machine_password();
 
-	if (!(ads = ads_startup(True))) {
+	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
 	}
 
@@ -1170,7 +1167,7 @@ int net_ads_join(int argc, const char **argv)
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	char *machine_account = NULL;
 	const char *short_domain_name = NULL;
 	char *tmp_password, *password;
@@ -1187,7 +1184,10 @@ int net_ads_join(int argc, const char **argv)
 		goto fail;
 	}
 
-	if ( (ads = ads_startup(True)) == NULL ) {
+	status = ads_startup(True, &ads);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
+		nt_status = ads_ntstatus(status);
 		goto fail;
 	}
 
@@ -1218,6 +1218,7 @@ int net_ads_join(int argc, const char **argv)
 		}
 		else {
 			d_fprintf(stderr, "Bad option: %s\n", argv[i]);
+			nt_status = NT_STATUS_INVALID_PARAMETER;
 			goto fail;
 		}
 	}
@@ -1230,6 +1231,9 @@ int net_ads_join(int argc, const char **argv)
 		if ( !ADS_ERR_OK(status) ) {
 			d_fprintf( stderr, "Failed to pre-create the machine object "
 				"in OU %s.\n", argv[0]);
+			DEBUG(1, ("error calling net_precreate_machine_acct: %s\n", 
+				  ads_errstr(status)));
+			nt_status = ads_ntstatus(status);
 			goto fail;
 		}
 	}
@@ -1242,7 +1246,8 @@ int net_ads_join(int argc, const char **argv)
 	nt_status = net_join_domain(ctx, ads->config.ldap_server_name, 
 				    &ads->ldap_ip, &domain_sid, password);
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
-		d_fprintf(stderr, "call of net_join_domain failed: %s\n", nt_errstr(nt_status));
+		DEBUG(1, ("call of net_join_domain failed: %s\n", 
+			  get_friendly_nt_error_msg(nt_status)));
 		goto fail;
 	}
 	
@@ -1305,6 +1310,7 @@ int net_ads_join(int argc, const char **argv)
 		netdom_store_machine_account( lp_workgroup(), domain_sid, "" ); 
 		netdom_store_machine_account( short_domain_name, domain_sid, "" );
 		
+		nt_status = ads_ntstatus(status);
 		goto fail;
 	}
 
@@ -1344,7 +1350,8 @@ int net_ads_join(int argc, const char **argv)
 
 fail:
 	/* issue an overall failure message at the end. */
-	d_printf("Failed to join domain!\n");
+	d_printf("Failed to join domain: %s\n", 
+	         get_friendly_nt_error_msg(nt_status));
 	ads_destroy(&ads);
 	return -1;
 }
@@ -1378,7 +1385,7 @@ static int net_ads_printer_search(int argc, const char **argv)
 	ADS_STATUS rc;
 	void *res = NULL;
 
-	if (!(ads = ads_startup(False))) {
+	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		return -1;
 	}
 
@@ -1411,7 +1418,7 @@ static int net_ads_printer_info(int argc, const char **argv)
 	const char *servername, *printername;
 	void *res = NULL;
 
-	if (!(ads = ads_startup(False))) {
+	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		return -1;
 	}
 
@@ -1470,7 +1477,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	char *prt_dn, *srv_dn, **srv_cn;
 	void *res = NULL;
 
-	if (!(ads = ads_startup(True))) {
+	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
 	}
 
@@ -1553,7 +1560,7 @@ static int net_ads_printer_remove(int argc, const char **argv)
 	char *prt_dn;
 	void *res = NULL;
 
-	if (!(ads = ads_startup(True))) {
+	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
 	}
 
@@ -1700,7 +1707,7 @@ int net_ads_changetrustpw(int argc, const char **argv)
 
 	use_in_memory_ccache();
 
-	if (!(ads = ads_startup(True))) {
+	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
 	}
 
@@ -1765,7 +1772,7 @@ static int net_ads_search(int argc, const char **argv)
 		return net_ads_search_usage(argc, argv);
 	}
 
-	if (!(ads = ads_startup(False))) {
+	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		return -1;
 	}
 
@@ -1825,7 +1832,7 @@ static int net_ads_dn(int argc, const char **argv)
 		return net_ads_dn_usage(argc, argv);
 	}
 
-	if (!(ads = ads_startup(False))) {
+	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		return -1;
 	}
 
@@ -1885,7 +1892,7 @@ static int net_ads_sid(int argc, const char **argv)
 		return net_ads_sid_usage(argc, argv);
 	}
 
-	if (!(ads = ads_startup(False))) {
+	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		return -1;
 	}
 
@@ -1942,7 +1949,7 @@ static int net_ads_keytab_flush(int argc, const char **argv)
 	int ret;
 	ADS_STRUCT *ads;
 
-	if (!(ads = ads_startup(True))) {
+	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
 	}
 	ret = ads_keytab_flush(ads);
@@ -1957,7 +1964,7 @@ static int net_ads_keytab_add(int argc, const char **argv)
 	ADS_STRUCT *ads;
 
 	d_printf("Processing principals to add...\n");
-	if (!(ads = ads_startup(True))) {
+	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
 	}
 	for (i = 0; i < argc; i++) {
@@ -1972,7 +1979,7 @@ static int net_ads_keytab_create(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	int ret;
 
-	if (!(ads = ads_startup(True))) {
+	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
 	}
 	ret = ads_keytab_create_default(ads);
