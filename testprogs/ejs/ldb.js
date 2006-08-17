@@ -18,7 +18,7 @@ if (options == undefined) {
 libinclude("base.js");
 
 if (options.ARGV.length != 1) {
-   println("Usage: ldap.js <HOST>");
+   println("Usage: ldb.js <prefix>");
    return -1;
 }
 
@@ -88,10 +88,10 @@ dn: cn=ROOTDSE
 defaultNamingContext: cn=Test
 
 dn: @PARTITION
-partition: cn=SideTest:" + prefix +  "testside.ldb
-partition: cn=Sub,cn=PartTest:" + prefix +  "testsub.ldb
-partition: cn=PartTest:" + prefix +  "testpartition.ldb
-partition: cn=Sub,cn=Sub,cn=PartTest:" + prefix +  "testsubsub.ldb
+partition: cn=SideTest:" + prefix + "/" + "testside.ldb
+partition: cn=Sub,cn=PartTest:" + prefix + "/" + "testsub.ldb
+partition: cn=PartTest:" + prefix + "/" + "testpartition.ldb
+partition: cn=Sub,cn=Sub,cn=PartTest:" + prefix + "/" + "testsubsub.ldb
 replicateEntries: @SUBCLASSES
 replicateEntries: @ATTRIBUTES
 replicateEntries: @INDEXLIST
@@ -349,31 +349,31 @@ caseattr2: Xz
 sys = sys_init();
 var dbfile = "test.ldb";
 
-sys.unlink(prefix + dbfile);
-sys.unlink(prefix + "testpartition.ldb");
-sys.unlink(prefix + "testsub.ldb");
-sys.unlink(prefix + "testsubsub.ldb");
-sys.unlink(prefix + "testside.ldb");
+sys.unlink(prefix + "/" + dbfile);
+sys.unlink(prefix + "/" + "testpartition.ldb");
+sys.unlink(prefix + "/" + "testsub.ldb");
+sys.unlink(prefix + "/" + "testsubsub.ldb");
+sys.unlink(prefix + "/" + "testside.ldb");
 
-var ok = ldb.connect("tdb://" + prefix + dbfile);
+var ok = ldb.connect("tdb://" + prefix + "/" + dbfile);
 assert(ok);
 
 basic_tests(ldb);
 
 setup_modules(ldb);
 ldb = ldb_init();
-var ok = ldb.connect("tdb://" + prefix + dbfile);
+var ok = ldb.connect("tdb://" + prefix + "/" + dbfile);
 assert(ok);
 
 parttestldb = ldb_init();
-var ok = parttestldb.connect("tdb://" + prefix + "testpartition.ldb");
+var ok = parttestldb.connect("tdb://" + prefix + "/" + "testpartition.ldb");
 assert(ok);
 
 modules_test(ldb, parttestldb);
 
-sys.unlink(prefix + dbfile);
-sys.unlink(prefix + "testpartition.ldb");
-sys.unlink(prefix + "testsub.ldb");
-sys.unlink(prefix + "testsubsub.ldb");
-sys.unlink(prefix + "testside.ldb");
+sys.unlink(prefix + "/" + dbfile);
+sys.unlink(prefix + "/" + "testpartition.ldb");
+sys.unlink(prefix + "/" + "testsub.ldb");
+sys.unlink(prefix + "/" + "testsubsub.ldb");
+sys.unlink(prefix + "/" + "testside.ldb");
 return 0;

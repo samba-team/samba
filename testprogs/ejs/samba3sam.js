@@ -27,7 +27,7 @@ prefix = options.ARGV[0];
 datadir = options.ARGV[1];
 
 function setup_modules(sys, ldb, from, to) {
-	var ldif = sys.file_load(datadir + "provision_samba3sam.ldif");
+	var ldif = sys.file_load(datadir + "/" + "provision_samba3sam.ldif");
 	ldif = substitute_var(ldif, from);
 	assert(ldif != undefined);
 	var ok = ldb.add(ldif);
@@ -52,7 +52,7 @@ replicateEntries: @INDEXLIST
 }
 
 function setup_data(sys, ldb, remote) {
-	var ldif = sys.file_load(datadir + "samba3.ldif");
+	var ldif = sys.file_load(datadir + "/" + "samba3.ldif");
 	ldif = substitute_var(ldif, remote);
 	assert(ldif != undefined);
 	var ok = ldb.add(ldif);
@@ -216,16 +216,16 @@ delete: description
 }
 
 sys = sys_init();
-var ldbfile = prefix + "test.ldb";
+var ldbfile = prefix + "/" + "test.ldb";
 var ldburl = "tdb://" + ldbfile;
 
 var samba4 = new Object("samba4 partition info");
-var samba4.FILE = prefix + "samba4.ldb";
+var samba4.FILE = prefix + "/" + "samba4.ldb";
 var samba4.URL = "tdb://" + samba4.FILE;
 var samba4.BASEDN = "dc=vernstok,dc=nl";
 
 var samba3 = new Object("samba3 partition info");
-var samba3.FILE = prefix + "samba3.ldb";
+var samba3.FILE = prefix + "/" + "samba3.ldb";
 var samba3.URL = "tdb://" + samba3.FILE;
 var samba3.BASEDN = "cn=Samba3Sam," + samba4.BASEDN;
 
