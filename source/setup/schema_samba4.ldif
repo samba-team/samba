@@ -106,20 +106,6 @@ adminDisplayName: Privilege
 attributeID: 1.3.6.1.4.1.7165.4.1.7
 attributeSyntax: 2.5.5.4
 
-dn: CN=middleName,CN=Schema,CN=Configuration,${BASEDN}
-cn: middleName
-name: middleName
-objectClass: top
-objectClass: attributeSchema
-lDAPDisplayName: middleName
-sSingleValued: TRUE
-systemFlags: 16
-systemOnly: FALSE
-schemaIDGUID: bf9679f2-0de6-11d0-a285-00aa003049e2
-adminDisplayName: Other-Name
-attributeID: 1.3.6.1.4.1.7165.4.1.8
-attributeSyntax: 2.5.5.12
-
 dn: CN=unixName,CN=Schema,CN=Configuration,${BASEDN}
 cn: unixName
 name: unixName
