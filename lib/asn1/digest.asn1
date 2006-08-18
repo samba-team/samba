@@ -29,10 +29,11 @@ DigestRequest ::= SEQUENCE  {
     serverNonce		UTF8String, -- same as "DigestInitReply.nonce"
     clientNonce		[4] UTF8String OPTIONAL,
     nonceCount		[5] UTF8String OPTIONAL,
-    qop			[2] UTF8String OPTIONAL,
+    qop			[6] UTF8String OPTIONAL,
+    identifier		[7] UTF8String OPTIONAL,
     opaque		UTF8String -- same as "DigestInitReply.opaque"
 }
--- opaque = hex(cksum(type|serverNonce|hostname,digest-key))
+-- opaque = hex(cksum(type|serverNonce|identifier|hostname,digest-key))
 -- serverNonce = hex(time[4bytes]random[12bytes])(-cbType:cbBinding)
 
 
