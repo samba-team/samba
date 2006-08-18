@@ -15,7 +15,6 @@ Compilation
 -----------
 
 add HAVE_MMAP=1 to use mmap instead of read/write
-add TDB_DEBUG=1 for verbose debug info
 add NOLOCK=1 to disable locking code
 
 Testing
@@ -41,6 +40,7 @@ The interface is very similar to gdbm except for the following:
 - no tdbm_reorganise() function
 - no tdbm_sync() function. No operations are cached in the library anyway
 - added a tdb_traverse() function for traversing the whole database
+- added transactions support
 
 A general rule for using tdb is that the caller frees any returned
 TDB_DATA structures. Just call free(p.dptr) to free a TDB_DATA
@@ -68,6 +68,19 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
                    memory. The filename is ignored in this case.
     TDB_NOLOCK - don't do any locking
     TDB_NOMMAP - don't use mmap
+    TDB_NOSYNC - don't synchronise transactions to disk
+
+----------------------------------------------------------------------
+TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
+		         int open_flags, mode_t mode,
+			 tdb_log_func log_fn,
+			 tdb_hash_func hash_fn)
+
+This is like tdb_open(), but allows you to pass an initial logging and
+hash function. Be careful when passing a hash function - all users of
+the database must use the same hash function or you will get data
+corruption.
+
 
 ----------------------------------------------------------------------
 char *tdb_error(TDB_CONTEXT *tdb);
@@ -114,7 +127,25 @@ int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb,
 
    if fn is NULL then it is not called
 
-   a non-zero return value from fn() indicates that the traversal should stop
+   a non-zero return value from fn() indicates that the traversal
+   should stop. Traversal callbacks may not start transactions.
+
+----------------------------------------------------------------------
+int tdb_traverse_read(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb,
+                     TDB_DATA key, TDB_DATA dbuf, void *state), void *state);
+
+   traverse the entire database - calling fn(tdb, key, data, state) on
+   each element, but marking the database read only during the
+   traversal, so any write operations will fail. This allows tdb to
+   use read locks, which increases the parallelism possible during the
+   traversal.
+
+   return -1 on error or the record count traversed
+
+   if fn is NULL then it is not called
+
+   a non-zero return value from fn() indicates that the traversal
+   should stop. Traversal callbacks may not start transactions.
 
 ----------------------------------------------------------------------
 TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
@@ -165,3 +196,40 @@ int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 
    unlock one hash chain
+
+----------------------------------------------------------------------
+int tdb_transaction_start(TDB_CONTEXT *tdb)
+
+   start a transaction. All operations after the transaction start can
+   either be committed with tdb_transaction_commit() or cancelled with
+   tdb_transaction_cancel(). 
+
+   If you call tdb_transaction_start() again on the same tdb context
+   while a transaction is in progress, then the same transaction
+   buffer is re-used. The number of tdb_transaction_{commit,cancel}
+   operations must match the number of successful
+   tdb_transaction_start() calls.
+
+   Note that transactions are by default disk synchronous, and use a
+   recover area in the database to automatically recover the database
+   on the next open if the system crashes during a transaction. You
+   can disable the synchronous transaction recovery setup using the
+   TDB_NOSYNC flag, which will greatly speed up operations at the risk
+   of corrupting your database if the system crashes.
+
+   Operations made within a transaction are not visible to other users
+   of the database until a successful commit.
+
+----------------------------------------------------------------------
+int tdb_transaction_cancel(TDB_CONTEXT *tdb)
+
+   cancel a current transaction, discarding all write and lock
+   operations that have been made since the transaction started.
+
+
+----------------------------------------------------------------------
+int tdb_transaction_commit(TDB_CONTEXT *tdb)
+
+   commit a current transaction, updating the database and releasing
+   the transaction locks.
+
