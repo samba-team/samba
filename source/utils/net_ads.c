@@ -812,23 +812,25 @@ done:
 	return ret;
 }
 
-static int net_ads_join_ok(void)
+static NTSTATUS net_ads_join_ok(void)
 {
 	ADS_STRUCT *ads = NULL;
+	ADS_STATUS status;
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
-		return -1;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	net_use_machine_password();
 
-	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
-		return -1;
+	status = ads_startup(True, &ads);
+	if (!ADS_ERR_OK(status)) {
+		return ads_ntstatus(status);
 	}
 
 	ads_destroy(&ads);
-	return 0;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -836,11 +838,14 @@ static int net_ads_join_ok(void)
  */
 int net_ads_testjoin(int argc, const char **argv)
 {
+	NTSTATUS status;
 	use_in_memory_ccache();
 
 	/* Display success or failure */
-	if (net_ads_join_ok() != 0) {
-		fprintf(stderr,"Join to domain is not valid\n");
+	status = net_ads_join_ok();
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,"Join to domain is not valid: %s\n", 
+			get_friendly_nt_error_msg(status));
 		return -1;
 	}
 
