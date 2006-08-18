@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd May  4, 2006
+.Dd Aug 18, 2006
 .Dt KRB5_STORAGE 3
 .Os HEIMDAL
 .Sh NAME
@@ -67,6 +67,8 @@
 .Nm krb5_ret_data ,
 .Nm krb5_store_string ,
 .Nm krb5_ret_string ,
+.Nm krb5_store_stringnl ,
+.Nm krb5_ret_stringnl ,
 .Nm krb5_store_stringz ,
 .Nm krb5_ret_stringz ,
 .Nm krb5_store_principal ,
@@ -153,6 +155,10 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn krb5_store_string "krb5_storage *sp" "const char *s"
 .Ft krb5_error_code
 .Fn krb5_ret_string "krb5_storage *sp" "char **string"
+.Ft krb5_error_code
+.Fn krb5_store_stringnl "krb5_storage *sp" "const char *s"
+.Ft krb5_error_code
+.Fn krb5_ret_stringnl "krb5_storage *sp" "char **string"
 .Ft krb5_error_code
 .Fn krb5_store_stringz "krb5_storage *sp" "const char *s"
 .Ft krb5_error_code
@@ -362,6 +368,12 @@ and
 store and reads a string by storing the length of the string with
 .Fn krb5_store_int32
 followed by the string itself.
+.Pp
+.Fn krb5_store_stringnl
+and 
+.Fn krb5_ret_stringnl
+store and reads a string by storing string followed by a
+.Dv '\n' .
 .Pp
 .Fn krb5_store_stringz
 and 
