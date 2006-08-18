@@ -852,32 +852,33 @@ int net_ads_testjoin(int argc, const char **argv)
   Simple configu checks before beginning the join
  ********************************************************************/
 
-static int check_ads_config( void )
+static NTSTATUS check_ads_config( void )
 {
 	if (lp_server_role() != ROLE_DOMAIN_MEMBER ) {
 		d_printf("Host is not configured as a member server.\n");
-		return -1;
+		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	}
 
 	if (strlen(global_myname()) > 15) {
 		d_printf("Our netbios name can be at most 15 chars long, "
-			 "\"%s\" is %u chars long\n",
-			 global_myname(), (unsigned int)strlen(global_myname()));
-		return -1;
+			 "\"%s\" is %u chars long\n", global_myname(),
+			 (unsigned int)strlen(global_myname()));
+		return NT_STATUS_NAME_TOO_LONG;
 	}
 
 	if ( lp_security() == SEC_ADS && !*lp_realm()) {
 		d_fprintf(stderr, "realm must be set in in smb.conf for ADS "
 			"join to succeed.\n");
-		return -1;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
-		return -1;
+		/* This is a good bet for failure of secrets_init ... */
+		return NT_STATUS_ACCESS_DENIED;
 	}
 	
-	return 0;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1167,7 +1168,7 @@ int net_ads_join(int argc, const char **argv)
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS nt_status;
 	const char *short_domain_name = NULL;
 	char *tmp_password, *password;
 	struct cldap_netlogon_reply cldap_reply;
@@ -1178,7 +1179,8 @@ int net_ads_join(int argc, const char **argv)
 	const char *create_in_ou = NULL;
 	int i;
 	
-	if ( check_ads_config() != 0 ) {
+	nt_status = check_ads_config();
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, "Invalid configuration.  Exiting....\n");
 		goto fail;
 	}
@@ -1194,11 +1196,13 @@ int net_ads_join(int argc, const char **argv)
 		d_fprintf(stderr, "realm of remote server (%s) and realm in smb.conf "
 			"(%s) DO NOT match.  Aborting join\n", ads->config.realm, 
 			lp_realm());
+		nt_status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
 
 	if (!(ctx = talloc_init("net_ads_join"))) {
 		d_fprintf(stderr, "Could not initialise talloc context.\n");
+		nt_status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
@@ -1212,6 +1216,7 @@ int net_ads_join(int argc, const char **argv)
 		else if ( !StrnCaseCmp(argv[i], "createcomputer", strlen("createcomputer")) ) {
 			if ( (create_in_ou = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, "Please supply a valid OU path\n");
+				nt_status = NT_STATUS_INVALID_PARAMETER;
 				goto fail;
 			}		
 		}
@@ -1278,6 +1283,9 @@ int net_ads_join(int argc, const char **argv)
 	if ( (netdom_store_machine_account( lp_workgroup(), domain_sid, password ) == -1)
 		|| (netdom_store_machine_account( short_domain_name, domain_sid, password ) == -1) )
 	{
+		/* issue an internal error here for now.
+		 * everything else would mean changing tdb routines. */
+		nt_status = NT_STATUS_INTERNAL_ERROR;
 		goto fail;
 	}
 
