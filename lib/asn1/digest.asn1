@@ -32,7 +32,7 @@ DigestRequest ::= SEQUENCE  {
     qop			[2] UTF8String OPTIONAL,
     opaque		UTF8String -- same as "DigestInitReply.opaque"
 }
--- opaque = hex(cksum(type|serverNonce|hostname,sessionkey))
+-- opaque = hex(cksum(type|serverNonce|hostname,digest-key))
 -- serverNonce = hex(time[4bytes]random[12bytes])(-cbType:cbBinding)
 
 
