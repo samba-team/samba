@@ -1,5 +1,25 @@
+2006-08-18  Love Hörnquist Åstrand  <lha@it.kth.se>
+
+	* kdc/{Makefile.am,kdigest.c,kdigest-commands.in}:
+	Frontend for remote digest service in KDC
+
+	* lib/krb5/krb5_storage.3: Document krb5_{ret,store}_stringnl
+	functions.
+
+	* lib/krb5/store.c: Add krb5_{ret,store}_stringnl functions,
+	stores/retrieves a \n terminated string.
+
+	* lib/krb5/krb5_locl.h: Default to address-less tickets.
+
+	* lib/krb5/init_creds.c (krb5_get_init_creds_opt_get_error): clear
+	error string on error.
+	
 2006-07-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/crypto.c: remove aes-192 (CMS)
+
+	* lib/krb5/crypto.c: Remove more CMS bits.
+	
 	* lib/krb5/crypto.c: Remove CMS symmetric encryption support.
 	
 2006-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
