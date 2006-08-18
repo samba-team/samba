@@ -69,30 +69,29 @@ ADS_STATUS ads_build_nt_error(enum ads_error_type etype,
 */
 NTSTATUS ads_ntstatus(ADS_STATUS status)
 {
-	if (status.error_type == ENUM_ADS_ERROR_NT){
+	switch (status.error_type) {
+	case ENUM_ADS_ERROR_NT:
 		return status.err.nt_status;	
-	}
-	if (status.error_type == ENUM_ADS_ERROR_SYSTEM) {
+	case ENUM_ADS_ERROR_SYSTEM:
 		return map_nt_error_from_unix(status.err.rc);
-	}
 #ifdef HAVE_LDAP
-	if ((status.error_type == ENUM_ADS_ERROR_LDAP) 
-	    && (status.err.rc == LDAP_NO_MEMORY)) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	case ENUM_ADS_ERROR_LDAP:
+		if (status.err.rc == LDAP_NO_MEMORY) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		break;
 #endif
 #ifdef HAVE_KRB5
-	if (status.error_type == ENUM_ADS_ERROR_KRB5) { 
-		if (status.err.rc == KRB5KDC_ERR_PREAUTH_FAILED) {
-			return NT_STATUS_LOGON_FAILURE;
-		} else if (status.err.rc == KRB5_KDC_UNREACH) {
-			return NT_STATUS_NO_LOGON_SERVERS;
-		} else if (status.err.rc == KRB5KRB_AP_ERR_SKEW) {
-			return NT_STATUS_TIME_DIFFERENCE_AT_DC;
-		}
-	}
+	case ENUM_ADS_ERROR_KRB5:
+		return krb5_to_ntstatus(status.err.rc);
 #endif
-	if (ADS_ERR_OK(status)) return NT_STATUS_OK;
+	default:
+		break;
+	}
+
+	if (ADS_ERR_OK(status)) {
+		return NT_STATUS_OK;
+	}
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
