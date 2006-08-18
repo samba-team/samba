@@ -203,7 +203,7 @@ struct _krb5_get_init_creds_opt_private {
 #endif
 
 #ifndef KRB5_ADDRESSLESS_DEFAULT
-#define KRB5_ADDRESSLESS_DEFAULT FALSE
+#define KRB5_ADDRESSLESS_DEFAULT TRUE
 #endif
 
 #endif /* __KRB5_LOCL_H__ */
