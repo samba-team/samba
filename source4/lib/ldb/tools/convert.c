@@ -48,7 +48,7 @@ static const struct syntax_map syntax_map[] = {
 		.comment =   "Case Insensitive String" 
 	},
 	{
-		.Standard_OID =  "1.3.6.1.4.1.1466.115.121.1.44",
+		.Standard_OID =  "1.3.6.1.4.1.1466.115.121.1.26",
 		.AD_OID =   "2.5.5.5",
 		.equality = "caseExactIA5Match",
 		.comment = "Printable String"

@@ -105,6 +105,11 @@ static const char *oc_attrs[] = {
 	"governsID",
 	"description",		
 	"subClassOf",
+	"objectClassCategory",
+	"mustContain",
+	"systemMustContain",
+	"mayContain",
+	"systemMayContain",
 	NULL
 };
 
@@ -229,6 +234,14 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 	return schemadn;
 }
 
+#define IF_NULL_FAIL_RET(x) do {     \
+		if (!x) {		\
+			ret.failures++; \
+			return ret;	\
+		}			\
+	} while (0) 
+
+
 static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_target target, FILE *in, FILE *out) 
 {
 	/* Read list of attributes to skip, OIDs to map */
@@ -242,6 +255,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 	} *oid_map = NULL;
 	int num_maps = 0;
 	struct ldb_result *attrs_res, *objectclasses_res;
+	struct ldb_message *msg;
 	struct ldb_dn *schemadn;
 	struct schema_conv ret;
 
@@ -252,24 +266,36 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 	ret.failures = 0;
 
 	while ((line = afdgets(fileno(in), mem_ctx, 0))) {
-		if (!*line) {
-			break;
+		/* Blank Line */
+		if (line[0] == '\0') {
+			continue;
 		}
-		if (isdigit(*line)) {
+		/* Comment */
+		if (line[0] == '#') {
+			continue;
+		}
+		if (isdigit(line[0])) {
 			char *p = strchr(line, ':');
+			IF_NULL_FAIL_RET(p);
 			if (!p) {
 				ret.failures = 1;
 				return ret;
 			}
+			p[0] = '\0';
 			p++;
 			oid_map = talloc_realloc(mem_ctx, oid_map, struct oid_map, num_maps + 2);
+			trim_string(line, " ", " ");
 			oid_map[num_maps].old_oid = talloc_steal(oid_map, line);
+			trim_string(p, " ", " ");
 			oid_map[num_maps].new_oid = p;
 			num_maps++;
 			oid_map[num_maps].old_oid = NULL;
 		} else {
 			attrs_skip = talloc_realloc(mem_ctx, attrs_skip, const char *, num_skip + 2);
+			trim_string(line, " ", " ");
 			attrs_skip[num_skip] = talloc_steal(attrs_skip, line);
+			num_skip++;
+			attrs_skip[num_skip] = NULL;
 		}
 	}
 
@@ -288,17 +314,19 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 	}
 	
 	for (i=0; i < attrs_res->count; i++) {
-		const char *name = ldb_msg_find_attr_as_string(attrs_res->msgs[i], "lDAPDisplayName", NULL);
-		const char *description = ldb_msg_find_attr_as_string(attrs_res->msgs[i], "description", NULL);
-		const char *oid = ldb_msg_find_attr_as_string(attrs_res->msgs[i], "attributeID", NULL);
-		const char *syntax = ldb_msg_find_attr_as_string(attrs_res->msgs[i], "attributeSyntax", NULL);
-		BOOL single_value = ldb_msg_find_attr_as_bool(attrs_res->msgs[i], "isSingleValued", False);
+		msg = attrs_res->msgs[i];
+
+		const char *name = ldb_msg_find_attr_as_string(msg, "lDAPDisplayName", NULL);
+		const char *description = ldb_msg_find_attr_as_string(msg, "description", NULL);
+		const char *oid = ldb_msg_find_attr_as_string(msg, "attributeID", NULL);
+		const char *syntax = ldb_msg_find_attr_as_string(msg, "attributeSyntax", NULL);
+		BOOL single_value = ldb_msg_find_attr_as_bool(msg, "isSingleValued", False);
 		const struct syntax_map *map = find_syntax_map_by_ad_oid(syntax);
 		char *schema_entry = NULL;
 		int j;
 
 		/* We have been asked to skip some attributes/objectClasses */
-		if (in_list(attrs_skip, name, False)) {
+		if (str_list_check_ci(attrs_skip, name)) {
 			ret.skipped++;
 			continue;
 		}
@@ -323,61 +351,49 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 						       "  %s\n", oid);
 			break;
 		}
-		if (!schema_entry) {
-			ret.failures++;
-			break;
-		}
+		IF_NULL_FAIL_RET(schema_entry);
 
 		schema_entry = talloc_asprintf_append(schema_entry, 
 						      "  NAME '%s'\n", name);
-		if (!schema_entry) {
-			ret.failures++;
-			return ret;
-		}
-
-		if (!schema_entry) return ret;
+		IF_NULL_FAIL_RET(schema_entry);
 
 		if (description) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
 							      "  DESC %s\n", description);
-			if (!schema_entry) {
-				ret.failures++;
-				return ret;
-			}
+			IF_NULL_FAIL_RET(schema_entry);
 		}
 
 		if (map) {
+			const char *syntax_oid;
 			if (map->equality) {
 				schema_entry = talloc_asprintf_append(schema_entry, 
 								      "  EQUALITY %s\n", map->equality);
-				if (!schema_entry) {
-					ret.failures++;
-					return ret;
-				}
+				IF_NULL_FAIL_RET(schema_entry);
 			}
 			if (map->substring) {
 				schema_entry = talloc_asprintf_append(schema_entry, 
-								      "  SUBSTRING %s\n", map->substring);
-				if (!schema_entry) {
-					ret.failures++;
-					return ret;
+								      "  SUBSTR %s\n", map->substring);
+				IF_NULL_FAIL_RET(schema_entry);
+			}
+			syntax_oid = map->Standard_OID;
+			/* We might have been asked to remap this oid,
+			 * due to a conflict, or lack of
+			 * implementation */
+			for (j=0; syntax_oid && oid_map[j].old_oid; j++) {
+				if (strcmp(syntax_oid, oid_map[j].old_oid) == 0) {
+					syntax_oid =  oid_map[j].new_oid;
+					break;
 				}
 			}
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  SYNTAX %s\n", map->Standard_OID);
-			if (!schema_entry) {
-				ret.failures++;
-				return ret;
-			}
+							      "  SYNTAX %s\n", syntax_oid);
+			IF_NULL_FAIL_RET(schema_entry);
 		}
 
 		if (single_value) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
 							      "  SINGLE-VALUE\n");
-			if (!schema_entry) {
-				ret.failures++;
-				return ret;
-			}
+			IF_NULL_FAIL_RET(schema_entry);
 		}
 		
 		schema_entry = talloc_asprintf_append(schema_entry, 
@@ -394,15 +410,21 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 	}
 	
 	for (i=0; i < objectclasses_res->count; i++) {
-		const char *name = ldb_msg_find_attr_as_string(objectclasses_res->msgs[i], "lDAPDisplayName", NULL);
-		const char *description = ldb_msg_find_attr_as_string(objectclasses_res->msgs[i], "description", NULL);
-		const char *oid = ldb_msg_find_attr_as_string(objectclasses_res->msgs[i], "governsID", NULL);
-		const char *subClassOf = ldb_msg_find_attr_as_string(objectclasses_res->msgs[i], "subClassOf", NULL);
+		msg = objectclasses_res->msgs[i];
+		const char *name = ldb_msg_find_attr_as_string(msg, "lDAPDisplayName", NULL);
+		const char *description = ldb_msg_find_attr_as_string(msg, "description", NULL);
+		const char *oid = ldb_msg_find_attr_as_string(msg, "governsID", NULL);
+		const char *subClassOf = ldb_msg_find_attr_as_string(msg, "subClassOf", NULL);
+		int objectClassCategory = ldb_msg_find_attr_as_int(msg, "objectClassCategory", 0);
+		struct ldb_message_element *must = ldb_msg_find_element(msg, "mustContain");
+		struct ldb_message_element *sys_must = ldb_msg_find_element(msg, "systemMustContain");
+		struct ldb_message_element *may = ldb_msg_find_element(msg, "mayContain");
+		struct ldb_message_element *sys_may = ldb_msg_find_element(msg, "systemMayContain");
 		char *schema_entry = NULL;
 		int j;
 
 		/* We have been asked to skip some attributes/objectClasses */
-		if (in_list(attrs_skip, name, False)) {
+		if (str_list_check_ci(attrs_skip, name)) {
 			ret.skipped++;
 			continue;
 		}
@@ -418,7 +440,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		switch (target) {
 		case TARGET_OPENLDAP:
 			schema_entry = talloc_asprintf(mem_ctx, 
-						       "objectClass (\n"
+						       "objectclass (\n"
 						       "  %s\n", oid);
 			break;
 		case TARGET_FEDORA_DS:
@@ -427,6 +449,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 						       "  %s\n", oid);
 			break;
 		}
+		IF_NULL_FAIL_RET(schema_entry);
 		if (!schema_entry) {
 			ret.failures++;
 			break;
@@ -434,29 +457,93 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 
 		schema_entry = talloc_asprintf_append(schema_entry, 
 						      "  NAME '%s'\n", name);
-		if (!schema_entry) {
-			ret.failures++;
-			return ret;
-		}
+		IF_NULL_FAIL_RET(schema_entry);
 
 		if (!schema_entry) return ret;
 
 		if (description) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
 							      "  DESC %s\n", description);
-			if (!schema_entry) {
-				ret.failures++;
-				return ret;
-			}
+			IF_NULL_FAIL_RET(schema_entry);
 		}
 
 		if (subClassOf) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
 							      "  SUP %s\n", subClassOf);
-			if (!schema_entry) {
-				ret.failures++;
-				return ret;
+			IF_NULL_FAIL_RET(schema_entry);
+		}
+		
+		switch (objectClassCategory) {
+		case 1:
+			schema_entry = talloc_asprintf_append(schema_entry, 
+							      "  STRUCTURAL\n");
+			IF_NULL_FAIL_RET(schema_entry);
+			break;
+		case 2:
+			schema_entry = talloc_asprintf_append(schema_entry, 
+							      "  ABSTRACT\n");
+			IF_NULL_FAIL_RET(schema_entry);
+			break;
+		case 3:
+			schema_entry = talloc_asprintf_append(schema_entry, 
+							      "  AUXILIARY\n");
+			IF_NULL_FAIL_RET(schema_entry);
+			break;
+		}
+
+#define APPEND_ATTRS(attributes) \
+		do {						\
+			int k;						\
+			for (k=0; attributes && k < attributes->num_values; k++) { \
+				schema_entry = talloc_asprintf_append(schema_entry, \
+								      " %s", \
+								      (const char *)attributes->values[k].data); \
+				IF_NULL_FAIL_RET(schema_entry);		\
+				if (k != (attributes->num_values - 1)) { \
+					schema_entry = talloc_asprintf_append(schema_entry, \
+									      " $"); \
+					IF_NULL_FAIL_RET(schema_entry);	\
+					if ((k+1)%5 == 0) {		\
+						schema_entry = talloc_asprintf_append(schema_entry, \
+										      "\n  "); \
+						IF_NULL_FAIL_RET(schema_entry);	\
+					}				\
+				}					\
+			}						\
+		} while (0)
+
+		if (must || sys_must) {
+			schema_entry = talloc_asprintf_append(schema_entry, 
+							      "  MUST (");
+			IF_NULL_FAIL_RET(schema_entry);
+
+			APPEND_ATTRS(must);
+			if (must && sys_must) {
+				schema_entry = talloc_asprintf_append(schema_entry, \
+								      " $"); \
 			}
+			APPEND_ATTRS(sys_must);
+			
+			schema_entry = talloc_asprintf_append(schema_entry, 
+							      ")\n");
+			IF_NULL_FAIL_RET(schema_entry);
+		}
+
+		if (may || sys_may) {
+			schema_entry = talloc_asprintf_append(schema_entry, 
+							      "  MAY (");
+			IF_NULL_FAIL_RET(schema_entry);
+
+			APPEND_ATTRS(may);
+			if (may && sys_may) {
+				schema_entry = talloc_asprintf_append(schema_entry, \
+								      " $"); \
+			}
+			APPEND_ATTRS(sys_may);
+			
+			schema_entry = talloc_asprintf_append(schema_entry, 
+							      " )\n");
+			IF_NULL_FAIL_RET(schema_entry);
 		}
 
 		schema_entry = talloc_asprintf_append(schema_entry, 

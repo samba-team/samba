@@ -10,6 +10,8 @@ dn: @INDEXLIST
 @IDXATTR: unixName
 @IDXATTR: privilege
 @IDXATTR: nCName
+@IDXATTR: lDAPDisplayName
+@IDXATTR: subClassOf
 
 dn: @ATTRIBUTES
 userPrincipalName: CASE_INSENSITIVE
