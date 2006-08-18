@@ -255,7 +255,6 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 	} *oid_map = NULL;
 	int num_maps = 0;
 	struct ldb_result *attrs_res, *objectclasses_res;
-	struct ldb_message *msg;
 	struct ldb_dn *schemadn;
 	struct schema_conv ret;
 
@@ -314,7 +313,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 	}
 	
 	for (i=0; i < attrs_res->count; i++) {
-		msg = attrs_res->msgs[i];
+		struct ldb_message *msg = attrs_res->msgs[i];
 
 		const char *name = ldb_msg_find_attr_as_string(msg, "lDAPDisplayName", NULL);
 		const char *description = ldb_msg_find_attr_as_string(msg, "description", NULL);
@@ -410,7 +409,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 	}
 	
 	for (i=0; i < objectclasses_res->count; i++) {
-		msg = objectclasses_res->msgs[i];
+		struct ldb_message *msg = objectclasses_res->msgs[i];
 		const char *name = ldb_msg_find_attr_as_string(msg, "lDAPDisplayName", NULL);
 		const char *description = ldb_msg_find_attr_as_string(msg, "description", NULL);
 		const char *oid = ldb_msg_find_attr_as_string(msg, "governsID", NULL);
