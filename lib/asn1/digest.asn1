@@ -3,31 +3,38 @@
 DIGEST DEFINITIONS ::=
 BEGIN
 
+IMPORTS EncryptedData FROM krb5;
+
 DigestInit ::= SEQUENCE {
+    type		UTF8String, -- http, sasl, chap., cram-md5 --
     cb-type		[0] UTF8String OPTIONAL,
-    cb-binding		[1] UTF8String OPTIONAL
+    cb-binding		[1] UTF8String OPTIONAL,
+    hostname		[2] UTF8String OPTIONAL -- for chap/cram-md5
 }
 
 DigestInitReply ::= SEQUENCE {
-    nonce		UTF8String,
-    opaque		UTF8String
+    nonce		UTF8String,	-- service nonce/challange
+    opaque		UTF8String	-- server state
 }
 
 
 DigestRequest ::= SEQUENCE  {
-    type		UTF8String, -- http-digest, sasl, chap --
+    type		UTF8String, -- http, sasl, chap, cram-md5 --
     digest		UTF8String, -- md5/md5-sess --
-    username		UTF8String,
-    authentication-user	[0] UTF8String OPTIONAL,
+    username		UTF8String, -- username user used
+    authentication-user	[0] UTF8String OPTIONAL, -- principal to get key from
     realm		[1] UTF8String OPTIONAL,
     method		[2] UTF8String OPTIONAL,
     uri			[3] UTF8String OPTIONAL,
-    serverNonce		UTF8String,
+    serverNonce		UTF8String, -- same as "DigestInitReply.nonce"
     clientNonce		[4] UTF8String OPTIONAL,
     nonceCount		[5] UTF8String OPTIONAL,
     qop			[2] UTF8String OPTIONAL,
-    opaque		UTF8String
+    opaque		UTF8String -- same as "DigestInitReply.opaque"
 }
+-- opaque = hex(cksum(type|serverNonce|hostname,sessionkey))
+-- serverNonce = hex(time[4bytes]random[12bytes])(-cbType:cbBinding)
+
 
 DigestError ::= SEQUENCE {
     reason		UTF8String
@@ -44,15 +51,27 @@ DigestResponse ::= SEQUENCE  {
     hash-a1		[3] OCTET STRING OPTIONAL
 }
 
-DigestReq ::= CHOICE {
+DigestReqInner ::= CHOICE {
     init		[0] DigestInit,
-    request		[1] DigestRequest
+    digestRequest	[1] DigestRequest
+}
+
+DigestREQ ::= [APPLICATION 128] SEQUENCE {
+    apReq		[0] OCTET STRING,
+    innerReq		[1] EncryptedData
 }
 
 DigestReply ::= CHOICE {
     error		[0] DigestError,
-    response		[1] DigestResponse
+    initReply		[1] DigestInitReply,
+    response		[2] DigestResponse
 }
+
+DigestREP ::= [APPLICATION 129] SEQUENCE {
+    apRep		[0] OCTET STRING,
+    innerRep		[1] EncryptedData
+}
+
 
 -- HTTP
 
