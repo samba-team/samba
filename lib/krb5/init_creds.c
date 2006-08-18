@@ -388,6 +388,8 @@ krb5_get_init_creds_opt_get_error(krb5_context context,
     }
 
     ret = copy_KRB_ERROR(*error, opt->opt_private->error);
+    if (ret)
+	krb5_clear_error_string(context);
 
     return 0;
 }
