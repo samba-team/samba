@@ -301,7 +301,8 @@ void winbindd_show_sequence(struct winbindd_cli_state *state)
 
 static void sequence_recv(void *private_data, BOOL success)
 {
-	struct sequence_state *state = private_data;
+	struct sequence_state *state =
+		(struct sequence_state *)private_data;
 	uint32 seq = DOM_SEQUENCE_NONE;
 
 	if ((success) && (state->response->result == WINBINDD_OK))
@@ -422,7 +423,8 @@ void winbindd_domain_info(struct winbindd_cli_state *state)
 
 static void domain_info_init_recv(void *private_data, BOOL success)
 {
-	struct domain_info_state *istate = private_data;
+	struct domain_info_state *istate =
+		(struct domain_info_state *)private_data;
 	struct winbindd_cli_state *state = istate->cli_state;
 	struct winbindd_domain *domain = istate->domain;
 

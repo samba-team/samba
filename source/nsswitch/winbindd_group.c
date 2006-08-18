@@ -168,7 +168,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	/* Allocate buffer */
 
 	if (!buf && buf_len != 0) {
-		if (!(buf = SMB_MALLOC(buf_len))) {
+		if (!(buf = (char *)SMB_MALLOC(buf_len))) {
 			DEBUG(1, ("out of memory\n"));
 			result = False;
 			goto done;
@@ -730,7 +730,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
                                 break;
 		}
 		
-		name_list = ent->sam_entries;
+		name_list = (struct acct_info *)ent->sam_entries;
 		
 		if (!(domain = 
 		      find_domain_from_name(ent->domain_name))) {
@@ -813,7 +813,8 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 
 		if (result) {
 			/* Append to group membership list */
-			gr_mem_list = SMB_REALLOC( gr_mem_list, gr_mem_list_len + gr_mem_len);
+			gr_mem_list = (char *)SMB_REALLOC(
+				gr_mem_list, gr_mem_list_len + gr_mem_len);
 
 			if (!gr_mem_list && (group_list[group_list_ndx].num_gr_mem != 0)) {
 				DEBUG(0, ("out of memory\n"));
@@ -941,7 +942,8 @@ void winbindd_list_groups(struct winbindd_cli_state *state)
 		
 		/* Allocate some memory for extra data.  Note that we limit
 		   account names to sizeof(fstring) = 128 characters.  */		
-		extra_data = SMB_REALLOC(extra_data, sizeof(fstring) * total_entries);
+		extra_data = (char *)SMB_REALLOC(
+			extra_data, sizeof(fstring) * total_entries);
  
 		if (!extra_data) {
 			DEBUG(0,("failed to enlarge buffer!\n"));
@@ -1072,7 +1074,8 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 static void getgroups_usersid_recv(void *private_data, BOOL success,
 				   const DOM_SID *sid, enum SID_NAME_USE type)
 {
-	struct getgroups_state *s = private_data;
+	struct getgroups_state *s =
+		(struct getgroups_state *)private_data;
 
 	if ((!success) ||
 	    ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER))) {
@@ -1089,7 +1092,8 @@ static void getgroups_usersid_recv(void *private_data, BOOL success,
 static void getgroups_tokensids_recv(void *private_data, BOOL success,
 				     DOM_SID *token_sids, size_t num_token_sids)
 {
-	struct getgroups_state *s = private_data;
+	struct getgroups_state *s =
+		(struct getgroups_state *)private_data;
 
 	/* We need at least the user sid and the primary group in the token,
 	 * otherwise it's an error */
@@ -1111,7 +1115,8 @@ static void getgroups_tokensids_recv(void *private_data, BOOL success,
 
 static void getgroups_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 {
-	struct getgroups_state *s = private_data;
+	struct getgroups_state *s =
+		(struct getgroups_state *)private_data;
 
 	if (success)
 		add_gid_to_array_unique(NULL, gid,
@@ -1181,7 +1186,8 @@ void winbindd_getusersids(struct winbindd_cli_state *state)
 static void getusersids_recv(void *private_data, BOOL success, DOM_SID *sids,
 			     size_t num_sids)
 {
-	struct winbindd_cli_state *state = private_data;
+	struct winbindd_cli_state *state =
+		(struct winbindd_cli_state *)private_data;
 	char *ret = NULL;
 	unsigned ofs, ret_size = 0;
 	size_t i;
@@ -1198,7 +1204,7 @@ static void getusersids_recv(void *private_data, BOOL success, DOM_SID *sids,
 	}
 
 	/* build the reply */
-	ret = SMB_MALLOC(ret_size);
+	ret = (char *)SMB_MALLOC(ret_size);
 	if (!ret) {
 		DEBUG(0, ("malloc failed\n"));
 		request_error(state);

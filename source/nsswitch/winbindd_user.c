@@ -362,7 +362,8 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 static void getpwnam_name2sid_recv(void *private_data, BOOL success,
 				   const DOM_SID *sid, enum SID_NAME_USE type)
 {
-	struct winbindd_cli_state *state = private_data;
+	struct winbindd_cli_state *state =
+		(struct winbindd_cli_state *)private_data;
 
 	if (!success) {
 		DEBUG(5, ("Could not lookup name for user %s\n",
@@ -382,7 +383,8 @@ static void getpwnam_name2sid_recv(void *private_data, BOOL success,
 
 static void getpwuid_recv(void *private_data, BOOL success, const char *sid)
 {
-	struct winbindd_cli_state *state = private_data;
+	struct winbindd_cli_state *state =
+		(struct winbindd_cli_state *)private_data;
 	DOM_SID user_sid;
 
 	if (!success) {
@@ -692,7 +694,7 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 				break;
 		}
 
-		name_list = ent->sam_entries;
+		name_list = (struct getpwent_user *)ent->sam_entries;
 
 		/* Lookup user info */
 		
@@ -778,7 +780,8 @@ void winbindd_list_users(struct winbindd_cli_state *state)
 		/* Allocate some memory for extra data */
 		total_entries += num_entries;
 			
-		extra_data = SMB_REALLOC(extra_data, sizeof(fstring) * total_entries);
+		extra_data = (char *)SMB_REALLOC(
+			extra_data, sizeof(fstring) * total_entries);
 			
 		if (!extra_data) {
 			DEBUG(0,("failed to enlarge buffer!\n"));

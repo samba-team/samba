@@ -524,7 +524,8 @@ static void account_lockout_policy_handler(struct timed_event *te,
 					   const struct timeval *now,
 					   void *private_data)
 {
-	struct winbindd_child *child = private_data;
+	struct winbindd_child *child =
+		(struct winbindd_child *)private_data;
 
 	struct winbindd_methods *methods;
 	SAM_UNK_INFO_12 lockout_policy;
@@ -823,7 +824,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		 * structure needs to be fetched via the
 		 * winbindd_cache. Hmm. That needs fixing... */
 
-		if (write_data(state.sock, (void *)&state.response.result,
+		if (write_data(state.sock,
+			       (const char *)&state.response.result,
 			       sizeof(state.response.result)) !=
 		    sizeof(state.response.result)) {
 			DEBUG(0, ("Could not write result\n"));
