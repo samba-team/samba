@@ -328,7 +328,8 @@ void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 
 static void uid2sid_recv(void *private_data, BOOL success, const char *sid)
 {
-	struct winbindd_cli_state *state = private_data;
+	struct winbindd_cli_state *state =
+		(struct winbindd_cli_state *)private_data;
 	struct uid2sid_state *uid2sid_state;
 
 	if (success) {
@@ -472,7 +473,8 @@ void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 
 static void gid2sid_recv(void *private_data, BOOL success, const char *sid)
 {
-	struct winbindd_cli_state *state = private_data;
+	struct winbindd_cli_state *state =
+		(struct winbindd_cli_state *)private_data;
 	struct gid2sid_state *gid2sid_state;
 
 	if (success) {
@@ -562,7 +564,8 @@ static void gid2sid_lookupname_recv(void *private_data, BOOL success,
 
 static void gid2sid_idmap_set_mapping_recv(void *private_data, BOOL success)
 {
-	struct gid2sid_state *state = private_data;
+	struct gid2sid_state *state =
+		(struct gid2sid_state *)private_data;
 
 	/* don't fail if we can't store it */
 

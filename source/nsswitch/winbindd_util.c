@@ -236,7 +236,7 @@ static void trustdom_recv(void *private_data, BOOL success)
 		return;
 	}
 
-	p = response->extra_data.data;
+	p = (char *)response->extra_data.data;
 
 	while ((p != NULL) && (*p != '\0')) {
 		char *q, *sidstr, *alt_name;

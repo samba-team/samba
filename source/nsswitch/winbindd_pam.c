@@ -104,7 +104,7 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	memset( state->response.extra_data.data, '\0', size );
-	prs_copy_all_data_out(state->response.extra_data.data, &ps);
+	prs_copy_all_data_out((char *)state->response.extra_data.data, &ps);
 	state->response.length += size;
 	prs_mem_free(&ps);
 	return NT_STATUS_OK;
@@ -1370,9 +1370,10 @@ done:
 		state->response.extra_data.data =
 			afs_createtoken_str(afsname, cell);
 
-		if (state->response.extra_data.data != NULL)
+		if (state->response.extra_data.data != NULL) {
 			state->response.length +=
-				strlen(state->response.extra_data.data)+1;
+				strlen((const char *)state->response.extra_data.data)+1;
+		}
 
 	no_token:
 		TALLOC_FREE(afsname);
@@ -1622,7 +1623,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				result = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
-			state->response.length +=  strlen(state->response.extra_data.data)+1;
+			state->response.length +=
+				strlen((const char *)state->response.extra_data.data)+1;
 		}
 		
 		if (state->request.flags & WBFLAG_PAM_USER_SESSION_KEY) {

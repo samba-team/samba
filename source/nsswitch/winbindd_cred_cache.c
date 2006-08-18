@@ -249,7 +249,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 #ifdef HAVE_MLOCK
 		size_t len = strlen(pass)+1;
 		
-		new_entry->pass = TALLOC_ZERO(mem_ctx, len);
+		new_entry->pass = (char *)TALLOC_ZERO(mem_ctx, len);
 		NT_STATUS_HAVE_NO_MEMORY(new_entry->pass);
 		
 #ifdef DEBUG_PASSWORD

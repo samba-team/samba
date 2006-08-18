@@ -1532,7 +1532,8 @@ static void winbindd_uid2sid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 				  struct winbindd_response *response,
 				  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const char *sid) = c;
+	void (*cont)(void *priv, BOOL succ, const char *sid) =
+		(void (*)(void *, BOOL, const char *))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger uid2sid\n"));
@@ -1587,7 +1588,8 @@ static void winbindd_gid2sid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 				  struct winbindd_response *response,
 				  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const char *sid) = c;
+	void (*cont)(void *priv, BOOL succ, const char *sid) =
+		(void (*)(void *, BOOL, const char *))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger gid2sid\n"));
