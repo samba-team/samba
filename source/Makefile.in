@@ -116,7 +116,7 @@ LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBSMBSHAREMODES_MAJOR=0
 LIBSMBSHAREMODES_MINOR=2
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/tdb @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_ 
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/tdb/include @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_ 
 FLAGS2 =
 FLAGS3 = 
 FLAGS4 = 
@@ -176,10 +176,11 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) $(CHARSE
 # object file lists
 ######################################################################
 
-TDBBASE_OBJ = tdb/tdb.o tdb/dump.o tdb/error.o tdb/freelist.o tdb/io.o \
-	tdb/lock.o tdb/open.o tdb/transaction.o tdb/traverse.o
+TDBBASE_OBJ = tdb/common/tdb.o tdb/common/dump.o tdb/common/error.o \
+	tdb/common/freelist.o tdb/common/io.o tdb/common/lock.o \
+	tdb/common/open.o tdb/common/transaction.o tdb/common/traverse.o
 
-TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o tdb/tdbback.o
+TDB_OBJ = $(TDBBASE_OBJ) tdb/common/tdbutil.o tdb/common/tdbback.o
 
 SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
@@ -545,7 +546,7 @@ CAC_OBJ = $(LIBSMBCLIENT_OBJ) \
 			 libmsrpc/cac_lsarpc.o libmsrpc/cac_winreg.o libmsrpc/cac_samr.o \
 			 libmsrpc/cac_svcctl.o
 
-LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o tdb/tdb.o
+LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o $(TDB_BASE_OBJ)
 
 # This shared library is intended for linking with unit test programs
 # to test Samba internals.  It's called libbigballofmud.so to
@@ -751,11 +752,12 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
 INIPARSER_OBJ = iniparser/src/iniparser.o iniparser/src/dictionary.o \
 		iniparser/src/strlib.o
 
-TDBBACKUP_OBJ = tdb/tdbbackup.o tdb/tdbback.o $(SNPRINTF_OBJ) $(TDBBASE_OBJ)
+TDBBACKUP_OBJ = tdb/tools/tdbbackup.o tdb/common/tdbback.o $(SNPRINTF_OBJ) \
+	$(TDBBASE_OBJ)
 
-TDBTOOL_OBJ = tdb/tdbtool.o $(TDBBASE_OBJ) $(SNPRINTF_OBJ)
+TDBTOOL_OBJ = tdb/tools/tdbtool.o $(TDBBASE_OBJ) $(SNPRINTF_OBJ)
 
-TDBDUMP_OBJ = tdb/tdbdump.o $(TDBBASE_OBJ) $(SNPRINTF_OBJ)
+TDBDUMP_OBJ = tdb/tools/tdbdump.o $(TDBBASE_OBJ) $(SNPRINTF_OBJ)
 
 NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o 
 
@@ -1655,6 +1657,7 @@ TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
+		tdb/*/*.o tdb/*/*.@PICSUFFIX@ tdb/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBMSRPC) \

@@ -913,9 +913,9 @@ extern int errno;
 #include "xfile.h"
 #include "intl.h"
 #include "dlinklist.h"
-#include "tdb/tdb.h"
-#include "tdb/tdbutil.h"
-#include "tdb/tdbback.h"
+#include "tdb.h"
+#include "tdbutil.h"
+#include "tdbback.h"
 
 #include "talloc.h"
 /* And a little extension. Abort on type mismatch */
