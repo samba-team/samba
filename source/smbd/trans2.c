@@ -4584,8 +4584,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 									count,
 									offset,
 									lock_type,
-									blocking_lock,
 									POSIX_LOCK,
+									blocking_lock,
 									&status);
 
 				if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
