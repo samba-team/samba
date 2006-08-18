@@ -6,7 +6,10 @@ AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_des) -I$(srcdir)/../lib/krb5
 
 man_MANS = kinit.1 klist.1 kdestroy.1 kgetcred.1
 
+SLC = $(top_builddir)/lib/sl/slc
+
 bin_PROGRAMS = kinit klist kdestroy kgetcred
+libexec_PROGRAMS = kdigest
 
 noinst_PROGRAMS = kverify kdecode_ticket generate-requests copy_cred_cache
 noinst_MANS = copy_cred_cache.1
@@ -22,6 +25,24 @@ kinit_LDADD = \
 kdestroy_LDADD	= $(kinit_LDADD)
 
 klist_LDADD	= $(kinit_LDADD)
+
+kdigest_SOURCES =				\
+	kdigest.c				\
+	kdigest-commands.c
+
+kdigest_LDADD = \
+	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(LIB_des) \
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(top_builddir)/lib/sl/libsl.la \
+	$(LIB_roken)
+
+$(kdigest_OBJECTS): kdigest-commands.h
+
+CLEANFILES = kdigest-commands.h kdigest-commands.c
+
+kdigest-commands.c kdigest-commands.h: kdigest-commands.in
+	$(SLC) $(srcdir)/kdigest-commands.in
 
 LDADD = \
 	$(top_builddir)/lib/krb5/libkrb5.la \
