@@ -47,8 +47,8 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 				     uint32_t version,
 				     union nbt_cldap_netlogon *netlogon)
 {
-	const char *ref_attrs[] = {"nETBIOSName", "ncName", NULL};
-	const char *dom_attrs[] = {"dnsDomain", "objectGUID", NULL};
+	const char *ref_attrs[] = {"nETBIOSName", "dnsRoot", "ncName", NULL};
+	const char *dom_attrs[] = {"objectGUID", NULL};
 	struct ldb_message **ref_res, **dom_res;
 	int ret, count = 0;
 	const char **services = lp_server_services();
@@ -96,6 +96,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 				DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n", domain, ldb_dn_linearize(mem_ctx, dom_dn), ldb_errstring(cldapd->samctx)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
+			talloc_steal(mem_ctx, dom_ldb_result);
 			if (dom_ldb_result->count != 1) {
 				DEBUG(2,("Error finding domain '%s'/'%s' in sam\n", domain, ldb_dn_linearize(mem_ctx, dom_dn)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
@@ -143,8 +144,8 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	domain_uuid      = samdb_result_guid(dom_res[0], "objectGUID");
-	realm            = samdb_result_string(dom_res[0], "dnsDomain", lp_realm());
-	dns_domain       = samdb_result_string(dom_res[0], "dnsDomain", lp_realm());
+	realm            = samdb_result_string(ref_res[0], "dnsRoot", lp_realm());
+	dns_domain       = samdb_result_string(ref_res[0], "dnsRoot", lp_realm());
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   strlower_talloc(mem_ctx, lp_netbios_name()), 
 					   dns_domain);
