@@ -200,8 +200,8 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_LOGON_FAILURE;
 }
 
-static struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state, 
-						const char *domain_name)
+struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state, 
+					const char *domain_name)
 {
 	struct winbindd_domain *domain;
 
