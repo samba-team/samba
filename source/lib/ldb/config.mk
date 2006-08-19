@@ -29,6 +29,16 @@ OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE ldb_paged_results
+[MODULE::ldb_paged_searches]
+INIT_FUNCTION = ldb_paged_searches_init
+SUBSYSTEM = ldb
+OBJ_FILES = \
+		modules/paged_searches.o
+# End MODULE ldb_paged_results
+################################################
+
+################################################
 # Start MODULE ldb_operational
 [MODULE::ldb_operational]
 SUBSYSTEM = ldb
