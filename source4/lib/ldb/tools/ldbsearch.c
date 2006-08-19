@@ -136,7 +136,8 @@ static int display_message(struct ldb_context *ldb, struct ldb_message *msg, str
 	return 0;
 }
 
-static int display_referral(char *referral, struct search_context *sctx) {
+static int display_referral(char *referral, struct search_context *sctx)
+{
 
 	sctx->refs++;
 	printf("# Referral\nref: %s\n\n", referral);
