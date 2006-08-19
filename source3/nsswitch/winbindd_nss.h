@@ -35,7 +35,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 16
+#define WINBIND_INTERFACE_VERSION 17
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -152,6 +152,10 @@ enum winbindd_cmd {
 
 	WINBINDD_DUAL_USERINFO,
 	WINBINDD_DUAL_GETSIDALIASES,
+
+	/* Complete the challenge phase of the NTLM authentication
+	   protocol using cached password. */
+	WINBINDD_CCACHE_NTLMAUTH,
 
 	WINBINDD_NUM_CMDS
 };
@@ -292,8 +296,21 @@ struct winbindd_request {
 		} dual_idmapset;
 		BOOL list_all_domains;
 
+		struct {
+			uid_t uid;
+			fstring user;
+			/* the effective uid of the client, must be the uid for 'user'.
+			   This is checked by the main daemon, trusted by children. */
+			/* if the blobs are length zero, then this doesn't
+			   produce an actual challenge response. It merely
+			   succeeds if there are cached credentials available
+			   that could be used. */
+			uint32 initial_blob_len; /* blobs in extra_data */
+			uint32 challenge_blob_len;
+		} ccache_ntlm_auth;
+
 		/* padding -- needed to fix alignment between 32bit and 64bit libs.
-		   The size if the sizeof the union without the padding aligned on 
+		   The size is the sizeof the union without the padding aligned on 
 		   an 8 byte boundary.   --jerry */
 
 		char padding[1560];
@@ -426,6 +443,9 @@ struct winbindd_response {
 			fstring shell;
 			uint32 group_rid;
 		} user_info;
+		struct {
+			uint32 auth_blob_len; /* blob in extra_data */
+		} ccache_ntlm_auth;
 	} data;
 
 	/* Variable length return data */
