@@ -89,7 +89,8 @@ typedef struct ntlmssp_state
 	char *user;
 	char *domain;
 	char *workstation;
-	char *password;
+	unsigned char *nt_hash;
+	unsigned char *lm_hash;
 	char *server_domain;
 
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
