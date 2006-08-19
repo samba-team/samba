@@ -369,6 +369,7 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_ALLOCATE_GID,         winbindd_dual_allocate_gid,          "ALLOCATE_GID" },
 	{ WINBINDD_GETUSERDOMGROUPS,     winbindd_dual_getuserdomgroups,      "GETUSERDOMGROUPS" },
 	{ WINBINDD_DUAL_GETSIDALIASES,   winbindd_dual_getsidaliases,         "GETSIDALIASES" },
+	{ WINBINDD_CCACHE_NTLMAUTH,      winbindd_dual_ccache_ntlm_auth,      "CCACHE_NTLM_AUTH" },
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }

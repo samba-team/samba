@@ -253,6 +253,9 @@ static struct winbindd_dispatch_table {
 	  "WINBINDD_PRIV_PIPE_DIR" },
 	{ WINBINDD_GETDCNAME, winbindd_getdcname, "GETDCNAME" },
 
+	/* Credential cache access */
+	{ WINBINDD_CCACHE_NTLMAUTH, winbindd_ccache_ntlm_auth, "NTLMAUTH" },
+
 	/* WINS functions */
 
 	{ WINBINDD_WINS_BYNAME, winbindd_wins_byname, "WINS_BYNAME" },

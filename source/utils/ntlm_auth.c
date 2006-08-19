@@ -6,6 +6,7 @@
    Copyright (C) Tim Potter      2000-2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003-2004
    Copyright (C) Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it> 2000 
+   Copyright (C) Robert O'Callahan 2006 (added cached credential code).
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -92,6 +93,7 @@ static DATA_BLOB opt_lm_response;
 static DATA_BLOB opt_nt_response;
 static int request_lm_key;
 static int request_user_session_key;
+static int use_cached_creds;
 
 static const char *require_membership_of;
 static const char *require_membership_of_sid;
@@ -583,14 +585,17 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(NTLMSSP_STATE **client_ntlmssp_st
 		return status;
 	}
 
-	status = ntlmssp_set_password(*client_ntlmssp_state, opt_password);
+	if (opt_password) {
+		status = ntlmssp_set_password(*client_ntlmssp_state, opt_password);
 	
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not set password: %s\n",
-			  nt_errstr(status)));
-		ntlmssp_end(client_ntlmssp_state);
-		return status;
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Could not set password: %s\n",
+				  nt_errstr(status)));
+			ntlmssp_end(client_ntlmssp_state);
+			return status;
+		}
 	}
+
 	return NT_STATUS_OK;
 }
 
@@ -615,6 +620,63 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(NTLMSSP_STATE **ntlmssp_state)
 		(*ntlmssp_state)->get_global_myname = get_winbind_netbios_name;
 	}
 	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ Used by firefox to drive NTLM auth to IIS servers. Currently
+ requires krb5 enabled in winbindd as only then are the credentials
+ cached in memory. This needs fixing in winbindd. JRA.
+*******************************************************************/
+
+static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_msg,
+				DATA_BLOB *reply)
+{
+	struct winbindd_request wb_request;
+	struct winbindd_response wb_response;
+	NSS_STATUS result;
+
+	/* get winbindd to do the ntlmssp step on our behalf */
+	ZERO_STRUCT(wb_request);
+	ZERO_STRUCT(wb_response);
+
+	fstr_sprintf(wb_request.data.ccache_ntlm_auth.user,
+		"%s%c%s", opt_domain, winbind_separator(), opt_username);
+	wb_request.data.ccache_ntlm_auth.uid = geteuid();
+	wb_request.data.ccache_ntlm_auth.initial_blob_len = initial_msg.length;
+	wb_request.data.ccache_ntlm_auth.challenge_blob_len = challenge_msg.length;
+	wb_request.extra_len = initial_msg.length + challenge_msg.length;
+
+	if (wb_request.extra_len > 0) {
+		wb_request.extra_data.data = SMB_MALLOC_ARRAY(char, wb_request.extra_len);
+		if (wb_request.extra_data.data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		memcpy(wb_request.extra_data.data, initial_msg.data, initial_msg.length);
+		memcpy(wb_request.extra_data.data + initial_msg.length,
+			challenge_msg.data, challenge_msg.length);
+	}
+
+	result = winbindd_request_response(WINBINDD_CCACHE_NTLMAUTH, &wb_request, &wb_response);
+	SAFE_FREE(wb_request.extra_data.data);
+
+	if (result != NSS_STATUS_SUCCESS) {
+		free_response(&wb_response);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (reply) {
+		*reply = data_blob(wb_response.extra_data.data,
+				wb_response.data.ccache_ntlm_auth.auth_blob_len);
+		if (wb_response.data.ccache_ntlm_auth.auth_blob_len > 0 &&
+				reply->data == NULL) {
+			free_response(&wb_response);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	free_response(&wb_response);
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
 static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode, 
@@ -737,7 +799,12 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode, 
 					 char *buf, int length) 
 {
+	/* The statics here are *HORRIBLE* and this entire concept
+	   needs to be rewritten. Essentially it's using these statics
+	   as the state in a state machine. BLEEEGH ! JRA. */
+
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
+	static DATA_BLOB initial_message;
 	static char* want_feature_list = NULL;
 	static uint32 neg_flags = 0;
 	static BOOL have_session_key = False;
@@ -782,7 +849,18 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		return;
 	}
 
-	if (opt_password == NULL) {
+	if (!ntlmssp_state && use_cached_creds) {
+		/* check whether credentials are usable. */
+		DATA_BLOB empty_blob = data_blob(NULL, 0);
+
+		nt_status = do_ccache_ntlm_auth(empty_blob, empty_blob, NULL);
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			/* failed to use cached creds */
+			use_cached_creds = False;
+		}
+	}
+
+	if (opt_password == NULL && !use_cached_creds) {
 		
 		/* Request a password from the calling process.  After
 		   sending it, the calling process should retry asking for the negotiate. */
@@ -829,12 +907,17 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		}
 		ntlmssp_want_feature_list(ntlmssp_state, want_feature_list);
 		first = True;
+		initial_message = data_blob(NULL, 0);
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
 	dump_data(10, (const char *)request.data, request.length);
 
-	nt_status = ntlmssp_update(ntlmssp_state, request, &reply);
+	if (use_cached_creds && !opt_password && !first) {
+		nt_status = do_ccache_ntlm_auth(initial_message, request, &reply);
+	} else {
+		nt_status = ntlmssp_update(ntlmssp_state, request, &reply);
+	}
 	
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		char *reply_base64 = base64_encode_data_blob(reply);
@@ -844,7 +927,11 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 			x_fprintf(x_stdout, "KK %s\n", reply_base64);
 		}
 		SAFE_FREE(reply_base64);
-		data_blob_free(&reply);
+		if (first) {
+			initial_message = reply;
+		} else {
+			data_blob_free(&reply);
+		}
 		DEBUG(10, ("NTLMSSP challenge\n"));
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		char *reply_base64 = base64_encode_data_blob(reply);
@@ -2081,7 +2168,8 @@ enum {
 	OPT_LM_KEY,
 	OPT_USER_SESSION_KEY,
 	OPT_DIAGNOSTICS,
-	OPT_REQUIRE_MEMBERSHIP
+	OPT_REQUIRE_MEMBERSHIP,
+	OPT_USE_CACHED_CREDS
 };
 
  int main(int argc, const char **argv)
@@ -2116,6 +2204,7 @@ enum {
 		{ "password", 0, POPT_ARG_STRING, &opt_password, OPT_PASSWORD, "User's plaintext password"},		
 		{ "request-lm-key", 0, POPT_ARG_NONE, &request_lm_key, OPT_LM_KEY, "Retrieve LM session key"},
 		{ "request-nt-key", 0, POPT_ARG_NONE, &request_user_session_key, OPT_USER_SESSION_KEY, "Retrieve User (NT) session key"},
+		{ "use-cached-creds", 0, POPT_ARG_NONE, &use_cached_creds, OPT_USE_CACHED_CREDS, "Use cached credentials if no password is given"},
 		{ "diagnostics", 0, POPT_ARG_NONE, &diagnostics, OPT_DIAGNOSTICS, "Perform diagnostics on the authentictaion chain"},
 		{ "require-membership-of", 0, POPT_ARG_STRING, &require_membership_of, OPT_REQUIRE_MEMBERSHIP, "Require that a user be a member of this group (either name or SID) for authentication to succeed" },
 		POPT_COMMON_SAMBA
