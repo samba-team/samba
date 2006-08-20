@@ -736,8 +736,10 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	enum SID_NAME_USE type;
 	uchar new_nt_pass[NT_HASH_LEN];
 	const uint8 *cached_nt_pass;
+	const uint8 *cached_salt;
 	NET_USER_INFO_3 *my_info3;
 	time_t kickoff_time, must_change_time;
+	BOOL password_good = False;
 
 	*info3 = NULL;
 
@@ -768,7 +770,8 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 				    state->mem_ctx, 
 				    &sid, 
 				    &my_info3, 
-				    &cached_nt_pass);
+				    &cached_nt_pass,
+				    &cached_salt);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("winbindd_dual_pam_auth_cached: failed to get creds: %s\n", nt_errstr(result)));
 		return result;
@@ -781,9 +784,26 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 #if DEBUG_PASSWORD
 	dump_data(100, (const char *)new_nt_pass, NT_HASH_LEN);
 	dump_data(100, (const char *)cached_nt_pass, NT_HASH_LEN);
+	if (cached_salt) {
+		dump_data(100, (const char *)cached_salt, NT_HASH_LEN);
+	}
 #endif
 
-	if (!memcmp(cached_nt_pass, new_nt_pass, NT_HASH_LEN)) {
+	if (cached_salt) {
+		/* In this case we didn't store the nt_hash itself,
+		   but the MD5 combination of salt + nt_hash. */
+		uchar salted_hash[NT_HASH_LEN];
+		E_md5hash(cached_salt, new_nt_pass, salted_hash);
+
+		password_good = (memcmp(cached_nt_pass, salted_hash, NT_HASH_LEN) == 0) ?
+			True : False;
+	} else {
+		/* Old cached cred - direct store of nt_hash (bad bad bad !). */
+		password_good = (memcmp(cached_nt_pass, new_nt_pass, NT_HASH_LEN) == 0) ?
+			True : False;
+	}
+
+	if (password_good) {
 
 		/* User *DOES* know the password, update logon_time and reset
 		 * bad_pw_count */
