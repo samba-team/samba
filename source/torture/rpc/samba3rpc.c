@@ -2402,6 +2402,11 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 		int i;
 
 		for (i=0; i<8; i++) {
+			if ((i == 6) &&
+			    (lp_parm_bool(-1, "target", "samba3", False))) {
+				/* Samba3 does not yet do level 6 */
+				continue;
+			}
 			status = getprinterinfo(mem_ctx, p, &printer_handle,
 						i, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
