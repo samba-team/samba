@@ -47,7 +47,6 @@ struct cache_entry {
 };
 
 #define WINBINDD_MAX_CACHE_SIZE (50*1024*1024)
-#define WINBINDD_CACHE_VERSION "WB_CACHE_VERSION_1"
 
 static struct winbind_cache *wcache;
 
