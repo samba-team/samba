@@ -103,8 +103,8 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	struct nbt_netlogon_packet reply;
 	struct nbt_netlogon_response_from_pdc2 *pdc;
 	struct ldb_context *samctx;
-	const char *ref_attrs[] = {"nETBIOSName", "ncName", NULL};
-	const char *dom_attrs[] = {"dnsDomain", "objectGUID", NULL};
+	const char *ref_attrs[] = {"nETBIOSName", "dnsRoot", "ncName", NULL};
+	const char *dom_attrs[] = {"objectGUID", NULL};
 	struct ldb_message **ref_res, **dom_res;
 	int ret;
 	const char **services = lp_server_services();
@@ -178,14 +178,14 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	}
 
 	pdc->domain_uuid      = samdb_result_guid(dom_res[0], "objectGUID");
-	pdc->forest           = samdb_result_string(dom_res[0], "dnsDomain", lp_realm());
-	pdc->dns_domain       = samdb_result_string(dom_res[0], "dnsDomain", lp_realm());
+	pdc->forest           = samdb_result_string(ref_res[0], "dnsRoot", lp_realm());
+	pdc->dns_domain       = samdb_result_string(ref_res[0], "dnsRoot", lp_realm());
 
 	/* TODO: get our full DNS name from somewhere else */
 	pdc->pdc_dns_name     = talloc_asprintf(packet, "%s.%s", 
 						strlower_talloc(packet, lp_netbios_name()), 
 						pdc->dns_domain);
-	pdc->domain           = samdb_result_string(dom_res[0], "nETBIOSName", name->name);;
+	pdc->domain           = samdb_result_string(ref_res[0], "nETBIOSName", name->name);;
 	pdc->pdc_name         = lp_netbios_name();
 	pdc->user_name        = netlogon->req.pdc2.user_name;
 	/* TODO: we need to make sure these are in our DNS zone */
