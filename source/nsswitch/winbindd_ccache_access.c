@@ -40,9 +40,10 @@ static BOOL client_can_access_ccache_entry(uid_t client_uid,
 	return False;
 }
 
-static NTSTATUS do_ntlm_auth_with_password(const char *username,
+static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 					const char *domain,
-					const char *password,
+					const unsigned char lm_hash[LM_HASH_LEN],
+					const unsigned char nt_hash[NT_HASH_LEN],
 					const DATA_BLOB initial_msg,
 					const DATA_BLOB challenge_msg,
 					DATA_BLOB *auth_msg)
@@ -75,10 +76,10 @@ static NTSTATUS do_ntlm_auth_with_password(const char *username,
 		goto done;
 	}
 
-	status = ntlmssp_set_password(ntlmssp_state, password);
+	status = ntlmssp_set_hashes(ntlmssp_state, lm_hash, nt_hash);
         
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not set password: %s\n",
+		DEBUG(1, ("Could not set hashes: %s\n",
 			nt_errstr(status)));
 		goto done;
 	}
@@ -256,7 +257,8 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 	if (!initial.data || !challenge.data) {
 		result = NT_STATUS_NO_MEMORY;
 	} else {
-		result = do_ntlm_auth_with_password(name_user, name_domain, entry->pass,
+		result = do_ntlm_auth_with_hashes(name_user, name_domain,
+						entry->lm_hash, entry->nt_hash,
 						initial, challenge, &auth);
 	}
 
