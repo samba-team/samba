@@ -42,7 +42,7 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 
 	len = (numbits+1)*(strlen(field)+1) + strlen(r) + 1;
 
-	ret = SMB_MALLOC(len);
+	ret = (char *)SMB_MALLOC(len);
 	if (!ret)
 		return NULL;
 
