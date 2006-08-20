@@ -142,6 +142,15 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 		}
 	},
 	{
+		.local_name = "distinguishedName",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "entryDN"
+			 }
+		}
+	},
+	{
 		.local_name = "*",
 		.type = MAP_KEEP,
 	},
