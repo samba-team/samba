@@ -162,9 +162,13 @@ NTSTATUS ntlmssp_set_hashes(NTLMSSP_STATE *ntlmssp_state,
 		const unsigned char lm_hash[16],
 		const unsigned char nt_hash[16]) 
 {
-	ntlmssp_state->lm_hash = TALLOC_MEMDUP(ntlmssp_state->mem_ctx, lm_hash, 16);
-	ntlmssp_state->nt_hash = TALLOC_MEMDUP(ntlmssp_state->mem_ctx, nt_hash, 16);
+	ntlmssp_state->lm_hash = (unsigned char *)
+		TALLOC_MEMDUP(ntlmssp_state->mem_ctx, lm_hash, 16);
+	ntlmssp_state->nt_hash = (unsigned char *)
+		TALLOC_MEMDUP(ntlmssp_state->mem_ctx, nt_hash, 16);
 	if (!ntlmssp_state->lm_hash || !ntlmssp_state->nt_hash) {
+		TALLOC_FREE(ntlmssp_state->lm_hash);
+		TALLOC_FREE(ntlmssp_state->nt_hash);
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
