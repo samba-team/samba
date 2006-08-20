@@ -32,7 +32,7 @@ static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response
 	size_t len = response->length - sizeof(struct winbindd_response);
 	prs_struct ps;
 	if (len > 0) {
-		info3_ndr = response->extra_data.data;
+		info3_ndr = (uint8 *)response->extra_data.data;
 		if (!prs_init(&ps, len, mem_ctx, UNMARSHALL)) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -112,7 +112,8 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	unbecome_root();
 
 	if ( result == NSS_STATUS_UNAVAIL )  {
-		struct auth_methods *auth_method = my_private_data;
+		struct auth_methods *auth_method =
+			(struct auth_methods *)my_private_data;
 
 		if ( auth_method )
 			return auth_method->auth(auth_context, auth_method->private_data, 
