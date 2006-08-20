@@ -462,6 +462,8 @@ struct WINBINDD_CCACHE_ENTRY {
 	const char *service;
 	const char *username;
 	const char *sid_string;
+	unsigned char *nt_hash; /* Base pointer for the following 2 */
+	unsigned char *lm_hash;
 	char *pass;
 	uid_t uid;
 	time_t create_time;
