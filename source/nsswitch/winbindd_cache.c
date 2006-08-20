@@ -47,6 +47,7 @@ struct cache_entry {
 };
 
 #define WINBINDD_MAX_CACHE_SIZE (50*1024*1024)
+#define WINBINDD_CACHE_VERSION "WB_CACHE_VERSION_1"
 
 static struct winbind_cache *wcache;
 
@@ -874,11 +875,14 @@ NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const DOM_SID
 	return NT_STATUS_OK;
 }
 
-/* Lookup creds for a SID */
+/* Lookup creds for a SID - copes with old (unsalted) creds as well
+   as new salted ones. */
+
 NTSTATUS wcache_get_creds(struct winbindd_domain *domain, 
 			  TALLOC_CTX *mem_ctx, 
 			  const DOM_SID *sid,
-			  const uint8 **cached_nt_pass)
+			  const uint8 **cached_nt_pass,
+			  const uint8 **cached_salt)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -898,19 +902,37 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 		return NT_STATUS_INVALID_SID;
 	}
 
+	/* Try and get a salted cred first. If we can't
+	   fall back to an unsalted cred. */
+
 	centry = wcache_fetch(cache, domain, "CRED/%s", sid_string_static(sid));
-	
 	if (!centry) {
 		DEBUG(10,("wcache_get_creds: entry for [CRED/%s] not found\n", 
-			sid_string_static(sid)));
+				sid_string_static(sid)));
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	t = centry_time(centry);
+
+	/* In the salted case this isn't actually the nt_hash itself,
+	   but the MD5 of the salt + nt_hash. Let the caller
+	   sort this out. It can tell as we only return the cached_salt
+	   if we are returning a salted cred. */
+
 	*cached_nt_pass = (const uint8 *)centry_hash16(centry, mem_ctx);
 
+	/* We only have 17 bytes more data in the salted cred case. */
+	if (centry->len - centry->ofs == 17) {
+		*cached_salt = (const uint8 *)centry_hash16(centry, mem_ctx);
+	} else {
+		*cached_salt = NULL;
+	}
+
 #if DEBUG_PASSWORD
-	dump_data(100, (const char *)cached_nt_pass, NT_HASH_LEN);
+	dump_data(100, (const char *)*cached_nt_pass, NT_HASH_LEN);
+	if (*cached_salt) {
+		dump_data(100, (const char *)*cached_salt, NT_HASH_LEN);
+	}
 #endif
 	status = centry->status;
 
@@ -921,6 +943,8 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	return status;
 }
 
+/* Store creds for a SID - only writes out new salted ones. */
+
 NTSTATUS wcache_save_creds(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
 			   const DOM_SID *sid, 
@@ -929,6 +953,8 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 	struct cache_entry *centry;
 	fstring sid_string;
 	uint32 rid;
+	uint8 cred_salt[NT_HASH_LEN];
+	uint8 salted_hash[NT_HASH_LEN];
 
 	if (is_null_sid(sid)) {
 		return NT_STATUS_INVALID_SID;
@@ -948,7 +974,13 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 #endif
 
 	centry_put_time(centry, time(NULL));
-	centry_put_hash16(centry, nt_pass);
+
+	/* Create a salt and then salt the hash. */
+	generate_random_buffer(cred_salt, NT_HASH_LEN);
+	E_md5hash(cred_salt, nt_pass, salted_hash);
+
+	centry_put_hash16(centry, salted_hash);
+	centry_put_hash16(centry, cred_salt);
 	centry_end(centry, "CRED/%s", sid_to_string(sid_string, sid));
 
 	DEBUG(10,("wcache_save_creds: %s\n", sid_string));
