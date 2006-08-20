@@ -2243,7 +2243,7 @@ int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct
 }
 #endif /* WITH_AIO */
 
-int getpeereid( int s, uid_t *uid)
+int sys_getpeereid( int s, uid_t *uid)
 {
 #if defined(HAVE_PEERCRED)
 	struct ucred cred;
