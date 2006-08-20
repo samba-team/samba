@@ -125,6 +125,10 @@ _PUBLIC_ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint)
 
 		ret = read(fd, data + offset, hint);
 
+		if (ret == 0) {
+			return NULL;
+		}
+
 		if (ret == -1) {
 			talloc_free(data);
 			return NULL;
