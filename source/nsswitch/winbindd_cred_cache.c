@@ -25,7 +25,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-#define MAX_CCACHES 100 
+#define MAX_CCACHES 10000
 
 static struct WINBINDD_CCACHE_ENTRY *ccache_list;
 
@@ -75,19 +75,24 @@ NTSTATUS remove_ccache_by_ccname(const char *ccname)
 			DLIST_REMOVE(ccache_list, entry);
 			TALLOC_FREE(entry->event); /* unregisters events */
 #ifdef HAVE_MUNLOCK
-			if (entry->pass) {	
-				size_t len = strlen(entry->pass)+1;
+			if (entry->nt_hash) {	
+				size_t len = NT_HASH_LEN + LM_HASH_LEN;
+
+				if (entry->pass) {
+					len += strlen(entry->pass)+1;
+				}
+
 #ifdef DEBUG_PASSWORD
-				DEBUG(10,("unlocking memory: %p\n", entry->pass));
+				DEBUG(10,("unlocking memory: %p\n", entry->nt_hash));
 #endif
-				memset(entry->pass, 0, len);
-				if ((munlock(entry->pass, len)) == -1) {
+				memset(entry->nt_hash, 0, len);
+				if ((munlock(entry->nt_hash, len)) == -1) {
 					DEBUG(0,("failed to munlock memory: %s (%d)\n", 
 						strerror(errno), errno));
 					return map_nt_error_from_unix(errno);
 				}
 #ifdef DEBUG_PASSWORD
-				DEBUG(10,("munlocked memory: %p\n", entry->pass));
+				DEBUG(10,("munlocked memory: %p\n", entry->nt_hash));
 #endif
 			}
 #endif /* HAVE_MUNLOCK */
@@ -108,7 +113,6 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 	int ret;
 	time_t new_start;
 	struct timeval t;
-
 
 	DEBUG(10,("krb5_ticket_refresh_handler called\n"));
 	DEBUGADD(10,("event called for: %s, %s\n", entry->ccname, entry->username));
@@ -245,30 +249,47 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		NT_STATUS_HAVE_NO_MEMORY(new_entry->service);
 	}
 
-	if (schedule_refresh_event && pass) {
+	if (pass) {
+		size_t len = NT_HASH_LEN + LM_HASH_LEN;
+
+		/* We only store the plaintext if we're going to
+		   schedule a krb5 refresh. */
+
+		if (schedule_refresh_event) {
+			len += strlen(pass)+1;
+		}
+		
+		/* new_entry->nt_hash is the base pointer for the block
+		   of memory pointed into by new_entry->lm_hash and
+		   new_entry->pass (if we're storing plaintext). */
+
+		new_entry->nt_hash = (unsigned char *)TALLOC_ZERO(mem_ctx, len);
+		NT_STATUS_HAVE_NO_MEMORY(new_entry->nt_hash);
+
+		new_entry->lm_hash = new_entry->nt_hash + NT_HASH_LEN;
 #ifdef HAVE_MLOCK
-		size_t len = strlen(pass)+1;
-		
-		new_entry->pass = (char *)TALLOC_ZERO(mem_ctx, len);
-		NT_STATUS_HAVE_NO_MEMORY(new_entry->pass);
-		
 #ifdef DEBUG_PASSWORD
-		DEBUG(10,("mlocking memory: %p\n", new_entry->pass));
+		DEBUG(10,("mlocking memory: %p\n", new_entry->nt_hash));
 #endif		
-		if ((mlock(new_entry->pass, len)) == -1) {
+		if ((mlock(new_entry->nt_hash, len)) == -1) {
 			DEBUG(0,("failed to mlock memory: %s (%d)\n", 
 				strerror(errno), errno));
 			return map_nt_error_from_unix(errno);
 		} 
 		
 #ifdef DEBUG_PASSWORD
-		DEBUG(10,("mlocked memory: %p\n", new_entry->pass));
+		DEBUG(10,("mlocked memory: %p\n", new_entry->nt_hash));
 #endif		
-		memcpy(new_entry->pass, pass, len);
-#else
-		new_entry->pass = talloc_strdup(mem_ctx, pass);
-		NT_STATUS_HAVE_NO_MEMORY(new_entry->pass);
 #endif /* HAVE_MLOCK */
+
+		/* Create and store the password hashes. */
+		E_md4hash(pass, new_entry->nt_hash);
+		E_deshash(pass, new_entry->lm_hash);
+
+		if (schedule_refresh_event) {
+			new_entry->pass = (char *)new_entry->lm_hash + LM_HASH_LEN;
+			memcpy(new_entry->pass, pass, len - NT_HASH_LEN - LM_HASH_LEN);
+		}
 	}
 
 	new_entry->create_time = create_time;
@@ -278,7 +299,6 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		return NT_STATUS_NO_MEMORY;
 	}
 	new_entry->uid = uid;
-
 
 	if (schedule_refresh_event && renew_until > 0) {
 
@@ -316,7 +336,7 @@ NTSTATUS init_ccache_list(void)
 		return NT_STATUS_OK;
 	}
 
-	mem_ctx = talloc_init("winbindd_ccache_krb5_handling");
+	mem_ctx = talloc_init("winbindd_ccache_handling");
 	if (mem_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
