@@ -705,6 +705,8 @@ int samdb_copy_template(struct ldb_context *ldb,
 		if (strcasecmp(el->name, "cn") == 0 ||
 		    strcasecmp(el->name, "name") == 0 ||
 		    strcasecmp(el->name, "sAMAccountName") == 0 ||
+		    strcasecmp(el->name, "sAMAccountName") == 0 ||
+		    strcasecmp(el->name, "distinguishedName") == 0 ||
 		    strcasecmp(el->name, "objectGUID") == 0) {
 			continue;
 		}
