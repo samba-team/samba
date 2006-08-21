@@ -272,7 +272,7 @@ enum SID_NAME_USE {
 #define LOOKUP_NAME_REMOTE   2  /* Ask others */
 #define LOOKUP_NAME_ALL (LOOKUP_NAME_ISOLATED|LOOKUP_NAME_REMOTE)
 
-#define LOOKUP_NAME_GROUP    4  /* This is a NASTY hack for valid users = @foo
+#define LOOKUP_NAME_GROUP    4  /* (unused) This is a NASTY hack for valid users = @foo
 				 * where foo also exists in as user. */
 
 /**

@@ -505,7 +505,7 @@ gid_t max_algorithmic_gid(void)
  there is not anymore a direct link between the gid and the rid.
  ********************************************************************/
 
-uint32 pdb_gid_to_group_rid(gid_t gid)
+uint32 algorithmic_pdb_gid_to_group_rid(gid_t gid)
 {
 	int rid_offset = algorithmic_rid_base();
 	return (((((uint32)gid)*RID_MULTIPLIER) + rid_offset) | GROUP_RID_TYPE);
