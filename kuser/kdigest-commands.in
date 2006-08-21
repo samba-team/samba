@@ -64,6 +64,11 @@ command = {
 		argument = "hostname"
 		help = "hostname of the server"
 	}
+	option = {
+		long = "realm"
+		type = "string"
+		help = "Kerberos realm to communicate with"
+	}
 	help = "Sets up a digest context and return initial parameters"
 }
 command = {
