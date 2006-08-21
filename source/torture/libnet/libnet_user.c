@@ -227,7 +227,7 @@ BOOL torture_createuser(struct torture_context *torture)
 		return False;
 	}
 
-	if (!test_cleanup(ctx->samr_pipe, mem_ctx, &ctx->domain.handle, TEST_USERNAME)) {
+	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
 		printf("cleanup failed\n");
 		return False;
 	}
@@ -313,7 +313,6 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, i
 		      comment, logon_script, profile_path, acct_expiry, allow_password_change,
 		      force_password_change, last_logon, last_logoff, last_password_change };
 	const int num_fields = 14;
-
 	const char* logon_scripts[] = { "start_login.cmd", "login.bat", "start.cmd" };
 	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
 	const char* home_drives[] = { "H:", "z:", "I:", "J:", "n:" };
@@ -486,11 +485,13 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	}
 
 	ZERO_STRUCT(req);
-	req.in.user_name = TEST_USERNAME;
 	req.in.domain_name = lp_workgroup();
-
+	req.in.user_name = TEST_USERNAME;
+	
 	printf("Testing change of a single field\n");
 	set_test_changes(mem_ctx, &req, 1);
+	
+	req.in.account_name = "newlibnetuser";
 
 	status = libnet_ModifyUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -498,7 +499,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 		return False;
 	}
 
-	if (!test_cleanup(ctx->samr_pipe, mem_ctx, &ctx->domain.handle, TEST_USERNAME)) {
+	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
 		printf("cleanup failed\n");
 		return False;
 	}
