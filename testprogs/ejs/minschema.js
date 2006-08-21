@@ -37,6 +37,7 @@ objectclasses = new Object();
 attributes = new Object();
 rootDse = new Object();
 
+objectclasses_expanded = new Object();
 
 /* the attributes we need for objectclasses */
 class_attrs = new Array("objectClass", 
@@ -599,8 +600,33 @@ for (i=0;i<classes.length;i++) {
 /*
   expand the objectclass list as needed
 */
+var num_classes = 0;
+var expanded = 0;
+/* calculate the actual number of classes */
 for (i in objectclasses) {
-	expand_objectclass(ldb, objectclasses[i]);
+	num_classes++;
+}
+/* so EJS do not have while nor the break statement
+   can't find any other way than doing more loops
+   than necessary to recursively expand all classes
+ */
+var inf;
+for (inf = 0;inf < 500; inf++) {
+	if (expanded < num_classes) {
+		for (i in objectclasses) {
+			var n = objectclasses[i];
+			if (objectclasses_expanded[i] != "DONE") {
+				expand_objectclass(ldb, objectclasses[i]);
+				objectclasses_expanded[i] = "DONE";
+				expanded++;
+			}
+		}
+		/* recalculate the actual number of classes */
+		num_classes = 0;
+		for (i in objectclasses) {
+			num_classes++;
+		}
+	}
 }
 
 /*
