@@ -227,7 +227,7 @@ function test_map_search(ldb, s3, s4)
 
 	/* Add a set of split records */
 	var ldif = "
-dn: cn=X,sambaDomainName=TESTS,${BASEDN}
+dn: " + s4.dn("cn=X") + "
 objectClass: user
 cn: X
 codePage: x
@@ -239,7 +239,7 @@ description: x
 objectSid: S-1-5-21-4231626423-2410014848-2360679739-552
 primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
 
-dn: cn=Y,sambaDomainName=TESTS,${BASEDN}
+dn: " + s4.dn("cn=Y") + "
 objectClass: top
 cn: Y
 codePage: x
@@ -249,7 +249,7 @@ nextRid: y
 lastLogon: y
 description: x
 
-dn: cn=Z,sambaDomainName=TESTS,${BASEDN}
+dn: " + s4.dn("cn=Z") + "
 objectClass: top
 cn: Z
 codePage: x
@@ -266,7 +266,7 @@ description: y
 
 	/* Add a set of remote records */
 	var ldif = "
-dn: cn=A,sambaDomainName=TESTS,${BASEDN}
+dn: " + s3.dn("cn=A") + "
 objectClass: posixAccount
 cn: A
 sambaNextRid: x
@@ -276,7 +276,7 @@ description: x
 sambaSID: S-1-5-21-4231626423-2410014848-2360679739-552
 sambaPrimaryGroupSID: S-1-5-21-4231626423-2410014848-2360679739-512
 
-dn: cn=B,sambaDomainName=TESTS,${BASEDN}
+dn: " + s3.dn("cn=B") + "
 objectClass: top
 cn:B
 sambaNextRid: x
@@ -284,7 +284,7 @@ sambaBadPasswordCount: x
 sambaLogonTime: y
 description: x
 
-dn: cn=C,sambaDomainName=TESTS,${BASEDN}
+dn: " + s3.dn("cn=C") + "
 objectClass: top
 cn: C
 sambaNextRid: x
@@ -300,7 +300,7 @@ description: y
 	println("Testing search by DN");
 
 	/* Search remote record by local DN */
-	dn = "cn=A,sambaDomainName=TESTS," + s4.BASEDN;
+	dn = s4.dn("cn=A");
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
 	assert(res != undefined);
@@ -310,7 +310,7 @@ description: y
 	assert(res[0].lastLogon == "x");
 
 	/* Search remote record by remote DN */
-	dn = "cn=A,sambaDomainName=TESTS," + s3.BASEDN;
+	dn = s3.dn("cn=A");
 	attrs = new Array("objectCategory", "lastLogon", "sambaLogonTime");
 	res = s3.db.search("", dn, ldb.SCOPE_BASE, attrs);
 	assert(res != undefined);
@@ -321,7 +321,7 @@ description: y
 	assert(res[0].sambaLogonTime == "x");
 
 	/* Search split record by local DN */
-	dn = "cn=X,sambaDomainName=TESTS," + s4.BASEDN;
+	dn = s4.dn("cn=X");
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
 	assert(res != undefined);
@@ -331,7 +331,7 @@ description: y
 	assert(res[0].lastLogon == "x");
 
 	/* Search split record by remote DN */
-	dn = "cn=X,sambaDomainName=TESTS," + s3.BASEDN;
+	dn = s3.dn("cn=X");
 	attrs = new Array("objectCategory", "lastLogon", "sambaLogonTime");
 	res = s3.db.search("", dn, ldb.SCOPE_BASE, attrs);
 	assert(res != undefined);
@@ -348,10 +348,10 @@ description: y
 	res = ldb.search("(revision=x)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 2);
-	assert(res[0].dn == ("cn=Y,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=Y"));
 	assert(res[0].objectCategory == "y");
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=X,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=X"));
 	assert(res[1].objectCategory == "x");
 	assert(res[1].lastLogon == "x");
 
@@ -360,10 +360,10 @@ description: y
 	res = ldb.search("(description=y)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 2);
-	assert(res[0].dn == ("cn=Z,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=Z"));
 	assert(res[0].objectCategory == "z");
 	assert(res[0].lastLogon == "z");
-	assert(res[1].dn == ("cn=C,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=C"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "z");
 
@@ -372,10 +372,10 @@ description: y
 	res = ldb.search("(badPwdCount=x)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 2);
-	assert(res[0].dn == ("cn=B,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=B"));
 	assert(res[0].objectCategory == undefined);
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=A"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "x");
 
@@ -389,11 +389,11 @@ description: y
 	res = ldb.search("(objectSid=*)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 2);
-	assert(res[0].dn == ("cn=X,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=X"));
 	assert(res[0].objectCategory == "x");
 	assert(res[0].lastLogon == "x");
 	assert(res[0].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
-	assert(res[1].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=A"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "x");
 	assert(res[1].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
@@ -405,7 +405,7 @@ description: y
 	res = ldb.search("(primaryGroupID=1-5-21-4231626423-2410014848-2360679739-512)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 1);
-	assert(res[0].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=A"));
 	assert(res[0].objectCategory == undefined);
 	assert(res[0].lastLogon == "x");
 	assert(res[0].primaryGroupID == "1-5-21-4231626423-2410014848-2360679739-512");
@@ -437,12 +437,12 @@ description: y
 	res = ldb.search("(objectClass=user)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 2);
-	assert(res[0].dn == ("cn=X,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=X"));
 	assert(res[0].objectCategory == "x");
 	assert(res[0].lastLogon == "x");
 	assert(res[0].objectClass != undefined);
 	assert(res[0].objectClass[3] == "user");
-	assert(res[1].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=A"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "x");
 	assert(res[1].objectClass != undefined);
@@ -452,19 +452,19 @@ description: y
 	res = ldb.search("(|(objectClass=user)(badPwdCount=x))", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 3);
-	assert(res[0].dn == ("cn=B,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=B"));
 	assert(res[0].objectCategory == undefined);
 	assert(res[0].lastLogon == "y");
 	assert(res[0].objectClass != undefined);
 	for (i=0;i<res[0].objectClass.length;i++) {
 		assert(res[0].objectClass[i] != "user");
 	}
-	assert(res[1].dn == ("cn=X,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=X"));
 	assert(res[1].objectCategory == "x");
 	assert(res[1].lastLogon == "x");
 	assert(res[1].objectClass != undefined);
 	assert(res[1].objectClass[3] == "user");
-	assert(res[2].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[2].dn == s4.dn("cn=A"));
 	assert(res[2].objectCategory == undefined);
 	assert(res[2].lastLogon == "x");
 	assert(res[2].objectClass != undefined);
@@ -477,10 +477,10 @@ description: y
 	res = ldb.search("(&(codePage=x)(revision=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 2);
-	assert(res[0].dn == ("cn=Y,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=Y"));
 	assert(res[0].objectCategory == "y");
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=X,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=X"));
 	assert(res[1].objectCategory == "x");
 	assert(res[1].lastLogon == "x");
 
@@ -489,10 +489,10 @@ description: y
 	res = ldb.search("(&(lastLogon=x)(description=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 2);
-	assert(res[0].dn == ("cn=X,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=X"));
 	assert(res[0].objectCategory == "x");
 	assert(res[0].lastLogon == "x");
-	assert(res[1].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=A"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "x");
 	
@@ -501,10 +501,10 @@ description: y
 	res = ldb.search("(&(codePage=x)(description=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 2);
-	assert(res[0].dn == ("cn=Y,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=Y"));
 	assert(res[0].objectCategory == "y");
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=X,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=X"));
 	assert(res[1].objectCategory == "x");
 	assert(res[1].lastLogon == "x");
 
@@ -522,10 +522,10 @@ description: y
 	res = ldb.search("(|(revision=x)(objectCategory=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 2);
-	assert(res[0].dn == ("cn=Y,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=Y"));
 	assert(res[0].objectCategory == "y");
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=X,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=X"));
 	assert(res[1].objectCategory == "x");
 	assert(res[1].lastLogon == "x");
 
@@ -534,13 +534,13 @@ description: y
 	res = ldb.search("(|(badPwdCount=x)(lastLogon=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 3);
-	assert(res[0].dn == ("cn=B,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=B"));
 	assert(res[0].objectCategory == undefined);
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=X,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=X"));
 	assert(res[1].objectCategory == "x");
 	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[2].dn == s4.dn("cn=A"));
 	assert(res[2].objectCategory == undefined);
 	assert(res[2].lastLogon == "x");
 
@@ -549,13 +549,13 @@ description: y
 	res = ldb.search("(|(revision=x)(lastLogon=y))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 3);
-	assert(res[0].dn == ("cn=Y,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=Y"));
 	assert(res[0].objectCategory == "y");
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=B,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=B"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "y");
-	assert(res[2].dn == ("cn=X,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[2].dn == s4.dn("cn=X"));
 	assert(res[2].objectCategory == "x");
 	assert(res[2].lastLogon == "x");
 
@@ -570,16 +570,16 @@ description: y
 	res = ldb.search("(!(revision=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 4);
-	assert(res[0].dn == ("cn=B,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=B"));
 	assert(res[0].objectCategory == undefined);
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=A"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == ("cn=Z,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[2].dn == s4.dn("cn=Z"));
 	assert(res[2].objectCategory == "z");
 	assert(res[2].lastLogon == "z");
-	assert(res[3].dn == ("cn=C,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[3].dn == s4.dn("cn=C"));
 	assert(res[3].objectCategory == undefined);
 	assert(res[3].lastLogon == "z");
 
@@ -588,10 +588,10 @@ description: y
 	res = ldb.search("(!(description=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 2);
-	assert(res[0].dn == ("cn=Z,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=Z"));
 	assert(res[0].objectCategory == "z");
 	assert(res[0].lastLogon == "z");
-	assert(res[1].dn == ("cn=C,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=C"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "z");
 
@@ -600,16 +600,16 @@ description: y
 	res = ldb.search("(!(&(codePage=x)(revision=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 4);
-	assert(res[0].dn == ("cn=B,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=B"));
 	assert(res[0].objectCategory == undefined);
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=A"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == ("cn=Z,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[2].dn == s4.dn("cn=Z"));
 	assert(res[2].objectCategory == "z");
 	assert(res[2].lastLogon == "z");
-	assert(res[3].dn == ("cn=C,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[3].dn == s4.dn("cn=C"));
 	assert(res[3].objectCategory == undefined);
 	assert(res[3].lastLogon == "z");
 
@@ -618,16 +618,16 @@ description: y
 	res = ldb.search("(!(&(lastLogon=x)(description=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 4);
-	assert(res[0].dn == ("cn=Y,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=Y"));
 	assert(res[0].objectCategory == "y");
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=B,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=B"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "y");
-	assert(res[2].dn == ("cn=Z,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[2].dn == s4.dn("cn=Z"));
 	assert(res[2].objectCategory == "z");
 	assert(res[2].lastLogon == "z");
-	assert(res[3].dn == ("cn=C,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[3].dn == s4.dn("cn=C"));
 	assert(res[3].objectCategory == undefined);
 	assert(res[3].lastLogon == "z");
 
@@ -636,16 +636,16 @@ description: y
 	res = ldb.search("(!(&(codePage=x)(description=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 4);
-	assert(res[0].dn == ("cn=B,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=B"));
 	assert(res[0].objectCategory == undefined);
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=A"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == ("cn=Z,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[2].dn == s4.dn("cn=Z"));
 	assert(res[2].objectCategory == "z");
 	assert(res[2].lastLogon == "z");
-	assert(res[3].dn == ("cn=C,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[3].dn == s4.dn("cn=C"));
 	assert(res[3].objectCategory == undefined);
 	assert(res[3].lastLogon == "z");
 
@@ -653,16 +653,16 @@ description: y
 	attrs = new Array("objectCategory", "lastLogon");
 	res = ldb.search("(!(|(revision=x)(objectCategory=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
-	assert(res[0].dn == ("cn=B,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=B"));
 	assert(res[0].objectCategory == undefined);
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=A"));
 	assert(res[1].objectCategory == undefined);
 	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == ("cn=Z,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[2].dn == s4.dn("cn=Z"));
 	assert(res[2].objectCategory == "z");
 	assert(res[2].lastLogon == "z");
-	assert(res[3].dn == ("cn=C,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[3].dn == s4.dn("cn=C"));
 	assert(res[3].objectCategory == undefined);
 	assert(res[3].lastLogon == "z");
 
@@ -671,13 +671,13 @@ description: y
 	res = ldb.search("(!(|(badPwdCount=x)(lastLogon=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 3);
-	assert(res[0].dn == ("cn=Y,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=Y"));
 	assert(res[0].objectCategory == "y");
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=Z,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=Z"));
 	assert(res[1].objectCategory == "z");
 	assert(res[1].lastLogon == "z");
-	assert(res[2].dn == ("cn=C,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[2].dn == s4.dn("cn=C"));
 	assert(res[2].objectCategory == undefined);
 	assert(res[2].lastLogon == "z");
 
@@ -686,13 +686,13 @@ description: y
 	res = ldb.search("(!(|(revision=x)(lastLogon=y)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 3);
-	assert(res[0].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=A"));
 	assert(res[0].objectCategory == undefined);
 	assert(res[0].lastLogon == "x");
-	assert(res[1].dn == ("cn=Z,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=Z"));
 	assert(res[1].objectCategory == "z");
 	assert(res[1].lastLogon == "z");
-	assert(res[2].dn == ("cn=C,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[2].dn == s4.dn("cn=C"));
 	assert(res[2].objectCategory == undefined);
 	assert(res[2].lastLogon == "z");
 
@@ -701,21 +701,411 @@ description: y
 	res = ldb.search("(|(&(revision=x)(objectCategory=x))(!(&(description=x)(nextRid=y)))(badPwdCount=y))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 5);
-	assert(res[0].dn == ("cn=B,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[0].dn == s4.dn("cn=B"));
 	assert(res[0].objectCategory == undefined);
 	assert(res[0].lastLogon == "y");
-	assert(res[1].dn == ("cn=X,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[1].dn == s4.dn("cn=X"));
 	assert(res[1].objectCategory == "x");
 	assert(res[1].lastLogon == "x");
-	assert(res[2].dn == ("cn=A,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[2].dn == s4.dn("cn=A"));
 	assert(res[2].objectCategory == undefined);
 	assert(res[2].lastLogon == "x");
-	assert(res[3].dn == ("cn=Z,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[3].dn == s4.dn("cn=Z"));
 	assert(res[3].objectCategory == "z");
 	assert(res[3].lastLogon == "z");
-	assert(res[4].dn == ("cn=C,sambaDomainName=TESTS," + s4.BASEDN));
+	assert(res[4].dn == s4.dn("cn=C"));
 	assert(res[4].objectCategory == undefined);
 	assert(res[4].lastLogon == "z");
+
+	/* Clean up */
+	var dns = new Array();
+	dns[0] = s4.dn("cn=A");
+	dns[1] = s4.dn("cn=B");
+	dns[2] = s4.dn("cn=C");
+	dns[3] = s4.dn("cn=X");
+	dns[4] = s4.dn("cn=Y");
+	dns[5] = s4.dn("cn=Z");
+	for (i=0;i<dns.length;i++) {
+		var ok = ldb.del(dns[i]);
+		assert(ok);
+	}
+}
+
+function test_map_modify(ldb, s3, s4)
+{
+	println("Running modification tests on mapped data");
+
+	var ldif;
+	var attrs;
+	var dn, dn2;
+	var res;
+	var ok;
+
+	println("Testing modification of local records");
+
+	/* Add local record */
+	dn = "cn=test,dc=idealx,dc=org";
+	ldif = "
+dn: " + dn + "
+cn: test
+foo: bar
+revision: 1
+description: test
+";
+	ok = ldb.add(ldif);
+	assert(ok);
+	/* Check it's there */
+	attrs = new Array("foo", "revision", "description");
+	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].foo == "bar");
+	assert(res[0].revision == "1");
+	assert(res[0].description == "test");
+	/* Check it's not in the local db */
+	res = s4.db.search("(cn=test)", NULL, ldb.SCOPE_DEFAULT, attrs);
+	assert(res != undefined);
+	assert(res.length == 0);
+	/* Check it's not in the remote db */
+	res = s3.db.search("(cn=test)", NULL, ldb.SCOPE_DEFAULT, attrs);
+	assert(res != undefined);
+	assert(res.length == 0);
+
+	/* Modify local record */
+	ldif = "
+dn: " + dn + "
+replace: foo
+foo: baz
+replace: description
+description: foo
+";
+	ok = ldb.modify(ldif);
+	assert(ok);
+	/* Check in local db */
+	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].foo == "baz");
+	assert(res[0].revision == "1");
+	assert(res[0].description == "foo");
+
+	/* Rename local record */
+	dn2 = "cn=toast,dc=idealx,dc=org";
+	ok = ldb.rename(dn, dn2);
+	assert(ok);
+	/* Check in local db */
+	res = ldb.search("", dn2, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn2);
+	assert(res[0].foo == "baz");
+	assert(res[0].revision == "1");
+	assert(res[0].description == "foo");
+
+	/* Delete local record */
+	ok = ldb.del(dn2);
+	assert(ok);
+	/* Check it's gone */
+	res = ldb.search("", dn2, ldb.SCOPE_BASE);
+	assert(res != undefined);
+	assert(res.length == 0);
+
+	println("Testing modification of remote records");
+
+	/* Add remote record */
+	dn = s4.dn("cn=test");
+	dn2 = s3.dn("cn=test");
+	ldif = "
+dn: " + dn2 + "
+cn: test
+description: foo
+sambaBadPasswordCount: 3
+sambaNextRid: 1001
+";
+	ok = s3.db.add(ldif);
+	assert(ok);
+	/* Check it's there */
+	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid");
+	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn2);
+	assert(res[0].description == "foo");
+	assert(res[0].sambaBadPasswordCount == "3");
+	assert(res[0].sambaNextRid == "1001");
+	/* Check in mapped db */
+	attrs = new Array("description", "badPwdCount", "nextRid");
+	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].description == "foo");
+	assert(res[0].badPwdCount == "3");
+	assert(res[0].nextRid == "1001");
+	/* Check in local db */
+	res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 0);
+
+	/* Modify remote data of remote record */
+	ldif = "
+dn: " + dn + "
+replace: description
+description: test
+replace: badPwdCount
+badPwdCount: 4
+";
+	ok = ldb.modify(ldif);
+	/* Check in mapped db */
+	attrs = new Array("description", "badPwdCount", "nextRid");
+	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].description == "test");
+	assert(res[0].badPwdCount == "4");
+	assert(res[0].nextRid == "1001");
+	/* Check in remote db */
+	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid");
+	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn2);
+	assert(res[0].description == "test");
+	assert(res[0].sambaBadPasswordCount == "4");
+	assert(res[0].sambaNextRid == "1001");
+
+	/* Rename remote record */
+	dn2 = s4.dn("cn=toast");
+	ok = ldb.rename(dn, dn2);
+	assert(ok);
+	/* Check in mapped db */
+	dn = dn2;
+	attrs = new Array("description", "badPwdCount", "nextRid");
+	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].description == "test");
+	assert(res[0].badPwdCount == "4");
+	assert(res[0].nextRid == "1001");
+	/* Check in remote db */
+	dn2 = s3.dn("cn=toast");
+	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid");
+	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn2);
+	assert(res[0].description == "test");
+	assert(res[0].sambaBadPasswordCount == "4");
+	assert(res[0].sambaNextRid == "1001");
+
+	/* Delete remote record */
+	ok = ldb.del(dn);
+	assert(ok);
+	/* Check in mapped db */
+	res = ldb.search("", dn, ldb.SCOPE_BASE);
+	assert(res != undefined);
+	assert(res.length == 0);
+	/* Check in remote db */
+	res = s3.db.search("", dn2, ldb.SCOPE_BASE);
+	assert(res != undefined);
+	assert(res.length == 0);
+
+	/* Add remote record (same as before) */
+	dn = s4.dn("cn=test");
+	dn2 = s3.dn("cn=test");
+	ldif = "
+dn: " + dn2 + "
+cn: test
+description: foo
+sambaBadPasswordCount: 3
+sambaNextRid: 1001
+";
+	ok = s3.db.add(ldif);
+	assert(ok);
+
+	/* Modify local data of remote record */
+	ldif = "
+dn: " + dn + "
+add: revision
+revision: 1
+replace: description
+description: test
+";
+	ok = ldb.modify(ldif);
+	/* Check in mapped db */
+	attrs = new Array("revision", "description");
+	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].description == "test");
+	assert(res[0].revision == "1");
+	/* Check in remote db */
+	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn2);
+	assert(res[0].description == "test");
+	assert(res[0].revision == undefined);
+	/* Check in local db */
+	res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].description == undefined);
+	assert(res[0].revision == "1");
+
+	/* Delete (newly) split record */
+	ok = ldb.del(dn);
+	assert(ok);
+
+	println("Testing modification of split records");
+
+	/* Add split record */
+	dn = s4.dn("cn=test");
+	dn2 = s3.dn("cn=test");
+	ldif = "
+dn: " + dn + "
+cn: test
+description: foo
+badPwdCount: 3
+nextRid: 1001
+revision: 1
+";
+	ok = ldb.add(ldif);
+	assert(ok);
+	/* Check it's there */
+	attrs = new Array("description", "badPwdCount", "nextRid", "revision");
+	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].description == "foo");
+	assert(res[0].badPwdCount == "3");
+	assert(res[0].nextRid == "1001");
+	assert(res[0].revision == "1");
+	/* Check in local db */
+	res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].description == undefined);
+	assert(res[0].badPwdCount == undefined);
+	assert(res[0].nextRid == undefined);
+	assert(res[0].revision == "1");
+	/* Check in remote db */
+	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid", "revision");
+	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn2);
+	assert(res[0].description == "foo");
+	assert(res[0].sambaBadPasswordCount == "3");
+	assert(res[0].sambaNextRid == "1001");
+	assert(res[0].revision == undefined);
+
+	/* Modify of split record */
+	ldif = "
+dn: " + dn + "
+replace: description
+description: test
+replace: badPwdCount
+badPwdCount: 4
+replace: revision
+revision: 2
+";
+	ok = ldb.modify(ldif);
+	assert(ok);
+	/* Check in mapped db */
+	attrs = new Array("description", "badPwdCount", "nextRid", "revision");
+	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].description == "test");
+	assert(res[0].badPwdCount == "4");
+	assert(res[0].nextRid == "1001");
+	assert(res[0].revision == "2");
+	/* Check in local db */
+	res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].description == undefined);
+	assert(res[0].badPwdCount == undefined);
+	assert(res[0].nextRid == undefined);
+	assert(res[0].revision == "2");
+	/* Check in remote db */
+	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid", "revision");
+	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn2);
+	assert(res[0].description == "test");
+	assert(res[0].sambaBadPasswordCount == "4");
+	assert(res[0].sambaNextRid == "1001");
+	assert(res[0].revision == undefined);
+
+	/* Rename split record */
+	dn2 = s4.dn("cn=toast");
+	ok = ldb.rename(dn, dn2);
+	assert(ok);
+	/* Check in mapped db */
+	dn = dn2;
+	attrs = new Array("description", "badPwdCount", "nextRid", "revision");
+	res = ldb.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].description == "test");
+	assert(res[0].badPwdCount == "4");
+	assert(res[0].nextRid == "1001");
+	assert(res[0].revision == "2");
+	/* Check in local db */
+	res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn);
+	assert(res[0].description == undefined);
+	assert(res[0].badPwdCount == undefined);
+	assert(res[0].nextRid == undefined);
+	assert(res[0].revision == "2");
+	/* Check in remote db */
+	dn2 = s3.dn("cn=toast");
+	attrs = new Array("description", "sambaBadPasswordCount", "sambaNextRid", "revision");
+	res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+	assert(res[0].dn == dn2);
+	assert(res[0].description == "test");
+	assert(res[0].sambaBadPasswordCount == "4");
+	assert(res[0].sambaNextRid == "1001");
+	assert(res[0].revision == undefined);
+
+	/* Delete split record */
+	ok = ldb.del(dn);
+	assert(ok);
+	/* Check in mapped db */
+	res = ldb.search("", dn, ldb.SCOPE_BASE);
+	assert(res != undefined);
+	assert(res.length == 0);
+	/* Check in local db */
+	res = s4.db.search("", dn, ldb.SCOPE_BASE);
+	assert(res != undefined);
+	assert(res.length == 0);
+	/* Check in remote db */
+	res = s3.db.search("", dn2, ldb.SCOPE_BASE);
+	assert(res != undefined);
+	assert(res.length == 0);
+}
+
+function make_dn(rdn)
+{
+	return rdn + ",sambaDomainName=TESTS," + this.BASEDN;
 }
 
 sys = sys_init();
@@ -727,12 +1117,14 @@ samba4.file = prefix + "/" + "samba4.ldb";
 samba4.url = "tdb://" + samba4.file;
 samba4.BASEDN = "dc=vernstok,dc=nl";
 samba4.db = ldb_init();
+samba4.dn = make_dn;
 
 var samba3 = new Object("samba3 partition info");
 samba3.file = prefix + "/" + "samba3.ldb";
 samba3.url = "tdb://" + samba3.file;
 samba3.BASEDN = "cn=Samba3Sam," + samba4.BASEDN;
 samba3.db = ldb_init();
+samba3.dn = make_dn;
 
 sys.unlink(ldbfile);
 sys.unlink(samba3.file);
@@ -776,6 +1168,7 @@ var ok = ldb.connect(ldburl);
 assert(ok);
 
 test_map_search(ldb, samba3, samba4);
+test_map_modify(ldb, samba3, samba4);
 
 sys.unlink(ldbfile);
 sys.unlink(samba3.file);
