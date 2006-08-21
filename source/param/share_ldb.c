@@ -263,7 +263,7 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS share_ldb_init(void *mem_ctx)
+NTSTATUS share_ldb_init(void)
 {
 	struct share_ops ops;
 
