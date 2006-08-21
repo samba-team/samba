@@ -92,7 +92,10 @@ krb5_rd_rep(krb5_context context,
   
     if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) { 
 	if ((*repl)->ctime != auth_context->authenticator->ctime ||
-	    (*repl)->cusec != auth_context->authenticator->cusec) {
+	    (*repl)->cusec != auth_context->authenticator->cusec) 
+	{
+	    krb5_free_ap_rep_enc_part(context, *repl);
+	    *repl = NULL;
 	    ret = KRB5KRB_AP_ERR_MUT_FAIL;
 	    krb5_clear_error_string (context);
 	    goto out;
@@ -114,6 +117,8 @@ void KRB5_LIB_FUNCTION
 krb5_free_ap_rep_enc_part (krb5_context context,
 			   krb5_ap_rep_enc_part *val)
 {
-    free_EncAPRepPart (val);
-    free (val);
+    if (val) {
+	free_EncAPRepPart (val);
+	free (val);
+    }
 }
