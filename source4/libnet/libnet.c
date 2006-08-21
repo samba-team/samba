@@ -45,16 +45,15 @@ struct libnet_context *libnet_context_init(struct event_context *ev)
 	/* name resolution methods */
 	ctx->name_res_methods = str_list_copy(ctx, lp_name_resolve_order());
 
-	/* connected domain params */
-	ZERO_STRUCT(ctx->domain);
+	/* connected services' params */
+	ZERO_STRUCT(ctx->samr);
+	ZERO_STRUCT(ctx->lsa);
 
 	/* currently opened user */
 	ZERO_STRUCT(ctx->user_handle);
 
-	/* init pipe pointers */
-	ctx->samr_pipe = NULL;
-	ctx->lsa_pipe  = NULL;
-	ctx->pipe      = NULL;
+	/* init pipe pointer */
+	ctx->pipe = NULL;
 	
 	return ctx;
 }
