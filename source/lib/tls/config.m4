@@ -11,7 +11,7 @@ if test x$SMB_ENABLE_GNUTLS = xNO; then
 	#include <gnutls/gnutls.h>
 	#include <gnutls/x509.h>
 	])
-	if test x"$ac_cv_header_gnutls_gnutls_h" = x"yes" -a x"$ac_cv_lib_ext_gnutls_gnutls_global_init" = x"yes" -a x"$ac_cv_have_gnutls_x509_crt_set_version_decl" = x"yes";then
+	if test x"$ac_cv_header_gnutls_gnutls_h" = x"yes" -a x"$ac_cv_lib_ext_gnutls_gnutls_global_init" = x"yes" -a x"$ac_cv_have_decl_gnutls_x509_crt_set_version" = x"yes";then
 		SMB_ENABLE(GNUTLS,YES)
 		AC_CHECK_DECL(gnutls_x509_crt_set_subject_key_id,  
 		              [AC_DEFINE(HAVE_GNUTLS_X509_CRT_SET_SUBJECT_KEY_ID,1,gnutls subject_key)], [], [
