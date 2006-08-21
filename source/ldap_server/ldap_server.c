@@ -31,6 +31,7 @@
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
 #include "smbd/service.h"
+#include "smbd/process_model.h"
 #include "lib/tls/tls.h"
 #include "lib/messaging/irpc.h"
 #include "lib/ldb/include/ldb.h"
@@ -472,8 +473,13 @@ static void ldapsrv_task_init(struct task_server *task)
 {	
 	struct ldapsrv_service *ldap_service;
 	NTSTATUS status;
+	const struct model_ops *model_ops;
 
 	task_server_set_title(task, "task[ldapsrv]");
+
+	/* run the ldap server as a single process */
+	model_ops = process_model_byname("single");
+	if (!model_ops) goto failed;
 
 	ldap_service = talloc_zero(task, struct ldapsrv_service);
 	if (ldap_service == NULL) goto failed;
@@ -491,11 +497,11 @@ static void ldapsrv_task_init(struct task_server *task)
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(i);
-			status = add_socket(task->event_ctx, task->model_ops, address, ldap_service);
+			status = add_socket(task->event_ctx, model_ops, address, ldap_service);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
-		status = add_socket(task->event_ctx, task->model_ops, lp_socket_address(), ldap_service);
+		status = add_socket(task->event_ctx, model_ops, lp_socket_address(), ldap_service);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 
