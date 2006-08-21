@@ -62,10 +62,14 @@ typedef void TALLOC_CTX;
 		_talloc_set_destructor((ptr), (void *)_talloc_destructor_fn); \
 	} while(0)
 #define _TALLOC_CHECK_TYPE(type,val) 
+/* this extremely strange macro is to avoid some braindamaged warning
+   stupidity in gcc 4.1.x */
+#define talloc_steal(ctx, ptr) ({ __typeof__(ptr) __talloc_steal_ret = (__typeof__(ptr))_talloc_steal((ctx),(ptr)); __talloc_steal_ret; })
 #else
 #define talloc_set_destructor(ptr, function) \
 	_talloc_set_destructor((ptr), (int (*)(void *))(function))
 #define _TALLOC_TYPEOF(ptr) void *
+#define talloc_steal(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_steal((ctx),(ptr))
 #endif
 
 /* useful macros for creating type checked pointers */
@@ -90,7 +94,6 @@ typedef void TALLOC_CTX;
 #define talloc_get_type(ptr, type) (type *)talloc_check_name(ptr, #type)
 
 #define talloc_find_parent_bytype(ptr, type) (type *)talloc_find_parent_byname(ptr, #type)
-#define talloc_steal(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_steal((ctx),(ptr))
 
 #if TALLOC_DEPRECATED
 #define talloc_zero_p(ctx, type) talloc_zero(ctx, type)
