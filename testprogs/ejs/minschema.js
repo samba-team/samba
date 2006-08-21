@@ -27,6 +27,8 @@ if (options.ARGV.length != 2) {
 var url = options.ARGV[0];
 var classfile = options.ARGV[1];
 
+/* use command line creds if available */
+ldb.credentials = options.get_credentials();
 
 var ok = ldb.connect(url);
 assert(ok);
