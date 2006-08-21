@@ -88,7 +88,7 @@ BOOL torture_domainopen(struct torture_context *torture)
 	net_ctx = libnet_context_init(evt_ctx);
 
 	status = torture_rpc_connection(mem_ctx, 
-					&net_ctx->samr_pipe,
+					&net_ctx->samr.pipe,
 					&dcerpc_table_samr);
 	
 	if (!NT_STATUS_IS_OK(status)) {
@@ -105,7 +105,7 @@ BOOL torture_domainopen(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_cleanup(net_ctx->samr_pipe, mem_ctx, &h)) {
+	if (!test_cleanup(net_ctx->samr.pipe, mem_ctx, &h)) {
 		ret = False;
 		goto done;
 	}
