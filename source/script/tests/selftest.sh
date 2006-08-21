@@ -13,7 +13,7 @@ ARG2=$2
 ARG3=$3
 
 if [ -z "$TORTURE_MAXTIME" ]; then
-    TORTURE_MAXTIME=600
+    TORTURE_MAXTIME=1200
 fi
 
 OLD_PWD=`pwd`
