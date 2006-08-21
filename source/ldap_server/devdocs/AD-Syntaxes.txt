@@ -1,27 +1,28 @@
-Description			LDAP OID			oMSyntax	attributeSyntax		MS-Name
+Description			LDAP OID			oMSyntax	oMObjectClass		attributeSyntax		MS-Name
 ----------------------------------------------------------------------------------------------------------------------------------------------
-Boolean				1.3.6.1.4.1.1466.115.121.1.7	   1		2.5.5.8			Boolean
-Integer				1.3.6.1.4.1.1466.115.121.1.27	   2		2.5.5.9			Integer
-Octet String			1.3.6.1.4.1.1466.115.121.1.40	   4		2.5.5.10		String(Octet)
-Octet String			1.3.6.1.4.1.1466.115.121.1.40	   4		2.5.5.17		String(Sid)
-OID				1.3.6.1.4.1.1466.115.121.1.38	   6		2.5.5.2			String(Object-Identifier)
-Integer				1.3.6.1.4.1.1466.115.121.1.27	  10		2.5.5.9			Enumeration
-Numeric String			1.3.6.1.4.1.1466.115.121.1.36	  18		2.5.5.6			String(Numeric)
-Printable String		1.3.6.1.4.1.1466.115.121.1.44	  19		2.5.5.5			String(Printable)
-CaseIgnoreString       	     *	1.2.840.113556.1.4.905		  20		2.5.5.4			String(Teletex)
-IA5 String			1.3.6.1.4.1.1466.115.121.1.26	  22		2.5.5.5			String(IA5)
-UTC Time			1.3.6.1.4.1.1466.115.121.1.53	  23		2.5.5.11		String(UTC-Time)
-Generalized Time		1.3.6.1.4.1.1466.115.121.1.24	  24		2.5.5.11		String(Generalized-Time)
-				1.2.840.113556.1.4.1362		  27		2.5.5.3			String(Case Sensitive)
-Directory String		1.3.6.1.4.1.1466.115.121.1.15	  64		2.5.5.12		String(Unicode)
-Large-Integer                *	1.2.840.113556.1.4.906		  65		2.5.5.16		Interval/LargeInteger
-Object-Security-Descriptor   *	1.2.840.113556.1.4.907		  66		2.5.5.15		String(NT-Sec-Desc)
-DN				1.3.6.1.4.1.1466.115.121.1.12	 127		2.5.5.1			Object(DS-DN)
-DNWithOctetString            *	1.2.840.113556.1.4.903		 127		2.5.5.7			Object(DN-Binary)
-OR-Name	                     *	1.2.840.113556.1.4.1221		 127		2.5.5.7			Object(OR-Name)
-Octet String			1.3.6.1.4.1.1466.115.121.1.40  	 127		2.5.5.10		Object(Replica-Link)
-Presentation Address		1.3.6.1.4.1.1466.115.121.1.43	 127		2.5.5.13		Object(Presentation-Address)
-DNWithString                 *	1.2.840.113556.1.4.904		 127		2.5.5.14		Object(Access-Point)/Object(DN-String)
+Boolean				1.3.6.1.4.1.1466.115.121.1.7	   1					2.5.5.8			Boolean
+Integer				1.3.6.1.4.1.1466.115.121.1.27	   2					2.5.5.9			Integer
+Octet String			1.3.6.1.4.1.1466.115.121.1.40	   4					2.5.5.10		String(Octet)
+Octet String			1.3.6.1.4.1.1466.115.121.1.40	   4					2.5.5.17		String(Sid)
+OID				1.3.6.1.4.1.1466.115.121.1.38	   6					2.5.5.2			String(Object-Identifier)
+Integer				1.3.6.1.4.1.1466.115.121.1.27	  10					2.5.5.9			Enumeration
+Numeric String			1.3.6.1.4.1.1466.115.121.1.36	  18					2.5.5.6			String(Numeric)
+Printable String		1.3.6.1.4.1.1466.115.121.1.44	  19					2.5.5.5			String(Printable)
+CaseIgnoreString       	     *	1.2.840.113556.1.4.905		  20					2.5.5.4			String(Teletex)
+IA5 String			1.3.6.1.4.1.1466.115.121.1.26	  22					2.5.5.5			String(IA5)
+UTC Time			1.3.6.1.4.1.1466.115.121.1.53	  23					2.5.5.11		String(UTC-Time)
+Generalized Time		1.3.6.1.4.1.1466.115.121.1.24	  24					2.5.5.11		String(Generalized-Time)
+				1.2.840.113556.1.4.1362		  27					2.5.5.3			String(Case Sensitive)
+Directory String		1.3.6.1.4.1.1466.115.121.1.15	  64					2.5.5.12		String(Unicode)
+Large-Integer                *	1.2.840.113556.1.4.906		  65					2.5.5.16		Interval/LargeInteger
+Object-Security-Descriptor   *	1.2.840.113556.1.4.907		  66					2.5.5.15		String(NT-Sec-Desc)
+DN				1.3.6.1.4.1.1466.115.121.1.12	 127	0c2b 8702 1c73 8500 004a	2.5.5.1			Object(DS-DN)
+DNWithOctetString            *	1.2.840.113556.1.4.903		 127	862a 8648 14f7 0101 0b01	2.5.5.7			Object(DN-Binary)
+OR-Name	                     *	1.2.840.113556.1.4.1221		 127	????				2.5.5.7			Object(OR-Name)
+Octet String			1.3.6.1.4.1.1466.115.121.1.40  	 127	862a 8648 14f7 0101 0601	2.5.5.10		Object(Replica-Link)
+Presentation Address		1.3.6.1.4.1.1466.115.121.1.43	 127	0c2b 8702 1c73 8500 005c	2.5.5.13		Object(Presentation-Address)
+Access Point			1.3.6.1.4.1.1466.115.121.1.2	 127	????				2.5.5.14		Object(Access-Point)
+DNWithString                 *	1.2.840.113556.1.4.904		 127	????				2.5.5.14		Object(DN-String)
 
 
 Unrepresent Syntaxes:
