@@ -119,7 +119,7 @@ name: unixName
 objectClass: top
 objectClass: attributeSchema
 lDAPDisplayName: unixName
-sSingleValued: TRUE
+isSingleValued: TRUE
 systemFlags: 16
 systemOnly: FALSE
 schemaIDGUID: bf9679f2-0de6-11d0-a285-00aa003049e2
