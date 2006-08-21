@@ -569,7 +569,6 @@ nt_err_code_struct nt_err_desc[] =
 	{ "Invalid workstation", 		NT_STATUS_INVALID_WORKSTATION },
 	{ "Password expired", 			NT_STATUS_PASSWORD_EXPIRED },
 	{ "Account disabled", 			NT_STATUS_ACCOUNT_DISABLED },
-	{ "Unexpected information received", 	NT_STATUS_INVALID_PARAMETER },
 	{ "Memory allocation error", 		NT_STATUS_NO_MEMORY },
 	{ "No domain controllers located", 	NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND },
 	{ "Named pipe not available", 		NT_STATUS_PIPE_NOT_AVAILABLE },
