@@ -179,6 +179,10 @@ NTSTATUS pvfs_rmdir(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (rmdir(name->full_name) == -1) {
+		/* some olders systems don't return ENOTEMPTY to rmdir() */
+		if (errno == EEXIST) {
+			return NT_STATUS_DIRECTORY_NOT_EMPTY;
+		}
 		return pvfs_map_errno(pvfs, errno);
 	}
 
