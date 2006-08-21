@@ -184,7 +184,13 @@ static struct MprVar mprLdbMessage(struct ldb_context *ldb, struct ldb_message *
 			if (attr->ldif_write_fn(ldb, msg, &el->values[0], &v) != 0) {
 				goto failed;
 			}
-			val = mprData(v.data, v.length);
+			/* FIXME: nasty hack, remove me when ejs will support
+			 * arbitrary string and does not truncate on \0 */
+			if (strlen((char *)v.data) != v.length) {
+				val = mprDataBlob(v);
+			} else {
+				val = mprData(v.data, v.length);
+			}
 		} else {
 			int j;
 			val = mprArray(el->name);
@@ -193,7 +199,13 @@ static struct MprVar mprLdbMessage(struct ldb_context *ldb, struct ldb_message *
 							&el->values[j], &v) != 0) {
 					goto failed;
 				}
-				mprAddArray(&val, j, mprData(v.data, v.length));
+				/* FIXME: nasty hack, remove me when ejs will support
+				 * arbitrary string and does not truncate on \0 */
+				if (strlen((char *)v.data) != v.length) {
+					mprAddArray(&val, j, mprDataBlob(v));
+				} else {
+					mprAddArray(&val, j, mprData(v.data, v.length));
+				}
 			}
 		}
 		mprSetVar(&var, el->name, val);
