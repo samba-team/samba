@@ -26,7 +26,7 @@
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 
-#if HAVE_LIBGNUTLS
+#if ENABLE_GNUTLS
 #include "gnutls/gnutls.h"
 
 #define DH_BITS 1024
@@ -48,7 +48,7 @@ struct tls_context {
 	struct socket_context *socket;
 	struct fd_event *fde;
 	BOOL tls_enabled;
-#if HAVE_LIBGNUTLS
+#if ENABLE_GNUTLS
 	gnutls_session session;
 	BOOL done_handshake;
 	BOOL have_first_byte;
@@ -78,7 +78,7 @@ BOOL tls_enabled(struct socket_context *sock)
 }
 
 
-#if HAVE_LIBGNUTLS
+#if ENABLE_GNUTLS
 
 static const struct socket_ops tls_socket_ops;
 

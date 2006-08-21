@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-#if HAVE_LIBGNUTLS
+#if ENABLE_GNUTLS
 #include "gnutls/gnutls.h"
 #include "gnutls/x509.h"
 
