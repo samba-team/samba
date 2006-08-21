@@ -6,15 +6,18 @@ BEGIN
 IMPORTS EncryptedData FROM krb5;
 
 DigestInit ::= SEQUENCE {
-    type		UTF8String, -- http, sasl, chap., cram-md5 --
-    cb-type		[0] UTF8String OPTIONAL,
-    cb-binding		[1] UTF8String OPTIONAL,
-    hostname		[2] UTF8String OPTIONAL -- for chap/cram-md5
+    type		UTF8String, -- http, sasl, chap, cram-md5 --
+    channel		[0] SEQUENCE {
+    	cb-type		UTF8String,
+    	cb-binding	UTF8String
+    } OPTIONAL,
+    hostname		[1] UTF8String OPTIONAL -- for chap/cram-md5
 }
 
 DigestInitReply ::= SEQUENCE {
     nonce		UTF8String,	-- service nonce/challange
-    opaque		UTF8String	-- server state
+    opaque		UTF8String,	-- server state
+    identifier		[0] UTF8String OPTIONAL
 }
 
 
@@ -62,7 +65,7 @@ DigestREQ ::= [APPLICATION 128] SEQUENCE {
     innerReq		[1] EncryptedData
 }
 
-DigestReply ::= CHOICE {
+DigestRepInner ::= CHOICE {
     error		[0] DigestError,
     initReply		[1] DigestInitReply,
     response		[2] DigestResponse

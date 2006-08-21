@@ -369,11 +369,13 @@ gen_files_test =					\
 gen_files_digest =					\
 	asn1_DigestInit.x				\
 	asn1_DigestInitReply.x				\
-	asn1_DigestReq.x				\
 	asn1_DigestRequest.x				\
 	asn1_DigestError.x				\
 	asn1_DigestResponse.x				\
-	asn1_DigestReply.x
+	asn1_DigestReqInner.x				\
+	asn1_DigestREQ.x				\
+	asn1_DigestRepInner.x				\
+	asn1_DigestREP.x
 	
 
 noinst_PROGRAMS = asn1_compile asn1_print asn1_gen
