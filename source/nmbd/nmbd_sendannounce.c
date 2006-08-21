@@ -35,7 +35,7 @@ extern BOOL found_lm_clients;
 
 void send_browser_reset(int reset_type, const char *to_name, int to_type, struct in_addr to_ip)
 {
-	pstring outbuf;
+	char outbuf[PSTRING_LEN];
 	char *p;
 
 	DEBUG(3,("send_browser_reset: sending reset request type %d to %s<%02x> IP %s.\n",
@@ -60,7 +60,7 @@ void send_browser_reset(int reset_type, const char *to_name, int to_type, struct
 
 void broadcast_announce_request(struct subnet_record *subrec, struct work_record *work)
 {
-	pstring outbuf;
+	char outbuf[PSTRING_LEN];
 	char *p;
 
 	work->needannounce = True;
@@ -91,7 +91,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
                               time_t announce_interval,
                               const char *server_name, int server_type, const char *server_comment)
 {
-	pstring outbuf;
+	char outbuf[PSTRING_LEN];
 	unstring upper_server_name;
 	char *p;
 
@@ -116,7 +116,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
 	SSVAL(p,27,BROWSER_ELECTION_VERSION);
 	SSVAL(p,29,BROWSER_CONSTANT); /* Browse signature. */
 
-	p += 31 + push_string(NULL, p+31, server_comment, -1, STR_ASCII|STR_TERMINATE);
+	p += 31 + push_string(NULL, p+31, server_comment, sizeof(outbuf) - (p + 31 - outbuf), STR_ASCII|STR_TERMINATE);
 
 	send_mailslot(False,BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
 			from_name, 0x0, to_name, to_type, to_ip, subrec->myip,
@@ -132,7 +132,7 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
                               time_t announce_interval,
                               char *server_name, int server_type, char *server_comment)
 {
-	pstring outbuf;
+	char outbuf[PSTRING_LEN];
 	char *p=outbuf;
 
 	memset(outbuf,'\0',sizeof(outbuf));
@@ -145,7 +145,7 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
 
 	p += 10;
 	p += push_string(NULL, p, server_name, 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
-	p += push_string(NULL, p, server_comment, sizeof(pstring)-15, STR_ASCII|STR_UPPER|STR_TERMINATE);
+	p += push_string(NULL, p, server_comment, sizeof(outbuf)- (p - outbuf), STR_ASCII|STR_UPPER|STR_TERMINATE);
 
 	send_mailslot(False,LANMAN_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
 		from_name, 0x0, to_name, to_type, to_ip, subrec->myip,
