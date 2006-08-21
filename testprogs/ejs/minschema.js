@@ -54,7 +54,7 @@ class_attrs = new Array("objectClass",
 attrib_attrs = new Array("objectClass", "lDAPDisplayName", 
 			 "isSingleValued", "linkID", "systemFlags", "systemOnly",
 			 "schemaIDGUID", "adminDisplayName", "attributeID",
-			 "attributeSyntax");
+			 "attributeSyntax", "oMSyntax", "oMObjectClass");
 
 /*
   notes:
@@ -75,21 +75,37 @@ function dprintf() {
 	}
 }
 
+function get_object_cn(ldb, name) {
+	var attrs = new Array("cn");
+
+	var res = ldb.search(sprintf("(ldapDisplayName=%s)", name), rootDse.schemaNamingContext, ldb.SCOPE_SUBTREE, attrs);
+	assert(res != undefined);
+	assert(res.length == 1);
+
+        var cn = res[0]["cn"];
+	assert(cn != undefined);
+	if (typeof(cn) == "string") {
+		return cn;
+	}
+	return cn[0];
+}
 /*
   create an objectclass object
 */
-function obj_objectClass(name) {
+function obj_objectClass(ldb, name) {
 	var o = new Object();
 	o.name = name;
+	o.cn = get_object_cn(ldb, name);
 	return o;
 }
 
 /*
   create an attribute object
 */
-function obj_attribute(name) {
+function obj_attribute(ldb, name) {
 	var o = new Object();
 	o.name = name;
+	o.cn = get_object_cn(ldb, name);
 	return o;
 }
 
@@ -142,12 +158,17 @@ function fix_dn(dn) {
 */
 function write_ldif_one(o, attrs) {
 	var i;
-	printf("dn: CN=%s,CN=Schema,CN=Configuration,${BASEDN}\n", o.name);
-	printf("cn: %s\n", o.name);
-	printf("name: %s\n", o.name);
+	printf("dn: CN=%s,CN=Schema,CN=Configuration,${BASEDN}\n", o.cn);
+	printf("cn: %s\n", o.cn);
+	printf("name: %s\n", o.cn);
 	for (i=0;i<attrs.length;i++) {
 		var a = attrs[i];
 		if (o[a] == undefined) {
+			continue;
+		}
+		/* special case for oMObjectClass, which is a binary object */
+		if (a == "oMObjectClass") {
+			printf("%s:: %s\n", a, o[a]);
 			continue;
 		}
 		var v = o[a];
@@ -211,6 +232,11 @@ function find_attribute_properties(ldb, o) {
 	var msg = res[0];
 	var a;
 	for (a in msg) {
+		/* special case for oMObjectClass, which is a binary object */
+		if (a == "oMObjectClass") {
+			o[a] = ldb.encode(msg[a]);
+			continue;
+		}
 		o[a] = msg[a];
 	}
 }
@@ -278,7 +304,7 @@ function expand_objectclass(ldb, o) {
 			var name = list[i];
 			if (objectclasses[name] == undefined) {
 				dprintf("Found new objectclass '%s'\n", name);
-				objectclasses[name] = obj_objectClass(name);
+				objectclasses[name] = obj_objectClass(ldb, name);
 			}
 		}
 	}
@@ -307,7 +333,7 @@ function add_objectclass_attributes(ldb, class) {
 		for (j=0;j<len;j++) {
 			var a = alist[j];
 			if (attributes[a] == undefined) {
-				attributes[a] = obj_attribute(a);
+				attributes[a] = obj_attribute(ldb, a);
 			}
 		}
 	}
@@ -337,7 +363,7 @@ function walk_dn(ldb, dn) {
 	var msg = res[0];
 	for (a in msg) {
 		if (attributes[a] == undefined) {
-			attributes[a] = obj_attribute(a);
+			attributes[a] = obj_attribute(ldb, a);
 		}
 	}
 }
@@ -360,7 +386,7 @@ function walk_naming_context(ldb, namingContext) {
 		for (c=0;c<msg.length;c++) {
 			var objectClass = msg[c];
 			if (objectclasses[objectClass] == undefined) {
-				objectclasses[objectClass] = obj_objectClass(objectClass);
+				objectclasses[objectClass] = obj_objectClass(ldb, objectClass);
 				objectclasses[objectClass].exampleDN = res[r].dn;
 			}
 		}
@@ -391,7 +417,7 @@ function build_objectclass(ldb, name) {
 		dprintf("unknown class '%s'\n", name);
 		return undefined;
 	}
-	return obj_objectClass(name);
+	return obj_objectClass(ldb, name);
 }
 
 /*
