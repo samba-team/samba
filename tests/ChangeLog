@@ -1,3 +1,7 @@
+2006-08-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kdc.in: Remove empty lines for picky awks
+	
 2006-07-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kdc.in: Check for cross realm case where remove user
