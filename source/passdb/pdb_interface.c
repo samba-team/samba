@@ -604,7 +604,7 @@ static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
 	}
 
 	if (pdb_rid_algorithm()) {
-		*rid = pdb_gid_to_group_rid( grp->gr_gid );
+		*rid = algorithmic_pdb_gid_to_group_rid( grp->gr_gid );
 	} else {
 		if (!pdb_new_rid(rid)) {
 			return NT_STATUS_ACCESS_DENIED;
