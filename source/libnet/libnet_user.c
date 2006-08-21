@@ -49,7 +49,7 @@ static struct composite_context* domain_opened(struct libnet_context *ctx,
 		 * if it's not been explicitly specified.
 		 */
 
-		if (policy_handle_empty(&ctx->domain.handle)) {
+		if (policy_handle_empty(&ctx->samr.handle)) {
 			domain_open->in.domain_name = cli_credentials_get_domain(ctx->cred);
 			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 
@@ -65,8 +65,8 @@ static struct composite_context* domain_opened(struct libnet_context *ctx,
 		 * opening a new domain otherwise.
 		 */
 
-		if (policy_handle_empty(&ctx->domain.handle) ||
-		    !strequal(domain_name, ctx->domain.name)) {
+		if (policy_handle_empty(&ctx->samr.handle) ||
+		    !strequal(domain_name, ctx->samr.name)) {
 			domain_open->in.domain_name = domain_name;
 			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;			
 
@@ -143,10 +143,10 @@ struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 
 	/* prepare arguments for useradd call */
 	s->user_add.in.username       = r->in.user_name;
-	s->user_add.in.domain_handle  = ctx->domain.handle;
+	s->user_add.in.domain_handle  = ctx->samr.handle;
 
 	/* send the request */
-	create_req = libnet_rpc_useradd_send(ctx->samr_pipe, &s->user_add, monitor);
+	create_req = libnet_rpc_useradd_send(ctx->samr.pipe, &s->user_add, monitor);
 	if (composite_nomem(create_req, c)) return c;
 
 	/* set the next stage */
@@ -178,10 +178,10 @@ static void continue_domain_open_create(struct composite_context *ctx)
 	
 	/* prepare arguments for useradd call */
 	s->user_add.in.username       = s->r.in.user_name;
-	s->user_add.in.domain_handle  = s->ctx->domain.handle;
+	s->user_add.in.domain_handle  = s->ctx->samr.handle;
 
 	/* send the request */
-	create_req = libnet_rpc_useradd_send(s->ctx->samr_pipe, &s->user_add, s->monitor_fn);
+	create_req = libnet_rpc_useradd_send(s->ctx->samr.pipe, &s->user_add, s->monitor_fn);
 	if (composite_nomem(create_req, c)) return;
 
 	/* set the next stage */
@@ -314,10 +314,10 @@ struct composite_context *libnet_DeleteUser_send(struct libnet_context *ctx,
 
 	/* prepare arguments for userdel call */
 	s->user_del.in.username       = r->in.user_name;
-	s->user_del.in.domain_handle  = ctx->domain.handle;
+	s->user_del.in.domain_handle  = ctx->samr.handle;
 
 	/* send request */
-	delete_req = libnet_rpc_userdel_send(ctx->samr_pipe, &s->user_del, monitor);
+	delete_req = libnet_rpc_userdel_send(ctx->samr.pipe, &s->user_del, monitor);
 	if (composite_nomem(delete_req, c)) return c;
 	
 	/* set the next stage */
@@ -349,10 +349,10 @@ static void continue_domain_open_delete(struct composite_context *ctx)
 
 	/* prepare arguments for userdel call */
 	s->user_del.in.username       = s->r.in.user_name;
-	s->user_del.in.domain_handle  = s->ctx->domain.handle;
+	s->user_del.in.domain_handle  = s->ctx->samr.handle;
 
 	/* send request */
-	delete_req = libnet_rpc_userdel_send(s->ctx->samr_pipe, &s->user_del, s->monitor_fn);
+	delete_req = libnet_rpc_userdel_send(s->ctx->samr.pipe, &s->user_del, s->monitor_fn);
 	if (composite_nomem(delete_req, c)) return;
 
 	/* set the next stage */
@@ -470,9 +470,9 @@ struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
 	if (prereq_ctx) return prereq_ctx;
 
 	s->user_mod.in.username      = r->in.user_name;
-	s->user_mod.in.domain_handle = ctx->domain.handle;
+	s->user_mod.in.domain_handle = ctx->samr.handle;
 
-	userinfo_req = libnet_rpc_userinfo_send(ctx->samr_pipe, &s->user_info, monitor);
+	userinfo_req = libnet_rpc_userinfo_send(ctx->samr.pipe, &s->user_info, monitor);
 	if (composite_nomem(userinfo_req, c)) return c;
 
 	composite_continue(c, userinfo_req, continue_rpc_userinfo, c);
@@ -496,11 +496,11 @@ static void continue_domain_open_modify(struct composite_context *ctx)
 
 	if (s->monitor_fn) s->monitor_fn(&msg);
 	
-	s->user_info.in.domain_handle  = s->ctx->domain.handle;
+	s->user_info.in.domain_handle  = s->ctx->samr.handle;
 	s->user_info.in.username       = s->r.in.user_name;
 	s->user_info.in.level          = level;
 
-	userinfo_req = libnet_rpc_userinfo_send(s->ctx->samr_pipe, &s->user_info, s->monitor_fn);
+	userinfo_req = libnet_rpc_userinfo_send(s->ctx->samr.pipe, &s->user_info, s->monitor_fn);
 	if (composite_nomem(userinfo_req, c)) return;
 	
 	composite_continue(c, userinfo_req, continue_rpc_userinfo, c);
@@ -519,12 +519,12 @@ static void continue_rpc_userinfo(struct composite_context *ctx)
 	c->status = libnet_rpc_userinfo_recv(ctx, c, &s->user_info);
 	if (!composite_is_ok(c)) return;
 
-	s->user_mod.in.domain_handle = s->ctx->domain.handle;
+	s->user_mod.in.domain_handle = s->ctx->samr.handle;
 	s->user_mod.in.username      = s->r.in.user_name;
 
 	c->status = set_user_changes(c, &s->user_mod.in.change, &s->user_info, &s->r);
 
-	usermod_req = libnet_rpc_usermod_send(s->ctx->samr_pipe, &s->user_mod, s->monitor_fn);
+	usermod_req = libnet_rpc_usermod_send(s->ctx->samr.pipe, &s->user_mod, s->monitor_fn);
 	if (composite_nomem(usermod_req, c)) return;
 
 	composite_continue(c, usermod_req, continue_rpc_usermod, c);

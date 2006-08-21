@@ -19,16 +19,31 @@
 */
 
 
+enum service_type { DOMAIN_SAMR, DOMAIN_LSA };
+
 /*
  * struct definition for opening a domain
  */
 
 struct libnet_DomainOpen {
 	struct {
+		enum service_type type;
 		const char *domain_name;
 		uint32_t access_mask;
 	} in;
 	struct {
 		struct policy_handle domain_handle;
+		const char *error_string;
+	} out;
+};
+
+
+struct libnet_DomainClose {
+	struct {
+		enum service_type type;
+		const char *domain_name;
+	} in;
+	struct {
+		const char *error_string;
 	} out;
 };
