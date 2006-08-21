@@ -195,7 +195,7 @@ NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *pmap)
 	fstrcpy(map.nt_name, grpname);
 
 	if (pdb_rid_algorithm()) {
-		rid = pdb_gid_to_group_rid( grp->gr_gid );
+		rid = algorithmic_pdb_gid_to_group_rid( grp->gr_gid );
 	} else {
 		if (!pdb_new_rid(&rid)) {
 			DEBUG(3, ("Could not get a new RID for %s\n",
