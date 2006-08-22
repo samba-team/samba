@@ -32,3 +32,6 @@
 [logging]
 	kdc = 0-/FILE:@objdir@/messages.log
 	default = 0-/FILE:@objdir@/messages.log
+
+[kadmin]
+	save-password = true
