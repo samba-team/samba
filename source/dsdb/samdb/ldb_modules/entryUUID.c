@@ -116,7 +116,7 @@ static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC
 	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
 	list = entryUUID_private->objectclass_res;
 
-	for (i=0; i < list->count; i++) {
+	for (i=0; list && i < list->count; i++) {
 		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
 			char *dn = ldb_dn_linearize(ctx, list->msgs[i]->dn);
 			return data_blob_string_const(dn);
@@ -137,7 +137,7 @@ static struct ldb_val class_to_oid(struct ldb_module *module, TALLOC_CTX *ctx, c
 	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
 	list = entryUUID_private->objectclass_res;
 
-	for (i=0; i < list->count; i++) {
+	for (i=0; list && i < list->count; i++) {
 		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
 			const char *oid = ldb_msg_find_attr_as_string(list->msgs[i], "governsID", NULL);
 			return data_blob_string_const(oid);
@@ -158,7 +158,7 @@ static struct ldb_val class_from_oid(struct ldb_module *module, TALLOC_CTX *ctx,
 	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
 	list = entryUUID_private->objectclass_res;
 
-	for (i=0; i < list->count; i++) {
+	for (i=0; list && i < list->count; i++) {
 		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "governsID", NULL)) == 0) {
 			const char *oc = ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL);
 			return data_blob_string_const(oc);
@@ -309,8 +309,7 @@ static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *sche
 			 "objectClass=classSchema", 
 			 attrs, objectclass_res);
 	if (ret != LDB_SUCCESS) {
-		printf("Search failed: %s\n", ldb_errstring(ldb));
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 	
 	return ret;
@@ -330,21 +329,20 @@ static int entryUUID_init(struct ldb_module *module)
 
 	map_private = talloc_get_type(module->private_data, struct map_private);
 
-	entryUUID_private = talloc(map_private, struct entryUUID_private);
+	entryUUID_private = talloc_zero(map_private, struct entryUUID_private);
 	map_private->caller_private = entryUUID_private;
 
 	schema_dn = find_schema_dn(module->ldb, map_private);
 	if (!schema_dn) {
-		printf("Failed to find schema DN: %s\n", ldb_errstring(module->ldb));
-		return LDB_ERR_OPERATIONS_ERROR;
+		/* Perhaps no schema yet */
+		return LDB_SUCCESS;
 	}
 	
 	ret = fetch_objectclass_schema(module->ldb, schema_dn, entryUUID_private, &entryUUID_private->objectclass_res);
 	if (ret != LDB_SUCCESS) {
-		printf("Failed to fetch objectClass schema elements: %s\n", ldb_errstring(module->ldb));
+		ldb_asprintf_errstring(module->ldb, "Failed to fetch objectClass schema elements: %s\n", ldb_errstring(module->ldb));
 		return ret;
-	}
-	
+	}	
 	
 	return ldb_next_init(module);
 }
