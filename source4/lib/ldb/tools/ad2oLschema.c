@@ -312,6 +312,14 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		return ret;
 	}
 	
+	switch (target) {
+	case TARGET_OPENLDAP:
+		break;
+	case TARGET_FEDORA_DS:
+		fprintf(out, "dn: cn=schema\n");
+		break;
+	}
+
 	for (i=0; i < attrs_res->count; i++) {
 		struct ldb_message *msg = attrs_res->msgs[i];
 
@@ -396,9 +404,16 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		}
 		
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "  )\n\n");
+						      "  )");
 
-		fprintf(out, "%s", schema_entry);
+		switch (target) {
+		case TARGET_OPENLDAP:
+			fprintf(out, "%s\n\n", schema_entry);
+			break;
+		case TARGET_FEDORA_DS:
+			fprintf(out, "%s\n", schema_entry);
+			break;
+		}
 	}
 
 	ldb_ret = fetch_objectclass_schema(ldb, schemadn, mem_ctx, &objectclasses_res);
@@ -502,7 +517,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 					schema_entry = talloc_asprintf_append(schema_entry, \
 									      " $"); \
 					IF_NULL_FAIL_RET(schema_entry);	\
-					if ((k+1)%5 == 0) {		\
+					if (target == TARGET_OPENLDAP && ((k+1)%5 == 0)) { \
 						schema_entry = talloc_asprintf_append(schema_entry, \
 										      "\n  "); \
 						IF_NULL_FAIL_RET(schema_entry);	\
@@ -524,7 +539,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			APPEND_ATTRS(sys_must);
 			
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      ")\n");
+							      " )\n");
 			IF_NULL_FAIL_RET(schema_entry);
 		}
 
@@ -546,9 +561,16 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		}
 
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "  )\n\n");
+						      "  )");
 
-		fprintf(out, "%s", schema_entry);
+		switch (target) {
+		case TARGET_OPENLDAP:
+			fprintf(out, "%s\n\n", schema_entry);
+			break;
+		case TARGET_FEDORA_DS:
+			fprintf(out, "%s\n", schema_entry);
+			break;
+		}
 	}
 
 	return ret;
