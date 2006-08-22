@@ -1120,7 +1120,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 	
 	/* This is an unmapped group */
 
-	uid_to_unix_groups_sid(gid, psid);
+	gid_to_unix_groups_sid(gid, psid);
 
  done:
 	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid,

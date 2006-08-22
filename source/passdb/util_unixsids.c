@@ -42,7 +42,7 @@ BOOL uid_to_unix_users_sid(uid_t uid, DOM_SID *sid)
 	return sid_append_rid(sid, uid);
 }
 
-BOOL uid_to_unix_groups_sid(gid_t gid, DOM_SID *sid)
+BOOL gid_to_unix_groups_sid(gid_t gid, DOM_SID *sid)
 {
 	sid_copy(sid, &global_sid_Unix_Groups);
 	return sid_append_rid(sid, gid);
