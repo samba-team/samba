@@ -29,7 +29,7 @@ install: all
 	${INSTALLCMD} -m 755 libtalloc.a $(libdir)
 	${INSTALLCMD} -d ${includedir}
 	${INSTALLCMD} -m 644 $(srcdir)/talloc.h $(includedir)
-	${INSTALLCMD} -m 644 $(srcdir)/talloc.pc $(libdir)/pkgconfig
+	${INSTALLCMD} -m 644 talloc.pc $(libdir)/pkgconfig
 	${INSTALLCMD} -d ${mandir}/man3
 	test -z "$(XSLTPROC)" || ${INSTALLCMD} -m 644 talloc.3 $(mandir)/man3
 
