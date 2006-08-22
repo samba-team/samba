@@ -836,19 +836,18 @@ struct ldb_dn *ldb_dn_string_compose(void *mem_ctx, const struct ldb_dn *base, c
 	struct ldb_dn *dn;
 	char *child_str;
 	va_list ap;
-	int ret;
 	
 	if (child_fmt == NULL) return NULL;
 
 	va_start(ap, child_fmt);
-	ret = vasprintf(&child_str, child_fmt, ap);
+	child_str = talloc_vasprintf(mem_ctx, child_fmt, ap);
 	va_end(ap);
 
-	if (ret <= 0) return NULL;
+	if (child_str == NULL) return NULL;
 
 	dn = ldb_dn_compose(mem_ctx, ldb_dn_explode(mem_ctx, child_str), base);
 
-	free(child_str);
+	talloc_free(child_str);
 
 	return dn;
 }
