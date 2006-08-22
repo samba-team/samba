@@ -563,15 +563,15 @@ static size_t utf8_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 
 	*inbytesleft = in_left;
 	*outbytesleft = out_left;
-	*inbuf = c;
-	*outbuf = uc;	
+	*inbuf = (const char *)c;
+	*outbuf = (char *)uc;
 	return 0;
 
 error:
 	*inbytesleft = in_left;
 	*outbytesleft = out_left;
-	*inbuf = c;
-	*outbuf = uc;
+	*inbuf = (const char *)c;
+	*outbuf = (char *)uc;
 	return -1;
 }
 
@@ -676,16 +676,16 @@ static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
 
 	*inbytesleft = in_left;
 	*outbytesleft = out_left;
-	*inbuf  = uc;
-	*outbuf = c;
+	*inbuf  = (const char *)uc;
+	*outbuf = (char *)c;
 	
 	return 0;
 
 error:
 	*inbytesleft = in_left;
 	*outbytesleft = out_left;
-	*inbuf  = uc;
-	*outbuf = c;
+	*inbuf  = (const char *)uc;
+	*outbuf = (char *)c;
 	return -1;
 }
 
