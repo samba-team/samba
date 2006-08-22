@@ -191,7 +191,9 @@ test-schema:
 	@echo "SKIPPING SCHEMA MODULE TEST"
 endif
 
-test: $(BINS) test-tdb test-ldap test-sqlite3 test-schema
+installcheck: install test-tdb test-ldap test-sqlite3 test-schema
+
+test: installcheck
 
 install: all
 	mkdir -p $(includedir) $(libdir)/pkgconfig $(libdir) $(bindir)
