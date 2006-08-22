@@ -135,6 +135,12 @@ struct ldb_map_context {
 	const struct ldb_dn *remote_base_dn;
 };
 
+/* Global private data */
+struct map_private {
+	void *caller_private;
+	struct ldb_map_context context;
+};
+
 /* initialization function */
 int
 ldb_map_init(struct ldb_module *module,
