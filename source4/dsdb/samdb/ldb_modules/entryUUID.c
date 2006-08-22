@@ -116,7 +116,7 @@ static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC
 	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
 	list = entryUUID_private->objectclass_res;
 
-	for (i=0; list && i < list->count; i++) {
+	for (i=0; list && (i < list->count); i++) {
 		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
 			char *dn = ldb_dn_linearize(ctx, list->msgs[i]->dn);
 			return data_blob_string_const(dn);
@@ -137,7 +137,7 @@ static struct ldb_val class_to_oid(struct ldb_module *module, TALLOC_CTX *ctx, c
 	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
 	list = entryUUID_private->objectclass_res;
 
-	for (i=0; list && i < list->count; i++) {
+	for (i=0; list && (i < list->count); i++) {
 		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
 			const char *oid = ldb_msg_find_attr_as_string(list->msgs[i], "governsID", NULL);
 			return data_blob_string_const(oid);
@@ -158,7 +158,7 @@ static struct ldb_val class_from_oid(struct ldb_module *module, TALLOC_CTX *ctx,
 	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
 	list = entryUUID_private->objectclass_res;
 
-	for (i=0; list && i < list->count; i++) {
+	for (i=0; list && (i < list->count); i++) {
 		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "governsID", NULL)) == 0) {
 			const char *oc = ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL);
 			return data_blob_string_const(oc);
