@@ -13,6 +13,7 @@ srcdir = @srcdir@
 builddir = @builddir@
 WITH_GCOV = @WITH_GCOV@
 WITH_LDAP = @WITH_LDAP@
+SLAPD = @SLAPD@
 WITH_SQLITE3 = @WITH_SQLITE3@
 
 ifeq ($(WITH_LDAP),yes)
@@ -78,7 +79,7 @@ BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrena
 
 LIBS = $(LDB_LIB)($(OBJS))
 
-MANPAGES = $(patsubst %.xml,%,$(wildcard man/*.xml))
+MANPAGES = $(patsubst %.xml,%,$(wildcard $(srcdir)/man/*.xml))
 
 EXAMPLES = examples/ldbreader examples/ldifreader
 
@@ -122,7 +123,7 @@ bin/oLschema2ldif: tools/oLschema2ldif.o tools/cmdline.o tools/convert.o $(LIBS)
 
 examples/ldbreader: examples/ldbreader.o $(LIBS)
 	$(CC) -o examples/ldbreader examples/ldbreader.o $(LIB_FLAGS)
- 
+
 examples/ldifreader: examples/ldifreader.o $(LIBS)
 	$(CC) -o examples/ldifreader examples/ldifreader.o $(LIB_FLAGS)
 
@@ -166,7 +167,7 @@ test-tdb: $(BINS)
 ifeq ($(WITH_LDAP),yes)
 test-ldap:
 	@echo "STARTING LDAP BACKEND TEST"
-	$(srcdir)/tests/test-ldap.sh
+	if test -x "$(SLAPD)"; then $(srcdir)/tests/test-ldap.sh; fi
 else
 test-ldap:
 	@echo "SKIP LDAP TEST - NO LDAP SUPPORT"
@@ -194,8 +195,8 @@ test: $(BINS) test-tdb test-ldap test-sqlite3 test-schema
 
 install: all
 	mkdir -p $(includedir) $(libdir)/pkgconfig $(libdir) $(bindir)
-	mkdir -p $(mandir) $(mandir)/man3
-	cp include/ldb.h include/ldb_errors.h $(includedir)
+	mkdir -p $(mandir) $(mandir)/man3 $(mandir)/man1
+	cp $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(includedir)
 	cp $(LDB_LIB) $(libdir)
 	cp $(BINS) $(bindir)
 	cp ldb.pc $(libdir)/pkgconfig
