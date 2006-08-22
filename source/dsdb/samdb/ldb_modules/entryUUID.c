@@ -257,7 +257,7 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx) 
 {
 	const char *rootdse_attrs[] = {"schemaNamingContext", NULL};
-	struct ldb_dn *schemadn;
+	struct ldb_dn *schema_dn;
 	struct ldb_dn *basedn = ldb_dn_explode(mem_ctx, "");
 	struct ldb_result *rootdse_res;
 	int ldb_ret;
@@ -268,25 +268,24 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 	/* Search for rootdse */
 	ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_BASE, NULL, rootdse_attrs, &rootdse_res);
 	if (ldb_ret != LDB_SUCCESS) {
-		printf("Search failed: %s\n", ldb_errstring(ldb));
 		return NULL;
 	}
 	
 	talloc_steal(mem_ctx, rootdse_res);
 
 	if (rootdse_res->count != 1) {
-		printf("Failed to find rootDSE");
+		ldb_asprintf_errstring(ldb, "Failed to find rootDSE: count %d", rootdse_res->count);
 		return NULL;
 	}
 	
 	/* Locate schema */
-	schemadn = ldb_msg_find_attr_as_dn(mem_ctx, rootdse_res->msgs[0], "schemaNamingContext");
-	if (!schemadn) {
+	schema_dn = ldb_msg_find_attr_as_dn(mem_ctx, rootdse_res->msgs[0], "schemaNamingContext");
+	if (!schema_dn) {
 		return NULL;
 	}
 
 	talloc_free(rootdse_res);
-	return schemadn;
+	return schema_dn;
 }
 
 static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *schemadn,
