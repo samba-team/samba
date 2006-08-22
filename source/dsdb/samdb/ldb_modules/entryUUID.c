@@ -36,6 +36,10 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/ndr/libndr.h"
 
+struct entryUUID_private {
+	struct ldb_result *objectclass_res;	
+};
+
 static struct ldb_val encode_guid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct GUID guid;
@@ -76,7 +80,7 @@ static struct ldb_val decode_guid(struct ldb_module *module, TALLOC_CTX *ctx, co
 }
 
 /* The backend holds binary sids, so just copy them back */
-static struct ldb_val sid_copy(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+static struct ldb_val val_copy(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct ldb_val out = data_blob(NULL, 0);
 	ldb_handler_copy(module->ldb, ctx, val, &out);
@@ -96,6 +100,75 @@ static struct ldb_val sid_always_binary(struct ldb_module *module, TALLOC_CTX *c
 
 	return out;
 }
+
+static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	int i;
+	struct map_private *map_private;
+	struct entryUUID_private *entryUUID_private;
+	struct ldb_result *list;
+
+	if (ldb_dn_explode(ctx, val->data)) {
+		return *val;
+	}
+	map_private = talloc_get_type(module->private_data, struct map_private);
+
+	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
+	list = entryUUID_private->objectclass_res;
+
+	for (i=0; i < list->count; i++) {
+		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
+			char *dn = ldb_dn_linearize(ctx, list->msgs[i]->dn);
+			return data_blob_string_const(dn);
+		}
+	}
+	return *val;
+}
+
+static struct ldb_val class_to_oid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	int i;
+	struct map_private *map_private;
+	struct entryUUID_private *entryUUID_private;
+	struct ldb_result *list;
+
+	map_private = talloc_get_type(module->private_data, struct map_private);
+
+	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
+	list = entryUUID_private->objectclass_res;
+
+	for (i=0; i < list->count; i++) {
+		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
+			const char *oid = ldb_msg_find_attr_as_string(list->msgs[i], "governsID", NULL);
+			return data_blob_string_const(oid);
+		}
+	}
+	return *val;
+}
+
+static struct ldb_val class_from_oid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	int i;
+	struct map_private *map_private;
+	struct entryUUID_private *entryUUID_private;
+	struct ldb_result *list;
+
+	map_private = talloc_get_type(module->private_data, struct map_private);
+
+	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
+	list = entryUUID_private->objectclass_res;
+
+	for (i=0; i < list->count; i++) {
+		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "governsID", NULL)) == 0) {
+			const char *oc = ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL);
+			return data_blob_string_const(oc);
+		}
+	}
+	return *val;
+}
+
+
+
 
 const struct ldb_map_attribute entryUUID_attributes[] = 
 {
@@ -119,7 +192,7 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 			.convert = {
 				.remote_name = "objectSid", 
 				.convert_local = sid_always_binary,
-				.convert_remote = sid_copy,
+				.convert_remote = val_copy,
 			},
 		},
 	},
@@ -142,6 +215,28 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 		}
 	},
 	{
+		.local_name = "allowedChildClassesEffective",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "allowedChildClassesEffective", 
+				.convert_local = class_to_oid,
+				.convert_remote = class_from_oid,
+			},
+		},
+	},
+	{
+		.local_name = "objectCategory",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "objectCategory", 
+				.convert_local = objectCategory_always_dn,
+				.convert_remote = val_copy,
+			},
+		},
+	},
+	{
 		.local_name = "distinguishedName",
 		.type = MAP_RENAME,
 		.u = {
@@ -159,16 +254,100 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 	}
 };
 
+static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx) 
+{
+	const char *rootdse_attrs[] = {"schemaNamingContext", NULL};
+	struct ldb_dn *schemadn;
+	struct ldb_dn *basedn = ldb_dn_explode(mem_ctx, "");
+	struct ldb_result *rootdse_res;
+	int ldb_ret;
+	if (!basedn) {
+		return NULL;
+	}
+	
+	/* Search for rootdse */
+	ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_BASE, NULL, rootdse_attrs, &rootdse_res);
+	if (ldb_ret != LDB_SUCCESS) {
+		printf("Search failed: %s\n", ldb_errstring(ldb));
+		return NULL;
+	}
+	
+	talloc_steal(mem_ctx, rootdse_res);
+
+	if (rootdse_res->count != 1) {
+		printf("Failed to find rootDSE");
+		return NULL;
+	}
+	
+	/* Locate schema */
+	schemadn = ldb_msg_find_attr_as_dn(mem_ctx, rootdse_res->msgs[0], "schemaNamingContext");
+	if (!schemadn) {
+		return NULL;
+	}
+
+	talloc_free(rootdse_res);
+	return schemadn;
+}
+
+static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *schemadn,
+			      TALLOC_CTX *mem_ctx, 
+			      struct ldb_result **objectclass_res)
+{
+	TALLOC_CTX *local_ctx = talloc_new(mem_ctx);
+	int ret;
+	const char *attrs[] = {
+		"lDAPDisplayName",
+		"governsID",
+		NULL
+	};
+
+	if (!local_ctx) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	/* Downlaod schema */
+	ret = ldb_search(ldb, schemadn, LDB_SCOPE_SUBTREE, 
+			 "objectClass=classSchema", 
+			 attrs, objectclass_res);
+	if (ret != LDB_SUCCESS) {
+		printf("Search failed: %s\n", ldb_errstring(ldb));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	return ret;
+}
+
 /* the context init function */
 static int entryUUID_init(struct ldb_module *module)
 {
         int ret;
+	struct map_private *map_private;
+	struct entryUUID_private *entryUUID_private;
+	struct ldb_dn *schema_dn;
 
 	ret = ldb_map_init(module, entryUUID_attributes, NULL, NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
 
-        return ldb_next_init(module);
+	map_private = talloc_get_type(module->private_data, struct map_private);
+
+	entryUUID_private = talloc(map_private, struct entryUUID_private);
+	map_private->caller_private = entryUUID_private;
+
+	schema_dn = find_schema_dn(module->ldb, map_private);
+	if (!schema_dn) {
+		printf("Failed to find schema DN: %s\n", ldb_errstring(module->ldb));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	ret = fetch_objectclass_schema(module->ldb, schema_dn, entryUUID_private, &entryUUID_private->objectclass_res);
+	if (ret != LDB_SUCCESS) {
+		printf("Failed to fetch objectClass schema elements: %s\n", ldb_errstring(module->ldb));
+		return ret;
+	}
+	
+	
+	return ldb_next_init(module);
 }
 
 static struct ldb_module_ops entryUUID_ops = {
