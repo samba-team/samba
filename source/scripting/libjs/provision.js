@@ -236,6 +236,7 @@ function open_ldb(info, dbname, erase)
 
 	var connect_ok = ldb.connect(dbname);
 	if (!connect_ok) {
+		var lp = loadparm_init();
 		sys.unlink(sprintf("%s/%s", lp.get("private dir"), dbname));
 		connect_ok = ldb.connect(dbname);
 		assert(connect_ok);
@@ -307,8 +308,9 @@ function setup_ldb_modify(ldif, info, ldb)
 	var mod_ok = ldb.modify(data);
 	if (!mod_ok) {
 		info.message("ldb load failed: " + ldb.errstring() + "\n");
-		assert(mod_ok);
+		return mod_ok;
 	}
+	return mod_ok;
 }
 
 /*
@@ -453,14 +455,32 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	ldb_erase_partitions(info, samdb);
 	
 	message("Adding baseDN: " + subobj.BASEDN + " (permitted to fail)\n");
-	setup_add_ldif("provision_basedn.ldif", info, samdb, true);
+	var add_ok = setup_add_ldif("provision_basedn.ldif", info, samdb, true);
 	message("Modifying baseDN: " + subobj.BASEDN + "\n");
-	setup_ldb_modify("provision_basedn_modify.ldif", info, samdb);
+	var modify_ok = setup_ldb_modify("provision_basedn_modify.ldif", info, samdb);
+	if (!modify_ok) {
+		if (!add_ok) {
+			message("Failed to both add and modify " + subobj.BASEDN + " in target " + subobj.LDAPBACKEND + "\n");
+			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
+		};
+		assert(modify_ok);
+	};
 
 	message("Setting up sam.ldb Samba4 schema\n");
 	setup_add_ldif("schema_samba4.ldif", info, samdb, false);
 	message("Setting up sam.ldb AD schema\n");
 	setup_add_ldif("schema.ldif", info, samdb, false);
+
+	// (hack) Reload, now we have the schema loaded.  
+	var commit_ok = samdb.transaction_commit();
+	if (!commit_ok) {
+		info.message("samdb commit failed: " + samdb.errstring() + "\n");
+		assert(commit_ok);
+	}
+	samdb.close();
+
+	samdb = open_ldb(info, paths.samdb, false);
+
 	message("Setting up display specifiers\n");
 	setup_add_ldif("display_specifiers.ldif", info, samdb, false);
 	message("Setting up sam.ldb templates\n");
