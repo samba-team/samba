@@ -906,6 +906,11 @@ static BOOL test_loop(void)
 	return True;
 }
 
+static int fail_destructor_str(char *ptr)
+{
+	return -1;
+}
+
 static BOOL test_free_parent_deny_child(void)
 {
 	char *top = talloc_new(NULL);
@@ -918,7 +923,7 @@ static BOOL test_free_parent_deny_child(void)
 	level2 = talloc_strdup(level1, "level2");
 	level3 = talloc_strdup(level2, "level3");
 
-	talloc_set_destructor(level3, fail_destructor);
+	talloc_set_destructor(level3, fail_destructor_str);
 	talloc_free(level1);
 	talloc_set_destructor(level3, NULL);
 
