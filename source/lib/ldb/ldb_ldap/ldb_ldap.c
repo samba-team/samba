@@ -557,7 +557,7 @@ static int lldb_parse_result(struct ldb_handle *handle, LDAPMessage *result)
 	case LDAP_RES_SEARCH_REFERENCE:
 		if (ldap_parse_result(lldb->ldap, result, &handle->status,
 					&matcheddnp, &errmsgp,
-					&referralsp, &serverctrlsp, 1) != LDAP_SUCCESS) {
+					&referralsp, &serverctrlsp, 0) != LDAP_SUCCESS) {
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			goto error;
 		}
@@ -581,7 +581,7 @@ static int lldb_parse_result(struct ldb_handle *handle, LDAPMessage *result)
 	case LDAP_RES_SEARCH_RESULT:
 		if (ldap_parse_result(lldb->ldap, result, &handle->status,
 					&matcheddnp, &errmsgp,
-					&referralsp, &serverctrlsp, 1) != LDAP_SUCCESS) {
+					&referralsp, &serverctrlsp, 0) != LDAP_SUCCESS) {
 			handle->status = LDB_ERR_OPERATIONS_ERROR;
 			goto error;
 		}
@@ -609,7 +609,7 @@ static int lldb_parse_result(struct ldb_handle *handle, LDAPMessage *result)
 	case LDAP_RES_MODDN:
 		if (ldap_parse_result(lldb->ldap, result, &handle->status,
 					&matcheddnp, &errmsgp,
-					&referralsp, &serverctrlsp, 1) != LDAP_SUCCESS) {
+					&referralsp, &serverctrlsp, 0) != LDAP_SUCCESS) {
 			handle->status = LDB_ERR_OPERATIONS_ERROR;
 			goto error;
 		}
