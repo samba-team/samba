@@ -1,5 +1,10 @@
 #!/bin/sh 
 
+if [ -z "$LDBDIR" ]; then
+    LDBDIR=`dirname $0`/..
+    export LDBDIR
+fi
+
 rm -rf tests/tmp/db
 mkdir -p tests/tmp/db
 
@@ -10,4 +15,4 @@ sleep 2
 if pidof slapd > /dev/null; then
     killall -9 slapd
 fi
-slapadd -f tests/slapd.conf < tests/init.ldif || exit 1
+slapadd -f $LDBDIR/tests/slapd.conf < $LDBDIR/tests/init.ldif || exit 1

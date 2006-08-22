@@ -1,7 +1,12 @@
 #!/bin/sh
 
-mkdir -p tests/tmp/db
+if [ -z "$LDBDIR" ]; then
+    LDBDIR=`dirname $0`/..
+    export LDBDIR
+fi
 
-slapd -f tests/slapd.conf -h "`tests/ldapi_url.sh`" $*
+mkdir -p $LDBDIR/tests/tmp/db
+
+slapd -f $LDBDIR/tests/slapd.conf -h "`$LDBDIR/tests/ldapi_url.sh`" $*
 
 sleep 2

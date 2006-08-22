@@ -1,5 +1,9 @@
 #!/bin/sh
 
+if [ -z "$LDB_SPECIALS" ]; then
+    export LDB_SPECIALS=1
+fi
+
 echo "LDB_URL: $LDB_URL"
 
 echo "Adding base elements"
@@ -22,8 +26,10 @@ $VALGRIND ldbsearch '(uid=uham)' || exit 1
 echo "Starting ldbtest"
 time $VALGRIND ldbtest --num-records 100 --num-searches 10  || exit 1
 
-echo "Adding index"
-$VALGRIND ldbadd $LDBDIR/tests/test-index.ldif  || exit 1
+if [ $LDB_SPECIALS = 1 ]; then
+ echo "Adding index"
+ $VALGRIND ldbadd $LDBDIR/tests/test-index.ldif  || exit 1
+fi
 
 echo "Adding attributes"
 $VALGRIND ldbadd $LDBDIR/tests/test-wrong_attributes.ldif  || exit 1
