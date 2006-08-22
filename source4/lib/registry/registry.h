@@ -55,9 +55,9 @@ extern const struct reg_predefined_key reg_predefined_keys[];
 /* structure to store the registry handles */
 struct registry_key 
 {
-  char *name;       
+  const char *name;       
   const char *path;	
-  char *class_name; 
+  const char *class_name; 
   NTTIME last_mod; 
   struct registry_hive *hive;
   void *backend_data;
@@ -65,7 +65,7 @@ struct registry_key
 
 struct registry_value 
 {
-  char *name;
+  const char *name;
   unsigned int data_type;
   DATA_BLOB data;
 };
@@ -156,7 +156,7 @@ struct reg_init_function_entry {
 
 struct reg_diff_value
 {
-	char *name;
+	const char *name;
 	enum { REG_DIFF_DEL_VAL, REG_DIFF_SET_VAL } changetype;
 	uint32_t type;
 	DATA_BLOB data;
@@ -164,7 +164,7 @@ struct reg_diff_value
 
 struct reg_diff_key
 {
-	char *name;
+	const char *name;
 	enum { REG_DIFF_CHANGE_KEY, REG_DIFF_DEL_KEY } changetype;
 	uint32_t numvalues;
 	struct reg_diff_value *values;
@@ -172,7 +172,7 @@ struct reg_diff_key
 
 struct reg_diff
 {
-	char *format;
+	const char *format;
 	uint32_t numkeys;
 	struct reg_diff_key *keys;
 };
