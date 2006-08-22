@@ -1,5 +1,6 @@
 AC_PREREQ(2.50)
 AC_INIT(talloc.h)
+AC_CONFIG_SRCDIR([talloc.c])
 AC_SUBST(datarootdir)
 AC_PROG_CC
 if test "x$GCC" = "xyes"; then
