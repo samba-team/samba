@@ -99,7 +99,7 @@
 const struct ldb_map_context *map_get_context(struct ldb_module *module)
 {
 	const struct map_private *data = talloc_get_type(module->private_data, struct map_private);
-	return &data->context;
+	return data->context;
 }
 
 /* Create a generic request context. */
@@ -338,35 +338,37 @@ const struct ldb_map_attribute *map_attr_find_local(const struct ldb_map_context
 /* Find an attribute mapping by the remote name. */
 const struct ldb_map_attribute *map_attr_find_remote(const struct ldb_map_context *data, const char *name)
 {
+	const struct ldb_map_attribute *map;
 	const struct ldb_map_attribute *wildcard = NULL;
 	int i, j;
 
 	for (i = 0; data->attribute_maps[i].local_name; i++) {
-		if (ldb_attr_cmp(data->attribute_maps[i].local_name, "*") == 0) {
+		map = &data->attribute_maps[i];
+		if (ldb_attr_cmp(map->local_name, "*") == 0) {
 			wildcard = &data->attribute_maps[i];
 		}
 
-		switch (data->attribute_maps[i].type) {
+		switch (map->type) {
 		case MAP_IGNORE:
 			break;
 
 		case MAP_KEEP:
-			if (ldb_attr_cmp(data->attribute_maps[i].local_name, name) == 0) {
-				return &data->attribute_maps[i];
+			if (ldb_attr_cmp(map->local_name, name) == 0) {
+				return map;
 			}
 			break;
 
 		case MAP_RENAME:
 		case MAP_CONVERT:
-			if (ldb_attr_cmp(data->attribute_maps[i].u.rename.remote_name, name) == 0) {
-				return &data->attribute_maps[i];
+			if (ldb_attr_cmp(map->u.rename.remote_name, name) == 0) {
+				return map;
 			}
 			break;
 
 		case MAP_GENERATE:
-			for (j = 0; data->attribute_maps[i].u.generate.remote_names[j]; j++) {
-				if (ldb_attr_cmp(data->attribute_maps[i].u.generate.remote_names[j], name) == 0) {
-					return &data->attribute_maps[i];
+			for (j = 0; map->u.generate.remote_names && map->u.generate.remote_names[j]; j++) {
+				if (ldb_attr_cmp(map->u.generate.remote_names[j], name) == 0) {
+					return map;
 				}
 			}
 			break;
@@ -1283,15 +1285,21 @@ int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attr
 
 	module->private_data = data;
 
+	data->context = talloc_zero(data, struct ldb_map_context);
+	if (!data->context) {
+		map_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;		
+	}
+
 	/* Store local and remote baseDNs */
-	ret = map_init_dns(module, &(data->context), name);
+	ret = map_init_dns(module, data->context, name);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(data);
 		return ret;
 	}
 
 	/* Store list of attribute and objectClass maps */
-	ret = map_init_maps(module, &(data->context), attrs, ocls);
+	ret = map_init_maps(module, data->context, attrs, ocls);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(data);
 		return ret;

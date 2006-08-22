@@ -138,7 +138,7 @@ struct ldb_map_context {
 /* Global private data */
 struct map_private {
 	void *caller_private;
-	struct ldb_map_context context;
+	struct ldb_map_context *context;
 };
 
 /* initialization function */
