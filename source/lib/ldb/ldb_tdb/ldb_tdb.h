@@ -37,7 +37,7 @@ struct ltdb_context {
 	struct ldb_module *module;
 
 	/* search stuff */
-	struct ldb_parse_tree *tree;
+	const struct ldb_parse_tree *tree;
 	const struct ldb_dn *base;
 	enum ldb_scope scope;
 	const char * const *attrs;

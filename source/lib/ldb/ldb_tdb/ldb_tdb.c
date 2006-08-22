@@ -255,7 +255,6 @@ done:
 
 static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message *msg)
 {
-	char *err;
 	int ret;
 	
 	ret = ltdb_check_special_dn(module, msg);

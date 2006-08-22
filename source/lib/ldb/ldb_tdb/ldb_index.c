@@ -180,7 +180,7 @@ static int list_cmp(const char **s1, const char **s2)
   return a list of dn's that might match a simple indexed search or
  */
 static int ltdb_index_dn_simple(struct ldb_module *module, 
-				struct ldb_parse_tree *tree,
+				const struct ldb_parse_tree *tree,
 				const struct ldb_message *index_list,
 				struct dn_list *list)
 {
@@ -256,7 +256,7 @@ static int list_union(struct ldb_context *, struct dn_list *, const struct dn_li
   the special objectclass attribute
  */
 static int ltdb_index_dn_objectclass(struct ldb_module *module, 
-				     struct ldb_parse_tree *tree,
+				     const struct ldb_parse_tree *tree,
 				     const struct ldb_message *index_list,
 				     struct dn_list *list)
 {
@@ -316,7 +316,7 @@ static int ltdb_index_dn_objectclass(struct ldb_module *module,
   return a list of dn's that might match a leaf indexed search
  */
 static int ltdb_index_dn_leaf(struct ldb_module *module, 
-			      struct ldb_parse_tree *tree,
+			      const struct ldb_parse_tree *tree,
 			      const struct ldb_message *index_list,
 			      struct dn_list *list)
 {
@@ -430,7 +430,7 @@ static int list_union(struct ldb_context *ldb,
 }
 
 static int ltdb_index_dn(struct ldb_module *module, 
-			 struct ldb_parse_tree *tree,
+			 const struct ldb_parse_tree *tree,
 			 const struct ldb_message *index_list,
 			 struct dn_list *list);
 
@@ -439,7 +439,7 @@ static int ltdb_index_dn(struct ldb_module *module,
   OR two index results
  */
 static int ltdb_index_dn_or(struct ldb_module *module, 
-			    struct ldb_parse_tree *tree,
+			    const struct ldb_parse_tree *tree,
 			    const struct ldb_message *index_list,
 			    struct dn_list *list)
 {
@@ -504,7 +504,7 @@ static int ltdb_index_dn_or(struct ldb_module *module,
   NOT an index results
  */
 static int ltdb_index_dn_not(struct ldb_module *module, 
-			     struct ldb_parse_tree *tree,
+			     const struct ldb_parse_tree *tree,
 			     const struct ldb_message *index_list,
 			     struct dn_list *list)
 {
@@ -523,7 +523,7 @@ static int ltdb_index_dn_not(struct ldb_module *module,
   AND two index results
  */
 static int ltdb_index_dn_and(struct ldb_module *module, 
-			     struct ldb_parse_tree *tree,
+			     const struct ldb_parse_tree *tree,
 			     const struct ldb_message *index_list,
 			     struct dn_list *list)
 {
@@ -586,7 +586,7 @@ static int ltdb_index_dn_and(struct ldb_module *module,
   -1 if an error. return 0 for no matches, or 1 for matches
  */
 static int ltdb_index_dn(struct ldb_module *module, 
-			 struct ldb_parse_tree *tree,
+			 const struct ldb_parse_tree *tree,
 			 const struct ldb_message *index_list,
 			 struct dn_list *list)
 {
