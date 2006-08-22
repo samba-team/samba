@@ -1,0 +1,160 @@
+#!/bin/sh
+#
+# Copyright (c) 2006 Kungliga Tekniska Högskolan
+# (Royal Institute of Technology, Stockholm, Sweden). 
+# All rights reserved. 
+#
+# Redistribution and use in source and binary forms, with or without 
+# modification, are permitted provided that the following conditions 
+# are met: 
+#
+# 1. Redistributions of source code must retain the above copyright 
+#    notice, this list of conditions and the following disclaimer. 
+#
+# 2. Redistributions in binary form must reproduce the above copyright 
+#    notice, this list of conditions and the following disclaimer in the 
+#    documentation and/or other materials provided with the distribution. 
+#
+# 3. Neither the name of the Institute nor the names of its contributors 
+#    may be used to endorse or promote products derived from this software 
+#    without specific prior written permission. 
+#
+# THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+# SUCH DAMAGE. 
+#
+# $Id$
+#
+
+srcdir="@srcdir@"
+objdir="@objdir@"
+
+R=EXAMPLE.ORG
+
+port=8888
+
+kadmin="../../kadmin/kadmin -l -r $R"
+kdc="../../kdc/kdc --addresses=localhost -P $port"
+
+server=host/datan.example.org
+cache="FILE:${objdir}/cache.krb5"
+ocache="FILE:${objdir}/ocache.krb5"
+keytabfile=${objdir}/server.keytab
+keytab="FILE:${keytabfile}"
+
+kinit="../../kuser/kinit -c $cache --no-afslog"
+klist="../../kuser/klist -c $cache"
+kdigest="../../kuser/kdigest --ccache=$cache"
+
+username=foo
+password=foobarbaz
+
+KRB5_CONFIG="${objdir}/krb5.conf"
+export KRB5_CONFIG
+
+rm -f ${keytabfile}
+rm -f current-db*
+rm -f out-*
+rm -f mkey.file*
+
+echo Creating database
+${kadmin} \
+    init \
+    --realm-max-ticket-life=1day \
+    --realm-max-renewable-life=1month \
+    ${R} || exit 1
+
+${kadmin} add -p $password --use-defaults ${username}@${R} || exit 1
+${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
+${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
+${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
+
+echo "Doing database check"
+${kadmin} check ${R} || exit 1
+
+echo $password > ${objdir}/foopassword
+
+echo Starting kdc
+${kdc} &
+kdcpid=$!
+sleep 2
+
+if tail -1 messages.log | grep "No sockets" ; then
+    echo "The KDC failed to bind to any sockets, another KDC running ?"
+    exit 1
+fi
+
+exitcode=0
+
+echo "Getting digest server tickets"
+${kinit} --password-file=${objdir}/foopassword ${username}@$R || exitcode=1
+${kdigest} server-init \
+    --kerberos-realm=${R} \
+    --type=CHAP > /dev/null || exitcode=1
+
+echo "Trying CHAP"
+
+${kdigest} server-init \
+    --kerberos-realm=${R} \
+    --type=CHAP \
+    --cb-type=TLS \
+    --cb-value=tls-channelbinding > /dev/null || exitcode=1
+
+${kdigest} server-init \
+    --kerberos-realm=${R} \
+    --type=CHAP \
+    --cb-type=TLS \
+    --cb-value=tls-channelbinding \
+    > sdigest-reply || exitcode=1
+
+snonce=`grep server-nonce= sdigest-reply | cut -f2- -d=`
+identifier=`grep identifier= sdigest-reply | cut -f2- -d=`
+opaque=`grep opaque= sdigest-reply | cut -f2- -d=`
+
+${kdigest} client-request \
+    --type=CHAP \
+    --username="$username"  \
+    --password="$password"  \
+    --opaque="$opaque"  \
+    --server-identifier="$identifier"  \
+    --server-nonce="$snonce" \
+    > cdigest-reply || exitcode=1
+
+cresponseData=`grep responseData= cdigest-reply | cut -f2- -d=`
+
+#echo user: $username
+#echo server-nonce: $snonce
+#echo opaqeue: $opaque
+#echo identifier: $identifier
+
+${kdigest} server-request \
+    --kerberos-realm=${R} \
+    --type=CHAP \
+    --username="$username"  \
+    --opaque="$opaque"  \
+    --server-identifier="$identifier"  \
+    --server-nonce="$snonce"  \
+    > s2digest-reply || exitcode=1
+
+sresponseData=`grep responseData= s2digest-reply | cut -f2- -d=`
+
+if test "$cresponseData" = "$sresponseData" ; then
+    echo "CHAP response matches"
+else
+    echo "CHAP response doesnt match"
+    exitcode=1
+fi
+
+echo "killing kdc (${kdcpid})"
+kill $kdcpid || exit 1
+
+exit $exitcode
+
