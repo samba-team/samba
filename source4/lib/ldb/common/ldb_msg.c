@@ -374,10 +374,10 @@ int ldb_msg_find_attr_as_bool(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	if (strcasecmp(v->data, "FALSE") == 0) {
+	if (strcasecmp((const char *)v->data, "FALSE") == 0) {
 		return 0;
 	}
-	if (strcasecmp(v->data, "TRUE") == 0) {
+	if (strcasecmp((const char *)v->data, "TRUE") == 0) {
 		return 1;
 	}
 	return default_value;
