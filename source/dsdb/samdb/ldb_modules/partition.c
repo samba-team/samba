@@ -643,6 +643,10 @@ static int partition_init(struct ldb_module *module)
 		data->replicate[i] = NULL;
 	}
 
+	/* Make the private data available to any searches the modules may trigger in initialisation */
+	module->private_data = data;
+	talloc_steal(module, data);
+	
 	modules_attributes = ldb_msg_find_element(msg, "modules");
 	if (modules_attributes) {
 		for (i=0; i < modules_attributes->num_values; i++) {
@@ -708,9 +712,6 @@ static int partition_init(struct ldb_module *module)
 		}
 	}
 
-	module->private_data = data;
-	talloc_steal(module, data);
-	
 	talloc_free(mem_ctx);
 	return ldb_next_init(module);
 }
