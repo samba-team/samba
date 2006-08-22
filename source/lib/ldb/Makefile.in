@@ -11,38 +11,15 @@ mandir = @mandir@
 VPATH = @srcdir@:@srcdir@/..:@POPTDIR@
 srcdir = @srcdir@
 builddir = @builddir@
-WITH_GCOV = @WITH_GCOV@
-WITH_LDAP = @WITH_LDAP@
 SLAPD = @SLAPD@
-WITH_SQLITE3 = @WITH_SQLITE3@
 POPTOBJ = @POPTOBJ@
+EXTRA_OBJ=@EXTRA_OBJ@
+TESTS=test-tdb.sh @TESTS@
 
-ifeq ($(WITH_LDAP),yes)
-OPENLDAP_PREFIX=/usr
-LDAP_LIBS=-L$(OPENLDAP_PREFIX)/lib -llber -lldap
-LDAP_FLAGS=-DHAVE_LDAP=1
-LDB_LDAP_OBJ=$(srcdir)/ldb_ldap/ldb_ldap.o
-endif
+CFLAGS=-I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
+       -I$(srcdir)/../tdb/include -I$(srcdir)/../tdb -I$(srcdir)/../talloc -DUSE_MMAP=1 @CFLAGS@
 
-ifeq ($(WITH_SQLITE3),yes)
-SQLITE3_PREFIX=/usr
-SQLITE3_LIBS=-L$(SQLITE3_PREFIX)/lib -lsqlite3
-SQLITE3_FLAGS=-DHAVE_SQLITE3=1
-LDB_SQLITE3_OBJ=$(srcdir)/ldb_sqlite3/ldb_sqlite3.o
-endif
-
-CFLAGS1=-I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
-       -I$(srcdir)/../tdb/include -I$(srcdir)/../tdb -I$(srcdir)/../talloc -DUSE_MMAP=1 $(LDAP_FLAGS)
-
-# enable the following two lines to build with gcov code coverage support
-ifeq ($(WITH_GCOV),1)
-GCOV_FLAGS = -ftest-coverage -fprofile-arcs 
-GCOV_LIBS = -lgcov
-endif
-
-CFLAGS = $(CFLAGS1) $(GCOV_FLAGS) @CFLAGS@
-
-LIB_FLAGS=-Llib -lldb $(LDAP_LIBS) $(SQLITE3_LIBS) $(GCOV_LIBS) @LIBS@
+LIB_FLAGS=-Llib -lldb @LIBS@
 
 TDBDIR=tdb
 TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/dump.o \
@@ -71,7 +48,7 @@ MODULES_OBJ=$(MODDIR)/operational.o $(MODDIR)/schema.o $(MODDIR)/rdn_name.o \
 	   $(MODDIR)/objectclass.o \
 	   $(MODDIR)/paged_results.o $(MODDIR)/sort.o $(MODDIR)/asq.o
 
-OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LDAP_OBJ) $(LDB_SQLITE3_OBJ) $(POPTOBJ)
+OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(EXTRA_OBJ) $(POPTOBJ)
 
 LDB_LIB = lib/libldb.a
 
@@ -160,38 +137,8 @@ distclean: clean
 etags:
 	etags */*.[ch]
 
-test-tdb: $(BINS)
-	@echo "STARTING TDB BACKEND TEST"
-	$(srcdir)/tests/test-tdb.sh
-
-ifeq ($(WITH_LDAP),yes)
-test-ldap:
-	@echo "STARTING LDAP BACKEND TEST"
-	if test -x "$(SLAPD)"; then $(srcdir)/tests/test-ldap.sh; fi
-else
-test-ldap:
-	@echo "SKIP LDAP TEST - NO LDAP SUPPORT"
-endif
-
-ifeq ($(WITH_SQLITE3),yes)
-test-sqlite3:
-	@echo "STARTING SQLITE3 BACKEND TEST"
-	$(srcdir)/tests/test-sqlite3.sh
-else
-test-sqlite3:
-	@echo "SKIP SQLITE3 TEST - NO SQLITE3 SUPPORT"
-endif
-
-ifeq (1,0)
-test-schema:
-	@echo "STARTING SCHEMA MODULE TEST"
-	$(srcdir)/tests/test-schema.sh
-else
-test-schema:
-	@echo "SKIPPING SCHEMA MODULE TEST"
-endif
-
-installcheck: install test-tdb test-ldap test-sqlite3 test-schema
+installcheck: install tests
+	for t in $(TESTS); do echo STARTING $${t}; $(srcdir)/tests/$${t} || exit 1; done
 
 test: installcheck
 
