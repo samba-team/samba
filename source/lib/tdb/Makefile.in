@@ -11,7 +11,7 @@ libdir = @libdir@
 VPATH = @srcdir@
 srcdir = @srcdir@
 builddir = @builddir@
-CFLAGS = -I$(srcdir)/include @CFLAGS@
+CFLAGS = -I$(srcdir)/include -Iinclude @CFLAGS@
 
 PROGS = bin/tdbtool bin/tdbtorture
 TDB_OBJ = common/tdb.o common/dump.o common/io.o common/lock.o \
