@@ -39,7 +39,8 @@
 struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const char **argv,
 					void (*usage)(void))
 {
-	struct ldb_cmdline options, *ret=NULL;
+	static struct ldb_cmdline options; /* needs to be static for older compilers */
+	struct ldb_cmdline *ret=NULL;
 	poptContext pc;
 #ifdef _SAMBA_BUILD_
 	int r;
