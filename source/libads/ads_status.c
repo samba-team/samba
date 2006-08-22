@@ -83,7 +83,7 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 #endif
 #ifdef HAVE_KRB5
 	case ENUM_ADS_ERROR_KRB5:
-		return krb5_to_ntstatus(status.err.rc);
+		return krb5_to_nt_status(status.err.rc);
 #endif
 	default:
 		break;
