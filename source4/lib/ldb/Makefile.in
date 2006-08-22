@@ -8,13 +8,14 @@ includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
 mandir = @mandir@
-VPATH = @srcdir@:@srcdir@/..
+VPATH = @srcdir@:@srcdir@/..:@POPTDIR@
 srcdir = @srcdir@
 builddir = @builddir@
 WITH_GCOV = @WITH_GCOV@
 WITH_LDAP = @WITH_LDAP@
 SLAPD = @SLAPD@
 WITH_SQLITE3 = @WITH_SQLITE3@
+POPTOBJ = @POPTOBJ@
 
 ifeq ($(WITH_LDAP),yes)
 OPENLDAP_PREFIX=/usr
@@ -71,7 +72,7 @@ MODULES_OBJ=$(MODDIR)/operational.o $(MODDIR)/schema.o $(MODDIR)/rdn_name.o \
 	   $(MODDIR)/objectclass.o \
 	   $(MODDIR)/paged_results.o $(MODDIR)/sort.o $(MODDIR)/asq.o
 
-OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LDAP_OBJ) $(LDB_SQLITE3_OBJ)
+OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LDAP_OBJ) $(LDB_SQLITE3_OBJ) $(POPTOBJ)
 
 LDB_LIB = lib/libldb.a
 
