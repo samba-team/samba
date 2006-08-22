@@ -630,11 +630,11 @@ _PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
 	/* this looks a little strange, but it is needed to cope
 	   with codepoints above 64k */
 	olen = 2;
-	outbuf = buf;
+	outbuf = (char *)buf;
 	smb_iconv(descriptor,  &str, &ilen, &outbuf, &olen);
 	if (olen == 2) {
 		olen = 4;
-		outbuf = buf;
+		outbuf = (char *)buf;
 		smb_iconv(descriptor,  &str, &ilen, &outbuf, &olen);
 		if (olen == 4) {
 			/* we didn't convert any bytes */
@@ -692,7 +692,7 @@ _PUBLIC_ ssize_t push_codepoint(char *str, codepoint_t c)
 	if (c < 0x10000) {
 		ilen = 2;
 		olen = 5;
-		inbuf = buf;
+		inbuf = (char *)buf;
 		SSVAL(buf, 0, c);
 		smb_iconv(descriptor, &inbuf, &ilen, &str, &olen);
 		if (ilen != 0) {
@@ -710,7 +710,7 @@ _PUBLIC_ ssize_t push_codepoint(char *str, codepoint_t c)
 
 	ilen = 4;
 	olen = 5;
-	inbuf = buf;
+	inbuf = (char *)buf;
 
 	smb_iconv(descriptor, &inbuf, &ilen, &str, &olen);
 	if (ilen != 0) {
