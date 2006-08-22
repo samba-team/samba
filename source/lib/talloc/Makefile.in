@@ -10,7 +10,7 @@ builddir = @builddir@
 XSLTPROC = @XSLTPROC@
 INSTALLCMD = @INSTALL@
 CC = @CC@
-CFLAGS = @CFLAGS@ -DHAVE_CONFIG_H= -I$(srcdir)
+CFLAGS = @CFLAGS@ -DHAVE_CONFIG_H= -I$(srcdir) -I.
 EXTRA_TARGETS = @DOC_TARGET@
 
 .SUFFIXES: .c .o .3 .3.xml .xml .html
