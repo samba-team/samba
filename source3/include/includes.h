@@ -671,6 +671,14 @@ typedef int socklen_t;
 #endif	/* don't lie.  If we don't have it, then don't use it */
 #endif
 
+#if !defined(int64)
+#if (SIZEOF_LONG == 8)
+#define int64 long
+#elif (SIZEOF_LONG_LONG == 8)
+#define int64 long long
+#endif	/* don't lie.  If we don't have it, then don't use it */
+#endif
+
 
 /*
  * Types for devices, inodes and offsets.
