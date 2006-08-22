@@ -31,8 +31,7 @@ SQLITE3_FLAGS=-DHAVE_SQLITE3=1
 LDB_SQLITE3_OBJ=$(srcdir)/ldb_sqlite3/ldb_sqlite3.o
 endif
 
-CFLAGS1=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
-       -Wcast-qual -Wcast-align -Wwrite-strings -g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
+CFLAGS1=-I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
        -I$(srcdir)/../tdb/include -I$(srcdir)/../tdb -I$(srcdir)/../talloc -DUSE_MMAP=1 $(LDAP_FLAGS)
 
 # enable the following two lines to build with gcov code coverage support
