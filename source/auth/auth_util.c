@@ -562,6 +562,10 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	struct passwd *pwd;
 	gid_t *gids;
 	auth_serversupplied_info *result;
+	int i;
+	size_t num_gids;
+	DOM_SID unix_group_sid;
+	
 
 	if ( !(pwd = getpwnam_alloc(NULL, pdb_get_username(sampass))) ) {
 		DEBUG(1, ("User %s in passdb, but getpwnam() fails!\n",
@@ -592,10 +596,29 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 		TALLOC_FREE(result);
 		return status;
 	}
+	
+	/* Add the "Unix Group" SID for each gid to catch mapped groups
+	   and their Unix equivalent.  This is to solve the backwards 
+	   compatibility problem of 'valid users = +ntadmin' where 
+	   ntadmin has been paired with "Domain Admins" in the group 
+	   mapping table.  Otherwise smb.conf would need to be changed
+	   to 'valid user = "Domain Admins"'.  --jerry */
+	
+	num_gids = result->num_sids;
+	for ( i=0; i<num_gids; i++ ) {
+		if ( !gid_to_unix_groups_sid( gids[i], &unix_group_sid ) ) {
+			DEBUG(1,("make_server_info_sam: Failed to create SID "
+				"for gid %d!\n", gids[i]));
+			continue;
+		}
+		add_sid_to_array_unique( result, &unix_group_sid,
+			&result->sids, &result->num_sids );
+	}
 
 	/* For now we throw away the gids and convert via sid_to_gid
 	 * later. This needs fixing, but I'd like to get the code straight and
 	 * simple first. */
+	 
 	TALLOC_FREE(gids);
 
 	DEBUG(5,("make_server_info_sam: made server info for user %s -> %s\n",
@@ -873,7 +896,7 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			become_root();
 			status = create_builtin_administrators( );
 			if ( !NT_STATUS_IS_OK(status) ) {
-				DEBUG(0,("create_local_nt_token: Failed to create BUILTIN\\Administrators group!\n"));
+				DEBUG(2,("create_local_nt_token: Failed to create BUILTIN\\Administrators group!\n"));
 				/* don't fail, just log the message */
 			}
 			unbecome_root();
@@ -900,7 +923,7 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			become_root();
 			status = create_builtin_users( );
 			if ( !NT_STATUS_IS_OK(status) ) {
-				DEBUG(0,("create_local_nt_token: Failed to create BUILTIN\\Users group!\n"));
+				DEBUG(2,("create_local_nt_token: Failed to create BUILTIN\\Users group!\n"));
 				/* don't fail, just log the message */
 			}
 			unbecome_root();
