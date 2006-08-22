@@ -2,24 +2,33 @@
 # Makefile for tdb directory
 #
 
-CFLAGS = -Iinclude @CFLAGS@
 CC = @CC@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
 includedir = @includedir@
 libdir = @libdir@
+VPATH = @srcdir@
+srcdir = @srcdir@
+builddir = @builddir@
+CFLAGS = -I$(srcdir)/include @CFLAGS@
 
 PROGS = bin/tdbtool bin/tdbtorture
 TDB_OBJ = common/tdb.o common/dump.o common/io.o common/lock.o \
 	common/open.o common/traverse.o common/freelist.o common/error.o \
 	common/transaction.o
 
-all: $(PROGS)
+DIRS = lib bin common tools examples
+
+all: dirs $(PROGS)
 
 .c.o:
 	@echo Compiling $*.c
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@mkdir -p `dirname $@`
+	$(CC) $(CFLAGS) -c $< -o $@
+
+dirs:
+	@mkdir -p $(DIRS)
 
 install: all
 	mkdir -p $(bindir)
@@ -27,8 +36,8 @@ install: all
 	mkdir -p $(libdir) 
 	mkdir -p $(libdir)/pkgconfig
 	cp $(PROGS) $(bindir)
-	cp include/tdb.h $(includedir)
-	cp tdb.pc $(libdir)/pkgconfig
+	cp $(srcdir)/include/tdb.h $(includedir)
+	cp $(srcdir)/tdb.pc $(libdir)/pkgconfig
 
 bin/tdbtest: tools/tdbtest.o $(TDB_OBJ)
 	$(CC) $(CFLAGS) -o bin/tdbtest tools/tdbtest.o $(TDB_OBJ) -lgdbm
