@@ -24,6 +24,7 @@ AC_FUNC_MMAP
 AC_PATH_PROG(XSLTPROC,xsltproc)
 AC_PATH_PROG(DOXYGEN,doxygen)
 AC_PATH_PROG(GCOV,gcov)
+AC_PATH_PROG(SLAPD,slapd)
 AC_CHECK_HEADERS(stdint.h dlfcn.h)
 AC_CONFIG_HEADER(include/config.h)
 AC_CHECK_FUNCS(dlopen dlsym dlclose)
@@ -35,7 +36,7 @@ MODULESDIR="$libdir/ldb"
 AC_DEFINE(MODULESDIR,$MODULESDIR,[Modules directory])
 AC_SUBST(MODULESDIR)
 
-AC_CHECK_LIB(popt, poptGetContext)
+sinclude(popt.m4)
 
 sinclude(ldap.m4)
 WITH_LDAP=$with_ldap_support
