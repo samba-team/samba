@@ -17,4 +17,7 @@ if [ -f tests/tmp/slapd.pid ]; then
     rm -f tests/tmp/slapd.pid
 fi
 
-slapadd -f $LDBDIR/tests/slapd.conf < $LDBDIR/tests/init.ldif || exit 1
+# we don't consider a slapadd failure as a test suite failure, as it
+# has nothing to do with ldb
+slapadd -f $LDBDIR/tests/slapd.conf < $LDBDIR/tests/init.ldif || exit 0
+
