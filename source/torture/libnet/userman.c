@@ -417,17 +417,37 @@ BOOL torture_usermod(struct torture_context *torture)
 	struct timeval force  = { 33333, 55444 };
 
 	struct usermod_change changes[] = {
-		{ USERMOD_FIELD_ACCOUNT_NAME,   "changed", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0 },
-		{ USERMOD_FIELD_FULL_NAME,      NULL, "Testing full account name", NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0 },
-		{ USERMOD_FIELD_DESCRIPTION,    NULL, NULL, "Description of tested account", NULL, NULL, NULL, NULL, NULL, NULL, 0 },
-		{ USERMOD_FIELD_COMMENT,        NULL, NULL, NULL, "Comment for the tested account", NULL, NULL, NULL, NULL, NULL, 0 },
-		{ USERMOD_FIELD_LOGON_SCRIPT,   NULL, NULL, NULL, NULL, "test_logon.cmd", NULL, NULL, NULL, NULL, 0 },
-		{ USERMOD_FIELD_PROFILE_PATH,   NULL, NULL, NULL, NULL, NULL, "\\\\TESTSRV\\profiles\\test", NULL, NULL, NULL, 0 },
-		{ USERMOD_FIELD_ACCT_EXPIRY,    NULL, NULL, NULL, NULL, NULL, NULL, &expiry, NULL, NULL, 0 },
-		{ USERMOD_FIELD_ALLOW_PASS_CHG, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &allow, NULL, 0 },
-		{ USERMOD_FIELD_FORCE_PASS_CHG, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &force, ACB_NORMAL }
+	{
+		.fields			= USERMOD_FIELD_ACCOUNT_NAME,
+		.account_name		= "changed",
+	},{
+		.fields			= USERMOD_FIELD_FULL_NAME,
+		.full_name		= "Testing full account name",
+	},{
+		.fields			= USERMOD_FIELD_DESCRIPTION,
+		.description		= "Description of tested account",
+	},{
+		.fields			= USERMOD_FIELD_COMMENT,
+		.comment		= "Comment for the tested account",
+	},{
+		.fields			= USERMOD_FIELD_LOGON_SCRIPT,
+		.logon_script		= "test_logon.cmd",
+	},{
+		.fields			= USERMOD_FIELD_PROFILE_PATH,
+		.profile_path		= "\\\\TESTSRV\\profiles\\test",
+	},{
+		.fields			= USERMOD_FIELD_ACCT_EXPIRY,
+		.acct_expiry		= &expiry,
+	},{
+		.fields			= USERMOD_FIELD_ALLOW_PASS_CHG,
+		.allow_password_change	= &allow,
+	},{
+		.fields			= USERMOD_FIELD_FORCE_PASS_CHG,
+		.force_password_change	= &force,
+		.acct_flags		= ACB_NORMAL,/* TODO: why is this needed here? */
+	}
 	};
-	
+
 	mem_ctx = talloc_init("test_userdel");
 	binding = lp_parm_string(-1, "torture", "binding");
 
