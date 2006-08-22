@@ -16,11 +16,11 @@ for f in $SCHEMA_NEEDED; do
 	    continue;
 	fi
 
-	echo "ERROR: you need the following OpenLDAP schema files in tests/schema/"
+	echo "SKIPPING TESTS: you need the following OpenLDAP schema files"
 	for f in $SCHEMA_NEEDED; do
 	    echo "  $f.schema"
 	done
-	exit 1
+	exit 0
     fi
 done
 
