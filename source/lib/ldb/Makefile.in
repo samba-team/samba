@@ -17,7 +17,8 @@ EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
 
 CFLAGS=-I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
-       -I$(srcdir)/../tdb/include -I$(srcdir)/../tdb -I$(srcdir)/../talloc -DUSE_MMAP=1 @CFLAGS@
+       -I$(srcdir)/../tdb/include -I$(srcdir)/../tdb -I$(srcdir)/../talloc \
+	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
 
 LIB_FLAGS=-Llib -lldb @LIBS@
 

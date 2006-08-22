@@ -37,13 +37,16 @@ AC_PATH_PROG(GCOV,gcov)
 AC_PATH_PROG(SLAPD,slapd)
 AC_CHECK_HEADERS(stdint.h dlfcn.h)
 AC_CONFIG_HEADER(include/config.h)
+AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_FUNCS(dlopen dlsym dlclose)
+
+AC_CHECK_TYPE(comparison_fn_t, 
+[AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
 SHLIBEXT="so" # Should be set based on OS later on
 AC_SUBST(SHLIBEXT)
 
-MODULESDIR="$libdir/ldb"
-AC_DEFINE(MODULESDIR,$MODULESDIR,[Modules directory])
+AC_DEFINE_UNQUOTED(MODULESDIR, LIBDIR "/ldb" , [Modules directory] )
 AC_SUBST(MODULESDIR)
 
 sinclude(popt.m4)
