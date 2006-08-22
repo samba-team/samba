@@ -13,11 +13,6 @@ typedef int (*ldb_search_callback)(struct ldb_context *, void *, struct ldb_repl
 /* Private data structures
  * ======================= */
 
-/* Global private data */
-struct map_private {
-	struct ldb_map_context context;
-};
-
 /* Context data for mapped requests */
 struct map_context {
 	enum map_step {
