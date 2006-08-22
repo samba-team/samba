@@ -200,8 +200,8 @@ install: all
 	cp $(LDB_LIB) $(libdir)
 	cp $(BINS) $(bindir)
 	cp ldb.pc $(libdir)/pkgconfig
-	cp $(filter %.1, $(MANPAGES)) $(mandir)/man1
-	cp $(filter %.3, $(MANPAGES)) $(mandir)/man3
+	test -z "$(XSLTPROC)" || cp $(filter %.1, $(MANPAGES)) $(mandir)/man1
+	test -z "$(XSLTPROC)" || cp $(filter %.3, $(MANPAGES)) $(mandir)/man3
 
 gcov:
 	$(GCOV) -po ldb_sqlite3 $(srcdir)/ldb_sqlite3/*.c 2| tee ldb_sqlite3.report.gcov
