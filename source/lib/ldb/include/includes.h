@@ -30,6 +30,8 @@
 #include <unistd.h>
 #include <fnmatch.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <time.h>
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
@@ -40,6 +42,9 @@
 
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
+#ifndef HAVE_COMPARISON_FN_T
+typedef int (*comparison_fn_t)(const void *, const void *);
+#endif
 
 #include "talloc.h"
 
