@@ -37,7 +37,7 @@ install: all
 	mkdir -p $(libdir)/pkgconfig
 	cp $(PROGS) $(bindir)
 	cp $(srcdir)/include/tdb.h $(includedir)
-	cp $(srcdir)/tdb.pc $(libdir)/pkgconfig
+	cp tdb.pc $(libdir)/pkgconfig
 
 bin/tdbtest: tools/tdbtest.o $(TDB_OBJ)
 	$(CC) $(CFLAGS) -o bin/tdbtest tools/tdbtest.o $(TDB_OBJ) -lgdbm
