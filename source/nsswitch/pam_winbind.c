@@ -366,7 +366,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	request.data.auth.krb5_cc_type[0] = '\0';
 	request.data.auth.uid = -1;
 	
-	request.flags = WBFLAG_PAM_INFO3_TEXT | WBFLAG_PAM_GET_PWD_POLICY;
+	request.flags = WBFLAG_PAM_INFO3_TEXT | WBFLAG_PAM_CONTACT_TRUSTDOM;
 
 	if (ctrl & WINBIND_KRB5_AUTH) {
 
@@ -564,7 +564,7 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 	}
 
 	if (ctrl & WINBIND_KRB5_AUTH) {
-		request.flags = WBFLAG_PAM_KRB5;
+		request.flags = WBFLAG_PAM_KRB5 | WBFLAG_PAM_CONTACT_TRUSTDOM;
 	}
 
 	ret = pam_winbind_request_log(pamh, ctrl, WINBINDD_PAM_CHAUTHTOK, &request, &response, user);
@@ -1150,7 +1150,7 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 		}
 		request.data.logoff.uid = pwd->pw_uid;
 
-		request.flags = WBFLAG_PAM_KRB5;
+		request.flags = WBFLAG_PAM_KRB5 | WBFLAG_PAM_CONTACT_TRUSTDOM;
 
 	        retval = pam_winbind_request_log(pamh, ctrl, WINBINDD_PAM_LOGOFF, &request, &response, user);
 	}
@@ -1391,7 +1391,7 @@ struct pam_module _pam_winbind_modstruct = {
  * Copyright (c) Tim Potter       <tpot@samba.org>     2000
  * Copyright (c) Andrew Bartlettt <abartlet@samba.org> 2002
  * Copyright (c) Guenther Deschner <gd@samba.org>      2005-2006
- * Copyright (c) Jan Rêkorajski 1999.
+ * Copyright (c) Jan RÃªkorajski 1999.
  * Copyright (c) Andrew G. Morgan 1996-8.
  * Copyright (c) Alex O. Yuriev, 1996.
  * Copyright (c) Cristian Gafton 1996.

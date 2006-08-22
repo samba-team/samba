@@ -42,8 +42,8 @@
    between /lib/libnss_winbind.so.2 and /li64/libnss_winbind.so.2.
    The easiest way to do this is to always use 8byte values for time_t. */
 
-#if defined(uint64)
-#  define SMB_TIME_T uint64
+#if defined(int64)
+#  define SMB_TIME_T int64
 #else
 #  define SMB_TIME_T time_t
 #endif
@@ -198,7 +198,7 @@ typedef struct winbindd_gr {
 #define WBFLAG_PAM_KRB5			0x1000
 #define WBFLAG_PAM_FALLBACK_AFTER_KRB5	0x2000
 #define WBFLAG_PAM_CACHED_LOGIN		0x4000
-#define WBFLAG_PAM_GET_PWD_POLICY	0x8000
+#define WBFLAG_PAM_GET_PWD_POLICY	0x8000	/* not used */
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
