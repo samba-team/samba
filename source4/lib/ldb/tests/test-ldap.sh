@@ -24,17 +24,18 @@ for f in $SCHEMA_NEEDED; do
     fi
 done
 
-export LDB_URL=`tests/ldapi_url.sh`
+if [ -z "$LDBDIR" ]; then
+    LDBDIR=`dirname $0`/..
+    export LDBDIR
+fi
+
+export LDB_URL=`$LDBDIR/tests/ldapi_url.sh`
 
 PATH=bin:$PATH
 export PATH
 
-if [ -z "$LDBDIR" ]; then
-    LDBDIR="."
-    export LDBDIR
-fi
-
 . $LDBDIR/tests/init_slapd.sh
 . $LDBDIR/tests/start_slapd.sh
 
+export LDB_SPECIALS=0
 . $LDBDIR/tests/test-generic.sh

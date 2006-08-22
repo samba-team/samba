@@ -13,7 +13,7 @@ export PATH
 rm -f $LDB_URL*
 
 if [ -z "$LDBDIR" ]; then
-    LDBDIR="."
+    LDBDIR=`dirname $0`/..
     export LDBDIR
 fi
 

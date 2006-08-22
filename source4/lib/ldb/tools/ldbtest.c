@@ -291,6 +291,13 @@ static void start_test_index(struct ldb_context **ldb)
 	struct ldb_dn *basedn;
 	int ret;
 	int flags = 0;
+	const char *specials;
+
+	specials = getenv("LDB_SPECIALS");
+	if (specials && atoi(specials) == 0) {
+		printf("LDB_SPECIALS disabled - skipping index test\n");
+		return;
+	}
 
 	if (options->nosync) {
 		flags |= LDB_FLG_NOSYNC;
