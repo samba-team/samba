@@ -8,11 +8,13 @@ fi
 rm -rf tests/tmp/db
 mkdir -p tests/tmp/db
 
-if pidof slapd > /dev/null; then
-    killall slapd
+if [ -f tests/tmp/slapd.pid ]; then
+    kill `cat tests/tmp/slapd.pid`
+    sleep 1
 fi
-sleep 2
-if pidof slapd > /dev/null; then
-    killall -9 slapd
+if [ -f tests/tmp/slapd.pid ]; then
+    kill -9 `cat tests/tmp/slapd.pid`
+    rm -f tests/tmp/slapd.pid
 fi
+
 slapadd -f $LDBDIR/tests/slapd.conf < $LDBDIR/tests/init.ldif || exit 1
