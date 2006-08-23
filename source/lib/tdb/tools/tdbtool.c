@@ -203,9 +203,10 @@ static void create_tdb(void)
 static void open_tdb(void)
 {
 	struct tdb_logging_context log_ctx;
+	char *tok = get_token(1);
+
 	log_ctx.log_fn = tdb_log;
 
-	char *tok = get_token(1);
 	if (!tok) {
 		help();
 		return;
