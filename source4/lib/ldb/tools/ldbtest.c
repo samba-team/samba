@@ -225,7 +225,7 @@ static void search_uid(struct ldb_context *ldb, struct ldb_dn *basedn, int nreco
 		struct ldb_result *res = NULL;
 		int ret;
 
-		asprintf(&expr, "(uid=TEST%d)", uid);
+		expr = talloc_asprintf(ldb, "(uid=TEST%d)", uid);
 		ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, expr, NULL, &res);
 
 		if (ret != LDB_SUCCESS || (uid < nrecords && res->count != 1)) {
@@ -242,7 +242,7 @@ static void search_uid(struct ldb_context *ldb, struct ldb_dn *basedn, int nreco
 		fflush(stdout);
 
 		talloc_free(res);
-		free(expr);
+		talloc_free(expr);
 	}
 
 	printf("\n");
