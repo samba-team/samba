@@ -131,10 +131,10 @@ distclean: clean
 	rm -f ldb.pc
 	rm -f Makefile
 
-installcheck: install tests
+test: all
 	for t in $(TESTS); do echo STARTING $${t}; $(srcdir)/tests/$${t} || exit 1; done
 
-test: installcheck
+installcheck: install test
 
 install: all
 	mkdir -p $(includedir) $(libdir)/pkgconfig $(libdir) $(bindir)
