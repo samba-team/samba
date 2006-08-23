@@ -58,7 +58,8 @@ Changes since 3.0.23b
 commits
 -------
 o   Jeremy Allison <jra@samba.org>
-    * Various fixes for winbindd's offline mode.
+    * Don't store a NULL SID in winbindd's offline cache.
+    * Ensure we store the offline password hash in the correct format.
     * OS/2 fixes for large Extended Attributes data.
     * Fix nmbd crashes caused by miscalculation in pushing 
       announcements.
