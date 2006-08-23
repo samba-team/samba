@@ -1,0 +1,743 @@
+/*
+ * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden). 
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without 
+ * modification, are permitted provided that the following conditions 
+ * are met: 
+ *
+ * 1. Redistributions of source code must retain the above copyright 
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright 
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution. 
+ *
+ * 3. Neither the name of the Institute nor the names of its contributors 
+ *    may be used to endorse or promote products derived from this software 
+ *    without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE. 
+ */
+
+#include "krb5_locl.h"
+RCSID("$Id$");
+#include "digest_asn1.h"
+
+struct krb5_digest {
+    char *cbtype;
+    char *cbbinding;
+
+    DigestInit init;
+    DigestInitReply initReply;
+    DigestRequest request;
+    DigestResponse response;
+};
+
+krb5_error_code
+krb5_digest_alloc(krb5_context context, krb5_digest *digest)
+{
+    krb5_digest d;
+
+    d = calloc(1, sizeof(*d));
+    if (d == NULL) {
+	*digest = NULL;
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    *digest = d;
+
+    return 0;
+}
+
+void
+krb5_digest_free(krb5_digest digest)
+{
+    if (digest == NULL)
+	return;
+    free_DigestInit(&digest->init);
+    free_DigestInitReply(&digest->initReply);
+    free_DigestRequest(&digest->request);
+    free_DigestResponse(&digest->response);
+    memset(digest, 0, sizeof(*digest));
+    free(digest);
+    return;
+}
+
+krb5_error_code
+krb5_digest_set_server_cb(krb5_context context,
+			  krb5_digest digest,
+			  const char *type,
+			  const char *binding)
+{
+    if (digest->init.channel) {
+	krb5_set_error_string(context, "server channel binding already set");
+	return EINVAL;
+    }
+    digest->init.channel = calloc(1, sizeof(*digest->init.channel));
+    if (digest->init.channel == NULL)
+	goto error;
+
+    digest->init.channel->cb_type = strdup(type);
+    if (digest->init.channel->cb_type == NULL)
+	goto error;
+
+    digest->init.channel->cb_binding = strdup(binding);
+    if (digest->init.channel->cb_binding == NULL) 
+	goto error;
+    return 0;
+error:
+    if (digest->init.channel) {
+	free(digest->init.channel->cb_type);
+	free(digest->init.channel->cb_binding);
+	free(digest->init.channel);
+	digest->init.channel = NULL;
+    }
+    krb5_set_error_string(context, "out of memory");
+    return ENOMEM;
+}
+
+krb5_error_code
+krb5_digest_set_type(krb5_context context,
+		     krb5_digest digest,
+		     const char *type)
+{
+    if (digest->init.type) {
+	krb5_set_error_string(context, "client type already set");
+	return EINVAL;
+    }
+    digest->init.type = strdup(type);
+    if (digest->init.type == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_digest_set_hostname(krb5_context context,
+			 krb5_digest digest,
+			 const char *hostname)
+{
+    if (digest->init.hostname) {
+	krb5_set_error_string(context, "server hostname already set");
+	return EINVAL;
+    }
+    digest->init.hostname = malloc(sizeof(*digest->init.hostname));
+    if (digest->init.hostname == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    *digest->init.hostname = strdup(hostname);
+    if (*digest->init.hostname == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	free(digest->init.hostname);
+	digest->init.hostname = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+const char *
+krb5_digest_get_server_nonce(krb5_context context,
+			     krb5_digest digest)
+{
+    return digest->initReply.nonce;
+}
+
+krb5_error_code
+krb5_digest_set_server_nonce(krb5_context context,
+			     krb5_digest digest,
+			     const char *nonce)
+{
+    if (digest->request.serverNonce) {
+	krb5_set_error_string(context, "nonce already set");
+	return EINVAL;
+    }
+    digest->request.serverNonce = strdup(nonce);
+    if (digest->request.serverNonce == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+const char *
+krb5_digest_get_opaque(krb5_context context,
+		       krb5_digest digest)
+{
+    return digest->initReply.opaque;
+}
+
+krb5_error_code
+krb5_digest_set_opaque(krb5_context context,
+		       krb5_digest digest,
+		       const char *opaque)
+{
+    if (digest->request.opaque) {
+	krb5_set_error_string(context, "opaque already set");
+	return EINVAL;
+    }
+    digest->request.opaque = strdup(opaque);
+    if (digest->request.opaque == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+const char *
+krb5_digest_get_identifier(krb5_context context,
+			   krb5_digest digest)
+{
+    if (digest->initReply.identifier == NULL)
+	return NULL;
+    return *digest->initReply.identifier;
+}
+
+krb5_error_code
+krb5_digest_set_identifier(krb5_context context,
+			   krb5_digest digest,
+			   const char *id)
+{
+    if (digest->request.identifier) {
+	krb5_set_error_string(context, "identifier already set");
+	return EINVAL;
+    }
+    digest->request.identifier = calloc(1, sizeof(*digest->request.identifier));
+    if (digest->request.identifier == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    *digest->request.identifier = strdup(id);
+    if (*digest->request.identifier == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	free(digest->request.identifier);
+	digest->request.identifier = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+static krb5_error_code
+digest_request(krb5_context context,
+	       krb5_digest digest,
+	       krb5_realm realm,
+	       krb5_ccache ccache,
+	       krb5_key_usage usage,
+	       const DigestReqInner *ireq,
+	       DigestRepInner *irep)
+{
+    DigestREQ req;
+    DigestREP rep;
+    krb5_error_code ret;
+    krb5_data data, data2;
+    size_t size;
+    krb5_crypto crypto = NULL;
+    krb5_auth_context ac = NULL;
+    krb5_principal principal = NULL;
+    krb5_ccache id;
+
+    krb5_data_zero(&data);
+    krb5_data_zero(&data2);
+
+    if (ccache == NULL) {
+	ret = krb5_cc_default(context, &id);
+	if (ret)
+	    goto out;
+    } else
+	id = ccache;
+
+    /*
+     *
+     */
+
+    ret = krb5_make_principal(context, &principal, 
+			      realm, KRB5_DIGEST_NAME, realm, NULL);
+    if (ret)
+	goto out;
+
+    ASN1_MALLOC_ENCODE(DigestReqInner, data.data, data.length,
+		       ireq, &size, ret);
+    if (ret) {
+	krb5_set_error_string(context,
+			      "Failed to encode digest inner request");
+	goto out;
+    }
+    if (size != data.length)
+	krb5_abortx(context, "ASN.1 internal encoder error");
+
+    ret = krb5_mk_req_exact(context, &ac, 
+			    AP_OPTS_USE_SUBKEY|AP_OPTS_MUTUAL_REQUIRED,
+			    principal, NULL, id, &req.apReq);
+    if (ret)
+	goto out;
+
+    {
+	krb5_keyblock *key;
+
+	ret = krb5_auth_con_getlocalsubkey(context, ac, &key);
+	if (ret)
+	    goto out;
+
+	ret = krb5_crypto_init(context, key, 0, &crypto);
+	krb5_free_keyblock (context, key);
+	if (ret)
+	    goto out;
+    }
+
+    ret = krb5_encrypt_EncryptedData(context, crypto, usage,
+				     data.data, data.length, 0, 
+				     &req.innerReq);
+    if (ret)
+	goto out;
+
+    krb5_data_free(&data);
+
+    ASN1_MALLOC_ENCODE(DigestREQ, data.data, data.length,
+		       &req, &size, ret);
+    if (ret)
+	return ret;
+    if (size != data.length)
+	krb5_abortx(context, "ASN.1 internal encoder error");
+
+    ret = krb5_sendto_kdc(context, &data, &realm, &data2);
+    if (ret)
+	goto out;
+
+    free_DigestResponse(&digest->response);
+
+    ret = decode_DigestREP(data2.data, data2.length, &rep, NULL);
+    if (ret) {
+	krb5_set_error_string(context, "Failed to parse digest response");
+	goto out;
+    }
+
+    {
+	krb5_ap_rep_enc_part *repl;
+
+	ret = krb5_rd_rep(context, ac, &rep.apRep, &repl);
+	if (ret)
+	    goto out;
+
+	krb5_free_ap_rep_enc_part(context, repl);
+    }
+    {
+	krb5_keyblock *key;
+
+	ret = krb5_auth_con_getremotesubkey(context, ac, &key);
+	if (ret)
+	    goto out;
+	if (key == NULL) {
+	    ret = EINVAL;
+	    krb5_set_error_string(context, 
+				  "Digest reply have no remote subkey");
+	    goto out;
+	}
+
+	krb5_crypto_destroy(context, crypto);
+	ret = krb5_crypto_init(context, key, 0, &crypto);
+	krb5_free_keyblock (context, key);
+	if (ret)
+	    goto out;
+    }
+
+    krb5_data_free(&data);
+    ret = krb5_decrypt_EncryptedData(context, crypto, usage,
+				     &rep.innerRep, &data);
+    if (ret)
+	goto out;
+    
+    ret = decode_DigestRepInner(data.data, data.length, irep, NULL);
+    if (ret)
+	goto out;
+
+out:
+    if (ccache == NULL)
+	krb5_cc_close(context, id);
+    if (crypto)
+	krb5_crypto_destroy(context, crypto);
+    if (ac)
+	krb5_auth_con_free(context, ac);
+    if (principal)
+	krb5_free_principal(context, principal);
+
+    krb5_data_free(&data);
+    krb5_data_free(&data2);
+
+    return ret;
+}
+
+krb5_error_code
+krb5_digest_init_request(krb5_context context,
+			 krb5_digest digest,
+			 krb5_realm realm,
+			 krb5_ccache ccache)
+{
+    DigestReqInner ireq;
+    DigestRepInner irep;
+    krb5_error_code ret;
+
+    memset(&ireq, 0, sizeof(ireq));
+
+    if (digest->init.type == NULL) {
+	krb5_set_error_string(context, "Type missing from init req");
+	return EINVAL;
+    }
+
+    ireq.element = choice_DigestReqInner_init;
+    ireq.u.init = digest->init;
+
+    ret = digest_request(context, digest, realm, ccache,
+			 KRB5_KU_DIGEST_ENCRYPT, &ireq, &irep);
+    if (ret)
+	goto out;
+
+    if (irep.element != choice_DigestRepInner_initReply) {
+	krb5_set_error_string(context, "digest reply not an initReply");
+	ret = EINVAL;
+	goto out;
+    }
+
+    ret = copy_DigestInitReply(&irep.u.initReply, &digest->initReply);
+    if (ret) {
+	krb5_set_error_string(context, "Failed to copy initReply");
+	goto out;
+    }
+
+out:
+    free_DigestRepInner(&irep);
+
+    return ret;
+}
+
+
+krb5_error_code
+krb5_digest_set_client_nonce(krb5_context context,
+			     krb5_digest digest,
+			     const char *nonce)
+{
+    if (digest->request.clientNonce) {
+	krb5_set_error_string(context, "clientNonce already set");
+	return EINVAL;
+    }
+    digest->request.clientNonce = 
+	calloc(1, sizeof(*digest->request.clientNonce));
+    if (digest->request.clientNonce == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    *digest->request.clientNonce = strdup(nonce);
+    if (*digest->request.clientNonce == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	free(digest->request.clientNonce);
+	digest->request.clientNonce = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_digest_set_digest(krb5_context context,
+		       krb5_digest digest,
+		       const char *dgst)
+{
+    if (digest->request.digest) {
+	krb5_set_error_string(context, "digest already set");
+	return EINVAL;
+    }
+    digest->request.digest = strdup(dgst);
+    if (digest->request.digest == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_digest_set_username(krb5_context context,
+			 krb5_digest digest,
+			 const char *username)
+{
+    if (digest->request.username) {
+	krb5_set_error_string(context, "username already set");
+	return EINVAL;
+    }
+    digest->request.username = strdup(username);
+    if (digest->request.username == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_digest_set_authentication_user(krb5_context context,
+				    krb5_digest digest,
+				    const char *authentication_user)
+{
+    if (digest->request.authentication_user) {
+	krb5_set_error_string(context, "authentication_user already set");
+	return EINVAL;
+    }
+    digest->request.authentication_user = 
+	malloc(sizeof(*digest->request.authentication_user));
+    if (digest->request.authentication_user == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    *digest->request.authentication_user = strdup(authentication_user);
+    if (*digest->request.authentication_user == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	free(digest->request.authentication_user);
+	digest->request.authentication_user = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_digest_set_realm(krb5_context context,
+		 krb5_digest digest,
+		 const char *realm)
+{
+    if (digest->request.realm) {
+	krb5_set_error_string(context, "realm already set");
+	return EINVAL;
+    }
+    digest->request.realm = malloc(sizeof(*digest->request.realm));
+    if (digest->request.realm == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    *digest->request.realm = strdup(realm);
+    if (*digest->request.realm == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	free(digest->request.realm);
+	digest->request.realm = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_digest_set_method(krb5_context context,
+		       krb5_digest digest,
+		       const char *method)
+{
+    if (digest->request.method) {
+	krb5_set_error_string(context, "method already set");
+	return EINVAL;
+    }
+    digest->request.method = malloc(sizeof(*digest->request.method));
+    if (digest->request.method == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    *digest->request.method = strdup(method);
+    if (*digest->request.method == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	free(digest->request.method);
+	digest->request.method = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_digest_set_uri(krb5_context context,
+		    krb5_digest digest,
+		    const char *uri)
+{
+    if (digest->request.uri) {
+	krb5_set_error_string(context, "uri already set");
+	return EINVAL;
+    }
+    digest->request.uri = malloc(sizeof(*digest->request.uri));
+    if (digest->request.uri == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    *digest->request.uri = strdup(uri);
+    if (*digest->request.uri == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	free(digest->request.uri);
+	digest->request.uri = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_digest_set_nonceCount(krb5_context context,
+			   krb5_digest digest,
+			   const char *nonce_count)
+{
+    if (digest->request.nonceCount) {
+	krb5_set_error_string(context, "nonceCount already set");
+	return EINVAL;
+    }
+    digest->request.nonceCount = 
+	malloc(sizeof(*digest->request.nonceCount));
+    if (digest->request.nonceCount == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    *digest->request.nonceCount = strdup(nonce_count);
+    if (*digest->request.nonceCount == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	free(digest->request.nonceCount);
+	digest->request.nonceCount = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_digest_set_qop(krb5_context context,
+		    krb5_digest digest,
+		    const char *qop)
+{
+    if (digest->request.qop) {
+	krb5_set_error_string(context, "qop already set");
+	return EINVAL;
+    }
+    digest->request.qop = malloc(sizeof(*digest->request.qop));
+    if (digest->request.qop == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    *digest->request.qop = strdup(qop);
+    if (*digest->request.qop == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	free(digest->request.qop);
+	digest->request.qop = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_digest_request(krb5_context context,
+		    krb5_digest digest,
+		    krb5_realm realm,
+		    krb5_ccache ccache)
+{
+    DigestReqInner ireq;
+    DigestRepInner irep;
+    krb5_error_code ret;
+
+    memset(&ireq, 0, sizeof(ireq));
+
+    ireq.element = choice_DigestReqInner_digestRequest;
+    ireq.u.digestRequest = digest->request;
+
+    if (digest->request.type == NULL) {
+	if (digest->init.type == NULL) {
+	    krb5_set_error_string(context, "Type missing from req");
+	    return EINVAL;
+	}
+	ireq.u.digestRequest.type = digest->init.type;
+    }
+
+    if (ireq.u.digestRequest.digest == NULL)
+	ireq.u.digestRequest.digest = "md5";
+
+    ret = digest_request(context, digest, realm, ccache,
+			 KRB5_KU_DIGEST_ENCRYPT, &ireq, &irep);
+    if (ret)
+	return ret;
+
+    if (irep.element != choice_DigestRepInner_response) {
+	krb5_set_error_string(context, "digest reply not an DigestResponse");
+	ret = EINVAL;
+	goto out;
+    }
+
+    ret = copy_DigestResponse(&irep.u.response, &digest->response);
+    if (ret) {
+	krb5_set_error_string(context, "Failed to copy initReply");
+	goto out;
+    }
+
+out:
+    free_DigestRepInner(&irep);
+
+    return ret;
+}
+
+const char *
+krb5_digest_get_responseData(krb5_context context,
+			     krb5_digest digest)
+{
+    return digest->response.responseData;
+}
+
+const char *
+krb5_digest_get_rsp(krb5_context context,
+		    krb5_digest digest)
+{
+    if (digest->response.rsp == NULL)
+	return NULL;
+    return *digest->response.rsp;
+}
+
+krb5_error_code
+krb5_digest_get_tickets(krb5_context context,
+			krb5_digest digest,
+			Ticket **tickets)
+{
+    *tickets = NULL;
+    return 0;
+}
+
+
+krb5_error_code
+krb5_digest_get_client_binding(krb5_context context,
+			       krb5_digest digest,
+			       char **type,
+			       char **binding)
+{
+    if (digest->response.channel) {
+	*type = strdup(digest->response.channel->cb_type);
+	*binding = strdup(digest->response.channel->cb_binding);
+	if (*type == NULL || *binding == NULL) {
+	    free(*type);
+	    free(*binding);
+	    krb5_set_error_string(context, "out of memory");
+	    return ENOMEM;
+	}
+    } else {
+	*type = NULL;
+	*binding = NULL;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_digest_get_a1_hash(krb5_context context,
+			krb5_digest digest,
+			krb5_data *data)
+{
+    krb5_error_code ret;
+
+    krb5_data_zero(data);
+    if (digest->response.hash_a1 == NULL)
+	return 0;
+    ret = copy_octet_string(digest->response.hash_a1, data);
+    if (ret)
+	krb5_clear_error_string(context);
+
+    return ret;
+}
