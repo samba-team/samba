@@ -42,6 +42,7 @@ _kdc_db_fetch(krb5_context context,
 	      krb5_kdc_configuration *config,
 	      krb5_const_principal principal,
 	      unsigned flags,
+	      HDB **db,
 	      hdb_entry_ex **h)
 {
     hdb_entry_ex *ent;
@@ -66,6 +67,8 @@ _kdc_db_fetch(krb5_context context,
 				       ent);
 	config->db[i]->hdb_close(context, config->db[i]);
 	if(ret == 0) {
+	    if (db)
+		*db = config->db[i];
 	    *h = ent;
 	    return 0;
 	}

@@ -465,7 +465,8 @@ do_authenticate (krb5_context context,
 	    client_name, from, server_name);
 
     ret = _kdc_db_fetch4 (context, config, name, instance, 
-			  config->v4_realm, HDB_F_GET_CLIENT, &client_entry);
+			  config->v4_realm, HDB_F_GET_CLIENT,
+			  &client_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Client not found in database: %s: %s",
 		client_name, krb5_get_err_text(context, ret));

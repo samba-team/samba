@@ -696,7 +696,7 @@ tgs_parse_request(krb5_context context,
 				       ap_req.ticket.sname,
 				       ap_req.ticket.realm);
     
-    ret = _kdc_db_fetch(context, config, princ, HDB_F_GET_KRBTGT, krbtgt);
+    ret = _kdc_db_fetch(context, config, princ, HDB_F_GET_KRBTGT, NULL, krbtgt);
 
     if(ret) {
 	char *p;
@@ -925,7 +925,8 @@ tgs_build_reply(krb5_context context,
 	}
 	_krb5_principalname2krb5_principal(&p, t->sname, t->realm);
 	ret = _kdc_db_fetch(context, config, p, 
-			    HDB_F_GET_CLIENT|HDB_F_GET_SERVER, &uu);
+			    HDB_F_GET_CLIENT|HDB_F_GET_SERVER, 
+			    NULL, &uu);
 	krb5_free_principal(context, p);
 	if(ret){
 	    if (ret == HDB_ERR_NOENTRY)
@@ -976,7 +977,7 @@ tgs_build_reply(krb5_context context,
      */
 
 server_lookup:
-    ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER, &server);
+    ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER, NULL, &server);
 
     if(ret){
 	const char *new_rlm;
@@ -1026,7 +1027,7 @@ server_lookup:
 	goto out;
     }
 
-    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT, &client);
+    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT, NULL, &client);
     if(ret) {
 	const char *krbtgt_realm; 
 

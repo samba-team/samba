@@ -80,7 +80,7 @@ valid_princ(krb5_context context,
     ret = krb5_unparse_name(context, princ, &s);
     if (ret)
 	return FALSE;
-    ret = _kdc_db_fetch(context, ctx->config, princ, ctx->flags, &ent);
+    ret = _kdc_db_fetch(context, ctx->config, princ, ctx->flags, NULL, &ent);
     if (ret) {
 	kdc_log(context, ctx->config, 7, "Lookup %s failed: %s", s,
 		krb5_get_err_text (context, ret));
@@ -111,7 +111,7 @@ _kdc_db_fetch4(krb5_context context,
 				       valid_princ, &ctx, 0, &p);
     if(ret)
 	return ret;
-    ret = _kdc_db_fetch(context, config, p, flags, ent);
+    ret = _kdc_db_fetch(context, config, p, flags, NULL, ent);
     krb5_free_principal(context, p);
     return ret;
 }
@@ -383,7 +383,7 @@ _kdc_do_version4(krb5_context context,
 	}
 
 	ret = _kdc_db_fetch(context, config, tgt_princ,
-			    HDB_F_GET_KRBTGT, &tgt);
+			    HDB_F_GET_KRBTGT, NULL, &tgt);
 	if(ret){
 	    char *s;
 	    s = kdc_log_msg(context, config, 0, "Ticket-granting ticket not "

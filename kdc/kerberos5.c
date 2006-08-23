@@ -897,7 +897,7 @@ _kdc_as_rep(krb5_context context,
 	    client_name, from, server_name);
 
     ret = _kdc_db_fetch(context, config, client_princ, 
-			HDB_F_GET_CLIENT, &client);
+			HDB_F_GET_CLIENT, NULL, &client);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name,
 		krb5_get_err_text(context, ret));
@@ -906,7 +906,8 @@ _kdc_as_rep(krb5_context context,
     }
 
     ret = _kdc_db_fetch(context, config, server_princ,
-			HDB_F_GET_SERVER|HDB_F_GET_KRBTGT, &server);
+			HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
+			NULL, &server);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", server_name,
 		krb5_get_err_text(context, ret));
