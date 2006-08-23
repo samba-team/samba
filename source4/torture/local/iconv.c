@@ -52,7 +52,7 @@ static int gen_codepoint_utf16(unsigned int codepoint,
 	in[2] = (codepoint>>16) & 0xFF;
 	in[3] = (codepoint>>24) & 0xFF;
 
-	ptr_in = in;
+	ptr_in = (char *)in;
 	size_in = 4;
 	size_out = 8;
 
@@ -77,7 +77,7 @@ static unsigned int get_codepoint(char *buf, size_t size, const char *charset)
 	cd = iconv_open("UCS-4LE", charset);
 
 	size_in = size;
-	ptr_out = out;
+	ptr_out = (char *)out;
 	size_out = sizeof(out);
 	memset(out, 0, sizeof(out));
 
@@ -141,8 +141,8 @@ static int test_buffer(struct torture_context *test,
 	}
 
 	/* internal convert to charset - placing result in buf1 */
-	ptr_in = inbuf;
-	ptr_out = buf1;
+	ptr_in = (const char *)inbuf;
+	ptr_out = (char *)buf1;
 	size_in1 = size;
 	outsize1 = sizeof(buf1);
 
@@ -152,8 +152,8 @@ static int test_buffer(struct torture_context *test,
 	errno1 = errno;
 
 	/* system convert to charset - placing result in buf2 */
-	ptr_in = inbuf;
-	ptr_out = buf2;
+	ptr_in = (const char *)inbuf;
+	ptr_out = (char *)buf2;
 	size_in2 = size;
 	outsize2 = sizeof(buf2);
 	
@@ -168,12 +168,12 @@ static int test_buffer(struct torture_context *test,
 	/* codepoints above 1M are not interesting for now */
 	if (len2 > len1 && 
 	    memcmp(buf1, buf2, len1) == 0 && 
-	    get_codepoint(buf2+len1, len2-len1, charset) >= (1<<20)) {
+	    get_codepoint((char *)(buf2+len1), len2-len1, charset) >= (1<<20)) {
 		return ok;
 	}
 	if (len1 > len2 && 
 	    memcmp(buf1, buf2, len2) == 0 && 
-	    get_codepoint(buf1+len2, len1-len2, charset) >= (1<<20)) {
+	    get_codepoint((char *)(buf1+len2), len1-len2, charset) >= (1<<20)) {
 		return ok;
 	}
 
@@ -211,11 +211,11 @@ static int test_buffer(struct torture_context *test,
 		show_buf("OUT2:", buf2, len2);
 		if (len2 > len1 && memcmp(buf1, buf2, len1) == 0) {
 			torture_comment(test, "next codepoint is %u", 
-			       get_codepoint(buf2+len1, len2-len1, charset));
+			       get_codepoint((char *)(buf2+len1), len2-len1, charset));
 		}
 		if (len1 > len2 && memcmp(buf1, buf2, len2) == 0) {
 			torture_comment(test, "next codepoint is %u", 
-			       get_codepoint(buf1+len2,len1-len2, charset));
+			       get_codepoint((char *)(buf1+len2),len1-len2, charset));
 		}
 
 		ok = 0;
@@ -223,8 +223,8 @@ static int test_buffer(struct torture_context *test,
 
 	/* convert back to UTF-16, putting result in buf3 */
 	size = size - size_in1;
-	ptr_in = buf1;
-	ptr_out = buf3;
+	ptr_in = (const char *)buf1;
+	ptr_out = (char *)buf3;
 	size_in3 = len1;
 	outsize3 = sizeof(buf3);
 
@@ -233,7 +233,7 @@ static int test_buffer(struct torture_context *test,
 
 	/* we only internally support the first 1M codepoints */
 	if (outsize3 != sizeof(buf3) - size &&
-	    get_codepoint(inbuf+sizeof(buf3) - outsize3, 
+	    get_codepoint((char *)(inbuf+sizeof(buf3) - outsize3), 
 			  size - (sizeof(buf3) - outsize3),
 			  "UTF-16LE") >= (1<<20)) {
 		return ok;
@@ -262,7 +262,7 @@ static int test_buffer(struct torture_context *test,
 		show_buf(" buf3", buf3, sizeof(buf3) - outsize3);
 		ok = 0;
 		torture_comment(test, "next codepoint is %u\n", 
-		       get_codepoint(inbuf+sizeof(buf3) - outsize3, 
+		       get_codepoint((char *)(inbuf+sizeof(buf3) - outsize3), 
 				     size - (sizeof(buf3) - outsize3),
 				     "UTF-16LE"));
 	}
@@ -286,9 +286,9 @@ static int test_codepoint(struct torture_context *test, const void *data)
 	unsigned int codepoint = *((const unsigned int *)data);
 	codepoint_t c;
 
-	size = push_codepoint(buf, codepoint);
+	size = push_codepoint((char *)buf, codepoint);
 	if (size == -1) {
-		torture_assert(test, codepoint >= 0xd800 && codepoint <= 0x10000, NULL);
+		torture_assert(test, codepoint >= 0xd800 && codepoint <= 0x10000, "Invalid Codepoint range");
 		return True;
 	}
 	buf[size] = random();
@@ -296,7 +296,7 @@ static int test_codepoint(struct torture_context *test, const void *data)
 	buf[size+2] = random();
 	buf[size+3] = random();
 
-	c = next_codepoint(buf, &size2);
+	c = next_codepoint((char *)buf, &size2);
 
 	if (c != codepoint) {
 		torture_fail(test, "next_codepoint(%u) failed - gave %u", codepoint, c);
@@ -329,7 +329,7 @@ static BOOL test_first_1m(struct torture_context *test, const void *data)
 	unsigned char inbuf[1000];
 
 	for (codepoint=0;codepoint<(1<<20);codepoint++) {
-		if (gen_codepoint_utf16(codepoint, inbuf, &size) != 0) {
+		if (gen_codepoint_utf16(codepoint, (char *)inbuf, &size) != 0) {
 			continue;
 		}
 
