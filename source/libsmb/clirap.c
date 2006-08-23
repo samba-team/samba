@@ -553,9 +553,10 @@ BOOL cli_setpathinfo(struct cli_state *cli, const char *fname,
 /****************************************************************************
 send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
 ****************************************************************************/
+
 BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
-		    time_t *c_time, time_t *a_time, time_t *m_time, 
-		    time_t *w_time, SMB_OFF_T *size, uint16 *mode,
+		    time_t *create_time, time_t *access_time, time_t *write_time, 
+		    time_t *change_time, SMB_OFF_T *size, uint16 *mode,
 		    SMB_INO_T *ino)
 {
 	unsigned int data_len = 0;
@@ -593,17 +594,17 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 		return False;
 	}
         
-	if (c_time) {
-                *c_time = interpret_long_date(rdata+0);
+	if (create_time) {
+                *create_time = interpret_long_date(rdata+0);
 	}
-	if (a_time) {
-		*a_time = interpret_long_date(rdata+8);
+	if (access_time) {
+		*access_time = interpret_long_date(rdata+8);
 	}
-	if (w_time) {
-		*w_time = interpret_long_date(rdata+16);
+	if (write_time) {
+		*write_time = interpret_long_date(rdata+16);
 	}
-	if (m_time) {
-		*m_time = interpret_long_date(rdata+24);
+	if (change_time) {
+		*change_time = interpret_long_date(rdata+24);
 	}
 	if (mode) {
 		*mode = SVAL(rdata, 32);
@@ -669,8 +670,8 @@ send a qfileinfo call
 ****************************************************************************/
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
 		   uint16 *mode, SMB_OFF_T *size,
-		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   time_t *w_time, SMB_INO_T *ino)
+		   time_t *create_time, time_t *access_time, time_t *write_time, 
+		   time_t *change_time, SMB_INO_T *ino)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -708,17 +709,17 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		return False;
 	}
 
-	if (c_time) {
-		*c_time = interpret_long_date(rdata+0) - cli->serverzone;
+	if (create_time) {
+		*create_time = interpret_long_date(rdata+0);
 	}
-	if (a_time) {
-		*a_time = interpret_long_date(rdata+8) - cli->serverzone;
+	if (access_time) {
+		*access_time = interpret_long_date(rdata+8);
 	}
-	if (m_time) {
-		*m_time = interpret_long_date(rdata+16) - cli->serverzone;
+	if (write_time) {
+		*write_time = interpret_long_date(rdata+16);
 	}
-	if (w_time) {
-		*w_time = interpret_long_date(rdata+24) - cli->serverzone;
+	if (change_time) {
+		*change_time = interpret_long_date(rdata+24);
 	}
 	if (mode) {
 		*mode = SVAL(rdata, 32);
@@ -793,9 +794,9 @@ BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name,
 		return False;
 	}
 
-	sbuf->st_atime = interpret_long_date( rdata+8 );
-	sbuf->st_mtime = interpret_long_date( rdata+16 );
-	sbuf->st_ctime = interpret_long_date( rdata+24 );
+	sbuf->st_atime = interpret_long_date( rdata+8 ); /* Access time. */
+	sbuf->st_mtime = interpret_long_date( rdata+16 ); /* Write time. */
+	sbuf->st_ctime = interpret_long_date( rdata+24 ); /* Change time. */
 	
 	*attributes = IVAL( rdata, 32 );
 	
