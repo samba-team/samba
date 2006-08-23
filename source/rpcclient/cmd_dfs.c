@@ -190,7 +190,7 @@ static NTSTATUS cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	NETDFS_DFS_ENUMINFO_CTR ctr;
 	NTSTATUS result;
 	uint32 info_level = 1;
-	uint32 unknown = 0, total = 0;
+	uint32 total = 0;
 
 	if (argc > 2) {
 		printf("Usage: %s [info_level]\n", argv[0]);
@@ -204,7 +204,7 @@ static NTSTATUS cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	init_netdfs_dfs_EnumStruct(&str, info_level, ctr);
 	str.e.ptr0 = 1;
 
-	result = rpccli_dfs_Enum(cli, mem_ctx, info_level, 0xFFFFFFFF, &str, &unknown, &total);
+	result = rpccli_dfs_Enum(cli, mem_ctx, info_level, 0xFFFFFFFF, &str, &total);
 
 	if (NT_STATUS_IS_OK(result))
 		display_dfs_enumstruct(&str);

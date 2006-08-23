@@ -192,7 +192,8 @@ static int net_groupmap_add(int argc, const char **argv)
 	uint32 rid = 0;	
 	gid_t gid;
 	int i;
-	
+	const char *name_type = "domain group";
+
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
 		if ( !StrnCaseCmp(argv[i], "rid", strlen("rid")) ) {
@@ -236,15 +237,21 @@ static int net_groupmap_add(int argc, const char **argv)
 				case 'b':
 				case 'B':
 					sid_type = SID_NAME_WKN_GRP;
+					name_type = "wellknown group";
 					break;
 				case 'd':
 				case 'D':
 					sid_type = SID_NAME_DOM_GRP;
+					name_type = "domain group";
 					break;
 				case 'l':
 				case 'L':
 					sid_type = SID_NAME_ALIAS;
+					name_type = "alias (local) group";
 					break;
+				default:
+					d_fprintf(stderr, "unknown group type %s\n", type);
+					return -1;
 			}
 		}
 		else {
@@ -275,7 +282,7 @@ static int net_groupmap_add(int argc, const char **argv)
 	if ( (rid == 0) && (string_sid[0] == '\0') ) {
 		d_printf("No rid or sid specified, choosing a RID\n");
 		if (pdb_rid_algorithm()) {
-			rid = pdb_gid_to_group_rid(gid);
+			rid = algorithmic_pdb_gid_to_group_rid(gid);
 		} else {
 			if (!pdb_new_rid(&rid)) {
 				d_printf("Could not get new RID\n");
@@ -317,7 +324,8 @@ static int net_groupmap_add(int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("Successfully added group %s to the mapping db\n", ntgroup);
+	d_printf("Successfully added group %s to the mapping db as a %s\n",
+		ntgroup, name_type);
 	return 0;
 }
 
@@ -413,14 +421,17 @@ static int net_groupmap_modify(int argc, const char **argv)
 	 * Allow changing of group type only between domain and local
 	 * We disallow changing Builtin groups !!! (SID problem)
 	 */ 
-	if (sid_type != SID_NAME_UNKNOWN) { 
-		if (map.sid_name_use == SID_NAME_WKN_GRP) {
-			d_fprintf(stderr, "You can only change between domain and local groups.\n");
-			return -1;
-		}
-		
-		map.sid_name_use=sid_type;
+	if (sid_type == SID_NAME_UNKNOWN) {
+		d_fprintf(stderr, "Can't map to an unknown group type.\n");
+		return -1;
 	}
+
+	if (map.sid_name_use == SID_NAME_WKN_GRP) {
+		d_fprintf(stderr, "You can only change between domain and local groups.\n");
+		return -1;
+	}
+		
+	map.sid_name_use=sid_type;
 
 	/* Change comment if new one */
 	if ( ntcomment[0] )
@@ -555,7 +566,14 @@ static int net_groupmap_set(int argc, const char **argv)
 		map.gid = grp->gr_gid;
 
 		if (opt_rid == 0) {
-			opt_rid = pdb_gid_to_group_rid(map.gid);
+			if ( pdb_rid_algorithm() )
+				opt_rid = algorithmic_pdb_gid_to_group_rid(map.gid);
+			else {
+				if ( !pdb_new_rid((uint32*)&opt_rid) ) {
+					d_fprintf( stderr, "Could not allocate new RID\n");
+					return -1;
+				}
+			}
 		}
 
 		sid_copy(&map.sid, get_global_sam_sid());

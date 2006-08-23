@@ -1189,7 +1189,6 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 			      struct samu *sam_pass, const struct smb_passwd *pw_buf)
 {
 	struct passwd *pwfile;
-	fstring unix_username;
 	
 	if ( !sam_pass ) {
 		DEBUG(5,("build_sam_account: struct samu is NULL\n"));
@@ -1198,10 +1197,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 
 	/* verify the user account exists */
 
-	fstrcpy( unix_username, pw_buf->smb_name );
-	strlower_m( unix_username );
-			
-	if ( !(pwfile = getpwnam_alloc(NULL, unix_username )) ) {
+	if ( !(pwfile = Get_Pwnam_alloc(NULL, pw_buf->smb_name )) ) {
 		DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s with uid "
 		"%u is not in unix passwd database!\n", pw_buf->smb_name, pw_buf->smb_userid));
 			return False;

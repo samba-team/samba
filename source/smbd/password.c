@@ -420,12 +420,11 @@ BOOL user_in_netgroup(const char *user, const char *ngname)
 		yp_get_default_domain(&mydomain);
 
 	if(mydomain == NULL) {
-		DEBUG(5,("Unable to get default yp domain\n"));
-		return False;
+		DEBUG(5,("Unable to get default yp domain, let's try without specifying it\n"));
 	}
 
 	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-		user, mydomain, ngname));
+		user, mydomain?mydomain:"(ANY)", ngname));
 
 	if (innetgr(ngname, NULL, user, mydomain)) {
 		DEBUG(5,("user_in_netgroup: Found\n"));
@@ -441,7 +440,7 @@ BOOL user_in_netgroup(const char *user, const char *ngname)
 		strlower_m(lowercase_user);
 	
 		DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-			lowercase_user, mydomain, ngname));
+			lowercase_user, mydomain?mydomain:"(ANY)", ngname));
 
 		if (innetgr(ngname, NULL, lowercase_user, mydomain)) {
 			DEBUG(5,("user_in_netgroup: Found\n"));

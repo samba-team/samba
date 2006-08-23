@@ -43,7 +43,6 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	DOM_SID sid;
 	enum SID_NAME_USE type;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	struct group *grp;
 
 	if (tmp_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
@@ -118,63 +117,6 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	if ((domain[0] == '\0') && (!(flags & LOOKUP_NAME_ISOLATED))) {
 		goto failed;
-	}
-
-	/*
-	 * Nasty hack necessary for too common scenarios:
-	 *
-	 * For 'valid users = +users' we know "users" is most probably not
-	 * BUILTIN\users but the unix group users. This hack requires the
-	 * admin to explicitly qualify BUILTIN if BUILTIN\users is meant.
-	 *
-	 * Please note that LOOKUP_NAME_GROUP can not be requested via for
-	 * example lsa_lookupnames, it only comes into this routine via
-	 * the expansion of group names coming in from smb.conf
-	 */
-
-	if ((flags & LOOKUP_NAME_GROUP) && ((grp = getgrnam(name)) != NULL)) {
-
-		GROUP_MAP map;
-
-		if (pdb_getgrgid(&map, grp->gr_gid)) {
-			/* The hack gets worse. Handle the case where we have
-			 * 'force group = +unixgroup' but "unixgroup" has a
-			 * group mapping */
-
-			if (sid_check_is_in_builtin(&map.sid)) {
-				domain = talloc_strdup(
-					tmp_ctx, builtin_domain_name());
-			} else {
-				domain = talloc_strdup(
-					tmp_ctx, get_global_sam_name());
-			}
-
-			sid_copy(&sid, &map.sid);
-			type = map.sid_name_use;
-			goto ok;
-		}
-
-		/* If we are using the smbpasswd backend, we need to use the
-		 * algorithmic mapping for the unix group we find. This is
-		 * necessary because when creating the NT token from the unix
-		 * gid list we got from initgroups() we use gid_to_sid() that
-		 * uses algorithmic mapping if pdb_rid_algorithm() is true. */
-
-		if (pdb_rid_algorithm() &&
-		    (grp->gr_gid < max_algorithmic_gid())) {
-			domain = talloc_strdup(tmp_ctx, get_global_sam_name());
-			sid_compose(&sid, get_global_sam_sid(),
-				    pdb_gid_to_group_rid(grp->gr_gid));
-			type = SID_NAME_DOM_GRP;
-			goto ok;
-		}
-		
-		if (lookup_unix_group_name(name, &sid)) {
-			domain = talloc_strdup(tmp_ctx,
-					       unix_groups_domain_name());
-			type = SID_NAME_DOM_GRP;
-			goto ok;
-		}
 	}
 
 	/* Now the guesswork begins, we haven't been given an explicit
@@ -1138,14 +1080,9 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 		goto done;
 	}
 
-	if (pdb_rid_algorithm() && (uid < max_algorithmic_uid())) {
-		sid_copy(psid, get_global_sam_sid());
-		sid_append_rid(psid, algorithmic_pdb_uid_to_user_rid(uid));
-		goto done;
-	} else {
-		uid_to_unix_users_sid(uid, psid);
-		goto done;
-	}
+	/* This is an unmapped user */
+
+	uid_to_unix_users_sid(uid, psid);
 
  done:
 	DEBUG(10,("uid_to_sid: local %u -> %s\n", (unsigned int)uid,
@@ -1180,16 +1117,10 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 		/* This is a mapped group */
 		goto done;
 	}
+	
+	/* This is an unmapped group */
 
-	if (pdb_rid_algorithm() && (gid < max_algorithmic_gid())) {
-		sid_copy(psid, get_global_sam_sid());
-		sid_append_rid(psid, pdb_gid_to_group_rid(gid));
-		goto done;
-	} else {
-		sid_copy(psid, &global_sid_Unix_Groups);
-		sid_append_rid(psid, gid);
-		goto done;
-	}
+	gid_to_unix_groups_sid(gid, psid);
 
  done:
 	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid,
@@ -1235,14 +1166,9 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 			*puid = id.uid;
 			goto done;
 		}
-		if (pdb_rid_algorithm() &&
-		    algorithmic_pdb_rid_is_user(rid)) {
-			*puid = algorithmic_pdb_user_rid_to_uid(rid);
-			goto done;
-		}
 
-		/* This was ours, but it was neither mapped nor
-		 * algorithmic. Fail */
+		/* This was ours, but it was not mapped.  Fail */
+
 		return False;
 	}
 
@@ -1323,14 +1249,9 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 			*pgid = id.gid;
 			goto done;
 		}
-		if (pdb_rid_algorithm() &&
-		    !algorithmic_pdb_rid_is_user(rid)) {
-			/* This must be a group, presented as alias */
-			*pgid = pdb_group_rid_to_gid(rid);
-			goto done;
-		}
-		/* This was ours, but it was neither mapped nor
-		 * algorithmic. Fail. */
+
+		/* This was ours, but it was not mapped.  Fail */
+
 		return False;
 	}
 	

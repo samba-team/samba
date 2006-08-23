@@ -351,11 +351,6 @@ fi
 %{_sbindir}/nmbd
 %{_sbindir}/winbindd
 
-%attr(755,root,root) /%{_lib}/libnss_wins.so*
-%attr(755,root,root) /%{_lib}/libnss_winbind.so*
-%attr(755,root,root) /%{_lib}/security/pam_winbind.so
-%attr(755,root,root) /%{_lib}/security/pam_smbpass.so
-
 %{_bindir}/mksmbpasswd.sh
 %{_bindir}/smbcontrol
 %{_bindir}/smbstatus
@@ -379,7 +374,6 @@ fi
 %{_mandir}/man8/nmbd.8*
 %{_mandir}/man8/pdbedit.8*
 %{_mandir}/man8/smbd.8*
-%{_mandir}/man7/pam_winbind.7*
 %{_mandir}/man8/tdbbackup.8*
 %{_mandir}/man8/tdbdump.8*
 %{_mandir}/man8/winbindd.8*
@@ -462,6 +456,11 @@ fi
 %config(noreplace) %{_sysconfdir}/samba/smb.conf
 %config(noreplace) %{_sysconfdir}/samba/lmhosts
 
+%attr(755,root,root) /%{_lib}/libnss_wins.so*
+%attr(755,root,root) /%{_lib}/libnss_winbind.so*
+%attr(755,root,root) /%{_lib}/security/pam_winbind.so
+%attr(755,root,root) /%{_lib}/security/pam_smbpass.so
+
 %{_includedir}/libsmbclient.h
 %{_libdir}/libsmbclient.a
 %{_libdir}/libsmbclient.so*
@@ -483,6 +482,7 @@ fi
 %{_mandir}/man5/lmhosts.5*
 %{_mandir}/man8/smbpasswd.8*
 %{_mandir}/man7/libsmbclient.7*
+%{_mandir}/man7/pam_winbind.7*
 
 %changelog
 * Fri Jan 16 2004 Gerald (Jerry) Carter <jerry@samba,org>
