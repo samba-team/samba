@@ -3,7 +3,7 @@
 DIGEST DEFINITIONS ::=
 BEGIN
 
-IMPORTS EncryptedData FROM krb5;
+IMPORTS EncryptedData, Principal FROM krb5;
 
 DigestInit ::= SEQUENCE {
     type		UTF8String, -- http, sasl, chap, cram-md5 --
@@ -25,7 +25,7 @@ DigestRequest ::= SEQUENCE  {
     type		UTF8String, -- http, sasl, chap, cram-md5 --
     digest		UTF8String, -- md5/md5-sess --
     username		UTF8String, -- username user used
-    authentication-user	[0] UTF8String OPTIONAL, -- principal to get key from
+    authentication-user	[0] Principal OPTIONAL, -- principal to get key from
     realm		[1] UTF8String OPTIONAL,
     method		[2] UTF8String OPTIONAL,
     uri			[3] UTF8String OPTIONAL,
@@ -34,6 +34,7 @@ DigestRequest ::= SEQUENCE  {
     nonceCount		[5] UTF8String OPTIONAL,
     qop			[6] UTF8String OPTIONAL,
     identifier		[7] UTF8String OPTIONAL,
+    hostname		[8] UTF8String OPTIONAL,
     opaque		UTF8String -- same as "DigestInitReply.opaque"
 }
 -- opaque = hex(cksum(type|serverNonce|identifier|hostname,digest-key))
@@ -41,7 +42,8 @@ DigestRequest ::= SEQUENCE  {
 
 
 DigestError ::= SEQUENCE {
-    reason		UTF8String
+    reason		UTF8String,
+    code		INTEGER (-2147483648..2147483647)
 }
 
 DigestResponse ::= SEQUENCE  {
