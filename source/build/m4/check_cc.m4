@@ -175,7 +175,7 @@ if test x$developer = xyes; then
 	    AX_CFLAGS_GCC_OPTION(-Wmissing-format-attribute, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wformat=2, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wno-format-y2k, DEVELOPER_CFLAGS)
-	    AX_CFLAGS_GCC_OPTION(-Wno-declaration-after-statement, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wdeclaration-after-statement, DEVELOPER_CFLAGS)
 	else
 	    AX_CFLAGS_IRIX_OPTION(-fullwarn, DEVELOPER_CFLAGS)
 	fi
