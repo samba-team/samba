@@ -17,10 +17,35 @@ Common bugs fixed in 3.0.23c include:
     as "valid users" with the smbpasswd passdb backend.
 
 
-RID Algorithims & passdb backend = smbpasswd
-============================================
+RID Algorithms & Passdb
+=======================
 
+Starting with the 3.0.23c release, the officially supported passdb 
+backends (smbpasswd, tdbsam, and ldapsam) now operate identically
+with regards to the historical RID algorithm for unmapped users 
+and groups (i.e. accounts not in the passdb or group mapping table).
+The resulting behavior is that all unmapped users are resolved 
+to a SID in the S-1-22-1 domain and all unmapped groups resolve
+to a SID in the S-1-22-2 domain.  Previously, when using the 
+smbpasswd passdb, such users and groups would resolve to an 
+algorithmic SID in the machine's own domain (S-1-5-XX-XX-XX).
+However, the smbpasswd backend still utilizes the RID algorithm
+when creating new user accounts or allocating a RID for a new 
+group mapping entry.
 
+With the changes in the 3.0.23c release, it is now possible to 
+resolve a uid/gid, name, or SID in any direction and always obtain
+a symmetric mapping.  This is important so that values for smb.conf 
+parameters such as "valid users" resolve to the same SIDs as those 
+included  in the local user's initial token.
+
+Most installations will notice no change.  However, because
+an unmapped account's SID will now change even when using 
+smbpasswd it is possible that any security descriptors on files
+previously copied from a Samba host to a Windows NTFS partition
+may now fail to give access. The workaround is to either manually
+map all affect groups (or add impacted users to the server's 
+passdb) or to manually reset the file's ACL.
 
 
 ######################################################################
@@ -32,7 +57,43 @@ Changes since 3.0.23b
 
 commits
 -------
+o   Jeremy Allison <jra@samba.org>
+    * Various fixes for winbindd's offline mode.
+    * OS/2 fixes for large Extended Attributes data.
+    * Fix nmbd crashes caused by miscalculation in pushing 
+      announcements.
 
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * RHEL4  and Fedora packaging updates.
+    * Remove RID algorithm support for unmapped users and groups
+      when using an smbpasswd backend.
+    * Extend the NT token for local users' with the S-1-22-2 
+      SID for each supplementary group
+    * BUG 3969: Fix unsigned time comparison with expiration 
+      policy from AD DC.
+    * Merge Guenther's fixes from the SuSE SLES10 tree to ensure 
+      that winbindd talks to the correct DC when servicing PAM 
+      authentication requests.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Fix msdfs RPC client and server management RPCs.
+    * Align idmap_ad with the current idmap_methods interface.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Re-add support for "username level" when looking up the 
+      matching Unix user for an smbpasswd entry.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Let innetgr() work without binding its use to a 
+      NIS domain to support netgroups in local files.
+
+
+o   Ben Winslow <rain@bluecherry.net>
+    * Allow client smb signing to be turned off correctly.
 
 
 Release Notes for older release follow:
