@@ -41,6 +41,12 @@ command = {
 		default = "sasl"
 	}
 	option = {
+		long = "kerberos-realm"
+		type = "string"
+		argument = "realm"
+		help = ""
+	}
+	option = {
 		long = "digest"
 		type = "string"
 		argument = "digest-type"
@@ -73,6 +79,18 @@ command = {
 }
 command = {
 	name = "server-request"
+	option = {
+		long = "type"
+		type = "string"
+		help = "digest type"
+		default = "sasl"
+	}
+	option = {
+		long = "kerberos-realm"
+		type = "string"
+		argument = "realm"
+		help = ""
+	}
 	option = {
 		long = "username"
 		type = "string"
@@ -146,6 +164,81 @@ command = {
 		help = "Where the the credential cache is created when the KDC returns tickets"
 	}
 	help = "Completes digest negotiation and return final parameters"
+}
+command = {
+	name = "client-request"
+	option = {
+		long = "type"
+		type = "string"
+		help = "digest type"
+		default = "sasl"
+	}
+	option = {
+		long = "username"
+		type = "string"
+		argument = "name"
+		help = "digest type"
+	}
+	option = {
+		long = "password"
+		type = "string"
+		argument = "password"
+	}
+	option = {
+		long = "server-nonce"
+		type = "string"
+		argument = "nonce"
+		help = ""
+	}
+	option = {
+		long = "server-identifier"
+		type = "string"
+		argument = "nonce"
+		help = ""
+	}
+	option = {
+		long = "client-nonce"
+		type = "string"
+		argument = "nonce"
+		help = ""
+	}
+	option = {
+		long = "opaque"
+		type = "string"
+		argument = "string"
+		help = ""
+	}
+	option = {
+		long = "realm"
+		type = "string"
+		argument = "realm"
+		help = ""
+	}
+	option = {
+		long = "method"
+		type = "string"
+		argument = "method"
+		help = ""
+	}
+	option = {
+		long = "uri"
+		type = "string"
+		argument = "uri"
+		help = ""
+	}
+	option = {
+		long = "nounce-count"
+		type = "string"
+		argument = "count"
+		help = ""
+	}
+	option = {
+		long = "qop"
+		type = "string"
+		argument = "qop"
+		help = ""
+	}
+	help = "Client part of a digest exchange"
 }
 command = {
 	name = "help"
