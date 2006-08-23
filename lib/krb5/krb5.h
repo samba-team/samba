@@ -75,6 +75,9 @@ typedef struct krb5_crypto_data *krb5_crypto;
 struct krb5_get_creds_opt_data;
 typedef struct krb5_get_creds_opt_data *krb5_get_creds_opt;
 
+struct krb5_digest;
+typedef struct krb5_digest *krb5_digest;
+
 typedef CKSUMTYPE krb5_cksumtype;
 
 typedef Checksum krb5_checksum;
@@ -208,8 +211,12 @@ typedef enum krb5_key_usage {
     /* Keyusage for the server referral in a TGS req */
     KRB5_KU_SAM_ENC_NONCE_SAD = 27,
     /* Encryption of the SAM-NONCE-OR-SAD field */
-    KRB5_KU_TGS_IMPERSONATE = -17
+    KRB5_KU_TGS_IMPERSONATE = -17,
     /* Checksum type used in the impersonate field */
+    KRB5_KU_DIGEST_ENCRYPT = -18,
+    /* Encryption key usage used in the digest encryption field */
+    KRB5_KU_DIGEST_OPAQUE = -19,
+    /* Checksum key usage used in the digest opaque field */
 } krb5_key_usage;
 
 typedef krb5_key_usage krb5_keyusage;
@@ -609,6 +616,8 @@ typedef EncAPRepPart krb5_ap_rep_enc_part;
 
 #define KRB5_TGS_NAME_SIZE (6)
 #define KRB5_TGS_NAME ("krbtgt")
+
+#define KRB5_DIGEST_NAME ("digest")
 
 /* variables */
 
