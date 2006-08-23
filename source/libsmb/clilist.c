@@ -94,27 +94,13 @@ static size_t interpret_long_filename(struct cli_state *cli, int level,char *p,f
 			}
 			p += 4; /* fileindex */
 				
-			/* these dates appear to arrive in a
-			   weird way. It seems to be localtime
-			   plus the serverzone given in the
-			   initial connect. This is GMT when
-			   DST is not in effect and one hour
-			   from GMT otherwise. Can this really
-			   be right??
-			   
-			   I suppose this could be called
-			   kludge-GMT. Is is the GMT you get
-			   by using the current DST setting on
-			   a different localtime. It will be
-			   cheap to calculate, I suppose, as
-			   no DST tables will be needed */
-			
-			finfo->ctime = interpret_long_date(p);
+			/* Offset zero is "create time", not "change time". */
 			p += 8;
 			finfo->atime = interpret_long_date(p);
 			p += 8;
 			finfo->mtime = interpret_long_date(p);
 			p += 8;
+			finfo->ctime = interpret_long_date(p);
 			p += 8;
 			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0);
 			p += 8;
