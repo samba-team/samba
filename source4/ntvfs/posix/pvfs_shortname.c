@@ -313,8 +313,8 @@ static BOOL is_8_3(struct pvfs_mangle_context *ctx,
   try to find a 8.3 name in the cache, and if found then
   return the original long name. 
 */
-static const char *check_cache(struct pvfs_mangle_context *ctx, 
-			       const char *name)
+static char *check_cache(struct pvfs_mangle_context *ctx, 
+			 TALLOC_CTX *mem_ctx, const char *name)
 {
 	uint32_t hash, multiplier;
 	unsigned int i;
@@ -351,10 +351,10 @@ static const char *check_cache(struct pvfs_mangle_context *ctx,
 	}
 
 	if (extension[0]) {
-		return talloc_asprintf(ctx, "%s.%s", prefix, extension);
+		return talloc_asprintf(mem_ctx, "%s.%s", prefix, extension);
 	}
 
-	return talloc_strdup(ctx, prefix);
+	return talloc_strdup(mem_ctx, prefix);
 }
 
 
@@ -672,12 +672,7 @@ const char *pvfs_short_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 char *pvfs_mangled_lookup(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, 
 			  const char *name)
 {
-	const char *ret;
-	ret = check_cache(pvfs->mangle_ctx, name);
-	if (ret) {
-		return talloc_steal(mem_ctx, ret);
-	}
-	return NULL;
+	return check_cache(pvfs->mangle_ctx, mem_ctx, name);
 }
 
 
