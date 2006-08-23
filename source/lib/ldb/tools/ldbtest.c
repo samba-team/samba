@@ -70,7 +70,7 @@ static void add_records(struct ldb_context *ldb,
 		char *name;
 		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 
-		asprintf(&name, "Test%d", i);
+		name = talloc_asprintf(tmp_ctx, "Test%d", i);
 
 		msg.dn = ldb_dn_build_child(tmp_ctx, "cn", name, basedn);
 		msg.num_elements = 6;
