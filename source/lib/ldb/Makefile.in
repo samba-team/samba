@@ -12,7 +12,6 @@ VPATH = @srcdir@:@srcdir@/..:@POPTDIR@
 srcdir = @srcdir@
 builddir = @builddir@
 SLAPD = @SLAPD@
-POPTOBJ = @POPTOBJ@
 EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
 
@@ -21,6 +20,9 @@ CFLAGS=-I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
 
 LIB_FLAGS=-Llib -lldb @LIBS@
+
+REPDIR=replace
+REPLACE_OBJ=$(REPDIR)/replace.o $(REPDIR)/timegm.o
 
 TDBDIR=tdb
 TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/dump.o \
@@ -49,7 +51,7 @@ MODULES_OBJ=$(MODDIR)/operational.o $(MODDIR)/schema.o $(MODDIR)/rdn_name.o \
 	   $(MODDIR)/objectclass.o \
 	   $(MODDIR)/paged_results.o $(MODDIR)/sort.o $(MODDIR)/asq.o
 
-OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(EXTRA_OBJ) $(POPTOBJ)
+OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(EXTRA_OBJ) $(REPLACE_OBJ)
 
 LDB_LIB = lib/libldb.a
 
@@ -59,7 +61,7 @@ LIBS = $(LDB_LIB)( $(OBJS) )
 
 EXAMPLES = examples/ldbreader examples/ldifreader
 
-DIRS = lib bin common ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples tdb talloc
+DIRS = lib bin common replace ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples tdb talloc
 
 all: dirs $(OBJS) $(LIBS) $(BINS) $(EXAMPLES) manpages
 
@@ -106,7 +108,7 @@ examples/ldifreader: examples/ldifreader.o $(LIBS)
 .SUFFIXES: .1 .1.xml .3 .3.xml .xml .html
 
 manpages:
-	$(srcdir)/docs/builddocs.sh "$(XSLTPROC)" "$(srcdir)"
+	@$(srcdir)/docs/builddocs.sh "$(XSLTPROC)" "$(srcdir)"
 
 doxygen:
 	test -z "$(DOXYGEN)" || (cd $(srcdir) && "$(DOXYGEN)")

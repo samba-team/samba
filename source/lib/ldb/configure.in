@@ -40,23 +40,17 @@ AC_CONFIG_HEADER(include/config.h)
 AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_FUNCS(dlopen dlsym dlclose)
 
-AC_CHECK_TYPE(uint8_t, unsigned char)
-AC_CHECK_TYPE(int64_t, long long)
-AC_CHECK_TYPE(uint64_t, unsigned long long)
-
-AC_CHECK_TYPE(comparison_fn_t, 
-[AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
-
 SHLIBEXT="so" # Should be set based on OS later on
 AC_SUBST(SHLIBEXT)
 
 AC_DEFINE_UNQUOTED(MODULESDIR, LIBDIR "/ldb" , [Modules directory] )
 AC_SUBST(MODULESDIR)
 
-sinclude(popt.m4)
-
 TESTS=""
 EXTRA_OBJ=""
+
+sinclude(popt.m4)
+sinclude(replace/config.m4)
 
 sinclude(ldap.m4)
 if test x"$with_ldap_support" = x"yes"; then

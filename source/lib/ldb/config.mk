@@ -140,6 +140,16 @@ PUBLIC_DEPENDENCIES = \
 # End MODULE ldb_tdb
 ################################################
 
+################################################
+# Start MODULE ldb_replace
+[MODULE::ldb_replace]
+SUBSYSTEM = ldb
+OBJ_FILES = \
+		replace/timegm.o \
+		replace/replace.o
+# End MODULE ldb_replace
+################################################
+
 ./lib/ldb/common/ldb_modules.o: lib/ldb/common/ldb_modules.c Makefile
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) $(PICFLAG) -DMODULESDIR=\"$(MODULESDIR)/ldb\" -DSHLIBEXT=\"$(SHLIBEXT)\" -c $< -o $@
@@ -166,7 +176,7 @@ OBJ_FILES = \
 		common/ldb_controls.o \
 		common/qsort.o
 PUBLIC_DEPENDENCIES = \
-		LIBREPLACE LIBTALLOC 
+		LIBREPLACE LIBTALLOC
 MANPAGE = man/ldb.3
 PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
 #
