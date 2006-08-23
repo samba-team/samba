@@ -80,6 +80,12 @@ struct ldb_val {
 };
 #endif
 
+/*! \cond DOXYGEN_IGNORE */
+#ifndef PRINTF_ATTRIBUTE
+#define PRINTF_ATTRIBUTE(a,b)
+#endif
+/*! \endcond */
+
 /**
    internal ldb exploded dn structures
 */
@@ -204,7 +210,7 @@ enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR,
 */
 struct ldb_debug_ops {
 	void (*debug)(void *context, enum ldb_debug_level level, 
-		      const char *fmt, va_list ap);
+		      const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
 	void *context;
 };
 
@@ -241,12 +247,6 @@ struct ldb_utf8_fns {
    connection is dropped (actually make sense only with ldap).
 */
 #define LDB_FLG_RECONNECT 4
-
-/*! \cond DOXYGEN_IGNORE */
-#ifndef PRINTF_ATTRIBUTE
-#define PRINTF_ATTRIBUTE(a,b)
-#endif
-/*! \endcond */
 
 /*
    structures for ldb_parse_tree handling code
@@ -1000,7 +1000,7 @@ int ldb_valid_attr_name(const char *s);
    \sa ldb_ldif_read for the reader equivalent to this function.
 */
 int ldb_ldif_write(struct ldb_context *ldb,
-		   int (*fprintf_fn)(void *, const char *, ...), 
+		   int (*fprintf_fn)(void *, const char *, ...) PRINTF_ATTRIBUTE(2,3), 
 		   void *private_data,
 		   const struct ldb_ldif *ldif);
 
@@ -1329,7 +1329,7 @@ struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v);
 */
 int ldb_set_debug(struct ldb_context *ldb,
 		  void (*debug)(void *context, enum ldb_debug_level level, 
-				const char *fmt, va_list ap),
+				const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0),
 		  void *context);
 
 /**
