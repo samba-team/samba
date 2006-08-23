@@ -55,7 +55,7 @@ LDB_LIB = lib/libldb.a
 
 BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest bin/oLschema2ldif
 
-LIBS = $(LDB_LIB)($(OBJS))
+LIBS = $(LDB_LIB)( $(OBJS) )
 
 EXAMPLES = examples/ldbreader examples/ldifreader
 
