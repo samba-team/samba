@@ -219,7 +219,7 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 
 	fclose(f);
 
-	asprintf(&cmd, "%s %s", editor, template);
+	cmd = talloc_asprintf(ldb, "%s %s", editor, template);
 
 	if (!cmd) {
 		unlink(template);
@@ -229,7 +229,7 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 
 	/* run the editor */
 	ret = system(cmd);
-	free(cmd);
+	talloc_free(cmd);
 
 	if (ret != 0) {
 		unlink(template);
