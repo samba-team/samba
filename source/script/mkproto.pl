@@ -25,7 +25,6 @@ my $public_data = \$_public;
 my $private_data = \$_private;
 my $builddir = undef;
 my $srcdir = undef;
-my $always_create = $ENV{MK_PROTO_ALWAYS_CREATE};
 
 sub public($)
 {
@@ -50,7 +49,6 @@ sub usage()
 	print "  --private-define=DEF   Same as --define, but just for private header\n";
 	print "  --srcdir=path          Read files relative to this directory\n";
 	print "  --builddir=path        Write file relative to this directory\n";
-	print "  --always-create        Always create new proto headers, even if the content hasn't changed\n";
 	print "  --help                 Print this help message\n\n";
 	exit 0;
 }
@@ -67,7 +65,6 @@ GetOptions(
 	'private-define=s' => \$private_define,
 	'srcdir=s' => sub { my ($f,$v) = @_; $srcdir = $v; },
 	'builddir=s' => sub { my ($f,$v) = @_; $builddir = $v; },
-	'always-create' => \$always_create,
 	'help' => \&usage
 ) or exit(1);
 
@@ -241,20 +238,12 @@ if (not defined($private_file) and defined($public_file)) {
 	print STDOUT $$private_data;
 }
 
-my $old_public_data = file_load($public_file);
-my $old_private_data = file_load($private_file);
+mkpath(dirname($public_file), 0, 0755);
+open(PUBLIC, ">$public_file") or die("Can't open `$public_file': $!"); 
+print PUBLIC "$$public_data";
+close(PUBLIC);
 
-if (defined($always_create) or not defined($old_public_data) or ($old_public_data ne $$public_data))
-{
-	mkpath(dirname($public_file), 0, 0755);
-	open(PUBLIC, ">$public_file") or die("Can't open `$public_file': $!"); 
-	print PUBLIC "$$public_data";
-	close(PUBLIC);
-} 
-
-if (($public_file ne $private_file) and (defined($always_create) or 
-	not defined($old_private_data) or ($old_private_data ne $$private_data))) {
-
+if ($public_file ne $private_file) {
 	mkpath(dirname($private_file), 0, 0755);
 	open(PRIVATE, ">$private_file") or die("Can't open `$private_file': $!"); 
 	print PRIVATE "$$private_data";
