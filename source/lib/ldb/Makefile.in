@@ -61,7 +61,7 @@ EXAMPLES = examples/ldbreader examples/ldifreader
 
 DIRS = lib bin common ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples tdb talloc
 
-all: dirs $(OBJS) $(BINS) $(LIBS) $(EXAMPLES) manpages doxygen
+all: dirs $(OBJS) $(LIBS) $(BINS) $(EXAMPLES) manpages doxygen
 
 .c.o:
 	@echo Compiling $*.c
