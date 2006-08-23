@@ -83,6 +83,7 @@ libkrb5_la_SOURCES =				\
 	creds.c					\
 	crypto.c				\
 	data.c					\
+	digest.c				\
 	eai_to_heim_errno.c			\
 	error_string.c				\
 	expand_hostname.c			\
