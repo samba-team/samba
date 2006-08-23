@@ -57,13 +57,11 @@ BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrena
 
 LIBS = $(LDB_LIB)($(OBJS))
 
-MANPAGES = $(patsubst %.xml,%,$(wildcard $(srcdir)/man/*.xml))
-
 EXAMPLES = examples/ldbreader examples/ldifreader
 
 DIRS = lib bin common ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples tdb talloc
 
-all: dirs $(OBJS) $(BINS) $(LIBS) $(EXAMPLES) $(MANPAGES) doxygen
+all: dirs $(OBJS) $(BINS) $(LIBS) $(EXAMPLES) manpages doxygen
 
 .c.o:
 	@echo Compiling $*.c
@@ -107,14 +105,8 @@ examples/ldifreader: examples/ldifreader.o $(LIBS)
 
 .SUFFIXES: .1 .1.xml .3 .3.xml .xml .html
 
-%.3: %.3.xml
-	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
-
-%.1: %.1.xml
-	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
-
-%.html: %.xml
-	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
+manpages:
+	$(srcdir)/docs/builddocs.sh "$(XSLTPROC)" "$(srcdir)"
 
 doxygen:
 	test -z "$(DOXYGEN)" || (cd $(srcdir) && "$(DOXYGEN)")
@@ -122,7 +114,7 @@ doxygen:
 clean:
 	rm -f */*.o *.gcov */*.gc?? tdbtest.ldb* \
 	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB)
-	rm -f $(MANPAGES)
+	rm -f man/*.1 man/*.3 man/*.html
 	rm -f $(EXAMPLES)
 	rm -rf apidocs/
 
@@ -135,9 +127,6 @@ distclean: clean
 	rm -f ldb.pc
 	rm -f Makefile
 
-etags:
-	etags */*.[ch]
-
 installcheck: install tests
 	for t in $(TESTS); do echo STARTING $${t}; $(srcdir)/tests/$${t} || exit 1; done
 
@@ -145,13 +134,11 @@ test: installcheck
 
 install: all
 	mkdir -p $(includedir) $(libdir)/pkgconfig $(libdir) $(bindir)
-	mkdir -p $(mandir) $(mandir)/man3 $(mandir)/man1
 	cp $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(includedir)
 	cp $(LDB_LIB) $(libdir)
 	cp $(BINS) $(bindir)
 	cp ldb.pc $(libdir)/pkgconfig
-	test -z "$(XSLTPROC)" || cp $(filter %.1, $(MANPAGES)) $(mandir)/man1
-	test -z "$(XSLTPROC)" || cp $(filter %.3, $(MANPAGES)) $(mandir)/man3
+	$(srcdir)/docs/installdocs.sh $(mandir)
 
 gcov:
 	$(GCOV) -po ldb_sqlite3 $(srcdir)/ldb_sqlite3/*.c 2| tee ldb_sqlite3.report.gcov
@@ -160,6 +147,9 @@ gcov:
 	$(GCOV) -po common $(srcdir)/common/*.c 2| tee common.report.gcov
 	$(GCOV) -po modules $(srcdir)/modules/*.c 2| tee modules.report.gcov
 	$(GCOV) -po tools $(srcdir)/tools/*.c 2| tee tools.report.gcov
+
+etags:
+	etags `find $(srcdir) -name "*.[ch]"`
 
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
