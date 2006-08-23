@@ -10,53 +10,43 @@ if ! test -x "$XSLTPROC"; then
     exit 0
 fi
 
-# list of places to look for the docbook style sheet
-manxsl=/usr/share/xml/docbook/stylesheet/nwalsh/manpages/docbook.xsl
-
-# list of places to look for the html style sheet
-htmlxsl=/usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl
-
-manstyle=""
-htmlstyle=""
-
-for f in $manxsl; do
-    if [ -r "$f" ]; then
-	manstyle="$f"
-    fi
-done
-
-if [ -z "$manstyle" ]; then
-    echo "manpages/docbook.xsl not found on system"
-    exit 0
-fi
-
-for f in $htmlxsl; do
-    if [ -r "$f" ]; then
-	htmlstyle="$f"
-    fi
-done
-
-if [ -z "$htmlstyle" ]; then
-    echo "html/docbook.xsl not found on system"
-    exit 0
-fi
+MANXSL="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"
+HTMLXSL="http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl"
 
 mkdir -p man html
 
 for f in $SRCDIR/man/*.xml; do
     base=`basename $f .xml`
     out=man/"`basename $base`"
-    if [ ! -f "$out" ] || [ "$base" -nt "$out" ]; then
+    if [ ! -f "$out" ] || [ "$f" -nt "$out" ]; then
 	echo Processing manpage $f
-	$XSLTPROC -o "$out" "$manstyle" $f || exit 1
+	$XSLTPROC --nonet -o "$out" "$MANXSL" $f
+	ret=$?
+	if [ "$ret" = "4" ]; then
+	    echo "ignoring stylesheet error 4 for $MANXSL"
+	    exit 0
+	fi
+	if [ "$ret" != "0" ]; then
+	    echo "xsltproc failed with error $ret"
+	    exit $ret
+	fi
     fi
 done
 
 for f in $SRCDIR/man/*.xml; do
     base=`basename $f .xml`
     out=man/"`basename $base`".html
-    if [ ! -f "$out" ] || [ "$base" -nt "$out" ]; then
+    if [ ! -f "$out" ] || [ "$f" -nt "$out" ]; then
 	echo Processing html $f
-	$XSLTPROC -o "$out" "$htmlstyle" $f || exit 1
+	$XSLTPROC --nonet -o "$out" "$HTMLXSL" $f
+	ret=$?
+	if [ "$ret" = "4" ]; then
+	    echo "ignoring stylesheet error 4 for $HTMLXSL"
+	    exit 0
+	fi
+	if [ "$ret" != "0" ]; then
+	    echo "xsltproc failed with error $ret"
+	    exit $ret
+	fi
     fi
 done
