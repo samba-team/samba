@@ -1,6 +1,6 @@
                    ===============================
-                   Release Notes for Samba 3.0.23b
-                             Aug 7, 2006
+                   Release Notes for Samba 3.0.23c
+                             Aug 23, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version 
@@ -8,6 +8,40 @@ that production Samba servers should be running for all current
 bug-fixes.  Please read the changes in this section and for the 
 original 3.0.23 release regarding new features and difference 
 in behavior from previous releases.
+
+Common bugs fixed in 3.0.23c include:
+
+  o Authentication failures in pam_winbind when the AD domain
+    policy is set to not expire passwords.
+  o Authorization failures when using smb.conf options such
+    as "valid users" with the smbpasswd passdb backend.
+
+
+RID Algorithims & passdb backend = smbpasswd
+============================================
+
+
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.23b
+---------------------
+
+commits
+-------
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ===============================
+                   Release Notes for Samba 3.0.23b
+                             Aug 7, 2006
+                   ===============================
 
 Common bugs fixed in 3.0.23b include:
 
@@ -65,8 +99,8 @@ to "valid users".
 Changes
 #######
 
-Changes since 3.0.23
---------------------
+Changes since 3.0.23a
+---------------------
 
 commits
 -------
@@ -117,9 +151,6 @@ o   Volker Lendecke <vl@samba.org>
       configured to use a username map.
     * Fix bug where qualified user or group names in smb.conf
       were assumed to use the '\' character as the winbind separator.
-
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ===============================
