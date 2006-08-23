@@ -155,16 +155,6 @@ int ltdb_pack_data(struct ldb_module *module,
 	return 0;
 }
 
-/* using this means we can compile standalone on broken systems like
-   MacOSX 10.4 */
-static size_t ldb_strnlen(const char *s, size_t n)
-{
-	int i;
-	for (i=0; s[i] && i<n; i++)
-		/* noop */ ;
-	return i;
-}
-
 /*
   unpack a ldb message from a linear buffer in TDB_DATA
 
@@ -201,7 +191,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 		break;
 
 	case LTDB_PACKING_FORMAT:
-		len = ldb_strnlen((char *)p, remaining);
+		len = strnlen((char *)p, remaining);
 		if (len == remaining) {
 			errno = EIO;
 			goto failed;
@@ -244,7 +234,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 			errno = EIO;
 			goto failed;
 		}
-		len = ldb_strnlen((char *)p, remaining-6);
+		len = strnlen((char *)p, remaining-6);
 		if (len == remaining-6) {
 			errno = EIO;
 			goto failed;
