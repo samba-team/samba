@@ -57,13 +57,13 @@ LDB_LIB = lib/libldb.a
 
 BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest bin/oLschema2ldif
 
-LIBS = $(LDB_LIB)( $(OBJS) )
+LIBS = $(LDB_LIB)
 
 EXAMPLES = examples/ldbreader examples/ldifreader
 
 DIRS = lib bin common replace ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples tdb talloc
 
-all: dirs $(OBJS) $(LIBS) $(BINS) $(EXAMPLES) manpages
+all: dirs $(OBJS) $(LDB_LIB) $(BINS) $(EXAMPLES) manpages
 
 .c.o:
 	@echo Compiling $*.c
@@ -74,6 +74,8 @@ dirs:
 	@mkdir -p $(DIRS)
 
 lib/libldb.a: $(OBJS)
+	ar -rv $@ $(OBJS)
+	@-ranlib $@
 
 bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS)
