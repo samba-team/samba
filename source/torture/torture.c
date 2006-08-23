@@ -2539,8 +2539,8 @@ static BOOL run_trans2test(int dummy)
 	fnum = cli_open(cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	cli_close(cli, fnum);
-	if (!cli_qpathinfo2(cli, fname, &c_time, &a_time, &m_time, 
-			    &w_time, &size, NULL, NULL)) {
+	if (!cli_qpathinfo2(cli, fname, &c_time, &a_time, &w_time, 
+			    &m_time, &size, NULL, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	} else {
@@ -2561,8 +2561,8 @@ static BOOL run_trans2test(int dummy)
 		correct = False;
 	}
 	sleep(3);
-	if (!cli_qpathinfo2(cli, "\\trans2\\", &c_time, &a_time, &m_time, 
-			    &w_time, &size, NULL, NULL)) {
+	if (!cli_qpathinfo2(cli, "\\trans2\\", &c_time, &a_time, &w_time, 
+			    &m_time, &size, NULL, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	}
@@ -2571,8 +2571,8 @@ static BOOL run_trans2test(int dummy)
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	cli_write(cli, fnum,  0, (char *)&fnum, 0, sizeof(fnum));
 	cli_close(cli, fnum);
-	if (!cli_qpathinfo2(cli, "\\trans2\\", &c_time, &a_time, &m_time2, 
-			    &w_time, &size, NULL, NULL)) {
+	if (!cli_qpathinfo2(cli, "\\trans2\\", &c_time, &a_time, &w_time, 
+			    &m_time2, &size, NULL, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	} else {
