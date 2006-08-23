@@ -1067,7 +1067,10 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	gid_t *gids;
 	DOM_SID primary_group_sid;
 	DOM_SID *group_sids;
+	DOM_SID unix_group_sid;
 	size_t num_group_sids;
+	size_t num_gids;
+	size_t i;
 
 	tmp_ctx = talloc_new(NULL);
 	if (tmp_ctx == NULL) {
@@ -1134,7 +1137,6 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		 * directly, without consulting passdb */
 
 		struct passwd *pass;
-		size_t i;
 
 		/*
 		 * This goto target is used as a fallback for the passdb
@@ -1202,6 +1204,31 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		group_sids = &primary_group_sid;
 
 		*found_username = talloc_strdup(mem_ctx, username);
+	}
+
+	/* Add the "Unix Group" SID for each gid to catch mapped groups
+	   and their Unix equivalent.  This is to solve the backwards
+	   compatibility problem of 'valid users = +ntadmin' where
+	   ntadmin has been paired with "Domain Admins" in the group
+	   mapping table.  Otherwise smb.conf would need to be changed
+	   to 'valid user = "Domain Admins"'.  --jerry */
+
+	num_gids = num_group_sids;
+	for ( i=0; i<num_gids; i++ ) {
+		gid_t high, low;
+
+		/* don't pickup anything managed by Winbind */
+
+		if ( lp_idmap_gid(&low, &high) && (gids[i] >= low) && (gids[i] <= high) )
+			continue;
+
+		if ( !gid_to_unix_groups_sid( gids[i], &unix_group_sid ) ) {
+			DEBUG(1,("create_token_from_username: Failed to create SID "
+				"for gid %d!\n", gids[i]));
+			continue;
+		}
+		add_sid_to_array_unique( mem_ctx, &unix_group_sid,
+			&group_sids, &num_group_sids );
 	}
 
 	*token = create_local_nt_token(mem_ctx, &user_sid,
