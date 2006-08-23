@@ -19,11 +19,10 @@ if test x"$POPTDIR" = x; then
         AC_CHECK_HEADERS(popt.h)
         AC_CHECK_LIB(popt, poptGetContext)
 else
-	POPTOBJ="findme.o popt.o poptconfig.o popthelp.o poptparse.o"
+	EXTRA_OBJ="$EXTRA_OBJ findme.o popt.o poptconfig.o popthelp.o poptparse.o"
 	CFLAGS="$CFLAGS -I$POPTDIR"
 fi
 
 AC_CHECK_HEADERS([float.h alloca.h])
 AC_CHECK_FUNCS(strerror)
-AC_SUBST(POPTOBJ)
 AC_SUBST(POPTDIR)
