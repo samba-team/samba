@@ -1,16 +1,10 @@
 AC_CHECK_HEADERS([stdint.h inttypes.h])
 AC_CHECK_TYPE(uint_t, unsigned int)
-AC_CHECK_TYPE(int8_t, signed char)
-AC_CHECK_TYPE(uint8_t, unsigned char)
 AC_CHECK_TYPE(int16_t, short)
 AC_CHECK_TYPE(uint16_t, unsigned short)
 AC_CHECK_TYPE(int32_t, long)
 AC_CHECK_TYPE(uint32_t, unsigned long)
-AC_CHECK_TYPE(int64_t, long long)
-AC_CHECK_TYPE(uint64_t, unsigned long long)
 AC_CHECK_TYPE(ssize_t, int)
-AC_CHECK_TYPE(comparison_fn_t, 
-[AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
 AC_CHECK_HEADERS(stdbool.h)
 
@@ -53,10 +47,9 @@ AC_TRY_COMPILE([
 [AC_DEFINE(socklen_t, int,[Socket length type])])
 
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
-AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
-AC_CHECK_FUNCS(timegm setenv vsyslog setlinebuf mktime ftruncate chsize rename)
-AC_CHECK_FUNCS(waitpid strnlen strlcpy strlcat innetgr initgroups memmove strdup)
+AC_CHECK_FUNCS(setenv vsyslog setlinebuf mktime ftruncate chsize rename)
+AC_CHECK_FUNCS(waitpid strlcpy strlcat innetgr initgroups memmove strdup)
 AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
