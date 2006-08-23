@@ -48,7 +48,7 @@ AC_TRY_COMPILE([
 
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
-AC_CHECK_FUNCS(setenv vsyslog setlinebuf mktime ftruncate chsize rename)
+AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid strlcpy strlcat innetgr initgroups memmove strdup)
 AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
