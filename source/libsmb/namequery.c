@@ -1356,6 +1356,9 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 	BOOL done_auto_lookup = False;
 	int auto_count = 0;
 
+	*ordered = False;
+
+
 	/* if we are restricted to solely using DNS for looking
 	   up a domain controller, make sure that host lookups
 	   are enabled for the 'name resolve order'.  If host lookups
@@ -1365,14 +1368,17 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 	fstrcpy( resolve_order, lp_name_resolve_order() );
 	strlower_m( resolve_order );
 	if ( ads_only )  {
-		if ( strstr( resolve_order, "host" ) )
+		if ( strstr( resolve_order, "host" ) ) {
 			fstrcpy( resolve_order, "ads" );
+
+			/* DNS SRV lookups used by the ads resolver
+			   are already sorted by priority and weight */
+			*ordered = True;
+		}
 		else
 			fstrcpy( resolve_order, "NULL" );
 	}
 
-	*ordered = False;
-	
 	/* fetch the server we have affinity for.  Add the 
 	   'password server' list to a search for our domain controllers */
 	
