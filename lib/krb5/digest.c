@@ -485,23 +485,19 @@ krb5_digest_set_username(krb5_context context,
 krb5_error_code
 krb5_digest_set_authentication_user(krb5_context context,
 				    krb5_digest digest,
-				    const char *authentication_user)
+				    krb5_principal authentication_user)
 {
+    krb5_error_code ret;
+
     if (digest->request.authentication_user) {
 	krb5_set_error_string(context, "authentication_user already set");
 	return EINVAL;
     }
-    digest->request.authentication_user = 
-	malloc(sizeof(*digest->request.authentication_user));
+    ret = krb5_copy_principal(context,
+			      authentication_user,
+			      &digest->request.authentication_user);
     if (digest->request.authentication_user == NULL) {
 	krb5_set_error_string(context, "out of memory");
-	return ENOMEM;
-    }
-    *digest->request.authentication_user = strdup(authentication_user);
-    if (*digest->request.authentication_user == NULL) {
-	krb5_set_error_string(context, "out of memory");
-	free(digest->request.authentication_user);
-	digest->request.authentication_user = NULL;
 	return ENOMEM;
     }
     return 0;
