@@ -31,6 +31,8 @@
 /* place a reasonable limit on old-style searches as clients tend to
    not send search close requests */
 #define MAX_OLD_SEARCHES 2000
+#define MAX_SEARCH_HANDLES (UINT16_MAX - 1)
+#define INVALID_SEARCH_HANDLE UINT16_MAX
 
 /*
   destroy an open search
@@ -58,7 +60,7 @@ static void pvfs_search_timer(struct event_context *ev, struct timed_event *te,
 static void pvfs_search_setup_timer(struct pvfs_search_state *search)
 {
 	struct event_context *ev = search->pvfs->ntvfs->ctx->event_ctx;
-	if (search->handle == -1) return;
+	if (search->handle == INVALID_SEARCH_HANDLE) return;
 	talloc_free(search->te);
 	search->te = event_add_timed(ev, search, 
 				     timeval_current_ofs(search->pvfs->search.inactivity_time, 0), 
@@ -488,7 +490,7 @@ static NTSTATUS pvfs_search_first_trans2(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	id = idr_get_new(pvfs->search.idtree, search, UINT16_MAX);
+	id = idr_get_new(pvfs->search.idtree, search, MAX_SEARCH_HANDLES);
 	if (id == -1) {
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
@@ -669,7 +671,7 @@ static NTSTATUS pvfs_search_first_smb2(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	search->pvfs		= pvfs;
-	search->handle		= -1;
+	search->handle		= INVALID_SEARCH_HANDLE;
 	search->dir		= dir;
 	search->current_index	= 0;
 	search->search_attrib	= 0;
@@ -804,7 +806,7 @@ NTSTATUS pvfs_search_close(struct ntvfs_module_context *ntvfs,
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
-	uint16_t handle = 0;
+	uint16_t handle = INVALID_SEARCH_HANDLE;
 
 	switch (io->generic.level) {
 	case RAW_FINDCLOSE_GENERIC:
