@@ -326,6 +326,7 @@ int32 DNSCopyDomainName( uint8 * pBuffer,
 int32 DNSGenerateKeyName( char **ppszKeyName )
 {
 	int32 dwError = 0;
+#if defined(WITH_DNS_UPDATES)
 	char *pszKeyName = NULL;
 	char szTemp[256];
 	char szBuffer[256];
@@ -348,6 +349,7 @@ int32 DNSGenerateKeyName( char **ppszKeyName )
 	return dwError;
 
       error:
+#endif
 
 	*ppszKeyName = NULL;
 	return dwError;
