@@ -205,6 +205,7 @@ void run_dns_queue(void)
 
 	if (!process_exists_by_pid(child_pid)) {
 		close(fd_in);
+		close(fd_out);
 		start_async_dns();
 	}
 
