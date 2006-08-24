@@ -30,6 +30,7 @@ typedef mode_t			SMB_ACL_PERM_T;
 
 /* Types of ACLs. */
 enum smb_acl_tag_t {
+	SMB_ACL_TAG_INVALID=0,
 	SMB_ACL_USER=1,
 	SMB_ACL_USER_OBJ,
 	SMB_ACL_GROUP,

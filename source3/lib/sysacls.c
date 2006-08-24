@@ -273,7 +273,7 @@ int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p)
 	}
 
 	entry_d		= &acl_d->acl[acl_d->count++];
-	entry_d->a_type	= 0;
+	entry_d->a_type	= SMB_ACL_TAG_INVALID;
 	entry_d->uid	= -1;
 	entry_d->gid	= -1;
 	entry_d->a_perm	= 0;
