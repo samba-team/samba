@@ -1,5 +1,8 @@
 2006-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/digest.c: Remove local error label and have just one exit
+	label, set error strings properly.
+
 	* kdc/digest.c: Simply the disabled-service case.  Check the
 	allow-digest flag in the HDB entry for the client.
 
