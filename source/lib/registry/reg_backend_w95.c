@@ -123,8 +123,10 @@ typedef struct creg_struct_s {
 	RGDB_KEY ***rgdb_keys;
 } CREG;
 
+#if 0 /* unused */
 #define RGKN_START_SIZE 0x2000
 #define RGKN_INC_SIZE   0x1000
+#endif
 
 #define LOCN_RGKN(creg, o) ((RGKN_KEY *)((creg)->base + sizeof(CREG_HDR) + o))
 #define LOCN_RGDB_BLOCK(creg, o) (((creg)->base + (creg)->creg_hdr->rgdb_offset + o))
