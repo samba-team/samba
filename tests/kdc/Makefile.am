@@ -8,7 +8,7 @@ check_PROGRAMS = $(TESTS) ap-req
 
 LDADD = ../../lib/krb5/libkrb5.la
 
-TESTS = check-kdc
+TESTS = check-kdc check-digest
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
 	-e 's,[@]objdir[@],$(top_builddir)/tests/kdc,g'
@@ -18,6 +18,11 @@ check-kdc: check-kdc.in Makefile
 	chmod +x check-kdc.tmp
 	mv check-kdc.tmp check-kdc
 
+check-digest: check-digest.in Makefile
+	$(do_subst) < $(srcdir)/check-digest.in > check-digest.tmp
+	chmod +x check-digest.tmp
+	mv check-digest.tmp check-digest
+
 krb5.conf: krb5.conf.in Makefile
 	$(do_subst) < $(srcdir)/krb5.conf.in > krb5.conf.tmp
 	mv krb5.conf.tmp krb5.conf
@@ -26,7 +31,9 @@ krb5.conf: krb5.conf.in Makefile
 CLEANFILES= \
 	$(TESTS) \
 	check-kdc.tmp \
+	check-digest.tmp \
 	krb5.conf krb5.conf.tmp \
+	digest-reply cdigest-reply o2digest-reply \
 	messages.log \
 	current-db* \
 	foopassword \
