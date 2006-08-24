@@ -40,16 +40,38 @@ cups_passwd_cb(const char *prompt)	/* I - Prompt */
 	return (NULL);
 }
 
-static const char *cups_server(void)
+static http_t *cups_connect(void)
 {
-	if ((lp_cups_server() != NULL) && (strlen(lp_cups_server()) > 0)) {
-		DEBUG(10, ("cups server explicitly set to %s\n",
-			   lp_cups_server()));
-		return lp_cups_server();
+	http_t *http;
+	char *server, *p;
+	int port;
+	
+	if (lp_cups_server() != NULL && strlen(lp_cups_server()) > 0) {
+		server = smb_xstrdup(lp_cups_server());
+	} else {
+		server = smb_xstrdup(cupsServer());
 	}
 
-	DEBUG(10, ("cups server left to default %s\n", cupsServer()));
-	return cupsServer();
+	p = strchr(server, ':');
+	if (p) {
+		port = atoi(p+1);
+		*p = '\0';
+	} else {
+		port = ippPort();
+	}
+	
+	DEBUG(10, ("connecting to cups server %s:%d\n",
+		   server, port));
+
+	if ((http = httpConnect(server, port)) == NULL) {
+		DEBUG(0,("Unable to connect to CUPS server %s:%d - %s\n", 
+			 server, port, strerror(errno)));
+		SAFE_FREE(server);
+		return NULL;
+	}
+
+	SAFE_FREE(server);
+	return http;
 }
 
 BOOL cups_cache_reload(void)
@@ -80,9 +102,7 @@ BOOL cups_cache_reload(void)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
-		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cups_server(), strerror(errno)));
+	if ((http = cups_connect()) == NULL) {
 		goto out;
 	}
 
@@ -287,9 +307,7 @@ static int cups_job_delete(const char *sharename, const char *lprm_command, stru
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
-		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cups_server(), strerror(errno)));
+	if ((http = cups_connect()) == NULL) {
 		goto out;
 	}
 
@@ -379,9 +397,7 @@ static int cups_job_pause(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
-		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cups_server(), strerror(errno)));
+	if ((http = cups_connect()) == NULL) {
 		goto out;
 	}
 
@@ -471,9 +487,7 @@ static int cups_job_resume(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
-		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cups_server(), strerror(errno)));
+	if ((http = cups_connect()) == NULL) {
 		goto out;
 	}
 
@@ -566,9 +580,7 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
-		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cups_server(), strerror(errno)));
+	if ((http = cups_connect()) == NULL) {
 		goto out;
 	}
 
@@ -732,9 +744,7 @@ static int cups_queue_get(const char *sharename,
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
-		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cups_server(), strerror(errno)));
+	if ((http = cups_connect()) == NULL) {
 		goto out;
 	}
 
@@ -1017,9 +1027,7 @@ static int cups_queue_pause(int snum)
 	 * Try to connect to the server...
 	 */
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
-		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cups_server(), strerror(errno)));
+	if ((http = cups_connect()) == NULL) {
 		goto out;
 	}
 
@@ -1111,9 +1119,7 @@ static int cups_queue_resume(int snum)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL) {
-		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cups_server(), strerror(errno)));
+	if ((http = cups_connect()) == NULL) {
 		goto out;
 	}
 
