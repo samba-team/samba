@@ -190,7 +190,13 @@ struct timespec convert_time_t_to_timespec(time_t t)
 	return ts;
 }
 
-#define TIME_FIXUP_CONSTANT (369.0*365.25*24*60*60-(3.0*24*60*60+6.0*60*60))
+#ifdef uint64
+
+#if (SIZEOF_LONG == 8)
+#define TIME_FIXUP_CONSTANT_INT 11644473600L
+#elif (SIZEOF_LONG_LONG == 8)
+#define TIME_FIXUP_CONSTANT_INT 11644473600LL
+#endif
 
 /****************************************************************************
  Interpret an 8 byte "filetime" structure to a time_t
@@ -204,14 +210,130 @@ struct timespec convert_time_t_to_timespec(time_t t)
  Returns GMT.
 ****************************************************************************/
 
+/* Large integer version. */
+static struct timespec nt_time_to_unix_timespec(NTTIME *nt)
+{
+	uint64 d;
+	struct timespec ret;
+
+	if ((nt->high == 0 && nt->low == 0 )||
+			(nt->high == 0xffffffff && nt->low == 0xffffffff)) {
+		ret.tv_sec = 0;
+		ret.tv_nsec = 0;
+		return ret;
+	}
+
+	d = (((uint64)nt->high) << 32 ) + ((uint64)nt->low);
+	/* d is now in 100ns units, since jan 1st 1601".
+	   Save off the ns fraction. */
+	
+	ret.tv_nsec = (long) ((d % 100) * 100);
+
+	/* Convert to seconds */
+	d /= 1000*1000*10;
+
+	/* Now adjust by 369 years to make the secs since 1970 */
+	d -= TIME_FIXUP_CONSTANT_INT;
+
+	if (d <= TIME_T_MIN) {
+		ret.tv_sec = TIME_T_MIN;
+		ret.tv_nsec = 0;
+		return ret;
+	}
+
+	if (d >= TIME_T_MAX) {
+		ret.tv_sec = TIME_T_MAX;
+		ret.tv_nsec = 0;
+		return ret;
+	}
+
+	ret.tv_sec = (time_t)d;
+        return ret;
+}
+
+/****************************************************************************
+ Convert a NTTIME structure to a time_t.
+ It's originally in "100ns units".
+
+ This is an absolute version of the one above.
+ By absolute I mean, it doesn't adjust from 1/1/1601 to 1/1/1970
+ if the NTTIME was 5 seconds, the time_t is 5 seconds. JFM
+****************************************************************************/
+
+time_t nt_time_to_unix_abs(const NTTIME *nt)
+{
+	uint64 d;
+	NTTIME neg_nt;
+
+	if (nt->high == 0) {
+		return (time_t)0;
+	}
+
+	if (nt->high==0x80000000 && nt->low==0) {
+		return (time_t)-1;
+	}
+
+	/* reverse the time */
+	/* it's a negative value, turn it to positive */
+	neg_nt.high=~nt->high;
+	neg_nt.low=~nt->low;
+
+	d = (((uint64)neg_nt.high) << 32 ) + ((uint64)neg_nt.low);
+
+	d += 1000*1000*10/2;
+	d /= 1000*1000*10;
+
+	if (!(TIME_T_MIN <= d && d <= TIME_T_MAX)) {
+		return (time_t)0;
+	}
+
+	return (time_t)d;
+}
+
+/****************************************************************************
+ Put a 8 byte filetime from a struct timespec. Uses GMT.
+****************************************************************************/
+
+void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
+{
+	uint64 d;
+
+	if (ts.tv_sec ==0 && ts.tv_nsec == 0) {
+		nt->low = 0;
+		nt->high = 0;
+		return;
+	}
+	if (ts.tv_sec == TIME_T_MAX) {
+		nt->low = 0xffffffff;
+		nt->high = 0x7fffffff;
+		return;
+	}		
+	if (ts.tv_sec == (time_t)-1) {
+		nt->low = 0xffffffff;
+		nt->high = 0xffffffff;
+		return;
+	}		
+
+	d = ts.tv_sec;
+	d += TIME_FIXUP_CONSTANT_INT;
+	d = ts.tv_sec * 1000*1000*10;
+	/* d is now in 100ns units. */
+	d += (ts.tv_nsec / 100);
+
+	nt->high = (uint32)(d / 1000*1000*10);
+	nt->low  = (uint32)(d % 1000*1000*10);
+}
+
+#else
+
+/* No 64-bit datatype. Use double float. */
+#define TIME_FIXUP_CONSTANT_DOUBLE (369.0*365.25*24*60*60-(3.0*24*60*60+6.0*60*60))
+
+/* Floating point double versions. */
 static struct timespec nt_time_to_unix_timespec(NTTIME *nt)
 {
 	double d;
 	struct timespec ret;
-	/* The next two lines are a fix needed for the 
-		broken SCO compiler. JRA. */
-	time_t l_time_min = TIME_T_MIN;
-	time_t l_time_max = TIME_T_MAX;
 
 	if ((nt->high == 0 && nt->low == 0 )||
 			(nt->high == 0xffffffff && nt->low == 0xffffffff)) {
@@ -225,16 +347,16 @@ static struct timespec nt_time_to_unix_timespec(NTTIME *nt)
 	d *= 1.0e-7;
  
 	/* now adjust by 369 years to make the secs since 1970 */
-	d -= TIME_FIXUP_CONSTANT;
+	d -= TIME_FIXUP_CONSTANT_DOUBLE;
 
-	if (d <= l_time_min) {
-		ret.tv_sec = l_time_min;
+	if (d <= TIME_T_MIN) {
+		ret.tv_sec = TIME_T_MIN;
 		ret.tv_nsec = 0;
 		return ret;
 	}
 
-	if (d >= l_time_max) {
-		ret.tv_sec = l_time_max;
+	if (d >= TIME_T_MAX) {
+		ret.tv_sec = TIME_T_MAX;
 		ret.tv_nsec = 0;
 		return ret;
 	}
@@ -242,11 +364,6 @@ static struct timespec nt_time_to_unix_timespec(NTTIME *nt)
 	ret.tv_sec = (time_t)d;
 	ret.tv_nsec = (long) ((d - (double)ret.tv_sec)*1.0e9);
 	return ret;
-}
-
-time_t nt_time_to_unix(NTTIME *nt)
-{
-	return convert_timespec_to_time_t(nt_time_to_unix_timespec(nt));
 }
 
 /****************************************************************************
@@ -262,10 +379,6 @@ time_t nt_time_to_unix_abs(const NTTIME *nt)
 {
 	double d;
 	time_t ret;
-	/* The next two lines are a fix needed for the 
-	   broken SCO compiler. JRA. */
-	time_t l_time_min = TIME_T_MIN;
-	time_t l_time_max = TIME_T_MAX;
 	NTTIME neg_nt;
 
 	if (nt->high == 0) {
@@ -285,32 +398,12 @@ time_t nt_time_to_unix_abs(const NTTIME *nt)
 	d += (neg_nt.low&0xFFF00000);
 	d *= 1.0e-7;
   
-	if (!(l_time_min <= d && d <= l_time_max)) {
+	if (!(TIME_T_MIN <= d && d <= TIME_T_MAX)) {
 		return (time_t)0;
 	}
 
 	ret = (time_t)(d+0.5);
 	return ret;
-}
-
-/****************************************************************************
- Interprets an nt time into a unix struct timespec.
- Differs from nt_time_to_unix in that an 8 byte value of 0xffffffffffffffff
- will be returned as (time_t)-1, whereas nt_time_to_unix returns 0 in this case.
-****************************************************************************/
-
-struct timespec interpret_long_date(char *p)
-{
-	NTTIME nt;
-	nt.low = IVAL(p,0);
-	nt.high = IVAL(p,4);
-	if (nt.low == 0xFFFFFFFF && nt.high == 0xFFFFFFFF) {
-		struct timespec ret;
-		ret.tv_sec = (time_t)-1;
-		ret.tv_nsec = 0;
-		return ret;
-	}
-	return nt_time_to_unix_timespec(&nt);
 }
 
 /****************************************************************************
@@ -338,12 +431,38 @@ void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
 	}		
 
 	d = (double)(ts.tv_sec);
-	d += TIME_FIXUP_CONSTANT;
+	d += TIME_FIXUP_CONSTANT_DOUBLE;
 	d *= 1.0e7;
 	d += ((double)ts.tv_nsec / 100.0);
 
 	nt->high = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
 	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
+}
+#endif
+
+time_t nt_time_to_unix(NTTIME *nt)
+{
+	return convert_timespec_to_time_t(nt_time_to_unix_timespec(nt));
+}
+
+/****************************************************************************
+ Interprets an nt time into a unix struct timespec.
+ Differs from nt_time_to_unix in that an 8 byte value of 0xffffffffffffffff
+ will be returned as (time_t)-1, whereas nt_time_to_unix returns 0 in this case.
+****************************************************************************/
+
+struct timespec interpret_long_date(char *p)
+{
+	NTTIME nt;
+	nt.low = IVAL(p,0);
+	nt.high = IVAL(p,4);
+	if (nt.low == 0xFFFFFFFF && nt.high == 0xFFFFFFFF) {
+		struct timespec ret;
+		ret.tv_sec = (time_t)-1;
+		ret.tv_nsec = 0;
+		return ret;
+	}
+	return nt_time_to_unix_timespec(&nt);
 }
 
 /****************************************************************************
