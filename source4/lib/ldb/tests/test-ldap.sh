@@ -1,6 +1,7 @@
 #!/bin/sh
 
-export PATH=/usr/local/sbin:/usr/sbin:/sbin:$PATH
+PATH=/usr/local/sbin:/usr/sbin:/sbin:$PATH
+export PATH
 SCHEMA_NEEDED="core nis cosine inetorgperson openldap"
 
 # setup needed schema files
@@ -29,7 +30,8 @@ if [ -z "$LDBDIR" ]; then
     export LDBDIR
 fi
 
-export LDB_URL=`$LDBDIR/tests/ldapi_url.sh`
+LDB_URL=`$LDBDIR/tests/ldapi_url.sh`
+export LDB_URL
 
 PATH=bin:$PATH
 export PATH
@@ -37,5 +39,6 @@ export PATH
 . $LDBDIR/tests/init_slapd.sh
 . $LDBDIR/tests/start_slapd.sh
 
-export LDB_SPECIALS=0
+LDB_SPECIALS=0
+export LDB_SPECIALS
 . $LDBDIR/tests/test-generic.sh
