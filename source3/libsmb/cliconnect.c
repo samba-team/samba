@@ -1149,6 +1149,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	}
 
 	if (cli->protocol >= PROTOCOL_NT1) {    
+		struct timespec ts;
 		/* NT protocol */
 		cli->sec_mode = CVAL(cli->inbuf,smb_vwv1);
 		cli->max_mux = SVAL(cli->inbuf, smb_vwv1+1);
@@ -1157,7 +1158,8 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->serverzone = SVALS(cli->inbuf,smb_vwv15+1);
 		cli->serverzone *= 60;
 		/* this time arrives in real GMT */
-		cli->servertime = interpret_long_date(cli->inbuf+smb_vwv11+1);
+		ts = interpret_long_date(cli->inbuf+smb_vwv11+1);
+		cli->servertime = ts.tv_sec;
 		cli->secblob = data_blob(smb_buf(cli->inbuf),smb_buflen(cli->inbuf));
 		cli->capabilities = IVAL(cli->inbuf,smb_vwv9+1);
 		if (cli->capabilities & CAP_RAW_MODE) {

@@ -1470,14 +1470,15 @@ smbc_getatr(SMBCCTX * context,
             char *path, 
             uint16 *mode,
             SMB_OFF_T *size, 
-            time_t *c_time,
-            time_t *a_time,
-            time_t *m_time,
+            struct timespec *c_time_ts,
+            struct timespec *a_time_ts,
+            struct timespec *m_time_ts,
             SMB_INO_T *ino)
 {
 	pstring fixedpath;
 	pstring targetpath;
 	struct cli_state *targetcli;
+	time_t m_time;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -1514,7 +1515,7 @@ smbc_getatr(SMBCCTX * context,
   
 	if (!srv->no_pathinfo2 &&
             cli_qpathinfo2(targetcli, targetpath,
-                           NULL, a_time, m_time, c_time, size, mode, ino)) {
+                           NULL, a_time_ts, m_time_ts, c_time_ts, size, mode, ino)) {
             return True;
         }
 
@@ -1524,10 +1525,11 @@ smbc_getatr(SMBCCTX * context,
                 return False;
         }
 
-	if (cli_getatr(targetcli, targetpath, mode, size, m_time)) {
-                if (m_time != NULL) {
-                        if (a_time != NULL) *a_time = *m_time;
-                        if (c_time != NULL) *c_time = *m_time;
+	if (cli_getatr(targetcli, targetpath, mode, size, &m_time)) {
+                if (m_time_ts != NULL) {
+			*m_time_ts = convert_time_t_to_timespec(m_time);
+                        if (a_time_ts != NULL) *a_time_ts = *m_time_ts;
+                        if (c_time_ts != NULL) *c_time_ts = *m_time_ts;
                 }
 		srv->no_pathinfo2 = True;
 		return True;
@@ -1709,11 +1711,11 @@ smbc_unlink_ctx(SMBCCTX *context,
 			int saverr = errno;
 			SMB_OFF_T size = 0;
 			uint16 mode = 0;
-			time_t m_time = 0, a_time = 0, c_time = 0;
+			struct timespec m_time_ts, a_time_ts, c_time_ts;
 			SMB_INO_T ino = 0;
 
 			if (!smbc_getatr(context, srv, path, &mode, &size,
-					 &c_time, &a_time, &m_time, &ino)) {
+					 &c_time_ts, &a_time_ts, &m_time_ts, &ino)) {
 
 				/* Hmmm, bad error ... What? */
 
@@ -2049,9 +2051,9 @@ smbc_stat_ctx(SMBCCTX *context,
         fstring password;
         fstring workgroup;
 	pstring path;
-	time_t m_time = 0;
-        time_t a_time = 0;
-        time_t c_time = 0;
+	struct timespec m_time_ts;
+        struct timespec a_time_ts;
+        struct timespec c_time_ts;
 	SMB_OFF_T size = 0;
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
@@ -2095,7 +2097,7 @@ smbc_stat_ctx(SMBCCTX *context,
 	}
 
 	if (!smbc_getatr(context, srv, path, &mode, &size, 
-			 &c_time, &a_time, &m_time, &ino)) {
+			 &c_time_ts, &a_time_ts, &m_time_ts, &ino)) {
 
 		errno = smbc_errno(context, srv->cli);
 		return -1;
@@ -2106,9 +2108,9 @@ smbc_stat_ctx(SMBCCTX *context,
 
 	smbc_setup_stat(context, st, path, size, mode);
 
-	st->st_atime = a_time;
-	st->st_ctime = c_time;
-	st->st_mtime = m_time;
+	set_atimespec(st, a_time_ts);
+	set_ctimespec(st, c_time_ts);
+	set_mtimespec(st, m_time_ts);
 	st->st_dev   = srv->dev;
 
 	return 0;
@@ -2124,9 +2126,9 @@ smbc_fstat_ctx(SMBCCTX *context,
                SMBCFILE *file,
                struct stat *st)
 {
-	time_t c_time;
-        time_t a_time;
-        time_t m_time;
+	struct timespec c_time_ts;
+        struct timespec a_time_ts;
+        struct timespec m_time_ts;
 	SMB_OFF_T size;
 	uint16 mode;
 	fstring server;
@@ -2182,22 +2184,26 @@ smbc_fstat_ctx(SMBCCTX *context,
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
 
 	if (!cli_qfileinfo(targetcli, file->cli_fd, &mode, &size,
-                           NULL, &a_time, &m_time, &c_time, &ino)) {
-	    if (!cli_getattrE(targetcli, file->cli_fd, &mode, &size,
-                              &c_time, &a_time, &m_time)) {
+                           NULL, &a_time_ts, &m_time_ts, &c_time_ts, &ino)) {
+		time_t c_time, a_time, m_time;
+		if (!cli_getattrE(targetcli, file->cli_fd, &mode, &size,
+				&c_time, &a_time, &m_time)) {
 
-		errno = EINVAL;
-		return -1;
-	    }
+			errno = EINVAL;
+			return -1;
+		}
+		c_time_ts = convert_time_t_to_timespec(c_time);
+		a_time_ts = convert_time_t_to_timespec(a_time);
+		m_time_ts = convert_time_t_to_timespec(m_time);
 	}
 
 	st->st_ino = ino;
 
 	smbc_setup_stat(context, st, file->fname, size, mode);
 
-	st->st_atime = a_time;
-	st->st_ctime = c_time;
-	st->st_mtime = m_time;
+	set_atimespec(st, a_time_ts);
+	set_ctimespec(st, c_time_ts);
+	set_mtimespec(st, m_time_ts);
 	st->st_dev = file->srv->dev;
 
 	return 0;
@@ -4079,7 +4085,7 @@ dos_attr_query(SMBCCTX *context,
                const char *filename,
                SMBCSRV *srv)
 {
-        time_t m_time = 0, a_time = 0, c_time = 0;
+	struct timespec m_time_ts, a_time_ts, c_time_ts;
         SMB_OFF_T size = 0;
         uint16 mode = 0;
 	SMB_INO_T inode = 0;
@@ -4094,7 +4100,7 @@ dos_attr_query(SMBCCTX *context,
         /* Obtain the DOS attributes */
         if (!smbc_getatr(context, srv, CONST_DISCARD(char *, filename),
                          &mode, &size, 
-                         &c_time, &a_time, &m_time, &inode)) {
+                         &c_time_ts, &a_time_ts, &m_time_ts, &inode)) {
         
                 errno = smbc_errno(context, srv->cli);
                 DEBUG(5, ("dos_attr_query Failed to query old attributes\n"));
@@ -4104,9 +4110,9 @@ dos_attr_query(SMBCCTX *context,
                 
         ret->mode = mode;
         ret->size = size;
-        ret->a_time = a_time;
-        ret->c_time = c_time;
-        ret->m_time = m_time;
+        ret->a_time = convert_timespec_to_time_t(a_time_ts);
+        ret->c_time = convert_timespec_to_time_t(c_time_ts);
+        ret->m_time = convert_timespec_to_time_t(m_time_ts);
         ret->inode = inode;
 
         return ret;
@@ -4200,7 +4206,8 @@ cacl_get(SMBCCTX *context,
         char *name;
         char *pExclude;
         char *p;
-	time_t m_time = 0, a_time = 0, c_time = 0;
+	struct timespec m_time_ts, a_time_ts, c_time_ts;
+	time_t m_time = (time_t)0, a_time = (time_t)0, c_time = (time_t)0;
 	SMB_OFF_T size = 0;
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
@@ -4547,13 +4554,16 @@ cacl_get(SMBCCTX *context,
 
                 /* Obtain the DOS attributes */
                 if (!smbc_getatr(context, srv, filename, &mode, &size, 
-                                 &c_time, &a_time, &m_time, &ino)) {
+                                 &c_time_ts, &a_time_ts, &m_time_ts, &ino)) {
                         
                         errno = smbc_errno(context, srv->cli);
                         return -1;
                         
                 }
-                
+                c_time = convert_timespec_to_time_t(c_time_ts);
+                a_time = convert_timespec_to_time_t(a_time_ts);
+                m_time = convert_timespec_to_time_t(m_time_ts);
+
                 if (! exclude_dos_mode) {
                         if (all || all_dos) {
                                 if (determine_size) {

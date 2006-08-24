@@ -555,8 +555,8 @@ send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
 ****************************************************************************/
 
 BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
-		    time_t *create_time, time_t *access_time, time_t *write_time, 
-		    time_t *change_time, SMB_OFF_T *size, uint16 *mode,
+		    struct timespec *create_time, struct timespec *access_time, struct timespec *write_time, 
+		    struct timespec *change_time, SMB_OFF_T *size, uint16 *mode,
 		    SMB_INO_T *ino)
 {
 	unsigned int data_len = 0;
@@ -670,8 +670,8 @@ send a qfileinfo call
 ****************************************************************************/
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
 		   uint16 *mode, SMB_OFF_T *size,
-		   time_t *create_time, time_t *access_time, time_t *write_time, 
-		   time_t *change_time, SMB_INO_T *ino)
+		   struct timespec *create_time, struct timespec *access_time, struct timespec *write_time, 
+		   struct timespec *change_time, SMB_INO_T *ino)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -794,9 +794,9 @@ BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name,
 		return False;
 	}
 
-	sbuf->st_atime = interpret_long_date( rdata+8 ); /* Access time. */
-	sbuf->st_mtime = interpret_long_date( rdata+16 ); /* Write time. */
-	sbuf->st_ctime = interpret_long_date( rdata+24 ); /* Change time. */
+	set_atimespec(sbuf, interpret_long_date( rdata+8 )); /* Access time. */
+	set_mtimespec(sbuf, interpret_long_date( rdata+16 )); /* Write time. */
+	set_ctimespec(sbuf, interpret_long_date( rdata+24 )); /* Change time. */
 	
 	*attributes = IVAL( rdata, 32 );
 	

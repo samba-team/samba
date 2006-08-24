@@ -435,31 +435,6 @@ int reply_ntcreate_and_X_quota(connection_struct *conn,
 	/* SCVAL(p,0,NO_OPLOCK_RETURN); */
 	p++;
 	SSVAL(p,0,fsp->fnum);
-#if 0
-	p += 2;
-	SIVAL(p,0,smb_action);
-	p += 4;
-	
-	/* Create time. */  
-	put_long_date(p,c_time);
-	p += 8;
-	put_long_date(p,sbuf.st_atime); /* access time */
-	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* write time */
-	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* change time */
-	p += 8;
-	SIVAL(p,0,fattr); /* File Attributes. */
-	p += 4;
-	SOFF_T(p, 0, get_allocation_size(conn,fsp,&sbuf));
-	p += 8;
-	SOFF_T(p,0,file_len);
-	p += 8;
-	if (flags & EXTENDED_RESPONSE_REQUIRED)
-		SSVAL(p,2,0x7);
-	p += 4;
-	SCVAL(p,0,fsp->is_directory ? 1 : 0);
-#endif
 
 	DEBUG(5,("reply_ntcreate_and_X_quota: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
 
@@ -493,7 +468,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	BOOL bad_path = False;
 	files_struct *fsp=NULL;
 	char *p = NULL;
-	time_t c_time;
+	struct timespec c_timespec;
+	struct timespec a_timespec;
+	struct timespec m_timespec;
 	BOOL extended_oplock_granted = False;
 	NTSTATUS status;
 
@@ -884,22 +861,23 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 	p += 4;
 	
 	/* Create time. */  
-	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	c_timespec = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	a_timespec = get_atimespec(&sbuf);
+	m_timespec = get_mtimespec(&sbuf);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
-		c_time &= ~1;
-		sbuf.st_atime &= ~1;
-		sbuf.st_mtime &= ~1;
-		sbuf.st_mtime &= ~1;
+		dos_filetime_timespec(&c_timespec);
+		dos_filetime_timespec(&a_timespec);
+		dos_filetime_timespec(&m_timespec);
 	}
 
-	put_long_date(p,c_time);
+	put_long_date_timespec(p, c_timespec);
 	p += 8;
-	put_long_date(p,sbuf.st_atime); /* access time */
+	put_long_date_timespec(p, a_timespec); /* access time */
 	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* write time */
+	put_long_date_timespec(p, m_timespec); /* write time */
 	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* change time */
+	put_long_date_timespec(p, m_timespec); /* change time */
 	p += 8;
 	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;
@@ -1119,7 +1097,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	uint32 sd_len;
 	uint32 ea_len;
 	uint16 root_dir_fid;
-	time_t c_time;
+	struct timespec c_timespec;
+	struct timespec a_timespec;
+	struct timespec m_timespec;
 	struct ea_list *ea_list = NULL;
 	TALLOC_CTX *ctx = NULL;
 	char *pdata = NULL;
@@ -1518,22 +1498,23 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	p += 8;
 
 	/* Create time. */
-	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	c_timespec = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	a_timespec = get_atimespec(&sbuf);
+	m_timespec = get_mtimespec(&sbuf);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
-		c_time &= ~1;
-		sbuf.st_atime &= ~1;
-		sbuf.st_mtime &= ~1;
-		sbuf.st_mtime &= ~1;
+		dos_filetime_timespec(&c_timespec);
+		dos_filetime_timespec(&a_timespec);
+		dos_filetime_timespec(&m_timespec);
 	}
 
-	put_long_date(p,c_time);
+	put_long_date_timespec(p, c_timespec); /* create time. */
 	p += 8;
-	put_long_date(p,sbuf.st_atime); /* access time */
+	put_long_date_timespec(p, a_timespec); /* access time */
 	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* write time */
+	put_long_date_timespec(p, m_timespec); /* write time */
 	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* change time */
+	put_long_date_timespec(p, m_timespec); /* change time */
 	p += 8;
 	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;

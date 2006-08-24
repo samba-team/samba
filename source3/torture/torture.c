@@ -2467,7 +2467,8 @@ static BOOL run_trans2test(int dummy)
 	struct cli_state *cli;
 	int fnum;
 	SMB_OFF_T size;
-	time_t c_time, a_time, m_time, w_time, m_time2;
+	time_t c_time, a_time, m_time, m_time2;
+	struct timespec c_time_ts, a_time_ts, m_time_ts, w_time_ts, m_time2_ts;
 	const char *fname = "\\trans2.tst";
 	const char *dname = "\\trans2";
 	const char *fname2 = "\\trans2\\trans2.tst";
@@ -2483,8 +2484,8 @@ static BOOL run_trans2test(int dummy)
 	cli_unlink(cli, fname);
 	fnum = cli_open(cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
-	if (!cli_qfileinfo(cli, fnum, NULL, &size, &c_time, &a_time, &m_time,
-			   NULL, NULL)) {
+	if (!cli_qfileinfo(cli, fnum, NULL, &size, &c_time_ts, &a_time_ts, &w_time_ts,
+			   &m_time_ts, NULL)) {
 		printf("ERROR: qfileinfo failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	}
@@ -2539,13 +2540,13 @@ static BOOL run_trans2test(int dummy)
 	fnum = cli_open(cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	cli_close(cli, fnum);
-	if (!cli_qpathinfo2(cli, fname, &c_time, &a_time, &w_time, 
-			    &m_time, &size, NULL, NULL)) {
+	if (!cli_qpathinfo2(cli, fname, &c_time_ts, &a_time_ts, &w_time_ts, 
+			    &m_time_ts, &size, NULL, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	} else {
-		if (w_time < 60*60*24*2) {
-			printf("write time=%s", ctime(&w_time));
+		if (w_time_ts.tv_sec < 60*60*24*2) {
+			printf("write time=%s", ctime(&w_time_ts.tv_sec));
 			printf("This system appears to set a initial 0 write time\n");
 			correct = False;
 		}
@@ -2561,8 +2562,8 @@ static BOOL run_trans2test(int dummy)
 		correct = False;
 	}
 	sleep(3);
-	if (!cli_qpathinfo2(cli, "\\trans2\\", &c_time, &a_time, &w_time, 
-			    &m_time, &size, NULL, NULL)) {
+	if (!cli_qpathinfo2(cli, "\\trans2\\", &c_time_ts, &a_time_ts, &w_time_ts, 
+			    &m_time_ts, &size, NULL, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	}
@@ -2571,8 +2572,8 @@ static BOOL run_trans2test(int dummy)
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	cli_write(cli, fnum,  0, (char *)&fnum, 0, sizeof(fnum));
 	cli_close(cli, fnum);
-	if (!cli_qpathinfo2(cli, "\\trans2\\", &c_time, &a_time, &w_time, 
-			    &m_time2, &size, NULL, NULL)) {
+	if (!cli_qpathinfo2(cli, "\\trans2\\", &c_time_ts, &a_time_ts, &w_time_ts, 
+			    &m_time2_ts, &size, NULL, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	} else {

@@ -61,7 +61,7 @@ extern fstring remote_arch;
 enum protocol_types Protocol = PROTOCOL_COREPLUS;
 
 /* a default finfo structure to ensure all fields are sensible */
-file_info def_finfo = {-1,0,0,0,0,0,0,"",""};
+file_info def_finfo;
 
 /* this is used by the chaining code */
 int chain_size = 0;

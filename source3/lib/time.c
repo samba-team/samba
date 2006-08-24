@@ -172,28 +172,52 @@ int TimeDiff(time_t t)
 }
 #endif
 
+time_t convert_timespec_to_time_t(struct timespec ts)
+{
+	/* 1 ns == 1,000,000,000 - one thousand millionths of a second.
+	   increment if it's greater than 500 millionth of a second. */
+	if (ts.tv_nsec > 500000000) {
+		return ts.tv_sec + 1;
+	}
+	return ts.tv_sec;
+}
+
+struct timespec convert_time_t_to_timespec(time_t t)
+{
+	struct timespec ts;
+	ts.tv_sec = t;
+	ts.tv_nsec = 0;
+	return ts;
+}
+
 #define TIME_FIXUP_CONSTANT (369.0*365.25*24*60*60-(3.0*24*60*60+6.0*60*60))
 
 /****************************************************************************
  Interpret an 8 byte "filetime" structure to a time_t
  It's originally in "100ns units since jan 1st 1601"
 
- An 8 byte value of 0xffffffffffffffff will be returned as (time_t)0.
+ An 8 byte value of 0xffffffffffffffff will be returned as a timespec of
+
+	tv_sec = 0
+	tv_nsec = 0;
 
  Returns GMT.
 ****************************************************************************/
 
-time_t nt_time_to_unix(NTTIME *nt)
+static struct timespec nt_time_to_unix_timespec(NTTIME *nt)
 {
 	double d;
-	time_t ret;
+	struct timespec ret;
 	/* The next two lines are a fix needed for the 
 		broken SCO compiler. JRA. */
 	time_t l_time_min = TIME_T_MIN;
 	time_t l_time_max = TIME_T_MAX;
 
-	if (nt->high == 0 || (nt->high == 0xffffffff && nt->low == 0xffffffff)) {
-		return(0);
+	if ((nt->high == 0 && nt->low == 0 )||
+			(nt->high == 0xffffffff && nt->low == 0xffffffff)) {
+		ret.tv_sec = 0;
+		ret.tv_nsec = 0;
+		return ret;
 	}
 
 	d = ((double)nt->high)*4.0*(double)(1<<30);
@@ -204,15 +228,25 @@ time_t nt_time_to_unix(NTTIME *nt)
 	d -= TIME_FIXUP_CONSTANT;
 
 	if (d <= l_time_min) {
-		return (l_time_min);
+		ret.tv_sec = l_time_min;
+		ret.tv_nsec = 0;
+		return ret;
 	}
 
 	if (d >= l_time_max) {
-		return (l_time_max);
+		ret.tv_sec = l_time_max;
+		ret.tv_nsec = 0;
+		return ret;
 	}
 
-	ret = (time_t)(d+0.5);
-	return(ret);
+	ret.tv_sec = (time_t)d;
+	ret.tv_nsec = (long) ((d - (double)ret.tv_sec)*1.0e9);
+	return ret;
+}
+
+time_t nt_time_to_unix(NTTIME *nt)
+{
+	return convert_timespec_to_time_t(nt_time_to_unix_timespec(nt));
 }
 
 /****************************************************************************
@@ -235,7 +269,7 @@ time_t nt_time_to_unix_abs(const NTTIME *nt)
 	NTTIME neg_nt;
 
 	if (nt->high == 0) {
-		return(0);
+		return (time_t)0;
 	}
 
 	if (nt->high==0x80000000 && nt->low==0) {
@@ -252,29 +286,64 @@ time_t nt_time_to_unix_abs(const NTTIME *nt)
 	d *= 1.0e-7;
   
 	if (!(l_time_min <= d && d <= l_time_max)) {
-		return(0);
+		return (time_t)0;
 	}
 
 	ret = (time_t)(d+0.5);
-
-	return(ret);
+	return ret;
 }
 
 /****************************************************************************
- Interprets an nt time into a unix time_t.
+ Interprets an nt time into a unix struct timespec.
  Differs from nt_time_to_unix in that an 8 byte value of 0xffffffffffffffff
  will be returned as (time_t)-1, whereas nt_time_to_unix returns 0 in this case.
 ****************************************************************************/
 
-time_t interpret_long_date(char *p)
+struct timespec interpret_long_date(char *p)
 {
 	NTTIME nt;
 	nt.low = IVAL(p,0);
 	nt.high = IVAL(p,4);
 	if (nt.low == 0xFFFFFFFF && nt.high == 0xFFFFFFFF) {
-		return (time_t)-1;
+		struct timespec ret;
+		ret.tv_sec = (time_t)-1;
+		ret.tv_nsec = 0;
+		return ret;
 	}
-	return nt_time_to_unix(&nt);
+	return nt_time_to_unix_timespec(&nt);
+}
+
+/****************************************************************************
+ Put a 8 byte filetime from a struct timespec. Uses GMT.
+****************************************************************************/
+
+void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
+{
+	double d;
+
+	if (ts.tv_sec ==0 && ts.tv_nsec == 0) {
+		nt->low = 0;
+		nt->high = 0;
+		return;
+	}
+	if (ts.tv_sec == TIME_T_MAX) {
+		nt->low = 0xffffffff;
+		nt->high = 0x7fffffff;
+		return;
+	}		
+	if (ts.tv_sec == (time_t)-1) {
+		nt->low = 0xffffffff;
+		nt->high = 0xffffffff;
+		return;
+	}		
+
+	d = (double)(ts.tv_sec);
+	d += TIME_FIXUP_CONSTANT;
+	d *= 1.0e7;
+	d += ((double)ts.tv_nsec / 100.0);
+
+	nt->high = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
+	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
 }
 
 /****************************************************************************
@@ -283,30 +352,10 @@ time_t interpret_long_date(char *p)
 
 void unix_to_nt_time(NTTIME *nt, time_t t)
 {
-	double d;
-
-	if (t==0) {
-		nt->low = 0;
-		nt->high = 0;
-		return;
-	}
-	if (t == TIME_T_MAX) {
-		nt->low = 0xffffffff;
-		nt->high = 0x7fffffff;
-		return;
-	}		
-	if (t == (time_t)-1) {
-		nt->low = 0xffffffff;
-		nt->high = 0xffffffff;
-		return;
-	}		
-
-	d = (double)(t);
-	d += TIME_FIXUP_CONSTANT;
-	d *= 1.0e7;
-
-	nt->high = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
-	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
+	struct timespec ts;
+	ts.tv_sec = t;
+	ts.tv_nsec = 0;
+	unix_timespec_to_nt_time(nt, ts);
 }
 
 /****************************************************************************
@@ -356,12 +405,20 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
  pointed to by p.
 ****************************************************************************/
 
-void put_long_date(char *p, time_t t)
+void put_long_date_timespec(char *p, struct timespec ts)
 {
 	NTTIME nt;
-	unix_to_nt_time(&nt, t);
+	unix_timespec_to_nt_time(&nt, ts);
 	SIVAL(p, 0, nt.low);
 	SIVAL(p, 4, nt.high);
+}
+
+void put_long_date(char *p, time_t t)
+{
+	struct timespec ts;
+	ts.tv_sec = t;
+	ts.tv_nsec = 0;
+	put_long_date_timespec(p, ts);
 }
 
 /****************************************************************************
@@ -717,6 +774,14 @@ time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs)
 	return ret;
 }
 
+struct timespec get_create_timespec(SMB_STRUCT_STAT *st,BOOL fake_dirs)
+{
+	struct timespec ts;
+	ts.tv_sec = get_create_time(st, fake_dirs);
+	ts.tv_nsec = 0;
+	return ts;
+}
+
 /****************************************************************************
  Initialise an NTTIME to -1, which means "unknown" or "don't expire".
 ****************************************************************************/
@@ -955,7 +1020,7 @@ time_t generalized_to_unix_time(const char *str)
 }
 
 /****************************************************************************
- Return all the possible time fields from a stat struct as a timespec.
+ Get/Set all the possible time fields from a stat struct as a timespec.
 ****************************************************************************/
 
 struct timespec get_atimespec(SMB_STRUCT_STAT *pst)
@@ -975,6 +1040,23 @@ struct timespec get_atimespec(SMB_STRUCT_STAT *pst)
 	ret.tv_sec = pst->st_atime;
 	ret.tv_nsec = pst->st_atimensec;
 	return ret;
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
+#endif
+#endif
+}
+
+void set_atimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	/* Old system - no ns timestamp. */
+	pst->st_atime = ts.tv_sec;
+#else
+#if defined(HAVE_STAT_ST_ATIM)
+	pst->st_atim = ts;
+#elif defined(HAVE_STAT_ST_ATIMENSEC)
+	pst->st_atime = ts.tv_sec;
+	pst->st_atimensec = ts.tv_nsec
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
 #endif
@@ -1004,6 +1086,23 @@ struct timespec get_mtimespec(SMB_STRUCT_STAT *pst)
 #endif
 }
 
+void set_mtimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	/* Old system - no ns timestamp. */
+	pst->st_mtime = ts.tv_sec;
+#else
+#if defined(HAVE_STAT_ST_MTIM)
+	pst->st_mtim = ts;
+#elif defined(HAVE_STAT_ST_MTIMENSEC)
+	pst->st_mtime = ts.tv_sec;
+	pst->st_mtimensec = ts.tv_nsec
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
+#endif
+#endif
+}
+
 struct timespec get_ctimespec(SMB_STRUCT_STAT *pst)
 {
 #if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
@@ -1021,6 +1120,23 @@ struct timespec get_ctimespec(SMB_STRUCT_STAT *pst)
 	ret.tv_sec = pst->st_ctime;
 	ret.tv_nsec = pst->st_ctimensec;
 	return ret;
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
+#endif
+#endif
+}
+
+void set_ctimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	/* Old system - no ns timestamp. */
+	pst->st_ctime = ts.tv_sec;
+#else
+#if defined(HAVE_STAT_ST_CTIM)
+	pst->st_atim = ts;
+#elif defined(HAVE_STAT_ST_CTIMENSEC)
+	pst->st_ctime = ts.tv_sec;
+	pst->st_ctimensec = ts.tv_nsec
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
 #endif
@@ -1056,6 +1172,11 @@ struct timespec get_create_timespec(SMB_STRUCT_STAT *st,BOOL fake_dirs)
 }
 #endif
 
+void dos_filetime_timespec(struct timespec *tsp)
+{
+	tsp->tv_sec &= ~1;
+	tsp->tv_nsec = 0;
+}
 
 /**
  Return the date and time as a string
