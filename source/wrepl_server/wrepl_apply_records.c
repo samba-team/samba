@@ -57,13 +57,17 @@ static const char *_R_ACTION_enum_string(enum _R_ACTION action)
 }
 
 #define R_IS_ACTIVE(r) ((r)->state == WREPL_STATE_ACTIVE)
+#if 0 /* unused */
 #define R_IS_RELEASED(r) ((r)->state == WREPL_STATE_RELEASED)
+#endif
 #define R_IS_TOMBSTONE(r) ((r)->state == WREPL_STATE_TOMBSTONE)
 
 #define R_IS_UNIQUE(r) ((r)->type == WREPL_TYPE_UNIQUE)
 #define R_IS_GROUP(r) ((r)->type == WREPL_TYPE_GROUP)
 #define R_IS_SGROUP(r) ((r)->type == WREPL_TYPE_SGROUP)
+#if 0 /* unused */
 #define R_IS_MHOMED(r) ((r)->type == WREPL_TYPE_MHOMED)
+#endif
 
 /* blindly overwrite records from the same owner in all cases */
 static enum _R_ACTION replace_same_owner(struct winsdb_record *r1, struct wrepl_name *r2)
