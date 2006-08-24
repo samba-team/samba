@@ -39,7 +39,7 @@ struct nbtd_iface_name {
 
 	/* if registered with a wins server, then this lists the server being
 	   used */
-	char *wins_server;
+	const char *wins_server;
 };
 
 
