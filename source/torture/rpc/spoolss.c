@@ -64,7 +64,32 @@ struct test_spoolss_context {
 	}\
 } while(0)
 
+#define _CHECK_FIELD_SIZE(c,r,e,type) do {\
+	if (sizeof(__typeof__(c.e)) != sizeof(type)) { \
+		printf(__location__ ":" #c "." #e "field is not " #type "\n"); \
+		smb_panic(__location__ ":" #c "." #e "field is not " #type ); \
+		ret = False; \
+	}\
+	if (sizeof(__typeof__(r.e)) != sizeof(type)) { \
+		printf(__location__ ":" #r "." #e "field is not " #type "\n"); \
+		smb_panic(__location__ ":" #r "." #e "field is not " #type ); \
+		ret = False; \
+	}\
+} while(0)
+
+#if 0 /* unused */
 #define COMPARE_UINT16(c,r,e) do {\
+	_CHECK_FIELD_SIZE(c,r,e,uint16_t); \
+	if (c.e != r.e){\
+		printf("%s: " #c "." #e "  0x%04X (%u) doesn't match " #r "." #e " 0x%04X (%u)\n",\
+			__location__, c.e, c.e, r.e, r.e);\
+		ret = False;\
+	}\
+} while(0)
+#endif
+
+#define COMPARE_UINT32(c,r,e) do {\
+	_CHECK_FIELD_SIZE(c,r,e,uint32_t); \
 	if (c.e != r.e){\
 		printf("%s: " #c "." #e "  0x%08X (%u) doesn't match " #r "." #e " 0x%08X (%u)\n",\
 			__location__, c.e, c.e, r.e, r.e);\
@@ -72,25 +97,22 @@ struct test_spoolss_context {
 	}\
 } while(0)
 
-#define COMPARE_UINT32(c,r,e) do {\
-	if (c.e != r.e){\
-		printf("%s: " #c "." #e "  0x%04X (%u) doesn't match " #r "." #e " 0x%04X (%u)\n",\
-			__location__, c.e, c.e, r.e, r.e);\
-		ret = False;\
-	}\
-} while(0)
-
+#if 0 /* unused */
 #define COMPARE_UINT64(c,r,e) do {\
+	_CHECK_FIELD_SIZE(c,r,e,uint64_t); \
 	if (c.e != r.e){\
 		printf("%s: " #c "." #e "  0x%016llX (%llu) doesn't match " #r "." #e " 0x%016llX (%llu)\n",\
 			__location__, c.e, c.e, r.e, r.e);\
 		ret = False;\
 	}\
 } while(0)
+#endif
 
 /* TODO: ! */
+#if 0 /* unused */
 #define COMPARE_SEC_DESC(c,r,e)
 #define COMPARE_SPOOLSS_TIME(c,r,e)
+#endif
 #define COMPARE_STRING_ARRAY(c,r,e)
 
 static BOOL test_OpenPrinter_server(struct test_spoolss_context *ctx)
