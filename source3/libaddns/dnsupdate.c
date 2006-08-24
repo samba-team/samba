@@ -466,7 +466,7 @@ int32 DNSUpdateGenerateSignature( gss_ctx_id_t * pGSSContext,
 				       dwTimeSigned,
 				       wFudge,
 				       pDNSUpdateRequest->wIdentification,
-				       MicDesc.value,
+				       (uint8 *)MicDesc.value,
 				       MicDesc.length, &pDNSTSIGRecord );
 	BAIL_ON_ERROR( dwError );
 
@@ -503,7 +503,7 @@ int32 DNSBuildSignatureBuffer( int32 dwMaxSignatureSize, uint8 ** ppSignature )
 	uint8 *pSignature = NULL;
 
 	dwError = DNSAllocateMemory( dwMaxSignatureSize,
-				     ( void ** ) &pSignature );
+				     ( void * ) &pSignature );
 	BAIL_ON_ERROR( dwError );
 
 	*ppSignature = pSignature;
@@ -579,7 +579,7 @@ int32 DNSBuildMessageBuffer( DNS_UPDATE_REQUEST * pDNSUpdateRequest,
 
 	dwError =
 		DNSAllocateMemory( dwMessageSize,
-				   ( void ** ) &pMessageBuffer );
+				   ( void * ) &pMessageBuffer );
 	BAIL_ON_ERROR( dwError );
 
 	pOffset = pMessageBuffer;
@@ -605,7 +605,11 @@ int32 DNSBuildMessageBuffer( DNS_UPDATE_REQUEST * pDNSUpdateRequest,
 	memcpy( pOffset, &wnTimePrefix, sizeof( int16 ) );
 	pOffset += sizeof( int16 );
 
-	time( (time_t*)&dwTimeSigned );
+	{
+		time_t t;
+		time(&t);
+		dwTimeSigned = t;
+	}
 	dwnTimeSigned = htonl( dwTimeSigned );
 	memcpy( pOffset, &dwnTimeSigned, sizeof( int32 ) );
 	pOffset += sizeof( int32 );
