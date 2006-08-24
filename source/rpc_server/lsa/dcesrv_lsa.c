@@ -1769,7 +1769,7 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct lsa_secret_state *secret_state;
 	struct dcesrv_handle *handle;
 	struct ldb_message **msgs, *msg;
-	char *errstr;
+	const char *errstr;
 	const char *attrs[] = {
 		NULL
 	};

@@ -435,7 +435,7 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 	struct ldb_message *msg2;
 	struct ldb_dn_component *rdn;
 	TALLOC_CTX *mem_ctx = talloc_new(msg);
-	char *errstr;
+	const char *errstr;
 	if (!mem_ctx) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -498,7 +498,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	struct ldb_message *msg2;
 	struct ldb_dn_component *rdn;
 	TALLOC_CTX *mem_ctx = talloc_new(msg);
-	char *errstr;
+	const char *errstr;
 	if (!mem_ctx) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -603,7 +603,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 	struct dom_sid *sid;
 	const char *dom_attrs[] = { "name", NULL };
 	struct ldb_message **dom_msgs;
-	char *errstr;
+	const char *errstr;
 	int ret;
 
 	TALLOC_CTX *mem_ctx = talloc_new(msg);
