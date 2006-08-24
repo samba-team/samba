@@ -310,7 +310,7 @@ int32 DNSUpdateAddZoneSection( DNS_UPDATE_REQUEST * pDNSRequest,
 	dwNumZones = pDNSRequest->wZones;
 
 	dwError = DNSReallocMemory( ( uint8 * ) pDNSRequest->ppZoneRRSet,
-				    ( void ** ) &pDNSRequest->ppZoneRRSet,
+				    ( void * ) &pDNSRequest->ppZoneRRSet,
 				    ( dwNumZones +
 				      1 ) * sizeof( DNS_ZONE_RECORD * )
 		 );
@@ -336,7 +336,7 @@ int32 DNSUpdateAddAdditionalSection( DNS_UPDATE_REQUEST * pDNSRequest,
 
 	dwNumAdditionals = pDNSRequest->wAdditionals;
 	dwError = DNSReallocMemory( pDNSRequest->ppAdditionalRRSet,
-				    ( void ** ) &pDNSRequest->
+				    ( void * ) &pDNSRequest->
 				    ppAdditionalRRSet,
 				    ( dwNumAdditionals +
 				      1 ) * sizeof( DNS_RR_RECORD * ) );
@@ -358,7 +358,7 @@ int32 DNSUpdateAddPRSection( DNS_UPDATE_REQUEST * pDNSRequest,
 
 	dwNumPRs = pDNSRequest->wPRs;
 	dwError = DNSReallocMemory( pDNSRequest->ppPRRRSet,
-				    ( void ** ) &pDNSRequest->ppPRRRSet,
+				    ( void * ) &pDNSRequest->ppPRRRSet,
 				    ( dwNumPRs +
 				      1 ) * sizeof( DNS_RR_RECORD * ) );
 	BAIL_ON_ERROR( dwError );
@@ -383,7 +383,7 @@ int32 DNSUpdateAddUpdateSection( DNS_UPDATE_REQUEST * pDNSRequest,
 
 	wNumUpdates = pDNSRequest->wUpdates;
 	dwError = DNSReallocMemory( pDNSRequest->ppUpdateRRSet,
-				    ( void ** ) &pDNSRequest->ppUpdateRRSet,
+				    ( void * ) &pDNSRequest->ppUpdateRRSet,
 				    ( wNumUpdates +
 				      1 ) * sizeof( DNS_RR_RECORD * ) );
 	BAIL_ON_ERROR( dwError );
@@ -406,7 +406,7 @@ int32 DNSUpdateCreateUpdateRequest( DNS_UPDATE_REQUEST ** ppDNSRequest )
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_UPDATE_REQUEST ),
-				   ( void ** ) &pDNSRequest );
+				   ( void * ) &pDNSRequest );
 	BAIL_ON_ERROR( dwError );
 
 	dwError = DNSGenerateIdentifier( &pDNSRequest->wIdentification );

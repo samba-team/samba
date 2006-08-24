@@ -321,7 +321,7 @@ int32 DNSGetTKeyData( DNS_RR_RECORD * pTKeyRecord,
 		sizeof( int16 ) );
 	wKeyDataSize = ntohs( wnKeyDataSize );
 
-	dwError = DNSAllocateMemory( wKeyDataSize, ( void ** ) &pKeyData );
+	dwError = DNSAllocateMemory( wKeyDataSize, ( void * ) &pKeyData );
 	BAIL_ON_ERROR( dwError );
 
 	memcpy( pKeyData, pTKeyRecord->pRData + dwKeyDataOffset,
@@ -444,7 +444,7 @@ int32 DNSNegotiateSecureContext( HANDLE hDNSServer,
 			if ( output_desc.length != 0 ) {
 
 				dwError = DNSBuildTKeyQueryRequest( szKeyName,
-								    output_desc.
+								    (uint8 *)output_desc.
 								    value,
 								    output_desc.
 								    length,
@@ -475,7 +475,7 @@ int32 DNSNegotiateSecureContext( HANDLE hDNSServer,
 			if ( output_desc.length != 0 ) {
 
 				dwError = DNSBuildTKeyQueryRequest( szKeyName,
-								    output_desc.
+								    (uint8 *)output_desc.
 								    value,
 								    output_desc.
 								    length,

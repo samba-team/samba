@@ -39,7 +39,7 @@ int32 DNSCreateDeleteRecord( char *szHost, int16 wClass,
 	BAIL_ON_ERROR( dwError );
 
 	dwError = DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				     ( void ** ) &pDNSRRRecord );
+				     ( void * ) &pDNSRRRecord );
 	BAIL_ON_ERROR( dwError );
 
 	pDNSRRRecord->RRHeader.dwTTL = 0;
@@ -81,7 +81,7 @@ int32 DNSCreateARecord( char *szHost, int16 wClass,
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				   ( void ** ) &pDNSRRRecord );
+				   ( void * ) &pDNSRRRecord );
 	BAIL_ON_ERROR( dwError );
 
 	pDNSRRRecord->RRHeader.wType = wType;
@@ -96,7 +96,7 @@ int32 DNSCreateARecord( char *szHost, int16 wClass,
 		pDNSRRRecord->RRHeader.wRDataSize = sizeof( int32 );
 		dwError =
 			DNSAllocateMemory( sizeof( int32 ),
-					   ( void ** ) &pRData );
+					   ( void * ) &pRData );
 		dwnIP = htonl( dwIP );
 		memcpy( pRData, &dwnIP, sizeof( int32 ) );
 		pDNSRRRecord->pRData = pRData;
@@ -151,7 +151,7 @@ int32 DNSCreateTKeyRecord( char *szKeyName, uint8 * pKeyData,
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				   ( void ** ) &pDNSRecord );
+				   ( void * ) &pDNSRecord );
 	BAIL_ON_ERROR( dwError );
 
 	dwError = DNSDomainNameFromString( szKeyName, &pDomainName );
@@ -181,7 +181,7 @@ int32 DNSCreateTKeyRecord( char *szKeyName, uint8 * pKeyData,
 		sizeof( wKeySize ) + wKeySize + sizeof( wOtherSize ) +
 		wOtherSize;
 
-	dwError = DNSAllocateMemory( dwRDataSize, ( void ** ) &pRData );
+	dwError = DNSAllocateMemory( dwRDataSize, ( void * ) &pRData );
 	BAIL_ON_ERROR( dwError );
 
 	dwnInception = htonl( dwInception );
@@ -277,7 +277,7 @@ int32 DNSCreateTSIGRecord( char *szKeyName, int32 dwTimeSigned,
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				   ( void ** ) &pDNSRecord );
+				   ( void * ) &pDNSRecord );
 	BAIL_ON_ERROR( dwError );
 
 	dwError = DNSDomainNameFromString( szKeyName, &pDomainName );
@@ -303,7 +303,7 @@ int32 DNSCreateTSIGRecord( char *szKeyName, int32 dwTimeSigned,
 		wMacSize + sizeof( wOriginalID ) + sizeof( wError ) +
 		sizeof( wOtherLen );
 
-	dwError = DNSAllocateMemory( dwRDataSize, ( void ** ) &pRData );
+	dwError = DNSAllocateMemory( dwRDataSize, ( void * ) &pRData );
 	BAIL_ON_ERROR( dwError );
 
 	/* Convert t to 48 bit network order */
@@ -387,7 +387,7 @@ int32 DNSCreateQuestionRecord( char *pszQName, int16 wQType,
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_QUESTION_RECORD ),
-				   ( void ** ) &pDNSQuestionRecord );
+				   ( void * ) &pDNSQuestionRecord );
 	BAIL_ON_ERROR( dwError );
 
 	pDNSQuestionRecord->pDomainName = pDomainName;
@@ -423,7 +423,7 @@ int32 DNSCreateZoneRecord( char *pszZName, DNS_ZONE_RECORD ** ppDNSZoneRecord )
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_ZONE_RECORD ),
-				   ( void ** ) &pDNSZoneRecord );
+				   ( void * ) &pDNSZoneRecord );
 	BAIL_ON_ERROR( dwError );
 
 	pDNSZoneRecord->pDomainName = pDomainName;
@@ -469,7 +469,7 @@ int32 DNSCreateNameInUseRecord( char *pszName, int32 qtype,
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				   ( void ** ) &pDNSRRRecord );
+				   ( void * ) &pDNSRRRecord );
 	BAIL_ON_ERROR( dwError );
 
 	pDNSRRRecord->RRHeader.pDomainName = pDomainName;
@@ -484,7 +484,7 @@ int32 DNSCreateNameInUseRecord( char *pszName, int32 qtype,
 		pDNSRRRecord->RRHeader.wRDataSize = 4;
 		dwError =
 			DNSAllocateMemory( 4,
-					   ( void ** ) &pDNSRRRecord->
+					   ( void * ) &pDNSRRRecord->
 					   pRData );
 		BAIL_ON_ERROR( dwError );
 		memcpy( pDNSRRRecord->pRData, &ip->s_addr, 4 );
@@ -521,7 +521,7 @@ int32 DNSCreateNameNotInUseRecord( char *pszName, int32 qtype,
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				   ( void ** ) &pDNSRRRecord );
+				   ( void * ) &pDNSRRRecord );
 	BAIL_ON_ERROR( dwError );
 
 	pDNSRRRecord->RRHeader.pDomainName = pDomainName;
