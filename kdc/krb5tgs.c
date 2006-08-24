@@ -364,9 +364,9 @@ tgs_make_reply(krb5_context context,
 	}
 	etype = b->etype.val[i];
     }else{
-	ret = _kdc_find_keys(context, config, 
-			     NULL, NULL, server, server_name,
-			     NULL, NULL, &skey, &etype, 
+	ret = _kdc_find_keys(context, config, "Server",
+			     server, server_name,
+			     &skey, &etype, 
 			     b->etype.val, b->etype.len);
 	if(ret)
 	    return ret;
