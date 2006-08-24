@@ -46,6 +46,7 @@ struct dns_rr_srv {
 	const char *hostname;
 	uint16 priority;
 	uint16 weight;
+	uint16 port;
 	size_t num_ips;
 	struct in_addr *ips;    /* support multi-homed hosts */
 
