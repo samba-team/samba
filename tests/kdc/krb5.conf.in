@@ -16,6 +16,8 @@
 	}
 
 [kdc]
+	enable-digest = true
+
 	enable-pkinit = true
 	pki-identity = FILE:@srcdir@/../../lib/hx509/data/kdc.crt,@srcdir@/../../lib/hx509/data/kdc.key
 	pki-anchors = FILE:@srcdir@/../../lib/hx509/data/ca.crt
