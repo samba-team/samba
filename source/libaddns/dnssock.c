@@ -59,7 +59,7 @@ static DNS_ERROR DNSTCPOpen( char *nameserver, HANDLE * phDNSServer )
 	s_in.sin_addr.s_addr = ulAddress;
 	s_in.sin_port = htons( DNS_TCP_PORT );
 
-	if ( (connect( sockServer, &s_in, sizeof( s_in ))) == SOCKET_ERROR ) {
+	if ( (connect( sockServer, (struct sockaddr*)&s_in, sizeof( s_in ))) == SOCKET_ERROR ) {
 		dwError = ERROR_DNS_CONNECTION_FAILED;
 		BAIL_ON_DNS_ERROR( dwError );
 	}
