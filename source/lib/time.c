@@ -178,28 +178,22 @@ int TimeDiff(time_t t)
  Interpret an 8 byte "filetime" structure to a time_t
  It's originally in "100ns units since jan 1st 1601"
 
- An 8 byte value of 0xffffffffffffffff will be returned as a timespec of
-
-	tv_sec = 0
-	tv_nsec = 0;
+ An 8 byte value of 0xffffffffffffffff will be returned as (time_t)0.
 
  Returns GMT.
 ****************************************************************************/
 
-struct timespec nt_time_to_unix_timespec(NTTIME *nt)
+time_t nt_time_to_unix(NTTIME *nt)
 {
 	double d;
-	struct timespec ret;
+	time_t ret;
 	/* The next two lines are a fix needed for the 
 		broken SCO compiler. JRA. */
 	time_t l_time_min = TIME_T_MIN;
 	time_t l_time_max = TIME_T_MAX;
 
-	if ((nt->high == 0 && nt->low == 0 )||
-			(nt->high == 0xffffffff && nt->low == 0xffffffff)) {
-		ret.tv_sec = 0;
-		ret.tv_nsec = 0;
-		return ret;
+	if (nt->high == 0 || (nt->high == 0xffffffff && nt->low == 0xffffffff)) {
+		return(0);
 	}
 
 	d = ((double)nt->high)*4.0*(double)(1<<30);
@@ -210,26 +204,15 @@ struct timespec nt_time_to_unix_timespec(NTTIME *nt)
 	d -= TIME_FIXUP_CONSTANT;
 
 	if (d <= l_time_min) {
-		ret.tv_sec = l_time_min;
-		ret.tv_nsec = 0;
-		return ret;
+		return (l_time_min);
 	}
 
 	if (d >= l_time_max) {
-		ret.tv_sec = l_time_max;
-		ret.tv_nsec = 0;
-		return ret;
+		return (l_time_max);
 	}
 
-	ret.tv_sec = (time_t)d;
-	ret.tv_nsec = (long) ((d*1.0e9) - ((double)ret.tv_sec)*1.0e9);
-	return ret;
-}
-
-time_t nt_time_to_unix(NTTIME *nt)
-{
-	struct timespec ts = nt_time_to_unix_timespec(nt);
-	return ts.tv_sec;
+	ret = (time_t)(d+0.5);
+	return(ret);
 }
 
 /****************************************************************************
@@ -241,10 +224,10 @@ time_t nt_time_to_unix(NTTIME *nt)
  if the NTTIME was 5 seconds, the time_t is 5 seconds. JFM
 ****************************************************************************/
 
-struct timespec nt_time_to_unix_abs(const NTTIME *nt)
+time_t nt_time_to_unix_abs(const NTTIME *nt)
 {
 	double d;
-	struct timespec ret;
+	time_t ret;
 	/* The next two lines are a fix needed for the 
 	   broken SCO compiler. JRA. */
 	time_t l_time_min = TIME_T_MIN;
@@ -252,15 +235,11 @@ struct timespec nt_time_to_unix_abs(const NTTIME *nt)
 	NTTIME neg_nt;
 
 	if (nt->high == 0) {
-		ret.tv_sec = 0;
-		ret.tv_nsec = 0;
-		return ret;
+		return(0);
 	}
 
 	if (nt->high==0x80000000 && nt->low==0) {
-		ret.tv_sec = (time_t)-1;
-		ret.tv_nsec = 0;
-		return ret;
+		return (time_t)-1;
 	}
 
 	/* reverse the time */
@@ -273,67 +252,29 @@ struct timespec nt_time_to_unix_abs(const NTTIME *nt)
 	d *= 1.0e-7;
   
 	if (!(l_time_min <= d && d <= l_time_max)) {
-		ret.tv_sec = 0;
-		ret.tv_nsec = 0;
-		return ret;
+		return(0);
 	}
 
-	ret.tv_sec = (time_t)d;
-	ret.tv_nsec = (long) ((d*1.0e9) - ((double)ret.tv_sec)*1.0e9);
-	return ret;
+	ret = (time_t)(d+0.5);
+
+	return(ret);
 }
 
 /****************************************************************************
- Interprets an nt time into a unix struct timespec.
+ Interprets an nt time into a unix time_t.
  Differs from nt_time_to_unix in that an 8 byte value of 0xffffffffffffffff
  will be returned as (time_t)-1, whereas nt_time_to_unix returns 0 in this case.
 ****************************************************************************/
 
-struct timespec interpret_long_date(char *p)
+time_t interpret_long_date(char *p)
 {
 	NTTIME nt;
 	nt.low = IVAL(p,0);
 	nt.high = IVAL(p,4);
 	if (nt.low == 0xFFFFFFFF && nt.high == 0xFFFFFFFF) {
-		struct timespec ret;
-		ret.tv_sec = (time_t)-1;
-		ret.tv_nsec = 0;
-		return ret;
+		return (time_t)-1;
 	}
-	return nt_time_to_unix_timespec(&nt);
-}
-
-/****************************************************************************
- Put a 8 byte filetime from a struct timespec. Uses GMT.
-****************************************************************************/
-
-void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
-{
-	double d;
-
-	if (ts.tv_sec ==0 && ts.tv_nsec == 0) {
-		nt->low = 0;
-		nt->high = 0;
-		return;
-	}
-	if (ts.tv_sec == TIME_T_MAX) {
-		nt->low = 0xffffffff;
-		nt->high = 0x7fffffff;
-		return;
-	}		
-	if (ts.tv_sec == (time_t)-1) {
-		nt->low = 0xffffffff;
-		nt->high = 0xffffffff;
-		return;
-	}		
-
-	d = (double)(ts.tv_sec);
-	d += TIME_FIXUP_CONSTANT;
-	d *= 1.0e7;
-	d += ((double)ts.tv_nsec / 100.0);
-
-	nt->high = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
-	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
+	return nt_time_to_unix(&nt);
 }
 
 /****************************************************************************
@@ -342,10 +283,30 @@ void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
 
 void unix_to_nt_time(NTTIME *nt, time_t t)
 {
-	struct timespec ts;
-	ts.tv_sec = t;
-	ts.tv_nsec = 0;
-	unix_timespec_to_nt_time(nt, ts);
+	double d;
+
+	if (t==0) {
+		nt->low = 0;
+		nt->high = 0;
+		return;
+	}
+	if (t == TIME_T_MAX) {
+		nt->low = 0xffffffff;
+		nt->high = 0x7fffffff;
+		return;
+	}		
+	if (t == (time_t)-1) {
+		nt->low = 0xffffffff;
+		nt->high = 0xffffffff;
+		return;
+	}		
+
+	d = (double)(t);
+	d += TIME_FIXUP_CONSTANT;
+	d *= 1.0e7;
+
+	nt->high = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
+	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
 }
 
 /****************************************************************************
@@ -395,10 +356,10 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
  pointed to by p.
 ****************************************************************************/
 
-void put_long_date(char *p, struct timespec ts)
+void put_long_date(char *p, time_t t)
 {
 	NTTIME nt;
-	unix_timespec_to_nt_time(&nt, ts);
+	unix_to_nt_time(&nt, t);
 	SIVAL(p, 0, nt.low);
 	SIVAL(p, 4, nt.high);
 }
