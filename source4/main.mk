@@ -299,6 +299,9 @@ gdbtest-all: all
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
 
+wintest: all
+	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} win
+
 unused_macros:
 	$(srcdir)/script/find_unused_macros.pl `find . -name "*.[ch]"` | sort
 
