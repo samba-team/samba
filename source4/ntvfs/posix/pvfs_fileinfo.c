@@ -23,18 +23,6 @@
 #include "includes.h"
 #include "vfs_posix.h"
 
-
-/* UNIX filetype mappings. */
-#define UNIX_TYPE_FILE 0
-#define UNIX_TYPE_DIR 1
-#define UNIX_TYPE_SYMLINK 2
-#define UNIX_TYPE_CHARDEV 3
-#define UNIX_TYPE_BLKDEV 4
-#define UNIX_TYPE_FIFO 5
-#define UNIX_TYPE_SOCKET 6
-#define UNIX_TYPE_UNKNOWN 0xFFFFFFFF
-
-
 /****************************************************************************
  Change a unix mode to a dos mode.
 ****************************************************************************/
