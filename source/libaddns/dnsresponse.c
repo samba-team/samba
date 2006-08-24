@@ -36,7 +36,7 @@ static int32 DNSStdAllocateResponse( DNS_RESPONSE ** ppDNSResponse )
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_RESPONSE ),
-				   ( void ** ) &pDNSResponse );
+				   ( void * ) &pDNSResponse );
 	BAIL_ON_ERROR( dwError );
 
 	*ppDNSResponse = pDNSResponse;
@@ -70,14 +70,14 @@ static int32 DNSStdUnmarshallQuestionSection( HANDLE hReceiveBuffer,
 	dwError =
 		DNSAllocateMemory( wQuestions *
 				   sizeof( DNS_QUESTION_RECORD * ),
-				   ( void ** ) &ppDNSQuestionRecords );
+				   ( void * ) &ppDNSQuestionRecords );
 	BAIL_ON_ERROR( dwError );
 
 	for ( i = 0; i < wQuestions; i++ ) {
 
 		dwError =
 			DNSAllocateMemory( sizeof( DNS_QUESTION_RECORD ),
-					   ( void ** ) &pDNSQuestionRecord );
+					   ( void * ) &pDNSQuestionRecord );
 		BAIL_ON_ERROR( dwError );
 
 		dwError =
@@ -130,7 +130,7 @@ static int32 DNSStdUnmarshallAnswerSection( HANDLE hReceiveBuffer,
 	int32 dwRead = 0;
 
 	dwError = DNSAllocateMemory( wAnswers * sizeof( DNS_RR_RECORD * ),
-				     ( void ** ) &ppDNSAnswerRRRecords );
+				     ( void * ) &ppDNSAnswerRRRecords );
 	BAIL_ON_ERROR( dwError );
 
 	for ( i = 0; i < wAnswers; i++ ) {
@@ -148,7 +148,7 @@ static int32 DNSStdUnmarshallAnswerSection( HANDLE hReceiveBuffer,
 
 		dwError =
 			DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-					   ( void ** ) &pDNSRRRecord );
+					   ( void * ) &pDNSRRRecord );
 		BAIL_ON_ERROR( dwError );
 
 		memcpy( &pDNSRRRecord->RRHeader, pRRHeader,
@@ -185,7 +185,7 @@ static int32 DNSStdUnmarshallAuthoritySection( HANDLE hReceiveBuffer,
 	int32 dwRead = 0;
 
 	dwError = DNSAllocateMemory( wAuthoritys * sizeof( DNS_RR_RECORD * ),
-				     ( void ** ) &ppDNSAuthorityRRRecords );
+				     ( void * ) &ppDNSAuthorityRRRecords );
 	BAIL_ON_ERROR( dwError );
 
 	for ( i = 0; i < wAuthoritys; i++ ) {
@@ -202,7 +202,7 @@ static int32 DNSStdUnmarshallAuthoritySection( HANDLE hReceiveBuffer,
 
 		dwError =
 			DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-					   ( void ** ) &pDNSRRRecord );
+					   ( void * ) &pDNSRRRecord );
 		BAIL_ON_ERROR( dwError );
 
 		memcpy( &pDNSRRRecord->RRHeader, pRRHeader,
@@ -240,7 +240,7 @@ static int32 DNSStdUnmarshallAdditionalSection( HANDLE hReceiveBuffer,
 	int32 dwRead = 0;
 
 	dwError = DNSAllocateMemory( wAdditionals * sizeof( DNS_RR_RECORD * ),
-				     ( void ** ) &ppDNSAdditionalRRRecords );
+				     ( void * ) &ppDNSAdditionalRRRecords );
 	BAIL_ON_ERROR( dwError );
 
 	for ( i = 0; i < wAdditionals; i++ ) {
@@ -257,7 +257,7 @@ static int32 DNSStdUnmarshallAdditionalSection( HANDLE hReceiveBuffer,
 
 		dwError =
 			DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-					   ( void ** ) &pDNSRRRecord );
+					   ( void * ) &pDNSRRRecord );
 		BAIL_ON_ERROR( dwError );
 
 		memcpy( &pDNSRRRecord->RRHeader, pRRHeader,
@@ -467,7 +467,7 @@ int32 DNSUnmarshallDomainName( HANDLE hRecvBuffer, DNS_DOMAIN_NAME ** ppDomainNa
 
 			dwError =
 				DNSAllocateMemory( sizeof( DNS_DOMAIN_LABEL ),
-						   ( void ** ) &pLabel );
+						   ( void * ) &pLabel );
 			BAIL_ON_ERROR( dwError );
 
 			pLabel->pszLabel = pszLabel;
@@ -481,7 +481,7 @@ int32 DNSUnmarshallDomainName( HANDLE hRecvBuffer, DNS_DOMAIN_NAME ** ppDomainNa
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_DOMAIN_NAME ),
-				   ( void ** ) &pDomainName );
+				   ( void * ) &pDomainName );
 	BAIL_ON_ERROR( dwError );
 	pDomainName->pLabelList = pLabelList;
 
@@ -552,7 +552,7 @@ int32 DNSUnmarshallRData( HANDLE hRecvBuffer,
 	int32 dwError = 0;
 	uint8 *pMemory = NULL;
 
-	dwError = DNSAllocateMemory( dwSize, ( void ** ) &pMemory );
+	dwError = DNSAllocateMemory( dwSize, ( void * ) &pMemory );
 	BAIL_ON_ERROR( dwError );
 	dwError =
 		DNSUnmarshallBuffer( hRecvBuffer, ( uint8 * ) pMemory, dwSize,

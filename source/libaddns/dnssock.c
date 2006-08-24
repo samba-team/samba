@@ -368,12 +368,12 @@ int32 DNSCreateSendBuffer( HANDLE * phDNSSendBuffer )
 	uint8 *pSendBuffer = NULL;
 
 	dwError = DNSAllocateMemory( sizeof( DNS_SENDBUFFER_CONTEXT ),
-				     ( void ** ) &pDNSContext );
+				     ( void * ) &pDNSContext );
 	BAIL_ON_ERROR( dwError );
 
 	dwError =
 		DNSAllocateMemory( SENDBUFFER_SIZE,
-				   ( void ** ) &pSendBuffer );
+				   ( void * ) &pSendBuffer );
 	BAIL_ON_ERROR( dwError );
 
 	pDNSContext->pSendBuffer = pSendBuffer;
@@ -587,12 +587,12 @@ int32 DNSCreateReceiveBuffer( HANDLE * phDNSRecvBuffer )
 	uint8 *pRecvBuffer = NULL;
 
 	dwError = DNSAllocateMemory( sizeof( DNS_RECEIVEBUFFER_CONTEXT ),
-				     ( void ** ) &pDNSContext );
+				     ( void * ) &pDNSContext );
 	BAIL_ON_ERROR( dwError );
 
 	dwError =
 		DNSAllocateMemory( RECVBUFFER_SIZE,
-				   ( void ** ) &pRecvBuffer );
+				   ( void * ) &pRecvBuffer );
 	BAIL_ON_ERROR( dwError );
 
 	pDNSContext->pRecvBuffer = pRecvBuffer;
@@ -684,7 +684,7 @@ int32 DNSUnmarshallDomainNameAtOffset( HANDLE hRecvBuffer,
 
 		dwError =
 			DNSAllocateMemory( sizeof( DNS_DOMAIN_LABEL ),
-					   ( void ** ) &pLabel );
+					   ( void * ) &pLabel );
 		BAIL_ON_ERROR( dwError );
 
 		pLabel->pszLabel = pszLabel;
@@ -694,7 +694,7 @@ int32 DNSUnmarshallDomainNameAtOffset( HANDLE hRecvBuffer,
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_DOMAIN_NAME ),
-				   ( void ** ) &pDomainName );
+				   ( void * ) &pDomainName );
 	BAIL_ON_ERROR( dwError );
 	pDomainName->pLabelList = pLabelList;
 

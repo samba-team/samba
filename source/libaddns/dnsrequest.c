@@ -398,7 +398,7 @@ int32 DNSStdAddQuestionSection( DNS_REQUEST * pDNSRequest,
 	dwNumQuestions = pDNSRequest->wQuestions;
 
 	dwError = DNSReallocMemory( ( uint8 * ) pDNSRequest->ppQuestionRRSet,
-				    ( void ** ) &pDNSRequest->ppQuestionRRSet,
+				    ( void * ) &pDNSRequest->ppQuestionRRSet,
 				    ( dwNumQuestions +
 				      1 ) * sizeof( DNS_QUESTION_RECORD * )
 		 );
@@ -424,7 +424,7 @@ int32 DNSStdAddAdditionalSection( DNS_REQUEST * pDNSRequest,
 
 	dwNumAdditionals = pDNSRequest->wAdditionals;
 	dwError = DNSReallocMemory( pDNSRequest->ppAdditionalRRSet,
-				    ( void ** ) &pDNSRequest->
+				    ( void * ) &pDNSRequest->
 				    ppAdditionalRRSet,
 				    ( dwNumAdditionals +
 				      1 ) * sizeof( DNS_RR_RECORD * ) );
@@ -453,7 +453,7 @@ int32 DNSStdCreateStdRequest( DNS_REQUEST ** ppDNSRequest )
 #endif
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_REQUEST ),
-				   ( void ** ) &pDNSRequest );
+				   ( void * ) &pDNSRequest );
 	BAIL_ON_ERROR( dwError );
 
 	dwError = DNSGenerateIdentifier( &pDNSRequest->wIdentification );

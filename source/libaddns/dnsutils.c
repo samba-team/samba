@@ -107,7 +107,7 @@ static int32 DNSMakeLabel( char *szLabel, DNS_DOMAIN_LABEL ** ppLabel )
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_DOMAIN_LABEL ),
-				   ( void ** ) &pLabel );
+				   ( void * ) &pLabel );
 	BAIL_ON_ERROR( dwError );
 
 	dwError = DNSAllocateString( szLabel, &pszLabel );
@@ -376,7 +376,7 @@ int32 DNSDomainNameFromString( char *pszDomainName,
 
 	dwError =
 		DNSAllocateMemory( sizeof( DNS_DOMAIN_NAME ),
-				   ( void ** ) &pDomainName );
+				   ( void * ) &pDomainName );
 	BAIL_ON_ERROR( dwError );
 
 	pDomainName->pLabelList = pLabelList;
@@ -509,9 +509,9 @@ int32 MapDNSResponseCodes( int16 wResponseCode )
 /*********************************************************************
 *********************************************************************/
 
-int32 DNSAllocateMemory(int32 dwSize, void * * ppMemory)
+int32 DNSAllocateMemory(int32 dwSize, void * _ppMemory)
 {
-
+	void **ppMemory = (void **)_ppMemory;
 	int32 dwError = 0;
 	void * pMemory = NULL;
 
@@ -529,8 +529,9 @@ int32 DNSAllocateMemory(int32 dwSize, void * * ppMemory)
 /*********************************************************************
 *********************************************************************/
 
-int32 DNSReallocMemory(void *  pMemory, void * * ppNewMemory, int32 dwSize)
+int32 DNSReallocMemory(void *  pMemory, void * _ppNewMemory, int32 dwSize)
 {
+	void **ppNewMemory = (void **)_ppNewMemory;
 	int32 dwError = 0;
 	void * pNewMemory = NULL;
 
@@ -573,7 +574,7 @@ int32 DNSAllocateString(char *pszInputString, char **ppszOutputString)
 		BAIL_ON_ERROR(dwError);
 	}
 	dwLen = (int32)strlen(pszInputString);
-	dwError = DNSAllocateMemory(dwLen+1, (void * *)&pszOutputString);
+	dwError = DNSAllocateMemory(dwLen+1, (void *)&pszOutputString);
 	BAIL_ON_ERROR(dwError);
 
 	strcpy(pszOutputString, pszInputString);
