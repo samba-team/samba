@@ -2,9 +2,8 @@
    writers - that stresses the locking code. 
 */
 
-#define _GNU_SOURCE
-
 #ifndef _SAMBA_BUILD_
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
@@ -46,7 +45,6 @@
 #define CULL_PROB 100
 #define KEYLEN 3
 #define DATALEN 100
-#define LOCKLEN 20
 
 static struct tdb_context *db;
 static int in_transaction;
