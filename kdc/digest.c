@@ -47,7 +47,7 @@ _kdc_do_digest(krb5_context context,
     krb5_ticket *ticket = NULL;
     krb5_auth_context ac = NULL;
     krb5_keytab id = NULL;
-    krb5_crypto crypto;
+    krb5_crypto crypto = NULL;
     DigestReqInner ireq;
     DigestRepInner r;
     DigestREP rep;
@@ -64,7 +64,7 @@ _kdc_do_digest(krb5_context context,
 	ret = KRB5KDC_ERR_POLICY;
 	kdc_log(context, config, 0,
 		"Rejected digest request from %s", from);
-	goto out;
+	return ret;
     }
 
     krb5_data_zero(&buf);
