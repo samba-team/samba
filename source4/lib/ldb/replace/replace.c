@@ -70,17 +70,31 @@
 #ifndef HAVE_SETENV
  int setenv(const char *name, const char *value, int overwrite) 
 {
-	char *p = NULL;
-	int ret = -1;
+	char *p;
+	size_t l1, l2;
+	int ret;
 
-	asprintf(&p, "%s=%s", name, value);
-
-	if (overwrite || getenv(name)) {
-		if (p) ret = putenv(p);
-	} else {
-		ret = 0;
+	if (!overwrite && getenv(name)) {
+		return 0;
 	}
 
-	return ret;	
+	l1 = strlen(name);
+	l2 = strlen(value);
+
+	p = malloc(l1+l2+2);
+	if (p == NULL) {
+		return -1;
+	}
+	memcpy(p, name, l1);
+	p[l1] = '=';
+	memcpy(p+l1+1, value, l2);
+	p[l1+l2+1] = 0;
+
+	ret = putenv(p);
+	if (ret != 0) {
+		free(p);
+	}
+
+	return ret;
 }
 #endif
