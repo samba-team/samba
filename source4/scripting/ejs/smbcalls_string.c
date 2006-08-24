@@ -242,13 +242,14 @@ failed:
   usage:
      str = sprintf("i=%d s=%7s", 7, "foo");
 */
+typedef char *(*_asprintf_append_t)(char *, const char *, ...);
 static int ejs_sprintf(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	const char *format;
 	const char *p;
 	char *ret;
 	int a = 1;
-	char *(*_asprintf_append)(char *, const char *, ...);
+	_asprintf_append_t _asprintf_append;
 	TALLOC_CTX *tmp_ctx;
 	if (argc < 1 || argv[0]->type != MPR_TYPE_STRING) {
 		ejsSetErrorMsg(eid, "sprintf invalid arguments");
@@ -259,7 +260,7 @@ static int ejs_sprintf(MprVarHandle eid, int argc, struct MprVar **argv)
 	ret = talloc_strdup(tmp_ctx, "");
 
 	/* avoid all the format string warnings */
-	_asprintf_append = talloc_asprintf_append;
+	_asprintf_append = (_asprintf_append_t)talloc_asprintf_append;
 
 	/*
 	  hackity hack ...
