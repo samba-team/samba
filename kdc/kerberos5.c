@@ -87,10 +87,10 @@ _kdc_find_padata(KDC_REQ *req, int *start, int type)
  * one, but preferring one that has default salt
  */
 
-static krb5_error_code
-find_etype(krb5_context context, const hdb_entry_ex *princ,
-	   krb5_enctype *etypes, unsigned len, 
-	   Key **ret_key, krb5_enctype *ret_etype)
+krb5_error_code
+_kdc_find_etype(krb5_context context, const hdb_entry_ex *princ,
+		krb5_enctype *etypes, unsigned len, 
+		Key **ret_key, krb5_enctype *ret_etype)
 {
     int i;
     krb5_error_code ret = KRB5KDC_ERR_ETYPE_NOSUPP;
@@ -113,27 +113,6 @@ find_etype(krb5_context context, const hdb_entry_ex *princ,
 		return ret;
 	}
     }
-    return ret;
-}
-
-krb5_error_code
-_kdc_find_keys(krb5_context context, 
-	       krb5_kdc_configuration *config,
-	       const char *type,
-	       const hdb_entry_ex *entry,
-	       const char *entry_name,
-	       Key **key,
-	       krb5_enctype *etype,
-	       krb5_enctype *etypes,
-	       unsigned num_etypes)
-{
-    krb5_error_code ret;
-
-    /* find client key */
-    ret = find_etype(context, entry, etypes, num_etypes, key, etype);
-    if (ret)
-	kdc_log(context, config, 0, 
-		"%s (%s) has no support for etypes", type, entry_name);
     return ret;
 }
 
@@ -1176,12 +1155,13 @@ _kdc_as_rep(krb5_context context,
      * KDC runtime enctypes.
      */
 
-    ret = _kdc_find_keys(context, config, "Client",
-			 client, client_name, 
-			 &ckey, &cetype,
-			 b->etype.val, b->etype.len);
-    if(ret)
+    ret = _kdc_find_etype(context, client, b->etype.val, b->etype.len,
+			  &ckey, &cetype);
+    if (ret) {
+	kdc_log(context, config, 0, 
+		"Client (%s) has no support for etypes", client_name);
 	goto out;
+    }
 	
     ret = _kdc_get_preferred_key(context, config,
 				 server, server_name,

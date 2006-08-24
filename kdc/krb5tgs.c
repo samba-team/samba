@@ -364,12 +364,13 @@ tgs_make_reply(krb5_context context,
 	}
 	etype = b->etype.val[i];
     }else{
-	ret = _kdc_find_keys(context, config, "Server",
-			     server, server_name,
-			     &skey, &etype, 
-			     b->etype.val, b->etype.len);
-	if(ret)
+	ret = _kdc_find_etype(context, server, b->etype.val, b->etype.len,
+			      &skey, &etype);
+	if(ret) {
+	    kdc_log(context, config, 0, 
+		    "Server (%s) has no support for etypes", server_name);
 	    return ret;
+	}
 	ekey = &skey->key;
     }
     
