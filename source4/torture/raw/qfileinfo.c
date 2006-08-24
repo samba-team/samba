@@ -138,6 +138,7 @@ static union smb_fileinfo *fname_find(const char *name)
 
 /* used to find hints on unknown values - and to make sure 
    we zero-fill */
+#if 0 /* unused */
 #define VAL_UNKNOWN(n1, v1) do {if (s1->n1.out.v1 != 0) { \
         printf("%s/%s non-zero unknown - %u (0x%x) at %s(%d)\n", \
                #n1, #v1, \
@@ -146,6 +147,7 @@ static union smb_fileinfo *fname_find(const char *name)
 	       __FILE__, __LINE__); \
         ret = False; \
 }} while(0)
+#endif
 
 /* basic testing of all RAW_FILEINFO_* calls 
    for each call we test that it succeeds, and where possible test 
@@ -352,6 +354,7 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 		ret = False; \
 	}} while (0)
 
+#if 0 /* unused */
 #define TIME_CHECK_UNX(sname, stype, tfield) do { \
 	s1 = fnum_find(sname); \
 	if (s1 && unx_nt_time_cmp(s1->stype.out.tfield, correct_time) != 0) { \
@@ -367,6 +370,7 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 		       nt_time_string(mem_ctx, correct_time)); \
 		ret = False; \
 	}} while (0)
+#endif
 
 	/* now check that all the times that are supposed to be equal are correct */
 	s1 = fnum_find("BASIC_INFO");
@@ -688,6 +692,7 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 	NAME_PATH_CHECK("ACCESS_INFORMATION", access_information, access_flags);
 #endif
 
+#if 0 /* unused */
 #define UNKNOWN_CHECK(sname, stype, tfield) do { \
 	s1 = fnum_find(sname); \
 	if (s1 && s1->stype.out.tfield != 0) { \
@@ -701,7 +706,7 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
                        #stype, #tfield, \
 		       (uint_t)s1->stype.out.tfield); \
 	}} while (0)
-
+#endif
 	/* now get a bit fancier .... */
 	
 	/* when we set the delete disposition then the link count should drop
