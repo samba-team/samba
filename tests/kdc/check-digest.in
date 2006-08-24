@@ -55,6 +55,8 @@ klist="../../kuser/klist -c $cache"
 kdigest="../../kuser/kdigest --ccache=$cache"
 
 username=foo
+userpassword=digestpassword
+
 password=foobarbaz
 
 KRB5_CONFIG="${objdir}/krb5.conf"
@@ -72,8 +74,8 @@ ${kadmin} \
     --realm-max-renewable-life=1month \
     ${R} || exit 1
 
-${kadmin} add -p $password --use-defaults ${username}@${R} || exit 1
-${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
+${kadmin} add -p $userpassword --use-defaults ${username}@${R} || exit 1
+${kadmin} add -p $password --use-defaults ${server}@${R} || exit 1
 ${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
 ${kadmin} modify --attributes=+allow-digest ${server}@${R} || exit 1
 ${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
@@ -96,7 +98,7 @@ fi
 exitcode=0
 
 echo "Getting digest server tickets"
-${kinit} --password-file=${objdir}/foopassword ${username}@$R || exitcode=1
+${kinit} --password-file=${objdir}/foopassword ${server}@$R || exitcode=1
 ${kdigest} server-init \
     --kerberos-realm=${R} \
     --type=CHAP > /dev/null || exitcode=1
@@ -120,7 +122,7 @@ opaque=`grep opaque= sdigest-reply | cut -f2- -d=`
 ${kdigest} client-request \
     --type=CHAP \
     --username="$username"  \
-    --password="$password"  \
+    --password="$userpassword"  \
     --opaque="$opaque"  \
     --server-identifier="$identifier"  \
     --server-nonce="$snonce" \
