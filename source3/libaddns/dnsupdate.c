@@ -337,9 +337,9 @@ int32 DNSSendUpdate( HANDLE hDNSServer, char *szDomainName, char *szHost,
 
 /********************************************************************
 ********************************************************************/
-
+#ifdef HAVE_GSSAPI_SUPPORT
 int32 DNSSendSecureUpdate( HANDLE hDNSServer,
-		     PCtxtHandle pGSSContext,
+		     gss_ctx_id_t * pGSSContext,
 		     char *pszKeyName,
 		     char *szDomainName,
 		     char *szHost,
@@ -425,7 +425,7 @@ int32 DNSSendSecureUpdate( HANDLE hDNSServer,
 /*********************************************************************
 *********************************************************************/
 
-int32 DNSUpdateGenerateSignature( PCtxtHandle pGSSContext,
+int32 DNSUpdateGenerateSignature( gss_ctx_id_t * pGSSContext,
 			    DNS_UPDATE_REQUEST * pDNSUpdateRequest,
 			    char *pszKeyName )
 {
@@ -492,6 +492,7 @@ int32 DNSUpdateGenerateSignature( PCtxtHandle pGSSContext,
 
 	return dwError;
 }
+#endif	/* HAVE_GSSAPI_SUPPORT */
 
 /*********************************************************************
 *********************************************************************/
