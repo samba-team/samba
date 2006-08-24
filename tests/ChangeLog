@@ -1,3 +1,7 @@
+2006-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kdc.in: Test aes only krbtgt and des3 only service.
+	
 2006-08-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kdc.in: Remove empty lines for picky awks
