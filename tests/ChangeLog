@@ -1,5 +1,7 @@
 2006-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-digest.in: Set allow digest flag on the server.
+
 	* kdc/Makefile.am: Build and run check-digest test.
 
 	* kdc/check-digest.in: Remove channel bindings from CHAP tests,

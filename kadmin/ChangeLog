@@ -1,5 +1,9 @@
-2006-07-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* util.c: Add KRB5_KDB_ALLOW_DIGEST
+	
+2006-07-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* get.c (format_field): optionally print issuer and anchor.
 	
 2006-06-21  Love Hörnquist Åstrand  <lha@it.su.se>

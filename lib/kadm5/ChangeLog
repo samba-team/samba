@@ -1,3 +1,11 @@
+2006-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* get_s.c: Add KRB5_KDB_ALLOW_DIGEST
+
+	* ent_setup.c: Add KRB5_KDB_ALLOW_DIGEST
+
+	* admin.h: Add KRB5_KDB_ALLOW_DIGEST
+	
 2006-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-cracklib.pl: Add password reuse checking. From Harald
