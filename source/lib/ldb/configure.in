@@ -37,8 +37,7 @@ AC_PATH_PROG(GCOV,gcov)
 AC_PATH_PROG(SLAPD,slapd)
 AC_CHECK_HEADERS(stdint.h dlfcn.h)
 AC_CONFIG_HEADER(include/config.h)
-AC_CHECK_LIB(dl, dlopen)
-AC_CHECK_FUNCS(dlopen dlsym dlclose)
+AC_SEARCH_LIBS(dlopen, dl, AC_DEFINE(HAVE_DLOPEN, [1], [have dlopen]))
 
 SHLIBEXT="so" # Should be set based on OS later on
 AC_SUBST(SHLIBEXT)
