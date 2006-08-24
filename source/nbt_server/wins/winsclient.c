@@ -111,7 +111,11 @@ static void nbtd_wins_refresh_handler(struct composite_context *c)
 	/* success - start a periodic name refresh */
 	iname->nb_flags |= NBT_NM_ACTIVE;
 	if (iname->wins_server) {
-		talloc_free(iname->wins_server);
+		/*
+		 * talloc_free() would generate a warning,
+		 * so steal it into the tmp context
+		 */
+		talloc_steal(tmp_ctx, iname->wins_server);
 	}
 	iname->wins_server = talloc_steal(iname, io.out.wins_server);
 
@@ -204,7 +208,11 @@ static void nbtd_wins_register_handler(struct composite_context *c)
 	/* success - start a periodic name refresh */
 	iname->nb_flags |= NBT_NM_ACTIVE;
 	if (iname->wins_server) {
-		talloc_free(iname->wins_server);
+		/*
+		 * talloc_free() would generate a warning,
+		 * so steal it into the tmp context
+		 */
+		talloc_steal(tmp_ctx, iname->wins_server);
 	}
 	iname->wins_server = talloc_steal(iname, io.out.wins_server);
 
