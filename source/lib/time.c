@@ -316,12 +316,12 @@ void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
 
 	d = ts.tv_sec;
 	d += TIME_FIXUP_CONSTANT_INT;
-	d = ts.tv_sec * 1000*1000*10;
+	d *= 1000*1000*10;
 	/* d is now in 100ns units. */
 	d += (ts.tv_nsec / 100);
 
-	nt->high = (uint32)(d / 1000*1000*10);
-	nt->low  = (uint32)(d % 1000*1000*10);
+	nt->low = (uint32)(d & 0xFFFFFFFF);
+	nt->high = (uint32)(d >> 32 );
 }
 
 #else
