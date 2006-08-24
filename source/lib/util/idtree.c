@@ -37,7 +37,9 @@
 
 #define IDR_BITS 5
 #define IDR_FULL 0xfffffffful
+#if 0 /* unused */
 #define TOP_LEVEL_FULL (IDR_FULL >> 30)
+#endif
 #define IDR_SIZE (1 << IDR_BITS)
 #define IDR_MASK ((1 << IDR_BITS)-1)
 #define MAX_ID_SHIFT (sizeof(int)*8 - 1)
