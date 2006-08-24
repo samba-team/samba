@@ -1,5 +1,10 @@
 2006-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/Makefile.am: Build and run check-digest test.
+
+	* kdc/check-digest.in: Remove channel bindings from CHAP tests,
+	there is no such thing for CHAP.
+
 	* kdc/check-kdc.in: Test aes only krbtgt and des3 only service.
 	
 2006-08-21  Love Hörnquist Åstrand  <lha@it.su.se>
