@@ -38,7 +38,6 @@ static const char *progname;
 
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
-#define BACKTRACE_STACK_SIZE 64
 #elif HAVE_LIBEXC_H
 #include <libexc.h>
 #endif
@@ -49,7 +48,9 @@ static const char *progname;
 _PUBLIC_ void call_backtrace(void)
 {
 #ifdef HAVE_BACKTRACE
+#ifndef BACKTRACE_STACK_SIZE
 #define BACKTRACE_STACK_SIZE 64
+#endif
 	void *backtrace_stack[BACKTRACE_STACK_SIZE];
 	size_t backtrace_size;
 	char **backtrace_strings;
@@ -73,6 +74,9 @@ _PUBLIC_ void call_backtrace(void)
 #elif HAVE_LIBEXC
 
 #define NAMESIZE 32 /* Arbitrary */
+#ifndef BACKTRACE_STACK_SIZE
+#define BACKTRACE_STACK_SIZE 64
+#endif
 
 	/* The IRIX libexc library provides an API for unwinding the stack. See
 	 * libexc(3) for details. Apparantly trace_back_stack leaks memory, but
