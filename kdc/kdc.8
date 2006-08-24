@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd December 17, 2004
+.Dd August 24, 2006
 .Dt KDC 8
 .Os HEIMDAL
 .Sh NAME
@@ -184,6 +184,9 @@ specified as:
 And there are some configuration options which do not have
 command-line equivalents:
 .Bl -tag -width "xxx" -offset indent
+.It Li enable-digest = Va boolean
+turn on support for digest processing in the KDC.
+The default is FALSE.
 .It Li check-ticket-addresses = Va boolean
 Check the addresses in the ticket when processing TGS requests.
 The default is TRUE.
