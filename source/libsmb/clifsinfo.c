@@ -282,7 +282,9 @@ BOOL cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *
 	}
 
 	if (pdate) {
-		*pdate = interpret_long_date(rdata);
+		struct timespec ts;
+		ts = interpret_long_date(rdata);
+		*pdate = ts.tv_sec;
 	}
 	if (pserial_number) {
 		*pserial_number = IVAL(rdata,8);

@@ -1077,7 +1077,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	SMB_OFF_T file_size = 0;
 	SMB_BIG_UINT allocation_size = 0;
 	uint32 len;
-	time_t mdate=0, adate=0, cdate=0;
+	struct timespec mdate_ts, adate_ts, create_date_ts;
+	time_t mdate = (time_t)0, adate = (time_t)0, create_date = (time_t)0;
 	char *nameptr;
 	char *last_entry_ptr;
 	BOOL was_8_3;
@@ -1088,6 +1089,10 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	*fname = 0;
 	*out_of_space = False;
 	*got_exact_match = False;
+
+	ZERO_STRUCT(mdate_ts);
+	ZERO_STRUCT(adate_ts);
+	ZERO_STRUCT(create_date_ts);
 
 	if (!conn->dirptr)
 		return(False);
@@ -1197,17 +1202,21 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			if (!(mode & aDIR))
 				file_size = get_file_size(sbuf);
 			allocation_size = get_allocation_size(conn,NULL,&sbuf);
-			mdate = sbuf.st_mtime;
-			adate = sbuf.st_atime;
-			cdate = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+
+			mdate_ts = get_mtimespec(&sbuf);
+			adate_ts = get_atimespec(&sbuf);
+			create_date_ts = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 
 			if (lp_dos_filetime_resolution(SNUM(conn))) {
-				cdate &= ~1;
-				mdate &= ~1;
-				adate &= ~1;
+				dos_filetime_timespec(&create_date_ts);
+				dos_filetime_timespec(&mdate_ts);
+				dos_filetime_timespec(&adate_ts);
 			}
 
-
+			create_date = convert_timespec_to_time_t(create_date_ts);
+			mdate = convert_timespec_to_time_t(mdate_ts);
+			adate = convert_timespec_to_time_t(adate_ts);
+			
 			DEBUG(5,("get_lanman2_dir_entry found %s fname=%s\n",pathreal,fname));
 	  
 			found = True;
@@ -1230,7 +1239,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			srv_put_dos_date2(p,0,cdate);
+			srv_put_dos_date2(p,0,create_date);
 			srv_put_dos_date2(p,4,adate);
 			srv_put_dos_date2(p,8,mdate);
 			SIVAL(p,12,(uint32)file_size);
@@ -1262,7 +1271,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			srv_put_dos_date2(p,0,cdate);
+			srv_put_dos_date2(p,0,create_date);
 			srv_put_dos_date2(p,4,adate);
 			srv_put_dos_date2(p,8,mdate);
 			SIVAL(p,12,(uint32)file_size);
@@ -1306,7 +1315,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			srv_put_dos_date2(p,0,cdate);
+			srv_put_dos_date2(p,0,create_date);
 			srv_put_dos_date2(p,4,adate);
 			srv_put_dos_date2(p,8,mdate);
 			SIVAL(p,12,(uint32)file_size);
@@ -1355,10 +1364,10 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			was_8_3 = mangle_is_8_3(fname, True, conn->params);
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
-			put_long_date(p,cdate); p += 8;
-			put_long_date(p,adate); p += 8;
-			put_long_date(p,mdate); p += 8;
-			put_long_date(p,mdate); p += 8;
+			put_long_date_timespec(p,create_date_ts); p += 8;
+			put_long_date_timespec(p,adate_ts); p += 8;
+			put_long_date_timespec(p,mdate_ts); p += 8;
+			put_long_date_timespec(p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -1401,10 +1410,10 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_DIRECTORY_INFO\n"));
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
-			put_long_date(p,cdate); p += 8;
-			put_long_date(p,adate); p += 8;
-			put_long_date(p,mdate); p += 8;
-			put_long_date(p,mdate); p += 8;
+			put_long_date_timespec(p,create_date_ts); p += 8;
+			put_long_date_timespec(p,adate_ts); p += 8;
+			put_long_date_timespec(p,mdate_ts); p += 8;
+			put_long_date_timespec(p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -1422,10 +1431,10 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_FULL_DIRECTORY_INFO\n"));
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
-			put_long_date(p,cdate); p += 8;
-			put_long_date(p,adate); p += 8;
-			put_long_date(p,mdate); p += 8;
-			put_long_date(p,mdate); p += 8;
+			put_long_date_timespec(p,create_date_ts); p += 8;
+			put_long_date_timespec(p,adate_ts); p += 8;
+			put_long_date_timespec(p,mdate_ts); p += 8;
+			put_long_date_timespec(p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -1467,10 +1476,10 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_ID_FULL_DIRECTORY_INFO\n"));
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
-			put_long_date(p,cdate); p += 8;
-			put_long_date(p,adate); p += 8;
-			put_long_date(p,mdate); p += 8;
-			put_long_date(p,mdate); p += 8;
+			put_long_date_timespec(p,create_date_ts); p += 8;
+			put_long_date_timespec(p,adate_ts); p += 8;
+			put_long_date_timespec(p,mdate_ts); p += 8;
+			put_long_date_timespec(p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -1498,10 +1507,10 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			was_8_3 = mangle_is_8_3(fname, True, conn->params);
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
-			put_long_date(p,cdate); p += 8;
-			put_long_date(p,adate); p += 8;
-			put_long_date(p,mdate); p += 8;
-			put_long_date(p,mdate); p += 8;
+			put_long_date_timespec(p,create_date_ts); p += 8;
+			put_long_date_timespec(p,adate_ts); p += 8;
+			put_long_date_timespec(p,mdate_ts); p += 8;
+			put_long_date_timespec(p,mdate_ts); p += 8;
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
@@ -1558,9 +1567,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SOFF_T(p,0,get_allocation_size(conn,NULL,&sbuf)); /* Number of bytes used on disk - 64 Bit */
 			p+= 8;
 
-			put_long_date(p,sbuf.st_ctime);       /* Inode change Time 64 Bit */
-			put_long_date(p+8,sbuf.st_atime);     /* Last access time 64 Bit */
-			put_long_date(p+16,sbuf.st_mtime);    /* Last modification time 64 Bit */
+			put_long_date_timespec(p,get_ctimespec(&sbuf));       /* Inode change Time 64 Bit */
+			put_long_date_timespec(p+8,get_atimespec(&sbuf));     /* Last access time 64 Bit */
+			put_long_date_timespec(p+16,get_mtimespec(&sbuf));    /* Last modification time 64 Bit */
 			p+= 24;
 
 			SIVAL(p,0,sbuf.st_uid);               /* user id for the owner */
@@ -2839,7 +2848,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	BOOL bad_path = False;
 	BOOL delete_pending = False;
 	int len;
-	time_t c_time;
+	time_t create_time, mtime, atime;
+	struct timespec create_time_ts, mtime_ts, atime_ts;
 	files_struct *fsp = NULL;
 	TALLOC_CTX *data_ctx = NULL;
 	struct ea_list *ea_list = NULL;
@@ -3058,21 +3068,25 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 	pdata = *ppdata;
 
-	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	create_time_ts = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	mtime_ts = get_mtimespec(&sbuf);
+	atime_ts = get_atimespec(&sbuf);
 
 	allocation_size = get_allocation_size(conn,fsp,&sbuf);
 
 	if (fsp) {
 		if (fsp->pending_modtime) {
 			/* the pending modtime overrides the current modtime */
-			sbuf.st_mtime = fsp->pending_modtime;
+			mtime_ts.tv_sec = fsp->pending_modtime;
+			mtime_ts.tv_nsec = 0;
 		}
 	} else {
 		/* Do we have this path open ? */
 		files_struct *fsp1 = file_find_di_first(sbuf.st_dev, sbuf.st_ino);
 		if (fsp1 && fsp1->pending_modtime) {
 			/* the pending modtime overrides the current modtime */
-			sbuf.st_mtime = fsp1->pending_modtime;
+			mtime_ts.tv_sec = fsp->pending_modtime;
+			mtime_ts.tv_nsec = 0;
 		}
 		if (fsp1 && fsp1->initial_allocation_size) {
 			allocation_size = get_allocation_size(conn, fsp1, &sbuf);
@@ -3080,11 +3094,14 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
-		c_time &= ~1;
-		sbuf.st_atime &= ~1;
-		sbuf.st_ctime &= ~1;
-		sbuf.st_mtime &= ~1;
+		dos_filetime_timespec(&create_time_ts);
+		dos_filetime_timespec(&mtime_ts);
+		dos_filetime_timespec(&atime_ts);
 	}
+
+	create_time = convert_timespec_to_time_t(create_time_ts);
+	mtime = convert_timespec_to_time_t(mtime_ts);
+	atime = convert_timespec_to_time_t(atime_ts);
 
 	/* NT expects the name to be in an exact form of the *full*
 	   filename. See the trans2 torture test */
@@ -3099,9 +3116,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		case SMB_INFO_STANDARD:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_STANDARD\n"));
 			data_size = 22;
-			srv_put_dos_date2(pdata,l1_fdateCreation,c_time);
-			srv_put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
-			srv_put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
+			srv_put_dos_date2(pdata,l1_fdateCreation,create_time);
+			srv_put_dos_date2(pdata,l1_fdateLastAccess,atime);
+			srv_put_dos_date2(pdata,l1_fdateLastWrite,mtime); /* write time */
 			SIVAL(pdata,l1_cbFile,(uint32)file_size);
 			SIVAL(pdata,l1_cbFileAlloc,(uint32)allocation_size);
 			SSVAL(pdata,l1_attrFile,mode);
@@ -3112,9 +3129,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_EA_SIZE\n"));
 			data_size = 26;
-			srv_put_dos_date2(pdata,0,c_time);
-			srv_put_dos_date2(pdata,4,sbuf.st_atime);
-			srv_put_dos_date2(pdata,8,sbuf.st_mtime); /* write time */
+			srv_put_dos_date2(pdata,0,create_time);
+			srv_put_dos_date2(pdata,4,atime);
+			srv_put_dos_date2(pdata,8,mtime); /* write time */
 			SIVAL(pdata,12,(uint32)file_size);
 			SIVAL(pdata,16,(uint32)allocation_size);
 			SSVAL(pdata,20,mode);
@@ -3190,20 +3207,17 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				data_size = 40;
 				SIVAL(pdata,36,0);
 			}
-			put_long_date(pdata,c_time);
-			put_long_date(pdata+8,sbuf.st_atime);
-			put_long_date(pdata+16,sbuf.st_mtime); /* write time */
-			put_long_date(pdata+24,sbuf.st_mtime); /* change time */
+			put_long_date_timespec(pdata,create_time_ts);
+			put_long_date_timespec(pdata+8,atime_ts);
+			put_long_date_timespec(pdata+16,mtime_ts); /* write time */
+			put_long_date_timespec(pdata+24,mtime_ts); /* change time */
 			SIVAL(pdata,32,mode);
 
 			DEBUG(5,("SMB_QFBI - "));
-			{
-				time_t create_time = c_time;
-				DEBUG(5,("create: %s ", ctime(&create_time)));
-			}
-			DEBUG(5,("access: %s ", ctime(&sbuf.st_atime)));
-			DEBUG(5,("write: %s ", ctime(&sbuf.st_mtime)));
-			DEBUG(5,("change: %s ", ctime(&sbuf.st_mtime)));
+			DEBUG(5,("create: %s ", ctime(&create_time)));
+			DEBUG(5,("access: %s ", ctime(&atime)));
+			DEBUG(5,("write: %s ", ctime(&mtime)));
+			DEBUG(5,("change: %s ", ctime(&mtime)));
 			DEBUG(5,("mode: %x\n", mode));
 			break;
 
@@ -3277,10 +3291,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		{
 			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ALL_INFORMATION\n"));
-			put_long_date(pdata,c_time);
-			put_long_date(pdata+8,sbuf.st_atime);
-			put_long_date(pdata+16,sbuf.st_mtime); /* write time */
-			put_long_date(pdata+24,sbuf.st_mtime); /* change time */
+			put_long_date_timespec(pdata,create_time_ts);
+			put_long_date_timespec(pdata+8,atime_ts);
+			put_long_date_timespec(pdata+16,mtime_ts); /* write time */
+			put_long_date_timespec(pdata+24,mtime_ts); /* change time */
 			SIVAL(pdata,32,mode);
 			SIVAL(pdata,36,0); /* padding. */
 			pdata += 40;
@@ -3387,10 +3401,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_FILE_NETWORK_OPEN_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_NETWORK_OPEN_INFORMATION\n"));
-			put_long_date(pdata,c_time);
-			put_long_date(pdata+8,sbuf.st_atime);
-			put_long_date(pdata+16,sbuf.st_mtime); /* write time */
-			put_long_date(pdata+24,sbuf.st_mtime); /* change time */
+			put_long_date_timespec(pdata,create_time_ts);
+			put_long_date_timespec(pdata+8,atime_ts);
+			put_long_date_timespec(pdata+16,mtime_ts); /* write time */
+			put_long_date_timespec(pdata+24,mtime_ts); /* change time */
 			SIVAL(pdata,32,allocation_size);
 			SOFF_T(pdata,40,file_size);
 			SIVAL(pdata,48,mode);
@@ -3420,9 +3434,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			SOFF_T(pdata,0,get_allocation_size(conn,fsp,&sbuf)); /* Number of bytes used on disk - 64 Bit */
 			pdata += 8;
 
-			put_long_date(pdata,sbuf.st_ctime);       /* Creation Time 64 Bit */
-			put_long_date(pdata+8,sbuf.st_atime);     /* Last access time 64 Bit */
-			put_long_date(pdata+16,sbuf.st_mtime);    /* Last modification time 64 Bit */
+			put_long_date_timespec(pdata,get_ctimespec(&sbuf));       /* Creation Time 64 Bit */
+			put_long_date_timespec(pdata+8,get_atimespec(&sbuf));     /* Last access time 64 Bit */
+			put_long_date_timespec(pdata+16,get_mtimespec(&sbuf));    /* Last modification time 64 Bit */
 			pdata += 24;
 
 			SIVAL(pdata,0,sbuf.st_uid);               /* user id for the owner */
@@ -3983,10 +3997,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			/* Ignore create time at offset pdata. */
 
 			/* access time */
-			tvs.actime = interpret_long_date(pdata+8);
+			tvs.actime = convert_timespec_to_time_t(interpret_long_date(pdata+8));
 
-			write_time = interpret_long_date(pdata+16);
-			changed_time = interpret_long_date(pdata+24);
+			write_time = convert_timespec_to_time_t(interpret_long_date(pdata+16));
+			changed_time = convert_timespec_to_time_t(interpret_long_date(pdata+24));
 
 			tvs.modtime = MIN(write_time, changed_time);
 
@@ -4212,8 +4226,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #endif /* LARGE_SMB_OFF_T */
 			}
 			pdata+=24;          /* ctime & st_blocks are not changed */
-			tvs.actime = interpret_long_date(pdata); /* access_time */
-			tvs.modtime = interpret_long_date(pdata+8); /* modification_time */
+			tvs.actime = convert_timespec_to_time_t(interpret_long_date(pdata)); /* access_time */
+			tvs.modtime = convert_timespec_to_time_t(interpret_long_date(pdata+8)); /* modification_time */
 			pdata+=16;
 			set_owner = (uid_t)IVAL(pdata,0);
 			pdata += 8;
