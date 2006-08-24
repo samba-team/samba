@@ -61,6 +61,12 @@ static int ldb_list_find(const void *needle,
 		int r;
 
 		test_i = (min_i + max_i) / 2;
+		/* the following cast looks strange, but is
+		 correct. The key to understanding it is that base_p
+		 is a pointer to an array of pointers, so we have to
+		 dereference it after casting to void **. The strange
+		 const in the middle gives us the right type of pointer
+		 after the dereference  (tridge) */
 		r = comp_fn(needle, *(void * const *)(base_p + (size * test_i)));
 		if (r == 0) {
 			/* scan back for first element */
