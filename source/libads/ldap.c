@@ -2691,18 +2691,18 @@ char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name )
 	
 	status = ads_find_machine_acct(ads, (void **)(void *)&res, global_myname());
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(0,("ads_get_dnshostname: Failed to find account for %s\n",
+		DEBUG(0,("ads_get_upn: Failed to find account for %s\n",
 			global_myname()));
 		goto out;
 	}
 		
 	if ( (count = ads_count_replies(ads, res)) != 1 ) {
-		DEBUG(1,("ads_get_dnshostname: %d entries returned!\n", count));
+		DEBUG(1,("ads_get_upn: %d entries returned!\n", count));
 		goto out;
 	}
 		
 	if ( (name = ads_pull_string(ads, ctx, res, "userPrincipalName")) == NULL ) {
-		DEBUG(0,("ads_get_dnshostname: No userPrincipalName attribute!\n"));
+		DEBUG(2,("ads_get_upn: No userPrincipalName attribute!\n"));
 	}
 
 out:

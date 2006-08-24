@@ -55,6 +55,9 @@ int net_ads_usage(int argc, const char **argv)
 	d_printf("    Issue LDAP search queries using a general filter, by DN, or by SID\n");
 	d_printf("keytab\n");
 	d_printf("    Manage a local keytab file based on the machine account in AD\n");
+	d_printf("dns\n");
+	d_printf("    Issue a dynamic DNS update request the server's hostname\n");
+	d_printf("    (using the machine credentials)\n");
 	
 	return -1;
 }
@@ -1136,7 +1139,89 @@ static BOOL net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 	return kerberos_secrets_store_des_salt( salt );
 }
 
-/*********************************************************
+/*******************************************************************
+ Send a DNS update request
+*******************************************************************/
+
+#if defined(WITH_DNS_UPDATES)
+static BOOL net_update_dns( TALLOC_CTX *ctx, ADS_STRUCT *ads ) 
+{
+	int num_addrs;
+	struct in_addr *iplist = NULL;
+	struct dns_rr_ns *nameservers = NULL;
+	int ns_count = 0;
+	int ret = 0;
+	NTSTATUS dns_status;
+	fstring machine_name;
+	fstring dns_server;
+	const char *dnsdomain;
+	ADS_STRUCT *ads_s = NULL;
+		
+	name_to_fqdn( machine_name, global_myname() );
+	strlower_m( machine_name );
+
+	if ( (dnsdomain = strchr_m( machine_name, '.')) == NULL ) {
+		d_printf("No DNS domain configured for %s.  Unable to perform DNS Update.\n",
+			machine_name);
+		goto done;
+	}
+	dnsdomain++;
+
+	dns_status = ads_dns_lookup_ns( ctx, dnsdomain, &nameservers, &ns_count );
+	if ( !NT_STATUS_IS_OK(dns_status) || (ns_count == 0)) {
+		DEBUG(3,("net_ads_join: Failed to find name server for the %s realm\n",
+			ads->config.realm));
+		goto done;
+	}
+
+	/* Get our ip address (not the 127.0.0.x address but a real ip address) */
+
+	num_addrs = get_my_ip_address( &iplist );
+	if ( num_addrs <= 0 ) {
+		DEBUG(4,("net_ads_join: Failed to find my non-loopback IP addresses!\n"));
+		ret = -1;
+		goto done;
+	}
+
+	/* Drop the user creds  */
+
+	ads_kdestroy( NULL );
+
+	ads_s = ads_init( ads->server.realm, ads->server.workgroup, ads->server.ldap_server );
+	if ( !ads_s ) {
+		DEBUG(1,("net_ads_join: ads_init() failed!\n"));
+		ret = -1;
+		goto done;
+	}
+
+	/* kinit with the machine password */
+
+	asprintf( &ads_s->auth.user_name, "%s$", global_myname() );
+	ads_s->auth.password = secrets_fetch_machine_password( lp_workgroup(), NULL, NULL );
+	ads_s->auth.realm = SMB_STRDUP( lp_realm() );
+	ads_kinit_password( ads_s );
+
+	/* Now perform the dns update - we'll try non-secure and if we fail, we'll 
+	   follow it up with a secure update */
+
+	fstrcpy( dns_server, nameservers[0].hostname );
+
+	ret = DoDNSUpdate(dns_server, dnsdomain, machine_name, iplist, num_addrs );
+	if ( ret ) {
+		DEBUG(1, ("Error creating dns update!\n"));
+	}
+
+done:
+	SAFE_FREE( iplist );
+	if ( ads_s )
+		ads_destroy( &ads_s );
+		
+	return (ret == 0);
+}
+#endif
+
+
+/*******************************************************************
  utility function to parse an integer parameter from 
  "parameter = value"
 **********************************************************/
@@ -1174,6 +1259,7 @@ int net_ads_join(int argc, const char **argv)
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	NTSTATUS nt_status;
+	char *machine_account = NULL;
 	const char *short_domain_name = NULL;
 	char *tmp_password, *password;
 	struct cldap_netlogon_reply cldap_reply;
@@ -1352,8 +1438,19 @@ int net_ads_join(int argc, const char **argv)
 		DEBUG(1,("Error creating host keytab!\n"));
 	}
 
+#if defined(WITH_DNS_UPDATES)
+	/* We enter this block with user creds */
+	
+	if ( !net_update_dns( ctx, ads ) ) {
+		d_fprintf( stderr, "DNS update failed!\n" );
+	}
+	
+	/* exit from this block using machine creds */
+#endif
+
 	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->config.realm);
 
+	SAFE_FREE(machine_account);
 	TALLOC_FREE( ctx );
 	ads_destroy(&ads);
 	
@@ -1361,11 +1458,85 @@ int net_ads_join(int argc, const char **argv)
 
 fail:
 	/* issue an overall failure message at the end. */
-	d_printf("Failed to join domain: %s\n", 
-	         get_friendly_nt_error_msg(nt_status));
+	d_printf("Failed to join domain: %s\n", get_friendly_nt_error_msg(nt_status));
+
+	SAFE_FREE(machine_account);
+	TALLOC_FREE( ctx );
+        ads_destroy(&ads);
+
+        return -1;
+
+}
+
+/*******************************************************************
+ ********************************************************************/
+ 
+static int net_ads_dns_usage(int argc, const char **argv)
+{
+#if defined(WITH_DNS_UPDATES)
+	d_printf("net ads dns <command>\n");
+	d_printf("Valid commands:\n");
+	d_printf("   register         Issue a dynamic DNS update request for our hostname\n");
+
+	return 0;
+#else
+	d_fprintf(stderr, "DNS update support not enabled at compile time!\n");
+	return -1;
+#endif
+}
+
+/*******************************************************************
+ ********************************************************************/
+ 
+static int net_ads_dns(int argc, const char **argv)
+{
+#if defined(WITH_DNS_UPDATES)
+	ADS_STRUCT *ads;
+	ADS_STATUS status;
+	TALLOC_CTX *ctx;
+	BOOL register_dns = False;
+	int i;
+	
+	status = ads_startup(True, &ads);
+	if ( !ADS_ERR_OK(status) ) {
+		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
+		return -1;
+	}
+
+	if (!(ctx = talloc_init("net_ads_dns"))) {
+		DEBUG(0, ("Could not initialise talloc context\n"));
+		return -1;
+	}
+
+	/* process additional command line args */
+	
+	for ( i=0; i<argc; i++ ) {
+		if ( strequal(argv[i], "register") ) {
+			register_dns = True;
+		}
+		else {
+			d_fprintf(stderr, "Bad option: %s\n", argv[i]);
+			return -1;
+		}
+	}
+	
+	if ( !net_update_dns( ctx, ads ) ) {
+		d_fprintf( stderr, "DNS update failed!\n" );
+		ads_destroy( &ads );
+		TALLOC_FREE( ctx );
+		return -1;
+	}
+	
+	d_fprintf( stderr, "Successfully registered hostname with DNS\n" );
+
 	ads_destroy(&ads);
 	TALLOC_FREE( ctx );
+	
+	return 0;
+#else
+	d_fprintf(stderr, "DNS update support not enabled at compile time!\n");
 	return -1;
+#endif
 }
 
 /*******************************************************************
@@ -2026,6 +2197,7 @@ int net_ads_help(int argc, const char **argv)
 		{"SEARCH", net_ads_search_usage},
 		{"INFO", net_ads_info},
 		{"JOIN", net_ads_join_usage},
+		{"DNS", net_ads_dns_usage},
 		{"LEAVE", net_ads_leave},
 		{"STATUS", net_ads_status},
 		{"PASSWORD", net_ads_password},
@@ -2046,6 +2218,7 @@ int net_ads(int argc, const char **argv)
 		{"STATUS", net_ads_status},
 		{"USER", net_ads_user},
 		{"GROUP", net_ads_group},
+		{"DNS", net_ads_dns},
 		{"PASSWORD", net_ads_password},
 		{"CHANGETRUSTPW", net_ads_changetrustpw},
 		{"PRINTER", net_ads_printer},
