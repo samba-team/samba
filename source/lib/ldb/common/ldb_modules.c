@@ -135,6 +135,8 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 	return NULL;
 }
 
+#ifndef STATIC_ldb_MODULES
+
 #ifdef HAVE_LDAP
 #define LDAP_INIT ldb_ldap_init,
 #else
@@ -147,7 +149,6 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 #define SQLITE3_INIT
 #endif
 
-#ifndef STATIC_ldb_MODULES
 #define STATIC_ldb_MODULES \
 	{	\
 		LDAP_INIT \
