@@ -4612,7 +4612,7 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	switch (ctr->level) {
 		case 2:
 		{
-			fstring group_name;
+			fstring group_name, acct_name;
 			NTSTATUS status;
 
 			/* We currently do not support renaming groups in the
@@ -4624,12 +4624,19 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 				return NT_STATUS_SPECIAL_ACCOUNT;
 			}
 
-			/* There has to be a valid name */
+			/* There has to be a valid name (and it has to be different) */
+
 			if ( !ctr->alias.info2.name.string ) 
 				return NT_STATUS_INVALID_PARAMETER;
 
-			unistr2_to_ascii( info.acct_name, ctr->alias.info2.name.string, 
-				sizeof(info.acct_name)-1 );
+			unistr2_to_ascii( acct_name, ctr->alias.info2.name.string, 
+				sizeof(acct_name)-1 );
+
+			/* If the name is the same just reply "ok".  Yes this
+			   doesn't allow you to change the case of a group name. */
+
+			if ( strequal( acct_name, info.acct_name ) )
+				return NT_STATUS_OK;
 
 			/* make sure the name doesn't already exist as a user 
 			   or local group */
