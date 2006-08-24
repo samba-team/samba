@@ -36,11 +36,6 @@
 #include "includes.h"
 #include "ldb/include/includes.h"
 
-#define ASQ_CTRL_SUCCESS			0
-#define ASQ_CTRL_INVALID_ATTRIBUTE_SYNTAX	21
-#define ASQ_CTRL_UNWILLING_TO_PERFORM		53
-#define ASQ_CTRL_AFFECTS_MULTIPLE_DSA		71
-
 struct asq_context {
 
 	enum {ASQ_SEARCH_BASE, ASQ_SEARCH_MULTI} step;
@@ -51,7 +46,12 @@ struct asq_context {
 
 	const char * const *req_attrs;
 	char *req_attribute;
-	int asq_ret;
+	enum {
+		ASQ_CTRL_SUCCESS			= 0,
+		ASQ_CTRL_INVALID_ATTRIBUTE_SYNTAX	= 21,
+		ASQ_CTRL_UNWILLING_TO_PERFORM		= 53,
+		ASQ_CTRL_AFFECTS_MULTIPLE_DSA		= 71
+	} asq_ret;
 
 	struct ldb_request *base_req;
 	struct ldb_reply *base_res;
