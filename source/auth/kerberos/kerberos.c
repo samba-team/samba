@@ -28,8 +28,6 @@
 
 #ifdef HAVE_KRB5
 
-#define LIBADS_CCACHE_NAME "MEMORY:libads"
-
 /*
   simulate a kinit, putting the tgt in the given credentials cache. 
   Orignally by remus@snapserver.com
