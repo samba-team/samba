@@ -34,9 +34,7 @@
 #define HWM_USER   "USER HWM"
 
 /* idmap version determines auto-conversion */
-#if 0 /* unused */
 #define IDMAP_VERSION 2
-#endif
 
 /*****************************************************************************
  Initialise idmap database. 
@@ -46,6 +44,7 @@ NTSTATUS samba3_read_idmap(const char *fn, TALLOC_CTX *ctx, struct samba3_idmapd
 {
 	TDB_CONTEXT *tdb;
 	TDB_DATA key, val;
+	int32_t version;
 
 	/* Open idmap repository */
 	if (!(tdb = tdb_open(fn, 0, TDB_DEFAULT, O_RDONLY, 0644))) {
@@ -57,6 +56,13 @@ NTSTATUS samba3_read_idmap(const char *fn, TALLOC_CTX *ctx, struct samba3_idmapd
 	idmap->mappings = NULL;
 	idmap->user_hwm = tdb_fetch_int32(tdb, HWM_USER);
 	idmap->group_hwm = tdb_fetch_int32(tdb, HWM_GROUP);
+
+	/* check against earlier versions */
+	version = tdb_fetch_int32(tdb, "IDMAP_VERSION");
+	if (version != IDMAP_VERSION) {
+		DEBUG(0, ("idmap_init: Unable to open idmap database, it's in an old format!\n"));
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
 
 	for (key = tdb_firstkey(tdb); key.dptr; key = tdb_nextkey(tdb, key)) 
 	{
