@@ -235,13 +235,13 @@ static struct timespec nt_time_to_unix_timespec(NTTIME *nt)
 	/* Now adjust by 369 years to make the secs since 1970 */
 	d -= TIME_FIXUP_CONSTANT_INT;
 
-	if (d <= TIME_T_MIN) {
+	if (((time_t)d) <= TIME_T_MIN) {
 		ret.tv_sec = TIME_T_MIN;
 		ret.tv_nsec = 0;
 		return ret;
 	}
 
-	if (d >= TIME_T_MAX) {
+	if (((time_t)d) >= TIME_T_MAX) {
 		ret.tv_sec = TIME_T_MAX;
 		ret.tv_nsec = 0;
 		return ret;
@@ -283,7 +283,7 @@ time_t nt_time_to_unix_abs(const NTTIME *nt)
 	d += 1000*1000*10/2;
 	d /= 1000*1000*10;
 
-	if (!(TIME_T_MIN <= d && d <= TIME_T_MAX)) {
+	if (!(TIME_T_MIN <= ((time_t)d) && ((time_t)d) <= TIME_T_MAX)) {
 		return (time_t)0;
 	}
 
