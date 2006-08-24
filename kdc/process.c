@@ -53,6 +53,7 @@ krb5_kdc_process_generic_request(krb5_context context,
 {
     KDC_REQ req;
     Ticket ticket;
+    DigestREQ digestreq;
     krb5_error_code ret;
     size_t i;
 
@@ -74,6 +75,10 @@ krb5_kdc_process_generic_request(krb5_context context,
     }else if(decode_Ticket(buf, len, &ticket, &i) == 0){
 	ret = _kdc_do_524(context, config, &ticket, reply, from, addr);
 	free_Ticket(&ticket);
+	return ret;
+    }else if(decode_DigestREQ(buf, len, &digestreq, &i) == 0){
+	ret = _kdc_do_digest(context, config, &digestreq, reply, from, addr);
+	free_DigestREQ(&digestreq);
 	return ret;
     } else if(_kdc_maybe_version4(buf, len)){
 	*prependlength = FALSE; /* elbitapmoc sdrawkcab XXX */
