@@ -119,39 +119,22 @@ find_etype(krb5_context context, const hdb_entry_ex *princ,
 krb5_error_code
 _kdc_find_keys(krb5_context context, 
 	       krb5_kdc_configuration *config,
-	       const hdb_entry_ex *client,
-	       const char *client_name,
-	       const hdb_entry_ex *server,
-	       const char *server_name,
-	       Key **ckey,
-	       krb5_enctype *cetype,
-	       Key **skey,
-	       krb5_enctype *setype, 
+	       const char *type,
+	       const hdb_entry_ex *entry,
+	       const char *entry_name,
+	       Key **key,
+	       krb5_enctype *etype,
 	       krb5_enctype *etypes,
 	       unsigned num_etypes)
 {
     krb5_error_code ret;
 
-    if(client){
-	/* find client key */
-	ret = find_etype(context, client, etypes, num_etypes, ckey, cetype);
-	if (ret) {
-	    kdc_log(context, config, 0, 
-		    "Client (%s) has no support for etypes", client_name);
-	    return ret;
-	}
-    }
-
-    if(server){
-	/* find server key */
-	ret = find_etype(context, server, etypes, num_etypes, skey, setype);
-	if (ret) {
-	    kdc_log(context, config, 0, 
-		    "Server (%s) has no support for etypes", server_name);
-	    return ret;
-	}
-    }
-    return 0;
+    /* find client key */
+    ret = find_etype(context, entry, etypes, num_etypes, key, etype);
+    if (ret)
+	kdc_log(context, config, 0, 
+		"%s (%s) has no support for etypes", type, entry_name);
+    return ret;
 }
 
 krb5_error_code
@@ -849,7 +832,7 @@ _kdc_as_rep(krb5_context context,
     AS_REP rep;
     KDCOptions f = b->kdc_options;
     hdb_entry_ex *client = NULL, *server = NULL;
-    krb5_enctype cetype, setype;
+    krb5_enctype cetype, setype, sessionetype;
     EncTicketPart et;
     EncKDCRepPart ek;
     krb5_principal client_princ = NULL, server_princ = NULL;
@@ -1186,14 +1169,53 @@ _kdc_as_rep(krb5_context context,
 	goto out2;
     }
     
-    ret = _kdc_find_keys(context, config, 
+    /*
+     * Find the client key (for preauth ENC-TS verification and reply
+     * encryption).  Then the best encryption type for the KDC and
+     * last the best session key that shared between the client and
+     * KDC runtime enctypes.
+     */
+
+    ret = _kdc_find_keys(context, config, "Client",
 			 client, client_name, 
-			 server, server_name, 
-			 &ckey, &cetype, &skey, &setype,
+			 &ckey, &cetype,
 			 b->etype.val, b->etype.len);
     if(ret)
 	goto out;
 	
+    ret = _kdc_get_preferred_key(context, config,
+				 server, server_name,
+				 &setype, &skey);
+    if(ret)
+	goto out;
+
+    {
+	const krb5_enctype *p;
+	int i, j;
+
+	p = krb5_kerberos_enctypes(context);
+
+	sessionetype = ETYPE_NULL;
+
+	for (i = 0; p[i] != ETYPE_NULL && sessionetype == ETYPE_NULL; i++) {
+	    if (krb5_enctype_valid(context, p[i]) != 0)
+		continue;
+	    for (j = 0; j < b->etype.len; j++) {
+		if (p[i] == b->etype.val[j]) {
+		    sessionetype = p[i];
+		    break;
+		}
+	    }
+	}
+	if (sessionetype == ETYPE_NULL) {
+	    kdc_log(context, config, 0, 
+		    "Client (%s) from %s has no common enctypes with KDC"
+		    "to use for the session key",
+		    client_name, from);
+	    goto out;
+	}
+    }
+
     {
 	struct rk_strpool *p = NULL;
 	char *str;
@@ -1300,7 +1322,7 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
-    krb5_generate_random_keyblock(context, setype, &et.key);
+    krb5_generate_random_keyblock(context, sessionetype, &et.key);
     copy_PrincipalName(&rep.cname, &et.cname);
     copy_Realm(&rep.crealm, &et.crealm);
     
