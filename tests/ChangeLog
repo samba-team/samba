@@ -1,5 +1,8 @@
 2006-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-digest.in: Use the server as the server and set
+	diffrent password for the user and service.
+
 	* kdc/check-digest.in: Set allow digest flag on the server.
 
 	* kdc/Makefile.am: Build and run check-digest test.

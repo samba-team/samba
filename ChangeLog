@@ -1,3 +1,79 @@
+2006-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/digest.c: Simply the disabled-service case.  Check the
+	allow-digest flag in the HDB entry for the client.
+
+	* kdc/process.c (krb5_kdc_process_generic_request): check if we
+	got a digest request and process it.
+
+	* kdc/main.c: Register hdb keytab operations.
+
+	* kdc/kdc.8: document [kdc]enable-digest=boolean
+
+	* kdc/Makefile.am: add digest to libkdc
+
+	* kdc/digest.c: Make a return a goto to avoid freeing un-inited
+	memory in cleanup code.
+
+	* kdc/default_config.c (krb5_kdc_default_config): default to all
+	bits set to zero.
+
+	* kdc/kdc.h (krb5_kdc_configuration): Add enable_digest
+
+	* kdc/headers.h: Include <digest_asn1.h>.
+
+	* lib/krb5/context.c (krb5_kerberos_enctypes): new function,
+	returns the list of Kerberos encryption types sorted in order of
+	most preferred to least preferred encryption type.
+
+	* kdc/misc.c (_kdc_get_preferred_key): new function, Use the order
+	list of preferred encryption types and sort the available keys and
+	return the most preferred key.
+
+	* kdc/krb5tgs.c: Adapt to the new sigature of _kdc_find_keys().
+
+	* kdc/kerberos5.c: Handle session key etype separately from the
+	tgt etype, now the krbtgt can be a aes-only key without the need
+	to support not-as-good etypes for the krbtgt.
+	
+2006-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/misc.c: Change _kdc_db_fetch() to return the database
+	pointer to if needed by the consumer.
+
+	* kdc/krb5tgs.c: Change _kdc_db_fetch() to return the database
+	pointer to if needed by the consumer.
+
+	* kdc/kerberos5.c: Change _kdc_db_fetch() to return the database
+	pointer to if needed by the consumer.
+	
+	* kdc/kerberos4.c: Change _kdc_db_fetch() to return the database
+	pointer to if needed by the consumer.
+	
+	* kdc/kaserver.c: Change _kdc_db_fetch() to return the database
+	pointer to if needed by the consumer.
+
+	* kdc/524.c: Change _kdc_db_fetch() to return the database pointer
+	to if needed by the consumer.
+
+	* kuser/kdigest-commands.in: Add --kerberos-realm, add client
+	request command.
+
+	* lib/krb5/Makefile.am: digest.c
+	
+	* lib/krb5/krb5.h: Add digest glue.
+
+	* lib/krb5/digest.c (krb5_digest_set_authentication_user): use
+	krb5_principal
+	
+	* lib/krb5/digest.c: Add digest support to the client side.
+	
+2006-08-21  Love Hörnquist Åstrand  <lha@it.kth.se>
+
+	* lib/krb5/rd_rep.c (krb5_rd_rep): free krb5_ap_rep_enc_part on
+	error and set return pointer to NULL
+	(krb5_free_ap_rep_enc_part): permit freeing of NULL
+	
 2006-08-18  Love Hörnquist Åstrand  <lha@it.kth.se>
 
 	* kdc/{Makefile.am,kdigest.c,kdigest-commands.in}:
