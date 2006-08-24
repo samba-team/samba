@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -88,6 +88,7 @@
 #include <parse_units.h>
 #include <krb5.h>
 #include <krb5_locl.h>
+#include <digest_asn1.h>
 #include <hdb.h>
 #include <hdb_err.h>
 #include <der.h> /* copy_octet_string */
