@@ -10,6 +10,7 @@
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
+datarootdir=@datarootdir@
 
 selftest_prefix=@selftest_prefix@
 smbtorture4_path=@smbtorture4_path@
