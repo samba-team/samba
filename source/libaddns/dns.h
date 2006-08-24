@@ -152,6 +152,11 @@
 #  endif /* don't lie.  If we don't have it, then don't use it */
 #endif
 
+/* needed on Sun boxes */
+#ifndef INADDR_NONE
+#define INADDR_NONE          0xFFFFFFFF
+#endif
+
 #include "dnserr.h"
 
 
