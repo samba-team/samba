@@ -80,6 +80,8 @@ typedef struct krb5_kdc_configuration {
 
     int pkinit_dh_min_bits;
 
+    int enable_digest;
+
 } krb5_kdc_configuration;
 
 #include <kdc-protos.h>
