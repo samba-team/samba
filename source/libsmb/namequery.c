@@ -1024,11 +1024,12 @@ static BOOL resolve_hosts(const char *name, int name_type,
 static BOOL resolve_ads(const char *name, int name_type,
                          struct ip_service **return_iplist, int *return_count)
 {
-	int 			i = 0;
+	int 			i, j;
 	NTSTATUS  		status;
 	TALLOC_CTX		*ctx;
 	struct dns_rr_srv	*dcs = NULL;
 	int			numdcs = 0;
+	int			numaddrs = 0;
 
 	if ( name_type != 0x1c )
 		return False;
@@ -1045,24 +1046,44 @@ static BOOL resolve_ads(const char *name, int name_type,
 	if ( !NT_STATUS_IS_OK( status ) ) {
 		return False;
 	}
-		
-	if ( (*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, numdcs)) == NULL ) {
-		DEBUG(0,("resolve_ads: malloc failed for %d entries\n", numdcs ));
-		return False;
-	}
-
-	*return_count = 0;
 
 	for (i=0;i<numdcs;i++) {
+		numaddrs += MAX(dcs[i].num_ips,1);
+	}
+		
+	if ( (*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, numaddrs)) == NULL ) {
+		DEBUG(0,("resolve_ads: malloc failed for %d entries\n", numaddrs ));
+		return False;
+	}
+	
+	/* now unroll the list of IP addresses */
+
+	*return_count = 0;
+	i = 0;
+	j = 0;
+	while ( i < numdcs && (*return_count<numaddrs) ) {
 		struct ip_service *r = &(*return_iplist)[*return_count];
 
-		/* use the IP address from the SRV structure if we have one */
-		if ( is_zero_ip( dcs[i].ip ) )
-			r->ip   = *interpret_addr2(dcs[i].hostname);
-		else
-			r->ip = dcs[i].ip;
-
 		r->port = dcs[i].port;
+		
+		/* If we don't have an IP list for a name, lookup it up */
+		
+		if ( !dcs[i].ips ) {
+			r->ip = *interpret_addr2(dcs[i].hostname);
+			i++;
+			j = 0;
+		} else {
+			/* use the IP addresses from the SRV sresponse */
+			
+			if ( j >= dcs[i].num_ips ) {
+				i++;
+				j = 0;
+				continue;
+			}
+			
+			r->ip = dcs[i].ips[j];
+			j++;
+		}
 			
 		/* make sure it is a valid IP.  I considered checking the negative
 		   connection cache, but this is the wrong place for it.  Maybe only
@@ -1358,7 +1379,6 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 
 	*ordered = False;
 
-
 	/* if we are restricted to solely using DNS for looking
 	   up a domain controller, make sure that host lookups
 	   are enabled for the 'name resolve order'.  If host lookups
@@ -1374,9 +1394,9 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 			/* DNS SRV lookups used by the ads resolver
 			   are already sorted by priority and weight */
 			*ordered = True;
+		} else {
+                        fstrcpy( resolve_order, "NULL" );
 		}
-		else
-			fstrcpy( resolve_order, "NULL" );
 	}
 
 	/* fetch the server we have affinity for.  Add the 

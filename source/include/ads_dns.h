@@ -47,10 +47,11 @@ struct dns_rr_srv {
 	uint16 priority;
 	uint16 weight;
 	uint16 port;
-	struct in_addr ip;
+	size_t num_ips;
+	struct in_addr *ips;	/* support multi-homed hosts */
 };
 
-/* SRV records */
+/* NS records */
 
 struct dns_rr_ns {
 	const char *hostname;

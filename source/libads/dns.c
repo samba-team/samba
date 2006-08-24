@@ -398,14 +398,45 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dn
 		}
 
 		/* only interested in A records as a shortcut for having to come 
-		   back later and lookup the name */
+		   back later and lookup the name.  For multi-homed hosts, the 
+		   number of additional records and exceed the number of answer 
+		   records. */
+		  
 
 		if ( (rr.type != T_A) || (rr.rdatalen != 4) ) 
 			continue;
 
+		/* FIX ME!!! Should this be a list of IP addresses for 
+		   each host? */ 
+		   
 		for ( i=0; i<idx; i++ ) {
 			if ( strcmp( rr.hostname, dcs[i].hostname ) == 0 ) {
-				uint8 *buf = (uint8*)&dcs[i].ip.s_addr;
+				int num_ips = dcs[i].num_ips;
+				uint8 *buf;
+				struct in_addr *tmp_ips;
+
+				/* allocate new memory */
+				
+				if ( dcs[i].num_ips == 0 ) {
+					if ( (dcs[i].ips = TALLOC_ARRAY( dcs, 
+						struct in_addr, 1 )) == NULL ) 
+					{
+						return NT_STATUS_NO_MEMORY;
+					}
+				} else {
+					if ( (tmp_ips = TALLOC_REALLOC_ARRAY( dcs, dcs[i].ips,
+						struct in_addr, dcs[i].num_ips+1)) == NULL ) 
+					{
+						return NT_STATUS_NO_MEMORY;
+					}
+					
+					dcs[i].ips = tmp_ips;
+				}
+				dcs[i].num_ips++;
+				
+				/* copy the new IP address */
+				
+				buf = (uint8*)&dcs[i].ips[num_ips].s_addr;
 				memcpy( buf, rr.rdata, 4 );
 			}
 		}
