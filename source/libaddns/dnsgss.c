@@ -28,6 +28,8 @@
 #include <ctype.h>
 
 
+#ifdef HAVE_GSSAPI_SUPPORT
+
 /*********************************************************************
 *********************************************************************/
 
@@ -89,7 +91,7 @@ int32 DNSBuildTKeyQueryRequest( char *szKeyName,
 /*********************************************************************
 *********************************************************************/
 
-int32 DNSVerifyResponseMessage_GSSSuccess( PCtxtHandle pGSSContext,
+int32 DNSVerifyResponseMessage_GSSSuccess( gss_ctx_id_t * pGSSContext,
 				     DNS_RR_RECORD * pClientTKeyRecord,
 				     DNS_RESPONSE * pDNSResponse )
 {
@@ -133,7 +135,7 @@ int32 DNSVerifyResponseMessage_GSSSuccess( PCtxtHandle pGSSContext,
 /*********************************************************************
 *********************************************************************/
 
-int32 DNSVerifyResponseMessage_GSSContinue( PCtxtHandle pGSSContext,
+int32 DNSVerifyResponseMessage_GSSContinue( gss_ctx_id_t * pGSSContext,
 				      DNS_RR_RECORD * pClientTKeyRecord,
 				      DNS_RESPONSE * pDNSResponse,
 				      uint8 ** ppServerKeyData,
@@ -283,8 +285,8 @@ int32 DNSNegotiateContextAndSecureUpdate( HANDLE hDNSServer,
 {
 	int32 dwError = 0;
 	char *pszKeyName = NULL;
-	CtxtHandle ContextHandle = 0;
-	CtxtHandle *pContextHandle = &ContextHandle;
+	gss_ctx_id_t ContextHandle = 0;
+	gss_ctx_id_t *pContextHandle = &ContextHandle;
 
 	dwError = DNSGenerateKeyName( &pszKeyName );
 	BAIL_ON_ERROR( dwError );
@@ -344,7 +346,7 @@ int32 DNSGetTKeyData( DNS_RR_RECORD * pTKeyRecord,
 int32 DNSNegotiateSecureContext( HANDLE hDNSServer,
 			   char *szDomain,
 			   char *szServerName,
-			   char *szKeyName, PCtxtHandle pGSSContext )
+			   char *szKeyName, gss_ctx_id_t * pGSSContext )
 {
 	int32 dwError = 0;
 	int32 dwMajorStatus = 0;
@@ -413,7 +415,7 @@ int32 DNSNegotiateSecureContext( HANDLE hDNSServer,
 	BAIL_ON_SEC_ERROR( dwMajorStatus );
 	printf( "After gss_import_name %d\n", dwMajorStatus );
 
-	memset( pGSSContext, 0, sizeof( CtxtHandle ) );
+	memset( pGSSContext, 0, sizeof( gss_ctx_id_t ) );
 	*pGSSContext = GSS_C_NO_CONTEXT;
 
 	do {
@@ -548,3 +550,5 @@ void display_status( const char *msg, OM_uint32 maj_stat, OM_uint32 min_stat )
 	display_status_1( msg, maj_stat, GSS_C_GSS_CODE );
 	display_status_1( msg, min_stat, GSS_C_MECH_CODE );
 }
+
+#endif	/* HAVE_GSSAPI_SUPPORT */

@@ -40,8 +40,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdarg.h>
+
+#ifdef HAVE_UUID_UUID_H
 #include <uuid/uuid.h>
+#endif
+
+#ifdef HAVE_KRB5_H
 #include <krb5.h>
+#endif
 
 #if HAVE_GSSAPI_H
 #include <gssapi.h>
@@ -49,6 +56,10 @@
 #include <gssapi/gssapi.h>
 #elif HAVE_GSSAPI_GSSAPI_GENERIC_H
 #include <gssapi/gssapi_generic.h>
+#endif
+
+#if defined(HAVE_GSSAPI_H) || defined(HAVE_GSSAPI_GSSAPI_H) || defined(HAVE_GSSAPI_GSSAPI_GENERIC_H)
+#define HAVE_GSSAPI_SUPPORT    1
 #endif
 
 #include <talloc.h>
@@ -238,7 +249,6 @@ TXT             16 text strings
 #define  DNS_REFUSED		5
 
 typedef long HANDLE;
-typedef gss_ctx_id_t CtxtHandle, *PCtxtHandle;
 
 #ifndef _BOOL
 typedef int BOOL;
@@ -485,28 +495,36 @@ void DNSFreeSendBufferContext( HANDLE hSendBuffer );
 int32 DNSGetSendBufferContextSize( HANDLE hSendBuffer );
 uint8 *DNSGetSendBufferContextBuffer( HANDLE hSendBuffer );
 
-/* from linux/dnsgss.c */
 
-int32 DNSVerifyResponseMessage_GSSSuccess( PCtxtHandle pGSSContext, DNS_RR_RECORD * pClientTKeyRecord, DNS_RESPONSE * pDNSResponse ); 
-int32 DNSVerifyResponseMessage_GSSContinue( PCtxtHandle pGSSContext, DNS_RR_RECORD * pClientTKeyRecord, DNS_RESPONSE * pDNSResponse, uint8 ** ppServerKeyData, int16 * pwServerKeyDataSize );
+/* from dnsgss.c */
+
+#ifdef HAVE_GSSAPI_SUPPORT
+
+int32 DNSVerifyResponseMessage_GSSSuccess( gss_ctx_id_t * pGSSContext, DNS_RR_RECORD * pClientTKeyRecord, DNS_RESPONSE * pDNSResponse ); 
+int32 DNSVerifyResponseMessage_GSSContinue( gss_ctx_id_t * pGSSContext, DNS_RR_RECORD * pClientTKeyRecord, DNS_RESPONSE * pDNSResponse, uint8 ** ppServerKeyData, int16 * pwServerKeyDataSize );
 int32 DNSResponseGetRCode( DNS_RESPONSE * pDNSResponse, int16 * pwRCode );
 int32 DNSResponseGetTSIGRecord( DNS_RESPONSE * pDNSResponse, DNS_RR_RECORD ** ppTSIGRecord ); 
 int32 DNSCompareTKeyRecord( DNS_RR_RECORD * pClientTKeyRecord, DNS_RR_RECORD * pTKeyRecord );
 int32 DNSBuildTKeyQueryRequest( char *szKeyName, uint8 * pKeyData, int32 dwKeyLen, DNS_REQUEST ** ppDNSRequest ); 
 int32 DNSResponseGetTKeyRecord( DNS_RESPONSE * pDNSResponse, DNS_RR_RECORD ** ppTKeyRecord ); 
 int32 DNSGetTKeyData( DNS_RR_RECORD * pTKeyRecord, uint8 ** ppKeyData, int16 * pwKeyDataSize ); 
-int32 DNSNegotiateSecureContext( HANDLE hDNSServer, char *szDomain, char *szServerName, char *szKeyName, PCtxtHandle pGSSContext ); 
+int32 DNSNegotiateSecureContext( HANDLE hDNSServer, char *szDomain, char *szServerName, char *szKeyName, gss_ctx_id_t * pGSSContext ); 
 void display_status( const char *msg, OM_uint32 maj_stat, OM_uint32 min_stat ); 
 int32 DNSNegotiateContextAndSecureUpdate( HANDLE hDNSServer, char *szServiceName, char *szDomainName, char *szHost, int32 dwIPAddress );
 
-/* from linux/dnsupdate.c */
+#endif	/* HAVE_GSSAPI_SUPPORT */
+
+/* from dnsupdate.c */
 
 int32 DNSSendUpdate( HANDLE hDNSServer, char *szDomainName, char *szHost, struct in_addr *iplist, int num_addrs, DNS_UPDATE_RESPONSE ** ppDNSUpdateResponse );
-int32 DNSSendSecureUpdate( HANDLE hDNSServer, PCtxtHandle pGSSContext, char *pszKeyName, char *szDomainName, char *szHost, int32 dwIP, DNS_UPDATE_RESPONSE ** ppDNSUpdateResponse );
-int32 DNSUpdateGenerateSignature( PCtxtHandle pGSSContext, DNS_UPDATE_REQUEST * pDNSUpdateRequest, char *pszKeyName ); 
 int32 DNSBuildSignatureBuffer( int32 dwMaxSignatureSize, uint8 ** ppSignature ); 
 int32 DNSBuildMessageBuffer( DNS_UPDATE_REQUEST * pDNSUpdateRequest, char *szKeyName, int32 * pdwTimeSigned, int16 * pwFudge, uint8 ** ppMessageBuffer, int32 * pdwMessageSize ); 
 int32 DNSClose( HANDLE hDNSUpdate );
+
+#ifdef HAVE_GSSAPI_SUPPORT
+int32 DNSSendSecureUpdate( HANDLE hDNSServer, gss_ctx_id_t * pGSSContext, char *pszKeyName, char *szDomainName, char *szHost, int32 dwIP, DNS_UPDATE_RESPONSE ** ppDNSUpdateResponse );
+int32 DNSUpdateGenerateSignature( gss_ctx_id_t * pGSSContext, DNS_UPDATE_REQUEST * pDNSUpdateRequest, char *pszKeyName ); 
+#endif  /* HAVE_GSSAPI_SUPPORT */
 
 /* from dnsupresp.c */
 
@@ -514,8 +532,11 @@ int32 DNSUpdateReceiveUpdateResponse( HANDLE hDNSHandle, DNS_UPDATE_RESPONSE ** 
 
 /* from dnssign.c */
 
-int32 DNSGenerateHash( CtxtHandle * gss_context, uint8 * pRequestBuffer, uint8 ** ppMAC, int32 * pdwMacLen );
+#ifdef HAVE_GSSAPI_SUPPORT
+int32 DNSGenerateHash( gss_ctx_id_t * gss_context, uint8 * pRequestBuffer, uint8 ** ppMAC, int32 * pdwMacLen );
 int32 BuildHashInputBuffer( DNS_REQUEST * pDNSRequest, int32 dwLength, uint8 ** ppHashInputBuffer, int32 * pdwHashInputBufferLen );
-int32 DNSStdValidateAndGetTSIGRecord( CtxtHandle * gss_context, DNS_RESPONSE * pDNSResponse, DNS_RR_RECORD ** ppDNSTSIGRecord );
+int32 DNSStdValidateAndGetTSIGRecord( gss_ctx_id_t * gss_context, DNS_RESPONSE * pDNSResponse, DNS_RR_RECORD ** ppDNSTSIGRecord );
+#endif  /* HAVE_GSSAPI_SUPPORT */
+
 
 #endif	/* _DNS_H */

@@ -27,10 +27,12 @@
 #include "dns.h"
 
 
+#ifdef HAVE_GSSAPI_SUPPORT
+
 /*********************************************************************
 *********************************************************************/
 
-int32 DNSStdValidateAndGetTSIGRecord( CtxtHandle * gss_context,
+int32 DNSStdValidateAndGetTSIGRecord( gss_ctx_id_t * gss_context,
 				DNS_RESPONSE * pDNSResponse,
 				DNS_RR_RECORD ** ppDNSTSIGRecord )
 {
@@ -42,7 +44,7 @@ int32 DNSStdValidateAndGetTSIGRecord( CtxtHandle * gss_context,
 /*********************************************************************
 *********************************************************************/
 
-int32 DNSUpdateValidateAndGetTSIGRecord( CtxtHandle * gss_context,
+int32 DNSUpdateValidateAndGetTSIGRecord( gss_ctx_id_t * gss_context,
 				   DNS_UPDATE_RESPONSE * pDNSUpdateResponse,
 				   DNS_RR_RECORD ** ppDNSTSIGRecord )
 {
@@ -50,3 +52,5 @@ int32 DNSUpdateValidateAndGetTSIGRecord( CtxtHandle * gss_context,
 
 	return dwError;
 }
+
+#endif
