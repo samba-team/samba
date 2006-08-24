@@ -72,8 +72,10 @@ void close_sock(void)
 }
 
 #define CONNECT_TIMEOUT 30
+#if 0 /* unused */
 #define WRITE_TIMEOUT CONNECT_TIMEOUT
 #define READ_TIMEOUT CONNECT_TIMEOUT
+#endif
 
 /* Make sure socket handle isn't stdin, stdout or stderr */
 #define RECURSION_LIMIT 3
