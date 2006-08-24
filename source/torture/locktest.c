@@ -47,8 +47,6 @@ static BOOL zero_zero;
 #define NFILES 2
 #define LOCK_TIMEOUT 0
 
-#define NASTY_POSIX_LOCK_HACK 0
-
 static struct cli_credentials *servers[NSERVERS];
 
 enum lock_op {OP_LOCK, OP_UNLOCK, OP_REOPEN};

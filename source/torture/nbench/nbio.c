@@ -1,5 +1,3 @@
-#define NBDEBUG 0
-
 /* 
    Unix SMB/CIFS implementation.
    SMB torture tester
@@ -29,8 +27,6 @@
 #include "torture/torture.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
-
-#define MAX_FILES 100
 
 extern int nbench_line_count;
 static int nbio_id = -1;
