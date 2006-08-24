@@ -75,6 +75,7 @@ ${kadmin} \
 ${kadmin} add -p $password --use-defaults ${username}@${R} || exit 1
 ${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
 ${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
+${kadmin} modify --attributes=+allow-digest ${server}@${R} || exit 1
 ${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
 
 echo "Doing database check"
