@@ -1,7 +1,8 @@
 #!/bin/sh
 
 if [ -z "$LDB_SPECIALS" ]; then
-    export LDB_SPECIALS=1
+    LDB_SPECIALS=1
+    export LDB_SPECIALS
 fi
 
 echo "LDB_URL: $LDB_URL"

@@ -5,7 +5,7 @@
 XSLTPROC="$1"
 SRCDIR="$2"
 
-if ! test -x "$XSLTPROC"; then
+if [ -z "$XSLTPROC" ] || [ ! -x "$XSLTPROC" ]; then
     echo "xsltproc not installed"
     exit 0
 fi
