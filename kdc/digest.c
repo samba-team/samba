@@ -61,10 +61,8 @@ _kdc_do_digest(krb5_context context,
     krb5_data serverNonce;
 
     if(!config->enable_digest) {
-	ret = KRB5KDC_ERR_POLICY;
-	kdc_log(context, config, 0,
-		"Rejected digest request from %s", from);
-	return ret;
+	kdc_log(context, config, 0, "Rejected digest request from %s", from);
+	return KRB5KDC_ERR_POLICY;
     }
 
     krb5_data_zero(&buf);
@@ -152,8 +150,13 @@ _kdc_do_digest(krb5_context context,
 	if (ret)
 	    goto out;
 
-	/* XXX add acl check here */
-
+	if (client->entry.flags.allow_digest == 0) {
+	    krb5_set_error_string(context, 
+				  "server is not permitted to use digest");
+	    ret = KRB5KDC_ERR_POLICY;
+	    _kdc_free_ent (context, client);
+	    goto out;
+	}
 	_kdc_free_ent (context, client);
     }
 
