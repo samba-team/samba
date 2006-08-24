@@ -206,8 +206,11 @@ _kdc_do_digest(krb5_context context,
 	r.element = choice_DigestRepInner_initReply;
 
 	hex_encode(server_nonce, sizeof(server_nonce), &r.u.initReply.nonce);
-	if (r.u.initReply.nonce == NULL)
-	    goto error;
+	if (r.u.initReply.nonce == NULL) {
+	    krb5_set_error_string(context, "Failed to decode server nonce");
+	    ret = ENOMEM;
+	    goto out;
+	}
 
 	sp = krb5_storage_emem();
 	if (sp == NULL) {
@@ -227,8 +230,12 @@ _kdc_do_digest(krb5_context context,
 	    asprintf(&s, "%s-%s:%s", r.u.initReply.nonce,
 		     ireq.u.init.channel->cb_type,
 		     ireq.u.init.channel->cb_binding);
-	    if (s == NULL)
-		goto error;
+	    if (s == NULL) {
+		krb5_set_error_string(context, "Failed to allocate "
+				      "channel binding");
+		ret = ENOMEM;
+		goto out;
+	    }
 	    free(r.u.initReply.nonce);
 	    r.u.initReply.nonce = s;
 	}
@@ -242,12 +249,18 @@ _kdc_do_digest(krb5_context context,
 	if (strcasecmp(ireq.u.init.type, "CHAP") == 0) {
 	    r.u.initReply.identifier = 
 		malloc(sizeof(*r.u.initReply.identifier));
-	    if (r.u.initReply.identifier == NULL)
-		goto error;
+	    if (r.u.initReply.identifier == NULL) {
+		krb5_set_error_string(context, "out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
 
 	    asprintf(r.u.initReply.identifier, "%02X", identifier & 0xff);
-	    if (*r.u.initReply.identifier == NULL)
-		goto error;
+	    if (*r.u.initReply.identifier == NULL) {
+		krb5_set_error_string(context, "out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
 
 	    ret = krb5_store_stringz(sp, *r.u.initReply.identifier);
 	    if (ret) {
@@ -309,7 +322,7 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 	}
 	if (size != buf.length)
-	    krb5_abortx(context, "asn1 internal error");
+	    krb5_abortx(context, "ASN1 internal error");
 
 	hex_encode(buf.data, buf.length, &r.u.initReply.opaque);
 	if (r.u.initReply.opaque == NULL) {
@@ -350,44 +363,56 @@ _kdc_do_digest(krb5_context context,
 
 	buf.length = strlen(ireq.u.digestRequest.opaque);
 	buf.data = malloc(buf.length);
-	if (buf.data == NULL)
-	    goto error;
+	if (buf.data == NULL) {
+	    krb5_set_error_string(context, "out of memory");
+	    ret = ENOMEM;
+	    goto out;
+	}
 
 	ret = hex_decode(ireq.u.digestRequest.opaque, buf.data, buf.length);
-	if (ret <= 0)
-	    goto error;
+	if (ret <= 0) {
+	    krb5_set_error_string(context, "Failed to decode opaque");
+	    ret = ENOMEM;
+	    goto out;
+	}
 	buf.length = ret;
 
 	ret = decode_Checksum(buf.data, buf.length, &res, NULL);
 	free(buf.data);
-	if (ret)
-	    goto error;
+	if (ret) {
+	    krb5_set_error_string(context, "Failed to decode digest Checksum");
+	    goto out;
+	}
 	
 	ret = krb5_storage_to_data(sp, &buf);
-	if (ret)
-	    goto error;
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
 
 	serverNonce.length = strlen(ireq.u.digestRequest.serverNonce);
 	serverNonce.data = malloc(serverNonce.length);
-	if (serverNonce.data == NULL)
-	    goto error;
+	if (serverNonce.data == NULL) {
+	    krb5_set_error_string(context, "out of memory");
+	    ret = ENOMEM;
+	    goto out;
+	}
 	    
 	/*
-	 * CHAP does the checksum of the raw nonce, HTTP/SASL uses the
-	 * HEX encoded nonce. This works just fine since CHAP doesn't
-	 * use channel-bindings.
+	 * CHAP does the checksum of the raw nonce, but do it for all
+	 * types, since we need to check the timestamp.
 	 */
-	if (strcasecmp(ireq.u.digestRequest.type, "CHAP") == 0) {
+	{
 	    ssize_t ssize;
 	    
 	    ssize = hex_decode(ireq.u.digestRequest.serverNonce, 
 			       serverNonce.data, serverNonce.length);
-	    if (ssize <= 0)
-		goto error;
+	    if (ssize <= 0) {
+		krb5_set_error_string(context, "Failed to decode serverNonce");
+		ret = ENOMEM;
+		goto out;
+	    }
 	    serverNonce.length = ssize;
-	} else {
-	    memcpy(serverNonce.data, ireq.u.digestRequest.serverNonce,
-		   serverNonce.length);
 	}
 
 	{
@@ -413,21 +438,25 @@ _kdc_do_digest(krb5_context context,
 	krb5_crypto_destroy(context, crypto);
 	crypto = NULL;
 	if (ret)
-	    goto error;
-
-	kdc_log(context, config, 0, "checksum verified ok!");
+	    goto out;
 
 	/* verify time */
 	{
 	    unsigned char *p = serverNonce.data;
 	    uint32_t t;
 	    
-	    if (serverNonce.length < 4)
-		goto error;
+	    if (serverNonce.length < 4) {
+		krb5_set_error_string(context, "server nonce too short");
+		ret = EINVAL;
+		goto out;
+	    }
 	    t = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
 
-	    if (abs((kdc_time & 0xffffffff) - t) > context->max_skew)
-		goto error;
+	    if (abs((kdc_time & 0xffffffff) - t) > context->max_skew) {
+		krb5_set_error_string(context, "time screw in server nonce ");
+		ret = EINVAL;
+		goto out;
+	    }
 	}
 
 	/* get username */
@@ -435,17 +464,22 @@ _kdc_do_digest(krb5_context context,
 			      ireq.u.digestRequest.username,
 			      &clientprincipal);
 	if (ret)
-	    goto error;
+	    goto out;
 
 	ret = _kdc_db_fetch(context, config, clientprincipal,
 			    HDB_F_GET_CLIENT, &db, &user);
 
 	if (ret)
-	    goto error;
+	    goto out;
 
 	ret = hdb_entry_get_password(context, db, &user->entry, &password);
-	if (ret && password == NULL)
-	    goto error;
+	if (ret || password == NULL) {
+	    if (ret == 0) {
+		ret = EINVAL;
+		krb5_set_error_string(context, "password missing");
+	    }
+	    goto out;
+	}
 
 	/* just support CHAP for now */
 	if (strcasecmp(ireq.u.digestRequest.type, "CHAP") == 0) {
@@ -453,14 +487,18 @@ _kdc_do_digest(krb5_context context,
 	    char md[MD5_DIGEST_LENGTH];
 	    char id;
 
-	    if (ireq.u.digestRequest.identifier == NULL)
-		goto error;
+	    if (ireq.u.digestRequest.identifier == NULL) {
+		krb5_set_error_string(context, "Identifier missing "
+				      "from CHAP request");
+		ret = EINVAL;
+		goto out;
+	    }
 	    
-	    if (strlen(*ireq.u.digestRequest.identifier) != 2)
-		goto error;
-	    
-	    if (hex_decode(*ireq.u.digestRequest.identifier, &id, 1) != 1)
-		goto error;
+	    if (hex_decode(*ireq.u.digestRequest.identifier, &id, 1) != 1) {
+		krb5_set_error_string(context, "failed to decode identifier");
+		ret = EINVAL;
+		goto out;
+	    }
 	    
 	    MD5_Init(&ctx);
 	    MD5_Update(&ctx, &id, 1);
@@ -476,15 +514,27 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 	} else {
-	    goto error;
+	    r.element = choice_DigestRepInner_error;
+	    asprintf(&r.u.error.reason, "unsupported digest type %s", 
+		     ireq.u.digestRequest.type);
+	    if (r.u.error.reason == NULL) {
+		krb5_set_error_string(context, "out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+	    r.u.error.code = EINVAL;
 	}
 
 	break;
     }
     default:
-    error:
 	r.element = choice_DigestRepInner_error;
-	r.u.error.reason = strdup("error");
+	r.u.error.reason = strdup("unknown operation");
+	if (r.u.error.reason == NULL) {
+	    krb5_set_error_string(context, "out of memory");
+	    ret = ENOMEM;
+	    goto out;
+	}
 	r.u.error.code = EINVAL;
 	break;
     }
@@ -495,7 +545,7 @@ _kdc_do_digest(krb5_context context,
 	goto out;
     }
     if (size != buf.length)
-	krb5_abortx(context, "asn1 internal error");
+	krb5_abortx(context, "ASN1 internal error");
 
     krb5_auth_con_addflags(context, ac, KRB5_AUTH_CONTEXT_USE_SUBKEY, NULL);
 
@@ -526,7 +576,7 @@ _kdc_do_digest(krb5_context context,
 	goto out;
     }
     if (size != reply->length)
-	krb5_abortx(context, "asn1 internal error");
+	krb5_abortx(context, "ASN1 internal error");
 
     
 out:
