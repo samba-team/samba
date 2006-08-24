@@ -396,6 +396,12 @@ configure(krb5_context context, int argc, char **argv)
 	enable_http = krb5_config_get_bool(context, NULL, "kdc", 
 					   "enable-http", NULL);
 
+    config->enable_digest = 
+	krb5_config_get_bool_default(context, NULL, 
+				     FALSE, 
+				     "kdc", 
+				     "enable-digest", NULL);
+
     config->check_ticket_addresses = 
 	krb5_config_get_bool_default(context, NULL, 
 				     config->check_ticket_addresses, 
