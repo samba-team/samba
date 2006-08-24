@@ -105,14 +105,11 @@ echo "Trying CHAP"
 ${kdigest} server-init \
     --kerberos-realm=${R} \
     --type=CHAP \
-    --cb-type=TLS \
-    --cb-value=tls-channelbinding > /dev/null || exitcode=1
+    > /dev/null || exitcode=1
 
 ${kdigest} server-init \
     --kerberos-realm=${R} \
     --type=CHAP \
-    --cb-type=TLS \
-    --cb-value=tls-channelbinding \
     > sdigest-reply || exitcode=1
 
 snonce=`grep server-nonce= sdigest-reply | cut -f2- -d=`
