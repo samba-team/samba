@@ -800,8 +800,10 @@ static const char *lp_string(const char *s)
  const char **fn_name(void) {return(*(const char ***)(ptr));}
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
  BOOL fn_name(void) {return((BOOL)*(int *)(ptr));}
+#if 0 /* unused */
 #define FN_GLOBAL_CHAR(fn_name,ptr) \
  char fn_name(void) {return(*(char *)(ptr));}
+#endif
 #define FN_GLOBAL_INTEGER(fn_name,ptr) \
  int fn_name(void) {return(*(int *)(ptr));}
 
@@ -813,8 +815,10 @@ static const char *lp_string(const char *s)
  const char **fn_name(int i) {return(const char **)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
  BOOL fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
+#if 0 /* unused */
 #define FN_LOCAL_CHAR(fn_name,val) \
  char fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
+#endif
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 
