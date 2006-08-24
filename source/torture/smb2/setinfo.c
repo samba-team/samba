@@ -130,18 +130,6 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		goto done; \
 	}} while (0)
 
-#define CHECK_STR(call, stype, field, value) do { \
- 	CHECK1(call); \
-	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && strcmp(finfo2.stype.out.field, value) != 0) { \
-		printf("(%s) %s - %s/%s should be '%s' - '%s'\n", __location__, \
-		        call_name, #stype, #field, \
-		        value, \
-			finfo2.stype.out.field); \
-		torture_smb2_all_info(tree, handle); \
-		ret = False; \
-		goto done; \
-	}} while (0)
-
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \

@@ -53,15 +53,6 @@ static struct {
 		ret = False; \
 	}} while (0)
 
-#define CHECK_STRING(call_name, stype, field1, field2) do { \
-	union smb_search_data *d = find_level("SMB2_FIND_" #call_name); \
-	if (strcmp(io.all_info2.out.field2.s, d->stype.field1.s) != 0) { \
-		printf("(%s) %s/%s should be '%s' - '%s'\n", __location__, \
-		       #call_name, #field2, \
-		       io.all_info2.out.field2.s, d->stype.field1.s); \
-		ret = False; \
-	}} while (0)
-
 #define CHECK_CONST_STRING(call_name, stype, field, str) do { \
 	union smb_search_data *d = find_level("SMB2_FIND_" #call_name); \
 	if (strcmp(str, d->stype.field.s) != 0) { \
