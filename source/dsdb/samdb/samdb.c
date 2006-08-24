@@ -675,7 +675,7 @@ int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg
 */
 int samdb_copy_template(struct ldb_context *ldb, 
 			struct ldb_message *msg, const char *filter,
-			char **errstring)
+			const char **errstring)
 {
 	struct ldb_result *res;
 	struct ldb_message *t;
