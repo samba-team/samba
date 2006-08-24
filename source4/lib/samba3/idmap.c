@@ -34,7 +34,9 @@
 #define HWM_USER   "USER HWM"
 
 /* idmap version determines auto-conversion */
+#if 0 /* unused */
 #define IDMAP_VERSION 2
+#endif
 
 /*****************************************************************************
  Initialise idmap database. 
