@@ -39,6 +39,7 @@ IDMAP_LIBS=@IDMAP_LIBS@
 KRB5LIBS=@KRB5_LIBS@
 LDAP_LIBS=@LDAP_LIBS@
 NSCD_LIBS=@NSCD_LIBS@
+UUID_LIBS=@UUID_LIBS@
 
 INSTALLCMD=@INSTALL@
 INSTALLLIBCMD_SH=@INSTALLLIBCMD_SH@
@@ -76,7 +77,6 @@ CONFIGLIBDIR = $(LIBDIR)/config
 CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
-datarootdir = @datarootdir@
 DATADIR = @datadir@
 
 # The permissions to give the executables
@@ -116,7 +116,11 @@ LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBSMBSHAREMODES_MAJOR=0
 LIBSMBSHAREMODES_MINOR=2
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/tdb/include @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_ 
+LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
+LIBADDNS_MAJOR=0
+LIBADDNS_MINOR=1
+
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/tdb/include @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_  -I$(srcdir)/libaddns
 FLAGS2 =
 FLAGS3 = 
 FLAGS4 = 
@@ -158,7 +162,7 @@ BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@
 
-SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBMSRPC@ 
+SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBMSRPC@ @LIBADDNS@
 
 PAM_MODULES = @PAM_MODULES@
 
@@ -205,8 +209,8 @@ PASSCHANGE_OBJ = libsmb/passchange.o
 SOCKET_WRAPPER_OBJ = lib/socket_wrapper.o
 
 LIBNDR_OBJ = libndr/ndr_basic.o libndr/ndr.o libndr/ndr_misc.o \
-		libndr/ndr_sec_helper.o libndr/ndr_string.o libndr/sid.o
 
+TALLOC_OBJ = lib/talloc.o
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
 LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
@@ -220,7 +224,7 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o lib/util_uuid.o \
 	  lib/util_unistr.o lib/util_file.o lib/data_blob.o \
 	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
-	  lib/talloc.o lib/substitute.o lib/fsusage.o \
+	  lib/substitute.o lib/fsusage.o \
 	  lib/ms_fnmatch.o lib/select.o lib/messages.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
 	  lib/md5.o lib/hmacmd5.o lib/arc4.o lib/iconv.o \
@@ -229,7 +233,7 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o @SOCKWRAP@ \
-	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o
+	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(TALLOC_OBJ)
 
 LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
@@ -243,6 +247,11 @@ POPT_LIB_OBJ = lib/popt_common.o
 PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o lib/sharesec.o
 
 KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o 
+
+LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsrequest.o libaddns/dnsresponse.o \
+	       libaddns/dnsutils.o  libaddns/dnssock.o libaddns/dnsuprequest.o \
+	       libaddns/dnsupresp.o libaddns/dnsupdate.o libaddns/dnsgss.o
+LIBADDNS_OBJ = $(LIBADDNS_OBJ0) $(TALLOC_OBJ)
 
 LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
 	     libads/krb5_setpw.o libads/ldap_user.o \
@@ -580,11 +589,11 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_rpc_service.o utils/net_rpc_registry.o utils/net_usershare.o \
 	   utils/netlookup.o utils/net_sam.o utils/net_rpc_shell.o \
 	   utils/net_util.o utils/net_rpc_sh_acct.o utils/net_rpc_audit.o \
-	   utils/passwd_util.o  
+	   utils/passwd_util.o  utils/net_dns.o
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ)  \
+	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ)  $(LIBADDNS_OBJ0)\
 	  $(LIBMSRPC_OBJ) $(IDMAP_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
@@ -944,7 +953,7 @@ bin/smbctool@EXEEXT@: $(TOOL_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS)
+	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS)
 
 bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -1086,6 +1095,17 @@ bin/smbfilter@EXEEXT@: $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
+
+bin/libaddns.@SHLIBEXT@: $(LIBADDNS_OBJ:.o=.@PICSUFFIX@)
+	@echo Linking libaddns shared library $@
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBADDNS_OBJ:.o=.@PICSUFFIX@) $(LDFLAGS) $(LIBS) \
+		$(KRB5LIBS) $(UUID_LIBS)\
+		@SONAMEFLAG@`basename $@`.$(LIBADDNS_MAJOR)
+
+bin/libaddns.a: $(LIBADDNS_OBJ:.o=.@PICSUFFIX@)
+	@echo Linking libaddns non-shared library $@
+	@-$(AR) -rc $@ $(LIBADDNS_OBJ:.o=.@PICSUFFIX@)
+
 bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
 	@echo Linking libsmbclient shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@) $(LDFLAGS) $(LIBS) \
@@ -1131,6 +1151,7 @@ bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 libsmbclient: $(LIBSMBCLIENT)
 libsmbsharemodes: $(LIBSMBSHAREMODES)
 libmsrpc: $(LIBMSRPC)
+libaddns: $(LIBADDNS)
 
 bin/librpc_lsarpc.@SHLIBEXT@: $(RPC_LSA_OBJ)
 	@echo "Linking $@"
@@ -1535,6 +1556,11 @@ installlibsmbsharemodes: installdirs libsmbsharemodes
 	-$(INSTALLLIBCMD_SH) bin/libsmbsharemodes.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libsmbsharemodes.a $(DESTDIR)$(LIBDIR)
 
+installlibaddns: installdirs libaddns
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(LIBDIR)
+	-$(INSTALLLIBCMD_SH) bin/libaddns.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_A) bin/libaddns.a $(DESTDIR)$(LIBDIR)
+
 installpammodules: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(PAMMODULESDIR)
 	@for module in $(PAM_MODULES); do \
@@ -1646,6 +1672,10 @@ uninstalllibmsrpc:
 uninstalllibsmbsharemodes: 
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.a
+
+uninstalllibaddns: 
+	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libaddns.@SHLIBEXT@
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libaddns.a
 
 uninstallpammodules:
 	@for module in $(PAM_MODULES); do \
