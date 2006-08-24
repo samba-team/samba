@@ -25,18 +25,19 @@ kdc_SOURCES = connect.c	\
 	config.c	\
 	main.c
 
-libkdc_la_SOURCES = \
-	default_config.c \
-	kdc_locl.h	\
-	kerberos5.c	\
-	krb5tgs.c	\
-	pkinit.c	\
-	log.c		\
-	misc.c		\
-	524.c		\
-	kerberos4.c	\
-	kaserver.c	\
-	process.c	\
+libkdc_la_SOURCES = 		\
+	default_config.c 	\
+	digest.c		\
+	kdc_locl.h		\
+	kerberos5.c		\
+	krb5tgs.c		\
+	pkinit.c		\
+	log.c			\
+	misc.c			\
+	524.c			\
+	kerberos4.c		\
+	kaserver.c		\
+	process.c		\
 	rx.h
 
 
