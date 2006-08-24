@@ -87,6 +87,7 @@ ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
 ${kadmin} add -p bar --use-defaults bar@${R} || exit 1
 ${kadmin} add -p foo --use-defaults remove@${R} || exit 1
 ${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
+${kadmin} add -p kaka --use-defaults ${server}-des3@${R} || exit 1
 ${kadmin} add -p foo --use-defaults ${ps} || exit 1
 ${kadmin} modify --attributes=+trusted-for-delegation ${ps} || exit 1
 ${kadmin} modify --constrained-delegation=${server} ${ps} || exit 1
@@ -113,6 +114,7 @@ ${kadmin} get foo@${R} > tempfile || exit 1
 enctypes=`grep Keytypes: tempfile | sed 's/(pw-salt)//g' | sed 's/,//g' | sed 's/Keytypes://'`
 
 enctype_sans_aes=`echo $enctypes | sed 's/aes[^ ]*//g'`
+enctype_sans_des3=`echo $enctypes | sed 's/des3-cbc-sha1//g'`
 
 echo foo > ${objdir}/foopassword
 
@@ -200,21 +202,31 @@ ${kadmin} delete remove2@${R2} || exit 1
 ${kgetcred} ${server}@${R} 2> /dev/null || exitcode=1
 ${kdestroy}
 
-#echo deleting all but aes enctypes on krbtgt
-#${kadmin} del_enctype krbtgt/${R}@${R} ${enctype_sans_aes} || exit 1
-#
-#echo "try all permutations (only aes)"
-#for a in $enctypes; do
-#	echo "Getting client initial tickets ($a)"
-#	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@${R} || exitcode=1
-#	for b in $enctypes; do
-#		echo "Getting tickets ($a ->  $b)"
-#		${kgetcred} -e $b ${server}@${R} || exitcode=1
-#		./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
-#		${kdestroy} --credential=${server}@${R}
-#	done
-#	${kdestroy}
-#done
+echo deleting all but aes enctypes on krbtgt
+${kadmin} del_enctype krbtgt/${R}@${R} ${enctype_sans_aes} || exit 1
+
+echo deleting all but des enctypes on server-des3
+${kadmin} del_enctype ${server}-des3@${R} ${enctype_sans_des3} || exit 1
+${kadmin} ext -k ${keytab} ${server}-des3@${R} || exit 1
+
+echo "try all permutations (only aes)"
+for a in $enctypes; do
+	echo "Getting client initial tickets ($a)"
+	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@${R} || exitcode=1
+	for b in $enctypes; do
+		echo "Getting tickets ($a ->  $b)"
+		${kgetcred} -e $b ${server}@${R} || exitcode=1
+		./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
+
+		echo "Getting tickets ($a ->  $b) (server des3 only)"
+		${kgetcred} ${server}-des3@${R} || exitcode=1
+		./ap-req ${server}-des3@${R} ${keytab} ${cache} || exitcode=1
+
+		${kdestroy} --credential=${server}@${R}
+		${kdestroy} --credential=${server}-des3@${R}
+	done
+	${kdestroy}
+done
 
 rsa=yes
 pkinit=no
