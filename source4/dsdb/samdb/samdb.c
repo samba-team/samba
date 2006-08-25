@@ -1026,7 +1026,7 @@ struct security_descriptor *samdb_default_security_descriptor(TALLOC_CTX *mem_ct
 
 const struct ldb_dn *samdb_base_dn(struct ldb_context *sam_ctx) 
 {
-	return ldb_auto_basedn(sam_ctx);
+	return ldb_get_default_basedn(sam_ctx);
 }
 
 
