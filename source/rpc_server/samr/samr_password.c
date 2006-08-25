@@ -216,7 +216,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	   user SID). We also need the current lm password hash in
 	   order to decrypt the incoming password */
 	ret = gendb_search(sam_ctx, 
-			   mem_ctx, samdb_base_dn(mem_ctx), &res, attrs,
+			   mem_ctx, NULL, &res, attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))",
 			   r->in.account->string);
 	if (ret != 1) {
@@ -356,7 +356,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	   user SID). We also need the current lm and nt password hashes
 	   in order to decrypt the incoming passwords */
 	ret = gendb_search(sam_ctx, 
-			   mem_ctx, samdb_base_dn(mem_ctx), &res, attrs,
+			   mem_ctx, NULL, &res, attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))",
 			   r->in.account->string);
 	if (ret != 1) {

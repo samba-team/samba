@@ -97,7 +97,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 	/* pull the user attributes */
-	num_records = gendb_search(sam_ctx, mem_ctx, samdb_base_dn(mem_ctx), &msgs, attrs,
+	num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
 				   r->in.account_name);
 
@@ -909,7 +909,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	   primary domain is also a "trusted" domain, so we need to
 	   put the primary domain into the lists of returned trusts as
 	   well */
-	ret1 = gendb_search(sam_ctx, mem_ctx, samdb_base_dn(mem_ctx), &res1, attrs, "(objectClass=domainDNS)");
+	ret1 = gendb_search(sam_ctx, mem_ctx, NULL, &res1, attrs, "(objectClass=domainDNS)");
 	if (ret1 != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -925,7 +925,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 
 	local_domain = samdb_result_string(ref_res[0], "nETBIOSName", NULL);
 
-	ret2 = gendb_search(sam_ctx, mem_ctx, samdb_base_dn(mem_ctx), &res2, attrs, "(objectClass=trustedDomain)");
+	ret2 = gendb_search(sam_ctx, mem_ctx, NULL, &res2, attrs, "(objectClass=trustedDomain)");
 	if (ret2 == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1152,7 +1152,7 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 		return WERR_GENERAL_FAILURE;
 	}
 
-	ret = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(mem_ctx), &dom_res, dom_attrs);
+	ret = gendb_search_dn(sam_ctx, mem_ctx, NULL, &dom_res, dom_attrs);
 	if (ret == -1) {
 		return WERR_GENERAL_FAILURE;		
 	}

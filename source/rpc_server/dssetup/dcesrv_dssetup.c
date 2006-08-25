@@ -88,7 +88,7 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 				return WERR_SERVER_UNAVAILABLE;
 			}
 
-			ret = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(mem_ctx), &res, attrs);
+			ret = gendb_search_dn(sam_ctx, mem_ctx, NULL, &res, attrs);
 			if (ret != 1) {
 				return WERR_SERVER_UNAVAILABLE;
 			}

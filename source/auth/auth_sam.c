@@ -75,8 +75,6 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 		}
 
 		domain_dn = samdb_result_dn(mem_ctx, msgs_domain_ref[0], "nCName", NULL);
-	} else {
-		domain_dn = samdb_base_dn(mem_ctx);
 	}
 
 	/* pull the user attributes */
@@ -107,7 +105,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 		}
 
 		/* find the domain's DN */
-		ret = gendb_search(sam_ctx, mem_ctx, samdb_base_dn(mem_ctx), &msgs_tmp, NULL,
+		ret = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_tmp, NULL,
 				   "(&(objectSid=%s)(objectclass=domain))", 
 				   ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 		if (ret == -1) {

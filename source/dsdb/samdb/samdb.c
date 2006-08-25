@@ -1024,7 +1024,7 @@ struct security_descriptor *samdb_default_security_descriptor(TALLOC_CTX *mem_ct
 	return sd;
 }
 
-struct ldb_dn *samdb_base_dn(TALLOC_CTX *mem_ctx) 
+const struct ldb_dn *samdb_base_dn(TALLOC_CTX *mem_ctx) 
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int server_role = lp_server_role();
@@ -1217,7 +1217,7 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		count = gendb_search(ctx, mem_ctx, samdb_base_dn(mem_ctx), &res, domain_attrs, 
+		count = gendb_search(ctx, mem_ctx, NULL, &res, domain_attrs, 
 				     "(objectSid=%s)", 
 				     ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 		if (count != 1) {
@@ -1397,7 +1397,7 @@ _PUBLIC_ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *me
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
 
-	user_dn = samdb_search_dn(ctx, mem_ctx, samdb_base_dn(mem_ctx), 
+	user_dn = samdb_search_dn(ctx, mem_ctx, NULL, 
 				  "(&(objectSid=%s)(objectClass=user))", 
 				  ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
 	if (!user_dn) {
@@ -1548,7 +1548,7 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 	 * cn=For...,cn=Builtin,dc={BASEDN}.  -- vl
 	 */
 	
-	basedn = samdb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(mem_ctx),
+	basedn = samdb_search_dn(sam_ctx, mem_ctx, NULL,
 				 "(&(objectClass=container)(cn=ForeignSecurityPrincipals))");
 	
 	if (basedn == NULL) {

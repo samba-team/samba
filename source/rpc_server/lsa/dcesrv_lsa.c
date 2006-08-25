@@ -563,7 +563,7 @@ static NTSTATUS lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	/* NOTE: This call must only return accounts that have at least
 	   one privilege set 
 	*/
-	ret = gendb_search(state->sam_ldb, mem_ctx, samdb_base_dn(mem_ctx), &res, attrs, 
+	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
 			   "(&(objectSid=*)(privilege=*))");
 	if (ret < 0) {
 		return NT_STATUS_NO_SUCH_USER;
@@ -1428,7 +1428,7 @@ static NTSTATUS lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = gendb_search(astate->policy->sam_ldb, mem_ctx, samdb_base_dn(mem_ctx), &res, attrs, 
+	ret = gendb_search(astate->policy->sam_ldb, mem_ctx, NULL, &res, attrs, 
 			   "objectSid=%s", sidstr);
 	if (ret != 1) {
 		return NT_STATUS_OK;
@@ -1484,7 +1484,7 @@ static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = gendb_search(state->sam_ldb, mem_ctx, samdb_base_dn(mem_ctx), &res, attrs, 
+	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
 			   "(&(objectSid=%s)(privilege=*))", sidstr);
 	if (ret == 0) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -1547,7 +1547,7 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 	}
 
 	msg->dn = samdb_search_dn(state->sam_ldb, mem_ctx, 
-				  samdb_base_dn(mem_ctx), "objectSid=%s", sidstr);
+				  NULL, "objectSid=%s", sidstr);
 	if (msg->dn == NULL) {
 		NTSTATUS status;
 		if (ldb_flag == LDB_FLAG_MOD_DELETE) {
@@ -2413,7 +2413,7 @@ static NTSTATUS lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *dce_call
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
-	ret = gendb_search(state->sam_ldb, mem_ctx, samdb_base_dn(mem_ctx), &res, attrs, 
+	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
 			   "privilege=%s", privname);
 	if (ret == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

@@ -103,8 +103,7 @@ static NTSTATUS sidmap_primary_domain_sid(struct sidmap_context *sidmap,
 	int ret;
 	struct ldb_message **res = NULL;
 
-	ret = gendb_search_dn(sidmap->samctx, mem_ctx, samdb_base_dn(mem_ctx), 
-			      &res, attrs);
+	ret = gendb_search_dn(sidmap->samctx, mem_ctx, NULL, &res, attrs);
 	if (ret != 1) {
 		talloc_free(res);
 		return NT_STATUS_NO_SUCH_DOMAIN;
@@ -137,7 +136,7 @@ _PUBLIC_ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap,
 
 	tmp_ctx = talloc_new(sidmap);
 
-	ret = gendb_search(sidmap->samctx, tmp_ctx, samdb_base_dn(tmp_ctx), &res, attrs, 
+	ret = gendb_search(sidmap->samctx, tmp_ctx, NULL, &res, attrs, 
 			   "objectSid=%s", ldap_encode_ndr_dom_sid(tmp_ctx, sid));
 	if (ret != 1) {
 		goto allocated_sid;
@@ -233,7 +232,7 @@ _PUBLIC_ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
 
 	tmp_ctx = talloc_new(sidmap);
 
-	ret = gendb_search(sidmap->samctx, tmp_ctx, samdb_base_dn(tmp_ctx), &res, attrs, 
+	ret = gendb_search(sidmap->samctx, tmp_ctx, NULL, &res, attrs, 
 			   "objectSid=%s", ldap_encode_ndr_dom_sid(tmp_ctx, sid));
 	if (ret != 1) {
 		goto allocated_sid;
@@ -347,7 +346,7 @@ _PUBLIC_ NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
                   given uid
 	*/
 
-	ret = gendb_search(sidmap->samctx, tmp_ctx, samdb_base_dn(tmp_ctx), &res, attrs, 
+	ret = gendb_search(sidmap->samctx, tmp_ctx, NULL, &res, attrs, 
 			   "uidNumber=%u", (unsigned int)uid);
 	for (i=0;i<ret;i++) {
 		if (!is_user_account(res[i])) continue;
@@ -445,7 +444,7 @@ _PUBLIC_ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
                   given gid
 	*/
 
-	ret = gendb_search(sidmap->samctx, tmp_ctx, samdb_base_dn(tmp_ctx), &res, attrs, 
+	ret = gendb_search(sidmap->samctx, tmp_ctx, NULL, &res, attrs, 
 			   "gidNumber=%u", (unsigned int)gid);
 	for (i=0;i<ret;i++) {
 		if (!is_group_account(res[i])) continue;
@@ -465,7 +464,7 @@ _PUBLIC_ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
 		goto allocate_sid;
 	}
 
-	ret = gendb_search(sidmap->samctx, tmp_ctx, samdb_base_dn(tmp_ctx), &res, attrs, 
+	ret = gendb_search(sidmap->samctx, tmp_ctx, NULL, &res, attrs, 
 			   "(|(unixName=%s)(sAMAccountName=%s))", 
 			   grp->gr_name, grp->gr_name);
 	for (i=0;i<ret;i++) {
