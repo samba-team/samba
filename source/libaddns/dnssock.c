@@ -732,7 +732,7 @@ void DNSFreeSendBufferContext( HANDLE hSendBuffer )
 
 	pSendBufferContext = ( DNS_SENDBUFFER_CONTEXT * ) hSendBuffer;
 
-	if ( pSendBufferContext->pSendBuffer ) {
+	if ( pSendBufferContext && pSendBufferContext->pSendBuffer ) {
 		DNSFreeMemory( pSendBufferContext->pSendBuffer );
 	}
 	if ( pSendBufferContext ) {

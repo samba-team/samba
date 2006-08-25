@@ -431,7 +431,6 @@ int32 DNSUpdateGenerateSignature( gss_ctx_id_t * pGSSContext,
 {
 	int32 dwError = 0;
 	int32 dwMinorStatus = 0;
-	HANDLE hSendBuffer = ( HANDLE ) NULL;
 	uint8 *pMessageBuffer = NULL;
 	int32 dwMessageSize = 0;
 	int32 dwMaxSignatureSize = 0;
@@ -476,10 +475,6 @@ int32 DNSUpdateGenerateSignature( gss_ctx_id_t * pGSSContext,
 
 
       error:
-
-	if ( hSendBuffer ) {
-		DNSFreeSendBufferContext( hSendBuffer );
-	}
 
 	if ( pMessageBuffer ) {
 		DNSFreeMemory( pMessageBuffer );
