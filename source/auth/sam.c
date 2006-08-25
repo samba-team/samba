@@ -206,7 +206,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	group_ret = gendb_search(sam_ctx,
-				 tmp_ctx, samdb_base_dn(tmp_ctx), &group_msgs, group_attrs,
+				 tmp_ctx, NULL, &group_msgs, group_attrs,
 				 "(&(member=%s)(sAMAccountType=*))", 
 				 ldb_dn_linearize(tmp_ctx, msg->dn));
 	if (group_ret == -1) {

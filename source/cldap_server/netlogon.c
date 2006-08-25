@@ -107,7 +107,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 
 	if (count == 0 && domain_guid) {
 		/* OK, so no dice with the name, try and find the domain with the GUID */
-		count = gendb_search(cldapd->samctx, mem_ctx, samdb_base_dn(mem_ctx), &dom_res, dom_attrs, 
+		count = gendb_search(cldapd->samctx, mem_ctx, NULL, &dom_res, dom_attrs, 
 				   "(&(objectClass=domainDNS)(objectGUID=%s))", 
 				   domain_guid);
 		if (count == 1) {
