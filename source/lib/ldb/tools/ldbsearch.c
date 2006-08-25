@@ -219,7 +219,7 @@ static int do_search(struct ldb_context *ldb,
 	sctx->refs = 0;
 
 	if (basedn == NULL) {
-		basedn = ldb_auto_basedn(ldb);
+		basedn = ldb_get_default_basedn(ldb);
 	}
 
 	req->operation = LDB_SEARCH;
