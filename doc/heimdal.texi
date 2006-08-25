@@ -17,7 +17,7 @@
 @c @include version.texi
 @set UPDATED $Date$
 @set EDITION 0.1
-@set VERSION 0.7
+@set VERSION 0.8
 
 @ifinfo
 @dircategory Heimdal
@@ -222,6 +222,9 @@ SUCH DAMAGE.
 @node Top, Introduction, (dir), (dir)
 @top Heimdal
 @end ifnottex
+
+This manual is last updated @value{UPDATED} for version
+@value{VERSION} of Heimdal.
 
 @menu
 * Introduction::                
