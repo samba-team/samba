@@ -223,6 +223,12 @@ static struct timespec nt_time_to_unix_timespec(NTTIME *nt)
 		return ret;
 	}
 
+	if ((nt->high == 0x7fffffff) && (nt->low == 0xffffffff)) {
+		ret.tv_sec = TIME_T_MAX;
+		ret.tv_nsec = 0;
+		return ret;
+	}
+
 	d = (((uint64)nt->high) << 32 ) + ((uint64)nt->low);
 	/* d is now in 100ns units, since jan 1st 1601".
 	   Save off the ns fraction. */

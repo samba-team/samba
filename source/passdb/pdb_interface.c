@@ -370,7 +370,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 #ifdef ENABLE_BUILD_FARM_HACKS
 		if (add_ret != 0) {
 			DEBUG(1, ("Creating a faked user %s for build farm "
-				  "purposes", name));
+				  "purposes\n", name));
 			faked_create_user(name);
 		}
 #endif
