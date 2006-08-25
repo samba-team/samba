@@ -490,6 +490,30 @@ krb5_digest_set_username(krb5_context context,
 }
 
 krb5_error_code
+krb5_digest_set_authid(krb5_context context,
+		       krb5_digest digest,
+		       const char *authid)
+{
+    if (digest->request.authid) {
+	krb5_set_error_string(context, "authid already set");
+	return EINVAL;
+    }
+    digest->request.authid = malloc(sizeof(*digest->request.authid));
+    if (digest->request.authid == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    *digest->request.authid = strdup(authid);
+    if (*digest->request.authid == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	free(digest->request.authid);
+	digest->request.authid = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
 krb5_digest_set_authentication_user(krb5_context context,
 				    krb5_digest digest,
 				    krb5_principal authentication_user)
@@ -512,8 +536,8 @@ krb5_digest_set_authentication_user(krb5_context context,
 
 krb5_error_code
 krb5_digest_set_realm(krb5_context context,
-		 krb5_digest digest,
-		 const char *realm)
+		      krb5_digest digest,
+		      const char *realm)
 {
     if (digest->request.realm) {
 	krb5_set_error_string(context, "realm already set");
