@@ -404,6 +404,13 @@ krb5_digest_init_request(krb5_context context,
     if (ret)
 	goto out;
 
+    if (irep.element == choice_DigestRepInner_error) {
+	krb5_set_error_string(context, "Digest init error: %s",
+			      irep.u.error.reason);
+	ret = irep.u.error.code;
+	goto out;
+    }
+
     if (irep.element != choice_DigestRepInner_initReply) {
 	krb5_set_error_string(context, "digest reply not an initReply");
 	ret = EINVAL;
@@ -654,6 +661,13 @@ krb5_digest_request(krb5_context context,
 			 KRB5_KU_DIGEST_ENCRYPT, &ireq, &irep);
     if (ret)
 	return ret;
+
+    if (irep.element == choice_DigestRepInner_error) {
+	krb5_set_error_string(context, "Digest response error: %s",
+			      irep.u.error.reason);
+	ret = irep.u.error.code;
+	goto out;
+    }
 
     if (irep.element != choice_DigestRepInner_response) {
 	krb5_set_error_string(context, "digest reply not an DigestResponse");
