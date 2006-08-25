@@ -4,7 +4,7 @@ include $(top_srcdir)/Makefile.am.common
 
 AUTOMAKE_OPTIONS = no-texinfo.tex
 
-MAKEINFOFLAGS = --no-split
+MAKEINFOFLAGS = --no-split --css-include=$(srcdir)/heimdal.css
 
 info_TEXINFOS = heimdal.texi
 heimdal_TEXINFOS = \
