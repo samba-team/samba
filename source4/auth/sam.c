@@ -321,7 +321,7 @@ _PUBLIC_ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	NTSTATUS nt_status;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int ret;
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;

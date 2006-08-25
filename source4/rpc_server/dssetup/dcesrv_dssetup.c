@@ -101,7 +101,7 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 			
 			domain		= samdb_search_string(sam_ctx, mem_ctx, NULL, "nETBIOSName", 
 							      "(&(objectclass=crossRef)(ncName=%s))", 
-							      ldb_dn_linearize(mem_ctx, samdb_base_dn(mem_ctx)));
+							      ldb_dn_linearize(mem_ctx, samdb_base_dn(sam_ctx)));
 	
 			dns_domain	= samdb_result_string(res[0], "dnsDomain", NULL);
 			forest		= samdb_result_string(res[0], "dnsDomain", NULL);
