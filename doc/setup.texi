@@ -1182,23 +1182,25 @@ Its useful to have one PEM file that contains all the trust anchors.
 Syntax is:
 
 @example
-FILE:certificate-file.pem,private-key-file.key,other-cert.pem,....
+FILE:certificate.pem,private-key.key,other-cert.pem,....
 @end example
 
 @item PKCS11:
 
-PKCS11: is used handle smartcards via PKCS11 drivers
-(soft-token,opensc,muscle) files.
+PKCS11: is used handle smartcards via PKCS11 drivers, for example
+soft-token opensc, or muscle. Default is to use all slots on the
+device/token.
 
 Syntax is:
 
 @example
-PKCS11:shared-object.so:slot=<num>:otherattribute=<value>
+PKCS11:shared-object.so
 @end example
 
 @item PKCS12:
 
-PKCS12: is used handle PKCS12 (.pfx/.p12) files.
+PKCS12: is used handle PKCS12 files. PKCS12 files commonly have the
+extension pfx or p12.
 
 Syntax is:
 
@@ -1209,8 +1211,6 @@ PKCS12:/path/to/file.pfx
 @end table
 
 @section Configure the Kerberos software
-
-Write about configuration options to krb5.conf.
 
 First configure the client's trust anchors and what parameters to
 verify, see subsection below how to do that. Now you can use kinit to
