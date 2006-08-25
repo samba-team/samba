@@ -33,6 +33,8 @@
 #include "db_wrap.h"
 #endif
 
+
+
 /*
   process command line options
 */
@@ -47,6 +49,8 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 #endif
 	int num_options = 0;
 	int opt;
+	int flags = 0;
+
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		{ "url",       'H', POPT_ARG_STRING, &options.url, 0, "database URL", "URL" },
@@ -194,29 +198,32 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		goto failed;
 	}
 
-	if (strcmp(ret->url, "NONE") != 0) {
-		int flags = 0;
-		if (options.nosync) {
-			flags |= LDB_FLG_NOSYNC;
-		}
+	if (strcmp(ret->url, "NONE") == 0) {
+		return ret;
+	}
+
+	if (options.nosync) {
+		flags |= LDB_FLG_NOSYNC;
+	}
 
 #ifdef _SAMBA_BUILD_
-		/* Must be after we have processed command line options */
-		gensec_init(); 
-
-		if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb))) {
-			goto failed;
-		}
-		if (ldb_set_opaque(ldb, "credentials", cmdline_credentials)) {
-			goto failed;
-		}
-		ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	/* Must be after we have processed command line options */
+	gensec_init(); 
+	
+	if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb))) {
+		goto failed;
+	}
+	if (ldb_set_opaque(ldb, "credentials", cmdline_credentials)) {
+		goto failed;
+	}
+	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 #endif
-		if (ldb_connect(ldb, ret->url, flags, ret->options) != 0) {
-			fprintf(stderr, "Failed to connect to %s - %s\n", 
-				ret->url, ldb_errstring(ldb));
-			goto failed;
-		}
+
+	/* now connect to the ldb */
+	if (ldb_connect(ldb, ret->url, flags, ret->options) != 0) {
+		fprintf(stderr, "Failed to connect to %s - %s\n", 
+			ret->url, ldb_errstring(ldb));
+		goto failed;
 	}
 
 	return ret;
