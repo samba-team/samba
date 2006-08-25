@@ -502,6 +502,10 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			    smbd_server_fd() != -1 &&
 			    ((child = sys_fork())==0)) {
 				/* Child code ... */
+
+				/* Stop zombies, the parent explicitly handles
+				 * them, counting worker smbds. */
+				CatchChild();
 				
 				/* close the listening socket(s) */
 				for(i = 0; i < num_sockets; i++)
