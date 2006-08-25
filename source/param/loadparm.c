@@ -3864,7 +3864,6 @@ static void dump_a_service(service * pService, FILE * f)
 
 BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 {
-	service * pService = ServicePtrs[snum];
 	int i;
 	BOOL result = False;
 	parm_class p_class;
@@ -3907,11 +3906,13 @@ BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 		{
 			void *ptr;
 
-			if (isGlobal)
+			if (isGlobal) {
 				ptr = parm_table[i].ptr;
-			else
+			} else {
+				service * pService = ServicePtrs[snum];
 				ptr = ((char *)pService) +
 					PTR_DIFF(parm_table[i].ptr, &sDefault);
+			}
 
 			print_parameter(&parm_table[i],
 					ptr, f);
