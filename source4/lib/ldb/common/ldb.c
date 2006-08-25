@@ -529,6 +529,43 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
+/*
+  try to autodetect a basedn if none specified. This fixes one of my
+  pet hates about ldapsearch, which is that you have to get a long,
+  complex basedn right to make any use of it.
+*/
+const struct ldb_dn *ldb_auto_basedn(struct ldb_context *ldb)
+{
+	TALLOC_CTX *tmp_ctx;
+	int ret;
+	static const char *attrs[] = { "defaultNamingContext", NULL };
+	struct ldb_result *res;
+	struct ldb_dn *basedn=NULL;
+
+	basedn = ldb_get_opaque(ldb, "auto_baseDN");
+	if (basedn) {
+		return basedn;
+	}
+
+	tmp_ctx = talloc_new(ldb);
+	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx), LDB_SCOPE_BASE, 
+			 "(objectClass=*)", attrs, &res);
+	if (ret == LDB_SUCCESS && res->count == 1) {
+		basedn = ldb_msg_find_attr_as_dn(ldb, res->msgs[0], "defaultNamingContext");
+	}
+
+	if (basedn) {
+		ldb_set_opaque(ldb, "auto_baseDN", basedn);
+	}
+
+	talloc_free(tmp_ctx);
+	return basedn;
+}
+
+/*
+  note that ldb_search() will automatically replace a NULL 'base' value with the 
+  defaultNamingContext from the rootDSE if available.
+*/
 int ldb_search(struct ldb_context *ldb, 
 	       const struct ldb_dn *base,
 	       enum ldb_scope scope,
@@ -545,6 +582,10 @@ int ldb_search(struct ldb_context *ldb,
 	if (req == NULL) {
 		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (base == NULL) {
+		base = ldb_auto_basedn(ldb);
 	}
 
 	req->operation = LDB_SEARCH;
