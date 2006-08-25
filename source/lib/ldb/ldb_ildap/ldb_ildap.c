@@ -52,7 +52,6 @@
 
 struct ildb_private {
 	struct ldap_connection *ldap;
-	struct ldb_message *rootDSE;
 	struct ldb_context *ldb;
 };
 
@@ -453,12 +452,7 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 	msg->type = LDAP_TAG_SearchRequest;
 
 	if (req->op.search.base == NULL) {
-		if (ildb->rootDSE != NULL) {
-			msg->r.SearchRequest.basedn =
-				talloc_strdup(msg, ldb_msg_find_attr_as_string(ildb->rootDSE, "defaultNamingContext", ""));
-		} else {
-			msg->r.SearchRequest.basedn = talloc_strdup(msg, "");
-		}
+		msg->r.SearchRequest.basedn = talloc_strdup(msg, "");
 	} else {
 		msg->r.SearchRequest.basedn  = ldb_dn_linearize(msg, req->op.search.base);
 	}
@@ -728,80 +722,6 @@ static int ildb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	return handle->status;
 }
 
-static int ildb_rootdse_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
-{
-	struct ildb_private *ildb;
-
-	if (!context || !ares) {
-		ldb_set_errstring(ldb, "NULL Context or Result in callback");
-		goto error;
-	}
-
-	ildb = talloc_get_type(context, struct ildb_private);
-
-	/* we are interested only in the single reply (rootdse) we receive here */
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-		if (ildb->rootDSE != NULL) {
-			/* what ? more than one rootdse entry ?! */
-			goto error;
-		}
-		ildb->rootDSE = talloc_steal(ildb, ares->message);
-		break;
-
-	case LDB_REPLY_REFERRAL:
-		goto error;
-
-	case LDB_REPLY_DONE:
-		break;
-	}
-	
-	talloc_free(ares);
-	return LDB_SUCCESS;
-
-error:
-	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
-}
-
-/*
-  fetch the rootDSE for later use
-*/
-static int ildb_init(struct ldb_module *module)
-{
-	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
-	struct ldb_request *req;
-	int ret;
-
-	req = talloc(ildb, struct ldb_request);
-	if (req == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ildb->rootDSE = NULL;
-
-	req->operation = LDB_SEARCH;
-	req->op.search.base = ldb_dn_new(req);
-	req->op.search.scope = LDB_SCOPE_BASE;
-	req->op.search.tree = ldb_parse_tree(req, "(objectClass=*)");
-	req->op.search.attrs = NULL;
-	req->controls = NULL;
-	req->context = ildb;
-	req->callback = ildb_rootdse_callback;
-	ldb_set_timeout(module->ldb, req, 60);
-
-	ret = ildb_search(module, req);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(req);
-		return ret;
-	}
-
-	ret = ildb_wait(req->handle, LDB_WAIT_ALL);
-	
-	talloc_free(req);
-	return ret;
-}
-
 static const struct ldb_module_ops ildb_ops = {
 	.name              = "ldap",
 	.search            = ildb_search,
@@ -813,8 +733,7 @@ static const struct ldb_module_ops ildb_ops = {
 	.start_transaction = ildb_start_trans,
 	.end_transaction   = ildb_end_trans,
 	.del_transaction   = ildb_del_trans,
-	.wait              = ildb_wait,
-	.init_context	   = ildb_init
+	.wait              = ildb_wait
 };
 
 /*
@@ -834,7 +753,6 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 		goto failed;
 	}
 
-	ildb->rootDSE = NULL;
 	ildb->ldb     = ldb;
 
 	ildb->ldap = ldap_new_connection(ildb, ldb_get_opaque(ldb, "EventContext"));
