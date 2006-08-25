@@ -824,8 +824,9 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 
 /*
   return an automatic baseDN from the defaultNamingContext of the rootDSE
+  This value have been set in an opaque pointer at connection time
 */
-const struct ldb_dn *ldb_auto_basedn(struct ldb_context *ldb);
+const struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb);
 
 /**
   Search the database
