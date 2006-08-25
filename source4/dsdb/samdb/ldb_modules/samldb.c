@@ -301,7 +301,7 @@ int samldb_notice_sid(struct ldb_module *module,
 	filter = talloc_asprintf(mem_ctx, "(objectSid=%s)",
 				 ldap_encode_ndr_dom_sid(mem_ctx, sid));
 
-	ret = ldb_search(module->ldb, samdb_base_dn(mem_ctx), LDB_SCOPE_SUBTREE, filter, attrs, &res);
+	ret = ldb_search(module->ldb, NULL, LDB_SCOPE_SUBTREE, filter, attrs, &res);
 	if (ret == LDB_SUCCESS) {
 		if (res->count > 0) {
 			talloc_free(res);
@@ -333,7 +333,7 @@ int samldb_notice_sid(struct ldb_module *module,
 	filter = talloc_asprintf(mem_ctx, "(&(objectSid=%s)(objectclass=domain))",
 				 ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
 
-	ret = ldb_search(module->ldb, samdb_base_dn(mem_ctx), LDB_SCOPE_SUBTREE, filter, attrs, &dom_res);
+	ret = ldb_search(module->ldb, NULL, LDB_SCOPE_SUBTREE, filter, attrs, &dom_res);
 	if (ret == LDB_SUCCESS) {
 		talloc_steal(mem_ctx, dom_res);
 		if (dom_res->count == 0) {

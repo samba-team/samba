@@ -69,7 +69,7 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	}
 
-	service_dn = ldb_dn_string_compose(tmp_ctx, samdb_base_dn(tmp_ctx),
+	service_dn = ldb_dn_string_compose(tmp_ctx, NULL,
 					   "CN=Directory Service,CN=Windows NT"
 					   ",CN=Services,CN=Configuration");
 	service_dn_str = ldb_dn_linearize(tmp_ctx, service_dn);
@@ -578,7 +578,6 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	struct ldb_message **result_res = NULL;
 	const struct ldb_dn *result_basedn;
 	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
-	const struct ldb_dn *basedn = samdb_base_dn(mem_ctx);
 
 	const char * const _domain_attrs_1779[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_null[] = { NULL };
@@ -737,7 +736,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				return WERR_OK;
 			}
 			dom_sid->num_auths--;
-			ldb_ret = gendb_search(sam_ctx, mem_ctx, basedn, &domain_res, attrs,
+			ldb_ret = gendb_search(sam_ctx, mem_ctx, NULL, &domain_res, attrs,
 					       "(&(objectSid=%s)(objectClass=domain))", ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
 			if (ldb_ret != 1) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;

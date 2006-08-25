@@ -239,7 +239,7 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 	if (strcasecmp(r->in.domain_name->string, "BUILTIN") == 0) {
 		ret = gendb_search(c_state->sam_ctx,
-				   mem_ctx, samdb_base_dn(mem_ctx), &dom_msgs, dom_attrs,
+				   mem_ctx, NULL, &dom_msgs, dom_attrs,
 				   "(objectClass=builtinDomain)");
 	} else {
 		ret = gendb_search(c_state->sam_ctx,
@@ -300,7 +300,7 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	c_state = h->data;
 
 	count = gendb_search(c_state->sam_ctx,
-			     mem_ctx, samdb_base_dn(mem_ctx), &dom_msgs, dom_attrs,
+			     mem_ctx, NULL, &dom_msgs, dom_attrs,
 			     "(objectClass=domain)");
 	if (count == -1) {
 		DEBUG(0,("samdb: no domains found in EnumDomains\n"));
@@ -380,7 +380,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 
 	ret = gendb_search(c_state->sam_ctx,
-			   mem_ctx, samdb_base_dn(mem_ctx), &dom_msgs, dom_attrs,
+			   mem_ctx, NULL, &dom_msgs, dom_attrs,
 			   "(&(objectSid=%s)(&(objectclass=domain)))",
 			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 	if (ret != 1) {
@@ -1124,7 +1124,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* check if the user already exists */
-	name = samdb_search_string(d_state->sam_ctx, mem_ctx, samdb_base_dn(mem_ctx), 
+	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL, 
 				   "sAMAccountName", 
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
 				   ldb_binary_encode_string(mem_ctx, account_name));
@@ -1631,7 +1631,7 @@ static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALL
 
 			memberdn = 
 				samdb_search_string(d_state->sam_ctx,
-						    mem_ctx, samdb_base_dn(mem_ctx), "distinguishedName",
+						    mem_ctx, NULL, "distinguishedName",
 						    "(objectSid=%s)",
 						    ldap_encode_ndr_dom_sid(mem_ctx, 
 									    r->in.sids->sids[i].sid));
@@ -2534,7 +2534,7 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	ret = gendb_search(d_state->sam_ctx, mem_ctx, samdb_base_dn(mem_ctx),
+	ret = gendb_search(d_state->sam_ctx, mem_ctx, NULL,
 			   &msgs, attrs, "(objectsid=%s)", 
 			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 
@@ -2594,7 +2594,7 @@ static NTSTATUS samr_DeleteAliasMember(struct dcesrv_call_state *dce_call, TALLO
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, samdb_base_dn(mem_ctx),
+	memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
 				       "distinguishedName", "(objectSid=%s)", 
 				       ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 
@@ -3928,7 +3928,7 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 	/* The domain name in this call is ignored */
 	ret = gendb_search_dn(sam_ctx, 
-			   mem_ctx, samdb_base_dn(mem_ctx), &msgs, attrs);
+			   mem_ctx, NULL, &msgs, attrs);
 	if (ret <= 0) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
