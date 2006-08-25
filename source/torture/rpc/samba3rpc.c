@@ -1676,8 +1676,8 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 
 		status = smb_composite_sesssetup(session2, &setup);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("(%s) anon session setup failed: %s\n",
-				 __location__, nt_errstr(status));
+			d_printf("(%s) session setup with new user failed: "
+				 "%s\n", __location__, nt_errstr(status));
 			ret = False;
 			goto done;
 		}
