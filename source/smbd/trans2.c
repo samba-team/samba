@@ -3085,7 +3085,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		files_struct *fsp1 = file_find_di_first(sbuf.st_dev, sbuf.st_ino);
 		if (fsp1 && fsp1->pending_modtime) {
 			/* the pending modtime overrides the current modtime */
-			mtime_ts.tv_sec = fsp->pending_modtime;
+			mtime_ts.tv_sec = fsp1->pending_modtime;
 			mtime_ts.tv_nsec = 0;
 		}
 		if (fsp1 && fsp1->initial_allocation_size) {
