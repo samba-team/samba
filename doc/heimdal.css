@@ -9,6 +9,12 @@ h1, h2, h3 {
 	font-weight: bold;
 }
 h1 {
+    padding: 0.5em 0 0.5em 5%;
+    color: white;
+    background: #3366cc;
+    border-bottom: solid 1px black;
+}
+h1 {
 	font-size: 200%;
 }
 h2 {
