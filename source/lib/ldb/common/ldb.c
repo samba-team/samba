@@ -554,9 +554,7 @@ const struct ldb_dn *ldb_auto_basedn(struct ldb_context *ldb)
 		basedn = ldb_msg_find_attr_as_dn(ldb, res->msgs[0], "defaultNamingContext");
 	}
 
-	if (basedn) {
-		ldb_set_opaque(ldb, "auto_baseDN", basedn);
-	}
+	ldb_set_opaque(ldb, "auto_baseDN", basedn);
 
 	talloc_free(tmp_ctx);
 	return basedn;
