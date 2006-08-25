@@ -22,8 +22,8 @@ DigestInitReply ::= SEQUENCE {
 
 
 DigestRequest ::= SEQUENCE  {
-    type		UTF8String, -- http, sasl, chap, cram-md5 --
-    digest		UTF8String, -- md5/md5-sess --
+    type		UTF8String, -- http, sasl-md5, chap, cram-md5 --
+    digest		UTF8String, -- http:md5/md5-sess sasl:clear/int/conf --
     username		UTF8String, -- username user used
     authentication-user	[0] Principal OPTIONAL, -- principal to get key from
     realm		[1] UTF8String OPTIONAL,
