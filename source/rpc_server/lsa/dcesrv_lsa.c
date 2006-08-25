@@ -267,7 +267,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 				     struct lsa_policy_state **_state)
 {
 	struct lsa_policy_state *state;
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn;
 
 	state = talloc(mem_ctx, struct lsa_policy_state);
 	if (!state) {
@@ -280,6 +280,8 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
+	partitions_basedn = samdb_partitions_dn(state->sam_ldb, mem_ctx);
+
 	state->sidmap = sidmap_open(state);
 	if (state->sidmap == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -287,7 +289,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 
 	/* work out the domain_dn - useful for so many calls its worth
 	   fetching here */
-	state->domain_dn = samdb_base_dn(state);
+	state->domain_dn = samdb_base_dn(state->sam_ldb);
 	if (!state->domain_dn) {
 		return NT_STATUS_NO_MEMORY;		
 	}

@@ -577,7 +577,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	const char * const *result_attrs;
 	struct ldb_message **result_res = NULL;
 	const struct ldb_dn *result_basedn;
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	const char * const _domain_attrs_1779[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_null[] = { NULL };
@@ -627,7 +627,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				       "%s", domain_filter);
 	} else {
 		ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res, domain_attrs,
-				       "(ncName=%s)", ldb_dn_linearize(mem_ctx, samdb_base_dn(mem_ctx)));
+				       "(ncName=%s)", ldb_dn_linearize(mem_ctx, samdb_base_dn(sam_ctx)));
 	} 
 
 	switch (ldb_ret) {
