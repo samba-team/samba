@@ -1506,7 +1506,8 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree)
 	status = dcerpc_lsa_GetUserName(lsa, mem_ctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetUserName failed - %s\n", nt_errstr(status));
+		printf("(%s) GetUserName failed - %s\n",
+		       __location__, nt_errstr(status));
 		talloc_free(lsa);
 		return NULL;
 	}
@@ -1549,7 +1550,8 @@ NTSTATUS secondary_tcon(TALLOC_CTX *mem_ctx,
 
 	status = smb_raw_tcon(result, tmp_ctx, &tcon);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("smb_raw_tcon failed: %s\n", nt_errstr(status));
+		d_printf("(%s) smb_raw_tcon failed: %s\n", __location__,
+			 nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return status;
 	}
@@ -1585,21 +1587,22 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 		mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
 		"IPC$", NULL, cmdline_credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("smbcli_full_connection failed: %s\n",
-			 nt_errstr(status));
+		d_printf("(%s) smbcli_full_connection failed: %s\n",
+			 __location__, nt_errstr(status));
 		ret = False;
 		goto done;
 	}
 
 	if (!(user_sid = whoami(mem_ctx, cli->tree))) {
-		d_printf("whoami on auth'ed connection failed\n");
+		d_printf("(%s) whoami on auth'ed connection failed\n",
+			 __location__);
 		ret = False;
 	}
 
 	talloc_free(cli);
 
 	if (!(anon_creds = create_anon_creds(mem_ctx))) {
-		d_printf("create_anon_creds failed\n");
+		d_printf("(%s) create_anon_creds failed\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -1608,27 +1611,29 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 		mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
 		"IPC$", NULL, anon_creds, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("anon smbcli_full_connection failed: %s\n",
-			 nt_errstr(status));
+		d_printf("(%s) anon smbcli_full_connection failed: %s\n",
+			 __location__, nt_errstr(status));
 		ret = False;
 		goto done;
 	}
 
 	if (!(user_sid = whoami(mem_ctx, cli->tree))) {
-		d_printf("whoami on anon connection failed\n");
+		d_printf("(%s) whoami on anon connection failed\n",
+			 __location__);
 		ret = False;
 		goto done;
 	}
 
 	if (!dom_sid_equal(user_sid,
 			   dom_sid_parse_talloc(mem_ctx, "s-1-5-7"))) {
-		d_printf("Anon lsa_GetUserName returned %s, expected S-1-5-7",
+		d_printf("(%s) Anon lsa_GetUserName returned %s, expected "
+			 "S-1-5-7", __location__,
 			 dom_sid_string(mem_ctx, user_sid));
 		ret = False;
 	}
 
 	if (!(user_creds = cli_credentials_init(mem_ctx))) {
-		d_printf("cli_credentials_init failed\n");
+		d_printf("(%s) cli_credentials_init failed\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -1644,7 +1649,7 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 			 cli_credentials_get_username(user_creds),
 			 cli_credentials_get_password(user_creds),
 			 &domain_name, &created_sid)) {
-		d_printf("create_user failed\n");
+		d_printf("(%s) create_user failed\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -1659,7 +1664,8 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 
 		session2 = smbcli_session_init(cli->transport, mem_ctx, False);
 		if (session2 == NULL) {
-			d_printf("smbcli_session_init failed\n");
+			d_printf("(%s) smbcli_session_init failed\n",
+				 __location__);
 			goto done;
 		}
 
@@ -1670,21 +1676,23 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 
 		status = smb_composite_sesssetup(session2, &setup);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("anon session setup failed: %s\n",
-				 nt_errstr(status));
+			d_printf("(%s) anon session setup failed: %s\n",
+				 __location__, nt_errstr(status));
 			ret = False;
 			goto done;
 		}
 
 		if (!NT_STATUS_IS_OK(secondary_tcon(mem_ctx, session2,
 						    "IPC$", &tree))) {
-			d_printf("secondary_tcon failed\n");
+			d_printf("(%s) secondary_tcon failed\n",
+				 __location__);
 			ret = False;
 			goto done;
 		}
 
 		if (!(user_sid = whoami(mem_ctx, tree))) {
-			d_printf("whoami on user connection failed\n");
+			d_printf("(%s) whoami on user connection failed\n",
+				 __location__);
 			ret = False;
 			goto delete;
 		}
@@ -1703,7 +1711,7 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
  delete:
 	if (!delete_user(cli, cmdline_credentials,
 			 cli_credentials_get_username(user_creds))) {
-		d_printf("delete_user failed\n");
+		d_printf("(%s) delete_user failed\n", __location__);
 		ret = False;
 	}
 
@@ -2345,7 +2353,8 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 
 		ZERO_STRUCT(r);
 		r.in.printername = talloc_asprintf(
-			mem_ctx, "\\\\%s", dcerpc_server_name(p));
+			mem_ctx, "\\\\%s",
+			lp_parm_string(-1, "torture", "host"));
 		r.in.datatype = NULL;
 		r.in.access_mask = 0;
 		r.in.level = 1;
