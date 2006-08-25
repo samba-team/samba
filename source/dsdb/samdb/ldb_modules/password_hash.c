@@ -489,7 +489,7 @@ static int build_domain_data_request(struct ph_context *ac)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ac->dom_req->operation = LDB_SEARCH;
-	ac->dom_req->op.search.base = samdb_base_dn(ac);
+	ac->dom_req->op.search.base = ldb_auto_basedn(ac->module->ldb);
 	ac->dom_req->op.search.scope = LDB_SCOPE_SUBTREE;
 
 	filter = talloc_asprintf(ac->dom_req, "(&(objectSid=%s)(|(objectClass=domain)(objectClass=builtinDomain)))", 

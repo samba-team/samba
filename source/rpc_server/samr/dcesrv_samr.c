@@ -225,7 +225,7 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct ldb_message **dom_msgs;
 	struct ldb_message **ref_msgs;
 	int ret;
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn;
 
 	r->out.sid = NULL;
 
@@ -236,6 +236,8 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	if (r->in.domain_name->string == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	partitions_basedn = samdb_partitions_dn(c_state->sam_ctx, mem_ctx);
 
 	if (strcasecmp(r->in.domain_name->string, "BUILTIN") == 0) {
 		ret = gendb_search(c_state->sam_ctx,
@@ -289,7 +291,7 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	const char * const ref_attrs[] = { "nETBIOSName", NULL};
 	struct ldb_message **dom_msgs;
 	struct ldb_message **ref_msgs;
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn;
 
 	*r->out.resume_handle = 0;
 	r->out.sam = NULL;
@@ -298,6 +300,8 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	DCESRV_PULL_HANDLE(h, r->in.connect_handle, SAMR_HANDLE_CONNECT);
 
 	c_state = h->data;
+
+	partitions_basedn = samdb_partitions_dn(c_state->sam_ctx, mem_ctx);
 
 	count = gendb_search(c_state->sam_ctx,
 			     mem_ctx, NULL, &dom_msgs, dom_attrs,
@@ -367,7 +371,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	struct ldb_message **dom_msgs;
 	struct ldb_message **ref_msgs;
 	int ret;
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn;
 
 	ZERO_STRUCTP(r->out.domain_handle);
 
@@ -378,6 +382,8 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	if (r->in.sid == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	partitions_basedn = samdb_partitions_dn(c_state->sam_ctx, mem_ctx);
 
 	ret = gendb_search(c_state->sam_ctx,
 			   mem_ctx, NULL, &dom_msgs, dom_attrs,

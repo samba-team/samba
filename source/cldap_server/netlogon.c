@@ -62,7 +62,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	const char *site_name;
 	const char *site_name2;
 	const char *pdc_ip;
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn;
 
 	if (cldapd->samctx == NULL) {
 		cldapd->samctx = samdb_connect(cldapd, anonymous_session(cldapd));
@@ -71,6 +71,8 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	}
+
+	partitions_basedn = samdb_partitions_dn(cldapd->samctx, mem_ctx);
 
 	/* the domain has an optional trailing . */
 	if (domain && domain[strlen(domain)-1] == '.') {

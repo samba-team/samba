@@ -889,7 +889,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	struct netr_DomainInfo1 *info1;
 	int ret, ret1, ret2, i;
 	NTSTATUS status;
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	const char *local_domain;
 
@@ -1143,7 +1143,7 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 	struct ldb_message **dom_res, **ref_res;
 	const char * const dom_attrs[] = { "dnsDomain", "objectSid", "objectGUID", NULL };
 	const char * const ref_attrs[] = { "nETBIOSName", NULL };
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	ZERO_STRUCT(r->out);
 

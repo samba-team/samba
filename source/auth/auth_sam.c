@@ -45,7 +45,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	struct ldb_message **msgs_tmp;
 	struct ldb_message **msgs;
 	struct ldb_message **msgs_domain_ref;
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	int ret;
 	int ret_domain;

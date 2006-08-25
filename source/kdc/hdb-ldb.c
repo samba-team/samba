@@ -524,7 +524,7 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
  	int ret;
 	char *cross_ref_filter;
 	struct ldb_result *cross_ref_res;
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(ldb_ctx, mem_ctx);
 
 	cross_ref_filter = talloc_asprintf(mem_ctx, 
 					   "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
@@ -706,7 +706,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 	const char *realm;
 	struct ldb_message **msg = NULL;
 	struct ldb_message **realm_ref_msg = NULL;
-	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(db->hdb_db, mem_ctx);
 	if (principal->name.name_string.len >= 2) {
 		/* 'normal server' case */
 		int ldb_ret;
