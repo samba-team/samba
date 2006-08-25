@@ -822,6 +822,11 @@ struct ldb_context *ldb_init(void *mem_ctx);
 */
 int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
 
+/*
+  return an automatic baseDN from the defaultNamingContext of the rootDSE
+*/
+const struct ldb_dn *ldb_auto_basedn(struct ldb_context *ldb);
+
 /**
   Search the database
 
