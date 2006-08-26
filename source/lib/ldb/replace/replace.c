@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "ldb/include/includes.h"
 
-#ifndef HAVE_STRNLEN
+#if !defined(HAVE_STRNLEN) && !defined(_SAMBA_BUILD_)
 /**
  Some platforms don't have strnlen
 **/
