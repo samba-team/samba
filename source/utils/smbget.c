@@ -388,7 +388,7 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 		offset_check = 0;
 	}
 
-	readbuf = SMB_MALLOC(blocksize);
+	readbuf = (char *)SMB_MALLOC(blocksize);
 
 	/* Now, download all bytes from offset_download to the end */
 	for(curpos = offset_download; curpos < remotestat.st_size; curpos+=blocksize) {
