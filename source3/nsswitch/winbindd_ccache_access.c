@@ -230,7 +230,7 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 	}
 
 	entry = get_ccache_by_username(state->request.data.ccache_ntlm_auth.user);
-	if (entry == NULL) {
+	if (entry == NULL || entry->cred_ptr == NULL) {
 		DEBUG(10,("winbindd_dual_ccache_ntlm_auth: could not find "
 			"credentials for user %s\n", 
 			state->request.data.ccache_ntlm_auth.user));
@@ -258,7 +258,7 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 		result = NT_STATUS_NO_MEMORY;
 	} else {
 		result = do_ntlm_auth_with_hashes(name_user, name_domain,
-						entry->lm_hash, entry->nt_hash,
+						entry->cred_ptr->lm_hash, entry->cred_ptr->nt_hash,
 						initial, challenge, &auth);
 	}
 

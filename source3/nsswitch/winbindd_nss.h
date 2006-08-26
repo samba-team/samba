@@ -456,22 +456,31 @@ struct winbindd_response {
 	} extra_data;
 };
 
+struct WINBINDD_MEMORY_CREDS {
+	struct WINBINDD_MEMORY_CREDS *next, *prev;
+	const char *username; /* lookup key. */
+	int ref_count;
+	size_t len;
+	unsigned char *nt_hash; /* Base pointer for the following 2 */
+	unsigned char *lm_hash;
+	char *pass;
+};
+
 struct WINBINDD_CCACHE_ENTRY {
+	struct WINBINDD_CCACHE_ENTRY *next, *prev;
 	const char *principal_name;
 	const char *ccname;
 	const char *service;
 	const char *username;
 	const char *sid_string;
-	unsigned char *nt_hash; /* Base pointer for the following 2 */
-	unsigned char *lm_hash;
-	char *pass;
+	struct WINBINDD_MEMORY_CREDS *cred_ptr;
+	int ref_count;
 	uid_t uid;
 	time_t create_time;
 	time_t renew_until;
 	BOOL refresh_tgt;
 	time_t refresh_time;
 	struct timed_event *event;
-	struct WINBINDD_CCACHE_ENTRY *next, *prev;
 };
 
 #endif
