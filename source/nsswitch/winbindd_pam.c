@@ -405,6 +405,7 @@ static void setup_return_cc_name(struct winbindd_cli_state *state, const char *c
  Authenticate a user with a clear text password using Kerberos and fill up
  ccache if required
  **********************************************************************/
+
 static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state,
 					    NET_USER_INFO_3 **info3)
@@ -630,9 +631,10 @@ failed:
 			 "%s\n", error_message(krb5_ret)));
 	}
 
-	if (!NT_STATUS_IS_OK(remove_ccache_by_ccname(cc))) {
+	if (!NT_STATUS_IS_OK(remove_ccache(state->request.data.auth.user))) {
 		DEBUG(3,("winbindd_raw_kerberos_login: "
-			  "could not remove ccache\n"));
+			  "could not remove ccache for user %s\n",
+			state->request.data.auth.user));
 	}
 
 done:
@@ -1224,7 +1226,7 @@ process_result:
 	
 		DOM_SID user_sid;
 
-		/* In all codepaths were result == NT_STATUS_OK info3 must have
+		/* In all codepaths where result == NT_STATUS_OK info3 must have
 		   been initialized. */
 		if (!info3) {
 			result = NT_STATUS_INTERNAL_ERROR;
@@ -1265,27 +1267,40 @@ process_result:
 
 		}
 
-		if ((state->request.flags & WBFLAG_PAM_CACHED_LOGIN) &&
-		    lp_winbind_offline_logon()) {
+		if ((state->request.flags & WBFLAG_PAM_CACHED_LOGIN)) {
 
-			result = winbindd_store_creds(domain,
+			/* Store in-memory creds for single-signon using ntlm_auth. */
+			result = winbindd_add_memory_creds(state->request.data.auth.user,
+							state->request.data.auth.pass);
+
+			if (!NT_STATUS_IS_OK(result)) {
+				DEBUG(10,("Failed to store memory creds: %s\n", nt_errstr(result)));
+				goto done;
+			}
+
+			if (lp_winbind_offline_logon()) {
+				result = winbindd_store_creds(domain,
 						      state->mem_ctx,
 						      state->request.data.auth.user,
 						      state->request.data.auth.pass,
 						      info3, NULL);
-			if (!NT_STATUS_IS_OK(result)) {
-				DEBUG(10,("Failed to store creds: %s\n", nt_errstr(result)));
-				goto done;
-			}
+				if (!NT_STATUS_IS_OK(result)) {
 
+					/* Release refcount. */
+					winbindd_delete_memory_creds(state->request.data.auth.user);
+
+					DEBUG(10,("Failed to store creds: %s\n", nt_errstr(result)));
+					goto done;
+				}
+			}
 		}
 
-			result = fillup_password_policy(domain, state);
+		result = fillup_password_policy(domain, state);
 
-			if (!NT_STATUS_IS_OK(result)) {
-				DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(result)));
-				goto done;
-			}
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(result)));
+			goto done;
+		}
 	
 	} 
 
@@ -1739,17 +1754,26 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	}
 
 done: 
-	if (NT_STATUS_IS_OK(result) && (state->request.flags & WBFLAG_PAM_CACHED_LOGIN) &&
-	    lp_winbind_offline_logon()) {
 
-		NTSTATUS cred_ret;
+	if (NT_STATUS_IS_OK(result) && (state->request.flags & WBFLAG_PAM_CACHED_LOGIN)) {
 		
-		cred_ret = winbindd_update_creds_by_name(contact_domain,
+		/* Update the single sign-on memory creds. */
+		result = winbindd_replace_memory_creds(state->request.data.chauthtok.user,
+							newpass);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10,("Failed to replace memory creds: %s\n", nt_errstr(result)));
+			goto process_result;
+		}
+
+		if (lp_winbind_offline_logon()) {
+			result = winbindd_update_creds_by_name(contact_domain,
 							 state->mem_ctx, user,
 							 newpass);
-		if (!NT_STATUS_IS_OK(cred_ret)) {
-			DEBUG(10,("Failed to store creds: %s\n", nt_errstr(cred_ret)));
-			goto process_result; /* FIXME: hm, risking inconsistant cache ? */
+			if (!NT_STATUS_IS_OK(result)) {
+				DEBUG(10,("Failed to store creds: %s\n", nt_errstr(result)));
+				goto process_result;
+			}
 		}
 	}		
 
@@ -1827,7 +1851,6 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state) 
 {
 	NTSTATUS result = NT_STATUS_NOT_SUPPORTED;
-	struct WINBINDD_CCACHE_ENTRY *entry;
 	int ret;
 
 	DEBUG(3, ("[%5lu]: pam dual logoff %s\n", (unsigned long)state->pid,
@@ -1840,45 +1863,32 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 
 #ifdef HAVE_KRB5
 	
-	/* what we need here is to find the corresponding krb5 ccache name *we*
-	 * created for a given username and destroy it (as the user who created it) */
-	
-	entry = get_ccache_by_username(state->request.data.logoff.user);
-	if (entry == NULL) {
-		DEBUG(10,("winbindd_pam_logoff: could not get ccname for user %s\n", 
-			state->request.data.logoff.user));
-		goto process_result;
-	}
-
-	DEBUG(10,("winbindd_pam_logoff: found ccache [%s]\n", entry->ccname));
-
-	if (entry->uid < 0 || state->request.data.logoff.uid < 0) {
+	if (state->request.data.logoff.uid < 0) {
 		DEBUG(0,("winbindd_pam_logoff: invalid uid\n"));
 		goto process_result;
 	}
 
-	if (entry->uid != state->request.data.logoff.uid) {
-		DEBUG(0,("winbindd_pam_logoff: uid's differ: %d != %d\n", 
-			entry->uid, state->request.data.logoff.uid));
+	/* what we need here is to find the corresponding krb5 ccache name *we*
+	 * created for a given username and destroy it (as the user who created it) */
+	
+	if (!ccache_entry_identical(state->request.data.logoff.user, 
+					state->request.data.logoff.uid,
+					state->request.data.logoff.krb5ccname)) {
+		DEBUG(0,("winbindd_pam_logoff: cached entry differs.\n"));
 		goto process_result;
 	}
 
-	if (!strcsequal(entry->ccname, state->request.data.logoff.krb5ccname)) {
-		DEBUG(0,("winbindd_pam_logoff: krb5ccnames differ: (daemon) %s != (client) %s\n", 
-			entry->ccname, state->request.data.logoff.krb5ccname));
-		goto process_result;
-	}
-
-	ret = ads_kdestroy(entry->ccname);
+	ret = ads_kdestroy(state->request.data.logoff.krb5ccname);
 
 	if (ret) {
 		DEBUG(0,("winbindd_pam_logoff: failed to destroy user ccache %s with: %s\n", 
-			entry->ccname, error_message(ret)));
+			state->request.data.logoff.krb5ccname, error_message(ret)));
 	} else {
 		DEBUG(10,("winbindd_pam_logoff: successfully destroyed ccache %s for user %s\n", 
-			entry->ccname, state->request.data.logoff.user));
-		remove_ccache_by_ccname(entry->ccname);
+			state->request.data.logoff.krb5ccname, state->request.data.logoff.user));
 	}
+
+	remove_ccache(state->request.data.logoff.user);
 
 	result = krb5_to_nt_status(ret);
 #else
@@ -1886,6 +1896,9 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 #endif
 
 process_result:
+
+	winbindd_delete_memory_creds(state->request.data.logoff.user);
+
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
 	fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
