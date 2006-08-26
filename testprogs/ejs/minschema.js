@@ -399,7 +399,80 @@ function walk_naming_context(ldb, namingContext) {
   trim the may attributes for an objectClass
 */
 function trim_objectclass_attributes(ldb, class) {
-	/* not implemented yet */
+	var i,j,n;
+
+	/* trim possibleInferiors,
+	 * include only the classes we extracted */
+	var possinf = class["possibleInferiors"];
+	if (possinf != undefined) {
+		var newpossinf = new Array();
+		if (typeof(possinf) == "string") {
+			possinf = new Array(possinf);
+		}
+		n = 0;
+		for (j = 0;j < possinf.length; j++) {
+			var x = possinf[j];
+			if (objectclasses[x] != undefined) {
+				newpossinf[n] = x;
+				n++;
+			}
+		}
+		class["possibleInferiors"] = newpossinf;
+	}
+
+	/* trim systemMayContain,
+	 * remove duplicates */
+	var sysmay = class["systemMayContain"];
+	if (sysmay != undefined) {
+		var newsysmay = new Array();
+		if (typeof(sysmay) == "string") {
+			sysmay = new Array(sysmay);
+		}
+		for (j = 0;j < sysmay.length; j++) {
+			var x = sysmay[j];
+			var dup = false;
+			if (newsysmay[0] == undefined) {
+				newsysmay[0] = x;
+			} else {
+				for (n = 0; n < newsysmay.length; n++) {
+					if (newsysmay[n] == x) {
+						dup = true;
+					}
+				}
+				if (dup == false) {
+					newsysmay[n] = x;
+				}
+			}
+		}
+		class["systemMayContain"] = newsysmay;
+	}
+
+	/* trim mayContain,
+	 * remove duplicates */
+	var may = class["mayContain"];
+	if (may != undefined) {
+		var newmay = new Array();
+		if (typeof(may) == "string") {
+			may = new Array(may);
+		}
+		for (j = 0;j < may.length; j++) {
+			var x = may[j];
+			var dup = false;
+			if (newmay[0] == undefined) {
+				newmay[0] = x;
+			} else {
+				for (n = 0; n < newmay.length; n++) {
+					if (newmay[n] == x) {
+						dup = true;
+					}
+				}
+				if (dup == false) {
+					newmay[n] = x;
+				}
+			}
+		}
+		class["mayContain"] = newmay;
+	}
 }
 
 /*
@@ -444,7 +517,6 @@ function list_append(a1, a2) {
 function attribute_list(class, attr1, attr2) {
 	var a1 = class[attr1];
 	var a2 = class[attr2];
-	var i;
 	if (typeof(a1) == "string") {
 		a1 = new Array(a1);
 	}
@@ -637,13 +709,6 @@ for (i in objectclasses) {
 }
 
 /*
-  trim the 'may' attribute lists to those really needed
-*/
-for (i in objectclasses) {
-	trim_objectclass_attributes(ldb, objectclasses[i]);
-}
-
-/*
   form the full list of attributes
 */
 for (i in objectclasses) {
@@ -653,6 +718,13 @@ for (i in objectclasses) {
 /* and attribute properties */
 for (i in attributes) {
 	find_attribute_properties(ldb, attributes[i]);
+}
+
+/*
+  trim the 'may' attribute lists to those really needed
+*/
+for (i in objectclasses) {
+	trim_objectclass_attributes(ldb, objectclasses[i]);
 }
 
 /*
