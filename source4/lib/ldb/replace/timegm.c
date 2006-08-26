@@ -38,7 +38,7 @@
 #include "includes.h"
 #include "ldb/include/includes.h"
 
-#ifndef HAVE_TIMEGM
+#if !defined(HAVE_TIMEGM) && !defined(_SAMBA_BUILD_)
 
 static int is_leap(unsigned y)
 {
