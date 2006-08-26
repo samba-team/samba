@@ -387,6 +387,20 @@ duplicate a string
 }
 #endif
 
+#ifndef HAVE_STRNLEN
+/**
+ Some platforms don't have strnlen
+**/
+
+ size_t strnlen(const char *s, size_t n)
+{
+	size_t i;
+	for (i=0; i<n && s[i] != '\0'; i++)
+		/* noop */ ;
+	return i;
+}
+#endif
+
 #ifndef HAVE_WAITPID
 int waitpid(pid_t pid,int *status,int options)
 {
