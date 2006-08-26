@@ -138,7 +138,8 @@ static const struct syntax_map syntax_map[] = {
 		.equality = "caseExactIA5Match",
 		.comment = "IA5 String" 
 	},
-	{  }
+	{	.Standard_OID = NULL
+	}
 };
 
 
