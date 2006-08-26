@@ -490,7 +490,7 @@ int32 DNSUpdateCreateUpdateRequest( DNS_UPDATE_REQUEST ** ppDNSRequest );
 DNS_ERROR DNSOpen( char *nameserver, int32 dwType, HANDLE * phDNSServer );
 int32 DNSReceiveBufferContext( HANDLE hDNSHandle, HANDLE hDNSRecvBuffer, int32 * pdwBytesRead );
 int32 DNSCreateSendBuffer( HANDLE * phDNSSendBuffer );
-int32 DNSMarshallBuffer( HANDLE hDNSSendBuffer, uint8 * pDNSSendBuffer, int32 dwBufferSize, int32 * pdwBytesWritten );;
+int32 DNSMarshallBuffer( HANDLE hDNSSendBuffer, uint8 * pDNSSendBuffer, int32 dwBufferSize, int32 * pdwBytesWritten );
 int32 DNSSendBufferContext( HANDLE hDNSServer, HANDLE hSendBuffer, int32 * pdwBytesSent );
 int32 DNSCreateReceiveBuffer( HANDLE * phDNSRecvBuffer );
 int32 DNSUnmarshallBuffer( HANDLE hDNSRecvBuffer, uint8 * pDNSRecvBuffer, int32 dwBufferSize, int32 * pdwBytesRead );
