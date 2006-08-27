@@ -30,6 +30,7 @@ struct libnet_Lookup {
 	} out;
 };
 
+
 struct libnet_LookupDCs {
 	struct {
 		const char *domain_name;
@@ -38,5 +39,20 @@ struct libnet_LookupDCs {
 	struct {
 		int num_dcs;
 		struct nbt_dc_name *dcs;
+	} out;
+};
+
+
+struct libnet_LookupName {
+	struct {
+		const char *name;
+		const char *domain_name;
+	} in;
+	struct {
+		struct dom_sid domain_sid;
+		int rid;
+		enum lsa_SidType sid_type;
+		const char *sidstr;
+		const char *error_string;
 	} out;
 };

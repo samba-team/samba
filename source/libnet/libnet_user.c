@@ -613,3 +613,160 @@ NTSTATUS libnet_ModifyUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	c = libnet_ModifyUser_send(ctx, mem_ctx, r, NULL);
 	return libnet_ModifyUser_recv(c, mem_ctx, r);
 }
+
+
+struct user_info_state {
+	struct libnet_context *ctx;
+	const char *domain_name;
+	struct libnet_LookupName lookup;
+	struct libnet_DomainOpen domopen;
+	struct libnet_rpc_userinfo userinfo;
+
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg *);
+};
+
+
+static void continue_name_found(struct composite_context *ctx);
+static void continue_domain_opened(struct composite_context *ctx);
+static void continue_info_received(struct composite_context *ctx);
+
+
+struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
+					       TALLOC_CTX *mem_ctx,
+					       struct libnet_UserInfo *r,
+					       void (*monitor)(struct monitor_msg*))
+{
+	struct composite_context *c;
+	struct user_info_state *s;
+	struct composite_context *lookup_req;
+
+	c = composite_create(mem_ctx, ctx->event_ctx);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct user_info_state);
+	if (composite_nomem(s, c)) return c;
+
+	c->private_data = s;
+
+	s->monitor_fn = monitor;
+	s->ctx = ctx;
+	s->domain_name = talloc_strdup(c, r->in.domain_name);
+
+	s->lookup.in.domain_name = s->domain_name;
+	s->lookup.in.name        = talloc_strdup(c, r->in.user_name);
+
+	lookup_req = libnet_LookupName_send(ctx, c, &s->lookup, s->monitor_fn);
+	if (composite_nomem(lookup_req, c)) return c;
+
+	composite_continue(c, lookup_req, continue_name_found, c);
+	return c;
+}
+
+
+static void continue_name_found(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct user_info_state *s;
+	struct composite_context *domopen_req;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct user_info_state);
+
+	c->status = libnet_LookupName_recv(ctx, c, &s->lookup);
+	if (!composite_is_ok(c)) return;
+
+	if (s->lookup.out.sid_type != SID_NAME_USER) {
+		composite_error(c, NT_STATUS_NO_SUCH_USER);
+		return;
+	}
+
+	s->domopen.in.type = DOMAIN_SAMR;
+	s->domopen.in.domain_name = s->domain_name;
+	s->domopen.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+
+	domopen_req = libnet_DomainOpen_send(s->ctx, &s->domopen, s->monitor_fn);
+	if (composite_nomem(domopen_req, c)) return;
+	
+	composite_continue(c, domopen_req, continue_domain_opened, c);
+}
+
+
+static void continue_domain_opened(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct user_info_state *s;
+	struct composite_context *info_req;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct user_info_state);
+
+	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domopen);
+	if (!composite_is_ok(c)) return;
+
+	s->userinfo.in.domain_handle = s->ctx->samr.handle;
+	s->userinfo.in.sid = s->lookup.out.sidstr;
+	s->userinfo.in.level = 21;
+
+	info_req = libnet_rpc_userinfo_send(s->ctx->samr.pipe, &s->userinfo, s->monitor_fn);
+	if (composite_nomem(info_req, c)) return;
+
+	composite_continue(c, info_req, continue_info_received, c);
+}
+
+
+static void continue_info_received(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct user_info_state *s;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct user_info_state);
+	
+	c->status = libnet_rpc_userinfo_recv(ctx, c, &s->userinfo);
+	if (!composite_is_ok(c)) return;
+
+	composite_done(c);
+}
+
+
+NTSTATUS libnet_UserInfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+			      struct libnet_UserInfo *r)
+{
+	NTSTATUS status;
+	struct user_info_state *s;
+
+	status = composite_wait(c);
+
+	if (NT_STATUS_IS_OK(status) && r != NULL) {
+		struct samr_UserInfo21 *info;
+
+		s = talloc_get_type(c->private_data, struct user_info_state);
+		info = &s->userinfo.out.info.info21;
+
+		r->out.account_name   = talloc_steal(mem_ctx, info->account_name.string);
+		r->out.full_name      = talloc_steal(mem_ctx, info->full_name.string);
+		r->out.description    = talloc_steal(mem_ctx, info->description.string);
+		r->out.home_directory = talloc_steal(mem_ctx, info->home_directory.string);
+		r->out.home_drive     = talloc_steal(mem_ctx, info->home_drive.string);
+		r->out.comment        = talloc_steal(mem_ctx, info->comment.string);
+		r->out.logon_script   = talloc_steal(mem_ctx, info->logon_script.string);
+		r->out.profile_path   = talloc_steal(mem_ctx, info->profile_path.string);
+
+		r->out.error_string = talloc_strdup(mem_ctx, "Success");
+	}
+
+	talloc_free(c);
+	
+	return status;
+}
+
+
+NTSTATUS libnet_UserInfo(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
+			 struct libnet_UserInfo *r)
+{
+	struct composite_context *c;
+	
+	c = libnet_UserInfo_send(ctx, mem_ctx, r, NULL);
+	return libnet_UserInfo_recv(c, mem_ctx, r);
+}

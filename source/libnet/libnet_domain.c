@@ -645,6 +645,7 @@ NTSTATUS libnet_DomainCloseLsa_recv(struct composite_context *c, struct libnet_c
 	if (NT_STATUS_IS_OK(status) && io) {
 		ctx->lsa.name = NULL;
 		ZERO_STRUCT(ctx->lsa.handle);
+
 		io->out.error_string = talloc_asprintf(mem_ctx, "Success");
 
 	} else if (!NT_STATUS_IS_OK(status)) {
