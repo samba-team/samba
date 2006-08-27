@@ -2467,7 +2467,7 @@ static BOOL run_trans2test(int dummy)
 	struct cli_state *cli;
 	int fnum;
 	SMB_OFF_T size;
-	time_t c_time, a_time, m_time, m_time2;
+	time_t c_time, a_time, m_time;
 	struct timespec c_time_ts, a_time_ts, m_time_ts, w_time_ts, m_time2_ts;
 	const char *fname = "\\trans2.tst";
 	const char *dname = "\\trans2";
@@ -2577,7 +2577,8 @@ static BOOL run_trans2test(int dummy)
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	} else {
-		if (m_time2 == m_time) {
+		if (memcmp(&m_time_ts, &m_time2_ts, sizeof(struct timespec))
+		    == 0) {
 			printf("This system does not update directory modification times\n");
 			correct = False;
 		}
