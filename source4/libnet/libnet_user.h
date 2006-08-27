@@ -87,3 +87,30 @@ struct libnet_ModifyUser {
 			mod->fields |= flag; \
 		} \
 	}
+
+
+struct libnet_UserInfo {
+	struct {
+		const char *user_name;
+		const char *domain_name;
+	} in;
+	struct {
+		const char *account_name;
+		const char *full_name;
+		const char *description;
+		const char *home_directory;
+		const char *home_drive;
+		const char *comment;
+		const char *logon_script;
+		const char *profile_path;
+		struct timeval *acct_expiry;
+		struct timeval *allow_password_change;
+		struct timeval *force_password_change;
+		struct timeval *last_logon;
+		struct timeval *last_logoff;
+		struct timeval *last_password_change;
+		uint32_t acct_flags;
+		
+		const char *error_string;
+	} out;
+};
