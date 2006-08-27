@@ -32,9 +32,11 @@ NTSTATUS torture_net_init(void)
 	register_torture_op("NET-API-LOOKUP", torture_lookup);
 	register_torture_op("NET-API-LOOKUPHOST", torture_lookup_host);
 	register_torture_op("NET-API-LOOKUPPDC", torture_lookup_pdc);
+	register_torture_op("NET-API-LOOKUPNAME", torture_lookup_sam_name);
 	register_torture_op("NET-API-CREATEUSER", torture_createuser);
 	register_torture_op("NET-API-DELETEUSER", torture_deleteuser);
 	register_torture_op("NET-API-MODIFYUSER", torture_modifyuser);
+	register_torture_op("NET-API-USERINFO", torture_userinfo_api);
 	register_torture_op("NET-API-RPCCONN-BIND", torture_rpc_connect_binding);
 	register_torture_op("NET-API-RPCCONN-SRV", torture_rpc_connect_srv);
 	register_torture_op("NET-API-RPCCONN-PDC", torture_rpc_connect_pdc);
@@ -42,6 +44,8 @@ NTSTATUS torture_net_init(void)
 	register_torture_op("NET-API-RPCCONN-DCINFO", torture_rpc_connect_dc_info);
 	register_torture_op("NET-API-LISTSHARES", torture_listshares);
 	register_torture_op("NET-API-DELSHARE", torture_delshare);
+	register_torture_op("NET-API-DOMOPENLSA", torture_domain_open_lsa);
+	register_torture_op("NET-API-DOMCLOSELSA", torture_domain_close_lsa);
 
 	return NT_STATUS_OK;
 }
