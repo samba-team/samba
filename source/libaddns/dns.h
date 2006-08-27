@@ -50,6 +50,30 @@
 #include <krb5.h>
 #endif
 
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+
+#ifndef int16
+#define int16 int16_t
+#endif
+
+#ifndef uint16
+#define uint16 uint16_t
+#endif
+
+#ifndef int32
+#define int32 int32_t
+#endif
+
+#ifndef uint32
+#define uint32 uint32_t
+#endif
+#endif
+
+#ifdef HAVE_KRB5_H
+#include <krb5.h>
+#endif
+
 #if HAVE_GSSAPI_H
 #include <gssapi.h>
 #elif HAVE_GSSAPI_GSSAPI_H
