@@ -650,9 +650,11 @@ const char *nt_errstr(NTSTATUS nt_code)
         static pstring msg;
         int idx = 0;
 
+#ifdef HAVE_LDAP
         if (NT_STATUS_TYPE(nt_code) == NT_STATUS_TYPE_LDAP) {
                 return ldap_err2string(NT_STATUS_LDAP_CODE(nt_code));
 	}
+#endif
 
 	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
 
