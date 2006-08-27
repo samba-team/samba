@@ -165,3 +165,28 @@ done:
 	talloc_free(mem_ctx);
 	return ret;
 }
+
+
+BOOL torture_lookup_sam_name(struct torture_context *torture)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	struct libnet_context *ctx;
+	struct libnet_LookupName r;
+
+	ctx = libnet_context_init(NULL);
+	ctx->cred = cmdline_credentials;
+
+	mem_ctx = talloc_init("torture lookup sam name");
+	if (mem_ctx == NULL) return False;
+
+	r.in.name = "Administrator";
+	r.in.domain_name = lp_workgroup();
+
+	status = libnet_LookupName(ctx, mem_ctx, &r);
+
+	talloc_free(mem_ctx);
+	talloc_free(ctx);
+
+	return True;
+}
