@@ -124,3 +124,14 @@ OBJ_FILES = \
 # End MODULE ldb_partition
 ################################################
 
+################################################
+# Start MODULE ldb_schema
+[MODULE::ldb_schema]
+SUBSYSTEM = ldb
+INIT_FUNCTION = ldb_schema_init
+OBJ_FILES = \
+		schema.o
+#
+# End MODULE ldb_schema
+################################################
+
