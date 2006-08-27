@@ -388,7 +388,7 @@ static void initarbuf(void)
 {
 	/* initialize tar buffer */
 	tbufsiz=blocksize*TBLOCK;
-	tarbuf=SMB_MALLOC(tbufsiz);      /* FIXME: We might not get the buffer */
+	tarbuf=(char *)SMB_MALLOC(tbufsiz);      /* FIXME: We might not get the buffer */
 
 	/* reset tar buffer pointer and tar file counter and total dumped */
 	tp=0; ntarf=0; ttarf=0;
