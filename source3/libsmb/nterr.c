@@ -650,11 +650,14 @@ const char *nt_errstr(NTSTATUS nt_code)
         static pstring msg;
         int idx = 0;
 
+        if (NT_STATUS_TYPE(nt_code) == NT_STATUS_TYPE_LDAP) {
+                return ldap_err2string(NT_STATUS_LDAP_CODE(nt_code));
+	}
+
 	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
 
 	while (nt_errs[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == 
-                    NT_STATUS_V(nt_code)) {
+		if (NT_STATUS_EQUAL(nt_errs[idx].nt_errcode, nt_code)) {
                         return nt_errs[idx].nt_errstr;
 		}
 		idx++;

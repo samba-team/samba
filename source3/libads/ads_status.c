@@ -76,10 +76,7 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 		return map_nt_error_from_unix(status.err.rc);
 #ifdef HAVE_LDAP
 	case ENUM_ADS_ERROR_LDAP:
-		if (status.err.rc == LDAP_NO_MEMORY) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		break;
+		return NT_STATUS_LDAP(status.err.rc);
 #endif
 #ifdef HAVE_KRB5
 	case ENUM_ADS_ERROR_KRB5:
