@@ -238,7 +238,7 @@ static int32 DNSSelect( HANDLE hDNSHandle )
 	if ( !dwNumSockets ) {
 #ifndef WIN32
 		dwError = ETIMEDOUT;
-#elif
+#else
 		dwError = WSAETIMEDOUT;
 #endif
 	}
