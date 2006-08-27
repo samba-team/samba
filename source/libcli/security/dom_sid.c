@@ -285,14 +285,7 @@ char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 		       (unsigned int)sid->sid_rev_num, (unsigned long)ia);
 
 	for (i = 0; i < sid->num_auths; i++) {
-                char *tmp = talloc_asprintf(mem_ctx, "%lu",
-					    (unsigned long)sid->sub_auths[i]);
-                if (tmp == NULL) {
-                        talloc_free(ret);
-                        return NULL;
-                }
-                ofs += snprintf(ret + ofs, maxlen - ofs, "-%s", tmp);
-                talloc_free(tmp);
+		ofs += snprintf(ret + ofs, maxlen - ofs, "-%lu", (unsigned long)sid->sub_auths[i]);
 	}
 	
 	return ret;
