@@ -124,14 +124,14 @@ int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags)
 	struct ldb_message_element *els;
 
 	if (! ldb_valid_attr_name(attr_name)) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	els = talloc_realloc(msg, msg->elements, 
 			     struct ldb_message_element, msg->num_elements+1);
 	if (!els) {
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	els[msg->num_elements].values = NULL;
@@ -140,13 +140,13 @@ int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags)
 	els[msg->num_elements].name = talloc_strdup(els, attr_name);
 	if (!els[msg->num_elements].name) {
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	msg->elements = els;
 	msg->num_elements++;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -157,13 +157,13 @@ int ldb_msg_add(struct ldb_message *msg,
 		int flags)
 {
 	if (ldb_msg_add_empty(msg, el->name, flags) != 0) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	msg->elements[msg->num_elements-1] = *el;
 	msg->elements[msg->num_elements-1].flags = flags;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -182,19 +182,19 @@ int ldb_msg_add_value(struct ldb_message *msg,
 		el = ldb_msg_find_element(msg, attr_name);
 	}
 	if (!el) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	vals = talloc_realloc(msg, el->values, struct ldb_val, el->num_values+1);
 	if (!vals) {
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	el->values = vals;
 	el->values[el->num_values] = *val;
 	el->num_values++;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 
@@ -258,7 +258,7 @@ int ldb_msg_add_fmt(struct ldb_message *msg,
 	str = talloc_vasprintf(msg, fmt, ap);
 	va_end(ap);
 
-	if (str == NULL) return -1;
+	if (str == NULL) return LDB_ERR_OPERATIONS_ERROR;
 
 	val.data   = (uint8_t *)str;
 	val.length = strlen(str);
@@ -684,13 +684,13 @@ int ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *r
 {
 	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
 	if (el == NULL) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 	el->name = talloc_strdup(msg->elements, replace);
 	if (el->name == NULL) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	return 0;
+	return LDB_SUCCESS;
 }
 
 
@@ -701,10 +701,10 @@ int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *rep
 {
 	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
 	if (el == NULL) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 	if (ldb_msg_add(msg, el, 0) != 0) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	return ldb_msg_rename_attr(msg, attr, replace);
 }
