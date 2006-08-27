@@ -587,7 +587,6 @@ BOOL pm_process( const char *FileName,
 
 		result = Parse( InFile, sfunc, pfunc );
 		SAFE_FREE( bufr );
-		bufr  = NULL;
 		bSize = 0;
 	}
 
