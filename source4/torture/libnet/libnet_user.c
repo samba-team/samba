@@ -509,3 +509,64 @@ done:
 	talloc_free(mem_ctx);
 	return ret;
 }
+
+
+BOOL torture_userinfo_api(struct torture_context *torture)
+{
+	const char *name = TEST_USERNAME;
+	const char *binding;
+	BOOL ret = True;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx, *prep_mem_ctx;
+	struct libnet_context *ctx;
+	struct dcerpc_pipe *p;
+	struct policy_handle h;
+	struct lsa_String domain_name;
+	struct libnet_UserInfo req;
+
+	prep_mem_ctx = talloc_init("torture user info");
+	binding = lp_parm_string(-1, "torture", "binding");
+
+	ctx = libnet_context_init(NULL);
+	ctx->cred = cmdline_credentials;
+
+	status = torture_rpc_connection(prep_mem_ctx,
+					&p,
+					&dcerpc_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	domain_name.string = lp_workgroup();
+	if (!test_opendomain(p, prep_mem_ctx, &h, &domain_name)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_createuser(p, prep_mem_ctx, &h, name)) {
+		ret = False;
+		goto done;
+	}
+
+	ZERO_STRUCT(req);
+	
+	req.in.domain_name = domain_name.string;
+	req.in.user_name   = name;
+
+	status = libnet_UserInfo(ctx, mem_ctx, &req);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("libnet_UserInfo call failed: %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
+		printf("cleanup failed\n");
+		ret = False;
+		goto done;
+	}
+
+done:
+	talloc_free(ctx);
+	talloc_free(mem_ctx);
+	return ret;
+}
