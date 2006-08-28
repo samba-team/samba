@@ -432,6 +432,10 @@ This enables tracking of the NULL memory context without enabling leak
 reporting on exit. Useful for when you want to do your own leak
 reporting call via talloc_report_null_full();
 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void talloc_disable_null_tracking(void);
+
+This disables tracking of the NULL memory context.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 (type *)talloc_zero(const void *ctx, type);

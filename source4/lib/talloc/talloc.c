@@ -79,9 +79,8 @@
    talloc_enable_leak_report_full() is called, otherwise it remains
    NULL
 */
-static const void *null_context;
+static void *null_context;
 static void *cleanup_context;
-
 
 struct talloc_reference_handle {
 	struct talloc_reference_handle *next, *prev;
@@ -906,6 +905,15 @@ void talloc_enable_null_tracking(void)
 	if (null_context == NULL) {
 		null_context = talloc_named_const(NULL, 0, "null_context");
 	}
+}
+
+/*
+  disable tracking of the NULL context
+*/
+void talloc_disable_null_tracking(void)
+{
+	talloc_free(null_context);
+	null_context = NULL;
 }
 
 /*
