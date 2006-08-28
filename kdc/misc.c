@@ -106,10 +106,7 @@ _kdc_get_preferred_key(krb5_context context,
     for (i = 0; p[i] != ETYPE_NULL; i++) {
 	if (krb5_enctype_valid(context, p[i]) != 0)
 	    continue;
-	ret = hdb_enctype2key(context, 
-			      &h->entry,
-			      p[i],
-			      key);
+	ret = hdb_enctype2key(context, &h->entry, p[i], key);
 	if (ret == 0) {
 	    *enctype = p[i];
 	    return 0;
