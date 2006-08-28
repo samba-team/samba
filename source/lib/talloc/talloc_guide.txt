@@ -193,7 +193,7 @@ destructor is only called when the memory is just about to go away.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-void talloc_increase_ref_count(const void *ptr);
+int talloc_increase_ref_count(const void *ptr);
 
 The talloc_increase_ref_count(ptr) function is exactly equivalent to:
 
@@ -202,6 +202,7 @@ The talloc_increase_ref_count(ptr) function is exactly equivalent to:
 You can use either syntax, depending on which you think is clearer in
 your code.
 
+It returns 0 on success and -1 on failure.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void talloc_set_name(const void *ptr, const char *fmt, ...);

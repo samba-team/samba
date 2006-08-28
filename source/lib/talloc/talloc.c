@@ -219,9 +219,12 @@ void _talloc_set_destructor(const void *ptr, int (*destructor)(void *))
 /*
   increase the reference count on a piece of memory. 
 */
-void talloc_increase_ref_count(const void *ptr)
+int talloc_increase_ref_count(const void *ptr)
 {
-	talloc_reference(null_context, ptr);
+	if (!talloc_reference(null_context, ptr)) {
+		return -1;
+	}
+	return 0;
 }
 
 /*
@@ -243,7 +246,7 @@ static int talloc_reference_destructor(struct talloc_reference_handle *handle)
   same underlying data, and you want to be able to free the two instances separately,
   and in either order
 */
-void *talloc_reference(const void *context, const void *ptr)
+void *_talloc_reference(const void *context, const void *ptr)
 {
 	struct talloc_chunk *tc;
 	struct talloc_reference_handle *handle;
