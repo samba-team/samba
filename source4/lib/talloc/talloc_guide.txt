@@ -82,6 +82,14 @@ The function talloc_size() should be used when you don't have a
 convenient type to pass to talloc(). Unlike talloc(), it is not type
 safe (as it returns a void *), so you are on your own for type checking.
 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+(typeof(ptr)) talloc_ptrtype(const void *ctx, ptr);
+
+The talloc_ptrtype() macro should be used when you have a pointer and
+want to allocate memory to point at with this pointer. When compiling
+with gcc >= 3 it is typesafe. Note this is a wrapper of talloc_size()
+and talloc_get_name() will return the current location in the source file.
+and not the type.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 int talloc_free(void *ptr);
@@ -515,6 +523,14 @@ The talloc_array_size() function is useful when the type is not
 known. It operates in the same way as talloc_array(), but takes a size
 instead of a type.
 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+(typeof(ptr)) talloc_array_ptrtype(const void *ctx, ptr, uint_t count);
+
+The talloc_ptrtype() macro should be used when you have a pointer to an array
+and want to allocate memory of an array to point at with this pointer. When compiling
+with gcc >= 3 it is typesafe. Note this is a wrapper of talloc_array_size()
+and talloc_get_name() will return the current location in the source file.
+and not the type.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void *talloc_realloc_fn(const void *ctx, void *ptr, size_t size);
