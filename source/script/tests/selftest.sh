@@ -117,6 +117,9 @@ cat >$SERVERCONFFILE<<EOF
 
 	kernel oplocks = no
 
+	printing = bsd
+	printcap name = /dev/null
+
 [tmp]
 	path = $PREFIX_ABS/tmp
 	read only = no
