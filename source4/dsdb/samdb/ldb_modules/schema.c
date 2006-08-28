@@ -41,7 +41,7 @@
    see ldap_server/devdocs/AD-syntaxes.txt
 */
 
-enum schema_int_attr_id {
+enum schema_internal_syntax {
 	SCHEMA_AS_BOOLEAN,
 	SCHEMA_AS_INTEGER,
 	SCHEMA_AS_OCTET_STRING,
@@ -77,7 +77,7 @@ enum schema_class_type {
 struct schema_attribute {
 	char *OID;				/* attributeID     */
 	char *name;				/* lDAPDisplayName */
-	enum schema_int_attr_id syntax;		/* generated from attributeSyntax, oMSyntax, oMObjectClass */
+	enum schema_internal_syntax syntax;	/* generated from attributeSyntax, oMSyntax, oMObjectClass */
 	bool single;				/* isSingleValued  */
 	int min;				/* rangeLower      */
 	int max;				/* rangeUpper      */
@@ -253,7 +253,7 @@ struct schema_attribute **schema_get_attrs_list(struct ldb_module *module,
 	return list;
 }
 
-static int map_schema_syntax(uint32_t om_syntax, const char *attr_syntax, const struct ldb_val *om_class, enum schema_int_attr_id *syntax)
+static int map_schema_syntax(uint32_t om_syntax, const char *attr_syntax, const struct ldb_val *om_class, enum schema_internal_syntax *syntax)
 {
 	int ret;
 
