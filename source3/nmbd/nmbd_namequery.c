@@ -59,7 +59,15 @@ static void query_name_response( struct subnet_record   *subrec,
   
 			rrec->repeat_count = 0;
 			/* How long we should wait for. */
-			rrec->repeat_time = p->timestamp + nmb->answers->ttl;
+			if (nmb->answers) {
+				rrec->repeat_time = p->timestamp + nmb->answers->ttl;
+			} else {
+				/* No answer - this is probably a corrupt
+				   packet.... */
+				DEBUG(0,("query_name_response: missing answer record in "
+					"NMB_WACK_OPCODE response.\n"));
+				rrec->repeat_time = p->timestamp + 10;
+			}
 			rrec->num_msgs--;
 			return;
 		} else if(nmb->header.rcode != 0) {
