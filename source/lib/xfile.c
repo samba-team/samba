@@ -267,7 +267,9 @@ int x_fflush(XFILE *f)
 	f->bufused -= ret;
 	if (f->bufused > 0) {
 		f->flags |= X_FLAG_ERROR;
-		memmove(f->buf, ret + (char *)f->buf, f->bufused);
+		if (f->buf) {
+			memmove(f->buf, ret + (char *)f->buf, f->bufused);
+		}
 		return -1;
 	}
 
