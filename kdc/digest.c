@@ -100,9 +100,8 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 
 	ret = EINVAL;
-	krb5_clear_error_string(context);
+	krb5_set_error_string(context, "Wrong digest server principal used");
 	p = krb5_principal_get_comp_string(context, principal, 0);
-
 	if (p == NULL) {
 	    krb5_free_principal(context, principal);
 	    goto out;
@@ -152,7 +151,7 @@ _kdc_do_digest(krb5_context context,
 
 	if (client->entry.flags.allow_digest == 0) {
 	    krb5_set_error_string(context, 
-				  "server is not permitted to use digest");
+				  "Client is not permitted to use digest");
 	    ret = KRB5KDC_ERR_POLICY;
 	    _kdc_free_ent (context, client);
 	    goto out;
@@ -167,6 +166,11 @@ _kdc_do_digest(krb5_context context,
 	ret = krb5_auth_con_getremotesubkey(context, ac, &key);
 	if (ret)
 	    goto out;
+	if (key == NULL) {
+	    krb5_set_error_string(context, "digest: remote subkey not found");
+	    ret = EINVAL;
+	    goto out;
+	}
 
 	ret = krb5_crypto_init(context, key, 0, &crypto);
 	krb5_free_keyblock (context, key);
@@ -183,8 +187,10 @@ _kdc_do_digest(krb5_context context,
 	   
     ret = decode_DigestReqInner(buf.data, buf.length, &ireq, NULL);
     krb5_data_free(&buf);
-    if (ret)
+    if (ret) {
+	krb5_set_error_string(context, "Failed to decode digest inner request");
 	goto out;
+    }
 
     /*
      * Process the inner request
@@ -192,8 +198,7 @@ _kdc_do_digest(krb5_context context,
 
     switch (ireq.element) {
     case choice_DigestReqInner_init: {
-	unsigned char server_nonce[16];
-	char identifier;
+	unsigned char server_nonce[16], identifier;
 
 	RAND_pseudo_bytes(&identifier, sizeof(identifier));
 	RAND_pseudo_bytes(&server_nonce, sizeof(server_nonce));
@@ -481,7 +486,6 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 	}
 
-	/* just support CHAP for now */
 	if (strcasecmp(ireq.u.digestRequest.type, "CHAP") == 0) {
 	    MD5_CTX ctx;
 	    char md[MD5_DIGEST_LENGTH];
@@ -513,6 +517,102 @@ _kdc_do_digest(krb5_context context,
 		ret = ENOMEM;
 		goto out;
 	    }
+	} else if (strcasecmp(ireq.u.digestRequest.type, "SASL-DIGEST-MD5") == 0) {
+	    MD5_CTX ctx;
+	    char md[MD5_DIGEST_LENGTH];
+	    char *A1, *A2;
+
+	    if (ireq.u.digestRequest.nonceCount == NULL) 
+		goto out;
+	    if (ireq.u.digestRequest.clientNonce == NULL) 
+		goto out;
+	    if (ireq.u.digestRequest.qop == NULL) 
+		goto out;
+	    if (ireq.u.digestRequest.realm == NULL) 
+		goto out;
+	    
+	    MD5_Init(&ctx);
+	    MD5_Update(&ctx, ireq.u.digestRequest.username,
+		       strlen(ireq.u.digestRequest.username));
+	    MD5_Update(&ctx, ":", 1);
+	    MD5_Update(&ctx, *ireq.u.digestRequest.realm,
+		       strlen(*ireq.u.digestRequest.realm));
+	    MD5_Update(&ctx, ":", 1);
+	    MD5_Update(&ctx, password, strlen(password));
+	    MD5_Final(md, &ctx);
+	    
+	    MD5_Init(&ctx);
+	    MD5_Update(&ctx, md, sizeof(md));
+	    MD5_Update(&ctx, ":", 1);
+	    MD5_Update(&ctx, ireq.u.digestRequest.serverNonce,
+		       strlen(ireq.u.digestRequest.serverNonce));
+	    MD5_Update(&ctx, ":", 1);
+	    MD5_Update(&ctx, *ireq.u.digestRequest.nonceCount,
+		       strlen(*ireq.u.digestRequest.nonceCount));
+	    if (ireq.u.digestRequest.authid) {
+		MD5_Update(&ctx, ":", 1);
+		MD5_Update(&ctx, *ireq.u.digestRequest.authid,
+			   strlen(*ireq.u.digestRequest.authid));
+	    }
+	    MD5_Final(md, &ctx);
+	    hex_encode(md, sizeof(md), &A1);
+	    if (A1 == NULL) {
+		krb5_set_error_string(context, "out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+	    
+	    MD5_Init(&ctx);
+	    MD5_Update(&ctx, "AUTHENTICATE:", sizeof("AUTHENTICATE:") - 1);
+	    MD5_Update(&ctx, *ireq.u.digestRequest.uri,
+		       strlen(*ireq.u.digestRequest.uri));
+	
+	    /* conf|int */
+	    if (strcmp(ireq.u.digestRequest.digest, "clear") != 0) {
+		static char conf_zeros[] = ":00000000000000000000000000000000";
+		MD5_Update(&ctx, conf_zeros, sizeof(conf_zeros) - 1);
+	    }
+	    
+	    MD5_Final(md, &ctx);
+	    hex_encode(md, sizeof(md), &A2);
+	    if (A2 == NULL) {
+		krb5_set_error_string(context, "out of memory");
+		ret = ENOMEM;
+		free(A1);
+		goto out;
+	    }
+
+	    MD5_Init(&ctx);
+	    MD5_Update(&ctx, A1, strlen(A2));
+	    MD5_Update(&ctx, ":", 1);
+	    MD5_Update(&ctx, ireq.u.digestRequest.serverNonce,
+		       strlen(ireq.u.digestRequest.serverNonce));
+	    MD5_Update(&ctx, ":", 1);
+	    MD5_Update(&ctx, *ireq.u.digestRequest.nonceCount,
+		       strlen(*ireq.u.digestRequest.nonceCount));
+	    MD5_Update(&ctx, ":", 1);
+	    MD5_Update(&ctx, *ireq.u.digestRequest.clientNonce,
+		       strlen(*ireq.u.digestRequest.clientNonce));
+	    MD5_Update(&ctx, ":", 1);
+	    MD5_Update(&ctx, *ireq.u.digestRequest.qop,
+		       strlen(*ireq.u.digestRequest.qop));
+	    MD5_Update(&ctx, ":", 1);
+	    MD5_Update(&ctx, A2, strlen(A2));
+
+	    MD5_Final(md, &ctx);
+
+	    r.element = choice_DigestRepInner_response;
+	    hex_encode(md, sizeof(md), &r.u.response.responseData);
+
+	    free(A1);
+	    free(A2);
+
+	    if (r.u.response.responseData == NULL) {
+		krb5_set_error_string(context, "out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+
 	} else {
 	    r.element = choice_DigestRepInner_error;
 	    asprintf(&r.u.error.reason, "unsupported digest type %s", 
