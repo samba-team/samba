@@ -177,6 +177,7 @@ if test x$developer = xyes; then
 	    AX_CFLAGS_GCC_OPTION(-Wno-format-y2k, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wdeclaration-after-statement, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wunused-macros, DEVELOPER_CFLAGS)
+#	    AX_CFLAGS_GCC_OPTION(-Wc++-compat, DEVELOPER_CFLAGS)
 #	    AX_CFLAGS_GCC_OPTION(-Wmissing-prototypes, DEVELOPER_CFLAGS)
 #	    AX_CFLAGS_GCC_OPTION(-Wmissing-declarations, DEVELOPER_CFLAGS)
 #	    AX_CFLAGS_GCC_OPTION(-Wmissing-field-initializers, DEVELOPER_CFLAGS)
