@@ -35,7 +35,7 @@ static struct WINBINDD_CCACHE_ENTRY *ccache_list;
  Find an entry by name.
 ****************************************************************/
 
-struct WINBINDD_CCACHE_ENTRY *get_ccache_by_username(const char *username)
+static struct WINBINDD_CCACHE_ENTRY *get_ccache_by_username(const char *username)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry;
 
@@ -307,7 +307,7 @@ static struct WINBINDD_MEMORY_CREDS *memory_creds_list;
  Find an entry on the list by name.
 ***********************************************************/
 
-static struct WINBINDD_MEMORY_CREDS *find_memory_creds_by_name(const char *username)
+struct WINBINDD_MEMORY_CREDS *find_memory_creds_by_name(const char *username)
 {
 	struct WINBINDD_MEMORY_CREDS *p;
 
@@ -411,7 +411,7 @@ static NTSTATUS winbindd_replace_memory_creds_internal(struct WINBINDD_MEMORY_CR
  Store credentials in memory in a list.
 *************************************************************/
 
-static NTSTATUS winbindd_add_memory_creds_internal(const char *username, const char *pass, BOOL store_pass)
+static NTSTATUS winbindd_add_memory_creds_internal(const char *username, uid_t uid, const char *pass, BOOL store_pass)
 {
 	/* Shortcut to ensure we don't store if no mlock. */
 #if !defined(HAVE_MLOCK) || !defined(HAVE_MUNLOCK)
@@ -420,8 +420,20 @@ static NTSTATUS winbindd_add_memory_creds_internal(const char *username, const c
 	NTSTATUS status;
 	struct WINBINDD_MEMORY_CREDS *memcredp = find_memory_creds_by_name(username);
 
+	if (uid == (uid_t)-1) {
+		DEBUG(0,("winbindd_add_memory_creds_internal: invalid uid for user %s.\n",
+			username ));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (memcredp) {
 		/* Already exists. Increment the reference count and replace stored creds. */
+		if (uid != memcredp->uid) {
+			DEBUG(0,("winbindd_add_memory_creds_internal: uid %u for user %s doesn't "
+				"match stored uid %u. Replacing.\n",
+				(unsigned int)uid, username, (unsigned int)memcredp->uid ));
+			memcredp->uid = uid;
+		}
 		memcredp->ref_count++;
 		DEBUG(10,("winbindd_add_memory_creds_internal: ref count for user %s is now %d\n",
 			username, memcredp->ref_count ));
@@ -440,9 +452,11 @@ static NTSTATUS winbindd_add_memory_creds_internal(const char *username, const c
 
 	status = store_memory_creds(memcredp, pass, store_pass);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_destroy(memcredp);
 		return status;
 	}
 
+	memcredp->uid = uid;
 	memcredp->ref_count = 1;
 	DLIST_ADD(memory_creds_list, memcredp);
 
@@ -460,7 +474,7 @@ static NTSTATUS winbindd_add_memory_creds_internal(const char *username, const c
  and associate the new credentials with the struct WINBINDD_CCACHE_ENTRY.
 *************************************************************/
 
-NTSTATUS winbindd_add_memory_creds(const char *username, const char *pass)
+NTSTATUS winbindd_add_memory_creds(const char *username, uid_t uid, const char *pass)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry = get_ccache_by_username(username);
 	BOOL store_pass = False;
@@ -470,7 +484,7 @@ NTSTATUS winbindd_add_memory_creds(const char *username, const char *pass)
 		store_pass = True;
 	}
 
-	status = winbindd_add_memory_creds_internal(username, pass, store_pass);
+	status = winbindd_add_memory_creds_internal(username, uid, pass, store_pass);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

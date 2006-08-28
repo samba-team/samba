@@ -29,7 +29,7 @@
 #define DBGC_CLASS DBGC_WINBIND
 
 static BOOL client_can_access_ccache_entry(uid_t client_uid,
-					struct WINBINDD_CCACHE_ENTRY *entry)
+					struct WINBINDD_MEMORY_CREDS *entry)
 {
 	if (client_uid == entry->uid || client_uid == 0) {
 		DEBUG(10, ("Access granted to uid %d\n", client_uid));
@@ -190,7 +190,7 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 						struct winbindd_cli_state *state)
 {
 	NTSTATUS result = NT_STATUS_NOT_SUPPORTED;
-	struct WINBINDD_CCACHE_ENTRY *entry;
+	struct WINBINDD_MEMORY_CREDS *entry;
 	DATA_BLOB initial, challenge, auth;
 	fstring name_domain, name_user;
 	uint32 initial_blob_len, challenge_blob_len, extra_len;
@@ -229,15 +229,15 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 		goto process_result;
 	}
 
-	entry = get_ccache_by_username(state->request.data.ccache_ntlm_auth.user);
-	if (entry == NULL || entry->cred_ptr == NULL) {
+	entry = find_memory_creds_by_name(state->request.data.ccache_ntlm_auth.user);
+	if (entry == NULL || entry->nt_hash == NULL || entry->lm_hash == NULL) {
 		DEBUG(10,("winbindd_dual_ccache_ntlm_auth: could not find "
 			"credentials for user %s\n", 
 			state->request.data.ccache_ntlm_auth.user));
 		goto process_result;
 	}
 
-	DEBUG(10,("winbindd_dual_ccache_ntlm_auth: found ccache [%s]\n", entry->ccname));
+	DEBUG(10,("winbindd_dual_ccache_ntlm_auth: found ccache [%s]\n", entry->username));
 
 	if (!client_can_access_ccache_entry(state->request.data.ccache_ntlm_auth.uid, entry)) {
 		goto process_result;
@@ -258,7 +258,7 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 		result = NT_STATUS_NO_MEMORY;
 	} else {
 		result = do_ntlm_auth_with_hashes(name_user, name_domain,
-						entry->cred_ptr->lm_hash, entry->cred_ptr->nt_hash,
+						entry->lm_hash, entry->nt_hash,
 						initial, challenge, &auth);
 	}
 

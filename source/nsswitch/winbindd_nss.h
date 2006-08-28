@@ -459,6 +459,7 @@ struct winbindd_response {
 struct WINBINDD_MEMORY_CREDS {
 	struct WINBINDD_MEMORY_CREDS *next, *prev;
 	const char *username; /* lookup key. */
+	uid_t uid;
 	int ref_count;
 	size_t len;
 	unsigned char *nt_hash; /* Base pointer for the following 2 */
