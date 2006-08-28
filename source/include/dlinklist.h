@@ -46,7 +46,7 @@ do { \
 		if ((p)->prev) (p)->prev->next = (p)->next; \
 		if ((p)->next) (p)->next->prev = (p)->prev; \
 	} \
-	if ((p) && ((p) != (list))) (p)->next = (p)->prev = NULL; \
+	if ((p) != (list)) (p)->next = (p)->prev = NULL; \
 } while (0)
 
 /* promote an element to the top of the list */
