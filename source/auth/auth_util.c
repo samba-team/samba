@@ -1988,16 +1988,19 @@ NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, NT_USER_TOKEN *ptoken)
 		return NULL;
 	}
 
-	token->user_sids = (DOM_SID *)talloc_memdup(
-		token, ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids );
+	ZERO_STRUCTP(token);
 
-	if ((ptoken->user_sids != NULL) && (token->user_sids == NULL)) {
-		DEBUG(0, ("talloc_memdup failed\n"));
-		TALLOC_FREE(token);
-		return NULL;
+	if (ptoken->user_sids && ptoken->num_sids) {
+		token->user_sids = (DOM_SID *)talloc_memdup(
+			token, ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids );
+
+		if (token->user_sids == NULL) {
+			DEBUG(0, ("talloc_memdup failed\n"));
+			TALLOC_FREE(token);
+			return NULL;
+		}
+		token->num_sids = ptoken->num_sids;
 	}
-
-	token->num_sids = ptoken->num_sids;
 	
 	/* copy the privileges; don't consider failure to be critical here */
 	
