@@ -259,7 +259,7 @@ int x_fflush(XFILE *f)
 		return -1;
 	}
 
-	if (f->bufused == 0) return 0;
+	if (f->bufused == 0 || !f->buf) return 0;
 
 	ret = write(f->fd, f->buf, f->bufused);
 	if (ret == -1) return -1;
@@ -267,9 +267,7 @@ int x_fflush(XFILE *f)
 	f->bufused -= ret;
 	if (f->bufused > 0) {
 		f->flags |= X_FLAG_ERROR;
-		if (f->buf) {
-			memmove(f->buf, ret + (char *)f->buf, f->bufused);
-		}
+		memmove(f->buf, ret + (char *)f->buf, f->bufused);
 		return -1;
 	}
 
