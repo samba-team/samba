@@ -64,11 +64,13 @@ typedef void TALLOC_CTX;
 /* this extremely strange macro is to avoid some braindamaged warning
    stupidity in gcc 4.1.x */
 #define talloc_steal(ctx, ptr) ({ _TALLOC_TYPEOF(ptr) __talloc_steal_ret = (_TALLOC_TYPEOF(ptr))_talloc_steal((ctx),(ptr)); __talloc_steal_ret; })
+#define talloc_reference(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_reference((ctx),(ptr))
 #else
 #define talloc_set_destructor(ptr, function) \
 	_talloc_set_destructor((ptr), (int (*)(void *))(function))
 #define _TALLOC_TYPEOF(ptr) void *
 #define talloc_steal(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_steal((ctx),(ptr))
+#define talloc_reference(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_reference((ctx),(ptr))
 #endif
 
 /* useful macros for creating type checked pointers */
@@ -107,8 +109,8 @@ typedef void TALLOC_CTX;
 /* The following definitions come from talloc.c  */
 void *_talloc(const void *context, size_t size);
 void _talloc_set_destructor(const void *ptr, int (*destructor)(void *));
-void talloc_increase_ref_count(const void *ptr);
-void *talloc_reference(const void *context, const void *ptr);
+int talloc_increase_ref_count(const void *ptr);
+void *_talloc_reference(const void *context, const void *ptr);
 int talloc_unlink(const void *context, void *ptr);
 const char *talloc_set_name(const void *ptr, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void talloc_set_name_const(const void *ptr, const char *name);
