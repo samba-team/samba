@@ -491,6 +491,10 @@ static BOOL test_misc(void)
 
 	p1 = talloc_init("%d bytes", 200);
 	p2 = talloc_asprintf(p1, "my test '%s'", "string");
+	if (strcmp(p2, "my test 'string'") != 0) {
+		printf("failed: talloc_asprintf(\"my test '%%s'\", \"string\") gave: \"%s\"\n", p2);
+		return False;
+	}
 	CHECK_BLOCKS(p1, 3);
 	CHECK_SIZE(p2, 17);
 	CHECK_BLOCKS(root, 1);
