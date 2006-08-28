@@ -103,13 +103,8 @@ static const char *oc_attrs[] = {
 	"systemMustContain",
 	"objectClassCategory",
 	"governsID",
-	"description",		
+	"description",
 	"subClassOf",
-	"objectClassCategory",
-	"mustContain",
-	"systemMustContain",
-	"mayContain",
-	"systemMayContain",
 	NULL
 };
 
