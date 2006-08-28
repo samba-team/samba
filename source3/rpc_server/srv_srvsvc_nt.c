@@ -771,7 +771,9 @@ static void init_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *sto
 	(*stot) = list_sessions(&session_list);
 
 	if (ss0 == NULL) {
-		(*snum) = 0;
+		if (snum) {
+			(*snum) = 0;
+		}
 		SAFE_FREE(session_list);
 		return;
 	}
