@@ -9,9 +9,6 @@ dnsDomain: ${DNSDOMAIN}
 replace: dc
 dc: ${RDN_DC}
 -
-replace: objectGUID
-objectGUID: ${DOMAINGUID}
--
 replace: forceLogoff
 forceLogoff: 9223372036854775808
 -
@@ -79,4 +76,5 @@ replace: subRefs
 subRefs: CN=Configuration,${BASEDN}
 subRefs: CN=Schema,CN=Configuration,${BASEDN}
 -
+${DOMAINGUID_MOD}
 
