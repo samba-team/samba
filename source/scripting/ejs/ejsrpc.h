@@ -139,19 +139,15 @@ NTSTATUS ejs_pull_winreg_String(struct ejs_rpc *ejs,
 NTSTATUS ejs_push_winreg_String(struct ejs_rpc *ejs, 
 			     struct MprVar *v, const char *name, const struct winreg_String *r);
 
-#define EJS_ALLOC_SIZE(ejs, s, size) do { \
-  (s) = talloc_size(ejs, size); \
+#define EJS_ALLOC(ejs, s) do { \
+  (s) = talloc_ptrtype(ejs, (s)); \
   if (!(s)) return ejs_panic(ejs, "out of memory"); \
 } while (0)
 
-#define EJS_ALLOC(ejs, s) EJS_ALLOC_SIZE(ejs, s, sizeof(*(s)))
-
-#define EJS_ALLOC_N_SIZE(ejs, s, n, elsize) do { \
-	(s) = talloc_array_size(ejs, elsize, n); \
+#define EJS_ALLOC_N(ejs, s, n) do { \
+	(s) = talloc_array_ptrtype(ejs, (s), n); \
 	if (!(s)) return ejs_panic(ejs, "out of memory"); \
 } while (0)
-
-#define EJS_ALLOC_N(ejs, s, n) EJS_ALLOC_N_SIZE(ejs, s, n, sizeof(*(s)))
 
 /* some types are equivalent for ejs */
 #define ejs_pull_dom_sid2 ejs_pull_dom_sid
