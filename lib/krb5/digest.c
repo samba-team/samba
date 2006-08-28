@@ -290,6 +290,11 @@ digest_request(krb5_context context,
 	ret = krb5_auth_con_getlocalsubkey(context, ac, &key);
 	if (ret)
 	    goto out;
+	if (key == NULL) {
+	    krb5_set_error_string(context, "Digest failed to get local subkey");
+	    ret = EINVAL;
+	    goto out;
+	}
 
 	ret = krb5_crypto_init(context, key, 0, &crypto);
 	krb5_free_keyblock (context, key);
@@ -307,8 +312,10 @@ digest_request(krb5_context context,
 
     ASN1_MALLOC_ENCODE(DigestREQ, data.data, data.length,
 		       &req, &size, ret);
-    if (ret)
-	return ret;
+    if (ret) {
+	krb5_set_error_string(context, "Failed to encode DigestREQest");
+	goto out;
+    }
     if (size != data.length)
 	krb5_abortx(context, "ASN.1 internal encoder error");
 
@@ -360,8 +367,10 @@ digest_request(krb5_context context,
 	goto out;
     
     ret = decode_DigestRepInner(data.data, data.length, irep, NULL);
-    if (ret)
+    if (ret) {
+	krb5_set_error_string(context, "Failed to decode digest inner reply");
 	goto out;
+    }
 
 out:
     if (ccache == NULL)
