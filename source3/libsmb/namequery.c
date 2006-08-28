@@ -1360,8 +1360,8 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
  a domain.
 *********************************************************/
 
-static BOOL get_dc_list(const char *domain, struct ip_service **ip_list, 
-                 int *count, BOOL ads_only, int *ordered)
+static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list, 
+                            int *count, BOOL ads_only, int *ordered)
 {
 	fstring resolve_order;
 	char *saf_servername;
@@ -1419,7 +1419,14 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 
 	if ( !*pserver ) {
 		DEBUG(10,("get_dc_list: no preferred domain controllers.\n"));
-		return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
+		/* TODO: change return type of internal_resolve_name to
+		 * NTSTATUS */
+		if (internal_resolve_name(domain, 0x1C, ip_list, count,
+					  resolve_order)) {
+			return NT_STATUS_OK;
+		} else {
+			return NT_STATUS_NO_LOGON_SERVERS;
+		}
 	}
 
 	DEBUG(3,("get_dc_list: preferred server list: \"%s\"\n", pserver ));
@@ -1434,7 +1441,8 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 	p = pserver;
 	while (next_token(&p,name,LIST_SEP,sizeof(name))) {
 		if (strequal(name, "*")) {
-			if ( internal_resolve_name(domain, 0x1C, &auto_ip_list, &auto_count, resolve_order) )
+			if (internal_resolve_name(domain, 0x1C, &auto_ip_list,
+						  &auto_count, resolve_order))
 				num_addresses += auto_count;
 			done_auto_lookup = True;
 			DEBUG(8,("Adding %d DC's from auto lookup\n", auto_count));
@@ -1448,16 +1456,20 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 		   
 	if ( (num_addresses == 0) ) {
 		if ( !done_auto_lookup ) {
-			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
+			if (internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order)) {
+				return NT_STATUS_OK;
+			} else {
+				return NT_STATUS_NO_LOGON_SERVERS;
+			}
 		} else {
 			DEBUG(4,("get_dc_list: no servers found\n")); 
-			return False;
+			return NT_STATUS_NO_LOGON_SERVERS;
 		}
 	}
 
 	if ( (return_iplist = SMB_MALLOC_ARRAY(struct ip_service, num_addresses)) == NULL ) {
 		DEBUG(3,("get_dc_list: malloc fail !\n"));
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	p = pserver;
@@ -1535,22 +1547,24 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 	*ip_list = return_iplist;
 	*count = local_count;
 
-	return (*count != 0);
+	return ( *count != 0 ? NT_STATUS_OK : NT_STATUS_NO_LOGON_SERVERS );
 }
 
 /*********************************************************************
  Small wrapper function to get the DC list and sort it if neccessary.
 *********************************************************************/
 
-BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *count, BOOL ads_only )
+NTSTATUS get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *count, BOOL ads_only )
 {
 	BOOL ordered;
+	NTSTATUS status;
 	
 	DEBUG(8,("get_sorted_dc_list: attempting lookup using [%s]\n",
 		(ads_only ? "ads" : lp_name_resolve_order())));
 	
-	if ( !get_dc_list(domain, ip_list, count, ads_only, &ordered) ) {
-		return False; 
+	status = get_dc_list(domain, ip_list, count, ads_only, &ordered);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status; 
 	}
 		
 	/* only sort if we don't already have an ordered list */
@@ -1558,5 +1572,5 @@ BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *c
 		sort_ip_list2( *ip_list, *count );
 	}
 		
-	return True;
+	return NT_STATUS_OK;
 }
