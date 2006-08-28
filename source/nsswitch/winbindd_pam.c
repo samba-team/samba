@@ -1271,6 +1271,7 @@ process_result:
 
 			/* Store in-memory creds for single-signon using ntlm_auth. */
 			result = winbindd_add_memory_creds(state->request.data.auth.user,
+							get_uid_from_state(state),
 							state->request.data.auth.pass);
 
 			if (!NT_STATUS_IS_OK(result)) {
