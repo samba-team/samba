@@ -71,7 +71,6 @@ privilege: SeRemoteInteractiveLogonRight
 dn: CN=${NETBIOSNAME},CN=Domain Controllers,${BASEDN}
 objectClass: computer
 cn: ${NETBIOSNAME}
-objectGUID: ${HOSTGUID}
 userAccountControl: 532480
 localPolicyFlags: 0
 primaryGroupID: 516
@@ -89,7 +88,7 @@ servicePrincipalName: HOST/${DNSNAME}/${REALM}
 servicePrincipalName: HOST/${NETBIOSNAME}/${REALM}
 servicePrincipalName: HOST/${DNSNAME}/${DOMAIN}
 servicePrincipalName: HOST/${NETBIOSNAME}/${DOMAIN}
-
+${HOSTGUID_ADD}
 
 dn: CN=Users,CN=Builtin,${BASEDN}
 objectClass: top

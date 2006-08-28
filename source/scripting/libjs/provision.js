@@ -164,6 +164,8 @@ function ldb_erase(ldb)
 	ldb.del("@ATTRIBUTES");
 	ldb.del("@SUBCLASSES");
 	ldb.del("@MODULES");
+	ldb.del("@PARTITION");
+	ldb.del("@KLUDGEACL");
 
 	/* and the rest */
 	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", attrs);
@@ -198,6 +200,9 @@ function ldb_erase_partitions(info, ldb)
 	var res = ldb.search("(objectClass=*)", "", ldb.SCOPE_BASE, rootDSE_attrs);
 	assert(typeof(res) != "undefined");
 	assert(res.length == 1);
+	if (typeof(res[0].namingContexts) == "undefined") {
+		return;
+	}	
 	for (j=0; j<res[0].namingContexts.length; j++) {
 		var attrs = new Array("dn");
 		var basedn = res[0].namingContexts[j];
@@ -416,6 +421,18 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	assert(valid_netbios_name(subobj.NETBIOSNAME));
 	var rdns = split(",", subobj.BASEDN);
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
+	
+	if (subobj.DOMAINGUID != undefined) {
+		subobj.DOMAINGUID_MOD = sprintf("replace: objectGUID\nobjectGUID: %s\n-", subobj.DOMAINGUID);
+	} else {
+		subobj.DOMAINGUID_MOD = "";
+	}
+
+	if (subobj.HOSTGUID != undefined) {
+		subobj.HOSTGUID_ADD = sprintf("objectGUID: %s", subobj.HOSTGUID);
+	} else {
+		subobj.HOSTGUID_ADD = "";
+	}
 
 	info.subobj = subobj;
 	info.message = message;
@@ -525,7 +542,9 @@ function provision_dns(subobj, message, paths, session_info, credentials)
 	var ok = ldb.connect(paths.samdb);
 	assert(ok);
 
-	/* These values may have changed, due to an incoming SamSync, so fetch them from the database */
+	/* These values may have changed, due to an incoming SamSync,
+           or may not have been specified, so fetch them from the database */
+
 	var attrs = new Array("objectGUID");
 	res = ldb.search("objectGUID=*", subobj.BASEDN, ldb.SCOPE_BASE, attrs);
 	assert(res.length == 1 && res[0].objectGUID != undefined)
@@ -574,12 +593,10 @@ function provision_guess()
 	assert(subobj.REALM);
 	assert(subobj.DOMAIN);
 	assert(subobj.HOSTNAME);
-
+	
 	subobj.VERSION      = version();
 	subobj.HOSTIP       = hostip();
-	subobj.DOMAINGUID   = randguid();
 	subobj.DOMAINSID    = randsid();
-	subobj.HOSTGUID     = randguid();
 	subobj.INVOCATIONID = randguid();
 	subobj.KRBTGTPASS   = randpass(12);
 	subobj.MACHINEPASS  = randpass(12);
