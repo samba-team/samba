@@ -59,7 +59,7 @@ typedef void TALLOC_CTX;
 #define talloc_set_destructor(ptr, function)				      \
 	do {								      \
 		int (*_talloc_destructor_fn)(_TALLOC_TYPEOF(ptr)) = (function);	      \
-		_talloc_set_destructor((ptr), (void *)_talloc_destructor_fn); \
+		_talloc_set_destructor((ptr), (int (*)(void *))_talloc_destructor_fn); \
 	} while(0)
 /* this extremely strange macro is to avoid some braindamaged warning
    stupidity in gcc 4.1.x */
@@ -149,7 +149,7 @@ void *talloc_autofree_context(void);
 size_t talloc_get_size(const void *ctx);
 void *talloc_find_parent_byname(const void *ctx, const char *name);
 void talloc_show_parents(const void *context, FILE *file);
-int talloc_is_parent(const void *context, const char *ptr);
+int talloc_is_parent(const void *context, const void *ptr);
 
 #endif
 
