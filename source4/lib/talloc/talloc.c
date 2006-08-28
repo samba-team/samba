@@ -813,7 +813,8 @@ void talloc_report_depth(const void *ptr, FILE *f, int depth)
 
 	for (c=tc->child;c;c=c->next) {
 		if (c->name == TALLOC_MAGIC_REFERENCE) {
-			struct talloc_reference_handle *handle = TC_PTR_FROM_CHUNK(c);
+			struct talloc_reference_handle *handle =
+				(struct talloc_reference_handle *)TC_PTR_FROM_CHUNK(c);
 			const char *name2 = talloc_get_name(handle->ptr);
 			fprintf(f, "%*sreference to: %s\n", depth*4, "", name2);
 		} else {
