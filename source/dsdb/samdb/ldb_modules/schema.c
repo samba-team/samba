@@ -81,23 +81,29 @@ struct schema_attribute {
 	bool single;				/* isSingleValued  */
 	int min;				/* rangeLower      */
 	int max;				/* rangeUpper      */
+	int systemflag;				/* systemFlag      */
+	int searchflag;				/* searchFlag      */
+	bool isdefunct;				/* isDefunct       */
 };
 
 struct schema_class {
-	char *OID;				/* governsID            */
-	char *name;				/* lDAPDisplayName      */
-	enum schema_class_type type;		/* objectClassCategory  */
-	bool systemOnly;			/* systemOnly           */
-	struct schema_class *parent;		/* subClassOf           */
-	struct schema_class **sysaux;		/* systemAuxiliaryClass */
-	struct schema_class **aux;		/* auxiliaryClass       */
-	struct schema_class **sysposssup;	/* systemPossSuperiors  */
-	struct schema_class **posssup;		/* possSuperiors        */
-	struct schema_class **possinf;		/* possibleInferiors    */
-	struct schema_attribute **sysmust;	/* systemMustContain    */
-	struct schema_attribute **must;		/* MustContain          */
-	struct schema_attribute **sysmay;	/* systemMayContain     */
-	struct schema_attribute **may;		/* MayContain           */
+	char *OID;				/* governsID             */
+	char *name;				/* lDAPDisplayName       */
+	enum schema_class_type type;		/* objectClassCategory   */
+	bool systemOnly;			/* systemOnly            */
+	bool isdefunct;				/* isDefunct             */
+	int systemflag;				/* systemFlag            */
+	char *defobjcat;			/* defaultObjectCategory */
+	struct schema_class *parent;		/* subClassOf            */
+	struct schema_class **sysaux;		/* systemAuxiliaryClass  */
+	struct schema_class **aux;		/* auxiliaryClass        */
+	struct schema_class **sysposssup;	/* systemPossSuperiors   */
+	struct schema_class **posssup;		/* possSuperiors         */
+	struct schema_class **possinf;		/* possibleInferiors     */
+	struct schema_attribute **sysmust;	/* systemMustContain     */
+	struct schema_attribute **must;		/* MustContain           */
+	struct schema_attribute **sysmay;	/* systemMayContain      */
+	struct schema_attribute **may;		/* MayContain            */
 };
 
 /* TODO: ditcontentrules */
@@ -365,6 +371,9 @@ static int schema_init_attrs(struct ldb_module *module, struct schema_private_da
 						"isSingleValued",
 						"rangeLower",
 						"rangeUpper",
+						"searchFlag",
+						"systemFlag",
+						"isDefunct",
 						NULL };
 	struct ldb_result *res;
 	int ret, i;
@@ -433,9 +442,12 @@ static int schema_init_attrs(struct ldb_module *module, struct schema_private_da
 			data->attrs[i]->single = 0;
 		}
 
-		/* rangeLower and rangeUpper are optional */
+		/* the following are optional */
 		data->attrs[i]->min = ldb_msg_find_attr_as_int(res->msgs[i], "rangeLower", -1);
 		data->attrs[i]->max = ldb_msg_find_attr_as_int(res->msgs[i], "rangeUpper", -1);
+		data->attrs[i]->systemflag = ldb_msg_find_attr_as_int(res->msgs[i], "systemFlag", 0);
+		data->attrs[i]->searchflag = ldb_msg_find_attr_as_int(res->msgs[i], "searchFlag", 0);
+		data->attrs[i]->isdefunct = ldb_msg_find_attr_as_bool(res->msgs[i], "isDefunct", False);
 	}
 
 done:
@@ -448,7 +460,10 @@ static int schema_init_classes(struct ldb_module *module, struct schema_private_
 	static const char *schema_attrs[] = {	"governsID",
 						"lDAPDisplayName",
 						"objectClassCategory",
+						"defaultObjectCategory"
 						"systemOnly",
+						"systemFlag",
+						"isDefunct",
 						"subClassOf",
 						"systemAuxiliaryClass",
 						"auxiliaryClass",
@@ -503,9 +518,16 @@ static int schema_init_classes(struct ldb_module *module, struct schema_private_
 		/* 0 should not be a valid value, but turn out it is so test with -1 */
 		SCHEMA_CHECK_VALUE(data->class[i]->type, -1, module);
 
+		data->class[i]->defobjcat = talloc_strdup(data->class[i],
+						ldb_msg_find_attr_as_string(res->msgs[i],
+									"defaultObjectCategory", NULL));
+		SCHEMA_CHECK_VALUE(data->class[i]->defobjcat, NULL, module);
+
 		/* the following attributes are all optional */
 
 		data->class[i]->systemOnly = ldb_msg_find_attr_as_bool(res->msgs[i], "systemOnly", False);
+		data->class[i]->systemflag = ldb_msg_find_attr_as_int(res->msgs[i], "systemFlag", 0);
+		data->class[i]->isdefunct = ldb_msg_find_attr_as_bool(res->msgs[i], "isDefunct", False);
 
 		/* attributes are loaded first, so we can just go an query the attributes repo */
 		
@@ -689,6 +711,11 @@ static int schema_add_class_to_dlist(struct schema_class_dlist *list, struct sch
 	struct schema_class_dlist *temp;
 	int ret;
 
+	/* see if this class is usable */
+	if (class->isdefunct) {
+		return LDB_ERR_NO_SUCH_ATTRIBUTE;
+	}
+
 	/* see if this class already exist in the class list */
 	if (schema_add_get_dlist_entry_with_class(list, class)) {
 		return LDB_SUCCESS;
@@ -828,7 +855,7 @@ static int schema_add_build_objectclass_list(struct schema_context *sctx)
 
 		class = schema_store_find(sctx->data->class_store, (char *)el->values[i].data);
 		if (!class) {
-			return LDB_ERR_NO_SUCH_OBJECT;
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
 		
 		ret = schema_add_class_to_dlist(sctx->class_list, class, class->type);
@@ -984,6 +1011,7 @@ static int schema_add_build_down_req(struct schema_context *sctx)
 {
 	struct schema_class_dlist *temp;
 	struct ldb_message *msg;
+	char *oc;
 	int ret;
 
 	sctx->down_req = talloc(sctx, struct ldb_request);
@@ -999,6 +1027,7 @@ static int schema_add_build_down_req(struct schema_context *sctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* rebuild the objectclass list */
 	ldb_msg_remove_attr(msg, "objectClass");
 	ret = ldb_msg_add_empty(msg, "objectClass", 0);
 	if (ret != LDB_SUCCESS) {
@@ -1012,7 +1041,21 @@ static int schema_add_build_down_req(struct schema_context *sctx)
 			return ret;
 		}
 	}
-	
+
+	/* objectCategory can be set only by the system */
+	if (ldb_msg_find_element(msg, "objectCategory")) {
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	/* the OC is mandatory, every class defines it */
+	/* use the one defined in the structural class that defines the object */
+	for (temp = sctx->class_list->next; temp; temp = temp->next) {
+		if (!temp->next) break;
+		if (temp->next->role != SCHEMA_CT_STRUCTURAL) break;
+	}
+	oc = talloc_strdup(msg, temp->class->defobjcat);
+	ret = ldb_msg_add_string(msg, "objectCategory", oc);
+
 	sctx->down_req->op.add.message = msg;
 
 	return LDB_SUCCESS;
