@@ -107,7 +107,7 @@ struct talloc_chunk {
 /* panic if we get a bad magic value */
 static struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 {
-	const char *pp = ptr;
+	const char *pp = (const char *)ptr;
 	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, pp - TC_HDR_SIZE);
 	if ((tc->flags & ~0xF) != TALLOC_MAGIC) { 
 		TALLOC_ABORT("Bad talloc magic value - unknown value"); 
@@ -177,7 +177,7 @@ void *_talloc(const void *context, size_t size)
 		return NULL;
 	}
 
-	tc = malloc(TC_HDR_SIZE+size);
+	tc = (struct talloc_chunk *)malloc(TC_HDR_SIZE+size);
 	if (tc == NULL) return NULL;
 
 	tc->size = size;
@@ -251,8 +251,9 @@ void *talloc_reference(const void *context, const void *ptr)
 	if (ptr == NULL) return NULL;
 
 	tc = talloc_chunk_from_ptr(ptr);
-	handle = talloc_named_const(context, sizeof(*handle), TALLOC_MAGIC_REFERENCE);
-
+	handle = (struct talloc_reference_handle *)talloc_named_const(context,
+						   sizeof(struct talloc_reference_handle),
+						   TALLOC_MAGIC_REFERENCE);
 	if (handle == NULL) return NULL;
 
 	/* note that we hang the destructor off the handle, not the
@@ -646,13 +647,13 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 		return NULL; 
 	}
 
-	tc = new_ptr;
+	tc = (struct talloc_chunk *)new_ptr;
 	tc->flags &= ~TALLOC_FLAG_FREE; 
 	if (tc->parent) {
-		tc->parent->child = new_ptr;
+		tc->parent->child = tc;
 	}
 	if (tc->child) {
-		tc->child->parent = new_ptr;
+		tc->child->parent = tc;
 	}
 
 	if (tc->prev) {
@@ -962,7 +963,7 @@ char *talloc_strdup(const void *t, const char *p)
 	if (!p) {
 		return NULL;
 	}
-	ret = talloc_memdup(t, p, strlen(p) + 1);
+	ret = (char *)talloc_memdup(t, p, strlen(p) + 1);
 	if (ret) {
 		talloc_set_name_const(ret, ret);
 	}
@@ -1003,7 +1004,7 @@ char *talloc_strndup(const void *t, const char *p, size_t n)
 
 	for (len=0; len<n && p[len]; len++) ;
 
-	ret = _talloc(t, len + 1);
+	ret = (char *)_talloc(t, len + 1);
 	if (!ret) { return NULL; }
 	memcpy(ret, p, len);
 	ret[len] = 0;
@@ -1033,7 +1034,7 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 		return NULL;
 	}
 
-	ret = _talloc(t, len+1);
+	ret = (char *)_talloc(t, len+1);
 	if (ret) {
 		va_copy(ap2, ap);
 		vsnprintf(ret, len+1, fmt, ap2);
@@ -1243,7 +1244,7 @@ void talloc_show_parents(const void *context, FILE *file)
 /*
   return 1 if ptr is a parent of context
 */
-int talloc_is_parent(const void *context, const char *ptr)
+int talloc_is_parent(const void *context, const void *ptr)
 {
 	struct talloc_chunk *tc;
 
