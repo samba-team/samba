@@ -58,13 +58,12 @@ typedef void TALLOC_CTX;
 #define _TALLOC_TYPEOF(ptr) __typeof__(ptr)
 #define talloc_set_destructor(ptr, function)				      \
 	do {								      \
-		int (*_talloc_destructor_fn)(typeof(ptr)) = (function);	      \
+		int (*_talloc_destructor_fn)(_TALLOC_TYPEOF(ptr)) = (function);	      \
 		_talloc_set_destructor((ptr), (void *)_talloc_destructor_fn); \
 	} while(0)
-#define _TALLOC_CHECK_TYPE(type,val) 
 /* this extremely strange macro is to avoid some braindamaged warning
    stupidity in gcc 4.1.x */
-#define talloc_steal(ctx, ptr) ({ __typeof__(ptr) __talloc_steal_ret = (__typeof__(ptr))_talloc_steal((ctx),(ptr)); __talloc_steal_ret; })
+#define talloc_steal(ctx, ptr) ({ _TALLOC_TYPEOF(ptr) __talloc_steal_ret = (_TALLOC_TYPEOF(ptr))_talloc_steal((ctx),(ptr)); __talloc_steal_ret; })
 #else
 #define talloc_set_destructor(ptr, function) \
 	_talloc_set_destructor((ptr), (int (*)(void *))(function))
