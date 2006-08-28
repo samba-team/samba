@@ -74,6 +74,7 @@ typedef void TALLOC_CTX;
 /* useful macros for creating type checked pointers */
 #define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
 #define talloc_size(ctx, size) talloc_named_const(ctx, size, __location__)
+#define talloc_ptrtype(ctx, ptr) (_TALLOC_TYPEOF(ptr))talloc_size(ctx, sizeof(*(ptr)))
 
 #define talloc_new(ctx) talloc_named_const(ctx, 0, "talloc_new: " __location__)
 
@@ -83,6 +84,7 @@ typedef void TALLOC_CTX;
 #define talloc_zero_array(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, #type)
 #define talloc_array(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
 #define talloc_array_size(ctx, size, count) _talloc_array(ctx, size, count, __location__)
+#define talloc_array_ptrtype(ctx, ptr, count) (_TALLOC_TYPEOF(ptr))talloc_array_size(ctx, sizeof(*(ptr)), count)
 
 #define talloc_realloc(ctx, p, type, count) (type *)_talloc_realloc_array(ctx, p, sizeof(type), count, #type)
 #define talloc_realloc_size(ctx, ptr, size) _talloc_realloc(ctx, ptr, size, __location__)
