@@ -1195,12 +1195,8 @@ static int fill_srv_info(struct srv_info_struct *service,
 				break;
 		}
 
-		if (buflen) {
-			*buflen = struct_len;
-		}
-		if (stringspace) {
-			*stringspace = len;
-		}
+		*buflen = struct_len;
+		*stringspace = len;
 		return struct_len + len;
 	}
   
