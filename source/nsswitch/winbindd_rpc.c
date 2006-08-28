@@ -774,7 +774,8 @@ static int get_ldap_sequence_number( const char* domain, uint32 *seq)
 	struct ip_service *ip_list = NULL;
 	int count;
 	
-	if ( !get_sorted_dc_list(domain, &ip_list, &count, False) ) {
+	if ( !NT_STATUS_IS_OK(get_sorted_dc_list(domain, &ip_list, &count,
+						 False)) ) {
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
 	}

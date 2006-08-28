@@ -182,7 +182,7 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
  disabled
 **********************************************************************/
 
-static BOOL ads_find_dc(ADS_STRUCT *ads)
+static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 {
 	const char *c_realm;
 	int count, i=0;
@@ -190,6 +190,7 @@ static BOOL ads_find_dc(ADS_STRUCT *ads)
 	pstring realm;
 	BOOL got_realm = False;
 	BOOL use_own_domain = False;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	/* if the realm and workgroup are both empty, assume they are ours */
 
@@ -220,7 +221,7 @@ again:
 		
 		if ( !c_realm || !*c_realm ) {
 			DEBUG(0,("ads_find_dc: no realm or workgroup!  Don't know what to do\n"));
-			return False;
+			return NT_STATUS_INVALID_PARAMETER; /* rather need MISSING_PARAMETER ... */
 		}
 	}
 	
@@ -229,14 +230,15 @@ again:
 	DEBUG(6,("ads_find_dc: looking for %s '%s'\n", 
 		(got_realm ? "realm" : "domain"), realm));
 
-	if ( !get_sorted_dc_list(realm, &ip_list, &count, got_realm) ) {
+	status = get_sorted_dc_list(realm, &ip_list, &count, got_realm);
+	if (!NT_STATUS_IS_OK(status)) {
 		/* fall back to netbios if we can */
 		if ( got_realm && !lp_disable_netbios() ) {
 			got_realm = False;
 			goto again;
 		}
 		
-		return False;
+		return status;
 	}
 			
 	/* if we fail this loop, then giveup since all the IP addresses returned were dead */
@@ -250,7 +252,7 @@ again:
 			
 		if ( ads_try_connect(ads, server) ) {
 			SAFE_FREE(ip_list);
-			return True;
+			return NT_STATUS_OK;
 		}
 		
 		/* keep track of failures */
@@ -259,7 +261,7 @@ again:
 
 	SAFE_FREE(ip_list);
 	
-	return False;
+	return NT_STATUS_NO_LOGON_SERVERS;
 }
 
 
@@ -272,6 +274,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 {
 	int version = LDAP_VERSION3;
 	ADS_STATUS status;
+	NTSTATUS ntstatus;
 
 	ads->last_attempt = time(NULL);
 	ads->ld = NULL;
@@ -283,11 +286,12 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		goto got_connection;
 	}
 
-	if (ads_find_dc(ads)) {
+	ntstatus = ads_find_dc(ads);
+	if (NT_STATUS_IS_OK(ntstatus)) {
 		goto got_connection;
 	}
 
-	return ADS_ERROR_NT(NT_STATUS_NO_LOGON_SERVERS);
+	return ADS_ERROR_NT(ntstatus);
 
 got_connection:
 	DEBUG(3,("Connected to LDAP server %s\n", inet_ntoa(ads->ldap_ip)));
