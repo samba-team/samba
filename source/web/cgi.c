@@ -80,8 +80,9 @@ static char *grab_line(FILE *f, int *cl)
 
 	}
 	
-
-	ret[i] = 0;
+	if (ret) {
+		ret[i] = 0;
+	}
 	return ret;
 }
 
