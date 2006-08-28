@@ -1,3 +1,18 @@
+2006-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* digest.asn1 (DigestRequest): add authid
+
+	* digest.asn1: Comment describing on how to communicate the sasl
+	int/conf mode.
+	
+2006-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* digest.asn1: Add some missing fields needed for digest.
+	
+2006-08-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* digest.asn1: Tweak to make consisten and more easier to use.
+	
 2006-07-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Remove CMS symmetric encryption support.  Add
