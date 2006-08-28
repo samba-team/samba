@@ -938,6 +938,81 @@ static BOOL test_free_parent_deny_child(void)
 	return True;
 }
 
+static BOOL test_talloc_ptrtype(void)
+{
+	BOOL ret = True;
+	char *top = talloc_new(NULL);
+	struct struct1 {
+		int foo;
+		int bar;
+	} *s1, *s2, **s3, ***s4;
+	const char *location1;
+	const char *location2;
+	const char *location3;
+	const char *location4;
+
+	printf("TESTING TALLOC PTRTYPE\n");
+	s1 = talloc_ptrtype(top, s1);location1 = __location__;
+
+	if (talloc_get_size(s1) != sizeof(struct struct1)) {
+		printf("%s: talloc_ptrtype() allocated the wrong size %u (should be %u)\n",
+			__location__, talloc_get_size(s1), sizeof(struct struct1));
+		ret = False;
+	}
+
+	if (strcmp(location1, talloc_get_name(s1)) != 0) {
+		printf("%s: talloc_ptrtype() sets the wrong name '%s' (should be '%s')\n",
+			__location__, talloc_get_name(s1), location1);
+		ret = False;
+	}
+
+	s2 = talloc_array_ptrtype(top, s2, 10);location2 = __location__;
+
+	if (talloc_get_size(s2) != (sizeof(struct struct1) * 10)) {
+		printf("%s: talloc_array_ptrtype() allocated the wrong size %u (should be %u)\n",
+			__location__, talloc_get_size(s2), (sizeof(struct struct1)*10));
+		ret = False;
+	}
+
+	if (strcmp(location2, talloc_get_name(s2)) != 0) {
+		printf("%s: talloc_array_ptrtype() sets the wrong name '%s' (should be '%s')\n",
+			__location__, talloc_get_name(s2), location2);
+		ret = False;
+	}
+
+	s3 = talloc_array_ptrtype(top, s3, 10);location3 = __location__;
+
+	if (talloc_get_size(s3) != (sizeof(struct struct1 *) * 10)) {
+		printf("%s: talloc_array_ptrtype() allocated the wrong size %u (should be %u)\n",
+			__location__, talloc_get_size(s3), (sizeof(struct struct1 *)*10));
+		ret = False;
+	}
+
+	if (strcmp(location3, talloc_get_name(s3)) != 0) {
+		printf("%s: talloc_array_ptrtype() sets the wrong name '%s' (should be '%s')\n",
+			__location__, talloc_get_name(s3), location3);
+		ret = False;
+	}
+
+	s4 = talloc_array_ptrtype(top, s4, 10);location4 = __location__;
+
+	if (talloc_get_size(s4) != (sizeof(struct struct1 **) * 10)) {
+		printf("%s: talloc_array_ptrtype() allocated the wrong size %u (should be %u)\n",
+			__location__, talloc_get_size(s4), (sizeof(struct struct1 **)*10));
+		ret = False;
+	}
+
+	if (strcmp(location4, talloc_get_name(s4)) != 0) {
+		printf("%s: talloc_array_ptrtype() sets the wrong name '%s' (should be '%s')\n",
+			__location__, talloc_get_name(s4), location4);
+		ret = False;
+	}
+
+	talloc_free(top);
+
+	return ret;
+}
+
 BOOL torture_local_talloc(struct torture_context *torture) 
 {
 	BOOL ret = True;
@@ -959,6 +1034,7 @@ BOOL torture_local_talloc(struct torture_context *torture)
 	ret &= test_lifeless();
 	ret &= test_loop();
 	ret &= test_free_parent_deny_child();
+	ret &= test_talloc_ptrtype();
 	if (ret) {
 		ret &= test_speed();
 	}

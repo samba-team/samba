@@ -97,6 +97,15 @@
 	  type checking.
         </para>
     </refsect2>
+    <refsect2><title>(typeof(ptr)) talloc_ptrtype(const void *ctx, ptr);</title>
+        <para>
+	  The talloc_ptrtype() macro should be used when you have a pointer and
+	  want to allocate memory to point at with this pointer. When compiling
+	  with gcc >= 3 it is typesafe. Note this is a wrapper of talloc_size()
+	  and talloc_get_name() will return the current location in the source file.
+	  and not the type.
+        </para>
+    </refsect2>
     <refsect2><title>int talloc_free(void *ptr);</title>
         <para>
 	  The talloc_free() function frees a piece of talloc memory, and
@@ -549,6 +558,15 @@ if (ptr) memcpy(ptr, p, strlen(p)+1);</programlisting>
 	  The talloc_array_size() function is useful when the type is not
 	  known. It operates in the same way as talloc_array(), but takes a
 	  size instead of a type.
+        </para>
+    </refsect2>
+    <refsect2><title>(typeof(ptr)) talloc_array_ptrtype(const void *ctx, ptr, uint_t count);</title>
+        <para>
+	  The talloc_ptrtype() macro should be used when you have a pointer to an array
+	  and want to allocate memory of an array to point at with this pointer. When compiling
+	  with gcc >= 3 it is typesafe. Note this is a wrapper of talloc_array_size()
+	  and talloc_get_name() will return the current location in the source file.
+	  and not the type.
         </para>
     </refsect2>
     <refsect2><title>void *talloc_realloc_fn(const void *ctx, void *ptr, size_t size)</title>
