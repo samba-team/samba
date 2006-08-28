@@ -203,6 +203,7 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 static const struct ldb_module_ops objectguid_ops = {
 	.name          = "objectguid",
 	.add           = objectguid_add,
+	.modify        = objectguid_modify,
 };
 
 
