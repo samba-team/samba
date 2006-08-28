@@ -89,7 +89,8 @@ static void set_capability(unsigned capability)
 	header.pid = 0;
 
 	if (capget(&header, &data) == -1) {
-		DEBUG(3,("Unable to get kernel capabilities (%s)\n", strerror(errno)));
+		DEBUG(3,("Unable to get kernel capabilities (%s)\n",
+			 strerror(errno)));
 		return;
 	}
 
@@ -156,15 +157,18 @@ static files_struct *linux_oplock_receive_message(fd_set *fds)
 static BOOL linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
 	if (linux_setlease(fsp->fh->fd, F_WRLCK) == -1) {
-		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
-inode = %.0f. (%s)\n",
+		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, "
+			 "fd = %d, dev = %x, inode = %.0f. (%s)\n",
 			 fsp->fsp_name, fsp->fh->fd, 
-			 (unsigned int)fsp->dev, (double)fsp->inode, strerror(errno)));
+			 (unsigned int)fsp->dev, (double)fsp->inode,
+			 strerror(errno)));
 		return False;
 	}
 	
-	DEBUG(3,("linux_set_kernel_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f, file_id = %lu\n",
-		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->fh->file_id));
+	DEBUG(3,("linux_set_kernel_oplock: got kernel oplock on file %s, "
+		 "dev = %x, inode = %.0f, file_id = %lu\n",
+		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
+		 fsp->fh->file_id));
 
 	return True;
 }
@@ -181,8 +185,9 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 		 * oplock state of this file.
 		 */
 		int state = fcntl(fsp->fh->fd, F_GETLEASE, 0);
-		dbgtext("linux_release_kernel_oplock: file %s, dev = %x, inode = %.0f file_id = %lu has kernel \
-oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
+		dbgtext("linux_release_kernel_oplock: file %s, dev = %x, "
+			"inode = %.0f file_id = %lu has kernel oplock state "
+			"of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
                         (double)fsp->inode, fsp->fh->file_id, state );
 	}
 
@@ -191,10 +196,12 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 	 */
 	if (linux_setlease(fsp->fh->fd, F_UNLCK) == -1) {
 		if (DEBUGLVL(0)) {
-			dbgtext("linux_release_kernel_oplock: Error when removing kernel oplock on file " );
-			dbgtext("%s, dev = %x, inode = %.0f, file_id = %lu. Error was %s\n",
-				fsp->fsp_name, (unsigned int)fsp->dev, 
-				(double)fsp->inode, fsp->fh->file_id, strerror(errno) );
+			dbgtext("linux_release_kernel_oplock: Error when "
+				"removing kernel oplock on file " );
+			dbgtext("%s, dev = %x, inode = %.0f, file_id = %lu. "
+				"Error was %s\n", fsp->fsp_name,
+				(unsigned int)fsp->dev, (double)fsp->inode,
+				fsp->fh->file_id, strerror(errno) );
 		}
 	}
 }
