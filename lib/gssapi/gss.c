@@ -115,37 +115,60 @@ supported_mechanisms(void *argptr, int argc, char **argv)
  *
  */
 
+#define DOVEDOT_MAJOR_VERSION 1
+#define DOVEDOT_MINOR_VERSION 0
+
+/*
+	S: MECH mech mech-parameters
+	S: MECH mech mech-parameters
+	S: VERSION major minor
+	S: CPID pid
+	S: CUID pid
+	S: ...
+	S: DONE
+	C: VERSION major minor
+	C: CPID pid
+
+	C: AUTH id method service= resp=
+	C: CONT id message
+
+	S: OK id user=
+	S: FAIL id reason=
+	S: CONTINUE id message
+*/
+
+int
+dovecot_server(void *argptr, int argc, char **argv)
+{
+    krb5_storage *sp;
+    int fd = 0;
+
+    sp = krb5_storage_from_fd(fd);
+    if (sp == NULL)
+	errx(1, "krb5_storage_from_fd");
+
+    krb5_store_stringnl(sp, "MECH\tGSSAPI");
+    krb5_store_stringnl(sp, "VERSION\t1\t0");
+    krb5_store_stringnl(sp, "DONE");
+
+    while (1) {
+	char *cmd;
+	if (krb5_ret_stringnl(sp, &cmd) != 0)
+	    break;
+	printf("cmd: %s\n", cmd);
+	free(cmd);
+    }
+    return 0;
+}
+
+/*
+ *
+ */
+
 int
 help(void *opt, int argc, char **argv)
 {
-    if(argc == 0) {
-	sl_help(commands, 1, argv - 1 /* XXX */);
-    } else {
-	SL_cmd *c = sl_match (commands, argv[0], 0);
- 	if(c == NULL) {
-	    fprintf (stderr, "No such command: %s. "
-		     "Try \"help\" for a list of commands\n",
-		     argv[0]);
-	} else {
-	    if(c->func) {
-		char *fake[] = { NULL, "--help", NULL };
-		fake[0] = argv[0];
-		(*c->func)(2, fake);
-		fprintf(stderr, "\n");
-	    }
-	    if(c->help && *c->help)
-		fprintf (stderr, "%s\n", c->help);
-	    if((++c)->name && c->func == NULL) {
-		int f = 0;
-		fprintf (stderr, "Synonyms:");
-		while (c->name && c->func == NULL) {
-		    fprintf (stderr, "%s%s", f ? ", " : " ", (c++)->name);
-		    f = 1;
-		}
-		fprintf (stderr, "\n");
-	    }
-	}
-    }
+    sl_slc_help(commands, argc, argv);
     return 0;
 }
 

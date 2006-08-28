@@ -216,34 +216,7 @@ client_request(struct client_request_options *opt, int argc, char **argv)
 int
 help(void *opt, int argc, char **argv)
 {
-    if(argc == 0) {
-	sl_help(commands, 1, argv - 1 /* XXX */);
-    } else {
-	SL_cmd *c = sl_match (commands, argv[0], 0);
- 	if(c == NULL) {
-	    fprintf (stderr, "No such command: %s. "
-		     "Try \"help\" for a list of commands\n",
-		     argv[0]);
-	} else {
-	    if(c->func) {
-		char *fake[] = { NULL, "--help", NULL };
-		fake[0] = argv[0];
-		(*c->func)(2, fake);
-		fprintf(stderr, "\n");
-	    }
-	    if(c->help && *c->help)
-		fprintf (stderr, "%s\n", c->help);
-	    if((++c)->name && c->func == NULL) {
-		int f = 0;
-		fprintf (stderr, "Synonyms:");
-		while (c->name && c->func == NULL) {
-		    fprintf (stderr, "%s%s", f ? ", " : " ", (c++)->name);
-		    f = 1;
-		}
-		fprintf (stderr, "\n");
-	    }
-	}
-    }
+    sl_slc_help(commands, argc, argv);
     return 0;
 }
 
