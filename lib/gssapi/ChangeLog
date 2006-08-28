@@ -1,4 +1,10 @@
+2006-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss.c (help): use sl_slc_help().
+	
 2006-07-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss-commands.in: rename command to supported-mechanisms
 
 	* Makefile.am: Make gss objects depend on the slc built
 	gss-commands.h

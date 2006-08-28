@@ -1,5 +1,11 @@
-2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* sl.h: Add sl_slc_help.
+
+	* sl.c: Add sl_slc_help.
+	
+2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* slc-gram.y (gen_wrapper): use the generated version of name for
 	function, if no function is is used, also use the generated name
 	for the structure name.

@@ -1,3 +1,7 @@
+2006-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kadmin.c (help): use sl_slc_help().
+	
 2006-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* util.c: Add KRB5_KDB_ALLOW_DIGEST

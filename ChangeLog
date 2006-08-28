@@ -1,5 +1,7 @@
 2006-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kdigest.c (help): use sl_slc_help().
+
 	* kdc/digest.c: Catch more error, add SASL DIGEST MD5.
 
 	* lib/krb5/digest.c: Catch more error.
