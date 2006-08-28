@@ -235,7 +235,7 @@
 	  about to go away.
         </para>
     </refsect2>
-    <refsect2><title>void talloc_increase_ref_count(const void *<emphasis role="italic">ptr</emphasis>);</title>
+    <refsect2><title>int talloc_increase_ref_count(const void *<emphasis role="italic">ptr</emphasis>);</title>
         <para>
 	  The talloc_increase_ref_count(<emphasis
 	  role="italic">ptr</emphasis>) function is exactly equivalent to:
@@ -244,6 +244,9 @@
         <para>
 	  You can use either syntax, depending on which you think is
 	  clearer in your code.
+        </para>
+        <para>
+	  It returns 0 on success and -1 on failure.
         </para>
     </refsect2>
     <refsect2 id="talloc_set_name"><title>void talloc_set_name(const void *ptr, const char *fmt, ...);</title>
