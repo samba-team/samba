@@ -165,7 +165,7 @@ static int net_lookup_dc(int argc, const char **argv)
 	asprintf(&pdc_str, "%s", inet_ntoa(addr));
 	d_printf("%s\n", pdc_str);
 
-	if (!get_sorted_dc_list(domain, &ip_list, &count, False)) {
+	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, &ip_list, &count, False))) {
 		SAFE_FREE(pdc_str);
 		return 0;
 	}
