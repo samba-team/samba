@@ -1,4 +1,25 @@
+2006-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/digest.c: Catch more error, add SASL DIGEST MD5.
+
+	* lib/krb5/digest.c: Catch more error.
+
+2006-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: language.
+
+	* doc/heimdal.texi: Add last updated text.
+	
+	* doc/heimdal.css: make box around heimdal title
+	
+	* doc/heimdal.css: Inital Heimdal css for the info manual
+	
+	* lib/krb5/digest.c: In the case where we get a DigestError back,
+	save the error string and code.
+	
 2006-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos5.c: Remove _kdc_find_etype(), its no longer used.
 
 	* kdc/digest.c: Remove local error label and have just one exit
 	label, set error strings properly.
