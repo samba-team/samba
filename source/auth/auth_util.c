@@ -607,7 +607,12 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	cli_credentials_set_conf(session_info->credentials);
-	cli_credentials_set_machine_account_pending(session_info->credentials);
+
+	if (lp_parm_bool(-1,"system","anonymous", False)) {
+		cli_credentials_set_anonymous(session_info->credentials);
+	} else {
+		cli_credentials_set_machine_account_pending(session_info->credentials);
+	}
 	*_session_info = session_info;
 
 	return NT_STATUS_OK;
