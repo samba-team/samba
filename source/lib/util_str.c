@@ -2284,7 +2284,9 @@ SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 	const char *p = nptr;
 	
 	if (!p) {
-		*entptr = p;
+		if (entptr) {
+			*entptr = p;
+		}
 		return val;
 	}
 
