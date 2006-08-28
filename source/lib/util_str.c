@@ -2023,7 +2023,7 @@ char* ipstr_list_make(char** ipstr_list, const struct ip_service* ip_list, int i
 	int i;
 	
 	/* arguments checking */
-	if (!ip_list && !ipstr_list) return 0;
+	if (!ip_list || !ipstr_list) return 0;
 
 	*ipstr_list = NULL;
 	
