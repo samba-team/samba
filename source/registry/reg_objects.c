@@ -182,6 +182,7 @@ REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val )
 			DEBUG(0,("dup_registry_value: memdup() failed for [%d] bytes!\n",
 				val->size));
 			SAFE_FREE( copy );
+			return NULL;
 		}
 		copy->size = val->size;
 	}
