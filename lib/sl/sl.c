@@ -348,3 +348,41 @@ sl_apropos (SL_cmd *cmd, const char *topic)
         if (cmd->usage != NULL && strstr(cmd->usage, topic) != NULL)
 	    printf ("%-20s%s\n", cmd->name, cmd->usage);
 }
+
+/*
+ * Help to be used with slc.
+ */
+
+void
+sl_slc_help (SL_cmd *cmds, int argc, char **argv)
+{
+    if(argc == 0) {
+	sl_help(cmds, 1, argv - 1 /* XXX */);
+    } else {
+	SL_cmd *c = sl_match (cmds, argv[0], 0);
+ 	if(c == NULL) {
+	    fprintf (stderr, "No such command: %s. "
+		     "Try \"help\" for a list of commands\n",
+		     argv[0]);
+	} else {
+	    if(c->func) {
+		char *fake[] = { NULL, "--help", NULL };
+		fake[0] = argv[0];
+		(*c->func)(2, fake);
+		fprintf(stderr, "\n");
+	    }
+	    if(c->help && *c->help)
+		fprintf (stderr, "%s\n", c->help);
+	    if((++c)->name && c->func == NULL) {
+		int f = 0;
+		fprintf (stderr, "Synonyms:");
+		while (c->name && c->func == NULL) {
+		    fprintf (stderr, "%s%s", f ? ", " : " ", (c++)->name);
+		    f = 1;
+		}
+		fprintf (stderr, "\n");
+	    }
+	}
+    }
+    return 0;
+}
