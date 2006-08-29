@@ -227,6 +227,21 @@ attributeID: 1.2.840.113556.1.4.966
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
 
+dn: CN=Domain-Identifier,CN=Schema,CN=Configuration,${BASEDN}
+cn: Domain-Identifier
+name: Domain-Identifier
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: domainIdentifier
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: TRUE
+schemaIDGUID: 7f561278-5301-11d1-a9c5-0000f80367c1
+adminDisplayName: Domain-Identifier
+attributeID: 1.2.840.113556.1.4.755
+attributeSyntax: 2.5.5.9
+oMSyntax: 2
+
 dn: CN=Legacy-Exchange-DN,CN=Schema,CN=Configuration,${BASEDN}
 cn: Legacy-Exchange-DN
 name: Legacy-Exchange-DN
@@ -486,6 +501,36 @@ attributeID: 2.5.21.6
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
+dn: CN=Trust-Attributes,CN=Schema,CN=Configuration,${BASEDN}
+cn: Trust-Attributes
+name: Trust-Attributes
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: trustAttributes
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: 80a67e5a-9f22-11d0-afdd-00c04fd930c9
+adminDisplayName: Trust-Attributes
+attributeID: 1.2.840.113556.1.4.470
+attributeSyntax: 2.5.5.9
+oMSyntax: 2
+
+dn: CN=ms-DS-Trust-Forest-Trust-Info,CN=Schema,CN=Configuration,${BASEDN}
+cn: ms-DS-Trust-Forest-Trust-Info
+name: ms-DS-Trust-Forest-Trust-Info
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: msDS-TrustForestTrustInfo
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: 29cc866e-49d3-4969-942e-1dbc0925d183
+adminDisplayName: ms-DS-Trust-Forest-Trust-Info
+attributeID: 1.2.840.113556.1.4.1702
+attributeSyntax: 2.5.5.10
+oMSyntax: 4
+
 dn: CN=Site-Object,CN=Schema,CN=Configuration,${BASEDN}
 cn: Site-Object
 name: Site-Object
@@ -668,6 +713,21 @@ adminDisplayName: May-Contain
 attributeID: 1.2.840.113556.1.2.25
 attributeSyntax: 2.5.5.2
 oMSyntax: 6
+
+dn: CN=Trust-Auth-Outgoing,CN=Schema,CN=Configuration,${BASEDN}
+cn: Trust-Auth-Outgoing
+name: Trust-Auth-Outgoing
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: trustAuthOutgoing
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: bf967a5f-0de6-11d0-a285-00aa003049e2
+adminDisplayName: Trust-Auth-Outgoing
+attributeID: 1.2.840.113556.1.4.135
+attributeSyntax: 2.5.5.10
+oMSyntax: 4
 
 dn: CN=Server-Reference-BL,CN=Schema,CN=Configuration,${BASEDN}
 cn: Server-Reference-BL
@@ -1012,6 +1072,21 @@ systemOnly: TRUE
 schemaIDGUID: 9a7ad944-ca53-11d1-bbd0-0080c76670c0
 adminDisplayName: Attribute-Types
 attributeID: 2.5.21.5
+attributeSyntax: 2.5.5.12
+oMSyntax: 64
+
+dn: CN=Initial-Auth-Outgoing,CN=Schema,CN=Configuration,${BASEDN}
+cn: Initial-Auth-Outgoing
+name: Initial-Auth-Outgoing
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: initialAuthOutgoing
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: 52458024-ca6a-11d0-afff-0000f80367c1
+adminDisplayName: Initial-Auth-Outgoing
+attributeID: 1.2.840.113556.1.4.540
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
@@ -1762,6 +1837,21 @@ attributeID: 1.2.840.113556.1.4.1189
 attributeSyntax: 2.5.5.5
 oMSyntax: 22
 
+dn: CN=Trust-Type,CN=Schema,CN=Configuration,${BASEDN}
+cn: Trust-Type
+name: Trust-Type
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: trustType
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: bf967a60-0de6-11d0-a285-00aa003049e2
+adminDisplayName: Trust-Type
+attributeID: 1.2.840.113556.1.4.136
+attributeSyntax: 2.5.5.9
+oMSyntax: 2
+
 dn: CN=Domain-Replica,CN=Schema,CN=Configuration,${BASEDN}
 cn: Domain-Replica
 name: Domain-Replica
@@ -1940,6 +2030,21 @@ adminDisplayName: Group-Membership-SAM
 attributeID: 1.2.840.113556.1.4.166
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
+
+dn: CN=Trust-Partner,CN=Schema,CN=Configuration,${BASEDN}
+cn: Trust-Partner
+name: Trust-Partner
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: trustPartner
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: bf967a5d-0de6-11d0-a285-00aa003049e2
+adminDisplayName: Trust-Partner
+attributeID: 1.2.840.113556.1.4.133
+attributeSyntax: 2.5.5.12
+oMSyntax: 64
 
 dn: CN=Instance-Type,CN=Schema,CN=Configuration,${BASEDN}
 cn: Instance-Type
@@ -2555,6 +2660,21 @@ attributeID: 1.2.840.113556.1.4.138
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
+dn: CN=Trust-Posix-Offset,CN=Schema,CN=Configuration,${BASEDN}
+cn: Trust-Posix-Offset
+name: Trust-Posix-Offset
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: trustPosixOffset
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: bf967a5e-0de6-11d0-a285-00aa003049e2
+adminDisplayName: Trust-Posix-Offset
+attributeID: 1.2.840.113556.1.4.134
+attributeSyntax: 2.5.5.9
+oMSyntax: 2
+
 dn: CN=Bridgehead-Server-List-BL,CN=Schema,CN=Configuration,${BASEDN}
 cn: Bridgehead-Server-List-BL
 name: Bridgehead-Server-List-BL
@@ -2735,6 +2855,21 @@ systemOnly: FALSE
 schemaIDGUID: be9ef6ee-cbc7-4f22-b27b-96967e7ee585
 adminDisplayName: departmentNumber
 attributeID: 2.16.840.1.113730.3.1.2
+attributeSyntax: 2.5.5.12
+oMSyntax: 64
+
+dn: CN=Additional-Trusted-Service-Names,CN=Schema,CN=Configuration,${BASEDN}
+cn: Additional-Trusted-Service-Names
+name: Additional-Trusted-Service-Names
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: additionalTrustedServiceNames
+isSingleValued: FALSE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: 032160be-9824-11d1-aec0-0000f80367c1
+adminDisplayName: Additional-Trusted-Service-Names
+attributeID: 1.2.840.113556.1.4.889
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
@@ -3727,6 +3862,21 @@ attributeID: 1.2.840.113556.1.4.12
 attributeSyntax: 2.5.5.9
 oMSyntax: 2
 
+dn: CN=Trust-Auth-Incoming,CN=Schema,CN=Configuration,${BASEDN}
+cn: Trust-Auth-Incoming
+name: Trust-Auth-Incoming
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: trustAuthIncoming
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: bf967a59-0de6-11d0-a285-00aa003049e2
+adminDisplayName: Trust-Auth-Incoming
+attributeID: 1.2.840.113556.1.4.129
+attributeSyntax: 2.5.5.10
+oMSyntax: 4
+
 dn: CN=SubSchemaSubEntry,CN=Schema,CN=Configuration,${BASEDN}
 cn: SubSchemaSubEntry
 name: SubSchemaSubEntry
@@ -4178,6 +4328,37 @@ adminDisplayName: MSMQ-Sign-Certificates
 attributeID: 1.2.840.113556.1.4.947
 attributeSyntax: 2.5.5.10
 oMSyntax: 4
+
+dn: CN=Initial-Auth-Incoming,CN=Schema,CN=Configuration,${BASEDN}
+cn: Initial-Auth-Incoming
+name: Initial-Auth-Incoming
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: initialAuthIncoming
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: 52458023-ca6a-11d0-afff-0000f80367c1
+adminDisplayName: Initial-Auth-Incoming
+attributeID: 1.2.840.113556.1.4.539
+attributeSyntax: 2.5.5.12
+oMSyntax: 64
+
+dn: CN=Domain-Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
+cn: Domain-Cross-Ref
+name: Domain-Cross-Ref
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: domainCrossRef
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: b000ea7b-a086-11d0-afdd-00c04fd930c9
+adminDisplayName: Domain-Cross-Ref
+attributeID: 1.2.840.113556.1.4.472
+attributeSyntax: 2.5.5.1
+oMSyntax: 127
+oMObjectClass:: KwwCh3McAIVK
 
 dn: CN=Text-Encoded-OR-Address,CN=Schema,CN=Configuration,${BASEDN}
 cn: Text-Encoded-OR-Address
@@ -4756,6 +4937,21 @@ attributeID: 1.2.840.113556.1.4.481
 attributeSyntax: 2.5.5.11
 oMSyntax: 24
 
+dn: CN=Trust-Direction,CN=Schema,CN=Configuration,${BASEDN}
+cn: Trust-Direction
+name: Trust-Direction
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: trustDirection
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: bf967a5c-0de6-11d0-a285-00aa003049e2
+adminDisplayName: Trust-Direction
+attributeID: 1.2.840.113556.1.4.132
+attributeSyntax: 2.5.5.9
+oMSyntax: 2
+
 dn: CN=Enabled,CN=Schema,CN=Configuration,${BASEDN}
 cn: Enabled
 name: Enabled
@@ -5270,6 +5466,21 @@ systemOnly: TRUE
 schemaIDGUID: 9a7ad948-ca53-11d1-bbd0-0080c76670c0
 adminDisplayName: Extended-Class-Info
 attributeID: 1.2.840.113556.1.4.908
+attributeSyntax: 2.5.5.12
+oMSyntax: 64
+
+dn: CN=Flat-Name,CN=Schema,CN=Configuration,${BASEDN}
+cn: Flat-Name
+name: Flat-Name
+objectClass: top
+objectClass: attributeSchema
+lDAPDisplayName: flatName
+isSingleValued: TRUE
+systemFlags: 16
+systemOnly: FALSE
+schemaIDGUID: b7b13117-b82e-11d0-afee-0000f80367c1
+adminDisplayName: Flat-Name
+attributeID: 1.2.840.113556.1.4.511
 attributeSyntax: 2.5.5.12
 oMSyntax: 64
 
@@ -7495,6 +7706,7 @@ objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 possibleInferiors: group
 possibleInferiors: msDS-AzApplication
 possibleInferiors: lostAndFound
+possibleInferiors: trustedDomain
 possibleInferiors: subnetContainer
 possibleInferiors: builtinDomain
 possibleInferiors: sitesContainer
@@ -7749,6 +7961,7 @@ systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 possibleInferiors: group
+possibleInferiors: trustedDomain
 possibleInferiors: computer
 possibleInferiors: foreignSecurityPrincipal
 possibleInferiors: user
@@ -8226,6 +8439,41 @@ defaultSecurityDescriptor: D:S:
 objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 schemaIDGUID: 5a8b3261-c38d-11d1-bbc9-0080c76670c0
 
+dn: CN=Trusted-Domain,CN=Schema,CN=Configuration,${BASEDN}
+cn: Trusted-Domain
+name: Trusted-Domain
+objectClass: top
+objectClass: classSchema
+systemPossSuperiors: container
+lDAPDisplayName: trustedDomain
+governsID: 1.2.840.113556.1.5.34
+rDNAttID: cn
+systemMayContain: trustType
+systemMayContain: trustPosixOffset
+systemMayContain: trustPartner
+systemMayContain: trustDirection
+systemMayContain: trustAuthOutgoing
+systemMayContain: trustAuthIncoming
+systemMayContain: trustAttributes
+systemMayContain: securityIdentifier
+systemMayContain: msDS-TrustForestTrustInfo
+systemMayContain: mS-DS-CreatorSID
+systemMayContain: initialAuthOutgoing
+systemMayContain: initialAuthIncoming
+systemMayContain: flatName
+systemMayContain: domainIdentifier
+systemMayContain: domainCrossRef
+systemMayContain: additionalTrustedServiceNames
+objectClassCategory: 1
+subClassOf: leaf
+defaultObjectCategory: CN=Trusted-Domain,CN=Schema,CN=Configuration,${BASEDN}
+defaultHidingValue: TRUE
+systemFlags: 16
+systemOnly: FALSE
+defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(OA;;WP;736e4812-af31-11d2-b7df-00805f48caeb;bf967ab8-0de6-11d0-a285-00aa003049e2;CO)(A;;SD;;;CO)
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
+schemaIDGUID: bf967ab8-0de6-11d0-a285-00aa003049e2
+
 dn: CN=Domain,CN=Schema,CN=Configuration,${BASEDN}
 cn: Domain
 name: Domain
@@ -8411,6 +8659,7 @@ objectClasses: ( 1.2.840.113556.1.5.28 NAME 'secret' SUP leaf STRUCTURAL MAY ( p
 objectClasses: ( 1.2.840.113556.1.5.107 NAME 'sitesContainer' SUP top STRUCTURAL )
 objectClasses: ( 1.2.840.113556.1.5.17 NAME 'server' SUP top STRUCTURAL MAY ( mailAddress $ serverReference $ serialNumber $ managedBy $ dNSHostName $ bridgeheadTransportList ) )
 objectClasses: ( 2.5.20.1 NAME 'subSchema' SUP top STRUCTURAL MAY ( objectClasses $ modifyTimeStamp $ extendedClassInfo $ extendedAttributeInfo $ dITContentRules $ attributeTypes ) )
+objectClasses: ( 1.2.840.113556.1.5.34 NAME 'trustedDomain' SUP leaf STRUCTURAL MAY ( trustType $ trustPosixOffset $ trustPartner $ trustDirection $ trustAuthOutgoing $ trustAuthIncoming $ trustAttributes $ securityIdentifier $ msDS-TrustForestTrustInfo $ mS-DS-CreatorSID $ initialAuthOutgoing $ initialAuthIncoming $ flatName $ domainIdentifier $ domainCrossRef $ additionalTrustedServiceNames ) )
 objectClasses: ( 1.2.840.113556.1.5.66 NAME 'domain' SUP top ABSTRACT MUST ( dc ) )
 objectClasses: ( 1.2.840.113556.1.5.76 NAME 'foreignSecurityPrincipal' SUP top STRUCTURAL MUST ( objectSid ) MAY ( foreignIdentifier ) )
 objectClasses: ( 1.2.840.113556.1.5.96 NAME 'subnet' SUP top STRUCTURAL MAY ( siteObject $ physicalLocationObject $ location ) )
@@ -8431,6 +8680,7 @@ attributeTypes: ( 2.16.840.1.113730.3.1.39 NAME 'preferredLanguage' SYNTAX '1.3.
 attributeTypes: ( 1.2.840.113556.1.4.752 NAME 'userSharedFolderOther' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
 attributeTypes: ( 1.2.840.113556.1.4.751 NAME 'userSharedFolder' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.966 NAME 'mSMQDigestsMig' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' )
+attributeTypes: ( 1.2.840.113556.1.4.755 NAME 'domainIdentifier' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.655 NAME 'legacyExchangeDN' SYNTAX '1.2.840.113556.1.4.905' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.618 NAME 'wellKnownObjects' SYNTAX '1.2.840.113556.1.4.903' )
 attributeTypes: ( 1.2.840.113556.1.4.1 NAME 'name' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
@@ -8448,6 +8698,8 @@ attributeTypes: ( 1.2.840.113556.1.4.867 NAME 'altSecurityIdentities' SYNTAX '1.
 attributeTypes: ( 1.3.6.1.4.1.250.1.57 NAME 'labeledURI' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
 attributeTypes: ( 1.2.840.113556.1.4.96 NAME 'pwdLastSet' SYNTAX '1.2.840.113556.1.4.906' SINGLE-VALUE )
 attributeTypes: ( 2.5.21.6 NAME 'objectClasses' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+attributeTypes: ( 1.2.840.113556.1.4.470 NAME 'trustAttributes' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.1702 NAME 'msDS-TrustForestTrustInfo' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.512 NAME 'siteObject' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.638 NAME 'isPrivilegeHolder' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
 attributeTypes: ( 1.2.840.113556.1.4.28 NAME 'dnsRoot' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
@@ -8460,6 +8712,7 @@ attributeTypes: ( 1.2.840.113556.1.4.677 NAME 'replTopologyStayOfExecution' SYNT
 attributeTypes: ( 1.2.840.113556.1.4.359 NAME 'netbootGUID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.2.26 NAME 'rDNAttID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.2.25 NAME 'mayContain' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' )
+attributeTypes: ( 1.2.840.113556.1.4.135 NAME 'trustAuthOutgoing' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.516 NAME 'serverReferenceBL' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
 attributeTypes: ( 2.5.18.1 NAME 'createTimeStamp' SYNTAX '1.3.6.1.4.1.1466.115.121.1.24' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.748 NAME 'attributeDisplayNames' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
@@ -8483,6 +8736,7 @@ attributeTypes: ( 1.2.840.113556.1.4.144 NAME 'operatorCount' SYNTAX '1.3.6.1.4.
 attributeTypes: ( 1.2.840.113556.1.4.1153 NAME 'msRADIUSFramedIPAddress' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.45 NAME 'homeDrive' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 2.5.21.5 NAME 'attributeTypes' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+attributeTypes: ( 1.2.840.113556.1.4.540 NAME 'initialAuthOutgoing' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 2.5.4.0 NAME 'objectClass' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' )
 attributeTypes: ( 1.2.840.113556.1.4.915 NAME 'possibleInferiors' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' )
 attributeTypes: ( 1.2.840.113556.1.4.1669 NAME 'msDS-Approx-Immed-Subordinates' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
@@ -8532,6 +8786,7 @@ attributeTypes: ( 1.2.840.113556.1.4.218 NAME 'applicationName' SYNTAX '1.3.6.1.
 attributeTypes: ( 1.2.840.113556.1.4.196 NAME 'systemMayContain' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' )
 attributeTypes: ( 1.2.840.113556.1.4.1191 NAME 'msRASSavedFramedRoute' SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' )
 attributeTypes: ( 1.2.840.113556.1.4.1189 NAME 'msRASSavedCallbackNumber' SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.136 NAME 'trustType' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.158 NAME 'domainReplica' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.2.615 NAME 'personalTitle' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.651 NAME 'otherMailbox' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
@@ -8544,6 +8799,7 @@ attributeTypes: ( 1.2.840.113556.1.4.661 NAME 'isDefunct' SYNTAX '1.3.6.1.4.1.14
 attributeTypes: ( 1.2.840.113556.1.4.98 NAME 'primaryGroupID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.160 NAME 'lmPwdHistory' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' )
 attributeTypes: ( 1.2.840.113556.1.4.166 NAME 'groupMembershipSAM' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.133 NAME 'trustPartner' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.2.1 NAME 'instanceType' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.806 NAME 'treatAsLeaf' SYNTAX '1.3.6.1.4.1.1466.115.121.1.7' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.562 NAME 'adminPropertyPages' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
@@ -8584,6 +8840,7 @@ attributeTypes: ( 1.2.840.113556.1.4.74 NAME 'maxPwdAge' SYNTAX '1.2.840.113556.
 attributeTypes: ( 1.2.840.113556.1.4.722 NAME 'otherIpPhone' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
 attributeTypes: ( 0.9.2342.19200300.100.1.21 NAME 'secretary' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
 attributeTypes: ( 1.2.840.113556.1.4.138 NAME 'userParameters' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.134 NAME 'trustPosixOffset' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.820 NAME 'bridgeheadServerListBL' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
 attributeTypes: ( 1.2.840.113556.1.4.1819 NAME 'msDS-AzApplicationData' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.866 NAME 'pekKeyChangeInterval' SYNTAX '1.2.840.113556.1.4.906' SINGLE-VALUE )
@@ -8596,6 +8853,7 @@ attributeTypes: ( 1.2.840.113556.1.4.148 NAME 'schemaIDGUID' SYNTAX '1.3.6.1.4.1
 attributeTypes: ( 1.2.840.113556.1.2.351 NAME 'auxiliaryClass' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' )
 attributeTypes: ( 0.9.2342.19200300.100.1.1 NAME 'uid' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
 attributeTypes: ( 2.16.840.1.113730.3.1.2 NAME 'departmentNumber' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+attributeTypes: ( 1.2.840.113556.1.4.889 NAME 'additionalTrustedServiceNames' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
 attributeTypes: ( 1.2.840.113556.1.2.464 NAME 'wWWHomePage' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.896 NAME 'uSNSource' SYNTAX '1.2.840.113556.1.4.906' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.1360 NAME 'mS-DS-ConsistencyGuid' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
@@ -8661,6 +8919,7 @@ attributeTypes: ( 1.2.840.113556.1.4.1442 NAME 'msDS-Cached-Membership-Time-Stam
 attributeTypes: ( 1.2.840.113556.1.4.169 NAME 'logonCount' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.58 NAME 'localeID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' )
 attributeTypes: ( 1.2.840.113556.1.4.12 NAME 'badPwdCount' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.129 NAME 'trustAuthIncoming' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
 attributeTypes: ( 2.5.18.10 NAME 'subSchemaSubEntry' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
 attributeTypes: ( 2.5.21.9 NAME 'structuralObjectClass' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' )
 attributeTypes: ( 1.2.840.113556.1.2.48 NAME 'isDeleted' SYNTAX '1.3.6.1.4.1.1466.115.121.1.7' SINGLE-VALUE )
@@ -8691,6 +8950,8 @@ attributeTypes: ( 1.2.840.113556.1.4.221 NAME 'sAMAccountName' SYNTAX '1.3.6.1.4
 attributeTypes: ( 1.2.840.113556.1.2.22 NAME 'governsID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' SINGLE-VALUE )
 attributeTypes: ( 0.9.2342.19200300.100.1.60 NAME 'jpegPhoto' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' )
 attributeTypes: ( 1.2.840.113556.1.4.947 NAME 'mSMQSignCertificates' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.539 NAME 'initialAuthIncoming' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.472 NAME 'domainCrossRef' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' SINGLE-VALUE )
 attributeTypes: ( 0.9.2342.19200300.100.1.2 NAME 'textEncodedORAddress' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.2.267 NAME 'uSNDSALastObjRemoved' SYNTAX '1.2.840.113556.1.4.906' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.1813 NAME 'msDS-OperationsForAzRoleBL' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
@@ -8729,6 +8990,7 @@ attributeTypes: ( 1.2.840.113556.1.4.1119 NAME 'msNPAllowDialin' SYNTAX '1.3.6.1
 attributeTypes: ( 1.2.840.113556.1.4.16 NAME 'codePage' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.150 NAME 'adminCount' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.481 NAME 'schemaUpdate' SYNTAX '1.3.6.1.4.1.1466.115.121.1.24' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.132 NAME 'trustDirection' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.2.557 NAME 'Enabled' SYNTAX '1.3.6.1.4.1.1466.115.121.1.7' SINGLE-VALUE )
 attributeTypes: ( 2.5.4.7 NAME 'l' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.268 NAME 'eFSPolicy' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' )
@@ -8763,6 +9025,7 @@ attributeTypes: ( 1.2.840.113556.1.4.1785 NAME 'msIIS-FTPRoot' SYNTAX '1.3.6.1.4
 attributeTypes: ( 1.2.840.113556.1.4.345 NAME 'groupPriority' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
 attributeTypes: ( 1.2.840.113556.1.4.819 NAME 'bridgeheadTransportList' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
 attributeTypes: ( 1.2.840.113556.1.4.908 NAME 'extendedClassInfo' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+attributeTypes: ( 1.2.840.113556.1.4.511 NAME 'flatName' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.301 NAME 'wbemPath' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
 attributeTypes: ( 1.2.840.113556.1.4.1706 NAME 'msDS-NCReplOutboundNeighbors' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
 attributeTypes: ( 1.2.840.113556.1.4.1809 NAME 'msDS-OperationsForAzTaskBL' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
