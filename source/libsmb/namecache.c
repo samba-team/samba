@@ -178,13 +178,13 @@ BOOL namecache_fetch(const char *name, int name_type, struct ip_service **ip_lis
 	char *key, *value;
 	time_t timeout;
 
-	*num_names = 0;
-
 	/* exit now if null pointers were passed as they're required further */
 	if (!ip_list || !num_names) return False;
 
 	if (!gencache_init())
 		return False;
+
+	*num_names = 0;
 
 	/* 
 	 * Use gencache interface - lookup the key

@@ -1516,7 +1516,7 @@ smbc_getatr(SMBCCTX * context,
   
 	if (!srv->no_pathinfo2 &&
             cli_qpathinfo2(targetcli, targetpath,
-                           c_time, a_time, m_time, NULL, size, mode, ino)) {
+                           NULL, a_time, m_time, c_time, size, mode, ino)) {
             return True;
         }
 
@@ -2184,7 +2184,7 @@ smbc_fstat_ctx(SMBCCTX *context,
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
 
 	if (!cli_qfileinfo(targetcli, file->cli_fd, &mode, &size,
-                           &c_time, &a_time, &m_time, NULL, &ino)) {
+                           NULL, &a_time, &m_time, &c_time, &ino)) {
 	    if (!cli_getattrE(targetcli, file->cli_fd, &mode, &size,
                               &c_time, &a_time, &m_time)) {
 

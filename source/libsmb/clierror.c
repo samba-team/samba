@@ -201,8 +201,6 @@ NTSTATUS cli_nt_error(struct cli_state *cli)
 void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 {
 	int  flgs2;
-	char rcls;
-	int code;
 
 	if(!cli->initialised) {
 		return;
@@ -223,11 +221,8 @@ void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
                 return;
         }
 
-	rcls  = CVAL(cli->inbuf,smb_rcls);
-	code  = SVAL(cli->inbuf,smb_err);
-
-	if (eclass) *eclass = rcls;
-	if (ecode) *ecode    = code;
+	*eclass  = CVAL(cli->inbuf,smb_rcls);
+	*ecode  = SVAL(cli->inbuf,smb_err);
 }
 
 /* Return a UNIX errno from a NT status code */
