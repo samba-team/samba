@@ -1613,7 +1613,9 @@ static BOOL cli_get_ea_list(struct cli_state *cli,
 	struct ea_struct *ea_list;
 
 	*pnum_eas = 0;
-	*pea_list = NULL;
+	if (pea_list) {
+	 	*pea_list = NULL;
+	}
 
 	if (!cli_send_trans(cli, SMBtrans2,
 			NULL,           /* Name */
