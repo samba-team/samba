@@ -1492,10 +1492,8 @@ int brl_forall(BRLOCK_FN(fn))
  Unlock the record.
 ********************************************************************/
 
-static int byte_range_lock_destructor(void *p)
+static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 {
-	struct byte_range_lock *br_lck =
-		talloc_get_type_abort(p, struct byte_range_lock);
 	TDB_DATA key;
 
 	key.dptr = (char *)&br_lck->key;
