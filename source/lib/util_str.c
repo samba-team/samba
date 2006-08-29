@@ -2023,7 +2023,7 @@ char* ipstr_list_make(char** ipstr_list, const struct ip_service* ip_list, int i
 	int i;
 	
 	/* arguments checking */
-	if (!ip_list && !ipstr_list) return 0;
+	if (!ip_list || !ipstr_list) return 0;
 
 	*ipstr_list = NULL;
 	
@@ -2251,7 +2251,9 @@ SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 	const char *p = nptr;
 	
 	if (!p) {
-		*entptr = p;
+		if (entptr) {
+			*entptr = p;
+		}
 		return val;
 	}
 

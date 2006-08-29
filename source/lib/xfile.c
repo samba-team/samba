@@ -259,7 +259,7 @@ int x_fflush(XFILE *f)
 		return -1;
 	}
 
-	if (f->bufused == 0) return 0;
+	if (f->bufused == 0 || !f->buf) return 0;
 
 	ret = write(f->fd, f->buf, f->bufused);
 	if (ret == -1) return -1;
