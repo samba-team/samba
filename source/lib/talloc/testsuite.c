@@ -435,7 +435,7 @@ static BOOL test_misc(void)
 	talloc_report(root, stdout);
 
 
-	p2 = talloc_zero_size(p1, 20);
+	p2 = (char *)talloc_zero_size(p1, 20);
 	if (p2[19] != 0) {
 		printf("Failed to give zero memory\n");
 		return False;
@@ -501,8 +501,8 @@ static BOOL test_misc(void)
 	talloc_unlink(NULL, p1);
 
 	p1 = talloc_named_const(root, 10, "p1");
-	p2 = talloc_named_const(root, 20, "p2");
-	talloc_reference(p1, p2);
+	p2 = (char *)talloc_named_const(root, 20, "p2");
+	(void)talloc_reference(p1, p2);
 	talloc_report_full(root, stdout);
 	talloc_unlink(root, p2);
 	talloc_report_full(root, stdout);
@@ -513,8 +513,8 @@ static BOOL test_misc(void)
 	talloc_unlink(root, p1);
 
 	p1 = talloc_named_const(root, 10, "p1");
-	p2 = talloc_named_const(root, 20, "p2");
-	talloc_reference(NULL, p2);
+	p2 = (char *)talloc_named_const(root, 20, "p2");
+	(void)talloc_reference(NULL, p2);
 	talloc_report_full(root, stdout);
 	talloc_unlink(root, p2);
 	talloc_report_full(root, stdout);
@@ -851,16 +851,16 @@ static BOOL test_speed(void)
 
 static BOOL test_lifeless(void)
 {
-	char *top = talloc_new(NULL);
+	void *top = talloc_new(NULL);
 	char *parent, *child; 
-	char *child_owner = talloc_new(NULL);
+	void *child_owner = talloc_new(NULL);
 
 	printf("TESTING TALLOC_UNLINK LOOP\n");
 
 	parent = talloc_strdup(top, "parent");
 	child = talloc_strdup(parent, "child");  
-	talloc_reference(child, parent);
-	talloc_reference(child_owner, child); 
+	(void)talloc_reference(child, parent);
+	(void)talloc_reference(child_owner, child); 
 	talloc_report_full(top, stdout);
 	talloc_unlink(top, parent);
 	talloc_free(child);
@@ -883,7 +883,7 @@ static int test_loop_destructor(char *ptr)
 
 static BOOL test_loop(void)
 {
-	char *top = talloc_new(NULL);
+	void *top = talloc_new(NULL);
 	char *parent;
 	struct req1 {
 		char *req2, *req3;
@@ -895,7 +895,7 @@ static BOOL test_loop(void)
 	req1->req2 = talloc_strdup(req1, "req2");  
 	talloc_set_destructor(req1->req2, test_loop_destructor);
 	req1->req3 = talloc_strdup(req1, "req3");
-	talloc_reference(req1->req3, req1);
+	(void)talloc_reference(req1->req3, req1);
 	talloc_report_full(top, stdout);
 	talloc_free(parent);
 	talloc_report_full(top, stdout);
@@ -917,7 +917,7 @@ static int fail_destructor_str(char *ptr)
 
 static BOOL test_free_parent_deny_child(void)
 {
-	char *top = talloc_new(NULL);
+	void *top = talloc_new(NULL);
 	char *level1;
 	char *level2;
 	char *level3;
@@ -941,7 +941,7 @@ static BOOL test_free_parent_deny_child(void)
 static BOOL test_talloc_ptrtype(void)
 {
 	BOOL ret = True;
-	char *top = talloc_new(NULL);
+	void *top = talloc_new(NULL);
 	struct struct1 {
 		int foo;
 		int bar;
