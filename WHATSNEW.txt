@@ -1,6 +1,6 @@
                    ===============================
                    Release Notes for Samba 3.0.23c
-                             Aug 30, 2006
+                             Aug 29, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version 
@@ -108,7 +108,7 @@ o   Guenther Deschner <gd@samba.org>
 o   Volker Lendecke <vl@samba.org>
     * Re-add support for "username level" when looking up the 
       matching Unix user for an smbpasswd entry.
-    * Merge snpritf() fixes from Samba 4.
+    * snprintf() fixes.
 
 
 o   Simo Sorce <idra@samba.org>
