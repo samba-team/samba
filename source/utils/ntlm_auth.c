@@ -623,9 +623,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(NTLMSSP_STATE **ntlmssp_state)
 }
 
 /*******************************************************************
- Used by firefox to drive NTLM auth to IIS servers. Currently
- requires krb5 enabled in winbindd as only then are the credentials
- cached in memory. This needs fixing in winbindd. JRA.
+ Used by firefox to drive NTLM auth to IIS servers.
 *******************************************************************/
 
 static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_msg,
