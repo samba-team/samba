@@ -6,6 +6,7 @@
    NOTE: Please read talloc_guide.txt for full documentation
 
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Stefan Metzmacher 2006
    
      ** NOTE! The following LGPL license applies to the talloc
      ** library. This does NOT imply that all of Samba is released
@@ -30,6 +31,23 @@
   inspired by http://swapped.cc/halloc/
 */
 
+#ifdef _SAMBA_BUILD_
+#include "version.h"
+#if (SAMBA_VERSION_MAJOR<4)
+#include "includes.h"
+/* This is to circumvent SAMBA3's paranoid malloc checker. Here in this file
+ * we trust ourselves... */
+#ifdef malloc
+#undef malloc
+#endif
+#ifdef realloc
+#undef realloc
+#endif
+#define _TALLOC_SAMBA3
+#endif /* (SAMBA_VERSION_MAJOR<4) */
+#endif /* _SAMBA_BUILD_ */
+
+#ifndef _TALLOC_SAMBA3
 #include "config.h"
 
 #include <stdio.h>
@@ -49,6 +67,7 @@
 #endif
 
 #include "talloc.h"
+#endif /* not _TALLOC_SAMBA3 */
 
 /* use this to force every realloc to change the pointer, to stress test
    code that might not cope */
@@ -788,11 +807,11 @@ size_t talloc_total_blocks(const void *ptr)
 /*
   return the number of external references to a pointer
 */
-static int talloc_reference_count(const void *ptr)
+size_t talloc_reference_count(const void *ptr)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	struct talloc_reference_handle *h;
-	int ret = 0;
+	size_t ret = 0;
 
 	for (h=tc->refs;h;h=h->next) {
 		ret++;
@@ -803,59 +822,12 @@ static int talloc_reference_count(const void *ptr)
 /*
   report on memory usage by all children of a pointer, giving a full tree view
 */
-void talloc_report_depth(const void *ptr, FILE *f, int depth)
-{
-	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
-
-	if (tc->flags & TALLOC_FLAG_LOOP) {
-		return;
-	}
-
-	tc->flags |= TALLOC_FLAG_LOOP;
-
-	for (c=tc->child;c;c=c->next) {
-		if (c->name == TALLOC_MAGIC_REFERENCE) {
-			struct talloc_reference_handle *handle =
-				(struct talloc_reference_handle *)TC_PTR_FROM_CHUNK(c);
-			const char *name2 = talloc_get_name(handle->ptr);
-			fprintf(f, "%*sreference to: %s\n", depth*4, "", name2);
-		} else {
-			const char *name = talloc_get_name(TC_PTR_FROM_CHUNK(c));
-			fprintf(f, "%*s%-30s contains %6lu bytes in %3lu blocks (ref %d)\n", 
-				depth*4, "",
-				name,
-				(unsigned long)talloc_total_size(TC_PTR_FROM_CHUNK(c)),
-				(unsigned long)talloc_total_blocks(TC_PTR_FROM_CHUNK(c)),
-				talloc_reference_count(TC_PTR_FROM_CHUNK(c)));
-			talloc_report_depth(TC_PTR_FROM_CHUNK(c), f, depth+1);
-		}
-	}
-	tc->flags &= ~TALLOC_FLAG_LOOP;
-}
-
-/*
-  report on memory usage by all children of a pointer, giving a full tree view
-*/
-void talloc_report_full(const void *ptr, FILE *f)
-{
-	if (ptr == NULL) {
-		ptr = null_context;
-	}
-	if (ptr == NULL) return;
-
-	fprintf(f,"full talloc report on '%s' (total %lu bytes in %lu blocks)\n", 
-		talloc_get_name(ptr), 
-		(unsigned long)talloc_total_size(ptr),
-		(unsigned long)talloc_total_blocks(ptr));
-
-	talloc_report_depth(ptr, f, 1);
-	fflush(f);
-}
-
-/*
-  report on memory usage by all children of a pointer
-*/
-void talloc_report(const void *ptr, FILE *f)
+void talloc_report_depth_cb(const void *ptr, int depth, int max_depth,
+			    void (*callback)(const void *ptr,
+			  		     int depth, int max_depth,
+					     int is_ref,
+					     void *private_data),
+			    void *private_data)
 {
 	struct talloc_chunk *c, *tc;
 
@@ -863,21 +835,80 @@ void talloc_report(const void *ptr, FILE *f)
 		ptr = null_context;
 	}
 	if (ptr == NULL) return;
-       
-	fprintf(f,"talloc report on '%s' (total %lu bytes in %lu blocks)\n", 
-		talloc_get_name(ptr), 
-		(unsigned long)talloc_total_size(ptr),
-		(unsigned long)talloc_total_blocks(ptr));
 
 	tc = talloc_chunk_from_ptr(ptr);
 
-	for (c=tc->child;c;c=c->next) {
-		fprintf(f, "\t%-30s contains %6lu bytes in %3lu blocks\n", 
-			talloc_get_name(TC_PTR_FROM_CHUNK(c)),
-			(unsigned long)talloc_total_size(TC_PTR_FROM_CHUNK(c)),
-			(unsigned long)talloc_total_blocks(TC_PTR_FROM_CHUNK(c)));
+	if (tc->flags & TALLOC_FLAG_LOOP) {
+		return;
 	}
+
+	callback(ptr, depth, max_depth, 0, private_data);
+
+	if (max_depth >= 0 && depth >= max_depth) {
+		return;
+	}
+
+	tc->flags |= TALLOC_FLAG_LOOP;
+	for (c=tc->child;c;c=c->next) {
+		if (c->name == TALLOC_MAGIC_REFERENCE) {
+			struct talloc_reference_handle *h = (struct talloc_reference_handle *)TC_PTR_FROM_CHUNK(c);
+			callback(h->ptr, depth + 1, max_depth, 1, private_data);
+		} else {
+			talloc_report_depth_cb(TC_PTR_FROM_CHUNK(c), depth + 1, max_depth, callback, private_data);
+		}
+	}
+	tc->flags &= ~TALLOC_FLAG_LOOP;
+}
+
+static void talloc_report_depth_FILE_helper(const void *ptr, int depth, int max_depth, int is_ref, void *_f)
+{
+	const char *name = talloc_get_name(ptr);
+	FILE *f = (FILE *)_f;
+
+	if (is_ref) {
+		fprintf(f, "%*sreference to: %s\n", depth*4, "", name);
+		return;
+	}
+
+	if (depth == 0) {
+		fprintf(f,"%stalloc report on '%s' (total %6lu bytes in %3lu blocks)\n", 
+			(max_depth < 0 ? "full " :""), name,
+			(unsigned long)talloc_total_size(ptr),
+			(unsigned long)talloc_total_blocks(ptr));
+		return;
+	}
+
+	fprintf(f, "%*s%-30s contains %6lu bytes in %3lu blocks (ref %d)\n", 
+		depth*4, "",
+		name,
+		(unsigned long)talloc_total_size(ptr),
+		(unsigned long)talloc_total_blocks(ptr),
+		talloc_reference_count(ptr));
+}
+
+/*
+  report on memory usage by all children of a pointer, giving a full tree view
+*/
+void talloc_report_depth_file(const void *ptr, int depth, int max_depth, FILE *f)
+{
+	talloc_report_depth_cb(ptr, depth, max_depth, talloc_report_depth_FILE_helper, f);
 	fflush(f);
+}
+
+/*
+  report on memory usage by all children of a pointer, giving a full tree view
+*/
+void talloc_report_full(const void *ptr, FILE *f)
+{
+	talloc_report_depth_file(ptr, 0, -1, f);
+}
+
+/*
+  report on memory usage by all children of a pointer
+*/
+void talloc_report(const void *ptr, FILE *f)
+{
+	talloc_report_depth_file(ptr, 0, 1, f);
 }
 
 /*

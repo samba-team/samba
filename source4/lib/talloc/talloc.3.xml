@@ -249,6 +249,11 @@
 	  It returns 0 on success and -1 on failure.
         </para>
     </refsect2>
+    <refsect2><title>size_t talloc_reference_count(const void *<emphasis role="italic">ptr</emphasis>);</title>
+        <para>
+	  Return the number of references to the pointer.
+        </para>
+    </refsect2>
     <refsect2 id="talloc_set_name"><title>void talloc_set_name(const void *ptr, const char *fmt, ...);</title>
         <para>
 	  Each talloc pointer has a "name".  The name is used principally
@@ -258,6 +263,12 @@
         </para>
         <para>
 	  The main use for names on pointer is for "talloc reports".  See
+	  <link
+	  linkend="talloc_report"><quote>talloc_report_depth_cb()</quote></link>,
+	  <link
+	  linkend="talloc_report"><quote>talloc_report_depth_file()</quote></link>,
+	  <link
+	  linkend="talloc_report"><quote>talloc_report()</quote></link>
 	  <link
 	  linkend="talloc_report"><quote>talloc_report()</quote></link>
 	  and <link
@@ -426,6 +437,45 @@ talloc_realloc(ctx, ptr, type, 0)  ==> talloc_free(ptr);</programlisting>
 	  printed for the top level memory context, but only if
 	  talloc_enable_leak_report() or talloc_enable_leak_report_full()
 	  has been called.
+        </para>
+    </refsect2>
+    <refsect2 id="talloc_report_depth_cb">
+     <funcsynopsis><funcprototype>
+      <funcdef>void <function>talloc_report_depth_cb</function></funcdef>
+      <paramdef><parameter>const void *ptr</parameter></paramdef>
+      <paramdef><parameter>int depth</parameter></paramdef>
+      <paramdef><parameter>int max_depth</parameter></paramdef>
+      <paramdef><parameter>void (*callback)(const void *ptr, int depth, int max_depth, int is_ref, void *priv)</parameter></paramdef>
+      <paramdef><parameter>void *priv</parameter></paramdef>
+     </funcprototype></funcsynopsis>
+        <para>
+	  This provides a more flexible reports than talloc_report(). It
+	  will recursively call the callback for the entire tree of memory
+	  referenced by the pointer. References in the tree are passed with
+	  <emphasis role="italic">is_ref = 1</emphasis> and the pointer that is referenced.
+        </para>
+        <para>
+	  You can pass NULL for the pointer, in which case a report is
+	  printed for the top level memory context, but only if
+	  talloc_enable_leak_report() or talloc_enable_leak_report_full()
+	  has been called.
+        </para>
+        <para>
+	  The recursion is stopped when depth >= max_depth.
+	  max_depth = -1 means only stop at leaf nodes.
+        </para>
+    </refsect2>
+    <refsect2 id="talloc_report_depth_file">
+     <funcsynopsis><funcprototype>
+      <funcdef>void <function>talloc_report_depth_file</function></funcdef>
+      <paramdef><parameter>const void *ptr</parameter></paramdef>
+      <paramdef><parameter>int depth</parameter></paramdef>
+      <paramdef><parameter>int max_depth</parameter></paramdef>
+      <paramdef><parameter>FILE *f</parameter></paramdef>
+     </funcprototype></funcsynopsis>
+        <para>
+	  This provides a more flexible reports than talloc_report(). It
+	  will let you specify the depth and max_depth.
         </para>
     </refsect2>
     <refsect2 id="talloc_enable_leak_report"><title>void talloc_enable_leak_report(void);</title>

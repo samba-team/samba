@@ -5,6 +5,7 @@
    Samba temporary memory allocation functions
 
    Copyright (C) Andrew Tridgell 2004-2005
+   Copyright (C) Stefan Metzmacher 2006
    
      ** NOTE! The following LGPL license applies to the talloc
      ** library. This does NOT imply that all of Samba is released
@@ -110,6 +111,7 @@ typedef void TALLOC_CTX;
 void *_talloc(const void *context, size_t size);
 void _talloc_set_destructor(const void *ptr, int (*destructor)(void *));
 int talloc_increase_ref_count(const void *ptr);
+size_t talloc_reference_count(const void *ptr);
 void *_talloc_reference(const void *context, const void *ptr);
 int talloc_unlink(const void *context, void *ptr);
 const char *talloc_set_name(const void *ptr, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
@@ -119,7 +121,6 @@ void *talloc_named(const void *context, size_t size,
 void *talloc_named_const(const void *context, size_t size, const char *name);
 const char *talloc_get_name(const void *ptr);
 void *talloc_check_name(const void *ptr, const char *name);
-void talloc_report_depth(const void *ptr, FILE *f, int depth);
 void *talloc_parent(const void *ptr);
 void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
 int talloc_free(void *ptr);
@@ -128,6 +129,13 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 void *_talloc_steal(const void *new_ctx, const void *ptr);
 size_t talloc_total_size(const void *ptr);
 size_t talloc_total_blocks(const void *ptr);
+void talloc_report_depth_cb(const void *ptr, int depth, int max_depth,
+			    void (*callback)(const void *ptr,
+			  		     int depth, int max_depth,
+					     int is_ref,
+					     void *private_data),
+			    void *private_data);
+void talloc_report_depth_file(const void *ptr, int depth, int max_depth, FILE *f);
 void talloc_report_full(const void *ptr, FILE *f);
 void talloc_report(const void *ptr, FILE *f);
 void talloc_enable_null_tracking(void);
@@ -142,8 +150,7 @@ char *talloc_append_string(const void *t, char *orig, const char *append);
 char *talloc_vasprintf(const void *t, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
 char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
 char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
-char *talloc_asprintf_append(char *s,
-			     const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+char *talloc_asprintf_append(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void *_talloc_array(const void *ctx, size_t el_size, unsigned count, const char *name);
 void *_talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const char *name);
 void *_talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name);
