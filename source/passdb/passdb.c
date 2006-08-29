@@ -50,10 +50,8 @@ const char *my_sam_name(void)
 /**********************************************************************
 ***********************************************************************/
 
-static int samu_destroy(void *p) 
+static int samu_destroy(struct samu *user) 
 {
-	struct samu *user = (struct samu *)p;
-
 	data_blob_clear_free( &user->lm_pw );
 	data_blob_clear_free( &user->nt_pw );
 

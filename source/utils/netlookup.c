@@ -41,7 +41,7 @@ static struct con_struct *cs;
  Close connection on context destruction.
 ********************************************************/
 
-static int cs_destructor(void *p)
+static int cs_destructor(struct con_struct *p)
 {
 	if (cs->cli) {
 		cli_shutdown(cs->cli);
