@@ -1,6 +1,6 @@
                    ===============================
                    Release Notes for Samba 3.0.23c
-                             Aug 23, 2006
+                             Aug 30, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version 
@@ -8,6 +8,10 @@ that production Samba servers should be running for all current
 bug-fixes.  Please read the changes in this section and for the 
 original 3.0.23 release regarding new features and difference 
 in behavior from previous releases.
+
+We would like to thank the developers of the Saturn code analysis 
+tool from Stanford University (http://glide.stanford.edu/saturn).
+This release includes several code fixes based on its reports.
 
 Common bugs fixed in 3.0.23c include:
 
@@ -57,12 +61,23 @@ Changes since 3.0.23b
 
 commits
 -------
+o   Michael Adam <ma@sernet.de>
+    * Fix incorrect logic in internal_resolve_name() caused by if 
+      statement.
+
+
 o   Jeremy Allison <jra@samba.org>
     * Don't store a NULL SID in winbindd's offline cache.
     * Ensure we store the offline password hash in the correct format.
     * OS/2 fixes for large Extended Attributes data.
     * Fix nmbd crashes caused by miscalculation in pushing 
       announcements.
+    * Handle times consistently across all client utils including
+      libsmbclient.
+    * Fix a file descriptor leak in nmbd sync DNS lookup code.
+    * Fix inconsistency found in checking for NULL in DLIST_REMOVE
+      macro.
+    * Pointer dereference fixes based on the Saturn analysis tool.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
@@ -76,6 +91,13 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Merge Guenther's fixes from the SuSE SLES10 tree to ensure 
       that winbindd talks to the correct DC when servicing PAM 
       authentication requests.
+    * Do not use the generic IP address sort routines for AD DCs
+      since the SRV lookup include a sorting algorithm based
+      on priority and weight. 
+    * Fix our DNS SRV lookup code to deal with multi-homed hosts.
+    * More changes to ensure that the primary group SID for 
+      a local user is based on the primary Unix group and not the
+      primaryGroupSID passdb attribute.
 
 
 o   Guenther Deschner <gd@samba.org>
@@ -86,6 +108,7 @@ o   Guenther Deschner <gd@samba.org>
 o   Volker Lendecke <vl@samba.org>
     * Re-add support for "username level" when looking up the 
       matching Unix user for an smbpasswd entry.
+    * Merge snpritf() fixes from Samba 4.
 
 
 o   Simo Sorce <idra@samba.org>
