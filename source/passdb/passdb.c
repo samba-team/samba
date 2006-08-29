@@ -136,7 +136,6 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 {
 	const char *guest_account = lp_guestaccount();
 	const char *domain = global_myname();
-	DOM_SID group_sid;
 	uint32 urid;
 
 	if ( !pwd ) {
@@ -148,8 +147,15 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 	pdb_set_username(user, pwd->pw_name, PDB_SET);
 	pdb_set_fullname(user, pwd->pw_gecos, PDB_SET);
 	pdb_set_domain (user, get_global_sam_name(), PDB_DEFAULT);
+#if 0
+	/* This can lead to a primary group of S-1-22-2-XX which 
+	   will be rejected by other parts of the Samba code. 
+	   Rely on pdb_get_group_sid() to "Do The Right Thing" (TM)  
+	   --jerry */
+	   
 	gid_to_sid(&group_sid, pwd->pw_gid);
 	pdb_set_group_sid(user, &group_sid, PDB_SET);
+#endif
 	
 	/* save the password structure for later use */
 	
