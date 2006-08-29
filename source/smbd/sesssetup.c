@@ -320,10 +320,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	
 	sub_set_smb_name( real_username );
 	reload_services(True);
+
 	if ( map_domainuser_to_guest ) {
 		make_server_info_guest(&server_info);
 	} else if (logon_info) {
-		ret = make_server_info_info3(mem_ctx, real_username, domain, 
+		/* pass the unmapped username here since map_username() 
+		   will be called again from inside make_server_info_info3() */
+		
+		ret = make_server_info_info3(mem_ctx, user, domain, 
 					     &server_info, &logon_info->info3);
 		if ( !NT_STATUS_IS_OK(ret) ) {
 			DEBUG(1,("make_server_info_info3 failed: %s!\n",
