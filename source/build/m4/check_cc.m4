@@ -164,6 +164,9 @@ if test x$developer = xyes; then
 	CFLAGS="${CFLAGS} -D_SAMBA_DEVELOPER_DONNOT_USE_O2_"
 	DEVELOPER_CFLAGS="-DDEBUG_PASSWORD -DDEVELOPER"
 	if test x"$GCC" = x"yes" ; then
+	    #
+	    # warnings we want...
+	    #
 	    AX_CFLAGS_GCC_OPTION(-Wall, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wshadow, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Werror-implicit-function-declaration, DEVELOPER_CFLAGS)
@@ -174,13 +177,18 @@ if test x$developer = xyes; then
 	    AX_CFLAGS_GCC_OPTION(-Wwrite-strings, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wmissing-format-attribute, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wformat=2, DEVELOPER_CFLAGS)
-	    AX_CFLAGS_GCC_OPTION(-Wno-format-y2k, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wdeclaration-after-statement, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wunused-macros, DEVELOPER_CFLAGS)
+#	    AX_CFLAGS_GCC_OPTION(-Wextra, DEVELOPER_CFLAGS)
 #	    AX_CFLAGS_GCC_OPTION(-Wc++-compat, DEVELOPER_CFLAGS)
 #	    AX_CFLAGS_GCC_OPTION(-Wmissing-prototypes, DEVELOPER_CFLAGS)
 #	    AX_CFLAGS_GCC_OPTION(-Wmissing-declarations, DEVELOPER_CFLAGS)
 #	    AX_CFLAGS_GCC_OPTION(-Wmissing-field-initializers, DEVELOPER_CFLAGS)
+	    #
+	    # warnings we don't want...
+	    #
+	    AX_CFLAGS_GCC_OPTION(-Wno-format-y2k, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wno-unused-parameter, DEVELOPER_CFLAGS)
 	else
 	    AX_CFLAGS_IRIX_OPTION(-fullwarn, DEVELOPER_CFLAGS)
 	fi
