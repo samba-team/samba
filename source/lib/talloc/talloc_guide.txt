@@ -205,6 +205,11 @@ your code.
 It returns 0 on success and -1 on failure.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+size_t talloc_reference_count(const void *ptr);
+
+Return the number of references to the pointer.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void talloc_set_name(const void *ptr, const char *fmt, ...);
 
 Each talloc pointer has a "name". The name is used principally for
@@ -347,6 +352,34 @@ debugging.
 Passing NULL is allowed, but it will only give a meaningful result if
 talloc_enable_leak_report() or talloc_enable_leak_report_full() has
 been called.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void talloc_report_depth_cb(const void *ptr, int depth, int max_depth,
+			    void (*callback)(const void *ptr,
+			    		     int depth, int max_depth,
+					     int is_ref,
+					     void *priv),
+			    void *priv);
+
+This provides a more flexible reports than talloc_report(). It
+will recursively call the callback for the entire tree of memory
+referenced by the pointer. References in the tree are passed with
+is_ref = 1 and the pointer that is referenced.
+
+You can pass NULL for the pointer, in which case a report is
+printed for the top level memory context, but only if
+talloc_enable_leak_report() or talloc_enable_leak_report_full()
+has been called.
+
+The recursion is stopped when depth >= max_depth.
+max_depth = -1 means only stop at leaf nodes.
+
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void talloc_report_depth_file(const void *ptr, int depth, int max_depth, FILE *f);
+
+This provides a more flexible reports than talloc_report(). It
+will let you specify the depth and max_depth.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
