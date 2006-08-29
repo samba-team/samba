@@ -406,9 +406,6 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dn
 		if ( (rr.type != T_A) || (rr.rdatalen != 4) ) 
 			continue;
 
-		/* FIX ME!!! Should this be a list of IP addresses for 
-		   each host? */ 
-		   
 		for ( i=0; i<idx; i++ ) {
 			if ( strcmp( rr.hostname, dcs[i].hostname ) == 0 ) {
 				int num_ips = dcs[i].num_ips;
