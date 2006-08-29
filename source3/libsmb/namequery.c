@@ -1172,86 +1172,86 @@ BOOL internal_resolve_name(const char *name, int name_type,
 		pstrcpy(name_resolve_list, lp_name_resolve_order());
 	} else {
 		pstrcpy(name_resolve_list, resolve_order);
+	}
 
-		if ( !name_resolve_list[0] ) {
-			ptr = "host";
-		} else {
-			ptr = name_resolve_list;
-		}
+	if ( !name_resolve_list[0] ) {
+		ptr = "host";
+	} else {
+		ptr = name_resolve_list;
+	}
 
-		/* iterate through the name resolution backends */
+	/* iterate through the name resolution backends */
   
-		while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
-			if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-				if (resolve_hosts(name, name_type, return_iplist, return_count)) {
-					result = True;
-					goto done;
-				}
-			} else if(strequal( tok, "ads")) {
-				/* deal with 0x1c names here.  This will result in a
-					SRV record lookup */
-				if (resolve_ads(name, name_type, return_iplist, return_count)) {
-					result = True;
-					goto done;
-				}
-			} else if(strequal( tok, "lmhosts")) {
-				if (resolve_lmhosts(name, name_type, return_iplist, return_count)) {
-					result = True;
-					goto done;
-				}
-			} else if(strequal( tok, "wins")) {
-				/* don't resolve 1D via WINS */
-				if (name_type != 0x1D && resolve_wins(name, name_type, return_iplist, return_count)) {
-					result = True;
-					goto done;
-				}
-			} else if(strequal( tok, "bcast")) {
-				if (name_resolve_bcast(name, name_type, return_iplist, return_count)) {
-					result = True;
-					goto done;
-				}
-			} else {
-				DEBUG(0,("resolve_name: unknown name switch type %s\n", tok));
+	while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
+		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
+			if (resolve_hosts(name, name_type, return_iplist, return_count)) {
+				result = True;
+				goto done;
 			}
+		} else if(strequal( tok, "ads")) {
+			/* deal with 0x1c names here.  This will result in a
+				SRV record lookup */
+			if (resolve_ads(name, name_type, return_iplist, return_count)) {
+				result = True;
+				goto done;
+			}
+		} else if(strequal( tok, "lmhosts")) {
+			if (resolve_lmhosts(name, name_type, return_iplist, return_count)) {
+				result = True;
+				goto done;
+			}
+		} else if(strequal( tok, "wins")) {
+			/* don't resolve 1D via WINS */
+			if (name_type != 0x1D && resolve_wins(name, name_type, return_iplist, return_count)) {
+				result = True;
+				goto done;
+			}
+		} else if(strequal( tok, "bcast")) {
+			if (name_resolve_bcast(name, name_type, return_iplist, return_count)) {
+				result = True;
+				goto done;
+			}
+		} else {
+			DEBUG(0,("resolve_name: unknown name switch type %s\n", tok));
 		}
+	}
 
-		/* All of the resolve_* functions above have returned false. */
+	/* All of the resolve_* functions above have returned false. */
 
-		SAFE_FREE(*return_iplist);
-		*return_count = 0;
+	SAFE_FREE(*return_iplist);
+	*return_count = 0;
 
-		return False;
+	return False;
 
   done:
 
-		/* Remove duplicate entries.  Some queries, notably #1c (domain
-			controllers) return the PDC in iplist[0] and then all domain
-			controllers including the PDC in iplist[1..n].  Iterating over
-			the iplist when the PDC is down will cause two sets of timeouts. */
+	/* Remove duplicate entries.  Some queries, notably #1c (domain
+	controllers) return the PDC in iplist[0] and then all domain
+	controllers including the PDC in iplist[1..n].  Iterating over
+	the iplist when the PDC is down will cause two sets of timeouts. */
 
-		if ( *return_count ) {
-			*return_count = remove_duplicate_addrs2( *return_iplist, *return_count );
-		}
+	if ( *return_count ) {
+		*return_count = remove_duplicate_addrs2( *return_iplist, *return_count );
+	}
  
-		/* Save in name cache */
-		if ( DEBUGLEVEL >= 100 ) {
-			for (i = 0; i < *return_count && DEBUGLEVEL == 100; i++)
-				DEBUG(100, ("Storing name %s of type %d (%s:%d)\n", name,
-					name_type, inet_ntoa((*return_iplist)[i].ip), (*return_iplist)[i].port));
-		}
+	/* Save in name cache */
+	if ( DEBUGLEVEL >= 100 ) {
+		for (i = 0; i < *return_count && DEBUGLEVEL == 100; i++)
+			DEBUG(100, ("Storing name %s of type %d (%s:%d)\n", name,
+				name_type, inet_ntoa((*return_iplist)[i].ip), (*return_iplist)[i].port));
+	}
    
-		namecache_store(name, name_type, *return_count, *return_iplist);
+	namecache_store(name, name_type, *return_count, *return_iplist);
 
-		/* Display some debugging info */
+	/* Display some debugging info */
 
-		if ( DEBUGLEVEL >= 10 ) {
-			DEBUG(10, ("internal_resolve_name: returning %d addresses: ", *return_count));
+	if ( DEBUGLEVEL >= 10 ) {
+		DEBUG(10, ("internal_resolve_name: returning %d addresses: ", *return_count));
 
-			for (i = 0; i < *return_count; i++) {
-				DEBUGADD(10, ("%s:%d ", inet_ntoa((*return_iplist)[i].ip), (*return_iplist)[i].port));
-			}
-			DEBUG(10, ("\n"));
+		for (i = 0; i < *return_count; i++) {
+			DEBUGADD(10, ("%s:%d ", inet_ntoa((*return_iplist)[i].ip), (*return_iplist)[i].port));
 		}
+		DEBUG(10, ("\n"));
 	}
   
 	return result;
