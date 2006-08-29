@@ -1097,7 +1097,6 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 	if (client_ntlmssp_state == NULL) {
 		DEBUG(1, ("Got NTLMSSP tArg without a client state\n"));
 		x_fprintf(x_stdout, "BH\n");
-		ntlmssp_end(&client_ntlmssp_state);
 		return;
 	}
 
