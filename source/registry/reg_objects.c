@@ -109,6 +109,10 @@ BOOL regsubkey_ctr_key_exists( REGSUBKEY_CTR *ctr, const char *keyname )
 {
 	int 	i;
 	
+	if (!ctr->subkeys) {
+		return False;
+	}
+
 	for ( i=0; i<ctr->num_subkeys; i++ ) {
 		if ( strequal( ctr->subkeys[i],keyname ) )
 			return True;
@@ -181,6 +185,7 @@ REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val )
 			DEBUG(0,("dup_registry_value: memdup() failed for [%d] bytes!\n",
 				val->size));
 			SAFE_FREE( copy );
+			return NULL;
 		}
 		copy->size = val->size;
 	}
