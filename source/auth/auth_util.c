@@ -513,11 +513,8 @@ NT_USER_TOKEN *get_root_nt_token( void )
 	return token;
 }
 
-static int server_info_dtor(void *p)
+static int server_info_dtor(auth_serversupplied_info *server_info)
 {
-	auth_serversupplied_info *server_info =
-		talloc_get_type_abort(p, auth_serversupplied_info);
-
 	if (server_info->sam_account != NULL) {
 		TALLOC_FREE(server_info->sam_account);
 	}

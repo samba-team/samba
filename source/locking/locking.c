@@ -672,10 +672,8 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	return result;
 }
 
-static int share_mode_lock_destructor(void *p)
+static int share_mode_lock_destructor(struct share_mode_lock *lck)
 {
-	struct share_mode_lock *lck =
-		talloc_get_type_abort(p, struct share_mode_lock);
 	TDB_DATA key = locking_key(lck->dev, lck->ino);
 	TDB_DATA data;
 

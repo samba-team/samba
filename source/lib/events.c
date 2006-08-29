@@ -23,9 +23,8 @@
 
 static struct timed_event *timed_events;
 
-static int timed_event_destructor(void *p)
+static int timed_event_destructor(struct timed_event *te)
 {
-	struct timed_event *te = talloc_get_type_abort(p, struct timed_event);
 	DEBUG(10, ("Destroying timed event %lx \"%s\"\n", (unsigned long)te,
 		te->event_name));
 	DLIST_REMOVE(timed_events, te);
