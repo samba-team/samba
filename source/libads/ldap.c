@@ -496,7 +496,7 @@ ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads, const char *bind_path,
 	}
 
 	cookie_be = ber_alloc_t(LBER_USE_DER);
-	if (cookie && *cookie) {
+	if (*cookie) {
 		ber_printf(cookie_be, "{iO}", (ber_int_t) 1000, *cookie);
 		ber_bvfree(*cookie); /* don't need it from last time */
 		*cookie = NULL;
