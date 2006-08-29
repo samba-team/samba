@@ -589,11 +589,11 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 			if (cnk->cflags == DP_C_SHORT)
 				cnk->value = va_arg (args, unsigned int);
 			else if (cnk->cflags == DP_C_LONG)
-				cnk->value = (long)va_arg (args, unsigned long int);
+				cnk->value = (unsigned long int)va_arg (args, unsigned long int);
 			else if (cnk->cflags == DP_C_LLONG)
 				cnk->value = (LLONG)va_arg (args, unsigned LLONG);
 			else
-				cnk->value = (long)va_arg (args, unsigned int);
+				cnk->value = (unsigned int)va_arg (args, unsigned int);
 
 			for (i = 1; i < clist[pnum].num; i++) {
 				clist[pnum].chunks[i]->value = cnk->value;
