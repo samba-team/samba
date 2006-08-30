@@ -1834,11 +1834,11 @@ test_pam_modules: pam_modules
 ##
 test: all torture timelimit
 	@echo Running Test suite
-	@sh ./script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
+	@sh $(srcdir)/script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
 
 valgrindtest: all torture timelimit
 	@echo Running Test suite with valgrind
 	@NMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/st/valgrind.log" \
-	 ./script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
+	 $(srcdir)/script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
