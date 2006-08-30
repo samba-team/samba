@@ -652,7 +652,7 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 	int     iplist_size = 0;
 	int     i;
 	BOOL    is_our_domain;
-
+	enum security_types sec = (enum security_types)lp_security();
 
 	is_our_domain = strequal(domain->name, lp_workgroup());
 
@@ -665,13 +665,27 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		return True;
 	}
 
+#ifdef WITH_ADS
+	if (sec == SEC_ADS) {
+		/* We need to make sure we know the local site before
+		   doing any DNS queries, as this will restrict the
+		   get_sorted_dc_list() call below to only fetching
+		   DNS records for the correct site. */
+
+		/* Find any DC to get the site record.
+		   We deliberately don't care about the
+		   return here. */
+		get_dc_name(domain->name, lp_realm(), dcname, &ip);
+        }
+#endif
+
 	/* try standard netbios queries first */
 
 	get_sorted_dc_list(domain->name, &ip_list, &iplist_size, False);
 
 	/* check for security = ads and use DNS if we can */
 
-	if ( iplist_size==0 && lp_security() == SEC_ADS ) 
+	if ( iplist_size==0 && sec == SEC_ADS ) 
 		get_sorted_dc_list(domain->alt_name, &ip_list, &iplist_size, True);
 
 	/* FIXME!! this is where we should re-insert the GETDC requests --jerry */

@@ -169,10 +169,6 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 	ads->ldap_ip = *interpret_addr2(srv);
 	SAFE_FREE(srv);
 	
-	/* cache the successful connection */
-
-	saf_store( ads->server.workgroup, server );
-
 	/* Store our site name. */
 	sitename_store( cldap_reply.client_site_name );
 
@@ -243,7 +239,7 @@ again:
 		
 		return status;
 	}
-			
+
 	/* if we fail this loop, then giveup since all the IP addresses returned were dead */
 	for ( i=0; i<count; i++ ) {
 		fstring server;
@@ -338,6 +334,10 @@ got_connection:
 	{
 		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
 	}
+
+	/* cache the successful connection */
+	saf_store( ads->server.workgroup, inet_ntoa(ads->ldap_ip));
+
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
 	status = ADS_ERROR(smb_ldap_start_tls(ads->ld, version));
