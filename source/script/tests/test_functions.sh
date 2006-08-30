@@ -43,7 +43,7 @@ samba3_check_or_start() {
 			if test x"$NMBD_MAXTIME" = x; then
 			    NMBD_MAXTIME=2700
 			fi
-			timelimit $NMBD_MAXTIME $NMBD_VALGRIND $SRCDIR/bin/nmbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $NMBD_TEST_LOG 2>&1 &
+			timelimit $NMBD_MAXTIME $NMBD_VALGRIND $BINDIR/nmbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $NMBD_TEST_LOG 2>&1 &
 			TIMELIMIT_NMBD_PID=$!
 			echo $TIMELIMIT_NMBD_PID > $PIDDIR/timelimit.nmbd.pid
 			wait $TIMELIMIT_NMBD_PID
@@ -72,7 +72,7 @@ samba3_check_or_start() {
 			if test x"$SMBD_MAXTIME" = x; then
 			    SMBD_MAXTIME=2700
 			fi
-			timelimit $SMBD_MAXTIME $SMBD_VALGRIND $SRCDIR/bin/smbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $SMBD_TEST_LOG 2>&1 &
+			timelimit $SMBD_MAXTIME $SMBD_VALGRIND $BINDIR/smbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $SMBD_TEST_LOG 2>&1 &
 			TIMELIMIT_SMBD_PID=$!
 			echo $TIMELIMIT_SMBD_PID > $PIDDIR/timelimit.smbd.pid
 			wait $TIMELIMIT_SMBD_PID
