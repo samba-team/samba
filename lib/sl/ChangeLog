@@ -1,3 +1,7 @@
+2006-08-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sl.c (sl_slc_help): remove return
+	
 2006-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* sl.h: Add sl_slc_help.
