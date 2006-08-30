@@ -431,5 +431,3 @@ void gencache_unlock_entry( const char *key )
 	tdb_unlock_bystring(cache, key);
 	return;
 }
-
-
