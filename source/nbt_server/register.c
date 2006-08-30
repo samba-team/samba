@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "nbt_server/nbt_server.h"
 #include "smbd/service_task.h"
 #include "libcli/composite/composite.h"

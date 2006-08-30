@@ -29,7 +29,7 @@
 #include "system/time.h"
 #include "lib/appweb/esp/esp.h"
 #include "lib/appweb/ejs/ejsInternal.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/tls/tls.h"
 #include "scripting/ejs/smbcalls.h"
 

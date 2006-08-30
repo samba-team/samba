@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "smbd/service_task.h"
 #include "smbd/service.h"
 #include "lib/messaging/irpc.h"

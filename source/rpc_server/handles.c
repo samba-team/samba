@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 
 /*

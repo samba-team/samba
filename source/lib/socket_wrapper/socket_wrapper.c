@@ -37,7 +37,7 @@
 #include <string.h>
 #include <stdio.h>
 #endif
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 /* LD_PRELOAD doesn't work yet, so REWRITE_CALLS is all we support
  * for now */

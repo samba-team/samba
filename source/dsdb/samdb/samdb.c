@@ -36,7 +36,7 @@
 #include "system/filesys.h"
 #include "db_wrap.h"
 #include "dsdb/samdb/samdb.h"
-#include "ads.h"
+#include "dsdb/common/flags.h"
 
 /*
   connect to the SAM database

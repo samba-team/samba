@@ -24,7 +24,7 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "build.h"
 #include "ntvfs/ntvfs.h"
 

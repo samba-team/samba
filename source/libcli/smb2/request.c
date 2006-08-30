@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
-#include "include/dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 
 /*

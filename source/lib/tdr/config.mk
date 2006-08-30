@@ -1,4 +1,5 @@
 [LIBRARY::TDR]
+CFLAGS = -Ilib/tdr
 PUBLIC_HEADERS = tdr.h
 VERSION = 0.0.1
 SO_VERSION = 0

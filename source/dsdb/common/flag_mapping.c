@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/samr.h"
-#include "ads.h"
+#include "dsdb/common/flags.h"
 
 /* 
 translated the ACB_CTRL Flags to UserFlags (userAccountControl) 

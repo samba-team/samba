@@ -23,7 +23,7 @@
 #include "system/time.h"
 #include "torture/torture.h"
 #include "build.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 _PUBLIC_ int torture_nprocs=4;
 _PUBLIC_ int torture_numops=10;
