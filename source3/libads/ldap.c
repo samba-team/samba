@@ -173,6 +173,9 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 
 	saf_store( ads->server.workgroup, server );
 
+	/* Store our site name. */
+	sitename_store( cldap_reply.client_site_name );
+
 	return True;
 }
 

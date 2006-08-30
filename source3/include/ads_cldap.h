@@ -35,8 +35,8 @@ struct cldap_netlogon_reply {
 
 	char unk[MAX_DNS_LABEL];
 	char user_name[MAX_DNS_LABEL];
-	char site_name[MAX_DNS_LABEL];
-	char site_name_2[MAX_DNS_LABEL];
+	char server_site_name[MAX_DNS_LABEL];
+	char client_site_name[MAX_DNS_LABEL];
 
 	uint32 version;
 	uint16 lmnt_token;
