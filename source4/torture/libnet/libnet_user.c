@@ -281,12 +281,13 @@ BOOL torture_deleteuser(struct torture_context *torture)
 	status = libnet_DeleteUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_DeleteUser call failed: %s\n", nt_errstr(status));
-		return False;
+		ret = False;
 	}
+
+	talloc_free(mem_ctx);
 
 done:
 	talloc_free(prep_mem_ctx);
-	talloc_free(mem_ctx);
 	return ret;
 }
 
@@ -429,6 +430,9 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, i
 			r->in.last_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
 			fldname = "last_password_change";
 			break;
+
+		default:
+			fldname = "unknown_field";
 		}
 		
 		printf(((i < num_changes - 1) ? "%s," : "%s"), fldname);
@@ -496,17 +500,20 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	status = libnet_ModifyUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
-		return False;
+		talloc_free(mem_ctx);
+		ret = False;
+		goto done;
 	}
 
 	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
 		printf("cleanup failed\n");
-		return False;
+		ret = False;
 	}
+
+	talloc_free(mem_ctx);
 
 done:
 	talloc_free(prep_mem_ctx);
-	talloc_free(mem_ctx);
 	return ret;
 }
 
@@ -524,7 +531,7 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 	struct lsa_String domain_name;
 	struct libnet_UserInfo req;
 
-	prep_mem_ctx = talloc_init("torture user info");
+	prep_mem_ctx = talloc_init("prepare torture user info");
 	binding = lp_parm_string(-1, "torture", "binding");
 
 	ctx = libnet_context_init(NULL);
@@ -548,6 +555,8 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 		goto done;
 	}
 
+	mem_ctx = talloc_init("torture user info");
+
 	ZERO_STRUCT(req);
 	
 	req.in.domain_name = domain_name.string;
@@ -557,16 +566,18 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_UserInfo call failed: %s\n", nt_errstr(status));
 		ret = False;
+		talloc_free(mem_ctx);
+		goto done;
 	}
 
 	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
 		printf("cleanup failed\n");
 		ret = False;
-		goto done;
 	}
 
-done:
 	talloc_free(ctx);
+
+done:
 	talloc_free(mem_ctx);
 	return ret;
 }
