@@ -34,8 +34,8 @@ include kdc/config.mk
 include passdb/config.mk
 
 DEFAULT_HEADERS = $(srcdir)/include/core.h \
-		  $(srcdir)/include/dlinklist.h \
-		  $(srcdir)/version.h
+				  $(srcdir)/lib/util/dlinklist.h \
+		  		  $(srcdir)/version.h
 
 binaries: $(BINARIES)
 libraries: $(STATIC_LIBS) $(SHARED_LIBS)
