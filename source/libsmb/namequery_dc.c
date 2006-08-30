@@ -76,8 +76,8 @@ static BOOL ads_dc_name(const char *domain,
 
 
 	if (i == 3) {
-		DEBUG(1,("ads_dc_name: sitename (now %s) keeps changing ???\n",
-			sitename));
+		DEBUG(1,("ads_dc_name: sitename (now \"%s\") keeps changing ???\n",
+			sitename ? sitename : ""));
 		SAFE_FREE(sitename);
 		ads_destroy(&ads);
 		return False;
