@@ -1,6 +1,6 @@
                    ===============================
                    Release Notes for Samba 3.0.23c
-                             Aug 29, 2006
+                             Aug 30, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version 
@@ -78,6 +78,7 @@ o   Jeremy Allison <jra@samba.org>
     * Fix inconsistency found in checking for NULL in DLIST_REMOVE
       macro.
     * Pointer dereference fixes based on the Saturn analysis tool.
+    * Fix memory leak in the AD DC lookup code.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>

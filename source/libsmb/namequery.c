@@ -1044,6 +1044,7 @@ static BOOL resolve_ads(const char *name, int name_type,
 		
 	status = ads_dns_query_dcs( ctx, name, &dcs, &numdcs );
 	if ( !NT_STATUS_IS_OK( status ) ) {
+		talloc_destroy(ctx);
 		return False;
 	}
 
@@ -1053,6 +1054,7 @@ static BOOL resolve_ads(const char *name, int name_type,
 		
 	if ( (*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, numaddrs)) == NULL ) {
 		DEBUG(0,("resolve_ads: malloc failed for %d entries\n", numaddrs ));
+		talloc_destroy(ctx);
 		return False;
 	}
 	
@@ -1096,8 +1098,7 @@ static BOOL resolve_ads(const char *name, int name_type,
 			(*return_count)++;
 	}
 		
-	TALLOC_FREE( dcs );
-				
+	talloc_destroy(ctx);
 	return True;
 }
 
