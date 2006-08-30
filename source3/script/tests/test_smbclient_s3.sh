@@ -11,7 +11,7 @@ fi
 
 SERVER="$1"
 SERVER_IP="$2"
-SMBCLIENT="$VALGRIND ${SMBCLIENT:-$SRCDIR/bin/smbclient} $CONFIGURATION"
+SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient} $CONFIGURATION"
 
 incdir=`dirname $0`
 . $incdir/test_functions.sh
