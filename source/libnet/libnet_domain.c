@@ -19,7 +19,7 @@
 */
 
 /*
-  a composite function for domain handling on samr pipe
+  a composite function for domain handling on samr and lsa pipes
 */
 
 #include "includes.h"
@@ -238,7 +238,7 @@ static void domain_open_handler(struct rpc_request *req)
 
 
 /**
- * Sends asynchronous DomainOpen request
+ * Sends asynchronous DomainOpenSamr request
  *
  * @param ctx initialised libnet context
  * @param io arguments and results of the call
@@ -267,11 +267,15 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 	s->access_mask         = io->in.access_mask;
 	s->domain_name.string  = io->in.domain_name;
 
+	/* check, if there's samr pipe opened already, before opening a domain */
 	if (ctx->samr.pipe == NULL) {
+
+		/* attempting to connect a domain controller */
 		s->rpcconn.level           = LIBNET_RPC_CONNECT_DC;
 		s->rpcconn.in.name         = io->in.domain_name;
 		s->rpcconn.in.dcerpc_iface = &dcerpc_table_samr;
-
+		
+		/* send rpc pipe connect request */
 		s->rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn);
 		if (composite_nomem(s->rpcconn_req, c)) return c;
 
@@ -329,7 +333,7 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 
 
 /**
- * Waits for and receives result of asynchronous DomainOpen call
+ * Waits for and receives result of asynchronous DomainOpenSamr call
  * 
  * @param c composite context returned by asynchronous DomainOpen call
  * @param ctx initialised libnet context
@@ -378,6 +382,14 @@ static void continue_rpc_connect_lsa(struct composite_context *ctx);
 static void continue_lsa_policy_open(struct rpc_request *req);
 
 
+/**
+ * Sends asynchronous DomainOpenLsa request
+ *
+ * @param ctx initialised libnet context
+ * @param io arguments and results of the call
+ * @param monitor pointer to monitor function that is passed monitor message
+ */
+
 struct composite_context* libnet_DomainOpenLsa_send(struct libnet_context *ctx,
 						    struct libnet_DomainOpen *io,
 						    void (*monitor)(struct monitor_msg*))
@@ -388,6 +400,7 @@ struct composite_context* libnet_DomainOpenLsa_send(struct libnet_context *ctx,
 	struct rpc_request *openpol_req;
 	struct lsa_QosInfo *qos;
 
+	/* create composite context and state */
 	c = composite_create(ctx, ctx->event_ctx);
 	if (c == NULL) return c;
 
@@ -396,15 +409,20 @@ struct composite_context* libnet_DomainOpenLsa_send(struct libnet_context *ctx,
 
 	c->private_data = s;
 
-	s->name = talloc_strdup(c, io->in.domain_name);
-	s->access_mask = io->in.access_mask;
-	s->ctx = ctx;
+	/* store arguments in the state structure */
+	s->name         = talloc_strdup(c, io->in.domain_name);
+	s->access_mask  = io->in.access_mask;
+	s->ctx          = ctx;
 
+	/* check, if there's lsa pipe opened already, before opening a handle */
 	if (ctx->lsa.pipe == NULL) {
+
+		/* attempting to connect a domain controller */
 		s->rpcconn.level           = LIBNET_RPC_CONNECT_DC;
 		s->rpcconn.in.name         = talloc_strdup(c, io->in.domain_name);
 		s->rpcconn.in.dcerpc_iface = &dcerpc_table_lsarpc;
 		
+		/* send rpc pipe connect request */
 		rpcconn_req = libnet_RpcConnect_send(ctx, c, &s->rpcconn);
 		if (composite_nomem(rpcconn_req, c)) return c;
 
@@ -414,6 +432,7 @@ struct composite_context* libnet_DomainOpenLsa_send(struct libnet_context *ctx,
 
 	s->pipe = ctx->lsa.pipe;
 
+	/* preparing parameters for lsa_OpenPolicy2 rpc call */
 	s->openpol.in.system_name = s->name;
 	s->openpol.in.access_mask = s->access_mask;
 	s->openpol.in.attr        = talloc_zero(c, struct lsa_ObjectAttribute);
@@ -426,7 +445,8 @@ struct composite_context* libnet_DomainOpenLsa_send(struct libnet_context *ctx,
 
 	s->openpol.in.attr->sec_qos = qos;
 	s->openpol.out.handle       = &s->handle;
-
+	
+	/* send rpc request */
 	openpol_req = dcerpc_lsa_OpenPolicy2_send(s->pipe, c, &s->openpol);
 	if (composite_nomem(openpol_req, c)) return c;
 
@@ -435,6 +455,9 @@ struct composite_context* libnet_DomainOpenLsa_send(struct libnet_context *ctx,
 }
 
 
+/*
+  Stage 0.5 (optional): Rpc pipe connected, send lsa open policy request
+ */
 static void continue_rpc_connect_lsa(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -445,11 +468,15 @@ static void continue_rpc_connect_lsa(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct domain_open_lsa_state);
 
+	/* receive rpc connection */
 	c->status = libnet_RpcConnect_recv(ctx, s->ctx, c, &s->rpcconn);
 	if (!composite_is_ok(c)) return;
 
+	/* RpcConnect function leaves the pipe in libnet context,
+	   so get it from there */
 	s->pipe = s->ctx->lsa.pipe;
-	
+
+	/* prepare lsa_OpenPolicy2 call */
 	s->openpol.in.system_name = s->name;
 	s->openpol.in.access_mask = s->access_mask;
 	s->openpol.in.attr        = talloc_zero(c, struct lsa_ObjectAttribute);
@@ -462,7 +489,8 @@ static void continue_rpc_connect_lsa(struct composite_context *ctx)
 
 	s->openpol.in.attr->sec_qos = qos;
 	s->openpol.out.handle       = &s->handle;
-	
+
+	/* send rpc request */
 	openpol_req = dcerpc_lsa_OpenPolicy2_send(s->pipe, c, &s->openpol);
 	if (composite_nomem(openpol_req, c)) return;
 
@@ -470,6 +498,9 @@ static void continue_rpc_connect_lsa(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 1: Lsa policy opened - we're done, if successfully
+ */
 static void continue_lsa_policy_open(struct rpc_request *req)
 {
 	struct composite_context *c;
@@ -485,6 +516,16 @@ static void continue_lsa_policy_open(struct rpc_request *req)
 }
 
 
+/**
+ * Receives result of asynchronous DomainOpenLsa call
+ *
+ * @param c composite context returned by asynchronous DomainOpenLsa call
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of the call
+ * @param io pointer to results (and arguments) of the call
+ * @return nt status code of execution
+ */
+
 NTSTATUS libnet_DomainOpenLsa_recv(struct composite_context *c, struct libnet_context *ctx,
 				   TALLOC_CTX *mem_ctx, struct libnet_DomainOpen *io)
 {
@@ -494,14 +535,19 @@ NTSTATUS libnet_DomainOpenLsa_recv(struct composite_context *c, struct libnet_co
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status) && io) {
+		/* everything went fine - get the results and
+		   return the error string */
 		s = talloc_get_type(c->private_data, struct domain_open_lsa_state);
 		io->out.domain_handle = s->handle;
 
 		ctx->lsa.handle      = s->handle;
-		ctx->lsa.name        = talloc_strdup(ctx, s->name);
+		ctx->lsa.name        = talloc_steal(ctx, s->name);
 		ctx->lsa.access_mask = s->access_mask;
+		
+		io->out.error_string = talloc_strdup(mem_ctx, "Success");
 
 	} else if (!NT_STATUS_IS_OK(status)) {
+		/* there was an error, so provide nt status code description */
 		io->out.error_string = talloc_asprintf(mem_ctx,
 						       "Failed to open domain: %s",
 						       nt_errstr(status));
@@ -512,6 +558,14 @@ NTSTATUS libnet_DomainOpenLsa_recv(struct composite_context *c, struct libnet_co
 }
 
 
+/**
+ * Sends a request to open a domain in desired service
+ *
+ * @param ctx initalised libnet context
+ * @param io arguments and results of the call
+ * @param monitor pointer to monitor function that is passed monitor message
+ */
+
 struct composite_context* libnet_DomainOpen_send(struct libnet_context *ctx,
 						 struct libnet_DomainOpen *io,
 						 void (*monitor)(struct monitor_msg*))
@@ -520,11 +574,13 @@ struct composite_context* libnet_DomainOpen_send(struct libnet_context *ctx,
 
 	switch (io->in.type) {
 	case DOMAIN_LSA:
+		/* reques to open a policy handle on \pipe\lsarpc */
 		c = libnet_DomainOpenLsa_send(ctx, io, monitor);
 		break;
 
 	case DOMAIN_SAMR:
 	default:
+		/* request to open a domain policy handle on \pipe\samr */
 		c = libnet_DomainOpenSamr_send(ctx, io, monitor);
 		break;
 	}
@@ -532,6 +588,15 @@ struct composite_context* libnet_DomainOpen_send(struct libnet_context *ctx,
 	return c;
 }
 
+
+/**
+ * Receive result of domain open request
+ *
+ * @param c composite context returned by DomainOpen_send function
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of the call
+ * @param io results and arguments of the call
+ */
 
 NTSTATUS libnet_DomainOpen_recv(struct composite_context *c, struct libnet_context *ctx,
 				TALLOC_CTX *mem_ctx, struct libnet_DomainOpen *io)
@@ -591,6 +656,7 @@ struct composite_context* libnet_DomainCloseLsa_send(struct libnet_context *ctx,
 	struct domain_close_lsa_state *s;
 	struct rpc_request *close_req;
 
+	/* composite context and state structure allocation */
 	c = composite_create(ctx, ctx->event_ctx);
 	if (c == NULL) return c;
 
@@ -607,11 +673,14 @@ struct composite_context* libnet_DomainCloseLsa_send(struct libnet_context *ctx,
 		return c;
 	}
 
+	/* get opened lsarpc pipe pointer */
 	s->pipe = ctx->lsa.pipe;
-
+	
+	/* prepare close handle call arguments */
 	s->close.in.handle  = &ctx->lsa.handle;
 	s->close.out.handle = &s->handle;
 
+	/* send the request */
 	close_req = dcerpc_lsa_Close_send(s->pipe, c, &s->close);
 	if (composite_nomem(close_req, c)) return c;
 
@@ -620,6 +689,9 @@ struct composite_context* libnet_DomainCloseLsa_send(struct libnet_context *ctx,
 }
 
 
+/*
+  Stage 1: Receive result of lsa close call
+*/
 static void continue_lsa_close(struct rpc_request *req)
 {
 	struct composite_context *c;
@@ -643,12 +715,15 @@ NTSTATUS libnet_DomainCloseLsa_recv(struct composite_context *c, struct libnet_c
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status) && io) {
+		/* policy handle closed successfully */
+
 		ctx->lsa.name = NULL;
 		ZERO_STRUCT(ctx->lsa.handle);
 
 		io->out.error_string = talloc_asprintf(mem_ctx, "Success");
 
 	} else if (!NT_STATUS_IS_OK(status)) {
+		/* there was an error, so return description of the status code */
 		io->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
 	}
 
@@ -675,6 +750,7 @@ struct composite_context* libnet_DomainCloseSamr_send(struct libnet_context *ctx
 	struct domain_close_samr_state *s;
 	struct rpc_request *close_req;
 
+	/* composite context and state structure allocation */
 	c = composite_create(ctx, ctx->event_ctx);
 	if (c == NULL) return c;
 
@@ -691,8 +767,10 @@ struct composite_context* libnet_DomainCloseSamr_send(struct libnet_context *ctx
 		return c;
 	}
 
+	/* prepare close domain handle call arguments */
 	s->close.in.handle = &ctx->samr.handle;
 
+	/* send the request */
 	close_req = dcerpc_samr_Close_send(ctx->samr.pipe, ctx, &s->close);
 	if (composite_nomem(close_req, c)) return c;
 
@@ -701,6 +779,9 @@ struct composite_context* libnet_DomainCloseSamr_send(struct libnet_context *ctx
 }
 
 
+/*
+  Stage 1: Receive result of samr close call
+*/
 static void continue_samr_close(struct rpc_request *req)
 {
 	struct composite_context *c;
@@ -724,11 +805,15 @@ NTSTATUS libnet_DomainCloseSamr_recv(struct composite_context *c, struct libnet_
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status) && io) {
+		/* domain policy handle closed successfully */
+
 		ZERO_STRUCT(ctx->samr.handle);
 		ctx->samr.name = NULL;
+
 		io->out.error_string = talloc_asprintf(mem_ctx, "Success");
 
 	} else if (!NT_STATUS_IS_OK(status)) {
+		/* there was an error, so return description of the status code */
 		io->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
 	}
 
@@ -745,11 +830,13 @@ struct composite_context* libnet_DomainClose_send(struct libnet_context *ctx,
 
 	switch (io->in.type) {
 	case DOMAIN_LSA:
+		/* request to close policy handle on \pipe\lsarpc */
 		c = libnet_DomainCloseLsa_send(ctx, io, monitor);
 		break;
 
 	case DOMAIN_SAMR:
 	default:
+		/* request to close domain policy handle on \pipe\samr */
 		c = libnet_DomainCloseSamr_send(ctx, io, monitor);
 		break;
 	}
@@ -765,11 +852,13 @@ NTSTATUS libnet_DomainClose_recv(struct composite_context *c, struct libnet_cont
 
 	switch (io->in.type) {
 	case DOMAIN_LSA:
+		/* receive result of closing lsa policy handle */
 		status = libnet_DomainCloseLsa_recv(c, ctx, mem_ctx, io);
 		break;
 
 	case DOMAIN_SAMR:
 	default:
+		/* receive result of closing samr domain policy handle */
 		status = libnet_DomainCloseSamr_recv(c, ctx, mem_ctx, io);
 		break;
 	}
