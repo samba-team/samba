@@ -384,5 +384,4 @@ sl_slc_help (SL_cmd *cmds, int argc, char **argv)
 	    }
 	}
     }
-    return 0;
 }
