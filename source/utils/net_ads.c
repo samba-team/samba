@@ -136,7 +136,7 @@ static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 	if (*reply.user_name) printf("User name:\t%s\n", reply.user_name);
 
 	printf("Server Site Name :\t\t%s\n", reply.server_site_name);
-	printf("Client Site Name (2):\t\t%s\n", reply.client_site_name);
+	printf("Client Site Name :\t\t%s\n", reply.client_site_name);
 
 	d_printf("NT Version: %d\n", reply.version);
 	d_printf("LMNT Token: %.2x\n", reply.lmnt_token);
