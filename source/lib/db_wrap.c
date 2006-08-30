@@ -28,7 +28,7 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/tdb/include/tdb.h"
 #include "lib/ldb/include/ldb.h"

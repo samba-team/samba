@@ -30,7 +30,7 @@
 #include "libcli/smb_composite/smb_composite.h"
 #include "auth/auth.h"
 #include "ntvfs/ntvfs.h"
-#include "include/dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 struct cvfs_file {
 	struct cvfs_file *prev, *next;

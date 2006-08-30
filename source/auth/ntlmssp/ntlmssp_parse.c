@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "smb.h"
 #include "pstring.h"
 
 /*

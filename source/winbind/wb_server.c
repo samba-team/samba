@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "lib/socket/socket.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
 #include "smbd/process_model.h"

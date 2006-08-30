@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "smb.h"
+#include "libcli/raw/interfaces.h"
 #include "libcli/rap/rap.h"
 #include "ntvfs/ipc/proto.h"
 #include "librpc/ndr/libndr.h"

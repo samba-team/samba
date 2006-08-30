@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "torture/ui.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 void torture_comment(struct torture_context *context, const char *comment, ...)
 {

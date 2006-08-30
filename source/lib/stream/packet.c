@@ -22,11 +22,11 @@
 */
 
 #include "includes.h"
-#include "smb.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "lib/stream/packet.h"
+#include "libcli/raw/smb.h"
 
 struct packet_context {
 	packet_callback_fn_t callback;

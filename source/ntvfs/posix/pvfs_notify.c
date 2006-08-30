@@ -24,7 +24,7 @@
 #include "vfs_posix.h"
 #include "lib/messaging/irpc.h"
 #include "messaging/messaging.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 
 /* pending notifies buffer, hung off struct pvfs_file for open directories

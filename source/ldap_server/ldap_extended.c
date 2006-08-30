@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "libcli/ldap/ldap.h"
 #include "lib/tls/tls.h"
 #include "smbd/service_stream.h"

@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "smb.h"
+#include "libcli/raw/smb.h"
 #include "pstring.h"
 #include "lib/ldb/include/ldb.h"
 #include "system/locale.h"

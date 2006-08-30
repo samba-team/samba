@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/auth.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"

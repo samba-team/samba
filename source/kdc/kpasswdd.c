@@ -27,7 +27,7 @@
 #include "lib/socket/socket.h"
 #include "kdc/kdc.h"
 #include "system/network.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/ldb/include/ldb.h"
 #include "heimdal/lib/krb5/krb5_locl.h"
 #include "heimdal/lib/krb5/krb5-private.h"

@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 /** used for network interfaces */
 struct interface {

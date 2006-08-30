@@ -26,8 +26,8 @@
 #include "system/filesys.h"
 #include "ntvfs/sysdep/sys_notify.h"
 #include "lib/events/events.h"
-#include "smb.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
+#include "libcli/raw/smb.h"
 
 #include <linux/inotify.h>
 #include <asm/unistd.h>

@@ -18,7 +18,7 @@
  */
 
 #include "includes.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "param/param.h"
 #include "system/filesys.h"
 

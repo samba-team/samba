@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
-#include "ads.h"
+#include "dsdb/common/flags.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/ldap/ldap.h"

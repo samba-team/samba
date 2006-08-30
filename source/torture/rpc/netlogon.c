@@ -26,7 +26,6 @@
 #include "torture/torture.h"
 #include "lib/events/events.h"
 #include "auth/auth.h"
-#include "smb.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/rpc.h"
 #include "libcli/auth/libcli_auth.h"

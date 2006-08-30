@@ -29,7 +29,7 @@
 #include "system/glob.h"
 #include "system/wait.h"
 #include "system/filesys.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "pstring.h"
 
 /* these are little tdb utility functions that are meant to make

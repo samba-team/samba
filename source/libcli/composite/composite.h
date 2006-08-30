@@ -20,6 +20,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "libcli/raw/interfaces.h"
+
 /*
   this defines the structures associated with "composite"
   requests. Composite requests are libcli requests that are internally

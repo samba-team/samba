@@ -27,7 +27,7 @@
 #include "system/filesys.h"
 #include "ntvfs/sysdep/sys_notify.h"
 #include "lib/events/events.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "build.h"
 
 /* list of registered backends */

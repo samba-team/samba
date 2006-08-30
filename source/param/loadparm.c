@@ -53,7 +53,6 @@
  */
 
 #include "includes.h"
-#include "smb.h"
 #include "version.h"
 #include "dynconfig.h"
 #include "pstring.h"
@@ -64,7 +63,7 @@
 #include "librpc/gen_ndr/samr.h"
 #include "smb_server/smb_server.h"
 #include "libcli/raw/signing.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "param/loadparm.h"
 
 static BOOL bLoaded = False;
@@ -698,7 +697,7 @@ static void init_globals(void)
 
 	do_parameter("use spnego", "True", NULL);
 
-	do_parameter("smb ports", SMB_PORTS, NULL);
+	do_parameter("smb ports", "445 139", NULL);
 	do_parameter("nbt port", "137", NULL);
 	do_parameter("dgram port", "138", NULL);
 	do_parameter("cldap port", "389", NULL);

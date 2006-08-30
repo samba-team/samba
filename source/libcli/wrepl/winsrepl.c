@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/socket/socket.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
