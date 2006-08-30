@@ -565,16 +565,105 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
 	return NT_STATUS_OK;
 }
 
+/****************************************************************************
+ Store and fetch the AD client sitename.
+****************************************************************************/
+
+#define SITENAME_KEY	"AD_SITENAME"
+
+/****************************************************************************
+ Store the AD client sitename.
+ We store indefinately as every new CLDAP query will re-write this.
+****************************************************************************/
+
+BOOL sitename_store(const char *sitename)
+{
+	time_t expire;
+	BOOL ret = False;
+	
+	if ( !sitename || (sitename && !*sitename)) {
+		DEBUG(2,("sitename_store: deleting empty sitename!\n"));
+		return gencache_del(SITENAME_KEY);
+	}
+	
+	if (!gencache_init()) {
+		return False;
+	}
+	
+	expire = get_time_t_max(); /* Store indefinately. */
+	
+	DEBUG(10,("sitename_store: sitename = [%s], expire = [%u]\n",
+		sitename, (unsigned int)expire ));
+
+	ret = gencache_set( SITENAME_KEY, sitename, expire );
+	return ret;
+}
+
+/****************************************************************************
+ Fetch the AD client sitename.
+ Caller must free.
+****************************************************************************/
+
+static char *sitename_fetch(void)
+{
+	char *sitename = NULL;
+	time_t timeout;
+	BOOL ret = False;
+	
+	if (!gencache_init()) {
+		return False;
+	}
+	
+	ret = gencache_get( SITENAME_KEY, &sitename, &timeout );
+	if ( !ret ) {
+		DEBUG(5,("sitename_fetch: No stored sitename\n"));
+	} else {
+		DEBUG(5,("sitename_fetch: Returning sitename \"%s\"\n",
+			sitename ));
+	}
+	return sitename;
+}
 
 /********************************************************************
+ Query with optional sitename.
 ********************************************************************/
 
-NTSTATUS ads_dns_query_dcs( TALLOC_CTX *ctx, const char *domain, struct dns_rr_srv **dclist, int *numdcs )
+NTSTATUS ads_dns_query_dcs_internal(TALLOC_CTX *ctx,
+				const char *domain,
+				const char *sitename,
+				struct dns_rr_srv **dclist,
+				int *numdcs )
 {
-	pstring name;
-
-	snprintf( name, sizeof(name), "_ldap._tcp.dc._msdcs.%s", domain );
-
+	char *name;
+	if (sitename) {
+		name = talloc_asprintf(ctx, "_ldap._tcp.%s._sites.dc._msdcs.%s",
+				sitename, domain );
+	} else {
+		name = talloc_asprintf(ctx, "_ldap._tcp.dc._msdcs.%s", domain );
+	}
+	if (!name) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	return ads_dns_lookup_srv( ctx, name, dclist, numdcs );
 }
 
+/********************************************************************
+ Query for AD DC's. Transparently use sitename.
+********************************************************************/
+
+NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
+			const char *domain,
+			struct dns_rr_srv **dclist,
+			int *numdcs )
+{
+	NTSTATUS status;
+	char *sitename = sitename_fetch();
+
+	status = ads_dns_query_dcs_internal(ctx, domain, sitename, dclist, numdcs);
+	if (sitename && !NT_STATUS_IS_OK(status)) {
+		/* Sitename DNS query may have failed. Try without. */
+		status = ads_dns_query_dcs_internal(ctx, domain, NULL, dclist, numdcs);
+	}
+	SAFE_FREE(sitename);
+	return status;
+}

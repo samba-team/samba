@@ -260,8 +260,8 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 		*reply->user_name = 0;
 	}
 
-	p += pull_netlogon_string(reply->site_name, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->site_name_2, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->server_site_name, p, (const char *)os3.data);
+	p += pull_netlogon_string(reply->client_site_name, p, (const char *)os3.data);
 
 	reply->version = IVAL(p, 0);
 	reply->lmnt_token = SVAL(p, 4);
