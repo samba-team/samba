@@ -220,8 +220,8 @@ BOOL torture_domain_close_lsa(struct torture_context *torture)
 	
 	status = libnet_DomainClose(ctx, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
 		ret = False;
+		goto done;
 	}
 
 done:
