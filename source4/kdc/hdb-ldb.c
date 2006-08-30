@@ -35,7 +35,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "kdc.h"
-#include "ads.h"
+#include "dsdb/common/flags.h"
 #include "hdb.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"

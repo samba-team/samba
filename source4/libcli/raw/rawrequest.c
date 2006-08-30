@@ -25,7 +25,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 
 /* we over allocate the data buffer to prevent too many realloc calls */

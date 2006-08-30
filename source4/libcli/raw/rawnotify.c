@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 /****************************************************************************
 change notify (async send)

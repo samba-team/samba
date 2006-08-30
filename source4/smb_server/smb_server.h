@@ -24,7 +24,7 @@
 #include "libcli/raw/interfaces.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 /*
   this header declares the core context structures associated with smb

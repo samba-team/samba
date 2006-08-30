@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"

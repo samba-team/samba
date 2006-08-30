@@ -34,7 +34,7 @@
 #include "libcli/ldap/ldap.h"
 #include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
-#include "include/dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 /* Syntax-Table
 

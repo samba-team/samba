@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "libcli/raw/libcliraw.h"
 
 #define TORTURE_TRANS_DATA 0

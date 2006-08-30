@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/registry/registry.h"
 #include "build.h"
 

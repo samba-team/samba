@@ -27,7 +27,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/messaging/irpc.h"
 #include "scripting/ejs/ejsrpc.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "librpc/rpc/dcerpc_table.h"
 #include "auth/credentials/credentials.h"

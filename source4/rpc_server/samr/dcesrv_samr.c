@@ -30,7 +30,7 @@
 #include "system/time.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "ads.h"
+#include "dsdb/common/flags.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/security/security.h"

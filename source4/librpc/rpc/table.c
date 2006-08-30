@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_table.h"
 

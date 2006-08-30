@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "kdc/kdc.h"
-#include "include/ads.h"
+#include "dsdb/common/flags.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "auth/auth.h"

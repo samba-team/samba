@@ -31,7 +31,7 @@
 #include "system/wait.h"
 #include "system/filesys.h"
 #include "lib/events/events.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "lib/util/mutex.h"
 #include "smbd/process_model.h"
 

@@ -32,7 +32,7 @@
 #include "libcli/util/clilsa.h"
 #include "system/dir.h"
 #include "system/filesys.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "system/readline.h"
 #include "auth/gensec/gensec.h"
 #include "system/time.h" /* needed by some systems for asctime() */
