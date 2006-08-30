@@ -604,7 +604,7 @@ BOOL sitename_store(const char *sitename)
  Caller must free.
 ****************************************************************************/
 
-static char *sitename_fetch(void)
+char *sitename_fetch(void)
 {
 	char *sitename = NULL;
 	time_t timeout;
@@ -622,6 +622,25 @@ static char *sitename_fetch(void)
 			sitename ));
 	}
 	return sitename;
+}
+
+/****************************************************************************
+ Did the sitename change ?
+****************************************************************************/
+
+BOOL sitename_changed(const char *sitename)
+{
+	BOOL ret = False;
+	char *new_sitename = sitename_fetch();
+
+	if (sitename && new_sitename && !strequal(sitename, new_sitename)) {
+		ret = True;
+	} else if ((sitename && !new_sitename) ||
+			(!sitename && new_sitename)) {
+		ret = True;
+	}
+	SAFE_FREE(new_sitename);
+	return ret;
 }
 
 /********************************************************************

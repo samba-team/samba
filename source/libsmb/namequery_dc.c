@@ -26,33 +26,64 @@
 #include "includes.h"
 
 /**************************************************************************
- Find the name and IP address for a server in he realm/domain
+ Find the name and IP address for a server in the realm/domain
  *************************************************************************/
  
-static BOOL ads_dc_name(const char *domain, const char *realm, struct in_addr *dc_ip, fstring srv_name)
+static BOOL ads_dc_name(const char *domain,
+			const char *realm,
+			struct in_addr *dc_ip,
+			fstring srv_name)
 {
 	ADS_STRUCT *ads;
+	char *sitename = sitename_fetch();
+	int i;
 
 	if (!realm && strequal(domain, lp_workgroup()))
 		realm = lp_realm();
 
-	ads = ads_init(realm, domain, NULL);
-	if (!ads)
-		return False;
+	/* Try this 3 times then give up. */
+	for( i =0 ; i < 3; i++) {
+		ads = ads_init(realm, domain, NULL);
+		if (!ads) {
+			SAFE_FREE(sitename);
+			return False;
+		}
 
-	DEBUG(4,("ads_dc_name: domain=%s\n", domain));
+		DEBUG(4,("ads_dc_name: domain=%s\n", domain));
 
 #ifdef HAVE_ADS
-	/* we don't need to bind, just connect */
-	ads->auth.flags |= ADS_AUTH_NO_BIND;
-
-	ads_connect(ads);
+		/* we don't need to bind, just connect */
+		ads->auth.flags |= ADS_AUTH_NO_BIND;
+		ads_connect(ads);
 #endif
 
-	if (!ads->config.realm) {
+		if (!ads->config.realm) {
+			SAFE_FREE(sitename);
+			ads_destroy(&ads);
+			return False;
+		}
+
+		/* Now we've found a server, see if our sitename
+		   has changed. If so, we need to re-do the query
+		   to ensure we only find servers in our site. */
+
+		if (!sitename_changed(sitename)) {
+			break;
+		}
+
+		ads_destroy(&ads);
+	}
+
+
+	if (i == 3) {
+		DEBUG(1,("ads_dc_name: sitename (now %s) keeps changing ???\n",
+			sitename));
+		SAFE_FREE(sitename);
 		ads_destroy(&ads);
 		return False;
 	}
+
+	SAFE_FREE(sitename);
 
 	fstrcpy(srv_name, ads->config.ldap_server_name);
 	strupper_m(srv_name);
@@ -157,4 +188,3 @@ BOOL get_dc_name(const char *domain, const char *realm, fstring srv_name, struct
 
 	return ret;
 }
-
