@@ -590,10 +590,6 @@ BOOL sitename_store(const char *sitename)
 	if (!sitename || (sitename && !*sitename)) {
 		DEBUG(5,("sitename_store: deleting empty sitename!\n"));
 		return gencache_del(SITENAME_KEY);
-	} else if (sitename && strequal(sitename, DEFAULT_SITE_NAME)) {
-		DEBUG(5,("sitename_store: delete default sitename %s\n",
-			DEFAULT_SITE_NAME));
-		return gencache_del(SITENAME_KEY);
 	}
 
 	expire = get_time_t_max(); /* Store indefinately. */
@@ -638,11 +634,6 @@ BOOL stored_sitename_changed(const char *sitename)
 {
 	BOOL ret = False;
 	char *new_sitename = sitename_fetch();
-
-	/* Treat default site as no name. */
-	if (strequal(sitename, DEFAULT_SITE_NAME)) {
-		sitename = NULL;
-	}
 
 	if (sitename && new_sitename && !strequal(sitename, new_sitename)) {
 		ret = True;

@@ -19,6 +19,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
 */
 
+#ifndef _INCLUDE_ADS_CLDAP_H_
+#define _INCLUDE_ADS_CLDAP_H_
+
 #define MAX_DNS_LABEL 255 + 1
 
 struct cldap_netlogon_reply {
@@ -43,8 +46,6 @@ struct cldap_netlogon_reply {
 	uint16 lm20_token;
 };
 
-#define DEFAULT_SITE_NAME "Default-First-Site-Name"
-
 /* Mailslot or cldap getdcname response flags */
 #define ADS_PDC            0x00000001  /* DC is PDC */
 #define ADS_GC             0x00000004  /* DC is a GC of forest */
@@ -57,4 +58,4 @@ struct cldap_netlogon_reply {
 #define ADS_GOOD_TIMESERV  0x00000200  /* DC has hardware clock (and running time) */
 #define ADS_NDNC           0x00000400  /* DomainName is non-domain NC serviced by LDAP server */
 
-
+#endif /* _INCLUDE_CLDAP_H_ */
