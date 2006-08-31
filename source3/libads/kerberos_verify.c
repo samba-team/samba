@@ -376,12 +376,14 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	if (lp_use_kerberos_keytab()) {
+	/* always check secrets first in order to prevent hitting the 
+	   keytab until really necessary */
+
+	auth_ok = ads_secrets_verify_ticket(context, auth_context, host_princ,
+					    ticket, &packet, &tkt, &keyblock);
+
+	if (!auth_ok && lp_use_kerberos_keytab()) {
 		auth_ok = ads_keytab_verify_ticket(context, auth_context, ticket, &packet, &tkt, &keyblock);
-	}
-	if (!auth_ok) {
-		auth_ok = ads_secrets_verify_ticket(context, auth_context, host_princ,
-						    ticket, &packet, &tkt, &keyblock);
 	}
 
 	release_server_mutex();
