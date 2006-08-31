@@ -126,7 +126,7 @@ _PUBLIC_ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap,
 					struct dom_sid *sid, uid_t *uid)
 {
 	const char *attrs[] = { "sAMAccountName", "uidNumber", 
-				"sAMAccountType", NULL };
+				"sAMAccountType", "unixName", NULL };
 	int ret;
 	const char *s;
 	TALLOC_CTX *tmp_ctx;
