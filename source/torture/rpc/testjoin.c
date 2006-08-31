@@ -327,9 +327,9 @@ struct test_join *torture_join_domain(const char *machine_name,
 	status = libnet_JoinDomain(libnet_ctx, libnet_r, libnet_r);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (libnet_r->out.error_string) {
-			DEBUG(0, ("Domain join failed - %s.\n", libnet_r->out.error_string));
+			DEBUG(0, ("Domain join failed - %s\n", libnet_r->out.error_string));
 		} else {
-			DEBUG(0, ("Domain join failed - %s.\n", nt_errstr(status)));
+			DEBUG(0, ("Domain join failed - %s\n", nt_errstr(status)));
 		}
 		talloc_free(tj);
                 return NULL;
