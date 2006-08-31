@@ -477,16 +477,20 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	char *fname = talloc_asprintf(NULL, "%s/smb_krb5.conf.%s", lp_private_dir(), domain);
 	char *file_contents = NULL;
 	size_t flen = 0;
+	char *realm_upper = NULL;
 	int loopcount = 0;
 
 	if (!fname) {
 		return False;
 	}
 
+	realm_upper = talloc_strdup(fname, realm);
+	strupper_m(realm_upper);
+
 	file_contents = talloc_asprintf(fname, "[libdefaults]\n\tdefault_realm = %s\n"
 				"[realms]\n\t%s = {\n"
 				"\t\tkdc = %s\n]\n",
-				realm, realm, inet_ntoa(ip));
+				realm_upper, realm_upper, inet_ntoa(ip));
 
 	if (!file_contents) {
 		TALLOC_FREE(fname);
@@ -541,6 +545,11 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	/* Set the environment variable to this file. */
 	setenv("KRB5_CONFIG", fname, 1);
 	TALLOC_FREE(fname);
+
+	DEBUG(5,("create_local_private_krb5_conf_for_domain: wrote "
+		"file %s with realm %s KDC = %s\n",
+		realm_upper, inet_ntoa(ip));
+
 	return True;
 }
 #endif
