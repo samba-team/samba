@@ -548,7 +548,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 
 	DEBUG(5,("create_local_private_krb5_conf_for_domain: wrote "
 		"file %s with realm %s KDC = %s\n",
-		realm_upper, inet_ntoa(ip));
+		fname, realm_upper, inet_ntoa(ip) ));
 
 	return True;
 }
