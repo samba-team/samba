@@ -279,14 +279,9 @@
 	/*************************************************/
 	/* Function: 0x0c                                */
 
-	typedef struct {
-		lsa_StringLarge name;
-		dom_sid2  *sid;
-	} lsa_TrustInformation;
-
 	NTSTATUS lsa_CreateTrustedDomain(
 		[in]         policy_handle *handle,
-		[in]         lsa_TrustInformation *info,
+		[in]         lsa_DomainInfo *info,
 		[in]         uint32 access_mask,
 		[out]        policy_handle *trustdom_handle
 		);
@@ -299,13 +294,8 @@
 	const int LSA_ENUM_TRUST_DOMAIN_MULTIPLIER = 60;
 
 	typedef struct {
-		lsa_StringLarge name;
-		dom_sid2 *sid;
-	} lsa_DomainInformation;
-
-	typedef struct {
 		uint32 count;
-		[size_is(count)] lsa_DomainInformation *domains;
+		[size_is(count)] lsa_DomainInfo *domains;
 	} lsa_DomainList;
 
 	NTSTATUS lsa_EnumTrustDom (
@@ -341,10 +331,11 @@
 		[size_is(count)] lsa_TranslatedSid *sids;
 	} lsa_TransSidArray;
 
+	const int LSA_REF_DOMAIN_LIST_MULTIPLIER = 32;
 	typedef struct {
 		[range(0,1000)] uint32 count;
-		[size_is(count)] lsa_TrustInformation *domains;
-		uint32 max_count;
+		[size_is(count)] lsa_DomainInfo *domains;
+		uint32 max_size;
 	} lsa_RefDomainList;
 
 	NTSTATUS lsa_LookupNames (
@@ -674,9 +665,13 @@
         );
 
 	/* Function:     0x28 */
-	NTSTATUS lsa_SetTrustDomainInfo();
+	NTSTATUS lsa_SetTrustedDomainInfo();
 	/* Function:      0x29 */
-	NTSTATUS lsa_DeleteTrustDomain();
+	NTSTATUS lsa_DeleteTrustedDomain(
+		[in]               policy_handle         *handle,
+		[in]               dom_sid2              *dom_sid
+	);
+
 	/* Function:       0x2a */
 	NTSTATUS lsa_StorePrivateData();
 	/* Function:        0x2b */
@@ -725,17 +720,40 @@
 		[out,unique,switch_is(level)] lsa_TrustedDomainInfo *info
 		);
 
+	/**********************/
 	/* Function 0x31 */
-	NTSTATUS lsa_SetTrustedDomainInfoByName();
+	NTSTATUS lsa_SetTrustedDomainInfoByName(
+		[in]                   policy_handle         *handle,
+		[in]                   lsa_String             trusted_domain,
+		[in]                   lsa_TrustDomInfoEnum   level, 
+		[in,unique,switch_is(level)] lsa_TrustedDomainInfo *info
+		);
 
 	/* Function 0x32 */
-	NTSTATUS lsa_EnumTrustedDomainsEx();
+
+	/* w2k3 treats max_size as max_domains*82	*/
+	const int LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER = 82;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_TrustDomainInfoInfoEx *domains;
+	} lsa_DomainListEx;
+
+	NTSTATUS lsa_EnumTrustedDomainsEx (
+		[in]               policy_handle *handle,
+		[in,out]           uint32 *resume_handle,
+		[out]              lsa_DomainListEx *domains,
+		[in]               uint32 max_size
+		);
+
 
 	/* Function 0x33 */
 	NTSTATUS lsa_CreateTrustedDomainEx();
 
 	/* Function 0x34 */
-	NTSTATUS lsa_CloseTrustedDomainEx();
+	NTSTATUS lsa_CloseTrustedDomainEx(
+		[in,out]                   policy_handle         *handle
+	);
 
 	/* Function 0x35 */
 

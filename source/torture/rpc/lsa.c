@@ -807,6 +807,26 @@ static BOOL test_DeleteTrustedDomain(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_DeleteTrustedDomainBySid(struct dcerpc_pipe *p, 
+					  TALLOC_CTX *mem_ctx, 
+					  struct policy_handle *handle,
+					  struct dom_sid *sid)
+{
+	NTSTATUS status;
+	struct lsa_DeleteTrustedDomain r;
+
+	r.in.handle = handle;
+	r.in.dom_sid = sid;
+
+	status = dcerpc_lsa_DeleteTrustedDomain(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("lsa_DeleteTrustedDomain failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 
 static BOOL test_CreateSecret(struct dcerpc_pipe *p, 
 			      TALLOC_CTX *mem_ctx, 
@@ -1437,8 +1457,10 @@ static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p,
 		struct policy_handle trustdom_handle;
 		struct policy_handle handle2;
 		struct lsa_Close c;
-		int levels [] = {1, 3, 6, 8, 12};
-			
+		struct lsa_CloseTrustedDomainEx c_trust;
+		int levels [] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+		int ok[]      = {1, 0, 1, 0, 0, 1, 0, 1, 0,  0,  0,  1};
+
 		if (domains->domains[i].sid) {
 			trust.in.handle = handle;
 			trust.in.sid = domains->domains[i].sid;
@@ -1455,6 +1477,9 @@ static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p,
 			c.in.handle = &trustdom_handle;
 			c.out.handle = &handle2;
 			
+			c_trust.in.handle = &trustdom_handle;
+			c_trust.out.handle = &handle2;
+			
 			for (j=0; j < ARRAY_SIZE(levels); j++) {
 				struct lsa_QueryTrustedDomainInfo q;
 				union lsa_TrustedDomainInfo info;
@@ -1462,18 +1487,32 @@ static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p,
 				q.in.level = levels[j];
 				q.out.info = &info;
 				status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
-				if (!NT_STATUS_IS_OK(status)) {
+				if (!NT_STATUS_IS_OK(status) && ok[j]) {
 					printf("QueryTrustedDomainInfo level %d failed - %s\n", 
+					       levels[j], nt_errstr(status));
+					ret = False;
+				} else if (NT_STATUS_IS_OK(status) && !ok[j]) {
+					printf("QueryTrustedDomainInfo level %d unexpectedly succeeded - %s\n", 
 					       levels[j], nt_errstr(status));
 					ret = False;
 				}
 			}
+			
+			status = dcerpc_lsa_CloseTrustedDomainEx(p, mem_ctx, &c_trust);
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+				printf("Expected CloseTrustedDomainEx to return NT_STATUS_NOT_IMPLEMENTED, instead - %s\n", nt_errstr(status));
+				return False;
+			}
+			
+			c.in.handle = &trustdom_handle;
+			c.out.handle = &handle2;
 			
 			status = dcerpc_lsa_Close(p, mem_ctx, &c);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Close of trusted domain failed - %s\n", nt_errstr(status));
 				return False;
 			}
+
 		}
 
 		trust_by_name.in.handle = handle;
@@ -1495,8 +1534,12 @@ static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p,
 			q.in.level = levels[j];
 			q.out.info = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfo(p, mem_ctx, &q);
-			if (!NT_STATUS_IS_OK(status)) {
+			if (!NT_STATUS_IS_OK(status) && ok[j]) {
 				printf("QueryTrustedDomainInfo level %d failed - %s\n", 
+				       levels[j], nt_errstr(status));
+				ret = False;
+			} else if (NT_STATUS_IS_OK(status) && !ok[j]) {
+				printf("QueryTrustedDomainInfo level %d unexpectedly succeeded - %s\n", 
 				       levels[j], nt_errstr(status));
 				ret = False;
 			}
@@ -1524,8 +1567,12 @@ static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p,
 			q.in.level   = levels[j];
 			q.out.info   = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, mem_ctx, &q);
-			if (!NT_STATUS_IS_OK(status)) {
+			if (!NT_STATUS_IS_OK(status) && ok[j]) {
 				printf("QueryTrustedDomainInfoBySid level %d failed - %s\n", 
+				       levels[j], nt_errstr(status));
+				ret = False;
+			} else if (NT_STATUS_IS_OK(status) && !ok[j]) {
+				printf("QueryTrustedDomainInfoBySid level %d unexpectedly succeeded - %s\n", 
 				       levels[j], nt_errstr(status));
 				ret = False;
 			}
@@ -1539,8 +1586,12 @@ static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p,
 			q.in.level          = levels[j];
 			q.out.info          = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfoByName(p, mem_ctx, &q);
-			if (!NT_STATUS_IS_OK(status)) {
+			if (!NT_STATUS_IS_OK(status) && ok[j]) {
 				printf("QueryTrustedDomainInfoByName level %d failed - %s\n", 
+				       levels[j], nt_errstr(status));
+				ret = False;
+			} else if (NT_STATUS_IS_OK(status) && !ok[j]) {
+				printf("QueryTrustedDomainInfoByName level %d unexpectedly succeeded - %s\n", 
 				       levels[j], nt_errstr(status));
 				ret = False;
 			}
@@ -1554,9 +1605,11 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 			      struct policy_handle *handle)
 {
 	struct lsa_EnumTrustDom r;
+	struct lsa_EnumTrustedDomainsEx r_ex;
 	NTSTATUS enum_status;
 	uint32_t resume_handle = 0;
 	struct lsa_DomainList domains;
+	struct lsa_DomainListEx domains_ex;
 	BOOL ret = True;
 
 	printf("\nTesting EnumTrustDom\n");
@@ -1587,12 +1640,41 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 			return False;
 		}
 		
-		if (lp_parm_bool(-1, "target", "samba4", False)) {
-			printf("skipping 'each' Trusted Domains tests against Samba4\n");
-		} else {
-			ret &= test_query_each_TrustDom(p, mem_ctx, handle, &domains);
-		}
+		ret &= test_query_each_TrustDom(p, mem_ctx, handle, &domains);
 		
+	} while ((NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)));
+
+	printf("\nTesting EnumTrustedDomainsEx\n");
+
+	resume_handle = 0;
+	do {
+		r_ex.in.handle = handle;
+		r_ex.in.resume_handle = &resume_handle;
+		r_ex.in.max_size = LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER * 3;
+		r_ex.out.domains = &domains_ex;
+		r_ex.out.resume_handle = &resume_handle;
+		
+		enum_status = dcerpc_lsa_EnumTrustedDomainsEx(p, mem_ctx, &r_ex);
+		
+		/* NO_MORE_ENTRIES is allowed */
+		if (NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES)) {
+			return True;
+		} else if (NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)) {
+			/* Windows 2003 gets this off by one on the first run */
+			if (r_ex.out.domains->count < 3 || r_ex.out.domains->count > 4) {
+				printf("EnumTrustDom didn't fill the buffer we "
+				       "asked it to (got %d, expected %d / %d == %d entries)\n",
+				       r_ex.out.domains->count, 
+				       r_ex.in.max_size,
+				       LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER, 
+				       r_ex.in.max_size / LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER);
+				ret = False;
+				exit(1);
+			}
+		} else if (!NT_STATUS_IS_OK(enum_status)) {
+			printf("EnumTrustedDomainEx failed - %s\n", nt_errstr(enum_status));
+			return False;
+		}
 	} while ((NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)));
 
 	return ret;
@@ -1605,7 +1687,7 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	BOOL ret = True;
 	struct lsa_CreateTrustedDomain r;
-	struct lsa_TrustInformation trustinfo;
+	struct lsa_DomainInfo trustinfo;
 	struct dom_sid *domsid[12];
 	struct policy_handle trustdom_handle[12];
 	struct lsa_QueryTrustedDomainInfo q;
@@ -1661,7 +1743,7 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	}
 	
 	for (i=0; i<12; i++) {
-		if (!test_Delete(p, mem_ctx, &trustdom_handle[i])) {
+		if (!test_DeleteTrustedDomainBySid(p, mem_ctx, handle, domsid[i])) {
 			ret = False;
 		}
 	}
@@ -1714,7 +1796,7 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 	printf("\nTesting QueryInfoPolicy\n");
 
 	if (lp_parm_bool(-1, "target", "samba4", False)) {
-		printf("skipping QueryInfoPolicy2 against Samba4\n");
+		printf("skipping QueryInfoPolicy against Samba4\n");
 		return True;
 	}
 

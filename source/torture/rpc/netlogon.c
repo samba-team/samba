@@ -1481,7 +1481,7 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 					    dcerpc_server_name(p));
 
 	for (i=0; i<domains.count * 4; i++) {
-		struct lsa_DomainInformation *info =
+		struct lsa_DomainInfo *info =
 			&domains.domains[rand()%domains.count];
 
 		d.in.domainname = info->name.string;

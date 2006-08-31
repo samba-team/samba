@@ -55,7 +55,9 @@ struct lsa_policy_state {
 	const struct ldb_dn *builtin_dn;
 	const struct ldb_dn *system_dn;
 	const char *domain_name;
+	const char *domain_dns;
 	struct dom_sid *domain_sid;
+	struct GUID domain_guid;
 	struct dom_sid *builtin_sid;
 };
 
@@ -76,7 +78,7 @@ struct lsa_account_state {
 struct lsa_secret_state {
 	struct lsa_policy_state *policy;
 	uint32_t access_mask;
-	const struct ldb_dn *secret_dn;
+	struct ldb_dn *secret_dn;
 	struct ldb_context *sam_ldb;
 	BOOL global;
 };
@@ -268,6 +270,20 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 {
 	struct lsa_policy_state *state;
 	const struct ldb_dn *partitions_basedn;
+	struct ldb_result *dom_res;
+	const char *dom_attrs[] = {
+		"objectSid", 
+		"objectGUID", 
+		NULL
+	};
+	struct ldb_result *ref_res;
+	const char *ref_attrs[] = {
+		"nETBIOSName",
+		"dnsRoot",
+		NULL
+	};
+	char *ref_filter;
+	int ret;
 
 	state = talloc(mem_ctx, struct lsa_policy_state);
 	if (!state) {
@@ -294,14 +310,58 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_NO_MEMORY;		
 	}
 
-	state->domain_name
-		= samdb_search_string(state->sam_ldb, state, partitions_basedn, "nETBIOSName", 
-				      "(&(objectclass=crossRef)(ncName=%s))", ldb_dn_linearize(mem_ctx, state->domain_dn));
+	ret = ldb_search(state->sam_ldb, state->domain_dn, LDB_SCOPE_BASE, NULL, dom_attrs, &dom_res);
 	
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+	talloc_steal(state, dom_res);
+	if (dom_res->count != 1) {
+		return NT_STATUS_NO_SUCH_DOMAIN;		
+	}
+
+	state->domain_sid = samdb_result_dom_sid(state, dom_res->msgs[0], "objectSid");
+	if (!state->domain_sid) {
+		return NT_STATUS_NO_SUCH_DOMAIN;		
+	}
+
+	state->domain_guid = samdb_result_guid(dom_res->msgs[0], "objectGUID");
+	if (!state->domain_sid) {
+		return NT_STATUS_NO_SUCH_DOMAIN;		
+	}
+
+	talloc_free(dom_res);
+
+	ref_filter = talloc_asprintf(state, "(&(objectclass=crossRef)(ncName=%s))", 
+				     ldb_dn_linearize(mem_ctx, state->domain_dn)); 
+	if (!ref_filter) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = ldb_search(state->sam_ldb, partitions_basedn, LDB_SCOPE_SUBTREE, ref_filter, ref_attrs, &ref_res);
+	talloc_steal(state, ref_res);
+	talloc_free(ref_filter);
+	
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+	if (ref_res->count != 1) {
+		return NT_STATUS_NO_SUCH_DOMAIN;		
+	}
+
+	state->domain_name = ldb_msg_find_attr_as_string(ref_res->msgs[0], "nETBIOSName", NULL);
 	if (!state->domain_name) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 	talloc_steal(state, state->domain_name);
+
+	state->domain_dns = ldb_msg_find_attr_as_string(ref_res->msgs[0], "dnsRoot", NULL);
+	if (!state->domain_dns) {
+		return NT_STATUS_NO_SUCH_DOMAIN;		
+	}
+	talloc_steal(state, state->domain_dns);
+
+	talloc_free(ref_res);
 
 	/* work out the builtin_dn - useful for so many calls its worth
 	   fetching here */
@@ -317,14 +377,6 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	if (!state->system_dn) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
-
-	state->domain_sid = samdb_search_dom_sid(state->sam_ldb, state,
-						 state->domain_dn, "objectSid", NULL);
-	if (!state->domain_sid) {
-		return NT_STATUS_NO_SUCH_DOMAIN;		
-	}
-
-	talloc_steal(state, state->domain_sid);
 
 	state->builtin_sid = dom_sid_parse_talloc(state, SID_BUILTIN);
 	if (!state->builtin_sid) {
@@ -409,20 +461,11 @@ static NTSTATUS lsa_info_AccountDomain(struct lsa_policy_state *state, TALLOC_CT
 static NTSTATUS lsa_info_DNS(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
 			     struct lsa_DnsDomainInfo *info)
 {
-	const char * const attrs[] = { "dnsDomain", "objectGUID", "objectSid", NULL };
-	int ret;
-	struct ldb_message **res;
-
-	ret = gendb_search_dn(state->sam_ldb, mem_ctx, state->domain_dn, &res, attrs);
-	if (ret != 1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
 	info->name.string = state->domain_name;
 	info->sid         = state->domain_sid;
-	info->dns_domain.string = samdb_result_string(res[0],           "dnsDomain", NULL);
-	info->dns_forest.string = samdb_result_string(res[0],           "dnsDomain", NULL);
-	info->domain_guid       = samdb_result_guid(res[0],             "objectGUID");
+	info->dns_domain.string = state->domain_dns;
+	info->dns_forest.string = state->domain_dns;
+	info->domain_guid       = state->domain_guid;
 
 	return NT_STATUS_OK;
 }
@@ -702,10 +745,10 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 	trusted_domain_state->trusted_domain_dn = talloc_reference(trusted_domain_state, msg->dn);
 
 	/* create the trusted_domain */
-	ret = samdb_add(trusted_domain_state->policy->sam_ldb, mem_ctx, msg);
-	if (ret != 0) {
-		DEBUG(0,("Failed to create trusted_domain record %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn)));
+	ret = ldb_add(trusted_domain_state->policy->sam_ldb, msg);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to create trusted_domain record %s: %s\n",
+			 ldb_dn_linearize(mem_ctx, msg->dn), ldb_errstring(trusted_domain_state->policy->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -857,35 +900,81 @@ static NTSTATUS lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce_call,
 }
 
 
+
 /* 
-  lsa_QueryTrustedDomainInfoBySid
+  lsa_SetTrustedDomainInfo
 */
-static NTSTATUS lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-						struct lsa_QueryTrustedDomainInfoBySid *r)
+static NTSTATUS lsa_SetTrustedDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					 struct lsa_SetTrustedDomainInfo *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+
+/* 
+  lsa_SetInfomrationTrustedDomain
+*/
+static NTSTATUS lsa_SetInformationTrustedDomain(struct dcesrv_call_state *dce_call, 
+						TALLOC_CTX *mem_ctx,
+						struct lsa_SetInformationTrustedDomain *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  lsa_SetTrustDomainInfo
+  lsa_DeleteTrustedDomain
 */
-static NTSTATUS lsa_SetTrustDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_SetTrustDomainInfo *r)
+static NTSTATUS lsa_DeleteTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				      struct lsa_DeleteTrustedDomain *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	NTSTATUS status;
+	struct lsa_OpenTrustedDomain open;
+	struct lsa_Delete delete;
+	struct dcesrv_handle *h;
+
+	open.in.handle = r->in.handle;
+	open.in.sid = r->in.dom_sid;
+	open.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	open.out.trustdom_handle = talloc(mem_ctx, struct policy_handle);
+	if (!open.out.trustdom_handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = lsa_OpenTrustedDomain(dce_call, mem_ctx, &open);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	DCESRV_PULL_HANDLE(h, open.out.trustdom_handle, DCESRV_HANDLE_ANY);
+	talloc_steal(mem_ctx, h);
+
+	delete.in.handle = open.out.trustdom_handle;
+	status = lsa_Delete(dce_call, mem_ctx, &delete);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
 }
 
-
-/* 
-  lsa_DeleteTrustDomain
-*/
-static NTSTATUS lsa_DeleteTrustDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				      struct lsa_DeleteTrustDomain *r)
+static NTSTATUS fill_trust_domain_ex(TALLOC_CTX *mem_ctx, 
+				     struct ldb_message *msg, 
+				     struct lsa_TrustDomainInfoInfoEx *info_ex) 
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	info_ex->domain_name.string
+		= ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
+	info_ex->netbios_name.string
+		= ldb_msg_find_attr_as_string(msg, "flatname", NULL);
+	info_ex->sid 
+		= samdb_result_dom_sid(mem_ctx, msg, "securityIdentifier");
+	info_ex->trust_direction
+		= ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
+	info_ex->trust_type
+		= ldb_msg_find_attr_as_int(msg, "trustType", 0);
+	info_ex->trust_attributes
+		= ldb_msg_find_attr_as_int(msg, "trustAttributes", 0);	
+	return NT_STATUS_OK;
 }
-
 
 /* 
   lsa_QueryTrustedDomainInfo
@@ -899,10 +988,12 @@ static NTSTATUS lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_call, T
 	int ret;
 	struct ldb_message **res;
 	const char *attrs[] = {
-		"cn",
-		"flatname",
-		"posixOffset",
+		"flatname", 
+		"trustPartner",
 		"securityIdentifier",
+		"trustDirection",
+		"trustType",
+		"trustAttributes", 
 		NULL
 	};
 
@@ -931,6 +1022,31 @@ static NTSTATUS lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_call, T
 		r->out.info->posix_offset.posix_offset
 			= samdb_result_uint(msg, "posixOffset", 0);					   
 		break;
+#if 0  /* Win2k3 doesn't implement this */
+	case LSA_TRUSTED_DOMAIN_INFO_BASIC:
+		r->out.info->info_basic.netbios_name.string 
+			= ldb_msg_find_attr_as_string(msg, "flatname", NULL);
+		r->out.info->info_basic.sid
+			= samdb_result_dom_sid(mem_ctx, msg, "securityIdentifier");
+		break;
+#endif
+	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX:
+		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->info_ex);
+
+	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO:
+		ZERO_STRUCT(r->out.info->full_info);
+		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->full_info.info_ex);
+
+	case LSA_TRUSTED_DOMAIN_INFO_INFO_ALL:
+		ZERO_STRUCT(r->out.info->info_all);
+		return fill_trust_domain_ex(mem_ctx, msg, &r->out.info->info_all.info_ex);
+
+	case LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS_INFO:
+	case LSA_TRUSTED_DOMAIN_INFO_11:
+		/* oops, we don't want to return the info after all */
+		talloc_free(r->out.info);
+		r->out.info = NULL;
+		return NT_STATUS_INVALID_PARAMETER;
 	default:
 		/* oops, we don't want to return the info after all */
 		talloc_free(r->out.info);
@@ -943,23 +1059,40 @@ static NTSTATUS lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_call, T
 
 
 /* 
-  lsa_SetInformationTrustedDomain
+  lsa_QueryTrustedDomainInfoBySid
 */
-static NTSTATUS lsa_SetInformationTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_SetInformationTrustedDomain *r)
+static NTSTATUS lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+						struct lsa_QueryTrustedDomainInfoBySid *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
+	NTSTATUS status;
+	struct lsa_OpenTrustedDomain open;
+	struct lsa_QueryTrustedDomainInfo query;
+	struct dcesrv_handle *h;
+	open.in.handle = r->in.handle;
+	open.in.sid = r->in.dom_sid;
+	open.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	open.out.trustdom_handle = talloc(mem_ctx, struct policy_handle);
+	if (!open.out.trustdom_handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = lsa_OpenTrustedDomain(dce_call, mem_ctx, &open);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-
-/*
-  lsa_QueryTrustedDomainInfoByName
-*/
-static NTSTATUS lsa_QueryTrustedDomainInfoByName(struct dcesrv_call_state *dce_call,
-						 TALLOC_CTX *mem_ctx,
-						 struct lsa_QueryTrustedDomainInfoByName *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	/* Ensure this handle goes away at the end of this call */
+	DCESRV_PULL_HANDLE(h, open.out.trustdom_handle, DCESRV_HANDLE_ANY);
+	talloc_steal(mem_ctx, h);
+	
+	query.in.trustdom_handle = open.out.trustdom_handle;
+	query.in.level = r->in.level;
+	status = lsa_QueryTrustedDomainInfo(dce_call, mem_ctx, &query);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
+	r->out.info = query.out.info;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -972,31 +1105,62 @@ static NTSTATUS lsa_SetTrustedDomainInfoByName(struct dcesrv_call_state *dce_cal
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-/*
-  lsa_EnumTrustedDomainsEx
+/* 
+   lsa_QueryTrustedDomainInfoByName
 */
-static NTSTATUS lsa_EnumTrustedDomainsEx(struct dcesrv_call_state *dce_call,
-					 TALLOC_CTX *mem_ctx,
-					 struct lsa_EnumTrustedDomainsEx *r)
+static NTSTATUS lsa_QueryTrustedDomainInfoByName(struct dcesrv_call_state *dce_call,
+						 TALLOC_CTX *mem_ctx,
+						 struct lsa_QueryTrustedDomainInfoByName *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	NTSTATUS status;
+	struct lsa_OpenTrustedDomainByName open;
+	struct lsa_QueryTrustedDomainInfo query;
+	struct dcesrv_handle *h;
+	open.in.handle = r->in.handle;
+	open.in.name = r->in.trusted_domain;
+	open.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	open.out.trustdom_handle = talloc(mem_ctx, struct policy_handle);
+	if (!open.out.trustdom_handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = lsa_OpenTrustedDomainByName(dce_call, mem_ctx, &open);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
+	/* Ensure this handle goes away at the end of this call */
+	DCESRV_PULL_HANDLE(h, open.out.trustdom_handle, DCESRV_HANDLE_ANY);
+	talloc_steal(mem_ctx, h);
+
+	query.in.trustdom_handle = open.out.trustdom_handle;
+	query.in.level = r->in.level;
+	status = lsa_QueryTrustedDomainInfo(dce_call, mem_ctx, &query);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
+	r->out.info = query.out.info;
+	return NT_STATUS_OK;
 }
 
 /*
-  lsa_CloseTrustedDomainEx
+  lsa_CloseTrustedDomainEx 
 */
 static NTSTATUS lsa_CloseTrustedDomainEx(struct dcesrv_call_state *dce_call,
 					 TALLOC_CTX *mem_ctx,
 					 struct lsa_CloseTrustedDomainEx *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	/* The result of a bad hair day from an IDL programmer?  Not
+	 * implmented in Win2k3.  You should always just lsa_Close
+	 * anyway. */
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
 /*
   comparison function for sorting lsa_DomainInformation array
 */
-static int compare_DomainInformation(struct lsa_DomainInformation *e1, struct lsa_DomainInformation *e2)
+static int compare_DomainInfo(struct lsa_DomainInfo *e1, struct lsa_DomainInfo *e2)
 {
 	return strcasecmp(e1->name.string, e2->name.string);
 }
@@ -1008,7 +1172,7 @@ static NTSTATUS lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 				 struct lsa_EnumTrustDom *r)
 {
 	struct dcesrv_handle *policy_handle;
-	struct lsa_DomainInformation *entries;
+	struct lsa_DomainInfo *entries;
 	struct lsa_policy_state *policy_state;
 	struct ldb_message **domains;
 	const char *attrs[] = {
@@ -1040,8 +1204,8 @@ static NTSTATUS lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_OK;
 	}
 
-	/* convert to lsa_DomainInformation format */
-	entries = talloc_array(mem_ctx, struct lsa_DomainInformation, count);
+	/* convert to lsa_TrustInformation format */
+	entries = talloc_array(mem_ctx, struct lsa_DomainInfo, count);
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1051,8 +1215,8 @@ static NTSTATUS lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* sort the results by name */
-	qsort(entries, count, sizeof(struct lsa_DomainInformation), 
-	      (comparison_fn_t)compare_DomainInformation);
+	qsort(entries, count, sizeof(*entries), 
+	      (comparison_fn_t)compare_DomainInfo);
 
 	if (*r->in.resume_handle >= count) {
 		*r->out.resume_handle = -1;
@@ -1065,6 +1229,96 @@ static NTSTATUS lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	r->out.domains->count = count - *r->in.resume_handle;
 	r->out.domains->count = MIN(r->out.domains->count, 
 				 1+(r->in.max_size/LSA_ENUM_TRUST_DOMAIN_MULTIPLIER));
+
+	r->out.domains->domains = entries + *r->in.resume_handle;
+	r->out.domains->count = r->out.domains->count;
+
+	if (r->out.domains->count < count - *r->in.resume_handle) {
+		*r->out.resume_handle = *r->in.resume_handle + r->out.domains->count;
+		return STATUS_MORE_ENTRIES;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+  comparison function for sorting lsa_DomainInformation array
+*/
+static int compare_TrustDomainInfoInfoEx(struct lsa_TrustDomainInfoInfoEx *e1, struct lsa_TrustDomainInfoInfoEx *e2)
+{
+	return strcasecmp(e1->domain_name.string, e2->domain_name.string);
+}
+
+/* 
+  lsa_EnumTrustedDomainsEx 
+*/
+static NTSTATUS lsa_EnumTrustedDomainsEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					struct lsa_EnumTrustedDomainsEx *r)
+{
+	struct dcesrv_handle *policy_handle;
+	struct lsa_TrustDomainInfoInfoEx *entries;
+	struct lsa_policy_state *policy_state;
+	struct ldb_message **domains;
+	const char *attrs[] = {
+		"flatname", 
+		"trustPartner",
+		"securityIdentifier",
+		"trustDirection",
+		"trustType",
+		"trustAttributes", 
+		NULL
+	};
+	NTSTATUS nt_status;
+
+	int count, i;
+
+	*r->out.resume_handle = 0;
+
+	r->out.domains->domains = NULL;
+	r->out.domains->count = 0;
+
+	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
+
+	policy_state = policy_handle->data;
+
+	/* search for all users in this domain. This could possibly be cached and 
+	   resumed based on resume_key */
+	count = gendb_search(policy_state->sam_ldb, mem_ctx, policy_state->system_dn, &domains, attrs, 
+			     "objectclass=trustedDomain");
+	if (count == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (count == 0 || r->in.max_size == 0) {
+		return NT_STATUS_OK;
+	}
+
+	/* convert to lsa_DomainInformation format */
+	entries = talloc_array(mem_ctx, struct lsa_TrustDomainInfoInfoEx, count);
+	if (!entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<count;i++) {
+		nt_status = fill_trust_domain_ex(mem_ctx, domains[i], &entries[i]);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+	}
+
+	/* sort the results by name */
+	qsort(entries, count, sizeof(*entries), 
+	      (comparison_fn_t)compare_TrustDomainInfoInfoEx);
+
+	if (*r->in.resume_handle >= count) {
+		*r->out.resume_handle = -1;
+
+		return NT_STATUS_NO_MORE_ENTRIES;
+	}
+
+	/* return the rest, limit by max_size. Note that we 
+	   use the w2k3 element size value of 60 */
+	r->out.domains->count = count - *r->in.resume_handle;
+	r->out.domains->count = MIN(r->out.domains->count, 
+				 1+(r->in.max_size/LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER));
 
 	r->out.domains->domains = entries + *r->in.resume_handle;
 	r->out.domains->count = r->out.domains->count;
@@ -1141,7 +1395,7 @@ static NTSTATUS lsa_authority_list(struct lsa_policy_state *state, TALLOC_CTX *m
 
 	domains->domains = talloc_realloc(domains, 
 					  domains->domains,
-					  struct lsa_TrustInformation,
+					  struct lsa_DomainInfo,
 					  domains->count+1);
 	if (domains->domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1149,6 +1403,7 @@ static NTSTATUS lsa_authority_list(struct lsa_policy_state *state, TALLOC_CTX *m
 	domains->domains[i].name.string = authority_name;
 	domains->domains[i].sid         = authority_sid;
 	domains->count++;
+	domains->max_size = LSA_REF_DOMAIN_LIST_MULTIPLIER * domains->count;
 	*sid_index = i;
 	
 	return NT_STATUS_OK;
