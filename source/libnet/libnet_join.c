@@ -135,14 +135,14 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			r->out.error_string
 				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsBind failed - %s\n", 
+						  "dcerpc_drsuapi_DsBind failed - %s", 
 						  dcerpc_errstr(tmp_ctx, drsuapi_pipe->last_fault_code));
 			talloc_free(tmp_ctx);
 			return status;
 		} else {
 			r->out.error_string
 				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsBind failed - %s\n", 
+						  "dcerpc_drsuapi_DsBind failed - %s", 
 						  nt_errstr(status));
 			talloc_free(tmp_ctx);
 			return status;
@@ -150,7 +150,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	} else if (!W_ERROR_IS_OK(r_drsuapi_bind.out.result)) {
 		r->out.error_string
 				= talloc_asprintf(r,
-						  "DsBind failed - %s\n", 
+						  "DsBind failed - %s", 
 						  win_errstr(r_drsuapi_bind.out.result));
 			talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -179,7 +179,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			r->out.error_string
 				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s\n", 
+						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s", 
 						  names[0].str,
 						  dcerpc_errstr(tmp_ctx, drsuapi_pipe->last_fault_code));
 			talloc_free(tmp_ctx);
@@ -187,7 +187,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		} else {
 			r->out.error_string
 				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s\n", 
+						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s", 
 						  names[0].str,
 						  nt_errstr(status));
 			talloc_free(tmp_ctx);
@@ -196,17 +196,23 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	} else if (!W_ERROR_IS_OK(r_crack_names.out.result)) {
 		r->out.error_string
 				= talloc_asprintf(r,
-						  "DsCrackNames failed - %s\n", win_errstr(r_crack_names.out.result));
+						  "DsCrackNames failed - %s", win_errstr(r_crack_names.out.result));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	} else if (r_crack_names.out.level != 1 
 		   || !r_crack_names.out.ctr.ctr1 
-		   || r_crack_names.out.ctr.ctr1->count != 1 
-		   || !r_crack_names.out.ctr.ctr1->array[0].result_name
-		   || r_crack_names.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-		r->out.error_string = talloc_asprintf(r, "DsCrackNames failed\n");
+		   || r_crack_names.out.ctr.ctr1->count != 1) {
+		r->out.error_string = talloc_asprintf(r, "DsCrackNames failed");
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	} else if (r_crack_names.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
+		r->out.error_string = talloc_asprintf(r, "DsCrackNames failed: %d", r_crack_names.out.ctr.ctr1->array[0].status);
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
+	} else if (r_crack_names.out.ctr.ctr1->array[0].result_name == NULL) {
+		r->out.error_string = talloc_asprintf(r, "DsCrackNames failed: no result name");
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Store the DN of our machine account. */
@@ -346,7 +352,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	} else if (!W_ERROR_IS_OK(r_crack_names.out.result)) {
 		r->out.error_string
 			= talloc_asprintf(r,
-					  "DsCrackNames failed - %s\n", win_errstr(r_crack_names.out.result));
+					  "DsCrackNames failed - %s", win_errstr(r_crack_names.out.result));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	} else if (r_crack_names.out.level != 1 
@@ -354,7 +360,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		   || r_crack_names.out.ctr.ctr1->count != 1
 		   || !r_crack_names.out.ctr.ctr1->array[0].result_name		  
 		   || r_crack_names.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-		r->out.error_string = talloc_asprintf(r, "DsCrackNames failed\n");
+		r->out.error_string = talloc_asprintf(r, "DsCrackNames failed");
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
