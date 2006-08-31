@@ -68,7 +68,7 @@ static BOOL ads_dc_name(const char *domain,
 		   has changed. If so, we need to re-do the DNS query
 		   to ensure we only find servers in our site. */
 
-		if (sitename_changed(sitename)) {
+		if (stored_sitename_changed(sitename)) {
 			SAFE_FREE(sitename);
 			sitename = sitename_fetch();
 			ads_destroy(&ads);
@@ -76,7 +76,7 @@ static BOOL ads_dc_name(const char *domain,
 		}
 
 #ifdef HAVE_KRB5
-		if ((ads->config.flags & ADS_KDC) && sitename) {
+		if ((ads->config.flags & ADS_KDC) && ads_sitename_match(ads)) {
 			/* We're going to use this KDC for this realm/domain.
 			   If we are using sites, then force the krb5 libs
 			   to use this KDC. */

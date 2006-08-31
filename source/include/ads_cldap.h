@@ -43,6 +43,8 @@ struct cldap_netlogon_reply {
 	uint16 lm20_token;
 };
 
+#define DEFAULT_SITE_NAME "Default-First-Site-Name"
+
 /* Mailslot or cldap getdcname response flags */
 #define ADS_PDC            0x00000001  /* DC is PDC */
 #define ADS_GC             0x00000004  /* DC is a GC of forest */

@@ -46,6 +46,8 @@ typedef struct {
 		char *realm;
 		char *bind_path;
 		char *ldap_server_name;
+		char *server_site_name;
+		char *client_site_name;
 		time_t current_time;
 	} config;
 
