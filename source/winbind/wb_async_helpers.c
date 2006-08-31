@@ -337,7 +337,7 @@ static void lsa_lookupsids_recv_names(struct rpc_request *req)
 	for (i=0; i<state->num_sids; i++) {
 		struct lsa_TranslatedName *name =
 			&state->r.out.names->names[i];
-		struct lsa_TrustInformation *dom;
+		struct lsa_DomainInfo *dom;
 
 		state->result[i] = talloc_zero(state->result,
 					       struct wb_sid_object);
@@ -494,7 +494,7 @@ static void lsa_lookupnames_recv_sids(struct rpc_request *req)
 
 	for (i=0; i<state->num_names; i++) {
 		struct lsa_TranslatedSid *sid = &state->r.out.sids->sids[i];
-		struct lsa_TrustInformation *dom;
+		struct lsa_DomainInfo *dom;
 
 		state->result[i] = talloc_zero(state->result,
 					       struct wb_sid_object);
