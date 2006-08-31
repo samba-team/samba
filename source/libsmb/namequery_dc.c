@@ -38,8 +38,9 @@ static BOOL ads_dc_name(const char *domain,
 	char *sitename = sitename_fetch();
 	int i;
 
-	if (!realm && strequal(domain, lp_workgroup()))
+	if (!realm && strequal(domain, lp_workgroup())) {
 		realm = lp_realm();
+	}
 
 	/* Try this 3 times then give up. */
 	for( i =0 ; i < 3; i++) {
@@ -64,22 +65,34 @@ static BOOL ads_dc_name(const char *domain,
 		}
 
 		/* Now we've found a server, see if our sitename
-		   has changed. If so, we need to re-do the query
+		   has changed. If so, we need to re-do the DNS query
 		   to ensure we only find servers in our site. */
 
-		if (!sitename_changed(sitename)) {
-			break;
+		if (sitename_changed(sitename)) {
+			SAFE_FREE(sitename);
+			sitename = sitename_fetch();
+			ads_destroy(&ads);
+			continue;
 		}
 
-		ads_destroy(&ads);
-	}
+#ifdef HAVE_KRB5
+		if ((ads->config.flags & ADS_KDC) && sitename) {
+			/* We're going to use this KDC for this realm/domain.
+			   If we are using sites, then force the krb5 libs
+			   to use this KDC. */
 
+			create_local_private_krb5_conf_for_domain(realm,
+								domain,
+								ads->ldap_ip);
+		}
+#endif
+		break;
+	}
 
 	if (i == 3) {
 		DEBUG(1,("ads_dc_name: sitename (now \"%s\") keeps changing ???\n",
 			sitename ? sitename : ""));
 		SAFE_FREE(sitename);
-		ads_destroy(&ads);
 		return False;
 	}
 

@@ -464,4 +464,62 @@ int kerberos_kinit_password(const char *principal,
 					   0);
 }
 
+/************************************************************************
+ Create  a specific krb5.conf file in the private directory pointing
+ at a specific kdc for a realm. Keyed off domain name. Sets
+ KRB5_CONFIG environment variable to point to this file. Must be
+ run as root or will fail (which is a good thing :-).
+************************************************************************/
+
+BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *domain, struct in_addr ip)
+{
+	XFILE *xfp = NULL;
+	char *fname = talloc_asprintf(NULL, "%s/smb_krb5.conf.%s", lp_private_dir(), domain);
+	char *file_contents = NULL;
+	size_t flen = 0;
+
+	if (!fname) {
+		return False;
+	}
+
+	file_contents = talloc_asprintf(fname, "[libdefaults]\n\tdefault_realm = %s\n"
+				"[realms]\n\t%s = {\n"
+				"\t\tkdc = %s\n]\n",
+				realm, realm, inet_ntoa(ip));
+
+	if (!file_contents) {
+		TALLOC_FREE(fname);
+		return False;
+	}
+
+	flen = strlen(file_contents);
+	xfp = x_fopen(fname, O_CREAT|O_WRONLY, 0600);
+	if (!xfp) {
+		TALLOC_FREE(fname);
+		return False;
+	}
+	/* Lock the file. */
+	if (!fcntl_lock(xfp->fd, F_SETLKW, 0, 1, F_WRLCK)) {
+		unlink(fname);
+		x_fclose(xfp);
+		TALLOC_FREE(fname);
+		return False;
+	}
+
+	if (x_fwrite(file_contents, flen, 1, xfp) != flen) {
+		unlink(fname);
+		x_fclose(xfp);
+		TALLOC_FREE(fname);
+		return False;
+	}
+	if (x_fclose(xfp)==-1) {
+		unlink(fname);
+		TALLOC_FREE(fname);
+		return False;
+	}
+	/* Set the environment variable to this file. */
+	setenv("KRB5_CONFIG", fname, 1);
+	TALLOC_FREE(fname);
+	return True;
+}
 #endif

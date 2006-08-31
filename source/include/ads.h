@@ -42,6 +42,7 @@ typedef struct {
 
 	/* info derived from the servers config */
 	struct {
+		uint32 flags; /* cldap flags identifying the services. */
 		char *realm;
 		char *bind_path;
 		char *ldap_server_name;
