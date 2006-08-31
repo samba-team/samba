@@ -1,3 +1,5 @@
+#!gmake
+#
 CC = @CC@
 GCOV = @GCOV@
 XSLTPROC = @XSLTPROC@
