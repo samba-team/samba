@@ -24,7 +24,9 @@ all: libtalloc.a testsuite $(EXTRA_TARGETS)
 testsuite: $(LIBOBJ) testsuite.o
 	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
 
-libtalloc.a: libtalloc.a($(LIBOBJ))
+libtalloc.a: $(LIBOBJ)
+	ar -rv $@ $(LIBOBJ)
+	@-ranlib $@
 
 install: all 
 	${INSTALLCMD} -d ${libdir}
