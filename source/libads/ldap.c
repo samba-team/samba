@@ -178,8 +178,8 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 	SAFE_FREE(ads->config.realm);
 	SAFE_FREE(ads->config.bind_path);
 	SAFE_FREE(ads->config.ldap_server_name);
-	SAFE_FREE(ads->config.server_site);
-	SAFE_FREE(ads->config.client_site);
+	SAFE_FREE(ads->config.server_site_name);
+	SAFE_FREE(ads->config.client_site_name);
 	SAFE_FREE(ads->server.workgroup);
 
 	ads->config.flags	       = cldap_reply.flags;
