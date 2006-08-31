@@ -99,6 +99,8 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * More changes to ensure that the primary group SID for 
       a local user is based on the primary Unix group and not the
       primaryGroupSID passdb attribute.
+    * Disable storing SIDs in the S-1-22-1 and S-1-22-2 domain 
+      to the SID<->uid/gid cache.
 
 
 o   Guenther Deschner <gd@samba.org>
