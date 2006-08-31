@@ -395,7 +395,7 @@ static BOOL torture_ioctl_test(struct torture_context *torture)
 		return False;
 	}
 
-	mem_ctx = talloc_init("ioctl_test");
+	mem_ctx = talloc_named_const(torture, 0, "ioctl_test");
 
 	printf("starting ioctl test\n");
 
@@ -786,7 +786,7 @@ static BOOL run_benchrw(struct torture_context *torture)
 		torture_numops,torture_nprocs);
 
 	/*init talloc context*/
-	mem_ctx = talloc_init("bench-readwrite");
+	mem_ctx = talloc_named_const(torture, 0, "bench-readwrite");
 	ev = event_context_init(mem_ctx);
 	state = talloc_array(mem_ctx, struct benchrw_state *, torture_nprocs);
 

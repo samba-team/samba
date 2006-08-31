@@ -910,6 +910,7 @@ static BOOL test_loop(void)
 		printf("FAILED TO FIRE LOOP DESTRUCTOR\n");
 		return False;
 	}
+	loop_destructor_count = 0;
 
 	return True;
 }
@@ -1021,6 +1022,7 @@ BOOL torture_local_talloc(struct torture_context *torture)
 {
 	BOOL ret = True;
 
+	talloc_disable_null_tracking();
 	talloc_enable_null_tracking();
 
 	ret &= test_ref1();
