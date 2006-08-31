@@ -133,7 +133,7 @@ PUBLIC_DEPENDENCIES = \
 ################################################
 # Start MODULE dcerpc_lsa
 [MODULE::dcerpc_lsarpc]
-INIT_FUNCTION = dcerpc_server_lsarpc_init
+INIT_FUNCTION = dcerpc_server_lsa_init
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		lsa/dcesrv_lsa.o
@@ -175,20 +175,6 @@ PUBLIC_DEPENDENCIES = \
 ################################################
 
 ################################################
-# Start MODULE dcerpc_dssetup
-[MODULE::dcerpc_dssetup]
-INIT_FUNCTION = dcerpc_server_dssetup_init
-SUBSYSTEM = dcerpc_server
-OBJ_FILES = \
-		dssetup/dcesrv_dssetup.o
-PUBLIC_DEPENDENCIES = \
-		SAMDB \
-		DCERPC_COMMON \
-		NDR_DSSETUP
-# End MODULE dcerpc_dssetup
-################################################
-
-################################################
 # Start SUBSYSTEM dcerpc_server
 [MODULE::dcerpc_server]
 INIT_FUNCTION = server_service_rpc_init
@@ -204,7 +190,6 @@ PUBLIC_DEPENDENCIES = \
 		LIBCLI_AUTH \
 		LIBNDR \
 		dcerpc
-		
 #
 # End SUBSYSTEM DCERPC
 ################################################

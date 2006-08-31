@@ -32,6 +32,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "passdb/secrets.h"
 #include "db_wrap.h"
+#include "librpc/gen_ndr/ndr_dssetup.h"
 
 /*
   this type allows us to distinguish handle types
@@ -59,6 +60,7 @@ struct lsa_policy_state {
 	struct dom_sid *domain_sid;
 	struct GUID domain_guid;
 	struct dom_sid *builtin_sid;
+	int mixed_domain;
 };
 
 
@@ -274,6 +276,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	const char *dom_attrs[] = {
 		"objectSid", 
 		"objectGUID", 
+		"nTMixedDomain",
 		NULL
 	};
 	struct ldb_result *ref_res;
@@ -329,6 +332,8 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	if (!state->domain_sid) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
+
+	state->mixed_domain = ldb_msg_find_attr_as_uint(dom_res->msgs[0], "nTMixedDomain", 0);
 
 	talloc_free(dom_res);
 
@@ -386,6 +391,110 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	*_state = state;
 
 	return NT_STATUS_OK;
+}
+
+/* 
+  dssetup_DsRoleGetPrimaryDomainInformation 
+*/
+static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state *dce_call, 
+						 TALLOC_CTX *mem_ctx,
+						 struct dssetup_DsRoleGetPrimaryDomainInformation *r)
+{
+	union dssetup_DsRoleInfo *info;
+
+	info = talloc(mem_ctx, union dssetup_DsRoleInfo);
+	W_ERROR_HAVE_NO_MEMORY(info);
+
+	switch (r->in.level) {
+	case DS_ROLE_BASIC_INFORMATION:
+	{
+		enum dssetup_DsRole role = DS_ROLE_STANDALONE_SERVER;
+		uint32_t flags = 0;
+		const char *domain = NULL;
+		const char *dns_domain = NULL;
+		const char *forest = NULL;
+		struct GUID domain_guid;
+		struct lsa_policy_state *state;
+
+		NTSTATUS status = lsa_get_policy_state(dce_call, mem_ctx, &state);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+
+		ZERO_STRUCT(domain_guid);
+
+		switch (lp_server_role()) {
+		case ROLE_STANDALONE:
+			role		= DS_ROLE_STANDALONE_SERVER;
+			break;
+		case ROLE_DOMAIN_MEMBER:
+			role		= DS_ROLE_MEMBER_SERVER;
+			break;
+		case ROLE_DOMAIN_BDC:
+			role		= DS_ROLE_BACKUP_DC;
+			break;
+		case ROLE_DOMAIN_PDC:
+			role		= DS_ROLE_PRIMARY_DC;
+			break;
+		}
+
+		switch (lp_server_role()) {
+		case ROLE_STANDALONE:
+			domain		= talloc_strdup(mem_ctx, lp_workgroup());
+			W_ERROR_HAVE_NO_MEMORY(domain);
+			break;
+		case ROLE_DOMAIN_MEMBER:
+			domain		= talloc_strdup(mem_ctx, lp_workgroup());
+			W_ERROR_HAVE_NO_MEMORY(domain);
+			/* TODO: what is with dns_domain and forest and guid? */
+			break;
+		case ROLE_DOMAIN_BDC:
+		case ROLE_DOMAIN_PDC:
+			flags		= DS_ROLE_PRIMARY_DS_RUNNING;
+
+			if (state->mixed_domain == 1) {
+				flags	|= DS_ROLE_PRIMARY_DS_MIXED_MODE;
+			}
+			
+			domain		= state->domain_name;
+			dns_domain	= state->domain_dns;
+			forest		= state->domain_dns;
+
+			domain_guid	= state->domain_guid;
+			flags	|= DS_ROLE_PRIMARY_DOMAIN_GUID_PRESENT;
+			break;
+		}
+
+		info->basic.role        = role; 
+		info->basic.flags       = flags;
+		info->basic.domain      = domain;
+		info->basic.dns_domain  = dns_domain;
+		info->basic.forest      = forest;
+		info->basic.domain_guid = domain_guid;
+
+		r->out.info = info;
+		return WERR_OK;
+	}
+	case DS_ROLE_UPGRADE_STATUS:
+	{
+		info->upgrade.upgrading     = DS_ROLE_NOT_UPGRADING;
+		info->upgrade.previous_role = DS_ROLE_PREVIOUS_UNKNOWN;
+
+		r->out.info = info;
+		return WERR_OK;
+	}
+	case DS_ROLE_OP_STATUS:
+	{
+		info->opstatus.status = DS_ROLE_OP_IDLE;
+
+		r->out.info = info;
+		return WERR_OK;
+	}
+	default:
+		return WERR_INVALID_PARAM;
+	}
+
+	return WERR_INVALID_PARAM;
 }
 
 /* 
@@ -3299,3 +3408,130 @@ static NTSTATUS lsa_LSARADTREPORTSECURITYEVENT(struct dcesrv_call_state *dce_cal
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_lsa_s.c"
+
+
+
+/*****************************************
+NOTE! The remaining calls below were
+removed in w2k3, so the DCESRV_FAULT()
+replies are the correct implementation. Do
+not try and fill these in with anything else
+******************************************/
+
+/* 
+  dssetup_DsRoleDnsNameToFlatName 
+*/
+static WERROR dssetup_DsRoleDnsNameToFlatName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					struct dssetup_DsRoleDnsNameToFlatName *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  dssetup_DsRoleDcAsDc 
+*/
+static WERROR dssetup_DsRoleDcAsDc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+			     struct dssetup_DsRoleDcAsDc *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  dssetup_DsRoleDcAsReplica 
+*/
+static WERROR dssetup_DsRoleDcAsReplica(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				  struct dssetup_DsRoleDcAsReplica *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  dssetup_DsRoleDemoteDc 
+*/
+static WERROR dssetup_DsRoleDemoteDc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+			       struct dssetup_DsRoleDemoteDc *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  dssetup_DsRoleGetDcOperationProgress 
+*/
+static WERROR dssetup_DsRoleGetDcOperationProgress(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					     struct dssetup_DsRoleGetDcOperationProgress *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  dssetup_DsRoleGetDcOperationResults 
+*/
+static WERROR dssetup_DsRoleGetDcOperationResults(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					    struct dssetup_DsRoleGetDcOperationResults *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  dssetup_DsRoleCancel 
+*/
+static WERROR dssetup_DsRoleCancel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+			     struct dssetup_DsRoleCancel *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  dssetup_DsRoleServerSaveStateForUpgrade 
+*/
+static WERROR dssetup_DsRoleServerSaveStateForUpgrade(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+						struct dssetup_DsRoleServerSaveStateForUpgrade *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  dssetup_DsRoleUpgradeDownlevelServer 
+*/
+static WERROR dssetup_DsRoleUpgradeDownlevelServer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					     struct dssetup_DsRoleUpgradeDownlevelServer *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  dssetup_DsRoleAbortDownlevelServerUpgrade 
+*/
+static WERROR dssetup_DsRoleAbortDownlevelServerUpgrade(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+						  struct dssetup_DsRoleAbortDownlevelServerUpgrade *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_dssetup_s.c"
+
+NTSTATUS dcerpc_server_lsa_init(void)
+{
+	NTSTATUS ret;
+	
+	ret = dcerpc_server_dssetup_init();
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
+	}
+	ret = dcerpc_server_lsarpc_init();
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
+	}
+	return ret;
+}
