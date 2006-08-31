@@ -5,40 +5,61 @@
 
    Copyright (C) Andrew Tridgell 2004
    
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+     ** NOTE! The following LGPL license applies to the talloc
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
    
-   This program is distributed in the hope that it will be useful,
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #ifdef _SAMBA_BUILD_
-#include "includes.h"
-#else
+#include "version.h"
+#endif /* _SAMBA_BUILD_ */
+
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef HAVE_STDARG_H
 #include <stdarg.h>
+#endif
+
 #include <sys/time.h>
 #include <time.h>
+
 #include "talloc.h"
+
+#ifndef False
+#define False 0
+#endif
+#ifndef True
+#define True 1
+#endif
+#ifndef BOOL
+#define BOOL int
 #endif
 
-/* the test suite can be built standalone, or as part of Samba */
-#ifndef _SAMBA_BUILD_
-typedef enum {False=0,True=1} BOOL;
-#endif
+struct torture_context;
 
-/* Samba3 does not define the timeval functions below */
-#if !defined(_SAMBA_BUILD_) || ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR<9))
+static struct timeval timeval_current(void)
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return tv;
+}
 
 static double timeval_elapsed(struct timeval *tv)
 {
@@ -46,9 +67,8 @@ static double timeval_elapsed(struct timeval *tv)
 	return (tv2.tv_sec - tv->tv_sec) + 
 	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
 }
-#endif /* _SAMBA_BUILD_ */
 
-#if SAMBA_VERSION_MAJOR<4
+#if SAMBA_VERSION_MAJOR==3
 #ifdef malloc
 #undef malloc
 #endif
@@ -75,6 +95,19 @@ static double timeval_elapsed(struct timeval *tv)
 		       (unsigned)talloc_total_blocks(ptr), \
 		       (unsigned)tblocks); \
 		talloc_report_full(ptr, stdout); \
+		return False; \
+	} \
+} while (0)
+
+#define CHECK_PARENT(ptr, parent) do { \
+	if (talloc_parent(ptr) != (parent)) { \
+		printf(__location__ " failed: '%s' has wrong parent: got %p  expected %p\n", \
+		       #ptr, \
+		       talloc_parent(ptr), \
+		       (parent)); \
+		talloc_report_full(ptr, stdout); \
+		talloc_report_full(parent, stdout); \
+		talloc_report_full(NULL, stdout); \
 		return False; \
 	} \
 } while (0)
@@ -335,6 +368,7 @@ static BOOL test_misc(void)
 	void *root, *p1;
 	char *p2;
 	double *d;
+	const char *name;
 
 	printf("TESTING MISCELLANEOUS\n");
 
@@ -371,9 +405,10 @@ static BOOL test_misc(void)
 	CHECK_BLOCKS(p1, 1);
 	CHECK_BLOCKS(root, 2);
 
-	talloc_set_name(p1, "my name is %s", "foo");
+	name = talloc_set_name(p1, "my name is %s", "foo");
 	if (strcmp(talloc_get_name(p1), "my name is foo") != 0) {
-		printf("failed: wrong name after talloc_set_name\n");
+		printf("failed: wrong name after talloc_set_name(my name is foo) - '%s'=>'%s'\n",
+			(name?name:"NULL"), talloc_get_name(p1));
 		return False;
 	}
 	CHECK_BLOCKS(p1, 2);
@@ -381,7 +416,8 @@ static BOOL test_misc(void)
 
 	talloc_set_name_const(p1, NULL);
 	if (strcmp(talloc_get_name(p1), "UNNAMED") != 0) {
-		printf("failed: wrong name after talloc_set_name(NULL)\n");
+		printf("failed: wrong name after talloc_set_name(NULL) - '%s'\n",
+			talloc_get_name(p1));
 		return False;
 	}
 	CHECK_BLOCKS(p1, 2);
@@ -459,6 +495,10 @@ static BOOL test_misc(void)
 
 	p1 = talloc_init("%d bytes", 200);
 	p2 = talloc_asprintf(p1, "my test '%s'", "string");
+	if (strcmp(p2, "my test 'string'") != 0) {
+		printf("failed: talloc_asprintf(\"my test '%%s'\", \"string\") gave: \"%s\"\n", p2);
+		return False;
+	}
 	CHECK_BLOCKS(p1, 3);
 	CHECK_SIZE(p2, 17);
 	CHECK_BLOCKS(root, 1);
@@ -466,7 +506,7 @@ static BOOL test_misc(void)
 
 	p1 = talloc_named_const(root, 10, "p1");
 	p2 = (char *)talloc_named_const(root, 20, "p2");
-	talloc_reference(p1, p2);
+	(void)talloc_reference(p1, p2);
 	talloc_report_full(root, stdout);
 	talloc_unlink(root, p2);
 	talloc_report_full(root, stdout);
@@ -478,7 +518,7 @@ static BOOL test_misc(void)
 
 	p1 = talloc_named_const(root, 10, "p1");
 	p2 = (char *)talloc_named_const(root, 20, "p2");
-	talloc_reference(NULL, p2);
+	(void)talloc_reference(NULL, p2);
 	talloc_report_full(root, stdout);
 	talloc_unlink(root, p2);
 	talloc_report_full(root, stdout);
@@ -656,7 +696,6 @@ static BOOL test_type(void)
 	return True;
 }
 
-#if 0
 /*
   test steal
 */
@@ -705,12 +744,12 @@ static BOOL test_steal(void)
 	talloc_free(root);
 
 	p1 = talloc_size(NULL, 3);
+	talloc_report_full(NULL, stdout);
 	CHECK_SIZE(NULL, 3);
 	talloc_free(p1);
 
 	return True;
 }
-#endif
 
 /*
   test talloc_realloc_fn
@@ -753,7 +792,12 @@ static BOOL test_unref_reparent(void)
 	c1 = talloc_named_const(p1, 1, "child");
 	talloc_reference(p2, c1);
 
+	CHECK_PARENT(c1, p1);
+
 	talloc_free(p1);
+
+	CHECK_PARENT(c1, p2);
+
 	talloc_unlink(p2, c1);
 
 	CHECK_SIZE(root, 1);
@@ -809,9 +853,175 @@ static BOOL test_speed(void)
 }
 
 
-BOOL torture_local_talloc(void) 
+static BOOL test_lifeless(void)
+{
+	void *top = talloc_new(NULL);
+	char *parent, *child; 
+	void *child_owner = talloc_new(NULL);
+
+	printf("TESTING TALLOC_UNLINK LOOP\n");
+
+	parent = talloc_strdup(top, "parent");
+	child = talloc_strdup(parent, "child");  
+	(void)talloc_reference(child, parent);
+	(void)talloc_reference(child_owner, child); 
+	talloc_report_full(top, stdout);
+	talloc_unlink(top, parent);
+	talloc_free(child);
+	talloc_report_full(top, stdout);
+	talloc_free(top);
+	talloc_free(child_owner);
+	talloc_free(child);
+
+	return True;
+}
+
+static int loop_destructor_count;
+
+static int test_loop_destructor(char *ptr)
+{
+	printf("loop destructor\n");
+	loop_destructor_count++;
+	return 0;
+}
+
+static BOOL test_loop(void)
+{
+	void *top = talloc_new(NULL);
+	char *parent;
+	struct req1 {
+		char *req2, *req3;
+	} *req1;
+
+	printf("TESTING TALLOC LOOP DESTRUCTION\n");
+	parent = talloc_strdup(top, "parent");
+	req1 = talloc(parent, struct req1);
+	req1->req2 = talloc_strdup(req1, "req2");  
+	talloc_set_destructor(req1->req2, test_loop_destructor);
+	req1->req3 = talloc_strdup(req1, "req3");
+	(void)talloc_reference(req1->req3, req1);
+	talloc_report_full(top, stdout);
+	talloc_free(parent);
+	talloc_report_full(top, stdout);
+	talloc_report_full(NULL, stdout);
+	talloc_free(top);
+
+	if (loop_destructor_count != 1) {
+		printf("FAILED TO FIRE LOOP DESTRUCTOR\n");
+		return False;
+	}
+
+	return True;
+}
+
+static int fail_destructor_str(char *ptr)
+{
+	return -1;
+}
+
+static BOOL test_free_parent_deny_child(void)
+{
+	void *top = talloc_new(NULL);
+	char *level1;
+	char *level2;
+	char *level3;
+
+	printf("TESTING TALLOC FREE PARENT DENY CHILD\n");
+	level1 = talloc_strdup(top, "level1");
+	level2 = talloc_strdup(level1, "level2");
+	level3 = talloc_strdup(level2, "level3");
+
+	talloc_set_destructor(level3, fail_destructor_str);
+	talloc_free(level1);
+	talloc_set_destructor(level3, NULL);
+
+	CHECK_PARENT(level3, top);
+
+	talloc_free(top);
+
+	return True;
+}
+
+static BOOL test_talloc_ptrtype(void)
 {
 	BOOL ret = True;
+	void *top = talloc_new(NULL);
+	struct struct1 {
+		int foo;
+		int bar;
+	} *s1, *s2, **s3, ***s4;
+	const char *location1;
+	const char *location2;
+	const char *location3;
+	const char *location4;
+
+	printf("TESTING TALLOC PTRTYPE\n");
+	s1 = talloc_ptrtype(top, s1);location1 = __location__;
+
+	if (talloc_get_size(s1) != sizeof(struct struct1)) {
+		printf("%s: talloc_ptrtype() allocated the wrong size %u (should be %u)\n",
+			__location__, talloc_get_size(s1), sizeof(struct struct1));
+		ret = False;
+	}
+
+	if (strcmp(location1, talloc_get_name(s1)) != 0) {
+		printf("%s: talloc_ptrtype() sets the wrong name '%s' (should be '%s')\n",
+			__location__, talloc_get_name(s1), location1);
+		ret = False;
+	}
+
+	s2 = talloc_array_ptrtype(top, s2, 10);location2 = __location__;
+
+	if (talloc_get_size(s2) != (sizeof(struct struct1) * 10)) {
+		printf("%s: talloc_array_ptrtype() allocated the wrong size %u (should be %u)\n",
+			__location__, talloc_get_size(s2), (sizeof(struct struct1)*10));
+		ret = False;
+	}
+
+	if (strcmp(location2, talloc_get_name(s2)) != 0) {
+		printf("%s: talloc_array_ptrtype() sets the wrong name '%s' (should be '%s')\n",
+			__location__, talloc_get_name(s2), location2);
+		ret = False;
+	}
+
+	s3 = talloc_array_ptrtype(top, s3, 10);location3 = __location__;
+
+	if (talloc_get_size(s3) != (sizeof(struct struct1 *) * 10)) {
+		printf("%s: talloc_array_ptrtype() allocated the wrong size %u (should be %u)\n",
+			__location__, talloc_get_size(s3), (sizeof(struct struct1 *)*10));
+		ret = False;
+	}
+
+	if (strcmp(location3, talloc_get_name(s3)) != 0) {
+		printf("%s: talloc_array_ptrtype() sets the wrong name '%s' (should be '%s')\n",
+			__location__, talloc_get_name(s3), location3);
+		ret = False;
+	}
+
+	s4 = talloc_array_ptrtype(top, s4, 10);location4 = __location__;
+
+	if (talloc_get_size(s4) != (sizeof(struct struct1 **) * 10)) {
+		printf("%s: talloc_array_ptrtype() allocated the wrong size %u (should be %u)\n",
+			__location__, talloc_get_size(s4), (sizeof(struct struct1 **)*10));
+		ret = False;
+	}
+
+	if (strcmp(location4, talloc_get_name(s4)) != 0) {
+		printf("%s: talloc_array_ptrtype() sets the wrong name '%s' (should be '%s')\n",
+			__location__, talloc_get_name(s4), location4);
+		ret = False;
+	}
+
+	talloc_free(top);
+
+	return ret;
+}
+
+BOOL torture_local_talloc(struct torture_context *torture) 
+{
+	BOOL ret = True;
+
+	talloc_enable_null_tracking();
 
 	ret &= test_ref1();
 	ret &= test_ref2();
@@ -821,10 +1031,14 @@ BOOL torture_local_talloc(void)
 	ret &= test_misc();
 	ret &= test_realloc();
 	ret &= test_realloc_child();
-/* 	ret &= test_steal(); */
+	ret &= test_steal();
 	ret &= test_unref_reparent();
 	ret &= test_realloc_fn();
 	ret &= test_type();
+	ret &= test_lifeless();
+	ret &= test_loop();
+	ret &= test_free_parent_deny_child();
+	ret &= test_talloc_ptrtype();
 	if (ret) {
 		ret &= test_speed();
 	}
@@ -837,8 +1051,8 @@ BOOL torture_local_talloc(void)
 #if !defined(_SAMBA_BUILD_) || ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR<9))
  int main(void)
 {
-	if (!torture_local_talloc()) {
-		printf("ERROR: TESTSUIE FAILED\n");
+	if (!torture_local_talloc(NULL)) {
+		printf("ERROR: TESTSUITE FAILED\n");
 		return -1;
 	}
 	return 0;
