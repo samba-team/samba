@@ -53,7 +53,7 @@ NTSTATUS create_directory_handle(struct smbcli_tree *tree, const char *dname, in
 	union smb_open io;
 	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("create_directory_handle");
+	mem_ctx = talloc_named_const(tree, 0, "create_directory_handle");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
@@ -329,7 +329,7 @@ void dump_all_info(TALLOC_CTX *mem_ctx, union smb_fileinfo *finfo)
 */
 void torture_all_info(struct smbcli_tree *tree, const char *fname)
 {
-	TALLOC_CTX *mem_ctx = talloc_init("%s", fname);
+	TALLOC_CTX *mem_ctx = talloc_named(tree, 0, "%s", fname);
 	union smb_fileinfo finfo;
 	NTSTATUS status;
 
@@ -373,7 +373,7 @@ NTSTATUS torture_set_sparse(struct smbcli_tree *tree, int fnum)
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("torture_set_sparse");
+	mem_ctx = talloc_named_const(tree, 0, "torture_set_sparse");
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
