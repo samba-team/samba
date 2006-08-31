@@ -32,8 +32,8 @@ install: all
 	${INSTALLCMD} -d ${includedir}
 	${INSTALLCMD} -m 644 $(srcdir)/talloc.h $(includedir)
 	${INSTALLCMD} -m 644 talloc.pc $(libdir)/pkgconfig
-	test -f talloc.3 && ${INSTALLCMD} -d ${mandir}/man3
-	test -f talloc.3 && ${INSTALLCMD} -m 644 talloc.3 $(mandir)/man3
+	test ! -e talloc.3 || ${INSTALLCMD} -d ${mandir}/man3
+	test ! -e talloc.3 || ${INSTALLCMD} -m 644 talloc.3 $(mandir)/man3
 
 doc: talloc.3 talloc.3.html
 
