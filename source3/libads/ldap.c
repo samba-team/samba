@@ -159,6 +159,7 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 	SAFE_FREE(ads->config.ldap_server_name);
 	SAFE_FREE(ads->server.workgroup);
 
+	ads->config.flags	       = cldap_reply.flags;
 	ads->config.ldap_server_name   = SMB_STRDUP(cldap_reply.hostname);
 	strupper_m(cldap_reply.domain);
 	ads->config.realm              = SMB_STRDUP(cldap_reply.domain);

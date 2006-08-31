@@ -306,5 +306,3 @@ BOOL ads_cldap_netlogon(const char *server, const char *realm,  struct cldap_net
 
 	return True;
 }
-
-

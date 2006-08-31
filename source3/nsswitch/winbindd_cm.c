@@ -590,7 +590,43 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 	ip_list.ip = ip;
 	ip_list.port = 0;
 
-	/* try GETDC requests first */
+#ifdef WITH_ADS
+	/* For active directory servers, try to get the ldap server name.
+	   None of these failures should be considered critical for now */
+
+	if ( lp_security() == SEC_ADS ) {
+		ADS_STRUCT *ads;
+
+		ads = ads_init(realm, domainname, NULL);
+		ads->auth.flags |= ADS_AUTH_NO_BIND;
+
+		if (ads_try_connect( ads, inet_ntoa(ip) ) )  {
+			const char *sitename = sitename_fetch();
+			/* We got a cldap packet. */
+			fstrcpy(name, ads->config.ldap_server_name);
+			namecache_store(name, 0x20, 1, &ip_list);
+
+#ifdef HAVE_KRB5
+			if ((ads->config.flags & ADS_KDC) && sitename) {
+				/* We're going to use this KDC for this realm/domain.
+				   If we are using sites, then force the krb5 libs
+				   to use this KDC. */
+
+				create_local_private_krb5_conf_for_domain(realm,
+								domainname,
+								ip);
+			}
+#endif
+			SAFE_FREE(sitename);
+			ads_destroy( &ads );
+			return True;
+		}
+
+		ads_destroy( &ads );
+	}
+#endif
+
+	/* try GETDC requests next */
 	
 	if (send_getdc_request(ip, domainname, sid)) {
 		int i;
@@ -610,31 +646,6 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 		namecache_store(name, 0x20, 1, &ip_list);
 		return True;
 	}
-
-#ifdef WITH_ADS
-	/* for active directory servers, try to get the ldap server name.
-	   None of these failure should be considered critical for now */
-
-	if ( lp_security() == SEC_ADS ) 
-	{
-		ADS_STRUCT *ads;
-
-		ads = ads_init( realm, domainname, NULL );
-		ads->auth.flags |= ADS_AUTH_NO_BIND;
-
-		if ( !ads_try_connect( ads, inet_ntoa(ip) ) )  {
-			ads_destroy( &ads );
-			return False;
-		}
-
-		fstrcpy(name, ads->config.ldap_server_name);
-		namecache_store(name, 0x20, 1, &ip_list);
-
-		ads_destroy( &ads );
-		return True;
-	}
-#endif
-
 	return False;
 }
 
