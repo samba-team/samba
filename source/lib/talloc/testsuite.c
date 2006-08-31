@@ -24,6 +24,10 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#ifdef _SAMBA_BUILD_
+#include "version.h"
+#endif /* _SAMBA_BUILD_ */
+
 #include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,7 +68,7 @@ static double timeval_elapsed(struct timeval *tv)
 	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
 }
 
-#if SAMBA_VERSION_MAJOR<4
+#if SAMBA_VERSION_MAJOR==3
 #ifdef malloc
 #undef malloc
 #endif
