@@ -999,6 +999,11 @@ void store_uid_sid_cache(const DOM_SID *psid, uid_t uid)
 {
 	struct uid_sid_cache *pc;
 
+	/* do not store SIDs in the "Unix Group" domain */
+	
+	if ( sid_check_is_in_unix_users( psid ) )
+		return;
+
 	if (n_uid_sid_cache >= MAX_UID_SID_CACHE_SIZE && n_uid_sid_cache > TURNOVER_UID_SID_CACHE_SIZE) {
 		/* Delete the last TURNOVER_UID_SID_CACHE_SIZE entries. */
 		struct uid_sid_cache *pc_next;
@@ -1070,6 +1075,11 @@ static BOOL fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
 void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 {
 	struct gid_sid_cache *pc;
+	
+	/* do not store SIDs in the "Unix Group" domain */
+	
+	if ( sid_check_is_in_unix_groups( psid ) )
+		return;
 
 	if (n_gid_sid_cache >= MAX_GID_SID_CACHE_SIZE && n_gid_sid_cache > TURNOVER_GID_SID_CACHE_SIZE) {
 		/* Delete the last TURNOVER_GID_SID_CACHE_SIZE entries. */
