@@ -115,6 +115,27 @@ static int ldap_search_with_timeout(LDAP *ld,
 	return result;
 }
 
+#ifdef HAVE_KRB5
+/**********************************************
+ Do client and server sitename match ?
+**********************************************/
+
+BOOL ads_sitename_match(ADS_STRUCT *ads)
+{
+	if (ads->config.server_site_name == NULL &&
+	    ads->config.client_site_name == NULL ) {
+		return True;
+	}
+	if (ads->config.server_site_name &&
+	    ads->config.client_site_name &&
+	    strequal(ads->config.server_site_name,
+		     ads->config.client_site_name)) {
+		return True;
+	}
+	return False;
+}
+#endif
+
 /*
   try a connection to a given ldap server, returning True and setting the servers IP
   in the ads struct if successful
@@ -157,6 +178,8 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 	SAFE_FREE(ads->config.realm);
 	SAFE_FREE(ads->config.bind_path);
 	SAFE_FREE(ads->config.ldap_server_name);
+	SAFE_FREE(ads->config.server_site);
+	SAFE_FREE(ads->config.client_site);
 	SAFE_FREE(ads->server.workgroup);
 
 	ads->config.flags	       = cldap_reply.flags;
@@ -164,6 +187,15 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 	strupper_m(cldap_reply.domain);
 	ads->config.realm              = SMB_STRDUP(cldap_reply.domain);
 	ads->config.bind_path          = ads_build_dn(ads->config.realm);
+	if (*cldap_reply.server_site_name) {
+		ads->config.server_site_name =
+			SMB_STRDUP(cldap_reply.server_site_name);
+	}
+	if (*cldap_reply.client_site_name) {
+		ads->config.server_site_name =
+			SMB_STRDUP(cldap_reply.server_site_name);
+	}
+		
 	ads->server.workgroup          = SMB_STRDUP(cldap_reply.netbios_domain);
 
 	ads->ldap_port = LDAP_PORT;
