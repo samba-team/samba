@@ -1970,7 +1970,7 @@ static int run_test(void)
 		current_op.opnum = op;
 		current_op.name = gen_ops[which_op].name;
 		current_op.status = NT_STATUS_OK;
-		current_op.mem_ctx = talloc_init("%s", current_op.name);
+		current_op.mem_ctx = talloc_named(NULL, 0, "%s", current_op.name);
 
 		ret = gen_ops[which_op].handler(instance);
 

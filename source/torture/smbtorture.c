@@ -195,7 +195,7 @@ static void usage(poptContext pc)
 
 static BOOL is_binding_string(const char *binding_string)
 {
-	TALLOC_CTX *mem_ctx = talloc_init("is_binding_string");
+	TALLOC_CTX *mem_ctx = talloc_named_const(NULL, 0, "is_binding_string");
 	struct dcerpc_binding *binding_struct;
 	NTSTATUS status;
 	
