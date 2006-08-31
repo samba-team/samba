@@ -90,7 +90,7 @@ struct ph_context {
 struct domain_data {
 	uint_t pwdProperties;
 	uint_t pwdHistoryLength;
-	char *dnsDomain;
+	char *dns_domain;
 	char *realm;
 };
 
@@ -165,7 +165,7 @@ static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_mes
 		if (name[strlen(name)-1] == '$') {
 			name[strlen(name)-1] = '\0';
 		}
-		saltbody = talloc_asprintf(msg, "%s.%s", name, domain->dnsDomain);
+		saltbody = talloc_asprintf(msg, "%s.%s", name, domain->dns_domain);
 		
 		krb5_ret = krb5_make_principal(smb_krb5_context->krb5_context,
 						&salt_principal,
@@ -480,7 +480,7 @@ static int build_domain_data_request(struct ph_context *ac)
 	/* attrs[] is returned from this function in
 	   ac->dom_req->op.search.attrs, so it must be static, as
 	   otherwise the compiler can put it on the stack */
-	static const char * const attrs[] = { "pwdProperties", "pwdHistoryLength", "dnsDomain", NULL };
+	static const char * const attrs[] = { "pwdProperties", "pwdHistoryLength", NULL };
 	char *filter;
 
 	ac->dom_req = talloc_zero(ac, struct ldb_request);
@@ -520,7 +520,8 @@ static struct domain_data *get_domain_data(struct ldb_module *module, void *ctx,
 	struct domain_data *data;
 	const char *tmp;
 	struct ph_context *ac;
-	
+	char *p;
+
 	ac = talloc_get_type(ctx, struct ph_context);
 
 	data = talloc_zero(ac, struct domain_data);
@@ -536,11 +537,26 @@ static struct domain_data *get_domain_data(struct ldb_module *module, void *ctx,
 
 	data->pwdProperties = samdb_result_uint(res->message, "pwdProperties", 0);
 	data->pwdHistoryLength = samdb_result_uint(res->message, "pwdHistoryLength", 0);
-	tmp = ldb_msg_find_attr_as_string(res->message, "dnsDomain", NULL);
+
+	/* For a domain DN, this puts things in dotted notation */
+	/* For builtin domains, this will give details for the host,
+	 * but that doesn't really matter, as it's just used for salt
+	 * and kerberos principals, which don't exist here */
+
+	tmp = ldb_dn_canonical_string(ctx, res->message->dn);
+	if (!tmp) {
+		return NULL;
+	}
+	
+	/* But it puts a trailing (or just before 'builtin') / on things, so kill that */
+	p = strchr(tmp, '/');
+	if (p) {
+		p[0] = '\0';
+	}
 
 	if (tmp != NULL) {
-		data->dnsDomain = talloc_strdup(data, tmp);
-		if (data->dnsDomain == NULL) {
+		data->dns_domain = strlower_talloc(data, tmp);
+		if (data->dns_domain == NULL) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Out of memory!\n");
 			return NULL;
 		}
