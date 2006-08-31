@@ -601,7 +601,7 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 
 		if (ads_try_connect( ads, inet_ntoa(ip) ) )  {
-			const char *sitename = sitename_fetch();
+			char *sitename = sitename_fetch();
 			/* We got a cldap packet. */
 			fstrcpy(name, ads->config.ldap_server_name);
 			namecache_store(name, 0x20, 1, &ip_list);
