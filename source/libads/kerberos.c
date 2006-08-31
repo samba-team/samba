@@ -477,6 +477,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	char *fname = talloc_asprintf(NULL, "%s/smb_krb5.conf.%s", lp_private_dir(), domain);
 	char *file_contents = NULL;
 	size_t flen = 0;
+	int loopcount = 0;
 
 	if (!fname) {
 		return False;
@@ -493,17 +494,37 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	}
 
 	flen = strlen(file_contents);
-	xfp = x_fopen(fname, O_CREAT|O_WRONLY, 0600);
-	if (!xfp) {
-		TALLOC_FREE(fname);
-		return False;
-	}
-	/* Lock the file. */
-	if (!fcntl_lock(xfp->fd, F_SETLKW, 0, 1, F_WRLCK)) {
-		unlink(fname);
-		x_fclose(xfp);
-		TALLOC_FREE(fname);
-		return False;
+
+	while (loopcount < 10) {
+		SMB_STRUCT_STAT st;
+
+		xfp = x_fopen(fname, O_CREAT|O_WRONLY, 0600);
+		if (!xfp) {
+			TALLOC_FREE(fname);
+			return False;
+		}
+		/* Lock the file. */
+		if (!fcntl_lock(xfp->fd, F_SETLKW, 0, 1, F_WRLCK)) {
+			unlink(fname);
+			x_fclose(xfp);
+			TALLOC_FREE(fname);
+			return False;
+		}
+
+		/* We got the lock. Is the file still there ? */
+		if (sys_stat(fname,&st)==-1) {
+			if (errno == ENOENT) {
+				/* Nope - try again up to 10x */
+				x_fclose(xfp);
+				loopcount++;
+				continue;	
+			}
+			unlink(fname);
+			x_fclose(xfp);
+			TALLOC_FREE(fname);
+			return False;
+		}
+		break;
 	}
 
 	if (x_fwrite(file_contents, flen, 1, xfp) != flen) {
