@@ -492,7 +492,11 @@ void *talloc_init(const char *fmt, ...)
 	void *ptr;
 	const char *name;
 
-	/* FIXME: move this into a samba3 specifiy file */
+	/*
+	 * samba3 expects talloc_report_depth_cb(NULL, ...)
+	 * reports all talloc'ed memory, so we need to enable
+	 * null_tracking
+	 */
 	talloc_enable_null_tracking();
 
 	ptr = _talloc(NULL, 0);
