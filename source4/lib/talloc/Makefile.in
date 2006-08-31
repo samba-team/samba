@@ -46,7 +46,7 @@ doc: talloc.3 talloc.3.html
 	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
 clean:
-	rm -f *~ *.o testsuite *.gc??
+	rm -f *~ *.o libtalloc.a testsuite *.gc?? talloc.3 talloc.3.html
 
 test: testsuite
 	./testsuite
