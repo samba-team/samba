@@ -889,7 +889,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	struct netr_DomainInfo1 *info1;
 	int ret, ret1, ret2, i;
 	NTSTATUS status;
-	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
+	const struct ldb_dn *partitions_basedn;
 
 	const char *local_domain;
 
@@ -903,6 +903,8 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
+
+	partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	/* we need to do two searches. The first will pull our primary
 	   domain and the second will pull any trusted domains. Our
@@ -1143,7 +1145,7 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 	struct ldb_message **dom_res, **ref_res;
 	const char * const dom_attrs[] = { "dnsDomain", "objectSid", "objectGUID", NULL };
 	const char * const ref_attrs[] = { "nETBIOSName", NULL };
-	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
+	const struct ldb_dn *partitions_basedn;
 
 	ZERO_STRUCT(r->out);
 
@@ -1151,6 +1153,8 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 	if (sam_ctx == NULL) {
 		return WERR_GENERAL_FAILURE;
 	}
+
+	partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	ret = gendb_search_dn(sam_ctx, mem_ctx, NULL, &dom_res, dom_attrs);
 	if (ret == -1) {
