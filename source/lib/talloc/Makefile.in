@@ -1,3 +1,5 @@
+#!gmake
+#
 prefix = @prefix@
 datarootdir = @datarootdir@
 exec_prefix = @exec_prefix@
