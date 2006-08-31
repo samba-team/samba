@@ -574,22 +574,27 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
 /****************************************************************************
  Store the AD client sitename.
  We store indefinately as every new CLDAP query will re-write this.
+ If the sitename is "Default-First-Site-Name" we don't store it
+ as this isn't a valid DNS name.
 ****************************************************************************/
 
 BOOL sitename_store(const char *sitename)
 {
 	time_t expire;
 	BOOL ret = False;
-	
-	if ( !sitename || (sitename && !*sitename)) {
-		DEBUG(2,("sitename_store: deleting empty sitename!\n"));
-		return gencache_del(SITENAME_KEY);
-	}
-	
+
 	if (!gencache_init()) {
 		return False;
 	}
 	
+	if (!sitename || (sitename && !*sitename)) {
+		DEBUG(5,("sitename_store: deleting empty sitename!\n"));
+		return gencache_del(SITENAME_KEY);
+	} else if (sitename && strequal(sitename, "Default-First-Site-Name")) {
+		DEBUG(5,("sitename_store: delete default sitename Default-First-Site-Name\n"));
+		return gencache_del(SITENAME_KEY);
+	}
+
 	expire = get_time_t_max(); /* Store indefinately. */
 	
 	DEBUG(10,("sitename_store: sitename = [%s], expire = [%u]\n",
