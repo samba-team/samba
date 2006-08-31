@@ -492,6 +492,13 @@ void *talloc_init(const char *fmt, ...)
 	void *ptr;
 	const char *name;
 
+	/*
+	 * samba3 expects talloc_report_depth_cb(NULL, ...)
+	 * reports all talloc'ed memory, so we need to enable
+	 * null_tracking
+	 */
+	talloc_enable_null_tracking();
+
 	ptr = _talloc(NULL, 0);
 	if (ptr == NULL) return NULL;
 
