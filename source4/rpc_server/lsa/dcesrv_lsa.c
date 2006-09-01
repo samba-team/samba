@@ -1271,7 +1271,7 @@ static NTSTATUS lsa_CloseTrustedDomainEx(struct dcesrv_call_state *dce_call,
 */
 static int compare_DomainInfo(struct lsa_DomainInfo *e1, struct lsa_DomainInfo *e2)
 {
-	return strcasecmp(e1->name.string, e2->name.string);
+	return strcasecmp_m(e1->name.string, e2->name.string);
 }
 
 /* 
@@ -1355,7 +1355,7 @@ static NTSTATUS lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 */
 static int compare_TrustDomainInfoInfoEx(struct lsa_TrustDomainInfoInfoEx *e1, struct lsa_TrustDomainInfoInfoEx *e2)
 {
-	return strcasecmp(e1->domain_name.string, e2->domain_name.string);
+	return strcasecmp_m(e1->netbios_name.string, e2->netbios_name.string);
 }
 
 /* 
