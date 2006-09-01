@@ -565,6 +565,8 @@ function provision_ldapbase(subobj, message, paths)
 {
 	message("Setting up LDAP base entry: " + subobj.BASEDN + " \n");
 	var rdns = split(",", subobj.BASEDN);
+	subobj.EXTENSIBLEOBJECT = "objectClass: extensibleObject";
+
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
 
 	setup_file("provision_basedn.ldif", 
@@ -619,6 +621,7 @@ function provision_guess()
 	rdn_list = split(".", subobj.DNSDOMAIN);
 	subobj.BASEDN       = "DC=" + join(",DC=", rdn_list);
 	subobj.LDAPBACKEND  = "users.ldb";
+	subobj.EXTENSIBLEOBJECT = "# no objectClass: extensibleObject for local ldb";
 	return subobj;
 }
 
