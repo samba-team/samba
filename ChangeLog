@@ -1,5 +1,8 @@
 2006-09-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: More text about the acl_file entry and
+	hdb-ldap-structural-object.  From Rüdiger Ranft.
+
 	* lib/krb5/krbhst.c (fallback_get_hosts): limit the fallback
 	lookups to 5.  Patch from Wesley Craig, umich.edu
 
