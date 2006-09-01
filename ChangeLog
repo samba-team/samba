@@ -1,5 +1,8 @@
 2006-09-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* configure.in: Add special tests for <sys/ucred.h>, include test
+	for sys/param.h and sys/types.h
+
 	* appl/test/tcp_server.c (proto): use keytab for krb5_recvauth
 	Patch from Ingemar Nilsson <init@pdc.kth.se>
 	
