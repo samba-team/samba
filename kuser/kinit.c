@@ -364,7 +364,7 @@ renew_validate(krb5_context context,
 	       krb5_deltat life)
 {
     krb5_error_code ret;
-    krb5_creds in, *out;
+    krb5_creds in, *out = NULL;
     krb5_kdc_flags flags;
 
     memset(&in, 0, sizeof(in));
@@ -379,17 +379,39 @@ renew_validate(krb5_context context,
 	krb5_warn(context, ret, "get_server");
 	goto out;
     }
+
+    if (renew) {
+	/* 
+	 * no need to check the error here, its only to be 
+	 * friendly to the user
+	 */
+	krb5_get_credentials(context, KRB5_GC_CACHED, cache, &in, &out);
+    }
+
     flags.i = 0;
     flags.b.renewable         = flags.b.renew = renew;
     flags.b.validate          = validate;
+
     if (forwardable_flag != -1)
 	flags.b.forwardable       = forwardable_flag;
+    else if (out)
+	flags.b.forwardable 	  = out->flags.b.forwardable;
+
     if (proxiable_flag != -1)
 	flags.b.proxiable         = proxiable_flag;
+    else if (out)
+	flags.b.proxiable 	  = out->flags.b.proxiable;
+
     if (anonymous_flag != -1)
 	flags.b.request_anonymous = anonymous_flag;
     if(life)
 	in.times.endtime = time(NULL) + life;
+
+    if (out) {
+	krb5_free_creds (context, out);
+	out = NULL;
+    }
+
 
     ret = krb5_get_kdc_cred(context,
 			    cache,
