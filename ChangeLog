@@ -1,5 +1,9 @@
 2006-09-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kinit.c (renew_validate): inherit the proxiable and
+	forwardable from the orignal ticket, pointed out by Bernard
+	Antoine of CERN.
+	
 	* doc/setup.texi: More text about the acl_file entry and
 	hdb-ldap-structural-object.  From Rüdiger Ranft.
 
