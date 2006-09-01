@@ -41,6 +41,11 @@ static BOOL test_LogonUasLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_LogonUasLogon r;
 
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping LogonUasLogon test against Samba4\n");
+		return True;
+	}
+
 	r.in.server_name = NULL;
 	r.in.account_name = cli_credentials_get_username(cmdline_credentials);
 	r.in.workstation = TEST_MACHINE_NAME;
@@ -61,6 +66,11 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct netr_LogonUasLogoff r;
+
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping LogonUasLogoff test against Samba4\n");
+		return True;
+	}
 
 	r.in.server_name = NULL;
 	r.in.account_name = cli_credentials_get_username(cmdline_credentials);
@@ -619,6 +629,11 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	BOOL ret = True;
 
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping DatabaseSync test against Samba4\n");
+		return True;
+	}
+
 	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
 		return False;
 	}
@@ -679,6 +694,11 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
 	BOOL ret = True;
+
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping DatabaseDeltas test against Samba4\n");
+		return True;
+	}
 
 	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
 		return False;
@@ -808,6 +828,12 @@ static BOOL test_GetDcName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_GetDcName r;
 
+
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping GetDCName test against Samba4\n");
+		return True;
+	}	
+
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.domainname = lp_workgroup();
 
@@ -833,6 +859,11 @@ static BOOL test_LogonControl(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonControl r;
 	BOOL ret = True;
 	int i;
+
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping LogonControl test against Samba4\n");
+		return True;
+	}
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.function_code = 1;
@@ -860,6 +891,11 @@ static BOOL test_GetAnyDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct netr_GetAnyDCName r;
+
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping GetAnyDCName test against Samba4\n");
+		return True;
+	}
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.domainname = lp_workgroup();
@@ -889,6 +925,11 @@ static BOOL test_LogonControl2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonControl2 r;
 	BOOL ret = True;
 	int i;
+
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping LogonControl2 test against Samba4\n");
+		return True;
+	}
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 
@@ -971,6 +1012,11 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	BOOL ret = True;
 
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping DatabaseSync2 test against Samba4\n");
+		return True;
+	}
+
 	if (!test_SetupCredentials2(p, mem_ctx, NETLOGON_NEG_AUTH2_FLAGS, 
 				    TEST_MACHINE_NAME, machine_password, 
 				    SEC_CHAN_BDC, &creds)) {
@@ -1021,6 +1067,11 @@ static BOOL test_LogonControl2Ex(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonControl2Ex r;
 	BOOL ret = True;
 	int i;
+
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping DatabaseSync2 test against Samba4\n");
+		return True;
+	}
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 
@@ -1122,6 +1173,11 @@ static BOOL test_netr_DsRGetSiteName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct netr_DsRGetSiteName r;
 	BOOL ret = True;
+
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping DsRGetSiteName test against Samba4\n");
+		return True;
+	}
 
 	r.in.computer_name		= computer_name;
 	printf("Testing netr_DsRGetSiteName\n");
