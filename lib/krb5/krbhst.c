@@ -422,6 +422,15 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
     struct addrinfo hints;
     char portstr[NI_MAXSERV];
 
+    /* 
+     * Don't try forever in case the DNS server keep returning us
+     * entries (like wildcard entries or the .nu TLD)
+     */
+    if(kd->fallback_count >= 5) {
+	kd->flags |= KD_FALLBACK;
+	return 0;
+    }
+
     if(kd->fallback_count == 0)
 	asprintf(&host, "%s.%s.", serv_string, kd->realm);
     else
