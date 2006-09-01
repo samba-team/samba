@@ -673,7 +673,8 @@ static NTSTATUS netr_DatabaseSync(struct dcesrv_call_state *dce_call, TALLOC_CTX
 static NTSTATUS netr_AccountDeltas(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_AccountDeltas *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	/* w2k3 returns "NOT IMPLEMENTED" for this call */
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
@@ -683,7 +684,8 @@ static NTSTATUS netr_AccountDeltas(struct dcesrv_call_state *dce_call, TALLOC_CT
 static NTSTATUS netr_AccountSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_AccountSync *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	/* w2k3 returns "NOT IMPLEMENTED" for this call */
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
@@ -831,40 +833,23 @@ static WERROR netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /*
   fill in a netr_DomainTrustInfo from a ldb search result
 */
-static NTSTATUS fill_domain_primary_info(TALLOC_CTX *mem_ctx, struct ldb_message *res,
-					 struct netr_DomainTrustInfo *info, 
-					 const char *local_domain)
-{
-	ZERO_STRUCTP(info);
-
-	info->domainname.string = local_domain;
-	info->fulldomainname.string = talloc_asprintf(info, "%s.", samdb_result_string(res, "dnsDomain", NULL));
-	/* TODO: we need proper forest support */
-	info->forest.string = info->fulldomainname.string;
-	info->guid = samdb_result_guid(res, "objectGUID");
-	info->sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
-
-	return NT_STATUS_OK;
-}
-
-/*
-  fill in a netr_DomainTrustInfo from a ldb search result
-*/
-static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx, struct ldb_message *res,
+static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
+				       struct ldb_message *res,
+				       struct ldb_message *ref_res,
 				       struct netr_DomainTrustInfo *info, 
-				       const char *local_domain, BOOL is_local)
+				       BOOL is_local)
 {
 	ZERO_STRUCTP(info);
 
 	if (is_local) {
-		info->domainname.string = local_domain;
-		info->fulldomainname.string = samdb_result_string(res, "dnsDomain", NULL);
+		info->domainname.string = samdb_result_string(ref_res, "nETBIOSName", NULL);
+		info->fulldomainname.string = samdb_result_string(ref_res, "dnsRoot", NULL);
 		info->forest.string = NULL;
 		info->guid = samdb_result_guid(res, "objectGUID");
 		info->sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
 	} else {
 		info->domainname.string = samdb_result_string(res, "flatName", NULL);
-		info->fulldomainname.string = samdb_result_string(res, "name", NULL);
+		info->fulldomainname.string = samdb_result_string(res, "trustPartner", NULL);
 		info->forest.string = NULL;
 		info->guid = samdb_result_guid(res, "objectGUID");
 		info->sid = samdb_result_dom_sid(mem_ctx, res, "securityIdentifier");
@@ -880,10 +865,10 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx, struct ldb_message *
 static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_LogonGetDomainInfo *r)
 {
-	const char * const attrs[] = { "dnsDomain", "objectSid", 
+	const char * const attrs[] = { "objectSid", 
 				       "objectGUID", "flatName", "securityIdentifier",
-				       NULL };
-	const char * const ref_attrs[] = { "nETBIOSName", NULL };
+				       "trustPartner", NULL };
+	const char * const ref_attrs[] = { "nETBIOSName", "dnsRoot", NULL };
 	struct ldb_context *sam_ctx;
 	struct ldb_message **res1, **res2, **ref_res;
 	struct netr_DomainInfo1 *info1;
@@ -911,7 +896,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	   primary domain is also a "trusted" domain, so we need to
 	   put the primary domain into the lists of returned trusts as
 	   well */
-	ret1 = gendb_search(sam_ctx, mem_ctx, NULL, &res1, attrs, "(objectClass=domainDNS)");
+	ret1 = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(sam_ctx), &res1, attrs);
 	if (ret1 != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -942,15 +927,15 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 				       info1->num_trusts);
 	NT_STATUS_HAVE_NO_MEMORY(info1->trusts);
 
-	status = fill_domain_primary_info(mem_ctx, res1[0], &info1->domaininfo, local_domain);
+	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->domaininfo, True);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	for (i=0;i<ret2;i++) {
-		status = fill_domain_trust_info(mem_ctx, res2[i], &info1->trusts[i], NULL, False);
+		status = fill_domain_trust_info(mem_ctx, res2[i], NULL, &info1->trusts[i], False);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	status = fill_domain_trust_info(mem_ctx, res1[0], &info1->trusts[i], local_domain, True);
+	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->trusts[i], True);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	r->out.info.info1 = info1;
@@ -1143,8 +1128,8 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 	void *sam_ctx;
 	int ret;
 	struct ldb_message **dom_res, **ref_res;
-	const char * const dom_attrs[] = { "dnsDomain", "objectSid", "objectGUID", NULL };
-	const char * const ref_attrs[] = { "nETBIOSName", NULL };
+	const char * const dom_attrs[] = { "objectSid", "objectGUID", NULL };
+	const char * const ref_attrs[] = { "nETBIOSName", "dnsRoot", NULL };
 	const struct ldb_dn *partitions_basedn;
 
 	ZERO_STRUCT(r->out);
@@ -1183,7 +1168,7 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 	/* TODO: add filtering by trust_flags, and correct trust_type
 	   and attributes */
 	trusts[0].netbios_name = samdb_result_string(ref_res[0], "nETBIOSName", NULL);
-	trusts[0].dns_name     = samdb_result_string(dom_res[0], "dnsDomain", NULL);
+	trusts[0].dns_name     = samdb_result_string(ref_res[0], "dnsRoot", NULL);
 	trusts[0].trust_flags = 
 		NETR_TRUST_FLAG_TREEROOT | 
 		NETR_TRUST_FLAG_IN_FOREST | 
