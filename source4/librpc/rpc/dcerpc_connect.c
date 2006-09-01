@@ -742,9 +742,7 @@ static void dcerpc_connect_timeout_handler(struct event_context *ev, struct time
 					   struct timeval t, void *private)
 {
 	struct composite_context *c = talloc_get_type(private, struct composite_context);
-	DEBUG(0,("DCERPC CONNECT TIMEOUT\n"));
 	composite_error(c, NT_STATUS_IO_TIMEOUT);
-	composite_done(c);
 }
 
 /*
