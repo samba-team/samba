@@ -2274,11 +2274,7 @@ enum {
 		}
 	}
 
-	if (!opt_username || !*opt_username) {
-		x_fprintf(x_stderr, "username must be specified!\n\n");
-		poptPrintHelp(pc, stderr, 0);
-		exit(1);
-	} else {
+	if (opt_username) {
 		char *domain = SMB_STRDUP(opt_username);
 		char *p = strchr_m(domain, *lp_winbind_separator());
 		if (p) {
@@ -2319,6 +2315,12 @@ enum {
 			x_fprintf(x_stderr, "%s\n", stdio_helper_protocols[i].name);
 		}
 
+		exit(1);
+	}
+
+	if (!opt_username || !*opt_username) {
+		x_fprintf(x_stderr, "username must be specified!\n\n");
+		poptPrintHelp(pc, stderr, 0);
 		exit(1);
 	}
 
