@@ -811,6 +811,11 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 	NTSTATUS nt_status;
 	BOOL first = False;
 	
+	if (!opt_username || !*opt_username) {
+		x_fprintf(x_stderr, "username must be specified!\n\n");
+		exit(1);
+	}
+
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
@@ -1505,6 +1510,11 @@ static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper
 	DATA_BLOB request;
 	SPNEGO_DATA spnego;
 	ssize_t len;
+
+	if (!opt_username || !*opt_username) {
+		x_fprintf(x_stderr, "username must be specified!\n\n");
+		exit(1);
+	}
 
 	if (strlen(buf) <= 3) {
 		DEBUG(1, ("SPNEGO query [%s] too short\n", buf));
