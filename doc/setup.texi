@@ -932,18 +932,25 @@ schema definition syntax instead of the old UMich-style, V2 syntax.
 
 @item
 You should specify the distinguished name under which your
-principals will be stored in @file{krb5.conf}:
+principals will be stored in @file{krb5.conf}. Also you need to
+enter the path to the kadmin acl file:
+
 
 @example
 [kdc]
         database = @{
                 dbname = ldap:ou=KerberosPrincipals,dc=example,dc=com
+                hdb-ldap-structural-object = inetOrgPerson
+                acl_file = /path/to/kadmind.acl
                 mkey_file = /path/to/mkey
         @}
 @end example
 
 @samp{mkey_file} can be excluded if you feel that you trust your ldap
-directory to have the raw keys inside it.
+directory to have the raw keys inside it.  The
+hdb-ldap-structural-object is not necessary if you do not need Samba
+comatibility.
+
 
 
 @item
