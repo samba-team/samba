@@ -123,6 +123,11 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
 
+	/* handle null ptr comparisons to simplify the use in qsort */
+	if (s1 == s2) return 0;
+	if (s1 == NULL) return -1;
+	if (s2 == NULL) return 1;
+
 	while (*s1 && *s2) {
 		c1 = next_codepoint(s1, &size1);
 		c2 = next_codepoint(s2, &size2);
@@ -201,6 +206,11 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 {
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
+
+	/* handle null ptr comparisons to simplify the use in qsort */
+	if (s1 == s2) return 0;
+	if (s1 == NULL) return -1;
+	if (s2 == NULL) return 1;
 
 	while (*s1 && *s2 && n) {
 		n--;
