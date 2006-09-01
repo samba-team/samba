@@ -19,5 +19,23 @@ fi
 
 # we don't consider a slapadd failure as a test suite failure, as it
 # has nothing to do with ldb
+
+MODCONF=tests/tmp/modules.conf
+rm -f $MODCONF
+touch $MODCONF || exit 1
+
+if ! slaptest -u -f $LDBDIR/tests/slapd.conf > /dev/null 2>&1; then
+echo "enabling sladp modules"
+cat > $MODCONF <<EOF 
+modulepath	/usr/lib/ldap
+moduleload	back_bdb
+EOF
+fi
+
+if ! slaptest -u -f $LDBDIR/tests/slapd.conf; then
+    echo "slaptest failed - skipping ldap tests"
+    exit 0
+fi
+
 slapadd -f $LDBDIR/tests/slapd.conf < $LDBDIR/tests/init.ldif || exit 0
 
