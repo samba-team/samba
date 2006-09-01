@@ -289,14 +289,15 @@ AC_CHECK_HEADERS([\
 	sgtty.h					\
 	siad.h					\
 	signal.h				\
-	stropts.h				\
 	strings.h				\
+	stropts.h				\
 	sys/bitypes.h				\
 	sys/category.h				\
 	sys/file.h				\
 	sys/filio.h				\
 	sys/ioccom.h				\
 	sys/mman.h				\
+	sys/param.h				\
 	sys/pty.h				\
 	sys/ptyio.h				\
 	sys/select.h				\
@@ -308,8 +309,8 @@ AC_CHECK_HEADERS([\
 	sys/termio.h				\
 	sys/timeb.h				\
 	sys/times.h				\
+	sys/types.h				\
 	sys/un.h				\
-	sys/ucred.h				\
 	termcap.h				\
 	termio.h				\
 	termios.h				\
@@ -341,6 +342,14 @@ AC_CHECK_HEADERS(sys/strtty.h, , , [AC_INCLUDES_DEFAULT
 #endif
 #if HAVE_SYS_STREAM_H
 #include <sys/stream.h>
+#endif])
+
+AC_CHECK_HEADERS(sys/ucred.h, , , [AC_INCLUDES_DEFAULT
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_PARAM_H
+#include <sys/param.h>
 #endif])
 
 AC_CHECK_HEADERS(security/pam_modules.h, , , [AC_INCLUDES_DEFAULT
