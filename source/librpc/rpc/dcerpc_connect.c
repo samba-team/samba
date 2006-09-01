@@ -736,6 +736,18 @@ static void continue_pipe_auth(struct composite_context *ctx)
 
 
 /*
+  handle timeouts of a dcerpc connect
+*/
+static void dcerpc_connect_timeout_handler(struct event_context *ev, struct timed_event *te, 
+					   struct timeval t, void *private)
+{
+	struct composite_context *c = talloc_get_type(private, struct composite_context);
+	DEBUG(0,("DCERPC CONNECT TIMEOUT\n"));
+	composite_error(c, NT_STATUS_IO_TIMEOUT);
+	composite_done(c);
+}
+
+/*
   start a request to open a rpc connection to a rpc pipe, using
   specified binding structure to determine the endpoint and options
 */
@@ -748,8 +760,6 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 	struct composite_context *c;
 	struct pipe_connect_state *s;
 	struct event_context *new_ev = NULL;
-	struct composite_context *binding_req;
-
 
 	if (ev == NULL) {
 		new_ev = event_context_init(parent_ctx);
@@ -777,12 +787,17 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 	s->binding      = binding;
 	s->table        = table;
 	s->credentials  = credentials;
+
+	event_add_timed(c->event_ctx, c,
+			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
+			dcerpc_connect_timeout_handler, c);
 	
 	switch (s->binding->transport) {
 	case NCACN_NP:
 	case NCACN_IP_TCP:
 	case NCALRPC:
 		if (!s->binding->endpoint) {
+			struct composite_context *binding_req;
 			binding_req = dcerpc_epm_map_binding_send(c, s->binding, s->table,
 								  s->pipe->conn->event_ctx);
 			composite_continue(c, binding_req, continue_map_binding, c);
