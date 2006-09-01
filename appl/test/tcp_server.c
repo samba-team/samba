@@ -78,7 +78,7 @@ proto (int sock, const char *service)
 			    VERSION,
 			    server,
 			    0,
-			    NULL,
+			    keytab,
 			    &ticket);
     if (status)
 	krb5_err (context, 1, status, "krb5_recvauth");
