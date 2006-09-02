@@ -548,7 +548,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 		break;
 	}
 
-	if (x_fwrite(file_contents, flen, 1, xfp) != flen) {
+	if (x_fwrite(file_contents, 1, flen, xfp) != flen) {
 		unlink(fname);
 		x_fclose(xfp);
 		TALLOC_FREE(dname);
