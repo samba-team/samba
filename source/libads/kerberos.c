@@ -485,7 +485,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	if (!dname) {
 		return False;
 	}
-	if (mkdir(dname, 0755)==-1) {
+	if ((mkdir(dname, 0755)==-1) && (errno != EEXIST)) {
 		DEBUG(0,("create_local_private_krb5_conf_for_domain: "
 			"failed to create directory %s. Error was %s\n",
 			dname, strerror(errno) ));
