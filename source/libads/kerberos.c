@@ -484,7 +484,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	if (!dname) {
 		return False;
 	}
-	if (mkdir(dname, 0700)==-1) {
+	if (mkdir(dname, 0755)==-1) {
 		DEBUG(0,("create_local_private_krb5_conf_for_domain: "
 			"failed to create directory %s. Error was %s\n",
 			dname, strerror(errno) ));
@@ -519,7 +519,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	while (loopcount < 10) {
 		SMB_STRUCT_STAT st;
 
-		xfp = x_fopen(fname, O_CREAT|O_WRONLY, 0600);
+		xfp = x_fopen(fname, O_CREAT|O_WRONLY, 0644);
 		if (!xfp) {
 			TALLOC_FREE(dname);
 			return False;
