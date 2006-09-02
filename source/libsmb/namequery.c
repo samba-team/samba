@@ -1030,7 +1030,7 @@ static BOOL resolve_ads(const char *name, int name_type,
 	int			numdcs = 0;
 	int			numaddrs = 0;
 
-	if ( name_type != 0x1c )
+	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE))
 		return False;
 		
 	DEBUG(5,("resolve_hosts: Attempting to resolve DC's for %s using DNS\n",
@@ -1040,8 +1040,12 @@ static BOOL resolve_ads(const char *name, int name_type,
 		DEBUG(0,("resolve_ads: talloc_init() failed!\n"));
 		return False;
 	}
-		
-	status = ads_dns_query_dcs( ctx, name, &dcs, &numdcs );
+
+	if (name_type == KDC_NAME_TYPE) {
+		status = ads_dns_query_kdcs(ctx, name, &dcs, &numdcs);
+	} else {
+		status = ads_dns_query_dcs(ctx, name, &dcs, &numdcs);
+	}
 	if ( !NT_STATUS_IS_OK( status ) ) {
 		talloc_destroy(ctx);
 		return False;
@@ -1185,6 +1189,13 @@ BOOL internal_resolve_name(const char *name, int name_type,
 	while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
 			if (resolve_hosts(name, name_type, return_iplist, return_count)) {
+				result = True;
+				goto done;
+			}
+		} else if(strequal( tok, "kdc")) {
+			/* deal with KDC_NAME_TYPE names here.  This will result in a
+				SRV record lookup */
+			if (resolve_ads(name, KDC_NAME_TYPE, return_iplist, return_count)) {
 				result = True;
 				goto done;
 			}
@@ -1355,13 +1366,17 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 	return True;
 }
 
+/* Private enum type for lookups. */
+
+enum dc_lookup_type { DC_NORMAL_LOOKUP, DC_ADS_ONLY, DC_KDC_ONLY };
+
 /********************************************************
  Get the IP address list of the domain controllers for
  a domain.
 *********************************************************/
 
 static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list, 
-                            int *count, BOOL ads_only, int *ordered)
+                            int *count, enum dc_lookup_type lookup_type, int *ordered)
 {
 	fstring resolve_order;
 	char *saf_servername;
@@ -1387,7 +1402,7 @@ static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list,
 
 	fstrcpy( resolve_order, lp_name_resolve_order() );
 	strlower_m( resolve_order );
-	if ( ads_only )  {
+	if ( lookup_type == DC_ADS_ONLY)  {
 		if ( strstr( resolve_order, "host" ) ) {
 			fstrcpy( resolve_order, "ads" );
 
@@ -1397,6 +1412,11 @@ static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list,
 		} else {
                         fstrcpy( resolve_order, "NULL" );
 		}
+	} else if (lookup_type == DC_KDC_ONLY) {
+		/* DNS SRV lookups used by the ads/kdc resolver
+		   are already sorted by priority and weight */
+		*ordered = True;
+		fstrcpy( resolve_order, "kdc" );
 	}
 
 	/* fetch the server we have affinity for.  Add the 
@@ -1558,11 +1578,16 @@ NTSTATUS get_sorted_dc_list( const char *domain, struct ip_service **ip_list, in
 {
 	BOOL ordered;
 	NTSTATUS status;
-	
+	enum dc_lookup_type lookup_type = DC_NORMAL_LOOKUP;
+
 	DEBUG(8,("get_sorted_dc_list: attempting lookup using [%s]\n",
 		(ads_only ? "ads" : lp_name_resolve_order())));
 	
-	status = get_dc_list(domain, ip_list, count, ads_only, &ordered);
+	if (ads_only) {
+		lookup_type = DC_ADS_ONLY;
+	}
+
+	status = get_dc_list(domain, ip_list, count, lookup_type, &ordered);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status; 
 	}
@@ -1572,5 +1597,31 @@ NTSTATUS get_sorted_dc_list( const char *domain, struct ip_service **ip_list, in
 		sort_ip_list2( *ip_list, *count );
 	}
 		
+	return NT_STATUS_OK;
+}
+
+/*********************************************************************
+ Get the KDC list - re-use all the logic in get_dc_list.
+*********************************************************************/
+
+NTSTATUS get_kdc_list( const char *realm, struct ip_service **ip_list, int *count)
+{
+	BOOL ordered;
+	NTSTATUS status;
+
+	*count = 0;
+	*ip_list = NULL;
+
+	status = get_dc_list(realm, ip_list, count, DC_KDC_ONLY, &ordered);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status; 
+	}
+
+	/* only sort if we don't already have an ordered list */
+	if ( !ordered ) {
+		sort_ip_list2( *ip_list, *count );
+	}
+
 	return NT_STATUS_OK;
 }

@@ -126,6 +126,10 @@ BOOL namecache_store(const char *name, int name_type,
 	 */
 	if (!gencache_init()) return False;
 
+	if (name_type > 255) {
+		return False; /* Don't store non-real name types. */
+	}
+
 	if ( DEBUGLEVEL >= 5 ) {
 		DEBUG(5, ("namecache_store: storing %d address%s for %s#%02x: ",
 			num_names, num_names == 1 ? "": "es", name, name_type));
@@ -183,6 +187,10 @@ BOOL namecache_fetch(const char *name, int name_type, struct ip_service **ip_lis
 
 	if (!gencache_init())
 		return False;
+
+	if (name_type > 255) {
+		return False; /* Don't fetch non-real name types. */
+	}
 
 	*num_names = 0;
 
