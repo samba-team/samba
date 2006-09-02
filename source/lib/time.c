@@ -1252,7 +1252,7 @@ void set_ctimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 	pst->st_ctime = ts.tv_sec;
 #else
 #if defined(HAVE_STAT_ST_CTIM)
-	pst->st_atim = ts;
+	pst->st_ctim = ts;
 #elif defined(HAVE_STAT_ST_CTIMENSEC)
 	pst->st_ctime = ts.tv_sec;
 	pst->st_ctimensec = ts.tv_nsec

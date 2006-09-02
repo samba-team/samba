@@ -81,6 +81,15 @@ struct smbc_internal_data {
         BOOL _debug_stderr;
 
         /*
+         * Support "Create Time" in get/set with the *xattr() functions, if
+         * true.  This replaces the dos attribute strings C_TIME, A_TIME and
+         * M_TIME with CHANGE_TIME, ACCESS_TIME and WRITE_TIME, and adds
+         * CREATE_TIME.  Default is FALSE, i.e.  to use the old-style shorter
+         * names and to not support CREATE time, for backward compatibility.
+         */
+        BOOL _full_time_names;
+
+        /*
          * Authentication function which includes the context.  This will be
          * used if set; otherwise context->callbacks.auth_fn() will be used.
          */

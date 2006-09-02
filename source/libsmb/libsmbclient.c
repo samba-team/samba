@@ -33,9 +33,10 @@
 typedef struct DOS_ATTR_DESC {
 	int mode;
 	SMB_OFF_T size;
-	time_t a_time;
-	time_t c_time;
-	time_t m_time;
+	time_t create_time;
+	time_t access_time;
+	time_t write_time;
+	time_t change_time;
 	SMB_INO_T inode;
 } DOS_ATTR_DESC;
 
@@ -1470,15 +1471,16 @@ smbc_getatr(SMBCCTX * context,
             char *path, 
             uint16 *mode,
             SMB_OFF_T *size, 
-            struct timespec *c_time_ts,
-            struct timespec *a_time_ts,
-            struct timespec *m_time_ts,
+            struct timespec *create_time_ts,
+            struct timespec *access_time_ts,
+            struct timespec *write_time_ts,
+            struct timespec *change_time_ts,
             SMB_INO_T *ino)
 {
 	pstring fixedpath;
 	pstring targetpath;
 	struct cli_state *targetcli;
-	time_t m_time;
+	time_t write_time;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -1515,7 +1517,11 @@ smbc_getatr(SMBCCTX * context,
   
 	if (!srv->no_pathinfo2 &&
             cli_qpathinfo2(targetcli, targetpath,
-                           NULL, a_time_ts, m_time_ts, c_time_ts, size, mode, ino)) {
+                           create_time_ts,
+                           access_time_ts,
+                           write_time_ts,
+                           change_time_ts,
+                           size, mode, ino)) {
             return True;
         }
 
@@ -1525,12 +1531,28 @@ smbc_getatr(SMBCCTX * context,
                 return False;
         }
 
-	if (cli_getatr(targetcli, targetpath, mode, size, &m_time)) {
-                if (m_time_ts != NULL) {
-			*m_time_ts = convert_time_t_to_timespec(m_time);
-                        if (a_time_ts != NULL) *a_time_ts = *m_time_ts;
-                        if (c_time_ts != NULL) *c_time_ts = *m_time_ts;
+	if (cli_getatr(targetcli, targetpath, mode, size, &write_time)) {
+
+                struct timespec w_time_ts;
+
+                w_time_ts = convert_time_t_to_timespec(write_time);
+
+                if (write_time_ts != NULL) {
+			*write_time_ts = w_time_ts;
                 }
+
+                if (create_time_ts != NULL) {
+                        *create_time_ts = w_time_ts;
+                }
+                
+                if (access_time_ts != NULL) {
+                        *access_time_ts = w_time_ts;
+                }
+                
+                if (change_time_ts != NULL) {
+                        *change_time_ts = w_time_ts;
+                }
+
 		srv->no_pathinfo2 = True;
 		return True;
 	}
@@ -1552,7 +1574,10 @@ smbc_getatr(SMBCCTX * context,
  */
 static BOOL
 smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path, 
-            time_t c_time, time_t a_time, time_t m_time,
+            time_t create_time,
+            time_t access_time,
+            time_t write_time,
+            time_t change_time,
             uint16 mode)
 {
         int fd;
@@ -1565,7 +1590,12 @@ smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
          * attributes manipulated.
          */
         if (srv->no_pathinfo ||
-            ! cli_setpathinfo(srv->cli, path, c_time, a_time, m_time, mode)) {
+            ! cli_setpathinfo(srv->cli, path,
+                              create_time,
+                              access_time,
+                              write_time,
+                              change_time,
+                              mode)) {
 
                 /*
                  * setpathinfo is not supported; go to plan B. 
@@ -1587,42 +1617,14 @@ smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                         return -1;
                 }
 
-                /*
-                 * Get the creat time of the file (if it wasn't provided).
-                 * We'll need it in the set call
-                 */
-                if (c_time == 0) {
-                        ret = cli_getattrE(srv->cli, fd,
-                                           NULL, NULL,
-                                           &c_time, NULL, NULL);
-                } else {
-                        ret = True;
-                }
-                    
-                /* If we got create time, set times */
-                if (ret) {
-                        /* Some OS versions don't support create time */
-                        if (c_time == 0 || c_time == -1) {
-                                c_time = time(NULL);
-                        }
+                /* Set the new attributes */
+                ret = cli_setattrE(srv->cli, fd,
+                                   change_time,
+                                   access_time,
+                                   write_time);
 
-                        /*
-                         * For sanity sake, since there is no POSIX function
-                         * to set the create time of a file, if the existing
-                         * create time is greater than either of access time
-                         * or modification time, set create time to the
-                         * smallest of those.  This ensure that the create
-                         * time of a file is never greater than its last
-                         * access or modification time.
-                         */
-                        if (c_time > a_time) c_time = a_time;
-                        if (c_time > m_time) c_time = m_time;
-                        
-                        /* Set the new attributes */
-                        ret = cli_setattrE(srv->cli, fd,
-                                           c_time, a_time, m_time);
-                        cli_close(srv->cli, fd);
-                }
+                /* Close the file */
+                cli_close(srv->cli, fd);
 
                 /*
                  * Unfortunately, setattrE() doesn't have a provision for
@@ -1711,11 +1713,17 @@ smbc_unlink_ctx(SMBCCTX *context,
 			int saverr = errno;
 			SMB_OFF_T size = 0;
 			uint16 mode = 0;
-			struct timespec m_time_ts, a_time_ts, c_time_ts;
+			struct timespec write_time_ts;
+                        struct timespec access_time_ts;
+                        struct timespec change_time_ts;
 			SMB_INO_T ino = 0;
 
 			if (!smbc_getatr(context, srv, path, &mode, &size,
-					 &c_time_ts, &a_time_ts, &m_time_ts, &ino)) {
+					 NULL,
+                                         &access_time_ts,
+                                         &write_time_ts,
+                                         &change_time_ts,
+                                         &ino)) {
 
 				/* Hmmm, bad error ... What? */
 
@@ -2051,9 +2059,9 @@ smbc_stat_ctx(SMBCCTX *context,
         fstring password;
         fstring workgroup;
 	pstring path;
-	struct timespec m_time_ts;
-        struct timespec a_time_ts;
-        struct timespec c_time_ts;
+	struct timespec write_time_ts;
+        struct timespec access_time_ts;
+        struct timespec change_time_ts;
 	SMB_OFF_T size = 0;
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
@@ -2097,7 +2105,11 @@ smbc_stat_ctx(SMBCCTX *context,
 	}
 
 	if (!smbc_getatr(context, srv, path, &mode, &size, 
-			 &c_time_ts, &a_time_ts, &m_time_ts, &ino)) {
+			 NULL,
+                         &access_time_ts,
+                         &write_time_ts,
+                         &change_time_ts,
+                         &ino)) {
 
 		errno = smbc_errno(context, srv->cli);
 		return -1;
@@ -2108,9 +2120,9 @@ smbc_stat_ctx(SMBCCTX *context,
 
 	smbc_setup_stat(context, st, path, size, mode);
 
-	set_atimespec(st, a_time_ts);
-	set_ctimespec(st, c_time_ts);
-	set_mtimespec(st, m_time_ts);
+	set_atimespec(st, access_time_ts);
+	set_ctimespec(st, change_time_ts);
+	set_mtimespec(st, write_time_ts);
 	st->st_dev   = srv->dev;
 
 	return 0;
@@ -2126,9 +2138,9 @@ smbc_fstat_ctx(SMBCCTX *context,
                SMBCFILE *file,
                struct stat *st)
 {
-	struct timespec c_time_ts;
-        struct timespec a_time_ts;
-        struct timespec m_time_ts;
+	struct timespec change_time_ts;
+        struct timespec access_time_ts;
+        struct timespec write_time_ts;
 	SMB_OFF_T size;
 	uint16 mode;
 	fstring server;
@@ -2184,26 +2196,33 @@ smbc_fstat_ctx(SMBCCTX *context,
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
 
 	if (!cli_qfileinfo(targetcli, file->cli_fd, &mode, &size,
-                           NULL, &a_time_ts, &m_time_ts, &c_time_ts, &ino)) {
-		time_t c_time, a_time, m_time;
+                           NULL,
+                           &access_time_ts,
+                           &write_time_ts,
+                           &change_time_ts,
+                           &ino)) {
+
+		time_t change_time, access_time, write_time;
+
 		if (!cli_getattrE(targetcli, file->cli_fd, &mode, &size,
-				&c_time, &a_time, &m_time)) {
+				&change_time, &access_time, &write_time)) {
 
 			errno = EINVAL;
 			return -1;
 		}
-		c_time_ts = convert_time_t_to_timespec(c_time);
-		a_time_ts = convert_time_t_to_timespec(a_time);
-		m_time_ts = convert_time_t_to_timespec(m_time);
+
+		change_time_ts = convert_time_t_to_timespec(change_time);
+		access_time_ts = convert_time_t_to_timespec(access_time);
+		write_time_ts = convert_time_t_to_timespec(write_time);
 	}
 
 	st->st_ino = ino;
 
 	smbc_setup_stat(context, st, file->fname, size, mode);
 
-	set_atimespec(st, a_time_ts);
-	set_ctimespec(st, c_time_ts);
-	set_mtimespec(st, m_time_ts);
+	set_atimespec(st, access_time_ts);
+	set_ctimespec(st, change_time_ts);
+	set_mtimespec(st, write_time_ts);
 	st->st_dev = file->srv->dev;
 
 	return 0;
@@ -2902,7 +2921,7 @@ smbc_opendir_ctx(SMBCCTX *context,
 
                                     if (smbc_getatr(context, srv, path,
                                                     &mode, NULL,
-                                                    NULL, NULL, NULL,
+                                                    NULL, NULL, NULL, NULL,
                                                     NULL) &&
                                         ! IS_DOS_DIR(mode)) {
 
@@ -3592,8 +3611,8 @@ smbc_utimes_ctx(SMBCCTX *context,
         fstring password;
         fstring workgroup;
 	pstring path;
-        time_t a_time;
-        time_t m_time;
+        time_t access_time;
+        time_t write_time;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -3611,10 +3630,10 @@ smbc_utimes_ctx(SMBCCTX *context,
 	}
   
         if (tbuf == NULL) {
-                a_time = m_time = time(NULL);
+                access_time = write_time = time(NULL);
         } else {
-                a_time = tbuf[0].tv_sec;
-                m_time = tbuf[1].tv_sec;
+                access_time = tbuf[0].tv_sec;
+                write_time = tbuf[1].tv_sec;
         }
 
         if (DEBUGLVL(4)) 
@@ -3623,13 +3642,13 @@ smbc_utimes_ctx(SMBCCTX *context,
                 char atimebuf[32];
                 char mtimebuf[32];
 
-                strncpy(atimebuf, ctime(&a_time), sizeof(atimebuf) - 1);
+                strncpy(atimebuf, ctime(&access_time), sizeof(atimebuf) - 1);
                 atimebuf[sizeof(atimebuf) - 1] = '\0';
                 if ((p = strchr(atimebuf, '\n')) != NULL) {
                         *p = '\0';
                 }
 
-                strncpy(mtimebuf, ctime(&m_time), sizeof(mtimebuf) - 1);
+                strncpy(mtimebuf, ctime(&write_time), sizeof(mtimebuf) - 1);
                 mtimebuf[sizeof(mtimebuf) - 1] = '\0';
                 if ((p = strchr(mtimebuf, '\n')) != NULL) {
                         *p = '\0';
@@ -3660,7 +3679,8 @@ smbc_utimes_ctx(SMBCCTX *context,
 		return -1;      /* errno set by smbc_server */
 	}
 
-        if (!smbc_setatr(context, srv, path, 0, a_time, m_time, 0)) {
+        if (!smbc_setatr(context, srv, path,
+                         0, access_time, write_time, 0, 0)) {
                 return -1;      /* errno set by smbc_setatr */
         }
 
@@ -4085,7 +4105,10 @@ dos_attr_query(SMBCCTX *context,
                const char *filename,
                SMBCSRV *srv)
 {
-	struct timespec m_time_ts, a_time_ts, c_time_ts;
+        struct timespec create_time_ts;
+        struct timespec write_time_ts;
+        struct timespec access_time_ts;
+        struct timespec change_time_ts;
         SMB_OFF_T size = 0;
         uint16 mode = 0;
 	SMB_INO_T inode = 0;
@@ -4100,7 +4123,11 @@ dos_attr_query(SMBCCTX *context,
         /* Obtain the DOS attributes */
         if (!smbc_getatr(context, srv, CONST_DISCARD(char *, filename),
                          &mode, &size, 
-                         &c_time_ts, &a_time_ts, &m_time_ts, &inode)) {
+                         &create_time_ts,
+                         &access_time_ts,
+                         &write_time_ts,
+                         &change_time_ts, 
+                         &inode)) {
         
                 errno = smbc_errno(context, srv->cli);
                 DEBUG(5, ("dos_attr_query Failed to query old attributes\n"));
@@ -4110,9 +4137,10 @@ dos_attr_query(SMBCCTX *context,
                 
         ret->mode = mode;
         ret->size = size;
-        ret->a_time = convert_timespec_to_time_t(a_time_ts);
-        ret->c_time = convert_timespec_to_time_t(c_time_ts);
-        ret->m_time = convert_timespec_to_time_t(m_time_ts);
+        ret->create_time = convert_timespec_to_time_t(create_time_ts);
+        ret->access_time = convert_timespec_to_time_t(access_time_ts);
+        ret->write_time = convert_timespec_to_time_t(write_time_ts);
+        ret->change_time = convert_timespec_to_time_t(change_time_ts);
         ret->inode = inode;
 
         return ret;
@@ -4126,8 +4154,40 @@ dos_attr_parse(SMBCCTX *context,
                SMBCSRV *srv,
                char *str)
 {
-	const char *p = str;
+        int n;
+        const char *p = str;
 	fstring tok;
+        struct {
+                const char * create_time_attr;
+                const char * access_time_attr;
+                const char * write_time_attr;
+                const char * change_time_attr;
+        } attr_strings;
+
+        /* Determine whether to use old-style or new-style attribute names */
+        if (context->internal->_full_time_names) {
+                /* new-style names */
+                attr_strings.create_time_attr = "CREATE_TIME";
+                attr_strings.access_time_attr = "ACCESS_TIME";
+                attr_strings.write_time_attr = "WRITE_TIME";
+                attr_strings.change_time_attr = "CHANGE_TIME";
+        } else {
+                /* old-style names */
+                attr_strings.create_time_attr = NULL;
+                attr_strings.access_time_attr = "A_TIME";
+                attr_strings.write_time_attr = "M_TIME";
+                attr_strings.change_time_attr = "C_TIME";
+        }
+
+        /* if this is to set the entire ACL... */
+        if (*str == '*') {
+                /* ... then increment past the first colon if there is one */
+                if ((p = strchr(str, ':')) != NULL) {
+                        ++p;
+                } else {
+                        p = str;
+                }
+        }
 
 	while (next_token(&p, tok, "\t,\r\n", sizeof(tok))) {
 
@@ -4141,18 +4201,28 @@ dos_attr_parse(SMBCCTX *context,
 			continue;
 		}
 
-		if (StrnCaseCmp(tok, "A_TIME:", 7) == 0) {
-                        dad->a_time = (time_t)strtol(tok+7, NULL, 10);
+                n = strlen(attr_strings.access_time_attr);
+                if (StrnCaseCmp(tok, attr_strings.access_time_attr, n) == 0) {
+                        dad->access_time = (time_t)strtol(tok+n+1, NULL, 10);
 			continue;
 		}
 
-		if (StrnCaseCmp(tok, "C_TIME:", 7) == 0) {
-                        dad->c_time = (time_t)strtol(tok+7, NULL, 10);
+                n = strlen(attr_strings.change_time_attr);
+                if (StrnCaseCmp(tok, attr_strings.change_time_attr, n) == 0) {
+                        dad->change_time = (time_t)strtol(tok+n+1, NULL, 10);
 			continue;
 		}
 
-		if (StrnCaseCmp(tok, "M_TIME:", 7) == 0) {
-                        dad->m_time = (time_t)strtol(tok+7, NULL, 10);
+                n = strlen(attr_strings.write_time_attr);
+                if (StrnCaseCmp(tok, attr_strings.write_time_attr, n) == 0) {
+                        dad->write_time = (time_t)strtol(tok+n+1, NULL, 10);
+			continue;
+		}
+
+                n = strlen(attr_strings.create_time_attr);
+                if (attr_strings.create_time_attr != NULL &&
+                    StrnCaseCmp(tok, attr_strings.create_time_attr, n) == 0) {
+                        dad->create_time = (time_t)strtol(tok+n+1, NULL, 10);
 			continue;
 		}
 
@@ -4193,9 +4263,10 @@ cacl_get(SMBCCTX *context,
         BOOL exclude_nt_acl = False;
         BOOL exclude_dos_mode = False;
         BOOL exclude_dos_size = False;
-        BOOL exclude_dos_ctime = False;
-        BOOL exclude_dos_atime = False;
-        BOOL exclude_dos_mtime = False;
+        BOOL exclude_dos_create_time = False;
+        BOOL exclude_dos_access_time = False;
+        BOOL exclude_dos_write_time = False;
+        BOOL exclude_dos_change_time = False;
         BOOL exclude_dos_inode = False;
         BOOL numeric = True;
         BOOL determine_size = (bufsize == 0);
@@ -4206,12 +4277,55 @@ cacl_get(SMBCCTX *context,
         char *name;
         char *pExclude;
         char *p;
-	struct timespec m_time_ts, a_time_ts, c_time_ts;
-	time_t m_time = (time_t)0, a_time = (time_t)0, c_time = (time_t)0;
+        struct timespec create_time_ts;
+	struct timespec write_time_ts;
+        struct timespec access_time_ts;
+        struct timespec change_time_ts;
+	time_t create_time = (time_t)0;
+	time_t write_time = (time_t)0;
+        time_t access_time = (time_t)0;
+        time_t change_time = (time_t)0;
 	SMB_OFF_T size = 0;
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
         struct cli_state *cli = srv->cli;
+        struct {
+                const char * create_time_attr;
+                const char * access_time_attr;
+                const char * write_time_attr;
+                const char * change_time_attr;
+        } attr_strings;
+        struct {
+                const char * create_time_attr;
+                const char * access_time_attr;
+                const char * write_time_attr;
+                const char * change_time_attr;
+        } excl_attr_strings;
+
+        /* Determine whether to use old-style or new-style attribute names */
+        if (context->internal->_full_time_names) {
+                /* new-style names */
+                attr_strings.create_time_attr = "CREATE_TIME";
+                attr_strings.access_time_attr = "ACCESS_TIME";
+                attr_strings.write_time_attr = "WRITE_TIME";
+                attr_strings.change_time_attr = "CHANGE_TIME";
+
+                excl_attr_strings.create_time_attr = "CREATE_TIME";
+                excl_attr_strings.access_time_attr = "ACCESS_TIME";
+                excl_attr_strings.write_time_attr = "WRITE_TIME";
+                excl_attr_strings.change_time_attr = "CHANGE_TIME";
+        } else {
+                /* old-style names */
+                attr_strings.create_time_attr = NULL;
+                attr_strings.access_time_attr = "A_TIME";
+                attr_strings.write_time_attr = "M_TIME";
+                attr_strings.change_time_attr = "C_TIME";
+
+                excl_attr_strings.create_time_attr = NULL;
+                excl_attr_strings.access_time_attr = "dos_attr.A_TIME";
+                excl_attr_strings.write_time_attr = "dos_attr.M_TIME";
+                excl_attr_strings.change_time_attr = "dos_attr.C_TIME";
+        }
 
         /* Copy name so we can strip off exclusions (if any are specified) */
         strncpy(name_sandbox, attr_name, sizeof(name_sandbox) - 1);
@@ -4269,14 +4383,22 @@ cacl_get(SMBCCTX *context,
                 else if (StrCaseCmp(pExclude, "dos_attr.size") == 0) {
                     exclude_dos_size = True;
                 }
-                else if (StrCaseCmp(pExclude, "dos_attr.c_time") == 0) {
-                    exclude_dos_ctime = True;
+                else if (excl_attr_strings.create_time_attr != NULL &&
+                         StrCaseCmp(pExclude,
+                                    excl_attr_strings.change_time_attr) == 0) {
+                    exclude_dos_create_time = True;
                 }
-                else if (StrCaseCmp(pExclude, "dos_attr.a_time") == 0) {
-                    exclude_dos_atime = True;
+                else if (StrCaseCmp(pExclude,
+                                    excl_attr_strings.access_time_attr) == 0) {
+                    exclude_dos_access_time = True;
                 }
-                else if (StrCaseCmp(pExclude, "dos_attr.m_time") == 0) {
-                    exclude_dos_mtime = True;
+                else if (StrCaseCmp(pExclude,
+                                    excl_attr_strings.write_time_attr) == 0) {
+                    exclude_dos_write_time = True;
+                }
+                else if (StrCaseCmp(pExclude,
+                                    excl_attr_strings.change_time_attr) == 0) {
+                    exclude_dos_change_time = True;
                 }
                 else if (StrCaseCmp(pExclude, "dos_attr.inode") == 0) {
                     exclude_dos_inode = True;
@@ -4554,15 +4676,21 @@ cacl_get(SMBCCTX *context,
 
                 /* Obtain the DOS attributes */
                 if (!smbc_getatr(context, srv, filename, &mode, &size, 
-                                 &c_time_ts, &a_time_ts, &m_time_ts, &ino)) {
+                                 &create_time_ts,
+                                 &access_time_ts,
+                                 &write_time_ts,
+                                 &change_time_ts,
+                                 &ino)) {
                         
                         errno = smbc_errno(context, srv->cli);
                         return -1;
                         
                 }
-                c_time = convert_timespec_to_time_t(c_time_ts);
-                a_time = convert_timespec_to_time_t(a_time_ts);
-                m_time = convert_timespec_to_time_t(m_time_ts);
+
+                create_time = convert_timespec_to_time_t(create_time_ts);
+                access_time = convert_timespec_to_time_t(access_time_ts);
+                write_time = convert_timespec_to_time_t(write_time_ts);
+                change_time = convert_timespec_to_time_t(change_time_ts);
 
                 if (! exclude_dos_mode) {
                         if (all || all_dos) {
@@ -4655,12 +4783,14 @@ cacl_get(SMBCCTX *context,
                         bufsize -= n;
                 }
 
-                if (! exclude_dos_ctime) {
+                if (! exclude_dos_create_time &&
+                    attr_strings.create_time_attr != NULL) {
                         if (all || all_dos) {
                                 if (determine_size) {
                                         p = talloc_asprintf(ctx,
-                                                            ",C_TIME:%lu",
-                                                            c_time);
+                                                            ",%s:%lu",
+                                                            attr_strings.create_time_attr,
+                                                            create_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -4668,11 +4798,13 @@ cacl_get(SMBCCTX *context,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     ",C_TIME:%lu", c_time);
+                                                     ",%s:%lu",
+                                                     attr_strings.create_time_attr,
+                                                     create_time);
                                 }
-                        } else if (StrCaseCmp(name, "c_time") == 0) {
+                        } else if (StrCaseCmp(name, attr_strings.create_time_attr) == 0) {
                                 if (determine_size) {
-                                        p = talloc_asprintf(ctx, "%lu", c_time);
+                                        p = talloc_asprintf(ctx, "%lu", create_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -4680,7 +4812,7 @@ cacl_get(SMBCCTX *context,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     "%lu", c_time);
+                                                     "%lu", create_time);
                                 }
                         }
         
@@ -4693,12 +4825,13 @@ cacl_get(SMBCCTX *context,
                         bufsize -= n;
                 }
 
-                if (! exclude_dos_atime) {
+                if (! exclude_dos_access_time) {
                         if (all || all_dos) {
                                 if (determine_size) {
                                         p = talloc_asprintf(ctx,
-                                                            ",A_TIME:%lu",
-                                                            a_time);
+                                                            ",%s:%lu",
+                                                            attr_strings.access_time_attr,
+                                                            access_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -4706,11 +4839,13 @@ cacl_get(SMBCCTX *context,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     ",A_TIME:%lu", a_time);
+                                                     ",%s:%lu",
+                                                     attr_strings.access_time_attr,
+                                                     access_time);
                                 }
-                        } else if (StrCaseCmp(name, "a_time") == 0) {
+                        } else if (StrCaseCmp(name, attr_strings.access_time_attr) == 0) {
                                 if (determine_size) {
-                                        p = talloc_asprintf(ctx, "%lu", a_time);
+                                        p = talloc_asprintf(ctx, "%lu", access_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -4718,7 +4853,7 @@ cacl_get(SMBCCTX *context,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     "%lu", a_time);
+                                                     "%lu", access_time);
                                 }
                         }
         
@@ -4731,12 +4866,13 @@ cacl_get(SMBCCTX *context,
                         bufsize -= n;
                 }
 
-                if (! exclude_dos_mtime) {
+                if (! exclude_dos_write_time) {
                         if (all || all_dos) {
                                 if (determine_size) {
                                         p = talloc_asprintf(ctx,
-                                                            ",M_TIME:%lu",
-                                                            m_time);
+                                                            ",%s:%lu",
+                                                            attr_strings.write_time_attr,
+                                                            write_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -4744,11 +4880,13 @@ cacl_get(SMBCCTX *context,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     ",M_TIME:%lu", m_time);
+                                                     ",%s:%lu",
+                                                     attr_strings.write_time_attr,
+                                                     write_time);
                                 }
-                        } else if (StrCaseCmp(name, "m_time") == 0) {
+                        } else if (StrCaseCmp(name, attr_strings.write_time_attr) == 0) {
                                 if (determine_size) {
-                                        p = talloc_asprintf(ctx, "%lu", m_time);
+                                        p = talloc_asprintf(ctx, "%lu", write_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -4756,7 +4894,48 @@ cacl_get(SMBCCTX *context,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     "%lu", m_time);
+                                                     "%lu", write_time);
+                                }
+                        }
+        
+                        if (!determine_size && n > bufsize) {
+                                errno = ERANGE;
+                                return -1;
+                        }
+                        buf += n;
+                        n_used += n;
+                        bufsize -= n;
+                }
+
+                if (! exclude_dos_change_time) {
+                        if (all || all_dos) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx,
+                                                            ",%s:%lu",
+                                                            attr_strings.change_time_attr,
+                                                            change_time);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     ",%s:%lu",
+                                                     attr_strings.change_time_attr,
+                                                     change_time);
+                                }
+                        } else if (StrCaseCmp(name, attr_strings.change_time_attr) == 0) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx, "%lu", change_time);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     "%lu", change_time);
                                 }
                         }
         
@@ -5046,6 +5225,12 @@ smbc_setxattr_ctx(SMBCCTX *context,
         TALLOC_CTX *ctx;
         POLICY_HND pol;
         DOS_ATTR_DESC *dad;
+        struct {
+                const char * create_time_attr;
+                const char * access_time_attr;
+                const char * write_time_attr;
+                const char * change_time_attr;
+        } attr_strings;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -5135,9 +5320,10 @@ smbc_setxattr_ctx(SMBCCTX *context,
 
                         /* Set the new DOS attributes */
                         if (! smbc_setatr(context, srv, path,
-                                          dad->c_time,
-                                          dad->a_time,
-                                          dad->m_time,
+                                          dad->create_time,
+                                          dad->access_time,
+                                          dad->write_time,
+                                          dad->change_time,
                                           dad->mode)) {
 
                                 /* cause failure if NT failed too */
@@ -5245,14 +5431,31 @@ smbc_setxattr_ctx(SMBCCTX *context,
                 return ret;
         }
 
+        /* Determine whether to use old-style or new-style attribute names */
+        if (context->internal->_full_time_names) {
+                /* new-style names */
+                attr_strings.create_time_attr = "system.dos_attr.CREATE_TIME";
+                attr_strings.access_time_attr = "system.dos_attr.ACCESS_TIME";
+                attr_strings.write_time_attr = "system.dos_attr.WRITE_TIME";
+                attr_strings.change_time_attr = "system.dos_attr.CHANGE_TIME";
+        } else {
+                /* old-style names */
+                attr_strings.create_time_attr = NULL;
+                attr_strings.access_time_attr = "system.dos_attr.A_TIME";
+                attr_strings.write_time_attr = "system.dos_attr.M_TIME";
+                attr_strings.change_time_attr = "system.dos_attr.C_TIME";
+        }
+
         /*
          * Are they asking to set a DOS attribute?
          */
         if (StrCaseCmp(name, "system.dos_attr.*") == 0 ||
             StrCaseCmp(name, "system.dos_attr.mode") == 0 ||
-            StrCaseCmp(name, "system.dos_attr.c_time") == 0 ||
-            StrCaseCmp(name, "system.dos_attr.a_time") == 0 ||
-            StrCaseCmp(name, "system.dos_attr.m_time") == 0) {
+            (attr_strings.create_time_attr != NULL &&
+             StrCaseCmp(name, attr_strings.create_time_attr) == 0) ||
+            StrCaseCmp(name, attr_strings.access_time_attr) == 0 ||
+            StrCaseCmp(name, attr_strings.write_time_attr) == 0 ||
+            StrCaseCmp(name, attr_strings.change_time_attr) == 0) {
 
                 /* get a DOS Attribute Descriptor with current attributes */
                 dad = dos_attr_query(context, ctx, path, srv);
@@ -5269,9 +5472,10 @@ smbc_setxattr_ctx(SMBCCTX *context,
 
                                 /* Set the new DOS attributes */
                                 ret2 = smbc_setatr(context, srv, path,
-                                                   dad->c_time,
-                                                   dad->a_time,
-                                                   dad->m_time,
+                                                   dad->create_time,
+                                                   dad->access_time,
+                                                   dad->write_time,
+                                                   dad->change_time,
                                                    dad->mode);
 
                                 /* ret2 has True (success) / False (failure) */
@@ -5313,6 +5517,12 @@ smbc_getxattr_ctx(SMBCCTX *context,
         pstring path;
         TALLOC_CTX *ctx;
         POLICY_HND pol;
+        struct {
+                const char * create_time_attr;
+                const char * access_time_attr;
+                const char * write_time_attr;
+                const char * change_time_attr;
+        } attr_strings;
 
 
         if (!context || !context->internal ||
@@ -5369,6 +5579,21 @@ smbc_getxattr_ctx(SMBCCTX *context,
                 return -1;
         }
 
+        /* Determine whether to use old-style or new-style attribute names */
+        if (context->internal->_full_time_names) {
+                /* new-style names */
+                attr_strings.create_time_attr = "system.dos_attr.CREATE_TIME";
+                attr_strings.access_time_attr = "system.dos_attr.ACCESS_TIME";
+                attr_strings.write_time_attr = "system.dos_attr.WRITE_TIME";
+                attr_strings.change_time_attr = "system.dos_attr.CHANGE_TIME";
+        } else {
+                /* old-style names */
+                attr_strings.create_time_attr = NULL;
+                attr_strings.access_time_attr = "system.dos_attr.A_TIME";
+                attr_strings.write_time_attr = "system.dos_attr.M_TIME";
+                attr_strings.change_time_attr = "system.dos_attr.C_TIME";
+        }
+
         /* Are they requesting a supported attribute? */
         if (StrCaseCmp(name, "system.*") == 0 ||
             StrnCaseCmp(name, "system.*!", 9) == 0 ||
@@ -5389,9 +5614,11 @@ smbc_getxattr_ctx(SMBCCTX *context,
             StrnCaseCmp(name, "system.dos_attr.*!", 18) == 0 ||
             StrCaseCmp(name, "system.dos_attr.mode") == 0 ||
             StrCaseCmp(name, "system.dos_attr.size") == 0 ||
-            StrCaseCmp(name, "system.dos_attr.c_time") == 0 ||
-            StrCaseCmp(name, "system.dos_attr.a_time") == 0 ||
-            StrCaseCmp(name, "system.dos_attr.m_time") == 0 ||
+            (attr_strings.create_time_attr != NULL &&
+             StrCaseCmp(name, attr_strings.create_time_attr) == 0) ||
+            StrCaseCmp(name, attr_strings.access_time_attr) == 0 ||
+            StrCaseCmp(name, attr_strings.write_time_attr) == 0 ||
+            StrCaseCmp(name, attr_strings.change_time_attr) == 0 ||
             StrCaseCmp(name, "system.dos_attr.inode") == 0) {
 
                 /* Yup. */
@@ -5536,7 +5763,7 @@ smbc_listxattr_ctx(SMBCCTX *context,
          * the complete set of attribute names, always, rather than only those
          * attribute names which actually exist for a file.  Hmmm...
          */
-        const char supported[] =
+        const char supported_old[] =
                 "system.*\0"
                 "system.*+\0"
                 "system.nt_sec_desc.revision\0"
@@ -5555,6 +5782,33 @@ smbc_listxattr_ctx(SMBCCTX *context,
                 "system.dos_attr.a_time\0"
                 "system.dos_attr.m_time\0"
                 ;
+        const char supported_new[] =
+                "system.*\0"
+                "system.*+\0"
+                "system.nt_sec_desc.revision\0"
+                "system.nt_sec_desc.owner\0"
+                "system.nt_sec_desc.owner+\0"
+                "system.nt_sec_desc.group\0"
+                "system.nt_sec_desc.group+\0"
+                "system.nt_sec_desc.acl.*\0"
+                "system.nt_sec_desc.acl\0"
+                "system.nt_sec_desc.acl+\0"
+                "system.nt_sec_desc.*\0"
+                "system.nt_sec_desc.*+\0"
+                "system.dos_attr.*\0"
+                "system.dos_attr.mode\0"
+                "system.dos_attr.create_time\0"
+                "system.dos_attr.access_time\0"
+                "system.dos_attr.write_time\0"
+                "system.dos_attr.change_time\0"
+                ;
+        const char * supported;
+
+        if (context->internal->_full_time_names) {
+                supported = supported_new;
+        } else {
+                supported = supported_old;
+        }
 
         if (size == 0) {
                 return sizeof(supported);
@@ -6029,24 +6283,17 @@ smbc_option_set(SMBCCTX *context,
                 option_value.b = (BOOL) va_arg(ap, int);
                 context->internal->_debug_stderr = option_value.b;
 
-        } else if (strcmp(option_name, "debug_to_stderr") == 0) {
+        } else if (strcmp(option_name, "full_time_names") == 0) {
                 /*
-                 * Log to standard error instead of standard output.
-                 *
-                 * This function used to take a third parameter,
-                 * void *option_value.  Since it was a void* and we needed to
-                 * pass a boolean, a boolean value was cast to void* to be
-                 * passed in.  Now that we're using a va_list to retrieve the
-                 * parameters, the casting kludge is unnecessary.
-                 *
-                 * WARNING: DO NOT USE THIS OPTION.
-                 * This option is retained for backward compatibility.  New
-                 * applications should use "debug_to_stderr" and properly pass
-                 * in a boolean (int) value.
+                 * Use new-style time attribute names, e.g. WRITE_TIME rather
+                 * than the old-style names such as M_TIME.  This allows also
+                 * setting/getting CREATE_TIME which was previously
+                 * unimplemented.  (Note that the old C_TIME was supposed to
+                 * be CHANGE_TIME but was confused and sometimes referred to
+                 * CREATE_TIME.)
                  */
-                option_value.v = va_arg(ap, void *);
-                context->internal->_debug_stderr =
-                        (option_value.v == NULL ? False : True);
+                option_value.b = (BOOL) va_arg(ap, int);
+                context->internal->_full_time_names = option_value.b;
 
         } else if (strcmp(option_name, "auth_function") == 0) {
                 /*
@@ -6086,6 +6333,21 @@ smbc_option_get(SMBCCTX *context,
 #else
 		return (void *) context->internal->_debug_stderr;
 #endif
+        } else if (strcmp(option_name, "full_time_names") == 0) {
+                /*
+                 * Use new-style time attribute names, e.g. WRITE_TIME rather
+                 * than the old-style names such as M_TIME.  This allows also
+                 * setting/getting CREATE_TIME which was previously
+                 * unimplemented.  (Note that the old C_TIME was supposed to
+                 * be CHANGE_TIME but was confused and sometimes referred to
+                 * CREATE_TIME.)
+                 */
+#if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
+		return (void *) (intptr_t) context->internal->_full_time_names;
+#else
+		return (void *) context->internal->_full_time_names;
+#endif
+
         } else if (strcmp(option_name, "auth_function") == 0) {
                 /*
                  * Use the new-style authentication function which includes

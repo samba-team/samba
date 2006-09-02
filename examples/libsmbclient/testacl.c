@@ -23,6 +23,7 @@ int main(int argc, const char *argv[])
     int flags;
     int debug = 0;
     int numeric = 0;
+    int full_time_names = 0;
     enum acl_mode mode = SMB_ACL_GET;
     static char *the_acl = NULL;
     int ret;
@@ -41,6 +42,11 @@ int main(int argc, const char *argv[])
             {
                 "debug", 'd', POPT_ARG_INT, &debug,
                 0, "Set debug level (0-100)"
+            },
+            {
+                "full_time_names", 'f', POPT_ARG_NONE, &full_time_names,
+                1,
+                "Use new style xattr names, which include CREATE_TIME"
             },
             {
                 "delete", 'D', POPT_ARG_STRING, NULL,
@@ -133,6 +139,11 @@ int main(int argc, const char *argv[])
         printf("Could not initialize smbc_ library\n");
         return 1;
     }
+
+    if (full_time_names) {
+        SMBCCTX *context = smbc_set_context(NULL);
+        smbc_option_set(context, "full_time_names", 1);
+    }
     
     /* Perform requested action */
     
@@ -143,11 +154,11 @@ int main(int argc, const char *argv[])
         {
             if (numeric)
             {
-                the_acl = "system.nt_sec_desc.*";
+                the_acl = "system.*";
             }
             else
             {
-                the_acl = "system.nt_sec_desc.*+";
+                the_acl = "system.*+";
             }
         }
         ret = smbc_getxattr(path, the_acl, value, sizeof(value));
