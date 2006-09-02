@@ -791,17 +791,22 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	char *saf_servername = saf_fetch( domain->name );
 	int retries;
 
-	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL)
+	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL) {
+		SAFE_FREE(saf_servername);
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* we have to check the server affinity cache here since 
 	   later we selecte a DC based on response time and not preference */
 	   
-	if ( saf_servername ) 
-	{
+	/* Check the negative connection cache
+	   before talking to it. It going down may have
+	   triggered the reconnection. */
+
+	if ( saf_servername && NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, saf_servername))) {
+
 		/* convert an ip address to a name */
-		if ( is_ipaddress( saf_servername ) )
-		{
+		if ( is_ipaddress( saf_servername ) ) {
 			fstring saf_name;
 			struct in_addr ip;
 
@@ -814,9 +819,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 					domain->name, saf_servername,
 					NT_STATUS_UNSUCCESSFUL);
 			}
-		} 
-		else 
-		{
+		} else {
 			fstrcpy( domain->dcname, saf_servername );
 		}
 

@@ -188,6 +188,8 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	DATA_BLOB blob;
 	DATA_BLOB os1, os2, os3;
 	int i1;
+	/* half the time of a regular ldap timeout, not less than 3 seconds. */
+	unsigned int al_secs = MAX(3,lp_ldap_timeout()/2);
 	char *p;
 
 	blob = data_blob(NULL, 8192);
@@ -200,7 +202,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	/* Setup timeout */
 	gotalarm = 0;
 	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
-	alarm(lp_ldap_timeout());
+	alarm(al_secs);
 	/* End setup timeout. */
  
 	ret = read(sock, blob.data, blob.length);
