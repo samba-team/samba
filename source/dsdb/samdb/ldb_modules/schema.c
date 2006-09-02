@@ -35,37 +35,12 @@
 #include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "lib/util/dlinklist.h"
+#include "schema_syntax.h"
 
 /* Syntax-Table
 
    see ldap_server/devdocs/AD-syntaxes.txt
 */
-
-enum schema_internal_syntax {
-	SCHEMA_AS_BOOLEAN,
-	SCHEMA_AS_INTEGER,
-	SCHEMA_AS_OCTET_STRING,
-	SCHEMA_AS_SID,
-	SCHEMA_AS_OID,
-	SCHEMA_AS_ENUMERATION,
-	SCHEMA_AS_NUMERIC_STRING,
-	SCHEMA_AS_PRINTABLE_STRING,
-	SCHEMA_AS_CASE_IGNORE_STRING,
-	SCHEMA_AS_IA5_STRING,
-	SCHEMA_AS_UTC_TIME,
-	SCHEMA_AS_GENERALIZED_TIME,
-	SCHEMA_AS_CASE_SENSITIVE_STRING,
-	SCHEMA_AS_DIRECTORY_STRING,
-	SCHEMA_AS_LARGE_INTEGER,
-	SCHEMA_AS_OBJECT_SECURITY_DESCRIPTOR,
-	SCHEMA_AS_DN,
-	SCHEMA_AS_DN_BINARY,
-	SCHEMA_AS_OR_NAME,
-	SCHEMA_AS_REPLICA_LINK,
-	SCHEMA_AS_PRESENTATION_ADDRESS,
-	SCHEMA_AS_ACCESS_POINT,
-	SCHEMA_AS_DN_STRING
-};
 
 enum schema_class_type {
 	SCHEMA_CT_88		= 0,
@@ -443,8 +418,8 @@ static int schema_init_attrs(struct ldb_module *module, struct schema_private_da
 		}
 
 		/* the following are optional */
-		data->attrs[i]->min = ldb_msg_find_attr_as_int(res->msgs[i], "rangeLower", -1);
-		data->attrs[i]->max = ldb_msg_find_attr_as_int(res->msgs[i], "rangeUpper", -1);
+		data->attrs[i]->min = ldb_msg_find_attr_as_int(res->msgs[i], "rangeLower", INT_MIN);
+		data->attrs[i]->max = ldb_msg_find_attr_as_int(res->msgs[i], "rangeUpper", INT_MAX);
 		data->attrs[i]->systemflag = ldb_msg_find_attr_as_int(res->msgs[i], "systemFlag", 0);
 		data->attrs[i]->searchflag = ldb_msg_find_attr_as_int(res->msgs[i], "searchFlag", 0);
 		data->attrs[i]->isdefunct = ldb_msg_find_attr_as_bool(res->msgs[i], "isDefunct", False);
