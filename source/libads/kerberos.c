@@ -478,6 +478,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	char *fname = NULL;
 	char *file_contents = NULL;
 	size_t flen = 0;
+	size_t ret;
 	char *realm_upper = NULL;
 	int loopcount = 0;
 
@@ -548,13 +549,18 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 		break;
 	}
 
-	if (x_fwrite(file_contents, 1, flen, xfp) != flen) {
+	ret = x_fwrite(file_contents, 1, flen, xfp);
+	if (flen != ret) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: x_fwrite failed,"
+			" returned %u. Errno %s\n", (unsigned int)ret, strerror(errno) ));
 		unlink(fname);
 		x_fclose(xfp);
 		TALLOC_FREE(dname);
 		return False;
 	}
 	if (x_fclose(xfp)==-1) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: x_fclose failed."
+			" Errno %s\n", strerror(errno) ));
 		unlink(fname);
 		TALLOC_FREE(dname);
 		return False;
