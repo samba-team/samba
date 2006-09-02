@@ -559,13 +559,14 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 		TALLOC_FREE(dname);
 		return False;
 	}
-	/* Set the environment variable to this file. */
-	setenv("KRB5_CONFIG", fname, 1);
-	TALLOC_FREE(dname);
 
 	DEBUG(5,("create_local_private_krb5_conf_for_domain: wrote "
 		"file %s with realm %s KDC = %s\n",
 		fname, realm_upper, inet_ntoa(ip) ));
+
+	/* Set the environment variable to this file. */
+	setenv("KRB5_CONFIG", fname, 1);
+	TALLOC_FREE(dname);
 
 	return True;
 }
