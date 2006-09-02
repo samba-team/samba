@@ -494,9 +494,12 @@ static char *get_kdc_ip_string(char *mem_ctx, const char *realm, struct in_addr 
 		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
 			kdc_str, inet_ntoa(ip_srv[i].ip));
 		if (!kdc_str) {
+			SAFE_FREE(ip_srv);
 			return NULL;
 		}
 	}
+
+	SAFE_FREE(ip_srv);
 
 	DEBUG(10,("get_kdc_ip_string: Returning %s\n",
 		kdc_str ));
