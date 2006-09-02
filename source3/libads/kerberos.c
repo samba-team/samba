@@ -505,9 +505,9 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	realm_upper = talloc_strdup(fname, realm);
 	strupper_m(realm_upper);
 
-	file_contents = talloc_asprintf(fname, "[libdefaults]\n\tdefault_realm = %s\n"
+	file_contents = talloc_asprintf(fname, "[libdefaults]\n\tdefault_realm = %s\n\n"
 				"[realms]\n\t%s = {\n"
-				"\t\tkdc = %s\n]\n",
+				"\t\tkdc = %s\n\t}\n",
 				realm_upper, realm_upper, inet_ntoa(ip));
 
 	if (!file_contents) {
