@@ -474,7 +474,7 @@ int kerberos_kinit_password(const char *principal,
 BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *domain, struct in_addr ip)
 {
 	XFILE *xfp = NULL;
-	char *dname = talloc_asprintf(NULL, "%s/smb_krb5", lp_private_dir());
+	char *dname = talloc_asprintf(NULL, "%s/smb_krb5", lp_lockdir());
 	char *fname = NULL;
 	char *file_contents = NULL;
 	size_t flen = 0;

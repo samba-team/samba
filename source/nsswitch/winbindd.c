@@ -963,6 +963,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	if (!directory_exist(lp_lockdir(), NULL)) {
+		mkdir(lp_lockdir(), 0755);
+	}
+
 	/* Setup names. */
 
 	if (!init_names())
