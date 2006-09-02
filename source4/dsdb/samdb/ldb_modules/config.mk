@@ -130,7 +130,7 @@ OBJ_FILES = \
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_schema_init
 OBJ_FILES = \
-		schema.o
+		schema.o schema_syntax.o
 #
 # End MODULE ldb_schema
 ################################################
