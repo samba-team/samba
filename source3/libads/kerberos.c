@@ -552,7 +552,8 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	ret = x_fwrite(file_contents, 1, flen, xfp);
 	if (flen != ret) {
 		DEBUG(0,("create_local_private_krb5_conf_for_domain: x_fwrite failed,"
-			" returned %u. Errno %s\n", (unsigned int)ret, strerror(errno) ));
+			" returned %u (should be %u). Errno %s\n",
+			(unsigned int)ret, (unsigned int)flen, strerror(errno) ));
 		unlink(fname);
 		x_fclose(xfp);
 		TALLOC_FREE(dname);
