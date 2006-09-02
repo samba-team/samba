@@ -465,6 +465,46 @@ int kerberos_kinit_password(const char *principal,
 }
 
 /************************************************************************
+ Create a string list of available kdc's, possibly searching by sitename.
+ Does DNS queries.
+************************************************************************/
+
+static char *get_kdc_ip_string(char *mem_ctx, const char *realm, struct in_addr primary_ip)
+{
+	struct ip_service *ip_srv;
+	int count, i;
+	char *kdc_str = talloc_asprintf(mem_ctx, "\tkdc = %s\n",
+					inet_ntoa(primary_ip));
+
+	if (kdc_str == NULL) {
+		return NULL;
+	}
+
+	if (!NT_STATUS_IS_OK(get_kdc_list(realm, &ip_srv, &count))) {
+		DEBUG(10,("get_kdc_ip_string: get_kdc_list failed. Returning %s\n",
+			kdc_str ));
+		return kdc_str;
+	}
+
+	for (i = 0; i < count; i++) {
+		if (ip_equal(ip_srv[i].ip, primary_ip)) {
+			continue;
+		}
+		/* Append to the string - inefficient but not done often. */
+		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+			kdc_str, inet_ntoa(ip_srv[i].ip));
+		if (!kdc_str) {
+			return NULL;
+		}
+	}
+
+	DEBUG(10,("get_kdc_ip_string: Returning %s\n",
+		kdc_str ));
+
+	return kdc_str;
+}
+
+/************************************************************************
  Create  a specific krb5.conf file in the private directory pointing
  at a specific kdc for a realm. Keyed off domain name. Sets
  KRB5_CONFIG environment variable to point to this file. Must be
@@ -477,6 +517,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	char *dname = talloc_asprintf(NULL, "%s/smb_krb5", lp_lockdir());
 	char *fname = NULL;
 	char *file_contents = NULL;
+	char *kdc_ip_string;
 	size_t flen = 0;
 	size_t ret;
 	char *realm_upper = NULL;
@@ -505,10 +546,16 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	realm_upper = talloc_strdup(fname, realm);
 	strupper_m(realm_upper);
 
+	kdc_ip_string = get_kdc_ip_string(dname, realm, ip);
+	if (!kdc_ip_string) {
+		TALLOC_FREE(dname);
+		return False;
+	}
+		
 	file_contents = talloc_asprintf(fname, "[libdefaults]\n\tdefault_realm = %s\n\n"
 				"[realms]\n\t%s = {\n"
-				"\t\tkdc = %s\n\t}\n",
-				realm_upper, realm_upper, inet_ntoa(ip));
+				"\t\t%s\t}\n",
+				realm_upper, realm_upper, kdc_ip_string);
 
 	if (!file_contents) {
 		TALLOC_FREE(dname);

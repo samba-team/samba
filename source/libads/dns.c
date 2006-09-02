@@ -649,18 +649,20 @@ BOOL stored_sitename_changed(const char *sitename)
  Query with optional sitename.
 ********************************************************************/
 
-NTSTATUS ads_dns_query_dcs_internal(TALLOC_CTX *ctx,
-				const char *domain,
+NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
+				const char *servicename,
+				const char *realm,
 				const char *sitename,
 				struct dns_rr_srv **dclist,
 				int *numdcs )
 {
 	char *name;
 	if (sitename) {
-		name = talloc_asprintf(ctx, "_ldap._tcp.%s._sites.dc._msdcs.%s",
-				sitename, domain );
+		name = talloc_asprintf(ctx, "%s._tcp.%s._sites.dc._msdcs.%s",
+				servicename, sitename, realm );
 	} else {
-		name = talloc_asprintf(ctx, "_ldap._tcp.dc._msdcs.%s", domain );
+		name = talloc_asprintf(ctx, "%s._tcp.dc._msdcs.%s",
+				servicename, realm );
 	}
 	if (!name) {
 		return NT_STATUS_NO_MEMORY;
@@ -673,17 +675,44 @@ NTSTATUS ads_dns_query_dcs_internal(TALLOC_CTX *ctx,
 ********************************************************************/
 
 NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
-			const char *domain,
+			const char *realm,
 			struct dns_rr_srv **dclist,
 			int *numdcs )
 {
 	NTSTATUS status;
 	char *sitename = sitename_fetch();
 
-	status = ads_dns_query_dcs_internal(ctx, domain, sitename, dclist, numdcs);
+	status = ads_dns_query_internal(ctx, "_ldap", realm, sitename,
+					dclist, numdcs);
 	if (sitename && !NT_STATUS_IS_OK(status)) {
 		/* Sitename DNS query may have failed. Try without. */
-		status = ads_dns_query_dcs_internal(ctx, domain, NULL, dclist, numdcs);
+		status = ads_dns_query_internal(ctx, "_ldap", realm, NULL,
+						dclist, numdcs);
+	}
+	SAFE_FREE(sitename);
+	return status;
+}
+
+/********************************************************************
+ Query for AD KDC's. Transparently use sitename.
+ Even if our underlying kerberos libraries are UDP only, this
+ is pretty safe as it's unlikely that a KDC supports TCP and not UDP.
+********************************************************************/
+
+NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
+			const char *realm,
+			struct dns_rr_srv **dclist,
+			int *numdcs )
+{
+	NTSTATUS status;
+	char *sitename = sitename_fetch();
+
+	status = ads_dns_query_internal(ctx, "_kerberos", realm, sitename,
+					dclist, numdcs);
+	if (sitename && !NT_STATUS_IS_OK(status)) {
+		/* Sitename DNS query may have failed. Try without. */
+		status = ads_dns_query_internal(ctx, "_kerberos", realm, NULL,
+						dclist, numdcs);
 	}
 	SAFE_FREE(sitename);
 	return status;
