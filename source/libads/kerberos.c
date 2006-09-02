@@ -474,13 +474,27 @@ int kerberos_kinit_password(const char *principal,
 BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *domain, struct in_addr ip)
 {
 	XFILE *xfp = NULL;
-	char *fname = talloc_asprintf(NULL, "%s/smb_krb5.conf.%s", lp_private_dir(), domain);
+	char *dname = talloc_asprintf(NULL, "%s/smb_krb5", lp_private_dir());
+	char *fname = NULL;
 	char *file_contents = NULL;
 	size_t flen = 0;
 	char *realm_upper = NULL;
 	int loopcount = 0;
 
+	if (!dname) {
+		return False;
+	}
+	if (mkdir(dname, 0700)==-1) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: "
+			"failed to create directory %s. Error was %s\n",
+			dname, strerror(errno) ));
+		TALLOC_FREE(dname);
+		return False;
+	}
+
+	fname = talloc_asprintf(dname, "%s/krb5.conf.%s", dname, domain);
 	if (!fname) {
+		TALLOC_FREE(dname);
 		return False;
 	}
 
@@ -496,7 +510,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 				realm_upper, realm_upper, inet_ntoa(ip));
 
 	if (!file_contents) {
-		TALLOC_FREE(fname);
+		TALLOC_FREE(dname);
 		return False;
 	}
 
@@ -507,14 +521,14 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 
 		xfp = x_fopen(fname, O_CREAT|O_WRONLY, 0600);
 		if (!xfp) {
-			TALLOC_FREE(fname);
+			TALLOC_FREE(dname);
 			return False;
 		}
 		/* Lock the file. */
 		if (!fcntl_lock(xfp->fd, F_SETLKW, 0, 1, F_WRLCK)) {
 			unlink(fname);
 			x_fclose(xfp);
-			TALLOC_FREE(fname);
+			TALLOC_FREE(dname);
 			return False;
 		}
 
@@ -528,7 +542,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 			}
 			unlink(fname);
 			x_fclose(xfp);
-			TALLOC_FREE(fname);
+			TALLOC_FREE(dname);
 			return False;
 		}
 		break;
@@ -537,17 +551,17 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	if (x_fwrite(file_contents, flen, 1, xfp) != flen) {
 		unlink(fname);
 		x_fclose(xfp);
-		TALLOC_FREE(fname);
+		TALLOC_FREE(dname);
 		return False;
 	}
 	if (x_fclose(xfp)==-1) {
 		unlink(fname);
-		TALLOC_FREE(fname);
+		TALLOC_FREE(dname);
 		return False;
 	}
 	/* Set the environment variable to this file. */
 	setenv("KRB5_CONFIG", fname, 1);
-	TALLOC_FREE(fname);
+	TALLOC_FREE(dname);
 
 	DEBUG(5,("create_local_private_krb5_conf_for_domain: wrote "
 		"file %s with realm %s KDC = %s\n",
