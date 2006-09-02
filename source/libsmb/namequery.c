@@ -1197,6 +1197,8 @@ BOOL internal_resolve_name(const char *name, int name_type,
 				SRV record lookup */
 			if (resolve_ads(name, KDC_NAME_TYPE, return_iplist, return_count)) {
 				result = True;
+				/* Ensure we don't namecache this with the KDC port. */
+				name_type = KDC_NAME_TYPE;
 				goto done;
 			}
 		} else if(strequal( tok, "ads")) {
