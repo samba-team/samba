@@ -124,14 +124,19 @@ BOOL ads_sitename_match(ADS_STRUCT *ads)
 {
 	if (ads->config.server_site_name == NULL &&
 	    ads->config.client_site_name == NULL ) {
+		DEBUG(10,("ads_sitename_match: both null\n"));
 		return True;
 	}
 	if (ads->config.server_site_name &&
 	    ads->config.client_site_name &&
 	    strequal(ads->config.server_site_name,
 		     ads->config.client_site_name)) {
+		DEBUG(10,("ads_sitename_match: name %s match\n", ads->config.server_site_name));
 		return True;
 	}
+	DEBUG(10,("ads_sitename_match: no match %s %s\n",
+		ads->config.server_site_name ? ads->config.server_site_name : "NULL",
+		ads->config.client_site_name ? ads->config.client_site_name : "NULL"));
 	return False;
 }
 #endif
@@ -192,8 +197,8 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 			SMB_STRDUP(cldap_reply.server_site_name);
 	}
 	if (*cldap_reply.client_site_name) {
-		ads->config.server_site_name =
-			SMB_STRDUP(cldap_reply.server_site_name);
+		ads->config.client_site_name =
+			SMB_STRDUP(cldap_reply.client_site_name);
 	}
 		
 	ads->server.workgroup          = SMB_STRDUP(cldap_reply.netbios_domain);

@@ -484,6 +484,9 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 		return False;
 	}
 
+	DEBUG(10,("create_local_private_krb5_conf_for_domain: fname = %s, realm = %s, domain = %s\n",
+		fname, realm, domain ));
+
 	realm_upper = talloc_strdup(fname, realm);
 	strupper_m(realm_upper);
 
