@@ -399,7 +399,7 @@ static int ads_user_add(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	char *upn, *userdn;
-	void *res=NULL;
+	LDAPMessage *res=NULL;
 	int rc = -1;
 
 	if (argc < 1) return net_ads_user_usage(argc, argv);
@@ -472,7 +472,7 @@ static int ads_user_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	void *res;
+	LDAPMessage *res;
 	const char *attrs[] = {"memberOf", NULL};
 	char *searchstring=NULL;
 	char **grouplist;
@@ -529,7 +529,7 @@ static int ads_user_delete(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	void *res;
+	LDAPMessage *res;
 	char *userdn;
 
 	if (argc < 1) {
@@ -606,7 +606,7 @@ static int ads_group_add(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	void *res=NULL;
+	LDAPMessage *res=NULL;
 	int rc = -1;
 
 	if (argc < 1) {
@@ -655,7 +655,7 @@ static int ads_group_delete(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	void *res;
+	LDAPMessage *res;
 	char *groupdn;
 
 	if (argc < 1) {
@@ -725,7 +725,7 @@ static int net_ads_status(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	void *res;
+	LDAPMessage *res;
 
 	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
@@ -944,7 +944,7 @@ static ADS_STATUS net_set_machine_spn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s )
 	
 	/* Find our DN */
 	
-	status = ads_find_machine_acct(ads_s, (void **)(void *)&res, machine_name);
+	status = ads_find_machine_acct(ads_s, &res, machine_name);
 	if (!ADS_ERR_OK(status)) 
 		return status;
 		
@@ -1014,7 +1014,7 @@ static ADS_STATUS net_set_machine_upn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s, const 
 	
 	/* Find our DN */
 	
-	status = ads_find_machine_acct(ads_s, (void **)(void *)&res, machine_name);
+	status = ads_find_machine_acct(ads_s, &res, machine_name);
 	if (!ADS_ERR_OK(status)) 
 		return status;
 		
@@ -1118,7 +1118,7 @@ static BOOL net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 		char *upn;
 		int count;
 		
-		status = ads_find_machine_acct(ads, (void **)(void *)&res, machine_name);
+		status = ads_find_machine_acct(ads, &res, machine_name);
 		if (!ADS_ERR_OK(status)) {
 			return False;
 		}
@@ -1566,7 +1566,7 @@ static int net_ads_printer_search(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 
 	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		return -1;
@@ -1599,7 +1599,7 @@ static int net_ads_printer_info(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	const char *servername, *printername;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 
 	if (!ADS_ERR_OK(ads_startup(False, &ads))) {
 		return -1;
@@ -1658,7 +1658,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx = talloc_init("net_ads_printer_publish");
 	ADS_MODLIST mods = ads_init_mods(mem_ctx);
 	char *prt_dn, *srv_dn, **srv_cn;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 
 	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
@@ -1741,7 +1741,7 @@ static int net_ads_printer_remove(int argc, const char **argv)
 	ADS_STATUS rc;
 	const char *servername;
 	char *prt_dn;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 
 	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
 		return -1;
@@ -1949,7 +1949,7 @@ static int net_ads_search(int argc, const char **argv)
 	ADS_STATUS rc;
 	const char *ldap_exp;
 	const char **attrs;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 
 	if (argc < 1) {
 		return net_ads_search_usage(argc, argv);
@@ -2009,7 +2009,7 @@ static int net_ads_dn(int argc, const char **argv)
 	ADS_STATUS rc;
 	const char *dn;
 	const char **attrs;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 
 	if (argc < 1) {
 		return net_ads_dn_usage(argc, argv);
@@ -2068,7 +2068,7 @@ static int net_ads_sid(int argc, const char **argv)
 	ADS_STATUS rc;
 	const char *sid_string;
 	const char **attrs;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	DOM_SID sid;
 
 	if (argc < 1) {

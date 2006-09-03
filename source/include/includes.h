@@ -1084,6 +1084,10 @@ typedef int (*comparison_fn_t)(const void *, const void *);
 #include "proto.h"
 #endif
 
+#ifdef HAVE_ADS
+#include "ads_protos.h"
+#endif
+
 /* We need this after proto.h to reference GetTimeOfDay(). */
 #include "smbprofile.h"
 

@@ -412,7 +412,7 @@ int32 DNSCreateQuestionRecord( char *pszQName, int16 wQType,
 /*********************************************************************
 *********************************************************************/
 
-int32 DNSCreateZoneRecord( char *pszZName, DNS_ZONE_RECORD ** ppDNSZoneRecord )
+int32 DNSCreateZoneRecord( const char *pszZName, DNS_ZONE_RECORD ** ppDNSZoneRecord )
 {
 	int32 dwError = 0;
 	DNS_ZONE_RECORD *pDNSZoneRecord = NULL;

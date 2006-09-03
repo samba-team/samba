@@ -41,7 +41,7 @@
 /*********************************************************************
 *********************************************************************/
 
-static int32 getToken( char *pszString, char *pszToken, int32 * pdwToken, 
+static int32 getToken( const char *pszString, char *pszToken, int32 * pdwToken, 
                        int32 * pdwPosition )
 {
 	int32 dwError = 0;
@@ -167,7 +167,7 @@ void DNSFreeDomainName(DNS_DOMAIN_NAME *pDomainName)
 /*********************************************************************
 *********************************************************************/
 
-static int32 LabelList( char *pszString, int32 * pdwPosition, DNS_DOMAIN_LABEL ** ppList )
+static int32 LabelList( const char *pszString, int32 * pdwPosition, DNS_DOMAIN_LABEL ** ppList )
 {
 	int32 dwError = 0;
 	DNS_DOMAIN_LABEL *pList = NULL;
@@ -358,7 +358,7 @@ int32 DNSGenerateKeyName( char **ppszKeyName )
 /*********************************************************************
 *********************************************************************/
 
-int32 DNSDomainNameFromString( char *pszDomainName,
+int32 DNSDomainNameFromString( const char *pszDomainName,
 			 DNS_DOMAIN_NAME ** ppDomainName )
 {
 	int32 dwError = 0;
