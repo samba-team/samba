@@ -594,7 +594,7 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 	/* For active directory servers, try to get the ldap server name.
 	   None of these failures should be considered critical for now */
 
-	if ( lp_security() == SEC_ADS ) {
+	if (lp_security() == SEC_ADS) {
 		ADS_STRUCT *ads;
 
 		ads = ads_init(realm, domainname, NULL);
@@ -976,10 +976,11 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	TALLOC_CTX              *mem_ctx = NULL;
 	struct rpc_pipe_client  *cli;
 	POLICY_HND pol;
-	
+
 	char *domain_name = NULL;
 	char *dns_name = NULL;
 	DOM_SID *dom_sid = NULL;
+	int try_count = 0;
 
 	ZERO_STRUCT( ctr );
 	
@@ -991,8 +992,10 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 		return;
 	}
 
+  try_again:
+
 	result = init_dc_connection(domain);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(result) || try_count > 2) {
 		DEBUG(5, ("set_dc_type_and_flags: Could not open a connection "
 			  "to %s: (%s)\n", domain->name, nt_errstr(result)));
 		domain->initialized = True;
@@ -1007,7 +1010,9 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 			  "PI_LSARPC_DS on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
 		domain->initialized = True;
-		return;
+		/* We want to detect network failures asap to try another dc. */
+		try_count++;
+		goto try_again;
 	}
 
 	result = rpccli_ds_getprimarydominfo(cli, cli->cli->mem_ctx,
@@ -1028,7 +1033,9 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 
 	if (cli == NULL) {
 		domain->initialized = True;
-		return;
+		/* We want to detect network failures asap to try another dc. */
+		try_count++;
+		goto try_again;
 	}
 
 	mem_ctx = talloc_init("set_dc_type_and_flags on domain %s\n",
