@@ -548,34 +548,54 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 			   const char *path_p, SMB_ACL_TYPE_T type)
 {
+#ifdef ENOTSUP
 	errno = ENOTSUP;
+#else
+	errno = ENOSYS;
+#endif
 	return NULL;
 }
 
 SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
 {
+#ifdef ENOTSUP
 	errno = ENOTSUP;
+#else
+	errno = ENOSYS;
+#endif
 	return NULL;
 }
 
 int sys_acl_set_file(vfs_handle_struct *handle,
 		     const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 {
+#ifdef ENOTSUP
 	errno = ENOTSUP;
+#else
+	errno = ENOSYS;
+#endif
 	return -1;
 }
 
 int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 		   int fd, SMB_ACL_T acl_d)
 {
+#ifdef ENOTSUP
 	errno = ENOTSUP;
+#else
+	errno = ENOSYS;
+#endif
 	return -1;
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
 			    const char *path)
 {
+#ifdef ENOTSUP
 	errno = ENOTSUP;
+#else
+	errno = ENOSYS;
+#endif
 	return -1;
 }
 
