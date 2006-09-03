@@ -286,6 +286,26 @@ again:
 		
 		if ( !NT_STATUS_IS_OK(check_negative_conn_cache(realm, server)) )
 			continue;
+
+		if (!got_realm) {
+			/* realm in this case is a workgroup name. We need
+			   to ignore any IP addresses in the negative connection
+			   cache that match ip addresses returned in the ad realm
+			   case. It sucks that I have to reproduce the logic above... */
+			c_realm = ads->server.realm;
+			if ( !c_realm || !*c_realm ) {
+				if ( !ads->server.workgroup || !*ads->server.workgroup ) {
+					c_realm = lp_realm();
+				}
+			}
+			if (c_realm && *c_realm &&
+					!NT_STATUS_IS_OK(check_negative_conn_cache(c_realm, server))) {
+				/* Ensure we add the workgroup name for this
+				   IP address as negative too. */
+				add_failed_connection_entry( realm, server, NT_STATUS_UNSUCCESSFUL );
+				continue;
+			}
+		}
 			
 		if ( ads_try_connect(ads, server) ) {
 			SAFE_FREE(ip_list);
