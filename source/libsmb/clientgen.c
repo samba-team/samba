@@ -79,6 +79,7 @@ static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 
 BOOL cli_receive_smb(struct cli_state *cli)
 {
+	extern int smb_read_error;
 	BOOL ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
@@ -108,7 +109,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 	/* If the server is not responding, note that now */
 	if (!ret) {
                 DEBUG(0, ("Receiving SMB: Server stopped responding\n"));
-		cli->smb_rw_error = READ_TIMEOUT;
+		cli->smb_rw_error = smb_read_error;
 		close(cli->fd);
 		cli->fd = -1;
 		return ret;
