@@ -1084,7 +1084,7 @@ typedef int (*comparison_fn_t)(const void *, const void *);
 #include "proto.h"
 #endif
 
-#ifdef HAVE_ADS
+#ifdef HAVE_LDAP
 #include "ads_protos.h"
 #endif
 
