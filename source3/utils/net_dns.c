@@ -30,7 +30,7 @@
 /*********************************************************************
 *********************************************************************/
 
-int DoDNSUpdate( char *pszServerName, char *pszDomainName,
+int DoDNSUpdate( char *pszServerName, const char *pszDomainName,
 		 char *pszHostName, struct in_addr *iplist, int num_addrs )
 {
 	int32 dwError = 0;

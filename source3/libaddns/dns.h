@@ -445,7 +445,7 @@ int32 DNSCopyDomainName( uint8 * pBuffer, DNS_DOMAIN_NAME * pDomainName, int32 *
 int32 DNSAllocateString( char *pszInputString, char **ppszOutputString );
 int32 DNSGenerateKeyName( char **pszKeyName ); 
 int32 DNSMakeRRHeader( DNS_RR_HEADER * pDNSRR, char *szOwnerName, int16 wType, int32 dwTTL ); 
-int32 DNSDomainNameFromString( char *pszDomainName, DNS_DOMAIN_NAME ** ppDomainName ); 
+int32 DNSDomainNameFromString( const char *pszDomainName, DNS_DOMAIN_NAME ** ppDomainName ); 
 int32 DNSAppendLabel( DNS_DOMAIN_LABEL * pLabelList, DNS_DOMAIN_LABEL * pLabel, DNS_DOMAIN_LABEL ** ppNewLabelList ); 
 int32 DNSGenerateKeyName( char **ppszKeyName ); 
 void DNSRecordGenerateOffsets( DNS_RR_RECORD * pDNSRecord );
@@ -470,7 +470,7 @@ int32 DNSAddQuestionSection( DNS_REQUEST * pDNSRequest, DNS_QUESTION_RECORD * pD
 int32 DNSAddAdditionalSection( DNS_REQUEST * pDNSRequest, DNS_RR_RECORD * pDNSRecord );
 int32 DNSAddAnswerSection( DNS_REQUEST * pDNSRequest, DNS_RR_RECORD * pDNSRecord );
 int32 DNSAddAuthoritySection( DNS_REQUEST * pDNSRequest, DNS_RR_RECORD * pDNSRecord );
-int32 DNSCreateZoneRecord( char *pszZName, DNS_ZONE_RECORD ** ppDNSZoneRecord );
+int32 DNSCreateZoneRecord( const char *pszZName, DNS_ZONE_RECORD ** ppDNSZoneRecord );
 int32 DNSFreeZoneRecord( DNS_ZONE_RECORD * pDNSZoneRecord );
 int32 DNSCreateNameInUseRecord( char *pszName, int32 qtype, struct in_addr *addr, DNS_RR_RECORD ** ppDNSRRRecord );
 int32 DNSCreateNameNotInUseRecord( char *pszName, int32 qtype, DNS_RR_RECORD ** ppDNSRRRecord );
@@ -545,7 +545,7 @@ int32 DNSNegotiateContextAndSecureUpdate( HANDLE hDNSServer, char *szServiceName
 
 /* from dnsupdate.c */
 
-int32 DNSSendUpdate( HANDLE hDNSServer, char *szDomainName, char *szHost, struct in_addr *iplist, int num_addrs, DNS_UPDATE_RESPONSE ** ppDNSUpdateResponse );
+int32 DNSSendUpdate( HANDLE hDNSServer, const char *szDomainName, char *szHost, struct in_addr *iplist, int num_addrs, DNS_UPDATE_RESPONSE ** ppDNSUpdateResponse );
 int32 DNSBuildSignatureBuffer( int32 dwMaxSignatureSize, uint8 ** ppSignature ); 
 int32 DNSBuildMessageBuffer( DNS_UPDATE_REQUEST * pDNSUpdateRequest, char *szKeyName, int32 * pdwTimeSigned, int16 * pwFudge, uint8 ** ppMessageBuffer, int32 * pdwMessageSize ); 
 int32 DNSClose( HANDLE hDNSUpdate );
