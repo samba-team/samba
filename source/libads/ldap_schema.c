@@ -29,7 +29,7 @@ ADS_STATUS ads_get_attrnames_by_oids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 				     char ***OIDs_out, char ***names, size_t *count)
 {
 	ADS_STATUS status;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	LDAPMessage *msg;
 	char *expr = NULL;
 	const char *attrs[] = { "lDAPDisplayName", "attributeId", NULL };
@@ -111,7 +111,7 @@ const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, const char *schema_path, TA
 {
 	ADS_STATUS rc;
 	int count = 0;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	char *expr = NULL;
 	const char *attrs[] = { "lDAPDisplayName", NULL };
 	char *result;
@@ -155,7 +155,7 @@ failed:
 static ADS_STATUS ads_schema_path(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **schema_path)
 {
 	ADS_STATUS status;
-	void *res;
+	LDAPMessage *res;
 	const char *schema;
 	const char *attrs[] = { "schemaNamingContext", NULL };
 

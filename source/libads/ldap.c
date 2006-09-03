@@ -438,7 +438,8 @@ static struct berval *dup_berval(TALLOC_CTX *ctx, const struct berval *in_val)
 	if (in_val->bv_len == 0) return value;
 
 	value->bv_len = in_val->bv_len;
-	value->bv_val = TALLOC_MEMDUP(ctx, in_val->bv_val, in_val->bv_len);
+	value->bv_val = (char *)TALLOC_MEMDUP(ctx, in_val->bv_val,
+					      in_val->bv_len);
 	return value;
 }
 
@@ -517,10 +518,12 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
  * @param cookie The paged results cookie to be returned on subsequent calls
  * @return status of search
  **/
-ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads, const char *bind_path,
-				    int scope, const char *expr,
-				    const char **attrs, void *args, void **res, 
-				    int *count, void **cookie)
+static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
+					   const char *bind_path,
+					   int scope, const char *expr,
+					   const char **attrs, void *args,
+					   LDAPMessage **res, 
+					   int *count, struct berval **cookie)
 {
 	int rc, i, version;
 	char *utf8_expr, *utf8_path, **search_attrs;
@@ -693,10 +696,10 @@ done:
 	return ADS_ERROR(rc);
 }
 
-ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
-			       int scope, const char *expr,
-			       const char **attrs, void **res, 
-			       int *count, void **cookie)
+static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
+				      int scope, const char *expr,
+				      const char **attrs, LDAPMessage **res, 
+				      int *count, struct berval **cookie)
 {
 	return ads_do_paged_search_args(ads, bind_path, scope, expr, attrs, NULL, res, count, cookie);
 }
@@ -713,11 +716,12 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
  * @param res ** which will contain results - free res* with ads_msgfree()
  * @return status of search
  **/
-ADS_STATUS ads_do_search_all_args(ADS_STRUCT *ads, const char *bind_path,
-				  int scope, const char *expr,
-				  const char **attrs, void *args, void **res)
+ ADS_STATUS ads_do_search_all_args(ADS_STRUCT *ads, const char *bind_path,
+				   int scope, const char *expr,
+				   const char **attrs, void *args,
+				   LDAPMessage **res)
 {
-	void *cookie = NULL;
+	struct berval *cookie = NULL;
 	int count = 0;
 	ADS_STATUS status;
 
@@ -730,7 +734,7 @@ ADS_STATUS ads_do_search_all_args(ADS_STRUCT *ads, const char *bind_path,
 
 #ifdef HAVE_LDAP_ADD_RESULT_ENTRY
 	while (cookie) {
-		void *res2 = NULL;
+		LDAPMessage *res2 = NULL;
 		ADS_STATUS status2;
 		LDAPMessage *msg, *next;
 
@@ -756,9 +760,9 @@ ADS_STATUS ads_do_search_all_args(ADS_STRUCT *ads, const char *bind_path,
 	return status;
 }
 
-ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
-			     int scope, const char *expr,
-			     const char **attrs, void **res)
+ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
+			      int scope, const char *expr,
+			      const char **attrs, LDAPMessage **res)
 {
 	return ads_do_search_all_args(ads, bind_path, scope, expr, attrs, NULL, res);
 }
@@ -780,10 +784,10 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 				BOOL(*fn)(char *, void **, void *), 
 				void *data_area)
 {
-	void *cookie = NULL;
+	struct berval *cookie = NULL;
 	int count = 0;
 	ADS_STATUS status;
-	void *res;
+	LDAPMessage *res;
 
 	status = ads_do_paged_search(ads, bind_path, scope, expr, attrs, &res,
 				     &count, &cookie);
@@ -816,9 +820,9 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  * @param res ** which will contain results - free res* with ads_msgfree()
  * @return status of search
  **/
-ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope, 
-			 const char *expr,
-			 const char **attrs, void **res)
+ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope, 
+			  const char *expr,
+			  const char **attrs, LDAPMessage **res)
 {
 	int rc;
 	char *utf8_expr, *utf8_path, **search_attrs = NULL;
@@ -880,9 +884,8 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
  * @param attrs Attributes to retrieve
  * @return status of search
  **/
-ADS_STATUS ads_search(ADS_STRUCT *ads, void **res, 
-		      const char *expr, 
-		      const char **attrs)
+ ADS_STATUS ads_search(ADS_STRUCT *ads, LDAPMessage **res, 
+		       const char *expr, const char **attrs)
 {
 	return ads_do_search(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE, 
 			     expr, attrs, res);
@@ -896,12 +899,11 @@ ADS_STATUS ads_search(ADS_STRUCT *ads, void **res,
  * @param attrs Attributes to retrieve
  * @return status of search
  **/
-ADS_STATUS ads_search_dn(ADS_STRUCT *ads, void *_res, 
-			 const char *dn, 
-			 const char **attrs)
+ ADS_STATUS ads_search_dn(ADS_STRUCT *ads, LDAPMessage **res, 
+			  const char *dn, const char **attrs)
 {
-	void **res = (void **)_res;
-	return ads_do_search(ads, dn, LDAP_SCOPE_BASE, "(objectclass=*)", attrs, res);
+	return ads_do_search(ads, dn, LDAP_SCOPE_BASE, "(objectclass=*)",
+			     attrs, res);
 }
 
 /**
@@ -909,7 +911,7 @@ ADS_STATUS ads_search_dn(ADS_STRUCT *ads, void *_res,
  * @param ads connection to ads server
  * @param msg Search results to free
  **/
-void ads_msgfree(ADS_STRUCT *ads, void *msg)
+ void ads_msgfree(ADS_STRUCT *ads, LDAPMessage *msg)
 {
 	if (!msg) return;
 	ldap_msgfree(msg);
@@ -931,7 +933,7 @@ void ads_memfree(ADS_STRUCT *ads, void *mem)
  * @param msg Search result
  * @return dn string
  **/
-char *ads_get_dn(ADS_STRUCT *ads, void *msg)
+ char *ads_get_dn(ADS_STRUCT *ads, LDAPMessage *msg)
 {
 	char *utf8_dn, *unix_dn;
 
@@ -957,7 +959,7 @@ char *ads_get_dn(ADS_STRUCT *ads, void *msg)
  * @param msg Search result
  * @return dn string
  **/
-char *ads_get_dn_canonical(ADS_STRUCT *ads, void *msg)
+ char *ads_get_dn_canonical(ADS_STRUCT *ads, LDAPMessage *msg)
 {
 #ifdef HAVE_LDAP_DN2AD_CANONICAL
 	return ldap_dn2ad_canonical(ads_get_dn(ads, msg));
@@ -995,7 +997,8 @@ char *ads_parent_dn(const char *dn)
  * @param host Hostname to search for
  * @return status of search
  **/
-ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *machine)
+ ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, LDAPMessage **res,
+				  const char *machine)
 {
 	ADS_STATUS status;
 	char *expr;
@@ -1271,7 +1274,7 @@ char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit)
 char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 {
 	ADS_STATUS status;
-	void *res;
+	LDAPMessage *res;
 	char *base, *wkn_dn, *ret, **wkn_dn_exp, **bind_dn_exp;
 	const char *attrs[] = {"distinguishedName", NULL};
 	int new_ln, wkn_ln, bind_ln, i;
@@ -1338,7 +1341,8 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 ADS_STATUS ads_add_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 				const char *name, const char **vals)
 {
-	return ads_modlist_add(ctx, mods, LDAP_MOD_ADD, name, (const void **) vals);
+	return ads_modlist_add(ctx, mods, LDAP_MOD_ADD, name,
+			       (const void *) vals);
 }
 
 /**
@@ -1361,7 +1365,7 @@ uint32 ads_get_kvno(ADS_STRUCT *ads, const char *machine_name)
 	if (asprintf(&filter, "(samAccountName=%s$)", machine_name) == -1) {
 		return kvno;
 	}
-	ret = ads_search(ads, (void**)(void *)&res, filter, attrs);
+	ret = ads_search(ads, &res, filter, attrs);
 	SAFE_FREE(filter);
 	if (!ADS_ERR_OK(ret) && ads_count_replies(ads, res)) {
 		DEBUG(1,("ads_get_kvno: Computer Account For %s not found.\n", machine_name));
@@ -1415,7 +1419,7 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 	ADS_STATUS ret = ADS_ERROR(LDAP_SUCCESS);
 	char *dn_string = NULL;
 
-	ret = ads_find_machine_acct(ads, (void **)(void *)&res, machine_name);
+	ret = ads_find_machine_acct(ads, &res, machine_name);
 	if (!ADS_ERR_OK(ret) || ads_count_replies(ads, res) != 1) {
 		DEBUG(5,("ads_clear_service_principal_names: WARNING: Host Account for %s not found... skipping operation.\n", machine_name));
 		DEBUG(5,("ads_clear_service_principal_names: WARNING: Service Principals for %s have NOT been cleared.\n", machine_name));
@@ -1484,7 +1488,7 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	char *dn_string = NULL;
 	const char *servicePrincipalName[3] = {NULL, NULL, NULL};
 
-	ret = ads_find_machine_acct(ads, (void **)(void *)&res, machine_name);
+	ret = ads_find_machine_acct(ads, &res, machine_name);
 	if (!ADS_ERR_OK(ret) || ads_count_replies(ads, res) != 1) {
 		DEBUG(1,("ads_add_service_principal_name: WARNING: Host Account for %s not found... skipping operation.\n",
 			machine_name));
@@ -1751,7 +1755,7 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
  * @param res Results to dump
  **/
 
-void ads_dump(ADS_STRUCT *ads, void *res)
+ void ads_dump(ADS_STRUCT *ads, LDAPMessage *res)
 {
 	ads_process_results(ads, res, ads_dump_field, NULL);
 }
@@ -1767,11 +1771,11 @@ void ads_dump(ADS_STRUCT *ads, void *res)
  * @param fn Function for processing each result
  * @param data_area user-defined area to pass to function
  **/
-void ads_process_results(ADS_STRUCT *ads, void *res,
-			 BOOL(*fn)(char *, void **, void *),
-			 void *data_area)
+ void ads_process_results(ADS_STRUCT *ads, LDAPMessage *res,
+			  BOOL(*fn)(char *, void **, void *),
+			  void *data_area)
 {
-	void *msg;
+	LDAPMessage *msg;
 	TALLOC_CTX *ctx;
 
 	if (!(ctx = talloc_init("ads_process_results")))
@@ -1836,9 +1840,9 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @param res Results of search
  * @return first entry from result
  **/
-void *ads_first_entry(ADS_STRUCT *ads, void *res)
+ LDAPMessage *ads_first_entry(ADS_STRUCT *ads, LDAPMessage *res)
 {
-	return (void *)ldap_first_entry(ads->ld, (LDAPMessage *)res);
+	return ldap_first_entry(ads->ld, res);
 }
 
 /**
@@ -1847,9 +1851,9 @@ void *ads_first_entry(ADS_STRUCT *ads, void *res)
  * @param res Results of search
  * @return next entry from result
  **/
-void *ads_next_entry(ADS_STRUCT *ads, void *res)
+ LDAPMessage *ads_next_entry(ADS_STRUCT *ads, LDAPMessage *res)
 {
-	return (void *)ldap_next_entry(ads->ld, (LDAPMessage *)res);
+	return ldap_next_entry(ads->ld, res);
 }
 
 /**
@@ -1860,8 +1864,8 @@ void *ads_next_entry(ADS_STRUCT *ads, void *res)
  * @param field Attribute to retrieve
  * @return Result string in talloc context
  **/
-char *ads_pull_string(ADS_STRUCT *ads, 
-		      TALLOC_CTX *mem_ctx, void *msg, const char *field)
+ char *ads_pull_string(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, LDAPMessage *msg,
+		       const char *field)
 {
 	char **values;
 	char *ret = NULL;
@@ -1891,9 +1895,9 @@ char *ads_pull_string(ADS_STRUCT *ads,
  * @param field Attribute to retrieve
  * @return Result strings in talloc context
  **/
-char **ads_pull_strings(ADS_STRUCT *ads, 
-			TALLOC_CTX *mem_ctx, void *msg, const char *field,
-			size_t *num_values)
+ char **ads_pull_strings(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+			 LDAPMessage *msg, const char *field,
+			 size_t *num_values)
 {
 	char **values;
 	char **ret = NULL;
@@ -1936,13 +1940,13 @@ char **ads_pull_strings(ADS_STRUCT *ads,
  * @param more_values Are there more values to get?
  * @return Result strings in talloc context
  **/
-char **ads_pull_strings_range(ADS_STRUCT *ads, 
-			      TALLOC_CTX *mem_ctx,
-			      void *msg, const char *field,
-			      char **current_strings,
-			      const char **next_attribute,
-			      size_t *num_strings,
-			      BOOL *more_strings)
+ char **ads_pull_strings_range(ADS_STRUCT *ads, 
+			       TALLOC_CTX *mem_ctx,
+			       LDAPMessage *msg, const char *field,
+			       char **current_strings,
+			       const char **next_attribute,
+			       size_t *num_strings,
+			       BOOL *more_strings)
 {
 	char *attr;
 	char *expected_range_attrib, *range_attr;
@@ -2059,8 +2063,8 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
  * @param v Pointer to int to store result
  * @return boolean inidicating success
 */
-BOOL ads_pull_uint32(ADS_STRUCT *ads, 
-		     void *msg, const char *field, uint32 *v)
+ BOOL ads_pull_uint32(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
+		      uint32 *v)
 {
 	char **values;
 
@@ -2084,8 +2088,7 @@ BOOL ads_pull_uint32(ADS_STRUCT *ads,
  * @param guid 37-byte area to receive text guid
  * @return boolean indicating success
  **/
-BOOL ads_pull_guid(ADS_STRUCT *ads,
-		   void *msg, struct uuid *guid)
+ BOOL ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct uuid *guid)
 {
 	char **values;
 	UUID_FLAT flat_guid;
@@ -2114,8 +2117,8 @@ BOOL ads_pull_guid(ADS_STRUCT *ads,
  * @param sid Pointer to sid to store result
  * @return boolean inidicating success
 */
-BOOL ads_pull_sid(ADS_STRUCT *ads, 
-		  void *msg, const char *field, DOM_SID *sid)
+ BOOL ads_pull_sid(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
+		   DOM_SID *sid)
 {
 	struct berval **values;
 	BOOL ret = False;
@@ -2141,8 +2144,8 @@ BOOL ads_pull_sid(ADS_STRUCT *ads,
  * @param sids pointer to sid array to allocate
  * @return the count of SIDs pulled
  **/
-int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
-		  void *msg, const char *field, DOM_SID **sids)
+ int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+		   LDAPMessage *msg, const char *field, DOM_SID **sids)
 {
 	struct berval **values;
 	BOOL ret;
@@ -2185,8 +2188,8 @@ int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
  * @param sd Pointer to *SEC_DESC to store result (talloc()ed)
  * @return boolean inidicating success
 */
-BOOL ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
-		  void *msg, const char *field, SEC_DESC **sd)
+ BOOL ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+		  LDAPMessage *msg, const char *field, SEC_DESC **sd)
 {
 	struct berval **values;
 	prs_struct      ps;
@@ -2218,7 +2221,8 @@ BOOL ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
  * @param msg Results of search
  * @return the username
  */
-char *ads_pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, void *msg)
+ char *ads_pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+			 LDAPMessage *msg)
 {
 #if 0	/* JERRY */
 	char *ret, *p;
@@ -2248,7 +2252,7 @@ ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
 {
 	const char *attrs[] = {"highestCommittedUSN", NULL};
 	ADS_STATUS status;
-	void *res;
+	LDAPMessage *res;
 
 	status = ads_do_search_retry(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
 	if (!ADS_ERR_OK(status)) 
@@ -2290,7 +2294,7 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 {
 	const char *attrs[] = {"currentTime", NULL};
 	ADS_STATUS status;
-	void *res;
+	LDAPMessage *res;
 	char *timestr;
 	TALLOC_CTX *ctx;
 	ADS_STRUCT *ads_s = ads;
@@ -2355,7 +2359,7 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32 *val)
 {
 	const char *attrs[] = {"domainFunctionality", NULL};
 	ADS_STATUS status;
-	void *res;
+	LDAPMessage *res;
 	ADS_STRUCT *ads_s = ads;
 	
 	*val = DS_DOMAIN_FUNCTION_2000;
@@ -2411,7 +2415,7 @@ done:
 ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid)
 {
 	const char *attrs[] = {"objectSid", NULL};
-	void *res;
+	LDAPMessage *res;
 	ADS_STATUS rc;
 
 	rc = ads_do_search_retry(ads, ads->config.bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
@@ -2436,7 +2440,7 @@ ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid)
 ADS_STATUS ads_site_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char **site_name)
 {
 	ADS_STATUS status;
-	void *res;
+	LDAPMessage *res;
 	const char *dn, *service_name;
 	const char *attrs[] = { "dsServiceName", NULL };
 
@@ -2480,7 +2484,7 @@ ADS_STATUS ads_site_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char **site_n
 ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *computer_name, const char **site_dn)
 {
 	ADS_STATUS status;
-	void *res;
+	LDAPMessage *res;
 	const char *parent, *config_context, *filter;
 	const char *attrs[] = { "configurationNamingContext", NULL };
 	char *dn;
@@ -2549,7 +2553,7 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
 ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **suffixes, size_t *num_suffixes)
 {
 	ADS_STATUS status;
-	void *res;
+	LDAPMessage *res;
 	const char *config_context, *base;
 	const char *attrs[] = { "configurationNamingContext", NULL };
 	const char *attrs2[] = { "uPNSuffixes", NULL };
@@ -2578,7 +2582,7 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **suffixe
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
-	suffixes = ads_pull_strings(ads, mem_ctx, &res, "uPNSuffixes", num_suffixes);
+	suffixes = ads_pull_strings(ads, mem_ctx, res, "uPNSuffixes", num_suffixes);
 	if (suffixes == NULL) {
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -2675,12 +2679,12 @@ BOOL ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
  * @param sids pointer to sid array to allocate
  * @return the count of SIDs pulled
  **/
-int ads_pull_sids_from_extendeddn(ADS_STRUCT *ads, 
-				  TALLOC_CTX *mem_ctx, 
-				  void *msg, 
-				  const char *field,
-				  enum ads_extended_dn_flags flags,
-				  DOM_SID **sids)
+ int ads_pull_sids_from_extendeddn(ADS_STRUCT *ads, 
+				   TALLOC_CTX *mem_ctx, 
+				   LDAPMessage *msg, 
+				   const char *field,
+				   enum ads_extended_dn_flags flags,
+				   DOM_SID **sids)
 {
 	int i;
 	size_t dn_count;
@@ -2722,7 +2726,7 @@ char* ads_get_dnshostname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine
 	int count = 0;
 	char *name = NULL;
 	
-	status = ads_find_machine_acct(ads, (void **)(void *)&res, global_myname());
+	status = ads_find_machine_acct(ads, &res, global_myname());
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0,("ads_get_dnshostname: Failed to find account for %s\n",
 			global_myname()));
@@ -2754,7 +2758,7 @@ char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name )
 	int count = 0;
 	char *name = NULL;
 	
-	status = ads_find_machine_acct(ads, (void **)(void *)&res, global_myname());
+	status = ads_find_machine_acct(ads, &res, global_myname());
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0,("ads_get_upn: Failed to find account for %s\n",
 			global_myname()));
@@ -2786,7 +2790,7 @@ char* ads_get_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *mach
 	int count = 0;
 	char *name = NULL;
 	
-	status = ads_find_machine_acct(ads, (void **)(void *)&res, global_myname());
+	status = ads_find_machine_acct(ads, &res, global_myname());
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0,("ads_get_dnshostname: Failed to find account for %s\n",
 			global_myname()));

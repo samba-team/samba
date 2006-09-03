@@ -3022,7 +3022,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
                                      NT_PRINTER_INFO_LEVEL *printer)
 {
 	ADS_STATUS ads_rc;
-	void *res;
+	LDAPMessage *res;
 	char *prt_dn = NULL, *srv_dn, *srv_cn_0;
 	char *srv_dn_utf8, **srv_cn_utf8;
 	TALLOC_CTX *ctx;
@@ -3121,7 +3121,7 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
                                        NT_PRINTER_INFO_LEVEL *printer)
 {
 	ADS_STATUS ads_rc;
-	void *res;
+	LDAPMessage *res;
 	char *prt_dn = NULL;
 
 	DEBUG(5, ("unpublishing printer %s\n", printer->info_2->printername));

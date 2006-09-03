@@ -29,7 +29,7 @@
 /********************************************************************
 ********************************************************************/
 
-static int32 DNSSendUpdate1( HANDLE hDNSServer, char *szDomainName,
+static int32 DNSSendUpdate1( HANDLE hDNSServer, const char *szDomainName,
 			     char *szHost, struct in_addr *iplist,
 			     int num_ips,
 			     DNS_UPDATE_RESPONSE * *ppDNSUpdateResponse )
@@ -108,7 +108,7 @@ static int32 DNSSendUpdate1( HANDLE hDNSServer, char *szDomainName,
 /********************************************************************
 ********************************************************************/
 
-static int32 DNSSendUpdate2( HANDLE hDNSServer, char *szDomainName,
+static int32 DNSSendUpdate2( HANDLE hDNSServer, const char *szDomainName,
 			     char *szHost, struct in_addr *iplist,
 			     int num_ips,
 			     DNS_UPDATE_RESPONSE * *ppDNSUpdateResponse )
@@ -197,7 +197,7 @@ static int32 DNSSendUpdate2( HANDLE hDNSServer, char *szDomainName,
 /********************************************************************
 ********************************************************************/
 
-static int32 DNSSendUpdate3( HANDLE hDNSServer, char *szDomainName,
+static int32 DNSSendUpdate3( HANDLE hDNSServer, const char *szDomainName,
 			     char *szHost, struct in_addr *iplist,
 			     int num_ips,
 			     DNS_UPDATE_RESPONSE * *ppDNSUpdateResponse )
@@ -288,7 +288,7 @@ static int32 DNSSendUpdate3( HANDLE hDNSServer, char *szDomainName,
 /********************************************************************
 ********************************************************************/
 
-int32 DNSSendUpdate( HANDLE hDNSServer, char *szDomainName, char *szHost,
+int32 DNSSendUpdate( HANDLE hDNSServer, const char *szDomainName, char *szHost,
 		     struct in_addr * iplist, int num_ips,
 		     DNS_UPDATE_RESPONSE * *ppDNSUpdateResponse )
 {

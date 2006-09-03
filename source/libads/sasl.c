@@ -453,7 +453,7 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 	char **values;
 	ADS_STATUS status;
 	int i, j;
-	void *res;
+	LDAPMessage *res;
 
 	/* get a list of supported SASL mechanisms */
 	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);

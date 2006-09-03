@@ -15,7 +15,11 @@ enum wb_posix_mapping {
 };
 
 typedef struct {
+#ifdef HAVE_LDAP
+	LDAP *ld;
+#else
 	void *ld; /* the active ldap structure */
+#endif
 	struct in_addr ldap_ip; /* the ip of the active connection, if any */
 	time_t last_attempt; /* last attempt to reconnect */
 	int ldap_port;
