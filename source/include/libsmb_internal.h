@@ -90,6 +90,12 @@ struct smbc_internal_data {
         BOOL _full_time_names;
 
         /*
+         * The share mode of a file being opened.  To match POSIX semantics
+         * (and maintain backward compatibility), DENY_NONE is the default.
+         */
+         smbc_share_mode _share_mode;
+
+        /*
          * Authentication function which includes the context.  This will be
          * used if set; otherwise context->callbacks.auth_fn() will be used.
          */

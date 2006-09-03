@@ -1120,7 +1120,8 @@ smbc_open_ctx(SMBCCTX *context,
 			cli_dfs_make_full_path( targetpath, targetcli->desthost, targetcli->share, temppath);
 		}
 		
-		if ((fd = cli_open(targetcli, targetpath, flags, DENY_NONE)) < 0) {
+		if ((fd = cli_open(targetcli, targetpath, flags,
+                                   context->internal->_share_mode)) < 0) {
 
 			/* Handle the error ... */
 
@@ -6166,6 +6167,8 @@ smbc_new_context(void)
 	context->options.browse_max_lmb_count      = 3;    /* # LMBs to query */
 	context->options.urlencode_readdir_entries = False;/* backward compat */
 	context->options.one_share_per_server      = False;/* backward compat */
+        context->internal->_share_mode             = SMBC_SHAREMODE_DENY_NONE;
+                                /* backward compat */
 
         context->open                              = smbc_open_ctx;
         context->creat                             = smbc_creat_ctx;
@@ -6301,6 +6304,7 @@ smbc_option_set(SMBCCTX *context,
 {
         va_list ap;
         union {
+                int i;
                 BOOL b;
                 smbc_get_auth_data_with_context_fn auth_fn;
                 void *v;
@@ -6326,6 +6330,15 @@ smbc_option_set(SMBCCTX *context,
                  */
                 option_value.b = (BOOL) va_arg(ap, int);
                 context->internal->_full_time_names = option_value.b;
+
+        } else if (strcmp(option_name, "open_share_mode") == 0) {
+                /*
+                 * The share mode to use for files opened with
+                 * smbc_open_ctx().  The default is SMBC_SHAREMODE_DENY_NONE.
+                 */
+                option_value.i = va_arg(ap, int);
+                context->internal->_share_mode =
+                        (smbc_share_mode) option_value.i;
 
         } else if (strcmp(option_name, "auth_function") == 0) {
                 /*
