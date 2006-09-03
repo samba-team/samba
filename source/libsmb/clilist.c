@@ -349,10 +349,17 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 	mnt = cli_cm_get_mntpoint( cli );
 
-	for (p=dirlist,i=0;i<total_received;i++) {
-		p += interpret_long_filename(cli,info_level,p,&finfo,NULL,NULL,NULL);
-		fn( mnt,&finfo, Mask, state );
-	}
+        /* see if the server disconnected or the connection otherwise failed */
+        if (cli_is_error(cli)) {
+                total_received = -1;
+        } else {
+                /* no connection problem.  let user function add each entry */
+                for (p=dirlist,i=0;i<total_received;i++) {
+                        p += interpret_long_filename(cli, info_level, p,
+                                                     &finfo,NULL,NULL,NULL);
+                        fn( mnt,&finfo, Mask, state );
+                }
+        }
 
 	/* free up the dirlist buffer and last name raw blob */
 	SAFE_FREE(dirlist);

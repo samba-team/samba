@@ -2540,6 +2540,7 @@ static SMBCFILE *
 smbc_opendir_ctx(SMBCCTX *context,
                  const char *fname)
 {
+        int saved_errno;
 	fstring server, share, user, password, options;
 	pstring workgroup;
 	pstring path;
@@ -2547,6 +2548,7 @@ smbc_opendir_ctx(SMBCCTX *context,
         char *p;
 	SMBCSRV *srv  = NULL;
 	SMBCFILE *dir = NULL;
+        struct _smbc_callbacks *cb;
 	struct in_addr rem_ip;
 
 	if (!context || !context->internal ||
@@ -2908,9 +2910,9 @@ smbc_opendir_ctx(SMBCCTX *context,
 					SAFE_FREE(dir->fname);
 					SAFE_FREE(dir);
 				}
-				errno = smbc_errno(context, targetcli);
+				saved_errno = smbc_errno(context, targetcli);
 
-                                if (errno == EINVAL) {
+                                if (saved_errno == EINVAL) {
                                     /*
                                      * See if they asked to opendir something
                                      * other than a directory.  If so, the
@@ -2926,12 +2928,34 @@ smbc_opendir_ctx(SMBCCTX *context,
                                         ! IS_DOS_DIR(mode)) {
 
                                         /* It is.  Correct the error value */
-                                        errno = ENOTDIR;
+                                        saved_errno = ENOTDIR;
                                     }
                                 }
 
-				return NULL;
+                                /*
+                                 * If there was an error and the server is no
+                                 * good any more...
+                                 */
+                                cb = &context->callbacks;
+                                if (cli_is_error(targetcli) &&
+                                    cb->check_server_fn(context, srv)) {
 
+                                    /* ... then remove it. */
+                                    if (cb->remove_unused_server_fn(context,
+                                                                    srv)) { 
+                                        /*
+                                         * We could not remove the server
+                                         * completely, remove it from the
+                                         * cache so we will not get it
+                                         * again. It will be removed when the
+                                         * last file/dir is closed.
+                                         */
+                                        cb->remove_cached_srv_fn(context, srv);
+                                    }
+                                }
+
+                                errno = saved_errno;
+				return NULL;
 			}
 		}
 
