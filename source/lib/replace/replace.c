@@ -2,38 +2,41 @@
    Unix SMB/CIFS implementation.
    replacement routines for broken systems
    Copyright (C) Andrew Tridgell 1992-1998
+
+     ** NOTE! The following LGPL license applies to the replace
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
    
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
-   
-   This program is distributed in the hope that it will be useful,
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "includes.h"
-#include "system/locale.h"
-#include "system/wait.h"
-#include "system/time.h"
-#include "system/network.h"
-#include "system/filesys.h"
-#include "system/syslog.h"
+#include "replace.h"
 
- void replace_dummy(void);
- void replace_dummy(void) {}
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <string.h>
+
+void replace_dummy(void);
+void replace_dummy(void) {}
 
 #ifndef HAVE_FTRUNCATE
  /*******************************************************************
 ftruncate for operating systems that don't have it
 ********************************************************************/
- int ftruncate(int f,off_t l)
+int rep_ftruncate(int f, off_t l)
 {
 #ifdef HAVE_CHSIZE
       return chsize(f,l);
@@ -53,7 +56,7 @@ ftruncate for operating systems that don't have it
 #ifndef HAVE_STRLCPY
 /* like strncpy but does not 0 fill the buffer and always null 
    terminates. bufsize is the size of the destination buffer */
- size_t strlcpy(char *d, const char *s, size_t bufsize)
+size_t rep_strlcpy(char *d, const char *s, size_t bufsize)
 {
 	size_t len = strlen(s);
 	size_t ret = len;
@@ -69,7 +72,7 @@ ftruncate for operating systems that don't have it
 /* like strncat but does not 0 fill the buffer and always null 
    terminates. bufsize is the length of the buffer, which should
    be one more than the maximum resulting string length */
- size_t strlcat(char *d, const char *s, size_t bufsize)
+size_t rep_strlcat(char *d, const char *s, size_t bufsize)
 {
 	size_t len1 = strlen(d);
 	size_t len2 = strlen(s);
@@ -97,7 +100,7 @@ Corrections by richard.kettlewell@kewill.com
 #define  HOUR    60*MINUTE
 #define  DAY             24*HOUR
 #define  YEAR    365*DAY
- time_t mktime(struct tm *t)
+time_t rep_mktime(struct tm *t)
 {
   struct tm       *u;
   time_t  epoch = 0;
@@ -149,7 +152,7 @@ Corrections by richard.kettlewell@kewill.com
 
 #ifndef HAVE_RENAME
 /* Rename a file. (from libiberty in GNU binutils)  */
- int rename(const char *zfrom, const char *zto)
+int rep_rename(const char *zfrom, const char *zto)
 {
   if (link (zfrom, zto) < 0)
     {
@@ -169,7 +172,8 @@ Corrections by richard.kettlewell@kewill.com
 /*
  * Search for a match in a netgroup. This replaces it on broken systems.
  */
- int innetgr(const char *group,const char *host,const char *user,const char *dom)
+int rep_innetgr(const char *group, const char *host, const char *user, 
+				const char *dom)
 {
 	char *hst, *usr, *dm;
   
@@ -194,7 +198,7 @@ Corrections by richard.kettlewell@kewill.com
 /****************************************************************************
  some systems don't have an initgroups call 
 ****************************************************************************/
- int initgroups(char *name, gid_t id)
+int rep_initgroups(char *name, gid_t id)
 {
 #ifndef HAVE_SETGROUPS
 	/* yikes! no SETGROUPS or INITGROUPS? how can this work? */
@@ -246,7 +250,7 @@ Corrections by richard.kettlewell@kewill.com
 /* This is needed due to needing the nap() function but we don't want
    to include the Xenix libraries since that will break other things...
    BTW: system call # 0x0c28 is the same as calling nap() */
- long nap(long milliseconds) {
+long nap(long milliseconds) {
 	 return syscall(0x0c28, milliseconds);
  }
 #endif
@@ -259,7 +263,7 @@ this is only used if the machine does not have it's own memmove().
 this is not the fastest algorithm in town, but it will do for our
 needs.
 ********************************************************************/
- void *memmove(void *dest,const void *src,int size)
+void *rep_memmove(void *dest,const void *src,int size)
 {
 	unsigned long d,s;
 	int i;
@@ -317,7 +321,7 @@ needs.
 /****************************************************************************
 duplicate a string
 ****************************************************************************/
- char *strdup(const char *s)
+char *rep_strdup(const char *s)
 {
 	size_t len;
 	char *ret;
@@ -335,7 +339,7 @@ duplicate a string
 #ifndef WITH_PTHREADS
 /* REWRITE: not thread safe */
 #ifdef REPLACE_INET_NTOA
- char *rep_inet_ntoa(struct in_addr ip)
+char *rep_inet_ntoa(struct in_addr ip)
 {
 	uint8_t *p = (uint8_t *)&ip.s_addr;
 	static char buf[18];
@@ -347,7 +351,7 @@ duplicate a string
 #endif
 
 #ifndef HAVE_SETLINEBUF
- int setlinebuf(FILE *stream)
+int rep_setlinebuf(FILE *stream)
 {
 	return setvbuf(stream, (char *)NULL, _IOLBF, 0);
 }
@@ -355,7 +359,7 @@ duplicate a string
 
 #ifndef HAVE_VSYSLOG
 #ifdef HAVE_SYSLOG
- void vsyslog (int facility_priority, char *format, va_list arglist)
+void rep_vsyslog (int facility_priority, char *format, va_list arglist)
 {
 	char *msg = NULL;
 	vasprintf(&msg, format, arglist);
@@ -388,7 +392,7 @@ duplicate a string
 /**
  Some platforms don't have strndup.
 **/
- char *strndup(const char *s, size_t n)
+char *rep_strndup(const char *s, size_t n)
 {
 	char *ret;
 	
@@ -404,14 +408,14 @@ duplicate a string
 #endif
 
 #ifndef HAVE_WAITPID
-int waitpid(pid_t pid,int *status,int options)
+int rep_waitpid(pid_t pid,int *status,int options)
 {
   return wait4(pid, status, options, NULL);
 }
 #endif
 
 #ifndef HAVE_SETEUID
- int seteuid(uid_t euid)
+int rep_seteuid(uid_t euid)
 {
 #ifdef HAVE_SETRESUID
 	return setresuid(-1, euid, -1);
@@ -422,7 +426,7 @@ int waitpid(pid_t pid,int *status,int options)
 #endif
 
 #ifndef HAVE_SETEGID
- int setegid(gid_t egid)
+int rep_setegid(gid_t egid)
 {
 #ifdef HAVE_SETRESGID
 	return setresgid(-1, egid, -1);
@@ -436,7 +440,7 @@ int waitpid(pid_t pid,int *status,int options)
 os/2 also doesn't have chroot
 ********************************************************************/
 #ifndef HAVE_CHROOT
-int chroot(const char *dname)
+int rep_chroot(const char *dname)
 {
 	errno = ENOSYS;
 	return -1;
@@ -460,7 +464,7 @@ int rep_mkstemp(char *template)
 #endif
 
 #ifndef HAVE_MKDTEMP
-char * mkdtemp(char *template)
+char *rep_mkdtemp(char *template)
 {
 	char *dname;
 	
@@ -475,7 +479,7 @@ char * mkdtemp(char *template)
 #endif
 
 #ifndef HAVE_PREAD
-static ssize_t pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
+static ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
 {
 	if (lseek(__fd, __offset, SEEK_SET) != __offset) {
 		return -1;
@@ -485,7 +489,7 @@ static ssize_t pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
 #endif
 
 #ifndef HAVE_PWRITE
-static ssize_t pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
+static ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 {
 	if (lseek(__fd, __offset, SEEK_SET) != __offset) {
 		return -1;
@@ -495,7 +499,7 @@ static ssize_t pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offs
 #endif
 
 #ifndef HAVE_STRCASESTR
-char *strcasestr(const char *haystack, const char *needle)
+char *rep_strcasestr(const char *haystack, const char *needle)
 {
 	const char *s;
 	size_t nlen = strlen(needle);
@@ -511,7 +515,7 @@ char *strcasestr(const char *haystack, const char *needle)
 
 #ifndef HAVE_STRTOK_R
 /* based on GLIBC version, copyright Free Software Foundation */
-char *strtok_r(char *s, const char *delim, char **save_ptr)
+char *rep_strtok_r(char *s, const char *delim, char **save_ptr)
 {
 	char *token;
 
@@ -533,5 +537,113 @@ char *strtok_r(char *s, const char *delim, char **save_ptr)
 	}
 
 	return token;
+}
+#endif
+
+#ifndef HAVE_STRNLEN
+/**
+ Some platforms don't have strnlen
+**/
+size_t rep_strnlen(const char *s, size_t n)
+{
+	int i;
+	for (i=0; s[i] && i<n; i++)
+		/* noop */ ;
+	return i;
+}
+#endif
+
+#ifndef HAVE_STRTOLL
+long long int rep_strtoll(const char *str, char **endptr, int base)
+{
+#ifdef HAVE_STRTOQ
+	return strtoq(str, endptr, base);
+#elif defined(HAVE___STRTOLL) 
+	return __strtoll(str, endptr, base);
+#elif SIZEOF_LONG == SIZEOF_LONG_LONG
+	return (long long int) strtol(str, endptr, base);
+#else
+# error "You need a strtoll function"
+#endif
+}
+#endif
+
+
+#ifndef HAVE_STRTOULL
+unsigned long long int rep_strtoull(const char *str, char **endptr, int base)
+{
+#ifdef HAVE_STRTOUQ
+	return strtouq(str, endptr, base);
+#elif defined(HAVE___STRTOULL) 
+	return __strtoull(str, endptr, base);
+#elif SIZEOF_LONG == SIZEOF_LONG_LONG
+	return (unsigned long long int) strtoul(str, endptr, base);
+#else
+# error "You need a strtoull function"
+#endif
+}
+#endif
+
+#ifndef HAVE_SETENV
+int rep_setenv(const char *name, const char *value, int overwrite) 
+{
+	char *p;
+	size_t l1, l2;
+	int ret;
+
+	if (!overwrite && getenv(name)) {
+		return 0;
+	}
+
+	l1 = strlen(name);
+	l2 = strlen(value);
+
+	p = malloc(l1+l2+2);
+	if (p == NULL) {
+		return -1;
+	}
+	memcpy(p, name, l1);
+	p[l1] = '=';
+	memcpy(p+l1+1, value, l2);
+	p[l1+l2+1] = 0;
+
+	ret = putenv(p);
+	if (ret != 0) {
+		free(p);
+	}
+
+	return ret;
+}
+#endif
+
+#if !defined(HAVE_TIMEGM)
+
+static int is_leap(unsigned y)
+{
+	y += 1900;
+	return (y % 4) == 0 && ((y % 100) != 0 || (y % 400) == 0);
+}
+
+time_t timegm(struct tm *tm)
+{
+	static const unsigned ndays[2][12] ={
+		{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
+		{31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
+	time_t res = 0;
+	unsigned i;
+	
+	for (i = 70; i < tm->tm_year; ++i)
+		res += is_leap(i) ? 366 : 365;
+	
+	for (i = 0; i < tm->tm_mon; ++i)
+		res += ndays[is_leap(tm->tm_year)][i];
+	res += tm->tm_mday - 1;
+	res *= 24;
+	res += tm->tm_hour;
+	res *= 60;
+	res += tm->tm_min;
+	res *= 60;
+	res += tm->tm_sec;
+	return res;
 }
 #endif

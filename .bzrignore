@@ -1,3 +1,6 @@
+source/lib/ldb/bin
+*.pc
+autom4te.cache
 *.d
 *.o
 *.x
@@ -42,7 +45,8 @@ source/heimdal/lib/krb5/k524_err.?
 source/heimdal/lib/krb5/krb5_err.?
 source/heimdal/lib/roken/vis.h
 source/include/build.h
-source/include/config.h
+config.h
+config.h.in
 source/include/config_tmp.h
 source/include/config_tmp.h.in
 source/ldap_server/proto.h

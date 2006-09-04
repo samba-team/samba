@@ -262,7 +262,7 @@ find_dynamic_method (krb5_context context,
     if (prefix == NULL)
 	krb5_errx(context, 1, "out of memory");
     
-    if (asprintf(&path, LIBDIR "/hdb_%s.so", prefix) == -1)
+    if (asprintf(&path, HDBDIR "/hdb_%s.so", prefix) == -1)
 	krb5_errx(context, 1, "out of memory");
 
 #ifndef RTLD_NOW

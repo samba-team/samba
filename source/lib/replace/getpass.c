@@ -18,9 +18,38 @@ Cambridge, MA 02139, USA.  */
 
 /* Modified to use with samba by Jeremy Allison, 8th July 1995. */
 
-#include "includes.h"
-#include "system/terminal.h"
-#include "system/wait.h"
+#include "replace.h"
+#include <stdlib.h>
+
+#if defined(HAVE_TERMIOS_H)
+/* POSIX terminal handling. */
+#include <termios.h>
+#elif defined(HAVE_TERMIO_H)
+/* Older SYSV terminal handling - don't use if we can avoid it. */
+#include <termio.h>
+#elif defined(HAVE_SYS_TERMIO_H)
+/* Older SYSV terminal handling - don't use if we can avoid it. */
+#include <sys/termio.h>
+#endif
+
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
+/*
+ * Define additional missing types
+ */
+#ifndef HAVE_SIG_ATOMIC_T_TYPE
+typedef int sig_atomic_t;
+#endif
+
+#ifndef SIGCLD
+#define SIGCLD SIGCHLD
+#endif
+
+#ifndef SIGNAL_CAST
+#define SIGNAL_CAST (RETSIGTYPE (*)(int))
+#endif
 
 #ifdef REPLACE_GETPASS
 

@@ -70,6 +70,9 @@ fi
 AC_SUBST(TESTS)
 AC_SUBST(EXTRA_OBJ)
 
+sinclude(replace.m4)
+SMB_REPLACE_FUNCS(strtoll)
+
 sinclude(config.m4)
 sinclude(../talloc/config.m4)
 sinclude(../tdb/config.m4)

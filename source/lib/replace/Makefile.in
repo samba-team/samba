@@ -1,0 +1,37 @@
+CC = @CC@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+includedir = @includedir@
+libdir = @libdir@
+VPATH = @srcdir@
+srcdir = @srcdir@
+builddir = @builddir@
+INSTALL = @INSTALL@
+
+OBJS = dlfcn.o getpass.o replace.o snprintf.o
+
+all: libreplace.a
+
+install: all
+	$(INSTALL) libreplace.a $(libdir)
+
+libreplace.a: $(OBJS)
+	ar -rv $@ $(OBJS)
+	@-ranlib $@
+
+test: testsuite
+	./testsuite
+
+TEST_OBJS = test/testsuite.o
+
+testsuite: libreplace.a $(TEST_OBJS)
+	$(CC) -o testsuite $(TEST_OBJS)
+
+.c.o:
+	@echo Compiling $*.c
+	@mkdir -p `dirname $@`
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f *.o

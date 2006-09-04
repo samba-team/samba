@@ -2,6 +2,7 @@
 # Start MODULE ldb_objectguid
 [MODULE::ldb_objectguid]
 SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = objectguid_module_init
 OBJ_FILES = \
 		objectguid.o
@@ -14,6 +15,7 @@ PUBLIC_DEPENDENCIES = \
 # Start MODULE ldb_samldb
 [MODULE::ldb_samldb]
 SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = samldb_module_init
 OBJ_FILES = \
 		samldb.o
@@ -26,6 +28,7 @@ OBJ_FILES = \
 [MODULE::ldb_samba3sam]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_samba3sam_module_init
+PRIVATE_DEPENDENCIES = LIBTALLOC
 OBJ_FILES = \
 		samba3sam.o
 #
@@ -37,6 +40,7 @@ OBJ_FILES = \
 [MODULE::ldb_entryUUID]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_entryUUID_module_init
+PRIVATE_DEPENDENCIES = LIBTALLOC
 ENABLE = YES
 OBJ_FILES = \
 		entryUUID.o
@@ -60,6 +64,7 @@ OBJ_FILES = \
 # Start MODULE ldb_rootdse
 [MODULE::ldb_rootdse]
 SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = rootdse_module_init
 OBJ_FILES = \
 		rootdse.o
@@ -74,7 +79,7 @@ SUBSYSTEM = ldb
 INIT_FUNCTION = password_hash_module_init
 OBJ_FILES = password_hash.o
 PUBLIC_DEPENDENCIES = HEIMDAL_KRB5
-PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS
+PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS LIBTALLOC
 #
 # End MODULE ldb_password_hash
 ################################################
@@ -82,6 +87,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS
 ################################################
 # Start MODULE ldb_local_password
 [MODULE::ldb_local_password]
+PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = ldb
 INIT_FUNCTION = local_password_module_init
 OBJ_FILES = local_password.o
@@ -92,6 +98,7 @@ OBJ_FILES = local_password.o
 ################################################
 # Start MODULE ldb_kludge_acl
 [MODULE::ldb_kludge_acl]
+PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_kludge_acl_init
 OBJ_FILES = \
@@ -106,6 +113,7 @@ PUBLIC_DEPENDENCIES = \
 # Start MODULE ldb_extended_dn
 [MODULE::ldb_extended_dn]
 SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = ldb_extended_dn_init
 OBJ_FILES = \
 		extended_dn.o
@@ -117,6 +125,7 @@ OBJ_FILES = \
 # Start MODULE ldb_partition
 [MODULE::ldb_partition]
 SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = ldb_partition_init
 OBJ_FILES = \
 		partition.o
@@ -128,6 +137,7 @@ OBJ_FILES = \
 # Start MODULE ldb_schema
 [MODULE::ldb_schema]
 SUBSYSTEM = ldb
+PRIVATE_DEPENDENCIES = LIBTALLOC
 INIT_FUNCTION = ldb_schema_init
 OBJ_FILES = \
 		schema.o schema_syntax.o
