@@ -523,7 +523,6 @@ get_new_tickets(krb5_context context,
     if (addrs_flag != -1)
 	krb5_get_init_creds_opt_set_addressless(context, opt, 
 						addrs_flag ? FALSE : TRUE);
-    printf("address: %d\n", addrs_flag);
 
     if (renew_life == NULL && renewable_flag)
 	renewstr = "1 month";
