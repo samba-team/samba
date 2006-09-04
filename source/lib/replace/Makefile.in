@@ -9,6 +9,8 @@ srcdir = @srcdir@
 builddir = @builddir@
 INSTALL = @INSTALL@
 
+.PHONY: test
+
 CFLAGS=-I. -I$(srcdir) @CFLAGS@
 
 OBJS = dlfcn.o getpass.o replace.o snprintf.o timegm.o
