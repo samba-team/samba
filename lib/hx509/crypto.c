@@ -38,12 +38,40 @@ struct hx509_crypto;
 
 struct signature_alg;
 
+enum crypto_op_type {
+    COT_SIGN
+};
+
 struct hx509_private_key {
     const struct signature_alg *md;
     const heim_oid *signature_alg;
     struct {
 	RSA *rsa;
     } private_key;
+    /* new crypto layer */
+    void *key;
+    int (*handle_alg)(const hx509_private_key,
+		      const AlgorithmIdentifier *,
+		      enum crypto_op_type);
+    int (*sign)(hx509_context context,
+		const hx509_private_key,
+		const AlgorithmIdentifier *,
+		const heim_octet_string *,
+		AlgorithmIdentifier *,
+		heim_octet_string *);
+#if 0
+    const AlgorithmIdentifier *
+        (*preferred_sig_alg)(const hx509_private_key_key,
+			     const hx509_peer_info);
+    int (*unwrap)(hx509_context context,
+		  const hx509_private_key,
+		  const AlgorithmIdentifier *,
+		  const heim_octet_string *,
+		  heim_octet_string *);
+    int (*get_spki)(hx509_context context,
+		    const hx509_private_key_key,
+		    SubjectPublicKeyInfo *);
+#endif
 };
 
 /*
@@ -63,7 +91,8 @@ struct signature_alg {
 			    const AlgorithmIdentifier *,
 			    const heim_octet_string *,
 			    const heim_octet_string *);
-    int (*create_signature)(const struct signature_alg *,
+    int (*create_signature)(hx509_context,
+			    const struct signature_alg *,
 			    const hx509_private_key,
 			    const AlgorithmIdentifier *,
 			    const heim_octet_string *,
@@ -172,7 +201,8 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 }
 
 static int
-rsa_create_signature(const struct signature_alg *sig_alg,
+rsa_create_signature(hx509_context context,
+		     const struct signature_alg *sig_alg,
 		     const hx509_private_key signer,
 		     const AlgorithmIdentifier *alg,
 		     const heim_octet_string *data,
@@ -213,7 +243,8 @@ rsa_create_signature(const struct signature_alg *sig_alg,
 
     memset(&di, 0, sizeof(di));
 
-    ret = _hx509_create_signature(NULL,
+    ret = _hx509_create_signature(context,
+				  NULL,
 				  digest_alg,
 				  data,
 				  &di.digestAlgorithm,
@@ -477,7 +508,8 @@ sha1_verify_signature(const struct signature_alg *sig_alg,
 }
 
 static int
-sha256_create_signature(const struct signature_alg *sig_alg,
+sha256_create_signature(hx509_context context,
+			const struct signature_alg *sig_alg,
 			const hx509_private_key signer,
 			const AlgorithmIdentifier *alg,
 			const heim_octet_string *data,
@@ -535,7 +567,8 @@ sha256_verify_signature(const struct signature_alg *sig_alg,
 }
 
 static int
-sha1_create_signature(const struct signature_alg *sig_alg,
+sha1_create_signature(hx509_context context,
+		      const struct signature_alg *sig_alg,
 		      const hx509_private_key signer,
 		      const AlgorithmIdentifier *alg,
 		      const heim_octet_string *data,
@@ -805,7 +838,8 @@ _hx509_verify_signature_bitstring(const Certificate *signer,
 }
 
 int
-_hx509_create_signature(const hx509_private_key signer,
+_hx509_create_signature(hx509_context context,
+			const hx509_private_key signer,
 			const AlgorithmIdentifier *alg,
 			const heim_octet_string *data,
 			AlgorithmIdentifier *signatureAlgorithm,
@@ -813,17 +847,27 @@ _hx509_create_signature(const hx509_private_key signer,
 {
     const struct signature_alg *md;
 
+    if (signer && signer->handle_alg &&
+	(*signer->handle_alg)(signer, alg, COT_SIGN))
+    {
+	return (*signer->sign)(context, signer, alg, data, 
+			       signatureAlgorithm, sig);
+    }
+
     md = find_sig_alg(&alg->algorithm);
-    if (md == NULL)
+    if (md == NULL) {
+	hx509_set_error_string(context, 0, HX509_SIG_ALG_NO_SUPPORTED,
+	    "algorithm no supported");
 	return HX509_SIG_ALG_NO_SUPPORTED;
+    }
 
-    if (signer && (md->flags & PROVIDE_CONF) == 0)
+    if (signer && (md->flags & PROVIDE_CONF) == 0) {
+	hx509_set_error_string(context, 0, HX509_SIG_ALG_NO_SUPPORTED,
+	    "algorithm provides no conf");
 	return HX509_CRYPTO_SIG_NO_CONF;
+    }
 
-    if (md->create_signature == NULL) /* XXX DSA */
-	return HX509_CRYPTO_SIG_NO_CONF;
-
-    return (*md->create_signature)(md, signer, alg, data, 
+    return (*md->create_signature)(context, md, signer, alg, data, 
 				   signatureAlgorithm, sig);
 }
 
