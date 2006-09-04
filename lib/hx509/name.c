@@ -46,11 +46,12 @@ static const struct {
 } no[] = {
     { "C", oid_id_at_countryName },
     { "CN", oid_id_at_commonName },
-    { "O", oid_id_at_organizationName },
-    { "L", oid_id_at_localityName },
+    { "DC", oid_id_domainComponent },
     { "Email", oid_id_pkcs9_emailAddress },
-    { "UID", oid_id_Userid },
-    { "DC", oid_id_domainComponent }
+    { "L", oid_id_at_localityName },
+    { "O", oid_id_at_organizationName },
+    { "OU", oid_id_at_organizationalUnitName },
+    { "UID", oid_id_Userid }
 };
 
 static char *
