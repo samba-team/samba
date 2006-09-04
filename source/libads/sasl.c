@@ -348,7 +348,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 			goto failed;
 		}
 
-		cred.bv_val = output_token.value;
+		cred.bv_val = (char *)output_token.value;
 		cred.bv_len = output_token.length;
 
 		rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 
@@ -397,7 +397,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	gss_release_buffer(&minor_status, &output_token);
 
 	output_token.value = SMB_MALLOC(strlen(ads->config.bind_path) + 8);
-	p = output_token.value;
+	p = (uint8 *)output_token.value;
 
 	*p++ = 1; /* no sign & seal selection */
 	/* choose the same size as the server gave us */
@@ -419,7 +419,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	free(output_token.value);
 
-	cred.bv_val = input_token.value;
+	cred.bv_val = (char *)input_token.value;
 	cred.bv_len = input_token.length;
 
 	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSSAPI", &cred, NULL, NULL, 

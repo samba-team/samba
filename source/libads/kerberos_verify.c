@@ -101,7 +101,7 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 				if (strequal(entry_princ_s, valid_princ_formats[i])) {
 					number_matched_principals++;
 					p_packet->length = ticket->length;
-					p_packet->data = (krb5_pointer)ticket->data;
+					p_packet->data = (char *)ticket->data;
 					*pp_tkt = NULL;
 
 					ret = krb5_rd_req_return_keyblock_from_keytab(context, &auth_context, p_packet,
@@ -228,7 +228,7 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	/* CIFS doesn't use addresses in tickets. This would break NAT. JRA */
 
 	p_packet->length = ticket->length;
-	p_packet->data = (krb5_pointer)ticket->data;
+	p_packet->data = (char *)ticket->data;
 
 	/* We need to setup a auth context with each possible encoding type in turn. */
 	for (i=0;enctypes[i];i++) {
