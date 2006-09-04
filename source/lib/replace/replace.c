@@ -375,7 +375,7 @@ void rep_vsyslog (int facility_priority, char *format, va_list arglist)
 /**
  Some platforms don't have strnlen
 **/
- size_t strnlen(const char *s, size_t max)
+ size_t rep_strnlen(const char *s, size_t max)
 {
         size_t len;
   
@@ -537,19 +537,6 @@ char *rep_strtok_r(char *s, const char *delim, char **save_ptr)
 	}
 
 	return token;
-}
-#endif
-
-#ifndef HAVE_STRNLEN
-/**
- Some platforms don't have strnlen
-**/
-size_t rep_strnlen(const char *s, size_t n)
-{
-	int i;
-	for (i=0; s[i] && i<n; i++)
-		/* noop */ ;
-	return i;
 }
 #endif
 
