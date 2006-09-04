@@ -317,9 +317,7 @@ get_init_creds_common(krb5_context context,
 	ctx->flags.b.renewable = 1;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ADDRESS_LIST) {
 	ctx->addrs = options->address_list;
-	printf("list\n");
     } else if (options->opt_private) {
-	printf("addresslessness\n");
 	switch (options->opt_private->addressless) {
 	case KRB5_INIT_CREDS_TRISTATE_UNSET:
 #if KRB5_ADDRESSLESS_DEFAULT == TRUE
@@ -327,15 +325,12 @@ get_init_creds_common(krb5_context context,
 #else
 	    ctx->addrs = NULL;
 #endif
-	printf("unset\n");
 	    break;
 	case KRB5_INIT_CREDS_TRISTATE_FALSE:
 	    ctx->addrs = NULL;
-	printf("false\n");
 	    break;
 	case KRB5_INIT_CREDS_TRISTATE_TRUE:
 	    ctx->addrs = &no_addrs;
-	printf("true\n");
 	    break;
 	}
     }
