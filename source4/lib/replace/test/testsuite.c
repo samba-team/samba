@@ -75,9 +75,31 @@ static int test_ftruncate()
 	return true;
 }
 
+/*
+  test strlcpy() function.
+  see http://www.gratisoft.us/todd/papers/strlcpy.html
+ */
 static int test_strlcpy()
 {
-	/* FIXME */
+	char buf[4];
+	const struct {
+		const char *src;
+		int result;
+	} tests[] = {
+		{ "abc", 3 },
+		{ "abcdef", 6 },
+		{ "abcd", 4 },
+		{ "", 0 },
+		{ NULL, 0 }
+	};
+	int i;
+	printf("testing strlcpy\n");
+	for (i=0;tests[i].src;i++) {
+		if (strlcpy(buf, tests[i].src, sizeof(buf)) != tests[i].result) {
+			printf("strlcpy test %d failed\n");
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -347,7 +369,6 @@ static int test_MAX()
 int torture_local_replace()
 {
 	int ret = true;
-;
 	ret &= test_ftruncate();
 	ret &= test_strlcpy();
 	ret &= test_strlcat();
