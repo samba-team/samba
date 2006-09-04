@@ -1216,6 +1216,8 @@ init_cred_loop(krb5_context context,
     memset(&md, 0, sizeof(md));
     memset(&rep, 0, sizeof(rep));
 
+    _krb5_get_init_creds_opt_free_krb5_error(init_cred_opts);
+
     if (ret_as_reply)
 	memset(ret_as_reply, 0, sizeof(*ret_as_reply));
 
@@ -1326,6 +1328,9 @@ init_cred_loop(krb5_context context,
 		krb5_free_error_contents(context, &error);
 		send_to_kdc_flags |= KRB5_KRBHST_FLAGS_LARGE_MSG;
 	    } else {
+		_krb5_get_init_creds_opt_set_krb5_error(context,
+							init_cred_opts,
+							&error);
 		if (ret_as_reply)
 		    rep.error = error;
 		else
@@ -1364,12 +1369,8 @@ out:
 
     if (ret == 0 && ret_as_reply)
 	*ret_as_reply = rep;
-    else {
-	_krb5_get_init_creds_opt_set_krb5_error(context,
-						init_cred_opts,
-						&rep.error);
+    else 
 	krb5_free_kdc_rep (context, &rep);
-    }
     return ret;
 }
 
