@@ -209,6 +209,11 @@ command = {
 		type = "flag"
 		help = "print the content of the certificates"
 	}
+	option = {
+		long = "info"
+		type = "flag"
+		help = "print the information about the certificate store"
+	}
 	min_args="1"
 	argument="certificate ..."
 	help = "Print certificates"
