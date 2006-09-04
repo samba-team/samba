@@ -50,6 +50,7 @@
 #include <hex.h>
 #include <roken.h>
 #include <com_err.h>
+#include <parse_units.h>
 
 #include <krb5-types.h>
 
