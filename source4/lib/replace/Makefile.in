@@ -16,6 +16,7 @@ OBJS = dlfcn.o getpass.o replace.o snprintf.o
 all: libreplace.a
 
 install: all
+	mkdir -p $(libdir)
 	$(INSTALL) libreplace.a $(libdir)
 
 libreplace.a: $(OBJS)
@@ -36,7 +37,7 @@ testsuite: libreplace.a $(TEST_OBJS)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f *.o *.a testsuite
+	rm -f *.o test/*.o *.a testsuite
 
 distclean: clean
 	rm -f *~ */*~
