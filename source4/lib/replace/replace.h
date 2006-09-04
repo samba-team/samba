@@ -76,9 +76,19 @@ char *rep_strdup(const char *s);
 void *rep_memmove(void *dest,const void *src,int size);
 #endif
 
+#if !defined(HAVE_MKTIME) || !defined(HAVE_TIMEGM)
+#include <sys/time.h>
+#endif
+
 #ifndef HAVE_MKTIME
 #define mktime rep_mktime
 time_t rep_mktime(struct tm *t);
+#endif
+
+#ifndef HAVE_TIMEGM
+struct tm;
+#define timegm rep_timegm
+time_t rep_timegm(struct tm *tm);
 #endif
 
 #ifndef HAVE_STRLCPY
@@ -145,11 +155,6 @@ int rep_vasprintf(char **ptr, const char *format, va_list ap);
 #define bzero(a,b) memset((a),'\0',(b))
 #endif
 
-#ifndef HAVE_TIMEGM
-struct tm;
-#define timegm rep_timegm
-time_t rep_timegm(struct tm *tm);
-#endif
 
 #ifndef PRINTF_ATTRIBUTE
 #if __GNUC__ >= 3
