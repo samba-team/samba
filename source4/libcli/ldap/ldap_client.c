@@ -226,19 +226,13 @@ static NTSTATUS ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 {
 	int tmp_port = 0;
 	char protocol[11];
-	char tmp_host[255];
-	const char *p = url;
+	char tmp_host[1025];
 	int ret;
-
-	/* skip leading "URL:" (if any) */
-	if (strncasecmp(p, "URL:", 4) == 0) {
-		p += 4;
-	}
 
 	/* Paranoia check */
 	SMB_ASSERT(sizeof(protocol)>10 && sizeof(tmp_host)>254);
 		
-	ret = sscanf(p, "%10[^:]://%254[^:/]:%d", protocol, tmp_host, &tmp_port);
+	ret = sscanf(url, "%10[^:]://%254[^:/]:%d", protocol, tmp_host, &tmp_port);
 	if (ret < 2) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -272,13 +266,16 @@ struct ldap_connect_state {
 	struct ldap_connection *conn;
 };
 
-static void ldap_connect_recv_conn(struct composite_context *ctx);
+static void ldap_connect_recv_unix_conn(struct composite_context *ctx);
+static void ldap_connect_recv_tcp_conn(struct composite_context *ctx);
 
 struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 					    const char *url)
 {
 	struct composite_context *result, *ctx;
 	struct ldap_connect_state *state;
+	char protocol[11];
+	int ret;
 
 	result = talloc_zero(NULL, struct composite_context);
 	if (result == NULL) goto failed;
@@ -298,44 +295,73 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 		if (conn->reconnect.url == NULL) goto failed;
 	}
 
-	state->ctx->status = ldap_parse_basic_url(conn, url, &conn->host,
-						  &conn->port, &conn->ldaps);
-	if (!NT_STATUS_IS_OK(state->ctx->status)) {
-		composite_error(state->ctx, state->ctx->status);
-		return result;
+	/* Paranoia check */
+	SMB_ASSERT(sizeof(protocol)>10);
+
+	ret = sscanf(url, "%10[^:]://", protocol);
+	if (ret < 1) {
+		return NULL;
 	}
 
-	ctx = socket_connect_multi_send(state, conn->host, 1, &conn->port,
-					conn->event.event_ctx);
-	if (ctx == NULL) goto failed;
+	if (strequal(protocol, "ldapi")) {
+		struct socket_address *unix_addr;
+		char path[1025];
+	
+		NTSTATUS status = socket_create("unix", SOCKET_TYPE_STREAM, &conn->sock, 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+		SMB_ASSERT(sizeof(protocol)>10);
+		SMB_ASSERT(sizeof(path)>1024);
+	
+		ret = sscanf(url, "%10[^:]://%1025c", protocol, path);
+		if (ret < 2) {
+			composite_error(state->ctx, NT_STATUS_INVALID_PARAMETER);
+			return result;
+		}
 
-	ctx->async.fn = ldap_connect_recv_conn;
-	ctx->async.private_data = state;
-	return result;
+		rfc1738_unescape(path);
+	
+		unix_addr = socket_address_from_strings(conn, conn->sock->backend_name, 
+							path, 0);
+		if (!unix_addr) {
+			return NULL;
+		}
 
+		ctx = socket_connect_send(conn->sock, NULL, unix_addr, 
+					  0, conn->event.event_ctx);
+		ctx->async.fn = ldap_connect_recv_unix_conn;
+		ctx->async.private_data = state;
+		return result;
+	} else {
+		NTSTATUS status = ldap_parse_basic_url(conn, url, &conn->host,
+							  &conn->port, &conn->ldaps);
+		if (!NT_STATUS_IS_OK(state->ctx->status)) {
+			composite_error(state->ctx, status);
+			return result;
+		}
+		
+		ctx = socket_connect_multi_send(state, conn->host, 1, &conn->port,
+						conn->event.event_ctx);
+		if (ctx == NULL) goto failed;
+
+		ctx->async.fn = ldap_connect_recv_tcp_conn;
+		ctx->async.private_data = state;
+		return result;
+	}
  failed:
 	talloc_free(result);
 	return NULL;
 }
 
-static void ldap_connect_recv_conn(struct composite_context *ctx)
+static void ldap_connect_got_sock(struct composite_context *ctx, struct ldap_connection *conn) 
 {
-	struct ldap_connect_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct ldap_connect_state);
-	struct ldap_connection *conn = state->conn;
-	uint16_t port;
-
-	state->ctx->status = socket_connect_multi_recv(ctx, state, &conn->sock,
-						       &port);
-	if (!composite_is_ok(state->ctx)) return;
-
 	/* setup a handler for events on this socket */
 	conn->event.fde = event_add_fd(conn->event.event_ctx, conn->sock, 
 				       socket_get_fd(conn->sock), 
 				       EVENT_FD_READ, ldap_io_handler, conn);
 	if (conn->event.fde == NULL) {
-		composite_error(state->ctx, NT_STATUS_INTERNAL_ERROR);
+		composite_error(ctx, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
@@ -366,9 +392,42 @@ static void ldap_connect_recv_conn(struct composite_context *ctx)
 	packet_set_fde(conn->packet, conn->event.fde);
 	packet_set_serialise(conn->packet);
 
-	composite_done(state->ctx);
+	composite_done(ctx);
+}
 
-	return;
+static void ldap_connect_recv_tcp_conn(struct composite_context *ctx)
+{
+	struct ldap_connect_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct ldap_connect_state);
+	struct ldap_connection *conn = state->conn;
+	uint16_t port;
+
+	NTSTATUS status = socket_connect_multi_recv(ctx, state, &conn->sock,
+						       &port);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		composite_error(state->ctx, status);
+		return;
+	}
+
+	ldap_connect_got_sock(state->ctx, conn);
+}
+
+static void ldap_connect_recv_unix_conn(struct composite_context *ctx)
+{
+	struct ldap_connect_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct ldap_connect_state);
+	struct ldap_connection *conn = state->conn;
+
+	NTSTATUS status = socket_connect_recv(ctx);
+
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		composite_error(state->ctx, status);
+		return;
+	}
+
+	ldap_connect_got_sock(state->ctx, conn);
 }
 
 NTSTATUS ldap_connect_recv(struct composite_context *ctx)
