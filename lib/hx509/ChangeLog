@@ -1,3 +1,28 @@
+2006-09-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ks_p11.c: save the mechs supported when initing the token, print
+	them in printinfo.
+
+	* hx_locl.h: Include <parse_units.h>.
+
+	* cms.c: pass context to _hx509_create_signature
+
+	* req.c: pass context to _hx509_create_signature
+
+	* keyset.c (hx509_certs_info): print information about the keyset.
+
+	* hxtool.c (pcert_print) print keystore info when --info flag is
+	given.
+
+	* hxtool-commands.in: Add hxtool print --info.
+
+	* test_query.in: Test hxtool print --info.
+
+	* hx_locl.h (hx509_keyset_ops): add printinfo
+
+	* crypto.c: Start to hang the private key operations of the
+	private key, pass hx509_context to create_checksum.
+	
 2006-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ks_p11.c: Iterate over all slots, not just the first/selected
