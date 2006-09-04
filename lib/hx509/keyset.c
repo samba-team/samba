@@ -330,3 +330,46 @@ hx509_get_one_cert(hx509_context context, hx509_certs certs, hx509_cert *c)
     hx509_certs_end_seq(context, certs, cursor);
     return 0;
 }
+
+static int
+certs_info_stdio(void *ctx, char *str)
+{
+    FILE *f = ctx;
+    fprintf(f, "%s\n", str);
+    return 0;
+}
+
+int
+hx509_certs_info(hx509_context context, 
+		 hx509_certs certs,
+		 int (*func)(void *, char *),
+		 void *ctx)
+{
+    if (func == NULL) {
+	func = certs_info_stdio;
+	if (ctx == NULL)
+	    ctx = stdout;
+    }
+    if (certs->ops->printinfo == NULL) {
+	(*func)(ctx, "No info function for certs");
+	return 0;
+    }
+    return (*certs->ops->printinfo)(context, certs, certs->ops_data,
+				    func, ctx);
+}
+
+void
+_hx509_pi_printf(int (*func)(void *, char *), void *ctx,
+		 char *fmt, ...)
+{
+    va_list ap;
+    char *str;
+
+    va_start(ap, fmt);
+    vasprintf(&str, fmt, ap);
+    va_end(ap);
+    if (str == NULL)
+	return;
+    (*func)(ctx, str);
+    free(str);
+}
