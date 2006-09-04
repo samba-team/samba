@@ -1005,22 +1005,43 @@ p11_iter_end(hx509_context context,
     return ret;
 }
 
+#define MECHFLAG(x) { "unknown-flag-" #x, x }
 static struct units mechflags[] = {
-	{"derive",		0x80000 },
-	{"unwrap",		0x40000 },
-	{"wrap",		0x20000 },
-	{"genereate-key-pair",	0x10000 },
-	{"generate",		0x08000 },
-	{"verify-recover",	0x04000 },
-	{"verify",		0x02000 },
-	{"sign-recover",	0x01000 },
-	{"sign",		0x00800 },
-	{"digest",		0x00400 },
-	{"decrypt",		0x00200 },
-	{"encrypt",		0x00100 },
-	{"hw",			0x00001 },
-	{ NULL,			0x00000 }
+	MECHFLAG(0x80000000),
+	MECHFLAG(0x40000000),
+	MECHFLAG(0x20000000),
+	MECHFLAG(0x10000000),
+	MECHFLAG(0x08000000),
+	MECHFLAG(0x04000000),
+	{"ec-compress",		0x2000000 },
+	{"ec-uncompress",	0x1000000 },
+	{"ec-namedcurve",	0x0800000 },
+	{"ec-ecparameters",	0x0400000 },
+	{"ec-f-2m",		0x0200000 },
+	{"ec-f-p",		0x0100000 },
+	{"derive",		0x0080000 },
+	{"unwrap",		0x0040000 },
+	{"wrap",		0x0020000 },
+	{"genereate-key-pair",	0x0010000 },
+	{"generate",		0x0008000 },
+	{"verify-recover",	0x0004000 },
+	{"verify",		0x0002000 },
+	{"sign-recover",	0x0001000 },
+	{"sign",		0x0000800 },
+	{"digest",		0x0000400 },
+	{"decrypt",		0x0000200 },
+	{"encrypt",		0x0000100 },
+	MECHFLAG(0x00080),
+	MECHFLAG(0x00040),
+	MECHFLAG(0x00020),
+	MECHFLAG(0x00010),
+	MECHFLAG(0x00008),
+	MECHFLAG(0x00004),
+	MECHFLAG(0x00002),
+	{"hw",			0x0000001 },
+	{ NULL,			0x0000000 }
 };
+#undef MECHFLAG
 
 static int
 p11_printinfo(hx509_context context, 
@@ -1059,10 +1080,9 @@ p11_printinfo(hx509_context context,
 			  flags, sizeof(flags));
 
 	    _hx509_pi_printf(func, ctx, 
-			     "  %s(%lu) flags: (0x%08x) %s",
+			     "  %s(%lu) flags: %s",
 			     mechname,
 			     (unsigned long)s->mechs.list[j],
-			     (unsigned long)s->mechs.infos[j]->flags,
 			     flags);
 	}
     }
