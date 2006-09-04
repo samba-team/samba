@@ -409,6 +409,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			fprintf(out, "%s\n", schema_entry);
 			break;
 		}
+		ret.count++;
 	}
 
 	ldb_ret = fetch_objectclass_schema(ldb, schemadn, mem_ctx, &objectclasses_res);
@@ -566,6 +567,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			fprintf(out, "%s\n", schema_entry);
 			break;
 		}
+		ret.count++;
 	}
 
 	return ret;
@@ -620,7 +622,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 	fclose(in);
 	fclose(out);
 
-	printf("Converted %d records with %d failures\n", ret.count, ret.failures);
+	printf("Converted %d records (skipped %d) with %d failures\n", ret.count, ret.skipped, ret.failures);
 
 	return 0;
 }
