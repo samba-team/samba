@@ -53,7 +53,7 @@ int pac_flag		= -1;
 int validate_flag	= 0;
 int version_flag	= 0;
 int help_flag		= 0;
-int addrs_flag		= 1;
+int addrs_flag		= -1;
 struct getarg_strings extra_addresses;
 int anonymous_flag	= 0;
 char *lifetime 		= NULL;
@@ -459,7 +459,6 @@ get_new_tickets(krb5_context context,
 {
     krb5_error_code ret;
     krb5_get_init_creds_opt *opt;
-    krb5_addresses no_addrs;
     krb5_creds cred;
     char passwd[256];
     krb5_deltat start_time = 0;
@@ -521,12 +520,10 @@ get_new_tickets(krb5_context context,
 	    krb5_err(context, 1, ret, "krb5_get_init_creds_opt_set_pkinit");
     }
 
-    if (!addrs_flag) {
-	no_addrs.len = 0;
-	no_addrs.val = NULL;
-
-	krb5_get_init_creds_opt_set_address_list (opt, &no_addrs);
-    }
+    if (addrs_flag != -1)
+	krb5_get_init_creds_opt_set_addressless(context, opt, 
+						addrs_flag ? FALSE : TRUE);
+    printf("address: %d\n", addrs_flag);
 
     if (renew_life == NULL && renewable_flag)
 	renewstr = "1 month";
@@ -852,7 +849,7 @@ main (int argc, char **argv)
 				krb5_principal_get_realm(context, principal), 
 				"afslog", TRUE, &do_afslog);
 
-    if(!addrs_flag && extra_addresses.num_strings > 0)
+    if(addrs_flag == 0 && extra_addresses.num_strings > 0)
 	krb5_errx(context, 1, "specifying both extra addresses and "
 		  "no addresses makes no sense");
     {
