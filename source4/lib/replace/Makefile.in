@@ -26,6 +26,8 @@ libreplace.a: $(OBJS)
 test: testsuite
 	./testsuite
 
+installcheck: install test
+
 TEST_OBJS = test/testsuite.o
 
 testsuite: libreplace.a $(TEST_OBJS)
