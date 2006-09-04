@@ -96,7 +96,7 @@ static int test_strlcpy()
 	printf("testing strlcpy\n");
 	for (i=0;tests[i].src;i++) {
 		if (strlcpy(buf, tests[i].src, sizeof(buf)) != tests[i].result) {
-			printf("strlcpy test %d failed\n");
+			printf("strlcpy test %d failed\n", i);
 			return false;
 		}
 	}
