@@ -52,7 +52,7 @@ typedef struct krb5_get_init_creds_ctx {
     const char *password;
     krb5_s2k_proc key_proc;
 
-    krb5_get_init_creds_req_pac req_pac;
+    krb5_get_init_creds_tristate req_pac;
 
     krb5_pk_init_ctx pk_init_ctx;
 } krb5_get_init_creds_ctx;
@@ -256,6 +256,8 @@ print_expire (krb5_context context,
     }
 }
 
+static krb5_addresses no_addrs = { 0, NULL };
+
 static krb5_error_code
 get_init_creds_common(krb5_context context,
 		      krb5_principal client,
@@ -284,7 +286,7 @@ get_init_creds_common(krb5_context context,
 	ctx->req_pac = options->opt_private->req_pac;
 	ctx->pk_init_ctx = options->opt_private->pk_init_ctx;
     } else
-	ctx->req_pac = KRB5_PA_PAC_DONT_CARE;
+	ctx->req_pac = KRB5_INIT_CREDS_TRISTATE_UNSET;
 
     if (ctx->key_proc == NULL)
 	ctx->key_proc = default_s2k_func;
@@ -313,8 +315,30 @@ get_init_creds_common(krb5_context context,
 	ctx->flags.b.postdated = 1;
     if (ctx->cred.times.renew_till)
 	ctx->flags.b.renewable = 1;
-    if (options->flags & KRB5_GET_INIT_CREDS_OPT_ADDRESS_LIST)
+    if (options->flags & KRB5_GET_INIT_CREDS_OPT_ADDRESS_LIST) {
 	ctx->addrs = options->address_list;
+	printf("list\n");
+    } else if (options->opt_private) {
+	printf("addresslessness\n");
+	switch (options->opt_private->addressless) {
+	case KRB5_INIT_CREDS_TRISTATE_UNSET:
+#if KRB5_ADDRESSLESS_DEFAULT == TRUE
+	    ctx->addrs = &no_addrs;
+#else
+	    ctx->addrs = NULL;
+#endif
+	printf("unset\n");
+	    break;
+	case KRB5_INIT_CREDS_TRISTATE_FALSE:
+	    ctx->addrs = NULL;
+	printf("false\n");
+	    break;
+	case KRB5_INIT_CREDS_TRISTATE_TRUE:
+	    ctx->addrs = &no_addrs;
+	printf("true\n");
+	    break;
+	}
+    }
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ETYPE_LIST) {
 	etypes = malloc((options->etype_list_length + 1)
 			* sizeof(krb5_enctype));
@@ -1029,12 +1053,12 @@ pa_data_add_pac_request(krb5_context context,
     void *buf;
     
     switch (ctx->req_pac) {
-    case KRB5_PA_PAC_DONT_CARE:
+    case KRB5_INIT_CREDS_TRISTATE_UNSET:
 	return 0; /* don't bother */
-    case KRB5_PA_PAC_REQ_TRUE:
+    case KRB5_INIT_CREDS_TRISTATE_TRUE:
 	req.include_pac = 1;
 	break;
-    case KRB5_PA_PAC_REQ_FALSE:
+    case KRB5_INIT_CREDS_TRISTATE_FALSE:
 	req.include_pac = 0;
     }	
 

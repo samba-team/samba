@@ -171,10 +171,10 @@ struct _krb5_krb_auth_data;
 #define KRB5_BUFSIZ 1024
 
 typedef enum {
-    KRB5_PA_PAC_DONT_CARE = 0, 
-    KRB5_PA_PAC_REQ_TRUE,
-    KRB5_PA_PAC_REQ_FALSE
-} krb5_get_init_creds_req_pac;
+    KRB5_INIT_CREDS_TRISTATE_UNSET = 0,
+    KRB5_INIT_CREDS_TRISTATE_TRUE,
+    KRB5_INIT_CREDS_TRISTATE_FALSE
+} krb5_get_init_creds_tristate;
 
 struct _krb5_get_init_creds_opt_private {
     int refcount;
@@ -182,12 +182,12 @@ struct _krb5_get_init_creds_opt_private {
     const char *password;
     krb5_s2k_proc key_proc;
     /* PA_PAC_REQUEST */
-    krb5_get_init_creds_req_pac req_pac;
+    krb5_get_init_creds_tristate req_pac;
     /* PKINIT */
     krb5_pk_init_ctx pk_init_ctx;
     int canonicalize;
-    /* */
     KRB_ERROR *error;
+    krb5_get_init_creds_tristate addressless;
 };
 
 /*
