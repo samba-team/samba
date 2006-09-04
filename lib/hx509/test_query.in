@@ -41,6 +41,11 @@ echo "try printing"
 	--pass=PASS:foobar \
 	PKCS12:$srcdir/data/test.p12 > /dev/null || exit 1
 
+./hxtool print \
+	--pass=PASS:foobar \
+	--info \
+	PKCS12:$srcdir/data/test.p12 > /dev/null || exit 1
+
 echo "make sure entry is found (friendlyname)"
 ./hxtool query \
 	--pass=PASS:foobar \
