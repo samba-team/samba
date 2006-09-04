@@ -103,11 +103,11 @@
  *
  **************************************************************/
 
-#ifndef NO_CONFIG_H
+#ifdef _SAMBA_BUILD_
 #include "config.h"
 #else
-#define NULL 0
-#endif 
+#include "replace_config.h"
+#endif
 
 #ifdef TEST_SNPRINTF /* need math library headers for testing */
 

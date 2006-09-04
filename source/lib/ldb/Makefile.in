@@ -6,6 +6,7 @@ XSLTPROC = @XSLTPROC@
 DOXYGEN = @DOXYGEN@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
 includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
@@ -21,20 +22,7 @@ CFLAGS=-I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
        -I$(srcdir)/../tdb/include -I$(srcdir)/../tdb -I$(srcdir)/../talloc \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
 
-LIB_FLAGS=-Llib -lldb @LIBS@
-
-REPDIR=replace
-REPLACE_OBJ=$(REPDIR)/replace.o $(REPDIR)/timegm.o
-
-TDBDIR=tdb
-TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/dump.o \
-	$(TDBDIR)/common/io.o $(TDBDIR)/common/lock.o \
-	$(TDBDIR)/common/open.o $(TDBDIR)/common/traverse.o \
-	$(TDBDIR)/common/freelist.o $(TDBDIR)/common/error.o \
-	$(TDBDIR)/common/transaction.o 
-
-TALLOCDIR=talloc
-TALLOC_OBJ=$(TALLOCDIR)/talloc.o
+LIB_FLAGS=-L$(srcdir)/../tdb -L$(srcdir)/../talloc -Llib -lldb -ltdb -ltalloc @LIBS@ @REPLACE_LIB@
 
 LDB_TDB_DIR=ldb_tdb
 LDB_TDB_OBJ=$(LDB_TDB_DIR)/ldb_tdb.o \
@@ -53,7 +41,7 @@ MODULES_OBJ=$(MODDIR)/operational.o $(MODDIR)/schema.o $(MODDIR)/rdn_name.o \
 	   $(MODDIR)/objectclass.o \
 	   $(MODDIR)/paged_results.o $(MODDIR)/sort.o $(MODDIR)/asq.o
 
-OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(EXTRA_OBJ) $(REPLACE_OBJ)
+OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(EXTRA_OBJ) 
 
 LDB_LIB = lib/libldb.a
 
@@ -63,7 +51,7 @@ LIBS = $(LDB_LIB)
 
 EXAMPLES = examples/ldbreader examples/ldifreader
 
-DIRS = lib bin common replace ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples tdb talloc
+DIRS = lib bin common ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples tdb talloc
 
 all: dirs $(OBJS) $(LDB_LIB) $(BINS) $(EXAMPLES) manpages
 
@@ -159,3 +147,7 @@ etags:
 
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
+
+@REPLACE_LIB@:
+	cd @REPLACE_DIR@ && ./autogen.sh && ./configure
+	$(MAKE) -C @REPLACE_DIR@

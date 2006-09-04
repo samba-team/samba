@@ -1,6 +1,6 @@
 #!/bin/sh
 
-rm -rf autom4te.cache/
+rm -rf autom4te.cache
 
 autoheader || exit 1
 autoconf || exit 1

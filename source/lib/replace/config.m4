@@ -1,8 +1,11 @@
 AC_CHECK_HEADERS([stdint.h inttypes.h])
 AC_CHECK_TYPE(uint_t, unsigned int)
+AC_CHECK_TYPE(uint8_t, unsigned char)
+AC_CHECK_TYPE(int8_t, char)
 AC_CHECK_TYPE(int16_t, short)
 AC_CHECK_TYPE(uint16_t, unsigned short)
 AC_CHECK_TYPE(int32_t, long)
+AC_CHECK_TYPE(intptr_t, unsigned long long)
 AC_CHECK_TYPE(uint32_t, unsigned long)
 AC_CHECK_TYPE(ssize_t, int)
 
@@ -170,3 +173,18 @@ else
 fi
 
 AC_CHECK_HEADERS([sys/param.h limits.h])
+
+AC_CHECK_TYPE(comparison_fn_t, 
+[AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
+
+AC_CHECK_FUNCS(timegm strnlen setenv)
+AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
+
+AC_TRY_CPP([
+#define eprintf(...) fprintf(stderr, __VA_ARGS__)
+eprintf("bla", "bar");
+], [], [AC_MSG_ERROR([__VA_ARGS__ is required])])
+
+# Check prerequisites
+AC_CHECK_FUNCS([memset printf syslog], [], 
+			   [ AC_MSG_ERROR([Required function not found])])

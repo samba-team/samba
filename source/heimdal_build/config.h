@@ -22,6 +22,8 @@
 /* path to sysconf - should we force this to samba LIBDIR ? */
 #define SYSCONFDIR "/etc"
 
+/* HDB module dir - set to Samba LIBDIR/hdb ? */
+#define HDBDIR "/usr/heimdal/lib"
 
 /* Maximum values on all known systems */
 #define MaxHostNameLen (64+4)
