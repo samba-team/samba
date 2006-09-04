@@ -197,6 +197,7 @@
 #define DP_C_LONG    3
 #define DP_C_LDOUBLE 4
 #define DP_C_LLONG   5
+#define DP_C_SIZET   6
 
 /* Chunk types */
 #define CNK_FMT_STR 0
@@ -467,6 +468,10 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 				cnk->cflags = DP_C_LDOUBLE;
 				ch = *format++;
 				break;
+			case 'z':
+				cnk->cflags = DP_C_SIZET;
+				ch = *format++;
+				break;
 			default:
 				break;
 			}
@@ -575,6 +580,8 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 				cnk->value = va_arg (args, long int);
 			else if (cnk->cflags == DP_C_LLONG)
 				cnk->value = va_arg (args, LLONG);
+			else if (cnk->cflags == DP_C_SIZET)
+				cnk->value = va_arg (args, ssize_t);
 			else
 				cnk->value = va_arg (args, int);
 
@@ -592,6 +599,8 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 				cnk->value = (unsigned long int)va_arg (args, unsigned long int);
 			else if (cnk->cflags == DP_C_LLONG)
 				cnk->value = (LLONG)va_arg (args, unsigned LLONG);
+			else if (cnk->cflags == DP_C_SIZET)
+				cnk->value = (size_t)va_arg (args, size_t);
 			else
 				cnk->value = (unsigned int)va_arg (args, unsigned int);
 
@@ -644,6 +653,8 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 				cnk->pnum = va_arg (args, long int *);
 			else if (cnk->cflags == DP_C_LLONG)
 				cnk->pnum = va_arg (args, LLONG *);
+			else if (cnk->cflags == DP_C_SIZET)
+				cnk->pnum = va_arg (args, ssize_t *);
 			else
 				cnk->pnum = va_arg (args, int *);
 
@@ -725,6 +736,8 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 				*((long int *)(cnk->pnum)) = (long int)currlen;
 			else if (cnk->cflags == DP_C_LLONG)
 				*((LLONG *)(cnk->pnum)) = (LLONG)currlen;
+			else if (cnk->cflags == DP_C_SIZET)
+				*((ssize_t *)(cnk->pnum)) = (ssize_t)currlen;
 			else
 				*((int *)(cnk->pnum)) = (int)currlen;
 			break;
@@ -1260,6 +1273,7 @@ int smb_snprintf(char *str,size_t count,const char *fmt,...)
 #ifdef TEST_SNPRINTF
 
  int sprintf(char *str,const char *fmt,...);
+ int printf(const char *fmt,...);
 
  int main (void)
 {
@@ -1329,15 +1343,20 @@ int smb_snprintf(char *str,size_t count,const char *fmt,...)
 	int fail = 0;
 	int num = 0;
 	int l1, l2;
+	char *ss_fmt[] = {
+		"%zd",
+		"%zu",
+		NULL
+	};
+	size_t ss_nums[] = {134, 91340, 123456789, 0203, 1234567890, 0};
 
 	printf ("Testing snprintf format codes against system sprintf...\n");
 
 	for (x = 0; fp_fmt[x] ; x++) {
 		for (y = 0; fp_nums[y] != 0 ; y++) {
 			buf1[0] = buf2[0] = '\0';
-			l1 = snprintf(NULL, 0, fp_fmt[x], fp_nums[y]);
-			l2 = sprintf(buf1, fp_fmt[x], fp_nums[y]);
-			sprintf (buf2, fp_fmt[x], fp_nums[y]);
+			l1 = snprintf(buf1, sizeof(buf1), fp_fmt[x], fp_nums[y]);
+			l2 = sprintf (buf2, fp_fmt[x], fp_nums[y]);
 			buf1[1023] = buf2[1023] = '\0';
 			if (strcmp (buf1, buf2) || (l1 != l2)) {
 				printf("snprintf doesn't match Format: %s\n\tsnprintf(%d) = [%s]\n\t sprintf(%d) = [%s]\n", 
@@ -1351,9 +1370,8 @@ int smb_snprintf(char *str,size_t count,const char *fmt,...)
 	for (x = 0; int_fmt[x] ; x++) {
 		for (y = 0; int_nums[y] != 0 ; y++) {
 			buf1[0] = buf2[0] = '\0';
-			l1 = snprintf(NULL, 0, int_fmt[x], int_nums[y]);
-			l2 = sprintf(buf1, int_fmt[x], int_nums[y]);
-			sprintf (buf2, int_fmt[x], int_nums[y]);
+			l1 = snprintf(buf1, sizeof(buf1), int_fmt[x], int_nums[y]);
+			l2 = sprintf (buf2, int_fmt[x], int_nums[y]);
 			buf1[1023] = buf2[1023] = '\0';
 			if (strcmp (buf1, buf2) || (l1 != l2)) {
 				printf("snprintf doesn't match Format: %s\n\tsnprintf(%d) = [%s]\n\t sprintf(%d) = [%s]\n", 
@@ -1367,9 +1385,8 @@ int smb_snprintf(char *str,size_t count,const char *fmt,...)
 	for (x = 0; str_fmt[x] ; x++) {
 		for (y = 0; str_vals[y] != 0 ; y++) {
 			buf1[0] = buf2[0] = '\0';
-			l1 = snprintf(NULL, 0, str_fmt[x], str_vals[y]);
-			l2 = sprintf(buf1, str_fmt[x], str_vals[y]);
-			sprintf (buf2, str_fmt[x], str_vals[y]);
+			l1 = snprintf(buf1, sizeof(buf1), str_fmt[x], str_vals[y]);
+			l2 = sprintf (buf2, str_fmt[x], str_vals[y]);
 			buf1[1023] = buf2[1023] = '\0';
 			if (strcmp (buf1, buf2) || (l1 != l2)) {
 				printf("snprintf doesn't match Format: %s\n\tsnprintf(%d) = [%s]\n\t sprintf(%d) = [%s]\n", 
@@ -1384,9 +1401,8 @@ int smb_snprintf(char *str,size_t count,const char *fmt,...)
 	for (x = 0; ll_fmt[x] ; x++) {
 		for (y = 0; ll_nums[y] != 0 ; y++) {
 			buf1[0] = buf2[0] = '\0';
-			l1 = snprintf(NULL, 0, ll_fmt[x], ll_nums[y]);
-			l2 = sprintf(buf1, ll_fmt[x], ll_nums[y]);
-			sprintf (buf2, ll_fmt[x], ll_nums[y]);
+			l1 = snprintf(buf1, sizeof(buf1), ll_fmt[x], ll_nums[y]);
+			l2 = sprintf (buf2, ll_fmt[x], ll_nums[y]);
 			buf1[1023] = buf2[1023] = '\0';
 			if (strcmp (buf1, buf2) || (l1 != l2)) {
 				printf("snprintf doesn't match Format: %s\n\tsnprintf(%d) = [%s]\n\t sprintf(%d) = [%s]\n", 
@@ -1432,6 +1448,21 @@ int smb_snprintf(char *str,size_t count,const char *fmt,...)
 		printf("snprintf doesn't match Format: %s\n\tsnprintf(%d) = [%s]\n\t sprintf(%d) = [%s]\n",
 				"%4$*1$d %2$s %3$*1$.*1$f", l1, buf1, l2, buf2);
 		fail++;
+	}
+
+	for (x = 0; ss_fmt[x] ; x++) {
+		for (y = 0; ss_nums[y] != 0 ; y++) {
+			buf1[0] = buf2[0] = '\0';
+			l1 = snprintf(buf1, sizeof(buf1), ss_fmt[x], ss_nums[y]);
+			l2 = sprintf (buf2, ss_fmt[x], ss_nums[y]);
+			buf1[1023] = buf2[1023] = '\0';
+			if (strcmp (buf1, buf2) || (l1 != l2)) {
+				printf("snprintf doesn't match Format: %s\n\tsnprintf(%d) = [%s]\n\t sprintf(%d) = [%s]\n", 
+				       ss_fmt[x], l1, buf1, l2, buf2);
+				fail++;
+			}
+			num++;
+		}
 	}
 #if 0
 	buf1[0] = buf2[0] = '\0';
