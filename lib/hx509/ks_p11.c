@@ -1058,9 +1058,9 @@ p11_printinfo(hx509_context context,
 			  flags, sizeof(flags));
 
 	    _hx509_pi_printf(func, ctx, 
-			     "  %lu (%s) flags: (0x%08x) %s",
-			     (unsigned long)s->mechs.list[j],
+			     "  %s(%lu) flags: (0x%08x) %s",
 			     mechname,
+			     (unsigned long)s->mechs.list[j],
 			     (unsigned long)s->mechs.infos[j]->flags,
 			     flags);
 	}
