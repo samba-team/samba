@@ -196,7 +196,8 @@ _hx509_request_to_pkcs10(hx509_context context,
     if (data.length != size)
 	abort();
 
-    ret = _hx509_create_signature(signer,
+    ret = _hx509_create_signature(context,
+				  signer,
 				  hx509_signature_rsa_with_sha1(),
 				  &data,
 				  &r.signatureAlgorithm,

@@ -892,7 +892,8 @@ hx509_cms_create_signed_1(hx509_context context,
 	    goto out;
 	}
 
-	ret = _hx509_create_signature(NULL,
+	ret = _hx509_create_signature(context,
+				      NULL,
 				      digest_alg,
 				      sd.encapContentInfo.eContent,
 				      NULL,
@@ -971,7 +972,8 @@ hx509_cms_create_signed_1(hx509_context context,
 	if (size != os.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 			   
-	ret = _hx509_create_signature(_hx509_cert_private_key(cert),
+	ret = _hx509_create_signature(context,
+				      _hx509_cert_private_key(cert),
 				      hx509_signature_rsa_with_sha1(),
 				      &os,
 				      &signer_info->signatureAlgorithm,
