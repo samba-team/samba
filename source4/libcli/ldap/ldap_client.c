@@ -311,9 +311,12 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}
+		talloc_steal(conn, conn->sock);
 		SMB_ASSERT(sizeof(protocol)>10);
 		SMB_ASSERT(sizeof(path)>1024);
 	
+		/* The %c specifier doesn't null terminate :-( */
+		ZERO_STRUCT(path);
 		ret = sscanf(url, "%10[^:]://%1025c", protocol, path);
 		if (ret < 2) {
 			composite_error(state->ctx, NT_STATUS_INVALID_PARAMETER);
