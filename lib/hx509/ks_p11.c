@@ -1032,7 +1032,8 @@ p11_printinfo(hx509_context context,
     struct p11_module *p = data;
     int i, j;
         
-    _hx509_pi_printf(func, ctx, "pkcs11 driver with %d slots", p->num_slots);
+    _hx509_pi_printf(func, ctx, "pkcs11 driver with %d slot%s", 
+		     p->num_slots, p->num_slots > 1 ? "s" : "");
 
     for (i = 0; i < p->num_slots; i++) {
 	struct p11_slot *s = &p->slot[i];
