@@ -42,6 +42,7 @@
 .Nm krb5_get_init_creds_opt_free ,
 .Nm krb5_get_init_creds_opt_init ,
 .Nm krb5_get_init_creds_opt_set_address_list ,
+.Nm krb5_get_init_creds_opt_set_addressless ,
 .Nm krb5_get_init_creds_opt_set_anonymous ,
 .Nm krb5_get_init_creds_opt_set_default_flags ,
 .Nm krb5_get_init_creds_opt_set_etype_list ,
@@ -81,6 +82,11 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fo krb5_get_init_creds_opt_set_address_list
 .Fa "krb5_get_init_creds_opt *opt"
 .Fa "krb5_addresses *addresses"
+.Fc
+.Ft void
+.Fo krb5_get_init_creds_opt_set_addressless
+.Fa "krb5_get_init_creds_opt *opt"
+.Fa "krb5_boolean addressless"
 .Fc
 .Ft void
 .Fo krb5_get_init_creds_opt_set_anonymous
@@ -308,6 +314,11 @@ used if no value is specified in the options structure.
 sets the list of
 .Fa addresses
 that is should be stored in the ticket.
+.Pp
+.Fn krb5_get_init_creds_opt_set_addressless
+controls if the ticket is requested with addresses or not,
+.Fn krb5_get_init_creds_opt_set_address_list
+overrides this option.
 .Pp
 .Fn krb5_get_init_creds_opt_set_anonymous
 make the request anonymous if the
