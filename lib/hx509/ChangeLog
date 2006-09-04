@@ -1,5 +1,7 @@
 2006-09-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_p11.c: add more mechflags
+
 	* name.c (no): add OU and sort
 
 	* revoke.c: pass context to _hx509_create_signature
