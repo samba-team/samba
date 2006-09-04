@@ -27,9 +27,51 @@
 #include "../replace.h"
 #include <stdio.h>
 
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#if HAVE_TYPES_H
+#include <sys/types.h>
+#endif
+
+#if HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
+#include <fcntl.h>
+#include <errno.h>
+
+#define TESTFILE "testfile.dat"
+
+/*
+  test ftruncate() function
+ */
 static int test_ftruncate()
 {
-	/* FIXME */
+	struct stat st;
+	int fd, i;
+	const int size;
+	printf("testing ftruncate\n");
+	unlink(TESTFILE);
+	fd = open(TESTFILE, O_RDWR|O_CREAT, 0600);
+	if (fd == -1) {
+		printf("creating '%s' failed - %s\n", TESTFILE, strerror(errno));
+		return false;
+	}
+	if (ftruncate(fd, size) != 0) {
+		printf("ftruncate failed - %s\n", strerror(errno));
+		return false;
+	}
+	if (fstat(fd, &st) != 0) {
+		printf("fstat failed - %s\n", strerror(errno));
+		return false;
+	}
+	if (st.st_size != size) {
+		printf("ftruncate gave wrong size %d - expected %d\n",
+		       (int)st.st_size, size);
+		return false;
+	}
 	return true;
 }
 

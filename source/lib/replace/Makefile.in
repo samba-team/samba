@@ -13,7 +13,7 @@ CFLAGS=-I. -I$(srcdir) @CFLAGS@
 
 OBJS = dlfcn.o getpass.o replace.o snprintf.o
 
-all: libreplace.a
+all: libreplace.a testsuite
 
 install: all
 	mkdir -p $(libdir)
