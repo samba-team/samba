@@ -34,4 +34,12 @@ testsuite: libreplace.a $(TEST_OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f *.o
+	rm -f *.o *.a testsuite
+
+distclean: clean
+	rm -f *~ */*~
+	rm -rf autom4te.cache
+	rm -f configure \
+		config.log config.status \
+		replace_config.h
+	rm -f Makefile
