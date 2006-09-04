@@ -3,7 +3,7 @@
 
 if [ $# -lt 1 ]
 then
-	echo "$0 PREFIX"
+	echo "$0 PREFIX TESTS"
 	exit
 fi
 
@@ -54,6 +54,16 @@ fi
 incdir=`dirname $ARG0`
 . $incdir/test_functions.sh
 
+#Start slapd before smbd
+if [ x"$TEST_LDAP" = x"yes" ]; then
+    slapd_start
+    echo -n "LDAP PROVISIONING..."
+    if ! $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-backend=$LDAPI; then
+	echo "LDAP PROVISIONING failed: $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-backend=$LDAPI"
+	exit 1;
+    fi
+fi
+
 SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
 export SMBD_TEST_FIFO
 SMBD_TEST_LOG="$PREFIX/smbd_test.log"
@@ -99,6 +109,10 @@ START=`date`
 failed=$?
 
 kill `cat $PIDDIR/smbd.pid`
+
+if [ "$TEST_LDAP"x = "yesx" ]; then
+    kill `cat $PIDDIR/slapd.pid`
+fi
 
 END=`date`
 echo "START: $START ($ARG0)";

@@ -65,6 +65,16 @@ smbd_have_test_log() {
 	return 1;
 }
 
+slapd_start() {
+    OLDPATH=$PATH
+    PATH=/usr/local/sbin:/usr/sbin:/sbin:$PATH
+    export PATH
+    slapd -f $SLAPD_CONF -h $LDAPI_ESCAPE
+    PATH=$OLDPATH
+    export PATH
+    return 0;
+}
+
 testit() {
 	if [ -z "$PREFIX" ]; then
 	    PREFIX=test_prefix

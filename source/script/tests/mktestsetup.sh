@@ -19,6 +19,8 @@ fi
 DOMAIN=SAMBADOMAIN
 USERNAME=administrator
 REALM=SAMBA.EXAMPLE.COM
+DNSNAME="samba.example.com"
+BASEDN="dc=samba,dc=example,dc=com"
 PASSWORD=penguin
 SRCDIR=`pwd`
 ROOT=$USER
@@ -57,11 +59,15 @@ CERTFILE=$TLSDIR/cert.pem
 KEYFILE=$TLSDIR/key.pem
 WINBINDD_SOCKET_DIR=$PREFIX_ABS/winbind_socket
 CONFIGURATION="--configfile=$CONFFILE"
+LDAPDIR=$PREFIX_ABS/ldap
+SLAPD_CONF=$LDAPDIR/slapd.conf
 export CONFIGURATION
 export CONFFILE
+export SLAPD_CONF
+export PIDDIR
 
 rm -rf $PREFIX/*
-mkdir -p $PRIVATEDIR $ETCDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR
+mkdir -p $PRIVATEDIR $ETCDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR $LDAPDIR/db
 
 cat >$CONFFILE<<EOF
 [global]
@@ -200,6 +206,7 @@ cat >$KRB5_CONFIG<<EOF
 [domain_realm]
  .samba.example.com = SAMBA.EXAMPLE.COM
 EOF
+export KRB5_CONFIG
 
 cat >$DHFILE<<EOF 
 -----BEGIN DH PARAMETERS-----
@@ -267,11 +274,75 @@ cSlMYli1H9MEXH0pQMGv5Qyd0OYIx2DDg96mZ+aFvqSG
 
 EOF
 
-export KRB5_CONFIG
+cat >$SLAPD_CONF <<EOF
+loglevel 0
 
-$srcdir/bin/smbscript $srcdir/setup/provision $CONFIGURATION --host-name=$NETBIOSNAME --host-ip=127.0.0.1 \
-    --quiet --domain $DOMAIN --realm $REALM \
-    --adminpass $PASSWORD --root=$ROOT || exit 1
+include $LDAPDIR/ad.schema
+
+pidfile		$PIDDIR/slapd.pid
+argsfile	$LDAPDIR/slapd.args
+
+access to * by * write
+
+allow update_anon bind_anon_dn
+
+include $LDAPDIR/modules.conf
+
+defaultsearchbase "$BASEDN"
+
+backend		bdb
+database        bdb
+suffix		"$BASEDN"
+directory	$LDAPDIR/db
+index           objectClass eq
+index           samAccountName eq
+
+EOF
+
+PROVISION_OPTIONS="$CONFIGURATION --host-name=$NETBIOSNAME --host-ip=127.0.0.1"
+PROVISION_OPTIONS="$PROVISION_OPTIONS --quiet --domain $DOMAIN --realm $REALM"
+PROVISION_OPTIONS="$PROVISION_OPTIONS --adminpass $PASSWORD --root=$ROOT"
+$srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS
+
+LDAPI="ldapi://$LDAPDIR/ldapi"
+LDAPI_ESCAPE="ldapi://"`echo $LDAPDIR/ldapi | sed 's|/|%2F|g'`
+export LDAPI
+export LDAPI_ESCAPE
+
+#This uses the provision we just did, to read out the schema
+$srcdir/bin/ad2oLschema $CONFIGURATION -H $PRIVATEDIR/sam.ldb -I $srcdir/setup/schema-map-openldap-2.3 -O $LDAPDIR/ad.schema
+#Now create an LDAP baseDN
+$srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-base
+
+OLDPATH=$PATH
+PATH=/usr/local/sbin:/usr/sbin:/sbin:$PATH
+export PATH
+
+MODCONF=$LDAPDIR/modules.conf
+rm -f $MODCONF
+touch $MODCONF
+
+if ! slaptest -u -f $SLAPD_CONF > /dev/null 2>&1; then
+    echo "enabling slapd modules"
+    cat > $MODCONF <<EOF 
+modulepath	/usr/lib/ldap
+moduleload	back_bdb
+EOF
+fi
+
+if slaptest -u -f $SLAPD_CONF; then
+    if ! slapadd -f $SLAPD_CONF < $PRIVATEDIR/$DNSNAME.ldif; then
+	echo "slapadd failed"
+    fi
+
+    if ! slaptest -f $SLAPD_CONF; then
+	echo "slaptest after database load failed"
+    fi
+fi
+    
+PATH=$OLDPATH
+export PATH
+
 
 cat >$PRIVATEDIR/wins_config.ldif<<EOF
 dn: name=TORTURE_26,CN=PARTNERS
@@ -284,3 +355,4 @@ type: 0x3
 EOF
 
 $srcdir/bin/ldbadd -H $PRIVATEDIR/wins_config.ldb < $PRIVATEDIR/wins_config.ldif >/dev/null || exit 1
+
