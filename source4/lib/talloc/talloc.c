@@ -890,7 +890,7 @@ static void talloc_report_depth_FILE_helper(const void *ptr, int depth, int max_
 		name,
 		(unsigned long)talloc_total_size(ptr),
 		(unsigned long)talloc_total_blocks(ptr),
-		talloc_reference_count(ptr));
+		(int)talloc_reference_count(ptr));
 }
 
 /*
