@@ -321,6 +321,8 @@ static NTSTATUS get_pwd_properties(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+#ifdef HAVE_KRB5
+
 static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx, 
 					const char *type,
 					uid_t uid,
@@ -368,19 +370,6 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 	return gen_cc;
 }
 
-static uid_t get_uid_from_state(struct winbindd_cli_state *state)
-{
-	uid_t uid = -1;
-
-	uid = state->request.data.auth.uid;
-
-	if (uid < 0) {
-		DEBUG(1,("invalid uid: '%d'\n", uid));
-		return -1;
-	}
-	return uid;
-}
-
 static void setup_return_cc_name(struct winbindd_cli_state *state, const char *cc)
 {
 	const char *type = state->request.data.auth.krb5_cc_type;
@@ -399,6 +388,21 @@ static void setup_return_cc_name(struct winbindd_cli_state *state, const char *c
 	}
 	
 	fstrcpy(state->response.data.auth.krb5ccname, cc);
+}
+
+#endif
+
+static uid_t get_uid_from_state(struct winbindd_cli_state *state)
+{
+	uid_t uid = -1;
+
+	uid = state->request.data.auth.uid;
+
+	if (uid < 0) {
+		DEBUG(1,("invalid uid: '%d'\n", uid));
+		return -1;
+	}
+	return uid;
 }
 
 /**********************************************************************
@@ -1852,7 +1856,9 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state) 
 {
 	NTSTATUS result = NT_STATUS_NOT_SUPPORTED;
+#ifdef HAVE_KRB5
 	int ret;
+#endif
 
 	DEBUG(3, ("[%5lu]: pam dual logoff %s\n", (unsigned long)state->pid,
 		state->request.data.logoff.user));
