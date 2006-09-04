@@ -506,7 +506,7 @@ char *rep_strcasestr(const char *haystack, const char *needle)
 	for (s=haystack;*s;s++) {
 		if (toupper(*needle) == toupper(*s) &&
 		    strncasecmp(s, needle, nlen) == 0) {
-			return discard_const_p(char, s);
+			return (char *)((intptr_t)s);
 		}
 	}
 	return NULL;
