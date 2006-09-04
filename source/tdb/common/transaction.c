@@ -88,6 +88,12 @@
 
 */
 
+struct tdb_transaction_el {
+	struct tdb_transaction_el *next, *prev;
+	tdb_off_t offset;
+	tdb_len_t length;
+	unsigned char *data;
+};
 
 /*
   hold the context of any current transaction
@@ -105,12 +111,7 @@ struct tdb_transaction {
 	   ordered, with first element at the front of the list. It
 	   needs to be doubly linked as the read/write traversals need
 	   to be backwards, while the commit needs to be forwards */
-	struct tdb_transaction_el {
-		struct tdb_transaction_el *next, *prev;
-		tdb_off_t offset;
-		tdb_len_t length;
-		unsigned char *data;
-	} *elements, *elements_last;
+	struct tdb_transaction_el *elements, *elements_last;
 
 	/* non-zero when an internal transaction error has
 	   occurred. All write operations will then fail until the
