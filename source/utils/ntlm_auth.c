@@ -479,7 +479,7 @@ static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
 
 static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
-	static const char zeros[16];
+	static const char zeros[16] = { 0, };
 	NTSTATUS nt_status;
 	char *error_string;
 	uint8 lm_key[8]; 

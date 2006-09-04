@@ -1626,7 +1626,7 @@ void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 	uchar digest_final[16];
 	uchar confounder[8];
 	uchar seq_num[8];
-	static const uchar nullbytes[8];
+	static const uchar nullbytes[8] = { 0, };
 
 	static const uchar schannel_seal_sig[8] = SCHANNEL_SEAL_SIGNATURE;
 	static const uchar schannel_sign_sig[8] = SCHANNEL_SIGN_SIGNATURE;

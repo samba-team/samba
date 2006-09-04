@@ -629,7 +629,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 			break;
 
 		case CNK_PTR:
-			cnk->strvalue = va_arg (args, void *);
+			cnk->strvalue = (char *)va_arg (args, void *);
 			for (i = 1; i < clist[pnum].num; i++) {
 				clist[pnum].chunks[i]->strvalue = cnk->strvalue;
 			}

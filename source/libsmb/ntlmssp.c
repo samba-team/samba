@@ -1062,7 +1062,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	if (!ntlmssp_state->nt_hash || !ntlmssp_state->lm_hash) {
-		static const uchar zeros[16];
+		static const uchar zeros[16] = { 0, };
 		/* do nothing - blobs are zero length */
 
 		/* session key is all zeros */
