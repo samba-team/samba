@@ -91,7 +91,9 @@ AC_CHECK_HEADERS(strings.h)
 AC_CACHE_CHECK([for C99 vsnprintf],samba_cv_HAVE_C99_VSNPRINTF,[
 AC_TRY_RUN([
 #include <sys/types.h>
+#include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 void foo(const char *format, ...) { 
        va_list ap;
        int len;
@@ -107,12 +109,14 @@ void foo(const char *format, ...) {
        va_start(ap, format);
        len = vsnprintf(0, 0, format, ap);
        va_end(ap);
-       if (len != 5) exit(1);
+       if (len != 5) exit(2);
 
-       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
+       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(3);
 
-       if (snprintf(buf, 20, "%lld", l) != 12 || strcmp(buf, "123456789000") != 0) exit(1);
-       if (snprintf(buf, 20, "%s", 0) < 3) exit(1);
+       if (snprintf(buf, 20, "%lld", l) != 12 || strcmp(buf, "123456789000") != 0) exit(4);
+       if (snprintf(buf, 20, "%zu", 123456789) != 9 || strcmp(buf, "123456789") != 0) exit(5);
+       if (snprintf(buf, 20, "%2\$d %1\$d", 3, 4) != 3 || strcmp(buf, "4 3") != 0) exit(6);
+       if (snprintf(buf, 20, "%s", 0) < 3) exit(7);
 
        exit(0);
 }
