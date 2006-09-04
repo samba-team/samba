@@ -1066,7 +1066,7 @@ p11_printinfo(hx509_context context,
 			 (unsigned long)s->mechs.num);
 	for (j = 0; j < s->mechs.num; j++) {
 	    const char *mechname = "unknown";
-	    char flags[256];
+	    char flags[256], unknownname[40];
 #define MECHNAME(s,n) case s: mechname = n; break
 	    switch(s->mechs.list[j]) {
 		MECHNAME(CKM_RSA_PKCS_KEY_PAIR_GEN, "rsa-pkcs-key-pair-gen");
@@ -1074,16 +1074,18 @@ p11_printinfo(hx509_context context,
 		MECHNAME(CKM_RSA_X_509, "rsa-x-509");
 		MECHNAME(CKM_MD5_RSA_PKCS, "md5-rsa-pkcs");
 		MECHNAME(CKM_SHA1_RSA_PKCS, "sha1-rsa-pkcs");
+	    default:
+		snprintf(unknownname, sizeof(unknownname),
+			 "unknown-mech-%lu", 
+			 (unsigned long)s->mechs.list[j]);
+		mechname = unknownname;
+		break;
 	    }
 #undef MECHNAME
 	    unparse_flags(s->mechs.infos[j]->flags, mechflags, 
 			  flags, sizeof(flags));
 
-	    _hx509_pi_printf(func, ctx, 
-			     "  %s(%lu) flags: %s",
-			     mechname,
-			     (unsigned long)s->mechs.list[j],
-			     flags);
+	    _hx509_pi_printf(func, ctx, "  %s: %s", mechname, flags);
 	}
     }
 
