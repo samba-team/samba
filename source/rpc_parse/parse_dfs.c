@@ -2576,7 +2576,7 @@ BOOL init_netdfs_q_dfs_EnumEx(NETDFS_Q_DFS_ENUMEX *v, uint32 level, uint32 bufsi
 	if (!dfs_name)
 		return False;
 	
-	init_unistr2(&v->dfs_name, dfs_name, UNI_FLAGS_NONE|UNI_STR_TERMINATE);
+	init_unistr2(&v->dfs_name, dfs_name, UNI_STR_TERMINATE);
 
 	v->level = level;
 	
