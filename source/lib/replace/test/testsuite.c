@@ -27,236 +27,236 @@
 #include "../replace.h"
 #include <stdio.h>
 
-int test_ftruncate()
+static int test_ftruncate()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_strlcpy()
+static int test_strlcpy()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_strlcat()
+static int test_strlcat()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_mktime()
+static int test_mktime()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_rename()
+static int test_rename()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_innetgr()
+static int test_innetgr()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_initgroups()
+static int test_initgroups()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_memmove()
+static int test_memmove()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_strdup()
+static int test_strdup()
 {
 	/* FIXME */
 	return true;
 }	
 
-int test_setlinebuf()
+static int test_setlinebuf()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_vsyslog()
+static int test_vsyslog()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_timegm()
+static int test_timegm()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_setenv()
+static int test_setenv()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_strndup()
+static int test_strndup()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_strnlen()
+static int test_strnlen()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_waitpid()
+static int test_waitpid()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_seteuid()
+static int test_seteuid()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_setegid()
+static int test_setegid()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_asprintf()
+static int test_asprintf()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_snprintf()
+static int test_snprintf()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_vasprintf()
+static int test_vasprintf()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_vsnprintf()
+static int test_vsnprintf()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_opendir()
+static int test_opendir()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_readdir()
+static int test_readdir()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_telldir()
+static int test_telldir()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_seekdir()
+static int test_seekdir()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_dlopen()
+static int test_dlopen()
 {
 	/* FIXME: test dlopen, dlsym, dlclose, dlerror */
 	return true;
 }
 
 
-int test_chroot()
+static int test_chroot()
 {
 	/* FIXME: chroot() */
 	return true;
 }
 
-int test_bzero()
+static int test_bzero()
 {
 	/* FIXME: bzero */
 	return true;
 }
 
-int test_strerror()
+static int test_strerror()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_errno()
+static int test_errno()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_mkdtemp()
+static int test_mkdtemp()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_mkstemp()
+static int test_mkstemp()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_pread()
+static int test_pread()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_pwrite()
+static int test_pwrite()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_getpass()
+static int test_getpass()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_inet_ntoa()
+static int test_inet_ntoa()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_strtoll()
+static int test_strtoll()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_strtoull()
+static int test_strtoull()
 {
 	/* FIXME */
 	return true;
@@ -278,25 +278,25 @@ UINT{16,32,64}_MAX
 INT32_MAX
 */
 
-int test_va_copy()
+static int test_va_copy()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_FUNCTION()
+static int test_FUNCTION()
 {
 	/* FIXME: test __FUNCTION__ macro */
 	return true;
 }
 
-int test_MIN()
+static int test_MIN()
 {
 	/* FIXME */
 	return true;
 }
 
-int test_MAX()
+static int test_MAX()
 {
 	/* FIXME */
 	return true;
