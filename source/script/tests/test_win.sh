@@ -7,7 +7,9 @@
 # Copyright Brad Henry <brad@samba.org> 2006
 # Released under the GNU GPL v2 or later.
 
-. $WINTEST_DIR/test_win.conf
+
+# This variable is defined in the per-hosts .fns file.
+. $WINTESTCONF
 
 # Setup the windows environment.
 # This was the best way I could figure out including library files
