@@ -1075,7 +1075,7 @@ static char *get_longfilename(file_info2 finfo)
 	/* finfo.size here is the length of the filename as written by the "/./@LongLink" name
 	 * header call. */
 	int namesize = finfo.size + strlen(cur_dir) + 2;
-	char *longname = SMB_MALLOC(namesize);
+	char *longname = (char *)SMB_MALLOC(namesize);
 	int offset = 0, left = finfo.size;
 	BOOL first = True;
 
@@ -1523,7 +1523,7 @@ static int read_inclusion_file(char *filename)
 	while ((! error) && (x_fgets(buf, sizeof(buf)-1, inclusion))) {
 		if (inclusion_buffer == NULL) {
 			inclusion_buffer_size = 1024;
-			if ((inclusion_buffer = SMB_MALLOC(inclusion_buffer_size)) == NULL) {
+			if ((inclusion_buffer = (char *)SMB_MALLOC(inclusion_buffer_size)) == NULL) {
 				DEBUG(0,("failure allocating buffer to read inclusion file\n"));
 				error = 1;
 				break;
@@ -1536,7 +1536,7 @@ static int read_inclusion_file(char *filename)
     
 		if ((strlen(buf) + 1 + inclusion_buffer_sofar) >= inclusion_buffer_size) {
 			inclusion_buffer_size *= 2;
-			inclusion_buffer = SMB_REALLOC(inclusion_buffer,inclusion_buffer_size);
+			inclusion_buffer = (char *)SMB_REALLOC(inclusion_buffer,inclusion_buffer_size);
 			if (!inclusion_buffer) {
 				DEBUG(0,("failure enlarging inclusion buffer to %d bytes\n",
 						inclusion_buffer_size));
