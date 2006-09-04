@@ -9,6 +9,8 @@ srcdir = @srcdir@
 builddir = @builddir@
 INSTALL = @INSTALL@
 
+CFLAGS=-I. -I$(srcdir) @CFLAGS@
+
 OBJS = dlfcn.o getpass.o replace.o snprintf.o
 
 all: libreplace.a
@@ -31,7 +33,7 @@ testsuite: libreplace.a $(TEST_OBJS)
 .c.o:
 	@echo Compiling $*.c
 	@mkdir -p `dirname $@`
-	$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f *.o *.a testsuite
