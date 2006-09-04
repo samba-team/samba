@@ -1,5 +1,29 @@
-2006-09-01  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-09-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/init_creds_pw.c: Remove debug printfs.
+
+	* kuser/kinit.c: Remove debug printf
+
+	* lib/krb5/krb5_get_init_creds.3: Document
+	krb5_get_init_creds_opt_set_addressless.
+
+	* kuser/kinit.c: Use new function
+	krb5_get_init_creds_opt_set_addressless.
+
+	* lib/krb5/krb5_locl.h: use new addressless, convert pa-pac option
+	to use the same tri-state option as the new addressless option.
+
+	* lib/krb5/init_creds_pw.c: use new addressless, convert pa-pac
+	option to use the same tri-state option as the new addressless
+	option.
+
+	* lib/krb5/init_creds.c (krb5_get_init_creds_opt_set_addressless):
+	used to control the address-lessness of the initial tickets
+	instead of passing in the empty set of address into
+	krb5_get_init_creds_opt_set_addresses.
+	
+2006-09-01  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kuser/kinit.c (renew_validate): inherit the proxiable and
 	forwardable from the orignal ticket, pointed out by Bernard
 	Antoine of CERN.
