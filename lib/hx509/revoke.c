@@ -702,7 +702,8 @@ add_to_req(hx509_context context, void *ptr, hx509_cert cert)
     if (ret)
 	goto out;
 
-    ret = _hx509_create_signature(NULL,
+    ret = _hx509_create_signature(context,
+				  NULL,
 				  &one->reqCert.hashAlgorithm,
 				  &c->tbsCertificate.issuer._save,
 				  NULL,
@@ -714,7 +715,8 @@ add_to_req(hx509_context context, void *ptr, hx509_cert cert)
     os.length = 
 	p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
 
-    ret = _hx509_create_signature(NULL,
+    ret = _hx509_create_signature(context,
+				  NULL,
 				  &one->reqCert.hashAlgorithm,
 				  &os,
 				  NULL,
