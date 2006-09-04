@@ -236,11 +236,13 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 		goto failed;
 	}
 
-	status = gensec_set_target_hostname(conn->gensec, conn->host);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to set GENSEC target hostname: %s\n", 
-			  nt_errstr(status)));
-		goto failed;
+	if (conn->host) {
+		status = gensec_set_target_hostname(conn->gensec, conn->host);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to set GENSEC target hostname: %s\n", 
+				  nt_errstr(status)));
+			goto failed;
+		}
 	}
 
 	status = gensec_set_target_service(conn->gensec, "ldap");
