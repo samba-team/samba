@@ -142,6 +142,8 @@ struct hx509_keyset_ops {
     int (*iter_start)(hx509_context, hx509_certs, void *, void **);
     int (*iter)(hx509_context, hx509_certs, void *, void *, hx509_cert *);
     int (*iter_end)(hx509_context, hx509_certs, void *, void *);
+    int (*printinfo)(hx509_context, hx509_certs, 
+		     void *, int (*)(void *, char *), void *);
 };
 
 struct _hx509_password {
