@@ -1,5 +1,7 @@
 2006-09-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_p11.c (p11_printinfo): print proper plural s
+
 	* ks_p11.c: save the mechs supported when initing the token, print
 	them in printinfo.
 
