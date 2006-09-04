@@ -787,7 +787,7 @@ kerberos5_forward(Authenticator *ap)
     krb5_error_code ret;
     krb5_ccache     ccache;
     krb5_creds      creds;
-    krb5_kdc_flags  flags;
+    KDCOptions	    flags;
     krb5_data       out_data;
     krb5_principal  principal;
 
@@ -828,15 +828,15 @@ kerberos5_forward(Authenticator *ap)
 
     creds.times.endtime = 0;
 
-    flags.i = 0;
-    flags.b.forwarded = 1;
+    memset(&flags, 0, sizeof(flags));
+    flags.forwarded = 1;
     if (forward_flags & OPTS_FORWARDABLE_CREDS)
-	flags.b.forwardable = 1;
+	flags.forwardable = 1;
 
     ret = krb5_get_forwarded_creds (context,
 				    auth_context,
 				    ccache,
-				    flags.i,
+				    KDCOptions2int(flags),
 				    RemoteHostName,
 				    &creds,
 				    &out_data);
