@@ -11,7 +11,7 @@ INSTALL = @INSTALL@
 
 CFLAGS=-I. -I$(srcdir) @CFLAGS@
 
-OBJS = dlfcn.o getpass.o replace.o snprintf.o
+OBJS = dlfcn.o getpass.o replace.o snprintf.o timegm.o
 
 all: libreplace.a testsuite
 

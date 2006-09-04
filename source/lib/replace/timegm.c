@@ -35,8 +35,8 @@
   adapted for Samba4 by Andrew Tridgell
 */
 
-#include "includes.h"
-#include "ldb/include/includes.h"
+#include "replace.h"
+#include <stdlib.h>
 
 #ifndef HAVE_TIMEGM
 
