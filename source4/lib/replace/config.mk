@@ -9,6 +9,7 @@ OBJ_FILES = \
 ##############################
 # Start SUBSYSTEM LIBREPLACE
 [SUBSYSTEM::LIBREPLACE]
+CFLAGS = -Ilib/replace
 OBJ_FILES = replace.o \
 		snprintf.o \
 		dlfcn.o \

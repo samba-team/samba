@@ -6,19 +6,19 @@
 
 #ifdef _SAMBA_BUILD_
 
-#include "system/filesys.h"
-#include "system/locale.h"
-#include "system/time.h"
-
 /* tell ldb we have the internal ldap code */
 #define HAVE_ILDAP 1
 
-#else /*_SAMBA_BUILD_*/
+#else
+#include "config.h"
+#endif /*_SAMBA_BUILD_*/
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include "config.h"
+#ifdef HAVE_REPLACE_H
+#include "replace.h"
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -50,8 +50,6 @@ typedef int (*comparison_fn_t)(const void *, const void *);
 #endif
 
 #include "talloc.h"
-
-#endif /*_SAMBA_BUILD_*/
 
 #include "ldb.h"
 #include "ldb_errors.h"

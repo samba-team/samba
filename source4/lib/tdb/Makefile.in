@@ -40,20 +40,23 @@ install: all
 	cp $(srcdir)/include/tdb.h $(includedir)
 	cp tdb.pc $(libdir)/pkgconfig
 
-bin/tdbtest: tools/tdbtest.o $(TDB_OBJ)
-	$(CC) $(CFLAGS) -o bin/tdbtest tools/tdbtest.o $(TDB_OBJ) -lgdbm
+libtdb.a: $(TDB_OBJ)
+	ar -rv libtdb.a $(TDB_OBJ)
 
-bin/tdbtool: tools/tdbtool.o $(TDB_OBJ)
-	$(CC) $(CFLAGS) -o bin/tdbtool tools/tdbtool.o $(TDB_OBJ)
+bin/tdbtest: tools/tdbtest.o libtdb.a
+	$(CC) $(CFLAGS) -o bin/tdbtest tools/tdbtest.o -L. -ltdb -lgdbm
 
-bin/tdbtorture: tools/tdbtorture.o $(TDB_OBJ)
-	$(CC) $(CFLAGS) -o bin/tdbtorture tools/tdbtorture.o $(TDB_OBJ)
+bin/tdbtool: tools/tdbtool.o libtdb.a
+	$(CC) $(CFLAGS) -o bin/tdbtool tools/tdbtool.o -L. -ltdb
 
-bin/tdbdump: tools/tdbdump.o $(TDB_OBJ)
-	$(CC) $(CFLAGS) -o bin/tdbdump tools/tdbdump.o $(TDB_OBJ)
+bin/tdbtorture: tools/tdbtorture.o libtdb.a
+	$(CC) $(CFLAGS) -o bin/tdbtorture tools/tdbtorture.o -L. -ltdb
 
-bin/tdbbackup: tools/tdbbackup.o $(TDB_OBJ)
-	$(CC) $(CFLAGS) -o bin/tdbbackup tools/tdbbackup.o $(TDB_OBJ)
+bin/tdbdump: tools/tdbdump.o libtdb.a
+	$(CC) $(CFLAGS) -o bin/tdbdump tools/tdbdump.o -L. -ltdb
+
+bin/tdbbackup: tools/tdbbackup.o libtdb.a
+	$(CC) $(CFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb
 
 clean:
 	rm -f $(PROGS) common/*.o tools/*.o *~ *.bak */*~ */*.bak *% core test.db test.tdb test.gdbm

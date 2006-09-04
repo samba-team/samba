@@ -4,24 +4,38 @@
    macros to go along with the lib/replace/ portability layer code
 
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Jelmer Vernooij 2006
+
+     ** NOTE! The following LGPL license applies to the replace
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
    
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
-   
-   This program is distributed in the hope that it will be useful,
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #ifndef _replace_h
 #define _replace_h
+
+#ifdef _SAMBA_BUILD_
+#include "config.h"
+#else
+#include "replace_config.h"
+#endif /* _SAMBA_BUILD_ */
+
+#include <stdlib.h>
+#include <stdarg.h>
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 #include "lib/replace/win32/replace.h"
@@ -53,59 +67,78 @@ extern int errno;
 #endif
 
 #ifndef HAVE_STRDUP
-char *strdup(const char *s);
+#define strdup rep_strdup
+char *rep_strdup(const char *s);
 #endif
 
 #ifndef HAVE_MEMMOVE
-void *memmove(void *dest,const void *src,int size);
+#define memmove rep_memmove
+void *rep_memmove(void *dest,const void *src,int size);
 #endif
 
 #ifndef HAVE_MKTIME
-time_t mktime(struct tm *t);
+#define mktime rep_mktime
+time_t rep_mktime(struct tm *t);
 #endif
 
 #ifndef HAVE_STRLCPY
-size_t strlcpy(char *d, const char *s, size_t bufsize);
+#define strlcpy rep_strlcpy
+size_t rep_strlcpy(char *d, const char *s, size_t bufsize);
 #endif
 
 #ifndef HAVE_STRLCAT
-size_t strlcat(char *d, const char *s, size_t bufsize);
+#define strlcat rep_strlcat
+size_t rep_strlcat(char *d, const char *s, size_t bufsize);
 #endif
 
 #ifndef HAVE_STRNDUP
-char *strndup(const char *s, size_t n);
+#define strndup rep_strndup
+char *rep_strndup(const char *s, size_t n);
 #endif
 
 #ifndef HAVE_STRNLEN
-size_t strnlen(const char *s, size_t n);
-#endif
-
-#ifndef HAVE_STRTOUL
-unsigned long strtoul(const char *nptr, char **endptr, int base);
+#define strnlen rep_strnlen
+size_t rep_strnlen(const char *s, size_t n);
 #endif
 
 #ifndef HAVE_SETENV
-int setenv(const char *name, const char *value, int overwrite); 
+#define setenv rep_setenv
+int rep_setenv(const char *name, const char *value, int overwrite); 
 #endif
 
 #ifndef HAVE_RENAME
-int rename(const char *zfrom, const char *zto);
+#define rename rep_rename
+int rep_rename(const char *zfrom, const char *zto);
 #endif
 
 #ifndef HAVE_STRCASESTR
-char *strcasestr(const char *haystack, const char *needle);
+#define strcasestr rep_strcasestr
+char *rep_strcasestr(const char *haystack, const char *needle);
 #endif
 
 #ifndef HAVE_STRTOK_R
-char *strtok_r(char *s, const char *delim, char **save_ptr);
+#define strtok_r rep_strtok_r 
+char *rep_strtok_r(char *s, const char *delim, char **save_ptr);
+#endif
+
+#ifndef HAVE_STRTOLL
+#define strtoll rep_strtoll
+long long int rep_strtoll(const char *str, char **endptr, int base);
+#endif
+
+#ifndef HAVE_STRTOULL
+#define strtoull rep_strtoull
+unsigned long long int rep_strtoull(const char *str, char **endptr, int base);
 #endif
 
 #ifndef HAVE_FTRUNCATE
-int ftruncate(int f,long l);
+#define ftruncate rep_ftruncate
+int rep_ftruncate(int f,long l);
 #endif
 
 #ifndef HAVE_VASPRINTF_DECL
-int vasprintf(char **ptr, const char *format, va_list ap);
+#define vasprintf rep_vasprintf
+int rep_vasprintf(char **ptr, const char *format, va_list ap);
 #endif
 
 #if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
@@ -114,7 +147,8 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 
 #ifndef HAVE_TIMEGM
 struct tm;
-time_t timegm(struct tm *tm);
+#define timegm rep_timegm
+time_t rep_timegm(struct tm *tm);
 #endif
 
 #ifndef PRINTF_ATTRIBUTE
@@ -131,10 +165,12 @@ time_t timegm(struct tm *tm);
 
 /* add varargs prototypes with printf checking */
 #ifndef HAVE_SNPRINTF_DECL
-int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
+#define snprintf rep_snprintf
+int rep_snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
 #ifndef HAVE_ASPRINTF_DECL
-int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
+#define asprintf rep_asprintf
+int rep_asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
 
@@ -174,7 +210,8 @@ int rep_mkstemp(char *temp);
 #endif
 
 #ifndef HAVE_MKDTEMP
-char *mkdtemp(char *template);
+#define mkdtemp rep_mkdtemp
+char *rep_mkdtemp(char *template);
 #endif
 
 #ifdef HAVE_LIMITS_H
@@ -247,5 +284,7 @@ typedef int bool;
 #ifndef __STRING
 #define __STRING(x)    #x
 #endif
+
+
 
 #endif
