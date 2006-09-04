@@ -10,9 +10,14 @@
        exit 1
  fi
 
- WINTEST_CONFFILE="$SRCDIR/script/tests/win/test_win.conf"
- if [ ! -r $WINTEST_CONFFILE ]; then
-       echo "$WINTEST_CONFFILE could not be read."
+ if [ ! $WINTESTCONF ]; then
+	echo "Environment variable WINTESTCONF has not been defined."
+	echo "Windows tests will not run unconfigured."
+	exit 1
+ fi
+
+ if [ ! -r $WINTESTCONF ]; then
+       echo "$WINTESTCONF could not be read."
        exit 1
  fi
 
@@ -20,7 +25,7 @@
  export TMPDIR=$TMPDIR
  export NETBIOSNAME=$NETBIOSNAME
 
- . $WINTEST_CONFFILE
+ . $WINTESTCONF
 
  $SRCDIR/script/tests/test_win.sh
  status=$?
