@@ -449,7 +449,7 @@ static BOOL test_plaintext(enum ntlm_break break_which)
 
 	uchar user_session_key[16];
 	uchar lm_key[16];
-	static const uchar zeros[8];
+	static const uchar zeros[8] = { 0, };
 	DATA_BLOB chall = data_blob(zeros, sizeof(zeros));
 	char *error_string;
 

@@ -1374,7 +1374,7 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 	struct samu *sampass = NULL;
 	DOM_SID guest_sid;
 	BOOL ret;
-	static const char zeros[16];
+	static const char zeros[16] = { 0, };
 
 	if ( !(sampass = samu_new( NULL )) ) {
 		return NT_STATUS_NO_MEMORY;
@@ -1691,7 +1691,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				auth_serversupplied_info **server_info, 
 				NET_USER_INFO_3 *info3) 
 {
-	static const char zeros[16];
+	static const char zeros[16] = { 0, };
 
 	NTSTATUS nt_status = NT_STATUS_OK;
 	char *found_username;

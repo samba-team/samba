@@ -183,7 +183,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *user_sess_key, 
 			     DATA_BLOB *lm_sess_key)
 {
-	static const unsigned char zeros[8];
+	static const unsigned char zeros[8] = { 0, };
 	if (nt_pw == NULL) {
 		DEBUG(3,("ntlm_password_check: NO NT password stored for user %s.\n", 
 			 username));
