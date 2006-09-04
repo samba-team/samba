@@ -72,10 +72,12 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 {
 	struct WINBINDD_CCACHE_ENTRY *entry =
 		talloc_get_type_abort(private_data, struct WINBINDD_CCACHE_ENTRY);
+#ifdef HAVE_KRB5
 	int ret;
 	time_t new_start;
 	struct timeval t;
 	struct WINBINDD_MEMORY_CREDS *cred_ptr = entry->cred_ptr;
+#endif
 
 	DEBUG(10,("krb5_ticket_refresh_handler called\n"));
 	DEBUGADD(10,("event called for: %s, %s\n", entry->ccname, entry->username));
