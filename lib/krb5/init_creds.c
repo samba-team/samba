@@ -226,7 +226,7 @@ krb5_get_init_creds_opt_set_default_flags(krb5_context context,
     krb5_appdefault_boolean(context, appname, realm, "no-addresses", 
 			    FALSE, &b);
     if (b)
-	krb5_get_init_creds_opt_set_addressless (opt, TRUE);
+	krb5_get_init_creds_opt_set_addressless (context, opt, TRUE);
 
 #if 0
     krb5_appdefault_boolean(context, appname, realm, "anonymous", FALSE, &b);
