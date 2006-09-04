@@ -960,8 +960,10 @@ static BOOL test_talloc_ptrtype(void)
 	s1 = talloc_ptrtype(top, s1);location1 = __location__;
 
 	if (talloc_get_size(s1) != sizeof(struct struct1)) {
-		printf("%s: talloc_ptrtype() allocated the wrong size %u (should be %u)\n",
-			__location__, talloc_get_size(s1), sizeof(struct struct1));
+		printf("%s: talloc_ptrtype() allocated the wrong size %lu "
+		       "(should be %lu)\n",
+			__location__, (unsigned long)talloc_get_size(s1),
+		       (unsigned long)sizeof(struct struct1));
 		ret = False;
 	}
 
@@ -974,22 +976,27 @@ static BOOL test_talloc_ptrtype(void)
 	s2 = talloc_array_ptrtype(top, s2, 10);location2 = __location__;
 
 	if (talloc_get_size(s2) != (sizeof(struct struct1) * 10)) {
-		printf("%s: talloc_array_ptrtype() allocated the wrong size %u (should be %u)\n",
-			__location__, talloc_get_size(s2), (sizeof(struct struct1)*10));
+		printf("%s: talloc_array_ptrtype() allocated the wrong size "
+		       "%lu (should be %lu)\n",
+			__location__, (unsigned long)talloc_get_size(s2),
+		       (unsigned long)(sizeof(struct struct1)*10));
 		ret = False;
 	}
 
 	if (strcmp(location2, talloc_get_name(s2)) != 0) {
 		printf("%s: talloc_array_ptrtype() sets the wrong name '%s' (should be '%s')\n",
-			__location__, talloc_get_name(s2), location2);
+			__location__, talloc_get_name(s2),
+		       location2);
 		ret = False;
 	}
 
 	s3 = talloc_array_ptrtype(top, s3, 10);location3 = __location__;
 
 	if (talloc_get_size(s3) != (sizeof(struct struct1 *) * 10)) {
-		printf("%s: talloc_array_ptrtype() allocated the wrong size %u (should be %u)\n",
-			__location__, talloc_get_size(s3), (sizeof(struct struct1 *)*10));
+		printf("%s: talloc_array_ptrtype() allocated the wrong size "
+		       "%lu (should be %lu)\n",
+			__location__, (unsigned long)talloc_get_size(s3),
+		       (unsigned long)(sizeof(struct struct1 *)*10));
 		ret = False;
 	}
 
@@ -1002,8 +1009,10 @@ static BOOL test_talloc_ptrtype(void)
 	s4 = talloc_array_ptrtype(top, s4, 10);location4 = __location__;
 
 	if (talloc_get_size(s4) != (sizeof(struct struct1 **) * 10)) {
-		printf("%s: talloc_array_ptrtype() allocated the wrong size %u (should be %u)\n",
-			__location__, talloc_get_size(s4), (sizeof(struct struct1 **)*10));
+		printf("%s: talloc_array_ptrtype() allocated the wrong size "
+		       "%lu (should be %lu)\n",
+			__location__, (unsigned long)talloc_get_size(s4),
+		       (unsigned long)(sizeof(struct struct1 **)*10));
 		ret = False;
 	}
 
