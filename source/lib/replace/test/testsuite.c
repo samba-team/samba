@@ -39,6 +39,14 @@
 #include <sys/stat.h>
 #endif
 
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+
 #include <fcntl.h>
 #include <errno.h>
 
@@ -47,11 +55,11 @@
 /*
   test ftruncate() function
  */
-static int test_ftruncate()
+static int test_ftruncate(void)
 {
 	struct stat st;
-	int fd, i;
-	const int size;
+	int fd;
+	const int size = 1234;
 	printf("testing ftruncate\n");
 	unlink(TESTFILE);
 	fd = open(TESTFILE, O_RDWR|O_CREAT, 0600);
@@ -79,7 +87,7 @@ static int test_ftruncate()
   test strlcpy() function.
   see http://www.gratisoft.us/todd/papers/strlcpy.html
  */
-static int test_strlcpy()
+static int test_strlcpy(void)
 {
 	char buf[4];
 	const struct {
@@ -103,224 +111,224 @@ static int test_strlcpy()
 	return true;
 }
 
-static int test_strlcat()
+static int test_strlcat(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_mktime()
+static int test_mktime(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_rename()
+static int test_rename(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_innetgr()
+static int test_innetgr(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_initgroups()
+static int test_initgroups(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_memmove()
+static int test_memmove(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_strdup()
+static int test_strdup(void)
 {
 	/* FIXME */
 	return true;
 }	
 
-static int test_setlinebuf()
+static int test_setlinebuf(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_vsyslog()
+static int test_vsyslog(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_timegm()
+static int test_timegm(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_setenv()
+static int test_setenv(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_strndup()
+static int test_strndup(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_strnlen()
+static int test_strnlen(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_waitpid()
+static int test_waitpid(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_seteuid()
+static int test_seteuid(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_setegid()
+static int test_setegid(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_asprintf()
+static int test_asprintf(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_snprintf()
+static int test_snprintf(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_vasprintf()
+static int test_vasprintf(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_vsnprintf()
+static int test_vsnprintf(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_opendir()
+static int test_opendir(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_readdir()
+static int test_readdir(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_telldir()
+static int test_telldir(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_seekdir()
+static int test_seekdir(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_dlopen()
+static int test_dlopen(void)
 {
 	/* FIXME: test dlopen, dlsym, dlclose, dlerror */
 	return true;
 }
 
 
-static int test_chroot()
+static int test_chroot(void)
 {
 	/* FIXME: chroot() */
 	return true;
 }
 
-static int test_bzero()
+static int test_bzero(void)
 {
 	/* FIXME: bzero */
 	return true;
 }
 
-static int test_strerror()
+static int test_strerror(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_errno()
+static int test_errno(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_mkdtemp()
+static int test_mkdtemp(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_mkstemp()
+static int test_mkstemp(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_pread()
+static int test_pread(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_pwrite()
+static int test_pwrite(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_getpass()
+static int test_getpass(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_inet_ntoa()
+static int test_inet_ntoa(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_strtoll()
+static int test_strtoll(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_strtoull()
+static int test_strtoull(void)
 {
 	/* FIXME */
 	return true;
@@ -342,31 +350,31 @@ UINT{16,32,64}_MAX
 INT32_MAX
 */
 
-static int test_va_copy()
+static int test_va_copy(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_FUNCTION()
+static int test_FUNCTION(void)
 {
 	/* FIXME: test __FUNCTION__ macro */
 	return true;
 }
 
-static int test_MIN()
+static int test_MIN(void)
 {
 	/* FIXME */
 	return true;
 }
 
-static int test_MAX()
+static int test_MAX(void)
 {
 	/* FIXME */
 	return true;
 }
 
-int torture_local_replace()
+int torture_local_replace(void *ctx)
 {
 	int ret = true;
 	ret &= test_ftruncate();
