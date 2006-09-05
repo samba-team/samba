@@ -1306,8 +1306,39 @@ process_result:
 			DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(result)));
 			goto done;
 		}
-	
-	} 
+
+		if (state->request.flags & WBFLAG_PAM_UNIX_NAME) {
+			/* We've been asked to return the unix username, per 
+			   'winbind use default domain' settings and the like */
+
+			fstring username_out;
+			const char *nt_username, *nt_domain;
+
+			if (!(nt_username = unistr2_tdup(state->mem_ctx, &info3->uni_user_name))) {
+				/* If the server didn't give us one, just use the one we sent them */
+				nt_username = name_user;
+			}
+
+			if (!(nt_domain = unistr2_tdup(state->mem_ctx, &info3->uni_logon_dom))) {
+				/* If the server didn't give us one, just use the one we sent them */
+				nt_domain = name_domain;
+			}
+
+			fill_domain_username(username_out, nt_domain, nt_username, True);
+
+			DEBUG(5, ("Setting unix username to [%s]\n", username_out));
+
+			SAFE_FREE(state->response.extra_data.data);
+			state->response.extra_data.data = SMB_STRDUP(username_out);
+			if (!state->response.extra_data.data) {
+				result = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+			state->response.length +=
+				strlen((const char *)state->response.extra_data.data)+1;
+		}
+	}
+ 
 
 done:
 	/* give us a more useful (more correct?) error code */
@@ -1329,7 +1360,7 @@ done:
 	      state->response.data.auth.nt_status_string,
 	      state->response.data.auth.pam_error));	      
 
-	if ( NT_STATUS_IS_OK(result) &&
+	if ( NT_STATUS_IS_OK(result) && info3 &&
 	     (state->request.flags & WBFLAG_PAM_AFS_TOKEN) ) {
 
 		char *afsname = talloc_strdup(state->mem_ctx,
@@ -1389,7 +1420,7 @@ done:
 	no_token:
 		TALLOC_FREE(afsname);
 	}
-
+	
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
