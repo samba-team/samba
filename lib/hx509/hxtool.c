@@ -449,6 +449,10 @@ print_certificate(hx509_context hxcontext, hx509_cert cert, int verbose)
     printf("    subject: \"%s\"\n", str);
     free(str);
 
+    ret = hx509_cert_keyusage_print(hxcontext, cert, &str);
+    printf("    keyusage: %s\n", str);
+    free(str);
+
     if (verbose) {
 	hx509_validate_ctx vctx;
 
