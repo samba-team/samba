@@ -95,9 +95,9 @@ if test x"$samba_cv_HAVE_SECURE_MKSTEMP" = x"yes"; then
 fi
 
 dnl Provided by snprintf.c:
-AC_CHECK_DECLS([asprintf, vasprintf, snprintf])
+AC_CHECK_HEADERS(stdio.h strings.h)
+AC_CHECK_DECLS([snprintf, vsnprintf, asprintf, vasprintf])
 AC_CHECK_FUNCS(snprintf vsnprintf asprintf vasprintf)
-AC_CHECK_HEADERS(strings.h)
 
 AC_CACHE_CHECK([for C99 vsnprintf],samba_cv_HAVE_C99_VSNPRINTF,[
 AC_TRY_RUN([
