@@ -344,7 +344,8 @@ static int winbind_auth_request(pam_handle_t * pamh,
 				const char *member, 
 				const char *cctype,
 				int process_result,
-				time_t *pwd_last_set)
+				time_t *pwd_last_set,
+				char **user_ret)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -386,6 +387,11 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	if (ctrl & WINBIND_CACHED_LOGIN) {
 		_pam_log_debug(ctrl, LOG_DEBUG, "enabling cached login flag\n"); 
 		request.flags |= WBFLAG_PAM_CACHED_LOGIN;
+	}
+
+	if (user_ret) {
+		*user_ret = NULL;
+		request.flags |= WBFLAG_PAM_UNIX_NAME;
 	}
 
 	if (cctype != NULL) {
@@ -524,6 +530,12 @@ static int winbind_auth_request(pam_handle_t * pamh,
 			_pam_log_debug(ctrl, LOG_DEBUG, "Could not set data: %s", 
 				       pam_strerror(pamh, ret2));
 		}
+	}
+
+	/* If winbindd returned a username, return the pointer to it here. */
+	if (user_ret && response.extra_data.data) {
+		/* We have to trust it's a null terminated string. */
+		*user_ret = response.extra_data.data;
 	}
 
 	return ret;
@@ -906,6 +918,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	const char *cctype = NULL;
 	int retval = PAM_AUTH_ERR;
 	dictionary *d;
+	char *username_ret = NULL;
 
 	/* parse arguments */
 	int ctrl = _pam_parse(argc, argv, &d);
@@ -948,7 +961,8 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	cctype = get_krb5_cc_type_from_config(argc, argv, ctrl, d);
 
 	/* Now use the username to look up password */
-	retval = winbind_auth_request(pamh, ctrl, username, password, member, cctype, True, NULL);
+	retval = winbind_auth_request(pamh, ctrl, username, password, member,
+					cctype, True, NULL, &username_ret);
 
 	if (retval == PAM_NEW_AUTHTOK_REQD ||
 	    retval == PAM_AUTHTOK_EXPIRED) {
@@ -967,6 +981,11 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	}
 
 out:
+	if (username_ret) {
+		pam_set_item (pamh, PAM_USER, username_ret);
+		free(username_ret);
+	}
+
 	if (d) {
 		iniparser_freedict(d);
 	}
@@ -1259,7 +1278,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		}
 		/* verify that this is the password for this user */
 		
-		retval = winbind_auth_request(pamh, ctrl, user, pass_old, NULL, NULL, False, &pwdlastset_prelim);
+		retval = winbind_auth_request(pamh, ctrl, user, pass_old,
+					NULL, NULL, False, &pwdlastset_prelim, NULL);
 
 		if (retval != PAM_ACCT_EXPIRED && 
 		    retval != PAM_AUTHTOK_EXPIRED &&
@@ -1354,7 +1374,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 			const char *member = get_member_from_config(argc, argv, ctrl, d);
 			const char *cctype = get_krb5_cc_type_from_config(argc, argv, ctrl, d);
 
-			retval = winbind_auth_request(pamh, ctrl, user, pass_new, member, cctype, False, NULL);
+			retval = winbind_auth_request(pamh, ctrl, user, pass_new,
+							member, cctype, False, NULL, NULL);
 			_pam_overwrite(pass_new);
 			_pam_overwrite(pass_old);
 			pass_old = pass_new = NULL;
