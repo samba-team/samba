@@ -12,7 +12,7 @@ if test "$ac_cv_prog_gcc" = yes; then
    CFLAGS="$CFLAGS -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings"
 fi
 
-sinclude(libreplace.m4)
-sinclude(win32/config.m4)
-sinclude(repdir/config.m4)
+m4_include(libreplace.m4)
+m4_include(win32/config.m4)
+m4_include(repdir/config.m4)
 AC_OUTPUT(Makefile)
