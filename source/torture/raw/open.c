@@ -1266,6 +1266,51 @@ done:
 	return ret;
 }
 
+/*
+  test RAW_OPEN_OPENX without a leading slash on the path.
+  NetApp filers are known to fail on this.
+  
+*/
+static BOOL test_no_leading_slash(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	union smb_open io;
+	const char *fname = BASEDIR "\\torture_no_leading_slash.txt";
+	NTSTATUS status;
+	int fnum = -1;
+	BOOL ret = True;
+	const char *buf = "test";
+
+	printf("Checking RAW_OPEN_OPENX without leading slash on path\n");
+	smbcli_unlink(cli->tree, fname);
+
+        /* Create the file */
+	fnum = create_complex_file(cli, mem_ctx, fname);
+	smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
+	smbcli_close(cli->tree, fnum);	
+
+        /* Prepare to open the file using path without leading slash */
+	io.openx.level = RAW_OPEN_OPENX;
+	io.openx.in.fname = fname + 1;
+	io.openx.in.flags = OPENX_FLAGS_ADDITIONAL_INFO;
+	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR;
+	io.openx.in.open_func = OPENX_OPEN_FUNC_OPEN;
+	io.openx.in.search_attrs = 0;
+	io.openx.in.file_attrs = 0;
+	io.openx.in.write_time = 0;
+	io.openx.in.size = 1024*1024;
+	io.openx.in.timeout = 0;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.openx.out.file.fnum;
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+
+	return ret;
+}
+
 /* A little torture test to expose a race condition in Samba 3.0.20 ... :-) */
 
 static BOOL test_raw_open_multi(void)
@@ -1420,6 +1465,7 @@ BOOL torture_raw_open(struct torture_context *torture)
 	ret &= test_create(cli, mem_ctx);
 	ret &= test_ctemp(cli, mem_ctx);
 	ret &= test_chained(cli, mem_ctx);
+	ret &= test_no_leading_slash(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
