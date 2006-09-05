@@ -1,5 +1,9 @@
 2006-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* snprintf.c: reapply patch that went away in last commit
+	
+	* snprintf-test.c: unbreak from previous commit
+
 	* snprintf.c: Add size_t formater (z modifer).
 
 	* snprintf-test.c: add tests for size_t printf formater
