@@ -1,5 +1,7 @@
 2006-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* name.c (no): Add serialNumber
+
 	* ks_p11.c (p11_get_session): return better error messages
 	
 2006-09-04  Love Hörnquist Åstrand  <lha@it.su.se>
