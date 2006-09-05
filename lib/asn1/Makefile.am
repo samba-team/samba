@@ -364,7 +364,8 @@ gen_files_test =					\
 	asn1_TESTInteger2.x				\
 	asn1_TESTInteger3.x				\
 	asn1_TESTLargeTag.x				\
-	asn1_TESTSeq.x
+	asn1_TESTSeq.x					\
+	asn1_TESTSeqOf.x
 
 gen_files_digest =					\
 	asn1_DigestInit.x				\
@@ -500,7 +501,7 @@ digest_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/digest.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/digest.asn1 digest_asn1 || (rm -f digest_asn1_files ; exit 1)
 
 test_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/test.asn1
-	./asn1_compile$(EXEEXT) $(srcdir)/test.asn1 test_asn1 || (rm -f test_asn1_files ; exit 1)
+	./asn1_compile$(EXEEXT) --sequence=TESTSeqOf $(srcdir)/test.asn1 test_asn1 || (rm -f test_asn1_files ; exit 1)
 
 $(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h
 
