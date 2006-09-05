@@ -11,7 +11,7 @@ AC_CONFIG_HEADER(include/config_tmp.h)
 
 # Configuration rules.
 m4_include(build/m4/env.m4)
-m4_include(lib/replace/libreplace.m4)
+m4_include(lib/replace/samba.m4)
 m4_include(lib/replace/win32/config.m4)
 m4_include(lib/replace/repdir/config.m4)
 m4_include(lib/smbreadline/readline.m4)

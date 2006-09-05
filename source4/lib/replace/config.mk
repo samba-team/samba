@@ -14,6 +14,6 @@ OBJ_FILES = replace.o \
 		snprintf.o \
 		dlfcn.o \
 		getpass.o
-PUBLIC_DEPENDENCIES = REPLACE_READDIR DL
+PUBLIC_DEPENDENCIES = REPLACE_READDIR REPLACE_EXT
 # End SUBSYSTEM LIBREPLACE
 ##############################
