@@ -50,6 +50,7 @@ AC_TRY_COMPILE([
 [AC_DEFINE(socklen_t, int,[Socket length type])])
 
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
+AC_CHECK_HEADERS(sys/time.h time.h)
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid strlcpy strlcat innetgr initgroups memmove strdup)
