@@ -168,7 +168,8 @@ function ldb_erase(ldb)
 	ldb.del("@KLUDGEACL");
 
 	/* and the rest */
-	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", attrs);
+     	var basedn = "";
+     	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	var i;
 	if (typeof(res) == "undefined") {
 		ldb_delete(ldb);
@@ -177,10 +178,8 @@ function ldb_erase(ldb)
 	for (i=0;i<res.length;i++) {
 		ldb.del(res[i].dn);
 	}
-	/* extra hack to ensure it's gone on remote ldap */
-	ldb.del("cn=ROOTDSE");
 
-	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", attrs);
+     	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	if (res.length != 0) {
 		ldb_delete(ldb);
 		return;
