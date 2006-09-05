@@ -11,5 +11,5 @@ AC_CHECK_SIZEOF(off_t,cross)
 AC_CHECK_SIZEOF(size_t,cross)
 AC_CHECK_SIZEOF(ssize_t,cross)
 AC_FUNC_MMAP
-m4_include(config.m4)
+m4_include(libtdb.m4)
 AC_OUTPUT(Makefile tdb.pc)
