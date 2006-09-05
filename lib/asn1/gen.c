@@ -774,6 +774,7 @@ generate_type (const Symbol *s)
     generate_type_free (s);
     generate_type_length (s);
     generate_type_copy (s);
+    generate_type_seq (s);
     generate_glue (s->type, s->gen_name);
     fprintf(headerfile, "\n\n");
     close_codefile();
