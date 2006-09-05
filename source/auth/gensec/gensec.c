@@ -4,7 +4,7 @@
    Generic Authentication Interface
 
    Copyright (C) Andrew Tridgell 2003
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -51,7 +51,9 @@ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx,
 	int i, j, num_mechs_in;
 
 	if (use_kerberos == CRED_AUTO_USE_KERBEROS) {
-		talloc_reference(mem_ctx, old_gensec_list);
+		if (!talloc_reference(mem_ctx, old_gensec_list)) {
+			return NULL;
+		}
 		return old_gensec_list;
 	}
 
@@ -103,13 +105,17 @@ struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gense
 	struct gensec_security_ops **backends;
 	backends = gensec_security_all();
 	if (!gensec_security) {
-		talloc_reference(mem_ctx, backends);
+		if (!talloc_reference(mem_ctx, backends)) {
+			return NULL;
+		}
 		return backends;
 	} else {
 		enum credentials_use_kerberos use_kerberos;
 		struct cli_credentials *creds = gensec_get_credentials(gensec_security);
 		if (!creds) {
-			talloc_reference(mem_ctx, backends);
+			if (!talloc_reference(mem_ctx, backends)) {
+				return NULL;
+			}
 			return backends;
 		}
 		use_kerberos = cli_credentials_get_kerberos_state(creds);
@@ -840,15 +846,6 @@ size_t gensec_sig_size(struct gensec_security *gensec_security, size_t data_size
 	return gensec_security->ops->sig_size(gensec_security, data_size);
 }
 
-size_t gensec_max_input_size(struct gensec_security *gensec_security) 
-{
-	if (!gensec_security->ops->max_input_size) {
-		return (1 << 17) - gensec_sig_size(gensec_security, 1 << 17);
-	}
-	
-	return gensec_security->ops->max_input_size(gensec_security);
-}
-
 size_t gensec_max_wrapped_size(struct gensec_security *gensec_security) 
 {
 	if (!gensec_security->ops->max_wrapped_size) {
@@ -858,7 +855,16 @@ size_t gensec_max_wrapped_size(struct gensec_security *gensec_security)
 	return gensec_security->ops->max_wrapped_size(gensec_security);
 }
 
-_PUBLIC_ NTSTATUS gensec_wrap(struct gensec_security *gensec_security, 
+size_t gensec_max_input_size(struct gensec_security *gensec_security) 
+{
+	if (!gensec_security->ops->max_input_size) {
+		return (1 << 17) - gensec_sig_size(gensec_security, 1 << 17);
+	}
+	
+	return gensec_security->ops->max_input_size(gensec_security);
+}
+
+NTSTATUS gensec_wrap(struct gensec_security *gensec_security, 
 		     TALLOC_CTX *mem_ctx, 
 		     const DATA_BLOB *in, 
 		     DATA_BLOB *out) 
@@ -869,7 +875,7 @@ _PUBLIC_ NTSTATUS gensec_wrap(struct gensec_security *gensec_security,
 	return gensec_security->ops->wrap(gensec_security, mem_ctx, in, out);
 }
 
-_PUBLIC_ NTSTATUS gensec_unwrap(struct gensec_security *gensec_security, 
+NTSTATUS gensec_unwrap(struct gensec_security *gensec_security, 
 		       TALLOC_CTX *mem_ctx, 
 		       const DATA_BLOB *in, 
 		       DATA_BLOB *out) 
