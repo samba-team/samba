@@ -1,4 +1,10 @@
+2006-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ks_p11.c (p11_get_session): return better error messages
+	
 2006-09-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ref: update to pkcs11 reference files 2.20
 
 	* ks_p11.c: add more mechflags
 
