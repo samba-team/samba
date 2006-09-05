@@ -185,10 +185,11 @@ AC_CHECK_TYPE(comparison_fn_t,
 AC_CHECK_FUNCS(timegm strnlen setenv)
 AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
 
-AC_TRY_CPP([
-#define eprintf(...) fprintf(stderr, __VA_ARGS__)
-eprintf("bla", "bar");
-], [], [AC_MSG_ERROR([__VA_ARGS__ is required])])
+# this test disabled as we don't actually need __VA_ARGS__ yet
+# AC_TRY_CPP([
+# #define eprintf(...) fprintf(stderr, __VA_ARGS__)
+# eprintf("bla", "bar");
+# ], [], [AC_MSG_ERROR([__VA_ARGS__ is required])])
 
 # Check prerequisites
 AC_CHECK_FUNCS([memset printf syslog], [], 
