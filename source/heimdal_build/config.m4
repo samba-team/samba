@@ -173,7 +173,7 @@ fi
 AC_SUBST(VOID_RETSIGTYPE)
 
 
-sinclude(heimdal/cf/check-var.m4)
+m4_include(heimdal/cf/check-var.m4)
 
 rk_CHECK_VAR(h_errno, 
 [#ifdef HAVE_SYS_TYPES_H
@@ -183,10 +183,10 @@ rk_CHECK_VAR(h_errno,
 #include <netdb.h>
 #endif])
 
-sinclude(heimdal/cf/find-func.m4)
-sinclude(heimdal/cf/find-func-no-libs.m4)
-sinclude(heimdal/cf/find-func-no-libs2.m4)
-sinclude(heimdal/cf/resolv.m4)
+m4_include(heimdal/cf/find-func.m4)
+m4_include(heimdal/cf/find-func-no-libs.m4)
+m4_include(heimdal/cf/find-func-no-libs2.m4)
+m4_include(heimdal/cf/resolv.m4)
 
 smb_save_LIBS=$LIBS
 RESOLV_LIBS=""
