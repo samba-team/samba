@@ -1474,6 +1474,10 @@ BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
 
 BOOL process_exists(const struct process_id pid)
 {
+	if (procid_is_me(&pid)) {
+		return True;
+	}
+
 	if (!procid_is_local(&pid)) {
 		/* This *SEVERELY* needs fixing. */
 		return True;
