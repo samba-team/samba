@@ -85,17 +85,15 @@ static BOOL test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_opendomain_lsa(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-				struct policy_handle **handle, struct lsa_String *domname)
+				struct policy_handle *handle, struct lsa_String *domname,
+				uint32_t *access_mask)
 {
 	NTSTATUS status;
 	struct lsa_OpenPolicy2 open;
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
 
-	*handle = talloc_zero(mem_ctx, struct policy_handle);
-	if (*handle == NULL) {
-		return False;
-	}
+	*access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 
 	ZERO_STRUCT(attr);
 	ZERO_STRUCT(qos);
@@ -109,8 +107,8 @@ static BOOL test_opendomain_lsa(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	open.in.system_name = domname->string;
 	open.in.attr        = &attr;
-	open.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	open.out.handle     = *handle;
+	open.in.access_mask = *access_mask;
+	open.out.handle     = handle;
 	
 	status = dcerpc_lsa_OpenPolicy2(p, mem_ctx, &open);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -124,9 +122,12 @@ static BOOL test_opendomain_lsa(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 BOOL torture_domain_open_lsa(struct torture_context *torture)
 {
 	NTSTATUS status;
+	BOOL ret = True;
 	struct libnet_context *ctx;
 	struct libnet_DomainOpen r;
+	struct lsa_Close close;
 	struct dcerpc_binding *binding;
+	struct policy_handle h;
 	const char *bindstr;
 	
 	bindstr = lp_parm_string(-1, "torture", "binding");
@@ -144,6 +145,7 @@ BOOL torture_domain_open_lsa(struct torture_context *torture)
 
 	ctx->cred = cmdline_credentials;
 
+	ZERO_STRUCT(r);
 	r.in.type = DOMAIN_LSA;
 	r.in.domain_name = binding->host;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -151,28 +153,39 @@ BOOL torture_domain_open_lsa(struct torture_context *torture)
 	status = libnet_DomainOpen(ctx, torture, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to open domain on lsa service: %s\n", nt_errstr(status));
-		return False;
+		ret = False;
+		goto done;
 	}
 
-	talloc_free(ctx);
+	ZERO_STRUCT(close);
+	close.in.handle  = &ctx->lsa.handle;
+	close.out.handle = &h;
+	
+	status = dcerpc_lsa_Close(ctx->lsa.pipe, ctx, &close);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("failed to close domain on lsa service: %s\n", nt_errstr(status));
+		ret = False;
+	}
 
-	return True;
+done:
+	talloc_free(ctx);
+	return ret;
 }
 
 
 BOOL torture_domain_close_lsa(struct torture_context *torture)
 {
-	BOOL ret;
+	BOOL ret = True;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct lsa_String domain_name;
 	struct dcerpc_binding *binding;
 	const char *bindstr;
-	struct policy_handle *h;
+	uint32_t access_mask;
+	struct policy_handle h;
 	struct dcerpc_pipe *p;
 	struct libnet_DomainClose r;
-	struct lsa_QueryInfoPolicy2 r2;
 
 	bindstr = lp_parm_string(-1, "torture", "binding");
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
@@ -181,7 +194,6 @@ BOOL torture_domain_close_lsa(struct torture_context *torture)
 		return False;
 	}
 
-	mem_ctx = talloc_init("torture_domain_close_lsa");
 	ctx = libnet_context_init(NULL);
 	if (ctx == NULL) {
 		d_printf("failed to create libnet context\n");
@@ -191,30 +203,33 @@ BOOL torture_domain_close_lsa(struct torture_context *torture)
 
 	ctx->cred = cmdline_credentials;
 
-	status = torture_rpc_connection(mem_ctx,
-					&p,
-					&dcerpc_table_lsarpc);
+	mem_ctx = talloc_init("torture_domain_close_lsa");
+	status = dcerpc_pipe_connect(mem_ctx, &p, bindstr, &dcerpc_table_lsarpc,
+				     cmdline_credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("failed to connect to server %s: %s\n", bindstr,
+			 nt_errstr(status));
 		ret = False;
 		goto done;
 	}
 
 	domain_name.string = lp_workgroup();
-	if (!test_opendomain_lsa(p, mem_ctx, &h, &domain_name)) {
+	
+	if (!test_opendomain_lsa(p, torture, &h, &domain_name, &access_mask)) {
+		d_printf("failed to open domain on lsa service\n");
 		ret = False;
 		goto done;
 	}
 	
-	/* simulate opening by means of libnet api functions */
-	ctx->lsa.pipe   = p;
-	ctx->lsa.name   = domain_name.string;
-	ctx->lsa.handle = *h;
+	ctx->lsa.pipe        = p;
+	ctx->lsa.name        = domain_name.string;
+	ctx->lsa.access_mask = access_mask;
+	ctx->lsa.handle      = h;
+	/* we have to use pipe's event context, otherwise the call will
+	   hang indefinately */
+	ctx->event_ctx       = p->conn->event_ctx;
 
-	r2.in.handle = &ctx->lsa.handle;
-	r2.in.level  = 1;
-	
-	status = dcerpc_lsa_QueryInfoPolicy2(ctx->lsa.pipe, mem_ctx, &r2);
-	
+	ZERO_STRUCT(r);
 	r.in.type = DOMAIN_LSA;
 	r.in.domain_name = domain_name.string;
 	
