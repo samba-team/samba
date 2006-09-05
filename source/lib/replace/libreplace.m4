@@ -1,7 +1,7 @@
 dnl find the libreplace sources. This is meant to work both for 
 dnl libreplace standalone builds, and builds of packages using libreplace
 libreplacedir=""
-for d in "$srcdir" "$srcdir/lib/replace" "$srcdir/libreplace" "$srcdir/../libreplace"; do
+for d in "$srcdir" "$srcdir/lib/replace" "$srcdir/libreplace" "$srcdir/../libreplace" "$srcdir/../replace"; do
 	if test -f "$d/replace.c"; then
 		libreplacedir="$d"		
 		AC_SUBST(libreplacedir)
