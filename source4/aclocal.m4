@@ -209,8 +209,7 @@ AC_DEFUN(LIB_REMOVE_USR_LIB,[
   $1=[$]ac_new_flags
 ])
 
-sinclude(build/m4/public.m4)
-sinclude(build/m4/core.m4)
-sinclude(build/m4/ax_cflags_gcc_option.m4)
-sinclude(build/m4/ax_cflags_irix_option.m4)
-sinclude(build/m4/smb_cc_features.m4)
+m4_include(build/m4/public.m4)
+m4_include(build/m4/ax_cflags_gcc_option.m4)
+m4_include(build/m4/ax_cflags_irix_option.m4)
+m4_include(build/m4/smb_cc_features.m4)
