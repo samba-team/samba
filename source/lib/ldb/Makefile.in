@@ -11,7 +11,7 @@ includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
 mandir = @mandir@
-VPATH = @srcdir@:@srcdir@/..:@POPTDIR@
+VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@
 srcdir = @srcdir@
 builddir = @builddir@
 SLAPD = @SLAPD@
@@ -19,10 +19,10 @@ EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
 
 CFLAGS=-I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
-       -I$(srcdir)/../tdb/include -I$(srcdir)/../tdb -I$(srcdir)/../talloc \
+       -I@poptdir@ -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
 
-LIB_FLAGS=-L$(srcdir)/../tdb -L$(srcdir)/../talloc -Llib -lldb -ltdb -ltalloc @LIBS@ @REPLACE_LIB@
+LIB_FLAGS=-Llib -lldb @LIBS@
 
 LDB_TDB_DIR=ldb_tdb
 LDB_TDB_OBJ=$(LDB_TDB_DIR)/ldb_tdb.o \
@@ -41,7 +41,7 @@ MODULES_OBJ=$(MODDIR)/operational.o $(MODDIR)/schema.o $(MODDIR)/rdn_name.o \
 	   $(MODDIR)/objectclass.o \
 	   $(MODDIR)/paged_results.o $(MODDIR)/sort.o $(MODDIR)/asq.o
 
-OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(EXTRA_OBJ) 
+OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) @TDBOBJ@ @TALLOCOBJ@ @POPTOBJ@ @LIBREPLACEOBJ@ $(EXTRA_OBJ) 
 
 LDB_LIB = lib/libldb.a
 
