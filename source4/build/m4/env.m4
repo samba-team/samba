@@ -33,9 +33,9 @@ fi
 
 AC_DEFINE([_GNU_SOURCE],[],[Pull in GNU extensions])
 
-sinclude(build/m4/check_path.m4)
-sinclude(build/m4/check_perl.m4)
-sinclude(build/m4/check_cc.m4)
-sinclude(build/m4/check_ld.m4)
-sinclude(build/m4/check_types.m4)
-sinclude(build/m4/check_doc.m4)
+m4_include(build/m4/check_path.m4)
+m4_include(build/m4/check_perl.m4)
+m4_include(build/m4/check_cc.m4)
+m4_include(build/m4/check_ld.m4)
+m4_include(build/m4/check_types.m4)
+m4_include(build/m4/check_doc.m4)
