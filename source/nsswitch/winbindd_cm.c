@@ -363,7 +363,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	/* cache the server name for later connections */
 
 	saf_store( domain->name, (*cli)->desthost );
-	if (domain->alt_name) {
+	if (domain->alt_name && (*cli)->use_kerberos) {
 		saf_store( domain->alt_name, (*cli)->desthost );
 	}
 
