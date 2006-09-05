@@ -224,6 +224,8 @@ static BOOL torture_open_connection_share(struct cli_state **c,
 				     username, workgroup, 
 				     password, flags, Undefined, &retry);
 	if (!NT_STATUS_IS_OK(status)) {
+		printf("failed to open share connection: //%s/%s port:%d - %s\n",
+			hostname, sharename, port_to_use, nt_errstr(status));
 		return False;
 	}
 
@@ -3682,6 +3684,7 @@ static BOOL run_pipe_number(int dummy)
 			break;
 		}
 		num_pipes++;
+		printf("\r%6d", num_pipes);
 	}
 
 	printf("pipe_number test - we can open %d %s pipes.\n", num_pipes, pipe_name );
