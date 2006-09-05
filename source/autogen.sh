@@ -53,11 +53,13 @@ echo "$0: running script/mkversion.sh"
 rm -rf autom4te*.cache
 rm -f configure include/config_tmp.h*
 
-echo "$0: running $AUTOHEADER"
-$AUTOHEADER || exit 1
+IPATHS="-I. -Ilib/replace"
 
-echo "$0: running $AUTOCONF"
-$AUTOCONF || exit 1
+echo "$0: running $AUTOHEADER $IPATHS"
+$AUTOHEADER $IPATHS || exit 1
+
+echo "$0: running $AUTOCONF $IPATHS"
+$AUTOCONF $IPATHS || exit 1
 
 rm -rf autom4te*.cache
 
