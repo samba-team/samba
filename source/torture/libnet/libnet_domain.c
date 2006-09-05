@@ -34,7 +34,8 @@
 
 
 static BOOL test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-				 struct policy_handle *handle, struct lsa_String *domname)
+				 struct policy_handle *handle, struct lsa_String *domname,
+				 uint32_t *access_mask)
 {
 	NTSTATUS status;
 	struct policy_handle h, domain_handle;
@@ -43,9 +44,11 @@ static BOOL test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_OpenDomain r3;
 	
 	printf("connecting\n");
+
+	*access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	
 	r1.in.system_name = 0;
-	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r1.in.access_mask = *access_mask;
 	r1.out.connect_handle = &h;
 	
 	status = dcerpc_samr_Connect(p, mem_ctx, &r1);
@@ -66,7 +69,7 @@ static BOOL test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	r3.in.connect_handle = &h;
-	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r3.in.access_mask = *access_mask;
 	r3.in.sid = r2.out.sid;
 	r3.out.domain_handle = &domain_handle;
 
@@ -262,8 +265,8 @@ BOOL torture_domain_open_samr(struct torture_context *torture)
 	mem_ctx = talloc_init("test_domainopen_lsa");
 	binding = lp_parm_string(-1, "torture", "binding");
 
-	evt_ctx = event_context_find(torture);
 	ctx = libnet_context_init(evt_ctx);
+	ctx->cred = cmdline_credentials;
 
 	name.string = lp_workgroup();
 
@@ -283,7 +286,7 @@ BOOL torture_domain_open_samr(struct torture_context *torture)
 		goto done;
 	}
 
-	domain_handle = io.out.domain_handle;
+	domain_handle = ctx->samr.handle;
 
 	r.in.handle   = &domain_handle;
 	r.out.handle  = &handle;
@@ -299,6 +302,80 @@ BOOL torture_domain_open_samr(struct torture_context *torture)
 
 done:
 	talloc_free(mem_ctx);
+	talloc_free(ctx);
 
+	return ret;
+}
+
+
+BOOL torture_domain_close_samr(struct torture_context *torture)
+{
+	BOOL ret = True;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	struct libnet_context *ctx;
+	struct lsa_String domain_name;
+	struct dcerpc_binding *binding;
+	const char *bindstr;
+	uint32_t access_mask;
+	struct policy_handle h;
+	struct dcerpc_pipe *p;
+	struct libnet_DomainClose r;
+
+	bindstr = lp_parm_string(-1, "torture", "binding");
+	status = dcerpc_parse_binding(torture, bindstr, &binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("failed to parse binding string\n");
+		return False;
+	}
+
+	ctx = libnet_context_init(NULL);
+	if (ctx == NULL) {
+		d_printf("failed to create libnet context\n");
+		ret = False;
+		goto done;
+	}
+
+	ctx->cred = cmdline_credentials;
+
+	mem_ctx = talloc_init("torture_domain_close_samr");
+	status = dcerpc_pipe_connect(mem_ctx, &p, bindstr, &dcerpc_table_samr,
+				     cmdline_credentials, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("failed to connect to server %s: %s\n", bindstr,
+			 nt_errstr(status));
+		ret = False;
+		goto done;
+	}
+
+	domain_name.string = lp_workgroup();
+	
+	if (!test_opendomain_samr(p, torture, &h, &domain_name, &access_mask)) {
+		d_printf("failed to open domain on samr service\n");
+		ret = False;
+		goto done;
+	}
+	
+	ctx->samr.pipe        = p;
+	ctx->samr.name        = domain_name.string;
+	ctx->samr.access_mask = access_mask;
+	ctx->samr.handle      = h;
+	/* we have to use pipe's event context, otherwise the call will
+	   hang indefinately */
+	ctx->event_ctx       = p->conn->event_ctx;
+
+	ZERO_STRUCT(r);
+	r.in.type = DOMAIN_SAMR;
+	r.in.domain_name = domain_name.string;
+	
+	status = libnet_DomainClose(ctx, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = False;
+		goto done;
+	}
+
+done:
+	talloc_free(mem_ctx);
+	talloc_free(ctx);
 	return ret;
 }
