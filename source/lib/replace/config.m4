@@ -142,6 +142,12 @@ AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
 			   [AC_MSG_ERROR([Required function not found])])
 
 sinclude(lib/replace/getpass.m4)
+sinclude(getpass.m4)
+sinclude(lib/replace/cc_features.m4)
+sinclude(cc_features.m4)
+
+LIBREPLACE_C99_STRUCT_INIT(c99_struct_initialization=yes,
+			c99_struct_initialization=no)
 
 dnl VA_COPY
 AC_CACHE_CHECK([for va_copy],samba_cv_HAVE_VA_COPY,[

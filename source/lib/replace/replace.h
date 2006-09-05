@@ -51,9 +51,7 @@
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_INTTYPES_H
+#elif HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
 
@@ -257,9 +255,7 @@ char *rep_mkdtemp(char *template);
 
 #ifdef HAVE_STDBOOL_H
 #include <stdbool.h>
-#endif
-
-#ifndef HAVE_BOOL
+#elif !defined(HAVE_BOOL)
 #define __bool_true_false_are_defined
 typedef int bool;
 #define false (0)
