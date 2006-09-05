@@ -431,12 +431,11 @@ print_certificate(hx509_context hxcontext, hx509_cert cert, int verbose)
     {
 	const char *fn = hx509_cert_get_friendly_name(cert);
 	if (fn)
-	    printf(" friendly name: %s", fn);
-	if (_hx509_cert_private_key(cert))
-	    printf(" (have private key)");
-
+	    printf("    friendly name: %s\n", fn);
+	printf("    private key: %s\n", 
+	       _hx509_cert_private_key(cert) ? "yes" : "no");
     }
-    printf("\n");
+
 
     ret = hx509_cert_get_issuer(cert, &name);
     hx509_name_to_string(name, &str);
@@ -695,7 +694,7 @@ query(struct query_options *opt, int argc, char **argv)
     ret = hx509_certs_find(context, certs, q, &c);
     hx509_query_free(context, q);
     if (ret)
-	warnx("hx509_certs_find: %d", ret);
+	printf("no match found (%d)\n", ret);
     else {
 	printf("match found\n");
 	if (opt->print_flag)
