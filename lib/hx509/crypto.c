@@ -130,7 +130,7 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
     const SubjectPublicKeyInfo *spi;
     DigestInfo di;
     unsigned char *to;
-    int tosize;
+    int tosize, retsize;
     int ret;
     RSA *rsa;
     RSAPublicKey pk;
@@ -167,18 +167,24 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 	goto out;
     }
 
-    ret = RSA_public_decrypt(sig->length, (unsigned char *)sig->data, 
-			     to, rsa, RSA_PKCS1_PADDING);
-    if (ret == -1) {
+    retsize = RSA_public_decrypt(sig->length, (unsigned char *)sig->data, 
+				 to, rsa, RSA_PKCS1_PADDING);
+    if (retsize == -1) {
 	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
 	free(to);
 	goto out;
     }
-    if (ret > tosize)
+    if (retsize > tosize)
 	_hx509_abort("internal rsa decryption failure: ret > tosize");
-    ret = decode_DigestInfo(to, ret, &di, &size);
+    ret = decode_DigestInfo(to, retsize, &di, &size);
     free(to);
     if (ret) {
+	goto out;
+    }
+
+    /* Check for extra data inside the sigature */
+    if (size != retsize) {
+	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
 	goto out;
     }
 
@@ -187,6 +193,15 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 		     (*sig_alg->digest_oid)()) != 0) 
     {
 	ret = HX509_CRYPTO_OID_MISMATCH;
+	goto out;
+    }
+
+    /* verify that the parameters are NULL or the NULL-type */
+    if (di.digestAlgorithm.parameters != NULL &&
+	(di.digestAlgorithm.parameters->length != 2 ||
+	 memcmp(di.digestAlgorithm.parameters->data, "\x05\x00", 2) != 0))
+    {
+	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
 	goto out;
     }
 
