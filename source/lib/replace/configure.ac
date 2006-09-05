@@ -4,7 +4,7 @@ AC_DEFUN([SMB_ENABLE], [echo -n ""])
 AC_PREREQ(2.50)
 AC_INIT(dlfcn.c)
 AC_CONFIG_SRCDIR([dlfcn.c])
-AC_CONFIG_HEADER(replace_config.h)
+AC_CONFIG_HEADER(config.h)
 AC_PROG_INSTALL
 AC_PROG_CC
 
