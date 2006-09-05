@@ -1,3 +1,16 @@
+dnl find the talloc sources. This is meant to work both for 
+dnl talloc standalone builds, and builds of packages using talloc
+tallocdir=""
+for d in "$srcdir" "$srcdir/lib/talloc" "$srcdir/talloc" "$srcdir/../talloc"; do
+	if test -f "$d/talloc.c"; then
+		tallocdir="$d"		
+		AC_SUBST(tallocdir)
+		break;
+	fi
+done
+TALLOCOBJ="talloc.o"
+AC_SUBST(TALLOCOBJ)
+
 AC_CHECK_HEADERS(stdarg.h vararg.h)
 
 dnl VA_COPY

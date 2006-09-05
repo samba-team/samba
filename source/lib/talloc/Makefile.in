@@ -6,18 +6,18 @@ exec_prefix = @exec_prefix@
 includedir = @includedir@
 libdir = @libdir@
 mandir = @mandir@
-VPATH = @srcdir@
+VPATH = @srcdir@:@libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
 XSLTPROC = @XSLTPROC@
 INSTALLCMD = @INSTALL@
 CC = @CC@
-CFLAGS = @CFLAGS@ -DHAVE_CONFIG_H= -I$(srcdir) -I.
+CFLAGS = @CFLAGS@ -DHAVE_CONFIG_H= -I. -I@srcdir@ -I@libreplacedir@
 EXTRA_TARGETS = @DOC_TARGET@
 
 .SUFFIXES: .c .o .3 .3.xml .xml .html
 
-LIBOBJ = talloc.o
+LIBOBJ = @TALLOCOBJ@ @LIBREPLACEOBJ@
 
 all: libtalloc.a testsuite $(EXTRA_TARGETS)
 
@@ -46,7 +46,7 @@ doc: talloc.3 talloc.3.html
 	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
 clean:
-	rm -f *~ *.o libtalloc.a testsuite *.gc?? talloc.3 talloc.3.html
+	rm -f *~ $(LIBOBJ) libtalloc.a testsuite *.gc?? talloc.3 talloc.3.html
 
 test: testsuite
 	./testsuite
