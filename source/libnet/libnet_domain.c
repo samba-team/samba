@@ -267,7 +267,7 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 	s->ctx                 = ctx;
 	s->pipe                = ctx->samr.pipe;
 	s->access_mask         = io->in.access_mask;
-	s->domain_name.string  = io->in.domain_name;
+	s->domain_name.string  = talloc_strdup(c, io->in.domain_name);
 
 	/* check, if there's samr pipe opened already, before opening a domain */
 	if (ctx->samr.pipe == NULL) {
@@ -360,7 +360,7 @@ NTSTATUS libnet_DomainOpenSamr_recv(struct composite_context *c, struct libnet_c
 		/* store the resulting handle and related data for use by other
 		   libnet functions */
 		ctx->samr.handle      = s->domain_handle;
-		ctx->samr.name        = talloc_strdup(ctx, s->domain_name.string);
+		ctx->samr.name        = talloc_steal(ctx, s->domain_name.string);
 		ctx->samr.access_mask = s->access_mask;
 	}
 
@@ -739,6 +739,7 @@ NTSTATUS libnet_DomainCloseLsa_recv(struct composite_context *c, struct libnet_c
 
 struct domain_close_samr_state {
 	struct samr_Close close;
+	struct policy_handle handle;
 	
 	void (*monitor_fn)(struct monitor_msg*);
 };
@@ -773,7 +774,9 @@ struct composite_context* libnet_DomainCloseSamr_send(struct libnet_context *ctx
 	}
 
 	/* prepare close domain handle call arguments */
-	s->close.in.handle = &ctx->samr.handle;
+	ZERO_STRUCT(s->close);
+	s->close.in.handle  = &ctx->samr.handle;
+	s->close.out.handle = &s->handle;
 
 	/* send the request */
 	close_req = dcerpc_samr_Close_send(ctx->samr.pipe, ctx, &s->close);
