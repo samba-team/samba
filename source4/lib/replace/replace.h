@@ -28,12 +28,7 @@
 #ifndef _replace_h
 #define _replace_h
 
-#ifdef _SAMBA_BUILD_
 #include "config.h"
-#else
-#include "replace_config.h"
-#endif /* _SAMBA_BUILD_ */
-
 #include <stdlib.h>
 #include <stdarg.h>
 
