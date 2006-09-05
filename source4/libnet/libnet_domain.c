@@ -48,6 +48,9 @@ struct domain_open_samr_state {
 	uint32_t                  access_mask;
 	struct policy_handle      connect_handle;
 	struct policy_handle      domain_handle;
+
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg*);
 };
 
 
@@ -252,15 +255,14 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct domain_open_samr_state *s;
 
-	c = talloc_zero(ctx, struct composite_context);
+	c = composite_create(ctx, ctx->event_ctx);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct domain_open_samr_state);
 	if (composite_nomem(s, c)) return c;
 
-	c->state        = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
-	c->event_ctx    = ctx->event_ctx;
+	s->monitor_fn   = monitor;
 
 	s->ctx                 = ctx;
 	s->pipe                = ctx->samr.pipe;
@@ -375,6 +377,9 @@ struct domain_open_lsa_state {
 	struct lsa_OpenPolicy2   openpol;
 	struct policy_handle handle;
 	struct dcerpc_pipe *pipe;
+
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg*);
 };
 
 
