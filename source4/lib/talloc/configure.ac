@@ -13,7 +13,9 @@ if test -n "$XSLTPROC"; then
 	DOC_TARGET=doc
 fi
 AC_SUBST(DOC_TARGET)
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADER(talloc_config.h)
 AC_SYS_LARGEFILE
 sinclude(config.m4)
+
+sinclude(libreplace.m4)
 AC_OUTPUT(Makefile talloc.pc)
