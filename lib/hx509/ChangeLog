@@ -1,5 +1,22 @@
 2006-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: print keyusage
+
+	* print.c: add hx509_cert_keyusage_print, simplify oid printing
+
+	* cert.c: add _hx509_cert_get_keyusage
+
+	* ks_p11.c: keep one session around for the whole life of the keyset
+
+	* test_query.in: tests more selection
+
+	* hxtool.c: improve pretty printing in print and query
+
+	* hxtool{.c,-commands.in}: add selection on KU and printing to query
+
+	* test_cms.in: Add cms test for digitalSignature and
+	keyEncipherment certs.
+
 	* name.c (no): Add serialNumber
 
 	* ks_p11.c (p11_get_session): return better error messages
