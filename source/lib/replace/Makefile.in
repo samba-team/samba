@@ -6,16 +6,16 @@ exec_prefix = @exec_prefix@
 bindir = @bindir@
 includedir = @includedir@
 libdir = @libdir@
-VPATH = @srcdir@
+VPATH = @libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
 INSTALL = @INSTALL@
 
 .PHONY: test
 
-CFLAGS=-I. -I$(srcdir) @CFLAGS@
+CFLAGS=-I. -I@libreplacedir@ @CFLAGS@
 
-OBJS = dlfcn.o getpass.o replace.o snprintf.o timegm.o
+OBJS = @LIBREPLACEOBJ@
 
 all: libreplace.a testsuite
 

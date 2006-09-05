@@ -1,3 +1,16 @@
+dnl find the libreplace sources. This is meant to work both for 
+dnl libreplace standalone builds, and builds of packages using libreplace
+libreplacedir=""
+for d in "$srcdir" "$srcdir/lib/replace" "$srcdir/libreplace" "$srcdir/../libreplace"; do
+	if test -f "$d/replace.c"; then
+		libreplacedir="$d"		
+		AC_SUBST(libreplacedir)
+		break;
+	fi
+done
+LIBREPLACEOBJ="dlfcn.o getpass.o replace.o snprintf.o timegm.o"
+AC_SUBST(LIBREPLACEOBJ)
+
 AC_CHECK_HEADERS([stdint.h inttypes.h])
 AC_CHECK_TYPE(uint_t, unsigned int)
 AC_CHECK_TYPE(uint8_t, unsigned char)
@@ -56,9 +69,7 @@ AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid strlcpy strlcat innetgr initgroups memmove strdup)
 AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp)
-AC_HAVE_DECL(setresuid, [#include <unistd.h>])
-AC_HAVE_DECL(setresgid, [#include <unistd.h>])
-AC_HAVE_DECL(errno, [#include <errno.h>])
+AC_CHECK_DECLS([setresuid, setresgid, errno])
 
 AC_CACHE_CHECK([for secure mkstemp],samba_cv_HAVE_SECURE_MKSTEMP,[
 AC_TRY_RUN([#include <stdlib.h>
@@ -83,10 +94,7 @@ if test x"$samba_cv_HAVE_SECURE_MKSTEMP" = x"yes"; then
 fi
 
 dnl Provided by snprintf.c:
-AC_HAVE_DECL(asprintf, [#include <stdio.h>])
-AC_HAVE_DECL(vasprintf, [#include <stdio.h>])
-AC_HAVE_DECL(vsnprintf, [#include <stdio.h>])
-AC_HAVE_DECL(snprintf, [#include <stdio.h>])
+AC_CHECK_DECLS([asprintf, vasprintf, snprintf])
 AC_CHECK_FUNCS(snprintf vsnprintf asprintf vasprintf)
 AC_CHECK_HEADERS(strings.h)
 
@@ -129,14 +137,10 @@ if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
     AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Whether there is a C99 compliant vsnprintf])
 fi
 
-dnl Provided by dlfcn.c:
-AC_SEARCH_LIBS_EXT(dlopen, [dl], DL_LIBS)
-SMB_EXT_LIB(DL,[${DL_LIBS}],[${DL_CFLAGS}],[${DL_CPPFLAGS}],[${DL_LDFLAGS}])
-SAVE_LIBS="$LIBS"
-LIBS="$LIBS $DL_LIBS"
+dnl dummies provided by dlfcn.c if not available
+AC_SEARCH_LIBS(dlopen, dl)
 AC_CHECK_HEADERS(dlfcn.h)
 AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
-LIBS="$SAVE_LIBS"
 
 AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
 			   [AC_MSG_ERROR([Required function not found])])
