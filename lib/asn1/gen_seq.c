@@ -82,7 +82,7 @@ generate_type_seq (const Symbol *s)
 	     "void *ptr;\n"
 	     "\n"
 	     "ptr = realloc(data->val, \n"
-	     "\t(data->len + 1) * sizeof(data->val[0]))\n"
+	     "\t(data->len + 1) * sizeof(data->val[0]));\n"
 	     "if (ptr == NULL) return ENOMEM;\n"
 	     "data->val = ptr;\n\n"
 	     "ret = copy_%s(element, &data->val[data->len]);\n"
@@ -99,12 +99,11 @@ generate_type_seq (const Symbol *s)
 	     s->gen_name, s->gen_name);
 
     fprintf (codefile, 
-	     "%s *old;\n"
 	     "void *ptr;\n"
 	     "\n"
-	     "if (data->len == 0) return ASN1_UNDERRUN;\n"
-	     "if (num >= data->len) return ASN1_OVERRUN;\n"
-	     "free_%s(data->val[element])\n"
+	     "if (data->len == 0 || element >= data->len)\n"
+	     "\treturn ASN1_OVERRUN;\n"
+	     "free_%s(&data->val[element]);\n"
 	     "data->len--;\n"
 	     "memmove(&data->val[element], &data->val[element + 1], \n"
 	     "\tsizeof(data->val[0]) * data->len);\n"
@@ -116,4 +115,3 @@ generate_type_seq (const Symbol *s)
 
     fprintf (codefile, "}\n\n");
 }
-
