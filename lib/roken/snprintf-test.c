@@ -33,10 +33,10 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "snprintf-test.h"
 #include "roken.h"
 #include <limits.h>
 
+#include "snprintf-test.h"
 
 RCSID("$Id$");
 
@@ -226,18 +226,30 @@ test_null (void)
 }
 
 static int
-test_length (void)
+test_sizet (void)
 {
-    char ch = 'a';
-    snprintf (&ch, 0, "foo");
-    return ch != 'a';
+    int tot = 0;
+    size_t sizet_values[] = { 0, 1, 2, 200, 4294967295u }; /* SIZE_MAX */
+    char *result[] = { "0", "1", "2", "200", "4294967295" };
+    int i;
+
+    for (i = 0; i < sizeof(sizet_values) / sizeof(sizet_values[0]); ++i) {
+#if 0
+	tot += try("%zu", sizet_values[i]);
+	tot += try("%zx", sizet_values[i]);
+	tot += try("%zX", sizet_values[i]);
+#else
+	char buf[256];
+	snprintf(buf, sizeof(buf), "%zu", sizet_values[i]);
+	if (strcmp(buf, result[i]) != 0) {
+	    printf("%s != %s", buf, result[i]);
+	    tot++;
+	}
+#endif
+    }
+    return tot;
 }
 
-static int
-test_simple (void)
-{
-    return try("");
-}
 
 int
 main (int argc, char **argv)
@@ -250,8 +262,6 @@ main (int argc, char **argv)
     ret += cmp_with_sprintf_long_long ();
 #endif
     ret += test_null ();
-    ret += test_length ();
-    ret += test_simple();
-
+    ret += test_sizet ();
     return ret;
 }
