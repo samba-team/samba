@@ -363,6 +363,9 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	/* cache the server name for later connections */
 
 	saf_store( domain->name, (*cli)->desthost );
+	if (domain->alt_name) {
+		saf_store( domain->alt_name, (*cli)->desthost );
+	}
 
 	if (!cli_send_tconX(*cli, "IPC$", "IPC", "", 0)) {
 
