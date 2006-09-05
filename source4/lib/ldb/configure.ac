@@ -48,10 +48,10 @@ AC_SUBST(MODULESDIR)
 TESTS=""
 EXTRA_OBJ=""
 
-sinclude(popt.m4)
-sinclude(replace/config.m4)
+m4_include(popt.m4)
+m4_include(../replace/libreplace.m4)
 
-sinclude(ldap.m4)
+m4_include(ldap.m4)
 if test x"$with_ldap_support" = x"yes"; then
    LIBS="$LIBS -llber -lldap"
    CFLAGS="$CFLAGS -DHAVE_LDAP=1"
@@ -59,7 +59,7 @@ if test x"$with_ldap_support" = x"yes"; then
    TESTS="$TESTS test-ldap.sh"
 fi
 
-sinclude(sqlite3.m4)
+m4_include(sqlite3.m4)
 if test x"$with_sqlite3_support" = x"yes"; then
    LIBS="$LIBS -lsqlite3"
    CFLAGS="$CFLAGS -DHAVE_SQLITE3=1"
@@ -70,10 +70,10 @@ fi
 AC_SUBST(TESTS)
 AC_SUBST(EXTRA_OBJ)
 
-sinclude(replace.m4)
+m4_include(replace.m4)
 SMB_REPLACE_FUNCS(strtoll)
 
-sinclude(config.m4)
-sinclude(../talloc/config.m4)
-sinclude(../tdb/config.m4)
+m4_include(config.m4)
+m4_include(../talloc/config.m4)
+m4_include(../tdb/config.m4)
 AC_OUTPUT(Makefile ldb.pc)
