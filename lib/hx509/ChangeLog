@@ -1,5 +1,9 @@
 2006-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* crypto.c: check that there are no extra bytes in the checksum
+	and that the parameters are NULL or the NULL-type. All to avoid
+	having excess data that can be used to fake the signature.
+
 	* hxtool.c: print keyusage
 
 	* print.c: add hx509_cert_keyusage_print, simplify oid printing
