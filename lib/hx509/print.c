@@ -82,17 +82,7 @@ hx509_print_func(hx509_vprint_func func, void *ctx, const char *fmt, ...)
 int
 hx509_oid_sprint(const heim_oid *oid, char **str)
 {
-    char *s, *r;
-    int i;
-    s = strdup("");
-    for (i = 0; i < oid->length; i++) {
-	asprintf(&r, "%s%d%s", s, oid->components[i],
-		 i < oid->length - 1 ? "." : "");
-	free(s);
-	s = r;
-    }
-    *str = s;
-    return 0;
+    return der_print_heim_oid(oid, str);
 }
 
 void
@@ -117,6 +107,28 @@ hx509_bitstring_print(const heim_bit_string *b,
 			 && (i == 0 || (i % 16) != 15) ? ":" : "",
 			 i != 0 && (i % 16) == 15 ?
 			 (i <= ((b->length + 7) / 8 - 2) ? "\n\t" : "\n"):"");
+}
+
+int
+hx509_cert_keyusage_print(hx509_context context, hx509_cert c, char **s)
+{
+    KeyUsage ku;
+    char buf[256];
+    int ret;
+
+    *s = NULL;
+
+    ret = _hx509_cert_get_keyusage(context, c, &ku);
+    if (ret)
+	return ret;
+    unparse_flags(KeyUsage2int(ku), asn1_KeyUsage_units(), buf, sizeof(buf));
+    *s = strdup(buf);
+    if (*s == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	return ENOMEM;
+    }
+
+    return 0;
 }
 
 /*
