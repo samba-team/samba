@@ -609,23 +609,19 @@ static BOOL test_realloc(void)
 	return True;
 }
 
-struct el2 {
-	const char *name;
-};
-
-struct el1 {
-	int count;
-	struct el2 **list, **list2, **list3;
-};
-
 /*
   test realloc with a child
 */
 static BOOL test_realloc_child(void)
 {
 	void *root;
-	struct el1 *el1;
-	struct el2 *el2;
+	struct el2 {
+		const char *name;
+	} *el2;	
+	struct el1 {
+		int count;
+		struct el2 **list, **list2, **list3;
+	} *el1;
 
 	printf("TESTING REALLOC WITH CHILD\n");
 
