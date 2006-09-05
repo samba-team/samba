@@ -44,7 +44,7 @@
 #include <sys/time.h>
 #endif
 
-#ifdef TIME_H
+#ifdef HAVE_TIME_H
 #include <time.h>
 #endif
 
