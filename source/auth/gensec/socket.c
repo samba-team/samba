@@ -58,6 +58,115 @@ static NTSTATUS gensec_socket_init_fn(struct socket_context *sock)
 	return NT_STATUS_OK;
 }
 
+/* These functions are for use here only (public because SPNEGO must
+ * use them for recursion) */
+NTSTATUS gensec_wrap_packets(struct gensec_security *gensec_security, 
+			     TALLOC_CTX *mem_ctx, 
+			     const DATA_BLOB *in, 
+			     DATA_BLOB *out,
+			     size_t *len_processed) 
+{
+	if (!gensec_security->ops->wrap_packets) {
+		NTSTATUS nt_status;
+		size_t max_input_size;
+		DATA_BLOB unwrapped, wrapped;
+		max_input_size = gensec_max_input_size(gensec_security);
+		unwrapped = data_blob_const(in->data, MIN(max_input_size, (size_t)in->length));
+		
+		nt_status = gensec_wrap(gensec_security, 
+					mem_ctx,
+					&unwrapped, &wrapped);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
+			return nt_status;
+		}
+		
+		*out = data_blob_talloc(mem_ctx, NULL, 4);
+		if (!out->data) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		RSIVAL(out->data, 0, wrapped.length);
+		
+		nt_status = data_blob_append(mem_ctx, out, wrapped.data, wrapped.length);
+		
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		*len_processed = unwrapped.length;
+		return nt_status;
+	}
+	return gensec_security->ops->wrap_packets(gensec_security, mem_ctx, in, out,
+						  len_processed);
+}
+
+/* These functions are for use here only (public because SPNEGO must
+ * use them for recursion) */
+NTSTATUS gensec_unwrap_packets(struct gensec_security *gensec_security, 
+					TALLOC_CTX *mem_ctx, 
+					const DATA_BLOB *in, 
+					DATA_BLOB *out,
+					size_t *len_processed) 
+{
+	if (!gensec_security->ops->unwrap_packets) {
+		DATA_BLOB wrapped;
+		NTSTATUS nt_status;
+		size_t packet_size;
+		if (in->length < 4) {
+			/* Missing the header we already had! */
+			DEBUG(0, ("Asked to unwrap packet of bogus length!  How did we get the short packet?!\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		
+		packet_size = RIVAL(in->data, 0);
+		
+		wrapped = data_blob_const(in->data + 4, packet_size);
+		
+		if (wrapped.length > (in->length - 4)) {
+			DEBUG(0, ("Asked to unwrap packed of bogus length %d > %d!  How did we get this?!\n",
+				  wrapped.length, in->length - 4));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		
+		nt_status = gensec_unwrap(gensec_security, 
+					  mem_ctx,
+					  &wrapped, out);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		
+		*len_processed = packet_size + 4;
+		return nt_status;
+	}
+	return gensec_security->ops->unwrap_packets(gensec_security, mem_ctx, in, out,
+						    len_processed);
+}
+
+/* These functions are for use here only (public because SPNEGO must
+ * use them for recursion) */
+NTSTATUS gensec_packet_full_request(struct gensec_security *gensec_security,
+				    DATA_BLOB blob, size_t *size) 
+{
+	if (gensec_security->ops->packet_full_request) {
+		return gensec_security->ops->packet_full_request(gensec_security,
+								 blob, size);
+	}
+	if (gensec_security->ops->unwrap_packets) {
+		if (blob.length) {
+			*size = blob.length;
+			return NT_STATUS_OK;
+		}
+		return STATUS_MORE_ENTRIES;
+	}
+	return packet_full_request_u32(NULL, blob, size);
+}
+
+static NTSTATUS gensec_socket_full_request(void *private, DATA_BLOB blob, size_t *size) 
+{
+	struct gensec_socket *gensec_socket = talloc_get_type(private, struct gensec_socket);
+	struct gensec_security *gensec_security = gensec_socket->gensec_security;
+	return gensec_packet_full_request(gensec_security, blob, size);
+}
+
 /* Try to figure out how much data is waiting to be read */
 static NTSTATUS gensec_socket_pending(struct socket_context *sock, size_t *npending) 
 {
@@ -183,37 +292,29 @@ static NTSTATUS gensec_socket_recv(struct socket_context *sock, void *buf,
 static NTSTATUS gensec_socket_unwrap(void *private, DATA_BLOB blob)
 {
 	struct gensec_socket *gensec_socket = talloc_get_type(private, struct gensec_socket);
-	DATA_BLOB wrapped;
 	DATA_BLOB unwrapped;
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx;
 	uint32_t packet_size;
 
-	if (blob.length < 4) {
-		/* Missing the header we already had! */
-		DEBUG(0, ("Asked to unwrap packed of bogus length!  How did we get the short packet?!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	wrapped = data_blob_const(blob.data + 4, blob.length - 4);
-
-	packet_size = RIVAL(blob.data, 0);
-	if (packet_size != wrapped.length) {
-		DEBUG(0, ("Asked to unwrap packed of bogus length!  How did we get this?!\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	mem_ctx = talloc_new(gensec_socket);
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	nt_status = gensec_unwrap(gensec_socket->gensec_security, 
-				  mem_ctx,
-				  &wrapped, &unwrapped);
+	nt_status = gensec_unwrap_packets(gensec_socket->gensec_security, 
+					  mem_ctx,
+					  &blob, &unwrapped, 
+					  &packet_size);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
 	}
+
+	if (packet_size != blob.length) {
+		DEBUG(0, ("gensec_socket_unwrap: Did not consume entire packet!\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	/* We could change this into a linked list, and have
 	 * gensec_socket_recv() and gensec_socket_pending() walk the
 	 * linked list */
@@ -242,9 +343,8 @@ static NTSTATUS gensec_socket_send(struct socket_context *sock,
 {
 	NTSTATUS nt_status;
 	struct gensec_socket *gensec_socket = talloc_get_type(sock->private_data, struct gensec_socket);
-	DATA_BLOB unwrapped, wrapped, out;
+	DATA_BLOB wrapped;
 	TALLOC_CTX *mem_ctx;
-	size_t max_input_size;
 
 	if (!gensec_socket->wrap) {
 		return socket_send(gensec_socket->socket, blob, sendlen);
@@ -273,26 +373,10 @@ static NTSTATUS gensec_socket_send(struct socket_context *sock,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	max_input_size = gensec_max_input_size(gensec_socket->gensec_security);
-	unwrapped = data_blob_const(blob->data, MIN(max_input_size, (size_t)blob->length));
-	
-	nt_status = gensec_wrap(gensec_socket->gensec_security, 
-				mem_ctx,
-				&unwrapped, &wrapped);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
-		return nt_status;
-	}
-	
-	out = data_blob_talloc(mem_ctx, NULL, 4);
-	if (!out.data) {
-		talloc_free(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-	RSIVAL(out.data, 0, wrapped.length);
-
-	nt_status = data_blob_append(gensec_socket, &out, wrapped.data, wrapped.length);
-
+	nt_status = gensec_wrap_packets(gensec_socket->gensec_security, 
+					mem_ctx,
+					blob, &wrapped, 
+					&gensec_socket->orig_send_len);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
@@ -300,11 +384,9 @@ static NTSTATUS gensec_socket_send(struct socket_context *sock,
 	
 	gensec_socket->interrupted = True;
 	gensec_socket->error = NT_STATUS_OK;
-	gensec_socket->orig_send_len
-		= unwrapped.length;
 
 	nt_status = packet_send_callback(gensec_socket->packet, 
-					 out,
+					 wrapped,
 					 send_callback, gensec_socket);
 
 	talloc_free(mem_ctx);
@@ -390,7 +472,7 @@ NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
 	packet_set_private(gensec_socket->packet, gensec_socket);
 	packet_set_socket(gensec_socket->packet, gensec_socket->socket);
 	packet_set_callback(gensec_socket->packet, gensec_socket_unwrap);
-	packet_set_full_request(gensec_socket->packet, packet_full_request_u32);
+	packet_set_full_request(gensec_socket->packet, gensec_socket_full_request);
 	packet_set_error_handler(gensec_socket->packet, gensec_socket_error_handler);
 	packet_set_serialise(gensec_socket->packet);
 

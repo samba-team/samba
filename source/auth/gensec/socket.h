@@ -26,3 +26,23 @@ NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
 			    void (*recv_handler)(void *, uint16_t),
 			    void *recv_private,
 			    struct socket_context **new_socket);
+/* These functions are for use here only (public because SPNEGO must
+ * use them for recursion) */
+NTSTATUS gensec_wrap_packets(struct gensec_security *gensec_security, 
+			     TALLOC_CTX *mem_ctx, 
+			     const DATA_BLOB *in, 
+			     DATA_BLOB *out,
+			     size_t *len_processed);
+/* These functions are for use here only (public because SPNEGO must
+ * use them for recursion) */
+NTSTATUS gensec_unwrap_packets(struct gensec_security *gensec_security, 
+			       TALLOC_CTX *mem_ctx, 
+			       const DATA_BLOB *in, 
+			       DATA_BLOB *out,
+			       size_t *len_processed);
+
+/* These functions are for use here only (public because SPNEGO must
+ * use them for recursion) */
+NTSTATUS gensec_packet_full_request(struct gensec_security *gensec_security,
+				    DATA_BLOB blob, size_t *size);
+
