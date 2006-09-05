@@ -48,7 +48,7 @@
 #endif /* _SAMBA_BUILD_ */
 
 #ifndef _TALLOC_SAMBA3
-#include "config.h"
+#include "replace.h"
 
 #include <stdio.h>
 #include <stdlib.h>
