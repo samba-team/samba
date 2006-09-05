@@ -16,7 +16,7 @@ AC_SUBST(DOC_TARGET)
 AC_CONFIG_HEADER(config.h)
 AC_SYS_LARGEFILE
 
-sinclude(libreplace.m4)
-sinclude(libtalloc.m4)
+m4_include(libreplace.m4)
+m4_include(libtalloc.m4)
 
 AC_OUTPUT(Makefile talloc.pc)
