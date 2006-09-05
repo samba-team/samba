@@ -56,3 +56,10 @@ gcov:
 
 installcheck: 
 	$(MAKE) test
+
+distclean: clean
+	rm -f *~ */*~
+	rm -rf autom4te.cache
+	rm -f configure \
+		config.log config.status config.h
+	rm -f Makefile
