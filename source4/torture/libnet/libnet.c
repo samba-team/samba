@@ -46,6 +46,8 @@ NTSTATUS torture_net_init(void)
 	register_torture_op("NET-API-DELSHARE", torture_delshare);
 	register_torture_op("NET-API-DOMOPENLSA", torture_domain_open_lsa);
 	register_torture_op("NET-API-DOMCLOSELSA", torture_domain_close_lsa);
+	register_torture_op("NET-API-DOMOPENSAMR", torture_domain_open_samr);
+	register_torture_op("NET-API-DOMCLOSESAMR", torture_domain_close_samr);
 
 	return NT_STATUS_OK;
 }
