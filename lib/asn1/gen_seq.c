@@ -111,7 +111,7 @@ generate_type_seq (const Symbol *s)
 	     "ptr = realloc(data->val, data->len * sizeof(data->val[0]));\n"
 	     "if (ptr) data->val = ptr;\n"
 	     "return 0;\n",
-	     subname, subname);
+	     subname);
 
     fprintf (codefile, "}\n\n");
 }
