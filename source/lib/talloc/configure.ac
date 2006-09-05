@@ -17,6 +17,6 @@ AC_CONFIG_HEADER(config.h)
 AC_SYS_LARGEFILE
 
 sinclude(libreplace.m4)
-sinclude(libtdb.m4)
+sinclude(libtalloc.m4)
 
 AC_OUTPUT(Makefile talloc.pc)
