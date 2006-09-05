@@ -179,6 +179,32 @@ echo "verify success signed data"
 	sd.data sd.data.out > /dev/null || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
+echo "create signed data (sd cert)"
+./hxtool cms-create-sd \
+	--certificate=FILE:$srcdir/data/test-ds-only.crt,$srcdir/data/test-ds-only.key \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "create signed data (ke cert)"
+./hxtool cms-create-sd \
+	--certificate=FILE:$srcdir/data/test-ke-only.crt,$srcdir/data/test-ke-only.key \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null 2>/dev/null && exit 1
+
+echo "create signed data (sd + ke certs)"
+./hxtool cms-create-sd \
+	--certificate=FILE:$srcdir/data/test-ke-only.crt,$srcdir/data/test-ke-only.key \
+	--certificate=FILE:$srcdir/data/test-ds-only.crt,$srcdir/data/test-ds-only.key \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "create signed data (ke + sd certs)"
+./hxtool cms-create-sd \
+	--certificate=FILE:$srcdir/data/test-ds-only.crt,$srcdir/data/test-ds-only.key \
+	--certificate=FILE:$srcdir/data/test-ke-only.crt,$srcdir/data/test-ke-only.key \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
 echo "envelope data (content-info)"
 ./hxtool cms-envelope \
 	--certificate=FILE:$srcdir/data/test.crt \
