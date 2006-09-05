@@ -421,20 +421,13 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     return 0;
 }
 
-struct print_s {
-    int counter;
-    int verbose;
-};
-
-static int
-print_f(hx509_context hxcontext, void *ctx, hx509_cert cert)
+static void
+print_certificate(hx509_context hxcontext, hx509_cert cert, int verbose)
 {
-    struct print_s *s = ctx;
     hx509_name name;
     char *str;
     int ret;
     
-    printf("cert: %d", s->counter++);
     {
 	const char *fn = hx509_cert_get_friendly_name(cert);
 	if (fn)
@@ -457,7 +450,7 @@ print_f(hx509_context hxcontext, void *ctx, hx509_cert cert)
     printf("    subject: \"%s\"\n", str);
     free(str);
 
-    if (s->verbose) {
+    if (verbose) {
 	hx509_validate_ctx vctx;
 
 	hx509_validate_ctx_init(hxcontext, &vctx);
@@ -467,6 +460,21 @@ print_f(hx509_context hxcontext, void *ctx, hx509_cert cert)
 	
 	hx509_validate_cert(hxcontext, vctx, cert);
     }
+}
+
+
+struct print_s {
+    int counter;
+    int verbose;
+};
+
+static int
+print_f(hx509_context hxcontext, void *ctx, hx509_cert cert)
+{
+    struct print_s *s = ctx;
+    
+    printf("cert: %d", s->counter++);
+    print_certificate(context, cert, s->verbose);
 
     return 0;
 }
@@ -678,12 +686,23 @@ query(struct query_options *opt, int argc, char **argv)
     if (opt->private_key_flag)
 	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
 
+    if (opt->keyEncipherment_flag)
+	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_ENCIPHERMENT);
+
+    if (opt->digitalSignature_flag)
+	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+
     ret = hx509_certs_find(context, certs, q, &c);
     hx509_query_free(context, q);
     if (ret)
 	warnx("hx509_certs_find: %d", ret);
-    else
+    else {
 	printf("match found\n");
+	if (opt->print_flag)
+	    print_certificate(context, c, 0);
+    }
+
+    hx509_cert_free(c);
 
     hx509_lock_free(lock);
 

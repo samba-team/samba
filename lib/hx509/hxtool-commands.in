@@ -345,6 +345,21 @@ command = {
 		help = "match on friendly name"
 	}
 	option = {
+		long = "keyEncipherment"
+		type = "flag"
+		help = "match keyEncipherment certificates"
+	}
+	option = {
+		long = "digitalSignature"
+		type = "flag"
+		help = "match digitalSignature certificates"
+	}
+	option = {
+		long = "print"
+		type = "flag"
+		help = "print matches"
+	}
+	option = {
 		long = "pass"
 		type = "strings"
 		argument = "password"
