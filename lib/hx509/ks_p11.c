@@ -41,8 +41,10 @@ RCSID("$Id$");
 struct p11_slot {
     int flags;
 #define P11_SESSION		1
-#define P11_LOGIN_REQ		2
-#define P11_LOGIN_DONE		4
+#define P11_SESSION_IN_USE	2
+#define P11_LOGIN_REQ		4
+#define P11_LOGIN_DONE		8
+    CK_SESSION_HANDLE session;
     CK_SLOT_ID id;
     CK_BBOOL token;
     char *name;
@@ -367,17 +369,22 @@ p11_get_session(hx509_context context,
 		hx509_lock lock,
 		CK_SESSION_HANDLE *psession)
 {
-    CK_SESSION_HANDLE session;
     CK_RV ret;
 
-    if (slot->flags & P11_SESSION)
+    if (slot->flags & P11_SESSION_IN_USE)
 	_hx509_abort("slot already in session");
+    
+    if (slot->flags & P11_SESSION) {
+	slot->flags |= P11_SESSION_IN_USE;
+	*psession = slot->session;
+	return 0;
+    }
 
     ret = P11FUNC(p, OpenSession, (slot->id, 
 				   CKF_SERIAL_SESSION,
 				   NULL,
 				   NULL,
-				   &session));
+				   &slot->session));
     if (ret != CKR_OK) {
 	if (context)
 	    hx509_set_error_string(context, 0, EINVAL,
@@ -436,7 +443,7 @@ p11_get_session(hx509_context context,
 	    strlcpy(pin, slot->pin, sizeof(pin));
 	}
 
-	ret = P11FUNC(p, Login, (session, CKU_USER,
+	ret = P11FUNC(p, Login, (slot->session, CKU_USER,
 				 (unsigned char*)pin, strlen(pin)));
 	if (ret != CKR_OK) {
 	    if (context)
@@ -444,7 +451,7 @@ p11_get_session(hx509_context context,
 				       "Failed to login on slot id %d "
 				       "with error: 0x%08x",
 				       (int)slot->id, ret);
-	    p11_put_session(p, slot, session);
+	    p11_put_session(p, slot, slot->session);
 	    return EINVAL;
 	}
 	if (slot->pin == NULL) {
@@ -453,14 +460,16 @@ p11_get_session(hx509_context context,
 		if (context)
 		    hx509_set_error_string(context, 0, ENOMEM,
 					   "out of memory");
-		p11_put_session(p, slot, session);
+		p11_put_session(p, slot, slot->session);
 		return ENOMEM;
 	    }
 	}
     } else
 	slot->flags |= P11_LOGIN_DONE;
 
-    *psession = session;
+    slot->flags |= P11_SESSION_IN_USE;
+
+    *psession = slot->session;
 
     return 0;
 }
@@ -470,15 +479,9 @@ p11_put_session(struct p11_module *p,
 		struct p11_slot *slot, 
 		CK_SESSION_HANDLE session)
 {
-    int ret;
-
-    if ((slot->flags & P11_SESSION) == 0)
+    if ((slot->flags & P11_SESSION_IN_USE) == 0)
 	_hx509_abort("slot not in session");
-    slot->flags &= ~P11_SESSION;
-
-    ret = P11FUNC(p, CloseSession, (session));
-    if (ret != CKR_OK)
-	return EINVAL;
+    slot->flags &= ~P11_SESSION_IN_USE;
 
     return 0;
 }
@@ -926,6 +929,16 @@ p11_release_module(struct p11_module *p)
 	dlclose(p->dl_handle);
 
     for (i = 0; i < p->num_slots; i++) {
+	if (p->slot->flags & P11_SESSION_IN_USE)
+	    _hx509_abort("pkcs11 module release while session in use");
+	if (p->slot->flags & P11_SESSION) {
+	    int ret;
+
+	    ret = P11FUNC(p, CloseSession, (p->slot->session));
+	    if (ret != CKR_OK)
+		;
+	}
+
 	if (p->slot[i].certs)
 	    hx509_certs_free(&p->slot[i].certs);
 	if (p->slot[i].name)
