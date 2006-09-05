@@ -770,6 +770,51 @@ check_fail_choice(void)
 			       (generic_decode)decode_TESTChoice1);
 }
 
+static int
+check_seq(void)
+{
+    TESTSeqOf seq;
+    TESTInteger i;
+    int ret;
+
+    seq.val = NULL;
+    seq.len = 0;
+
+    ret = add_TESTSeqOf(&seq, &i);
+    if (ret) { printf("failed adding\n"); goto out; }
+    ret = add_TESTSeqOf(&seq, &i);
+    if (ret) { printf("failed adding\n"); goto out; }
+    ret = add_TESTSeqOf(&seq, &i);
+    if (ret) { printf("failed adding\n"); goto out; }
+    ret = add_TESTSeqOf(&seq, &i);
+    if (ret) { printf("failed adding\n"); goto out; }
+
+    ret = remove_TESTSeqOf(&seq, seq.len - 1);
+    if (ret) { printf("failed removing\n"); goto out; }
+    ret = remove_TESTSeqOf(&seq, 2);
+    if (ret) { printf("failed removing\n"); goto out; }
+    ret = remove_TESTSeqOf(&seq, 0);
+    if (ret) { printf("failed removing\n"); goto out; }
+    ret = remove_TESTSeqOf(&seq, 0);
+    if (ret) { printf("failed removing\n"); goto out; }
+    ret = remove_TESTSeqOf(&seq, 0);
+    if (ret == 0) {
+	printf("can remove from empty list");
+	return 1;
+    }
+
+    if (seq.len != 0) {
+	printf("seq not empty!");
+	return 1;
+    }
+    ret = 0;
+
+out:
+
+    return ret;
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -791,6 +836,8 @@ main(int argc, char **argv)
     ret += check_fail_largetag();
     ret += check_fail_sequence();
     ret += check_fail_choice();
+
+    ret += check_seq();
 
     return ret;
 }
