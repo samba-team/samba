@@ -192,3 +192,16 @@ eprintf("bla", "bar");
 # Check prerequisites
 AC_CHECK_FUNCS([memset printf syslog], [], 
 			   [ AC_MSG_ERROR([Required function not found])])
+
+AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <signal.h>],[sig_atomic_t i = 0],
+	samba_cv_sig_atomic_t=yes,samba_cv_sig_atomic_t=no)])
+if test x"$samba_cv_sig_atomic_t" = x"yes"; then
+   AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE,1,[Whether we have the atomic_t variable type])
+fi
