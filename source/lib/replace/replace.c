@@ -31,6 +31,14 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 void replace_dummy(void);
 void replace_dummy(void) {}
 
