@@ -695,7 +695,7 @@ vsnprintf (char *str, size_t sz, const char *format, va_list args)
     state.append_char = sn_append_char;
 
     ret = xyzprintf (&state, format, args);
-    if (state.s != NULL)
+    if (state.s != NULL && sz != 0)
 	*state.s = '\0';
     return ret;
 }
