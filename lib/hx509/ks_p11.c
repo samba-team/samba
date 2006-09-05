@@ -65,7 +65,8 @@ struct p11_module {
 
 #define P11FUNC(module,f,args) (*(module)->funcs->C_##f)args
 
-static int p11_get_session(struct p11_module *,
+static int p11_get_session(hx509_context,
+			   struct p11_module *,
 			   struct p11_slot *,
 			   hx509_lock,
 			   CK_SESSION_HANDLE *);
@@ -135,7 +136,7 @@ p11_rsa_private_encrypt(int flen,
 
     ck_sigsize = RSA_size(rsa);
 
-    ret = p11_get_session(p11rsa->p, p11rsa->slot, NULL, &session);
+    ret = p11_get_session(NULL, p11rsa->p, p11rsa->slot, NULL, &session);
     if (ret)
 	return -1;
 
@@ -174,7 +175,7 @@ p11_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
 
     ck_sigsize = RSA_size(rsa);
 
-    ret = p11_get_session(p11rsa->p, p11rsa->slot, NULL, &session);
+    ret = p11_get_session(NULL, p11rsa->p, p11rsa->slot, NULL, &session);
     if (ret)
 	return -1;
 
@@ -335,21 +336,18 @@ p11_init_slot(hx509_context context,
     ret = P11FUNC(p, GetTokenInfo, (slot->id, &token_info));
     if (ret) {
 	hx509_set_error_string(context, 0, EINVAL,
-			       "Failed to init PKCS11 slot %d",
-			       num);
+			       "Failed to init PKCS11 slot %d "
+			       "with error 0x08x",
+			       num, ret);
 	return EINVAL;
     }
 
     if (token_info.flags & CKF_LOGIN_REQUIRED)
 	slot->flags |= P11_LOGIN_REQ;
 
-    ret = p11_get_session(p, slot, lock, &session);
-    if (ret) {
-	hx509_set_error_string(context, 0, ret,
-			       "Failed to get session PKCS11 slot %d",
-			       num);
+    ret = p11_get_session(context, p, slot, lock, &session);
+    if (ret)
 	return ret;
-    }
 
     ret = p11_mech_info(context, p, slot, num);
     if (ret)
@@ -363,7 +361,8 @@ p11_init_slot(hx509_context context,
 }
 
 static int
-p11_get_session(struct p11_module *p,
+p11_get_session(hx509_context context,
+		struct p11_module *p,
 		struct p11_slot *slot,
 		hx509_lock lock,
 		CK_SESSION_HANDLE *psession)
@@ -379,8 +378,14 @@ p11_get_session(struct p11_module *p,
 				   NULL,
 				   NULL,
 				   &session));
-    if (ret != CKR_OK)
+    if (ret != CKR_OK) {
+	if (context)
+	    hx509_set_error_string(context, 0, EINVAL,
+				   "Failed to OpenSession for slot id %d "
+				   "with error: 0x%08x",
+				   (int)slot->id, ret);
 	return EINVAL;
+    }
     
     slot->flags |= P11_SESSION;
     
@@ -419,6 +424,11 @@ p11_get_session(struct p11_module *p,
 	    ret = hx509_lock_prompt(lock, &prompt);
 	    if (ret) {
 		free(str);
+		if (context)
+		    hx509_set_error_string(context, 0, ret,
+					   "Failed to get pin code for slot "
+					   "id %d with error: %d",
+					   (int)slot->id, ret);
 		return ret;
 	    }
 	    free(str);
@@ -429,17 +439,24 @@ p11_get_session(struct p11_module *p,
 	ret = P11FUNC(p, Login, (session, CKU_USER,
 				 (unsigned char*)pin, strlen(pin)));
 	if (ret != CKR_OK) {
+	    if (context)
+		hx509_set_error_string(context, 0, EINVAL,
+				       "Failed to login on slot id %d "
+				       "with error: 0x%08x",
+				       (int)slot->id, ret);
 	    p11_put_session(p, slot, session);
 	    return EINVAL;
 	}
 	if (slot->pin == NULL) {
 	    slot->pin = strdup(pin);
 	    if (slot->pin == NULL) {
+		if (context)
+		    hx509_set_error_string(context, 0, ENOMEM,
+					   "out of memory");
 		p11_put_session(p, slot, session);
-		return EINVAL;
+		return ENOMEM;
 	    }
 	}
-
     } else
 	slot->flags |= P11_LOGIN_DONE;
 
