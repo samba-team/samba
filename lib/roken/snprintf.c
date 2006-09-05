@@ -325,6 +325,8 @@ if (long_long_flag) \
      res = (unsig long long)va_arg(arg, unsig long long); \
 else if (long_flag) \
      res = (unsig long)va_arg(arg, unsig long); \
+else if (size_t_flag) \
+     res = (unsig long)va_arg(arg, size_t); \
 else if (short_flag) \
      res = (unsig short)va_arg(arg, unsig int); \
 else \
@@ -335,6 +337,8 @@ else \
 #define PARSE_INT_FORMAT(res, arg, unsig) \
 if (long_flag) \
      res = (unsig long)va_arg(arg, unsig long); \
+else if (size_t_flag) \
+     res = (unsig long)va_arg(arg, size_t); \
 else if (short_flag) \
      res = (unsig short)va_arg(arg, unsig int); \
 else \
@@ -358,6 +362,7 @@ xyzprintf (struct snprintf_state *state, const char *char_format, va_list ap)
 	    int flags          = 0;
 	    int width          = 0;
 	    int prec           = -1;
+	    int size_t_flag    = 0;
 	    int long_long_flag = 0;
 	    int long_flag      = 0;
 	    int short_flag     = 0;
@@ -416,6 +421,9 @@ xyzprintf (struct snprintf_state *state, const char *char_format, va_list ap)
 
 	    if (c == 'h') {
 		short_flag = 1;
+		c = *format++;
+	    } else if (c == 'z') {
+		size_t_flag = 1;
 		c = *format++;
 	    } else if (c == 'l') {
 		long_flag = 1;
@@ -687,7 +695,7 @@ vsnprintf (char *str, size_t sz, const char *format, va_list args)
     state.append_char = sn_append_char;
 
     ret = xyzprintf (&state, format, args);
-    if (state.s != NULL && sz != 0)
+    if (state.s != NULL)
 	*state.s = '\0';
     return ret;
 }
