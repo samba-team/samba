@@ -47,11 +47,12 @@ static const struct {
     { "C", oid_id_at_countryName },
     { "CN", oid_id_at_commonName },
     { "DC", oid_id_domainComponent },
-    { "Email", oid_id_pkcs9_emailAddress },
     { "L", oid_id_at_localityName },
     { "O", oid_id_at_organizationName },
     { "OU", oid_id_at_organizationalUnitName },
-    { "UID", oid_id_Userid }
+    { "UID", oid_id_Userid },
+    { "emailAddress", oid_id_pkcs9_emailAddress },
+    { "serialNumber", oid_id_at_serialNumber }
 };
 
 static char *
