@@ -33,10 +33,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "snprintf-test.h"
 #include "roken.h"
 #include <limits.h>
-
-#include "snprintf-test.h"
 
 RCSID("$Id$");
 
