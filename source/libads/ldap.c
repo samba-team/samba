@@ -393,8 +393,9 @@ got_connection:
 		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
 	}
 
-	/* cache the successful connection */
+	/* cache the successful connection for workgroup and realm */
 	saf_store( ads->server.workgroup, inet_ntoa(ads->ldap_ip));
+	saf_store( ads->server.realm, inet_ntoa(ads->ldap_ip));
 
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
