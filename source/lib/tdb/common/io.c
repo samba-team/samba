@@ -29,28 +29,6 @@
 
 #include "tdb_private.h"
 
-#ifndef HAVE_PREAD
- static ssize_t pread(int fd, void *buf, size_t count, off_t offset)
-{
-	if (lseek(fd, offset, SEEK_SET) != offset) {
-		errno = EIO;
-		return -1;
-	}
-	return read(fd, buf, count);
-}
-#endif
-
-#ifndef HAVE_PWRITE
- static ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset)
-{
-	if (lseek(fd, offset, SEEK_SET) != offset) {
-		errno = EIO;
-		return -1;
-	}
-	return write(fd, buf, count);
-}
-#endif
-
 /* check for an out of bounds access - if it is out of bounds then
    see if the database has been expanded by someone else and expand
    if necessary 

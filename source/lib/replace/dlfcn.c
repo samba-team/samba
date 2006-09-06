@@ -24,7 +24,6 @@
 */
 
 #include "replace.h"
-#include <stdlib.h>
 
 #ifndef HAVE_DLOPEN
 void *dlopen(const char *name, int flags)
@@ -41,7 +40,7 @@ void *dlsym(void *handle, const char *symbol)
 #endif
 
 #ifndef HAVE_DLERROR
-const char *dlerror(void)
+char *dlerror(void)
 {
 	return "dynamic loading of objects not supported on this platform";
 }
