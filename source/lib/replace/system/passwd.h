@@ -1,3 +1,6 @@
+#ifndef _system_passwd_h
+#define _system_passwd_h
+
 /* 
    Unix SMB/CIFS implementation.
 
@@ -90,3 +93,4 @@
 int initgroups(char *name,gid_t id);
 #endif
 
+#endif

@@ -9,13 +9,13 @@ exec_prefix = @exec_prefix@
 bindir = @bindir@
 includedir = @includedir@
 libdir = @libdir@
-VPATH = @srcdir@
+VPATH = @srcdir@:@libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
-CFLAGS = -I$(srcdir)/include -Iinclude @CFLAGS@
+CFLAGS = -I$(srcdir)/include -Iinclude -I@libreplacedir@ @CFLAGS@
 
 PROGS = bin/tdbtool bin/tdbtorture
-TDB_OBJ = @TDBOBJ@
+TDB_OBJ = @TDBOBJ@ @LIBREPLACEOBJ@
 
 DIRS = lib bin common tools examples
 
@@ -24,7 +24,7 @@ all: dirs $(PROGS)
 .c.o:
 	@echo Compiling $*.c
 	@mkdir -p `dirname $@`
-	$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 dirs:
 	@mkdir -p $(DIRS)

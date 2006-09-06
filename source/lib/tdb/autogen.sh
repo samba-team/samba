@@ -3,8 +3,9 @@
 rm -rf autom4te.cache
 rm -f configure config.h.in
 
-autoheader || exit 1
-autoconf || exit 1
+IPATHS="-I libreplace -I lib/replace -I ../libreplace -I ../replace"
+autoconf $IPATHS || exit 1
+autoheader $IPATHS || exit 1
 
 rm -rf autom4te.cache
 

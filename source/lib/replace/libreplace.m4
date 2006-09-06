@@ -168,6 +168,7 @@ AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
 
 m4_include(getpass.m4)
 m4_include(cc_features.m4)
+m4_include(system/config.m4)
 
 LIBREPLACE_C99_STRUCT_INIT(c99_struct_initialization=yes,
 			c99_struct_initialization=no)
