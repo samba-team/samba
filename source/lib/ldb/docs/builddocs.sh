@@ -13,7 +13,7 @@ fi
 MANXSL="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"
 HTMLXSL="http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl"
 
-mkdir -p man html
+mkdir -p man
 
 for f in $SRCDIR/man/*.xml; do
     base=`basename $f .xml`
