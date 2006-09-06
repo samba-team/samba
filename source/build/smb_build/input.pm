@@ -30,6 +30,25 @@ sub str2array($)
 	return split /[ \t\n]/;
 }
 
+sub add_libreplace($)
+{
+	my ($part) = @_;
+
+	return if ($part->{NAME} eq "LIBREPLACE");
+	return if ($part->{NAME} eq "LIBREPLACE_HOSTCC");
+
+	foreach my $n (@{$part->{PRIVATE_DEPENDENCIES}}) {
+		return if ($n eq "LIBREPLACE");
+		return if ($n eq "LIBREPLACE_HOSTCC");
+	}
+
+	if (defined($part->{USE_HOSTCC}) && $part->{USE_HOSTCC} eq "YES") {
+		push (@{$part->{PRIVATE_DEPENDENCIES}}, "LIBREPLACE_HOSTCC");
+	} else {
+		push (@{$part->{PRIVATE_DEPENDENCIES}}, "LIBREPLACE");
+	}
+}
+
 sub check_subsystem($$$)
 {
 	my ($INPUT, $subsys, $default_ot) = @_;
@@ -38,6 +57,7 @@ sub check_subsystem($$$)
 	unless(defined($subsys->{OUTPUT_TYPE})) {
 		$subsys->{OUTPUT_TYPE} = $default_ot;
 	}
+	add_libreplace($subsys);
 }
 
 sub check_module($$$)
@@ -75,6 +95,7 @@ sub check_module($$$)
 	} else { 
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
 	}
+	add_libreplace($mod);
 }
 
 sub check_library($$$)
@@ -100,6 +121,7 @@ sub check_library($$$)
 	}
 
 	$lib->{INSTALLDIR} = "LIBDIR";
+	add_libreplace($lib);
 }
 
 sub check_binary($$)
@@ -111,6 +133,7 @@ sub check_binary($$)
 	($bin->{BINARY} = (lc $bin->{NAME})) if not defined($bin->{BINARY});
 
 	$bin->{OUTPUT_TYPE} = "BINARY";
+	add_libreplace($bin);
 }
 
 sub import_integrated($$)
