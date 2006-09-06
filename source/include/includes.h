@@ -83,12 +83,6 @@ _PUBLIC_ void smb_panic(const char *why) NORETURN_ATTRIBUTE;
 #include <signal.h>
 #include <errno.h>
 
-#ifdef HAVE_STDARG_H
-#include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
-
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 
 /* Lists, trees, caching, database... */
