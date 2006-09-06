@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/include/includes.h"
+#include "system/locale.h"
 #include "ldb/tools/cmdline.h"
 #include "ldb/tools/convert.h"
 
