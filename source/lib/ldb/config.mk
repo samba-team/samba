@@ -153,7 +153,7 @@ PUBLIC_DEPENDENCIES = \
 
 ./lib/ldb/common/ldb_modules.o: lib/ldb/common/ldb_modules.c Makefile
 	@echo Compiling $<
-	@$(CC) -Iinclude $(CFLAGS) -Ilib/talloc -Ilib/ldb $(PICFLAG) -DLDBMODULESDIR=\"$(MODULESDIR)/ldb\" -DSHLIBEXT=\"$(SHLIBEXT)\" -c $< -o $@
+	@$(CC) -Iinclude $(CFLAGS) -Ilib/replace -Ilib/talloc -Ilib/ldb $(PICFLAG) -DLDBMODULESDIR=\"$(MODULESDIR)/ldb\" -DSHLIBEXT=\"$(SHLIBEXT)\" -c $< -o $@
 
 ################################################
 # Start SUBSYSTEM ldb
