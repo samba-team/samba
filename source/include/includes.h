@@ -22,7 +22,7 @@
 */
 
 #ifndef NO_CONFIG_H /* for some tests */
-#include "config.h"
+#include "replace.h"
 #endif
 
 #include "local.h"
@@ -90,7 +90,6 @@ _PUBLIC_ void smb_panic(const char *why) NORETURN_ATTRIBUTE;
 #endif
 
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
-#include "lib/replace/replace.h"
 
 /* Lists, trees, caching, database... */
 #include "talloc/talloc.h"
