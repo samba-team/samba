@@ -521,7 +521,7 @@ WERROR rpccli_reg_enum_key(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	else
 		fstrcpy( class_name, "" );
 
-	*mod_time   = nt_time_to_unix(out.time);
+	*mod_time   = nt_time_to_unix(*out.time);
 
 	return out.status;
 }

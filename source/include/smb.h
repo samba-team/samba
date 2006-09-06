@@ -213,14 +213,8 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PI_NTSVCS		14
 #define PI_MAX_PIPES		15
 
-typedef struct uint64_s
-{
-	uint32 low;
-	uint32 high;
-} UINT64_S;
-
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
-typedef UINT64_S NTTIME;
+typedef uint64_t NTTIME;
 
 
 /* Allowable account control bits */
@@ -280,7 +274,7 @@ enum SID_NAME_USE {
  *
  * @sa http://msdn.microsoft.com/library/default.asp?url=/library/en-us/security/accctrl_38yn.asp
  **/
-typedef struct sid_info {
+typedef struct dom_sid {
 	uint8  sid_rev_num;             /**< SID revision number */
 	uint8  num_auths;               /**< Number of sub-authorities */
 	uint8  id_auth[6];              /**< Identifier Authority */
@@ -292,6 +286,9 @@ typedef struct sid_info {
 	 */
 	uint32 sub_auths[MAXSUBAUTHS];  
 } DOM_SID;
+
+#include "libndr/misc.h"
+#include "libndr/security.h"
 
 struct lsa_dom_info {
 	BOOL valid;

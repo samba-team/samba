@@ -22,15 +22,6 @@
 
 #include "includes.h"
 
-/* Evil hack to convert Samba3 NTTIME's to Samba4 NTTIME's */
-
-union NTTIME_big {
-	NTTIME s3;
-	uint64_t s4;
-};
-
-
-
 #define NDR_SVAL(ndr, ofs) (NDR_BE(ndr)?RSVAL(ndr->data,ofs):SVAL(ndr->data,ofs))
 #define NDR_IVAL(ndr, ofs) (NDR_BE(ndr)?RIVAL(ndr->data,ofs):IVAL(ndr->data,ofs))
 #define NDR_IVALS(ndr, ofs) (NDR_BE(ndr)?RIVALS(ndr->data,ofs):IVALS(ndr->data,ofs))
@@ -514,8 +505,7 @@ NTSTATUS ndr_push_ref_ptr(struct ndr_push *ndr, const void *p)
 */
 NTSTATUS ndr_push_NTTIME(struct ndr_push *ndr, int ndr_flags, NTTIME t)
 {
-	union NTTIME_big b; b.s3 = t;
-	NDR_CHECK(ndr_push_udlong(ndr, ndr_flags, b.s4));
+	NDR_CHECK(ndr_push_udlong(ndr, ndr_flags, t));
 	return NT_STATUS_OK;
 }
 
@@ -524,10 +514,7 @@ NTSTATUS ndr_push_NTTIME(struct ndr_push *ndr, int ndr_flags, NTTIME t)
 */
 NTSTATUS ndr_pull_NTTIME(struct ndr_pull *ndr, int ndr_flags, NTTIME *t)
 {
-	union NTTIME_big b; 
-	NDR_CHECK(ndr_pull_udlong(ndr, ndr_flags, &b.s4));
-
-	*t = b.s3;
+	NDR_CHECK(ndr_pull_udlong(ndr, ndr_flags, t));
 	return NT_STATUS_OK;
 }
 
@@ -536,10 +523,8 @@ NTSTATUS ndr_pull_NTTIME(struct ndr_pull *ndr, int ndr_flags, NTTIME *t)
 */
 NTSTATUS ndr_push_NTTIME_1sec(struct ndr_push *ndr, int ndr_flags, NTTIME t)
 {
-	union NTTIME_big b; b.s3 = t;
-
-	b.s4 /= 10000000;
-	NDR_CHECK(ndr_push_hyper(ndr, ndr_flags, b.s4));
+	t /= 10000000;
+	NDR_CHECK(ndr_push_hyper(ndr, ndr_flags, t));
 	return NT_STATUS_OK;
 }
 
@@ -548,10 +533,8 @@ NTSTATUS ndr_push_NTTIME_1sec(struct ndr_push *ndr, int ndr_flags, NTTIME t)
 */
 NTSTATUS ndr_pull_NTTIME_1sec(struct ndr_pull *ndr, int ndr_flags, NTTIME *t)
 {
-	union NTTIME_big b;
-	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &b.s4));
-	b.s4 *= 10000000;
-	*t = b.s3;
+	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, t));
+	(*t) *= 10000000;
 	return NT_STATUS_OK;
 }
 
@@ -560,9 +543,7 @@ NTSTATUS ndr_pull_NTTIME_1sec(struct ndr_pull *ndr, int ndr_flags, NTTIME *t)
 */
 NTSTATUS ndr_pull_NTTIME_hyper(struct ndr_pull *ndr, int ndr_flags, NTTIME *t)
 {
-	union NTTIME_big b;
-	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &b.s4));
-	*t = b.s3;
+	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, t));
 	return NT_STATUS_OK;
 }
 
@@ -571,8 +552,7 @@ NTSTATUS ndr_pull_NTTIME_hyper(struct ndr_pull *ndr, int ndr_flags, NTTIME *t)
 */
 NTSTATUS ndr_push_NTTIME_hyper(struct ndr_push *ndr, int ndr_flags, NTTIME t)
 {
-	union NTTIME_big b; b.s3 = t;
-	NDR_CHECK(ndr_push_hyper(ndr, ndr_flags, b.s4));
+	NDR_CHECK(ndr_push_hyper(ndr, ndr_flags, t));
 	return NT_STATUS_OK;
 }
 

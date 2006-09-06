@@ -42,22 +42,17 @@ NTSTATUS ndr_push_dom_sid(struct ndr_push *ndr, int ndr_flags, const struct dom_
 NTSTATUS ndr_pull_dom_sid(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *r)
 {
 	uint32_t cntr_sub_auths_0;
-	TALLOC_CTX *_mem_save_sub_auths_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sid_rev_num));
-		NDR_CHECK(ndr_pull_int8(ndr, NDR_SCALARS, &r->num_auths));
-		if (r->num_auths < 0 || r->num_auths > 15) {
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->num_auths));
+		if (r->num_auths > 15) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->id_auth, 6));
-		NDR_PULL_ALLOC_N(ndr, r->sub_auths, r->num_auths);
-		_mem_save_sub_auths_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->sub_auths, 0);
 		for (cntr_sub_auths_0 = 0; cntr_sub_auths_0 < r->num_auths; cntr_sub_auths_0++) {
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sub_auths[cntr_sub_auths_0]));
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sub_auths_0, 0);
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}

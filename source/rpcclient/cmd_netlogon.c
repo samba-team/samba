@@ -263,7 +263,7 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct rpc_pipe_client *cli,
         uint32 database_id, num_deltas, tmp;
         SAM_DELTA_HDR *hdr_deltas;
         SAM_DELTA_CTR *deltas;
-        UINT64_S seqnum;
+        uint64 seqnum;
 
         if (argc != 3) {
                 fprintf(stderr, "Usage: %s database_id seqnum\n", argv[0]);
@@ -273,8 +273,7 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct rpc_pipe_client *cli,
         database_id = atoi(argv[1]);
         tmp = atoi(argv[2]);
 
-        seqnum.low = tmp & 0xffff;
-        seqnum.high = 0;
+        seqnum = tmp & 0xffff;
 
 	result = rpccli_netlogon_sam_deltas(cli, mem_ctx, database_id,
 					 seqnum, &num_deltas, 

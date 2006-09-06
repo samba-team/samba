@@ -26,23 +26,6 @@
 static int pong_count;
 
 
-/* samba4 timeval functions */
-
-double timeval_elapsed2(const struct timeval *tv1, const struct timeval *tv2)
-{
-        return (tv2->tv_sec - tv1->tv_sec) +
-               (tv2->tv_usec - tv1->tv_usec)*1.0e-6;
-}
-
-/**
-  return the number of seconds elapsed since a given time
-*/
-double timeval_elapsed(const struct timeval *tv)
-{
-        struct timeval tv2 = timeval_current();
-        return timeval_elapsed2(tv, &tv2);
-}
-
 /****************************************************************************
 a useful function for testing the message system
 ****************************************************************************/

@@ -135,13 +135,6 @@ enum sec_privilege {
 	SEC_PRIV_REMOTE_INTERACTIVE_LOGON=24
 };
 
-struct dom_sid {
-	uint8_t sid_rev_num;
-	int8_t num_auths;/* [range(0 15)] */
-	uint8_t id_auth[6];
-	uint32_t *sub_auths;
-}/* [noprint,gensize,noejs,public,nosize] */;
-
 /* bitmap security_ace_flags */
 #define SEC_ACE_FLAG_OBJECT_INHERIT ( 0x01 )
 #define SEC_ACE_FLAG_CONTAINER_INHERIT ( 0x02 )

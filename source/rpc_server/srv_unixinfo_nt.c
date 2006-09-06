@@ -34,12 +34,11 @@ NTSTATUS _unixinfo_sid_to_uid(pipes_struct *p,
 {
 	uid_t uid;
 
-	r_u->uid.low = 0;
-	r_u->uid.high = 0;
+	r_u->uid = 0;
 
 	r_u->status = sid_to_uid(&q_u->sid, &uid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
 	if (NT_STATUS_IS_OK(r_u->status))
-		r_u->uid.low = uid;
+		r_u->uid = uid;
 
 	return r_u->status;
 }
@@ -54,8 +53,8 @@ NTSTATUS _unixinfo_uid_to_sid(pipes_struct *p,
 
 	r_u->status = NT_STATUS_NO_SUCH_USER;
 
-	if (q_u->uid.high == 0) {
-		uid_to_sid(&sid, q_u->uid.low);
+	if (q_u->uid == 0) {
+		uid_to_sid(&sid, q_u->uid);
 		r_u->status = NT_STATUS_OK;
 	}
 
@@ -73,12 +72,11 @@ NTSTATUS _unixinfo_sid_to_gid(pipes_struct *p,
 {
 	gid_t gid;
 
-	r_u->gid.low = 0;
-	r_u->gid.high = 0;
+	r_u->gid = 0;
 
 	r_u->status = sid_to_gid(&q_u->sid, &gid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
 	if (NT_STATUS_IS_OK(r_u->status))
-		r_u->gid.low = gid;
+		r_u->gid = gid;
 
 	return r_u->status;
 }
@@ -93,8 +91,8 @@ NTSTATUS _unixinfo_gid_to_sid(pipes_struct *p,
 
 	r_u->status = NT_STATUS_NO_SUCH_USER;
 
-	if (q_u->gid.high == 0) {
-		gid_to_sid(&sid, q_u->gid.low);
+	if (q_u->gid == 0) {
+		gid_to_sid(&sid, q_u->gid);
 		r_u->status = NT_STATUS_OK;
 	}
 
@@ -135,15 +133,10 @@ NTSTATUS _unixinfo_getpwuid(pipes_struct *p,
 		r_u->info[i].homedir = "";
 		r_u->info[i].shell = "";
 
-		if (q_u->uid[i].high != 0) {
-			DEBUG(10, ("64-bit uids not yet supported...\n"));
-			continue;
-		}
-
-		pw = getpwuid(q_u->uid[i].low);
+		pw = getpwuid(q_u->uid[i]);
 
 		if (pw == NULL) {
-			DEBUG(10, ("Did not find uid %d\n", q_u->uid[i].low));
+			DEBUG(10, ("Did not find uid %lld\n", q_u->uid[i]));
 			continue;
 		}
 
