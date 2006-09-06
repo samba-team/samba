@@ -106,7 +106,7 @@ static int do_global_checks(void)
 		{"client-ip", '\0', POPT_ARG_STRING, &caddr, 0, "Client IP address for 'hosts allow' checking"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
-		POPT_TABLEEND
+		{ NULL }
 	};
 
 	setup_logging(NULL, DEBUG_STDERR);

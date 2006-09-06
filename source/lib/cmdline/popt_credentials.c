@@ -145,5 +145,5 @@ struct poptOption popt_common_credentials[] = {
 	{ "simple-bind-dn", 0, POPT_ARG_STRING, NULL, OPT_SIMPLE_BIND_DN, "DN to use for a simple bind" },
 	{ "kerberos", 'k', POPT_ARG_STRING, NULL, OPT_KERBEROS, "Use Kerberos" },
 	{ "use-security-mechanisms", 0, POPT_ARG_STRING, NULL, OPT_GENSEC_MECHS, "Restricted list of authentication mechanisms available for use with this authentication"},
-	POPT_TABLEEND
+	{ NULL }
 };

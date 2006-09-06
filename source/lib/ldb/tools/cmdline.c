@@ -75,7 +75,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
 #endif
-		POPT_TABLEEND
+		{ NULL }
 	};
 
 	ldb_global_init();

@@ -151,7 +151,7 @@ struct poptOption popt_common_connection[] = {
 	{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
 	{ "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },
 	{ "maxprotocol", 'm', POPT_ARG_STRING, NULL, 'm', "Set max protocol level", "MAXPROTOCOL" },
-	POPT_TABLEEND
+	{ NULL }
 };
 
 struct poptOption popt_common_samba[] = {
@@ -163,12 +163,12 @@ struct poptOption popt_common_samba[] = {
 	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files", "LOGFILEBASE" },
 	{ "leak-report",     0, POPT_ARG_NONE, NULL, OPT_LEAK_REPORT, "enable talloc leak reporting on exit", NULL },	
 	{ "leak-report-full",0, POPT_ARG_NONE, NULL, OPT_LEAK_REPORT_FULL, "enable full talloc leak reporting on exit", NULL },
-	POPT_TABLEEND
+	{ NULL }
 };
 
 struct poptOption popt_common_version[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
 	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
-	POPT_TABLEEND
+	{ NULL }
 };
 

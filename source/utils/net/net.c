@@ -148,7 +148,7 @@ static int binary_net(int argc, const char **argv)
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		POPT_TABLEEND
+		{ NULL }
 	};
 
 #ifdef HAVE_SETBUFFER
