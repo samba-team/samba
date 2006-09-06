@@ -33,6 +33,16 @@ PUBLIC_DEPENDENCIES = KERBEROS auth HEIMDAL_GSSAPI
 ################################################
 
 ################################################
+# Start MODULE cyrus_sasl
+[MODULE::cyrus_sasl]
+SUBSYSTEM = gensec
+INIT_FUNCTION = gensec_sasl_init
+OBJ_FILES = cyrus_sasl.o 
+PUBLIC_DEPENDENCIES = SASL auth
+# End MODULE cyrus_sasl
+################################################
+
+################################################
 # Start MODULE gensec_spnego
 [MODULE::gensec_spnego]
 SUBSYSTEM = gensec
