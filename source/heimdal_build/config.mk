@@ -393,6 +393,7 @@ OBJ_FILES = ../heimdal/lib/asn1/lex.ho
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+USE_HOSTCC = YES
 OBJ_FILES = \
 	../heimdal/lib/asn1/main.ho \
 	../heimdal/lib/asn1/gen.ho \
@@ -412,10 +413,8 @@ OBJ_FILES = \
 	../heimdal/lib/roken/estrdup.ho \
 	../heimdal/lib/roken/ecalloc.ho \
 	../heimdal/lib/asn1/symbol.ho \
-	replace.ho \
 	../heimdal/lib/vers/print_version.ho \
-	../lib/replace/snprintf.ho \
-	../lib/replace/replace.ho
+	replace.ho
 PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H
 # End BINARY asn1_compile
 #######################
@@ -432,6 +431,7 @@ OBJ_FILES = ../heimdal/lib/com_err/lex.ho
 # Start BINARY compile_et
 [BINARY::compile_et]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+USE_HOSTCC = YES
 OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	../heimdal/lib/com_err/parse.ho \
 	../heimdal/lib/com_err/compile_et.ho \
@@ -439,9 +439,7 @@ OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	../heimdal/lib/roken/get_window_size.ho \
 	../heimdal/lib/roken/strupr.ho \
 	../heimdal/lib/roken/setprogname.ho \
-	replace.ho \
-	../lib/replace/snprintf.ho \
-	../lib/replace/replace.ho
+	replace.ho
 PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H
 # End BINARY compile_et
 #######################
