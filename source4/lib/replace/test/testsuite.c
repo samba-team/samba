@@ -24,31 +24,28 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "../replace.h"
-#include <stdio.h>
+#include "replace.h"
 
-#if HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
-#if HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#if HAVE_STRING_H
-#include <string.h>
-#endif
-
-#include <fcntl.h>
-#include <errno.h>
+/*
+  we include all the system/*.h include files here so that libreplace tests
+  them in the build farm
+*/
+#include "system/capability.h"
+#include "system/dir.h"
+#include "system/filesys.h"
+#include "system/glob.h"
+#include "system/iconv.h"
+#include "system/locale.h"
+#include "system/network.h"
+#include "system/passwd.h"
+#include "system/printing.h"
+#include "system/readline.h"
+#include "system/select.h"
+#include "system/shmem.h"
+#include "system/syslog.h"
+#include "system/terminal.h"
+#include "system/time.h"
+#include "system/wait.h"
 
 #define TESTFILE "testfile.dat"
 

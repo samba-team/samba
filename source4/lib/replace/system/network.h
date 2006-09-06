@@ -1,3 +1,5 @@
+#ifndef _system_network_h
+#define _system_network_h
 /* 
    Unix SMB/CIFS implementation.
 
@@ -98,3 +100,4 @@ char *rep_inet_ntoa(struct in_addr ip);
 #define INADDR_NONE 0xffffffff
 #endif
 
+#endif

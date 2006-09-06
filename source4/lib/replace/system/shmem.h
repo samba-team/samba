@@ -1,7 +1,9 @@
+#ifndef _system_shmem_h
+#define _system_shmem_h
 /* 
    Unix SMB/CIFS implementation.
 
-   iconv memory system include wrappers
+   shared memory system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
    
@@ -20,18 +22,30 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef HAVE_NATIVE_ICONV
-#ifdef HAVE_ICONV_H
-#include <iconv.h>
-#endif
-#ifdef HAVE_GICONV_H
-#include <giconv.h>
-#endif
+#if defined(HAVE_SYS_IPC_H)
+#include <sys/ipc.h>
+#endif /* HAVE_SYS_IPC_H */
+
+#if defined(HAVE_SYS_SHM_H)
+#include <sys/shm.h>
+#endif /* HAVE_SYS_SHM_H */
+
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
 #endif
 
-/* needed for some systems without iconv. Doesn't really matter
-   what error code we use */
-#ifndef EILSEQ
-#define EILSEQ EIO
+/* NetBSD doesn't have these */
+#ifndef SHM_R
+#define SHM_R 0400
 #endif
 
+#ifndef SHM_W
+#define SHM_W 0200
+#endif
+
+
+#ifndef MAP_FILE
+#define MAP_FILE 0
+#endif
+
+#endif

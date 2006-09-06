@@ -24,35 +24,12 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _SAMBA_BUILD_
-#include "config.h"
-#include <stdlib.h>
-#include <stdio.h>
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#include "tdb.h"
-
-#else
-#include "includes.h"
-#include "lib/tdb/include/tdb.h"
+#include "replace.h"
+#include "system/filesys.h"
 #include "system/time.h"
 #include "system/shmem.h"
-#include "system/filesys.h"
-#endif
+#include "system/select.h"
+#include "tdb.h"
 
 #ifndef u32
 #define u32 unsigned
@@ -100,10 +77,6 @@ typedef u32 tdb_off_t;
 #define GLOBAL_LOCK      0
 #define ACTIVE_LOCK      4
 #define TRANSACTION_LOCK 8
-
-#ifndef MAP_FILE
-#define MAP_FILE 0
-#endif
 
 #ifndef MAP_FAILED
 #define MAP_FAILED ((void *)-1)

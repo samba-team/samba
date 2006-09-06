@@ -1,3 +1,5 @@
+#ifndef _system_dir_h
+#define _system_dir_h
 /* 
    Unix SMB/CIFS implementation.
 
@@ -59,3 +61,4 @@
 			)
 #endif
 
+#endif

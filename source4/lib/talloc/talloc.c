@@ -49,23 +49,6 @@
 
 #ifndef _TALLOC_SAMBA3
 #include "replace.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-
-#if defined(HAVE_STDARG_H)
-#include <stdarg.h>
-#elif defined (HAVE_VARARGS_H)
-#include <varargs.h>
-#else
-#error "no var arg header"
-#endif
-
 #include "talloc.h"
 #endif /* not _TALLOC_SAMBA3 */
 

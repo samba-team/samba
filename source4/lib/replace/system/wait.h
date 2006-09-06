@@ -1,3 +1,5 @@
+#ifndef _system_wait_h
+#define _system_wait_h
 /* 
    Unix SMB/CIFS implementation.
 
@@ -32,3 +34,4 @@
 #define SIGNAL_CAST (RETSIGTYPE (*)(int))
 #endif
 
+#endif

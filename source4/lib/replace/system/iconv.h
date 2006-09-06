@@ -1,7 +1,9 @@
+#ifndef _system_iconv_h
+#define _system_iconv_h
 /* 
    Unix SMB/CIFS implementation.
 
-   terminal system include wrappers
+   iconv memory system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
    
@@ -20,20 +22,19 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef SUNOS4
-/* on SUNOS4 termios.h conflicts with sys/ioctl.h */
-#undef HAVE_TERMIOS_H
+#ifdef HAVE_NATIVE_ICONV
+#ifdef HAVE_ICONV_H
+#include <iconv.h>
+#endif
+#ifdef HAVE_GICONV_H
+#include <giconv.h>
+#endif
 #endif
 
-
-#if defined(HAVE_TERMIOS_H)
-/* POSIX terminal handling. */
-#include <termios.h>
-#elif defined(HAVE_TERMIO_H)
-/* Older SYSV terminal handling - don't use if we can avoid it. */
-#include <termio.h>
-#elif defined(HAVE_SYS_TERMIO_H)
-/* Older SYSV terminal handling - don't use if we can avoid it. */
-#include <sys/termio.h>
+/* needed for some systems without iconv. Doesn't really matter
+   what error code we use */
+#ifndef EILSEQ
+#define EILSEQ EIO
 #endif
 
+#endif
