@@ -19,7 +19,12 @@ TDB_OBJ = @TDBOBJ@ @LIBREPLACEOBJ@
 
 DIRS = lib bin common tools examples
 
-all: dirs $(PROGS)
+all: showflags dirs $(PROGS)
+
+showflags:
+	@echo 'tdb will be compiled with flags:'
+	@echo '  CFLAGS = $(CFLAGS)'
+	@echo '  LIBS = $(LIBS)'
 
 .c.o:
 	@echo Compiling $*.c

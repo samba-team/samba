@@ -53,7 +53,12 @@ EXAMPLES = examples/ldbreader examples/ldifreader
 
 DIRS = lib bin common ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples tdb talloc
 
-all: dirs $(OBJS) $(LDB_LIB) $(BINS) $(EXAMPLES) manpages
+all: showflags dirs $(OBJS) $(LDB_LIB) $(BINS) $(EXAMPLES) manpages
+
+showflags:
+	@echo 'ldb will be compiled with flags:'
+	@echo '  CFLAGS = $(CFLAGS)'
+	@echo '  LIBS = $(LIBS)'
 
 .c.o:
 	@echo Compiling $*.c
