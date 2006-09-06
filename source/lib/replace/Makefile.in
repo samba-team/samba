@@ -17,7 +17,12 @@ CFLAGS=-I. -I@libreplacedir@ @CFLAGS@
 
 OBJS = @LIBREPLACEOBJ@
 
-all: libreplace.a testsuite
+all: showflags libreplace.a testsuite
+
+showflags:
+	@echo 'libreplace will be compiled with flags:'
+	@echo '  CFLAGS = $(CFLAGS)'
+	@echo '  LIBS = $(LIBS)'
 
 install: all
 	mkdir -p $(libdir)
