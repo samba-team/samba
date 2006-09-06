@@ -98,6 +98,7 @@ include smb2/config.mk
 SUBSYSTEM = torture
 INIT_FUNCTION = torture_misc_init
 OBJ_FILES = misc.o
+PUBLIC_DEPENDENCIES = LIBREPLACE
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
@@ -197,6 +198,7 @@ PRIVATE_PROTO_HEADER = \
 OBJ_FILES = \
 		nbench/nbio.o \
 		nbench/nbench.o
+PUBLIC_DEPENDENCIES = LIBREPLACE
 # End MODULE TORTURE_NBENCH
 #################################
 
@@ -258,7 +260,7 @@ OBJ_FILES = \
 		libnet/libnet_domain.o
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-NET \
-		POPT_CREDENTIALS
+		POPT_CREDENTIALS LIBREPLACE
 # End SUBSYSTEM TORTURE_NET
 #################################
 
