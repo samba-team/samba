@@ -19,7 +19,12 @@ EXTRA_TARGETS = @DOC_TARGET@
 
 LIBOBJ = @TALLOCOBJ@ @LIBREPLACEOBJ@
 
-all: libtalloc.a testsuite $(EXTRA_TARGETS)
+all: showflags libtalloc.a testsuite $(EXTRA_TARGETS)
+
+showflags:
+	@echo 'talloc will be compiled with flags:'
+	@echo '  CFLAGS = $(CFLAGS)'
+	@echo '  LIBS = $(LIBS)'
 
 testsuite: $(LIBOBJ) testsuite.o
 	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
