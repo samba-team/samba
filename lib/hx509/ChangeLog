@@ -1,5 +1,20 @@
-2006-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-09-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cms.c (hx509_cms_unenvelope): try to save the error string from
+	find_CMSIdentifier so we have one more bit of information what
+	went wrong.
+
+	* hxtool.c: More pretty printing, make verify_signed return the
+	error string from the library.
+
+	* cms.c: Try returning what certificates failed to parse or be
+	found.
+
+	* ks_p11.c (p11_list_keys): fetch CKA_LABEL and use it to set the
+	friendlyname for the certificate.
+	
+2006-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* crypto.c: check that there are no extra bytes in the checksum
 	and that the parameters are NULL or the NULL-type. All to avoid
 	having excess data that can be used to fake the signature.
