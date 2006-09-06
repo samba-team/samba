@@ -1865,22 +1865,26 @@ void winbindd_pam_logoff(struct winbindd_cli_state *state)
 	state->request.data.logoff.krb5ccname
 		[sizeof(state->request.data.logoff.krb5ccname)-1]='\0';
 
-	parse_domain_user(state->request.data.logoff.user, name_domain, user);
+	if (!parse_domain_user(state->request.data.logoff.user, name_domain, user)) {
+		goto failed;
+	}
 
-	domain = find_auth_domain(state, name_domain);
-
-	if (domain == NULL) {
-		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
-		DEBUG(5, ("Pam Logoff for %s returned %s "
-			  "(PAM: %d)\n",
-			  state->request.data.auth.user, 
-			  state->response.data.auth.nt_status_string,
-			  state->response.data.auth.pam_error));
-		request_error(state);
-		return;
+	if ((domain = find_auth_domain(state, name_domain)) == NULL) {
+		goto failed;
 	}
 
 	sendto_domain(state, domain);
+	return;
+
+ failed:
+	set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
+	DEBUG(5, ("Pam Logoff for %s returned %s "
+		  "(PAM: %d)\n",
+		  state->request.data.auth.user, 
+		  state->response.data.auth.nt_status_string,
+		  state->response.data.auth.pam_error));
+	request_error(state);
+	return;
 }
 
 enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
@@ -1895,6 +1899,11 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 		state->request.data.logoff.user));
 
 	if (!(state->request.flags & WBFLAG_PAM_KRB5)) {
+		result = NT_STATUS_OK;
+		goto process_result;
+	}
+
+	if (state->request.data.logoff.krb5ccname[0] == '\0') {
 		result = NT_STATUS_OK;
 		goto process_result;
 	}
