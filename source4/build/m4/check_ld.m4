@@ -27,7 +27,6 @@ LDSHFLAGS="-shared"
 SONAMEFLAG=""
 SHLD="\${CC}"
 PICFLAG=""
-PICSUFFIX="po"
 SHLIBEXT="so"
 
 AC_MSG_CHECKING([ability to build shared libraries])
@@ -56,7 +55,6 @@ case "$host_os" in
 			## ${CFLAGS} added for building 64-bit shared 
 			## libs using Sun's Compiler
 			LDSHFLAGS="-G \${CFLAGS}"
-			PICSUFFIX="po.o"
 		fi
 		;;
 	*sunos*)
@@ -177,7 +175,7 @@ AC_MSG_RESULT($BLDSHARED)
 AC_MSG_CHECKING([linker flags for shared libraries])
 AC_MSG_RESULT([$LDSHFLAGS])
 AC_MSG_CHECKING([compiler flags for position-independent code])
-AC_MSG_RESULT([$PICFLAGS])
+AC_MSG_RESULT([$PICFLAG])
 
 #######################################################
 # test whether building a shared library actually works
@@ -186,17 +184,10 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
                [ac_cv_shlib_works],[
    ac_cv_shlib_works=no
    # try building a trivial shared library
-   if test "$PICSUFFIX" = "po"; then
-     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/build/tests/shlib.c &&
-       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o shlib.so shlib.po &&
+   ${CC} ${CFLAGS} ${PICFLAG} -c ${srcdir-.}/build/tests/shlib.c -o shlib.o &&
+       ${SHLD} ${LDSHFLAGS} `eval echo ${LDFLAGS}` -o shlib.${SHLIBEXT} shlib.o &&
        ac_cv_shlib_works=yes
-   else
-     $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.$PICSUFFIX ${srcdir-.}/build/tests/shlib.c &&
-       mv shlib.$PICSUFFIX shlib.po &&
-       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o shlib.so shlib.po &&
-       ac_cv_shlib_works=yes
-   fi
-   rm -f shlib.so shlib.po
+   rm -f shlib.${SHLIBEXT} shlib.o
 ])
 if test $ac_cv_shlib_works = no; then
    BLDSHARED=false
