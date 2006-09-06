@@ -764,19 +764,19 @@ static int get_ldap_seq(const char *server, int port, uint32 *seq)
 
 /**********************************************************************
  Get the sequence number for a Windows AD native mode domain using
- LDAP queries
+ LDAP queries. 
 **********************************************************************/
 
-static int get_ldap_sequence_number( const char* domain, uint32 *seq)
+static int get_ldap_sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
 	int ret = -1;
 	int i, port = LDAP_PORT;
 	struct ip_service *ip_list = NULL;
 	int count;
 	
-	if ( !NT_STATUS_IS_OK(get_sorted_dc_list(domain, &ip_list, &count,
+	if ( !NT_STATUS_IS_OK(get_sorted_dc_list(domain->name, &ip_list, &count,
 						 False)) ) {
-		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
+		DEBUG(3, ("Could not look up dc's for domain %s\n", domain->name));
 		return False;
 	}
 
@@ -799,7 +799,7 @@ static int get_ldap_sequence_number( const char* domain, uint32 *seq)
 			goto done;
 
 		/* add to failed connection cache */
-		add_failed_connection_entry( domain, ipstr,
+		winbind_add_failed_connection_entry( domain, ipstr,
 					     NT_STATUS_UNSUCCESSFUL );
 	}
 
@@ -807,7 +807,7 @@ done:
 	if ( ret == 0 ) {
 		DEBUG(3, ("get_ldap_sequence_number: Retrieved sequence "
 			  "number for Domain (%s) from DC (%s:%d)\n", 
-			domain, inet_ntoa(ip_list[i].ip), port));
+			domain->name, inet_ntoa(ip_list[i].ip), port));
 	}
 
 	SAFE_FREE(ip_list);
