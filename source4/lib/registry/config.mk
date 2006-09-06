@@ -34,6 +34,7 @@ INIT_FUNCTION = registry_w95_init
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_w95.o
+PUBLIC_DEPENDENCIES = LIBREPLACE
 # End MODULE registry_w95
 ################################################
 
