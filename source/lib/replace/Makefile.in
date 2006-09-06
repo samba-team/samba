@@ -49,6 +49,7 @@ testsuite: libreplace.a $(TEST_OBJS)
 
 clean:
 	rm -f *.o test/*.o *.a testsuite
+	rm -f testfile.dat
 
 distclean: clean
 	rm -f *~ */*~
