@@ -1,4 +1,12 @@
+2006-09-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c (_krb5_pk_verify_sign): catch the error string
+	from the hx509 lib
+	
 2006-09-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds.c (krb5_get_init_creds_opt_set_default_flags):
+	fix argument to krb5_get_init_creds_opt_set_addressless.
 
 	* lib/krb5/init_creds_pw.c (init_cred_loop): try to catch the
 	error when we actually have an error to catch.
