@@ -1152,15 +1152,15 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 		ccname = pam_getenv(pamh, "KRB5CCNAME");
 		if (ccname == NULL) {
 			_pam_log_debug(ctrl, LOG_DEBUG, "user has no KRB5CCNAME environment");
-			retval = PAM_SUCCESS;
-			goto out;
 		}
 
 		strncpy(request.data.logoff.user, user,
 			sizeof(request.data.logoff.user) - 1);
 
-		strncpy(request.data.logoff.krb5ccname, ccname,
-			sizeof(request.data.logoff.krb5ccname) - 1);
+		if (ccname) {
+			strncpy(request.data.logoff.krb5ccname, ccname,
+				sizeof(request.data.logoff.krb5ccname) - 1);
+		}
 
 		pwd = getpwnam(user);
 		if (pwd == NULL) {
