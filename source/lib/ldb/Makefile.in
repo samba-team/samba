@@ -51,7 +51,7 @@ LIBS = $(LDB_LIB)
 
 EXAMPLES = examples/ldbreader examples/ldifreader
 
-DIRS = lib bin common ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples tdb talloc
+DIRS = lib bin common ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples
 
 all: showflags dirs $(OBJS) $(LDB_LIB) $(BINS) $(EXAMPLES) manpages
 
@@ -111,20 +111,22 @@ doxygen:
 	test -z "$(DOXYGEN)" || (cd $(srcdir) && "$(DOXYGEN)")
 
 clean:
-	rm -f */*.o *.gcov */*.gc?? tdbtest.ldb* \
+	rm -f *.o */*.o *.gcov */*.gc?? tdbtest.ldb*
 	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB)
 	rm -f man/*.1 man/*.3 man/*.html
 	rm -f $(EXAMPLES)
 	rm -rf apidocs/
+	rm -rf tests/schema/
 
 distclean: clean
 	rm -f *~ */*~
-	rm -rf autom4te.cache bin lib
-	rm -f configure \
-		config.log config.status \
-		include/config.h include/config.h.in \
+	rm -rf bin lib
+	rm -f config.log config.status include/config.h
 	rm -f ldb.pc
 	rm -f Makefile
+
+realdistclean: distclean
+	rm -f configure.in include/config.h.in
 
 test: all
 	for t in $(TESTS); do echo STARTING $${t}; $(srcdir)/tests/$${t} || exit 1; done
@@ -152,7 +154,3 @@ etags:
 
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
-
-@REPLACE_LIB@:
-	cd @REPLACE_DIR@ && ./autogen.sh && ./configure
-	$(MAKE) -C @REPLACE_DIR@
