@@ -878,9 +878,9 @@ static void dump_pac_logon_info(PAC_LOGON_INFO *logon_info) {
 	
 		DEBUG(2,("decode_pac_data: Logon time mismatch between ticket and PAC!\n"));
 		DEBUGADD(2, ("decode_pac_data: PAC: %s\n", 
-			http_timestring(nt_time_to_unix(&logon_name->logon_time))));
+			http_timestring(nt_time_to_unix(logon_name->logon_time))));
 		DEBUGADD(2, ("decode_pac_data: Ticket: %s\n", 
-			http_timestring(nt_time_to_unix(&tgs_authtime_nttime))));
+			http_timestring(nt_time_to_unix(tgs_authtime_nttime))));
 		
 		nt_status = NT_STATUS_ACCESS_DENIED;
 		goto out;

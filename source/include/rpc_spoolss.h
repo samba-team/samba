@@ -1556,7 +1556,7 @@ typedef struct {
 	uint32 previousnames_len;
 	uint32 previousnames_ptr;
 	NTTIME	driverdate;
-	UINT64_S	driverversion;
+	uint64	driverversion;
 	uint32	dummy4;
 	uint32 mfgname_ptr;
 	uint32 oemurl_ptr;

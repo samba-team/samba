@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
+#include "rpc_client/cli_unixinfo.h"
 
 static NTSTATUS cmd_unixinfo_uid2sid(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
@@ -36,8 +37,7 @@ static NTSTATUS cmd_unixinfo_uid2sid(struct rpc_pipe_client *cli,
 	}
 
 	uid = atoi(argv[1]);
-
-	result = rpccli_unixinfo_uid2sid(cli, mem_ctx, uid, &sid);
+	result = rpccli_unixinfo_UidToSid(cli, mem_ctx, uid, &sid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -52,7 +52,7 @@ static NTSTATUS cmd_unixinfo_sid2uid(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     int argc, const char **argv)
 {
-	uid_t uid;
+	uint64_t uid;
 	DOM_SID sid;
 	NTSTATUS result;
 
@@ -66,12 +66,12 @@ static NTSTATUS cmd_unixinfo_sid2uid(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	result = rpccli_unixinfo_sid2uid(cli, mem_ctx, &sid, &uid);
+	result = rpccli_unixinfo_SidToUid(cli, mem_ctx, sid, &uid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	printf("%u\n", uid);
+	printf("%llu\n", uid);
 
 done:
 	return result;
@@ -92,7 +92,7 @@ static NTSTATUS cmd_unixinfo_gid2sid(struct rpc_pipe_client *cli,
 
 	gid = atoi(argv[1]);
 
-	result = rpccli_unixinfo_gid2sid(cli, mem_ctx, gid, &sid);
+	result = rpccli_unixinfo_GidToSid(cli, mem_ctx, gid, &sid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -107,7 +107,7 @@ static NTSTATUS cmd_unixinfo_sid2gid(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     int argc, const char **argv)
 {
-	gid_t gid;
+	uint64_t gid;
 	DOM_SID sid;
 	NTSTATUS result;
 
@@ -121,12 +121,12 @@ static NTSTATUS cmd_unixinfo_sid2gid(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	result = rpccli_unixinfo_sid2gid(cli, mem_ctx, &sid, &gid);
+	result = rpccli_unixinfo_SidToGid(cli, mem_ctx, sid, &gid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	printf("%u\n", gid);
+	printf("%llu\n", gid);
 
 done:
 	return result;
@@ -136,9 +136,9 @@ static NTSTATUS cmd_unixinfo_getpwuid(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      int argc, const char **argv)
 {
-	uid_t *uids;
-	int i, num_uids;
-	struct unixinfo_getpwuid *info;
+	uint64_t *uids;
+	unsigned int i, num_uids;
+	struct unixinfo_GetPWUidInfo *info;
 	NTSTATUS result;
 
 	if (argc < 2) {
@@ -147,7 +147,7 @@ static NTSTATUS cmd_unixinfo_getpwuid(struct rpc_pipe_client *cli,
 	}
 
 	num_uids = argc-1;
-	uids = TALLOC_ARRAY(mem_ctx, uid_t, num_uids);
+	uids = TALLOC_ARRAY(mem_ctx, uint64_t, num_uids);
 
 	if (uids == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -157,7 +157,7 @@ static NTSTATUS cmd_unixinfo_getpwuid(struct rpc_pipe_client *cli,
 		uids[i] = atoi(argv[i+1]);
 	}
 
-	result = rpccli_unixinfo_getpwuid(cli, mem_ctx, num_uids, uids, &info);
+	result = rpccli_unixinfo_GetPWUid(cli, mem_ctx, &num_uids, uids, &info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
@@ -165,10 +165,10 @@ static NTSTATUS cmd_unixinfo_getpwuid(struct rpc_pipe_client *cli,
 
 	for (i=0; i<num_uids; i++) {
 		if (NT_STATUS_IS_OK(info[i].status)) {
-			printf("%d:%s:%s\n", uids[i], info[i].homedir,
+			printf("%llu:%s:%s\n", uids[i], info[i].homedir,
 			       info[i].shell);
 		} else {
-			printf("%d:%s\n", uids[i], nt_errstr(info[i].status));
+			printf("%llu:%s\n", uids[i], nt_errstr(info[i].status));
 		}
 	}
 

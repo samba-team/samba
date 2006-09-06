@@ -48,7 +48,7 @@ BOOL unixinfo_io_r_unixinfo_sid_to_uid(const char *desc, UNIXINFO_R_SID_TO_UID *
 	return True;
 }
 
-void init_q_unixinfo_uid_to_sid(UNIXINFO_Q_UID_TO_SID *q_d, UINT64_S uid)
+void init_q_unixinfo_uid_to_sid(UNIXINFO_Q_UID_TO_SID *q_d, uint64 uid)
 {
 	q_d->uid = uid;
 }
@@ -97,7 +97,7 @@ BOOL unixinfo_io_q_unixinfo_sid_to_gid(const char *desc, UNIXINFO_Q_SID_TO_GID *
 	return smb_io_dom_sid(desc, &q_d->sid, ps, depth);
 }
 
-void init_r_unixinfo_sid_to_gid(UNIXINFO_R_SID_TO_GID *r_d, UINT64_S gid)
+void init_r_unixinfo_sid_to_gid(UNIXINFO_R_SID_TO_GID *r_d, uint64 gid)
 {
 	r_d->gid = gid;
 	r_d->status = NT_STATUS_OK;
@@ -115,7 +115,7 @@ BOOL unixinfo_io_r_unixinfo_sid_to_gid(const char *desc, UNIXINFO_R_SID_TO_GID *
 	return True;
 }
 
-void init_q_unixinfo_gid_to_sid(UNIXINFO_Q_GID_TO_SID *q_d, UINT64_S gid)
+void init_q_unixinfo_gid_to_sid(UNIXINFO_Q_GID_TO_SID *q_d, uint64 gid)
 {
 	q_d->gid = gid;
 }
@@ -154,7 +154,7 @@ BOOL unixinfo_io_r_unixinfo_gid_to_sid(const char *desc, UNIXINFO_R_GID_TO_SID *
 }
 
 void init_q_unixinfo_getpwuid(UNIXINFO_Q_GETPWUID *r_d, int count,
-			      UINT64_S *uids)
+			      uint64 *uids)
 {
 	r_d->count = count;
 	r_d->uid = uids;
@@ -186,7 +186,7 @@ BOOL unixinfo_io_q_unixinfo_getpwuid(const char *desc,
 	}
 
 	if (UNMARSHALLING(ps)) {
-		q_d->uid = PRS_ALLOC_MEM(ps, UINT64_S, q_d->count);
+		q_d->uid = PRS_ALLOC_MEM(ps, uint64, q_d->count);
 		if (q_d->uid == NULL) {
 			return False;
 		}

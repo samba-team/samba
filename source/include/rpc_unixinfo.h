@@ -34,12 +34,12 @@ typedef struct unixinfo_q_sid_to_uid {
 } UNIXINFO_Q_SID_TO_UID;
 
 typedef struct unixinfo_r_sid_to_uid {
-	UINT64_S uid;
+	uint64 uid;
 	NTSTATUS status;
 } UNIXINFO_R_SID_TO_UID;
 
 typedef struct unixinfo_q_uid_to_sid {
-	UINT64_S uid;
+	uint64 uid;
 } UNIXINFO_Q_UID_TO_SID;
 
 typedef struct unixinfo_r_uid_to_sid {
@@ -53,12 +53,12 @@ typedef struct unixinfo_q_sid_to_gid {
 } UNIXINFO_Q_SID_TO_GID;
 
 typedef struct unixinfo_r_sid_to_gid {
-	UINT64_S gid;
+	uint64 gid;
 	NTSTATUS status;
 } UNIXINFO_R_SID_TO_GID;
 
 typedef struct unixinfo_q_gid_to_sid {
-	UINT64_S gid;
+	uint64 gid;
 } UNIXINFO_Q_GID_TO_SID;
 
 typedef struct unixinfo_r_gid_to_sid {
@@ -69,7 +69,7 @@ typedef struct unixinfo_r_gid_to_sid {
 
 typedef struct unixinfo_q_getpwuid {
 	uint32 count;
-	UINT64_S *uid;
+	uint64 *uid;
 } UNIXINFO_Q_GETPWUID;
 
 struct unixinfo_getpwuid {
@@ -123,12 +123,12 @@ typedef struct unixinfo_q_sid_to_uid {
 } UNIXINFO_Q_SID_TO_UID;
 
 typedef struct unixinfo_r_sid_to_uid {
-	UINT64_S uid;
+	uint64 uid;
 	NTSTATUS status;
 } UNIXINFO_R_SID_TO_UID;
 
 typedef struct unixinfo_q_uid_to_sid {
-	UINT64_S uid;
+	uint64 uid;
 } UNIXINFO_Q_UID_TO_SID;
 
 typedef struct unixinfo_r_uid_to_sid {
@@ -142,12 +142,12 @@ typedef struct unixinfo_q_sid_to_gid {
 } UNIXINFO_Q_SID_TO_GID;
 
 typedef struct unixinfo_r_sid_to_gid {
-	UINT64_S gid;
+	uint64 gid;
 	NTSTATUS status;
 } UNIXINFO_R_SID_TO_GID;
 
 typedef struct unixinfo_q_gid_to_sid {
-	UINT64_S gid;
+	uint64 gid;
 } UNIXINFO_Q_GID_TO_SID;
 
 typedef struct unixinfo_r_gid_to_sid {
@@ -157,7 +157,7 @@ typedef struct unixinfo_r_gid_to_sid {
 } UNIXINFO_R_GID_TO_SID;
 
 typedef struct unixinfo_q_getpwuid {
-	UINT64_S uid;
+	uint64 uid;
 } UNIXINFO_Q_GETPWUID;
 
 typedef struct unixinfo_r_getpwuid {

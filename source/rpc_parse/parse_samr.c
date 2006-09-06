@@ -511,12 +511,10 @@ void init_unk_info1(SAM_UNK_INFO_1 *u_1, uint16 min_pass_len, uint16 pass_hist,
 	u_1->password_properties = password_properties;
 
 	/* password never expire */
-	u_1->expire.high = nt_expire.high;
-	u_1->expire.low = nt_expire.low;
+	u_1->expire = nt_expire;
 
 	/* can change the password now */
-	u_1->min_passwordage.high = nt_min_age.high;
-	u_1->min_passwordage.low = nt_min_age.low;
+	u_1->min_passwordage = nt_min_age;
 	
 }
 
@@ -555,11 +553,9 @@ void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 			const char *comment, const char *domain, const char *server,
 			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias, NTTIME nt_logout, uint32 server_role)
 {
-	u_2->logout.low = nt_logout.low;
-	u_2->logout.high = nt_logout.high;
+	u_2->logout = nt_logout;
 
-	u_2->seq_num.low = seq_num;
-	u_2->seq_num.high = 0x00000000;
+	u_2->seq_num = seq_num;
 
 
 	u_2->unknown_4 = 0x00000001;
@@ -635,8 +631,7 @@ inits a structure.
 
 void init_unk_info3(SAM_UNK_INFO_3 *u_3, NTTIME nt_logout)
 {
-	u_3->logout.low = nt_logout.low;
-	u_3->logout.high = nt_logout.high;
+	u_3->logout = nt_logout;
 }
 
 /*******************************************************************
@@ -789,8 +784,7 @@ inits a structure.
 void init_unk_info8(SAM_UNK_INFO_8 * u_8, uint32 seq_num)
 {
 	unix_to_nt_time(&u_8->domain_create_time, 0);
-	u_8->seq_num.low = seq_num;
-	u_8->seq_num.high = 0x0000;
+	u_8->seq_num = seq_num;
 }
 
 /*******************************************************************
@@ -849,10 +843,8 @@ inits a structure.
 
 void init_unk_info12(SAM_UNK_INFO_12 * u_12, NTTIME nt_lock_duration, NTTIME nt_reset_time, uint16 lockout)
 {
-	u_12->duration.low = nt_lock_duration.low;
-	u_12->duration.high = nt_lock_duration.high;
-	u_12->reset_count.low = nt_reset_time.low;
-	u_12->reset_count.high = nt_reset_time.high;
+	u_12->duration = nt_lock_duration;
+	u_12->reset_count = nt_reset_time;
 
 	u_12->bad_attempt_lockout = lockout;
 }
@@ -887,8 +879,7 @@ inits a structure.
 void init_unk_info13(SAM_UNK_INFO_13 * u_13, uint32 seq_num)
 {
 	unix_to_nt_time(&u_13->domain_create_time, 0);
-	u_13->seq_num.low = seq_num;
-	u_13->seq_num.high = 0x0000;
+	u_13->seq_num = seq_num;
 	u_13->unknown1 = 0;
 	u_13->unknown2 = 0;
 }

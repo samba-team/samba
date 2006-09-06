@@ -59,8 +59,8 @@ typedef struct perf_object_type
 	uint32 DefaultCounter;
 	uint32 NumInstances;
 	uint32 CodePage;
-	UINT64_S PerfTime;
-	UINT64_S PerfFreq;
+	uint64 PerfTime;
+	uint64 PerfFreq;
 	PERF_COUNTER_DEFINITION *counters;
 	PERF_INSTANCE_DEFINITION *instances;
 	PERF_COUNTER_BLOCK counter_data;
@@ -88,13 +88,13 @@ typedef struct perf_data_block
 	   PerfTime, and having it there will make my offset math much easier. */
 	uint32 Padding;
 	/* Now when I'm marshalling this, I'll need to call prs_align_uint64() 
-	   before I start encodint the UINT64_S structs */
+	   before I start encodint the uint64 structs */
 	/* clock rate * seconds uptime */
-	UINT64_S PerfTime;
+	uint64 PerfTime;
 	/* The clock rate of the CPU */
-	UINT64_S PerfFreq; 
+	uint64 PerfFreq; 
 	/* used for high-res timers -- for now PerfTime * 10e7 */
-	UINT64_S PerfTime100nSec;
+	uint64 PerfTime100nSec;
 	uint32 SystemNameLength;
 	uint32 SystemNameOffset;
 	/* The SystemName, in unicode, terminated */

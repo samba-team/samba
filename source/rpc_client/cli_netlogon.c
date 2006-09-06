@@ -638,7 +638,7 @@ NTSTATUS rpccli_netlogon_sam_sync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 /* Sam synchronisation */
 
 NTSTATUS rpccli_netlogon_sam_deltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                 uint32 database_id, UINT64_S seqnum,
+                                 uint32 database_id, uint64 seqnum,
                                  uint32 *num_deltas, 
                                  SAM_DELTA_HDR **hdr_deltas, 
                                  SAM_DELTA_CTR **deltas)

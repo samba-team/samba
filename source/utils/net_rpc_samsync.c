@@ -42,44 +42,6 @@ static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
 	d_printf("\n");
 }
 
-static const char *display_time(const UINT64_S *nttime)
-{
-	static fstring string;
-
-	float high;
-	float low;
-	int sec;
-	int days, hours, mins, secs;
-	int offset = 1;
-
-	if (nttime->high==0 && nttime->low==0)
-		return "Now";
-
-	if (nttime->high==0x80000000 && nttime->low==0)
-		return "Never";
-
-	high = 65536;	
-	high = high/10000;
-	high = high*65536;
-	high = high/1000;
-	high = high * (~nttime->high);
-
-	low = ~nttime->low;	
-	low = low/(1000*1000*10);
-
-	sec=high+low;
-	sec+=offset;
-
-	days=sec/(60*60*24);
-	hours=(sec - (days*60*60*24)) / (60*60);
-	mins=(sec - (days*60*60*24) - (hours*60*60) ) / 60;
-	secs=sec - (days*60*60*24) - (hours*60*60) - (mins*60);
-
-	fstr_sprintf(string, "%u days, %u hours, %u minutes, %u seconds", days, hours, mins, secs);
-	return (string);
-}
-
-
 static void display_alias_info(uint32 rid, SAM_ALIAS_INFO *a)
 {
 	d_printf("Alias '%s' ", unistr2_static(&a->uni_als_name));
@@ -123,11 +85,10 @@ static void display_account_info(uint32 rid, SAM_ACCOUNT_INFO *a)
 	       pdb_encode_acct_ctrl(a->acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 }
 
-static time_t uint64s_nt_time_to_unix_abs(const UINT64_S *src)
+static time_t uint64s_nt_time_to_unix_abs(const uint64 *src)
 {
 	NTTIME nttime;
-	nttime.high = src->high;
-	nttime.low = src->low;
+	nttime = *src;
 	return nt_time_to_unix_abs(&nttime);
 }
 
@@ -144,11 +105,11 @@ static void display_domain_info(SAM_DOMAIN_INFO *a)
 
 	d_printf("Force Logoff: %d\n", (int)u_logout);
 
-	d_printf("Max Password Age: %s\n", display_time(&a->max_pwd_age));
-	d_printf("Min Password Age: %s\n", display_time(&a->min_pwd_age));
+	d_printf("Max Password Age: %s\n", display_time(a->max_pwd_age));
+	d_printf("Min Password Age: %s\n", display_time(a->min_pwd_age));
 
-	d_printf("Lockout Time: %s\n", display_time(&a->account_lockout.lockout_duration));
-	d_printf("Lockout Reset Time: %s\n", display_time(&a->account_lockout.reset_count));
+	d_printf("Lockout Time: %s\n", display_time(a->account_lockout.lockout_duration));
+	d_printf("Lockout Reset Time: %s\n", display_time(a->account_lockout.reset_count));
 
 	d_printf("Bad Attempt Lockout: %d\n", a->account_lockout.bad_attempt_lockout);
 	d_printf("User must logon to change password: %d\n", a->logon_chgpass);
@@ -420,14 +381,14 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 
 	/* Logon and password information */
 	if (!nt_time_is_zero(&delta->logon_time)) {
-		unix_time = nt_time_to_unix(&delta->logon_time);
+		unix_time = nt_time_to_unix(delta->logon_time);
 		stored_time = pdb_get_logon_time(account);
 		if (stored_time != unix_time)
 			pdb_set_logon_time(account, unix_time, PDB_CHANGED);
 	}
 
 	if (!nt_time_is_zero(&delta->logoff_time)) {
-		unix_time = nt_time_to_unix(&delta->logoff_time);
+		unix_time = nt_time_to_unix(delta->logoff_time);
 		stored_time = pdb_get_logoff_time(account);
 		if (stored_time != unix_time)
 			pdb_set_logoff_time(account, unix_time,PDB_CHANGED);
@@ -463,7 +424,7 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 		pdb_set_logon_count(account, delta->logon_count, PDB_CHANGED);
 
 	if (!nt_time_is_zero(&delta->pwd_last_set_time)) {
-		unix_time = nt_time_to_unix(&delta->pwd_last_set_time);
+		unix_time = nt_time_to_unix(delta->pwd_last_set_time);
 		stored_time = pdb_get_pass_last_set_time(account);
 		if (stored_time != unix_time)
 			pdb_set_pass_last_set_time(account, unix_time, PDB_CHANGED);
@@ -1632,7 +1593,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	} else {
 		pdb_sethexpwd(hex_nt_passwd, NULL, 0);
 	}
-	unix_time = nt_time_to_unix(&(delta->account_info.pwd_last_set_time));
+	unix_time = nt_time_to_unix(delta->account_info.pwd_last_set_time);
 
 	/* The nobody user is entered by populate_ldap_for_ldif */
 	if (strcmp(username, "nobody") == 0) {

@@ -1,0 +1,4 @@
+- Properly map Samba4's dom_sid to Samba3's DOM_SID
+- Allow building IDL files from within the Samba3 tree
+- Autogenerate correct headers so generated files don't have to 
+  be edited for Samba3
