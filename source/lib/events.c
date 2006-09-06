@@ -79,27 +79,24 @@ struct timed_event *add_timed_event(TALLOC_CTX *mem_ctx,
 
 void run_events(void)
 {
-	struct timeval now;
+	/* Run all events that are pending, not just one (as we
+	   did previously. */
 
-	if (timed_events == NULL) {
-		/* No syscall if there are no events */
-		DEBUG(11, ("run_events: No events\n"));
-		return;
+	while (timed_events) {
+		struct timeval now;
+		GetTimeOfDay(&now);
+
+		if (timeval_compare(&now, &timed_events->when) < 0) {
+			/* Nothing to do yet */
+			DEBUG(11, ("run_events: Nothing to do\n"));
+			return;
+		}
+
+		DEBUG(10, ("Running event \"%s\" %lx\n", timed_events->event_name,
+			(unsigned long)timed_events));
+
+		timed_events->handler(timed_events, &now, timed_events->private_data);
 	}
-
-	GetTimeOfDay(&now);
-
-	if (timeval_compare(&now, &timed_events->when) < 0) {
-		/* Nothing to do yet */
-		DEBUG(11, ("run_events: Nothing to do\n"));
-		return;
-	}
-
-	DEBUG(10, ("Running event \"%s\" %lx\n", timed_events->event_name,
-		(unsigned long)timed_events));
-
-	timed_events->handler(timed_events, &now, timed_events->private_data);
-	return;
 }
 
 struct timeval *get_timed_events_timeout(struct timeval *to_ret)

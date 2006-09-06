@@ -64,6 +64,113 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+static NTSTATUS init_dc_connection(struct winbindd_domain *domain);
+
+/****************************************************************
+ Handler triggered if we're offline to try and detect a DC.
+****************************************************************/
+
+static void check_domain_online_handler(struct timed_event *te,
+					const struct timeval *now,
+					void *private_data)
+{
+        struct winbindd_domain *domain =
+                (struct winbindd_domain *)private_data;
+
+	DEBUG(10,("check_domain_online_handler: called for domain %s\n",
+		domain->name ));
+
+	if (domain->check_online_event) {
+		TALLOC_FREE(domain->check_online_event);
+	}
+
+	/* We've been told to stay offline, so stay
+	   that way. */
+
+	if (get_global_winbindd_state_offline()) {
+		DEBUG(10,("check_domain_online_handler: domain %s remaining globally offline\n",
+			domain->name ));
+		return;
+	}
+
+	/* This call takes care of setting the online
+	   flag to true if we connected, or re-adding
+	   the offline handler if false. */
+	init_dc_connection(domain);
+}
+
+/****************************************************************
+ Set domain offline and also add handler to put us back online
+ if we detect a DC.
+****************************************************************/
+
+void set_domain_offline(struct winbindd_domain *domain)
+{
+	DEBUG(10,("set_domain_offline: called for domain %s\n",
+		domain->name ));
+
+	if (domain->check_online_event) {
+		TALLOC_FREE(domain->check_online_event);
+	}
+
+	domain->online = False;
+
+	/* We only add the timeout handler that checks and
+	   allows us to go back online when we've not
+	   been told to remain offline. */
+
+	if (get_global_winbindd_state_offline()) {
+		DEBUG(10,("set_domain_offline: domain %s remaining globally offline\n",
+			domain->name ));
+		return;
+	}
+
+	domain->check_online_event = add_timed_event( NULL,
+						timeval_current_ofs(lp_winbind_cache_time(), 0),
+						"check_domain_online_handler",
+						check_domain_online_handler,
+						domain);
+
+	/* The above *has* to succeed for winbindd to work. */
+	if (!domain->check_online_event) {
+		smb_panic("set_domain_offline: failed to add online handler.\n");
+	}
+
+	DEBUG(10,("set_domain_offline: added event handler for domain %s\n",
+		domain->name ));
+}
+
+/****************************************************************
+ Set domain online - if allowed.
+****************************************************************/
+
+void set_domain_online(struct winbindd_domain *domain)
+{
+	DEBUG(10,("set_domain_offline: called for domain %s\n",
+		domain->name ));
+
+	if (get_global_winbindd_state_offline()) {
+		DEBUG(10,("set_domain_online: domain %s remaining globally offline\n",
+			domain->name ));
+		return;
+	}
+
+	domain->online = True;
+}
+
+/****************************************************************
+ Add -ve connection cache entries for domain and realm.
+****************************************************************/
+
+void winbind_add_failed_connection_entry(const struct winbindd_domain *domain,
+					const char *server,
+					NTSTATUS result)
+{
+	add_failed_connection_entry(domain->name, server, result);
+	if (*domain->alt_name) {
+		add_failed_connection_entry(domain->alt_name, server, result);
+	}
+}
 
 /* Choose between anonymous or authenticated connections.  We need to use
    an authenticated connection if DCs have the RestrictAnonymous registry
@@ -403,7 +510,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	SAFE_FREE(ipc_password);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		add_failed_connection_entry(domain->name, controller, result);
+		winbind_add_failed_connection_entry(domain, controller, result);
 		if ((*cli) != NULL) {
 			cli_shutdown(*cli);
 			*cli = NULL;
@@ -761,7 +868,7 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	if ( !open_any_socket_out(addrs, num_addrs, 5000, &fd_index, fd) ) 
 	{
 		for (i=0; i<num_dcs; i++) {
-			add_failed_connection_entry(domain->name,
+			winbind_add_failed_connection_entry(domain,
 				dcs[i].name, NT_STATUS_UNSUCCESSFUL);
 		}
 		return False;
@@ -782,7 +889,7 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	/* We can not continue without the DC's name */
-	add_failed_connection_entry(domain->name, dcs[fd_index].name,
+	winbind_add_failed_connection_entry(domain, dcs[fd_index].name,
 				    NT_STATUS_UNSUCCESSFUL);
 	goto again;
 }
@@ -797,6 +904,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL) {
 		SAFE_FREE(saf_servername);
+		set_domain_offline(domain);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -819,8 +927,8 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 					  &domain->sid, ip, saf_name )) {
 				fstrcpy( domain->dcname, saf_name );
 			} else {
-				add_failed_connection_entry(
-					domain->name, saf_servername,
+				winbind_add_failed_connection_entry(
+					domain, saf_servername,
 					NT_STATUS_UNSUCCESSFUL);
 			}
 		} else {
@@ -850,7 +958,6 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 			/* 5 second timeout. */
 			if (!open_any_socket_out(addrs, num_addrs, 5000, &dummy, &fd)) {
-				domain->online = False;
 				fd = -1;
 			}
 		}
@@ -863,7 +970,6 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			   to true, if a "WINBINDD_OFFLINE" entry
 			   is found in the winbindd cache. */
 			set_global_winbindd_state_offline();
-			domain->online = False;
 			break;
 		}
 
@@ -881,7 +987,10 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			/* We're changing state from offline to online. */
 			set_global_winbindd_state_online();
 		}
-		domain->online = True;
+		set_domain_online(domain);
+	} else {
+		/* Ensure we setup the retry handler. */
+		set_domain_offline(domain);
 	}
 
 	talloc_destroy(mem_ctx);
