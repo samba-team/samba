@@ -125,13 +125,14 @@ sub handle_loadparm($$)
 {
 	my ($file,$line) = @_;
 
-	if ($line =~ /^_PUBLIC_ FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|CHAR|INTEGER|LIST)\((\w+),.*\)/o) {
+	if ($line =~ /^_PUBLIC_ FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|bool|CHAR|INTEGER|LIST)\((\w+),.*\)/o) {
 		my $scope = $1;
 		my $type = $2;
 		my $name = $3;
 
 		my %tmap = (
 			    "BOOL" => "BOOL ",
+				"bool" => "bool ",
 			    "CONST_STRING" => "const char *",
 			    "STRING" => "const char *",
 			    "INTEGER" => "int ",
@@ -182,7 +183,7 @@ sub process_file($$$)
 		}
 
 		next unless ( $is_public || $line =~ /
-			      ^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
+			      ^void|^BOOL|^bool|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
 			      ^NTSTATUS|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR|^XFILE|^FILE|^DIR|
 			      ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME|^FN_|^init_module|
 			      ^GtkWidget|^GType|^smb_ucs2_t
