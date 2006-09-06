@@ -160,6 +160,7 @@ static int send_cldap_netlogon(int sock, const char *domain,
 
 	if (write(sock, data.data, data.length) != (ssize_t)data.length) {
 		DEBUG(2,("failed to send cldap query (%s)\n", strerror(errno)));
+		asn1_free(&data);
 		return -1;
 	}
 
