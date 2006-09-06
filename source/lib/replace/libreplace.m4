@@ -139,7 +139,12 @@ if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
 fi
 
 dnl dummies provided by dlfcn.c if not available
+save_LIBS="$LIBS"
+LIBS=""
 AC_SEARCH_LIBS(dlopen, dl)
+LIBDL="$LIBS"
+AC_SUBST(LIBDL)
+LIBS="$save_LIBS"
 AC_CHECK_HEADERS(dlfcn.h)
 AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
 
