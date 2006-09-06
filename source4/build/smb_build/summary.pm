@@ -53,7 +53,7 @@ sub show($$)
 	print "Developer mode: ".(enabled($config->{developer})?"yes":"no")."\n";
 	print "Automatic dependencies: ".
 	    (enabled($config->{automatic_dependencies})
-		    ? "yes" : "no (install GNU make >= 3.81)") .
+		    ? "yes" : "no (disabled till make doesn't spin)(install GNU make >= 3.81)") .
 	     "\n";
 	
 	print "Using shared libraries: " .
