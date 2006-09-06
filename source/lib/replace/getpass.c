@@ -19,7 +19,6 @@ Cambridge, MA 02139, USA.  */
 /* Modified to use with samba by Jeremy Allison, 8th July 1995. */
 
 #include "replace.h"
-#include <stdlib.h>
 
 #if defined(HAVE_TERMIOS_H)
 /* POSIX terminal handling. */

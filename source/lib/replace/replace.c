@@ -30,6 +30,7 @@
 #include "system/syslog.h"
 #include "system/network.h"
 #include "system/locale.h"
+#include "system/wait.h"
 
 void replace_dummy(void);
 void replace_dummy(void) {}
@@ -42,7 +43,7 @@ int rep_ftruncate(int f, off_t l)
 {
 #ifdef HAVE_CHSIZE
       return chsize(f,l);
-#else
+#elif defined(F_FREESP)
       struct  flock   fl;
 
       fl.l_whence = 0;
@@ -50,6 +51,8 @@ int rep_ftruncate(int f, off_t l)
       fl.l_start = l;
       fl.l_type = F_WRLCK;
       return fcntl(f, F_FREESP, &fl);
+#else
+#error "you must have a ftruncate function"
 #endif
 }
 #endif /* HAVE_FTRUNCATE */
@@ -151,24 +154,6 @@ time_t rep_mktime(struct tm *t)
 #endif /* !HAVE_MKTIME */
 
 
-
-#ifndef HAVE_RENAME
-/* Rename a file. (from libiberty in GNU binutils)  */
-int rep_rename(const char *zfrom, const char *zto)
-{
-  if (link (zfrom, zto) < 0)
-    {
-      if (errno != EEXIST)
-	return -1;
-      if (unlink (zto) < 0
-	  || link (zfrom, zto) < 0)
-	return -1;
-    }
-  return unlink (zfrom);
-}
-#endif /* HAVE_RENAME */
-
-
 #ifndef HAVE_INNETGR
 #if defined(HAVE_SETNETGRENT) && defined(HAVE_GETNETGRENT) && defined(HAVE_ENDNETGRENT)
 /*
@@ -211,7 +196,7 @@ int rep_initgroups(char *name, gid_t id)
 #include <grp.h>
 
 	gid_t *grouplst = NULL;
-	int max_gr = groups_max();
+	int max_gr = 32;
 	int ret;
 	int    i,j;
 	struct group *g;
@@ -481,7 +466,7 @@ char *rep_mkdtemp(char *template)
 #endif
 
 #ifndef HAVE_PREAD
-static ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
+ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
 {
 	if (lseek(__fd, __offset, SEEK_SET) != __offset) {
 		return -1;
@@ -491,7 +476,7 @@ static ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
 #endif
 
 #ifndef HAVE_PWRITE
-static ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
+ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 {
 	if (lseek(__fd, __offset, SEEK_SET) != __offset) {
 		return -1;

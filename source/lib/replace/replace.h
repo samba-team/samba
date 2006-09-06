@@ -61,7 +61,6 @@
 #include <strings.h>
 #endif
 
-
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
 #define strerror(i) sys_errlist[i]
@@ -121,11 +120,6 @@ size_t rep_strnlen(const char *s, size_t n);
 int rep_setenv(const char *name, const char *value, int overwrite); 
 #endif
 
-#ifndef HAVE_RENAME
-#define rename rep_rename
-int rep_rename(const char *zfrom, const char *zto);
-#endif
-
 #ifndef HAVE_STRCASESTR
 #define strcasestr rep_strcasestr
 char *rep_strcasestr(const char *haystack, const char *needle);
@@ -148,11 +142,36 @@ unsigned long long int rep_strtoull(const char *str, char **endptr, int base);
 
 #ifndef HAVE_FTRUNCATE
 #define ftruncate rep_ftruncate
-int rep_ftruncate(int f,long l);
+int rep_ftruncate(int,off_t);
+#endif
+
+#ifndef HAVE_INITGROUPS
+#define ftruncate rep_ftruncate
+int rep_initgroups(char *name, gid_t id);
 #endif
 
 #if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
 #define bzero(a,b) memset((a),'\0',(b))
+#endif
+
+#ifndef HAVE_DLERROR
+#define dlerror rep_dlerror
+char *rep_dlerror(void);
+#endif
+
+#ifndef HAVE_DLOPEN
+#define dlopen rep_dlopen
+void *rep_dlopen(const char *name, int flags);
+#endif
+
+#ifndef HAVE_DLSYM
+#define dlsym rep_dlsym
+void *rep_dlsym(void *handle, const char *symbol);
+#endif
+
+#ifndef HAVE_DLCLOSE
+#define dlclose rep_dlclose
+int rep_dlclose(void *handle);
 #endif
 
 
@@ -195,6 +214,7 @@ int rep_asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 
 
 #ifndef HAVE_VA_COPY
+#undef va_copy
 #ifdef HAVE___VA_COPY
 #define va_copy(dest, src) __va_copy(dest, src)
 #else
