@@ -300,11 +300,12 @@ hx509_cms_unenvelope(hx509_context context,
 	if (ret == 0)
 	    break;
 	cert = NULL;
+	hx509_clear_error_string(context);
     }
     
     if (cert == NULL) {
 	ret = HX509_CMS_NO_RECIPIENT_CERTIFICATE;
-	hx509_set_error_string(context, 0, ret,
+	hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 			       "No private key decrypted the transfer key");
 	goto out;
     }
