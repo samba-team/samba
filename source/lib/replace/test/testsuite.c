@@ -27,7 +27,7 @@
 #include "replace.h"
 
 /*
-  we include all the system/*.h include files here so that libreplace tests
+  we include all the system/ include files here so that libreplace tests
   them in the build farm
 */
 #include "system/capability.h"
