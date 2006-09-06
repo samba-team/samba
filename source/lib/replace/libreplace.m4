@@ -144,11 +144,11 @@ dnl dummies provided by dlfcn.c if not available
 save_LIBS="$LIBS"
 LIBS=""
 AC_SEARCH_LIBS(dlopen, dl)
+AC_CHECK_HEADERS(dlfcn.h)
+AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
 LIBDL="$LIBS"
 AC_SUBST(LIBDL)
 LIBS="$save_LIBS"
-AC_CHECK_HEADERS(dlfcn.h)
-AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
 
 AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
 			   [AC_MSG_ERROR([Required function not found])])
