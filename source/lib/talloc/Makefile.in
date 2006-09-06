@@ -46,7 +46,7 @@ doc: talloc.3 talloc.3.html
 	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
 clean:
-	rm -f *~ $(LIBOBJ) libtalloc.a testsuite *.gc?? talloc.3 talloc.3.html
+	rm -f *~ $(LIBOBJ) libtalloc.a testsuite testsuite.o *.gc?? talloc.3 talloc.3.html
 
 test: testsuite
 	./testsuite
@@ -59,7 +59,10 @@ installcheck:
 
 distclean: clean
 	rm -f *~ */*~
-	rm -rf autom4te.cache
-	rm -f configure \
-		config.log config.status config.h
 	rm -f Makefile
+	rm -f config.log \
+		config.status \
+		config.h
+
+realdistclean: distclean
+	rm -f configure config.h.in
