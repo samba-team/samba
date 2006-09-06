@@ -29,6 +29,7 @@
 #include "system/passwd.h"
 #include "system/syslog.h"
 #include "system/network.h"
+#include "system/locale.h"
 
 void replace_dummy(void);
 void replace_dummy(void) {}
