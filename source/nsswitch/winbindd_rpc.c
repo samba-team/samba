@@ -842,7 +842,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 		DEBUG(8,("using get_ldap_seq() to retrieve the "
 			 "sequence number\n"));
 
-		res =  get_ldap_sequence_number( domain->name, seq );
+		res =  get_ldap_sequence_number( domain, seq );
 		if (res == 0)
 		{			
 			result = NT_STATUS_OK;
