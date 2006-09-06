@@ -672,8 +672,16 @@ _krb5_pk_verify_sign(krb5_context context,
 				  contentType,
 				  content,
 				  &signer_certs);
-    if (ret)
+    if (ret) {
+	char *s = hx509_get_error_string(id->hx509ctx, ret);
+	if (s) {
+	    krb5_set_error_string(context,
+				  "CMS verify signed failed with %s", s);
+	    free(s);
+	} else
+	    krb5_clear_error_string(context);
 	return ret;
+    }
 
     *signer = calloc(1, sizeof(**signer));
     if (*signer == NULL) {
