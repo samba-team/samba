@@ -54,13 +54,6 @@ m4_include(lib/appweb/config.m4)
 m4_include(nsswitch/config.m4)
 m4_include(libcli/config.m4)
 
-AC_ARG_ENABLE(dso,
-[  --enable-dso 		Enable building internal libraries as DSO's (experimental)],
-[ if test x$enable_dso != xyes; then
- 	BLDSHARED=false
-  fi], 
-[BLDSHARED=false])
-
 #################################################
 # add *_CFLAGS only for the real build
 CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
