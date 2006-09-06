@@ -117,7 +117,7 @@ sub _prepare_compiler_linker($)
 	}
 	
 	if (!(abs_path($self->{config}->{srcdir}) eq abs_path($self->{config}->{builddir}))) {
-	    $builddir_headers= "-I\$(builddir)/include -I\$(builddir)/lib/replace -I\$(builddir) -I\$(builddir)/lib ";
+	    $builddir_headers= "-I\$(builddir)/include -I\$(builddir) -I\$(builddir)/lib ";
 	}
 
 	$self->output(<< "__EOD__"
@@ -126,7 +126,7 @@ SHELL=$self->{config}->{SHELL}
 PERL=$self->{config}->{PERL}
 
 CPP=$self->{config}->{CPP}
-CPPFLAGS=$builddir_headers-I\$(srcdir)/include -I\$(srcdir)/lib/replace -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $self->{config}->{CPPFLAGS}
+CPPFLAGS=$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $self->{config}->{CPPFLAGS}
 
 CC=$self->{config}->{CC}
 CFLAGS=$self->{config}->{CFLAGS} \$(CPPFLAGS)

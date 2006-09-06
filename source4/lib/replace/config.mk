@@ -18,3 +18,12 @@ OBJ_FILES = replace.o \
 PUBLIC_DEPENDENCIES = REPLACE_READDIR DL
 # End SUBSYSTEM LIBREPLACE
 ##############################
+
+[SUBSYSTEM::LIBREPLACE_HOSTCC]
+CFLAGS = -Ilib/replace
+OBJ_FILES = replace.ho \
+		snprintf.ho \
+		dlfcn.ho \
+		getpass.ho \
+		timegm.ho
+
