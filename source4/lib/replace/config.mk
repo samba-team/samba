@@ -13,7 +13,8 @@ CFLAGS = -Ilib/replace
 OBJ_FILES = replace.o \
 		snprintf.o \
 		dlfcn.o \
-		getpass.o
+		getpass.o \
+		timegm.o
 PUBLIC_DEPENDENCIES = REPLACE_READDIR DL
 # End SUBSYSTEM LIBREPLACE
 ##############################
