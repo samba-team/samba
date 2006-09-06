@@ -1005,7 +1005,7 @@ int main(int argc, const char **argv)
 		{ "multiplex", 0, POPT_ARG_NONE, &opt_multiplex, OPT_MULTIPLEX, "Multiplex Mode"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
-		POPT_TABLEEND
+		{ NULL }
 	};
 
 	/* Samba client initialisation */

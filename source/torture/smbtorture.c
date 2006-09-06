@@ -410,7 +410,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		POPT_TABLEEND
+		{ NULL }
 	};
 
 #ifdef HAVE_SETBUFFER

@@ -419,7 +419,7 @@ static char **reg_completion(const char *text, int start, int end)
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		POPT_TABLEEND
+		{ NULL }
 	};
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);

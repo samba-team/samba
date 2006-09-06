@@ -153,7 +153,7 @@ const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, 
 		{"load-dso", 'l', POPT_ARG_STRING, &plugin, 0, "load from shared object file", NULL },
 		POPT_COMMON_SAMBA
 		POPT_AUTOHELP
-		POPT_TABLEEND
+		{ NULL }
 	};
 
 	dcerpc_table_init();

@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
-		POPT_TABLEEND
+		{ NULL }
 	};
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);

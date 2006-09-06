@@ -3090,7 +3090,7 @@ static int do_message_op(const char *desthost, const char *destip, int name_type
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		POPT_TABLEEND
+		{ NULL }
 	};
 	
 	mem_ctx = talloc_init("client.c/main");

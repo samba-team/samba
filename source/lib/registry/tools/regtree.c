@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 		{"no-values", 'V', POPT_ARG_NONE, &no_values, 0, "don't show values", NULL},
 		POPT_COMMON_SAMBA	
 		POPT_COMMON_CREDENTIALS	
-		POPT_TABLEEND
+		{ NULL }
 	};
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);

@@ -185,7 +185,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		 "set maximum runtime of the server process, till autotermination", "seconds"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
-		POPT_TABLEEND
+		{ NULL }
 	};
 
 	pc = poptGetContext(binary_name, argc, argv, long_options, 0);
