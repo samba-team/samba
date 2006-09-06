@@ -23,8 +23,8 @@
 
 #define _PRINTF_ATTRIBUTE(a,b) 
 
-#include "libndr/misc.h"
-#include "libndr/security.h"
+#include "librpc/ndr/misc.h"
+#include "librpc/ndr/security.h"
 
 struct dcerpc_syntax_id {
 	struct GUID uuid;

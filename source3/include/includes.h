@@ -1000,7 +1000,8 @@ extern int errno;
 #include "rpc_client.h"
 #include "event.h"
 
-#include "libndr/libndr.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/unixinfo.h"
 
 /*
  * Type for wide character dirent structure.
