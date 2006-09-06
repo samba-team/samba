@@ -516,7 +516,7 @@ struct poptOption cifsddHelpOptions[] = {
   { NULL, '\0', POPT_ARG_CALLBACK, (void *)&cifsdd_help_message, '\0', NULL, NULL },
   { "help", '?', 0, NULL, '?', "Show this help message", NULL },
   { "usage", '\0', 0, NULL, 'u', "Display brief usage message", NULL },
-    POPT_TABLEEND
+  { NULL }
 } ;
 
 int main(int argc, const char ** argv)
@@ -533,7 +533,7 @@ int main(int argc, const char ** argv)
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		POPT_TABLEEND
+		{ NULL }
 	};
 
 	/* Block sizes. */
