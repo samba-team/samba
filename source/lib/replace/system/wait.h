@@ -26,6 +26,8 @@
 #include <sys/wait.h>
 #endif
 
+#include <signal.h>
+
 #ifndef SIGCLD
 #define SIGCLD SIGCHLD
 #endif
