@@ -247,6 +247,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 	entry->create_time = create_time;
 	entry->renew_until = renew_until;
 	entry->uid = uid;
+	entry->ref_count = 1;
 
 	if (schedule_refresh_event && renew_until > 0) {
 
