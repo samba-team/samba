@@ -174,8 +174,8 @@ const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security 
 	return NULL;
 }
 
-static const struct gensec_security_ops *gensec_security_by_sasl_name(struct gensec_security *gensec_security,
-								      const char *sasl_name)
+const struct gensec_security_ops *gensec_security_by_sasl_name(struct gensec_security *gensec_security,
+							       const char *sasl_name)
 {
 	int i;
 	struct gensec_security_ops **backends;
