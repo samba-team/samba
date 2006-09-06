@@ -99,7 +99,7 @@ OBJ_FILES = \
 		reg_samba.o \
 		patchfile.o
 PUBLIC_DEPENDENCIES = \
-		LIBSAMBA-UTIL CHARSET
+		LIBSAMBA-UTIL CHARSET LIBREPLACE
 PRIVATE_PROTO_HEADER = registry_proto.h
 PUBLIC_HEADERS = registry.h
 # End MODULE registry_ldb
