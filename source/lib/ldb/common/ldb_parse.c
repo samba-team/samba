@@ -43,6 +43,7 @@
 
 #include "includes.h"
 #include "ldb/include/includes.h"
+#include "system/locale.h"
 
 /*
 a filter is defined by:

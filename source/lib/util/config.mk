@@ -38,6 +38,7 @@ OBJ_FILES = pidfile.o
 [SUBSYSTEM::UNIX_PRIVS]
 PRIVATE_PROTO_HEADER = unix_privs.h
 OBJ_FILES = unix_privs.o
+PUBLIC_DEPENDENCIES = LIBREPLACE
 
 ################################################
 # Start SUBSYSTEM WRAP_XATTR
@@ -45,7 +46,7 @@ OBJ_FILES = unix_privs.o
 PUBLIC_PROTO_HEADER = wrap_xattr.h
 OBJ_FILES = \
 		wrap_xattr.o
-PUBLIC_DEPENDENCIES = XATTR
+PUBLIC_DEPENDENCIES = XATTR LIBREPLACE
 #
 # End SUBSYSTEM WRAP_XATTR
 ################################################
