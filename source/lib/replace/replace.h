@@ -139,11 +139,6 @@ unsigned long long int rep_strtoull(const char *str, char **endptr, int base);
 int rep_ftruncate(int f,long l);
 #endif
 
-#ifndef HAVE_VASPRINTF_DECL
-#define vasprintf rep_vasprintf
-int rep_vasprintf(char **ptr, const char *format, va_list ap);
-#endif
-
 #if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
 #define bzero(a,b) memset((a),'\0',(b))
 #endif
@@ -161,12 +156,22 @@ int rep_vasprintf(char **ptr, const char *format, va_list ap);
 #endif
 #endif
 
-/* add varargs prototypes with printf checking */
-#ifndef HAVE_SNPRINTF_DECL
+#ifndef HAVE_VASPRINTF
+#define vasprintf rep_vasprintf
+int rep_vasprintf(char **ptr, const char *format, va_list ap);
+#endif
+
+#ifndef HAVE_SNPRINTF
 #define snprintf rep_snprintf
 int rep_snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
-#ifndef HAVE_ASPRINTF_DECL
+
+#ifndef HAVE_VSNPRINTF
+#define vsnprintf rep_vsnprintf
+int rep_vsnprintf(char *,size_t ,const char *, va_list ap);
+#endif
+
+#ifndef HAVE_ASPRINTF
 #define asprintf rep_asprintf
 int rep_asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
