@@ -1,41 +1,66 @@
 AC_SYS_LARGEFILE
 
-#
-# Config CPPFLAG settings for strange OS's that must be set
-# before other tests.
-#
 case "$host_os" in
-# Try to work out if this is the native HPUX compiler that uses the -Ae flag.
-    *hpux*)    
-      AC_PROG_CC_FLAG(Ae)
-      # mmap on HPUX is completely broken...
-      AC_DEFINE(MMAP_BLACKLIST, 1, [Whether MMAP is broken])
-      if test $ac_cv_prog_cc_Ae = yes; then
-        CPPFLAGS="$CPPFLAGS -Ae"
-      fi
-    ;;
-#
-# VOS may need to have POSIX support and System V compatibility enabled.
-#
-    *vos*)
-          case "$CPPFLAGS" in
-	      *-D_POSIX_C_SOURCE*)
+	*linux*)   AC_DEFINE(LINUX,1,[Whether the host os is linux])
 		;;
-	  *)
-		CPPFLAGS="$CPPFLAGS -D_POSIX_C_SOURCE=200112L"
-		AC_DEFINE(_POSIX_C_SOURCE, 200112L, [Whether to enable POSIX support])
+	*solaris*) AC_DEFINE(SUNOS5,1,[Whether the host os is solaris])
+		AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 		;;
-          esac
-          case "$CPPFLAGS" in
-	     *-D_SYSV*|*-D_SVID_SOURCE*)
+	*sunos*) AC_DEFINE(SUNOS4,1,[Whether the host os is sunos4])
+		AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 		;;
-	     *)
-		CPPFLAGS="$CPPFLAGS -D_SYSV"
-		AC_DEFINE(_SYSV, 1, [Whether to enable System V compatibility])
-          esac
-    ;;
-
+	*netbsd* | *freebsd* | *dragonfly* )  
+		AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
+		;;
+	*openbsd*)
+		AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
+		;;
+	*irix*) AC_DEFINE(IRIX,1,[Whether the host os is irix])
+		case "$host_os" in
+		*irix6*) AC_DEFINE(IRIX6,1,[Whether the host os is irix6])
+		;;
+		esac
+		;;
+	*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
+		AC_DEFINE(BROKEN_STRNLEN,1,[Does strnlen work correctly])
+		AC_DEFINE(BROKEN_STRNDUP,1,[Does strndup work correctly])
+		;;
+	*hpux*) AC_DEFINE(HPUX,1,[Whether the host os is HPUX])
+		;;
+	*qnx*) AC_DEFINE(QNX,1,[Whether the host os is qnx])
+		;;
+	*osf*) AC_DEFINE(OSF1,1,[Whether the host os is osf1])
+		AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
+		;;
+	*sco*) AC_DEFINE(SCO,1,[Whether the host os is sco unix])
+		;;
+	*unixware*) AC_DEFINE(UNIXWARE,1,[Whether the host os is unixware])
+		;;
+	*next2*) AC_DEFINE(NEXT2,1,[Whether the host os is NeXT v2])
+		;;
+	*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man])
+		;;
+	*sysv4*) AC_DEFINE(SYSV,1,[Whether this is a system V system])
+		case "$host" in
+			*-univel-*)
+				if [ test "$GCC" != yes ]; then
+					AC_DEFINE(HAVE_MEMSET,1,[Whether memset() is available])
+				fi
+				;;
+			*mips-sni-sysv4*) AC_DEFINE(RELIANTUNIX,1,[Whether the host os is reliantunix]);;
+		esac
+		;;
+	*sysv5*) AC_DEFINE(SYSV,1,[Whether this is a system V system])
+		if [ test "$GCC" != yes ]; then
+			AC_DEFINE(HAVE_MEMSET,1,[Whether memset() is available])
+		fi
+		;;
+	*vos*)
+		;;
+	*darwin*)   AC_DEFINE(DARWINOS,1,[Whether the host os is Darwin/MacOSX])
+		;;
 esac
+
 
 AC_CHECK_HEADERS(stdarg.h string.h)
 
