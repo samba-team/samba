@@ -164,15 +164,67 @@ find_CMSIdentifier(hx509_context context,
 	q.match = HX509_QUERY_MATCH_SUBJECT_KEY_ID;
 	break;
     default:
+	hx509_set_error_string(context, 0, HX509_CMS_NO_RECIPIENT_CERTIFICATE,
+			       "unknown CMS identifier element");
 	return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
     }
 
     q.match |= match;
 
     ret = hx509_certs_find(context, certs, &q, &cert);
-    if (ret)
-	return ret;
+    if (ret == HX509_CERT_NOT_FOUND) {
+	switch (client->element) {
+	case choice_CMSIdentifier_issuerAndSerialNumber: {
+	    IssuerAndSerialNumber *iasn;
+	    char *serial, *name;
 
+	    iasn = &client->u.issuerAndSerialNumber;
+
+	    ret = _hx509_Name_to_string(&iasn->issuer, &name);
+	    if(ret)
+		return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
+	    ret = der_print_hex_heim_integer(&iasn->serialNumber, &serial);
+	    if (ret) {
+		free(name);
+		return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
+	    }
+	    hx509_set_error_string(context, 0,
+				   HX509_CMS_NO_RECIPIENT_CERTIFICATE,
+				   "Failed to find cert issued by %s "
+				   "with serial number %s",
+				   name, serial);
+	    free(name);
+	    free(serial);
+	    return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
+	}
+	case choice_CMSIdentifier_subjectKeyIdentifier: {
+	    KeyIdentifier *ki  = &client->u.subjectKeyIdentifier;
+	    char *str;
+	    ssize_t len;
+
+	    len = hex_encode(ki->data, ki->length, &str);
+	    if (len < 0)
+		hx509_clear_error_string(context);
+	    else
+		hx509_set_error_string(context, 0,
+				       HX509_CMS_NO_RECIPIENT_CERTIFICATE,
+				       "Failed to find cert with id: %s",
+				       str);
+	    free(str);
+	    
+	    return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
+	}
+	default:
+	    _hx509_abort("unknown CMS id type");
+	    break;
+	}
+    } else if (ret) {
+	hx509_set_error_string(context, HX509_ERROR_APPEND,
+			       HX509_CMS_NO_RECIPIENT_CERTIFICATE,
+			       "Failed to find CMS id in cert store");
+	return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
+    }
+    
     *signer_cert = cert;
 
     return 0;
@@ -218,8 +270,14 @@ hx509_cms_unenvelope(hx509_context context,
 	goto out;
     }
 
+    if (ed.recipientInfos.len == 0) {
+	ret = HX509_CMS_NO_RECIPIENT_CERTIFICATE;
+	hx509_set_error_string(context, 0, ret,
+			       "No recipient info in enveloped data");
+	goto out;
+    }
+
     cert = NULL;
-    ret = HX509_CMS_NO_RECIPIENT_CERTIFICATE;
     for (i = 0; i < ed.recipientInfos.len; i++) {
 	ri = &ed.recipientInfos.val[i];
 
@@ -231,10 +289,8 @@ hx509_cms_unenvelope(hx509_context context,
 	ret = find_CMSIdentifier(context, &ri->rid, certs, &cert, 
 				 HX509_QUERY_PRIVATE_KEY|
 				 HX509_QUERY_KU_ENCIPHERMENT);
-	if (ret) {
-	    ret = HX509_CMS_NO_RECIPIENT_CERTIFICATE;
+	if (ret)
 	    continue;
-	}
 
 	ret = _hx509_cert_private_decrypt(&ri->encryptedKey, 
 					  &ri->keyEncryptionAlgorithm.algorithm,
@@ -247,7 +303,9 @@ hx509_cms_unenvelope(hx509_context context,
     }
     
     if (cert == NULL) {
-	hx509_clear_error_string(context);
+	ret = HX509_CMS_NO_RECIPIENT_CERTIFICATE;
+	hx509_set_error_string(context, 0, ret,
+			       "No private key decrypted the transfer key");
 	goto out;
     }
 
@@ -572,10 +630,8 @@ hx509_cms_verify_signed(hx509_context context,
 
 	ret = find_CMSIdentifier(context, &signer_info->sid, certs, &cert,
 				 HX509_QUERY_KU_DIGITALSIGNATURE);
-	if (ret) {
-	    hx509_clear_error_string(context);
+	if (ret)
 	    continue;
-	}
 
 	if (signer_info->signedAttrs) {
 	    const Attribute *attr;
