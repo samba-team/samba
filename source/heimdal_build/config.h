@@ -6,10 +6,8 @@
 #ifndef HAVE_HEIMDAL_CONFIG_H
 #define HAVE_HEIMDAL_CONFIG_H 1
 
-/* bring in the samba4 config.h */
 #include "include/config.h"
-
-#ifdef HAVE_KRB5
+#include "replace.h"
 
 #define RCSID(msg)
 
@@ -40,14 +38,6 @@
 
 /* these should be done with configure tests */
 #define KRB5
-
-#include <sys/types.h>
-#include <stdarg.h>
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif
-#include "lib/replace/replace.h"
-#endif
 
 /* we need to tell roken about the functions that Samba replaces in lib/replace */
 #ifndef HAVE_SETEUID
