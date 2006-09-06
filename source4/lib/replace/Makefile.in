@@ -29,8 +29,7 @@ install: all
 	$(INSTALL) libreplace.a $(libdir)
 
 libreplace.a: $(OBJS)
-	ar -rv $@ $(OBJS)
-	@-ranlib $@
+	ar -rcsv $@ $(OBJS)
 
 test: testsuite
 	./testsuite
