@@ -37,7 +37,7 @@ PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		PIDFILE \
 		POPT_SAMBA \
-		LIBPOPT \
+		POPT_EXT \
 		gensec \
 		registry \
 		ntptr \
