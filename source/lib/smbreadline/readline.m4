@@ -72,10 +72,10 @@ AC_MSG_CHECKING(whether to use extern readline)
 if test x"$EXTERNAL_READLINE" = x"yes"; then
 	AC_MSG_RESULT(yes)
 	AC_DEFINE(HAVE_LIBREADLINE,1,[Whether the system has readline])
-	SMB_SUBSYSTEM(SMBREADLINE, [lib/smbreadline/smbreadline.o], [READLINE])
+	SMB_SUBSYSTEM(SMBREADLINE, [lib/smbreadline/smbreadline.o], [READLINE LIBREPLACE])
 	SMB_EXT_LIB(READLINE, [${TERMLIBS}])
 	SMB_ENABLE(READLINE,YES)
 else
-	SMB_SUBSYSTEM(SMBREADLINE, [lib/smbreadline/smbreadline.o], [])
+	SMB_SUBSYSTEM(SMBREADLINE, [lib/smbreadline/smbreadline.o], [LIBREPLACE])
 	AC_MSG_RESULT(no)
 fi
