@@ -297,6 +297,7 @@ BOOL ads_cldap_netlogon(const char *server, const char *realm,  struct cldap_net
 
 	ret = send_cldap_netlogon(sock, realm, global_myname(), 6);
 	if (ret != 0) {
+		close(sock);
 		return False;
 	}
 	ret = recv_cldap_netlogon(sock, reply);
