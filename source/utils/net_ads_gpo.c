@@ -47,7 +47,7 @@ static int net_ads_gpo_effective(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	const char *attrs[] = {"distinguishedName", "userAccountControl", NULL};
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	const char *filter;
 	char *dn = NULL;
 	struct GROUP_POLICY_OBJECT *gpo_list;
@@ -68,7 +68,8 @@ static int net_ads_gpo_effective(int argc, const char **argv)
 		goto out;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -132,18 +133,20 @@ static int net_ads_gpo_list(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	int num_reply = 0;
 	void *msg = NULL;
 	struct GROUP_POLICY_OBJECT gpo;
 	TALLOC_CTX *mem_ctx;
+	char *dn;
 
 	mem_ctx = talloc_init("net_ads_gpo_list");
 	if (mem_ctx == NULL) {
 		return -1;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -161,8 +164,12 @@ static int net_ads_gpo_list(int argc, const char **argv)
 
 	/* dump the results */
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-	
-		status = ads_parse_gpo(ads, mem_ctx, msg, ads_get_dn(ads, msg), &gpo);
+
+		if ((dn = ads_get_dn(ads, msg)) == NULL) {
+			goto out;
+		}
+
+		status = ads_parse_gpo(ads, mem_ctx, msg, dn, &gpo);
 
 		if (!ADS_ERR_OK(status)) {
 			d_printf("parse failed: %s\n", ads_errstr(status));
@@ -174,6 +181,7 @@ static int net_ads_gpo_list(int argc, const char **argv)
 	}
 
 out:
+	ads_memfree(ads, dn);
 	ads_msgfree(ads, res);
 
 	talloc_destroy(mem_ctx);
@@ -188,7 +196,7 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	const char *attrs[] = {"distinguishedName", "userAccountControl", NULL};
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	const char *filter;
 	char *dn = NULL;
 	struct GROUP_POLICY_OBJECT *gpo_list;
@@ -209,7 +217,8 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 		goto out;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -280,7 +289,8 @@ static int net_ads_gpo_get_link(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -319,7 +329,8 @@ static int net_ads_gpo_add_link(int argc, const char **argv)
 		gpo_opt = atoi(argv[2]);
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -351,7 +362,8 @@ static int net_ads_gpo_delete_link(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
@@ -385,7 +397,8 @@ static int net_ads_gpo_get_gpo(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!(ads = ads_startup())) {
+	status = ads_startup(False, &ads);
+	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 

@@ -445,7 +445,7 @@ ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 	struct GROUP_POLICY_OBJECT *gpo_list;
 	const char *attrs[] = {"distinguishedName", "userAccountControl", NULL};
 	char *filter, *dn;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	uint32 uac;
 
 	return ADS_ERROR_NT(NT_STATUS_NOT_IMPLEMENTED);
@@ -473,15 +473,18 @@ ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 	}
 
 	if (!ads_pull_uint32(ads, res, "userAccountControl", &uac)) {
+		ads_memfree(ads, dn);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	if (!(uac & UF_WORKSTATION_TRUST_ACCOUNT)) {
+		ads_memfree(ads, dn);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
 	status = ads_get_gpo_list(ads, mem_ctx, dn, GPO_LIST_FLAG_MACHINE, &gpo_list);
 	if (!ADS_ERR_OK(status)) {
+		ads_memfree(ads, dn);
 		return status;
 	}
 
@@ -489,8 +492,10 @@ ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 				      cse_gpo_name_to_guid_string("Security"), 
 				      GPO_LIST_FLAG_MACHINE); 
 	if (!ADS_ERR_OK(status)) {
+		ads_memfree(ads, dn);
 		return status;
 	}
 
+	ads_memfree(ads, dn);
 	return ADS_ERROR(LDAP_SUCCESS);
 }
