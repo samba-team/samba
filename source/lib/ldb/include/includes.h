@@ -5,20 +5,14 @@
 */
 
 #ifdef _SAMBA_BUILD_
-
 /* tell ldb we have the internal ldap code */
 #define HAVE_ILDAP 1
-
-#else
-#include "config.h"
-#endif /*_SAMBA_BUILD_*/
+#endif
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#ifdef HAVE_REPLACE_H
 #include "replace.h"
-#endif
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
