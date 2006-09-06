@@ -199,6 +199,10 @@ struct winbindd_domain {
 
 	struct winbindd_child child;
 
+	/* Callback we use to try put us back online. */
+
+	struct timed_event *check_online_event;
+
 	/* Linked list info */
 
 	struct winbindd_domain *prev, *next;

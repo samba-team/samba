@@ -473,12 +473,10 @@ static BOOL centry_expired(struct winbindd_domain *domain, const char *keystr, s
 		return False;
 	}
 
-	/* when the domain is offline and we havent checked in the last 30
-	 * seconds if it has become online again, return the cached entry.
+	/* when the domain is offline return the cached entry.
 	 * This deals with transient offline states... */
 
-	if (!domain->online && 
-	    !NT_STATUS_IS_OK(check_negative_conn_cache(domain->name, domain->dcname))) {
+	if (!domain->online) {
 		DEBUG(10,("centry_expired: Key %s for domain %s valid as domain is offline.\n",
 			keystr, domain->name ));
 		return False;
@@ -2552,7 +2550,7 @@ void set_global_winbindd_state_online(void)
 	tdb_delete_bystring(wcache->tdb, "WINBINDD_OFFLINE");
 }
 
-BOOL get_global_winbindd_state_online(void)
+BOOL get_global_winbindd_state_offline(void)
 {
 	return global_winbindd_offline_state;
 }

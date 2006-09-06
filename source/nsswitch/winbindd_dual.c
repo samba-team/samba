@@ -576,7 +576,17 @@ static void child_msg_offline(int msg_type, struct process_id src, void *buf, si
 
 	for (domain = domain_list(); domain; domain = domain->next) {
 		DEBUG(5,("child_msg_offline: marking %s offline.\n", domain->name));
-		domain->online = False;
+		set_domain_offline(domain);
+	}
+}
+
+/* Ensure any negative cache entries with the netbios or realm names are removed. */
+
+static void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
+{
+	check_negative_conn_cache_timeout(domain->name, domain->dcname, 0);
+	if (*domain->alt_name) {
+		check_negative_conn_cache_timeout(domain->alt_name, domain->dcname, 0);
 	}
 }
 
@@ -599,12 +609,12 @@ static void child_msg_online(int msg_type, struct process_id src, void *buf, siz
 	winbindd_flush_nscd_cache();
 
 	/* Mark everything online - delete any negative cache entries
-	   to force an immediate reconnect. */
+	   to force a reconnect on the next query from the parent to this child. */
 
 	for (domain = domain_list(); domain; domain = domain->next) {
 		DEBUG(5,("child_msg_online: marking %s online.\n", domain->name));
-		domain->online = True;
-		check_negative_conn_cache_timeout(domain->name, domain->dcname, 0);
+		set_domain_online(domain);
+		winbindd_flush_negative_conn_cache(domain);
 	}
 }
 
@@ -614,7 +624,7 @@ static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
 	char *buf = NULL;
 
 	if ((buf = talloc_asprintf(mem_ctx, "global:%s ", 
-				   get_global_winbindd_state_online() ? 
+				   get_global_winbindd_state_offline() ? 
 				   "Offline":"Online")) == NULL) {
 		return NULL;
 	}
