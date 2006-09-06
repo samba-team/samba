@@ -5,187 +5,174 @@ dnl  Copyright (C) Jelmer Vernooij 2006
 dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
-dnl Check if we use GNU ld
-AC_PATH_PROG(LD, ld)
-AC_PROG_LD_GNU
-AC_PATH_PROG(AR, ar)
 
+AC_PATH_PROG(PROG_LD,ld)
+AC_PROG_LD_GNU
+AC_PATH_PROG(PROG_AR, ar)
+
+AC_SUBST(STLD)
+AC_SUBST(STLD_FLAGS)
+AC_SUBST(BLDSHARED)
+AC_SUBST(LD)
+AC_SUBST(LDFLAGS)
+AC_SUBST(SHLD)
+AC_SUBST(SHLD_FLAGS)
 AC_SUBST(SHLIBEXT)
-AC_SUBST(LDSHFLAGS)
 AC_SUBST(SONAMEFLAG)
-AC_SUBST(DYNEXP)
 AC_SUBST(PICFLAG)
 
-AC_SUBST(BLDSHARED)
 # Assume non-shared by default and override below
-BLDSHARED="false"
-
 # these are the defaults, good for lots of systems
-DYNEXP=
-HOST_OS="$host_os"
-LDSHFLAGS="-shared"
-SONAMEFLAG=""
-SHLD="\${CC}"
-PICFLAG=""
+STLD=${PROG_AR}
+STLD_FLAGS="-rcs"
+BLDSHARED="false"
+LD="${CC}"
+LDFLAGS=""
+SHLD="${CC}"
+SHLD_FLAGS="-shared"
 SHLIBEXT="so"
+SONAMEFLAG=""
+PICFLAG=""
 
 AC_MSG_CHECKING([ability to build shared libraries])
 
 # and these are for particular systems
 case "$host_os" in
 	*linux*)
-		AC_DEFINE(LINUX,1,[Whether the host os is linux])
 		BLDSHARED="true"
-		LDSHFLAGS="-shared" 
-		DYNEXP="-Wl,--export-dynamic"
-		PICFLAG="-fPIC"
+		if test "${ac_cv_gnu_ld_no_default_allow_shlib_undefined}" = "yes"; then
+			SHLD_FLAGS="-shared -Wl,-Bsymbolic -Wl,--allow-shlib-undefined" 
+		else
+			SHLD_FLAGS="-shared -Wl,-Bsymbolic" 
+		fi
+		LDFLAGS="-Wl,--export-dynamic"
+		PICFLAGS="-fPIC"
 		SONAMEFLAG="-Wl,-soname="
 		;;
 	*solaris*)
-		AC_DEFINE(SUNOS5,1,[Whether the host os is solaris])
 		BLDSHARED="true"
-		LDSHFLAGS="-G"
+		SHLD_FLAGS="-G"
+		SONAMEFLAG="-h "
 		if test "${GCC}" = "yes"; then
-			PICFLAG="-fPIC"
+			PICFLAGS="-fPIC"
+			SONAMEFLAG="-Wl,-soname="
 			if test "${ac_cv_prog_gnu_ld}" = "yes"; then
-				DYNEXP="-Wl,-E"
+				LDFLAGS="-Wl,-E"
 			fi
 		else
-			PICFLAG="-KPIC"
+			PICFLAGS="-KPIC"
 			## ${CFLAGS} added for building 64-bit shared 
 			## libs using Sun's Compiler
-			LDSHFLAGS="-G \${CFLAGS}"
+			SHLD_FLAGS="-G \${CFLAGS}"
 		fi
 		;;
 	*sunos*)
-		AC_DEFINE(SUNOS4,1,[Whether the host os is sunos4])
 		BLDSHARED="true"
-		LDSHFLAGS="-G"
-		PICFLAG="-KPIC"   # Is this correct for SunOS
+		SHLD_FLAGS="-G"
+		SONAMEFLAG="-Wl,-h,"
+		PICFLAGS="-KPIC"   # Is this correct for SunOS
 		;;
-	*netbsd* | *freebsd*) 
+	*netbsd* | *freebsd* | *dragonfly* )  
 		BLDSHARED="true"
-		LDSHFLAGS="-shared"
-		DYNEXP="-Wl,--export-dynamic"
-		PICFLAG="-fPIC -DPIC"
+		LDFLAGS="-Wl,--export-dynamic"
+		SONAMEFLAG="-Wl,-soname,"
+		PICFLAGS="-fPIC -DPIC"
 		;;
 	*openbsd*)
 		BLDSHARED="true"
-		LDSHFLAGS="-shared"
-		DYNEXP="-Wl,-Bdynamic"
-		PICFLAG="-fPIC"
+		LDFLAGS="-Wl,-Bdynamic"
+		SONAMEFLAG="-Wl,-soname,"
+		PICFLAGS="-fPIC"
 		;;
 	*irix*)
-		AC_DEFINE(IRIX,1,[Whether the host os is irix])
-		ATTEMPT_WRAP32_BUILD=yes
 		BLDSHARED="true"
-		LDSHFLAGS="-set_version sgi1.0 -shared"
+		SHLD_FLAGS="-set_version sgi1.0 -shared"
 		SONAMEFLAG="-soname "
-		SHLD="\${LD}"
+		SHLD="${PROG_LD}"
 		if test "${GCC}" = "yes"; then
-			PICFLAG="-fPIC"
+			PICFLAGS="-fPIC"
 		else 
-			PICFLAG="-KPIC"
+			PICFLAGS="-KPIC"
 		fi
 		;;
 	*aix*)
-		AC_DEFINE(AIX,1,[Whether the host os is aix])
 		BLDSHARED="true"
-		LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry,-berok"
-		DYNEXP="-Wl,-brtl,-bexpall,-bbigtoc"
-		PICFLAG="-O2"
-		if test "${GCC}" != "yes"; then
-			## for funky AIX compiler using strncpy()
-			CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
-		fi
+		SHLD_FLAGS="-Wl,-G,-bexpall"
+		LDFLAGS="-Wl,-brtl,-bexpall,-bbigtoc"
+		# as AIX code is always position independent...
+		PICFLAGS="-O2"
 		;;
 	*hpux*)
-		AC_DEFINE(HPUX,1,[Whether the host os is HPUX])
-		SHLIBEXT="sl"
 		# Use special PIC flags for the native HP-UX compiler.
 		if test $ac_cv_prog_cc_Ae = yes; then
 			BLDSHARED="true"
-			SHLD="/usr/bin/ld"
-			LDSHFLAGS="-B symbolic -b -z"
-			SONAMEFLAG="+h "
-			PICFLAG="+z"
+			SHLD_FLAGS="-b -Wl,-B,symbolic,-b,-z"
+			SONAMEFLAG="-Wl,+h "
+			PICFLAGS="+z"
+		elif test "${GCC}" = "yes"; then
+			BLDSHARED="true" # I hope this is correct
+			PICFLAGS="-fPIC"
 		fi
-		DYNEXP="-Wl,-E"
-		;;
-	*qnx*)
-		AC_DEFINE(QNX,1,[Whether the host os is qnx])
+		if test "$host_cpu" = "ia64"; then
+			SHLIBEXT="so"
+			LDFLAGS="-Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
+		else
+			SHLIBEXT="sl"
+			LDFLAGS="-Wl,-E,+b/usr/local/lib:/usr/lib"
+		fi
 		;;
 	*osf*)
-		AC_DEFINE(OSF1,1,[Whether the host os is osf1])
 		BLDSHARED="true"
-		LDSHFLAGS="-shared"
 		SONAMEFLAG="-Wl,-soname,"
-		PICFLAG="-fPIC"
-		;;
-	*sco*)
-		AC_DEFINE(SCO,1,[Whether the host os is sco unix])
+		PICFLAGS="-fPIC"
 		;;
 	*unixware*)
-		AC_DEFINE(UNIXWARE,1,[Whether the host os is unixware])
 		BLDSHARED="true"
-		LDSHFLAGS="-shared"
 		SONAMEFLAG="-Wl,-soname,"
-		PICFLAG="-KPIC"
+		PICFLAGS="-KPIC"
 		;;
-	*next2*)
-		AC_DEFINE(NEXT2,1,[Whether the host os is NeXT v2])
-		;;
-	*dgux*)
-		;;
-	*sysv4*)
-		AC_DEFINE(SYSV,1,[Whether this is a system V system])
-		case "$host" in
-			*-univel-*)
-				if [ test "$GCC" != yes ]; then
-					AC_DEFINE(HAVE_MEMSET,1,[Whether memset() is available])
-				fi
-				LDSHFLAGS="-G"
-                            	DYNEXP="-Bexport"
-				;;
-			*mips-sni-sysv4*)
-				AC_DEFINE(RELIANTUNIX,1,[Whether the host os is reliantunix])
-				;;
-		esac
-		;;
-
-	*sysv5*)
-		AC_DEFINE(SYSV,1,[Whether this is a system V system])
-		if [ test "$GCC" != yes ]; then
-			AC_DEFINE(HAVE_MEMSET,1,[Whether memset() is available])
-		fi
-		LDSHFLAGS="-G"
-		;;
-	*-vms)
-		BLDSHARED="false"
-		LDSHFLAGS=""
-		;;
-	*vos*)
-		BLDSHARED="false"
-		LDSHFLAGS=""
-		;;
-	*)
+	*darwin*)
+		BLDSHARED="true"
+		SHLD_FLAGS="-bundle -flat_namespace -undefined suppress"
+		SHLIBEXT="dylib"
 		;;
 esac
+
 AC_MSG_RESULT($BLDSHARED)
-AC_MSG_CHECKING([linker flags for shared libraries])
-AC_MSG_RESULT([$LDSHFLAGS])
-AC_MSG_CHECKING([compiler flags for position-independent code])
-AC_MSG_RESULT([$PICFLAG])
+
+AC_MSG_CHECKING([LD])
+AC_MSG_RESULT([$LD])
+AC_MSG_CHECKING([LDFLAGS])
+AC_MSG_RESULT([$LDFLAGS])
+
+AC_MSG_CHECKING([STLD])
+AC_MSG_RESULT([$STLD])
+AC_MSG_CHECKING([STLD_FLAGS])
+AC_MSG_RESULT([$STLD_FLAGS])
 
 #######################################################
 # test whether building a shared library actually works
 if test $BLDSHARED = true; then
+
+AC_MSG_CHECKING([SHLD])
+AC_MSG_RESULT([$SHLD])
+AC_MSG_CHECKING([SHLD_FLAGS])
+AC_MSG_RESULT([$SHLD_FLAGS])
+
+AC_MSG_CHECKING([SHLIBEXT])
+AC_MSG_RESULT([$SHLIBEXT])
+AC_MSG_CHECKING([SONAMEFLAG])
+AC_MSG_RESULT([$SONAMEFLAG])
+
+AC_MSG_CHECKING([PICFLAG])
+AC_MSG_RESULT([$PICFLAG])
+
 AC_CACHE_CHECK([whether building shared libraries actually works], 
                [ac_cv_shlib_works],[
    ac_cv_shlib_works=no
    # try building a trivial shared library
    ${CC} ${CFLAGS} ${PICFLAG} -c ${srcdir-.}/build/tests/shlib.c -o shlib.o &&
-       ${SHLD} ${LDSHFLAGS} `eval echo ${LDFLAGS}` -o shlib.${SHLIBEXT} shlib.o &&
+       ${SHLD} `eval echo ${SHLD_FLAGS} ` -o shlib.${SHLIBEXT} shlib.o &&
        ac_cv_shlib_works=yes
    rm -f shlib.${SHLIBEXT} shlib.o
 ])
@@ -194,4 +181,9 @@ if test $ac_cv_shlib_works = no; then
 fi
 fi
 
-
+AC_ARG_ENABLE(dso,
+[  --enable-dso 		Enable building internal libraries as DSO's (experimental)],
+[ if test x$enable_dso != xyes; then
+ 	BLDSHARED=false
+  fi], 
+[BLDSHARED=false])

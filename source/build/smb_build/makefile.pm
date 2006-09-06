@@ -139,13 +139,12 @@ INSTALL_LINK_FLAGS=$devld_install
 LD=$self->{config}->{LD} 
 LDFLAGS=$self->{config}->{LDFLAGS} -L\$(builddir)/bin
 
-STLD=$self->{config}->{AR}
-STLD_FLAGS=-rc
+STLD=$self->{config}->{STLD}
+STLD_FLAGS=$self->{config}->{STLD_FLAGS}
 
-SHLD=$self->{config}->{CC}
-SHLD_FLAGS=$self->{config}->{LDSHFLAGS} $self->{config}->{LDFLAGS} -L\$(builddir)/bin
+SHLD=$self->{config}->{SHLD}
+SHLD_FLAGS=$self->{config}->{SHLD_FLAGS} -L\$(builddir)/bin
 SHLIBEXT=$self->{config}->{SHLIBEXT}
-DYNEXP=$self->{config}->{DYNEXP}
 
 XSLTPROC=$self->{config}->{XSLTPROC}
 
@@ -393,7 +392,7 @@ sub Binary($$)
 #
 bin/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) 
 	\@echo Linking \$\@
-	\@\$(CC) \$(DYNEXP) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \$(INSTALL_LINK_FLAGS) \\
+	\@\$(LD) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
@@ -403,7 +402,7 @@ __EOD__
 $self->output(<< "__EOD__"
 $installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) 
 	\@echo Linking \$\@
-	\@\$(CC) \$(DYNEXP) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(LD) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
