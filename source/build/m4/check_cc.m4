@@ -71,15 +71,8 @@ AC_SUBST(samba_cv_immediate_structures)
 
 ############################################
 # check if the compiler handles c99 struct initialization
-SMB_CC_SUPPORTS_C99_STRUCT_INIT(samba_cv_c99_struct_initialization=yes,
+LIBREPLACE_C99_STRUCT_INIT(samba_cv_c99_struct_initialization=yes,
 		    samba_cv_c99_struct_initialization=no)
-
-if test x"$samba_cv_c99_struct_initialization" != x"yes"; then
-	# We might need to add some flags to CC to get c99 behaviour.
-	AX_CFLAGS_IRIX_OPTION(-c99, CFLAGS)
-	SMB_CC_SUPPORTS_C99_STRUCT_INIT(samba_cv_c99_struct_initialization=yes,
-			    samba_cv_c99_struct_initialization=no)
-fi
 
 if test x"$samba_cv_c99_struct_initialization" != x"yes"; then
 	AC_MSG_WARN([C compiler does not support c99 struct initialization!])
