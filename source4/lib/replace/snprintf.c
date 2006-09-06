@@ -104,6 +104,7 @@
  **************************************************************/
 
 #include "replace.h"
+#include "system/locale.h"
 
 #ifdef TEST_SNPRINTF /* need math library headers for testing */
 
@@ -116,22 +117,6 @@
 #  undef HAVE_VASPRINTF
 #  include <math.h>
 #endif /* TEST_SNPRINTF */
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif
-#ifdef HAVE_CTYPE_H
-#include <ctype.h>
-#endif
-#include <sys/types.h>
-#include <stdarg.h>
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
 
 #if defined(HAVE_SNPRINTF) && defined(HAVE_VSNPRINTF) && defined(HAVE_C99_VSNPRINTF)
 /* only include stdio.h if we are not re-defining snprintf or vsnprintf */
