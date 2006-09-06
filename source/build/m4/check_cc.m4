@@ -198,6 +198,49 @@ if test -n "$DEVELOPER_CFLAGS"; then
 	CFLAGS="${OLD_CFLAGS}"
 fi
 
+#
+# Config CPPFLAG settings for strange OS's that must be set
+# before other tests.
+#
+case "$host_os" in
+	# Try to work out if this is the native HPUX compiler that uses the -Ae flag.
+	*hpux*)
+		AC_PROG_CC_FLAG(Ae)
+		# mmap on HPUX is completely broken...
+		AC_DEFINE(MMAP_BLACKLIST, 1, [Whether MMAP is broken])
+		if test $ac_cv_prog_cc_Ae = yes; then
+			CPPFLAGS="$CPPFLAGS -Ae"
+		fi
+		;;
+
+	*aix*)
+		if test "${GCC}" != "yes"; then
+			## for funky AIX compiler using strncpy()
+			CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
+		fi
+		;;
+
+	#
+	# VOS may need to have POSIX support and System V compatibility enabled.
+	#
+	*vos*)
+		case "$CPPFLAGS" in
+			*-D_POSIX_C_SOURCE*);;
+			*)
+				CPPFLAGS="$CPPFLAGS -D_POSIX_C_SOURCE=200112L"
+				AC_DEFINE(_POSIX_C_SOURCE, 200112L, [Whether to enable POSIX support])
+				;;
+		esac
+		case "$CPPFLAGS" in
+			*-D_SYSV*|*-D_SVID_SOURCE*);;
+			*)
+				CPPFLAGS="$CPPFLAGS -D_SYSV"
+				AC_DEFINE(_SYSV, 1, [Whether to enable System V compatibility])
+				;;
+		esac
+		;;
+esac
+
 # allow for --with-hostcc=gcc
 AC_ARG_WITH(hostcc,[  --with-hostcc=compiler    choose host compiler],
 [HOSTCC=$withval],
