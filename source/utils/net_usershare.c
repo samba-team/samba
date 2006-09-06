@@ -458,6 +458,63 @@ static int net_usershare_info(int argc, const char **argv)
 }
 
 /***************************************************************************
+ Count the current total number of usershares.
+***************************************************************************/
+
+static int count_num_usershares(void)
+{
+	SMB_STRUCT_DIR *dp;
+	SMB_STRUCT_DIRENT *de;
+	pstring basepath;
+	int num_usershares = 0;
+
+	get_basepath(basepath);
+	dp = sys_opendir(basepath);
+	if (!dp) {
+		d_fprintf(stderr, "count_num_usershares: cannot open usershare directory %s. Error %s\n",
+			basepath, strerror(errno) );
+		return -1;
+	}
+
+	while((de = sys_readdir(dp)) != 0) {
+		SMB_STRUCT_STAT sbuf;
+		pstring path;
+		const char *n = de->d_name;
+
+		/* Ignore . and .. */
+		if (*n == '.') {
+			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
+				continue;
+			}
+		}
+
+		if (!validate_net_name(n, INVALID_SHARENAME_CHARS, strlen(n))) {
+			d_fprintf(stderr, "count_num_usershares: ignoring bad share name %s\n",n);
+			continue;
+		}
+		pstrcpy(path, basepath);
+		pstrcat(path, "/");
+		pstrcat(path, n);
+
+		if (sys_lstat(path, &sbuf) != 0) {
+			d_fprintf(stderr, "count_num_usershares: can't lstat file %s. Error was %s\n",
+				path, strerror(errno) );
+			continue;
+		}
+
+		if (!S_ISREG(sbuf.st_mode)) {
+			d_fprintf(stderr, "count_num_usershares: file %s is not a regular file. Ignoring.\n",
+				path );
+			continue;
+		}
+		num_usershares++;
+	}
+
+	sys_closedir(dp);
+	return num_usershares;
+}
+
+/***************************************************************************
  Add a single userlevel share.
 ***************************************************************************/
 
@@ -481,6 +538,7 @@ static int net_usershare_add(int argc, const char **argv)
 	size_t to_write;
 	uid_t myeuid = geteuid();
 	BOOL guest_ok = False;
+	int num_usershares;
 
 	us_comment = "";
 	arg_acl = "S-1-1-0:R";
@@ -526,6 +584,16 @@ static int net_usershare_add(int argc, const char **argv)
 					return net_usershare_add_usage(argc, argv);
 			}
 			break;
+	}
+
+	/* Ensure we're under the "usershare max shares" number. Advisory only. */
+	num_usershares = count_num_usershares();
+	if (num_usershares > lp_usershare_max_shares()) {
+		d_fprintf(stderr, "net usershare add: too many usershares already defined (%d), "
+			"maximum number allowed is %d.\n",
+			num_usershares, lp_usershare_max_shares() );
+		SAFE_FREE(sharename);
+		return -1;
 	}
 
 	if (!validate_net_name(sharename, INVALID_SHARENAME_CHARS, strlen(sharename))) {
