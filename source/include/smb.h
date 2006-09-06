@@ -287,8 +287,8 @@ typedef struct dom_sid {
 	uint32 sub_auths[MAXSUBAUTHS];  
 } DOM_SID;
 
-#include "libndr/misc.h"
-#include "libndr/security.h"
+#include "librpc/ndr/misc.h"
+#include "librpc/ndr/security.h"
 
 struct lsa_dom_info {
 	BOOL valid;
