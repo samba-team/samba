@@ -114,6 +114,32 @@ static int tcsetattr(int fd, int flags, struct sgttyb *_t)
 static struct termios t;
 #endif /* SYSV_TERMIO */
 
+static void catch_signal(int signum,void (*handler)(int ))
+{
+#ifdef HAVE_SIGACTION
+	struct sigaction act;
+	struct sigaction oldact;
+
+	memset(&act, 0, sizeof(act));
+
+	act.sa_handler = handler;
+#ifdef SA_RESTART
+	/*
+	 * We *want* SIGALRM to interrupt a system call.
+	 */
+	if(signum != SIGALRM)
+		act.sa_flags = SA_RESTART;
+#endif
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask,signum);
+	sigaction(signum,&act,&oldact);
+	return oldact.sa_handler;
+#else /* !HAVE_SIGACTION */
+	/* FIXME: need to handle sigvec and systems with broken signal() */
+	return signal(signum, handler);
+#endif
+}
+
 char *getsmbpass(const char *prompt)
 {
   FILE *in, *out;
@@ -123,7 +149,7 @@ char *getsmbpass(const char *prompt)
   size_t nread;
 
   /* Catch problematic signals */
-  CatchSignal(SIGINT, SIGNAL_CAST SIG_IGN);
+  catch_signal(SIGINT, SIGNAL_CAST SIG_IGN);
 
   /* Try to write to and read from the terminal if we can.
      If we can't open the terminal, use stderr and stdin.  */
@@ -175,7 +201,7 @@ char *getsmbpass(const char *prompt)
     fclose (in);
 
   /* Catch problematic signals */
-  CatchSignal(SIGINT, SIGNAL_CAST SIG_DFL);
+  catch_signal(SIGINT, SIGNAL_CAST SIG_DFL);
 
   printf("\n");
   return buf;
