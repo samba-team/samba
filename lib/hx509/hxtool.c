@@ -140,7 +140,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     if (co.data != p)
 	free_octet_string(&co);
     if (ret)
-	errx(1, "hx509_cms_verify_signed: %d", ret);
+	hx509_err(context, 1, ret, "hx509_cms_verify_signed");
 
     printf("signers:\n");
     hx509_certs_iter(context, signers, hx509_ci_print_names, stdout);
@@ -425,17 +425,15 @@ static void
 print_certificate(hx509_context hxcontext, hx509_cert cert, int verbose)
 {
     hx509_name name;
+    const char *fn;
     char *str;
     int ret;
     
-    {
-	const char *fn = hx509_cert_get_friendly_name(cert);
-	if (fn)
-	    printf("    friendly name: %s\n", fn);
-	printf("    private key: %s\n", 
-	       _hx509_cert_private_key(cert) ? "yes" : "no");
-    }
-
+    fn = hx509_cert_get_friendly_name(cert);
+    if (fn)
+	printf("    friendly name: %s\n", fn);
+    printf("    private key: %s\n", 
+	   _hx509_cert_private_key(cert) ? "yes" : "no");
 
     ret = hx509_cert_get_issuer(cert, &name);
     hx509_name_to_string(name, &str);
@@ -476,7 +474,7 @@ print_f(hx509_context hxcontext, void *ctx, hx509_cert cert)
 {
     struct print_s *s = ctx;
     
-    printf("cert: %d", s->counter++);
+    printf("cert: %d\n", s->counter++);
     print_certificate(context, cert, s->verbose);
 
     return 0;
