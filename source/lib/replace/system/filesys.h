@@ -1,3 +1,5 @@
+#ifndef _system_filesys_h
+#define _system_filesys_h
 /* 
    Unix SMB/CIFS implementation.
 
@@ -165,3 +167,4 @@
 #define SEEK_SET 0
 #endif
 
+#endif

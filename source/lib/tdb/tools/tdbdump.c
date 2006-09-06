@@ -18,30 +18,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _SAMBA_BUILD_
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
-#include <time.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <ctype.h>
-#include <signal.h>
+#include "replace.h"
 #include "tdb.h"
-
-#else
-
-#include "includes.h"
-#include "lib/tdb/include/tdb.h"
 #include "system/locale.h"
 #include "system/filesys.h"
-
-#endif
 
 static void print_data(TDB_DATA d)
 {

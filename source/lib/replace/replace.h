@@ -29,8 +29,11 @@
 #define _replace_h
 
 #include "config.h"
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <errno.h>
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 #include "lib/replace/win32/replace.h"
@@ -49,6 +52,15 @@
 #elif HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
+
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
 
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
@@ -70,7 +82,7 @@ void *rep_memmove(void *dest,const void *src,int size);
 #endif
 
 #if !defined(HAVE_MKTIME) || !defined(HAVE_TIMEGM)
-#include <sys/time.h>
+#include "system/time.h"
 #endif
 
 #ifndef HAVE_MKTIME
@@ -285,7 +297,5 @@ typedef int bool;
 #ifndef __STRING
 #define __STRING(x)    #x
 #endif
-
-
 
 #endif

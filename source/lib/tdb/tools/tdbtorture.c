@@ -2,32 +2,11 @@
    writers - that stresses the locking code. 
 */
 
-#ifndef _SAMBA_BUILD_
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <time.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <stdarg.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/wait.h>
+#include "replace.h"
 #include "tdb.h"
-
-#else
-
-#include "includes.h"
-#include "lib/tdb/include/tdb.h"
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/filesys.h"
-
-#endif
 
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>

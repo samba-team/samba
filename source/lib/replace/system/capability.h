@@ -1,7 +1,9 @@
+#ifndef _system_capability_h
+#define _system_capability_h
 /* 
    Unix SMB/CIFS implementation.
 
-   printing system include wrappers
+   capability system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
    
@@ -20,23 +22,20 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef AIX
-#define DEFAULT_PRINTING PRINT_AIX
-#define PRINTCAP_NAME "/etc/qconfig"
+#ifdef HAVE_SYS_CAPABILITY_H
+
+#if defined(BROKEN_REDHAT_7_SYSTEM_HEADERS) && !defined(_I386_STATFS_H)
+#define _I386_STATFS_H
+#define BROKEN_REDHAT_7_STATFS_WORKAROUND
 #endif
 
-#ifdef HPUX
-#define DEFAULT_PRINTING PRINT_HPUX
+#include <sys/capability.h>
+
+#ifdef BROKEN_REDHAT_7_STATFS_WORKAROUND
+#undef _I386_STATFS_H
+#undef BROKEN_REDHAT_7_STATFS_WORKAROUND
 #endif
 
-#ifdef QNX
-#define DEFAULT_PRINTING PRINT_QNX
 #endif
 
-#ifndef DEFAULT_PRINTING
-#define DEFAULT_PRINTING PRINT_BSD
 #endif
-#ifndef PRINTCAP_NAME
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
-

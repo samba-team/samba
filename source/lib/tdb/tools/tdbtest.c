@@ -1,26 +1,9 @@
 /* a test program for tdb - the trivial database */
 
-#ifndef _SAMBA_BUILD_
-#include <stdlib.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <signal.h>
+#include "replace.h"
 #include "tdb.h"
-#else
-
-#include "includes.h"
 #include "system/filesys.h"
 #include "system/time.h"
-#include "lib/tdb/include/tdb.h"
-
-#endif
 
 #include <gdbm.h>
 

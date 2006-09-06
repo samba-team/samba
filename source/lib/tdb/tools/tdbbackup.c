@@ -41,33 +41,9 @@
 
  */
 
-#ifndef _SAMBA_BUILD_
-#if HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
-#include <time.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <ctype.h>
-#include <signal.h>
-
-#else
-
-#include "includes.h"
-#include "system/filesys.h"
-
-#endif
-
+#include "replace.h"
 #include "tdb.h"
+#include "system/filesys.h"
 
 /*
   see if one file is newer than another

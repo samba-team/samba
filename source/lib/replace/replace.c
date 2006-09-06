@@ -24,20 +24,10 @@
 
 #include "replace.h"
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-
-#if HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
-#if HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
+#include "system/filesys.h"
+#include "system/time.h"
+#include "system/passwd.h"
+#include "system/syslog.h"
 
 void replace_dummy(void);
 void replace_dummy(void) {}

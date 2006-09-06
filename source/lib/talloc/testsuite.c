@@ -28,18 +28,8 @@
 #include "version.h"
 #endif /* _SAMBA_BUILD_ */
 
-#include "config.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#ifdef HAVE_STDARG_H
-#include <stdarg.h>
-#endif
-
-#include <sys/time.h>
-#include <time.h>
-
+#include "replace.h"
+#include "system/time.h"
 #include "talloc.h"
 
 #ifndef False

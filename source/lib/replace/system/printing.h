@@ -1,7 +1,10 @@
+#ifndef _system_printing_h
+#define _system_printing_h
+
 /* 
    Unix SMB/CIFS implementation.
 
-   syslog system include wrappers
+   printing system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
    
@@ -20,44 +23,24 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef HAVE_SYSLOG_H
-#include <syslog.h>
-#else
-#ifdef HAVE_SYS_SYSLOG_H
-#include <sys/syslog.h>
-#endif
+#ifdef AIX
+#define DEFAULT_PRINTING PRINT_AIX
+#define PRINTCAP_NAME "/etc/qconfig"
 #endif
 
-/* For sys_adminlog(). */
-#ifndef LOG_EMERG
-#define LOG_EMERG       0       /* system is unusable */
+#ifdef HPUX
+#define DEFAULT_PRINTING PRINT_HPUX
 #endif
 
-#ifndef LOG_ALERT
-#define LOG_ALERT       1       /* action must be taken immediately */
+#ifdef QNX
+#define DEFAULT_PRINTING PRINT_QNX
 #endif
 
-#ifndef LOG_CRIT
-#define LOG_CRIT        2       /* critical conditions */
+#ifndef DEFAULT_PRINTING
+#define DEFAULT_PRINTING PRINT_BSD
+#endif
+#ifndef PRINTCAP_NAME
+#define PRINTCAP_NAME "/etc/printcap"
 #endif
 
-#ifndef LOG_ERR
-#define LOG_ERR         3       /* error conditions */
 #endif
-
-#ifndef LOG_WARNING
-#define LOG_WARNING     4       /* warning conditions */
-#endif
-
-#ifndef LOG_NOTICE
-#define LOG_NOTICE      5       /* normal but significant condition */
-#endif
-
-#ifndef LOG_INFO
-#define LOG_INFO        6       /* informational */
-#endif
-
-#ifndef LOG_DEBUG
-#define LOG_DEBUG       7       /* debug-level messages */
-#endif
-

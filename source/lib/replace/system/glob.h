@@ -1,7 +1,9 @@
+#ifndef _system_glob_h
+#define _system_glob_h
 /* 
    Unix SMB/CIFS implementation.
 
-   time system include wrappers
+   glob system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
    
@@ -20,22 +22,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef TIME_WITH_SYS_TIME
-#include <sys/time.h>
-#include <time.h>
-#else
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
+#ifdef HAVE_GLOB_H
+#include <glob.h>
 #endif
 
-#ifdef HAVE_UTIME_H
-#include <utime.h>
+#ifdef HAVE_FNMATCH_H
+#include <fnmatch.h>
 #endif
 
-#ifndef HAVE_TIMEGM
-time_t timegm(struct tm *tm);
 #endif
-

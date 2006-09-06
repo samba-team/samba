@@ -1,7 +1,10 @@
+#ifndef _system_locale_h
+#define _system_locale_h
+
 /* 
    Unix SMB/CIFS implementation.
 
-   select system include wrappers
+   locale include wrappers
 
    Copyright (C) Andrew Tridgell 2004
    
@@ -20,19 +23,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
+#ifdef HAVE_CTYPE_H
+#include <ctype.h>
 #endif
 
-#ifndef SELECT_CAST
-#define SELECT_CAST
+#ifdef HAVE_LOCALE_H
+#include <locale.h>
 #endif
 
-/* use epoll if it is available */
-#if defined(HAVE_EPOLL_CREATE) && defined(HAVE_SYS_EPOLL_H)
-#define WITH_EPOLL 1
-#endif
-
-#if WITH_EPOLL
-#include <sys/epoll.h>
 #endif

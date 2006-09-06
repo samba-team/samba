@@ -1,3 +1,6 @@
+#ifndef _system_kerberos_h
+#define _system_kerberos_h
+
 /* 
    Unix SMB/CIFS implementation.
 
@@ -125,4 +128,6 @@
 #include "heimdal/lib/krb5/krb5.h"
 #include "heimdal/lib/gssapi/gssapi.h"
 #include "heimdal/lib/com_err/com_err.h"
+#endif
+
 #endif

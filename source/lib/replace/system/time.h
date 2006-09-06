@@ -1,7 +1,9 @@
+#ifndef _system_time_h
+#define _system_time_h
 /* 
    Unix SMB/CIFS implementation.
 
-   shared memory system include wrappers
+   time system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
    
@@ -20,29 +22,19 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#if defined(HAVE_SYS_IPC_H)
-#include <sys/ipc.h>
-#endif /* HAVE_SYS_IPC_H */
-
-#if defined(HAVE_SYS_SHM_H)
-#include <sys/shm.h>
-#endif /* HAVE_SYS_SHM_H */
-
-#ifdef HAVE_SYS_MMAN_H
-#include <sys/mman.h>
+#ifdef TIME_WITH_SYS_TIME
+#include <sys/time.h>
+#include <time.h>
+#else
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
 #endif
 
-/* NetBSD doesn't have these */
-#ifndef SHM_R
-#define SHM_R 0400
+#ifdef HAVE_UTIME_H
+#include <utime.h>
 #endif
 
-#ifndef SHM_W
-#define SHM_W 0200
 #endif
-
-
-#ifndef MAP_FILE
-#define MAP_FILE 0
-#endif
-
