@@ -22,7 +22,7 @@
 */
 
 #ifndef NO_CONFIG_H /* for some tests */
-#include "replace.h"
+#include "lib/replace/replace.h"
 #endif
 
 #include "local.h"

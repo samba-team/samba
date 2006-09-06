@@ -110,7 +110,7 @@ PUBLIC_HEADERS = registry.h
 INSTALLDIR = BINDIR
 OBJ_FILES = tools/regdiff.o
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG registry POPT_EXT POPT_SAMBA POPT_CREDENTIALS
+		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regdiff.1
 # End BINARY regdiff
 ################################################
@@ -121,7 +121,7 @@ MANPAGE = man/regdiff.1
 INSTALLDIR = BINDIR
 OBJ_FILES = tools/regpatch.o
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG registry POPT_EXT POPT_SAMBA POPT_CREDENTIALS
+		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regpatch.1
 # End BINARY regpatch
 ################################################
@@ -132,7 +132,7 @@ MANPAGE = man/regpatch.1
 INSTALLDIR = BINDIR
 OBJ_FILES = tools/regshell.o
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG POPT_EXT registry POPT_SAMBA POPT_CREDENTIALS \
+		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS \
 		SMBREADLINE
 MANPAGE = man/regshell.1
 # End BINARY regshell
@@ -144,7 +144,7 @@ MANPAGE = man/regshell.1
 INSTALLDIR = BINDIR
 OBJ_FILES = tools/regtree.o
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG POPT_EXT registry POPT_SAMBA POPT_CREDENTIALS
+		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regtree.1
 # End BINARY regtree
 ################################################
