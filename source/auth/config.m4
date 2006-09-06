@@ -17,3 +17,13 @@ SMB_ENABLE(CRYPT,YES)
 SMB_EXT_LIB(CRYPT, $CRYPT_LIBS)
 
 AC_CHECK_FUNCS(crypt16 getauthuid getpwanam)
+
+AC_CHECK_HEADERS(sasl/sasl.h)
+AC_CHECK_LIB_EXT(sasl2, SASL_LIBS, sasl_client_init)
+SMB_EXT_LIB(SASL, $SASL_LIBS)
+
+if test x"$ac_cv_header_sasl_sasl_h" = x"yes" -a x"$ac_cv_lib_ext_sasl2_sasl_client_init" = x"yes";then
+	SMB_ENABLE(cyrus_sasl,YES)
+else
+	SMB_ENABLE(cyrus_sasl, NO)
+fi
