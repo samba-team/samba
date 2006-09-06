@@ -683,14 +683,17 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
 	     CK_OBJECT_HANDLE object,
 	     void *ptr, CK_ATTRIBUTE *query, int num_query)
 {
-    heim_octet_string localKeyId;
     struct p11_collector *ctx = ptr;
     hx509_cert cert;
     Certificate t;
     int ret;
 
-    localKeyId.data = query[0].pValue;
-    localKeyId.length = query[0].ulValueLen;
+    if ((CK_LONG)query[0].ulValueLen == -1 ||
+	(CK_LONG)query[1].ulValueLen == -1) 
+    {
+	return 0;
+    }
+
 
     ret = decode_Certificate(query[1].pValue, query[1].ulValueLen,
 			     &t, NULL);
@@ -708,11 +711,27 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
 
     _hx509_cert_set_release(cert, p11_cert_release, p);
 
+    {
+	heim_octet_string data;
+	
+	data.data = query[0].pValue;
+	data.length = query[0].ulValueLen;
+	
+	_hx509_set_cert_attribute(ctx->context,
+				  cert,
+				  oid_id_pkcs_9_at_localKeyId(),
+				  &data);
+    }
 
-    _hx509_set_cert_attribute(ctx->context,
-			      cert,
-			      oid_id_pkcs_9_at_localKeyId(),
-			      &localKeyId);
+    if ((CK_LONG)query[2].ulValueLen != -1) {
+	char *str;
+
+	asprintf(&str, "%.*s", (int)query[2].ulValueLen, query[2].pValue);
+	if (str) {
+	    hx509_cert_set_friendly_name(cert, str);
+	    free(str);
+	}
+    }
 
     ret = _hx509_collector_certs_add(ctx->context, ctx->c, cert);
     if (ret) {
@@ -737,9 +756,10 @@ p11_list_keys(hx509_context context,
     CK_ATTRIBUTE search_data[] = {
 	{CKA_CLASS, &key_class, sizeof(key_class)},
     };
-    CK_ATTRIBUTE query_data[2] = {
+    CK_ATTRIBUTE query_data[3] = {
 	{CKA_ID, NULL, 0},
-	{CKA_VALUE, NULL, 0}
+	{CKA_VALUE, NULL, 0},
+	{CKA_LABEL, NULL, 0}
     };
     int ret;
 
@@ -763,7 +783,7 @@ p11_list_keys(hx509_context context,
     key_class = CKO_CERTIFICATE;
     ret = iterate_entries(p, slot, session,
 			  search_data, 1,
-			  query_data, 2,
+			  query_data, 3,
 			  collect_cert, &ctx);
     if (ret)
 	goto out;
