@@ -28,6 +28,7 @@
 
 #include "includes.h"
 #include "ldb/include/includes.h"
+#include "system/locale.h"
 
 /*
   default handler that just copies a ldb_val.
