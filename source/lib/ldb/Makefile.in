@@ -19,7 +19,7 @@ EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
 
 CFLAGS=-I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
-       -I@poptdir@ -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
+       @POPT_CFLAGS@ -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
 
 LIB_FLAGS=-Llib -lldb @LIBS@
