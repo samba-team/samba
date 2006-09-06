@@ -10,6 +10,7 @@ OBJ_FILES = \
 OBJ_FILES = smbcalls_config.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_config
+PUBLIC_DEPENDENCIES = LIBREPLACE
 
 [MODULE::smbcalls_ldb]
 OBJ_FILES = smbcalls_ldb.o
@@ -31,32 +32,38 @@ PUBLIC_DEPENDENCIES = LIBSAMBA3
 OBJ_FILES = smbcalls_rand.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_random
+PUBLIC_DEPENDENCIES = LIBREPLACE
 
 [MODULE::smbcalls_nss]
 OBJ_FILES = smbcalls_nss.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_nss
+PUBLIC_DEPENDENCIES = LIBREPLACE
 
 [MODULE::smbcalls_data]
 OBJ_FILES = smbcalls_data.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_datablob
+PUBLIC_DEPENDENCIES = LIBREPLACE
 
 [MODULE::smbcalls_auth]
 OBJ_FILES = smbcalls_auth.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_auth
 PUBLIC_DEPENDENCIES = auth
+PUBLIC_DEPENDENCIES = LIBREPLACE
 
 [MODULE::smbcalls_string]
 OBJ_FILES = smbcalls_string.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_string
+PUBLIC_DEPENDENCIES = LIBREPLACE
 
 [MODULE::smbcalls_sys]
 OBJ_FILES = smbcalls_sys.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_system
+PUBLIC_DEPENDENCIES = LIBREPLACE
 
 #######################
 # Start LIBRARY smbcalls
@@ -76,7 +83,7 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = \
 		EJS LIBSAMBA-UTIL \
 		EJSRPC MESSAGING \
-		LIBSAMBA-NET LIBCLI_SMB LIBPOPT \
+		LIBSAMBA-NET LIBCLI_SMB LIBPOPT LIBREPLACE \
 		POPT_CREDENTIALS POPT_SAMBA \
 		dcerpc \
 		NDR_TABLE
