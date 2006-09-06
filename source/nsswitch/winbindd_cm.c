@@ -757,7 +757,8 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	if ((addrs == NULL) || (dcnames == NULL))
 		return False;
 
-	if ( !open_any_socket_out(addrs, num_addrs, 10000, &fd_index, fd) ) 
+	/* 5 second timeout. */
+	if ( !open_any_socket_out(addrs, num_addrs, 5000, &fd_index, fd) ) 
 	{
 		for (i=0; i<num_dcs; i++) {
 			add_failed_connection_entry(domain->name,
@@ -847,7 +848,8 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 445, &addrs, &num_addrs);
 			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 139, &addrs, &num_addrs);
 
-			if (!open_any_socket_out(addrs, num_addrs, 10000, &dummy, &fd)) {
+			/* 5 second timeout. */
+			if (!open_any_socket_out(addrs, num_addrs, 5000, &dummy, &fd)) {
 				domain->online = False;
 				fd = -1;
 			}
@@ -890,18 +892,40 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 {
+	/* We're closing down a possibly dead
+	   connection. Don't have impossibly long (10s) timeouts. */
+
+	if (conn->cli) {
+		cli_set_timeout(conn->cli, 1000); /* 1 second. */
+	}
+
 	if (conn->samr_pipe != NULL) {
-		cli_rpc_pipe_close(conn->samr_pipe);
+		if (!cli_rpc_pipe_close(conn->samr_pipe)) {
+			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+			if (conn->cli) {
+				cli_set_timeout(conn->cli, 500);
+			}
+		}
 		conn->samr_pipe = NULL;
 	}
 
 	if (conn->lsa_pipe != NULL) {
-		cli_rpc_pipe_close(conn->lsa_pipe);
+		if (!cli_rpc_pipe_close(conn->lsa_pipe)) {
+			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+			if (conn->cli) {
+				cli_set_timeout(conn->cli, 500);
+			}
+		}
 		conn->lsa_pipe = NULL;
 	}
 
 	if (conn->netlogon_pipe != NULL) {
-		cli_rpc_pipe_close(conn->netlogon_pipe);
+		if (!cli_rpc_pipe_close(conn->netlogon_pipe)) {
+			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+			if (conn->cli) {
+				cli_set_timeout(conn->cli, 500);
+			}
+		}
 		conn->netlogon_pipe = NULL;
 	}
 
