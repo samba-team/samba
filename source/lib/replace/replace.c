@@ -28,6 +28,7 @@
 #include "system/time.h"
 #include "system/passwd.h"
 #include "system/syslog.h"
+#include "system/network.h"
 
 void replace_dummy(void);
 void replace_dummy(void) {}
