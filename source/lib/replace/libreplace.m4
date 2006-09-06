@@ -70,7 +70,9 @@ AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid strlcpy strlcat innetgr initgroups memmove strdup)
 AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp)
-AC_CHECK_DECLS([setresuid, setresgid, errno])
+AC_HAVE_DECL(setresuid, [#include <unistd.h>])
+AC_HAVE_DECL(setresgid, [#include <unistd.h>])
+AC_HAVE_DECL(errno, [#include <errno.h>])
 
 AC_CACHE_CHECK([for secure mkstemp],samba_cv_HAVE_SECURE_MKSTEMP,[
 AC_TRY_RUN([#include <stdlib.h>
