@@ -1,27 +1,3 @@
-SAVE_LIBS="$LIBS"
-SAVE_CFLAGS="$CFLAGS"
-SAVE_CPPFLAGS="$CPPFLAGS"
-SAVE_LDFLAGS="$LDFLAGS"
-
-LIBS=""
-CFLAGS=""
-CPPFLAGS=""
-LDFLAGS=""
-
 m4_include(lib/popt/libpopt.m4)
-
-POPT_EXT_LIBS="$LIBS $POPTOBJ"
-POPT_EXT_CFLAGS="$CFLAGS"
-POPT_EXT_CPPFLAGS="$CPPFLAGS"
-POPT_EXT_LDFLAGS="$LDFLAGS"
-
-LIBS="$SAVE_LIBS"
-CFLAGS="$SAVE_CFLAGS"
-CPPFLAGS="$SAVE_CPPFLAGS"
-LDFLAGS="$SAVE_LDFLAGS"
-
-SMB_EXT_LIB(POPT_EXT,
-	    [${POPT_EXT_LIBS}],
-	    [${POPT_EXT_CFLAGS}],
-	    [${POPT_EXT_CPPFLAGS}],
-	    [${POPT_EXT_LDFLAGS}])
+SMB_SUBSYSTEM(LIBPOPT,
+	[lib/popt/findme.o lib/popt/popt.o lib/popt/poptconfig.o lib/popt/popthelp.o lib/popt/poptparse.o], [], [-I$srcdir/lib/popt])
