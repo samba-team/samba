@@ -513,3 +513,81 @@ void ndr_print_unixinfo_GetPWUid(struct ndr_print *ndr, const char *name, int fl
 	ndr->depth--;
 }
 
+const struct dcerpc_interface_call unixinfo_calls[] = {
+	{
+		"unixinfo_SidToUid",
+		sizeof(struct unixinfo_SidToUid),
+		(ndr_push_flags_fn_t) ndr_push_unixinfo_SidToUid,
+		(ndr_pull_flags_fn_t) ndr_pull_unixinfo_SidToUid,
+		(ndr_print_function_t) ndr_print_unixinfo_SidToUid,
+		False,
+	},
+	{
+		"unixinfo_UidToSid",
+		sizeof(struct unixinfo_UidToSid),
+		(ndr_push_flags_fn_t) ndr_push_unixinfo_UidToSid,
+		(ndr_pull_flags_fn_t) ndr_pull_unixinfo_UidToSid,
+		(ndr_print_function_t) ndr_print_unixinfo_UidToSid,
+		False,
+	},
+	{
+		"unixinfo_SidToGid",
+		sizeof(struct unixinfo_SidToGid),
+		(ndr_push_flags_fn_t) ndr_push_unixinfo_SidToGid,
+		(ndr_pull_flags_fn_t) ndr_pull_unixinfo_SidToGid,
+		(ndr_print_function_t) ndr_print_unixinfo_SidToGid,
+		False,
+	},
+	{
+		"unixinfo_GidToSid",
+		sizeof(struct unixinfo_GidToSid),
+		(ndr_push_flags_fn_t) ndr_push_unixinfo_GidToSid,
+		(ndr_pull_flags_fn_t) ndr_pull_unixinfo_GidToSid,
+		(ndr_print_function_t) ndr_print_unixinfo_GidToSid,
+		False,
+	},
+	{
+		"unixinfo_GetPWUid",
+		sizeof(struct unixinfo_GetPWUid),
+		(ndr_push_flags_fn_t) ndr_push_unixinfo_GetPWUid,
+		(ndr_pull_flags_fn_t) ndr_pull_unixinfo_GetPWUid,
+		(ndr_print_function_t) ndr_print_unixinfo_GetPWUid,
+		False,
+	},
+	{ NULL, 0, NULL, NULL, NULL, False }
+};
+
+const char * const unixinfo_endpoint_strings[] = {
+	"ncacn_np:[\\pipe\\unixinfo]", 
+	"ncacn_ip_tcp:", 
+	"ncalrpc:", 
+};
+
+const struct dcerpc_endpoint_list unixinfo_endpoints = {
+	.count	= 3,
+	.names	= unixinfo_endpoint_strings
+};
+
+const char * const unixinfo_authservice_strings[] = {
+	"host", 
+};
+
+const struct dcerpc_authservice_list unixinfo_authservices = {
+	.count	= 3,
+	.names	= unixinfo_authservice_strings
+};
+
+
+const struct dcerpc_interface_table dcerpc_table_unixinfo = {
+	.name		= "unixinfo",
+	.syntax_id	= {
+		{0x9c54e310,0xa955,0x4885,{0xbd,0x31},{0x78,0x78,0x71,0x47,0xdf,0xa6}},
+		DCERPC_UNIXINFO_VERSION
+	},
+	.helpstring	= DCERPC_UNIXINFO_HELPSTRING,
+	.num_calls	= 5,
+	.calls		= unixinfo_calls,
+	.endpoints	= &unixinfo_endpoints,
+	.authservices	= &unixinfo_authservices
+};
+
