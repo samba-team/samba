@@ -133,7 +133,7 @@ sub create_output($$)
 			next if $elem == $part;
 
 			push(@{$part->{PUBLIC_CFLAGS}}, @{$elem->{CPPFLAGS}}) if (defined(@{$elem->{CPPFLAGS}}))
-									      and ($#{$elem->{CPPFLAGS}} > 0);
+									      and ($#{$elem->{CPPFLAGS}} >= 0);
 
 			next if not defined($elem->{CFLAGS});
 			next if $elem->{CFLAGS} eq "";
