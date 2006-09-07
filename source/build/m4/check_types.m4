@@ -5,16 +5,6 @@ dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
 
-dnl Add #include for broken IRIX header files
-case "$host_os" in
-	*irix6*) AC_ADD_INCLUDE(<standards.h>)
-		;;
-esac
-
-AC_C_BIGENDIAN
-
-AC_HEADER_STDC
-
 AC_CHECK_SIZEOF(short,cross)
 AC_CHECK_SIZEOF(int,cross)
 AC_CHECK_SIZEOF(long,cross)
