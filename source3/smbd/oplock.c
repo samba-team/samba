@@ -348,6 +348,12 @@ static void oplock_timeout_handler(struct timed_event *te,
 {
 	files_struct *fsp = (files_struct *)private_data;
 
+	/* Ensure we always remove this event. */
+	if (fsp->oplock_timeout != NULL) {
+		/* Remove the timed event handler. */
+		TALLOC_FREE(fsp->oplock_timeout);
+		fsp->oplock_timeout = NULL;
+	}
 	DEBUG(0, ("Oplock break failed for file %s -- replying anyway\n", fsp->fsp_name));
 	global_client_failed_oplock_break = True;
 	remove_oplock(fsp);
