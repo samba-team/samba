@@ -317,7 +317,8 @@
 		SID_NAME_WKN_GRP  = 5, /* well-known group */
 		SID_NAME_DELETED  = 6, /* deleted account: needed for c2 rating */
 		SID_NAME_INVALID  = 7, /* invalid account */
-		SID_NAME_UNKNOWN  = 8  /* oops. */
+		SID_NAME_UNKNOWN  = 8, /* oops. */
+		SID_NAME_COMPUTER = 9  /* machine */
 	} lsa_SidType;
 
 	typedef struct {
