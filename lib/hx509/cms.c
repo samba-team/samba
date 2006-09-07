@@ -205,12 +205,13 @@ find_CMSIdentifier(hx509_context context,
 	    len = hex_encode(ki->data, ki->length, &str);
 	    if (len < 0)
 		hx509_clear_error_string(context);
-	    else
+	    else {
 		hx509_set_error_string(context, 0,
 				       HX509_CMS_NO_RECIPIENT_CERTIFICATE,
 				       "Failed to find cert with id: %s",
 				       str);
-	    free(str);
+		free(str);
+	    }
 	    
 	    return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
 	}
