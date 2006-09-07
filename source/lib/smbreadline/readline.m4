@@ -68,6 +68,9 @@ AC_CHECK_LIB(readline, rl_completion_matches,
 	     [],
 	     [$TERMLIBS])
 
+# not all readline libs have rl_event_hook
+AC_CHECK_DECLS(rl_event_hook, [], [], [#include <readline/readline.h>])
+
 AC_MSG_CHECKING(whether to use extern readline)
 if test x"$EXTERNAL_READLINE" = x"yes"; then
 	AC_MSG_RESULT(yes)
