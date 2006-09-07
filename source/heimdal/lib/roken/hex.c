@@ -35,7 +35,7 @@
 #include <config.h>
 RCSID("$Id: hex.c,v 1.8 2006/01/09 17:09:29 lha Exp $");
 #endif
-#include "roken.h"
+#include <roken.h>
 #include <ctype.h>
 #include "hex.h"
 
