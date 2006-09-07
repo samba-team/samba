@@ -6,15 +6,16 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+
 #include <stdarg.h>
 #include <string.h>
 #include <core/nterr.h>
-#include <ndr/ndr_misc.h>
-#include <ndr/ndr_dcerpc.h>
-#include "gen_ndr/ndr_unixinfo.h"
+#include <gen_ndr/ndr_misc.h>
+#include <gen_ndr/ndr_dcerpc.h>
+#include "librpc/gen_ndr/ndr_unixinfo.h"
 #include <dcerpc.h>
 
-#include <ndr/ndr_security.h>
+#include <gen_ndr/ndr_security.h>
 NTSTATUS ndr_push_unixinfo_GetPWUidInfo(struct ndr_push *ndr, int ndr_flags, const struct unixinfo_GetPWUidInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -513,5 +514,4 @@ void ndr_print_unixinfo_GetPWUid(struct ndr_print *ndr, const char *name, int fl
 	}
 	ndr->depth--;
 }
-
 
