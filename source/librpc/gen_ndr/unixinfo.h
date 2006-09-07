@@ -5,7 +5,7 @@
 #ifndef _HEADER_unixinfo
 #define _HEADER_unixinfo
 
-#include "librpc/ndr/security.h"
+#include "librpc/gen_ndr/security.h"
 struct unixinfo_GetPWUidInfo {
 	NTSTATUS status;/* [keepref] */
 	const char *homedir;/* [unique,keepref,charset(UTF8)] */
