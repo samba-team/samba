@@ -25,7 +25,6 @@ PRIVATE_PROTO_HEADER = simple/proto.h
 OBJ_FILES = \
 		simple/vfs_simple.o \
 		simple/svfs_util.o
-PUBLIC_DEPENDENCIES = LIBREPLACE
 # End MODULE ntvfs_simple
 ################################################
 
@@ -39,7 +38,6 @@ PRIVATE_PROTO_HEADER = cifs_posix_cli/proto.h
 OBJ_FILES = \
                 cifs_posix_cli/vfs_simple.o \
                 cifs_posix_cli/svfs_util.o
-PUBLIC_DEPENDENCIES = LIBREPLACE
 # End MODULE ntvfs_cifs_posix_cli
 ################################################
 
@@ -75,7 +73,6 @@ SUBSYSTEM = ntvfs
 INIT_FUNCTION = ntvfs_nbench_init 
 OBJ_FILES = \
 		nbench/vfs_nbench.o
-PUBLIC_DEPENDENCIES = LIBREPLACE
 # End MODULE ntvfs_nbench
 ################################################
 
@@ -93,7 +90,6 @@ OBJ_FILES = \
 		ntvfs_generic.o \
 		ntvfs_interface.o \
 		ntvfs_util.o
-PUBLIC_DEPENDENCIES = LIBREPLACE
 #
 # End SUBSYSTEM NTVFS
 ################################################
