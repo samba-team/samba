@@ -101,6 +101,7 @@ static int gensec_sasl_get_password(sasl_conn_t *conn, void *context, int id,
 	}
 	secret->len = strlen(password);
 	safe_strcpy(secret->data, password, secret->len+1);
+	*psecret = secret;
 	return SASL_OK;
 }
 
@@ -119,9 +120,16 @@ static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security
 	struct socket_address *remote_socket_addr = gensec_get_peer_addr(gensec_security);
 	char *local_addr = NULL;
 	char *remote_addr = NULL;
-	sasl_callback_t callbacks[5];
 	int sasl_ret;
 
+	sasl_callback_t *callbacks;
+
+	gensec_sasl_state = talloc(gensec_security, struct gensec_sasl_state);
+	if (!gensec_sasl_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	callbacks = talloc_array(gensec_sasl_state, sasl_callback_t, 5);
 	callbacks[0].id = SASL_CB_USER;
 	callbacks[0].proc = gensec_sasl_get_user;
 	callbacks[0].context = gensec_security;
@@ -141,11 +149,6 @@ static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security
 	callbacks[4].id = SASL_CB_LIST_END;
 	callbacks[4].proc = NULL;
 	callbacks[4].context = NULL;
-
-	gensec_sasl_state = talloc(gensec_security, struct gensec_sasl_state);
-	if (!gensec_sasl_state) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	gensec_security->private_data = gensec_sasl_state;
 
@@ -342,7 +345,7 @@ int gensec_sasl_log(void *context,
 		debug_level = 0;
 		break;
 	}
-	DEBUG(debug_level, ("gensec_sasl: %s", message));
+	DEBUG(debug_level, ("gensec_sasl: %s\n", message));
 
 	return SASL_OK;
 }
@@ -351,17 +354,20 @@ NTSTATUS gensec_sasl_init(void)
 {
 	NTSTATUS ret;
 	int sasl_ret, i;
-	sasl_callback_t callbacks[2];
 	const char **sasl_mechs;
 	
-	callbacks[0].id = SASL_CB_LOG;
-	callbacks[0].proc = gensec_sasl_log;
-	callbacks[0].context = NULL;
-
-	callbacks[1].id = SASL_CB_LIST_END;
-	callbacks[1].proc = gensec_sasl_log;
-	callbacks[1].context = NULL;
-
+	static const sasl_callback_t callbacks[] = {
+		{ 
+			.id = SASL_CB_LOG,
+			.proc = gensec_sasl_log,
+			.context = NULL,
+		},
+		{
+			.id = SASL_CB_LIST_END,
+			.proc = gensec_sasl_log,
+			.context = NULL,
+		}
+	};
 	sasl_ret = sasl_client_init(callbacks);
 	
 	if (sasl_ret == SASL_NOMECH) {
