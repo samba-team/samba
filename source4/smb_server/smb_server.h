@@ -382,7 +382,7 @@ struct smbsrv_connection {
 /* useful way of catching wct errors with file and line number */
 #define SMBSRV_CHECK_WCT(req, wcount) do { \
 	if ((req)->in.wct != (wcount)) { \
-		DEBUG(1,("Unexpected WCT %d at %s(%d) - expected %d\n", \
+		DEBUG(1,("Unexpected WCT %u at %s(%d) - expected %d\n", \
 			 (req)->in.wct, __FILE__, __LINE__, wcount)); \
 		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror)); \
 		return; \
