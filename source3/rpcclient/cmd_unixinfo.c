@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
-#include "rpc_client/cli_unixinfo.h"
+#include "librpc/gen_ndr/cli_unixinfo.h"
 
 static NTSTATUS cmd_unixinfo_uid2sid(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
