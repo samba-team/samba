@@ -41,11 +41,15 @@ sub add_libreplace($)
 		return if ($n eq "LIBREPLACE");
 		return if ($n eq "LIBREPLACE_HOSTCC");
 	}
+	foreach my $n (@{$part->{PUBLIC_DEPENDENCIES}}) {
+		return if ($n eq "LIBREPLACE");
+		return if ($n eq "LIBREPLACE_HOSTCC");
+	}
 
 	if (defined($part->{USE_HOSTCC}) && $part->{USE_HOSTCC} eq "YES") {
-		push (@{$part->{PRIVATE_DEPENDENCIES}}, "LIBREPLACE_HOSTCC");
+		unshift (@{$part->{PRIVATE_DEPENDENCIES}}, "LIBREPLACE_HOSTCC");
 	} else {
-		push (@{$part->{PRIVATE_DEPENDENCIES}}, "LIBREPLACE");
+		unshift (@{$part->{PRIVATE_DEPENDENCIES}}, "LIBREPLACE");
 	}
 }
 

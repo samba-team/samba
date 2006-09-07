@@ -9,6 +9,5 @@ PUBLIC_HEADERS = samba3.h
 OBJ_FILES = smbpasswd.o tdbsam.o policy.o \
 		idmap.o winsdb.o samba3.o group.o \
 		registry.o secrets.o share_info.o
-PUBLIC_DEPENDENCIES = LIBREPLACE
 # End SUBSYSTEM LIBSAMBA3
 ################################################
