@@ -33,7 +33,11 @@
 
 #include "hx_locl.h"
 RCSID("$Id$");
+#ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
+#endif
+
+#ifdef HAVE_DLOPEN
 
 #include "pkcs11u.h"
 #include "pkcs11.h"
@@ -1155,8 +1159,12 @@ static struct hx509_keyset_ops keyset_pkcs11 = {
     p11_printinfo
 };
 
+#endif /* HAVE_DLOPEN */
+
 void
 _hx509_ks_pkcs11_register(hx509_context context)
 {
+#ifdef HAVE_DLOPEN
     _hx509_ks_register(context, &keyset_pkcs11);
+#endif
 }
