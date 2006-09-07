@@ -600,27 +600,14 @@ NSS_STATUS winbindd_request(int req_type,
  enable them
  ************************************************************************/
  
-/* Use putenv() instead of setenv() in these functions as not all
-   environments have the latter. */
-
 BOOL winbind_off( void )
 {
-#if HAVE_SETENV
 	setenv(WINBINDD_DONT_ENV, "1", 1);
 	return True;
-#else
-	static const char *s = WINBINDD_DONT_ENV "=1";
-	return putenv(s) != -1;
-#endif
 }
 
 BOOL winbind_on( void )
 {
-#if HAVE_SETENV
 	setenv(WINBINDD_DONT_ENV, "0", 1);
 	return True;
-#else
-	static const char *s = WINBINDD_DONT_ENV "=0";
-	return putenv(s) != -1;
-#endif
 }
