@@ -1,3 +1,36 @@
+2006-09-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* CMS.asn1 (CMSVersion): rename versions from v0 to CMSVersion_v0,
+	...
+	
+2006-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add TESTSeqOf for testing sequence generation code.
+
+	* check-gen.c: Add sequence tests.
+
+	* test.asn1: Add TESTSeqOf for testing sequence generation code.
+
+	* gen_seq.c: fix warning.
+
+	* gen_seq.c: make generated data work
+
+	* setchgpw2.asn1: enctype is part of the krb5 module now, use that
+	instead of locally defining it.
+
+	* Makefile.am: asn1_compile += gen_seq.c
+
+	* gen_locl.h: add new prototypes, remove unused ones.
+
+	* gen.c: Generate sequence function.
+
+	* main.c: add --sequence
+
+	* gen_seq.c: Add generated add_ and remove_ for "SEQUENCE OF
+	TType". I'm tried of writing realloc(foo->data,
+	sizeof(foo->data[0]) + (foo->len + 1)); Only generated for those
+	type that is enabled by the command flag --sequence.
+	
 2006-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* digest.asn1 (DigestRequest): add authid
