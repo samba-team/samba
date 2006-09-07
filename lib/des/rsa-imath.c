@@ -188,14 +188,6 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
 	return -1;
     size--; p++;
 
-    /* 
-     * Check for Daniel Bleichenbacher an attack on PKCS #1 v1.5
-     * signatures. Doesn't work on standard signatures and small key,
-     * so limit when we check for it.
-     */
-    if (size > 42 && (3 * 8 * size) >= BN_num_bits(rsa->n))
-	return -1;
-
     memmove(to, p, size);
 
     return size;
