@@ -19,7 +19,7 @@ for f in ${IDL_FILES}; do
 	basename=`basename $f .idl`
 	ndr="librpc/gen_ndr/ndr_$basename.c"
 
-	if [ -f $ndr && 0 ]; then
+	if [ -f $ndr ] && false; then
 		if [ "x`find librpc/idl/$f -newer $ndr -print`" = "xlibrpc/idl/$f" ]; then
 			list="$list librpc/idl/$f"
 		fi
@@ -42,10 +42,7 @@ fi
 ##
 
 for f in librpc/gen_ndr/ndr_*.c; do
-	cat $f | sed -e 's/^static //g' \
-		-e 's/^_PUBLIC_ //g' \
-		-e 's/#include <stdint.h>//g' \
-		-e 's/#include <stdbool.h>//g' > $f.new
+	cat $f | sed -e 's/^static //g' > $f.new
 	/bin/mv -f $f.new $f
 done
 
