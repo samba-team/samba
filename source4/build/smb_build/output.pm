@@ -107,6 +107,21 @@ sub generate_binary($)
 	$bin->{BINARY} = $bin->{NAME};
 }
 
+sub merge_array($$)
+{
+	# $dest is a reference to an array
+	# $src is an array
+	my ($dest, $src) = @_;
+
+	return unless defined($src);
+	return unless ($#{$src} >= 0);
+
+	foreach my $line (@{$src}) {
+		next if (grep /^$line$/, @{$$dest});
+		push(@{$$dest}, $line);
+	}
+}
+
 
 sub create_output($$)
 {
@@ -128,21 +143,18 @@ sub create_output($$)
 	foreach $part (values %{$depend}) {
 		next if not defined($part->{OUTPUT_TYPE});
 
+		merge_array(\$part->{FINAL_CFLAGS}, $part->{CPPFLAGS});
+		merge_array(\$part->{FINAL_CFLAGS}, $part->{CFLAGS});
+
 		foreach (@{$part->{UNIQUE_DEPENDENCIES_ALL}}) {
 			my $elem = $depend->{$_};
 			next if $elem == $part;
 
-			push(@{$part->{PUBLIC_CFLAGS}}, @{$elem->{CPPFLAGS}}) if (defined(@{$elem->{CPPFLAGS}}))
-									      and ($#{$elem->{CPPFLAGS}} >= 0);
-
-			next if not defined($elem->{CFLAGS});
-			next if $elem->{CFLAGS} eq "";
-			next if (grep /^$elem->{CFLAGS}$/, @{$part->{PUBLIC_CFLAGS}});
-			push(@{$part->{PUBLIC_CFLAGS}}, $elem->{CFLAGS});
+			merge_array(\$part->{FINAL_CFLAGS}, $elem->{CPPFLAGS});
+			merge_array(\$part->{FINAL_CFLAGS}, $elem->{CFLAGS});
 		}
 
-
-		# Always import the CFLAGS and CPPFLAGS of the unique dependencies
+		# Always import the link options of the unique dependencies
 		foreach (@{$part->{UNIQUE_DEPENDENCIES}}) {
 			my $elem = $depend->{$_};
 			next if $elem == $part;
@@ -155,14 +167,11 @@ sub create_output($$)
 	}
 
 	foreach $part (values %{$depend}) {
-		$part->{CFLAGS} .= " " . join(' ', @{$part->{PUBLIC_CFLAGS}}) if defined($part->{PUBLIC_CFLAGS});
-		$part->{CFLAGS} .= " " . join(' ', @{$part->{CPPFLAGS}}) if defined($part->{CPPFLAGS});
 		if (($part->{STANDARD_VISIBILITY} ne "default") and 
 			($config->{visibility_attribute} eq "yes")) {
-			$part->{CFLAGS} .=  " -fvisibility=$part->{STANDARD_VISIBILITY}";
+		    	push(@{$part->{FINAL_CFLAGS}}, "-fvisibility=$part->{STANDARD_VISIBILITY}");
 		}
 	}
-
 
 	return $depend;
 }
