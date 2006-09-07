@@ -208,7 +208,8 @@ sub fn_declare($$$)
 
 	if (has_property($fn, "public")) {
 		pidl_hdr "$decl;";
-		pidl "_PUBLIC_ $decl";
+		pidl "__attribute__((visibility(\"default\")))";
+		pidl "$decl";
 	} else {
 		pidl "static $decl";
 	}
@@ -1879,7 +1880,8 @@ sub ParseTypedefPrint($)
 
 	return if (has_property($e, "noprint"));
 
-	pidl "_PUBLIC_ void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $args)";
+	pidl "__attribute__((visibility(\"default\")))";
+	pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $args)";
 	pidl "{";
 	indent;
 	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}->($e->{DATA}, $e->{NAME});
@@ -1917,7 +1919,8 @@ sub ParseFunctionPrint($)
 
 	return if has_property($fn, "noprint");
 
-	pidl "_PUBLIC_ void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, const struct $fn->{NAME} *r)";
+	pidl "__attribute__((visibility(\"default\")))";
+	pidl "void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, const struct $fn->{NAME} *r)";
 	pidl "{";
 	indent;
 
@@ -2380,6 +2383,11 @@ sub GenerateIncludes()
 		pidl choose_header("librpc/gen_ndr/ndr_dcerpc.h", "gen_ndr/ndr_dcerpc.h");
 		pidl choose_header("librpc/rpc/dcerpc.h", "dcerpc.h"); #FIXME: This shouldn't be here!
 	}
+
+	pidl "/* define dummy __attribute__ for systems that don't have it */";
+	pidl "#if !(defined(__GNUC__) || defined(__GNUG__) || defined(__attribute__))";
+	pidl "#define __attribute__(p) /* nothing */";
+	pidl "#endif";
 }
 
 #####################################################################
