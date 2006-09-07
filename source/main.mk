@@ -317,15 +317,15 @@ unused_macros:
 
 .c.d:
 	@echo "Generating dependencies for $<"
-	@$(CC) -M -MG -MP -MT $(<:.c=.o) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
+	@$(CC) -M -MG -MP -MT $(<:.c=.o) -MT $@ `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
 
 .c.hd:
 	@echo "Generating host-compiler dependencies for $<"
-	@$(CC) -M -MG -MP -MT $(<:.c=.ho) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
+	@$(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
 
 include/includes.d: include/includes.h
 	@echo "Generating dependencies for $<"
-	@$(CC) -M -MG -MT include/includes.h.gch $(CFLAGS) $< -o $@
+	@$(CC) -M -MG -MT include/includes.h.gch -MT $@ $(CFLAGS) $< -o $@
 
 .c.o:
 	@if test -n "$(CC_CHECKER)"; then \
