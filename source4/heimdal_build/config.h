@@ -10,6 +10,6 @@
 #define KRB5
 
 #include "include/config.h"
-#include "replace.h"
+#include "lib/replace/replace.h"
 
 #endif
