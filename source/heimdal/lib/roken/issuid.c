@@ -36,7 +36,7 @@
 RCSID("$Id: issuid.c,v 1.6 2005/05/13 07:42:03 lha Exp $");
 #endif
 
-#include "roken.h"
+#include <roken.h>
 
 int ROKEN_LIB_FUNCTION
 issuid(void)

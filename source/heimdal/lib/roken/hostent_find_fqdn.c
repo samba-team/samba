@@ -36,7 +36,7 @@
 RCSID("$Id: hostent_find_fqdn.c,v 1.3 2005/04/12 11:28:51 lha Exp $");
 #endif
 
-#include "roken.h"
+#include <roken.h>
 
 /*
  * Try to find a fqdn (with `.') in he if possible, else return h_name
