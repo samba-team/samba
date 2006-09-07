@@ -198,10 +198,6 @@ sub check($$$$$)
 			}
 		}
 
-		unless (defined($part->{CFLAGS})) {
-			$part->{CFLAGS} = "";
-		}
-
 		unless (defined($part->{PUBLIC_HEADERS})) {
 			$part->{PUBLIC_HEADERS} = [];
 		}

@@ -14,15 +14,18 @@ sub create_cflags($$)
 
 	foreach my $key (values %{$CTX}) {
 		next unless defined ($key->{OBJ_LIST});
-		next unless defined ($key->{CFLAGS});
-		next if ($key->{CFLAGS} eq "");
+
+		next unless defined ($key->{FINAL_CFLAGS});
+		next unless ($#{$key->{FINAL_CFLAGS}} >= 0);
+
+		my $cflags = join(' ', @{$key->{FINAL_CFLAGS}});
 
 		foreach (@{$key->{OBJ_LIST}}) {
 			my $ofile = $_;
 			my $dfile = $_;
 			$dfile =~ s/\.o$/.d/;
 			$dfile =~ s/\.ho$/.d/;
-			print CFLAGS_TXT "$ofile $dfile: CFLAGS+=$key->{CFLAGS}\n";
+			print CFLAGS_TXT "$ofile $dfile: CFLAGS+= $cflags\n";
 		}
 	}
 	close(CFLAGS_TXT);
