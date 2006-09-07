@@ -4,10 +4,8 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <stdarg.h>
 #include <string.h>
 #include <core/nterr.h>
