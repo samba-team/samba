@@ -296,6 +296,9 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	struct sockaddr_in *peeraddr_in = (struct sockaddr_in *)&peeraddr;
 
+	DEBUG(10,("cm_prepare_connection: connecting to DC %s for domain %s\n",
+		controller, domain->name ));
+
 	machine_password = secrets_fetch_machine_password(lp_workgroup(), NULL,
 							  NULL);
 	
@@ -921,6 +924,9 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 	if ( saf_servername && NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, saf_servername))) {
 
+		DEBUG(10,("cm_open_connection: saf_servername is '%s' for domain %s\n",
+			saf_servername, domain->name ));
+
 		/* convert an ip address to a name */
 		if ( is_ipaddress( saf_servername ) ) {
 			fstring saf_name;
@@ -949,7 +955,10 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 
-		if ((strlen(domain->dcname) > 0)
+		DEBUG(10,("cm_open_connection: dcname is '%s' for domain %s\n",
+			domain->dcname, domain->name ));
+
+		if (*domain->dcname 
 			&& NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, domain->dcname))
 			&& (resolve_name(domain->dcname, &domain->dcaddr.sin_addr, 0x20)))
 		{
