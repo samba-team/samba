@@ -3,19 +3,9 @@
 
 #ifndef __krb5_types_h__
 #define __krb5_types_h__
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
-#if HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#if HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif
+#include "replace.h"
+
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -23,5 +13,11 @@
 
 typedef socklen_t krb5_socklen_t;
 typedef ssize_t krb5_ssize_t;
+
+#ifdef VOID_RETSIGTYPE
+#define SIGRETURN(x) return
+#else
+#define SIGRETURN(x) return (RETSIGTYPE)(x)
+#endif
 
 #endif /* __krb5_types_h__ */
