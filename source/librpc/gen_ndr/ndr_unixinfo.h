@@ -5,7 +5,7 @@
 #ifndef _HEADER_NDR_unixinfo
 #define _HEADER_NDR_unixinfo
 
-#include <ndr.h>
+#include "librpc/ndr/libndr.h"
 #define DCERPC_UNIXINFO_UUID "9c54e310-a955-4885-bd31-78787147dfa6"
 #define DCERPC_UNIXINFO_VERSION 0.0
 #define DCERPC_UNIXINFO_NAME "unixinfo"
