@@ -132,13 +132,8 @@ sub create_output($$)
 			my $elem = $depend->{$_};
 			next if $elem == $part;
 
-			if (defined(@{$elem->{CPPFLAGS}})) {
-				my $count = 0;
-				foreach (@{$elem->{CPPFLAGS}}) {
-					$count++;
-				}
-				push(@{$part->{PUBLIC_CFLAGS}}, @{$elem->{CPPFLAGS}}) if ($count > 0);
-			}
+			push(@{$part->{PUBLIC_CFLAGS}}, @{$elem->{CPPFLAGS}}) if (defined(@{$elem->{CPPFLAGS}}))
+									      and ($#{$elem->{CPPFLAGS}} > 0);
 
 			next if not defined($elem->{CFLAGS});
 			next if $elem->{CFLAGS} eq "";
