@@ -1,5 +1,7 @@
 2006-09-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_file.c: Sprinkle error messages.
+
 	* cms.c: Sprinkle even more error messages.
 	
 	* cms.c: Sprinkle some error messages.
