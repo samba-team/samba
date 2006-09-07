@@ -167,8 +167,12 @@ void winbind_add_failed_connection_entry(const struct winbindd_domain *domain,
 					NTSTATUS result)
 {
 	add_failed_connection_entry(domain->name, server, result);
+	/* If this was the saf name for the last thing we talked to,
+	   remove it. */
+	saf_delete(domain->name, server);
 	if (*domain->alt_name) {
 		add_failed_connection_entry(domain->alt_name, server, result);
+		saf_delete(domain->alt_name, server);
 	}
 }
 
