@@ -285,7 +285,6 @@ if test x$GNU_MAKE = x"yes"; then
 		new_make=yes
 	fi
 fi
-new_make=no
 AC_MSG_RESULT($new_make)
 automatic_dependencies=no
 AX_CFLAGS_GCC_OPTION([-M -MT conftest.d -MF conftest.o], [], [ automatic_dependencies=$new_make ], [])
