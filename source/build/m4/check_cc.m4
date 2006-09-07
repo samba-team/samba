@@ -23,61 +23,6 @@ if test x$ac_cv_prog_cc_g = xyes -a x$debug = xyes; then
 	CFLAGS="${CFLAGS} -g"
 fi
 
-dnl needed before AC_TRY_COMPILE
-AC_ISC_POSIX
-
-AC_C_INLINE
-
-AC_CACHE_CHECK([that the C compiler can precompile header files],samba_cv_precompiled_headers, [
-	dnl Check whether the compiler can generate precompiled headers
-	touch conftest.h
-	if ${CC-cc} conftest.h 2> /dev/null && test -f conftest.h.gch; then
-		precompiled_headers=yes
-	else
-		precompiled_headers=no
-	fi])
-AC_SUBST(precompiled_headers)
-
-
-dnl Check if the C compiler understands volatile (it should, being ANSI).
-AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
-	AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],
-		samba_cv_volatile=yes,samba_cv_volatile=no)])
-if test x"$samba_cv_volatile" = x"yes"; then
-	AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
-fi
-
-############################################
-# check if the compiler can do immediate structures
-AC_CACHE_CHECK([for immediate structures],samba_cv_immediate_structures, [
-    AC_TRY_COMPILE([
-#include <stdio.h>],
-[
-   typedef struct {unsigned x;} FOOBAR;
-   #define X_FOOBAR(x) ((FOOBAR) { x })
-   #define FOO_ONE X_FOOBAR(1)
-   FOOBAR f = FOO_ONE;   
-   static struct {
-	FOOBAR y; 
-	} f2[] = {
-		{FOO_ONE}
-	};   
-],
-	samba_cv_immediate_structures=yes,samba_cv_immediate_structures=no)])
-if test x"$samba_cv_immediate_structures" = x"yes"; then
-   AC_DEFINE(HAVE_IMMEDIATE_STRUCTURES,1,[Whether the compiler supports immediate structures])
-fi
-AC_SUBST(samba_cv_immediate_structures)
-
-############################################
-# check if the compiler handles c99 struct initialization
-LIBREPLACE_C99_STRUCT_INIT(samba_cv_c99_struct_initialization=yes,
-		    samba_cv_c99_struct_initialization=no)
-
-if test x"$samba_cv_c99_struct_initialization" != x"yes"; then
-	AC_MSG_WARN([C compiler does not support c99 struct initialization!])
-	AC_MSG_ERROR([Please Install gcc from http://gcc.gnu.org/])
-fi
 
 ############################################
 # check if the compiler can handle negative enum values

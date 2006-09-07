@@ -1,3 +1,7 @@
+dnl needed before AC_TRY_COMPILE
+AC_ISC_POSIX
+
+AC_C_INLINE
 
 LIBREPLACE_C99_STRUCT_INIT([],[])
 
@@ -15,6 +19,16 @@ LIBREPLACEOBJ="dlfcn.o getpass.o replace.o snprintf.o timegm.o"
 AC_SUBST(LIBREPLACEOBJ)
 
 AC_SYS_LARGEFILE
+
+dnl Add #include for broken IRIX header files
+case "$host_os" in
+	*irix6*) AC_ADD_INCLUDE(<standards.h>)
+		;;
+esac
+
+AC_C_BIGENDIAN
+AC_HEADER_STDC
+
 
 AC_CHECK_HEADERS([stdint.h inttypes.h])
 AC_CHECK_TYPE(uint_t, unsigned int)
@@ -260,3 +274,21 @@ if test x"$samba_cv_HAVE_OPEN_O_DIRECT" = x"yes"; then
 fi 
 
 
+AC_CACHE_CHECK([that the C compiler can precompile header files],samba_cv_precompiled_headers, [
+	dnl Check whether the compiler can generate precompiled headers
+	touch conftest.h
+	if ${CC-cc} conftest.h 2> /dev/null && test -f conftest.h.gch; then
+		precompiled_headers=yes
+	else
+		precompiled_headers=no
+	fi])
+AC_SUBST(precompiled_headers)
+
+
+dnl Check if the C compiler understands volatile (it should, being ANSI).
+AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
+	AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],
+		samba_cv_volatile=yes,samba_cv_volatile=no)])
+if test x"$samba_cv_volatile" = x"yes"; then
+	AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
+fi
