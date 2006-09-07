@@ -619,8 +619,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 #define SYSTEM_KRB5_CONF_PATH "/etc/krb5.conf"
 	/* Insanity, sheer insanity..... */
 
-
-	{
+	if (strequal(realm, lp_realm())) {
 		pstring linkpath;
 		int lret;
 
