@@ -37,6 +37,16 @@ if test x"$c99_init" = x"no"; then
      ],
      [AC_MSG_RESULT(yes); c99_init=yes],[AC_MSG_RESULT(no)])
 fi
+
+if test "`uname`" = "HP-UX"; then
+  if test "$ac_cv_c_compiler_gnu" = no; then
+	# special override for broken HP-UX compiler - I can't find a way to test
+	# this properly (its a compiler bug)
+	CFLAGS="$CFLAGS -AC99";
+	c99_init=yes;
+  fi
+fi
+
 if test x"$c99_init" = x"yes"; then
     saved_CFLAGS=""
     $1
