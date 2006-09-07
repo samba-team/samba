@@ -120,6 +120,16 @@ size_t rep_strnlen(const char *s, size_t n);
 int rep_setenv(const char *name, const char *value, int overwrite); 
 #endif
 
+#ifndef HAVE_SETEUID
+#define seteuid rep_seteuid
+int rep_seteuid(uid_t);
+#endif
+
+#ifndef HAVE_SETEGID
+#define setegid rep_setegid
+int rep_setegid(gid_t);
+#endif
+
 #ifndef HAVE_STRCASESTR
 #define strcasestr rep_strcasestr
 char *rep_strcasestr(const char *haystack, const char *needle);
