@@ -2388,7 +2388,7 @@ history
 ****************************************************************************/
 static int cmd_history(struct smbclient_context *ctx, const char **args)
 {
-#if defined(HAVE_LIBREADLINE)
+#if defined(HAVE_LIBREADLINE) && defined(HAVE_DECL_RL_EVENT_HOOK)
 	HIST_ENTRY **hlist;
 	int i;
 
