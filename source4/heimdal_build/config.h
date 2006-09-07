@@ -29,9 +29,6 @@
 
 #define VERSIONLIST {"Lorikeet-Heimdal, Modified for Samba4 0.7rc1"}
 
-/* even if we do have dlopen, we don't want heimdal using it */
-#undef HAVE_DLOPEN
-
 #define VERSION "Samba"
 
 #define ROKEN_LIB_FUNCTION
@@ -39,29 +36,9 @@
 /* these should be done with configure tests */
 #define KRB5
 
-/* we need to tell roken about the functions that Samba replaces in lib/replace */
-#ifndef HAVE_SETEUID
-#define HAVE_SETEUID 1
-#endif
-
 #define GETHOSTBYADDR_PROTO_COMPATIBLE
 #define GETSERVBYNAME_PROTO_COMPATIBLE
 #define OPENLOG_PROTO_COMPATIBLE
 #define GETSOCKNAME_PROTO_COMPATIBLE
-
-#ifndef HAVE_SOCKLEN_T
-#define HAVE_SOCKLEN_T
-#endif
-
-#ifndef HAVE_STRNDUP
-#define HAVE_STRNDUP
-#endif
-#ifndef HAVE_SOCKLEN_T
-#define HAVE_SOCKLEN_T
-#endif
-
-#ifndef HAVE_SSIZE_T
-#define HAVE_SSIZE_T
-#endif
 
 #endif
