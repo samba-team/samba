@@ -1,4 +1,3 @@
-#include "librpc/gen_ndr/unixinfo.h"
 #include "librpc/gen_ndr/ndr_unixinfo.h"
 #ifndef __CLI_UNIXINFO__
 #define __CLI_UNIXINFO__

@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "./cli_unixinfo.h"
+#include "librpc/gen_ndr/cli_unixinfo.h"
 
 NTSTATUS rpccli_unixinfo_SidToUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct dom_sid sid, uint64_t *uid)
 {
