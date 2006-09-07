@@ -77,6 +77,30 @@ BOOL saf_store( const char *domain, const char *servername )
 	return ret;
 }
 
+BOOL saf_delete( const char *domain, const char *servername )
+{
+	char *key;
+	BOOL ret = False;
+	
+	if ( !domain || !servername ) {
+		DEBUG(2,("saf_delete: Refusing to store empty domain or servername!\n"));
+		return False;
+	}
+	
+	if ( !gencache_init() ) 
+		return False;
+	
+	key = saf_key(domain);
+	ret = gencache_del(key);
+	
+	if (ret) {
+		DEBUG(10,("saf_delete: domain = [%s], server = [%s]\n",
+			domain, servername));
+	}
+	SAFE_FREE( key );
+	return ret;
+}
+
 /****************************************************************************
 ****************************************************************************/
 
