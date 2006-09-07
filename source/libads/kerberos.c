@@ -516,15 +516,15 @@ static char *get_kdc_ip_string(char *mem_ctx, const char *realm, struct in_addr 
 
 BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *domain, struct in_addr ip)
 {
-	XFILE *xfp = NULL;
 	char *dname = talloc_asprintf(NULL, "%s/smb_krb5", lp_lockdir());
+	char *tmpname = NULL;
 	char *fname = NULL;
 	char *file_contents = NULL;
 	char *kdc_ip_string;
 	size_t flen = 0;
-	size_t ret;
+	ssize_t ret;
+	int fd;
 	char *realm_upper = NULL;
-	int loopcount = 0;
 
 	if (!dname) {
 		return False;
@@ -533,6 +533,12 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 		DEBUG(0,("create_local_private_krb5_conf_for_domain: "
 			"failed to create directory %s. Error was %s\n",
 			dname, strerror(errno) ));
+		TALLOC_FREE(dname);
+		return False;
+	}
+
+	tmpname = talloc_asprintf(dname, "%s/smb_tmp_krb5.XXXXXX", lp_lockdir());
+	if (!tmpname) {
 		TALLOC_FREE(dname);
 		return False;
 	}
@@ -567,52 +573,36 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 
 	flen = strlen(file_contents);
 
-	while (loopcount < 10) {
-		SMB_STRUCT_STAT st;
-
-		xfp = x_fopen(fname, O_CREAT|O_WRONLY, 0644);
-		if (!xfp) {
-			TALLOC_FREE(dname);
-			return False;
-		}
-		/* Lock the file. */
-		if (!fcntl_lock(xfp->fd, F_SETLKW, 0, 1, F_WRLCK)) {
-			unlink(fname);
-			x_fclose(xfp);
-			TALLOC_FREE(dname);
-			return False;
-		}
-
-		/* We got the lock. Is the file still there ? */
-		if (sys_stat(fname,&st)==-1) {
-			if (errno == ENOENT) {
-				/* Nope - try again up to 10x */
-				x_fclose(xfp);
-				loopcount++;
-				continue;	
-			}
-			unlink(fname);
-			x_fclose(xfp);
-			TALLOC_FREE(dname);
-			return False;
-		}
-		break;
+	fd = smb_mkstemp(tmpname);
+	if (fd == -1) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: smb_mkstemp failed,"
+			" for file %s. Errno %s\n",
+			tmpname, strerror(errno) ));
 	}
 
-	ret = x_fwrite(file_contents, 1, flen, xfp);
+	ret = write(fd, file_contents, flen);
 	if (flen != ret) {
-		DEBUG(0,("create_local_private_krb5_conf_for_domain: x_fwrite failed,"
-			" returned %u (should be %u). Errno %s\n",
-			(unsigned int)ret, (unsigned int)flen, strerror(errno) ));
-		unlink(fname);
-		x_fclose(xfp);
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: write failed,"
+			" returned %d (should be %u). Errno %s\n",
+			(int)ret, (unsigned int)flen, strerror(errno) ));
+		unlink(tmpname);
+		close(fd);
 		TALLOC_FREE(dname);
 		return False;
 	}
-	if (x_fclose(xfp)==-1) {
-		DEBUG(0,("create_local_private_krb5_conf_for_domain: x_fclose failed."
+	if (close(fd)==-1) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: close failed."
 			" Errno %s\n", strerror(errno) ));
-		unlink(fname);
+		unlink(tmpname);
+		TALLOC_FREE(dname);
+		return False;
+	}
+
+	if (rename(tmpname, fname) == -1) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: rename "
+			"of %s to %s failed. Errno %s\n",
+			tmpname, fname, strerror(errno) ));
+		unlink(tmpname);
 		TALLOC_FREE(dname);
 		return False;
 	}
@@ -623,6 +613,37 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 
 	/* Set the environment variable to this file. */
 	setenv("KRB5_CONFIG", fname, 1);
+
+#if defined(OVERWRITE_SYSTEM_KRB5_CONF)
+
+	/* Insanity, sheer insanity..... */
+
+	if (symlink(fname, "/etc/krb5.conf") == -1) {
+		if (errno != EEXIST) {
+			DEBUG(0,("create_local_private_krb5_conf_for_domain: symlink "
+				"of %s to /etc/krb5.conf failed. Errno %s\n",
+				fname, strerror(errno) ));
+			TALLOC_FREE(dname);
+			return True; /* Not a fatal error. */
+		}
+
+		if (unlink("/etc/krb5.conf") == -1) {
+			DEBUG(0,("create_local_private_krb5_conf_for_domain: unlink "
+				"of /etc/krb5.conf failed. Errno %s\n",
+				strerror(errno) ));
+			TALLOC_FREE(dname);
+			return True; /* Not a fatal error. */
+		}
+		if (symlink(fname, "/etc/krb5.conf") == -1) {
+			DEBUG(0,("create_local_private_krb5_conf_for_domain: "
+				"forced symlink of %s to /etc/krb5.conf failed. Errno %s\n",
+				fname, strerror(errno) ));
+			TALLOC_FREE(dname);
+			return True; /* Not a fatal error. */
+		}
+	}
+#endif
+
 	TALLOC_FREE(dname);
 
 	return True;
