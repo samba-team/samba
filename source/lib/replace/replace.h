@@ -130,6 +130,11 @@ int rep_seteuid(uid_t);
 int rep_setegid(gid_t);
 #endif
 
+#ifndef HAVE_SETLINEBUF
+#define setlinebuf rep_setlinebuf
+int rep_setlinebuf(FILE *);
+#endif
+
 #ifndef HAVE_STRCASESTR
 #define strcasestr rep_strcasestr
 char *rep_strcasestr(const char *haystack, const char *needle);
