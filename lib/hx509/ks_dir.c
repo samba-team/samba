@@ -35,6 +35,14 @@
 RCSID("$Id$");
 #include <dirent.h>
 
+/*
+ * The DIR keyset module is strange compared to the other modules
+ * since it does lazy evaluation and really doesn't keep any local
+ * state except for the directory iteration and cert iteration of
+ * files. DIR ignores most errors so that the consumer doesn't get
+ * failes for stray files in directories.
+ */
+
 struct dircursor {
     DIR *dir;
     hx509_certs certs;
