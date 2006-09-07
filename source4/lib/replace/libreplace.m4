@@ -14,6 +14,8 @@ done
 LIBREPLACEOBJ="dlfcn.o getpass.o replace.o snprintf.o timegm.o"
 AC_SUBST(LIBREPLACEOBJ)
 
+AC_SYS_LARGEFILE
+
 AC_CHECK_HEADERS([stdint.h inttypes.h])
 AC_CHECK_TYPE(uint_t, unsigned int)
 AC_CHECK_TYPE(uint8_t, unsigned char)
@@ -24,6 +26,22 @@ AC_CHECK_TYPE(int32_t, long)
 AC_CHECK_TYPE(intptr_t, unsigned long long)
 AC_CHECK_TYPE(uint32_t, unsigned long)
 AC_CHECK_TYPE(ssize_t, int)
+
+AC_TYPE_SIGNAL
+AC_TYPE_UID_T
+AC_TYPE_MODE_T
+AC_TYPE_OFF_T
+AC_TYPE_SIZE_T
+AC_TYPE_PID_T
+AC_STRUCT_ST_RDEV
+AC_CHECK_TYPE(ino_t,unsigned)
+AC_CHECK_TYPE(loff_t,off_t)
+AC_CHECK_TYPE(offset_t,loff_t)
+AC_CHECK_TYPES(long long)
+
+AC_FUNC_MEMCMP
+
+AC_CHECK_FUNCS(pipe strftime srandom random srand rand usleep setbuffer)
 
 AC_CHECK_HEADERS(stdbool.h)
 
@@ -227,5 +245,18 @@ AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
 if test x"$samba_cv_sig_atomic_t" = x"yes"; then
    AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE,1,[Whether we have the atomic_t variable type])
 fi
+
+
+AC_CACHE_CHECK([for O_DIRECT flag to open(2)],samba_cv_HAVE_OPEN_O_DIRECT,[
+AC_TRY_COMPILE([
+#include <unistd.h>
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif],
+[int fd = open("/dev/null", O_DIRECT);],
+samba_cv_HAVE_OPEN_O_DIRECT=yes,samba_cv_HAVE_OPEN_O_DIRECT=no)])
+if test x"$samba_cv_HAVE_OPEN_O_DIRECT" = x"yes"; then
+    AC_DEFINE(HAVE_OPEN_O_DIRECT,1,[Whether the open(2) accepts O_DIRECT])
+fi 
 
 
