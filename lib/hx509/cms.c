@@ -267,7 +267,8 @@ hx509_cms_unenvelope(hx509_context context,
 
     if (ed.encryptedContentInfo.encryptedContent == NULL) {
 	ret = HX509_CMS_NO_DATA_AVAILABLE;
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret,
+			       "Content missing from encrypted data");
 	goto out;
     }
 
@@ -313,7 +314,8 @@ hx509_cms_unenvelope(hx509_context context,
 
     ret = copy_oid(&ed.encryptedContentInfo.contentType, contentType);
     if (ret) {
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to copy EnvelopedData content oid");
 	goto out;
     }
 
@@ -342,7 +344,9 @@ hx509_cms_unenvelope(hx509_context context,
 
 	ret = hx509_crypto_set_key_data(crypto, key.data, key.length);
 	if (ret) {
-	    hx509_clear_error_string(context);
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to set key for decryption "
+				   "of EnvelopedData");
 	    goto out;
 	}
 	
@@ -352,7 +356,8 @@ hx509_cms_unenvelope(hx509_context context,
 				   ivec.length ? &ivec : NULL,
 				   content);
 	if (ret) {
-	    hx509_clear_error_string(context);
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to decrypt EnvelopedData");
 	    goto out;
 	}
     }
@@ -405,7 +410,8 @@ hx509_cms_envelope_1(hx509_context context,
 
     ret = hx509_crypto_set_random_key(crypto, &key);
     if (ret) {
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret,
+			       "Create random key for EnvelopedData content");
 	hx509_crypto_destroy(crypto);
 	goto out;
     }
@@ -416,7 +422,8 @@ hx509_cms_envelope_1(hx509_context context,
 			       &ivec,
 			       &ed.encryptedContentInfo.encryptedContent);
     if (ret) {
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to encrypt EnvelopedData content");
 	hx509_crypto_destroy(crypto);
 	goto out;
     }
@@ -426,15 +433,19 @@ hx509_cms_envelope_1(hx509_context context,
 	enc_alg = &ed.encryptedContentInfo.contentEncryptionAlgorithm;
 	ret = copy_oid(encryption_type, &enc_alg->algorithm);
 	if (ret) {
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to set crypto oid "
+				   "for EnvelopedData");
 	    hx509_crypto_destroy(crypto);
-	    hx509_clear_error_string(context);
 	    goto out;
 	}	
 	ALLOC(enc_alg->parameters, 1);
 	if (enc_alg->parameters == NULL) {
-	    hx509_clear_error_string(context);
-	    hx509_crypto_destroy(crypto);
 	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to allocate crypto paramaters "
+				   "for EnvelopedData");
+	    hx509_crypto_destroy(crypto);
 	    goto out;
 	}
 
@@ -444,15 +455,16 @@ hx509_cms_envelope_1(hx509_context context,
 				      enc_alg->parameters);
 	hx509_crypto_destroy(crypto);
 	if (ret) {
-	    hx509_clear_error_string(context);
 	    goto out;
 	}
     }
 
     ALLOC_SEQ(&ed.recipientInfos, 1);
     if (ed.recipientInfos.val == NULL) {
-	hx509_clear_error_string(context);
 	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to allocate recipients info "
+			       "for EnvelopedData");
 	goto out;
     }
 
@@ -461,7 +473,9 @@ hx509_cms_envelope_1(hx509_context context,
     ri->version = 0;
     ret = fill_CMSIdentifier(cert, &ri->rid);
     if (ret) {
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to set CMS identifier info "
+			       "for EnvelopedData");
 	goto out;
     }
 
@@ -469,7 +483,9 @@ hx509_cms_envelope_1(hx509_context context,
 				     &ri->keyEncryptionAlgorithm.algorithm,
 				     &ri->encryptedKey);
     if (ret) {
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to encrypt transport key for "
+			       "EnvelopedData");
 	goto out;
     }
 
@@ -482,7 +498,9 @@ hx509_cms_envelope_1(hx509_context context,
 
     ret = copy_oid(contentType, &ed.encryptedContentInfo.contentType);
     if (ret) {
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to copy content oid for "
+			       "EnvelopedData");
 	goto out;
     }
 
@@ -491,7 +509,8 @@ hx509_cms_envelope_1(hx509_context context,
     ASN1_MALLOC_ENCODE(EnvelopedData, content->data, content->length,
 		       &ed, &size, ret);
     if (ret) {
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to encode EnvelopedData");
 	goto out;
     }
     if (size != content->length)
