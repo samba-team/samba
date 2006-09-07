@@ -520,7 +520,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	char *tmpname = NULL;
 	char *fname = NULL;
 	char *file_contents = NULL;
-	char *kdc_ip_string;
+	char *kdc_ip_string = NULL;
 	size_t flen = 0;
 	ssize_t ret;
 	int fd;
@@ -627,6 +627,7 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 			return True; /* Not a fatal error. */
 		}
 
+		/* Yes, this is a race conditon... too bad. */
 		if (unlink("/etc/krb5.conf") == -1) {
 			DEBUG(0,("create_local_private_krb5_conf_for_domain: unlink "
 				"of /etc/krb5.conf failed. Errno %s\n",
