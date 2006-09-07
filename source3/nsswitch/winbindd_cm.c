@@ -146,7 +146,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 void set_domain_online(struct winbindd_domain *domain)
 {
-	DEBUG(10,("set_domain_offline: called for domain %s\n",
+	DEBUG(10,("set_domain_online: called for domain %s\n",
 		domain->name ));
 
 	if (get_global_winbindd_state_offline()) {
