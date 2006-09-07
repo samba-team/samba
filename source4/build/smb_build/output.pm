@@ -137,11 +137,7 @@ sub create_output($$)
 
 			next if not defined($elem->{CFLAGS});
 			next if $elem->{CFLAGS} eq "";
-			my $found = 0;
-			foreach my $line (@{$part->{PUBLIC_CFLAGS}}) {
-				$found = 1 if ($line eq $elem->{CFLAGS});
-			}
-			next if ($found == 1);
+			next if (grep /^$elem->{CFLAGS}$/, @{$part->{PUBLIC_CFLAGS}});
 			push(@{$part->{PUBLIC_CFLAGS}}, $elem->{CFLAGS});
 		}
 
