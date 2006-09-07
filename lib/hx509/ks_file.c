@@ -232,8 +232,8 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	if (ret <= 0) {
 	    free(key);
 	    free(ivdata);
-	    hx509_clear_error_string(context);
-
+	    hx509_set_error_string(context, 0, EINVAL,
+				   "Failed to do string2key for RSA key");
 	    return EINVAL;
 	}
 
@@ -327,6 +327,9 @@ parse_pem_file(hx509_context context,
 		type = strdup(buf + 11);
 		if (type == NULL)
 		    break;
+		p = strchr(type, '-');
+		if (p)
+		    *p = '\0';
 		*found_data = 1;
 		where = SEARCHHEADER;
 	    }
@@ -374,11 +377,18 @@ parse_pem_file(hx509_context context,
 	if (where == DONE) {
 	    int j;
 
-	    ret = EINVAL;
 	    for (j = 0; j < sizeof(formats)/sizeof(formats[0]); j++) {
 		const char *q = formats[j].name;
-		if (strncmp(type, q, strlen(q)) == 0)
+		if (strcasecmp(type, q) == 0) {
 		    ret = (*formats[j].func)(context, c, headers, data, len);
+		    break;
+		}
+	    }
+	    if (j == sizeof(formats)/sizeof(formats[0])) {
+		ret = EINVAL;
+		hx509_set_error_string(context, 0, ret,
+				       "Found no matching PEM format for %s",
+				       type);
 	    }
 	    free(data);
 	    data = NULL;
