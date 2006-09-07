@@ -7,6 +7,6 @@ OBJ_FILES = \
 		util_unistr.o
 PUBLIC_HEADERS = charset.h
 PUBLIC_PROTO_HEADER = charset_proto.h
-PUBLIC_DEPENDENCIES = ICONV LIBREPLACE
+PUBLIC_DEPENDENCIES = ICONV
 # End SUBSYSTEM CHARSET
 ################################################

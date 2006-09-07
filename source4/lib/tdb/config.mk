@@ -9,8 +9,6 @@ OBJ_FILES = \
 	common/open.o common/traverse.o common/freelist.o \
 	common/error.o common/transaction.o common/tdbutil.o
 CFLAGS = -Ilib/tdb/include
-PUBLIC_DEPENDENCIES = \
-		LIBREPLACE
 PUBLIC_HEADERS = include/tdb.h
 #
 # End SUBSYSTEM ldb

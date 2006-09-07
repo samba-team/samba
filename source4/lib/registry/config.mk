@@ -34,7 +34,6 @@ INIT_FUNCTION = registry_w95_init
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_w95.o
-PUBLIC_DEPENDENCIES = LIBREPLACE
 # End MODULE registry_w95
 ################################################
 
@@ -99,7 +98,7 @@ OBJ_FILES = \
 		reg_samba.o \
 		patchfile.o
 PUBLIC_DEPENDENCIES = \
-		LIBSAMBA-UTIL CHARSET LIBREPLACE
+		LIBSAMBA-UTIL CHARSET
 PRIVATE_PROTO_HEADER = registry_proto.h
 PUBLIC_HEADERS = registry.h
 # End MODULE registry_ldb
