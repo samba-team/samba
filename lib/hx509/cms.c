@@ -137,6 +137,57 @@ fill_CMSIdentifier(const hx509_cert cert, CMSIdentifier *id)
 }
 
 static int
+unparse_CMSIdentifier(hx509_context context,
+		      CMSIdentifier *id,
+		      char **str)
+{
+    int ret;
+
+    *str = NULL;
+    switch (id->element) {
+    case choice_CMSIdentifier_issuerAndSerialNumber: {
+	IssuerAndSerialNumber *iasn;
+	char *serial, *name;
+
+	iasn = &id->u.issuerAndSerialNumber;
+
+	ret = _hx509_Name_to_string(&iasn->issuer, &name);
+	if(ret)
+	    return ret;
+	ret = der_print_hex_heim_integer(&iasn->serialNumber, &serial);
+	if (ret) {
+	    free(name);
+	    return ret;
+	}
+	asprintf(str, "certificate issued by %s with serial number %s",
+		 name, serial);
+	free(name);
+	free(serial);
+	break;
+    }
+    case choice_CMSIdentifier_subjectKeyIdentifier: {
+	KeyIdentifier *ki  = &id->u.subjectKeyIdentifier;
+	char *keyid;
+	ssize_t len;
+
+	len = hex_encode(ki->data, ki->length, &keyid);
+	if (len < 0)
+	    return ENOMEM;
+
+	asprintf(str, "certificate with id %s", keyid);
+	free(keyid);
+	break;
+    }
+    default:
+	asprintf(str, "certificate have unknown CMSidentifier type");
+	break;
+    }
+    if (*str == NULL)
+	return ENOMEM;
+    return 0;
+}
+
+static int
 find_CMSIdentifier(hx509_context context,
 		   CMSIdentifier *client,
 		   hx509_certs certs,
@@ -173,52 +224,16 @@ find_CMSIdentifier(hx509_context context,
 
     ret = hx509_certs_find(context, certs, &q, &cert);
     if (ret == HX509_CERT_NOT_FOUND) {
-	switch (client->element) {
-	case choice_CMSIdentifier_issuerAndSerialNumber: {
-	    IssuerAndSerialNumber *iasn;
-	    char *serial, *name;
+	char *str;
 
-	    iasn = &client->u.issuerAndSerialNumber;
-
-	    ret = _hx509_Name_to_string(&iasn->issuer, &name);
-	    if(ret)
-		return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
-	    ret = der_print_hex_heim_integer(&iasn->serialNumber, &serial);
-	    if (ret) {
-		free(name);
-		return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
-	    }
+	ret = unparse_CMSIdentifier(context, client, &str);
+	if (ret == 0) {
 	    hx509_set_error_string(context, 0,
 				   HX509_CMS_NO_RECIPIENT_CERTIFICATE,
-				   "Failed to find cert issued by %s "
-				   "with serial number %s",
-				   name, serial);
-	    free(name);
-	    free(serial);
-	    return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
-	}
-	case choice_CMSIdentifier_subjectKeyIdentifier: {
-	    KeyIdentifier *ki  = &client->u.subjectKeyIdentifier;
-	    char *str;
-	    ssize_t len;
-
-	    len = hex_encode(ki->data, ki->length, &str);
-	    if (len < 0)
-		hx509_clear_error_string(context);
-	    else {
-		hx509_set_error_string(context, 0,
-				       HX509_CMS_NO_RECIPIENT_CERTIFICATE,
-				       "Failed to find cert with id: %s",
-				       str);
-		free(str);
-	    }
-	    
-	    return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
-	}
-	default:
-	    _hx509_abort("unknown CMS id type");
-	    break;
-	}
+				   "Failed to find %s", str);
+	} else
+	    hx509_clear_error_string(context);
+	return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
     } else if (ret) {
 	hx509_set_error_string(context, HX509_ERROR_APPEND,
 			       HX509_CMS_NO_RECIPIENT_CERTIFICATE,
@@ -241,7 +256,6 @@ hx509_cms_unenvelope(hx509_context context,
 {
     heim_octet_string key;
     EnvelopedData ed;
-    KeyTransRecipientInfo *ri;
     hx509_cert cert;
     AlgorithmIdentifier *ai;
     heim_octet_string *enccontent;
@@ -259,17 +273,9 @@ hx509_cms_unenvelope(hx509_context context,
 
     ret = decode_EnvelopedData(data, length, &ed, &size);
     if (ret) {
-	hx509_clear_error_string(context);
-	return ret;
-    }
-
-    /* XXX check content of ed */
-
-    if (ed.encryptedContentInfo.encryptedContent == NULL) {
-	ret = HX509_CMS_NO_DATA_AVAILABLE;
 	hx509_set_error_string(context, 0, ret,
-			       "Content missing from encrypted data");
-	goto out;
+			       "Failed to decode EnvelopedData");
+	return ret;
     }
 
     if (ed.recipientInfos.len == 0) {
@@ -279,8 +285,19 @@ hx509_cms_unenvelope(hx509_context context,
 	goto out;
     }
 
+    if (ed.encryptedContentInfo.encryptedContent == NULL) {
+	ret = HX509_CMS_NO_DATA_AVAILABLE;
+	hx509_set_error_string(context, 0, ret,
+			       "Content missing from encrypted data");
+	goto out;
+    }
+
     cert = NULL;
     for (i = 0; i < ed.recipientInfos.len; i++) {
+	KeyTransRecipientInfo *ri;
+	char *str;
+	int ret2;
+
 	ri = &ed.recipientInfos.val[i];
 
 	/* ret = search_keyset(ri,
@@ -302,7 +319,13 @@ hx509_cms_unenvelope(hx509_context context,
 	if (ret == 0)
 	    break;
 	cert = NULL;
-	hx509_clear_error_string(context);
+	ret2 = unparse_CMSIdentifier(context, &ri->rid, &str);
+	if (ret2 == 0) {
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to decrypt with %s", str);
+	    free(str);
+	} else
+	    hx509_clear_error_string(context);
     }
     
     if (cert == NULL) {
@@ -544,7 +567,9 @@ any_to_certs(hx509_context context, const SignedData *sd, hx509_certs certs)
 
 	ret = decode_Certificate(p, length, &cert, &size);
 	if (ret) {
-	    hx509_clear_error_string(context);
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to decode certificate %d "
+				   "in SignedData.certificates", i);
 	    return ret;
 	}
 
@@ -599,13 +624,15 @@ hx509_cms_verify_signed(hx509_context context,
 
     ret = decode_SignedData(data, length, &sd, &size);
     if (ret) {
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to decode SignedData");
 	goto out;
     }
 
     if (sd.encapContentInfo.eContent == NULL) {
-	hx509_clear_error_string(context);
 	ret = HX509_CMS_NO_DATA_AVAILABLE;
+	hx509_set_error_string(context, 0, ret,
+			       "No content data in SignedData");
 	goto out;
     }
 
@@ -622,9 +649,8 @@ hx509_cms_verify_signed(hx509_context context,
     /* XXX Check CMS version */
 
     ret = any_to_certs(context, &sd, certs);
-    if (ret) {
+    if (ret)
 	goto out;
-    }
 
     if (store) {
 	ret = hx509_certs_merge(context, certs, store);
@@ -645,7 +671,9 @@ hx509_cms_verify_signed(hx509_context context,
 
 	if (signer_info->signature.length == 0) {
 	    ret = HX509_CMS_MISSING_SIGNER_DATA;
-	    hx509_clear_error_string(context);
+	    hx509_set_error_string(context, 0, ret,
+				   "SignerInfo %d in SignedData "
+				   "missing sigature", i);
 	    continue;
 	}
 
@@ -667,12 +695,17 @@ hx509_cms_verify_signed(hx509_context context,
 	    attr = find_attribute(&sa, oid_id_pkcs9_messageDigest());
 	    if (attr == NULL) {
 		ret = HX509_CRYPTO_SIGNATURE_MISSING;
-		hx509_clear_error_string(context);
+		hx509_set_error_string(context, 0, ret,
+				       "SignerInfo have signed attributes "
+				       "but messageDigest (signature) "
+				       "is missing");
 		continue;
 	    }
 	    if (attr->value.len != 1) {
 		ret = HX509_CRYPTO_SIGNATURE_MISSING;
-		hx509_clear_error_string(context);
+		hx509_set_error_string(context, 0, ret,
+				       "SignerInfo have more then one "
+				       "messageDigest (signature)");
 		continue;
 	    }
 	    
@@ -681,7 +714,9 @@ hx509_cms_verify_signed(hx509_context context,
 				       &os,
 				       &size);
 	    if (ret) {
-		hx509_clear_error_string(context);
+		hx509_set_error_string(context, 0, ret,
+				       "Failed to decode "
+				       "messageDigest (signature)");
 		continue;
 	    }
 
@@ -691,7 +726,8 @@ hx509_cms_verify_signed(hx509_context context,
 					  &os);
 	    free_octet_string(&os);
 	    if (ret) {
-		hx509_clear_error_string(context);
+		hx509_set_error_string(context, 0, ret,
+				       "Failed to verify messageDigest");
 		continue;
 	    }
 
@@ -705,7 +741,8 @@ hx509_cms_verify_signed(hx509_context context,
 	    } else {
 		if (attr->value.len != 1) {
 		    ret = HX509_CMS_DATA_OID_MISMATCH;
-		    hx509_clear_error_string(context);
+		    hx509_set_error_string(context, 0, ret,
+					   "More then one oid in signedAttrs");
 		    continue;
 		}
 		ret = decode_ContentType(attr->value.val[0].data, 
@@ -713,7 +750,9 @@ hx509_cms_verify_signed(hx509_context context,
 					 &decode_oid, 
 					 &size);
 		if (ret) {
-		    hx509_clear_error_string(context);
+		    hx509_set_error_string(context, 0, ret,
+					   "Failed to decode "
+					   "oid in signedAttrs");
 		    continue;
 		}
 		match_oid = &decode_oid;
@@ -752,7 +791,8 @@ hx509_cms_verify_signed(hx509_context context,
 
 	if (heim_oid_cmp(match_oid, &sd.encapContentInfo.eContentType)) {
 	    ret = HX509_CMS_DATA_OID_MISMATCH;
-		    hx509_clear_error_string(context);
+	    hx509_set_error_string(context, 0, ret,
+				   "Oid in message mismatch from the expected");
 	}	
 	if (match_oid == &decode_oid)
 	    free_oid(&decode_oid);
@@ -906,7 +946,8 @@ hx509_cms_create_signed_1(hx509_context context,
     memset(&path, 0, sizeof(path));
 
     if (_hx509_cert_private_key(cert) == NULL) {
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, HX509_PRIVATE_KEY_MISSING,
+			       "Private key missing for signing");
 	return HX509_PRIVATE_KEY_MISSING;
     }
 
@@ -914,7 +955,7 @@ hx509_cms_create_signed_1(hx509_context context,
     if (digest_alg == NULL)
 	digest_alg = hx509_signature_sha1();
 
-    sd.version = 3;
+    sd.version = CMSVersion_v3;
 
     copy_oid(eContentType, &sd.encapContentInfo.eContentType);
     ALLOC(sd.encapContentInfo.eContent, 1);
@@ -1158,13 +1199,15 @@ hx509_cms_decrypt_encrypted(hx509_context context,
 
     ret = decode_CMSEncryptedData(data, length, &ed, NULL);
     if (ret) {
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to decode CMSEncryptedData");
 	return ret;
     }
 
     if (ed.encryptedContentInfo.encryptedContent == NULL) {
 	ret = HX509_CMS_NO_DATA_AVAILABLE;
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret,
+			       "No content in EncryptedData");
 	goto out;
     }
 
