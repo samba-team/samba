@@ -38,7 +38,7 @@ RCSID("$Id: strsep.c,v 1.4 2005/04/12 11:29:10 lha Exp $");
 
 #include <string.h>
 
-#include "roken.h"
+#include <roken.h>
 
 #ifndef HAVE_STRSEP
 
