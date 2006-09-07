@@ -287,7 +287,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 		}
 
 		if ( (resp_len = res_query(name, C_IN, q_type, buffer, buf_len)) < 0 ) {
-			DEBUG(1,("ads_dns_lookup_srv: Failed to resolve %s (%s)\n", name, strerror(errno)));
+			DEBUG(3,("ads_dns_lookup_srv: Failed to resolve %s (%s)\n", name, strerror(errno)));
 			TALLOC_FREE( buffer );
 			return NT_STATUS_UNSUCCESSFUL;
 		}
@@ -323,7 +323,7 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dn
 
 	status = dns_send_req( ctx, name, T_SRV, &buffer, &resp_len );
 	if ( !NT_STATUS_IS_OK(status) ) {
-		DEBUG(0,("ads_dns_lookup_srv: Failed to send DNS query (%s)\n",
+		DEBUG(3,("ads_dns_lookup_srv: Failed to send DNS query (%s)\n",
 			nt_errstr(status)));
 		return status;
 	}
@@ -471,7 +471,7 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
 	   
 	status = dns_send_req( ctx, dnsdomain, T_NS, &buffer, &resp_len );
 	if ( !NT_STATUS_IS_OK(status) ) {
-		DEBUG(0,("ads_dns_lookup_ns: Failed to send DNS query (%s)\n",
+		DEBUG(3,("ads_dns_lookup_ns: Failed to send DNS query (%s)\n",
 			nt_errstr(status)));
 		return status;
 	}
