@@ -1,5 +1,12 @@
 2006-09-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cms.c: Sprinkle even more error messages.
+	
+	* cms.c: Sprinkle some error messages.
+
+	* cms.c (find_CMSIdentifier): only free string when we allocated
+	one.
+
 	* ks_p11.c: Don't build most of the pkcs11 module if there are no
 	dlopen().
 	
