@@ -32,6 +32,16 @@
 #define GENSEC_OID_KERBEROS5_OLD "1 2 840 48018 1 2 2"
 #define GENSEC_OID_KERBEROS5_USER2USER "1 2 840 113554 1 2 2 3"
 
+enum gensec_order {
+	GENSEC_SPNEGO,
+	GENSEC_GSSAPI,
+	GENSEC_KRB5,
+	GENSEC_SCHANNEL,
+	GENSEC_NTLMSSP,
+	GENSEC_SASL,
+	GENSEC_OTHER
+};
+
 struct gensec_security;
 struct gensec_target {
 	const char *principal;
@@ -127,6 +137,7 @@ struct gensec_security_ops {
 				    uint32_t feature); 
 	BOOL enabled;
 	BOOL kerberos;
+	enum gensec_order order;
 };
 	
 struct gensec_security_ops_wrapper {
