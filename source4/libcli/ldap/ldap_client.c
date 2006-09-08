@@ -405,10 +405,9 @@ static void ldap_connect_recv_tcp_conn(struct composite_context *ctx)
 				struct ldap_connect_state);
 	struct ldap_connection *conn = state->conn;
 	uint16_t port;
-
 	NTSTATUS status = socket_connect_multi_recv(ctx, state, &conn->sock,
 						       &port);
-	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		composite_error(state->ctx, status);
 		return;
 	}
