@@ -1,3 +1,10 @@
+2006-09-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ks_p11.c: cast void * to char * when using it for %s formating
+	in printf.
+
+	* name.c: New function _hx509_Name_to_string.
+	
 2006-09-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ks_file.c: Sprinkle error messages.
