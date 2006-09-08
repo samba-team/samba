@@ -1361,7 +1361,8 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
 	.enabled        = True,
-	.kerberos       = True
+	.kerberos       = True,
+	.priority       = GENSEC_GSSAPI
 };
 
 /* As a server, this could in theory accept any GSSAPI mech */
@@ -1379,7 +1380,8 @@ static const struct gensec_security_ops gensec_gssapi_sasl_krb5_security_ops = {
 	.unwrap           = gensec_gssapi_unwrap,
 	.have_feature     = gensec_gssapi_have_feature,
 	.enabled          = True,
-	.kerberos         = True
+	.kerberos         = True,
+	.priority         = GENSEC_GSSAPI
 };
 
 NTSTATUS gensec_gssapi_init(void)
