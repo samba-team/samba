@@ -1245,6 +1245,13 @@ const struct gensec_critical_sizes *gensec_interface_version(void)
 	return &critical_sizes;
 }
 
+static int sort_gensec(struct gensec_security_ops **gs1, struct gensec_security_ops **gs2) {
+	SMB_ASSERT(talloc_get_type(*gs1, struct gensec_security_ops));
+	SMB_ASSERT(talloc_get_type(*gs2, struct gensec_security_ops));
+
+	return (*gs2)->order - (*gs1)->order;
+}
+
 /*
   initialise the GENSEC subsystem
 */
@@ -1264,6 +1271,8 @@ NTSTATUS gensec_init(void)
 	run_init_functions(shared_init);
 
 	talloc_free(shared_init);
+
+	qsort(generic_security_ops, gensec_num_backends, sizeof(*generic_security_ops), QSORT_CAST sort_gensec);
 	
 	return NT_STATUS_OK;
 }
