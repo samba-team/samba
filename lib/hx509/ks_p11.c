@@ -730,7 +730,8 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
     if ((CK_LONG)query[2].ulValueLen != -1) {
 	char *str;
 
-	asprintf(&str, "%.*s", (int)query[2].ulValueLen, query[2].pValue);
+	asprintf(&str, "%.*s",
+		 (int)query[2].ulValueLen, (char *)query[2].pValue);
 	if (str) {
 	    hx509_cert_set_friendly_name(cert, str);
 	    free(str);
