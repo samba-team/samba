@@ -2380,6 +2380,11 @@ sub GenerateIncludes()
 		pidl choose_header("librpc/gen_ndr/ndr_dcerpc.h", "gen_ndr/ndr_dcerpc.h");
 		pidl choose_header("librpc/rpc/dcerpc.h", "dcerpc.h"); #FIXME: This shouldn't be here!
 	}
+
+	# Samba3 doesn't have _PUBLIC
+	if (is_intree() == 3) {
+		pidl "#define _PUBLIC_";
+	}
 }
 
 #####################################################################
