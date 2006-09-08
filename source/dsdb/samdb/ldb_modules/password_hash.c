@@ -88,6 +88,7 @@ struct ph_context {
 };
 
 struct domain_data {
+	BOOL store_cleartext;
 	uint_t pwdProperties;
 	uint_t pwdHistoryLength;
 	char *dns_domain;
@@ -535,7 +536,8 @@ static struct domain_data *get_domain_data(struct ldb_module *module, void *ctx,
 		return NULL;
 	}
 
-	data->pwdProperties = samdb_result_uint(res->message, "pwdProperties", 0);
+	data->pwdProperties= samdb_result_uint(res->message, "pwdProperties", 0);
+	data->store_cleartext = data->pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT;
 	data->pwdHistoryLength = samdb_result_uint(res->message, "pwdHistoryLength", 0);
 
 	/* For a domain DN, this puts things in dotted notation */
@@ -692,6 +694,7 @@ static int password_hash_add_do_add(struct ldb_handle *h) {
 	/* if we have sambaPassword in the original message add the operatio on it here */
 	sambaAttr = ldb_msg_find_element(msg, "sambaPassword");
 	if (sambaAttr) {
+		unsigned int user_account_control;
 		ret = add_password_hashes(ac->module, msg, 0);
 		/* we can compute new password hashes from the unicode password */
 		if (ret != LDB_SUCCESS) {
@@ -715,8 +718,10 @@ static int password_hash_add_do_add(struct ldb_handle *h) {
 		
 		/* if both the domain properties and the user account controls do not permit
 		 * clear text passwords then wipe out the sambaPassword */
-		if ((!(domain->pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT)) ||
-		    (!(ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0) & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED))) {
+		user_account_control = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
+		if (domain->store_cleartext && (user_account_control & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
+			/* Keep sambaPassword attribute */
+		} else {
 			ldb_msg_remove_attr(msg, "sambaPassword");
 		}
 	}
@@ -1022,8 +1027,10 @@ static int password_hash_mod_do_mod(struct ldb_handle *h) {
 
 			/* if the domain properties or the user account controls do not permit
 			 * clear text passwords then wipe out the sambaPassword */
-			if ((!(domain->pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT)) ||
-			    (!(ldb_msg_find_attr_as_uint(ac->search_res->message, "userAccountControl", 0) & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED))) {
+			if (domain->store_cleartext &&
+			    (ldb_msg_find_attr_as_uint(ac->search_res->message, "userAccountControl", 0) & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
+				/* Keep sambaPassword attribute */
+			} else {
 				ldb_msg_remove_attr(msg, "sambaPassword");
 			}
 

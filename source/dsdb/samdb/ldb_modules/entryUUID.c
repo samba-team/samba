@@ -215,6 +215,15 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 		}
 	},
 	{
+		.local_name = "sambaPassword",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "userPassword"
+			 }
+		}
+	},
+	{
 		.local_name = "allowedChildClassesEffective",
 		.type = MAP_CONVERT,
 		.u = {
