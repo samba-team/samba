@@ -340,7 +340,10 @@ include/includes.d: include/includes.h
 		$(CC_CHECKER) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@; \
 	fi
 	@echo "Compiling $<"
-	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
+	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@ && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@" 1>&2;\
+		$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@ >/dev/null 2>&1
 
 .h.h.gch:
 	@echo "Precompiling $<"
