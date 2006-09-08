@@ -110,7 +110,7 @@ NT_USER_TOKEN system_token = { 1, system_sid_array, SE_ALL_PRIVS };
 ****************************************************************************/
 
 static const struct {
-	enum SID_NAME_USE sid_type;
+	enum lsa_SidType sid_type;
 	const char *string;
 } sid_name_type[] = {
 	{SID_NAME_USER, "User"},
@@ -123,7 +123,7 @@ static const struct {
 	{SID_NAME_UNKNOWN, "UNKNOWN"},
 	{SID_NAME_COMPUTER, "Computer"},
 
- 	{(enum SID_NAME_USE)0, NULL}
+ 	{(enum lsa_SidType)0, NULL}
 };
 
 const char *sid_type_lookup(uint32 sid_type) 

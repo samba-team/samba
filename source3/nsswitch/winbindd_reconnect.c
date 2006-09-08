@@ -87,7 +87,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    const char *domain_name,
 			    const char *name,
 			    DOM_SID *sid,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	NTSTATUS result;
 
@@ -111,7 +111,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    const DOM_SID *sid,
 			    char **domain_name,
 			    char **name,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	NTSTATUS result;
 
@@ -132,7 +132,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 			      size_t num_rids,
 			      char **domain_name,
 			      char ***names,
-			      enum SID_NAME_USE **types)
+			      enum lsa_SidType **types)
 {
 	NTSTATUS result;
 

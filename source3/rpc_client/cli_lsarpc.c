@@ -177,7 +177,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				const DOM_SID *sids, 
 				char ***domains,
 				char ***names,
-				enum SID_NAME_USE **types)
+				enum lsa_SidType **types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
@@ -233,7 +233,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	if (!((*types) = TALLOC_ARRAY(mem_ctx, enum SID_NAME_USE, num_sids))) {
+	if (!((*types) = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -254,7 +254,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 
 			(*names)[i] = talloc_strdup(mem_ctx, name);
 			(*domains)[i] = talloc_strdup(mem_ctx, dom_name);
-			(*types)[i] = (enum SID_NAME_USE)t_names.name[i].sid_name_use;
+			(*types)[i] = (enum lsa_SidType)t_names.name[i].sid_name_use;
 			
 			if (((*names)[i] == NULL) || ((*domains)[i] == NULL)) {
 				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
@@ -282,7 +282,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 const char **names,
 				 const char ***dom_names,
 				 DOM_SID **sids,
-				 enum SID_NAME_USE **types)
+				 enum lsa_SidType **types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_NAMES q;
@@ -329,7 +329,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	if (!((*types = TALLOC_ARRAY(mem_ctx, enum SID_NAME_USE, num_names)))) {
+	if (!((*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_names)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -365,7 +365,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 			sid_append_rid(sid, dom_rid);
 		}
 
-		(*types)[i] = (enum SID_NAME_USE)t_rids[i].type;
+		(*types)[i] = (enum lsa_SidType)t_rids[i].type;
 
 		if (dom_names == NULL) {
 			continue;

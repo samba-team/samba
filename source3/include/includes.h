@@ -66,6 +66,36 @@
 #undef HAVE_TERMIOS_H
 #endif
 
+#ifdef __GNUC__
+/** gcc attribute used on function parameters so that it does not emit
+ * warnings about them being unused. **/
+#  define UNUSED(param) param __attribute__ ((unused))
+#else
+#  define UNUSED(param) param
+/** Feel free to add definitions for other compilers here. */
+#endif
+
+#ifndef _PUBLIC_
+#ifdef HAVE_VISIBILITY_ATTR
+#  define _PUBLIC_ __attribute__((visibility("default")))
+#else
+#  define _PUBLIC_
+#endif
+#endif
+
+#ifndef NORETURN_ATTRIBUTE
+#if (__GNUC__ >= 3)
+/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
+ * the parameter containing the format, and a2 the index of the first
+ * argument. Note that some gcc 2.x versions don't handle this
+ * properly **/
+#define NORETURN_ATTRIBUTE __attribute__ ((noreturn))
+#else
+#define NORETURN_ATTRIBUTE
+#endif
+#endif
+
+
 #if (__GNUC__ >= 3 ) && (__GNUC_MINOR__ >= 1 )
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
@@ -999,9 +1029,6 @@ extern int errno;
 #include "spnego.h"
 #include "rpc_client.h"
 #include "event.h"
-
-#include "librpc/ndr/libndr.h"
-#include "librpc/gen_ndr/unixinfo.h"
 
 /*
  * Type for wide character dirent structure.

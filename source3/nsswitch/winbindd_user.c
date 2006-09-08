@@ -314,7 +314,7 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 /* Return a password structure from a username.  */
 
 static void getpwnam_name2sid_recv(void *private_data, BOOL success,
-				   const DOM_SID *sid, enum SID_NAME_USE type);
+				   const DOM_SID *sid, enum lsa_SidType type);
 
 void winbindd_getpwnam(struct winbindd_cli_state *state)
 {
@@ -360,7 +360,7 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 }
 
 static void getpwnam_name2sid_recv(void *private_data, BOOL success,
-				   const DOM_SID *sid, enum SID_NAME_USE type)
+				   const DOM_SID *sid, enum lsa_SidType type)
 {
 	struct winbindd_cli_state *state =
 		(struct winbindd_cli_state *)private_data;

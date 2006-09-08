@@ -551,9 +551,9 @@ static void lookupsid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			   void *c, void *private_data)
 {
 	void (*cont)(void *priv, BOOL succ, const char *dom_name,
-		     const char *name, enum SID_NAME_USE type) =
+		     const char *name, enum lsa_SidType type) =
 		(void (*)(void *, BOOL, const char *, const char *,
-			  enum SID_NAME_USE))c;
+			  enum lsa_SidType))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger lookupsid\n"));
@@ -569,14 +569,14 @@ static void lookupsid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 
 	cont(private_data, True, response->data.name.dom_name,
 	     response->data.name.name,
-	     (enum SID_NAME_USE)response->data.name.type);
+	     (enum lsa_SidType)response->data.name.type);
 }
 
 void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 			      void (*cont)(void *private_data, BOOL success,
 					   const char *dom_name,
 					   const char *name,
-					   enum SID_NAME_USE type),
+					   enum lsa_SidType type),
 			      void *private_data)
 {
 	struct winbindd_domain *domain;
@@ -601,7 +601,7 @@ void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 					     struct winbindd_cli_state *state)
 {
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	DOM_SID sid;
 	fstring name;
 	fstring dom_name;
@@ -638,8 +638,8 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			    void *c, void *private_data)
 {
 	void (*cont)(void *priv, BOOL succ, const DOM_SID *sid,
-		     enum SID_NAME_USE type) =
-		(void (*)(void *, BOOL, const DOM_SID *, enum SID_NAME_USE))c;
+		     enum lsa_SidType type) =
+		(void (*)(void *, BOOL, const DOM_SID *, enum lsa_SidType))c;
 	DOM_SID sid;
 
 	if (!success) {
@@ -662,14 +662,14 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	}
 
 	cont(private_data, True, &sid,
-	     (enum SID_NAME_USE)response->data.sid.type);
+	     (enum lsa_SidType)response->data.sid.type);
 }
 
 void winbindd_lookupname_async(TALLOC_CTX *mem_ctx, const char *dom_name,
 			       const char *name,
 			       void (*cont)(void *private_data, BOOL success,
 					    const DOM_SID *sid,
-					    enum SID_NAME_USE type),
+					    enum lsa_SidType type),
 			       void *private_data)
 {
 	struct winbindd_request request;
@@ -695,7 +695,7 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx, const char *dom_name,
 enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state)
 {
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	char *name_domain, *name_user;
 	DOM_SID sid;
 	char *p;
@@ -812,7 +812,7 @@ enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 	DOM_SID domain_sid;
 	char *domain_name;
 	char **names;
-	enum SID_NAME_USE *types;
+	enum lsa_SidType *types;
 	NTSTATUS status;
 	char *result;
 
@@ -1171,7 +1171,7 @@ struct sid2uid_state {
 
 static void sid2uid_lookup_sid_recv(void *private_data, BOOL success,
 				    const char *dom_name, const char *name,
-				    enum SID_NAME_USE type);
+				    enum lsa_SidType type);
 static void sid2uid_noalloc_recv(void *private_data, BOOL success, uid_t uid);
 static void sid2uid_alloc_recv(void *private_data, BOOL success, uid_t uid);
 static void sid2uid_name2uid_recv(void *private_data, BOOL success, uid_t uid);
@@ -1220,7 +1220,7 @@ void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
 static void sid2uid_lookup_sid_recv(void *private_data, BOOL success,
 				    const char *dom_name, const char *name,
-				    enum SID_NAME_USE type)
+				    enum lsa_SidType type)
 {
 	struct sid2uid_state *state =
 		talloc_get_type_abort(private_data, struct sid2uid_state);
@@ -1333,7 +1333,7 @@ struct sid2gid_state {
 
 static void sid2gid_lookup_sid_recv(void *private_data, BOOL success,
 				    const char *dom_name, const char *name,
-				    enum SID_NAME_USE type);
+				    enum lsa_SidType type);
 static void sid2gid_noalloc_recv(void *private_data, BOOL success, gid_t gid);
 static void sid2gid_alloc_recv(void *private_data, BOOL success, gid_t gid);
 static void sid2gid_name2gid_recv(void *private_data, BOOL success, gid_t gid);
@@ -1382,7 +1382,7 @@ void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
 static void sid2gid_lookup_sid_recv(void *private_data, BOOL success,
 				    const char *dom_name, const char *name,
-				    enum SID_NAME_USE type)
+				    enum lsa_SidType type)
 {
 	struct sid2gid_state *state =
 		talloc_get_type_abort(private_data, struct sid2gid_state);
