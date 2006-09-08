@@ -580,6 +580,16 @@ BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 			tmpname, strerror(errno) ));
 	}
 
+	if (fchmod(fd, 0644)==-1) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: fchmod failed for %s."
+			" Errno %s\n",
+			tmpname, strerror(errno) ));
+		unlink(tmpname);
+		close(fd);
+		TALLOC_FREE(dname);
+		return False;
+	}
+
 	ret = write(fd, file_contents, flen);
 	if (flen != ret) {
 		DEBUG(0,("create_local_private_krb5_conf_for_domain: write failed,"
