@@ -212,7 +212,8 @@ SOCKET_WRAPPER_OBJ = lib/socket_wrapper.o
 LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
 	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o
 
-LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o
+LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o \
+		 librpc/gen_ndr/ndr_dfs.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -841,7 +842,7 @@ cac: SHOWFLAGS $(LIBMSRPC)
 
 #####################################################################
 ## Perl IDL Compiler
-IDL_FILES = unixinfo.idl lsa.idl
+IDL_FILES = unixinfo.idl lsa.idl dfs.idl
 
 pidl/Makefile: pidl/Makefile.PL
 	@echo Building Perl IDL Compiler....

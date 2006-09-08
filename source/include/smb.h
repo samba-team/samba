@@ -281,6 +281,7 @@ typedef struct dom_sid {
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/unixinfo.h"
 #include "librpc/gen_ndr/lsa.h"
+#include "librpc/gen_ndr/dfs.h"
 
 struct lsa_dom_info {
 	BOOL valid;
