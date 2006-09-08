@@ -240,6 +240,7 @@ static NTSTATUS gensec_sasl_unwrap_packets(struct gensec_security *gensec_securi
 				   in->data, in->length, &out_data, &out_len);
 	if (sasl_ret == SASL_OK) {
 		*out = data_blob_talloc(out_mem_ctx, out_data, out_len);
+		*len_processed = in->length;
 	} else {
 		DEBUG(1, ("GENSEC SASL: unwrap failed: %s\n", sasl_errdetail(gensec_sasl_state->conn)));
 	}
@@ -261,6 +262,7 @@ static NTSTATUS gensec_sasl_wrap_packets(struct gensec_security *gensec_security
 				   in->data, in->length, &out_data, &out_len);
 	if (sasl_ret == SASL_OK) {
 		*out = data_blob_talloc(out_mem_ctx, out_data, out_len);
+		*len_processed = in->length;
 	} else {
 		DEBUG(1, ("GENSEC SASL: wrap failed: %s\n", sasl_errdetail(gensec_sasl_state->conn)));
 	}
