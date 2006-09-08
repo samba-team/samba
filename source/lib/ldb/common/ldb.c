@@ -163,11 +163,11 @@ static const struct ldb_dn *ldb_set_default_basedn(struct ldb_context *ldb)
 	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx), LDB_SCOPE_BASE, 
 			 "(objectClass=*)", attrs, &res);
 	if (ret == LDB_SUCCESS) {
-		talloc_steal(tmp_ctx, res);
 		if (res->count == 1) {
 			basedn = ldb_msg_find_attr_as_dn(ldb, res->msgs[0], "defaultNamingContext");
 			ldb_set_opaque(ldb, "default_baseDN", basedn);
 		}
+		talloc_free(res);
 	}
 
 	talloc_free(tmp_ctx);
