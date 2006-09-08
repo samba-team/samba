@@ -1040,7 +1040,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.session_info     = gensec_spnego_session_info,
 	.have_feature     = gensec_spnego_have_feature,
 	.enabled          = True,
-	.order            = GENSEC_SPNEGO
+	.priority         = GENSEC_SPNEGO
 };
 
 NTSTATUS gensec_spnego_init(void)

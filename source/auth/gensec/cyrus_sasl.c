@@ -309,7 +309,7 @@ static const struct gensec_security_ops gensec_sasl_security_ops = {
 	.unwrap_packets   = gensec_sasl_unwrap_packets,
 	.have_feature     = gensec_sasl_have_feature,
 	.enabled          = False,
-	.order            = GENSEC_SASL
+	.priority         = GENSEC_SASL
 };
 
 int gensec_sasl_log(void *context, 
