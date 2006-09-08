@@ -331,22 +331,22 @@ MODCONF=$LDAPDIR/modules.conf
 rm -f $MODCONF
 touch $MODCONF
 
-if ! slaptest -u -f $SLAPD_CONF > /dev/null 2>&1; then
+slaptest -u -f $SLAPD_CONF > /dev/null 2>&1 || {
     echo "enabling slapd modules"
     cat > $MODCONF <<EOF 
 modulepath	/usr/lib/ldap
 moduleload	back_bdb
 EOF
-fi
+}
 
 if slaptest -u -f $SLAPD_CONF; then
-    if ! slapadd -f $SLAPD_CONF < $PRIVATEDIR/$DNSNAME.ldif; then
+    slapadd -f $SLAPD_CONF < $PRIVATEDIR/$DNSNAME.ldif || {
 	echo "slapadd failed"
-    fi
+    }
 
-    if ! slaptest -f $SLAPD_CONF; then
+    slaptest -f $SLAPD_CONF || {
 	echo "slaptest after database load failed"
-    fi
+    }
 fi
     
 PATH=$OLDPATH
