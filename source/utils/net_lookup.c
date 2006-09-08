@@ -247,7 +247,7 @@ static int net_lookup_name(int argc, const char **argv)
 {
 	const char *dom, *name;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 
 	if (argc != 1) {
 		d_printf("usage: net lookup name <name>\n");
@@ -269,7 +269,7 @@ static int net_lookup_sid(int argc, const char **argv)
 {
 	const char *dom, *name;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 
 	if (argc != 1) {
 		d_printf("usage: net lookup sid <sid>\n");

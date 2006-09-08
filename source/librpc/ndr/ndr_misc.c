@@ -25,6 +25,41 @@
 
 #include "includes.h"
 
+NTSTATUS ndr_push_GUID(struct ndr_push *ndr, int ndr_flags, const struct GUID *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->time_low));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->time_mid));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->time_hi_and_version));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->clock_seq, 2));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->node, 6));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_GUID(struct ndr_pull *ndr, int ndr_flags, struct GUID *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->time_low));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->time_mid));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->time_hi_and_version));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->clock_seq, 2));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->node, 6));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NT_STATUS_OK;
+}
+
+size_t ndr_size_GUID(const struct GUID *r, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_GUID);
+}
+
 /**
   build a GUID from a string
 */
@@ -168,4 +203,37 @@ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *
 BOOL policy_handle_empty(struct policy_handle *h) 
 {
 	return (h->handle_type == 0 && GUID_all_zero(&h->uuid));
+}
+
+NTSTATUS ndr_push_policy_handle(struct ndr_push *ndr, int ndr_flags, const struct policy_handle *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->handle_type));
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->uuid));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_policy_handle(struct ndr_pull *ndr, int ndr_flags, struct policy_handle *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->handle_type));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->uuid));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NT_STATUS_OK;
+}
+
+void ndr_print_policy_handle(struct ndr_print *ndr, const char *name, const struct policy_handle *r)
+{
+	ndr_print_struct(ndr, name, "policy_handle");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "handle_type", r->handle_type);
+	ndr_print_GUID(ndr, "uuid", &r->uuid);
+	ndr->depth--;
 }

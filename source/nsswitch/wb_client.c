@@ -35,7 +35,7 @@ NSS_STATUS winbindd_request_response(int req_type,
 /* Call winbindd to convert a name to a sid */
 
 BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
-                         enum SID_NAME_USE *name_type)
+                         enum lsa_SidType *name_type)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -56,7 +56,7 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 				       &response)) == NSS_STATUS_SUCCESS) {
 		if (!string_to_sid(sid, response.data.sid.sid))
 			return False;
-		*name_type = (enum SID_NAME_USE)response.data.sid.type;
+		*name_type = (enum lsa_SidType)response.data.sid.type;
 	}
 
 	return result == NSS_STATUS_SUCCESS;
@@ -66,7 +66,7 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 
 BOOL winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
 			const char **domain, const char **name,
-                        enum SID_NAME_USE *name_type)
+                        enum lsa_SidType *name_type)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -105,7 +105,7 @@ BOOL winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		}
 	}
 
-	*name_type = (enum SID_NAME_USE)response.data.name.type;
+	*name_type = (enum lsa_SidType)response.data.name.type;
 
 	DEBUG(10, ("winbind_lookup_sid: SUCCESS: SID %s -> %s %s\n", 
 		   sid_string_static(sid), response.data.name.dom_name,
@@ -117,7 +117,7 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			 const DOM_SID *domain_sid,
 			 int num_rids, uint32 *rids,
 			 const char **domain_name,
-			 const char ***names, enum SID_NAME_USE **types)
+			 const char ***names, enum lsa_SidType **types)
 {
 	size_t i, buflen;
 	ssize_t len;
@@ -166,7 +166,7 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 	*domain_name = talloc_strdup(mem_ctx, response.data.domain_name);
 
 	*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
-	*types = TALLOC_ARRAY(mem_ctx, enum SID_NAME_USE, num_rids);
+	*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
 
 	if ((*names == NULL) || (*types == NULL)) {
 		goto fail;
@@ -183,7 +183,7 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			goto fail;
 		}
 			
-		(*types)[i] = (enum SID_NAME_USE)strtoul(p, &q, 10);
+		(*types)[i] = (enum lsa_SidType)strtoul(p, &q, 10);
 
 		if (*q != ' ') {
 			DEBUG(10, ("Got invalid reply: %s\n",

@@ -48,7 +48,7 @@ struct afs_ace {
 	BOOL positive;
 	char *name;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	uint32 rights;
 	struct afs_ace *next;
 };
@@ -110,7 +110,7 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 				   const char *name, uint32 rights)
 {
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	struct afs_ace *result;
 
 	if (strcmp(name, "system:administrators") == 0) {
@@ -713,7 +713,7 @@ static BOOL nt_to_afs_acl(const char *filename,
 	for (i = 0; i < dacl->num_aces; i++) {
 		SEC_ACE *ace = &(dacl->ace[i]);
 		const char *dom_name, *name;
-		enum SID_NAME_USE name_type;
+		enum lsa_SidType name_type;
 		char *p;
 
 		if (ace->type != SEC_ACE_TYPE_ACCESS_ALLOWED) {

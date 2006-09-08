@@ -212,7 +212,7 @@ SOCKET_WRAPPER_OBJ = lib/socket_wrapper.o
 LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
 	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o
 
-LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o
+LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -841,7 +841,7 @@ cac: SHOWFLAGS $(LIBMSRPC)
 
 #####################################################################
 ## Perl IDL Compiler
-IDL_FILES = unixinfo.idl 
+IDL_FILES = unixinfo.idl lsa.idl
 
 pidl/Makefile: pidl/Makefile.PL
 	@echo Building Perl IDL Compiler....
@@ -1715,8 +1715,8 @@ uninstallpammodules:
 TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 
 clean: delheaders python_clean
-	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
-		tdb/*/*.o tdb/*/*.@PICSUFFIX@ tdb/*/*.@SHLIBEXT@ \
+	-rm -f core */*~ *~ */*.o */*/*.o */*.@PICSUFFIX@ */*/*.@PICSUFFIX@ \
+		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBMSRPC) \

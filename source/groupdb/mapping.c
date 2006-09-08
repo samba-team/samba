@@ -38,7 +38,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 #define MEMBEROF_PREFIX "MEMBEROF/"
 
 
-static BOOL enum_group_mapping(const DOM_SID *sid, enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
+static BOOL enum_group_mapping(const DOM_SID *sid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
                                size_t *p_num_entries, BOOL unix_only);
 static BOOL group_map_remove(const DOM_SID *sid);
 			
@@ -136,7 +136,7 @@ static BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 /****************************************************************************
 initialise first time the mapping list
 ****************************************************************************/
-NTSTATUS add_initial_entry(gid_t gid, const char *sid, enum SID_NAME_USE sid_name_use, const char *nt_name, const char *comment)
+NTSTATUS add_initial_entry(gid_t gid, const char *sid, enum lsa_SidType sid_name_use, const char *nt_name, const char *comment)
 {
 	GROUP_MAP map;
 
@@ -398,7 +398,7 @@ static BOOL group_map_remove(const DOM_SID *sid)
  Enumerate the group mapping.
 ****************************************************************************/
 
-static BOOL enum_group_mapping(const DOM_SID *domsid, enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
+static BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
 			size_t *p_num_entries, BOOL unix_only)
 {
 	TDB_DATA kbuf, dbuf, newkey;
@@ -1040,7 +1040,7 @@ NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
 }
 
 NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
-					   const DOM_SID *sid, enum SID_NAME_USE sid_name_use,
+					   const DOM_SID *sid, enum lsa_SidType sid_name_use,
 					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
 					   BOOL unix_only)
 {
@@ -1068,7 +1068,7 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 				  const char *name, uint32 *rid)
 {
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	uint32 new_rid;
 	gid_t gid;
 	BOOL exists;
@@ -1269,7 +1269,7 @@ NTSTATUS pdb_nop_delete_group_mapping_entry(struct pdb_methods *methods,
 }
 
 NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
-					   enum SID_NAME_USE sid_name_use,
+					   enum lsa_SidType sid_name_use,
 					   GROUP_MAP **rmap, size_t *num_entries,
 					   BOOL unix_only)
 {
@@ -1317,7 +1317,7 @@ BOOL pdb_set_dom_grp_info(const DOM_SID *sid, const struct acct_info *info)
 NTSTATUS pdb_create_builtin_alias(uint32 rid)
 {
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	gid_t gid;
 	GROUP_MAP map;
 	TALLOC_CTX *mem_ctx;
