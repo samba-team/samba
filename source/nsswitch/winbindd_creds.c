@@ -80,7 +80,7 @@ NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
 	
 		/* do lookup ourself */
 
-		enum SID_NAME_USE type;
+		enum lsa_SidType type;
 		
 		if (!lookup_cached_name(mem_ctx,
 	        	                domain->name,

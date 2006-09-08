@@ -164,7 +164,7 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 		int dom_idx;
 		char *full_name;
 		const char *domain;
-		enum SID_NAME_USE type = SID_NAME_UNKNOWN;
+		enum lsa_SidType type = SID_NAME_UNKNOWN;
 
 		/* Split name into domain and user component */
 
@@ -239,7 +239,7 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 		int dom_idx;
 		char *full_name;
 		const char *domain;
-		enum SID_NAME_USE type = SID_NAME_UNKNOWN;
+		enum lsa_SidType type = SID_NAME_UNKNOWN;
 
 		/* Split name into domain and user component */
 

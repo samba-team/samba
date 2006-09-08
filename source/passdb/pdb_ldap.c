@@ -2156,7 +2156,7 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_TYPE)));
 		return False;
 	}
-	map->sid_name_use = (enum SID_NAME_USE)atol(temp);
+	map->sid_name_use = (enum lsa_SidType)atol(temp);
 
 	if ((map->sid_name_use < SID_NAME_USER) ||
 			(map->sid_name_use > SID_NAME_UNKNOWN)) {
@@ -3104,7 +3104,7 @@ static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
  *********************************************************************/
 
 static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
-					   const DOM_SID *domsid, enum SID_NAME_USE sid_name_use,
+					   const DOM_SID *domsid, enum lsa_SidType sid_name_use,
 					   GROUP_MAP **pp_rmap,
 					   size_t *p_num_entries,
 					   BOOL unix_only)
@@ -3166,7 +3166,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 	int count;
 	LDAPMod **mods = NULL;
 	int rc;
-	enum SID_NAME_USE type = SID_NAME_USE_NONE;
+	enum lsa_SidType type = SID_NAME_USE_NONE;
 
 	pstring filter;
 
@@ -3278,7 +3278,7 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 	int i;
 	pstring filter;
 	size_t num_members = 0;
-	enum SID_NAME_USE type = SID_NAME_USE_NONE;
+	enum lsa_SidType type = SID_NAME_USE_NONE;
 
 	*pp_members = NULL;
 	*p_num_members = 0;
@@ -3377,7 +3377,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	int i;
 	int rc;
 	char *filter;
-	enum SID_NAME_USE type = SID_NAME_USE_NONE;
+	enum lsa_SidType type = SID_NAME_USE_NONE;
 
 	if (sid_check_is_builtin(domain_sid)) {
 		type = SID_NAME_ALIAS;
@@ -3644,7 +3644,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 				    int num_rids,
 				    uint32 *rids,
 				    const char **names,
-				    enum SID_NAME_USE *attrs)
+				    enum lsa_SidType *attrs)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
@@ -3794,7 +3794,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		uint32 rid;
 		int rid_index;
 		const char *attr;
-		enum SID_NAME_USE type;
+		enum lsa_SidType type;
 		const char *dn = smbldap_talloc_dn(mem_ctx, ld, entry);
 
 		attr = smbldap_talloc_single_attribute(ld, entry, "sambaGroupType",
@@ -3805,7 +3805,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 			continue;
 		}
 
-		type = (enum SID_NAME_USE)atol(attr);
+		type = (enum lsa_SidType)atol(attr);
 
 		/* Consistency checks */
 		if ((is_builtin && (type != SID_NAME_ALIAS)) ||
@@ -4326,7 +4326,7 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 				     struct pdb_search *search,
                                      const DOM_SID *sid,
-				     enum SID_NAME_USE type)
+				     enum lsa_SidType type)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
@@ -4513,7 +4513,7 @@ static BOOL ldapsam_new_rid(struct pdb_methods *methods, uint32 *rid)
 
 static BOOL ldapsam_sid_to_id(struct pdb_methods *methods,
 			      const DOM_SID *sid,
-			      union unid_t *id, enum SID_NAME_USE *type)
+			      union unid_t *id, enum lsa_SidType *type)
 {
 	struct ldapsam_privates *priv =
 		(struct ldapsam_privates *)methods->private_data;
@@ -4576,7 +4576,7 @@ static BOOL ldapsam_sid_to_id(struct pdb_methods *methods,
 		}
 
 		id->gid = strtoul(gid_str, NULL, 10);
-		*type = (enum SID_NAME_USE)strtoul(value, NULL, 10);
+		*type = (enum lsa_SidType)strtoul(value, NULL, 10);
 		ret = True;
 		goto done;
 	}

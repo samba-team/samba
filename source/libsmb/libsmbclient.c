@@ -3784,7 +3784,7 @@ convert_sid_to_string(struct cli_state *ipc_cli,
 {
 	char **domains = NULL;
 	char **names = NULL;
-	enum SID_NAME_USE *types = NULL;
+	enum lsa_SidType *types = NULL;
 	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
 	sid_to_string(str, sid);
 
@@ -3820,7 +3820,7 @@ convert_string_to_sid(struct cli_state *ipc_cli,
                       DOM_SID *sid,
                       const char *str)
 {
-	enum SID_NAME_USE *types = NULL;
+	enum lsa_SidType *types = NULL;
 	DOM_SID *sids = NULL;
 	BOOL result = True;
 	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
