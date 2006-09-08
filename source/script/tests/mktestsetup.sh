@@ -281,10 +281,16 @@ include $LDAPDIR/ad.schema
 
 pidfile		$PIDDIR/slapd.pid
 argsfile	$LDAPDIR/slapd.args
-
+sasl-realm $DNSNAME
 access to * by * write
 
-allow update_anon bind_anon_dn
+authz-regexp
+          uid=([^,]*),cn=$DNSNAME,cn=digest-md5,cn=auth
+          ldap:///$BASEDN??sub?(samAccountName=$1)
+
+authz-regexp
+          uid=([^,]*),cn=([^,]*),cn=digest-md5,cn=auth
+          ldap:///$BASEDN??sub?(samAccountName=$1)
 
 include $LDAPDIR/modules.conf
 
@@ -293,6 +299,8 @@ defaultsearchbase "$BASEDN"
 backend		bdb
 database        bdb
 suffix		"$BASEDN"
+rootdn          "cn=Manager,$BASEDN"
+rootpw          $PASSWORD
 directory	$LDAPDIR/db
 index           objectClass eq
 index           samAccountName eq
@@ -302,6 +310,7 @@ EOF
 PROVISION_OPTIONS="$CONFIGURATION --host-name=$NETBIOSNAME --host-ip=127.0.0.1"
 PROVISION_OPTIONS="$PROVISION_OPTIONS --quiet --domain $DOMAIN --realm $REALM"
 PROVISION_OPTIONS="$PROVISION_OPTIONS --adminpass $PASSWORD --root=$ROOT"
+PROVISION_OPTIONS="$PROVISION_OPTIONS --simple-bind-dn=cn=Manager,$BASEDN --password=$PASSWORD --root=$ROOT"
 $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS
 
 LDAPI="ldapi://$LDAPDIR/ldapi"
