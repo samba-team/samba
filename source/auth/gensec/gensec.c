@@ -1246,9 +1246,6 @@ const struct gensec_critical_sizes *gensec_interface_version(void)
 }
 
 static int sort_gensec(struct gensec_security_ops **gs1, struct gensec_security_ops **gs2) {
-	SMB_ASSERT(talloc_get_type(*gs1, struct gensec_security_ops));
-	SMB_ASSERT(talloc_get_type(*gs2, struct gensec_security_ops));
-
 	return (*gs2)->order - (*gs1)->order;
 }
 
