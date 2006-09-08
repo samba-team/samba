@@ -36,6 +36,7 @@ sub add_libreplace($)
 
 	return if ($part->{NAME} eq "LIBREPLACE");
 	return if ($part->{NAME} eq "LIBREPLACE_HOSTCC");
+	return if ($part->{NAME} eq "REPLACE_READDIR");
 
 	foreach my $n (@{$part->{PRIVATE_DEPENDENCIES}}) {
 		return if ($n eq "LIBREPLACE");
