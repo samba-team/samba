@@ -308,7 +308,8 @@ static const struct gensec_security_ops gensec_sasl_security_ops = {
 	.wrap_packets     = gensec_sasl_wrap_packets,
 	.unwrap_packets   = gensec_sasl_unwrap_packets,
 	.have_feature     = gensec_sasl_have_feature,
-	.enabled          = False,
+	.enabled          = True,
+	.order            = GENSEC_SASL
 };
 
 int gensec_sasl_log(void *context, 
