@@ -256,7 +256,7 @@ static const struct gensec_security_ops gensec_schannel_security_ops = {
 	.sig_size	= schannel_sig_size,
 	.have_feature   = schannel_have_feature,
 	.enabled        = True,
-	.order          = GENSEC_SCHANNEL
+	.priority       = GENSEC_SCHANNEL
 };
 
 NTSTATUS gensec_schannel_init(void)

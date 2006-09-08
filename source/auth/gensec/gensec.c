@@ -1246,7 +1246,7 @@ const struct gensec_critical_sizes *gensec_interface_version(void)
 }
 
 static int sort_gensec(struct gensec_security_ops **gs1, struct gensec_security_ops **gs2) {
-	return (*gs2)->order - (*gs1)->order;
+	return (*gs2)->priority - (*gs1)->priority;
 }
 
 /*

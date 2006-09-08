@@ -730,7 +730,7 @@ static const struct gensec_security_ops gensec_fake_gssapi_krb5_security_ops = {
 	.have_feature   = gensec_krb5_have_feature,
 	.enabled        = False,
 	.kerberos       = True,
-	.order          = GENSEC_KRB5
+	.priority       = GENSEC_KRB5
 };
 
 static const struct gensec_security_ops gensec_krb5_security_ops = {
@@ -745,7 +745,7 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.unwrap         = gensec_krb5_unwrap,
 	.enabled        = True,
 	.kerberos       = True,
-	.order          = GENSEC_KRB5
+	.priority       = GENSEC_KRB5
 };
 
 NTSTATUS gensec_krb5_init(void)
