@@ -46,7 +46,7 @@ case "$host_os" in
 			SHLD_FLAGS="-shared -Wl,-Bsymbolic" 
 		fi
 		LDFLAGS="-Wl,--export-dynamic"
-		PICFLAGS="-fPIC"
+		PICFLAG="-fPIC"
 		SONAMEFLAG="-Wl,-soname="
 		;;
 	*solaris*)
@@ -54,13 +54,13 @@ case "$host_os" in
 		SHLD_FLAGS="-G"
 		SONAMEFLAG="-h "
 		if test "${GCC}" = "yes"; then
-			PICFLAGS="-fPIC"
+			PICFLAG="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
 			if test "${ac_cv_prog_gnu_ld}" = "yes"; then
 				LDFLAGS="-Wl,-E"
 			fi
 		else
-			PICFLAGS="-KPIC"
+			PICFLAG="-KPIC"
 			## ${CFLAGS} added for building 64-bit shared 
 			## libs using Sun's Compiler
 			SHLD_FLAGS="-G \${CFLAGS}"
@@ -70,19 +70,19 @@ case "$host_os" in
 		BLDSHARED="true"
 		SHLD_FLAGS="-G"
 		SONAMEFLAG="-Wl,-h,"
-		PICFLAGS="-KPIC"   # Is this correct for SunOS
+		PICFLAG="-KPIC"   # Is this correct for SunOS
 		;;
 	*netbsd* | *freebsd* | *dragonfly* )  
 		BLDSHARED="true"
 		LDFLAGS="-Wl,--export-dynamic"
 		SONAMEFLAG="-Wl,-soname,"
-		PICFLAGS="-fPIC -DPIC"
+		PICFLAG="-fPIC -DPIC"
 		;;
 	*openbsd*)
 		BLDSHARED="true"
 		LDFLAGS="-Wl,-Bdynamic"
 		SONAMEFLAG="-Wl,-soname,"
-		PICFLAGS="-fPIC"
+		PICFLAG="-fPIC"
 		;;
 	*irix*)
 		BLDSHARED="true"
@@ -90,9 +90,9 @@ case "$host_os" in
 		SONAMEFLAG="-soname "
 		SHLD="${PROG_LD}"
 		if test "${GCC}" = "yes"; then
-			PICFLAGS="-fPIC"
+			PICFLAG="-fPIC"
 		else 
-			PICFLAGS="-KPIC"
+			PICFLAG="-KPIC"
 		fi
 		;;
 	*aix*)
@@ -100,7 +100,7 @@ case "$host_os" in
 		SHLD_FLAGS="-Wl,-G,-bexpall"
 		LDFLAGS="-Wl,-brtl,-bexpall,-bbigtoc"
 		# as AIX code is always position independent...
-		PICFLAGS="-O2"
+		PICFLAG="-O2"
 		;;
 	*hpux*)
 		# Use special PIC flags for the native HP-UX compiler.
@@ -108,10 +108,10 @@ case "$host_os" in
 			BLDSHARED="true"
 			SHLD_FLAGS="-b -Wl,-B,symbolic,-b,-z"
 			SONAMEFLAG="-Wl,+h "
-			PICFLAGS="+z"
+			PICFLAG="+z"
 		elif test "${GCC}" = "yes"; then
 			BLDSHARED="true" # I hope this is correct
-			PICFLAGS="-fPIC"
+			PICFLAG="-fPIC"
 		fi
 		if test "$host_cpu" = "ia64"; then
 			SHLIBEXT="so"
@@ -124,12 +124,12 @@ case "$host_os" in
 	*osf*)
 		BLDSHARED="true"
 		SONAMEFLAG="-Wl,-soname,"
-		PICFLAGS="-fPIC"
+		PICFLAG="-fPIC"
 		;;
 	*unixware*)
 		BLDSHARED="true"
 		SONAMEFLAG="-Wl,-soname,"
-		PICFLAGS="-KPIC"
+		PICFLAG="-KPIC"
 		;;
 	*darwin*)
 		BLDSHARED="true"
