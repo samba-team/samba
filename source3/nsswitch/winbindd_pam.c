@@ -603,13 +603,13 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 					    cc,
 					    service,
 					    state->request.data.auth.user,
-					    NULL,
-					    state->request.data.auth.pass,
+					    realm,
 					    uid,
 					    time(NULL),
 					    ticket_lifetime,
 					    renewal_until, 
-					    lp_winbind_refresh_tickets());
+					    lp_winbind_refresh_tickets(),
+					    False);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_raw_kerberos_login: failed to add ccache to list: %s\n", 
@@ -841,8 +841,71 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 							state->request.data.auth.pass,
 							my_info3);
 		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(1,("failed to update creds: %s\n", nt_errstr(result)));
+			DEBUG(1,("winbindd_dual_pam_auth_cached: failed to update creds: %s\n",
+				nt_errstr(result)));
 			return result;
+		}
+
+		/* FIXME: what else points out that the remote domain is AD ? */
+		if (!strequal(domain->name, domain->alt_name) &&
+		    (state->request.flags & WBFLAG_PAM_KRB5)) {
+
+			uid_t uid = -1;
+			const char *cc = NULL;
+			char *realm = NULL;
+			const char *principal_s = NULL;
+			const char *service = NULL;
+			BOOL internal_ccache = False;
+
+			uid = get_uid_from_state(state);
+			if (uid == -1) {
+				DEBUG(0,("winbindd_dual_pam_auth_cached: invalid uid\n"));
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			cc = generate_krb5_ccache(state->mem_ctx,
+						state->request.data.auth.krb5_cc_type,
+						state->request.data.auth.uid,
+						&internal_ccache);
+			if (cc == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			realm = domain->alt_name;
+			strupper_m(realm);
+
+			principal_s = talloc_asprintf(state->mem_ctx, "%s@%s", name_user, realm);
+			if (principal_s == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			service = talloc_asprintf(state->mem_ctx, "%s/%s@%s", KRB5_TGS_NAME, realm, realm);
+			if (service == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			if (!internal_ccache) {
+
+				setup_return_cc_name(state, cc);
+
+				result = add_ccache_to_list(principal_s,
+							    cc,
+							    service,
+							    state->request.data.auth.user,
+							    domain->alt_name,
+							    uid,
+							    time(NULL),
+							    time(NULL) + lp_winbind_cache_time(),
+							    time(NULL) + WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
+							    lp_winbind_refresh_tickets(),
+							    True);
+
+				if (!NT_STATUS_IS_OK(result)) {
+					DEBUG(10,("winbindd_dual_pam_auth_cached: failed "
+						"to add ccache to list: %s\n",
+						nt_errstr(result)));
+				}
+			}
 		}
 
 		return NT_STATUS_OK;
