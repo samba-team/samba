@@ -7,7 +7,9 @@ dnl -------------------------------------------------------
 dnl
 
 AC_PATH_PROG(PROG_LD,ld)
+LD=${PROG_LD}
 AC_PROG_LD_GNU
+LD=""
 AC_PATH_PROG(PROG_AR, ar)
 
 AC_SUBST(STLD)
