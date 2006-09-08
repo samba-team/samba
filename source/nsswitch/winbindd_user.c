@@ -388,15 +388,32 @@ static void getpwnam_name2sid_recv(void *private_data, BOOL success,
 	winbindd_getpwsid(state, sid);
 }
 
-/* Return a password structure given a uid number */
+static void getpwuid_recv(void *private_data, BOOL success, const char *sid)
+{
+	struct winbindd_cli_state *state = private_data;
+	DOM_SID user_sid;
 
+	if (!success) {
+		DEBUG(10,("uid2sid_recv: uid [%lu] to sid mapping failed\n.",
+			  (unsigned long)(state->request.data.uid)));
+		request_error(state);
+		return;
+	}
+	
+	DEBUG(10,("uid2sid_recv: uid %lu has sid %s\n",
+		  (unsigned long)(state->request.data.uid), sid));
+
+	string_to_sid(&user_sid, sid);
+	winbindd_getpwsid(state, &user_sid);
+}
+
+/* Return a password structure given a uid number */
 void winbindd_getpwuid(struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
 	NTSTATUS status;
 	
 	/* Bug out if the uid isn't in the winbind range */
-
 	if ((state->request.data.uid < server_state.uid_low ) ||
 	    (state->request.data.uid > server_state.uid_high)) {
 		request_error(state);
@@ -409,14 +426,15 @@ void winbindd_getpwuid(struct winbindd_cli_state *state)
 	status = idmap_uid_to_sid(&user_sid, state->request.data.uid,
 				  ID_QUERY_ONLY | ID_CACHE_ONLY);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("Could not find SID for uid %lu\n",
-			  (unsigned long)state->request.data.uid));
-		request_error(state);
+	if (NT_STATUS_IS_OK(status)) {
+		winbindd_getpwsid(state, &user_sid);
 		return;
 	}
 
-	winbindd_getpwsid(state, &user_sid);
+	DEBUG(10,("Could not find SID for uid %lu in the cache. Querying idmap backend\n",
+		  (unsigned long)state->request.data.uid));
+
+	winbindd_uid2sid_async(state->mem_ctx, state->request.data.uid, getpwuid_recv, state);
 }
 
 /*
