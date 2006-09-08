@@ -846,6 +846,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			return result;
 		}
 
+#ifdef HAVE_KRB5
 		/* FIXME: what else points out that the remote domain is AD ? */
 		if (!strequal(domain->name, domain->alt_name) &&
 		    (state->request.flags & WBFLAG_PAM_KRB5)) {
@@ -907,7 +908,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 				}
 			}
 		}
-
+#endif /* HAVE_KRB5 */
 		return NT_STATUS_OK;
 
 	}
