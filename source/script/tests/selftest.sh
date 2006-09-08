@@ -58,10 +58,10 @@ incdir=`dirname $ARG0`
 if [ x"$TEST_LDAP" = x"yes" ]; then
     slapd_start
     echo -n "LDAP PROVISIONING..."
-    if ! $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-backend=$LDAPI; then
+    $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-backend=$LDAPI || {
 	echo "LDAP PROVISIONING failed: $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-backend=$LDAPI"
 	exit 1;
-    fi
+    }
 fi
 
 SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
