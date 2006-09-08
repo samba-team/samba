@@ -727,11 +727,12 @@ NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
  */
 
 _PUBLIC_ NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_security, 
-					const char **sasl_names) 
+						 const char **sasl_names) 
 {
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
 	const struct gensec_security_ops **ops;
+	int i;
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -743,7 +744,12 @@ _PUBLIC_ NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_
 		talloc_free(mem_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	nt_status = gensec_start_mech_by_ops(gensec_security, ops[0]);
+	for (i=0; ops[i]; i++) {
+		nt_status = gensec_start_mech_by_ops(gensec_security, ops[i]);
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)) {
+			break;
+		}
+	}
 	talloc_free(mem_ctx);
 	return nt_status;
 }
