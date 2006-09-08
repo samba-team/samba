@@ -418,7 +418,7 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.session_info   = gensec_ntlmssp_session_info,
 	.have_feature   = gensec_ntlmssp_have_feature,
 	.enabled        = True,
-	.order          = GENSEC_NTLMSSP
+	.priority       = GENSEC_NTLMSSP
 };
 
 
