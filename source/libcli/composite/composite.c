@@ -142,6 +142,13 @@ _PUBLIC_ void composite_continue(struct composite_context *ctx,
 	if (composite_nomem(new_ctx, ctx)) return;
 	new_ctx->async.fn = continuation;
 	new_ctx->async.private_data = private_data;
+
+	/* if we are setting up a continuation, and the context has
+	   already finished, then we should run the callback with an
+	   immediate event, otherwise we can be stuck forever */
+	if (new_ctx->state >= COMPOSITE_STATE_DONE && continuation) {
+		event_add_timed(new_ctx->event_ctx, new_ctx, timeval_zero(), composite_trigger, new_ctx);
+	}
 }
 
 _PUBLIC_ void composite_continue_rpc(struct composite_context *ctx,
