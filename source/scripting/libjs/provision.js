@@ -224,6 +224,10 @@ function ldb_erase_partitions(info, ldb)
 			}
 			
 			var res3 = ldb.search("(|(objectclass=*)(dn=*))", basedn, ldb.SCOPE_SUBTREE, attrs);
+			if (typeof(res3) == "undefined") {
+				info.message("ldb search failed: " + ldb.errstring() + "\n");
+				continue;
+			}
 			if (res3.length != 0) {
 				info.message("Failed to delete all records under " + basedn + ", " + res3.length + " records remaining\n");
 			}
