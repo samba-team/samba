@@ -66,11 +66,18 @@ showlayout:
 
 showflags:
 	@echo 'Samba will be compiled with flags:'
-	@echo '  CFLAGS = $(CFLAGS)'
-	@echo '  LDFLAGS = $(LDFLAGS)'
+	@echo '  CPP        = $(CPP)'
+	@echo '  CPPFLAGS   = $(CPPFLAGS)'
+	@echo '  CC         = $(CC)'
+	@echo '  CFLAGS     = $(CFLAGS)'
+	@echo '  PICFLAG    = $(PICFLAG)'
+	@echo '  LD         = $(LD)'
+	@echo '  LDFLAGS    = $(LDFLAGS)'
+	@echo '  STLD       = $(STLD)'
 	@echo '  STLD_FLAGS = $(STLD_FLAGS)'
+	@echo '  SHLD       = $(SHLD)'
 	@echo '  SHLD_FLAGS = $(SHLD_FLAGS)'
-	@echo '  LIBS = $(LIBS)'
+	@echo '  SHLIBEXT   = $(SHLIBEXT)'
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
