@@ -145,11 +145,15 @@ stringtooid(const char *name, size_t len)
     return NULL;
 }
 
-
 int
 hx509_name_to_string(const hx509_name name, char **str)
 {
-    const Name *n = &name->der_name;
+    return _hx509_Name_to_string(&name->der_name, str);
+}
+
+int
+_hx509_Name_to_string(const const Name *n, char **str)
+{
     size_t total_len = 0;
     int i, j;
 
