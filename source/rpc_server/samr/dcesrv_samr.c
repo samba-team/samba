@@ -690,19 +690,22 @@ static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	{
 		static const char * const attrs2[] = {"forceLogoff",
 						      "comment", 
-						      "modifiedCount"};
+						      "modifiedCount", 
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 3:
 	{
-		static const char * const attrs2[] = {"forceLogoff"};
+		static const char * const attrs2[] = {"forceLogoff", 
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 4:
 	{
-		static const char * const attrs2[] = {"comment"};
+		static const char * const attrs2[] = {"comment", 
+						      NULL};
 		attrs = attrs2;
 		break;
 	}
@@ -715,7 +718,9 @@ static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 	case 8:
 	{
-		static const char * const attrs2[] = { "modifiedCount", "creationTime", NULL };
+		static const char * const attrs2[] = { "modifiedCount", 
+						       "creationTime", 
+						       NULL };
 		attrs = attrs2;
 		break;
 	}
@@ -728,7 +733,8 @@ static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_
 						       "modifiedCount", 
 						       "lockoutDuration", 
 						       "lockOutObservationWindow", 
-						       "lockoutThreshold", NULL};
+						       "lockoutThreshold", 
+						       NULL};
 		attrs = attrs2;
 		break;
 	}
@@ -736,13 +742,16 @@ static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	{
 		static const char * const attrs2[] = { "lockoutDuration", 
 						       "lockOutObservationWindow", 
-						       "lockoutThreshold", NULL};
+						       "lockoutThreshold", 
+						       NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 13:
 	{
-		static const char * const attrs2[] = { "modifiedCount", "creationTime", NULL };
+		static const char * const attrs2[] = { "modifiedCount", 
+						       "creationTime", 
+						       NULL };
 		attrs = attrs2;
 		break;
 	}
