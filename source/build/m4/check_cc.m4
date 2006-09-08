@@ -29,6 +29,18 @@ if test x$ac_cv_prog_cc_g = xyes -a x$debug = xyes; then
 	CFLAGS="${CFLAGS} -g"
 fi
 
+dnl needed before AC_TRY_COMPILE
+AC_ISC_POSIX
+
+############################################
+# check if the compiler handles c99 struct initialization
+LIBREPLACE_C99_STRUCT_INIT(samba_cv_c99_struct_initialization=yes,
+		    samba_cv_c99_struct_initialization=no)
+
+if test x"$samba_cv_c99_struct_initialization" != x"yes"; then
+	AC_MSG_WARN([C compiler does not support c99 struct initialization!])
+	AC_MSG_ERROR([Please Install gcc from http://gcc.gnu.org/])
+fi
 
 ############################################
 # check if the compiler can handle negative enum values
