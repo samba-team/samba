@@ -64,24 +64,12 @@
 #endif
 #endif
 
-#define _GNU_SOURCE /* Use GNU extensions */
-
 /* mark smb_panic() as noreturn, so static analysers know that it is
    used like abort */
 _PUBLIC_ void smb_panic(const char *why) NORETURN_ATTRIBUTE;
 
-#include <sys/types.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <sys/time.h>
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-
-#include <signal.h>
-#include <errno.h>
+#include "system/time.h"
+#include "system/wait.h"
 
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 
