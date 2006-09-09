@@ -224,7 +224,7 @@ struct pr_chunk_x {
 	int num;
 };
 
-static size_t dopr(char *buffer, size_t maxlen, const char *format, 
+static int dopr(char *buffer, size_t maxlen, const char *format, 
 		   va_list args_in);
 static void fmtstr(char *buffer, size_t *currlen, size_t maxlen,
 		    char *value, int flags, int min, int max);
@@ -237,7 +237,7 @@ static struct pr_chunk *new_chunk(void);
 static int add_cnk_list_entry(struct pr_chunk_x **list,
 				int max_num, struct pr_chunk *chunk);
 
-static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args_in)
+static int dopr(char *buffer, size_t maxlen, const char *format, va_list args_in)
 {
 	char ch;
 	int state;
@@ -251,7 +251,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 	struct pr_chunk *cnk = NULL;
 	struct pr_chunk_x *clist = NULL;
 	int max_pos;
-	size_t ret = -1;
+	int ret = -1;
 
 	VA_COPY(args, args_in);
 
