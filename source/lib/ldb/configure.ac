@@ -13,7 +13,7 @@ AC_DEFUN([SMB_EXT_LIB], [echo -n ""])
 AC_DEFUN([SMB_ENABLE], [echo -n ""])
 AC_INIT(include/ldb.h)
 AC_CONFIG_SRCDIR([common/ldb.c])
-AC_PROG_CC
+m4_include(libreplace.m4)
 
 if test "$ac_cv_prog_gcc" = yes; then
    CFLAGS="$CFLAGS -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings"
@@ -29,8 +29,6 @@ if test x"$with_gcov_support" = x"yes"; then
    LIBS="$LIBS -lgcov"
 fi
 
-AC_SYS_LARGEFILE
-AC_FUNC_MMAP
 AC_PATH_PROG(XSLTPROC,xsltproc)
 AC_PATH_PROG(DOXYGEN,doxygen)
 AC_PATH_PROG(GCOV,gcov)
@@ -48,7 +46,6 @@ AC_SUBST(MODULESDIR)
 TESTS=""
 EXTRA_OBJ=""
 
-m4_include(libreplace.m4)
 m4_include(libpopt.m4)
 m4_include(libtalloc.m4)
 m4_include(libtdb.m4)
