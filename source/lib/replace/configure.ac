@@ -5,8 +5,6 @@ AC_PREREQ(2.50)
 AC_INIT(dlfcn.c)
 AC_CONFIG_SRCDIR([dlfcn.c])
 AC_CONFIG_HEADER(config.h)
-AC_PROG_INSTALL
-AC_PROG_CC
 
 if test "$ac_cv_prog_gcc" = yes; then
    CFLAGS="$CFLAGS -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings"

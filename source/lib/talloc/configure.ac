@@ -2,21 +2,16 @@ AC_PREREQ(2.50)
 AC_INIT(talloc.h)
 AC_CONFIG_SRCDIR([talloc.c])
 AC_SUBST(datarootdir)
-AC_PROG_CC
-if test "x$GCC" = "xyes"; then
-	CFLAGS="$CFLAGS -Wall -W"
-fi
-AC_PROG_INSTALL
+AC_CONFIG_HEADER(config.h)
+
+m4_include(libreplace.m4)
+m4_include(libtalloc.m4)
+
 AC_PATH_PROG(XSLTPROC,xsltproc)
 DOC_TARGET=""
 if test -n "$XSLTPROC"; then
 	DOC_TARGET=doc
 fi
 AC_SUBST(DOC_TARGET)
-AC_CONFIG_HEADER(config.h)
-AC_SYS_LARGEFILE
-
-m4_include(libreplace.m4)
-m4_include(libtalloc.m4)
 
 AC_OUTPUT(Makefile talloc.pc)
