@@ -1,5 +1,6 @@
 dnl needed before AC_TRY_COMPILE
 AC_ISC_POSIX
+AC_USE_SYSTEM_EXTENSIONS
 
 AC_C_INLINE
 
@@ -57,7 +58,7 @@ AC_FUNC_MEMCMP
 
 AC_CHECK_FUNCS(pipe strftime srandom random srand rand usleep setbuffer)
 
-AC_CHECK_HEADERS(stdbool.h)
+AC_CHECK_HEADERS(stdbool.h stddef.h)
 
 AC_CHECK_TYPE(bool, 
 [AC_DEFINE(HAVE_BOOL, 1, [Whether the bool type is available])],,
