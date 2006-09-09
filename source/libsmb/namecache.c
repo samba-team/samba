@@ -201,9 +201,7 @@ BOOL namecache_fetch(const char *name, int name_type, struct ip_service **ip_lis
 
 	if (!gencache_get(key, &value, &timeout)) {
 		DEBUG(5, ("no entry for %s#%02X found.\n", name, name_type));
-		gencache_del(key);
 		SAFE_FREE(key);
-		SAFE_FREE(value);		 
 		return False;
 	} else {
 		DEBUG(5, ("name %s#%02X found.\n", name, name_type));
@@ -314,9 +312,7 @@ BOOL namecache_status_fetch(const char *keyname, int keyname_type,
 
 	if (!gencache_get(key, &value, &timeout)) {
 		DEBUG(5, ("namecache_status_fetch: no entry for %s found.\n", key));
-		gencache_del(key);
 		SAFE_FREE(key);
-		SAFE_FREE(value);
 		return False;
 	} else {
 		DEBUG(5, ("namecache_status_fetch: key %s -> %s\n", key, value ));

@@ -183,7 +183,6 @@ BOOL trustdom_cache_fetch(const char* name, DOM_SID* sid)
 	if (!gencache_get(key, &value, &timeout)) {
 		DEBUG(5, ("no entry for trusted domain %s found.\n", name));
 		SAFE_FREE(key);
-		SAFE_FREE(value);
 		return False;
 	} else {
 		SAFE_FREE(key);

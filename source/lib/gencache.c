@@ -212,6 +212,15 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		   "timeout = %s", t > time(NULL) ? "valid" :
 		   "expired", keystr, endptr+1, ctime(&t)));
 
+	if (t <= time(NULL)) {
+
+		/* We're expired, delete the entry */
+		tdb_delete(cache, keybuf);
+
+		SAFE_FREE(databuf.dptr);
+		return False;
+	}
+
 	if (valstr) {
 		*valstr = SMB_STRDUP(endptr+1);
 		if (*valstr == NULL) {
@@ -227,7 +236,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		*timeout = t;
 	}
 
-	return t > time(NULL);
+	return True;
 } 
 
 
