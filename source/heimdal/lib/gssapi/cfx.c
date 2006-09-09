@@ -199,7 +199,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     size_t wrapped_len, cksumsize;
     uint16_t padlength, rrc = 0;
     int32_t seq_number;
-    OM_uint32 padsize;
+    uint16_t padsize;
     u_char *p;
 
     ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
