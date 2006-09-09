@@ -755,7 +755,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 
 	ildb->ldb     = ldb;
 
-	ildb->ldap = ldap_new_connection(ildb, ldb_get_opaque(ldb, "EventContext"));
+	ildb->ldap = ldap4_new_connection(ildb, ldb_get_opaque(ldb, "EventContext"));
 	if (!ildb->ldap) {
 		ldb_oom(ldb);
 		goto failed;

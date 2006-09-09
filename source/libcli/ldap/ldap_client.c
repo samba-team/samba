@@ -40,7 +40,7 @@
 /*
   create a new ldap_connection stucture. The event context is optional
 */
-struct ldap_connection *ldap_new_connection(TALLOC_CTX *mem_ctx, 
+struct ldap_connection *ldap4_new_connection(TALLOC_CTX *mem_ctx, 
 					    struct event_context *ev)
 {
 	struct ldap_connection *conn;
