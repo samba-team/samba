@@ -21,9 +21,9 @@
 
 #include "includes.h"
 #include "pstring.h"
-#include "lib/replace/system/filesys.h"
-#include "lib/replace/system/select.h"
-#include "lib/replace/system/readline.h"
+#include "system/filesys.h"
+#include "system/select.h"
+#include "system/readline.h"
 
 /*******************************************************************
  Similar to sys_select() but catch EINTR and continue.
