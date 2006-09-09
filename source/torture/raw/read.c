@@ -725,7 +725,7 @@ static BOOL test_read_for_execute(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_read rd;
 	NTSTATUS status;
 	BOOL ret = True;
-	int fnum;
+	int fnum=0;
 	uint8_t *buf;
 	const int maxsize = 900;
 	const char *fname = BASEDIR "\\test.txt";

@@ -1126,9 +1126,6 @@ static int schema_add(struct ldb_module *module, struct ldb_request *req)
 
 static int schema_modify(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_handle *h;
-	struct schema_context *sctx;
-
 	if (ldb_dn_is_special(req->op.mod.message->dn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
@@ -1138,9 +1135,6 @@ static int schema_modify(struct ldb_module *module, struct ldb_request *req)
 
 static int schema_delete(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_handle *h;
-	struct schema_context *sctx;
-
 	if (ldb_dn_is_special(req->op.del.dn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
@@ -1152,9 +1146,6 @@ static int schema_delete(struct ldb_module *module, struct ldb_request *req)
 
 static int schema_rename(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_handle *h;
-	struct schema_context *sctx;
-
 	if (ldb_dn_is_special(req->op.rename.olddn) &&
 	    ldb_dn_is_special(req->op.rename.newdn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);

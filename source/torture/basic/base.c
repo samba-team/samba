@@ -1465,7 +1465,7 @@ static BOOL run_iometer(struct torture_context *torture)
 		goto done;
 	}
 
-	printf("size: %d\n", filesize);
+	printf("size: %d\n", (int)filesize);
 
 	filesize -= (sizeof(buf) - 1);
 

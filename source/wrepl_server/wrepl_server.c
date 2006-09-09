@@ -200,7 +200,7 @@ NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 	}
 
 	DEBUG(2,("wreplsrv_load_partners: %u partners found: wins_config_db seqnumber %llu\n",
-		res->count, service->config.seqnumber));
+		res->count, (unsigned long long)service->config.seqnumber));
 
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
@@ -329,7 +329,8 @@ NTSTATUS wreplsrv_add_table(struct wreplsrv_service *service,
 			ret = winsdb_set_maxVersion(service->wins_db, cur->owner.max_version);
 			if (ret != cur->owner.max_version) {
 				DEBUG(0,("winsdb_set_maxVersion(%llu) failed: %llu\n",
-					cur->owner.max_version, ret));
+					 (unsigned long long)cur->owner.max_version, 
+					 (unsigned long long)ret));
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			}
 		}

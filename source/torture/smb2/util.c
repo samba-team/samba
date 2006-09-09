@@ -175,9 +175,9 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 		printf("(%s) " #field " not setup correctly: %s(%llu) => %s(%llu)\n", \
 			__location__, \
 			nt_time_string(tree, setfile.basic_info.in.field), \
-			setfile.basic_info.in.field, \
+			(unsigned long long)setfile.basic_info.in.field, \
 			nt_time_string(tree, fileinfo.basic_info.out.field), \
-			fileinfo.basic_info.out.field); \
+			(unsigned long long)fileinfo.basic_info.out.field); \
 		status = NT_STATUS_INVALID_PARAMETER; \
 	} \
 } while (0)

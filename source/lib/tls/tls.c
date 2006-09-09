@@ -339,7 +339,7 @@ static NTSTATUS tls_socket_send(struct socket_context *sock,
 		return STATUS_MORE_ENTRIES;
 	}
 	if (ret < 0) {
-		DEBUG(0,("gnutls_record_send of %d failed - %s\n", blob->length, gnutls_strerror(ret)));
+		DEBUG(0,("gnutls_record_send of %d failed - %s\n", (int)blob->length, gnutls_strerror(ret)));
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 	*sendlen = ret;
@@ -419,11 +419,13 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 
 	if (dhpfile) {
 		gnutls_datum_t dhparms;
-		dhparms.data = (uint8_t *)file_load(dhpfile, &dhparms.size, mem_ctx);
+		size_t size;
+		dhparms.data = (uint8_t *)file_load(dhpfile, &size, mem_ctx);
 
 		if (!dhparms.data) {
 			goto init_failed;
 		}
+		dhparms.size = size;
 			
 		ret = gnutls_dh_params_import_pkcs3(params->dh_params, &dhparms, GNUTLS_X509_FMT_PEM);
 		if (ret < 0) goto init_failed;

@@ -678,7 +678,7 @@ _PUBLIC_ void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t
 
 _PUBLIC_ void ndr_print_udlong(struct ndr_print *ndr, const char *name, uint64_t v)
 {
-	ndr->print(ndr, "%-25s: 0x%016llx (%llu)", name, v, v);
+	ndr->print(ndr, "%-25s: 0x%016llx (%llu)", name, (unsigned long long)v, (unsigned long long)v);
 }
 
 _PUBLIC_ void ndr_print_udlongr(struct ndr_print *ndr, const char *name, uint64_t v)
@@ -688,7 +688,7 @@ _PUBLIC_ void ndr_print_udlongr(struct ndr_print *ndr, const char *name, uint64_
 
 _PUBLIC_ void ndr_print_dlong(struct ndr_print *ndr, const char *name, int64_t v)
 {
-	ndr->print(ndr, "%-25s: 0x%016llx (%lld)", name, v, v);
+	ndr->print(ndr, "%-25s: 0x%016llx (%lld)", name, (unsigned long long)v, (long long)v);
 }
 
 _PUBLIC_ void ndr_print_hyper(struct ndr_print *ndr, const char *name, uint64_t v)
@@ -781,7 +781,7 @@ _PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 
 _PUBLIC_ void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_BLOB r)
 {
-	ndr->print(ndr, "%-25s: DATA_BLOB length=%u", name, r.length);
+	ndr->print(ndr, "%-25s: DATA_BLOB length=%u", name, (unsigned)r.length);
 	if (r.length) {
 		dump_data(10, r.data, r.length);
 	}

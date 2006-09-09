@@ -962,10 +962,10 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname1 = BASEDIR "\\inheritance\\testfile";
 	const char *fname2 = BASEDIR "\\inheritance\\testdir";
 	BOOL ret = True;
-	int fnum, fnum2, i;
+	int fnum=0, fnum2, i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
-	struct security_descriptor *sd, *sd2, *sd_orig, *sd_def;
+	struct security_descriptor *sd, *sd2, *sd_orig=NULL, *sd_def;
 	const char *owner_sid;
 	const struct dom_sid *creator_owner;
 	const struct {
@@ -1384,10 +1384,10 @@ static BOOL test_inheritance_dynamic(struct smbcli_state *cli, TALLOC_CTX *mem_c
 	const char *dname = BASEDIR "\\inheritance";
 	const char *fname1 = BASEDIR "\\inheritance\\testfile";
 	BOOL ret = True;
-	int fnum, fnum2;
+	int fnum=0, fnum2;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
-	struct security_descriptor *sd, *sd_orig;
+	struct security_descriptor *sd, *sd_orig=NULL;
 	const char *owner_sid;
 	
 	printf("TESTING DYNAMIC ACL INHERITANCE\n");
@@ -1554,7 +1554,7 @@ static BOOL test_sd_get_set(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	struct security_descriptor *sd_group = NULL;
 	struct security_descriptor *sd_dacl = NULL;
 	struct security_descriptor *sd_sacl = NULL;
-	int fnum;
+	int fnum=0;
 	const char *fname = BASEDIR "\\sd_get_set.txt";
 	uint64_t desired_64;
 	uint32_t desired = 0, granted;

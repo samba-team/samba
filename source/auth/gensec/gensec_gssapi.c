@@ -761,8 +761,8 @@ static NTSTATUS gensec_gssapi_wrap(struct gensec_security *gensec_security,
 		size_t max_wrapped_size = gensec_gssapi_max_wrapped_size(gensec_security);
 		if (max_wrapped_size < out->length) {
 			DEBUG(1, ("gensec_gssapi_wrap: when wrapped, INPUT data (%u) is grew to be larger than SASL negotiated maximum output size (%u > %u)\n",
-				  in->length, 
-				  out->length, 
+				  (unsigned)in->length, 
+				  (unsigned)out->length, 
 				  (unsigned int)max_wrapped_size));
 			return NT_STATUS_INVALID_PARAMETER;
 		}

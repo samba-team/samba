@@ -57,8 +57,8 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	time_t now = time(NULL);
 	const char *now_timestr;
 	const char *action;
-	const char *old_state;
-	const char *new_state;
+	const char *old_state=NULL;
+	const char *new_state=NULL;
 	uint32_t modify_flags;
 	BOOL modify_record;
 	BOOL delete_record;
@@ -171,8 +171,8 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 	time_t now = time(NULL);
 	const char *now_timestr;
 	const char *action;
-	const char *old_state;
-	const char *new_state;
+	const char *old_state=NULL;
+	const char *new_state=NULL;
 	uint32_t modify_flags;
 	BOOL modify_record;
 	BOOL delete_record;
@@ -435,7 +435,8 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 		 *             but we use a wins name query
 		 */
 		DEBUG(0,("ask wins server '%s' if '%s' with version_id:%llu still exists\n",
-			rec->wins_owner, nbt_name_string(rec, rec->name), rec->version));
+			 rec->wins_owner, nbt_name_string(rec, rec->name), 
+			 (unsigned long long)rec->version));
 
 		s = talloc_zero(tmp_mem, struct verify_state);
 		NT_STATUS_HAVE_NO_MEMORY(s);
