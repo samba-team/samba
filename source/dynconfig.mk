@@ -14,7 +14,7 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" \
 
 ./dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) $(PICFLAG) $(PATH_FLAGS) -c $< -o $@
+	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) $(PATH_FLAGS) -c $< -o $@
 
 # dynconfig defines used for binaries in bin/, when configure ran in developer 
 # mode:
