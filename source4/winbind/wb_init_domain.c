@@ -293,7 +293,7 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
 	}
 
 	state->domain->ldap_conn =
-		ldap_new_connection(state->domain, state->ctx->event_ctx);
+		ldap4_new_connection(state->domain, state->ctx->event_ctx);
 	composite_nomem(state->domain->ldap_conn, state->ctx);
 
 	ldap_url = talloc_asprintf(state, "ldap://%s/",
