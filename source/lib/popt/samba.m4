@@ -5,6 +5,6 @@ if test x"$POPTOBJ" = "x"; then
 	SMB_ENABLE(LIBPOPT,YES)
 else
 	SMB_SUBSYSTEM(LIBPOPT,
-	[lib/popt/findme.o lib/popt/popt.o lib/popt/poptconfig.o lib/popt/popthelp.o lib/popt/poptparse.o], [], [-I$srcdir/lib/popt])
+	[lib/popt/findme.o lib/popt/popt.o lib/popt/poptconfig.o lib/popt/popthelp.o lib/popt/poptparse.o], [], [-Ilib/popt])
 fi
 
