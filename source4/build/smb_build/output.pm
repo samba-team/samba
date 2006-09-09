@@ -12,12 +12,16 @@ sub add_dir($$)
 {
 	my ($dir,$files) = @_;
 	my @ret = ();
+	my $dirsep = "/";
 
+	$dir =~ s/^\.$//g;
 	$dir =~ s/^\.\///g;
+
+	$dirsep = "" if ($dir eq "");
 	
 	foreach (@$files) {
 		if (substr($_, 0, 1) ne "\$") {
-			$_ = "$dir/$_";
+			$_ = "$dir$dirsep$_";
 			s/([^\/\.]+)\/\.\.\///g;
 			s/([^\/\.]+)\/\.\.\///g;
 		}
