@@ -180,6 +180,8 @@ BOOL gencache_del(const char *keystr)
 BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 {
 	TDB_DATA keybuf, databuf;
+	time_t t;
+	char *endptr;
 
 	/* fail completely if get null pointers passed */
 	SMB_ASSERT(keystr);
@@ -191,67 +193,43 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	keybuf.dptr = CONST_DISCARD(char *, keystr);
 	keybuf.dsize = strlen(keystr)+1;
 	databuf = tdb_fetch(cache, keybuf);
-	
-	if (databuf.dptr && databuf.dsize > TIMEOUT_LEN) {
-		char* entry_buf = SMB_STRNDUP(databuf.dptr, databuf.dsize);
-		char *v;
-		time_t t;
-		unsigned u;
-		int status;
-		char *fmt;
 
-		v = (char *)SMB_MALLOC(databuf.dsize + 1 - TIMEOUT_LEN);
-		if (!v) {
-			return False;
-		}
+	if (databuf.dptr == NULL) {
+		DEBUG(10, ("Cache entry with key = %s couldn't be found\n",
+			   keystr));
+		return False;
+	}
 
+	t = strtol(databuf.dptr, &endptr, 10);
+
+	if ((endptr == NULL) || (*endptr != '/')) {
+		DEBUG(2, ("Invalid gencache data format: %s\n", databuf.dptr));
 		SAFE_FREE(databuf.dptr);
+		return False;
+	}
 
-		asprintf(&fmt, READ_CACHE_DATA_FMT_TEMPLATE, (unsigned int)databuf.dsize - TIMEOUT_LEN);
-		if (!fmt) {
-			SAFE_FREE(v);
-			return False;
-		}
-
-		status = sscanf(entry_buf, fmt, &u, v);
-		SAFE_FREE(fmt);
-
-		if ( status != 2 ) {
-			DEBUG(0, ("gencache_get: Invalid return %d from sscanf\n", status ));
-		}
-		t = u;
-		SAFE_FREE(entry_buf);
-
-		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
-			   "timeout = %s", t > time(NULL) ? "valid" :
-			   "expired", keystr, v, ctime(&t)));
-
-		if (valstr) {
-			*valstr = v;
-		} else {
-			SAFE_FREE(v);
-		}
-
-		if (timeout) {
-			*timeout = t;
-		}
-
-		return t > time(NULL);
-
-	} 
-
-	SAFE_FREE(databuf.dptr);
+	DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
+		   "timeout = %s", t > time(NULL) ? "valid" :
+		   "expired", keystr, endptr+1, ctime(&t)));
 
 	if (valstr) {
-		*valstr = NULL;
+		*valstr = SMB_STRDUP(endptr+1);
+		if (*valstr == NULL) {
+			SAFE_FREE(databuf.dptr);
+			DEBUG(0, ("strdup failed\n"));
+			return False;
+		}
 	}
+	
+	SAFE_FREE(databuf.dptr);
+
 	if (timeout) {
-		timeout = NULL;
+		*timeout = t;
 	}
 
-	DEBUG(10, ("Cache entry with key = %s couldn't be found\n", keystr));
-	return False;
-}
+	return t > time(NULL);
+} 
+
 
 /**
  * Iterate through all entries which key matches to specified pattern
