@@ -58,6 +58,30 @@ again:
 		blob->length = estimated_size;
 		goto again;
 	}
+	if (ret == -1 && errno == EPERM) {
+		struct stat statbuf;
+
+		if (fd != -1) {
+			ret = fstat(fd, &statbuf);
+		} else {
+			ret = stat(fname, &statbuf);
+		}
+		if (ret == 0) {
+			/* check if this is a directory and the sticky bit is set */
+			if (S_ISDIR(statbuf.st_mode) && (statbuf.st_mode & S_ISVTX)) {
+				/* pretend we could not find the xattr */
+
+				data_blob_free(blob);
+				return NT_STATUS_NOT_FOUND;
+
+			} else {
+				/* if not this was probably a legittimate error
+				 * reset ret and errno to the correct values */
+				errno = EPERM;
+				ret = -1;
+			}
+		}
+	}
 
 	if (ret == -1) {
 		data_blob_free(blob);
