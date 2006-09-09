@@ -841,7 +841,9 @@ pk_verify_host(krb5_context context,
 						       oid_id_pkinit_san(),
 						       &list);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_set_error_string(context, "Failed to find the PK-INIT "
+				  "subjectAltName in the KDC certificate");
+
 	    return ret;
 	}
 
@@ -853,7 +855,9 @@ pk_verify_host(krb5_context context,
 					   &r,
 					   NULL);
 	    if (ret) {
-		krb5_clear_error_string(context);
+		krb5_set_error_string(context, "Failed to decode the PK-INIT "
+				      "subjectAltName in the KDC certificate");
+
 		break;
 	    }
 
@@ -864,7 +868,7 @@ pk_verify_host(krb5_context context,
 	    {
 		krb5_set_error_string(context, "KDC have wrong realm name in "
 				      "the certificate");
-		ret = EINVAL;
+		ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
 	    }
 
 	    free_KRB5PrincipalName(&r);
@@ -883,7 +887,8 @@ pk_verify_host(krb5_context context,
 				    hi->ai->ai_addr, hi->ai->ai_addrlen);
 
 	if (ret)
-	    krb5_set_error_string(context, "Address mismatch in the KDC certificate");
+	    krb5_set_error_string(context, "Address mismatch in "
+				  "the KDC certificate");
     }
     return ret;
 }
@@ -972,7 +977,6 @@ pk_rd_pa_reply_enckey(krb5_context context,
     /* make sure that it is the kdc's certificate */
     ret = pk_verify_host(context, realm, hi, ctx, host);
     if (ret) {
-	krb5_set_error_string(context, "PKINIT: failed verify host: %d", ret);
 	goto out;
     }
 
