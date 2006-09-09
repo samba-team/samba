@@ -130,17 +130,32 @@ sub run_config_mk($$$$)
 	my $section = "GLOBAL";
 	my $makefile = "";
 
-	my $parsing_file = $builddir."/".$filename;
+	my $parsing_file = $filename;
+	my $retry_parsing_file = undef;
 
 	$ENV{samba_builddir} = $builddir;
 	$ENV{samba_srcdir} = $srcdir;
-	
-	if (!open(CONFIG_MK, $parsing_file)) { 
-		$parsing_file = $srcdir."/".$filename;
-		open(CONFIG_MK, $parsing_file) or 
-		    die("Can't open neither `$builddir."/".$filename' nor `$srcdir/$filename'\n");
+
+	if (($srcdir ne ".") or ($builddir ne ".")) {
+		$parsing_file = $builddir."/".$filename;
+		$retry_parsing_file = $srcdir."/".$filename;
 	}
-	
+
+	if (open(CONFIG_MK, $parsing_file)) {
+		$retry_parsing_file = undef;
+	} else {
+		die("Can't open $parsing_file") unless defined($retry_parsing_file);
+	}
+
+	if (defined($retry_parsing_file)) {
+		if (open(CONFIG_MK, $parsing_file)) {
+			$parsing_file = $retry_parsing_file;
+			$retry_parsing_file = undef;
+		} else {
+			die("Can't open neither '$parsing_file' nor '$retry_parsing_file'\n");
+		}
+	}
+
 	push (@parsed_files, $parsing_file);
 	
 	
@@ -173,7 +188,12 @@ sub run_config_mk($$$$)
 
 		# include
 		if ($line =~ /^include (.*)$/) {
-			$makefile .= run_config_mk($input, $srcdir, $builddir, dirname($filename)."/$1");
+			my $subfile= $1;
+			my $subdir = dirname($filename);
+			$subdir =~ s/^\.$//g;
+			$subdir =~ s/^\.\///g;
+			$subdir .= "/" if ($subdir ne "");
+			$makefile .= run_config_mk($input, $srcdir, $builddir, $subdir.$subfile);
 			next;
 		}
 
