@@ -29,6 +29,24 @@ if test x"$c99_init" = x"no"; then
      [AC_MSG_RESULT(yes); c99_init=yes],[AC_MSG_RESULT(no)])
 fi
 if test x"$c99_init" = x"no"; then
+    AC_MSG_CHECKING(for C99 designated initializers with -qlanglvl=extc99)
+    CFLAGS="$saved_CFLAGS -qlanglvl=extc99";
+    AC_TRY_COMPILE([#include <stdio.h>],
+     [ struct foo {int x;char y;};
+       struct foo bar = { .y = 'X', .x = 1 };	 
+     ],
+     [AC_MSG_RESULT(yes); c99_init=yes],[AC_MSG_RESULT(no)])
+fi
+if test x"$c99_init" = x"no"; then
+    AC_MSG_CHECKING(for C99 designated initializers with -qlanglvl=stdc99)
+    CFLAGS="$saved_CFLAGS -qlanglvl=stdc99";
+    AC_TRY_COMPILE([#include <stdio.h>],
+     [ struct foo {int x;char y;};
+       struct foo bar = { .y = 'X', .x = 1 };	 
+     ],
+     [AC_MSG_RESULT(yes); c99_init=yes],[AC_MSG_RESULT(no)])
+fi
+if test x"$c99_init" = x"no"; then
     AC_MSG_CHECKING(for C99 designated initializers with -c99)
     CFLAGS="$saved_CFLAGS -c99"
     AC_TRY_COMPILE([#include <stdio.h>],
