@@ -4805,6 +4805,65 @@ static BOOL run_local_substitute(int dummy)
 	return (diff == 0);
 }
 
+static BOOL run_local_gencache(int dummy)
+{
+	char *val;
+	time_t tm;
+
+	if (!gencache_init()) {
+		d_printf("%s: gencache_init() failed\n", __location__);
+		return False;
+	}
+
+	if (!gencache_set("foo", "bar", time(NULL) + 1000)) {
+		d_printf("%s: gencache_set() failed\n", __location__);
+		return False;
+	}
+
+	if (!gencache_get("foo", &val, &tm)) {
+		d_printf("%s: gencache_get() failed\n", __location__);
+		return False;
+	}
+
+	if (strcmp(val, "bar") != 0) {
+		d_printf("%s: gencache_get() returned %s, expected %s\n",
+			 __location__, val, "bar");
+		SAFE_FREE(val);
+		return False;
+	}
+
+	SAFE_FREE(val);
+
+	if (!gencache_del("foo")) {
+		d_printf("%s: gencache_del() failed\n", __location__);
+		return False;
+	}
+	if (gencache_del("foo")) {
+		d_printf("%s: second gencache_del() succeeded\n",
+			 __location__);
+		return False;
+	}
+			
+	if (gencache_get("foo", &val, &tm)) {
+		d_printf("%s: gencache_get() on deleted entry "
+			 "succeeded\n", __location__);
+		return False;
+	}
+
+	if (!gencache_shutdown()) {
+		d_printf("%s: gencache_shutdown() failed\n", __location__);
+		return False;
+	}
+
+	if (gencache_shutdown()) {
+		d_printf("%s: second gencache_shutdown() succeeded\n",
+			 __location__);
+		return False;
+	}
+
+	return True;
+}
+
 static double create_procs(BOOL (*fn)(int), BOOL *result)
 {
 	int i, status;
@@ -4956,6 +5015,7 @@ static struct {
 	{"FDSESS", run_fdsesstest, 0},
 	{ "EATEST", run_eatest, 0},
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
+	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{NULL, NULL, 0}};
 
 
