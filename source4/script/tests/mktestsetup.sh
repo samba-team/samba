@@ -199,8 +199,8 @@ cat >$KRB5_CONFIG<<EOF
 
 [realms]
  SAMBA.EXAMPLE.COM = {
-  kdc = 127.0.0.1
-  admin_server = 127.0.0.1
+  kdc = 127.0.0.1:88
+  admin_server = 127.0.0.1:88
   default_domain = samba.example.com
  }
 [domain_realm]
