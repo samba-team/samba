@@ -117,7 +117,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	struct ldap_BindResponse *resp;
 	struct ldapsrv_connection *conn;
 	int result = 0;
-	const char *errstr;
+	const char *errstr=NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
 	DEBUG(10, ("BindSASL dn: %s\n",req->dn));
@@ -200,7 +200,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		result = LDAP_SASL_BIND_IN_PROGRESS;
 		errstr = NULL;
 	} else if (NT_STATUS_IS_OK(status)) {
-		struct auth_session_info *old_session_info;
+		struct auth_session_info *old_session_info=NULL;
 		struct ldapsrv_sasl_context *ctx;
 
 		result = LDAP_SUCCESS;

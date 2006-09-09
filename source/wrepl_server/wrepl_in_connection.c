@@ -69,7 +69,8 @@ static NTSTATUS wreplsrv_recv_request(void *private, DATA_BLOB blob)
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (DEBUGLVL(10)) {
-		DEBUG(10,("Received WINS-Replication packet of length %u\n", packet_in_blob.length + 4));
+		DEBUG(10,("Received WINS-Replication packet of length %u\n", 
+			  (unsigned)packet_in_blob.length + 4));
 		NDR_PRINT_DEBUG(wrepl_packet, &call->req_packet);
 	}
 

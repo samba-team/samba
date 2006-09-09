@@ -102,11 +102,11 @@
 	if (!r->in.buffer && r->in.offered != 0) {\
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,\
 			"SPOOLSS Buffer: r->in.offered[%u] but there's no buffer",\
-			r->in.offered);\
+			(unsigned)r->in.offered);\
 	} else if (r->in.buffer && r->in.buffer->length != r->in.offered) {\
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,\
 			"SPOOLSS Buffer: r->in.offered[%u] doesn't match length of r->in.buffer[%u]",\
-			r->in.offered, r->in.buffer->length);\
+			(unsigned)r->in.offered, (unsigned)r->in.buffer->length);\
 	}\
 } while(0)
 
@@ -127,7 +127,7 @@
 		if (r->in.offered != _ndr_info->data_size) {\
 			return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,\
 				"SPOOLSS Buffer: offered[%u] doesn't match length of buffer[%u]",\
-				r->in.offered, (unsigned)_ndr_info->data_size);\
+				(unsigned)r->in.offered, (unsigned)_ndr_info->data_size);\
 		}\
 		if (r->out.needed <= _ndr_info->data_size) {\
 			struct __##fn __r;\

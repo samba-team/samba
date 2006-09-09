@@ -123,7 +123,7 @@ NTSTATUS gensec_unwrap_packets(struct gensec_security *gensec_security,
 		
 		if (wrapped.length > (in->length - 4)) {
 			DEBUG(0, ("Asked to unwrap packed of bogus length %d > %d!  How did we get this?!\n",
-				  wrapped.length, in->length - 4));
+				  (int)wrapped.length, (int)(in->length - 4)));
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 		

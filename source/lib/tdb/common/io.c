@@ -125,7 +125,7 @@ static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 			/* Ensure ecode is set for log fn. */
 			tdb->ecode = TDB_ERR_IO;
 			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_read failed at %d len=%d ret=%d (%s) map_size=%d\n",
-				 off, len, ret, strerror(errno), tdb->map_size));
+				 off, len, ret, strerror(errno), (int)tdb->map_size));
 			return TDB_ERRCODE(TDB_ERR_IO, -1);
 		}
 	}

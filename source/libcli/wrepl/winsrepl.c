@@ -88,7 +88,8 @@ static NTSTATUS wrepl_finish_recv(void *private, DATA_BLOB packet_blob_in)
 	DATA_BLOB blob;
 
 	if (!req) {
-		DEBUG(1,("Received unexpected WINS packet of length %u!\n", packet_blob_in.length));
+		DEBUG(1,("Received unexpected WINS packet of length %u!\n", 
+			 (unsigned)packet_blob_in.length));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
@@ -108,7 +109,8 @@ static NTSTATUS wrepl_finish_recv(void *private, DATA_BLOB packet_blob_in)
 	}
 
 	if (DEBUGLVL(10)) {
-		DEBUG(10,("Received WINS packet of length %u\n", packet_blob_in.length));
+		DEBUG(10,("Received WINS packet of length %u\n", 
+			  (unsigned)packet_blob_in.length));
 		NDR_PRINT_DEBUG(wrepl_packet, req->packet);
 	}
 
@@ -489,7 +491,8 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 	}
 
 	if (DEBUGLVL(10)) {
-		DEBUG(10,("Sending WINS packet of length %u\n", blob.length));
+		DEBUG(10,("Sending WINS packet of length %u\n", 
+			  (unsigned)blob.length));
 		NDR_PRINT_DEBUG(wrepl_packet, &wrap.packet);
 	}
 

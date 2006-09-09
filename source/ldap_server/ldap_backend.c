@@ -578,7 +578,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	struct ldapsrv_reply *modifydn_r;
 	void *local_ctx;
 	struct ldb_context *samdb = call->conn->ldb;
-	struct ldb_dn *olddn, *newdn, *newrdn;
+	struct ldb_dn *olddn, *newdn=NULL, *newrdn;
 	struct ldb_dn *parentdn = NULL;
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;

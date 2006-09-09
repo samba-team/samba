@@ -860,7 +860,7 @@ NTSTATUS smb_raw_chkpath(struct smbcli_tree *tree, union smb_chkpath *parms)
 struct smbcli_request *smb_raw_flush_send(struct smbcli_tree *tree, union smb_flush *parms)
 {
 	struct smbcli_request *req; 
-	uint16_t fnum;
+	uint16_t fnum=0;
 
 	switch (parms->generic.level) {
 	case RAW_FLUSH_FLUSH:
