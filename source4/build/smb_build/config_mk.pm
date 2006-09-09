@@ -201,7 +201,7 @@ sub run_config_mk($$$$)
 			next;
 		}
 
-		die("$srcdir."/".$filename:$linenum: Bad line while parsing $srcdir."/".$filename");
+		die("$parsing_file:$linenum: Bad line while parsing $parsing_file");
 	}
 
 	foreach my $section (keys %{$result}) {
@@ -209,19 +209,19 @@ sub run_config_mk($$$$)
 
 		my $sectype = $section_types->{$type};
 		if (not defined($sectype)) {
-			die($srcdir."/".$filename.":[".$section."] unknown section type \"".$type."\"!");
+			die($parsing_file.":[".$section."] unknown section type \"".$type."\"!");
 		}
 
 		$input->{$name}{NAME} = $name;
 		$input->{$name}{TYPE} = $type;
-		$input->{$name}{MK_FILE} = $srcdir."/".$filename;
+		$input->{$name}{MK_FILE} = $parsing_file;
 		$input->{$name}{BASEDIR} = dirname($filename);
 
 		foreach my $key (values %{$result->{$section}}) {
 			$key->{VAL} = smb_build::input::strtrim($key->{VAL});
 			my $vartype = $sectype->{$key->{KEY}};
 			if (not defined($vartype)) {
-				die($srcdir."/".$filename.":[".$section."]: unknown attribute type \"$key->{KEY}\"!");
+				die($parsing_file.":[".$section."]: unknown attribute type \"$key->{KEY}\"!");
 			}
 			if ($vartype eq "string") {
 				$input->{$name}{$key->{KEY}} = $key->{VAL};
