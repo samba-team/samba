@@ -22,7 +22,7 @@
 #ifndef __LIBCLI_H__
 #define __LIBCLI_H__
 
-#include <core.h>
+#include "core.h"
 #include "librpc/gen_ndr/nbt.h"
 
 /* 
