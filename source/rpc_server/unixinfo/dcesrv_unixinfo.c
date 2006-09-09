@@ -26,9 +26,7 @@
 #include "librpc/gen_ndr/ndr_unixinfo.h"
 #include "lib/events/events.h"
 #include "dsdb/samdb/samdb.h"
-
-#include <sys/types.h>
-#include <pwd.h>
+#include "system/passwd.h"
 
 static NTSTATUS unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
