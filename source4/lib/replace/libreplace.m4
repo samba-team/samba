@@ -1,11 +1,3 @@
-dnl needed before AC_TRY_COMPILE
-AC_ISC_POSIX
-AC_USE_SYSTEM_EXTENSIONS
-
-AC_C_INLINE
-
-LIBREPLACE_C99_STRUCT_INIT([],[])
-
 dnl find the libreplace sources. This is meant to work both for 
 dnl libreplace standalone builds, and builds of packages using libreplace
 libreplacedir=""
@@ -19,6 +11,14 @@ done
 LIBREPLACEOBJ="dlfcn.o getpass.o replace.o snprintf.o timegm.o"
 AC_SUBST(LIBREPLACEOBJ)
 
+dnl needed before AC_TRY_COMPILE
+AC_ISC_POSIX
+AC_USE_SYSTEM_EXTENSIONS
+AC_C_INLINE
+AC_PROG_CC
+
+LIBREPLACE_C99_STRUCT_INIT([],[])
+
 AC_SYS_LARGEFILE
 
 dnl Add #include for broken IRIX header files
@@ -30,6 +30,10 @@ esac
 AC_C_BIGENDIAN
 AC_HEADER_STDC
 
+AC_CHECK_SIZEOF(off_t,cross)
+AC_CHECK_SIZEOF(size_t,cross)
+AC_CHECK_SIZEOF(ssize_t,cross)
+AC_FUNC_MMAP
 
 AC_CHECK_HEADERS([stdint.h inttypes.h])
 AC_CHECK_TYPE(uint_t, unsigned int)
