@@ -605,8 +605,8 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 			if (s2->all_info.out.ea_size != 
 			    ea_list_size(s1->all_eas.out.num_eas, s1->all_eas.out.eas)) {
 				printf("ERROR: ea_list_size=%d != fnum all_info.out.ea_size=%d\n",
-				       ea_list_size(s1->all_eas.out.num_eas, s1->all_eas.out.eas),
-				       s2->all_info.out.ea_size);
+				       (int)ea_list_size(s1->all_eas.out.num_eas, s1->all_eas.out.eas),
+				       (int)s2->all_info.out.ea_size);
 			}
 		}
 	}

@@ -121,7 +121,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		int ret = ldb_sequence_number(module->ldb, &seq_num);
 		if (ret == LDB_SUCCESS) {
 			if (ldb_msg_add_fmt(msg, "highestCommittedUSN", 
-					    "%llu", seq_num) != 0) {
+					    "%llu", (unsigned long long)seq_num) != 0) {
 				goto failed;
 			}
 		}
@@ -260,7 +260,7 @@ static int rootdse_register_partition(struct ldb_module *module, struct ldb_requ
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	list[priv->num_partitions] = talloc_reference(list, req->op.reg_partition.dn);
+	list[priv->num_partitions] = ldb_dn_copy(list, req->op.reg_partition.dn);
 	if (!list[priv->num_partitions]) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

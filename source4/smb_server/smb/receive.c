@@ -142,7 +142,8 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 	}
  
 	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct + req->in.data_size > req->in.size) {
-		DEBUG(2,("Invalid SMB buffer length count %d\n", req->in.data_size));
+		DEBUG(2,("Invalid SMB buffer length count %d\n", 
+			 (int)req->in.data_size));
 		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB packet");
 		return NT_STATUS_OK;
 	}

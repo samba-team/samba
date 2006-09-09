@@ -180,7 +180,7 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 		return 0;
 	}
 
-	if (ldb_msg_add_fmt(msg, attr, "%llu", v) != 0) {
+	if (ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)v) != 0) {
 		return -1;
 	}
 

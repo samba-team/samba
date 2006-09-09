@@ -67,7 +67,7 @@ static char *nbench_ntvfs_handle_string(struct ntvfs_request *req, struct ntvfs_
 		break;
 	default:
 		DEBUG(0,("%s: invalid wire handle size: %u\n",
-			__FUNCTION__, key.length));
+			__FUNCTION__, (unsigned)key.length));
 		break;
 	}
 

@@ -204,12 +204,12 @@ struct smb2_request {
 	uint16_t want_size = ((dynamic)?(size)+1:(size)); \
 	if (is_size < (size)) { \
 		DEBUG(0,("%s: buffer too small 0x%x. Expected 0x%x\n", \
-			 __location__, is_size, want_size)); \
+			 __location__, (unsigned)is_size, (unsigned)want_size)); \
 		return NT_STATUS_BUFFER_TOO_SMALL; \
 	}\
 	if (field_size != want_size) { \
 		DEBUG(0,("%s: unexpected fixed body size 0x%x. Expected 0x%x\n", \
-			 __location__, field_size, want_size)); \
+			 __location__, (unsigned)field_size, (unsigned)want_size)); \
 		return NT_STATUS_INVALID_PARAMETER; \
 	} \
 } while (0)
