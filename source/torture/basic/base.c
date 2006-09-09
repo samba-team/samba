@@ -766,7 +766,7 @@ static BOOL run_deferopen(struct smbcli_state *cli, int dummy)
 			return False;
 		}
 
-		printf("pid %u open %d\n", getpid(), i);
+		printf("pid %u open %d\n", (unsigned)getpid(), i);
 
 		sleep(10);
 		i++;
