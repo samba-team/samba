@@ -34,13 +34,7 @@ runcopy() {
 }
 
 compare() {
-	if [ -r $1 -a -r $2 ] ; then
-	    sum1=`sum $1`
-	    sum2=`sum $2`
-	    test "$sum1" = "$sum2"
-	else
-	    false
-	fi
+    cmp "$1" "$2"
 }
 
 incdir=`dirname $0`
