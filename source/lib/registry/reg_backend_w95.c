@@ -204,7 +204,7 @@ static WERROR w95_open_reg (struct registry_hive *h, struct registry_key **root)
 
     creg->base = mmap(0, creg->sbuf.st_size, PROT_READ, MAP_SHARED, creg->fd, 0);
                                                                                                                                               
-    if ((int)creg->base == 1) {
+    if (creg->base == (void *)-1) {
 		DEBUG(0,("Could not mmap file: %s, %s\n", h->location, strerror(errno)));
         return WERR_FOOBAR;
     }
