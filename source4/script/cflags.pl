@@ -7,15 +7,13 @@
 use strict;
 
 my $target = shift;
-my $target2 = "./$target";
 
 sub check_flags($)
 {
-    my ($name)=@_;
+	my ($name)=@_;
 	open (IN, "extra_cflags.txt");
-    while (<IN> =~ /^([^:]+): (.*)$/) {
-		next unless (grep(/^$target$/, (split / /, $1)) ||
-			     grep(/^$target2$/, (split / /, $1)));
+	while (<IN> =~ /^([^:]+): (.*)$/) {
+		next unless (grep(/^$target$/, (split / /, $1)));
 		$_ = $2;
 		s/^CFLAGS\+=//;
 		print "$_ ";
