@@ -176,11 +176,6 @@ static int reinit_account_policies (void)
 		}
 	}
 
-	if (!remove_account_policy_migrated()) {
-		fprintf(stderr, "Can't remove marker from tdb\n");
-		return -1;
-	}
-
 	return 0;
 }
 
@@ -193,11 +188,6 @@ static int export_account_policies (struct pdb_methods *in, struct pdb_methods *
 {
 	int i;
 
-	if (!account_policy_migrated(True)) {
-		fprintf(stderr, "Unable to set account policy marker in tdb\n");
-		return -1;
-	}
-
 	for ( i=1; decode_account_policy_name(i) != NULL; i++ ) {
 		uint32 policy_value;
 		NTSTATUS status;
@@ -206,7 +196,6 @@ static int export_account_policies (struct pdb_methods *in, struct pdb_methods *
 
 		if ( NT_STATUS_IS_ERR(status) ) {
 			fprintf(stderr, "Unable to get account policy from %s\n", in->name);
-			remove_account_policy_migrated();
 			return -1;
 		}
 
@@ -214,7 +203,6 @@ static int export_account_policies (struct pdb_methods *in, struct pdb_methods *
 
 		if ( NT_STATUS_IS_ERR(status) ) {
 			fprintf(stderr, "Unable to migrate account policy to %s\n", out->name);
-			remove_account_policy_migrated();
 			return -1;
 		}
 	}

@@ -3495,11 +3495,6 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
 static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods,
 					   int policy_index, uint32 value)
 {
-	if (!account_policy_migrated(False)) {
-		return (account_policy_set(policy_index, value)) ?
-			NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-	}
-
 	return ldapsam_set_account_policy_in_ldap(methods, policy_index,
 						  value);
 }
@@ -3587,11 +3582,6 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods,
 					   int policy_index, uint32 *value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
-
-	if (!account_policy_migrated(False)) {
-		return (account_policy_get(policy_index, value))
-			? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-	}
 
 	if (cache_account_policy_get(policy_index, value)) {
 		DEBUG(11,("ldapsam_get_account_policy: got valid value from "
