@@ -295,7 +295,7 @@ static NTSTATUS gensec_socket_unwrap(void *private, DATA_BLOB blob)
 	DATA_BLOB unwrapped;
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx;
-	uint32_t packet_size;
+	size_t packet_size;
 
 	mem_ctx = talloc_new(gensec_socket);
 	if (!mem_ctx) {
