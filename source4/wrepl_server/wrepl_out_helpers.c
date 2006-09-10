@@ -569,7 +569,7 @@ static void wreplsrv_pull_cycle_handler_req(struct wrepl_request *req);
 
 static NTSTATUS wreplsrv_pull_cycle_next_owner_do_work(struct wreplsrv_pull_cycle_state *state)
 {
-	struct wreplsrv_owner *current_owner;
+	struct wreplsrv_owner *current_owner=NULL;
 	struct wreplsrv_owner *local_owner;
 	uint32_t i;
 	uint64_t old_max_version = 0;
