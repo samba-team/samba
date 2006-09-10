@@ -140,7 +140,7 @@ int rep_setegid(gid_t);
 
 #ifndef HAVE_SETLINEBUF
 #define setlinebuf rep_setlinebuf
-int rep_setlinebuf(FILE *);
+void rep_setlinebuf(FILE *);
 #endif
 
 #ifndef HAVE_STRCASESTR
