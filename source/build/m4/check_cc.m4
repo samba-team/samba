@@ -168,12 +168,8 @@ fi
 case "$host_os" in
 	# Try to work out if this is the native HPUX compiler that uses the -Ae flag.
 	*hpux*)
-		AC_PROG_CC_FLAG(Ae)
 		# mmap on HPUX is completely broken...
 		AC_DEFINE(MMAP_BLACKLIST, 1, [Whether MMAP is broken])
-		if test $ac_cv_prog_cc_Ae = yes; then
-			CPPFLAGS="$CPPFLAGS -Ae"
-		fi
 		;;
 
 	*aix*)

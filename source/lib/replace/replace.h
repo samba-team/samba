@@ -352,4 +352,8 @@ typedef int bool;
 #define __STRING(x)    #x
 #endif
 
+#if MMAP_BLACKLIST
+#undef HAVE_MMAP
+#endif
+
 #endif
