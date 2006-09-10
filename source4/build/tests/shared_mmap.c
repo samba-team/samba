@@ -39,6 +39,8 @@ main()
 				   MAP_FILE | MAP_SHARED, 
 				   fd, 0);
 
+		if (buf == (int *)-1) exit(1);
+
 		while (count-- && buf[9124] != 55732) sleep(1);
 
 		if (count <= 0) exit(1);
