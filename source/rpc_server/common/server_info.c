@@ -89,3 +89,47 @@ _PUBLIC_ const char *dcesrv_common_get_lan_root(TALLOC_CTX *mem_ctx, struct dces
 {
 	return talloc_strdup(mem_ctx, "");
 }
+
+/* This hardcoded value should go into a ldb database! */
+_PUBLIC_ uint32_t dcesrv_common_get_users(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+{
+	return -1;
+}
+
+/* This hardcoded value should go into a ldb database! */
+_PUBLIC_ uint32_t dcesrv_common_get_disc(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+{
+	return 15;
+}
+
+/* This hardcoded value should go into a ldb database! */
+_PUBLIC_ uint32_t dcesrv_common_get_hidden(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+{
+	return 0;
+}
+
+/* This hardcoded value should go into a ldb database! */
+_PUBLIC_ uint32_t dcesrv_common_get_announce(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+{
+	return 240;
+}
+
+/* This hardcoded value should go into a ldb database! */
+_PUBLIC_ uint32_t dcesrv_common_get_anndelta(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+{
+	return 3000;
+}
+
+/* This hardcoded value should go into a ldb database! */
+_PUBLIC_ uint32_t dcesrv_common_get_licenses(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+{
+	return 0;
+}
+
+/* This hardcoded value should go into a ldb database! */
+_PUBLIC_ const char *dcesrv_common_get_userpath(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+{
+	return talloc_strdup(mem_ctx, "c:\\");
+}
+
+
