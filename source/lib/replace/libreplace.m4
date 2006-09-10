@@ -42,7 +42,6 @@ AC_HEADER_STDC
 AC_CHECK_SIZEOF(off_t,cross)
 AC_CHECK_SIZEOF(size_t,cross)
 AC_CHECK_SIZEOF(ssize_t,cross)
-AC_FUNC_MMAP
 
 AC_CHECK_HEADERS([stdint.h inttypes.h])
 AC_CHECK_TYPE(uint_t, unsigned int)
@@ -83,9 +82,18 @@ AC_INCLUDES_DEFAULT
 )
 
 
+AC_CACHE_CHECK([for working mmap],samba_cv_HAVE_MMAP,[
+AC_TRY_RUN([#include "$libreplacedir/test/shared_mmap.c"],
+           samba_cv_HAVE_MMAP=yes,samba_cv_HAVE_MMAP=no,samba_cv_HAVE_MMAP=cross)])
+if test x"$samba_cv_HAVE_MMAP" = x"yes"; then
+    AC_DEFINE(HAVE_MMAP,1,[Whether mmap works])
+fi
+
+
 AC_CACHE_CHECK([for broken inet_ntoa],samba_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #ifdef HAVE_ARPA_INET_H
