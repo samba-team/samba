@@ -729,7 +729,7 @@ NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
 _PUBLIC_ NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_security, 
 						 const char **sasl_names) 
 {
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
 	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
 	const struct gensec_security_ops **ops;
 	int i;

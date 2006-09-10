@@ -914,7 +914,7 @@ static LLONG ROUND(LDOUBLE value)
 static double my_modf(double x0, double *iptr)
 {
 	int i;
-	LLONG l;
+	LLONG l=0;
 	double x = x0;
 	double f = 1.0;
 
