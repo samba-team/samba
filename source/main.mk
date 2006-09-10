@@ -330,26 +330,33 @@ include/includes.d: include/includes.h
 	@echo "Generating dependencies for $<"
 	@$(CC) -M -MG -MT include/includes.h.gch -MT $@ $(CFLAGS) $< -o $@
 
+#
+# $< is broken in older BSD versions:
+# when $@ is foo/bar.o, $< could be torture/foo/bar.c
+# if it also exists. So better use $* which is foo/bar
+# and append .c manually to get foo/bar.c
+#
 .c.o:
 	@if test -n "$(CC_CHECKER)"; then \
-		echo "Checking  $< with '$(CC_CHECKER)'"; \
-		$(CC_CHECKER) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@; \
+		echo "Checking  $*.c with '$(CC_CHECKER)'"; \
+		$(CC_CHECKER) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $*.c -o $@; \
 	fi
-	@echo "Compiling $<"
-	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@ && exit 0;\
+	@echo "Compiling $*.c"
+	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $*.c -o $@ && exit 0;\
 		echo "The following command failed:" 1>&2;\
-		echo "$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@" 1>&2;\
-		echo "@: $@";\
-		echo "<: $<";\
-		echo "*: $*";\
-		$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@ >/dev/null 2>&1
+		echo "$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $*.c -o $@" 1>&2;\
+		echo "@: $@" 1>&2;\
+		echo "<: $<" 1>&2;\
+		echo "*: $*" 1>&2;\
+		echo "*.c: $*.c" 1>&2;\
+		$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $*.c -o $@ >/dev/null 2>&1
 
 .c.ho:
-	@echo "Compiling $< with host compiler"
-	@$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $< -o $@ && exit 0;\
+	@echo "Compiling $*.c with host compiler"
+	@$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $*.c -o $@ && exit 0;\
 		echo "The following command failed:" 1>&2;\
-		echo "$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $< -o $@" 1>&2;\
-		$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $< -o $@ >/dev/null 2>&1
+		echo "$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $*.c -o $@" 1>&2;\
+		$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $*.c -o $@ >/dev/null 2>&1
 
 .h.h.gch:
 	@echo "Precompiling $<"
