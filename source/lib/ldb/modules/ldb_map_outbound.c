@@ -507,7 +507,7 @@ static int map_subtree_select_local_not(struct ldb_module *module, void *mem_ctx
 /* Select a list of subtrees that query attributes in the local partition */
 static int map_subtree_select_local_list(struct ldb_module *module, void *mem_ctx, struct ldb_parse_tree **new, const struct ldb_parse_tree *tree)
 {
-	int i, j, ret;
+	int i, j, ret=0;
 
 	/* Prepare new tree */
 	*new = talloc_memdup(mem_ctx, tree, sizeof(struct ldb_parse_tree));
@@ -630,7 +630,7 @@ static int map_subtree_collect_remote_not(struct ldb_module *module, void *mem_c
 /* Collect a list of subtrees that query attributes in the remote partition */
 static int map_subtree_collect_remote_list(struct ldb_module *module, void *mem_ctx, struct ldb_parse_tree **new, const struct ldb_parse_tree *tree)
 {
-	int i, j, ret;
+	int i, j, ret=0;
 
 	/* Prepare new tree */
 	*new = talloc_memdup(mem_ctx, tree, sizeof(struct ldb_parse_tree));
