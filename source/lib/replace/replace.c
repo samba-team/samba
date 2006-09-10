@@ -338,9 +338,9 @@ char *rep_inet_ntoa(struct in_addr ip)
 #endif
 
 #ifndef HAVE_SETLINEBUF
-int rep_setlinebuf(FILE *stream)
+void rep_setlinebuf(FILE *stream)
 {
-	return setvbuf(stream, (char *)NULL, _IOLBF, 0);
+	setvbuf(stream, (char *)NULL, _IOLBF, 0);
 }
 #endif /* HAVE_SETLINEBUF */
 

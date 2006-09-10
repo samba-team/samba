@@ -146,7 +146,8 @@ static int test_strdup(void)
 
 static int test_setlinebuf(void)
 {
-	/* FIXME */
+	printf("testing setlinebuf\n");
+	setlinebuf(stdout);
 	return true;
 }
 

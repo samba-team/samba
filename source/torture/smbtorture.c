@@ -413,9 +413,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		{ NULL }
 	};
 
-#ifdef HAVE_SETBUFFER
-	setbuffer(stdout, NULL, 0);
-#endif
+	setlinebuf(stdout);
 
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);
