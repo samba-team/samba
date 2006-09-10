@@ -130,7 +130,7 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	uint32_t total_deleted=0;
 	struct pvfs_filename *name;
 	const char *fname;
-	uint_t ofs;
+	off_t ofs;
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, unl->unlink.in.pattern, 

@@ -203,17 +203,17 @@ static const char *extract_name(void *data, enum smb_search_level level,
 /*
   extract the name from a smb_data structure and level
 */
-static int extract_resume_key(void *data, enum smb_search_level level,
-			      enum smb_search_data_level data_level)
+static uint32_t extract_resume_key(void *data, enum smb_search_level level,
+				   enum smb_search_data_level data_level)
 {
 	int i;
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		if (level == levels[i].level &&
 		    data_level == levels[i].data_level) {
-			return (int)*(uint32_t *)(levels[i].resume_key_offset + (char *)data);
+			return *(uint32_t *)(levels[i].resume_key_offset + (char *)data);
 		}
 	}
-	return -1;
+	return 0;
 }
 
 /* find a level in the table by name */
@@ -604,7 +604,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 			case CONT_RESUME_KEY:
 				io2.t2fnext.in.resume_key = extract_resume_key(&result->list[result->count-1],
 									       io2.t2fnext.level, io2.t2fnext.data_level);
-				if (io2.t2fnext.in.resume_key <= 0) {
+				if (io2.t2fnext.in.resume_key == 0) {
 					printf("Server does not support resume by key for level %s\n",
 					       level_name(io2.t2fnext.level, io2.t2fnext.data_level));
 					return NT_STATUS_NOT_SUPPORTED;
