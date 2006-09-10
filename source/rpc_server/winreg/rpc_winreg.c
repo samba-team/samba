@@ -399,7 +399,11 @@ static WERROR winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	/* Just asking for the size of the buffer */
 	r->out.type = (enum winreg_Type *)&val->data_type;
-	r->out.length = &val->data.length;
+	r->out.length = talloc(mem_ctx, uint32_t);
+	if (!r->out.length) {
+		return WERR_NOMEM;
+	}
+	*r->out.length = val->data.length;
 	if (!r->in.data) {
 		r->out.size = talloc(mem_ctx, uint32_t);
 		*r->out.size = val->data.length;
