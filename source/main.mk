@@ -339,6 +339,9 @@ include/includes.d: include/includes.h
 	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@ && exit 0;\
 		echo "The following command failed:" 1>&2;\
 		echo "$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@" 1>&2;\
+		echo "@: $@";\
+		echo "<: $<";\
+		echo "*: $*";\
 		$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@ >/dev/null 2>&1
 
 .c.ho:
