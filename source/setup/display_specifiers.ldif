@@ -1,3 +1,12 @@
+dn: CN=409,CN=DisplaySpecifiers,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+cn: 409
+name: 409
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+
 dn: CN=user-Display,CN=409,CN=DisplaySpecifiers,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: displaySpecifier
