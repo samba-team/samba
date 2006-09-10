@@ -77,9 +77,8 @@ struct samr_Password *smbpasswd_gethexpwd(TALLOC_CTX *mem_ctx, const char *p)
 		p1 = strchr_m(hexchars, hinybble);
 		p2 = strchr_m(hexchars, lonybble);
 		
-		if (!p1 || !p2)
-		{
-                        return (False);
+		if (!p1 || !p2)	{
+                        return NULL;
 		}
 		
 		hinybble = PTR_DIFF(p1, hexchars);
