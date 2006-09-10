@@ -36,9 +36,19 @@ export LDB_URL
 PATH=bin:$PATH
 export PATH
 
-. $LDBDIR/tests/init_slapd.sh
-. $LDBDIR/tests/start_slapd.sh
-
 LDB_SPECIALS=0
 export LDB_SPECIALS
-. $LDBDIR/tests/test-generic.sh
+
+if $LDBDIR/tests/init_slapd.sh && 
+   $LDBDIR/tests/start_slapd.sh &&
+   $LDBDIR/tests/test-generic.sh; then
+    echo "ldap tests passed";
+    ret=0
+else
+    echo "ldap tests failed";
+    ret=$?
+fi
+
+$LDBDIR/tests/kill_slapd.sh
+
+exit $ret
