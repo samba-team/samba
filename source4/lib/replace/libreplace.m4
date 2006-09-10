@@ -11,6 +11,10 @@ done
 LIBREPLACEOBJ="dlfcn.o getpass.o replace.o snprintf.o timegm.o"
 AC_SUBST(LIBREPLACEOBJ)
 
+dnl stop the C89 attempt by autoconf - if autoconf detects -Ae it will enable it
+dnl which conflicts with C99 on HPUX
+ac_cv_prog_cc_Ae=no
+
 dnl needed before AC_TRY_COMPILE
 AC_ISC_POSIX
 AC_USE_SYSTEM_EXTENSIONS
