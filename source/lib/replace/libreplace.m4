@@ -81,6 +81,15 @@ AC_INCLUDES_DEFAULT
 #endif]
 )
 
+AC_CHECK_TYPE(_Bool, 
+[AC_DEFINE(HAVE__Bool, 1, [Whether the _Bool type is available])],,
+[
+AC_INCLUDES_DEFAULT
+#ifdef HAVE_STDBOOL_H
+#include <stdbool.h>
+#endif]
+)
+
 
 AC_CACHE_CHECK([for working mmap],samba_cv_HAVE_MMAP,[
 AC_TRY_RUN([#include "$libreplacedir/test/shared_mmap.c"],

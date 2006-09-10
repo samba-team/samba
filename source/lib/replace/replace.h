@@ -310,11 +310,22 @@ char *rep_mkdtemp(char *template);
 
 #ifdef HAVE_STDBOOL_H
 #include <stdbool.h>
-#elif !defined(HAVE_BOOL)
+#endif
+
+#if !defined(HAVE_BOOL)
+#ifdef HAVE__Bool
+#define bool _Bool
+#else
 #define __bool_true_false_are_defined
 typedef int bool;
-#define false (0)
+#endif
+#endif
+
+#ifndef true
 #define true (1)
+#endif
+#ifndef false
+#define false (0)
 #endif
 
 #ifndef HAVE_FUNCTION_MACRO
