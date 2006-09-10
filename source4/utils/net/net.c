@@ -151,9 +151,7 @@ static int binary_net(int argc, const char **argv)
 		{ NULL }
 	};
 
-#ifdef HAVE_SETBUFFER
-	setbuffer(stdout, NULL, 0);
-#endif
+	setlinebuf(stdout);
 
 	pc = poptGetContext("net", argc, (const char **) argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
