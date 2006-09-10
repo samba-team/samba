@@ -1,3 +1,4 @@
+#include "config.h"
 
 #line 3 "lex.yy.c"
 
