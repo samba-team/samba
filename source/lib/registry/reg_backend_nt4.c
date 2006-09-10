@@ -133,6 +133,8 @@ static DATA_BLOB hbin_alloc (struct regf_data *data, uint32_t size, uint32_t *of
 	struct hbin_block *hbin = NULL;
 	int i;
 
+	*offset = 0;
+
 	if (size == 0)
 		return data_blob(NULL, 0);
 
