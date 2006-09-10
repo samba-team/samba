@@ -1078,15 +1078,30 @@ static WERROR srvsvc_NetSrvSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 static WERROR srvsvc_NetDiskEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetDiskEnum *r)
 {
-	r->out.disks.discs = NULL;
-	r->out.disks.count = 0;
+	r->out.info.disks = NULL;
+	r->out.info.count = 0;
 	r->out.totalentries = 0;
 	r->out.resume_handle = NULL;
 
 	switch (r->in.level) {
 	case 0:
 	{
-		return WERR_NOT_SUPPORTED;
+		/* we can safely hardcode the reply and report we have only one disk (C:) */
+		/* for some reason Windows wants 2 entries with the second being empty */
+		r->out.info.disks = talloc_array(mem_ctx, struct srvsvc_NetDiskInfo0, 2);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info.disks);
+		r->out.info.count = 2;
+
+		r->out.info.disks[0].disk = talloc_strdup(mem_ctx, "C:");
+		W_ERROR_HAVE_NO_MEMORY(r->out.info.disks[0].disk);
+
+		r->out.info.disks[1].disk = talloc_strdup(mem_ctx, "");
+		W_ERROR_HAVE_NO_MEMORY(r->out.info.disks[1].disk);
+
+		r->out.totalentries = 1;
+		r->out.resume_handle = r->in.resume_handle;
+
+		return WERR_OK;
 	}
 	default:
 		return WERR_UNKNOWN_LEVEL;

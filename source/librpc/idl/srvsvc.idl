@@ -1121,12 +1121,12 @@
 /* srvsvc_NetDisk         */
 /**************************/
 	typedef struct {
-		[flag(STR_LEN4)] string disc;
+		[flag(STR_LEN4)] string disk;
 	} srvsvc_NetDiskInfo0;
 
 	typedef struct {
 		uint32 count;
-		[size_is(count), length_is(count)] srvsvc_NetDiskInfo0 *discs;
+		[size_is(count), length_is(count)] srvsvc_NetDiskInfo0 *disks;
 	} srvsvc_NetDiskInfo;
 
 	/******************/
@@ -1134,7 +1134,7 @@
 	WERROR srvsvc_NetDiskEnum(
 		[in]      [string,charset(UTF16)] uint16 *server_unc,
 		[in]      uint32 level,
-		[in,out]  srvsvc_NetDiskInfo disks,
+		[in,out]  srvsvc_NetDiskInfo info,
 		[in]      uint32 maxlen,
 		[out]     uint32 totalentries,
 		[in,out]  uint32 *resume_handle
