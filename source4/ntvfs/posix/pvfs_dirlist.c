@@ -52,7 +52,7 @@ struct pvfs_dir {
 */
 #define DIR_OFFSET_DOT    0
 #define DIR_OFFSET_DOTDOT 1
-#define DIR_OFFSET_BASE   0x80000002
+#define DIR_OFFSET_BASE   0x80000022
 
 /*
   a special directory listing case where the pattern has no wildcard. We can just do a single stat()
