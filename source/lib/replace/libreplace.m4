@@ -57,6 +57,7 @@ AC_CHECK_TYPE(int32_t, long)
 AC_CHECK_TYPE(intptr_t, unsigned long long)
 AC_CHECK_TYPE(uint32_t, unsigned long)
 AC_CHECK_TYPE(ssize_t, int)
+AC_CHECK_TYPE(ptrdiff_t, unsigned long long)
 
 dnl these are needed for heimdal roken.h
 AC_CHECK_TYPE(struct sockaddr, [], [], [
