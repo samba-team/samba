@@ -524,7 +524,7 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 	const char *binding;
 	BOOL ret = True;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx, *prep_mem_ctx;
+	TALLOC_CTX *mem_ctx=NULL, *prep_mem_ctx;
 	struct libnet_context *ctx;
 	struct dcerpc_pipe *p;
 	struct policy_handle h;

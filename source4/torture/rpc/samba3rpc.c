@@ -1458,7 +1458,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames failed - %s\n", nt_errstr(status));
 		talloc_free(tmp_ctx);
-		return False;
+		return NULL;
 	}
 
 	result = dom_sid_add_rid(mem_ctx, l.out.domains->domains[0].sid,
