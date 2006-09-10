@@ -1025,6 +1025,35 @@ static WERROR srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 		r->out.info.info101 = info101;
 		return WERR_OK;
 	}
+	case 102:
+	{
+		struct srvsvc_NetSrvInfo102 *info102;
+
+		info102 = talloc(mem_ctx, struct srvsvc_NetSrvInfo102);
+		W_ERROR_HAVE_NO_MEMORY(info102);
+
+		info102->platform_id	= dcesrv_common_get_platform_id(mem_ctx, dce_ctx);
+		info102->server_name	= dcesrv_common_get_server_name(mem_ctx, dce_ctx, r->in.server_unc);
+		W_ERROR_HAVE_NO_MEMORY(info102->server_name);
+
+		info102->version_major	= dcesrv_common_get_version_major(mem_ctx, dce_ctx);
+		info102->version_minor	= dcesrv_common_get_version_minor(mem_ctx, dce_ctx);
+		info102->server_type	= dcesrv_common_get_server_type(mem_ctx, dce_ctx);
+		info102->comment	= talloc_strdup(mem_ctx, lp_serverstring());
+		W_ERROR_HAVE_NO_MEMORY(info102->comment);
+
+		info102->users		= dcesrv_common_get_users(mem_ctx, dce_ctx);
+		info102->disc		= dcesrv_common_get_disc(mem_ctx, dce_ctx);
+		info102->hidden		= dcesrv_common_get_hidden(mem_ctx, dce_ctx);
+		info102->announce	= dcesrv_common_get_announce(mem_ctx, dce_ctx);
+		info102->anndelta	= dcesrv_common_get_anndelta(mem_ctx, dce_ctx);
+		info102->licenses	= dcesrv_common_get_licenses(mem_ctx, dce_ctx);
+		info102->userpath	= dcesrv_common_get_userpath(mem_ctx, dce_ctx);
+		W_ERROR_HAVE_NO_MEMORY(info102->userpath);
+
+		r->out.info.info102 = info102;
+		return WERR_OK;
+	}
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}

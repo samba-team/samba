@@ -626,8 +626,8 @@
 	typedef struct {
 		srvsvc_PlatformId platform_id;
 		[string,charset(UTF16)] uint16 *server_name;
-		uint32 ver_major;
-		uint32 ver_minor;
+		uint32 version_major;
+		uint32 version_minor;
 		svcctl_ServerType server_type;
 		[string,charset(UTF16)] uint16 *comment;
 		uint32 users;
@@ -635,7 +635,7 @@
 		uint32 hidden;
 		uint32 announce;
 		uint32 anndelta;
-		uint32 licences;
+		uint32 licenses;
 		[string,charset(UTF16)] uint16 *userpath;
 	} srvsvc_NetSrvInfo102;
 
