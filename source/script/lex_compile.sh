@@ -19,7 +19,9 @@ fi
 TOP=`pwd`
 if cd $dir && $LEX $file; then
 	if [ -r $base.yy.c ];then
-		sed '/^#/ s|$base.yy\.c|$DEST|' $base.yy.c > $base.c
+	        # we must guarantee that config.h comes first
+	        echo "#include \"config.h\"" > $base.c
+		sed '/^#/ s|$base.yy\.c|$DEST|' $base.yy.c >> $base.c
 		rm -f $base.yy.c
 	fi
 fi
