@@ -75,12 +75,15 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 				 const char *unix_path,
 				 const char *fname, 
 				 struct pvfs_search_state *search,
-				 uint32_t dir_index,
+				 off_t dir_offset,
 				 union smb_search_data *file)
 {
 	struct pvfs_filename *name;
 	NTSTATUS status;
 	const char *shortname;
+	uint32_t dir_index = (uint32_t)dir_offset; /* truncated - see the code 
+						      in pvfs_list_seek_ofs() for 
+						      how we cope with this */
 
 	status = pvfs_resolve_partial(pvfs, file, unix_path, fname, &name);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -249,7 +252,7 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	while ((*reply_count) < max_count) {
 		union smb_search_data *file;
 		const char *name;
-		uint_t ofs = search->current_index;
+		off_t ofs = search->current_index;
 
 		name = pvfs_list_next(dir, &search->current_index);
 		if (name == NULL) break;
@@ -419,9 +422,14 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	search->current_index = io->search_next.in.id.server_cookie;
-	search->last_used = time(NULL);
 	dir = search->dir;
+
+	status = pvfs_list_seek_ofs(dir, io->search_next.in.id.server_cookie, 
+				    &search->current_index);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	search->last_used = time(NULL);
 
 	status = pvfs_search_fill(pvfs, req, max_count, search, io->generic.data_level,
 				  &reply_count, search_private, callback);
@@ -557,23 +565,24 @@ static NTSTATUS pvfs_search_next_trans2(struct ntvfs_module_context *ntvfs,
 		/* we didn't find the search handle */
 		return NT_STATUS_INVALID_HANDLE;
 	}
-
+	
 	dir = search->dir;
+	
+	status = NT_STATUS_OK;
 
 	/* work out what type of continuation is being used */
 	if (io->t2fnext.in.last_name && *io->t2fnext.in.last_name) {
 		status = pvfs_list_seek(dir, io->t2fnext.in.last_name, &search->current_index);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (io->t2fnext.in.resume_key) {
-				search->current_index = io->t2fnext.in.resume_key;
-			} else {
-				return status;
-			}
+		if (!NT_STATUS_IS_OK(status) && io->t2fnext.in.resume_key) {
+			status = pvfs_list_seek_ofs(dir, io->t2fnext.in.resume_key, 
+						    &search->current_index);
 		}
-	} else if (io->t2fnext.in.flags & FLAG_TRANS2_FIND_CONTINUE) {
-		/* plain continue - nothing to do */
-	} else {
-		search->current_index = io->t2fnext.in.resume_key;
+	} else if (!(io->t2fnext.in.flags & FLAG_TRANS2_FIND_CONTINUE)) {
+		status = pvfs_list_seek_ofs(dir, io->t2fnext.in.resume_key, 
+					    &search->current_index);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	search->num_ea_names = io->t2fnext.in.num_names;

@@ -45,10 +45,14 @@ struct pvfs_dir {
 	uint32_t name_cache_index;
 };
 
+/* these three numbers are chosen to minimise the chances of a bad
+   interaction with the OS value for 'end of directory'. On IRIX
+   telldir() returns 0xFFFFFFFF at the end of a directory, and that
+   caused an infinite loop with the original values of 0,1,2
+*/
 #define DIR_OFFSET_DOT    0
 #define DIR_OFFSET_DOTDOT 1
-#define DIR_OFFSET_BASE   2
-
+#define DIR_OFFSET_BASE   0x80000002
 
 /*
   a special directory listing case where the pattern has no wildcard. We can just do a single stat()
@@ -140,7 +144,7 @@ NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	dir->pvfs = pvfs;
 	dir->no_wildcard = False;
 	dir->end_of_search = False;
-	dir->offset = 0;
+	dir->offset = DIR_OFFSET_DOT;
 	dir->name_cache = talloc_zero_array(dir, 
 					    struct name_cache_entry, 
 					    NAME_CACHE_SIZE);
@@ -173,7 +177,7 @@ static void dcache_add(struct pvfs_dir *dir, const char *name)
 /* 
    return the next entry
 */
-const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
+const char *pvfs_list_next(struct pvfs_dir *dir, off_t *ofs)
 {
 	struct dirent *de;
 	enum protocol_types protocol = dir->pvfs->ntvfs->ctx->protocol;
@@ -190,7 +194,7 @@ const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 	   not return them first in a directory, but windows client
 	   may assume that these entries always appear first */
 	if (*ofs == DIR_OFFSET_DOT) {
-		(*ofs)++;
+		(*ofs) = DIR_OFFSET_DOTDOT;
 		dir->offset = *ofs;
 		if (ms_fnmatch(dir->pattern, ".", protocol) == 0) {
 			dcache_add(dir, ".");
@@ -199,7 +203,7 @@ const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 	}
 
 	if (*ofs == DIR_OFFSET_DOTDOT) {
-		(*ofs)++;
+		(*ofs) = DIR_OFFSET_BASE;
 		dir->offset = *ofs;
 		if (ms_fnmatch(dir->pattern, "..", protocol) == 0) {
 			dcache_add(dir, "..");
@@ -254,7 +258,7 @@ const char *pvfs_list_unix_path(struct pvfs_dir *dir)
 /*
   return True if end of search has been reached
 */
-BOOL pvfs_list_eos(struct pvfs_dir *dir, uint_t ofs)
+BOOL pvfs_list_eos(struct pvfs_dir *dir, off_t ofs)
 {
 	return dir->end_of_search;
 }
@@ -262,10 +266,12 @@ BOOL pvfs_list_eos(struct pvfs_dir *dir, uint_t ofs)
 /*
   seek to the given name
 */
-NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
+NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, off_t *ofs)
 {
 	struct dirent *de;
 	int i;
+
+	dir->end_of_search = False;
 
 	if (ISDOT(name)) {
 		dir->offset = DIR_OFFSET_DOTDOT;
@@ -299,6 +305,67 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 	while ((de = readdir(dir->dir))) {
 		if (strcasecmp_m(name, de->d_name) == 0) {
 			dir->offset = telldir(dir->dir) + DIR_OFFSET_BASE;
+			*ofs = dir->offset;
+			return NT_STATUS_OK;
+		}
+	}
+
+	dir->end_of_search = True;
+
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+/*
+  seek to the given offset
+*/
+NTSTATUS pvfs_list_seek_ofs(struct pvfs_dir *dir, uint32_t resume_key, off_t *ofs)
+{
+	struct dirent *de;
+	int i;
+
+	dir->end_of_search = False;
+
+	if (resume_key == DIR_OFFSET_DOT) {
+		*ofs = DIR_OFFSET_DOTDOT;
+		return NT_STATUS_OK;
+	}
+
+	if (resume_key == DIR_OFFSET_DOTDOT) {
+		*ofs = DIR_OFFSET_BASE;
+		return NT_STATUS_OK;
+	}
+
+	if (resume_key == DIR_OFFSET_BASE) {
+		rewinddir(dir->dir);
+		if ((de=readdir(dir->dir)) == NULL) {
+			dir->end_of_search = True;
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		*ofs = telldir(dir->dir) + DIR_OFFSET_BASE;
+		dir->offset = *ofs;
+		return NT_STATUS_OK;
+	}
+
+	for (i=dir->name_cache_index;i>=0;i--) {
+		struct name_cache_entry *e = &dir->name_cache[i];
+		if (resume_key == (uint32_t)e->offset) {
+			*ofs = e->offset;
+			return NT_STATUS_OK;
+		}
+	}
+	for (i=NAME_CACHE_SIZE-1;i>dir->name_cache_index;i--) {
+		struct name_cache_entry *e = &dir->name_cache[i];
+		if (resume_key == (uint32_t)e->offset) {
+			*ofs = e->offset;
+			return NT_STATUS_OK;
+		}
+	}
+
+	rewinddir(dir->dir);
+
+	while ((de = readdir(dir->dir))) {
+		dir->offset = telldir(dir->dir) + DIR_OFFSET_BASE;
+		if (resume_key == (uint32_t)dir->offset) {
 			*ofs = dir->offset;
 			return NT_STATUS_OK;
 		}
