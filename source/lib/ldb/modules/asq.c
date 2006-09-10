@@ -289,6 +289,9 @@ static int asq_requests(struct ldb_handle *handle) {
 	ac = talloc_get_type(handle->private_data, struct asq_context);
 
 	/* look up the DNs */
+	if (ac->base_res == NULL) {
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
 	el = ldb_msg_find_element(ac->base_res->message, ac->req_attribute);
 	/* no values found */
 	if (el == NULL) {
