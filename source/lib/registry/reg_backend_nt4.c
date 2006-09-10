@@ -473,7 +473,7 @@ static WERROR regf_get_subkey_by_index (TALLOC_CTX *ctx, const struct registry_k
 {
 	DATA_BLOB data;
 	struct nk_block *nk = key->backend_data;
-	uint32_t key_off;
+	uint32_t key_off=0;
 
 	if (idx >= nk->num_subkeys)
 		return WERR_NO_MORE_ITEMS;
