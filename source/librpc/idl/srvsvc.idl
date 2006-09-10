@@ -1348,9 +1348,9 @@
 	/* Function: 0x21 */
 	WERROR srvsvc_NetNameValidate(
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]   [string,charset(UTF16)] uint16 path[],
-		[in]    uint32 pathtype,
-		[in]    uint32 pathflags
+		[in]   [string,charset(UTF16)] uint16 name[],
+		[in]    uint32 name_type,
+		[in]    uint32 flags
 		);
 
 	/******************/
@@ -1362,10 +1362,10 @@
 	/* Function: 0x23 */
 	WERROR srvsvc_NetPRNameCompare(
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]   [string,charset(UTF16)] uint16 path1[],
-		[in]   [string,charset(UTF16)] uint16 path2[],
-		[in]    uint32 pathtype,
-		[in]    uint32 pathflags
+		[in]   [string,charset(UTF16)] uint16 name1[],
+		[in]   [string,charset(UTF16)] uint16 name2[],
+		[in]    uint32 name_type,
+		[in]    uint32 flags
 		);
 
 /**************************/

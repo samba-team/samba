@@ -766,6 +766,78 @@ static BOOL test_NetRemoteTOD(struct dcerpc_pipe *p,
 	return ret;
 }
 
+/**************************/
+/* srvsvc_NetName         */
+/**************************/
+
+static BOOL test_NetNameValidate(struct dcerpc_pipe *p,
+				 TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct srvsvc_NetNameValidate r;
+	char *invalidc;
+	int i, n;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.flags = 0x0;
+
+	printf("testing NetNameValidate\n");
+
+	/* valid path types only between 1 and 13 */
+	for (i = 1; i < 14; i++) {
+
+		/* Find maximum length accepted by this type */
+		r.in.name_type = i;
+		r.in.name = talloc_strdup(mem_ctx, "A");
+		n = 0;
+
+		while (W_ERROR_IS_OK(r.out.result)) {
+			status = dcerpc_srvsvc_NetNameValidate(p, mem_ctx, &r);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("NetNameValidate failed while checking maximum size (%s)\n",
+						nt_errstr(status));
+				break;
+			}
+			
+			r.in.name = talloc_append_string(mem_ctx, r.in.name, "A");
+			if (!r.in.name) {
+				printf("NetNameValidate: Out of memory!\n");
+				return False;
+			}
+			n++;
+		}
+
+		talloc_free(r.in.name);
+
+		printf("Maximum length for type %d: %d\n", i, n);
+
+		/* find invalid chars for this type check only ASCII between 0x20 and 0x7e */
+
+		invalidc = NULL;
+
+		for (n = 0x20; n < 0x7e; n++) {
+			r.in.name = talloc_asprintf(mem_ctx, "%c", (char)n);
+
+			status = dcerpc_srvsvc_NetNameValidate(p, mem_ctx, &r);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("NetNameValidate failed while checking valid chars (%s)\n",
+						nt_errstr(status));
+				break;
+			}
+
+			if (!W_ERROR_IS_OK(r.out.result)) {
+				invalidc = talloc_asprintf_append(invalidc, "%c", (char)n);
+			}
+
+			talloc_free(r.in.name);
+		}
+
+		printf("Invalid chars for type %d: %s\n", i, invalidc);
+	}
+
+	return True;
+}
+
 BOOL torture_rpc_srvsvc(struct torture_context *torture)
 {
         NTSTATUS status;
@@ -795,7 +867,8 @@ BOOL torture_rpc_srvsvc(struct torture_context *torture)
 	ret &= test_NetRemoteTOD(p, mem_ctx);
 	ret &= test_NetShareEnum(p, mem_ctx, True);
 	ret &= test_NetShareGetInfo(p, mem_ctx, "ADMIN$", True);
-
+	ret &= test_NetNameValidate(p, mem_ctx);
+	
 	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_srvsvc);
 
 	if (!binding) {
