@@ -257,7 +257,7 @@ static NTSTATUS pvfs_rename_wildcard(struct pvfs_state *pvfs,
 {
 	struct pvfs_dir *dir;
 	NTSTATUS status;
-	uint_t ofs = 0;
+	off_t ofs = 0;
 	const char *fname, *fname2, *dir_path;
 	uint16_t attrib = ren->rename.in.attrib;
 	int total_renamed = 0;
