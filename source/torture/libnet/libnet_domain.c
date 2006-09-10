@@ -180,7 +180,7 @@ BOOL torture_domain_close_lsa(struct torture_context *torture)
 {
 	BOOL ret = True;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx=NULL;
 	struct libnet_context *ctx;
 	struct lsa_String domain_name;
 	struct dcerpc_binding *binding;
@@ -254,7 +254,7 @@ BOOL torture_domain_open_samr(struct torture_context *torture)
 	NTSTATUS status;
 	const char *binding;
 	struct libnet_context *ctx;
-	struct event_context *evt_ctx;
+	struct event_context *evt_ctx=NULL;
 	TALLOC_CTX *mem_ctx;
 	struct policy_handle domain_handle, handle;
 	struct lsa_String name;
@@ -312,7 +312,7 @@ BOOL torture_domain_close_samr(struct torture_context *torture)
 {
 	BOOL ret = True;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx=NULL;
 	struct libnet_context *ctx;
 	struct lsa_String domain_name;
 	struct dcerpc_binding *binding;
