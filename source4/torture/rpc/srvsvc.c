@@ -786,6 +786,7 @@ static BOOL test_NetNameValidate(struct dcerpc_pipe *p,
 	/* valid path types only between 1 and 13 */
 	for (i = 1; i < 14; i++) {
 
+again:
 		/* Find maximum length accepted by this type */
 		r.in.name_type = i;
 		r.in.name = talloc_strdup(mem_ctx, "A");
@@ -809,7 +810,7 @@ static BOOL test_NetNameValidate(struct dcerpc_pipe *p,
 
 		talloc_free(r.in.name);
 
-		printf("Maximum length for type %d: %d\n", i, n);
+		printf("Maximum length for type %2d, flags %08x: %d\n", i, r.in.flags, n);
 
 		/* find invalid chars for this type check only ASCII between 0x20 and 0x7e */
 
@@ -832,7 +833,15 @@ static BOOL test_NetNameValidate(struct dcerpc_pipe *p,
 			talloc_free(r.in.name);
 		}
 
-		printf("Invalid chars for type %d: %s\n", i, invalidc);
+		printf(" Invalid chars for type %2d, flags %08x: \"%s\"\n", i, r.in.flags, invalidc);
+
+		/* only two values are accepted for flags: 0x0 and 0x80000000 */
+		if (r.in.flags == 0x0) {
+			r.in.flags = 0x80000000;
+			goto again;
+		}
+
+		r.in.flags = 0x0;
 	}
 
 	return True;
