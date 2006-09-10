@@ -57,7 +57,7 @@ struct schema_conv {
 	int failures;
 };
 
-struct token {
+struct schema_token {
 	int type;
 	char *value;
 };
@@ -135,14 +135,14 @@ static char *get_def_value(TALLOC_CTX *ctx, char **string)
 	return value;
 }
 
-static struct token *get_next_schema_token(TALLOC_CTX *ctx, char **string)
+static struct schema_token *get_next_schema_token(TALLOC_CTX *ctx, char **string)
 {
 	char *c = skip_spaces(*string);
 	char *type;
-	struct token *token;
+	struct schema_token *token;
 	int n;
 
-	token = talloc(ctx, struct token);
+	token = talloc(ctx, struct schema_token);
 
 	n = strcspn(c, " \t\n");
 	type = talloc_strndup(token, c, n);
@@ -333,7 +333,7 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 {
 	TALLOC_CTX *ctx;
 	struct ldb_message *msg;
-	struct token *token;
+	struct schema_token *token;
         char *c, *s;
         int n;
 
