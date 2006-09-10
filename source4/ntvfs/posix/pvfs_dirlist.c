@@ -49,6 +49,10 @@ struct pvfs_dir {
    interaction with the OS value for 'end of directory'. On IRIX
    telldir() returns 0xFFFFFFFF at the end of a directory, and that
    caused an infinite loop with the original values of 0,1,2
+
+   On XFS on linux telldir returns 0x7FFFFFFF at the end of a
+   directory. Thus the change from 0x80000002, as otherwise
+   0x7FFFFFFF+0x80000002==1==DIR_OFFSET_DOTDOT
 */
 #define DIR_OFFSET_DOT    0
 #define DIR_OFFSET_DOTDOT 1
