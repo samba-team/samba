@@ -68,7 +68,7 @@ static int ldb_msg_el_partition(struct ldb_module *module, struct ldb_message *l
 {
 	const struct ldb_map_context *data = map_get_context(module);
 	const struct ldb_map_attribute *map = map_attr_find_local(data, attr_name);
-	struct ldb_message_element *el;
+	struct ldb_message_element *el=NULL;
 
 	/* Unknown attribute: ignore */
 	if (map == NULL) {
