@@ -50,7 +50,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 	struct security_ace ace;
 	struct security_descriptor *sd;
 	struct dom_sid *test_sid;
-	NTSTATUS status, status2;
+	NTSTATUS status, status2=NT_STATUS_OK;
 	const char *call_name;
 	time_t basetime = (time(NULL) - 86400) & ~1;
 	int n = time(NULL) % 100;
