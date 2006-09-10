@@ -7,7 +7,8 @@ fi
 
 mkdir -p $LDBDIR/tests/tmp/db
 
-# not having slapd isn't considered a ldb test failure
-slapd -f $LDBDIR/tests/slapd.conf -h "`$LDBDIR/tests/ldapi_url.sh`" $* || exit 0
+# running slapd with -d0 means it stays in the same process group, so it can be
+# killed by timelimit
+slapd -d0 -f $LDBDIR/tests/slapd.conf -h "`$LDBDIR/tests/ldapi_url.sh`" $* &
 
 sleep 2
