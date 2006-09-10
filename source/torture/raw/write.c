@@ -224,6 +224,12 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\test.txt";
 	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
+	int max_bits=63;
+
+	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
+		max_bits=33;
+		printf("dangerous not set - limiting range of test to 2^%d\n", max_bits);
+	}
 
 	buf = talloc_zero_size(mem_ctx, maxsize);
 
@@ -350,7 +356,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 	CHECK_BUFFER(buf, seed, 4000);
 
-	for (i=33;i<64;i++) {
+	for (i=33;i<max_bits;i++) {
 		printf("Trying 2^%d offset\n", i);
 		setup_buffer(buf, seed+1, maxsize);
 		io.writex.in.file.fnum = fnum;
