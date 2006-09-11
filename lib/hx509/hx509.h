@@ -91,8 +91,10 @@ typedef enum {
     HX509_QUERY_OPTION_END = 0xffff
 } hx509_query_option;
 
-enum hx509_error_flag {
-    HX509_ERROR_APPEND = 1,
-};
+/* flags to hx509_set_error_string */
+#define HX509_ERROR_APPEND				0x01
+
+/* flags to hx509_cms_unenvelope */
+#define HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT	0x01
 
 #include <hx509-protos.h>
