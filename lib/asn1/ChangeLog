@@ -1,5 +1,9 @@
 2006-09-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add KRB5SignedPath and friends.
+
+	* k5.asn1: Add KRB5SignedPath and friends.
+
 	* Makefile.am: Add new sequence generation for GeneralNames.
 
 2006-09-07  Love Hörnquist Åstrand  <lha@it.su.se>
