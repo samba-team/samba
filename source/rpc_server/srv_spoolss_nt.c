@@ -66,10 +66,6 @@ static uint32 smb_connections=0;
 
 extern STANDARD_MAPPING printer_std_mapping, printserver_std_mapping;
 
-#define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
-((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
-
-
 /* API table for Xcv Monitor functions */
 
 struct xcv_api_table {

@@ -78,9 +78,6 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 
 	if (NT_STATUS_IS_OK(result)) {
 		*pol = r.pol;
-#ifdef __INSURE__
-		pol->marker = MALLOC(1);
-#endif
 	}
 
 	return result;
@@ -125,9 +122,6 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 
 	if (NT_STATUS_IS_OK(result)) {
 		*pol = r.pol;
-#ifdef __INSURE__
-		pol->marker = (char *)malloc(1);
-#endif
 	}
 
 	return result;
@@ -144,10 +138,6 @@ NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 		
 	memcpy( &policy, pol, sizeof(policy) );
-
-#ifdef __INSURE__
-	SAFE_FREE(pol->marker);
-#endif
 
 	return rpccli_lsa_Close( cli, mem_ctx, &policy );
 }

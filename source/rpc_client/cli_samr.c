@@ -52,9 +52,6 @@ NTSTATUS rpccli_samr_connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*connect_pol = r.connect_pol;
-#ifdef __INSURE__
-		connect_pol->marker = malloc(1);
-#endif
 	}
 
 	return result;
@@ -88,9 +85,6 @@ NTSTATUS rpccli_samr_connect4(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*connect_pol = r.connect_pol;
-#ifdef __INSURE__
-		connect_pol->marker = malloc(1);
-#endif
 	}
 
 	return result;
@@ -125,9 +119,6 @@ NTSTATUS rpccli_samr_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	/* Return output parameters */
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
-#ifdef __INSURE__
-		SAFE_FREE(connect_pol->marker);
-#endif
 		*connect_pol = r.pol;
 	}
 
@@ -166,9 +157,6 @@ NTSTATUS rpccli_samr_open_domain(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*domain_pol = r.domain_pol;
-#ifdef __INSURE__
-		domain_pol->marker = malloc(1);
-#endif
 	}
 
 	return result;
@@ -204,9 +192,6 @@ NTSTATUS rpccli_samr_open_user(struct rpc_pipe_client *cli,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*user_pol = r.user_pol;
-#ifdef __INSURE__
-		user_pol->marker = malloc(1);
-#endif
 	}
 
 	return result;
@@ -244,9 +229,6 @@ NTSTATUS rpccli_samr_open_group(struct rpc_pipe_client *cli,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*group_pol = r.pol;
-#ifdef __INSURE__
-		group_pol->marker = malloc(1);
-#endif
 	}
 
 	return result;
@@ -936,9 +918,6 @@ NTSTATUS rpccli_samr_open_alias(struct rpc_pipe_client *cli,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*alias_pol = r.pol;
-#ifdef __INSURE__
-		alias_pol->marker = malloc(1);
-#endif
 	}
 
 	return result;
