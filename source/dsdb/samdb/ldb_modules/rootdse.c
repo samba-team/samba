@@ -103,7 +103,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 			= gensec_use_kerberos_mechs(msg, backends, use_kerberos);
 		int i;
 		for (i = 0; ops && ops[i]; i++) {
-			if (ops[i]->sasl_name) {
+			if (ops[i]->sasl_name && ops[i]->server_start) {
 				char *sasl_name = talloc_strdup(msg, ops[i]->sasl_name);
 				if (!sasl_name) {
 					goto failed;
