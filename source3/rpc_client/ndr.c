@@ -79,6 +79,8 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* have the ndr parser alloc memory for us */
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = pull_fn(pull, NDR_OUT, data);
 	talloc_free(pull);
 
