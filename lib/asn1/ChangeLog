@@ -1,3 +1,7 @@
+2006-09-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add new sequence generation for GeneralNames.
+
 2006-09-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* CMS.asn1 (CMSVersion): rename versions from v0 to CMSVersion_v0,
