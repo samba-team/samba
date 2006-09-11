@@ -31,7 +31,7 @@ failed=0
 name="RPC-SPOOLSS on ncacn_np"
 testit "$name" bin/smbtorture $TORTURE_OPTIONS ncacn_np:"$server" $OPTIONS RPC-SPOOLSS "$*" || failed=`expr $failed + 1`
 
-for bindoptions in padcheck connect sign seal ntlm,sign ntlm,seal validate bigendian; do
+for bindoptions in padcheck connect sign seal ntlm,sign ntlm,seal $VALIDATE bigendian; do
    for transport in ncacn_ip_tcp ncacn_np; do
      case $transport in
 	 ncacn_np) tests=$ncacn_np_tests ;;

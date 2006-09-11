@@ -23,7 +23,7 @@ incdir=`dirname $0`
 . $incdir/test_functions.sh
 
 failed=0
-for bindoptions in seal,validate,padcheck bigendian; do
+for bindoptions in seal,padcheck $VALIDATE bigendian; do
  for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
    case $transport in
 	 ncalrpc) tests=$ncalrpc_tests ;;
