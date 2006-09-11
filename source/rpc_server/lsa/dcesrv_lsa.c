@@ -1704,26 +1704,27 @@ static NTSTATUS lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			       struct lsa_LookupSids *r)
 {
-	struct lsa_LookupSids3 r3;
+	struct lsa_LookupSids2 r2;
 	NTSTATUS status;
 	int i;
 
-	r3.in.sids     = r->in.sids;
-	r3.in.names    = NULL;
-	r3.in.level    = r->in.level;
-	r3.in.count    = r->in.count;
-	r3.in.unknown1 = 0;
-	r3.in.unknown2 = 0;
-	r3.out.count   = r->out.count;
-	r3.out.names   = NULL;
+	r2.in.handle   = r->in.handle;
+	r2.in.sids     = r->in.sids;
+	r2.in.names    = NULL;
+	r2.in.level    = r->in.level;
+	r2.in.count    = r->in.count;
+	r2.in.unknown1 = 0;
+	r2.in.unknown2 = 0;
+	r2.out.count   = r->out.count;
+	r2.out.names   = NULL;
 
-	status = lsa_LookupSids3(dce_call, mem_ctx, &r3);
+	status = lsa_LookupSids2(dce_call, mem_ctx, &r2);
 	if (dce_call->fault_code != 0) {
 		return status;
 	}
 
-	r->out.domains = r3.out.domains;
-	if (!r3.out.names) {
+	r->out.domains = r2.out.domains;
+	if (!r2.out.names) {
 		r->out.names = NULL;
 		return status;
 	}
@@ -1732,16 +1733,16 @@ static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	if (r->out.names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	r->out.names->count = r3.out.names->count;
+	r->out.names->count = r2.out.names->count;
 	r->out.names->names = talloc_array(r->out.names, struct lsa_TranslatedName, 
 					     r->out.names->count);
 	if (r->out.names->names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	for (i=0;i<r->out.names->count;i++) {
-		r->out.names->names[i].sid_type    = r3.out.names->names[i].sid_type;
-		r->out.names->names[i].name.string = r3.out.names->names[i].name.string;
-		r->out.names->names[i].sid_index   = r3.out.names->names[i].sid_index;
+		r->out.names->names[i].sid_type    = r2.out.names->names[i].sid_type;
+		r->out.names->names[i].name.string = r2.out.names->names[i].name.string;
+		r->out.names->names[i].sid_index   = r2.out.names->names[i].sid_index;
 	}
 
 	return status;
