@@ -32,8 +32,10 @@ static BOOL test_uidtosid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct unixinfo_UidToSid r;
+	struct dom_sid sid;
 
 	r.in.uid = 1000;
+	r.out.sid = &sid;
 
 	status = dcerpc_unixinfo_UidToSid(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -58,6 +60,8 @@ static BOOL test_getpwuid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	
 	r.in.count = &num_uids;
 	r.in.uids = uids;
+	r.out.count = &num_uids;
+	r.out.infos = talloc_array(mem_ctx, struct unixinfo_GetPWUidInfo, num_uids);
 
 	result = dcerpc_unixinfo_GetPWUid(p, mem_ctx, &r);
 
