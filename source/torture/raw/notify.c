@@ -979,12 +979,14 @@ static BOOL test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_notify notify;
 	union smb_open io;
 	struct smbcli_request *req;
+	struct timeval tv;
 	struct {
 		const char *path;
 		BOOL recursive;
 		uint32_t filter;
 		int expected;
 		int fnum;
+		int counted;
 	} dirs[] = {
 		{BASEDIR "\\abc",               True, FILE_NOTIFY_CHANGE_NAME, 30 },
 		{BASEDIR "\\zqy",               True, FILE_NOTIFY_CHANGE_NAME, 8 },
@@ -1009,6 +1011,7 @@ static BOOL test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	};
 	int i;
 	NTSTATUS status;
+	BOOL all_done = False;
 
 	printf("TESTING CHANGE NOTIFY FOR DIFFERENT DEPTHS\n");
 
@@ -1053,20 +1056,35 @@ static BOOL test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		talloc_free(path);
 	}
 
-	/* give a bit of time for all the events to propogate */
-	sleep(4);
+	/* give a bit of time for the events to propogate */
+	tv = timeval_current();
 
-	/* count events that have happened in each dir */
+	do {
+		/* count events that have happened in each dir */
+		for (i=0;i<ARRAY_SIZE(dirs);i++) {
+			notify.nttrans.in.file.fnum = dirs[i].fnum;
+			req = smb_raw_changenotify_send(cli->tree, &notify);
+			smb_raw_ntcancel(req);
+			notify.nttrans.out.num_changes = 0;
+			status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+			dirs[i].counted += notify.nttrans.out.num_changes;
+		}
+		
+		all_done = True;
+
+		for (i=0;i<ARRAY_SIZE(dirs);i++) {
+			if (dirs[i].counted != dirs[i].expected) {
+				all_done = False;
+			}
+		}
+	} while (!all_done && timeval_elapsed(&tv) < 20);
+
+	printf("took %.4f seconds to propogate all events\n", timeval_elapsed(&tv));
+
 	for (i=0;i<ARRAY_SIZE(dirs);i++) {
-		notify.nttrans.in.file.fnum = dirs[i].fnum;
-		req = smb_raw_changenotify_send(cli->tree, &notify);
-		smb_raw_ntcancel(req);
-		notify.nttrans.out.num_changes = 0;
-		status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-		if (notify.nttrans.out.num_changes != dirs[i].expected) {
+		if (dirs[i].counted != dirs[i].expected) {
 			printf("ERROR: i=%d expected %d got %d for '%s'\n",
-			       i, dirs[i].expected, notify.nttrans.out.num_changes,
-			       dirs[i].path);
+			       i, dirs[i].expected, dirs[i].counted, dirs[i].path);
 			ret = False;
 		}
 	}
