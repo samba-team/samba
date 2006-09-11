@@ -183,6 +183,12 @@ if test $ac_cv_shlib_works = no; then
 fi
 fi
 
+AC_MSG_CHECKING([if we can link using the selected flags])
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
+	    AC_MSG_RESULT(yes),
+	    AC_MSG_ERROR([we cannot link with the selected cc and ld flags. Aborting configure]),
+	    AC_MSG_WARN([cannot run when cross-compiling]))
+
 AC_ARG_ENABLE(dso,
 [  --enable-dso 		Enable building internal libraries as DSO's (experimental)],
 [ if test x$enable_dso != xyes; then
