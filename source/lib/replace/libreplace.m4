@@ -15,11 +15,12 @@ dnl stop the C89 attempt by autoconf - if autoconf detects -Ae it will enable it
 dnl which conflicts with C99 on HPUX
 ac_cv_prog_cc_Ae=no
 
-dnl needed before AC_TRY_COMPILE
+savedCFLAGS=$CFLAGS
+AC_PROG_CC
+CFLAGS=$savedCFLAGS
 AC_ISC_POSIX
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC_C99
-AC_PROG_CC
 AC_C_INLINE
 AC_PROG_INSTALL
 
