@@ -387,16 +387,22 @@ static BOOL test_random_5m(struct torture_context *test, const void *data)
 struct torture_suite *torture_local_iconv(TALLOC_CTX *mem_ctx)
 {
 	static iconv_t cd;
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-ICONV");
+	struct torture_suite *suite;
 
-    srandom(time(NULL));
+	if (!lp_parm_bool(-1, "iconv", "native", True)) {
+		printf("system iconv disabled - skipping test\n");
+		return NULL;
+	}
 
 	cd = iconv_open("UTF-16LE", "UCS-4LE");
 	if (cd == (iconv_t)-1) {
 		printf("unable to test - system iconv library does not support UTF-16LE -> UCS-4LE\n");
-		return suite;
+		return NULL;
 	}
 	iconv_close(cd);
+
+	suite = torture_suite_create(mem_ctx, "LOCAL-ICONV");
+	srandom(time(NULL));
 
 	torture_suite_add_simple_tcase(suite, "next_codepoint()",
 								   test_next_codepoint, NULL);
