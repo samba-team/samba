@@ -2446,7 +2446,7 @@ static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		
 		/* set value */
 		if (samdb_msg_add_value(secret_state->sam_ldb, 
-					mem_ctx, msg, "priorSecret", &val) != 0) {
+					mem_ctx, msg, "priorValue", &val) != 0) {
 			return NT_STATUS_NO_MEMORY; 
 		}
 		
@@ -2466,7 +2466,7 @@ static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 				}
 			} else {
 				if (samdb_msg_add_delete(secret_state->sam_ldb, 
-							 mem_ctx, msg, "secret")) {
+							 mem_ctx, msg, "currentValue")) {
 					return NT_STATUS_NO_MEMORY;
 				}
 				if (samdb_msg_add_delete(secret_state->sam_ldb, 
@@ -2492,7 +2492,7 @@ static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		
 		/* set value */
 		if (samdb_msg_add_value(secret_state->sam_ldb, 
-					mem_ctx, msg, "secret", &val) != 0) {
+					mem_ctx, msg, "currentValue", &val) != 0) {
 			return NT_STATUS_NO_MEMORY; 
 		}
 		
@@ -2509,7 +2509,7 @@ static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 			NTTIME last_set_time;
 			struct ldb_message **res;
 			const char *attrs[] = {
-				"secret",
+				"currentValue",
 				"lastSetTime",
 				NULL
 			};
@@ -2527,13 +2527,13 @@ static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			}
 
-			new_val = ldb_msg_find_ldb_val(res[0], "secret");
+			new_val = ldb_msg_find_ldb_val(res[0], "currentValue");
 			last_set_time = ldb_msg_find_attr_as_uint64(res[0], "lastSetTime", 0);
 			
 			if (new_val) {
 				/* set value */
 				if (samdb_msg_add_value(secret_state->sam_ldb, 
-							mem_ctx, msg, "priorSecret", 
+							mem_ctx, msg, "priorValue", 
 							new_val) != 0) {
 					return NT_STATUS_NO_MEMORY; 
 				}
@@ -2574,8 +2574,8 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	int ret;
 	struct ldb_message **res;
 	const char *attrs[] = {
-		"secret",
-		"priorSecret",
+		"currentValue",
+		"priorValue",
 		"lastSetTime",
 		"priorSetTime", 
 		NULL
@@ -2607,7 +2607,7 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			return NT_STATUS_NO_MEMORY;
 		}
 		/* Decrypt */
-		prior_val = ldb_msg_find_ldb_val(res[0], "priorSecret");
+		prior_val = ldb_msg_find_ldb_val(res[0], "priorValue");
 		
 		if (prior_val && prior_val->length) {
 			secret.data = prior_val->data;
@@ -2643,7 +2643,7 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		}
 
 		/* Decrypt */
-		new_val = ldb_msg_find_ldb_val(res[0], "secret");
+		new_val = ldb_msg_find_ldb_val(res[0], "currentValue");
 		
 		if (new_val && new_val->length) {
 			secret.data = new_val->data;
