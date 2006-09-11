@@ -222,7 +222,7 @@ typedef struct sam_user_info_23
 typedef struct sam_user_info_24
 {
 	uint8 pass[516];
-	uint16 pw_len;
+	uint8 pw_len;
 } SAM_USER_INFO_24;
 
 /*
