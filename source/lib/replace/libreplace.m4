@@ -24,6 +24,12 @@ AC_PROG_CC_C99
 AC_C_INLINE
 AC_PROG_INSTALL
 
+AH_VERBATIM([_XOPEN_SOURCE],
+[/* Enable XOPEN on systems that have them.  */
+#ifndef _XOPEN_SOURCE
+# define _XOPEN_SOURCE 1
+#endif])
+
 AH_VERBATIM([_XOPEN_SOURCE_EXTENDED],
 [/* Enable XOPEN extensions on systems that have them.  */
 #ifndef _XOPEN_SOURCE_EXTENDED
@@ -112,7 +118,6 @@ AC_INCLUDES_DEFAULT
 #include <stdbool.h>
 #endif]
 )
-
 
 AC_CACHE_CHECK([for working mmap],samba_cv_HAVE_MMAP,[
 AC_TRY_RUN([#include "$libreplacedir/test/shared_mmap.c"],
