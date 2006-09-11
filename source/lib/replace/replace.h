@@ -30,6 +30,10 @@
 
 #include "config.h"
 
+#ifdef HAVE_STANDARDS_H
+#include <standards.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
