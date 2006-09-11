@@ -92,6 +92,7 @@ cat >$CONFFILE<<EOF
 	server role = pdc
 	max xmit = 32K
 	server max protocol = SMB2
+	notify:inotify = false
 
 [tmp]
 	path = $TMPDIR
