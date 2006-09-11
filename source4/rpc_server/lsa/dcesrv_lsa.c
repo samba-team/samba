@@ -395,6 +395,9 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 
 /* 
   dssetup_DsRoleGetPrimaryDomainInformation 
+
+  This is not an LSA call, but is the only call left on the DSSETUP
+  pipe (after the pipe was truncated), and needs lsa_get_policy_state
 */
 static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state *dce_call, 
 						 TALLOC_CTX *mem_ctx,
@@ -1554,11 +1557,11 @@ static NTSTATUS lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX *mem_c
 
 
 /*
-  lsa_LookupSids3
+  lsa_LookupSids2
 */
-static NTSTATUS lsa_LookupSids3(struct dcesrv_call_state *dce_call,
+static NTSTATUS lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
-				struct lsa_LookupSids3 *r)
+				struct lsa_LookupSids2 *r)
 {
 	struct lsa_policy_state *state;
 	int i;
@@ -1640,32 +1643,56 @@ static NTSTATUS lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 
 
 /*
-  lsa_LookupSids2
+  lsa_LookupSids3
+
+  Identical to LookupSids2, but doesn't take a policy handle
+  
 */
-static NTSTATUS lsa_LookupSids2(struct dcesrv_call_state *dce_call,
+static NTSTATUS lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
-				struct lsa_LookupSids2 *r)
+				struct lsa_LookupSids3 *r)
 {
-	struct lsa_LookupSids3 r3;
+	struct lsa_LookupSids2 r2;
+	struct lsa_OpenPolicy2 pol;
 	NTSTATUS status;
+	struct dcesrv_handle *h;
 
-	r3.in.sids     = r->in.sids;
-	r3.in.names    = r->in.names;
-	r3.in.level    = r->in.level;
-	r3.in.count    = r->in.count;
-	r3.in.unknown1 = r->in.unknown1;
-	r3.in.unknown2 = r->in.unknown2;
-	r3.out.count   = r->out.count;
-	r3.out.names   = r->out.names;
+	/* No policy handle on the wire, so make one up here */
+	r2.in.handle = talloc(mem_ctx, struct policy_handle);
+	if (!r2.in.handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	status = lsa_LookupSids3(dce_call, mem_ctx, &r3);
+	pol.out.handle = r2.in.handle;
+	pol.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	pol.in.attr = NULL;
+	pol.in.system_name = NULL;
+	status = lsa_OpenPolicy2(dce_call, mem_ctx, &pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* ensure this handle goes away at the end of this call */
+	DCESRV_PULL_HANDLE(h, r2.in.handle, LSA_HANDLE_POLICY);
+	talloc_steal(mem_ctx, h);
+
+	r2.in.sids     = r->in.sids;
+	r2.in.names    = r->in.names;
+	r2.in.level    = r->in.level;
+	r2.in.count    = r->in.count;
+	r2.in.unknown1 = r->in.unknown1;
+	r2.in.unknown2 = r->in.unknown2;
+	r2.out.count   = r->out.count;
+	r2.out.names   = r->out.names;
+
+	status = lsa_LookupSids2(dce_call, mem_ctx, &r2);
 	if (dce_call->fault_code != 0) {
 		return status;
 	}
 
-	r->out.domains = r3.out.domains;
-	r->out.names   = r3.out.names;
-	r->out.count   = r3.out.count;
+	r->out.domains = r2.out.domains;
+	r->out.names   = r2.out.names;
+	r->out.count   = r2.out.count;
 
 	return status;
 }
@@ -2987,20 +3014,20 @@ static NTSTATUS lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CTX *mem_
 
 
 /*
-  lsa_LookupNames4
+  lsa_LookupNames3
 */
-static NTSTATUS lsa_LookupNames4(struct dcesrv_call_state *dce_call,
+static NTSTATUS lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 				 TALLOC_CTX *mem_ctx,
-				 struct lsa_LookupNames4 *r)
+				 struct lsa_LookupNames3 *r)
 {
-	struct lsa_policy_state *state;
+	struct lsa_policy_state *policy_state;
+	struct dcesrv_handle *policy_handle;
 	int i;
 	NTSTATUS status = NT_STATUS_OK;
 
-	status = lsa_get_policy_state(dce_call, mem_ctx, &state);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
+
+	policy_state = policy_handle->data;
 
 	r->out.domains = NULL;
 
@@ -3036,7 +3063,7 @@ static NTSTATUS lsa_LookupNames4(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
 		r->out.sids->sids[i].unknown     = 0;
 
-		status2 = lsa_lookup_name(state, mem_ctx, name, &sid, &atype);
+		status2 = lsa_lookup_name(policy_state, mem_ctx, name, &sid, &atype);
 		if (!NT_STATUS_IS_OK(status2) || sid->num_auths == 0) {
 			status = STATUS_SOME_UNMAPPED;
 			continue;
@@ -3048,7 +3075,7 @@ static NTSTATUS lsa_LookupNames4(struct dcesrv_call_state *dce_call,
 			continue;
 		}
 
-		status2 = lsa_authority_list(state, mem_ctx, sid, r->out.domains, &sid_index);
+		status2 = lsa_authority_list(policy_state, mem_ctx, sid, r->out.domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
 			return status2;
 		}
@@ -3063,16 +3090,38 @@ static NTSTATUS lsa_LookupNames4(struct dcesrv_call_state *dce_call,
 }
 
 /* 
-  lsa_LookupNames3
+  lsa_LookupNames4
+
+  Identical to LookupNames3, but doesn't take a policy handle
+  
 */
-static NTSTATUS lsa_LookupNames3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				 struct lsa_LookupNames3 *r)
+static NTSTATUS lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				 struct lsa_LookupNames4 *r)
 {
-	struct lsa_LookupNames4 r2;
+	struct lsa_LookupNames3 r2;
+	struct lsa_OpenPolicy2 pol;
 	NTSTATUS status;
 	struct dcesrv_handle *h;
-	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
-	
+
+	/* No policy handle on the wire, so make one up here */
+	r2.in.handle = talloc(mem_ctx, struct policy_handle);
+	if (!r2.in.handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	pol.out.handle = r2.in.handle;
+	pol.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	pol.in.attr = NULL;
+	pol.in.system_name = NULL;
+	status = lsa_OpenPolicy2(dce_call, mem_ctx, &pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* ensure this handle goes away at the end of this call */
+	DCESRV_PULL_HANDLE(h, r2.in.handle, LSA_HANDLE_POLICY);
+	talloc_steal(mem_ctx, h);
+
 	r2.in.num_names = r->in.num_names;
 	r2.in.names = r->in.names;
 	r2.in.sids = r->in.sids;
@@ -3083,7 +3132,7 @@ static NTSTATUS lsa_LookupNames3(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	r2.out.sids = r->out.sids;
 	r2.out.count = r->out.count;
 	
-	status = lsa_LookupNames4(dce_call, mem_ctx, &r2);
+	status = lsa_LookupNames3(dce_call, mem_ctx, &r2);
 	if (dce_call->fault_code != 0) {
 		return status;
 	}
