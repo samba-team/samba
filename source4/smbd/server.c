@@ -103,6 +103,19 @@ static void sig_hup(int sig)
 	debug_schedule_reopen_logs();
 }
 
+static void sig_term(int sig)
+{
+#if HAVE_GETPGRP
+	static int done_sigterm;
+	if (done_sigterm == 0 && getpgrp() == getpid()) {
+		DEBUG(0,("SIGTERM: killing children\n"));
+		done_sigterm = 1;
+		kill(-getpgrp(), SIGTERM);
+	}
+#endif
+	exit(0);
+}
+
 /*
   setup signal masks
 */
@@ -130,6 +143,7 @@ static void setup_signals(void)
 	BlockSignals(False, SIGTERM);
 
 	CatchSignal(SIGHUP, sig_hup);
+	CatchSignal(SIGTERM, sig_term);
 }
 
 /*
@@ -142,6 +156,11 @@ static void server_stdin_handler(struct event_context *event_ctx, struct fd_even
 	uint8_t c;
 	if (read(0, &c, 1) == 0) {
 		DEBUG(0,("%s: EOF on stdin - terminating\n", binary_name));
+#if HAVE_GETPGRP
+		if (getpgrp() == getpid()) {
+			kill(-getpgrp(), SIGTERM);
+		}
+#endif
 		exit(0);
 	}
 }
