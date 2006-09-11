@@ -327,7 +327,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		/* pass the unmapped username here since map_username() 
 		   will be called again from inside make_server_info_info3() */
 		
-		ret = make_server_info_info3(mem_ctx, user, domain, 
+		ret = make_server_info_info3(mem_ctx, client, domain, 
 					     &server_info, &logon_info->info3);
 		if ( !NT_STATUS_IS_OK(ret) ) {
 			DEBUG(1,("make_server_info_info3 failed: %s!\n",
