@@ -1454,6 +1454,17 @@ _kdc_as_rep(krb5_context context,
     _kdc_log_timestamp(context, config, "AS-REQ", et.authtime, et.starttime, 
 		       et.endtime, et.renew_till);
 
+    /* do this as the last thing since this signs the EncTicketPart */
+    ret = _kdc_add_KRB5SignedPath(context,
+				  config,
+				  server,
+				  setype,
+				  NULL,
+				  NULL,
+				  &et);
+    if (ret)
+	goto out;
+
     ret = _kdc_encode_reply(context, config, 
 			    &rep, &et, &ek, setype, server->entry.kvno, 
 			    &skey->key, client->entry.kvno, 
