@@ -23,7 +23,30 @@
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_unixinfo_c.h"
+#include "libcli/security/security.h"
 
+
+/*
+  test the SidToUid interface
+*/
+static BOOL test_sidtouid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct unixinfo_SidToUid r;
+	struct dom_sid *sid;
+	
+	sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1234-5432");
+	r.in.sid = *sid;
+
+	status = dcerpc_unixinfo_SidToUid(p, mem_ctx, &r);
+	if (NT_STATUS_EQUAL(NT_STATUS_NONE_MAPPED, status)) {
+	} else if (!NT_STATUS_IS_OK(status)) {
+		printf("UidToSid failed == %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
 
 /*
   test the UidToSid interface
@@ -65,6 +88,28 @@ static BOOL test_getpwuid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	result = dcerpc_unixinfo_GetPWUid(p, mem_ctx, &r);
 
 	return NT_STATUS_IS_OK(result);
+}
+
+/*
+  test the SidToGid interface
+*/
+static BOOL test_sidtogid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct unixinfo_SidToGid r;
+	struct dom_sid *sid;
+	
+	sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1234-5432");
+	r.in.sid = *sid;
+
+	status = dcerpc_unixinfo_SidToGid(p, mem_ctx, &r);
+	if (NT_STATUS_EQUAL(NT_STATUS_NONE_MAPPED, status)) {
+	} else if (!NT_STATUS_IS_OK(status)) {
+		printf("SidToGid failed == %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
 }
 
 /*
