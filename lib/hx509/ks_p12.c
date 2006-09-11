@@ -258,11 +258,16 @@ envelopedData_parser(hx509_context context,
 
     ret = hx509_cms_unenvelope(context,
 			       _hx509_lock_unlock_certs(lock),
+			       0,
 			       data, length,
+			       NULL,
 			       &contentType,
 			       &content);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, HX509_ERROR_APPEND, ret, 
+			       "PKCS12 failed to unenvelope");
 	return ret;
+    }
 
     if (heim_oid_cmp(&contentType, oid_id_pkcs7_data()) == 0)
 	ret = parse_safe_content(context, c, content.data, content.length);

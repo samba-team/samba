@@ -926,8 +926,10 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
     ret = hx509_cms_unenvelope(ctx->id->hx509ctx,
 			       ctx->id->certs,
+			       HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT,
 			       rep->content->data,
 			       rep->content->length,
+			       NULL,
 			       &contentType,
 			       &content);
     if (ret)

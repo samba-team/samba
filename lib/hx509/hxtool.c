@@ -325,12 +325,12 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
 		 opt->certificate_strings.strings[i], ret);
     }
 
-    ret = hx509_cms_unenvelope(context, certs, co.data, co.length, 
-			       &contentType, &o);
+    ret = hx509_cms_unenvelope(context, certs, 0, co.data, co.length,
+			       NULL, &contentType, &o);
     if (co.data != p)
 	free_octet_string(&co);
     if (ret)
-	errx(1, "hx509_cms_unenvelope: %d", ret);
+	hx509_err(context, 1, ret, "hx509_cms_unenvelope");
 
     _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
@@ -371,8 +371,8 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 	ret = hx509_certs_append(context, certs, lock, 
 				 opt->certificate_strings.strings[i]);
 	if (ret)
-	    errx(1, "hx509_certs_append: certs: %s: %d", 
-		 opt->certificate_strings.strings[i], ret);
+	    hx509_err(context, 1, ret, "hx509_certs_append: certs: %s: %d", 
+		      opt->certificate_strings.strings[i], ret);
     }
 
     if (opt->encryption_type_string) {
@@ -614,7 +614,8 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 
 	    ret = hx509_certs_append(context, certs, NULL, s);
 	    if (ret)
-		errx(1, "hx509_certs_append: certs: %s: %d", s, ret);
+		hx509_err(context, 1, ret, "hx509_certs_append: certs: %s: %d", 
+			  s, ret);
 
 	} else if (strncmp(s, "crl:", 4) == 0) {
 	    s += 4;
