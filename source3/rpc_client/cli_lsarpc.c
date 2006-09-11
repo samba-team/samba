@@ -132,14 +132,7 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			  POLICY_HND *pol)
 {
-	struct policy_handle policy;
-	
-	if ( !pol )
-		return NT_STATUS_NO_MEMORY;
-		
-	memcpy( &policy, pol, sizeof(policy) );
-
-	return rpccli_lsa_Close( cli, mem_ctx, &policy );
+	return rpccli_lsa_Close( cli, mem_ctx, pol);
 }
 
 /** Lookup a list of sids */
