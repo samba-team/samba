@@ -78,10 +78,6 @@ typedef u32 tdb_off_t;
 #define ACTIVE_LOCK      4
 #define TRANSACTION_LOCK 8
 
-#ifndef MAP_FAILED
-#define MAP_FAILED ((void *)-1)
-#endif
-
 /* free memory if the pointer is valid and zero the pointer */
 #ifndef SAFE_FREE
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
