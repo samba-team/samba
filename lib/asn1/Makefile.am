@@ -34,6 +34,7 @@ gen_files_k5 =						\
 	asn1_AUTHDATA_TYPE.x				\
 	asn1_Authenticator.x				\
 	asn1_AuthorizationData.x			\
+	asn1_AuthorizationDataElement.x			\
 	asn1_CKSUMTYPE.x				\
 	asn1_ChangePasswdDataMS.x			\
 	asn1_Checksum.x					\
@@ -95,7 +96,10 @@ gen_files_k5 =						\
 	asn1_TransitedEncoding.x			\
 	asn1_TypedData.x				\
 	asn1_krb5int32.x				\
-	asn1_krb5uint32.x
+	asn1_krb5uint32.x				\
+	asn1_KRB5SignedPathData.x			\
+	asn1_KRB5SignedPathPrincipals.x			\
+	asn1_KRB5SignedPath.x
 
 gen_files_cms =						\
 	asn1_CMSAttributes.x				\
@@ -483,7 +487,7 @@ cms_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1 cms_asn1 || (rm -f cms_asn1_files ; exit 1)
 
 krb5_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/k5.asn1
-	./asn1_compile$(EXEEXT) --encode-rfc1510-bit-string $(srcdir)/k5.asn1 krb5_asn1 || (rm -f krb5_asn1_files ; exit 1)
+	./asn1_compile$(EXEEXT) --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData $(srcdir)/k5.asn1 krb5_asn1 || (rm -f krb5_asn1_files ; exit 1)
 
 pkinit_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/pkinit.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/pkinit.asn1 pkinit_asn1 || (rm -f pkinit_asn1_files ; exit 1)
