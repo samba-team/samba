@@ -1695,15 +1695,9 @@ BOOL smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth
 	if(UNMARSHALLING(ps))
 		ZERO_STRUCTP(pol);
 	
-	if (!prs_uint32("data1", ps, depth, &pol->data1))
+	if (!prs_uint32("handle_type", ps, depth, &pol->handle_type))
 		return False;
-	if (!prs_uint32("data2", ps, depth, &pol->data2))
-		return False;
-	if (!prs_uint16("data3", ps, depth, &pol->data3))
-		return False;
-	if (!prs_uint16("data4", ps, depth, &pol->data4))
-		return False;
-	if(!prs_uint8s (False, "data5", ps, depth, pol->data5, sizeof(pol->data5)))
+	if (!smb_io_uuid("uuid", (struct uuid*)&pol->uuid, ps, depth))
 		return False;
 
 	return True;
