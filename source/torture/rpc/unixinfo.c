@@ -32,13 +32,12 @@ static BOOL test_uidtosid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct unixinfo_UidToSid r;
-	struct dom_sid sid;
 
 	r.in.uid = 1000;
-	r.out.sid = &sid;
 
 	status = dcerpc_unixinfo_UidToSid(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(NT_STATUS_NO_SUCH_USER, status)) {
+	} else if (!NT_STATUS_IS_OK(status)) {
 		printf("UidToSid failed == %s\n", nt_errstr(status));
 		return False;
 	}
@@ -68,6 +67,26 @@ static BOOL test_getpwuid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return NT_STATUS_IS_OK(result);
 }
 
+/*
+  test the GidToSid interface
+*/
+static BOOL test_gidtosid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct unixinfo_GidToSid r;
+
+	r.in.gid = 1000;
+
+	status = dcerpc_unixinfo_GidToSid(p, mem_ctx, &r);
+	if (NT_STATUS_EQUAL(NT_STATUS_NO_SUCH_GROUP, status)) {
+	} else if (!NT_STATUS_IS_OK(status)) {
+		printf("GidToSid failed == %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 BOOL torture_rpc_unixinfo(struct torture_context *torture)
 {
         NTSTATUS status;
@@ -84,6 +103,7 @@ BOOL torture_rpc_unixinfo(struct torture_context *torture)
 
 	ret &= test_uidtosid(p, mem_ctx);
 	ret &= test_getpwuid(p, mem_ctx);
+	ret &= test_gidtosid(p, mem_ctx);
 
 	printf("\n");
 	
