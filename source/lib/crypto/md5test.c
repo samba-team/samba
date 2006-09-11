@@ -31,34 +31,34 @@ BOOL torture_local_crypto_md5(struct torture_context *torture)
 	BOOL ret = True;
 	uint32_t i;
 	struct {
-		DATA_BLOB data;
-		DATA_BLOB md5;
+		const char *data;
+		const char *md5;
 	} testarray[] = {
 	{
-		.data	= data_blob_string_const(""),
-		.md5	= strhex_to_data_blob("d41d8cd98f00b204e9800998ecf8427e")
+		.data	= "",
+		.md5	= "d41d8cd98f00b204e9800998ecf8427e"
 	},{
-		.data	= data_blob_string_const("a"),
-		.md5	= strhex_to_data_blob("0cc175b9c0f1b6a831c399e269772661")
+		.data	= "a",
+		.md5	= "0cc175b9c0f1b6a831c399e269772661"
 	},{
-		.data	= data_blob_string_const("abc"),
-		.md5	= strhex_to_data_blob("900150983cd24fb0d6963f7d28e17f72")
+		.data	= "abc",
+		.md5	= "900150983cd24fb0d6963f7d28e17f72"
 	},{
-		.data	= data_blob_string_const("message digest"),
-		.md5	= strhex_to_data_blob("f96b697d7cb7938d525a2f31aaf161d0")
+		.data	= "message digest",
+		.md5	= "f96b697d7cb7938d525a2f31aaf161d0"
 	},{
-		.data	= data_blob_string_const("abcdefghijklmnopqrstuvwxyz"),
-		.md5	= strhex_to_data_blob("c3fcd3d76192e4007dfb496cca67e13b")
+		.data	= "abcdefghijklmnopqrstuvwxyz",
+		.md5	= "c3fcd3d76192e4007dfb496cca67e13b"
 	},{
-		.data	= data_blob_string_const("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		.data	= "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 						 "abcdefghijklmnopqrstuvwxyz"
-						 "0123456789"),
-		.md5	= strhex_to_data_blob("d174ab98d277d9f5a5611c2c9f419d9f")
+						 "0123456789",
+		.md5	= "d174ab98d277d9f5a5611c2c9f419d9f"
 	},{
-		.data	= data_blob_string_const("123456789012345678901234567890"
+		.data	= "123456789012345678901234567890"
 						 "123456789012345678901234567890"
-						 "12345678901234567890"),
-		.md5	= strhex_to_data_blob("57edf4a22be3c955ac49da2e2107b67a")
+						 "12345678901234567890",
+		.md5	= "57edf4a22be3c955ac49da2e2107b67a"
 	}
 	};
 
@@ -67,20 +67,27 @@ BOOL torture_local_crypto_md5(struct torture_context *torture)
 		uint8_t md5[16];
 		int e;
 
+		DATA_BLOB data;
+		DATA_BLOB md5blob;
+
+		data = data_blob_string_const(testarray[i].data);
+		md5blob  = strhex_to_data_blob(testarray[i].md5);
+
 		MD5Init(&ctx);
-		MD5Update(&ctx, testarray[i].data.data, testarray[i].data.length);
+		MD5Update(&ctx, data.data, data.length);
 		MD5Final(md5, &ctx);
 
-		e = memcmp(testarray[i].md5.data,
+		e = memcmp(md5blob.data,
 			   md5,
-			   MIN(testarray[i].md5.length, sizeof(md5)));
+			   MIN(md5blob.length, sizeof(md5)));
 		if (e != 0) {
 			printf("md5 test[%u]: failed\n", i);
-			dump_data(0, testarray[i].data.data, testarray[i].data.length);
-			dump_data(0, testarray[i].md5.data, testarray[i].md5.length);
+			dump_data(0, data.data, data.length);
+			dump_data(0, md5blob.data, md5blob.length);
 			dump_data(0, md5, sizeof(md5));
 			ret = False;
 		}
+		talloc_free(md5blob.data);
 	}
 
 	return ret;
