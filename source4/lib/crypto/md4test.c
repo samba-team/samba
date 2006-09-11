@@ -77,6 +77,7 @@ BOOL torture_local_crypto_md4(struct torture_context *torture)
 			dump_data(0, md4, sizeof(md4));
 			ret = False;
 		}
+		talloc_free(md4blob.data);
 	}
 
 	return ret;

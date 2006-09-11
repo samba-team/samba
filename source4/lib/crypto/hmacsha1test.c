@@ -40,39 +40,39 @@ BOOL torture_local_crypto_hmacsha1(struct torture_context *torture)
 		DATA_BLOB key;
 		DATA_BLOB data;
 		DATA_BLOB sha1;
-	} testarray[] = {
-	{
-		.key	= data_blob_repeat_byte(0x0b, 20),
-		.data	= data_blob_string_const("Hi There"),
-		.sha1	= strhex_to_data_blob("b617318655057264e28bc0b6fb378c8ef146be00")
-	},{
-		.key	= data_blob_string_const("Jefe"),
-		.data	= data_blob_string_const("what do ya want for nothing?"),
-		.sha1	= strhex_to_data_blob("effcdf6ae5eb2fa2d27416d5f184df9c259a7c79")
-	},{
-		.key	= data_blob_repeat_byte(0xaa, 20),
-		.data	= data_blob_repeat_byte(0xdd, 50),
-		.sha1	= strhex_to_data_blob("125d7342b9ac11cd91a39af48aa17b4f63f175d3")
-	},{
-		.key	= strhex_to_data_blob("0102030405060708090a0b0c0d0e0f10111213141516171819"),
-		.data	= data_blob_repeat_byte(0xcd, 50),
-		.sha1	= strhex_to_data_blob("4c9007f4026250c6bc8414f9bf50c86c2d7235da")
-	},{
-		.key	= data_blob_repeat_byte(0x0c, 20),
-		.data	= data_blob_string_const("Test With Truncation"),
-		.sha1	= strhex_to_data_blob("4c1a03424b55e07fe7f27be1d58bb9324a9a5a04")
-		/* sha1-96 =                 0x4c1a03424b55e07fe7f27be1 */
-	},{
-		.key	= data_blob_repeat_byte(0xaa, 80),
-		.data	= data_blob_string_const("Test Using Larger Than Block-Size Key - Hash Key First"),
-		.sha1	= strhex_to_data_blob("aa4ae5e15272d00e95705637ce8a3b55ed402112")
-	},{
-		.key	= data_blob_repeat_byte(0xaa, 80),
-		.data	= data_blob_string_const("Test Using Larger Than Block-Size Key "
-						 "and Larger Than One Block-Size Data"),
-		.sha1	= strhex_to_data_blob("e8e99d0f45237d786d6bbaa7965c7808bbff1a91")
-	}
-	};
+	} testarray[7];
+
+	testarray[0].key	= data_blob_repeat_byte(0x0b, 20);
+	testarray[0].data	= data_blob_string_const("Hi There");
+	testarray[0].sha1	= strhex_to_data_blob("b617318655057264e28bc0b6fb378c8ef146be00");
+
+	testarray[1].key	= data_blob_string_const("Jefe");
+	testarray[1].data	= data_blob_string_const("what do ya want for nothing?");
+	testarray[1].sha1 = strhex_to_data_blob("effcdf6ae5eb2fa2d27416d5f184df9c259a7c79");
+
+	testarray[2].key	= data_blob_repeat_byte(0xaa, 20);
+	testarray[2].data	= data_blob_repeat_byte(0xdd, 50);
+	testarray[2].sha1	= strhex_to_data_blob("125d7342b9ac11cd91a39af48aa17b4f63f175d3");
+	
+	testarray[3].key	= strhex_to_data_blob("0102030405060708090a0b0c0d0e0f10111213141516171819");
+	testarray[3].data	= data_blob_repeat_byte(0xcd, 50);
+	testarray[3].sha1	= strhex_to_data_blob("4c9007f4026250c6bc8414f9bf50c86c2d7235da");
+
+	testarray[4].key	= data_blob_repeat_byte(0x0c, 20);
+	testarray[4].data	= data_blob_string_const("Test With Truncation");
+	testarray[4].sha1	= strhex_to_data_blob("4c1a03424b55e07fe7f27be1d58bb9324a9a5a04");
+	/* sha1-96 =                 0x4c1a03424b55e07fe7f27be1 */
+
+	testarray[5].key	= data_blob_repeat_byte(0xaa, 80);
+	testarray[5].data	= data_blob_string_const("Test Using Larger Than Block-Size Key - Hash Key First");
+	testarray[5].sha1	= strhex_to_data_blob("aa4ae5e15272d00e95705637ce8a3b55ed402112");
+
+	testarray[6].key	= data_blob_repeat_byte(0xaa, 80);
+	testarray[6].data	= data_blob_string_const("Test Using Larger Than Block-Size Key "
+							 "and Larger Than One Block-Size Data");
+	testarray[6].sha1	= strhex_to_data_blob("e8e99d0f45237d786d6bbaa7965c7808bbff1a91");
+
+	testarray[7].key        = data_blob(NULL, 0);
 
 	for (i=0; i < ARRAY_SIZE(testarray); i++) {
 		struct HMACSHA1Context ctx;
