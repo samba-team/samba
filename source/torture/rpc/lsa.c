@@ -525,7 +525,9 @@ static void lookupsids_cb(struct rpc_request *req)
 		*replies = -1;
 	}
 
-	*replies += 1;
+	if (*replies >= 0) {
+		*replies += 1;
+	}
 }
 
 static BOOL test_LookupSids_async(struct dcerpc_pipe *p, 
@@ -579,15 +581,15 @@ static BOOL test_LookupSids_async(struct dcerpc_pipe *p,
 		req[i]->async.private = &replies;
 	}
 
-	while (replies < num_async_requests) {
+	while (replies >= 0 && replies < num_async_requests) {
 		event_loop_once(p->conn->event_ctx);
-		if (replies < 0) {
-			ret = False;
-			break;
-		}
 	}
 
 	talloc_free(req);
+
+	if (replies < 0) {
+		ret = False;
+	}
 
 	return ret;
 }
