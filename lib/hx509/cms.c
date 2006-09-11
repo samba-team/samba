@@ -249,8 +249,10 @@ find_CMSIdentifier(hx509_context context,
 int
 hx509_cms_unenvelope(hx509_context context,
 		     hx509_certs certs,
+		     int flags,
 		     const void *data,
 		     size_t length,
+		     const heim_octet_string *encryptedContent,
 		     heim_oid *contentType,
 		     heim_octet_string *content)
 {
@@ -258,11 +260,11 @@ hx509_cms_unenvelope(hx509_context context,
     EnvelopedData ed;
     hx509_cert cert;
     AlgorithmIdentifier *ai;
-    heim_octet_string *enccontent;
+    const heim_octet_string *enccontent;
     heim_octet_string *params, params_data;
     heim_octet_string ivec;
     size_t size;
-    int ret, i;
+    int ret, i, findflags = 0;
 
 
     memset(&key, 0, sizeof(key));
@@ -270,6 +272,9 @@ hx509_cms_unenvelope(hx509_context context,
     memset(&ivec, 0, sizeof(ivec));
     memset(content, 0, sizeof(*content));
     memset(contentType, 0, sizeof(*contentType));
+
+    if (flags & HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT)
+	findflags |= HX509_QUERY_KU_ENCIPHERMENT;
 
     ret = decode_EnvelopedData(data, length, &ed, &size);
     if (ret) {
@@ -285,11 +290,15 @@ hx509_cms_unenvelope(hx509_context context,
 	goto out;
     }
 
-    if (ed.encryptedContentInfo.encryptedContent == NULL) {
-	ret = HX509_CMS_NO_DATA_AVAILABLE;
-	hx509_set_error_string(context, 0, ret,
-			       "Content missing from encrypted data");
-	goto out;
+    enccontent = ed.encryptedContentInfo.encryptedContent;
+    if (enccontent == NULL) {
+	if (encryptedContent == NULL) {
+	    ret = HX509_CMS_NO_DATA_AVAILABLE;
+	    hx509_set_error_string(context, 0, ret,
+				   "Content missing from encrypted data");
+	    goto out;
+	}
+	enccontent = encryptedContent;
     }
 
     cert = NULL;
@@ -306,8 +315,7 @@ hx509_cms_unenvelope(hx509_context context,
 	 */
 
 	ret = find_CMSIdentifier(context, &ri->rid, certs, &cert, 
-				 HX509_QUERY_PRIVATE_KEY|
-				 HX509_QUERY_KU_ENCIPHERMENT);
+				 HX509_QUERY_PRIVATE_KEY|findflags);
 	if (ret)
 	    continue;
 
@@ -341,8 +349,6 @@ hx509_cms_unenvelope(hx509_context context,
 			       "Failed to copy EnvelopedData content oid");
 	goto out;
     }
-
-    enccontent = ed.encryptedContentInfo.encryptedContent;
 
     ai = &ed.encryptedContentInfo.contentEncryptionAlgorithm;
     if (ai->parameters) {
