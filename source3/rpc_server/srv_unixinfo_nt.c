@@ -89,7 +89,7 @@ NTSTATUS _unixinfo_gid_to_sid(pipes_struct *p,
 {
 	DOM_SID sid;
 
-	r_u->status = NT_STATUS_NO_SUCH_USER;
+	r_u->status = NT_STATUS_NO_SUCH_GROUP;
 
 	if (q_u->gid == 0) {
 		gid_to_sid(&sid, q_u->gid);
