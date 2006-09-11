@@ -749,7 +749,7 @@
 
 	typedef struct {
 		samr_CryptPassword password;
-		uint16 pw_len;
+		uint8 pw_len;
 	} samr_UserInfo24;
 
 	typedef [flag(NDR_PAHEX)] struct {
