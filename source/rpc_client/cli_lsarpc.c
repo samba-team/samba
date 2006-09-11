@@ -138,35 +138,18 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			  POLICY_HND *pol)
 {
-	prs_struct qbuf, rbuf;
-	LSA_Q_CLOSE q;
-	LSA_R_CLOSE r;
-	NTSTATUS result;
+	struct policy_handle policy;
+	
+	if ( !pol )
+		return NT_STATUS_NO_MEMORY;
+		
+	memcpy( &policy, pol, sizeof(policy) );
 
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	init_lsa_q_close(&q, pol);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_CLOSE,
-			q, r,
-			qbuf, rbuf,
-			lsa_io_q_close,
-			lsa_io_r_close,
-			NT_STATUS_UNSUCCESSFUL );
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	if (NT_STATUS_IS_OK(result)) {
 #ifdef __INSURE__
-		SAFE_FREE(pol->marker);
+	SAFE_FREE(pol->marker);
 #endif
-		*pol = r.pol;
-	}
 
-	return result;
+	return rpccli_lsa_Close( cli, mem_ctx, &policy );
 }
 
 /** Lookup a list of sids */
