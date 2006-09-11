@@ -22,7 +22,7 @@
 	/* Function: 0x01 */
 	NTSTATUS unixinfo_UidToSid (
 	    [in]	hyper uid,
-	    [out]	dom_sid *sid
+	    [out,ref]	dom_sid *sid
 	    );
 
 	/******************/
