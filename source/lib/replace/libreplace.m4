@@ -95,7 +95,10 @@ AC_FUNC_MEMCMP
 
 AC_CHECK_FUNCS(pipe strftime srandom random srand rand usleep setbuffer lstat getpgrp)
 
-AC_CHECK_HEADERS(stdbool.h stddef.h)
+AC_CHECK_HEADERS(stdbool.h stddef.h sys/select.h)
+
+AC_CHECK_HEADERS(sys/epoll.h)
+AC_CHECK_FUNCS(epoll_create)
 
 AC_CHECK_TYPE(bool, 
 [AC_DEFINE(HAVE_BOOL, 1, [Whether the bool type is available])],,
