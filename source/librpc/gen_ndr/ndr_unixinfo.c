@@ -9,73 +9,43 @@ NTSTATUS ndr_push_unixinfo_GetPWUidInfo(struct ndr_push *ndr, int ndr_flags, con
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->status));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->homedir));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->shell));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->homedir));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->shell));
+			ndr->flags = _flags_save_string;
+		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->homedir) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->homedir, CH_UTF8)));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->homedir, CH_UTF8)));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->homedir, ndr_charset_length(r->homedir, CH_UTF8), sizeof(uint8_t), CH_UTF8));
-		}
-		if (r->shell) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->shell, CH_UTF8)));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->shell, CH_UTF8)));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->shell, ndr_charset_length(r->shell, CH_UTF8), sizeof(uint8_t), CH_UTF8));
-		}
 	}
 	return NT_STATUS_OK;
 }
 
 NTSTATUS ndr_pull_unixinfo_GetPWUidInfo(struct ndr_pull *ndr, int ndr_flags, struct unixinfo_GetPWUidInfo *r)
 {
-	uint32_t _ptr_homedir;
-	TALLOC_CTX *_mem_save_homedir_0;
-	uint32_t _ptr_shell;
-	TALLOC_CTX *_mem_save_shell_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->status));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_homedir));
-		if (_ptr_homedir) {
-			NDR_PULL_ALLOC(ndr, r->homedir);
-		} else {
-			r->homedir = NULL;
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->homedir));
+			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_shell));
-		if (_ptr_shell) {
-			NDR_PULL_ALLOC(ndr, r->shell);
-		} else {
-			r->shell = NULL;
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->shell));
+			ndr->flags = _flags_save_string;
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->homedir) {
-			_mem_save_homedir_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->homedir, 0);
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->homedir));
-			NDR_CHECK(ndr_pull_array_length(ndr, &r->homedir));
-			if (ndr_get_array_length(ndr, &r->homedir) > ndr_get_array_size(ndr, &r->homedir)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->homedir), ndr_get_array_length(ndr, &r->homedir));
-			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->homedir), sizeof(uint8_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->homedir, ndr_get_array_length(ndr, &r->homedir), sizeof(uint8_t), CH_UTF8));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_homedir_0, 0);
-		}
-		if (r->shell) {
-			_mem_save_shell_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->shell, 0);
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->shell));
-			NDR_CHECK(ndr_pull_array_length(ndr, &r->shell));
-			if (ndr_get_array_length(ndr, &r->shell) > ndr_get_array_size(ndr, &r->shell)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->shell), ndr_get_array_length(ndr, &r->shell));
-			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->shell), sizeof(uint8_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->shell, ndr_get_array_length(ndr, &r->shell), sizeof(uint8_t), CH_UTF8));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_shell_0, 0);
-		}
 	}
 	return NT_STATUS_OK;
 }
@@ -85,18 +55,8 @@ _PUBLIC_ void ndr_print_unixinfo_GetPWUidInfo(struct ndr_print *ndr, const char 
 	ndr_print_struct(ndr, name, "unixinfo_GetPWUidInfo");
 	ndr->depth++;
 	ndr_print_NTSTATUS(ndr, "status", r->status);
-	ndr_print_ptr(ndr, "homedir", r->homedir);
-	ndr->depth++;
-	if (r->homedir) {
-		ndr_print_string(ndr, "homedir", r->homedir);
-	}
-	ndr->depth--;
-	ndr_print_ptr(ndr, "shell", r->shell);
-	ndr->depth++;
-	if (r->shell) {
-		ndr_print_string(ndr, "shell", r->shell);
-	}
-	ndr->depth--;
+	ndr_print_string(ndr, "homedir", r->homedir);
+	ndr_print_string(ndr, "shell", r->shell);
 	ndr->depth--;
 }
 
@@ -168,8 +128,10 @@ NTSTATUS ndr_push_unixinfo_UidToSid(struct ndr_push *ndr, int flags, const struc
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.uid));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.sid));
+		if (r->out.sid) {
+			NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
+		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -177,22 +139,26 @@ NTSTATUS ndr_push_unixinfo_UidToSid(struct ndr_push *ndr, int flags, const struc
 
 NTSTATUS ndr_pull_unixinfo_UidToSid(struct ndr_pull *ndr, int flags, struct unixinfo_UidToSid *r)
 {
+	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->in.uid));
-		NDR_PULL_ALLOC(ndr, r->out.sid);
-		ZERO_STRUCTP(r->out.sid);
 	}
 	if (flags & NDR_OUT) {
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sid));
+		if (_ptr_sid) {
 			NDR_PULL_ALLOC(ndr, r->out.sid);
+		} else {
+			r->out.sid = NULL;
 		}
-		_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.sid, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
+		if (r->out.sid) {
+			_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.sid, 0);
+			NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, 0);
+		}
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -216,7 +182,9 @@ _PUBLIC_ void ndr_print_unixinfo_UidToSid(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_ptr(ndr, "sid", r->out.sid);
 		ndr->depth++;
-		ndr_print_dom_sid(ndr, "sid", r->out.sid);
+		if (r->out.sid) {
+			ndr_print_dom_sid(ndr, "sid", r->out.sid);
+		}
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -292,8 +260,10 @@ NTSTATUS ndr_push_unixinfo_GidToSid(struct ndr_push *ndr, int flags, const struc
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.gid));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.sid));
+		if (r->out.sid) {
+			NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
+		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -301,22 +271,26 @@ NTSTATUS ndr_push_unixinfo_GidToSid(struct ndr_push *ndr, int flags, const struc
 
 NTSTATUS ndr_pull_unixinfo_GidToSid(struct ndr_pull *ndr, int flags, struct unixinfo_GidToSid *r)
 {
+	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->in.gid));
-		NDR_PULL_ALLOC(ndr, r->out.sid);
-		ZERO_STRUCTP(r->out.sid);
 	}
 	if (flags & NDR_OUT) {
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sid));
+		if (_ptr_sid) {
 			NDR_PULL_ALLOC(ndr, r->out.sid);
+		} else {
+			r->out.sid = NULL;
 		}
-		_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.sid, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
+		if (r->out.sid) {
+			_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.sid, 0);
+			NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, 0);
+		}
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -340,7 +314,9 @@ _PUBLIC_ void ndr_print_unixinfo_GidToSid(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_ptr(ndr, "sid", r->out.sid);
 		ndr->depth++;
-		ndr_print_dom_sid(ndr, "sid", r->out.sid);
+		if (r->out.sid) {
+			ndr_print_dom_sid(ndr, "sid", r->out.sid);
+		}
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -367,9 +343,6 @@ NTSTATUS ndr_push_unixinfo_GetPWUid(struct ndr_push *ndr, int flags, const struc
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
 		for (cntr_infos_1 = 0; cntr_infos_1 < *r->out.count; cntr_infos_1++) {
 			NDR_CHECK(ndr_push_unixinfo_GetPWUidInfo(ndr, NDR_SCALARS, &r->out.infos[cntr_infos_1]));
-		}
-		for (cntr_infos_1 = 0; cntr_infos_1 < *r->out.count; cntr_infos_1++) {
-			NDR_CHECK(ndr_push_unixinfo_GetPWUidInfo(ndr, NDR_BUFFERS, &r->out.infos[cntr_infos_1]));
 		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -433,9 +406,6 @@ NTSTATUS ndr_pull_unixinfo_GetPWUid(struct ndr_pull *ndr, int flags, struct unix
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.infos, 0);
 		for (cntr_infos_1 = 0; cntr_infos_1 < *r->out.count; cntr_infos_1++) {
 			NDR_CHECK(ndr_pull_unixinfo_GetPWUidInfo(ndr, NDR_SCALARS, &r->out.infos[cntr_infos_1]));
-		}
-		for (cntr_infos_1 = 0; cntr_infos_1 < *r->out.count; cntr_infos_1++) {
-			NDR_CHECK(ndr_pull_unixinfo_GetPWUidInfo(ndr, NDR_BUFFERS, &r->out.infos[cntr_infos_1]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_infos_1, 0);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));

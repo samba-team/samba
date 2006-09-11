@@ -6,8 +6,8 @@
 #include "librpc/gen_ndr/security.h"
 struct unixinfo_GetPWUidInfo {
 	NTSTATUS status;/* [keepref] */
-	const char *homedir;/* [unique,keepref,charset(UTF8)] */
-	const char *shell;/* [unique,keepref,charset(UTF8)] */
+	const char * homedir;/* [keepref,flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * shell;/* [keepref,flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM)] */
 };
 
 
@@ -30,7 +30,7 @@ struct unixinfo_UidToSid {
 	} in;
 
 	struct {
-		struct dom_sid *sid;/* [keepref,ref] */
+		struct dom_sid *sid;/* [unique,keepref] */
 		NTSTATUS result;
 	} out;
 
@@ -56,7 +56,7 @@ struct unixinfo_GidToSid {
 	} in;
 
 	struct {
-		struct dom_sid *sid;/* [keepref,ref] */
+		struct dom_sid *sid;/* [unique,keepref] */
 		NTSTATUS result;
 	} out;
 
