@@ -109,25 +109,6 @@ _hx509_request_add_eku(hx509_context context,
     return 0;
 }
 
-static int
-add_san(GeneralNames *san, const GeneralName *name)
-{
-    void *val;
-    int ret;
-
-    val = realloc(san->val, sizeof(san->val[0]) * (san->len + 1));
-    if (val == NULL)
-	return ENOMEM;
-    san->val = val;
-
-    ret = copy_GeneralName(name, &san->val[san->len]);
-    if (ret)
-	return ret;
-
-    san->len += 1;
-    return 0;
-}
-
 int
 _hx509_request_add_dns_name(hx509_context context,
 			    hx509_request req,
@@ -139,7 +120,7 @@ _hx509_request_add_dns_name(hx509_context context,
     name.element = choice_GeneralName_dNSName;
     name.u.dNSName = rk_UNCONST(hostname);
 
-    return add_san(&req->san, &name);
+    return add_GeneralNames(&req->san, &name);
 }
 
 int
@@ -153,7 +134,7 @@ _hx509_request_add_email(hx509_context context,
     name.element = choice_GeneralName_rfc822Name;
     name.u.dNSName = rk_UNCONST(email);
 
-    return add_san(&req->san, &name);
+    return add_GeneralNames(&req->san, &name);
 }
 
 
