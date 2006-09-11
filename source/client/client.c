@@ -3173,7 +3173,14 @@ static char **remote_completion(const char *text, int len)
 	if (!info.matches) {
 		return NULL;
 	}
+
+	/*
+	 * We're leaving matches[0] free to fill it later with the text to
+	 * display: Either the one single match or the longest common subset
+	 * of the matches.
+	 */
 	info.matches[0] = NULL;
+	info.count = 1;
 
 	for (i = len-1; i >= 0; i--) {
 		if ((text[i] == '/') || (text[i] == CLI_DIRSEP_CHAR)) {
@@ -3195,15 +3202,36 @@ static char **remote_completion(const char *text, int len)
 	if (cli_list(cli, dirmask, aDIR | aSYSTEM | aHIDDEN, completion_remote_filter, &info) < 0)
 		goto cleanup;
 
-	if (info.count == 2)
-		info.matches[0] = SMB_STRDUP(info.matches[1]);
-	else {
-		info.matches[0] = (char *)SMB_MALLOC(info.samelen+1);
-		if (!info.matches[0])
-			goto cleanup;
-		strncpy(info.matches[0], info.matches[1], info.samelen);
-		info.matches[0][info.samelen] = 0;
+	if (info.count == 1) {
+
+		/*
+		 * No matches at all, NULL indicates there is nothing
+		 */
+
+		SAFE_FREE(info.matches[0]);
+		SAFE_FREE(info.matches);
+		return NULL;
 	}
+
+	if (info.count == 2) {
+
+		/*
+		 * Exactly one match in matches[1], indicate this is the one
+		 * in matches[0].
+		 */
+
+		info.matches[0] = info.matches[1];
+		info.matches[1] = NULL;
+		info.count -= 1;
+		return info.matches;
+	}
+
+	/*
+	 * We got more than one possible match, set the result to the maximum
+	 * common subset
+	 */
+
+	info.matches[0] = SMB_STRNDUP(info.matches[1], info.samelen);
 	info.matches[info.count] = NULL;
 	return info.matches;
 
@@ -3230,10 +3258,13 @@ static char **completion_fn(const char *text, int start, int end)
 		sp = strchr(buf, ' ');
 		if (sp == NULL)
 			return NULL;
-		
-		for (i = 0; commands[i].name; i++)
-			if ((strncmp(commands[i].name, text, sp - buf) == 0) && (commands[i].name[sp - buf] == 0))
+
+		for (i = 0; commands[i].name; i++) {
+			if ((strncmp(commands[i].name, buf, sp - buf) == 0) &&
+			    (commands[i].name[sp - buf] == 0)) {
 				break;
+			}
+		}
 		if (commands[i].name == NULL)
 			return NULL;
 
