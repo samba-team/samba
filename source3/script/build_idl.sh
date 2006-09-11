@@ -33,7 +33,7 @@ done
 ##
 
 if [ "x$list" != x ]; then
-	echo "${PIDL} ${list}"
+	# echo "${PIDL} ${list}"
 	$PIDL $list || exit 1
 fi
 
