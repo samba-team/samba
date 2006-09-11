@@ -43,17 +43,17 @@ static BOOL test_NetCharDevGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		printf("testing NetCharDevGetInfo level %u on device '%s'\n",
+		d_printf("testing NetCharDevGetInfo level %u on device '%s'\n",
 			r.in.level, r.in.device_name);
 		status = dcerpc_srvsvc_NetCharDevGetInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetCharDevGetInfo level %u on device '%s' failed - %s\n",
+			d_printf("NetCharDevGetInfo level %u on device '%s' failed - %s\n",
 				r.in.level, r.in.device_name, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetCharDevGetInfo level %u on device '%s' failed - %s\n",
+			d_printf("NetCharDevGetInfo level %u on device '%s' failed - %s\n",
 				r.in.level, r.in.device_name, win_errstr(r.out.result));
 			continue;
 		}
@@ -77,16 +77,16 @@ static BOOL test_NetCharDevControl(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	for (i=0;i<ARRAY_SIZE(opcodes);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.opcode = opcodes[i];
-		printf("testing NetCharDevControl opcode %u on device '%s'\n", 
+		d_printf("testing NetCharDevControl opcode %u on device '%s'\n", 
 			r.in.opcode, r.in.device_name);
 		status = dcerpc_srvsvc_NetCharDevControl(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetCharDevControl opcode %u failed - %s\n", r.in.opcode, nt_errstr(status));
+			d_printf("NetCharDevControl opcode %u failed - %s\n", r.in.opcode, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetCharDevControl opcode %u failed - %s\n", r.in.opcode, win_errstr(r.out.result));
+			d_printf("NetCharDevControl opcode %u failed - %s\n", r.in.opcode, win_errstr(r.out.result));
 			continue;
 		}
 	}
@@ -120,12 +120,12 @@ static BOOL test_NetCharDevEnum(struct dcerpc_pipe *p,
 		printf("testing NetCharDevEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetCharDevEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetCharDevEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
+			d_printf("NetCharDevEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetCharDevEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			d_printf("NetCharDevEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
 			continue;
 		}
 
@@ -166,11 +166,11 @@ static BOOL test_NetCharDevQGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		printf("testing NetCharDevQGetInfo level %u on devicequeue '%s'\n",
+		d_printf("testing NetCharDevQGetInfo level %u on devicequeue '%s'\n",
 			r.in.level, r.in.queue_name);
 		status = dcerpc_srvsvc_NetCharDevQGetInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetCharDevQGetInfo level %u on devicequeue '%s' failed - %s\n",
+			d_printf("NetCharDevQGetInfo level %u on devicequeue '%s' failed - %s\n",
 				r.in.level, r.in.queue_name, nt_errstr(status));
 			ret = False;
 			continue;
@@ -203,7 +203,7 @@ static BOOL test_NetCharDevQSetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ZERO_STRUCT(r.out);
 		parm_error = 0;
 		r.in.level = levels[i];
-		printf("testing NetCharDevQSetInfo level %u on devicequeue '%s'\n", 
+		d_printf("testing NetCharDevQSetInfo level %u on devicequeue '%s'\n", 
 			r.in.level, devicequeue);
 		switch (r.in.level) {
 		case 0:
@@ -224,13 +224,13 @@ static BOOL test_NetCharDevQSetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.parm_error = &parm_error;
 		status = dcerpc_srvsvc_NetCharDevQSetInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetCharDevQSetInfo level %u on devicequeue '%s' failed - %s\n",
+			d_printf("NetCharDevQSetInfo level %u on devicequeue '%s' failed - %s\n",
 				r.in.level, r.in.queue_name, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetCharDevQSetInfo level %u on devicequeue '%s' failed - %s\n",
+			d_printf("NetCharDevQSetInfo level %u on devicequeue '%s' failed - %s\n",
 				r.in.level, r.in.queue_name, win_errstr(r.out.result));
 			continue;
 		}
@@ -266,12 +266,12 @@ static BOOL test_NetCharDevQEnum(struct dcerpc_pipe *p,
 		printf("testing NetCharDevQEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetCharDevQEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetCharDevQEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
+			d_printf("NetCharDevQEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetCharDevQEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			d_printf("NetCharDevQEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
 			continue;
 		}
 
@@ -314,15 +314,15 @@ static BOOL test_NetConnEnum(struct dcerpc_pipe *p,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		printf("testing NetConnEnum level %u\n", r.in.level);
+		d_printf("testing NetConnEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetConnEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetConnEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
+			d_printf("NetConnEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetConnEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			d_printf("NetConnEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
 			continue;
 		}
 	}
@@ -355,15 +355,15 @@ static BOOL test_NetFileEnum(struct dcerpc_pipe *p,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		printf("testing NetFileEnum level %u\n", r.in.level);
+		d_printf("testing NetFileEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetFileEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetFileEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
+			d_printf("NetFileEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetFileEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			d_printf("NetFileEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
 			continue;
 		}
 	}
@@ -396,15 +396,15 @@ static BOOL test_NetSessEnum(struct dcerpc_pipe *p,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		printf("testing NetSessEnum level %u\n", r.in.level);
+		d_printf("testing NetSessEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetSessEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetSessEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
+			d_printf("NetSessEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetSessEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			d_printf("NetSessEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
 			continue;
 		}
 	}
@@ -425,15 +425,15 @@ static BOOL test_NetShareCheck(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.device_name = device_name;
 
-	printf("testing NetShareCheck on device '%s'\n", r.in.device_name);
+	d_printf("testing NetShareCheck on device '%s'\n", r.in.device_name);
 
 	status = dcerpc_srvsvc_NetShareCheck(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("dcerpc_srvsvc_NetShareCheck on device '%s' failed - %s\n",
+		d_printf("dcerpc_srvsvc_NetShareCheck on device '%s' failed - %s\n",
 			r.in.device_name, nt_errstr(status));
 		ret = False;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("NetShareCheck on device '%s' failed - %s\n",
+		d_printf("NetShareCheck on device '%s' failed - %s\n",
 			r.in.device_name, win_errstr(r.out.result));
 		ret = False;
 	}
@@ -472,18 +472,18 @@ static BOOL test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		if (admin) expected = levels[i].admin_status;
 		ZERO_STRUCT(r.out);
 
-		printf("testing NetShareGetInfo level %u on share '%s'\n", 
+		d_printf("testing NetShareGetInfo level %u on share '%s'\n", 
 		       r.in.level, r.in.share_name);
 
 		status = dcerpc_srvsvc_NetShareGetInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetShareGetInfo level %u on share '%s' failed - %s\n",
+			d_printf("NetShareGetInfo level %u on share '%s' failed - %s\n",
 				r.in.level, r.in.share_name, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_EQUAL(r.out.result, expected)) {
-			printf("NetShareGetInfo level %u on share '%s' failed - %s (expected %s)\n",
+			d_printf("NetShareGetInfo level %u on share '%s' failed - %s (expected %s)\n",
 				r.in.level, r.in.share_name, win_errstr(r.out.result),
 				win_errstr(expected));
 			ret = False;
@@ -543,15 +543,15 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 		ZERO_STRUCT(r.out);
 		resume_handle = 0;
 
-		printf("testing NetShareEnumAll level %u\n", r.in.level);
+		d_printf("testing NetShareEnumAll level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetShareEnumAll(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetShareEnumAll level %u failed - %s\n", r.in.level, nt_errstr(status));
+			d_printf("NetShareEnumAll level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_EQUAL(r.out.result, expected)) {
-			printf("NetShareEnumAll level %u failed - %s (expected %s)\n",
+			d_printf("NetShareEnumAll level %u failed - %s (expected %s)\n",
 				r.in.level, win_errstr(r.out.result),
 				win_errstr(expected));
 			continue;
@@ -608,15 +608,15 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p,
 
 		ZERO_STRUCT(r.out);
 
-		printf("testing NetShareEnum level %u\n", r.in.level);
+		d_printf("testing NetShareEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetShareEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetShareEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
+			d_printf("NetShareEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_EQUAL(r.out.result, expected)) {
-			printf("NetShareEnum level %u failed - %s (expected %s)\n",
+			d_printf("NetShareEnum level %u failed - %s (expected %s)\n",
 				r.in.level, win_errstr(r.out.result),
 				win_errstr(expected));
 			continue;
@@ -648,15 +648,15 @@ static BOOL test_NetSrvGetInfo(struct dcerpc_pipe *p,
 		ZERO_STRUCT(r.out);
 		resume_handle = 0;
 		r.in.level = levels[i];
-		printf("testing NetSrvGetInfo level %u\n", r.in.level);
+		d_printf("testing NetSrvGetInfo level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetSrvGetInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetSrvGetInfo level %u failed - %s\n", r.in.level, nt_errstr(status));
+			d_printf("NetSrvGetInfo level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetSrvGetInfo level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			d_printf("NetSrvGetInfo level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
 			continue;
 		}
 	}
@@ -684,16 +684,16 @@ static BOOL test_NetDiskEnum(struct dcerpc_pipe *p,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		printf("testing NetDiskEnum level %u\n", r.in.level);
+		d_printf("testing NetDiskEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetDiskEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			NDR_PRINT_OUT_DEBUG(srvsvc_NetDiskEnum, &r);
-			printf("NetDiskEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
+			d_printf("NetDiskEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetDiskEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			d_printf("NetDiskEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
 			continue;
 		}
 	}
@@ -724,15 +724,15 @@ static BOOL test_NetTransportEnum(struct dcerpc_pipe *p,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
 		r.in.level = levels[i];
-		printf("testing NetTransportEnum level %u\n", r.in.level);
+		d_printf("testing NetTransportEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetTransportEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetTransportEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
+			d_printf("NetTransportEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetTransportEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			d_printf("NetTransportEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
 			continue;
 		}
 	}
@@ -753,14 +753,14 @@ static BOOL test_NetRemoteTOD(struct dcerpc_pipe *p,
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
 
 	ZERO_STRUCT(r.out);
-	printf("testing NetRemoteTOD\n");
+	d_printf("testing NetRemoteTOD\n");
 	status = dcerpc_srvsvc_NetRemoteTOD(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("NetRemoteTOD failed - %s\n", nt_errstr(status));
+		d_printf("NetRemoteTOD failed - %s\n", nt_errstr(status));
 		ret = False;
 	}
 	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("NetRemoteTOD failed - %s\n", win_errstr(r.out.result));
+		d_printf("NetRemoteTOD failed - %s\n", win_errstr(r.out.result));
 	}
 
 	return ret;
@@ -781,7 +781,7 @@ static BOOL test_NetNameValidate(struct dcerpc_pipe *p,
 	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.flags = 0x0;
 
-	printf("testing NetNameValidate\n");
+	d_printf("testing NetNameValidate\n");
 
 	/* valid path types only between 1 and 13 */
 	for (i = 1; i < 14; i++) {
@@ -796,14 +796,14 @@ again:
 		while (W_ERROR_IS_OK(r.out.result)) {
 			status = dcerpc_srvsvc_NetNameValidate(p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("NetNameValidate failed while checking maximum size (%s)\n",
+				d_printf("NetNameValidate failed while checking maximum size (%s)\n",
 						nt_errstr(status));
 				break;
 			}
 			
 			r.in.name = talloc_append_string(mem_ctx, r.in.name, "A");
 			if (!r.in.name) {
-				printf("NetNameValidate: Out of memory!\n");
+				d_printf("NetNameValidate: Out of memory!\n");
 				return False;
 			}
 			n++;
@@ -811,7 +811,7 @@ again:
 
 		talloc_free(r.in.name);
 
-		printf("Maximum length for type %2d, flags %08x: %d\n", i, r.in.flags, n);
+		d_printf("Maximum length for type %2d, flags %08x: %d\n", i, r.in.flags, n);
 
 		/* find invalid chars for this type check only ASCII between 0x20 and 0x7e */
 
@@ -822,7 +822,7 @@ again:
 
 			status = dcerpc_srvsvc_NetNameValidate(p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("NetNameValidate failed while checking valid chars (%s)\n",
+				d_printf("NetNameValidate failed while checking valid chars (%s)\n",
 						nt_errstr(status));
 				break;
 			}
@@ -834,7 +834,7 @@ again:
 			talloc_free(r.in.name);
 		}
 
-		printf(" Invalid chars for type %2d, flags %08x: \"%s\"\n", i, r.in.flags, invalidc);
+		d_printf(" Invalid chars for type %2d, flags %08x: \"%s\"\n", i, r.in.flags, invalidc);
 
 		/* only two values are accepted for flags: 0x0 and 0x80000000 */
 		if (r.in.flags == 0x0) {
@@ -882,7 +882,7 @@ BOOL torture_rpc_srvsvc(struct torture_context *torture)
 	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_srvsvc);
 
 	if (!binding) {
-		printf("You must specify a ncacn binding string\n");
+		d_printf("You must specify a ncacn binding string\n");
 		return False;
 	}
 
