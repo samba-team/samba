@@ -58,24 +58,27 @@ static struct ldb_val encode_guid(struct ldb_module *module, TALLOC_CTX *ctx, co
 	return out;
 }
 
-static struct ldb_val decode_guid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+static struct ldb_val guid_always_string(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct GUID *guid;
 	NTSTATUS status;
 	struct ldb_val out = data_blob(NULL, 0);
-	
-	guid = talloc(ctx, struct GUID);
-	if (guid == NULL) {
-		return out;
-	}
-	status = ndr_pull_struct_blob(val, guid, guid, 
-				      (ndr_pull_flags_fn_t)ndr_pull_GUID);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (val->length >= 32 && val->data[val->length] == '\0') {
+		ldb_handler_copy(module->ldb, ctx, val, &out);
+	} else {
+		guid = talloc(ctx, struct GUID);
+		if (guid == NULL) {
+			return out;
+		}
+		status = ndr_pull_struct_blob(val, guid, guid, 
+					      (ndr_pull_flags_fn_t)ndr_pull_GUID);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(guid);
+			return out;
+		}
+		out = data_blob_string_const(GUID_string(ctx, guid));
 		talloc_free(guid);
-		return out;
 	}
-	out = data_blob_string_const(GUID_string(ctx, guid));
-	talloc_free(guid);
 	return out;
 }
 
@@ -179,7 +182,7 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 		.u = {
 			.convert = {
 				.remote_name = "entryUUID", 
-				.convert_local = decode_guid,
+				.convert_local = guid_always_string,
 				.convert_remote = encode_guid,
 			},
 		},
