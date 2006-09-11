@@ -1,3 +1,4 @@
+#include "idl_types.h"
 /*
   Unixinfo interface definition
 */
@@ -22,7 +23,7 @@
 	/* Function: 0x01 */
 	NTSTATUS unixinfo_UidToSid (
 	    [in]	hyper uid,
-	    [out,ref]	dom_sid *sid
+	    [out,unique]	dom_sid *sid
 	    );
 
 	/******************/
@@ -36,13 +37,13 @@
 	/* Function: 0x03 */
 	NTSTATUS unixinfo_GidToSid (
 	    [in]	hyper gid,
-	    [out,ref]	dom_sid *sid
+	    [out,unique]	dom_sid *sid
 	    );
 
-    typedef struct {
-    	NTSTATUS status;
-        [string,charset(UTF8)] uint8 *homedir;
-	   	[string,charset(UTF8)] uint8 *shell;
+	typedef struct {
+		NTSTATUS status;
+		utf8string homedir;
+		utf8string shell;
 	} unixinfo_GetPWUidInfo;
 
 	/******************/
