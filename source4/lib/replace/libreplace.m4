@@ -84,7 +84,7 @@ AC_CHECK_TYPES(long long)
 
 AC_FUNC_MEMCMP
 
-AC_CHECK_FUNCS(pipe strftime srandom random srand rand usleep setbuffer)
+AC_CHECK_FUNCS(pipe strftime srandom random srand rand usleep setbuffer lstat)
 
 AC_CHECK_HEADERS(stdbool.h stddef.h)
 
