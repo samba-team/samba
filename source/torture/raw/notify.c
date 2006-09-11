@@ -215,7 +215,7 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* and we now see the rest of the unlink calls on both directory handles */
 	notify.nttrans.in.file.fnum = fnum;
-	sleep(1);
+	sleep(3);
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -319,7 +319,7 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	notify.nttrans.in.completion_filter = 0;
 	notify.nttrans.in.recursive = True;
-	msleep(10);
+	msleep(200);
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
 
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name\\subname1-r");
@@ -436,7 +436,7 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		notify.nttrans.in.completion_filter = (1<<i); \
 		req = smb_raw_changenotify_send(cli->tree, &notify); \
 		op \
-		msleep(10); smb_raw_ntcancel(req); \
+		msleep(200); smb_raw_ntcancel(req); \
 		status = smb_raw_changenotify_recv(req, mem_ctx, &notify); \
 		cleanup \
 		smbcli_close(cli->tree, fnum); \
@@ -1054,7 +1054,7 @@ static BOOL test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	/* give a bit of time for all the events to propogate */
-	sleep(2);
+	sleep(4);
 
 	/* count events that have happened in each dir */
 	for (i=0;i<ARRAY_SIZE(dirs);i++) {
