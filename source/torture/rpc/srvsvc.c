@@ -788,6 +788,7 @@ static BOOL test_NetNameValidate(struct dcerpc_pipe *p,
 
 again:
 		/* Find maximum length accepted by this type */
+		ZERO_STRUCT(r.out);
 		r.in.name_type = i;
 		r.in.name = talloc_strdup(mem_ctx, "A");
 		n = 0;
@@ -814,7 +815,7 @@ again:
 
 		/* find invalid chars for this type check only ASCII between 0x20 and 0x7e */
 
-		invalidc = NULL;
+		invalidc = talloc_strdup(mem_ctx, "");
 
 		for (n = 0x20; n < 0x7e; n++) {
 			r.in.name = talloc_asprintf(mem_ctx, "%c", (char)n);
