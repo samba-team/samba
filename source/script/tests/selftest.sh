@@ -39,6 +39,7 @@ SHRDIR=$PREFIX_ABS/tmp
 LIBDIR=$PREFIX_ABS/lib
 PIDDIR=$PREFIX_ABS/pid
 CONFFILE=$LIBDIR/client.conf
+SAMBA4CONFFILE=$LIBDIR/samba4client.conf
 SERVERCONFFILE=$LIBDIR/server.conf
 COMMONCONFFILE=$LIBDIR/common.conf
 PRIVATEDIR=$PREFIX_ABS/private
@@ -46,8 +47,11 @@ LOCKDIR=$PREFIX_ABS/lockdir
 LOGDIR=$PREFIX_ABS/logs
 SOCKET_WRAPPER_DIR=$PREFIX/sw
 CONFIGURATION="-s $CONFFILE"
+SAMBA4CONFIGURATION="-s $SAMBA4CONFFILE"
 
-export PREFIX PREFIX_ABS CONFIGURATION CONFFILE PATH SOCKET_WRAPPER_DIR DOMAIN
+export PREFIX PREFIX_ABS
+export CONFIGURATION CONFFILE SAMBA4CONFIGURATION SAMBA4CONFFILE
+export PATH SOCKET_WRAPPER_DIR DOMAIN
 export PRIVATEDIR LIBDIR PIDDIR LOCKDIR LOGDIR SERVERCONFFILE
 export SRCDIR SCRIPTDIR BINDIR
 export USERNAME PASSWORD
@@ -94,14 +98,21 @@ cat >$COMMONCONFFILE<<EOF
 	passdb backend = tdbsam
 
 	name resolve order = bcast
-
-	panic action = $SCRIPTDIR/gdb_backtrace %d
 EOF
 
 cat >$CONFFILE<<EOF
 [global]
 	netbios name = TORTURE26
 	interfaces = 127.0.0.26/8
+	panic action = $SCRIPTDIR/gdb_backtrace %d
+	include = $COMMONCONFFILE
+EOF
+
+cat >$SAMBA4CONFFILE<<EOF
+[global]
+	netbios name = TORTURE26
+	interfaces = 127.0.0.26/8
+	panic action = $SCRIPTDIR/gdb_backtrace %PID% %PROG%
 	include = $COMMONCONFFILE
 EOF
 
@@ -110,6 +121,7 @@ cat >$SERVERCONFFILE<<EOF
 	netbios name = $SERVER
 	interfaces = $SERVER_IP/8
 	bind interfaces only = yes
+	panic action = $SCRIPTDIR/gdb_backtrace %d
 	include = $COMMONCONFFILE
 
 	; Necessary to add the build farm hacks
@@ -133,7 +145,6 @@ cat >$SERVERCONFFILE<<EOF
 	hide unwriteable files = yes
 EOF
 
-
 ##
 ## create a test account
 ##
@@ -142,10 +153,6 @@ EOF
 	smbpasswd -c $CONFFILE -L -s -a $USERNAME >/dev/null || exit 1
 
 echo "DONE";
-
-if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
-	CONFIGURATION="$CONFIGURATION --option=\"torture:progress=no\""
-fi
 
 SERVER_TEST_FIFO="$PREFIX/server_test.fifo"
 export SERVER_TEST_FIFO
@@ -169,14 +176,15 @@ samba3_check_or_start
 SOCKET_WRAPPER_DEFAULT_IFACE=26
 export SOCKET_WRAPPER_DEFAULT_IFACE
 TORTURE4_INTERFACES='127.0.0.26/8,127.0.0.27/8,127.0.0.28/8,127.0.0.29/8,127.0.0.30/8,127.0.0.31/8'
-TORTURE4_OPTIONS="--maximum-runtime=$TORTURE_MAXTIME --option=interfaces=$TORTURE4_INTERFACES $CONFIGURATION"
+TORTURE4_OPTIONS="--option=interfaces=$TORTURE4_INTERFACES $SAMBA4CONFIGURATION"
+TORTURE4_OPTIONS="$TORTURE4_OPTIONS --maximum-runtime=$TORTURE_MAXTIME"
+TORTURE4_OPTIONS="$TORTURE4_OPTIONS --target=samba3"
 export TORTURE4_OPTIONS
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:progress=no"
 fi
 
-TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=target:samba3=yes"
 
 ##
 ## ready to go...now loop through the tests
