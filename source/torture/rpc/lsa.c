@@ -514,8 +514,6 @@ BOOL test_many_LookupSids(struct dcerpc_pipe *p,
 	return True;
 }
 
-#define NUM_ASYNC_REQUESTS 1000
-
 static void lookupsids_cb(struct rpc_request *req)
 {
 	int *replies = (int *)req->async.private;
@@ -536,18 +534,21 @@ static BOOL test_LookupSids_async(struct dcerpc_pipe *p,
 {
 	struct lsa_SidArray sids;
 	struct lsa_SidPtr sidptr;
-
-	uint32_t count[NUM_ASYNC_REQUESTS];
-	struct lsa_TransNameArray names[NUM_ASYNC_REQUESTS];
-	struct lsa_LookupSids r[NUM_ASYNC_REQUESTS];
+	uint32_t *count;
+	struct lsa_TransNameArray *names;
+	struct lsa_LookupSids *r;
 	struct rpc_request **req;
-
 	int i, replies;
 	BOOL ret = True;
+	const int num_async_requests = 50;
 
-	printf("\nTesting %d async lookupsids request\n", 100);
+	count = talloc_array(mem_ctx, uint32_t, num_async_requests);
+	names = talloc_array(mem_ctx, struct lsa_TransNameArray, num_async_requests);
+	r = talloc_array(mem_ctx, struct lsa_LookupSids, num_async_requests);
 
-	req = talloc_array(mem_ctx, struct rpc_request *, NUM_ASYNC_REQUESTS);
+	printf("\nTesting %d async lookupsids request\n", num_async_requests);
+
+	req = talloc_array(mem_ctx, struct rpc_request *, num_async_requests);
 
 	sids.num_sids = 1;
 	sids.sids = &sidptr;
@@ -555,7 +556,7 @@ static BOOL test_LookupSids_async(struct dcerpc_pipe *p,
 
 	replies = 0;
 
-	for (i=0; i<NUM_ASYNC_REQUESTS; i++) {
+	for (i=0; i<num_async_requests; i++) {
 		count[i] = 0;
 		names[i].count = 0;
 		names[i].names = NULL;
@@ -578,7 +579,7 @@ static BOOL test_LookupSids_async(struct dcerpc_pipe *p,
 		req[i]->async.private = &replies;
 	}
 
-	while (replies < NUM_ASYNC_REQUESTS) {
+	while (replies < num_async_requests) {
 		event_loop_once(p->conn->event_ctx);
 		if (replies < 0) {
 			ret = False;
