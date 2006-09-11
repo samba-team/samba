@@ -1,5 +1,18 @@
-2006-09-08  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-09-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* req.c: Use the new add_GeneralNames function.
+
+	* hx509.h: Add HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT.
+
+	* ks_p12.c: Adapt to new signature of hx509_cms_unenvelope.
+
+	* hxtool.c: Adapt to new signature of hx509_cms_unenvelope.
+
+	* cms.c: Allow passing in encryptedContent and flag.  Add new flag
+	HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT.
+	
+2006-09-08  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ks_p11.c: cast void * to char * when using it for %s formating
 	in printf.
 
