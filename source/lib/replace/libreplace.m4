@@ -29,6 +29,12 @@ AH_VERBATIM([_XOPEN_SOURCE_EXTENDED],
 # define _XOPEN_SOURCE_EXTENDED 1
 #endif])
 
+AH_VERBATIM([_OSF_SOURCE],
+[/* Enable OSF extensions on systems that have them.  */
+#ifndef _OSF_SOURCE
+# define _OSF_SOURCE 1
+#endif])
+
 LIBREPLACE_C99_STRUCT_INIT([],[])
 
 AC_SYS_LARGEFILE
