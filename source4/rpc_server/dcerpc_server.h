@@ -168,11 +168,14 @@ struct dcesrv_connection {
 	/* a list of established context_ids */
 	struct dcesrv_connection_context *contexts;
 
-	/* the state of the current calls */
-	struct dcesrv_call_state *call_list;
+	/* the state of the current incoming call fragments */
+	struct dcesrv_call_state *incoming_fragmented_call_list;
 
 	/* the state of the async pending calls */
 	struct dcesrv_call_state *pending_call_list;
+
+	/* the state of the current outgoing calls */
+	struct dcesrv_call_state *call_list;
 
 	/* the maximum size the client wants to receive */
 	uint32_t cli_max_recv_frag;

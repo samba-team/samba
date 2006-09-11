@@ -133,12 +133,12 @@ static const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv
 }
 
 /*
-  find a call that is pending in our call list
+  find the earlier parts of a fragmented call awaiting reassembily
 */
-static struct dcesrv_call_state *dcesrv_find_call(struct dcesrv_connection *dce_conn, uint16_t call_id)
+static struct dcesrv_call_state *dcesrv_find_fragmented_call(struct dcesrv_connection *dce_conn, uint16_t call_id)
 {
 	struct dcesrv_call_state *c;
-	for (c=dce_conn->call_list;c;c=c->next) {
+	for (c=dce_conn->incoming_fragmented_call_list;c;c=c->next) {
 		if (c->pkt.call_id == call_id) {
 			return c;
 		}
@@ -1013,7 +1013,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 
 		/* this is a continuation of an existing call - find the call then
 		   tack it on the end */
-		call = dcesrv_find_call(dce_conn, call2->pkt.call_id);
+		call = dcesrv_find_fragmented_call(dce_conn, call2->pkt.call_id);
 		if (!call) {
 			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
 		}
@@ -1049,10 +1049,11 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	}
 
 	/* this may not be the last pdu in the chain - if its isn't then
-	   just put it on the call_list and wait for the rest */
+	   just put it on the incoming_fragmented_call_list and wait for the rest */
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
 	    !(call->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
-		DLIST_ADD_END(dce_conn->call_list, call, struct dcesrv_call_state *);
+		DLIST_ADD_END(dce_conn->incoming_fragmented_call_list, call, 
+			      struct dcesrv_call_state *);
 		return NT_STATUS_OK;
 	}
 
