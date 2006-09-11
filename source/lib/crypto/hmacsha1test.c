@@ -72,8 +72,6 @@ BOOL torture_local_crypto_hmacsha1(struct torture_context *torture)
 							 "and Larger Than One Block-Size Data");
 	testarray[6].sha1	= strhex_to_data_blob("e8e99d0f45237d786d6bbaa7965c7808bbff1a91");
 
-	testarray[7].key        = data_blob(NULL, 0);
-
 	for (i=0; i < ARRAY_SIZE(testarray); i++) {
 		struct HMACSHA1Context ctx;
 		uint8_t sha1[SHA1HashSize];
