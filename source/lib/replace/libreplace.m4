@@ -27,7 +27,7 @@ AC_PROG_INSTALL
 AH_VERBATIM([_XOPEN_SOURCE],
 [/* Enable XOPEN on systems that have them.  */
 #ifndef _XOPEN_SOURCE
-# define _XOPEN_SOURCE 1
+# define _XOPEN_SOURCE 500
 #endif])
 
 AH_VERBATIM([_XOPEN_SOURCE_EXTENDED],
@@ -51,6 +51,8 @@ case "$host_os" in
 	*irix6*) AC_ADD_INCLUDE(<standards.h>)
 		;;
 esac
+
+AC_CHECK_HEADERS([standards.h])
 
 AC_C_BIGENDIAN
 AC_HEADER_STDC
