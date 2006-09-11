@@ -69,8 +69,15 @@ export PIDDIR
 rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $ETCDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR $LDAPDIR/db
 
+if [ -z "$VALGRIND" ]; then
+    nativeiconv="true"
+else
+    nativeiconv="false"
+fi
+
 cat >$CONFFILE<<EOF
 [global]
+	iconv:native = $nativeiconv
 	netbios name = $NETBIOSNAME
         netbios aliases = $SERVER
 	workgroup = $DOMAIN
