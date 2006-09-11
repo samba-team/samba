@@ -1816,8 +1816,11 @@ return the contents of a prs_struct in a DATA_BLOB
 ********************************************************************/
 BOOL prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
-	blob->length = prs_offset(prs);
+	blob->length = prs_data_size(prs);
 	blob->data = (uint8 *)talloc_zero_size(mem_ctx, blob->length);
+	
+	/* set the pointer at the end of the buffer */
+	prs_set_offset( prs, prs_data_size(prs) );
 
 	if (!prs_copy_all_data_out((char *)blob->data, prs))
 		return False;
