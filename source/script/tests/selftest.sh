@@ -16,6 +16,13 @@ if [ -z "$TORTURE_MAXTIME" ]; then
     TORTURE_MAXTIME=1200
 fi
 
+# disable rpc validation when using valgrind - its way too slow
+if [ -z "$VALGRIND" ]; then
+    VALIDATE="validate";
+else
+    VALIDATE="";
+fi
+
 OLD_PWD=`pwd`
 PREFIX=$ARG1
 PREFIX=`echo $PREFIX | sed s+//+/+`
