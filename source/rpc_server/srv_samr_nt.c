@@ -4638,6 +4638,8 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 			if ( strequal( acct_name, info.acct_name ) )
 				return NT_STATUS_OK;
 
+			fstrcpy( info.acct_name, acct_name );
+
 			/* make sure the name doesn't already exist as a user 
 			   or local group */
 
