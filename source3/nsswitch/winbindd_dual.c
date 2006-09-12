@@ -46,7 +46,7 @@ static void child_read_request(struct winbindd_cli_state *state)
 			sizeof(state->request));
 
 	if (len != sizeof(state->request)) {
-		DEBUG(0, ("Got invalid request length: %d\n", (int)len));
+		DEBUG(len > 0 ? 0 : 3, ("Got invalid request length: %d\n", (int)len));
 		state->finished = True;
 		return;
 	}
