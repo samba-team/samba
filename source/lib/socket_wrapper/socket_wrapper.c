@@ -361,9 +361,6 @@ static int sockaddr_convert_to_un(struct socket_info *si, const struct sockaddr 
 		} else {
 			return convert_in_un_remote(si, (const struct sockaddr_in *)in_addr, out_addr, bcast);
 		}
-	case AF_UNIX:
-		memcpy(out_addr, in_addr, sizeof(*out_addr));
-		return 0;
 	default:
 		break;
 	}
@@ -405,10 +402,6 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 			return -1;
 		}
 		return convert_un_in(in_addr, (struct sockaddr_in *)out_addr, _out_addrlen);
-	case AF_UNIX:
-		memcpy(out_addr, in_addr, out_addrlen);
-		*_out_addrlen = out_addrlen;
-		return 0;
 	default:
 		break;
 	}
@@ -444,6 +437,16 @@ _PUBLIC_ int swrap_socket(int domain, int type, int protocol)
 
 	if (!socket_wrapper_dir()) {
 		return real_socket(domain, type, protocol);
+	}
+
+	switch (domain) {
+	case AF_INET:
+		break;
+	case AF_UNIX:
+		return real_socket(domain, type, protocol);
+	default:
+		errno = EAFNOSUPPORT;
+		return -1;
 	}
 	
 	fd = real_socket(AF_UNIX, type, 0);
@@ -588,7 +591,7 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 		return real_connect(s, serv_addr, addrlen);
 	}
 
-	if (si->bound == 0 && si->domain != AF_UNIX) {
+	if (si->bound == 0) {
 		ret = swrap_auto_bind(si);
 		if (ret == -1) return -1;
 	}
@@ -600,10 +603,8 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 			   sizeof(struct sockaddr_un));
 
 	/* to give better errors */
-	if (serv_addr->sa_family == AF_INET) {
-		if (ret == -1 && errno == ENOENT) {
-			errno = EHOSTUNREACH;
-		}
+	if (ret == -1 && errno == ENOENT) {
+		errno = EHOSTUNREACH;
 	}
 
 	if (ret == 0) {
@@ -691,8 +692,6 @@ _PUBLIC_ int swrap_getsockopt(int s, int level, int optname, void *optval, sockl
 	} 
 
 	switch (si->domain) {
-	case AF_UNIX:
-		return real_getsockopt(s, level, optname, optval, optlen);
 	default:
 		errno = ENOPROTOOPT;
 		return -1;
@@ -712,8 +711,6 @@ _PUBLIC_ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *o
 	}
 
 	switch (si->domain) {
-	case AF_UNIX:
-		return real_setsockopt(s, level, optname, optval, optlen);
 	case AF_INET:
 		return 0;
 	default:
@@ -761,7 +758,7 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		return real_sendto(s, buf, len, flags, to, tolen);
 	}
 
-	if (si->bound == 0 && si->domain != AF_UNIX) {
+	if (si->bound == 0) {
 		ret = swrap_auto_bind(si);
 		if (ret == -1) return -1;
 	}
@@ -794,10 +791,8 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 	ret = real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
 
 	/* to give better errors */
-	if (to->sa_family == AF_INET) {
-		if (ret == -1 && errno == ENOENT) {
-			errno = EHOSTUNREACH;
-		}
+	if (ret == -1 && errno == ENOENT) {
+		errno = EHOSTUNREACH;
 	}
 
 	swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len, ret);
