@@ -520,8 +520,8 @@ static void lookupsids_cb(struct rpc_request *req)
 	NTSTATUS status;
 
 	status = dcerpc_ndr_request_recv(req);
-	DEBUG(3, ("lookupsids returned %s\n", nt_errstr(status)));
 	if (!NT_STATUS_IS_OK(status)) {
+		printf("lookupsids returned %s\n", nt_errstr(status));
 		*replies = -1;
 	}
 
