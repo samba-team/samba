@@ -25,8 +25,8 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _replace_h
-#define _replace_h
+#ifndef _LIBREPLACE_REPLACE_H
+#define _LIBREPLACE_REPLACE_H
 
 #include "config.h"
 
@@ -360,4 +360,4 @@ typedef int bool;
 #undef HAVE_MMAP
 #endif
 
-#endif
+#endif /* _LIBREPLACE_REPLACE_H */
