@@ -19,7 +19,7 @@
 #ifndef __SOCKET_WRAPPER_H__
 #define __SOCKET_WRAPPER_H__
 
-int swrap_socket(int domain, int type, int protocol);
+int swrap_socket(int family, int type, int protocol);
 int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen);
 int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen);
 int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen);

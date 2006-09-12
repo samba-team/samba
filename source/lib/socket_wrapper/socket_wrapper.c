@@ -80,7 +80,7 @@ struct socket_info
 {
 	int fd;
 
-	int domain;
+	int family;
 	int type;
 	int protocol;
 	int bound;
@@ -430,20 +430,20 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 
 }
 
-_PUBLIC_ int swrap_socket(int domain, int type, int protocol)
+_PUBLIC_ int swrap_socket(int family, int type, int protocol)
 {
 	struct socket_info *si;
 	int fd;
 
 	if (!socket_wrapper_dir()) {
-		return real_socket(domain, type, protocol);
+		return real_socket(family, type, protocol);
 	}
 
-	switch (domain) {
+	switch (family) {
 	case AF_INET:
 		break;
 	case AF_UNIX:
-		return real_socket(domain, type, protocol);
+		return real_socket(family, type, protocol);
 	default:
 		errno = EAFNOSUPPORT;
 		return -1;
@@ -455,7 +455,7 @@ _PUBLIC_ int swrap_socket(int domain, int type, int protocol)
 
 	si = calloc(1, sizeof(struct socket_info));
 
-	si->domain = domain;
+	si->family = family;
 	si->type = type;
 	si->protocol = protocol;
 	si->fd = fd;
@@ -492,14 +492,14 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	fd = ret;
 
 	ret = sockaddr_convert_from_un(parent_si, &un_addr, un_addrlen,
-				       parent_si->domain, addr, addrlen);
+				       parent_si->family, addr, addrlen);
 	if (ret == -1) return ret;
 
 	child_si = malloc(sizeof(struct socket_info));
 	memset(child_si, 0, sizeof(*child_si));
 
 	child_si->fd = fd;
-	child_si->domain = parent_si->domain;
+	child_si->family = parent_si->family;
 	child_si->type = parent_si->type;
 	child_si->protocol = parent_si->protocol;
 	child_si->bound = 1;
@@ -508,7 +508,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	if (ret == -1) return ret;
 
 	ret = sockaddr_convert_from_un(child_si, &un_my_addr, un_my_addrlen,
-				       child_si->domain, &my_addr, &my_addrlen);
+				       child_si->family, &my_addr, &my_addrlen);
 	if (ret == -1) return ret;
 
 	child_si->myname_len = my_addrlen;
@@ -691,11 +691,8 @@ _PUBLIC_ int swrap_getsockopt(int s, int level, int optname, void *optval, sockl
 		return real_getsockopt(s, level, optname, optval, optlen);
 	} 
 
-	switch (si->domain) {
-	default:
-		errno = ENOPROTOOPT;
-		return -1;
-	}
+	errno = ENOPROTOOPT;
+	return -1;
 }
 
 _PUBLIC_ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, socklen_t optlen)
@@ -710,7 +707,7 @@ _PUBLIC_ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *o
 		return real_setsockopt(s, level, optname, optval, optlen);
 	}
 
-	switch (si->domain) {
+	switch (si->family) {
 	case AF_INET:
 		return 0;
 	default:
@@ -737,7 +734,7 @@ _PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct 
 		return ret;
 
 	if (sockaddr_convert_from_un(si, &un_addr, un_addrlen,
-				     si->domain, from, fromlen) == -1) {
+				     si->family, from, fromlen) == -1) {
 		return -1;
 	}
 
