@@ -133,7 +133,7 @@ void seekdir(DIR *dir, long ofs)
 	}
 #ifdef _OSF_SOURCE
 	return -1;
-#else
+#endif
 }
 
 void rewinddir(DIR *dir)
