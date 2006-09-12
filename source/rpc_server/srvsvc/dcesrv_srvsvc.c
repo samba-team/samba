@@ -1273,7 +1273,47 @@ static WERROR srvsvc_NetPathCompare(struct dcesrv_call_state *dce_call, TALLOC_C
 static WERROR srvsvc_NetNameValidate(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetNameValidate *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	int len;
+
+	if ((r->in.flags != 0x0) && (r->in.flags != 0x80000000)) {
+		return WERR_INVALID_NAME;
+	}
+
+	switch (r->in.name_type) {
+	case 1:
+	case 2:
+	case 3:
+	case 4:
+	case 5:
+	case 6:
+	case 7:
+	case 8:
+		return WERR_NOT_SUPPORTED;
+
+	case 9: /* validate share name */
+
+		len = strlen_m(r->in.name);
+		if ((r->in.flags == 0x0) && (len > 81)) {
+			return WERR_INVALID_NAME;
+		}
+		if ((r->in.flags == 0x80000000) && (len > 13)) {
+			return WERR_INVALID_NAME;
+		}
+		if (! dcesrv_common_validate_share_name(mem_ctx, r->in.name)) {
+			return WERR_INVALID_NAME;
+		}
+		return WERR_OK;
+
+	case 10:
+	case 11:
+	case 12:
+	case 13:
+		return WERR_NOT_SUPPORTED;
+	default:
+		return WERR_INVALID_PARAM;
+	}
+
+	return WERR_INVALID_PARAM;
 }
 
 
