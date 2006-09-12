@@ -399,7 +399,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		{"parse-dns",	'D', POPT_ARG_STRING,	NULL, 	OPT_DNS,	"parse-dns", 	NULL},
 		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,
 		 "run dangerous tests (eg. wiping out password database)", NULL},
-		{"target", 		'T', POPT_ARG_STRING, &target, 0, "samba4|other", NULL},
+		{"target", 		'T', POPT_ARG_STRING, &target, 0, "samba3|samba4|other", NULL},
 		{"async",       'a', POPT_ARG_NONE,     NULL,   OPT_ASYNC,
 		 "run async tests", NULL},
 		{"num-async",    0, POPT_ARG_INT,  &torture_numasync,  0,
@@ -489,7 +489,9 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		exit(1);
 	}
 
-	if (!strcmp(target, "samba4")) {
+	if (strcmp(target, "samba3") == 0) {
+		lp_set_cmdline("target:samba3", "true");
+	} else if (strcmp(target, "samba4") == 0) {
 		lp_set_cmdline("target:samba4", "true");
 	}
 
