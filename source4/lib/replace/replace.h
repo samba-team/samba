@@ -53,6 +53,9 @@
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
+/* force off HAVE_INTTYPES_H so that roken doesn't try to include both,
+   which causes a warning storm on irix */
+#undef HAVE_INTTYPES_H
 #elif HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
