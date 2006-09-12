@@ -113,6 +113,23 @@ static const char *socket_wrapper_dir(void)
 	return s;
 }
 
+static const char *socket_wrapper_dump_dir(void)
+{
+	const char *s = getenv("SOCKET_WRAPPER_DUMP_DIR");
+
+	if (!socket_wrapper_dir()) {
+		return NULL;
+	}
+
+	if (s == NULL) {
+		return NULL;
+	}
+	if (strncmp(s, "./", 2) == 0) {
+		s += 2;
+	}
+	return s;
+}
+
 static unsigned int socket_wrapper_default_iface(void)
 {
 	const char *s = getenv("SOCKET_WRAPPER_DEFAULT_IFACE");
@@ -401,16 +418,22 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 }
 
 enum swrap_packet_type {
+	SWRAP_CONNECT,
+	SWRAP_ACCEPT,
 	SWRAP_RECVFROM,
 	SWRAP_SENDTO,
 	SWRAP_RECV,
-	SWRAP_SEND
+	SWRAP_SEND,
+	SWRAP_CLOSE
 };
 
 static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *addr,
 			      enum swrap_packet_type type,
 			      const void *buf, size_t len, ssize_t ret)
 {
+	if (!socket_wrapper_dump_dir()) {
+		return;
+	}
 
 }
 
@@ -492,6 +515,8 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->peername = sockaddr_dup(addr, *addrlen);
 
 	DLIST_ADD(sockets, child_si);
+
+	swrap_dump_packet(child_si, addr, SWRAP_ACCEPT, NULL, 0, 0);
 
 	return fd;
 }
@@ -585,6 +610,8 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 		si->peername_len = addrlen;
 		si->peername = sockaddr_dup(serv_addr, addrlen);
 	}
+
+	swrap_dump_packet(si, serv_addr, SWRAP_CONNECT, NULL, 0, ret);
 
 	return ret;
 }
@@ -821,6 +848,8 @@ _PUBLIC_ int swrap_close(int fd)
 
 	if (si) {
 		DLIST_REMOVE(sockets, si);
+
+		swrap_dump_packet(si, NULL, SWRAP_CLOSE, NULL, 0, 0);
 
 		free(si->path);
 		free(si->myname);
