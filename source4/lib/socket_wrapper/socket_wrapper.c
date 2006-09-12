@@ -53,6 +53,8 @@
 #define real_setsockopt setsockopt
 #define real_recvfrom recvfrom
 #define real_sendto sendto
+#define real_recv recv
+#define real_send send
 #define real_socket socket
 #define real_close close
 #endif
@@ -398,6 +400,20 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 	return -1;
 }
 
+enum swrap_packet_type {
+	SWRAP_RECVFROM,
+	SWRAP_SENDTO,
+	SWRAP_RECV,
+	SWRAP_SEND
+};
+
+static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *addr,
+			      enum swrap_packet_type type,
+			      const void *buf, size_t len, ssize_t ret)
+{
+
+}
+
 _PUBLIC_ int swrap_socket(int domain, int type, int protocol)
 {
 	struct socket_info *si;
@@ -700,12 +716,14 @@ _PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct 
 				     si->domain, from, fromlen) == -1) {
 		return -1;
 	}
-	
+
+	swrap_dump_packet(si, from, SWRAP_RECVFROM, buf, len, ret);
+
 	return ret;
 }
 
 
-_PUBLIC_ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
+_PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
 {
 	struct sockaddr_un un_addr;
 	int ret;
@@ -740,6 +758,9 @@ _PUBLIC_ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, 
 			/* ignore the any errors in broadcast sends */
 			real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
 		}
+
+		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len, len);
+
 		return len;
 	}
 
@@ -751,6 +772,45 @@ _PUBLIC_ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, 
 			errno = EHOSTUNREACH;
 		}
 	}
+
+	swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len, ret);
+
+	return ret;
+}
+
+_PUBLIC_ ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
+{
+	int ret;
+	struct socket_info *si = find_socket_info(s);
+
+	if (!si) {
+		return real_recv(s, buf, len, flags);
+	}
+
+	ret = real_recv(s, buf, len, flags);
+	if (ret == -1) 
+		return ret;
+
+	swrap_dump_packet(si, NULL, SWRAP_RECV, buf, len, ret);
+
+	return ret;
+}
+
+
+_PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
+{
+	int ret;
+	struct socket_info *si = find_socket_info(s);
+
+	if (!si) {
+		return real_send(s, buf, len, flags);
+	}
+
+	ret = real_send(s, buf, len, flags);
+	if (ret == -1) 
+		return ret;
+
+	swrap_dump_packet(si, NULL, SWRAP_SEND, buf, len, ret);
 
 	return ret;
 }
