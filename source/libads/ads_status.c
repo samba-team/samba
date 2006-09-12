@@ -76,6 +76,9 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 		return map_nt_error_from_unix(status.err.rc);
 #ifdef HAVE_LDAP
 	case ENUM_ADS_ERROR_LDAP:
+		if (status.err.rc == LDAP_SUCCESS) {
+			return NT_STATUS_OK;
+		}
 		return NT_STATUS_LDAP(status.err.rc);
 #endif
 #ifdef HAVE_KRB5
