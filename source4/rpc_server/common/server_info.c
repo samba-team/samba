@@ -132,4 +132,13 @@ _PUBLIC_ const char *dcesrv_common_get_userpath(TALLOC_CTX *mem_ctx, struct dces
 	return talloc_strdup(mem_ctx, "c:\\");
 }
 
+#define INVALID_SHARE_NAME_CHARS " \"*+,./:;<=>?[\\]|"
 
+_PUBLIC_ bool dcesrv_common_validate_share_name(TALLOC_CTX *mem_ctx, const char *share_name)
+{
+	if (strpbrk(share_name, INVALID_SHARE_NAME_CHARS)) {
+		return False;
+	}
+
+	return True;
+}
