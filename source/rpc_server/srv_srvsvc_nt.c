@@ -2221,11 +2221,28 @@ WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 WERROR _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV_R_NET_NAME_VALIDATE *r_u)
 {
 	fstring sharename;
+	int len;
+
+	if ((q_u->flags != 0x0) && (q_u->flags != 0x80000000)) {
+		return WERR_INVALID_PARAM;
+	}
 
 	switch ( q_u->type ) {
 	case 0x9:
 		rpcstr_pull(sharename, q_u->sharename.buffer, sizeof(sharename), q_u->sharename.uni_str_len*2, 0);
-		if ( !validate_net_name( sharename, INVALID_SHARENAME_CHARS, sizeof(sharename) ) ) {
+
+		len = strlen_m(sharename);
+
+		if ((q_u->flags == 0x0) && (len > 81)) {
+			DEBUG(5,("_srv_net_name_validate: share name too long (%s > 81 chars)\n", sharename));
+			return WERR_INVALID_NAME;
+		}
+		if ((q_u->flags == 0x80000000) && (len > 13)) {
+			DEBUG(5,("_srv_net_name_validate: share name too long (%s > 13 chars)\n", sharename));
+			return WERR_INVALID_NAME;
+		}
+
+		if ( ! validate_net_name( sharename, INVALID_SHARENAME_CHARS, sizeof(sharename) ) ) {
 			DEBUG(5,("_srv_net_name_validate: Bad sharename \"%s\"\n", sharename));
 			return WERR_INVALID_NAME;
 		}
