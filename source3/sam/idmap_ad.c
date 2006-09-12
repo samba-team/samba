@@ -149,7 +149,7 @@ static NTSTATUS ad_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, enum idmap_t
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
 	const char *attrs[] = { "objectSid", NULL };
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	void *msg = NULL;
 	char *expr = NULL;
 	fstring sid_string;
@@ -235,7 +235,7 @@ static NTSTATUS ad_idmap_get_id_from_sid(unid_t *unid, enum idmap_type *id_type,
 						  ADS_ATTR_RFC2307_UIDNUMBER_OID,
 						  ADS_ATTR_RFC2307_GIDNUMBER_OID,
 						  NULL };
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	void *msg = NULL;
 	char *expr = NULL;
 	uint32 atype, uid;
