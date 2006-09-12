@@ -389,8 +389,12 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			   mem_ctx, NULL, &dom_msgs, dom_attrs,
 			   "(&(objectSid=%s)(&(objectclass=domain)))",
 			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
-	if (ret != 1) {
+	if (ret == 0) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	} else if (ret > 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == -1) {
+		DEBUG(1, ("Failed to open domain %s: %s\n", dom_sid_string(mem_ctx, r->in.sid), ldb_errstring(c_state->sam_ctx)));
 	} else {
 		ret = gendb_search(c_state->sam_ctx,
 				   mem_ctx, partitions_basedn, &ref_msgs, ref_attrs,
