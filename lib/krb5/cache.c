@@ -488,8 +488,8 @@ krb5_cc_retrieve_cred(krb5_context context,
     krb5_cc_cursor cursor;
 
     if (id->ops->retrieve != NULL) {
-	return (*id->ops->retrieve*)(context, id, whichfields,
-				     mcreds, creds);
+	return (*id->ops->retrieve)(context, id, whichfields,
+				    mcreds, creds);
     }
 
     krb5_cc_start_seq_get(context, id, &cursor);
