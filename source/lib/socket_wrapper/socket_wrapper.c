@@ -535,6 +535,7 @@ static int swrap_auto_bind(struct socket_info *si)
 	int i;
 	char type;
 	int ret;
+	int port;
 	struct stat st;
 	
 	un_addr.sun_family = AF_UNIX;
@@ -552,9 +553,10 @@ static int swrap_auto_bind(struct socket_info *si)
 	}
 	
 	for (i=0;i<1000;i++) {
+		port = 10000 + i;
 		snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), 
 			 "%s/"SOCKET_FORMAT, socket_wrapper_dir(),
-			 type, socket_wrapper_default_iface(), i + 10000);
+			 type, socket_wrapper_default_iface(), port);
 		if (stat(un_addr.sun_path, &st) == 0) continue;
 		
 		ret = real_bind(si->fd, (struct sockaddr *)&un_addr, sizeof(un_addr));
@@ -571,7 +573,7 @@ static int swrap_auto_bind(struct socket_info *si)
 	
 	memset(&in, 0, sizeof(in));
 	in.sin_family = AF_INET;
-	in.sin_port   = htons(i);
+	in.sin_port   = htons(port);
 	in.sin_addr.s_addr = htonl(127<<24 | socket_wrapper_default_iface());
 	
 	si->myname_len = sizeof(in);
