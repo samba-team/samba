@@ -273,7 +273,7 @@ hx509_cms_unenvelope(hx509_context context,
     memset(content, 0, sizeof(*content));
     memset(contentType, 0, sizeof(*contentType));
 
-    if (flags & HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT)
+    if ((flags & HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT) == 0)
 	findflags |= HX509_QUERY_KU_ENCIPHERMENT;
 
     ret = decode_EnvelopedData(data, length, &ed, &size);
