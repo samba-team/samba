@@ -1,4 +1,12 @@
+2006-09-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_crypto.in,Makefile.am,data/bleichenbacher-{bad,good}.pem:
+	test bleichenbacher from eay
+
 2006-09-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool.c: Make common function for all getarg_strings and
+	hx509_certs_append commonly used.
 
 	* cms.c: HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT is a negative
 	flag, treat it was such.

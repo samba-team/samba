@@ -141,6 +141,7 @@ LDADD = libhx509.la
 TESTS = 			\
 	test_chain		\
 	test_cms		\
+	test_crypto		\
 	test_name		\
 	test_nist		\
 	test_nist_cert		\
@@ -159,6 +160,11 @@ test_cms: test_cms.in Makefile
 	$(do_subst) < $(srcdir)/test_cms.in > test_cms.tmp
 	chmod +x test_cms.tmp
 	mv test_cms.tmp test_cms
+
+test_crypto: test_crypto.in Makefile
+	$(do_subst) < $(srcdir)/test_crypto.in > test_crypto.tmp
+	chmod +x test_crypto.tmp
+	mv test_crypto.tmp test_crypto
 
 test_nist: test_nist.in Makefile
 	$(do_subst) < $(srcdir)/test_nist.in > test_nist.tmp
