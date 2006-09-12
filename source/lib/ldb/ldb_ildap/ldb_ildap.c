@@ -124,8 +124,7 @@ static int ildb_map_error(struct ildb_private *ildb, NTSTATUS status)
 	if (NT_STATUS_IS_OK(status)) {
 		return LDB_SUCCESS;
 	}
-	talloc_free(ildb->ldb->err_string);
-	ildb->ldb->err_string = talloc_strdup(ildb, ldap_errstr(ildb->ldap, status));
+	ldb_set_errstring(ildb->ldb, ldap_errstr(ildb->ldap, status));
 	if (NT_STATUS_IS_LDAP(status)) {
 		return NT_STATUS_LDAP_CODE(status);
 	}
@@ -246,7 +245,6 @@ static void ildb_callback(struct ldap_request *req)
 
 				status = ldap_check_response(req->conn, &msg->r.GeneralResult);
 				if (!NT_STATUS_IS_OK(status)) {
-					ldb_debug(ac->module->ldb, LDB_DEBUG_ERROR, "Error: %s\n" ,ldap_errstr(req->conn, status));
 					handle->status = ildb_map_error(ildb, status);
 					return;
 				}
