@@ -59,7 +59,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
+	partitions_basedn = samdb_partitions_dn(samctx, samctx);
 
 	ret = gendb_search(samctx, samctx, partitions_basedn, &ref_res, ref_attrs,
 			   "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
