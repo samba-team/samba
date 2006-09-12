@@ -3,6 +3,7 @@
    unix domain sockets if the environment variable SOCKET_WRAPPER_DIR 
    is set.
    Copyright (C) Jelmer Vernooij 2005
+   Copyright (C) Stefan Metzmacher 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -98,7 +99,7 @@ struct socket_info
 	struct socket_info *prev, *next;
 };
 
-static struct socket_info *sockets = NULL;
+static struct socket_info *sockets;
 
 
 static const char *socket_wrapper_dir(void)
