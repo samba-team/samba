@@ -1,3 +1,8 @@
+2006-09-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cms.c: HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT is a negative
+	flag, treat it was such.
+	
 2006-09-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* req.c: Use the new add_GeneralNames function.
