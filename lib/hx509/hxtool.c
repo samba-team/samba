@@ -67,6 +67,19 @@ lock_strings(hx509_lock lock, getarg_strings *pass)
     }
 }
 
+static void
+certs_strings(hx509_context context, const char *type, hx509_certs certs,
+	      hx509_lock lock, const getarg_strings *s)
+{
+    int i, ret;
+
+    for (i = 0; i < s->num_strings; i++) {
+	ret = hx509_certs_append(context, certs, lock, s->strings[i]);
+	if (ret)
+	    hx509_err(context, ret, 1,
+		      "hx509_certs_append: %s %s", type, s->strings[i]);
+    }
+}
 
 int
 cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
@@ -78,7 +91,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     hx509_certs signers = NULL;
     hx509_certs anchors = NULL;
     hx509_lock lock;
-    int ret, i;
+    int ret;
 
     size_t sz;
     void *p;
@@ -96,24 +109,10 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     ret = hx509_verify_init_ctx(context, &ctx);
 
     ret = hx509_certs_init(context, "MEMORY:cms-anchors", 0, NULL, &anchors);
-
-    for (i = 0; i < opt->anchors_strings.num_strings; i++) {
-	ret = hx509_certs_append(context, anchors, lock, 
-				 opt->anchors_strings.strings[i]);
-	if (ret)
-	    errx(1, "hx509_certs_append: anchor: %s: %d", 
-		 opt->anchors_strings.strings[i], ret);
-    }
-
     ret = hx509_certs_init(context, "MEMORY:cert-store", 0, NULL, &store);
 
-    for (i = 0; i < opt->certificate_strings.num_strings; i++) {
-	ret = hx509_certs_append(context, store, lock, 
-				 opt->certificate_strings.strings[i]);
-	if (ret)
-	    errx(1, "hx509_certs_append: store: %s %d",
-		 opt->certificate_strings.strings[i], ret);
-    }
+    certs_strings(context, "anchors", anchors, lock, &opt->anchors_strings);
+    certs_strings(context, "store", store, lock, &opt->certificate_strings);
 
     co.data = p;
     co.length = sz;
@@ -173,7 +172,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     hx509_cert cert;
     size_t sz;
     void *p;
-    int ret, i;
+    int ret;
 
     contentType = oid_id_pkcs7_data();
 
@@ -183,43 +182,16 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
 
-    for (i = 0; i < opt->pass_strings.num_strings; i++) {
-	ret = hx509_lock_command_string(lock, opt->pass_strings.strings[i]);
-	if (ret)
-	    errx(1, "hx509_lock_command_string: %s: %d", 
-		 opt->pass_strings.strings[i], ret);
-    }
-
     ret = hx509_certs_init(context, "MEMORY:cert-store", 0, NULL, &store);
     ret = hx509_certs_init(context, "MEMORY:cert-pool", 0, NULL, &pool);
 
-    for (i = 0; i < opt->certificate_strings.num_strings; i++) {
-	ret = hx509_certs_append(context, store, lock, 
-				 opt->certificate_strings.strings[i]);
-	if (ret)
-	    errx(1, "hx509_certs_append: store: %s: %d", 
-		 opt->certificate_strings.strings[i], ret);
-    }
-
-    for (i = 0; i < opt->pool_strings.num_strings; i++) {
-	ret = hx509_certs_append(context, pool, lock, 
-				 opt->pool_strings.strings[i]);
-	if (ret)
-	    errx(1, "hx509_certs_append: pool: %s: %d", 
-		 opt->pool_strings.strings[i], ret);
-    }
+    certs_strings(context, "store", store, lock, &opt->certificate_strings);
+    certs_strings(context, "pool", pool, lock, &opt->pool_strings);
 
     if (opt->anchors_strings.num_strings) {
-	ret = hx509_certs_init(context, "MEMORY:cert-anchors", 0, NULL,
-			       &anchors);
-
-	for (i = 0; i < opt->anchors_strings.num_strings; i++) {
-	    ret = hx509_certs_append(context, anchors, lock, 
-				     opt->anchors_strings.strings[i]);
-	    if (ret)
-		errx(1, "hx509_certs_append: anchor: %s: %d", 
-		     opt->anchors_strings.strings[i], ret);
-	}
+	ret = hx509_certs_init(context, "MEMORY:cert-anchors", 
+			       0, NULL, &anchors);
+	certs_strings(context, "anchors", anchors, lock, &opt->anchors_strings);
     } else
 	anchors = NULL;
 
@@ -285,7 +257,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     hx509_certs certs;
     size_t sz;
     void *p;
-    int ret, i;
+    int ret;
     hx509_lock lock;
 
     hx509_lock_init(context, &lock);
@@ -317,13 +289,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "hx509_certs_init: MEMORY: %d", ret);
 
-    for (i = 0; i < opt->certificate_strings.num_strings; i++) {
-	ret = hx509_certs_append(context, certs, lock, 
-				 opt->certificate_strings.strings[i]);
-	if (ret)
-	    errx(1, "hx509_certs_append: %s: %d",
-		 opt->certificate_strings.strings[i], ret);
-    }
+    certs_strings(context, "store", certs, lock, &opt->certificate_strings);
 
     ret = hx509_cms_unenvelope(context, certs, 0, co.data, co.length,
 			       NULL, &contentType, &o);
@@ -353,7 +319,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     hx509_query *q;
     hx509_certs certs;
     hx509_cert cert;
-    int ret, i;
+    int ret;
     size_t sz;
     void *p;
     hx509_lock lock;
@@ -367,13 +333,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 
     ret = hx509_certs_init(context, "MEMORY:cert-store", 0, NULL, &certs);
 
-    for (i = 0; i < opt->certificate_strings.num_strings; i++) {
-	ret = hx509_certs_append(context, certs, lock, 
-				 opt->certificate_strings.strings[i]);
-	if (ret)
-	    hx509_err(context, 1, ret, "hx509_certs_append: certs: %s: %d", 
-		      opt->certificate_strings.strings[i], ret);
-    }
+    certs_strings(context, "store", certs, lock, &opt->certificate_strings);
 
     if (opt->encryption_type_string) {
 	enctype = hx509_crypto_enctype_by_name(opt->encryption_type_string);
@@ -735,13 +695,7 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 
     ret = hx509_certs_init(context, "MEMORY:ocsp-pool", 0, NULL, &pool);
 
-    for (i = 0; i < opt->pool_strings.num_strings; i++) {
-	ret = hx509_certs_append(context, pool, lock, 
-				 opt->pool_strings.strings[i]);
-	if (ret)
-	    errx(1, "hx509_certs_append: pool: %s: %d", 
-		 opt->pool_strings.strings[i], ret);
-    }
+    certs_strings(context, "ocsp-pool", pool, lock, &opt->pool_strings);
 
     file = argv[0];
 
