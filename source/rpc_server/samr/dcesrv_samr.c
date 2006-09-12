@@ -387,7 +387,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	ret = gendb_search(c_state->sam_ctx,
 			   mem_ctx, NULL, &dom_msgs, dom_attrs,
-			   "(&(objectSid=%s)(&(objectclass=domain)))",
+			   "(&(objectSid=%s)(&(|(objectclass=domain)(objectClass=builtinDomain))))",
 			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 	if (ret == 0) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
