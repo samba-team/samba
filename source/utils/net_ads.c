@@ -755,10 +755,12 @@ static int net_ads_status(int argc, const char **argv)
  That only worked using the machine creds because added the machine
  with full control to the computer object's ACL.
 *******************************************************************/
+
 static int net_ads_leave(int argc, const char **argv)
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS adsret;
+	NTSTATUS status;
 	int ret = -1;
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *ctx;
@@ -795,28 +797,29 @@ static int net_ads_leave(int argc, const char **argv)
 		goto done;
 	}
 
-	if ( !NT_STATUS_IS_OK(netdom_leave_domain( ctx, cli, dom_sid )) ) {
-		d_fprintf(stderr, "Failed to disable machine account for '%s' in realm '%s'\n",
-			global_myname(), ads->config.realm);
-		goto done;
-	}
-	
-	ret = 0;
+	status = netdom_leave_domain(ctx, cli, dom_sid);
 
-	/* Now we've disabled the account, try and delete it
-	   via LDAP - the old way we used to. Don't log a failure
-	   if this failed. */
+	/* Ty and delete it via LDAP - the old way we used to. */
 
 	adsret = ads_leave_realm(ads, global_myname());
 	if (ADS_ERR_OK(adsret)) {
 		d_printf("Deleted account for '%s' in realm '%s'\n",
 			global_myname(), ads->config.realm);
+		ret = 0;
 	} else {
-		d_printf("Disabled account for '%s' in realm '%s'\n",
-			global_myname(), ads->config.realm);
+		/* We couldn't delete it - see if the disable succeeded. */
+		if (NT_STATUS_IS_OK(status)) {
+			d_printf("Disabled account for '%s' in realm '%s'\n",
+				global_myname(), ads->config.realm);
+			ret = 0;
+		} else {
+			d_fprintf(stderr, "Failed to disable machine account for '%s' in realm '%s'\n",
+				global_myname(), ads->config.realm);
+		}
 	}
 
 done:
+
 	if ( cli ) 
 		cli_shutdown(cli);
 
