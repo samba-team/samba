@@ -369,7 +369,7 @@ talloc_realloc(ctx, ptr, type, 0)  ==> talloc_free(ptr);</programlisting>
 	  known so the type-safe talloc_realloc() cannot be used.
         </para>
     </refsect2>
-    <refsect2><title>void *talloc_steal(const void *<emphasis role="italic">new_ctx</emphasis>, const void *<emphasis role="italic">ptr</emphasis>);</title>
+    <refsect2><title>TYPE *talloc_steal(const void *<emphasis role="italic">new_ctx</emphasis>, const TYPE *<emphasis role="italic">ptr</emphasis>);</title>
         <para>
 	  The talloc_steal() function changes the parent context of a
 	  talloc pointer.  It is typically used when the context that the
@@ -385,6 +385,16 @@ talloc_realloc(ctx, ptr, type, 0)  ==> talloc_free(ptr);</programlisting>
 	  relationship if you are not careful with talloc_steal().  No
 	  guarantees are provided as to your sanity or the safety of your
 	  data if you do this.
+        </para>
+    </refsect2>
+    <refsect2><title>TYPE *talloc_move(const void *<emphasis role="italic">new_ctx</emphasis>, TYPE *<emphasis role="italic">ptr</emphasis>);</title>
+        <para>
+	  The talloc_move() function is a wrapper around
+	  talloc_steal() which zeros the source pointer after the
+	  move. This avoids a potential source of bugs where a
+	  programmer leaves a pointer in two structures, and uses the
+	  pointer from the old structure after it has been moved to a
+	  new one.
         </para>
     </refsect2>
     <refsect2><title>size_t talloc_total_size(const void *<emphasis role="italic">ptr</emphasis>);</title>

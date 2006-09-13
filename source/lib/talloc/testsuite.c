@@ -731,6 +731,40 @@ static bool test_steal(void)
 }
 
 /*
+  test move
+*/
+static bool test_move(void)
+{
+	void *root;
+	struct t_move {
+		char *p;
+		int *x;
+	} *t1, *t2;
+	printf("TESTING MOVE\n");
+
+	root = talloc_new(NULL);
+
+	t1 = talloc(root, struct t_move);
+	t2 = talloc(root, struct t_move);
+	t1->p = talloc_strdup(t1, "foo");
+	t1->x = talloc(t1, int);
+	*t1->x = 42;
+
+	t2->p = talloc_move(t2, t1->p);
+	t2->x = talloc_move(t2, t1->x);
+	if (t1->p != NULL || t1->x != NULL ||
+	    strcmp(t2->p, "foo") ||
+	    *t2->x != 42) {
+		printf("talloc move failed\n");
+		return false;
+	}
+
+	talloc_free(root);
+
+	return true;
+}
+
+/*
   test talloc_realloc_fn
 */
 static bool test_realloc_fn(void)
@@ -1022,6 +1056,7 @@ bool torture_local_talloc(struct torture_context *torture)
 	ret &= test_realloc();
 	ret &= test_realloc_child();
 	ret &= test_steal();
+	ret &= test_move();
 	ret &= test_unref_reparent();
 	ret &= test_realloc_fn();
 	ret &= test_type();
