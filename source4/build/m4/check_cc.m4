@@ -5,14 +5,7 @@ dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
 
-# don't let the AC_PROG_CC macro auto set the CFLAGS
-OLD_CFLAGS="${CFLAGS}"
-AC_PROG_CC
-CFLAGS="${OLD_CFLAGS}"
-if test x"$CC" = x""; then
-	AC_MSG_WARN([No c compiler was not found!])
-	AC_MSG_ERROR([Please Install gcc from http://gcc.gnu.org/])
-fi
+AC_LIBREPLACE_CC_CHECKS
 
 if test x"$GCC" = x"yes" ; then
 	AC_MSG_CHECKING([for version of gcc])
@@ -28,9 +21,6 @@ fi
 if test x$ac_cv_prog_cc_g = xyes -a x$debug = xyes; then
 	CFLAGS="${CFLAGS} -g"
 fi
-
-dnl needed before AC_TRY_COMPILE
-AC_ISC_POSIX
 
 ############################################
 # check if the compiler handles c99 struct initialization
