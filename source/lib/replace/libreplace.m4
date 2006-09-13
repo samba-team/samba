@@ -11,7 +11,7 @@ done
 LIBREPLACEOBJ="replace.o"
 AC_SUBST(LIBREPLACEOBJ)
 
-LIBREPLACEOBJ="${LIBREPLACEOBJ} dlfcn.o snprintf.o timegm.o"
+LIBREPLACEOBJ="${LIBREPLACEOBJ} snprintf.o timegm.o"
 
 dnl stop the C89 attempt by autoconf - if autoconf detects -Ae it will enable it
 dnl which conflicts with C99 on HPUX
@@ -235,19 +235,11 @@ if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
     AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Whether there is a C99 compliant vsnprintf])
 fi
 
-dnl dummies provided by dlfcn.c if not available
-save_LIBS="$LIBS"
-LIBS=""
-AC_SEARCH_LIBS(dlopen, dl)
-AC_CHECK_HEADERS(dlfcn.h)
-AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
-LIBDL="$LIBS"
-AC_SUBST(LIBDL)
-LIBS="$save_LIBS"
 
 AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
 			   [AC_MSG_ERROR([Required function not found])])
 
+m4_include(dlfcn.m4)
 m4_include(getpass.m4)
 m4_include(system/config.m4)
 
