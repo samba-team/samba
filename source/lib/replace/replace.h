@@ -40,7 +40,7 @@
 #include <errno.h>
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
-#include "lib/replace/win32/replace.h"
+#include "win32_replace.h"
 #endif
 
 #ifdef __COMPAR_FN_T
