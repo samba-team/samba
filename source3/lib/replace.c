@@ -415,6 +415,21 @@ char *rep_inet_ntoa(struct in_addr ip)
 }
 #endif /* HAVE_STRTOUL */
 
+#ifndef HAVE_STRTOULL
+unsigned long long int rep_strtoull(const char *str, char **endptr, int base)
+{
+#ifdef HAVE_STRTOUQ
+	return strtouq(str, endptr, base);
+#elif defined(HAVE___STRTOULL) 
+	return __strtoull(str, endptr, base);
+#elif SIZEOF_LONG == SIZEOF_LONG_LONG
+	return (unsigned long long int) strtoul(str, endptr, base);
+#else
+# error "You need a strtoull function"
+#endif
+}
+#endif
+
 #ifndef HAVE_SETLINEBUF
  int setlinebuf(FILE *stream)
 {
