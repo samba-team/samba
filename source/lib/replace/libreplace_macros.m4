@@ -91,11 +91,11 @@ AC_DEFUN([AC_EXTENSION_FLAG],
 [
   cat >>confdefs.h <<\EOF
 #ifndef $1
-# define $1
+# define $1 1
 #endif
 EOF
 AH_VERBATIM([$1], [#ifndef $1
-# define $1
+# define $1 1
 #endif])
 ])
 
