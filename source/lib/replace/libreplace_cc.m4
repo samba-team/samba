@@ -69,6 +69,9 @@ esac
 
 AC_CHECK_HEADERS([standards.h])
 
+# Solaris needs HAVE_LONG_LONG defined
+AC_CHECK_TYPES(long long)
+
 AC_CHECK_TYPE(uint_t, unsigned int)
 AC_CHECK_TYPE(int8_t, char)
 AC_CHECK_TYPE(uint8_t, unsigned char)
