@@ -12,7 +12,6 @@ include events/config.mk
 include cmdline/config.mk
 include socket_wrapper/config.mk
 include appweb/config.mk
-include replace/config.mk
 include stream/config.mk
 include util/config.mk
 include tdr/config.mk
