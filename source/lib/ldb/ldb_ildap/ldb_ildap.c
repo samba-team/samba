@@ -249,9 +249,7 @@ static void ildb_callback(struct ldap_request *req)
 					return;
 				}
 				
-				if (msg->controls) {
-					ares->controls = talloc_steal(ares, msg->controls);
-				}
+				ares->controls = talloc_move(ares, msg->controls);
 				if (msg->r.SearchResultDone.resultcode) {
 					if (msg->r.SearchResultDone.errormessage) {
 						ldb_set_errstring(ac->module->ldb, msg->r.SearchResultDone.errormessage);
@@ -280,7 +278,7 @@ static void ildb_callback(struct ldap_request *req)
 					return;
 				}
 				ares->message->num_elements = search->num_attributes;
-				ares->message->elements = talloc_steal(ares->message, search->attributes);
+				ares->message->elements = talloc_move(ares->message, search->attributes);
 
 				handle->status = LDB_SUCCESS;
 				handle->state = LDB_ASYNC_PENDING;
@@ -383,7 +381,7 @@ static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ildb_ac->req = talloc_steal(ildb_ac, req);
+	ildb_ac->req = talloc_move(ildb_ac, req);
 	talloc_free(req->time_event);
 	req->time_event = NULL;
 	if (timeout) {
