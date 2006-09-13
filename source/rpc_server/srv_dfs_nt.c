@@ -170,6 +170,9 @@ static BOOL init_reply_dfs_info_1(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 	dfs1->path = talloc_asprintf(mem_ctx, 
 				"\\\\%s\\%s\\%s", global_myname(), 
 				j->service_name, j->volume_name);
+	if (dfs1->path == NULL)
+		return False;
+
 	DEBUG(5,("init_reply_dfs_info_1: initing entrypath: %s\n",dfs1->path));
 	return True;
 }
@@ -178,6 +181,8 @@ static BOOL init_reply_dfs_info_2(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 {
 	dfs2->path = talloc_asprintf(mem_ctx, 
 			"\\\\%s\\%s\\%s", global_myname(), j->service_name, j->volume_name);
+	if (dfs2->path == NULL)
+		return False;
 	dfs2->comment = talloc_strdup(mem_ctx, j->comment);
 	dfs2->state = 1; /* set up state of dfs junction as OK */
 	dfs2->num_stores = j->referral_count;
@@ -193,6 +198,9 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 	else
 		dfs3->path = talloc_asprintf(mem_ctx, "\\\\%s\\%s\\%s", global_myname(),
 			j->service_name, j->volume_name);
+
+	if (dfs3->path == NULL)
+		return False;
 
 	dfs3->comment = talloc_strdup(mem_ctx, j->comment);
 	dfs3->state = 1;
