@@ -3,7 +3,7 @@ AC_INIT(replace.c)
 AC_CONFIG_SRCDIR([replace.c])
 AC_CONFIG_HEADER(config.h)
 
-m4_include(libreplace.m4)
+AC_LIBREPLACE_ALL_CHECKS
 
 if test "$ac_cv_prog_gcc" = yes; then
    CFLAGS="$CFLAGS -Wall"

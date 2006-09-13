@@ -34,7 +34,7 @@ AC_DEFUN(LIB_REMOVE_USR_LIB,[
   $1=[$]ac_new_flags
 ])
 
-m4_include(lib/replace/libreplace_macros.m4)
+m4_include(lib/replace/libreplace.m4)
 m4_include(build/m4/ax_cflags_gcc_option.m4)
 m4_include(build/m4/ax_cflags_irix_option.m4)
 m4_include(build/m4/public.m4)

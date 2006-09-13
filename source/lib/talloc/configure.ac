@@ -4,7 +4,8 @@ AC_CONFIG_SRCDIR([talloc.c])
 AC_SUBST(datarootdir)
 AC_CONFIG_HEADER(config.h)
 
-m4_include(libreplace.m4)
+AC_LIBREPLACE_ALL_CHECKS
+
 m4_include(libtalloc.m4)
 
 AC_PATH_PROG(XSLTPROC,xsltproc)
