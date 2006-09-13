@@ -24,6 +24,7 @@ AC_ISC_POSIX
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC_C99
 AC_C_INLINE
+AC_C_BIGENDIAN
 AC_PROG_INSTALL
 
 AH_VERBATIM([_XOPEN_SOURCE_EXTENDED],
@@ -49,10 +50,6 @@ case "$host_os" in
 esac
 
 AC_CHECK_HEADERS([standards.h])
-
-AC_C_BIGENDIAN
-AC_HEADER_STDC
-
 
 AC_CHECK_SIZEOF(off_t,cross)
 AC_CHECK_SIZEOF(size_t,cross)
@@ -86,7 +83,7 @@ AC_FUNC_MEMCMP
 
 AC_CHECK_FUNCS(pipe strftime srandom random srand rand usleep setbuffer lstat getpgrp)
 
-AC_CHECK_HEADERS(stdbool.h stddef.h sys/select.h)
+AC_CHECK_HEADERS(stdbool.h sys/select.h)
 
 AC_CHECK_HEADERS(sys/epoll.h)
 AC_CHECK_FUNCS(epoll_create)
