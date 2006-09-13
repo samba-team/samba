@@ -236,13 +236,6 @@ if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
 fi
 
 
-AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
-			   [AC_MSG_ERROR([Required function not found])])
-
-m4_include(dlfcn.m4)
-m4_include(getpass.m4)
-m4_include(system/config.m4)
-
 LIBREPLACE_C99_STRUCT_INIT(c99_struct_initialization=yes,
 			c99_struct_initialization=no)
 
@@ -344,3 +337,12 @@ AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
 if test x"$samba_cv_volatile" = x"yes"; then
 	AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
 fi
+
+m4_include(dlfcn.m4)
+m4_include(getpass.m4)
+m4_include(system/config.m4)
+m4_include(win32/config.m4)
+m4_include(repdir/config.m4)
+
+AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
+			   [AC_MSG_ERROR([Required function not found])])
