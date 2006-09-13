@@ -221,7 +221,13 @@
 	WERROR dfs_Remove2();
 
 	/* Function 0x15 */
-	WERROR dfs_EnumEx();
+	WERROR dfs_EnumEx(
+		[in,string,charset(UTF16)] uint16 *name,
+		[in] uint32 level,
+		[in] uint32 bufsize,
+		[in,out,unique] dfs_EnumStruct *info,
+		[in,out,unique] uint32 *total
+			  );
 
 	/* Function 0x16 */
 	WERROR dfs_SetInfo2();
