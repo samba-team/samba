@@ -51,6 +51,10 @@ if test x"$libreplace_READDIR_GETDIRENTRIES" = x"yes"; then
 	libreplace_READDIR_NEEDED=no
 fi
 
+AC_MSG_CHECKING([a usable readdir()])
 if test x"$libreplace_READDIR_NEEDED" = x"yes"; then
-	AC_MSG_WARN([the provides readdir() is broken])
+	AC_MSG_RESULT(no)
+	AC_MSG_WARN([the provided readdir() is broken])
+else
+	AC_MSG_RESULT(yes)
 fi
