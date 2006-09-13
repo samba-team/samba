@@ -34,7 +34,7 @@ static void cleanup(void)
 	mkdir(TESTDIR, 0700) == 0 || FAILED("mkdir");
 }
 
-static void create_files()
+static void create_files(void)
 {
 	int i;
 	for (i=0;i<NUM_FILES;i++) {
