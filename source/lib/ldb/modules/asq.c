@@ -117,7 +117,7 @@ static int asq_terminate(struct ldb_handle *handle)
 
 	if (ac->controls) {
 		for (i = 0; ac->controls[i]; i++);
-		ares->controls = talloc_steal(ares, ac->controls);
+		ares->controls = talloc_move(ares, ac->controls);
 	} else {
 		i = 0;
 	}
@@ -162,7 +162,7 @@ static int asq_base_callback(struct ldb_context *ldb, void *context, struct ldb_
 
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
-		ac->base_res = talloc_steal(ac, ares);
+		ac->base_res = talloc_move(ac, ares);
 	} else {
 		talloc_free(ares);
 	}
