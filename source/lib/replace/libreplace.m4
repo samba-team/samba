@@ -8,8 +8,10 @@ for d in "$srcdir" "$srcdir/lib/replace" "$srcdir/libreplace" "$srcdir/../librep
 		break;
 	fi
 done
-LIBREPLACEOBJ="dlfcn.o getpass.o replace.o snprintf.o timegm.o"
+LIBREPLACEOBJ="replace.o"
 AC_SUBST(LIBREPLACEOBJ)
+
+LIBREPLACEOBJ="${LIBREPLACEOBJ} dlfcn.o snprintf.o timegm.o"
 
 dnl stop the C89 attempt by autoconf - if autoconf detects -Ae it will enable it
 dnl which conflicts with C99 on HPUX
