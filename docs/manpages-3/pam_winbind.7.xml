@@ -119,6 +119,13 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>silent</term>
+		<listitem><para>
+		Do not emit any messages.
+		</para></listitem>
+		</varlistentry>
+
 		</variablelist>
 
 
