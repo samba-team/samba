@@ -21,8 +21,9 @@ all: showflags libreplace.a testsuite
 
 showflags:
 	@echo 'libreplace will be compiled with flags:'
+	@echo '  CC     = $(CC)'
 	@echo '  CFLAGS = $(CFLAGS)'
-	@echo '  LIBS = $(LIBS)'
+	@echo '  LIBS   = $(LIBS)'
 
 install: all
 	mkdir -p $(libdir)
@@ -31,7 +32,7 @@ install: all
 libreplace.a: $(OBJS)
 	ar -rcsv $@ $(OBJS)
 
-test: testsuite
+test: all
 	./testsuite
 
 installcheck: install test
