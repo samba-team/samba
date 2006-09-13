@@ -33,7 +33,75 @@ sub ParseFunction($$)
 	pidl "static BOOL api_$fn->{NAME}(pipes_struct *p)";
 	pidl "{";
 	indent;
+	pidl "struct ndr_pull *pull;";
+	pidl "struct ndr_push *push;";
+	pidl "DATA_BLOB blob;";
+	pidl "struct $fn->{NAME} r;";
+	pidl "TALLOC_CTX *mem_ctx = talloc_init(\"api_$fn->{NAME}\");";
+	pidl "";
+	pidl "if (!prs_data_blob(&p->in_data.data, &blob, mem_ctx)) {";
+	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\treturn False;";
+	pidl "}";
+	pidl "";
+	pidl "pull = ndr_pull_init_blob(&blob, mem_ctx);";
+	pidl "if (pull == NULL)";
+	pidl "\treturn False;";
+	pidl "";
+	pidl "pull->flags |= LIBNDR_FLAG_REF_ALLOC;";
+	pidl "status = ndr_pull_$fn->{NAME}(pull, NDR_IN, &r);";
+	pidl "if (NT_STATUS_IS_ERR(status)) {";
+	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\treturn False;";
+	pidl "}";
+	pidl "";
+	my $proto = "_$fn->{NAME}(pipes_struct *p";
+	my $ret = "_$fn->{NAME}(p";
+	foreach (@{$fn->{ELEMENTS}}) {
+		my @dir = @{$_->{DIRECTION}};
+		if (grep(@dir, /in/) and grep(@dir, /out/)) {
+			pidl "r.out.$_->{NAME} = r.in.$_->{NAME};";
+		}
+		if (grep(@dir, /in/)) { $ret .= ", r.in.$_->{NAME}"; }
+		else { $ret .= ", r.out.$_->{NAME}"; }
 
+		$proto .= ", " . DeclLong($_);
+	}
+	$ret .= ")";
+	$proto .= ");";
+
+	if ($fn->{RETURN_TYPE}) {
+		$ret = "r.out.result = $ret";
+		$proto = "$fn->{RETURN_TYPE} $proto";
+	} else {
+		$proto = "void $proto";
+	}
+
+	pidl_hdr "$proto";
+	pidl "$ret;";
+
+	pidl "";
+	pidl "push = ndr_push_init_ctx(mem_ctx);";
+	pidl "if (push == NULL) {";
+	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\treturn False;";
+	pidl "}";
+	pidl "";
+	pidl "status = ndr_push_$fn->{NAME}(push, NDR_OUT, &r);";
+	pidl "if (NT_STATUS_IS_ERR(status)) {";
+	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\treturn False;";
+	pidl "}";
+	pidl "";
+	pidl "blob = ndr_push_blob(push);";
+	pidl "if (!prs_init_data_blob(&p->in_data.rdata, &blob, p->mem_ctx)) {";
+	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\treturn False;";
+	pidl "}";
+	pidl "";
+	pidl "talloc_free(mem_ctx);";
+	pidl "";
+	pidl "return True;";
 	deindent;
 	pidl "}";
 	pidl "";
