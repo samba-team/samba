@@ -26,7 +26,7 @@
 
 /* make sure we have included the correct config.h */
 #ifndef CONFIG_H_IS_FROM_SAMBA
-#warn  "make sure you have removed all config.h files from standalone builds!"
+#error "make sure you have removed all config.h files from standalone builds!"
 #error "the included config.h isn't from samba!"
 #endif
 
