@@ -35,6 +35,7 @@ sub ParseFunction($$)
 	indent;
 	pidl "struct ndr_pull *pull;";
 	pidl "struct ndr_push *push;";
+	pidl "NTSTATUS status;";
 	pidl "DATA_BLOB blob;";
 	pidl "struct $fn->{NAME} r;";
 	pidl "TALLOC_CTX *mem_ctx = talloc_init(\"api_$fn->{NAME}\");";
