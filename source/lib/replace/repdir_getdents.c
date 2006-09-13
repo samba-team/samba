@@ -118,11 +118,7 @@ long telldir(DIR *dir)
 	return d->seekpos + d->ofs;
 }
 
-#ifdef _OSF_SOURCE
-int seekdir(DIR *dir, long ofs)
-#else
 void seekdir(DIR *dir, long ofs)
-#endif
 {
 	struct dir_buf *d = (struct dir_buf *)dir;
 	d->seekpos = lseek(d->fd, ofs & ~(DIR_BUF_SIZE-1), SEEK_SET);
@@ -131,9 +127,6 @@ void seekdir(DIR *dir, long ofs)
 	while (d->ofs < (ofs & (DIR_BUF_SIZE-1))) {
 		if (readdir(dir) == NULL) break;
 	}
-#ifdef _OSF_SOURCE
-	return -1;
-#endif
 }
 
 void rewinddir(DIR *dir)
