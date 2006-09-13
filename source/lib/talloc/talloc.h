@@ -73,7 +73,7 @@ typedef void TALLOC_CTX;
 #endif
 
 #define talloc_reference(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_reference((ctx),(ptr))
-#define talloc_move(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_move((ctx),&(ptr))
+#define talloc_move(ctx, ptr) (_TALLOC_TYPEOF(*(ptr)))_talloc_move((ctx),(const void **)(ptr))
 
 /* useful macros for creating type checked pointers */
 #define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)

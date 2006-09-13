@@ -387,7 +387,7 @@ talloc_realloc(ctx, ptr, type, 0)  ==> talloc_free(ptr);</programlisting>
 	  data if you do this.
         </para>
     </refsect2>
-    <refsect2><title>TYPE *talloc_move(const void *<emphasis role="italic">new_ctx</emphasis>, TYPE *<emphasis role="italic">ptr</emphasis>);</title>
+    <refsect2><title>TYPE *talloc_move(const void *<emphasis role="italic">new_ctx</emphasis>, TYPE **<emphasis role="italic">ptr</emphasis>);</title>
         <para>
 	  The talloc_move() function is a wrapper around
 	  talloc_steal() which zeros the source pointer after the
