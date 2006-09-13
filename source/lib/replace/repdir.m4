@@ -15,7 +15,7 @@ if test x"$libreplace_READDIR_NEEDED" = x"yes"; then
 AC_CACHE_CHECK([for replacing readdir using getdents()],libreplace_READDIR_GETDENTS,[
 	AC_TRY_RUN([
 #include "confdefs.h"
-#include "$libreplacedir/repdir/repdir.c"
+#include "$libreplacedir/repdir_getdents.c"
 #define test_readdir_os2_delete main
 #include "$libreplacedir/test/os2_delete.c"],
 	[libreplace_READDIR_GETDENTS=yes],
@@ -25,6 +25,6 @@ fi
 if test x"$libreplace_READDIR_GETDENTS" = x"yes"; then
 	AC_DEFINE(REPLACE_READDIR,1,[replace readdir])
 	AC_DEFINE(REPLACE_READDIR_GETDENTS,1,[replace readdir using getdents()])
-	LIBREPLACEOBJ="${LIBREPLACEOBJ} repdir/repdir.o"
+	LIBREPLACEOBJ="${LIBREPLACEOBJ} repdir_getdents.o"
 	libreplace_READDIR_NEEDED=no
 fi
