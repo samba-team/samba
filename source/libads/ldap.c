@@ -2874,6 +2874,8 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
 }
 #endif
 
+#ifdef HAVE_LDAP
+
 /**
  * Delete a machine from the realm
  * @param ads connection to ads server
@@ -2992,4 +2994,6 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	SAFE_FREE(host);
 	return status;
 }
+#endif
+
 #endif
