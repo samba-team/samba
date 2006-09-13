@@ -13,4 +13,5 @@ CPPFLAGS="$SAVE_CPPFLAGS"
 ])
 if test x"$samba_cv_REPLACE_GETPASS" = x"yes"; then
 	AC_DEFINE(REPLACE_GETPASS,1,[Whether getpass should be replaced])
+	LIBREPLACEOBJ="${LIBREPLACEOBJ} getpass.o"
 fi
