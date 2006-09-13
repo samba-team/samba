@@ -11,7 +11,7 @@ done
 LIBREPLACEOBJ="replace.o"
 AC_SUBST(LIBREPLACEOBJ)
 
-LIBREPLACEOBJ="${LIBREPLACEOBJ} snprintf.o timegm.o"
+LIBREPLACEOBJ="${LIBREPLACEOBJ} snprintf.o"
 
 dnl stop the C89 attempt by autoconf - if autoconf detects -Ae it will enable it
 dnl which conflicts with C99 on HPUX
@@ -279,7 +279,7 @@ AC_CHECK_HEADERS([sys/param.h limits.h])
 AC_CHECK_TYPE(comparison_fn_t, 
 [AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
-AC_CHECK_FUNCS(timegm strnlen setenv)
+AC_CHECK_FUNCS(strnlen setenv)
 AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
 
 # this test disabled as we don't actually need __VA_ARGS__ yet
@@ -338,12 +338,13 @@ if test x"$samba_cv_volatile" = x"yes"; then
 	AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
 fi
 
+m4_include(system/config.m4)
+
 m4_include(dlfcn.m4)
 m4_include(getpass.m4)
 m4_include(win32.m4)
+m4_include(timegm.m4)
 m4_include(repdir.m4)
-
-m4_include(system/config.m4)
 
 AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
 			   [AC_MSG_ERROR([Required function not found])])
