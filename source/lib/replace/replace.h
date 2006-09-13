@@ -72,7 +72,8 @@
 #include <sys/types.h>
 #endif
 
-#ifdef HAVE_STDDEF_H
+#if STDC_HEADERS
+#include <stdlib.h>
 #include <stddef.h>
 #endif
 
