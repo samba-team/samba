@@ -30,7 +30,7 @@ extern uint32 global_client_caps;
   into the dfs_path structure 
  **********************************************************************/
 
-static BOOL parse_dfs_path(char *pathname, struct dfs_path *pdp)
+static BOOL parse_dfs_path(const char *pathname, struct dfs_path *pdp)
 {
 	pstring pathname_local;
 	char *p, *temp;
@@ -317,7 +317,8 @@ TALLOC_CTX can be NULL here if struct referral **reflistpp, int *refcntp
 are also NULL.
 *****************************************************************/
 
-static BOOL resolve_dfs_path(TALLOC_CTX *ctx, pstring dfspath, struct dfs_path *dp, 
+static BOOL resolve_dfs_path(TALLOC_CTX *ctx, const char *dfspath, 
+							 struct dfs_path *dp, 
 		      connection_struct *conn, BOOL search_flag, 
 		      struct referral **reflistpp, int *refcntp,
 		      BOOL *self_referralp, int *consumedcntp)
@@ -459,7 +460,7 @@ BOOL dfs_redirect( pstring pathname, connection_struct *conn, BOOL search_wcard_
  Return a self referral.
 **********************************************************************/
 
-static BOOL self_ref(TALLOC_CTX *ctx, char *pathname, struct junction_map *jucn,
+static BOOL self_ref(TALLOC_CTX *ctx, const char *pathname, struct junction_map *jucn,
 			int *consumedcntp, BOOL *self_referralp)
 {
 	struct referral *ref;
@@ -490,7 +491,7 @@ static BOOL self_ref(TALLOC_CTX *ctx, char *pathname, struct junction_map *jucn,
  junction_map structure.
 **********************************************************************/
 
-BOOL get_referred_path(TALLOC_CTX *ctx, char *pathname, struct junction_map *jucn,
+BOOL get_referred_path(TALLOC_CTX *ctx, const char *pathname, struct junction_map *jucn,
 		       int *consumedcntp, BOOL *self_referralp)
 {
 	struct dfs_path dp;
@@ -880,7 +881,7 @@ int setup_dfs_referral(connection_struct *orig_conn, char *pathname, int max_ref
  Creates a junction structure from a Dfs pathname
 **********************************************************************/
 
-BOOL create_junction(char *pathname, struct junction_map *jucn)
+BOOL create_junction(const char *pathname, struct junction_map *jucn)
 {
         struct dfs_path dp;
  

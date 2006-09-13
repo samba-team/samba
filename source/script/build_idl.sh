@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PIDL_ARGS="--outputdir librpc/gen_ndr --header --ndr-parser --samba3-ndr-client --"
+PIDL_ARGS="--outputdir librpc/gen_ndr --header --ndr-parser --samba3-ndr-server --samba3-ndr-client --"
 PIDL_EXTRA_ARGS="$*"
 
 oldpwd=`pwd`
