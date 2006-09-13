@@ -332,7 +332,7 @@ RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl.o rpc_server/srv_svcctl_nt.o \
 
 RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs.o rpc_server/srv_ntsvcs_nt.o
 
-RPC_DFS_OBJ =  rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o
+RPC_DFS_OBJ =  librpc/gen_ndr/srv_dfs.o rpc_server/srv_dfs_nt.o
 
 RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o 
 
@@ -353,7 +353,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
                 rpc_parse/parse_reg.o rpc_parse/parse_rpc.o \
                 rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
                 rpc_parse/parse_wks.o rpc_parse/parse_ds.o \
-		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
+		rpc_parse/parse_spoolss.o \
 		rpc_parse/parse_echo.o rpc_parse/parse_shutdown.o \
 		rpc_parse/parse_svcctl.o \
 		rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o \
