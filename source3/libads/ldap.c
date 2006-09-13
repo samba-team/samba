@@ -2925,13 +2925,14 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	ads_memfree(ads, hostnameDN);
 	if (rc != LDAP_SUCCESS) {
 		const char *attrs[] = { "cn", NULL };
-		void *msg_sub;
+		LDAPMessage *msg_sub;
 
 		/* we only search with scope ONE, we do not expect any further
 		 * objects to be created deeper */
 
-		status = ads_do_search_retry(ads, hostnameDN, LDAP_SCOPE_ONE,
-					"(objectclass=*)", attrs, &res);
+		status = ads_do_search_retry(ads, hostnameDN,
+					     LDAP_SCOPE_ONELEVEL,
+					     "(objectclass=*)", attrs, &res);
 
 		if (!ADS_ERR_OK(status)) {
 			SAFE_FREE(host);
@@ -2963,8 +2964,9 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 		}
 
 		/* there should be no subordinate objects anymore */
-		status = ads_do_search_retry(ads, hostnameDN, LDAP_SCOPE_ONE,
-					"(objectclass=*)", attrs, &res);
+		status = ads_do_search_retry(ads, hostnameDN,
+					     LDAP_SCOPE_ONELEVEL,
+					     "(objectclass=*)", attrs, &res);
 
 		if (!ADS_ERR_OK(status) || ( (ads_count_replies(ads, res)) > 0 ) ) {
 			SAFE_FREE(host);
