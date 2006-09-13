@@ -131,6 +131,9 @@ realdistclean: distclean
 test: all
 	for t in $(TESTS); do echo STARTING $${t}; $(srcdir)/tests/$${t} || exit 1; done
 
+valgrindtest: all
+	for t in $(TESTS); do echo STARTING $${t}; VALGRIND="valgrind -q --db-attach=yes --num-callers=30" $(srcdir)/tests/$${t} || exit 1; done
+
 installcheck: install test
 
 install: all
