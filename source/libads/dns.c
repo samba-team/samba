@@ -46,7 +46,9 @@
 #  define T_A   	ns_t_a
 #endif
 #  define T_SRV 	ns_t_srv
+#if !defined(T_NS)	/* AIX 5.3 already defines T_NS */
 #  define T_NS 		ns_t_ns
+#endif
 #else
 #  ifdef HFIXEDSZ
 #    define NS_HFIXEDSZ HFIXEDSZ
