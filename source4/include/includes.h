@@ -23,8 +23,15 @@
 
 #ifndef NO_CONFIG_H /* for some tests */
 #include "lib/replace/replace.h"
+
+/* make sure we have included the correct config.h */
+#ifndef CONFIG_H_IS_FROM_SAMBA
+#warn  "make sure you have removed all config.h files from standalone builds!"
+#error "the included config.h isn't from samba!"
 #endif
 
+#endif /* NO_CONFIG_H */
+ 
 #include "local.h"
 
 #ifdef __GNUC__
