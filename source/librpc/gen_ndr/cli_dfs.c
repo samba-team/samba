@@ -384,18 +384,25 @@ NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *name, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *total)
 {
 	struct dfs_EnumEx r;
 	NTSTATUS status;
 	
 	/* In parameters */
+	r.in.name = name;
+	r.in.level = level;
+	r.in.bufsize = bufsize;
+	r.in.info = info;
+	r.in.total = total;
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETDFS, DCERPC_DFS_ENUMEX, &r, (ndr_pull_flags_fn_t)ndr_pull_dfs_EnumEx, (ndr_push_flags_fn_t)ndr_push_dfs_EnumEx);
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 	
 	/* Return variables */
+	*info = *r.out.info;
+	*total = *r.out.total;
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);

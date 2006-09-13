@@ -22,6 +22,6 @@ NTSTATUS rpccli_dfs_SetDcAddress(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 NTSTATUS rpccli_dfs_FlushFtTable(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_dfs_Add2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);
-NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);
+NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *name, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *total);
 NTSTATUS rpccli_dfs_SetInfo2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);
 #endif /* __CLI_NETDFS__ */
