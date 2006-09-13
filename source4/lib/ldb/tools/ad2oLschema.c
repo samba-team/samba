@@ -139,7 +139,7 @@ static int fetch_oc_recursive(struct ldb_context *ldb, struct ldb_dn *schemadn,
 		if (!res_list->msgs) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		res_list->msgs[res_list->count] = talloc_steal(res_list, search_from->msgs[i]);
+		res_list->msgs[res_list->count] = talloc_move(res_list, search_from->msgs[i]);
 		res_list->count++;
 		res_list->msgs[res_list->count] = NULL;
 
@@ -191,7 +191,7 @@ static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *sche
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	*objectclasses_res = talloc_steal(mem_ctx, ret_res);
+	*objectclasses_res = talloc_move(mem_ctx, ret_res);
 	return ret;
 }
 
@@ -280,7 +280,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			p++;
 			oid_map = talloc_realloc(mem_ctx, oid_map, struct oid_map, num_maps + 2);
 			trim_string(line, " ", " ");
-			oid_map[num_maps].old_oid = talloc_steal(oid_map, line);
+			oid_map[num_maps].old_oid = talloc_move(oid_map, line);
 			trim_string(p, " ", " ");
 			oid_map[num_maps].new_oid = p;
 			num_maps++;
@@ -288,7 +288,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		} else {
 			attrs_skip = talloc_realloc(mem_ctx, attrs_skip, const char *, num_skip + 2);
 			trim_string(line, " ", " ");
-			attrs_skip[num_skip] = talloc_steal(attrs_skip, line);
+			attrs_skip[num_skip] = talloc_move(attrs_skip, line);
 			num_skip++;
 			attrs_skip[num_skip] = NULL;
 		}
