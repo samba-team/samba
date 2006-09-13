@@ -1,3 +1,7 @@
+AC_DEFUN_ONCE(AC_LIBREPLACE_BROKEN_CHECKS,
+[
+echo "LIBREPLACE_BROKEN_CHECKS: START"
+
 dnl find the libreplace sources. This is meant to work both for 
 dnl libreplace standalone builds, and builds of packages using libreplace
 libreplacedir=""
@@ -12,70 +16,6 @@ LIBREPLACEOBJ="replace.o"
 AC_SUBST(LIBREPLACEOBJ)
 
 LIBREPLACEOBJ="${LIBREPLACEOBJ} snprintf.o"
-
-dnl stop the C89 attempt by autoconf - if autoconf detects -Ae it will enable it
-dnl which conflicts with C99 on HPUX
-ac_cv_prog_cc_Ae=no
-
-savedCFLAGS=$CFLAGS
-AC_PROG_CC
-CFLAGS=$savedCFLAGS
-AC_ISC_POSIX
-AC_USE_SYSTEM_EXTENSIONS
-AC_PROG_CC_C99
-AC_C_INLINE
-AC_C_BIGENDIAN
-AC_PROG_INSTALL
-
-AH_VERBATIM([_XOPEN_SOURCE_EXTENDED],
-[/* Enable XOPEN extensions on systems that have them.  */
-#ifndef _XOPEN_SOURCE_EXTENDED
-# define _XOPEN_SOURCE_EXTENDED 1
-#endif])
-
-AH_VERBATIM([_OSF_SOURCE],
-[/* Enable OSF extensions on systems that have them.  */
-#ifndef _OSF_SOURCE
-# define _OSF_SOURCE 1
-#endif])
-
-LIBREPLACE_C99_STRUCT_INIT([],[])
-
-AC_SYS_LARGEFILE
-
-dnl Add #include for broken IRIX header files
-case "$host_os" in
-	*irix6*) AC_ADD_INCLUDE(<standards.h>)
-		;;
-esac
-
-AC_CHECK_HEADERS([standards.h])
-
-AC_CHECK_TYPE(uint_t, unsigned int)
-AC_CHECK_TYPE(int8_t, char)
-AC_CHECK_TYPE(uint8_t, unsigned char)
-AC_CHECK_TYPE(int16_t, short)
-AC_CHECK_TYPE(uint16_t, unsigned short)
-AC_CHECK_TYPE(int32_t, long)
-AC_CHECK_TYPE(uint32_t, unsigned long)
-AC_CHECK_TYPE(int64_t, long long)
-AC_CHECK_TYPE(uint64_t, unsigned long long)
-
-AC_CHECK_TYPE(size_t, unsigned int)
-AC_CHECK_TYPE(ssize_t, int)
-
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(char)
-AC_CHECK_SIZEOF(short)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(long long)
-
-AC_CHECK_SIZEOF(off_t)
-AC_CHECK_SIZEOF(size_t)
-AC_CHECK_SIZEOF(ssize_t)
-
-AC_CHECK_TYPE(intptr_t, unsigned long long)
-AC_CHECK_TYPE(ptrdiff_t, unsigned long long)
 
 AC_TYPE_SIGNAL
 AC_TYPE_UID_T
@@ -343,3 +283,24 @@ m4_include(repdir.m4)
 
 AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
 			   [AC_MSG_ERROR([Required function not found])])
+
+echo "LIBREPLACE_BROKEN_CHECKS: END"
+]) dnl end AC_LIBREPLACE_BROKEN_CHECKS
+
+AC_DEFUN_ONCE(AC__LIBREPLACE_ALL_CHECKS_START,
+[
+#LIBREPLACE_ALL_CHECKS: START"
+])
+AC_DEFUN_ONCE(AC__LIBREPLACE_ALL_CHECKS_END,
+[
+#LIBREPLACE_ALL_CHECKS: END"
+])
+m4_define(AC_LIBREPLACE_ALL_CHECKS,
+[
+AC__LIBREPLACE_ALL_CHECKS_START
+AC_LIBREPLACE_CC_CHECKS
+AC_LIBREPLACE_BROKEN_CHECKS
+AC__LIBREPLACE_ALL_CHECKS_END
+])
+
+AC_LIBREPLACE_ALL_CHECKS
