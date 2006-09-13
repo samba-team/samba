@@ -45,17 +45,9 @@ AC_C_INLINE
 AC_C_BIGENDIAN
 AC_PROG_INSTALL
 
-AH_VERBATIM([_XOPEN_SOURCE_EXTENDED],
-[/* Enable XOPEN extensions on systems that have them.  */
-#ifndef _XOPEN_SOURCE_EXTENDED
-# define _XOPEN_SOURCE_EXTENDED 1
-#endif])
 
-AH_VERBATIM([_OSF_SOURCE],
-[/* Enable OSF extensions on systems that have them.  */
-#ifndef _OSF_SOURCE
-# define _OSF_SOURCE 1
-#endif])
+AC_EXTENSION_FLAG(_XOPEN_SOURCE_EXTENDED)
+AC_EXTENSION_FLAG(_OSF_SOURCE)
 
 LIBREPLACE_C99_STRUCT_INIT([],[AC_MSG_WARN([c99 structure initializer are not supported])])
 
