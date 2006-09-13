@@ -43,7 +43,6 @@ top: domain
 top: person
 top: group
 domain: domainDNS
-domain: builtinDomain
 person: organizationalPerson
 organizationalPerson: user
 user: computer
