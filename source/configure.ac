@@ -8,6 +8,7 @@ AC_INIT([samba],[],[samba-technical@samba.org])
 
 AC_CONFIG_SRCDIR([include/includes.h])
 AC_CONFIG_HEADER(include/config_tmp.h)
+AC_DEFINE(CONFIG_H_IS_FROM_SAMBA,1,[Marker for samba's config.h])
 
 # Configuration rules.
 m4_include(lib/replace/libreplace.m4)
