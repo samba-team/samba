@@ -381,7 +381,6 @@ static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ildb_ac->req = talloc_move(ildb_ac, req);
 	talloc_free(req->time_event);
 	req->time_event = NULL;
 	if (timeout) {
@@ -392,6 +391,7 @@ static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg
 
 	req->async.fn = ildb_callback;
 	req->async.private_data = (void *)h;
+	ildb_ac->req = talloc_move(ildb_ac, req);
 
 	*handle = h;
 	return LDB_SUCCESS;

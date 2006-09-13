@@ -548,10 +548,7 @@ static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ld
 		res->refs[n + 1] = NULL;
 	}
 
-	if (ares->controls) {
-		res->controls = talloc_move(res, ares->controls);
-	}
-
+	talloc_steal(res, ares->controls);
 	talloc_free(ares);
 	return LDB_SUCCESS;
 
