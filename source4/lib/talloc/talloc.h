@@ -65,14 +65,15 @@ typedef void TALLOC_CTX;
 /* this extremely strange macro is to avoid some braindamaged warning
    stupidity in gcc 4.1.x */
 #define talloc_steal(ctx, ptr) ({ _TALLOC_TYPEOF(ptr) __talloc_steal_ret = (_TALLOC_TYPEOF(ptr))_talloc_steal((ctx),(ptr)); __talloc_steal_ret; })
-#define talloc_reference(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_reference((ctx),(ptr))
 #else
 #define talloc_set_destructor(ptr, function) \
 	_talloc_set_destructor((ptr), (int (*)(void *))(function))
 #define _TALLOC_TYPEOF(ptr) void *
 #define talloc_steal(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_steal((ctx),(ptr))
-#define talloc_reference(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_reference((ctx),(ptr))
 #endif
+
+#define talloc_reference(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_reference((ctx),(ptr))
+#define talloc_move(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_move((ctx),&(ptr))
 
 /* useful macros for creating type checked pointers */
 #define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
@@ -127,6 +128,7 @@ int talloc_free(void *ptr);
 void talloc_free_children(void *ptr);
 void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *name);
 void *_talloc_steal(const void *new_ctx, const void *ptr);
+void *_talloc_move(const void *new_ctx, const void **pptr);
 size_t talloc_total_size(const void *ptr);
 size_t talloc_total_blocks(const void *ptr);
 void talloc_report_depth_cb(const void *ptr, int depth, int max_depth,
