@@ -190,7 +190,7 @@ static int paged_search_callback(struct ldb_context *ldb, void *context, struct 
 
 		ac->store->num_entries++;
 
-		ac->store->last->r = talloc_move(ac->store->last, ares);
+		ac->store->last->r = talloc_steal(ac->store->last, ares);
 		ac->store->last->next = NULL;
 	}
 
@@ -205,14 +205,12 @@ static int paged_search_callback(struct ldb_context *ldb, void *context, struct 
 			goto error;
 		}
 
-		ac->store->last_ref->r = talloc_move(ac->store->last, ares);
+		ac->store->last_ref->r = talloc_steal(ac->store->last, ares);
 		ac->store->last_ref->next = NULL;
 	}
 
 	if (ares->type == LDB_REPLY_DONE) {
-		if (ares->controls) {
-			ac->store->controls = talloc_move(ac->store, ares->controls);
-		}
+		ac->store->controls = talloc_move(ac->store, ares->controls);
 		talloc_free(ares);
 	}
 
