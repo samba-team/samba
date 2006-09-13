@@ -11,6 +11,7 @@ AC_CACHE_CHECK([for broken readdir],libreplace_READDIR_NEEDED,[
 # try to replace with getdents() if needed
 #
 if test x"$libreplace_READDIR_NEEDED" = x"yes"; then
+AC_CHECK_FUNCS(getdents)
 AC_CACHE_CHECK([for replacing readdir using getdents()],libreplace_READDIR_GETDENTS,[
 	AC_TRY_RUN([
 #include "confdefs.h"
@@ -32,6 +33,7 @@ fi
 # try to replace with getdirentries() if needed
 #
 if test x"$libreplace_READDIR_NEEDED" = x"yes"; then
+AC_CHECK_FUNCS(getdirentries)
 AC_CACHE_CHECK([for replacing readdir using getdirentries()],libreplace_READDIR_GETDIRENTRIES,[
 	AC_TRY_RUN([
 #include "confdefs.h"
