@@ -70,17 +70,6 @@ AC_CHECK_TYPE(uint32_t, unsigned long)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(ptrdiff_t, unsigned long long)
 
-dnl these are needed for heimdal roken.h
-AC_CHECK_TYPE(struct sockaddr, [], [], [
-AC_INCLUDES_DEFAULT
-#include <sys/socket.h>])
-AC_CHECK_TYPE(struct sockaddr_storage, [], [], [
-AC_INCLUDES_DEFAULT
-#include <sys/socket.h>])
-AC_CHECK_TYPE(struct addrinfo, [], [], [
-AC_INCLUDES_DEFAULT
-#include <netdb.h>])
-
 AC_TYPE_SIGNAL
 AC_TYPE_UID_T
 AC_TYPE_MODE_T
