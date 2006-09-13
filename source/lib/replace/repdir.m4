@@ -1,7 +1,6 @@
 AC_CACHE_CHECK([for broken readdir],libreplace_READDIR_NEEDED,[
 	AC_TRY_RUN([
 #define test_readdir_os2_delete main
-#error
 #include "$libreplacedir/test/os2_delete.c"],
 	[libreplace_READDIR_NEEDED=no],
 	[libreplace_READDIR_NEEDED=yes],
