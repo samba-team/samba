@@ -146,6 +146,8 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 void set_domain_online(struct winbindd_domain *domain)
 {
+	struct timeval now;
+
 	DEBUG(10,("set_domain_online: called for domain %s\n",
 		domain->name ));
 
@@ -154,6 +156,10 @@ void set_domain_online(struct winbindd_domain *domain)
 			domain->name ));
 		return;
 	}
+
+	/* If we are waiting to get a krb5 ticket, trigger immediately. */
+	GetTimeOfDay(&now);
+	set_event_dispatch_time("krb5_ticket_gain_handler", now);
 
 	domain->online = True;
 }
