@@ -282,13 +282,13 @@ static char *centry_hash16(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 	if (len != 16) {
 		DEBUG(0,("centry corruption? hash len (%u) != 16\n", 
 			len ));
-		smb_panic("centry_hash16");
+		return NULL;
 	}
 
 	if (centry->len - centry->ofs < 16) {
 		DEBUG(0,("centry corruption? needed 16 bytes, have %d\n", 
 			 centry->len - centry->ofs));
-		smb_panic("centry_hash16");
+		return NULL;
 	}
 
 	ret = TALLOC_ARRAY(mem_ctx, char, 16);
@@ -587,6 +587,24 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 
 	free(kstr);
 	return centry;
+}
+
+static void wcache_delete(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
+static void wcache_delete(const char *format, ...)
+{
+	va_list ap;
+	char *kstr;
+	TDB_DATA key;
+
+	va_start(ap, format);
+	smb_xvasprintf(&kstr, format, ap);
+	va_end(ap);
+
+	key.dptr = kstr;
+	key.dsize = strlen(kstr);
+
+	tdb_delete(wcache->tdb, key);
+	free(kstr);
 }
 
 /*
@@ -918,6 +936,16 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	   if we are returning a salted cred. */
 
 	*cached_nt_pass = (const uint8 *)centry_hash16(centry, mem_ctx);
+	if (*cached_nt_pass == NULL) {
+		const char *sidstr = sid_string_static(sid);
+
+		/* Bad (old) cred cache. Delete and pretend we
+		   don't have it. */
+		DEBUG(0,("wcache_get_creds: bad entry for [CRED/%s] - deleting\n", 
+				sidstr));
+		wcache_delete("CRED/%s", sidstr);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
 	/* We only have 17 bytes more data in the salted cred case. */
 	if (centry->len - centry->ofs == 17) {
