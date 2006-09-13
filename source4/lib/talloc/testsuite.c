@@ -750,8 +750,8 @@ static bool test_move(void)
 	t1->x = talloc(t1, int);
 	*t1->x = 42;
 
-	t2->p = talloc_move(t2, t1->p);
-	t2->x = talloc_move(t2, t1->x);
+	t2->p = talloc_move(t2, &t1->p);
+	t2->x = talloc_move(t2, &t1->x);
 	if (t1->p != NULL || t1->x != NULL ||
 	    strcmp(t2->p, "foo") ||
 	    *t2->x != 42) {

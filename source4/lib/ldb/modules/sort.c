@@ -185,7 +185,7 @@ static int server_sort_search_callback(struct ldb_context *ldb, void *context, s
 
 		ac->msgs[ac->num_msgs + 1] = NULL;
 
-		ac->msgs[ac->num_msgs] = talloc_move(ac->msgs, ares->message);
+		ac->msgs[ac->num_msgs] = talloc_move(ac->msgs, &ares->message);
 		ac->num_msgs++;
 	}
 
@@ -196,13 +196,13 @@ static int server_sort_search_callback(struct ldb_context *ldb, void *context, s
 		}
 
 		ac->referrals[ac->num_refs + 1] = NULL;
-		ac->referrals[ac->num_refs] = talloc_move(ac->referrals, ares->referral);
+		ac->referrals[ac->num_refs] = talloc_move(ac->referrals, &ares->referral);
 
 		ac->num_refs++;
 	}
 
 	if (ares->type == LDB_REPLY_DONE) {
-		ac->controls = talloc_move(ac, ares->controls);
+		ac->controls = talloc_move(ac, &ares->controls);
 	}
 
 	talloc_free(ares);
@@ -330,7 +330,7 @@ static int server_sort_results(struct ldb_handle *handle)
 		}
 
 		ares->type = LDB_REPLY_ENTRY;
-		ares->message = talloc_move(ares, ac->msgs[i]);
+		ares->message = talloc_move(ares, &ac->msgs[i]);
 		
 		handle->status = ac->up_callback(ac->module->ldb, ac->up_context, ares);
 		if (handle->status != LDB_SUCCESS) {
@@ -346,7 +346,7 @@ static int server_sort_results(struct ldb_handle *handle)
 		}
 
 		ares->type = LDB_REPLY_REFERRAL;
-		ares->referral = talloc_move(ares, ac->referrals[i]);
+		ares->referral = talloc_move(ares, &ac->referrals[i]);
 		
 		handle->status = ac->up_callback(ac->module->ldb, ac->up_context, ares);
 		if (handle->status != LDB_SUCCESS) {
@@ -361,7 +361,7 @@ static int server_sort_results(struct ldb_handle *handle)
 	}
 
 	ares->type = LDB_REPLY_DONE;
-	ares->controls = talloc_move(ares, ac->controls);
+	ares->controls = talloc_move(ares, &ac->controls);
 		
 	handle->status = ac->up_callback(ac->module->ldb, ac->up_context, ares);
 	if (handle->status != LDB_SUCCESS) {
