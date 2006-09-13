@@ -12,9 +12,6 @@
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
-#ifdef REPLACE_READDIR
-#include "lib/replace/repdir/repdir.h"
-#endif
 
 #define NUM_FILES 700
 #define READDIR_SIZE 100
@@ -22,7 +19,10 @@
 
 #define TESTDIR "test.dir"
 
-#define FAILED(d) (fprintf(stderr, "Failed for %s - %s\n", d, strerror(errno)), exit(1), 1)
+static int test_readdir_os2_delete_ret;
+
+#define FAILED(d) (fprintf(stderr, "Failed for %s - %s\n", d, strerror(errno)), test_readdir_os2_delete_ret = 1, 1)
+#define CHECK do { if (test_readdir_os2_delete_ret != 0) return test_readdir_os2_delete_ret; } while (0)
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -78,7 +78,7 @@ static int os2_delete(DIR *d)
 	return j;
 }
 
-int main(void)
+int test_readdir_os2_delete(void)
 {
 	int total_deleted = 0;
 	DIR *d;
