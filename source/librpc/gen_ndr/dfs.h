@@ -321,6 +321,16 @@ struct dfs_Remove2 {
 
 struct dfs_EnumEx {
 	struct {
+		const char *name;/* [keepref,ref,charset(UTF16)] */
+		uint32_t level;/* [keepref] */
+		uint32_t bufsize;/* [keepref] */
+		struct dfs_EnumStruct *info;/* [unique,keepref] */
+		uint32_t *total;/* [unique,keepref] */
+	} in;
+
+	struct {
+		struct dfs_EnumStruct *info;/* [unique,keepref] */
+		uint32_t *total;/* [unique,keepref] */
 		WERROR result;
 	} out;
 
