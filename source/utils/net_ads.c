@@ -758,6 +758,7 @@ static int net_ads_status(int argc, const char **argv)
 static int net_ads_leave(int argc, const char **argv)
 {
 	ADS_STRUCT *ads = NULL;
+	ADS_STATUS adsret;
 	int ret = -1;
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *ctx;
@@ -800,10 +801,20 @@ static int net_ads_leave(int argc, const char **argv)
 		goto done;
 	}
 	
-	d_printf("Disabled account for '%s' in realm '%s'\n", 
-		global_myname(), ads->config.realm);
-		
 	ret = 0;
+
+	/* Now we've disabled the account, try and delete it
+	   via LDAP - the old way we used to. Don't log a failure
+	   if this failed. */
+
+	adsret = ads_leave_realm(ads, global_myname());
+	if (ADS_ERR_OK(adsret)) {
+		d_printf("Deleted account for '%s' in realm '%s'\n",
+			global_myname(), ads->config.realm);
+	} else {
+		d_printf("Disabled account for '%s' in realm '%s'\n",
+			global_myname(), ads->config.realm);
+	}
 
 done:
 	if ( cli ) 

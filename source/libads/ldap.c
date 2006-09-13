@@ -2818,4 +2818,178 @@ out:
 	return name;
 }
 
+#if 0
+
+   SAVED CODE - we used to join via ldap - remember how we did this. JRA.
+
+/**
+ * Join a machine to a realm
+ *  Creates the machine account and sets the machine password
+ * @param ads connection to ads server
+ * @param machine name of host to add
+ * @param org_unit Organizational unit to place machine in
+ * @return status of join
+ **/
+ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
+			uint32 account_type, const char *org_unit)
+{
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	char *machine;
+
+	/* machine name must be lowercase */
+	machine = SMB_STRDUP(machine_name);
+	strlower_m(machine);
+
+	/*
+	status = ads_find_machine_acct(ads, (void **)&res, machine);
+	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
+		DEBUG(0, ("Host account for %s already exists - deleting old account\n", machine));
+		status = ads_leave_realm(ads, machine);
+		if (!ADS_ERR_OK(status)) {
+			DEBUG(0, ("Failed to delete host '%s' from the '%s' realm.\n",
+				machine, ads->config.realm));
+			return status;
+		}
+	}
+	*/
+	status = ads_add_machine_acct(ads, machine, account_type, org_unit);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0, ("ads_join_realm: ads_add_machine_acct failed (%s): %s\n", machine, ads_errstr(status)));
+		SAFE_FREE(machine);
+		return status;
+	}
+
+	status = ads_find_machine_acct(ads, (void **)(void *)&res, machine);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0, ("ads_join_realm: Host account test failed for machine %s\n", machine));
+		SAFE_FREE(machine);
+		return status;
+	}
+
+	SAFE_FREE(machine);
+	ads_msgfree(ads, res);
+
+	return status;
+}
+#endif
+
+/**
+ * Delete a machine from the realm
+ * @param ads connection to ads server
+ * @param hostname Machine to remove
+ * @return status of delete
+ **/
+ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
+{
+	ADS_STATUS status;
+	void *msg;
+	LDAPMessage *res;
+	char *hostnameDN, *host;
+	int rc;
+	LDAPControl ldap_control;
+	LDAPControl  * pldap_control[2] = {NULL, NULL};
+
+	pldap_control[0] = &ldap_control;
+	memset(&ldap_control, 0, sizeof(LDAPControl));
+	ldap_control.ldctl_oid = (char *)LDAP_SERVER_TREE_DELETE_OID;
+
+	/* hostname must be lowercase */
+	host = SMB_STRDUP(hostname);
+	strlower_m(host);
+
+	status = ads_find_machine_acct(ads, &res, host);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0, ("Host account for %s does not exist.\n", host));
+		SAFE_FREE(host);
+		return status;
+	}
+
+	msg = ads_first_entry(ads, res);
+	if (!msg) {
+		SAFE_FREE(host);
+		return ADS_ERROR_SYSTEM(ENOENT);
+	}
+
+	hostnameDN = ads_get_dn(ads, (LDAPMessage *)msg);
+
+	rc = ldap_delete_ext_s(ads->ld, hostnameDN, pldap_control, NULL);
+	if (rc) {
+		DEBUG(3,("ldap_delete_ext_s failed with error code %d\n", rc));
+	}else {
+		DEBUG(3,("ldap_delete_ext_s succeeded with error code %d\n", rc));
+	}
+
+	ads_memfree(ads, hostnameDN);
+	if (rc != LDAP_SUCCESS) {
+		const char *attrs[] = { "cn", NULL };
+		void *msg_sub;
+
+		/* we only search with scope ONE, we do not expect any further
+		 * objects to be created deeper */
+
+		status = ads_do_search_retry(ads, hostnameDN, LDAP_SCOPE_ONE,
+					"(objectclass=*)", attrs, &res);
+
+		if (!ADS_ERR_OK(status)) {
+			SAFE_FREE(host);
+			ads_memfree(ads, hostnameDN);
+			return status;
+		}
+
+		for (msg_sub = ads_first_entry(ads, res); msg_sub;
+			msg_sub = ads_next_entry(ads, msg_sub)) {
+
+			char *dn = NULL;
+
+			if ((dn = ads_get_dn(ads, msg_sub)) == NULL) {
+				SAFE_FREE(host);
+				ads_memfree(ads, hostnameDN);
+				return ADS_ERROR(LDAP_NO_MEMORY);
+			}
+
+			status = ads_del_dn(ads, dn);
+			if (!ADS_ERR_OK(status)) {
+				DEBUG(3,("failed to delete dn %s: %s\n", dn, ads_errstr(status)));
+				SAFE_FREE(host);
+				ads_memfree(ads, dn);
+				ads_memfree(ads, hostnameDN);
+				return status;
+			}
+
+			ads_memfree(ads, dn);
+		}
+
+		/* there should be no subordinate objects anymore */
+		status = ads_do_search_retry(ads, hostnameDN, LDAP_SCOPE_ONE,
+					"(objectclass=*)", attrs, &res);
+
+		if (!ADS_ERR_OK(status) || ( (ads_count_replies(ads, res)) > 0 ) ) {
+			SAFE_FREE(host);
+			ads_memfree(ads, hostnameDN);
+			return status;
+		}
+
+		/* delete hostnameDN now */
+		status = ads_del_dn(ads, hostnameDN);
+		if (!ADS_ERR_OK(status)) {
+			SAFE_FREE(host);
+			DEBUG(3,("failed to delete dn %s: %s\n", hostnameDN, ads_errstr(status)));
+			ads_memfree(ads, hostnameDN);
+			return status;
+		}
+	}
+
+	ads_memfree(ads, hostnameDN);
+
+	status = ads_find_machine_acct(ads, &res, host);
+	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
+		DEBUG(3, ("Failed to remove host account.\n"));
+		SAFE_FREE(host);
+		return status;
+	}
+
+	SAFE_FREE(host);
+	return status;
+}
 #endif
