@@ -210,7 +210,7 @@ static int paged_search_callback(struct ldb_context *ldb, void *context, struct 
 	}
 
 	if (ares->type == LDB_REPLY_DONE) {
-		ac->store->controls = talloc_move(ac->store, ares->controls);
+		ac->store->controls = talloc_move(ac->store, &ares->controls);
 		talloc_free(ares);
 	}
 
@@ -383,7 +383,7 @@ static int paged_results(struct ldb_handle *handle)
 		ares->controls = ac->store->controls;
 		while (ares->controls[i]) i++; /* counting */
 
-		ares->controls = talloc_move(ares, ac->store->controls);
+		ares->controls = talloc_move(ares, &ac->store->controls);
 		num_ctrls += i;
 	}
 

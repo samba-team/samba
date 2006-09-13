@@ -439,7 +439,7 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ac->search_res = talloc_move(ac, ares);
+		ac->search_res = talloc_move(ac, &ares);
 	} else {
 		talloc_free(ares);
 	}

@@ -528,7 +528,7 @@ static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ld
 
 		res->msgs[res->count + 1] = NULL;
 
-		res->msgs[res->count] = talloc_move(res->msgs, ares->message);
+		res->msgs[res->count] = talloc_move(res->msgs, &ares->message);
 		res->count++;
 	}
 
@@ -544,7 +544,7 @@ static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ld
 			goto error;
 		}
 
-		res->refs[n] = talloc_move(res->refs, ares->referral);
+		res->refs[n] = talloc_move(res->refs, &ares->referral);
 		res->refs[n + 1] = NULL;
 	}
 

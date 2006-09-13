@@ -378,7 +378,7 @@ static int list_intersect(struct ldb_context *ldb,
 	for (i=0;i<list->count;i++) {
 		if (ldb_list_find(list->dn[i], list2->dn, list2->count, 
 			      sizeof(char *), (comparison_fn_t)strcmp) != -1) {
-			list3->dn[list3->count] = talloc_move(list3->dn, list->dn[i]);
+			list3->dn[list3->count] = talloc_move(list3->dn, &list->dn[i]);
 			list3->count++;
 		} else {
 			talloc_free(list->dn[i]);
@@ -386,7 +386,7 @@ static int list_intersect(struct ldb_context *ldb,
 	}
 
 	talloc_free(list->dn);
-	list->dn = talloc_move(list, list3->dn);
+	list->dn = talloc_move(list, &list3->dn);
 	list->count = list3->count;
 	talloc_free(list3);
 
@@ -486,7 +486,7 @@ static int ltdb_index_dn_or(struct ldb_module *module,
 
 		if (ret == -1) {
 			ret = 1;
-			list->dn = talloc_move(list, list2->dn);
+			list->dn = talloc_move(list, &list2->dn);
 			list->count = list2->count;
 		} else {
 			if (list_union(ldb, list, list2) == -1) {
@@ -567,7 +567,7 @@ static int ltdb_index_dn_and(struct ldb_module *module,
 		if (ret == -1) {
 			ret = 1;
 			talloc_free(list->dn);
-			list->dn = talloc_move(list, list2->dn);
+			list->dn = talloc_move(list, &list2->dn);
 			list->count = list2->count;
 		} else {
 			if (list_intersect(ldb, list, list2) == -1) {

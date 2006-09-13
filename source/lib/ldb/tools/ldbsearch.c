@@ -81,7 +81,7 @@ static int store_message(struct ldb_message *msg, struct search_context *sctx) {
 		return -1;
 	}
 
-	sctx->store[sctx->num_stored] = talloc_move(sctx->store, msg);
+	sctx->store[sctx->num_stored] = talloc_move(sctx->store, &msg);
 	sctx->num_stored++;
 	sctx->store[sctx->num_stored] = NULL;
 
@@ -96,7 +96,7 @@ static int store_referral(char *referral, struct search_context *sctx) {
 		return -1;
 	}
 
-	sctx->refs_store[sctx->refs] = talloc_move(sctx->refs_store, referral);
+	sctx->refs_store[sctx->refs] = talloc_move(sctx->refs_store, &referral);
 	sctx->refs++;
 	sctx->refs_store[sctx->refs] = NULL;
 

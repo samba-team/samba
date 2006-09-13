@@ -312,7 +312,7 @@ int ltdb_add_attr_results(struct ldb_module *module,
 
 	(*res) = res2;
 
-	(*res)[*count] = talloc_move(*res, msg2);
+	(*res)[*count] = talloc_move(*res, &msg2);
 	(*res)[(*count)+1] = NULL;
 	(*count)++;
 

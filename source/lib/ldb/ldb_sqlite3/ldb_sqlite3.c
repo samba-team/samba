@@ -865,7 +865,7 @@ static int lsql_search_sync_callback(struct ldb_context *ldb, void *context, str
 
 		res->msgs[res->count + 1] = NULL;
 
-		res->msgs[res->count] = talloc_move(res->msgs, ares->message);
+		res->msgs[res->count] = talloc_move(res->msgs, &ares->message);
 		res->count++;
 	} else {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "unrecognized async reply in ltdb_search_sync_callback!\n");
