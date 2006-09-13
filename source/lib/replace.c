@@ -416,7 +416,7 @@ char *rep_inet_ntoa(struct in_addr ip)
 #endif /* HAVE_STRTOUL */
 
 #ifndef HAVE_STRTOULL
-unsigned long long int rep_strtoull(const char *str, char **endptr, int base)
+unsigned long long int strtoull(const char *str, char **endptr, int base)
 {
 #ifdef HAVE_STRTOUQ
 	return strtouq(str, endptr, base);
