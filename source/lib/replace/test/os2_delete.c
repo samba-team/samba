@@ -22,7 +22,6 @@
 static int test_readdir_os2_delete_ret;
 
 #define FAILED(d) (fprintf(stderr, "Failed for %s - %s\n", d, strerror(errno)), test_readdir_os2_delete_ret = 1, 1)
-#define CHECK do { if (test_readdir_os2_delete_ret != 0) return test_readdir_os2_delete_ret; } while (0)
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -84,6 +83,8 @@ int test_readdir_os2_delete(void)
 	DIR *d;
 	struct dirent *de;
 
+	test_readdir_os2_delete_ret = 0;
+
 	cleanup();
 	create_files();
 	
@@ -106,5 +107,5 @@ int test_readdir_os2_delete(void)
 
 	rmdir(TESTDIR) == 0 || FAILED("rmdir");
 
-	return 0;
+	return test_readdir_os2_delete_ret;
 }
