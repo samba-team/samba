@@ -2922,7 +2922,6 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 		DEBUG(3,("ldap_delete_ext_s succeeded with error code %d\n", rc));
 	}
 
-	ads_memfree(ads, hostnameDN);
 	if (rc != LDAP_SUCCESS) {
 		const char *attrs[] = { "cn", NULL };
 		LDAPMessage *msg_sub;
