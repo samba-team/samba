@@ -69,10 +69,12 @@ slapd_start() {
     OLDPATH=$PATH
     PATH=/usr/local/sbin:/usr/sbin:/sbin:$PATH
     export PATH
-    slapd -f $SLAPD_CONF -h $LDAPI_ESCAPE
+# running slapd in the background means it stays in the same process group, so it can be
+# killed by timelimit
+    slapd -d0 -f $SLAPD_CONF -h $LDAPI_ESCAPE &
     PATH=$OLDPATH
     export PATH
-    return 0;
+    return $?;
 }
 
 testit() {
