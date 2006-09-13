@@ -470,7 +470,6 @@ my($opt_samba3_header);
 my($opt_samba3_parser);
 my($opt_samba3_server);
 my($opt_samba3_template);
-my($opt_samba3_client);
 my($opt_samba3_ndr_client);
 my($opt_template) = 0;
 my($opt_client);
@@ -552,7 +551,6 @@ my $result = GetOptions (
 		'samba3-parser:s' => \$opt_samba3_parser,
 		'samba3-server:s' => \$opt_samba3_server,
 		'samba3-template:s' => \$opt_samba3_template,
-		'samba3-client:s' => \$opt_samba3_client,
 		'samba3-ndr-client:s' => \$opt_samba3_ndr_client,
 		'header:s' => \$opt_header,
 	    'server:s' => \$opt_server,
@@ -578,11 +576,6 @@ if (not $result) {
 if ($opt_help) {
     ShowHelp();
     exit(0);
-}
-
-if ($opt_samba3_client and $opt_samba3_ndr_client) {
-	print "--samba3-client and --samba3-ndr-client can not be used together\n";
-	exit(1);
 }
 
 sub process_file($)
@@ -660,7 +653,7 @@ sub process_file($)
 	    defined($opt_ndr_parser) or defined($opt_ejs) or 
 		defined($opt_dump_ndr_tree) or defined($opt_samba3_header) or 
 	    defined($opt_samba3_parser) or defined($opt_samba3_server) or 
-		defined($opt_samba3_template) or defined($opt_samba3_client) or
+		defined($opt_samba3_template) or 
 		defined($opt_swig) or defined($opt_samba3_ndr_client)) {
 		require Parse::Pidl::NDR;
 		$ndr = Parse::Pidl::NDR::Parse($pidl);
@@ -773,7 +766,7 @@ $dcom
 	}
 
 	if (defined($opt_samba3_header) or defined($opt_samba3_parser) or
-		defined($opt_samba3_server) or defined($opt_samba3_client) or
+		defined($opt_samba3_server) or 
 		defined($opt_samba3_ndr_client) or defined($opt_samba3_template)) {
 		require Parse::Pidl::Samba3::Types;
 		Parse::Pidl::Samba3::Types::LoadTypes($ndr);
@@ -801,12 +794,6 @@ $dcom
 		my $header = ($opt_samba3_template or "$outputdir/srv_$basename\_nt.c");
 		require Parse::Pidl::Samba3::Template;
 		FileSave($header, Parse::Pidl::Samba3::Template::Parse($ndr, $basename));
-	}
-
-	if (defined($opt_samba3_client)) {
-		my $header = ($opt_samba3_client or "$outputdir/cli_$basename.c");
-		require Parse::Pidl::Samba3::Client;
-		FileSave($header, Parse::Pidl::Samba3::Client::Parse($ndr, $basename));
 	}
 
 	if (defined($opt_samba3_ndr_client)) {
