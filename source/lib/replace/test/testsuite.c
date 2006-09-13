@@ -229,8 +229,15 @@ static int test_opendir(void)
 	return true;
 }
 
-static int test_readdir(void)
+extern int test_readdir_os2_delete(void);
+
+static bool test_readdir(void)
 {
+	printf("testing readdir\n");
+	if (test_readdir_os2_delete() != 0) {
+		return false;
+	}
+
 	/* FIXME */
 	return true;
 }

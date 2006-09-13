@@ -36,7 +36,7 @@ test: testsuite
 
 installcheck: install test
 
-TEST_OBJS = test/testsuite.o
+TEST_OBJS = test/testsuite.o test/os2_delete.o
 
 testsuite: libreplace.a $(TEST_OBJS)
 	$(CC) -o testsuite $(TEST_OBJS) -L. -lreplace
