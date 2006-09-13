@@ -5,6 +5,6 @@ AC_DEFUN([SMB_ENABLE], [echo -n ""])
 AC_INIT(include/tdb.h)
 AC_CONFIG_SRCDIR([common/tdb.c])
 AC_CONFIG_HEADER(include/config.h)
-m4_include(libreplace.m4)
+AC_LIBREPLACE_ALL_CHECKS
 m4_include(libtdb.m4)
 AC_OUTPUT(Makefile tdb.pc)

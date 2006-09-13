@@ -303,4 +303,6 @@ AC_LIBREPLACE_BROKEN_CHECKS
 AC__LIBREPLACE_ALL_CHECKS_END
 ])
 
-AC_LIBREPLACE_ALL_CHECKS
+m4_include(libreplace_cc.m4)
+m4_include(libreplace_macros.m4)
+m4_include(autoconf-2.60.m4)

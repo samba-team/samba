@@ -13,7 +13,8 @@ AC_DEFUN([SMB_EXT_LIB], [echo -n ""])
 AC_DEFUN([SMB_ENABLE], [echo -n ""])
 AC_INIT(include/ldb.h)
 AC_CONFIG_SRCDIR([common/ldb.c])
-m4_include(libreplace.m4)
+
+AC_LIBREPLACE_ALL_CHECKS
 
 if test "$ac_cv_prog_gcc" = yes; then
    CFLAGS="$CFLAGS -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings"

@@ -1,1 +1,1 @@
-m4_include(libreplace_macros.m4)
+m4_include(libreplace.m4)
