@@ -101,6 +101,8 @@ cat >$CONFFILE<<EOF
 	server max protocol = SMB2
 	notify:inotify = false
 
+system:anonymous = true
+
 [tmp]
 	path = $TMPDIR
 	read only = no
@@ -292,13 +294,15 @@ argsfile	$LDAPDIR/slapd.args
 sasl-realm $DNSNAME
 access to * by * write
 
+allow update_anon
+
 authz-regexp
           uid=([^,]*),cn=$DNSNAME,cn=digest-md5,cn=auth
-          ldap:///$BASEDN??sub?(samAccountName=$1)
+          ldap:///$BASEDN??sub?(samAccountName=\$1)
 
 authz-regexp
           uid=([^,]*),cn=([^,]*),cn=digest-md5,cn=auth
-          ldap:///$BASEDN??sub?(samAccountName=$1)
+          ldap:///$BASEDN??sub?(samAccountName=\$1)
 
 include $LDAPDIR/modules.conf
 
