@@ -872,6 +872,7 @@ AC_CHECK_HEADERS(sys/sysmacros.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
 AC_CHECK_HEADERS(xfs/libxfs.h)
+AC_CHECK_HEADERS(security/pam_ext.h)
 
 AC_CHECK_HEADERS(rpcsvc/yp_prot.h,,,[[
 #if HAVE_RPC_RPC_H
@@ -3973,6 +3974,7 @@ AC_ARG_WITH(pam,
 
 # we can't build a pam module if we don't have pam.
 AC_CHECK_LIB(pam, pam_get_data, [AC_DEFINE(HAVE_LIBPAM,1,[Whether libpam is available])])
+AC_CHECK_LIB(pam, pam_vsyslog, [AC_DEFINE(HAVE_PAM_VSYSLOG,1,[Whether pam_vsyslog is available])])
 
 #################################################
 # check for pam_smbpass support
