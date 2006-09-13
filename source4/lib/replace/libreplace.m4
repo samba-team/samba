@@ -51,20 +51,30 @@ esac
 
 AC_CHECK_HEADERS([standards.h])
 
-AC_CHECK_SIZEOF(off_t,cross)
-AC_CHECK_SIZEOF(size_t,cross)
-AC_CHECK_SIZEOF(ssize_t,cross)
-
-AC_CHECK_HEADERS([stdint.h inttypes.h])
 AC_CHECK_TYPE(uint_t, unsigned int)
-AC_CHECK_TYPE(uint8_t, unsigned char)
 AC_CHECK_TYPE(int8_t, char)
+AC_CHECK_TYPE(uint8_t, unsigned char)
 AC_CHECK_TYPE(int16_t, short)
 AC_CHECK_TYPE(uint16_t, unsigned short)
 AC_CHECK_TYPE(int32_t, long)
-AC_CHECK_TYPE(intptr_t, unsigned long long)
 AC_CHECK_TYPE(uint32_t, unsigned long)
+AC_CHECK_TYPE(int64_t, long long)
+AC_CHECK_TYPE(uint64_t, unsigned long long)
+
+AC_CHECK_TYPE(size_t, unsigned int)
 AC_CHECK_TYPE(ssize_t, int)
+
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(char)
+AC_CHECK_SIZEOF(short)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(long long)
+
+AC_CHECK_SIZEOF(off_t)
+AC_CHECK_SIZEOF(size_t)
+AC_CHECK_SIZEOF(ssize_t)
+
+AC_CHECK_TYPE(intptr_t, unsigned long long)
 AC_CHECK_TYPE(ptrdiff_t, unsigned long long)
 
 AC_TYPE_SIGNAL
@@ -77,7 +87,6 @@ AC_STRUCT_ST_RDEV
 AC_CHECK_TYPE(ino_t,unsigned)
 AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
-AC_CHECK_TYPES(long long)
 
 AC_FUNC_MEMCMP
 
