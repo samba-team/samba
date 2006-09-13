@@ -60,10 +60,10 @@ sub ParseFunction($$)
 	my $ret = "_$fn->{NAME}(p";
 	foreach (@{$fn->{ELEMENTS}}) {
 		my @dir = @{$_->{DIRECTION}};
-		if (grep(@dir, /in/) and grep(@dir, /out/)) {
+		if (grep(/in/, @dir) and grep(/out/, @dir)) {
 			pidl "r.out.$_->{NAME} = r.in.$_->{NAME};";
 		}
-		if (grep(@dir, /in/)) { $ret .= ", r.in.$_->{NAME}"; }
+		if (grep(/in/, @dir)) { $ret .= ", r.in.$_->{NAME}"; }
 		else { $ret .= ", r.out.$_->{NAME}"; }
 
 		$proto .= ", " . DeclLong($_);
@@ -95,7 +95,7 @@ sub ParseFunction($$)
 	pidl "}";
 	pidl "";
 	pidl "blob = ndr_push_blob(push);";
-	pidl "if (!prs_init_data_blob(&p->in_data.rdata, &blob, p->mem_ctx)) {";
+	pidl "if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {";
 	pidl "\ttalloc_free(mem_ctx);";
 	pidl "\treturn False;";
 	pidl "}";
