@@ -171,7 +171,22 @@ static struct ldb_val class_from_oid(struct ldb_module *module, TALLOC_CTX *ctx,
 }
 
 
+static struct ldb_val normalise_to_signed32(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	long long int signed_ll = strtoll(val->data, NULL, 10);
+	if (signed_ll >= 0x80000000LL) {
+		union {
+			int32_t signed_int;
+			uint32_t unsigned_int;
+		} u = {
+			.unsigned_int = strtoul(val->data, NULL, 10)
+		};
 
+		struct ldb_val out = data_blob_string_const(talloc_asprintf(ctx, "%d", u.signed_int));
+		return out;
+	}
+	return val_copy(module, ctx, val);
+}
 
 const struct ldb_map_attribute entryUUID_attributes[] = 
 {
@@ -255,6 +270,28 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 			.rename = {
 				 .remote_name = "entryDN"
 			 }
+		}
+	},
+	{
+		.local_name = "groupType",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "groupType",
+				 .convert_local = normalise_to_signed32,
+				 .convert_remote = val_copy,
+			 },
+		}
+	},
+	{
+		.local_name = "samAccountType",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "samAccountType",
+				 .convert_local = normalise_to_signed32,
+				 .convert_remote = val_copy,
+			 },
 		}
 	},
 	{
