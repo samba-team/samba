@@ -251,4 +251,6 @@ define(AC_ADD_INCLUDE,
 EOF
 ])
 
+m4_include(libreplace_cc.m4)
 m4_include(autoconf-2.60.m4)
+
