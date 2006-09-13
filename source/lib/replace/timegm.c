@@ -36,17 +36,7 @@
 */
 
 #include "replace.h"
-#include <stdlib.h>
-
-#ifndef HAVE_TIMEGM
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-#ifdef HAVE_TIME_H
-#include <time.h>
-#endif
+#include "system/time.h"
 
 static int is_leap(unsigned y)
 {
@@ -76,5 +66,3 @@ time_t timegm(struct tm *tm)
 	res += tm->tm_sec;
 	return res;
 }
-
-#endif /* HAVE_TIMEGM */
