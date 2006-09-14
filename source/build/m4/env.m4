@@ -5,8 +5,6 @@ dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
 
-AC_CANONICAL_HOST
-
 AC_SUBST(srcdir)
 export srcdir;
 
