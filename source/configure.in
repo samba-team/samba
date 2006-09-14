@@ -540,6 +540,10 @@ if test x"$samba_cv_volatile" = x"yes"; then
    AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
 fi
 
+dnl Figure out the flags to support named structure initializers
+
+LIBREPLACE_C99_STRUCT_INIT([],[AC_MSG_WARN([c99 structure initializer are not supported])])
+
 UNAME_S=`(uname -s) 2>/dev/null` || UNAME_S="unknown"
 AC_MSG_CHECKING(uname -s)
 AC_MSG_RESULT(${UNAME_S})
