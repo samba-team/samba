@@ -73,9 +73,12 @@ fi
 
 echo "Testing binary file attribute value"
 cp $LDBDIR/tests/samba4.png tests/tmp/samba4.png
-#$VALGRIND ldbmodify $LDBDIR/tests/photo.ldif || exit 1
-#exit 1
-#$VALGRIND ldbsearch '(cn=Hampster Ursula)' jpegPhoto
+$VALGRIND ldbmodify $LDBDIR/tests/photo.ldif || exit 1
+count=`$VALGRIND ldbsearch '(cn=Hampster Ursula)' jpegPhoto || grep '^dn' | wc -l`
+if [ $count != 1 ]; then
+    echo returned $count records - expected 1
+    exit 1
+fi
 rm -f tests/tmp/samba4.png
 
 echo "*TODO* Testing UTF8 upper lower case searches !!"
