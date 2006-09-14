@@ -164,7 +164,7 @@ static void set_domain_online(struct winbindd_domain *domain)
 }
 
 /****************************************************************
- Request init_dc_connection to set a domain online.
+ Requested to set a domain online.
 ****************************************************************/
 
 void set_domain_online_request(struct winbindd_domain *domain)
@@ -178,14 +178,19 @@ void set_domain_online_request(struct winbindd_domain *domain)
 		return;
 	}
 
-	/* If we were called from a message request, initiate
-	   a DC connection immediately. */
+	/* We've been told it's safe to go online and
+	   try and connect to a DC. But I don't believe it...
+	   Wait at least 5 seconds. Heuristics suck... */
 
-	init_dc_connection(domain);
+	if (!domain->check_online_event) {
+		DEBUG(5,("set_domain_online_request: no check_domain_online_handler "
+			"registered. Were we online (%d) ?\n", (int)domain->online ));
+	} else {
+		struct timeval tev;
 
-	if (domain->online == False) {
-		DEBUG(10,("set_domain_online_request: failed to init connection to DC. "
-			"Domain %s staying offline.\n", domain->name ));
+		GetTimeOfDay(&tev);
+		tev.tv_sec += 5;
+		set_event_dispatch_time("check_domain_online_handler", tev);
 	}
 }
 
@@ -906,6 +911,9 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	if ( !open_any_socket_out(addrs, num_addrs, 5000, &fd_index, fd) ) 
 	{
 		for (i=0; i<num_dcs; i++) {
+			DEBUG(10, ("find_new_dc: open_any_socket_out failed for "
+				"domain %s address %s\n",
+				domain->name, inet_ntoa(dcs[i].ip) ));
 			winbind_add_failed_connection_entry(domain,
 				dcs[i].name, NT_STATUS_UNSUCCESSFUL);
 		}
