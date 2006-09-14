@@ -72,9 +72,10 @@ if [ $count != 3 ]; then
 fi
 
 echo "Testing binary file attribute value"
+mkdir -p tests/tmp
 cp $LDBDIR/tests/samba4.png tests/tmp/samba4.png
 $VALGRIND ldbmodify $LDBDIR/tests/photo.ldif || exit 1
-count=`$VALGRIND ldbsearch '(cn=Hampster Ursula)' jpegPhoto || grep '^dn' | wc -l`
+count=`$VALGRIND ldbsearch '(cn=Ursula Hampster)' jpegPhoto | grep '^dn' | wc -l`
 if [ $count != 1 ]; then
     echo returned $count records - expected 1
     exit 1
