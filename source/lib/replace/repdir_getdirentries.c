@@ -104,7 +104,13 @@ struct dirent *readdir(DIR *dir)
 	return de;
 }
 
+#define TELLDIR_TAKES_CONST_DIR
+
+#ifdef TELLDIR_TAKES_CONST_DIR
+long telldir(const DIR *dir)
+#else
 long telldir(DIR *dir)
+#endif
 {
 	struct dir_buf *d = (struct dir_buf *)dir;
 	if (d->ofs >= d->nbytes) {
