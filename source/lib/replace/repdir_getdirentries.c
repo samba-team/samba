@@ -48,6 +48,7 @@
   well. Contact the author.
 */
 
+#include "replace.h"
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -104,8 +105,6 @@ struct dirent *readdir(DIR *dir)
 	return de;
 }
 
-#define TELLDIR_TAKES_CONST_DIR
-
 #ifdef TELLDIR_TAKES_CONST_DIR
 long telldir(const DIR *dir)
 #else
@@ -126,7 +125,11 @@ long telldir(DIR *dir)
 	return d->seekpos + d->ofs;
 }
 
+#ifdef SEEKDIR_RETURNS_INT
+int seekdir(DIR *dir, long ofs)
+#else
 void seekdir(DIR *dir, long ofs)
+#endif
 {
 	struct dir_buf *d = (struct dir_buf *)dir;
 	long pos;
@@ -136,6 +139,9 @@ void seekdir(DIR *dir, long ofs)
 	while (d->ofs < (ofs & (DIR_BUF_SIZE-1))) {
 		if (readdir(dir) == NULL) break;
 	}
+#ifdef SEEKDIR_RETURNS_INT
+	return -1;
+#endif
 }
 
 void rewinddir(DIR *dir)

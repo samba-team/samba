@@ -14,7 +14,7 @@ if test x"$libreplace_READDIR_NEEDED" = x"yes"; then
 AC_CHECK_FUNCS(getdents)
 AC_CACHE_CHECK([for replacing readdir using getdents()],libreplace_READDIR_GETDENTS,[
 	AC_TRY_RUN([
-#include "confdefs.h"
+#define _LIBREPLACE_REPLACE_H
 #include "$libreplacedir/repdir_getdents.c"
 #define test_readdir_os2_delete main
 #include "$libreplacedir/test/os2_delete.c"],
@@ -34,9 +34,26 @@ fi
 #
 if test x"$libreplace_READDIR_NEEDED" = x"yes"; then
 AC_CHECK_FUNCS(getdirentries)
+AC_VERIFY_C_PROTOTYPE([long telldir(const DIR *dir)],
+	[
+	return 0;
+	],[
+	AC_DEFINE(TELLDIR_TAKES_CONST_DIR, 1, [Whether telldir takes a const pointer])
+	],[],[
+	#include <dirent.h>
+	])
+
+AC_VERIFY_C_PROTOTYPE([int seekdir(DIR *dir, long ofs)],
+	[
+	return 0;
+	],[
+	AC_DEFINE(SEEKDIR_RETURNS_INT, 1, [Whether seekdir returns an int])
+	],[],[
+	#include <dirent.h>
+	])
 AC_CACHE_CHECK([for replacing readdir using getdirentries()],libreplace_READDIR_GETDIRENTRIES,[
 	AC_TRY_RUN([
-#include "confdefs.h"
+#define _LIBREPLACE_REPLACE_H
 #include "$libreplacedir/repdir_getdirentries.c"
 #define test_readdir_os2_delete main
 #include "$libreplacedir/test/os2_delete.c"],
