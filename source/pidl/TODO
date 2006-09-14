@@ -1,3 +1,5 @@
+- warn about [out] attributes on pointers (midl/samba3 compatibility)
+
 - true multiple dimension array / strings in arrays support
 
 - compatibility mode for generating MIDL-readable data:
