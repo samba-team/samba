@@ -584,9 +584,9 @@ static void child_msg_offline(int msg_type, struct process_id src, void *buf, si
 
 static void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
 {
-	check_negative_conn_cache_timeout(domain->name, domain->dcname, 0);
+	flush_negative_conn_cache_for_domain(domain->name);
 	if (*domain->alt_name) {
-		check_negative_conn_cache_timeout(domain->alt_name, domain->dcname, 0);
+		flush_negative_conn_cache_for_domain(domain->alt_name);
 	}
 }
 
