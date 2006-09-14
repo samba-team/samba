@@ -741,8 +741,9 @@ void *_talloc_steal(const void *new_ctx, const void *ptr)
   a wrapper around talloc_steal() for situations where you are moving a pointer
   between two structures, and want the old pointer to be set to NULL
 */
-void *_talloc_move(const void *new_ctx, const void **pptr)
+void *_talloc_move(const void *new_ctx, const void *_pptr)
 {
+	const void **pptr = (const void **)_pptr;
 	void *ret = _talloc_steal(new_ctx, *pptr);
 	(*pptr) = NULL;
 	return ret;
