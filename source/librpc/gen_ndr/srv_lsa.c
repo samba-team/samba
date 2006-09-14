@@ -133,6 +133,12 @@ static BOOL api_lsa_EnumPrivs(pipes_struct *p)
 	}
 	
 	r.out.resume_handle = r.in.resume_handle;
+	r.out.privs = talloc_size(mem_ctx, sizeof(*r.out.privs));
+	if (r.out.privs == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_EnumPrivs(p, r.in.handle, r.in.resume_handle, r.in.max_count, r.out.privs);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -179,6 +185,12 @@ static BOOL api_lsa_QuerySecurity(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QuerySecurity(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.sdbuf = talloc_size(mem_ctx, sizeof(*r.out.sdbuf));
+	if (r.out.sdbuf == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -333,6 +345,12 @@ static BOOL api_lsa_OpenPolicy(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
+	if (r.out.handle == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_OpenPolicy(p, r.in.system_name, r.in.attr, r.in.access_mask, r.out.handle);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -379,6 +397,12 @@ static BOOL api_lsa_QueryInfoPolicy(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QueryInfoPolicy(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -533,6 +557,12 @@ static BOOL api_lsa_CreateAccount(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.acct_handle = talloc_size(mem_ctx, sizeof(*r.out.acct_handle));
+	if (r.out.acct_handle == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_CreateAccount(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.acct_handle);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -584,6 +614,12 @@ static BOOL api_lsa_EnumAccounts(pipes_struct *p)
 	}
 	
 	r.out.resume_handle = r.in.resume_handle;
+	r.out.sids = talloc_size(mem_ctx, sizeof(*r.out.sids));
+	if (r.out.sids == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_EnumAccounts(p, r.in.handle, r.in.resume_handle, r.in.num_entries, r.out.sids);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -630,6 +666,12 @@ static BOOL api_lsa_CreateTrustedDomain(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CreateTrustedDomain(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.trustdom_handle = talloc_size(mem_ctx, sizeof(*r.out.trustdom_handle));
+	if (r.out.trustdom_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -685,6 +727,12 @@ static BOOL api_lsa_EnumTrustDom(pipes_struct *p)
 	}
 	
 	r.out.resume_handle = r.in.resume_handle;
+	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	if (r.out.domains == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_EnumTrustDom(p, r.in.handle, r.in.resume_handle, r.in.max_size, r.out.domains);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -731,6 +779,12 @@ static BOOL api_lsa_LookupNames(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupNames(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -787,6 +841,12 @@ static BOOL api_lsa_LookupSids(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	if (r.out.domains == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.names = r.in.names;
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupSids(p, r.in.handle, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count);
@@ -835,6 +895,12 @@ static BOOL api_lsa_CreateSecret(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CreateSecret(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.sec_handle = talloc_size(mem_ctx, sizeof(*r.out.sec_handle));
+	if (r.out.sec_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -889,6 +955,12 @@ static BOOL api_lsa_OpenAccount(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.acct_handle = talloc_size(mem_ctx, sizeof(*r.out.acct_handle));
+	if (r.out.acct_handle == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_OpenAccount(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.acct_handle);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -935,6 +1007,12 @@ static BOOL api_lsa_EnumPrivsAccount(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_EnumPrivsAccount(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.privs = talloc_size(mem_ctx, sizeof(*r.out.privs));
+	if (r.out.privs == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1289,6 +1367,12 @@ static BOOL api_lsa_OpenTrustedDomain(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.trustdom_handle = talloc_size(mem_ctx, sizeof(*r.out.trustdom_handle));
+	if (r.out.trustdom_handle == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_OpenTrustedDomain(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.trustdom_handle);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -1335,6 +1419,12 @@ static BOOL api_lsa_QueryTrustedDomainInfo(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QueryTrustedDomainInfo(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1435,6 +1525,12 @@ static BOOL api_lsa_OpenSecret(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_OpenSecret(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.sec_handle = talloc_size(mem_ctx, sizeof(*r.out.sec_handle));
+	if (r.out.sec_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1593,6 +1689,12 @@ static BOOL api_lsa_LookupPrivValue(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.luid = talloc_size(mem_ctx, sizeof(*r.out.luid));
+	if (r.out.luid == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_LookupPrivValue(p, r.in.handle, r.in.name, r.out.luid);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -1643,6 +1745,12 @@ static BOOL api_lsa_LookupPrivName(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.name = talloc_size(mem_ctx, sizeof(*r.out.name));
+	if (r.out.name == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_LookupPrivName(p, r.in.handle, r.in.luid, r.out.name);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -1689,6 +1797,12 @@ static BOOL api_lsa_LookupPrivDisplayName(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupPrivDisplayName(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.disp_name = talloc_size(mem_ctx, sizeof(*r.out.disp_name));
+	if (r.out.disp_name == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1794,6 +1908,12 @@ static BOOL api_lsa_EnumAccountsWithUserRight(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.sids = talloc_size(mem_ctx, sizeof(*r.out.sids));
+	if (r.out.sids == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_EnumAccountsWithUserRight(p, r.in.handle, r.in.name, r.out.sids);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -1840,6 +1960,12 @@ static BOOL api_lsa_EnumAccountRights(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_EnumAccountRights(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.rights = talloc_size(mem_ctx, sizeof(*r.out.rights));
+	if (r.out.rights == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1990,6 +2116,12 @@ static BOOL api_lsa_QueryTrustedDomainInfoBySid(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QueryTrustedDomainInfoBySid(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2244,6 +2376,12 @@ static BOOL api_lsa_OpenPolicy2(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
+	if (r.out.handle == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_OpenPolicy2(p, r.in.system_name, r.in.attr, r.in.access_mask, r.out.handle);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -2346,6 +2484,12 @@ static BOOL api_lsa_QueryInfoPolicy2(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	if (r.out.info == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_QueryInfoPolicy2(p, r.in.handle, r.in.level, r.out.info);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -2442,6 +2586,12 @@ static BOOL api_lsa_QueryTrustedDomainInfoByName(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QueryTrustedDomainInfoByName(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2547,6 +2697,12 @@ static BOOL api_lsa_EnumTrustedDomainsEx(pipes_struct *p)
 	}
 	
 	r.out.resume_handle = r.in.resume_handle;
+	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	if (r.out.domains == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_EnumTrustedDomainsEx(p, r.in.handle, r.in.resume_handle, r.out.domains, r.in.max_size);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -2698,6 +2854,12 @@ static BOOL api_lsa_QueryDomainInformationPolicy(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	if (r.out.info == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _lsa_QueryDomainInformationPolicy(p, r.in.handle, r.in.level, r.out.info);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -2794,6 +2956,12 @@ static BOOL api_lsa_OpenTrustedDomainByName(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_OpenTrustedDomainByName(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.trustdom_handle = talloc_size(mem_ctx, sizeof(*r.out.trustdom_handle));
+	if (r.out.trustdom_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2898,6 +3066,12 @@ static BOOL api_lsa_LookupSids2(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	if (r.out.domains == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.names = r.in.names;
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupSids2(p, r.in.handle, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
@@ -2946,6 +3120,12 @@ static BOOL api_lsa_LookupNames2(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupNames2(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3452,6 +3632,12 @@ static BOOL api_lsa_LookupNames3(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	if (r.out.domains == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.sids = r.in.sids;
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupNames3(p, r.in.handle, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
@@ -3854,6 +4040,12 @@ static BOOL api_lsa_LookupSids3(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	if (r.out.domains == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.names = r.in.names;
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupSids3(p, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
@@ -3902,6 +4094,12 @@ static BOOL api_lsa_LookupNames4(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupNames4(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4227,7 +4425,7 @@ void lsarpc_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_lsarpc_cmds) / sizeof(struct api_struct);
 }
 
-NTSTATUS rpc_netdfs_init(void)
+NTSTATUS rpc_lsarpc_init(void)
 {
 	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "lsarpc", "lsarpc", api_lsarpc_cmds, sizeof(api_lsarpc_cmds) / sizeof(struct api_struct));
 }

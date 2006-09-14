@@ -23,120 +23,92 @@
 #include "includes.h"
 #include "nterr.h"
 
+
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
 /* Map a sid to a uid */
 
-NTSTATUS _unixinfo_sid_to_uid(pipes_struct *p,
-			      UNIXINFO_Q_SID_TO_UID *q_u,
-			      UNIXINFO_R_SID_TO_UID *r_u)
+NTSTATUS _unixinfo_SidToUid(pipes_struct *p, struct dom_sid sid, uint64_t *uid)
 {
-	uid_t uid;
+	uid_t real_uid;
+	NTSTATUS status;
+	*uid = 0;
 
-	r_u->uid = 0;
+	status = sid_to_uid(&sid, &real_uid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
+	if (NT_STATUS_IS_OK(status))
+		*uid = real_uid;
 
-	r_u->status = sid_to_uid(&q_u->sid, &uid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
-	if (NT_STATUS_IS_OK(r_u->status))
-		r_u->uid = uid;
-
-	return r_u->status;
+	return status;
 }
 
 /* Map a uid to a sid */
 
-NTSTATUS _unixinfo_uid_to_sid(pipes_struct *p,
-			      UNIXINFO_Q_UID_TO_SID *q_u,
-			      UNIXINFO_R_UID_TO_SID *r_u)
+NTSTATUS _unixinfo_UidToSid(pipes_struct *p, uint64_t uid, struct dom_sid *sid)
 {
-	DOM_SID sid;
+	NTSTATUS status = NT_STATUS_NO_SUCH_USER;
 
-	r_u->status = NT_STATUS_NO_SUCH_USER;
+	uid_to_sid(sid, (uid_t)uid);
+	status = NT_STATUS_OK;
 
-	if (q_u->uid == 0) {
-		uid_to_sid(&sid, q_u->uid);
-		r_u->status = NT_STATUS_OK;
-	}
-
-	init_r_unixinfo_uid_to_sid(r_u,
-				NT_STATUS_IS_OK(r_u->status) ? &sid : NULL);
-
-	return r_u->status;
+	return status;
 }
 
 /* Map a sid to a gid */
 
-NTSTATUS _unixinfo_sid_to_gid(pipes_struct *p,
-			      UNIXINFO_Q_SID_TO_GID *q_u,
-			      UNIXINFO_R_SID_TO_GID *r_u)
+NTSTATUS _unixinfo_SidToGid(pipes_struct *p, struct dom_sid sid, uint64_t *gid)
 {
-	gid_t gid;
+	gid_t real_gid;
+	NTSTATUS status;
 
-	r_u->gid = 0;
+	*gid = 0;
 
-	r_u->status = sid_to_gid(&q_u->sid, &gid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
-	if (NT_STATUS_IS_OK(r_u->status))
-		r_u->gid = gid;
+	status = sid_to_gid(&sid, &real_gid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
+	if (NT_STATUS_IS_OK(status))
+		*gid = real_gid;
 
-	return r_u->status;
+	return status;
 }
 
 /* Map a gid to a sid */
 
-NTSTATUS _unixinfo_gid_to_sid(pipes_struct *p,
-			      UNIXINFO_Q_GID_TO_SID *q_u,
-			      UNIXINFO_R_GID_TO_SID *r_u)
+NTSTATUS _unixinfo_GidToSid(pipes_struct *p, uint64_t gid, struct dom_sid *sid)
 {
-	DOM_SID sid;
+	NTSTATUS status = NT_STATUS_NO_SUCH_GROUP;
 
-	r_u->status = NT_STATUS_NO_SUCH_GROUP;
+	gid_to_sid(sid, (gid_t)gid);
+	status = NT_STATUS_OK;
 
-	if (q_u->gid == 0) {
-		gid_to_sid(&sid, q_u->gid);
-		r_u->status = NT_STATUS_OK;
-	}
-
-	init_r_unixinfo_gid_to_sid(r_u,
-				NT_STATUS_IS_OK(r_u->status) ? &sid : NULL);
-
-	return r_u->status;
+	return status;
 }
 
 /* Get unix struct passwd information */
 
-NTSTATUS _unixinfo_getpwuid(pipes_struct *p,
-			    UNIXINFO_Q_GETPWUID *q_u,
-			    UNIXINFO_R_GETPWUID *r_u)
+NTSTATUS _unixinfo_GetPWUid(pipes_struct *p, uint32_t *count, uint64_t *uids, 
+							struct unixinfo_GetPWUidInfo *infos)
 {
 	int i;
+	NTSTATUS status;
 
-	if (r_u->count > 1023) {
+	if (*count > 1023)
 		return NT_STATUS_INVALID_PARAMETER;
-	}
 
-	r_u->info = TALLOC_ARRAY(p->mem_ctx, struct unixinfo_getpwuid,
-				 q_u->count);
+	status = NT_STATUS_OK;
 
-	if ((r_u->count > 0) && (r_u->info == NULL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	r_u->status = NT_STATUS_OK;
-	r_u->count = q_u->count;
-
-	for (i=0; i<r_u->count; i++) {
+	for (i=0; i<*count; i++) {
 		struct passwd *pw;
 		char *homedir, *shell;
 		ssize_t len1, len2;
 
-		r_u->info[i].status = NT_STATUS_NO_SUCH_USER;
-		r_u->info[i].homedir = "";
-		r_u->info[i].shell = "";
+		infos[i].status = NT_STATUS_NO_SUCH_USER;
+		infos[i].homedir = "";
+		infos[i].shell = "";
 
-		pw = getpwuid(q_u->uid[i]);
+		pw = getpwuid(uids[i]);
 
 		if (pw == NULL) {
-			DEBUG(10, ("Did not find uid %lld\n", q_u->uid[i]));
+			DEBUG(10, ("Did not find uid %lld\n", uids[i]));
 			continue;
 		}
 
@@ -146,14 +118,14 @@ NTSTATUS _unixinfo_getpwuid(pipes_struct *p,
 		if ((len1 < 0) || (len2 < 0) || (homedir == NULL) ||
 		    (shell == NULL)) {
 			DEBUG(3, ("push_utf8_talloc failed\n"));
-			r_u->info[i].status = NT_STATUS_NO_MEMORY;
+			infos[i].status = NT_STATUS_NO_MEMORY;
 			continue;
 		}
 
-		r_u->info[i].status = NT_STATUS_OK;
-		r_u->info[i].homedir = homedir;
-		r_u->info[i].shell = shell;
+		infos[i].status = NT_STATUS_OK;
+		infos[i].homedir = homedir;
+		infos[i].shell = shell;
 	}
 
-	return r_u->status;
+	return status;
 }
