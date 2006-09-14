@@ -90,5 +90,12 @@ AC_CHECK_SIZEOF(ssize_t)
 AC_CHECK_TYPE(intptr_t, unsigned long long)
 AC_CHECK_TYPE(ptrdiff_t, unsigned long long)
 
+if test x"$ac_cv_type_long_long" != x"yes";then
+	AC_MSG_ERROR([LIBREPLACE needs type 'long long'])
+fi
+if test $ac_cv_sizeof_long_long -lt 8;then
+	AC_MSG_ERROR([LIBREPLACE needs sizeof(long long) >= 8])
+fi
+
 AC__LIBREPLACE_ONLY_CC_CHECKS_END
 ]) dnl end AC_LIBREPLACE_CC_CHECKS
