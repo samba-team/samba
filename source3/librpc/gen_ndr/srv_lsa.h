@@ -84,5 +84,5 @@ NTSTATUS _lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p);
 NTSTATUS _lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p);
 NTSTATUS _lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p);
 void lsarpc_get_pipe_fns(struct api_struct **fns, int *n_fns);
-NTSTATUS rpc_netdfs_init(void);
+NTSTATUS rpc_lsarpc_init(void);
 #endif /* __SRV_LSARPC__ */

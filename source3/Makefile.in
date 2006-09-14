@@ -314,7 +314,7 @@ RPC_NETLOG_OBJ = rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o
 RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
                rpc_server/srv_samr_util.o
 
-RPC_UNIXINFO_OBJ = rpc_server/srv_unixinfo.o rpc_server/srv_unixinfo_nt.o rpc_parse/parse_unixinfo.o
+RPC_UNIXINFO_OBJ = librpc/gen_ndr/srv_unixinfo.o rpc_server/srv_unixinfo_nt.o 
 REGFIO_OBJ = registry/regfio.o
 
 RPC_REG_OBJ =  rpc_server/srv_reg.o rpc_server/srv_reg_nt.o $(REGFIO_OBJ)

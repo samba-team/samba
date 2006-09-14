@@ -71,7 +71,7 @@ struct unixinfo_GetPWUid {
 
 	struct {
 		uint32_t *count;/* [keepref,ref,range(0 1023)] */
-		struct unixinfo_GetPWUidInfo *infos;/* [keepref,ref,size_is(*count)] */
+		struct unixinfo_GetPWUidInfo *infos;/* [keepref,size_is(*count)] */
 		NTSTATUS result;
 	} out;
 

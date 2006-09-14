@@ -31,6 +31,12 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.exist_flag = talloc_size(mem_ctx, sizeof(*r.out.exist_flag));
+	if (r.out.exist_flag == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	_dfs_GetManagerVersion(p, r.out.exist_flag);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -227,6 +233,12 @@ static BOOL api_dfs_GetInfo(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_GetInfo(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
