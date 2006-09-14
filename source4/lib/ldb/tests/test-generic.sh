@@ -25,7 +25,7 @@ echo "Showing renamed record"
 $VALGRIND ldbsearch '(uid=uham)' || exit 1
 
 echo "Starting ldbtest"
-time $VALGRIND ldbtest --num-records 100 --num-searches 10  || exit 1
+$VALGRIND ldbtest --num-records 100 --num-searches 10  || exit 1
 
 if [ $LDB_SPECIALS = 1 ]; then
  echo "Adding index"
@@ -62,7 +62,7 @@ $VALGRIND ldbsearch '(cn=test*multi*test*multi)'  || exit 1
 $VALGRIND ldbsearch '(cn=test*multi*test*multi*multi_*)' || exit 1
 
 echo "Starting ldbtest indexed"
-time $VALGRIND ldbtest --num-records 100 --num-searches 500  || exit 1
+$VALGRIND ldbtest --num-records 100 --num-searches 500  || exit 1
 
 echo "Testing one level search"
 count=`$VALGRIND ldbsearch -b 'ou=Groups,o=University of Michigan,c=TEST' -s one 'objectclass=*' none |grep '^dn' | wc -l`
