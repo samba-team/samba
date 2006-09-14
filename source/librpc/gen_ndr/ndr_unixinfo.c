@@ -327,7 +327,7 @@ _PUBLIC_ void ndr_print_unixinfo_GidToSid(struct ndr_print *ndr, const char *nam
 NTSTATUS ndr_push_unixinfo_GetPWUid(struct ndr_push *ndr, int flags, const struct unixinfo_GetPWUid *r)
 {
 	uint32_t cntr_uids_0;
-	uint32_t cntr_infos_1;
+	uint32_t cntr_infos_0;
 	if (flags & NDR_IN) {
 		if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
@@ -339,10 +339,9 @@ NTSTATUS ndr_push_unixinfo_GetPWUid(struct ndr_push *ndr, int flags, const struc
 	if (flags & NDR_OUT) {
 		if (r->out.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
-		if (r->out.infos == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
-		for (cntr_infos_1 = 0; cntr_infos_1 < *r->out.count; cntr_infos_1++) {
-			NDR_CHECK(ndr_push_unixinfo_GetPWUidInfo(ndr, NDR_SCALARS, &r->out.infos[cntr_infos_1]));
+		for (cntr_infos_0 = 0; cntr_infos_0 < *r->out.count; cntr_infos_0++) {
+			NDR_CHECK(ndr_push_unixinfo_GetPWUidInfo(ndr, NDR_SCALARS, &r->out.infos[cntr_infos_0]));
 		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -352,10 +351,10 @@ NTSTATUS ndr_push_unixinfo_GetPWUid(struct ndr_push *ndr, int flags, const struc
 NTSTATUS ndr_pull_unixinfo_GetPWUid(struct ndr_pull *ndr, int flags, struct unixinfo_GetPWUid *r)
 {
 	uint32_t cntr_uids_0;
-	uint32_t cntr_infos_1;
+	uint32_t cntr_infos_0;
 	TALLOC_CTX *_mem_save_count_0;
 	TALLOC_CTX *_mem_save_uids_0;
-	TALLOC_CTX *_mem_save_infos_1;
+	TALLOC_CTX *_mem_save_infos_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -379,9 +378,6 @@ NTSTATUS ndr_pull_unixinfo_GetPWUid(struct ndr_pull *ndr, int flags, struct unix
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_uids_0, 0);
 		NDR_PULL_ALLOC(ndr, r->out.count);
 		*r->out.count = *r->in.count;
-		if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_PULL_ALLOC_N(ndr, r->out.infos, *r->in.count);
-		memset(r->out.infos, 0, *r->in.count * sizeof(*r->out.infos));
 		if (r->in.uids) {
 			if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.uids, *r->in.count));
@@ -399,15 +395,13 @@ NTSTATUS ndr_pull_unixinfo_GetPWUid(struct ndr_pull *ndr, int flags, struct unix
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.infos));
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->out.infos, ndr_get_array_size(ndr, &r->out.infos));
-		}
-		_mem_save_infos_1 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_ALLOC_N(ndr, r->out.infos, ndr_get_array_size(ndr, &r->out.infos));
+		_mem_save_infos_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.infos, 0);
-		for (cntr_infos_1 = 0; cntr_infos_1 < *r->out.count; cntr_infos_1++) {
-			NDR_CHECK(ndr_pull_unixinfo_GetPWUidInfo(ndr, NDR_SCALARS, &r->out.infos[cntr_infos_1]));
+		for (cntr_infos_0 = 0; cntr_infos_0 < *r->out.count; cntr_infos_0++) {
+			NDR_CHECK(ndr_pull_unixinfo_GetPWUidInfo(ndr, NDR_SCALARS, &r->out.infos[cntr_infos_0]));
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_infos_1, 0);
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_infos_0, 0);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 		if (r->out.infos) {
 			if (r->out.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -420,7 +414,7 @@ NTSTATUS ndr_pull_unixinfo_GetPWUid(struct ndr_pull *ndr, int flags, struct unix
 _PUBLIC_ void ndr_print_unixinfo_GetPWUid(struct ndr_print *ndr, const char *name, int flags, const struct unixinfo_GetPWUid *r)
 {
 	uint32_t cntr_uids_0;
-	uint32_t cntr_infos_1;
+	uint32_t cntr_infos_0;
 	ndr_print_struct(ndr, name, "unixinfo_GetPWUid");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -453,19 +447,16 @@ _PUBLIC_ void ndr_print_unixinfo_GetPWUid(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->out.count);
 		ndr->depth--;
-		ndr_print_ptr(ndr, "infos", r->out.infos);
-		ndr->depth++;
 		ndr->print(ndr, "%s: ARRAY(%d)", "infos", *r->out.count);
 		ndr->depth++;
-		for (cntr_infos_1=0;cntr_infos_1<*r->out.count;cntr_infos_1++) {
-			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_infos_1);
-			if (idx_1) {
-				ndr_print_unixinfo_GetPWUidInfo(ndr, "infos", &r->out.infos[cntr_infos_1]);
-				free(idx_1);
+		for (cntr_infos_0=0;cntr_infos_0<*r->out.count;cntr_infos_0++) {
+			char *idx_0=NULL;
+			asprintf(&idx_0, "[%d]", cntr_infos_0);
+			if (idx_0) {
+				ndr_print_unixinfo_GetPWUidInfo(ndr, "infos", &r->out.infos[cntr_infos_0]);
+				free(idx_0);
 			}
 		}
-		ndr->depth--;
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;

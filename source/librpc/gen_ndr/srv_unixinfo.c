@@ -31,6 +31,12 @@ static BOOL api_unixinfo_SidToUid(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.uid = talloc_size(mem_ctx, sizeof(*r.out.uid));
+	if (r.out.uid == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _unixinfo_SidToUid(p, r.in.sid, r.out.uid);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -77,6 +83,12 @@ static BOOL api_unixinfo_UidToSid(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_unixinfo_UidToSid(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.sid = talloc_size(mem_ctx, sizeof(*r.out.sid));
+	if (r.out.sid == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -131,6 +143,12 @@ static BOOL api_unixinfo_SidToGid(pipes_struct *p)
 		return False;
 	}
 	
+	r.out.gid = talloc_size(mem_ctx, sizeof(*r.out.gid));
+	if (r.out.gid == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _unixinfo_SidToGid(p, r.in.sid, r.out.gid);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -177,6 +195,12 @@ static BOOL api_unixinfo_GidToSid(pipes_struct *p)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_unixinfo_GidToSid(pull, NDR_IN, &r);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
+	r.out.sid = talloc_size(mem_ctx, sizeof(*r.out.sid));
+	if (r.out.sid == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -232,6 +256,12 @@ static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
 	}
 	
 	r.out.count = r.in.count;
+	r.out.infos = talloc_array_size(mem_ctx, sizeof(*r.out.infos), *r.in.count);
+	if (r.out.infos == NULL) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	
 	r.out.result = _unixinfo_GetPWUid(p, r.in.count, r.in.uids, r.out.infos);
 	
 	push = ndr_push_init_ctx(mem_ctx);
@@ -274,7 +304,7 @@ void unixinfo_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_unixinfo_cmds) / sizeof(struct api_struct);
 }
 
-NTSTATUS rpc_netdfs_init(void)
+NTSTATUS rpc_unixinfo_init(void)
 {
 	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "unixinfo", "unixinfo", api_unixinfo_cmds, sizeof(api_unixinfo_cmds) / sizeof(struct api_struct));
 }
