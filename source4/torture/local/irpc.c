@@ -242,12 +242,17 @@ struct torture_suite *torture_local_irpc(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-IRPC");
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "irpc");
 	int i;
-	static uint32_t values[] = {0, 0x7FFFFFFE, 0xFFFFFFFE, 0xFFFFFFFF, 
-				    random() & 0xFFFFFFFF};
+	uint32_t *values = talloc_array(tcase, uint32_t, 5);
+
+	values[0] = 0;
+	values[1] = 0x7FFFFFFE;
+	values[2] = 0xFFFFFFFE;
+	values[3] = 0xFFFFFFFF;
+	values[4] = random() & 0xFFFFFFFF;
 
 	tcase->setup = irpc_setup;
 
-	for (i = 0; i < ARRAY_SIZE(values); i++) {
+	for (i = 0; i < 5; i++) {
 		torture_tcase_add_test(tcase, "addone", test_addone, (void *)values[i]);
 	}
 						   
