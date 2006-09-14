@@ -65,9 +65,7 @@ installcheck:
 distclean: clean
 	rm -f *~ */*~
 	rm -f Makefile
-	rm -f config.log \
-		config.status \
-		config.h
+	rm -f config.log config.status config.h config.cache
 
 realdistclean: distclean
 	rm -f configure config.h.in
