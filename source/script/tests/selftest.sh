@@ -129,7 +129,7 @@ echo "END:   $END ($ARG0)";
 count=`find $PREFIX -name 'valgrind.log*' | wc -l`
 if [ "$count" != 0 ]; then
     for f in $PREFIX/valgrind.log*; do
-	if [ -s $f ]; then
+	if [ -s $f ] && grep -v DWARF2.CFI.reader $f > /dev/null; then
 	    echo "VALGRIND FAILURE";
 	    failed=`expr $failed + 1`
 	    cat $f
