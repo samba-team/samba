@@ -1024,6 +1024,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 out:
 	if (username_ret) {
 		pam_set_item (pamh, PAM_USER, username_ret);
+		_pam_log_debug(pamh, ctrl, LOG_INFO, "Returned user was '%s'", username_ret);
 		free(username_ret);
 	}
 
