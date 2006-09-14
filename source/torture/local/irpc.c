@@ -81,12 +81,12 @@ static NTSTATUS irpc_EchoData(struct irpc_message *irpc, struct echo_EchoData *r
   test a addone call over the internal messaging system
 */
 static BOOL test_addone(struct torture_context *test, const void *_data,
-						const void *_value)
+			const void *_value)
 {
 	struct echo_AddOne r;
 	NTSTATUS status;
 	const struct irpc_test_data *data = _data;
-	uint32_t value = (uint32_t)value;
+	uint32_t value = (uint32_t)_value;
 
 	/* make the call */
 	r.in.in_data = value;
