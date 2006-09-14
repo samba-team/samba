@@ -3,6 +3,7 @@
 
    Copyright (C) Jelmer Vernooij 2005
    Copyright (C) Martin Kuehl <mkhl@samba.org> 2006
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2006
 
    * NOTICE: this module is NOT released under the GNU LGPL license as
    * other ldb code. This module is release under the GNU GPL v2 or
@@ -81,9 +82,7 @@ static const char **map_attrs_collect_remote(struct ldb_module *module, void *me
 	const struct ldb_map_attribute *map;
 	const char *name=NULL;
 	int i, j, last;
-
-	if (attrs == NULL)
-		return NULL;
+	int ret;
 
 	last = 0;
 	result = talloc_array(mem_ctx, const char *, 1);
@@ -95,6 +94,25 @@ static const char **map_attrs_collect_remote(struct ldb_module *module, void *me
 	for (i = 0; attrs[i]; i++) {
 		/* Wildcards are kept remotely, too */
 		if (ldb_attr_cmp(attrs[i], "*") == 0) {
+			const char **new_attrs = NULL;
+			ret = map_attrs_merge(module, mem_ctx, &new_attrs, attrs);
+			if (ret != LDB_SUCCESS) {
+				goto failed;
+			}
+			ret = map_attrs_merge(module, mem_ctx, &new_attrs, data->wildcard_attributes);
+			if (ret != LDB_SUCCESS) {
+				goto failed;
+			}
+
+			attrs = new_attrs;
+			break;
+		}
+	}
+
+	for (i = 0; attrs[i]; i++) {
+		/* Wildcards are kept remotely, too */
+		if (ldb_attr_cmp(attrs[i], "*") == 0) {
+			/* Add all 'include in wildcard' attributes */
 			name = attrs[i];
 			goto named;
 		}
@@ -158,29 +176,6 @@ static int map_attrs_partition(struct ldb_module *module, void *local_ctx, void 
 {
 	*local_attrs = map_attrs_select_local(module, local_ctx, attrs);
 	*remote_attrs = map_attrs_collect_remote(module, remote_ctx, attrs);
-
-	return 0;
-}
-
-/* Merge two lists of attributes into a single one. */
-static int map_attrs_merge(struct ldb_module *module, void *mem_ctx, const char ***attrs, const char * const *more_attrs)
-{
-	int i, j, k;
-
-	for (i = 0; (*attrs)[i]; i++) /* noop */ ;
-	for (j = 0; more_attrs[j]; j++) /* noop */ ;
-
-	*attrs = talloc_realloc(mem_ctx, *attrs, const char *, i+j+1);
-	if (*attrs == NULL) {
-		map_oom(module);
-		return -1;
-	}
-
-	for (k = 0; k < j; k++) {
-		(*attrs)[i+k] = more_attrs[k];
-	}
-
-	(*attrs)[i+k] = NULL;
 
 	return 0;
 }
@@ -815,11 +810,6 @@ static int map_attrs_collect_and_partition(struct ldb_module *module, void *loca
 	*local_attrs = NULL;
 	*remote_attrs = NULL;
 
-	/* There are no searched attributes, just stick to that */
-	if (search_attrs == NULL) {
-		return 0;
-	}
-
 	/* There is no tree, just partition the searched attributes */
 	if (tree == NULL) {
 		return map_attrs_partition(module, local_ctx, remote_ctx, local_attrs, remote_attrs, search_attrs);
@@ -1028,6 +1018,9 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 	const char **local_attrs, **remote_attrs;
 	int ret;
 
+	const char *wildcard[] = { "*", NULL };
+	const char * const *attrs;
+
 	/* Do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.search.base))
 		return ldb_next_request(module, req);
@@ -1068,8 +1061,15 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 	ac->search_reqs[0]->context = ac;
 	ac->search_reqs[0]->callback = map_remote_search_callback;
 
+	/* It is easier to deal with the two different ways of
+	 * expressing the wildcard in the same codepath */
+	attrs = req->op.search.attrs;
+	if (attrs == NULL) {
+		attrs = wildcard;
+	}
+
 	/* Split local from remote attrs */
-	ret = map_attrs_collect_and_partition(module, ac, ac->search_reqs[0], &local_attrs, &remote_attrs, req->op.search.attrs, req->op.search.tree);
+	ret = map_attrs_collect_and_partition(module, ac, ac->search_reqs[0], &local_attrs, &remote_attrs, attrs, req->op.search.tree);
 	if (ret) {
 		goto failed;
 	}
