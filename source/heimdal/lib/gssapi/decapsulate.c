@@ -110,7 +110,7 @@ gssapi_krb5_verify_header(u_char **str,
     if (len < 2)
 	return GSS_S_DEFECTIVE_TOKEN;
 
-    if (memcmp (*str, type, 2) != 0)
+    if ((*str)[0] != type[0] || (*str)[1] != type[1])
 	return GSS_S_DEFECTIVE_TOKEN;
     *str += 2;
 
