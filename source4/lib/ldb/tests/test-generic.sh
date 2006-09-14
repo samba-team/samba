@@ -72,9 +72,11 @@ if [ $count != 3 ]; then
 fi
 
 echo "Testing binary file attribute value"
-cp tests/samba4.png /tmp/samba4.png
-$VALGRIND ldbmodify $LDBDIR/tests/photo.ldif || echo "this seem to fail on ldap ..."
-rm /tmp/samba4.png
+cp $LDBDIR/tests/samba4.png tests/tmp/samba4.png
+#$VALGRIND ldbmodify $LDBDIR/tests/photo.ldif || exit 1
+#exit 1
+#$VALGRIND ldbsearch '(cn=Hampster Ursula)' jpegPhoto
+rm -f tests/tmp/samba4.png
 
 echo "*TODO* Testing UTF8 upper lower case searches !!"
 

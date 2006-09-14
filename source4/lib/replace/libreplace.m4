@@ -1,3 +1,26 @@
+AC_DEFUN_ONCE(AC_LIBREPLACE_LOCATION_CHECKS,
+[
+echo "LIBREPLACE_LOCATION_CHECKS: START"
+
+dnl find the libreplace sources. This is meant to work both for 
+dnl libreplace standalone builds, and builds of packages using libreplace
+libreplacedir=""
+for d in "$srcdir" "$srcdir/lib/replace" "$srcdir/libreplace" "$srcdir/../libreplace" "$srcdir/../replace"; do
+	if test -f "$d/replace.c"; then
+		libreplacedir="$d"		
+		AC_SUBST(libreplacedir)
+		break;
+	fi
+done
+LIBREPLACEOBJ="replace.o"
+AC_SUBST(LIBREPLACEOBJ)
+
+AC_CANONICAL_HOST
+
+echo "LIBREPLACE_LOCATION_CHECKS: END"
+]) dnl end AC_LIBREPLACE_LOCATION_CHECKS
+
+
 AC_DEFUN_ONCE(AC_LIBREPLACE_BROKEN_CHECKS,
 [
 echo "LIBREPLACE_BROKEN_CHECKS: START"
@@ -298,6 +321,7 @@ AC_DEFUN_ONCE(AC__LIBREPLACE_ALL_CHECKS_END,
 m4_define(AC_LIBREPLACE_ALL_CHECKS,
 [
 AC__LIBREPLACE_ALL_CHECKS_START
+AC_LIBREPLACE_LOCATION_CHECKS
 AC_LIBREPLACE_CC_CHECKS
 AC_LIBREPLACE_BROKEN_CHECKS
 AC__LIBREPLACE_ALL_CHECKS_END
