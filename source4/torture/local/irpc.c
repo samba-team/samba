@@ -242,8 +242,8 @@ struct torture_suite *torture_local_irpc(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-IRPC");
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "irpc");
 	int i;
-	uint32_t values[] = {0, 0x7FFFFFFE, 0xFFFFFFFE, 0xFFFFFFFF, 
-						 random() & 0xFFFFFFFF};
+	static uint32_t values[] = {0, 0x7FFFFFFE, 0xFFFFFFFE, 0xFFFFFFFF, 
+				    random() & 0xFFFFFFFF};
 
 	tcase->setup = irpc_setup;
 
