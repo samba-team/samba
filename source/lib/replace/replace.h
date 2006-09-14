@@ -223,12 +223,12 @@ int rep_dlclose(void *handle);
 int rep_vasprintf(char **ptr, const char *format, va_list ap);
 #endif
 
-#ifndef HAVE_SNPRINTF
+#if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define snprintf rep_snprintf
 int rep_snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
 
-#ifndef HAVE_VSNPRINTF
+#if !defined(HAVE_VSNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define vsnprintf rep_vsnprintf
 int rep_vsnprintf(char *,size_t ,const char *, va_list ap);
 #endif
