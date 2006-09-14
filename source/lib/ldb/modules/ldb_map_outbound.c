@@ -180,37 +180,6 @@ static int map_attrs_partition(struct ldb_module *module, void *local_ctx, void 
 	return 0;
 }
 
-/* Mapping ldb values
- * ================== */
-
-/* Map an ldb value from a parse tree into the remote partition. */
-static struct ldb_val ldb_val_map_subtree(struct ldb_module *module, struct ldb_parse_tree *new, const struct ldb_map_attribute *map, const struct ldb_parse_tree *tree)
-{
-	struct ldb_val val;
-
-	/* Extract the old value */
-	switch (tree->operation) {
-	case LDB_OP_EQUALITY:
-		val = tree->u.equality.value;
-		break;
-	case LDB_OP_LESS:
-	case LDB_OP_GREATER:
-	case LDB_OP_APPROX:
-		val = tree->u.comparison.value;
-		break;
-	case LDB_OP_EXTENDED:
-		val = tree->u.extended.value;
-		break;
-	default:
-		val.length = 0;
-		val.data = NULL;
-		return ldb_val_dup(new, &val);
-	}
-
-	/* Convert to the new value */
-	return ldb_val_map_local(module, new, map, val);
-}
-
 /* Mapping message elements
  * ======================== */
 
@@ -677,46 +646,99 @@ static int map_subtree_collect_remote_list(struct ldb_module *module, void *mem_
 int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, struct ldb_parse_tree **new, const struct ldb_parse_tree *tree, const struct ldb_map_attribute *map)
 {
 	const char *attr;
-	struct ldb_val val;
 
 	/* Prepare new tree */
-	*new = talloc_memdup(mem_ctx, tree, sizeof(struct ldb_parse_tree));
+	*new = talloc(mem_ctx, struct ldb_parse_tree);
 	if (*new == NULL) {
 		map_oom(module);
 		return -1;
 	}
+	**new = *tree;
+	
+	if (map->type == MAP_KEEP) {
+		/* Nothing to do here */
+		return 0;
+	}
 
-	/* Map attribute and value */
-	attr = map_attr_map_local(*new, map, tree->u.equality.attr);
+	/* Store attribute and value in new tree */
+	switch (tree->operation) {
+	case LDB_OP_PRESENT:
+		attr = map_attr_map_local(*new, map, tree->u.present.attr);
+		(*new)->u.present.attr = attr;
+		break;
+	case LDB_OP_SUBSTRING:
+	{
+		attr = map_attr_map_local(*new, map, tree->u.substring.attr);
+		(*new)->u.substring.attr = attr;
+		break;
+	}
+	case LDB_OP_EQUALITY:
+		attr = map_attr_map_local(*new, map, tree->u.equality.attr);
+		(*new)->u.equality.attr = attr;
+		break;
+	case LDB_OP_LESS:
+	case LDB_OP_GREATER:
+	case LDB_OP_APPROX:
+		attr = map_attr_map_local(*new, map, tree->u.comparison.attr);
+		(*new)->u.comparison.attr = attr;
+		break;
+	case LDB_OP_EXTENDED:
+		attr = map_attr_map_local(*new, map, tree->u.extended.attr);
+		(*new)->u.extended.attr = attr;
+		break;
+	default:			/* unknown kind of simple subtree */
+		talloc_free(*new);
+		return -1;
+	}
+
 	if (attr == NULL) {
 		talloc_free(*new);
 		*new = NULL;
 		return 0;
 	}
-	val = ldb_val_map_subtree(module, *new, map, tree);
+
+	if (map->type == MAP_RENAME) {
+		/* Nothing more to do here, the attribute has been renamed */
+		return 0;
+	}
 
 	/* Store attribute and value in new tree */
 	switch (tree->operation) {
 	case LDB_OP_PRESENT:
-		(*new)->u.present.attr = attr;
 		break;
 	case LDB_OP_SUBSTRING:
-		(*new)->u.substring.attr = attr;
-		(*new)->u.substring.chunks = NULL;	/* FIXME! */
+	{
+		int i;
+		/* Map value */
+		(*new)->u.substring.chunks = NULL;
+		for (i=0; tree->u.substring.chunks[i]; i++) {
+			(*new)->u.substring.chunks = talloc_realloc(*new, (*new)->u.substring.chunks, struct ldb_val *, i+2);
+			if (!(*new)->u.substring.chunks) {
+				talloc_free(*new);
+				*new = NULL;
+				return 0;
+			}
+			(*new)->u.substring.chunks[i] = talloc(*new, struct ldb_val);
+			if (!(*new)->u.substring.chunks[i]) {
+				talloc_free(*new);
+				*new = NULL;
+				return 0;
+			}
+			*(*new)->u.substring.chunks[i] = ldb_val_map_local(module, *new, map, *tree->u.substring.chunks[i]);
+			(*new)->u.substring.chunks[i+1] = NULL;
+		}
 		break;
+	}
 	case LDB_OP_EQUALITY:
-		(*new)->u.equality.attr = attr;
-		(*new)->u.equality.value = val;
+		(*new)->u.equality.value = ldb_val_map_local(module, *new, map, tree->u.equality.value);
 		break;
 	case LDB_OP_LESS:
 	case LDB_OP_GREATER:
 	case LDB_OP_APPROX:
-		(*new)->u.comparison.attr = attr;
-		(*new)->u.comparison.value = val;
+		(*new)->u.comparison.value = ldb_val_map_local(module, *new, map, tree->u.comparison.value);
 		break;
 	case LDB_OP_EXTENDED:
-		(*new)->u.extended.attr = attr;
-		(*new)->u.extended.value = val;
+		(*new)->u.extended.value = ldb_val_map_local(module, *new, map, tree->u.extended.value);
 		(*new)->u.extended.rule_id = talloc_strdup(*new, tree->u.extended.rule_id);
 		break;
 	default:			/* unknown kind of simple subtree */
