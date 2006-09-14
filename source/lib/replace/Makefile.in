@@ -53,7 +53,7 @@ clean:
 
 distclean: clean
 	rm -f *~ */*~
-	rm -f config.log config.status config.h
+	rm -f config.log config.status config.h config.cache
 	rm -f Makefile
 
 realdistclean: distclean
