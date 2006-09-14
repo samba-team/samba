@@ -93,7 +93,7 @@ struct torture_test *torture_tcase_add_test(struct torture_tcase *tcase,
 	test->dangerous = False;
 	test->data = data;
 
-	DLIST_ADD(tcase->tests, test);
+	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
 
 	return test;
 }
