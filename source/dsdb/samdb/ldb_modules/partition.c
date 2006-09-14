@@ -186,35 +186,43 @@ error:
 }
 
 
-static int partition_send_request(struct partition_context *ac, struct ldb_module *partition)
+static int partition_send_request(struct partition_context *ac, struct ldb_module *partition, 
+				  struct ldb_dn *partition_base_dn)
 {
 	int ret;
 	struct ldb_module *next = make_module_for_next_request(ac->module, ac->module->ldb, partition);
-	
+	struct ldb_request *req;
 	ac->down_req = talloc_realloc(ac, ac->down_req, 
 					struct ldb_request *, ac->num_requests + 1);
 	if (!ac->down_req) {
 		ldb_set_errstring(ac->module->ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac->down_req[ac->num_requests] = talloc(ac, struct ldb_request);
-	if (ac->down_req[ac->num_requests] == NULL) {
+	req = ac->down_req[ac->num_requests] = talloc(ac, struct ldb_request);
+	if (req == NULL) {
 		ldb_set_errstring(ac->module->ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
 	*ac->down_req[ac->num_requests] = *ac->orig_req; /* copy the request */
-	
-	if (ac->down_req[ac->num_requests]->operation == LDB_SEARCH) {
-		ac->down_req[ac->num_requests]->callback = partition_search_callback;
-		ac->down_req[ac->num_requests]->context = ac;
+
+	if (req->operation == LDB_SEARCH) {
+		/* If the search is for 'more' than this partition,
+		 * then change the basedn, so a remote LDAP server
+		 * doesn't object */
+		if (ldb_dn_compare_base(ac->module->ldb, 
+					partition_base_dn, req->op.search.base) != 0) {
+			req->op.search.base = partition_base_dn;
+		}
+		req->callback = partition_search_callback;
+		req->context = ac;
 	} else {
-		ac->down_req[ac->num_requests]->callback = partition_other_callback;
-		ac->down_req[ac->num_requests]->context = ac;
+		req->callback = partition_other_callback;
+		req->context = ac;
 	}
 
 	/* Spray off search requests to all backends */
-	ret = ldb_next_request(next, ac->down_req[ac->num_requests]); 
+	ret = ldb_next_request(next, req); 
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -230,12 +238,12 @@ static int partition_send_all(struct ldb_module *module,
 	int i;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
-	int ret = partition_send_request(ac, module->next);
+	int ret = partition_send_request(ac, module->next, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		ret = partition_send_request(ac, data->partitions[i]->module);
+		ret = partition_send_request(ac, data->partitions[i]->module, data->partitions[i]->dn);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -307,21 +315,26 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		
 		ac = talloc_get_type(h->private_data, struct partition_context);
 		
+		/* Search from the base DN */
+		if (!req->op.search.base || req->op.search.base->comp_num == 0) {
+			return partition_send_all(module, ac, req);
+		}
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {
 			/* Find all partitions under the search base */
 			if (ldb_dn_compare_base(module->ldb, 
 						req->op.search.base,
 						data->partitions[i]->dn) == 0) {
-				ret = partition_send_request(ac, data->partitions[i]->module);
+				ret = partition_send_request(ac, data->partitions[i]->module, data->partitions[i]->dn);
 				if (ret != LDB_SUCCESS) {
 					return ret;
 				}
 			}
 		}
 
-		/* Perhaps we didn't match any partitions.  Try the main partition, then all partitions */
+		/* Perhaps we didn't match any partitions.  Try the main partition, only */
 		if (ac->num_requests == 0) {
-			return partition_send_all(module, ac, req);
+			talloc_free(h);
+			return ldb_next_request(module, req);
 		}
 		
 		return LDB_SUCCESS;
@@ -701,11 +714,19 @@ static int partition_init(struct ldb_module *module)
 			
 			ret = ldb_load_modules_list(module->ldb, modules, partition->module, &partition->module);
 			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(module->ldb, 
+						       "partition_init: "
+						       "loading backend for %s failed: %s", 
+						       base, ldb_errstring(module->ldb));
 				talloc_free(mem_ctx);
 				return ret;
 			}
 			ret = ldb_init_module_chain(module->ldb, partition->module);
 			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(module->ldb, 
+						       "partition_init: "
+						       "initialising backend for %s failed: %s", 
+						       base, ldb_errstring(module->ldb));
 				talloc_free(mem_ctx);
 				return ret;
 			}

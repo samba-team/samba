@@ -75,6 +75,7 @@ const struct ldb_map_attribute *map_attr_find_remote(const struct ldb_map_contex
 
 const char *map_attr_map_local(void *mem_ctx, const struct ldb_map_attribute *map, const char *attr);
 const char *map_attr_map_remote(void *mem_ctx, const struct ldb_map_attribute *map, const char *attr);
+int map_attrs_merge(struct ldb_module *module, void *mem_ctx, const char ***attrs, const char * const *more_attrs);
 
 struct ldb_val ldb_val_map_local(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, struct ldb_val val);
 struct ldb_val ldb_val_map_remote(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, struct ldb_val val);

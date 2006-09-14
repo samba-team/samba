@@ -303,6 +303,15 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 	}
 };
 
+/* These things do not show up in wildcard searches in OpenLDAP, but
+ * we need them to show up in the AD-like view */
+const char * const wildcard_attributes[] = {
+	"objectGUID", 
+	"whenCreated", 
+	"whenChanged",
+	NULL
+};
+
 static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx) 
 {
 	const char *rootdse_attrs[] = {"schemaNamingContext", NULL};
@@ -372,7 +381,7 @@ static int entryUUID_init(struct ldb_module *module)
 	struct entryUUID_private *entryUUID_private;
 	struct ldb_dn *schema_dn;
 
-	ret = ldb_map_init(module, entryUUID_attributes, NULL, NULL);
+	ret = ldb_map_init(module, entryUUID_attributes, NULL, wildcard_attributes, NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
 
@@ -387,7 +396,8 @@ static int entryUUID_init(struct ldb_module *module)
 		return LDB_SUCCESS;
 	}
 	
-	ret = fetch_objectclass_schema(module->ldb, schema_dn, entryUUID_private, &entryUUID_private->objectclass_res);
+	ret = fetch_objectclass_schema(module->ldb, schema_dn, entryUUID_private, 
+				       &entryUUID_private->objectclass_res);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(module->ldb, "Failed to fetch objectClass schema elements: %s\n", ldb_errstring(module->ldb));
 		return ret;

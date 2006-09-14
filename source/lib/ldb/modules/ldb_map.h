@@ -1,27 +1,26 @@
-/* 
-   ldb database library - map backend
+/*
+   ldb database mapping module
 
    Copyright (C) Jelmer Vernooij 2005
    Copyright (C) Martin Kuehl <mkhl@samba.org> 2006
-	Development sponsored by the Google Summer of Code program
 
-     ** NOTE! The following LGPL license applies to the ldb
-     ** library. This does NOT imply that all of Samba is released
-     ** under the LGPL
+   * NOTICE: this module is NOT released under the GNU LGPL license as
+   * other ldb code. This module is release under the GNU GPL v2 or
+   * later license.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
    
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307	 USA
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 #ifndef __LDB_MAP_H__
@@ -130,6 +129,11 @@ struct ldb_map_context {
 	struct ldb_map_attribute *attribute_maps;
 	/* NOTE: Always declare base classes first here */
 	const struct ldb_map_objectclass *objectclass_maps;
+
+	/* Remote (often operational) attributes that should be added
+	 * to any wildcard search */
+	const char * const *wildcard_attributes;
+
 	/* struct ldb_context *mapped_ldb; */
 	const struct ldb_dn *local_base_dn;
 	const struct ldb_dn *remote_base_dn;
@@ -141,12 +145,11 @@ struct map_private {
 	struct ldb_map_context *context;
 };
 
-/* initialization function */
-int
-ldb_map_init(struct ldb_module *module,
-	     const struct ldb_map_attribute *attrs,
-	     const struct ldb_map_objectclass *ocls,
-	     const char *name);
+/* Initialize global private data. */
+int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attrs, 
+		 const struct ldb_map_objectclass *ocls,
+		 const char * const *wildcard_attributes,
+		 const char *name);
 
 /* get copy of map_ops */
 struct ldb_module_ops

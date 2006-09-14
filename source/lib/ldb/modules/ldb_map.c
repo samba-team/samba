@@ -432,6 +432,30 @@ const char *map_attr_map_remote(void *mem_ctx, const struct ldb_map_attribute *m
 	return talloc_strdup(mem_ctx, map->local_name);
 }
 
+
+/* Merge two lists of attributes into a single one. */
+int map_attrs_merge(struct ldb_module *module, void *mem_ctx, const char ***attrs, const char * const *more_attrs)
+{
+	int i, j, k;
+
+	for (i = 0; *attrs && (*attrs)[i]; i++) /* noop */ ;
+	for (j = 0; more_attrs && more_attrs[j]; j++) /* noop */ ;
+
+	*attrs = talloc_realloc(mem_ctx, *attrs, const char *, i+j+1);
+	if (*attrs == NULL) {
+		map_oom(module);
+		return -1;
+	}
+
+	for (k = 0; k < j; k++) {
+		(*attrs)[i+k] = more_attrs[k];
+	}
+
+	(*attrs)[i+k] = NULL;
+
+	return 0;
+}
+
 /* Mapping ldb values
  * ================== */
 
@@ -1226,7 +1250,10 @@ static int map_init_dns(struct ldb_module *module, struct ldb_map_context *data,
 }
 
 /* Store attribute maps and objectClass maps in private data. */
-static int map_init_maps(struct ldb_module *module, struct ldb_map_context *data, const struct ldb_map_attribute *attrs, const struct ldb_map_objectclass *ocls)
+static int map_init_maps(struct ldb_module *module, struct ldb_map_context *data, 
+			 const struct ldb_map_attribute *attrs, 
+			 const struct ldb_map_objectclass *ocls, 
+			 const char * const *wildcard_attributes)
 {
 	int i, j, last;
 	last = 0;
@@ -1261,6 +1288,8 @@ static int map_init_maps(struct ldb_module *module, struct ldb_map_context *data
 	/* Store list of objectClass maps */
 	data->objectclass_maps = ocls;
 
+	data->wildcard_attributes = wildcard_attributes;
+
 	return LDB_SUCCESS;
 }
 
@@ -1271,7 +1300,10 @@ struct ldb_module_ops ldb_map_get_ops(void)
 }
 
 /* Initialize global private data. */
-int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attrs, const struct ldb_map_objectclass *ocls, const char *name)
+int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attrs, 
+		 const struct ldb_map_objectclass *ocls,
+		 const char * const *wildcard_attributes,
+		 const char *name)
 {
 	struct map_private *data;
 	int ret;
@@ -1299,7 +1331,7 @@ int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attr
 	}
 
 	/* Store list of attribute and objectClass maps */
-	ret = map_init_maps(module, data->context, attrs, ocls);
+	ret = map_init_maps(module, data->context, attrs, ocls, wildcard_attributes);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(data);
 		return ret;
