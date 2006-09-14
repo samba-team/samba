@@ -162,3 +162,31 @@ void flush_negative_conn_cache( void )
 	}
 
 }
+
+/****************************************************************************
+ Remove all negative entries for a domain. Used when going to online state in
+ winbindd.
+****************************************************************************/
+ 
+void flush_negative_conn_cache_for_domain(const char *domain)
+{
+	struct failed_connection_cache *fcc;
+	
+	fcc = failed_connection_cache;
+
+	while (fcc) {
+		struct failed_connection_cache *fcc_next;
+
+		fcc_next = fcc->next;
+
+		if (strequal(fcc->domain_name, domain)) {
+			DEBUG(10,("flush_negative_conn_cache_for_domain: removed server %s "
+				" from failed cache for domain %s\n",
+				fcc->controller, domain));
+			DLIST_REMOVE(failed_connection_cache, fcc);
+			free(fcc);
+		}
+
+		fcc = fcc_next;
+	}
+}
