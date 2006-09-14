@@ -143,8 +143,8 @@ sub ParseInterface($)
 	pidl "}";
 	pidl "";
 
-	pidl_hdr "NTSTATUS rpc_netdfs_init(void);";
-	pidl "NTSTATUS rpc_netdfs_init(void)";
+	pidl_hdr "NTSTATUS rpc_$if->{NAME}_init(void);";
+	pidl "NTSTATUS rpc_$if->{NAME}_init(void)";
 	pidl "{";
 	pidl "\treturn rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, \"$if->{NAME}\", \"$if->{NAME}\", api_$if->{NAME}_cmds, sizeof(api_$if->{NAME}_cmds) / sizeof(struct api_struct));";
 	pidl "}";
