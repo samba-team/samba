@@ -47,7 +47,38 @@ dnl Add #include for broken IRIX header files
 case "$host_os" in
 	*irix6*) AC_ADD_INCLUDE(<standards.h>)
 		;;
+	*hpux*)
+		# mmap on HPUX is completely broken...
+		AC_DEFINE(MMAP_BLACKLIST, 1, [Whether MMAP is broken])
+		;;
+	*aix*)
+		if test "${GCC}" != "yes"; then
+			## for funky AIX compiler using strncpy()
+			CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
+		fi
+		;;
+	#
+	# VOS may need to have POSIX support and System V compatibility enabled.
+	#
+	*vos*)
+		case "$CFLAGS" in
+			*-D_POSIX_C_SOURCE*);;
+			*)
+				CFLAGS="$CFLAGS -D_POSIX_C_SOURCE=200112L"
+				AC_DEFINE(_POSIX_C_SOURCE, 200112L, [Whether to enable POSIX support])
+				;;
+		esac
+		case "$CFLAGS" in
+			*-D_SYSV*|*-D_SVID_SOURCE*);;
+			*)
+				CFLAGS="$CFLAGS -D_SYSV"
+				AC_DEFINE(_SYSV, 1, [Whether to enable System V compatibility])
+				;;
+		esac
+		;;
 esac
+
+
 
 AC_CHECK_HEADERS([standards.h])
 
