@@ -788,6 +788,10 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 	struct cache_entry *centry;
 	fstring sid_string;
 
+	if (is_null_sid(&sid)) {
+		return;
+	}
+
 	centry = centry_start(domain, status);
 	if (!centry)
 		return;
@@ -806,6 +810,10 @@ static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WI
 {
 	struct cache_entry *centry;
 	fstring sid_string;
+
+	if (is_null_sid(&info->user_sid)) {
+		return;
+	}
 
 	centry = centry_start(domain, status);
 	if (!centry)
