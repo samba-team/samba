@@ -144,7 +144,7 @@ void set_domain_offline(struct winbindd_domain *domain)
  Set domain online - if allowed.
 ****************************************************************/
 
-void set_domain_online(struct winbindd_domain *domain)
+static void set_domain_online(struct winbindd_domain *domain)
 {
 	struct timeval now;
 
@@ -160,8 +160,33 @@ void set_domain_online(struct winbindd_domain *domain)
 	/* If we are waiting to get a krb5 ticket, trigger immediately. */
 	GetTimeOfDay(&now);
 	set_event_dispatch_time("krb5_ticket_gain_handler", now);
-
 	domain->online = True;
+}
+
+/****************************************************************
+ Request init_dc_connection to set a domain online.
+****************************************************************/
+
+void set_domain_online_request(struct winbindd_domain *domain)
+{
+	DEBUG(10,("set_domain_online_request: called for domain %s\n",
+		domain->name ));
+
+	if (get_global_winbindd_state_offline()) {
+		DEBUG(10,("set_domain_online_request: domain %s remaining globally offline\n",
+			domain->name ));
+		return;
+	}
+
+	/* If we were called from a message request, initiate
+	   a DC connection immediately. */
+
+	init_dc_connection(domain);
+
+	if (domain->online == False) {
+		DEBUG(10,("set_domain_online_request: failed to init connection to DC. "
+			"Domain %s staying offline.\n", domain->name ));
+	}
 }
 
 /****************************************************************
@@ -1083,21 +1108,26 @@ void close_conns_after_fork(void)
 static BOOL connection_ok(struct winbindd_domain *domain)
 {
 	if (domain->conn.cli == NULL) {
-		DEBUG(8, ("Connection to %s for domain %s has NULL "
+		DEBUG(8, ("connection_ok: Connection to %s for domain %s has NULL "
 			  "cli!\n", domain->dcname, domain->name));
 		return False;
 	}
 
 	if (!domain->conn.cli->initialised) {
-		DEBUG(3, ("Connection to %s for domain %s was never "
+		DEBUG(3, ("connection_ok: Connection to %s for domain %s was never "
 			  "initialised!\n", domain->dcname, domain->name));
 		return False;
 	}
 
 	if (domain->conn.cli->fd == -1) {
-		DEBUG(3, ("Connection to %s for domain %s has died or was "
+		DEBUG(3, ("connection_ok: Connection to %s for domain %s has died or was "
 			  "never started (fd == -1)\n", 
 			  domain->dcname, domain->name));
+		return False;
+	}
+
+	if (domain->online == False) {
+		DEBUG(3, ("connection_ok: Domain %s is offline\n", domain->name));
 		return False;
 	}
 

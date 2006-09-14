@@ -608,13 +608,13 @@ static void child_msg_online(int msg_type, struct process_id src, void *buf, siz
 
 	winbindd_flush_nscd_cache();
 
-	/* Mark everything online - delete any negative cache entries
-	   to force a reconnect on the next query from the parent to this child. */
+	/* Try and mark everything online - delete any negative cache entries
+	   to force a reconnect now. */
 
 	for (domain = domain_list(); domain; domain = domain->next) {
 		DEBUG(5,("child_msg_online: marking %s online.\n", domain->name));
-		set_domain_online(domain);
 		winbindd_flush_negative_conn_cache(domain);
+		set_domain_online_request(domain);
 	}
 }
 
