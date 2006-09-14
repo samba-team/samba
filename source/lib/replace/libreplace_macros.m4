@@ -282,9 +282,9 @@ AC_DEFUN(AC_VERIFY_C_PROTOTYPE,
 		}
 	],[
 		AS_TR_SH([ac_cv_c_prototype_$1])=yes
-		$3
 	],[
 		AS_TR_SH([ac_cv_c_prototype_$1])=no
-		$4
 	])
-)])
+)
+AS_IF([test $AS_TR_SH([ac_cv_c_prototype_$1]) = yes],[$3],[$4])
+])
