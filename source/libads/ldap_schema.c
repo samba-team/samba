@@ -181,7 +181,7 @@ static ADS_STATUS ads_schema_path(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **s
  * Check for "Services for Unix" or rfc2307 Schema and load some attributes into the ADS_STRUCT
  * @param ads connection to ads server
  * @param enum mapping type
- * @return BOOL status of search (False if one or more attributes couldn't be
+ * @return ADS_STATUS status of search (False if one or more attributes couldn't be
  * found in Active Directory)
  **/ 
 ADS_STATUS ads_check_posix_schema_mapping(ADS_STRUCT *ads, enum wb_posix_mapping map_type) 
@@ -191,7 +191,6 @@ ADS_STATUS ads_check_posix_schema_mapping(ADS_STRUCT *ads, enum wb_posix_mapping
 	char **oids_out, **names_out;
 	size_t num_names;
 	char *schema_path = NULL;
-	ADS_STRUCT *ads_s = ads;
 	int i;
 
 	const char *oids_sfu[] = { 	ADS_ATTR_SFU_UIDNUMBER_OID,
@@ -234,22 +233,6 @@ ADS_STATUS ads_check_posix_schema_mapping(ADS_STRUCT *ads, enum wb_posix_mapping
 	ctx = talloc_init("ads_check_posix_schema_mapping");
 	if (ctx == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	/* establish a new ldap tcp session if necessary */
-
-	if (!ads->ld) {
-		if ((ads_s = ads_init(ads->server.realm, ads->server.workgroup, 
-				      ads->server.ldap_server)) == NULL) {
-			status = ADS_ERROR(LDAP_SERVER_DOWN);
-			goto done;
-		}
-
-		ads_s->auth.flags = ADS_AUTH_ANON_BIND;
-		status = ads_connect(ads_s);
-		if (!ADS_ERR_OK(status)) {
-			goto done;
-		}
 	}
 
 	status = ads_schema_path(ads, ctx, &schema_path);
@@ -321,10 +304,6 @@ ADS_STATUS ads_check_posix_schema_mapping(ADS_STRUCT *ads, enum wb_posix_mapping
 	
 	ads->schema.map_type = map_type;
 done:
-	/* free any temporary ads connections */
-	if (ads_s != ads) {
-		ads_destroy(&ads_s);
-	}
 	if (ctx) {
 		talloc_destroy(ctx);
 	}
