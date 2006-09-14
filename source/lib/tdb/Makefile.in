@@ -74,7 +74,7 @@ clean:
 
 distclean: clean
 	rm -f *~ */*~
-	rm -f config.log config.status include/config.h
+	rm -f config.log config.status include/config.h config.cache
 	rm -f Makefile
 
 realdistclean: distclean

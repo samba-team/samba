@@ -121,7 +121,7 @@ clean:
 distclean: clean
 	rm -f *~ */*~
 	rm -rf bin lib
-	rm -f config.log config.status include/config.h
+	rm -f config.log config.status config.cache include/config.h
 	rm -f ldb.pc
 	rm -f Makefile
 
