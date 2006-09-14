@@ -51,6 +51,6 @@
         NTSTATUS unixinfo_GetPWUid (
 		[in,out,ref,range(0,1023)] uint32 *count,
 		[in,size_is(*count)] hyper uids[],
-		[out,size_is(*count)] unixinfo_GetPWUidInfo *infos
+		[out,size_is(*count)] unixinfo_GetPWUidInfo infos[*]
         );
 }
