@@ -50,8 +50,14 @@ static int ldb_read_data_file(void *mem_ctx, struct ldb_val *value)
 	int count, size, bytes;
 	int ret;
 	int f;
+	const char *fname = (const char *)value->data;
 
-	f = open((const char *)value->data, O_RDONLY);
+	if (strncmp(fname, "file://", 7) != 0) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+	fname += 7;
+
+	f = open(fname, O_RDONLY);
 	if (f == -1) {
 		return -1;
 	}
