@@ -11,7 +11,7 @@ AC_SUBST(POPT_CFLAGS)
 if test x"$INCLUDED_POPT" != x"yes"; then
 	AC_CHECK_HEADERS(popt.h)
 	AC_CHECK_LIB(popt, poptGetContext, [ POPT_LIBS="-lpopt" ])
-	if test x"$ac_cv_header_popt_h" = x"no"; then
+	if test x"$ac_cv_header_popt_h" = x"no" -o x"$ac_cv_lib_popt_poptGetContext" = x"no"; then
 		INCLUDED_POPT=yes
 		POPT_CFLAGS=""
 	else
