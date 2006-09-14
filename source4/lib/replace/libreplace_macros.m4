@@ -268,3 +268,23 @@ dnl AS_HELP_STRING is not available in autoconf 2.57, and AC_HELP_STRING is depr
 dnl in autoconf 2.59, so define AS_HELP_STRING to be AC_HELP_STRING unless it is already
 dnl defined.
 m4_ifdef([AS_HELP_STRING], , [m4_define([AS_HELP_STRING], m4_defn([AC_HELP_STRING]))])
+
+dnl check if the prototype in the header matches the given one
+dnl AC_VERIFY_C_PROTOTYPE(prototype,functionbody,[IF-TRUE].[IF-FALSE],[extraheaders])
+AC_DEFUN(AC_VERIFY_C_PROTOTYPE,
+[AC_CACHE_CHECK([for prototype $1], AS_TR_SH([ac_cv_c_prototype_$1]),
+	AC_COMPILE_IFELSE([
+		AC_INCLUDES_DEFAULT
+		$5
+		$1
+		{
+			$2
+		}
+	],[
+		AS_TR_SH([ac_cv_c_prototype_$1])=yes
+		$3
+	],[
+		AS_TR_SH([ac_cv_c_prototype_$1])=no
+		$4
+	])
+)])
