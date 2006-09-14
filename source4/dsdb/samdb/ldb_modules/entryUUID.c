@@ -284,11 +284,11 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 		}
 	},
 	{
-		.local_name = "samAccountType",
+		.local_name = "sAMAccountType",
 		.type = MAP_CONVERT,
 		.u = {
 			.convert = {
-				 .remote_name = "samAccountType",
+				 .remote_name = "sAMAccountType",
 				 .convert_local = normalise_to_signed32,
 				 .convert_remote = val_copy,
 			 },
