@@ -26,6 +26,30 @@ sub fatal($$) { my ($e,$s) = @_; die("$e->{ORIGINAL}->{FILE}:$e->{ORIGINAL}->{LI
 sub warning($$) { my ($e,$s) = @_; warn("$e->{ORIGINAL}->{FILE}:$e->{ORIGINAL}->{LINE}: $s\n"); }
 sub fn_declare($) { my ($n) = @_; pidl $n; pidl_hdr "$n;"; }
 
+sub AllocOutVar($$$$)
+{
+	my ($e, $mem_ctx, $name, $env) = @_;
+
+	my $l = $e->{LEVELS}[0];
+
+	if ($l->{TYPE} eq "POINTER") {
+		$l = GetNextLevel($e, $l);
+	}
+
+	if ($l->{TYPE} eq "ARRAY") {
+		my $size = ParseExpr($l->{SIZE_IS}, $env);
+		pidl "$name = talloc_array_size($mem_ctx, sizeof(*$name), $size);";
+	} else {
+		pidl "$name = talloc_size($mem_ctx, sizeof(*$name));";
+	}
+
+	pidl "if ($name == NULL) {";
+	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\treturn False;";
+	pidl "}";
+	pidl "";
+}
+
 sub ParseFunction($$)
 {
 	my ($if,$fn) = @_;
@@ -56,12 +80,21 @@ sub ParseFunction($$)
 	pidl "\treturn False;";
 	pidl "}";
 	pidl "";
+
+	my %env = ();
+	foreach (@{$fn->{ELEMENTS}}) {
+		next unless (grep (/in/, @{$_->{DIRECTION}}));
+		$env{$_->{NAME}} = "r.in.$_->{NAME}";
+	}
+
 	my $proto = "_$fn->{NAME}(pipes_struct *p";
 	my $ret = "_$fn->{NAME}(p";
 	foreach (@{$fn->{ELEMENTS}}) {
 		my @dir = @{$_->{DIRECTION}};
 		if (grep(/in/, @dir) and grep(/out/, @dir)) {
 			pidl "r.out.$_->{NAME} = r.in.$_->{NAME};";
+		} elsif (grep(/out/, @dir)) {
+			AllocOutVar($_, "mem_ctx", "r.out.$_->{NAME}", \%env);
 		}
 		if (grep(/in/, @dir)) { $ret .= ", r.in.$_->{NAME}"; }
 		else { $ret .= ", r.out.$_->{NAME}"; }
