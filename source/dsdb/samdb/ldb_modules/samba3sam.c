@@ -866,7 +866,7 @@ static int samba3sam_init(struct ldb_module *module)
 {
         int ret;
 
-	ret = ldb_map_init(module, samba3_attributes, samba3_objectclasses, "samba3sam");
+	ret = ldb_map_init(module, samba3_attributes, samba3_objectclasses, NULL, "samba3sam");
         if (ret != LDB_SUCCESS)
                 return ret;
 
