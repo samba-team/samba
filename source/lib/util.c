@@ -2848,7 +2848,7 @@ void name_to_fqdn(fstring fqdn, const char *name)
 			DEBUG(1, ("WARNING: your /etc/hosts file may be broken!\n"));
 			DEBUGADD(1, ("    Specifing the machine hostname for address 127.0.0.1 may lead\n"));
 			DEBUGADD(1, ("    to Kerberos authentication probelms as localhost.localdomain\n"));
-			DEBUGADD(1, ("    may end up to be used instead of the real machine FQDN.\n"));
+			DEBUGADD(1, ("    may end up being used instead of the real machine FQDN.\n"));
 			full = hp->h_name;
 		}
 			
