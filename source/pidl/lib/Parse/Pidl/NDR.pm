@@ -543,9 +543,10 @@ sub ParseFunction($$$)
 		push (@{$e->{DIRECTION}}, "in") if (has_property($x, "in"));
 		push (@{$e->{DIRECTION}}, "out") if (has_property($x, "out"));
 
-		nonfatal($x, "`$e->{NAME}' is [out] argument but not a pointer")
-			if ($e->{LEVELS}[0]->{TYPE} ne "POINTER") and 
-			    grep(/out/, @{$e->{DIRECTION}});
+		nonfatal($x, "`$e->{NAME}' is [out] argument but not a pointer or array")
+			if ($e->{LEVELS}[0]->{TYPE} ne "POINTER" and 
+				$e->{LEVELS}[0]->{TYPE} ne "ARRAY" and
+			    grep(/out/, @{$e->{DIRECTION}}));
 
 		push (@elements, $e);
 	}
