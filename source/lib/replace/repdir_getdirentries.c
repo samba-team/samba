@@ -91,7 +91,9 @@ struct dirent *readdir(DIR *dir)
 	struct dirent *de;
 
 	if (d->ofs >= d->nbytes) {
-		d->nbytes = getdirentries(d->fd, d->buf, DIR_BUF_SIZE, &d->seekpos);
+		long pos;
+		d->nbytes = getdirentries(d->fd, d->buf, DIR_BUF_SIZE, &pos);
+		d->seekpos = pos;
 		d->ofs = 0;
 	}
 	if (d->ofs >= d->nbytes) {
@@ -121,8 +123,9 @@ long telldir(DIR *dir)
 void seekdir(DIR *dir, long ofs)
 {
 	struct dir_buf *d = (struct dir_buf *)dir;
+	long pos;
 	d->seekpos = lseek(d->fd, ofs & ~(DIR_BUF_SIZE-1), SEEK_SET);
-	d->nbytes = getdirentries(d->fd, d->buf, DIR_BUF_SIZE, &d->seekpos);
+	d->nbytes = getdirentries(d->fd, d->buf, DIR_BUF_SIZE, &pos);
 	d->ofs = 0;
 	while (d->ofs < (ofs & (DIR_BUF_SIZE-1))) {
 		if (readdir(dir) == NULL) break;
