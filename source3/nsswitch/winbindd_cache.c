@@ -788,7 +788,7 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 	struct cache_entry *centry;
 	fstring sid_string;
 
-	if (is_null_sid(&sid)) {
+	if (is_null_sid(sid)) {
 		return;
 	}
 
