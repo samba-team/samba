@@ -118,6 +118,11 @@ system:anonymous = true
 	cifs:password = $PASSWORD
 	cifs:domain = $DOMAIN
 	cifs:share = tmp
+
+[cifsposixtestshare]
+	read only = no
+	ntvfs handler = cifsposix
+	path = $TMPDIR
 EOF
 
 ## Override default srahes_config.ldb file

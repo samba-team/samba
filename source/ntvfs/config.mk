@@ -29,16 +29,16 @@ OBJ_FILES = \
 ################################################
 
 ################################################
-# Start MODULE ntvfs_cifs_posix_cli
-[MODULE::ntvfs_cifs_posix]
-ENABLE = NO
+# Start MODULE ntvfs_cifsposix
+[MODULE::ntvfs_cifsposix]
+#ENABLE = NO
 INIT_FUNCTION = ntvfs_cifs_posix_init
 SUBSYSTEM = ntvfs
 PRIVATE_PROTO_HEADER = cifs_posix_cli/proto.h
 OBJ_FILES = \
-                cifs_posix_cli/vfs_simple.o \
+                cifs_posix_cli/vfs_cifs_posix.o \
                 cifs_posix_cli/svfs_util.o
-# End MODULE ntvfs_cifs_posix_cli
+# End MODULE ntvfs_cifsposix
 ################################################
 
 ################################################
