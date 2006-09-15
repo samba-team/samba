@@ -76,8 +76,6 @@ static NTSTATUS svfs_connect(struct ntvfs_module_context *ntvfs,
 
 	ntvfs->private_data = private;
 
-	DEBUG(0,("WARNING: ntvfs simple: connect to share [%s] with ROOT privileges!!!\n",sharename));
-
 	return NT_STATUS_OK;
 }
 
