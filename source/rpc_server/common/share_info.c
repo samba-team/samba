@@ -87,7 +87,7 @@ const char *dcesrv_common_get_share_path(TALLOC_CTX *mem_ctx, struct dcesrv_cont
 		return talloc_strdup(mem_ctx, "");
 	}
 
-	p = talloc_strdup(mem_ctx, share_string_option(scfg, SHARE_PATH, ""));
+	p = talloc_strdup(mem_ctx, share_string_option(scfg, SHARE_PATH, "/"));
 	if (!p) {
 		return NULL;
 	}
