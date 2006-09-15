@@ -205,7 +205,7 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PI_WINREG		6
 #define PI_SPOOLSS		7
 #define PI_NETDFS		8
-#define PI_ECHO 		9
+#define PI_RPCECHO 		9
 #define PI_INITSHUTDOWN		10
 #define PI_SVCCTL		11
 #define PI_EVENTLOG 		12

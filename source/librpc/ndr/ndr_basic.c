@@ -492,11 +492,8 @@ NTSTATUS ndr_push_sptr_ptr(struct ndr_push *ndr, const void *p)
 /*
   push always a 0, if a pointer is NULL it's a fatal error
 */
-NTSTATUS ndr_push_ref_ptr(struct ndr_push *ndr, const void *p)
+NTSTATUS ndr_push_ref_ptr(struct ndr_push *ndr)
 {
-	if (p == NULL) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
 	return ndr_push_uint32(ndr, NDR_SCALARS, 0xAEF1AEF1);
 }
 
