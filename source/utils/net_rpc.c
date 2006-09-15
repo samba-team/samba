@@ -5133,7 +5133,7 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
 
 static int rpc_shutdown_abort(int argc, const char **argv) 
 {
-	int rc = run_rpc_command(NULL, PI_SHUTDOWN, 0, 
+	int rc = run_rpc_command(NULL, PI_INITSHUTDOWN, 0, 
 				 rpc_shutdown_abort_internals,
 				 argc, argv);
 
@@ -5282,7 +5282,7 @@ static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 
 static int rpc_shutdown(int argc, const char **argv) 
 {
-	int rc = run_rpc_command(NULL, PI_SHUTDOWN, 0, 
+	int rc = run_rpc_command(NULL, PI_INITSHUTDOWN, 0, 
 				 rpc_init_shutdown_internals,
 				 argc, argv);
 

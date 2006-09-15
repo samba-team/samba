@@ -45,7 +45,7 @@ NTSTATUS rpccli_shutdown_init(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	init_shutdown_q_init(&q, msg, timeout, do_reboot, force);
 
-	CLI_DO_RPC(cli, mem_ctx, PI_SHUTDOWN, SHUTDOWN_INIT,
+	CLI_DO_RPC(cli, mem_ctx, PI_INITSHUTDOWN, SHUTDOWN_INIT,
 		q, r,
 		qbuf, rbuf,
 		shutdown_io_q_init,
@@ -78,7 +78,7 @@ NTSTATUS rpccli_shutdown_init_ex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 
 	init_shutdown_q_init_ex(&q, msg, timeout, do_reboot, force, reason);
 
-	CLI_DO_RPC(cli, mem_ctx, PI_SHUTDOWN, SHUTDOWN_INIT_EX,
+	CLI_DO_RPC(cli, mem_ctx, PI_INITSHUTDOWN, SHUTDOWN_INIT_EX,
 		q, r,
 		qbuf, rbuf,
 		shutdown_io_q_init_ex,
@@ -107,7 +107,7 @@ NTSTATUS rpccli_shutdown_abort(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 
 	init_shutdown_q_abort(&q);
 
-	CLI_DO_RPC(cli, mem_ctx, PI_SHUTDOWN, SHUTDOWN_ABORT,
+	CLI_DO_RPC(cli, mem_ctx, PI_INITSHUTDOWN, SHUTDOWN_ABORT,
 		q, r,
 		qbuf, rbuf,
 		shutdown_io_q_abort,
