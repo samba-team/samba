@@ -107,8 +107,10 @@ START=`date`
  bin/nmblookup $CONFIGURATION -U $SERVER $NETBIOSNAME
 
 # start off with 0 failures
- failed=0
- export failed
+failed=0
+export failed
+totalfailed=0
+export totalfailed
 
  . script/tests/tests_$TESTS.sh
  exit $failed
@@ -137,4 +139,4 @@ if [ "$count" != 0 ]; then
     done
 fi
 
-teststatus $ARG0 $failed
+teststatus $ARG0 $totalfailed
