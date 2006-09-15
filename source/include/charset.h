@@ -26,6 +26,9 @@ typedef enum {CH_UCS2=0, CH_UTF16=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=
 #ifndef strlen_m
 #define strlen_m strlen
 #endif
+#ifndef strlen_m_term
+#define strlen_m_term strlen
+#endif
 
 
 #define NUM_CHARSETS 5
