@@ -455,7 +455,7 @@ static WERROR srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		NTSTATUS nterr;
 		struct share_info *info;
 		struct share_context *sctx;
-		
+
 		nterr = share_get_context(mem_ctx, &sctx);
 		if (!NT_STATUS_IS_OK(nterr)) {
 			return ntstatus_to_werror(nterr);
@@ -481,14 +481,17 @@ static WERROR srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		}
 		W_ERROR_HAVE_NO_MEMORY(info->type);
 
-		/* Windows will send a path in a form of C:\example\path */
-		if (r->in.info.info502->path[1] == ':') {
-			info->path = talloc_strdup(info, &r->in.info.info502->path[2]);
-		} else {
-			info->path = talloc_strdup(info, r->in.info.info502->path);
+		if (r->in.info.info502->path && r->in.info.info502->path[0]) {
+			/* Windows will send a path in a form of C:\example\path */
+			if (strncmp(r->in.info.info502->path, "C:", 2) == 0) {
+				info->path = talloc_strdup(info, &r->in.info.info502->path[2]);
+			} else {
+				/* very strange let's try to set as is */
+				info->path = talloc_strdup(info, r->in.info.info502->path);
+			}
+			W_ERROR_HAVE_NO_MEMORY(info->path);
+			all_string_sub(info->path, "\\", "/", 0);
 		}
-		W_ERROR_HAVE_NO_MEMORY(info->path);
-		all_string_sub(info->path, "\\", "/", 0);
 
 		if (r->in.info.info502->comment && r->in.info.info502->comment[0]) {
 			info->comment = talloc_strdup(info, r->in.info.info502->comment);
@@ -998,7 +1001,67 @@ static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareSetInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	NTSTATUS nterr;
+	struct share_context *sctx = NULL;
+	struct share_config *scfg = NULL;
+
+	ZERO_STRUCT(r->out);
+
+	/* TODO: - access check
+	 */
+
+	if (strcmp("", r->in.share_name) == 0) {
+		return WERR_INVALID_PARAM;
+	}
+
+	nterr = share_get_context(mem_ctx, &sctx);
+	if (!NT_STATUS_IS_OK(nterr)) {
+		return ntstatus_to_werror(nterr);
+	}
+
+	switch (r->in.level) {
+	case 0:
+	{
+		return WERR_NOT_SUPPORTED;
+	}
+	case 1:
+	{
+		return WERR_NOT_SUPPORTED;
+	}
+	case 2:
+	{
+		return WERR_NOT_SUPPORTED;
+	}
+	case 501:
+	{
+		return WERR_NOT_SUPPORTED;
+	}
+	case 502:
+	{
+		return WERR_NOT_SUPPORTED;
+	}
+	case 1004:
+	{
+		WERROR status;
+		union srvsvc_NetShareInfo info;
+
+		/* r->out.info.comment; */
+		return WERR_NOT_SUPPORTED;
+	}
+	case 1005:
+	{
+		WERROR status;
+		union srvsvc_NetShareInfo info;
+
+		/* r->out.info.dfs_flags; */
+		
+		return WERR_NOT_SUPPORTED;
+	}
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -1018,6 +1081,13 @@ static WERROR srvsvc_NetShareDelSticky(struct dcesrv_call_state *dce_call, TALLO
 static WERROR srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareCheck *r)
 {
+	NTSTATUS nterr;
+	struct share_context *sctx = NULL;
+	struct share_config *scfg = NULL;
+	char *device;
+	const char **names;
+	int count, i;
+
 	ZERO_STRUCT(r->out);
 
 	/* TODO: - access check
@@ -1028,12 +1098,57 @@ static WERROR srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TALLOC_CT
 		return WERR_OK;
 	}
 
-	if (strcmp("C:\\", r->in.device_name) == 0) {
-		r->out.type = STYPE_DISKTREE;
-		return WERR_OK;
+	/* copy the path skipping C:\ */
+	if (strncasecmp(r->in.device_name, "C:", 2) == 0) {
+		device = talloc_strdup(mem_ctx, &r->in.device_name[2]);
+	} else {
+		/* no chance we have a share that doesn't start with C:\ */
+		return WERR_DEVICE_NOT_SHARED;
+	}
+	all_string_sub(device, "\\", "/", 0);
+
+	nterr = share_get_context(mem_ctx, &sctx);
+	if (!NT_STATUS_IS_OK(nterr)) {
+		return ntstatus_to_werror(nterr);
 	}
 
-	/* TODO: - lookup the share be devicename (path) */
+	nterr = share_list_all(mem_ctx, sctx, &count, &names);
+	if (!NT_STATUS_IS_OK(nterr)) {
+		return ntstatus_to_werror(nterr);
+	}
+
+	for (i = 0; i < count; i++) {
+		const char *path;
+		const char *type;
+
+		nterr = share_get_config(mem_ctx, sctx, names[i], &scfg);
+		if (!NT_STATUS_IS_OK(nterr)) {
+			return ntstatus_to_werror(nterr);
+		}
+		path = share_string_option(scfg, SHARE_PATH, NULL);
+		if (!path) continue;
+
+		if (strcmp(device, path) == 0) {		
+			type = share_string_option(scfg, SHARE_TYPE, NULL);
+			if (!type) continue;
+
+			if (strcmp(type, "DISK") == 0) {
+				r->out.type = STYPE_DISKTREE;
+				return WERR_OK;
+			}
+
+			if (strcmp(type, "IPC") == 0) {
+				r->out.type = STYPE_IPC;
+				return WERR_OK;
+			}
+
+			if (strcmp(type, "PRINTER") == 0) {
+				r->out.type = STYPE_PRINTQ;
+				return WERR_OK;
+			}
+		}
+	}
+
 	return WERR_DEVICE_NOT_SHARED;
 }
 
