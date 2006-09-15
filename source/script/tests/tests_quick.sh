@@ -9,5 +9,5 @@ $SRCDIR/script/tests/test_ldap.sh $SERVER $USERNAME $PASSWORD || failed=`expr $f
 $SRCDIR/script/tests/test_nbt.sh $SERVER || failed=`expr $failed + $?`
 $SRCDIR/script/tests/test_quick.sh //$SERVER/cifs $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
 $SRCDIR/script/tests/test_rpc_quick.sh $SERVER $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
-#$SRCDIR/script/tests/test_cifsposix.sh //$SERVER/cifsposixtestshare $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
+$SRCDIR/script/tests/test_cifsposix.sh //$SERVER/cifsposixtestshare $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
 

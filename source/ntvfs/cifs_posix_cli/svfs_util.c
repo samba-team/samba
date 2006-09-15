@@ -1,9 +1,12 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   simple NTVFS filesystem backend
+   simpler Samba VFS filesystem backend for clients which support the
+   CIFS Unix Extensions or newer CIFS POSIX protocol extensions
+
 
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Steve French 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,23 +23,23 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 /*
-  utility functions for simple backend
+  utility functions for cifs posix backend
 */
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "cvfs.h"
+#include "cifsposix.h"
+#include "system/time.h"
 #include "system/dir.h"
 #include "ntvfs/ntvfs.h"
-
 
 /*
   convert a windows path to a unix path - don't do any manging or case sensitive handling
 */
-char *cvfs_unix_path(struct ntvfs_module_context *ntvfs,
+char *cifspsx_unix_path(struct ntvfs_module_context *ntvfs,
 		     struct ntvfs_request *req, const char *name)
 {
-	struct svfs_private *private = ntvfs->private_data;
+	struct cifspsx_private *private = ntvfs->private_data;
 	char *ret;
 
 	if (*name != '\\') {
@@ -57,16 +60,16 @@ char *cvfs_unix_path(struct ntvfs_module_context *ntvfs,
   returned names are separate unix and DOS names. The returned names
   are relative to the directory
 */
-struct svfs_dir *cvfs_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request *req, const char *unix_path)
+struct cifspsx_dir *cifspsx_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request *req, const char *unix_path)
 {
 	char *p, *mask;
-	struct svfs_dir *dir;
+	struct cifspsx_dir *dir;
 	DIR *odir;
 	struct dirent *dent;
 	uint_t allocated = 0;
 	char *low_mask;
 
-	dir = talloc(mem_ctx, struct svfs_dir);
+	dir = talloc(mem_ctx, struct cifspsx_dir);
 	if (!dir) { return NULL; }
 
 	dir->count = 0;
@@ -110,7 +113,7 @@ struct svfs_dir *cvfs_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request *req, 
 		
 		if (dir->count >= allocated) {
 			allocated = (allocated + 100) * 1.2;
-			dir->files = talloc_realloc(dir, dir->files, struct svfs_dirfile, allocated);
+			dir->files = talloc_realloc(dir, dir->files, struct cifspsx_dirfile, allocated);
 			if (!dir->files) { 
 				closedir(odir);
 				return NULL;
@@ -140,22 +143,22 @@ struct svfs_dir *cvfs_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request *req, 
   returned names are separate unix and DOS names. The returned names
   are relative to the directory
 */
-struct svfs_dir *cvfs_list(struct ntvfs_module_context *ntvfs, struct ntvfs_request *req, const char *pattern)
+struct cifspsx_dir *cifspsx_list(struct ntvfs_module_context *ntvfs, struct ntvfs_request *req, const char *pattern)
 {
-	struct svfs_private *private = ntvfs->private_data;
+	struct cifspsx_private *private = ntvfs->private_data;
 	char *unix_path;
 
-	unix_path = cvfs_unix_path(ntvfs, req, pattern);
+	unix_path = cifspsx_unix_path(ntvfs, req, pattern);
 	if (!unix_path) { return NULL; }
 
-	return cvfs_list_unix(private, req, unix_path);
+	return cifspsx_list_unix(private, req, unix_path);
 }
 
 
 /*******************************************************************
 set the time on a file via file descriptor
 *******************************************************************/
-int cvfs_file_utime(int fd, struct utimbuf *times)
+int cifspsx_file_utime(int fd, struct utimbuf *times)
 {
 	char *fd_path = NULL;
 	int ret;
@@ -175,7 +178,7 @@ int cvfs_file_utime(int fd, struct utimbuf *times)
 /*
   map a unix file attrib to a DOS attribute
 */
-uint16_t cvfs_unix_to_dos_attrib(mode_t mode)
+uint16_t cifspsx_unix_to_dos_attrib(mode_t mode)
 {
 	uint16_t ret = 0;
 	if (S_ISDIR(mode)) ret |= FILE_ATTRIBUTE_DIRECTORY;
