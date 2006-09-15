@@ -1019,7 +1019,7 @@ done:
 */
 static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	const int num_dirs = 100;
+	const int num_dirs = 50;
 	int i, fnum, n;
 	char *fname, *dname;
 	BOOL ret = True;
