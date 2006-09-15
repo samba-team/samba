@@ -152,7 +152,7 @@ static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, const struct registry_key *h, co
 	/* Then, open the handle using the hive */
 
 	memset(&r, 0, sizeof(struct winreg_OpenKey));
-    r.in.handle = &(((struct rpc_key_data *)h->backend_data)->pol);
+    r.in.parent_handle = &(((struct rpc_key_data *)h->backend_data)->pol);
     init_winreg_String(&r.in.keyname, name);
     r.in.unknown = 0x00000000;
     r.in.access_mask = 0x02000000;
@@ -230,7 +230,7 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, const struct registry
 	r.in.handle = &mykeydata->pol;
 	r.in.enum_index = n;
 	r.in.name = &namebuf;
-	r.in.class = &classbuf;
+	r.in.keyclass = &classbuf;
 	r.in.last_changed_time = &change_time;
 	r.out.name = &namebuf;
 
@@ -249,7 +249,7 @@ static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, const struct registry_key *parent
 	struct winreg_CreateKey r;
 
 	init_winreg_String(&r.in.name, name);
-	init_winreg_String(&r.in.class, NULL);
+	init_winreg_String(&r.in.keyclass, NULL);
 
 	r.in.handle = parent->backend_data;
 	r.out.new_handle = talloc(mem_ctx, struct policy_handle);	
@@ -292,10 +292,10 @@ static WERROR rpc_query_key(const struct registry_key *k)
     }
                                                                                                        
     if (W_ERROR_IS_OK(r.out.result)) {
-		mykeydata->num_subkeys = r.out.num_subkeys;
-		mykeydata->num_values = r.out.num_values;
-		mykeydata->max_valnamelen = r.out.max_valnamelen;
-		mykeydata->max_valdatalen = r.out.max_valbufsize;
+		mykeydata->num_subkeys = *r.out.num_subkeys;
+		mykeydata->num_values = *r.out.num_values;
+		mykeydata->max_valnamelen = *r.out.max_valnamelen;
+		mykeydata->max_valdatalen = *r.out.max_valbufsize;
 	} 
 
 	return r.out.result;
