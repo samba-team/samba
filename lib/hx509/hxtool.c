@@ -407,9 +407,13 @@ print_certificate(hx509_context hxcontext, hx509_cert cert, int verbose)
     printf("    subject: \"%s\"\n", str);
     free(str);
 
+    printf("    keyusage: ");
     ret = hx509_cert_keyusage_print(hxcontext, cert, &str);
-    printf("    keyusage: %s\n", str);
-    free(str);
+    if (ret == 0) {
+	printf("%s\n", str);
+	free(str);
+    } else
+	printf("no");
 
     if (verbose) {
 	hx509_validate_ctx vctx;
@@ -520,9 +524,11 @@ verify_f(hx509_context hxcontext, void *ctx, hx509_cert c)
     int ret;
 
     ret = hx509_verify_path(hxcontext, v->ctx, c, v->chain);
-    if (ret)
-	printf("verify_path returned %d\n", ret);
-    else
+    if (ret) {
+	char *s = hx509_get_error_string(hxcontext, ret);
+	printf("verify_path: %s: %d\n", s, ret);
+	free(s);
+    } else
 	printf("path ok\n");
 
     return ret;
