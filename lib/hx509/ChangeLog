@@ -1,3 +1,12 @@
+2006-09-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cert.c: Add a strict rfc3280 verification flag. rfc3280 requires
+	certificates to have KeyUsage.keyCertSign if they are to be used
+	for signing of certificates, but the step in the verifiation is
+	optional.
+
+	* hxtool.c: Improve printing and error reporting.
+	
 2006-09-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_crypto.in,Makefile.am,data/bleichenbacher-{bad,good}.pem:
