@@ -50,4 +50,14 @@ echo "Bleichenbacher bad cert (from eay)"
     cert:FILE:$srcdir/data/bleichenbacher-bad.pem \
     anchor:FILE:$srcdir/data/bleichenbacher-bad.pem > /dev/null && exit 1
 
+echo "Bleichenbacher good cert (from yutaka)"
+./hxtool verify --missing-revoke \
+    cert:FILE:$srcdir/data/yutaka-pad-ok-cert.pem \
+    anchor:FILE:$srcdir/data/yutaka-pad-ok-ca.pem > /dev/null || exit 1
+
+echo "Bleichenbacher bad cert (from yutaka)"
+./hxtool verify --missing-revoke \
+    cert:FILE:$srcdir/data/yutaka-pad-broken-cert.pem \
+    anchor:FILE:$srcdir/data/yutaka-pad-broken-ca.pem > /dev/null && exit 1
+
 exit 0
