@@ -1,5 +1,3 @@
-AC_CHECK_HEADERS(sys/socket.h sys/sockio.h sys/un.h)
-
 AC_CHECK_FUNCS(writev)
 AC_CHECK_FUNCS(readv)
 
@@ -97,9 +95,6 @@ if $have_ipv6 = true; then
 fi
 dnl don't build ipv6 by default, unless the above test enables it, or
 dnl the configure uses --with-static-modules=socket_ipv6
-
-AC_CHECK_HEADERS(arpa/inet.h net/if.h netdb.h netinet/in.h sys/time.h)
-AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 
 
 ##################

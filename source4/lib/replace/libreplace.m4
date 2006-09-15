@@ -88,6 +88,33 @@ if test x"$samba_cv_HAVE_MMAP" = x"yes"; then
 fi
 
 
+AC_CHECK_HEADERS(sys/syslog.h syslog.h)
+AC_CHECK_HEADERS(sys/time.h time.h)
+AC_CHECK_HEADERS(stdarg.h vararg.h)
+AC_CHECK_HEADERS(sys/socket.h netinet/in.h netdb.h arpa/inet.h)
+AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
+AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
+
+
+dnl we need to check that net/if.h really can be used, to cope with hpux
+dnl where including it always fails
+AC_TRY_COMPILE([
+	  #include <stdio.h>
+          #if STDC_HEADERS
+          # include <stdlib.h>
+          # include <stddef.h>
+          #else
+          # if HAVE_STDLIB_H
+          #  include <stdlib.h>
+          # endif
+          #endif
+          #if HAVE_SYS_SOCKET_H
+          # include <sys/socket.h>
+          #endif],
+	  [#include <net/if.h>],
+	  AC_DEFINE(HAVE_NET_IF_H, 1, usability of net/if.h))
+
+
 AC_CACHE_CHECK([for broken inet_ntoa],samba_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
 #include <stdio.h>
@@ -117,10 +144,6 @@ AC_TRY_COMPILE([
 [socklen_t foo;],,
 [AC_DEFINE(socklen_t, int,[Socket length type])])
 
-AC_CHECK_HEADERS(sys/syslog.h syslog.h)
-AC_CHECK_HEADERS(sys/time.h time.h)
-AC_CHECK_HEADERS(sys/socket.h netinet/in.h)
-AC_CHECK_HEADERS(stdarg.h vararg.h)
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid strlcpy strlcat innetgr initgroups memmove strdup)
