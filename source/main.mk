@@ -208,14 +208,16 @@ idl: pidl/lib/Parse/Pidl/IDL.pm
 	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh PARTIAL $(PIDL_ARGS)
 
 pidl/lib/Parse/Pidl/IDL.pm: pidl/idl.yp
-	-$(YAPP) -s -m 'Parse::Pidl::IDL' -o pidl/lib/Parse/Pidl/IDL.pm pidl/idl.yp 
+	-$(YAPP) -s -m 'Parse::Pidl::IDL' -o pidl/lib/Parse/Pidl/IDL.pm pidl/idl.yp ||\
+		touch pidl/lib/Parse/Pidl/IDL.pm
 
 smb_interfaces: pidl/smb_interfaces.pm
 	$(PERL) -Ipidl $(srcdir)/script/build_smb_interfaces.pl \
 		include/smb_interfaces.h
 
 pidl/smb_interfaces.pm: pidl/smb_interfaces.yp
-	-$(YAPP) -s -m 'smb_interfaces' -o pidl/smb_interfaces.pm pidl/smb_interfaces.yp 
+	-$(YAPP) -s -m 'smb_interfaces' -o pidl/smb_interfaces.pm pidl/smb_interfaces.yp ||\
+		touch pidl/smb_interfaces.pm
 
 include/config.h:
 	@echo "include/config.h not present"
