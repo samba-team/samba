@@ -832,7 +832,6 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		return True;
 	}
 
-#ifdef WITH_ADS
 	if (sec == SEC_ADS) {
 		/* We need to make sure we know the local site before
 		   doing any DNS queries, as this will restrict the
@@ -843,17 +842,15 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		   We deliberately don't care about the
 		   return here. */
 		get_dc_name(domain->name, lp_realm(), dcname, &ip);
-        }
-#endif
 
-	/* try standard netbios queries first */
-
-	get_sorted_dc_list(domain->name, &ip_list, &iplist_size, False);
-
-	/* check for security = ads and use DNS if we can */
-
-	if ( iplist_size==0 && sec == SEC_ADS ) 
+		/* Now do the site-specific AD dns lookup. */
 		get_sorted_dc_list(domain->alt_name, &ip_list, &iplist_size, True);
+        }
+
+	/* try standard netbios queries if no ADS */
+
+	if (iplist_size==0) 
+		get_sorted_dc_list(domain->name, &ip_list, &iplist_size, False);
 
 	/* FIXME!! this is where we should re-insert the GETDC requests --jerry */
 
