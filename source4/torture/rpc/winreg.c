@@ -54,10 +54,12 @@ static BOOL test_GetVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct winreg_GetVersion r;
-
+	uint32_t v;
 	printf("\ntesting GetVersion\n");
 
+	ZERO_STRUCT(r);
 	r.in.handle = handle;
+	r.out.version = &v;
 
 	status = dcerpc_winreg_GetVersion(p, mem_ctx, &r);
 
@@ -372,10 +374,24 @@ static BOOL test_QueryInfoKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct winreg_QueryInfoKey r;
+	uint32_t num_subkeys, max_subkeylen, max_subkeysize,
+		num_values, max_valnamelen, max_valbufsize,
+		secdescsize;
+	NTTIME last_changed_time;
 
 	printf("\ntesting QueryInfoKey\n");
 
+	ZERO_STRUCT(r);
 	r.in.handle = handle;
+	r.out.num_subkeys = &num_subkeys;
+	r.out.max_subkeylen = &max_subkeylen;
+	r.out.max_subkeysize = &max_subkeysize;
+	r.out.num_values = &num_values;
+	r.out.max_valnamelen = &max_valnamelen;
+	r.out.max_valbufsize = &max_valbufsize;
+	r.out.secdescsize = &secdescsize;
+	r.out.last_changed_time = &last_changed_time;
+	
 	init_winreg_String(&r.in.class_in, class);
 	
 	status = dcerpc_winreg_QueryInfoKey(p, mem_ctx, &r);

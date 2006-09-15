@@ -211,14 +211,14 @@
 		[in,ref] policy_handle *handle,
 		[in] winreg_String class_in,
 		[out] winreg_String *class_out,
-		[out] uint32 *num_subkeys,
-		[out] uint32 *max_subkeylen,
-		[out] uint32 *max_subkeysize,
-		[out] uint32 *num_values,
-		[out] uint32 *max_valnamelen,
-		[out] uint32 *max_valbufsize,
-		[out] uint32 *secdescsize,
-		[out] NTTIME *last_changed_time
+		[out,ref] uint32 *num_subkeys,
+		[out,ref] uint32 *max_subkeylen,
+		[out,ref] uint32 *max_subkeysize,
+		[out,ref] uint32 *num_values,
+		[out,ref] uint32 *max_valnamelen,
+		[out,ref] uint32 *max_valbufsize,
+		[out,ref] uint32 *secdescsize,
+		[out,ref] NTTIME *last_changed_time
 	);
 
 	/******************/
@@ -289,8 +289,8 @@
 	/******************/
 	/* Function: 0x1a */
 	WERROR winreg_GetVersion(
-		[in,ref] policy_handle *handle,
-		[out]    uint32 *version
+		[in,ref]     policy_handle *handle,
+		[out,ref]    uint32 *version
 	);
 
 	/******************/
