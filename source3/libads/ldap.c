@@ -115,7 +115,6 @@ static int ldap_search_with_timeout(LDAP *ld,
 	return result;
 }
 
-#ifdef HAVE_KRB5
 /**********************************************
  Do client and server sitename match ?
 **********************************************/
@@ -139,7 +138,6 @@ BOOL ads_sitename_match(ADS_STRUCT *ads)
 		ads->config.client_site_name ? ads->config.client_site_name : "NULL"));
 	return False;
 }
-#endif
 
 /*
   try a connection to a given ldap server, returning True and setting the servers IP
@@ -394,8 +392,10 @@ got_connection:
 	}
 
 	/* cache the successful connection for workgroup and realm */
-	saf_store( ads->server.workgroup, inet_ntoa(ads->ldap_ip));
-	saf_store( ads->server.realm, inet_ntoa(ads->ldap_ip));
+	if (ads_sitename_match(ads)) {
+		saf_store( ads->server.workgroup, inet_ntoa(ads->ldap_ip));
+		saf_store( ads->server.realm, inet_ntoa(ads->ldap_ip));
+	}
 
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 

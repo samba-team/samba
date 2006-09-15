@@ -754,7 +754,6 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 
 		if (ads_try_connect( ads, inet_ntoa(ip) ) )  {
-			char *sitename = sitename_fetch();
 			/* We got a cldap packet. */
 			fstrcpy(name, ads->config.ldap_server_name);
 			namecache_store(name, 0x20, 1, &ip_list);
@@ -769,9 +768,12 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 				create_local_private_krb5_conf_for_domain(realm,
 								domainname,
 								ip);
+
+				/* Ensure we contact this DC also. */
+				saf_store( domainname, name);
+				saf_store( realm, name);
 			}
 #endif
-			SAFE_FREE(sitename);
 			ads_destroy( &ads );
 			return True;
 		}
