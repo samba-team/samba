@@ -34,7 +34,7 @@ interface rpcecho
 	/* test strings */
  	void echo_TestCall (
 		[in,string,charset(UTF16)]       uint16 *s1,
-		[out,string,charset(UTF16)]      uint16 *s2
+		[out,string,charset(UTF16)]      uint16 **s2
  		);
 
 
