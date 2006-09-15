@@ -119,6 +119,11 @@ system:anonymous = true
 	cifs:domain = $DOMAIN
 	cifs:share = tmp
 
+[simple]
+	path = $TMPDIR
+	read only = no
+	ntvfs handler = simple
+
 [cifsposixtestshare]
 	read only = no
 	ntvfs handler = cifsposix
