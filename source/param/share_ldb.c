@@ -263,18 +263,141 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+#define SHARE_ADD_STRING(type, data) do { \
+	err = ldb_msg_add_string(msg, type, data); \
+	if (err != LDB_SUCCESS) { \
+		DEBUG(2,("ERROR: unable to add share %s to ldb msg\n", type)); \
+		ret = NT_STATUS_UNSUCCESSFUL; \
+		goto done; \
+	} } while(0)
+
+NTSTATUS sldb_create(struct share_context *ctx, struct share_info *info)
+{
+	struct ldb_context *ldb;
+	struct ldb_message *msg;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS ret;
+	char *conns;
+	int err;
+
+	if (!info->name || !info->type || !info->path) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	tmp_ctx = talloc_new(NULL);
+	if (!tmp_ctx) {
+		DEBUG(0,("ERROR: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ldb = talloc_get_type(ctx->priv_data, struct ldb_context);
+
+	msg = ldb_msg_new(tmp_ctx);
+	if (!msg) {
+		DEBUG(0,("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	/* TODO: escape info->name */
+	msg->dn = ldb_dn_string_compose(tmp_ctx, ldb_dn_new(tmp_ctx), "CN=%s,CN=SHARES", info->name);
+	if (!msg->dn) {
+		DEBUG(0,("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	SHARE_ADD_STRING("cn", info->name);
+	SHARE_ADD_STRING("objectClass", "top");
+	SHARE_ADD_STRING("objectClass", "share");
+
+	SHARE_ADD_STRING(SHARE_NAME, info->name);
+	SHARE_ADD_STRING(SHARE_TYPE, info->type);
+	SHARE_ADD_STRING(SHARE_PATH, info->path);
+	if (strcmp(info->type, "DISK") == 0) {
+		SHARE_ADD_STRING(SHARE_NTVFS_HANDLER, "default");
+	}
+	if (info->comment) {
+		SHARE_ADD_STRING(SHARE_COMMENT, info->comment);
+	}
+
+	if (info->password) {
+		SHARE_ADD_STRING(SHARE_PASSWORD, info->password);
+	}
+
+	/* TODO: Security Descriptor */
+
+	SHARE_ADD_STRING(SHARE_AVAILABLE, "True");
+	SHARE_ADD_STRING(SHARE_BROWSEABLE, "True");
+	SHARE_ADD_STRING(SHARE_READONLY, "False");
+	conns = talloc_asprintf(tmp_ctx, "%d", info->max_users);
+	SHARE_ADD_STRING(SHARE_MAX_CONNECTIONS, conns);
+
+	err = ldb_add(ldb, msg);
+	if (err != LDB_SUCCESS) {
+		DEBUG(2,("ERROR: unable to add share %s to share.ldb\n"
+			 "       err=%d [%s]\n", info->name, err, ldb_errstring(ldb)));
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	ret = NT_STATUS_OK;
+done:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+NTSTATUS sldb_remove(struct share_context *ctx, const char *name)
+{
+	struct ldb_context *ldb;
+	struct ldb_dn *dn;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS ret;
+	int err;
+
+	tmp_ctx = talloc_new(NULL);
+	if (!tmp_ctx) {
+		DEBUG(0,("ERROR: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ldb = talloc_get_type(ctx->priv_data, struct ldb_context);
+
+	dn = ldb_dn_string_compose(tmp_ctx, ldb_dn_new(tmp_ctx), "CN=%s,CN=SHARES", name);
+	if (!dn) {
+		DEBUG(0,("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	err = ldb_delete(ldb, dn);
+	if (err != LDB_SUCCESS) {
+		DEBUG(2,("ERROR: unable to remove share %s from share.ldb\n"
+			 "       err=%d [%s]\n", name, err, ldb_errstring(ldb)));
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	ret = NT_STATUS_OK;
+done:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
 NTSTATUS share_ldb_init(void)
 {
-	struct share_ops ops;
-
-	ops.name = "ldb";
-	ops.init = sldb_init;
-	ops.string_option = sldb_string_option;
-	ops.int_option = sldb_int_option;
-	ops.bool_option = sldb_bool_option;
-	ops.string_list_option = sldb_string_list_option;
-	ops.list_all = sldb_list_all;
-	ops.get_config = sldb_get_config;
+	static struct share_ops ops = {
+		.name = "ldb",
+		.init = sldb_init,
+		.string_option = sldb_string_option,
+		.int_option = sldb_int_option,
+		.bool_option = sldb_bool_option,
+		.string_list_option = sldb_string_list_option,
+		.list_all = sldb_list_all,
+		.get_config = sldb_get_config,
+		.create = sldb_create,
+		.remove = sldb_remove
+	};
 
 	return share_register(&ops);
 }
