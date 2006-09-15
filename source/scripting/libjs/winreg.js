@@ -80,7 +80,7 @@ function __winreg_open_path(path)
 	}
 
 	io = irpcObj();
-	io.input.handle  = handle;
+	io.input.parent_handle  = handle;
 	io.input.keyname = hpath;
 	io.input.unknown = 0;
 	io.input.access_mask = this.SEC_FLAG_MAXIMUM_ALLOWED;
@@ -122,10 +122,10 @@ function __winreg_enum_path(path)
 	io.input.name.length = 0;
 	io.input.name.size   = 32;
 	io.input.name.name   = NULL;
-	io.input.class = new Object();
-	io.input.class.length = 0;
-	io.input.class.size   = 1024;
-	io.input.class.name   = NULL;
+	io.input.keyclass = new Object();
+	io.input.keyclass.length = 0;
+	io.input.keyclass.size   = 1024;
+	io.input.keyclass.name   = NULL;
 	io.input.last_changed_time = 0;
 
 	var idx = 0;
@@ -239,7 +239,7 @@ function __winreg_create_key(path, key)
 	var io = irpcObj();
 	io.input.handle = handle;
 	io.input.name = key;
-	io.input.class = NULL;
+	io.input.keyclass = NULL;
 	io.input.options = 0;
 	io.input.access_mask = this.SEC_FLAG_MAXIMUM_ALLOWED;
 	io.input.secdesc = NULL;
