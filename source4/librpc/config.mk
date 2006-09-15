@@ -618,11 +618,11 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM dcerpc
 ################################################
 
-#[MODULE::RPC_EJS_ECHO]
-#INIT_FUNCTION = ejs_init_rpcecho
-#OBJ_FILES = gen_ndr/ndr_echo_ejs.o
-#SUBSYSTEM = smbcalls
-#PUBLIC_DEPENDENCIES = dcerpc NDR_ECHO EJSRPC
+[MODULE::RPC_EJS_ECHO]
+INIT_FUNCTION = ejs_init_rpcecho
+OBJ_FILES = gen_ndr/ndr_echo_ejs.o
+SUBSYSTEM = smbcalls
+PUBLIC_DEPENDENCIES = dcerpc NDR_ECHO EJSRPC
 
 [MODULE::RPC_EJS_MISC]
 INIT_FUNCTION = ejs_init_misc
