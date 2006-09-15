@@ -222,7 +222,9 @@ test_AddOne(echo);
 test_EchoData(echo);
 test_SinkData(echo);
 test_SourceData(echo);
-test_TestCall(echo);
+
+print("SKIPPING test_TestCall as pidl cannot generate code for it\n");
+/* test_TestCall(echo); */
 test_TestCall2(echo);
 test_TestSleep(echo);
 test_TestEnum(echo);
