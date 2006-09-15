@@ -152,7 +152,9 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	return total;
 }  
 
-#elif HAVE_IFACE_IFREQ
+#define _FOUND_IFACE_ANY
+#endif /* HAVE_IFACE_IFCONF */
+#ifdef HAVE_IFACE_IFREQ
 
 #ifndef I_STR
 #include <sys/stropts.h>
@@ -247,7 +249,9 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	return total;
 }
 
-#elif HAVE_IFACE_AIX
+#define _FOUND_IFACE_ANY
+#endif /* HAVE_IFACE_IFREQ */
+#ifdef HAVE_IFACE_AIX
 
 /****************************************************************************
 this one is for AIX (tested on 4.2)
@@ -335,7 +339,9 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	return total;
 }
 
-#else /* a dummy version */
+#define _FOUND_IFACE_ANY
+#endif /* HAVE_IFACE_AIX */
+#ifndef _FOUND_IFACE_ANY
 static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 {
 	return -1;
