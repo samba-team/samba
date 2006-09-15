@@ -7,12 +7,6 @@ dnl
 
 AC_LIBREPLACE_CC_CHECKS
 
-if test x"$GCC" = x"yes" ; then
-	AC_MSG_CHECKING([for version of gcc])
-	GCC_VERSION=`$CC -dumpversion`
-	AC_MSG_RESULT(${GCC_VERSION})
-fi
-
 #
 # Set the debug symbol option if we have
 # --enable-*developer or --enable-debug
