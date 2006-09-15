@@ -204,7 +204,8 @@ sub GetElementLevelTable($)
 			}
 		} 
 		
-		if (scalar(@size_is) == 0 and has_property($e, "string")) {
+		if (scalar(@size_is) == 0 and has_property($e, "string") and 
+		    $i == $e->{POINTERS}) {
 			$is_string = 1;
 			$is_varying = $is_conformant = has_property($e, "noheader")?0:1;
 			delete($e->{PROPERTIES}->{string});
