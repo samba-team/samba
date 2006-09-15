@@ -1,9 +1,11 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   simple NTVFS filesystem backend
+   NTVFS filesystem backend for Linux CIFS client and clients which support
+   CIFS Unix extensions
 
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Steve French 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,10 +33,8 @@
 */
 
 #include "includes.h"
-#include "system/dir.h"
 #include "system/filesys.h"
 #include "cvfs.h"
-#include "system/time.h"
 #include "lib/util/dlinklist.h"
 #include "ntvfs/ntvfs.h"
 #include "ntvfs/cifs_posix_cli/proto.h"
@@ -64,6 +64,7 @@ static NTSTATUS svfs_connect(struct ntvfs_module_context *ntvfs,
 	private->open_files = NULL;
 	private->search = NULL;
 
+	DEBUG(0,("cifs backend: connect to %s",sharename));
 	/* the directory must exist */
 	if (stat(private->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
 		DEBUG(0,("'%s' is not a directory, when connecting to [%s]\n", 
@@ -790,7 +791,7 @@ static NTSTATUS svfs_search_first(struct ntvfs_module_context *ntvfs,
 	union smb_search_data file;
 	uint_t max_count;
 
-	if (io->generic.level != RAW_SEARCH_BOTH_DIRECTORY_INFO) {
+	if (io->generic.level != RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -860,7 +861,7 @@ static NTSTATUS svfs_search_next(struct ntvfs_module_context *ntvfs,
 	union smb_search_data file;
 	uint_t max_count;
 
-	if (io->generic.level != RAW_SEARCH_BOTH_DIRECTORY_INFO) {
+	if (io->generic.level != RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -1009,11 +1010,11 @@ NTSTATUS ntvfs_cifs_posix_init(void)
 	ops.cancel = svfs_cancel;
 
 	/* register ourselves with the NTVFS subsystem. We register
-	   under names 'simple'
+	   under name 'cifsposix'
 	*/
 
 	ops.type = NTVFS_DISK;
-	ops.name = "cifs-posix-cli";
+	ops.name = "cifsposix";
 	ret = ntvfs_register(&ops, &vers);
 
 	if (!NT_STATUS_IS_OK(ret)) {
