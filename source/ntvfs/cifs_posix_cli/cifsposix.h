@@ -1,5 +1,7 @@
 
-struct svfs_private {
+struct cifspsx_private {
+	struct ntvfs_module_context *ntvfs;
+
 	/* the base directory */
 	char *connectpath;
 
@@ -9,21 +11,22 @@ struct svfs_private {
 	/* next available search handle */
 	uint16_t next_search_handle;
 
-	struct svfs_file *open_files;
+	struct cifspsx_file *open_files;
 };
 
-struct svfs_dir {
+struct cifspsx_dir {
 	unsigned int count;
 	char *unix_dir;
-	struct svfs_dirfile {
+	struct cifspsx_dirfile {
 		char *name;
 		struct stat st;
 	} *files;
 };
 
-struct svfs_file {
-	struct svfs_file *next, *prev;
+struct cifspsx_file {
+	struct cifspsx_file *next, *prev;
 	int fd;
+	struct ntvfs_handle *handle;
 	char *name;
 };
 
@@ -31,5 +34,5 @@ struct search_state {
 	struct search_state *next, *prev;
 	uint16_t handle;
 	unsigned int current_index;
-	struct svfs_dir *dir;
+	struct cifspsx_dir *dir;
 };

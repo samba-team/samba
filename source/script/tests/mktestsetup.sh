@@ -126,7 +126,7 @@ system:anonymous = true
 
 [cifsposixtestshare]
 	read only = no
-	ntvfs handler = cifsposix
+	ntvfs handler = cifsposix   
 	path = $TMPDIR
 EOF
 
