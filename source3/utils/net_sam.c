@@ -387,6 +387,80 @@ static int net_sam_set(int argc, const char **argv)
 }
 
 /*
+ * Change account policies
+ */
+
+static int net_sam_policy(int argc, const char **argv)
+{
+	
+	const char *account_policy = NULL;
+	uint32 value, old_value;
+	int field;
+
+	if ((argc < 1) || (argc > 2)) {
+		d_fprintf(stderr, "usage: net sam policy \"<account policy>\" "
+			  "-> show current value\n");
+		d_fprintf(stderr, "usage: net sam policy \"<account policy>\" "
+			  "<value> -> set a new value\n");
+		return -1;
+	}
+
+	account_policy = argv[0];
+	field = account_policy_name_to_fieldnum(account_policy);
+
+	if (field == 0) {
+		char *apn = account_policy_names_list();
+		d_fprintf(stderr, "No account policy by that name!\n");
+		if (apn) {
+			d_fprintf(stderr, "Valid account policies "
+				  "are:\n%s\n", apn);
+		}
+		SAFE_FREE(apn);
+		return -1;
+	}
+
+	if (!pdb_get_account_policy(field, &old_value)) {
+		fprintf(stderr, "Valid account policy, but unable to "
+			"fetch value!\n");
+		return -1;
+	}
+
+	if (argc == 1) {
+		/*
+		 * Just read the value
+		 */
+
+		printf("Account policy \"%s\" description: %s\n",
+		       account_policy, account_policy_get_desc(field));
+		printf("Account policy \"%s\" value is: %d\n", account_policy,
+		       old_value);
+		return 0;
+	}
+
+	/*
+	 * Here we know we have 2 args, so set it
+	 */
+	
+	value = strtoul(argv[1], NULL, 10);
+
+	printf("Account policy \"%s\" description: %s\n", account_policy,
+	       account_policy_get_desc(field));
+	printf("Account policy \"%s\" value was: %d\n", account_policy,
+	       old_value);
+
+	if (!pdb_set_account_policy(field, value)) {
+		d_fprintf(stderr, "Setting account policy %s to %u failed \n",
+			  account_policy, value);
+	}
+
+	printf("Account policy \"%s\" value is now: %d\n", account_policy,
+	       value);
+
+	return 0;
+}
+
+
+/*
  * Map a unix group to a domain group
  */
 
@@ -1232,6 +1306,8 @@ int net_sam(int argc, const char **argv)
 		  "Show details of a SAM entry" },
 		{ "set", net_sam_set,
 		  "Set details of a SAM account" },
+		{ "policy", net_sam_policy,
+		  "Set account policies" },
 #ifdef HAVE_LDAP
 		{ "provision", net_sam_provision,
 		  "Provision a clean User Database" },
