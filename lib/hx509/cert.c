@@ -35,17 +35,19 @@
 RCSID("$Id$");
 #include "crypto-headers.h"
 
-
 struct hx509_verify_ctx_data {
     hx509_certs trust_anchors;
     int flags;
 #define HX509_VERIFY_CTX_F_TIME_SET			1
 #define HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE	2
+#define HX509_VERIFY_CTX_F_REQUIRE_RFC3280		4
     time_t time_now;
     unsigned int max_depth;
 #define HX509_VERIFY_MAX_DEPTH 30
     hx509_revoke_ctx revoke_ctx;
 };
+
+#define REQUIRE_RFC3280(ctx) ((ctx)->flags & HX509_VERIFY_CTX_F_REQUIRE_RFC3280)
 
 struct _hx509_cert_attrs {
     size_t len;
@@ -331,6 +333,15 @@ hx509_verify_set_proxy_certificate(hx509_verify_ctx ctx, int boolean)
 	ctx->flags |= HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE;
     else
 	ctx->flags &= ~HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE;
+}
+
+void
+hx509_verify_set_strict_rfc3280_verification(hx509_verify_ctx ctx, int boolean)
+{
+    if (boolean)
+	ctx->flags |= HX509_VERIFY_CTX_F_REQUIRE_RFC3280;
+    else
+	ctx->flags &= ~HX509_VERIFY_CTX_F_REQUIRE_RFC3280;
 }
 
 static const Extension *
@@ -752,11 +763,14 @@ find_parent(hx509_context context,
 	}
     }
 
+#if 0
     /* 
      * Assume trust anchors isn't proxy certificates, require
      * KeyUsage.KeyCertSign
      */
     q.match |= HX509_QUERY_KU_KEYCERTSIGN;
+#endif
+
     ret = hx509_certs_find(context, trust_anchors, &q, parent);
     if (ret == 0) {
 	free_AuthorityKeyIdentifier(&ai);
@@ -782,7 +796,7 @@ find_parent(hx509_context context,
 	}
 	
 	hx509_set_error_string(context, 0, HX509_ISSUER_NOT_FOUND,
-			       "Failed to find issuer for"
+			       "Failed to find issuer for "
 			       "certificate with subject: %s", str);
 	free(str);
     }
@@ -1398,7 +1412,9 @@ hx509_verify_path(hx509_context context,
 
 	switch (type) {
 	case CA_CERT:
-	    ret = check_key_usage(context, c, 1 << 5, TRUE); /* XXX make constants */
+	    /* XXX make constants for keyusage */
+	    ret = check_key_usage(context, c, 1 << 5,
+				  REQUIRE_RFC3280(ctx) ? TRUE : FALSE);
 	    if (ret)
 		goto out;
 	    break;
