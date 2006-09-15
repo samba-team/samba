@@ -100,7 +100,7 @@ testit() {
 		date
 		echo "Testing $name"
 	else
-		echo "Testing $name ($failed)"
+		echo "Testing $name (`expr $failed + $totalfailed` test failed so far)"
 	fi
 
 	smbd_check_only && SMBD_IS_UP="yes"
@@ -167,11 +167,14 @@ teststatus() {
 	name=`basename $1`
 	failed=$2
 
-	if [ x"$failed" = x"0" ];then
-		echo "TEST STATUS: $failed";
-	else
-		echo "TEST STATUS: $failed";
-	fi
+	echo "TEST STATUS: $failed failures";
+	test x"$failed" = x"0" || {
+cat <<EOF	    
+************************
+*** TESTSUITE FAILED ***
+************************
+EOF
+	}
 	exit $failed
 }
 
@@ -179,4 +182,7 @@ if [ -z "$VALGRIND" ]; then
     MALLOC_CHECK_=2
     export MALLOC_CHECK_
 fi
+
+# initialise the local failed variable to zero when starting each of the tests
+failed=0
 
