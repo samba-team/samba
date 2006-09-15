@@ -84,6 +84,9 @@ static const char *sclassic_string_option(struct share_config *scfg, const char 
 		if (lp_print_ok(s->snum)) {
 			return "PRINTER";
 		}
+		if (strcmp("NTFS", lp_fstype(s->snum)) == 0) {
+			return "DISK";
+		}
 		return lp_fstype(s->snum);
 	}
 
