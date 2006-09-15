@@ -36,6 +36,16 @@ struct share_config {
 	void *opaque;
 };
 
+struct share_info {
+	const char *name;
+	const char *type;
+	const char *path;
+	const char *comment;
+	const char *password;
+	int32_t max_users;
+	struct security_descriptor *sd;
+};
+
 struct share_ops {
 	const char *name;
 	NTSTATUS (*init)(TALLOC_CTX *, const struct share_ops*, struct share_context **);
@@ -45,8 +55,8 @@ struct share_ops {
 	const char **(*string_list_option)(TALLOC_CTX *, struct share_config *, const char *);
 	NTSTATUS (*list_all)(TALLOC_CTX *, struct share_context *, int *, const char ***);
 	NTSTATUS (*get_config)(TALLOC_CTX *, struct share_context *, const char *, struct share_config **);
-	NTSTATUS (*create_obj)(struct share_context *, const char *);
-	NTSTATUS (*delete_obj)(struct share_context *, const char *);
+	NTSTATUS (*create)(struct share_context *, struct share_info *);
+	NTSTATUS (*remove)(struct share_context *, const char *);
 };
 
 #include "param/share_proto.h"
@@ -56,14 +66,14 @@ struct share_ops {
 #define SHARE_NAME		"name"
 #define SHARE_PATH		"path"
 #define SHARE_COMMENT		"comment"
-#define SHARE_PASSWORD			"password"
+#define SHARE_PASSWORD		"password"
 #define SHARE_HOSTS_ALLOW	"hosts-allow"
 #define SHARE_HOSTS_DENY	"hosts-deny"
 #define SHARE_NTVFS_HANDLER	"ntvfs-handler"
 #define SHARE_TYPE		"type"
 #define SHARE_VOLUME		"volume"
 #define SHARE_CSC_POLICY	"csc-policy"
-#define SHARE_AVAILABLE	"available"
+#define SHARE_AVAILABLE		"available"
 #define SHARE_BROWSEABLE	"browseable"
 #define SHARE_MAX_CONNECTIONS	"max-connections"
 

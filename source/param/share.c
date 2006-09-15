@@ -54,6 +54,22 @@ NTSTATUS share_get_config(TALLOC_CTX *mem_ctx, struct share_context *sctx, const
 	return sctx->ops->get_config(mem_ctx, sctx, name, scfg);
 }
 
+NTSTATUS share_create(struct share_context *sctx, struct share_info *info)
+{
+	if (sctx->ops->create) {
+		return sctx->ops->create(sctx, info);
+	}
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS share_remove(struct share_context *sctx, const char *name)
+{
+	if (sctx->ops->remove) {
+		return sctx->ops->remove(sctx, name);
+	}
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 /* List of currently available share backends */
 static struct share_ops **backends = NULL;
 
