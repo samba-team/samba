@@ -912,8 +912,8 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	{
 		for (i=0; i<num_dcs; i++) {
 			DEBUG(10, ("find_new_dc: open_any_socket_out failed for "
-				"domain %s address %s\n",
-				domain->name, inet_ntoa(dcs[i].ip) ));
+				"domain %s address %s. Error was %s\n",
+				domain->name, inet_ntoa(dcs[i].ip), strerror(errno) ));
 			winbind_add_failed_connection_entry(domain,
 				dcs[i].name, NT_STATUS_UNSUCCESSFUL);
 		}
