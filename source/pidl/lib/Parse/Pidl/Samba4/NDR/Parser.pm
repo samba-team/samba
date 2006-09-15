@@ -7,6 +7,10 @@
 
 package Parse::Pidl::Samba4::NDR::Parser;
 
+require Exporter;
+@ISA = qw(Exporter);
+@EXPORT = qw(is_charset_array);
+
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType);
 use Parse::Pidl::Util qw(has_property ParseExpr print_uuid);

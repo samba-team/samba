@@ -209,13 +209,20 @@ static BOOL test_testcall(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct echo_TestCall r;
+	char *s = NULL;
 
 	r.in.s1 = "input string";
+	r.out.s2 = &s;
 
 	printf("\nTesting TestCall\n");
 	status = dcerpc_echo_TestCall(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("TestCall failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!strcmp(s, "input string")) {
+		printf("Didn't receive back same string\n");
 		return False;
 	}
 
