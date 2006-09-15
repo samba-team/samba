@@ -5,6 +5,8 @@ dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
 
+AC_LIBREPLACE_LOCATION_CHECKS
+
 #################################################
 # Directory handling stuff to support both the
 # legacy SAMBA directories and FHS compliant
