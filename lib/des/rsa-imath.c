@@ -151,6 +151,15 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
     BN2mpz(&n, rsa->n);
     BN2mpz(&e, rsa->e);
 
+#if 0
+    /* Check that the exponent is larger then 3 */
+    if (mp_int_compare_value(&e, 3) <= 0) {
+	mp_int_clear(&n);
+	mp_int_clear(&e);
+	return -1;
+    }
+#endif
+
     mp_int_init(&s);
     mp_int_init(&us);
     mp_int_read_unsigned(&s, rk_UNCONST(from), flen);
