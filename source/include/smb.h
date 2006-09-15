@@ -206,7 +206,7 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PI_SPOOLSS		7
 #define PI_NETDFS		8
 #define PI_ECHO 		9
-#define PI_SHUTDOWN		10
+#define PI_INITSHUTDOWN		10
 #define PI_SVCCTL		11
 #define PI_EVENTLOG 		12
 #define PI_UNIXINFO		13
@@ -282,6 +282,8 @@ typedef struct dom_sid {
 #include "librpc/gen_ndr/unixinfo.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/dfs.h"
+#include "librpc/gen_ndr/initshutdown.h"
+#include "librpc/gen_ndr/winreg.h"
 
 struct lsa_dom_info {
 	BOOL valid;
