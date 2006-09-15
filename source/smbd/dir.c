@@ -61,6 +61,7 @@ struct dptr_struct {
 	uint32 attr;
 	char *path;
 	BOOL has_wild; /* Set to true if the wcard entry has MS wildcard characters in it. */
+	BOOL did_stat; /* Optimisation for non-wcard searches. */
 };
 
 static struct bitmap *dptr_bmap;
@@ -535,6 +536,11 @@ long dptr_TellDir(struct dptr_struct *dptr)
 	return TellDir(dptr->dir_hnd);
 }
 
+BOOL dptr_has_wild(struct dptr_struct *dptr)
+{
+	return dptr->has_wild;
+}
+
 /****************************************************************************
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
@@ -557,8 +563,6 @@ static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr, long *poffs
 
 const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT_STAT *pst)
 {
-	pstring pathreal;
-
 	SET_STAT_INVALID(*pst);
 
 	if (dptr->has_wild) {
@@ -571,55 +575,62 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 		return NULL;
 	}
 
-	/* We know the stored wcard contains no wildcard characters. See if we can match
-	   with a stat call. If we can't, then set has_wild to true to
-	   prevent us from doing this on every call. */
+	if (!dptr->did_stat) {
+		pstring pathreal;
 
-	/* First check if it should be visible. */
-	if (!is_visible_file(dptr->conn, dptr->path, dptr->wcard, pst, True)) {
-		dptr->has_wild = True;
-		return dptr_normal_ReadDirName(dptr, poffset, pst);
-	}
+		/* We know the stored wcard contains no wildcard characters. See if we can match
+		   with a stat call. If we can't, then set did_stat to true to
+		   ensure we only do this once and keep searching. */
 
-	if (VALID_STAT(*pst)) {
-		/* We need to set the underlying dir_hdn offset to -1 also as
-		   this function is usually called with the output from TellDir. */
-		dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
-		return dptr->wcard;
-	}
+		dptr->did_stat = True;
 
-	pstrcpy(pathreal,dptr->path);
-	pstrcat(pathreal,"/");
-	pstrcat(pathreal,dptr->wcard);
+		/* First check if it should be visible. */
+		if (!is_visible_file(dptr->conn, dptr->path, dptr->wcard, pst, True)) {
+			/* This only returns False if the file was found, but
+			   is explicitly not visible. Set us to end of directory,
+			   but return NULL as we know we can't ever find it. */
+			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
+			return NULL;
+		}
 
-	if (SMB_VFS_STAT(dptr->conn,pathreal,pst) == 0) {
-		/* We need to set the underlying dir_hdn offset to -1 also as
-		   this function is usually called with the output from TellDir. */
-		dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
-		return dptr->wcard;
-	} else {
-		/* If we get any other error than ENOENT or ENOTDIR
-		   then the file exists we just can't stat it. */
-		if (errno != ENOENT && errno != ENOTDIR) {
-			/* We need to set the underlying dir_hdn offset to -1 also as
+		if (VALID_STAT(*pst)) {
+			/* We need to set the underlying dir_hnd offset to -1 also as
 			   this function is usually called with the output from TellDir. */
 			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
 			return dptr->wcard;
 		}
-	}
 
-	/* In case sensitive mode we don't search - we know if it doesn't exist 
-	   with a stat we will fail. */
+		pstrcpy(pathreal,dptr->path);
+		pstrcat(pathreal,"/");
+		pstrcat(pathreal,dptr->wcard);
 
-	if (dptr->conn->case_sensitive) {
-		/* We need to set the underlying dir_hdn offset to -1 also as
-		   this function is usually called with the output from TellDir. */
-		dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
-		return NULL;
-	} else {
-		dptr->has_wild = True;
-		return dptr_normal_ReadDirName(dptr, poffset, pst);
+		if (SMB_VFS_STAT(dptr->conn,pathreal,pst) == 0) {
+			/* We need to set the underlying dir_hnd offset to -1 also as
+			   this function is usually called with the output from TellDir. */
+			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
+			return dptr->wcard;
+		} else {
+			/* If we get any other error than ENOENT or ENOTDIR
+			   then the file exists we just can't stat it. */
+			if (errno != ENOENT && errno != ENOTDIR) {
+				/* We need to set the underlying dir_hdn offset to -1 also as
+				   this function is usually called with the output from TellDir. */
+				dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
+				return dptr->wcard;
+			}
+		}
+
+		/* In case sensitive mode we don't search - we know if it doesn't exist 
+		   with a stat we will fail. */
+
+		if (dptr->conn->case_sensitive) {
+			/* We need to set the underlying dir_hnd offset to -1 also as
+			   this function is usually called with the output from TellDir. */
+			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
+			return NULL;
+		}
 	}
+	return dptr_normal_ReadDirName(dptr, poffset, pst);
 }
 
 /****************************************************************************
