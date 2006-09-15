@@ -312,16 +312,16 @@ NTSTATUS sclassic_get_config(TALLOC_CTX *mem_ctx,
 
 NTSTATUS share_classic_init(void)
 {
-	struct share_ops ops;
-
-	ops.name = "classic";
-	ops.init = sclassic_init;
-	ops.string_option = sclassic_string_option;
-	ops.int_option = sclassic_int_option;
-	ops.bool_option = sclassic_bool_option;
-	ops.string_list_option = sclassic_string_list_option;
-	ops.list_all = sclassic_list_all;
-	ops.get_config = sclassic_get_config;
+	static struct share_ops ops = {
+		.name = "classic",
+		.init = sclassic_init,
+		.string_option = sclassic_string_option,
+		.int_option = sclassic_int_option,
+		.bool_option = sclassic_bool_option,
+		.string_list_option = sclassic_string_list_option,
+		.list_all = sclassic_list_all,
+		.get_config = sclassic_get_config
+	};
 
 	return share_register(&ops);
 }

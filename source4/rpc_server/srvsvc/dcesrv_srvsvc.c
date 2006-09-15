@@ -452,10 +452,68 @@ static WERROR srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 	case 502:
 	{
+		NTSTATUS nterr;
+		struct share_info *info;
+		struct share_context *sctx;
+		
+		nterr = share_get_context(mem_ctx, &sctx);
+		if (!NT_STATUS_IS_OK(nterr)) {
+			return ntstatus_to_werror(nterr);
+		}
+			
+		info = talloc_zero(mem_ctx, struct share_info);
+		W_ERROR_HAVE_NO_MEMORY(info);
+
+		info->name = talloc_strdup(info, r->in.info.info502->name);
+		W_ERROR_HAVE_NO_MEMORY(info->name);
+		switch (r->in.info.info502->type) {
+		case 0x00:
+			info->type = talloc_strdup(mem_ctx, "DISK");
+			break;
+		case 0x01:
+			info->type = talloc_strdup(mem_ctx, "PRINTER");
+			break;
+		case 0x03:
+			info->type = talloc_strdup(mem_ctx, "IPC");
+			break;
+		default:
+			return WERR_INVALID_PARAM;
+		}
+		W_ERROR_HAVE_NO_MEMORY(info->type);
+
+		/* Windows will send a path in a form of C:\example\path */
+		if (r->in.info.info502->path[1] == ':') {
+			info->path = talloc_strdup(info, &r->in.info.info502->path[2]);
+		} else {
+			info->path = talloc_strdup(info, r->in.info.info502->path);
+		}
+		W_ERROR_HAVE_NO_MEMORY(info->path);
+		all_string_sub(info->path, "\\", "/", 0);
+
+		if (r->in.info.info502->comment && r->in.info.info502->comment[0]) {
+			info->comment = talloc_strdup(info, r->in.info.info502->comment);
+			W_ERROR_HAVE_NO_MEMORY(info->comment);
+		}
+
+		if (r->in.info.info502->password && r->in.info.info502->password[0]) {
+			info->password = talloc_strdup(info, r->in.info.info502->password);
+			W_ERROR_HAVE_NO_MEMORY(info->password);
+		}
+
+		info->max_users = r->in.info.info502->max_users;
+		/* TODO: security descriptor */
+
+	        	
+		nterr = share_create(sctx, info);
+		if (!NT_STATUS_IS_OK(nterr)) {
+			return ntstatus_to_werror(nterr);
+		}
+
 		if (r->in.parm_error) {
 			r->out.parm_error = r->in.parm_error;
 		}
-		return WERR_NOT_SUPPORTED;
+		
+		return WERR_OK;
 	}
 	default:
 		return WERR_UNKNOWN_LEVEL;
@@ -1808,7 +1866,20 @@ static WERROR srvsvc_NETRSERVERTRANSPORTDELEX(struct dcesrv_call_state *dce_call
 static WERROR srvsvc_NetShareDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareDel *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	NTSTATUS nterr;
+	struct share_context *sctx;
+		
+	nterr = share_get_context(mem_ctx, &sctx);
+	if (!NT_STATUS_IS_OK(nterr)) {
+		return ntstatus_to_werror(nterr);
+	}
+			
+	nterr = share_remove(sctx, r->in.share_name);
+	if (!NT_STATUS_IS_OK(nterr)) {
+		return ntstatus_to_werror(nterr);
+	}
+
+	return WERR_OK;
 }
 
 /* 
