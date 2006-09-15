@@ -139,4 +139,4 @@ if [ "$count" != 0 ]; then
     done
 fi
 
-teststatus $ARG0 $totalfailed
+teststatus $ARG0 $failed

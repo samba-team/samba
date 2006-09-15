@@ -100,7 +100,12 @@ testit() {
 		date
 		echo "Testing $name"
 	else
-		echo "Testing $name (`expr $failed + $totalfailed` test failed so far)"
+	        nf="`expr $failed + $totalfailed`";
+		if [ "$nf" = "0" ]; then 
+		    echo "Testing $name"
+		else 
+		    echo "Testing $name ($nf tests failed so far)"
+		fi
 	fi
 
 	smbd_check_only && SMBD_IS_UP="yes"
