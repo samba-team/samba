@@ -118,7 +118,7 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle = handle;
 	r.out.new_handle = &newhandle;
 	init_winreg_String(&r.in.name, name);	
-	init_winreg_String(&r.in.class, class);
+	init_winreg_String(&r.in.keyclass, class);
 	r.in.options = 0x0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.action_taken = r.out.action_taken = &action_taken;
@@ -180,7 +180,7 @@ static BOOL test_CreateKey_sd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle = handle;
 	r.out.new_handle = newhandle;
 	init_winreg_String(&r.in.name, name);	
-	init_winreg_String(&r.in.class, class);
+	init_winreg_String(&r.in.keyclass, class);
 	r.in.options = 0x0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.action_taken = r.out.action_taken = &action_taken;
@@ -305,7 +305,7 @@ static BOOL test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("\ntesting OpenKey\n");
 
-	r.in.handle = hive_handle;
+	r.in.parent_handle = hive_handle;
 	init_winreg_String(&r.in.keyname, keyname);
 	r.in.unknown = 0x00000000;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -412,7 +412,7 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle = handle;
 	r.in.enum_index = 0;
 	r.in.name = &name;
-	r.in.class = &class;
+	r.in.keyclass = &class;
 	r.out.name = &name;
 	r.in.last_changed_time = &t;
 

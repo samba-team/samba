@@ -186,7 +186,7 @@ static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 		}
 		r->out.name->length = 2*strlen_m_term(key->name);
 		r->out.name->name = key->name;
-		r->out.class = talloc_zero(mem_ctx, struct winreg_StringBuf);
+		r->out.keyclass = talloc_zero(mem_ctx, struct winreg_StringBuf);
 		if (r->in.last_changed_time) {
 			r->out.last_changed_time = &key->last_mod;
 		}
@@ -310,7 +310,7 @@ static WERROR winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	struct dcesrv_handle *h, *newh;
 	WERROR result;
 
-	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.parent_handle, HTYPE_REGKEY);
 
 	if (r->in.keyname.name && strcmp(r->in.keyname.name, "") == 0) {
 		newh = talloc_reference(dce_call->context, h);
@@ -345,22 +345,22 @@ static WERROR winreg_QueryInfoKey(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 	k = h->data;
 
-	ret = reg_key_num_subkeys(k, &r->out.num_subkeys);
+	ret = reg_key_num_subkeys(k, r->out.num_subkeys);
 	if (!W_ERROR_IS_OK(ret)) { 
 		return ret;
 	}
 
-	ret = reg_key_num_values(k, &r->out.num_values);
+	ret = reg_key_num_values(k, r->out.num_values);
 	if (!W_ERROR_IS_OK(ret)) { 
 		return ret;
 	}
 
-	ret = reg_key_subkeysizes(k, &r->out.max_subkeysize, &r->out.max_subkeylen);
+	ret = reg_key_subkeysizes(k, r->out.max_subkeysize, r->out.max_subkeylen);
 	if (!W_ERROR_IS_OK(ret)) { 
 		return ret;
 	}
 
-	ret = reg_key_valuesizes(k, &r->out.max_valnamelen, &r->out.max_valbufsize);
+	ret = reg_key_valuesizes(k, r->out.max_valnamelen, r->out.max_valbufsize);
 	if (!W_ERROR_IS_OK(ret)) { 
 		return ret;
 	}
@@ -523,7 +523,7 @@ static WERROR winreg_GetVersion(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
-	r->out.version = 5;
+	*r->out.version = 5;
 	return WERR_OK;
 }
 

@@ -109,7 +109,7 @@
 	WERROR winreg_CreateKey(
 		[in,ref] policy_handle *handle,
 		[in] winreg_String name,
-		[in] winreg_String class,
+		[in] winreg_String keyclass,
 		[in] uint32 options,
 		[in] winreg_AccessMask access_mask,
 		[in,unique] winreg_SecBuf *secdesc,
@@ -144,7 +144,7 @@
 		[in,ref]        policy_handle    *handle,
 		[in]            uint32           enum_index,
 		[in,out,ref]    winreg_StringBuf *name,
-		[in,out,unique] winreg_StringBuf *class,
+		[in,out,unique] winreg_StringBuf *keyclass,
 		[in,out,unique] NTTIME           *last_changed_time
 	);
 
@@ -198,7 +198,7 @@
 	/******************/
 	/* Function: 0x0f */
 	WERROR winreg_OpenKey(
-		[in,ref] policy_handle *handle,
+		[in,ref] policy_handle *parent_handle,
 		[in] winreg_String keyname,
 		[in] uint32 unknown,
 		[in] winreg_AccessMask access_mask,
@@ -211,14 +211,14 @@
 		[in,ref] policy_handle *handle,
 		[in] winreg_String class_in,
 		[out] winreg_String *class_out,
-		[out] uint32 num_subkeys,
-		[out] uint32 max_subkeylen,
-		[out] uint32 max_subkeysize,
-		[out] uint32 num_values,
-		[out] uint32 max_valnamelen,
-		[out] uint32 max_valbufsize,
-		[out] uint32 secdescsize,
-		[out] NTTIME last_changed_time
+		[out] uint32 *num_subkeys,
+		[out] uint32 *max_subkeylen,
+		[out] uint32 *max_subkeysize,
+		[out] uint32 *num_values,
+		[out] uint32 *max_valnamelen,
+		[out] uint32 *max_valbufsize,
+		[out] uint32 *secdescsize,
+		[out] NTTIME *last_changed_time
 	);
 
 	/******************/
@@ -290,7 +290,7 @@
 	/* Function: 0x1a */
 	WERROR winreg_GetVersion(
 		[in,ref] policy_handle *handle,
-		[out]    uint32 version
+		[out]    uint32 *version
 	);
 
 	/******************/
