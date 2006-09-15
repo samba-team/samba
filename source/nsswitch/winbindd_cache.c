@@ -952,6 +952,7 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 		DEBUG(0,("wcache_get_creds: bad entry for [CRED/%s] - deleting\n", 
 				sidstr));
 		wcache_delete("CRED/%s", sidstr);
+		centry_free(centry);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
