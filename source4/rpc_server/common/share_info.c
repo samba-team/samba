@@ -79,13 +79,21 @@ enum srvsvc_ShareType dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct d
 const char *dcesrv_common_get_share_path(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg)
 {
 	const char *sharetype;
+	char *p;
 	
 	sharetype = share_string_option(scfg, SHARE_TYPE, SHARE_TYPE_DEFAULT);
 	
 	if (sharetype && strcasecmp(sharetype, "IPC") == 0) {
 		return talloc_strdup(mem_ctx, "");
 	}
-	return talloc_strdup(mem_ctx, "C:\\");
+
+	p = talloc_strdup(mem_ctx, share_string_option(scfg, SHARE_PATH, ""));
+	if (!p) {
+		return NULL;
+	}
+	all_string_sub(p, "/", "\\", 0);
+	
+	return talloc_asprintf(mem_ctx, "C:%s", p);
 }
 
 /* This hardcoded value should go into a ldb database! */
