@@ -965,15 +965,15 @@ int cac_Shutdown(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Shutdown *op)
    }
 
    /*initialize for winreg pipe if we have to*/
-   if(!hnd->_internal.pipes[PI_SHUTDOWN]) {
-      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(srv->cli, PI_SHUTDOWN, &(hnd->status)))) {
+   if(!hnd->_internal.pipes[PI_INITSHUTDOWN]) {
+      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(srv->cli, PI_INITSHUTDOWN, &(hnd->status)))) {
          return CAC_FAILURE;
       }
 
-      hnd->_internal.pipes[PI_SHUTDOWN] = True;
+      hnd->_internal.pipes[PI_INITSHUTDOWN] = True;
    }
 
-   pipe_hnd = cac_GetPipe(hnd, PI_SHUTDOWN);
+   pipe_hnd = cac_GetPipe(hnd, PI_INITSHUTDOWN);
    if(!pipe_hnd) {
       hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
@@ -1006,12 +1006,12 @@ int cac_AbortShutdown(CacServerHandle *hnd, TALLOC_CTX *mem_ctx) {
    if(!hnd) 
       return CAC_FAILURE;
 
-   if(!hnd->_internal.ctx || !hnd->_internal.pipes[PI_SHUTDOWN]) {
+   if(!hnd->_internal.ctx || !hnd->_internal.pipes[PI_INITSHUTDOWN]) {
       hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   pipe_hnd = cac_GetPipe(hnd, PI_SHUTDOWN);
+   pipe_hnd = cac_GetPipe(hnd, PI_INITSHUTDOWN);
    if(!pipe_hnd) {
       hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
