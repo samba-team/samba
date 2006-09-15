@@ -582,7 +582,7 @@ static void child_msg_offline(int msg_type, struct process_id src, void *buf, si
 
 /* Ensure any negative cache entries with the netbios or realm names are removed. */
 
-static void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
+void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
 {
 	flush_negative_conn_cache_for_domain(domain->name);
 	if (*domain->alt_name) {
@@ -681,6 +681,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	int fdpair[2];
 	struct winbindd_cli_state state;
 	extern BOOL override_logfile;
+	time_t startup_time;
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) != 0) {
 		DEBUG(0, ("Could not open child pipe: %s\n",
@@ -764,6 +765,9 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	message_register(MSG_WINBIND_ONLINE,child_msg_online);
 	message_register(MSG_WINBIND_ONLINESTATUS,child_msg_onlinestatus);
 
+	child->domain->startup = True;
+	startup_time = time(NULL);
+
 	while (1) {
 
 		int ret;
@@ -779,6 +783,13 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		run_events();
 
 		GetTimeOfDay(&now);
+
+		if (child->domain->startup && (now.tv_sec > startup_time + 30)) {
+			/* No longer in "startup" mode. */
+			DEBUG(10,("fork_domain_child: domain %s no longer in 'startup' mode.\n",
+				child->domain->name ));
+			child->domain->startup = False;
+		}
 
 		tp = get_timed_events_timeout(&t);
 		if (tp) {
