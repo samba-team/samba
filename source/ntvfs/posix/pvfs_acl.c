@@ -349,6 +349,13 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 	uid_t uid = geteuid();
 	uint32_t max_bits = SEC_RIGHTS_FILE_READ | SEC_FILE_ALL;
 
+	if ((pvfs->flags & PVFS_FLAG_READONLY) &&
+	    ((*access_mask) & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA | 
+			       SEC_FILE_WRITE_EA | SEC_FILE_WRITE_ATTRIBUTE | 
+			       SEC_DIR_DELETE_CHILD))) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/* owner and root get extra permissions */
 	if (uid == 0) {
 		max_bits |= SEC_STD_ALL | SEC_FLAG_SYSTEM_SECURITY;
@@ -389,6 +396,13 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	struct xattr_NTACL *acl;
 	NTSTATUS status;
 	struct security_descriptor *sd;
+
+	if ((pvfs->flags & PVFS_FLAG_READONLY) &&
+	    ((*access_mask) & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA | 
+			       SEC_FILE_WRITE_EA | SEC_FILE_WRITE_ATTRIBUTE | 
+			       SEC_DIR_DELETE_CHILD))) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	acl = talloc(req, struct xattr_NTACL);
 	if (acl == NULL) {
