@@ -84,9 +84,13 @@ done
 
 testit "CLDAP" bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ LDAP-CLDAP || failed=`expr $failed + 1`
 
-LDBDIR=lib/ldb
-export LDBDIR
-testit "ldb tests" $LDBDIR/tests/test-tdb.sh || failed=`expr $failed + 1`
+# only do the ldb tests when not in quick mode - they are quite slow, and ldb
+# is now pretty well tested by the rest of the quick tests anyway
+test "$TORTURE_QUICK" = "yes" || {
+   LDBDIR=lib/ldb
+   export LDBDIR
+   testit "ldb tests" $LDBDIR/tests/test-tdb.sh || failed=`expr $failed + 1`
+}
 
 SCRIPTDIR=../testprogs/ejs
 
