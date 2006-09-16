@@ -1,5 +1,8 @@
 2006-09-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/main.c (sigterm): don't _exit, let loop() catch the signal
+	instead.
+
 	* lib/krb5/krb5_timeofday.3: Fixes from Björn Sandell.
 
 	* lib/krb5/krb5_get_init_creds.3: Fixes from Björn Sandell.

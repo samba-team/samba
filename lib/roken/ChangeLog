@@ -1,3 +1,9 @@
+2006-09-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken.h.in: Add samba socket wrapper fragment.
+
+	* Makefile.am: Add samba socket wrapper fragment.
+	
 2006-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* snprintf.c: reapply patch that went away in last commit
