@@ -27,7 +27,7 @@ struct libnet_context *libnet_context_init(struct event_context *ev)
 	struct libnet_context *ctx;
 
 	/* create brand new libnet context */ 
-	ctx = talloc(NULL, struct libnet_context);
+	ctx = talloc(ev, struct libnet_context);
 	if (!ctx) {
 		return NULL;
 	}
