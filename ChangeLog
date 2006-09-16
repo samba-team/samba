@@ -1,3 +1,9 @@
+2006-09-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_timeofday.3: Fixes from Björn Sandell.
+
+	* lib/krb5/krb5_get_init_creds.3: Fixes from Björn Sandell.
+	
 2006-09-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* tools/krb5-config.in: Add "kafs" option.
