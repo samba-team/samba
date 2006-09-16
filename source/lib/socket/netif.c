@@ -30,6 +30,10 @@
 
 */
 
+#ifndef AUTOCONF_TEST
+#include "config.h"
+#endif
+
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -41,10 +45,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
-#ifndef AUTOCONF_TEST
-#include "config.h"
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -76,7 +76,10 @@
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
+#ifdef HAVE_NET_IF_H
 #include <net/if.h>
+#endif
+
 #define BOOL int
 #include "netif.h"
 
