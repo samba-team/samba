@@ -100,6 +100,7 @@ cat >$CONFFILE<<EOF
 	max xmit = 32K
 	server max protocol = SMB2
 	notify:inotify = false
+	ldb:nosync = true
 
 system:anonymous = true
 
