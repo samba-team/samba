@@ -595,6 +595,12 @@ dnl
 
 AC_KRB_STRUCT_SPWD
 
+#
+# Check if we want samba's socket wrapper
+#
+
+samba_SOCKET_WRAPPER
+
 dnl won't work with automake
 dnl moved to AC_OUTPUT in configure.in
 dnl AC_CONFIG_FILES($1/Makefile)
