@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 	if (remote) {
 		error = reg_open_remote (&h, NULL, cmdline_credentials, remote, NULL);
 	} else {
-		error = reg_open_local (&h, NULL, cmdline_credentials);
+		error = reg_open_local (NULL, &h, NULL, cmdline_credentials);
 	}
 
 	if (W_ERROR_IS_OK(error)) {
