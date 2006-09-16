@@ -693,4 +693,8 @@ int ROKEN_LIB_FUNCTION
 closefrom(int);
 #endif
 
+#ifdef SOCKET_WRAPPER_REPLACE
+#include <socket_wrapper.h>
+#endif
+
 ROKEN_CPP_END

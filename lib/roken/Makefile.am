@@ -159,6 +159,11 @@ include_HEADERS = 				\
 	xdbm.h					\
 	$(XHEADERS) 
 
+if have_socket_wrapper
+libroken_la_SOURCES += socket_wrapper.c socket_wrapper.h
+include_HEADERS += socket_wrapper.h
+endif
+
 build_HEADERZ = test-mem.h
 
 nodist_include_HEADERS = roken.h
