@@ -54,8 +54,8 @@ int main(int argc, char **argv)
 		error = WERR_OK;
 		switch(opt)	{
 		case 'L':
-			if (!h1 && !from_null) error = reg_open_local(&h1, NULL, cmdline_credentials);
-			else if (!h2) error = reg_open_local(&h2, NULL, cmdline_credentials);
+			if (!h1 && !from_null) error = reg_open_local(NULL, &h1, NULL, cmdline_credentials);
+			else if (!h2) error = reg_open_local(NULL, &h2, NULL, cmdline_credentials);
 			break;
 		case 'R':
 			if (!h1 && !from_null) 

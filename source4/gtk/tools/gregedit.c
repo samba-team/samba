@@ -385,7 +385,7 @@ static void on_open_gconf_activate(GtkMenuItem *menuitem, gpointer user_data)
 
 static void on_open_local_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	WERROR error = reg_open_local(&registry, NULL, NULL);
+	WERROR error = reg_open_local(NULL, &registry, NULL, NULL);
 	if(!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(mainwin, "Error while opening local registry", error);
 		return;
@@ -953,7 +953,7 @@ static GtkWidget* create_savefilewin (void)
 
 static int gregedit_load_defaults(void)
 {
-	WERROR error = reg_open_local(&registry, NULL, NULL);
+	WERROR error = reg_open_local(NULL, &registry, NULL, NULL);
 	if(!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(mainwin, "Error while loading local registry", error);
 		return -1;
