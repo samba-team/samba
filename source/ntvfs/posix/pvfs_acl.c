@@ -336,6 +336,25 @@ NTSTATUS pvfs_acl_query(struct pvfs_state *pvfs,
 
 
 /*
+  check the read only bit against any of the write access bits
+*/
+static BOOL pvfs_read_only(struct pvfs_state *pvfs, uint32_t access_mask)
+{
+	if ((pvfs->flags & PVFS_FLAG_READONLY) &&
+	    (access_mask & (SEC_FILE_WRITE_DATA |
+			    SEC_FILE_APPEND_DATA | 
+			    SEC_FILE_WRITE_EA | 
+			    SEC_FILE_WRITE_ATTRIBUTE | 
+			    SEC_STD_DELETE | 
+			    SEC_STD_WRITE_DAC | 
+			    SEC_STD_WRITE_OWNER | 
+			    SEC_DIR_DELETE_CHILD))) {
+		return True;
+	}
+	return False;
+}
+
+/*
   default access check function based on unix permissions
   doing this saves on building a full security descriptor
   for the common case of access check on files with no 
@@ -349,10 +368,7 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 	uid_t uid = geteuid();
 	uint32_t max_bits = SEC_RIGHTS_FILE_READ | SEC_FILE_ALL;
 
-	if ((pvfs->flags & PVFS_FLAG_READONLY) &&
-	    ((*access_mask) & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA | 
-			       SEC_FILE_WRITE_EA | SEC_FILE_WRITE_ATTRIBUTE | 
-			       SEC_DIR_DELETE_CHILD))) {
+	if (pvfs_read_only(pvfs, *access_mask)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -397,10 +413,7 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	struct security_descriptor *sd;
 
-	if ((pvfs->flags & PVFS_FLAG_READONLY) &&
-	    ((*access_mask) & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA | 
-			       SEC_FILE_WRITE_EA | SEC_FILE_WRITE_ATTRIBUTE | 
-			       SEC_DIR_DELETE_CHILD))) {
+	if (pvfs_read_only(pvfs, *access_mask)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
