@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd May  1, 2006
+.Dd Sep  16, 2006
 .Dt KRB5_GET_INIT_CREDS 3
 .Os HEIMDAL
 .Sh NAME
@@ -51,7 +51,7 @@
 .Nm krb5_get_init_creds_opt_set_paq_request ,
 .Nm krb5_get_init_creds_opt_set_preauth_list ,
 .Nm krb5_get_init_creds_opt_set_proxiable ,
-.Nm krb5_get_init_creds_opt_set_rewew_life ,
+.Nm krb5_get_init_creds_opt_set_renew_life ,
 .Nm krb5_get_init_creds_opt_set_salt ,
 .Nm krb5_get_init_creds_opt_set_tkt_life ,
 .Nm krb5_get_init_creds_password ,
@@ -146,7 +146,7 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "int proxiable"
 .Fc
 .Ft void
-.Fo krb5_get_init_creds_opt_set_rewew_life
+.Fo krb5_get_init_creds_opt_set_renew_life
 .Fa "krb5_get_init_creds_opt *opt"
 .Fa "krb5_deltat renew_life"
 .Fc
@@ -226,7 +226,7 @@ or
 .Fn krb5_get_init_creds_opt_alloc
 allocates a extendible structures that needs to be freed with
 .Fn krb5_get_init_creds_opt_free .
-The structure modified by the any of the
+The structure may be modified by any of the
 .Fn krb5_get_init_creds_opt_set
 functions to change request parameters and authentication information.
 .Pp
@@ -269,6 +269,7 @@ function.
 Possible values for the
 .Fa type
 element are:
+.Pp
 .Bl -tag -width Ds -compact -offset indent
 .It KRB5_PROMPT_TYPE_PASSWORD
 .It KRB5_PROMPT_TYPE_NEW_PASSWORD
@@ -360,7 +361,7 @@ sets the list of client-supported preauth types.
 .Fn krb5_get_init_creds_opt_set_proxiable
 makes the request proxiable.
 .Pp
-.Fn krb5_get_init_creds_opt_set_rewew_life
+.Fn krb5_get_init_creds_opt_set_renew_life
 sets the requested renewable lifetime.
 .Pp
 .Fn krb5_get_init_creds_opt_set_salt
