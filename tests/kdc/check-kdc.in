@@ -83,6 +83,11 @@ ${kadmin} \
     --realm-max-renewable-life=1month \
     ${R2} || exit 1
 
+${kadmin} cpw -r krbtgt/${R}@${R} || exit 1
+${kadmin} cpw -r krbtgt/${R}@${R} || exit 1
+${kadmin} cpw -r krbtgt/${R}@${R} || exit 1
+${kadmin} cpw -r krbtgt/${R}@${R} || exit 1
+
 ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
 ${kadmin} add -p bar --use-defaults bar@${R} || exit 1
 ${kadmin} add -p foo --use-defaults remove@${R} || exit 1
