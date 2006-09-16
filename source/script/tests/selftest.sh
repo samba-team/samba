@@ -113,7 +113,7 @@ totalfailed=0
 export totalfailed
 
  . script/tests/tests_$TESTS.sh
- exit $failed
+ exit $totalfailed
 ) 9>$SMBD_TEST_FIFO
 failed=$?
 
