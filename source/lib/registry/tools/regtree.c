@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 			return 1;
 		}
 	} else {
-		error = reg_open_local (&h, NULL, cmdline_credentials);
+		error = reg_open_local (NULL, &h, NULL, cmdline_credentials);
 
 		if(!W_ERROR_IS_OK(error)) {
 			fprintf(stderr, "Unable to open local registry:%s \n", win_errstr(error));
