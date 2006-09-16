@@ -1861,10 +1861,13 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	/* now switch on the type of variable it is */
 	switch (parm_table[parmnum].type)
 	{
-		case P_BOOL:
-			if (!set_boolean(pszParmValue, parm_ptr)) {
+		case P_BOOL: {
+			BOOL b;
+			if (!set_boolean(pszParmValue, &b)) {
 				DEBUG(0,("lp_do_parameter(%s): value is not boolean!\n", pszParmValue));
 				return False;
+			}
+			*(int *)parm_ptr = b;
 			}
 			break;
 
