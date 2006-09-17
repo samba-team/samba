@@ -44,11 +44,15 @@ struct message_store {
 	struct message_store *next;
 };
 
+struct private_data;
+
 struct results_store {
+
+	struct private_data *priv;
+
 	char *cookie;
 	time_t timestamp;
-	int num_sent; /* To be removed */
-	struct ldb_result *result; /* To be removed */
+
 	struct results_store *prev;
 	struct results_store *next;
 	
@@ -79,7 +83,11 @@ int store_destructor(struct results_store *store)
 	if (store->next) {
 		store->next->prev = store->prev;
 	}
-	
+
+	if (store == store->priv->store) {
+		store->priv->store = NULL;
+	}
+
 	return 0;
 }
 
@@ -95,6 +103,8 @@ static struct results_store *new_store(struct private_data *priv)
 	newr = talloc(priv, struct results_store);
 	if (!newr) return NULL;
 
+	newr->priv = priv;
+
 	newr->cookie = talloc_asprintf(newr, "%d", new_id);
 	if (!newr->cookie) {
 		talloc_free(newr);
@@ -102,9 +112,6 @@ static struct results_store *new_store(struct private_data *priv)
 	}
 
 	newr->timestamp = time(NULL);
-
-	newr->num_sent = 0; /* To be removed */
-	newr->result = NULL; /* To be removed */
 
 	newr->first = NULL;
 	newr->num_entries = 0;
