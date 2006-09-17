@@ -36,14 +36,16 @@ struct share_config {
 	void *opaque;
 };
 
+enum share_info_type {
+	SHARE_INFO_STRING,
+	SHARE_INFO_INT,
+	SHARE_INFO_BLOB
+};
+
 struct share_info {
+	enum share_info_type type;
 	const char *name;
-	const char *type;
-	const char *path;
-	const char *comment;
-	const char *password;
-	int32_t max_users;
-	struct security_descriptor *sd;
+	void *value;
 };
 
 struct share_ops {
@@ -55,7 +57,8 @@ struct share_ops {
 	const char **(*string_list_option)(TALLOC_CTX *, struct share_config *, const char *);
 	NTSTATUS (*list_all)(TALLOC_CTX *, struct share_context *, int *, const char ***);
 	NTSTATUS (*get_config)(TALLOC_CTX *, struct share_context *, const char *, struct share_config **);
-	NTSTATUS (*create)(struct share_context *, struct share_info *);
+	NTSTATUS (*create)(struct share_context *, const char *, struct share_info *, int);
+	NTSTATUS (*set)(struct share_context *, const char *, struct share_info *, int);
 	NTSTATUS (*remove)(struct share_context *, const char *);
 };
 
