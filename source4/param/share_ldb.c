@@ -361,6 +361,8 @@ NTSTATUS sldb_create(struct share_context *ctx, const char *name, struct share_i
 	SHARE_ADD_STRING(SHARE_AVAILABLE, "True");
 	SHARE_ADD_STRING(SHARE_BROWSEABLE, "True");
 	SHARE_ADD_STRING(SHARE_READONLY, "False");
+	SHARE_ADD_STRING(SHARE_NTVFS_HANDLER, "unixuid");
+	SHARE_ADD_STRING(SHARE_NTVFS_HANDLER, "posix");
 
 	err = ldb_add(ldb, msg);
 	if (err != LDB_SUCCESS) {
@@ -428,7 +430,7 @@ NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS ret;
-	bool rename = False;
+	bool do_rename = False;
 	char *newname;
 	int err, i;
 
@@ -462,7 +464,7 @@ NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info
 	for (i = 0; i < count; i++) {
 		if (strcasecmp(info[i].name, SHARE_NAME) == 0) {
 			if (strcasecmp(name, (char *)info[i].value) != 0) {
-				rename = True;
+				do_rename = True;
 				newname = (char *)info[i].value;
 				SHARE_MOD_STRING("cn", (char *)info[i].value);
 			}
@@ -485,7 +487,7 @@ NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info
 		}
 	}
 
-	if (rename) {
+	if (do_rename) {
 		struct ldb_dn *olddn, *newdn;
 
 		olddn = msg->dn;
