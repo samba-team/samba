@@ -270,7 +270,7 @@ time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset)
 	x2 = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
 	SIVAL(&x,0,x2);
 
-	return pull_dos_date((void *)&x, zone_offset);
+	return pull_dos_date((const uint8_t *)&x, zone_offset);
 }
 
 /**
