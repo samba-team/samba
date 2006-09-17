@@ -438,10 +438,94 @@ static WERROR srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 	case 2:
 	{
+		NTSTATUS nterr;
+		struct share_info *info;
+		struct share_context *sctx;
+		int count = 8;
+		int i;
+
+		nterr = share_get_context(mem_ctx, &sctx);
+		if (!NT_STATUS_IS_OK(nterr)) {
+			return ntstatus_to_werror(nterr);
+		}
+
+		/* there are no more than 8 options in struct srvsvc_NetShareInfo2 */
+		info = talloc_array(mem_ctx, struct share_info, count);
+		W_ERROR_HAVE_NO_MEMORY(info);
+
+		i = 0;
+
+		info[i].name = SHARE_TYPE;
+		info[i].type = SHARE_INFO_STRING;
+		switch (r->in.info.info2->type) {
+		case 0x00:
+			info[i].value = talloc_strdup(info, "DISK");
+			break;
+		case 0x01:
+			info[i].value = talloc_strdup(info, "PRINTER");
+			break;
+		case 0x03:
+			info[i].value = talloc_strdup(info, "IPC");
+			break;
+		default:
+			return WERR_INVALID_PARAM;
+		}
+		W_ERROR_HAVE_NO_MEMORY(info[i].value);
+		i++;
+
+		if (r->in.info.info2->path && r->in.info.info2->path[0]) {
+			info[i].name = SHARE_PATH;
+			info[i].type = SHARE_INFO_STRING;
+
+			/* Windows will send a path in a form of C:\example\path */
+			if (r->in.info.info2->path[1] == ':') {
+				info[i].value = talloc_strdup(info, &r->in.info.info2->path[2]);
+			} else {
+				/* very strange let's try to set as is */
+				info[i].value = talloc_strdup(info, r->in.info.info2->path);
+			}
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+			all_string_sub((char *)info[i].value, "\\", "/", 0);
+
+			i++;
+		}
+
+		if (r->in.info.info2->comment && r->in.info.info2->comment[0]) {
+			info[i].name = SHARE_COMMENT;
+			info[i].type = SHARE_INFO_STRING;
+			info[i].value = talloc_strdup(info, r->in.info.info2->comment);
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+
+			i++;
+		}
+
+		if (r->in.info.info2->password && r->in.info.info2->password[0]) {
+			info[i].name = SHARE_PASSWORD;
+			info[i].type = SHARE_INFO_STRING;
+			info[i].value = talloc_strdup(info, r->in.info.info502->password);
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+
+			i++;
+		}
+
+		info[i].name = SHARE_MAX_CONNECTIONS;
+		info[i].type = SHARE_INFO_INT;
+		info[i].value = talloc(info, int);
+		*((int *)info[i].value) = r->in.info.info2->max_users;
+		i++;
+
+		/* TODO: security descriptor */
+
+		nterr = share_create(sctx, r->in.info.info2->name, info, i);
+		if (!NT_STATUS_IS_OK(nterr)) {
+			return ntstatus_to_werror(nterr);
+		}
+
 		if (r->in.parm_error) {
 			r->out.parm_error = r->in.parm_error;
 		}
-		return WERR_NOT_SUPPORTED;
+		
+		return WERR_OK;
 	}
 	case 501:
 	{	
@@ -455,59 +539,82 @@ static WERROR srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		NTSTATUS nterr;
 		struct share_info *info;
 		struct share_context *sctx;
+		int count = 10;
+		int i;
 
 		nterr = share_get_context(mem_ctx, &sctx);
 		if (!NT_STATUS_IS_OK(nterr)) {
 			return ntstatus_to_werror(nterr);
 		}
-			
-		info = talloc_zero(mem_ctx, struct share_info);
+
+		/* there are no more than 10 options in struct srvsvc_NetShareInfo502 */
+		info = talloc_array(mem_ctx, struct share_info, count);
 		W_ERROR_HAVE_NO_MEMORY(info);
 
-		info->name = talloc_strdup(info, r->in.info.info502->name);
-		W_ERROR_HAVE_NO_MEMORY(info->name);
+		i = 0;
+
+		info[i].name = SHARE_TYPE;
+		info[i].type = SHARE_INFO_STRING;
 		switch (r->in.info.info502->type) {
 		case 0x00:
-			info->type = talloc_strdup(mem_ctx, "DISK");
+			info[i].value = talloc_strdup(info, "DISK");
 			break;
 		case 0x01:
-			info->type = talloc_strdup(mem_ctx, "PRINTER");
+			info[i].value = talloc_strdup(info, "PRINTER");
 			break;
 		case 0x03:
-			info->type = talloc_strdup(mem_ctx, "IPC");
+			info[i].value = talloc_strdup(info, "IPC");
 			break;
 		default:
 			return WERR_INVALID_PARAM;
 		}
-		W_ERROR_HAVE_NO_MEMORY(info->type);
+		W_ERROR_HAVE_NO_MEMORY(info[i].value);
+		i++;
 
 		if (r->in.info.info502->path && r->in.info.info502->path[0]) {
+			info[i].name = SHARE_PATH;
+			info[i].type = SHARE_INFO_STRING;
+
 			/* Windows will send a path in a form of C:\example\path */
-			if (strncmp(r->in.info.info502->path, "C:", 2) == 0) {
-				info->path = talloc_strdup(info, &r->in.info.info502->path[2]);
+			if (r->in.info.info2->path[1] == ':') {
+				info[i].value = talloc_strdup(info, &r->in.info.info502->path[2]);
 			} else {
 				/* very strange let's try to set as is */
-				info->path = talloc_strdup(info, r->in.info.info502->path);
+				info[i].value = talloc_strdup(info, r->in.info.info502->path);
 			}
-			W_ERROR_HAVE_NO_MEMORY(info->path);
-			all_string_sub(info->path, "\\", "/", 0);
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+			all_string_sub((char *)info[i].value, "\\", "/", 0);
+
+			i++;
 		}
 
 		if (r->in.info.info502->comment && r->in.info.info502->comment[0]) {
-			info->comment = talloc_strdup(info, r->in.info.info502->comment);
-			W_ERROR_HAVE_NO_MEMORY(info->comment);
+			info[i].name = SHARE_COMMENT;
+			info[i].type = SHARE_INFO_STRING;
+			info[i].value = talloc_strdup(info, r->in.info.info502->comment);
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+
+			i++;
 		}
 
 		if (r->in.info.info502->password && r->in.info.info502->password[0]) {
-			info->password = talloc_strdup(info, r->in.info.info502->password);
-			W_ERROR_HAVE_NO_MEMORY(info->password);
+			info[i].name = SHARE_PASSWORD;
+			info[i].type = SHARE_INFO_STRING;
+			info[i].value = talloc_strdup(info, r->in.info.info502->password);
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+
+			i++;
 		}
 
-		info->max_users = r->in.info.info502->max_users;
+		info[i].name = SHARE_MAX_CONNECTIONS;
+		info[i].type = SHARE_INFO_INT;
+		info[i].value = talloc(info, int);
+		*((int *)info[i].value) = r->in.info.info502->max_users;
+		i++;
+
 		/* TODO: security descriptor */
 
-	        	
-		nterr = share_create(sctx, info);
+		nterr = share_create(sctx, r->in.info.info502->name, info, i);
 		if (!NT_STATUS_IS_OK(nterr)) {
 			return ntstatus_to_werror(nterr);
 		}
@@ -1030,7 +1137,95 @@ static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 	case 2:
 	{
-		return WERR_NOT_SUPPORTED;
+		struct share_info *info;
+		int count = 8;
+		int i;
+
+		/* there are no more than 8 options in struct srvsvc_NetShareInfo2 */
+		info = talloc_array(mem_ctx, struct share_info, count);
+		W_ERROR_HAVE_NO_MEMORY(info);
+
+		i = 0;
+
+		if (strcasecmp(r->in.share_name, r->in.info.info2->name) != 0) {
+			info[i].name = SHARE_NAME;
+			info[i].type = SHARE_INFO_STRING;
+			info[i].value = talloc_strdup(info, r->in.info.info2->name);
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+			i++;
+		}
+
+		info[i].name = SHARE_TYPE;
+		info[i].type = SHARE_INFO_STRING;
+		switch (r->in.info.info2->type) {
+		case 0x00:
+			info[i].value = talloc_strdup(info, "DISK");
+			break;
+		case 0x01:
+			info[i].value = talloc_strdup(info, "PRINTER");
+			break;
+		case 0x03:
+			info[i].value = talloc_strdup(info, "IPC");
+			break;
+		default:
+			return WERR_INVALID_PARAM;
+		}
+		W_ERROR_HAVE_NO_MEMORY(info[i].value);
+		i++;
+
+		if (r->in.info.info2->path && r->in.info.info2->path[0]) {
+			info[i].name = SHARE_PATH;
+			info[i].type = SHARE_INFO_STRING;
+
+			/* Windows will send a path in a form of C:\example\path */
+			if (r->in.info.info2->path[1] == ':') {
+				info[i].value = talloc_strdup(info, &r->in.info.info2->path[2]);
+			} else {
+				/* very strange let's try to set as is */
+				info[i].value = talloc_strdup(info, r->in.info.info2->path);
+			}
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+			all_string_sub((char *)info[i].value, "\\", "/", 0);
+
+			i++;
+		}
+
+		if (r->in.info.info2->comment && r->in.info.info2->comment[0]) {
+			info[i].name = SHARE_COMMENT;
+			info[i].type = SHARE_INFO_STRING;
+			info[i].value = talloc_strdup(info, r->in.info.info2->comment);
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+
+			i++;
+		}
+
+		if (r->in.info.info2->password && r->in.info.info2->password[0]) {
+			info[i].name = SHARE_PASSWORD;
+			info[i].type = SHARE_INFO_STRING;
+			info[i].value = talloc_strdup(info, r->in.info.info502->password);
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+
+			i++;
+		}
+
+		info[i].name = SHARE_MAX_CONNECTIONS;
+		info[i].type = SHARE_INFO_INT;
+		info[i].value = talloc(info, int);
+		*((int *)info[i].value) = r->in.info.info2->max_users;
+		i++;
+
+		/* TODO: security descriptor */
+
+		nterr = share_set(sctx, r->in.share_name, info, i);
+		if (!NT_STATUS_IS_OK(nterr)) {
+			return ntstatus_to_werror(nterr);
+		}
+
+		if (r->in.parm_error) {
+			r->out.parm_error = r->in.parm_error;
+		}
+		
+		return WERR_OK;
 	}
 	case 501:
 	{
@@ -1038,14 +1233,103 @@ static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 	case 502:
 	{
-		return WERR_NOT_SUPPORTED;
+		struct share_info *info;
+		int count = 8;
+		int i;
+
+		/* there are no more than 8 options in struct srvsvc_NetShareInfo502 */
+		info = talloc_array(mem_ctx, struct share_info, count);
+		W_ERROR_HAVE_NO_MEMORY(info);
+
+		i = 0;
+
+		if (strcasecmp(r->in.share_name, r->in.info.info502->name) != 0) {
+			info[i].name = SHARE_NAME;
+			info[i].type = SHARE_INFO_STRING;
+			info[i].value = talloc_strdup(info, r->in.info.info502->name);
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+			i++;
+		}
+
+		info[i].name = SHARE_TYPE;
+		info[i].type = SHARE_INFO_STRING;
+		switch (r->in.info.info502->type) {
+		case 0x00:
+			info[i].value = talloc_strdup(info, "DISK");
+			break;
+		case 0x01:
+			info[i].value = talloc_strdup(info, "PRINTER");
+			break;
+		case 0x03:
+			info[i].value = talloc_strdup(info, "IPC");
+			break;
+		default:
+			return WERR_INVALID_PARAM;
+		}
+		W_ERROR_HAVE_NO_MEMORY(info[i].value);
+		i++;
+
+		if (r->in.info.info502->path && r->in.info.info502->path[0]) {
+			info[i].name = SHARE_PATH;
+			info[i].type = SHARE_INFO_STRING;
+
+			/* Windows will send a path in a form of C:\example\path */
+			if (r->in.info.info2->path[1] == ':') {
+				info[i].value = talloc_strdup(info, &r->in.info.info502->path[2]);
+			} else {
+				/* very strange let's try to set as is */
+				info[i].value = talloc_strdup(info, r->in.info.info502->path);
+			}
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+			all_string_sub((char *)info[i].value, "\\", "/", 0);
+
+			i++;
+		}
+
+		if (r->in.info.info502->comment && r->in.info.info502->comment[0]) {
+			info[i].name = SHARE_COMMENT;
+			info[i].type = SHARE_INFO_STRING;
+			info[i].value = talloc_strdup(info, r->in.info.info502->comment);
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+
+			i++;
+		}
+
+		if (r->in.info.info502->password && r->in.info.info502->password[0]) {
+			info[i].name = SHARE_PASSWORD;
+			info[i].type = SHARE_INFO_STRING;
+			info[i].value = talloc_strdup(info, r->in.info.info502->password);
+			W_ERROR_HAVE_NO_MEMORY(info[i].value);
+
+			i++;
+		}
+
+		info[i].name = SHARE_MAX_CONNECTIONS;
+		info[i].type = SHARE_INFO_INT;
+		info[i].value = talloc(info, int);
+		*((int *)info[i].value) = r->in.info.info502->max_users;
+		i++;
+
+		/* TODO: security descriptor */
+
+		nterr = share_set(sctx, r->in.share_name, info, i);
+		if (!NT_STATUS_IS_OK(nterr)) {
+			return ntstatus_to_werror(nterr);
+		}
+
+		if (r->in.parm_error) {
+			r->out.parm_error = r->in.parm_error;
+		}
+		
+		return WERR_OK;
 	}
 	case 1004:
 	{
 		WERROR status;
 		union srvsvc_NetShareInfo info;
 
-		/* r->out.info.comment; */
+		/* r->in.info.comment; */
+
 		return WERR_NOT_SUPPORTED;
 	}
 	case 1005:
@@ -1053,9 +1337,13 @@ static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 		WERROR status;
 		union srvsvc_NetShareInfo info;
 
-		/* r->out.info.dfs_flags; */
+		/* r->in.info.dfs_flags; */
 		
-		return WERR_NOT_SUPPORTED;
+		if (r->in.parm_error) {
+			r->out.parm_error = r->in.parm_error;
+		}
+
+		return WERR_OK;
 	}
 	default:
 		return WERR_UNKNOWN_LEVEL;
