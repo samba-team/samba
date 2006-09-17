@@ -219,9 +219,6 @@ if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
 fi
 
 
-LIBREPLACE_C99_STRUCT_INIT(c99_struct_initialization=yes,
-			c99_struct_initialization=no)
-
 dnl VA_COPY
 AC_CACHE_CHECK([for va_copy],samba_cv_HAVE_VA_COPY,[
 AC_TRY_LINK([#include <stdarg.h>
