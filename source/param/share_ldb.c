@@ -174,7 +174,7 @@ static NTSTATUS sldb_list_all(TALLOC_CTX *mem_ctx,
 	ret = ldb_search(ldb, ldb_dn_explode(tmp_ctx, "CN=SHARES"), LDB_SCOPE_SUBTREE, "(name=*)", NULL, &res);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 	talloc_steal(tmp_ctx, res);
 
@@ -230,7 +230,7 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 	ret = ldb_search(ldb, ldb_dn_explode(tmp_ctx, "CN=SHARES"), LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		talloc_free(tmp_ctx);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 	talloc_steal(tmp_ctx, res);
 
@@ -263,24 +263,48 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-#define SHARE_ADD_STRING(type, data) do { \
-	err = ldb_msg_add_string(msg, type, data); \
+#define SHARE_ADD_STRING(name, value) do { \
+	err = ldb_msg_add_string(msg, name, value); \
 	if (err != LDB_SUCCESS) { \
-		DEBUG(2,("ERROR: unable to add share %s to ldb msg\n", type)); \
+		DEBUG(2,("ERROR: unable to add string share option %s to ldb msg\n", name)); \
 		ret = NT_STATUS_UNSUCCESSFUL; \
 		goto done; \
 	} } while(0)
 
-NTSTATUS sldb_create(struct share_context *ctx, struct share_info *info)
+#define SHARE_ADD_INT(name, value) do { \
+	err = ldb_msg_add_fmt(msg, name, "%d", value); \
+	if (err != LDB_SUCCESS) { \
+		DEBUG(2,("ERROR: unable to add integer share option %s to ldb msg\n", name)); \
+		ret = NT_STATUS_UNSUCCESSFUL; \
+		goto done; \
+	} } while(0)
+
+#define SHARE_ADD_BLOB(name, value) do { \
+	err = ldb_msg_add_value(msg, name, value); \
+	if (err != LDB_SUCCESS) { \
+		DEBUG(2,("ERROR: unable to add blob share option %s to ldb msg\n", name)); \
+		ret = NT_STATUS_UNSUCCESSFUL; \
+		goto done; \
+	} } while(0)
+
+NTSTATUS sldb_create(struct share_context *ctx, const char *name, struct share_info *info, int count)
 {
 	struct ldb_context *ldb;
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS ret;
-	char *conns;
-	int err;
+	int err, i, j;
 
-	if (!info->name || !info->type || !info->path) {
+	for (i = 0, j = 0; i < count || j != 0x03; i++) {
+		if (strcasecmp(info[i].name, SHARE_TYPE) == 0) j |= 0x02;
+		if (strcasecmp(info[i].name, SHARE_PATH) == 0) j |= 0x01;
+		if (strcasecmp(info[i].name, SHARE_NAME) == 0) {
+			if (strcasecmp(name, (char *)info[i].value) != 0) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+	}
+	if (!name || j != 0x03) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
@@ -300,29 +324,36 @@ NTSTATUS sldb_create(struct share_context *ctx, struct share_info *info)
 	}
 
 	/* TODO: escape info->name */
-	msg->dn = ldb_dn_string_compose(tmp_ctx, ldb_dn_new(tmp_ctx), "CN=%s,CN=SHARES", info->name);
+	msg->dn = ldb_dn_string_compose(tmp_ctx, ldb_dn_new(tmp_ctx), "CN=%s,CN=SHARES", name);
 	if (!msg->dn) {
 		DEBUG(0,("ERROR: Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	SHARE_ADD_STRING("cn", info->name);
 	SHARE_ADD_STRING("objectClass", "top");
 	SHARE_ADD_STRING("objectClass", "share");
+	SHARE_ADD_STRING("cn", name);
+	SHARE_ADD_STRING(SHARE_NAME, name);
 
-	SHARE_ADD_STRING(SHARE_NAME, info->name);
-	SHARE_ADD_STRING(SHARE_TYPE, info->type);
-	SHARE_ADD_STRING(SHARE_PATH, info->path);
-	if (strcmp(info->type, "DISK") == 0) {
-		SHARE_ADD_STRING(SHARE_NTVFS_HANDLER, "default");
-	}
-	if (info->comment) {
-		SHARE_ADD_STRING(SHARE_COMMENT, info->comment);
-	}
+	for (i = 0; i < count; i++) {
+		if (strcasecmp(info[i].name, SHARE_NAME) == 0) continue;
 
-	if (info->password) {
-		SHARE_ADD_STRING(SHARE_PASSWORD, info->password);
+		switch (info[i].type) {
+		case SHARE_INFO_STRING:
+			SHARE_ADD_STRING(info[i].name, (char *)info[i].value);
+			break;
+		case SHARE_INFO_INT:
+			SHARE_ADD_INT(info[i].name, *((int *)info[i].value));
+			break;
+		case SHARE_INFO_BLOB:
+			SHARE_ADD_BLOB(info[i].name, (DATA_BLOB *)info[i].value);
+			break;
+		default:
+			DEBUG(2,("ERROR: Invalid share info type for %s\n", info[i].name));
+			ret = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		}
 	}
 
 	/* TODO: Security Descriptor */
@@ -330,14 +361,167 @@ NTSTATUS sldb_create(struct share_context *ctx, struct share_info *info)
 	SHARE_ADD_STRING(SHARE_AVAILABLE, "True");
 	SHARE_ADD_STRING(SHARE_BROWSEABLE, "True");
 	SHARE_ADD_STRING(SHARE_READONLY, "False");
-	conns = talloc_asprintf(tmp_ctx, "%d", info->max_users);
-	SHARE_ADD_STRING(SHARE_MAX_CONNECTIONS, conns);
 
 	err = ldb_add(ldb, msg);
 	if (err != LDB_SUCCESS) {
 		DEBUG(2,("ERROR: unable to add share %s to share.ldb\n"
-			 "       err=%d [%s]\n", info->name, err, ldb_errstring(ldb)));
-		ret = NT_STATUS_UNSUCCESSFUL;
+			 "       err=%d [%s]\n", name, err, ldb_errstring(ldb)));
+		if (err == LDB_ERR_NO_SUCH_OBJECT) {
+			ret = NT_STATUS_BAD_NETWORK_NAME;
+		} else {
+			ret = NT_STATUS_UNSUCCESSFUL;
+		}
+		goto done;
+	}
+
+	ret = NT_STATUS_OK;
+done:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+#define SHARE_MOD_STRING(name, value) do { \
+	err = ldb_msg_add_empty(msg, name, LDB_FLAG_MOD_REPLACE); \
+	if (err != LDB_SUCCESS) { \
+		DEBUG(2,("ERROR: unable to add string share option %s to ldb msg\n", name)); \
+		ret = NT_STATUS_UNSUCCESSFUL; \
+		goto done; \
+	} \
+	err = ldb_msg_add_string(msg, name, value); \
+	if (err != LDB_SUCCESS) { \
+		DEBUG(2,("ERROR: unable to add string share option %s to ldb msg\n", name)); \
+		ret = NT_STATUS_UNSUCCESSFUL; \
+		goto done; \
+	} } while(0)
+
+#define SHARE_MOD_INT(name, value) do { \
+	err = ldb_msg_add_empty(msg, name, LDB_FLAG_MOD_REPLACE); \
+	if (err != LDB_SUCCESS) { \
+		DEBUG(2,("ERROR: unable to add string share option %s to ldb msg\n", name)); \
+		ret = NT_STATUS_UNSUCCESSFUL; \
+		goto done; \
+	} \
+	err = ldb_msg_add_fmt(msg, name, "%d", value); \
+	if (err != LDB_SUCCESS) { \
+		DEBUG(2,("ERROR: unable to add integer share option %s to ldb msg\n", name)); \
+		ret = NT_STATUS_UNSUCCESSFUL; \
+		goto done; \
+	} } while(0)
+
+#define SHARE_MOD_BLOB(name, value) do { \
+	err = ldb_msg_add_empty(msg, name, LDB_FLAG_MOD_REPLACE); \
+	if (err != LDB_SUCCESS) { \
+		DEBUG(2,("ERROR: unable to add string share option %s to ldb msg\n", name)); \
+		ret = NT_STATUS_UNSUCCESSFUL; \
+		goto done; \
+	} \
+	err = ldb_msg_add_value(msg, name, value); \
+	if (err != LDB_SUCCESS) { \
+		DEBUG(2,("ERROR: unable to add blob share option %s to ldb msg\n", name)); \
+		ret = NT_STATUS_UNSUCCESSFUL; \
+		goto done; \
+	} } while(0)
+
+NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info *info, int count)
+{
+	struct ldb_context *ldb;
+	struct ldb_message *msg;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS ret;
+	bool rename = False;
+	char *newname;
+	int err, i;
+
+	if (!name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	tmp_ctx = talloc_new(NULL);
+	if (!tmp_ctx) {
+		DEBUG(0,("ERROR: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ldb = talloc_get_type(ctx->priv_data, struct ldb_context);
+
+	msg = ldb_msg_new(tmp_ctx);
+	if (!msg) {
+		DEBUG(0,("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	/* TODO: escape name */
+	msg->dn = ldb_dn_string_compose(tmp_ctx, ldb_dn_new(tmp_ctx), "CN=%s,CN=SHARES", name);
+	if (!msg->dn) {
+		DEBUG(0,("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i = 0; i < count; i++) {
+		if (strcasecmp(info[i].name, SHARE_NAME) == 0) {
+			if (strcasecmp(name, (char *)info[i].value) != 0) {
+				rename = True;
+				newname = (char *)info[i].value;
+				SHARE_MOD_STRING("cn", (char *)info[i].value);
+			}
+		}
+
+		switch (info[i].type) {
+		case SHARE_INFO_STRING:
+			SHARE_MOD_STRING(info[i].name, (char *)info[i].value);
+			break;
+		case SHARE_INFO_INT:
+			SHARE_MOD_INT(info[i].name, *((int *)info[i].value));
+			break;
+		case SHARE_INFO_BLOB:
+			SHARE_MOD_BLOB(info[i].name, (DATA_BLOB *)info[i].value);
+			break;
+		default:
+			DEBUG(2,("ERROR: Invalid share info type for %s\n", info[i].name));
+			ret = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		}
+	}
+
+	if (rename) {
+		struct ldb_dn *olddn, *newdn;
+
+		olddn = msg->dn;
+
+		/* TODO: escape newname */
+		newdn = ldb_dn_string_compose(tmp_ctx, ldb_dn_new(tmp_ctx), "CN=%s,CN=SHARES", newname);
+		if (!newdn) {
+			DEBUG(0,("ERROR: Out of memory!\n"));
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		err = ldb_rename(ldb, olddn, newdn);
+		if (err != LDB_SUCCESS) {
+			DEBUG(2,("ERROR: unable to rename share %s (to %s)\n"
+				 "       err=%d [%s]\n", name, newname, err, ldb_errstring(ldb)));
+			if (err == LDB_ERR_NO_SUCH_OBJECT) {
+				ret = NT_STATUS_BAD_NETWORK_NAME;
+			} else {
+				ret = NT_STATUS_UNSUCCESSFUL;
+			}
+			goto done;
+		}
+
+		msg->dn = newdn;
+	}
+
+	err = ldb_modify(ldb, msg);
+	if (err != LDB_SUCCESS) {
+		DEBUG(2,("ERROR: unable to add share %s to share.ldb\n"
+			 "       err=%d [%s]\n", name, err, ldb_errstring(ldb)));
+		if (err == LDB_ERR_NO_SUCH_OBJECT) {
+			ret = NT_STATUS_BAD_NETWORK_NAME;
+		} else {
+			ret = NT_STATUS_UNSUCCESSFUL;
+		}
 		goto done;
 	}
 
@@ -396,6 +580,7 @@ NTSTATUS share_ldb_init(void)
 		.list_all = sldb_list_all,
 		.get_config = sldb_get_config,
 		.create = sldb_create,
+		.set = sldb_set,
 		.remove = sldb_remove
 	};
 

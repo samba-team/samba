@@ -54,10 +54,18 @@ NTSTATUS share_get_config(TALLOC_CTX *mem_ctx, struct share_context *sctx, const
 	return sctx->ops->get_config(mem_ctx, sctx, name, scfg);
 }
 
-NTSTATUS share_create(struct share_context *sctx, struct share_info *info)
+NTSTATUS share_create(struct share_context *sctx, const char *name, struct share_info *info, int count)
 {
 	if (sctx->ops->create) {
-		return sctx->ops->create(sctx, info);
+		return sctx->ops->create(sctx, name, info, count);
+	}
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS share_set(struct share_context *sctx, const char *name, struct share_info *info, int count)
+{
+	if (sctx->ops->set) {
+		return sctx->ops->set(sctx, name, info, count);
 	}
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
