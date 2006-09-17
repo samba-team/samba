@@ -1,13 +1,17 @@
 dnl find the tdb sources. This is meant to work both for 
 dnl tdb standalone builds, and builds of packages using tdb
 tdbdir=""
-for d in "$srcdir" "$srcdir/lib/tdb" "$srcdir/tdb" "$srcdir/../tdb"; do
+tdbpaths="$srcdir $srcdir/lib/tdb $srcdir/tdb $srcdir/../tdb"
+for d in $tdbpaths; do
 	if test -f "$d/common/tdb.c"; then
 		tdbdir="$d"		
 		AC_SUBST(tdbdir)
 		break;
 	fi
 done
+if [ x"$tdbdir" = "x" ];  then
+   AC_MSG_ERROR([cannot find tdb source in $tdbpaths])
+fi
 TDBOBJ="common/tdb.o common/dump.o common/transaction.o common/error.o common/traverse.o"
 TDBOBJ="$TDBOBJ common/freelist.o common/io.o common/lock.o common/open.o"
 AC_SUBST(TDBOBJ)

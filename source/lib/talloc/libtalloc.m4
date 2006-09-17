@@ -1,13 +1,17 @@
 dnl find the talloc sources. This is meant to work both for 
 dnl talloc standalone builds, and builds of packages using talloc
 tallocdir=""
-for d in "$srcdir" "$srcdir/lib/talloc" "$srcdir/talloc" "$srcdir/../talloc"; do
+tallocpaths="$srcdir $srcdir/lib/talloc $srcdir/talloc $srcdir/../talloc"
+for d in $tallocpaths; do
 	if test -f "$d/talloc.c"; then
 		tallocdir="$d"		
 		AC_SUBST(tallocdir)
 		break;
 	fi
 done
+if [ x"$tallocdir" = "x" ];  then
+   AC_MSG_ERROR([cannot find talloc source in $tallocpaths])
+fi
 TALLOCOBJ="talloc.o"
 AC_SUBST(TALLOCOBJ)
 
