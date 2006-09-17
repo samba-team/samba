@@ -21,6 +21,9 @@
 /* To use these macros you must have a structure containing a next and
    prev pointer */
 
+#ifndef _DLINKLIST_H
+#define _DLINKLIST_H
+
 
 /* hook into the front of the list */
 #define DLIST_ADD(list, p) \
@@ -107,3 +110,5 @@ do { \
 			} \
 		} \
 } while (0)
+
+#endif /* _DLINKLIST_H */

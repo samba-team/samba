@@ -21,11 +21,28 @@
 */
 
 #ifdef _SAMBA_BUILD_
+
+#define SOCKET_WRAPPER_NOT_REPLACE
 #include "includes.h"
-#undef SOCKET_WRAPPER
 #include "system/network.h"
 #include "system/filesys.h"
-#else
+
+#ifndef _DLINKLIST_H
+#include "lib/util/dlinklist.h"
+#endif
+
+#ifdef malloc
+#undef malloc
+#endif
+#ifdef calloc
+#undef calloc
+#endif
+#ifdef strdup
+#undef strdup
+#endif
+
+#else /* _SAMBA_BUILD_ */
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -37,8 +54,10 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+
+#error "dlinklist.h missing"
+
 #endif
-#include "lib/util/dlinklist.h"
 
 /* LD_PRELOAD doesn't work yet, so REWRITE_CALLS is all we support
  * for now */
