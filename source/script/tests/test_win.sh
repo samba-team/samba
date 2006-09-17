@@ -30,13 +30,22 @@ setup_win_server_test()
 # Run the smbtorture test.
 run_win_server_test()
 {
-	echo -e "\nRunning smbtorture RAW-QFILEINFO test."
+        winfailed=0
+	echo -e "\nRunning smbtorture tests."
+	echo -e "\nRunning RAW-QFILEINFO"
 	$SMBTORTURE_BIN_PATH \
 		-U $SMBTORTURE_USERNAME%$SMBTORTURE_PASSWORD \
 		-d 10 -W $SMBTORTURE_WORKGROUP \
 		//$SMBTORTURE_REMOTE_HOST/$SMBTORTURE_REMOTE_SHARE_NAME \
-		RAW-QFILEINFO
-	err_rtn=$?
+		RAW-QFILEINFO || winfailed=`expr $winfailed + 1`
+	
+	echo -e "\nRunning RPC-WINREG"
+	$SMBTORTURE_BIN_PATH \
+		-U $SMBTORTURE_USERNAME%$SMBTORTURE_PASSWORD \
+		-W $SMBTORTURE_WORKGROUP \
+		ncacn_np:$SMBTORTURE_REMOTE_HOST \
+		RPC-WINREG || winfailed=`expr $winfailed + 1`
+	err_rtn=$winfailed
 }
 
 # Clean up the windows environment after the test has run or failed.
