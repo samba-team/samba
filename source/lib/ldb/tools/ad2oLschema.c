@@ -63,7 +63,7 @@ static void usage(void)
 	printf("\n");
 	printf("Converts records from an AD-like LDIF schema into an openLdap formatted schema\n\n");
 	exit(1);
-};
+}
 
 static int fetch_attrs_schema(struct ldb_context *ldb, struct ldb_dn *schemadn,
 			      TALLOC_CTX *mem_ctx, 
