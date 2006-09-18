@@ -248,7 +248,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	ret = ldb_search(remote_ldb, account_dn, LDB_SCOPE_BASE, 
 			     NULL, attrs, &res);
 	if (ret != LDB_SUCCESS || res->count != 1) {
-		r->out.error_string = talloc_asprintf(r, "ldb_search for %s failed - %s\n",
+		r->out.error_string = talloc_asprintf(r, "ldb_search for %s failed - %s",
 						      account_dn_str, ldb_errstring(remote_ldb));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -313,7 +313,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		if (rtn != 0) {
 			r->out.error_string
 				= talloc_asprintf(r, 
-						  "Failed to replace entries on %s\n", 
+						  "Failed to replace entries on %s", 
 						  ldb_dn_linearize(tmp_ctx, msg->dn));
 			talloc_free(tmp_ctx);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -335,7 +335,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			r->out.error_string
 				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s\n", 
+						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s", 
 						  r->in.domain_name, 
 						  dcerpc_errstr(tmp_ctx, drsuapi_pipe->last_fault_code));
 			talloc_free(tmp_ctx);
@@ -343,7 +343,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		} else {
 			r->out.error_string
 				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s\n", 
+						  "dcerpc_drsuapi_DsCrackNames for [%s] failed - %s", 
 						  r->in.domain_name, 
 						  nt_errstr(status));
 			talloc_free(tmp_ctx);
@@ -602,7 +602,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		/* check if we got one RID for the user */
 		if (ln.out.rids.count != 1) {
 			r->out.error_string = talloc_asprintf(mem_ctx,
-							      "samr_LookupNames for [%s] returns %d RIDs\n",
+							      "samr_LookupNames for [%s] returns %d RIDs",
 							      r->in.account_name, ln.out.rids.count);
 			talloc_free(tmp_ctx);
 			return NT_STATUS_INVALID_PARAMETER;
@@ -647,7 +647,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			status = dcerpc_samr_CreateUser2(samr_pipe, tmp_ctx, &cu);			
 			if (!NT_STATUS_IS_OK(status)) {
 				r->out.error_string = talloc_asprintf(mem_ctx,
-								      "samr_CreateUser2 (recreate) for [%s] failed: %s\n",
+								      "samr_CreateUser2 (recreate) for [%s] failed: %s",
 								      r->in.account_name, nt_errstr(status));
 				talloc_free(tmp_ctx);
 				return status;
@@ -655,7 +655,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "samr_CreateUser2 for [%s] failed: %s\n",
+						      "samr_CreateUser2 for [%s] failed: %s",
 						      r->in.account_name, nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return status;
@@ -679,7 +679,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		status = NT_STATUS_INVALID_PARAMETER;
 		r->out.error_string
 			= talloc_asprintf(mem_ctx,
-					  "samr_QueryUserInfo failed to return qui.out.info for [%s]: %s\n",
+					  "samr_QueryUserInfo failed to return qui.out.info for [%s]: %s",
 					  r->in.account_name, nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return status;
@@ -723,7 +723,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 				= talloc_asprintf(mem_ctx,
 						  "We asked to create a new machine account (%s) of type %s, "
 						  "but we got an account of type %s.  This is unexpected.  "
-						  "Perhaps delete the account and try again.\n",
+						  "Perhaps delete the account and try again.",
 						  r->in.account_name, new_account_type, old_account_type);
 			talloc_free(tmp_ctx);
 			return NT_STATUS_INVALID_PARAMETER;
@@ -735,7 +735,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 				= talloc_asprintf(mem_ctx,
 						  "The machine account (%s) already exists in the domain %s, "
 						  "but is a %s.  You asked to join as a %s.  Please delete "
-						  "the account and try again.\n",
+						  "the account and try again.",
 						  r->in.account_name, connect_with_info->out.domain_name, old_account_type, new_account_type);
 			talloc_free(tmp_ctx);
 			return NT_STATUS_USER_EXISTS;
@@ -910,7 +910,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	if (!ldb) {
 		r->out.error_string
 			= talloc_asprintf(mem_ctx, 
-					  "Could not open secrets database\n");
+					  "Could not open secrets database");
 		talloc_free(tmp_mem);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -1135,7 +1135,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	/* create the secret */
 	ret = samdb_add(ldb, tmp_mem, msg);
 	if (ret != 0) {
-		r->out.error_string = talloc_asprintf(mem_ctx, "Failed to create secret record %s\n", 
+		r->out.error_string = talloc_asprintf(mem_ctx, "Failed to create secret record %s", 
 						      ldb_dn_linearize(ldb, msg->dn));
 		talloc_free(tmp_mem);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -1154,14 +1154,14 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		filter = talloc_asprintf(mem_ctx, "dn=%s", ldb_dn_linearize(mem_ctx, msg->dn));
 		status = cli_credentials_set_secrets(creds, NULL, filter);
 		if (!NT_STATUS_IS_OK(status)) {
-			r->out.error_string = talloc_asprintf(mem_ctx, "Failed to read secrets for keytab update for %s\n", 
+			r->out.error_string = talloc_asprintf(mem_ctx, "Failed to read secrets for keytab update for %s", 
 							      filter);
 			talloc_free(tmp_mem);
 			return status;
 		} 
 		ret = cli_credentials_update_keytab(creds);
 		if (ret != 0) {
-			r->out.error_string = talloc_asprintf(mem_ctx, "Failed to update keytab for %s\n", 
+			r->out.error_string = talloc_asprintf(mem_ctx, "Failed to update keytab for %s", 
 							      filter);
 			talloc_free(tmp_mem);
 			return NT_STATUS_UNSUCCESSFUL;

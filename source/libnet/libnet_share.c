@@ -46,7 +46,7 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "Connection to SRVSVC pipe of server %s "
-						      "failed: %s\n",
+						      "failed: %s",
 						      r->in.server_name,
 						      nt_errstr(status));
 		return status;
@@ -76,7 +76,7 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 		break;
 	default:
 		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "libnet_ListShares: Invalid info level requested: %d\n",
+						      "libnet_ListShares: Invalid info level requested: %d",
 						      s.in.level);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -89,7 +89,7 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "srvsvc_NetShareEnumAll on server '%s' failed"
-						      ": %s\n",
+						      ": %s",
 						      r->in.server_name, nt_errstr(status));
 		goto disconnect;
 	}
@@ -125,7 +125,7 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "Connection to SRVSVC pipe of server %s "
-						      "failed: %s\n",
+						      "failed: %s",
 						      r->in.server_name, nt_errstr(status));
 		return status;
 	}
@@ -139,7 +139,7 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "srvsvc_NetShareAdd on server '%s' failed"
-						      ": %s\n",
+						      ": %s",
 						      r->in.server_name, nt_errstr(status));
 	}
 
@@ -164,7 +164,7 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "Connection to SRVSVC pipe of server %s "
-						      "failed: %s\n",
+						      "failed: %s",
 						      r->in.server_name, nt_errstr(status));
 		return status;
 	} 
@@ -176,7 +176,7 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "srvsvc_NetShareDel on server '%s' failed"
-						      ": %s\n",
+						      ": %s",
 						      r->in.server_name, nt_errstr(status));
 	}
 
