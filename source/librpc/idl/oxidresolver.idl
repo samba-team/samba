@@ -16,8 +16,7 @@
 	endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", "ncalrpc:"),
 	pointer_default(unique),
   	pointer_default_top(unique),
-	depends(dcom, orpc),
-	keepref
+	depends(dcom, orpc)
 ]
 interface IOXIDResolver
 {
@@ -34,8 +33,8 @@ interface IOXIDResolver
 		 [in] uint16 cRequestedProtseqs,
 		 [in, size_is(cRequestedProtseqs)] uint16 arRequestedProtseqs[],
 		 [out] DUALSTRINGARRAY *ppdsaOxidBindings,
-		 [out] IPID pipidRemUnknown,
-		 [out] uint32 pAuthnHint
+		 [out,ref] IPID *pipidRemUnknown,
+		 [out,ref] uint32 *pAuthnHint
 			 );
 
 	/* Simple ping is used to ping a Set. Client machines use this */
@@ -51,8 +50,7 @@ interface IOXIDResolver
 	/* whole set can subsequently be pinged using SimplePing, */
 	/* thus reducing network traffic. */
 	[idempotent] WERROR ComplexPing (
-		[in] SETID *SetId, /* In of 0 on first call for new set. */
-		[out] SETID SetId,
+		[in,out,ref] SETID *SetId, /* In of 0 on first call for new set. */
 		[in] uint16 SequenceNum,
 		[in] uint16 cAddToSet,
 		[in] uint16 cDelFromSet,
@@ -60,7 +58,7 @@ interface IOXIDResolver
 		[in, size_is(cAddToSet)] OID AddToSet[],
 		/*remove these OIDs from the set */
 		[in, size_is(cDelFromSet)] OID DelFromSet[],
-		[out] uint16 PingBackoffFactor/* 2^factor = multipler */
+		[out,ref] uint16 *PingBackoffFactor/* 2^factor = multipler */
 			 );
 
 	/* In some cases the client maybe unsure that a particular */
@@ -80,9 +78,9 @@ interface IOXIDResolver
 											  [in] uint16 cRequestedProtseqs,
 											  [in, size_is(cRequestedProtseqs)] uint16 arRequestedProtseqs[],
 											  [out] DUALSTRINGARRAY *pdsaOxidBindings,
-											  [out] IPID ipidRemUnknown,
-											  [out] uint32 AuthnHint,
-											  [out] COMVERSION ComVersion
+											  [out,ref] IPID *ipidRemUnknown,
+											  [out,ref] uint32 *AuthnHint,
+											  [out,ref] COMVERSION *ComVersion
 											 );
 	typedef struct {
 		COMVERSION version;
@@ -90,7 +88,7 @@ interface IOXIDResolver
 	} COMINFO;
 
 	[idempotent] WERROR ServerAlive2 (
-	  [out] COMINFO info,
-	  [out] DUALSTRINGARRAY dualstring,
+	  [out,ref] COMINFO *info,
+	  [out,ref] DUALSTRINGARRAY *dualstring,
 	  [out] uint8 unknown2[3]);
 }

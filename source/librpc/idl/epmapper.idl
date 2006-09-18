@@ -15,8 +15,7 @@ http://www.opengroup.org/onlinepubs/9629399/chap6.htm#tagcjh_11_02_03_01: bindin
 		  "ncalrpc:[EPMAPPER]"),
  helpstring("EndPoint Mapper"),
  pointer_default_top(sptr),
- pointer_default(sptr),
- keepref
+ pointer_default(sptr)
 ]
 interface epmapper
 {
