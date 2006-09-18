@@ -891,8 +891,25 @@ MAKEDIR = || exec false; \
 	  $(CC_CHECKER) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $< -o $@;\
 	 fi
 	@echo Compiling $*.c
-	@$(CC) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $< -o $@ 
+	@$(CC) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $< -o $@ && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(CC) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $< -o $@" 1>&2;\
+		$(CC) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $< -o $@ >/dev/null 2>&1
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
+
+.c.@PICSUFFIX@:
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
+	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+	@if test -n "$(CC_CHECKER)"; then \
+	  echo "Checking  $*.c with '$(CC_CHECKER)' and @PICFLAGS@";\
+	  $(CC_CHECKER) -I. -I$(srcdir) $(FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@;\
+	 fi
+	@echo Compiling $*.c with @PICFLAGS@
+	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@ && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@" 1>&2;\
+		$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@ >/dev/null 2>&1
+@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
 
 # this adds support for precompiled headers. To use it, install a snapshot
 # of gcc-3.4 and run 'make pch' before you do the main build. 
@@ -935,17 +952,6 @@ smbd/build_options.o: smbd/build_options.c Makefile include/config.h include/bui
 smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
 	@echo Generating $@
 	@dir=smbd $(MAKEDIR) && $(AWK) -f $(srcdir)/script/mkbuildoptions.awk > $(builddir)/smbd/build_options.c < $(srcdir)/include/config.h.in
-
-.c.@PICSUFFIX@:
-	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
-	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-	@if test -n "$(CC_CHECKER)"; then \
-	  echo "Checking  $*.c with '$(CC_CHECKER)' and @PICFLAGS@";\
-	  $(CC_CHECKER) -I. -I$(srcdir) $(FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@;\
-	 fi
-	@echo Compiling $*.c with @PICFLAGS@
-	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
-@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
 
 bin/.dummy:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then :; else \
