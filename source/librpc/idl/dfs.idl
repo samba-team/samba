@@ -177,7 +177,6 @@
 		[in]		uint32 level,
 		[in]		uint32 bufsize,
 		[in,out,unique]	dfs_EnumStruct *info,
-		[in,unique]     uint32 *unknown,
 		[in,out,unique]	uint32 *total
 		);
 
