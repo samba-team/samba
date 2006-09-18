@@ -527,7 +527,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	req.in.user_name = name;
 	
 	printf("Testing change of a single field\n");
-	set_test_changes(mem_ctx, &req, 1, &name, last_logoff);
+	set_test_changes(mem_ctx, &req, 1, &name, none);
 	
 	status = libnet_ModifyUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
