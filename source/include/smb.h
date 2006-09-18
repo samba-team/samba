@@ -284,6 +284,7 @@ typedef struct dom_sid {
 #include "librpc/gen_ndr/dfs.h"
 #include "librpc/gen_ndr/initshutdown.h"
 #include "librpc/gen_ndr/winreg.h"
+#include "librpc/gen_ndr/eventlog.h"
 
 struct lsa_dom_info {
 	BOOL valid;

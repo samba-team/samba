@@ -214,7 +214,8 @@ LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
 
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o \
 		 librpc/gen_ndr/ndr_dfs.o librpc/gen_ndr/ndr_echo.o \
-		 librpc/gen_ndr/ndr_winreg.o librpc/gen_ndr/ndr_initshutdown.o
+		 librpc/gen_ndr/ndr_winreg.o librpc/gen_ndr/ndr_initshutdown.o \
+		 librpc/gen_ndr/ndr_eventlog.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -299,8 +300,9 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/ndr.o
 
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_unixinfo.o librpc/gen_ndr/cli_lsa.o \
-				   librpc/gen_ndr/cli_dfs.o librpc/gen_ndr/cli_echo.o \
+		   librpc/gen_ndr/cli_dfs.o librpc/gen_ndr/cli_echo.o \
 		   librpc/gen_ndr/cli_winreg.o librpc/gen_ndr/cli_initshutdown.o \
+		   librpc/gen_ndr/cli_eventlog.o \
 		   $(LIBMSRPC_GEN_OBJ1) $(LIBNDR_GEN_OBJ) $(LIBNDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
@@ -847,7 +849,8 @@ cac: SHOWFLAGS $(LIBMSRPC)
 
 #####################################################################
 ## Perl IDL Compiler
-IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl
+IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
+	    eventlog.idl
 
 idl: 
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
