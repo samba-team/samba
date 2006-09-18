@@ -11,7 +11,6 @@
   keepref
 ] interface wkssvc
 {
-	declare [v1_enum] enum srvsvc_PlatformId;
 
 #define BOOL uint32
 
@@ -19,7 +18,7 @@
 	/* Function: 0x00 */
 
 	typedef struct {
-		srvsvc_PlatformId platform_id;
+		uint16 platform_id;
 		[string,charset(UTF16)] uint16 *server_name;
 		[string,charset(UTF16)] uint16 *domain_name;
 		uint32 version_major;
@@ -27,7 +26,7 @@
 	} wkssvc_NetWkstaInfo100;
 
 	typedef struct {
-		srvsvc_PlatformId platform_id;
+		uint16 platform_id;
 		[string,charset(UTF16)] uint16 *server_name;
 		[string,charset(UTF16)] uint16 *domain_name;
 		uint32 version_major;
@@ -36,7 +35,7 @@
 	} wkssvc_NetWkstaInfo101;
 
 	typedef struct {
-		srvsvc_PlatformId platform_id;
+		uint16 platform_id;
 		[string,charset(UTF16)] uint16 *server_name;
 		[string,charset(UTF16)] uint16 *domain_name;
 		uint32 version_major;
@@ -218,10 +217,10 @@
 
 	WERROR wkssvc_NetWkstaTransportEnum (
 		[in]         [string,charset(UTF16)] uint16 *server_name,
-		[in,out]     uint32 level,
+		[in,out]     uint32 *level,
 		[in,out,switch_is(level),ref] wkssvc_NetWkstaTransportCtr *ctr,
 		[in]         uint32 max_buffer,
-		[out]        uint32 totalentries,
+		[out]        uint32 *totalentries,
 		[in,out]     uint32 *resume_handle
 		);
 
