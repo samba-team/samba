@@ -908,20 +908,6 @@ struct timespec {
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
-#ifndef _BOOL
-typedef int BOOL;
-#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
-#endif
-
-#ifndef HAVE_STRERROR
-extern char *sys_errlist[];
-#define strerror(i) sys_errlist[i]
-#endif
-
-#ifndef HAVE_ERRNO_DECL
-extern int errno;
-#endif
-
 #ifdef HAVE_BROKEN_GETGROUPS
 #define GID_T int
 #else
@@ -1159,10 +1145,6 @@ enum flush_reason_enum {
 #define PASSWORD_LENGTH 8
 #endif
 
-#ifdef REPLACE_INET_NTOA
-#define inet_ntoa rep_inet_ntoa
-#endif
-
 #ifndef HAVE_PIPE
 #define SYNC_DNS 1
 #endif
@@ -1191,71 +1173,12 @@ enum flush_reason_enum {
 #define ULTRIX_AUTH 1
 #endif
 
-#ifndef HAVE_STRDUP
-char *strdup(const char *s);
-#endif
-
-#ifndef HAVE_STRNDUP
-char *strndup(const char *s, size_t size);
-#endif
-
-#ifndef HAVE_MEMMOVE
-void *memmove(void *dest,const void *src,int size);
-#endif
-
-#ifndef HAVE_INITGROUPS
-int initgroups(char *name,gid_t id);
-#endif
-
-#ifndef HAVE_RENAME
-int rename(const char *zfrom, const char *zto);
-#endif
-
-#ifndef HAVE_MKTIME
-time_t mktime(struct tm *t);
-#endif
-
-#ifndef HAVE_STRLCPY
-size_t strlcpy(char *d, const char *s, size_t bufsize);
-#endif
-
-#ifndef HAVE_STRLCAT
-size_t strlcat(char *d, const char *s, size_t bufsize);
-#endif
-
-#ifndef HAVE_FTRUNCATE
-int ftruncate(int f,long l);
-#endif
-
-#ifndef HAVE_STRNDUP
-char *strndup(const char *s, size_t n);
-#endif
-
-#ifndef HAVE_STRNLEN
-size_t strnlen(const char *s, size_t n);
-#endif
-
-#ifndef HAVE_STRTOUL
-unsigned long strtoul(const char *nptr, char **endptr, int base);
-#endif
-
-#ifndef HAVE_SETENV
-int setenv(const char *name, const char *value, int overwrite); 
-#endif
-
 #if (defined(USE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
 /* stupid glibc */
 int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 #endif
 #if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
-#endif
-#ifndef HAVE_VASPRINTF_DECL
-int vasprintf(char **ptr, const char *format, va_list ap);
-#endif
-
-#ifdef REPLACE_GETPASS
-#define getpass(prompt) getsmbpass((prompt))
 #endif
 
 /*
@@ -1430,28 +1353,6 @@ int fdprintf(int , const char *, ...) PRINTF_ATTRIBUTE(2,3);
 int d_printf(const char *, ...) PRINTF_ATTRIBUTE(1,2);
 /*PRINTFLIKE2 */
 int d_fprintf(FILE *f, const char *, ...) PRINTF_ATTRIBUTE(2,3);
-#ifndef HAVE_SNPRINTF_DECL
-/*PRINTFLIKE3 */
-int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
-#endif
-#ifndef HAVE_ASPRINTF_DECL
-/*PRINTFLIKE2 */
-int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
-#endif
-
-/* Fix prototype problem with non-C99 compliant snprintf implementations, esp
-   HPUX 11.  Don't change the sense of this #if statement.  Read the comments
-   in lib/snprint.c if you think you need to.  See also bugzilla bug 174. */
-
-#if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
-#define snprintf smb_snprintf
-#define vsnprintf smb_vsnprintf
-
-/* PRINTFLIKE3 */
-int smb_snprintf(char *str,size_t count,const char *fmt,...);
-int smb_vsnprintf (char *str, size_t count, const char *fmt, va_list args);
-
-#endif
 
 /* PRINTFLIKE2 */
 void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
@@ -1479,10 +1380,6 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 #else
 #define VA_COPY(dest, src) (dest) = (src)
 #endif
-#endif
-
-#ifndef HAVE_TIMEGM
-time_t timegm(struct tm *tm);
 #endif
 
 /*
