@@ -1423,7 +1423,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	cli_set_timeout(cli, 30000); /* 10 seconds. */
+	cli_set_timeout(cli, 10000); /* 10 seconds. */
 
 	if (dest_ip)
 		ip = *dest_ip;
