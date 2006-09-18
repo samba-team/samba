@@ -1531,8 +1531,8 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_QUERY_DOMAIN_INFO" , SAMR_QUERY_DOMAIN_INFO, api_samr_query_domain_info},
       {"SAMR_QUERY_USERGROUPS"  , SAMR_QUERY_USERGROUPS , api_samr_query_usergroups },
       {"SAMR_QUERY_DISPINFO"    , SAMR_QUERY_DISPINFO   , api_samr_query_dispinfo   },
+      {"SAMR_QUERY_DISPINFO2"   , SAMR_QUERY_DISPINFO2  , api_samr_query_dispinfo   },
       {"SAMR_QUERY_DISPINFO3"   , SAMR_QUERY_DISPINFO3  , api_samr_query_dispinfo   },
-      {"SAMR_QUERY_DISPINFO4"   , SAMR_QUERY_DISPINFO4  , api_samr_query_dispinfo   },
       
       {"SAMR_QUERY_ALIASINFO"   , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },
       {"SAMR_QUERY_GROUPINFO"   , SAMR_QUERY_GROUPINFO  , api_samr_query_groupinfo  },
