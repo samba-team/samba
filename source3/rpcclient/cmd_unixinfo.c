@@ -156,7 +156,7 @@ static NTSTATUS cmd_unixinfo_getpwuid(struct rpc_pipe_client *cli,
 		uids[i] = atoi(argv[i+1]);
 	}
 
-	result = rpccli_unixinfo_GetPWUid(cli, mem_ctx, &num_uids, uids, &info);
+	result = rpccli_unixinfo_GetPWUid(cli, mem_ctx, &num_uids, uids, info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
