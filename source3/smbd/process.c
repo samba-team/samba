@@ -75,7 +75,6 @@ static BOOL push_queued_message(char *buf, int msg_len,
 				struct timeval end_time,
 				char *private_data, size_t private_len)
 {
-	struct pending_message_list *tmp_msg;
 	struct pending_message_list *msg;
 
 	msg = TALLOC_ZERO_P(NULL, struct pending_message_list);
@@ -105,7 +104,7 @@ static BOOL push_queued_message(char *buf, int msg_len,
 		}
 	}
 
-	DLIST_ADD_END(deferred_open_queue, msg, tmp_msg);
+	DLIST_ADD_END(deferred_open_queue, msg, struct pending_message_list *);
 
 	DEBUG(10,("push_message: pushed message length %u on "
 		  "deferred_open_queue\n", (unsigned int)msg_len));

@@ -86,7 +86,6 @@ struct browse_cache_record *create_browser_in_lmb_cache( const char *work_name,
                                                          struct in_addr ip )
 {
 	struct browse_cache_record *browc;
-	struct browse_cache_record *tmp_browc;
 	time_t now = time( NULL );
 
 	browc = SMB_MALLOC_P(struct browse_cache_record);
@@ -115,7 +114,7 @@ struct browse_cache_record *create_browser_in_lmb_cache( const char *work_name,
   
 	browc->ip = ip;
  
-	DLIST_ADD_END(lmb_browserlist, browc, tmp_browc);
+	DLIST_ADD_END(lmb_browserlist, browc, struct browse_cache_record *);
 
 	if( DEBUGLVL( 3 ) ) {
 		Debug1( "nmbd_browserdb:create_browser_in_lmb_cache()\n" );

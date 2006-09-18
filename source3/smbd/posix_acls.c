@@ -1241,7 +1241,6 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 	BOOL all_aces_are_inherit_only = (fsp->is_directory ? True : False);
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
-	canon_ace *tmp_ace = NULL;
 	canon_ace *current_ace = NULL;
 	BOOL got_dir_allow = False;
 	BOOL got_file_allow = False;
@@ -1429,7 +1428,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 			if ((psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) ==
 				(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) {
 
-				DLIST_ADD_END(dir_ace, current_ace, tmp_ace);
+				DLIST_ADD_END(dir_ace, current_ace, canon_ace *);
 
 				/*
 				 * Note if this was an allow ace. We can't process
@@ -1487,7 +1486,7 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 		 */
 
 		if (current_ace && !(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
-			DLIST_ADD_END(file_ace, current_ace, tmp_ace);
+			DLIST_ADD_END(file_ace, current_ace, canon_ace *);
 
 			/*
 			 * Note if this was an allow ace. We can't process
@@ -1734,7 +1733,6 @@ static void process_deny_list( canon_ace **pp_ace_list )
 	for (curr_ace = ace_list; curr_ace; curr_ace = curr_ace_next) {
 		mode_t new_perms = (mode_t)0;
 		canon_ace *allow_ace_p;
-		canon_ace *tmp_ace;
 
 		curr_ace_next = curr_ace->next; /* So we can't lose the link. */
 
@@ -1753,7 +1751,7 @@ static void process_deny_list( canon_ace **pp_ace_list )
 
 			curr_ace->attr = ALLOW_ACE;
 			curr_ace->perms = (mode_t)0;
-			DLIST_DEMOTE(ace_list, curr_ace, tmp_ace);
+			DLIST_DEMOTE(ace_list, curr_ace, canon_ace *);
 			continue;
 		}
 
@@ -1778,13 +1776,12 @@ static void process_deny_list( canon_ace **pp_ace_list )
 
 		curr_ace->attr = ALLOW_ACE;
 		curr_ace->perms = (new_perms & ~curr_ace->perms);
-		DLIST_DEMOTE(ace_list, curr_ace, tmp_ace);
+		DLIST_DEMOTE(ace_list, curr_ace, canon_ace *);
 	}
 
 	/* Pass 3 above - deal with deny group entries. */
 
 	for (curr_ace = ace_list; curr_ace; curr_ace = curr_ace_next) {
-		canon_ace *tmp_ace;
 		canon_ace *allow_ace_p;
 		canon_ace *allow_everyone_p = NULL;
 
@@ -1826,8 +1823,7 @@ static void process_deny_list( canon_ace **pp_ace_list )
 			curr_ace->perms = allow_everyone_p->perms & ~curr_ace->perms;
 		else
 			curr_ace->perms = (mode_t)0;
-		DLIST_DEMOTE(ace_list, curr_ace, tmp_ace);
-
+		DLIST_DEMOTE(ace_list, curr_ace, canon_ace *);
 	}
 
 	/* Doing this fourth pass allows Windows semantics to be layered
@@ -2067,7 +2063,7 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 	}
 
 	if (other_ace) {
-		DLIST_DEMOTE(list_head, other_ace, ace);
+		DLIST_DEMOTE(list_head, other_ace, canon_ace *);
 	}
 
 	/* We have probably changed the head of the list. */

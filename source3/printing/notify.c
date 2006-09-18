@@ -295,7 +295,7 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 	 * the messages are sent in the order they were received. JRA.
 	 */
 
-	DLIST_ADD_END(notify_queue_head, pnqueue, tmp_ptr);
+	DLIST_ADD_END(notify_queue_head, pnqueue, struct notify_queue *);
 	num_messages++;
 }
 
