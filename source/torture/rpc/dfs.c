@@ -88,7 +88,6 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t 
 	r.in.level = level;
 	r.in.bufsize = (uint32_t)-1;
 	r.in.total = &total;
-	r.in.unknown = &total;
 	r.in.info = &e;
 
 	e.level = r.in.level;
