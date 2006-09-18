@@ -128,11 +128,11 @@ SamrTestPrivateFunctionsUser
 #define SAMR_REMOVE_SID_FOREIGN_DOMAIN        0x2d
 #define SAMR_QUERY_DOMAIN_INFO2  0x2e /* looks like an alias for SAMR_QUERY_DOMAIN_INFO */
 #define SAMR_UNKNOWN_2f        0x2f
-#define SAMR_QUERY_DISPINFO3   0x30 /* Alias for SAMR_QUERY_DISPINFO
+#define SAMR_QUERY_DISPINFO2   0x30 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 3 */
 #define SAMR_UNKNOWN_31        0x31
 #define SAMR_CREATE_USER       0x32
-#define SAMR_QUERY_DISPINFO4   0x33 /* Alias for SAMR_QUERY_DISPINFO
+#define SAMR_QUERY_DISPINFO3   0x33 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 4 */
 #define SAMR_ADDMULTI_ALIASMEM 0x34
 
