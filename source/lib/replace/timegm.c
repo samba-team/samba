@@ -35,9 +35,8 @@
   adapted for Samba4 by Andrew Tridgell
 */
 
-#include "includes.h"
-
-#ifndef HAVE_TIMEGM
+#include "replace.h"
+#include "system/time.h"
 
 static int is_leap(unsigned y)
 {
@@ -67,5 +66,3 @@ time_t timegm(struct tm *tm)
 	res += tm->tm_sec;
 	return res;
 }
-
-#endif /* HAVE_TIMEGM */

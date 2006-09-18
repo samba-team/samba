@@ -1,7 +1,11 @@
+#ifndef _system_select_h
+#define _system_select_h
 /* 
    Unix SMB/CIFS implementation.
-   replacement routines for broken systems
-   Copyright (C) Andrew Tridgell 1992-1998
+
+   select system include wrappers
+
+   Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,25 +22,21 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 
- void replace1_dummy(void);
- void replace1_dummy(void) {}
+#ifndef SELECT_CAST
+#define SELECT_CAST
+#endif
 
-#ifndef HAVE_SETENV
- int setenv(const char *name, const char *value, int overwrite) 
-{
-	char *p = NULL;
-	int ret = -1;
+/* use epoll if it is available */
+#if defined(HAVE_EPOLL_CREATE) && defined(HAVE_SYS_EPOLL_H)
+#define WITH_EPOLL 1
+#endif
 
-	asprintf(&p, "%s=%s", name, value);
+#if WITH_EPOLL
+#include <sys/epoll.h>
+#endif
 
-	if (overwrite || getenv(name)) {
-		if (p) ret = putenv(p);
-	} else {
-		ret = 0;
-	}
-
-	return ret;	
-}
 #endif

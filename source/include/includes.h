@@ -27,7 +27,7 @@
 #endif
 
 #ifndef NO_CONFIG_H /* for some tests */
-#include "config.h"
+#include "lib/replace/replace.h"
 #endif
 
 /* only do the C++ reserved word check when we compile
@@ -124,6 +124,23 @@
 #include <unistd.h>
 #endif
 #endif /* RELIANTUNIX */
+
+#include "system/capability.h"
+#include "system/dir.h"
+#include "system/filesys.h"
+#include "system/glob.h"
+#include "system/iconv.h"
+#include "system/locale.h"
+#include "system/network.h"
+#include "system/passwd.h"
+#include "system/printing.h"
+#include "system/readline.h"
+#include "system/select.h"
+#include "system/shmem.h"
+#include "system/syslog.h"
+#include "system/terminal.h"
+#include "system/time.h"
+#include "system/wait.h"
 
 #include <sys/types.h>
 
@@ -937,11 +954,6 @@ extern int errno;
 
 #ifndef NGROUPS_MAX
 #define NGROUPS_MAX 32 /* Guess... */
-#endif
-
-#ifdef SOCKET_WRAPPER
-#define SOCKET_WRAPPER_REPLACE
-#include "lib/socket_wrapper/socket_wrapper.h"
 #endif
 
 /* Our own pstrings and fstrings */
