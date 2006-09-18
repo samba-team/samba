@@ -66,15 +66,6 @@
 #undef HAVE_TERMIOS_H
 #endif
 
-#ifdef __GNUC__
-/** gcc attribute used on function parameters so that it does not emit
- * warnings about them being unused. **/
-#  define UNUSED(param) param __attribute__ ((unused))
-#else
-#  define UNUSED(param) param
-/** Feel free to add definitions for other compilers here. */
-#endif
-
 #ifndef _PUBLIC_
 #ifdef HAVE_VISIBILITY_ATTR
 #  define _PUBLIC_ __attribute__((visibility("default")))
