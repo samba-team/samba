@@ -1113,10 +1113,6 @@ enum flush_reason_enum {
     /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
     NUM_FLUSH_REASONS};
 
-#ifndef HAVE_COMPARISON_FN_T
-typedef int (*comparison_fn_t)(const void *, const void *);
-#endif
-
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
