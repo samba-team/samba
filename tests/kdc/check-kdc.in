@@ -50,9 +50,11 @@ server2=host/computer.example.com
 cache="FILE:${objdir}/cache.krb5"
 ocache="FILE:${objdir}/ocache.krb5"
 o2cache="FILE:${objdir}/o2cache.krb5"
+icache="FILE:${objdir}/icache.krb5"
 keytabfile=${objdir}/server.keytab
 keytab="FILE:${keytabfile}"
 ps="proxy-service@${R}"
+aesenctype="aes256-cts-hmac-sha1-96"
 
 kinit="../../kuser/kinit -c $cache --no-afslog"
 klist="../../kuser/klist -c $cache"
@@ -61,6 +63,7 @@ kgetcred_imp="../../kuser/kgetcred -c $cache --out-cache=${ocache}"
 kdestroy="../../kuser/kdestroy -c $cache"
 ktutil="../../admin/ktutil"
 hxtool="../../lib/hx509/hxtool"
+kimpersonate="../../kuser/kimpersonate -k ${keytab} --ccache=${ocache}"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
@@ -272,6 +275,17 @@ ${kgetcred_imp} --forward --impersonate=bar@${R} ${ps} || exitcode=1
 ${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${server}@${R} || exitcode=1
 ./ap-req ${server}@${R} ${keytab} ${o2cache} || exitcode=1
 ${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} bar@${R} 2>/dev/null && exitcode=1
+
+echo "test constrained delegation impersonation (non forward)"
+rm -f ocache.krb5
+${kimpersonate} -s ${ps} -c bar@${R} -t ${aesenctype} || exitcode=1
+${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${server}@${R} > /dev/null 2>/dev/null && exitcode=1
+
+echo "test constrained delegation impersonation (missing KRB5SignedPath)"
+rm -f ocache.krb5
+${kimpersonate} -s ${ps} -c bar@${R} -t ${aesenctype} -f forwardable || exitcode=1
+${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${server}@${R} > /dev/null 2>/dev/null && exitcode=1
+
 ${kdestroy}
 
 echo "killing kdc (${kdcpid})"
