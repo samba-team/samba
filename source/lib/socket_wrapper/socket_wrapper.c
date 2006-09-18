@@ -24,10 +24,9 @@
 
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "includes.h"
-/*
 #include "system/network.h"
 #include "system/filesys.h"
-*/
+
 #ifndef _DLINKLIST_H
 #include "lib/util/dlinklist.h"
 #endif
