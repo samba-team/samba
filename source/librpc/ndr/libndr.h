@@ -247,7 +247,7 @@ enum ndr_compression_alg {
 		if (!(mem_ctx)) {\
 			return ndr_pull_error(ndr, NDR_ERR_ALLOC, "NDR_PULL_SET_MEM_CTX(NULL): %s\n", __location__); \
 		}\
-		ndr->current_mem_ctx = mem_ctx;\
+		ndr->current_mem_ctx = CONST_DISCARD(TALLOC_CTX *, mem_ctx);\
 	}\
 } while(0)
 
@@ -260,21 +260,17 @@ enum ndr_compression_alg {
 	}\
 } while(0)
 
-#define NDR_PULL_ALLOC_SIZE(ndr, s, size) do { \
+#define NDR_PULL_ALLOC(ndr, s) do { \
 	_NDR_PULL_FIX_CURRENT_MEM_CTX(ndr);\
-	(s) = talloc_size(ndr->current_mem_ctx, size); \
-	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u failed: %s\n",(unsigned)size, __location__); \
+	(s) = talloc_ptrtype(ndr->current_mem_ctx, (s)); \
+	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %s failed: %s\n", # s, __location__); \
 } while (0)
 
-#define NDR_PULL_ALLOC(ndr, s) NDR_PULL_ALLOC_SIZE(ndr, s, sizeof(*(s)))
-
-#define NDR_PULL_ALLOC_N_SIZE(ndr, s, n, elsize) do { \
+#define NDR_PULL_ALLOC_N(ndr, s, n) do { \
 	_NDR_PULL_FIX_CURRENT_MEM_CTX(ndr);\
-	(s) = talloc_array_size(ndr->current_mem_ctx, elsize, n); \
-	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u * %u failed: %s\n", (unsigned)n, (unsigned)elsize, __location__); \
+	(s) = talloc_array_ptrtype(ndr->current_mem_ctx, (s), n); \
+	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u * %s failed: %s\n", (unsigned)n, # s, __location__); \
 } while (0)
-
-#define NDR_PULL_ALLOC_N(ndr, s, n) NDR_PULL_ALLOC_N_SIZE(ndr, s, n, sizeof(*(s)))
 
 
 #define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
@@ -282,7 +278,10 @@ enum ndr_compression_alg {
        if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %u failed: %s\n", (unsigned)size, __location__); \
 } while (0)
 
-#define NDR_PUSH_ALLOC(ndr, s) NDR_PUSH_ALLOC_SIZE(ndr, s, sizeof(*(s)))
+#define NDR_PUSH_ALLOC(ndr, s) do { \
+       (s) = talloc_ptrtype(ndr, (s)); \
+       if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %s failed: %s\n", # s, __location__); \
+} while (0)
 
 /* these are used when generic fn pointers are needed for ndr push/pull fns */
 typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, const void *);
