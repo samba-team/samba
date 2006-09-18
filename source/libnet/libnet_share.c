@@ -134,13 +134,19 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 	s.in.info.info2 	= &r->in.share;
 	s.in.server_unc		= talloc_asprintf(mem_ctx, "\\\\%s", r->in.server_name);
  
-	status = dcerpc_srvsvc_NetShareAdd(c.out.dcerpc_pipe, mem_ctx,&s);	
+	status = dcerpc_srvsvc_NetShareAdd(c.out.dcerpc_pipe, mem_ctx, &s);	
 
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "srvsvc_NetShareAdd on server '%s' failed"
 						      ": %s",
 						      r->in.server_name, nt_errstr(status));
+	} else if (!W_ERROR_IS_OK(s.out.result)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "srvsvc_NetShareAdd on server '%s' failed"
+						      ": %s",
+						      r->in.server_name, win_errstr(s.out.result));
+		status = werror_to_ntstatus(s.out.result);
 	}
 
 	talloc_free(c.out.dcerpc_pipe);
@@ -178,6 +184,12 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 						      "srvsvc_NetShareDel on server '%s' failed"
 						      ": %s",
 						      r->in.server_name, nt_errstr(status));
+	} else if (!W_ERROR_IS_OK(s.out.result)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "srvsvc_NetShareDel on server '%s' failed"
+						      ": %s",
+						      r->in.server_name, win_errstr(s.out.result));
+		status = werror_to_ntstatus(s.out.result);
 	}
 
 	talloc_free(c.out.dcerpc_pipe);
