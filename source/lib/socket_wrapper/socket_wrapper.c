@@ -3,6 +3,7 @@
    unix domain sockets if the environment variable SOCKET_WRAPPER_DIR 
    is set.
    Copyright (C) Jelmer Vernooij 2005
+   Copyright (C) Stefan Metzmacher 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,25 +20,44 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifdef _SAMBA_BUILD_
+
+#define SOCKET_WRAPPER_NOT_REPLACE
 #include "includes.h"
-
-#ifdef _PUBLIC_
-#undef _PUBLIC_
+/*
+#include "system/network.h"
+#include "system/filesys.h"
+*/
+#ifndef _DLINKLIST_H
+#include "lib/util/dlinklist.h"
 #endif
-#define _PUBLIC_
 
-#ifdef SOCKET_WRAPPER_REPLACE
-#undef accept
-#undef connect
-#undef bind
-#undef getpeername
-#undef getsockname
-#undef getsockopt
-#undef setsockopt
-#undef recvfrom
-#undef sendto
-#undef socket
-#undef close
+#ifdef malloc
+#undef malloc
+#endif
+#ifdef calloc
+#undef calloc
+#endif
+#ifdef strdup
+#undef strdup
+#endif
+
+#else /* _SAMBA_BUILD_ */
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <errno.h>
+#include <sys/un.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+
+#error "dlinklist.h missing"
+
 #endif
 
 /* LD_PRELOAD doesn't work yet, so REWRITE_CALLS is all we support
@@ -54,13 +74,12 @@
 #define real_setsockopt setsockopt
 #define real_recvfrom recvfrom
 #define real_sendto sendto
+#define real_recv recv
+#define real_send send
 #define real_socket socket
 #define real_close close
 #endif
 
-#undef malloc
-#undef calloc
-#undef strdup
 /* we need to use a very terse format here as IRIX 6.4 silently
    truncates names to 16 chars, so if we use a longer name then we
    can't tell which port a packet came from with recvfrom() 
@@ -82,7 +101,7 @@ struct socket_info
 {
 	int fd;
 
-	int domain;
+	int family;
 	int type;
 	int protocol;
 	int bound;
@@ -100,12 +119,29 @@ struct socket_info
 	struct socket_info *prev, *next;
 };
 
-static struct socket_info *sockets = NULL;
+static struct socket_info *sockets;
 
 
 static const char *socket_wrapper_dir(void)
 {
 	const char *s = getenv("SOCKET_WRAPPER_DIR");
+	if (s == NULL) {
+		return NULL;
+	}
+	if (strncmp(s, "./", 2) == 0) {
+		s += 2;
+	}
+	return s;
+}
+
+static const char *socket_wrapper_dump_dir(void)
+{
+	const char *s = getenv("SOCKET_WRAPPER_DUMP_DIR");
+
+	if (!socket_wrapper_dir()) {
+		return NULL;
+	}
+
 	if (s == NULL) {
 		return NULL;
 	}
@@ -346,9 +382,6 @@ static int sockaddr_convert_to_un(struct socket_info *si, const struct sockaddr 
 		} else {
 			return convert_in_un_remote(si, (const struct sockaddr_in *)in_addr, out_addr, bcast);
 		}
-	case AF_UNIX:
-		memcpy(out_addr, in_addr, sizeof(*out_addr));
-		return 0;
 	default:
 		break;
 	}
@@ -390,10 +423,6 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 			return -1;
 		}
 		return convert_un_in(in_addr, (struct sockaddr_in *)out_addr, _out_addrlen);
-	case AF_UNIX:
-		memcpy(out_addr, in_addr, out_addrlen);
-		*_out_addrlen = out_addrlen;
-		return 0;
 	default:
 		break;
 	}
@@ -402,26 +431,52 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 	return -1;
 }
 
-_PUBLIC_ int swrap_socket(int domain, int type, int protocol)
+enum swrap_packet_type {
+	SWRAP_CONNECT,
+	SWRAP_ACCEPT,
+	SWRAP_RECVFROM,
+	SWRAP_SENDTO,
+	SWRAP_RECV,
+	SWRAP_SEND,
+	SWRAP_CLOSE
+};
+
+static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *addr,
+			      enum swrap_packet_type type,
+			      const void *buf, size_t len, ssize_t ret)
+{
+	if (!socket_wrapper_dump_dir()) {
+		return;
+	}
+
+}
+
+_PUBLIC_ int swrap_socket(int family, int type, int protocol)
 {
 	struct socket_info *si;
 	int fd;
 
 	if (!socket_wrapper_dir()) {
-		return real_socket(domain, type, protocol);
-	}
-	
-	si = (struct socket_info *)calloc(1, sizeof(struct socket_info));
-	if (si == NULL) {
-		errno = ENOMEM;
-		return -1;
+		return real_socket(family, type, protocol);
 	}
 
+	switch (family) {
+	case AF_INET:
+		break;
+	case AF_UNIX:
+		return real_socket(family, type, protocol);
+	default:
+		errno = EAFNOSUPPORT;
+		return -1;
+	}
+	
 	fd = real_socket(AF_UNIX, type, 0);
 
 	if (fd == -1) return -1;
 
-	si->domain = domain;
+	si = calloc(1, sizeof(struct socket_info));
+
+	si->family = family;
 	si->type = type;
 	si->protocol = protocol;
 	si->fd = fd;
@@ -458,29 +513,35 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	fd = ret;
 
 	ret = sockaddr_convert_from_un(parent_si, &un_addr, un_addrlen,
-				       parent_si->domain, addr, addrlen);
-	if (ret == -1) return ret;
-
-	child_si = (struct socket_info *)malloc(sizeof(struct socket_info));
-	if (child_si == NULL) {
+				       parent_si->family, addr, addrlen);
+	if (ret == -1) {
 		close(fd);
-		errno = ENOMEM;
-		return -1;
+		return ret;
 	}
+
+	child_si = malloc(sizeof(struct socket_info));
 	memset(child_si, 0, sizeof(*child_si));
 
 	child_si->fd = fd;
-	child_si->domain = parent_si->domain;
+	child_si->family = parent_si->family;
 	child_si->type = parent_si->type;
 	child_si->protocol = parent_si->protocol;
 	child_si->bound = 1;
 
 	ret = real_getsockname(fd, (struct sockaddr *)&un_my_addr, &un_my_addrlen);
-	if (ret == -1) return ret;
+	if (ret == -1) {
+		free(child_si);
+		close(fd);
+		return ret;
+	}
 
 	ret = sockaddr_convert_from_un(child_si, &un_my_addr, un_my_addrlen,
-				       child_si->domain, &my_addr, &my_addrlen);
-	if (ret == -1) return ret;
+				       child_si->family, &my_addr, &my_addrlen);
+	if (ret == -1) {
+		free(child_si);
+		close(fd);
+		return ret;
+	}
 
 	child_si->myname_len = my_addrlen;
 	child_si->myname = sockaddr_dup(&my_addr, my_addrlen);
@@ -489,6 +550,8 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->peername = sockaddr_dup(addr, *addrlen);
 
 	DLIST_ADD(sockets, child_si);
+
+	swrap_dump_packet(child_si, addr, SWRAP_ACCEPT, NULL, 0, 0);
 
 	return fd;
 }
@@ -504,6 +567,7 @@ static int swrap_auto_bind(struct socket_info *si)
 	int i;
 	char type;
 	int ret;
+	int port;
 	struct stat st;
 	
 	un_addr.sun_family = AF_UNIX;
@@ -521,9 +585,10 @@ static int swrap_auto_bind(struct socket_info *si)
 	}
 	
 	for (i=0;i<1000;i++) {
+		port = 10000 + i;
 		snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), 
 			 "%s/"SOCKET_FORMAT, socket_wrapper_dir(),
-			 type, socket_wrapper_default_iface(), i + 10000);
+			 type, socket_wrapper_default_iface(), port);
 		if (stat(un_addr.sun_path, &st) == 0) continue;
 		
 		ret = real_bind(si->fd, (struct sockaddr *)&un_addr, sizeof(un_addr));
@@ -540,7 +605,7 @@ static int swrap_auto_bind(struct socket_info *si)
 	
 	memset(&in, 0, sizeof(in));
 	in.sin_family = AF_INET;
-	in.sin_port   = htons(i);
+	in.sin_port   = htons(port);
 	in.sin_addr.s_addr = htonl(127<<24 | socket_wrapper_default_iface());
 	
 	si->myname_len = sizeof(in);
@@ -560,7 +625,7 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 		return real_connect(s, serv_addr, addrlen);
 	}
 
-	if (si->bound == 0 && si->domain != AF_UNIX) {
+	if (si->bound == 0) {
 		ret = swrap_auto_bind(si);
 		if (ret == -1) return -1;
 	}
@@ -572,16 +637,16 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 			   sizeof(struct sockaddr_un));
 
 	/* to give better errors */
-	if (serv_addr->sa_family == AF_INET) {
-		if (ret == -1 && errno == ENOENT) {
-			errno = EHOSTUNREACH;
-		}
+	if (ret == -1 && errno == ENOENT) {
+		errno = EHOSTUNREACH;
 	}
 
 	if (ret == 0) {
 		si->peername_len = addrlen;
 		si->peername = sockaddr_dup(serv_addr, addrlen);
 	}
+
+	swrap_dump_packet(si, serv_addr, SWRAP_CONNECT, NULL, 0, ret);
 
 	return ret;
 }
@@ -660,13 +725,8 @@ _PUBLIC_ int swrap_getsockopt(int s, int level, int optname, void *optval, sockl
 		return real_getsockopt(s, level, optname, optval, optlen);
 	} 
 
-	switch (si->domain) {
-	case AF_UNIX:
-		return real_getsockopt(s, level, optname, optval, optlen);
-	default:
-		errno = ENOPROTOOPT;
-		return -1;
-	}
+	errno = ENOPROTOOPT;
+	return -1;
 }
 
 _PUBLIC_ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, socklen_t optlen)
@@ -681,15 +741,9 @@ _PUBLIC_ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *o
 		return real_setsockopt(s, level, optname, optval, optlen);
 	}
 
-	switch (si->domain) {
-	case AF_UNIX:
-		return real_setsockopt(s, level, optname, optval, optlen);
+	switch (si->family) {
 	case AF_INET:
-		/* Silence some warnings */
-#ifdef TCP_NODELAY
-		if (optname == TCP_NODELAY) 
-			return 0;
-#endif
+		return 0;
 	default:
 		errno = ENOPROTOOPT;
 		return -1;
@@ -714,15 +768,17 @@ _PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct 
 		return ret;
 
 	if (sockaddr_convert_from_un(si, &un_addr, un_addrlen,
-				     si->domain, from, fromlen) == -1) {
+				     si->family, from, fromlen) == -1) {
 		return -1;
 	}
-	
+
+	swrap_dump_packet(si, from, SWRAP_RECVFROM, buf, len, ret);
+
 	return ret;
 }
 
 
-_PUBLIC_ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
+_PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
 {
 	struct sockaddr_un un_addr;
 	int ret;
@@ -733,7 +789,7 @@ _PUBLIC_ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, 
 		return real_sendto(s, buf, len, flags, to, tolen);
 	}
 
-	if (si->bound == 0 && si->domain != AF_UNIX) {
+	if (si->bound == 0) {
 		ret = swrap_auto_bind(si);
 		if (ret == -1) return -1;
 	}
@@ -757,17 +813,57 @@ _PUBLIC_ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, 
 			/* ignore the any errors in broadcast sends */
 			real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
 		}
+
+		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len, len);
+
 		return len;
 	}
 
 	ret = real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
 
 	/* to give better errors */
-	if (to->sa_family == AF_INET) {
-		if (ret == -1 && errno == ENOENT) {
-			errno = EHOSTUNREACH;
-		}
+	if (ret == -1 && errno == ENOENT) {
+		errno = EHOSTUNREACH;
 	}
+
+	swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len, ret);
+
+	return ret;
+}
+
+_PUBLIC_ ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
+{
+	int ret;
+	struct socket_info *si = find_socket_info(s);
+
+	if (!si) {
+		return real_recv(s, buf, len, flags);
+	}
+
+	ret = real_recv(s, buf, len, flags);
+	if (ret == -1) 
+		return ret;
+
+	swrap_dump_packet(si, NULL, SWRAP_RECV, buf, len, ret);
+
+	return ret;
+}
+
+
+_PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
+{
+	int ret;
+	struct socket_info *si = find_socket_info(s);
+
+	if (!si) {
+		return real_send(s, buf, len, flags);
+	}
+
+	ret = real_send(s, buf, len, flags);
+	if (ret == -1) 
+		return ret;
+
+	swrap_dump_packet(si, NULL, SWRAP_SEND, buf, len, ret);
 
 	return ret;
 }
@@ -778,6 +874,8 @@ _PUBLIC_ int swrap_close(int fd)
 
 	if (si) {
 		DLIST_REMOVE(sockets, si);
+
+		swrap_dump_packet(si, NULL, SWRAP_CLOSE, NULL, 0, 0);
 
 		free(si->path);
 		free(si->myname);
