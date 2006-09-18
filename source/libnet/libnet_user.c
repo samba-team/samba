@@ -550,7 +550,7 @@ static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod
 	SET_FIELD_LSA_STRING(r->in, user, mod, full_name, USERMOD_FIELD_FULL_NAME);
 
 	/* description change */
-	SET_FIELD_LSA_STRING(r->in, user, mod, comment, USERMOD_FIELD_DESCRIPTION);
+	SET_FIELD_LSA_STRING(r->in, user, mod, description, USERMOD_FIELD_DESCRIPTION);
 
 	/* comment change */
 	SET_FIELD_LSA_STRING(r->in, user, mod, comment, USERMOD_FIELD_COMMENT);
@@ -572,6 +572,12 @@ static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod
 
 	/* force password change time */
 	SET_FIELD_NTTIME(r->in, user, mod, force_password_change, USERMOD_FIELD_FORCE_PASS_CHG);
+
+	/* last logon change time */
+	SET_FIELD_NTTIME(r->in, user, mod, last_logon, USERMOD_FIELD_LAST_LOGON);
+
+	/* last logoff change time */
+	SET_FIELD_NTTIME(r->in, user, mod, last_logoff, USERMOD_FIELD_LAST_LOGOFF);
 
 	/* account expiry change */
 	SET_FIELD_NTTIME(r->in, user, mod, acct_expiry, USERMOD_FIELD_ACCT_EXPIRY);
@@ -744,6 +750,7 @@ NTSTATUS libnet_UserInfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 		s = talloc_get_type(c->private_data, struct user_info_state);
 		info = &s->userinfo.out.info.info21;
 
+		/* string fields */
 		r->out.account_name   = talloc_steal(mem_ctx, info->account_name.string);
 		r->out.full_name      = talloc_steal(mem_ctx, info->full_name.string);
 		r->out.description    = talloc_steal(mem_ctx, info->description.string);
@@ -752,6 +759,25 @@ NTSTATUS libnet_UserInfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 		r->out.comment        = talloc_steal(mem_ctx, info->comment.string);
 		r->out.logon_script   = talloc_steal(mem_ctx, info->logon_script.string);
 		r->out.profile_path   = talloc_steal(mem_ctx, info->profile_path.string);
+
+		/* time fields (allocation) */
+		r->out.acct_expiry           = talloc(mem_ctx, struct timeval);
+		r->out.allow_password_change = talloc(mem_ctx, struct timeval);
+		r->out.force_password_change = talloc(mem_ctx, struct timeval);
+		r->out.last_logon            = talloc(mem_ctx, struct timeval);
+		r->out.last_logoff           = talloc(mem_ctx, struct timeval);
+		r->out.last_password_change  = talloc(mem_ctx, struct timeval);
+		
+		/* time fields (converting) */
+		nttime_to_timeval(r->out.acct_expiry, info->acct_expiry);
+		nttime_to_timeval(r->out.allow_password_change, info->allow_password_change);
+		nttime_to_timeval(r->out.force_password_change, info->force_password_change);
+		nttime_to_timeval(r->out.last_logon, info->last_logon);
+		nttime_to_timeval(r->out.last_logoff, info->last_logoff);
+		nttime_to_timeval(r->out.last_password_change, info->last_password_change);
+
+		/* flag and number fields */
+		r->out.acct_flags = info->acct_flags;
 
 		r->out.error_string = talloc_strdup(mem_ctx, "Success");
 	}
