@@ -8,7 +8,7 @@ cd ${srcdir}
 
 [ -d librpc/gen_ndr ] || mkdir -p librpc/gen_ndr || exit 1
 
-PIDL="$PERL pidl/pidl ${PIDL_ARGS} ${PIDL_EXTRA_ARGS}"
+PIDL="pidl ${PIDL_ARGS} ${PIDL_EXTRA_ARGS}"
 
 ##
 ## Find newer files rather than rebuild all of them
