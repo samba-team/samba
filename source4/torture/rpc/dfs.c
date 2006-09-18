@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   test suite for lsa dfs operations
+   test suite for rpc dfs operations
 
    Copyright (C) Andrew Tridgell 2003
    
@@ -24,14 +24,12 @@
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_dfs_c.h"
 
-
-static BOOL test_GetManagerVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static BOOL test_GetManagerVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, enum dfs_ManagerVersion *version)
 {
 	NTSTATUS status;
 	struct dfs_GetManagerVersion r;
-	uint32_t exist = 0;
 
-	r.out.exist_flag = &exist;
+	r.out.version = version;
 
 	status = dcerpc_dfs_GetManagerVersion(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -172,6 +170,7 @@ BOOL torture_rpc_dfs(struct torture_context *torture)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
+	enum dfs_ManagerVersion version;
 
 	mem_ctx = talloc_init("torture_rpc_dfs");
 
@@ -182,7 +181,7 @@ BOOL torture_rpc_dfs(struct torture_context *torture)
 		return False;
 	}
 
-	if (!test_GetManagerVersion(p, mem_ctx)) {
+	if (!test_GetManagerVersion(p, mem_ctx, &version)) {
 		ret = False;
 	}
 
