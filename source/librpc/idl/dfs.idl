@@ -25,19 +25,19 @@
 	/******************/
 	/* Function: 0x01 */
 	WERROR dfs_Add (
-		[in,string,charset(UTF16)] uint16 *path,
-		[in,string,charset(UTF16)] uint16 *server,
-		[in,unique,string,charset(UTF16)] uint16 *share,
-		[in,unique,string,charset(UTF16)] uint16 *comment,
-		[in]         uint32 flags
+		[in]		[string,charset(UTF16)] uint16 *path,
+		[in]		[string,charset(UTF16)] uint16 *server,
+		[in,unique]	[string,charset(UTF16)] uint16 *share,
+		[in,unique]	[string,charset(UTF16)] uint16 *comment,
+		[in]		uint32 flags
 		);
 
 	/******************/
 	/* Function: 0x02 */
 	WERROR dfs_Remove (
-		[in,string,charset(UTF16)] uint16 *path,
-		[in,unique,string,charset(UTF16)] uint16 *server,
-		[in,unique,string,charset(UTF16)] uint16 *share
+		[in]		[string,charset(UTF16)] uint16 *path,
+		[in,unique]	[string,charset(UTF16)] uint16 *server,
+		[in,unique]	[string,charset(UTF16)] uint16 *share
 		);
 
 	/******************/
@@ -107,7 +107,7 @@
 	} dfs_Info300;
 
 	typedef union {
-		[case(0)]	dfs_Info0 *info0;
+		[case(0)]   dfs_Info0 *info0;
 		[case(1)]   dfs_Info1 *info1;
 		[case(2)]   dfs_Info2 *info2;
 		[case(3)]   dfs_Info3 *info3;
@@ -118,10 +118,10 @@
 	} dfs_Info;
 
 	WERROR dfs_GetInfo (
-		[in,ref,string,charset(UTF16)] uint16 *path,
-		[in,unique,string,charset(UTF16)] uint16 *server,
-		[in,unique,string,charset(UTF16)] uint16 *share,
-		[in]     uint32 level,
+		[in,ref]	[string,charset(UTF16)] uint16 *path,
+		[in,unique]	[string,charset(UTF16)] uint16 *server,
+		[in,unique]	[string,charset(UTF16)] uint16 *share,
+		[in]		uint32 level,
 		[out,switch_is(level)] dfs_Info *info
 		);
 
@@ -174,11 +174,11 @@
 	} dfs_EnumStruct;
 
 	WERROR dfs_Enum (
-		[in] uint32 level,
-		[in] uint32 bufsize,
-		[in,out,unique] dfs_EnumStruct *info,
+		[in]		uint32 level,
+		[in]		uint32 bufsize,
+		[in,out,unique]	dfs_EnumStruct *info,
 		[in,unique]     uint32 *unknown,
-		[in,out,unique] uint32 *total
+		[in,out,unique]	uint32 *total
 		);
 
 	/* Function 0x06 */
@@ -228,12 +228,12 @@
 
 	/* Function 0x15 */
 	WERROR dfs_EnumEx(
-		[in,string,charset(UTF16)] uint16 *name,
-		[in] uint32 level,
-		[in] uint32 bufsize,
+		[in]            [string,charset(UTF16)] uint16 *name,
+		[in]            uint32 level,
+		[in]            uint32 bufsize,
 		[in,out,unique] dfs_EnumStruct *info,
 		[in,out,unique] uint32 *total
-			  );
+	);
 
 	/* Function 0x16 */
 	WERROR dfs_SetInfo2();
