@@ -474,8 +474,16 @@
 		[size_is(count)] srvsvc_NetShareInfo1004 *array;
 	} srvsvc_NetShareCtr1004;
 
+	typedef bitmap {
+		SHARE_1005_IN_DFS               = 0x00000001,
+		SHARE_1005_DFS_ROOT             = 0x00000002
+	} NetShareInfo1005Flags;
+	
+	const uint32 SHARE_1005_CSC_POLICY_MASK = 0x00000030;
+	const uint32 SHARE_1005_CSC_POLICY_SHIFT = 4;
+
 	typedef struct {
-		uint32 dfs_flags;
+		NetShareInfo1005Flags dfs_flags;
 	} srvsvc_NetShareInfo1005;
 
 	typedef struct {
