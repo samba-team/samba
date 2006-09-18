@@ -566,6 +566,28 @@ _PUBLIC_ NTTIME timeval_to_nttime(const struct timeval *tv)
 		  ((TIME_FIXUP_CONSTANT + (uint64_t)tv->tv_sec) * 1000000));
 }
 
+/**
+  convert a NTTIME to a timeval
+*/
+_PUBLIC_ void nttime_to_timeval(struct timeval *tv, NTTIME t)
+{
+	if (tv == NULL) return;
+
+	t += 10/2;
+	t /= 10;
+	t -= TIME_FIXUP_CONSTANT*1000*1000;
+
+	tv->tv_sec  = t / 1000000;
+
+	if (TIME_T_MIN > tv->tv_sec || tv->tv_sec > TIME_T_MAX) {
+		tv->tv_sec  = 0;
+		tv->tv_usec = 0;
+		return;
+	}
+	
+	tv->tv_usec = t - tv->tv_sec*1000000;
+}
+
 /*******************************************************************
 yield the difference between *A and *B, in seconds, ignoring leap seconds
 ********************************************************************/
