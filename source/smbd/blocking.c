@@ -86,7 +86,7 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 		SMB_BIG_UINT offset, SMB_BIG_UINT count)
 {
 	static BOOL set_lock_msg;
-	blocking_lock_record *blr, *tmp;
+	blocking_lock_record *blr;
 	NTSTATUS status;
 
 	if(in_chained_smb() ) {
@@ -148,7 +148,7 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 		return False;
 	}
 
-	DLIST_ADD_END(blocking_lock_queue, blr, tmp);
+	DLIST_ADD_END(blocking_lock_queue, blr, blocking_lock_record *);
 
 	/* Ensure we'll receive messages when this is unlocked. */
 	if (!set_lock_msg) {
