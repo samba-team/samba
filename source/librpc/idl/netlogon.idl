@@ -1046,7 +1046,7 @@ interface netlogon
 		);
 
 	typedef [flag(NDR_PAHEX)] struct {
-		uint16 data[256];
+		uint8 data[512];
 		uint32 length;
 	} netr_CryptPassword;
 
