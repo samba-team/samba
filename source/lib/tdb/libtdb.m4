@@ -9,7 +9,7 @@ for d in $tdbpaths; do
 		break;
 	fi
 done
-if x"$tdbdir" = "x"; then
+if test x"$tdbdir" = "x"; then
    AC_MSG_ERROR([cannot find tdb source in $tdbpaths])
 fi
 TDBOBJ="common/tdb.o common/dump.o common/transaction.o common/error.o common/traverse.o"
