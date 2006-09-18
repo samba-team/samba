@@ -130,7 +130,7 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 		return status;
 	}
 
-	s.in.level 		= r->in.level;
+	s.in.level 		= 2;
 	s.in.info.info2 	= &r->in.share;
 	s.in.server_unc		= talloc_asprintf(mem_ctx, "\\\\%s", r->in.server_name);
  

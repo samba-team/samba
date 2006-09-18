@@ -47,7 +47,6 @@ struct libnet_AddShare {
 	enum libnet_AddShare_level level;
 	struct {
 		const char * server_name;
-		uint32_t level;
 		struct srvsvc_NetShareInfo2 share;	
 	} in;
 	struct {
