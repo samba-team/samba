@@ -37,7 +37,6 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_LookupNames r1;
 	struct samr_OpenUser r2;
 	struct samr_DeleteUser r3;
-	struct samr_Close r4;
 	struct lsa_String names[2];
 	uint32_t rid;
 	struct policy_handle user_handle;
@@ -82,15 +81,6 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	r4.in.handle = domain_handle;
-	r4.out.handle = domain_handle;
-
-	status = dcerpc_samr_Close(p, mem_ctx, &r4);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Close failed - %s\n", nt_errstr(status));
-		return False;
-	}
-	
 	return True;
 }
 
@@ -142,6 +132,25 @@ static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		*handle = domain_handle;
 	}
 
+	return True;
+}
+
+
+static BOOL test_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		       struct policy_handle *domain_handle)
+{
+	NTSTATUS status;
+	struct samr_Close r;
+  
+	r.in.handle = domain_handle;
+	r.out.handle = domain_handle;
+
+	status = dcerpc_samr_Close(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Close failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	
 	return True;
 }
 
@@ -210,6 +219,7 @@ BOOL torture_createuser(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_CreateUser req;
+	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_createuser");
 	binding = lp_parm_string(-1, "torture", "binding");
@@ -224,15 +234,25 @@ BOOL torture_createuser(struct torture_context *torture)
 	status = libnet_CreateUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_CreateUser call failed: %s\n", nt_errstr(status));
-		return False;
+		ret = False;
+		goto done;
 	}
 
 	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
 		printf("cleanup failed\n");
-		return False;
+		ret = False;
+		goto done;
 	}
 
-	return True;
+	if (!test_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
+		printf("domain close failed\n");
+		ret = False;
+	}
+
+done:
+	talloc_free(ctx);
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 
@@ -262,7 +282,8 @@ BOOL torture_deleteuser(struct torture_context *torture)
 					&p,
 					&dcerpc_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		ret = False;
+		goto done;
 	}
 
 	domain_name.string = lp_workgroup();
@@ -287,6 +308,7 @@ BOOL torture_deleteuser(struct torture_context *torture)
 	talloc_free(mem_ctx);
 
 done:
+	talloc_free(ctx);
 	talloc_free(prep_mem_ctx);
 	return ret;
 }
@@ -308,18 +330,20 @@ done:
 		continue; \
 	}
 
-static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_changes)
+enum test_fields { none = 0, account_name, full_name, description, home_directory, home_drive,
+		   comment, logon_script, profile_path, acct_expiry, allow_password_change,
+		   force_password_change, last_logon, last_logoff, last_password_change };
+
+static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_changes,
+			     char **user_name, enum test_fields req_change)
 {
-	enum fields { account_name = 0, full_name, description, home_directory, home_drive,
-		      comment, logon_script, profile_path, acct_expiry, allow_password_change,
-		      force_password_change, last_logon, last_logoff, last_password_change };
 	const int num_fields = 14;
 	const char* logon_scripts[] = { "start_login.cmd", "login.bat", "start.cmd" };
 	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
 	const char* home_drives[] = { "H:", "z:", "I:", "J:", "n:" };
 	const char *homedir, *homedrive, *logonscript;
 	struct timeval now;
-	int i, randval;
+	int i, testfld;
 
 	srandom((unsigned)time(NULL));
 
@@ -327,17 +351,21 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, i
 
 	for (i = 0; i < num_changes && i < num_fields; i++) {
 		const char *fldname;
-		randval = random() % num_fields;
+
+		testfld = (req_change == none) ? (random() % num_fields) : req_change;
 
 		/* get one in case we hit time field this time */
 		gettimeofday(&now, NULL);
 		
-		switch (randval) {
+		switch (testfld) {
 		case account_name:
 			continue_if_field_set(r->in.account_name);
 			r->in.account_name = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
 							     (int)random());
 			fldname = "account_name";
+			
+			/* update the test's user name in case it's about to change */
+			*user_name = r->in.account_name;
 			break;
 
 		case full_name:
@@ -436,6 +464,9 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, i
 		}
 		
 		printf(((i < num_changes - 1) ? "%s," : "%s"), fldname);
+
+		/* disable requested field (it's supposed to be the only one used) */
+		if (req_change != none) req_change = none;
 	}
 
 	printf("]\n");
@@ -451,7 +482,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	TALLOC_CTX *prep_mem_ctx, *mem_ctx;
 	struct policy_handle h;
 	struct lsa_String domain_name;
-	const char *name = TEST_USERNAME;
+	char *name;
 	struct libnet_context *ctx;
 	struct libnet_ModifyUser req;
 	BOOL ret = True;
@@ -466,8 +497,11 @@ BOOL torture_modifyuser(struct torture_context *torture)
 					&p,
 					&dcerpc_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		ret = False;
+		goto done;
 	}
+
+	name = talloc_strdup(prep_mem_ctx, TEST_USERNAME);
 
 	domain_name.string = lp_workgroup();
 	if (!test_opendomain(p, prep_mem_ctx, &h, &domain_name)) {
@@ -490,13 +524,11 @@ BOOL torture_modifyuser(struct torture_context *torture)
 
 	ZERO_STRUCT(req);
 	req.in.domain_name = lp_workgroup();
-	req.in.user_name = TEST_USERNAME;
+	req.in.user_name = name;
 	
 	printf("Testing change of a single field\n");
-	set_test_changes(mem_ctx, &req, 1);
+	set_test_changes(mem_ctx, &req, 1, &name, last_logoff);
 	
-	req.in.account_name = "newlibnetuser";
-
 	status = libnet_ModifyUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
@@ -505,14 +537,21 @@ BOOL torture_modifyuser(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
+	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, name)) {
 		printf("cleanup failed\n");
+		ret = False;
+		goto done;
+	}
+
+	if (!test_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
+		printf("domain close failed\n");
 		ret = False;
 	}
 
 	talloc_free(mem_ctx);
 
 done:
+	talloc_free(ctx);
 	talloc_free(prep_mem_ctx);
 	return ret;
 }
@@ -572,6 +611,12 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 
 	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
 		printf("cleanup failed\n");
+		ret = False;
+		goto done;
+	}
+
+	if (!test_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
+		printf("domain close failed\n");
 		ret = False;
 	}
 
