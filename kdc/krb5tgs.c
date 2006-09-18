@@ -1491,7 +1491,7 @@ server_lookup:
     }
 
     /*
-     *
+     * Constrained delegation
      */
 
     if (client != NULL
@@ -1524,16 +1524,11 @@ server_lookup:
 
 	if (adtkt.flags.forwardable == 0) {
 	    kdc_log(context, config, 0,
-		    "missing forwardable flag on ticket for "
+		    "Missing forwardable flag on ticket for "
 		    "constrained delegation from %s to %s ", spn, cpn);
 	    ret = KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
 	    goto out;
 	}
-
-	/*
-	 * Check that the KDC have issued this ticket
-	 */
-	require_signedpath = 1;
 
 	ret = check_constrained_delegation(context, config, client, sp);
 	if (ret) {
@@ -1559,9 +1554,36 @@ server_lookup:
 	    goto out;
 	}
 
+	/*
+	 * Check KRB5SignedPath in authorization data and add new entry to
+	 * make sure servers can't fake a ticket to us.
+	 */
+
+	ret = check_KRB5SignedPath(context,
+				   config,
+				   krbtgt,
+				   &adtkt,
+				   &spp,
+				   1);
+	if (ret) {
+	    kdc_log(context, config, 0,
+		    "KRB5SignedPath check from service %s failed "
+		    "for delegation to %s for client %s "
+		    "from %s failed with %s",
+		    spn, str, cpn, from, krb5_get_err_text(context, ret));
+	    free(str);
+	    goto out;
+	}
+
 	kdc_log(context, config, 0, "constrained delegation for %s "
 		"from %s to %s", str, cpn, spn);
 	free(str);
+
+	/* 
+	 * Also require that the KDC have issue the service's krbtgt
+	 * used to do the request. 
+	 */
+	require_signedpath = 1;
     }
 
     /*
@@ -1591,11 +1613,7 @@ server_lookup:
 	goto out;
     }
 	
-    /*
-     * Check KRB5SignedPath in authorization data and add new entry to
-     * make sure servers can't fake a ticket to us.
-    */
-
+    /* also check the krbtgt for signature */
     ret = check_KRB5SignedPath(context,
 			       config,
 			       krbtgt,
