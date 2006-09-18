@@ -81,7 +81,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 				user->nt_password_present = True;
 			}
 		} else {
-			*error_string = talloc_asprintf(mem_ctx, "Failed to parse Sensitive Data for %s:\n", username);
+			*error_string = talloc_asprintf(mem_ctx, "Failed to parse Sensitive Data for %s:", username);
 			dump_data(10, data.data, data.length);
 			return nt_status;
 		}
@@ -186,7 +186,6 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		r->out.error_string
 			= talloc_asprintf(mem_ctx, 
 					  "Our join to domain %s is not as a BDC (%d), please rejoin as a BDC",
-					  
 					  cli_credentials_get_domain(machine_account),
 					  cli_credentials_get_secure_channel_type(machine_account));
 		talloc_free(samsync_ctx);

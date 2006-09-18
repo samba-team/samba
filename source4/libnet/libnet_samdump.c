@@ -188,7 +188,7 @@ NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct 
 						  s->secret.data, s->secret.length, 
 						  (void **)&secret_string) == -1) {
 				r->out.error_string = talloc_asprintf(mem_ctx, 
-								      "Could not convert secret for domain %s to a string\n",
+								      "Could not convert secret for domain %s to a string",
 								      t->name);
 				talloc_free(samdump_state);
 				return NT_STATUS_INVALID_PARAMETER;

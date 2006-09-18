@@ -42,7 +42,7 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->srvsvc.out.error_string = talloc_asprintf(mem_ctx,
-						"Connection to SRVSVC pipe of server '%s' failed: %s\n",
+						"Connection to SRVSVC pipe of server '%s' failed: %s",
 						r->srvsvc.in.server_name, nt_errstr(status));
 		return status;
 	}
@@ -54,7 +54,7 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 	status = dcerpc_srvsvc_NetRemoteTOD(c.out.dcerpc_pipe, mem_ctx, &tod);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->srvsvc.out.error_string = talloc_asprintf(mem_ctx,
-						"srvsvc_NetrRemoteTOD on server '%s' failed: %s\n",
+						"srvsvc_NetrRemoteTOD on server '%s' failed: %n",
 						r->srvsvc.in.server_name, nt_errstr(status));
 		goto disconnect;
 	}
@@ -62,7 +62,7 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 	/* check result of srvsvc_NetrRemoteTOD */
 	if (!W_ERROR_IS_OK(tod.out.result)) {
 		r->srvsvc.out.error_string = talloc_asprintf(mem_ctx,
-						"srvsvc_NetrRemoteTOD on server '%s' failed: %s\n",
+						"srvsvc_NetrRemoteTOD on server '%s' failed: %s",
 						r->srvsvc.in.server_name, win_errstr(tod.out.result));
 		status = werror_to_ntstatus(tod.out.result);
 		goto disconnect;
