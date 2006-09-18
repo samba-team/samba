@@ -941,7 +941,7 @@ extern int errno;
 
 #ifdef SOCKET_WRAPPER
 #define SOCKET_WRAPPER_REPLACE
-#include "include/socket_wrapper.h"
+#include "lib/socket_wrapper/socket_wrapper.h"
 #endif
 
 /* Our own pstrings and fstrings */
