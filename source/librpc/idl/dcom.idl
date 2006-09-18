@@ -18,8 +18,7 @@
 	object,
 	uuid("00000000-0000-0000-C000-000000000046"),
 	pointer_default(unique),
-	helpstring("Base interface for all COM interfaces"),
-	keepref
+	helpstring("Base interface for all COM interfaces")
 ]
 interface IUnknown
 {
@@ -43,8 +42,7 @@ interface IUnknown
 [
 	object,
 	uuid("00000001-0000-0000-C000-000000000046"),
-	pointer_default(unique),
-	keepref
+	pointer_default(unique)
 ] interface IClassFactory : IUnknown
 {
 	[local] WERROR CreateInstance([in,unique] MInterfacePointer *pUnknown, 
@@ -71,8 +69,7 @@ interface IUnknown
 	uuid("00000131-0000-0000-C000-000000000046"),
 	object,
 	pointer_default(unique),
-	helpstring("Remote version of IUnknown"),
-	keepref
+	helpstring("Remote version of IUnknown")
 ]
 interface IRemUnknown : IUnknown
 {
@@ -172,8 +169,7 @@ interface IRemUnknown : IUnknown
 [
 	object,
 	pointer_default(unique),
-	uuid("00000143-0000-0000-C000-000000000046"),
-	keepref
+	uuid("00000143-0000-0000-C000-000000000046")
 ]
 
 interface IRemUnknown2 : IRemUnknown
@@ -190,8 +186,7 @@ interface IRemUnknown2 : IRemUnknown
 [
 	object,
 	pointer_default(unique),
-	uuid("00020400-0000-0000-C000-000000000046"),
-	keepref
+	uuid("00020400-0000-0000-C000-000000000046")
 ] interface IDispatch : IUnknown
 {
 	/*****************/
@@ -259,8 +254,7 @@ interface IRemUnknown2 : IRemUnknown
 	uuid(DA23F6DB-6F45-466C-9EED-0B65286F2D78),
 	helpstring("ICoffeeMachine Interface"),
 	pointer_default(unique),
-	object,
-	keepref
+	object
 ] interface ICoffeeMachine : IUnknown
 {
 	WERROR MakeCoffee([in,string,charset(UTF16)] uint16 *flavor);
@@ -278,8 +272,7 @@ interface IRemUnknown2 : IRemUnknown
 	object,
 	pointer_default(unique),
 	uuid("0000000C-0000-0000-C000-000000000046"),
-	helpstring("Stream"),
-	keepref
+	helpstring("Stream")
 ]
 interface IStream : IUnknown
 {

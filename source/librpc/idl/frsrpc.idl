@@ -3,8 +3,7 @@
   version(1.1),
   endpoint("ncacn_ip_tcp:", "ncalrpc:"),
   helpstring("File Replication Service"),
-  pointer_default(unique),
-  keepref
+  pointer_default(unique)
 ] 
 interface frsrpc
 {

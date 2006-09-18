@@ -4,8 +4,7 @@
   endpoint("ncacn_np:[\\pipe\\rpcecho]", "ncacn_ip_tcp:", "ncalrpc:"),
   pointer_default(unique),
   version(1.0),
-  helpstring("Simple echo pipe"),
-  keepref
+  helpstring("Simple echo pipe")
 ]
 interface rpcecho
 {

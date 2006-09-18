@@ -5,15 +5,14 @@
   	pointer_default_top(unique),
 	depends(orpc),
  	endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", 
-		  "ncalrpc:[EPMAPPER]"),
-	keepref
+		  "ncalrpc:[EPMAPPER]")
 ] interface rot
 {
 	WERROR rot_add (
 					[in] uint32 flags, 
 					[in] MInterfacePointer *unk, 
 					[in] MInterfacePointer *moniker, 
-					[out] uint32 rotid
+					[out,ref] uint32 *rotid
 					);
 	
 	WERROR rot_remove (
@@ -26,7 +25,7 @@
 	
 	WERROR rot_get_interface_pointer (
 					 [in] MInterfacePointer *moniker, 
-					 [out] MInterfacePointer *ip
+					 [out,ref] MInterfacePointer *ip
 					 );
 	
 	WERROR rot_set_modification_time (
@@ -36,7 +35,7 @@
 	
 	WERROR rot_get_modification_time (
 							   [in] MInterfacePointer *moniker,
-							   [out] NTTIME t
+							   [out,ref] NTTIME *t
 							   );
 	
 	WERROR rot_enum (

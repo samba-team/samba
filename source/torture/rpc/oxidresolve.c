@@ -47,6 +47,8 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uin
 	r.in.Interfaces = 1;
 	iids[0] = dcerpc_table_IUnknown.syntax_id.uuid;
 	r.in.pIIDs = iids;
+	r.out.pOxid = oxid;
+	r.out.ipidRemUnknown = oid;
 
 	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
@@ -60,7 +62,7 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uin
 	}
 
 	if(!W_ERROR_IS_OK(r.out.hr)) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.hr));
+		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(*r.out.hr));
 		return 0;
 	}
 
@@ -69,8 +71,6 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uin
 		return 0;
 	}
 
-	*oid = r.out.ipidRemUnknown;
-	*oxid = r.out.pOxid;
 
 	return 1;
 }
@@ -189,7 +189,7 @@ static int test_ResolveOxid2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_
 		return 0;
 	}
 	
-	printf("Remote server versions: %d, %d\n", r.out.ComVersion.MajorVersion, r.out.ComVersion.MinorVersion);
+	printf("Remote server versions: %d, %d\n", r.out.ComVersion->MajorVersion, r.out.ComVersion->MinorVersion);
 
 	return 1;
 }

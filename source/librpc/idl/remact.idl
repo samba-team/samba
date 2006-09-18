@@ -8,8 +8,7 @@
 	pointer_default(unique),
   	pointer_default_top(unique),
 	endpoint("ncalrpc:", "ncacn_ip_tcp:[135]", "ncacn_np:[\\pipe\\epmapper]"),
-	depends(dcom,orpc),
-	keepref
+	depends(dcom,orpc)
 ]
 interface IRemoteActivation
 {
@@ -25,7 +24,7 @@ interface IRemoteActivation
 	const uint32 MODE_GET_CLASS_OBJECT = 0xffffffff;
 	WERROR RemoteActivation (
 			[in] ORPCTHIS this,
-			[out] ORPCTHAT that,
+			[out,ref] ORPCTHAT *that,
 			[in] GUID Clsid,
 			[in] [string,charset(UTF16)] uint16 *pwszObjectName,
 			[in] MInterfacePointer *pObjectStorage,
@@ -35,12 +34,12 @@ interface IRemoteActivation
 			[in,size_is(Interfaces)] GUID *pIIDs,
 			[in] uint16 num_protseqs,
 			[in, size_is(num_protseqs)] uint16 protseq[*],
-			[out] hyper pOxid,
-			[out] DUALSTRINGARRAY *pdsaOxidBindings,
-			[out] GUID ipidRemUnknown,
-			[out] uint32 AuthnHint,
-			[out] COMVERSION ServerVersion,
-			[out] WERROR hr,
+			[out,ref] hyper *pOxid,
+			[out,ref] DUALSTRINGARRAY *pdsaOxidBindings,
+			[out,ref] GUID *ipidRemUnknown,
+			[out,ref] uint32 *AuthnHint,
+			[out,ref] COMVERSION *ServerVersion,
+			[out,ref] WERROR *hr,
 			[out,size_is(Interfaces)] MInterfacePointer *ifaces[],
 			[out,size_is(Interfaces)] WERROR results[]
 			);
