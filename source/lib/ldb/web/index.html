@@ -64,15 +64,20 @@ svn. To fetch via svn use the following commands:
   svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/ldb ldb
   svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/tdb tdb
   svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/talloc talloc
+  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/replace libreplace
 </pre>
 
 To fetch via rsync use these commands:
 
 <pre>
-  rsync -Pavz samba.org::ftp/unpacked/samba4/source/lib/ldb .
-  rsync -Pavz samba.org::ftp/unpacked/samba4/source/lib/tdb .
-  rsync -Pavz samba.org::ftp/unpacked/samba4/source/lib/talloc .
+  rsync -Pavz samba.org::ftp/unpacked/ldb .
+  rsync -Pavz samba.org::ftp/unpacked/tdb .
+  rsync -Pavz samba.org::ftp/unpacked/talloc .
+  rsync -Pavz samba.org::ftp/unpacked/libreplace .
 </pre>
+
+and build in ldb. It will find the other libraries in the directory
+above automatically.
 
 <hr>
 <tiny>
