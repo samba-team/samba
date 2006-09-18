@@ -13,7 +13,7 @@ for d in $libreplacepaths; do
 		break;
 	fi
 done
-if [ x"$libreplacedir" = "x" ];  then
+if test x"$libreplacedir" = "x"; then
 	AC_MSG_ERROR([cannot find libreplace in $libreplacepaths])
 fi
 LIBREPLACEOBJ="replace.o"

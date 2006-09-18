@@ -9,7 +9,7 @@ for d in $tallocpaths; do
 		break;
 	fi
 done
-if [ x"$tallocdir" = "x" ];  then
+if test x"$tallocdir" = "x"; then
    AC_MSG_ERROR([cannot find talloc source in $tallocpaths])
 fi
 TALLOCOBJ="talloc.o"
