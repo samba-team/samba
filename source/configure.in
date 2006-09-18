@@ -227,6 +227,14 @@ do
 done
 ])
 
+SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/tdb/include"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -D_SAMBA_BUILD_"
+
+SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/popt"
+
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)
@@ -239,6 +247,7 @@ AC_SUBST(rootsbindir)
 AC_SUBST(pammodulesdir)
 
 dnl Unique-to-Samba variables we'll be playing with.
+AC_SUBST(SAMBA_CPPFLAGS)
 AC_SUBST(SHELL)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(SONAMEFLAG)
@@ -2683,7 +2692,7 @@ fi
 
 AC_CACHE_CHECK([whether getpass should be replaced],samba_cv_REPLACE_GETPASS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt"
+CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
 AC_TRY_COMPILE([
 #define REPLACE_GETPASS 1
 #define NO_PROTO_H 1
@@ -4313,7 +4322,7 @@ fi
 if test x"$samba_cv_SYSQUOTA_FOUND" != x"no"; then
 AC_CACHE_CHECK([whether the sys_quota interface works],samba_cv_SYSQUOTA_WORKS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt -I${srcdir-.}/nsswitch"
+CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1
@@ -4340,7 +4349,7 @@ fi
 if test x"$samba_cv_SYSQUOTA_FOUND" != x"no" -a x"$samba_cv_found_xfs_header" = x"yes"; then
 AC_CACHE_CHECK([whether the sys_quota interface works with XFS],samba_cv_SYSQUOTA_WORKS_XFS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt -I${srcdir-.}/nsswitch"
+CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1
@@ -4360,7 +4369,7 @@ fi
 
 AC_CACHE_CHECK([whether the old quota support works],samba_cv_QUOTA_WORKS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt -I${srcdir-.}/nsswitch"
+CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1

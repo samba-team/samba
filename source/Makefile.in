@@ -121,7 +121,7 @@ LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
 LIBADDNS_MAJOR=0
 LIBADDNS_MINOR=1
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/tdb/include @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_  -I$(srcdir)/libaddns -I$(srcdir)/librpc
+FLAGS1 = $(CFLAGS) @FLAGS1@ @SAMBA_CPPFLAGS@ @SMBWRAP_INC@ $(CPPFLAGS)
 FLAGS2 =
 FLAGS3 = 
 FLAGS4 = 
