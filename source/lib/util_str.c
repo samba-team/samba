@@ -1663,49 +1663,6 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 	return ret;
 }
 
-
-#if !defined(HAVE_STRNDUP) || defined(BROKEN_STRNDUP)
-/**
- Some platforms don't have strndup.
-**/
-#if defined(PARANOID_MALLOC_CHECKER)
-#undef strndup
-#endif
-
- char *strndup(const char *s, size_t n)
-{
-	char *ret;
-	
-	n = strnlen(s, n);
-	ret = SMB_MALLOC(n+1);
-	if (!ret)
-		return NULL;
-	memcpy(ret, s, n);
-	ret[n] = 0;
-
-	return ret;
-}
-
-#if defined(PARANOID_MALLOC_CHECKER)
-#define strndup(s,n) __ERROR_DONT_USE_STRNDUP_DIRECTLY
-#endif
-
-#endif
-
-#if !defined(HAVE_STRNLEN) || defined(BROKEN_STRNLEN)
-/**
- Some platforms don't have strnlen
-**/
-
- size_t strnlen(const char *s, size_t n)
-{
-	size_t i;
-	for (i=0; i<n && s[i] != '\0'; i++)
-		/* noop */ ;
-	return i;
-}
-#endif
-
 /**
  List of Strings manipulation functions
 **/
