@@ -1,3 +1,16 @@
+2006-09-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* fix-export: Build lib/hx509/{hx509-protos.h,hx509-private.h}.
+
+	* kuser/Makefile.am: Add tool for printing tickets.
+
+	* kuser/kimpersonate.1: Add tool for printing tickets.
+	
+	* kuser/kimpersonate.c: Add tool for printing tickets.
+
+	* kdc/krb5tgs.c: Check the adtkt in the constrained delegation
+	case too.
+	
 2006-09-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/main.c (sigterm): don't _exit, let loop() catch the signal
