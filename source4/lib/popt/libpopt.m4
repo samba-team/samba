@@ -25,7 +25,8 @@ if test x"$INCLUDED_POPT" != x"no"; then
 	dnl find the popt sources. This is meant to work both for 
 	dnl popt standalone builds, and builds of packages using popt
 	poptdir=""
-	for d in "$srcdir" "$srcdir/lib/popt" "$srcdir/popt" "$srcdir/../popt"; do
+	poptpaths="$srcdir $srcdir/lib/popt $srcdir/popt $srcdir/../popt"
+	for d in $poptpaths; do
 		if test -f "$d/popt.c"; then
 			poptdir="$d"		
 			POPT_CFLAGS="-I$d"
@@ -33,6 +34,9 @@ if test x"$INCLUDED_POPT" != x"no"; then
 			break
 		fi
 	done
+        if test x"$poptdir" = "x"; then
+		AC_MSG_ERROR([cannot find popt source in $poptpaths])
+	fi
 	POPTOBJ="popt.o findme.o poptconfig.o popthelp.o poptparse.o"
 	AC_SUBST(POPTOBJ)
 	AC_CHECK_HEADERS([float.h alloca.h])
