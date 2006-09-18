@@ -49,7 +49,15 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 	}
 
 	*res = NULL;
-	status = ads_do_search_all_args(ads, bp, scope, expr, attrs, args, res);
+
+	/* when binding anonymously, we cannot use the paged search LDAP
+	 * control - Guenther */
+
+	if (ads->auth.flags & ADS_AUTH_ANON_BIND) {
+		status = ads_do_search(ads, bp, scope, expr, attrs, res);
+	} else {
+		status = ads_do_search_all_args(ads, bp, scope, expr, attrs, args, res);
+	}
 	if (ADS_ERR_OK(status)) {
 		DEBUG(5,("Search for %s gave %d replies\n",
 			 expr, ads_count_replies(ads, *res)));
@@ -82,7 +90,16 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 		}
 
 		*res = NULL;
-		status = ads_do_search_all_args(ads, bp, scope, expr, attrs, args, res);
+
+		/* when binding anonymously, we cannot use the paged search LDAP
+		 * control - Guenther */
+
+		if (ads->auth.flags & ADS_AUTH_ANON_BIND) {
+			status = ads_do_search(ads, bp, scope, expr, attrs, res);
+		} else {
+			status = ads_do_search_all_args(ads, bp, scope, expr, attrs, args, res);
+		}
+
 		if (ADS_ERR_OK(status)) {
 			DEBUG(5,("Search for filter: %s, base: %s gave %d replies\n",
 				 expr, bp, ads_count_replies(ads, *res)));
