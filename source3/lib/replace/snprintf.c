@@ -103,11 +103,8 @@
  *
  **************************************************************/
 
-#ifndef NO_CONFIG_H
-#include "config.h"
-#else
-#define NULL 0
-#endif 
+#include "replace.h"
+#include "system/locale.h"
 
 #ifdef TEST_SNPRINTF /* need math library headers for testing */
 
@@ -121,22 +118,6 @@
 #  include <math.h>
 #endif /* TEST_SNPRINTF */
 
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif
-#ifdef HAVE_CTYPE_H
-#include <ctype.h>
-#endif
-#include <sys/types.h>
-#include <stdarg.h>
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
 #if defined(HAVE_SNPRINTF) && defined(HAVE_VSNPRINTF) && defined(HAVE_C99_VSNPRINTF)
 /* only include stdio.h if we are not re-defining snprintf or vsnprintf */
 #include <stdio.h>
@@ -144,6 +125,9 @@
  void dummy_snprintf(void);
  void dummy_snprintf(void) {} 
 #endif /* HAVE_SNPRINTF, etc */
+
+/* yes this really must be a ||. Don't muck with this (tridge) */
+#if !defined(HAVE_VSNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 
 #ifdef HAVE_LONG_DOUBLE
 #define LDOUBLE long double
@@ -217,9 +201,6 @@
 #define MAX(p,q) (((p) >= (q)) ? (p) : (q))
 #endif
 
-/* yes this really must be a ||. Don't muck with this (tridge) */
-#if !defined(HAVE_VSNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
-
 struct pr_chunk {
 	int type; /* chunk type */
 	int num; /* parameter number */
@@ -243,7 +224,7 @@ struct pr_chunk_x {
 	int num;
 };
 
-static size_t dopr(char *buffer, size_t maxlen, const char *format, 
+static int dopr(char *buffer, size_t maxlen, const char *format, 
 		   va_list args_in);
 static void fmtstr(char *buffer, size_t *currlen, size_t maxlen,
 		    char *value, int flags, int min, int max);
@@ -256,7 +237,7 @@ static struct pr_chunk *new_chunk(void);
 static int add_cnk_list_entry(struct pr_chunk_x **list,
 				int max_num, struct pr_chunk *chunk);
 
-static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args_in)
+static int dopr(char *buffer, size_t maxlen, const char *format, va_list args_in)
 {
 	char ch;
 	int state;
@@ -270,7 +251,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 	struct pr_chunk *cnk = NULL;
 	struct pr_chunk_x *clist = NULL;
 	int max_pos;
-	size_t ret = -1;
+	int ret = -1;
 
 	VA_COPY(args, args_in);
 
@@ -638,7 +619,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 			break;
 
 		case CNK_PTR:
-			cnk->strvalue = (char *)va_arg (args, void *);
+			cnk->strvalue = va_arg (args, void *);
 			for (i = 1; i < clist[pnum].num; i++) {
 				clist[pnum].chunks[i]->strvalue = cnk->strvalue;
 			}
@@ -933,7 +914,7 @@ static LLONG ROUND(LDOUBLE value)
 static double my_modf(double x0, double *iptr)
 {
 	int i;
-	LLONG l;
+	LLONG l=0;
 	double x = x0;
 	double f = 1.0;
 
@@ -1203,11 +1184,10 @@ static int add_cnk_list_entry(struct pr_chunk_x **list,
 	return max;
 }
 
- int smb_vsnprintf (char *str, size_t count, const char *fmt, va_list args)
+ int vsnprintf (char *str, size_t count, const char *fmt, va_list args)
 {
 	return dopr(str, count, fmt, args);
 }
-#define vsnprintf smb_vsnprintf
 #endif
 
 /* yes this really must be a ||. Don't muck with this (tridge)
@@ -1217,7 +1197,7 @@ static int add_cnk_list_entry(struct pr_chunk_x **list,
  * that doesn't work properly according to the autoconf test.
  */
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
-int smb_snprintf(char *str,size_t count,const char *fmt,...)
+ int snprintf(char *str,size_t count,const char *fmt,...)
 {
 	size_t ret;
 	va_list ap;
@@ -1227,7 +1207,48 @@ int smb_snprintf(char *str,size_t count,const char *fmt,...)
 	va_end(ap);
 	return ret;
 }
-#define snprintf smb_snprintf
+#endif
+
+#ifndef HAVE_C99_VSNPRINTF
+ int printf(const char *fmt, ...)
+{
+	va_list ap;
+	int ret;
+	char *s;
+
+	s = NULL;
+	va_start(ap, fmt);
+	ret = vasprintf(&s, fmt, ap);
+	va_end(ap);
+
+	if (s) {
+		fwrite(s, 1, strlen(s), stdout);
+	}
+	free(s);
+
+	return ret;
+}
+#endif
+
+#ifndef HAVE_C99_VSNPRINTF
+ int fprintf(FILE *stream, const char *fmt, ...)
+{
+	va_list ap;
+	int ret;
+	char *s;
+
+	s = NULL;
+	va_start(ap, fmt);
+	ret = vasprintf(&s, fmt, ap);
+	va_end(ap);
+
+	if (s) {
+		fwrite(s, 1, strlen(s), stream);
+	}
+	free(s);
+
+	return ret;
+}
 #endif
 
 #endif 
