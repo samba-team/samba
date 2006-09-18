@@ -849,14 +849,7 @@ cac: SHOWFLAGS $(LIBMSRPC)
 ## Perl IDL Compiler
 IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl
 
-pidl/Makefile: pidl/Makefile.PL
-	@echo Building Perl IDL Compiler....
-	@cd $(srcdir)/pidl && $(PERL) Makefile.PL
-
-pidl/lib/Parse/Pidl/IDL.pm: pidl/Makefile
-	@cd $(srcdir)/pidl && make
-
-idl: pidl/lib/Parse/Pidl/IDL.pm
+idl: 
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh $(PIDL_ARGS)
 
