@@ -880,6 +880,19 @@
 
 	typedef struct {
 		uint32    idx;
+		uint32    rid;
+		samr_GroupAttrs acct_flags;
+		lsa_String account_name;
+		lsa_String description;
+	} samr_DispEntryFullGroup;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] samr_DispEntryFullGroup *entries;
+	} samr_DispInfoFullGroups;
+
+	typedef struct {
+		uint32    idx;
 		lsa_AsciiString account_name;
 	} samr_DispEntryAscii;
 
@@ -891,7 +904,7 @@
 	typedef [switch_type(uint16)] union {
 		[case(1)] samr_DispInfoGeneral info1;/* users */
 		[case(2)] samr_DispInfoFull info2; /* trust accounts? */
-		[case(3)] samr_DispInfoFull info3; /* groups */
+		[case(3)] samr_DispInfoFullGroups info3; /* groups */
 		[case(4)] samr_DispInfoAscii info4; /* users */
 		[case(5)] samr_DispInfoAscii info5; /* groups */
 	} samr_DispInfo;
