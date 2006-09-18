@@ -1,28 +1,3 @@
-dnl AC_VALIDATE_CACHE_SYSTEM_TYPE[(cmd)]
-dnl if the cache file is inconsistent with the current host,
-dnl target and build system types, execute CMD or print a default
-dnl error message.
-AC_DEFUN(AC_VALIDATE_CACHE_SYSTEM_TYPE, [
-    AC_REQUIRE([AC_CANONICAL_SYSTEM])
-    AC_MSG_CHECKING([config.cache system type])
-    if { test x"${ac_cv_host_system_type+set}" = x"set" &&
-         test x"$ac_cv_host_system_type" != x"$host"; } ||
-       { test x"${ac_cv_build_system_type+set}" = x"set" &&
-         test x"$ac_cv_build_system_type" != x"$build"; } ||
-       { test x"${ac_cv_target_system_type+set}" = x"set" &&
-         test x"$ac_cv_target_system_type" != x"$target"; }; then
-	AC_MSG_RESULT([different])
-	ifelse($#, 1, [$1],
-		[AC_MSG_ERROR(["you must remove config.cache and restart configure"])])
-    else
-	AC_MSG_RESULT([same])
-    fi
-    ac_cv_host_system_type="$host"
-    ac_cv_build_system_type="$build"
-    ac_cv_target_system_type="$target"
-])
-
-
 dnl test whether dirent has a d_off member
 AC_DEFUN(AC_DIRENT_D_OFF,
 [AC_CACHE_CHECK([for d_off in dirent], ac_cv_dirent_d_off,
@@ -77,32 +52,6 @@ AC_DEFUN(SMB_SUBSYSTEM,
 	AC_DEFINE_UNQUOTED([static_decl_]translit([$1], [A-Z], [a-z]), [$decl_static_modules_]translit([$1], [A-Z], [a-z]), [Decl of Static init functions])
     	ifelse([$2], , :, [rm -f $2])
 ])
-
-dnl AC_PROG_CC_FLAG(flag)
-AC_DEFUN(AC_PROG_CC_FLAG,
-[AC_CACHE_CHECK(whether ${CC-cc} accepts -$1, ac_cv_prog_cc_$1,
-[echo 'void f(){}' > conftest.c
-if test -z "`${CC-cc} -$1 -c conftest.c 2>&1`"; then
-  ac_cv_prog_cc_$1=yes
-else
-  ac_cv_prog_cc_$1=no
-fi
-rm -f conftest*
-])])
-
-dnl see if a declaration exists for a function or variable
-dnl defines HAVE_function_DECL if it exists
-dnl AC_HAVE_DECL(var, includes)
-AC_DEFUN(AC_HAVE_DECL,
-[
- AC_CACHE_CHECK([for $1 declaration],ac_cv_have_$1_decl,[
-    AC_TRY_COMPILE([$2],[int i = (int)$1],
-        ac_cv_have_$1_decl=yes,ac_cv_have_$1_decl=no)])
- if test x"$ac_cv_have_$1_decl" = x"yes"; then
-    AC_DEFINE([HAVE_]translit([$1], [a-z], [A-Z])[_DECL],1,[Whether $1() is available])
- fi
-])
-
 
 dnl AC_LIBTESTFUNC(lib, function, [actions if found], [actions if not found])
 dnl Check for a function in a library, but don't keep adding the same library
@@ -868,3 +817,5 @@ else
     $2
 fi
 ])
+
+m4_include(lib/replace/libreplace.m4)

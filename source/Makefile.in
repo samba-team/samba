@@ -193,8 +193,6 @@ VERSION_OBJ = lib/version.o
 
 DOSERR_OBJ = libsmb/doserr.o
 
-SNPRINTF_OBJ = lib/snprintf.o
-
 WBCOMMON_OBJ = nsswitch/wb_common.o
 
 AFS_OBJ = lib/afs.o
@@ -219,15 +217,15 @@ RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
 TALLOC_OBJ = lib/talloc.o
 
-LIB_WITHOUT_PROTO_OBJ = @SOCKET_WRAPPER_OBJS@
+LIB_WITHOUT_PROTO_OBJ = @LIBREPLACE_OBJS@ @SOCKET_WRAPPER_OBJS@
 
 LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/getsmbpass.o lib/interface.o lib/md4.o \
-	  lib/interfaces.o lib/pidfile.o lib/replace.o lib/replace1.o lib/repdir.o lib/timegm.o \
+	  lib/interfaces.o lib/pidfile.o \
 	  lib/signal.o lib/system.o lib/sendfile.o lib/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o \
 	  lib/util_pw.o lib/access.o lib/smbrun.o \
-	  lib/bitmap.o lib/crc32.o $(SNPRINTF_OBJ) lib/dprintf.o \
+	  lib/bitmap.o lib/crc32.o lib/dprintf.o \
 	  lib/xfile.o lib/wins_srv.o lib/util_reg.o \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o lib/util_uuid.o \
 	  lib/util_unistr.o lib/util_file.o lib/data_blob.o \
@@ -558,7 +556,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ)
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
-		  lib/replace1.o $(SNPRINTF_OBJ) @BUILD_INIPARSER@
+		  @LIBREPLACE_OBJS@ @BUILD_INIPARSER@
 
 LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   libsmb/libsmb_cache.o \
@@ -623,7 +621,7 @@ CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 MOUNT_OBJ = client/smbmount.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
-MNT_OBJ = client/smbmnt.o lib/replace.o lib/timegm.o $(VERSION_OBJ) $(SNPRINTF_OBJ) @SOCKET_WRAPPER_OBJS@
+MNT_OBJ = client/smbmnt.o $(VERSION_OBJ) @LIBREPLACE_OBJS@ @SOCKET_WRAPPER_OBJS@
 
 UMOUNT_OBJ = client/smbumount.o @SOCKET_WRAPPER_OBJS@
 
@@ -772,7 +770,7 @@ WINBINDD_OBJ = \
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) $(RPC_PARSE_OBJ1) $(DOSERR_OBJ)
 
-WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) lib/replace1.o lib/snprintf.o @WINBIND_NSS_EXTRA_OBJS@
+WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) @LIBREPLACE_OBJS@ @WINBIND_NSS_EXTRA_OBJS@
 
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
@@ -780,12 +778,12 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
 INIPARSER_OBJ = iniparser/src/iniparser.o iniparser/src/dictionary.o \
 		iniparser/src/strlib.o
 
-TDBBACKUP_OBJ = tdb/tools/tdbbackup.o tdb/common/tdbback.o $(SNPRINTF_OBJ) \
+TDBBACKUP_OBJ = tdb/tools/tdbbackup.o tdb/common/tdbback.o @LIBREPLACE_OBJS@ \
 	$(TDBBASE_OBJ)
 
-TDBTOOL_OBJ = tdb/tools/tdbtool.o $(TDBBASE_OBJ) $(SNPRINTF_OBJ)
+TDBTOOL_OBJ = tdb/tools/tdbtool.o $(TDBBASE_OBJ) @LIBREPLACE_OBJS@
 
-TDBDUMP_OBJ = tdb/tools/tdbdump.o $(TDBBASE_OBJ) $(SNPRINTF_OBJ)
+TDBDUMP_OBJ = tdb/tools/tdbdump.o $(TDBBASE_OBJ) @LIBREPLACE_OBJS@
 
 NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o 
 
@@ -1514,9 +1512,6 @@ bin/t_doschar@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_doschar.o
 	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) $(LIBS) torture/t_doschar.o -L ./bin -lbigballofmud
 bin/t_push_ucs2@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
 	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) $(LIBS) torture/t_push_ucs2.o -L ./bin -lbigballofmud
-
-bin/t_snprintf@EXEEXT@: lib/snprintf.c
-	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) -DTEST_SNPRINTF lib/snprintf.c -lm
 
 bin/timelimit@EXEEXT@: script/tests/timelimit.o
 	@echo Linking $@

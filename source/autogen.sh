@@ -4,8 +4,8 @@
 
 ## insert all possible names (only works with 
 ## autoconf 2.x
-TESTAUTOHEADER="autoheader autoheader-2.53 autoheader2.50"
-TESTAUTOCONF="autoconf autoconf-2.53 autoconf2.50"
+TESTAUTOHEADER="autoheader autoheader-2.53 autoheader2.50 autoheader259 autoheader253"
+TESTAUTOCONF="autoconf autoconf-2.53 autoconf2.50 autoconf259 autoconf253"
 
 AUTOHEADERFOUND="0"
 AUTOCONFFOUND="0"
@@ -53,11 +53,13 @@ echo "$0: running script/mkversion.sh"
 rm -rf autom4te*.cache
 rm -f configure include/config.h*
 
-echo "$0: running $AUTOHEADER"
-$AUTOHEADER || exit 1
+IPATHS="-I. -Ilib/replace"
 
-echo "$0: running $AUTOCONF"
-$AUTOCONF || exit 1
+echo "$0: running $AUTOHEADER $IPATHS"
+$AUTOHEADER $IPATHS || exit 1
+
+echo "$0: running $AUTOCONF $IPATHS"
+$AUTOCONF $IPATHS || exit 1
 
 rm -rf autom4te*.cache
 
