@@ -19,7 +19,7 @@
 #ifndef __SOCKET_WRAPPER_H__
 #define __SOCKET_WRAPPER_H__
 
-int swrap_socket(int domain, int type, int protocol);
+int swrap_socket(int family, int type, int protocol);
 int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen);
 int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen);
 int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen);
@@ -28,7 +28,9 @@ int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen);
 int swrap_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen);
 int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, socklen_t optlen);
 ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
-ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen);
+ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen);
+ssize_t swrap_recv(int s, void *buf, size_t len, int flags);
+ssize_t swrap_send(int s, const void *buf, size_t len, int flags);
 int swrap_close(int);
 
 #ifdef SOCKET_WRAPPER_REPLACE
@@ -77,6 +79,16 @@ int swrap_close(int);
 #undef sendto
 #endif
 #define sendto(s,buf,len,flags,to,tolen)          swrap_sendto(s,buf,len,flags,to,tolen)
+
+#ifdef recv
+#undef recv
+#endif
+#define recv(s,buf,len,flags)		swrap_recv(s,buf,len,flags)
+
+#ifdef send
+#undef send
+#endif
+#define send(s,buf,len,flags)		swrap_send(s,buf,len,flags)
 
 #ifdef socket
 #undef socket
