@@ -1185,9 +1185,10 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 
 /* Query display info */
 
-static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli, 
-                                        TALLOC_CTX *mem_ctx,
-                                        int argc, const char **argv) 
+static NTSTATUS cmd_samr_query_dispinfo_int(struct rpc_pipe_client *cli, 
+					    TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv, 
+					    int opcode)
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -1278,11 +1279,31 @@ static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli,
 		if (!got_params)
 			get_query_dispinfo_params(
 				loop_count, &max_entries, &max_size);
-		
-		result = rpccli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
-						 &start_idx, info_level,
-						 &num_entries, max_entries, 
-						 max_size, &ctr);
+
+		switch (opcode) {
+		case SAMR_QUERY_DISPINFO:
+			result = rpccli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
+							    &start_idx, info_level,
+							    &num_entries, max_entries, 
+							    max_size, &ctr);
+			break;
+		case SAMR_QUERY_DISPINFO2:
+			result = rpccli_samr_query_dispinfo2(cli, mem_ctx, &domain_pol,
+							     &start_idx, info_level,
+							     &num_entries, max_entries, 
+							     max_size, &ctr);
+			break;
+		case SAMR_QUERY_DISPINFO3:
+			result = rpccli_samr_query_dispinfo3(cli, mem_ctx, &domain_pol,
+							     &start_idx, info_level,
+							     &num_entries, max_entries, 
+							     max_size, &ctr);
+			break;
+		default:
+			printf("unknown opcode: %d\n", opcode);
+			return NT_STATUS_INVALID_PARAMETER;
+			break;
+		}
 
 		loop_count++;
 
@@ -1319,6 +1340,26 @@ static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli, 
+					TALLOC_CTX *mem_ctx,
+					int argc, const char **argv)
+{
+	return cmd_samr_query_dispinfo_int(cli, mem_ctx, argc, argv, SAMR_QUERY_DISPINFO);
+}
+
+static NTSTATUS cmd_samr_query_dispinfo2(struct rpc_pipe_client *cli, 
+					 TALLOC_CTX *mem_ctx,
+					 int argc, const char **argv) 
+{
+	return cmd_samr_query_dispinfo_int(cli, mem_ctx, argc, argv, SAMR_QUERY_DISPINFO2);
+}
+
+static NTSTATUS cmd_samr_query_dispinfo3(struct rpc_pipe_client *cli, 
+					 TALLOC_CTX *mem_ctx,
+					 int argc, const char **argv) 
+{
+	return cmd_samr_query_dispinfo_int(cli, mem_ctx, argc, argv, SAMR_QUERY_DISPINFO3);
+}
 /* Query domain info */
 
 static NTSTATUS cmd_samr_query_dominfo(struct rpc_pipe_client *cli, 
@@ -2122,6 +2163,8 @@ struct cmd_set samr_commands[] = {
 	{ "queryaliasmem", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_aliasmem, 	NULL, PI_SAMR, NULL,	"Query alias membership",  "" },
 	{ "deletealias", 	RPC_RTYPE_NTSTATUS, cmd_samr_delete_alias, 	NULL, PI_SAMR, NULL,	"Delete an alias",  "" },
 	{ "querydispinfo", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dispinfo, 	NULL, PI_SAMR, NULL,	"Query display info",      "" },
+	{ "querydispinfo2", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dispinfo2, 	NULL, PI_SAMR, NULL,	"Query display info 2",      "" },
+	{ "querydispinfo3", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dispinfo3, 	NULL, PI_SAMR, NULL,	"Query display info 3",      "" },
 	{ "querydominfo", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dominfo, 	NULL, PI_SAMR, NULL,	"Query domain info",       "" },
 	{ "enumdomusers",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_dom_users,       NULL, PI_SAMR, NULL,	"Enumerate domain users", "" },
 	{ "enumdomgroups",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_dom_groups,       NULL, PI_SAMR, NULL,	"Enumerate domain groups", "" },
