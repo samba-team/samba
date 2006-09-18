@@ -12,8 +12,7 @@
   endpoint("ncacn_np:[\\pipe\\netlogon]","ncacn_ip_tcp:","ncalrpc:"),
   pointer_default(unique),
   pointer_default_top(unique),
-  depends(lsa,samr,security),
-  keepref
+  depends(lsa,samr,security)
 ]
 
 interface netlogon

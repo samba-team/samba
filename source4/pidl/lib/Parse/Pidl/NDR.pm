@@ -586,23 +586,6 @@ sub CheckPointerTypes($$)
 	}
 }
 
-#FIXME: Remove when ref handling in Samba4 is fixed
-sub AddKeepRef($)
-{
-	my $d = shift;
-
-	if ($d->{TYPE} eq "FUNCTION") {
-		foreach (@{$d->{ELEMENTS}}) {
-			$_->{PROPERTIES}->{keepref} = 1;
-		}
-	} elsif ($d->{TYPE} eq "TYPEDEF" and ($d->{DATA}->{TYPE} eq "STRUCT"
-			or $d->{DATA}->{TYPE} eq "UNION")) {
-		foreach (@{$d->{DATA}->{ELEMENTS}}) {
-			$_->{PROPERTIES}->{keepref} = 1;
-		}
-	}
-}
-
 sub ParseInterface($)
 {
 	my $idl = shift;
@@ -628,12 +611,10 @@ sub ParseInterface($)
 		if ($d->{TYPE} eq "DECLARE") {
 			push (@declares, $d);
 		} elsif ($d->{TYPE} eq "FUNCTION") {
-			AddKeepRef($d) if (has_property($idl, "keepref"));
 			push (@functions, ParseFunction($idl, $d, \$opnum));
 		} elsif ($d->{TYPE} eq "CONST") {
 			push (@consts, ParseConst($idl, $d));
 		} else {
-			AddKeepRef($d) if (has_property($idl, "keepref"));
 			push (@types, ParseType($idl, $d));
 		}
 	}
@@ -855,10 +836,6 @@ my %property_list = (
 	"noheader"		=> ["ELEMENT"],
 	"charset"		=> ["ELEMENT"],
 	"length_is"		=> ["ELEMENT"],
-
-	# temporary (should be removed once we've migrated away from 
-	# relying on ref pointers being there in Samba4's code)
-	"keepref"		=> ["ELEMENT","INTERFACE"],
 );
 
 #####################################################################
