@@ -1129,9 +1129,6 @@ AC_CACHE_CHECK([for struct timespec type],samba_cv_struct_timespec, [
 #  include <time.h>
 # endif
 #endif
-#if HAVE_AIO_H
-#include <aio.h>
-#endif
 ],[struct timespec ts;],
 	samba_cv_struct_timespec=yes,samba_cv_struct_timespec=no)])
 if test x"$samba_cv_struct_timespec" = x"yes"; then
