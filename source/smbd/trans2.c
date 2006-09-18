@@ -197,7 +197,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 
 	if (sizeret) {
 		for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p) + 1) {
-			struct ea_list *listp, *tmp;
+			struct ea_list *listp;
 
 			if (strnequal(p, "system.", 7) || samba_private_attr_name(p))
 				continue;
@@ -218,7 +218,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 					(unsigned int)*pea_total_len, dos_ea_name,
 					(unsigned int)listp->ea.value.length ));
 			}
-			DLIST_ADD_END(ea_list_head, listp, tmp);
+			DLIST_ADD_END(ea_list_head, listp, struct ea_list *);
 		}
 		/* Add on 4 for total length. */
 		if (*pea_total_len) {
@@ -396,7 +396,6 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 	size_t offset = 0;
 
 	while (offset + 2 < data_size) {
-		struct ea_list *tmp;
 		struct ea_list *eal = TALLOC_ZERO_P(ctx, struct ea_list);
 		unsigned int namelen = CVAL(pdata,offset);
 
@@ -418,7 +417,7 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 		}
 
 		offset += (namelen + 1); /* Go past the name + terminating zero. */
-		DLIST_ADD_END(ea_list_head, eal, tmp);
+		DLIST_ADD_END(ea_list_head, eal, struct ea_list *);
 		DEBUG(10,("read_ea_name_list: read ea name %s\n", eal->ea.name));
 	}
 
@@ -493,14 +492,13 @@ static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t d
 	size_t bytes_used = 0;
 
 	while (offset < data_size) {
-		struct ea_list *tmp;
 		struct ea_list *eal = read_ea_list_entry(ctx, pdata + offset, data_size - offset, &bytes_used);
 
 		if (!eal) {
 			return NULL;
 		}
 
-		DLIST_ADD_END(ea_list_head, eal, tmp);
+		DLIST_ADD_END(ea_list_head, eal, struct ea_list *);
 		offset += bytes_used;
 	}
 

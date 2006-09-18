@@ -108,7 +108,7 @@ void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 		   void (*continuation)(void *private_data, BOOL success),
 		   void *private_data)
 {
-	struct winbindd_async_request *state, *tmp;
+	struct winbindd_async_request *state;
 
 	SMB_ASSERT(continuation != NULL);
 
@@ -127,7 +127,7 @@ void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 	state->continuation = continuation;
 	state->private_data = private_data;
 
-	DLIST_ADD_END(child->requests, state, tmp);
+	DLIST_ADD_END(child->requests, state, struct winbindd_async_request *);
 
 	schedule_async_request(child);
 

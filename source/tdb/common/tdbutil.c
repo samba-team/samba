@@ -720,7 +720,6 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 	TDB_DATA key, next;
 	TDB_LIST_NODE *list = NULL;
 	TDB_LIST_NODE *rec = NULL;
-	TDB_LIST_NODE *tmp = NULL;
 	
 	for (key = tdb_firstkey(tdb); key.dptr; key = next) {
 		/* duplicate key string to ensure null-termination */
@@ -741,7 +740,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 
 			rec->node_key = key;
 	
-			DLIST_ADD_END(list, rec, tmp);
+			DLIST_ADD_END(list, rec, TDB_LIST_NODE *);
 		
 			DEBUG(18, ("checking %s matched pattern %s\n", key_str, pattern));
 		} else {
