@@ -1282,13 +1282,13 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 		if (pwdHistoryLength > 0) {
 			if (lmNewHash && lmPwdHash && memcmp(lmNewHash->hash, lmPwdHash->hash, 16) == 0) {
 				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_COMPLEXITY;
+					*reject_reason = SAMR_REJECT_IN_HISTORY;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 			if (ntNewHash && ntPwdHash && memcmp(ntNewHash->hash, ntPwdHash->hash, 16) == 0) {
 				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_COMPLEXITY;
+					*reject_reason = SAMR_REJECT_IN_HISTORY;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
@@ -1301,7 +1301,7 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 		for (i=0; lmNewHash && i<sambaLMPwdHistory_len;i++) {
 			if (memcmp(lmNewHash->hash, sambaLMPwdHistory[i].hash, 16) == 0) {
 				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_COMPLEXITY;
+					*reject_reason = SAMR_REJECT_IN_HISTORY;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
@@ -1309,7 +1309,7 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 		for (i=0; ntNewHash && i<sambaNTPwdHistory_len;i++) {
 			if (memcmp(ntNewHash->hash, sambaNTPwdHistory[i].hash, 16) == 0) {
 				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_COMPLEXITY;
+					*reject_reason = SAMR_REJECT_IN_HISTORY;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
