@@ -118,7 +118,7 @@
 	} dfs_Info;
 
 	WERROR dfs_GetInfo (
-		[in,ref]	[string,charset(UTF16)] uint16 *path,
+		[in]		[string,charset(UTF16)] uint16 path[],
 		[in,unique]	[string,charset(UTF16)] uint16 *server,
 		[in,unique]	[string,charset(UTF16)] uint16 *share,
 		[in]		uint32 level,
@@ -227,7 +227,7 @@
 
 	/* Function 0x15 */
 	WERROR dfs_EnumEx(
-		[in,ref]	[string,charset(UTF16)] uint16 *name,
+		[in]		[string,charset(UTF16)] uint16 name[],
 		[in]		uint32 level,
 		[in]		uint32 bufsize,
 		[in,out,unique]	dfs_EnumStruct *info,
