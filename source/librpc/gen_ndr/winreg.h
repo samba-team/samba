@@ -315,14 +315,14 @@ struct winreg_QueryInfoKey {
 
 	struct {
 		struct winreg_String *class_out;/* [unique,keepref] */
-		uint32_t *num_subkeys;/* [unique,keepref] */
-		uint32_t *max_subkeylen;/* [unique,keepref] */
-		uint32_t *max_subkeysize;/* [unique,keepref] */
-		uint32_t *num_values;/* [unique,keepref] */
-		uint32_t *max_valnamelen;/* [unique,keepref] */
-		uint32_t *max_valbufsize;/* [unique,keepref] */
-		uint32_t *secdescsize;/* [unique,keepref] */
-		NTTIME *last_changed_time;/* [unique,keepref] */
+		uint32_t *num_subkeys;/* [keepref,ref] */
+		uint32_t *max_subkeylen;/* [keepref,ref] */
+		uint32_t *max_subkeysize;/* [keepref,ref] */
+		uint32_t *num_values;/* [keepref,ref] */
+		uint32_t *max_valnamelen;/* [keepref,ref] */
+		uint32_t *max_valbufsize;/* [keepref,ref] */
+		uint32_t *secdescsize;/* [keepref,ref] */
+		NTTIME *last_changed_time;/* [keepref,ref] */
 		WERROR result;
 	} out;
 
@@ -447,7 +447,7 @@ struct winreg_GetVersion {
 	} in;
 
 	struct {
-		uint32_t *version;/* [unique,keepref] */
+		uint32_t *version;/* [keepref,ref] */
 		WERROR result;
 	} out;
 
