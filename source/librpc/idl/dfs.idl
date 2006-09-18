@@ -112,7 +112,7 @@
 	} dfs_Info;
 
 	WERROR dfs_GetInfo (
-		[in,string,charset(UTF16)] uint16 *path,
+		[in,ref,string,charset(UTF16)] uint16 *path,
 		[in,unique,string,charset(UTF16)] uint16 *server,
 		[in,unique,string,charset(UTF16)] uint16 *share,
 		[in]     uint32 level,
