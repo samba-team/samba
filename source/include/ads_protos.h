@@ -20,7 +20,7 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 			      BOOL *more_strings);
 BOOL ads_pull_uint32(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
 		     uint32 *v);
-BOOL ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct uuid *guid);
+BOOL ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct GUID *guid);
 BOOL ads_pull_sid(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
 		  DOM_SID *sid);
 int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
