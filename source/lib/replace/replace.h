@@ -325,6 +325,7 @@ char *rep_mkdtemp(char *template);
 #define bool _Bool
 #else
 #define __bool_true_false_are_defined
+#define BOOL_DEFINED /* needed for <rpcsvc/yp_prot.h> not doing a redefine */
 typedef int bool;
 #endif
 #endif
