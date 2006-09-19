@@ -65,12 +65,12 @@ fi
 AM_CONDITIONAL(OPENLDAP_MODULE, test "$enable_hdb_openldap_module" = yes -a "$with_openldap" = yes)
 
 AC_ARG_ENABLE(pk-init, 
-	AS_HELP_STRING([--enable-pk-init],
+	AS_HELP_STRING([--disable-pk-init],
 		[if you want support to pk-init]))
-if test "$enable_pk_init" = yes ;then
+if test "$enable_pk_init" != no ;then
 	AC_DEFINE([PKINIT], 1, [Define to enable PKINIT.])
 fi
-AM_CONDITIONAL(PKINIT, test "$enable_pk_init" = yes)
+AM_CONDITIONAL(PKINIT, test "$enable_pk_init" != no)
 
 
 rk_TEST_PACKAGE(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena, KRB4, krb4-config)
