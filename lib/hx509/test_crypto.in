@@ -60,4 +60,11 @@ echo "Bleichenbacher bad cert (from yutaka)"
     cert:FILE:$srcdir/data/yutaka-pad-broken-cert.pem \
     anchor:FILE:$srcdir/data/yutaka-pad-broken-ca.pem > /dev/null && exit 1
 
+# Ralf-Philipp Weinmann <weinmann@cdc.informatik.tu-darmstadt.de>
+# Andrew Pyshkin <pychkine@cdc.informatik.tu-darmstadt.de>
+echo "Bleichenbacher bad cert (sf pad correct)"
+./hxtool verify --missing-revoke \
+    cert:FILE:$srcdir/data/bleichenbacher-sf-pad-correct.pem \
+    anchor:FILE:$srcdir/data/sf-class2-root.pem > /dev/null && exit 1
+
 exit 0
