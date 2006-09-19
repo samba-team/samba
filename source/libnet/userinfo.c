@@ -62,6 +62,9 @@ static NTSTATUS userinfo_lookup(struct composite_context *c,
 	/* receive samr_Lookup reply */
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
+	
+	/* there could be a problem with name resolving itself */
+	NT_STATUS_NOT_OK_RETURN(s->lookup.out.result);
 
 	/* have we actually got name resolved
 	   - we're looking for only one at the moment */
