@@ -157,7 +157,7 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 	if ( sampass->unix_pw ) {
 		pwd = sampass->unix_pw;
 	} else {
-		pwd = getpwnam_alloc( sampass, pdb_get_username(sampass) );
+		pwd = Get_Pwnam_alloc( sampass, pdb_get_username(sampass) );
 	}
 
 	if ( !pwd ) {
