@@ -131,6 +131,7 @@ static BOOL api_eventlog_CloseEventLog(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = r.in.handle;
 	r.out.result = _eventlog_CloseEventLog(p, r.in.handle);
 	
@@ -232,6 +233,7 @@ static BOOL api_eventlog_GetNumRecords(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.number = talloc_size(mem_ctx, sizeof(*r.out.number));
 	if (r.out.number == NULL) {
 		talloc_free(mem_ctx);
@@ -388,6 +390,7 @@ static BOOL api_eventlog_OpenEventLogW(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
@@ -544,6 +547,7 @@ static BOOL api_eventlog_ReadEventLogW(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.data = talloc_array_size(mem_ctx, sizeof(*r.out.data), r.in.number_of_bytes);
 	if (r.out.data == NULL) {
 		talloc_free(mem_ctx);

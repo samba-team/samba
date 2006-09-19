@@ -31,6 +31,7 @@ static BOOL api_wkssvc_NetWkstaGetInfo(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
@@ -87,6 +88,7 @@ static BOOL api_wkssvc_NetWkstaSetInfo(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.parm_error = r.in.parm_error;
 	r.out.result = _wkssvc_NetWkstaSetInfo(p, r.in.server_name, r.in.level, r.in.info, r.in.parm_error);
 	
@@ -138,6 +140,7 @@ static BOOL api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.users = r.in.users;
 	r.out.entriesread = talloc_size(mem_ctx, sizeof(*r.out.entriesread));
 	if (r.out.entriesread == NULL) {
@@ -302,6 +305,7 @@ static BOOL api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.level = r.in.level;
 	r.out.ctr = r.in.ctr;
 	r.out.totalentries = talloc_size(mem_ctx, sizeof(*r.out.totalentries));

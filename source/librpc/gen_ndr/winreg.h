@@ -24,21 +24,21 @@ enum winreg_Type {
 };
 
 struct winreg_String {
-	uint16_t name_len;/* [keepref,value(strlen_m_term(name)*2)] */
-	uint16_t name_size;/* [keepref,value(strlen_m_term(name)*2)] */
-	const char *name;/* [unique,keepref,charset(UTF16)] */
+	uint16_t name_len;/* [value(strlen_m_term(name)*2)] */
+	uint16_t name_size;/* [value(strlen_m_term(name)*2)] */
+	const char *name;/* [unique,charset(UTF16)] */
 }/* [public,noejs] */;
 
 struct KeySecurityData {
-	uint8_t *data;/* [unique,keepref,length_is(len),size_is(size)] */
-	uint32_t size;/* [keepref] */
-	uint32_t len;/* [keepref] */
+	uint8_t *data;/* [unique,length_is(len),size_is(size)] */
+	uint32_t size;
+	uint32_t len;
 };
 
 struct winreg_SecBuf {
-	uint32_t length;/* [keepref] */
-	struct KeySecurityData sd;/* [keepref] */
-	uint8_t inherit;/* [keepref] */
+	uint32_t length;
+	struct KeySecurityData sd;
+	uint8_t inherit;
 };
 
 enum winreg_CreateAction {
@@ -48,27 +48,27 @@ enum winreg_CreateAction {
 };
 
 struct winreg_StringBuf {
-	uint16_t length;/* [keepref,value(strlen_m_term(name)*2)] */
-	uint16_t size;/* [keepref] */
-	const char *name;/* [unique,keepref,length_is(length/2),charset(UTF16),size_is(size/2)] */
+	uint16_t length;/* [value(strlen_m_term(name)*2)] */
+	uint16_t size;
+	const char *name;/* [unique,length_is(length/2),charset(UTF16),size_is(size/2)] */
 };
 
 struct QueryMultipleValue {
-	struct winreg_String *name;/* [unique,keepref] */
-	enum winreg_Type type;/* [keepref] */
-	uint32_t offset;/* [keepref] */
-	uint32_t length;/* [keepref] */
+	struct winreg_String *name;/* [unique] */
+	enum winreg_Type type;
+	uint32_t offset;
+	uint32_t length;
 };
 
 
 struct winreg_OpenHKCR {
 	struct {
-		uint16_t *system_name;/* [unique,keepref] */
-		uint32_t access_mask;/* [keepref] */
+		uint16_t *system_name;/* [unique] */
+		uint32_t access_mask;
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -77,12 +77,12 @@ struct winreg_OpenHKCR {
 
 struct winreg_OpenHKCU {
 	struct {
-		uint16_t *system_name;/* [unique,keepref] */
-		uint32_t access_mask;/* [keepref] */
+		uint16_t *system_name;/* [unique] */
+		uint32_t access_mask;
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -91,12 +91,12 @@ struct winreg_OpenHKCU {
 
 struct winreg_OpenHKLM {
 	struct {
-		uint16_t *system_name;/* [unique,keepref] */
-		uint32_t access_mask;/* [keepref] */
+		uint16_t *system_name;/* [unique] */
+		uint32_t access_mask;
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -105,12 +105,12 @@ struct winreg_OpenHKLM {
 
 struct winreg_OpenHKPD {
 	struct {
-		uint16_t *system_name;/* [unique,keepref] */
-		uint32_t access_mask;/* [keepref] */
+		uint16_t *system_name;/* [unique] */
+		uint32_t access_mask;
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -119,12 +119,12 @@ struct winreg_OpenHKPD {
 
 struct winreg_OpenHKU {
 	struct {
-		uint16_t *system_name;/* [unique,keepref] */
-		uint32_t access_mask;/* [keepref] */
+		uint16_t *system_name;/* [unique] */
+		uint32_t access_mask;
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -133,11 +133,11 @@ struct winreg_OpenHKU {
 
 struct winreg_CloseKey {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -146,18 +146,18 @@ struct winreg_CloseKey {
 
 struct winreg_CreateKey {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		struct winreg_String name;/* [keepref] */
-		struct winreg_String keyclass;/* [keepref] */
-		uint32_t options;/* [keepref] */
-		uint32_t access_mask;/* [keepref] */
-		struct winreg_SecBuf *secdesc;/* [unique,keepref] */
-		enum winreg_CreateAction *action_taken;/* [unique,keepref] */
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String name;
+		struct winreg_String keyclass;
+		uint32_t options;
+		uint32_t access_mask;
+		struct winreg_SecBuf *secdesc;/* [unique] */
+		enum winreg_CreateAction *action_taken;/* [unique] */
 	} in;
 
 	struct {
-		struct policy_handle *new_handle;/* [keepref,ref] */
-		enum winreg_CreateAction *action_taken;/* [unique,keepref] */
+		struct policy_handle *new_handle;/* [ref] */
+		enum winreg_CreateAction *action_taken;/* [unique] */
 		WERROR result;
 	} out;
 
@@ -166,8 +166,8 @@ struct winreg_CreateKey {
 
 struct winreg_DeleteKey {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		struct winreg_String key;/* [keepref] */
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String key;
 	} in;
 
 	struct {
@@ -179,8 +179,8 @@ struct winreg_DeleteKey {
 
 struct winreg_DeleteValue {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		struct winreg_String value;/* [keepref] */
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String value;
 	} in;
 
 	struct {
@@ -192,17 +192,17 @@ struct winreg_DeleteValue {
 
 struct winreg_EnumKey {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		uint32_t enum_index;/* [keepref] */
-		struct winreg_StringBuf *name;/* [keepref,ref] */
-		struct winreg_StringBuf *keyclass;/* [unique,keepref] */
-		NTTIME *last_changed_time;/* [unique,keepref] */
+		struct policy_handle *handle;/* [ref] */
+		uint32_t enum_index;
+		struct winreg_StringBuf *name;/* [ref] */
+		struct winreg_StringBuf *keyclass;/* [unique] */
+		NTTIME *last_changed_time;/* [unique] */
 	} in;
 
 	struct {
-		struct winreg_StringBuf *name;/* [keepref,ref] */
-		struct winreg_StringBuf *keyclass;/* [unique,keepref] */
-		NTTIME *last_changed_time;/* [unique,keepref] */
+		struct winreg_StringBuf *name;/* [ref] */
+		struct winreg_StringBuf *keyclass;/* [unique] */
+		NTTIME *last_changed_time;/* [unique] */
 		WERROR result;
 	} out;
 
@@ -211,21 +211,21 @@ struct winreg_EnumKey {
 
 struct winreg_EnumValue {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		uint32_t enum_index;/* [keepref] */
-		struct winreg_StringBuf *name;/* [keepref,ref] */
-		enum winreg_Type *type;/* [unique,keepref] */
-		uint8_t *value;/* [unique,keepref,length_is(*length),size_is(*size)] */
-		uint32_t *size;/* [unique,keepref] */
-		uint32_t *length;/* [unique,keepref] */
+		struct policy_handle *handle;/* [ref] */
+		uint32_t enum_index;
+		struct winreg_StringBuf *name;/* [ref] */
+		enum winreg_Type *type;/* [unique] */
+		uint8_t *value;/* [unique,length_is(*length),size_is(*size)] */
+		uint32_t *size;/* [unique] */
+		uint32_t *length;/* [unique] */
 	} in;
 
 	struct {
-		struct winreg_StringBuf *name;/* [keepref,ref] */
-		enum winreg_Type *type;/* [unique,keepref] */
-		uint8_t *value;/* [unique,keepref,length_is(*length),size_is(*size)] */
-		uint32_t *size;/* [unique,keepref] */
-		uint32_t *length;/* [unique,keepref] */
+		struct winreg_StringBuf *name;/* [ref] */
+		enum winreg_Type *type;/* [unique] */
+		uint8_t *value;/* [unique,length_is(*length),size_is(*size)] */
+		uint32_t *size;/* [unique] */
+		uint32_t *length;/* [unique] */
 		WERROR result;
 	} out;
 
@@ -234,7 +234,7 @@ struct winreg_EnumValue {
 
 struct winreg_FlushKey {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 	} in;
 
 	struct {
@@ -246,13 +246,13 @@ struct winreg_FlushKey {
 
 struct winreg_GetKeySecurity {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		uint32_t sec_info;/* [keepref] */
-		struct KeySecurityData *sd;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
+		uint32_t sec_info;
+		struct KeySecurityData *sd;/* [ref] */
 	} in;
 
 	struct {
-		struct KeySecurityData *sd;/* [keepref,ref] */
+		struct KeySecurityData *sd;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -261,9 +261,9 @@ struct winreg_GetKeySecurity {
 
 struct winreg_LoadKey {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		struct winreg_String *keyname;/* [unique,keepref] */
-		struct winreg_String *filename;/* [unique,keepref] */
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String *keyname;/* [unique] */
+		struct winreg_String *filename;/* [unique] */
 	} in;
 
 	struct {
@@ -275,13 +275,13 @@ struct winreg_LoadKey {
 
 struct winreg_NotifyChangeKeyValue {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		uint8_t watch_subtree;/* [keepref] */
-		uint32_t notify_filter;/* [keepref] */
-		uint32_t unknown;/* [keepref] */
-		struct winreg_String string1;/* [keepref] */
-		struct winreg_String string2;/* [keepref] */
-		uint32_t unknown2;/* [keepref] */
+		struct policy_handle *handle;/* [ref] */
+		uint8_t watch_subtree;
+		uint32_t notify_filter;
+		uint32_t unknown;
+		struct winreg_String string1;
+		struct winreg_String string2;
+		uint32_t unknown2;
 	} in;
 
 	struct {
@@ -293,14 +293,14 @@ struct winreg_NotifyChangeKeyValue {
 
 struct winreg_OpenKey {
 	struct {
-		struct policy_handle *parent_handle;/* [keepref,ref] */
-		struct winreg_String keyname;/* [keepref] */
-		uint32_t unknown;/* [keepref] */
-		uint32_t access_mask;/* [keepref] */
+		struct policy_handle *parent_handle;/* [ref] */
+		struct winreg_String keyname;
+		uint32_t unknown;
+		uint32_t access_mask;
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -309,20 +309,20 @@ struct winreg_OpenKey {
 
 struct winreg_QueryInfoKey {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		struct winreg_String class_in;/* [keepref] */
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String class_in;
 	} in;
 
 	struct {
-		struct winreg_String *class_out;/* [unique,keepref] */
-		uint32_t *num_subkeys;/* [keepref,ref] */
-		uint32_t *max_subkeylen;/* [keepref,ref] */
-		uint32_t *max_subkeysize;/* [keepref,ref] */
-		uint32_t *num_values;/* [keepref,ref] */
-		uint32_t *max_valnamelen;/* [keepref,ref] */
-		uint32_t *max_valbufsize;/* [keepref,ref] */
-		uint32_t *secdescsize;/* [keepref,ref] */
-		NTTIME *last_changed_time;/* [keepref,ref] */
+		struct winreg_String *class_out;/* [unique] */
+		uint32_t *num_subkeys;/* [ref] */
+		uint32_t *max_subkeylen;/* [ref] */
+		uint32_t *max_subkeysize;/* [ref] */
+		uint32_t *num_values;/* [ref] */
+		uint32_t *max_valnamelen;/* [ref] */
+		uint32_t *max_valbufsize;/* [ref] */
+		uint32_t *secdescsize;/* [ref] */
+		NTTIME *last_changed_time;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -331,19 +331,19 @@ struct winreg_QueryInfoKey {
 
 struct winreg_QueryValue {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		struct winreg_String value_name;/* [keepref] */
-		enum winreg_Type *type;/* [unique,keepref] */
-		uint8_t *data;/* [unique,keepref,length_is(*length),size_is(*size)] */
-		uint32_t *size;/* [unique,keepref] */
-		uint32_t *length;/* [unique,keepref] */
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String value_name;
+		enum winreg_Type *type;/* [unique] */
+		uint8_t *data;/* [unique,length_is(*length),size_is(*size)] */
+		uint32_t *size;/* [unique] */
+		uint32_t *length;/* [unique] */
 	} in;
 
 	struct {
-		enum winreg_Type *type;/* [unique,keepref] */
-		uint8_t *data;/* [unique,keepref,length_is(*length),size_is(*size)] */
-		uint32_t *size;/* [unique,keepref] */
-		uint32_t *length;/* [unique,keepref] */
+		enum winreg_Type *type;/* [unique] */
+		uint8_t *data;/* [unique,length_is(*length),size_is(*size)] */
+		uint32_t *size;/* [unique] */
+		uint32_t *length;/* [unique] */
 		WERROR result;
 	} out;
 
@@ -376,13 +376,13 @@ struct winreg_SaveKey {
 
 struct winreg_SetKeySecurity {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		uint32_t access_mask;/* [keepref] */
-		struct KeySecurityData *sd;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
+		uint32_t access_mask;
+		struct KeySecurityData *sd;/* [ref] */
 	} in;
 
 	struct {
-		struct KeySecurityData *sd;/* [keepref,ref] */
+		struct KeySecurityData *sd;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -391,11 +391,11 @@ struct winreg_SetKeySecurity {
 
 struct winreg_SetValue {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		struct winreg_String name;/* [keepref] */
-		enum winreg_Type type;/* [keepref] */
-		uint8_t *data;/* [keepref,ref,size_is(size)] */
-		uint32_t size;/* [keepref] */
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String name;
+		enum winreg_Type type;
+		uint8_t *data;/* [ref,size_is(size)] */
+		uint32_t size;
 	} in;
 
 	struct {
@@ -415,11 +415,11 @@ struct winreg_UnLoadKey {
 
 struct winreg_InitiateSystemShutdown {
 	struct {
-		uint16_t *hostname;/* [unique,keepref] */
-		struct initshutdown_String *message;/* [unique,keepref] */
-		uint32_t timeout;/* [keepref] */
-		uint8_t force_apps;/* [keepref] */
-		uint8_t reboot;/* [keepref] */
+		uint16_t *hostname;/* [unique] */
+		struct initshutdown_String *message;/* [unique] */
+		uint32_t timeout;
+		uint8_t force_apps;
+		uint8_t reboot;
 	} in;
 
 	struct {
@@ -431,7 +431,7 @@ struct winreg_InitiateSystemShutdown {
 
 struct winreg_AbortSystemShutdown {
 	struct {
-		uint16_t *server;/* [unique,keepref] */
+		uint16_t *server;/* [unique] */
 	} in;
 
 	struct {
@@ -443,11 +443,11 @@ struct winreg_AbortSystemShutdown {
 
 struct winreg_GetVersion {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 	} in;
 
 	struct {
-		uint32_t *version;/* [keepref,ref] */
+		uint32_t *version;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -456,12 +456,12 @@ struct winreg_GetVersion {
 
 struct winreg_OpenHKCC {
 	struct {
-		uint16_t *system_name;/* [unique,keepref] */
-		uint32_t access_mask;/* [keepref] */
+		uint16_t *system_name;/* [unique] */
+		uint32_t access_mask;
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -470,12 +470,12 @@ struct winreg_OpenHKCC {
 
 struct winreg_OpenHKDD {
 	struct {
-		uint16_t *system_name;/* [unique,keepref] */
-		uint32_t access_mask;/* [keepref] */
+		uint16_t *system_name;/* [unique] */
+		uint32_t access_mask;
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -484,17 +484,17 @@ struct winreg_OpenHKDD {
 
 struct winreg_QueryMultipleValues {
 	struct {
-		struct policy_handle *key_handle;/* [keepref,ref] */
-		struct QueryMultipleValue *values;/* [keepref,ref,length_is(num_values),size_is(num_values)] */
-		uint32_t num_values;/* [keepref] */
-		uint8_t *buffer;/* [unique,keepref,length_is(*buffer_size),size_is(*buffer_size)] */
-		uint32_t *buffer_size;/* [keepref,ref] */
+		struct policy_handle *key_handle;/* [ref] */
+		struct QueryMultipleValue *values;/* [ref,length_is(num_values),size_is(num_values)] */
+		uint32_t num_values;
+		uint8_t *buffer;/* [unique,length_is(*buffer_size),size_is(*buffer_size)] */
+		uint32_t *buffer_size;/* [ref] */
 	} in;
 
 	struct {
-		struct QueryMultipleValue *values;/* [keepref,ref,length_is(num_values),size_is(num_values)] */
-		uint8_t *buffer;/* [unique,keepref,length_is(*buffer_size),size_is(*buffer_size)] */
-		uint32_t *buffer_size;/* [keepref,ref] */
+		struct QueryMultipleValue *values;/* [ref,length_is(num_values),size_is(num_values)] */
+		uint8_t *buffer;/* [unique,length_is(*buffer_size),size_is(*buffer_size)] */
+		uint32_t *buffer_size;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -503,12 +503,12 @@ struct winreg_QueryMultipleValues {
 
 struct winreg_InitiateSystemShutdownEx {
 	struct {
-		uint16_t *hostname;/* [unique,keepref] */
-		struct initshutdown_String *message;/* [unique,keepref] */
-		uint32_t timeout;/* [keepref] */
-		uint8_t force_apps;/* [keepref] */
-		uint8_t reboot;/* [keepref] */
-		uint32_t reason;/* [keepref] */
+		uint16_t *hostname;/* [unique] */
+		struct initshutdown_String *message;/* [unique] */
+		uint32_t timeout;
+		uint8_t force_apps;
+		uint8_t reboot;
+		uint32_t reason;
 	} in;
 
 	struct {
@@ -528,12 +528,12 @@ struct winreg_SaveKeyEx {
 
 struct winreg_OpenHKPT {
 	struct {
-		uint16_t *system_name;/* [unique,keepref] */
-		uint32_t access_mask;/* [keepref] */
+		uint16_t *system_name;/* [unique] */
+		uint32_t access_mask;
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -542,12 +542,12 @@ struct winreg_OpenHKPT {
 
 struct winreg_OpenHKPN {
 	struct {
-		uint16_t *system_name;/* [unique,keepref] */
-		uint32_t access_mask;/* [keepref] */
+		uint16_t *system_name;/* [unique] */
+		uint32_t access_mask;
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 

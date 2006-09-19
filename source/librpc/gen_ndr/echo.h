@@ -4,44 +4,44 @@
 #define _HEADER_rpcecho
 
 struct echo_info1 {
-	uint8_t v;/* [keepref] */
+	uint8_t v;
 };
 
 struct echo_info2 {
-	uint16_t v;/* [keepref] */
+	uint16_t v;
 };
 
 struct echo_info3 {
-	uint32_t v;/* [keepref] */
+	uint32_t v;
 };
 
 struct echo_info4 {
-	uint64_t v;/* [keepref] */
+	uint64_t v;
 };
 
 struct echo_info5 {
-	uint8_t v1;/* [keepref] */
-	uint64_t v2;/* [keepref] */
+	uint8_t v1;
+	uint64_t v2;
 };
 
 struct echo_info6 {
-	uint8_t v1;/* [keepref] */
-	struct echo_info1 info1;/* [keepref] */
+	uint8_t v1;
+	struct echo_info1 info1;
 };
 
 struct echo_info7 {
-	uint8_t v1;/* [keepref] */
-	struct echo_info4 info4;/* [keepref] */
+	uint8_t v1;
+	struct echo_info4 info4;
 };
 
 union echo_Info {
-	struct echo_info1 info1;/* [keepref,case] */
-	struct echo_info2 info2;/* [keepref,case(2)] */
-	struct echo_info3 info3;/* [keepref,case(3)] */
-	struct echo_info4 info4;/* [keepref,case(4)] */
-	struct echo_info5 info5;/* [keepref,case(5)] */
-	struct echo_info6 info6;/* [keepref,case(6)] */
-	struct echo_info7 info7;/* [keepref,case(7)] */
+	struct echo_info1 info1;/* [case] */
+	struct echo_info2 info2;/* [case(2)] */
+	struct echo_info3 info3;/* [case(3)] */
+	struct echo_info4 info4;/* [case(4)] */
+	struct echo_info5 info5;/* [case(5)] */
+	struct echo_info6 info6;/* [case(6)] */
+	struct echo_info7 info7;/* [case(7)] */
 }/* [switch_type(uint16)] */;
 
 enum echo_Enum1 {
@@ -55,28 +55,28 @@ enum echo_Enum1_32 {
 };
 
 struct echo_Enum2 {
-	enum echo_Enum1 e1;/* [keepref] */
-	enum echo_Enum1_32 e2;/* [keepref] */
+	enum echo_Enum1 e1;
+	enum echo_Enum1_32 e2;
 };
 
 union echo_Enum3 {
-	enum echo_Enum1 e1;/* [keepref,case(ECHO_ENUM1)] */
-	struct echo_Enum2 e2;/* [keepref,case(ECHO_ENUM2)] */
+	enum echo_Enum1 e1;/* [case(ECHO_ENUM1)] */
+	struct echo_Enum2 e2;/* [case(ECHO_ENUM2)] */
 }/* [switch_type(uint16)] */;
 
 struct echo_Surrounding {
-	uint32_t x;/* [keepref] */
-	uint16_t *surrounding;/* [keepref,size_is(x)] */
+	uint32_t x;
+	uint16_t *surrounding;/* [size_is(x)] */
 };
 
 
 struct echo_AddOne {
 	struct {
-		uint32_t in_data;/* [keepref] */
+		uint32_t in_data;
 	} in;
 
 	struct {
-		uint32_t *out_data;/* [keepref,ref] */
+		uint32_t *out_data;/* [ref] */
 	} out;
 
 };
@@ -84,12 +84,12 @@ struct echo_AddOne {
 
 struct echo_EchoData {
 	struct {
-		uint32_t len;/* [keepref] */
-		uint8_t *in_data;/* [keepref,size_is(len)] */
+		uint32_t len;
+		uint8_t *in_data;/* [size_is(len)] */
 	} in;
 
 	struct {
-		uint8_t *out_data;/* [keepref,size_is(len)] */
+		uint8_t *out_data;/* [size_is(len)] */
 	} out;
 
 };
@@ -97,8 +97,8 @@ struct echo_EchoData {
 
 struct echo_SinkData {
 	struct {
-		uint32_t len;/* [keepref] */
-		uint8_t *data;/* [keepref,size_is(len)] */
+		uint32_t len;
+		uint8_t *data;/* [size_is(len)] */
 	} in;
 
 };
@@ -106,11 +106,11 @@ struct echo_SinkData {
 
 struct echo_SourceData {
 	struct {
-		uint32_t len;/* [keepref] */
+		uint32_t len;
 	} in;
 
 	struct {
-		uint8_t *data;/* [keepref,size_is(len)] */
+		uint8_t *data;/* [size_is(len)] */
 	} out;
 
 };
@@ -118,11 +118,11 @@ struct echo_SourceData {
 
 struct echo_TestCall {
 	struct {
-		const char *s1;/* [keepref,ref,charset(UTF16)] */
+		const char *s1;/* [ref,charset(UTF16)] */
 	} in;
 
 	struct {
-		const char **s2;/* [keepref,ref,charset(UTF16)] */
+		const char **s2;/* [ref,charset(UTF16)] */
 	} out;
 
 };
@@ -130,11 +130,11 @@ struct echo_TestCall {
 
 struct echo_TestCall2 {
 	struct {
-		uint16_t level;/* [keepref] */
+		uint16_t level;
 	} in;
 
 	struct {
-		union echo_Info *info;/* [keepref,ref,switch_is(level)] */
+		union echo_Info *info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 
@@ -143,7 +143,7 @@ struct echo_TestCall2 {
 
 struct echo_TestSleep {
 	struct {
-		uint32_t seconds;/* [keepref] */
+		uint32_t seconds;
 	} in;
 
 	struct {
@@ -155,15 +155,15 @@ struct echo_TestSleep {
 
 struct echo_TestEnum {
 	struct {
-		enum echo_Enum1 *foo1;/* [keepref,ref] */
-		struct echo_Enum2 *foo2;/* [keepref,ref] */
-		union echo_Enum3 *foo3;/* [keepref,ref,switch_is(*foo1)] */
+		enum echo_Enum1 *foo1;/* [ref] */
+		struct echo_Enum2 *foo2;/* [ref] */
+		union echo_Enum3 *foo3;/* [ref,switch_is(*foo1)] */
 	} in;
 
 	struct {
-		enum echo_Enum1 *foo1;/* [keepref,ref] */
-		struct echo_Enum2 *foo2;/* [keepref,ref] */
-		union echo_Enum3 *foo3;/* [keepref,ref,switch_is(*foo1)] */
+		enum echo_Enum1 *foo1;/* [ref] */
+		struct echo_Enum2 *foo2;/* [ref] */
+		union echo_Enum3 *foo3;/* [ref,switch_is(*foo1)] */
 	} out;
 
 };
@@ -171,11 +171,11 @@ struct echo_TestEnum {
 
 struct echo_TestSurrounding {
 	struct {
-		struct echo_Surrounding *data;/* [keepref,ref] */
+		struct echo_Surrounding *data;/* [ref] */
 	} in;
 
 	struct {
-		struct echo_Surrounding *data;/* [keepref,ref] */
+		struct echo_Surrounding *data;/* [ref] */
 	} out;
 
 };
@@ -183,7 +183,7 @@ struct echo_TestSurrounding {
 
 struct echo_TestDoublePointer {
 	struct {
-		uint16_t ***data;/* [keepref,ref] */
+		uint16_t ***data;/* [ref] */
 	} in;
 
 	struct {
