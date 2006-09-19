@@ -1,0 +1,114 @@
+#!/bin/sh
+#
+# Copyright (c) 2006 Kungliga Tekniska Högskolan
+# (Royal Institute of Technology, Stockholm, Sweden). 
+# All rights reserved. 
+#
+# Redistribution and use in source and binary forms, with or without 
+# modification, are permitted provided that the following conditions 
+# are met: 
+#
+# 1. Redistributions of source code must retain the above copyright 
+#    notice, this list of conditions and the following disclaimer. 
+#
+# 2. Redistributions in binary form must reproduce the above copyright 
+#    notice, this list of conditions and the following disclaimer in the 
+#    documentation and/or other materials provided with the distribution. 
+#
+# 3. Neither the name of the Institute nor the names of its contributors 
+#    may be used to endorse or promote products derived from this software 
+#    without specific prior written permission. 
+#
+# THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+# SUCH DAMAGE. 
+#
+# $Id$
+#
+
+srcdir="@srcdir@"
+objdir="@objdir@"
+
+R=EXAMPLE.ORG
+
+port=8888
+
+kadmin="../../kadmin/kadmin -l -r $R"
+kdc="../../kdc/kdc --addresses=localhost -P $port"
+keytabfile=${objdir}/server.keytab
+keytab="FILE:${keytabfile}"
+
+gssmask="../../appl/gssmask/gssmask"
+gssmaskn1="${gssmask} -p 8889 --spn=host/n1.example.org@${R} --logfile=n1.log"
+gssmaskn2="${gssmask} -p 8890 --spn=host/n2.example.org@${R} --logfile=n2.log"
+gssmaestro="../../appl/gssmask/gssmaestro"
+
+KRB5_CONFIG="${objdir}/krb5.conf"
+export KRB5_CONFIG
+
+rm -f ${keytabfile}
+rm -f current-db*
+rm -f out-*
+rm -f mkey.file*
+
+echo Creating database
+${kadmin} \
+    init \
+    --realm-max-ticket-life=1day \
+    --realm-max-renewable-life=1month \
+    ${R} || exit 1
+
+${kadmin} add -p p1 --use-defaults host/n1.example.org@${R} || exit 1
+${kadmin} add -p p2 --use-defaults host/n2.example.org@${R} || exit 1
+${kadmin} ext -k ${keytab} host/n1.example.org@${R} || exit 1
+${kadmin} ext -k ${keytab} host/n2.example.org@${R} || exit 1
+
+${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
+
+echo "Doing database check"
+${kadmin} check ${R} || exit 1
+
+echo Starting kdc
+${kdc} &
+kdcpid=$!
+sleep 2
+
+if tail -1 messages.log | grep "No sockets" ; then
+    echo "The KDC failed to bind to any sockets, another KDC running ?"
+    exit 1
+fi
+
+exitcode=0
+
+echo "Starting client 1"
+${gssmaskn1} &
+n1pid=$!
+
+echo "Starting client 2"
+${gssmaskn2} &
+n2pid=$!
+
+sleep 2
+
+${gssmaestro} \
+    --slaves=localhost:8889 \
+    --slaves=localhost:8890 \
+    --principals=user1@${R}:u1
+
+echo "killing kdc and clients (${kdcpid}, ${n1pid}, ${n2pid})"
+kill ${kdcpid} ${n1pid} ${n2pid} 2> /dev/null
+
+exit $exitcode
+
+
+exit 0
+
+
