@@ -306,6 +306,14 @@ AC_SUBST(EXTRA_ALL_TARGETS)
 AC_SUBST(CONFIG_LIBS)
 AC_SUBST(NSCD_LIBS)
 
+## check for --enable-debug first before checking CFLAGS before
+## so that we don't mix -O and -g
+AC_ARG_ENABLE(debug, 
+[  --enable-debug          Turn on compiler debugging information (default=no)],
+    [if eval "test x$enable_debug = xyes"; then
+	CFLAGS="${CFLAGS} -g"
+    fi])
+
 # compile with optimization and without debugging by default, but
 # allow people to set their own preference.
 # do this here since AC_CACHE_CHECK apparently sets the CFLAGS to "-g -O2"
@@ -343,12 +351,6 @@ if test "x$PIE_CFLAGS" = x
 then
 	libc_cv_fpie=no
 fi
-
-AC_ARG_ENABLE(debug, 
-[  --enable-debug          Turn on compiler debugging information (default=no)],
-    [if eval "test x$enable_debug = xyes"; then
-	CFLAGS="${CFLAGS} -g"
-    fi])
 
 m4_include(lib/socket_wrapper/config.m4)
 
