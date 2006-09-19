@@ -35,7 +35,7 @@ static BOOL api_netr_LogonUasLogon(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_LogonUasLogon, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -98,7 +98,7 @@ static BOOL api_netr_LogonUasLogoff(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_LogonUasLogoff, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -162,13 +162,13 @@ static BOOL api_netr_LogonSamLogon(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.return_authenticator = r.in.return_authenticator;
-	r.out.validation = talloc_size(mem_ctx, sizeof(*r.out.validation));
+	r.out.validation = talloc_zero_size(mem_ctx, sizeof(*r.out.validation));
 	if (r.out.validation == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.authoritative = talloc_size(mem_ctx, sizeof(*r.out.authoritative));
+	r.out.authoritative = talloc_zero_size(mem_ctx, sizeof(*r.out.authoritative));
 	if (r.out.authoritative == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -405,7 +405,7 @@ static BOOL api_netr_ServerPasswordSet(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_ServerPasswordSet, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.return_authenticator = talloc_size(mem_ctx, sizeof(*r.out.return_authenticator));
+	r.out.return_authenticator = talloc_zero_size(mem_ctx, sizeof(*r.out.return_authenticator));
 	if (r.out.return_authenticator == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -470,7 +470,7 @@ static BOOL api_netr_DatabaseDeltas(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.return_authenticator = r.in.return_authenticator;
 	r.out.sequence_num = r.in.sequence_num;
-	r.out.delta_enum_array = talloc_size(mem_ctx, sizeof(*r.out.delta_enum_array));
+	r.out.delta_enum_array = talloc_zero_size(mem_ctx, sizeof(*r.out.delta_enum_array));
 	if (r.out.delta_enum_array == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -535,7 +535,7 @@ static BOOL api_netr_DatabaseSync(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.return_authenticator = r.in.return_authenticator;
 	r.out.sync_context = r.in.sync_context;
-	r.out.delta_enum_array = talloc_size(mem_ctx, sizeof(*r.out.delta_enum_array));
+	r.out.delta_enum_array = talloc_zero_size(mem_ctx, sizeof(*r.out.delta_enum_array));
 	if (r.out.delta_enum_array == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -599,25 +599,25 @@ static BOOL api_netr_AccountDeltas(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.return_authenticator = r.in.return_authenticator;
-	r.out.buffer = talloc_size(mem_ctx, sizeof(*r.out.buffer));
+	r.out.buffer = talloc_zero_size(mem_ctx, sizeof(*r.out.buffer));
 	if (r.out.buffer == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.count_returned = talloc_size(mem_ctx, sizeof(*r.out.count_returned));
+	r.out.count_returned = talloc_zero_size(mem_ctx, sizeof(*r.out.count_returned));
 	if (r.out.count_returned == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.total_entries = talloc_size(mem_ctx, sizeof(*r.out.total_entries));
+	r.out.total_entries = talloc_zero_size(mem_ctx, sizeof(*r.out.total_entries));
 	if (r.out.total_entries == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.recordid = talloc_size(mem_ctx, sizeof(*r.out.recordid));
+	r.out.recordid = talloc_zero_size(mem_ctx, sizeof(*r.out.recordid));
 	if (r.out.recordid == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -681,25 +681,25 @@ static BOOL api_netr_AccountSync(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.return_authenticator = r.in.return_authenticator;
-	r.out.buffer = talloc_size(mem_ctx, sizeof(*r.out.buffer));
+	r.out.buffer = talloc_zero_size(mem_ctx, sizeof(*r.out.buffer));
 	if (r.out.buffer == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.count_returned = talloc_size(mem_ctx, sizeof(*r.out.count_returned));
+	r.out.count_returned = talloc_zero_size(mem_ctx, sizeof(*r.out.count_returned));
 	if (r.out.count_returned == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.total_entries = talloc_size(mem_ctx, sizeof(*r.out.total_entries));
+	r.out.total_entries = talloc_zero_size(mem_ctx, sizeof(*r.out.total_entries));
 	if (r.out.total_entries == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.next_reference = talloc_size(mem_ctx, sizeof(*r.out.next_reference));
+	r.out.next_reference = talloc_zero_size(mem_ctx, sizeof(*r.out.next_reference));
 	if (r.out.next_reference == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -763,7 +763,7 @@ static BOOL api_netr_GetDcName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_GetDcName, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.dcname = talloc_size(mem_ctx, sizeof(*r.out.dcname));
+	r.out.dcname = talloc_zero_size(mem_ctx, sizeof(*r.out.dcname));
 	if (r.out.dcname == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -826,7 +826,7 @@ static BOOL api_netr_LogonControl(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_LogonControl, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -889,7 +889,7 @@ static BOOL api_netr_GetAnyDCName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_GetAnyDCName, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.dcname = talloc_size(mem_ctx, sizeof(*r.out.dcname));
+	r.out.dcname = talloc_zero_size(mem_ctx, sizeof(*r.out.dcname));
 	if (r.out.dcname == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -952,7 +952,7 @@ static BOOL api_netr_LogonControl2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_LogonControl2, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.query = talloc_size(mem_ctx, sizeof(*r.out.query));
+	r.out.query = talloc_zero_size(mem_ctx, sizeof(*r.out.query));
 	if (r.out.query == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1076,7 +1076,7 @@ static BOOL api_netr_DatabaseSync2(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.return_authenticator = r.in.return_authenticator;
 	r.out.sync_context = r.in.sync_context;
-	r.out.delta_enum_array = talloc_size(mem_ctx, sizeof(*r.out.delta_enum_array));
+	r.out.delta_enum_array = talloc_zero_size(mem_ctx, sizeof(*r.out.delta_enum_array));
 	if (r.out.delta_enum_array == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1140,7 +1140,7 @@ static BOOL api_netr_DatabaseRedo(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.return_authenticator = r.in.return_authenticator;
-	r.out.delta_enum_array = talloc_size(mem_ctx, sizeof(*r.out.delta_enum_array));
+	r.out.delta_enum_array = talloc_zero_size(mem_ctx, sizeof(*r.out.delta_enum_array));
 	if (r.out.delta_enum_array == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1203,7 +1203,7 @@ static BOOL api_netr_LogonControl2Ex(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_LogonControl2Ex, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.query = talloc_size(mem_ctx, sizeof(*r.out.query));
+	r.out.query = talloc_zero_size(mem_ctx, sizeof(*r.out.query));
 	if (r.out.query == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1322,7 +1322,7 @@ static BOOL api_netr_DsRGetDCName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_DsRGetDCName, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1667,7 +1667,7 @@ static BOOL api_netr_ServerAuthenticate3(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.credentials = r.in.credentials;
 	r.out.negotiate_flags = r.in.negotiate_flags;
-	r.out.rid = talloc_size(mem_ctx, sizeof(*r.out.rid));
+	r.out.rid = talloc_zero_size(mem_ctx, sizeof(*r.out.rid));
 	if (r.out.rid == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1730,7 +1730,7 @@ static BOOL api_netr_DsRGetDCNameEx(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_DsRGetDCNameEx, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1793,7 +1793,7 @@ static BOOL api_netr_DsRGetSiteName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_DsRGetSiteName, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.site = talloc_size(mem_ctx, sizeof(*r.out.site));
+	r.out.site = talloc_zero_size(mem_ctx, sizeof(*r.out.site));
 	if (r.out.site == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1857,7 +1857,7 @@ static BOOL api_netr_LogonGetDomainInfo(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.return_authenticator = r.in.return_authenticator;
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1920,7 +1920,7 @@ static BOOL api_netr_ServerPasswordSet2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_ServerPasswordSet2, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.return_authenticator = talloc_size(mem_ctx, sizeof(*r.out.return_authenticator));
+	r.out.return_authenticator = talloc_zero_size(mem_ctx, sizeof(*r.out.return_authenticator));
 	if (r.out.return_authenticator == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2151,7 +2151,7 @@ static BOOL api_netr_DsRGetDCNameEx2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_DsRGetDCNameEx2, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2438,13 +2438,13 @@ static BOOL api_netr_LogonSamLogonEx(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_LogonSamLogonEx, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.validation = talloc_size(mem_ctx, sizeof(*r.out.validation));
+	r.out.validation = talloc_zero_size(mem_ctx, sizeof(*r.out.validation));
 	if (r.out.validation == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.authoritative = talloc_size(mem_ctx, sizeof(*r.out.authoritative));
+	r.out.authoritative = talloc_zero_size(mem_ctx, sizeof(*r.out.authoritative));
 	if (r.out.authoritative == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2508,13 +2508,13 @@ static BOOL api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_DsrEnumerateDomainTrusts, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.count = talloc_size(mem_ctx, sizeof(*r.out.count));
+	r.out.count = talloc_zero_size(mem_ctx, sizeof(*r.out.count));
 	if (r.out.count == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.trusts = talloc_array_size(mem_ctx, sizeof(*r.out.trusts), count);
+	r.out.trusts = talloc_zero_size(mem_ctx, sizeof(*r.out.trusts) * count);
 	if (r.out.trusts == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2802,13 +2802,13 @@ static BOOL api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.return_authenticator = r.in.return_authenticator;
-	r.out.validation = talloc_size(mem_ctx, sizeof(*r.out.validation));
+	r.out.validation = talloc_zero_size(mem_ctx, sizeof(*r.out.validation));
 	if (r.out.validation == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.authoritative = talloc_size(mem_ctx, sizeof(*r.out.authoritative));
+	r.out.authoritative = talloc_zero_size(mem_ctx, sizeof(*r.out.authoritative));
 	if (r.out.authoritative == NULL) {
 		talloc_free(mem_ctx);
 		return False;
