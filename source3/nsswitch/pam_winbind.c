@@ -575,7 +575,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	/* If winbindd returned a username, return the pointer to it here. */
 	if (user_ret && response.extra_data.data) {
 		/* We have to trust it's a null terminated string. */
-		*user_ret = response.extra_data.data;
+		*user_ret = (char *)response.extra_data.data;
 	}
 
 	return ret;
