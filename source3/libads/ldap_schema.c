@@ -165,10 +165,12 @@ static ADS_STATUS ads_schema_path(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **s
 	}
 
 	if ( (schema = ads_pull_string(ads, mem_ctx, res, "schemaNamingContext")) == NULL ) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 	}
 
 	if ( (*schema_path = talloc_strdup(mem_ctx, schema)) == NULL ) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
