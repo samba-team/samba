@@ -325,7 +325,14 @@ char *rep_mkdtemp(char *template);
 #define bool _Bool
 #else
 #define __bool_true_false_are_defined
-#define BOOL_DEFINED /* needed for <rpcsvc/yp_prot.h> not doing a redefine */
+/*
+ * to prevent <rpcsvc/yp_prot.h> from doing a redefine of 'bool'
+ *
+ * IRIX, HPUX, MacOS 10 and Solaris need BOOL_DEFINED
+ * Tru64 needs _BOOL_EXISTS
+ */
+#define BOOL_DEFINED
+#define _BOOL_EXISTS
 typedef int bool;
 #endif
 #endif
