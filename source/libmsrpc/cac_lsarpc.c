@@ -470,7 +470,7 @@ int cac_LsaQueryInfoPolicy(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Lsa
    char *domain_name    = NULL;
    char *dns_name       = NULL;
    char *forest_name     = NULL;
-   struct uuid *domain_guid    = NULL;
+   struct GUID *domain_guid    = NULL;
    DOM_SID *domain_sid  = NULL;
 
    if(!hnd)

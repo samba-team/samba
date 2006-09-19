@@ -1817,13 +1817,6 @@ struct ea_list {
 /* EA to use for DOS attributes */
 #define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
 
-struct uuid {
-	uint32 time_low;
-	uint16 time_mid;
-	uint16 time_hi_and_version;
-	uint8  clock_seq[2];
-	uint8  node[6];
-};
 #define UUID_SIZE 16
 
 #define UUID_FLAT_SIZE 16
