@@ -150,7 +150,7 @@ static BOOL api_lsa_EnumPrivs(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.resume_handle = r.in.resume_handle;
-	r.out.privs = talloc_size(mem_ctx, sizeof(*r.out.privs));
+	r.out.privs = talloc_zero_size(mem_ctx, sizeof(*r.out.privs));
 	if (r.out.privs == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -213,7 +213,7 @@ static BOOL api_lsa_QuerySecurity(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_QuerySecurity, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.sdbuf = talloc_size(mem_ctx, sizeof(*r.out.sdbuf));
+	r.out.sdbuf = talloc_zero_size(mem_ctx, sizeof(*r.out.sdbuf));
 	if (r.out.sdbuf == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -388,7 +388,7 @@ static BOOL api_lsa_OpenPolicy(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_OpenPolicy, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -451,7 +451,7 @@ static BOOL api_lsa_QueryInfoPolicy(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_QueryInfoPolicy, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -626,7 +626,7 @@ static BOOL api_lsa_CreateAccount(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CreateAccount, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.acct_handle = talloc_size(mem_ctx, sizeof(*r.out.acct_handle));
+	r.out.acct_handle = talloc_zero_size(mem_ctx, sizeof(*r.out.acct_handle));
 	if (r.out.acct_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -690,7 +690,7 @@ static BOOL api_lsa_EnumAccounts(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.resume_handle = r.in.resume_handle;
-	r.out.sids = talloc_size(mem_ctx, sizeof(*r.out.sids));
+	r.out.sids = talloc_zero_size(mem_ctx, sizeof(*r.out.sids));
 	if (r.out.sids == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -753,7 +753,7 @@ static BOOL api_lsa_CreateTrustedDomain(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomain, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.trustdom_handle = talloc_size(mem_ctx, sizeof(*r.out.trustdom_handle));
+	r.out.trustdom_handle = talloc_zero_size(mem_ctx, sizeof(*r.out.trustdom_handle));
 	if (r.out.trustdom_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -817,7 +817,7 @@ static BOOL api_lsa_EnumTrustDom(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.resume_handle = r.in.resume_handle;
-	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	r.out.domains = talloc_zero_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -880,7 +880,7 @@ static BOOL api_lsa_LookupNames(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LookupNames, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	r.out.domains = talloc_zero_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -945,7 +945,7 @@ static BOOL api_lsa_LookupSids(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LookupSids, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	r.out.domains = talloc_zero_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1010,7 +1010,7 @@ static BOOL api_lsa_CreateSecret(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CreateSecret, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.sec_handle = talloc_size(mem_ctx, sizeof(*r.out.sec_handle));
+	r.out.sec_handle = talloc_zero_size(mem_ctx, sizeof(*r.out.sec_handle));
 	if (r.out.sec_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1073,7 +1073,7 @@ static BOOL api_lsa_OpenAccount(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_OpenAccount, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.acct_handle = talloc_size(mem_ctx, sizeof(*r.out.acct_handle));
+	r.out.acct_handle = talloc_zero_size(mem_ctx, sizeof(*r.out.acct_handle));
 	if (r.out.acct_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1136,7 +1136,7 @@ static BOOL api_lsa_EnumPrivsAccount(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_EnumPrivsAccount, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.privs = talloc_size(mem_ctx, sizeof(*r.out.privs));
+	r.out.privs = talloc_zero_size(mem_ctx, sizeof(*r.out.privs));
 	if (r.out.privs == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1535,7 +1535,7 @@ static BOOL api_lsa_OpenTrustedDomain(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_OpenTrustedDomain, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.trustdom_handle = talloc_size(mem_ctx, sizeof(*r.out.trustdom_handle));
+	r.out.trustdom_handle = talloc_zero_size(mem_ctx, sizeof(*r.out.trustdom_handle));
 	if (r.out.trustdom_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1598,7 +1598,7 @@ static BOOL api_lsa_QueryTrustedDomainInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfo, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1717,7 +1717,7 @@ static BOOL api_lsa_OpenSecret(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_OpenSecret, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.sec_handle = talloc_size(mem_ctx, sizeof(*r.out.sec_handle));
+	r.out.sec_handle = talloc_zero_size(mem_ctx, sizeof(*r.out.sec_handle));
 	if (r.out.sec_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1897,7 +1897,7 @@ static BOOL api_lsa_LookupPrivValue(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LookupPrivValue, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.luid = talloc_size(mem_ctx, sizeof(*r.out.luid));
+	r.out.luid = talloc_zero_size(mem_ctx, sizeof(*r.out.luid));
 	if (r.out.luid == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -1960,7 +1960,7 @@ static BOOL api_lsa_LookupPrivName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LookupPrivName, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.name = talloc_size(mem_ctx, sizeof(*r.out.name));
+	r.out.name = talloc_zero_size(mem_ctx, sizeof(*r.out.name));
 	if (r.out.name == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2023,7 +2023,7 @@ static BOOL api_lsa_LookupPrivDisplayName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LookupPrivDisplayName, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.disp_name = talloc_size(mem_ctx, sizeof(*r.out.disp_name));
+	r.out.disp_name = talloc_zero_size(mem_ctx, sizeof(*r.out.disp_name));
 	if (r.out.disp_name == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2143,7 +2143,7 @@ static BOOL api_lsa_EnumAccountsWithUserRight(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_EnumAccountsWithUserRight, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.sids = talloc_size(mem_ctx, sizeof(*r.out.sids));
+	r.out.sids = talloc_zero_size(mem_ctx, sizeof(*r.out.sids));
 	if (r.out.sids == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2206,7 +2206,7 @@ static BOOL api_lsa_EnumAccountRights(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_EnumAccountRights, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.rights = talloc_size(mem_ctx, sizeof(*r.out.rights));
+	r.out.rights = talloc_zero_size(mem_ctx, sizeof(*r.out.rights));
 	if (r.out.rights == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2381,7 +2381,7 @@ static BOOL api_lsa_QueryTrustedDomainInfoBySid(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfoBySid, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2668,7 +2668,7 @@ static BOOL api_lsa_OpenPolicy2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_OpenPolicy2, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
+	r.out.handle = talloc_zero_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2790,7 +2790,7 @@ static BOOL api_lsa_QueryInfoPolicy2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_QueryInfoPolicy2, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2909,7 +2909,7 @@ static BOOL api_lsa_QueryTrustedDomainInfoByName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfoByName, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -3029,7 +3029,7 @@ static BOOL api_lsa_EnumTrustedDomainsEx(pipes_struct *p)
 	
 	ZERO_STRUCT(r.out);
 	r.out.resume_handle = r.in.resume_handle;
-	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	r.out.domains = talloc_zero_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -3206,7 +3206,7 @@ static BOOL api_lsa_QueryDomainInformationPolicy(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_QueryDomainInformationPolicy, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
+	r.out.info = talloc_zero_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -3325,7 +3325,7 @@ static BOOL api_lsa_OpenTrustedDomainByName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_OpenTrustedDomainByName, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.trustdom_handle = talloc_size(mem_ctx, sizeof(*r.out.trustdom_handle));
+	r.out.trustdom_handle = talloc_zero_size(mem_ctx, sizeof(*r.out.trustdom_handle));
 	if (r.out.trustdom_handle == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -3444,7 +3444,7 @@ static BOOL api_lsa_LookupSids2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LookupSids2, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	r.out.domains = talloc_zero_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -3509,7 +3509,7 @@ static BOOL api_lsa_LookupNames2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LookupNames2, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	r.out.domains = talloc_zero_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -4078,7 +4078,7 @@ static BOOL api_lsa_LookupNames3(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LookupNames3, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	r.out.domains = talloc_zero_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -4535,7 +4535,7 @@ static BOOL api_lsa_LookupSids3(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LookupSids3, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	r.out.domains = talloc_zero_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -4600,7 +4600,7 @@ static BOOL api_lsa_LookupNames4(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LookupNames4, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
+	r.out.domains = talloc_zero_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
 		talloc_free(mem_ctx);
 		return False;
