@@ -447,6 +447,7 @@ struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
 						 struct libnet_ModifyUser *r,
 						 void (*monitor)(struct monitor_msg*))
 {
+	const uint16_t level = 21;
 	struct composite_context *c;
 	struct modify_user_state *s;
 	struct composite_context *prereq_ctx;
@@ -469,8 +470,9 @@ struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
 				   continue_domain_open_modify, monitor);
 	if (prereq_ctx) return prereq_ctx;
 
-	s->user_mod.in.username      = r->in.user_name;
-	s->user_mod.in.domain_handle = ctx->samr.handle;
+	s->user_info.in.username      = r->in.user_name;
+	s->user_info.in.domain_handle = ctx->samr.handle;
+	s->user_info.in.level         = level;
 
 	userinfo_req = libnet_rpc_userinfo_send(ctx->samr.pipe, &s->user_info, monitor);
 	if (composite_nomem(userinfo_req, c)) return c;
@@ -578,6 +580,9 @@ static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod
 
 	/* last logoff change time */
 	SET_FIELD_NTTIME(r->in, user, mod, last_logoff, USERMOD_FIELD_LAST_LOGOFF);
+
+	/* last password change time */
+	SET_FIELD_NTTIME(r->in, user, mod, last_password_change, USERMOD_FIELD_LAST_PASS_CHG);
 
 	/* account expiry change */
 	SET_FIELD_NTTIME(r->in, user, mod, acct_expiry, USERMOD_FIELD_ACCT_EXPIRY);
