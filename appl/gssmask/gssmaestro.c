@@ -269,7 +269,7 @@ connect_client(const char *name, const char *port)
 	char *str = NULL;
 	get_version_capa(c, &version, &c->capabilities, &str);
 	if (str) {
-	    printf("client %s is using %s\n", c->name, str);
+	    printf("client %s:%s is using %s\n", c->name, port, str);
 	    free(str);
 	}
     }
