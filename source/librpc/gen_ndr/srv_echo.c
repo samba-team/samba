@@ -31,6 +31,9 @@ static BOOL api_echo_AddOne(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(echo_AddOne, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.out_data = talloc_size(mem_ctx, sizeof(*r.out.out_data));
 	if (r.out.out_data == NULL) {
@@ -39,6 +42,9 @@ static BOOL api_echo_AddOne(pipes_struct *p)
 	}
 	
 	_echo_AddOne(p, r.in.in_data, r.out.out_data);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(echo_AddOne, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -88,6 +94,9 @@ static BOOL api_echo_EchoData(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(echo_EchoData, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.out_data = talloc_array_size(mem_ctx, sizeof(*r.out.out_data), r.in.len);
 	if (r.out.out_data == NULL) {
@@ -96,6 +105,9 @@ static BOOL api_echo_EchoData(pipes_struct *p)
 	}
 	
 	_echo_EchoData(p, r.in.len, r.in.in_data, r.out.out_data);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(echo_EchoData, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -145,7 +157,13 @@ static BOOL api_echo_SinkData(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(echo_SinkData, &r);
+	
 	_echo_SinkData(p, r.in.len, r.in.data);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(echo_SinkData, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -195,6 +213,9 @@ static BOOL api_echo_SourceData(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(echo_SourceData, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.data = talloc_array_size(mem_ctx, sizeof(*r.out.data), r.in.len);
 	if (r.out.data == NULL) {
@@ -203,6 +224,9 @@ static BOOL api_echo_SourceData(pipes_struct *p)
 	}
 	
 	_echo_SourceData(p, r.in.len, r.out.data);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(echo_SourceData, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -252,6 +276,9 @@ static BOOL api_echo_TestCall(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(echo_TestCall, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.s2 = talloc_size(mem_ctx, sizeof(*r.out.s2));
 	if (r.out.s2 == NULL) {
@@ -260,6 +287,9 @@ static BOOL api_echo_TestCall(pipes_struct *p)
 	}
 	
 	_echo_TestCall(p, r.in.s1, r.out.s2);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(echo_TestCall, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -309,6 +339,9 @@ static BOOL api_echo_TestCall2(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(echo_TestCall2, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
@@ -317,6 +350,9 @@ static BOOL api_echo_TestCall2(pipes_struct *p)
 	}
 	
 	r.out.result = _echo_TestCall2(p, r.in.level, r.out.info);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(echo_TestCall2, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -366,7 +402,13 @@ static BOOL api_echo_TestSleep(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(echo_TestSleep, &r);
+	
 	r.out.result = _echo_TestSleep(p, r.in.seconds);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(echo_TestSleep, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -416,11 +458,17 @@ static BOOL api_echo_TestEnum(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(echo_TestEnum, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.foo1 = r.in.foo1;
 	r.out.foo2 = r.in.foo2;
 	r.out.foo3 = r.in.foo3;
 	_echo_TestEnum(p, r.in.foo1, r.in.foo2, r.in.foo3);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(echo_TestEnum, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -470,9 +518,15 @@ static BOOL api_echo_TestSurrounding(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(echo_TestSurrounding, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.data = r.in.data;
 	_echo_TestSurrounding(p, r.in.data);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(echo_TestSurrounding, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -522,7 +576,13 @@ static BOOL api_echo_TestDoublePointer(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(echo_TestDoublePointer, &r);
+	
 	r.out.result = _echo_TestDoublePointer(p, r.in.data);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(echo_TestDoublePointer, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {

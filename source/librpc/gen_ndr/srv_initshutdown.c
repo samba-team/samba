@@ -31,7 +31,13 @@ static BOOL api_initshutdown_Init(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(initshutdown_Init, &r);
+	
 	r.out.result = _initshutdown_Init(p, r.in.hostname, r.in.message, r.in.timeout, r.in.force_apps, r.in.reboot);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(initshutdown_Init, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -81,7 +87,13 @@ static BOOL api_initshutdown_Abort(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(initshutdown_Abort, &r);
+	
 	r.out.result = _initshutdown_Abort(p, r.in.server);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(initshutdown_Abort, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -131,7 +143,13 @@ static BOOL api_initshutdown_InitEx(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(initshutdown_InitEx, &r);
+	
 	r.out.result = _initshutdown_InitEx(p, r.in.hostname, r.in.message, r.in.timeout, r.in.force_apps, r.in.reboot, r.in.reason);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(initshutdown_InitEx, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
