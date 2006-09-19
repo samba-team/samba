@@ -82,10 +82,14 @@ sub ParseFunction($$)
 	pidl "";
 
 	my %env = ();
+	my $hasout = 0;
 	foreach (@{$fn->{ELEMENTS}}) {
+		if (grep(/out/, @{$_->{DIRECTION}})) { $hasout = 1; }
 		next unless (grep (/in/, @{$_->{DIRECTION}}));
 		$env{$_->{NAME}} = "r.in.$_->{NAME}";
 	}
+
+	pidl "ZERO_STRUCT(r.out);" if ($hasout);
 
 	my $proto = "_$fn->{NAME}(pipes_struct *p";
 	my $ret = "_$fn->{NAME}(p";
