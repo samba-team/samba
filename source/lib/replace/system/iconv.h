@@ -23,11 +23,14 @@
 */
 
 #ifdef HAVE_NATIVE_ICONV
-#ifdef HAVE_ICONV_H
+#ifdef HAVE_ICONV
 #include <iconv.h>
 #endif
-#ifdef HAVE_GICONV_H
+#ifdef HAVE_GICONV
 #include <giconv.h>
+#endif
+#ifdef HAVE_BICONV
+#include <biconv.h>
 #endif
 #endif
 
