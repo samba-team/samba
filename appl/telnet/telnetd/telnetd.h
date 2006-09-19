@@ -221,3 +221,7 @@ int output_data (const char *format, ...)
 __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
+
+#ifdef ENCRYPTION
+extern int require_encryption;
+#endif
