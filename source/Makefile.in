@@ -925,7 +925,10 @@ pch: proto_exists
 
 dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
-	@$(CC) $(FLAGS) $(PATH_FLAGS) @PIE_CFLAGS@ -c $(srcdir)/dynconfig.c -o $@ 
+	@$(CC) $(FLAGS) $(PATH_FLAGS) @PIE_CFLAGS@ -c $(srcdir)/dynconfig.c -o $@ && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(CC) $(FLAGS) $(PATH_FLAGS) @PIE_CFLAGS@ -c $(srcdir)/dynconfig.c -o $@" 1>&2;\
+		$(CC) $(FLAGS) $(PATH_FLAGS) @PIE_CFLAGS@ -c $(srcdir)/dynconfig.c -o $@ >/dev/null 2>&1
 
 dynconfig.@PICSUFFIX@: dynconfig.c Makefile
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
