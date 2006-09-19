@@ -2666,40 +2666,6 @@ if test x"$samba_cv_HAVE_BROKEN_GETGROUPS" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_GETGROUPS,1,[Whether getgroups is broken])
 fi
 
-AC_CACHE_CHECK([whether getpass should be replaced],samba_cv_REPLACE_GETPASS,[
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
-AC_TRY_COMPILE([
-#define REPLACE_GETPASS 1
-#define NO_PROTO_H 1
-#define NO_CONFIG_H 1
-#define main dont_declare_main
-#include "${srcdir-.}/lib/getsmbpass.c"
-#undef main
-],[],samba_cv_REPLACE_GETPASS=yes,samba_cv_REPLACE_GETPASS=no)
-CPPFLAGS="$SAVE_CPPFLAGS"
-])
-if test x"$samba_cv_REPLACE_GETPASS" = x"yes"; then
-	AC_DEFINE(REPLACE_GETPASS,1,[Whether getpass should be replaced])
-fi
-
-AC_CACHE_CHECK([for broken inet_ntoa],samba_cv_REPLACE_INET_NTOA,[
-AC_TRY_RUN([
-#include <stdio.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-main() { struct in_addr ip; ip.s_addr = 0x12345678;
-if (strcmp(inet_ntoa(ip),"18.52.86.120") &&
-    strcmp(inet_ntoa(ip),"120.86.52.18")) { exit(0); } 
-exit(1);}],
-           samba_cv_REPLACE_INET_NTOA=yes,samba_cv_REPLACE_INET_NTOA=no,samba_cv_REPLACE_INET_NTOA=cross)])
-if test x"$samba_cv_REPLACE_INET_NTOA" = x"yes"; then
-    AC_DEFINE(REPLACE_INET_NTOA,1,[Whether inet_ntoa should be replaced])
-fi
-
 AC_CACHE_CHECK([for secure mkstemp],samba_cv_HAVE_SECURE_MKSTEMP,[
 AC_TRY_RUN([#include <stdlib.h>
 #include <sys/types.h>
