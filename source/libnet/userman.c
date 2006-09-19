@@ -555,142 +555,142 @@ static NTSTATUS usermod_lookup(struct composite_context *c,
 static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 				  union samr_UserInfo *i)
 {
-	if (s->change.fields) {
-		if (s->change.fields & USERMOD_FIELD_ACCOUNT_NAME) {
-			*level = 7;
-			i->info7.account_name.string = s->change.account_name;
+	if (s->change.fields == 0) return s->change.fields;
 
-			s->change.fields ^= USERMOD_FIELD_ACCOUNT_NAME;
-
-		} else if (s->change.fields & USERMOD_FIELD_FULL_NAME) {
-			*level = 8;
-			i->info8.full_name.string = s->change.full_name;
-			
-			s->change.fields ^= USERMOD_FIELD_FULL_NAME;
-
-		} else if (s->change.fields & USERMOD_FIELD_DESCRIPTION) {
-			*level = 13;
-			i->info13.description.string = s->change.description;
-			
-			s->change.fields ^= USERMOD_FIELD_DESCRIPTION;
-
-		} else if (s->change.fields & USERMOD_FIELD_COMMENT) {
-			*level = 2;
-
-			if (s->stage == USERMOD_QUERY) {
-				/* the user info is obtained, so now set the required field */
-				i->info2.comment.string = s->change.comment;
-				s->change.fields ^= USERMOD_FIELD_COMMENT;
-
-			} else {
-				/* we need to query the user info before setting one field in it */
-				s->stage = USERMOD_QUERY;
-				return s->change.fields;
-			}
-
-		} else if (s->change.fields & USERMOD_FIELD_ALLOW_PASS_CHG) {
-			*level = 3;
-			
-			if (s->stage == USERMOD_QUERY) {
-				i->info3.allow_password_change = timeval_to_nttime(s->change.allow_password_change);
-				s->change.fields ^= USERMOD_FIELD_ALLOW_PASS_CHG;
-
-			} else {
-				s->stage = USERMOD_QUERY;
-				return s->change.fields;
-			}
-
-		} else if (s->change.fields & USERMOD_FIELD_FORCE_PASS_CHG) {
-			*level = 3;
-
-			if (s->stage == USERMOD_QUERY) {
-				i->info3.force_password_change = timeval_to_nttime(s->change.force_password_change);
-				s->change.fields ^= USERMOD_FIELD_FORCE_PASS_CHG;
-
-			} else {
-				s->stage = USERMOD_QUERY;
-				return s->change.fields;
-			}
-
-		} else if (s->change.fields & USERMOD_FIELD_LAST_LOGON) {
-			*level = 3;
-			
-			if (s->stage == USERMOD_QUERY) {
-				i->info3.last_logon = timeval_to_nttime(s->change.last_logon);
-				s->change.fields ^= USERMOD_FIELD_LAST_LOGON;
-			} else {
-				s->stage = USERMOD_QUERY;
-				return s->change.fields;
-			}
+	if (s->change.fields & USERMOD_FIELD_ACCOUNT_NAME) {
+		*level = 7;
+		i->info7.account_name.string = s->change.account_name;
 		
-		} else if (s->change.fields & USERMOD_FIELD_LAST_LOGOFF) {
-			*level = 3;
+		s->change.fields ^= USERMOD_FIELD_ACCOUNT_NAME;
+		
+	} else if (s->change.fields & USERMOD_FIELD_FULL_NAME) {
+		*level = 8;
+		i->info8.full_name.string = s->change.full_name;
+		
+		s->change.fields ^= USERMOD_FIELD_FULL_NAME;
+		
+	} else if (s->change.fields & USERMOD_FIELD_DESCRIPTION) {
+		*level = 13;
+		i->info13.description.string = s->change.description;
+		
+		s->change.fields ^= USERMOD_FIELD_DESCRIPTION;
+		
+	} else if (s->change.fields & USERMOD_FIELD_COMMENT) {
+		*level = 2;
+		
+		if (s->stage == USERMOD_QUERY) {
+			/* the user info is obtained, so now set the required field */
+			i->info2.comment.string = s->change.comment;
+			s->change.fields ^= USERMOD_FIELD_COMMENT;
 			
-			if (s->stage == USERMOD_QUERY) {
-				i->info3.last_logoff = timeval_to_nttime(s->change.last_logoff);
-				s->change.fields ^= USERMOD_FIELD_LAST_LOGOFF;
-			} else {
-				s->stage = USERMOD_QUERY;
-				return s->change.fields;
-			}
-
-		} else if (s->change.fields & USERMOD_FIELD_LAST_PASS_CHG) {
-			*level = 3;
-			
-			if (s->stage == USERMOD_QUERY) {
-				i->info3.last_password_change = timeval_to_nttime(s->change.last_password_change);
-				s->change.fields ^= USERMOD_FIELD_LAST_PASS_CHG;
-			} else {
-				s->stage = USERMOD_QUERY;
-				return s->change.fields;
-			}
-
-		} else if (s->change.fields & USERMOD_FIELD_LOGON_SCRIPT) {
-			*level = 11;
-			i->info11.logon_script.string = s->change.logon_script;
-			
-			s->change.fields ^= USERMOD_FIELD_LOGON_SCRIPT;
-
-		} else if (s->change.fields & USERMOD_FIELD_PROFILE_PATH) {
-			*level = 12;
-			i->info12.profile_path.string = s->change.profile_path;
-
-			s->change.fields ^= USERMOD_FIELD_PROFILE_PATH;
-
-		} else if (s->change.fields & USERMOD_FIELD_HOME_DIRECTORY) {
-			*level = 3;
-			
-			if (s->stage == USERMOD_QUERY) {
-				i->info3.home_directory.string = s->change.home_directory;
-				s->change.fields ^= USERMOD_FIELD_HOME_DIRECTORY;
-			} else {
-				s->stage = USERMOD_QUERY;
-				return s->change.fields;
-			}
-
-		} else if (s->change.fields & USERMOD_FIELD_HOME_DRIVE) {
-			*level = 3;
-
-			if (s->stage == USERMOD_QUERY) {
-				i->info3.home_drive.string = s->change.home_drive;
-				s->change.fields ^= USERMOD_FIELD_HOME_DRIVE;
-			} else {
-				s->stage = USERMOD_QUERY;
-				return s->change.fields;
-			}
-
-		} else if (s->change.fields & USERMOD_FIELD_ACCT_EXPIRY) {
-			*level = 17;
-			i->info17.acct_expiry = timeval_to_nttime(s->change.acct_expiry);
-
-			s->change.fields ^= USERMOD_FIELD_ACCT_EXPIRY;
-
-		} else if (s->change.fields & USERMOD_FIELD_ACCT_FLAGS) {
-			*level = 16;
-			i->info16.acct_flags = s->change.acct_flags;
-
-			s->change.fields ^= USERMOD_FIELD_ACCT_FLAGS;
+		} else {
+			/* we need to query the user info before setting one field in it */
+			s->stage = USERMOD_QUERY;
+			return s->change.fields;
 		}
+		
+	} else if (s->change.fields & USERMOD_FIELD_ALLOW_PASS_CHG) {
+		*level = 3;
+		
+		if (s->stage == USERMOD_QUERY) {
+			i->info3.allow_password_change = timeval_to_nttime(s->change.allow_password_change);
+			s->change.fields ^= USERMOD_FIELD_ALLOW_PASS_CHG;
+			
+		} else {
+			s->stage = USERMOD_QUERY;
+			return s->change.fields;
+		}
+
+	} else if (s->change.fields & USERMOD_FIELD_FORCE_PASS_CHG) {
+		*level = 3;
+
+		if (s->stage == USERMOD_QUERY) {
+			i->info3.force_password_change = timeval_to_nttime(s->change.force_password_change);
+			s->change.fields ^= USERMOD_FIELD_FORCE_PASS_CHG;
+			
+		} else {
+			s->stage = USERMOD_QUERY;
+			return s->change.fields;
+		}
+		
+	} else if (s->change.fields & USERMOD_FIELD_LAST_LOGON) {
+		*level = 3;
+		
+		if (s->stage == USERMOD_QUERY) {
+			i->info3.last_logon = timeval_to_nttime(s->change.last_logon);
+			s->change.fields ^= USERMOD_FIELD_LAST_LOGON;
+		} else {
+			s->stage = USERMOD_QUERY;
+			return s->change.fields;
+		}
+		
+	} else if (s->change.fields & USERMOD_FIELD_LAST_LOGOFF) {
+		*level = 3;
+		
+		if (s->stage == USERMOD_QUERY) {
+			i->info3.last_logoff = timeval_to_nttime(s->change.last_logoff);
+			s->change.fields ^= USERMOD_FIELD_LAST_LOGOFF;
+		} else {
+			s->stage = USERMOD_QUERY;
+			return s->change.fields;
+		}
+
+	} else if (s->change.fields & USERMOD_FIELD_LAST_PASS_CHG) {
+		*level = 3;
+		
+		if (s->stage == USERMOD_QUERY) {
+			i->info3.last_password_change = timeval_to_nttime(s->change.last_password_change);
+			s->change.fields ^= USERMOD_FIELD_LAST_PASS_CHG;
+		} else {
+			s->stage = USERMOD_QUERY;
+			return s->change.fields;
+		}
+		
+	} else if (s->change.fields & USERMOD_FIELD_LOGON_SCRIPT) {
+		*level = 11;
+		i->info11.logon_script.string = s->change.logon_script;
+		
+		s->change.fields ^= USERMOD_FIELD_LOGON_SCRIPT;
+		
+	} else if (s->change.fields & USERMOD_FIELD_PROFILE_PATH) {
+		*level = 12;
+		i->info12.profile_path.string = s->change.profile_path;
+		
+		s->change.fields ^= USERMOD_FIELD_PROFILE_PATH;
+		
+	} else if (s->change.fields & USERMOD_FIELD_HOME_DIRECTORY) {
+		*level = 3;
+		
+		if (s->stage == USERMOD_QUERY) {
+			i->info3.home_directory.string = s->change.home_directory;
+			s->change.fields ^= USERMOD_FIELD_HOME_DIRECTORY;
+		} else {
+			s->stage = USERMOD_QUERY;
+			return s->change.fields;
+		}
+		
+	} else if (s->change.fields & USERMOD_FIELD_HOME_DRIVE) {
+		*level = 3;
+		
+		if (s->stage == USERMOD_QUERY) {
+			i->info3.home_drive.string = s->change.home_drive;
+			s->change.fields ^= USERMOD_FIELD_HOME_DRIVE;
+		} else {
+			s->stage = USERMOD_QUERY;
+			return s->change.fields;
+		}
+		
+	} else if (s->change.fields & USERMOD_FIELD_ACCT_EXPIRY) {
+		*level = 17;
+		i->info17.acct_expiry = timeval_to_nttime(s->change.acct_expiry);
+		
+		s->change.fields ^= USERMOD_FIELD_ACCT_EXPIRY;
+		
+	} else if (s->change.fields & USERMOD_FIELD_ACCT_FLAGS) {
+		*level = 16;
+		i->info16.acct_flags = s->change.acct_flags;
+		
+		s->change.fields ^= USERMOD_FIELD_ACCT_FLAGS;
 	}
 
 	/* We're going to be here back again soon unless all fields have been set */
