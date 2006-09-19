@@ -132,10 +132,11 @@ static NTSTATUS auth_init_script(struct auth_context *auth_context, const char *
 	if (param && *param) {
 		/* we load the 'fallback' module - if script isn't here, call this
 		   module */
-		if (!load_auth_module(auth_context, param, (auth_methods **)&(*auth_method)->private_data)) {
+		auth_methods *priv;
+		if (!load_auth_module(auth_context, param, &priv)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		
+		(*auth_method)->private_data = (void *)priv;
 	}
 	return NT_STATUS_OK;
 }
