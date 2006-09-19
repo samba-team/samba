@@ -31,6 +31,7 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.exist_flag = talloc_size(mem_ctx, sizeof(*r.out.exist_flag));
 	if (r.out.exist_flag == NULL) {
 		talloc_free(mem_ctx);
@@ -237,6 +238,7 @@ static BOOL api_dfs_GetInfo(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
@@ -293,6 +295,7 @@ static BOOL api_dfs_Enum(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.info = r.in.info;
 	r.out.total = r.in.total;
 	r.out.result = _dfs_Enum(p, r.in.level, r.in.bufsize, r.in.info, r.in.unknown, r.in.total);
@@ -1095,6 +1098,7 @@ static BOOL api_dfs_EnumEx(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.info = r.in.info;
 	r.out.total = r.in.total;
 	r.out.result = _dfs_EnumEx(p, r.in.name, r.in.level, r.in.bufsize, r.in.info, r.in.total);

@@ -31,6 +31,7 @@ static BOOL api_echo_AddOne(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.out_data = talloc_size(mem_ctx, sizeof(*r.out.out_data));
 	if (r.out.out_data == NULL) {
 		talloc_free(mem_ctx);
@@ -87,6 +88,7 @@ static BOOL api_echo_EchoData(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.out_data = talloc_array_size(mem_ctx, sizeof(*r.out.out_data), r.in.len);
 	if (r.out.out_data == NULL) {
 		talloc_free(mem_ctx);
@@ -193,6 +195,7 @@ static BOOL api_echo_SourceData(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.data = talloc_array_size(mem_ctx, sizeof(*r.out.data), r.in.len);
 	if (r.out.data == NULL) {
 		talloc_free(mem_ctx);
@@ -249,6 +252,7 @@ static BOOL api_echo_TestCall(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.s2 = talloc_size(mem_ctx, sizeof(*r.out.s2));
 	if (r.out.s2 == NULL) {
 		talloc_free(mem_ctx);
@@ -305,6 +309,7 @@ static BOOL api_echo_TestCall2(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
 		talloc_free(mem_ctx);
@@ -411,6 +416,7 @@ static BOOL api_echo_TestEnum(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.foo1 = r.in.foo1;
 	r.out.foo2 = r.in.foo2;
 	r.out.foo3 = r.in.foo3;
@@ -464,6 +470,7 @@ static BOOL api_echo_TestSurrounding(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.data = r.in.data;
 	_echo_TestSurrounding(p, r.in.data);
 	
