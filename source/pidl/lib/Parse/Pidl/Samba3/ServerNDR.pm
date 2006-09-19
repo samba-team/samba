@@ -80,6 +80,9 @@ sub ParseFunction($$)
 	pidl "\treturn False;";
 	pidl "}";
 	pidl "";
+	pidl "if (DEBUGLEVEL >= 10)";
+	pidl "\tNDR_PRINT_IN_DEBUG($fn->{NAME}, &r);";
+	pidl "";
 
 	my %env = ();
 	my $hasout = 0;
@@ -118,6 +121,9 @@ sub ParseFunction($$)
 	pidl_hdr "$proto";
 	pidl "$ret;";
 
+	pidl "";
+	pidl "if (DEBUGLEVEL >= 10)";
+	pidl "\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, &r);";
 	pidl "";
 	pidl "push = ndr_push_init_ctx(mem_ctx);";
 	pidl "if (push == NULL) {";
