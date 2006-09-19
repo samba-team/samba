@@ -1245,6 +1245,8 @@ suboption(void)
 	    encrypt_start(subpointer, SB_LEN());
 	    break;
 	case ENCRYPT_END:
+	    if (require_encryption)
+		fatal(net, "Output encryption is not possible to turn off");
 	    encrypt_end();
 	    break;
 	case ENCRYPT_REQSTART:
@@ -1257,6 +1259,8 @@ suboption(void)
 	     * if we have been able to get in the correct mode
 	     * anyhow.
 	     */
+	    if (require_encryption)
+		fatal(net, "Input encryption is not possible to turn off");
 	    encrypt_request_end();
 	    break;
 	case ENCRYPT_ENC_KEYID:
