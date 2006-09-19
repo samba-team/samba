@@ -52,7 +52,15 @@ sub ParseFunction($$)
 		} 
 	}
 
+	pidl "";
+	pidl "if (DEBUGLEVEL >= 10)";
+	pidl "\tNDR_PRINT_IN_DEBUG($fn->{NAME}, &r);";
+	pidl "";
 	pidl "status = cli_do_rpc_ndr(cli, mem_ctx, PI_$uif, $ufn, &r, (ndr_pull_flags_fn_t)ndr_pull_$fn->{NAME}, (ndr_push_flags_fn_t)ndr_push_$fn->{NAME});";
+	pidl "";
+	pidl "if (DEBUGLEVEL >= 10)";
+	pidl "\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, &r);";
+	pidl "";
 	pidl "if (NT_STATUS_IS_ERR(status)) {";
 	pidl "\treturn status;";
 	pidl "}";
