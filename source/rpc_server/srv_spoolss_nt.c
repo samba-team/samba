@@ -4262,7 +4262,7 @@ static BOOL construct_printer_info_5(Printer_entry *print_hnd, PRINTER_INFO_5 *p
 static BOOL construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *printer, int snum)
 {
 	char *guid_str = NULL;
-	struct uuid guid; 
+	struct GUID guid; 
 	
 	if (is_printer_published(print_hnd, snum, &guid)) {
 		asprintf(&guid_str, "{%s}", smb_uuid_string_static(guid));

@@ -158,39 +158,39 @@ BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 	return True;
 }
 
-BOOL secrets_store_domain_guid(const char *domain, struct uuid *guid)
+BOOL secrets_store_domain_guid(const char *domain, struct GUID *guid)
 {
 	fstring key;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper_m(key);
-	return secrets_store(key, guid, sizeof(struct uuid));
+	return secrets_store(key, guid, sizeof(struct GUID));
 }
 
-BOOL secrets_fetch_domain_guid(const char *domain, struct uuid *guid)
+BOOL secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 {
-	struct uuid *dyn_guid;
+	struct GUID *dyn_guid;
 	fstring key;
 	size_t size = 0;
-	struct uuid new_guid;
+	struct GUID new_guid;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper_m(key);
-	dyn_guid = (struct uuid *)secrets_fetch(key, &size);
+	dyn_guid = (struct GUID *)secrets_fetch(key, &size);
 
 	if (!dyn_guid) {
 		if (lp_server_role() == ROLE_DOMAIN_PDC) {
 			smb_uuid_generate_random(&new_guid);
 			if (!secrets_store_domain_guid(domain, &new_guid))
 				return False;
-			dyn_guid = (struct uuid *)secrets_fetch(key, &size);
+			dyn_guid = (struct GUID *)secrets_fetch(key, &size);
 		}
 		if (dyn_guid == NULL) {
 			return False;
 		}
 	}
 
-	if (size != sizeof(struct uuid)) { 
+	if (size != sizeof(struct GUID)) { 
 		DEBUG(1,("UUID size %d is wrong!\n", (int)size));
 		SAFE_FREE(dyn_guid);
 		return False;

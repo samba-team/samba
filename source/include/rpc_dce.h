@@ -126,7 +126,7 @@ enum schannel_direction {
 
 /* RPC_IFACE */
 typedef struct rpc_iface_info {
-	struct uuid uuid;  /* 16 bytes of rpc interface identification */
+	struct GUID uuid;  /* 16 bytes of rpc interface identification */
 	uint32 version;    /* the interface version number */
 } RPC_IFACE;
 

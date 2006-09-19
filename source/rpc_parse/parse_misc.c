@@ -298,10 +298,10 @@ BOOL smb_io_dom_sid2(const char *desc, DOM_SID2 *sid, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Reads or writes a struct uuid
+ Reads or writes a struct GUID
 ********************************************************************/
 
-BOOL smb_io_uuid(const char *desc, struct uuid *uuid, 
+BOOL smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth)
 {
 	if (uuid == NULL)
@@ -1704,7 +1704,7 @@ BOOL smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth
 	
 	if (!prs_uint32("handle_type", ps, depth, &pol->handle_type))
 		return False;
-	if (!smb_io_uuid("uuid", (struct uuid*)&pol->uuid, ps, depth))
+	if (!smb_io_uuid("uuid", (struct GUID*)&pol->uuid, ps, depth))
 		return False;
 
 	return True;
