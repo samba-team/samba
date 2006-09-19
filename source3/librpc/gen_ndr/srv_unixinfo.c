@@ -31,6 +31,9 @@ static BOOL api_unixinfo_SidToUid(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(unixinfo_SidToUid, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.uid = talloc_size(mem_ctx, sizeof(*r.out.uid));
 	if (r.out.uid == NULL) {
@@ -39,6 +42,9 @@ static BOOL api_unixinfo_SidToUid(pipes_struct *p)
 	}
 	
 	r.out.result = _unixinfo_SidToUid(p, r.in.sid, r.out.uid);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(unixinfo_SidToUid, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -88,6 +94,9 @@ static BOOL api_unixinfo_UidToSid(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(unixinfo_UidToSid, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.sid = talloc_size(mem_ctx, sizeof(*r.out.sid));
 	if (r.out.sid == NULL) {
@@ -96,6 +105,9 @@ static BOOL api_unixinfo_UidToSid(pipes_struct *p)
 	}
 	
 	r.out.result = _unixinfo_UidToSid(p, r.in.uid, r.out.sid);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(unixinfo_UidToSid, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -145,6 +157,9 @@ static BOOL api_unixinfo_SidToGid(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(unixinfo_SidToGid, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.gid = talloc_size(mem_ctx, sizeof(*r.out.gid));
 	if (r.out.gid == NULL) {
@@ -153,6 +168,9 @@ static BOOL api_unixinfo_SidToGid(pipes_struct *p)
 	}
 	
 	r.out.result = _unixinfo_SidToGid(p, r.in.sid, r.out.gid);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(unixinfo_SidToGid, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -202,6 +220,9 @@ static BOOL api_unixinfo_GidToSid(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(unixinfo_GidToSid, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.sid = talloc_size(mem_ctx, sizeof(*r.out.sid));
 	if (r.out.sid == NULL) {
@@ -210,6 +231,9 @@ static BOOL api_unixinfo_GidToSid(pipes_struct *p)
 	}
 	
 	r.out.result = _unixinfo_GidToSid(p, r.in.gid, r.out.sid);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(unixinfo_GidToSid, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -259,6 +283,9 @@ static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(unixinfo_GetPWUid, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.count = r.in.count;
 	r.out.infos = talloc_array_size(mem_ctx, sizeof(*r.out.infos), *r.in.count);
@@ -268,6 +295,9 @@ static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
 	}
 	
 	r.out.result = _unixinfo_GetPWUid(p, r.in.count, r.in.uids, r.out.infos);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(unixinfo_GetPWUid, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
