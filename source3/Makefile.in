@@ -220,7 +220,7 @@ TALLOC_OBJ = lib/talloc.o
 LIB_WITHOUT_PROTO_OBJ = @LIBREPLACE_OBJS@ @SOCKET_WRAPPER_OBJS@
 
 LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
-	  lib/getsmbpass.o lib/interface.o lib/md4.o \
+	  lib/interface.o lib/md4.o \
 	  lib/interfaces.o lib/pidfile.o \
 	  lib/signal.o lib/system.o lib/sendfile.o lib/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o \
