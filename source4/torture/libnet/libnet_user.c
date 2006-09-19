@@ -330,6 +330,7 @@ done:
 		continue; \
 	}
 
+const int fields_num = 15;
 enum test_fields { none = 0, account_name, full_name, description, home_directory, home_drive,
 		   comment, logon_script, profile_path, acct_expiry, allow_password_change,
 		   force_password_change, last_logon, last_logoff, last_password_change };
@@ -337,7 +338,6 @@ enum test_fields { none = 0, account_name, full_name, description, home_director
 static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_changes,
 			     char **user_name, enum test_fields req_change)
 {
-	const int num_fields = 14;
 	const char* logon_scripts[] = { "start_login.cmd", "login.bat", "start.cmd" };
 	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
 	const char* home_drives[] = { "H:", "z:", "I:", "J:", "n:" };
@@ -349,10 +349,10 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, i
 
 	printf("Fields to change: [");
 
-	for (i = 0; i < num_changes && i < num_fields; i++) {
+	for (i = 0; i < num_changes && i < fields_num; i++) {
 		const char *fldname;
 
-		testfld = (req_change == none) ? (random() % num_fields) : req_change;
+		testfld = (req_change == none) ? (random() % fields_num) : req_change;
 
 		/* get one in case we hit time field this time */
 		gettimeofday(&now, NULL);
@@ -485,6 +485,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	char *name;
 	struct libnet_context *ctx;
 	struct libnet_ModifyUser req;
+	int fld;
 	BOOL ret = True;
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
@@ -522,19 +523,41 @@ BOOL torture_modifyuser(struct torture_context *torture)
 		goto done;
 	}
 
-	ZERO_STRUCT(req);
-	req.in.domain_name = lp_workgroup();
-	req.in.user_name = name;
-	
-	printf("Testing change of a single field\n");
-	set_test_changes(mem_ctx, &req, 1, &name, none);
-	
-	status = libnet_ModifyUser(ctx, mem_ctx, &req);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
-		talloc_free(mem_ctx);
-		ret = False;
-		goto done;
+	printf("Testing change of all fields - each single one in turn\n");
+
+	for (fld = 1; fld < fields_num; fld++) {
+		ZERO_STRUCT(req);
+		req.in.domain_name = lp_workgroup();
+		req.in.user_name = name;
+
+		set_test_changes(mem_ctx, &req, 1, &name, fld);
+
+		status = libnet_ModifyUser(ctx, mem_ctx, &req);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
+			talloc_free(mem_ctx);
+			ret = False;
+			goto done;
+		}
+
+		if (fld == account_name) {
+			/* restore original testing username - it's useful when test fails
+			   because it prevents from problems with recreating account */
+			ZERO_STRUCT(req);
+			req.in.domain_name = lp_workgroup();
+			req.in.user_name = name;
+			req.in.account_name = TEST_USERNAME;
+			
+			status = libnet_ModifyUser(ctx, mem_ctx, &req);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
+				talloc_free(mem_ctx);
+				ret = False;
+				goto done;
+			}
+			
+			name = TEST_USERNAME;
+		}
 	}
 
 	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, name)) {
