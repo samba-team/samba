@@ -130,7 +130,7 @@ if ($opt_fastbind && !$opt_simpleauth) {
 }
 
 if ($opt_notify) {
-	$opt_paging = 0;
+	$opt_paging = undef;
 }
 
 # get the query
@@ -1562,7 +1562,7 @@ sub default_callback {
 
 	my ($res,$obj) = @_;
 
-	if ($res->code == LDAP_REFERRAL) {
+	if (!$opt_notify && $res->code == LDAP_REFERRAL) {
 		return;
 	}
 
@@ -1753,7 +1753,7 @@ sub main () {
 			scope => $scope,
 				) || die "cannot search";
 
-		if ($async_search->code == LDAP_REFERRAL) {
+		if (!$opt_notify && ($async_search->code == LDAP_REFERRAL)) {
 			foreach my $ref ($async_search->referrals) {
 				print "\ngot Referral: [$ref]\n";
 				$async_ldap_hd->unbind();
