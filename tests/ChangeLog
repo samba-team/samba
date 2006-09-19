@@ -1,5 +1,7 @@
 2006-09-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-gss.in: Add (c)
+
 	* kdc/check-kdc.in: Test constrained delegation impersonation.
 	
 2006-09-16  Love Hörnquist Åstrand  <lha@it.su.se>
