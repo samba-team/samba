@@ -437,6 +437,7 @@ static struct cmd_set rpcclient_commands[] = {
 	{ "help", RPC_RTYPE_NTSTATUS, cmd_help, NULL, 	  -1, NULL,	"Get help on commands", "[command]" },
 	{ "?", 	RPC_RTYPE_NTSTATUS, cmd_help, NULL,	  -1, NULL,	"Get help on commands", "[command]" },
 	{ "debuglevel", RPC_RTYPE_NTSTATUS, cmd_debuglevel, NULL,   -1,	NULL, "Set debug level", "level" },
+	{ "debug", RPC_RTYPE_NTSTATUS, cmd_debuglevel, NULL,   -1,	NULL, "Set debug level", "level" },
 	{ "list",	RPC_RTYPE_NTSTATUS, cmd_listcommands, NULL, -1,	NULL, "List available commands on <pipe>", "pipe" },
 	{ "exit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,   -1,	NULL,	"Exit program", "" },
 	{ "quit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,	  -1,	NULL, "Exit program", "" },
