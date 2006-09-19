@@ -818,13 +818,16 @@ handleServer(void *ptr)
 static char *port_str;
 static int version_flag;
 static int help_flag;
+static char *logfile_str;
 
 static int port = 4711;
 
 struct getargs args[] = {
     { "spn",	0,   arg_string,	&targetname,	"This host's SPN",
-      "number-of-service" },
+      "service/host@REALM" },
     { "port",	'p', arg_string,	&port_str,	"Use this port",
+      "number-of-service" },
+    { "logfile", 0,  arg_string,	&logfile_str,	"logfile",
       "number-of-service" },
     { "version", 0,  arg_flag,		&version_flag,	"Print version",
       NULL },
@@ -873,11 +876,17 @@ main(int argc, char **argv)
 
     krb5_init_context(&context);
 
-    logfile = fopen("/dev/tty", "w");
-    if (logfile == NULL)
-	err(1, "error opening /dev/tty");
+    {
+	const char *lf = logfile_str;
+	if (lf == NULL)
+	    lf = "/dev/tty";
 
-    mini_inetd(port);
+	logfile = fopen(lf, "w");
+	if (logfile == NULL)
+	    err(1, "error opening %s", lf);
+    }
+
+    mini_inetd(htons(port));
     fprintf(logfile, "connected\n");
 
     {
