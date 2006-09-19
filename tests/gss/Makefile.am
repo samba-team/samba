@@ -2,17 +2,29 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-TESTS = check-gss
+noinst_DATA = krb5.conf
+
+TESTS = check-gss check-gssmask
 check_PROGRAMS = $(TESTS)
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
-	-e 's,[@]objdir[@],$(top_builddir)/tests/kdc,g'
+	-e 's,[@]objdir[@],$(top_builddir)/tests/gss,g'
 
 check-gss: check-gss.in Makefile
 	$(do_subst) < $(srcdir)/check-gss.in > check-gss.tmp
 	chmod +x check-gss.tmp
 	mv check-gss.tmp check-gss
 
+check-gssmask: check-gssmask.in Makefile
+	$(do_subst) < $(srcdir)/check-gssmask.in > check-gssmask.tmp
+	chmod +x check-gssmask.tmp
+	mv check-gssmask.tmp check-gssmask
+
+krb5.conf: krb5.conf.in Makefile
+	$(do_subst) < $(srcdir)/krb5.conf.in > krb5.conf.tmp
+	mv krb5.conf.tmp krb5.conf
+
 CLEANFILES= \
 	$(TESTS) \
-	check-gss.tmp
+	check-gss.tmp \
+	check-gssmask.tmp
