@@ -612,6 +612,39 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 				return s->change.fields;
 			}
 
+		} else if (s->change.fields & USERMOD_FIELD_LAST_LOGON) {
+			*level = 3;
+			
+			if (s->stage == USERMOD_QUERY) {
+				i->info3.last_logon = timeval_to_nttime(s->change.last_logon);
+				s->change.fields ^= USERMOD_FIELD_LAST_LOGON;
+			} else {
+				s->stage = USERMOD_QUERY;
+				return s->change.fields;
+			}
+		
+		} else if (s->change.fields & USERMOD_FIELD_LAST_LOGOFF) {
+			*level = 3;
+			
+			if (s->stage == USERMOD_QUERY) {
+				i->info3.last_logoff = timeval_to_nttime(s->change.last_logoff);
+				s->change.fields ^= USERMOD_FIELD_LAST_LOGOFF;
+			} else {
+				s->stage = USERMOD_QUERY;
+				return s->change.fields;
+			}
+
+		} else if (s->change.fields & USERMOD_FIELD_LAST_PASS_CHG) {
+			*level = 3;
+			
+			if (s->stage == USERMOD_QUERY) {
+				i->info3.last_password_change = timeval_to_nttime(s->change.last_password_change);
+				s->change.fields ^= USERMOD_FIELD_LAST_PASS_CHG;
+			} else {
+				s->stage = USERMOD_QUERY;
+				return s->change.fields;
+			}
+
 		} else if (s->change.fields & USERMOD_FIELD_LOGON_SCRIPT) {
 			*level = 11;
 			i->info11.logon_script.string = s->change.logon_script;
@@ -623,6 +656,28 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 			i->info12.profile_path.string = s->change.profile_path;
 
 			s->change.fields ^= USERMOD_FIELD_PROFILE_PATH;
+
+		} else if (s->change.fields & USERMOD_FIELD_HOME_DIRECTORY) {
+			*level = 3;
+			
+			if (s->stage == USERMOD_QUERY) {
+				i->info3.home_directory.string = s->change.home_directory;
+				s->change.fields ^= USERMOD_FIELD_HOME_DIRECTORY;
+			} else {
+				s->stage = USERMOD_QUERY;
+				return s->change.fields;
+			}
+
+		} else if (s->change.fields & USERMOD_FIELD_HOME_DRIVE) {
+			*level = 3;
+
+			if (s->stage == USERMOD_QUERY) {
+				i->info3.home_drive.string = s->change.home_drive;
+				s->change.fields ^= USERMOD_FIELD_HOME_DRIVE;
+			} else {
+				s->stage = USERMOD_QUERY;
+				return s->change.fields;
+			}
 
 		} else if (s->change.fields & USERMOD_FIELD_ACCT_EXPIRY) {
 			*level = 17;
@@ -638,7 +693,7 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 		}
 	}
 
-	/* We're going to be back here again soon unless all fields have been set */
+	/* We're going to be here back again soon unless all fields have been set */
 	if (s->change.fields) {
 		s->stage = USERMOD_OPEN;
 	} else {
@@ -656,13 +711,22 @@ static NTSTATUS usermod_open(struct composite_context *c,
 			     struct usermod_state *s)
 {
 	union samr_UserInfo *i = &s->info;
-	uint16_t level;
+	/* set the level to invalid value, so that unless setfields routine 
+	   gives it a valid value we report the error correctly */
+	uint16_t level = 27;
 
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 
 	/* prepare UserInfo level and data based on bitmask field */
 	s->change.fields = usermod_setfields(s, &level, i);
+
+	if (level > 26) {
+		/* apparently there's a field that the setfields routine
+		   does not know how to set */
+		c->state = COMPOSITE_STATE_ERROR;
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* If some specific level is used to set user account data and the change
 	   itself does not cover all fields then we need to query the user info
