@@ -5,11 +5,6 @@ AC_PREREQ(2.53)
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
 
-AC_LIBREPLACE_LOCATION_CHECKS
-
-AC_DISABLE_STATIC
-AC_ENABLE_SHARED
-
 SMB_VERSION_STRING=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 
@@ -17,6 +12,11 @@ SAMBA_VERSION_SVN_REVISION=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_
 if test -n "${SAMBA_VERSION_SVN_REVISION}";then
 	echo "BUILD REVISION: ${SAMBA_VERSION_SVN_REVISION}"
 fi
+
+AC_LIBREPLACE_LOCATION_CHECKS
+
+AC_DISABLE_STATIC
+AC_ENABLE_SHARED
 
 #################################################
 # Directory handling stuff to support both the
