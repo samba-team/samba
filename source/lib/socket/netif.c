@@ -80,7 +80,6 @@
 #include <net/if.h>
 #endif
 
-#define BOOL int
 #include "netif.h"
 
 #if HAVE_IFACE_IFCONF
