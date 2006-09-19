@@ -2173,6 +2173,76 @@ BOOL samr_io_r_query_dispinfo(const char *desc, SAMR_R_QUERY_DISPINFO * r_u,
 }
 
 /*******************************************************************
+inits a SAMR_Q_GET_DISPENUM_INDEX structure.
+********************************************************************/
+
+void init_samr_q_get_dispenum_index(SAMR_Q_GET_DISPENUM_INDEX * q_e, POLICY_HND *pol,
+				    uint16 switch_level, const char *name)
+{
+	DEBUG(5, ("init_samr_q_get_dispenum_index\n"));
+
+	q_e->domain_pol = *pol;
+
+	q_e->switch_level = switch_level;
+
+	init_lsa_string(&q_e->name, name);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_q_get_dispenum_index(const char *desc, SAMR_Q_GET_DISPENUM_INDEX * q_e,
+				  prs_struct *ps, int depth)
+{
+	if (q_e == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_get_dispenum_index");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("domain_pol", &q_e->domain_pol, ps, depth))
+		return False;
+
+	if(!prs_uint16("switch_level", ps, depth, &q_e->switch_level))
+		return False;
+
+	if (!smb_io_lsa_string("name", &q_e->name, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_r_get_dispenum_index(const char *desc, SAMR_R_GET_DISPENUM_INDEX * r_u,
+				  prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_get_dispenum_index");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("idx", ps, depth, &r_u->idx))
+		return False;
+	
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
 inits a SAMR_Q_OPEN_GROUP structure.
 ********************************************************************/
 
