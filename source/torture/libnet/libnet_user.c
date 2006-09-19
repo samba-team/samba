@@ -26,9 +26,8 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
+#include "torture/libnet/usertest.h"
 
-
-#define TEST_USERNAME        "libnetusertest"
 
 static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle, const char *username)
@@ -318,25 +317,8 @@ done:
   Generate testing set of random changes
 */
 
-#define TEST_CHG_ACCOUNTNAME   "newlibnetusertest%02d"
-#define TEST_CHG_DESCRIPTION   "Sample description %ld"
-#define TEST_CHG_FULLNAME      "First%04x Last%04x"
-#define TEST_CHG_COMMENT       "Comment[%04lu%04lu]"
-#define TEST_CHG_PROFILEPATH   "\\\\srv%04ld\\profile%02u\\prof"
-
-#define continue_if_field_set(field) \
-	if (field != 0) { \
-		i--; \
-		continue; \
-	}
-
-const int fields_num = 15;
-enum test_fields { none = 0, account_name, full_name, description, home_directory, home_drive,
-		   comment, logon_script, profile_path, acct_expiry, allow_password_change,
-		   force_password_change, last_logon, last_logoff, last_password_change };
-
-static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_changes,
-			     char **user_name, enum test_fields req_change)
+void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_changes,
+		      char **user_name, enum test_fields req_change)
 {
 	const char* logon_scripts[] = { "start_login.cmd", "login.bat", "start.cmd" };
 	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
@@ -349,10 +331,10 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, i
 
 	printf("Fields to change: [");
 
-	for (i = 0; i < num_changes && i < fields_num; i++) {
+	for (i = 0; i < num_changes && i < FIELDS_NUM; i++) {
 		const char *fldname;
 
-		testfld = (req_change == none) ? (random() % fields_num) : req_change;
+		testfld = (req_change == none) ? (random() % FIELDS_NUM) : req_change;
 
 		/* get one in case we hit time field this time */
 		gettimeofday(&now, NULL);
@@ -525,7 +507,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 
 	printf("Testing change of all fields - each single one in turn\n");
 
-	for (fld = 1; fld < fields_num; fld++) {
+	for (fld = 1; fld < FIELDS_NUM; fld++) {
 		ZERO_STRUCT(req);
 		req.in.domain_name = lp_workgroup();
 		req.in.user_name = name;
