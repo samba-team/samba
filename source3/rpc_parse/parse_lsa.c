@@ -2922,7 +2922,7 @@ BOOL lsa_io_r_setsystemaccount(const char *desc, LSA_R_SETSYSTEMACCOUNT  *out, p
 }
 
 
-static void init_lsa_string( LSA_STRING *uni, const char *string )
+void init_lsa_string( LSA_STRING *uni, const char *string )
 {
 	init_unistr2(&uni->unistring, string, UNI_FLAGS_NONE);
 	init_uni_hdr(&uni->hdr, &uni->unistring);
