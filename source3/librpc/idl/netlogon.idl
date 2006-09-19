@@ -62,7 +62,7 @@ interface netlogon
 		[in] [string,charset(UTF16)] uint16 *server_name,
 		[in] [string,charset(UTF16)] uint16 account_name[],
 		[in] [string,charset(UTF16)] uint16 workstation[],
-		[out] netr_UasLogoffInfo info
+		[out,ref] netr_UasLogoffInfo *info
 		);
 
 
@@ -246,8 +246,8 @@ interface netlogon
 		[in]  uint16 logon_level,
 		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 		[in]  uint16 validation_level,
-		[out] [switch_is(validation_level)] netr_Validation validation,
-		[out] uint8 authoritative
+		[out,ref] [switch_is(validation_level)] netr_Validation *validation,
+		[out,ref] uint8 *authoritative
 		);
 
 
@@ -299,7 +299,7 @@ interface netlogon
 		[in]  [string,charset(UTF16)] uint16 computer_name[],
 		[in]  netr_Authenticator credential,
 		[in]  samr_Password new_password,
-		[out] netr_Authenticator return_authenticator
+		[out,ref] netr_Authenticator *return_authenticator
 		);
 
 
@@ -680,9 +680,9 @@ interface netlogon
 		[in]      [string,charset(UTF16)] uint16 logon_server[],
 		[in]      [string,charset(UTF16)] uint16 computername[],
 		[in]      netr_Authenticator credential,
-		[in,out]  netr_Authenticator return_authenticator,
+		[in,out,ref]  netr_Authenticator *return_authenticator,
 		[in]      netr_SamDatabaseID database_id,
-		[in,out]  udlong sequence_num,
+		[in,out,ref]  udlong *sequence_num,
 		[in]      uint32 preferredmaximumlength,
 		[out]     netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
@@ -695,9 +695,9 @@ interface netlogon
 		[in]     [string,charset(UTF16)] uint16 logon_server[],
 		[in]     [string,charset(UTF16)] uint16 computername[],
 		[in]     netr_Authenticator credential,
-		[in,out] netr_Authenticator return_authenticator,
+		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in]     netr_SamDatabaseID database_id,
-		[in,out] uint32 sync_context,
+		[in,out,ref] uint32 *sync_context,
 		[in]     uint32 preferredmaximumlength,
 		[out]    netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
@@ -722,15 +722,15 @@ interface netlogon
 		[in]     [string,charset(UTF16)] uint16 *logon_server,
 		[in]     [string,charset(UTF16)] uint16 computername[],
 		[in]     netr_Authenticator credential,
-		[in,out] netr_Authenticator return_authenticator,
+		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in]     netr_UAS_INFO_0 uas,
 		[in]     uint32 count,
 		[in]     uint32 level,
 		[in]     uint32 buffersize,
-		[out,subcontext(4)] netr_AccountBuffer buffer,
-		[out]    uint32 count_returned,
-		[out]    uint32 total_entries,
-		[out]    netr_UAS_INFO_0 recordid
+		[out,ref,subcontext(4)] netr_AccountBuffer *buffer,
+		[out,ref]    uint32 *count_returned,
+		[out,ref]    uint32 *total_entries,
+		[out,ref]    netr_UAS_INFO_0 *recordid
 		);
 
 
@@ -741,15 +741,15 @@ interface netlogon
 		[in]      [string,charset(UTF16)] uint16 *logon_server,
 		[in]      [string,charset(UTF16)] uint16 computername[],
 		[in]      netr_Authenticator credential,
-		[in,out]  netr_Authenticator return_authenticator,
+		[in,out,ref]  netr_Authenticator *return_authenticator,
 		[in]      uint32 reference,
 		[in]      uint32 level,
 		[in]      uint32 buffersize,
-		[out,subcontext(4)] netr_AccountBuffer buffer,
-		[out]     uint32 count_returned,
-		[out]     uint32 total_entries,
-		[out]     uint32 next_reference,
-		[in,out]  netr_UAS_INFO_0 recordid
+		[out,ref,subcontext(4)] netr_AccountBuffer *buffer,
+		[out,ref]     uint32 *count_returned,
+		[out,ref]     uint32 *total_entries,
+		[out,ref]     uint32 *next_reference,
+		[in,out,ref]  netr_UAS_INFO_0 *recordid
 		);
 
 
@@ -759,7 +759,7 @@ interface netlogon
 	NTSTATUS netr_GetDcName(
 		[in]  [string,charset(UTF16)] uint16 logon_server[],
 		[in]  [string,charset(UTF16)] uint16 *domainname,
-		[out] [string,charset(UTF16)] uint16 *dcname
+		[out,ref] [string,charset(UTF16)] uint16 **dcname
 		);
 
 	/*****************/
@@ -805,7 +805,7 @@ interface netlogon
 		[in]   [string,charset(UTF16)] uint16 *logon_server,
 		[in]   netr_LogonControlCode function_code,
 		[in]   uint32 level,
-		[out,switch_is(level)]  netr_CONTROL_QUERY_INFORMATION info
+		[out,ref,switch_is(level)]  netr_CONTROL_QUERY_INFORMATION *info
 		);
 
 
@@ -815,7 +815,7 @@ interface netlogon
 	WERROR netr_GetAnyDCName(
 		[in]  [string,charset(UTF16)] uint16 *logon_server,
 		[in]  [string,charset(UTF16)] uint16 *domainname,
-		[out] [string,charset(UTF16)] uint16 *dcname
+		[out,ref] [string,charset(UTF16)] uint16 **dcname
 		);
 
 
@@ -834,7 +834,7 @@ interface netlogon
 		[in]    uint32 function_code,
 		[in]    uint32 level,
 		[in][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  data,
-		[out][switch_is(level)]        netr_CONTROL_QUERY_INFORMATION query
+		[out,ref][switch_is(level)]        netr_CONTROL_QUERY_INFORMATION *query
 		);
 
 
@@ -865,10 +865,10 @@ interface netlogon
 		[in]     [string,charset(UTF16)] uint16 logon_server[],
 		[in]     [string,charset(UTF16)] uint16 computername[],
 		[in]     netr_Authenticator credential,
-		[in,out] netr_Authenticator return_authenticator,
+		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in]     netr_SamDatabaseID database_id,
 		[in]     uint16 restart_state,
-		[in,out] uint32 sync_context,
+		[in,out,ref] uint32 *sync_context,
 		[in]     uint32 preferredmaximumlength,
 		[out]    netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
@@ -883,7 +883,7 @@ interface netlogon
 		[in]     [string,charset(UTF16)] uint16 logon_server[],
 		[in]     [string,charset(UTF16)] uint16 computername[],
 		[in]     netr_Authenticator credential,
-		[in,out] netr_Authenticator return_authenticator,
+		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in][size_is(change_log_entry_size)] uint8 *change_log_entry,
 		[in]     uint32 change_log_entry_size,
 		[out]    netr_DELTA_ENUM_ARRAY *delta_enum_array
@@ -898,7 +898,7 @@ interface netlogon
 		[in]   uint32 function_code,
 		[in]   uint32 level,
 		[in][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  data,
-		[out][switch_is(level)]        netr_CONTROL_QUERY_INFORMATION query
+		[out,ref][switch_is(level)]        netr_CONTROL_QUERY_INFORMATION *query
 		);
 
 	/*****************/
@@ -976,7 +976,7 @@ interface netlogon
 	/* Function 0x1c */
 	WERROR netr_DsRGetSiteName(
 		[in] [string,charset(UTF16)] uint16 *computer_name,
-		[out] [string,charset(UTF16)] uint16 *site
+		[out,ref] [string,charset(UTF16)] uint16 **site
 		);
 
 	/****************/
@@ -1042,7 +1042,7 @@ interface netlogon
 		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in]	     uint32 level,
 		[in,switch_is(level)] netr_DomainQuery query,
-		[out,switch_is(level)] netr_DomainInfo info
+		[out,ref,switch_is(level)] netr_DomainInfo *info
 		);
 
 	typedef [flag(NDR_PAHEX)] struct {
@@ -1059,7 +1059,7 @@ interface netlogon
 		[in]  [string,charset(UTF16)] uint16 computer_name[],
 		[in]  netr_Authenticator credential,
 		[in]  netr_CryptPassword new_password,
-		[out] netr_Authenticator return_authenticator
+		[out,ref] netr_Authenticator *return_authenticator
 		);
 
 	/****************/
@@ -1111,9 +1111,9 @@ interface netlogon
 		[in]  uint16 logon_level,
 		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 		[in]  uint16 validation_level,
-		[out] [switch_is(validation_level)] netr_Validation validation,
-		[out] uint8 authoritative,
-		[in,out] uint32 flags
+		[out,ref] [switch_is(validation_level)] netr_Validation *validation,
+		[out,ref] uint8 *authoritative,
+		[in,out,ref] uint32 *flags
 		);
 
 	/****************/
@@ -1159,8 +1159,8 @@ interface netlogon
 	WERROR netr_DsrEnumerateDomainTrusts(
 		[in]                 [string,charset(UTF16)] uint16           *server_name,
 		[in]                 netr_TrustFlags  trust_flags,
-		[out]                uint32           count,
-		[out,size_is(count)] netr_DomainTrust *trusts
+		[out,ref]                uint32           *count,
+		[out,ref,size_is(count)] netr_DomainTrust **trusts
 		);
 
 
@@ -1192,9 +1192,9 @@ interface netlogon
 		[in]  uint16 logon_level,
 		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 		[in]  uint16 validation_level,
-		[out] [switch_is(validation_level)] netr_Validation validation,
-		[out] uint8 authoritative,
-		[in,out] uint32 flags
+		[out,ref] [switch_is(validation_level)] netr_Validation *validation,
+		[out,ref] uint8 *authoritative,
+		[in,out,ref] uint32 *flags
 		);
 
 	/****************/
