@@ -910,7 +910,7 @@ case "$host_os" in
 		fi
 	;;
 esac
-AC_CHECK_HEADERS(shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
+AC_CHECK_HEADERS(shadow.h)
 AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(syscall.h sys/syscall.h)
@@ -919,24 +919,6 @@ AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr
 AC_CHECK_HEADERS(sys/ea.h sys/proplist.h)
 
 AC_CHECK_HEADERS(sys/cdefs.h glob.h)
-
-AC_CHECK_HEADERS(netinet/ip.h,,,[[
-#include <sys/types.h>
-#if HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#include <netinet/in.h>
-#if HAVE_NETINET_IN_SYSTM_H
-#include <netinet/in_systm.h>
-#endif
-]])
-
-AC_CHECK_HEADERS(net/if.h,,,[[
-#include <sys/types.h>
-#if HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-]])
 
 AC_CHECK_HEADERS(security/pam_modules.h,,,[[
 #if HAVE_SECURITY_PAM_APPL_H
