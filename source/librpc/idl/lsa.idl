@@ -9,8 +9,7 @@
   endpoint("ncacn_np:[\\pipe\\lsarpc]","ncacn_np:[\\pipe\\netlogon]","ncacn_np:[\\pipe\\lsass]", "ncacn_ip_tcp:", "ncalrpc:"),
   pointer_default(unique),
   helpstring("Local Security Authority"),
-  depends(security),
-  keepref
+  depends(security)
 ] interface lsarpc
 {
 	declare bitmap security_secinfo;
