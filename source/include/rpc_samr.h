@@ -121,7 +121,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_USERGROUPS  0x27
 
 #define SAMR_QUERY_DISPINFO    0x28
-#define SAMR_UNKNOWN_29        0x29
+#define SAMR_GET_DISPENUM_INDEX 0x29
 #define SAMR_UNKNOWN_2a        0x2a
 #define SAMR_UNKNOWN_2b        0x2b
 #define SAMR_GET_USRDOM_PWINFO 0x2c
@@ -1047,6 +1047,22 @@ typedef struct r_samr_query_dispinfo_info
 
 } SAMR_R_QUERY_DISPINFO;
 
+/* SAMR_Q_GET_DISPENUM_INDEX */
+typedef struct q_samr_get_dispenum_index
+{
+	POLICY_HND domain_pol;
+	uint16 switch_level;
+	LSA_STRING name;
+
+} SAMR_Q_GET_DISPENUM_INDEX;
+
+/* SAMR_R_GET_DISPENUM_INDEX */
+typedef struct r_samr_get_dispenum_index
+{
+	uint32 idx;
+	NTSTATUS status;
+	
+} SAMR_R_GET_DISPENUM_INDEX;
 
 /* SAMR_Q_DELETE_DOM_GROUP - delete domain group */
 typedef struct q_samr_delete_dom_group_info
