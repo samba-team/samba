@@ -59,6 +59,9 @@ int	auth_level = 0;
 
 extern	int utmp_len;
 int	registerd_host_only = 0;
+#ifdef ENCRYPTION
+int	require_encryption = 0;
+#endif
 
 #undef NOERROR
 
@@ -136,6 +139,9 @@ static void usage (void);
 char valid_opts[] = "Bd:hklnS:u:UL:y"
 #ifdef AUTHENTICATION
 		    "a:X:z"
+#endif
+#ifdef ENCRYPTION
+                     "e"
 #endif
 #ifdef DIAGNOSTICS
 		    "D:"
@@ -248,6 +254,11 @@ main(int argc, char **argv)
 	    break;
 #endif /* DIAGNOSTICS */
 
+#ifdef ENCRYPTION
+	case 'e':
+	    require_encryption = 1;
+	    break;
+#endif
 
 	case 'h':
 	    hostinfo = 0;
@@ -548,6 +559,15 @@ getterminaltype(char *name, size_t name_sz)
      */
     if (his_state_is_will(TELOPT_ENCRYPT)) {
 	encrypt_wait();
+    }
+    if (require_encryption) {
+
+	while (encrypt_delay())
+	    if (telnet_spin())
+		fatal(net, "Failed while waiting for encryption");
+
+	if (!encrypt_is_encrypting())
+	    fatal(net, "Encryption required but not turned on by client");
     }
 #endif
     if (his_state_is_will(TELOPT_TSPEED)) {
