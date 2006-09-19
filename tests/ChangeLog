@@ -1,3 +1,9 @@
+2006-09-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss/check-gssmask.in: test for gssmask + gssmaestro.
+
+	* gss/krb5.conf.in: Add krb5.conf for krb5.conf
+	
 2006-09-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss/check-gss.in: Add (c)
