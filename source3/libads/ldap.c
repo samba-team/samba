@@ -2089,7 +2089,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @param guid 37-byte area to receive text guid
  * @return boolean indicating success
  **/
- BOOL ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct uuid *guid)
+ BOOL ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct GUID *guid)
 {
 	char **values;
 	UUID_FLAT flat_guid;
