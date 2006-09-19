@@ -73,7 +73,7 @@ char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 	}
 
 	maxlen = sid->num_auths * 11 + 25;
-	ret = talloc_size(mem_ctx, maxlen);
+	ret = (char *)talloc_size(mem_ctx, maxlen);
 	if (!ret) return talloc_strdup(mem_ctx, "(SID ERR)");
 
 	ia = (sid->id_auth[5]) +
