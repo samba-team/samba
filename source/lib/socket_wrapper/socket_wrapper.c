@@ -473,7 +473,7 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 
 	if (fd == -1) return -1;
 
-	si = calloc(1, sizeof(struct socket_info));
+	si = (struct socket_info *)calloc(1, sizeof(struct socket_info));
 
 	si->family = family;
 	si->type = type;
@@ -518,7 +518,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return ret;
 	}
 
-	child_si = malloc(sizeof(struct socket_info));
+	child_si = (struct socket_info *)malloc(sizeof(struct socket_info));
 	memset(child_si, 0, sizeof(*child_si));
 
 	child_si->fd = fd;
