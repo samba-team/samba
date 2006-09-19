@@ -58,8 +58,8 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return 0;
 	}
 
-	if(!W_ERROR_IS_OK(r.out.hr)) {
-		printf("RemoteActivation: %s\n", win_errstr(r.out.hr));
+	if(!W_ERROR_IS_OK(*r.out.hr)) {
+		printf("RemoteActivation: %s\n", win_errstr(*r.out.hr));
 		return 0;
 	}
 
@@ -83,8 +83,8 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return 0;
 	}
 
-	if(!W_ERROR_IS_OK(r.out.hr)) {
-		printf("RemoteActivation(GetClassObject): %s\n", win_errstr(r.out.hr));
+	if(!W_ERROR_IS_OK(*r.out.hr)) {
+		printf("RemoteActivation(GetClassObject): %s\n", win_errstr(*r.out.hr));
 		return 0;
 	}
 
