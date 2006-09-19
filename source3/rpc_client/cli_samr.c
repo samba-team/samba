@@ -1576,6 +1576,49 @@ NTSTATUS rpccli_samr_query_dispinfo3(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* Query display info index */
+
+NTSTATUS rpccli_samr_get_dispenum_index(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx, 
+					POLICY_HND *domain_pol,
+					uint16 switch_value,
+					const char *name,
+					uint32 *idx)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_GET_DISPENUM_INDEX q;
+	SAMR_R_GET_DISPENUM_INDEX r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_get_dispenum_index for name = %s\n", name));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_samr_q_get_dispenum_index(&q, domain_pol, switch_value, name);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_GET_DISPENUM_INDEX,
+		q, r,
+		qbuf, rbuf,
+		samr_io_q_get_dispenum_index,
+		samr_io_r_get_dispenum_index,
+		NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	*idx = 0;
+
+        result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
+		*idx = r.idx;
+	}
+
+	return result;
+}
+
 
 /* Lookup rids.  Note that NT4 seems to crash if more than ~1000 rids are
    looked up in one packet. */
