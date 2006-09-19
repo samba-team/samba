@@ -31,9 +31,15 @@ static BOOL api_lsa_Close(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_Close, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.handle = r.in.handle;
 	r.out.result = _lsa_Close(p, r.in.handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_Close, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -83,7 +89,13 @@ static BOOL api_lsa_Delete(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_Delete, &r);
+	
 	r.out.result = _lsa_Delete(p, r.in.handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_Delete, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -133,6 +145,9 @@ static BOOL api_lsa_EnumPrivs(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_EnumPrivs, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.resume_handle = r.in.resume_handle;
 	r.out.privs = talloc_size(mem_ctx, sizeof(*r.out.privs));
@@ -142,6 +157,9 @@ static BOOL api_lsa_EnumPrivs(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_EnumPrivs(p, r.in.handle, r.in.resume_handle, r.in.max_count, r.out.privs);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_EnumPrivs, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -191,6 +209,9 @@ static BOOL api_lsa_QuerySecurity(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_QuerySecurity, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.sdbuf = talloc_size(mem_ctx, sizeof(*r.out.sdbuf));
 	if (r.out.sdbuf == NULL) {
@@ -199,6 +220,9 @@ static BOOL api_lsa_QuerySecurity(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_QuerySecurity(p, r.in.handle, r.in.sec_info, r.out.sdbuf);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_QuerySecurity, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -248,7 +272,13 @@ static BOOL api_lsa_SetSecObj(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_SetSecObj, &r);
+	
 	r.out.result = _lsa_SetSecObj(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_SetSecObj, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -298,7 +328,13 @@ static BOOL api_lsa_ChangePassword(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_ChangePassword, &r);
+	
 	r.out.result = _lsa_ChangePassword(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_ChangePassword, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -348,6 +384,9 @@ static BOOL api_lsa_OpenPolicy(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_OpenPolicy, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
@@ -356,6 +395,9 @@ static BOOL api_lsa_OpenPolicy(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_OpenPolicy(p, r.in.system_name, r.in.attr, r.in.access_mask, r.out.handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_OpenPolicy, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -405,6 +447,9 @@ static BOOL api_lsa_QueryInfoPolicy(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_QueryInfoPolicy, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
@@ -413,6 +458,9 @@ static BOOL api_lsa_QueryInfoPolicy(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_QueryInfoPolicy(p, r.in.handle, r.in.level, r.out.info);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_QueryInfoPolicy, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -462,7 +510,13 @@ static BOOL api_lsa_SetInfoPolicy(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy, &r);
+	
 	r.out.result = _lsa_SetInfoPolicy(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_SetInfoPolicy, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -512,7 +566,13 @@ static BOOL api_lsa_ClearAuditLog(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_ClearAuditLog, &r);
+	
 	r.out.result = _lsa_ClearAuditLog(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_ClearAuditLog, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -562,6 +622,9 @@ static BOOL api_lsa_CreateAccount(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CreateAccount, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.acct_handle = talloc_size(mem_ctx, sizeof(*r.out.acct_handle));
 	if (r.out.acct_handle == NULL) {
@@ -570,6 +633,9 @@ static BOOL api_lsa_CreateAccount(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_CreateAccount(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.acct_handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CreateAccount, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -619,6 +685,9 @@ static BOOL api_lsa_EnumAccounts(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_EnumAccounts, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.resume_handle = r.in.resume_handle;
 	r.out.sids = talloc_size(mem_ctx, sizeof(*r.out.sids));
@@ -628,6 +697,9 @@ static BOOL api_lsa_EnumAccounts(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_EnumAccounts(p, r.in.handle, r.in.resume_handle, r.in.num_entries, r.out.sids);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_EnumAccounts, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -677,6 +749,9 @@ static BOOL api_lsa_CreateTrustedDomain(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomain, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.trustdom_handle = talloc_size(mem_ctx, sizeof(*r.out.trustdom_handle));
 	if (r.out.trustdom_handle == NULL) {
@@ -685,6 +760,9 @@ static BOOL api_lsa_CreateTrustedDomain(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_CreateTrustedDomain(p, r.in.handle, r.in.info, r.in.access_mask, r.out.trustdom_handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomain, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -734,6 +812,9 @@ static BOOL api_lsa_EnumTrustDom(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_EnumTrustDom, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.resume_handle = r.in.resume_handle;
 	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
@@ -743,6 +824,9 @@ static BOOL api_lsa_EnumTrustDom(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_EnumTrustDom(p, r.in.handle, r.in.resume_handle, r.in.max_size, r.out.domains);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_EnumTrustDom, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -792,6 +876,9 @@ static BOOL api_lsa_LookupNames(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LookupNames, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
@@ -802,6 +889,9 @@ static BOOL api_lsa_LookupNames(pipes_struct *p)
 	r.out.sids = r.in.sids;
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupNames(p, r.in.handle, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LookupNames, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -851,6 +941,9 @@ static BOOL api_lsa_LookupSids(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LookupSids, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
@@ -861,6 +954,9 @@ static BOOL api_lsa_LookupSids(pipes_struct *p)
 	r.out.names = r.in.names;
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupSids(p, r.in.handle, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LookupSids, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -910,6 +1006,9 @@ static BOOL api_lsa_CreateSecret(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CreateSecret, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.sec_handle = talloc_size(mem_ctx, sizeof(*r.out.sec_handle));
 	if (r.out.sec_handle == NULL) {
@@ -918,6 +1017,9 @@ static BOOL api_lsa_CreateSecret(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_CreateSecret(p, r.in.handle, r.in.name, r.in.access_mask, r.out.sec_handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CreateSecret, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -967,6 +1069,9 @@ static BOOL api_lsa_OpenAccount(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_OpenAccount, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.acct_handle = talloc_size(mem_ctx, sizeof(*r.out.acct_handle));
 	if (r.out.acct_handle == NULL) {
@@ -975,6 +1080,9 @@ static BOOL api_lsa_OpenAccount(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_OpenAccount(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.acct_handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_OpenAccount, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1024,6 +1132,9 @@ static BOOL api_lsa_EnumPrivsAccount(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_EnumPrivsAccount, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.privs = talloc_size(mem_ctx, sizeof(*r.out.privs));
 	if (r.out.privs == NULL) {
@@ -1032,6 +1143,9 @@ static BOOL api_lsa_EnumPrivsAccount(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_EnumPrivsAccount(p, r.in.handle, r.out.privs);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_EnumPrivsAccount, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1081,7 +1195,13 @@ static BOOL api_lsa_AddPrivilegesToAccount(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_AddPrivilegesToAccount, &r);
+	
 	r.out.result = _lsa_AddPrivilegesToAccount(p, r.in.handle, r.in.privs);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_AddPrivilegesToAccount, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1131,7 +1251,13 @@ static BOOL api_lsa_RemovePrivilegesFromAccount(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_RemovePrivilegesFromAccount, &r);
+	
 	r.out.result = _lsa_RemovePrivilegesFromAccount(p, r.in.handle, r.in.remove_all, r.in.privs);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_RemovePrivilegesFromAccount, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1181,7 +1307,13 @@ static BOOL api_lsa_GetQuotasForAccount(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_GetQuotasForAccount, &r);
+	
 	r.out.result = _lsa_GetQuotasForAccount(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_GetQuotasForAccount, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1231,7 +1363,13 @@ static BOOL api_lsa_SetQuotasForAccount(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_SetQuotasForAccount, &r);
+	
 	r.out.result = _lsa_SetQuotasForAccount(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_SetQuotasForAccount, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1281,7 +1419,13 @@ static BOOL api_lsa_GetSystemAccessAccount(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_GetSystemAccessAccount, &r);
+	
 	r.out.result = _lsa_GetSystemAccessAccount(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_GetSystemAccessAccount, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1331,7 +1475,13 @@ static BOOL api_lsa_SetSystemAccessAccount(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_SetSystemAccessAccount, &r);
+	
 	r.out.result = _lsa_SetSystemAccessAccount(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_SetSystemAccessAccount, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1381,6 +1531,9 @@ static BOOL api_lsa_OpenTrustedDomain(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_OpenTrustedDomain, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.trustdom_handle = talloc_size(mem_ctx, sizeof(*r.out.trustdom_handle));
 	if (r.out.trustdom_handle == NULL) {
@@ -1389,6 +1542,9 @@ static BOOL api_lsa_OpenTrustedDomain(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_OpenTrustedDomain(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.trustdom_handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_OpenTrustedDomain, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1438,6 +1594,9 @@ static BOOL api_lsa_QueryTrustedDomainInfo(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfo, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
@@ -1446,6 +1605,9 @@ static BOOL api_lsa_QueryTrustedDomainInfo(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_QueryTrustedDomainInfo(p, r.in.trustdom_handle, r.in.level, r.out.info);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfo, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1495,7 +1657,13 @@ static BOOL api_lsa_SetInformationTrustedDomain(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_SetInformationTrustedDomain, &r);
+	
 	r.out.result = _lsa_SetInformationTrustedDomain(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_SetInformationTrustedDomain, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1545,6 +1713,9 @@ static BOOL api_lsa_OpenSecret(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_OpenSecret, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.sec_handle = talloc_size(mem_ctx, sizeof(*r.out.sec_handle));
 	if (r.out.sec_handle == NULL) {
@@ -1553,6 +1724,9 @@ static BOOL api_lsa_OpenSecret(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_OpenSecret(p, r.in.handle, r.in.name, r.in.access_mask, r.out.sec_handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_OpenSecret, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1602,7 +1776,13 @@ static BOOL api_lsa_SetSecret(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_SetSecret, &r);
+	
 	r.out.result = _lsa_SetSecret(p, r.in.sec_handle, r.in.new_val, r.in.old_val);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_SetSecret, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1652,12 +1832,18 @@ static BOOL api_lsa_QuerySecret(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_QuerySecret, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.new_val = r.in.new_val;
 	r.out.new_mtime = r.in.new_mtime;
 	r.out.old_val = r.in.old_val;
 	r.out.old_mtime = r.in.old_mtime;
 	r.out.result = _lsa_QuerySecret(p, r.in.sec_handle, r.in.new_val, r.in.new_mtime, r.in.old_val, r.in.old_mtime);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_QuerySecret, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1707,6 +1893,9 @@ static BOOL api_lsa_LookupPrivValue(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LookupPrivValue, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.luid = talloc_size(mem_ctx, sizeof(*r.out.luid));
 	if (r.out.luid == NULL) {
@@ -1715,6 +1904,9 @@ static BOOL api_lsa_LookupPrivValue(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_LookupPrivValue(p, r.in.handle, r.in.name, r.out.luid);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivValue, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1764,6 +1956,9 @@ static BOOL api_lsa_LookupPrivName(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LookupPrivName, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.name = talloc_size(mem_ctx, sizeof(*r.out.name));
 	if (r.out.name == NULL) {
@@ -1772,6 +1967,9 @@ static BOOL api_lsa_LookupPrivName(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_LookupPrivName(p, r.in.handle, r.in.luid, r.out.name);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivName, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1821,6 +2019,9 @@ static BOOL api_lsa_LookupPrivDisplayName(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LookupPrivDisplayName, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.disp_name = talloc_size(mem_ctx, sizeof(*r.out.disp_name));
 	if (r.out.disp_name == NULL) {
@@ -1830,6 +2031,9 @@ static BOOL api_lsa_LookupPrivDisplayName(pipes_struct *p)
 	
 	r.out.language_id = r.in.language_id;
 	r.out.result = _lsa_LookupPrivDisplayName(p, r.in.handle, r.in.name, r.out.disp_name, r.in.language_id, r.in.unknown);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivDisplayName, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1879,7 +2083,13 @@ static BOOL api_lsa_DeleteObject(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_DeleteObject, &r);
+	
 	r.out.result = _lsa_DeleteObject(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_DeleteObject, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1929,6 +2139,9 @@ static BOOL api_lsa_EnumAccountsWithUserRight(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_EnumAccountsWithUserRight, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.sids = talloc_size(mem_ctx, sizeof(*r.out.sids));
 	if (r.out.sids == NULL) {
@@ -1937,6 +2150,9 @@ static BOOL api_lsa_EnumAccountsWithUserRight(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_EnumAccountsWithUserRight(p, r.in.handle, r.in.name, r.out.sids);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_EnumAccountsWithUserRight, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1986,6 +2202,9 @@ static BOOL api_lsa_EnumAccountRights(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_EnumAccountRights, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.rights = talloc_size(mem_ctx, sizeof(*r.out.rights));
 	if (r.out.rights == NULL) {
@@ -1994,6 +2213,9 @@ static BOOL api_lsa_EnumAccountRights(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_EnumAccountRights(p, r.in.handle, r.in.sid, r.out.rights);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_EnumAccountRights, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2043,7 +2265,13 @@ static BOOL api_lsa_AddAccountRights(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_AddAccountRights, &r);
+	
 	r.out.result = _lsa_AddAccountRights(p, r.in.handle, r.in.sid, r.in.rights);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_AddAccountRights, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2093,7 +2321,13 @@ static BOOL api_lsa_RemoveAccountRights(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_RemoveAccountRights, &r);
+	
 	r.out.result = _lsa_RemoveAccountRights(p, r.in.handle, r.in.sid, r.in.unknown, r.in.rights);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_RemoveAccountRights, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2143,6 +2377,9 @@ static BOOL api_lsa_QueryTrustedDomainInfoBySid(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfoBySid, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
@@ -2151,6 +2388,9 @@ static BOOL api_lsa_QueryTrustedDomainInfoBySid(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_QueryTrustedDomainInfoBySid(p, r.in.handle, r.in.dom_sid, r.in.level, r.out.info);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfoBySid, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2200,7 +2440,13 @@ static BOOL api_lsa_SetTrustedDomainInfo(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfo, &r);
+	
 	r.out.result = _lsa_SetTrustedDomainInfo(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_SetTrustedDomainInfo, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2250,7 +2496,13 @@ static BOOL api_lsa_DeleteTrustedDomain(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_DeleteTrustedDomain, &r);
+	
 	r.out.result = _lsa_DeleteTrustedDomain(p, r.in.handle, r.in.dom_sid);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_DeleteTrustedDomain, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2300,7 +2552,13 @@ static BOOL api_lsa_StorePrivateData(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_StorePrivateData, &r);
+	
 	r.out.result = _lsa_StorePrivateData(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_StorePrivateData, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2350,7 +2608,13 @@ static BOOL api_lsa_RetrievePrivateData(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_RetrievePrivateData, &r);
+	
 	r.out.result = _lsa_RetrievePrivateData(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_RetrievePrivateData, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2400,6 +2664,9 @@ static BOOL api_lsa_OpenPolicy2(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_OpenPolicy2, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
@@ -2408,6 +2675,9 @@ static BOOL api_lsa_OpenPolicy2(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_OpenPolicy2(p, r.in.system_name, r.in.attr, r.in.access_mask, r.out.handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_OpenPolicy2, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2457,10 +2727,16 @@ static BOOL api_lsa_GetUserName(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_GetUserName, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.account_name = r.in.account_name;
 	r.out.authority_name = r.in.authority_name;
 	r.out.result = _lsa_GetUserName(p, r.in.system_name, r.in.account_name, r.in.authority_name);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_GetUserName, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2510,6 +2786,9 @@ static BOOL api_lsa_QueryInfoPolicy2(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_QueryInfoPolicy2, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
@@ -2518,6 +2797,9 @@ static BOOL api_lsa_QueryInfoPolicy2(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_QueryInfoPolicy2(p, r.in.handle, r.in.level, r.out.info);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_QueryInfoPolicy2, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2567,7 +2849,13 @@ static BOOL api_lsa_SetInfoPolicy2(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy2, &r);
+	
 	r.out.result = _lsa_SetInfoPolicy2(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_SetInfoPolicy2, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2617,6 +2905,9 @@ static BOOL api_lsa_QueryTrustedDomainInfoByName(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfoByName, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
@@ -2625,6 +2916,9 @@ static BOOL api_lsa_QueryTrustedDomainInfoByName(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_QueryTrustedDomainInfoByName(p, r.in.handle, r.in.trusted_domain, r.in.level, r.out.info);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfoByName, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2674,7 +2968,13 @@ static BOOL api_lsa_SetTrustedDomainInfoByName(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfoByName, &r);
+	
 	r.out.result = _lsa_SetTrustedDomainInfoByName(p, r.in.handle, r.in.trusted_domain, r.in.level, r.in.info);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_SetTrustedDomainInfoByName, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2724,6 +3024,9 @@ static BOOL api_lsa_EnumTrustedDomainsEx(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_EnumTrustedDomainsEx, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.resume_handle = r.in.resume_handle;
 	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
@@ -2733,6 +3036,9 @@ static BOOL api_lsa_EnumTrustedDomainsEx(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_EnumTrustedDomainsEx(p, r.in.handle, r.in.resume_handle, r.out.domains, r.in.max_size);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_EnumTrustedDomainsEx, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2782,7 +3088,13 @@ static BOOL api_lsa_CreateTrustedDomainEx(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx, &r);
+	
 	r.out.result = _lsa_CreateTrustedDomainEx(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomainEx, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2832,9 +3144,15 @@ static BOOL api_lsa_CloseTrustedDomainEx(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CloseTrustedDomainEx, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.handle = r.in.handle;
 	r.out.result = _lsa_CloseTrustedDomainEx(p, r.in.handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CloseTrustedDomainEx, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2884,6 +3202,9 @@ static BOOL api_lsa_QueryDomainInformationPolicy(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_QueryDomainInformationPolicy, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
@@ -2892,6 +3213,9 @@ static BOOL api_lsa_QueryDomainInformationPolicy(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_QueryDomainInformationPolicy(p, r.in.handle, r.in.level, r.out.info);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_QueryDomainInformationPolicy, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2941,7 +3265,13 @@ static BOOL api_lsa_SetDomainInformationPolicy(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_SetDomainInformationPolicy, &r);
+	
 	r.out.result = _lsa_SetDomainInformationPolicy(p, r.in.handle, r.in.level, r.in.info);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_SetDomainInformationPolicy, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -2991,6 +3321,9 @@ static BOOL api_lsa_OpenTrustedDomainByName(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_OpenTrustedDomainByName, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.trustdom_handle = talloc_size(mem_ctx, sizeof(*r.out.trustdom_handle));
 	if (r.out.trustdom_handle == NULL) {
@@ -2999,6 +3332,9 @@ static BOOL api_lsa_OpenTrustedDomainByName(pipes_struct *p)
 	}
 	
 	r.out.result = _lsa_OpenTrustedDomainByName(p, r.in.handle, r.in.name, r.in.access_mask, r.out.trustdom_handle);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_OpenTrustedDomainByName, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3048,7 +3384,13 @@ static BOOL api_lsa_TestCall(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_TestCall, &r);
+	
 	r.out.result = _lsa_TestCall(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_TestCall, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3098,6 +3440,9 @@ static BOOL api_lsa_LookupSids2(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LookupSids2, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
@@ -3108,6 +3453,9 @@ static BOOL api_lsa_LookupSids2(pipes_struct *p)
 	r.out.names = r.in.names;
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupSids2(p, r.in.handle, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LookupSids2, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3157,6 +3505,9 @@ static BOOL api_lsa_LookupNames2(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LookupNames2, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
@@ -3167,6 +3518,9 @@ static BOOL api_lsa_LookupNames2(pipes_struct *p)
 	r.out.sids = r.in.sids;
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupNames2(p, r.in.handle, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LookupNames2, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3216,7 +3570,13 @@ static BOOL api_lsa_CreateTrustedDomainEx2(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx2, &r);
+	
 	r.out.result = _lsa_CreateTrustedDomainEx2(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomainEx2, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3266,7 +3626,13 @@ static BOOL api_lsa_CREDRWRITE(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITE, &r);
+	
 	r.out.result = _lsa_CREDRWRITE(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CREDRWRITE, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3316,7 +3682,13 @@ static BOOL api_lsa_CREDRREAD(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CREDRREAD, &r);
+	
 	r.out.result = _lsa_CREDRREAD(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CREDRREAD, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3366,7 +3738,13 @@ static BOOL api_lsa_CREDRENUMERATE(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CREDRENUMERATE, &r);
+	
 	r.out.result = _lsa_CREDRENUMERATE(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CREDRENUMERATE, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3416,7 +3794,13 @@ static BOOL api_lsa_CREDRWRITEDOMAINCREDENTIALS(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITEDOMAINCREDENTIALS, &r);
+	
 	r.out.result = _lsa_CREDRWRITEDOMAINCREDENTIALS(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CREDRWRITEDOMAINCREDENTIALS, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3466,7 +3850,13 @@ static BOOL api_lsa_CREDRREADDOMAINCREDENTIALS(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CREDRREADDOMAINCREDENTIALS, &r);
+	
 	r.out.result = _lsa_CREDRREADDOMAINCREDENTIALS(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CREDRREADDOMAINCREDENTIALS, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3516,7 +3906,13 @@ static BOOL api_lsa_CREDRDELETE(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CREDRDELETE, &r);
+	
 	r.out.result = _lsa_CREDRDELETE(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CREDRDELETE, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3566,7 +3962,13 @@ static BOOL api_lsa_CREDRGETTARGETINFO(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CREDRGETTARGETINFO, &r);
+	
 	r.out.result = _lsa_CREDRGETTARGETINFO(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CREDRGETTARGETINFO, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3616,7 +4018,13 @@ static BOOL api_lsa_CREDRPROFILELOADED(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CREDRPROFILELOADED, &r);
+	
 	r.out.result = _lsa_CREDRPROFILELOADED(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CREDRPROFILELOADED, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3666,6 +4074,9 @@ static BOOL api_lsa_LookupNames3(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LookupNames3, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
@@ -3676,6 +4087,9 @@ static BOOL api_lsa_LookupNames3(pipes_struct *p)
 	r.out.sids = r.in.sids;
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupNames3(p, r.in.handle, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LookupNames3, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3725,7 +4139,13 @@ static BOOL api_lsa_CREDRGETSESSIONTYPES(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CREDRGETSESSIONTYPES, &r);
+	
 	r.out.result = _lsa_CREDRGETSESSIONTYPES(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CREDRGETSESSIONTYPES, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3775,7 +4195,13 @@ static BOOL api_lsa_LSARREGISTERAUDITEVENT(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LSARREGISTERAUDITEVENT, &r);
+	
 	r.out.result = _lsa_LSARREGISTERAUDITEVENT(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LSARREGISTERAUDITEVENT, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3825,7 +4251,13 @@ static BOOL api_lsa_LSARGENAUDITEVENT(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LSARGENAUDITEVENT, &r);
+	
 	r.out.result = _lsa_LSARGENAUDITEVENT(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LSARGENAUDITEVENT, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3875,7 +4307,13 @@ static BOOL api_lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LSARUNREGISTERAUDITEVENT, &r);
+	
 	r.out.result = _lsa_LSARUNREGISTERAUDITEVENT(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LSARUNREGISTERAUDITEVENT, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3925,7 +4363,13 @@ static BOOL api_lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, &r);
+	
 	r.out.result = _lsa_LSARQUERYFORESTTRUSTINFORMATION(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -3975,7 +4419,13 @@ static BOOL api_lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, &r);
+	
 	r.out.result = _lsa_LSARSETFORESTTRUSTINFORMATION(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -4025,7 +4475,13 @@ static BOOL api_lsa_CREDRRENAME(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_CREDRRENAME, &r);
+	
 	r.out.result = _lsa_CREDRRENAME(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_CREDRRENAME, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -4075,6 +4531,9 @@ static BOOL api_lsa_LookupSids3(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LookupSids3, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
@@ -4085,6 +4544,9 @@ static BOOL api_lsa_LookupSids3(pipes_struct *p)
 	r.out.names = r.in.names;
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupSids3(p, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LookupSids3, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -4134,6 +4596,9 @@ static BOOL api_lsa_LookupNames4(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LookupNames4, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.domains = talloc_size(mem_ctx, sizeof(*r.out.domains));
 	if (r.out.domains == NULL) {
@@ -4144,6 +4609,9 @@ static BOOL api_lsa_LookupNames4(pipes_struct *p)
 	r.out.sids = r.in.sids;
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupNames4(p, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LookupNames4, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -4193,7 +4661,13 @@ static BOOL api_lsa_LSAROPENPOLICYSCE(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LSAROPENPOLICYSCE, &r);
+	
 	r.out.result = _lsa_LSAROPENPOLICYSCE(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LSAROPENPOLICYSCE, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -4243,7 +4717,13 @@ static BOOL api_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LSARADTREGISTERSECURITYEVENTSOURCE, &r);
+	
 	r.out.result = _lsa_LSARADTREGISTERSECURITYEVENTSOURCE(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LSARADTREGISTERSECURITYEVENTSOURCE, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -4293,7 +4773,13 @@ static BOOL api_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, &r);
+	
 	r.out.result = _lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -4343,7 +4829,13 @@ static BOOL api_lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(lsa_LSARADTREPORTSECURITYEVENT, &r);
+	
 	r.out.result = _lsa_LSARADTREPORTSECURITYEVENT(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(lsa_LSARADTREPORTSECURITYEVENT, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {

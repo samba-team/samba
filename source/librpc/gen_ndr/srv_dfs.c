@@ -31,6 +31,9 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_GetManagerVersion, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.exist_flag = talloc_size(mem_ctx, sizeof(*r.out.exist_flag));
 	if (r.out.exist_flag == NULL) {
@@ -39,6 +42,9 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 	}
 	
 	_dfs_GetManagerVersion(p, r.out.exist_flag);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_GetManagerVersion, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -88,7 +94,13 @@ static BOOL api_dfs_Add(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_Add, &r);
+	
 	r.out.result = _dfs_Add(p, r.in.path, r.in.server, r.in.share, r.in.comment, r.in.flags);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_Add, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -138,7 +150,13 @@ static BOOL api_dfs_Remove(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_Remove, &r);
+	
 	r.out.result = _dfs_Remove(p, r.in.path, r.in.server, r.in.share);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_Remove, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -188,7 +206,13 @@ static BOOL api_dfs_SetInfo(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_SetInfo, &r);
+	
 	r.out.result = _dfs_SetInfo(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_SetInfo, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -238,6 +262,9 @@ static BOOL api_dfs_GetInfo(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_GetInfo, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.info = talloc_size(mem_ctx, sizeof(*r.out.info));
 	if (r.out.info == NULL) {
@@ -246,6 +273,9 @@ static BOOL api_dfs_GetInfo(pipes_struct *p)
 	}
 	
 	r.out.result = _dfs_GetInfo(p, r.in.path, r.in.server, r.in.share, r.in.level, r.out.info);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_GetInfo, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -295,10 +325,16 @@ static BOOL api_dfs_Enum(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_Enum, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.info = r.in.info;
 	r.out.total = r.in.total;
 	r.out.result = _dfs_Enum(p, r.in.level, r.in.bufsize, r.in.info, r.in.unknown, r.in.total);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_Enum, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -348,7 +384,13 @@ static BOOL api_dfs_Rename(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_Rename, &r);
+	
 	r.out.result = _dfs_Rename(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_Rename, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -398,7 +440,13 @@ static BOOL api_dfs_Move(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_Move, &r);
+	
 	r.out.result = _dfs_Move(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_Move, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -448,7 +496,13 @@ static BOOL api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_ManagerGetConfigInfo, &r);
+	
 	r.out.result = _dfs_ManagerGetConfigInfo(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_ManagerGetConfigInfo, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -498,7 +552,13 @@ static BOOL api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_ManagerSendSiteInfo, &r);
+	
 	r.out.result = _dfs_ManagerSendSiteInfo(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_ManagerSendSiteInfo, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -548,7 +608,13 @@ static BOOL api_dfs_AddFtRoot(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_AddFtRoot, &r);
+	
 	r.out.result = _dfs_AddFtRoot(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_AddFtRoot, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -598,7 +664,13 @@ static BOOL api_dfs_RemoveFtRoot(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_RemoveFtRoot, &r);
+	
 	r.out.result = _dfs_RemoveFtRoot(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_RemoveFtRoot, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -648,7 +720,13 @@ static BOOL api_dfs_AddStdRoot(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_AddStdRoot, &r);
+	
 	r.out.result = _dfs_AddStdRoot(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_AddStdRoot, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -698,7 +776,13 @@ static BOOL api_dfs_RemoveStdRoot(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_RemoveStdRoot, &r);
+	
 	r.out.result = _dfs_RemoveStdRoot(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_RemoveStdRoot, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -748,7 +832,13 @@ static BOOL api_dfs_ManagerInitialize(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_ManagerInitialize, &r);
+	
 	r.out.result = _dfs_ManagerInitialize(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_ManagerInitialize, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -798,7 +888,13 @@ static BOOL api_dfs_AddStdRootForced(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_AddStdRootForced, &r);
+	
 	r.out.result = _dfs_AddStdRootForced(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_AddStdRootForced, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -848,7 +944,13 @@ static BOOL api_dfs_GetDcAddress(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_GetDcAddress, &r);
+	
 	r.out.result = _dfs_GetDcAddress(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_GetDcAddress, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -898,7 +1000,13 @@ static BOOL api_dfs_SetDcAddress(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_SetDcAddress, &r);
+	
 	r.out.result = _dfs_SetDcAddress(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_SetDcAddress, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -948,7 +1056,13 @@ static BOOL api_dfs_FlushFtTable(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_FlushFtTable, &r);
+	
 	r.out.result = _dfs_FlushFtTable(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_FlushFtTable, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -998,7 +1112,13 @@ static BOOL api_dfs_Add2(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_Add2, &r);
+	
 	r.out.result = _dfs_Add2(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_Add2, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1048,7 +1168,13 @@ static BOOL api_dfs_Remove2(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_Remove2, &r);
+	
 	r.out.result = _dfs_Remove2(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_Remove2, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1098,10 +1224,16 @@ static BOOL api_dfs_EnumEx(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_EnumEx, &r);
+	
 	ZERO_STRUCT(r.out);
 	r.out.info = r.in.info;
 	r.out.total = r.in.total;
 	r.out.result = _dfs_EnumEx(p, r.in.name, r.in.level, r.in.bufsize, r.in.info, r.in.total);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_EnumEx, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
@@ -1151,7 +1283,13 @@ static BOOL api_dfs_SetInfo2(pipes_struct *p)
 		return False;
 	}
 	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_IN_DEBUG(dfs_SetInfo2, &r);
+	
 	r.out.result = _dfs_SetInfo2(p);
+	
+	if (DEBUGLEVEL >= 10)
+		NDR_PRINT_OUT_DEBUG(dfs_SetInfo2, &r);
 	
 	push = ndr_push_init_ctx(mem_ctx);
 	if (push == NULL) {
