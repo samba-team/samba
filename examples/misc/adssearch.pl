@@ -14,6 +14,7 @@ use strict;
 
 use Net::LDAP;
 use Net::LDAP::Control;
+use Net::LDAP::Constant qw(LDAP_REFERRAL);
 use Convert::ASN1;
 use Time::Local;
 use POSIX qw(strftime);
@@ -38,6 +39,8 @@ my $base 	= "";
 my $binddn 	= "";
 my $password 	= "";
 my $server 	= "";
+my $rebind_url;
+
 
 my $tdbdump	= "/usr/bin/tdbdump";
 my $testparm	= "/usr/bin/testparm";
@@ -48,7 +51,6 @@ my $secrets_tdb = "/etc/samba/secrets.tdb";
 my $klist	= "/usr/bin/klist";
 my $kinit	= "/usr/bin/kinit";
 my $ads_h 	= "/home/gd/ads.h";
-my $page_size	= "1000";
 my $workgroup	= "";
 my $machine	= "";
 my $realm	= "";
@@ -62,14 +64,17 @@ my (
 	$opt_display_extendeddn,
 	$opt_display_metadata,
 	$opt_display_raw,
+	$opt_domain_scope,
 	$opt_dump_rootdse,
 	$opt_dump_schema,
 	$opt_dump_wknguid,
+	$opt_fastbind,
 	$opt_help, 
 	$opt_host, 
 	$opt_machine,
 	$opt_notify, 
-	$opt_notify_nodiffs, 
+	$opt_notify_nodiffs,
+	$opt_paging,
 	$opt_password,
 	$opt_port,
 	$opt_realm,
@@ -87,13 +92,16 @@ GetOptions(
 	'base|b=s'	=> \$opt_base,
 	'D|DN=s'	=> \$opt_binddn,
 	'debug=i'	=> \$opt_debug,
-	'extendeddn|e=i'	=> \$opt_display_extendeddn,
+	'domain_scope'	=> \$opt_domain_scope,
+	'extendeddn|e:i'	=> \$opt_display_extendeddn,
+	'fastbind'	=> \$opt_fastbind,
 	'help'		=> \$opt_help,
 	'host|h=s'	=> \$opt_host,
 	'machine|P'	=> \$opt_machine,
 	'metadata|m'	=> \$opt_display_metadata,
 	'nodiffs'	=> \$opt_notify_nodiffs,
 	'notify|n'	=> \$opt_notify,
+	'paging:i'	=> \$opt_paging,
 	'password|w=s'	=> \$opt_password,
 	'port=i'	=> \$opt_port,
 	'rawdisplay'	=> \$opt_display_raw,
@@ -111,12 +119,18 @@ GetOptions(
 	);
 
 
-# activate controls
-my $paging	= 1 if !$opt_notify;
-
 if (!@ARGV && !$opt_dump_schema && !$opt_dump_rootdse && !$opt_notify || $opt_help) {
 	usage();
 	exit 1;
+}
+
+if ($opt_fastbind && !$opt_simpleauth) {
+	printf("LDAP fast bind can only be performed with simple binds\n");
+	exit 1;
+}
+
+if ($opt_notify) {
+	$opt_paging = undef;
 }
 
 # get the query
@@ -124,7 +138,8 @@ my $query 	= shift;
 my @attrs	= @ARGV;
 
 # some global vars
-my ($filter, $dse, $uri);
+my $filter = "";
+my ($dse, $uri);
 my ($attr, $value);
 my (@ctrls, @ctrls_s);
 my ($ctl_paged, $cookie);
@@ -483,14 +498,17 @@ sub usage {
 	print "\t--asq [attribute]\n\t\tAttribute to use for a attribute scoped query (LDAP_SERVER_ASQ_OID)\n";
 	print "\t--base|-b [base]\n\t\tUse base [base]\n";
 	print "\t--debug [level]\n\t\tUse debuglevel (for Net::LDAP)\n";
+	print "\t--domain_scope\n\t\tLimit LDAP search to local domain (LDAP_SERVER_DOMAIN_SCOPE_OID)\n";
 	print "\t--DN|-D [binddn]\n\t\tUse binddn or principal\n";
-	print "\t--extendeddn|-e\n\t\tDisplay extended dn (LDAP_SERVER_EXTENDED_DN_OID)\n";
+	print "\t--extendeddn|-e [value]\n\t\tDisplay extended dn (LDAP_SERVER_EXTENDED_DN_OID)\n";
+	print "\t--fastbind\n\t\tDo LDAP fast bind using LDAP_SERVER_FAST_BIND_OID extension\n";
 	print "\t--help\n\t\tDisplay help page\n";
 	print "\t--host|-h [host]\n\t\tQuery Host [host] (either a hostname or an LDAP uri)\n";
 	print "\t--machine|-P\n\t\tUse samba3 machine account stored in $secrets_tdb (needs root access)\n";
 	print "\t--metdata|-m\n\t\tDisplay replication metadata\n";
 	print "\t--nodiffs\n\t\tDisplay no diffs but full entry dump when running in notify mode\n";
 	print "\t--notify|-n\n\t\tActivate asynchronous change notification (LDAP_SERVER_NOTIFICATION_OID)\n";
+	print "\t--paging [pagesize]\n\t\tUse paged results when searching\n";
 	print "\t--password|-w [password]\n\t\tUse [password] for binddn\n";
 	print "\t--port [port]\n\t\tUse [port] when connecting ADS\n";
 	print "\t--rawdisplay\n\t\tDo not interpret values\n";
@@ -710,26 +728,41 @@ sub check_user {
 	return $acct;
 }
 
-sub check_ctrls ($$@) {
+sub check_root_dse($$$@) {
 
 	# bogus function??
 	my $server = shift || "";
 	$dse = shift || get_dse($server) || return -1;
-	my @ctrls = @_;
+	my $attr = shift || die "unknown query";
+	my @array = @_;
 
-	my $dse_controls = $dse->get_value('supportedControl', asref => '1');
-	my @dse_controls = @$dse_controls;
+	my $dse_list = $dse->get_value($attr, asref => '1');
+	my @dse_array = @$dse_list;
 
-	foreach my $i (@ctrls) {
+	foreach my $i (@array) {
 		# we could use -> supported_control but this 
 		# is only available in newer versions of perl-ldap
 #		if ( ! $dse->supported_control( $i ) ) {
-		if ( grep(/$i->type()/, @dse_controls) ) { 
-			printf("required control: %s is not supported by ADS-server.\n", $i->type());
+		if ( grep(/$i->type()/, @dse_array) ) { 
+			printf("required \"$attr\": %s is not supported by ADS-server.\n", $i->type());
 			return -1;
 		}
 	}
 	return 0;
+}
+
+sub check_ctrls ($$@) {
+	my $server = shift;
+	my $dse = shift;
+	my @array = @_;
+	return check_root_dse($server, $dse, "supportedControl", @array);
+}
+
+sub check_exts ($$@) {
+	my $server = shift;
+	my $dse = shift;
+	my @array = @_;
+	return check_root_dse($server, $dse, "supportedExtension", @array);
 }
 
 sub get_base_from_rootdse {
@@ -1365,7 +1398,7 @@ sub print_header {
 	printf "%10s: %s\n", "scope", $scope;
 	printf "%10s: %s\n", "attrs", join(", ", @attrs);
 	printf "%10s: %s\n", "controls", join(", ", @ctrls_s);
-	printf "%10s: %s\n", "page_size", $page_size if ($paging);
+	printf "%10s: %s\n", "page_size", $opt_paging if ($opt_paging);
 	printf "%10s: %s\n", "start_tls", $opt_starttls ? "yes" : "no";
 	printf "\n";
 }
@@ -1413,10 +1446,15 @@ sub gen_controls {
 	$ctl_paged = Net::LDAP::Control->new( 
 		type => $ads_controls{'LDAP_PAGED_RESULT_OID_STRING'},
 		critical => 'true',
-		size => $page_size);
+		size => $opt_paging ? $opt_paging : 1000);
 
+	# setup domscope control
+	my $ctl_domscope = Net::LDAP::Control->new( 
+		type => $ads_controls{'LDAP_SERVER_DOMAIN_SCOPE_OID'},
+		critical => 'true',
+		value => "");
 
-	if ($paging) {
+	if (defined($opt_paging)) {
 		push(@ctrls, $ctl_paged);
 		push(@ctrls_s, "LDAP_PAGED_RESULT_OID_STRING" );
 	}
@@ -1434,7 +1472,12 @@ sub gen_controls {
 		push(@ctrls, $ctl_asq);
 		push(@ctrls_s, "LDAP_SERVER_ASQ_OID");
 	}
-	
+
+	if ($opt_domain_scope) {
+		push(@ctrls, $ctl_domscope);
+		push(@ctrls_s, "LDAP_SERVER_DOMAIN_SCOPE_OID");
+	}
+
 	return @ctrls;
 }
 
@@ -1519,6 +1562,10 @@ sub default_callback {
 
 	my ($res,$obj) = @_;
 
+	if (!$opt_notify && $res->code == LDAP_REFERRAL) {
+		return;
+	}
+
 	if (!$opt_notify) {
 		return process_result($res,$obj);
 	} 
@@ -1566,6 +1613,9 @@ sub notify_callback {
 		printf("\ngot changenotify for dn: [%s]\n%s\n", $async_entry->dn, ("-" x 80));
 
 		my $new_usn = $async_entry->get_value('uSNChanged');
+		if (!$new_usn) {
+			die "odd, no usnChanged attribute???";
+		}
 		if (!$usn || $new_usn > $usn) {
 			$usn = $new_usn;
 			if ($opt_notify_nodiffs) {
@@ -1602,14 +1652,37 @@ sub do_bind($$) {
 		$mesg = $async_ldap_hd->bind( 
 			$binddn, 
 			password => $password, 
-			callback => \&error_callback
+			callback => $opt_fastbind ? undef : \&error_callback
 		) || die "doesnt work";
 	};
+	if ($mesg->code) { 
+		display_ldap_err($mesg) if (!$opt_fastbind);
+		return -1;
+	}
+	return 0;
+}
+
+sub do_fast_bind() {
+
+	do_unbind();
+
+	my $hd = get_ldap_hd($server,1);
+
+	my $mesg = $hd->extension(
+		name => $ads_extensions{'LDAP_SERVER_FAST_BIND_OID'});
+	
 	if ($mesg->code) { 
 		display_ldap_err($mesg);
 		return -1;
 	}
-	return 0;
+
+	my $ret = do_bind($hd, undef);
+	$hd->unbind;
+
+	printf("bind using 'LDAP_SERVER_FAST_BIND_OID' %s\n", 
+		$ret == 0 ? "succeeded" : "failed");
+
+	return $ret;
 }
 
 sub do_unbind() {
@@ -1625,9 +1698,21 @@ sub do_unbind() {
 
 sub main () {
 
+	if ($opt_fastbind) {
+
+		if (check_exts($server,$dse,"LDAP_SERVER_FAST_BIND_OID") == -1) {
+			print "LDAP_SERVER_FAST_BIND_OID not supported by this server\n";
+			exit 1;
+		}
+
+		# fast bind can only bind, not search
+		exit do_fast_bind();
+	}
+
 	$filter = construct_filter($query);
 	@attrs  = construct_attrs(@attrs);
 	@ctrls  = gen_controls();
+
 	if (check_ctrls($server,$dse,@ctrls) == -1) {
 		print "not all required LDAP Controls are supported by this server\n";
 		exit 1;
@@ -1668,6 +1753,21 @@ sub main () {
 			scope => $scope,
 				) || die "cannot search";
 
+		if (!$opt_notify && ($async_search->code == LDAP_REFERRAL)) {
+			foreach my $ref ($async_search->referrals) {
+				print "\ngot Referral: [$ref]\n";
+				$async_ldap_hd->unbind();
+				$async_ldap_hd = get_ldap_hd($ref, 1);
+				if (do_bind($async_ldap_hd, $sasl_bind) == -1) {
+					$async_ldap_hd->unbind();
+					next;
+				}
+				print "\nsuccessful rebind to: [$ref]\n";
+				last;
+			}
+			next; # repeat the query
+		}
+
 		if ($opt_notify) {
 
 			print "Base [$base] is registered now for change-notify\n";
@@ -1701,7 +1801,7 @@ sub main () {
 	if ($async_search->entries == 0) {
 		print "No entries found with filter $filter\n";
 	} else {
-		print "Got $total_entry_count Entries in $page_count Pages\n" if ($paging);
+		print "Got $total_entry_count Entries in $page_count Pages\n" if ($opt_paging);
 	}
 
 	do_unbind()
