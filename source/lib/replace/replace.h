@@ -324,17 +324,25 @@ char *rep_mkdtemp(char *template);
 #ifdef HAVE__Bool
 #define bool _Bool
 #else
-#define __bool_true_false_are_defined
+typedef int bool;
+#endif
+#endif
+
 /*
  * to prevent <rpcsvc/yp_prot.h> from doing a redefine of 'bool'
  *
  * IRIX, HPUX, MacOS 10 and Solaris need BOOL_DEFINED
  * Tru64 needs _BOOL_EXISTS
  */
+#ifndef BOOL_DEFINED
 #define BOOL_DEFINED
-#define _BOOL_EXISTS
-typedef int bool;
 #endif
+#ifndef _BOOL_EXISTS
+#define _BOOL_EXISTS
+#endif
+
+#ifndef __bool_true_false_are_defined
+#define __bool_true_false_are_defined
 #endif
 
 #ifndef true
