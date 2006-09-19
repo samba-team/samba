@@ -8,120 +8,120 @@ struct dfs_Info0 {
 };
 
 struct dfs_Info1 {
-	const char *path;/* [unique,keepref,charset(UTF16)] */
+	const char *path;/* [unique,charset(UTF16)] */
 };
 
 struct dfs_Info2 {
-	const char *path;/* [unique,keepref,charset(UTF16)] */
-	const char *comment;/* [unique,keepref,charset(UTF16)] */
-	uint32_t state;/* [keepref] */
-	uint32_t num_stores;/* [keepref] */
+	const char *path;/* [unique,charset(UTF16)] */
+	const char *comment;/* [unique,charset(UTF16)] */
+	uint32_t state;
+	uint32_t num_stores;
 };
 
 struct dfs_StorageInfo {
-	uint32_t state;/* [keepref] */
-	const char *server;/* [unique,keepref,charset(UTF16)] */
-	const char *share;/* [unique,keepref,charset(UTF16)] */
+	uint32_t state;
+	const char *server;/* [unique,charset(UTF16)] */
+	const char *share;/* [unique,charset(UTF16)] */
 };
 
 struct dfs_Info3 {
-	const char *path;/* [unique,keepref,charset(UTF16)] */
-	const char *comment;/* [unique,keepref,charset(UTF16)] */
-	uint32_t state;/* [keepref] */
-	uint32_t num_stores;/* [keepref] */
-	struct dfs_StorageInfo *stores;/* [unique,keepref,size_is(num_stores)] */
+	const char *path;/* [unique,charset(UTF16)] */
+	const char *comment;/* [unique,charset(UTF16)] */
+	uint32_t state;
+	uint32_t num_stores;
+	struct dfs_StorageInfo *stores;/* [unique,size_is(num_stores)] */
 };
 
 struct dfs_Info4 {
-	const char *path;/* [unique,keepref,charset(UTF16)] */
-	const char *comment;/* [unique,keepref,charset(UTF16)] */
-	uint32_t state;/* [keepref] */
-	uint32_t timeout;/* [keepref] */
-	struct GUID guid;/* [keepref] */
-	uint32_t num_stores;/* [keepref] */
-	struct dfs_StorageInfo *stores;/* [unique,keepref,size_is(num_stores)] */
+	const char *path;/* [unique,charset(UTF16)] */
+	const char *comment;/* [unique,charset(UTF16)] */
+	uint32_t state;
+	uint32_t timeout;
+	struct GUID guid;
+	uint32_t num_stores;
+	struct dfs_StorageInfo *stores;/* [unique,size_is(num_stores)] */
 };
 
 struct dfs_Info100 {
-	const char *comment;/* [unique,keepref,charset(UTF16)] */
+	const char *comment;/* [unique,charset(UTF16)] */
 };
 
 struct dfs_Info101 {
-	uint32_t state;/* [keepref] */
+	uint32_t state;
 };
 
 struct dfs_Info102 {
-	uint32_t timeout;/* [keepref] */
+	uint32_t timeout;
 };
 
 struct dfs_Info200 {
-	const char *dom_root;/* [unique,keepref,charset(UTF16)] */
+	const char *dom_root;/* [unique,charset(UTF16)] */
 };
 
 struct dfs_Info300 {
-	uint32_t flags;/* [keepref] */
-	const char *dom_root;/* [unique,keepref,charset(UTF16)] */
+	uint32_t flags;
+	const char *dom_root;/* [unique,charset(UTF16)] */
 };
 
 union dfs_Info {
-	struct dfs_Info0 *info0;/* [unique,keepref,case(0)] */
-	struct dfs_Info1 *info1;/* [unique,keepref,case] */
-	struct dfs_Info2 *info2;/* [unique,keepref,case(2)] */
-	struct dfs_Info3 *info3;/* [unique,keepref,case(3)] */
-	struct dfs_Info4 *info4;/* [unique,keepref,case(4)] */
-	struct dfs_Info100 *info100;/* [unique,keepref,case(100)] */
-	struct dfs_Info101 *info101;/* [unique,keepref,case(101)] */
-	struct dfs_Info102 *info102;/* [unique,keepref,case(102)] */
+	struct dfs_Info0 *info0;/* [unique,case(0)] */
+	struct dfs_Info1 *info1;/* [unique,case] */
+	struct dfs_Info2 *info2;/* [unique,case(2)] */
+	struct dfs_Info3 *info3;/* [unique,case(3)] */
+	struct dfs_Info4 *info4;/* [unique,case(4)] */
+	struct dfs_Info100 *info100;/* [unique,case(100)] */
+	struct dfs_Info101 *info101;/* [unique,case(101)] */
+	struct dfs_Info102 *info102;/* [unique,case(102)] */
 };
 
 struct dfs_EnumArray1 {
-	uint32_t count;/* [keepref] */
-	struct dfs_Info1 *s;/* [unique,keepref,size_is(count)] */
+	uint32_t count;
+	struct dfs_Info1 *s;/* [unique,size_is(count)] */
 };
 
 struct dfs_EnumArray2 {
-	uint32_t count;/* [keepref] */
-	struct dfs_Info2 *s;/* [unique,keepref,size_is(count)] */
+	uint32_t count;
+	struct dfs_Info2 *s;/* [unique,size_is(count)] */
 };
 
 struct dfs_EnumArray3 {
-	uint32_t count;/* [keepref] */
-	struct dfs_Info3 *s;/* [unique,keepref,size_is(count)] */
+	uint32_t count;
+	struct dfs_Info3 *s;/* [unique,size_is(count)] */
 };
 
 struct dfs_EnumArray4 {
-	uint32_t count;/* [keepref] */
-	struct dfs_Info4 *s;/* [unique,keepref,size_is(count)] */
+	uint32_t count;
+	struct dfs_Info4 *s;/* [unique,size_is(count)] */
 };
 
 struct dfs_EnumArray200 {
-	uint32_t count;/* [keepref] */
-	struct dfs_Info200 *s;/* [unique,keepref,size_is(count)] */
+	uint32_t count;
+	struct dfs_Info200 *s;/* [unique,size_is(count)] */
 };
 
 struct dfs_EnumArray300 {
-	uint32_t count;/* [keepref] */
-	struct dfs_Info300 *s;/* [unique,keepref,size_is(count)] */
+	uint32_t count;
+	struct dfs_Info300 *s;/* [unique,size_is(count)] */
 };
 
 union dfs_EnumInfo {
-	struct dfs_EnumArray1 *info1;/* [unique,keepref,case] */
-	struct dfs_EnumArray2 *info2;/* [unique,keepref,case(2)] */
-	struct dfs_EnumArray3 *info3;/* [unique,keepref,case(3)] */
-	struct dfs_EnumArray4 *info4;/* [unique,keepref,case(4)] */
-	struct dfs_EnumArray200 *info200;/* [unique,keepref,case(200)] */
-	struct dfs_EnumArray300 *info300;/* [unique,keepref,case(300)] */
+	struct dfs_EnumArray1 *info1;/* [unique,case] */
+	struct dfs_EnumArray2 *info2;/* [unique,case(2)] */
+	struct dfs_EnumArray3 *info3;/* [unique,case(3)] */
+	struct dfs_EnumArray4 *info4;/* [unique,case(4)] */
+	struct dfs_EnumArray200 *info200;/* [unique,case(200)] */
+	struct dfs_EnumArray300 *info300;/* [unique,case(300)] */
 };
 
 struct dfs_EnumStruct {
-	uint32_t level;/* [keepref] */
-	union dfs_EnumInfo e;/* [keepref,switch_is(level)] */
+	uint32_t level;
+	union dfs_EnumInfo e;/* [switch_is(level)] */
 };
 
 
 struct dfs_GetManagerVersion {
 	struct {
-		uint32_t *exist_flag;/* [keepref,ref] */
+		uint32_t *exist_flag;/* [ref] */
 	} out;
 
 };
@@ -129,11 +129,11 @@ struct dfs_GetManagerVersion {
 
 struct dfs_Add {
 	struct {
-		const char *path;/* [keepref,ref,charset(UTF16)] */
-		const char *server;/* [keepref,ref,charset(UTF16)] */
-		const char *share;/* [unique,keepref,charset(UTF16)] */
-		const char *comment;/* [unique,keepref,charset(UTF16)] */
-		uint32_t flags;/* [keepref] */
+		const char *path;/* [ref,charset(UTF16)] */
+		const char *server;/* [ref,charset(UTF16)] */
+		const char *share;/* [unique,charset(UTF16)] */
+		const char *comment;/* [unique,charset(UTF16)] */
+		uint32_t flags;
 	} in;
 
 	struct {
@@ -145,9 +145,9 @@ struct dfs_Add {
 
 struct dfs_Remove {
 	struct {
-		const char *path;/* [keepref,ref,charset(UTF16)] */
-		const char *server;/* [unique,keepref,charset(UTF16)] */
-		const char *share;/* [unique,keepref,charset(UTF16)] */
+		const char *path;/* [ref,charset(UTF16)] */
+		const char *server;/* [unique,charset(UTF16)] */
+		const char *share;/* [unique,charset(UTF16)] */
 	} in;
 
 	struct {
@@ -167,14 +167,14 @@ struct dfs_SetInfo {
 
 struct dfs_GetInfo {
 	struct {
-		const char *path;/* [keepref,ref,charset(UTF16)] */
-		const char *server;/* [unique,keepref,charset(UTF16)] */
-		const char *share;/* [unique,keepref,charset(UTF16)] */
-		uint32_t level;/* [keepref] */
+		const char *path;/* [ref,charset(UTF16)] */
+		const char *server;/* [unique,charset(UTF16)] */
+		const char *share;/* [unique,charset(UTF16)] */
+		uint32_t level;
 	} in;
 
 	struct {
-		union dfs_Info *info;/* [keepref,ref,switch_is(level)] */
+		union dfs_Info *info;/* [ref,switch_is(level)] */
 		WERROR result;
 	} out;
 
@@ -183,16 +183,16 @@ struct dfs_GetInfo {
 
 struct dfs_Enum {
 	struct {
-		uint32_t level;/* [keepref] */
-		uint32_t bufsize;/* [keepref] */
-		struct dfs_EnumStruct *info;/* [unique,keepref] */
-		uint32_t *unknown;/* [unique,keepref] */
-		uint32_t *total;/* [unique,keepref] */
+		uint32_t level;
+		uint32_t bufsize;
+		struct dfs_EnumStruct *info;/* [unique] */
+		uint32_t *unknown;/* [unique] */
+		uint32_t *total;/* [unique] */
 	} in;
 
 	struct {
-		struct dfs_EnumStruct *info;/* [unique,keepref] */
-		uint32_t *total;/* [unique,keepref] */
+		struct dfs_EnumStruct *info;/* [unique] */
+		uint32_t *total;/* [unique] */
 		WERROR result;
 	} out;
 
@@ -321,16 +321,16 @@ struct dfs_Remove2 {
 
 struct dfs_EnumEx {
 	struct {
-		const char *name;/* [keepref,ref,charset(UTF16)] */
-		uint32_t level;/* [keepref] */
-		uint32_t bufsize;/* [keepref] */
-		struct dfs_EnumStruct *info;/* [unique,keepref] */
-		uint32_t *total;/* [unique,keepref] */
+		const char *name;/* [ref,charset(UTF16)] */
+		uint32_t level;
+		uint32_t bufsize;
+		struct dfs_EnumStruct *info;/* [unique] */
+		uint32_t *total;/* [unique] */
 	} in;
 
 	struct {
-		struct dfs_EnumStruct *info;/* [unique,keepref] */
-		uint32_t *total;/* [unique,keepref] */
+		struct dfs_EnumStruct *info;/* [unique] */
+		uint32_t *total;/* [unique] */
 		WERROR result;
 	} out;
 

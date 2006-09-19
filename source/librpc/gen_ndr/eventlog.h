@@ -20,38 +20,38 @@
 #define EVENTLOG_AUDIT_FAILURE ( 0x0010 )
 
 struct eventlog_OpenUnknown0 {
-	uint16_t unknown0;/* [keepref] */
-	uint16_t unknown1;/* [keepref] */
+	uint16_t unknown0;
+	uint16_t unknown1;
 };
 
 struct eventlog_Record {
-	uint32_t size;/* [keepref] */
-	uint32_t reserved;/* [keepref] */
-	uint32_t record_number;/* [keepref] */
-	uint32_t time_generated;/* [keepref] */
-	uint32_t time_written;/* [keepref] */
-	uint32_t event_id;/* [keepref] */
-	uint16_t event_type;/* [keepref] */
-	uint16_t num_of_strings;/* [keepref] */
-	uint16_t event_category;/* [keepref] */
-	uint16_t reserved_flags;/* [keepref] */
-	uint32_t closing_record_number;/* [keepref] */
-	uint32_t stringoffset;/* [keepref] */
-	uint32_t sid_length;/* [keepref] */
-	uint32_t sid_offset;/* [keepref] */
-	uint32_t data_length;/* [keepref] */
-	uint32_t data_offset;/* [keepref] */
-	const char * source_name;/* [keepref,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * computer_name;/* [keepref,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * *strings;/* [keepref,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * raw_data;/* [keepref,flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t size;
+	uint32_t reserved;
+	uint32_t record_number;
+	uint32_t time_generated;
+	uint32_t time_written;
+	uint32_t event_id;
+	uint16_t event_type;
+	uint16_t num_of_strings;
+	uint16_t event_category;
+	uint16_t reserved_flags;
+	uint32_t closing_record_number;
+	uint32_t stringoffset;
+	uint32_t sid_length;
+	uint32_t sid_offset;
+	uint32_t data_length;
+	uint32_t data_offset;
+	const char * source_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * *strings;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * raw_data;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 }/* [public] */;
 
 
 struct eventlog_ClearEventLogW {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		struct lsa_String *unknown;/* [unique,keepref] */
+		struct policy_handle *handle;/* [ref] */
+		struct lsa_String *unknown;/* [unique] */
 	} in;
 
 	struct {
@@ -71,11 +71,11 @@ struct eventlog_BackupEventLogW {
 
 struct eventlog_CloseEventLog {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -92,11 +92,11 @@ struct eventlog_DeregisterEventSource {
 
 struct eventlog_GetNumRecords {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 	} in;
 
 	struct {
-		uint32_t *number;/* [keepref,ref] */
+		uint32_t *number;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -121,15 +121,15 @@ struct eventlog_ChangeNotify {
 
 struct eventlog_OpenEventLogW {
 	struct {
-		struct eventlog_OpenUnknown0 *unknown0;/* [unique,keepref] */
-		struct lsa_String logname;/* [keepref] */
-		struct lsa_String servername;/* [keepref] */
-		uint32_t unknown2;/* [keepref] */
-		uint32_t unknown3;/* [keepref] */
+		struct eventlog_OpenUnknown0 *unknown0;/* [unique] */
+		struct lsa_String logname;
+		struct lsa_String servername;
+		uint32_t unknown2;
+		uint32_t unknown3;
 	} in;
 
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -154,16 +154,16 @@ struct eventlog_OpenBackupEventLogW {
 
 struct eventlog_ReadEventLogW {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
-		uint32_t flags;/* [keepref] */
-		uint32_t offset;/* [keepref] */
-		uint32_t number_of_bytes;/* [keepref] */
+		struct policy_handle *handle;/* [ref] */
+		uint32_t flags;
+		uint32_t offset;
+		uint32_t number_of_bytes;
 	} in;
 
 	struct {
-		uint8_t *data;/* [keepref,ref,size_is(number_of_bytes)] */
-		uint32_t *sent_size;/* [keepref,ref] */
-		uint32_t *real_size;/* [keepref,ref] */
+		uint8_t *data;/* [ref,size_is(number_of_bytes)] */
+		uint32_t *sent_size;/* [ref] */
+		uint32_t *real_size;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -268,7 +268,7 @@ struct eventlog_GetLogIntormation {
 
 struct eventlog_FlushEventLog {
 	struct {
-		struct policy_handle *handle;/* [keepref,ref] */
+		struct policy_handle *handle;/* [ref] */
 	} in;
 
 	struct {

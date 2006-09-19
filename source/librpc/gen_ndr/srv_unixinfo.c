@@ -31,6 +31,7 @@ static BOOL api_unixinfo_SidToUid(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.uid = talloc_size(mem_ctx, sizeof(*r.out.uid));
 	if (r.out.uid == NULL) {
 		talloc_free(mem_ctx);
@@ -87,6 +88,7 @@ static BOOL api_unixinfo_UidToSid(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.sid = talloc_size(mem_ctx, sizeof(*r.out.sid));
 	if (r.out.sid == NULL) {
 		talloc_free(mem_ctx);
@@ -143,6 +145,7 @@ static BOOL api_unixinfo_SidToGid(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.gid = talloc_size(mem_ctx, sizeof(*r.out.gid));
 	if (r.out.gid == NULL) {
 		talloc_free(mem_ctx);
@@ -199,6 +202,7 @@ static BOOL api_unixinfo_GidToSid(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.sid = talloc_size(mem_ctx, sizeof(*r.out.sid));
 	if (r.out.sid == NULL) {
 		talloc_free(mem_ctx);
@@ -255,6 +259,7 @@ static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.count = r.in.count;
 	r.out.infos = talloc_array_size(mem_ctx, sizeof(*r.out.infos), *r.in.count);
 	if (r.out.infos == NULL) {

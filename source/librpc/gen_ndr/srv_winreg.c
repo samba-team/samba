@@ -31,6 +31,7 @@ static BOOL api_winreg_OpenHKCR(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
@@ -87,6 +88,7 @@ static BOOL api_winreg_OpenHKCU(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
@@ -143,6 +145,7 @@ static BOOL api_winreg_OpenHKLM(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
@@ -199,6 +202,7 @@ static BOOL api_winreg_OpenHKPD(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
@@ -255,6 +259,7 @@ static BOOL api_winreg_OpenHKU(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
@@ -311,6 +316,7 @@ static BOOL api_winreg_CloseKey(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = r.in.handle;
 	r.out.result = _winreg_CloseKey(p, r.in.handle);
 	
@@ -362,6 +368,7 @@ static BOOL api_winreg_CreateKey(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.new_handle = talloc_size(mem_ctx, sizeof(*r.out.new_handle));
 	if (r.out.new_handle == NULL) {
 		talloc_free(mem_ctx);
@@ -519,6 +526,7 @@ static BOOL api_winreg_EnumKey(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.name = r.in.name;
 	r.out.keyclass = r.in.keyclass;
 	r.out.last_changed_time = r.in.last_changed_time;
@@ -572,6 +580,7 @@ static BOOL api_winreg_EnumValue(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.name = r.in.name;
 	r.out.type = r.in.type;
 	r.out.value = r.in.value;
@@ -677,6 +686,7 @@ static BOOL api_winreg_GetKeySecurity(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.sd = r.in.sd;
 	r.out.result = _winreg_GetKeySecurity(p, r.in.handle, r.in.sec_info, r.in.sd);
 	
@@ -828,6 +838,7 @@ static BOOL api_winreg_OpenKey(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
@@ -884,6 +895,7 @@ static BOOL api_winreg_QueryInfoKey(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.class_out = talloc_size(mem_ctx, sizeof(*r.out.class_out));
 	if (r.out.class_out == NULL) {
 		talloc_free(mem_ctx);
@@ -988,6 +1000,7 @@ static BOOL api_winreg_QueryValue(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.type = r.in.type;
 	r.out.data = r.in.data;
 	r.out.size = r.in.size;
@@ -1192,6 +1205,7 @@ static BOOL api_winreg_SetKeySecurity(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.sd = r.in.sd;
 	r.out.result = _winreg_SetKeySecurity(p, r.in.handle, r.in.access_mask, r.in.sd);
 	
@@ -1443,6 +1457,7 @@ static BOOL api_winreg_GetVersion(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.version = talloc_size(mem_ctx, sizeof(*r.out.version));
 	if (r.out.version == NULL) {
 		talloc_free(mem_ctx);
@@ -1499,6 +1514,7 @@ static BOOL api_winreg_OpenHKCC(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
@@ -1555,6 +1571,7 @@ static BOOL api_winreg_OpenHKDD(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
@@ -1611,6 +1628,7 @@ static BOOL api_winreg_QueryMultipleValues(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.values = r.in.values;
 	r.out.buffer = r.in.buffer;
 	r.out.buffer_size = r.in.buffer_size;
@@ -1764,6 +1782,7 @@ static BOOL api_winreg_OpenHKPT(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);
@@ -1820,6 +1839,7 @@ static BOOL api_winreg_OpenHKPN(pipes_struct *p)
 		return False;
 	}
 	
+	ZERO_STRUCT(r.out);
 	r.out.handle = talloc_size(mem_ctx, sizeof(*r.out.handle));
 	if (r.out.handle == NULL) {
 		talloc_free(mem_ctx);

@@ -5,19 +5,19 @@
 
 #include "librpc/gen_ndr/security.h"
 struct unixinfo_GetPWUidInfo {
-	NTSTATUS status;/* [keepref] */
-	const char * homedir;/* [keepref,flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * shell;/* [keepref,flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM)] */
+	NTSTATUS status;
+	const char * homedir;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * shell;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM)] */
 };
 
 
 struct unixinfo_SidToUid {
 	struct {
-		struct dom_sid sid;/* [keepref] */
+		struct dom_sid sid;
 	} in;
 
 	struct {
-		uint64_t *uid;/* [keepref,ref] */
+		uint64_t *uid;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -26,11 +26,11 @@ struct unixinfo_SidToUid {
 
 struct unixinfo_UidToSid {
 	struct {
-		uint64_t uid;/* [keepref] */
+		uint64_t uid;
 	} in;
 
 	struct {
-		struct dom_sid *sid;/* [unique,keepref] */
+		struct dom_sid *sid;/* [unique] */
 		NTSTATUS result;
 	} out;
 
@@ -39,11 +39,11 @@ struct unixinfo_UidToSid {
 
 struct unixinfo_SidToGid {
 	struct {
-		struct dom_sid sid;/* [keepref] */
+		struct dom_sid sid;
 	} in;
 
 	struct {
-		uint64_t *gid;/* [keepref,ref] */
+		uint64_t *gid;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -52,11 +52,11 @@ struct unixinfo_SidToGid {
 
 struct unixinfo_GidToSid {
 	struct {
-		uint64_t gid;/* [keepref] */
+		uint64_t gid;
 	} in;
 
 	struct {
-		struct dom_sid *sid;/* [unique,keepref] */
+		struct dom_sid *sid;/* [unique] */
 		NTSTATUS result;
 	} out;
 
@@ -65,13 +65,13 @@ struct unixinfo_GidToSid {
 
 struct unixinfo_GetPWUid {
 	struct {
-		uint32_t *count;/* [keepref,ref,range(0 1023)] */
-		uint64_t *uids;/* [keepref,size_is(*count)] */
+		uint32_t *count;/* [ref,range(0 1023)] */
+		uint64_t *uids;/* [size_is(*count)] */
 	} in;
 
 	struct {
-		uint32_t *count;/* [keepref,ref,range(0 1023)] */
-		struct unixinfo_GetPWUidInfo *infos;/* [keepref,size_is(*count)] */
+		uint32_t *count;/* [ref,range(0 1023)] */
+		struct unixinfo_GetPWUidInfo *infos;/* [size_is(*count)] */
 		NTSTATUS result;
 	} out;
 
