@@ -3775,10 +3775,8 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 		q_u->secdesc_ctr = SMB_MALLOC_P(SEC_DESC_BUF);
 		if (!q_u->secdesc_ctr)
 			return False;
-		q_u->secdesc_ctr->ptr = (secdesc != NULL) ? 1: 0;
-		q_u->secdesc_ctr->max_len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
-		q_u->secdesc_ctr->len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
-		q_u->secdesc_ctr->sec = secdesc;
+		q_u->secdesc_ctr->sd = secdesc;
+		q_u->secdesc_ctr->sd_size = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
 
 		q_u->devmode_ctr.devmode_ptr = (devmode != NULL) ? 1 : 0;
 		q_u->devmode_ctr.size = (devmode != NULL) ? sizeof(DEVICEMODE) + (3*sizeof(uint32)) : 0;
@@ -3799,10 +3797,8 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 		q_u->secdesc_ctr = SMB_MALLOC_P(SEC_DESC_BUF);
 		if (!q_u->secdesc_ctr)
 			return False;
-		q_u->secdesc_ctr->ptr = (secdesc != NULL) ? 1: 0;
-		q_u->secdesc_ctr->max_len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
-		q_u->secdesc_ctr->len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
-		q_u->secdesc_ctr->sec = secdesc;
+		q_u->secdesc_ctr->sd_size = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
+		q_u->secdesc_ctr->sd = secdesc;
 
 		break;
 	case 7:

@@ -373,7 +373,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 		prs_mem_free( &ps );
 		return 0;
 	}
-	sec = sd_orig->sec;
+	sec = sd_orig->sd;
 		
 	/* is this even valid? */
 	
@@ -385,17 +385,17 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	/* update access masks */
 	
 	for ( i=0; i<sec->dacl->num_aces; i++ ) {
-		switch ( sec->dacl->ace[i].info.mask ) {
+		switch ( sec->dacl->aces[i].access_mask ) {
 			case (GENERIC_READ_ACCESS | GENERIC_WRITE_ACCESS | GENERIC_EXECUTE_ACCESS):
-				sec->dacl->ace[i].info.mask = PRINTER_ACE_PRINT;
+				sec->dacl->aces[i].access_mask = PRINTER_ACE_PRINT;
 				break;
 				
 			case GENERIC_ALL_ACCESS:
-				sec->dacl->ace[i].info.mask = PRINTER_ACE_FULL_CONTROL;
+				sec->dacl->aces[i].access_mask = PRINTER_ACE_FULL_CONTROL;
 				break;
 				
 			case READ_CONTROL_ACCESS:
-				sec->dacl->ace[i].info.mask = PRINTER_ACE_MANAGE_DOCUMENTS;
+				sec->dacl->aces[i].access_mask = PRINTER_ACE_MANAGE_DOCUMENTS;
 			
 			default:	/* no change */
 				break;
@@ -428,7 +428,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	/* store it back */
 	
-	sd_size = sec_desc_size(sd_store->sec) + sizeof(SEC_DESC_BUF);
+	sd_size = sec_desc_size(sd_store->sd) + sizeof(SEC_DESC_BUF);
 	prs_init(&ps, sd_size, ctx, MARSHALL);
 
 	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_store, &ps, 1 ) ) {
@@ -4998,7 +4998,7 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 	   permissions through NT.  If they are NULL in the new security
 	   descriptor then copy them over from the old one. */
 
-	if (!secdesc_ctr->sec->owner_sid || !secdesc_ctr->sec->grp_sid) {
+	if (!secdesc_ctr->sd->owner_sid || !secdesc_ctr->sd->group_sid) {
 		DOM_SID *owner_sid, *group_sid;
 		SEC_ACL *dacl, *sacl;
 		SEC_DESC *psd = NULL;
@@ -5011,25 +5011,25 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 
 		/* Pick out correct owner and group sids */
 
-		owner_sid = secdesc_ctr->sec->owner_sid ?
-			secdesc_ctr->sec->owner_sid :
-			old_secdesc_ctr->sec->owner_sid;
+		owner_sid = secdesc_ctr->sd->owner_sid ?
+			secdesc_ctr->sd->owner_sid :
+			old_secdesc_ctr->sd->owner_sid;
 
-		group_sid = secdesc_ctr->sec->grp_sid ?
-			secdesc_ctr->sec->grp_sid :
-			old_secdesc_ctr->sec->grp_sid;
+		group_sid = secdesc_ctr->sd->group_sid ?
+			secdesc_ctr->sd->group_sid :
+			old_secdesc_ctr->sd->group_sid;
 
-		dacl = secdesc_ctr->sec->dacl ?
-			secdesc_ctr->sec->dacl :
-			old_secdesc_ctr->sec->dacl;
+		dacl = secdesc_ctr->sd->dacl ?
+			secdesc_ctr->sd->dacl :
+			old_secdesc_ctr->sd->dacl;
 
-		sacl = secdesc_ctr->sec->sacl ?
-			secdesc_ctr->sec->sacl :
-			old_secdesc_ctr->sec->sacl;
+		sacl = secdesc_ctr->sd->sacl ?
+			secdesc_ctr->sd->sacl :
+			old_secdesc_ctr->sd->sacl;
 
 		/* Make a deep copy of the security descriptor */
 
-		psd = make_sec_desc(mem_ctx, secdesc_ctr->sec->revision, secdesc_ctr->sec->type,
+		psd = make_sec_desc(mem_ctx, secdesc_ctr->sd->revision, secdesc_ctr->sd->type,
 				    owner_sid, group_sid,
 				    sacl,
 				    dacl,
@@ -5049,7 +5049,7 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 
 	/* Store the security descriptor in a tdb */
 
-	prs_init(&ps, (uint32)sec_desc_size(new_secdesc_ctr->sec) +
+	prs_init(&ps, (uint32)sec_desc_size(new_secdesc_ctr->sd) +
 		 sizeof(SEC_DESC_BUF), mem_ctx, MARSHALL);
 
 	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr,
@@ -5194,7 +5194,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 
 		/* Save default security descriptor for later */
 
-		prs_init(&ps, (uint32)sec_desc_size((*secdesc_ctr)->sec) +
+		prs_init(&ps, (uint32)sec_desc_size((*secdesc_ctr)->sd) +
 				sizeof(SEC_DESC_BUF), ctx, MARSHALL);
 
 		if (sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
@@ -5212,7 +5212,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 	   this security descriptor has been created when winbindd was
 	   down.  Take ownership of security descriptor. */
 
-	if (sid_equal((*secdesc_ctr)->sec->owner_sid, &global_sid_World)) {
+	if (sid_equal((*secdesc_ctr)->sd->owner_sid, &global_sid_World)) {
 		DOM_SID owner_sid;
 
 		/* Change sd owner to workgroup administrator */
@@ -5226,11 +5226,11 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 
 			sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 
-			psd = make_sec_desc(ctx, (*secdesc_ctr)->sec->revision, (*secdesc_ctr)->sec->type,
+			psd = make_sec_desc(ctx, (*secdesc_ctr)->sd->revision, (*secdesc_ctr)->sd->type,
 					    &owner_sid,
-					    (*secdesc_ctr)->sec->grp_sid,
-					    (*secdesc_ctr)->sec->sacl,
-					    (*secdesc_ctr)->sec->dacl,
+					    (*secdesc_ctr)->sd->group_sid,
+					    (*secdesc_ctr)->sd->sacl,
+					    (*secdesc_ctr)->sd->dacl,
 					    &size);
 
 			if (!psd) {
@@ -5253,7 +5253,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		SEC_ACL *the_acl = (*secdesc_ctr)->sec->dacl;
+		SEC_ACL *the_acl = (*secdesc_ctr)->sd->dacl;
 		int i;
 
 		DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
@@ -5262,11 +5262,11 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;
 
-			sid_to_string(sid_str, &the_acl->ace[i].trustee);
+			sid_to_string(sid_str, &the_acl->aces[i].trustee);
 
 			DEBUG(10, ("%s %d %d 0x%08x\n", sid_str,
-				   the_acl->ace[i].type, the_acl->ace[i].flags, 
-				   the_acl->ace[i].info.mask)); 
+				   the_acl->aces[i].type, the_acl->aces[i].flags, 
+				   the_acl->aces[i].access_mask)); 
 		}
 	}
 
@@ -5318,7 +5318,7 @@ void map_printer_permissions(SEC_DESC *sd)
 	int i;
 
 	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
-		se_map_generic(&sd->dacl->ace[i].info.mask,
+		se_map_generic(&sd->dacl->aces[i].access_mask,
 			       &printer_generic_mapping);
 	}
 }
@@ -5396,7 +5396,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 		   against.  This is because print jobs are child objects
 		   objects of a printer. */
 
-		secdesc = se_create_child_secdesc(mem_ctx, parent_secdesc->sec, False);
+		secdesc = se_create_child_secdesc(mem_ctx, parent_secdesc->sd, False);
 
 		if (!secdesc) {
 			talloc_destroy(mem_ctx);
@@ -5415,9 +5415,9 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	
 	/* Check access */
 	
-	map_printer_permissions(secdesc->sec);
+	map_printer_permissions(secdesc->sd);
 
-	result = se_access_check(secdesc->sec, user->nt_user_token, access_type,
+	result = se_access_check(secdesc->sd, user->nt_user_token, access_type,
 				 &access_granted, &status);
 
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));

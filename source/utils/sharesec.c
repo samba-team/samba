@@ -75,7 +75,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 
 	if (numeric) {
 		fprintf(f, "%d/%d/0x%08x", 
-			ace->type, ace->flags, ace->info.mask);
+			ace->type, ace->flags, ace->access_mask);
 		return;
 	}
 
@@ -96,7 +96,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 	/* Standard permissions */
 
 	for (v = standard_values; v->perm; v++) {
-		if (ace->info.mask == v->mask) {
+		if (ace->access_mask == v->mask) {
 			fprintf(f, "%s", v->perm);
 			return;
 		}
@@ -105,11 +105,11 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 	/* Special permissions.  Print out a hex value if we have
 	   leftover bits in the mask. */
 
-	got_mask = ace->info.mask;
+	got_mask = ace->access_mask;
 
  again:
 	for (v = special_values; v->perm; v++) {
-		if ((ace->info.mask & v->mask) == v->mask) {
+		if ((ace->access_mask & v->mask) == v->mask) {
 			if (do_print) {
 				fprintf(f, "%s", v->perm);
 			}
@@ -119,7 +119,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 
 	if (!do_print) {
 		if (got_mask != 0) {
-			fprintf(f, "0x%08x", ace->info.mask);
+			fprintf(f, "0x%08x", ace->access_mask);
 		} else {
 			do_print = 1;
 			goto again;
@@ -148,8 +148,8 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 
 	fprintf(f, "OWNER:%s\n", sidstr);
 
-	if (sd->grp_sid) {
-		sid_to_string(sidstr, sd->grp_sid);
+	if (sd->group_sid) {
+		sid_to_string(sidstr, sd->group_sid);
 	} else {
 		fstrcpy(sidstr, "");
 	}
@@ -158,7 +158,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 
 	/* Print aces */
 	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
-		SEC_ACE *ace = &sd->dacl->ace[i];
+		SEC_ACE *ace = &sd->dacl->aces[i];
 		fprintf(f, "ACL:");
 		print_ace(f, ace);
 		fprintf(f, "\n");

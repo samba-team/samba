@@ -1009,16 +1009,16 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	if (psd->off_owner_sid==0) {
+	if (psd->owner_sid==0) {
 		security_info_sent &= ~OWNER_SECURITY_INFORMATION;
 	}
-	if (psd->off_grp_sid==0) {
+	if (psd->group_sid==0) {
 		security_info_sent &= ~GROUP_SECURITY_INFORMATION;
 	}
-	if (psd->off_sacl==0) {
+	if (psd->sacl==0) {
 		security_info_sent &= ~SACL_SECURITY_INFORMATION;
 	}
-	if (psd->off_dacl==0) {
+	if (psd->dacl==0) {
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	}
 	

@@ -63,7 +63,7 @@ char *get_sec_mask_str(uint32 type)
  ****************************************************************************/
 void display_sec_access(SEC_ACCESS *info)
 {
-	printf("\t\tPermissions: 0x%x: %s\n", info->mask, get_sec_mask_str(info->mask));
+	printf("\t\tPermissions: 0x%x: %s\n", *info, get_sec_mask_str(*info));
 }
 
 /****************************************************************************
@@ -92,7 +92,7 @@ void display_sec_ace(SEC_ACE *ace)
 			break;
 	}
 	printf(" (%d) flags: %d\n", ace->type, ace->flags);
-	display_sec_access(&ace->info);
+	display_sec_access(&ace->access_mask);
 	sid_to_string(sid_str, &ace->trustee);
 	printf("\t\tSID: %s\n\n", sid_str);
 }
@@ -110,7 +110,7 @@ void display_sec_acl(SEC_ACL *sec_acl)
 
 	if (sec_acl->size != 0 && sec_acl->num_aces != 0)
 		for (i = 0; i < sec_acl->num_aces; i++)
-			display_sec_ace(&sec_acl->ace[i]);
+			display_sec_ace(&sec_acl->aces[i]);
 				
 }
 
@@ -179,8 +179,8 @@ void display_sec_desc(SEC_DESC *sec)
 		printf("\tOwner SID:\t%s\n", sid_str);
 	}
 
-	if (sec->grp_sid) {
-		sid_to_string(sid_str, sec->grp_sid);
+	if (sec->group_sid) {
+		sid_to_string(sid_str, sec->group_sid);
 		printf("\tParent SID:\t%s\n", sid_str);
 	}
 }

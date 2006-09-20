@@ -46,13 +46,13 @@ SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *a
 	   positive number. */
 
 	if ((num_aces) && 
-            ((dst->ace = TALLOC_ARRAY(ctx, SEC_ACE, num_aces)) 
+            ((dst->aces = TALLOC_ARRAY(ctx, SEC_ACE, num_aces)) 
              == NULL)) {
 		return NULL;
 	}
         
 	for (i = 0; i < num_aces; i++) {
-		dst->ace[i] = ace_list[i]; /* Structure copy. */
+		dst->aces[i] = ace_list[i]; /* Structure copy. */
 		dst->size += ace_list[i].size;
 	}
 
@@ -68,7 +68,7 @@ SEC_ACL *dup_sec_acl(TALLOC_CTX *ctx, SEC_ACL *src)
 	if(src == NULL)
 		return NULL;
 
-	return make_sec_acl(ctx, src->revision, src->num_aces, src->ace);
+	return make_sec_acl(ctx, src->revision, src->num_aces, src->aces);
 }
 
 /*******************************************************************
@@ -105,7 +105,7 @@ BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2)
 		BOOL found = False;
 
 		for (j = 0; j < s2->num_aces; j++) {
-			if (sec_ace_equal(&s1->ace[i], &s2->ace[j])) {
+			if (sec_ace_equal(&s1->aces[i], &s2->aces[j])) {
 				found = True;
 				break;
 			}
