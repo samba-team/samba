@@ -256,7 +256,7 @@ static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, int num_changes,
-			 char **username)
+			 struct libnet_rpc_usermod *mod, char **username)
 {
 	const char* logon_scripts[] = { "start_login.cmd", "login.bat", "start.cmd" };
 	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
@@ -264,16 +264,15 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const char *homedir, *homedrive, *logonscript;
 
 	NTSTATUS status;
-	struct libnet_rpc_usermod mod;
 	struct timeval now;
 	enum test_fields testfld;
 	int i;
 
-	ZERO_STRUCT(mod);
+	ZERO_STRUCT(*mod);
 	srandom((unsigned)time(NULL));
 
-	mod.in.username = talloc_strdup(mem_ctx, *username);
-	mod.in.domain_handle = *handle;
+	mod->in.username = talloc_strdup(mem_ctx, *username);
+	mod->in.domain_handle = *handle;
 
 	printf("modifying user (%d simultaneous change(s))\n", num_changes);
 
@@ -282,126 +281,126 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	for (i = 0; i < num_changes && i < FIELDS_NUM; i++) {
 		const char *fldname;
 
-		testfld = random() % FIELDS_NUM;
+		testfld = random() % (FIELDS_NUM - 1);
 
 		gettimeofday(&now, NULL);
 
 		switch (testfld) {
 		case account_name:
-			continue_if_field_set(mod.in.change.account_name);
-			mod.in.change.account_name = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
+			continue_if_field_set(mod->in.change.account_name);
+			mod->in.change.account_name = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
 								     (int)random());
-			mod.in.change.fields |= USERMOD_FIELD_ACCOUNT_NAME;
+			mod->in.change.fields |= USERMOD_FIELD_ACCOUNT_NAME;
 			fldname = "account_name";
-			*username = talloc_strdup(mem_ctx, mod.in.change.account_name);
+			*username = talloc_strdup(mem_ctx, mod->in.change.account_name);
 			break;
 
 		case full_name:
-			continue_if_field_set(mod.in.change.full_name);
-			mod.in.change.full_name = talloc_asprintf(mem_ctx, TEST_CHG_FULLNAME,
+			continue_if_field_set(mod->in.change.full_name);
+			mod->in.change.full_name = talloc_asprintf(mem_ctx, TEST_CHG_FULLNAME,
 								  (int)random(), (int)random());
-			mod.in.change.fields |= USERMOD_FIELD_FULL_NAME;
+			mod->in.change.fields |= USERMOD_FIELD_FULL_NAME;
 			fldname = "full_name";
 			break;
 
 		case description:
-			continue_if_field_set(mod.in.change.description);
-			mod.in.change.description = talloc_asprintf(mem_ctx, TEST_CHG_DESCRIPTION,
+			continue_if_field_set(mod->in.change.description);
+			mod->in.change.description = talloc_asprintf(mem_ctx, TEST_CHG_DESCRIPTION,
 								    random());
-			mod.in.change.fields |= USERMOD_FIELD_DESCRIPTION;
+			mod->in.change.fields |= USERMOD_FIELD_DESCRIPTION;
 			fldname = "description";
 			break;
 			
 		case home_directory:
-			continue_if_field_set(mod.in.change.home_directory);
+			continue_if_field_set(mod->in.change.home_directory);
 			homedir = home_dirs[random() % (sizeof(home_dirs)/sizeof(char*))];
-			mod.in.change.home_directory = talloc_strdup(mem_ctx, homedir);
-			mod.in.change.fields |= USERMOD_FIELD_HOME_DIRECTORY;
+			mod->in.change.home_directory = talloc_strdup(mem_ctx, homedir);
+			mod->in.change.fields |= USERMOD_FIELD_HOME_DIRECTORY;
 			fldname = "home directory";
 			break;
 
 		case home_drive:
-			continue_if_field_set(mod.in.change.home_drive);
+			continue_if_field_set(mod->in.change.home_drive);
 			homedrive = home_drives[random() % (sizeof(home_drives)/sizeof(char*))];
-			mod.in.change.home_drive = talloc_strdup(mem_ctx, homedrive);
-			mod.in.change.fields |= USERMOD_FIELD_HOME_DRIVE;
+			mod->in.change.home_drive = talloc_strdup(mem_ctx, homedrive);
+			mod->in.change.fields |= USERMOD_FIELD_HOME_DRIVE;
 			fldname = "home drive";
 			break;
 
 		case comment:
-			continue_if_field_set(mod.in.change.comment);
-			mod.in.change.comment = talloc_asprintf(mem_ctx, TEST_CHG_COMMENT,
+			continue_if_field_set(mod->in.change.comment);
+			mod->in.change.comment = talloc_asprintf(mem_ctx, TEST_CHG_COMMENT,
 								random(), random());
-			mod.in.change.fields |= USERMOD_FIELD_COMMENT;
+			mod->in.change.fields |= USERMOD_FIELD_COMMENT;
 			fldname = "comment";
 			break;
 
 		case logon_script:
-			continue_if_field_set(mod.in.change.logon_script);
+			continue_if_field_set(mod->in.change.logon_script);
 			logonscript = logon_scripts[random() % (sizeof(logon_scripts)/sizeof(char*))];
-			mod.in.change.logon_script = talloc_strdup(mem_ctx, logonscript);
-			mod.in.change.fields |= USERMOD_FIELD_LOGON_SCRIPT;
+			mod->in.change.logon_script = talloc_strdup(mem_ctx, logonscript);
+			mod->in.change.fields |= USERMOD_FIELD_LOGON_SCRIPT;
 			fldname = "logon script";
 			break;
 
 		case profile_path:
-			continue_if_field_set(mod.in.change.profile_path);
-			mod.in.change.profile_path = talloc_asprintf(mem_ctx, TEST_CHG_PROFILEPATH,
+			continue_if_field_set(mod->in.change.profile_path);
+			mod->in.change.profile_path = talloc_asprintf(mem_ctx, TEST_CHG_PROFILEPATH,
 								     (long int)random(), (unsigned int)random());
-			mod.in.change.fields |= USERMOD_FIELD_PROFILE_PATH;
+			mod->in.change.fields |= USERMOD_FIELD_PROFILE_PATH;
 			fldname = "profile path";
 			break;
 
 		case acct_expiry:
-			continue_if_field_set(mod.in.change.acct_expiry);
+			continue_if_field_set(mod->in.change.acct_expiry);
 			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod.in.change.acct_expiry = talloc_memdup(mem_ctx, &now, sizeof(now));
-			mod.in.change.fields |= USERMOD_FIELD_ACCT_EXPIRY;
+			mod->in.change.acct_expiry = talloc_memdup(mem_ctx, &now, sizeof(now));
+			mod->in.change.fields |= USERMOD_FIELD_ACCT_EXPIRY;
 			fldname = "acct_expiry";
 			break;
 
 		case allow_password_change:
-			continue_if_field_set(mod.in.change.allow_password_change);
+			continue_if_field_set(mod->in.change.allow_password_change);
 			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod.in.change.allow_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-			mod.in.change.fields |= USERMOD_FIELD_ALLOW_PASS_CHG;
+			mod->in.change.allow_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
+			mod->in.change.fields |= USERMOD_FIELD_ALLOW_PASS_CHG;
 			fldname = "allow_password_change";
 			break;
 
 		case force_password_change:
-			continue_if_field_set(mod.in.change.force_password_change);
+			continue_if_field_set(mod->in.change.force_password_change);
 			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod.in.change.force_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-			mod.in.change.fields |= USERMOD_FIELD_FORCE_PASS_CHG;
+			mod->in.change.force_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
+			mod->in.change.fields |= USERMOD_FIELD_FORCE_PASS_CHG;
 			fldname = "force_password_change";
 			break;
 
 		case last_logon:
-			continue_if_field_set(mod.in.change.last_logon);
+			continue_if_field_set(mod->in.change.last_logon);
 			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod.in.change.last_logon = talloc_memdup(mem_ctx, &now, sizeof(now));
-			mod.in.change.fields |= USERMOD_FIELD_LAST_LOGON;
+			mod->in.change.last_logon = talloc_memdup(mem_ctx, &now, sizeof(now));
+			mod->in.change.fields |= USERMOD_FIELD_LAST_LOGON;
 			fldname = "last_logon";
 			break;
 
 		case last_logoff:
-			continue_if_field_set(mod.in.change.last_logoff);
+			continue_if_field_set(mod->in.change.last_logoff);
 			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod.in.change.last_logoff = talloc_memdup(mem_ctx, &now, sizeof(now));
-			mod.in.change.fields |= USERMOD_FIELD_LAST_LOGOFF;
+			mod->in.change.last_logoff = talloc_memdup(mem_ctx, &now, sizeof(now));
+			mod->in.change.fields |= USERMOD_FIELD_LAST_LOGOFF;
 			fldname = "last_logoff";
 			break;
 
 		case last_password_change:
-			continue_if_field_set(mod.in.change.last_password_change);
+			continue_if_field_set(mod->in.change.last_password_change);
 			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod.in.change.last_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-			mod.in.change.fields |= USERMOD_FIELD_LAST_PASS_CHG;
+			mod->in.change.last_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
+			mod->in.change.fields |= USERMOD_FIELD_LAST_PASS_CHG;
 			fldname = "last_password_change";
 			break;
 
 		default:
-			fldname = "unknown_field";
+			fldname = talloc_asprintf(mem_ctx, "unknown_field (%d)", testfld);
 			break;
 		}
 
@@ -409,7 +408,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 	printf("]\n");
 
-	status = libnet_rpc_usermod(p, mem_ctx, &mod);
+	status = libnet_rpc_usermod(p, mem_ctx, mod);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_usermd - %s\n", nt_errstr(status));
 		return False;
@@ -433,6 +432,80 @@ static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("Failed to call sync libnet_rpc_userdel - %s\n", nt_errstr(status));
 		return False;
 	}
+
+	return True;
+}
+
+
+#define CMP_LSA_STRING_FLD(fld, flags) \
+	if ((mod->in.change.fields & flags) && \
+	    !strequal(i->fld.string, mod->in.change.fld)) { \
+		printf("'%s' field does not match\n", #fld); \
+		printf("received: '%s'\n", i->fld.string); \
+		printf("expected: '%s'\n", mod->in.change.fld); \
+		return False; \
+	}
+
+
+#define CMP_TIME_FLD(fld, flags) \
+	if (mod->in.change.fields & flags) { \
+		nttime_to_timeval(&t, i->fld); \
+		if (timeval_compare(&t, mod->in.change.fld)) { \
+			printf("'%s' field does not match\n", #fld); \
+			printf("received: '%s (+%ld us)'\n", timestring(mem_ctx, t.tv_sec), t.tv_usec); \
+			printf("expected: '%s (+%ld us)'\n", timestring(mem_ctx, mod->in.change.fld->tv_sec), mod->in.change.fld->tv_usec); \
+			return False; \
+		} \
+	}
+
+#define CMP_NUM_FLD(fld, flags) \
+	if ((mod->in.change.fields & flags) && \
+	    (i->fld != mod->in.change.fld)) { \
+		printf("'%s' field does not match\n", #fld); \
+		printf("received: '%04x'\n", i->fld); \
+		printf("expected: '%04x'\n", mod->in.change.fld); \
+		return False; \
+	}
+
+
+static BOOL test_compare(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			 struct policy_handle *handle, struct libnet_rpc_usermod *mod,
+			 const char *username)
+{
+	NTSTATUS status;
+	struct libnet_rpc_userinfo info;
+	struct samr_UserInfo21 *i;
+	struct timeval t;
+
+	ZERO_STRUCT(info);
+
+	info.in.username = username;
+	info.in.domain_handle = *handle;
+	info.in.level = 21;             /* the most rich infolevel available */
+
+	status = libnet_rpc_userinfo(p, mem_ctx, &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	i = &info.out.info.info21;
+
+	CMP_LSA_STRING_FLD(account_name, USERMOD_FIELD_ACCOUNT_NAME);
+	CMP_LSA_STRING_FLD(full_name, USERMOD_FIELD_FULL_NAME);
+	CMP_LSA_STRING_FLD(description, USERMOD_FIELD_DESCRIPTION);
+	CMP_LSA_STRING_FLD(comment, USERMOD_FIELD_COMMENT);
+	CMP_LSA_STRING_FLD(logon_script, USERMOD_FIELD_LOGON_SCRIPT);
+	CMP_LSA_STRING_FLD(profile_path, USERMOD_FIELD_PROFILE_PATH);
+	CMP_LSA_STRING_FLD(home_directory, USERMOD_FIELD_HOME_DIRECTORY);
+	CMP_LSA_STRING_FLD(home_drive, USERMOD_FIELD_HOME_DRIVE);
+	CMP_TIME_FLD(acct_expiry, USERMOD_FIELD_ACCT_EXPIRY);
+	CMP_TIME_FLD(allow_password_change, USERMOD_FIELD_ALLOW_PASS_CHG);
+	CMP_TIME_FLD(force_password_change, USERMOD_FIELD_FORCE_PASS_CHG);
+	CMP_TIME_FLD(last_logon, USERMOD_FIELD_LAST_LOGON);
+	CMP_TIME_FLD(last_logoff, USERMOD_FIELD_LAST_LOGOFF);
+	CMP_TIME_FLD(last_password_change, USERMOD_FIELD_LAST_PASS_CHG);
+	CMP_NUM_FLD(acct_flags, USERMOD_FIELD_ACCT_FLAGS)
 
 	return True;
 }
@@ -548,6 +621,7 @@ BOOL torture_usermod(struct torture_context *torture)
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct lsa_String domain_name;
+	int i;
 	char *name;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
@@ -577,24 +651,20 @@ BOOL torture_usermod(struct torture_context *torture)
 		goto done;
 	}
 
-	/* single change */
-	if (!test_usermod(p, mem_ctx, &h, 1, &name)) {
-		ret = False;
-		goto done;
-	}
+	for (i = 1; i < 8; i++) {
+		struct libnet_rpc_usermod m;
 
-	/* double change */
-	if (!test_usermod(p, mem_ctx, &h, 2, &name)) {
-		ret = False;
-		goto done;
-	}
+		if (!test_usermod(p, mem_ctx, &h, i, &m, &name)) {
+			ret = False;
+			goto done;
+		}
 
-	/* triple change */
-	if (!test_usermod(p, mem_ctx, &h, 3, &name)) {
-		ret = False;
-		goto done;
+		if (!test_compare(p, mem_ctx, &h, &m, name)) {
+			ret = False;
+			goto done;
+		}
 	}
-
+	
 	if (!test_cleanup(p, mem_ctx, &h, name)) {
 		ret = False;
 		goto done;
