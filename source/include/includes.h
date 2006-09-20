@@ -1237,4 +1237,8 @@ void exit_server(const char *const reason) NORETURN_ATTRIBUTE ;
 void exit_server_cleanly(const char *const reason) NORETURN_ATTRIBUTE ;
 void exit_server_fault(void) NORETURN_ATTRIBUTE ;
 
+#ifdef HAVE_LIBNSCD
+#include "libnscd.h"
+#endif
+
 #endif /* _INCLUDES_H */
