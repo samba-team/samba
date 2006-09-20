@@ -3031,10 +3031,10 @@ static void smb_nscd_flush_cache(const char *service)
 
 void smb_nscd_flush_user_cache(void)
 {
-	return smb_nscd_flush_cache("passwd");
+	smb_nscd_flush_cache("passwd");
 }
 
 void smb_nscd_flush_group_cache(void)
 {
-	return smb_nscd_flush_cache("group");
+	smb_nscd_flush_cache("group");
 }
