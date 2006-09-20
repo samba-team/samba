@@ -860,8 +860,8 @@ int cac_RegGetKeySecurity(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegG
       return CAC_FAILURE;
    }
 
-   op->out.size = buf.len;
-   op->out.descriptor = dup_sec_desc(mem_ctx, buf.sec);
+   op->out.size = buf.sd_size;
+   op->out.descriptor = dup_sec_desc(mem_ctx, buf.sd);
 
    if (op->out.descriptor == NULL) {
 	   return CAC_FAILURE;

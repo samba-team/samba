@@ -46,10 +46,8 @@ void sec_ace_copy(SEC_ACE *ace_dest, SEC_ACE *ace_src)
 	ace_dest->type  = ace_src->type;
 	ace_dest->flags = ace_src->flags;
 	ace_dest->size  = ace_src->size;
-	ace_dest->info.mask = ace_src->info.mask;
-	ace_dest->obj_flags = ace_src->obj_flags;
-	memcpy(&ace_dest->obj_guid, &ace_src->obj_guid, sizeof(struct GUID));
-	memcpy(&ace_dest->inh_guid, &ace_src->inh_guid, sizeof(struct GUID));
+	ace_dest->access_mask = ace_src->access_mask;
+	ace_dest->object = ace_src->object;
 	sid_copy(&ace_dest->trustee, &ace_src->trustee);
 }
 
@@ -57,12 +55,12 @@ void sec_ace_copy(SEC_ACE *ace_dest, SEC_ACE *ace_src)
  Sets up a SEC_ACE structure.
 ********************************************************************/
 
-void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 flag)
+void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, uint8 type, uint32 mask, uint8 flag)
 {
 	t->type = type;
 	t->flags = flag;
 	t->size = sid_size(sid) + 8;
-	t->info = mask;
+	t->access_mask = mask;
 
 	ZERO_STRUCTP(&t->trustee);
 	sid_copy(&t->trustee, sid);
@@ -89,7 +87,7 @@ NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, unsign
 	(*pp_new)[i].type  = 0;
 	(*pp_new)[i].flags = 0;
 	(*pp_new)[i].size  = SEC_ACE_HEADER_SIZE + sid_size(sid);
-	(*pp_new)[i].info.mask = mask;
+	(*pp_new)[i].access_mask = mask;
 	sid_copy(&(*pp_new)[i].trustee, sid);
 	return NT_STATUS_OK;
 }
@@ -106,7 +104,7 @@ NTSTATUS sec_ace_mod_sid(SEC_ACE *ace, size_t num, DOM_SID *sid, uint32 mask)
 
 	for (i = 0; i < num; i ++) {
 		if (sid_compare(&ace[i].trustee, sid) == 0) {
-			ace[i].info.mask = mask;
+			ace[i].access_mask = mask;
 			return NT_STATUS_OK;
 		}
 	}
@@ -160,7 +158,7 @@ BOOL sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2)
 	/* Check top level stuff */
 
 	if (s1->type != s2->type || s1->flags != s2->flags ||
-	    s1->info.mask != s2->info.mask) {
+	    s1->access_mask != s2->access_mask) {
 		return False;
 	}
 
