@@ -819,6 +819,14 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 		if (pkt->call_id == req->call_id) break;
 	}
 
+#if 0
+	/* useful for testing certain vendors RPC servers */
+	if (req == NULL && c->pending && pkt->call_id == 0) {
+		DEBUG(0,("HACK FOR INCORRECT CALL ID\n"));
+		req = c->pending;
+	}
+#endif
+
 	if (req == NULL) {
 		DEBUG(2,("dcerpc_request: unmatched call_id %u in response packet\n", pkt->call_id));
 		data_blob_free(raw_packet);
