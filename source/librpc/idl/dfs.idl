@@ -93,13 +93,22 @@
 		[size_is(num_stores)] dfs_StorageInfo *stores;
 	} dfs_Info4;
 
+	/* verified with dfsutil */
+	typedef [public,bitmap32bit] bitmap {
+		DFS_PROPERTY_FLAG_INSITE_REFERRALS	= 0x01,
+		DFS_PROPERTY_FLAG_ROOT_SCALABILITY	= 0x02,
+		DFS_PROPERTY_FLAG_SITE_COSTING 		= 0x04,
+		DFS_PROPERTY_FLAG_TARGET_FAILBACK	= 0x08,
+		DFS_PROPERTY_FLAG_CLUSTER_ENABLED	= 0x10	/* untested */
+	} dfs_PropertyFlags;
+
 	typedef struct {
 		[string,charset(UTF16)] uint16 *path;
 		[string,charset(UTF16)] uint16 *comment;
 		uint32 state;
 		uint32 timeout;
 		GUID   guid;
-		uint32 flags;
+		dfs_PropertyFlags flags;
 		uint32 pktsize;
 		uint32 num_stores;
 	} dfs_Info5;
@@ -121,7 +130,7 @@
 		uint32 state;
 		uint32 timeout;
 		GUID   guid;
-		uint32 flags;
+		dfs_PropertyFlags flags;
 		uint32 pktsize;
 		uint16 num_stores;
 		[size_is(num_stores)] dfs_StorageInfo2 *stores;
@@ -144,7 +153,7 @@
 	} dfs_Info102;
 
 	typedef struct {
-		uint32 flags;
+		dfs_PropertyFlags flags;
 	} dfs_Info103;
 
 	typedef struct {
