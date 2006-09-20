@@ -1882,9 +1882,20 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	/* test what happens when picking a simple password (FIXME) */
-	if (!test_ChangePasswordUser3(p, mem_ctx, acct_name, 0, password, "simple", 0, True)) {
-		ret = False;
+	{
+		char simple_pass[9];
+		char v = (char)random();
+		int i;
+
+		for (i=0; i <ARRAY_SIZE(simple_pass); i++) {
+			simple_pass[i] = v;
+		}
+		simple_pass[i] = '\0';
+
+		/* test what happens when picking a simple password */
+		if (!test_ChangePasswordUser3(p, mem_ctx, acct_name, 0, password, simple_pass, 0, True)) {
+			ret = False;
+		}
 	}
 
 	/* set samr_SetDomainInfo level 1 with min_length 5 */
