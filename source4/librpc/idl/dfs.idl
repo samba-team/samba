@@ -60,8 +60,17 @@
 		uint32 num_stores;
 	} dfs_Info2;
 
+	const int DFS_STORAGE_STATES = 0xf;
+
+	/* yes, this is a bitmap */
+	typedef [public,bitmap32bit] bitmap {
+		DFS_STORAGE_STATE_OFFLINE 	= 1,
+		DFS_STORAGE_STATE_ONLINE 	= 2,
+		DFS_STORAGE_STATE_ACTIVE 	= 4
+	} dfs_StorageState;
+
 	typedef struct {
-		uint32 state;
+		dfs_StorageState state;
 		[string,charset(UTF16)] uint16 *server;
 		[string,charset(UTF16)] uint16 *share;
 	} dfs_StorageInfo;
@@ -127,7 +136,7 @@
 	} dfs_Info100;
 
 	typedef struct {
-		uint32 state;
+		dfs_StorageState state;
 	} dfs_Info101;
 
 	typedef struct {
@@ -151,7 +160,7 @@
 	} dfs_Info105;
 
 	typedef struct {
-		uint32 state;
+		dfs_StorageState state;
 		dfs_Target_Priority priority;
 	} dfs_Info106;
 
