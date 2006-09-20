@@ -5109,8 +5109,9 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
 						const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint16_t server = 1;
 	
-	result = werror_to_ntstatus(rpccli_reg_abort_shutdown(pipe_hnd, mem_ctx));
+	result = rpccli_winreg_AbortSystemShutdown(pipe_hnd, mem_ctx, &server);
 	
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown successfully aborted\n");
