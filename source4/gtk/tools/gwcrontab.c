@@ -44,15 +44,15 @@ static void update_joblist(void)
 	int i;
 	uint32_t resume_handle = 0;
 
-    gtk_list_store_clear(store_jobs);
+	gtk_list_store_clear(store_jobs);
 
 	ctr.entries_read = 0;
 	ctr.first_entry = NULL;
 	r.in.servername = dcerpc_server_name(at_pipe);
 	r.in.ctr = r.out.ctr = &ctr;
-    r.in.preferred_max_len = 0xffffffff;
-    r.in.resume_handle = r.out.resume_handle = &resume_handle;
-	
+	r.in.preferred_max_len = 0xffffffff;
+	r.in.resume_handle = r.out.resume_handle = &resume_handle;
+
 	status = dcerpc_atsvc_JobEnum(at_pipe, mem_ctx, &r);
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, "Error while enumerating first job", status);
