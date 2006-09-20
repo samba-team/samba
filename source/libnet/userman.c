@@ -557,25 +557,36 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 {
 	if (s->change.fields == 0) return s->change.fields;
 
-	if (s->change.fields & USERMOD_FIELD_ACCOUNT_NAME) {
+	*level = 0;
+
+	if ((s->change.fields & USERMOD_FIELD_ACCOUNT_NAME) &&
+	    (*level == 0 || *level == 7)) {
 		*level = 7;
 		i->info7.account_name.string = s->change.account_name;
 		
 		s->change.fields ^= USERMOD_FIELD_ACCOUNT_NAME;
 		
-	} else if (s->change.fields & USERMOD_FIELD_FULL_NAME) {
+	}
+
+	if ((s->change.fields & USERMOD_FIELD_FULL_NAME) &&
+	    (*level == 0 || *level == 8)) {
 		*level = 8;
 		i->info8.full_name.string = s->change.full_name;
 		
 		s->change.fields ^= USERMOD_FIELD_FULL_NAME;
-		
-	} else if (s->change.fields & USERMOD_FIELD_DESCRIPTION) {
+	}
+	
+	if ((s->change.fields & USERMOD_FIELD_DESCRIPTION) &&
+	    (*level == 0 || *level == 13)) {
 		*level = 13;
 		i->info13.description.string = s->change.description;
 		
 		s->change.fields ^= USERMOD_FIELD_DESCRIPTION;
 		
-	} else if (s->change.fields & USERMOD_FIELD_COMMENT) {
+	}
+
+	if ((s->change.fields & USERMOD_FIELD_COMMENT) &&
+	    (*level == 0 || *level == 2)) {
 		*level = 2;
 		
 		if (s->stage == USERMOD_QUERY) {
@@ -589,7 +600,10 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 			return s->change.fields;
 		}
 		
-	} else if (s->change.fields & USERMOD_FIELD_ALLOW_PASS_CHG) {
+	}
+
+	if ((s->change.fields & USERMOD_FIELD_ALLOW_PASS_CHG) &&
+	    (*level == 0 || *level == 3)) {
 		*level = 3;
 		
 		if (s->stage == USERMOD_QUERY) {
@@ -601,7 +615,10 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 			return s->change.fields;
 		}
 
-	} else if (s->change.fields & USERMOD_FIELD_FORCE_PASS_CHG) {
+	}
+	
+	if ((s->change.fields & USERMOD_FIELD_FORCE_PASS_CHG) &&
+	    (*level == 0 || *level == 3)) {
 		*level = 3;
 
 		if (s->stage == USERMOD_QUERY) {
@@ -613,7 +630,10 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 			return s->change.fields;
 		}
 		
-	} else if (s->change.fields & USERMOD_FIELD_LAST_LOGON) {
+	}
+
+	if ((s->change.fields & USERMOD_FIELD_LAST_LOGON) &&
+	    (*level == 0 || *level == 3)) {
 		*level = 3;
 		
 		if (s->stage == USERMOD_QUERY) {
@@ -624,7 +644,10 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 			return s->change.fields;
 		}
 		
-	} else if (s->change.fields & USERMOD_FIELD_LAST_LOGOFF) {
+	}
+
+	if ((s->change.fields & USERMOD_FIELD_LAST_LOGOFF) &&
+	    (*level == 0 || *level == 3)) {
 		*level = 3;
 		
 		if (s->stage == USERMOD_QUERY) {
@@ -635,7 +658,10 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 			return s->change.fields;
 		}
 
-	} else if (s->change.fields & USERMOD_FIELD_LAST_PASS_CHG) {
+	}
+	
+	if ((s->change.fields & USERMOD_FIELD_LAST_PASS_CHG) &&
+	    (*level == 0 || *level == 3)) {
 		*level = 3;
 		
 		if (s->stage == USERMOD_QUERY) {
@@ -646,19 +672,28 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 			return s->change.fields;
 		}
 		
-	} else if (s->change.fields & USERMOD_FIELD_LOGON_SCRIPT) {
+	}
+	
+	if ((s->change.fields & USERMOD_FIELD_LOGON_SCRIPT) &&
+	    (*level == 0 || *level == 11)) {
 		*level = 11;
 		i->info11.logon_script.string = s->change.logon_script;
 		
 		s->change.fields ^= USERMOD_FIELD_LOGON_SCRIPT;
 		
-	} else if (s->change.fields & USERMOD_FIELD_PROFILE_PATH) {
+	}
+
+	if ((s->change.fields & USERMOD_FIELD_PROFILE_PATH) &&
+	    (*level == 0 || *level == 12)) {
 		*level = 12;
 		i->info12.profile_path.string = s->change.profile_path;
 		
 		s->change.fields ^= USERMOD_FIELD_PROFILE_PATH;
 		
-	} else if (s->change.fields & USERMOD_FIELD_HOME_DIRECTORY) {
+	}
+
+	if ((s->change.fields & USERMOD_FIELD_HOME_DIRECTORY) &&
+	    (*level == 0 || *level == 3)) {
 		*level = 3;
 		
 		if (s->stage == USERMOD_QUERY) {
@@ -669,7 +704,10 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 			return s->change.fields;
 		}
 		
-	} else if (s->change.fields & USERMOD_FIELD_HOME_DRIVE) {
+	}
+
+	if ((s->change.fields & USERMOD_FIELD_HOME_DRIVE) &&
+	    (*level == 0 || *level == 3)) {
 		*level = 3;
 		
 		if (s->stage == USERMOD_QUERY) {
@@ -680,13 +718,19 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 			return s->change.fields;
 		}
 		
-	} else if (s->change.fields & USERMOD_FIELD_ACCT_EXPIRY) {
+	}
+	
+	if ((s->change.fields & USERMOD_FIELD_ACCT_EXPIRY) &&
+	    (*level == 0 || *level == 17)) {
 		*level = 17;
 		i->info17.acct_expiry = timeval_to_nttime(s->change.acct_expiry);
 		
 		s->change.fields ^= USERMOD_FIELD_ACCT_EXPIRY;
 		
-	} else if (s->change.fields & USERMOD_FIELD_ACCT_FLAGS) {
+	}
+
+	if ((s->change.fields & USERMOD_FIELD_ACCT_FLAGS) &&
+	    (*level == 0 || *level == 16)) {
 		*level = 16;
 		i->info16.acct_flags = s->change.acct_flags;
 		
@@ -704,24 +748,19 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 }
 
 
-/**
- * Stage 2: Open user account
- */
-static NTSTATUS usermod_open(struct composite_context *c,
-			     struct usermod_state *s)
+static NTSTATUS usermod_change(struct composite_context *c,
+			       struct usermod_state *s)
 {
 	union samr_UserInfo *i = &s->info;
+
 	/* set the level to invalid value, so that unless setfields routine 
 	   gives it a valid value we report the error correctly */
 	uint16_t level = 27;
 
-	c->status = dcerpc_ndr_request_recv(s->req);
-	NT_STATUS_NOT_OK_RETURN(c->status);
-
 	/* prepare UserInfo level and data based on bitmask field */
 	s->change.fields = usermod_setfields(s, &level, i);
 
-	if (level > 26) {
+	if (level < 1 || level > 26) {
 		/* apparently there's a field that the setfields routine
 		   does not know how to set */
 		c->state = COMPOSITE_STATE_ERROR;
@@ -755,6 +794,19 @@ static NTSTATUS usermod_open(struct composite_context *c,
 	s->req->async.private  = c;
 
 	return NT_STATUS_OK;
+}
+
+
+/**
+ * Stage 2: Open user account
+ */
+static NTSTATUS usermod_open(struct composite_context *c,
+			     struct usermod_state *s)
+{
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
+	
+	return usermod_change(c, s);
 }
 
 
@@ -803,7 +855,13 @@ static NTSTATUS usermod_modify(struct composite_context *c,
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 
-	c->state = COMPOSITE_STATE_DONE;
+	if (s->change.fields == 0) {
+		/* all fields have been set - we're done */
+		c->state = COMPOSITE_STATE_DONE;
+	} else {
+		/* something's still not changed - repeat the procedure */
+		return usermod_change(c, s);
+	}
 
 	return NT_STATUS_OK;
 }
