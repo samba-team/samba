@@ -99,28 +99,12 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 			pdb_set_kickoff_time(to, unix_time , PDB_CHANGED);
 	}	
 
-	if (from->fields_present & ACCT_ALLOW_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_can_change_time);
-		stored_time = pdb_get_pass_can_change_time(to);
-		DEBUG(10,("INFO_21 PASS_CAN_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_can_change_time(to, unix_time, PDB_CHANGED);
-	}
-
 	if (from->fields_present & ACCT_LAST_PWD_CHANGE) {
 		unix_time=nt_time_to_unix(&from->pass_last_set_time);
 		stored_time = pdb_get_pass_last_set_time(to);
 		DEBUG(10,("INFO_21 PASS_LAST_SET: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
 			pdb_set_pass_last_set_time(to, unix_time, PDB_CHANGED);
-	}
-
-	if (from->fields_present & ACCT_FORCE_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_must_change_time);
-		stored_time=pdb_get_pass_must_change_time(to);
-		DEBUG(10,("INFO_21 PASS_MUST_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_must_change_time(to, unix_time, PDB_CHANGED);
 	}
 
 	if ((from->fields_present & ACCT_USERNAME) &&
@@ -338,28 +322,12 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 			pdb_set_kickoff_time(to, unix_time , PDB_CHANGED);
 	}	
 
-	if (from->fields_present & ACCT_ALLOW_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_can_change_time);
-		stored_time = pdb_get_pass_can_change_time(to);
-		DEBUG(10,("INFO_23 PASS_CAN_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_can_change_time(to, unix_time, PDB_CHANGED);
-	}
-
 	if (from->fields_present & ACCT_LAST_PWD_CHANGE) {
 		unix_time=nt_time_to_unix(&from->pass_last_set_time);
 		stored_time = pdb_get_pass_last_set_time(to);
 		DEBUG(10,("INFO_23 PASS_LAST_SET: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
 			pdb_set_pass_last_set_time(to, unix_time, PDB_CHANGED);
-	}
-
-	if (from->fields_present & ACCT_FORCE_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_must_change_time);
-		stored_time=pdb_get_pass_must_change_time(to);
-		DEBUG(10,("INFO_23 PASS_MUST_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_must_change_time(to, unix_time, PDB_CHANGED);
 	}
 
 	/* Backend should check this for sanity */
@@ -567,28 +535,12 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 			pdb_set_kickoff_time(to, unix_time , PDB_CHANGED);
 	}	
 
-	if (from->fields_present & ACCT_ALLOW_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_can_change_time);
-		stored_time = pdb_get_pass_can_change_time(to);
-		DEBUG(10,("INFO_25 PASS_CAN_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_can_change_time(to, unix_time, PDB_CHANGED);
-	}
-
 	if (from->fields_present & ACCT_LAST_PWD_CHANGE) {
 		unix_time=nt_time_to_unix(&from->pass_last_set_time);
 		stored_time = pdb_get_pass_last_set_time(to);
 		DEBUG(10,("INFO_25 PASS_LAST_SET: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time) 
 			pdb_set_pass_last_set_time(to, unix_time, PDB_CHANGED);
-	}
-
-	if (from->fields_present & ACCT_FORCE_PWD_CHANGE) {
-		unix_time=nt_time_to_unix(&from->pass_must_change_time);
-		stored_time=pdb_get_pass_must_change_time(to);
-		DEBUG(10,("INFO_25 PASS_MUST_CH: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
-			pdb_set_pass_must_change_time(to, unix_time, PDB_CHANGED);
 	}
 
 	if ((from->fields_present & ACCT_USERNAME) &&
