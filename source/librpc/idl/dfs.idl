@@ -334,7 +334,7 @@
 
 	/* Function 0x15 */
 	WERROR dfs_EnumEx(
-		[in]		[string,charset(UTF16)] uint16 name[],
+		[in]		[string,charset(UTF16)] uint16 dfs_name[],
 		[in]		uint32 level,
 		[in]		uint32 bufsize,
 		[in,out,unique]	dfs_EnumStruct *info,
