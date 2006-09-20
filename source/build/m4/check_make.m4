@@ -1,6 +1,7 @@
 dnl SMB Build Environment make Checks
 dnl -------------------------------------------------------
 dnl  Copyright (C) Stefan (metze) Metzmacher 2004
+dnl  Copyright (C) Jelmer Vernooij 2005
 dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
@@ -39,5 +40,9 @@ AC_MSG_RESULT($new_make)
 automatic_dependencies=no
 AX_CFLAGS_GCC_OPTION([-M -MT conftest.d -MF conftest.o], [], [ automatic_dependencies=$new_make ], [])
 AC_MSG_CHECKING([Whether to use automatic dependencies])
+AC_ARG_ENABLE(automatic-dependencies,
+[ --enable-automatic-dependencies 			Enable automatic dependencies],
+[ automatic_dependencies=$enableval ], 
+[ automatic_dependencies=no ])
 AC_MSG_RESULT($automatic_dependencies)
 AC_SUBST(automatic_dependencies)
