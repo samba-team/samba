@@ -342,14 +342,14 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	SAM_USERINFO_CTR *user_ctr;
 	fstring server;
-	uint32 user_rid;
+	uint32 user_rid = 0;
 	
 	if ((argc < 2) || (argc > 4)) {
 		printf("Usage: %s rid [info level] [access mask] \n", argv[0]);
 		return NT_STATUS_OK;
 	}
 	
-	user_rid = strtoul(argv[1], NULL, 10);
+	sscanf(argv[1], "%i", &user_rid);
 	
 	if (argc > 2)
 		sscanf(argv[2], "%i", &info_level);
