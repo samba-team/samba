@@ -118,3 +118,28 @@ void data_blob_clear_free(DATA_BLOB *d)
 	data_blob_clear(d);
 	data_blob_free(d);
 }
+
+/**
+  useful for constructing data blobs in test suites, while
+  avoiding const warnings
+**/
+DATA_BLOB data_blob_string_const(const char *str)
+{
+	DATA_BLOB blob;
+	blob.data = CONST_DISCARD(uint8 *, str);
+	blob.length = strlen(str);
+	blob.free = NULL;
+	return blob;
+}
+
+/**
+ * Create a new data blob from const data 
+ */
+DATA_BLOB data_blob_const(const void *p, size_t length)
+{
+	DATA_BLOB blob;
+	blob.data = CONST_DISCARD(uint8 *, p);
+	blob.length = length;
+	blob.free = NULL;
+	return blob;
+}
