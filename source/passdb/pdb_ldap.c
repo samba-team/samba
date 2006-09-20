@@ -1869,6 +1869,10 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 	DEBUG(rc ? 0 : 3,("Running the command `%s' gave %d\n", 
 			  rename_script, rc));
 
+	if (rc == 0) {
+		smb_nscd_flush_user_cache();
+	}
+
 	if (rc)
 		return NT_STATUS_UNSUCCESSFUL;
 

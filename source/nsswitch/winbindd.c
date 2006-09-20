@@ -1054,7 +1054,8 @@ int main(int argc, char **argv)
 
 	init_idmap_child();
 
-	winbindd_flush_nscd_cache();
+	smb_nscd_flush_user_cache();
+	smb_nscd_flush_group_cache();
 
 	/* Loop waiting for requests */
 

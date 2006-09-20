@@ -592,7 +592,8 @@ static void child_msg_online(int msg_type, struct process_id src, void *buf, siz
 	/* Set our global state as online. */
 	set_global_winbindd_state_online();
 
-	winbindd_flush_nscd_cache();
+	smb_nscd_flush_user_cache();
+	smb_nscd_flush_group_cache();
 
 	/* Mark everything online - delete any negative cache entries
 	   to force an immediate reconnect. */
