@@ -472,7 +472,7 @@ HandleOP(AcceptContext)
     
     gsm_error = convert_gss_to_gsm(maj_stat);
 
-    put32(c, hContext);
+    put32(c, new_context_id);
     put32(c, gsm_error);
     putdata(c, out_token);
     put32(c, deleg_hcred);
@@ -662,13 +662,87 @@ HandleOP(SetPasswordSelf)
 static int
 HandleOP(Wrap)
 {
+    OM_uint32 maj_stat, min_stat;
+    int32_t hContext, flags, seqno;
+    krb5_data token;
+    gss_ctx_id_t ctx;
+    gss_buffer_desc input_token, output_token;
+    int conf_state;
+
+    ret32(c, hContext);
+    ret32(c, flags);
+    ret32(c, seqno);
+    retdata(c, token);
+
+    ctx = find_handle(c->handle, hContext, handle_context);
+    if (ctx == NULL)
+	errx(1, "wrap: reference to unknown context");
+
+    input_token.length = token.length;
+    input_token.value = token.data;
+    
+    maj_stat = gss_wrap(&min_stat, ctx, flags, 0, &input_token,
+			&conf_state, &output_token);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_wrap failed");
+    
+    krb5_data_free(&token);
+    
+    token.data = output_token.value;
+    token.length = output_token.length;
+    
+    put32(c, 0); /* XXX fix gsm_error */
+    putdata(c, token);
+    
+    gss_release_buffer(&min_stat, &output_token);
+    
     return 0;
 }
- 
+
 
 static int
 HandleOP(Unwrap)
 {
+    OM_uint32 maj_stat, min_stat;
+    int32_t hContext, flags, seqno;
+    krb5_data token;
+    gss_ctx_id_t ctx;
+    gss_buffer_desc input_token, output_token;
+    int conf_state;
+    gss_qop_t qop_state;
+
+    ret32(c, hContext);
+    ret32(c, flags);
+    ret32(c, seqno);
+    retdata(c, token);
+
+    ctx = find_handle(c->handle, hContext, handle_context);
+    if (ctx == NULL)
+	errx(1, "unwrap: reference to unknown context");
+
+    input_token.length = token.length;
+    input_token.value = token.data;
+    
+    maj_stat = gss_unwrap(&min_stat, ctx, &input_token,
+			  &output_token, &conf_state, &qop_state);
+    
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_unwrap failed: %d/%d", maj_stat, min_stat);
+	
+    krb5_data_free(&token);
+    if (maj_stat == GSS_S_COMPLETE) {
+	token.data = output_token.value;
+	token.length = output_token.length;
+    } else {
+	token.data = NULL;
+	token.length = 0;
+    }
+    put32(c, 0); /* XXX fix gsm_error */
+    putdata(c, token);
+
+    if (maj_stat == GSS_S_COMPLETE)
+	gss_release_buffer(&min_stat, &output_token);
+
     return 0;
 }
 
