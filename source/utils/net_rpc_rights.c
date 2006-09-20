@@ -48,7 +48,7 @@ static NTSTATUS sid_to_name(struct rpc_pipe_client *pipe_hnd,
 			fstrcpy( name, names[0] );
 	}
 
-	rpccli_lsa_close(pipe_hnd, mem_ctx, &pol);
+	rpccli_lsa_Close(pipe_hnd, mem_ctx, &pol);
 	return result;
 }
 
@@ -81,7 +81,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *pipe_hnd,
 	if ( NT_STATUS_IS_OK(result) )
 		sid_copy( sid, &sids[0] );
 
-	rpccli_lsa_close(pipe_hnd, mem_ctx, &pol);
+	rpccli_lsa_Close(pipe_hnd, mem_ctx, &pol);
 	return result;
 }
 
@@ -391,7 +391,7 @@ static NTSTATUS rpc_rights_list_internal(const DOM_SID *domain_sid,
 	result = enum_privileges_for_user(pipe_hnd, mem_ctx, &pol, &sid );
 
 done:
-	rpccli_lsa_close(pipe_hnd, mem_ctx, &pol);
+	rpccli_lsa_Close(pipe_hnd, mem_ctx, &pol);
 
 	return result;
 }
@@ -442,7 +442,7 @@ static NTSTATUS rpc_rights_grant_internal(const DOM_SID *domain_sid,
 			argv[0], nt_errstr(result));
 	}
 		
- 	rpccli_lsa_close(pipe_hnd, mem_ctx, &dom_pol);
+ 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &dom_pol);
 	
 	return result;
 }
@@ -493,7 +493,7 @@ done:
 			argv[0], nt_errstr(result));
 	}
 	
-	rpccli_lsa_close(pipe_hnd, mem_ctx, &dom_pol);
+	rpccli_lsa_Close(pipe_hnd, mem_ctx, &dom_pol);
 
 	return result;
 }	

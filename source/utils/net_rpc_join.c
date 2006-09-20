@@ -193,7 +193,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 						5, &domain, &domain_sid),
 		      "error querying info policy");
 
-	rpccli_lsa_close(pipe_hnd, mem_ctx, &lsa_pol);
+	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 
 	/* Bail out if domain didn't get set. */

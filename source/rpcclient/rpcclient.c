@@ -168,7 +168,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 	got_domain_sid = True;
 	sid_copy( &domain_sid, dom_sid );
 
-	rpccli_lsa_close(lsapipe, mem_ctx, &pol);
+	rpccli_lsa_Close(lsapipe, mem_ctx, &pol);
 	cli_rpc_pipe_close(lsapipe);
 	talloc_destroy(mem_ctx);
 
