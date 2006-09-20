@@ -246,17 +246,17 @@ struct WKSSVC_NETRWKSTAUSERSETINFO {
 struct wkssvc_NetWkstaTransportEnum {
 	struct {
 		const char *server_name;/* [unique,charset(UTF16)] */
-		uint32_t *level;/* [unique] */
+		uint32_t *level;/* [ref] */
 		union wkssvc_NetWkstaTransportCtr *ctr;/* [ref,switch_is(level)] */
 		uint32_t max_buffer;
-		uint32_t *resume_handle;/* [unique] */
+		uint32_t *resume_handle;/* [ref] */
 	} in;
 
 	struct {
-		uint32_t *level;/* [unique] */
+		uint32_t *level;/* [ref] */
 		union wkssvc_NetWkstaTransportCtr *ctr;/* [ref,switch_is(level)] */
 		uint32_t *totalentries;/* [unique] */
-		uint32_t *resume_handle;/* [unique] */
+		uint32_t *resume_handle;/* [ref] */
 		WERROR result;
 	} out;
 
