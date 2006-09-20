@@ -53,10 +53,20 @@
 		[string,charset(UTF16)] uint16 *path;
 	} dfs_Info1;
 
+	/* first 4 bits unverified yet */
+	typedef [public,bitmap32bit] bitmap {
+		DFS_VOLUME_STATE_OK 		= 0x1,
+		DFS_VOLUME_STATE_INCONSISTENT 	= 0x2,
+		DFS_VOLUME_STATE_OFFLINE 	= 0x4,
+		DFS_VOLUME_STATE_ONLINE		= 0x8,
+		DFS_VOLUME_STATE_STANDALONE	= DFS_VOLUME_FLAVOR_STANDALONE,
+		DFS_VOLUME_STATE_AD_BLOB	= DFS_VOLUME_FLAVOR_AD_BLOB
+	} dfs_VolumeState;
+
 	typedef struct {
 		[string,charset(UTF16)] uint16 *path;
 		[string,charset(UTF16)] uint16 *comment;
-		uint32 state;
+		dfs_VolumeState state;
 		uint32 num_stores;
 	} dfs_Info2;
 
@@ -78,7 +88,7 @@
 	typedef struct {
 		[string,charset(UTF16)] uint16 *path;
 		[string,charset(UTF16)] uint16 *comment;
-		uint32 state;
+		dfs_VolumeState state;
 		uint32 num_stores;
 		[size_is(num_stores)] dfs_StorageInfo *stores;
 	} dfs_Info3;
@@ -86,7 +96,7 @@
 	typedef struct {
 		[string,charset(UTF16)] uint16 *path;
 		[string,charset(UTF16)] uint16 *comment;
-		uint32 state;
+		dfs_VolumeState state;
 		uint32 timeout;
 		GUID   guid;
 		uint32 num_stores;
@@ -105,7 +115,7 @@
 	typedef struct {
 		[string,charset(UTF16)] uint16 *path;
 		[string,charset(UTF16)] uint16 *comment;
-		uint32 state;
+		dfs_VolumeState state;
 		uint32 timeout;
 		GUID   guid;
 		dfs_PropertyFlags flags;
@@ -136,7 +146,7 @@
 	typedef struct {
 		[string,charset(UTF16)] uint16 *entry_path;
 		[string,charset(UTF16)] uint16 *comment;
-		uint32 state;
+		dfs_VolumeState state;
 		uint32 timeout;
 		GUID   guid;
 		dfs_PropertyFlags flags;
@@ -171,7 +181,7 @@
 
 	typedef struct {
 		[string,charset(UTF16)] uint16 *comment;
-		uint32 state;
+		dfs_VolumeState state;
 		uint32 timeout;
 		uint32 property_flag_mask;
 		uint32 property_flags;
