@@ -1373,18 +1373,14 @@ static NTSTATUS cmd_samr_get_dispenum_index(struct rpc_pipe_client *cli,
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint16 info_level = 1;
 	uint32 idx;
-	const char *name;
 
-	if (argc > 6) {
+	if (argc < 2 || argc > 3) {
 		printf("Usage: %s mame [info level]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc >= 2)
-                name = argv[1];
-
 	if (argc >= 3)
-                sscanf(argv[2], "%hd", &info_level);
+		sscanf(argv[2], "%hd", &info_level);
         
 
 	/* Get sam policy handle */
@@ -1407,7 +1403,7 @@ static NTSTATUS cmd_samr_get_dispenum_index(struct rpc_pipe_client *cli,
 	/* Query display info index */
 
 	result = rpccli_samr_get_dispenum_index(cli, mem_ctx, &domain_pol,
-						info_level, name, &idx);
+						info_level, argv[1], &idx);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	};
