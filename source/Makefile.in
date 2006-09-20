@@ -211,7 +211,7 @@ LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o \
 		 librpc/gen_ndr/ndr_dfs.o librpc/gen_ndr/ndr_echo.o \
 		 librpc/gen_ndr/ndr_winreg.o librpc/gen_ndr/ndr_initshutdown.o \
-		 librpc/gen_ndr/ndr_eventlog.o
+		 librpc/gen_ndr/ndr_eventlog.o librpc/gen_ndr/ndr_wkssvc.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -292,7 +292,6 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o \
-	       rpc_client/cli_wkssvc.o \
 	       rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
 	       rpc_client/cli_ds.o \
@@ -327,7 +326,7 @@ RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
 RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
 
-RPC_WKS_OBJ =  rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
+RPC_WKS_OBJ =  librpc/gen_ndr/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 
 RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl.o rpc_server/srv_svcctl_nt.o \
                   services/svc_spoolss.o services/svc_rcinit.o services/services_db.o \
@@ -356,10 +355,8 @@ RPC_PARSE_OBJ1 = $(RPC_PARSE_OBJ0) rpc_parse/parse_sec.o
 RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
                 rpc_parse/parse_reg.o rpc_parse/parse_rpc.o \
                 rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
-                rpc_parse/parse_wks.o rpc_parse/parse_ds.o \
-		rpc_parse/parse_spoolss.o \
-		rpc_parse/parse_shutdown.o \
-		rpc_parse/parse_svcctl.o \
+                rpc_parse/parse_ds.o rpc_parse/parse_spoolss.o \
+		rpc_parse/parse_shutdown.o rpc_parse/parse_svcctl.o \
 		rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o \
                 rpc_parse/parse_ntsvcs.o $(REGOBJS_OBJ) 
 

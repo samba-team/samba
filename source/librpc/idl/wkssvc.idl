@@ -217,7 +217,7 @@
 	WERROR wkssvc_NetWkstaTransportEnum (
 		[in]         [string,charset(UTF16)] uint16 *server_name,
 		[in,out,ref] uint32 *level,
-		[in,out,switch_is(level),ref] wkssvc_NetWkstaTransportCtr *ctr,
+		[in,out,switch_is(*level),ref] wkssvc_NetWkstaTransportCtr *ctr,
 		[in]         uint32 max_buffer,
 		[out]        uint32 *totalentries,
 		[in,out,ref] uint32 *resume_handle
