@@ -131,57 +131,6 @@ WERROR rpccli_reg_shutdown(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return out.status;
 }
 
-/*******************************************************************
-*******************************************************************/
-
-WERROR rpccli_reg_abort_shutdown(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
-{
-	REG_Q_ABORT_SHUTDOWN in;
-	REG_R_ABORT_SHUTDOWN out;
-	prs_struct qbuf, rbuf;
-
-	ZERO_STRUCT (in);
-	ZERO_STRUCT (out);
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_ABORT_SHUTDOWN, 
-	            in, out, 
-	            qbuf, rbuf,
-	            reg_io_q_abort_shutdown,
-	            reg_io_r_abort_shutdown, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;	
-}
-
-
-/****************************************************************************
-do a REG Unknown 0xB command.  sent after a create key or create value.
-this might be some sort of "sync" or "refresh" command, sent after
-modification of the registry...
-****************************************************************************/
-
-WERROR rpccli_reg_flush_key(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                           POLICY_HND *hnd)
-{
-	REG_Q_FLUSH_KEY in;
-	REG_R_FLUSH_KEY out;
-	prs_struct qbuf, rbuf;
-
-	ZERO_STRUCT (in);
-	ZERO_STRUCT (out);
-	
-	init_reg_q_flush_key(&in, hnd);
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_FLUSH_KEY, 
-	            in, out, 
-	            qbuf, rbuf,
-	            reg_io_q_flush_key,
-	            reg_io_r_flush_key, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;
-}
-
 /****************************************************************************
 do a REG Query Key
 ****************************************************************************/

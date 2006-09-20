@@ -393,7 +393,7 @@ WERROR cac_delete_subkeys_recursive(struct rpc_pipe_client *pipe_hnd, TALLOC_CTX
          break;
 
       /*flush the key just to be safe*/
-      rpccli_reg_flush_key(pipe_hnd, mem_ctx, key);
+      rpccli_winreg_FlushKey(pipe_hnd, mem_ctx, key);
       
       /*close the key that we opened*/
       rpccli_reg_close(pipe_hnd, mem_ctx, &subkey);
@@ -778,8 +778,7 @@ int cac_RegSetValue(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegSetValu
       return CAC_FAILURE;
 
    /*flush*/
-   err = rpccli_reg_flush_key(pipe_hnd, mem_ctx, op->in.key);
-   hnd->status = werror_to_ntstatus(err);
+   hnd->status = rpccli_winreg_FlushKey(pipe_hnd, mem_ctx, op->in.key);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
