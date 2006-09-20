@@ -107,11 +107,11 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 
 	SIVAL(param, 0, fnum);
 
-	if (sd->off_dacl)
+	if (sd->dacl)
 		sec_info |= DACL_SECURITY_INFORMATION;
-	if (sd->off_owner_sid)
+	if (sd->owner_sid)
 		sec_info |= OWNER_SECURITY_INFORMATION;
-	if (sd->off_grp_sid)
+	if (sd->group_sid)
 		sec_info |= GROUP_SECURITY_INFORMATION;
 	SSVAL(param, 4, sec_info);
 

@@ -834,7 +834,7 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 
 	/* Print results */
 
-	display_sec_desc(sdb->sec);
+	display_sec_desc(sdb->sd);
 
 	rpccli_lsa_close(cli, mem_ctx, &pol);
  done:
