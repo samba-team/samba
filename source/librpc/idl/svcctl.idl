@@ -108,7 +108,7 @@
 
 	WERROR svcctl_LockServiceDatabase(
 							 [in,ref] policy_handle *handle,
-							 [out] policy_handle lock
+							 [out,ref] policy_handle *lock
 							);
 
 	/*****************/
@@ -155,7 +155,7 @@
 									  [in] uint32 error,
 									  [in] [string,charset(UTF16)] uint16 *binary_path,
 									  [in] [string,charset(UTF16)] uint16 *load_order_group,
-									  [out] uint32 tag_id,
+									  [out,ref] uint32 *tag_id,
 									  [in] [string,charset(UTF16)] uint16 *dependencies,
 									  [in] [string,charset(UTF16)] uint16 *service_start_name,
 									  [in] [string,charset(UTF16)] uint16 *password,
@@ -186,8 +186,8 @@
 										[in] uint32 state,
 										[out] ENUM_SERVICE_STATUS *status,
 										[in] uint32 buf_size,
-										[out] uint32 bytes_needed,
-										[out] uint32 services_returned);
+										[out,ref] uint32 *bytes_needed,
+										[out,ref] uint32 *services_returned);
 
 	/*****************/
 	/* Function 0x0e */
@@ -197,8 +197,8 @@
 							[in] uint32 state,
 							[in] uint32 buf_size,
 							[out,size_is(buf_size)] uint8 service[*],
-							[out] uint32 bytes_needed,
-							[out] uint32 services_returned,
+							[out,ref] uint32 *bytes_needed,
+							[out,ref] uint32 *services_returned,
 							[in,out] uint32 *resume_handle
 						   );
 	/*****************/
@@ -221,7 +221,7 @@
 	WERROR svcctl_QueryServiceConfigW([in,ref] policy_handle *handle,
 									 [out] uint8 query[buf_size], /*QUERY_SERVICE_CONFIG */
 									 [in] uint32 buf_size,
-									 [out] uint32 bytes_needed
+									 [out,ref] uint32 *bytes_needed
 									 );
 
 	/*****************/
@@ -244,13 +244,13 @@
 	/* Function 0x14 */
 	WERROR svcctl_GetServiceDisplayNameW([in,ref] policy_handle *handle,
 										[in] [string,charset(UTF16)] uint16 *service_name,
-										[out] [string,charset(UTF16)] uint16 *display_name,
+										[out,ref] [string,charset(UTF16)] uint16 **display_name,
 										[in,out] uint32 *display_name_length); 
 	/*****************/
 	/* Function 0x15 */
 	WERROR svcctl_GetServiceKeyNameW([in,ref] policy_handle *handle,
 										[in] [string,charset(UTF16)] uint16 *service_name,
-										[out] [string,charset(UTF16)] uint16 *key_name,
+										[out,ref] [string,charset(UTF16)] uint16 **key_name,
 										[in,out] uint32 *display_name_length);									
 	/*****************/
 	/* Function 0x16 */
@@ -268,7 +268,7 @@
 									  [in] uint32 error,
 									  [in] [string,charset(UTF16)] uint16 *binary_path,
 									  [in] [string,charset(UTF16)] uint16 *load_order_group,
-									  [out] uint32 tag_id,
+									  [out,ref] uint32 *tag_id,
 									  [in] [string,charset(UTF16)] uint16 *dependencies,
 									  [in] [string,charset(UTF16)] uint16 *service_start_name,
 									  [in] [string,charset(UTF16)] uint16 *password,
@@ -296,8 +296,8 @@
 										[in] uint32 state,
 										[out] ENUM_SERVICE_STATUS *status,
 										[in] uint32 buf_size,
-										[out] uint32 bytes_needed,
-										[out] uint32 services_returned);
+										[out,ref] uint32 *bytes_needed,
+										[out,ref] uint32 *services_returned);
 
 	/*****************/
 	/* Function 0x1a */
@@ -307,8 +307,8 @@
 							[in] uint32 state,
 							[in] uint32 buf_size,
 							[out,size_is(buf_size)] uint8 service[*],
-							[out] uint32 bytes_needed,
-							[out] uint32 services_returned,
+							[out,ref] uint32 *bytes_needed,
+							[out,ref] uint32 *services_returned,
 							[in,out] uint32 *resume_handle
 						   );
 	
@@ -331,7 +331,7 @@
 	WERROR svcctl_QueryServiceConfigA([in,ref] policy_handle *handle,
 									 [out] uint8 query[buf_size], /*QUERYU_SERVICE_CONFIG */
 									 [in] uint32 buf_size,
-									 [out] uint32 bytes_needed
+									 [out,ref] uint32 *bytes_needed
 									 );
 
 	/*****************/
@@ -354,13 +354,13 @@
 	/* Function 0x20 */
 	WERROR svcctl_GetServiceDisplayNameA([in,ref] policy_handle *handle,
 										[in] [string,charset(UTF16)] uint16 *service_name,
-										[out] [string,charset(UTF16)] uint16 *display_name,
+										[out,ref] [string,charset(UTF16)] uint16 **display_name,
 										[in,out] uint32 *display_name_length); 
 	/*****************/
 	/* Function 0x21 */
 	WERROR svcctl_GetServiceKeyNameA([in,ref] policy_handle *handle,
 										[in] [string,charset(UTF16)] uint16 *service_name,
-										[out] [string,charset(UTF16)] uint16 *key_name,
+										[out,ref] [string,charset(UTF16)] uint16 **key_name,
 										[in,out] uint32 *display_name_length);									
 
 	/*****************/
@@ -391,7 +391,7 @@
 									  [in] uint32 info_level,
 									  [out] uint8 buffer[buf_size],
 									  [in] uint32 buf_size,
-									  [out] uint32 bytes_needed);
+									  [out,ref] uint32 *bytes_needed);
 
 	/*****************/
 	/* Function 0x27 */
@@ -400,7 +400,7 @@
 									  [in] uint32 info_level,
 									  [out] uint8 buffer[buf_size],
 									  [in] uint32 buf_size,
-									  [out] uint32 bytes_needed);
+									  [out,ref] uint32 *bytes_needed);
 
 	/*****************/
 	/* Function 0x28 */
@@ -409,7 +409,7 @@
 									   [in] uint32 info_level,
 									   [out] uint8 buffer[buf_size],
 									   [in] uint32 buf_size,
-									   [out] uint32 bytes_needed);
+									   [out,ref] uint32 *bytes_needed);
 
 	/*****************/
 	/* Function 0x29 */
@@ -420,10 +420,10 @@
 								 [in] uint32 state,
 								 [out] uint8 services[buf_size],
 								 [in] uint32 buf_size,
-								 [out] uint32 bytes_needed,
-								 [out] uint32 service_returned,
+								 [out,ref] uint32 *bytes_needed,
+								 [out,ref] uint32 *service_returned,
 								 [in,out] uint32 *resume_handle, 
-								 [out] [string,charset(UTF16)] uint16 *group_name);
+								 [out,ref] [string,charset(UTF16)] uint16 **group_name);
 
 	/*****************/
 	/* Function 0x2a */
@@ -434,10 +434,10 @@
 								 [in] uint32 state,
 								 [out] uint8 services[buf_size],
 								 [in] uint32 buf_size,
-								 [out] uint32 bytes_needed,
-								 [out] uint32 service_returned,
+								 [out,ref] uint32 *bytes_needed,
+								 [out,ref] uint32 *service_returned,
 								 [in,out] uint32 *resume_handle, 
-								 [out] [string,charset(UTF16)] uint16 *group_name);
+								 [out,ref] [string,charset(UTF16)] uint16 **group_name);
 
 	/*****************/
 	/* Function 0x2b */
