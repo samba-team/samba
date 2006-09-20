@@ -7,7 +7,6 @@
  */
 
 var sys;
-var ldb = ldb_init();
 var options = GetOptions(ARGV, "POPT_AUTOHELP", "POPT_COMMON_SAMBA");
 if (options == undefined) {
 	println("Failed to parse options");
@@ -1107,6 +1106,8 @@ function make_dn(rdn)
 {
 	return rdn + ",sambaDomainName=TESTS," + this.BASEDN;
 }
+
+var ldb = ldb_init();
 
 sys = sys_init();
 var ldbfile = prefix + "/" + "test.ldb";

@@ -1,5 +1,13 @@
 #!/bin/sh
 exec smbscript "$0" ${1+"$@"}
+
+var options = GetOptions(ARGV, 
+		"POPT_COMMON_SAMBA");
+if (options == undefined) {
+   println("Failed to parse options");
+   return -1;
+}
+
 libinclude("base.js");
 
 var obj = new Object();
