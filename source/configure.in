@@ -3817,6 +3817,7 @@ LIBS="$ac_save_LIBS"
 fi
 
 AC_CHECK_LIB_EXT(nscd, NSCD_LIBS, nscd_flush_cache)
+PASSDB_LIBS="$PASSDB_LIBS $NSCD_LIBS"
 
 #################################################
 # check for automount support

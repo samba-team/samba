@@ -3014,24 +3014,3 @@ int this_is_smp(void)
 	return 0;
 #endif
 }
-
-static void smb_nscd_flush_cache(const char *service)
-{
-#ifdef HAVE_NSCD_FLUSH_CACHE
-	if (!nscd_flush_cache(service)) {
-		DEBUG(10,("failed to flush nscd cache for '%s' service: %s. "
-			  "Is nscd running?\n",
-			  service, strerror(errno)));
-	}
-#endif
-}
-
-void smb_nscd_flush_user_cache(void)
-{
-	return smb_nscd_flush_cache("passwd");
-}
-
-void smb_nscd_flush_group_cache(void)
-{
-	return smb_nscd_flush_cache("group");
-}
