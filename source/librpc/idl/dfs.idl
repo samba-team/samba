@@ -113,8 +113,17 @@
 		uint32 num_stores;
 	} dfs_Info5;
 
+	typedef [v1_enum] enum {
+		DFS_INVALID_PRIORITY_CLASS	 	= -1,
+		DFS_SITE_COST_NORMAL_PRIORITY_CLASS	= 0,
+		DFS_GLOBAL_HIGH_PRIORITY_CLASS		= 1,
+		DFS_SITE_COST_HIGH_PRIORITY_CLASS	= 2,
+		DFS_SITE_COST_LOW_PRIORITY_CLASS	= 3,
+		DFS_GLOBAL_LOW_PRIORITY_CLASS		= 4
+	} dfs_Target_PriorityClass;
+
 	typedef struct {
-		uint16 target_priority_class;
+		dfs_Target_PriorityClass target_priority_class;
 		uint16 target_priority_rank;
 		uint16 reserved;
 	} dfs_Target_Priority;
