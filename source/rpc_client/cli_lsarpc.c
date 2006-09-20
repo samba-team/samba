@@ -127,14 +127,6 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/** Close a LSA policy handle */
-
-NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-			  POLICY_HND *pol)
-{
-	return rpccli_lsa_Close( cli, mem_ctx, pol);
-}
-
 /** Lookup a list of sids */
 
 NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,

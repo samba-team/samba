@@ -43,7 +43,7 @@ static NTSTATUS cmd_testme(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	status = rpccli_lsa_close(lsa_pipe, mem_ctx, &pol);
+	status = rpccli_lsa_Close(lsa_pipe, mem_ctx, &pol);
 
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
