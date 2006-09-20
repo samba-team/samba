@@ -569,7 +569,7 @@ HandleOP(Verify)
 static int
 HandleOP(GetVersionAndCapabilities)
 {
-    int32_t cap = 0x10; /* has moniker */
+    int32_t cap = ISSERVER | HAS_MONIKER;
     char name[256] = "unknown", *str;
 
     if (targetname)
@@ -751,15 +751,19 @@ find_op(int32_t op)
 }
 
 static struct client *
-create_client(int fd)
+create_client(int fd, int port, const char *moniker)
 {
     struct client *c;
-    char hostname[MAXHOSTNAMELEN];
 
     c = ecalloc(1, sizeof(*c));
 
-    gethostname(hostname, sizeof(hostname));
-    asprintf(&c->moniker, "gssmask: %s", hostname);
+    if (moniker) {
+	c->moniker = estrdup(moniker);
+    } else {
+	char hostname[MAXHOSTNAMELEN];
+	gethostname(hostname, sizeof(hostname));
+	asprintf(&c->moniker, "gssmask: %s:%d", hostname, port);
+    }
 
     {
 	c->salen = sizeof(c->sa);
@@ -819,6 +823,7 @@ static char *port_str;
 static int version_flag;
 static int help_flag;
 static char *logfile_str;
+static char *moniker_str;
 
 static int port = 4711;
 
@@ -829,6 +834,8 @@ struct getargs args[] = {
       "number-of-service" },
     { "logfile", 0,  arg_string,	&logfile_str,	"logfile",
       "number-of-service" },
+    { "moniker", 0,  arg_string,	&moniker_str,	"nickname",
+      "name" },
     { "version", 0,  arg_flag,		&version_flag,	"Print version",
       NULL },
     { "help",	 0,  arg_flag,		&help_flag,	NULL,
@@ -892,7 +899,7 @@ main(int argc, char **argv)
     {
 	struct client *c; 
 
-	c = create_client(0);
+	c = create_client(0, port, moniker_str);
 	/* close(0); */
 
 	handleServer(c);
