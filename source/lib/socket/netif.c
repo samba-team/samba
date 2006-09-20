@@ -31,7 +31,7 @@
 */
 
 #ifndef AUTOCONF_TEST
-#include "config.h"
+#include "includes.h"
 #endif
 
 #include <unistd.h>
@@ -80,7 +80,6 @@
 #include <net/if.h>
 #endif
 
-#define BOOL int
 #include "netif.h"
 
 #if HAVE_IFACE_IFCONF
