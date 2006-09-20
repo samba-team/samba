@@ -49,6 +49,7 @@ keytab="FILE:${keytabfile}"
 gssmask="../../appl/gssmask/gssmask"
 gssmaskn1="${gssmask} -p 8889 --spn=host/n1.example.org@${R} --logfile=n1.log"
 gssmaskn2="${gssmask} -p 8890 --spn=host/n2.example.org@${R} --logfile=n2.log"
+gssmaskn3="${gssmask} -p 8891 --spn=host/n3.example.org@${R} --logfile=n3.log"
 gssmaestro="../../appl/gssmask/gssmaestro"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
@@ -68,8 +69,10 @@ ${kadmin} \
 
 ${kadmin} add -p p1 --use-defaults host/n1.example.org@${R} || exit 1
 ${kadmin} add -p p2 --use-defaults host/n2.example.org@${R} || exit 1
+${kadmin} add -p p3 --use-defaults host/n3.example.org@${R} || exit 1
 ${kadmin} ext -k ${keytab} host/n1.example.org@${R} || exit 1
 ${kadmin} ext -k ${keytab} host/n2.example.org@${R} || exit 1
+${kadmin} ext -k ${keytab} host/n3.example.org@${R} || exit 1
 
 ${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
 
@@ -89,22 +92,27 @@ fi
 exitcode=0
 
 echo "Starting client 1"
-${gssmaskn1} &
+${gssmaskn1} --moniker=n1 &
 n1pid=$!
 
 echo "Starting client 2"
-${gssmaskn2} &
+${gssmaskn2} --moniker=n2 &
 n2pid=$!
+
+echo "Starting client 3"
+${gssmaskn3} --moniker=n3 &
+n3pid=$!
 
 sleep 2
 
 ${gssmaestro} \
     --slaves=localhost:8889 \
     --slaves=localhost:8890 \
+    --slaves=localhost:8891 \
     --principals=user1@${R}:u1
 
-echo "killing kdc and clients (${kdcpid}, ${n1pid}, ${n2pid})"
-kill ${kdcpid} ${n1pid} ${n2pid} 2> /dev/null
+echo "killing kdc and clients (${kdcpid}, ${n1pid}, ${n2pid}, ${n3pid})"
+kill ${kdcpid} ${n1pid} ${n2pid} ${n3pid} 2> /dev/null
 
 exit $exitcode
 
