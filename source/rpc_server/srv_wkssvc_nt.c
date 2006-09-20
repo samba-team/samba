@@ -65,18 +65,18 @@ WERROR _wkssvc_NetWkstaGetInfo( pipes_struct *p, const char *server_name, uint32
 	/* We only support info level 100 currently */
 	
 	if ( level != 100 ) {
-		return NT_STATUS_INVALID_LEVEL;
+		return WERR_UNKNOWN_LEVEL;
 	}
 
 	if ( (wks100 = TALLOC_ZERO_P(p->mem_ctx, struct wkssvc_NetWkstaInfo100)) == NULL ) {
-		return NT_STATUS_NO_MEMORY;
+		return WERR_NOMEM;
 	}
 
 	create_wks_info_100( wks100 );
 	
 	info->info100 = wks100;
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
 /********************************************************************
