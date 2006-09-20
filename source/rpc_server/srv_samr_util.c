@@ -292,7 +292,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		if (from->passmustchange == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
 			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);		
 		} else {
-			pdb_set_pass_last_set_time(to, time(0), PDB_CHANGED);
+			pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
 		}
 	}
 
@@ -521,7 +521,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		if (from->passmustchange == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
 			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);		
 		} else {
-			pdb_set_pass_last_set_time(to, time(0), PDB_CHANGED);
+			pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
 		}
 	}
 
