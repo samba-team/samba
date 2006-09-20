@@ -56,11 +56,11 @@
 	/* Function: 0x00 */
 	WERROR srvsvc_NetCharDevEnum(
 		[in]   [string,charset(UTF16)] uint16 *server_unc, 
-		[in,out]   uint32 level,
-		[in,out,switch_is(level)]   srvsvc_NetCharDevCtr ctr,
+		[in,out,ref]   uint32 *level,
+		[in,out,ref,switch_is(*level)]   srvsvc_NetCharDevCtr *ctr,
 		[in]   uint32 max_buffer,
-		[out]   uint32 totalentries,
-		[in,out]   uint32 *resume_handle
+		[out,ref]   uint32 *totalentries,
+		[in,out,unique]   uint32 *resume_handle
 		);
 
 	/******************/
@@ -69,7 +69,7 @@
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 device_name[],
 		[in]   uint32 level,
-		[out,switch_is(level)]   srvsvc_NetCharDevInfo info
+		[out,ref,switch_is(level)]   srvsvc_NetCharDevInfo *info
 		);
 
 	/******************/
@@ -122,10 +122,10 @@
 	WERROR srvsvc_NetCharDevQEnum(
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 *user,
-		[in,out]   uint32 level,
-		[in,out,switch_is(level)]   srvsvc_NetCharDevQCtr ctr,
+		[in,out,ref]   uint32 *level,
+		[in,out,switch_is(*level),ref]   srvsvc_NetCharDevQCtr *ctr,
 		[in]   uint32 max_buffer,
-		[out]   uint32 totalentries,
+		[out,ref]   uint32 *totalentries,
 		[in,out]   uint32 *resume_handle
 		);
 
@@ -136,7 +136,7 @@
 		[in]   [string,charset(UTF16)] uint16 queue_name[],
 		[in]   [string,charset(UTF16)] uint16 user[],
 		[in]   uint32 level,
-		[out,switch_is(level)]   srvsvc_NetCharDevQInfo info
+		[out,switch_is(level),ref]   srvsvc_NetCharDevQInfo *info
 		);
 
 	/******************/
@@ -202,11 +202,11 @@
 	WERROR srvsvc_NetConnEnum(
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 *path,
-		[in,out]   uint32 level,
-		[in,out,switch_is(level)]   srvsvc_NetConnCtr ctr,
+		[in,out,ref]   uint32 *level,
+		[in,out,switch_is(*level),ref]   srvsvc_NetConnCtr *ctr,
 		[in]   uint32 max_buffer,
-		[out]   uint32 totalentries,
-		[in,out]   uint32 *resume_handle
+		[out,ref]   uint32 *totalentries,
+		[in,out,unique]   uint32 *resume_handle
 		);
 
 /**************************/
@@ -252,11 +252,11 @@
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 *path,
 		[in]   [string,charset(UTF16)] uint16 *user,
-		[in,out]   uint32 level,
-		[in,out,switch_is(level)]   srvsvc_NetFileCtr ctr,
+		[in,out,ref]   uint32 *level,
+		[in,out,switch_is(*level),ref]   srvsvc_NetFileCtr *ctr,
 		[in]   uint32 max_buffer,
-		[out]   uint32 totalentries,
-		[in,out]   uint32 *resume_handle
+		[out,ref]   uint32 *totalentries,
+		[in,out,unique]   uint32 *resume_handle
 		);
 
 	/******************/
@@ -265,7 +265,7 @@
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 fid,
 		[in]   uint32 level,
-		[out,switch_is(level)]   srvsvc_NetFileInfo info
+		[out,switch_is(level),ref]   srvsvc_NetFileInfo *info
 		);
 
 	/******************/
@@ -359,11 +359,11 @@
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 *client,
 		[in]   [string,charset(UTF16)] uint16 *user,
-		[in,out]   uint32 level,
-		[in,out,switch_is(level)]   srvsvc_NetSessCtr ctr,
+		[in,out,ref]   uint32 *level,
+		[in,out,switch_is(*level),ref]   srvsvc_NetSessCtr *ctr,
 		[in]   uint32 max_buffer,
-		[out]   uint32 totalentries,
-		[in,out]   uint32 *resume_handle
+		[out,ref]   uint32 *totalentries,
+		[in,out,unique]   uint32 *resume_handle
 		);
 
 	/******************/
@@ -473,8 +473,16 @@
 		[size_is(count)] srvsvc_NetShareInfo1004 *array;
 	} srvsvc_NetShareCtr1004;
 
+	typedef bitmap {
+		SHARE_1005_IN_DFS               = 0x00000001,
+		SHARE_1005_DFS_ROOT             = 0x00000002
+	} NetShareInfo1005Flags;
+	
+	const uint32 SHARE_1005_CSC_POLICY_MASK = 0x00000030;
+	const uint32 SHARE_1005_CSC_POLICY_SHIFT = 4;
+
 	typedef struct {
-		uint32 dfs_flags;
+		NetShareInfo1005Flags dfs_flags;
 	} srvsvc_NetShareInfo1005;
 
 	typedef struct {
@@ -547,10 +555,10 @@
 	/* Function: 0x0f */
 	WERROR srvsvc_NetShareEnumAll (
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in,out]   uint32 level,
-		[in,out,switch_is(level)] srvsvc_NetShareCtr ctr,
+		[in,out,ref]   uint32 *level,
+		[in,out,ref,switch_is(*level)] srvsvc_NetShareCtr *ctr,
 		[in]   uint32 max_buffer,
-		[out]  uint32 totalentries,
+		[out,ref]  uint32 *totalentries,
 		[in,out]   uint32 *resume_handle
 		);
 
@@ -560,7 +568,7 @@
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 share_name[],
 		[in]   uint32 level,
-		[out,switch_is(level)] srvsvc_NetShareInfo info
+		[out,ref,switch_is(level)] srvsvc_NetShareInfo *info
 		);
 
 	/******************/
@@ -594,7 +602,7 @@
 	WERROR srvsvc_NetShareCheck(
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 device_name[],
-		[out]  srvsvc_ShareType type
+		[out,ref]  srvsvc_ShareType *type
 		);
 
 /**************************/
@@ -1104,7 +1112,7 @@
 	WERROR srvsvc_NetSrvGetInfo(
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 level,
-		[out,switch_is(level)] srvsvc_NetSrvInfo info
+		[out,ref,switch_is(level)] srvsvc_NetSrvInfo *info
 		);
 
 	/******************/
@@ -1133,9 +1141,9 @@
 	WERROR srvsvc_NetDiskEnum(
 		[in]      [string,charset(UTF16)] uint16 *server_unc,
 		[in]      uint32 level,
-		[in,out]  srvsvc_NetDiskInfo info,
+		[in,out,ref]  srvsvc_NetDiskInfo *info,
 		[in]      uint32 maxlen,
-		[out]     uint32 totalentries,
+		[out,ref]     uint32 *totalentries,
 		[in,out]  uint32 *resume_handle
 		);
 
@@ -1169,7 +1177,7 @@
 		[in]      [string,charset(UTF16)] uint16 *service,
 		[in]      uint32 level,
 		[in]      uint32 options,
-		[out]     srvsvc_Statistics stat
+		[out,ref]     srvsvc_Statistics *stat
 		);
 
 /**************************/
@@ -1254,11 +1262,11 @@
 	/* Function: 0x1a */
 	WERROR srvsvc_NetTransportEnum(
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in,out] uint32 level,
-		[in,out,switch_is(level)]   srvsvc_NetTransportCtr transports,
+		[in,out,ref] uint32 *level,
+		[in,out,ref,switch_is(*level)]   srvsvc_NetTransportCtr *transports,
 		[in]   uint32 max_buffer,
-		[out]   uint32 totalentries,
-		[in,out]   uint32 *resume_handle
+		[out,ref]   uint32 *totalentries,
+		[in,out,unique]   uint32 *resume_handle
 		);
 
 	/******************/
@@ -1315,7 +1323,7 @@
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 path[],
 		[in]   uint32 pathflags,
-		[out]   uint32 pathtype
+		[out,ref]   uint32 *pathtype
 		);
 
 	/******************/
@@ -1326,7 +1334,7 @@
 		[out]  [size_is(maxbuf)] uint8 can_path[],
 		[in]   uint32 maxbuf,
 		[in]   [string,charset(UTF16)] uint16 prefix[],
-		[in,out] uint32 pathtype,
+		[in,out,ref] uint32 *pathtype,
 		[in]    uint32 pathflags
 		);
 
@@ -1376,11 +1384,11 @@
 	   total entries ... */
 	WERROR srvsvc_NetShareEnum(
 		[in]       [string,charset(UTF16)] uint16 *server_unc,
-	 	[in,out]   uint32 level,
-		[in,out,switch_is(level)]   srvsvc_NetShareCtr ctr,
+	 	[in,out,ref]   uint32 *level,
+		[in,out,ref,switch_is(*level)]   srvsvc_NetShareCtr *ctr,
 		[in]       uint32 max_buffer,
-		[out]      uint32 totalentries,
-		[in,out]   uint32 *resume_handle
+		[out,ref]      uint32 *totalentries,
+		[in,out,unique]   uint32 *resume_handle
 		);
 
 	/******************/
