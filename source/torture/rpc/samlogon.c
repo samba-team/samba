@@ -1525,7 +1525,8 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 	old_user_password = user_password;
 
 	test_ChangePasswordUser3(torture_join_samr_pipe(user_ctx), mem_ctx,
-				 TEST_USER_NAME, 16 /* > 14 */, &user_password);
+				 TEST_USER_NAME, 16 /* > 14 */, &user_password, 
+				 NULL, 0, False);
 
 	status = dcerpc_parse_binding(mem_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
