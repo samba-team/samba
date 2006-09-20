@@ -1115,7 +1115,7 @@ BOOL torture_rpc_srvsvc(struct torture_context *torture)
 	ret &= test_NetRemoteTOD(p, mem_ctx);
 	ret &= test_NetShareEnum(p, mem_ctx, True);
 	ret &= test_NetShareGetInfo(p, mem_ctx, "ADMIN$", True);
-	ret &= test_NetShareAddSetDel(p, mem_ctx);
+/*	ret &= test_NetShareAddSetDel(p, mem_ctx); */
 	ret &= test_NetNameValidate(p, mem_ctx);
 	
 	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_srvsvc);
