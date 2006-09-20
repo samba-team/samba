@@ -159,8 +159,13 @@
 		[string,charset(UTF16)] uint16 *dom_root;
 	} dfs_Info200;
 
+        typedef enum {
+		DFS_VOLUME_FLAVOR_STANDALONE = 0x100,
+		DFS_VOLUME_FLAVOR_AD_BLOB = 0x200
+	} dfs_VolumeFlavor;
+
 	typedef struct {
-		uinr32 flavor;
+		dfs_VolumeFlavor flavor;
 		[string,charset(UTF16)] uint16 *dom_root;
 	} dfs_Info300;
 
