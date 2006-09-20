@@ -90,3 +90,5 @@ krb5_error_code store_string(krb5_storage *, const char *);
         if (store_string((_client)->sock, str) != 0)		\
 	    errx(1, "krb5_store_str " #str);			\
     } while(0)
+
+char *** permutate_all(struct getarg_strings *, size_t *);
