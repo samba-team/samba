@@ -51,7 +51,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	rpccli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	*sid = sids[0];
 
@@ -208,7 +208,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 
 	display_lsa_query_info(&dom, mem_ctx);
 
-	rpccli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
  done:
 	return result;
@@ -256,7 +256,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 		       sid_type_lookup(types[i]), types[i]);
 	}
 
-	rpccli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
  done:
 	return result;
@@ -324,7 +324,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 		       names[i] ? names[i] : "*unknown*", types[i]);
 	}
 
-	rpccli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
  done:
 	return result;
@@ -387,7 +387,7 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 		}
 	}
 
-	rpccli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
 	return result;
 }
@@ -441,7 +441,7 @@ static NTSTATUS cmd_lsa_enum_privilege(struct rpc_pipe_client *cli,
 		       privs_high[i], privs_low[i], privs_high[i], privs_low[i]);
 	}
 
-	rpccli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
 	return result;
 }
@@ -480,7 +480,7 @@ static NTSTATUS cmd_lsa_get_dispname(struct rpc_pipe_client *cli,
 	/* Print results */
 	printf("%s -> %s (language: 0x%x)\n", argv[1], description, lang_id_desc);
 
-	rpccli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
 	return result;
 }
@@ -534,7 +534,7 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 		printf("%s\n", sid_str);
 	}
 
-	rpccli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
 	return result;
 }
@@ -576,7 +576,7 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
 	printf("Account for SID %s successfully created\n\n", argv[1]);
 	result = NT_STATUS_OK;
 
-	rpccli_lsa_close(cli, mem_ctx, &dom_pol);
+	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
  done:
 	return result;
 }
@@ -632,7 +632,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 		printf("%u\t%u\t%u\n", set[i].luid.high, set[i].luid.low, set[i].attr);
 	}
 
-	rpccli_lsa_close(cli, mem_ctx, &dom_pol);
+	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
  done:
 	return result;
 }
@@ -680,7 +680,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 		printf("\t%s\n", rights[i]);
 	}
 
-	rpccli_lsa_close(cli, mem_ctx, &dom_pol);
+	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
  done:
 	return result;
 }
@@ -719,7 +719,7 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	rpccli_lsa_close(cli, mem_ctx, &dom_pol);
+	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
  done:
 	return result;
 }
@@ -758,7 +758,7 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	rpccli_lsa_close(cli, mem_ctx, &dom_pol);
+	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
 
  done:
 	return result;
@@ -796,7 +796,7 @@ static NTSTATUS cmd_lsa_lookup_priv_value(struct rpc_pipe_client *cli,
 
 	printf("%u:%u (0x%x:0x%x)\n", luid.high, luid.low, luid.high, luid.low);
 
-	rpccli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
 	return result;
 }
@@ -836,7 +836,7 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 
 	display_sec_desc(sdb->sd);
 
-	rpccli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
 	return result;
 }
@@ -944,7 +944,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 
  done:
 	if (&pol)
-		rpccli_lsa_close(cli, mem_ctx, &pol);
+		rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
 }
@@ -982,7 +982,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 
  done:
 	if (&pol)
-		rpccli_lsa_close(cli, mem_ctx, &pol);
+		rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
 }
@@ -1031,7 +1031,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 
  done:
 	if (&pol)
-		rpccli_lsa_close(cli, mem_ctx, &pol);
+		rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
 }

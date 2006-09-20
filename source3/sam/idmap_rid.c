@@ -326,7 +326,7 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	status = NT_STATUS_OK;
 
 out:
-	rpccli_lsa_close(pipe_hnd, mem_ctx, &pol);
+	rpccli_lsa_Close(pipe_hnd, mem_ctx, &pol);
 	cli_rpc_pipe_close(pipe_hnd);
 	talloc_destroy(mem_ctx);
 	cli_shutdown(cli);
