@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/cli_unixinfo.h"
 #include "librpc/gen_ndr/cli_dfs.h"
 #include "librpc/gen_ndr/cli_lsa.h"
+#include "librpc/gen_ndr/cli_winreg.h"
 
 /* macro to expand cookie-cutter code in cli_xxx() using rpc_api_pipe_req() */
 

@@ -114,58 +114,6 @@ BOOL reg_io_r_open_hive(const char *desc,  REG_R_OPEN_HIVE *r_u,
 }
 
 /*******************************************************************
- Inits a structure.
-********************************************************************/
-
-void init_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol)
-{
-	memcpy(&q_u->pol, pol, sizeof(q_u->pol));
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-BOOL reg_io_q_flush_key(const char *desc,  REG_Q_FLUSH_KEY *q_u, prs_struct *ps, int depth)
-{
-	if ( !q_u )
-		return False;
-
-	prs_debug(ps, depth, desc, "reg_io_q_flush_key");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-Unmarshalls a registry key flush response
-********************************************************************/
-
-BOOL reg_io_r_flush_key(const char *desc,  REG_R_FLUSH_KEY *r_u,
-                        prs_struct *ps, int depth)
-{
-	if ( !r_u )
-		return False;
-
-	prs_debug(ps, depth, desc, "reg_io_r_flush_key");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes SEC_DESC_BUF and SEC_DATA structures.
 ********************************************************************/
 
