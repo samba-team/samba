@@ -2680,8 +2680,7 @@ NTSTATUS ndr_push_wkssvc_NetWkstaTransportEnum(struct ndr_push *ndr, int flags, 
 		if (r->in.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.level));
 		if (r->in.ctr == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (r->in.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.ctr, *r->in.level));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.ctr, r->in.level));
 		NDR_CHECK(ndr_push_wkssvc_NetWkstaTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.ctr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_buffer));
 		if (r->in.resume_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2691,8 +2690,7 @@ NTSTATUS ndr_push_wkssvc_NetWkstaTransportEnum(struct ndr_push *ndr, int flags, 
 		if (r->out.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.level));
 		if (r->out.ctr == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (r->out.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.ctr, *r->out.level));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.ctr, r->out.level));
 		NDR_CHECK(ndr_push_wkssvc_NetWkstaTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.ctr));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.totalentries));
 		if (r->out.totalentries) {
@@ -2747,8 +2745,7 @@ NTSTATUS ndr_pull_wkssvc_NetWkstaTransportEnum(struct ndr_pull *ndr, int flags, 
 		}
 		_mem_save_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.ctr, LIBNDR_FLAG_REF_ALLOC);
-		if (r->in.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.ctr, *r->in.level));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.ctr, r->in.level));
 		NDR_CHECK(ndr_pull_wkssvc_NetWkstaTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.ctr));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.max_buffer));
@@ -2779,8 +2776,7 @@ NTSTATUS ndr_pull_wkssvc_NetWkstaTransportEnum(struct ndr_pull *ndr, int flags, 
 		}
 		_mem_save_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.ctr, LIBNDR_FLAG_REF_ALLOC);
-		if (r->out.level == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->out.ctr, *r->out.level));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->out.ctr, r->out.level));
 		NDR_CHECK(ndr_pull_wkssvc_NetWkstaTransportCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.ctr));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_totalentries));
@@ -2829,8 +2825,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportEnum(struct ndr_print *ndr, cons
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->in.ctr);
 		ndr->depth++;
-		if (r->in.level == NULL) return;
-		ndr_print_set_switch_value(ndr, r->in.ctr, *r->in.level);
+		ndr_print_set_switch_value(ndr, r->in.ctr, r->in.level);
 		ndr_print_wkssvc_NetWkstaTransportCtr(ndr, "ctr", r->in.ctr);
 		ndr->depth--;
 		ndr_print_uint32(ndr, "max_buffer", r->in.max_buffer);
@@ -2849,8 +2844,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportEnum(struct ndr_print *ndr, cons
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
-		if (r->out.level == NULL) return;
-		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level);
+		ndr_print_set_switch_value(ndr, r->out.ctr, r->out.level);
 		ndr_print_wkssvc_NetWkstaTransportCtr(ndr, "ctr", r->out.ctr);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "totalentries", r->out.totalentries);
