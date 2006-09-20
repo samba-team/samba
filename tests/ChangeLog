@@ -1,5 +1,9 @@
-2006-09-19  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-09-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-gssmask.in: Add a third client
+	
+2006-09-19 Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* gss/check-gssmask.in: test for gssmask + gssmaestro.
 
 	* gss/krb5.conf.in: Add krb5.conf for krb5.conf
