@@ -23,6 +23,11 @@
 
 #include "tdb.h"
 
+#ifndef _BOOL
+typedef int BOOL;
+#define _BOOL
+#endif
+
 /* single node of a list returned by tdb_search_keys */
 typedef struct keys_node 
 {
