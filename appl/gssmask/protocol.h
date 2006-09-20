@@ -188,13 +188,13 @@ enum gssMaggotOp {
     /*
      * return:
      *   int32: protocol version
-     *   int32: capability flags
-     *      ISSERVER		0x01
-     *      ISKDC		0x02
-     *      MS_KERBEROS		0x04
-     *      LOGSERVER		0x08
-     *      HAS_MONIKER		0x10
-     *   string: version string
+     *   int32: capability flags */
+#define      ISSERVER		0x01
+#define      ISKDC		0x02
+#define      MS_KERBEROS	0x04
+#define      LOGSERVER		0x08
+#define      HAS_MONIKER	0x10
+    /*   string: version string
      */
     eGetTargetName,
     /*
