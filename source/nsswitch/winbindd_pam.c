@@ -2098,7 +2098,14 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 		  (unsigned long)state->pid,
 		  state->request.data.chng_pswd_auth_crap.domain,
 		  state->request.data.chng_pswd_auth_crap.user));
-	
+
+	if (lp_winbind_offline_logon()) {
+		DEBUG(0,("Refusing password change as winbind offline logons are enabled. "));
+		DEBUGADD(0,("Changing passwords here would risk inconsistent logons\n"));
+		result = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
 	if (*state->request.data.chng_pswd_auth_crap.domain) {
 		fstrcpy(domain,state->request.data.chng_pswd_auth_crap.domain);
 	} else {
