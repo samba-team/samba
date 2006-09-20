@@ -1,5 +1,30 @@
-2006-09-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-09-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/gssmask/gssmask.c: Add wrap/unwrap ops
+
+	* appl/gssmask/protocol.h: Add eGetVersionAndCapabilities flags
+
+	* appl/gssmask/common.c: Add permutate_all (and support
+	functions).
+
+	* appl/gssmask/common.h: Add permutate_all
+
+	* appl/gssmask/gssmask.c: use new flags, return moniker
+
+	* appl/gssmask/gssmaestro.c: test self context building and all
+	permutation of clients
+	
+2006-09-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/gssmask/gssmask.c: add --logfile option, use htons() on
+	port number
+
+	* appl/gssmask/gssmaestro.c: Log port in connection message.
+
+	* configure.in: Make pk-init turned on by default.
+	
+2006-09-18  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* fix-export: Build lib/hx509/{hx509-protos.h,hx509-private.h}.
 
 	* kuser/Makefile.am: Add tool for printing tickets.
