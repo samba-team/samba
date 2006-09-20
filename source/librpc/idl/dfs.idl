@@ -85,6 +85,44 @@
 	} dfs_Info4;
 
 	typedef struct {
+		[string,charset(UTF16)] uint16 *path;
+		[string,charset(UTF16)] uint16 *comment;
+		uint32 state;
+		uint32 timeout;
+		GUID   guid;
+		uint32 flags;
+		uint32 pktsize;
+		uint32 num_stores;
+	} dfs_Info5;
+
+	typedef struct {
+		uint16 target_priority_class;
+		uint16 target_priority_rank;
+		uint16 reserved;
+	} dfs_Target_Priority;
+
+	typedef struct {
+		dfs_StorageInfo info;
+		dfs_Target_Priority target_priority;
+	} dfs_StorageInfo2;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *entry_path;
+		[string,charset(UTF16)] uint16 *comment;
+		uint32 state;
+		uint32 timeout;
+		GUID   guid;
+		uint32 flags;
+		uint32 pktsize;
+		uint16 num_stores;
+		[size_is(num_stores)] dfs_StorageInfo2 *stores;
+	} dfs_Info6;
+
+	typedef struct {
+		GUID  generation_guid;
+	} dfs_Info7;
+
+	typedef struct {
 		[string,charset(UTF16)] uint16 *comment;
 	} dfs_Info100;
 
@@ -97,11 +135,32 @@
 	} dfs_Info102;
 
 	typedef struct {
+		uint32 flags;
+	} dfs_Info103;
+
+	typedef struct {
+		dfs_Target_Priority priority;
+	} dfs_Info104;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *comment;
+		uint32 state;
+		uint32 timeout;
+		uint32 property_flag_mask;
+		uint32 property_flags;
+	} dfs_Info105;
+
+	typedef struct {
+		uint32 state;
+		dfs_Target_Priority priority;
+	} dfs_Info106;
+
+	typedef struct {
 		[string,charset(UTF16)] uint16 *dom_root;
 	} dfs_Info200;
 
 	typedef struct {
-		uint32 flags;
+		uinr32 flavor;
 		[string,charset(UTF16)] uint16 *dom_root;
 	} dfs_Info300;
 
@@ -111,9 +170,16 @@
 		[case(2)]   dfs_Info2 *info2;
 		[case(3)]   dfs_Info3 *info3;
 		[case(4)]   dfs_Info4 *info4;
+		[case(5)]   dfs_Info5 *info5;
+		[case(6)]   dfs_Info6 *info6;
+		[case(7)]   dfs_Info7 *info7;
 		[case(100)] dfs_Info100 *info100;
 		[case(101)] dfs_Info101 *info101;
 		[case(102)] dfs_Info102 *info102;
+		[case(103)] dfs_Info103 *info103;
+		[case(104)] dfs_Info104 *info104;
+		[case(105)] dfs_Info105 *info105;
+		[case(106)] dfs_Info106 *info106;
 	} dfs_Info;
 
 	WERROR dfs_GetInfo (
