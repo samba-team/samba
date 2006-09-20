@@ -56,7 +56,7 @@ NTSTATUS smb2_read_recv(struct smb2_request *req,
 	NTSTATUS status;
 
 	if (!smb2_request_receive(req) || 
-	    smb2_request_is_error(req)) {
+	    !smb2_request_is_ok(req)) {
 		return smb2_request_destroy(req);
 	}
 
