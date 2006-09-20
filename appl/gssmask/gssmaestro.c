@@ -43,12 +43,11 @@ struct client {
     krb5_storage *sock;
     int32_t capabilities;
     char *target_name;
+    char *moniker;
 };
 
-#if 0
-static struct client *clients;
+static struct client **clients;
 static int num_clients;
-#endif
 
 static int
 init_sec_context(struct client *client, 
@@ -147,6 +146,15 @@ get_version_capa(struct client *client,
     return GSMERR_OK;
 }
 
+static int
+get_moniker(struct client *client, 
+	    char **moniker)
+{
+    put32(client, eGetMoniker);
+    retstring(client, *moniker);
+    return GSMERR_OK;
+}
+
 
 static int
 build_context(struct client *ipeer, struct client *apeer,
@@ -220,19 +228,26 @@ build_context(struct client *ipeer, struct client *apeer,
 	    toast_resource(apeer, deleg);
 	*hDelegCred = 0;
     } else
-	*hDelegCred = 0;
+	*hDelegCred = deleg;
 
     return val;
 }
 			 
-static struct client *
-connect_client(const char *name, const char *port)
+static void
+connect_client(const char *slave)
 {
+    char *name, *port;
     struct client *c = ecalloc(1, sizeof(*c));
     struct addrinfo hints, *res0, *res;
     int ret, fd;
 
-    c->name = estrdup(name);
+    name = estrdup(slave);
+    port = strchr(name, ':');
+    if (port == NULL)
+	errx(1, "port missing from %s", name);
+    *port++ = 0;
+
+    c->name = estrdup(slave);
     
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = PF_UNSPEC;
@@ -262,20 +277,43 @@ connect_client(const char *name, const char *port)
     if (c->sock == NULL)
 	errx(1, "krb5_storage_from_fd");
 
-    get_targetname(c, &c->target_name);
-
     {
 	int32_t version;
 	char *str = NULL;
 	get_version_capa(c, &version, &c->capabilities, &str);
 	if (str) {
-	    printf("client %s:%s is using %s\n", c->name, port, str);
+	    printf("client %s is using %s\n", c->name, str);
 	    free(str);
 	}
+	if (c->capabilities & HAS_MONIKER)
+	    get_moniker(c, &c->moniker);
+	else
+	    c->moniker = c->name;
+	if (c->capabilities & ISSERVER)
+	    get_targetname(c, &c->target_name);
     }
 
-    return c;
+    clients = erealloc(clients, (num_clients + 1) * sizeof(*clients));
+    
+    clients[num_clients] = c;
+    num_clients++;
+
+    free(name);
 }
+
+static struct client *
+get_client(const char *slave)
+{
+    size_t i;
+    for (i = 0; i < num_clients; i++)
+	if (strcmp(slave, clients[i]->name) == 0)
+	    return clients[i];
+    errx(1, "failed to find client %s", slave);
+}
+
+/*
+ *
+ */
 
 static int version_flag;
 static int help_flag;
@@ -309,8 +347,8 @@ main(int argc, char **argv)
     int optidx= 0;
     char *user;
     char *password;
-    char *slavename;
-    char *slaveport;
+    char ***list, **p;
+    size_t num_list, i, j, k;
 
     setprogname (argv[0]);
 
@@ -337,38 +375,37 @@ main(int argc, char **argv)
 	errx(1, "password missing from %s", user);
     *password++ = 0;
 	
-
     if (slaves.num_strings == 0)
 	errx(1, "no principals");
 
-    slavename = estrdup(slaves.strings[0]);
-    slaveport = strchr(slavename, ':');
-    if (slaveport == NULL)
-	errx(1, "port missing from %s", slavename);
-    *slaveport++ = 0;
+    list = permutate_all(&slaves, &num_list);
 
-    {
-	struct client *c;
-	int32_t hCred, delegCred;
+    /*
+     * Set up connection to all clients
+     */
+
+    for (i = 0; i < slaves.num_strings; i++)
+	connect_client(slaves.strings[i]);
+
+    /* 
+     * First test if all slaves can build context to them-self.
+     */
+
+    for (i = 0; i < num_clients; i++) {
+	int32_t hCred, val, delegCred;
 	int32_t clientC, serverC;
-	int32_t val;
+	struct client *c = clients[i];
+	
+	if (c->target_name == NULL)
+	    continue;
 
-	c = connect_client(slavename, slaveport);
-	if (c == NULL)
-	    errx(1, "failed to contact %s:%s", slavename, slaveport);
-
-	/*
-	 *
-	 */
+	printf("%s connects to self using %s\n",
+	       c->moniker, c->target_name);
 
 	val = acquire_cred(c, user, password, 1, &hCred);
 	if (val != GSMERR_OK)
 	    errx(1, "failed to acquire_cred: %d", (int)val);
-
-	/*
-	 *
-	 */
-
+    
 	val = build_context(c, c, GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
 			    hCred, &clientC, &serverC, &delegCred);
 	if (val == GSMERR_OK) {
@@ -383,6 +420,7 @@ main(int argc, char **argv)
 	/*
 	 *
 	 */
+
 	val = build_context(c, c, 0,
 			    hCred, &clientC, &serverC, &delegCred);
 	if (val == GSMERR_OK) {
@@ -395,11 +433,73 @@ main(int argc, char **argv)
 	}
 
 	toast_resource(c, hCred);
-	/*
-	 *
-	 */
-	goodbye(c);
     }
+
+    /*
+     * Build contexts though all entries in each lists, including the
+     * step from the last entry to the first, ie treat the list as a
+     * circle.
+     *
+     * Only follow the delegated credential, but test "all"
+     * flags. (XXX only do deleg|mutual right now.
+     */
+
+    for (i = 0; i < num_list; i++) {
+	int32_t hCred, val, delegCred;
+	int32_t clientC, serverC;
+	struct client *client, *server;
+
+	p = list[i];
+	
+	client = get_client(p[0]);
+
+	val = acquire_cred(client, user, password, 1, &hCred);
+	if (val != GSMERR_OK)
+	    errx(1, "failed to acquire_cred: %d", (int)val);
+
+	for (j = 1; j < num_clients + 1; j++) {
+	    server = get_client(p[j % num_clients]);
+	    
+	    if (server->target_name == NULL) {
+		warnx("no target on %s", server->moniker);
+		break;
+	    }
+
+	    for (k = 1; k < j; k++)
+		printf("\t");
+	    printf("%s -> %s\n", client->moniker, server->moniker);
+
+	    val = build_context(client, server,
+				GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
+				hCred, &clientC, &serverC, &delegCred);
+	    if (val != GSMERR_OK) {
+		warnx("build_context failed: %d", (int)val);
+		break;
+	    }
+
+	    toast_resource(client, clientC);
+	    toast_resource(server, serverC);
+	    if (!delegCred) {
+		warnx("no delegated cred on %s", server->moniker);
+		break;
+	    }
+	    toast_resource(client, hCred);
+	    hCred = delegCred;
+	    client = server;
+	}
+	if (hCred)
+	    toast_resource(client, hCred);
+    }
+
+
+
+    /*
+     * Close all connections to clients
+     */
+
+    for (i = 0; i < num_clients; i++)
+	goodbye(clients[i]);
+
     printf("done\n");
 
     return 0;
