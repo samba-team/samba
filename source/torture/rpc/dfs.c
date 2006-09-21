@@ -23,6 +23,121 @@
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_dfs_c.h"
+#include "librpc/gen_ndr/ndr_srvsvc_c.h"
+#include "libnet/libnet.h"
+#include "libcli/raw/libcliraw.h"
+#include "torture/util.h"
+#include "libcli/libcli.h"
+#include "lib/cmdline/popt_common.h"
+
+#define SMBTORTURE_DFS_SHARENAME "smbtorture_dfs_share"
+#define SMBTORTURE_DFS_DIRNAME "\\smbtorture_dfs_dir"
+#define SMBTORTURE_DFS_PATHNAME "C:"SMBTORTURE_DFS_DIRNAME
+
+#define IS_DFS_VERSION_UNSUPPORTED_CALL_W2K3(x,y)\
+	if (x == DFS_MANAGER_VERSION_W2K3) {\
+		if (!W_ERROR_EQUAL(y,WERR_NOT_SUPPORTED)) {\
+			printf("expected WERR_NOT_SUPPORTED\n");\
+			return False;\
+		}\
+		return True;\
+	}\
+
+static BOOL test_NetShareAdd(TALLOC_CTX *mem_ctx, const char *host, const char *sharename, const char *dir)
+{
+	NTSTATUS status;
+	struct srvsvc_NetShareInfo2 i;
+	struct libnet_context* libnetctx;
+	struct libnet_AddShare r;
+
+	printf("Creating share %s\n", sharename);
+
+	if (!(libnetctx = libnet_context_init(NULL))) {
+		return False;
+	}
+
+	libnetctx->cred = cmdline_credentials;
+
+	i.name			= sharename;
+	i.type			= STYPE_DISKTREE;
+	i.path			= dir;
+	i.max_users		= (uint32_t) -1;
+	i.comment		= "created by smbtorture";
+	i.password		= NULL;
+	i.permissions		= 0x0;
+	i.current_users		= 0x0;
+
+	r.level 		= 2;
+	r.in.server_name	= host;
+	r.in.share 		= i;
+
+	status = libnet_AddShare(libnetctx, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Failed to add new share: %s (%s)\n", 
+			nt_errstr(status), r.out.error_string);
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_NetShareDel(TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
+{
+	NTSTATUS status;
+	struct libnet_context* libnetctx;
+	struct libnet_DelShare r;
+
+	printf("Deleting share %s\n", sharename);
+
+	if (!(libnetctx = libnet_context_init(NULL))) {
+		return False;
+	}
+
+	libnetctx->cred = cmdline_credentials;
+
+	r.in.share_name		= sharename;
+	r.in.server_name	= host;
+
+	status = libnet_DelShare(libnetctx, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Failed to delete share: %s (%s)\n", 
+			nt_errstr(status), r.out.error_string);
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_CreateDir(TALLOC_CTX *mem_ctx, 
+			   struct smbcli_state **cli, 
+			   const char *host, 
+			   const char *share, 
+			   const char *dir)
+{
+	printf("Creating directory %s\n", dir);
+
+	if (!torture_open_connection_share(mem_ctx, cli, host, share, NULL)) {
+		return False;
+	}
+
+	if (!torture_setup_dir(*cli, dir)) {
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_DeleteDir(struct smbcli_state *cli, const char *dir)
+{
+	printf("Deleting directory %s\n", dir);
+
+	if (smbcli_deltree(cli->tree, dir) == -1) {
+		printf("Unable to delete dir %s - %s\n", dir, smbcli_errstr(cli->tree));
+		return False;
+	}
+
+	return True;
+}
 
 static BOOL test_GetManagerVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, enum dfs_ManagerVersion *version)
 {
@@ -218,6 +333,127 @@ static BOOL test_EnumEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *
 }
 
 
+static BOOL test_StdRootForced(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
+{
+	NTSTATUS status;
+	struct dfs_AddStdRootForced r;
+	enum dfs_ManagerVersion version;
+
+	printf("Testing StdRootForced\n");
+
+	if (!test_GetManagerVersion(p, mem_ctx, &version)) {
+		return False;
+	}
+
+	r.in.servername	= host;
+	r.in.rootshare	= sharename;
+	r.in.comment	= "standard dfs forced standalone DFS root created by smbtorture (dfs_AddStdRootForced)";
+	r.in.store	= SMBTORTURE_DFS_PATHNAME;
+
+	status = dcerpc_dfs_AddStdRootForced(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("AddStdRootForced failed - %s\n", nt_errstr(status));
+		return False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("AddStdRootForced failed - %s\n", win_errstr(r.out.result));
+		IS_DFS_VERSION_UNSUPPORTED_CALL_W2K3(version, r.out.result);
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_RemoveStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
+{
+	struct dfs_RemoveStdRoot r;
+	NTSTATUS status;
+
+	printf("Testing RemoveStdRoot\n");
+
+	r.in.servername	= host;
+	r.in.rootshare	= sharename;
+	r.in.flags	= 0;
+
+	status = dcerpc_dfs_RemoveStdRoot(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("RemoveStdRoot failed - %s\n", nt_errstr(status));
+		return False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("dfs_RemoveStdRoot failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_AddStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
+{
+	NTSTATUS status;
+	struct dfs_AddStdRoot r;
+
+	printf("Testing AddStdRoot\n");
+
+	r.in.servername	= host;
+	r.in.rootshare	= sharename;
+	r.in.comment	= "standard dfs standalone DFS root created by smbtorture (dfs_AddStdRoot)";
+	r.in.flags	= 0;
+
+	status = dcerpc_dfs_AddStdRoot(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("AddStdRoot failed - %s\n", nt_errstr(status));
+		return False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("dfs_AddStdRoot failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
+static void test_cleanup_stdroot(struct dcerpc_pipe *p, 
+				 TALLOC_CTX *mem_ctx, 
+				 const char *host, 
+				 const char *sharename, 
+				 const char *dir)
+{
+	struct smbcli_state *cli;
+
+	printf("Cleaning up StdRoot\n");
+
+	test_RemoveStdRoot(p, mem_ctx, host, sharename);
+	test_NetShareDel(mem_ctx, host, sharename);
+	torture_open_connection_share(mem_ctx, &cli, host, "C$", NULL);
+	test_DeleteDir(cli, dir);
+	torture_close_connection(cli);
+}
+
+static BOOL test_StdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host)
+{
+	enum dfs_ManagerVersion version;
+	const char *sharename = SMBTORTURE_DFS_SHARENAME;
+	const char *dir = SMBTORTURE_DFS_DIRNAME;
+	const char *path = SMBTORTURE_DFS_PATHNAME;
+	struct smbcli_state *cli;
+	BOOL ret;
+
+	printf("Testing StdRoot\n");
+
+	test_cleanup_stdroot(p, mem_ctx, host, sharename, dir);
+
+	ret &= test_CreateDir(mem_ctx, &cli, host, "C$", dir);
+	ret &= test_NetShareAdd(mem_ctx, host, sharename, path);
+	ret &= test_GetManagerVersion(p, mem_ctx, &version);
+	ret &= test_AddStdRoot(p, mem_ctx, host, sharename);
+	ret &= test_RemoveStdRoot(p, mem_ctx, host, sharename);
+	ret &= test_StdRootForced(p, mem_ctx, host, sharename);
+	ret &= test_NetShareDel(mem_ctx, host, sharename);
+	ret &= test_DeleteDir(cli, dir);
+
+	torture_close_connection(cli);
+
+	return ret;
+}
+
 BOOL torture_rpc_dfs(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -239,6 +475,7 @@ BOOL torture_rpc_dfs(struct torture_context *torture)
 	ret &= test_GetManagerVersion(p, mem_ctx, &version);
 	ret &= test_Enum(p, mem_ctx);
 	ret &= test_EnumEx(p, mem_ctx, host);
+	ret &= test_StdRoot(p, mem_ctx, host);
 
 	talloc_free(mem_ctx);
 
