@@ -525,7 +525,9 @@ main(int argc, char **argv)
 	if (val != GSMERR_OK)
 	    errx(1, "failed to acquire_cred: %d", (int)val);
     
-	val = build_context(c, c, GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
+	val = build_context(c, c, 
+			    GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG|
+			    GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
 			    hCred, &clientC, &serverC, &delegCred);
 	if (val == GSMERR_OK) {
 	    test_token(c, clientC, c, serverC);
@@ -541,7 +543,8 @@ main(int argc, char **argv)
 	 *
 	 */
 
-	val = build_context(c, c, 0,
+	val = build_context(c, c,
+			    GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG,
 			    hCred, &clientC, &serverC, &delegCred);
 	if (val == GSMERR_OK) {
 	    test_token(c, clientC, c, serverC);
@@ -591,6 +594,7 @@ main(int argc, char **argv)
 	    printf("%s -> %s\n", client->moniker, server->moniker);
 
 	    val = build_context(client, server,
+				GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG|
 				GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
 				hCred, &clientC, &serverC, &delegCred);
 	    if (val != GSMERR_OK) {
