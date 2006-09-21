@@ -350,7 +350,7 @@ WERROR _winreg_OpenKey(pipes_struct *p, struct policy_handle *parent_handle, str
  reg_reply_info
  ********************************************************************/
 
-WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t **data, uint32_t *size, uint32_t *length)
+WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t *data, uint32_t *size, uint32_t *length)
 {
 	WERROR			status = WERR_BADFILE;
 	char 			*name;
@@ -470,9 +470,11 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct 
         	*size   =  regval_size( val );
         	*length =  regval_size( val );
 
+#if 0
 		if ( (*data = talloc_memdup( p->mem_ctx, regval_data_p(val), *size )) == NULL ) {
 			status = WERR_NOMEM;
 		}
+#endif
 
 		*type = val->type;
 	}

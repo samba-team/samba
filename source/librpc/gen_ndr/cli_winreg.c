@@ -512,7 +512,7 @@ NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t **data, uint32_t *size, uint32_t *length)
+NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t *data, uint32_t *size, uint32_t *length)
 {
 	struct winreg_QueryValue r;
 	NTSTATUS status;
