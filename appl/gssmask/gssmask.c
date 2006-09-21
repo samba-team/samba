@@ -557,12 +557,80 @@ HandleOP(Decrypt)
 static int
 HandleOP(Sign)
 {
+    OM_uint32 maj_stat, min_stat;
+    int32_t hContext, flags, seqno;
+    krb5_data token;
+    gss_ctx_id_t ctx;
+    gss_buffer_desc input_token, output_token;
+
+    ret32(c, hContext);
+    ret32(c, flags);
+    ret32(c, seqno);
+    retdata(c, token);
+
+    ctx = find_handle(c->handle, hContext, handle_context);
+    if (ctx == NULL)
+	errx(1, "wrap: reference to unknown context");
+
+    input_token.length = token.length;
+    input_token.value = token.data;
+    
+    maj_stat = gss_get_mic(&min_stat, ctx, 0, &input_token,
+			   &output_token);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_get_mic failed");
+    
+    krb5_data_free(&token);
+    
+    token.data = output_token.value;
+    token.length = output_token.length;
+    
+    put32(c, 0); /* XXX fix gsm_error */
+    putdata(c, token);
+    
+    gss_release_buffer(&min_stat, &output_token);
+    
     return 0;
 }
 
 static int
 HandleOP(Verify)
 {
+    OM_uint32 maj_stat, min_stat;
+    int32_t hContext, flags, seqno;
+    krb5_data msg, mic;
+    gss_ctx_id_t ctx;
+    gss_buffer_desc msg_token, mic_token;
+    gss_qop_t qop;
+
+    ret32(c, hContext);
+
+    ctx = find_handle(c->handle, hContext, handle_context);
+    if (ctx == NULL)
+	errx(1, "wrap: reference to unknown context");
+
+    ret32(c, flags);
+    ret32(c, seqno);
+    retdata(c, msg);
+
+    msg_token.length = msg.length;
+    msg_token.value = msg.data;
+    
+    retdata(c, mic);
+
+    mic_token.length = mic.length;
+    mic_token.value = mic.data;
+
+    maj_stat = gss_verify_mic(&min_stat, ctx, &msg_token,
+			      &mic_token, &qop);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_verify_mic failed");
+    
+    krb5_data_free(&mic);
+    krb5_data_free(&msg);
+    
+    put32(c, 0); /* XXX fix gsm_error */
+    
     return 0;
 }
 
