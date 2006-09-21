@@ -27,6 +27,8 @@
 #include "librpc/gen_ndr/cli_unixinfo.h"
 #include "librpc/gen_ndr/cli_dfs.h"
 #include "librpc/gen_ndr/cli_lsa.h"
+#include "librpc/gen_ndr/cli_srvsvc.h"
+#include "librpc/gen_ndr/cli_svcctl.h"
 #include "librpc/gen_ndr/cli_winreg.h"
 #include "librpc/gen_ndr/cli_initshutdown.h"
 #include "librpc/gen_ndr/cli_wkssvc.h"

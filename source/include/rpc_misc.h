@@ -92,11 +92,6 @@ enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_
  * RPC policy handle used pretty much everywhere
  **********************************************************************/
  
-typedef struct {
-	uint32 ptr_hnd;          /* pointer to enumeration handle */
-	uint32 handle;           /* enumeration handle */
-} ENUM_HND;
-
 typedef struct policy_handle POLICY_HND;
 
 #define OUR_HANDLE(hnd) (((hnd)==NULL) ? "NULL" :\

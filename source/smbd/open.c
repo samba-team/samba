@@ -2057,7 +2057,7 @@ NTSTATUS open_directory(connection_struct *conn,
  Open a pseudo-file (no locking checks - a 'stat' open).
 ****************************************************************************/
 
-NTSTATUS open_file_stat(connection_struct *conn, char *fname,
+NTSTATUS open_file_stat(connection_struct *conn, const char *fname,
 			SMB_STRUCT_STAT *psbuf, files_struct **result)
 {
 	files_struct *fsp = NULL;

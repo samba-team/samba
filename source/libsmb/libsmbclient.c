@@ -2473,15 +2473,13 @@ net_share_enum_rpc(struct cli_state *cli,
 {
         int i;
 	WERROR result;
-	ENUM_HND enum_hnd;
+	uint32 enum_hnd;
         uint32 info_level = 1;
 	uint32 preferred_len = 0xffffffff;
-        uint32 type;
-	SRV_SHARE_INFO_CTR ctr;
-	fstring name = "";
-        fstring comment = "";
+	union srvsvc_NetShareCtr ctr;
         void *mem_ctx;
 	struct rpc_pipe_client *pipe_hnd;
+	uint32 numentries;
         NTSTATUS nt_status;
 
         /* Open the server service pipe */
@@ -2500,36 +2498,29 @@ net_share_enum_rpc(struct cli_state *cli,
         }
 
         /* Issue the NetShareEnum RPC call and retrieve the response */
-	init_enum_hnd(&enum_hnd, 0);
-	result = rpccli_srvsvc_net_share_enum(pipe_hnd,
+	enum_hnd = 0;
+	result = rpccli_srvsvc_NetShareEnum(pipe_hnd,
                                               mem_ctx,
-                                              info_level,
+											  NULL,
+                                              &info_level,
                                               &ctr,
                                               preferred_len,
+											  &numentries,
                                               &enum_hnd);
 
         /* Was it successful? */
-	if (!W_ERROR_IS_OK(result) || ctr.num_entries == 0) {
+	if (!W_ERROR_IS_OK(result) || numentries == 0) {
                 /*  Nope.  Go clean up. */
 		goto done;
         }
 
         /* For each returned entry... */
-        for (i = 0; i < ctr.num_entries; i++) {
-
-                /* pull out the share name */
-                rpcstr_pull_unistr2_fstring(
-                        name, &ctr.share.info1[i].info_1_str.uni_netname);
-
-                /* pull out the share's comment */
-                rpcstr_pull_unistr2_fstring(
-                        comment, &ctr.share.info1[i].info_1_str.uni_remark);
-
-                /* Get the type value */
-                type = ctr.share.info1[i].info_1.type;
+        for (i = 0; i < numentries; i++) {
 
                 /* Add this share to the list */
-                (*fn)(name, type, comment, state);
+                (*fn)(ctr.ctr1->array[i].name, 
+					  ctr.ctr1->array[i].type, 
+					  ctr.ctr1->array[i].comment, state);
         }
 
 done:

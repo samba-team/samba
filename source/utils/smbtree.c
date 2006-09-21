@@ -134,10 +134,12 @@ static BOOL get_rpc_shares(struct cli_state *cli,
 	NTSTATUS status;
 	struct rpc_pipe_client *pipe_hnd;
 	TALLOC_CTX *mem_ctx;
-	ENUM_HND enum_hnd;
+	uint32 enum_hnd;
 	WERROR werr;
-	SRV_SHARE_INFO_CTR ctr;
+	union srvsvc_NetShareCtr ctr;
+	uint32 numentries;
 	int i;
+	uint32 info_level = 1;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -145,8 +147,7 @@ static BOOL get_rpc_shares(struct cli_state *cli,
 		return False;
 	}
 
-	init_enum_hnd(&enum_hnd, 0);
-
+	enum_hnd = 0;
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &status);
 
 	if (pipe_hnd == NULL) {
@@ -156,8 +157,8 @@ static BOOL get_rpc_shares(struct cli_state *cli,
 		return False;
 	}
 
-	werr = rpccli_srvsvc_net_share_enum(pipe_hnd, mem_ctx, 1, &ctr,
-					    0xffffffff, &enum_hnd);
+	werr = rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, NULL, &info_level, &ctr,
+					    0xffffffff, &numentries, &enum_hnd);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		TALLOC_FREE(mem_ctx);
@@ -165,14 +166,9 @@ static BOOL get_rpc_shares(struct cli_state *cli,
 		return False;
 	}
 
-	for (i=0; i<ctr.num_entries; i++) {
-		SRV_SHARE_INFO_1 *info = &ctr.share.info1[i];
-		char *name, *comment;
-		name = rpcstr_pull_unistr2_talloc(
-			mem_ctx, &info->info_1_str.uni_netname);
-		comment = rpcstr_pull_unistr2_talloc(
-			mem_ctx, &info->info_1_str.uni_remark);
-		fn(name, info->info_1.type, comment, state);
+	for (i=0; i<numentries; i++) {
+		fn(ctr.ctr1->array[i].name, ctr.ctr1->array[i].type, 
+		   ctr.ctr1->array[i].comment, state);
 	}
 
 	TALLOC_FREE(mem_ctx);

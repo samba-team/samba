@@ -206,11 +206,13 @@ ERRORMAP_OBJ = libsmb/errormap.o
 PASSCHANGE_OBJ = libsmb/passchange.o
 
 LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
-	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o
+	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o \
+	       rpc_client/ndr.o
 
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o \
 		 librpc/gen_ndr/ndr_dfs.o librpc/gen_ndr/ndr_echo.o \
 		 librpc/gen_ndr/ndr_winreg.o librpc/gen_ndr/ndr_initshutdown.o \
+		 librpc/gen_ndr/ndr_srvsvc.o librpc/gen_ndr/ndr_svcctl.o \
 		 librpc/gen_ndr/ndr_eventlog.o librpc/gen_ndr/ndr_wkssvc.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
@@ -291,18 +293,18 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(LIBNMB_OBJ)
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
-	       rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o \
+	       rpc_client/cli_netlogon.o \
 	       rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
 	       rpc_client/cli_ds.o \
-	       rpc_client/cli_shutdown.o rpc_client/cli_svcctl.o \
-	       rpc_client/ndr.o
+	       rpc_client/cli_shutdown.o rpc_client/cli_svcctl.o
 
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_unixinfo.o librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_dfs.o librpc/gen_ndr/cli_echo.o \
+				   librpc/gen_ndr/cli_srvsvc.o \
 		   librpc/gen_ndr/cli_winreg.o librpc/gen_ndr/cli_initshutdown.o \
 		   librpc/gen_ndr/cli_eventlog.o \
-		   $(LIBMSRPC_GEN_OBJ1) $(LIBNDR_GEN_OBJ) $(LIBNDR_OBJ)
+		   $(LIBNDR_GEN_OBJ) $(LIBNDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
 
@@ -325,7 +327,7 @@ RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshu
 
 RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
-RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
+RPC_SVC_OBJ = librpc/gen_ndr/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
 
 RPC_WKS_OBJ =  librpc/gen_ndr/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 
@@ -355,7 +357,7 @@ RPC_PARSE_OBJ1 = $(RPC_PARSE_OBJ0) rpc_parse/parse_sec.o
 
 RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
                 rpc_parse/parse_reg.o rpc_parse/parse_rpc.o \
-                rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
+                rpc_parse/parse_samr.o \
                 rpc_parse/parse_ds.o rpc_parse/parse_spoolss.o \
 		rpc_parse/parse_shutdown.o rpc_parse/parse_svcctl.o \
 		rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o \
@@ -518,9 +520,9 @@ SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
 SMBTREE_OBJ = utils/smbtree.o $(PARAM_OBJ) \
              $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) \
 	     $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) \
-             rpc_client/cli_srvsvc.o rpc_parse/parse_srv.o  \
              rpc_client/cli_pipe.o rpc_parse/parse_rpc.o \
-             rpc_client/cli_netlogon.o rpc_parse/parse_net.o
+             rpc_client/cli_netlogon.o rpc_parse/parse_net.o \
+			$(LIBMSRPC_GEN_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
@@ -582,12 +584,12 @@ LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ) \
 
 LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.@PICSUFFIX@)
 
-CLIENT_OBJ1 = client/client.o client/clitar.o rpc_client/cli_srvsvc.o \
-	rpc_parse/parse_srv.o rpc_client/cli_pipe.o rpc_parse/parse_rpc.o \
-	rpc_client/cli_netlogon.o rpc_parse/parse_net.o
+CLIENT_OBJ1 = client/client.o client/clitar.o rpc_client/cli_pipe.o \
+			  rpc_parse/parse_rpc.o rpc_client/cli_netlogon.o \
+			  rpc_parse/parse_net.o
 
 CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
-	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
+	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(LIBMSRPC_GEN_OBJ) \
              $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ)
 
 TOOL_OBJ = client/smbctool.o client/clitar.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
@@ -849,7 +851,7 @@ cac: SHOWFLAGS $(LIBMSRPC)
 #####################################################################
 ## Perl IDL Compiler
 IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
-	    eventlog.idl wkssvc.idl netlogon.idl
+			srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl
 
 idl: 
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \

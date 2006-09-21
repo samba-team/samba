@@ -152,53 +152,6 @@ BOOL smb_io_nttime(const char *desc, prs_struct *ps, int depth, NTTIME *nttime)
 }
 
 /*******************************************************************
- Gets an enumeration handle from an ENUM_HND structure.
-********************************************************************/
-
-uint32 get_enum_hnd(ENUM_HND *enh)
-{
-	return (enh && enh->ptr_hnd != 0) ? enh->handle : 0;
-}
-
-/*******************************************************************
- Inits an ENUM_HND structure.
-********************************************************************/
-
-void init_enum_hnd(ENUM_HND *enh, uint32 hnd)
-{
-	DEBUG(5,("smb_io_enum_hnd\n"));
-
-	enh->ptr_hnd = (hnd != 0) ? 1 : 0;
-	enh->handle = hnd;
-}
-
-/*******************************************************************
- Reads or writes an ENUM_HND structure.
-********************************************************************/
-
-BOOL smb_io_enum_hnd(const char *desc, ENUM_HND *hnd, prs_struct *ps, int depth)
-{
-	if (hnd == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_enum_hnd");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_uint32("ptr_hnd", ps, depth, &hnd->ptr_hnd)) /* pointer */
-		return False;
-
-	if (hnd->ptr_hnd != 0) {
-		if(!prs_uint32("handle ", ps, depth, &hnd->handle )) /* enum handle */
-			return False;
-	}
-
-	return True;
-}
-
-/*******************************************************************
  Reads or writes a DOM_SID structure.
 ********************************************************************/
 
