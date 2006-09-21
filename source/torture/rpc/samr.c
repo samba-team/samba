@@ -1884,11 +1884,11 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	{
 		char simple_pass[9];
-		char v = (char)random();
+		char *v = generate_random_str(mem_ctx, 1);
 		int i;
 
 		for (i=0; i <ARRAY_SIZE(simple_pass); i++) {
-			simple_pass[i] = v;
+			simple_pass[i] = *v;
 		}
 		simple_pass[i] = '\0';
 
