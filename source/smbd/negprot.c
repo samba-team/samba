@@ -33,7 +33,8 @@ static void get_challenge(char buff[8])
 	NTSTATUS nt_status;
 	const uint8 *cryptkey;
 
-	/* We might be called more than once, muliple negprots are premitted */
+	/* We might be called more than once, multiple negprots are
+	 * permitted */
 	if (negprot_global_auth_context) {
 		DEBUG(3, ("get challenge: is this a secondary negprot?  negprot_global_auth_context is non-NULL!\n"));
 		(negprot_global_auth_context->free)(&negprot_global_auth_context);
@@ -189,15 +190,6 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 	strlower_m(unix_name);
 	push_ascii_nstring(dos_name, unix_name);
 	safe_strcpy(guid, dos_name, sizeof(guid)-1);
-
-#ifdef DEVELOPER
-	/* valgrind fixer... */
-	{
-		size_t sl = strlen(guid);
-		if (sizeof(guid)-sl)
-			memset(&guid[sl], '\0', sizeof(guid)-sl);
-	}
-#endif
 
 	/* strangely enough, NT does not sent the single OID NTLMSSP when
 	   not a ADS member, it sends no OIDs at all
