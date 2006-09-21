@@ -1,5 +1,13 @@
 2006-09-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/gssmask/gssmaestro.c: Add GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG
+	to all context flags
+	
+	* appl/gssmask/gssmaestro.c: Add wrap and mic tests for all
+	elements
+
+	* appl/gssmask/gssmask.c: Add mic tests
+
 	* appl/gssmask/gssmaestro.c: dont exit early then when context
 	is half built.
 	
