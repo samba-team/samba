@@ -47,7 +47,7 @@ BOOL torture_utable(int dummy)
 		SSVAL(&c2, 0, c);
 		fstrcpy(fname, "\\utable\\x");
 		p = fname+strlen(fname);
-		len = convert_string(CH_UCS2, CH_UNIX, 
+		len = convert_string(CH_UTF16LE, CH_UNIX, 
 				     &c2, 2, 
 				     p, sizeof(fname)-strlen(fname), True);
 		p[len] = 0;
@@ -104,7 +104,7 @@ static char *form_name(int c)
 	p = fname+strlen(fname);
 	SSVAL(&c2, 0, c);
 
-	len = convert_string(CH_UCS2, CH_UNIX, 
+	len = convert_string(CH_UTF16LE, CH_UNIX, 
 			     &c2, 2, 
 			     p, sizeof(fname)-strlen(fname), True);
 	p[len] = 0;
