@@ -98,21 +98,21 @@ static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
 	return h;
 }
 
-static bool check_ps_continuation(struct ldb_reply *ares, struct ps_context *ac)
+static int check_ps_continuation(struct ldb_reply *ares, struct ps_context *ac)
 {
 	struct ldb_paged_control *rep_control, *req_control;
 
 	/* look up our paged control */
-	if (strcmp(LDB_CONTROL_PAGED_RESULTS_OID, ares->controls[0]->oid) != 0) {
+	if (!ares->controls || strcmp(LDB_CONTROL_PAGED_RESULTS_OID, ares->controls[0]->oid) != 0) {
 		/* something wrong here */
-		return False;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	rep_control = talloc_get_type(ares->controls[0]->data, struct ldb_paged_control);
 	if (rep_control->cookie_len == 0) {
 		/* we are done */
 		ac->pending = False;
-		return True;
+		return LDB_SUCCESS;
 	}
 
 	/* more processing required */
@@ -122,7 +122,7 @@ static bool check_ps_continuation(struct ldb_reply *ares, struct ps_context *ac)
 
 	if (strcmp(LDB_CONTROL_PAGED_RESULTS_OID, ac->new_req->controls[0]->oid) != 0) {
 		/* something wrong here */
-		return False;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	req_control = talloc_get_type(ac->new_req->controls[0]->data, struct ldb_paged_control);
@@ -137,7 +137,7 @@ static bool check_ps_continuation(struct ldb_reply *ares, struct ps_context *ac)
 	req_control->cookie_len = rep_control->cookie_len;
 
 	ac->pending = True;
-	return True;
+	return LDB_SUCCESS;
 }
 
 static int store_referral(char *referral, struct ps_context *ac)
@@ -181,7 +181,7 @@ static int send_referrals(struct ldb_context *ldb, struct ps_context *ac)
 static int ps_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct ps_context *ac = NULL;
-	int ret;
+	int ret = LDB_ERR_OPERATIONS_ERROR;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, "NULL Context or Result in callback");
@@ -203,7 +203,8 @@ static int ps_callback(struct ldb_context *ldb, void *context, struct ldb_reply 
 		break;
 
 	case LDB_REPLY_DONE:
-		if (!check_ps_continuation(ares, ac)) {
+		ret = check_ps_continuation(ares, ac);
+		if (ret != LDB_SUCCESS) {
 			goto error;
 		}
 		if (!ac->pending) {
@@ -225,7 +226,7 @@ static int ps_callback(struct ldb_context *ldb, void *context, struct ldb_reply 
 
 error:
 	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return ret;
 }
 
 static int ps_search(struct ldb_module *module, struct ldb_request *req)
@@ -385,12 +386,29 @@ static int ps_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	}
 }
 
+static int check_supported_paged(struct ldb_context *ldb, void *context, 
+				 struct ldb_reply *ares) 
+{
+	struct private_data *data;
+	data = talloc_get_type(context,
+			       struct private_data);
+	if (ares->type == LDB_REPLY_ENTRY) {
+		if (ldb_msg_check_string_attribute(ares->message,
+						   "supportedControl",
+						   LDB_CONTROL_PAGED_RESULTS_OID)) {
+			data->paged_supported = True;
+		}
+	}
+	return LDB_SUCCESS;
+}
+
+
 static int ps_init(struct ldb_module *module)
 {
 	static const char *attrs[] = { "supportedControl", NULL };
 	struct private_data *data;
-	struct ldb_result *res = NULL;
 	int ret;
+	struct ldb_request *req;
 
 	data = talloc(module, struct private_data);
 	if (data == NULL) {
@@ -398,28 +416,40 @@ static int ps_init(struct ldb_module *module)
 	}
 	module->private_data = data;
 	data->paged_supported = False;
+
+	req = talloc(module, struct ldb_request);
+	if (req == NULL) {
+		ldb_set_errstring(module->ldb, "Out of Memory");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	req->operation = LDB_SEARCH;
+	req->op.search.base = ldb_dn_new(req);
+	req->op.search.scope = LDB_SCOPE_BASE;
+
+	req->op.search.tree = ldb_parse_tree(req, "objectClass=*");
+	if (req->op.search.tree == NULL) {
+		ldb_set_errstring(module->ldb, "Unable to parse search expression");
+		talloc_free(req);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	req->op.search.attrs = attrs;
+	req->controls = NULL;
+	req->context = data;
+	req->callback = check_supported_paged;
+	ldb_set_timeout(module->ldb, req, 0); /* use default timeout */
+
+	ret = ldb_next_request(module, req);
 	
-	/* find the supported controls */
-	ret = ldb_search(module->ldb,
-			 ldb_dn_new(module),
-			 LDB_SCOPE_BASE,
-			 "(objectClass=*)",
-			 attrs,
-			 &res);
-
-	if (ret != LDB_SUCCESS || res->count != 1) {
-		if (res) talloc_free(res);
-		return ldb_next_init(module);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
-
-	if (ldb_msg_check_string_attribute(res->msgs[0],
-					   "supportedControl",
-					   LDB_CONTROL_PAGED_RESULTS_OID)) {
-
-		data->paged_supported = True;
+	
+	talloc_free(req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
-
-	talloc_free(res);
 
 	return ldb_next_init(module);
 }
