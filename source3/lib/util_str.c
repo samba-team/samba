@@ -1593,6 +1593,58 @@ void strupper_m(char *s)
 }
 
 /**
+ Count the number of UCS2 characters in a string. Normally this will
+ be the same as the number of bytes in a string for single byte strings,
+ but will be different for multibyte.
+**/
+
+size_t strlen_m(const char *s)
+{
+	size_t count = 0;
+
+	if (!s) {
+		return 0;
+	}
+
+	while (*s && !(((uint8_t)*s) & 0x80)) {
+		s++;
+		count++;
+	}
+
+	if (!*s) {
+		return count;
+	}
+
+	while (*s) {
+		size_t c_size;
+		codepoint_t c = next_codepoint(s, &c_size);
+		if (c < 0x10000) {
+			/* Unicode char fits into 16 bits. */
+			count += 1;
+		} else {
+			/* Double-width unicode char - 32 bits. */
+			count += 2;
+		}
+		s += c_size;
+	}
+
+	return count;
+}
+
+/**
+ Count the number of UCS2 characters in a string including the null
+ terminator.
+**/
+
+size_t strlen_m_term(const char *s)
+{
+	if (!s) {
+		return 0;
+	}
+	return strlen_m(s) + 1;
+}
+
+/**
  Return a RFC2254 binary string representation of a buffer.
  Used in LDAP filters.
  Caller must free.
