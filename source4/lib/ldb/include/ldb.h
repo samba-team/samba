@@ -743,6 +743,7 @@ struct ldb_sequence_number {
 	uint64_t seq_num;
 };
 
+typedef int (*ldb_request_callback_t)(struct ldb_context *, void *, struct ldb_reply *);
 struct ldb_request {
 
 	enum ldb_request_type operation;
@@ -761,7 +762,7 @@ struct ldb_request {
 	struct ldb_control **controls;
 
 	void *context;
-	int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
+	ldb_request_callback_t callback;
 
 	int timeout;
 	time_t starttime;
