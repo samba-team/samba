@@ -217,38 +217,6 @@ static BOOL test_EnumEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *
 	return ret;
 }
 
-#if 0
-static BOOL test_Add(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
-{
-	NTSTATUS status;
-	struct dfs_Add add;
-	struct dfs_Remove rem;
-	
-	add.in.path = "\\\\win2003\\2nd root\\test";
-	add.in.server = "win2003";
-	add.in.share = "e$";
-	add.in.comment = "a test comment";
-	add.in.flags = 1;
-
-	status = dcerpc_dfs_Add(p, mem_ctx, &add);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Add failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	rem.in.path = add.in.path;
-	rem.in.server = add.in.server;
-	rem.in.share = add.in.share;
-	
-	status = dcerpc_dfs_Remove(p, mem_ctx, &rem);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Add failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	return True;
-}
-#endif
 
 BOOL torture_rpc_dfs(struct torture_context *torture)
 {
@@ -269,9 +237,6 @@ BOOL torture_rpc_dfs(struct torture_context *torture)
 	}
 
 	ret &= test_GetManagerVersion(p, mem_ctx, &version);
-#if 0
-	ret &= test_Add(p, mem_ctx);
-#endif
 	ret &= test_Enum(p, mem_ctx);
 	ret &= test_EnumEx(p, mem_ctx, host);
 
