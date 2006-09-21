@@ -363,8 +363,7 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct 
 		return WERR_BADFID;
 
 	*size = *length = *type = 0;
-	value_name.name = NULL;
-		
+	
 	DEBUG(7,("_reg_info: policy key name = [%s]\n", regkey->name));
 	DEBUG(7,("_reg_info: policy key type = [%08x]\n", regkey->type));
 	
