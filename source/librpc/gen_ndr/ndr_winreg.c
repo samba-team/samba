@@ -2281,13 +2281,14 @@ NTSTATUS ndr_push_winreg_QueryValue(struct ndr_push *ndr, int flags, const struc
 		if (r->in.type) {
 			NDR_CHECK(ndr_push_winreg_Type(ndr, NDR_SCALARS, *r->in.type));
 		}
-		if (r->in.data == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.size));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.length));
-		for (cntr_data_1 = 0; cntr_data_1 < *r->in.length; cntr_data_1++) {
-			if (r->in.data[cntr_data_1] == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-			NDR_CHECK(ndr_push_ref_ptr(ndr));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.data));
+		if (r->in.data) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.size));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.length));
+			for (cntr_data_1 = 0; cntr_data_1 < *r->in.length; cntr_data_1++) {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.data[cntr_data_1]));
+			}
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.size));
 		if (r->in.size) {
@@ -2303,13 +2304,14 @@ NTSTATUS ndr_push_winreg_QueryValue(struct ndr_push *ndr, int flags, const struc
 		if (r->out.type) {
 			NDR_CHECK(ndr_push_winreg_Type(ndr, NDR_SCALARS, *r->out.type));
 		}
-		if (r->out.data == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.size));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.length));
-		for (cntr_data_1 = 0; cntr_data_1 < *r->out.length; cntr_data_1++) {
-			if (r->out.data[cntr_data_1] == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-			NDR_CHECK(ndr_push_ref_ptr(ndr));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.data));
+		if (r->out.data) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.size));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.length));
+			for (cntr_data_1 = 0; cntr_data_1 < *r->out.length; cntr_data_1++) {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.data[cntr_data_1]));
+			}
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.size));
 		if (r->out.size) {
@@ -2333,6 +2335,7 @@ NTSTATUS ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int flags, struct winr
 	uint32_t _ptr_length;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_type_0;
+	TALLOC_CTX *_mem_save_data_0;
 	TALLOC_CTX *_mem_save_data_1;
 	TALLOC_CTX *_mem_save_data_2;
 	TALLOC_CTX *_mem_save_size_0;
@@ -2360,24 +2363,34 @@ NTSTATUS ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int flags, struct winr
 			NDR_CHECK(ndr_pull_winreg_Type(ndr, NDR_SCALARS, r->in.type));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_type_0, 0);
 		}
-		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.data));
-		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.data));
-		if (ndr_get_array_length(ndr, &r->in.data) > ndr_get_array_size(ndr, &r->in.data)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.data), ndr_get_array_length(ndr, &r->in.data));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
+		if (_ptr_data) {
+			NDR_PULL_ALLOC(ndr, r->in.data);
+		} else {
+			r->in.data = NULL;
 		}
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->in.data, ndr_get_array_size(ndr, &r->in.data));
-		}
-		memcpy(r->out.data,r->in.data,ndr_get_array_size(ndr, &r->in.data) * sizeof(*r->in.data));
-		_mem_save_data_1 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->in.data, 0);
-		for (cntr_data_1 = 0; cntr_data_1 < *r->in.length; cntr_data_1++) {
-			NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_data));
-			if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-				NDR_PULL_ALLOC(ndr, r->in.data[cntr_data_1]);
+		if (r->in.data) {
+			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.data, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.data));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.data));
+			if (ndr_get_array_length(ndr, &r->in.data) > ndr_get_array_size(ndr, &r->in.data)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.data), ndr_get_array_length(ndr, &r->in.data));
 			}
+			NDR_PULL_ALLOC_N(ndr, r->in.data, ndr_get_array_size(ndr, &r->in.data));
+			_mem_save_data_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.data, 0);
+			for (cntr_data_1 = 0; cntr_data_1 < *r->in.length; cntr_data_1++) {
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
+				if (_ptr_data) {
+					NDR_PULL_ALLOC(ndr, r->in.data[cntr_data_1]);
+				} else {
+					r->in.data[cntr_data_1] = NULL;
+				}
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_1, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_1, 0);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_size));
 		if (_ptr_size) {
 			NDR_PULL_ALLOC(ndr, r->in.size);
@@ -2402,9 +2415,6 @@ NTSTATUS ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int flags, struct winr
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.length));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_length_0, 0);
 		}
-		if (r->in.size == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_PULL_ALLOC_N(ndr, r->out.data, *r->in.size);
-		memcpy(r->out.data, r->in.data, *r->in.size * sizeof(*r->in.data));
 		if (r->in.data) {
 			if (r->in.size == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.data, *r->in.size));
@@ -2427,24 +2437,34 @@ NTSTATUS ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int flags, struct winr
 			NDR_CHECK(ndr_pull_winreg_Type(ndr, NDR_SCALARS, r->out.type));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_type_0, 0);
 		}
-		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.data));
-		NDR_CHECK(ndr_pull_array_length(ndr, &r->out.data));
-		if (ndr_get_array_length(ndr, &r->out.data) > ndr_get_array_size(ndr, &r->out.data)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->out.data), ndr_get_array_length(ndr, &r->out.data));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
+		if (_ptr_data) {
+			NDR_PULL_ALLOC(ndr, r->out.data);
+		} else {
+			r->out.data = NULL;
 		}
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->out.data, ndr_get_array_size(ndr, &r->out.data));
-		}
-		memcpy(r->out.data,r->in.data,ndr_get_array_size(ndr, &r->out.data) * sizeof(*r->in.data));
-		_mem_save_data_1 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.data, 0);
-		for (cntr_data_1 = 0; cntr_data_1 < *r->out.length; cntr_data_1++) {
-			NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_data));
-			if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-				NDR_PULL_ALLOC(ndr, r->out.data[cntr_data_1]);
+		if (r->out.data) {
+			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.data, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->out.data));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->out.data));
+			if (ndr_get_array_length(ndr, &r->out.data) > ndr_get_array_size(ndr, &r->out.data)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->out.data), ndr_get_array_length(ndr, &r->out.data));
 			}
+			NDR_PULL_ALLOC_N(ndr, r->out.data, ndr_get_array_size(ndr, &r->out.data));
+			_mem_save_data_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.data, 0);
+			for (cntr_data_1 = 0; cntr_data_1 < *r->out.length; cntr_data_1++) {
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
+				if (_ptr_data) {
+					NDR_PULL_ALLOC(ndr, r->out.data[cntr_data_1]);
+				} else {
+					r->out.data[cntr_data_1] = NULL;
+				}
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_1, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_1, 0);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_size));
 		if (_ptr_size) {
 			NDR_PULL_ALLOC(ndr, r->out.size);
@@ -2506,20 +2526,24 @@ _PUBLIC_ void ndr_print_winreg_QueryValue(struct ndr_print *ndr, const char *nam
 		ndr->depth--;
 		ndr_print_ptr(ndr, "data", r->in.data);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "data", *r->in.length);
-		ndr->depth++;
-		for (cntr_data_1=0;cntr_data_1<*r->in.length;cntr_data_1++) {
-			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_data_1);
-			if (idx_1) {
-				ndr_print_ptr(ndr, "data", r->in.data[cntr_data_1]);
-				ndr->depth++;
-				ndr_print_uint8(ndr, "data", *r->in.data[cntr_data_1]);
-				ndr->depth--;
-				free(idx_1);
+		if (r->in.data) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "data", *r->in.length);
+			ndr->depth++;
+			for (cntr_data_1=0;cntr_data_1<*r->in.length;cntr_data_1++) {
+				char *idx_1=NULL;
+				asprintf(&idx_1, "[%d]", cntr_data_1);
+				if (idx_1) {
+					ndr_print_ptr(ndr, "data", r->in.data[cntr_data_1]);
+					ndr->depth++;
+					if (r->in.data[cntr_data_1]) {
+						ndr_print_uint8(ndr, "data", *r->in.data[cntr_data_1]);
+					}
+					ndr->depth--;
+					free(idx_1);
+				}
 			}
+			ndr->depth--;
 		}
-		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "size", r->in.size);
 		ndr->depth++;
@@ -2546,20 +2570,24 @@ _PUBLIC_ void ndr_print_winreg_QueryValue(struct ndr_print *ndr, const char *nam
 		ndr->depth--;
 		ndr_print_ptr(ndr, "data", r->out.data);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "data", *r->out.length);
-		ndr->depth++;
-		for (cntr_data_1=0;cntr_data_1<*r->out.length;cntr_data_1++) {
-			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_data_1);
-			if (idx_1) {
-				ndr_print_ptr(ndr, "data", r->out.data[cntr_data_1]);
-				ndr->depth++;
-				ndr_print_uint8(ndr, "data", *r->out.data[cntr_data_1]);
-				ndr->depth--;
-				free(idx_1);
+		if (r->out.data) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "data", *r->out.length);
+			ndr->depth++;
+			for (cntr_data_1=0;cntr_data_1<*r->out.length;cntr_data_1++) {
+				char *idx_1=NULL;
+				asprintf(&idx_1, "[%d]", cntr_data_1);
+				if (idx_1) {
+					ndr_print_ptr(ndr, "data", r->out.data[cntr_data_1]);
+					ndr->depth++;
+					if (r->out.data[cntr_data_1]) {
+						ndr_print_uint8(ndr, "data", *r->out.data[cntr_data_1]);
+					}
+					ndr->depth--;
+					free(idx_1);
+				}
 			}
+			ndr->depth--;
 		}
-		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "size", r->out.size);
 		ndr->depth++;

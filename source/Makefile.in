@@ -320,7 +320,8 @@ RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
 RPC_UNIXINFO_OBJ = librpc/gen_ndr/srv_unixinfo.o rpc_server/srv_unixinfo_nt.o 
 REGFIO_OBJ = registry/regfio.o
 
-RPC_REG_OBJ =  rpc_server/srv_reg.o rpc_server/srv_reg_nt.o $(REGFIO_OBJ)
+RPC_REG_OBJ =  librpc/gen_ndr/srv_winreg.o rpc_server/srv_winreg_nt.o $(REGFIO_OBJ)
+RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshutdown_nt.o 
 
 RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
@@ -718,7 +719,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
             $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ) \
-            $(RPC_NTSVCS_OBJ) utils/passwd_util.o
+            $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) utils/passwd_util.o
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
@@ -1235,6 +1236,11 @@ bin/librpc_NETLOGON.@SHLIBEXT@: $(RPC_NETLOG_OBJ)
 bin/librpc_winreg.@SHLIBEXT@: $(RPC_REG_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_REG_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_initshutdown.@SHLIBEXT@: $(RPC_INITSHUTDOWN_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_INITSHUTDOWN_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
 bin/librpc_lsa_ds.@SHLIBEXT@: $(RPC_LSA_DS_OBJ)

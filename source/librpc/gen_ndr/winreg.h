@@ -334,14 +334,14 @@ struct winreg_QueryValue {
 		struct policy_handle *handle;/* [ref] */
 		struct winreg_String value_name;
 		enum winreg_Type *type;/* [unique] */
-		uint8_t **data;/* [ref,length_is(*length),size_is(*size)] */
+		uint8_t **data;/* [unique,length_is(*length),size_is(*size)] */
 		uint32_t *size;/* [unique] */
 		uint32_t *length;/* [unique] */
 	} in;
 
 	struct {
 		enum winreg_Type *type;/* [unique] */
-		uint8_t **data;/* [ref,length_is(*length),size_is(*size)] */
+		uint8_t **data;/* [unique,length_is(*length),size_is(*size)] */
 		uint32_t *size;/* [unique] */
 		uint32_t *length;/* [unique] */
 		WERROR result;
