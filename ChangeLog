@@ -1,5 +1,8 @@
 2006-09-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/gssmask/gssmaestro.c: dont exit early then when context
+	is half built.
+	
 	* lib/krb5/rd_req.c: disable ETypeList parsing usage for now, cfx
 	seems broken and its not good to upgrade to a broken enctype.
 	
