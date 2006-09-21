@@ -93,9 +93,9 @@ typedef struct {
 	uint32 attr;
 } LUID_ATTR;
 
-#ifndef _BOOL
+#ifndef _UPPER_BOOL
 typedef int BOOL;
-#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
+#define _UPPER_BOOL
 #endif
 
 typedef struct {

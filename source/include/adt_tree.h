@@ -21,9 +21,9 @@
 #ifndef ADT_TREE_H
 #define ADT_TREE_H
 
-#ifndef _BOOL
+#ifndef _UPPER_BOOL
 typedef int BOOL;
-#define _BOOL  
+#define _UPPER_BOOL  
 #endif
 
 

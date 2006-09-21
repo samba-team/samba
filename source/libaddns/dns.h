@@ -279,10 +279,9 @@ TXT             16 text strings
 
 typedef long HANDLE;
 
-#ifndef _BOOL
+#ifndef _UPPER_BOOL
 typedef int BOOL;
-
-#define _BOOL			/* So we don't typedef BOOL again */
+#define _UPPER_BOOL
 #endif
 
 

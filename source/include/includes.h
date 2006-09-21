@@ -612,9 +612,9 @@ struct timespec {
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
-#ifndef _BOOL
+#ifndef _UPPER_BOOL
 typedef int BOOL;
-#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
+#define _UPPER_BOOL
 #endif
 
 #ifdef HAVE_BROKEN_GETGROUPS
