@@ -327,7 +327,10 @@
 		);
  
 	/* Function 0x0e */
-	WERROR dfs_ManagerInitialize();
+	WERROR dfs_ManagerInitialize(
+		[in]		[string,charset(UTF16)] uint16 *servername,
+		[in]		uint32 flags
+		);
 
 	/* Function 0x0f */
 	WERROR dfs_AddStdRootForced(
