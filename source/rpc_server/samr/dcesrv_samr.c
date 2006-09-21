@@ -2038,7 +2038,7 @@ static NTSTATUS samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		break;
 	case GROUPINFOATTRIBUTES:
 		/* This does not do anything obviously visible in W2k3 LDAP */
-		break;
+		return NT_STATUS_OK;
 	default:
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
