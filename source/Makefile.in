@@ -554,7 +554,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ)
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
-		  @LIBREPLACE_OBJS@ @BUILD_INIPARSER@
+		  @LIBREPLACE_OBJS@ @SOCKET_WRAPPER_OBJS@ @BUILD_INIPARSER@
 
 LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   libsmb/libsmb_cache.o \
@@ -768,7 +768,7 @@ WINBINDD_OBJ = \
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) $(RPC_PARSE_OBJ1) $(DOSERR_OBJ)
 
-WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) @LIBREPLACE_OBJS@ @WINBIND_NSS_EXTRA_OBJS@
+WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) @LIBREPLACE_OBJS@ @SOCKET_WRAPPER_OBJS@ @WINBIND_NSS_EXTRA_OBJS@
 
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
