@@ -134,6 +134,37 @@ get_targetname(struct client *client,
     return GSMERR_OK;
 }
 
+static int32_t
+wrap_token(struct client *client, int32_t hContext, int32_t flags,
+	   krb5_data *in, krb5_data *out)
+{
+    int32_t val;
+    put32(client, eWrap);
+    put32(client, hContext);
+    put32(client, flags);
+    put32(client, 0);
+    putdata(client, *in);
+    ret32(client, val);
+    retdata(client, *out);
+    return val;
+}
+
+static int32_t
+unwrap_token(struct client *client, int32_t hContext, int flags, 
+	     krb5_data *in, krb5_data *out)
+{
+    int32_t val;
+    put32(client, eUnwrap);
+    put32(client, hContext);
+    put32(client, flags);
+    put32(client, 0);
+    putdata(client, *in);
+    ret32(client, val);
+    retdata(client, *out);
+    return val;
+}
+
+
 static int
 get_version_capa(struct client *client, 
 		 int32_t *version, int32_t *capa,
@@ -212,27 +243,61 @@ build_context(struct client *ipeer, struct client *apeer,
     if (iContext == NULL || val != GSMERR_OK) {
 	if (ic)
 	    toast_resource(ipeer, ic);
-	*iContext = 0;
+	if (iContext)
+	    *iContext = 0;
     } else
 	*iContext = ic;
 
     if (aContext == NULL || val != GSMERR_OK) {
 	if (ac)
 	    toast_resource(apeer, ac);
-	*aContext = 0;
+	if (aContext)
+	    *aContext = 0;
     } else
 	*aContext = ac;
 
     if (hDelegCred == NULL || val != GSMERR_OK) {
 	if (deleg)
 	    toast_resource(apeer, deleg);
-	*hDelegCred = 0;
+	if (hDelegCred)
+	    *hDelegCred = 0;
     } else
 	*hDelegCred = deleg;
 
     return val;
 }
 			 
+static void
+test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
+{
+    krb5_data msg, wrapped, out;
+    
+    msg.data = "foo";
+    msg.length = 3;
+
+    krb5_data_zero(&wrapped);
+    krb5_data_zero(&out);
+
+    wrap_token(c1, hc1, 0, &msg, &wrapped);
+    unwrap_token(c2, hc2, 0, &wrapped, &out);
+    krb5_data_free(&wrapped);
+    krb5_data_free(&out);
+
+    wrap_token(c1, hc1, 1, &msg, &wrapped);
+    unwrap_token(c2, hc2, 1, &wrapped, &out);
+    krb5_data_free(&wrapped);
+    krb5_data_free(&out);
+
+    return;
+}
+
+static void
+test_token(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
+{
+    test_wrap(c1, hc1, c2, hc2);
+    test_wrap(c2, hc2, c1, hc1);
+}
+
 static void
 connect_client(const char *slave)
 {
@@ -409,6 +474,7 @@ main(int argc, char **argv)
 	val = build_context(c, c, GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
 			    hCred, &clientC, &serverC, &delegCred);
 	if (val == GSMERR_OK) {
+	    test_token(c, clientC, c, serverC);
 	    toast_resource(c, clientC);
 	    toast_resource(c, serverC);
 	    if (delegCred)
