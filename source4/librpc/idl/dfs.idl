@@ -34,17 +34,13 @@
 	/******************/
 	/* Function: 0x02 */
 	WERROR dfs_Remove (
-		[in]		[string,charset(UTF16)] uint16 *path,
-		[in,unique]	[string,charset(UTF16)] uint16 *server,
-		[in,unique]	[string,charset(UTF16)] uint16 *share
+		[in]		[string,charset(UTF16)] uint16 *dfs_entry_path,
+		[in,unique]	[string,charset(UTF16)] uint16 *servername,
+		[in,unique]	[string,charset(UTF16)] uint16 *sharename
 		);
 
 	/******************/
 	/* Function: 0x03 */
-	WERROR dfs_SetInfo ();
-
-	/******************/
-	/* Function: 0x04 */
 
 	typedef struct {
 	} dfs_Info0;
@@ -224,10 +220,20 @@
 		[case(106)] dfs_Info106 *info106;
 	} dfs_Info;
 
+	WERROR dfs_SetInfo (
+		[in]	 	[string,charset(UTF16)] uint16 dfs_entry_path[],
+		[in,unique]	[string,charset(UTF16)] uint16 *servername,
+		[in,unique]	[string,charset(UTF16)] uint16 *sharename,
+		[in]		uint32 level,
+		[in,ref,switch_is(level)] dfs_Info *info
+		);
+
+	/******************/
+	/* Function: 0x04 */
 	WERROR dfs_GetInfo (
-		[in]		[string,charset(UTF16)] uint16 path[],
-		[in,unique]	[string,charset(UTF16)] uint16 *server,
-		[in,unique]	[string,charset(UTF16)] uint16 *share,
+		[in]		[string,charset(UTF16)] uint16 dfs_entry_path[],
+		[in,unique]	[string,charset(UTF16)] uint16 *servername,
+		[in,unique]	[string,charset(UTF16)] uint16 *sharename,
 		[in]		uint32 level,
 		[out,switch_is(level)] dfs_Info *info
 		);
@@ -313,7 +319,7 @@
 		[in]		uint32 flags
 		);
  
- 	/* Function 0x0d */
+	/* Function 0x0d */
 	WERROR dfs_RemoveStdRoot(
 		[in]		[string,charset(UTF16)] uint16 servername[],
 		[in]		[string,charset(UTF16)] uint16 rootshare[],
