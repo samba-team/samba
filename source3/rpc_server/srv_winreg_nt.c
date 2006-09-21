@@ -554,7 +554,7 @@ WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t e
 	if ( !regkey )
 		return WERR_BADFID; 
 
-	if ( !name || !keyclass || !last_changed_time )
+	if ( !name || !keyclass )
 		return WERR_INVALID_PARAM;
 
 	DEBUG(8,("_reg_enum_key: enumerating key [%s]\n", regkey->name));
@@ -566,7 +566,9 @@ WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t e
 	
 	DEBUG(10,("_reg_enum_key: retrieved subkey named [%s]\n", subkey));
 	
-	*last_changed_time = 0;
+	if ( last_changed_time ) {
+		*last_changed_time = 0;
+	}
 	keyclass->name = NULL;
 	if ( (name->name = talloc_strdup( p->mem_ctx, subkey )) == NULL ) {
 		status = WERR_NOMEM;
