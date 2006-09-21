@@ -465,7 +465,7 @@ static BOOL is_legal_name(const char *name)
 			 * for mb UNIX asian characters like Japanese (SJIS) here.
 			 * JRA.
 			 */
-			if (convert_string(CH_UNIX, CH_UCS2, name, 2, mbc, 2, False) == 2) {
+			if (convert_string(CH_UNIX, CH_UTF16LE, name, 2, mbc, 2, False) == 2) {
 				/* Was a good mb string. */
 				name += 2;
 				continue;

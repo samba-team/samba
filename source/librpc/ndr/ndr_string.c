@@ -31,7 +31,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 	uint32_t len1, ofs, len2;
 	uint16_t len3;
 	int ret;
-	charset_t chset = CH_UCS2;
+	charset_t chset = CH_UTF16LE;
 	unsigned byte_mul = 2;
 	unsigned flags = ndr->flags;
 	unsigned c_len_term = 0;
@@ -40,7 +40,9 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		return NT_STATUS_OK;
 	}
 
-	SMB_ASSERT(!NDR_BE(ndr));
+	if (NDR_BE(ndr)) {
+		chset = CH_UTF16BE;
+	}
 
 	if (flags & LIBNDR_FLAG_STR_ASCII) {
 		chset = CH_DOS;
@@ -282,7 +284,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
 	ssize_t s_len, c_len, d_len;
-	charset_t chset = CH_UCS2;
+	charset_t chset = CH_UTF16LE;
 	unsigned flags = ndr->flags;
 	unsigned byte_mul = 2;
 	uint8_t *dest = NULL;
@@ -291,7 +293,9 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		return NT_STATUS_OK;
 	}
 
-	SMB_ASSERT(!NDR_BE(ndr));
+	if (NDR_BE(ndr)) {
+		chset = CH_UTF16BE;
+	}
 	
 	s_len = s?strlen(s):0;
 
@@ -557,7 +561,9 @@ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var,
 		return NT_STATUS_OK;
 	}
 
-	SMB_ASSERT (!NDR_BE(ndr) || chset != CH_UCS2);
+	if (NDR_BE(ndr) && chset == CH_UTF16) {
+		chset = CH_UTF16BE;
+	}
 
 	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
 
@@ -580,7 +586,9 @@ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var,
 {
 	ssize_t ret, required;
 
-	SMB_ASSERT(!NDR_BE(ndr) || chset != CH_UCS2);
+	if (NDR_BE(ndr) && chset == CH_UTF16) {
+		chset = CH_UTF16BE;
+	}
 
 	required = byte_mul * length;
 	
