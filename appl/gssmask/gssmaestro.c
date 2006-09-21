@@ -202,8 +202,8 @@ build_context(struct client *ipeer, struct client *apeer,
 
     krb5_data_zero(&itoken);
 
-    while (!iDone && !aDone) {
-
+    while (!iDone || !aDone) {
+	
 	if (iDone)
 	    errx(1, "iPeer already done, aPeer want extra rtt");
 
@@ -347,7 +347,6 @@ connect_client(const char *slave)
 	char *str = NULL;
 	get_version_capa(c, &version, &c->capabilities, &str);
 	if (str) {
-	    printf("client %s is using %s\n", c->name, str);
 	    free(str);
 	}
 	if (c->capabilities & HAS_MONIKER)
