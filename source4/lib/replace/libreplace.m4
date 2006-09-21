@@ -267,10 +267,10 @@ AC_CHECK_FUNCS(strnlen setenv)
 AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
 
 # this test disabled as we don't actually need __VA_ARGS__ yet
-# AC_TRY_CPP([
-# #define eprintf(...) fprintf(stderr, __VA_ARGS__)
-# eprintf("bla", "bar");
-# ], [], [AC_MSG_ERROR([__VA_ARGS__ is required])])
+AC_TRY_CPP([
+#define eprintf(...) fprintf(stderr, __VA_ARGS__)
+eprintf("bla", "bar");
+], AC_DEFINE(HAVE__VA_ARGS__MACRO, 1, [Whether the __VA_ARGS__ macro is available]))
 
 # Check prerequisites
 AC_CHECK_FUNCS([memset printf syslog], [], 
