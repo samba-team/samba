@@ -22,4 +22,5 @@
 	default = 0-/FILE:@objdir@/messages.log
 
 [kadmin]
+	default_keys = des3-cbc-sha1:pw-salt
 	save-password = true
