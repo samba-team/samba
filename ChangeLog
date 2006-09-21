@@ -1,5 +1,10 @@
-2006-09-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-09-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/rd_req.c: disable ETypeList parsing usage for now, cfx
+	seems broken and its not good to upgrade to a broken enctype.
+	
+2006-09-20  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* appl/gssmask/gssmask.c: Add wrap/unwrap ops
 
 	* appl/gssmask/protocol.h: Add eGetVersionAndCapabilities flags
