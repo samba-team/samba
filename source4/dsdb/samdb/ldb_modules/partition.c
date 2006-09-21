@@ -474,28 +474,103 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 {
 	int i, ret;
 	uint64_t seq_number = 0;
+	uint64_t timestamp_sequence = 0;
+	uint64_t timestamp = 0;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
-	ret = ldb_next_request(module, req);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-	seq_number = seq_number + req->op.seq_num.seq_num;
 
-	/* Look at base DN */
-	/* Figure out which partition it is under */
-	/* Skip the lot if 'data' isn't here yet (initialistion) */
-	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		struct ldb_module *next = make_module_for_next_request(req, module->ldb, data->partitions[i]->module);
-		
-		ret = ldb_next_request(next, req);
-		talloc_free(next);
+	switch (req->op.seq_num.type) {
+	case LDB_SEQ_NEXT:
+	case LDB_SEQ_HIGHEST_SEQ:
+	       	ret = ldb_next_request(module, req);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		seq_number = seq_number + req->op.seq_num.seq_num;
+		if (req->op.seq_num.flags & LDB_SEQ_TIMESTAMP_SEQUENCE) {
+			timestamp_sequence = req->op.seq_num.seq_num;
+		} else {
+			seq_number = seq_number + req->op.seq_num.seq_num;
+		}
+
+		/* Look at base DN */
+		/* Figure out which partition it is under */
+		/* Skip the lot if 'data' isn't here yet (initialistion) */
+		for (i=0; data && data->partitions && data->partitions[i]; i++) {
+			struct ldb_module *next = make_module_for_next_request(req, module->ldb, data->partitions[i]->module);
+			
+			ret = ldb_next_request(next, req);
+			talloc_free(next);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			if (req->op.seq_num.flags & LDB_SEQ_TIMESTAMP_SEQUENCE) {
+				timestamp_sequence = MAX(timestamp_sequence, req->op.seq_num.seq_num);
+			} else {
+				seq_number = seq_number + req->op.seq_num.seq_num;
+			}
+		}
+		/* fall though */
+	case LDB_SEQ_HIGHEST_TIMESTAMP:
+	{
+		struct ldb_request *date_req = talloc(req, struct ldb_request);
+		if (!date_req) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		*date_req = *req;
+		date_req->op.seq_num.flags = LDB_SEQ_HIGHEST_TIMESTAMP;
+
+		ret = ldb_next_request(module, date_req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		timestamp = date_req->op.seq_num.seq_num;
+		
+		/* Look at base DN */
+		/* Figure out which partition it is under */
+		/* Skip the lot if 'data' isn't here yet (initialistion) */
+		for (i=0; data && data->partitions && data->partitions[i]; i++) {
+			struct ldb_module *next = make_module_for_next_request(req, module->ldb, data->partitions[i]->module);
+			
+			ret = ldb_next_request(next, date_req);
+			talloc_free(next);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			timestamp = MAX(timestamp, date_req->op.seq_num.seq_num);
+		}
+		break;
 	}
-	req->op.seq_num.seq_num = seq_number;
+	}
+
+	switch (req->op.seq_num.flags) {
+	case LDB_SEQ_NEXT:
+	case LDB_SEQ_HIGHEST_SEQ:
+		
+		req->op.seq_num.flags = 0;
+
+		/* Has someone above set a timebase sequence? */
+		if (timestamp_sequence) {
+			req->op.seq_num.seq_num = (((unsigned long long)timestamp << 24) | (seq_number & 0xFFFFFF));
+		} else {
+			req->op.seq_num.seq_num = seq_number;
+		}
+
+		if (timestamp_sequence > req->op.seq_num.seq_num) {
+			req->op.seq_num.seq_num = timestamp_sequence;
+			req->op.seq_num.flags |= LDB_SEQ_TIMESTAMP_SEQUENCE;
+		}
+
+		req->op.seq_num.flags |= LDB_SEQ_GLOBAL_SEQUENCE;
+		break;
+	case LDB_SEQ_HIGHEST_TIMESTAMP:
+		req->op.seq_num.seq_num = timestamp;
+		break;
+	}
+
+	switch (req->op.seq_num.flags) {
+	case LDB_SEQ_NEXT:
+		req->op.seq_num.seq_num++;
+	}
 	return LDB_SUCCESS;
 }
 

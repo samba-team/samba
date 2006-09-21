@@ -3,6 +3,7 @@
 
    Copyright (C) Simo Sorce  2004-2006
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Andrew Tridgell 2005
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -79,6 +80,29 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 	return 0;
 }
 
+/*
+  add a uint64_t element to a record
+*/
+static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_t v)
+{
+	struct ldb_message_element *el;
+
+	if (ldb_msg_find_element(msg, attr) != NULL) {
+		return 0;
+	}
+
+	if (ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)v) != 0) {
+		return -1;
+	}
+
+	el = ldb_msg_find_element(msg, attr);
+	/* always set as replace. This works because on add ops, the flag
+	   is ignored */
+	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	return 0;
+}
+
 /* add_record: add objectGUID attribute */
 static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 {
@@ -87,6 +111,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message *msg;
 	struct ldb_val v;
 	struct GUID guid;
+	uint64_t seq_num;
 	NTSTATUS nt_status;
 	int ret;
 	time_t t = time(NULL);
@@ -138,6 +163,16 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* Get a sequence number from the backend */
+	ret = ldb_sequence_number(module->ldb, LDB_SEQ_NEXT, &seq_num);
+	if (ret == LDB_SUCCESS) {
+		if (add_uint64_element(msg, "uSNCreated", seq_num) != 0 ||
+		    add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
+			talloc_free(down_req);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
 	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
 
 	/* go on with the call chain */
@@ -159,6 +194,7 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message *msg;
 	int ret;
 	time_t t = time(NULL);
+	uint64_t seq_num;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_add_record\n");
 
@@ -184,6 +220,15 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	if (add_time_element(msg, "whenChanged", t) != 0) {
 		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* Get a sequence number from the backend */
+	ret = ldb_sequence_number(module->ldb, LDB_SEQ_NEXT, &seq_num);
+	if (ret == LDB_SUCCESS) {
+		if (add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
+			talloc_free(down_req);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);

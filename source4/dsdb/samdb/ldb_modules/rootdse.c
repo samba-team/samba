@@ -118,7 +118,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	if (do_attribute(attrs, "highestCommittedUSN")) {
 		uint64_t seq_num;
-		int ret = ldb_sequence_number(module->ldb, &seq_num);
+		int ret = ldb_sequence_number(module->ldb, LDB_SEQ_HIGHEST_SEQ, &seq_num);
 		if (ret == LDB_SUCCESS) {
 			if (ldb_msg_add_fmt(msg, "highestCommittedUSN", 
 					    "%llu", (unsigned long long)seq_num) != 0) {

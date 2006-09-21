@@ -413,8 +413,10 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_message *msg;
-	struct ldb_message_element el;
+	struct ldb_message_element el[2];
 	struct ldb_val val;
+	struct ldb_val val_time;
+	time_t t = time(NULL);
 	char *s = NULL;
 	int ret;
 
@@ -424,31 +426,49 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 		return -1;
 	}
 
-	s = talloc_asprintf(msg, "%.0f", ltdb->sequence_number+1);
+	s = talloc_asprintf(msg, "%llu", ltdb->sequence_number+1);
 	if (!s) {
 		errno = ENOMEM;
 		return -1;
 	}
 
-	msg->num_elements = 1;
-	msg->elements = &el;
+	msg->num_elements = ARRAY_SIZE(el);
+	msg->elements = el;
 	msg->dn = ldb_dn_explode(msg, LTDB_BASEINFO);
 	if (msg->dn == NULL) {
 		talloc_free(msg);
 		errno = ENOMEM;
 		return -1;
 	}
-	el.name = talloc_strdup(msg, LTDB_SEQUENCE_NUMBER);
-	if (el.name == NULL) {
+	el[0].name = talloc_strdup(msg, LTDB_SEQUENCE_NUMBER);
+	if (el[0].name == NULL) {
 		talloc_free(msg);
 		errno = ENOMEM;
 		return -1;
 	}
-	el.values = &val;
-	el.num_values = 1;
-	el.flags = LDB_FLAG_MOD_REPLACE;
+	el[0].values = &val;
+	el[0].num_values = 1;
+	el[0].flags = LDB_FLAG_MOD_REPLACE;
 	val.data = (uint8_t *)s;
 	val.length = strlen(s);
+
+	el[1].name = talloc_strdup(msg, LTDB_MOD_TIMESTAMP);
+	if (el[1].name == NULL) {
+		talloc_free(msg);
+		errno = ENOMEM;
+		return -1;
+	}
+	el[1].values = &val_time;
+	el[1].num_values = 1;
+	el[1].flags = LDB_FLAG_MOD_REPLACE;
+
+	s = ldb_timestring(msg, t);
+	if (s == NULL) {
+		return -1;
+	}
+
+	val_time.data = (uint8_t *)s;
+	val_time.length = strlen(s);
 
 	ret = ltdb_modify_internal(module, msg);
 
