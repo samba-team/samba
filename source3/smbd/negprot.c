@@ -224,10 +224,6 @@ static int negprot_spnego(char *p)
 
 	memcpy(p, blob.data, blob.length);
 	len = blob.length;
-	if (len > 256) {
-		DEBUG(0,("negprot_spnego: blob length too long (%d)\n", len));
-		len = 255;
-	}
 	data_blob_free(&blob);
 
 	return len;
