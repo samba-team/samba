@@ -286,6 +286,9 @@ test-noswrap: all
 quicktest: all
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
 
+testenv: all
+	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} xterm SOCKET_WRAPPER
+
 valgrindtest: valgrindtest-quick
 
 valgrindtest-quick: all
