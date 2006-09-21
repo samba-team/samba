@@ -944,6 +944,8 @@ static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *r
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	req->op.seq_num.flags = 0;
+
 	tret = ltdb_search_dn1(module, dn, msg);
 	if (tret != 1) {
 		talloc_free(tmp_ctx);
@@ -952,7 +954,26 @@ static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *r
 		return LDB_SUCCESS;
 	}
 
-	req->op.seq_num.seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
+	switch (req->op.seq_num.type) {
+	case LDB_SEQ_HIGHEST_SEQ:
+		req->op.seq_num.seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
+		break;
+	case LDB_SEQ_NEXT:
+		req->op.seq_num.seq_num = ldb_msg_find_attr_as_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
+		req->op.seq_num.seq_num++;
+		break;
+	case LDB_SEQ_HIGHEST_TIMESTAMP:
+	{
+		const char *date = ldb_msg_find_attr_as_string(msg, LTDB_MOD_TIMESTAMP, NULL);
+		if (date) {
+			req->op.seq_num.seq_num = ldb_string_to_time(date);
+		} else {
+			req->op.seq_num.seq_num = 0;
+			/* zero is as good as anything when we don't know */
+		}
+		break;
+	}
+	}
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }

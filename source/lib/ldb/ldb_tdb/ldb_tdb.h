@@ -14,7 +14,7 @@ struct ltdb_private {
 	
 	/* a double is used for portability and ease of string
 	   handling. It has plenty of digits of precision */
-	double sequence_number;
+	unsigned long long sequence_number;
 
 	struct ltdb_cache {
 		struct ldb_message *baseinfo;
@@ -58,6 +58,7 @@ struct ltdb_context {
 
 /* special attribute types */
 #define LTDB_SEQUENCE_NUMBER "sequenceNumber"
+#define LTDB_MOD_TIMESTAMP "whenChanged"
 #define LTDB_OBJECTCLASS "objectClass"
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_cache.c  */
