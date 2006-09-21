@@ -460,6 +460,7 @@ krb5_verify_ap_req2(krb5_context context,
 
     ac->keytype = ETYPE_NULL;
 
+#if 0 /* disabled because gssapi cfx seems broken */
     if (etypes.val) {
 	int i;
 
@@ -470,6 +471,10 @@ krb5_verify_ap_req2(krb5_context context,
 	    }
 	}
     }
+#else
+    etypes.val = NULL;
+    etypes.len = 0;
+#endif
 
     if (ap_req_options) {
 	*ap_req_options = 0;
