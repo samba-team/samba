@@ -305,17 +305,31 @@
 	/* Function 0x0b */
 	WERROR dfs_RemoveFtRoot();
 
-	/* Function 0x0c */
-	WERROR dfs_AddStdRoot();
-
-	/* Function 0x0d */
-	WERROR dfs_RemoveStdRoot();
-
+	/* Function 0x0c */ 
+	WERROR dfs_AddStdRoot(
+		[in]		[string,charset(UTF16)] uint16 servername[],
+		[in]		[string,charset(UTF16)] uint16 rootshare[],
+		[in]		[string,charset(UTF16)] uint16 comment[],
+		[in]		uint32 flags
+		);
+ 
+ 	/* Function 0x0d */
+	WERROR dfs_RemoveStdRoot(
+		[in]		[string,charset(UTF16)] uint16 servername[],
+		[in]		[string,charset(UTF16)] uint16 rootshare[],
+		[in]		uint32 flags
+		);
+ 
 	/* Function 0x0e */
 	WERROR dfs_ManagerInitialize();
 
 	/* Function 0x0f */
-	WERROR dfs_AddStdRootForced();
+	WERROR dfs_AddStdRootForced(
+		[in]		[string,charset(UTF16)] uint16 servername[],
+		[in]		[string,charset(UTF16)] uint16 rootshare[],
+		[in]		[string,charset(UTF16)] uint16 comment[],
+		[in]		[string,charset(UTF16)] uint16 store[] /* C:\\whatever */
+		);
 
 	/* Function 0x10 */
 	WERROR dfs_GetDcAddress();
