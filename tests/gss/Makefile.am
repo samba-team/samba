@@ -26,5 +26,9 @@ krb5.conf: krb5.conf.in Makefile
 
 CLEANFILES= \
 	$(TESTS) \
+	server.keytab \
+	krb5.conf \
+	current-db* \
+	*.log \
 	check-gss.tmp \
 	check-gssmask.tmp
