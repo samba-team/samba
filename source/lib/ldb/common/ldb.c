@@ -888,7 +888,7 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 /*
   return the global sequence number
 */
-int ldb_sequence_number(struct ldb_context *ldb, uint64_t *seq_num)
+int ldb_sequence_number(struct ldb_context *ldb, enum ldb_sequence_type type, uint64_t *seq_num)
 {
 	struct ldb_request *req;
 	int ret;
@@ -905,6 +905,7 @@ int ldb_sequence_number(struct ldb_context *ldb, uint64_t *seq_num)
 	req->callback = NULL;
 	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
+	req->op.seq_num.type = type;
 	/* do request and autostart a transaction */
 	ret = ldb_request(ldb, req);
 	

@@ -169,29 +169,6 @@ failed:
 	return -1;
 }
 
-/*
-  add a uint64_t element to a record
-*/
-static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_t v)
-{
-	struct ldb_message_element *el;
-
-	if (ldb_msg_find_element(msg, attr) != NULL) {
-		return 0;
-	}
-
-	if (ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)v) != 0) {
-		return -1;
-	}
-
-	el = ldb_msg_find_element(msg, attr);
-	/* always set as replace. This works because on add ops, the flag
-	   is ignored */
-	el->flags = LDB_FLAG_MOD_REPLACE;
-
-	return 0;
-}
-
 
 /*
   hook search operations
@@ -312,108 +289,6 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	return ret;
 }
 
-/*
-  hook add record ops
-*/
-static int operational_add(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_request *down_req;
-	struct ldb_message *msg;
-	uint64_t seq_num;
-	int ret;
-
-	if (ldb_dn_is_special(req->op.add.message->dn)) {
-		return ldb_next_request(module, req);
-	}
-
-	down_req = talloc(req, struct ldb_request);
-	if (down_req == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	*down_req = *req;
-
-	/* we have to copy the message as the caller might have it as a const */
-	down_req->op.mod.message = msg = ldb_msg_copy_shallow(down_req, req->op.mod.message);
-	if (msg == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* Get a sequence number from the backend */
-	ret = ldb_sequence_number(module->ldb, &seq_num);
-	if (ret == LDB_SUCCESS) {
-		if (add_uint64_element(msg, "uSNCreated", seq_num) != 0 ||
-		    add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
-			talloc_free(down_req);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-	}
-
-	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
-
-	/* go on with the call chain */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
-	}
-
-	return ret;
-}
-
-/*
-  hook modify record ops
-*/
-static int operational_modify(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_request *down_req;
-	struct ldb_message *msg;
-	uint64_t seq_num;
-	int ret;
-
-	if (ldb_dn_is_special(req->op.mod.message->dn)) {
-		return ldb_next_request(module, req);
-	}
-
-	down_req = talloc(req, struct ldb_request);
-	if (down_req == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	*down_req = *req;
-
-	/* we have to copy the message as the caller might have it as a const */
-	down_req->op.mod.message = msg = ldb_msg_copy_shallow(down_req, req->op.mod.message);
-	if (msg == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	/* Get a sequence number from the backend */
-	ret = ldb_sequence_number(module->ldb, &seq_num);
-	if (ret == LDB_SUCCESS) {
-		/* update the records USN if possible */
-		if (add_uint64_element(msg, "uSNChanged", 
-				       seq_num) != 0) {
-			talloc_free(down_req);
-			return -1;
-		}
-	}
-	
-	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
-
-	/* go on with the call chain */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->handle = down_req->handle;
-	}
-
-	return ret;
-}
-
 static int operational_init(struct ldb_module *ctx)
 {
 	/* setup some standard attribute handlers */
@@ -428,8 +303,6 @@ static int operational_init(struct ldb_module *ctx)
 static const struct ldb_module_ops operational_ops = {
 	.name              = "operational",
 	.search            = operational_search,
-	.add               = operational_add,
-	.modify            = operational_modify,
 	.init_context	   = operational_init
 };
 

@@ -38,6 +38,7 @@
 
 struct entryUUID_private {
 	struct ldb_result *objectclass_res;	
+	struct ldb_dn **base_dns;
 };
 
 static struct ldb_val encode_guid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
@@ -188,6 +189,80 @@ static struct ldb_val normalise_to_signed32(struct ldb_module *module, TALLOC_CT
 	return val_copy(module, ctx, val);
 }
 
+static struct ldb_val usn_to_entryCSN(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	struct ldb_val out;
+	unsigned long long usn = strtoull(val->data, NULL, 10);
+	time_t t = (usn >> 24);
+	out = data_blob_string_const(talloc_asprintf(ctx, "%s#%06x#00#000000", ldb_timestring(ctx, t), (unsigned int)(usn & 0xFFFFFF)));
+	return out;
+}
+
+static unsigned long long entryCSN_to_usn_int(TALLOC_CTX *ctx, const struct ldb_val *val) 
+{
+	char *entryCSN = talloc_strdup(ctx, val->data);
+	char *mod_per_sec;
+	time_t t;
+	unsigned long long usn;
+	char *p;
+	if (!entryCSN) {
+		return 0;
+	}
+	p = strchr(entryCSN, '#');
+	if (!p) {
+		return 0;
+	}
+	p[0] = '\0';
+	p++;
+	mod_per_sec = p;
+
+	p = strchr(p, '#');
+	if (!p) {
+		return 0;
+	}
+	p[0] = '\0';
+	p++;
+
+	usn = strtol(mod_per_sec, NULL, 16);
+
+	t = ldb_string_to_time(entryCSN);
+	
+	usn = usn | ((unsigned long long)t <<24);
+	return usn;
+}
+
+static struct ldb_val entryCSN_to_usn(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	struct ldb_val out;
+	unsigned long long usn = entryCSN_to_usn_int(ctx, val);
+	out = data_blob_string_const(talloc_asprintf(ctx, "%lld", usn));
+	return out;
+}
+
+static struct ldb_val usn_to_timestamp(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	struct ldb_val out;
+	unsigned long long usn = strtoull(val->data, NULL, 10);
+	time_t t = (usn >> 24);
+	out = data_blob_string_const(ldb_timestring(ctx, t));
+	return out;
+}
+
+static struct ldb_val timestamp_to_usn(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	struct ldb_val out;
+	time_t t;
+	unsigned long long usn;
+
+	t = ldb_string_to_time(val->data);
+	
+	usn = ((unsigned long long)t <<24);
+
+	out = data_blob_string_const(talloc_asprintf(ctx, "%lld", usn));
+	return out;
+}
+
+
 const struct ldb_map_attribute entryUUID_attributes[] = 
 {
 	/* objectGUID */
@@ -295,6 +370,28 @@ const struct ldb_map_attribute entryUUID_attributes[] =
 		}
 	},
 	{
+		.local_name = "usnChanged",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "entryCSN",
+				 .convert_local = usn_to_entryCSN,
+				 .convert_remote = entryCSN_to_usn
+			 },
+		},
+	},
+	{
+		.local_name = "usnCreated",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "createTimestamp",
+				 .convert_local = usn_to_timestamp,
+				 .convert_remote = timestamp_to_usn,
+			 },
+		},
+	},
+	{
 		.local_name = "*",
 		.type = MAP_KEEP,
 	},
@@ -309,6 +406,8 @@ const char * const wildcard_attributes[] = {
 	"objectGUID", 
 	"whenCreated", 
 	"whenChanged",
+	"usnCreated",
+	"usnChanged",
 	NULL
 };
 
@@ -373,6 +472,75 @@ static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *sche
 	return ret;
 }
 
+
+static int get_remote_rootdse(struct ldb_context *ldb, void *context, 
+		       struct ldb_reply *ares) 
+{
+	struct entryUUID_private *entryUUID_private;
+	entryUUID_private = talloc_get_type(context,
+					    struct entryUUID_private);
+	if (ares->type == LDB_REPLY_ENTRY) {
+		int i;
+		struct ldb_message_element *el = ldb_msg_find_element(ares->message, "namingContexts");
+		entryUUID_private->base_dns = talloc_realloc(entryUUID_private, entryUUID_private->base_dns, struct ldb_dn *, 
+							     el->num_values + 1);
+		for (i=0; i < el->num_values; i++) {
+			if (!entryUUID_private->base_dns) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			entryUUID_private->base_dns[i] = ldb_dn_explode(entryUUID_private->base_dns, (const char *)el->values[i].data);
+			if (!entryUUID_private->base_dns[i]) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+		}
+		entryUUID_private->base_dns[i] = NULL;
+	}
+}
+
+static int find_base_dns(struct ldb_module *module, 
+			  struct entryUUID_private *entryUUID_private) 
+{
+	int ret;
+	struct ldb_request *req;
+	const char *naming_context_attr[] = {
+		"namingContexts",
+		NULL
+	};
+	req = talloc(module, struct ldb_request);
+	if (req == NULL) {
+		ldb_set_errstring(module->ldb, "Out of Memory");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	req->operation = LDB_SEARCH;
+	req->op.search.base = ldb_dn_new(req);
+	req->op.search.scope = LDB_SCOPE_BASE;
+
+	req->op.search.tree = ldb_parse_tree(req, "objectClass=*");
+	if (req->op.search.tree == NULL) {
+		ldb_set_errstring(module->ldb, "Unable to parse search expression");
+		talloc_free(req);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	req->op.search.attrs = naming_context_attr;
+	req->controls = NULL;
+	req->context = entryUUID_private;
+	req->callback = get_remote_rootdse;
+	ldb_set_timeout(module->ldb, req, 0); /* use default timeout */
+
+	ret = ldb_next_request(module, req);
+	
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+	
+	talloc_free(req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+}
+
 /* the context init function */
 static int entryUUID_init(struct ldb_module *module)
 {
@@ -402,13 +570,104 @@ static int entryUUID_init(struct ldb_module *module)
 		ldb_asprintf_errstring(module->ldb, "Failed to fetch objectClass schema elements: %s\n", ldb_errstring(module->ldb));
 		return ret;
 	}	
-	
+
+	ret = find_base_dns(module, entryUUID_private);
+
 	return ldb_next_init(module);
+}
+
+static int get_seq(struct ldb_context *ldb, void *context, 
+		   struct ldb_reply *ares) 
+{
+	unsigned long long *max_seq = context;
+	unsigned long long seq;
+	if (ares->type == LDB_REPLY_ENTRY) {
+		struct ldb_message_element *el = ldb_msg_find_element(ares->message, "contextCSN");
+		if (el) {
+			seq = entryCSN_to_usn_int(ares, &el->values[0]);
+			*max_seq = MAX(seq, *max_seq);
+		}
+	}
+}
+
+static int entryUUID_sequence_number(struct ldb_module *module, struct ldb_request *req)
+{
+	int i, ret;
+	struct map_private *map_private;
+	struct entryUUID_private *entryUUID_private;
+	unsigned long long max_seq = 0;
+	struct ldb_request *search_req;
+	map_private = talloc_get_type(module->private_data, struct map_private);
+
+	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
+
+	/* Search the baseDNs for a sequence number */
+	for (i=0; entryUUID_private && 
+		     entryUUID_private->base_dns && 
+		     entryUUID_private->base_dns[i];
+		i++) {
+		static const char *contextCSN_attr[] = {
+			"contextCSN", NULL
+		};
+		search_req = talloc(req, struct ldb_request);
+		if (search_req == NULL) {
+			ldb_set_errstring(module->ldb, "Out of Memory");
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		search_req->operation = LDB_SEARCH;
+		search_req->op.search.base = entryUUID_private->base_dns[i];
+		search_req->op.search.scope = LDB_SCOPE_BASE;
+		
+		search_req->op.search.tree = ldb_parse_tree(search_req, "objectClass=*");
+		if (search_req->op.search.tree == NULL) {
+			ldb_set_errstring(module->ldb, "Unable to parse search expression");
+			talloc_free(search_req);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		search_req->op.search.attrs = contextCSN_attr;
+		search_req->controls = NULL;
+		search_req->context = &max_seq;
+		search_req->callback = get_seq;
+		ldb_set_timeout(module->ldb, search_req, 0); /* use default timeout */
+		
+		ret = ldb_next_request(module, search_req);
+		
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(search_req->handle, LDB_WAIT_ALL);
+		}
+		
+		talloc_free(search_req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	switch (req->op.seq_num.type) {
+	case LDB_SEQ_HIGHEST_SEQ:
+		req->op.seq_num.seq_num = max_seq;
+		break;
+	case LDB_SEQ_NEXT:
+		req->op.seq_num.seq_num = max_seq;
+		req->op.seq_num.seq_num++;
+		break;
+	case LDB_SEQ_HIGHEST_TIMESTAMP:
+	{
+		req->op.seq_num.seq_num = (max_seq >> 24);
+		break;
+	}
+	}
+	req->op.seq_num.flags = 0;
+	req->op.seq_num.flags |= LDB_SEQ_TIMESTAMP_SEQUENCE;
+	req->op.seq_num.flags |= LDB_SEQ_GLOBAL_SEQUENCE;
+	return LDB_SUCCESS;
 }
 
 static struct ldb_module_ops entryUUID_ops = {
 	.name		   = "entryUUID",
 	.init_context	   = entryUUID_init,
+	.sequence_number   = entryUUID_sequence_number
 };
 
 /* the init function */
@@ -421,6 +680,5 @@ int ldb_entryUUID_module_init(void)
 	entryUUID_ops.rename	= ops.rename;
 	entryUUID_ops.search	= ops.search;
 	entryUUID_ops.wait	= ops.wait;
-
 	return ldb_register_module(&entryUUID_ops);
 }

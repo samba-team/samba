@@ -740,7 +740,13 @@ struct ldb_register_partition {
 };
 
 struct ldb_sequence_number {
+	enum ldb_sequence_type {
+		LDB_SEQ_HIGHEST_SEQ,
+		LDB_SEQ_HIGHEST_TIMESTAMP,
+		LDB_SEQ_NEXT
+	} type;
 	uint64_t seq_num;
+	uint32_t flags;
 };
 
 typedef int (*ldb_request_callback_t)(struct ldb_context *, void *, struct ldb_reply *);
@@ -921,11 +927,6 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
   otherwise a failure code)
 */
 int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn);
-
-/**
-  Obtain current database sequence number
-*/
-int ldb_sequence_number(struct ldb_context *ldb, uint64_t *seq_num);
 
 /**
   start a transaction

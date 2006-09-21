@@ -207,4 +207,14 @@ int check_critical_controls(struct ldb_control **controls);
 
 /* The following definitions come from lib/ldb/common/ldb_utf8.c */
 char *ldb_casefold_default(void *context, void *mem_ctx, const char *s);
+
+/**
+  Obtain current/next database sequence number
+*/
+int ldb_sequence_number(struct ldb_context *ldb, enum ldb_sequence_type type, uint64_t *seq_num);
+
+#define LDB_SEQ_GLOBAL_SEQUENCE    0x01
+#define LDB_SEQ_TIMESTAMP_SEQUENCE 0x02
+
+
 #endif

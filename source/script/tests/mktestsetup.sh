@@ -328,6 +328,10 @@ directory	$LDAPDIR/db
 index           objectClass eq
 index           samAccountName eq
 
+overlay syncprov
+syncprov-checkpoint 100 10
+syncprov-sessionlog 100
+
 EOF
 
 PROVISION_OPTIONS="$CONFIGURATION --host-name=$NETBIOSNAME --host-ip=127.0.0.1"
