@@ -1374,33 +1374,86 @@ size_t align_string(const void *base_ptr, const char *p, int flags)
 	return 0;
 }
 
-/****************************************************************
- Calculate the size (in bytes) of the next multibyte character in
- our internal character set. Note that p must be pointing to a
- valid mb char, not within one.
-****************************************************************/
+/*
+  Return the unicode codepoint for the next multi-byte CH_UNIX character
+  in the string. The unicode codepoint (codepoint_t) is an unsinged 32 bit value.
 
-size_t next_mb_char_size(const char *s)
+  Also return the number of bytes consumed (which tells the caller
+  how many bytes to skip to get to the next CH_UNIX character).
+
+  Return INVALID_CODEPOINT if the next character cannot be converted.
+*/
+
+codepoint_t next_codepoint(const char *str, size_t *size)
 {
-	size_t i;
+	/* It cannot occupy more than 4 bytes in UTF16 format */
+	uint8_t buf[4];
+	smb_iconv_t descriptor;
+	size_t ilen_orig;
+	size_t ilen;
+	size_t olen;
+	char *outbuf;
 
-	if (!(*s & 0x80))
-		return 1; /* ascii. */
-
-	conv_silent = True;
-	for ( i = 1; i <=4; i++ ) {
-		smb_ucs2_t uc;
-		if (convert_string(CH_UNIX, CH_UCS2, s, i, &uc, 2, False) == 2) {
-#if 0 /* JRATEST */
-			DEBUG(10,("next_mb_char_size: size %u at string %s\n",
-				(unsigned int)i, s));
-#endif
-			conv_silent = False;
-			return i;
-		}
+	if ((str[0] & 0x80) == 0) {
+		*size = 1;
+		return (codepoint_t)str[0];
 	}
-	/* We're hosed - we don't know how big this is... */
-	DEBUG(10,("next_mb_char_size: unknown size at string %s\n", s));
-	conv_silent = False;
-	return 1;
+
+	/* We assume that no multi-byte character can take
+	   more than 5 bytes. This is OK as we only
+	   support codepoints up to 1M */
+
+	ilen_orig = strnlen(str, 5);
+	ilen = ilen_orig;
+
+        lazy_initialize_conv();
+
+	/* CH_UCS2 == UTF16-LE. */
+        descriptor = conv_handles[CH_UNIX][CH_UCS2];
+	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
+		*size = 1;
+		return INVALID_CODEPOINT;
+	}
+
+	/* This looks a little strange, but it is needed to cope
+	   with codepoints above 64k which are encoded as per RFC2781. */
+	olen = 2;
+	outbuf = (char *)buf;
+	smb_iconv(descriptor, &str, &ilen, &outbuf, &olen);
+	if (olen == 2) {
+		/* We failed to convert to a 2 byte character.
+		   See if we can convert to a 4 UTF16-LE byte char encoding.
+		*/
+		olen = 4;
+		outbuf = (char *)buf;
+		smb_iconv(descriptor,  &str, &ilen, &outbuf, &olen);
+		if (olen == 4) {
+			/* We didn't convert any bytes */
+			*size = 1;
+			return INVALID_CODEPOINT;
+		}
+		olen = 4 - olen;
+	} else {
+		olen = 2 - olen;
+	}
+
+	*size = ilen_orig - ilen;
+
+	if (olen == 2) {
+		/* 2 byte, UTF16-LE encoded value. */
+		return (codepoint_t)SVAL(buf, 0);
+	}
+	if (olen == 4) {
+		/* Decode a 4 byte UTF16-LE character manually.
+		   See RFC2871 for the encoding machanism.
+		*/
+		codepoint_t w1 = SVAL(buf,0) & ~0xD800;
+		codepoint_t w2 = SVAL(buf,2) & ~0xDC00;
+
+		return (codepoint_t)0x10000 +
+				(w1 << 10) + w2;
+	}
+
+	/* no other length is valid */
+	return INVALID_CODEPOINT;
 }

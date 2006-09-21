@@ -22,6 +22,7 @@
 /* this defines the charset types used in samba */
 typedef enum {CH_UCS2=0, CH_UTF16=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4} charset_t;
 
+#if 0
 /* FIXME!!!  Hack job for now to get the lsa ndr code compiling */
 #ifndef strlen_m
 #define strlen_m strlen
@@ -29,7 +30,7 @@ typedef enum {CH_UCS2=0, CH_UTF16=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=
 #ifndef strlen_m_term
 #define strlen_m_term strlen
 #endif
-
+#endif
 
 #define NUM_CHARSETS 5
 

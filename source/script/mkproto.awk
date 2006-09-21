@@ -146,7 +146,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^NODE_STATUS_STRUCT|SMB_STRUCT_DIR|ELOG_TDB/ ) {
+  if( $0 ~ /^NODE_STATUS_STRUCT|SMB_STRUCT_DIR|ELOG_TDB|codepoint_t/ ) {
     gotstart = 1;
   }
 

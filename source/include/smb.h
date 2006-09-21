@@ -170,6 +170,10 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((unsigned char *)(src))[0],\
 				((unsigned char *)(dest))[1] = ((unsigned char *)(src))[1], (dest))
 
+/* Large data type for manipulating uint32 unicode codepoints */
+typedef uint32 codepoint_t;
+#define INVALID_CODEPOINT ((codepoint_t)-1)
+
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 #define PIPE_SRVSVC   "\\PIPE\\srvsvc"
