@@ -133,9 +133,6 @@
 #define OPENX_FILE_CREATE_IF_NOT_EXIST 0x10
 #define OPENX_FILE_FAIL_IF_NOT_EXIST 0
 
-/* share types */
-/* defined in librpc/gen_ndr/srvsvc.h */
-
 #include "doserr.h"
 
 typedef union unid_t {
@@ -1356,9 +1353,6 @@ char *strdup(char *s);
 #ifndef SELECT_CAST
 #define SELECT_CAST
 #endif
-
-/* these are used in NetServerEnum to choose what to receive */
-/* defined in librpc/gen_ndr/srvsvc.h */
 
 /* This was set by JHT in liaison with Jeremy Allison early 1997
  * History:
