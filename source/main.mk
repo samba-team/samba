@@ -361,7 +361,7 @@ include/includes.d: include/includes.h
 
 .h.h.gch:
 	@echo "Precompiling $<"
-	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
+	@$(CC) -Ilib/replace `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
 
 .y.c:
 	@echo "Building $< with $(YACC)"
