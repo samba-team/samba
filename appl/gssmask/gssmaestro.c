@@ -164,6 +164,36 @@ unwrap_token(struct client *client, int32_t hContext, int flags,
     return val;
 }
 
+static int32_t
+get_mic(struct client *client, int32_t hContext,
+	krb5_data *in, krb5_data *mic)
+{
+    int32_t val;
+    put32(client, eSign);
+    put32(client, hContext);
+    put32(client, 0);
+    put32(client, 0);
+    putdata(client, *in);
+    ret32(client, val);
+    retdata(client, *mic);
+    return val;
+}
+
+static int32_t
+verify_mic(struct client *client, int32_t hContext, 
+	   krb5_data *in, krb5_data *mic)
+{
+    int32_t val;
+    put32(client, eVerify);
+    put32(client, hContext);
+    put32(client, 0);
+    put32(client, 0);
+    putdata(client, *in);
+    putdata(client, *mic);
+    ret32(client, val);
+    return val;
+}
+
 
 static int
 get_version_capa(struct client *client, 
@@ -268,9 +298,32 @@ build_context(struct client *ipeer, struct client *apeer,
 }
 			 
 static void
-test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
+test_mic(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
+{
+    krb5_data msg, mic;
+    int32_t val;
+    
+    msg.data = "foo";
+    msg.length = 3;
+
+    krb5_data_zero(&mic);
+
+    val = get_mic(c1, hc1, &msg, &mic);
+    if (val)
+	errx(1, "get_mic failed to host: %s", c1->moniker);
+    val = verify_mic(c2, hc2, &msg, &mic);
+    if (val)
+	errx(1, "verify_mic failed to host: %s", c2->moniker);
+
+    krb5_data_free(&mic);
+}
+
+static void
+test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2, 
+	  int conf)
 {
     krb5_data msg, wrapped, out;
+    int32_t val;
     
     msg.data = "foo";
     msg.length = 3;
@@ -278,24 +331,26 @@ test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
     krb5_data_zero(&wrapped);
     krb5_data_zero(&out);
 
-    wrap_token(c1, hc1, 0, &msg, &wrapped);
-    unwrap_token(c2, hc2, 0, &wrapped, &out);
+    val = wrap_token(c1, hc1, conf, &msg, &wrapped);
+    if (val)
+	errx(1, "wrap_token failed to host: %s", c1->moniker);
+    val = unwrap_token(c2, hc2, conf, &wrapped, &out);
+    if (val)
+	errx(1, "unwrap_token failed to host: %s", c2->moniker);
+
     krb5_data_free(&wrapped);
     krb5_data_free(&out);
-
-    wrap_token(c1, hc1, 1, &msg, &wrapped);
-    unwrap_token(c2, hc2, 1, &wrapped, &out);
-    krb5_data_free(&wrapped);
-    krb5_data_free(&out);
-
-    return;
 }
 
 static void
 test_token(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
 {
-    test_wrap(c1, hc1, c2, hc2);
-    test_wrap(c2, hc2, c1, hc1);
+    test_mic(c1, hc1, c2, hc2);
+    test_mic(c2, hc2, c1, hc1);
+    test_wrap(c1, hc1, c2, hc2, 0);
+    test_wrap(c2, hc2, c1, hc1, 0);
+    test_wrap(c1, hc1, c2, hc2, 1);
+    test_wrap(c2, hc2, c1, hc1, 1);
 }
 
 static void
@@ -489,6 +544,7 @@ main(int argc, char **argv)
 	val = build_context(c, c, 0,
 			    hCred, &clientC, &serverC, &delegCred);
 	if (val == GSMERR_OK) {
+	    test_token(c, clientC, c, serverC);
 	    toast_resource(c, clientC);
 	    toast_resource(c, serverC);
 	    if (delegCred)
@@ -541,6 +597,8 @@ main(int argc, char **argv)
 		warnx("build_context failed: %d", (int)val);
 		break;
 	    }
+
+	    test_token(client, clientC, server, serverC);
 
 	    toast_resource(client, clientC);
 	    toast_resource(server, serverC);
