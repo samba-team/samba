@@ -1887,10 +1887,8 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		char *v = generate_random_str(mem_ctx, 1);
 		int i;
 
-		for (i=0; i <ARRAY_SIZE(simple_pass); i++) {
-			simple_pass[i] = *v;
-		}
-		simple_pass[i] = '\0';
+		ZERO_STRUCT(simple_pass);
+		memset(simple_pass, *v, sizeof(simple_pass) - 1);
 
 		/* test what happens when picking a simple password */
 		if (!test_ChangePasswordUser3(p, mem_ctx, acct_name, 0, password, simple_pass, 0, True)) {
