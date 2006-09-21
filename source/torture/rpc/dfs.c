@@ -155,6 +155,34 @@ static BOOL test_GetManagerVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, e
 	return True;
 }
 
+static BOOL test_ManagerInitialize(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host)
+{
+	NTSTATUS status;
+	enum dfs_ManagerVersion version;
+	struct dfs_ManagerInitialize r;
+
+	printf("Testing ManagerInitialize\n");
+
+	if (!test_GetManagerVersion(p, mem_ctx, &version)) {
+		return False;
+	}
+
+	r.in.servername = host;
+	r.in.flags = 0;
+
+	status = dcerpc_dfs_ManagerInitialize(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ManagerInitialize failed - %s\n", nt_errstr(status));
+		return False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("dfs_ManagerInitialize failed - %s\n", win_errstr(r.out.result));
+		IS_DFS_VERSION_UNSUPPORTED_CALL_W2K3(version, r.out.result);
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_GetInfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t level,
 			      const char *root)
 {
@@ -170,10 +198,10 @@ static BOOL test_GetInfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16
 
 	status = dcerpc_dfs_GetInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Info failed - %s\n", nt_errstr(status));
+		printf("GetInfo failed - %s\n", nt_errstr(status));
 		return False;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("GetInfo failed - %s\n", win_errstr(r.out.result));
+		printf("dfs_GetInfo failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
 
@@ -355,7 +383,7 @@ static BOOL test_StdRootForced(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const
 		printf("AddStdRootForced failed - %s\n", nt_errstr(status));
 		return False;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("AddStdRootForced failed - %s\n", win_errstr(r.out.result));
+		printf("dfs_AddStdRootForced failed - %s\n", win_errstr(r.out.result));
 		IS_DFS_VERSION_UNSUPPORTED_CALL_W2K3(version, r.out.result);
 		return False;
 	}
@@ -471,6 +499,7 @@ BOOL torture_rpc_dfs(struct torture_context *torture)
 	}
 
 	ret &= test_GetManagerVersion(p, mem_ctx, &version);
+	ret &= test_ManagerInitialize(p, mem_ctx, host);
 	ret &= test_Enum(p, mem_ctx);
 	ret &= test_EnumEx(p, mem_ctx, host);
 	ret &= test_StdRoot(p, mem_ctx, host);
