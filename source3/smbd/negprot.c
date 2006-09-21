@@ -169,7 +169,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
  Generate the spnego negprot reply blob. Return the number of bytes used.
 ****************************************************************************/
 
-static int negprot_spnego(char *p)
+static DATA_BLOB negprot_spnego(void)
 {
 	DATA_BLOB blob;
 	nstring dos_name;
@@ -180,7 +180,6 @@ static int negprot_spnego(char *p)
 				   OID_NTLMSSP,
 				   NULL};
 	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
-	int len;
 
 	global_spnego_negotiated = True;
 
@@ -222,11 +221,7 @@ static int negprot_spnego(char *p)
 		SAFE_FREE(host_princ_s);
 	}
 
-	memcpy(p, blob.data, blob.length);
-	len = blob.length;
-	data_blob_free(&blob);
-
-	return len;
+	return blob;
 }
 
 /****************************************************************************
@@ -332,10 +327,17 @@ static int reply_nt1(char *inbuf, char *outbuf)
 				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-		int len = negprot_spnego(p);
-		
+		DATA_BLOB spnego_blob = negprot_spnego();
+
+		if (spnego_blob.data == NULL) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+
+		memcpy(p, spnego_blob.data, spnego_blob.length);
+		p += spnego_blob.length;
+		data_blob_free(&spnego_blob);
+
 		SCVAL(outbuf,smb_vwv16+1, 0);
-		p += len;
 		DEBUG(3,("using SPNEGO\n"));
 	}
 	
