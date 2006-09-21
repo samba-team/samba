@@ -230,11 +230,8 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 	}
 	data_blob_free(&blob);
 
-	if (lp_security() != SEC_ADS && !lp_use_kerberos_keytab()) {
-		*pkeylen = 0;
-	} else {
-		*pkeylen = len;
-	}
+	*pkeylen = 0;
+
 	return len;
 }
 
