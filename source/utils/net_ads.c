@@ -1061,7 +1061,7 @@ static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
 	asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path);
 	free(ou_str);
 
-	rc = ads_search_dn(ads, &res, dn, NULL);
+	rc = ads_search_dn(ads, (void**)&res, dn, NULL);
 	ads_msgfree(ads, res);
 
 	if (ADS_ERR_OK(rc)) {
