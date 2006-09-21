@@ -67,7 +67,7 @@ done
 if test "$do_usage" = "yes"; then
     echo "usage: $0 [options] [libraries]"
     echo "options: [--prefix[=dir]] [--exec-prefix[=dir]] [--libs] [--cflags]"
-    echo "libraries: krb5 gssapi kadm-client kadm-server"
+    echo "libraries: krb5 gssapi kadm-client kadm-server kafs"
     exit $usage_exit
 fi
 
@@ -102,7 +102,7 @@ if test "$do_libs" = "yes"; then
 	lib_flags="$lib_flags -lkadm5srv @LIB_dbopen@"
 	;;
     kafs)
-	lib_flags="$lib_flags -lgssapi"
+	lib_flags="$lib_flags -lkafs"
 	;;
     esac
     lib_flags="$lib_flags -lkrb5 @LIB_pkinit@ -lcom_err"
