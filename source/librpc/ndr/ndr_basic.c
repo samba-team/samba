@@ -250,7 +250,7 @@ NTSTATUS ndr_push_WERROR(struct ndr_push *ndr, int ndr_flags, WERROR status)
 
 void ndr_print_WERROR(struct ndr_print *ndr, const char *name, WERROR r)
 {
-	ndr->print(ndr, "%-25s: %d", name, W_ERROR_V(r));
+	ndr->print(ndr, "%-25s: %s", name, dos_errstr(r));
 }
 
 /*
