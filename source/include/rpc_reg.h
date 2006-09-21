@@ -61,9 +61,13 @@
 
 #define KEY_HKLM		"HKLM"
 #define KEY_HKU			"HKU"
+#define KEY_HKCC		"HKCC"
 #define KEY_HKCR		"HKCR"
 #define KEY_HKPD		"HKPD"
 #define KEY_HKPT		"HKPT"
+#define KEY_HKPN		"HKPN"
+#define KEY_HKCU		"HKCU"
+#define KEY_HKDD		"HKDD"
 #define KEY_SERVICES		"HKLM\\SYSTEM\\CurrentControlSet\\Services"
 #define KEY_PRINTING 		"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
 #define KEY_PRINTING_2K		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"

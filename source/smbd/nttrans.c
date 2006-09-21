@@ -37,6 +37,7 @@ static const char *known_nt_pipes[] = {
 	"\\lsass",
 	"\\lsarpc",
 	"\\winreg",
+	"\\initshutdown",
 	"\\spoolss",
 	"\\netdfs",
 	"\\rpcecho",
