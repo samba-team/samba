@@ -154,6 +154,8 @@ cn: X9
 
 	var res = ldb.search("x=8", "cn=PartTest", ldb.SCOPE_DEFAULT);
 	assert(res[0].objectGUID != undefined);
+	assert(res[0].uSNCreated != undefined);
+	assert(res[0].uSNChanged != undefined);
 	assert(res[0].createTimestamp == undefined);
 	assert(res[0].whenCreated != undefined);
 	assert(res[0].name == "x8");
@@ -241,7 +243,7 @@ x: 11
 	var res8 = ldb.search("x=11", "cn=sub,cn=parttest", ldb.SCOPE_DEFAULT, attrs);
 	
 	assert(res8[0].objectGUID == undefined); /* The objectGUID module is not loaded here */
-	assert(res8[0].uSNCreated != undefined);
+	assert(res8[0].uSNCreated == undefined); /* The objectGUID module is not loaded here */
 	assert(res8[0].name == "x11");
 	assert(res8[0].cn == "x11");
 
