@@ -163,9 +163,9 @@ static BOOL test_GetInfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16
 
 	printf("Testing GetInfo level %u on '%s'\n", level, root);
 
-	r.in.path = talloc_strdup(mem_ctx, root);
-	r.in.server = NULL;
-	r.in.share = NULL;
+	r.in.dfs_entry_path = talloc_strdup(mem_ctx, root);
+	r.in.servername = NULL;
+	r.in.sharename = NULL;
 	r.in.level = level;
 
 	status = dcerpc_dfs_GetInfo(p, mem_ctx, &r);
@@ -429,7 +429,6 @@ static void test_cleanup_stdroot(struct dcerpc_pipe *p,
 
 static BOOL test_StdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host)
 {
-	enum dfs_ManagerVersion version;
 	const char *sharename = SMBTORTURE_DFS_SHARENAME;
 	const char *dir = SMBTORTURE_DFS_DIRNAME;
 	const char *path = SMBTORTURE_DFS_PATHNAME;
@@ -442,7 +441,6 @@ static BOOL test_StdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char 
 
 	ret &= test_CreateDir(mem_ctx, &cli, host, "C$", dir);
 	ret &= test_NetShareAdd(mem_ctx, host, sharename, path);
-	ret &= test_GetManagerVersion(p, mem_ctx, &version);
 	ret &= test_AddStdRoot(p, mem_ctx, host, sharename);
 	ret &= test_RemoveStdRoot(p, mem_ctx, host, sharename);
 	ret &= test_StdRootForced(p, mem_ctx, host, sharename);
