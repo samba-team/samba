@@ -169,7 +169,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
  Generate the spnego negprot reply blob. Return the number of bytes used.
 ****************************************************************************/
 
-static int negprot_spnego(char *p, uint8 *pkeylen)
+static int negprot_spnego(char *p)
 {
 	DATA_BLOB blob;
 	nstring dos_name;
@@ -229,8 +229,6 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 		len = 255;
 	}
 	data_blob_free(&blob);
-
-	*pkeylen = 0;
 
 	return len;
 }
@@ -338,10 +336,9 @@ static int reply_nt1(char *inbuf, char *outbuf)
 				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-		uint8 keylen;
-		int len = negprot_spnego(p, &keylen);
+		int len = negprot_spnego(p);
 		
-		SCVAL(outbuf,smb_vwv16+1,keylen);
+		SCVAL(outbuf,smb_vwv16+1, 0);
 		p += len;
 		DEBUG(3,("using SPNEGO\n"));
 	}
