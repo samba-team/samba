@@ -1056,7 +1056,10 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 		DLIST_ADD_END(dce_conn->incoming_fragmented_call_list, call, 
 			      struct dcesrv_call_state *);
 		return NT_STATUS_OK;
-	}
+	} 
+	
+	/* This removes any fragments we may have had stashed away */
+	DLIST_REMOVE(dce_conn->incoming_fragmented_call_list, call);
 
 	switch (call->pkt.ptype) {
 	case DCERPC_PKT_BIND:
