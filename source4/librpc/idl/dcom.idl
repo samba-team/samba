@@ -117,7 +117,7 @@ interface IRemUnknown : IUnknown
 		                [in] uint32 context,
 						[in] uint32 locale,
 						[in] GUID iid,
-						[out, iid_is(iid)] MInterfacePointer data);
+						[out, iid_is(iid)] MInterfacePointer *data);
 }
 
 [
@@ -157,8 +157,8 @@ interface IRemUnknown : IUnknown
 	WERROR ISystemActivatorRemoteCreateInstance([in] hyper unknown1,  /* OXID ? */
 											  [in] MInterfacePointer iface1,
 											  [in] hyper unknown2,
-											  [out] uint32 unknown3, 
-											  [out] MInterfacePointer iface2);
+											  [out,ref] uint32 *unknown3, 
+											  [out,ref] MInterfacePointer *iface2);
 }
 
 
@@ -280,13 +280,13 @@ interface IStream : IUnknown
 				[out, size_is(num_requested), length_is(num_read)] uint8 pv[],
 				[in] uint32 num_requested, 
 				[in, unique] uint32 *num_readx,
-				[out] uint32 num_read
+				[out,ref] uint32 *num_read
 				);
 
 	WERROR Write(
 				[in,size_is(num_requested),unique] uint8 *data,
 				 [in] uint32 num_requested,
-				 [out] uint32 num_written);
+				 [out,ref] uint32 *num_written);
 }
 
 [
