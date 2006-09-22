@@ -638,7 +638,7 @@ typedef int BOOL;
 #include "tdbutil.h"
 #include "tdbback.h"
 
-#include "talloc.h"
+#include "lib/talloc/talloc.h"
 /* And a little extension. Abort on type mismatch */
 #define talloc_get_type_abort(ptr, type) \
 	(type *)talloc_check_name_abort(ptr, #type)

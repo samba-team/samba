@@ -48,24 +48,7 @@
 #endif /* _SAMBA_BUILD_ */
 
 #ifndef _TALLOC_SAMBA3
-#include "config.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-
-#if defined(HAVE_STDARG_H)
-#include <stdarg.h>
-#elif defined (HAVE_VARARGS_H)
-#include <varargs.h>
-#else
-#error "no var arg header"
-#endif
-
+#include "replace.h"
 #include "talloc.h"
 #endif /* not _TALLOC_SAMBA3 */
 
@@ -752,6 +735,18 @@ void *_talloc_steal(const void *new_ctx, const void *ptr)
 	_TLIST_ADD(new_tc->child, tc);
 
 	return discard_const_p(void, ptr);
+}
+
+/*
+  a wrapper around talloc_steal() for situations where you are moving a pointer
+  between two structures, and want the old pointer to be set to NULL
+*/
+void *_talloc_move(const void *new_ctx, const void *_pptr)
+{
+	const void **pptr = (const void **)_pptr;
+	void *ret = _talloc_steal(new_ctx, *pptr);
+	(*pptr) = NULL;
+	return ret;
 }
 
 /*
