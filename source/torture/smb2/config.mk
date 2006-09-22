@@ -8,6 +8,8 @@ PRIVATE_PROTO_HEADER = \
 		proto.h
 OBJ_FILES = \
 		connect.o \
+		dir.o \
+		maxwrite.o \
 		scan.o \
 		util.o \
 		getinfo.o \
