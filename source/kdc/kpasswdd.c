@@ -280,7 +280,8 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 							reply);
 		}
 		if (chpw.targname && chpw.targrealm) {
-			if (_krb5_principalname2krb5_principal(&principal, *chpw.targname, 
+			if (_krb5_principalname2krb5_principal(kdc->smb_krb5_context->krb5_context,
+							       &principal, *chpw.targname, 
 							       *chpw.targrealm) != 0) {
 				free_ChangePasswdDataMS(&chpw);
 				return kpasswdd_make_error_reply(kdc, mem_ctx, 
