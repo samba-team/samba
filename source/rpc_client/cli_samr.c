@@ -1424,24 +1424,6 @@ void get_query_dispinfo_params(int loop_count, uint32 *max_entries,
 
 /* Query display info */
 
-static uint32 get_next_idx(SAMR_R_QUERY_DISPINFO *r)
-{
-	switch (r->switch_level) {
-	case 1:
-		return r->ctr->sam.info1->sam[r->num_entries-1].user_idx;
-	case 2:
-		return r->ctr->sam.info2->sam[r->num_entries-1].user_idx;
-	case 3:
-		return r->ctr->sam.info3->sam[r->num_entries-1].grp_idx;
-	case 4:
-		return r->ctr->sam.info4->sam[r->num_entries-1].user_idx;
-	case 5:
-		return r->ctr->sam.info5->sam[r->num_entries-1].grp_idx;
-	default:
-		return 0;
-	}
-}
-
 NTSTATUS rpccli_samr_query_dispinfo(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx, 
 				    POLICY_HND *domain_pol, uint32 *start_idx,
