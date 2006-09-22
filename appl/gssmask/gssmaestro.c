@@ -225,6 +225,7 @@ build_context(struct client *ipeer, struct client *apeer,
     int32_t val, ic = 0, ac = 0, deleg = 0;
     krb5_data itoken, otoken;
     int iDone = 0, aDone = 0;
+    int step = 0;
 
     if (apeer->target_name == NULL)
 	errx(1, "apeer %s have no target name", apeer->name);
@@ -239,6 +240,7 @@ build_context(struct client *ipeer, struct client *apeer,
 
 	val = init_sec_context(ipeer, &ic, &hCred, flags, apeer->target_name,
 			       &itoken, &otoken);
+	step++;
 	switch(val) {
 	case GSMERR_OK:
 	    iDone = 1;
@@ -248,13 +250,15 @@ build_context(struct client *ipeer, struct client *apeer,
 	case GSMERR_CONTINUE_NEEDED:
 	    break;
 	default:
-	    errx(1, "iPeer %s failed with %d", ipeer->name, (int)val);
+	    errx(1, "iPeer %s failed with %d (step %d)", 
+		 ipeer->name, (int)val, step);
 	}
 
 	if (aDone)
 	    errx(1, "aPeer already done, iPeer want extra rtt");
 
 	val = accept_sec_context(apeer, &ac, &otoken, &itoken, &deleg);
+	step++;
 	switch(val) {
 	case GSMERR_OK:
 	    aDone = 1;
@@ -264,7 +268,8 @@ build_context(struct client *ipeer, struct client *apeer,
 	case GSMERR_CONTINUE_NEEDED:
 	    break;
 	default:
-	    errx(1, "aPeer %s failed with %d", apeer->name, (int)val);
+	    errx(1, "aPeer %s failed with %d (step %d)",
+		 apeer->name, (int)val, step);
 	}
 
 	val = GSMERR_OK;
