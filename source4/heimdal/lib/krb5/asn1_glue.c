@@ -47,13 +47,23 @@ _krb5_principal2principalname (PrincipalName *p,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-_krb5_principalname2krb5_principal (krb5_principal *principal,
+_krb5_principalname2krb5_principal (krb5_context context, 
+				    krb5_principal *principal,
 				    const PrincipalName from,
 				    const Realm realm)
 {
-    krb5_principal p = malloc(sizeof(*p));
-    copy_PrincipalName(&from, &p->name);
-    p->realm = strdup(realm);
-    *principal = p;
+    if (from.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+	    if (from.name_string.len != 1) {
+		    return KRB5_PARSE_MALFORMED;
+	    }
+	    return krb5_parse_name(context, 
+				   from.name_string.val[0],
+				   principal);
+    } else {
+	    krb5_principal p = malloc(sizeof(*p));
+	    copy_PrincipalName(&from, &p->name);
+	    p->realm = strdup(realm);
+	    *principal = p;
+    }
     return 0;
 }
