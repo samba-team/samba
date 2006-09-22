@@ -54,7 +54,7 @@ static void single_accept_connection(struct event_context *ev,
 	/* accept an incoming connection. */
 	status = socket_accept(sock, &sock2);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("accept_connection_single: accept: %s\n", nt_errstr(status)));
+		DEBUG(0,("single_accept_connection: accept: %s\n", nt_errstr(status)));
 		/* this looks strange, but is correct. We need to
 		   throttle things until the system clears enough
 		   resources to handle this new socket. If we don't
