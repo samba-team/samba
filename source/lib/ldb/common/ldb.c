@@ -61,21 +61,7 @@ static struct ldb_backend {
 	ldb_connect_fn connect_fn;
 	struct ldb_backend *prev, *next;
 } *ldb_backends = NULL;
-/*
- register a new ldb backend
-*/
-int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn)
-{
-	struct ldb_backend *backend = talloc(talloc_autofree_context(), struct ldb_backend);
 
-	/* Maybe check for duplicity here later on? */
-
-	backend->name = talloc_strdup(backend, url_prefix);
-	backend->connect_fn = connectfn;
-	DLIST_ADD(ldb_backends, backend);
-
-	return LDB_SUCCESS;
-}
 
 static ldb_connect_fn ldb_find_backend(const char *url)
 {
@@ -88,6 +74,26 @@ static ldb_connect_fn ldb_find_backend(const char *url)
 	}
 
 	return NULL;
+}
+
+/*
+ register a new ldb backend
+*/
+int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn)
+{
+	struct ldb_backend *backend = talloc(talloc_autofree_context(), struct ldb_backend);
+
+	if (ldb_find_backend(url_prefix)) {
+		return LDB_SUCCESS;
+	}
+
+	/* Maybe check for duplicity here later on? */
+
+	backend->name = talloc_strdup(backend, url_prefix);
+	backend->connect_fn = connectfn;
+	DLIST_ADD(ldb_backends, backend);
+
+	return LDB_SUCCESS;
 }
 
 /* 
