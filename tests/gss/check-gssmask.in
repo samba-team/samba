@@ -109,7 +109,7 @@ ${gssmaestro} \
     --slaves=localhost:8889 \
     --slaves=localhost:8890 \
     --slaves=localhost:8891 \
-    --principals=user1@${R}:u1
+    --principals=user1@${R}:u1 || exitcode=1
 
 echo "killing kdc and clients (${kdcpid}, ${n1pid}, ${n2pid}, ${n3pid})"
 kill ${kdcpid} ${n1pid} ${n2pid} ${n3pid} 2> /dev/null
