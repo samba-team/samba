@@ -360,6 +360,52 @@ static BOOL test_EnumEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *
 	return ret;
 }
 
+static BOOL test_RemoveStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
+{
+	struct dfs_RemoveStdRoot r;
+	NTSTATUS status;
+
+	printf("Testing RemoveStdRoot\n");
+
+	r.in.servername	= host;
+	r.in.rootshare	= sharename;
+	r.in.flags	= 0;
+
+	status = dcerpc_dfs_RemoveStdRoot(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("RemoveStdRoot failed - %s\n", nt_errstr(status));
+		return False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("dfs_RemoveStdRoot failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_AddStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
+{
+	NTSTATUS status;
+	struct dfs_AddStdRoot r;
+
+	printf("Testing AddStdRoot\n");
+
+	r.in.servername	= host;
+	r.in.rootshare	= sharename;
+	r.in.comment	= "standard dfs standalone DFS root created by smbtorture (dfs_AddStdRoot)";
+	r.in.flags	= 0;
+
+	status = dcerpc_dfs_AddStdRoot(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("AddStdRoot failed - %s\n", nt_errstr(status));
+		return False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("dfs_AddStdRoot failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
 
 static BOOL test_AddStdRootForced(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
 {
@@ -388,53 +434,7 @@ static BOOL test_AddStdRootForced(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, co
 		return False;
 	}
 
-	return True;
-}
-
-static BOOL test_RemoveStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
-{
-	struct dfs_RemoveStdRoot r;
-	NTSTATUS status;
-
-	printf("Testing RemoveStdRoot\n");
-
-	r.in.servername	= host;
-	r.in.rootshare	= sharename;
-	r.in.flags	= 0;
-
-	status = dcerpc_dfs_RemoveStdRoot(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("RemoveStdRoot failed - %s\n", nt_errstr(status));
-		return False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("dfs_RemoveStdRoot failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
-
-	return True;
-}
-static BOOL test_AddStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
-{
-	NTSTATUS status;
-	struct dfs_AddStdRoot r;
-
-	printf("Testing AddStdRoot\n");
-
-	r.in.servername	= host;
-	r.in.rootshare	= sharename;
-	r.in.comment	= "standard dfs standalone DFS root created by smbtorture (dfs_AddStdRoot)";
-	r.in.flags	= 0;
-
-	status = dcerpc_dfs_AddStdRoot(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("AddStdRoot failed - %s\n", nt_errstr(status));
-		return False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("dfs_AddStdRoot failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
-
-	return True;
+	return test_RemoveStdRoot(p, mem_ctx, host, sharename);
 }
 
 static void test_cleanup_stdroot(struct dcerpc_pipe *p, 
