@@ -1,3 +1,15 @@
+2006-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ui.c (read_string): Try to not call signaction for signal 0 and
+	use NSIG if it exists to determin how many signals there exists,
+	also, only restore those signalhandlers that we got out.
+	
+	Bug reported by and patch tested by Harald Barth.
+	
+2006-09-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsa-imath.c: Add commeted out test that exponent is > 3
+	
 2006-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* bn.c (BN_rand): avoid shadowing.
