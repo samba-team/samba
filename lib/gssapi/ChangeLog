@@ -1,3 +1,9 @@
+2006-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/{init_sec_context.c,gsskrb5_locl.h}: merge most of the
+	initiator part from the samba patch by Stefan Metzmacher and
+	Andrew Bartlet (still missing DCE/RPC support)
+
 2006-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss.c (help): use sl_slc_help().
