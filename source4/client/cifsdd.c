@@ -498,7 +498,8 @@ static int copy_files(void)
 		 * at least obs bytes in the IO buffer but might not if the
 		 * file is too small.
 		 */
-		if (!dd_flush_block(ofile, iobuf, &data_size, obs)) {
+		if (data_size && 
+		    !dd_flush_block(ofile, iobuf, &data_size, obs)) {
 			return(IOERROR_EXIT_CODE);
 		}
 	}
