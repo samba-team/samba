@@ -803,7 +803,8 @@ static void init_srv_sess_info_1(pipes_struct *p, struct srvsvc_NetSessCtr1 *ss1
 	}
 	
 	if (ss1 == NULL) {
-		(*snum) = 0;
+		if (snum != NULL)
+			(*snum) = 0;
 		return;
 	}
 
@@ -867,7 +868,8 @@ static WERROR init_srv_sess_info_ctr(pipes_struct *p, union srvsvc_NetSessCtr *c
 		break;
 	default:
 		DEBUG(5,("init_srv_sess_info_ctr: unsupported switch value %d\n", switch_value));
-		(*resume_hnd) = 0;
+		if (resume_hnd != NULL)
+			(*resume_hnd) = 0;
 		(*total_entries) = 0;
 		ctr->ctr0 = NULL;
 		status = WERR_UNKNOWN_LEVEL;
@@ -887,7 +889,8 @@ static void init_srv_conn_info_0(pipes_struct *p, struct srvsvc_NetConnCtr0 *ss0
 	(*stot) = 1;
 
 	if (ss0 == NULL) {
-		(*snum) = 0;
+		if (snum != NULL)
+			(*snum) = 0;
 		return;
 	}
 
@@ -928,7 +931,8 @@ static void init_srv_conn_info_1(pipes_struct *p, struct srvsvc_NetConnCtr1 *ss1
 	(*stot) = 1;
 
 	if (ss1 == NULL) {
-		(*snum) = 0;
+		if (snum != NULL)
+			(*snum) = 0;
 		return;
 	}
 
