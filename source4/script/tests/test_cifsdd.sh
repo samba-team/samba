@@ -17,7 +17,7 @@ DOMAIN=$4
 DD=bin/cifsdd
 
 SHARE=tmp
-DEBUGLEVEL=4
+DEBUGLEVEL=1
 
 failed=0
 
@@ -44,7 +44,9 @@ sourcepath=tempfile.src.$$
 destpath=tempfile.dst.$$
 
 # Create a source file with arbitrary contents
-cp $DD $sourcepath
+dd if=$DD of=$sourcepath bs=1024 count=50 > /dev/null
+
+ls -l $sourcepath
 
 for bs in 512 4k 48k ; do
 
