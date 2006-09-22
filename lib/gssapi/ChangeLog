@@ -1,5 +1,8 @@
 2006-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/accept_sec_context.c: Merge of the acceptor part from the
+	samba patch by Stefan Metzmacher and Andrew Bartlet.
+
 	* krb5/init_sec_context.c: Add GSS_C_DCE_STYLE.
 
 	* krb5/{init_sec_context.c,gsskrb5_locl.h}: merge most of the
