@@ -20,6 +20,8 @@
 
 #include "includes.h"
 
+#ifdef HAVE_LDAP
+
 ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 			    const char *extension_raw,
 			    struct GP_EXT *gp_ext)
@@ -678,3 +680,5 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 
 	return ADS_ERROR(LDAP_SUCCESS);
 }
+
+#endif /* HAVE_LDAP */

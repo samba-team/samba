@@ -20,6 +20,8 @@
 
 #include "includes.h"
 
+#ifdef HAVE_LDAP
+
 #define DEFAULT_DOMAIN_POLICY "Default Domain Policy"
 #define DEFAULT_DOMAIN_CONTROLLERS_POLICY "Default Domain Controllers Policy"
 
@@ -499,3 +501,5 @@ ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 	ads_memfree(ads, dn);
 	return ADS_ERROR(LDAP_SUCCESS);
 }
+
+#endif /* HAVE_LDAP */
