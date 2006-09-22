@@ -211,7 +211,7 @@ ADS_STATUS ads_get_gpo_link(ADS_STRUCT *ads,
 {
 	ADS_STATUS status;
 	const char *attrs[] = {"gPLink", "gPOptions", NULL};
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	const char *gp_link;
 	uint32 gp_options;
 
@@ -254,7 +254,7 @@ ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
 {
 	ADS_STATUS status;
 	const char *attrs[] = {"gPLink", NULL};
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	const char *gp_link, *gp_link_new;
 	ADS_MODLIST mods;
 
@@ -309,7 +309,7 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 {
 	ADS_STATUS status;
 	const char *attrs[] = {"gPLink", NULL};
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	const char *gp_link, *gp_link_new = NULL;
 	ADS_MODLIST mods;
 
@@ -432,7 +432,7 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 		       struct GROUP_POLICY_OBJECT *gpo)
 {
 	ADS_STATUS status;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	char *dn;
 	const char *filter;
 	const char *attrs[] = { "cn", "displayName", "flags", "gPCFileSysPath", 
