@@ -37,6 +37,7 @@ struct snapin_table {
 	ADS_STATUS (*snapin_fn)(ADS_STRUCT *, TALLOC_CTX *mem_ctx, const char *, const char *);
 };
 
+#if 0 /* unused */
 static struct gpo_table gpo_default_policy[] = {
 	{ DEFAULT_DOMAIN_POLICY, 
 		"31B2F340-016D-11D2-945F-00C04FB984F9" },
@@ -44,7 +45,7 @@ static struct gpo_table gpo_default_policy[] = {
 		"6AC1786C-016F-11D2-945F-00C04fB984F9" },
 	{ NULL, NULL }
 };
-
+#endif
 
 /* the following is seen in gPCMachineExtensionNames or gPCUserExtensionNames */
 
@@ -127,6 +128,19 @@ static const char *guid_string_to_name(const char *guid_string, struct gpo_table
 	return NULL;
 }
 
+static const char *snapin_guid_string_to_name(const char *guid_string, 
+					      struct snapin_table *table)
+{
+	int i;
+	for (i = 0; table[i].guid_string; i++) {
+		if (strequal(guid_string, table[i].guid_string)) {
+			return table[i].name;
+		}
+	}
+	return NULL;
+}
+
+#if 0 /* unused */
 static const char *default_gpo_name_to_guid_string(const char *name)
 {
 	return name_to_guid_string(name, gpo_default_policy);
@@ -136,6 +150,7 @@ static const char *default_gpo_guid_string_to_name(const char *guid)
 {
 	return guid_string_to_name(guid, gpo_default_policy);
 }
+#endif
 
 const char *cse_gpo_guid_string_to_name(const char *guid)
 {
@@ -149,7 +164,7 @@ static const char *cse_gpo_name_to_guid_string(const char *name)
 
 const char *cse_snapin_gpo_guid_string_to_name(const char *guid)
 {
-	return guid_string_to_name(guid, gpo_cse_snapin_extensions);
+	return snapin_guid_string_to_name(guid, gpo_cse_snapin_extensions);
 }
 
 void dump_gp_ext(struct GP_EXT *gp_ext)
