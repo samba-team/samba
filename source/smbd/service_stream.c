@@ -57,14 +57,14 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 	struct event_context *event_ctx = srv_conn->event.ctx;
 	const struct model_ops *model_ops = srv_conn->model_ops;
 
-	if (!reason) reason = "unknwon reason";
+	if (!reason) reason = "unknown reason";
 
 	srv_conn->terminate = reason;
 
 	if (srv_conn->processing) {
 		/* 
 		 * if we're currently inside the stream_io_handler(),
-		 * deferr the termination to the end of stream_io_hendler()
+		 * defer the termination to the end of stream_io_hendler()
 		 *
 		 * and we don't want to read or write to the connection...
 		 */
