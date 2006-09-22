@@ -23,7 +23,7 @@
 #define DEFAULT_DOMAIN_POLICY "Default Domain Policy"
 #define DEFAULT_DOMAIN_CONTROLLERS_POLICY "Default Domain Controllers Policy"
 
-/* should we store a parsed guid ? UUID_FLAT guid; */
+/* should we store a parsed guid ? */
 struct gpo_table {
 	const char *name;
 	const char *guid_string;
