@@ -446,4 +446,4 @@ int net_ads_gpo(int argc, const char **argv)
 	return net_run_function(argc, argv, func, net_ads_gpo_usage);
 }
 
-#endif
+#endif /* HAVE_ADS */

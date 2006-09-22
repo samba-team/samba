@@ -20,6 +20,8 @@
 
 #include "includes.h"
 
+#ifdef HAVE_LDAP
+
 #define GPT_INI_SECTION_GENERAL "General"
 #define GPT_INI_PARAMETER_VERSION "Version"
 #define GPT_INI_PARAMETER_DISPLAYNAME "displayName"
@@ -165,3 +167,5 @@ TicketValidateClient = 1
 signature="$CHICAGO$"
 Revision=1
 */
+
+#endif /* HAVE_LDAP */
