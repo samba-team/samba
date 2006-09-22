@@ -1380,7 +1380,7 @@ struct srvsvc_NetServerStatisticsGet {
 	} in;
 
 	struct {
-		struct srvsvc_Statistics *stat;/* [ref] */
+		struct srvsvc_Statistics *stats;/* [ref] */
 		WERROR result;
 	} out;
 

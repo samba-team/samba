@@ -25,7 +25,7 @@ NTSTATUS rpccli_srvsvc_NetShareCheck(struct rpc_pipe_client *cli, TALLOC_CTX *me
 NTSTATUS rpccli_srvsvc_NetSrvGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetSrvInfo *info);
 NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetSrvInfo info, uint32_t *parm_error);
 NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, struct srvsvc_NetDiskInfo *info, uint32_t maxlen, uint32_t *totalentries, uint32_t *resume_handle);
-NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *service, uint32_t level, uint32_t options, struct srvsvc_Statistics *stat);
+NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *service, uint32_t level, uint32_t options, struct srvsvc_Statistics *stats);
 NTSTATUS rpccli_srvsvc_NetTransportAdd(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetTransportInfo info);
 NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetTransportCtr *transports, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle);
 NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t unknown, struct srvsvc_NetTransportInfo0 transport);

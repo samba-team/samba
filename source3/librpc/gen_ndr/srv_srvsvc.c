@@ -1498,13 +1498,13 @@ static BOOL api_srvsvc_NetServerStatisticsGet(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(srvsvc_NetServerStatisticsGet, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.stat = talloc_zero_size(mem_ctx, sizeof(*r.out.stat));
-	if (r.out.stat == NULL) {
+	r.out.stats = talloc_zero_size(mem_ctx, sizeof(*r.out.stats));
+	if (r.out.stats == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 	
-	r.out.result = _srvsvc_NetServerStatisticsGet(p, r.in.server_unc, r.in.service, r.in.level, r.in.options, r.out.stat);
+	r.out.result = _srvsvc_NetServerStatisticsGet(p, r.in.server_unc, r.in.service, r.in.level, r.in.options, r.out.stats);
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetServerStatisticsGet, &r);
