@@ -579,7 +579,6 @@ repl_mutual
            )
 {
     OM_uint32 ret;
-    int32_t seq_number;
     krb5_error_code kret;
     krb5_data indata;
     krb5_ap_rep_enc_part *repl;
@@ -610,22 +609,7 @@ repl_mutual
     krb5_free_ap_rep_enc_part (_gsskrb5_context,
 			       repl);
     
-    krb5_auth_getremoteseqnumber (_gsskrb5_context,
-				  ctx->auth_context,
-				  &seq_number);
-
     _gsskrb5i_is_cfx(ctx, &is_cfx);
-
-    ret = _gssapi_msg_order_create(minor_status,
-				   &ctx->order,
-				   _gssapi_msg_order_f(ctx->flags),
-				   seq_number, 0, is_cfx);
-    if (ret) {
-	return ret;
-    }
-	
-    ctx->more_flags |= OPEN;
-
     if (is_cfx) {
 	krb5_keyblock *key = NULL;
 
@@ -650,7 +634,35 @@ repl_mutual
     if (ret_flags)
 	*ret_flags = ctx->flags;
 
-    return ret;
+    if (req_flags & GSS_C_DCE_STYLE) {
+	int32_t con_flags;
+	krb5_data outbuf;
+
+	/* Do don't do sequence number for the mk-rep */
+	krb5_auth_con_removeflags(_gsskrb5_context,
+				  ctx->auth_context,
+				  KRB5_AUTH_CONTEXT_DO_SEQUENCE,
+				  &con_flags);
+
+	kret = krb5_mk_rep(_gsskrb5_context,
+			   ctx->auth_context,
+			   &outbuf);
+	if (kret) {
+	    _gsskrb5_set_error_string ();
+	    *minor_status = kret;
+	    return GSS_S_FAILURE;
+	}
+	
+	output_token->length = outbuf.length;
+	output_token->value  = outbuf.data;
+
+	krb5_auth_con_removeflags(_gsskrb5_context,
+				  ctx->auth_context,
+				  KRB5_AUTH_CONTEXT_DO_SEQUENCE,
+				  NULL);
+    }
+
+    return gsskrb5_initiator_ready(minor_status, ctx);
 }
 
 /*
@@ -759,6 +771,10 @@ OM_uint32 _gsskrb5_init_sec_context
 			  time_rec);
 	break;
     case INITIATOR_READY:
+	/* 
+	 * If we get there, the caller have called
+	 * gss_init_sec_context() one time too many.
+	 */
 	*minor_status = 0;
 	ret = GSS_S_BAD_STATUS;
 	break;
