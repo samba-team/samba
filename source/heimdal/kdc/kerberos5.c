@@ -869,7 +869,7 @@ _kdc_as_rep(krb5_context context,
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No server in request";
     } else{
-	_krb5_principalname2krb5_principal (&server_princ,
+	    _krb5_principalname2krb5_principal (context, &server_princ,
 					    *(b->sname), b->realm);
 	ret = krb5_unparse_name(context, server_princ, &server_name);
     }
@@ -882,7 +882,7 @@ _kdc_as_rep(krb5_context context,
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No client in request";
     } else {
-	_krb5_principalname2krb5_principal (&client_princ,
+	    _krb5_principalname2krb5_principal (context, &client_princ,
 					    *(b->cname), b->realm);
 	ret = krb5_unparse_name(context, client_princ, &client_name);
     }
@@ -1270,7 +1270,7 @@ _kdc_as_rep(krb5_context context,
     if (f.request_anonymous)
 	make_anonymous_principalname (&rep.cname);
     else
-	_krb5_principal2principalname(&rep.cname, 
+	    _krb5_principal2principalname(&rep.cname, 
 				      client->entry.principal);
     rep.ticket.tkt_vno = 5;
     copy_Realm(&server->entry.principal->realm, &rep.ticket.realm);
@@ -2137,7 +2137,7 @@ tgs_rep2(krb5_context context,
 	goto out2;
     }
     
-    _krb5_principalname2krb5_principal(&princ,
+    _krb5_principalname2krb5_principal(context, &princ,
 				       ap_req.ticket.sname,
 				       ap_req.ticket.realm);
     
@@ -2340,7 +2340,7 @@ tgs_rep2(krb5_context context,
 		ret = KRB5KDC_ERR_POLICY;
 		goto out2;
 	    }
-	    _krb5_principalname2krb5_principal(&p, t->sname, t->realm);
+	    _krb5_principalname2krb5_principal(context, &p, t->sname, t->realm);
 	    ret = _kdc_db_fetch(context, config, p, 
 				HDB_F_GET_CLIENT|HDB_F_GET_SERVER, &uu);
 	    krb5_free_principal(context, p);
@@ -2364,11 +2364,11 @@ tgs_rep2(krb5_context context,
 	    r = adtkt.crealm;
 	}
 
-	_krb5_principalname2krb5_principal(&sp, *s, r);
+	_krb5_principalname2krb5_principal(context, &sp, *s, r);
 	ret = krb5_unparse_name(context, sp, &spn);	
 	if (ret)
 	    goto out;
-	_krb5_principalname2krb5_principal(&cp, tgt->cname, tgt->crealm);
+	_krb5_principalname2krb5_principal(context, &cp, tgt->cname, tgt->crealm);
 	ret = krb5_unparse_name(context, cp, &cpn);
 	if (ret)
 	    goto out;
