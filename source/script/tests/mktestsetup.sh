@@ -22,6 +22,7 @@ REALM=SAMBA.EXAMPLE.COM
 DNSNAME="samba.example.com"
 BASEDN="dc=samba,dc=example,dc=com"
 PASSWORD=penguin
+AUTH="-U$USERNAME%$PASSWORD"
 SRCDIR=`pwd`
 ROOT=$USER
 SERVER=localhost
@@ -65,6 +66,7 @@ export CONFIGURATION
 export CONFFILE
 export SLAPD_CONF
 export PIDDIR
+export AUTH
 
 rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $ETCDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR $LDAPDIR/db
@@ -327,6 +329,17 @@ rootpw          $PASSWORD
 directory	$LDAPDIR/db
 index           objectClass eq
 index           samAccountName eq
+index name eq
+index objectSid eq
+index objectCategory eq
+index member eq
+index uidNumber eq
+index gidNumber eq
+index unixName eq
+index privilege eq
+index nCName eq
+index lDAPDisplayName eq
+index subClassOf eq
 
 overlay syncprov
 syncprov-checkpoint 100 10
