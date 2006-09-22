@@ -508,7 +508,9 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 
 	ZERO_STRUCTP(ctr);
 
-	*resume_hnd = 0;
+	if (resume_hnd) {
+		*resume_hnd = 0;
+	}
 
 	/* Ensure all the usershares are loaded. */
 	become_root();
