@@ -26,7 +26,7 @@
 #include "libcli/libcli.h"
 #include "torture/util.h"
 
-#define BASEDIR "\\chartest\\"
+#define BASEDIR "\\chartest"
 
 /* 
    open a file using a set of unicode code points for the name
@@ -62,7 +62,7 @@ static NTSTATUS unicode_open(struct smbcli_tree *tree,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fname2 = talloc_asprintf(ucs_name, "%s%s", BASEDIR, fname);
+	fname2 = talloc_asprintf(ucs_name, "%s\\%s", BASEDIR, fname);
 	if (!fname2) {
 		talloc_free(ucs_name);
 		return NT_STATUS_NO_MEMORY;
