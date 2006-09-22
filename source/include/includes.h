@@ -645,6 +645,7 @@ typedef int BOOL;
 
 #include "nt_status.h"
 #include "ads.h"
+#include "gpo.h"
 #include "ads_dns.h"
 #include "interfaces.h"
 #include "trans2.h"
