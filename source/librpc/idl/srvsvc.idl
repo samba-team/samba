@@ -1177,7 +1177,7 @@
 		[in]      [string,charset(UTF16)] uint16 *service,
 		[in]      uint32 level,
 		[in]      uint32 options,
-		[out,ref]     srvsvc_Statistics *stat
+		[out,ref]     srvsvc_Statistics *stats
 		);
 
 /**************************/

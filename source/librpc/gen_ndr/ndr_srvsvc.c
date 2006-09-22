@@ -16485,8 +16485,8 @@ NTSTATUS ndr_push_srvsvc_NetServerStatisticsGet(struct ndr_push *ndr, int flags,
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.options));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.stat == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_srvsvc_Statistics(ndr, NDR_SCALARS, r->out.stat));
+		if (r->out.stats == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		NDR_CHECK(ndr_push_srvsvc_Statistics(ndr, NDR_SCALARS, r->out.stats));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -16498,7 +16498,7 @@ NTSTATUS ndr_pull_srvsvc_NetServerStatisticsGet(struct ndr_pull *ndr, int flags,
 	uint32_t _ptr_service;
 	TALLOC_CTX *_mem_save_server_unc_0;
 	TALLOC_CTX *_mem_save_service_0;
-	TALLOC_CTX *_mem_save_stat_0;
+	TALLOC_CTX *_mem_save_stats_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -16540,17 +16540,17 @@ NTSTATUS ndr_pull_srvsvc_NetServerStatisticsGet(struct ndr_pull *ndr, int flags,
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.options));
-		NDR_PULL_ALLOC(ndr, r->out.stat);
-		ZERO_STRUCTP(r->out.stat);
+		NDR_PULL_ALLOC(ndr, r->out.stats);
+		ZERO_STRUCTP(r->out.stats);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.stat);
+			NDR_PULL_ALLOC(ndr, r->out.stats);
 		}
-		_mem_save_stat_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.stat, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_srvsvc_Statistics(ndr, NDR_SCALARS, r->out.stat));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_stat_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_stats_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.stats, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_srvsvc_Statistics(ndr, NDR_SCALARS, r->out.stats));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_stats_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -16585,9 +16585,9 @@ _PUBLIC_ void ndr_print_srvsvc_NetServerStatisticsGet(struct ndr_print *ndr, con
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "srvsvc_NetServerStatisticsGet");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "stat", r->out.stat);
+		ndr_print_ptr(ndr, "stats", r->out.stats);
 		ndr->depth++;
-		ndr_print_srvsvc_Statistics(ndr, "stat", r->out.stat);
+		ndr_print_srvsvc_Statistics(ndr, "stats", r->out.stats);
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
