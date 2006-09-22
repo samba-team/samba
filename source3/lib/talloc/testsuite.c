@@ -28,29 +28,9 @@
 #include "version.h"
 #endif /* _SAMBA_BUILD_ */
 
-#include "config.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#ifdef HAVE_STDARG_H
-#include <stdarg.h>
-#endif
-
-#include <sys/time.h>
-#include <time.h>
-
+#include "replace.h"
+#include "system/time.h"
 #include "talloc.h"
-
-#ifndef False
-#define False 0
-#endif
-#ifndef True
-#define True 1
-#endif
-#ifndef BOOL
-#define BOOL int
-#endif
 
 struct torture_context;
 
@@ -84,7 +64,7 @@ static double timeval_elapsed(struct timeval *tv)
 		       (unsigned)talloc_total_size(ptr), \
 		       (unsigned)tsize); \
 		talloc_report_full(ptr, stdout); \
-		return False; \
+		return false; \
 	} \
 } while (0)
 
@@ -95,7 +75,7 @@ static double timeval_elapsed(struct timeval *tv)
 		       (unsigned)talloc_total_blocks(ptr), \
 		       (unsigned)tblocks); \
 		talloc_report_full(ptr, stdout); \
-		return False; \
+		return false; \
 	} \
 } while (0)
 
@@ -108,7 +88,7 @@ static double timeval_elapsed(struct timeval *tv)
 		talloc_report_full(ptr, stdout); \
 		talloc_report_full(parent, stdout); \
 		talloc_report_full(NULL, stdout); \
-		return False; \
+		return false; \
 	} \
 } while (0)
 
@@ -116,7 +96,7 @@ static double timeval_elapsed(struct timeval *tv)
 /*
   test references 
 */
-static BOOL test_ref1(void)
+static bool test_ref1(void)
 {
 	void *root, *p1, *p2, *ref, *r1;
 
@@ -157,7 +137,7 @@ static BOOL test_ref1(void)
 
 	printf("Testing NULL\n");
 	if (talloc_reference(root, NULL)) {
-		return False;
+		return false;
 	}
 
 	CHECK_BLOCKS(root, 1);
@@ -166,13 +146,13 @@ static BOOL test_ref1(void)
 
 	talloc_free(root);
 
-	return True;
+	return true;
 }
 
 /*
   test references 
 */
-static BOOL test_ref2(void)
+static bool test_ref2(void)
 {
 	void *root, *p1, *p2, *ref, *r1;
 
@@ -222,13 +202,13 @@ static BOOL test_ref2(void)
 
 	talloc_free(root);
 
-	return True;
+	return true;
 }
 
 /*
   test references 
 */
-static BOOL test_ref3(void)
+static bool test_ref3(void)
 {
 	void *root, *p1, *p2, *ref, *r1;
 
@@ -260,13 +240,13 @@ static BOOL test_ref3(void)
 
 	talloc_free(root);
 
-	return True;
+	return true;
 }
 
 /*
   test references 
 */
-static BOOL test_ref4(void)
+static bool test_ref4(void)
 {
 	void *root, *p1, *p2, *ref, *r1;
 
@@ -308,14 +288,14 @@ static BOOL test_ref4(void)
 
 	talloc_free(root);
 
-	return True;
+	return true;
 }
 
 
 /*
   test references 
 */
-static BOOL test_unlink1(void)
+static bool test_unlink1(void)
 {
 	void *root, *p1, *p2, *ref, *r1;
 
@@ -352,7 +332,7 @@ static BOOL test_unlink1(void)
 
 	talloc_free(root);
 
-	return True;
+	return true;
 }
 
 static int fail_destructor(void *ptr)
@@ -363,7 +343,7 @@ static int fail_destructor(void *ptr)
 /*
   miscellaneous tests to try to get a higher test coverage percentage
 */
-static BOOL test_misc(void)
+static bool test_misc(void)
 {
 	void *root, *p1;
 	char *p2;
@@ -377,7 +357,7 @@ static BOOL test_misc(void)
 	p1 = talloc_size(root, 0x7fffffff);
 	if (p1) {
 		printf("failed: large talloc allowed\n");
-		return False;
+		return false;
 	}
 
 	p1 = talloc_strdup(root, "foo");
@@ -395,11 +375,11 @@ static BOOL test_misc(void)
 	p2 = talloc_strdup(p1, "foo");
 	if (talloc_unlink(root, p2) != -1) {
 		printf("failed: talloc_unlink() of non-reference context should return -1\n");
-		return False;
+		return false;
 	}
 	if (talloc_unlink(p1, p2) != 0) {
 		printf("failed: talloc_unlink() of parent should succeed\n");
-		return False;
+		return false;
 	}
 	talloc_free(p1);
 	CHECK_BLOCKS(p1, 1);
@@ -409,7 +389,7 @@ static BOOL test_misc(void)
 	if (strcmp(talloc_get_name(p1), "my name is foo") != 0) {
 		printf("failed: wrong name after talloc_set_name(my name is foo) - '%s'=>'%s'\n",
 			(name?name:"NULL"), talloc_get_name(p1));
-		return False;
+		return false;
 	}
 	CHECK_BLOCKS(p1, 2);
 	CHECK_BLOCKS(root, 3);
@@ -418,7 +398,7 @@ static BOOL test_misc(void)
 	if (strcmp(talloc_get_name(p1), "UNNAMED") != 0) {
 		printf("failed: wrong name after talloc_set_name(NULL) - '%s'\n",
 			talloc_get_name(p1));
-		return False;
+		return false;
 	}
 	CHECK_BLOCKS(p1, 2);
 	CHECK_BLOCKS(root, 3);
@@ -426,13 +406,13 @@ static BOOL test_misc(void)
 
 	if (talloc_free(NULL) != -1) {
 		printf("talloc_free(NULL) should give -1\n");
-		return False;
+		return false;
 	}
 
 	talloc_set_destructor(p1, fail_destructor);
 	if (talloc_free(p1) != -1) {
 		printf("Failed destructor should cause talloc_free to fail\n");
-		return False;
+		return false;
 	}
 	talloc_set_destructor(p1, NULL);
 
@@ -442,24 +422,24 @@ static BOOL test_misc(void)
 	p2 = (char *)talloc_zero_size(p1, 20);
 	if (p2[19] != 0) {
 		printf("Failed to give zero memory\n");
-		return False;
+		return false;
 	}
 	talloc_free(p2);
 
 	if (talloc_strdup(root, NULL) != NULL) {
 		printf("failed: strdup on NULL should give NULL\n");
-		return False;
+		return false;
 	}
 
 	p2 = talloc_strndup(p1, "foo", 2);
 	if (strcmp("fo", p2) != 0) {
 		printf("failed: strndup doesn't work\n");
-		return False;
+		return false;
 	}
 	p2 = talloc_asprintf_append(p2, "o%c", 'd');
 	if (strcmp("food", p2) != 0) {
 		printf("failed: talloc_asprintf_append doesn't work\n");
-		return False;
+		return false;
 	}
 	CHECK_BLOCKS(p2, 1);
 	CHECK_BLOCKS(p1, 3);
@@ -467,7 +447,7 @@ static BOOL test_misc(void)
 	p2 = talloc_asprintf_append(NULL, "hello %s", "world");
 	if (strcmp("hello world", p2) != 0) {
 		printf("failed: talloc_asprintf_append doesn't work\n");
-		return False;
+		return false;
 	}
 	CHECK_BLOCKS(p2, 1);
 	CHECK_BLOCKS(p1, 3);
@@ -476,13 +456,13 @@ static BOOL test_misc(void)
 	d = talloc_array(p1, double, 0x20000000);
 	if (d) {
 		printf("failed: integer overflow not detected\n");
-		return False;
+		return false;
 	}
 
 	d = talloc_realloc(p1, d, double, 0x20000000);
 	if (d) {
 		printf("failed: integer overflow not detected\n");
-		return False;
+		return false;
 	}
 
 	talloc_free(p1);
@@ -497,7 +477,7 @@ static BOOL test_misc(void)
 	p2 = talloc_asprintf(p1, "my test '%s'", "string");
 	if (strcmp(p2, "my test 'string'") != 0) {
 		printf("failed: talloc_asprintf(\"my test '%%s'\", \"string\") gave: \"%s\"\n", p2);
-		return False;
+		return false;
 	}
 	CHECK_BLOCKS(p1, 3);
 	CHECK_SIZE(p2, 17);
@@ -532,7 +512,7 @@ static BOOL test_misc(void)
 
 	if (talloc_unlink(root, NULL) != -1) {
 		printf("failed: talloc_unlink(root, NULL) == -1\n");
-		return False;
+		return false;
 	}
 
 	talloc_report(root, stdout);
@@ -547,14 +527,14 @@ static BOOL test_misc(void)
 	talloc_enable_leak_report();
 	talloc_enable_leak_report_full();
 
-	return True;
+	return true;
 }
 
 
 /*
   test realloc
 */
-static BOOL test_realloc(void)
+static bool test_realloc(void)
 {
 	void *root, *p1, *p2;
 
@@ -586,7 +566,7 @@ static BOOL test_realloc(void)
 	talloc_increase_ref_count(p2);
 	if (talloc_realloc_size(NULL, p2, 5) != NULL) {
 		printf("failed: talloc_realloc() on a referenced pointer should fail\n");
-		return False;
+		return false;
 	}
 	CHECK_BLOCKS(p1, 4);
 
@@ -596,7 +576,7 @@ static BOOL test_realloc(void)
 
 	if (talloc_realloc_size(NULL, p1, 0x7fffffff) != NULL) {
 		printf("failed: oversize talloc should fail\n");
-		return False;
+		return false;
 	}
 
 	talloc_realloc_size(NULL, p1, 0);
@@ -606,13 +586,13 @@ static BOOL test_realloc(void)
 
 	talloc_free(root);
 
-	return True;
+	return true;
 }
 
 /*
   test realloc with a child
 */
-static BOOL test_realloc_child(void)
+static bool test_realloc_child(void)
 {
 	void *root;
 	struct el2 {
@@ -650,14 +630,14 @@ static BOOL test_realloc_child(void)
 
 	talloc_free(root);
 
-	return True;
+	return true;
 }
 
 
 /*
   test type checking
 */
-static BOOL test_type(void)
+static bool test_type(void)
 {
 	void *root;
 	struct el1 {
@@ -678,27 +658,27 @@ static BOOL test_type(void)
 
 	if (talloc_get_type(el1, struct el1) != el1) {
 		printf("type check failed on el1\n");
-		return False;
+		return false;
 	}
 	if (talloc_get_type(el1, struct el2) != NULL) {
 		printf("type check failed on el1 with el2\n");
-		return False;
+		return false;
 	}
 	talloc_set_type(el1, struct el2);
 	if (talloc_get_type(el1, struct el2) != (struct el2 *)el1) {
 		printf("type set failed on el1 with el2\n");
-		return False;
+		return false;
 	}
 
 	talloc_free(root);
 
-	return True;
+	return true;
 }
 
 /*
   test steal
 */
-static BOOL test_steal(void)
+static bool test_steal(void)
 {
 	void *root, *p1, *p2;
 
@@ -715,12 +695,12 @@ static BOOL test_steal(void)
 
 	if (talloc_steal(p1, NULL) != NULL) {
 		printf("failed: stealing NULL should give NULL\n");
-		return False;
+		return false;
 	}
 
 	if (talloc_steal(p1, p1) != p1) {
 		printf("failed: stealing to ourselves is a nop\n");
-		return False;
+		return false;
 	}
 	CHECK_BLOCKS(root, 3);
 	CHECK_SIZE(root, 30);
@@ -747,13 +727,47 @@ static BOOL test_steal(void)
 	CHECK_SIZE(NULL, 3);
 	talloc_free(p1);
 
-	return True;
+	return true;
+}
+
+/*
+  test move
+*/
+static bool test_move(void)
+{
+	void *root;
+	struct t_move {
+		char *p;
+		int *x;
+	} *t1, *t2;
+	printf("TESTING MOVE\n");
+
+	root = talloc_new(NULL);
+
+	t1 = talloc(root, struct t_move);
+	t2 = talloc(root, struct t_move);
+	t1->p = talloc_strdup(t1, "foo");
+	t1->x = talloc(t1, int);
+	*t1->x = 42;
+
+	t2->p = talloc_move(t2, &t1->p);
+	t2->x = talloc_move(t2, &t1->x);
+	if (t1->p != NULL || t1->x != NULL ||
+	    strcmp(t2->p, "foo") ||
+	    *t2->x != 42) {
+		printf("talloc move failed\n");
+		return false;
+	}
+
+	talloc_free(root);
+
+	return true;
 }
 
 /*
   test talloc_realloc_fn
 */
-static BOOL test_realloc_fn(void)
+static bool test_realloc_fn(void)
 {
 	void *root, *p1;
 
@@ -774,11 +788,11 @@ static BOOL test_realloc_fn(void)
 	talloc_free(root);
 
 
-	return True;
+	return true;
 }
 
 
-static BOOL test_unref_reparent(void)
+static bool test_unref_reparent(void)
 {
 	void *root, *p1, *p2, *c1;
 
@@ -804,13 +818,13 @@ static BOOL test_unref_reparent(void)
 	talloc_free(p2);
 	talloc_free(root);
 
-	return True;
+	return true;
 }
 
 /*
   measure the speed of talloc versus malloc
 */
-static BOOL test_speed(void)
+static bool test_speed(void)
 {
 	void *ctx = talloc_new(NULL);
 	unsigned count;
@@ -848,11 +862,11 @@ static BOOL test_speed(void)
 
 	printf("malloc: %.0f ops/sec\n", count/timeval_elapsed(&tv));
 
-	return True;	
+	return true;	
 }
 
 
-static BOOL test_lifeless(void)
+static bool test_lifeless(void)
 {
 	void *top = talloc_new(NULL);
 	char *parent, *child; 
@@ -872,7 +886,7 @@ static BOOL test_lifeless(void)
 	talloc_free(child_owner);
 	talloc_free(child);
 
-	return True;
+	return true;
 }
 
 static int loop_destructor_count;
@@ -884,7 +898,7 @@ static int test_loop_destructor(char *ptr)
 	return 0;
 }
 
-static BOOL test_loop(void)
+static bool test_loop(void)
 {
 	void *top = talloc_new(NULL);
 	char *parent;
@@ -907,11 +921,11 @@ static BOOL test_loop(void)
 
 	if (loop_destructor_count != 1) {
 		printf("FAILED TO FIRE LOOP DESTRUCTOR\n");
-		return False;
+		return false;
 	}
 	loop_destructor_count = 0;
 
-	return True;
+	return true;
 }
 
 static int fail_destructor_str(char *ptr)
@@ -919,7 +933,7 @@ static int fail_destructor_str(char *ptr)
 	return -1;
 }
 
-static BOOL test_free_parent_deny_child(void)
+static bool test_free_parent_deny_child(void)
 {
 	void *top = talloc_new(NULL);
 	char *level1;
@@ -939,12 +953,12 @@ static BOOL test_free_parent_deny_child(void)
 
 	talloc_free(top);
 
-	return True;
+	return true;
 }
 
-static BOOL test_talloc_ptrtype(void)
+static bool test_talloc_ptrtype(void)
 {
-	BOOL ret = True;
+	bool ret = true;
 	void *top = talloc_new(NULL);
 	struct struct1 {
 		int foo;
@@ -963,13 +977,13 @@ static BOOL test_talloc_ptrtype(void)
 		       "(should be %lu)\n",
 			__location__, (unsigned long)talloc_get_size(s1),
 		       (unsigned long)sizeof(struct struct1));
-		ret = False;
+		ret = false;
 	}
 
 	if (strcmp(location1, talloc_get_name(s1)) != 0) {
 		printf("%s: talloc_ptrtype() sets the wrong name '%s' (should be '%s')\n",
 			__location__, talloc_get_name(s1), location1);
-		ret = False;
+		ret = false;
 	}
 
 	s2 = talloc_array_ptrtype(top, s2, 10);location2 = __location__;
@@ -979,14 +993,14 @@ static BOOL test_talloc_ptrtype(void)
 		       "%lu (should be %lu)\n",
 			__location__, (unsigned long)talloc_get_size(s2),
 		       (unsigned long)(sizeof(struct struct1)*10));
-		ret = False;
+		ret = false;
 	}
 
 	if (strcmp(location2, talloc_get_name(s2)) != 0) {
 		printf("%s: talloc_array_ptrtype() sets the wrong name '%s' (should be '%s')\n",
 			__location__, talloc_get_name(s2),
 		       location2);
-		ret = False;
+		ret = false;
 	}
 
 	s3 = talloc_array_ptrtype(top, s3, 10);location3 = __location__;
@@ -996,13 +1010,13 @@ static BOOL test_talloc_ptrtype(void)
 		       "%lu (should be %lu)\n",
 			__location__, (unsigned long)talloc_get_size(s3),
 		       (unsigned long)(sizeof(struct struct1 *)*10));
-		ret = False;
+		ret = false;
 	}
 
 	if (strcmp(location3, talloc_get_name(s3)) != 0) {
 		printf("%s: talloc_array_ptrtype() sets the wrong name '%s' (should be '%s')\n",
 			__location__, talloc_get_name(s3), location3);
-		ret = False;
+		ret = false;
 	}
 
 	s4 = talloc_array_ptrtype(top, s4, 10);location4 = __location__;
@@ -1012,13 +1026,13 @@ static BOOL test_talloc_ptrtype(void)
 		       "%lu (should be %lu)\n",
 			__location__, (unsigned long)talloc_get_size(s4),
 		       (unsigned long)(sizeof(struct struct1 **)*10));
-		ret = False;
+		ret = false;
 	}
 
 	if (strcmp(location4, talloc_get_name(s4)) != 0) {
 		printf("%s: talloc_array_ptrtype() sets the wrong name '%s' (should be '%s')\n",
 			__location__, talloc_get_name(s4), location4);
-		ret = False;
+		ret = false;
 	}
 
 	talloc_free(top);
@@ -1026,9 +1040,9 @@ static BOOL test_talloc_ptrtype(void)
 	return ret;
 }
 
-BOOL torture_local_talloc(struct torture_context *torture) 
+bool torture_local_talloc(struct torture_context *torture) 
 {
-	BOOL ret = True;
+	bool ret = true;
 
 	talloc_disable_null_tracking();
 	talloc_enable_null_tracking();
@@ -1042,6 +1056,7 @@ BOOL torture_local_talloc(struct torture_context *torture)
 	ret &= test_realloc();
 	ret &= test_realloc_child();
 	ret &= test_steal();
+	ret &= test_move();
 	ret &= test_unref_reparent();
 	ret &= test_realloc_fn();
 	ret &= test_type();
