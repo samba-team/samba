@@ -1001,7 +1001,7 @@ AC_CACHE_CHECK([for immediate structures],samba_cv_immediate_structures, [
    #define X_FOOBAR(x) ((FOOBAR) { x })
    #define FOO_ONE X_FOOBAR(1)
    FOOBAR f = FOO_ONE;   
-   struct {
+   static struct {
 	FOOBAR y; 
 	} f2[] = {
 		{FOO_ONE}
