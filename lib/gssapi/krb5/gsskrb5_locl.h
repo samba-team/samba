@@ -64,10 +64,22 @@ typedef struct {
          COMPAT_OLD_DES3_SELECTED = 8,
 	 ACCEPTOR_SUBKEY = 16
   } more_flags;
+  enum gss_ctx_id_t_state {
+      /* initiator states */
+      INITIATOR_START,
+      INITIATOR_WAIT_FOR_MUTAL,
+      INITIATOR_READY,
+      /* acceptor states */
+      ACCEPTOR_START,
+      ACCEPTOR_WAIT_FOR_DCESTYLE,
+      ACCEPTOR_READY
+  } state;
   struct krb5_ticket *ticket;
   OM_uint32 lifetime;
   HEIMDAL_MUTEX ctx_id_mutex;
   struct gss_msg_order *order;
+  krb5_keyblock *service_keyblock;
+  krb5_data fwd_data;
 } *gsskrb5_ctx;
 
 typedef struct {
