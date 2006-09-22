@@ -109,7 +109,9 @@ typedef OM_uint32 gss_qop_t;
 #define GSS_C_PROT_READY_FLAG 128
 #define GSS_C_TRANS_FLAG 256
 
-#define GSS_C_DCE_STYLE 0x1000 
+#define GSS_C_DCE_STYLE 4096
+#define GSS_C_IDENTIFY_FLAG 8192
+#define GSS_C_EXTENDED_ERROR_FLAG 16384
 
 /*
  * Credential usage options
