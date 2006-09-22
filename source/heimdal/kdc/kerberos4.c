@@ -655,7 +655,8 @@ _kdc_encode_v4_ticket(krb5_context context,
 
     {
 	krb5_principal princ;
-	_krb5_principalname2krb5_principal(&princ,
+	_krb5_principalname2krb5_principal(context,
+					   &princ,
 					   *service,
 					   et->crealm);
 	ret = krb5_524_conv_principal(context, 
@@ -667,7 +668,8 @@ _kdc_encode_v4_ticket(krb5_context context,
 	if(ret)
 	    return ret;
 
-	_krb5_principalname2krb5_principal(&princ,
+	_krb5_principalname2krb5_principal(context, 
+					   &princ,
 					   et->cname,
 					   et->crealm);
 				     

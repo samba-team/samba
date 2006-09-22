@@ -372,6 +372,7 @@ _krb5_principal2principalname (
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_principalname2krb5_principal (
+	krb5_context /* context */,
 	krb5_principal */*principal*/,
 	const PrincipalName /*from*/,
 	const Realm /*realm*/);
