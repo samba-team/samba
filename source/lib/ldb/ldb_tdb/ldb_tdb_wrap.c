@@ -58,6 +58,7 @@ static int ltdb_wrap_destructor(struct ltdb_wrap *w)
 	return 0;
 }				 
 
+#if (_SAMBA_BUILD_ >= 4)
 static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
 static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...)
 {
@@ -90,7 +91,22 @@ static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, con
 	ldb_debug(ldb, ldb_level, "ltdb: tdb(%s): %s", name, message);
 	talloc_free(message);
 }
-
+#else
+static void ltdb_log_fn(struct tdb_context *tdb, int level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
+static void ltdb_log_fn(struct tdb_context *tdb, int level, const char *fmt, ...)
+{
+	/* until we merge the tdb debug changes into samba3, we don't know 
+	   how serious the error is, and we can't go via the ldb loggin code */
+	va_list ap;
+	const char *name = tdb_name(tdb);
+	char *message; 
+	va_start(ap, fmt);
+	message = talloc_vasprintf(NULL, fmt, ap);
+	va_end(ap);
+	DEBUG(3, ("ltdb: tdb(%s): %s", name, message));
+	talloc_free(message);
+}
+#endif
 
 /*
   wrapped connection to a tdb database. The caller should _not_ free
@@ -106,9 +122,14 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 {
 	struct ltdb_wrap *w;
 	struct stat st;
+#if (_SAMBA_BUILD_ >= 4)
 	struct tdb_logging_context log_ctx;
+	struct tdb_logging_context log_ctx_p = &log_ctx;
 	log_ctx.log_fn = ltdb_log_fn;
 	log_ctx.log_private = ldb;
+#else
+	tdb_log_func log_ctx_p = ltdb_log_fn;
+#endif
 
 	if (stat(path, &st) == 0) {
 		for (w=tdb_list;w;w=w->next) {
@@ -124,7 +145,7 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	w->tdb = tdb_open_ex(path, hash_size, tdb_flags, open_flags, mode, &log_ctx, NULL);
+	w->tdb = tdb_open_ex(path, hash_size, tdb_flags, open_flags, mode, log_ctx_p, NULL);
 	if (w->tdb == NULL) {
 		talloc_free(w);
 		return NULL;

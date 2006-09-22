@@ -4,10 +4,19 @@
   a temporary includes file until I work on the ldb build system
 */
 
-#ifdef _SAMBA_BUILD_
+#if (_SAMBA_BUILD_ >= 4)
 /* tell ldb we have the internal ldap code */
 #define HAVE_ILDAP 1
 #endif
+
+#if (_SAMBA_BUILD_ <= 3)
+/* allow forbidden string functions - should be replaced with _m functions */
+#undef strcasecmp
+#undef strncasecmp
+#define dyn_MODULESDIR dyn_LIBDIR
+#endif
+
+
 
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
