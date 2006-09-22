@@ -37,6 +37,8 @@ NTSTATUS torture_smb2_init(void)
 	register_torture_op("SMB2-FIND", torture_smb2_find);
 	register_torture_op("SMB2-LOCK", torture_smb2_lock);
 	register_torture_op("SMB2-NOTIFY", torture_smb2_notify);
+	register_torture_op("SMB2-MAXWRITE", torture_smb2_maxwrite);
+	register_torture_op("SMB2-DIR", torture_smb2_dir);
 
 	return NT_STATUS_OK;
 }
