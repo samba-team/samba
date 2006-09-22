@@ -36,7 +36,7 @@
 #include "includes.h"
 #include "ldb/include/includes.h"
 
-#ifdef _SAMBA_BUILD_
+#if (_SAMBA_BUILD_ >= 4)
 #include "build.h"
 #include "dynconfig.h"
 #endif

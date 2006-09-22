@@ -37,6 +37,7 @@ do { \
 } while (0)
 
 /* remove an element from a list - element doesn't have to be in list. */
+#ifndef DLIST_REMOVE
 #define DLIST_REMOVE(list, p) \
 do { \
 	if ((p) == (list)) { \
@@ -48,6 +49,7 @@ do { \
 	} \
 	if ((p) && ((p) != (list))) (p)->next = (p)->prev = NULL; \
 } while (0)
+#endif
 
 /* promote an element to the top of the list */
 #define DLIST_PROMOTE(list, p) \
