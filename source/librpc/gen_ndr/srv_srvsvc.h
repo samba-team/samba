@@ -25,7 +25,7 @@ WERROR _srvsvc_NetShareCheck(pipes_struct *p, const char *server_unc, const char
 WERROR _srvsvc_NetSrvGetInfo(pipes_struct *p, const char *server_unc, uint32_t level, union srvsvc_NetSrvInfo *info);
 WERROR _srvsvc_NetSrvSetInfo(pipes_struct *p, const char *server_unc, uint32_t level, union srvsvc_NetSrvInfo info, uint32_t *parm_error);
 WERROR _srvsvc_NetDiskEnum(pipes_struct *p, const char *server_unc, uint32_t level, struct srvsvc_NetDiskInfo *info, uint32_t maxlen, uint32_t *totalentries, uint32_t *resume_handle);
-WERROR _srvsvc_NetServerStatisticsGet(pipes_struct *p, const char *server_unc, const char *service, uint32_t level, uint32_t options, struct srvsvc_Statistics *stat);
+WERROR _srvsvc_NetServerStatisticsGet(pipes_struct *p, const char *server_unc, const char *service, uint32_t level, uint32_t options, struct srvsvc_Statistics *stats);
 WERROR _srvsvc_NetTransportAdd(pipes_struct *p, const char *server_unc, uint32_t level, union srvsvc_NetTransportInfo info);
 WERROR _srvsvc_NetTransportEnum(pipes_struct *p, const char *server_unc, uint32_t *level, union srvsvc_NetTransportCtr *transports, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle);
 WERROR _srvsvc_NetTransportDel(pipes_struct *p, const char *server_unc, uint32_t unknown, struct srvsvc_NetTransportInfo0 transport);

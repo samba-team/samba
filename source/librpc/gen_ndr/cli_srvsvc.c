@@ -738,7 +738,7 @@ NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *service, uint32_t level, uint32_t options, struct srvsvc_Statistics *stat)
+NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *service, uint32_t level, uint32_t options, struct srvsvc_Statistics *stats)
 {
 	struct srvsvc_NetServerStatisticsGet r;
 	NTSTATUS status;
@@ -762,7 +762,7 @@ NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli, TALLO
 	}
 	
 	/* Return variables */
-	*stat = *r.out.stat;
+	*stats = *r.out.stats;
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
