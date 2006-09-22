@@ -361,13 +361,13 @@ static BOOL test_EnumEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *
 }
 
 
-static BOOL test_StdRootForced(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
+static BOOL test_AddStdRootForced(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
 {
 	NTSTATUS status;
 	struct dfs_AddStdRootForced r;
 	enum dfs_ManagerVersion version;
 
-	printf("Testing StdRootForced\n");
+	printf("Testing AddStdRootForced\n");
 
 	if (!test_GetManagerVersion(p, mem_ctx, &version)) {
 		return False;
@@ -413,7 +413,6 @@ static BOOL test_RemoveStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const
 
 	return True;
 }
-
 static BOOL test_AddStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
 {
 	NTSTATUS status;
@@ -471,7 +470,7 @@ static BOOL test_StdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char 
 	ret &= test_NetShareAdd(mem_ctx, host, sharename, path);
 	ret &= test_AddStdRoot(p, mem_ctx, host, sharename);
 	ret &= test_RemoveStdRoot(p, mem_ctx, host, sharename);
-	ret &= test_StdRootForced(p, mem_ctx, host, sharename);
+	ret &= test_AddStdRootForced(p, mem_ctx, host, sharename);
 	ret &= test_NetShareDel(mem_ctx, host, sharename);
 	ret &= test_DeleteDir(cli, dir);
 
