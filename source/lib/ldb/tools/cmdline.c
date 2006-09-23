@@ -26,7 +26,7 @@
 #include "ldb/include/includes.h"
 #include "ldb/tools/cmdline.h"
 
-#ifdef _SAMBA_BUILD_
+#if (_SAMBA_BUILD_ >= 4)
 #include "lib/cmdline/popt_common.h"
 #include "lib/ldb/samba/ldif_handlers.h"
 #include "auth/auth.h"
@@ -44,7 +44,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	static struct ldb_cmdline options; /* needs to be static for older compilers */
 	struct ldb_cmdline *ret=NULL;
 	poptContext pc;
-#ifdef _SAMBA_BUILD_
+#if (_SAMBA_BUILD_ >= 4)
 	int r;
 #endif
 	int num_options = 0;
@@ -70,7 +70,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		{ "output", 'O', POPT_ARG_STRING, &options.output, 0, "Output File", "Output" },
 		{ NULL,    'o', POPT_ARG_STRING, NULL, 'o', "ldb_connect option", "OPTION" },
 		{ "controls", 0, POPT_ARG_STRING, NULL, 'c', "controls", NULL },
-#ifdef _SAMBA_BUILD_
+#if (_SAMBA_BUILD_ >= 4)
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
@@ -80,7 +80,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 
 	ldb_global_init();
 
-#ifdef _SAMBA_BUILD_
+#if (_SAMBA_BUILD_ >= 4)
 	r = ldb_register_samba_handlers(ldb);
 	if (r != 0) {
 		goto failed;
@@ -206,7 +206,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		flags |= LDB_FLG_NOSYNC;
 	}
 
-#ifdef _SAMBA_BUILD_
+#if (_SAMBA_BUILD_ >= 4)
 	/* Must be after we have processed command line options */
 	gensec_init(); 
 	

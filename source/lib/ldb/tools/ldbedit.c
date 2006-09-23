@@ -189,7 +189,7 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 {
 	int fd, ret;
 	FILE *f;
-	char template[] = "/tmp/ldbedit.XXXXXX";
+	char file_template[] = "/tmp/ldbedit.XXXXXX";
 	char *cmd;
 	struct ldb_ldif *ldif;
 	struct ldb_message **msgs2 = NULL;
@@ -197,10 +197,10 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 
 	/* write out the original set of messages to a temporary
 	   file */
-	fd = mkstemp(template);
+	fd = mkstemp(file_template);
 
 	if (fd == -1) {
-		perror(template);
+		perror(file_template);
 		return -1;
 	}
 
@@ -209,7 +209,7 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 	if (!f) {
 		perror("fopen");
 		close(fd);
-		unlink(template);
+		unlink(file_template);
 		return -1;
 	}
 
@@ -219,10 +219,10 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 
 	fclose(f);
 
-	cmd = talloc_asprintf(ldb, "%s %s", editor, template);
+	cmd = talloc_asprintf(ldb, "%s %s", editor, file_template);
 
 	if (!cmd) {
-		unlink(template);
+		unlink(file_template);
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
@@ -232,15 +232,15 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 	talloc_free(cmd);
 
 	if (ret != 0) {
-		unlink(template);
+		unlink(file_template);
 		fprintf(stderr, "edit with %s failed\n", editor);
 		return -1;
 	}
 
 	/* read the resulting ldif into msgs2 */
-	f = fopen(template, "r");
+	f = fopen(file_template, "r");
 	if (!f) {
-		perror(template);
+		perror(file_template);
 		return -1;
 	}
 
@@ -254,7 +254,7 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 	}
 
 	fclose(f);
-	unlink(template);
+	unlink(file_template);
 
 	return merge_edits(ldb, msgs1, count1, msgs2, count2);
 }
