@@ -128,6 +128,7 @@ BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	uint32 old_offset;
 	uint32 offset_acl_size;
 	SEC_ACL *psa;
+	uint16 revision;
 
 	/*
 	 * Note that the size is always a multiple of 4 bytes due to the
@@ -155,8 +156,16 @@ BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	
 	old_offset = prs_offset(ps);
 
-	if(!prs_uint16("revision", ps, depth, (uint16 *)&psa->revision))
+	if (MARSHALLING(ps)) {
+		revision = (uint16)psa->revision;
+	}
+
+	if(!prs_uint16("revision", ps, depth, &revision))
 		return False;
+
+	if (UNMARSHALLING(ps)) {
+		psa->revision = (enum security_acl_revision)revision;
+	}
 
 	if(!prs_uint16_pre("size     ", ps, depth, &psa->size, &offset_acl_size))
 		return False;
@@ -212,6 +221,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 	uint32 max_offset = 0; /* after we're done, move offset to end */
 	uint32 tmp_offset = 0;
 	uint32 off_sacl, off_dacl, off_owner_sid, off_grp_sid;
+	uint16 revision;
 
 	SEC_DESC *psd;
 
@@ -237,8 +247,16 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 	/* start of security descriptor stored for back-calc offset purposes */
 	old_offset = prs_offset(ps);
 
-	if(!prs_uint16("revision ", ps, depth, (uint16*)&psd->revision))
+	if (MARSHALLING(ps)) {
+		revision = (uint16)psd->revision;
+	}
+
+	if(!prs_uint16("revision", ps, depth, &revision))
 		return False;
+
+	if (UNMARSHALLING(ps)) {
+		psd->revision = (enum security_acl_revision)revision;
+	}
 
 	if(!prs_uint16("type     ", ps, depth, &psd->type))
 		return False;
