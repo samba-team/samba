@@ -364,7 +364,7 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 
 ADS_STATUS ads_parse_gpo(ADS_STRUCT *ads,
 			 TALLOC_CTX *mem_ctx,
-			 void *res,
+			 LDAPMessage *res,
 			 const char *gpo_dn,
 			 struct GROUP_POLICY_OBJECT *gpo)
 {
