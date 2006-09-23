@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
 
-   Winbind daemon - krb5 credential cache funcions
+   Winbind daemon - krb5 credential cache functions
    and in-memory cache functions.
 
    Copyright (C) Guenther Deschner 2005-2006
@@ -136,7 +136,7 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 		 * seconds when the KDC was not available right now. */
 
 		if (ret == KRB5_KDC_UNREACH) {
-			new_start = time(NULL) + lp_winbind_cache_time();
+			new_start = time(NULL) + MAX(30, lp_winbind_cache_time());
 			goto done;
 		}
 
