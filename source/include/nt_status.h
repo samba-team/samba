@@ -45,9 +45,9 @@ typedef uint32 NTSTATUS;
 #endif
 
 #if defined(HAVE_IMMEDIATE_STRUCTURES)
-typedef struct {uint32 v;} WERROR;
+typedef struct {uint32 w;} WERROR;
 #define W_ERROR(x) ((WERROR) { x })
-#define W_ERROR_V(x) ((x).v)
+#define W_ERROR_V(x) ((x).w)
 #else
 typedef uint32 WERROR;
 #define W_ERROR(x) (x)
