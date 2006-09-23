@@ -221,7 +221,7 @@ static void krb5_ticket_gain_handler(struct timed_event *te,
   retry_later:
 
 	entry->event = add_timed_event(entry,
-					timeval_current_ofs(lp_winbind_cache_time(), 0),
+					timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0),
 					"krb5_ticket_gain_handler",
 					krb5_ticket_gain_handler,
 					entry);
@@ -351,7 +351,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 	if (schedule_refresh_event && renew_until > 0) {
 		if (postponed_request) {
 			entry->event = add_timed_event(entry,
-						timeval_current_ofs(lp_winbind_cache_time(), 0),
+						timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0),
 						"krb5_ticket_gain_handler",
 						krb5_ticket_gain_handler,
 						entry);
