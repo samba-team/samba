@@ -27,11 +27,14 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
+#define FNAME "testmaxwrite.dat"
+
 /*
   test writing
 */
 static NTSTATUS torture_smb2_write(TALLOC_CTX *mem_ctx, 
-				   struct smb2_tree *tree, struct smb2_handle handle)
+				   struct smb2_tree *tree, 
+				   struct smb2_handle handle)
 {
 	struct smb2_write w;
 	struct smb2_read r;
@@ -62,12 +65,17 @@ static NTSTATUS torture_smb2_write(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("write failed - %s\n", nt_errstr(status));
 			max = len-1;
-			talloc_free(tree);
-			if (!torture_smb2_connection(mem_ctx, &tree)) {
-				printf("failed to reconnect\n");
-				return NT_STATUS_NET_WRITE_FAULT;
+			status = smb2_util_close(tree, handle);
+			if (!NT_STATUS_IS_OK(status)) {
+				/* vista bug */
+				printf("coping with server disconnect\n");
+				talloc_free(tree);
+				if (!torture_smb2_connection(mem_ctx, &tree)) {
+					printf("failed to reconnect\n");
+					return NT_STATUS_NET_WRITE_FAULT;
+				}
 			}
-			handle = torture_smb2_create(tree, "test9.dat");
+			handle = torture_smb2_create(tree, FNAME);
 			continue;
 		} else {
 			min = len;
@@ -93,6 +101,8 @@ static NTSTATUS torture_smb2_write(TALLOC_CTX *mem_ctx,
 	}
 
 	printf("converged: len=%d\n", max);
+	smb2_util_close(tree, handle);
+	smb2_util_unlink(tree, FNAME);
 
 	return NT_STATUS_OK;
 }
@@ -113,7 +123,7 @@ BOOL torture_smb2_maxwrite(struct torture_context *torture)
 		return False;
 	}
 
-	h1 = torture_smb2_create(tree, "test9.dat");
+	h1 = torture_smb2_create(tree, FNAME);
 	status = torture_smb2_write(mem_ctx, tree, h1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Write failed - %s\n", nt_errstr(status));
