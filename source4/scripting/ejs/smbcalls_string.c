@@ -91,6 +91,22 @@ static int ejs_strstr(MprVarHandle eid, int argc, char **argv)
 
 /*
   usage:
+      var s = strspn(string, legal_chars_string);
+*/
+static int ejs_strspn(MprVarHandle eid, int argc, char **argv)
+{
+        int len;
+	if (argc != 2) {
+		ejsSetErrorMsg(eid, "strspn invalid arguments");
+		return -1;
+	}
+	len = strspn(argv[0], argv[1]);
+	mpr_Return(eid, mprCreateIntegerVar(len));
+	return 0;
+}
+
+/*
+  usage:
      list = split(".", "a.foo.bar");
      list = split(".", "a.foo.bar", count);
 
@@ -493,6 +509,7 @@ static int ejs_string_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetStringCFunction(obj, "strlower", ejs_strlower);
 	mprSetStringCFunction(obj, "strupper", ejs_strupper);
 	mprSetStringCFunction(obj, "strstr", ejs_strstr);
+	mprSetStringCFunction(obj, "strspn", ejs_strspn);
 	mprSetCFunction(obj, "split", ejs_split);
 	mprSetCFunction(obj, "join", ejs_join);
 	mprSetCFunction(obj, "sprintf", ejs_sprintf);
