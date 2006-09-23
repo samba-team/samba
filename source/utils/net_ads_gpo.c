@@ -173,15 +173,15 @@ static int net_ads_gpo_list(int argc, const char **argv)
 
 		if (!ADS_ERR_OK(status)) {
 			d_printf("parse failed: %s\n", ads_errstr(status));
+			ads_memfree(ads, dn);
 			goto out;
 		}	
 
 		dump_gpo(mem_ctx, &gpo);
-
+		ads_memfree(ads, dn);
 	}
 
 out:
-	ads_memfree(ads, dn);
 	ads_msgfree(ads, res);
 
 	talloc_destroy(mem_ctx);
