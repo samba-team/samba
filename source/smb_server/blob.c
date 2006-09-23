@@ -38,6 +38,15 @@
 	} \
 } while (0)
 
+
+/* align the end of the blob on an 8 byte boundary */
+#define BLOB_ALIGN(blob, alignment) do { \
+	if ((blob)->length & ((alignment)-1)) { \
+		uint8_t _pad = (alignment) - ((blob)->length & ((alignment)-1)); \
+		BLOB_CHECK(smbsrv_blob_fill_data(blob, blob, (blob)->length+_pad)); \
+	} \
+} while (0)
+
 /* grow the data size of a trans2 reply */
 NTSTATUS smbsrv_blob_grow_data(TALLOC_CTX *mem_ctx,
 			       DATA_BLOB *blob,
@@ -616,6 +625,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->directory_info.name.s,
 						     ofs + 60, default_str_flags,
 						     STR_TERMINATE_ASCII));
+		BLOB_ALIGN(blob, 8);
 		data = blob->data + ofs;
 		SIVAL(data,          0, blob->length - ofs);
 		return NT_STATUS_OK;
@@ -635,6 +645,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->full_directory_info.name.s, 
 						     ofs + 60, default_str_flags,
 						     STR_TERMINATE_ASCII));
+		BLOB_ALIGN(blob, 8);
 		data = blob->data + ofs;
 		SIVAL(data,          0, blob->length - ofs);
 		return NT_STATUS_OK;
@@ -646,6 +657,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->name_info.name.s, 
 						     ofs + 8, default_str_flags,
 						     STR_TERMINATE_ASCII));
+		BLOB_ALIGN(blob, 8);
 		data = blob->data + ofs;
 		SIVAL(data,          0, blob->length - ofs);
 		return NT_STATUS_OK;
@@ -672,10 +684,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->both_directory_info.name.s, 
 						     ofs + 60, default_str_flags,
 						     STR_TERMINATE_ASCII));
-		/* align the end of the blob on an even boundary */
-		if (blob->length & 1) {
-			BLOB_CHECK(smbsrv_blob_fill_data(blob, blob, blob->length+1));
-		}
+		BLOB_ALIGN(blob, 8);
 		data = blob->data + ofs;
 		SIVAL(data,          0, blob->length - ofs);
 		return NT_STATUS_OK;
@@ -697,6 +706,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->id_full_directory_info.name.s, 
 						     ofs + 60, default_str_flags,
 						     STR_TERMINATE_ASCII));
+		BLOB_ALIGN(blob, 8);
 		data = blob->data + ofs;
 		SIVAL(data,          0, blob->length - ofs);
 		return NT_STATUS_OK;
@@ -724,6 +734,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->id_both_directory_info.name.s, 
 						     ofs + 60, default_str_flags,
 						     STR_TERMINATE_ASCII));
+		BLOB_ALIGN(blob, 8);
 		data = blob->data + ofs;
 		SIVAL(data,          0, blob->length - ofs);
 		return NT_STATUS_OK;
