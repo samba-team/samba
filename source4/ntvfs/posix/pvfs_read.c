@@ -59,7 +59,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	}
 
 	maxcnt = rd->readx.in.maxcnt;
-	if (maxcnt > UINT16_MAX) {
+	if (maxcnt > UINT16_MAX && req->ctx->protocol < PROTOCOL_SMB2) {
 		maxcnt = 0;
 	}
 

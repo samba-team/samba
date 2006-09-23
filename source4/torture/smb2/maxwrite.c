@@ -37,7 +37,7 @@ static NTSTATUS torture_smb2_write(TALLOC_CTX *mem_ctx,
 	struct smb2_read r;
 	NTSTATUS status;
 	int i, len;
-	int max = 10000000;
+	int max = 80000000;
 	int min = 1;
 
 	while (max > min) {
@@ -94,7 +94,7 @@ static NTSTATUS torture_smb2_write(TALLOC_CTX *mem_ctx,
 
 	printf("converged: len=%d\n", max);
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 
