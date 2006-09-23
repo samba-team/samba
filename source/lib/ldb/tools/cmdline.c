@@ -285,7 +285,7 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			}
 			if (ctxid[0]) {
 				control->ctxid_len = ldb_base64_decode(ctxid);
-				control->contextId = talloc_memdup(control, ctxid, control->ctxid_len);
+				control->contextId = (char *)talloc_memdup(control, ctxid, control->ctxid_len);
 			} else {
 				control->ctxid_len = 0;
 				control->contextId = NULL;
@@ -327,7 +327,7 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			control->max_attributes = max_attrs;
 			if (*cookie) {
 				control->cookie_len = ldb_base64_decode(cookie);
-				control->cookie = talloc_memdup(control, cookie, control->cookie_len);
+				control->cookie = (char *)talloc_memdup(control, cookie, control->cookie_len);
 			} else {
 				control->cookie = NULL;
 				control->cookie_len = 0;
@@ -671,9 +671,9 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 
 			if (req_control->cookie)
 				talloc_free(req_control->cookie);
-			req_control->cookie = talloc_memdup(req_control,
-							    rep_control->cookie,
-							    rep_control->cookie_len);
+			req_control->cookie = (char *)talloc_memdup(
+				req_control, rep_control->cookie,
+				rep_control->cookie_len);
 			req_control->cookie_len = rep_control->cookie_len;
 
 			ret = 1;
@@ -727,9 +727,9 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 
 			if (req_control->cookie)
 				talloc_free(req_control->cookie);
-			req_control->cookie = talloc_memdup(req_control, 
-							    rep_control->cookie,
-							    rep_control->cookie_len);
+			req_control->cookie = (char *)talloc_memdup(
+				req_control, rep_control->cookie,
+				rep_control->cookie_len);
 			req_control->cookie_len = rep_control->cookie_len;
 
 			cookie = ldb_base64_encode(req_control, rep_control->cookie, rep_control->cookie_len);
