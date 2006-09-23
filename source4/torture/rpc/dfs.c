@@ -200,7 +200,8 @@ static BOOL test_GetInfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetInfo failed - %s\n", nt_errstr(status));
 		return False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
+	} else if (!W_ERROR_IS_OK(r.out.result) && 
+		   !W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, r.out.result)) {
 		printf("dfs_GetInfo failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
@@ -212,7 +213,7 @@ static BOOL test_GetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char 
 {
 	BOOL ret = True;
 	/* 103, 104, 105, 106 is only available on Set */
-	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 100, 101, 102, 103, 104, 105, 106, 200, 300};
+	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 100, 101, 102, 103, 104, 105, 106};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -310,7 +311,8 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Enum failed - %s\n", nt_errstr(status));
 		return False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
+	} else if (!W_ERROR_IS_OK(r.out.result) && 
+		   !W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, r.out.result)) {
 		printf("dfs_Enum failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
