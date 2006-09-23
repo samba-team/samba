@@ -122,11 +122,11 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 {
 	struct ltdb_wrap *w;
 	struct stat st;
-#if (_SAMBA_BUILD_ <= 3)
+#if defined(_SAMBA_BUILD_) && (_SAMBA_BUILD_ <= 3)
 	tdb_log_func log_ctx_p = ltdb_log_fn;
 #else
 	struct tdb_logging_context log_ctx;
-	struct tdb_logging_context log_ctx_p = &log_ctx;
+	const struct tdb_logging_context *log_ctx_p = &log_ctx;
 	log_ctx.log_fn = ltdb_log_fn;
 	log_ctx.log_private = ldb;
 #endif
