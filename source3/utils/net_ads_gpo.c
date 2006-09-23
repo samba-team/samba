@@ -135,7 +135,7 @@ static int net_ads_gpo_list(int argc, const char **argv)
 	ADS_STATUS status;
 	LDAPMessage *res = NULL;
 	int num_reply = 0;
-	void *msg = NULL;
+	LDAPMessage *msg = NULL;
 	struct GROUP_POLICY_OBJECT gpo;
 	TALLOC_CTX *mem_ctx;
 	char *dn;
