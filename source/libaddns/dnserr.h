@@ -37,7 +37,7 @@
 
 /* Setup the DNS_ERROR typedef.  Technique takes from nt_status.h */
 
-#if defined(HAVE_IMMEDIATE_STRUCTURES)
+#if defined(HAVE_IMMEDIATE_STRUCTURES_XX_DISABLED)
 typedef struct {uint32 v;} DNS_ERROR;
 #define ERROR_DNS(x) ((DNS_ERROR) { x })
 #define ERROR_DNS_V(x) ((x).v)
