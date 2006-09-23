@@ -53,6 +53,7 @@ BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 {
 	uint32 old_offset;
 	uint32 offset_ace_size;
+	uint8 type;
 
 	if (psa == NULL)
 		return False;
@@ -62,8 +63,16 @@ BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 	
 	old_offset = prs_offset(ps);
 
-	if(!prs_uint8("type ", ps, depth, (uint8*)&psa->type))
+	if (MARSHALLING(ps)) {
+		type = (uint8)psa->type;
+	}
+
+	if(!prs_uint8("type ", ps, depth, &type))
 		return False;
+
+	if (UNMARSHALLING(ps)) {
+		psa->type = (enum security_ace_type)type;
+	}
 
 	if(!prs_uint8("flags", ps, depth, &psa->flags))
 		return False;
