@@ -643,6 +643,8 @@ static BOOL mapping_upgrade(const char *tdb_path)
 {
 	static TDB_CONTEXT *tdb;
 	int ret, status=0;
+	pstring old_path;
+	pstring new_path;
 
 	tdb = tdb_open_log(tdb_path, 0, TDB_DEFAULT, O_RDWR, 0600);
 	if (tdb == NULL) goto failed;
@@ -657,8 +659,11 @@ static BOOL mapping_upgrade(const char *tdb_path)
 
 	if (tdb) tdb_close(tdb);
 
-	if (unlink(tdb_path) != 0) {
-		DEBUG(0,("Failed to delete old group mapping database\n"));
+	pstrcpy(old_path, tdb_path);
+	pstrcpy(new_path, lock_path("group_mapping.tdb.upgraded"));
+
+	if (rename(old_path, new_path) != 0) {
+		DEBUG(0,("Failed to rename old group mapping database\n"));
 		goto failed;
 	}
 	return True;
