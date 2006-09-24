@@ -362,11 +362,11 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 	return ads_gen_mod(ads, link_dn, mods); 
 }
 
-ADS_STATUS ads_parse_gpo(ADS_STRUCT *ads,
-			 TALLOC_CTX *mem_ctx,
-			 LDAPMessage *res,
-			 const char *gpo_dn,
-			 struct GROUP_POLICY_OBJECT *gpo)
+ ADS_STATUS ads_parse_gpo(ADS_STRUCT *ads,
+			  TALLOC_CTX *mem_ctx,
+			  LDAPMessage *res,
+			  const char *gpo_dn,
+			  struct GROUP_POLICY_OBJECT *gpo)
 {
 	ZERO_STRUCTP(gpo);
 

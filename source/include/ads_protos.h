@@ -87,3 +87,9 @@ void ads_process_results(ADS_STRUCT *ads, LDAPMessage *res,
 			 BOOL(*fn)(char *, void **, void *),
 			 void *data_area);
 void ads_dump(ADS_STRUCT *ads, LDAPMessage *res);
+
+ADS_STATUS ads_parse_gpo(ADS_STRUCT *ads,
+			 TALLOC_CTX *mem_ctx,
+			 LDAPMessage *res,
+			 const char *gpo_dn,
+			 struct GROUP_POLICY_OBJECT *gpo);
