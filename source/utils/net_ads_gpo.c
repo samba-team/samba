@@ -139,6 +139,16 @@ static int net_ads_gpo_list(int argc, const char **argv)
 	struct GROUP_POLICY_OBJECT gpo;
 	TALLOC_CTX *mem_ctx;
 	char *dn;
+	const char *attrs[] = {
+		"versionNumber",
+		"flags",
+		"gPCFileSysPath",
+		"displayName",
+		"name",
+		"gPCMachineExtensionNames",
+		"gPCUserExtensionNames",
+		NULL
+	};
 
 	mem_ctx = talloc_init("net_ads_gpo_list");
 	if (mem_ctx == NULL) {
@@ -152,7 +162,7 @@ static int net_ads_gpo_list(int argc, const char **argv)
 
 	status = ads_do_search_all(ads, ads->config.bind_path,
 				   LDAP_SCOPE_SUBTREE,
-				   "(objectclass=groupPolicyContainer)", NULL, &res);
+				   "(objectclass=groupPolicyContainer)", attrs, &res);
 	if (!ADS_ERR_OK(status)) {
 		d_printf("search failed: %s\n", ads_errstr(status));
 		goto out;
