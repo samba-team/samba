@@ -172,7 +172,7 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 {
 	uint32 info_level = 101;
 	union srvsvc_NetSrvInfo ctr;
-	WERROR result;
+	NTSTATUS result;
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
