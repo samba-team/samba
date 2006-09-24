@@ -34,7 +34,7 @@
    from using BOOL for internal functions 
 */
 
-#if defined(HAVE_IMMEDIATE_STRUCTURES_XX_DISABLED)
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
 typedef struct {uint32 v;} NTSTATUS;
 #define NT_STATUS(x) ((NTSTATUS) { x })
 #define NT_STATUS_V(x) ((x).v)
@@ -44,7 +44,7 @@ typedef uint32 NTSTATUS;
 #define NT_STATUS_V(x) (x)
 #endif
 
-#if defined(HAVE_IMMEDIATE_STRUCTURES_XX_DISABLED)
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
 typedef struct {uint32 w;} WERROR;
 #define W_ERROR(x) ((WERROR) { x })
 #define W_ERROR_V(x) ((x).w)
