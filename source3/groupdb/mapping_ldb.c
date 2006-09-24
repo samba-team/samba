@@ -53,8 +53,8 @@ static BOOL mapping_upgrade(const char *tdb_path);
 		return True;
 	}
 
-	/* this is needed as Samba3 doesn't have the auto init code yet */
-	ldb_tdb_init();
+	/* this is needed as Samba3 doesn't have this globally yet */
+	ldb_global_init();
 
 	db_path = lock_path("group_mapping.ldb");
 
