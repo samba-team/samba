@@ -789,8 +789,8 @@ LDB_MODULES_OBJ=lib/ldb/modules/operational.o lib/ldb/modules/schema.o lib/ldb/m
           lib/ldb/modules/objectclass.o \
           lib/ldb/modules/paged_results.o lib/ldb/modules/sort.o lib/ldb/modules/asq.o
 
-# disabled until build issues sorted out
-# LDB_LDAP_OBJ=lib/ldb/ldb_ldap/ldb_ldap.o
+# enabled in configure.in
+LDB_LDAP_OBJ=@LDBLDAP@
 
 LDB_OBJ = ${LDB_COMMON_OBJ} ${LDB_TDB_OBJ} ${LDB_LDAP_OBJ} ${LDB_MODULES_OBJ}
 
