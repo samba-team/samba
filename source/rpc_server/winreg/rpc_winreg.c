@@ -527,7 +527,7 @@ static WERROR winreg_GetVersion(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
 	r->out.version = talloc(mem_ctx, uint32_t);
-	NT_STATUS_HAVE_NO_MEMORY(r->out.version);
+	W_ERROR_HAVE_NO_MEMORY(r->out.version);
 
 	*r->out.version = 5;
 
