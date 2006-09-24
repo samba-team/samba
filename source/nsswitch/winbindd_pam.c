@@ -1791,7 +1791,7 @@ void winbindd_pam_logoff(struct winbindd_cli_state *state)
 		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
 		DEBUG(5, ("Pam Logoff for %s returned %s "
 			  "(PAM: %d)\n",
-			  state->request.data.auth.user, 
+			  state->request.data.logoff.user, 
 			  state->response.data.auth.nt_status_string,
 			  state->response.data.auth.pam_error));
 		request_error(state);
