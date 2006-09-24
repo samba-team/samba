@@ -1,4 +1,8 @@
-2006-09-11  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-09-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gen_decode.c (decode_type): drop unused variable realtype.
+	
+2006-09-11  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* Makefile.am: Add KRB5SignedPath and friends.
 
