@@ -324,7 +324,7 @@ if test "x$CFLAGS" = x; then
   CFLAGS="-O"
 fi
 
-CFLAGS="${CFLAGS} -D_SAMBA_BUILD_"
+CFLAGS="${CFLAGS} -D_SAMBA_BUILD_=3"
 
 AC_LIBREPLACE_CC_CHECKS
 
@@ -990,27 +990,6 @@ fi
 # we need dlopen/dlclose/dlsym/dlerror for PAM, the password database plugins and the plugin loading code
 AC_SEARCH_LIBS(dlopen, [dl])
 # dlopen/dlclose/dlsym/dlerror will be checked again later and defines will be set then
-
-############################################
-# check if the compiler can do immediate structures
-AC_CACHE_CHECK([for immediate structures],samba_cv_immediate_structures, [
-    AC_TRY_COMPILE([
-#include <stdio.h>],
-[
-   typedef struct {unsigned x;} FOOBAR;
-   #define X_FOOBAR(x) ((FOOBAR) { x })
-   #define FOO_ONE X_FOOBAR(1)
-   FOOBAR f = FOO_ONE;   
-   struct {
-	FOOBAR y; 
-	} f2[] = {
-		{FOO_ONE}
-	};   
-],
-	samba_cv_immediate_structures=yes,samba_cv_immediate_structures=no)])
-if test x"$samba_cv_immediate_structures" = x"yes"; then
-   AC_DEFINE(HAVE_IMMEDIATE_STRUCTURES,1,[Whether the compiler supports immediate structures])
-fi
 
 ############################################
 # check if the compiler can do immediate structures
