@@ -2472,7 +2472,7 @@ net_share_enum_rpc(struct cli_state *cli,
                    void *state)
 {
         int i;
-	WERROR result;
+	NTSTATUS result;
 	uint32 enum_hnd;
         uint32 info_level = 1;
 	uint32 preferred_len = 0xffffffff;
@@ -2509,7 +2509,7 @@ net_share_enum_rpc(struct cli_state *cli,
                                               &enum_hnd);
 
         /* Was it successful? */
-	if (!W_ERROR_IS_OK(result) || numentries == 0) {
+	if (!NT_STATUS_IS_OK(result) || numentries == 0) {
                 /*  Nope.  Go clean up. */
 		goto done;
         }
@@ -2531,7 +2531,7 @@ done:
         TALLOC_FREE(mem_ctx);
 
         /* Tell 'em if it worked */
-        return W_ERROR_IS_OK(result) ? 0 : -1;
+        return NT_STATUS_IS_OK(result) ? 0 : -1;
 }
 
 

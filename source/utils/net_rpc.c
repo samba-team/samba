@@ -3014,7 +3014,7 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 					TALLOC_CTX *mem_ctx,int argc,
 					const char **argv)
 {
-	WERROR result;
+	NTSTATUS result;
 	char *sharename;
 	char *path;
 	uint32 type = STYPE_DISKTREE; /* only allow disk shares to be added */
@@ -3047,7 +3047,7 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 
 	result = rpccli_srvsvc_NetShareAdd(pipe_hnd, mem_ctx, NULL, level, 
 									   info, &parm_error);
-	return werror_to_ntstatus(result);
+	return result;
 }
 
 static int rpc_share_add(int argc, const char **argv)
@@ -3084,10 +3084,10 @@ static NTSTATUS rpc_share_del_internals(const DOM_SID *domain_sid,
 					int argc,
 					const char **argv)
 {
-	WERROR result;
+	NTSTATUS result;
 
 	result = rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx, NULL, argv[0], 0);
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return NT_STATUS_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /** 
@@ -3128,7 +3128,7 @@ static void display_share_info_1(struct srvsvc_NetShareInfo1 *info1)
 
 }
 
-static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
+static NTSTATUS get_share_info(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx, 
 				uint32 level,
 				int argc,
@@ -3175,13 +3175,13 @@ static NTSTATUS rpc_share_list_internals(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	union srvsvc_NetShareCtr ctr;
-	WERROR result;
+	NTSTATUS result;
 	uint32 i, level = 1;
 	uint32 numentries;
 
 	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr, 
 							&numentries);
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Display results */
@@ -3195,7 +3195,7 @@ static NTSTATUS rpc_share_list_internals(const DOM_SID *domain_sid,
 	for (i = 0; i < numentries; i++)
 		display_share_info_1(&ctr.ctr1->array[i]);
  done:
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return NT_STATUS_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /*** 
@@ -3268,7 +3268,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
 						int argc,
 						const char **argv)
 {
-	WERROR result;
+	NTSTATUS result;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	union srvsvc_NetShareCtr ctr_src;
 	uint32 i;
@@ -3279,7 +3279,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
 
 	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src, 
 							&numentries);
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* connect destination PI_SRVSVC */
@@ -3312,13 +3312,13 @@ static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
 		result = rpccli_srvsvc_NetShareAdd(srvsvc_pipe, mem_ctx, NULL, 
 										   502, info, &parm_error);
 	
-                if (W_ERROR_V(result) == W_ERROR_V(WERR_ALREADY_EXISTS)) {
+                if (NT_STATUS_EQUAL(result, NT_STATUS_OBJECT_NAME_COLLISION)) {
 			printf("           [%s] does already exist\n", ctr_src.ctr502->array[i].name);
 			continue;
 		}
 
-		if (!W_ERROR_IS_OK(result)) {
-			printf("cannot add share: %s\n", dos_errstr(result));
+		if (!NT_STATUS_IS_OK(result)) {
+			printf("cannot add share: %s\n", nt_errstr(result));
 			goto done;
 		}
 
@@ -3540,7 +3540,7 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 						int argc,
 						const char **argv)
 {
-	WERROR result;
+	NTSTATUS result;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	union srvsvc_NetShareCtr ctr_src;
 	uint32 i;
@@ -3557,7 +3557,7 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src, 
 							&numentries);
 
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	for (i = 0; i < numentries; i++) {
@@ -3676,7 +3676,7 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
 						int argc,
 						const char **argv)
 {
-	WERROR result;
+	NTSTATUS result;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	union srvsvc_NetShareCtr ctr_src;
 	union srvsvc_NetShareInfo info;
@@ -3690,7 +3690,7 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
 	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src,
 							&numentries);
 
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* connect destination PI_SRVSVC */
@@ -3722,8 +3722,8 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
 											   argv[0], level, info,
 											   &parm_error);
 	
-		if (!W_ERROR_IS_OK(result)) {
-			printf("cannot set share-acl: %s\n", dos_errstr(result));
+		if (!NT_STATUS_IS_OK(result)) {
+			printf("cannot set share-acl: %s\n", nt_errstr(result));
 			goto done;
 		}
 
@@ -4354,13 +4354,13 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	struct cli_state *cli = pipe_hnd->cli;
 	int i;
 	union srvsvc_NetShareInfo info;
-	WERROR result;
+	NTSTATUS result;
 	uint16 cnum;
 
 	result = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx, NULL, netname,
 					       502, &info);
 
-	if (!W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("Coult not query secdesc for share %s\n",
 			  netname));
 		return;
@@ -4651,7 +4651,7 @@ static NTSTATUS rpc_sh_share_add(TALLOC_CTX *mem_ctx,
 {
 	union srvsvc_NetShareInfo info;
 	struct srvsvc_NetShareInfo2 info2;
-	WERROR result;
+	NTSTATUS result;
 	uint32 parm_error;
 
 	if ((argc < 2) || (argc > 3)) {
@@ -4668,7 +4668,7 @@ static NTSTATUS rpc_sh_share_add(TALLOC_CTX *mem_ctx,
 	result = rpccli_srvsvc_NetShareAdd(
 		pipe_hnd, mem_ctx, NULL, 2, info, &parm_error); 
 					     
-	return werror_to_ntstatus(result);
+	return result;
 }
 
 static NTSTATUS rpc_sh_share_delete(TALLOC_CTX *mem_ctx,
@@ -4676,7 +4676,7 @@ static NTSTATUS rpc_sh_share_delete(TALLOC_CTX *mem_ctx,
 				    struct rpc_pipe_client *pipe_hnd,
 				    int argc, const char **argv)
 {
-	WERROR result;
+	NTSTATUS result;
 
 	if (argc != 1) {
 		d_fprintf(stderr, "usage: %s <share>\n", ctx->whoami);
@@ -4684,7 +4684,7 @@ static NTSTATUS rpc_sh_share_delete(TALLOC_CTX *mem_ctx,
 	}
 
 	result = rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx, NULL, argv[0], 0);
-	return werror_to_ntstatus(result);
+	return result;
 }
 
 static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
@@ -4693,7 +4693,7 @@ static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
 				  int argc, const char **argv)
 {
 	union srvsvc_NetShareInfo info;
-	WERROR result;
+	NTSTATUS result;
 
 	if (argc != 1) {
 		d_fprintf(stderr, "usage: %s <share>\n", ctx->whoami);
@@ -4702,7 +4702,7 @@ static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
 
 	result = rpccli_srvsvc_NetShareGetInfo(
 		pipe_hnd, mem_ctx, NULL, argv[0], 2, &info);
-	if (!W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -4712,7 +4712,7 @@ static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
 	d_printf("Password: %s\n", info.info2->password);
 
  done:
-	return werror_to_ntstatus(result);
+	return result;
 }
 
 struct rpc_sh_cmd *net_rpc_share_cmds(TALLOC_CTX *mem_ctx,
@@ -4768,9 +4768,9 @@ static NTSTATUS rpc_file_close_internals(const DOM_SID *domain_sid,
 					int argc,
 					const char **argv)
 {
-	WERROR result;
+	NTSTATUS result;
 	result = rpccli_srvsvc_NetFileClose(pipe_hnd, mem_ctx, NULL, atoi(argv[0]));
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return NT_STATUS_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /** 
@@ -4832,7 +4832,7 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	union srvsvc_NetFileCtr ctr;
-	WERROR result;
+	NTSTATUS result;
 	uint32 hnd;
 	uint32 preferred_len = 0xffffffff, i;
 	const char *username=NULL;
@@ -4848,7 +4848,7 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 	result = rpccli_srvsvc_NetFileEnum(pipe_hnd,
 					mem_ctx, NULL, NULL, username, &level, &ctr, preferred_len, &numentries, &hnd);
 
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Display results */
@@ -4860,7 +4860,7 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 	for (i = 0; i < numentries; i++)
 		display_file_info_3(&ctr.ctr3->array[i]);
  done:
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return NT_STATUS_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /** 

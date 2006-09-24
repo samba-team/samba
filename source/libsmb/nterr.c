@@ -28,7 +28,7 @@ typedef const struct
 	NTSTATUS nt_errcode;
 } nt_err_code_struct;
 
-static nt_err_code_struct nt_errs[] =
+static const nt_err_code_struct nt_errs[] =
 {
 	{ "NT_STATUS_OK", NT_STATUS_OK },
 	{ "NT_STATUS_UNSUCCESSFUL", NT_STATUS_UNSUCCESSFUL },
