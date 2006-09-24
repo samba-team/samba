@@ -3042,6 +3042,9 @@ SMBLDAP=""
 AC_SUBST(SMBLDAP)
 SMBLDAPUTIL=""
 AC_SUBST(SMBLDAPUTIL)
+LDBLDAP=""
+AC_SUBST(LDBLDAP)
+
 if test x"$with_ldap_support" != x"no"; then
 
   ##################################################################
@@ -3111,6 +3114,7 @@ if test x"$with_ldap_support" != x"no"; then
     default_shared_modules="$default_shared_modules";
     SMBLDAP="lib/smbldap.o"
     SMBLDAPUTIL="lib/smbldap_util.o"
+    LDBLDAP="lib/ldb/ldb_ldap/ldb_ldap.o"
     with_ldap_support=yes
     AC_MSG_CHECKING(whether LDAP support is used)
     AC_MSG_RESULT(yes)
