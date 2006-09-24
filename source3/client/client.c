@@ -2726,6 +2726,7 @@ static BOOL browse_host_rpc(BOOL sort)
 	struct rpc_pipe_client *pipe_hnd;
 	TALLOC_CTX *mem_ctx;
 	uint32 enum_hnd = 0;
+	struct srvsvc_NetShareCtr1 ctr1;
 	union srvsvc_NetShareCtr ctr;
 	int i;
 	uint32 level;
@@ -2746,9 +2747,11 @@ static BOOL browse_host_rpc(BOOL sort)
 		return False;
 	}
 
+	ZERO_STRUCT(ctr1);
 	level = 1;
+	ctr.ctr1 = &ctr1;
 
-	status = rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, NULL, &level, &ctr,
+	status = rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, "", &level, &ctr,
 					    0xffffffff, &numentries, &enum_hnd);
 
 	if (!NT_STATUS_IS_OK(status)) {
