@@ -65,6 +65,12 @@ Constants:
 PATH_NAME_MAX
 UINT{16,32,64}_MAX
 INT32_MAX
+RTLD_LAZY
+HOST_NAME_MAX
+UINT16_MAX
+UINT32_MAX
+UINT64_MAX
+CHAR_BIT
 
 Macros:
 va_copy
@@ -72,6 +78,7 @@ __FUNCTION__
 __STRING
 MIN
 MAX
+QSORT_CAST
 
 Prerequisites:
 memset (for bzero)

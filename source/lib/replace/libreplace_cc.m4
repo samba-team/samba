@@ -28,7 +28,13 @@ ac_cv_prog_cc_Ae=no
 savedCFLAGS=$CFLAGS
 AC_PROG_CC
 CFLAGS=$savedCFLAGS
+
+dnl don't try for C99 if we are using gcc, as otherwise we 
+dnl lose immediate structure constants
+if test x"$GCC" = x"no" ; then
 AC_PROG_CC_C99
+fi
+
 if test x"$GCC" = x"yes" ; then
 	AC_MSG_CHECKING([for version of gcc])
 	GCC_VERSION=`$CC -dumpversion`
@@ -120,6 +126,27 @@ if test x"$ac_cv_type_long_long" != x"yes";then
 fi
 if test $ac_cv_sizeof_long_long -lt 8;then
 	AC_MSG_ERROR([LIBREPLACE needs sizeof(long long) >= 8])
+fi
+
+############################################
+# check if the compiler can do immediate structures
+AC_CACHE_CHECK([for immediate structures],samba_cv_immediate_structures, [
+    AC_TRY_COMPILE([
+#include <stdio.h>],
+[
+   typedef struct {unsigned x;} FOOBAR;
+   #define X_FOOBAR(x) ((FOOBAR) { x })
+   #define FOO_ONE X_FOOBAR(1)
+   FOOBAR f = FOO_ONE;   
+   static const struct {
+	FOOBAR y; 
+	} f2[] = {
+		{FOO_ONE}
+	};   
+],
+	samba_cv_immediate_structures=yes,samba_cv_immediate_structures=no)])
+if test x"$samba_cv_immediate_structures" = x"yes"; then
+   AC_DEFINE(HAVE_IMMEDIATE_STRUCTURES,1,[Whether the compiler supports immediate structures])
 fi
 
 AC__LIBREPLACE_ONLY_CC_CHECKS_END

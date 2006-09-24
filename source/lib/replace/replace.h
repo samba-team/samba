@@ -357,10 +357,10 @@ typedef int bool;
 #endif
 
 #ifndef _TRUE
-#define _TRUE
+#define _TRUE true
 #endif
 #ifndef _FALSE
-#define _FALSE
+#define _FALSE false
 #endif
 
 #ifndef HAVE_FUNCTION_MACRO
