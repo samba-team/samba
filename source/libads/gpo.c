@@ -380,12 +380,10 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 		gpo->ds_path = ads_get_dn(ads, res);
 	}
 	if (gpo->ds_path == NULL) {
-		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	if (!ads_pull_uint32(ads, res, "versionNumber", &gpo->version)) {
-		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
@@ -395,33 +393,27 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 
 	/* sure ??? */
 	if (!ads_pull_uint32(ads, res, "flags", &gpo->options)) {
-		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	gpo->file_sys_path = ads_pull_string(ads, mem_ctx, res, "gPCFileSysPath");
 	if (gpo->file_sys_path == NULL) {
-		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	gpo->display_name = ads_pull_string(ads, mem_ctx, res, "displayName");
 	if (gpo->display_name == NULL) {
-		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	gpo->name = ads_pull_string(ads, mem_ctx, res, "name");
 	if (gpo->name == NULL) {
-		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	/* ???, this is optional to have and what does it depend on, the 'flags' ?) */
 	gpo->machine_extensions = ads_pull_string(ads, mem_ctx, res, "gPCMachineExtensionNames");
 	gpo->user_extensions = ads_pull_string(ads, mem_ctx, res, "gPCUserExtensionNames");
-
-	ads_msgfree(ads, res);
 
 	return ADS_ERROR(LDAP_SUCCESS);
 }
@@ -478,16 +470,18 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 
 	if (ads_count_replies(ads, res) != 1) {
 		DEBUG(10,("ads_get_gpo: no result\n"));
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
 	dn = ads_get_dn(ads, res);
 	if (dn == NULL) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 	
 	status = ads_parse_gpo(ads, mem_ctx, res, dn, gpo);
-	
+	ads_msgfree(ads, res);
 	ads_memfree(ads, dn);
 
 	return status;
