@@ -166,7 +166,7 @@ static void display_srv_info_102(struct srvsvc_NetSrvInfo102 *sv102)
 }
 
 /* Server query info */
-static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli, 
+static NTSTATUS cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
@@ -176,7 +176,7 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
-		return WERR_OK;
+		return NT_STATUS_OK;
 	}
 
 	if (argc == 2)
@@ -185,7 +185,7 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 	result = rpccli_srvsvc_NetSrvGetInfo(cli, mem_ctx, NULL, info_level,
 					     &ctr);
 
-	if (!W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -238,20 +238,20 @@ static void display_share_info_502(struct srvsvc_NetShareInfo502 *info502)
 
 }
 
-static WERROR cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli, 
+static NTSTATUS cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
 	uint32 info_level = 2;
 	union srvsvc_NetShareCtr ctr;
-	WERROR result;
+	NTSTATUS result;
 	uint32 hnd;
 	uint32 preferred_len = 0xffffffff, i;
 	uint32 numentries;
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
-		return WERR_OK;
+		return NT_STATUS_OK;
 	}
 
 	if (argc == 2)
@@ -263,7 +263,7 @@ static WERROR cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli,
 		cli, mem_ctx, NULL, &info_level, &ctr, preferred_len, &numentries, 
 		&hnd);
 
-	if (!W_ERROR_IS_OK(result) || !numentries)
+	if (!NT_STATUS_IS_OK(result) || !numentries)
 		goto done;
 
 	/* Display results */
@@ -290,17 +290,17 @@ static WERROR cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli,
 	return result;
 }
 
-static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli, 
+static NTSTATUS cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli, 
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
 {
 	uint32 info_level = 502;
 	union srvsvc_NetShareInfo info;
-	WERROR result;
+	NTSTATUS result;
 
 	if (argc > 3) {
 		printf("Usage: %s [sharename] [infolevel]\n", argv[0]);
-		return WERR_OK;
+		return NT_STATUS_OK;
 	}
 
 	if (argc == 3)
@@ -308,7 +308,7 @@ static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 
 	result = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx, NULL, argv[1], info_level, &info);
 
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Display results */
@@ -332,34 +332,34 @@ static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 	return result;
 }
 
-static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli, 
+static NTSTATUS cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli, 
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
 {
 	uint32 info_level = 502;
 	union srvsvc_NetShareInfo info_get;
-	WERROR result;
+	NTSTATUS result;
 	uint32 parm_error;
 
 	if (argc > 3) {
 		printf("Usage: %s [sharename] [comment]\n", argv[0]);
-		return WERR_OK;
+		return NT_STATUS_OK;
 	}
 
 	/* retrieve share info */
 	result = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx, NULL, argv[1], info_level, &info_get);
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* set share info */
 	result = rpccli_srvsvc_NetShareSetInfo(cli, mem_ctx, NULL, argv[1], info_level, info_get, &parm_error);
 
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* re-retrieve share info and display */
 	result = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx, NULL, argv[1], info_level, &info_get);
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	display_share_info_502(info_get.info502);
@@ -368,44 +368,44 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 	return result;
 }
 
-static WERROR cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli, 
+static NTSTATUS cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
 	fstring srv_name_slash;
-	WERROR result;
+	NTSTATUS result;
 	struct srvsvc_NetRemoteTODInfo tod;
 
 	if (argc > 1) {
 		printf("Usage: %s\n", argv[0]);
-		return WERR_OK;
+		return NT_STATUS_OK;
 	}
 
 	fstr_sprintf(srv_name_slash, "\\\\%s", cli->cli->desthost);
 	result = rpccli_srvsvc_NetRemoteTOD(
 		cli, mem_ctx, srv_name_slash, &tod);
 
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
  done:
 	return result;
 }
 
-static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli, 
+static NTSTATUS cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli, 
 					 TALLOC_CTX *mem_ctx,
 					 int argc, const char **argv)
 {
 	uint32 info_level = 3;
 	union srvsvc_NetFileCtr ctr;
-	WERROR result;
+	NTSTATUS result;
 	uint32 hnd;
 	uint32 preferred_len = 0xffff;
 	uint32 numentries;
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
-		return WERR_OK;
+		return NT_STATUS_OK;
 	}
 
 	if (argc == 2)
@@ -418,7 +418,7 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 	result = rpccli_srvsvc_NetFileEnum(
 		cli, mem_ctx, NULL, NULL, NULL, &info_level, &ctr, preferred_len, &numentries, &hnd);
 
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
  done:
@@ -431,12 +431,12 @@ struct cmd_set srvsvc_commands[] = {
 
 	{ "SRVSVC" },
 
-	{ "srvinfo",     RPC_RTYPE_WERROR, NULL, cmd_srvsvc_srv_query_info, PI_SRVSVC, NULL, "Server query info", "" },
-	{ "netshareenum",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum, PI_SRVSVC, NULL, "Enumerate shares", "" },
-	{ "netsharegetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_get_info, PI_SRVSVC, NULL, "Get Share Info", "" },
-	{ "netsharesetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_info, PI_SRVSVC, NULL, "Set Share Info", "" },
-	{ "netfileenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_enum,  PI_SRVSVC, NULL, "Enumerate open files", "" },
-	{ "netremotetod",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_remote_tod, PI_SRVSVC, NULL, "Fetch remote time of day", "" },
+	{ "srvinfo",     RPC_RTYPE_NTSTATUS, cmd_srvsvc_srv_query_info, NULL, PI_SRVSVC, NULL, "Server query info", "" },
+	{ "netshareenum",RPC_RTYPE_NTSTATUS, cmd_srvsvc_net_share_enum, NULL, PI_SRVSVC, NULL, "Enumerate shares", "" },
+	{ "netsharegetinfo",RPC_RTYPE_NTSTATUS, cmd_srvsvc_net_share_get_info, NULL, PI_SRVSVC, NULL, "Get Share Info", "" },
+	{ "netsharesetinfo",RPC_RTYPE_NTSTATUS, cmd_srvsvc_net_share_set_info, NULL, PI_SRVSVC, NULL, "Set Share Info", "" },
+	{ "netfileenum", RPC_RTYPE_NTSTATUS, cmd_srvsvc_net_file_enum, NULL, PI_SRVSVC, NULL, "Enumerate open files", "" },
+	{ "netremotetod",RPC_RTYPE_NTSTATUS, cmd_srvsvc_net_remote_tod, NULL, PI_SRVSVC, NULL, "Fetch remote time of day", "" },
 
 	{ NULL }
 };
