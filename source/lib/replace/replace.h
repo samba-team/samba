@@ -333,12 +333,16 @@ typedef int bool;
  *
  * IRIX, HPUX, MacOS 10 and Solaris need BOOL_DEFINED
  * Tru64 needs _BOOL_EXISTS
+ * AIX needs _BOOL,_TRUE,_FALSE
  */
 #ifndef BOOL_DEFINED
 #define BOOL_DEFINED
 #endif
 #ifndef _BOOL_EXISTS
 #define _BOOL_EXISTS
+#endif
+#ifndef _BOOL
+#define _BOOL
 #endif
 
 #ifndef __bool_true_false_are_defined
@@ -350,6 +354,13 @@ typedef int bool;
 #endif
 #ifndef false
 #define false (0)
+#endif
+
+#ifndef _TRUE
+#define _TRUE
+#endif
+#ifndef _FALSE
+#define _FALSE
 #endif
 
 #ifndef HAVE_FUNCTION_MACRO
