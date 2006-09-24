@@ -819,3 +819,6 @@ fi
 ])
 
 m4_include(lib/replace/libreplace.m4)
+
+dnl not needed yet, might be needed in the future
+dnl m4_include(lib/ldb/libldb.m4)
