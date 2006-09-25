@@ -3141,6 +3141,7 @@ if test x"$with_ldap_support" != x"no"; then
     if test x"$ac_cv_func_ext_ldap_initialize" != x"yes"; then
       AC_MSG_WARN(Disabling ldb_ldap support (requires ldap_initialize))
     else
+      AC_DEFINE(HAVE_LDB_LDAP,1,[Whether ldb_ldap is available])
       LDBLDAP="lib/ldb/ldb_ldap/ldb_ldap.o"
     fi
     with_ldap_support=yes
