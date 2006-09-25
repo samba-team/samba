@@ -1,0 +1,503 @@
+<%
+
+/*
+ * Copyright:
+ *   (C) 2006 by Derrell Lipman
+ *       All rights reserved
+ *
+ * License:
+ *   LGPL 2.1: http://creativecommons.org/licenses/LGPL/2.1/
+ */
+
+/*
+ * This is a simple JSON-RPC server.
+ */
+
+/* Bring in the date class */
+jsonrpc_include("jsondate.esp");
+
+/* bring the string functions into the global frame */
+string_init(global);
+
+/* Bring the system functions into the global frame */
+sys_init(global);
+
+function printf()
+{
+	print(vsprintf(arguments));
+}
+
+
+/* KLUDGE... */
+form = new Array();
+server = new Array();
+request = new Array();
+/* ...KLUDGE */
+
+/*
+ * All of our manipulation of JSON RPC methods will be through this object.
+ * Each class of methods will assign to here, and all of the constants will
+ * also be in this object.
+ */
+jsonrpc = new Object();
+jsonrpc.Constant = new Object();
+jsonrpc.Constant.ErrorOrigin = new Object(); /* error origins */
+jsonrpc.Constant.ErrorCode = new Object();   /* server-generated error codes */
+jsonrpc.method = new Object();       /* methods available in requested class */
+
+
+/*
+ * ScriptTransport constants
+ */
+jsonrpc.Constant.ScriptTransport = new Object();
+jsonrpc.Constant.ScriptTransport.NotInUse        = -1;
+
+
+/*
+ * JSON-RPC error origin constants
+ */
+jsonrpc.Constant.ErrorOrigin.Server              = 1;
+jsonrpc.Constant.ErrorOrigin.Application         = 2;
+jsonrpc.Constant.ErrorOrigin.Transport           = 3;
+jsonrpc.Constant.ErrorOrigin.Client              = 4;
+
+
+
+/*
+ * JSON-RPC server-generated error code constants
+ */
+
+/**
+ * Error code, value 0: Unknown Error
+ *
+ * The default error code, used only when no specific error code is passed to
+ * the JsonRpcError constructor.  This code should generally not be used.
+ */
+jsonrpc.Constant.ErrorCode.Unknown               = 0;
+
+/**
+ * Error code, value 1: Illegal Service
+ *
+ * The service name contains illegal characters or is otherwise deemed
+ * unacceptable to the JSON-RPC server.
+ */
+jsonrpc.Constant.ErrorCode.IllegalService        = 1;
+
+/**
+ * Error code, value 2: Service Not Found
+ *
+ * The requested service does not exist at the JSON-RPC server.
+ */
+jsonrpc.Constant.ErrorCode.ServiceNotFound       = 2;
+
+/**
+ * Error code, value 3: Class Not Found
+ *
+ * If the JSON-RPC server divides service methods into subsets (classes), this
+ * indicates that the specified class was not found.  This is slightly more
+ * detailed than "Method Not Found", but that error would always also be legal
+ * (and true) whenever this one is returned. (Not used in this implementation)
+ */
+jsonrpc.Constant.ErrorCode.ClassNotFound         = 3; // not used in this implementation
+
+/**
+ * Error code, value 4: Method Not Found
+ *
+ * The method specified in the request is not found in the requested service.
+ */
+jsonrpc.Constant.ErrorCode.MethodNotFound        = 4;
+
+/**
+ * Error code, value 5: Parameter Mismatch
+ *
+ * If a method discovers that the parameters (arguments) provided to it do not
+ * match the requisite types for the method's parameters, it should return
+ * this error code to indicate so to the caller.
+ */
+jsonrpc.Constant.ErrorCode.PaameterMismatch      = 5;
+
+/**
+ * Error code, value 6: Permission Denied
+ *
+ * A JSON-RPC service provider can require authentication, and that
+ * authentication can be implemented such the method takes authentication
+ * parameters, or such that a method or class of methods requires prior
+ * authentication.  If the caller has not properly authenticated to use the
+ * requested method, this error code is returned.
+ */
+jsonrpc.Constant.ErrorCode.PermissionDenied      = 6;
+
+/*
+ * Error code, value 7: Unexpected Output
+ *
+ * The called method illegally generated output to the browser, which would
+ * have preceeded the JSON-RPC data.
+ */
+jsonrpc.Constant.ErrorCode.UnexpectedOutput      = 7;
+
+
+
+
+
+
+
+function sendReply(reply, scriptTransportId)
+{
+    /* If not using ScriptTransport... */
+    if (scriptTransportId == jsonrpc.Constant.ScriptTransport.NotInUse)
+    {
+        /* ... then just output the reply. */
+        printf(reply);
+    }
+    else
+    {
+        /* Otherwise, we need to add a call to a qooxdoo-specific function */
+        reply =
+            "qx.io.remote.ScriptTransport._requestFinished(" +
+            scriptTransportId + ", " + reply +
+            ");";
+        printf(reply);
+    }
+}
+
+
+/*
+ * class Json
+ *
+ * This class provides the JSON encoder and decoder, and some utility
+ * functions.
+ */
+Json = new Object();
+
+/* KLUDGE... */
+function _jsonDecode(s)
+{
+    var o = new Object();
+    o.id = 23;
+    o.service = "qooxdoo.test";
+    o.method = "echo";
+    o.params = new Array(1);
+    o.params[0] = "hello world";
+    return o;
+}
+/* ...KLUDGE */
+
+Json.decode = _jsonDecode;
+
+/* KLUDGE... */
+function _jsonEncode(o)
+{
+    return "{ result: \"hello world\" }"
+}
+/* ...KLUDGE */
+
+Json.encode = _jsonEncode;
+
+function _jsonValidRequest(req)
+{
+    if (req == undefined)
+    {
+        return false;
+    }
+
+    if (req.id == undefined)
+    {
+        return false;
+    }
+
+    if (req.service == undefined)
+    {
+        return false;
+    }
+
+    if (req.method == undefined)
+    {
+        return false;
+    }
+
+    if (req.params == undefined)
+    {
+        return false;
+    }
+
+    return true;
+}
+jsonrpc.validRequest = _jsonValidRequest;
+_jsonValidRequest = null;
+
+/*
+ * class JsonRpcError
+ *
+ * This class allows service methods to easily provide error information for
+ * return via JSON-RPC.
+ */
+function _JsonRpcError_create(origin, code, message)
+{
+    var o = new Object();
+
+    o.data = new Object();
+    o.data.origin = origin;
+    o.data.code = code;
+    o.data.message = message;
+    o.scriptTransportId = jsonrpc.Constant.ScriptTransport.NotInUse;
+    o.__type = "_JsonRpcError";
+
+    function _origin(origin)
+    {
+        this.origin = origin;
+    }
+    o.setOrigin = _origin;
+
+    function _setError(code, message)
+    {
+        this.code = code;
+        this.message = message;
+    }
+    o.setError = _setError;
+
+    function _setId(id)
+    {
+        this.id = id;
+    }
+    o.setId = _setId;
+
+    function _setScriptTransportId(id)
+    {
+        this.scriptTransportId = id;
+    }
+    o.setScriptTransportId = _setScriptTransportId;
+
+    function _Send()
+    {
+        var error = this;
+        var id = this.id;
+        var ret = new Array(2);
+        ret.error = this.data;
+        ret.id = this.id;
+        sendReply(Json.encode(ret), this.scriptTransportId);
+    }
+    o.Send = _Send;
+
+    return o;
+}
+
+jsonrpc.createError = _JsonRpcError_create;
+_JsonRpcError_create = null;
+
+/*
+ * 'input' is the user-provided json-encoded request
+ * 'jsonInput' is that request, decoded into its object form
+ */
+var input;
+var jsonInput = null;
+
+/* Allocate a generic error object */
+error = jsonrpc.createError(jsonrpc.Constant.ErrorOrigin.Server,
+                            jsonrpc.Constant.ErrorCode.Unknown,
+                            "Unknown error");
+
+/* Assume (default) we're not using ScriptTransport */
+scriptTransportId = jsonrpc.Constant.ScriptTransport.NotInUse;
+
+/* What type of request did we receive? */
+if (server["REQUEST_METHOD"] == "POST" &&
+    server["CONENT_TYPE"] == "text/json")
+{
+    /* We found literal POSTed json-rpc data (we hope) */
+    input = request["POST_DATA"];
+    jsonInput = Json.decode(input);
+}
+else if (server["REQUEST_METHOD"] == "GET" &&
+         form["_ScriptTransport_id"] != undefined &&
+         form["_ScriptTransport_data"] != undefined)
+{
+    /* We have what looks like a valid ScriptTransport request */
+    scriptTransportId = form["_ScriptTransport_id"];
+    error.setScriptTransportId(scriptTransportId);
+    input = form["_ScriptTransport_data"];
+    jsonInput = Json.decode(input);
+}
+
+/* KLUDGE... */
+jsonInput = Json.decode(input);
+/* ...KLUDGE */
+
+/* Ensure that this was a JSON-RPC service request */
+if (! jsonrpc.validRequest(jsonInput))
+{
+    /*
+     * This request was not issued with JSON-RPC so echo the error rather than
+     * issuing a JsonRpcError response.
+     */
+    printf("JSON-RPC request expected; service, method or params missing<br>");
+    return;
+}
+
+/*
+ * Ok, it looks like JSON-RPC, so we'll return an Error object if we encounter
+ * errors from here on out.
+ */
+error.setId(jsonInput.id);
+
+/* Service and method names may contain these characters */
+var nameChars =
+    "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+
+/* The first letter of service and method names must be a letter */
+var nameFirstLetter =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+/*
+ * Ensure the method name is kosher.  A meethod name should be:
+ *
+ *   - first character is in [a-zA-Z] 
+ *   - other characters are in [_a-zA-Z0-9]
+ */
+
+/* First check for legal characters */
+if (strspn(jsonInput.method, nameChars) != strlen(jsonInput.method))
+{
+    /* There's some illegal character in the service name */
+    error.setError(JsonRpcError.MethodNotFound,
+                   "Illegal character found in method name.");
+    error.Send();
+    return;
+}
+
+/* Now ensure that it begins with a letter */
+if (strspn(substr(jsonInput.method, 0, 1), nameFirstLetter) != 1)
+{
+    error.setError(jsonrpc.Constant.ErrorCode.MethodNotFound,
+                   "The method name does not begin with a letter");
+    error.Send();
+    return;
+}
+
+/*
+ * Ensure the requested service name is kosher.  A service name should be:
+ *
+ *   - a dot-separated sequences of strings; no adjacent dots
+ *   - first character of each string is in [a-zA-Z] 
+ *   - other characters are in [_a-zA-Z0-9]
+ */
+
+/* First check for legal characters */
+if (strspn(jsonInput.service, "." + nameChars) != strlen(jsonInput.service))
+{
+    /* There's some illegal character in the service name */
+    error.setError(JsonRpcError.IllegalService,
+                   "Illegal character found in service name.");
+    error.Send();
+    return;
+}
+
+/*
+ * Now ensure there are no double dots.
+ *
+ * Frustration with ejs.  Result must be NULL, but we can't use the ===
+ * operator: strstr() === null so we have to use typeof.  If the result isn't
+ * null, then it'll be a number and therefore not type "pointer".
+ */
+if (typeof(strstr(jsonInput.service, "..")) != "pointer")
+{
+    error.setError(JsonRpcError.IllegalService,
+                   "Illegal use of two consecutive dots in service name");
+    error.Send();
+    return;
+}
+
+/* Explode the service name into its dot-separated parts */
+var serviceComponents = split(".", jsonInput.service);
+
+/* Ensure that each component begins with a letter */
+for (var i = 0; i < serviceComponents.length; i++)
+{
+    if (strspn(substr(serviceComponents[i], 0, 1), nameFirstLetter) != 1)
+    {
+        error.setError(jsonrpc.Constant.ErrorCode.IllegalService,
+                       "A service name component does not begin with a letter");
+        error.Send();
+        return;
+    }
+}
+
+/*
+ * Now replace all dots with slashes so we can locate the service script.  We
+ * also retain the split components of the path, as the class name of the
+ * service is the last component of the path.
+ */
+var servicePath = join("/", serviceComponents) + ".esp";
+
+/* Load the requested class */
+if (jsonrpc_include(servicePath))
+{
+    /* Couldn't find the requested service */
+    error.setError(jsonrpc.Constant.ErrorCode.ServiceNotFound,
+                   "Service class `" + servicePath + "` does not exist.");
+    error.Send();
+    return;
+}
+
+/*
+ * Find the requested method.
+ *
+ * What we really want to do here, and could do in any reasonable language,
+ * is:
+ *
+ *   method = jsonrpc.method[jsonInput.method];
+ *   if (method && typeof(method) == "function") ...
+ *
+ * The following completely unreasonable sequence of commands is because:
+ *
+ *  (a) ejs evaluates all OR'ed expressions even if an early one is false, and
+ *      bars on the typeof(method) call if method is undefined
+ *
+ *  (b) ejs does not allow comparing against the string "function"!!!  What
+ *      the hell is special about that particular string???
+ *
+ * E-gad.  What a mess.
+ */
+var method = jsonrpc.method[jsonInput.method];
+var valid = (method != undefined);
+if (valid)
+{
+    var type = typeof(method);
+    if (substr(type, 0, 1) != 'f' || substr(type, 1) != "unction")
+    {
+        valid = false;
+    }
+}
+
+if (! valid)
+{
+    error.setError(jsonrpc.Constant.ErrorCode.MethodNotFound,
+                   "Method `" + method + "` not found.");
+    error.Send();
+    return;
+}
+
+/* Most errors from here on out will be Application-generated */
+error.setOrigin(jsonrpc.Constant.ErrorOrigin.Application);
+
+/* Call the requested method passing it the provided params */
+var retval = method(jsonInput.params, error);
+
+/* See if the result of the function was actually an error object */
+var wasError = (retval["__type"] != undefined);
+if (wasError)
+{
+    wasError = retval.__type == "_JsonRpcError";
+}
+if (wasError)
+{
+    /* Yup, it was.  Return the error */
+    retval.Send();
+    return;
+}
+
+/* Give 'em what they came for! */
+var ret = new Object();
+ret.result = retval;
+ret.id = jsonInput.id;
+sendReply(Json.encode(ret), scriptTransportId);
+%>
