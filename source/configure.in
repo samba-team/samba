@@ -238,7 +238,10 @@ SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
 
 SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/popt"
 
-SAMBA_CPPFLAGS=`echo ${SAMBA_CPPFLAGS} | sed -e "s;${srcdir};\$\(srcdir\);g"`
+## cleanup the $(srcdir) in the Makefile if we are outside of the tree
+if test "x${srcdir-.}" != "x."; then
+	SAMBA_CPPFLAGS=`echo ${SAMBA_CPPFLAGS} | sed -e "s;${srcdir};\$\(srcdir\);g"`
+fi
 
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
