@@ -67,6 +67,45 @@ static int ejs_typeof(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 /*
+  return the native type of a variable
+*/
+static int ejs_typeof_native(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	const struct {
+		MprType type;
+		const char *name;
+	} types[] = {
+		{ MPR_TYPE_UNDEFINED,        "undefined" },
+		{ MPR_TYPE_NULL,             "null" },
+		{ MPR_TYPE_BOOL,             "boolean" },
+		{ MPR_TYPE_CFUNCTION,        "c_function" },
+		{ MPR_TYPE_FLOAT,            "float" },
+		{ MPR_TYPE_INT,              "integer" },
+		{ MPR_TYPE_INT64,            "integer64" },
+		{ MPR_TYPE_OBJECT,           "object" },
+		{ MPR_TYPE_FUNCTION,         "function" },
+		{ MPR_TYPE_STRING,           "string" },
+		{ MPR_TYPE_STRING_CFUNCTION, "string_c_function" },
+		{ MPR_TYPE_PTR,              "pointer" }
+	};
+	int i;
+	const char *type = NULL;
+
+	if (argc != 1) return -1;
+	
+	for (i=0;i<ARRAY_SIZE(types);i++) {
+		if (argv[0]->type == types[i].type) {
+			type = types[i].name;
+			break;
+		}
+	}
+	if (type == NULL) return -1;
+
+	mpr_ReturnString(eid, type);
+	return 0;
+}
+
+/*
   libinclude() allows you to include js files using a search path specified
   in "js include =" in smb.conf. 
 */
@@ -113,6 +152,47 @@ static int ejs_libinclude(int eid, int argc, char **argv)
 }
 
 /*
+  jsonrpc_include() allows you to include jsonrpc files from a path
+  based at "jsonrpc base =" in smb.conf.
+*/
+static int ejs_jsonrpc_include(int eid, int argc, char **argv)
+{
+        int ret = -1;
+        char *path;
+        char *emsg;
+	const char *jsonrpc_base = lp_jsonrpc_base();
+        struct MprVar result;
+
+
+	if (jsonrpc_base == NULL || jsonrpc_base == NULL) {
+		ejsSetErrorMsg(eid, "js include path not set");
+		return -1;
+	}
+
+        if (argc != 1) {
+                mpr_Return(eid, mprCreateIntegerVar(-1));
+		return 0;
+        }
+
+        path = talloc_asprintf(mprMemCtx(), "%s/%s", jsonrpc_base, argv[0]);
+        if (path == NULL) {
+                mpr_Return(eid, mprCreateIntegerVar(-1));
+                return 0;
+        }
+
+        if (file_exist(path)) {
+                ret = ejsEvalFile(eid, path, &result, &emsg);
+                if (ret < 0) {
+                        printf("file found; ret=%d (%s)\n", ret, emsg);
+                }
+        }
+        
+        mpr_Return(eid, mprCreateIntegerVar(ret));
+        talloc_free(path);
+	return 0;
+}
+
+/*
   return the current version
 */
 static int ejs_version(MprVarHandle eid, int argc, struct MprVar **argv)
@@ -153,7 +233,9 @@ void smb_setup_ejs_functions(void (*exception_handler)(const char *))
 	talloc_free(shared_init);
 
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "nativeTypeOf", ejs_typeof_native, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "libinclude", ejs_libinclude, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineStringCFunction(-1, "jsonrpc_include", ejs_jsonrpc_include, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "version", ejs_version, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
 
