@@ -1273,8 +1273,8 @@
 	/* Function: 0x1b */
 	WERROR srvsvc_NetTransportDel(
 		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]	uint32 unknown,
-		[in] 	srvsvc_NetTransportInfo0 transport
+		[in]	uint32 level,
+		[in,switch_is(level)]   srvsvc_NetTransportInfo info
 		);
 
 /**************************/
