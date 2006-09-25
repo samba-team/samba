@@ -34,16 +34,27 @@
 #include <common.h>
 RCSID("$Id$");
 
+static FILE *logfile;
+
 /*
  *
  */
 
 struct client {
     char *name;
+    struct sockaddr *sa;
+    socklen_t salen;
     krb5_storage *sock;
     int32_t capabilities;
     char *target_name;
     char *moniker;
+    krb5_storage *logsock;
+    int have_log;
+#ifdef ENABLE_PTHREAD_SUPPORT
+    pthread_t thr;
+#else
+    pid_t child;
+#endif
 };
 
 static struct client **clients;
@@ -195,7 +206,7 @@ verify_mic(struct client *client, int32_t hContext,
 }
 
 
-static int
+static int32_t
 get_version_capa(struct client *client, 
 		 int32_t *version, int32_t *capa,
 		 char **version_str)
@@ -207,7 +218,7 @@ get_version_capa(struct client *client,
     return GSMERR_OK;
 }
 
-static int
+static int32_t
 get_moniker(struct client *client, 
 	    char **moniker)
 {
@@ -215,6 +226,51 @@ get_moniker(struct client *client,
     retstring(client, *moniker);
     return GSMERR_OK;
 }
+
+static int
+wait_log(struct client *c)
+{
+    int32_t port;
+    struct sockaddr_storage sast;
+    socklen_t salen = sizeof(sast);
+    int fd, fd2, ret;
+
+    memset(&sast, 0, sizeof(sast));
+
+    assert(sizeof(sast) >= c->salen);
+
+    fd = socket(c->sa->sa_family, SOCK_STREAM, 0);
+    if (fd < 0)
+	err(1, "failed to build socket for %s's logging port", c->moniker);
+
+    ((struct sockaddr *)&sast)->sa_family = c->sa->sa_family;
+    ret = bind(fd, (struct sockaddr *)&sast, c->salen);
+    if (ret < 0)
+	err(1, "failed to bind %s's logging port", c->moniker);
+
+    if (listen(fd, SOMAXCONN) < 0)
+	err(1, "failed to listen %s's logging port", c->moniker);
+
+    salen = sizeof(sast);
+    ret = getsockname(fd, (struct sockaddr *)&sast, &salen);
+    if (ret < 0)
+	err(1, "failed to get address of local socket for %s", c->moniker);
+
+    port = socket_get_port((struct sockaddr *)&sast);
+
+    put32(c, eSetLoggingSocket);
+    put32(c, ntohs(port));
+
+    salen = sizeof(sast);
+    fd2 = accept(fd, (struct sockaddr *)&sast, &salen);
+    if (fd2 < 0)
+	err(1, "failed to accept local socket for %s", c->moniker);
+    close(fd);
+
+    return fd2;
+}
+
+
 
 
 static int
@@ -229,7 +285,6 @@ build_context(struct client *ipeer, struct client *apeer,
 
     if (apeer->target_name == NULL)
 	errx(1, "apeer %s have no target name", apeer->name);
-
 
     krb5_data_zero(&itoken);
 
@@ -358,6 +413,48 @@ test_token(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
     test_wrap(c2, hc2, c1, hc1, 1);
 }
 
+static int
+log_function(void *ptr)
+{
+    struct client *c = ptr;
+    int32_t cmd, line;
+    char *file, *string;
+
+    while (1) {
+        if (krb5_ret_int32(c->logsock, &cmd))
+	    goto out;
+
+	switch (cmd) {
+	case eLogSetMoniker:
+	    if (krb5_ret_string(c->logsock, &file))
+		goto out;
+	    free(file);
+	    break;
+	case eLogInfo:
+	case eLogFailure:
+	    if (krb5_ret_string(c->logsock, &file))
+		goto out;
+	    if (krb5_ret_int32(c->logsock, &line))
+		goto out;
+	    if (krb5_ret_string(c->logsock, &string))
+		goto out;
+	    fprintf(logfile, "%s:%lu: %s\n", 
+		    file, (unsigned long)line, string);
+	    fflush(logfile);
+	    free(file);
+	    free(string);
+	    if (krb5_store_int32(c->logsock, 0))
+		goto out;
+	    break;
+	default:
+	    errx(1, "client send bad log command: %d", (int)cmd);
+	}
+    }
+out:
+
+    return 0;
+}
+
 static void
 connect_client(const char *slave)
 {
@@ -391,6 +488,9 @@ connect_client(const char *slave)
 	    fd = -1;
 	    continue;
 	}
+	c->sa = ecalloc(1, res->ai_addrlen);
+	memcpy(c->sa, res->ai_addr, res->ai_addrlen);
+	c->salen = res->ai_addrlen;
 	break;  /* okay we got one */
     }
     if (fd < 0)
@@ -417,6 +517,31 @@ connect_client(const char *slave)
 	    get_targetname(c, &c->target_name);
     }
 
+    if (logfile) {
+	int fd;
+
+	printf("starting log socket to client %s\n", c->moniker);
+
+	fd = wait_log(c);
+
+	c->logsock = krb5_storage_from_fd(fd);
+	close(fd);
+	if (c->logsock == NULL)
+	    errx(1, "failed to create log krb5_storage");
+#ifdef ENABLE_PTHREAD_SUPPORT
+	pthread_create(&c->thr, NULL, log_function, c);
+#else
+	c->child = fork();
+	if (c->child == -1)
+	    errx(1, "failed to fork");
+	else if (c->child == 0) {
+	    log_function(c);
+	    exit(0);
+	}
+#endif
+   }
+
+
     clients = erealloc(clients, (num_clients + 1) * sizeof(*clients));
     
     clients[num_clients] = c;
@@ -441,6 +566,7 @@ get_client(const char *slave)
 
 static int version_flag;
 static int help_flag;
+static char *logfile_str;
 static getarg_strings principals;
 static getarg_strings slaves;
 
@@ -448,6 +574,8 @@ struct getargs args[] = {
     { "principals", 0,  arg_strings,	&principals,	"Test principal",
       NULL },
     { "slaves", 0,  arg_strings,	&slaves,	"Slaves",
+      NULL },
+    { "log-file", 0, arg_string,	&logfile_str,	"Logfile",
       NULL },
     { "version", 0,  arg_flag,		&version_flag,	"Print version",
       NULL },
@@ -502,19 +630,48 @@ main(int argc, char **argv)
     if (slaves.num_strings == 0)
 	errx(1, "no principals");
 
+    if (logfile_str) {
+	printf("open logfile %s\n", logfile_str);
+	logfile = fopen(logfile_str, "w+");
+	if (logfile == NULL)
+	    err(1, "failed to open: %s", logfile_str);
+    }
+
+    /*
+     *
+     */
+
     list = permutate_all(&slaves, &num_list);
 
     /*
      * Set up connection to all clients
      */
 
+    printf("Connecting to slaves\n");
     for (i = 0; i < slaves.num_strings; i++)
 	connect_client(slaves.strings[i]);
+
+    /*
+     * Test acquire credentials
+     */
+
+    printf("Test acquire credentials\n");
+    for (i = 0; i < slaves.num_strings; i++) {
+	int32_t hCred, val;
+
+	val = acquire_cred(clients[i], user, password, 1, &hCred);
+	if (val != GSMERR_OK)
+	    errx(1, "Failed to acquire_cred on host %s: %d", 
+		 clients[i]->moniker, (int)val);
+
+	toast_resource(clients[i], hCred);
+    }
 
     /* 
      * First test if all slaves can build context to them-self.
      */
 
+    printf("Self context tests\n");
     for (i = 0; i < num_clients; i++) {
 	int32_t hCred, val, delegCred;
 	int32_t clientC, serverC;
@@ -573,6 +730,8 @@ main(int argc, char **argv)
      * flags. (XXX only do deleg|mutual right now.
      */
 
+    printf("\"All\" permutation tests\n");
+
     for (i = 0; i < num_list; i++) {
 	int32_t hCred, val, delegCred;
 	int32_t clientC, serverC;
@@ -589,16 +748,15 @@ main(int argc, char **argv)
 	for (j = 1; j < num_clients + 1; j++) {
 	    server = get_client(p[j % num_clients]);
 	    
-	    if (server->target_name == NULL) {
-		warnx("no target on %s", server->moniker);
+	    if (server->target_name == NULL)
 		break;
-	    }
 
 	    for (k = 1; k < j; k++)
 		printf("\t");
 	    printf("%s -> %s\n", client->moniker, server->moniker);
 
 	    val = build_context(client, server,
+				GSS_C_DCE_STYLE|
 				GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG|
 				GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
 				hCred, &clientC, &serverC, &delegCred);
@@ -629,8 +787,17 @@ main(int argc, char **argv)
      * Close all connections to clients
      */
 
-    for (i = 0; i < num_clients; i++)
+    printf("sending goodbye and waiting for log sockets\n");
+    for (i = 0; i < num_clients; i++) {
 	goodbye(clients[i]);
+	if (clients[i]->logsock) {
+#ifdef ENABLE_PTHREAD_SUPPORT
+	    pthread_join(&clients[i]->thr, NULL);
+#else
+	    waitpid(clients[i]->child, NULL, 0);
+#endif
+	}
+    }
 
     printf("done\n");
 
