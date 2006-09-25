@@ -756,7 +756,6 @@ main(int argc, char **argv)
 	    printf("%s -> %s\n", client->moniker, server->moniker);
 
 	    val = build_context(client, server,
-				GSS_C_DCE_STYLE|
 				GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG|
 				GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
 				hCred, &clientC, &serverC, &delegCred);
