@@ -47,8 +47,6 @@
 
 #include "cfx.h"
 
-#define GSS_ARCFOUR_WRAP_TOKEN_SIZE 32
-
 /*
  *
  */
