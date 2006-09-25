@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-typedef const struct
+typedef struct
 {
 	const char *nt_errstr;
 	NTSTATUS nt_errcode;
