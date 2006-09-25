@@ -1053,7 +1053,11 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 	if (flags & STR_UPPER) {
 		smb_ucs2_t *dest_ucs2 = (smb_ucs2_t *)dest;
 		size_t i;
-		for (i = 0; i < (dest_len / 2) && dest_ucs2[i]; i++) {
+
+		/* We check for i < (ret / 2) below as the dest string isn't null
+		   terminated if STR_TERMINATE isn't set. */
+
+		for (i = 0; i < (ret / 2) && i < (dest_len / 2) && dest_ucs2[i]; i++) {
 			smb_ucs2_t v = toupper_w(dest_ucs2[i]);
 			if (v != dest_ucs2[i]) {
 				dest_ucs2[i] = v;
