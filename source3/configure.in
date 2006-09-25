@@ -2706,15 +2706,6 @@ SMB_CHECK_SYSCONF(_SC_NPROCESSORS_ONLN)
 SMB_CHECK_SYSCONF(_SC_PAGESIZE)
 AC_CHECK_FUNCS(getpagesize)
 
-AC_CACHE_CHECK([for root],samba_cv_HAVE_ROOT,[
-AC_TRY_RUN([main() { exit(getuid() != 0); }],
-           samba_cv_HAVE_ROOT=yes,samba_cv_HAVE_ROOT=no,samba_cv_HAVE_ROOT=cross)])
-if test x"$samba_cv_HAVE_ROOT" = x"yes"; then
-    AC_DEFINE(HAVE_ROOT,1,[Whether current user is root])
-else
-    AC_MSG_WARN(running as non-root will disable some tests)
-fi
-
 ##################
 # look for a method of finding the list of network interfaces
 iface=no;
