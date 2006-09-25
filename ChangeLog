@@ -1,3 +1,12 @@
+2006-09-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/gssmask/gssmaestro.c: Add logsocket support.
+	
+2006-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* appl/gssmask/gssmaestro.c (build_context): print the step the
+	context exchange.
+	
 2006-09-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* appl/gssmask/gssmaestro.c: Add GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG
