@@ -229,12 +229,12 @@ do
 done
 ])
 
-SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/replace"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/talloc"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/tdb/include"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
+SAMBA_CPPFLAGS="-Iinclude -I\$(srcdir)/include  -I. -I\$(srcdir)"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I\$(srcdir)/lib/replace"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I\$(srcdir)/lib/talloc"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I\$(srcdir)/tdb/include"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I\$(srcdir)/libaddns"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I\$(srcdir)/librpc"
 
 SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/popt"
 
@@ -876,7 +876,7 @@ esac
 
 AC_LIBREPLACE_BROKEN_CHECKS
 
-LIBREPLACE_DIR=`echo ${libreplacedir} |sed -e 's/^\.\///g'`
+LIBREPLACE_DIR=`echo ${libreplacedir} | sed -e "s;${srcdir};;" -e "s;^/;;"`
 
 LIBREPLACE_OBJS=""
 for obj in ${LIBREPLACEOBJ}; do
