@@ -113,7 +113,7 @@ function ldaptime()
 */
 function datestring()
 {
-	var t = sys.gmtime(sys.nttime());
+	var t = sys.ntgmtime(sys.nttime());
 	return sprintf("%04u%02u%02u%02u",
 		       t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour);
 }

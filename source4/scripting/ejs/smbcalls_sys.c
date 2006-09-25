@@ -58,6 +58,22 @@ static int ejs_sys_hostname(MprVarHandle eid, int argc, struct MprVar **argv)
 
 
 /*
+  return current time as seconds and microseconds
+*/
+static int ejs_sys_gettimeofday(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct timeval tv = timeval_current();
+        struct MprVar v = mprObject("timeval");
+	struct MprVar sec = mprCreateIntegerVar(tv.tv_sec);
+	struct MprVar usec = mprCreateIntegerVar(tv.tv_usec);
+
+        mprCreateProperty(&v, "sec", &sec);
+        mprCreateProperty(&v, "usec", &usec);
+	mpr_Return(eid, v);
+	return 0;
+}
+
+/*
   return current time as a 64 bit nttime value
 */
 static int ejs_sys_nttime(MprVarHandle eid, int argc, struct MprVar **argv)
@@ -86,6 +102,35 @@ static int ejs_sys_unix2nttime(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 /*
+  return the GMT time represented by the struct tm argument, as a time_t value
+*/
+static int ejs_sys_gmmktime(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct MprVar *o;
+	struct tm tm;
+	if (argc != 1 || !mprVarIsObject(argv[0]->type)) {
+		ejsSetErrorMsg(eid, "sys_gmmktime invalid arguments");
+		return -1;
+	}
+
+        o = argv[0];
+#define TM_EL(n) tm.n = mprVarToNumber(mprGetProperty(o, #n, NULL))
+	TM_EL(tm_sec);
+	TM_EL(tm_min);
+	TM_EL(tm_hour);
+	TM_EL(tm_mday);
+	TM_EL(tm_mon);
+	TM_EL(tm_year);
+	TM_EL(tm_wday);
+	TM_EL(tm_yday);
+	TM_EL(tm_isdst);
+#undef TM_EL        
+
+	mpr_Return(eid, mprCreateIntegerVar(mktime(&tm)));
+	return 0;
+}
+
+/*
   return the given time as a gmtime structure
 */
 static int ejs_sys_gmtime(MprVarHandle eid, int argc, struct MprVar **argv)
@@ -95,6 +140,41 @@ static int ejs_sys_gmtime(MprVarHandle eid, int argc, struct MprVar **argv)
 	struct tm *tm;
 	if (argc != 1 || !mprVarIsNumber(argv[0]->type)) {
 		ejsSetErrorMsg(eid, "sys_gmtime invalid arguments");
+		return -1;
+	}
+	t = (time_t) mprVarToNumber(argv[0]);
+	tm = gmtime(&t);
+	if (tm == NULL) {
+		mpr_Return(eid, mprCreateUndefinedVar());
+		return 0;
+	}
+	ret = mprObject("gmtime");
+#define TM_EL(n) mprSetVar(&ret, #n, mprCreateIntegerVar(tm->n))
+	TM_EL(tm_sec);
+	TM_EL(tm_min);
+	TM_EL(tm_hour);
+	TM_EL(tm_mday);
+	TM_EL(tm_mon);
+	TM_EL(tm_year);
+	TM_EL(tm_wday);
+	TM_EL(tm_yday);
+	TM_EL(tm_isdst);
+#undef TM_EL
+
+	mpr_Return(eid, ret);
+	return 0;
+}
+
+/*
+  return the given NT time as a gmtime structure
+*/
+static int ejs_sys_ntgmtime(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	time_t t;
+	struct MprVar ret;
+	struct tm *tm;
+	if (argc != 1 || !mprVarIsNumber(argv[0]->type)) {
+		ejsSetErrorMsg(eid, "sys_ntgmtime invalid arguments");
 		return -1;
 	}
 	t = nt_time_to_unix(mprVarToNumber(argv[0]));
@@ -114,6 +194,7 @@ static int ejs_sys_gmtime(MprVarHandle eid, int argc, struct MprVar **argv)
 	TM_EL(tm_wday);
 	TM_EL(tm_yday);
 	TM_EL(tm_isdst);
+#undef TM_EL
 
 	mpr_Return(eid, ret);
 	return 0;
@@ -332,8 +413,11 @@ static int ejs_sys_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(obj, "interfaces", ejs_sys_interfaces);
 	mprSetCFunction(obj, "hostname", ejs_sys_hostname);
 	mprSetCFunction(obj, "nttime", ejs_sys_nttime);
+	mprSetCFunction(obj, "getTimeOfDay", ejs_sys_gettimeofday);
 	mprSetCFunction(obj, "unix2nttime", ejs_sys_unix2nttime);
+	mprSetCFunction(obj, "gmmktime", ejs_sys_gmmktime);
 	mprSetCFunction(obj, "gmtime", ejs_sys_gmtime);
+	mprSetCFunction(obj, "ntgmtime", ejs_sys_ntgmtime);
 	mprSetCFunction(obj, "ldaptime", ejs_sys_ldaptime);
 	mprSetCFunction(obj, "httptime", ejs_sys_httptime);
 	mprSetStringCFunction(obj, "unlink", ejs_sys_unlink);

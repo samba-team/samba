@@ -35,6 +35,7 @@
 
 #define SWAT_SESSION_KEY "SwatSessionId"
 #define HTTP_PREAUTH_URI "/scripting/preauth.esp"
+#define JSONRPC_REQUEST "/services"
 
 /* state of the esp subsystem for a specific request */
 struct esp_state {
@@ -414,6 +415,9 @@ static void http_setup_arrays(struct esp_state *esp)
 	SETVAR(ESP_REQUEST_OBJ, "CONTENT_LENGTH", 
 	       talloc_asprintf(esp, "%u", web->input.content_length));
 	SETVAR(ESP_REQUEST_OBJ, "QUERY_STRING", web->input.query_string);
+#if 0 /* djl -- not yet.  need to track down the compiler warning */
+	SETVAR(ESP_REQUEST_OBJ, "POST_DATA", web->input.partial);
+#endif
 	SETVAR(ESP_REQUEST_OBJ, "REQUEST_METHOD", web->input.post_request?"POST":"GET");
 	SETVAR(ESP_REQUEST_OBJ, "REQUEST_URI", web->input.url);
 	p = strrchr(web->input.url, '/');
@@ -518,7 +522,6 @@ static void esp_request(struct esp_state *esp, const char *url)
 	talloc_free(buf);
 }
 
-
 /*
   perform pre-authentication on every page is /scripting/preauth.esp
   exists.  If this script generates any non-whitepace output at all,
@@ -541,9 +544,9 @@ static BOOL http_preauth(struct esp_state *esp)
 	esp_request(esp, HTTP_PREAUTH_URI);
 	for (i=0;i<esp->web->output.content.length;i++) {
 		if (!isspace(esp->web->output.content.data[i])) {
-			/* if the preauth has generated content, then force it to be
-			   html, so that we can show the login page for failed
-			   access to images */
+			/* if the preauth has generated content, then force it
+			   to be html, so that we can show the login page for
+			   failed access to images */
 			http_setHeader(esp->web, "Content-Type: text/html", 0);
 			return False;
 		}
@@ -763,11 +766,16 @@ void http_process_input(struct websrv_context *web)
 	void *ejs_save = ejs_save_state();
 	int i;
 	const char *file_type = NULL;
-	BOOL esp_enable = False;
+        enum page_type {
+                page_type_simple,
+                page_type_esp,
+                page_type_jsonrpc
+        };
+        enum page_type page_type;
 	const struct {
 		const char *extension;
 		const char *mime_type;
-		BOOL esp_enable;
+                enum page_type page_type;
 	} mime_types[] = {
 		{"gif",  "image/gif"},
 		{"png",  "image/png"},
@@ -847,20 +855,29 @@ void http_process_input(struct websrv_context *web)
 	esp->req = espCreateRequest(web, web->input.url, esp->variables);
 	if (esp->req == NULL) goto internal_error;
 
-	/* work out the mime type */
-	p = strrchr(web->input.url, '.');
-	if (p == NULL) {
-		esp_enable = True;
-	}
-	for (i=0;p && i<ARRAY_SIZE(mime_types);i++) {
+	/*
+         * Work out the mime type.  First, we see if the request is a JSON-RPC
+         * service request.  If not, we look at the extension.
+         */
+        if (strcmp(web->input.url, JSONRPC_REQUEST) == 0) {
+            page_type = page_type_jsonrpc;
+            file_type = "text/json";
+            
+        } else {
+            p = strrchr(web->input.url, '.');
+            if (p == NULL) {
+                    page_type = page_type_esp;
+            }
+            for (i=0;p && i<ARRAY_SIZE(mime_types);i++) {
 		if (strcmp(mime_types[i].extension, p+1) == 0) {
-			file_type = mime_types[i].mime_type;
-			esp_enable = mime_types[i].esp_enable;
+                    file_type = mime_types[i].mime_type;
+                    page_type = mime_types[i].page_type;
 		}
-	}
-	if (file_type == NULL) {
+            }
+            if (file_type == NULL) {
 		file_type = "text/html";
-	}
+            }
+        }
 
 	/* setup basic headers */
 	http_setResponseCode(web, 200);
@@ -872,14 +889,32 @@ void http_process_input(struct websrv_context *web)
 
 	http_setup_arrays(esp);
 
-	/* possibly do pre-authentication */
-	if (http_preauth(esp)) {
-		if (esp_enable) {
-			esp_request(esp, web->input.url);
-		} else {
-			http_simple_request(web);
-		}
-	}
+	/*
+         * Do pre-authentication.  If pre-authentication succeeds, do
+         * page-type-specific processing.
+         */
+        switch(page_type)
+        {
+        case page_type_simple:
+                if (http_preauth(esp)) {
+                        http_simple_request(web);
+                }
+                break;
+
+        case page_type_esp:
+                if (http_preauth(esp)) {
+                        esp_request(esp, web->input.url);
+                }
+                break;
+
+        case page_type_jsonrpc:
+#if 0 /* djl -- not yet */
+                if (! jsonrpc_request(esp)) {
+                        http_error(web, 500, "Out of memory");
+                }
+#endif
+                break;
+        }
 
 	if (web->conn == NULL) {
 		/* the connection has been terminated above us, probably
