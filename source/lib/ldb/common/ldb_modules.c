@@ -137,13 +137,13 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 
 #ifndef STATIC_ldb_MODULES
 
-#if defined(HAVE_LDAP) && defined(HAVE_LDAP_INITIALIZE)
+#ifdef HAVE_LDB_LDAP
 #define LDAP_INIT ldb_ldap_init,
 #else
 #define LDAP_INIT
 #endif
 
-#ifdef HAVE_SQLITE3
+#ifdef HAVE_LDB_SQLITE3
 #define SQLITE3_INIT ldb_sqlite3_init,
 #else
 #define SQLITE3_INIT
