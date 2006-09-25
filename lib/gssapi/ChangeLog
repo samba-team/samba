@@ -1,5 +1,11 @@
 2006-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi.h: Add GSS_C flags from
+	draft-brezak-win2k-krb-rc4-hmac-04.txt.
+
+	* krb5/delete_sec_context.c: Free service_keyblock and fwd_data,
+	indent.
+
 	* krb5/accept_sec_context.c: Merge of the acceptor part from the
 	samba patch by Stefan Metzmacher and Andrew Bartlet.
 
