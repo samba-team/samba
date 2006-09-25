@@ -1796,8 +1796,9 @@ uninstallpammodules:
 TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 
 clean: delheaders python_clean
-	-rm -f core */*~ *~ */*.o */*/*.o */*.@PICSUFFIX@ */*/*.@PICSUFFIX@ \
-		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ \
+	-rm -f core */*~ *~ */*.o */*/*.o */*/*/*.o \
+		*/*.@PICSUFFIX@ */*/*.@PICSUFFIX@ */*/*/*.@PICSUFFIX@ \
+		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBMSRPC) \
