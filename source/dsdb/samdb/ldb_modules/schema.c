@@ -496,8 +496,8 @@ static int schema_init_classes(struct ldb_module *module, struct schema_private_
 		data->class[i]->defobjcat = talloc_strdup(data->class[i],
 						ldb_msg_find_attr_as_string(res->msgs[i],
 									"defaultObjectCategory", NULL));
-		SCHEMA_CHECK_VALUE(data->class[i]->defobjcat, NULL, module);
-
+/*		SCHEMA_CHECK_VALUE(data->class[i]->defobjcat, NULL, module);
+*/
 		/* the following attributes are all optional */
 
 		data->class[i]->systemOnly = ldb_msg_find_attr_as_bool(res->msgs[i], "systemOnly", False);
@@ -1028,9 +1028,9 @@ static int schema_add_build_down_req(struct schema_context *sctx)
 		if (!temp->next) break;
 		if (temp->next->role != SCHEMA_CT_STRUCTURAL) break;
 	}
-	oc = talloc_strdup(msg, temp->class->defobjcat);
+/*	oc = talloc_strdup(msg, temp->class->defobjcat);
 	ret = ldb_msg_add_string(msg, "objectCategory", oc);
-
+*/
 	sctx->down_req->op.add.message = msg;
 
 	return LDB_SUCCESS;
@@ -1250,13 +1250,19 @@ static int schema_init(struct ldb_module *module)
 	struct ldb_result *res;
 	int ret;
 
-	/* need to let the partiorion module to register first */
+	/* need to let the partition module to register first */
 	ret = ldb_next_init(module);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
-	data = talloc_zero(module, struct schema_private_data);
+	data = ldb_get_opaque(module->ldb, "schema_instance");
+	if (data) {
+		module->private_data = data;
+		return LDB_SUCCESS;
+	}
+
+	data = talloc_zero(module->ldb, struct schema_private_data);
 	if (data == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -1299,6 +1305,8 @@ static int schema_init(struct ldb_module *module)
 	}
 
 	module->private_data = data;
+	ldb_set_opaque(module->ldb, "schema_instance", data);
+
 	return LDB_SUCCESS;
 }
 
