@@ -69,6 +69,7 @@ if test x"$with_ldap_support" != x"no"; then
   
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes" -a x"$ac_cv_func_ext_ldap_domain2hostlist" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
+    AC_DEFINE(HAVE_LDB_LDAP,1,[Whether ldb_ldap is available])
     with_ldap_support=yes
     AC_MSG_CHECKING(whether LDAP support is used)
     AC_MSG_RESULT(yes)
