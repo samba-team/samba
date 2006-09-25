@@ -71,52 +71,56 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 
 		/*
 		 * Token must start with [APPLICATION 0] SEQUENCE.
-		 */
-		if (len == 0 || *p != 0x60)
-			return (GSS_S_DEFECTIVE_TOKEN);
-		p++;
-		len--;
-
-		/*
-		 * Decode the length and make sure it agrees with the
-		 * token length.
+		 * But if it doesn't assume its DCE-STYLE Kerberos!
 		 */
 		if (len == 0)
 			return (GSS_S_DEFECTIVE_TOKEN);
-		if ((*p & 0x80) == 0) {
-			a = *p;
-			p++;
-			len--;
+		if  (*p != 0x60) {
+			mech_oid = *GSS_KRB5_MECHANISM;
 		} else {
-			b = *p & 0x7f;
 			p++;
 			len--;
-			if (len < b)
+	
+			/*
+			 * Decode the length and make sure it agrees with the
+			 * token length.
+			 */
+			if (len == 0)
 				return (GSS_S_DEFECTIVE_TOKEN);
-			a = 0;
-			while (b) {
-				a = (a << 8) | *p;
+			if ((*p & 0x80) == 0) {
+				a = *p;
 				p++;
 				len--;
-				b--;
+			} else {
+				b = *p & 0x7f;
+				p++;
+				len--;
+				if (len < b)
+					return (GSS_S_DEFECTIVE_TOKEN);
+				a = 0;
+				while (b) {
+					a = (a << 8) | *p;
+					p++;
+					len--;
+					b--;
+				}
 			}
+			if (a != len)
+				return (GSS_S_DEFECTIVE_TOKEN);
+	
+			/*
+			 * Decode the OID for the mechanism. Simplify life by
+			 * assuming that the OID length is less than 128 bytes.
+			 */
+			if (len < 2 || *p != 0x06)
+				return (GSS_S_DEFECTIVE_TOKEN);
+			if ((p[1] & 0x80) || p[1] > (len - 2))
+				return (GSS_S_DEFECTIVE_TOKEN);
+			mech_oid.length = p[1];
+			p += 2;
+			len -= 2;
+			mech_oid.elements = p;
 		}
-		if (a != len)
-			return (GSS_S_DEFECTIVE_TOKEN);
-
-		/*
-		 * Decode the OID for the mechanism. Simplify life by
-		 * assuming that the OID length is less than 128 bytes.
-		 */
-		if (len < 2 || *p != 0x06)
-			return (GSS_S_DEFECTIVE_TOKEN);
-		if ((p[1] & 0x80) || p[1] > (len - 2))
-			return (GSS_S_DEFECTIVE_TOKEN);
-		mech_oid.length = p[1];
-		p += 2;
-		len -= 2;
-		mech_oid.elements = p;
-
 		/*
 		 * Now that we have a mechanism, we can find the
 		 * implementation.
