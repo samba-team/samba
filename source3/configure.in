@@ -229,14 +229,16 @@ do
 done
 ])
 
-SAMBA_CPPFLAGS="-Iinclude -I\$(srcdir)/include  -I. -I\$(srcdir)"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I\$(srcdir)/lib/replace"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I\$(srcdir)/lib/talloc"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I\$(srcdir)/tdb/include"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I\$(srcdir)/libaddns"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I\$(srcdir)/librpc"
+SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/replace"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/talloc"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/tdb/include"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
 
 SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/popt"
+
+SAMBA_CPPFLAGS=`echo ${SAMBA_CPPFLAGS} | sed -e "s;${srcdir};\$\(srcdir\);g"`
 
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
