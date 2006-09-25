@@ -1,3 +1,12 @@
+2006-09-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_accept_sec_context.c (gss_accept_sec_context): if the
+	token doesn't start with [APPLICATION 0] SEQUENCE, lets assume its
+	a DCE-style kerberos 5 connection. XXX this needs to be made
+	better in cause we get another GSS-API protocol violating
+	protocol. It should be possible to detach the Kerberos DCE-style
+	since it starts with a AP-REQ PDU, but that have to wait for now.
+	
 2006-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gssapi.h: Add GSS_C flags from
