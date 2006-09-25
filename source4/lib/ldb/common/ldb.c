@@ -819,7 +819,9 @@ int ldb_modify(struct ldb_context *ldb,
 	int ret;
 
 	ret = ldb_msg_sanity_check(ldb, message);
-	if (ret != LDB_SUCCESS) return ret;
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	ret = ldb_build_mod_req(&req, ldb, ldb,
 					message,
