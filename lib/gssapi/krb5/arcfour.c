@@ -57,6 +57,16 @@ RCSID("$Id$");
  *	Confounder[8]
  */
 
+/*
+ * WRAP in DCE-style have a fixed size header and no padding, the oid
+ * and length over the WRAP header is a total of
+ * GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE byte (ie total of 43
+ * bytes overhead).
+ */
+
+#define GSS_ARCFOUR_WRAP_TOKEN_SIZE 32
+#define GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE 13
+
 
 static krb5_error_code
 arcfour_mic_key(krb5_context context, krb5_keyblock *key,
@@ -486,7 +496,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     u_char *p, *p0;
     int cmp;
     int conf_flag;
-    size_t padlen;
+    size_t padlen, len;
     
     if (conf_state)
 	*conf_state = 0;
@@ -494,16 +504,27 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	*qop_state = 0;
 
     p0 = input_message_buffer->value;
+
+    if ((context_handle->flags & GSS_C_DCE_STYLE) == 0) {
+	len = input_message_buffer->length;
+    } else {
+	len = GSS_ARCFOUR_WRAP_TOKEN_SIZE + 
+	    GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE;
+	if (input_message_buffer->length < len)
+	    return GSS_S_BAD_MECH;
+    }
+
     omret = _gssapi_verify_mech_header(&p0,
-				       input_message_buffer->length,
+				       len,
 				       GSS_KRB5_MECHANISM);
     if (omret)
 	return omret;
-    p = p0;
 
-    datalen = input_message_buffer->length -
-	(p - ((u_char *)input_message_buffer->value)) - 
-	GSS_ARCFOUR_WRAP_TOKEN_SIZE;
+    datalen = input_message_buffer->length 
+	- (p0 - (u_char *)input_message_buffer->value)
+	- GSS_ARCFOUR_WRAP_TOKEN_SIZE;
+
+    p = p0;
 
     if (memcmp(p, "\x02\x01", 2) != 0)
 	return GSS_S_BAD_SIG;
@@ -595,13 +616,15 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     }
     memset(k6_data, 0, sizeof(k6_data));
 
-    ret = _gssapi_verify_pad(output_message_buffer, datalen, &padlen);
-    if (ret) {
-	_gsskrb5_release_buffer(minor_status, output_message_buffer);
-	*minor_status = 0;
-	return ret;
+    if ((context_handle->flags & GSS_C_DCE_STYLE) == 0) {
+	ret = _gssapi_verify_pad(output_message_buffer, datalen, &padlen);
+	if (ret) {
+	    _gsskrb5_release_buffer(minor_status, output_message_buffer);
+	    *minor_status = 0;
+	    return ret;
+	}
+	output_message_buffer->length -= padlen;
     }
-    output_message_buffer->length -= padlen;
 
     ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SEAL,
 			    cksum_data, sizeof(cksum_data),
