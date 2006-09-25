@@ -60,8 +60,8 @@ RCSID("$Id$");
 /*
  * WRAP in DCE-style have a fixed size header and no padding, the oid
  * and length over the WRAP header is a total of
- * GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE byte (ie total of 43
- * bytes overhead).
+ * GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE byte (ie total of 45
+ * bytes overhead, remember the 2 bytes from APPL [0] SEQ).
  */
 
 #define GSS_ARCFOUR_WRAP_TOKEN_SIZE 32
@@ -354,9 +354,19 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     if (conf_state)
 	*conf_state = 0;
 
-    datalen = input_message_buffer->length + 1 /* padding */;
-    len = datalen + GSS_ARCFOUR_WRAP_TOKEN_SIZE;
-     _gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
+    datalen = input_message_buffer->length;
+
+    if ((context_handle->flags & GSS_C_DCE_STYLE) == 0) {
+	datalen += 1 /* padding */;
+	len = datalen + GSS_ARCFOUR_WRAP_TOKEN_SIZE;
+	_gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
+    } else {
+	len = GSS_ARCFOUR_WRAP_TOKEN_SIZE;
+	_gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
+	assert(total_len == GSS_ARCFOUR_WRAP_TOKEN_SIZE + GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE);
+	assert(total_len - len == 2);
+	total_len += datalen;
+    }
 
     output_message_buffer->length = total_len;
     output_message_buffer->value  = malloc (total_len);
@@ -407,7 +417,9 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     /* p points to data */
     p = p0 + GSS_ARCFOUR_WRAP_TOKEN_SIZE;
     memcpy(p, input_message_buffer->value, input_message_buffer->length);
-    p[input_message_buffer->length] = 1; /* PADDING */
+
+    if ((context_handle->flags & GSS_C_DCE_STYLE) == 0)
+	p[input_message_buffer->length] = 1; /* PADDING */
 
     ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SEAL,
 			    p0 + 16, 8, /* SGN_CKSUM */ 
@@ -624,7 +636,8 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	    return ret;
 	}
 	output_message_buffer->length -= padlen;
-    }
+    } else
+	padlen = 0;
 
     ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SEAL,
 			    cksum_data, sizeof(cksum_data),
