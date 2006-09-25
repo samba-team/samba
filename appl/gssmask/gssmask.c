@@ -637,11 +637,11 @@ HandleOP(Verify)
 static int
 HandleOP(GetVersionAndCapabilities)
 {
-    int32_t cap = ISSERVER | HAS_MONIKER;
+    int32_t cap = HAS_MONIKER;
     char name[256] = "unknown", *str;
 
     if (targetname)
-	cap |= 0x1; /* is server */
+	cap |= ISSERVER; /* is server */
 
 #ifdef HAVE_UNAME
     {
