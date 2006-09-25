@@ -7,6 +7,7 @@
 # Copyright Brad Henry <brad@samba.org> 2006
 # Released under the GNU GPL v2 or later.
 
+. script/tests/test_functions.sh
 
 # This variable is defined in the per-hosts .fns file.
 . $WINTESTCONF
@@ -17,7 +18,7 @@
 # I was finding that "cat common.exp wintest_setup.exp | expect -f -"
 # fails to run, but exits with 0 status something like 1% of the time.
 
-setup_win_server_test()
+setup_qfileinfo_test()
 {
 	echo -e "\nSetting up windows environment."
 	cat $WINTEST_DIR/common.exp > $TMPDIR/setup.exp
@@ -27,29 +28,8 @@ setup_win_server_test()
 	rm -f $TMPDIR/setup.exp
 }
 
-# Run the smbtorture test.
-run_win_server_test()
-{
-        winfailed=0
-	echo -e "\nRunning smbtorture tests."
-	echo -e "\nRunning RAW-QFILEINFO"
-	$SMBTORTURE_BIN_PATH \
-		-U $SMBTORTURE_USERNAME%$SMBTORTURE_PASSWORD \
-		-d 10 -W $SMBTORTURE_WORKGROUP \
-		//$SMBTORTURE_REMOTE_HOST/$SMBTORTURE_REMOTE_SHARE_NAME \
-		RAW-QFILEINFO || winfailed=`expr $winfailed + 1`
-	
-	echo -e "\nRunning RPC-WINREG"
-	$SMBTORTURE_BIN_PATH \
-		-U $SMBTORTURE_USERNAME%$SMBTORTURE_PASSWORD \
-		-W $SMBTORTURE_WORKGROUP \
-		ncacn_np:$SMBTORTURE_REMOTE_HOST \
-		RPC-WINREG || winfailed=`expr $winfailed + 1`
-	err_rtn=$winfailed
-}
-
 # Clean up the windows environment after the test has run or failed.
-remove_win_server_test()
+remove_qfileinfo_test()
 {
 	echo -e "\nCleaning up windows environment."
 	cat $WINTEST_DIR/common.exp > $TMPDIR/remove.exp
@@ -59,103 +39,80 @@ remove_win_server_test()
 	rm -f $TMPDIR/remove.exp
 }
 
-# Test windows as a server against samba as a client.
-win_server_test()
+restore_snapshot()
 {
-	echo -e "\nSETUP PHASE"
-	setup_win_server_test
-	if [ $err_rtn -ne 0 ]; then
-		echo -e "\nSamba CLIENT test setup failed."
-		return $err_rtn
-	fi
-	echo -e "\nSamba CLIENT test setup completed successfully."
-
-	echo -e "\nTEST PHASE"
-	run_win_server_test
-	if [ $err_rtn -ne 0 ]; then
-		echo -e "\nSamba CLIENT test run failed."
-		return $err_rtn
-	fi
-	echo -e "\nSamba CLIENT test run completed successfully."
-
-	echo -e "\nCLEANUP PHASE"
-	remove_win_server_test
-	if [ $err_rtn -ne 0 ]; then
-		echo -e "\nSamba CLIENT test removal failed."
-		return $err_rtn
-	fi
-	echo -e "\nSamba CLIENT test removal completed successfully."
-}
-
-# Test windows as a client against samba as a server.
-win_client_test()
-{
-	cat $WINTEST_DIR/common.exp > $TMPDIR/client_test.exp
-	cat $WINTEST_DIR/wintest_client.exp >> $TMPDIR/client_test.exp
-	expect $TMPDIR/client_test.exp
-	err_rtn=$?
-	rm -f $TMPDIR/client_test.exp
-}
-
-check_error()
-{
-	if [ $err_rtn -ne 0 ]; then
-		# Restore snapshot to ensure VM is in a known state.
-		perl -I$WINTEST_DIR $WINTEST_DIR/vm_load_snapshot.pl
-		echo "Snapshot restored."
-		echo "=========================================="
-		echo $err_str
-		echo "=========================================="
-	else
-		echo -e "\nALL OK: $cmdline"
-		echo "=========================================="
-		echo $err_ok_str
-		echo "=========================================="
-	fi
-
-	all_errs=`expr $all_errs + $err_rtn`
-}
-
-get_remote_ip()
-{
-	export SMBTORTURE_REMOTE_HOST=`perl -I$WINTEST_DIR $WINTEST_DIR/vm_get_ip.pl`
-	err_rtn=$?
+	echo -e $1
+	perl -I$WINTEST_DIR $WINTEST_DIR/vm_load_snapshot.pl
+	echo "Snapshot restored."
 }
 
 # Index variable to count the total number of tests which fail.
 all_errs=0
 
-# Get ip address of windows vmware host.
-err_str="Test failed to get the IP address of the windows host."
-err_ok_str="Windows host IP address discovered successfully."
+export SMBTORTURE_REMOTE_HOST=`perl -I$WINTEST_DIR $WINTEST_DIR/vm_get_ip.pl`
+if [ -z $SMBTORTURE_REMOTE_HOST ]; then
+	# Restore snapshot to ensure VM is in a known state, then exit.
+	restore_snapshot "Test failed to get the IP address of the windows host."
+	exit 1
+fi
 
-get_remote_ip
-check_error
+test_name="RAW-QFILEINFO / WINDOWS SERVER"
+echo -e "\n$test_name SETUP PHASE"
 
-test_name="SAMBA CLIENT / WINDOWS SERVER"
-echo "--==--==--==--==--==--==--==--==--==--==--"
-echo "Running test $test_name (level 0 stdout)"
-echo "--==--==--==--==--==--==--==--==--==--==--"
-date
-echo "Testing $test_name"
+setup_qfileinfo_test
 
-err_str="TEST FAILED: $test_name"
-err_ok_str="TEST PASSED: $test_name"
+if [ $err_rtn -ne 0 ]; then
+	# If test setup fails, load VM snapshot and skip test.
+	restore_snapshot "\n$test_name setup failed, skipping test."
+else
+	echo -e "\n$test_name setup completed successfully."
+	old_errs=$all_errs
 
-win_server_test
-check_error
+	testit "$test_name" $SMBTORTURE_BIN_PATH \
+		-U $SMBTORTURE_USERNAME%$SMBTORTURE_PASSWORD \
+		-d 10 -W $SMBTORTURE_WORKGROUP \
+		//$SMBTORTURE_REMOTE_HOST/$SMBTORTURE_REMOTE_SHARE_NAME \
+		RAW-QFILEINFO || all_errs=`expr $all_errs + 1`
+	if [ $old_errs -lt $all_errs ]; then
+		# If test fails, load VM snapshot and skip cleanup.
+		restore_snapshot "\n$test_name failed."
+	else
+		echo -e "\n$test_name CLEANUP PHASE"
+		remove_qfileinfo_test
+		if [ $err_rtn -ne 0 ]; then
+			# If cleanup fails, restore VM snapshot.
+			restore_snapshot "\n$test_name removal failed."
+		else
+			echo -e "\n$test_name removal completed successfully."
+		fi
+	fi
+fi
 
-test_name="WINDOWS CLIENT / SAMBA SERVER"
-echo "--==--==--==--==--==--==--==--==--==--==--"
-echo "Running test $test_name (level 0 stdout)"
-echo "--==--==--==--==--==--==--==--==--==--==--"
-date
-echo "Testing $test_name"
+test_name="RPC-WINREG / WINDOWS SERVER"
+old_errs=$all_errs
 
-err_str="TEST FAILED: $test_name"
-err_ok_str="TEST PASSED: $test_name"
+testit "$test_name" $SMBTORTURE_BIN_PATH \
+	-U $SMBTORTURE_USERNAME%$SMBTORTURE_PASSWORD \
+	-W $SMBTORTURE_WORKGROUP \
+	ncacn_np:$SMBTORTURE_REMOTE_HOST \
+	RPC-WINREG || all_errs=`expr $all_errs + 1`
+if [ $old_errs -lt $all_errs ]; then
+	restore_snapshot "\n$test_name failed."
+fi
 
-win_client_test
-check_error
+test_name="WINDOWS CLIENT / SAMBA SERVER SHARE"
+old_errs=$all_errs
+cat $WINTEST_DIR/common.exp > $TMPDIR/client_test.exp
+cat $WINTEST_DIR/wintest_client.exp >> $TMPDIR/client_test.exp
 
-exit $all_errs
+testit "$test_name" \
+	expect $TMPDIR/client_tests.exp || all_errs`expr $all_errs + 1`
+
+if [ $old_errs -lt $all_errs ]; then
+	# Restore snapshot to ensure VM is in a known state.
+	restore_snapshot "\n$test_name failed."
+	echo "Snapshot restored."
+fi
+rm -f $TMPDIR/client_test.exp
+
+testok $0 $all_errs
