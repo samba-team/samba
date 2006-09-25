@@ -54,7 +54,7 @@ m4_include(libtdb.m4)
 m4_include(ldap.m4)
 if test x"$with_ldap_support" = x"yes"; then
    LIBS="$LIBS -llber -lldap"
-   CFLAGS="$CFLAGS -DHAVE_LDAP=1"
+   CFLAGS="$CFLAGS -DHAVE_LDB_LDAP=1"
    EXTRA_OBJ="$EXTRA_OBJ ldb_ldap/ldb_ldap.o"
    TESTS="$TESTS test-ldap.sh"
 fi
@@ -62,7 +62,7 @@ fi
 m4_include(sqlite3.m4)
 if test x"$with_sqlite3_support" = x"yes"; then
    LIBS="$LIBS -lsqlite3"
-   CFLAGS="$CFLAGS -DHAVE_SQLITE3=1"
+   CFLAGS="$CFLAGS -DHAVE_LDB_SQLITE3=1"
    EXTRA_OBJ="$EXTRA_OBJ ldb_sqlite3/ldb_sqlite3.o"
    TESTS="$TESTS test-sqlite3.sh"
 fi
