@@ -218,7 +218,6 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 	TALLOC_CTX *tmp_ctx;
 	const char *attrs[] = { "configurationNamingContext", NULL };
 	const char *attrs2[] = { "lDAPAdminLimits", NULL };
-	const char *conf_dn_s;
 	struct ldb_message_element *el;
 	struct ldb_result *res = NULL;
 	struct ldb_dn *basedn;
@@ -238,7 +237,7 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		return -1;
 	}
 
-	basedn = ldb_dn_explode(tmp_ctx, "");
+	basedn = ldb_dn_new(tmp_ctx);
 	if (basedn == NULL) {
 		goto failed;
 	}
@@ -249,11 +248,7 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		goto failed;
 	}
 
-	conf_dn_s = ldb_msg_find_attr_as_string(res->msgs[0], "configurationNamingContext", NULL);
-	if (conf_dn_s == NULL) {
-		goto failed;
-	}
-	conf_dn = ldb_dn_explode(tmp_ctx, conf_dn_s);
+	conf_dn = ldb_msg_find_attr_as_dn(tmp_ctx, res->msgs[0], "configurationNamingContext");
 	if (conf_dn == NULL) {
 		goto failed;
 	}
