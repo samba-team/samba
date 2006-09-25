@@ -3106,6 +3106,7 @@ if test x"$with_ldap_support" != x"no"; then
   AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $smb_ldap_cv_ldap_set_rebind_proc, [Number of arguments to ldap_set_rebind_proc])
 
   AC_CHECK_FUNC_EXT(ldap_dn2ad_canonical,$LDAP_LIBS)	
+  AC_CHECK_FUNC_EXT(ldap_initialize,$LDAP_LIBS)
   
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
@@ -3114,7 +3115,11 @@ if test x"$with_ldap_support" != x"no"; then
     default_shared_modules="$default_shared_modules";
     SMBLDAP="lib/smbldap.o"
     SMBLDAPUTIL="lib/smbldap_util.o"
-    LDBLDAP="lib/ldb/ldb_ldap/ldb_ldap.o"
+    if test x"$ac_cv_func_ext_ldap_initialize" != x"yes"; then
+      AC_MSG_WARN(Disabling ldb_ldap support (requires ldap_initialize))
+    else
+      LDBLDAP="lib/ldb/ldb_ldap/ldb_ldap.o"
+    fi
     with_ldap_support=yes
     AC_MSG_CHECKING(whether LDAP support is used)
     AC_MSG_RESULT(yes)
