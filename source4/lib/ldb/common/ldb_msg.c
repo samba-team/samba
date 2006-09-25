@@ -591,11 +591,6 @@ int ldb_msg_sanity_check(struct ldb_context *ldb,
 		ldb_set_errstring(ldb, "ldb message lacks a DN!");
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
-	if (msg->dn->comp_num == 0) {
-		/* root dse has empty dn */
-		ldb_set_errstring(ldb, "DN on new ldb message is '' (not permitted)!");
-		return LDB_ERR_ENTRY_ALREADY_EXISTS;
-	}
 
 	/* basic syntax checks */
 	for (i = 0; i < msg->num_elements; i++) {
