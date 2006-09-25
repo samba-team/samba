@@ -137,7 +137,7 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 
 #ifndef STATIC_ldb_MODULES
 
-#ifdef HAVE_LDAP
+#if defined(HAVE_LDAP) && defined(HAVE_LDAP_INITIALIZE)
 #define LDAP_INIT ldb_ldap_init,
 #else
 #define LDAP_INIT
