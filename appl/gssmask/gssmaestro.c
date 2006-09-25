@@ -398,6 +398,12 @@ test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2,
     if (val)
 	errx(1, "unwrap_token failed to host: %s", c2->moniker);
 
+    if (msg.length != out.length)
+	errx(1, "unwrap'ed token have wrong length");
+
+    if (memcmp(msg.data, out.data, msg.length) != 0)
+	errx(1, "unwrap'ed token have wrong data");
+
     krb5_data_free(&wrapped);
     krb5_data_free(&out);
 }
