@@ -40,6 +40,7 @@ if test x"$with_sqlite3_support" != x"no"; then
 
   if test x"$ac_cv_lib_ext_sqlite3_sqlite3_open" = x"yes"; then
     AC_DEFINE(HAVE_SQLITE3,1,[Whether sqlite3 is available])
+    AC_DEFINE(HAVE_LDB_SQLITE3,1,[Whether ldb_sqlite3 is available])
     AC_MSG_CHECKING(whether SQLITE3 support is used)
     AC_MSG_RESULT(yes)
     with_sqlite3_support=yes
