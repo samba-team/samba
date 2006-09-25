@@ -686,7 +686,7 @@ HandleOP(SetLoggingSocket)
 	       "logging port on peer is: %d", (int)portnum);
 
     sa = c->sa;
-    socket_set_port((struct sockaddr *)(&c->sa), portnum);
+    socket_set_port((struct sockaddr *)(&c->sa), htons(portnum));
 
     logmessage(c, __FILE__, __LINE__, 0, "socket");
     fd = socket(((struct sockaddr *)&c->sa)->sa_family, SOCK_STREAM, 0);
@@ -711,6 +711,8 @@ HandleOP(SetLoggingSocket)
     krb5_store_int32(c->logging, eLogSetMoniker);
     store_string(c->logging, "gssmask");
     
+    logmessage(c, __FILE__, __LINE__, 0, "logging turned on");
+
     return 0;
 }
     
