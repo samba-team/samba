@@ -108,7 +108,8 @@ NTSTATUS _unixinfo_GetPWUid(pipes_struct *p, uint32_t *count, uint64_t *uids,
 		pw = getpwuid(uids[i]);
 
 		if (pw == NULL) {
-			DEBUG(10, ("Did not find uid %lld\n", uids[i]));
+			DEBUG(10, ("Did not find uid %lld\n",
+				   (long long int)uids[i]));
 			continue;
 		}
 
