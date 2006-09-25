@@ -58,8 +58,8 @@ RCSID("$Id$");
  */
 
 /*
- * WRAP in DCE-style have a fixed size header and no padding, the oid
- * and length over the WRAP header is a total of
+ * WRAP in DCE-style have a fixed size header, the oid and length over
+ * the WRAP header is a total of
  * GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE byte (ie total of 45
  * bytes overhead, remember the 2 bytes from APPL [0] SEQ).
  */
@@ -354,17 +354,15 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     if (conf_state)
 	*conf_state = 0;
 
-    datalen = input_message_buffer->length;
+    datalen = input_message_buffer->length + 1 /* padding */;
 
     if ((context_handle->flags & GSS_C_DCE_STYLE) == 0) {
-	datalen += 1 /* padding */;
 	len = datalen + GSS_ARCFOUR_WRAP_TOKEN_SIZE;
 	_gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
     } else {
 	len = GSS_ARCFOUR_WRAP_TOKEN_SIZE;
-	_gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
-	assert(total_len == GSS_ARCFOUR_WRAP_TOKEN_SIZE + GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE);
-	assert(total_len - len == 2);
+	total_len = GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE;
+	total_len += GSS_ARCFOUR_WRAP_TOKEN_SIZE;
 	total_len += datalen;
     }
 
@@ -418,8 +416,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     p = p0 + GSS_ARCFOUR_WRAP_TOKEN_SIZE;
     memcpy(p, input_message_buffer->value, input_message_buffer->length);
 
-    if ((context_handle->flags & GSS_C_DCE_STYLE) == 0)
-	p[input_message_buffer->length] = 1; /* PADDING */
+    p[input_message_buffer->length] = 1; /* PADDING */
 
     ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SEAL,
 			    p0 + 16, 8, /* SGN_CKSUM */ 
@@ -628,7 +625,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     }
     memset(k6_data, 0, sizeof(k6_data));
 
-    if ((context_handle->flags & GSS_C_DCE_STYLE) == 0) {
+    if (1 || (context_handle->flags & GSS_C_DCE_STYLE) == 0) {
 	ret = _gssapi_verify_pad(output_message_buffer, datalen, &padlen);
 	if (ret) {
 	    _gsskrb5_release_buffer(minor_status, output_message_buffer);
