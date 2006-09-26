@@ -35,6 +35,9 @@ enum GPO_LINK_TYPE {
 #define GPO_LIST_FLAG_MACHINE	0x00000001
 #define GPO_LIST_FLAG_SITEONLY	0x00000002
 
+#define GPO_VERSION_USER(x) (x >> 16)
+#define GPO_VERSION_MACHINE(x) (x & 0xffff)
+
 struct GROUP_POLICY_OBJECT {
 	uint32 options;	/* GPFLAGS_* */ 
 	uint32 version;
