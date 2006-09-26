@@ -396,10 +396,10 @@ export PATH
 
 
 cat >$PRIVATEDIR/wins_config.ldif<<EOF
-dn: name=TORTURE_26,CN=PARTNERS
+dn: name=TORTURE_6,CN=PARTNERS
 objectClass: wreplPartner
-name: TORTURE_26
-address: 127.0.0.26
+name: TORTURE_6
+address: 127.0.0.6
 pullInterval: 0
 pushChangeCount: 0
 type: 0x3
