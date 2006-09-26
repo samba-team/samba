@@ -479,6 +479,8 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct 
 			memcpy( data, regval_data_p(val), *value_length );
 			status = WERR_OK;
 		}
+
+		*data_size = *value_length;
 	}
 
 	TALLOC_FREE( regvals );
@@ -625,6 +627,8 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle, uint32_t
 		memcpy( data, regval_data_p(val), *value_length );
 		status = WERR_OK;
 	}
+
+	*data_size = *value_length;
 
 done:	
 	free_registry_value( val );
