@@ -89,6 +89,8 @@
 #define SOCKET_TYPE_CHAR_TCP		'T'
 #define SOCKET_TYPE_CHAR_UDP		'U'
 
+#define MAX_WRAPPED_INTERFACES 16
+
 static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 {
 	struct sockaddr *ret = (struct sockaddr *)malloc(len);
@@ -156,7 +158,7 @@ static unsigned int socket_wrapper_default_iface(void)
 	if (s) {
 		unsigned int iface;
 		if (sscanf(s, "%u", &iface) == 1) {
-			if (iface >= 1 && iface <= 0xFF) {
+			if (iface >= 1 && iface <= MAX_WRAPPED_INTERFACES) {
 				return iface;
 			}
 		}
@@ -189,7 +191,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 		return -1;
 	}
 
-	if (iface == 0 || iface > 0xFF) {
+	if (iface == 0 || iface > MAX_WRAPPED_INTERFACES) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -804,7 +806,7 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 
 		type = SOCKET_TYPE_CHAR_UDP;
 
-		for(iface=0; iface <= 0xFF; iface++) {
+		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
 			snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT, 
 				 socket_wrapper_dir(), type, iface, prt);
 			if (stat(un_addr.sun_path, &st) != 0) continue;
