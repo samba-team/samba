@@ -146,11 +146,11 @@ get_targetname(struct client *client,
 }
 
 static int32_t
-wrap_token(struct client *client, int32_t hContext, int32_t flags,
+encrypt_token(struct client *client, int32_t hContext, int32_t flags,
 	   krb5_data *in, krb5_data *out)
 {
     int32_t val;
-    put32(client, eWrap);
+    put32(client, eEncrypt);
     put32(client, hContext);
     put32(client, flags);
     put32(client, 0);
@@ -161,11 +161,11 @@ wrap_token(struct client *client, int32_t hContext, int32_t flags,
 }
 
 static int32_t
-unwrap_token(struct client *client, int32_t hContext, int flags, 
+decrypt_token(struct client *client, int32_t hContext, int flags, 
 	     krb5_data *in, krb5_data *out)
 {
     int32_t val;
-    put32(client, eUnwrap);
+    put32(client, eDecrypt);
     put32(client, hContext);
     put32(client, flags);
     put32(client, 0);
@@ -401,23 +401,23 @@ test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2,
     krb5_data_zero(&wrapped);
     krb5_data_zero(&out);
 
-    val = wrap_token(c1, hc1, conf, &msg, &wrapped);
+    val = encrypt_token(c1, hc1, conf, &msg, &wrapped);
     if (val) {
-	warnx("wrap_token failed to host: %s", c1->moniker);
+	warnx("encrypt_token failed to host: %s", c1->moniker);
 	return val;
     }
-    val = unwrap_token(c2, hc2, conf, &wrapped, &out);
+    val = decrypt_token(c2, hc2, conf, &wrapped, &out);
     if (val) {
 	krb5_data_free(&wrapped);
-	warnx("unwrap_token failed to host: %s", c2->moniker);
+	warnx("decrypt_token failed to host: %s", c2->moniker);
 	return val;
     }
 
     if (msg.length != out.length) {
-	warnx("unwrap'ed token have wrong length");
+	warnx("decrypted'ed token have wrong length");
 	val = GSMERR_ERROR;
     } else if (memcmp(msg.data, out.data, msg.length) != 0) {
-	warnx("unwrap'ed token have wrong data");
+	warnx("decryptd'ed token have wrong data");
 	val = GSMERR_ERROR;
     }
 
