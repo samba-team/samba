@@ -258,45 +258,84 @@ static BOOL process_one(const char *name)
 /*
   main program
 */
-int main(int argc,char *argv[])
+int main(int argc, const char *argv[])
 {
 	BOOL ret = True;
 	poptContext pc;
+	int opt;
+	enum {
+		OPT_BROADCAST_ADDRESS	= 1000,
+		OPT_UNICAST_ADDRESS,
+		OPT_FIND_MASTER,
+		OPT_WINS_LOOKUP,
+		OPT_NODE_STATUS,
+		OPT_ROOT_PORT,
+		OPT_LOOKUP_BY_IP,
+		OPT_CASE_SENSITIVE
+	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "broadcast", 'B', POPT_ARG_STRING, &options.broadcast_address, 
-		  'B', "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
+		{ "broadcast", 'B', POPT_ARG_STRING, NULL, OPT_BROADCAST_ADDRESS,
+		  "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
 
-		{ "unicast", 'U', POPT_ARG_STRING, &options.unicast_address, 
-		  'U', "Specify address to use for unicast" },
+		{ "unicast", 'U', POPT_ARG_STRING, NULL, OPT_UNICAST_ADDRESS,
+		  "Specify address to use for unicast", NULL },
 
-		{ "master-browser", 'M', POPT_ARG_VAL, &options.find_master, 
-		  True, "Search for a master browser" },
+		{ "master-browser", 'M', POPT_ARG_NONE, NULL, OPT_FIND_MASTER,
+		  "Search for a master browser", NULL },
 
-		{ "wins", 'W', POPT_ARG_VAL, &options.wins_lookup, True, "Do a WINS lookup" },
+		{ "wins", 'W', POPT_ARG_NONE, NULL, OPT_WINS_LOOKUP,
+		  "Do a WINS lookup", NULL },
 
-		{ "status", 'S', POPT_ARG_VAL, &options.node_status, 
-		  True, "Lookup node status as well" },
+		{ "status", 'S', POPT_ARG_NONE, NULL, OPT_NODE_STATUS, 
+		  "Lookup node status as well", NULL },
 
-		{ "root-port", 'r', POPT_ARG_VAL, &options.root_port, 
-		  True, "Use root port 137 (Win95 only replies to this)" },
+		{ "root-port", 'r', POPT_ARG_NONE, NULL, OPT_ROOT_PORT, 
+		  "Use root port 137 (Win95 only replies to this)", NULL },
 
-		{ "lookup-by-ip", 'A', POPT_ARG_VAL, &options.lookup_by_ip, 
-		  True, "Do a node status on <name> as an IP Address" },
+		{ "lookup-by-ip", 'A', POPT_ARG_NONE, NULL, OPT_LOOKUP_BY_IP, 
+		  "Do a node status on <name> as an IP Address", NULL },
 
-		{ "case-sensitive", 0, POPT_ARG_VAL, &options.case_sensitive, 
-		  True, "Don't uppercase the name before sending" },
+		{ "case-sensitive", 0, POPT_ARG_NONE, NULL, OPT_CASE_SENSITIVE, 
+		  "Don't uppercase the name before sending", NULL },
 
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0 }
 	};
 	
-	pc = poptGetContext("nmblookup", argc, (const char **)argv, long_options, 
+	pc = poptGetContext("nmblookup", argc, argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
-	
+
 	poptSetOtherOptionHelp(pc, "<NODE> ...");
 
-	while ((poptGetNextOpt(pc) != -1)) /* noop */ ;
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch(opt) {
+		case OPT_BROADCAST_ADDRESS:
+			options.broadcast_address = poptGetOptArg(pc);
+			break;
+		case OPT_UNICAST_ADDRESS:
+			options.unicast_address = poptGetOptArg(pc);
+			break;
+		case OPT_FIND_MASTER:
+			options.find_master = True;
+			break;
+		case OPT_WINS_LOOKUP:
+			options.wins_lookup = True;
+			break;
+		case OPT_NODE_STATUS:
+			options.node_status = True;
+			break;
+		case OPT_ROOT_PORT:
+			options.root_port = True;
+			break;
+		case OPT_LOOKUP_BY_IP:
+			options.lookup_by_ip = True;
+			break;
+		case OPT_CASE_SENSITIVE:
+			options.case_sensitive = True;
+			break;
+		}
+	}
 
 	/* swallow argv[0] */
 	poptGetArg(pc);
