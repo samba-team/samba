@@ -60,7 +60,10 @@ case "$host_os" in
 	*hpux*)
 		# mmap on HPUX is completely broken...
 		AC_DEFINE(MMAP_BLACKLIST, 1, [Whether MMAP is broken])
-		CFLAGS="$CFLAGS -D_LARGEFILE64_SUPPORT -D__LP64__ -DO_LARGEFILE=04000"
+		if test "`uname -r`" = "B.11.11"; then
+			AC_MSG_WARN([Enabling HPUX 11.11 header bug workaround])
+			CFLAGS="$CFLAGS -D_LARGEFILE64_SUPPORT -D__LP64__ -DO_LARGEFILE=04000"
+		fi
 		;;
 	*aix*)
 		if test "${GCC}" != "yes"; then
