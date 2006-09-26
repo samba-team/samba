@@ -1,0 +1,218 @@
+#
+#	.loginrc -- Michael's login shell startup script (used only for Windows)
+#
+#	NOTE: this should not be distributed with releases.
+#
+#	Copyright (c) Mbedthis Software, 2003-2005. All Rights Reserved.
+#
+HOME=`pwd`
+
+TERM=ansi
+CYROOT=/cygdrive/c
+JDK="/cygdrive/c/program files/java/jdk1.5.0_07/bin"
+H=$CYROOT
+R=usr/svn/appWeb/main
+CDPATH=".:${H}/usr/svn/appWeb:${H}/${R}/http:${H}/${R}/http/modules:${H}/${R}:${H}/usr/svn/appWeb/releases:${H}/usr/svn/packages:${H}/usr/svn/bling/player/trunk:${H}/usr/svn/bling/player/trunk/src:${H}/usr/svn/bling/player/trunk/appdir:${H}/usr/svn:${H}:${H}/usr/svn:${H}/usr"
+APPWEB_PATH="${H}/${R}/bin/DEBUG:${H}/${R}/bin/RELEASE:${H}/${R}/bin:${H}/usr/bin"
+PATH="${H}/usr/bin:/usr/local/bin:/usr/bin:/bin:/usr/X11R6/bin:$PATH:${H}/tcl/bin:${JDK}"
+
+CLASSPATH="c:/usr/svn/j/ggperf"
+PS1='`cygpath -m $PWD`> '
+SVN_EDITOR=C:/cygwin/bin/vim.exe
+
+umask 022
+
+export TERM CDPATH INCLUDE LIB LIBPATH PATH PS1 SVN_EDITOR MSCL CLASSPATH
+
+################################################################################
+#
+#	Set the dev environment PATH and other critical environment variables
+#
+
+# export BLD_ALTERNATE_CONFIG=WIN/buildConfig
+
+#
+#	Desired .NET Framework
+#
+# FRAMEWORK=v1.0.3705
+# FRAMEWORK=v1.1.4322
+FRAMEWORK=v2.0.50727
+
+#
+#	Desired C Compiler
+#
+# MSCL=VS2005
+# MSCL=VS2003
+# MSCL=VS.NET
+MSCL=VS6
+VXWORKS=1
+
+echo "Using compiler: $MSCL, .NET framework: $FRAMEWORK"
+
+#
+#	Setup for Visual Studio and SDK
+#
+if [ $MSCL == "VS2005" ]
+then
+	#
+	#	Visual Studio .NET 2005 defines. 
+	#
+	CYNET="$H/Program Files/Microsoft Visual Studio 8"
+	DOSNET="C:/Program Files/Microsoft Visual Studio 8"
+	PATH="$APPWEB_PATH:$CYNET/Common7/IDE:$CYNET/VC/BIN:$CYNET/VC/VCPackages:$CYNET/Common7/Tools:$CYNET/Common7/Tools/bin:$CYNET/SDK/v2.0/bin:$CYROOT/WINDOWS/Microsoft.NET/Framework/v2.0.40607:$CYNET/SDK/v2.0/bin:$PATH"
+	INCLUDE="$DOSNET/VC/ATLMFC/INCLUDE;$DOSNET/VC/INCLUDE;$DOSNET/VC/PlatformSDK/include;$DOSNET/SDK/v2.0/include;$INCLUDE"
+	LIB="$DOSNET/VC/ATLMFC/LIB;$DOSNET/VC/LIB;$DOSNET/VC/PlatformSDK/lib;$DOSNET/SDK/v2.0/lib;$LIB"
+	LIBPATH=c:/WINDOWS/Microsoft.NET/Framework/$FRAMEWORK
+
+	#	MOB -- old
+	#	PATH="$APPWEB_PATH:$CYNET/Common7/IDE:$CYNET/VC/BIN:$CYNET/Common7/Tools:$CYNET/Common7/Tools/bin/prerelease:$CYNET/Common7/Tools/bin:$CYNET/FrameworkSDK/bin:$H/WINDOWS/Microsoft.NET/Framework/$FRAMEWORK:$PATH"
+	#	INCLUDE="$DOSNET/VC/ATLMFC/INCLUDE;$DOSNET/VC/INCLUDE;$DOSNET/VC/PlatformSDK/include/prerelease;$DOSNET/VC/PlatformSDK/include;$DOSNET/FrameworkSDK/include;$INCLUDE"
+	#	LIB="$DOSNET/VC/ATLMFC/LIB;$DOSNET/VC/LIB;$DOSNET/VC/PlatformSDK/lib/prerelease;$DOSNET/VC/PlatformSDK/lib;$DOSNET/FrameworkSDK/lib;$LIB"
+fi
+
+if [ $MSCL == "VS2003" ]
+then
+	#
+	#	Visual Studio .NET 2003 defines. 
+	#
+	CYNET="$H/Program Files/Microsoft Visual Studio .NET 2003"
+	DOSNET="C:/Program Files/Microsoft Visual Studio .NET 2003"
+	PATH="$APPWEB_PATH:$CYNET/Common7/IDE:$CYNET/VC7/BIN:$CYNET/Common7/Tools:$CYNET/Common7/Tools/bin/prerelease:$CYNET/Common7/Tools/bin:$CYNET/FrameworkSDK/bin:$H/WINDOWS/Microsoft.NET/Framework/$FRAMEWORK:$CYNET/SDK/v1.1/bin:$PATH"
+	INCLUDE="$DOSNET/VC7/ATLMFC/INCLUDE;$DOSNET/VC7/INCLUDE;$DOSNET/VC7/PlatformSDK/include/prerelease;$DOSNET/VC7/PlatformSDK/include;$DOSNET/FrameworkSDK/include;$INCLUDE"
+	LIB="$DOSNET/VC7/ATLMFC/LIB;$DOSNET/VC7/LIB;$DOSNET/VC7/PlatformSDK/lib/prerelease;$DOSNET/VC7/PlatformSDK/lib;$DOSNET/FrameworkSDK/lib;$LIB"
+fi
+
+
+if [ $MSCL == "VS.NET" ]
+then
+	#
+	#	Visual Studio .NET defines. 
+	#
+	CYNET="$H/Program Files/Microsoft Visual Studio .NET"
+	DOSNET="C:/Program Files/Microsoft Visual Studio .NET"
+	PATH="$APPWEB_PATH:$CYNET/Common7/IDE:$CYNET/VC7/BIN:$CYNET/Common7/Tools:$CYNET/Common7/Tools/bin/prerelease:$CYNET/Common7/Tools/bin:$CYNET/FrameworkSDK/bin:$H/WINDOWS/Microsoft.NET/Framework/$FRAMEWORK:$CYNET/SDK/v1.0/bin:$PATH"
+	INCLUDE="$DOSNET/VC7/ATLMFC/INCLUDE;$DOSNET/VC7/INCLUDE;$DOSNET/VC7/PlatformSDK/include/prerelease;$DOSNET/VC7/PlatformSDK/include;$DOSNET/FrameworkSDK/include;$INCLUDE"
+	LIB="$DOSNET/VC7/ATLMFC/LIB;$DOSNET/VC7/LIB;$DOSNET/VC7/PlatformSDK/lib/prerelease;$DOSNET/VC7/PlatformSDK/lib;$DOSNET/FrameworkSDK/lib;$LIB"
+fi
+
+
+if [ $MSCL == "VS6" ]
+then
+	#	Visual Studio 6 defines. 
+	#
+	CYNET="$H/Program Files/Microsoft Visual Studio"
+	DOSNET="C:/Program Files/Microsoft Visual Studio"
+	PATH="$APPWEB_PATH:$CYNET/Common/MSDev98/bin:$CYNET/VC98/BIN:$CYNET/Common/IDE:$CYNET/Common/Tools/WinNT:$CYNET/Common/Tools:$PATH"
+	# OLD PATH="$APPWEB_PATH:$CYNET/Common/IDE:$CYNET/VC98/BIN:$CYNET/Common/MSDev98/bin:$CYNET/Common/Tools:$CYNET/Common/Tools/bin/prerelease:$CYNET/Common/Tools/bin:$CYNET/FrameworkSDK/bin:$H/WINDOWS/Microsoft.NET/Framework/$FRAMEWORK:$PATH"
+	INCLUDE="$DOSNET/VC98/ATLMFC/INCLUDE;$DOSNET/VC98/INCLUDE;$DOSNET/VC98/MFC/INCLUDE;$INCLUDE"
+	LIB="$DOSNET/VC98/LIB;$DOSNET/VC98/MFC/LIB;$LIB"
+fi
+
+if [ $VXWORKS ]
+then
+	#
+	#	Required by VxWorks
+	#
+	WIND_BASE=C:/tornado
+	WIND_HOST_TYPE=x86-win32
+	WIND_REGISTRY=coalsack
+	WIND_LMHOST=coalsack
+	BLD_VX_HOST=i386-wrs-vxworks
+	export WIND_BASE WIND_HOST_TYPE WIND_REGISTRY WIND_LMHOST BLD_VX_HOST
+
+	VX_TOOLS=`cygpath $WIND_BASE`/host/$WIND_HOST_TYPE
+	#
+	#	Use cygwin make and tools by preference
+	#
+	PATH="$APPWEB_PATH:$PATH:$VX_TOOLS/bin"
+fi
+
+#
+#	Make required directories for CYGWIN
+#
+if [ ! -x /bin/bash.exe ]
+then
+	DIR=`cygpath -w "$HOME/winTools"`
+ 	echo -e "\nCreating /bin"
+	echo Mounting \"${DIR}\" as /bin
+	mount -f -b "$DIR" /bin
+fi
+
+if [ ! -x /tmp ]
+then
+ 	mkdir -p tmp
+	DIR=`cygpath -w "$HOME/tmp"`
+ 	echo -e "\nCreating /tmp"
+	echo Mounting \"${DIR}\" as /tmp
+ 	mount -f -b "$DIR" /tmp
+fi
+echo
+
+
+################################################################################
+#
+#	Do a bit of validation (MOB -- extend)
+#
+type cl 2>/dev/null >/dev/null
+if [ $? -ne 0 ]
+then
+	echo "Can't find compiler: cl. Check WIN/bashrc settings for PATH"
+fi
+
+################################################################################
+#
+#	Some convenient functions
+#
+pvi () {
+
+	pattern=$1
+	shift
+	files=$*
+	if [ -z "${files}" ]
+	then
+		files='*.c *.cpp *.h Makefile *.html *.aspx *.cs'
+	fi
+	vi -c "/${pattern}" $(grep -l "${pattern}" ${files})
+}
+
+################################################################################
+
+g() {
+	pattern=$1
+	shift
+	files=$*
+	if [ -z "${files}" ]
+	then
+		files=`echo *.c *.cpp *.h Makefile *.html *.aspx *.cs`
+	fi
+	eval grep "${pattern}" ${files}
+}
+
+################################################################################
+
+usedvi() {
+	pvi $1 $HOME/mr/*.c $HOME/mr/*.h $HOME/mr/WIN/*.c $HOME/lib/*/*.c 
+}
+
+################################################################################
+
+alias ls='ls -CF $*'
+alias lc='ls -CF $*'
+alias lr='ls -R $*'
+alias xwin='startxwin.sh'
+alias htmlview='"C:/Program Files/Internet Explorer/iexplore.exe" $*'
+set -o vi
+
+if [ `uname -o` = "Cygwin" ]
+then
+	alias vim='"C:/Program Files/vim/vim64/vim.exe" $*'
+	alias gvim='"C:/Program Files/vim/vim64/gvim.exe" $*'
+fi
+
+brew() {
+	"C:/Program Files/BREW SDK v2.1.3/Bin/BREW_Emulator.exe"
+}
+
+js() {
+	cscript /nologo $*
+}
