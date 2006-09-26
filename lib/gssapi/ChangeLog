@@ -1,5 +1,14 @@
 2006-09-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/arcfour.c: Add wrap support, interrop with itself but not
+	w2k3s-sp1
+
+	* krb5/gsskrb5_locl.h: move the arcfour specific stuff to the
+	arcfour header.
+
+	* krb5/arcfour.c: Support DCE-style unwrap, tested with
+	w2k3server-sp1.
+
 	* mech/gss_accept_sec_context.c (gss_accept_sec_context): if the
 	token doesn't start with [APPLICATION 0] SEQUENCE, lets assume its
 	a DCE-style kerberos 5 connection. XXX this needs to be made

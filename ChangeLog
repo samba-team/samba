@@ -1,4 +1,19 @@
-2006-09-25  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-09-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/gssmask/gssmaestro.c: Handle FIRST_CALL in the context
+	building, better error handling.
+
+	* appl/gssmask/gssmaestro.c: switch from wrap/unwrap to
+	encrypt/decrypt
+	
+	* appl/gssmask/gssmask.c: Don't announce spn if there is none.
+
+	* appl/gssmask/gssmaestro.c: Check that the pre-wrapped data is
+	the same as afterward.
+	
+2006-09-25  Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* appl/gssmask/gssmaestro.c: Remove stray GSS_C_DCE_STYLE.
 
 	* appl/gssmask/gssmaestro.c: Add logsocket support.
 	
