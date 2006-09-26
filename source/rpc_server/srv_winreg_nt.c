@@ -1231,7 +1231,9 @@ WERROR _winreg_CreateKey( pipes_struct *p, struct policy_handle *handle, struct 
 	
 	/* FIXME: report the truth here */
 	
-	*action_taken = REG_CREATED_NEW_KEY;
+	if ( action_taken ) {
+		*action_taken = REG_CREATED_NEW_KEY;
+	}
 
 done:
 	/* close any intermediate key handles */
