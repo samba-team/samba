@@ -465,8 +465,6 @@ ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 	LDAPMessage *res = NULL;
 	uint32 uac;
 
-	return ADS_ERROR_NT(NT_STATUS_NOT_IMPLEMENTED);
-
 	filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)(sAMAccountName=%s))", hostname);
 	if (filter == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -481,18 +479,23 @@ ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 	}
 
 	if (ads_count_replies(ads, res) != 1) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
 	dn = ads_get_dn(ads, res);
 	if (dn == NULL) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	if (!ads_pull_uint32(ads, res, "userAccountControl", &uac)) {
+		ads_msgfree(ads, res);
 		ads_memfree(ads, dn);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
+
+	ads_msgfree(ads, res);
 
 	if (!(uac & UF_WORKSTATION_TRUST_ACCOUNT)) {
 		ads_memfree(ads, dn);
@@ -505,15 +508,15 @@ ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 		return status;
 	}
 
+	ads_memfree(ads, dn);
+
 	status = gpo_process_gpo_list(ads, mem_ctx, &gpo_list, 
 				      cse_gpo_name_to_guid_string("Security"), 
 				      GPO_LIST_FLAG_MACHINE); 
 	if (!ADS_ERR_OK(status)) {
-		ads_memfree(ads, dn);
 		return status;
 	}
 
-	ads_memfree(ads, dn);
 	return ADS_ERROR(LDAP_SUCCESS);
 }
 

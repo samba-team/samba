@@ -276,6 +276,7 @@ ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
 
 	if (ads_count_replies(ads, res) != 1) {
 		DEBUG(10,("ads_add_gpo_link: no result\n"));
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
@@ -286,6 +287,7 @@ ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
 		gp_link_new = talloc_asprintf(mem_ctx, "%s[%s;%d]", gp_link, gpo_dn, gpo_opt);
 	}
 
+	ads_msgfree(ads, res);
 	if (gp_link_new == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
@@ -334,6 +336,7 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 
 	if (ads_count_replies(ads, res) != 1) {
 		DEBUG(10,("ads_delete_gpo_link: no result\n"));
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
@@ -343,8 +346,9 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 	}
 
 	/* find link to delete */
-//	gp_link_new = talloc_asprintf(mem_ctx, "%s[%s;%d]", gp_link, gpo_dn, gpo_opt);
+	/* gp_link_new = talloc_asprintf(mem_ctx, "%s[%s;%d]", gp_link, gpo_dn, gpo_opt); */
 
+	ads_msgfree(ads, res);
 	if (gp_link_new == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}

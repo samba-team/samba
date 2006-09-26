@@ -2458,8 +2458,11 @@ ADS_STATUS ads_site_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char **site_n
 
 	service_name = ads_pull_string(ads, mem_ctx, res, "dsServiceName");
 	if (service_name == NULL) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 	}
+
+	ads_msgfree(ads, res);
 
 	/* go up three levels */
 	dn = ads_parent_dn(ads_parent_dn(ads_parent_dn(service_name)));
@@ -2471,8 +2474,6 @@ ADS_STATUS ads_site_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char **site_n
 	if (*site_name == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
-
-	ads_msgfree(ads, res);
 
 	return status;
 	/*
@@ -2508,13 +2509,17 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
 
 	config_context = ads_pull_string(ads, mem_ctx, res, "configurationNamingContext");
 	if (config_context == NULL) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	filter = talloc_asprintf(mem_ctx, "(cn=%s)", computer_name);
 	if (filter == NULL) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
+
+	ads_msgfree(ads, res);
 
 	status = ads_do_search(ads, config_context, LDAP_SCOPE_SUBTREE, filter, NULL, &res);
 	if (!ADS_ERR_OK(status)) {
@@ -2522,23 +2527,27 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
 	}
 
 	if (ads_count_replies(ads, res) != 1) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
 	dn = ads_get_dn(ads, res);
 	if (dn == NULL) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	/* go up three levels */
 	parent = ads_parent_dn(ads_parent_dn(ads_parent_dn(dn)));
 	if (parent == NULL) {
+		ads_msgfree(ads, res);
 		ads_memfree(ads, dn);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	*site_dn = talloc_strdup(mem_ctx, parent);
 	if (*site_dn == NULL) {
+		ads_msgfree(ads, res);
 		ads_memfree(ads, dn);
 		ADS_ERROR(LDAP_NO_MEMORY);
 	}
