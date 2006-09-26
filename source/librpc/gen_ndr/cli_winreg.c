@@ -294,7 +294,7 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, enum winreg_Type *type, uint8_t *value, uint32_t *size, uint32_t *length)
+NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, enum winreg_Type *type, uint8_t *data, uint32_t *data_size, uint32_t *value_length)
 {
 	struct winreg_EnumValue r;
 	NTSTATUS status;
@@ -304,9 +304,9 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	r.in.enum_index = enum_index;
 	r.in.name = name;
 	r.in.type = type;
-	r.in.value = value;
-	r.in.size = size;
-	r.in.length = length;
+	r.in.data = data;
+	r.in.data_size = data_size;
+	r.in.value_length = value_length;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_EnumValue, &r);
@@ -323,9 +323,9 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	/* Return variables */
 	*name = *r.out.name;
 	*type = *r.out.type;
-	*value = *r.out.value;
-	*size = *r.out.size;
-	*length = *r.out.length;
+	*data = *r.out.data;
+	*data_size = *r.out.data_size;
+	*value_length = *r.out.value_length;
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -476,14 +476,14 @@ NTSTATUS rpccli_winreg_OpenKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String class_in, struct winreg_String *class_out, uint32_t *num_subkeys, uint32_t *max_subkeylen, uint32_t *max_subkeysize, uint32_t *num_values, uint32_t *max_valnamelen, uint32_t *max_valbufsize, uint32_t *secdescsize, NTTIME *last_changed_time)
+NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String *classname, uint32_t *num_subkeys, uint32_t *max_subkeylen, uint32_t *max_subkeysize, uint32_t *num_values, uint32_t *max_valnamelen, uint32_t *max_valbufsize, uint32_t *secdescsize, NTTIME *last_changed_time)
 {
 	struct winreg_QueryInfoKey r;
 	NTSTATUS status;
 	
 	/* In parameters */
 	r.in.handle = handle;
-	r.in.class_in = class_in;
+	r.in.classname = classname;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_QueryInfoKey, &r);
@@ -498,7 +498,7 @@ NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 	
 	/* Return variables */
-	*class_out = *r.out.class_out;
+	*classname = *r.out.classname;
 	*num_subkeys = *r.out.num_subkeys;
 	*max_subkeylen = *r.out.max_subkeylen;
 	*max_subkeysize = *r.out.max_subkeysize;

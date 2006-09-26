@@ -70,11 +70,11 @@ NTSTATUS rpccli_winreg_query_key(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
                            uint32 *secdescsize, NTTIME *mod_time)
 {
 	NTSTATUS status;
-	struct winreg_String classname_in, classname_out;
+	struct winreg_String classname;
 
-	classname_in.name = key_class;
+	classname.name = key_class;
 	status = rpccli_winreg_QueryInfoKey( cli, mem_ctx, hnd, 
-			classname_in, &classname_out, num_subkeys,
+			&classname, num_subkeys,
 			max_subkeylen, max_subkeysize, num_values,
 			max_valnamelen, max_valbufsize, secdescsize,
 			mod_time );

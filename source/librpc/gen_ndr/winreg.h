@@ -215,17 +215,17 @@ struct winreg_EnumValue {
 		uint32_t enum_index;
 		struct winreg_StringBuf *name;/* [ref] */
 		enum winreg_Type *type;/* [unique] */
-		uint8_t *value;/* [unique,length_is(*length),size_is(*size)] */
-		uint32_t *size;/* [unique] */
-		uint32_t *length;/* [unique] */
+		uint8_t *data;/* [unique,length_is(*value_length),size_is(*data_size)] */
+		uint32_t *data_size;/* [unique] */
+		uint32_t *value_length;/* [unique] */
 	} in;
 
 	struct {
 		struct winreg_StringBuf *name;/* [ref] */
 		enum winreg_Type *type;/* [unique] */
-		uint8_t *value;/* [unique,length_is(*length),size_is(*size)] */
-		uint32_t *size;/* [unique] */
-		uint32_t *length;/* [unique] */
+		uint8_t *data;/* [unique,length_is(*value_length),size_is(*data_size)] */
+		uint32_t *data_size;/* [unique] */
+		uint32_t *value_length;/* [unique] */
 		WERROR result;
 	} out;
 
@@ -310,11 +310,11 @@ struct winreg_OpenKey {
 struct winreg_QueryInfoKey {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		struct winreg_String class_in;
+		struct winreg_String *classname;/* [ref] */
 	} in;
 
 	struct {
-		struct winreg_String *class_out;/* [unique] */
+		struct winreg_String *classname;/* [ref] */
 		uint32_t *num_subkeys;/* [ref] */
 		uint32_t *max_subkeylen;/* [ref] */
 		uint32_t *max_subkeysize;/* [ref] */
