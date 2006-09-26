@@ -18,7 +18,7 @@ NTSTATUS rpccli_winreg_LoadKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 NTSTATUS rpccli_winreg_NotifyChangeKeyValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint8_t watch_subtree, uint32_t notify_filter, uint32_t unknown, struct winreg_String string1, struct winreg_String string2, uint32_t unknown2);
 NTSTATUS rpccli_winreg_OpenKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *parent_handle, struct winreg_String keyname, uint32_t unknown, uint32_t access_mask, struct policy_handle *handle);
 NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String class_in, struct winreg_String *class_out, uint32_t *num_subkeys, uint32_t *max_subkeylen, uint32_t *max_subkeysize, uint32_t *num_values, uint32_t *max_valnamelen, uint32_t *max_valbufsize, uint32_t *secdescsize, NTTIME *last_changed_time);
-NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t *data, uint32_t *size, uint32_t *length);
+NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t *data, uint32_t *data_size, uint32_t *value_length);
 NTSTATUS rpccli_winreg_ReplaceKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_winreg_RestoreKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_winreg_SaveKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx);

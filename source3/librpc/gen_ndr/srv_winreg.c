@@ -1108,9 +1108,9 @@ static BOOL api_winreg_QueryValue(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.type = r.in.type;
 	r.out.data = r.in.data;
-	r.out.size = r.in.size;
-	r.out.length = r.in.length;
-	r.out.result = _winreg_QueryValue(p, r.in.handle, r.in.value_name, r.in.type, r.in.data, r.in.size, r.in.length);
+	r.out.data_size = r.in.data_size;
+	r.out.value_length = r.in.value_length;
+	r.out.result = _winreg_QueryValue(p, r.in.handle, r.in.value_name, r.in.type, r.in.data, r.in.data_size, r.in.value_length);
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(winreg_QueryValue, &r);
