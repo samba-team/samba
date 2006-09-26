@@ -89,6 +89,8 @@
 #define SOCKET_TYPE_CHAR_TCP		'T'
 #define SOCKET_TYPE_CHAR_UDP		'U'
 
+#define MAX_WRAPPED_INTERFACES 16
+
 static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 {
 	struct sockaddr *ret = (struct sockaddr *)malloc(len);
@@ -156,7 +158,7 @@ static unsigned int socket_wrapper_default_iface(void)
 	if (s) {
 		unsigned int iface;
 		if (sscanf(s, "%u", &iface) == 1) {
-			if (iface >= 1 && iface <= 0xFF) {
+			if (iface >= 1 && iface <= MAX_WRAPPED_INTERFACES) {
 				return iface;
 			}
 		}
@@ -189,7 +191,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 		return -1;
 	}
 
-	if (iface == 0 || iface > 0xFF) {
+	if (iface == 0 || iface > MAX_WRAPPED_INTERFACES) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -468,7 +470,25 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 		errno = EAFNOSUPPORT;
 		return -1;
 	}
-	
+
+	switch (type) {
+	case SOCK_STREAM:
+		break;
+	case SOCK_DGRAM:
+		break;
+	default:
+		errno = EPROTONOSUPPORT;
+		return -1;
+	}
+
+	switch (protocol) {
+	case 0:
+		break;
+	default:
+		errno = EPROTONOSUPPORT;
+		return -1;
+	}
+
 	fd = real_socket(AF_UNIX, type, 0);
 
 	if (fd == -1) return -1;
@@ -555,6 +575,9 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	return fd;
 }
 
+static int autobind_start_init;
+static int autobind_start;
+
 /* using sendto() or connect() on an unbound socket would give the
    recipient no way to reply, as unlike UDP and TCP, a unix domain
    socket can't auto-assign emphemeral port numbers, so we need to
@@ -568,7 +591,14 @@ static int swrap_auto_bind(struct socket_info *si)
 	int ret;
 	int port;
 	struct stat st;
-	
+
+	if (autobind_start_init != 1) {
+		autobind_start_init = 1;
+		autobind_start = getpid();
+		autobind_start %= 50000;
+		autobind_start += 10000;
+	}
+
 	un_addr.sun_family = AF_UNIX;
 
 	switch (si->type) {
@@ -582,9 +612,13 @@ static int swrap_auto_bind(struct socket_info *si)
 		errno = ESOCKTNOSUPPORT;
 		return -1;
 	}
-	
+
+	if (autobind_start > 60000) {
+		autobind_start = 10000;
+	}
+
 	for (i=0;i<1000;i++) {
-		port = 10000 + i;
+		port = autobind_start + i;
 		snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), 
 			 "%s/"SOCKET_FORMAT, socket_wrapper_dir(),
 			 type, socket_wrapper_default_iface(), port);
@@ -595,13 +629,14 @@ static int swrap_auto_bind(struct socket_info *si)
 
 		si->tmp_path = strdup(un_addr.sun_path);
 		si->bound = 1;
+		autobind_start = port + 1;
 		break;
 	}
 	if (i == 1000) {
 		errno = ENFILE;
 		return -1;
 	}
-	
+
 	memset(&in, 0, sizeof(in));
 	in.sin_family = AF_INET;
 	in.sin_port   = htons(port);
@@ -609,7 +644,6 @@ static int swrap_auto_bind(struct socket_info *si)
 	
 	si->myname_len = sizeof(in);
 	si->myname = sockaddr_dup(&in, si->myname_len);
-	si->bound = 1;
 	return 0;
 }
 
@@ -804,7 +838,7 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 
 		type = SOCKET_TYPE_CHAR_UDP;
 
-		for(iface=0; iface <= 0xFF; iface++) {
+		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
 			snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT, 
 				 socket_wrapper_dir(), type, iface, prt);
 			if (stat(un_addr.sun_path, &st) != 0) continue;
@@ -870,21 +904,24 @@ _PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 _PUBLIC_ int swrap_close(int fd)
 {
 	struct socket_info *si = find_socket_info(fd);
+	int ret;
 
-	if (si) {
-		DLIST_REMOVE(sockets, si);
-
-		swrap_dump_packet(si, NULL, SWRAP_CLOSE, NULL, 0, 0);
-
-		free(si->path);
-		free(si->myname);
-		free(si->peername);
-		if (si->tmp_path) {
-			unlink(si->tmp_path);
-			free(si->tmp_path);
-		}
-		free(si);
+	if (!si) {
+		return real_close(fd);
 	}
 
-	return real_close(fd);
+	DLIST_REMOVE(sockets, si);
+
+	ret = real_close(fd);
+
+	free(si->path);
+	free(si->myname);
+	free(si->peername);
+	if (si->tmp_path) {
+		unlink(si->tmp_path);
+		free(si->tmp_path);
+	}
+	free(si);
+
+	return ret;
 }
