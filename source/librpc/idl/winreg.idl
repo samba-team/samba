@@ -226,9 +226,9 @@
 		[in,ref] policy_handle *handle,
 		[in] winreg_String value_name,
 		[in,out] winreg_Type *type,
-		[in,out,size_is(*size),length_is(*length)] uint8 *data,
-		[in,out] uint32 *size,
-		[in,out] uint32 *length
+		[in,out,size_is(*data_size),length_is(*value_length)] uint8 *data,
+		[in,out] uint32 *data_size,
+		[in,out] uint32 *value_length
 	);
 
 	/******************/

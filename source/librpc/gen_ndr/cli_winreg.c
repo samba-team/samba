@@ -512,7 +512,7 @@ NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t *data, uint32_t *size, uint32_t *length)
+NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t *data, uint32_t *data_size, uint32_t *value_length)
 {
 	struct winreg_QueryValue r;
 	NTSTATUS status;
@@ -522,8 +522,8 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	r.in.value_name = value_name;
 	r.in.type = type;
 	r.in.data = data;
-	r.in.size = size;
-	r.in.length = length;
+	r.in.data_size = data_size;
+	r.in.value_length = value_length;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_QueryValue, &r);
@@ -540,8 +540,8 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	/* Return variables */
 	*type = *r.out.type;
 	*data = *r.out.data;
-	*size = *r.out.size;
-	*length = *r.out.length;
+	*data_size = *r.out.data_size;
+	*value_length = *r.out.value_length;
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);

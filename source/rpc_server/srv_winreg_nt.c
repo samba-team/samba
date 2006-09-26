@@ -350,7 +350,7 @@ WERROR _winreg_OpenKey(pipes_struct *p, struct policy_handle *parent_handle, str
  reg_reply_info
  ********************************************************************/
 
-WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t *data, uint32_t *size, uint32_t *length)
+WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t *data, uint32_t *data_size, uint32_t *value_length)
 {
 	WERROR			status = WERR_BADFILE;
 	char 			*name;
@@ -362,7 +362,7 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct 
 	if ( !regkey )
 		return WERR_BADFID;
 
-	*size = *length = *type = 0;
+	*value_length = *type = 0;
 	
 	DEBUG(7,("_reg_info: policy key name = [%s]\n", regkey->name));
 	DEBUG(7,("_reg_info: policy key type = [%08x]\n", regkey->type));
@@ -383,8 +383,8 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct 
 		{
 			uint32 outbuf_len;
 			prs_struct prs_hkpd;
-			prs_init(&prs_hkpd, *size, p->mem_ctx, MARSHALL);
-			status = reg_perfcount_get_hkpd(&prs_hkpd, *size, &outbuf_len, NULL);
+			prs_init(&prs_hkpd, *data_size, p->mem_ctx, MARSHALL);
+			status = reg_perfcount_get_hkpd(&prs_hkpd, *data_size, &outbuf_len, NULL);
 			regval_ctr_addvalue(regvals, "HKPD", REG_BINARY,
 					    prs_hkpd.data_p, outbuf_len);
 			val = dup_registry_value(regval_ctr_specific_value(regvals, 0));
@@ -435,8 +435,8 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct 
 			/* we probably have a request for a specific object here */
 			uint32 outbuf_len;
 			prs_struct prs_hkpd;
-			prs_init(&prs_hkpd, *size, p->mem_ctx, MARSHALL);
-			status = reg_perfcount_get_hkpd(&prs_hkpd, *size, &outbuf_len, name);
+			prs_init(&prs_hkpd, *data_size, p->mem_ctx, MARSHALL);
+			status = reg_perfcount_get_hkpd(&prs_hkpd, *data_size, &outbuf_len, name);
 			regval_ctr_addvalue(regvals, "HKPD", REG_BINARY,
 					    prs_hkpd.data_p, outbuf_len);
 			
@@ -465,17 +465,20 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct 
 	    }
 	}
 
+	/* if we have a value then copy it to the output */
+
 	if ( val ) {
-        	*size   =  regval_size( val );
-        	*length =  regval_size( val );
-
-#if 0
-		if ( (*data = talloc_memdup( p->mem_ctx, regval_data_p(val), *size )) == NULL ) {
-			status = WERR_NOMEM;
-		}
-#endif
-
+        	*value_length =  regval_size( val );
 		*type = val->type;
+
+		if ( *data_size == 0 ) {
+			status = WERR_OK;
+		} else if ( *value_length > *data_size ) {
+			status = WERR_MORE_DATA;
+		} else {
+			memcpy( data, regval_data_p(val), *value_length );
+			status = WERR_OK;
+		}
 	}
 
 	TALLOC_FREE( regvals );
