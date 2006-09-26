@@ -123,7 +123,7 @@ void iniparser_dump(dictionary * d, FILE * f);
   iniparser_getstring() instead.
  */
 /*--------------------------------------------------------------------------*/
-char * iniparser_getstr(dictionary * d, char * key);
+char * iniparser_getstr(dictionary * d, const char * key);
 
 
 /*-------------------------------------------------------------------------*/
@@ -141,7 +141,7 @@ char * iniparser_getstr(dictionary * d, char * key);
   the dictionary, do not free or modify it.
  */
 /*--------------------------------------------------------------------------*/
-char * iniparser_getstring(dictionary * d, char * key, char * def);
+char * iniparser_getstring(dictionary * d, const char * key, char * def);
 
 /*-------------------------------------------------------------------------*/
 /**
@@ -156,7 +156,7 @@ char * iniparser_getstring(dictionary * d, char * key, char * def);
   the notfound value is returned.
  */
 /*--------------------------------------------------------------------------*/
-int iniparser_getint(dictionary * d, char * key, int notfound);
+int iniparser_getint(dictionary * d, const char * key, int notfound);
 
 /*-------------------------------------------------------------------------*/
 /**
@@ -205,7 +205,7 @@ double iniparser_getdouble(dictionary * d, char * key, double notfound);
   necessarily have to be 0 or 1.
  */
 /*--------------------------------------------------------------------------*/
-int iniparser_getboolean(dictionary * d, char * key, int notfound);
+int iniparser_getboolean(dictionary * d, const char * key, int notfound);
 
 
 /*-------------------------------------------------------------------------*/
@@ -264,7 +264,7 @@ int iniparser_find_entry(dictionary * ini, char * entry) ;
   The returned dictionary must be freed using iniparser_freedict().
  */
 /*--------------------------------------------------------------------------*/
-dictionary * iniparser_load(char * ininame);
+dictionary * iniparser_load(const char * ininame);
 
 /*-------------------------------------------------------------------------*/
 /**
