@@ -85,6 +85,8 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	pstring subpath;
 	POLICY_HND pol_hive, pol_key; 
 	uint32 idx;
+	NTSTATUS status;
+	struct winreg_String subkeyname;
 	
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc enumerate <path> [recurse]\n");
@@ -99,16 +101,17 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	
 	/* open the top level hive and then the registry key */
 	
-	result = rpccli_reg_connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
-	if ( !W_ERROR_IS_OK(result) ) {
+	status = rpccli_winreg_connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
+	if ( !NT_STATUS_IS_OK(status) ) {
 		d_fprintf(stderr, "Unable to connect to remote registry: "
 			  "%s\n", dos_errstr(result));
-		return werror_to_ntstatus(result);
+		return status;
 	}
 	
-	result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath,
-				       MAXIMUM_ALLOWED_ACCESS, &pol_key );
-	if ( !W_ERROR_IS_OK(result) ) {
+	subkeyname.name = subpath;
+	status = rpccli_winreg_OpenKey(pipe_hnd, mem_ctx, &pol_hive, subkeyname,
+				       0, MAXIMUM_ALLOWED_ACCESS, &pol_key );
+	if ( !NT_STATUS_IS_OK(status) ) {
 		d_fprintf(stderr, "Unable to open [%s]: %s\n", argv[0],
 			  dos_errstr(result));
 		return werror_to_ntstatus(result);
@@ -116,17 +119,17 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	
 	/* get the subkeys */
 	
-	result = WERR_OK;
+	status = NT_STATUS_OK;
 	idx = 0;
-	while ( W_ERROR_IS_OK(result) ) {
+	while ( NT_STATUS_IS_OK(status) ) {
 		time_t modtime;
 		fstring keyname, classname;
 		
-		result = rpccli_reg_enum_key(pipe_hnd, mem_ctx, &pol_key, idx, 
+		status = rpccli_winreg_enum_key(pipe_hnd, mem_ctx, &pol_key, idx, 
 			keyname, classname, &modtime );
 			
-		if ( W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
-			result = WERR_OK;
+		if ( W_ERROR_EQUAL(ntstatus_to_werror(status), WERR_NO_MORE_ITEMS) ) {
+			status = NT_STATUS_OK;
 			break;
 		}
 			
@@ -138,14 +141,14 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		idx++;
 	}
 
-	if ( !W_ERROR_IS_OK(result) )
+	if ( !NT_STATUS_IS_OK(status) )
 		goto out;
 	
 	/* get the values */
 	
-	result = WERR_OK;
+	status = NT_STATUS_OK;
 	idx = 0;
-	while ( W_ERROR_IS_OK(result) ) {
+	while ( NT_STATUS_IS_OK(status) ) {
 		uint32 type;
 		fstring name;
 		REGVAL_BUFFER value;
@@ -153,11 +156,11 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		fstrcpy( name, "" );
 		ZERO_STRUCT( value );
 		
-		result = rpccli_reg_enum_val(pipe_hnd, mem_ctx, &pol_key, idx, 
+		status = rpccli_winreg_enum_val(pipe_hnd, mem_ctx, &pol_key, idx, 
 			name, &type, &value );
 			
-		if ( W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
-			result = WERR_OK;
+		if ( W_ERROR_EQUAL(ntstatus_to_werror(status), WERR_NO_MORE_ITEMS) ) {
+			status = NT_STATUS_OK;
 			break;
 		}
 			
@@ -175,10 +178,10 @@ out:
 	/* cleanup */
 	
 	if ( strlen( subpath ) != 0 )
-		rpccli_reg_close(pipe_hnd, mem_ctx, &pol_key );
-	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_hive );
+		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key );
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive );
 
-	return werror_to_ntstatus(result);
+	return status;
 }
 
 /********************************************************************
@@ -205,6 +208,8 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 	uint32 hive;
 	pstring subpath;
 	POLICY_HND pol_hive, pol_key; 
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	struct winreg_String subkeyname;
 	
 	if (argc != 2 ) {
 		d_printf("Usage:    net rpc backup <path> <file> \n");
@@ -218,30 +223,39 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 	
 	/* open the top level hive and then the registry key */
 	
-	result = rpccli_reg_connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
-	if ( !W_ERROR_IS_OK(result) ) {
+	status = rpccli_winreg_connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
+	if ( !NT_STATUS_IS_OK(status) ) {
 		d_fprintf(stderr, "Unable to connect to remote registry\n");
-		return werror_to_ntstatus(result);
+		return status;
 	}
 	
-	result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
-	if ( !W_ERROR_IS_OK(result) ) {
+	subkeyname.name = subpath;
+	status = rpccli_winreg_OpenKey(pipe_hnd, mem_ctx, &pol_hive, subkeyname,
+			0, MAXIMUM_ALLOWED_ACCESS, &pol_key );
+	if ( !NT_STATUS_IS_OK(status) ) {
 		d_fprintf(stderr, "Unable to open [%s]\n", argv[0]);
 		return werror_to_ntstatus(result);
 	}
 	
-	result = rpccli_reg_save_key(pipe_hnd, mem_ctx, &pol_key, argv[1] );
+#if 0	/* IDL not implemented */
+	/* original call was: rpccli_reg_save_key(pipe_hnd, mem_ctx, &pol_key, argv[1] ); */
+
+	status = rpccli_winreg_SaveKey( cli, mem_ctx );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_fprintf(stderr, "Unable to save [%s] to %s:%s\n", argv[0], cli->desthost, argv[1]);
 	}
+#else
+	d_printf("Call not implemented.\n");
+	status = NT_STATUS_NOT_IMPLEMENTED;
+#endif
 	
 	
 	/* cleanup */
 	
-	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_key );
-	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_hive );
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key );
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive );
 
-	return werror_to_ntstatus(result);
+	return status;
 }
 
 /********************************************************************
