@@ -84,6 +84,7 @@ init_sec_context(struct client *client,
 static int
 accept_sec_context(struct client *client, 
 		   int32_t *hContext,
+		   int32_t flags,
 		   const krb5_data *itoken,
 		   krb5_data *otoken,
 		   int32_t *hDelegCred)
@@ -92,7 +93,7 @@ accept_sec_context(struct client *client,
     krb5_data_zero(otoken);
     put32(client, eAcceptContext);
     put32(client, *hContext);
-    put32(client, 0);
+    put32(client, flags);
     putdata(client, *itoken);
     ret32(client, *hContext);
     ret32(client, val);
@@ -282,6 +283,7 @@ build_context(struct client *ipeer, struct client *apeer,
     krb5_data itoken, otoken;
     int iDone = 0, aDone = 0;
     int step = 0;
+    int first_call = 0x80;
 
     if (apeer->target_name == NULL)
 	errx(1, "apeer %s have no target name", apeer->name);
@@ -296,8 +298,8 @@ build_context(struct client *ipeer, struct client *apeer,
 	    goto out;
 	}
 
-	val = init_sec_context(ipeer, &ic, &hCred, flags, apeer->target_name,
-			       &itoken, &otoken);
+	val = init_sec_context(ipeer, &ic, &hCred, flags|first_call,
+			       apeer->target_name, &itoken, &otoken);
 	step++;
 	switch(val) {
 	case GSMERR_OK:
@@ -319,7 +321,8 @@ build_context(struct client *ipeer, struct client *apeer,
 	    goto out;
 	}
 
-	val = accept_sec_context(apeer, &ac, &otoken, &itoken, &deleg);
+	val = accept_sec_context(apeer, &ac, flags|first_call,
+				 &otoken, &itoken, &deleg);
 	step++;
 	switch(val) {
 	case GSMERR_OK:
@@ -335,7 +338,7 @@ build_context(struct client *ipeer, struct client *apeer,
 	    val = GSMERR_ERROR;
 	    goto out;
 	}
-
+	first_call = 0;
 	val = GSMERR_OK;
     }
 
@@ -636,6 +639,7 @@ main(int argc, char **argv)
     char *password;
     char ***list, **p;
     size_t num_list, i, j, k;
+    int failed = 0;
 
     setprogname (argv[0]);
 
@@ -695,12 +699,16 @@ main(int argc, char **argv)
 	int32_t hCred, val;
 
 	val = acquire_cred(clients[i], user, password, 1, &hCred);
-	if (val != GSMERR_OK)
-	    errx(1, "Failed to acquire_cred on host %s: %d", 
+	if (val != GSMERR_OK) {
+	    warnx("Failed to acquire_cred on host %s: %d", 
 		 clients[i]->moniker, (int)val);
-
-	toast_resource(clients[i], hCred);
+	    failed = 1;
+	} else
+	    toast_resource(clients[i], hCred);
     }
+
+    if (failed)
+	goto out;
 
     /* 
      * First test if all slaves can build context to them-self.
@@ -736,7 +744,6 @@ main(int argc, char **argv)
 	} else {
 	    warnx("build_context failed: %d", (int)val);
 	}
-
 	/*
 	 *
 	 */
@@ -756,7 +763,6 @@ main(int argc, char **argv)
 
 	toast_resource(c, hCred);
     }
-
     /*
      * Build contexts though all entries in each lists, including the
      * step from the last entry to the first, ie treat the list as a
@@ -823,6 +829,7 @@ main(int argc, char **argv)
      * Close all connections to clients
      */
     
+out:
     printf("sending goodbye and waiting for log sockets\n");
     for (i = 0; i < num_clients; i++) {
 	goodbye(clients[i]);
