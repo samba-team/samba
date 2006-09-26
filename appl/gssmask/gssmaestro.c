@@ -290,8 +290,11 @@ build_context(struct client *ipeer, struct client *apeer,
 
     while (!iDone || !aDone) {
 	
-	if (iDone)
-	    errx(1, "iPeer already done, aPeer want extra rtt");
+	if (iDone) {
+	    warnx("iPeer already done, aPeer want extra rtt");
+	    val = GSMERR_ERROR;
+	    goto out;
+	}
 
 	val = init_sec_context(ipeer, &ic, &hCred, flags, apeer->target_name,
 			       &itoken, &otoken);
@@ -305,12 +308,16 @@ build_context(struct client *ipeer, struct client *apeer,
 	case GSMERR_CONTINUE_NEEDED:
 	    break;
 	default:
-	    errx(1, "iPeer %s failed with %d (step %d)", 
-		 ipeer->name, (int)val, step);
+	    warnx("iPeer %s failed with %d (step %d)", 
+		  ipeer->name, (int)val, step);
+	    goto out;
 	}
 
-	if (aDone)
-	    errx(1, "aPeer already done, iPeer want extra rtt");
+	if (aDone) {
+	    warnx("aPeer already done, iPeer want extra rtt");
+	    val = GSMERR_ERROR;
+	    goto out;
+	}
 
 	val = accept_sec_context(apeer, &ac, &otoken, &itoken, &deleg);
 	step++;
@@ -323,8 +330,10 @@ build_context(struct client *ipeer, struct client *apeer,
 	case GSMERR_CONTINUE_NEEDED:
 	    break;
 	default:
-	    errx(1, "aPeer %s failed with %d (step %d)",
+	    warnx("aPeer %s failed with %d (step %d)",
 		 apeer->name, (int)val, step);
+	    val = GSMERR_ERROR;
+	    goto out;
 	}
 
 	val = GSMERR_OK;
@@ -354,6 +363,7 @@ build_context(struct client *ipeer, struct client *apeer,
     } else
 	*hDelegCred = deleg;
 
+out:
     return val;
 }
 			 
@@ -378,7 +388,7 @@ test_mic(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
     krb5_data_free(&mic);
 }
 
-static void
+static int32_t
 test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2, 
 	  int conf)
 {
@@ -392,31 +402,47 @@ test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2,
     krb5_data_zero(&out);
 
     val = wrap_token(c1, hc1, conf, &msg, &wrapped);
-    if (val)
-	errx(1, "wrap_token failed to host: %s", c1->moniker);
+    if (val) {
+	warnx("wrap_token failed to host: %s", c1->moniker);
+	return val;
+    }
     val = unwrap_token(c2, hc2, conf, &wrapped, &out);
-    if (val)
-	errx(1, "unwrap_token failed to host: %s", c2->moniker);
+    if (val) {
+	krb5_data_free(&wrapped);
+	warnx("unwrap_token failed to host: %s", c2->moniker);
+	return val;
+    }
 
-    if (msg.length != out.length)
-	errx(1, "unwrap'ed token have wrong length");
-
-    if (memcmp(msg.data, out.data, msg.length) != 0)
-	errx(1, "unwrap'ed token have wrong data");
+    if (msg.length != out.length) {
+	warnx("unwrap'ed token have wrong length");
+	val = GSMERR_ERROR;
+    } else if (memcmp(msg.data, out.data, msg.length) != 0) {
+	warnx("unwrap'ed token have wrong data");
+	val = GSMERR_ERROR;
+    }
 
     krb5_data_free(&wrapped);
     krb5_data_free(&out);
+    return val;
 }
 
-static void
+static int32_t
 test_token(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
 {
+    int32_t val;
+
     test_mic(c1, hc1, c2, hc2);
     test_mic(c2, hc2, c1, hc1);
-    test_wrap(c1, hc1, c2, hc2, 0);
-    test_wrap(c2, hc2, c1, hc1, 0);
-    test_wrap(c1, hc1, c2, hc2, 1);
-    test_wrap(c2, hc2, c1, hc1, 1);
+    val = test_wrap(c1, hc1, c2, hc2, 0);
+    if (val) return val;
+    val = test_wrap(c2, hc2, c1, hc1, 0);
+    if (val) return val;
+    val = test_wrap(c1, hc1, c2, hc2, 1);
+    if (val) return val;
+    val = test_wrap(c2, hc2, c1, hc1, 1);
+    if (val) return val;
+
+    return GSMERR_OK;
 }
 
 static int
@@ -444,6 +470,8 @@ log_function(void *ptr)
 		goto out;
 	    if (krb5_ret_string(c->logsock, &string))
 		goto out;
+	    printf("%s:%lu: %s\n", 
+		   file, (unsigned long)line, string);
 	    fprintf(logfile, "%s:%lu: %s\n", 
 		    file, (unsigned long)line, string);
 	    fflush(logfile);
@@ -542,6 +570,7 @@ connect_client(const char *slave)
 	    errx(1, "failed to fork");
 	else if (c->child == 0) {
 	    log_function(c);
+	    fclose(logfile);
 	    exit(0);
 	}
 #endif
@@ -694,6 +723,7 @@ main(int argc, char **argv)
 	    errx(1, "failed to acquire_cred: %d", (int)val);
     
 	val = build_context(c, c, 
+			    GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG|
 			    GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG|
 			    GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
 			    hCred, &clientC, &serverC, &delegCred);
@@ -739,14 +769,14 @@ main(int argc, char **argv)
     printf("\"All\" permutation tests\n");
 
     for (i = 0; i < num_list; i++) {
-	int32_t hCred, val, delegCred;
-	int32_t clientC, serverC;
+	int32_t hCred, val, delegCred = 0;
+	int32_t clientC = 0, serverC = 0;
 	struct client *client, *server;
-
+	
 	p = list[i];
 	
 	client = get_client(p[0]);
-
+	
 	val = acquire_cred(client, user, password, 1, &hCred);
 	if (val != GSMERR_OK)
 	    errx(1, "failed to acquire_cred: %d", (int)val);
@@ -762,6 +792,7 @@ main(int argc, char **argv)
 	    printf("%s -> %s\n", client->moniker, server->moniker);
 
 	    val = build_context(client, server,
+				GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG|
 				GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG|
 				GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
 				hCred, &clientC, &serverC, &delegCred);
@@ -769,9 +800,11 @@ main(int argc, char **argv)
 		warnx("build_context failed: %d", (int)val);
 		break;
 	    }
-
-	    test_token(client, clientC, server, serverC);
-
+	    
+	    val = test_token(client, clientC, server, serverC);
+	    if (val)
+		break;
+	    
 	    toast_resource(client, clientC);
 	    toast_resource(server, serverC);
 	    if (!delegCred) {
@@ -785,13 +818,11 @@ main(int argc, char **argv)
 	if (hCred)
 	    toast_resource(client, hCred);
     }
-
-
-
+    
     /*
      * Close all connections to clients
      */
-
+    
     printf("sending goodbye and waiting for log sockets\n");
     for (i = 0; i < num_clients; i++) {
 	goodbye(clients[i]);
