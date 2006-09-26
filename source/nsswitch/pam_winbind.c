@@ -124,7 +124,7 @@ static int _pam_parse(const pam_handle_t *pamh, int flags, int argc, const char 
 		goto config_from_pam;
 	}
 
-	if (iniparser_getboolean(*d, ("global:debug", False))) {
+	if (iniparser_getboolean(*d, "global:debug", False)) {
 		ctrl |= WINBIND_DEBUG_ARG;
 	}
 
@@ -140,7 +140,7 @@ static int _pam_parse(const pam_handle_t *pamh, int flags, int argc, const char 
 		ctrl |= WINBIND_SILENT;
 	}
 
-	if (iniparser_getstr(*d, "global:krb5_ccache_type")) != NULL) {
+	if (iniparser_getstr(*d, "global:krb5_ccache_type") != NULL) {
 		ctrl |= WINBIND_KRB5_CCACHE_TYPE;
 	}
 	
