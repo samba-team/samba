@@ -227,6 +227,11 @@ int ldb_msg_add_string(struct ldb_message *msg,
 	val.data = discard_const_p(uint8_t, str);
 	val.length = strlen(str);
 
+	if (val.length == 0) {
+		/* allow empty strings as non-existant attributes */
+		return 0;
+	}
+
 	return ldb_msg_add_value(msg, attr_name, &val);
 }
 
