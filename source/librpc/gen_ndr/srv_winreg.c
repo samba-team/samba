@@ -646,10 +646,10 @@ static BOOL api_winreg_EnumValue(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.name = r.in.name;
 	r.out.type = r.in.type;
-	r.out.value = r.in.value;
-	r.out.size = r.in.size;
-	r.out.length = r.in.length;
-	r.out.result = _winreg_EnumValue(p, r.in.handle, r.in.enum_index, r.in.name, r.in.type, r.in.value, r.in.size, r.in.length);
+	r.out.data = r.in.data;
+	r.out.data_size = r.in.data_size;
+	r.out.value_length = r.in.value_length;
+	r.out.result = _winreg_EnumValue(p, r.in.handle, r.in.enum_index, r.in.name, r.in.type, r.in.data, r.in.data_size, r.in.value_length);
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(winreg_EnumValue, &r);
@@ -995,12 +995,7 @@ static BOOL api_winreg_QueryInfoKey(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(winreg_QueryInfoKey, &r);
 	
 	ZERO_STRUCT(r.out);
-	r.out.class_out = talloc_zero_size(mem_ctx, sizeof(*r.out.class_out));
-	if (r.out.class_out == NULL) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-	
+	r.out.classname = r.in.classname;
 	r.out.num_subkeys = talloc_zero_size(mem_ctx, sizeof(*r.out.num_subkeys));
 	if (r.out.num_subkeys == NULL) {
 		talloc_free(mem_ctx);
@@ -1049,7 +1044,7 @@ static BOOL api_winreg_QueryInfoKey(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_QueryInfoKey(p, r.in.handle, r.in.class_in, r.out.class_out, r.out.num_subkeys, r.out.max_subkeylen, r.out.max_subkeysize, r.out.num_values, r.out.max_valnamelen, r.out.max_valbufsize, r.out.secdescsize, r.out.last_changed_time);
+	r.out.result = _winreg_QueryInfoKey(p, r.in.handle, r.in.classname, r.out.num_subkeys, r.out.max_subkeylen, r.out.max_subkeysize, r.out.num_values, r.out.max_valnamelen, r.out.max_valbufsize, r.out.secdescsize, r.out.last_changed_time);
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(winreg_QueryInfoKey, &r);

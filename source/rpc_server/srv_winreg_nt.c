@@ -492,12 +492,12 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct 
  ****************************************************************************/
 
 WERROR _winreg_QueryInfoKey(pipes_struct *p, struct policy_handle *handle, 
-			    struct winreg_String class_in, 
-			    struct winreg_String *class_out, uint32_t *num_subkeys, 
-			    uint32_t *max_subkeylen, uint32_t *max_subkeysize, 
+			    struct winreg_String *classname, 
+			    uint32_t *num_subkeys, uint32_t *max_subkeylen, 
+			    uint32_t *max_subkeysize, 
 			    uint32_t *num_values, uint32_t *max_valnamelen, 
-			    uint32_t *max_valbufsize, uint32_t *secdescsize, 
-			    NTTIME *last_changed_time)
+			    uint32_t *max_valbufsize, 
+			    uint32_t *secdescsize, NTTIME *last_changed_time)
 {
 	WERROR 	status = WERR_OK;
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, handle );
@@ -506,22 +506,23 @@ WERROR _winreg_QueryInfoKey(pipes_struct *p, struct policy_handle *handle,
 		return WERR_BADFID; 
 	
 	if ( !get_subkey_information( regkey, num_subkeys, max_subkeylen) ) {
-		DEBUG(0,("_reg_query_key: get_subkey_information() failed!\n"));
+		DEBUG(0,("_winreg_QueryInfoKey: get_subkey_information() failed!\n"));
 		return WERR_ACCESS_DENIED;
 	}
 		
 	if ( !get_value_information( regkey, num_values, max_valnamelen, max_valbufsize) ) {
-		DEBUG(0,("_reg_query_key: get_value_information() failed!\n"));
+		DEBUG(0,("_winreg_QueryInfoKey: get_value_information() failed!\n"));
 		return WERR_ACCESS_DENIED;	
 	}
 
-	*secdescsize = 0x00000078;	/* size for key's sec_desc */
-	
-	/* Win9x set this to 0x0 since it does not keep timestamps.
-	   Doing the same here for simplicity   --jerry */
-	   
+	*secdescsize = 0;	/* used to be hard coded for 0x00000078 */
 	*last_changed_time = 0;
+	*max_subkeysize = 0;	/* maybe this is the classname length ? */
 
+	/* don't bother with class names for now */
+	
+	classname->name = NULL;
+	
 	return status;
 }
 
@@ -586,7 +587,7 @@ done:
  Implementation of REG_ENUM_VALUE
  ****************************************************************************/
 
-WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, enum winreg_Type *type, uint8_t *value, uint32_t *size, uint32_t *length)
+WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, enum winreg_Type *type, uint8_t *data, uint32_t *data_size, uint32_t *value_length)
 {
 	WERROR 	status = WERR_OK;
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, handle );
@@ -595,17 +596,17 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle, uint32_t
 	if ( !regkey )
 		return WERR_BADFID; 
 
-	if ( !name || !type || !value || !size || !length )
+	if ( !name )
 		return WERR_INVALID_PARAM;
-
-	DEBUG(8,("_reg_enum_value: enumerating values for key [%s]\n", regkey->name));
+		
+	DEBUG(8,("_winreg_EnumValue: enumerating values for key [%s]\n", regkey->name));
 
 	if ( !fetch_reg_values_specific( regkey, &val, enum_index ) ) {
 		status = WERR_NO_MORE_ITEMS;
 		goto done;
 	}
 
-	DEBUG(10,("_reg_enum_value: retrieved value named  [%s]\n", val->valuename));
+	DEBUG(10,("_winreg_EnumValue: retrieved value named  [%s]\n", val->valuename));
 	
 	/* subkey has the string name now */
 	
@@ -613,14 +614,17 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle, uint32_t
 		status = WERR_NOMEM;
 	}
 
-        *size   =  regval_size( val );
-        *length =  regval_size( val );
-
-	if ( (value = talloc_memdup( p->mem_ctx, regval_data_p(val), *size )) == NULL ) {
-		status = WERR_NOMEM;
-	}
-
+	*value_length =  regval_size( val );
 	*type = val->type;
+
+	if ( *data_size == 0 ) {
+		status = WERR_OK;
+	} else if ( *value_length > *data_size ) {
+		status = WERR_MORE_DATA;
+	} else {
+		memcpy( data, regval_data_p(val), *value_length );
+		status = WERR_OK;
+	}
 
 done:	
 	free_registry_value( val );
