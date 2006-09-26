@@ -249,6 +249,8 @@ static NTSTATUS cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli,
 	uint32 preferred_len = 0xffffffff, i;
 	uint32 numentries;
 
+	ZERO_STRUCT(ctr);
+
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
 		return NT_STATUS_OK;
@@ -259,8 +261,33 @@ static NTSTATUS cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli,
 
 	hnd = 0;
 
+	switch (info_level) {
+	case 1: {
+		struct srvsvc_NetShareCtr1 ctr1;
+		ZERO_STRUCT(ctr1);
+		ctr.ctr1 = &ctr1;
+		}
+		break;
+
+	case 2: {
+		struct srvsvc_NetShareCtr2 ctr2;
+		ZERO_STRUCT(ctr2);
+		ctr.ctr2 = &ctr2;
+		}
+		break;
+	case 502: {
+		struct srvsvc_NetShareCtr502 ctr502;
+		ZERO_STRUCT(ctr502);
+		ctr.ctr502 = &ctr502;
+		}
+		break;
+
+	default:
+		break;
+	}
+
 	result = rpccli_srvsvc_NetShareEnum(
-		cli, mem_ctx, NULL, &info_level, &ctr, preferred_len, &numentries, 
+		cli, mem_ctx, cli->cli->desthost, &info_level, &ctr, preferred_len, &numentries, 
 		&hnd);
 
 	if (!NT_STATUS_IS_OK(result) || !numentries)
