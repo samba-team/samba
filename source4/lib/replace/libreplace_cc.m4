@@ -60,6 +60,7 @@ case "$host_os" in
 	*hpux*)
 		# mmap on HPUX is completely broken...
 		AC_DEFINE(MMAP_BLACKLIST, 1, [Whether MMAP is broken])
+		CFLAGS="$CFLAGS -D_LARGEFILE64_SUPPORT -D__LP64__ -DO_LARGEFILE=04000"
 		;;
 	*aix*)
 		if test "${GCC}" != "yes"; then
