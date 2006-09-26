@@ -149,12 +149,8 @@ static struct ldb_dn *mapping_dn(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 			       sid_to_string(string_sid, &map->sid)) != LDB_SUCCESS ||
 	    ldb_msg_add_fmt(msg, "gidNumber", "%u", (unsigned)map->gid) != LDB_SUCCESS ||
 	    ldb_msg_add_fmt(msg, "sidNameUse", "%u", (unsigned)map->sid_name_use) != LDB_SUCCESS ||
+	    ldb_msg_add_string(msg, "comment", map->comment) != LDB_SUCCESS ||
 	    ldb_msg_add_string(msg, "ntName", map->nt_name) != LDB_SUCCESS) {
-		goto failed;
-	}
-
-	if ((map->comment[0] != '\0') && 
-	    (ldb_msg_add_string(msg, "ntName", map->nt_name) != LDB_SUCCESS)) {
 		goto failed;
 	}
 
