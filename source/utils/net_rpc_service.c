@@ -80,7 +80,7 @@ static WERROR watch_service_state(struct rpc_pipe_client *pipe_hnd,
 		
 		d_printf(".");
 		i++;
-		usleep( 100 );
+		sys_usleep( 100 );
 	}
 	d_printf("\n");
 	
