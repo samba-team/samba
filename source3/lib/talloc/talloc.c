@@ -743,7 +743,7 @@ void *_talloc_steal(const void *new_ctx, const void *ptr)
 */
 void *_talloc_move(const void *new_ctx, const void *_pptr)
 {
-	const void **pptr = (const void **)_pptr;
+	const void **pptr = discard_const_p(const void *,_pptr);
 	void *ret = _talloc_steal(new_ctx, *pptr);
 	(*pptr) = NULL;
 	return ret;
