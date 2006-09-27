@@ -340,22 +340,23 @@ AC_ARG_ENABLE(pie, [  --enable-pie            Turn on pie support if available (
 
 if test "x$enable_pie" != xno
 then
-	AC_CACHE_CHECK(for -fPIE, libc_cv_fpie, [dnl
+	AC_CACHE_CHECK(for -pie and -fPIE, samba_cv_fpie, [dnl
 		cat > conftest.c <<EOF
 int foo;
 main () { return 0;}
 EOF
 		if AC_TRY_COMMAND([${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS -pie -fPIE -o conftest conftest.c 1>&AS_MESSAGE_LOG_FD])
 		then
-			libc_cv_fpie=yes
-			PIE_CFLAGS="-fPIE"
-			PIE_LDFLAGS="-pie"
+			samba_cv_fpie=yes
+		else
+			samba_cv_fpie=no
 		fi
 		rm -f conftest*])
 fi
-if test "x$PIE_CFLAGS" = x
+if test x"${samba_cv_fpie}" = x"yes"
 then
-	libc_cv_fpie=no
+	PIE_CFLAGS="-fPIE"
+	PIE_LDFLAGS="-pie"
 fi
 
 m4_include(lib/socket_wrapper/config.m4)
