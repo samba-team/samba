@@ -6,10 +6,10 @@ AC_SEARCH_LIBS(dlopen, dl)
 
 AC_CHECK_HEADERS(dlfcn.h)
 
-libreplace_dlfcn=no
-AC_CHECK_FUNCS([dlopen dlsym dlerror dlclose],[],[libreplace_dlfcn=yes])
+libreplace_cv_dlfcn=no
+AC_CHECK_FUNCS([dlopen dlsym dlerror dlclose],[],[libreplace_cv_dlfcn=yes])
 
-if test x"${libreplace_dlfcn}" = x"yes";then
+if test x"${libreplace_cv_dlfcn}" = x"yes";then
 	LIBREPLACEOBJ="${LIBREPLACEOBJ} dlfcn.o"
 fi
 
