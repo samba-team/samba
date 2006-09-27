@@ -766,7 +766,9 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	message_register(MSG_WINBIND_ONLINE,child_msg_online);
 	message_register(MSG_WINBIND_ONLINESTATUS,child_msg_onlinestatus);
 
-	child->domain->startup = True;
+	if ( child->domain ) {
+		child->domain->startup = True;
+	}
 	startup_time = time(NULL);
 
 	while (1) {
@@ -785,7 +787,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 		GetTimeOfDay(&now);
 
-		if (child->domain->startup && (now.tv_sec > startup_time + 30)) {
+		if (child->domain && child->domain->startup && (now.tv_sec > startup_time + 30)) {
 			/* No longer in "startup" mode. */
 			DEBUG(10,("fork_domain_child: domain %s no longer in 'startup' mode.\n",
 				child->domain->name ));
