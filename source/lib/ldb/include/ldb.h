@@ -781,6 +781,7 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type);
 
 int ldb_set_timeout(struct ldb_context *ldb, struct ldb_request *req, int timeout);
 int ldb_set_timeout_from_prev_req(struct ldb_context *ldb, struct ldb_request *oldreq, struct ldb_request *newreq);
+void ldb_set_create_perms(struct ldb_context *ldb, unsigned int perms);
 
 /**
   Initialise ldbs' global information
