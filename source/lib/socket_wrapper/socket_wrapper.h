@@ -23,12 +23,14 @@ int swrap_socket(int family, int type, int protocol);
 int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen);
 int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen);
 int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen);
+int swrap_listen(int s, int backlog);
 int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen);
 int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen);
 int swrap_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen);
 int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, socklen_t optlen);
 ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
 ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen);
+int swrap_ioctl(int s, int req, void *ptr);
 ssize_t swrap_recv(int s, void *buf, size_t len, int flags);
 ssize_t swrap_send(int s, const void *buf, size_t len, int flags);
 int swrap_close(int);
@@ -49,6 +51,11 @@ int swrap_close(int);
 #undef bind
 #endif
 #define bind(s,myaddr,addrlen)		swrap_bind(s,myaddr,addrlen)
+
+#ifdef listen
+#undef listen
+#endif
+#define listen(s,blog)			swrap_listen(s,blog)
 
 #ifdef getpeername
 #undef getpeername
@@ -79,6 +86,11 @@ int swrap_close(int);
 #undef sendto
 #endif
 #define sendto(s,buf,len,flags,to,tolen)          swrap_sendto(s,buf,len,flags,to,tolen)
+
+#ifdef ioctl
+#undef ioctl
+#endif
+#define ioctl(s,req,ptr)		swrap_ioctl(s,req,ptr)
 
 #ifdef recv
 #undef recv
