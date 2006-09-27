@@ -118,14 +118,6 @@
 #include "system/time.h"
 #include "system/wait.h"
 
-#ifdef HAVE_STROPTS_H
-#include <stropts.h>
-#endif
-
-#ifdef HAVE_POLL_H
-#include <poll.h>
-#endif
-
 #if defined(HAVE_RPC_RPC_H)
 /*
  * Check for AUTH_ERROR define conflict with rpc/rpc.h in prot.h.
