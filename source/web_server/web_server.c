@@ -122,7 +122,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 		 while inside http_process_input(), but we must not
 		 destroy the stack variables being used by that
 		 rendering process when we handle the timeout. */
-		talloc_reference(web->task, web);
+		if (!talloc_reference(web->task, web)) goto failed;
 		http_process_input(web);
 		talloc_unlink(web->task, web);
 	}
