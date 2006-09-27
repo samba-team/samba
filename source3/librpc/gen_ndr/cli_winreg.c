@@ -572,12 +572,15 @@ NTSTATUS rpccli_winreg_ReplaceKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_RestoreKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_winreg_RestoreKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String *filename, uint32_t flags)
 {
 	struct winreg_RestoreKey r;
 	NTSTATUS status;
 	
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.filename = filename;
+	r.in.flags = flags;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_RestoreKey, &r);
@@ -597,12 +600,15 @@ NTSTATUS rpccli_winreg_RestoreKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_winreg_SaveKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_winreg_SaveKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String *filename, struct KeySecurityAttribute *sec_attrib)
 {
 	struct winreg_SaveKey r;
 	NTSTATUS status;
 	
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.filename = filename;
+	r.in.sec_attrib = sec_attrib;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_SaveKey, &r);

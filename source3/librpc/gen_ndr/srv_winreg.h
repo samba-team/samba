@@ -20,8 +20,8 @@ WERROR _winreg_OpenKey(pipes_struct *p, struct policy_handle *parent_handle, str
 WERROR _winreg_QueryInfoKey(pipes_struct *p, struct policy_handle *handle, struct winreg_String *classname, uint32_t *num_subkeys, uint32_t *max_subkeylen, uint32_t *max_subkeysize, uint32_t *num_values, uint32_t *max_valnamelen, uint32_t *max_valbufsize, uint32_t *secdescsize, NTTIME *last_changed_time);
 WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct winreg_String value_name, enum winreg_Type *type, uint8_t *data, uint32_t *data_size, uint32_t *value_length);
 WERROR _winreg_ReplaceKey(pipes_struct *p);
-WERROR _winreg_RestoreKey(pipes_struct *p);
-WERROR _winreg_SaveKey(pipes_struct *p);
+WERROR _winreg_RestoreKey(pipes_struct *p, struct policy_handle *handle, struct winreg_String *filename, uint32_t flags);
+WERROR _winreg_SaveKey(pipes_struct *p, struct policy_handle *handle, struct winreg_String *filename, struct KeySecurityAttribute *sec_attrib);
 WERROR _winreg_SetKeySecurity(pipes_struct *p, struct policy_handle *handle, uint32_t access_mask, struct KeySecurityData *sd);
 WERROR _winreg_SetValue(pipes_struct *p, struct policy_handle *handle, struct winreg_String name, enum winreg_Type type, uint8_t *data, uint32_t size);
 WERROR _winreg_UnLoadKey(pipes_struct *p);
