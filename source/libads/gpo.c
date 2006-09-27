@@ -392,8 +392,8 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 	}
 
 	/* split here for convenience */
-	gpo->version_user = gpo->version >> 16;
-	gpo->version_machine = gpo->version & 0xffff;
+	gpo->version_user = GPO_VERSION_USER(gpo->version);
+	gpo->version_machine = GPO_VERSION_MACHINE(gpo->version);
 
 	/* sure ??? */
 	if (!ads_pull_uint32(ads, res, "flags", &gpo->options)) {
