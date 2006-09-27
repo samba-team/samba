@@ -100,18 +100,20 @@ cat >$COMMONCONFFILE<<EOF
 	name resolve order = bcast
 EOF
 
+TORTURE_INTERFACES='127.0.0.6/8,127.0.0.7/8,127.0.0.8/8,127.0.0.9/8,127.0.0.10/8,127.0.0.11/8'
+
 cat >$CONFFILE<<EOF
 [global]
-	netbios name = TORTURE26
-	interfaces = 127.0.0.26/8
+	netbios name = TORTURE_6
+	interfaces = $TORTURE_INTERFACES
 	panic action = $SCRIPTDIR/gdb_backtrace %d
 	include = $COMMONCONFFILE
 EOF
 
 cat >$SAMBA4CONFFILE<<EOF
 [global]
-	netbios name = TORTURE26
-	interfaces = 127.0.0.26/8
+	netbios name = TORTURE_6
+	interfaces = $TORTURE_INTERFACES
 	panic action = $SCRIPTDIR/gdb_backtrace %PID% %PROG%
 	include = $COMMONCONFFILE
 EOF
@@ -172,11 +174,10 @@ export SOCKET_WRAPPER_DEFAULT_IFACE
 samba3_check_or_start
 
 # ensure any one smbtorture call doesn't run too long
-# and smbtorture will use 127.0.0.26 as source address by default
-SOCKET_WRAPPER_DEFAULT_IFACE=26
+# and smbtorture will use 127.0.0.6 as source address by default
+SOCKET_WRAPPER_DEFAULT_IFACE=6
 export SOCKET_WRAPPER_DEFAULT_IFACE
-TORTURE4_INTERFACES='127.0.0.26/8,127.0.0.27/8,127.0.0.28/8,127.0.0.29/8,127.0.0.30/8,127.0.0.31/8'
-TORTURE4_OPTIONS="--option=interfaces=$TORTURE4_INTERFACES $SAMBA4CONFIGURATION"
+TORTURE4_OPTIONS="$SAMBA4CONFIGURATION"
 TORTURE4_OPTIONS="$TORTURE4_OPTIONS --maximum-runtime=$TORTURE_MAXTIME"
 TORTURE4_OPTIONS="$TORTURE4_OPTIONS --target=samba3"
 export TORTURE4_OPTIONS
