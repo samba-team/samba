@@ -124,6 +124,11 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	if (lp_parm_bool(-1, "ldb", "nosync", False)) {
 		flags |= LDB_FLG_NOSYNC;
 	}
+
+	/* we usually want Samba databases to be private. If we later
+	   find we need one public, we will need to add a parameter to
+	   ldb_wrap_connect() */
+	ldb_set_create_perms(ldb, 0600);
 	
 	ret = ldb_connect(ldb, real_url, flags, options);
 	if (ret != LDB_SUCCESS) {
