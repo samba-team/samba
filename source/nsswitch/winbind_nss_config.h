@@ -37,8 +37,8 @@
 #endif
 
 #include "system/passwd.h"
-#include "system/network.h"
 #include "system/filesys.h"
+#include "system/network.h"
 
 #include "nsswitch/winbind_nss.h"
 
