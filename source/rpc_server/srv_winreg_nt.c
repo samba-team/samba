@@ -1189,7 +1189,9 @@ WERROR _winreg_CreateKey( pipes_struct *p, struct policy_handle *handle, struct 
 
 		/* copy the new key name (just the lower most keyname) */
 
-		pstrcpy( name, ptr+1 );
+		if ( (name = talloc_strdup( p->mem_ctx, ptr+1 )) == NULL ) {
+			return WERR_NOMEM;
+		}
 	}
 	else {
 		/* use the existing open key information */
@@ -1334,11 +1336,15 @@ WERROR _winreg_DeleteKey(pipes_struct *p, struct policy_handle *handle, struct w
 		pstrcpy( newkeyname, name );
 		ptr = strrchr( newkeyname, '\\' );
 		*ptr = '\0';
-		pstrcpy( name, ptr+1 );
+		if ( (name = talloc_strdup( p->mem_ctx, ptr+1 )) == NULL ) {
+			result = WERR_NOMEM;
+			goto done;
+		}
 
 		result = open_registry_key( p, &newparent_handle, &newparentinfo, parent, newkeyname, (REG_KEY_READ|REG_KEY_WRITE) );
-		if ( !W_ERROR_IS_OK(result) )
-			return result;
+		if ( !W_ERROR_IS_OK(result) ) {
+			goto done;
+		}
 	}
 	else {
 		/* use the existing open key information */
