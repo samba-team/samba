@@ -389,13 +389,10 @@ failed:
 	struct ldb_result *res=NULL;
 	fstring string_sid;
 	NTSTATUS status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-	
+
 	if (!init_group_mapping()) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	*sids = NULL;
-	*num = 0;
 
       	if (!sid_to_string(string_sid, member)) {
 		return NT_STATUS_INVALID_PARAMETER;
