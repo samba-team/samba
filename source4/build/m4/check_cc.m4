@@ -37,17 +37,11 @@ AC_CACHE_CHECK([that the C compiler understands negative enum values],SMB_BUILD_
 	enum negative_values { NEGATIVE_VALUE = 0xFFFFFFFF };
 	int main(void) {
 		enum negative_values v1 = NEGATIVE_VALUE;
-		unsigned v2 = NEGATIVE_VALUE;
-
-		if (v1 != 0xFFFFFFFF) {
-			printf("%u != 0xFFFFFFFF\n", v1);
+		unsigned v2 = 0xFFFFFFFF;
+		if (v1 != v2) {
+			printf("v1=0x%08x v2=0x%08x\n", v1, v2);
 			return 1;
 		}
-		if (v2 != 0xFFFFFFFF) {
-			printf("%u != 0xFFFFFFFF\n", v2);
-			return 1;
-		}
-
 		return 0;
 	}
 ],
