@@ -238,11 +238,24 @@
 	/******************/
 	/* Function: 0x13 */
 	WERROR winreg_RestoreKey(
+		[in,ref] policy_handle *handle,
+		[in,ref] winreg_String *filename,
+		[in]     uint32 flags 
 	);
 
 	/******************/
 	/* Function: 0x14 */
+
+	typedef struct {
+		uint32 data_size;
+		KeySecurityData sec_data;
+		uint8 inherit;
+	} KeySecurityAttribute;
+
 	WERROR winreg_SaveKey(
+		[in,ref] policy_handle *handle,
+		[in,ref] winreg_String *filename,
+		[in,unique] KeySecurityAttribute *sec_attrib
 	);
 
 	/******************/

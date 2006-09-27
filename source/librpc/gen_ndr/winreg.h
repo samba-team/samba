@@ -53,6 +53,12 @@ struct winreg_StringBuf {
 	const char *name;/* [unique,length_is(length/2),charset(UTF16),size_is(size/2)] */
 };
 
+struct KeySecurityAttribute {
+	uint32_t data_size;
+	struct KeySecurityData sec_data;
+	uint8_t inherit;
+};
+
 struct QueryMultipleValue {
 	struct winreg_String *name;/* [unique] */
 	enum winreg_Type type;
@@ -360,6 +366,12 @@ struct winreg_ReplaceKey {
 
 struct winreg_RestoreKey {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String *filename;/* [ref] */
+		uint32_t flags;
+	} in;
+
+	struct {
 		WERROR result;
 	} out;
 
@@ -367,6 +379,12 @@ struct winreg_RestoreKey {
 
 
 struct winreg_SaveKey {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct winreg_String *filename;/* [ref] */
+		struct KeySecurityAttribute *sec_attrib;/* [unique] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;

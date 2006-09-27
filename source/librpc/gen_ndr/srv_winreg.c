@@ -1217,7 +1217,7 @@ static BOOL api_winreg_RestoreKey(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_RestoreKey, &r);
 	
-	r.out.result = _winreg_RestoreKey(p);
+	r.out.result = _winreg_RestoreKey(p, r.in.handle, r.in.filename, r.in.flags);
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(winreg_RestoreKey, &r);
@@ -1273,7 +1273,7 @@ static BOOL api_winreg_SaveKey(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_SaveKey, &r);
 	
-	r.out.result = _winreg_SaveKey(p);
+	r.out.result = _winreg_SaveKey(p, r.in.handle, r.in.filename, r.in.sec_attrib);
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(winreg_SaveKey, &r);
