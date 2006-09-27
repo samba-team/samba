@@ -409,11 +409,6 @@ BOOL status_profile_dump(BOOL verbose)
 
 #ifdef WITH_PROFILE
 
-static void sample_delay(int delay_msec)
-{
-	poll(NULL, 0, delay_msec);
-}
-
 /* Convert microseconds to milliseconds. */
 #define usec_to_msec(s) ((s) / 1000)
 /* Convert microseconds to seconds. */
@@ -526,7 +521,7 @@ BOOL status_profile_rates(BOOL verbose)
 				    (unsigned long )usec_to_msec(remain_usec));
 			}
 
-			sample_delay(usec_to_msec(remain_usec));
+			sys_usleep(remain_usec);
 		}
 
 	}
