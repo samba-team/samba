@@ -1,9 +1,8 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell               1992-1997.
- *  Copyright (C) Jeremy Allison                     2001.
- *  Copyright (C) Gerald Carter                      2002-2005.
+ * 
+ *  Copyright (C) Gerald Carter                 2002-2006.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,10 +27,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#if 0	/* temporaily disabled */
 static struct generic_mapping reg_generic_map = 
 	{ REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
-#endif
 
 /******************************************************************
  free() function for REGISTRY_KEY
@@ -761,9 +758,6 @@ WERROR _winreg_AbortSystemShutdown(pipes_struct *p, uint16_t *server)
 	return (ret == 0) ? WERR_OK : WERR_ACCESS_DENIED;
 }
 
-#if 0	/* This code works but is disabled for now until I 
-	   fix the WinReg IDL file -- jerry */
-
 /*******************************************************************
  ********************************************************************/
 
@@ -914,26 +908,26 @@ static WERROR restore_registry_key ( REGISTRY_KEY *krecord, const char *fname )
 	return result;
 }
 
-#endif
-
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_RestoreKey(pipes_struct *p)
+WERROR _winreg_RestoreKey(pipes_struct *p, struct policy_handle *handle, struct winreg_String *filename, uint32_t flags)
 {
-#if 0	/* temporarily disabled */
-	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
-	pstring         filename;
+	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, handle );
+	pstring         fname;
 	int             snum;
 	
 	if ( !regkey )
 		return WERR_BADFID; 
 
-	rpcstr_pull(filename, q_u->filename.string->buffer, sizeof(filename), q_u->filename.string->uni_str_len*2, STR_TERMINATE);
+	if ( !filename || !filename->name )
+		return WERR_INVALID_PARAM;
 
-	DEBUG(8,("_reg_restore_key: verifying restore of key [%s] from \"%s\"\n", regkey->name, filename));
+	pstrcpy( fname, filename->name );
 
-	if ( (snum = validate_reg_filename( filename )) == -1 )
+	DEBUG(8,("_winreg_RestoreKey: verifying restore of key [%s] from \"%s\"\n", regkey->name, fname));
+
+	if ( (snum = validate_reg_filename( fname )) == -1 )
 		return WERR_OBJECT_PATH_INVALID;
 		
 	/* user must posses SeRestorePrivilege for this this proceed */
@@ -941,16 +935,12 @@ WERROR _winreg_RestoreKey(pipes_struct *p)
 	if ( !user_has_privileges( p->pipe_user.nt_user_token, &se_restore ) )
 		return WERR_ACCESS_DENIED;
 		
-	DEBUG(2,("_reg_restore_key: Restoring [%s] from %s in share %s\n", regkey->name, filename, lp_servicename(snum) ));
+	DEBUG(2,("_winreg_RestoreKey: Restoring [%s] from %s in share %s\n", regkey->name, fname, lp_servicename(snum) ));
 
-	return restore_registry_key( regkey, filename );
-#endif
+	return restore_registry_key( regkey, fname );
 
 	return WERR_NOT_SUPPORTED;
 }
-
-#if 0	/* this code works but has been disable until I fix
-	   the winreg IDL    -- jerry */
 
 /********************************************************************
 ********************************************************************/
@@ -987,14 +977,16 @@ static WERROR reg_write_tree( REGF_FILE *regfile, const char *keypath,
 	/* we need a REGISTRY_KEY object here to enumerate subkeys and values */
 	
 	ZERO_STRUCT( registry_key );
-	pstrcpy( registry_key.name, keypath );
-	if ( !(registry_key.hook = reghook_cache_find( registry_key.name )) )
+
+	if ( (registry_key.name = talloc_strdup(regfile->mem_ctx, keypath)) == NULL )
+		return WERR_NOMEM;
+
+	if ( (registry_key.hook = reghook_cache_find( registry_key.name )) == NULL )
 		return WERR_BADFILE;
 
-	
 	/* lookup the values and subkeys */
 	
-	if ( !(subkeys = TALLOC_ZERO_P( regfile->mem_ctx, REGSUBKEY_CTR )) )
+	if ( !(subkeys = TALLOC_ZERO_P( regfile->mem_ctx, REGSUBKEY_CTR )) ) 
 		return WERR_NOMEM;
 
 	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) )
@@ -1025,6 +1017,7 @@ static WERROR reg_write_tree( REGF_FILE *regfile, const char *keypath,
 
 done:
 	TALLOC_FREE( subkeys );
+	TALLOC_FREE( registry_key.name );
 
 	return result;
 }
@@ -1101,35 +1094,32 @@ static WERROR backup_registry_key ( REGISTRY_KEY *krecord, const char *fname )
 	
 	return result;
 }
-#endif
 
 /*******************************************************************
  ********************************************************************/
 
-WERROR _winreg_SaveKey(pipes_struct *p)
+WERROR _winreg_SaveKey(pipes_struct *p, struct policy_handle *handle, struct winreg_String *filename, struct KeySecurityAttribute *sec_attrib)
 {
-#if 0
-	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
-	pstring         filename;
+	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, handle );
+	pstring         fname;
 	int             snum;
 	
 	if ( !regkey )
 		return WERR_BADFID; 
 
-	rpcstr_pull(filename, q_u->filename.string->buffer, sizeof(filename), q_u->filename.string->uni_str_len*2, STR_TERMINATE);
+	if ( !filename || !filename->name )
+		return WERR_INVALID_PARAM;
 
-	DEBUG(8,("_reg_save_key: verifying backup of key [%s] to \"%s\"\n", regkey->name, filename));
+	pstrcpy( fname, filename->name );
+
+	DEBUG(8,("_winreg_SaveKey: verifying backup of key [%s] to \"%s\"\n", regkey->name, fname));
 	
-	if ( (snum = validate_reg_filename( filename )) == -1 )
+	if ( (snum = validate_reg_filename( fname )) == -1 )
 		return WERR_OBJECT_PATH_INVALID;
 		
-	DEBUG(2,("_reg_save_key: Saving [%s] to %s in share %s\n", regkey->name, filename, lp_servicename(snum) ));
+	DEBUG(2,("_winreg_SaveKey: Saving [%s] to %s in share %s\n", regkey->name, fname, lp_servicename(snum) ));
 		
-	return backup_registry_key( regkey, filename );
-#endif
-
-	/* disabled for now until I fix the IDL  --jerry */
-	return WERR_NOT_SUPPORTED;
+	return backup_registry_key( regkey, fname );
 }
 
 /*******************************************************************
@@ -1137,7 +1127,9 @@ WERROR _winreg_SaveKey(pipes_struct *p)
 
 WERROR _winreg_SaveKeyEx(pipes_struct *p)
 {
-	/* disabled for now until I fix the IDL  --jerry */
+	/* fill in your code here if you think this call should
+	   do anything */
+
 	return WERR_NOT_SUPPORTED;
 }
 
