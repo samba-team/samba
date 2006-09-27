@@ -112,7 +112,7 @@ static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC
 	struct entryUUID_private *entryUUID_private;
 	struct ldb_result *list;
 
-	if (ldb_dn_explode(ctx, val->data)) {
+	if (ldb_dn_explode(ctx, (const char *)val->data)) {
 		return *val;
 	}
 	map_private = talloc_get_type(module->private_data, struct map_private);
@@ -121,7 +121,7 @@ static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC
 	list = entryUUID_private->objectclass_res;
 
 	for (i=0; list && (i < list->count); i++) {
-		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
+		if (ldb_attr_cmp((const char *)val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
 			char *dn = ldb_dn_linearize(ctx, list->msgs[i]->dn);
 			return data_blob_string_const(dn);
 		}
@@ -142,7 +142,7 @@ static struct ldb_val class_to_oid(struct ldb_module *module, TALLOC_CTX *ctx, c
 	list = entryUUID_private->objectclass_res;
 
 	for (i=0; list && (i < list->count); i++) {
-		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
+		if (ldb_attr_cmp((const char *)val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
 			const char *oid = ldb_msg_find_attr_as_string(list->msgs[i], "governsID", NULL);
 			return data_blob_string_const(oid);
 		}
@@ -163,7 +163,7 @@ static struct ldb_val class_from_oid(struct ldb_module *module, TALLOC_CTX *ctx,
 	list = entryUUID_private->objectclass_res;
 
 	for (i=0; list && (i < list->count); i++) {
-		if (ldb_attr_cmp(val->data, ldb_msg_find_attr_as_string(list->msgs[i], "governsID", NULL)) == 0) {
+		if (ldb_attr_cmp((const char *)val->data, ldb_msg_find_attr_as_string(list->msgs[i], "governsID", NULL)) == 0) {
 			const char *oc = ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL);
 			return data_blob_string_const(oc);
 		}
@@ -174,13 +174,13 @@ static struct ldb_val class_from_oid(struct ldb_module *module, TALLOC_CTX *ctx,
 
 static struct ldb_val normalise_to_signed32(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	long long int signed_ll = strtoll(val->data, NULL, 10);
+	long long int signed_ll = strtoll((const char *)val->data, NULL, 10);
 	if (signed_ll >= 0x80000000LL) {
 		union {
 			int32_t signed_int;
 			uint32_t unsigned_int;
 		} u = {
-			.unsigned_int = strtoul(val->data, NULL, 10)
+			.unsigned_int = strtoul((const char *)val->data, NULL, 10)
 		};
 
 		struct ldb_val out = data_blob_string_const(talloc_asprintf(ctx, "%d", u.signed_int));
@@ -192,7 +192,7 @@ static struct ldb_val normalise_to_signed32(struct ldb_module *module, TALLOC_CT
 static struct ldb_val usn_to_entryCSN(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct ldb_val out;
-	unsigned long long usn = strtoull(val->data, NULL, 10);
+	unsigned long long usn = strtoull((const char *)val->data, NULL, 10);
 	time_t t = (usn >> 24);
 	out = data_blob_string_const(talloc_asprintf(ctx, "%s#%06x#00#000000", ldb_timestring(ctx, t), (unsigned int)(usn & 0xFFFFFF)));
 	return out;
@@ -200,7 +200,7 @@ static struct ldb_val usn_to_entryCSN(struct ldb_module *module, TALLOC_CTX *ctx
 
 static unsigned long long entryCSN_to_usn_int(TALLOC_CTX *ctx, const struct ldb_val *val) 
 {
-	char *entryCSN = talloc_strdup(ctx, val->data);
+	char *entryCSN = talloc_strdup(ctx, (const char *)val->data);
 	char *mod_per_sec;
 	time_t t;
 	unsigned long long usn;
@@ -242,7 +242,7 @@ static struct ldb_val entryCSN_to_usn(struct ldb_module *module, TALLOC_CTX *ctx
 static struct ldb_val usn_to_timestamp(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct ldb_val out;
-	unsigned long long usn = strtoull(val->data, NULL, 10);
+	unsigned long long usn = strtoull((const char *)val->data, NULL, 10);
 	time_t t = (usn >> 24);
 	out = data_blob_string_const(ldb_timestring(ctx, t));
 	return out;
@@ -254,7 +254,7 @@ static struct ldb_val timestamp_to_usn(struct ldb_module *module, TALLOC_CTX *ct
 	time_t t;
 	unsigned long long usn;
 
-	t = ldb_string_to_time(val->data);
+	t = ldb_string_to_time((const char *)val->data);
 	
 	usn = ((unsigned long long)t <<24);
 
@@ -495,6 +495,8 @@ static int get_remote_rootdse(struct ldb_context *ldb, void *context,
 		}
 		entryUUID_private->base_dns[i] = NULL;
 	}
+
+	return LDB_SUCCESS;
 }
 
 static int find_base_dns(struct ldb_module *module, 
@@ -539,6 +541,8 @@ static int find_base_dns(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	return LDB_SUCCESS;
 }
 
 /* the context init function */
@@ -588,6 +592,8 @@ static int get_seq(struct ldb_context *ldb, void *context,
 			*max_seq = MAX(seq, *max_seq);
 		}
 	}
+
+	return LDB_SUCCESS;
 }
 
 static int entryUUID_sequence_number(struct ldb_module *module, struct ldb_request *req)
