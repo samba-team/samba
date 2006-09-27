@@ -718,7 +718,7 @@ static int partition_init(struct ldb_module *module)
 		}
 		
 		for (i=0; i < replicate_attributes->num_values; i++) {
-			data->replicate[i] = ldb_dn_explode(data->replicate, replicate_attributes->values[i].data);
+			data->replicate[i] = ldb_dn_explode(data->replicate, (const char *)replicate_attributes->values[i].data);
 			if (!data->replicate[i]) {
 				ldb_asprintf_errstring(module->ldb, 
 							"partition_init: "
