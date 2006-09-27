@@ -471,7 +471,7 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle, struct 
         	*value_length =  regval_size( val );
 		*type = val->type;
 
-		if ( *data_size == 0 ) {
+		if ( *data_size == 0 || !data ) {
 			status = WERR_OK;
 		} else if ( *value_length > *data_size ) {
 			status = WERR_MORE_DATA;
@@ -619,7 +619,7 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle, uint32_t
 	*value_length =  regval_size( val );
 	*type = val->type;
 
-	if ( *data_size == 0 ) {
+	if ( *data_size == 0 || !data ) {
 		status = WERR_OK;
 	} else if ( *value_length > *data_size ) {
 		status = WERR_MORE_DATA;
