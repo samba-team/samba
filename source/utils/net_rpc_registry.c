@@ -1,7 +1,8 @@
 /* 
    Samba Unix/Linux SMB client library 
    Distributed SMB/CIFS Server Management Utility 
-   Copyright (C) Gerald (Jerry) Carter          2005
+
+   Copyright (C) Gerald (Jerry) Carter          2005-2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -210,6 +211,7 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 	POLICY_HND pol_hive, pol_key; 
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct winreg_String subkeyname;
+	struct winreg_String filename;
 	
 	if (argc != 2 ) {
 		d_printf("Usage:    net rpc backup <path> <file> \n");
@@ -237,18 +239,11 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 		return werror_to_ntstatus(result);
 	}
 	
-#if 0	/* IDL not implemented */
-	/* original call was: rpccli_reg_save_key(pipe_hnd, mem_ctx, &pol_key, argv[1] ); */
-
-	status = rpccli_winreg_SaveKey( cli, mem_ctx );
+	filename.name = argv[1];
+	status = rpccli_winreg_SaveKey( pipe_hnd, mem_ctx, &pol_key, &filename, NULL  );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_fprintf(stderr, "Unable to save [%s] to %s:%s\n", argv[0], cli->desthost, argv[1]);
 	}
-#else
-	d_printf("Call not implemented.\n");
-	status = NT_STATUS_NOT_IMPLEMENTED;
-#endif
-	
 	
 	/* cleanup */
 	
