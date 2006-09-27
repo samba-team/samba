@@ -67,12 +67,14 @@
 #define real_accept accept
 #define real_connect connect
 #define real_bind bind
+#define real_listen listen
 #define real_getpeername getpeername
 #define real_getsockname getsockname
 #define real_getsockopt getsockopt
 #define real_setsockopt setsockopt
 #define real_recvfrom recvfrom
 #define real_sendto sendto
+#define real_ioctl ioctl
 #define real_recv recv
 #define real_send send
 #define real_socket socket
@@ -712,6 +714,20 @@ _PUBLIC_ int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	return ret;
 }
 
+_PUBLIC_ int swrap_listen(int s, int backlog)
+{
+	int ret;
+	struct socket_info *si = find_socket_info(s);
+
+	if (!si) {
+		return real_listen(s, backlog);
+	}
+
+	ret = real_listen(s, backlog);
+
+	return ret;
+}
+
 _PUBLIC_ int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 {
 	struct socket_info *si = find_socket_info(s);
@@ -860,6 +876,20 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 	}
 
 	swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len, ret);
+
+	return ret;
+}
+
+_PUBLIC_ int swrap_ioctl(int s, int r, void *p)
+{
+	int ret;
+	struct socket_info *si = find_socket_info(s);	
+
+	if (!si) {
+		return real_ioctl(s, r, p);
+	}
+
+	ret = real_ioctl(s, r, p);
 
 	return ret;
 }
