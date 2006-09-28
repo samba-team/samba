@@ -615,6 +615,7 @@ dnl Add #include for broken IRIX header files
 esac
 
 DYNEXP=
+AC_SUBST(DYNEXP)
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
@@ -1642,15 +1643,14 @@ PICFLAGS=""
 PICSUFFIX="po"
 SHLIBEXT="so"
 
-if test "$enable_shared" = "yes"; then
-  # this bit needs to be modified for each OS that supports share libs
-  # You need to specify how to create a shared library and
-  # how to compile C code to produce PIC object files
+# this bit needs to be modified for each OS that supports share libs
+# You need to specify how to create a shared library and
+# how to compile C code to produce PIC object files
 
-  AC_MSG_CHECKING([ability to build shared libraries])
+AC_MSG_CHECKING([ability to build shared libraries])
 
-  # and these are for particular systems
-  case "$host_os" in
+# and these are for particular systems
+case "$host_os" in
 		*linux*)   AC_DEFINE(LINUX,1,[Whether the host os is linux])
 			BLDSHARED="true"
 			if test "${ac_cv_gnu_ld_no_default_allow_shlib_undefined}" = "yes"; then
@@ -1826,18 +1826,39 @@ if test "$enable_shared" = "yes"; then
 		*)
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
-  esac
-  AC_SUBST(DYNEXP)
-  AC_MSG_RESULT($BLDSHARED)
-  AC_MSG_CHECKING([linker flags for shared libraries])
-  AC_MSG_RESULT([$LDSHFLAGS])
-  AC_MSG_CHECKING([compiler flags for position-independent code])
-  AC_MSG_RESULT([$PICFLAGS])
+esac
+
+if test "$enable_shared" != "yes"; then
+	BLDSHARED=false
 fi
+
+AC_MSG_RESULT($BLDSHARED)
+
+AC_MSG_CHECKING([LDFLAGS])
+AC_MSG_RESULT([$LDFLAGS])
+AC_MSG_CHECKING([DYNEXP])
+AC_MSG_RESULT([$DYNEXP])
 
 #######################################################
 # test whether building a shared library actually works
 if test $BLDSHARED = true; then
+
+AC_MSG_CHECKING([SHLD])
+AC_MSG_RESULT([$SHLD])
+AC_MSG_CHECKING([LDSHFLAGS])
+AC_MSG_RESULT([$LDSHFLAGS])
+
+AC_MSG_CHECKING([SHLIBEXT])
+AC_MSG_RESULT([$SHLIBEXT])
+AC_MSG_CHECKING([SONAMEFLAG])
+AC_MSG_RESULT([$SONAMEFLAG])
+
+AC_MSG_CHECKING([PICFLAGS])
+AC_MSG_RESULT([$PICFLAGS])
+
+AC_MSG_CHECKING([NSSSONAMEVERSIONSUFFIX])
+AC_MSG_RESULT([$NSSSONAMEVERSIONSUFFIX])
+
 AC_CACHE_CHECK([whether building shared libraries actually works], 
                [ac_cv_shlib_works],[
    # try building a trivial shared library
@@ -1849,6 +1870,7 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
    `eval echo $SHLD` `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" \
         shlib.$PICSUFFIX && ac_cv_shlib_works=yes
    rm -f "shlib.$SHLIBEXT" shlib.$PICSUFFIX
+
 ])
 if test $ac_cv_shlib_works = no; then
    BLDSHARED=false
