@@ -66,6 +66,8 @@ case "$host_os" in
 		fi
 		;;
 	*aix*)
+		AC_DEFINE(BROKEN_STRNDUP, 1, [Whether strndup is broken])
+		AC_DEFINE(BROKEN_STRNLEN, 1, [Whether strnlen is broken])
 		if test "${GCC}" != "yes"; then
 			## for funky AIX compiler using strncpy()
 			CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
