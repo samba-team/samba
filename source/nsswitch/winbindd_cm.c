@@ -84,6 +84,15 @@ static void check_domain_online_handler(struct timed_event *te,
 		TALLOC_FREE(domain->check_online_event);
 	}
 
+	/* Are we still in "startup" mode ? */
+
+	if (domain->startup && (now->tv_sec > domain->startup_time + 30)) {
+		/* No longer in "startup" mode. */
+		DEBUG(10,("check_domain_online_handler: domain %s no longer in 'startup' mode.\n",
+			domain->name ));
+		domain->startup = False;
+	}
+
 	/* We've been told to stay offline, so stay
 	   that way. */
 
@@ -125,8 +134,13 @@ void set_domain_offline(struct winbindd_domain *domain)
 		return;
 	}
 
+	/* If we're in statup mode, check again in 10 seconds, not in
+	   lp_winbind_cache_time() seconds (which is 5 mins by default). */
+
 	domain->check_online_event = add_timed_event( NULL,
-						timeval_current_ofs(lp_winbind_cache_time(), 0),
+						domain->startup ?
+							timeval_current_ofs(10,0) : 
+							timeval_current_ofs(lp_winbind_cache_time(), 0),
 						"check_domain_online_handler",
 						check_domain_online_handler,
 						domain);
@@ -161,6 +175,9 @@ static void set_domain_online(struct winbindd_domain *domain)
 	GetTimeOfDay(&now);
 	set_event_dispatch_time("krb5_ticket_gain_handler", now);
 	domain->online = True;
+
+	/* Ok, we're out of any startup mode now... */
+	domain->startup = False;
 }
 
 /****************************************************************
@@ -179,7 +196,8 @@ void set_domain_online_request(struct winbindd_domain *domain)
 	}
 
 	/* We've been told it's safe to go online and
-	   try and connect to a DC. But I don't believe it...
+	   try and connect to a DC. But I don't believe it
+	   because network manager seems to lie.
 	   Wait at least 5 seconds. Heuristics suck... */
 
 	if (!domain->check_online_event) {
@@ -189,6 +207,11 @@ void set_domain_online_request(struct winbindd_domain *domain)
 		struct timeval tev;
 
 		GetTimeOfDay(&tev);
+
+		/* Go into "startup" mode again. */
+		domain->startup_time = tev.tv_sec;
+		domain->startup = True;
+
 		tev.tv_sec += 5;
 		set_event_dispatch_time("check_domain_online_handler", tev);
 	}

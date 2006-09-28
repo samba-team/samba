@@ -169,7 +169,8 @@ struct winbindd_domain {
 	BOOL primary;                          /* is this our primary domain ? */
 	BOOL internal;                         /* BUILTIN and member SAM */
 	BOOL online;			       /* is this domain available ? */
-	BOOL startup;                          /* are we in the first 30 seconds after fork ? */
+	time_t startup_time;		       /* When we set "startup" true. */
+	BOOL startup;                          /* are we in the first 30 seconds after startup_time ? */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
