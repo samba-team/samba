@@ -42,11 +42,7 @@ AC_MSG_CHECKING([ability to build shared libraries])
 case "$host_os" in
 	*linux*)
 		BLDSHARED="true"
-		if test "${ac_cv_gnu_ld_no_default_allow_shlib_undefined}" = "yes"; then
-			SHLD_FLAGS="-shared -Wl,-Bsymbolic -Wl,--allow-shlib-undefined" 
-		else
-			SHLD_FLAGS="-shared -Wl,-Bsymbolic" 
-		fi
+		SHLD_FLAGS="-shared -Wl,-Bsymbolic -Wl,--allow-shlib-undefined" 
 		LDFLAGS="-Wl,--export-dynamic"
 		PICFLAG="-fPIC"
 		SONAMEFLAG="-Wl,-soname="
