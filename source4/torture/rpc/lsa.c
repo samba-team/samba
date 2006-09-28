@@ -976,7 +976,8 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 				
 				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
 				
-				secret2 = sess_decrypt_string(&blob1, &session_key);
+				secret2 = sess_decrypt_string(mem_ctx, 
+							      &blob1, &session_key);
 				
 				if (strcmp(secret1, secret2) != 0) {
 					printf("Returned secret '%s' doesn't match '%s'\n", 
@@ -1036,7 +1037,8 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 				
 				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
 				
-				secret4 = sess_decrypt_string(&blob1, &session_key);
+				secret4 = sess_decrypt_string(mem_ctx, 
+							      &blob1, &session_key);
 				
 				if (strcmp(secret3, secret4) != 0) {
 					printf("Returned NEW secret %s doesn't match %s\n", secret4, secret3);
@@ -1048,7 +1050,8 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 				
 				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
 				
-				secret2 = sess_decrypt_string(&blob1, &session_key);
+				secret2 = sess_decrypt_string(mem_ctx, 
+							      &blob1, &session_key);
 				
 				if (strcmp(secret1, secret2) != 0) {
 					printf("Returned OLD secret %s doesn't match %s\n", secret2, secret1);
@@ -1122,7 +1125,8 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 				
 				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
 				
-				secret6 = sess_decrypt_string(&blob1, &session_key);
+				secret6 = sess_decrypt_string(mem_ctx,
+							      &blob1, &session_key);
 				
 				if (strcmp(secret3, secret4) != 0) {
 					printf("Returned NEW secret '%s' doesn't match '%s'\n", secret4, secret3);
@@ -1134,7 +1138,8 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 				
 				blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
 				
-				secret6 = sess_decrypt_string(&blob1, &session_key);
+				secret6 = sess_decrypt_string(mem_ctx,
+							      &blob1, &session_key);
 				
 				if (strcmp(secret5, secret6) != 0) {
 					printf("Returned OLD secret %s doesn't match %s\n", secret5, secret6);

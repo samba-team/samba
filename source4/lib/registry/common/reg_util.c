@@ -171,9 +171,9 @@ WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, co
 	if(strchr(name, '\\')) predeflength = strchr(name, '\\')-name;
 	else predeflength = strlen(name);
 
-	predefname = strndup(name, predeflength);
+	predefname = talloc_strndup(mem_ctx, name, predeflength);
 	error = reg_get_predefined_key_by_name(handle, predefname, &predef);
-	SAFE_FREE(predefname);
+	talloc_free(predefname);
 
 	if(!W_ERROR_IS_OK(error)) {
 		return error;

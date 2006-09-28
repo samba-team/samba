@@ -139,7 +139,7 @@ static BOOL test_CreateSecret_basic(struct dcerpc_pipe *p,
 			
 			blob2 = data_blob_talloc(mem_ctx, NULL, blob1.length);
 			
-			secret2 = sess_decrypt_string(&blob1, &session_key);
+			secret2 = sess_decrypt_string(mem_ctx, &blob1, &session_key);
 			
 			if (strcmp(secret1, secret2) != 0) {
 				printf("Returned secret '%s' doesn't match '%s'\n", 
