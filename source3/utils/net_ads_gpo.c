@@ -424,14 +424,14 @@ static int net_ads_gpo_get_gpo(int argc, const char **argv)
 	}	
 
 	dump_gpo(mem_ctx, &gpo);
-
+#if 0
 	status = ADS_ERROR_NT(ads_gpo_get_sysvol_gpt_version(ads, mem_ctx, gpo.file_sys_path, &sysvol_gpt_version)); 
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
 	printf("sysvol GPT version: %d\n", sysvol_gpt_version);
-
+#endif
 out:
 	talloc_destroy(mem_ctx);
 	ads_destroy(&ads);
