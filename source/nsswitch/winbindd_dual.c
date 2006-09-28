@@ -613,7 +613,7 @@ static void child_msg_online(int msg_type, struct process_id src, void *buf, siz
 	   to force a reconnect now. */
 
 	for (domain = domain_list(); domain; domain = domain->next) {
-		DEBUG(5,("child_msg_online: marking %s online.\n", domain->name));
+		DEBUG(5,("child_msg_online: requesting %s to go online.\n", domain->name));
 		winbindd_flush_negative_conn_cache(domain);
 		set_domain_online_request(domain);
 	}
@@ -682,7 +682,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	int fdpair[2];
 	struct winbindd_cli_state state;
 	extern BOOL override_logfile;
-	time_t startup_time;
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) != 0) {
 		DEBUG(0, ("Could not open child pipe: %s\n",
@@ -768,8 +767,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 	if ( child->domain ) {
 		child->domain->startup = True;
+		child->domain->startup_time = time(NULL);
 	}
-	startup_time = time(NULL);
 
 	while (1) {
 
@@ -787,7 +786,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 		GetTimeOfDay(&now);
 
-		if (child->domain && child->domain->startup && (now.tv_sec > startup_time + 30)) {
+		if (child->domain && child->domain->startup &&
+				(now.tv_sec > child->domain->startup_time + 30)) {
 			/* No longer in "startup" mode. */
 			DEBUG(10,("fork_domain_child: domain %s no longer in 'startup' mode.\n",
 				child->domain->name ));
