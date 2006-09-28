@@ -550,7 +550,8 @@ function provision_dns(subobj, message, paths, session_info, credentials)
 
 	var attrs = new Array("objectGUID");
 	res = ldb.search("objectGUID=*", subobj.BASEDN, ldb.SCOPE_BASE, attrs);
-	assert(res.length == 1 && res[0].objectGUID != undefined)
+	assert(res.length == 1);
+	assert(res[0].objectGUID != undefined);
 	subobj.DOMAINGUID = res[0].objectGUID;
 
 	subobj.HOSTGUID = searchone(ldb, subobj.BASEDN, "(&(objectClass=computer)(cn=" + subobj.NETBIOSNAME + "))", "objectGUID");
