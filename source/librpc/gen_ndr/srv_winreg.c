@@ -1008,8 +1008,8 @@ static BOOL api_winreg_QueryInfoKey(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.max_subkeysize = talloc_zero_size(mem_ctx, sizeof(*r.out.max_subkeysize));
-	if (r.out.max_subkeysize == NULL) {
+	r.out.max_classlen = talloc_zero_size(mem_ctx, sizeof(*r.out.max_classlen));
+	if (r.out.max_classlen == NULL) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1044,7 +1044,7 @@ static BOOL api_winreg_QueryInfoKey(pipes_struct *p)
 		return False;
 	}
 	
-	r.out.result = _winreg_QueryInfoKey(p, r.in.handle, r.in.classname, r.out.num_subkeys, r.out.max_subkeylen, r.out.max_subkeysize, r.out.num_values, r.out.max_valnamelen, r.out.max_valbufsize, r.out.secdescsize, r.out.last_changed_time);
+	r.out.result = _winreg_QueryInfoKey(p, r.in.handle, r.in.classname, r.out.num_subkeys, r.out.max_subkeylen, r.out.max_classlen, r.out.num_values, r.out.max_valnamelen, r.out.max_valbufsize, r.out.secdescsize, r.out.last_changed_time);
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(winreg_QueryInfoKey, &r);

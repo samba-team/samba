@@ -67,6 +67,8 @@ enum netdom_domain_t { ND_TYPE_NT4, ND_TYPE_AD };
 /* INCLUDE FILES */
 
 #include "utils/net_proto.h"
+#include "libmsrpc.h"
+
  
 /* MACROS & DEFINES */
 

@@ -74,7 +74,7 @@ int cac_RegConnect( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	}
 
 	hnd->status =
-		rpccli_winreg_connect( pipe_hnd, mem_ctx, op->in.root,
+		rpccli_winreg_Connect( pipe_hnd, mem_ctx, op->in.root,
 				       op->in.access, key );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
@@ -280,13 +280,16 @@ int cac_RegEnumKeys( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	resume_idx = op->out.resume_idx;
 
 	do {
+#if 0	/* FIXME!!! */
+
 		hnd->status =
-			rpccli_winreg_enum_key( pipe_hnd, mem_ctx, op->in.key,
+			rpccli_winreg_EnumKey( pipe_hnd, mem_ctx, op->in.key,
 						resume_idx, key_name_in,
 						class_name_in,
 						&mod_times_out
 						[num_keys_out] );
 
+#endif
 		if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 			/*don't increment any values */
 			break;
@@ -407,9 +410,11 @@ WERROR cac_delete_subkeys_recursive( struct rpc_pipe_client * pipe_hnd,
 		struct winreg_String key_string;
 		NTSTATUS status;
 
+#if 0	/* FIXME!!! */
 		status = rpccli_winreg_enum_key( pipe_hnd, mem_ctx, key,
 						 cur_key, subkey_name,
 						 class_buf, &mod_time_buf );
+#endif
 
 		if ( !NT_STATUS_IS_OK( status ) )
 			break;
@@ -780,11 +785,13 @@ int cac_RegEnumValues( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	do {
 		ZERO_STRUCT( val_buf );
 
+#if 0
 		hnd->status =
 			rpccli_winreg_enum_val( pipe_hnd, mem_ctx, op->in.key,
 						resume_idx, val_name_buf,
 						&types_out[num_values_out],
 						&val_buf );
+#endif
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) )
 			break;
