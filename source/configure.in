@@ -1728,7 +1728,7 @@ case "$host_os" in
 			;;
 		*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-G,-bexpall"
+			LDSHFLAGS="-Wl,-G,-bexpall,-bbigtoc"
 			DYNEXP="-Wl,-brtl,-bexpall,-bbigtoc"
 			PICFLAGS="-O2"
 			# as AIX code is always position independent...
