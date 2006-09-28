@@ -904,12 +904,16 @@ everything: all libsmbclient debug2html smbfilter talloctort modules torture \
 .SUFFIXES: .c .o .@PICSUFFIX@ .lo
 
 SHOWFLAGS:
-	@echo "Using FLAGS = $(FLAGS)"
-	@echo "      LIBS = $(LIBS)"
-	@echo "      LDSHFLAGS = $(LDSHFLAGS)"
-	@echo "      LDFLAGS = $(LDFLAGS)"
-	@echo "      PIE_CFLAGS = @PIE_CFLAGS@"
+	@echo "Using FLAGS       = $(FLAGS)"
+	@echo "      LIBS        = $(LIBS)"
+	@echo "      LDFLAGS     = $(LDFLAGS)"
+	@echo "      DYNEXP      = $(DYNEXP)"
+	@echo "      PIE_CFLAGS  = @PIE_CFLAGS@"
 	@echo "      PIE_LDFLAGS = @PIE_LDFLAGS@"
+	@echo "      LDSHFLAGS   = $(LDSHFLAGS)"
+	@echo "      SHLIBEXT    = @SHLIBEXT@"
+	@echo "      SONAMEFLAG  = @SONAMEFLAG@"
+	@echo "      PICFLAGS    = @PICFLAGS@"
 
 MAKEDIR = || exec false; \
 	  if test -d "$$dir"; then :; else \
