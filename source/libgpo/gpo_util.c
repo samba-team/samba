@@ -202,8 +202,10 @@ void dump_gpo(TALLOC_CTX *mem_ctx, struct GROUP_POLICY_OBJECT *gpo)
 	DEBUGADD(lvl,("name:\t\t\t%s\n", gpo->name));
 	DEBUGADD(lvl,("displayname:\t\t%s\n", gpo->display_name));
 	DEBUGADD(lvl,("version:\t\t%d (0x%08x)\n", gpo->version, gpo->version));
-	DEBUGADD(lvl,("version_user:\t\t%d (0x%04x)\n", gpo->version_user, gpo->version_user));
-	DEBUGADD(lvl,("version_machine:\t%d (0x%04x)\n", gpo->version_machine, gpo->version_machine));
+	DEBUGADD(lvl,("version_user:\t\t%d (0x%04x)\n", GPO_VERSION_USER(gpo->version), 
+							GPO_VERSION_USER(gpo->version)));
+	DEBUGADD(lvl,("version_machine:\t%d (0x%04x)\n", GPO_VERSION_MACHINE(gpo->version), 
+							 GPO_VERSION_MACHINE(gpo->version)));
 	DEBUGADD(lvl,("filesyspath:\t\t%s\n", gpo->file_sys_path));
 	DEBUGADD(lvl,("dspath:\t\t%s\n", gpo->ds_path));
 
