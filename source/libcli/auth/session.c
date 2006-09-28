@@ -97,7 +97,8 @@ DATA_BLOB sess_encrypt_string(const char *str, const DATA_BLOB *session_key)
 
   caller should free the returned string
 */
-char *sess_decrypt_string(DATA_BLOB *blob, const DATA_BLOB *session_key)
+char *sess_decrypt_string(TALLOC_CTX *mem_ctx, 
+			  DATA_BLOB *blob, const DATA_BLOB *session_key)
 {
 	DATA_BLOB out;
 	int slen;
@@ -107,7 +108,7 @@ char *sess_decrypt_string(DATA_BLOB *blob, const DATA_BLOB *session_key)
 		return NULL;
 	}
 	
-	out = data_blob(NULL, blob->length);
+	out = data_blob_talloc(mem_ctx, NULL, blob->length);
 	if (!out.data) {
 		return NULL;
 	}
@@ -117,18 +118,22 @@ char *sess_decrypt_string(DATA_BLOB *blob, const DATA_BLOB *session_key)
 	if (IVAL(out.data, 4) != 1) {
 		DEBUG(0,("Unexpected revision number %d in session crypted string\n",
 			 IVAL(out.data, 4)));
+		data_blob_free(&out);
 		return NULL;
 	}
 
 	slen = IVAL(out.data, 0);
 	if (slen > blob->length - 8) {
 		DEBUG(0,("Invalid crypt length %d\n", slen));
+		data_blob_free(&out);
 		return NULL;
 	}
 
-	ret = strndup((const char *)(out.data+8), slen);
+	ret = talloc_strndup(mem_ctx, (const char *)(out.data+8), slen);
 
 	data_blob_free(&out);
+
+	DEBUG(0,("decrypted string '%s' of length %d\n", ret, slen));
 
 	return ret;
 }
