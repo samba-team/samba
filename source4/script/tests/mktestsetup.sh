@@ -71,7 +71,7 @@ export SERVER
 export NETBIOSNAME
 
 rm -rf $PREFIX/*
-mkdir -p $PRIVATEDIR $ETCDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR $LDAPDIR/db
+mkdir -p $PRIVATEDIR $ETCDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR $LDAPDIR/db $LDAPDIR/db/bdb-logs $LDAPDIR/db/tmp
 
 if [ -z "$VALGRIND" ]; then
     nativeiconv="true"
@@ -339,14 +339,43 @@ index uidNumber eq
 index gidNumber eq
 index unixName eq
 index privilege eq
-index nCName eq
+index nCName eq pres
 index lDAPDisplayName eq
 index subClassOf eq
+index dnsRoot eq
+index nETBIOSName eq pres
 
 overlay syncprov
 syncprov-checkpoint 100 10
 syncprov-sessionlog 100
 
+EOF
+
+cat > $LDAPDIR/db/DB_CONFIG <<EOF
+#
+	# Set the database in memory cache size.
+	#
+	set_cachesize   0       524288        0
+	
+	
+	#
+	# Set database flags (this is a test environment, we don't need to fsync()).
+	#		
+	set_flags       DB_TXN_NOSYNC
+	
+	#
+	# Set log values.
+	#
+	set_lg_regionmax        104857
+	set_lg_max              1048576
+	set_lg_bsize            209715
+	set_lg_dir              $LDAPDIR/db/bdb-logs
+	
+	
+	#
+	# Set temporary file creation directory.
+	#			
+	set_tmp_dir             $LDAPDIR/db/tmp
 EOF
 
 PROVISION_OPTIONS="$CONFIGURATION --host-name=$NETBIOSNAME --host-ip=127.0.0.1"
