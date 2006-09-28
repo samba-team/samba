@@ -22,6 +22,10 @@
 
 #ifdef HAVE_LDAP
 
+/****************************************************************
+ parse the raw extension string into a GP_EXT structure
+****************************************************************/
+
 ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 			    const char *extension_raw,
 			    struct GP_EXT *gp_ext)
@@ -131,6 +135,10 @@ parse_error:
 	return ADS_ERROR(LDAP_NO_MEMORY);
 }
 
+/****************************************************************
+ parse the raw link string into a GP_LINK structure
+****************************************************************/
+
 ADS_STATUS ads_parse_gplink(TALLOC_CTX *mem_ctx, 
 			    const char *gp_link_raw,
 			    uint32 options,
@@ -206,6 +214,10 @@ parse_error:
 	return ADS_ERROR(LDAP_NO_MEMORY);
 }
 
+/****************************************************************
+ helper call to get a GP_LINK structure from a linkdn
+****************************************************************/
+
 ADS_STATUS ads_get_gpo_link(ADS_STRUCT *ads,
 			    TALLOC_CTX *mem_ctx,
 			    const char *link_dn,
@@ -238,6 +250,7 @@ ADS_STATUS ads_get_gpo_link(ADS_STRUCT *ads,
 		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);	
 	}
 
+	/* perfectly leggal to have no options */
 	if (!ads_pull_uint32(ads, res, "gPOptions", &gp_options)) {
 		DEBUG(10,("ads_get_gpo_link: no 'gPOptions' attribute found\n"));
 		gp_options = 0;
@@ -247,6 +260,10 @@ ADS_STATUS ads_get_gpo_link(ADS_STRUCT *ads,
 
 	return ads_parse_gplink(mem_ctx, gp_link, gp_options, gp_link_struct); 
 }
+
+/****************************************************************
+ helper call to add a gp link
+****************************************************************/
 
 ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads, 
 			    TALLOC_CTX *mem_ctx, 
@@ -259,7 +276,6 @@ ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
 	LDAPMessage *res = NULL;
 	const char *gp_link, *gp_link_new;
 	ADS_MODLIST mods;
-
 
 	/* although ADS allows to set anything here, we better check here if
 	 * the gpo_dn is sane */
@@ -288,14 +304,10 @@ ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
 	}
 
 	ads_msgfree(ads, res);
-	if (gp_link_new == NULL) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	ADS_ERROR_HAVE_NO_MEMORY(gp_link_new);
 
 	mods = ads_init_mods(mem_ctx);
-	if (mods == NULL) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	ADS_ERROR_HAVE_NO_MEMORY(mods);
 
 	status = ads_mod_str(mem_ctx, &mods, "gPLink", gp_link_new);
 	if (!ADS_ERR_OK(status)) {
@@ -304,6 +316,10 @@ ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
 
 	return ads_gen_mod(ads, link_dn, mods); 
 }
+
+/****************************************************************
+ helper call to delete add a gp link
+****************************************************************/
 
 /* untested & broken */
 ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads, 
@@ -349,14 +365,10 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 	/* gp_link_new = talloc_asprintf(mem_ctx, "%s[%s;%d]", gp_link, gpo_dn, gpo_opt); */
 
 	ads_msgfree(ads, res);
-	if (gp_link_new == NULL) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	ADS_ERROR_HAVE_NO_MEMORY(gp_link_new);
 
 	mods = ads_init_mods(mem_ctx);
-	if (mods == NULL) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	ADS_ERROR_HAVE_NO_MEMORY(mods);
 
 	status = ads_mod_str(mem_ctx, &mods, "gPLink", gp_link_new);
 	if (!ADS_ERR_OK(status)) {
@@ -366,6 +378,10 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 	return ads_gen_mod(ads, link_dn, mods); 
 }
 
+/****************************************************************
+ parse a GROUP_POLICY_OBJECT structure from an LDAPMessage result
+****************************************************************/
+
  ADS_STATUS ads_parse_gpo(ADS_STRUCT *ads,
 			  TALLOC_CTX *mem_ctx,
 			  LDAPMessage *res,
@@ -374,26 +390,19 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 {
 	ZERO_STRUCTP(gpo);
 
-	if (res == NULL) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	ADS_ERROR_HAVE_NO_MEMORY(res);
 
 	if (gpo_dn) {
 		gpo->ds_path = talloc_strdup(mem_ctx, gpo_dn);
 	} else {
 		gpo->ds_path = ads_get_dn(ads, res);
 	}
-	if (gpo->ds_path == NULL) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+
+	ADS_ERROR_HAVE_NO_MEMORY(gpo->ds_path);
 
 	if (!ads_pull_uint32(ads, res, "versionNumber", &gpo->version)) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
-
-	/* split here for convenience */
-	gpo->version_user = GPO_VERSION_USER(gpo->version);
-	gpo->version_machine = GPO_VERSION_MACHINE(gpo->version);
 
 	/* sure ??? */
 	if (!ads_pull_uint32(ads, res, "flags", &gpo->options)) {
@@ -401,19 +410,13 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 	}
 
 	gpo->file_sys_path = ads_pull_string(ads, mem_ctx, res, "gPCFileSysPath");
-	if (gpo->file_sys_path == NULL) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	ADS_ERROR_HAVE_NO_MEMORY(gpo->file_sys_path);
 
 	gpo->display_name = ads_pull_string(ads, mem_ctx, res, "displayName");
-	if (gpo->display_name == NULL) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	ADS_ERROR_HAVE_NO_MEMORY(gpo->display_name);
 
 	gpo->name = ads_pull_string(ads, mem_ctx, res, "name");
-	if (gpo->name == NULL) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	ADS_ERROR_HAVE_NO_MEMORY(gpo->name);
 
 	/* ???, this is optional to have and what does it depend on, the 'flags' ?) */
 	gpo->machine_extensions = ads_pull_string(ads, mem_ctx, res, "gPCMachineExtensionNames");
@@ -421,6 +424,10 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 
 	return ADS_ERROR(LDAP_SUCCESS);
 }
+
+/****************************************************************
+ get a GROUP_POLICY_OBJECT structure based on different input paramters
+****************************************************************/
 
 ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 		       TALLOC_CTX *mem_ctx,
@@ -458,9 +465,7 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 					 "(&(objectclass=groupPolicyContainer)(%s=%s))", 
 					 display_name ? "displayName" : "name",
 					 display_name ? display_name : guid_name);
-		if (filter == NULL) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
+		ADS_ERROR_HAVE_NO_MEMORY(filter);
 
 		status = ads_do_search_all(ads, ads->config.bind_path,
 					   LDAP_SCOPE_SUBTREE, filter, 
@@ -490,6 +495,10 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 
 	return status;
 }
+
+/****************************************************************
+ add a gplink to the GROUP_POLICY_OBJECT linked list
+****************************************************************/
 
 ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 				  TALLOC_CTX *mem_ctx, 
@@ -522,9 +531,7 @@ ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 		}
 
 		new_gpo = TALLOC_P(mem_ctx, struct GROUP_POLICY_OBJECT);
-		if (new_gpo == NULL) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
+		ADS_ERROR_HAVE_NO_MEMORY(new_gpo);
 
 		ZERO_STRUCTP(new_gpo);
 
@@ -544,6 +551,10 @@ ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 
 	return ADS_ERROR(LDAP_SUCCESS);
 }
+
+/****************************************************************
+ get the full list of GROUP_POLICY_OBJECTs for a given dn
+****************************************************************/
 
 ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads, 
 			    TALLOC_CTX *mem_ctx, 
