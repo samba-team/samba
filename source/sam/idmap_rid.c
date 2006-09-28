@@ -226,7 +226,7 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 			username,
 			lp_workgroup(),
 			password,
-			CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, True, NULL);
+			CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK, True, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("rid_idmap_get_domains: could not setup connection to dc\n"));

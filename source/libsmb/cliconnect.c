@@ -1530,7 +1530,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 				      pw_len, domain);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 
-		if (!(flags & CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK)) {
+		if (!(flags & CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK)) {
 			DEBUG(1,("failed session setup with %s\n",
 				 nt_errstr(nt_status)));
 			cli_shutdown(cli);
@@ -1688,7 +1688,7 @@ struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
 	
 	nt_status = cli_full_connection(&cli, myname, server, server_ip, 0, "IPC$", "IPC", 
 					user_info->username, lp_workgroup(), user_info->password, 
-					CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, Undefined, NULL);
+					CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK, Undefined, NULL);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;
