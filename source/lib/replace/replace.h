@@ -121,12 +121,14 @@ size_t rep_strlcpy(char *d, const char *s, size_t bufsize);
 size_t rep_strlcat(char *d, const char *s, size_t bufsize);
 #endif
 
-#ifndef HAVE_STRNDUP
+#if (defined(BROKEN_STRNDUP) || !defined(HAVE_STRNDUP))
+#undef HAVE_STRNDUP
 #define strndup rep_strndup
 char *rep_strndup(const char *s, size_t n);
 #endif
 
-#ifndef HAVE_STRNLEN
+#if (defined(BROKEN_STRNLEN) || !defined(HAVE_STRNLEN))
+#undef HAVE_STRNLEN
 #define strnlen rep_strnlen
 size_t rep_strnlen(const char *s, size_t n);
 #endif
