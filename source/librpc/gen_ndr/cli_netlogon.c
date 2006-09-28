@@ -21,6 +21,10 @@ NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_LOGONUASLOGON, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_LogonUasLogon, (ndr_push_flags_fn_t)ndr_push_netr_LogonUasLogon);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonUasLogon, &r);
 	
@@ -29,7 +33,9 @@ NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 	
 	/* Return variables */
-	*info = *r.out.info;
+	if ( info ) {
+		*info = *r.out.info;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -49,6 +55,10 @@ NTSTATUS rpccli_netr_LogonUasLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 		NDR_PRINT_IN_DEBUG(netr_LogonUasLogoff, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_LOGONUASLOGOFF, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_LogonUasLogoff, (ndr_push_flags_fn_t)ndr_push_netr_LogonUasLogoff);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonUasLogoff, &r);
@@ -83,6 +93,10 @@ NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_LOGONSAMLOGON, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_LogonSamLogon, (ndr_push_flags_fn_t)ndr_push_netr_LogonSamLogon);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogon, &r);
 	
@@ -91,7 +105,9 @@ NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 	
 	/* Return variables */
-	*return_authenticator = *r.out.return_authenticator;
+	if ( return_authenticator ) {
+		*return_authenticator = *r.out.return_authenticator;
+	}
 	*validation = *r.out.validation;
 	*authoritative = *r.out.authoritative;
 	
@@ -117,6 +133,10 @@ NTSTATUS rpccli_netr_LogonSamLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_LOGONSAMLOGOFF, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_LogonSamLogoff, (ndr_push_flags_fn_t)ndr_push_netr_LogonSamLogoff);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogoff, &r);
 	
@@ -125,7 +145,9 @@ NTSTATUS rpccli_netr_LogonSamLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 	
 	/* Return variables */
-	*return_authenticator = *r.out.return_authenticator;
+	if ( return_authenticator ) {
+		*return_authenticator = *r.out.return_authenticator;
+	}
 	
 	/* Return result */
 	return r.out.result;
@@ -145,6 +167,10 @@ NTSTATUS rpccli_netr_ServerReqChallenge(struct rpc_pipe_client *cli, TALLOC_CTX 
 		NDR_PRINT_IN_DEBUG(netr_ServerReqChallenge, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_SERVERREQCHALLENGE, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_ServerReqChallenge, (ndr_push_flags_fn_t)ndr_push_netr_ServerReqChallenge);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerReqChallenge, &r);
@@ -177,6 +203,10 @@ NTSTATUS rpccli_netr_ServerAuthenticate(struct rpc_pipe_client *cli, TALLOC_CTX 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_SERVERAUTHENTICATE, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_ServerAuthenticate, (ndr_push_flags_fn_t)ndr_push_netr_ServerAuthenticate);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate, &r);
 	
@@ -208,6 +238,10 @@ NTSTATUS rpccli_netr_ServerPasswordSet(struct rpc_pipe_client *cli, TALLOC_CTX *
 		NDR_PRINT_IN_DEBUG(netr_ServerPasswordSet, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_SERVERPASSWORDSET, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_ServerPasswordSet, (ndr_push_flags_fn_t)ndr_push_netr_ServerPasswordSet);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordSet, &r);
@@ -242,6 +276,10 @@ NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DATABASEDELTAS, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DatabaseDeltas, (ndr_push_flags_fn_t)ndr_push_netr_DatabaseDeltas);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseDeltas, &r);
 	
@@ -252,7 +290,9 @@ NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sequence_num = *r.out.sequence_num;
-	*delta_enum_array = *r.out.delta_enum_array;
+	if ( delta_enum_array ) {
+		*delta_enum_array = *r.out.delta_enum_array;
+	}
 	
 	/* Return result */
 	return r.out.result;
@@ -277,6 +317,10 @@ NTSTATUS rpccli_netr_DatabaseSync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DATABASESYNC, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DatabaseSync, (ndr_push_flags_fn_t)ndr_push_netr_DatabaseSync);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseSync, &r);
 	
@@ -287,7 +331,9 @@ NTSTATUS rpccli_netr_DatabaseSync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sync_context = *r.out.sync_context;
-	*delta_enum_array = *r.out.delta_enum_array;
+	if ( delta_enum_array ) {
+		*delta_enum_array = *r.out.delta_enum_array;
+	}
 	
 	/* Return result */
 	return r.out.result;
@@ -312,6 +358,10 @@ NTSTATUS rpccli_netr_AccountDeltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 		NDR_PRINT_IN_DEBUG(netr_AccountDeltas, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_ACCOUNTDELTAS, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_AccountDeltas, (ndr_push_flags_fn_t)ndr_push_netr_AccountDeltas);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_AccountDeltas, &r);
@@ -351,6 +401,10 @@ NTSTATUS rpccli_netr_AccountSync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_ACCOUNTSYNC, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_AccountSync, (ndr_push_flags_fn_t)ndr_push_netr_AccountSync);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_AccountSync, &r);
 	
@@ -384,6 +438,10 @@ NTSTATUS rpccli_netr_GetDcName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_GETDCNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_GetDcName, (ndr_push_flags_fn_t)ndr_push_netr_GetDcName);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_GetDcName, &r);
 	
@@ -413,6 +471,10 @@ NTSTATUS rpccli_netr_LogonControl(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_LOGONCONTROL, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_LogonControl, (ndr_push_flags_fn_t)ndr_push_netr_LogonControl);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonControl, &r);
 	
@@ -440,6 +502,10 @@ NTSTATUS rpccli_netr_GetAnyDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 		NDR_PRINT_IN_DEBUG(netr_GetAnyDCName, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_GETANYDCNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_GetAnyDCName, (ndr_push_flags_fn_t)ndr_push_netr_GetAnyDCName);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_GetAnyDCName, &r);
@@ -470,6 +536,10 @@ NTSTATUS rpccli_netr_LogonControl2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 		NDR_PRINT_IN_DEBUG(netr_LogonControl2, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_LOGONCONTROL2, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_LogonControl2, (ndr_push_flags_fn_t)ndr_push_netr_LogonControl2);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonControl2, &r);
@@ -502,6 +572,10 @@ NTSTATUS rpccli_netr_ServerAuthenticate2(struct rpc_pipe_client *cli, TALLOC_CTX
 		NDR_PRINT_IN_DEBUG(netr_ServerAuthenticate2, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_SERVERAUTHENTICATE2, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_ServerAuthenticate2, (ndr_push_flags_fn_t)ndr_push_netr_ServerAuthenticate2);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate2, &r);
@@ -538,6 +612,10 @@ NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DATABASESYNC2, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DatabaseSync2, (ndr_push_flags_fn_t)ndr_push_netr_DatabaseSync2);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseSync2, &r);
 	
@@ -548,7 +626,9 @@ NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sync_context = *r.out.sync_context;
-	*delta_enum_array = *r.out.delta_enum_array;
+	if ( delta_enum_array ) {
+		*delta_enum_array = *r.out.delta_enum_array;
+	}
 	
 	/* Return result */
 	return r.out.result;
@@ -572,6 +652,10 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DATABASEREDO, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DatabaseRedo, (ndr_push_flags_fn_t)ndr_push_netr_DatabaseRedo);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseRedo, &r);
 	
@@ -581,7 +665,9 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
-	*delta_enum_array = *r.out.delta_enum_array;
+	if ( delta_enum_array ) {
+		*delta_enum_array = *r.out.delta_enum_array;
+	}
 	
 	/* Return result */
 	return r.out.result;
@@ -602,6 +688,10 @@ NTSTATUS rpccli_netr_LogonControl2Ex(struct rpc_pipe_client *cli, TALLOC_CTX *me
 		NDR_PRINT_IN_DEBUG(netr_LogonControl2Ex, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_LOGONCONTROL2EX, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_LogonControl2Ex, (ndr_push_flags_fn_t)ndr_push_netr_LogonControl2Ex);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonControl2Ex, &r);
@@ -628,6 +718,10 @@ NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINS(struct rpc_pipe_client *cli, TA
 		NDR_PRINT_IN_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINS, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRENUMERATETRUSTEDDOMAINS, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRENUMERATETRUSTEDDOMAINS, (ndr_push_flags_fn_t)ndr_push_netr_NETRENUMERATETRUSTEDDOMAINS);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINS, &r);
@@ -659,6 +753,10 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DSRGETDCNAME, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DsRGetDCName, (ndr_push_flags_fn_t)ndr_push_netr_DsRGetDCName);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCName, &r);
 	
@@ -667,7 +765,9 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	}
 	
 	/* Return variables */
-	*info = *r.out.info;
+	if ( info ) {
+		*info = *r.out.info;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -684,6 +784,10 @@ NTSTATUS rpccli_netr_NETRLOGONDUMMYROUTINE1(struct rpc_pipe_client *cli, TALLOC_
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONDUMMYROUTINE1, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRLOGONDUMMYROUTINE1, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRLOGONDUMMYROUTINE1, (ndr_push_flags_fn_t)ndr_push_netr_NETRLOGONDUMMYROUTINE1);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONDUMMYROUTINE1, &r);
@@ -710,6 +814,10 @@ NTSTATUS rpccli_netr_NETRLOGONSETSERVICEBITS(struct rpc_pipe_client *cli, TALLOC
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRLOGONSETSERVICEBITS, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRLOGONSETSERVICEBITS, (ndr_push_flags_fn_t)ndr_push_netr_NETRLOGONSETSERVICEBITS);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONSETSERVICEBITS, &r);
 	
@@ -734,6 +842,10 @@ NTSTATUS rpccli_netr_NETRLOGONGETTRUSTRID(struct rpc_pipe_client *cli, TALLOC_CT
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONGETTRUSTRID, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRLOGONGETTRUSTRID, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRLOGONGETTRUSTRID, (ndr_push_flags_fn_t)ndr_push_netr_NETRLOGONGETTRUSTRID);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONGETTRUSTRID, &r);
@@ -760,6 +872,10 @@ NTSTATUS rpccli_netr_NETRLOGONCOMPUTESERVERDIGEST(struct rpc_pipe_client *cli, T
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRLOGONCOMPUTESERVERDIGEST, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRLOGONCOMPUTESERVERDIGEST, (ndr_push_flags_fn_t)ndr_push_netr_NETRLOGONCOMPUTESERVERDIGEST);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONCOMPUTESERVERDIGEST, &r);
 	
@@ -784,6 +900,10 @@ NTSTATUS rpccli_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct rpc_pipe_client *cli, T
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONCOMPUTECLIENTDIGEST, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRLOGONCOMPUTECLIENTDIGEST, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRLOGONCOMPUTECLIENTDIGEST, (ndr_push_flags_fn_t)ndr_push_netr_NETRLOGONCOMPUTECLIENTDIGEST);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONCOMPUTECLIENTDIGEST, &r);
@@ -815,6 +935,10 @@ NTSTATUS rpccli_netr_ServerAuthenticate3(struct rpc_pipe_client *cli, TALLOC_CTX
 		NDR_PRINT_IN_DEBUG(netr_ServerAuthenticate3, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_SERVERAUTHENTICATE3, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_ServerAuthenticate3, (ndr_push_flags_fn_t)ndr_push_netr_ServerAuthenticate3);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate3, &r);
@@ -849,6 +973,10 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DSRGETDCNAMEEX, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DsRGetDCNameEx, (ndr_push_flags_fn_t)ndr_push_netr_DsRGetDCNameEx);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCNameEx, &r);
 	
@@ -857,7 +985,9 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 	
 	/* Return variables */
-	*info = *r.out.info;
+	if ( info ) {
+		*info = *r.out.info;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -875,6 +1005,10 @@ NTSTATUS rpccli_netr_DsRGetSiteName(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 		NDR_PRINT_IN_DEBUG(netr_DsRGetSiteName, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DSRGETSITENAME, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DsRGetSiteName, (ndr_push_flags_fn_t)ndr_push_netr_DsRGetSiteName);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetSiteName, &r);
@@ -907,6 +1041,10 @@ NTSTATUS rpccli_netr_LogonGetDomainInfo(struct rpc_pipe_client *cli, TALLOC_CTX 
 		NDR_PRINT_IN_DEBUG(netr_LogonGetDomainInfo, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_LOGONGETDOMAININFO, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_LogonGetDomainInfo, (ndr_push_flags_fn_t)ndr_push_netr_LogonGetDomainInfo);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonGetDomainInfo, &r);
@@ -941,6 +1079,10 @@ NTSTATUS rpccli_netr_ServerPasswordSet2(struct rpc_pipe_client *cli, TALLOC_CTX 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_SERVERPASSWORDSET2, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_ServerPasswordSet2, (ndr_push_flags_fn_t)ndr_push_netr_ServerPasswordSet2);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordSet2, &r);
 	
@@ -967,6 +1109,10 @@ NTSTATUS rpccli_netr_NETRSERVERPASSWORDGET(struct rpc_pipe_client *cli, TALLOC_C
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRSERVERPASSWORDGET, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRSERVERPASSWORDGET, (ndr_push_flags_fn_t)ndr_push_netr_NETRSERVERPASSWORDGET);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRSERVERPASSWORDGET, &r);
 	
@@ -992,6 +1138,10 @@ NTSTATUS rpccli_netr_NETRLOGONSENDTOSAM(struct rpc_pipe_client *cli, TALLOC_CTX 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRLOGONSENDTOSAM, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRLOGONSENDTOSAM, (ndr_push_flags_fn_t)ndr_push_netr_NETRLOGONSENDTOSAM);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONSENDTOSAM, &r);
 	
@@ -1016,6 +1166,10 @@ NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESW(struct rpc_pipe_client *cli, TALLOC_
 		NDR_PRINT_IN_DEBUG(netr_DSRADDRESSTOSITENAMESW, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DSRADDRESSTOSITENAMESW, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DSRADDRESSTOSITENAMESW, (ndr_push_flags_fn_t)ndr_push_netr_DSRADDRESSTOSITENAMESW);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DSRADDRESSTOSITENAMESW, &r);
@@ -1049,6 +1203,10 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DSRGETDCNAMEEX2, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DsRGetDCNameEx2, (ndr_push_flags_fn_t)ndr_push_netr_DsRGetDCNameEx2);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCNameEx2, &r);
 	
@@ -1057,7 +1215,9 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	}
 	
 	/* Return variables */
-	*info = *r.out.info;
+	if ( info ) {
+		*info = *r.out.info;
+	}
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -1074,6 +1234,10 @@ NTSTATUS rpccli_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct rpc_pipe_client 
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRLOGONGETTIMESERVICEPARENTDOMAIN, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN, (ndr_push_flags_fn_t)ndr_push_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN, &r);
@@ -1100,6 +1264,10 @@ NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct rpc_pipe_client *cli, 
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRENUMERATETRUSTEDDOMAINSEX, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRENUMERATETRUSTEDDOMAINSEX, (ndr_push_flags_fn_t)ndr_push_netr_NETRENUMERATETRUSTEDDOMAINSEX);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINSEX, &r);
 	
@@ -1125,6 +1293,10 @@ NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESEXW(struct rpc_pipe_client *cli, TALLO
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DSRADDRESSTOSITENAMESEXW, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DSRADDRESSTOSITENAMESEXW, (ndr_push_flags_fn_t)ndr_push_netr_DSRADDRESSTOSITENAMESEXW);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DSRADDRESSTOSITENAMESEXW, &r);
 	
@@ -1149,6 +1321,10 @@ NTSTATUS rpccli_netr_DSRGETDCSITECOVERAGEW(struct rpc_pipe_client *cli, TALLOC_C
 		NDR_PRINT_IN_DEBUG(netr_DSRGETDCSITECOVERAGEW, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DSRGETDCSITECOVERAGEW, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DSRGETDCSITECOVERAGEW, (ndr_push_flags_fn_t)ndr_push_netr_DSRGETDCSITECOVERAGEW);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DSRGETDCSITECOVERAGEW, &r);
@@ -1181,6 +1357,10 @@ NTSTATUS rpccli_netr_LogonSamLogonEx(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_LOGONSAMLOGONEX, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_LogonSamLogonEx, (ndr_push_flags_fn_t)ndr_push_netr_LogonSamLogonEx);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogonEx, &r);
 	
@@ -1211,6 +1391,10 @@ NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli, TALLO
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DSRENUMERATEDOMAINTRUSTS, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DsrEnumerateDomainTrusts, (ndr_push_flags_fn_t)ndr_push_netr_DsrEnumerateDomainTrusts);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DsrEnumerateDomainTrusts, &r);
 	
@@ -1238,6 +1422,10 @@ NTSTATUS rpccli_netr_DSRDEREGISTERDNSHOSTRECORDS(struct rpc_pipe_client *cli, TA
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DSRDEREGISTERDNSHOSTRECORDS, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DSRDEREGISTERDNSHOSTRECORDS, (ndr_push_flags_fn_t)ndr_push_netr_DSRDEREGISTERDNSHOSTRECORDS);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DSRDEREGISTERDNSHOSTRECORDS, &r);
 	
@@ -1262,6 +1450,10 @@ NTSTATUS rpccli_netr_NETRSERVERTRUSTPASSWORDSGET(struct rpc_pipe_client *cli, TA
 		NDR_PRINT_IN_DEBUG(netr_NETRSERVERTRUSTPASSWORDSGET, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRSERVERTRUSTPASSWORDSGET, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRSERVERTRUSTPASSWORDSGET, (ndr_push_flags_fn_t)ndr_push_netr_NETRSERVERTRUSTPASSWORDSGET);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRSERVERTRUSTPASSWORDSGET, &r);
@@ -1288,6 +1480,10 @@ NTSTATUS rpccli_netr_DSRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli, T
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_DSRGETFORESTTRUSTINFORMATION, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_DSRGETFORESTTRUSTINFORMATION, (ndr_push_flags_fn_t)ndr_push_netr_DSRGETFORESTTRUSTINFORMATION);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DSRGETFORESTTRUSTINFORMATION, &r);
 	
@@ -1312,6 +1508,10 @@ NTSTATUS rpccli_netr_NETRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli, 
 		NDR_PRINT_IN_DEBUG(netr_NETRGETFORESTTRUSTINFORMATION, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRGETFORESTTRUSTINFORMATION, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRGETFORESTTRUSTINFORMATION, (ndr_push_flags_fn_t)ndr_push_netr_NETRGETFORESTTRUSTINFORMATION);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRGETFORESTTRUSTINFORMATION, &r);
@@ -1346,6 +1546,10 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli, TALLOC_
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_LOGONSAMLOGONWITHFLAGS, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_LogonSamLogonWithFlags, (ndr_push_flags_fn_t)ndr_push_netr_LogonSamLogonWithFlags);
 	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogonWithFlags, &r);
 	
@@ -1354,7 +1558,9 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli, TALLOC_
 	}
 	
 	/* Return variables */
-	*return_authenticator = *r.out.return_authenticator;
+	if ( return_authenticator ) {
+		*return_authenticator = *r.out.return_authenticator;
+	}
 	*validation = *r.out.validation;
 	*authoritative = *r.out.authoritative;
 	*flags = *r.out.flags;
@@ -1374,6 +1580,10 @@ NTSTATUS rpccli_netr_NETRSERVERGETTRUSTINFO(struct rpc_pipe_client *cli, TALLOC_
 		NDR_PRINT_IN_DEBUG(netr_NETRSERVERGETTRUSTINFO, &r);
 	
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_NETLOGON, DCERPC_NETR_NETRSERVERGETTRUSTINFO, &r, (ndr_pull_flags_fn_t)ndr_pull_netr_NETRSERVERGETTRUSTINFO, (ndr_push_flags_fn_t)ndr_push_netr_NETRSERVERGETTRUSTINFO);
+	
+	if ( !NT_STATUS_IS_OK(status) ) {
+		return status;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRSERVERGETTRUSTINFO, &r);

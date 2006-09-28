@@ -26,7 +26,7 @@
  connect to a registry hive root (open a registry policy)
 *******************************************************************/
 
-NTSTATUS rpccli_winreg_connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          uint32 reg_type, uint32 access_mask,
                          POLICY_HND *reg_hnd)
 {
@@ -56,61 +56,6 @@ NTSTATUS rpccli_winreg_connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	return NT_STATUS_INVALID_PARAMETER;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-NTSTATUS rpccli_winreg_query_key(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                           POLICY_HND *hnd,
-                           char *key_class, uint32 *class_len,
-                           uint32 *num_subkeys, uint32 *max_subkeylen,
-                           uint32 *max_subkeysize, uint32 *num_values,
-                           uint32 *max_valnamelen, uint32 *max_valbufsize,
-                           uint32 *secdescsize, NTTIME *mod_time)
-{
-	NTSTATUS status;
-	struct winreg_String classname;
-
-	classname.name = key_class;
-	status = rpccli_winreg_QueryInfoKey( cli, mem_ctx, hnd, 
-			&classname, num_subkeys,
-			max_subkeylen, max_subkeysize, num_values,
-			max_valnamelen, max_valbufsize, secdescsize,
-			mod_time );
-
-	/* The old code would check for INSUFFICIENT_BUFFER.  
-	   Will have to work this out. */
-
-	return status;
-}
-
-
-/****************************************************************************
-****************************************************************************/
-
-NTSTATUS rpccli_winreg_enum_val(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                          POLICY_HND *hnd, int idx,
-                          fstring val_name, uint32 *type, REGVAL_BUFFER *value)
-{
-	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-	
-	/* do rpc */
-	
-		
-	return status;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-NTSTATUS rpccli_winreg_enum_key(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                          POLICY_HND *hnd, int key_index, fstring key_name,
-                          fstring class_name, time_t *mod_time)
-{
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	
-	return status;
 }
 
 /*

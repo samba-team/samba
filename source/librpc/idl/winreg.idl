@@ -131,7 +131,7 @@
 	);
 
 	typedef struct {
-		[value(strlen_m_term(name)*2)] uint16 length; 
+		[value(strlen_m(name)*2)] uint16 length; 
 		/* size cannot be auto-set by value() as it is the
 		   amount of space the server is allowed to use for this
 		   string in the reply, not its current size */
@@ -139,6 +139,9 @@
 		[size_is(size/2),length_is(length/2),charset(UTF16)] uint16 *name;
 	} winreg_StringBuf;
 
+
+	/******************/
+	/* Function: 0x09 */
 	WERROR winreg_EnumKey(
 		[in,ref]        policy_handle    *handle,
 		[in]            uint32           enum_index,
@@ -211,7 +214,7 @@
 		[in,out,ref] winreg_String *classname,
 		[out,ref] uint32 *num_subkeys,
 		[out,ref] uint32 *max_subkeylen,
-		[out,ref] uint32 *max_subkeysize,
+		[out,ref] uint32 *max_classlen,
 		[out,ref] uint32 *num_values,
 		[out,ref] uint32 *max_valnamelen,
 		[out,ref] uint32 *max_valbufsize,

@@ -268,7 +268,7 @@ NTSTATUS ndr_push_winreg_StringBuf(struct ndr_push *ndr, int ndr_flags, const st
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, strlen_m_term(r->name)*2));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, strlen_m(r->name)*2));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->size));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->name));
 	}
@@ -276,8 +276,8 @@ NTSTATUS ndr_push_winreg_StringBuf(struct ndr_push *ndr, int ndr_flags, const st
 		if (r->name) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size/2));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, strlen_m_term(r->name)*2/2));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->name, strlen_m_term(r->name)*2/2, sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, strlen_m(r->name)*2/2));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->name, strlen_m(r->name)*2/2, sizeof(uint16_t), CH_UTF16));
 		}
 	}
 	return NT_STATUS_OK;
@@ -324,7 +324,7 @@ _PUBLIC_ void ndr_print_winreg_StringBuf(struct ndr_print *ndr, const char *name
 {
 	ndr_print_struct(ndr, name, "winreg_StringBuf");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name)*2:r->length);
+	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m(r->name)*2:r->length);
 	ndr_print_uint16(ndr, "size", r->size);
 	ndr_print_ptr(ndr, "name", r->name);
 	ndr->depth++;
@@ -2111,8 +2111,8 @@ NTSTATUS ndr_push_winreg_QueryInfoKey(struct ndr_push *ndr, int flags, const str
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_subkeys));
 		if (r->out.max_subkeylen == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.max_subkeylen));
-		if (r->out.max_subkeysize == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.max_subkeysize));
+		if (r->out.max_classlen == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.max_classlen));
 		if (r->out.num_values == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_values));
 		if (r->out.max_valnamelen == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2134,7 +2134,7 @@ NTSTATUS ndr_pull_winreg_QueryInfoKey(struct ndr_pull *ndr, int flags, struct wi
 	TALLOC_CTX *_mem_save_classname_0;
 	TALLOC_CTX *_mem_save_num_subkeys_0;
 	TALLOC_CTX *_mem_save_max_subkeylen_0;
-	TALLOC_CTX *_mem_save_max_subkeysize_0;
+	TALLOC_CTX *_mem_save_max_classlen_0;
 	TALLOC_CTX *_mem_save_num_values_0;
 	TALLOC_CTX *_mem_save_max_valnamelen_0;
 	TALLOC_CTX *_mem_save_max_valbufsize_0;
@@ -2163,8 +2163,8 @@ NTSTATUS ndr_pull_winreg_QueryInfoKey(struct ndr_pull *ndr, int flags, struct wi
 		ZERO_STRUCTP(r->out.num_subkeys);
 		NDR_PULL_ALLOC(ndr, r->out.max_subkeylen);
 		ZERO_STRUCTP(r->out.max_subkeylen);
-		NDR_PULL_ALLOC(ndr, r->out.max_subkeysize);
-		ZERO_STRUCTP(r->out.max_subkeysize);
+		NDR_PULL_ALLOC(ndr, r->out.max_classlen);
+		ZERO_STRUCTP(r->out.max_classlen);
 		NDR_PULL_ALLOC(ndr, r->out.num_values);
 		ZERO_STRUCTP(r->out.num_values);
 		NDR_PULL_ALLOC(ndr, r->out.max_valnamelen);
@@ -2199,12 +2199,12 @@ NTSTATUS ndr_pull_winreg_QueryInfoKey(struct ndr_pull *ndr, int flags, struct wi
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.max_subkeylen));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_max_subkeylen_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.max_subkeysize);
+			NDR_PULL_ALLOC(ndr, r->out.max_classlen);
 		}
-		_mem_save_max_subkeysize_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.max_subkeysize, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.max_subkeysize));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_max_subkeysize_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_max_classlen_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.max_classlen, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.max_classlen));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_max_classlen_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.num_values);
 		}
@@ -2280,9 +2280,9 @@ _PUBLIC_ void ndr_print_winreg_QueryInfoKey(struct ndr_print *ndr, const char *n
 		ndr->depth++;
 		ndr_print_uint32(ndr, "max_subkeylen", *r->out.max_subkeylen);
 		ndr->depth--;
-		ndr_print_ptr(ndr, "max_subkeysize", r->out.max_subkeysize);
+		ndr_print_ptr(ndr, "max_classlen", r->out.max_classlen);
 		ndr->depth++;
-		ndr_print_uint32(ndr, "max_subkeysize", *r->out.max_subkeysize);
+		ndr_print_uint32(ndr, "max_classlen", *r->out.max_classlen);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "num_values", r->out.num_values);
 		ndr->depth++;

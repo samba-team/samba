@@ -48,7 +48,7 @@ enum winreg_CreateAction {
 };
 
 struct winreg_StringBuf {
-	uint16_t length;/* [value(strlen_m_term(name)*2)] */
+	uint16_t length;/* [value(strlen_m(name)*2)] */
 	uint16_t size;
 	const char *name;/* [unique,length_is(length/2),charset(UTF16),size_is(size/2)] */
 };
@@ -323,7 +323,7 @@ struct winreg_QueryInfoKey {
 		struct winreg_String *classname;/* [ref] */
 		uint32_t *num_subkeys;/* [ref] */
 		uint32_t *max_subkeylen;/* [ref] */
-		uint32_t *max_subkeysize;/* [ref] */
+		uint32_t *max_classlen;/* [ref] */
 		uint32_t *num_values;/* [ref] */
 		uint32_t *max_valnamelen;/* [ref] */
 		uint32_t *max_valbufsize;/* [ref] */

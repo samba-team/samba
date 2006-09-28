@@ -88,6 +88,14 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	uint32 idx;
 	NTSTATUS status;
 	struct winreg_String subkeyname;
+	struct winreg_String classname;
+	uint32 num_subkeys, max_subkeylen, max_classlen;
+	uint32 num_values, max_valnamelen, max_valbufsize;
+	uint32 secdescsize;
+	NTTIME last_changed_time;
+	struct winreg_StringBuf subkey_namebuf;
+	char *name_buffer; 
+	uint8 *value_buffer;
 	
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc enumerate <path> [recurse]\n");
@@ -102,10 +110,10 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	
 	/* open the top level hive and then the registry key */
 	
-	status = rpccli_winreg_connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
+	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
 	if ( !NT_STATUS_IS_OK(status) ) {
 		d_fprintf(stderr, "Unable to connect to remote registry: "
-			  "%s\n", dos_errstr(result));
+			  "%s\n", nt_errstr(status));
 		return status;
 	}
 	
@@ -114,29 +122,68 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 				       0, MAXIMUM_ALLOWED_ACCESS, &pol_key );
 	if ( !NT_STATUS_IS_OK(status) ) {
 		d_fprintf(stderr, "Unable to open [%s]: %s\n", argv[0],
-			  dos_errstr(result));
+			  nt_errstr(status));
 		return werror_to_ntstatus(result);
 	}
-	
+
+	classname.name = NULL;
+	status = rpccli_winreg_QueryInfoKey( pipe_hnd, mem_ctx, &pol_key, 
+			&classname, &num_subkeys, &max_subkeylen,
+			&max_classlen, &num_values, &max_valnamelen,
+			&max_valbufsize, &secdescsize, &last_changed_time );
+
+	if ( !NT_STATUS_IS_OK(status) ) {
+		d_fprintf(stderr, "Unable to determine subkeys (%s)\n", 
+			nt_errstr(status));
+		return status;
+	}
+
+	/* values do not include the terminating NULL */
+
+	max_subkeylen += 2;
+	max_valnamelen += 2;
+
+	if ( (name_buffer = TALLOC_ARRAY( mem_ctx, char, max_subkeylen )) == NULL ) {
+		d_fprintf(stderr, "Memory allocation error.\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* get the subkeys */
 	
 	status = NT_STATUS_OK;
 	idx = 0;
 	while ( NT_STATUS_IS_OK(status) ) {
-		time_t modtime;
-		fstring keyname, classname;
-		
-		status = rpccli_winreg_enum_key(pipe_hnd, mem_ctx, &pol_key, idx, 
-			keyname, classname, &modtime );
+		struct winreg_StringBuf class_namebuf;
+		fstring kname;
+		NTTIME modtime;
+
+		class_namebuf.name = NULL;
+		class_namebuf.size = 0;
+		class_namebuf.length = 0;
+
+		/* zero out each time */
+
+		subkey_namebuf.length = 0;
+		subkey_namebuf.size = max_subkeylen;
+		memset( name_buffer, 0x0, max_subkeylen );
+		subkey_namebuf.name = name_buffer;
+
+		status = rpccli_winreg_EnumKey(pipe_hnd, mem_ctx, &pol_key, idx, 
+			&subkey_namebuf, &class_namebuf, &modtime);
 			
 		if ( W_ERROR_EQUAL(ntstatus_to_werror(status), WERR_NO_MORE_ITEMS) ) {
 			status = NT_STATUS_OK;
 			break;
 		}
-			
-		d_printf("Keyname   = %s\n", keyname );
-		d_printf("Classname = %s\n", classname );
-		d_printf("Modtime   = %s\n", http_timestring(modtime) );
+
+		if ( !NT_STATUS_IS_OK(status) )
+			goto out;
+		
+		StrnCpy( kname, subkey_namebuf.name, MIN(subkey_namebuf.length,sizeof(kname))-1 );
+		kname[MIN(subkey_namebuf.length,sizeof(kname))-1] = '\0';
+		d_printf("Keyname   = %s\n", kname);
+		d_printf("Modtime   = %s\n", 
+			http_timestring(nt_time_to_unix(modtime)) );
 		d_printf("\n" );
 
 		idx++;
@@ -144,27 +191,60 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 
 	if ( !NT_STATUS_IS_OK(status) )
 		goto out;
-	
+
+	/* TALLOC_FREE( name_buffer ); */
+
+	if ( (name_buffer = TALLOC_ARRAY( mem_ctx, char, max_valnamelen )) == NULL ) {
+		d_fprintf(stderr, "Memory allocation error.\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if ( (value_buffer = TALLOC_ARRAY( mem_ctx, uint8, max_valbufsize )) == NULL ) {
+		d_fprintf(stderr, "Memory allocation error.\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* get the values */
 	
 	status = NT_STATUS_OK;
 	idx = 0;
 	while ( NT_STATUS_IS_OK(status) ) {
-		uint32 type;
+		enum winreg_Type type;
 		fstring name;
+		uint8 *data;
+		uint32 data_size, value_length;
+		struct winreg_StringBuf value_namebuf;
 		REGVAL_BUFFER value;
 		
 		fstrcpy( name, "" );
 		ZERO_STRUCT( value );
-		
-		status = rpccli_winreg_enum_val(pipe_hnd, mem_ctx, &pol_key, idx, 
-			name, &type, &value );
+
+		memset( name_buffer, 0x0, max_valnamelen );
+		value_namebuf.name = name_buffer;
+		value_namebuf.length = 0;
+		value_namebuf.size = max_valnamelen;
+
+		memset( value_buffer, 0x0, max_valbufsize );
+		data = value_buffer;
+		data_size = max_valbufsize;
+		value_length = 0;
+
+		status = rpccli_winreg_EnumValue(pipe_hnd, mem_ctx, &pol_key, idx, 
+			&value_namebuf, &type, data, &data_size, &value_length );
 			
 		if ( W_ERROR_EQUAL(ntstatus_to_werror(status), WERR_NO_MORE_ITEMS) ) {
 			status = NT_STATUS_OK;
 			break;
 		}
+
+		if ( !NT_STATUS_IS_OK(status) )
+			goto out;
+
+		init_regval_buffer( &value, data, value_length );
 			
+		StrnCpy( name, value_namebuf.name, MIN(max_valnamelen, sizeof(name)-1) );
+		name[MIN(max_valnamelen, sizeof(name)-1)] = '\0';
+
 		d_printf("Valuename  = %s\n", name );
 		d_printf("Type       = %s\n", reg_type_lookup(type));
 		d_printf("Data       = " );
@@ -173,7 +253,6 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 
 		idx++;
 	}
-	
 	
 out:
 	/* cleanup */
@@ -225,7 +304,7 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 	
 	/* open the top level hive and then the registry key */
 	
-	status = rpccli_winreg_connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
+	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
 	if ( !NT_STATUS_IS_OK(status) ) {
 		d_fprintf(stderr, "Unable to connect to remote registry\n");
 		return status;
