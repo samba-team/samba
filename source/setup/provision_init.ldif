@@ -12,6 +12,8 @@ dn: @INDEXLIST
 @IDXATTR: nCName
 @IDXATTR: lDAPDisplayName
 @IDXATTR: subClassOf
+@IDXATTR: dnsRoot
+@IDXATTR: nETBIOSName
 
 dn: @ATTRIBUTES
 userPrincipalName: CASE_INSENSITIVE

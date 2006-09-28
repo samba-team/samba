@@ -69,6 +69,8 @@ if [ x"$TEST_LDAP" = x"yes" ]; then
 	echo "LDAP PROVISIONING failed: $srcdir/bin/smbscript $srcdir/setup/provision $PROVISION_OPTIONS --ldap-backend=$LDAPI"
 	exit 1;
     }
+    #LDAP is slow
+    TORTURE_MAXTIME=`expr $TORTURE_MAXTIME '*' 2`
 fi
 
 SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
