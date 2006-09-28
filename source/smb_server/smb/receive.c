@@ -78,18 +78,6 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 
 	smb_conn->statistics.last_request_time = cur_time;
 
-	/* a temporary hack to allow me to find a possible file descriptor leak in 
-	   build farm machines (tridge) */
-	{
-		static int maxfd;
-		int xfd = open("/dev/null", O_RDONLY);
-		close(xfd);
-		if (xfd > maxfd) {
-			maxfd = xfd;
-			DEBUG(0,("MAXFD=%d\n", maxfd));
-		}
-	}
-
 	/* see if its a special NBT packet */
 	if (CVAL(blob.data, 0) != 0) {
 		req = smbsrv_init_request(smb_conn);
