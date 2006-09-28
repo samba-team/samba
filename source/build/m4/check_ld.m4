@@ -95,7 +95,7 @@ case "$host_os" in
 		;;
 	*aix*)
 		BLDSHARED="true"
-		SHLD_FLAGS="-Wl,-G,-bexpall"
+		SHLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
 		LDFLAGS="-Wl,-brtl,-bexpall,-bbigtoc"
 		# as AIX code is always position independent...
 		PICFLAG="-O2"
