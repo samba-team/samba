@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  Group Policy Object Support
- *  Copyright (C) Guenther Deschner 2005
+ *  Copyright (C) Guenther Deschner 2005-2006
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -520,6 +520,129 @@ ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 	}
 
 	return ADS_ERROR(LDAP_SUCCESS);
+}
+
+/****************************************************************
+ check wether the version number in a GROUP_POLICY_OBJECT match those of the
+ locally stored version. If not, fetch the required policy via CIFS
+****************************************************************/
+
+NTSTATUS check_refresh_gpo(ADS_STRUCT *ads, 
+			   TALLOC_CTX *mem_ctx,
+			   struct GROUP_POLICY_OBJECT *gpo,
+			   struct cli_state **cli_out)
+{
+	NTSTATUS result;
+	char *server, *share, *nt_path, *unix_path;
+	uint32 sysvol_gpt_version = 0;
+	char *display_name;
+	struct cli_state *cli = NULL;
+
+	result = ads_gpo_explode_filesyspath(ads, mem_ctx, gpo->file_sys_path, 
+					     &server, &share, &nt_path, &unix_path);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto out;
+	}
+
+	result = ads_gpo_get_sysvol_gpt_version(ads, mem_ctx, 
+						unix_path,
+						&sysvol_gpt_version,
+						&display_name); 
+	if (!NT_STATUS_IS_OK(result) && 
+	    !NT_STATUS_EQUAL(result, NT_STATUS_NO_SUCH_FILE)) {
+		DEBUG(10,("check_refresh_gpo: failed to get local gpt version: %s\n", 
+			nt_errstr(result)));
+		goto out;
+	}
+
+	while (gpo->version > sysvol_gpt_version) {
+
+		DEBUG(1,("check_refresh_gpo: need to refresh GPO\n"));
+
+		if (*cli_out == NULL) {
+
+			result = cli_full_connection(&cli, global_myname(), 
+						     server, /* ads->config.ldap_server_name, */
+						     NULL, 0,
+						     share, "A:",
+						     ads->auth.user_name, NULL, ads->auth.password,
+						     CLI_FULL_CONNECTION_USE_KERBEROS,
+						     Undefined, NULL);
+			if (!NT_STATUS_IS_OK(result)) {
+				DEBUG(10,("check_refresh_gpo: failed to connect: %s\n", nt_errstr(result)));
+				goto out;
+			}
+
+			*cli_out = cli;
+		}
+
+		result = ads_fetch_gpo_files(ads, mem_ctx, *cli_out, gpo);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto out;
+		}
+
+		result = ads_gpo_get_sysvol_gpt_version(ads, mem_ctx, 
+							unix_path, 
+							&sysvol_gpt_version,
+							&display_name); 
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10,("check_refresh_gpo: failed to get local gpt version: %s\n", 
+				nt_errstr(result)));
+			goto out;
+		}
+		
+		if (gpo->version == sysvol_gpt_version) {
+			break;
+		}
+	} 
+
+	DEBUG(10,("Name:\t\t\t%s\n", gpo->display_name));
+	DEBUGADD(10,("sysvol GPT version:\t%d (user: %d, machine: %d)\n", 
+		sysvol_gpt_version, 
+		GPO_VERSION_USER(sysvol_gpt_version), 
+		GPO_VERSION_MACHINE(sysvol_gpt_version))); 
+	DEBUGADD(10,("LDAP GPO version:\t%d (user: %d, machine: %d)\n", 
+		gpo->version,
+		GPO_VERSION_USER(gpo->version),
+		GPO_VERSION_MACHINE(gpo->version)));
+
+	result = NT_STATUS_OK;
+
+ out:
+	return result;
+
+}
+
+/****************************************************************
+ check wether the version numbers in the gpo_list match the locally stored, if
+ not, go and get each required GPO via CIFS
+ ****************************************************************/
+
+NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads, 
+				TALLOC_CTX *mem_ctx, 
+				struct GROUP_POLICY_OBJECT *gpo_list)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct cli_state *cli = NULL;
+	struct GROUP_POLICY_OBJECT *gpo;
+
+	for (gpo = gpo_list; gpo; gpo = gpo->next) {
+
+		result = check_refresh_gpo(ads, mem_ctx, gpo, &cli);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto out;
+		}
+	}
+
+	result = NT_STATUS_OK;
+
+ out:
+	if (cli) {
+		cli_shutdown(cli);
+	}
+
+	return result;
 }
 
 #endif /* HAVE_LDAP */
