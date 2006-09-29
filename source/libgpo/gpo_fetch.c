@@ -121,14 +121,7 @@ NTSTATUS ads_fetch_gpo_files(ADS_STRUCT *ads,
 			    struct GROUP_POLICY_OBJECT *gpo)
 {
 	NTSTATUS result;
-	int fnum = 0;
-	int fd = 0;
-	char *data = NULL;
-	static int io_bufsize = 64512;
-	int read_size = io_bufsize;
 	char *server, *service, *nt_path, *unix_path, *nt_ini_path, *unix_ini_path;
-	off_t start = 0;
-	off_t nread = 0;
 
 	result = ads_gpo_explode_filesyspath(ads, mem_ctx, gpo->file_sys_path, 
 					     &server, &service, &nt_path, &unix_path);
@@ -148,55 +141,19 @@ NTSTATUS ads_fetch_gpo_files(ADS_STRUCT *ads,
 		goto out;
 	}
 
-	/* open local file */
-
-	fd = sys_open(unix_ini_path, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-	if (fd == -1) {
-		result = map_nt_error_from_unix(errno);
-		goto out;
-	}
-	 
-	/* open remote file */
-
-	fnum = cli_open(cli, nt_ini_path, O_RDONLY, DENY_NONE);
-	if (fnum == -1) {
-		result = NT_STATUS_NO_SUCH_FILE;
+	result = gpo_copy_file(mem_ctx, cli, nt_ini_path, unix_ini_path);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto out;
 	}
 
-	/* copy gpt.ini */
-
-	data = (char *)SMB_MALLOC(read_size);
-	if (data == NULL) {
-		result = NT_STATUS_NO_MEMORY;
+	result = gpo_sync_directories(mem_ctx, cli, nt_path, unix_path);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto out;
-	}
-
-	while (1) {
-
-		int n = cli_read(cli, fnum, data, nread + start, read_size);
-
-		if (n <= 0)
-			break;
-
-		if (write(fd, data, n) != n) {
-			break;
-		}
-
-		nread += n;
 	}
 
 	result = NT_STATUS_OK;
 
  out:
-	SAFE_FREE(data);
-	if (fd) {
-		close(fd);
-	}
-	if (fnum) {
-		cli_close(cli, fnum);
-	}
-
 	return result;
 }
 
