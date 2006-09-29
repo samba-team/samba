@@ -1200,6 +1200,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		num_group_sids = 1;
 		group_sids = &primary_group_sid;
+		gids = gid;
 
 		*found_username = talloc_strdup(mem_ctx, username);
 	}
