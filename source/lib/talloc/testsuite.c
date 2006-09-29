@@ -24,10 +24,6 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifdef _SAMBA_BUILD_
-#include "version.h"
-#endif /* _SAMBA_BUILD_ */
-
 #include "replace.h"
 #include "system/time.h"
 #include "talloc.h"
@@ -48,7 +44,7 @@ static double timeval_elapsed(struct timeval *tv)
 	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
 }
 
-#if SAMBA_VERSION_MAJOR==3
+#if _SAMBA_BUILD_==3
 #ifdef malloc
 #undef malloc
 #endif
@@ -1040,6 +1036,28 @@ static bool test_talloc_ptrtype(void)
 	return ret;
 }
 
+static bool test_autofree(void)
+{
+#if _SAMBA_BUILD_>=4
+	/* 
+	 * we can't run this inside smbtorture in samba4
+	 * as smbtorture uses talloc_autofree_context()
+	 */
+	printf("SKIPPING TALLOC AUTOFREE CONTEXT (not supported from smbtorture)\n");
+#else
+	void *p;
+
+	printf("TESTING TALLOC AUTOFREE CONTEXT\n");
+
+	p = talloc_autofree_context();
+	talloc_free(p);
+
+	p = talloc_autofree_context();
+	talloc_free(p);
+#endif
+	return true;
+}
+
 bool torture_local_talloc(struct torture_context *torture) 
 {
 	bool ret = true;
@@ -1067,13 +1085,14 @@ bool torture_local_talloc(struct torture_context *torture)
 	if (ret) {
 		ret &= test_speed();
 	}
+	ret &= test_autofree();
 
 	return ret;
 }
 
 
 
-#if !defined(_SAMBA_BUILD_) || ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR<9))
+#if _SAMBA_BUILD_<4
  int main(void)
 {
 	if (!torture_local_talloc(NULL)) {
