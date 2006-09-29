@@ -153,13 +153,6 @@ int rep_setegid(gid_t);
 void rep_setlinebuf(FILE *);
 #endif
 
-#ifndef HAVE_VSYSLOG
-#ifdef HAVE_SYSLOG
-#define vsyslog rep_vsyslog
-void rep_vsyslog (int facility_priority, char *format, va_list arglist);
-#endif
-#endif
-
 #ifndef HAVE_STRCASESTR
 #define strcasestr rep_strcasestr
 char *rep_strcasestr(const char *haystack, const char *needle);
@@ -229,7 +222,7 @@ int rep_dlclose(void *handle);
 
 #ifndef HAVE_VASPRINTF
 #define vasprintf rep_vasprintf
-int rep_vasprintf(char **ptr, const char *format, va_list ap);
+int rep_vasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
 #endif
 
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
@@ -239,7 +232,7 @@ int rep_snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 
 #if !defined(HAVE_VSNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define vsnprintf rep_vsnprintf
-int rep_vsnprintf(char *,size_t ,const char *, va_list ap);
+int rep_vsnprintf(char *,size_t ,const char *, va_list ap) PRINTF_ATTRIBUTE(3,0);
 #endif
 
 #ifndef HAVE_ASPRINTF
@@ -247,6 +240,12 @@ int rep_vsnprintf(char *,size_t ,const char *, va_list ap);
 int rep_asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
+#ifndef HAVE_VSYSLOG
+#ifdef HAVE_SYSLOG
+#define vsyslog rep_vsyslog
+void rep_vsyslog (int facility_priority, const char *format, va_list arglist) PRINTF_ATTRIBUTE(2,0);
+#endif
+#endif
 
 /* we used to use these fns, but now we have good replacements
    for snprintf and vsnprintf */
