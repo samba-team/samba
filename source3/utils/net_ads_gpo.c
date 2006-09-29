@@ -46,15 +46,18 @@ static int net_ads_gpo_effective(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	const char *attrs[] = {"distinguishedName", "userAccountControl", NULL};
+	const char *attrs[] = { "userAccountControl", NULL };
 	LDAPMessage *res = NULL;
 	const char *filter;
 	char *dn = NULL;
 	struct GROUP_POLICY_OBJECT *gpo_list;
 	uint32 uac = 0;
 	uint32 flags = 0;
+	struct GROUP_POLICY_OBJECT *gpo;
+	NTSTATUS result;
 	
 	if (argc < 1) {
+		printf("usage: net ads gpo effective <username|machinename>\n");
 		return -1;
 	}
 
@@ -99,7 +102,7 @@ static int net_ads_gpo_effective(int argc, const char **argv)
 		flags |= GPO_LIST_FLAG_MACHINE;
 	}
 
-	printf("%s: '%s' has dn: '%s'\n", 
+	printf("\n%s: '%s' has dn: '%s'\n\n", 
 		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user", 
 		argv[0], dn);
 
@@ -108,19 +111,29 @@ static int net_ads_gpo_effective(int argc, const char **argv)
 		goto out;
 	}
 
-	printf("unsorted full dump of all GPOs for this machine:\n");
+	for (gpo = gpo_list; gpo; gpo = gpo->next) {
 
-	{
-		struct GROUP_POLICY_OBJECT *gpo = gpo_list;
+		char *server, *share, *nt_path, *unix_path;
 
-		for (gpo = gpo_list; gpo; gpo = gpo->next) {
-			dump_gpo(mem_ctx, gpo);
+		printf("--------------------------------------\n");
+		printf("Name:\t\t\t%s\n", gpo->display_name);
+		printf("LDAP GPO version:\t%d (user: %d, machine: %d)\n",
+			gpo->version,
+			GPO_VERSION_USER(gpo->version),
+			GPO_VERSION_MACHINE(gpo->version));
+
+		result = ads_gpo_explode_filesyspath(ads, mem_ctx, gpo->file_sys_path,
+						     &server, &share, &nt_path, &unix_path);
+		if (!NT_STATUS_IS_OK(result)) {
+			printf("got: %s\n", nt_errstr(result));
 		}
+
+		printf("GPO stored on server: %s, share: %s\n", server, share);
+		printf("\tremote path:\t%s\n", nt_path);
+		printf("\tlocal path:\t%s\n", unix_path);
 	}
 
-	printf("sorted full dump of all GPOs valid for this machine:\n");
-      
-out:
+ out:
 	ads_memfree(ads, dn);
 	ads_msgfree(ads, res);
 
@@ -214,6 +227,7 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 	uint32 flags = 0;
 	
 	if (argc < 1) {
+		printf("usage: net ads gpo apply <username|machinename>\n");
 		return -1;
 	}
 
@@ -291,6 +305,7 @@ static int net_ads_gpo_get_link(int argc, const char **argv)
 	struct GP_LINK gp_link;
 
 	if (argc < 1) {
+		printf("usage: net ads gpo getlink <linkname>\n");
 		return -1;
 	}
 
@@ -327,6 +342,7 @@ static int net_ads_gpo_add_link(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 
 	if (argc < 2) {
+		printf("usage: net ads gpo addlink <linkdn> <gpodn> [options]\n");
 		return -1;
 	}
 
@@ -397,6 +413,7 @@ static int net_ads_gpo_get_gpo(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	struct GROUP_POLICY_OBJECT gpo;
 	uint32 sysvol_gpt_version;
+	char *display_name;
 
 	if (argc < 1) {
 		return -1;
@@ -424,14 +441,17 @@ static int net_ads_gpo_get_gpo(int argc, const char **argv)
 	}	
 
 	dump_gpo(mem_ctx, &gpo);
-#if 0
-	status = ADS_ERROR_NT(ads_gpo_get_sysvol_gpt_version(ads, mem_ctx, gpo.file_sys_path, &sysvol_gpt_version)); 
+
+	status = ADS_ERROR_NT(ads_gpo_get_sysvol_gpt_version(ads, mem_ctx, 
+							     gpo.file_sys_path, 
+							     &sysvol_gpt_version, 
+							     &display_name)); 
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
 	printf("sysvol GPT version: %d\n", sysvol_gpt_version);
-#endif
+
 out:
 	talloc_destroy(mem_ctx);
 	ads_destroy(&ads);
