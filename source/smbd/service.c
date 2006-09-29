@@ -1043,6 +1043,11 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 		smb_panic("make_connection: PANIC ERROR. Called as nonroot\n");
 	}
 
+	if (conn_num_open() > 2047) {
+		*status = NT_STATUS_INSUFF_SERVER_RESOURCES;
+		return NULL;
+	}
+
 	if(lp_security() != SEC_SHARE) {
 		vuser = get_valid_user_struct(vuid);
 		if (!vuser) {
