@@ -33,13 +33,14 @@
 #define HAVE_SETEUID 1
 #endif
 
-#ifndef HAVE_SOCKLEN_T
-#define HAVE_SOCKLEN_T
-#endif
-
 #ifndef HAVE_STRNDUP
 #define HAVE_STRNDUP
 #endif
+
+#ifndef HAVE_VSYSLOG
+#define HAVE_VSYSLOG
+#endif
+
 #ifndef HAVE_SOCKLEN_T
 #define HAVE_SOCKLEN_T
 #endif
