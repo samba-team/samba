@@ -2245,7 +2245,7 @@ int net_ads(int argc, const char **argv)
 		{"WORKGROUP", net_ads_workgroup},
 		{"LOOKUP", net_ads_lookup},
 		{"KEYTAB", net_ads_keytab},
-		/* {"GPO", net_ads_gpo}, */
+		{"GPO", net_ads_gpo},
 		{"HELP", net_ads_help},
 		{NULL, NULL}
 	};

@@ -167,31 +167,31 @@ const char *cse_snapin_gpo_guid_string_to_name(const char *guid)
 	return snapin_guid_string_to_name(guid, gpo_cse_snapin_extensions);
 }
 
-void dump_gp_ext(struct GP_EXT *gp_ext)
+void dump_gp_ext(struct GP_EXT *gp_ext, int debuglevel)
 {
-	int lvl = 10;
+	int lvl = debuglevel;
 	int i;
 
 	if (gp_ext == NULL) {
 		return;
 	}
 
-	DEBUG(lvl,("---------------------\n\n"));
-	DEBUGADD(lvl,("name:\t\t\t%s\n", gp_ext->gp_extension));
+	DEBUG(lvl,("\t---------------------\n\n"));
+	DEBUGADD(lvl,("\tname:\t\t\t%s\n", gp_ext->gp_extension));
 
 	for (i=0; i< gp_ext->num_exts; i++) {
 
-		DEBUGADD(lvl,("extension:\t\t\t%s\n", gp_ext->extensions_guid[i]));
-		DEBUGADD(lvl,("extension (name):\t\t\t%s\n", gp_ext->extensions[i]));
+		DEBUGADD(lvl,("\textension:\t\t\t%s\n", gp_ext->extensions_guid[i]));
+		DEBUGADD(lvl,("\textension (name):\t\t\t%s\n", gp_ext->extensions[i]));
 		
-		DEBUGADD(lvl,("snapin:\t\t\t%s\n", gp_ext->snapins_guid[i]));
-		DEBUGADD(lvl,("snapin (name):\t\t\t%s\n", gp_ext->snapins[i]));
+		DEBUGADD(lvl,("\tsnapin:\t\t\t%s\n", gp_ext->snapins_guid[i]));
+		DEBUGADD(lvl,("\tsnapin (name):\t\t\t%s\n", gp_ext->snapins[i]));
 	}
 }
 
-void dump_gpo(TALLOC_CTX *mem_ctx, struct GROUP_POLICY_OBJECT *gpo) 
+void dump_gpo(TALLOC_CTX *mem_ctx, struct GROUP_POLICY_OBJECT *gpo, int debuglevel) 
 {
-	int lvl = 1;
+	int lvl = debuglevel;
 
 	if (gpo == NULL) {
 		return;
@@ -251,7 +251,7 @@ void dump_gpo(TALLOC_CTX *mem_ctx, struct GROUP_POLICY_OBJECT *gpo)
 		if (!ADS_ERR_OK(status)) {
 			return;
 		}
-		dump_gp_ext(&gp_ext);
+		dump_gp_ext(&gp_ext, lvl);
 	}
 	
 	if (gpo->user_extensions) {
@@ -265,7 +265,7 @@ void dump_gpo(TALLOC_CTX *mem_ctx, struct GROUP_POLICY_OBJECT *gpo)
 		if (!ADS_ERR_OK(status)) {
 			return;
 		}
-		dump_gp_ext(&gp_ext);
+		dump_gp_ext(&gp_ext, lvl);
 	}
 };
 
@@ -321,7 +321,7 @@ void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link)
 				DEBUG(lvl,("get gpo for %s failed: %s\n", gp_link->link_names[i], ads_errstr(status)));
 				return;
 			}
-			dump_gpo(mem_ctx, &gpo);
+			dump_gpo(mem_ctx, &gpo, lvl);
 		}
 	}
 }
