@@ -109,6 +109,7 @@ struct socket_info
 	int protocol;
 	int bound;
 	int bcast;
+	int is_server;
 
 	char *path;
 	char *tmp_path;
@@ -137,13 +138,9 @@ static const char *socket_wrapper_dir(void)
 	return s;
 }
 
-static const char *socket_wrapper_dump_dir(void)
+static const char *socket_wrapper_pcap_file(void)
 {
-	const char *s = getenv("SOCKET_WRAPPER_DUMP_DIR");
-
-	if (!socket_wrapper_dir()) {
-		return NULL;
-	}
+	const char *s = getenv("SOCKET_WRAPPER_PCAP_FILE");
 
 	if (s == NULL) {
 		return NULL;
@@ -435,23 +432,40 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 }
 
 enum swrap_packet_type {
-	SWRAP_CONNECT,
-	SWRAP_ACCEPT,
+	SWRAP_CONNECT_SEND,
+	SWRAP_CONNECT_UNREACH,
+	SWRAP_CONNECT_RECV,
+	SWRAP_CONNECT_ACK,
+	SWRAP_ACCEPT_SEND,
+	SWRAP_ACCEPT_RECV,
+	SWRAP_ACCEPT_ACK,
 	SWRAP_RECVFROM,
 	SWRAP_SENDTO,
+	SWRAP_SENDTO_UNREACH,
+	SWRAP_PENDING_RST,
 	SWRAP_RECV,
+	SWRAP_RECV_RST,
 	SWRAP_SEND,
-	SWRAP_CLOSE
+	SWRAP_SEND_RST,
+	SWRAP_CLOSE_SEND,
+	SWRAP_CLOSE_RECV,
+	SWRAP_CLOSE_ACK
 };
 
 static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *addr,
 			      enum swrap_packet_type type,
-			      const void *buf, size_t len, ssize_t ret)
+			      const void *buf, size_t len)
 {
-	if (!socket_wrapper_dump_dir()) {
+	const char *file_name;
+
+	file_name = socket_wrapper_pcap_file();
+	if (!file_name) {
 		return;
 	}
 
+	if (si->family != AF_INET) {
+		return;
+	}
 }
 
 _PUBLIC_ int swrap_socket(int family, int type, int protocol)
@@ -548,6 +562,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->type = parent_si->type;
 	child_si->protocol = parent_si->protocol;
 	child_si->bound = 1;
+	child_si->is_server = 1;
 
 	ret = real_getsockname(fd, (struct sockaddr *)&un_my_addr, &un_my_addrlen);
 	if (ret == -1) {
@@ -572,7 +587,9 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 
 	DLIST_ADD(sockets, child_si);
 
-	swrap_dump_packet(child_si, addr, SWRAP_ACCEPT, NULL, 0, 0);
+	swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_SEND, NULL, 0);
+	swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_RECV, NULL, 0);
+	swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_ACK, NULL, 0);
 
 	return fd;
 }
@@ -668,6 +685,8 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)serv_addr, addrlen, &un_addr, 0, NULL);
 	if (ret == -1) return -1;
 
+	swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_SEND, NULL, 0);
+
 	ret = real_connect(s, (struct sockaddr *)&un_addr, 
 			   sizeof(struct sockaddr_un));
 
@@ -679,9 +698,12 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	if (ret == 0) {
 		si->peername_len = addrlen;
 		si->peername = sockaddr_dup(serv_addr, addrlen);
-	}
 
-	swrap_dump_packet(si, serv_addr, SWRAP_CONNECT, NULL, 0, ret);
+		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_RECV, NULL, 0);
+		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_ACK, NULL, 0);
+	} else {
+		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_UNREACH, NULL, 0);
+	}
 
 	return ret;
 }
@@ -736,7 +758,7 @@ _PUBLIC_ int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 		return real_getpeername(s, name, addrlen);
 	}
 
-	if (!si->peername) 
+	if (!si->peername)
 	{
 		errno = ENOTCONN;
 		return -1;
@@ -821,7 +843,7 @@ _PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct 
 		return -1;
 	}
 
-	swrap_dump_packet(si, from, SWRAP_RECVFROM, buf, len, ret);
+	swrap_dump_packet(si, from, SWRAP_RECVFROM, buf, ret);
 
 	return ret;
 }
@@ -863,7 +885,7 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 			real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
 		}
 
-		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len, len);
+		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
 
 		return len;
 	}
@@ -875,7 +897,12 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		errno = EHOSTUNREACH;
 	}
 
-	swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len, ret);
+	if (ret == -1) {
+		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
+		swrap_dump_packet(si, to, SWRAP_SENDTO_UNREACH, buf, len);
+	} else {
+		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, ret);
+	}
 
 	return ret;
 }
@@ -883,13 +910,25 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 _PUBLIC_ int swrap_ioctl(int s, int r, void *p)
 {
 	int ret;
-	struct socket_info *si = find_socket_info(s);	
+	struct socket_info *si = find_socket_info(s);
+	int value;
 
 	if (!si) {
 		return real_ioctl(s, r, p);
 	}
 
 	ret = real_ioctl(s, r, p);
+
+	switch (r) {
+	case FIONREAD:
+		value = *((int *)p);
+		if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
+			swrap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
+		} else if (value == 0) { /* END OF FILE */
+			swrap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
+		}
+		break;
+	}
 
 	return ret;
 }
@@ -904,10 +943,13 @@ _PUBLIC_ ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
 	}
 
 	ret = real_recv(s, buf, len, flags);
-	if (ret == -1) 
-		return ret;
-
-	swrap_dump_packet(si, NULL, SWRAP_RECV, buf, len, ret);
+	if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
+		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
+	} else if (ret == 0) { /* END OF FILE */
+		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
+	} else {
+		swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
+	}
 
 	return ret;
 }
@@ -923,10 +965,13 @@ _PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 	}
 
 	ret = real_send(s, buf, len, flags);
-	if (ret == -1) 
-		return ret;
 
-	swrap_dump_packet(si, NULL, SWRAP_SEND, buf, len, ret);
+	if (ret == -1) {
+		swrap_dump_packet(si, NULL, SWRAP_SEND, buf, len);
+		swrap_dump_packet(si, NULL, SWRAP_SEND_RST, NULL, 0);
+	} else {
+		swrap_dump_packet(si, NULL, SWRAP_SEND, buf, ret);
+	}
 
 	return ret;
 }
@@ -942,11 +987,20 @@ _PUBLIC_ int swrap_close(int fd)
 
 	DLIST_REMOVE(sockets, si);
 
+	if (si->myname && si->peername) {
+		swrap_dump_packet(si, NULL, SWRAP_CLOSE_SEND, NULL, 0);
+	}
+
 	ret = real_close(fd);
 
-	free(si->path);
-	free(si->myname);
-	free(si->peername);
+	if (si->myname && si->peername) {
+		swrap_dump_packet(si, NULL, SWRAP_CLOSE_RECV, NULL, 0);
+		swrap_dump_packet(si, NULL, SWRAP_CLOSE_ACK, NULL, 0);
+	}
+
+	if (si->path) free(si->path);
+	if (si->myname) free(si->myname);
+	if (si->peername) free(si->peername);
 	if (si->tmp_path) {
 		unlink(si->tmp_path);
 		free(si->tmp_path);
