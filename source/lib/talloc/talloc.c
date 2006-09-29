@@ -82,7 +82,7 @@
    NULL
 */
 static void *null_context;
-static void *cleanup_context;
+static void *autofree_context;
 
 struct talloc_reference_handle {
 	struct talloc_reference_handle *next, *prev;
@@ -1208,10 +1208,15 @@ void *talloc_realloc_fn(const void *context, void *ptr, size_t size)
 }
 
 
+static int talloc_autofree_destructor(void *ptr)
+{
+	autofree_context = NULL;
+	return 0;
+}
+
 static void talloc_autofree(void)
 {
-	talloc_free(cleanup_context);
-	cleanup_context = NULL;
+	talloc_free(autofree_context);
 }
 
 /*
@@ -1220,11 +1225,12 @@ static void talloc_autofree(void)
 */
 void *talloc_autofree_context(void)
 {
-	if (cleanup_context == NULL) {
-		cleanup_context = talloc_named_const(NULL, 0, "autofree_context");
+	if (autofree_context == NULL) {
+		autofree_context = talloc_named_const(NULL, 0, "autofree_context");
+		talloc_set_destructor(autofree_context, talloc_autofree_destructor);
 		atexit(talloc_autofree);
 	}
-	return cleanup_context;
+	return autofree_context;
 }
 
 size_t talloc_get_size(const void *context)
