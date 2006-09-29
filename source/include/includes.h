@@ -1450,6 +1450,10 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 #endif
 #endif
 
+#ifndef HAVE_VSYSLOG
+void vsyslog (int facility_priority, const char *format, va_list arglist);
+#endif
+
 #ifndef HAVE_TIMEGM
 time_t timegm(struct tm *tm);
 #endif
