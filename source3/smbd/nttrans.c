@@ -477,7 +477,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 	START_PROFILE(SMBntcreateX);
 
-	DEBUG(10,("reply_ntcreateX: flags = 0x%x, access_mask = 0x%x \
+	DEBUG(10,("reply_ntcreate_and_X: flags = 0x%x, access_mask = 0x%x \
 file_attributes = 0x%x, share_access = 0x%x, create_disposition = 0x%x \
 create_options = 0x%x root_dir_fid = 0x%x\n",
 			(unsigned int)flags,
