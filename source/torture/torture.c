@@ -37,7 +37,7 @@ _PUBLIC_ BOOL torture_showall = False;
 
 struct torture_suite_list *torture_suites = NULL;
 
-NTSTATUS torture_register_suite(struct torture_suite *suite)
+_PUBLIC_ NTSTATUS torture_register_suite(struct torture_suite *suite)
 {
 	struct torture_suite_list *p, *n;
 
@@ -67,8 +67,7 @@ NTSTATUS torture_register_suite(struct torture_suite *suite)
 	return NT_STATUS_OK;
 }
 
-static BOOL wrap_old_torture_fn(struct torture_context *torture,
-								const void *_fn)
+static BOOL wrap_old_torture_fn(struct torture_context *torture, const void *_fn)
 {
 	BOOL (*fn)(struct torture_context *) = _fn;
 	return fn(torture);
@@ -81,9 +80,7 @@ _PUBLIC_ NTSTATUS register_torture_op(const char *name, BOOL (*fn)(struct tortur
 	struct torture_suite *suite;
 	suite = torture_suite_create(talloc_autofree_context(), name);
 
-	torture_suite_add_simple_tcase(suite, name, 
-								   wrap_old_torture_fn,
-								   fn);
+	torture_suite_add_simple_tcase(suite, name, wrap_old_torture_fn, fn);
 	torture_register_suite(suite);
 
 	return NT_STATUS_OK;
