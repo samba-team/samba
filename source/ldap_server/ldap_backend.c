@@ -220,6 +220,10 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 			scope = LDB_SCOPE_SUBTREE;
 			success_limit = 0;
 			break;
+	        default:
+			result = LDAP_PROTOCOL_ERROR;
+			errstr = "Invalid scope";
+			break;
 	}
 
 	if (req->num_attributes >= 1) {
