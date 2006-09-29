@@ -111,6 +111,11 @@ static int net_ads_gpo_effective(int argc, const char **argv)
 		goto out;
 	}
 
+	if (!NT_STATUS_IS_OK(result = check_refresh_gpo_list(ads, mem_ctx, gpo_list))) {
+		printf("failed to refresh GPOs: %s\n", nt_errstr(result));
+		goto out;
+	}
+
 	for (gpo = gpo_list; gpo; gpo = gpo->next) {
 
 		char *server, *share, *nt_path, *unix_path;
