@@ -346,7 +346,7 @@ void rep_setlinebuf(FILE *stream)
 
 #ifndef HAVE_VSYSLOG
 #ifdef HAVE_SYSLOG
-void rep_vsyslog (int facility_priority, char *format, va_list arglist)
+void rep_vsyslog (int facility_priority, const char *format, va_list arglist)
 {
 	char *msg = NULL;
 	vasprintf(&msg, format, arglist);
