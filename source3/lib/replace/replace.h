@@ -151,6 +151,13 @@ int rep_setegid(gid_t);
 void rep_setlinebuf(FILE *);
 #endif
 
+#ifndef HAVE_VSYSLOG
+#ifdef HAVE_SYSLOG
+#define vsyslog rep_vsyslog
+void rep_vsyslog (int facility_priority, char *format, va_list arglist);
+#endif
+#endif
+
 #ifndef HAVE_STRCASESTR
 #define strcasestr rep_strcasestr
 char *rep_strcasestr(const char *haystack, const char *needle);
