@@ -90,3 +90,6 @@ struct GP_EXT {
 	char **snapins;
 	char **snapins_guid;
 };
+
+#define GPO_CACHE_DIR "gpo_cache"
+#define GPT_INI "GPT.INI"
