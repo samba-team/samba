@@ -396,6 +396,9 @@ BOOL asn1_start_tag(struct asn1_data *data, uint8_t tag)
 	nesting->start = data->ofs;
 	nesting->next = data->nesting;
 	data->nesting = nesting;
+	if (asn1_tag_remaining(data) == -1) {
+		return False;
+	}
 	return !data->has_error;
 }
 
@@ -426,11 +429,21 @@ BOOL asn1_end_tag(struct asn1_data *data)
 /* work out how many bytes are left in this nested tag */
 int asn1_tag_remaining(struct asn1_data *data)
 {
+	int remaining;
+	if (data->has_error) {
+		return -1;
+	}
+
 	if (!data->nesting) {
 		data->has_error = True;
 		return -1;
 	}
-	return data->nesting->taglen - (data->ofs - data->nesting->start);
+	remaining = data->nesting->taglen - (data->ofs - data->nesting->start);
+	if (remaining > (data->length - data->ofs)) {
+		data->has_error = True;
+		return -1;
+	}
+	return remaining;
 }
 
 /* read an object ID from a ASN1 buffer */
@@ -518,6 +531,10 @@ BOOL asn1_read_OctetString(struct asn1_data *data, DATA_BLOB *blob)
 		return False;
 	}
 	*blob = data_blob(NULL, len+1);
+	if (!blob->data) {
+		data->has_error = True;
+		return False;
+	}
 	asn1_read(data, blob->data, len);
 	asn1_end_tag(data);
 	blob->length--;
@@ -542,6 +559,10 @@ BOOL asn1_read_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blo
 		return False;
 	}
 	*blob = data_blob(NULL, len);
+	if (!blob->data) {
+		data->has_error = True;
+		return False;
+	}
 	asn1_read(data, blob->data, len);
 	asn1_end_tag(data);
 	return !data->has_error;

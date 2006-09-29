@@ -949,8 +949,14 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 			r->mechanism = LDAP_AUTH_MECH_SIMPLE;
 			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(0));
 			pwlen = asn1_tag_remaining(data);
+			if (pwlen == -1) {
+				return False;
+			}
 			if (pwlen != 0) {
 				char *pw = talloc_size(msg, pwlen+1);
+				if (!pw) {
+					return False;
+				}
 				asn1_read(data, pw, pwlen);
 				pw[pwlen] = '\0';
 				r->creds.password = pw;
@@ -974,6 +980,9 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 				r->creds.SASL.secblob = NULL;
 			}
 			asn1_end_tag(data);
+		} else {
+			/* Neither Simple nor SASL bind */
+			return False;
 		}
 		asn1_end_tag(data);
 		break;
@@ -1096,8 +1105,9 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 			ldap_decode_attrib(msg, data, &mod.attrib);
 			asn1_end_tag(data);
 			if (!add_mod_to_array_talloc(msg, &mod,
-						     &r->mods, &r->num_mods))
-				break;
+						     &r->mods, &r->num_mods)) {
+				return False;
+			}
 		}
 
 		asn1_end_tag(data);
@@ -1146,6 +1156,9 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 		asn1_start_tag(data,
 			       ASN1_APPLICATION_SIMPLE(LDAP_TAG_DelRequest));
 		len = asn1_tag_remaining(data);
+		if (len == -1) {
+			return False;
+		}
 		dn = talloc_size(msg, len+1);
 		if (dn == NULL)
 			break;
@@ -1179,9 +1192,13 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 			char *newsup;
 			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(0));
 			len = asn1_tag_remaining(data);
+			if (len == -1) {
+				return False;
+			}
 			newsup = talloc_size(msg, len+1);
-			if (newsup == NULL)
-				break;
+			if (newsup == NULL) {
+				return False;
+			}
 			asn1_read(data, newsup, len);
 			newsup[len] = '\0';
 			r->newsuperior = newsup;
