@@ -165,7 +165,7 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	printf("Total Groups:\t%d\n", info2->num_domain_grps);
 	printf("Total Aliases:\t%d\n", info2->num_local_grps);
 	
-	printf("Sequence No:\t%lld\n", info2->seq_num);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info2->seq_num);
 
 	printf("Force Logoff:\t%d\n", (int)nt_time_to_unix_abs(&info2->logout));
 
@@ -210,7 +210,7 @@ static void display_sam_unk_info_7(SAM_UNK_INFO_7 *info7)
 
 static void display_sam_unk_info_8(SAM_UNK_INFO_8 *info8)
 {
-	printf("Sequence No:\t%lld\n", info8->seq_num);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info8->seq_num);
 	printf("Domain Create Time:\t%s\n", 
 		http_timestring(nt_time_to_unix(info8->domain_create_time)));
 }
@@ -229,7 +229,7 @@ static void display_sam_unk_info_12(SAM_UNK_INFO_12 *info12)
 
 static void display_sam_unk_info_13(SAM_UNK_INFO_13 *info13)
 {
-	printf("Sequence No:\t%lld\n", info13->seq_num);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info13->seq_num);
 	printf("Domain Create Time:\t%s\n", 
 		http_timestring(nt_time_to_unix(info13->domain_create_time)));
 	printf("Unknown1:\t%d\n", info13->unknown1);
