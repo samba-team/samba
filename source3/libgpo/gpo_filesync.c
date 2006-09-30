@@ -40,7 +40,8 @@ NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
 		       const char *unix_path)
 {
 	NTSTATUS result;
-	int fnum, fd;
+	int fnum;
+	int fd = 0;
 	char *data = NULL;
 	static int io_bufsize = 64512;
 	int read_size = io_bufsize;
