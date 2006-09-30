@@ -4,8 +4,15 @@
 <chapterinfo>
 	&author.jht;
 	&author.jelmer;
+	<author>
+		<firstname>Jonathan</firstname><surname>Johnson</surname>
+		<affiliation>
+			<orgname>Sutinen Consulting, Inc.</orgname>
+                        <address><email>jon@sutinen.com</email></address>
+		</affiliation>
+	</author>
 	<pubdate>July 5, 1998</pubdate>
-	<pubdate>Updated: April 21, 2003</pubdate>
+	<pubdate>Updated: September 20, 2006</pubdate>
 </chapterinfo>
 
 <title>Network Browsing</title>
@@ -14,11 +21,21 @@
 <indexterm><primary>browsing across subnets</primary></indexterm>
 <indexterm><primary>resolution of NetBIOS names</primary></indexterm>
 <indexterm><primary>browse list handling</primary></indexterm>
+<indexterm><primary>WINS</primary></indexterm>
 This chapter contains detailed information as well as a fast-track guide to
 implementing browsing across subnets and/or across workgroups (or domains).
 WINS is the best tool for resolution of NetBIOS names to IP addresses; however, WINS is
 not involved in browse list handling except by way of name-to-address resolution.
 </para>
+
+<note><para>
+<indexterm><primary>WINS</primary></indexterm>
+What is WINS?
+</para>
+<para>
+WINS is a facility that provides resolution of a NetBIOS name to its IP address. WINS is like a
+Dynamic-DNS service for NetBIOS networking names. 
+</para></note>
 
 <note><para>
 <indexterm><primary>Windows 2000</primary></indexterm>
@@ -2167,6 +2184,42 @@ Here are a few possibilities:
 	</varlistentry>
 </variablelist>
 
+</sect2>
+<sect2>
+<title>Invalid Cached Share References Affects Network Browsing</title>
+<para>
+Cached references on your MS Windows client (workstation or server) to shares or servers that no longer exist
+can cause MS Windows Explorer to appear unresponsive as it tries to connect to these shares. After a delay
+(can take a long time) it times out and browsing will appear to be mostly normal again.
+</para>
+
+<para>
+To eliminate the problem the stale cached references should be removed. This does not happen automatically and
+requires manual intervention. This is a design feature of MS Windows and not anything that Samba can change.
+To remove the stale shortcuts found in <emphasis>My Network Places</emphasis> which refer to what are now
+invalid shares or servers it is necessary to edit the Windows Registry under
+<literal>HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\</literal>. Edit the entry
+<literal>MountPoints2</literal> (on Windows XP and later, or <literal>MountPoints</literal> on
+Windows 2000 and earlier). Remove all keys named <literal>\\server\share</literal> (where 'server' and 'share' refer to a
+non-existent server or share). Note that this must be done for every user profile that has such stale
+references.
+</para>
+
+<para>
+Samba users have reported that these stale references negatively affect network browsing with Windows, Samba,
+and Novell servers. They suspect it is a universal problem not directly related to the existence of a Samba
+server. Samba users may experience this more often due to Samba being somewhat viewed as an experimenter's
+toolkit. This results from the fact that a user might go through several reconfigurations and incarnations of
+their Samba server, by different names, with different shares, increasing the chances for having stale
+(invalid) cached share references. Strangely (or not so strangely), Windows does not seem to expire these
+references. I am not sure how or why the registry keys are created.
+</para>
+
+<para>
+It is common for <emphasis>Open</emphasis> dialog boxes (for example; in Word and Excel) to respond very
+slowly, as they attempt to locate all of the cached references, even if they are not in the current directory
+being accessed.
+</para>
 </sect2>
 </sect1>
 </chapter>
