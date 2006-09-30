@@ -70,7 +70,7 @@ static NTSTATUS cmd_unixinfo_sid2uid(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	printf("%llu\n", uid);
+	printf("%llu\n", (unsigned long long)uid);
 
 done:
 	return result;
@@ -125,7 +125,7 @@ static NTSTATUS cmd_unixinfo_sid2gid(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	printf("%llu\n", gid);
+	printf("%llu\n", (unsigned long long)gid);
 
 done:
 	return result;
@@ -164,10 +164,11 @@ static NTSTATUS cmd_unixinfo_getpwuid(struct rpc_pipe_client *cli,
 
 	for (i=0; i<num_uids; i++) {
 		if (NT_STATUS_IS_OK(info[i].status)) {
-			printf("%llu:%s:%s\n", uids[i], info[i].homedir,
-			       info[i].shell);
+			printf("%llu:%s:%s\n", (unsigned long long)uids[i],
+			       info[i].homedir, info[i].shell);
 		} else {
-			printf("%llu:%s\n", uids[i], nt_errstr(info[i].status));
+			printf("%llu:%s\n", (unsigned long long)uids[i],
+			       nt_errstr(info[i].status));
 		}
 	}
 
