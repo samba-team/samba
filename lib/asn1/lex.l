@@ -58,6 +58,10 @@ static void unterminated(const char *, unsigned);
 
 %}
 
+/* This is for Solaris 10 lex that doesn't grow its tables automagicly */
+%p 5000
+%a 5000
+%n 1000
 
 %%
 ABSENT			{ return kw_ABSENT; }
