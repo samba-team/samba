@@ -68,6 +68,7 @@ struct dir_buf {
 DIR *opendir(const char *dname)
 {
 	struct dir_buf *d;
+	struct stat sb;
 	d = malloc(sizeof(*d));
 	if (d == NULL) {
 		errno = ENOMEM;
@@ -76,6 +77,17 @@ DIR *opendir(const char *dname)
 	d->fd = open(dname, O_RDONLY);
 	if (d->fd == -1) {
 		free(d);
+		return NULL;
+	}
+	if (fstat(d->fd, &sb) < 0) {
+		close(d->fd);
+		free(d);
+		return NULL;
+	}
+	if (!S_ISDIR(sb.st_mode)) {
+		close(d->fd);
+		free(d);   
+		errno = ENOTDIR;
 		return NULL;
 	}
 	d->ofs = 0;
