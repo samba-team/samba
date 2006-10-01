@@ -42,6 +42,7 @@
 #include <sys/utsname.h>
 #endif
 
+#include <assert.h>
 #include <krb5.h>
 #include <gssapi.h>
 #include <unistd.h>
@@ -53,6 +54,12 @@
 
 krb5_error_code store_string(krb5_storage *, const char *);
 
+
+#define ret16(_client, num)					\
+    do {							\
+        if (krb5_ret_int16((_client)->sock, &(num)) != 0)	\
+	    errx(1, "krb5_ret_int16 " #num);		\
+    } while(0)
 
 #define ret32(_client, num)					\
     do {							\
