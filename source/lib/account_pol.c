@@ -295,8 +295,11 @@ BOOL init_account_policy(void)
 
 	/* BUILTIN\Administrators get everything -- *always* */
 
-	if ( !grant_all_privileges( &global_sid_Builtin_Administrators ) ) {
-		DEBUG(0,("init_account_policy: Failed to grant privileges to BUILTIN\\Administrators!\n"));
+	if ( lp_enable_privileges() ) {
+		if ( !grant_all_privileges( &global_sid_Builtin_Administrators ) ) {
+			DEBUG(1,("init_account_policy: Failed to grant privileges "
+				"to BUILTIN\\Administrators!\n"));
+		}
 	}
 
 	return True;

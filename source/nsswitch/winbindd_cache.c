@@ -444,6 +444,7 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 	status = domain->backend->sequence_number(domain, &domain->sequence_number);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("refresh_sequence_number: failed with %s\n", nt_errstr(status)));
 		domain->sequence_number = DOM_SEQUENCE_NONE;
 	}
 	
@@ -770,6 +771,10 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 	struct cache_entry *centry;
 	fstring sid_string;
 
+	if (is_null_sid(sid)) {
+		return;
+	}
+
 	centry = centry_start(domain, status);
 	if (!centry)
 		return;
@@ -788,6 +793,10 @@ static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WI
 {
 	struct cache_entry *centry;
 	fstring sid_string;
+
+	if (is_null_sid(&info->user_sid)) {
+		return;
+	}
 
 	centry = centry_start(domain, status);
 	if (!centry)

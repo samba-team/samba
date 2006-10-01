@@ -421,10 +421,10 @@ static BOOL lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 			return False;
 		}
 
-		become_root();
+		become_root_uid_only();
 		result = pdb_lookup_rids(domain_sid, num_rids, rids,
 					 *names, *types);
-		unbecome_root();
+		unbecome_root_uid_only();
 
 		return (NT_STATUS_IS_OK(result) ||
 			NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED) ||
@@ -1069,6 +1069,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 {
 	uid_t low, high;
 	uint32 rid;
+	BOOL ret;
 
 	ZERO_STRUCTP(psid);
 
@@ -1083,7 +1084,11 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 		goto done;
 	}
 
-	if (pdb_uid_to_rid(uid, &rid)) {
+	become_root_uid_only();
+	ret = pdb_uid_to_rid(uid, &rid);
+	unbecome_root_uid_only();
+
+	if (ret) {
 		/* This is a mapped user */
 		sid_copy(psid, get_global_sam_sid());
 		sid_append_rid(psid, rid);
@@ -1108,6 +1113,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 
 void gid_to_sid(DOM_SID *psid, gid_t gid)
 {
+	BOOL ret;
 	gid_t low, high;
 
 	ZERO_STRUCTP(psid);
@@ -1123,7 +1129,11 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 		goto done;
 	}
 
-	if (pdb_gid_to_sid(gid, psid)) {
+	become_root_uid_only();
+	ret = pdb_gid_to_sid(gid, psid);
+	unbecome_root_uid_only();
+
+	if (ret) {
 		/* This is a mapped group */
 		goto done;
 	}
@@ -1165,8 +1175,13 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 
 	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
 		union unid_t id;
+		BOOL ret;
 
-		if (pdb_sid_to_id(psid, &id, &type)) {
+		become_root_uid_only();
+		ret = pdb_sid_to_id(psid, &id, &type);
+		unbecome_root_uid_only();
+
+		if (ret) {
 			if (type != SID_NAME_USER) {
 				DEBUG(5, ("sid %s is a %s, expected a user\n",
 					  sid_string_static(psid),
@@ -1240,7 +1255,13 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 
 	if ((sid_check_is_in_builtin(psid) ||
 	     sid_check_is_in_wellknown_domain(psid))) {
-		if (pdb_getgrsid(&map, *psid)) {
+		BOOL ret;
+
+		become_root_uid_only();
+		ret = pdb_getgrsid(&map, *psid);
+		unbecome_root_uid_only();
+
+		if (ret) {
 			*pgid = map.gid;
 			goto done;
 		}
@@ -1248,7 +1269,13 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	}
 
 	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
-		if (pdb_sid_to_id(psid, &id, &type)) {
+		BOOL ret;
+
+		become_root_uid_only();
+		ret = pdb_sid_to_id(psid, &id, &type);
+		unbecome_root_uid_only();
+
+		if (ret) {
 			if ((type != SID_NAME_DOM_GRP) &&
 			    (type != SID_NAME_ALIAS)) {
 				DEBUG(5, ("sid %s is a %s, expected a group\n",

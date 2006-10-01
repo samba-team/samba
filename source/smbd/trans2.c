@@ -944,16 +944,16 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
  Case can be significant or not.
 **********************************************************/
 
-static BOOL exact_match(char *str,char *mask, BOOL case_sig) 
+static BOOL exact_match(connection_struct *conn, char *str, char *mask)
 {
 	if (mask[0] == '.' && mask[1] == 0)
 		return False;
-	if (case_sig)	
+	if (conn->case_sensitive)
 		return strcmp(str,mask)==0;
 	if (StrCaseCmp(str,mask) != 0) {
 		return False;
 	}
-	if (ms_has_wild(str)) {
+	if (dptr_has_wild(conn->dirptr)) {
 		return False;
 	}
 	return True;
@@ -1114,7 +1114,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 		pstrcpy(fname,dname);      
 
-		if(!(got_match = *got_exact_match = exact_match(fname, mask, conn->case_sensitive)))
+		if(!(got_match = *got_exact_match = exact_match(conn, fname, mask)))
 			got_match = mask_match(fname, mask, conn->case_sensitive);
 
 		if(!got_match && check_mangled_names && !mangle_is_8_3(fname, False, SNUM(conn))) {
@@ -1129,7 +1129,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			pstring newname;
 			pstrcpy( newname, fname);
 			mangle_map( newname, True, False, SNUM(conn));
-			if(!(got_match = *got_exact_match = exact_match(newname, mask, conn->case_sensitive)))
+			if(!(got_match = *got_exact_match = exact_match(conn, newname, mask)))
 				got_match = mask_match(newname, mask, conn->case_sensitive);
 		}
 

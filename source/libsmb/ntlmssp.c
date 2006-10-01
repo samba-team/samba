@@ -746,16 +746,25 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		if (lm_session_key.data && lm_session_key.length >= 8) {
 			if (ntlmssp_state->lm_resp.data && ntlmssp_state->lm_resp.length == 24) {
 				session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
+				if (session_key.data == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
 				SMBsesskeygen_lm_sess_key(lm_session_key.data, ntlmssp_state->lm_resp.data, 
 							  session_key.data);
 				DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
-				dump_data_pw("LM session key:\n", session_key.data, session_key.length);
 			} else {
-				/* use the key unmodified - it's
-				 * probably a NULL key from the guest
-				 * login */
-				session_key = lm_session_key;
+				static const uint8 zeros[24] = { 0, };
+				session_key = data_blob_talloc(
+					ntlmssp_state->mem_ctx, NULL, 16);
+				if (session_key.data == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
+				SMBsesskeygen_lm_sess_key(
+					lm_session_key.data, zeros,
+					session_key.data);
 			}
+			dump_data_pw("LM session key:\n", session_key.data,
+				     session_key.length);
 		} else {
 			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM session key.\n"));
 			session_key = data_blob(NULL, 0);

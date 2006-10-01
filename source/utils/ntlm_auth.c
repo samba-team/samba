@@ -1816,6 +1816,33 @@ enum {
 		}
 	}
 
+	if (opt_username) {
+		char *domain = SMB_STRDUP(opt_username);
+		char *p = strchr_m(domain, *lp_winbind_separator());
+		if (p) {
+			opt_username = p+1;
+			*p = '\0';
+			if (opt_domain && !strequal(opt_domain, domain)) {
+				x_fprintf(x_stderr, "Domain specified in username (%s) "
+					"doesn't match specified domain (%s)!\n\n",
+					domain, opt_domain);
+				poptPrintHelp(pc, stderr, 0);
+				exit(1);
+			}
+			opt_domain = domain;
+		} else {
+			SAFE_FREE(domain);
+		}
+	}
+
+	if (opt_domain == NULL || !*opt_domain) {
+		opt_domain = get_winbind_domain();
+	}
+
+	if (opt_workstation == NULL) {
+		opt_workstation = "";
+	}
+
 	if (helper_protocol) {
 		int i;
 		for (i=0; i<NUM_HELPER_MODES; i++) {
@@ -1833,18 +1860,10 @@ enum {
 		exit(1);
 	}
 
-	if (!opt_username) {
+	if (!opt_username || !*opt_username) {
 		x_fprintf(x_stderr, "username must be specified!\n\n");
 		poptPrintHelp(pc, stderr, 0);
 		exit(1);
-	}
-
-	if (opt_domain == NULL) {
-		opt_domain = get_winbind_domain();
-	}
-
-	if (opt_workstation == NULL) {
-		opt_workstation = "";
 	}
 
 	if (opt_challenge.length) {

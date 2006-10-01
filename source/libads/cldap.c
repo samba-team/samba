@@ -160,6 +160,8 @@ static int send_cldap_netlogon(int sock, const char *domain,
 
 	if (write(sock, data.data, data.length) != (ssize_t)data.length) {
 		DEBUG(2,("failed to send cldap query (%s)\n", strerror(errno)));
+		asn1_free(&data);
+		return -1;
 	}
 
 	asn1_free(&data);
@@ -295,6 +297,7 @@ BOOL ads_cldap_netlogon(const char *server, const char *realm,  struct cldap_net
 
 	ret = send_cldap_netlogon(sock, realm, global_myname(), 6);
 	if (ret != 0) {
+		close(sock);
 		return False;
 	}
 	ret = recv_cldap_netlogon(sock, reply);

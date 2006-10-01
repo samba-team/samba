@@ -886,7 +886,8 @@ BOOL parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 
     Also, if omit DOMAIN if 'winbind trusted domains only = true', as the 
     username is then unqualified in unix
-	 
+
+    We always canonicalize as UPPERCASE DOMAIN, lowercase username.
 */
 void fill_domain_username(fstring name, const char *domain, const char *user, BOOL can_assume)
 {
@@ -896,7 +897,7 @@ void fill_domain_username(fstring name, const char *domain, const char *user, BO
 	strlower_m(tmp_user);
 
 	if (can_assume && assume_domain(domain)) {
-		strlcpy(name, user, sizeof(fstring));
+		strlcpy(name, tmp_user, sizeof(fstring));
 	} else {
 		slprintf(name, sizeof(fstring) - 1, "%s%c%s",
 			 domain, *lp_winbind_separator(),
@@ -1215,27 +1216,6 @@ BOOL winbindd_upgrade_idmap(void)
 	}
 
 	return idmap_convert(idmap_name);
-}
-
-void winbindd_flush_nscd_cache(void)
-{
-#ifdef HAVE_NSCD_FLUSH_CACHE
-
-	/* Flush nscd caches to get accurate new information */
-	int ret = nscd_flush_cache("passwd");
-	if (ret) {
-		DEBUG(5,("failed to flush nscd cache for 'passwd' service: %s\n",
-			strerror(errno)));
-	}
-
-	ret = nscd_flush_cache("group");
-	if (ret) {
-		DEBUG(5,("failed to flush nscd cache for 'group' service: %s\n",
-			strerror(errno)));
-	}
-#else
-	return;
-#endif
 }
 
 NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,

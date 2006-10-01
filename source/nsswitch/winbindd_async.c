@@ -1469,3 +1469,119 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 	do_async_domain(mem_ctx, domain, &request, query_user_recv,
 			cont, private_data);
 }
+
+/* The following uid2sid/gid2sid functions has been contributed by
+ * Keith Reynolds <Keith.Reynolds@centrify.com> */
+
+static void winbindd_uid2sid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+				  struct winbindd_response *response,
+				  void *c, void *private_data)
+{
+	void (*cont)(void *priv, BOOL succ, const char *sid) = c;
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger uid2sid\n"));
+		cont(private_data, False, NULL);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("uid2sid returned an error\n"));
+		cont(private_data, False, NULL);
+		return;
+	}
+
+	cont(private_data, True, response->data.sid.sid);
+}
+
+void winbindd_uid2sid_async(TALLOC_CTX *mem_ctx, uid_t uid,
+			    void (*cont)(void *private_data, BOOL success, const char *sid),
+			    void *private_data)
+{
+	struct winbindd_request request;
+
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_DUAL_UID2SID;
+	request.data.uid = uid;
+	do_async(mem_ctx, idmap_child(), &request, winbindd_uid2sid_recv, cont, private_data);
+}
+
+enum winbindd_result winbindd_dual_uid2sid(struct winbindd_domain *domain,
+					   struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+	NTSTATUS result;
+
+	DEBUG(3,("[%5lu]: uid to sid %lu\n",
+		 (unsigned long)state->pid,
+		 (unsigned long) state->request.data.uid));
+
+	/* Find sid for this uid and return it, possibly ask the slow remote idmap */
+	result = idmap_uid_to_sid(&sid, state->request.data.uid, ID_EMPTY);
+
+	if (NT_STATUS_IS_OK(result)) {
+		sid_to_string(state->response.data.sid.sid, &sid);
+		state->response.data.sid.type = SID_NAME_USER;
+		return WINBINDD_OK;
+	}
+
+	return WINBINDD_ERROR;
+}
+
+static void winbindd_gid2sid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+				  struct winbindd_response *response,
+				  void *c, void *private_data)
+{
+	void (*cont)(void *priv, BOOL succ, const char *sid) = c;
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger gid2sid\n"));
+		cont(private_data, False, NULL);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("gid2sid returned an error\n"));
+		cont(private_data, False, NULL);
+		return;
+	}
+
+	cont(private_data, True, response->data.sid.sid);
+}
+
+void winbindd_gid2sid_async(TALLOC_CTX *mem_ctx, gid_t gid,
+			    void (*cont)(void *private_data, BOOL success, const char *sid),
+			    void *private_data)
+{
+	struct winbindd_request request;
+
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_DUAL_GID2SID;
+	request.data.gid = gid;
+	do_async(mem_ctx, idmap_child(), &request, winbindd_gid2sid_recv, cont, private_data);
+}
+
+enum winbindd_result winbindd_dual_gid2sid(struct winbindd_domain *domain,
+					   struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+	NTSTATUS result;
+
+	DEBUG(3,("[%5lu]: gid %lu to sid\n",
+		(unsigned long)state->pid,
+		(unsigned long) state->request.data.gid));
+
+	/* Find sid for this gid and return it, possibly ask the slow remote idmap */
+	result = idmap_gid_to_sid(&sid, state->request.data.gid, ID_EMPTY);
+
+	if (NT_STATUS_IS_OK(result)) {
+		sid_to_string(state->response.data.sid.sid, &sid);
+		DEBUG(10, ("[%5lu]: retrieved sid: %s\n",
+			   (unsigned long)state->pid,
+			   state->response.data.sid.sid));
+		state->response.data.sid.type = SID_NAME_DOM_GRP;
+		return WINBINDD_OK;
+	}
+
+	return WINBINDD_ERROR;
+}

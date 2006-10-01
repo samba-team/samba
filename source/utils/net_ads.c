@@ -1061,7 +1061,7 @@ static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
 	asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path);
 	free(ou_str);
 
-	rc = ads_search_dn(ads, &res, dn, NULL);
+	rc = ads_search_dn(ads, (void**)&res, dn, NULL);
 	ads_msgfree(ads, res);
 
 	if (ADS_ERR_OK(rc)) {
@@ -1525,8 +1525,11 @@ static int net_ads_printer_publish(int argc, const char **argv)
 		return -1;
 	}
 
-	get_remote_printer_publishing_data(pipe_hnd, mem_ctx, &mods,
-					   printername);
+	if (!W_ERROR_IS_OK(get_remote_printer_publishing_data(pipe_hnd, mem_ctx, &mods,
+							      printername))) {
+		ads_destroy(&ads);
+		return -1;
+	}
 
         rc = ads_add_printer_entry(ads, prt_dn, mem_ctx, &mods);
         if (!ADS_ERR_OK(rc)) {

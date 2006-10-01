@@ -269,11 +269,12 @@ static void uid2sid_lookupname_recv(void *private_data, BOOL success,
 				    enum SID_NAME_USE type);
 static void uid2sid_idmap_set_mapping_recv(void *private_data, BOOL success);
 
+static void uid2sid_recv(void *private_data, BOOL success, const char *sid);
+
 void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS status;
-	struct uid2sid_state *uid2sid_state;
 
 	DEBUG(3, ("[%5lu]: uid to sid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.uid));
@@ -294,6 +295,25 @@ void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 		return;
 	}
 
+	winbindd_uid2sid_async(state->mem_ctx, state->request.data.uid, uid2sid_recv, state);
+}
+
+static void uid2sid_recv(void *private_data, BOOL success, const char *sid)
+{
+	struct winbindd_cli_state *state = private_data;
+	struct uid2sid_state *uid2sid_state;
+
+	if (success) {
+		DEBUG(10,("uid2sid: uid %lu has sid %s\n",
+			  (unsigned long)(state->request.data.uid), sid));
+		fstrcpy(state->response.data.sid.sid, sid);
+		state->response.data.sid.type = SID_NAME_USER;
+		request_ok(state);
+		return;
+	}
+
+	/* preexisitng mapping not found go on */
+
 	if (is_in_uid_range(state->request.data.uid)) {
 		/* This is winbind's, so we should better have succeeded
 		 * above. */
@@ -308,9 +328,6 @@ void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 		request_error(state);
 		return;
 	}
-
-	/* The only chance that this is correct is that winbind trusted
-	 * domains only = yes, and the user exists in nss and the domain. */
 
 	uid2sid_state = TALLOC_ZERO_P(state->mem_ctx, struct uid2sid_state);
 	if (uid2sid_state == NULL) {
@@ -396,11 +413,12 @@ static void gid2sid_lookupname_recv(void *private_data, BOOL success,
 				    enum SID_NAME_USE type);
 static void gid2sid_idmap_set_mapping_recv(void *private_data, BOOL success);
 
+static void gid2sid_recv(void *private_data, BOOL success, const char *sid);
+
 void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS status;
-	struct gid2sid_state *gid2sid_state;
 
 	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.gid));
@@ -420,6 +438,25 @@ void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 		request_ok(state);
 		return;
 	}
+
+	winbindd_gid2sid_async(state->mem_ctx, state->request.data.gid, gid2sid_recv, state);
+}
+
+static void gid2sid_recv(void *private_data, BOOL success, const char *sid)
+{
+	struct winbindd_cli_state *state = private_data;
+	struct gid2sid_state *gid2sid_state;
+
+	if (success) {
+		DEBUG(10,("gid2sid: gid %lu has sid %s\n",
+			  (unsigned long)(state->request.data.gid), sid));
+		fstrcpy(state->response.data.sid.sid, sid);
+		state->response.data.sid.type = SID_NAME_DOM_GRP;
+		request_ok(state);
+		return;
+	}
+
+	/* preexisitng mapping not found go on */
 
 	if (is_in_gid_range(state->request.data.gid)) {
 		/* This is winbind's, so we should better have succeeded

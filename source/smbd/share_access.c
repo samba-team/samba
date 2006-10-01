@@ -214,6 +214,10 @@ BOOL user_ok_token(const char *username, struct nt_user_token *token, int snum)
 		const char *list[2];
 		list[0] = lp_username(snum);
 		list[1] = NULL;
+		if ((list[0] == NULL) || (*list[0] == '\0')) {
+			DEBUG(0, ("'only user = yes' and no 'username ='\n"));
+			return False;
+		}
 		if (!token_contains_name_in_list(NULL, lp_servicename(snum),
 						 token, list)) {
 			DEBUG(10, ("%s != 'username'\n", username));

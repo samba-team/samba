@@ -46,7 +46,7 @@ static void child_read_request(struct winbindd_cli_state *state)
 			sizeof(state->request));
 
 	if (len != sizeof(state->request)) {
-		DEBUG(0, ("Got invalid request length: %d\n", (int)len));
+		DEBUG(len > 0 ? 0 : 3, ("Got invalid request length: %d\n", (int)len));
 		state->finished = True;
 		return;
 	}
@@ -355,6 +355,8 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_CHECK_MACHACC,        winbindd_dual_check_machine_acct,    "CHECK_MACHACC" },
 	{ WINBINDD_DUAL_SID2UID,         winbindd_dual_sid2uid,               "DUAL_SID2UID" },
 	{ WINBINDD_DUAL_SID2GID,         winbindd_dual_sid2gid,               "DUAL_SID2GID" },
+	{ WINBINDD_DUAL_UID2SID,         winbindd_dual_uid2sid,               "DUAL_UID2SID" },
+	{ WINBINDD_DUAL_GID2SID,         winbindd_dual_gid2sid,               "DUAL_GID2SID" },
 	{ WINBINDD_DUAL_UID2NAME,        winbindd_dual_uid2name,              "DUAL_UID2NAME" },
 	{ WINBINDD_DUAL_NAME2UID,        winbindd_dual_name2uid,              "DUAL_NAME2UID" },
 	{ WINBINDD_DUAL_GID2NAME,        winbindd_dual_gid2name,              "DUAL_GID2NAME" },
@@ -590,7 +592,8 @@ static void child_msg_online(int msg_type, struct process_id src, void *buf, siz
 	/* Set our global state as online. */
 	set_global_winbindd_state_online();
 
-	winbindd_flush_nscd_cache();
+	smb_nscd_flush_user_cache();
+	smb_nscd_flush_group_cache();
 
 	/* Mark everything online - delete any negative cache entries
 	   to force an immediate reconnect. */

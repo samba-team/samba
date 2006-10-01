@@ -539,6 +539,9 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			add_ret = smbrun(add_script,NULL);
 			DEBUG(add_ret ? 0 : 1,("fetch_account: Running the command `%s' "
 				 "gave %d\n", add_script, add_ret));
+			if (add_ret == 0) {
+				smb_nscd_flush_user_cache();
+			}
 		}
 		
 		/* try and find the possible unix account again */

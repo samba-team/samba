@@ -1505,6 +1505,10 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 
 		DEBUG(rename_ret ? 0 : 3,("Running the command `%s' gave %d\n", rename_script, rename_ret));
 
+		if (rename_ret == 0) {
+			smb_nscd_flush_user_cache();
+		}
+
 		if (rename_ret) 
 			goto done; 
         } else {

@@ -329,54 +329,16 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	request_ok(state);
 }
 
-/* Return a group structure from a gid number */
-
-void winbindd_getgrgid(struct winbindd_cli_state *state)
+static void getgrgid_got_sid(struct winbindd_cli_state *state, DOM_SID group_sid)
 {
 	struct winbindd_domain *domain;
-	DOM_SID group_sid;
 	enum SID_NAME_USE name_type;
 	fstring dom_name;
 	fstring group_name;
 	size_t gr_mem_len;
 	size_t num_gr_mem;
 	char *gr_mem;
-	NTSTATUS status;
 
-	DEBUG(3, ("[%5lu]: getgrgid %lu\n", (unsigned long)state->pid, 
-		  (unsigned long)state->request.data.gid));
-
-	/* Bug out if the gid isn't in the winbind range */
-
-	if ((state->request.data.gid < server_state.gid_low) ||
-	    (state->request.data.gid > server_state.gid_high)) {
-		request_error(state);
-		return;
-	}
-
-	/* Get sid from gid */
-
-	status = idmap_gid_to_sid(&group_sid, state->request.data.gid, 0);
-	if (NT_STATUS_IS_OK(status)) {
-		/* This is a remote one */
-		goto got_sid;
-	}
-
-	/* Ok, this might be "ours", i.e. an alias */
-
-	if (pdb_gid_to_sid(state->request.data.gid, &group_sid) &&
-	    lookup_sid(state->mem_ctx, &group_sid, NULL, NULL, &name_type) &&
-	    (name_type == SID_NAME_ALIAS)) {
-		/* Hey, got an alias */
-		goto got_sid;
-	}
-
-	DEBUG(1, ("could not convert gid %lu to sid\n", 
-		  (unsigned long)state->request.data.gid));
-	request_error(state);
-	return;
-
- got_sid:
 	/* Get name from sid */
 
 	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &group_sid, dom_name,
@@ -423,7 +385,71 @@ void winbindd_getgrgid(struct winbindd_cli_state *state)
 
 	state->response.length += gr_mem_len;
 	state->response.extra_data.data = gr_mem;
+
 	request_ok(state);
+}
+
+static void getgrgid_recv(void *private_data, BOOL success, const char *sid)
+{
+	struct winbindd_cli_state *state = talloc_get_type_abort(private_data, struct winbindd_cli_state);
+	enum SID_NAME_USE name_type;
+	DOM_SID group_sid;
+
+	if (success) {
+		DEBUG(10,("getgrgid_recv: gid %lu has sid %s\n",
+			  (unsigned long)(state->request.data.gid), sid));
+
+		string_to_sid(&group_sid, sid);
+		getgrgid_got_sid(state, group_sid);
+		return;
+	}
+
+	/* Ok, this might be "ours", i.e. an alias */
+	if (pdb_gid_to_sid(state->request.data.gid, &group_sid) &&
+	    lookup_sid(state->mem_ctx, &group_sid, NULL, NULL, &name_type) &&
+	    (name_type == SID_NAME_ALIAS)) {
+		/* Hey, got an alias */
+		DEBUG(10,("getgrgid_recv: we have an alias with gid %lu and sid %s\n",
+			  (unsigned long)(state->request.data.gid), sid));
+		getgrgid_got_sid(state, group_sid);
+		return;
+	}
+
+	DEBUG(1, ("could not convert gid %lu to sid\n", 
+		  (unsigned long)state->request.data.gid));
+	request_error(state);
+}
+
+/* Return a group structure from a gid number */
+void winbindd_getgrgid(struct winbindd_cli_state *state)
+{
+	DOM_SID group_sid;
+	NTSTATUS status;
+
+	DEBUG(3, ("[%5lu]: getgrgid %lu\n", (unsigned long)state->pid, 
+		  (unsigned long)state->request.data.gid));
+
+	/* Bug out if the gid isn't in the winbind range */
+
+	if ((state->request.data.gid < server_state.gid_low) ||
+	    (state->request.data.gid > server_state.gid_high)) {
+		request_error(state);
+		return;
+	}
+
+	/* Get sid from gid */
+
+	status = idmap_gid_to_sid(&group_sid, state->request.data.gid, ID_EMPTY);
+	if (NT_STATUS_IS_OK(status)) {
+		/* This is a remote one */
+		getgrgid_got_sid(state, group_sid);
+		return;
+	}
+
+	DEBUG(10,("winbindd_getgrgid: gid %lu not found in cache, try with the async interface\n",
+		  (unsigned long)state->request.data.gid));
+
+	winbindd_gid2sid_async(state->mem_ctx, state->request.data.gid, getgrgid_recv, state);
 }
 
 /*

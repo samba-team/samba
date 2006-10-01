@@ -138,6 +138,8 @@ enum winbindd_cmd {
 	 * between parent and children */
 	WINBINDD_DUAL_SID2UID,
 	WINBINDD_DUAL_SID2GID,
+	WINBINDD_DUAL_UID2SID,
+	WINBINDD_DUAL_GID2SID,
 	WINBINDD_DUAL_IDMAPSET,
 
 	/* Wrapper around possibly blocking unix nss calls */

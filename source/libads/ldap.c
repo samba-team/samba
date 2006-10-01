@@ -2183,10 +2183,15 @@ ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
 		return status;
 
 	if (ads_count_replies(ads, res) != 1) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 	}
 
-	ads_pull_uint32(ads, res, "highestCommittedUSN", usn);
+	if (!ads_pull_uint32(ads, res, "highestCommittedUSN", usn)) {
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);
+	}
+
 	ads_msgfree(ads, res);
 	return ADS_SUCCESS;
 }
@@ -2248,7 +2253,7 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 
 	timestr = ads_pull_string(ads_s, ctx, res, "currentTime");
 	if (!timestr) {
-		ads_msgfree(ads, res);
+		ads_msgfree(ads_s, res);
 		status = ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 		goto done;
 	}

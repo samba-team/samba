@@ -1,6 +1,6 @@
                    ===============================
-                   Release Notes for Samba 3.0.23c
-                             Aug 30, 2006
+                   Release Notes for Samba 3.0.23d
+                             Oct 3, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version 
@@ -8,6 +8,32 @@ that production Samba servers should be running for all current
 bug-fixes.  Please read the changes in this section and for the 
 original 3.0.23 release regarding new features and difference 
 in behavior from previous releases.
+
+Common bugs fixed in 3.0.23c include:
+
+  o
+
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.23b
+---------------------
+
+commits
+-------
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ===============================
+                   Release Notes for Samba 3.0.23c
+                             Aug 30, 2006
+                   ===============================
 
 We would like to thank the developers of the Saturn code analysis 
 tool from Stanford University (http://glide.stanford.edu/saturn).
@@ -122,8 +148,6 @@ o   Simo Sorce <idra@samba.org>
 o   Ben Winslow <rain@bluecherry.net>
     * Allow client smb signing to be turned off correctly.
 
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ===============================

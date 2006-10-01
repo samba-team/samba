@@ -2897,6 +2897,9 @@ static void spoolss_notify_devmode(int snum,
 				   NT_PRINTER_INFO_LEVEL *printer,
 				   TALLOC_CTX *mem_ctx)
 {
+	/* for a dummy implementation we have to zero the fields */
+	data->notify_data.data.length = 0;
+	data->notify_data.data.string = NULL;
 }
 
 /*******************************************************************

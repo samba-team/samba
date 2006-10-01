@@ -464,6 +464,9 @@ BOOL encode_pw_buffer(uint8 buffer[516], const char *password, int string_flags)
 	uchar new_pw[512];
 	size_t new_pw_len;
 
+	/* the incoming buffer can be any alignment. */
+	string_flags |= STR_NOALIGN;
+
 	new_pw_len = push_string(NULL, new_pw,
 				 password, 
 				 sizeof(new_pw), string_flags);
@@ -493,6 +496,9 @@ BOOL decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
 		      int string_flags)
 {
 	int byte_len=0;
+
+	/* the incoming buffer can be any alignment. */
+	string_flags |= STR_NOALIGN;
 
 	/*
 	  Warning !!! : This function is called from some rpc call.

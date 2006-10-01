@@ -1450,6 +1450,10 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 #endif
 #endif
 
+#ifndef HAVE_VSYSLOG
+void vsyslog (int facility_priority, const char *format, va_list arglist);
+#endif
+
 #ifndef HAVE_TIMEGM
 time_t timegm(struct tm *tm);
 #endif
@@ -1599,5 +1603,9 @@ void dump_core(void) NORETURN_ATTRIBUTE ;
 void exit_server(const char *const reason) NORETURN_ATTRIBUTE ;
 void exit_server_cleanly(const char *const reason) NORETURN_ATTRIBUTE ;
 void exit_server_fault(void) NORETURN_ATTRIBUTE ;
+
+#ifdef HAVE_LIBNSCD
+#include "libnscd.h"
+#endif
 
 #endif /* _INCLUDES_H */
