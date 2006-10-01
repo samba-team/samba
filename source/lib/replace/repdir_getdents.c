@@ -80,16 +80,16 @@ DIR *opendir(const char *dname)
 		return NULL;
 	}
 	if (fstat(d->fd, &sb) < 0) {
-                close(d->fd);
-                free(d);
-                return NULL;
-        }
-        if (!S_ISDIR(sb.st_mode)) {
-                close(d->fd);
-                free(d);   
-                errno = ENOTDIR;
-                return NULL;
-        }
+		close(d->fd);
+		free(d);
+		return NULL;
+	}
+	if (!S_ISDIR(sb.st_mode)) {
+		close(d->fd);
+		free(d);   
+		errno = ENOTDIR;
+		return NULL;
+	}
 	d->ofs = 0;
 	d->seekpos = 0;
 	d->nbytes = 0;
