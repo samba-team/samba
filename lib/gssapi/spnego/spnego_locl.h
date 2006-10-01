@@ -39,6 +39,8 @@
 #include <config.h>
 #endif
 
+#include <sys/param.h>
+
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
