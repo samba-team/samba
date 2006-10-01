@@ -950,16 +950,13 @@ p11_release_module(struct p11_module *p)
     if (--p->refcount > 0)
 	return;
 
-    if (p->dl_handle)
-	dlclose(p->dl_handle);
-
     for (i = 0; i < p->num_slots; i++) {
-	if (p->slot->flags & P11_SESSION_IN_USE)
+	if (p->slot[i].flags & P11_SESSION_IN_USE)
 	    _hx509_abort("pkcs11 module release while session in use");
-	if (p->slot->flags & P11_SESSION) {
+	if (p->slot[i].flags & P11_SESSION) {
 	    int ret;
 
-	    ret = P11FUNC(p, CloseSession, (p->slot->session));
+	    ret = P11FUNC(p, CloseSession, (p->slot[i].session));
 	    if (ret != CKR_OK)
 		;
 	}
@@ -983,8 +980,15 @@ p11_release_module(struct p11_module *p)
 		free(p->slot[i].mechs.infos);
 	    }
 	}
-	free(p->slot);
     }
+    free(p->slot);
+
+    if (p->funcs)
+	P11FUNC(p, Finalize, (NULL));
+
+    if (p->dl_handle)
+	dlclose(p->dl_handle);
+
     memset(p, 0, sizeof(*p));
     free(p);
 }
@@ -1021,6 +1025,8 @@ p11_iter_start(hx509_context context,
     }
 
     for (i = 0 ; i < p->num_slots; i++) {
+	if (p->slot[i].certs == NULL)
+	    continue;
 	ret = hx509_certs_merge(context, c->certs, p->slot[i].certs);
 	if (ret) {
 	    hx509_certs_free(&c->certs);
