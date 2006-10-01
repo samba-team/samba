@@ -223,7 +223,7 @@ RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
 TALLOC_OBJ = lib/talloc/talloc.o
 
-LIB_WITHOUT_PROTO_OBJ = @LIBREPLACE_OBJS@ @SOCKET_WRAPPER_OBJS@
+LIB_WITHOUT_PROTO_OBJ = @LIBREPLACE_OBJS@ @SOCKET_WRAPPER_OBJS@ $(TALLOC_OBJ)
 
 LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/md4.o \
@@ -245,7 +245,7 @@ LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \
-	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(TALLOC_OBJ)
+	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o
 
 LIB_OBJ = $(LIB_WITHOUT_PROTO_OBJ) $(LIB_WITH_PROTO_OBJ)
 
