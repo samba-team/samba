@@ -87,9 +87,9 @@ OM_uint32 _gsskrb5_inquire_cred
 	acred = (gsskrb5_cred)cred_handle;
 
     if (acred)
-	HEIMDAL_MUTEX_lock(&icred->cred_id_mutex);
-    if (icred)
 	HEIMDAL_MUTEX_lock(&acred->cred_id_mutex);
+    if (icred)
+	HEIMDAL_MUTEX_lock(&icred->cred_id_mutex);
 
     if (output_name != NULL) {
 	if (icred && icred->principal != NULL) {
