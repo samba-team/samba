@@ -1,3 +1,22 @@
+2006-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/wrap.c (_gsskrb5_wrap_size_limit): use
+	_gssapi_wrap_size_arcfour for arcfour
+
+	* krb5/arcfour.c: Move _gssapi_wrap_size_arcfour here.
+
+	* Makefile.am: Split all mech to diffrent mechsrc variables.
+
+	* spnego/context_stubs.c: Make internal function static (and
+	rename).
+	
+2006-10-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/inquire_cred.c: Fix "if (x) lock(y)" bug. From Harald
+	Barth.
+
+	* spnego/spnego_locl.h: Include <sys/param.h> for MAXHOSTNAMELEN.
+	
 2006-09-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* krb5/arcfour.c: Add wrap support, interrop with itself but not
