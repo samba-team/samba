@@ -104,7 +104,7 @@ static NTSTATUS userinfo_openuser(struct composite_context *c,
 	/* receive samr_OpenUser reply */
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
-
+	
 	/* prepare parameters for QueryUserInfo call */
 	s->queryuserinfo.in.user_handle = &s->user_handle;
 	s->queryuserinfo.in.level       = s->level;
@@ -133,6 +133,9 @@ static NTSTATUS userinfo_getuser(struct composite_context *c,
 	/* receive samr_QueryUserInfo reply */
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
+
+	/* check if queryuser itself went ok */
+	NT_STATUS_NOT_OK_RETURN(s->queryuserinfo.out.result);
 
 	s->info = talloc_steal(s, s->queryuserinfo.out.info);
 	

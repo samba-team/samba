@@ -565,7 +565,6 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 		i->info7.account_name.string = s->change.account_name;
 		
 		s->change.fields ^= USERMOD_FIELD_ACCOUNT_NAME;
-		
 	}
 
 	if ((s->change.fields & USERMOD_FIELD_FULL_NAME) &&
@@ -581,8 +580,7 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 		*level = 13;
 		i->info13.description.string = s->change.description;
 		
-		s->change.fields ^= USERMOD_FIELD_DESCRIPTION;
-		
+		s->change.fields ^= USERMOD_FIELD_DESCRIPTION;		
 	}
 
 	if ((s->change.fields & USERMOD_FIELD_COMMENT) &&
@@ -599,88 +597,14 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 			s->stage = USERMOD_QUERY;
 			return s->change.fields;
 		}
-		
 	}
 
-	if ((s->change.fields & USERMOD_FIELD_ALLOW_PASS_CHG) &&
-	    (*level == 0 || *level == 3)) {
-		*level = 3;
-		
-		if (s->stage == USERMOD_QUERY) {
-			i->info3.allow_password_change = timeval_to_nttime(s->change.allow_password_change);
-			s->change.fields ^= USERMOD_FIELD_ALLOW_PASS_CHG;
-			
-		} else {
-			s->stage = USERMOD_QUERY;
-			return s->change.fields;
-		}
-
-	}
-	
-	if ((s->change.fields & USERMOD_FIELD_FORCE_PASS_CHG) &&
-	    (*level == 0 || *level == 3)) {
-		*level = 3;
-
-		if (s->stage == USERMOD_QUERY) {
-			i->info3.force_password_change = timeval_to_nttime(s->change.force_password_change);
-			s->change.fields ^= USERMOD_FIELD_FORCE_PASS_CHG;
-			
-		} else {
-			s->stage = USERMOD_QUERY;
-			return s->change.fields;
-		}
-		
-	}
-
-	if ((s->change.fields & USERMOD_FIELD_LAST_LOGON) &&
-	    (*level == 0 || *level == 3)) {
-		*level = 3;
-		
-		if (s->stage == USERMOD_QUERY) {
-			i->info3.last_logon = timeval_to_nttime(s->change.last_logon);
-			s->change.fields ^= USERMOD_FIELD_LAST_LOGON;
-		} else {
-			s->stage = USERMOD_QUERY;
-			return s->change.fields;
-		}
-		
-	}
-
-	if ((s->change.fields & USERMOD_FIELD_LAST_LOGOFF) &&
-	    (*level == 0 || *level == 3)) {
-		*level = 3;
-		
-		if (s->stage == USERMOD_QUERY) {
-			i->info3.last_logoff = timeval_to_nttime(s->change.last_logoff);
-			s->change.fields ^= USERMOD_FIELD_LAST_LOGOFF;
-		} else {
-			s->stage = USERMOD_QUERY;
-			return s->change.fields;
-		}
-
-	}
-	
-	if ((s->change.fields & USERMOD_FIELD_LAST_PASS_CHG) &&
-	    (*level == 0 || *level == 3)) {
-		*level = 3;
-		
-		if (s->stage == USERMOD_QUERY) {
-			i->info3.last_password_change = timeval_to_nttime(s->change.last_password_change);
-			s->change.fields ^= USERMOD_FIELD_LAST_PASS_CHG;
-		} else {
-			s->stage = USERMOD_QUERY;
-			return s->change.fields;
-		}
-		
-	}
-	
 	if ((s->change.fields & USERMOD_FIELD_LOGON_SCRIPT) &&
 	    (*level == 0 || *level == 11)) {
 		*level = 11;
 		i->info11.logon_script.string = s->change.logon_script;
 		
 		s->change.fields ^= USERMOD_FIELD_LOGON_SCRIPT;
-		
 	}
 
 	if ((s->change.fields & USERMOD_FIELD_PROFILE_PATH) &&
@@ -689,35 +613,32 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 		i->info12.profile_path.string = s->change.profile_path;
 		
 		s->change.fields ^= USERMOD_FIELD_PROFILE_PATH;
-		
 	}
 
 	if ((s->change.fields & USERMOD_FIELD_HOME_DIRECTORY) &&
-	    (*level == 0 || *level == 3)) {
-		*level = 3;
+	    (*level == 0 || *level == 10)) {
+		*level = 10;
 		
 		if (s->stage == USERMOD_QUERY) {
-			i->info3.home_directory.string = s->change.home_directory;
+			i->info10.home_directory.string = s->change.home_directory;
 			s->change.fields ^= USERMOD_FIELD_HOME_DIRECTORY;
 		} else {
 			s->stage = USERMOD_QUERY;
 			return s->change.fields;
 		}
-		
 	}
 
 	if ((s->change.fields & USERMOD_FIELD_HOME_DRIVE) &&
-	    (*level == 0 || *level == 3)) {
-		*level = 3;
+	    (*level == 0 || *level == 10)) {
+		*level = 10;
 		
 		if (s->stage == USERMOD_QUERY) {
-			i->info3.home_drive.string = s->change.home_drive;
+			i->info10.home_drive.string = s->change.home_drive;
 			s->change.fields ^= USERMOD_FIELD_HOME_DRIVE;
 		} else {
 			s->stage = USERMOD_QUERY;
 			return s->change.fields;
 		}
-		
 	}
 	
 	if ((s->change.fields & USERMOD_FIELD_ACCT_EXPIRY) &&
@@ -726,7 +647,6 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 		i->info17.acct_expiry = timeval_to_nttime(s->change.acct_expiry);
 		
 		s->change.fields ^= USERMOD_FIELD_ACCT_EXPIRY;
-		
 	}
 
 	if ((s->change.fields & USERMOD_FIELD_ACCT_FLAGS) &&
@@ -854,6 +774,8 @@ static NTSTATUS usermod_modify(struct composite_context *c,
 	/* receive samr_SetUserInfo result */
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
+
+	NT_STATUS_NOT_OK_RETURN(s->setuser.out.result);
 
 	if (s->change.fields == 0) {
 		/* all fields have been set - we're done */
