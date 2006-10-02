@@ -2229,6 +2229,53 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct smbcli_tree *tree,
 	return NT_STATUS_OK;
 }
 
+static BOOL enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
+			 int level)
+{
+	struct spoolss_EnumPrinters r;
+	NTSTATUS status;
+	DATA_BLOB blob;
+
+	r.in.flags = PRINTER_ENUM_LOCAL;
+	r.in.server = "\\\\localhost";
+	r.in.level = 1;
+	r.in.buffer = NULL;
+	r.in.offered = 0;
+
+	status = dcerpc_spoolss_EnumPrinters(pipe, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) dcerpc_spoolss_EnumPrinters failed: %s\n",
+			 __location__, nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		d_printf("(%s) EnumPrinters unexpected return code %s, should "
+			 "be WERR_INSUFFICIENT_BUFFER\n", __location__,
+			 win_errstr(r.out.result));
+		return False;
+	}
+
+	blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+	if (blob.data == NULL) {
+		d_printf("(%s) data_blob_talloc failed\n", __location__);
+		return False;
+	}
+
+	r.in.buffer = &blob;
+	r.in.offered = r.out.needed;
+
+	status = dcerpc_spoolss_EnumPrinters(pipe, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		d_printf("(%s) dcerpc_spoolss_EnumPrinters failed: %s, "
+			 "%s\n", __location__, nt_errstr(status),
+			 win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
 static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *pipe,
 			       struct policy_handle *handle, int level,
 			       union spoolss_PrinterInfo **res)
@@ -2352,9 +2399,7 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 		struct spoolss_OpenPrinterEx r;
 
 		ZERO_STRUCT(r);
-		r.in.printername = talloc_asprintf(
-			mem_ctx, "\\\\%s",
-			lp_parm_string(-1, "torture", "host"));
+		r.in.printername = "\\\\localhost";
 		r.in.datatype = NULL;
 		r.in.access_mask = 0;
 		r.in.level = 1;
@@ -2365,6 +2410,13 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
 				 "%s\n", __location__, nt_errstr(status));
+			talloc_free(mem_ctx);
+			return False;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
+				 "%s\n", __location__,
+				 win_errstr(r.out.result));
 			talloc_free(mem_ctx);
 			return False;
 		}
@@ -2383,6 +2435,13 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 			talloc_free(mem_ctx);
 			return False;
 		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			d_printf("(%s) dcerpc_spoolss_ClosePrinter failed: "
+				 "%s\n", __location__,
+				 win_errstr(r.out.result));
+			talloc_free(mem_ctx);
+			return False;
+		}
 	}
 
 	{
@@ -2390,8 +2449,7 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 
 		ZERO_STRUCT(r);
 		r.in.printername = talloc_asprintf(
-			mem_ctx, "\\\\%s\\%s", dcerpc_server_name(p),
-			printers[0]);
+			mem_ctx, "\\\\localhost\\%s", printers[0]);
 		r.in.datatype = NULL;
 		r.in.access_mask = 0;
 		r.in.level = 1;
@@ -2402,6 +2460,13 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
 				 "%s\n", __location__, nt_errstr(status));
+			talloc_free(mem_ctx);
+			return False;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
+				 "%s\n", __location__,
+				 win_errstr(r.out.result));
 			talloc_free(mem_ctx);
 			return False;
 		}
@@ -2439,6 +2504,12 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 			talloc_free(mem_ctx);
 			return False;
 		}
+	}
+
+	if (!enumprinters(mem_ctx, p, 1)) {
+		d_printf("(%s) enumprinters failed\n", __location__);
+		talloc_free(mem_ctx);
+		return False;
 	}
 
 	talloc_free(mem_ctx);
