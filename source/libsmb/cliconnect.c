@@ -765,6 +765,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 	DEBUG(3,("got principal=%s\n", principal ? principal : "<null>"));
 
+#ifdef HAVE_KRB5
 	if (got_kerberos_mechanism && (principal == NULL)) {
 		/*
 		 * It is WRONG to depend on the principal sent in the negprot
@@ -776,6 +777,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 		DEBUGADD(1, ("Disabling Kerberos\n"));
 		cli->use_kerberos = False;
 	}
+#endif
 
 	fstrcpy(cli->user_name, user);
 
