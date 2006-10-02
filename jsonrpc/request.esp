@@ -13,8 +13,10 @@
  * This is a simple JSON-RPC server.
  */
 
-/* Bring in the date class */
+/* Bring in the json format/parse functions */
 jsonrpc_include("json.esp");
+
+/* Bring in the date class */
 jsonrpc_include("jsondate.esp");
 
 /* bring the string functions into the global frame */
