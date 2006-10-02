@@ -1363,7 +1363,7 @@ MprVar mprCreateStringVar(const char *value, bool allocate)
 	memset(&v, 0x0, sizeof(v));
 	v.type = MPR_TYPE_STRING;
 	if (value == 0) {
-		v.string = "";
+		v.string = (char*) "";
 	} else if (allocate) {
 		v.string = mprStrdup(value);
 		v.allocatedData = 1;
