@@ -92,7 +92,7 @@ int literal_to_var(int eid, int argc, char **argv)
 
         tok.source = argv[0];
         tok.pos = 0;
-        tok.ctx = talloc_new(NULL);
+        tok.ctx = talloc_new(mprMemCtx());
         if (tok.ctx == NULL) {
                 mpr_Return(eid, mprCreateUndefinedVar());
                 return 0;
