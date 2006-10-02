@@ -60,8 +60,14 @@ case "$host_os" in
 	*hpux*)
 		# mmap on HPUX is completely broken...
 		AC_DEFINE(MMAP_BLACKLIST, 1, [Whether MMAP is broken])
+		if test "`uname -r`" = "B.11.11"; then
+			AC_MSG_WARN([Enabling HPUX 11.11 header bug workaround])
+			CFLAGS="$CFLAGS -D_LARGEFILE64_SUPPORT -D__LP64__ -DO_LARGEFILE=04000"
+		fi
 		;;
 	*aix*)
+		AC_DEFINE(BROKEN_STRNDUP, 1, [Whether strndup is broken])
+		AC_DEFINE(BROKEN_STRNLEN, 1, [Whether strnlen is broken])
 		if test "${GCC}" != "yes"; then
 			## for funky AIX compiler using strncpy()
 			CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
