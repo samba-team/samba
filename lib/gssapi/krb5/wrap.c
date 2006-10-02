@@ -127,9 +127,13 @@ _gsskrb5_wrap_size_limit (
 
   switch (keytype) {
   case KEYTYPE_DES :
+      ret = sub_wrap_size(req_output_size, max_input_size, 8, 22);
+      break;
   case KEYTYPE_ARCFOUR:
   case KEYTYPE_ARCFOUR_56:
-      ret = sub_wrap_size(req_output_size, max_input_size, 8, 22);
+      ret = _gssapi_wrap_size_arcfour(minor_status, ctx, 
+				      conf_req_flag, qop_req, 
+				      req_output_size, max_input_size, key);
       break;
   case KEYTYPE_DES3 :
       ret = sub_wrap_size(req_output_size, max_input_size, 8, 34);
