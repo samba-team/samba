@@ -72,7 +72,8 @@ OBJ_FILES = \
 		smbcalls_creds.o \
 		smbcalls_param.o \
 		ejsnet.o \
-		mprutil.o
+		mprutil.o \
+		literal.o
 PUBLIC_DEPENDENCIES = \
 		EJS LIBSAMBA-UTIL \
 		EJSRPC MESSAGING \
