@@ -569,21 +569,6 @@ static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod
 	/* profile path change */
 	SET_FIELD_LSA_STRING(r->in, user, mod, profile_path, USERMOD_FIELD_PROFILE_PATH);
 
-	/* allow password change time */
-	SET_FIELD_NTTIME(r->in, user, mod, allow_password_change, USERMOD_FIELD_ALLOW_PASS_CHG);
-
-	/* force password change time */
-	SET_FIELD_NTTIME(r->in, user, mod, force_password_change, USERMOD_FIELD_FORCE_PASS_CHG);
-
-	/* last logon change time */
-	SET_FIELD_NTTIME(r->in, user, mod, last_logon, USERMOD_FIELD_LAST_LOGON);
-
-	/* last logoff change time */
-	SET_FIELD_NTTIME(r->in, user, mod, last_logoff, USERMOD_FIELD_LAST_LOGOFF);
-
-	/* last password change time */
-	SET_FIELD_NTTIME(r->in, user, mod, last_password_change, USERMOD_FIELD_LAST_PASS_CHG);
-
 	/* account expiry change */
 	SET_FIELD_NTTIME(r->in, user, mod, acct_expiry, USERMOD_FIELD_ACCT_EXPIRY);
 
@@ -629,6 +614,7 @@ NTSTATUS libnet_ModifyUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 struct user_info_state {
 	struct libnet_context *ctx;
 	const char *domain_name;
+	const char *user_name;
 	struct libnet_LookupName lookup;
 	struct libnet_DomainOpen domopen;
 	struct libnet_rpc_userinfo userinfo;
@@ -639,7 +625,7 @@ struct user_info_state {
 
 
 static void continue_name_found(struct composite_context *ctx);
-static void continue_domain_opened(struct composite_context *ctx);
+static void continue_domain_open_info(struct composite_context *ctx);
 static void continue_info_received(struct composite_context *ctx);
 
 
@@ -650,6 +636,7 @@ struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 {
 	struct composite_context *c;
 	struct user_info_state *s;
+	struct composite_context *prereq_ctx;
 	struct composite_context *lookup_req;
 
 	c = composite_create(mem_ctx, ctx->event_ctx);
@@ -663,9 +650,14 @@ struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 	s->monitor_fn = monitor;
 	s->ctx = ctx;
 	s->domain_name = talloc_strdup(c, r->in.domain_name);
+	s->user_name = talloc_strdup(c, r->in.user_name);
+
+	prereq_ctx = domain_opened(ctx, s->domain_name, c, &s->domopen,
+				   continue_domain_open_info, monitor);
+	if (prereq_ctx) return prereq_ctx;
 
 	s->lookup.in.domain_name = s->domain_name;
-	s->lookup.in.name        = talloc_strdup(c, r->in.user_name);
+	s->lookup.in.name        = s->user_name;
 
 	lookup_req = libnet_LookupName_send(ctx, c, &s->lookup, s->monitor_fn);
 	if (composite_nomem(lookup_req, c)) return c;
@@ -675,11 +667,36 @@ struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 }
 
 
+static void continue_domain_open_info(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct user_info_state *s;
+	struct composite_context *lookup_req;
+	struct monitor_msg msg;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct user_info_state);
+
+	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domopen);
+	if (!composite_is_ok(c)) return;
+	
+	if (s->monitor_fn) s->monitor_fn(&msg);
+
+	s->lookup.in.domain_name = s->domain_name;
+	s->lookup.in.name        = s->user_name;
+
+	lookup_req = libnet_LookupName_send(s->ctx, c, &s->lookup, s->monitor_fn);
+	if (composite_nomem(lookup_req, c)) return;
+	
+	composite_continue(c, lookup_req, continue_rpc_userinfo, c);
+}
+
+
 static void continue_name_found(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct user_info_state *s;
-	struct composite_context *domopen_req;
+	struct composite_context *info_req;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct user_info_state);
@@ -691,29 +708,6 @@ static void continue_name_found(struct composite_context *ctx)
 		composite_error(c, NT_STATUS_NO_SUCH_USER);
 		return;
 	}
-
-	s->domopen.in.type = DOMAIN_SAMR;
-	s->domopen.in.domain_name = s->domain_name;
-	s->domopen.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-
-	domopen_req = libnet_DomainOpen_send(s->ctx, &s->domopen, s->monitor_fn);
-	if (composite_nomem(domopen_req, c)) return;
-	
-	composite_continue(c, domopen_req, continue_domain_opened, c);
-}
-
-
-static void continue_domain_opened(struct composite_context *ctx)
-{
-	struct composite_context *c;
-	struct user_info_state *s;
-	struct composite_context *info_req;
-
-	c = talloc_get_type(ctx->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct user_info_state);
-
-	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domopen);
-	if (!composite_is_ok(c)) return;
 
 	s->userinfo.in.domain_handle = s->ctx->samr.handle;
 	s->userinfo.in.sid = s->lookup.out.sidstr;
