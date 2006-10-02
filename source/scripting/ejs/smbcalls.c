@@ -83,7 +83,7 @@ static int ejs_typeof_native(MprVarHandle eid, int argc, struct MprVar **argv)
 		{ MPR_TYPE_INT,              "integer" },
 		{ MPR_TYPE_INT64,            "integer64" },
 		{ MPR_TYPE_OBJECT,           "object" },
-		{ MPR_TYPE_FUNCTION,         "function" },
+		{ MPR_TYPE_FUNCTION,         "js_function" },
 		{ MPR_TYPE_STRING,           "string" },
 		{ MPR_TYPE_STRING_CFUNCTION, "string_c_function" },
 		{ MPR_TYPE_PTR,              "pointer" }
@@ -152,10 +152,20 @@ static int ejs_libinclude(int eid, int argc, char **argv)
 }
 
 /*
-  jsonrpc_include() allows you to include jsonrpc files from a path
-  based at "jsonrpc base =" in smb.conf.
+  return the current version
 */
-static int ejs_jsonrpc_include(int eid, int argc, char **argv)
+static int ejs_version(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	mpr_ReturnString(eid, SAMBA_VERSION_STRING);
+	return 0;
+}
+
+
+/*
+ * jsonrpc_include() allows you to include jsonrpc files from a path based at
+ * "jsonrpc base =" in smb.conf.
+ */
+static int jsonrpc_include(int eid, int argc, char **argv)
 {
         int ret = -1;
         char *path;
@@ -192,14 +202,7 @@ static int ejs_jsonrpc_include(int eid, int argc, char **argv)
 	return 0;
 }
 
-/*
-  return the current version
-*/
-static int ejs_version(MprVarHandle eid, int argc, struct MprVar **argv)
-{
-	mpr_ReturnString(eid, SAMBA_VERSION_STRING);
-	return 0;
-}
+
 
 static void (*ejs_exception_handler) (const char *) = NULL;
 
@@ -222,6 +225,7 @@ void smb_setup_ejs_functions(void (*exception_handler)(const char *))
 	smb_setup_ejs_options();
 	smb_setup_ejs_credentials();
 	smb_setup_ejs_param();
+        smb_setup_ejs_literal();
 	
 	ejsnet_setup();
 
@@ -235,7 +239,7 @@ void smb_setup_ejs_functions(void (*exception_handler)(const char *))
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "nativeTypeOf", ejs_typeof_native, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "libinclude", ejs_libinclude, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "jsonrpc_include", ejs_jsonrpc_include, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "version", ejs_version, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineStringCFunction(-1, "jsonrpc_include", jsonrpc_include, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
 
