@@ -54,6 +54,7 @@ AC_CHECK_FUNCS(getdents)
 AC_CACHE_CHECK([for replacing readdir using getdents()],libreplace_cv_READDIR_GETDENTS,[
 	AC_TRY_RUN([
 #define _LIBREPLACE_REPLACE_H
+#error _donot_use_getdents_replacement_anymore
 #include "$libreplacedir/repdir_getdents.c"
 #define test_readdir_os2_delete main
 #include "$libreplacedir/test/os2_delete.c"],
