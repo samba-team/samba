@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -665,5 +665,81 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	*conf_state = conf_flag;
 
     *minor_status = 0;
+    return GSS_S_COMPLETE;
+}
+
+static OM_uint32
+max_wrap_length_arcfour(const gsskrb5_ctx ctx,
+			krb5_crypto crypto,
+			size_t input_length,
+			OM_uint32 *max_input_size)
+{
+    /* 
+     * if GSS_C_DCE_STYLE is in use:
+     *  - we only need to encapsulate the WRAP token
+     * However, since this is a fixed since, we just 
+     */
+    if (ctx->flags & GSS_C_DCE_STYLE) {
+	size_t len, total_len;
+
+	len = GSS_ARCFOUR_WRAP_TOKEN_SIZE;
+	_gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
+
+	if (input_length < len)
+	    *max_input_size = 0;
+	else
+	    *max_input_size = input_length - len;
+
+    } else {
+	size_t extrasize = GSS_ARCFOUR_WRAP_TOKEN_SIZE;
+	size_t blocksize = 8;
+	size_t len, total_len;
+
+	len = 8 + input_length + blocksize + extrasize;
+
+	_gsskrb5_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
+
+	total_len -= input_length; /* token length */
+	if (total_len < input_length) {
+	    *max_input_size = (input_length - total_len);
+	    (*max_input_size) &= (~(OM_uint32)(blocksize - 1));
+	} else {
+	    *max_input_size = 0;
+	}
+    }
+
+    return GSS_S_COMPLETE;
+}
+
+OM_uint32
+_gssapi_wrap_size_arcfour(OM_uint32 *minor_status,
+			  const gsskrb5_ctx ctx,
+			  int conf_req_flag,
+			  gss_qop_t qop_req,
+			  OM_uint32 req_output_size,
+			  OM_uint32 *max_input_size,
+			  krb5_keyblock *key)
+{
+    krb5_error_code ret;
+    krb5_crypto crypto;
+
+    ret = krb5_crypto_init(_gsskrb5_context, key, 0, &crypto);
+    if (ret != 0) {
+	_gsskrb5_set_error_string();
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
+
+    ret = max_wrap_length_arcfour(ctx, crypto,
+				  req_output_size, max_input_size);
+    if (ret != 0) {
+	_gsskrb5_set_error_string();
+	*minor_status = ret;
+	krb5_crypto_destroy(_gsskrb5_context, crypto);
+	return GSS_S_FAILURE;
+    }
+
+    krb5_crypto_destroy(_gsskrb5_context, crypto);
+
     return GSS_S_COMPLETE;
 }
