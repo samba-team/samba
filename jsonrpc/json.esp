@@ -137,6 +137,9 @@ Json = new Object();
 Json.encode = _encode;
 _encode = null;
 
+/* Json.decode(): decode a string into its object form */
+Json.decode = literal_to_var;
+
 /* Internal stuff, not for external access */
 Json._internal = new Object();
 
@@ -191,7 +194,7 @@ Json._internal.convert['\x1f'] = '\\u001f';
 
 /* Test it */
 libinclude("base.js");
-function testIt()
+function testFormat()
 {
     var test = new Object();
     test.int = 23;
@@ -208,6 +211,33 @@ function testIt()
     test.obj.array[1] = 223;
     printf("%s\n", Json.encode(test));
 }
-//testIt();
+
+function testParse()
+{
+    var s;
+
+    s = '{ "x" : 23 }';
+    obj = Json.decode(s);
+    printf("Decode/encode of\n\t%s\nyielded\n\t%s\n\n", s, Json.encode(obj));
+
+    s = '{ "x" : [ 23, 42] }';
+    obj = Json.decode(s);
+    printf("Decode/encode of\n\t%s\nyielded\n\t%s\n\n", s, Json.encode(obj));
+
+    s = '[ 13, 19, { "x" : [ 23, 42] }, 223 ]';
+    obj = Json.decode(s);
+    printf("Decode/encode of\n\t%s\nyielded\n\t%s\n\n", s, Json.encode(obj));
+
+    s = '{ "x" : [ "hi" ] }';
+    obj = Json.decode(s);
+    printf("Decode/encode of\n\t%s\nyielded\n\t%s\n\n", s, Json.encode(obj));
+
+    s = '[ 13, 19, { "x" : [ 23, 42, { "y":{"a":"hello", "b":"world", "c":[1,2,3]}}] }, 223 ]';
+    obj = Json.decode(s);
+    printf("Decode/encode of\n\t%s\nyielded\n\t%s\n\n", s, Json.encode(obj));
+}
+
+//testFormat();
+testParse();
 
 %>
