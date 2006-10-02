@@ -74,6 +74,8 @@ make_proto lib/krb5 krb5-protos.h krb5-private.h '$(libkrb5_la_SOURCES)' KRB5_LI
 make_proto lib/kadm5 kadm5-protos.h kadm5-private.h '$(libkadm5srv_la_SOURCES) $(libkadm5clnt_la_SOURCES)'
 make_proto lib/hdb hdb-protos.h hdb-private.h '$(libhdb_la_SOURCES)'
 make_proto lib/hx509 hx509-protos.h hx509-private.h '$(libhx509_la_SOURCES)'
+make_proto lib/gssapi /dev/null spnego/spnego-private.h '$(spnegosrc)'
+make_proto lib/gssapi /dev/null krb5/gsskrb5-private.h '$(krb5src)'
 make_proto appl/login login_protos.h /dev/null '$(login_SOURCES)'
 make_proto kcm kcm_protos.h /dev/null '$(kcm_SOURCES)'
 make_proto kdc kdc-protos.h kdc-private.h '$(libkdc_la_SOURCES)'
@@ -83,6 +85,6 @@ find . -name .cvsignore -print | xargs rm
 find . -name .__afs\* -print | xargs rm
 rm -fr autom4te*.cache
 
-echo "tar cf - ${distdir} \| gzip -9 > ${distdir}.tar.gz"
+echo "tar cf - ${distdir} | gzip -9 > ${distdir}.tar.gz"
 echo "gpg -ba -u 0x45D901D8 ${distdir}.tar.gz"
 
