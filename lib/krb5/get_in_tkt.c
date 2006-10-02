@@ -409,7 +409,7 @@ add_padata(krb5_context context,
 
 static krb5_error_code
 init_as_req (krb5_context context,
-	     krb5_kdc_flags opts,
+	     KDCOptions opts,
 	     krb5_creds *creds,
 	     const krb5_addresses *addrs,
 	     const krb5_enctype *etypes,
@@ -427,7 +427,7 @@ init_as_req (krb5_context context,
 
     a->pvno = 5;
     a->msg_type = krb_as_req;
-    a->req_body.kdc_options = opts.b;
+    a->req_body.kdc_options = opts;
     a->req_body.cname = malloc(sizeof(*a->req_body.cname));
     if (a->req_body.cname == NULL) {
 	ret = ENOMEM;
@@ -647,14 +647,14 @@ krb5_get_in_cred(krb5_context context,
     krb5_salt salt;
     krb5_keyblock *key;
     size_t size;
-    krb5_kdc_flags opts;
+    KDCOptions opts;
     PA_DATA *pa;
     krb5_enctype etype;
     krb5_preauthdata *my_preauth = NULL;
     unsigned nonce;
     int done;
 
-    opts.i = options;
+    opts = int2KDCOptions(options);
 
     krb5_generate_random_block (&nonce, sizeof(nonce));
     nonce &= 0xffffffff;
@@ -799,12 +799,9 @@ krb5_get_in_tkt(krb5_context context,
 		krb5_kdc_rep *ret_as_reply)
 {
     krb5_error_code ret;
-    krb5_kdc_flags opts;
-    opts.i = 0;
-    opts.b = int2KDCOptions(options);
     
     ret = krb5_get_in_cred (context,
-			    opts.i,
+			    options,
 			    addrs,
 			    etypes,
 			    ptypes,

@@ -513,7 +513,7 @@ krb5_get_init_creds_keytab(krb5_context context,
     a->keytab    = keytab;
 
     ret = krb5_get_in_cred (context,
-			    ctx.flags.i,
+			    KDCOptions2int(ctx.flags),
 			    ctx.addrs,
 			    ctx.etypes,
 			    ctx.pre_auth_types,
@@ -1559,7 +1559,7 @@ krb5_get_init_creds_keyblock(krb5_context context,
 	goto out;
 
     ret = krb5_get_in_cred (context,
-			    ctx.flags.i,
+			    KDCOptions2int(ctx.flags),
 			    ctx.addrs,
 			    ctx.etypes,
 			    ctx.pre_auth_types,
