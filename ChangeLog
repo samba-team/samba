@@ -1,5 +1,9 @@
-2006-09-26  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* fix-export: build gssapi mech private files
+	
+2006-09-26  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* appl/gssmask/gssmaestro.c: Handle FIRST_CALL in the context
 	building, better error handling.
 
