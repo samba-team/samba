@@ -14,6 +14,7 @@
  */
 
 /* Bring in the date class */
+jsonrpc_include("json.esp");
 jsonrpc_include("jsondate.esp");
 
 /* bring the string functions into the global frame */
@@ -27,12 +28,6 @@ function printf()
 	print(vsprintf(arguments));
 }
 
-
-/* KLUDGE... */
-form = new Array();
-server = new Array();
-request = new Array();
-/* ...KLUDGE */
 
 /*
  * All of our manipulation of JSON RPC methods will be through this object.
@@ -147,7 +142,7 @@ function sendReply(reply, scriptTransportId)
     if (scriptTransportId == jsonrpc.Constant.ScriptTransport.NotInUse)
     {
         /* ... then just output the reply. */
-        printf(reply);
+        write(reply);
     }
     else
     {
@@ -156,42 +151,10 @@ function sendReply(reply, scriptTransportId)
             "qx.io.remote.ScriptTransport._requestFinished(" +
             scriptTransportId + ", " + reply +
             ");";
-        printf(reply);
+        write(reply);
     }
 }
 
-
-/*
- * class Json
- *
- * This class provides the JSON encoder and decoder, and some utility
- * functions.
- */
-Json = new Object();
-
-/* KLUDGE... */
-function _jsonDecode(s)
-{
-    var o = new Object();
-    o.id = 23;
-    o.service = "qooxdoo.test";
-    o.method = "echo";
-    o.params = new Array(1);
-    o.params[0] = "hello world";
-    return o;
-}
-/* ...KLUDGE */
-
-Json.decode = _jsonDecode;
-
-/* KLUDGE... */
-function _jsonEncode(o)
-{
-    return "{ result: \"hello world\" }"
-}
-/* ...KLUDGE */
-
-Json.encode = _jsonEncode;
 
 function _jsonValidRequest(req)
 {
@@ -300,14 +263,14 @@ error = jsonrpc.createError(jsonrpc.Constant.ErrorOrigin.Server,
 scriptTransportId = jsonrpc.Constant.ScriptTransport.NotInUse;
 
 /* What type of request did we receive? */
-if (server["REQUEST_METHOD"] == "POST" &&
-    server["CONENT_TYPE"] == "text/json")
+if (request["REQUEST_METHOD"] == "POST" &&
+    request["CONTENT_TYPE"] == "text/json")
 {
     /* We found literal POSTed json-rpc data (we hope) */
     input = request["POST_DATA"];
     jsonInput = Json.decode(input);
 }
-else if (server["REQUEST_METHOD"] == "GET" &&
+else if (request["REQUEST_METHOD"] == "GET" &&
          form["_ScriptTransport_id"] != undefined &&
          form["_ScriptTransport_data"] != undefined)
 {
@@ -318,10 +281,6 @@ else if (server["REQUEST_METHOD"] == "GET" &&
     jsonInput = Json.decode(input);
 }
 
-/* KLUDGE... */
-jsonInput = Json.decode(input);
-/* ...KLUDGE */
-
 /* Ensure that this was a JSON-RPC service request */
 if (! jsonrpc.validRequest(jsonInput))
 {
@@ -329,7 +288,7 @@ if (! jsonrpc.validRequest(jsonInput))
      * This request was not issued with JSON-RPC so echo the error rather than
      * issuing a JsonRpcError response.
      */
-    printf("JSON-RPC request expected; service, method or params missing<br>");
+    write("JSON-RPC request expected; service, method or params missing<br>");
     return;
 }
 

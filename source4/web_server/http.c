@@ -36,6 +36,7 @@
 #define SWAT_SESSION_KEY "SwatSessionId"
 #define HTTP_PREAUTH_URI "/scripting/preauth.esp"
 #define JSONRPC_REQUEST "/services"
+#define JSONRPC_SERVER "/services/request.esp"
 
 /* state of the esp subsystem for a specific request */
 struct esp_state {
@@ -415,9 +416,10 @@ static void http_setup_arrays(struct esp_state *esp)
 	SETVAR(ESP_REQUEST_OBJ, "CONTENT_LENGTH", 
 	       talloc_asprintf(esp, "%u", web->input.content_length));
 	SETVAR(ESP_REQUEST_OBJ, "QUERY_STRING", web->input.query_string);
-#if 0 /* djl -- not yet.  need to track down the compiler warning */
-	SETVAR(ESP_REQUEST_OBJ, "POST_DATA", web->input.partial);
-#endif
+	SETVAR(ESP_REQUEST_OBJ, "POST_DATA",
+               talloc_strndup(esp,
+                              web->input.partial.data,
+                              web->input.partial.length));
 	SETVAR(ESP_REQUEST_OBJ, "REQUEST_METHOD", web->input.post_request?"POST":"GET");
 	SETVAR(ESP_REQUEST_OBJ, "REQUEST_URI", web->input.url);
 	p = strrchr(web->input.url, '/');
@@ -427,7 +429,6 @@ static void http_setup_arrays(struct esp_state *esp)
 		struct MprVar mpv = mprObject("socket_address");
 		mprSetPtrChild(&mpv, "socket_address", peer_address);
 		espSetVar(req, ESP_REQUEST_OBJ, "REMOTE_SOCKET_ADDRESS", mpv);
-
 		SETVAR(ESP_REQUEST_OBJ, "REMOTE_ADDR", peer_address->addr);
 	}
 	p = socket_get_peer_name(web->conn->socket, esp);
@@ -520,6 +521,30 @@ static void esp_request(struct esp_state *esp, const char *url)
 		http_writeBlock(web, "</pre>", 6);
 	}
 	talloc_free(buf);
+}
+
+/*
+  process a JSON RPC request
+*/
+static void jsonrpc_request(struct esp_state *esp)
+{
+	const char *path = http_local_path(esp->web, JSONRPC_SERVER);
+
+        /* Ensure we got a valid path. */
+	if (path == NULL) {
+                /* should never occur */
+		http_error(esp->web, 500, "Internal server error");
+		return;
+	}
+
+        /* Ensure that the JSON-RPC server request script exists */
+	if (!file_exist(path)) {
+		http_error_unix(esp->web, path);
+		return;
+	}
+
+        /* Call the server request script */
+	esp_request(esp, JSONRPC_SERVER);
 }
 
 /*
@@ -859,7 +884,11 @@ void http_process_input(struct websrv_context *web)
          * Work out the mime type.  First, we see if the request is a JSON-RPC
          * service request.  If not, we look at the extension.
          */
-        if (strcmp(web->input.url, JSONRPC_REQUEST) == 0) {
+        if (strncmp(web->input.url,
+                    JSONRPC_REQUEST,
+                    sizeof(JSONRPC_REQUEST) - 1) == 0 &&
+            (web->input.url[sizeof(JSONRPC_REQUEST) - 1] == '\0' ||
+             web->input.url[sizeof(JSONRPC_REQUEST) - 1] == '/')) {
             page_type = page_type_jsonrpc;
             file_type = "text/json";
             
@@ -876,6 +905,7 @@ void http_process_input(struct websrv_context *web)
             }
             if (file_type == NULL) {
 		file_type = "text/html";
+                page_type = page_type_simple;
             }
         }
 
@@ -908,11 +938,7 @@ void http_process_input(struct websrv_context *web)
                 break;
 
         case page_type_jsonrpc:
-#if 0 /* djl -- not yet */
-                if (! jsonrpc_request(esp)) {
-                        http_error(web, 500, "Out of memory");
-                }
-#endif
+                jsonrpc_request(esp);
                 break;
         }
 
