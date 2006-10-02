@@ -1,5 +1,9 @@
 2006-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/arcfour.c: Improve the calcucation of header
+	lengths. DCE-STYLE data is also padded so remove if (1 || ...)
+	code.
+
 	* krb5/wrap.c (_gsskrb5_wrap_size_limit): use
 	_gssapi_wrap_size_arcfour for arcfour
 
