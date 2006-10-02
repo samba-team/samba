@@ -984,6 +984,12 @@ typedef struct printer_info_5
 }
 PRINTER_INFO_5;
 
+typedef struct printer_info_6
+{
+	uint32 status;
+}
+PRINTER_INFO_6;
+
 #define SPOOL_DS_PUBLISH	1
 #define SPOOL_DS_UPDATE		2
 #define SPOOL_DS_UNPUBLISH	4

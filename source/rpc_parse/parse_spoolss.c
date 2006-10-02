@@ -2452,6 +2452,24 @@ BOOL smb_io_printer_info_5(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_5 
 }
 
 /*******************************************************************
+ Parse a PRINTER_INFO_6 structure.
+********************************************************************/  
+
+BOOL smb_io_printer_info_6(const char *desc, RPC_BUFFER *buffer,
+			   PRINTER_INFO_6 *info, int depth)
+{
+	prs_struct *ps=&buffer->prs;
+
+	prs_debug(ps, depth, desc, "smb_io_printer_info_6");
+	depth++;	
+	
+	if (!prs_uint32("status", ps, depth, &info->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Parse a PRINTER_INFO_7 structure.
 ********************************************************************/  
 
@@ -3110,6 +3128,14 @@ uint32 spoolss_size_printer_info_5(PRINTER_INFO_5 *info)
 	return size;
 }
 
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/
+
+uint32 spoolss_size_printer_info_6(PRINTER_INFO_6 *info)
+{
+	return sizeof(uint32);
+}
 
 /*******************************************************************
 return the size required by a struct in the stream
@@ -6259,6 +6285,11 @@ void free_printer_info_4(PRINTER_INFO_4 *printer)
 }
 
 void free_printer_info_5(PRINTER_INFO_5 *printer)
+{
+	SAFE_FREE(printer);
+}
+
+void free_printer_info_6(PRINTER_INFO_6 *printer)
 {
 	SAFE_FREE(printer);
 }
