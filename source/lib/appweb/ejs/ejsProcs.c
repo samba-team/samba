@@ -59,7 +59,7 @@ static int 		valueOfProc(EjsHandle eid, int argc, MprVar **argv);
  */
 static MprVarTriggerStatus lengthTrigger(MprVarTriggerOp op, 
 	MprProperties *parentProperties, MprVar *prop, MprVar *newValue,
-	bool copyRef);
+	int copyRef);
 
 /******************************************************************************/
 /*
@@ -340,7 +340,7 @@ static int valueOfProc(EjsHandle eid, int argc, MprVar **argv)
 
 static MprVarTriggerStatus lengthTrigger(MprVarTriggerOp op, 
 	MprProperties *parentProperties, MprVar *prop, MprVar *newValue, 
-	bool copyRef)
+	int copyRef)
 {
 	switch (op) {
 	case MPR_VAR_READ:
