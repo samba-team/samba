@@ -165,7 +165,7 @@ BOOL spnego_parse_negTokenInit(DATA_BLOB blob,
 	ret = !data.has_error;
 	if (data.has_error) {
 		int j;
-		SAFE_FREE(principal);
+		SAFE_FREE(*principal);
 		for(j = 0; j < i && j < ASN1_MAX_OIDS-1; j++) {
 			SAFE_FREE(OIDs[j]);
 		}
