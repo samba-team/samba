@@ -5,9 +5,9 @@
 # we want everything on stderr, so the program is not disturbed
 exec 1>&2
 
-BASENAME=$( basename $0)
+BASENAME=`basename $0`
 
-test -z ${GDB_BIN} && GDB_BIN=$( type -p gdb)
+test -z ${GDB_BIN} && GDB_BIN=`type -p gdb`
 if [ -z ${GDB_BIN} ]; then
 	echo "ERROR: ${BASENAME} needs an installed gdb. "
 	exit 1
