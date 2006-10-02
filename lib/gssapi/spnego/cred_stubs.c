@@ -86,7 +86,7 @@ _gss_spnego_alloc_cred(OM_uint32 *minor_status,
  * we support gss_{get,set}_neg_mechs() we will need to expose
  * more functionality.
  */
-OM_uint32 gss_spnego_acquire_cred
+OM_uint32 _gss_spnego_acquire_cred
 (OM_uint32 *minor_status,
  const gss_name_t desired_name,
  OM_uint32 time_req,
@@ -157,15 +157,7 @@ out:
     return ret;
 }
 
-OM_uint32 gss_spnego_release_cred
-           (OM_uint32 *minor_status,
-            gss_cred_id_t *cred_handle
-           )
-{
-    return _gss_spnego_release_cred(minor_status, cred_handle);
-}
-
-OM_uint32 gss_spnego_inquire_cred
+OM_uint32 _gss_spnego_inquire_cred
            (OM_uint32 * minor_status,
             const gss_cred_id_t cred_handle,
             gss_name_t * name,
@@ -194,7 +186,7 @@ OM_uint32 gss_spnego_inquire_cred
     return ret;
 }
 
-OM_uint32 gss_spnego_add_cred (
+OM_uint32 _gss_spnego_add_cred (
             OM_uint32 * minor_status,
             const gss_cred_id_t input_cred_handle,
             const gss_name_t desired_name,
@@ -243,7 +235,7 @@ OM_uint32 gss_spnego_add_cred (
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 gss_spnego_inquire_cred_by_mech (
+OM_uint32 _gss_spnego_inquire_cred_by_mech (
             OM_uint32 * minor_status,
             const gss_cred_id_t cred_handle,
             const gss_OID mech_type,
@@ -274,7 +266,7 @@ OM_uint32 gss_spnego_inquire_cred_by_mech (
     return ret;
 }
 
-OM_uint32 gss_spnego_inquire_cred_by_oid
+OM_uint32 _gss_spnego_inquire_cred_by_oid
            (OM_uint32 * minor_status,
             const gss_cred_id_t cred_handle,
             const gss_OID desired_object,

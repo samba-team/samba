@@ -94,7 +94,7 @@ OM_uint32 _gss_spnego_alloc_sec_context (OM_uint32 * minor_status,
  * Free a SPNEGO context handle. The caller must have acquired
  * the lock before this is called.
  */
-OM_uint32 _gss_spnego_delete_sec_context
+OM_uint32 _gss_spnego_internal_delete_sec_context
            (OM_uint32 *minor_status,
             gss_ctx_id_t *context_handle,
             gss_buffer_t output_token
@@ -198,20 +198,6 @@ _gss_spnego_require_mechlist_mic(OM_uint32 *minor_status,
     }
 
     return GSS_S_COMPLETE;
-}
-
-OM_uint32 gss_spnego_internal_release_oid(OM_uint32 *minor_status, gss_OID *OID)
-{
-    *minor_status = 0;
-
-    if (*OID == GSS_SPNEGO_MECHANISM ||
-	*OID == &gss_mskrb_mechanism_oid_desc ||
-	*OID == &gss_krb5_mechanism_oid_desc) {
-	*OID = GSS_C_NO_OID;
-	return GSS_S_COMPLETE;
-    }
-
-    return GSS_S_FAILURE;
 }
 
 int _gss_spnego_add_mech_type(gss_OID mech_type,

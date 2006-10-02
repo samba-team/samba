@@ -67,7 +67,7 @@ spnego_supported_mechs(OM_uint32 *minor_status, gss_OID_set *mechs)
 
 
 
-OM_uint32 gss_spnego_process_context_token
+OM_uint32 _gss_spnego_process_context_token
            (OM_uint32 *minor_status,
             const gss_ctx_id_t context_handle,
             const gss_buffer_t token_buffer
@@ -95,12 +95,12 @@ OM_uint32 gss_spnego_process_context_token
 
     ctx->negotiated_ctx_id = GSS_C_NO_CONTEXT;
 
-    return _gss_spnego_delete_sec_context(minor_status,
-					  &context,
-					  GSS_C_NO_BUFFER);
+    return _gss_spnego_internal_delete_sec_context(minor_status,
+					   &context,
+					   GSS_C_NO_BUFFER);
 }
 
-OM_uint32 gss_spnego_delete_sec_context
+OM_uint32 _gss_spnego_delete_sec_context
            (OM_uint32 *minor_status,
             gss_ctx_id_t *context_handle,
             gss_buffer_t output_token
@@ -115,12 +115,12 @@ OM_uint32 gss_spnego_delete_sec_context
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
-    return _gss_spnego_delete_sec_context(minor_status,
-					  context_handle,
-					  output_token);
+    return _gss_spnego_internal_delete_sec_context(minor_status,
+						   context_handle,
+						   output_token);
 }
 
-OM_uint32 gss_spnego_context_time
+OM_uint32 _gss_spnego_context_time
            (OM_uint32 *minor_status,
             const gss_ctx_id_t context_handle,
             OM_uint32 *time_rec
@@ -144,7 +144,7 @@ OM_uint32 gss_spnego_context_time
 			    time_rec);
 }
 
-OM_uint32 gss_spnego_get_mic
+OM_uint32 _gss_spnego_get_mic
            (OM_uint32 *minor_status,
             const gss_ctx_id_t context_handle,
             gss_qop_t qop_req,
@@ -170,7 +170,7 @@ OM_uint32 gss_spnego_get_mic
 		       qop_req, message_buffer, message_token);
 }
 
-OM_uint32 gss_spnego_verify_mic
+OM_uint32 _gss_spnego_verify_mic
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             const gss_buffer_t message_buffer,
@@ -199,7 +199,7 @@ OM_uint32 gss_spnego_verify_mic
 			  qop_state);
 }
 
-OM_uint32 gss_spnego_wrap
+OM_uint32 _gss_spnego_wrap
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             int conf_req_flag,
@@ -232,7 +232,7 @@ OM_uint32 gss_spnego_wrap
 		    output_message_buffer);
 }
 
-OM_uint32 gss_spnego_unwrap
+OM_uint32 _gss_spnego_unwrap
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             const gss_buffer_t input_message_buffer,
@@ -263,7 +263,7 @@ OM_uint32 gss_spnego_unwrap
 		      qop_state);
 }
 
-OM_uint32 gss_spnego_display_status
+OM_uint32 _gss_spnego_display_status
            (OM_uint32 * minor_status,
             OM_uint32 status_value,
             int status_type,
@@ -275,7 +275,7 @@ OM_uint32 gss_spnego_display_status
     return GSS_S_FAILURE;
 }
 
-OM_uint32 gss_spnego_compare_name
+OM_uint32 _gss_spnego_compare_name
            (OM_uint32 *minor_status,
             const gss_name_t name1,
             const gss_name_t name2,
@@ -285,7 +285,7 @@ OM_uint32 gss_spnego_compare_name
     return gss_compare_name(minor_status, name1, name2, name_equal);
 }
 
-OM_uint32 gss_spnego_display_name
+OM_uint32 _gss_spnego_display_name
            (OM_uint32 * minor_status,
             const gss_name_t input_name,
             gss_buffer_t output_name_buffer,
@@ -296,7 +296,7 @@ OM_uint32 gss_spnego_display_name
 			    output_name_buffer, output_name_type);
 }
 
-OM_uint32 gss_spnego_import_name
+OM_uint32 _gss_spnego_import_name
            (OM_uint32 * minor_status,
             const gss_buffer_t input_name_buffer,
             const gss_OID input_name_type,
@@ -307,7 +307,7 @@ OM_uint32 gss_spnego_import_name
 			   input_name_type, output_name);
 }
 
-OM_uint32 gss_spnego_export_name
+OM_uint32 _gss_spnego_export_name
            (OM_uint32  * minor_status,
             const gss_name_t input_name,
             gss_buffer_t exported_name
@@ -317,7 +317,7 @@ OM_uint32 gss_spnego_export_name
 			   exported_name);
 }
 
-OM_uint32 gss_spnego_release_name
+OM_uint32 _gss_spnego_release_name
            (OM_uint32 * minor_status,
             gss_name_t * input_name
            )
@@ -325,7 +325,7 @@ OM_uint32 gss_spnego_release_name
     return gss_release_name(minor_status, input_name);
 }
 
-OM_uint32 gss_spnego_inquire_context (
+OM_uint32 _gss_spnego_inquire_context (
             OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             gss_name_t * src_name,
@@ -362,7 +362,7 @@ OM_uint32 gss_spnego_inquire_context (
 			       open_context);
 }
 
-OM_uint32 gss_spnego_wrap_size_limit (
+OM_uint32 _gss_spnego_wrap_size_limit (
             OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             int conf_req_flag,
@@ -393,7 +393,7 @@ OM_uint32 gss_spnego_wrap_size_limit (
 			       max_input_size);
 }
 
-OM_uint32 gss_spnego_export_sec_context (
+OM_uint32 _gss_spnego_export_sec_context (
             OM_uint32 * minor_status,
             gss_ctx_id_t * context_handle,
             gss_buffer_t interprocess_token
@@ -424,7 +424,7 @@ OM_uint32 gss_spnego_export_sec_context (
 				 &ctx->negotiated_ctx_id,
 				 interprocess_token);
     if (ret == GSS_S_COMPLETE) {
-	ret = _gss_spnego_delete_sec_context(minor_status,
+	ret = _gss_spnego_internal_delete_sec_context(minor_status,
 					     context_handle,
 					     GSS_C_NO_BUFFER);
 	if (ret == GSS_S_COMPLETE)
@@ -436,7 +436,7 @@ OM_uint32 gss_spnego_export_sec_context (
     return ret;
 }
 
-OM_uint32 gss_spnego_import_sec_context (
+OM_uint32 _gss_spnego_import_sec_context (
             OM_uint32 * minor_status,
             const gss_buffer_t interprocess_token,
             gss_ctx_id_t *context_handle
@@ -458,7 +458,7 @@ OM_uint32 gss_spnego_import_sec_context (
 				 interprocess_token,
 				 &ctx->negotiated_ctx_id);
     if (ret != GSS_S_COMPLETE) {
-	_gss_spnego_delete_sec_context(&minor, context_handle, GSS_C_NO_BUFFER);
+	_gss_spnego_internal_delete_sec_context(&minor, context_handle, GSS_C_NO_BUFFER);
 	return ret;
     }
 
@@ -472,7 +472,7 @@ OM_uint32 gss_spnego_import_sec_context (
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 gss_spnego_inquire_names_for_mech (
+OM_uint32 _gss_spnego_inquire_names_for_mech (
             OM_uint32 * minor_status,
             const gss_OID mechanism,
             gss_OID_set * name_types
@@ -515,7 +515,7 @@ out:
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 gss_spnego_inquire_mechs_for_name (
+OM_uint32 _gss_spnego_inquire_mechs_for_name (
             OM_uint32 * minor_status,
             const gss_name_t input_name,
             gss_OID_set * mech_types
@@ -536,7 +536,7 @@ OM_uint32 gss_spnego_inquire_mechs_for_name (
     return ret;
 }
 
-OM_uint32 gss_spnego_canonicalize_name (
+OM_uint32 _gss_spnego_canonicalize_name (
             OM_uint32 * minor_status,
             const gss_name_t input_name,
             const gss_OID mech_type,
@@ -547,7 +547,7 @@ OM_uint32 gss_spnego_canonicalize_name (
     return gss_duplicate_name(minor_status, input_name, output_name);
 }
 
-OM_uint32 gss_spnego_duplicate_name (
+OM_uint32 _gss_spnego_duplicate_name (
             OM_uint32 * minor_status,
             const gss_name_t src_name,
             gss_name_t * dest_name
@@ -556,7 +556,7 @@ OM_uint32 gss_spnego_duplicate_name (
     return gss_duplicate_name(minor_status, src_name, dest_name);
 }
 
-OM_uint32 gss_spnego_sign
+OM_uint32 _gss_spnego_sign
            (OM_uint32 * minor_status,
             gss_ctx_id_t context_handle,
             int qop_req,
@@ -585,7 +585,7 @@ OM_uint32 gss_spnego_sign
 		    message_token);
 }
 
-OM_uint32 gss_spnego_verify
+OM_uint32 _gss_spnego_verify
            (OM_uint32 * minor_status,
             gss_ctx_id_t context_handle,
             gss_buffer_t message_buffer,
@@ -614,7 +614,7 @@ OM_uint32 gss_spnego_verify
 		      qop_state);
 }
 
-OM_uint32 gss_spnego_seal
+OM_uint32 _gss_spnego_seal
            (OM_uint32 * minor_status,
             gss_ctx_id_t context_handle,
             int conf_req_flag,
@@ -647,7 +647,7 @@ OM_uint32 gss_spnego_seal
 		    output_message_buffer);
 }
 
-OM_uint32 gss_spnego_unseal
+OM_uint32 _gss_spnego_unseal
            (OM_uint32 * minor_status,
             gss_ctx_id_t context_handle,
             gss_buffer_t input_message_buffer,
@@ -679,7 +679,7 @@ OM_uint32 gss_spnego_unseal
 }
 
 #if 0
-OM_uint32 gss_spnego_unwrap_ex
+OM_uint32 _gss_spnego_unwrap_ex
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
 	    const gss_buffer_t token_header_buffer,
@@ -713,7 +713,7 @@ OM_uint32 gss_spnego_unwrap_ex
 			 qop_state);
 }
 
-OM_uint32 gss_spnego_wrap_ex
+OM_uint32 _gss_spnego_wrap_ex
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             int conf_req_flag,
@@ -756,7 +756,7 @@ OM_uint32 gss_spnego_wrap_ex
 		       output_message_buffer);
 }
 
-OM_uint32 gss_spnego_complete_auth_token
+OM_uint32 _gss_spnego_complete_auth_token
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
 	    gss_buffer_t input_message_buffer)
@@ -781,7 +781,7 @@ OM_uint32 gss_spnego_complete_auth_token
 }
 #endif
 
-OM_uint32 gss_spnego_inquire_sec_context_by_oid
+OM_uint32 _gss_spnego_inquire_sec_context_by_oid
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             const gss_OID desired_object,
@@ -807,7 +807,7 @@ OM_uint32 gss_spnego_inquire_sec_context_by_oid
 					  data_set);
 }
 
-OM_uint32 gss_spnego_set_sec_context_option
+OM_uint32 _gss_spnego_set_sec_context_option
            (OM_uint32 * minor_status,
             gss_ctx_id_t * context_handle,
             const gss_OID desired_object,

@@ -196,7 +196,7 @@ spnego_initial
 					    &ctx->preferred_mech_type);
     if (GSS_ERROR(sub)) {
 	*minor_status = minor;
-	_gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
+	_gss_spnego_internal_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return sub;
     }
 
@@ -225,7 +225,7 @@ spnego_initial
     if (GSS_ERROR(sub)) {
 	free_NegTokenInit(&ni);
 	*minor_status = minor;
-	_gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
+	_gss_spnego_internal_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return sub;
     }
 
@@ -234,7 +234,7 @@ spnego_initial
 	if (ni.mechToken == NULL) {
 	    free_NegTokenInit(&ni);
 	    gss_release_buffer(&minor, &mech_token);
-	    _gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
+	    _gss_spnego_internal_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	    *minor_status = ENOMEM;
 	    return GSS_S_FAILURE;
 	}
@@ -244,7 +244,7 @@ spnego_initial
 	    free_NegTokenInit(&ni);
 	    gss_release_buffer(&minor, &mech_token);
 	    *minor_status = ENOMEM;
-	    _gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
+	    _gss_spnego_internal_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	    return GSS_S_FAILURE;
 	}
 	memcpy(ni.mechToken->data, mech_token.value, mech_token.length);
@@ -261,7 +261,7 @@ spnego_initial
     if (buf == NULL) {
 	free_NegTokenInit(&ni);
 	*minor_status = ENOMEM;
-	_gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
+	_gss_spnego_internal_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return GSS_S_FAILURE;
     }
 
@@ -288,7 +288,7 @@ spnego_initial
 	*minor_status = ret;
 	free(buf);
 	free_NegTokenInit(&ni);
-	_gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
+	_gss_spnego_internal_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return GSS_S_FAILURE;
     }
 
@@ -308,7 +308,7 @@ spnego_initial
     free (buf);
 
     if (sub) {
-	_gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
+	_gss_spnego_internal_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return sub;
     }
 
@@ -528,7 +528,7 @@ spnego_reply
     return ret;
 }
 
-OM_uint32 gss_spnego_init_sec_context
+OM_uint32 _gss_spnego_init_sec_context
            (OM_uint32 * minor_status,
             const gss_cred_id_t initiator_cred_handle,
             gss_ctx_id_t * context_handle,

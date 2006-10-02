@@ -531,7 +531,7 @@ verify_mechlist_mic
 }
 
 OM_uint32
-gss_spnego_accept_sec_context
+_gss_spnego_accept_sec_context
 	   (OM_uint32 * minor_status,
 	    gss_ctx_id_t * context_handle,
 	    const gss_cred_id_t acceptor_cred_handle,
@@ -865,7 +865,7 @@ gss_spnego_accept_sec_context
  	return ret;
     }
 
-    _gss_spnego_delete_sec_context(&minor, context_handle,
+    _gss_spnego_internal_delete_sec_context(&minor, context_handle,
 				   GSS_C_NO_BUFFER);
 
     return ret;
