@@ -160,11 +160,12 @@ BIN_PROGS4 = bin/ldbedit@EXEEXT@ bin/ldbsearch@EXEEXT@ bin/ldbadd@EXEEXT@ \
 TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
-	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@
+	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@
 
 BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) $(BIN_PROGS4) @EXTRA_BIN_PROGS@
 
-EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@ \
+EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
+	bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@
 
 SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBMSRPC@ @LIBADDNS@
@@ -221,9 +222,13 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o \
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
+LIBREPLACE_OBJ = @LIBREPLACE_OBJS@
+
+SOCKET_WRAPPER_OBJ = @SOCKET_WRAPPER_OBJS@
+
 TALLOC_OBJ = lib/talloc/talloc.o
 
-LIB_WITHOUT_PROTO_OBJ = @LIBREPLACE_OBJS@ @SOCKET_WRAPPER_OBJS@ $(TALLOC_OBJ)
+LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(TALLOC_OBJ)
 
 LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/md4.o \
@@ -694,6 +699,9 @@ SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(REGOBJS_OBJ) 
 TALLOCTORT_OBJ = lib/talloc/testsuite.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
                  $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(LIBSAMBA_OBJ) $(SECRETS_OBJ)
 
+REPLACETORT_OBJ = lib/replace/test/testsuite.o lib/replace/test/os2_delete.o \
+		$(LIBREPLACE_OBJ)
+
 RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/display.o \
              rpcclient/cmd_lsarpc.o \
@@ -874,6 +882,8 @@ sharesec: SHOWFLAGS bin/sharesec@EXEEXT@
 
 talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
 
+replacetort : SHOWFLAGS bin/replacetort@EXEEXT@
+
 timelimit : SHOWFLAGS bin/timelimit@EXEEXT@
 
 nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
@@ -899,7 +909,7 @@ idl:
 #####################################################################
 
 
-everything: all libsmbclient debug2html smbfilter talloctort modules torture \
+everything: all libsmbclient debug2html smbfilter talloctort replacetort modules torture \
 	$(EVERYTHING_PROGS)
 
 .SUFFIXES:
@@ -1112,6 +1122,11 @@ bin/talloctort@EXEEXT@: $(TALLOCTORT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(TALLOCTORT_OBJ) $(LDFLAGS) \
 		$(DYNEXP) $(LIBS) $(LDAP_LIBS)
+
+bin/replacetort@EXEEXT@: $(REPLACETORT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(REPLACETORT_OBJ) $(LDFLAGS) \
+		$(DYNEXP) $(LIBS)
 
 bin/masktest@EXEEXT@: $(MASKTEST_OBJ) bin/.dummy
 	@echo Linking $@
