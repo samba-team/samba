@@ -64,9 +64,6 @@ server_init(struct server_init_options *opt, int argc, char ** argv)
     krb5_error_code ret;
     krb5_digest digest;
 
-    if (opt->kerberos_realm_string == NULL)
-	errx(1, "realm argument missing");
-
     if (strcasecmp(opt->type_string, "CHAP") != 0)
 	errx(1, "type not CHAP");
 
@@ -113,8 +110,6 @@ server_request(struct server_request_options *opt, int argc, char **argv)
     krb5_digest digest;
     const char *h;
 
-    if (opt->kerberos_realm_string == NULL)
-	errx(1, "realm argument missing");
     if (opt->server_nonce_string == NULL)
 	errx(1, "server nonce missing");
     if (opt->type_string == NULL)
