@@ -1,5 +1,10 @@
 2006-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kdigest.c: Don't require --kerberos-realm.
+
+	* lib/krb5/digest.c (digest_request): if NULL is passed in as
+	realm, use default realm.
+
 	* fix-export: build gssapi mech private files
 	
 2006-09-26  Love Hörnquist Åstrand  <lha@it.su.se>
