@@ -57,8 +57,6 @@ struct libnet_ModifyUser {
 		struct timeval *acct_expiry;
 		struct timeval *allow_password_change;
 		struct timeval *force_password_change;
-		struct timeval *last_logon;
-		struct timeval *last_logoff;
 		struct timeval *last_password_change;
 		uint32_t acct_flags;
 	} in;
