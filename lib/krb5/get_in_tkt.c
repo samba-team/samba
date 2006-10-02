@@ -769,7 +769,7 @@ krb5_get_in_cred(krb5_context context,
 			       NULL, 
 			       nonce, 
 			       FALSE, 
-			       opts.b.request_anonymous,
+			       opts.request_anonymous,
 			       decrypt_proc, 
 			       decryptarg);
     memset (key->keyvalue.data, 0, key->keyvalue.length);
