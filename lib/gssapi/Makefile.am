@@ -71,9 +71,7 @@ krb5src = \
 	krb5/verify_mic.c \
 	krb5/wrap.c
 
-libgssapi_la_SOURCES  = \
-	$(BUILT_SOURCES) \
-	$(krb5src) \
+mechsrc = \
 	mech/context.h \
 	mech/cred.h \
 	mech/gss_accept_sec_context.c \
@@ -131,7 +129,9 @@ libgssapi_la_SOURCES  = \
 	mech/gss_inquire_sec_context_by_oid.c \
 	mech/mech_switch.h \
 	mech/name.h \
-	mech/utils.h \
+	mech/utils.h
+
+spnegosrc = \
 	spnego/accept_sec_context.c \
 	spnego/compat.c \
 	spnego/context_stubs.c \
@@ -140,6 +140,13 @@ libgssapi_la_SOURCES  = \
 	spnego/gssapi_spnego.h \
 	spnego/init_sec_context.c \
 	spnego/spnego_locl.h
+
+
+libgssapi_la_SOURCES  = \
+	$(BUILT_SOURCES) \
+	$(krb5src) \
+	$(mechsrc) \
+	$(spnegosrc)
 
 libgssapi_la_LIBADD = \
 	../krb5/libkrb5.la \
@@ -162,6 +169,7 @@ spnego_files =					\
 	asn1_NegTokenResp.x
 
 $(libgssapi_la_OBJECTS): $(srcdir)/krb5/gsskrb5-private.h
+$(libgssapi_la_OBJECTS): $(srcdir)/spnego/spnego-private.h
 
 BUILT_SOURCES = $(spnego_files:.x=.c) $(gssapi_files:.x=.c)
 
@@ -181,6 +189,9 @@ gssapi_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/mech/gssapi.asn1
 
 $(srcdir)/krb5/gsskrb5-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p krb5/gsskrb5-private.h $(krb5src) || rm -f krb5/gsskrb5-private.h
+
+$(srcdir)/spnego/spnego-private.h:
+	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p spnego/spnego-private.h $(spnegosrc) || rm -f spnego/spnego-private.h
 
 
 TESTS = test_oid test_names test_cfx
