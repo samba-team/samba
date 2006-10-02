@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 typedef struct krb5_get_init_creds_ctx {
-    krb5_kdc_flags flags;
+    KDCOptions flags;
     krb5_creds cred;
     krb5_addresses *addrs;
     krb5_enctype *etypes;
@@ -292,7 +292,6 @@ get_init_creds_common(krb5_context context,
 	ctx->key_proc = default_s2k_func;
 
     ctx->pre_auth_types = NULL;
-    ctx->flags.i = 0;
     ctx->addrs = NULL;
     ctx->etypes = NULL;
     ctx->pre_auth_types = NULL;
@@ -303,18 +302,16 @@ get_init_creds_common(krb5_context context,
     if (ret)
 	return ret;
 
-    ctx->flags.i = 0;
-
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_FORWARDABLE)
-	ctx->flags.b.forwardable = options->forwardable;
+	ctx->flags.forwardable = options->forwardable;
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_PROXIABLE)
-	ctx->flags.b.proxiable = options->proxiable;
+	ctx->flags.proxiable = options->proxiable;
 
     if (start_time)
-	ctx->flags.b.postdated = 1;
+	ctx->flags.postdated = 1;
     if (ctx->cred.times.renew_till)
-	ctx->flags.b.renewable = 1;
+	ctx->flags.renewable = 1;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ADDRESS_LIST) {
 	ctx->addrs = options->address_list;
     } else if (options->opt_private) {
@@ -361,7 +358,7 @@ get_init_creds_common(krb5_context context,
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_SALT)
 	;			/* XXX */
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ANONYMOUS)
-	ctx->flags.b.request_anonymous = options->anonymous;
+	ctx->flags.request_anonymous = options->anonymous;
     return 0;
 }
 
@@ -542,7 +539,7 @@ krb5_get_init_creds_keytab(krb5_context context,
 
 static krb5_error_code
 init_creds_init_as_req (krb5_context context,
-			krb5_kdc_flags opts,
+			KDCOptions opts,
 			const krb5_creds *creds,
 			const krb5_addresses *addrs,
 			const krb5_enctype *etypes,
@@ -554,7 +551,7 @@ init_creds_init_as_req (krb5_context context,
 
     a->pvno = 5;
     a->msg_type = krb_as_req;
-    a->req_body.kdc_options = opts.b;
+    a->req_body.kdc_options = opts;
     a->req_body.cname = malloc(sizeof(*a->req_body.cname));
     if (a->req_body.cname == NULL) {
 	ret = ENOMEM;
@@ -1357,7 +1354,7 @@ init_cred_loop(krb5_context context,
 				   NULL,
 				   ctx->nonce,
 				   FALSE,
-				   ctx->flags.b.request_anonymous,
+				   ctx->flags.request_anonymous,
 				   NULL,
 				   NULL);
 	krb5_free_keyblock(context, key);
