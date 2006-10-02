@@ -17,4 +17,7 @@ failed=0
 testit "talloctort" $VALGRIND $BINDIR/talloctort || \
     failed=`expr $failed + 1`
 
+testit "replacetort" $VALGRIND $BINDIR/replacetort || \
+    failed=`expr $failed + 1`
+
 testok $0 $failed
