@@ -50,6 +50,7 @@ NTSTATUS torture_local_init(void)
 	int i;
 	TALLOC_CTX *mem_ctx = talloc_autofree_context();
 
+	register_torture_op("LOCAL-REPLACE", torture_local_replace);
 	register_torture_op("LOCAL-TALLOC", torture_local_talloc);
 	register_torture_op("LOCAL-CRYPTO-MD4", torture_local_crypto_md4);
 	register_torture_op("LOCAL-CRYPTO-MD5", torture_local_crypto_md5);
