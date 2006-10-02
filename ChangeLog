@@ -1,5 +1,14 @@
 2006-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/init_creds_pw.c: minimize layering and remove
+	krb5_kdc_flags
+
+	* lib/krb5/get_in_tkt.c: Always use the kdc_flags in the right bit
+	order.
+
+	* lib/krb5/init_creds_pw.c: Always use the kdc_flags in the right
+	bit order.
+
 	* kuser/kdigest.c: Don't require --kerberos-realm.
 
 	* lib/krb5/digest.c (digest_request): if NULL is passed in as
