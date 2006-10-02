@@ -634,9 +634,10 @@ acceptor_wait_for_dcestyle(OM_uint32 * minor_status,
     }
 
     /*
-     * After the krb5_rd_rep() the remote and local seq_number should be the same,
-     * because the client just replies the seq_number from our AP-REP in its AP-REP,
-     * but then the client uses the seq_number from its AP-REQ for GSS_wrap()
+     * After the krb5_rd_rep() the remote and local seq_number should
+     * be the same, because the client just replies the seq_number
+     * from our AP-REP in its AP-REP, but then the client uses the
+     * seq_number from its AP-REQ for GSS_wrap()
      */
     {
 	int32_t tmp_r_seq_number, tmp_l_seq_number;
