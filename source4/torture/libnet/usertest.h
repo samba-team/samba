@@ -27,10 +27,9 @@
 	}
 
 
-#define FIELDS_NUM 15
+#define FIELDS_NUM 11
 enum test_fields { none = 0, account_name, full_name, description, home_directory, home_drive,
-		   comment, logon_script, profile_path, acct_expiry, allow_password_change,
-		   force_password_change, last_logon, last_logoff, last_password_change };
+		   comment, logon_script, profile_path, acct_expiry, acct_flags };
 
 
 #define TEST_CHG_ACCOUNTNAME   "newlibnetusertest%02d"
