@@ -74,14 +74,6 @@
 #endif
 #endif
 
-#ifndef NORETURN_ATTRIBUTE
-#if (__GNUC__ >= 3)
-#define NORETURN_ATTRIBUTE __attribute__ ((noreturn))
-#else
-#define NORETURN_ATTRIBUTE
-#endif
-#endif
-
 #if defined(__GNUC__) && !defined(__cplusplus)
 /** gcc attribute used on function parameters so that it does not emit
  * warnings about them being unused. **/
