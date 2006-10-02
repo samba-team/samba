@@ -72,7 +72,11 @@ libhx509_la_files = \
 	req.c \
 	revoke.c
 
-libhx509_la_LIBADD = $(LIB_des) ../asn1/libasn1.la
+libhx509_la_LIBADD = \
+	$(LIB_des) \
+	../asn1/libasn1.la \
+	$(LIB_roken) $(LIB_dlopen)
+
 libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_des)
 libhx509_la_SOURCES = $(libhx509_la_files) $(BUILT_SOURCES)
 
