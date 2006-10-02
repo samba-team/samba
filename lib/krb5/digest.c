@@ -247,7 +247,8 @@ digest_request(krb5_context context,
     krb5_crypto crypto = NULL;
     krb5_auth_context ac = NULL;
     krb5_principal principal = NULL;
-    krb5_ccache id;
+    krb5_ccache id = NULL;
+    krb5_realm r = NULL;
 
     krb5_data_zero(&data);
     krb5_data_zero(&data2);
@@ -258,6 +259,13 @@ digest_request(krb5_context context,
 	    goto out;
     } else
 	id = ccache;
+
+    if (realm == NULL) {
+	ret = krb5_get_default_realm(context, &r);
+	if (ret)
+	    goto out;
+    } else
+	r = realm;
 
     /*
      *
@@ -373,8 +381,10 @@ digest_request(krb5_context context,
     }
 
 out:
-    if (ccache == NULL)
+    if (ccache == NULL && id)
 	krb5_cc_close(context, id);
+    if (realm == NULL && r)
+	free(r);
     if (crypto)
 	krb5_crypto_destroy(context, crypto);
     if (ac)
