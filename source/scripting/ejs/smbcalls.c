@@ -203,6 +203,38 @@ static int jsonrpc_include(int eid, int argc, char **argv)
 }
 
 
+static int ejs_debug(int eid, int argc, char **argv)
+{
+        int i;
+        int level;
+        void *ctx = mprMemCtx();
+        char *msg;
+
+
+        if (argc < 2) {
+		return -1;
+        }
+
+        level = atoi(argv[0]);
+
+        msg = talloc_zero_size(ctx, 1);
+        if (msg == NULL) {
+                DEBUG(0, ("out of memory in debug()\n"));
+                return 0;
+        }
+
+        for (i = 1; i < argc; i++) {
+                msg = talloc_append_string(ctx, msg, argv[i]);
+                if (msg == NULL) {
+                        DEBUG(0, ("out of memory in debug()\n"));
+                        return 0;
+                }
+        }
+
+        DEBUG(level, ("%s", msg));
+        talloc_free(msg);
+	return 0;
+}
 
 static void (*ejs_exception_handler) (const char *) = NULL;
 
@@ -241,5 +273,6 @@ void smb_setup_ejs_functions(void (*exception_handler)(const char *))
 	ejsDefineStringCFunction(-1, "libinclude", ejs_libinclude, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "version", ejs_version, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "jsonrpc_include", jsonrpc_include, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineStringCFunction(-1, "debug", ejs_debug, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
 

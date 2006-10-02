@@ -413,7 +413,7 @@ static int ejs_sys_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(obj, "interfaces", ejs_sys_interfaces);
 	mprSetCFunction(obj, "hostname", ejs_sys_hostname);
 	mprSetCFunction(obj, "nttime", ejs_sys_nttime);
-	mprSetCFunction(obj, "getTimeOfDay", ejs_sys_gettimeofday);
+	mprSetCFunction(obj, "gettimeofday", ejs_sys_gettimeofday);
 	mprSetCFunction(obj, "unix2nttime", ejs_sys_unix2nttime);
 	mprSetCFunction(obj, "gmmktime", ejs_sys_gmmktime);
 	mprSetCFunction(obj, "gmtime", ejs_sys_gmtime);
