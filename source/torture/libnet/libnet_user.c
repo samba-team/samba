@@ -343,11 +343,11 @@ void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_
 		case account_name:
 			continue_if_field_set(r->in.account_name);
 			r->in.account_name = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
-							     (int)random());
+							     (int)(random() % 100));
 			fldname = "account_name";
 			
 			/* update the test's user name in case it's about to change */
-			*user_name = r->in.account_name;
+			*user_name = talloc_strdup(mem_ctx, r->in.account_name);
 			break;
 
 		case full_name:
@@ -406,41 +406,6 @@ void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_
 			fldname = "acct_expiry";
 			break;
 
-		case allow_password_change:
-			continue_if_field_set(r->in.allow_password_change);
-			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			r->in.allow_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-			fldname = "allow_password_change";
-			break;
-
-		case force_password_change:
-			continue_if_field_set(r->in.force_password_change);
-			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			r->in.force_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-			fldname = "force_password_change";
-			break;
-
-		case last_logon:
-			continue_if_field_set(r->in.last_logon);
-			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			r->in.last_logon = talloc_memdup(mem_ctx, &now, sizeof(now));
-			fldname = "last_logon";
-			break;
-
-		case last_logoff:
-			continue_if_field_set(r->in.last_logoff);
-			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			r->in.last_logoff = talloc_memdup(mem_ctx, &now, sizeof(now));
-			fldname = "last_logoff";
-			break;
-
-		case last_password_change:
-			continue_if_field_set(r->in.last_password_change);
-			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			r->in.last_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-			fldname = "last_password_change";
-			break;
-
 		default:
 			fldname = "unknown_field";
 		}
@@ -455,6 +420,28 @@ void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_
 }
 
 
+#define TEST_STR_FLD(fld) \
+	if (!strequal(req.in.fld, user_req.out.fld)) { \
+		printf("failed to change '%s'\n", #fld); \
+		ret = False; \
+		goto cleanup; \
+	}
+
+#define TEST_TIME_FLD(fld) \
+	if (timeval_compare(req.in.fld, user_req.out.fld)) { \
+		printf("failed to change '%s'\n", #fld); \
+		ret = False; \
+		goto cleanup; \
+	}
+
+#define TEST_NUM_FLD(fld) \
+	if (req.in.fld != user_req.out.fld) { \
+		printf("failed to change '%s'\n", #fld); \
+		ret = False; \
+		goto cleanup; \
+	}
+
+
 BOOL torture_modifyuser(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -467,6 +454,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	char *name;
 	struct libnet_context *ctx;
 	struct libnet_ModifyUser req;
+	struct libnet_UserInfo user_req;
 	int fld;
 	BOOL ret = True;
 
@@ -507,7 +495,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 
 	printf("Testing change of all fields - each single one in turn\n");
 
-	for (fld = 1; fld < FIELDS_NUM; fld++) {
+	for (fld = 1; fld < FIELDS_NUM - 1; fld++) {
 		ZERO_STRUCT(req);
 		req.in.domain_name = lp_workgroup();
 		req.in.user_name = name;
@@ -517,9 +505,43 @@ BOOL torture_modifyuser(struct torture_context *torture)
 		status = libnet_ModifyUser(ctx, mem_ctx, &req);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
-			talloc_free(mem_ctx);
 			ret = False;
-			goto done;
+			continue;
+		}
+
+		ZERO_STRUCT(user_req);
+		user_req.in.domain_name = lp_workgroup();
+		user_req.in.user_name = name;
+
+		status = libnet_UserInfo(ctx, mem_ctx, &user_req);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("libnet_UserInfo call failed: %s\n", nt_errstr(status));
+			continue;
+		}
+
+		switch (fld) {
+		case account_name: TEST_STR_FLD(account_name);
+			break;
+		case full_name: TEST_STR_FLD(full_name);
+			break;
+		case comment: TEST_STR_FLD(comment);
+			break;
+		case description: TEST_STR_FLD(description);
+			break;
+		case home_directory: TEST_STR_FLD(home_directory);
+			break;
+		case home_drive: TEST_STR_FLD(home_drive);
+			break;
+		case logon_script: TEST_STR_FLD(logon_script);
+			break;
+		case profile_path: TEST_STR_FLD(profile_path);
+			break;
+		case acct_expiry: TEST_TIME_FLD(acct_expiry);
+			break;
+		case acct_flags: TEST_NUM_FLD(acct_flags);
+			break;
+		default:
+			break;
 		}
 
 		if (fld == account_name) {
@@ -538,10 +560,11 @@ BOOL torture_modifyuser(struct torture_context *torture)
 				goto done;
 			}
 			
-			name = TEST_USERNAME;
+			name = talloc_strdup(mem_ctx, TEST_USERNAME);
 		}
 	}
 
+cleanup:
 	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, name)) {
 		printf("cleanup failed\n");
 		ret = False;
