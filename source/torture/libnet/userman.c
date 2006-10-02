@@ -262,6 +262,9 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
 	const char* home_drives[] = { "H:", "z:", "I:", "J:", "n:" };
 	const char *homedir, *homedrive, *logonscript;
+	const uint32_t flags[] = { (ACB_DISABLED | ACB_NORMAL),
+				   (ACB_NORMAL | ACB_PWNOEXP),
+				   (ACB_NORMAL | ACB_PW_EXPIRED) };
 
 	NTSTATUS status;
 	struct timeval now;
@@ -278,10 +281,10 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("fields to change: [");
 
-	for (i = 0; i < num_changes && i < FIELDS_NUM; i++) {
+	for (i = 0; i < num_changes && i < FIELDS_NUM - 1; i++) {
 		const char *fldname;
 
-		testfld = random() % (FIELDS_NUM - 1);
+		testfld = (random() % (FIELDS_NUM - 1)) + 1;
 
 		gettimeofday(&now, NULL);
 
@@ -359,44 +362,11 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			fldname = "acct_expiry";
 			break;
 
-		case allow_password_change:
-			continue_if_field_set(mod->in.change.allow_password_change);
-			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod->in.change.allow_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-			mod->in.change.fields |= USERMOD_FIELD_ALLOW_PASS_CHG;
-			fldname = "allow_password_change";
-			break;
-
-		case force_password_change:
-			continue_if_field_set(mod->in.change.force_password_change);
-			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod->in.change.force_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-			mod->in.change.fields |= USERMOD_FIELD_FORCE_PASS_CHG;
-			fldname = "force_password_change";
-			break;
-
-		case last_logon:
-			continue_if_field_set(mod->in.change.last_logon);
-			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod->in.change.last_logon = talloc_memdup(mem_ctx, &now, sizeof(now));
-			mod->in.change.fields |= USERMOD_FIELD_LAST_LOGON;
-			fldname = "last_logon";
-			break;
-
-		case last_logoff:
-			continue_if_field_set(mod->in.change.last_logoff);
-			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod->in.change.last_logoff = talloc_memdup(mem_ctx, &now, sizeof(now));
-			mod->in.change.fields |= USERMOD_FIELD_LAST_LOGOFF;
-			fldname = "last_logoff";
-			break;
-
-		case last_password_change:
-			continue_if_field_set(mod->in.change.last_password_change);
-			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
-			mod->in.change.last_password_change = talloc_memdup(mem_ctx, &now, sizeof(now));
-			mod->in.change.fields |= USERMOD_FIELD_LAST_PASS_CHG;
-			fldname = "last_password_change";
+		case acct_flags:
+			continue_if_field_set(mod->in.change.acct_flags);
+			mod->in.change.acct_flags = flags[random() % (sizeof(flags)/sizeof(uint32_t))];
+			mod->in.change.fields |= USERMOD_FIELD_ACCT_EXPIRY;
+			fldname = "acct_flags";
 			break;
 
 		default:
@@ -500,11 +470,6 @@ static BOOL test_compare(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	CMP_LSA_STRING_FLD(home_directory, USERMOD_FIELD_HOME_DIRECTORY);
 	CMP_LSA_STRING_FLD(home_drive, USERMOD_FIELD_HOME_DRIVE);
 	CMP_TIME_FLD(acct_expiry, USERMOD_FIELD_ACCT_EXPIRY);
-	CMP_TIME_FLD(allow_password_change, USERMOD_FIELD_ALLOW_PASS_CHG);
-	CMP_TIME_FLD(force_password_change, USERMOD_FIELD_FORCE_PASS_CHG);
-	CMP_TIME_FLD(last_logon, USERMOD_FIELD_LAST_LOGON);
-	CMP_TIME_FLD(last_logoff, USERMOD_FIELD_LAST_LOGOFF);
-	CMP_TIME_FLD(last_password_change, USERMOD_FIELD_LAST_PASS_CHG);
 	CMP_NUM_FLD(acct_flags, USERMOD_FIELD_ACCT_FLAGS)
 
 	return True;
@@ -650,21 +615,22 @@ BOOL torture_usermod(struct torture_context *torture)
 		ret = False;
 		goto done;
 	}
-
-	for (i = 1; i < 8; i++) {
+	
+	for (i = 1; i < FIELDS_NUM; i++) {
 		struct libnet_rpc_usermod m;
 
 		if (!test_usermod(p, mem_ctx, &h, i, &m, &name)) {
 			ret = False;
-			goto done;
+			goto cleanup;
 		}
 
 		if (!test_compare(p, mem_ctx, &h, &m, name)) {
 			ret = False;
-			goto done;
+			goto cleanup;
 		}
 	}
 	
+cleanup:	
 	if (!test_cleanup(p, mem_ctx, &h, name)) {
 		ret = False;
 		goto done;
