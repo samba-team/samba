@@ -21,7 +21,7 @@
 
 static int test_readdir_os2_delete_ret;
 
-#define FAILED(d) (fprintf(stderr, "Failed for %s - %s\n", d, strerror(errno)), test_readdir_os2_delete_ret = 1, 1)
+#define FAILED(d) (fprintf(stderr, "Failed for %s - %d = %s\n", d, errno, strerror(errno)), test_readdir_os2_delete_ret = 1, 1)
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -87,7 +87,11 @@ int test_readdir_os2_delete(void)
 
 	cleanup();
 	create_files();
-	
+
+	d = opendir(TESTDIR "/test0.txt");
+	if (d != NULL) FAILED("opendir() on file succeed");
+	if (errno != ENOTDIR) FAILED("opendir() on file didn't give ENOTDIR");
+
 	d = opendir(TESTDIR);
 
 	/* skip past . and .. */
