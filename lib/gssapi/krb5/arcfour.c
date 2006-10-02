@@ -363,7 +363,8 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     } else {
 	len = GSS_ARCFOUR_WRAP_TOKEN_SIZE;
 	_gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
-	total_len = GSS_ARCFOUR_WRAP_TOKEN_SIZE + GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE + datalen;
+	len = total_len;
+	total_len += datalen;
     }
 
     output_message_buffer->length = total_len;
