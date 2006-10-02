@@ -1426,7 +1426,8 @@ static int net_ads_printer_info(int argc, const char **argv)
 	rc = ads_find_printer_on_server(ads, &res, printername, servername);
 
 	if (!ADS_ERR_OK(rc)) {
-		d_fprintf(stderr, "ads_find_printer_on_server: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "Server '%s' not found: %s\n", 
+			servername, ads_errstr(rc));
 		ads_msgfree(ads, res);
 		ads_destroy(&ads);
 		return -1;
