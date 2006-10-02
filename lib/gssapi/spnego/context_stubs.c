@@ -34,8 +34,8 @@
 
 RCSID("$Id$");
 
-OM_uint32
-_gss_spnego_supported_mechs(OM_uint32 *minor_status, gss_OID_set *mechs)
+static OM_uint32
+spnego_supported_mechs(OM_uint32 *minor_status, gss_OID_set *mechs)
 {
     OM_uint32 ret, junk;
     gss_OID_set m;
@@ -484,7 +484,7 @@ OM_uint32 gss_spnego_inquire_names_for_mech (
 
     *name_types = NULL;
 
-    ret = _gss_spnego_supported_mechs(minor_status, &mechs);
+    ret = spnego_supported_mechs(minor_status, &mechs);
     if (ret != GSS_S_COMPLETE)
 	return ret;
 
