@@ -89,7 +89,7 @@ static int test_strlcpy(void)
 	char buf[4];
 	const struct {
 		const char *src;
-		int result;
+		size_t result;
 	} tests[] = {
 		{ "abc", 3 },
 		{ "abcdef", 6 },
@@ -373,9 +373,11 @@ static int test_MAX(void)
 	return true;
 }
 
-int torture_local_replace(void *ctx)
+struct torture_context;
+
+bool torture_local_replace(struct torture_context *torture)
 {
-	int ret = true;
+	bool ret = true;
 	ret &= test_ftruncate();
 	ret &= test_strlcpy();
 	ret &= test_strlcat();
@@ -423,7 +425,7 @@ int torture_local_replace(void *ctx)
 	return ret;
 }
 
-#if !defined(_SAMBA_BUILD_) || ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR<9))
+#if _SAMBA_BUILD_<4
 int main(void)
 {
 	if (!torture_local_replace(NULL)) {
