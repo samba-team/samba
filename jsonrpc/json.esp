@@ -37,6 +37,11 @@ function _escape(s)
         }
     }
 
+    if (arr.length == 0)
+    {
+        return "";
+    }
+    
     return join("", arr);
 }
 
@@ -72,10 +77,14 @@ function _encode(o)
     }
     else if (type == "float" ||
              type == "integer" ||
-             type == "integer64" ||
-             type == "pointer")
+             type == "integer64")
     {
-        return (o + 0);
+        return o + 0;
+    }
+    else if (type == "pointer")
+    {
+        var x = "" + o;
+        return '"' + substr(x, 16, strlen(x) - 16 - 1) + '"';
     }
     else if (type == "object")
     {
@@ -127,6 +136,10 @@ function _encode(o)
     else if (type == "string")
     {
         return '"' + this._internal.escape(o) + '"';
+    }
+    else
+    {
+        return '{ "unknown_object":"' + type + '"}';
     }
 }
 
@@ -193,6 +206,7 @@ Json._internal.convert['\x1f'] = '\\u001f';
 
 
 /* Test it */
+/*
 libinclude("base.js");
 function testFormat()
 {
@@ -211,7 +225,11 @@ function testFormat()
     test.obj.array[1] = 223;
     printf("%s\n", Json.encode(test));
 }
+testFormat();
+*/
 
+/*
+libinclude("base.js");
 function testParse()
 {
     var s;
@@ -236,8 +254,6 @@ function testParse()
     obj = Json.decode(s);
     printf("Decode/encode of\n\t%s\nyielded\n\t%s\n\n", s, Json.encode(obj));
 }
-
-//testFormat();
 testParse();
-
+*/
 %>
