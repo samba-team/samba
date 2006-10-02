@@ -1,9 +1,11 @@
 #!/bin/sh
 
-local_tests="LOCAL-NTLMSSP LOCAL-TALLOC LOCAL-MESSAGING LOCAL-IRPC"
-local_tests="$local_tests LOCAL-BINDING LOCAL-IDTREE LOCAL-SOCKET"
-local_tests="$local_tests LOCAL-PAC LOCAL-STRLIST LOCAL-SDDL LOCAL-NDR"
-local_tests="$local_tests LOCAL-EVENT LOCAL-CRYPTO-MD4"
+local_tests="LOCAL-REPLACE LOCAL-TALLOC LOCAL-STRLIST"
+local_tests="$local_tests LOCAL-IDTREE LOCAL-EVENT"
+local_tests="$local_tests LOCAL-SOCKET LOCAL-MESSAGING LOCAL-IRPC"
+local_tests="$local_tests LOCAL-NDR LOCAL-BINDING"
+local_tests="$local_tests LOCAL-SDDL LOCAL-PAC"
+local_tests="$local_tests LOCAL-NTLMSSP LOCAL-CRYPTO-MD4"
 local_tests="$local_tests LOCAL-CRYPTO-MD5 LOCAL-CRYPTO-HMACMD5"
 local_tests="$local_tests LOCAL-CRYPTO-SHA1 LOCAL-CRYPTO-HMACSHA1"
 
