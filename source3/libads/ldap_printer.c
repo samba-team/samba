@@ -41,8 +41,18 @@
 			  servername));
 		return status;
 	}
+	if (ads_count_replies(ads, *res) != 1) {
+		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+	}
 	srv_dn = ldap_get_dn(ads->ld, *res);
+	if (srv_dn == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
 	srv_cn = ldap_explode_dn(srv_dn, 1);
+	if (srv_cn == NULL) {
+		ldap_memfree(srv_dn);
+		return ADS_ERROR(LDAP_INVALID_DN_SYNTAX);
+	}
 	ads_msgfree(ads, *res);
 
 	asprintf(&s, "(cn=%s-%s)", srv_cn[0], printer);
