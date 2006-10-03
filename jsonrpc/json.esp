@@ -112,6 +112,10 @@ function _encode(o)
             }
             buf = buf + "]";
         }
+        else if (o["__type"] == "_JSON_Date")
+        {
+            buf = "" + o.encoding();
+        }
         else
         {
             /* No length field, so it must be an ordinary object */
