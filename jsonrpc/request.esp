@@ -209,14 +209,14 @@ function _JsonRpcError_create(origin, code, message)
 
     function _origin(origin)
     {
-        this.origin = origin;
+        this.data.origin = origin;
     }
     o.setOrigin = _origin;
 
     function _setError(code, message)
     {
-        this.code = code;
-        this.message = message;
+        this.data.code = code;
+        this.data.message = message;
     }
     o.setError = _setError;
 
@@ -236,7 +236,7 @@ function _JsonRpcError_create(origin, code, message)
     {
         var error = this;
         var id = this.id;
-        var ret = new Array(2);
+        var ret = new Object();
         ret.error = this.data;
         ret.id = this.id;
         sendReply(Json.encode(ret), this.scriptTransportId);
@@ -444,12 +444,7 @@ error.setOrigin(jsonrpc.Constant.ErrorOrigin.Application);
 var retval = method(jsonInput.params, error);
 
 /* See if the result of the function was actually an error object */
-var wasError = (retval["__type"] != undefined);
-if (wasError)
-{
-    wasError = retval.__type == "_JsonRpcError";
-}
-if (wasError)
+if (retval["__type"] == "_JsonRpcError")
 {
     /* Yup, it was.  Return the error */
     retval.Send();

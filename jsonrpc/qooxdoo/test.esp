@@ -31,7 +31,7 @@ function _echo(params, error)
 {
     if (params.length != 1)
     {
-        error.SetError(JsonRpcError_ParameterMismatch,
+        error.setError(JsonRpcError_ParameterMismatch,
                        "Expected 1 parameter; got " + params.length);
         return error;
     }
@@ -75,9 +75,9 @@ function _sleep(params, error)
 {
     if (params.length != 1)
     {
-        error.SetError(JsonRpcError_ParameterMismatch,
+        error.setError(JsonRpcError_ParameterMismatch,
                        "Expected 1 parameter; got " + params.length);
-        return null;
+        return error;
     }
     
     sleep(params[0]);
@@ -222,7 +222,7 @@ jsonrpc.method.getCurrentTimestamp = _getCurrentTimestamp;
 
 function _getError(params, error)
 {
-    error.SetError(23, "This is an application-provided error");
+    error.setError(23, "This is an application-provided error");
     return error;
 }	
 jsonrpc.method.getError = _getError;
