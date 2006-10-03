@@ -40,6 +40,8 @@
 		( READ_CONTROL_ACCESS		| \
 		  SA_RIGHT_USER_CHANGE_PASSWORD	| \
 		  SA_RIGHT_USER_SET_LOC_COM )
+#define SAMR_USR_RIGHTS_CANT_WRITE_PW \
+		( READ_CONTROL_ACCESS | SA_RIGHT_USER_SET_LOC_COM )
 
 #define DISP_INFO_CACHE_TIMEOUT 10
 
@@ -89,6 +91,11 @@ static struct generic_mapping usr_generic_mapping = {
 	GENERIC_RIGHTS_USER_READ,
 	GENERIC_RIGHTS_USER_WRITE,
 	GENERIC_RIGHTS_USER_EXECUTE,
+	GENERIC_RIGHTS_USER_ALL_ACCESS};
+static struct generic_mapping usr_nopwchange_generic_mapping = {
+	GENERIC_RIGHTS_USER_READ,
+	GENERIC_RIGHTS_USER_WRITE,
+	GENERIC_RIGHTS_USER_EXECUTE & ~SA_RIGHT_USER_CHANGE_PASSWORD,
 	GENERIC_RIGHTS_USER_ALL_ACCESS};
 static struct generic_mapping grp_generic_mapping = {
 	GENERIC_RIGHTS_GROUP_READ,
@@ -657,16 +664,6 @@ NTSTATUS _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u,
 }
 
 /*******************************************************************
- _samr_set_sec_obj
- ********************************************************************/
-
-NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_SEC_OBJ *r_u)
-{
-	DEBUG(0,("_samr_set_sec_obj: Not yet implemented!\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/*******************************************************************
 ********************************************************************/
 
 static BOOL get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol, 
@@ -690,6 +687,97 @@ static BOOL get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol,
 
 	return True;
 }
+
+/*******************************************************************
+ _samr_set_sec_obj
+ ********************************************************************/
+
+NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_SEC_OBJ *r_u)
+{
+	DOM_SID pol_sid;
+	uint32 acc_granted, i;
+	SEC_ACL *dacl;
+	BOOL ret;
+	struct samu *sampass=NULL;
+	NTSTATUS status;
+
+	r_u->status = NT_STATUS_OK;
+
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (!(sampass = samu_new( p->mem_ctx))) {
+		DEBUG(0,("No memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* get the user record */
+	become_root();
+	ret = pdb_getsampwsid(sampass, &pol_sid);
+	unbecome_root();
+
+	if (!ret) {
+		DEBUG(4, ("User %s not found\n", sid_string_static(&pol_sid)));
+		TALLOC_FREE(sampass);
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	dacl = q_u->buf->sd->dacl;
+	for (i=0; i < dacl->num_aces; i++) {
+		if (sid_equal(&pol_sid, &dacl->aces[i].trustee)) {
+			ret = pdb_set_pass_can_change(sampass, 
+				(dacl->aces[i].access_mask & 
+				 SA_RIGHT_USER_CHANGE_PASSWORD) ? 
+						      True: False);
+			break;
+		}
+	}
+
+	if (!ret) {
+		TALLOC_FREE(sampass);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = pdb_update_sam_account(sampass);
+
+	TALLOC_FREE(sampass);
+
+	return status;
+}
+
+/*******************************************************************
+  build correct perms based on policies and password times for _samr_query_sec_obj
+*******************************************************************/
+static BOOL check_change_pw_access(TALLOC_CTX *mem_ctx, DOM_SID *user_sid)
+{
+	struct samu *sampass=NULL;
+	BOOL ret;
+
+	if ( !(sampass = samu_new( mem_ctx )) ) {
+		DEBUG(0,("No memory!\n"));
+		return False;
+	}
+
+	become_root();
+	ret = pdb_getsampwsid(sampass, user_sid);
+	unbecome_root();
+
+	if (ret == False) {
+		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
+		TALLOC_FREE(sampass);
+		return False;
+	}
+
+	DEBUG(3,("User:[%s]\n",  pdb_get_username(sampass) ));
+
+	if (pdb_get_pass_can_change(sampass)) {
+		TALLOC_FREE(sampass);
+		return True;
+	}
+	TALLOC_FREE(sampass);
+	return False;
+}
+
 
 /*******************************************************************
  _samr_query_sec_obj
@@ -731,7 +819,13 @@ NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_
 		/* TODO: different SDs have to be generated for aliases groups and users.
 		         Currently all three get a default user SD  */
 		DEBUG(10,("_samr_query_sec_obj: querying security on Object with SID: %s\n", sid_to_string(str_sid, &pol_sid)));
-		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &pol_sid, SAMR_USR_RIGHTS_WRITE_PW);
+		if (check_change_pw_access(p->mem_ctx, &pol_sid)) {
+			r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, 
+							  &pol_sid, SAMR_USR_RIGHTS_WRITE_PW);
+		} else {
+			r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_nopwchange_generic_mapping, 
+							  &pol_sid, SAMR_USR_RIGHTS_CANT_WRITE_PW);
+		}
 	} else {
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
@@ -3056,7 +3150,7 @@ static BOOL set_user_info_18(SAM_USER_INFO_18 *id18, struct samu *pwd)
 		TALLOC_FREE(pwd);
 		return False;
 	}
- 	if (!pdb_set_pass_changed_now (pwd)) {
+ 	if (!pdb_set_pass_last_set_time (pwd, time(NULL), PDB_CHANGED)) {
 		TALLOC_FREE(pwd);
 		return False; 
 	}

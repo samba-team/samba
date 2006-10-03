@@ -689,7 +689,7 @@ BOOL change_lanman_password(struct samu *sampass, uchar *pass2)
 		return False;	/* We lose the NT hash. Sorry. */
 	}
 
-	if (!pdb_set_pass_changed_now  (sampass)) {
+	if (!pdb_set_pass_last_set_time  (sampass, time(NULL), PDB_CHANGED)) {
 		TALLOC_FREE(sampass);
 		/* Not quite sure what this one qualifies as, but this will do */
 		return False; 
@@ -1018,41 +1018,34 @@ static BOOL check_passwd_history(struct samu *sampass, const char *plaintext)
 
 NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, BOOL as_root, uint32 *samr_reject_reason)
 {
-	uint32 min_len, min_age;
+	uint32 min_len;
 	struct passwd *pass = NULL;
 	const char *username = pdb_get_username(hnd);
-	time_t last_change_time = pdb_get_pass_last_set_time(hnd);
 	time_t can_change_time = pdb_get_pass_can_change_time(hnd);
 
 	if (samr_reject_reason) {
 		*samr_reject_reason = Undefined;
 	}
 
-	if (pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &min_age)) {
-		/*
-		 * Windows calculates the minimum password age check
-		 * dynamically, it basically ignores the pwdcanchange
-		 * timestamp. Do likewise.
-		 */
-		if (last_change_time + min_age > time(NULL)) {
-			DEBUG(1, ("user %s cannot change password now, must "
-				  "wait until %s\n", username,
-				  http_timestring(last_change_time+min_age)));
-			if (samr_reject_reason) {
-				*samr_reject_reason = REJECT_REASON_OTHER;
-			}
-			return NT_STATUS_ACCOUNT_RESTRICTION;
+	/* check to see if the secdesc has previously been set to disallow */
+	if (!pdb_get_pass_can_change(hnd)) {
+		DEBUG(1, ("user %s does not have permissions to change password\n"));
+		if (samr_reject_reason) {
+			*samr_reject_reason = REJECT_REASON_OTHER;
 		}
-	} else {
-		if ((can_change_time != 0) && (time(NULL) < can_change_time)) {
-			DEBUG(1, ("user %s cannot change password now, must "
-				  "wait until %s\n", username,
-				  http_timestring(can_change_time)));
-			if (samr_reject_reason) {
-				*samr_reject_reason = REJECT_REASON_OTHER;
-			}
-			return NT_STATUS_ACCOUNT_RESTRICTION;
+		return NT_STATUS_ACCOUNT_RESTRICTION;
+	}
+
+	/* removed calculation here, becuase passdb now calculates
+	   based on policy.  jmcd */
+	if ((can_change_time != 0) && (time(NULL) < can_change_time)) {
+		DEBUG(1, ("user %s cannot change password now, must "
+			  "wait until %s\n", username,
+			  http_timestring(can_change_time)));
+		if (samr_reject_reason) {
+			*samr_reject_reason = REJECT_REASON_OTHER;
 		}
+		return NT_STATUS_ACCOUNT_RESTRICTION;
 	}
 
 	if (pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &min_len) && (str_charnum(new_passwd) < min_len)) {
