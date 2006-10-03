@@ -6208,7 +6208,6 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, struct samu *pw, DOM_SID *
 			pass_last_set_time, pass_can_change_time,
 			pass_must_change_time;
 			
-	time_t must_change_time;
 	const char*		user_name = pdb_get_username(pw);
 	const char*		full_name = pdb_get_fullname(pw);
 	const char*		home_dir  = pdb_get_homedir(pw);
@@ -6233,16 +6232,12 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, struct samu *pw, DOM_SID *
 	}
 
 	/* Create NTTIME structs */
-	unix_to_nt_time (&logon_time,	        pdb_get_logon_time(pw));
-	unix_to_nt_time (&logoff_time,	pdb_get_logoff_time(pw));
+	unix_to_nt_time (&logon_time, 		pdb_get_logon_time(pw));
+	unix_to_nt_time (&logoff_time, 		pdb_get_logoff_time(pw));
 	unix_to_nt_time (&kickoff_time, 	pdb_get_kickoff_time(pw));
-	unix_to_nt_time (&pass_last_set_time, pdb_get_pass_last_set_time(pw));
-	unix_to_nt_time (&pass_can_change_time,pdb_get_pass_can_change_time(pw));
-	must_change_time = pdb_get_pass_must_change_time(pw);
-	if (must_change_time == get_time_t_max())
-		unix_to_nt_time_abs(&pass_must_change_time, must_change_time);
-	else
-		unix_to_nt_time(&pass_must_change_time, must_change_time);
+	unix_to_nt_time (&pass_last_set_time, 	pdb_get_pass_last_set_time(pw));
+	unix_to_nt_time (&pass_can_change_time,	pdb_get_pass_can_change_time(pw));
+	unix_to_nt_time (&pass_must_change_time,pdb_get_pass_must_change_time(pw));
 	
 	/* structure assignment */
 	usr->logon_time            = logon_time;

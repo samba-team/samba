@@ -72,32 +72,12 @@ time_t pdb_get_pass_last_set_time(const struct samu *sampass)
 
 time_t pdb_get_pass_can_change_time(const struct samu *sampass)
 {
-	uint32 allow;
-
-	if (sampass->pass_last_set_time == 0)
-		return (time_t) 0;
-	
-	if (!pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &allow))
-		allow = 0;
-
-	return sampass->pass_last_set_time + allow;
+	return sampass->pass_can_change_time;
 }
 
 time_t pdb_get_pass_must_change_time(const struct samu *sampass)
 {
-	uint32 expire;
-
-	if (sampass->pass_last_set_time == 0)
-		return (time_t) 0;
-
-	if (sampass->acct_ctrl & ACB_PWNOEXP)
-		return get_time_t_max();
-
-	if (!pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &expire)
-	    || expire == (uint32)-1 || expire == 0) 
-		return get_time_t_max();
-
-	return sampass->pass_last_set_time + expire;
+	return sampass->pass_must_change_time;
 }
 
 uint16 pdb_get_logon_divs(const struct samu *sampass)
