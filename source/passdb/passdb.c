@@ -1106,7 +1106,7 @@ uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_onl
 	logoff_time = (uint32)pdb_get_logoff_time(sampass);
 	kickoff_time = (uint32)pdb_get_kickoff_time(sampass);
 	bad_password_time = (uint32)pdb_get_bad_password_time(sampass);
-	pass_can_change_time = (uint32)pdb_get_pass_can_change_time(sampass);
+	pass_can_change_time = (uint32)pdb_get_pass_can_change_time_noncalc(sampass);
 	pass_must_change_time = (uint32)pdb_get_pass_must_change_time(sampass);
 	pass_last_set_time = (uint32)pdb_get_pass_last_set_time(sampass);
 

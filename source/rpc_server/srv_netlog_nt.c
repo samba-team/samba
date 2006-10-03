@@ -623,7 +623,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 			return NT_STATUS_NO_MEMORY;
 		}
 		
-		if (!pdb_set_pass_changed_now(sampass)) {
+		if (!pdb_set_pass_last_set_time(sampass, time(NULL), PDB_CHANGED)) {
 			TALLOC_FREE(sampass);
 			/* Not quite sure what this one qualifies as, but this will do */
 			return NT_STATUS_UNSUCCESSFUL; 

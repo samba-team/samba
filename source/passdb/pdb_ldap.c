@@ -1096,7 +1096,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_KICKOFF_TIME), temp);
 
-	slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_can_change_time(sampass));
+	slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_can_change_time_noncalc(sampass));
 	if (need_update(sampass, PDB_CANCHANGETIME))
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_CAN_CHANGE), temp);
