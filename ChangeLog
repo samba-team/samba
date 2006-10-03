@@ -1,5 +1,9 @@
-2006-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_digest.3: Basic krb5_digest manpage.
+	
+2006-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* fix-export: build gssapi mech private files
 	
 	* lib/krb5/init_creds_pw.c: minimize layering and remove
