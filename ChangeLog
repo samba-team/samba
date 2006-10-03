@@ -1,5 +1,7 @@
 2006-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* fix-export: build gssapi mech private files
+	
 	* lib/krb5/init_creds_pw.c: minimize layering and remove
 	krb5_kdc_flags
 
