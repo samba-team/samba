@@ -197,6 +197,7 @@ man_MANS =					\
 	krb5_creds.3				\
 	krb5_crypto_init.3			\
 	krb5_data.3				\
+	krb5_digest.3				\
 	krb5_eai_to_heim_errno.3		\
 	krb5_encrypt.3				\
 	krb5_expand_hostname.3			\
