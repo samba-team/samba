@@ -114,7 +114,7 @@ static const char *http_local_path(struct websrv_context *web, const char *url)
 	if (url[0] != '/') return NULL;
 
 	for (i=0;url[i];i++) {
-		if ((!isalnum((unsigned char)url[i]) && !strchr("./_", url[i])) ||
+		if ((!isalnum((unsigned char)url[i]) && !strchr("./_-", url[i])) ||
 		    (url[i] == '.' && strchr("/.", url[i+1]))) {
 			return NULL;
 		}
