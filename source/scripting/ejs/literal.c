@@ -20,6 +20,7 @@ enum json_tokener_error {
         json_tokener_error_oom, /* out of memory */
         json_tokener_error_parse_unexpected,
         json_tokener_error_parse_null,
+        json_tokener_error_parse_date,
         json_tokener_error_parse_boolean,
         json_tokener_error_parse_number,
         json_tokener_error_parse_array,
@@ -30,27 +31,40 @@ enum json_tokener_error {
 };
 
 enum json_tokener_state {
-        json_tokener_state_eatws,               /* 0 */
-        json_tokener_state_start,               /* 1 */
-        json_tokener_state_finish,              /* 2 */
-        json_tokener_state_null,                /* 3 */
-        json_tokener_state_comment_start,       /* 4 */
-        json_tokener_state_comment,             /* 5 */
-        json_tokener_state_comment_eol,         /* 6 */
-        json_tokener_state_comment_end,         /* 7 */
-        json_tokener_state_string,              /* 8 */
-        json_tokener_state_string_escape,       /* 9 */
-        json_tokener_state_escape_unicode,      /* 10 */
-        json_tokener_state_boolean,             /* 11 */
-        json_tokener_state_number,              /* 12 */
-        json_tokener_state_array,               /* 13 */
-        json_tokener_state_array_sep,           /* 14 */
-        json_tokener_state_object,              /* 15 */
-        json_tokener_state_object_field_start,  /* 16 */
-        json_tokener_state_object_field,        /* 17 */
-        json_tokener_state_object_field_end,    /* 18 */
-        json_tokener_state_object_value,        /* 19 */
-        json_tokener_state_object_sep           /* 20 */
+        json_tokener_state_eatws,
+        json_tokener_state_start,
+        json_tokener_state_finish,
+        json_tokener_state_null,
+        json_tokener_state_date,
+        json_tokener_state_comment_start,
+        json_tokener_state_comment,
+        json_tokener_state_comment_eol,
+        json_tokener_state_comment_end,
+        json_tokener_state_string,
+        json_tokener_state_string_escape,
+        json_tokener_state_escape_unicode,
+        json_tokener_state_boolean,
+        json_tokener_state_number,
+        json_tokener_state_array,
+        json_tokener_state_datelist,
+        json_tokener_state_array_sep,
+        json_tokener_state_datelist_sep,
+        json_tokener_state_object,
+        json_tokener_state_object_field_start,
+        json_tokener_state_object_field,
+        json_tokener_state_object_field_end,
+        json_tokener_state_object_value,
+        json_tokener_state_object_sep
+};
+
+enum date_field {
+        date_field_year,
+        date_field_month,
+        date_field_day,
+        date_field_hour,
+        date_field_minute,
+        date_field_second,
+        date_field_millisecond
 };
 
 struct json_tokener
@@ -145,11 +159,16 @@ static void *append_string(void *ctx,
 static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                                            enum json_tokener_error *err_p)
 {
-        enum json_tokener_state state, saved_state;
+        enum json_tokener_state state;
+        enum json_tokener_state saved_state;
+        enum date_field date_field;
         struct MprVar current = mprCreateUndefinedVar();
+        struct MprVar tempObj;
         struct MprVar obj;
         enum json_tokener_error err = json_tokener_success;
+        char date_script[] = "JSON_Date.create(0);";
         char *obj_field_name = NULL;
+        char *emsg = NULL;
         char quote_char;
         int deemed_double;
         int start_offset;
@@ -190,8 +209,12 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                                 break;
                         case 'N':
                         case 'n':
-                                state = json_tokener_state_null;
                                 start_offset = this->pos++;
+                                if (this->source[this->pos] == 'e') {
+                                    state = json_tokener_state_date;
+                                } else {
+                                    state = json_tokener_state_null;
+                                }
                                 break;
                         case '"':
                         case '\'':
@@ -241,7 +264,8 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                         goto out;
                         
                 case json_tokener_state_null:
-                        if(strncasecmp("null", this->source + start_offset,
+                        if(strncasecmp("null",
+                                       this->source + start_offset,
                                        this->pos - start_offset)) {
                                 *err_p = json_tokener_error_parse_null;
                                 mprDestroyVar(&current);
@@ -256,6 +280,38 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                         } else {
                                 this->pos++;
                         }
+                        break;
+                        
+                case json_tokener_state_date:
+                        if (this->pos - start_offset <= 18) {
+                                if (strncasecmp("new Date(Date.UTC(",
+                                                this->source + start_offset,
+                                                this->pos - start_offset)) {
+                                        *err_p = json_tokener_error_parse_date;
+                                        mprDestroyVar(&current);
+                                        return mprCreateUndefinedVar();
+                                } else {
+                                        this->pos++;
+                                        break;
+                                }
+                        }
+                        
+                        this->pos--;            /* we went one too far */
+                        state = json_tokener_state_eatws;
+                        saved_state = json_tokener_state_datelist;
+
+                        /* Create a JsonDate object */
+                        if (ejsEvalScript(0,
+                                          date_script,
+                                          &tempObj,
+                                          &emsg) != 0) {
+                                *err_p = json_tokener_error_parse_date;
+                                mprDestroyVar(&current);
+                                return mprCreateUndefinedVar();
+                        }
+                        mprDestroyVar(&current);
+                        mprCopyVar(&current, &tempObj, MPR_DEEP_COPY);
+                        date_field = date_field_year;
                         break;
                         
                 case json_tokener_state_comment_start:
@@ -293,11 +349,12 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                         
                 case json_tokener_state_string:
                         if(c == quote_char) {
-                                if ((this->pb = append_string(
-                                             this->ctx,
-                                             this->pb,
-                                             this->source + start_offset,
-                                             this->pos - start_offset)) == NULL) {
+                                this->pb = append_string(
+                                        this->ctx,
+                                        this->pb,
+                                        this->source + start_offset,
+                                        this->pos - start_offset);
+                                if (this->pb == NULL) {
                                         err = json_tokener_error_oom;
                                         goto out;
                                 }
@@ -315,11 +372,12 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                         switch(c) {
                         case '"':
                         case '\\':
-                                if ((this->pb = append_string(
-                                             this->ctx,
-                                             this->pb,
-                                             this->source + start_offset,
-                                             this->pos - start_offset - 1)) == NULL) {
+                                this->pb = append_string(
+                                        this->ctx,
+                                        this->pb,
+                                        this->source + start_offset,
+                                        this->pos - start_offset - 1);
+                                if (this->pb == NULL) {
                                         err = json_tokener_error_oom;
                                         goto out;
                                 }
@@ -330,11 +388,12 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                         case 'n':
                         case 'r':
                         case 't':
-                                if ((this->pb = append_string(
-                                             this->ctx,
-                                             this->pb,
-                                             this->source + start_offset,
-                                             this->pos - start_offset - 1)) == NULL) {
+                                this->pb = append_string(
+                                        this->ctx,
+                                        this->pb,
+                                        this->source + start_offset,
+                                        this->pos - start_offset - 1);
+                                if (this->pb == NULL) {
                                         err = json_tokener_error_oom;
                                         goto out;
                                 }
@@ -345,41 +404,41 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                                          * pass string constant.
                                          */
                                         char buf[] = "\b";
-                                        if ((this->pb = append_string(
-                                                     this->ctx,
-                                                     this->pb,
-                                                     buf,
-                                                     1)) == NULL) {
+                                        this->pb = append_string(this->ctx,
+                                                                 this->pb,
+                                                                 buf,
+                                                                 1);
+                                        if (this->pb == NULL) {
                                                 err = json_tokener_error_oom;
                                                 goto out;
                                         }
                                 } else if (c == 'n') {
                                         char buf[] = "\n";
-                                        if ((this->pb = append_string(
-                                                     this->ctx,
-                                                     this->pb,
-                                                     buf,
-                                                     1)) == NULL) {
+                                        this->pb = append_string(this->ctx,
+                                                                 this->pb,
+                                                                 buf,
+                                                                 1);
+                                        if (this->pb == NULL) {
                                                 err = json_tokener_error_oom;
                                                 goto out;
                                         }
                                 } else if (c == 'r') {
                                         char buf[] = "\r";
-                                        if ((this->pb = append_string(
-                                                     this->ctx,
-                                                     this->pb,
-                                                     buf,
-                                                     1)) == NULL) {
+                                        this->pb = append_string(this->ctx,
+                                                                 this->pb,
+                                                                 buf,
+                                                                 1);
+                                        if (this->pb == NULL) {
                                                 err = json_tokener_error_oom;
                                                 goto out;
                                         }
                                 } else if (c == 't') {
                                         char buf[] = "\t";
-                                        if ((this->pb = append_string(
-                                                     this->ctx,
-                                                     this->pb,
-                                                     buf,
-                                                     1)) == NULL) {
+                                        this->pb = append_string(this->ctx,
+                                                                 this->pb,
+                                                                 buf,
+                                                                 1);
+                                        if (this->pb == NULL) {
                                                 err = json_tokener_error_oom;
                                                 goto out;
                                         }
@@ -388,11 +447,12 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                                 state = saved_state;
                                 break;
                         case 'u':
-                                if ((this->pb = append_string(
-                                             this->ctx,
-                                             this->pb,
-                                             this->source + start_offset,
-                                             this->pos - start_offset - 1)) == NULL) {
+                                this->pb = append_string(
+                                        this->ctx,
+                                        this->pb,
+                                        this->source + start_offset,
+                                        this->pos - start_offset - 1);
+                                if (this->pb == NULL) {
                                         err = json_tokener_error_oom;
                                         goto out;
                                 }
@@ -417,22 +477,24 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                                                 hexdigit(*(this->source + start_offset + 3));
                                         if (ucs_char < 0x80) {
                                                 utf_out[0] = ucs_char;
-                                                if ((this->pb = append_string(
-                                                             this->ctx,
-                                                             this->pb,
-                                                             (char *) utf_out,
-                                                             1)) == NULL) {
+                                                this->pb = append_string(
+                                                        this->ctx,
+                                                        this->pb,
+                                                        (char *) utf_out,
+                                                        1);
+                                                if (this->pb == NULL) {
                                                         err = json_tokener_error_oom;
                                                         goto out;
                                                 }
                                         } else if (ucs_char < 0x800) {
                                                 utf_out[0] = 0xc0 | (ucs_char >> 6);
                                                 utf_out[1] = 0x80 | (ucs_char & 0x3f);
-                                                if ((this->pb = append_string(
-                                                             this->ctx,
-                                                             this->pb,
-                                                             (char *) utf_out,
-                                                             2)) == NULL) {
+                                                this->pb = append_string(
+                                                        this->ctx,
+                                                        this->pb,
+                                                        (char *) utf_out,
+                                                        2);
+                                                if (this->pb == NULL) {
                                                         err = json_tokener_error_oom;
                                                         goto out;
                                                 }
@@ -440,11 +502,12 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                                                 utf_out[0] = 0xe0 | (ucs_char >> 12);
                                                 utf_out[1] = 0x80 | ((ucs_char >> 6) & 0x3f);
                                                 utf_out[2] = 0x80 | (ucs_char & 0x3f);
-                                                if ((this->pb = append_string(
-                                                             this->ctx,
-                                                             this->pb,
-                                                             (char *) utf_out,
-                                                             3)) == NULL) {
+                                                this->pb = append_string(
+                                                        this->ctx,
+                                                        this->pb,
+                                                        (char *) utf_out,
+                                                        3);
+                                                if (this->pb == NULL) {
                                                         err = json_tokener_error_oom;
                                                         goto out;
                                                 }
@@ -536,6 +599,63 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                         }
                         break;
                         
+                case json_tokener_state_datelist:
+                        if(c == ')') {
+                                if (this->source[this->pos+1] == ')') {
+                                        this->pos += 2;
+                                        saved_state = json_tokener_state_finish;
+                                        state = json_tokener_state_eatws;
+                                } else {
+                                        err = json_tokener_error_parse_date;
+                                        goto out;
+                                }
+                        } else {
+                                obj = json_tokener_do_parse(this, &err);
+                                if (err != json_tokener_success) {
+                                        goto out;
+                                }
+
+                                /* date list items must be integers */
+                                if (obj.type != MPR_TYPE_INT) {
+                                        err = json_tokener_error_parse_date;
+                                        goto out;
+                                }
+                                
+                                switch(date_field) {
+                                case date_field_year:
+                                        mprSetVar(&current, "year", obj);
+                                        break;
+                                case date_field_month:
+                                        mprSetVar(&current, "month", obj);
+                                        break;
+                                case date_field_day:
+                                        mprSetVar(&current, "day", obj);
+                                        break;
+                                case date_field_hour:
+                                        mprSetVar(&current, "hour", obj);
+                                        break;
+                                case date_field_minute:
+                                        mprSetVar(&current, "minute", obj);
+                                        break;
+                                case date_field_second:
+                                        mprSetVar(&current, "second", obj);
+                                        break;
+                                case date_field_millisecond:
+                                        mprSetVar(&current, "millisecond", obj);
+                                        break;
+                                default:
+                                        err = json_tokener_error_parse_date;
+                                        goto out;
+                                }
+
+                                /* advance to the next date field */
+                                date_field++;
+
+                                saved_state = json_tokener_state_datelist_sep;
+                                state = json_tokener_state_eatws;
+                        }
+                        break;
+                        
                 case json_tokener_state_array_sep:
                         if(c == ']') {
                                 this->pos++;
@@ -547,6 +667,27 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                                 state = json_tokener_state_eatws;
                         } else {
                                 *err_p = json_tokener_error_parse_array;
+                                mprDestroyVar(&current);
+                                return mprCreateUndefinedVar();
+                        }
+                        break;
+                        
+                case json_tokener_state_datelist_sep:
+                        if(c == ')') {
+                                if (this->source[this->pos+1] == ')') {
+                                        this->pos += 2;
+                                        saved_state = json_tokener_state_finish;
+                                        state = json_tokener_state_eatws;
+                                } else {
+                                        err = json_tokener_error_parse_date;
+                                        goto out;
+                                }
+                        } else if(c == ',') {
+                                this->pos++;
+                                saved_state = json_tokener_state_datelist;
+                                state = json_tokener_state_eatws;
+                        } else {
+                                *err_p = json_tokener_error_parse_date;
                                 mprDestroyVar(&current);
                                 return mprCreateUndefinedVar();
                         }
@@ -580,17 +721,18 @@ static struct MprVar json_tokener_do_parse(struct json_tokener *this,
                         
                 case json_tokener_state_object_field:
                         if(c == quote_char) {
-                                if ((this->pb = append_string(
-                                             this->ctx,
-                                             this->pb,
-                                             this->source + start_offset,
-                                             this->pos - start_offset)) == NULL) {
+                                this->pb = append_string(
+                                        this->ctx,
+                                        this->pb,
+                                        this->source + start_offset,
+                                        this->pos - start_offset);
+                                if (this->pb == NULL) {
                                         err = json_tokener_error_oom;
                                         goto out;
                                 }
-                                if ((obj_field_name =
-                                     talloc_strdup(this->ctx,
-                                                   this->pb)) == NULL) {
+                                obj_field_name = talloc_strdup(this->ctx,
+                                                               this->pb);
+                                if (obj_field_name == NULL) {
                                         err = json_tokener_error_oom;
                                         goto out;
                                 }
@@ -653,10 +795,11 @@ out:
         talloc_free(obj_field_name);
         if(err == json_tokener_success) {
                 return current;
+        } else {
+                mprDestroyVar(&current);
+                *err_p = err;
+                return mprCreateUndefinedVar();
         }
-        mprDestroyVar(&current);
-        *err_p = err;
-        return mprCreateUndefinedVar();
 }
 
 

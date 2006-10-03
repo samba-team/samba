@@ -16,6 +16,7 @@
 function _JSON_Date_create(secondsSinceEpoch)
 {
     var o = new Object();
+    o.__type = "_JSON_Date";
 
     function _setUtcDateTimeFields(year, month, day, hour, minute, second, millisecond)
     {
@@ -137,7 +138,7 @@ function _JSON_Date_create(secondsSinceEpoch)
     }
     o.getUtcMillisecond = _getUtcMillisecond;
 
-    function getEpochTime()
+    function _getEpochTime()
     {
         var tm = new Object();
         tm.tm_sec = this.second;
@@ -151,8 +152,9 @@ function _JSON_Date_create(secondsSinceEpoch)
         tm.isdst = 0;
         return gmmktime(tm);
     }
+    o.getEpochTime = _getEpochTime;
 
-    function encoding()
+    function _encoding()
     {
         /* Encode the date in a well-documented fashion */
         return sprintf("new Date(Date.UTC(%d,%d,%d,%d,%d,%d,%d))",
@@ -164,6 +166,7 @@ function _JSON_Date_create(secondsSinceEpoch)
                        this.second,
                        this.millisecond);
     }
+    o.encoding = _encoding;
 
     if (! secondsSinceEpoch)
     {
@@ -174,13 +177,13 @@ function _JSON_Date_create(secondsSinceEpoch)
     {
         o.setEpochTime(secondsSinceEpoch);
     }
-    o.year = null;
-    o.month = null;
-    o.day = null;
-    o.hour = null;
-    o.minute = null;
-    o.second = null;
-    o.millisecond = null;
+    o.year = 0;
+    o.month = 0;
+    o.day = 0;
+    o.hour = 0;
+    o.minute = 0;
+    o.second = 0;
+    o.millisecond = 0;
     return o;
 }
 
