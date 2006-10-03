@@ -81,6 +81,161 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fo krb5_digest_free
 .Fa "krb5_digest digest"
 .Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_type
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *type"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_server_cb
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *type"
+.Fa "const char *binding"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_hostname
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *hostname"
+.Fc
+.Ft "const char *"
+.Fo krb5_digest_get_server_nonce
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_server_nonce
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *nonce"
+.Fc
+.Ft "const char *"
+.Fo krb5_digest_get_opaque
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_opaque
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *opaque"
+.Fc
+.Ft "const char *"
+.Fo krb5_digest_get_identifier
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_identifier
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *id"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_init_request
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "krb5_realm realm"
+.Fa "krb5_ccache ccache"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_client_nonce
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *nonce"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_digest
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *dgst"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_username
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *username"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_authid
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *authid"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_authentication_user
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "krb5_principal authentication_user"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_realm
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *realm"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_method
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *method"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_uri
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *uri"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_nonceCount
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *nonce_count"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_set_qop
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "const char *qop"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_request
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "krb5_realm realm"
+.Fa "krb5_ccache ccache"
+.Fc
+.Ft "const char *"
+.Fo krb5_digest_get_responseData
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fc
+.Ft "const char *"
+.Fo krb5_digest_get_rsp
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_get_tickets
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "Ticket **tickets"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_get_client_binding
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "char **type"
+.Fa "char **binding"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_digest_get_a1_hash
+.Fa "krb5_context context"
+.Fa "krb5_digest digest"
+.Fa "krb5_data *data"
+.Fc
 .Sh DESCRIPTION
 The
 .Fn krb5_digest_alloc
