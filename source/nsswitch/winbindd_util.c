@@ -350,6 +350,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 
 	if ((request == NULL) || (response == NULL) || (state == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(mem_ctx);
 		continuation(private_data, False);
 		return WINBINDD_ERROR;
 	}
