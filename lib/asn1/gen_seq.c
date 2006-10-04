@@ -105,8 +105,10 @@ generate_type_seq (const Symbol *s)
 	     "\treturn ASN1_OVERRUN;\n"
 	     "free_%s(&data->val[element]);\n"
 	     "data->len--;\n"
-	     "memmove(&data->val[element], &data->val[element + 1], \n"
-	     "\tsizeof(data->val[0]) * data->len);\n"
+	     /* don't move if its the last element */
+	     "if (element < data->len)\n"
+	     "\tmemmove(&data->val[element], &data->val[element + 1], \n"
+	     "\t\tsizeof(data->val[0]) * data->len);\n"
 	     /* resize but don't care about failures since it doesn't matter */
 	     "ptr = realloc(data->val, data->len * sizeof(data->val[0]));\n"
 	     "if (ptr) data->val = ptr;\n"
