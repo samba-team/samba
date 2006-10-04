@@ -247,20 +247,22 @@ fi
 
 # If we support pkinit and have RSA, lets try that
 if test "$pkinit" = yes -a "$rsa" = yes ; then
-	echo "Trying pk-init (principal in certificate)"
-	base="${srcdir}/../../lib/hx509/data"
-	${kinit} -C FILE:${base}/pkinit.crt,${base}/pkinit.key bar@${R} || exitcode=1
-	${kgetcred} ${server}@${R} || exitcode=1
-	${kdestroy}
-	echo "Trying pk-init (principal in pki-mapping)"
-	${kinit} -C FILE:${base}/pkinit.crt,${base}/pkinit.key foo@${R} || exitcode=1
-	${kgetcred} ${server}@${R} || exitcode=1
-	${kdestroy}
-	echo "Trying pk-init (password protected key)"
-	${kinit} -C FILE:${base}/pkinit.crt,${base}/pkinit-pw.key --password-file=${objdir}/foopassword foo@${R} || exitcode=1
-	${kgetcred} ${server}@${R} || exitcode=1
-	${kdestroy}
 
+    for type in "" "--pk-use-enckey"; do
+	echo "Trying pk-init (principal in certificate) $type"
+	base="${srcdir}/../../lib/hx509/data"
+	${kinit} $type -C FILE:${base}/pkinit.crt,${base}/pkinit.key bar@${R} || exitcode=1
+	${kgetcred} ${server}@${R} || exitcode=1
+	${kdestroy}
+	echo "Trying pk-init (principal in pki-mapping) $type"
+	${kinit} $type -C FILE:${base}/pkinit.crt,${base}/pkinit.key foo@${R} || exitcode=1
+	${kgetcred} ${server}@${R} || exitcode=1
+	${kdestroy}
+	echo "Trying pk-init (password protected key) $type"
+	${kinit} $type -C FILE:${base}/pkinit.crt,${base}/pkinit-pw.key --password-file=${objdir}/foopassword foo@${R} || exitcode=1
+	${kgetcred} ${server}@${R} || exitcode=1
+	${kdestroy}
+    done
 else
 	echo "no pkinit (pkinit: $pkinit, rsa: $rsa)"
 fi
