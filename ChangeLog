@@ -1,5 +1,8 @@
 2006-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c: Sign the request in the encKey case.  Bug reported
+	by Olga Kornievskaia of Umich.
+
 	* lib/krb5/Makefile.am: man_MANS += krb5_digest.3
 
 	* lib/krb5/krb5_digest.3: Add all protos
