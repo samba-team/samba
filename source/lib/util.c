@@ -312,6 +312,13 @@ void add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 {
 	int i;
 
+	if ((*num_gids != 0) && (*gids == NULL)) {
+		/*
+		 * A former call to this routine has failed to allocate memory
+		 */
+		return;
+	}
+
 	for (i=0; i<*num_gids; i++) {
 		if ((*gids)[i] == gid)
 			return;
