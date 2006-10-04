@@ -71,6 +71,7 @@ int fcache_version;
 char *password_file	= NULL;
 char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
+int pk_use_enckey	= 0;
 
 static char *krb4_cc_name;
 
@@ -157,6 +158,9 @@ static struct getargs args[] = {
 
     {  "x509-anchors",	'D',  arg_string, &pk_x509_anchors,
        "directory with CA certificates", "directory" },
+
+    {  "pk-use-enckey",	0,  arg_flag, &pk_use_enckey,
+       "Use RSA encrypted reply (instead of DH)" },
 
 #endif
     { "version", 	0,   arg_flag, &version_flag },
@@ -512,7 +516,7 @@ get_new_tickets(krb5_context context,
 						 pk_x509_anchors,
 						 NULL,
 						 NULL,
-						 0,
+						 pk_use_enckey ? 2 : 0,
 						 krb5_prompter_posix,
 						 NULL,
 						 passwd);
