@@ -126,7 +126,7 @@ char *ldb_attr_casefold(void *mem_ctx, const char *s)
 {
 	int i;
 	char *ret = talloc_strdup(mem_ctx, s);
-	if (!s) {
+	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
 	}
