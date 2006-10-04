@@ -782,7 +782,7 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 			namecache_store(name, 0x20, 1, &ip_list);
 
 			DEBUG(10,("dcip_to_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
-#ifdef HAVE_KRB5
+
 			if ((ads->config.flags & ADS_KDC) && ads_sitename_match(ads)) {
 				/* We're going to use this KDC for this realm/domain.
 				   If we are using sites, then force the krb5 libs
@@ -796,7 +796,7 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 				saf_store( domainname, name);
 				saf_store( realm, name);
 			}
-#endif
+
 			ads_destroy( &ads );
 			return True;
 		}
