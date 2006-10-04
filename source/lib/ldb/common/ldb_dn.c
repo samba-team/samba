@@ -674,6 +674,7 @@ static struct ldb_dn_component ldb_dn_copy_component(void *mem_ctx, struct ldb_d
 	dst.name = talloc_strdup(mem_ctx, src->name);
 	if (dst.name == NULL) {
 		talloc_free(dst.value.data);
+		dst.value.data = NULL;
 	}
 
 	return dst;
@@ -826,6 +827,9 @@ struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const str
 	for (i = 0; i < dn1->comp_num; i++) {
 		newdn->components[i] = ldb_dn_copy_component(newdn->components,
 							   &(dn1->components[i]));
+		if (newdn->components[i].value.data == NULL) {
+			goto failed;
+		}
 	}
 
 	return newdn;
