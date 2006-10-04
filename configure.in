@@ -23,6 +23,9 @@ AC_CANONICAL_HOST
 CANONICAL_HOST=$host
 AC_SUBST(CANONICAL_HOST)
 
+dnl Hints for autobuild
+AB_INIT
+
 rk_SYS_LARGEFILE
 
 dnl
