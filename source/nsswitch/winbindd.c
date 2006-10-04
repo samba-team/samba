@@ -634,36 +634,36 @@ static void remove_client(struct winbindd_cli_state *state)
 {
 	/* It's a dead client - hold a funeral */
 	
-	if (state != NULL) {
-		
-		/* Close socket */
-		
-		close(state->sock);
-		
-		/* Free any getent state */
-		
-		free_getent_state(state->getpwent_state);
-		free_getent_state(state->getgrent_state);
-		
-		/* We may have some extra data that was not freed if the
-		   client was killed unexpectedly */
-
-		SAFE_FREE(state->response.extra_data.data);
-
-		if (state->mem_ctx != NULL) {
-			talloc_destroy(state->mem_ctx);
-			state->mem_ctx = NULL;
-		}
-
-		remove_fd_event(&state->fd_event);
-		
-		/* Remove from list and free */
-		
-		winbindd_remove_client(state);
-		TALLOC_FREE(state);
+	if (state == NULL) {
+		return;
 	}
-}
+		
+	/* Close socket */
+		
+	close(state->sock);
+		
+	/* Free any getent state */
+		
+	free_getent_state(state->getpwent_state);
+	free_getent_state(state->getgrent_state);
+		
+	/* We may have some extra data that was not freed if the client was
+	   killed unexpectedly */
 
+	SAFE_FREE(state->response.extra_data.data);
+
+	if (state->mem_ctx != NULL) {
+		talloc_destroy(state->mem_ctx);
+		state->mem_ctx = NULL;
+	}
+
+	remove_fd_event(&state->fd_event);
+		
+	/* Remove from list and free */
+		
+	winbindd_remove_client(state);
+	TALLOC_FREE(state);
+}
 
 /* Shutdown client connection which has been idle for the longest time */
 
