@@ -562,12 +562,18 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 					(lck->num_share_modes *
 					sizeof(struct share_mode_entry)) +
 					data->u.s.delete_token_size );
+	if (lck->servicepath == NULL) {
+		smb_panic("talloc_strdup failed\n");
+	}
 
 	lck->filename = talloc_strdup(lck, dbuf.dptr + sizeof(*data) +
 					(lck->num_share_modes *
 					sizeof(struct share_mode_entry)) +
 					data->u.s.delete_token_size +
 					strlen(lck->servicepath) + 1 );
+	if (lck->filename == NULL) {
+		smb_panic("talloc_strdup failed\n");
+	}
 
 	/*
 	 * Ensure that each entry has a real process attached.
