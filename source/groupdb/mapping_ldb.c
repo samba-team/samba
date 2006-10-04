@@ -139,10 +139,14 @@ static struct ldb_dn *mapping_dn(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 	}
 	
 	msg = ldb_msg_new(ldb);
-	if (msg == NULL) return False;
+	if (msg == NULL) {
+		return False;
+	}
 
 	msg->dn = mapping_dn(msg, &map->sid);
-	if (msg->dn == NULL) goto failed;
+	if (msg->dn == NULL) {
+		goto failed;
+	}
 
 	if (ldb_msg_add_string(msg, "objectClass", "groupMap") != LDB_SUCCESS ||
 	    ldb_msg_add_string(msg, "sid", 
@@ -303,6 +307,9 @@ failed:
 	}
 
 	dn = mapping_dn(ldb, sid);
+	if (dn == NULL) {
+		return False;
+	}
 	ret = ldb_delete(ldb, dn);
 	talloc_free(dn);
 
@@ -466,6 +473,9 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 	}
 
 	msg.dn = mapping_dn(tmp_ctx, alias);
+	if (msg.dn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	msg.num_elements = 1;
 	msg.elements = &el;
 	el.flags = operation;
@@ -524,6 +534,9 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 	*num = 0;
 
 	dn = mapping_dn(ldb, alias);
+	if (dn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, attrs, &res);
 	talloc_steal(dn, res);
