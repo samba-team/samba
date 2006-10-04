@@ -1,5 +1,7 @@
 2006-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kinit.c: Add flag --pk-use-enckey.
+
 	* kdc/pkinit.c: Sign the request in the encKey case.  Bug reported
 	by Olga Kornievskaia of Umich.
 
