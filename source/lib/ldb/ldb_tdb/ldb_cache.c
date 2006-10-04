@@ -318,7 +318,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_dn *baseinfo_dn = NULL;
 	struct ldb_dn *indexlist_dn = NULL;
-	double seq;
+	uint64_t seq;
 
 	if (ltdb->cache == NULL) {
 		ltdb->cache = talloc_zero(ltdb, struct ltdb_cache);
@@ -356,7 +356,7 @@ int ltdb_cache_load(struct ldb_module *module)
 
 	/* if the current internal sequence number is the same as the one
 	   in the database then assume the rest of the cache is OK */
-	seq = ldb_msg_find_attr_as_double(ltdb->cache->baseinfo, LTDB_SEQUENCE_NUMBER, 0);
+	seq = ldb_msg_find_attr_as_uint64(ltdb->cache->baseinfo, LTDB_SEQUENCE_NUMBER, 0);
 	if (seq == ltdb->sequence_number) {
 		goto done;
 	}
