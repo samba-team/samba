@@ -475,8 +475,8 @@ static void validate_my_share_entries(int num,
 	if (is_deferred_open_entry(share_entry) &&
 	    !open_was_deferred(share_entry->op_mid)) {
 		pstring str;
-		DEBUG(0, ("Got a deferred entry without a request: "
-			  "PANIC: %s\n", share_mode_str(num, share_entry)));
+		pstr_sprintf(str, "Got a deferred entry without a request: "
+			     "PANIC: %s\n", share_mode_str(num, share_entry));
 		smb_panic(str);
 	}
 
