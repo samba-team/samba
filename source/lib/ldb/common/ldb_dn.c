@@ -698,6 +698,7 @@ struct ldb_dn *ldb_dn_copy_partial(void *mem_ctx, const struct ldb_dn *dn, int n
 	newdn->comp_num = num_el;
 	n = newdn->comp_num - 1;
 	newdn->components = talloc_array(newdn, struct ldb_dn_component, newdn->comp_num);
+	if (newdn->components == NULL) goto failed;
 
 	if (dn->comp_num == 0) return newdn;
 	e = dn->comp_num - 1;
