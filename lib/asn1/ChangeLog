@@ -1,3 +1,14 @@
+2006-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gen_seq.c: In generation of remove_TYPE: if you just removed the
+	last element, you must not memmove memory beyond the array.  From
+	Andrew Bartlett
+	
+2006-10-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lex.l: Grow (%p, %a, %n) tables for Solaris 10 lex. From Harald
+	Barth.
+	
 2006-09-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_decode.c (decode_type): drop unused variable realtype.
