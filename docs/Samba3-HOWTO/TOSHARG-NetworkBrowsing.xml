@@ -2199,20 +2199,20 @@ requires manual intervention. This is a design feature of MS Windows and not any
 To remove the stale shortcuts found in <emphasis>My Network Places</emphasis> which refer to what are now
 invalid shares or servers it is necessary to edit the Windows Registry under
 <literal>HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\</literal>. Edit the entry
-<literal>MountPoints2</literal> (on Windows XP and later, or <literal>MountPoints</literal> on
-Windows 2000 and earlier). Remove all keys named <literal>\\server\share</literal> (where 'server' and 'share' refer to a
+<literal>MountPoints2</literal> (on Windows XP and later, or <literal>MountPoints</literal> on Windows 2000
+and earlier). Remove all keys named <literal>\\server\share</literal> (where 'server' and 'share' refer to a
 non-existent server or share). Note that this must be done for every user profile that has such stale
-references.
+references. Alternately, you can delete the shortcuts from the MS Windows Explorer in <literal>My Network
+Places</literal> just by right-clicking them and selecting <emphasis>Delete.</emphasis>
 </para>
 
 <para>
 Samba users have reported that these stale references negatively affect network browsing with Windows, Samba,
-and Novell servers. They suspect it is a universal problem not directly related to the existence of a Samba
+and Novell servers. It is suspected to be a universal problem not directly related to the Samba
 server. Samba users may experience this more often due to Samba being somewhat viewed as an experimenter's
 toolkit. This results from the fact that a user might go through several reconfigurations and incarnations of
 their Samba server, by different names, with different shares, increasing the chances for having stale
-(invalid) cached share references. Strangely (or not so strangely), Windows does not seem to expire these
-references. I am not sure how or why the registry keys are created.
+(invalid) cached share references. Windows clients do not seem to expire these references.
 </para>
 
 <para>

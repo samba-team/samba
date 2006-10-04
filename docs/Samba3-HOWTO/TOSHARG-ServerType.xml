@@ -782,19 +782,48 @@ makes Samba act as a domain member. Read the manufacturer's manual before the wa
 <sect2>
 <title>Constantly Losing Connections to Password Server</title>
 
-<para>
-	<quote>
+<para><quote>
 Why does server_validate() simply give up rather than re-establish its connection to the
 password server?  Though I am not fluent in the SMB protocol, perhaps the cluster server
 process passes along to its client workstation the session key it receives from the password
 server, which means the password hashes submitted by the client would not work on a subsequent
-connection whose session key would be different. So server_validate() must give up.</quote>
-</para>
+connection whose session key would be different. So server_validate() must give up.
+</quote></para>
 
 <para>
 Indeed. That's why <smbconfoption name="security">server</smbconfoption>
 is at best a nasty hack. Please use <smbconfoption name="security">domain</smbconfoption>;
 <smbconfoption name="security">server</smbconfoption> mode is also known as pass-through authentication.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Stand-alone Server is converted to Domain Controller &smbmdash; Now User accounts don't work</title>
+
+<para><quote>
+When I try to log in to the DOMAIN, the eventlog shows <emphasis>tried credentials DOMAIN/username; effective
+credentials SERVER/username</emphasis>
+</quote></para>
+
+<para>
+Usually this is due to a user or machine account being created before the Samba server is configured to be a
+domain controller. Accounts created before the server becomes a domain controller will be
+<emphasis>local</emphasis> accounts and authenticated as what looks like a member in the SERVER domain, much
+like local user accounts in Windows 2000 and later.  Accounts created after the Samba server becomes a domain
+controller will be <emphasis>domain</emphasis> accounts and will be authenticated as a member of the DOMAIN
+domain.
+</para>
+
+<para>
+This can be verified by issuing the command <command>pdbedit -L -v username</command>.  If this reports DOMAIN
+then the account is a domain account, if it reports SERVER then the account is a local account.
+</para>
+
+<para>
+The easiest way to resolve this is to remove and recreate the account; however this may cause problems with
+established user profiles. You can also use <command>pdbedit -u username -I DOMAIN</command>. You may also
+need to change the User SID and Primary Group SID to match the domain.
 </para>
 
 </sect2>
