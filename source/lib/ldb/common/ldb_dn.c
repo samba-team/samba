@@ -818,6 +818,7 @@ struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const str
 		int comp_num = dn2->comp_num;
 		if (dn1 != NULL) comp_num += dn1->comp_num;
 		newdn = ldb_dn_copy_partial(mem_ctx, dn2, comp_num);
+		LDB_DN_NULL_FAILED(newdn);
 	}
 
 	if (dn1 == NULL) {
