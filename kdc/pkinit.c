@@ -656,10 +656,11 @@ pk_mk_pa_reply_enckey(krb5_context context,
 		      ContentInfo *content_info)
 {
     krb5_error_code ret;
-    krb5_data buf, o;
+    krb5_data buf, signed_data;
     size_t size;
 
     krb5_data_zero(&buf);
+    krb5_data_zero(&signed_data);
 
     switch (client_params->type) {
     case PKINIT_COMPAT_WIN2K: {
@@ -723,21 +724,55 @@ pk_mk_pa_reply_enckey(krb5_context context,
     if (buf.length != size)
 	krb5_abortx(context, "Internal ASN.1 encoder error");
 
+    {
+	hx509_query *q;
+	hx509_cert cert;
+	
+	ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
+	if (ret)
+	    goto out;
+	
+	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+	
+	ret = hx509_certs_find(kdc_identity->hx509ctx, 
+			       kdc_identity->certs, 
+			       q, 
+			       &cert);
+	hx509_query_free(kdc_identity->hx509ctx, q);
+	if (ret)
+	    goto out;
+	
+	ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
+					oid_id_pkrkeydata(),
+					buf.data,
+					buf.length,
+					NULL,
+					cert,
+					kdc_identity->anchors,
+					kdc_identity->certpool,
+					&signed_data);
+	hx509_cert_free(cert);
+    }
+
+    krb5_data_free(&buf);
+    if (ret) 
+	goto out;
+
     ret = hx509_cms_envelope_1(kdc_identity->hx509ctx,
 			       client_params->cert,
-			       buf.data, buf.length, NULL,
-			       oid_id_pkcs7_signedData(), &o);
+			       signed_data.data, signed_data.length, NULL,
+			       oid_id_pkcs7_signedData(), &buf);
     if (ret)
 	goto out;
     
     ret = _krb5_pk_mk_ContentInfo(context,
-				  &o,
+				  &buf,
 				  oid_id_pkcs7_envelopedData(),
 				  content_info);
-    free_octet_string(&o);
-
- out:
+out:
     krb5_data_free(&buf);
+    krb5_data_free(&signed_data);
     return ret;
 }
 
