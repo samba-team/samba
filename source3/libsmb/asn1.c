@@ -74,6 +74,10 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 	struct nesting *nesting;
 	size_t len;
 
+	if (data->has_error) {
+		return False;
+	}
+
 	nesting = data->nesting;
 
 	if (!nesting) {
