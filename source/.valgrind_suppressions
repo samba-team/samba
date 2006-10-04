@@ -2,63 +2,25 @@
 # from the build farm log
 
 {
-   samba_dlopen1
-   Memcheck:Cond
-   obj:/lib/ld-2.3.6.so
-   obj:/lib/ld-2.3.6.so
-   obj:/lib/tls/libc-2.3.6.so
-   obj:/lib/ld-2.3.6.so
-   fun:_dl_open
-}
-
-{
-   samba_dlopen2
-   Memcheck:Cond
-   obj:/lib/ld-2.3.6.so
-   fun:_dl_open
-}
-
-{
-   samba_dlopen3
+   samba3_dlopen1
    Memcheck:Addr4
    obj:/lib/ld-2.3.6.so
    obj:/lib/ld-2.3.6.so
-   obj:/lib/ld-2.3.6.so
-   obj:/lib/ld-2.3.6.so
-   obj:/lib/ld-2.3.6.so
-   obj:/lib/ld-2.3.6.so
    obj:/lib/tls/libc-2.3.6.so
    obj:/lib/ld-2.3.6.so
    fun:_dl_open
-}
-
-{
-   samba_dlopen4
-   Memcheck:Cond
-   obj:/lib/ld-2.3.6.so
    obj:/lib/tls/libc-2.3.6.so
    obj:/lib/ld-2.3.6.so
-   fun:_dl_open
- }
-
-{
-   samba_dlopen5
-   Memcheck:Addr4
-   obj:/lib/ld-2.3.6.so
-   obj:/lib/ld-2.3.6.so
-   obj:/lib/ld-2.3.6.so
+   fun:__libc_dlopen_mode
    obj:/lib/tls/libc-2.3.6.so
-   obj:/lib/ld-2.3.6.so
-   fun:_dl_open
-}
-
-{
-   samba_dlopen6
-   Memcheck:Cond
-   obj:/lib/ld-2.3.6.so
-   obj:/lib/ld-2.3.6.so
-   obj:/lib/ld-2.3.6.so
    obj:/lib/tls/libc-2.3.6.so
-   obj:/lib/ld-2.3.6.so
-   fun:_dl_open
+   obj:/lib/tls/libc-2.3.6.so
+   obj:/lib/tls/libc-2.3.6.so
+   obj:/lib/tls/libc-2.3.6.so
+   fun:iconv_open
+   fun:smb_iconv_open
+   fun:charset_name
+   fun:init_iconv
+   fun:lp_load
+   fun:main
 }
