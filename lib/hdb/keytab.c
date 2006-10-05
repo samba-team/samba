@@ -201,6 +201,8 @@ hdb_get_entry(krb5_context context,
     const char *dbname = d->dbname;
     const char *mkey   = d->mkey;
 
+    memset(&ent, 0, sizeof(ent));
+
     if (dbname == NULL)
 	find_db (context, &dbname, &mkey, principal);
 
