@@ -1029,7 +1029,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 
 	/* check to see if the secdesc has previously been set to disallow */
 	if (!pdb_get_pass_can_change(hnd)) {
-		DEBUG(1, ("user %s does not have permissions to change password\n"));
+		DEBUG(1, ("user %s does not have permissions to change password\n", username));
 		if (samr_reject_reason) {
 			*samr_reject_reason = REJECT_REASON_OTHER;
 		}
