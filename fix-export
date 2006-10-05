@@ -9,7 +9,7 @@ cd $distdir
 
 if test "$DATEDVERSION"; then
 	ed -s configure.in << END
-/AC_INIT/s/AC_INIT(\([^,]*\), [^,]*, \(.*\))/AC_INIT(\1, $DATEDVERSION, \2)/
+/AC_INIT/s/AC_INIT(\([^,]*\), *[^,]*, *\(.*\))/AC_INIT(\1, $DATEDVERSION, \2)/
 w
 q
 END
