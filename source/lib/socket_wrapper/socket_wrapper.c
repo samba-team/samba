@@ -81,6 +81,12 @@
 #define real_close close
 #endif
 
+#ifdef HAVE_GETTIMEOFDAY_TZ
+#define swrapGetTimeOfDay(tval) gettimeofday(tval,NULL)
+#else
+#define swrapGetTimeOfDay(tval)	gettimeofday(tval)
+#endif
+
 /* we need to use a very terse format here as IRIX 6.4 silently
    truncates names to 16 chars, so if we use a longer name then we
    can't tell which port a packet came from with recvfrom() 
@@ -134,19 +140,6 @@ static struct socket_info *sockets;
 static const char *socket_wrapper_dir(void)
 {
 	const char *s = getenv("SOCKET_WRAPPER_DIR");
-	if (s == NULL) {
-		return NULL;
-	}
-	if (strncmp(s, "./", 2) == 0) {
-		s += 2;
-	}
-	return s;
-}
-
-static const char *socket_wrapper_pcap_file(void)
-{
-	const char *s = getenv("SOCKET_WRAPPER_PCAP_FILE");
-
 	if (s == NULL) {
 		return NULL;
 	}
@@ -457,6 +450,287 @@ enum swrap_packet_type {
 	SWRAP_CLOSE_ACK
 };
 
+struct swrap_file_hdr {
+	unsigned long	magic;
+	unsigned short	version_major;	
+	unsigned short	version_minor;
+	long		timezone;
+	unsigned long	sigfigs;
+	unsigned long	frame_max_len;
+#define SWRAP_FRAME_LENGTH_MAX 0xFFFF
+	unsigned long	link_type;
+};
+#define SWRAP_FILE_HDR_SIZE 24
+
+struct swrap_packet {
+	struct {
+		unsigned long seconds;
+		unsigned long micro_seconds;
+		unsigned long recorded_length;
+		unsigned long full_length;
+	} frame;
+#define SWRAP_PACKET__FRAME_SIZE 16
+
+	struct {
+		struct {
+			unsigned char	ver_hdrlen;
+			unsigned char	tos;
+			unsigned short	packet_length;
+			unsigned short	identification;
+			unsigned char	flags;
+			unsigned char	fragment;
+			unsigned char	ttl;
+			unsigned char	protocol;
+			unsigned short	hdr_checksum;
+			unsigned long	src_addr;
+			unsigned long	dest_addr;
+		} hdr;
+#define SWRAP_PACKET__IP_HDR_SIZE 20
+
+		union {
+			struct {
+				unsigned short	source_port;
+				unsigned short	dest_port;
+				unsigned long	seq_num;
+				unsigned long	ack_num;
+				unsigned char	hdr_length;
+				unsigned char	control;
+				unsigned short	window;
+				unsigned short	checksum;
+				unsigned short	urg;
+			} tcp;
+#define SWRAP_PACKET__IP_P_TCP_SIZE 20
+			struct {
+				unsigned short	source_port;
+				unsigned short	dest_port;
+				unsigned short	length;
+				unsigned short	checksum;
+			} udp;
+#define SWRAP_PACKET__IP_P_UDP_SIZE 8
+			struct {
+				unsigned char	type;
+				unsigned char	code;
+				unsigned short	checksum;
+				unsigned long	unused;
+			} icmp;
+#define SWRAP_PACKET__IP_P_ICMP_SIZE 8
+		} p;
+	} ip;
+};
+#define SWRAP_PACKET_SIZE 56
+
+static const char *socket_wrapper_pcap_file(void)
+{
+	static int initialized = 0;
+	static const char *s = NULL;
+	static const struct swrap_file_hdr h;
+	static const struct swrap_packet p;
+
+	if (initialized == 1) {
+		return s;
+	}
+	initialized = 1;
+
+	/*
+	 * TODO: don't use the structs use plain buffer offsets
+	 *       and PUSH_U8(), PUSH_U16() and PUSH_U32()
+	 * 
+	 * for now make sure we disable PCAP support
+	 * if the struct has alignment!
+	 */
+	if (sizeof(h) != SWRAP_FILE_HDR_SIZE) {
+		return NULL;
+	}
+	if (sizeof(p) != SWRAP_PACKET_SIZE) {
+		return NULL;
+	}
+	if (sizeof(p.frame) != SWRAP_PACKET__FRAME_SIZE) {
+		return NULL;
+	}
+	if (sizeof(p.ip.hdr) != SWRAP_PACKET__IP_HDR_SIZE) {
+		return NULL;
+	}
+	if (sizeof(p.ip.p.tcp) != SWRAP_PACKET__IP_P_TCP_SIZE) {
+		return NULL;
+	}
+	if (sizeof(p.ip.p.udp) != SWRAP_PACKET__IP_P_UDP_SIZE) {
+		return NULL;
+	}
+	if (sizeof(p.ip.p.icmp) != SWRAP_PACKET__IP_P_ICMP_SIZE) {
+		return NULL;
+	}
+
+	s = getenv("SOCKET_WRAPPER_PCAP_FILE");
+	if (s == NULL) {
+		return NULL;
+	}
+	if (strncmp(s, "./", 2) == 0) {
+		s += 2;
+	}
+	return s;
+}
+
+static struct swrap_packet *swrap_packet_init(struct timeval *tval,
+					      const struct sockaddr_in *src_addr,
+					      const struct sockaddr_in *dest_addr,
+					      int socket_type,
+					      const unsigned char *payload,
+					      size_t payload_len,
+					      unsigned long tcp_seq,
+					      unsigned long tcp_ack,
+					      unsigned char tcp_ctl,
+					      int unreachable,
+					      size_t *_packet_len)
+{
+	struct swrap_packet *ret;
+	struct swrap_packet *packet;
+	size_t packet_len;
+	size_t alloc_len;
+	size_t nonwire_len = sizeof(packet->frame);
+	size_t wire_hdr_len;
+	size_t wire_len;
+	size_t icmp_hdr_len = 0;
+	size_t icmp_truncate_len = 0;
+	unsigned char protocol, icmp_protocol;
+	unsigned short src_port = src_addr->sin_port;
+	unsigned short dest_port = dest_addr->sin_port;
+
+	switch (socket_type) {
+	case SOCK_STREAM:
+		protocol = 0x06; /* TCP */
+		wire_hdr_len = sizeof(packet->ip.hdr) + sizeof(packet->ip.p.tcp);
+		wire_len = wire_hdr_len + payload_len;
+		break;
+
+	case SOCK_DGRAM:
+		protocol = 0x11; /* UDP */
+		wire_hdr_len = sizeof(packet->ip.hdr) + sizeof(packet->ip.p.udp);
+		wire_len = wire_hdr_len + payload_len;
+		break;
+	}
+
+	if (unreachable) {
+		icmp_protocol = protocol;
+		protocol = 0x01; /* ICMP */
+		if (wire_len > 64 ) {
+			icmp_truncate_len = wire_len - 64;
+		}
+		icmp_hdr_len = sizeof(packet->ip.hdr) + sizeof(packet->ip.p.icmp);
+		wire_hdr_len += icmp_hdr_len;
+		wire_len += icmp_hdr_len;
+	}
+
+	packet_len = nonwire_len + wire_len;
+	alloc_len = packet_len;
+	if (alloc_len < sizeof(struct swrap_packet)) {
+		alloc_len = sizeof(struct swrap_packet);
+	}
+	ret = (struct swrap_packet *)malloc(alloc_len);
+	if (!ret) return NULL;
+
+	packet = ret;
+
+	packet->frame.seconds		= tval->tv_sec;
+	packet->frame.micro_seconds	= tval->tv_usec;
+	packet->frame.recorded_length	= wire_len - icmp_truncate_len;
+	packet->frame.full_length	= wire_len - icmp_truncate_len;
+
+	packet->ip.hdr.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
+	packet->ip.hdr.tos		= 0x00;
+	packet->ip.hdr.packet_length	= htons(wire_len - icmp_truncate_len);
+	packet->ip.hdr.identification	= htons(0xFFFF);
+	packet->ip.hdr.flags		= 0x40; /* BIT 1 set - means don't fraqment */
+	packet->ip.hdr.fragment		= htons(0x0000);
+	packet->ip.hdr.ttl		= 0xFF;
+	packet->ip.hdr.protocol		= protocol;
+	packet->ip.hdr.hdr_checksum	= htons(0x0000);
+	packet->ip.hdr.src_addr		= src_addr->sin_addr.s_addr;
+	packet->ip.hdr.dest_addr	= dest_addr->sin_addr.s_addr;
+
+	if (unreachable) {
+		packet->ip.p.icmp.type		= 0x03; /* destination unreachable */
+		packet->ip.p.icmp.code		= 0x01; /* host unreachable */
+		packet->ip.p.icmp.checksum	= htons(0x0000);
+		packet->ip.p.icmp.unused	= htonl(0x00000000);
+
+		/* set the ip header in the ICMP payload */
+		packet = (struct swrap_packet *)(((unsigned char *)ret) + icmp_hdr_len);
+		packet->ip.hdr.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
+		packet->ip.hdr.tos		= 0x00;
+		packet->ip.hdr.packet_length	= htons(wire_len - icmp_hdr_len);
+		packet->ip.hdr.identification	= htons(0xFFFF);
+		packet->ip.hdr.flags		= 0x40; /* BIT 1 set - means don't fraqment */
+		packet->ip.hdr.fragment		= htons(0x0000);
+		packet->ip.hdr.ttl		= 0xFF;
+		packet->ip.hdr.protocol		= icmp_protocol;
+		packet->ip.hdr.hdr_checksum	= htons(0x0000);
+		packet->ip.hdr.src_addr		= dest_addr->sin_addr.s_addr;
+		packet->ip.hdr.dest_addr	= src_addr->sin_addr.s_addr;
+
+		src_port = dest_addr->sin_port;
+		dest_port = src_addr->sin_port;
+	}
+
+	switch (socket_type) {
+	case SOCK_STREAM:
+		packet->ip.p.tcp.source_port	= src_port;
+		packet->ip.p.tcp.dest_port	= dest_port;
+		packet->ip.p.tcp.seq_num	= htonl(tcp_seq);
+		packet->ip.p.tcp.ack_num	= htonl(tcp_ack);
+		packet->ip.p.tcp.hdr_length	= 0x50; /* 5 * 32 bit words */
+		packet->ip.p.tcp.control	= tcp_ctl;
+		packet->ip.p.tcp.window		= htons(0x7FFF);
+		packet->ip.p.tcp.checksum	= htons(0x0000);
+		packet->ip.p.tcp.urg		= htons(0x0000);
+
+		break;
+
+	case SOCK_DGRAM:
+		packet->ip.p.udp.source_port	= src_addr->sin_port;
+		packet->ip.p.udp.dest_port	= dest_addr->sin_port;
+		packet->ip.p.udp.length		= htons(8 + payload_len);
+		packet->ip.p.udp.checksum	= htons(0x0000);
+
+		break;
+	}
+
+	if (payload && payload_len > 0) {
+		unsigned char *p = (unsigned char *)ret;
+		p += nonwire_len;
+		p += wire_hdr_len;
+		memcpy(p, payload, payload_len);
+	}
+
+	*_packet_len = packet_len - icmp_truncate_len;
+	return ret;
+}
+
+static int swrap_get_pcap_fd(const char *fname)
+{
+	static int fd = -1;
+
+	if (fd != -1) return fd;
+
+	fd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_APPEND, 0644);
+	if (fd != -1) {
+		struct swrap_file_hdr file_hdr;
+		file_hdr.magic		= 0xA1B2C3D4;
+		file_hdr.version_major	= 0x0002;	
+		file_hdr.version_minor	= 0x0004;
+		file_hdr.timezone	= 0x00000000;
+		file_hdr.sigfigs	= 0x00000000;
+		file_hdr.frame_max_len	= SWRAP_FRAME_LENGTH_MAX;
+		file_hdr.link_type	= 0x0065; /* 101 RAW IP */
+
+		write(fd, &file_hdr, sizeof(file_hdr));
+		return fd;
+	}
+
+	fd = open(fname, O_WRONLY|O_APPEND, 0644);
+
+	return fd;
+}
+
 static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *addr,
 			      enum swrap_packet_type type,
 			      const void *buf, size_t len)
@@ -468,6 +742,10 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 	unsigned long tcp_ack = 0;
 	unsigned char tcp_ctl = 0;
 	int unreachable = 0;
+	struct timeval tv;
+	struct swrap_packet *packet;
+	size_t packet_len = 0;
+	int fd;
 
 	file_name = socket_wrapper_pcap_file();
 	if (!file_name) {
@@ -707,7 +985,21 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		break;
 	}
 
-	/* TODO: contruct the blob and write to the file */
+	swrapGetTimeOfDay(&tv);
+
+	packet = swrap_packet_init(&tv, src_addr, dest_addr, si->type, buf, len,
+				   tcp_seq, tcp_ack, tcp_ctl, unreachable,
+				   &packet_len);
+	if (!packet) {
+		return;
+	}
+
+	fd = swrap_get_pcap_fd(file_name);
+	if (fd != -1) {
+		write(fd, packet, packet_len);
+	}
+
+	free(packet);
 }
 
 _PUBLIC_ int swrap_socket(int family, int type, int protocol)
