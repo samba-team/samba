@@ -1,4 +1,14 @@
+2006-10-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/name.h: remove <sys/queue.h>
+
+	* mech/mech_switch.h: remove <sys/queue.h>
+	
+	* mech/cred.h: remove <sys/queue.h>
+
 2006-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/arcfour.c: Thinker more with header lengths.
 
 	* krb5/arcfour.c: Improve the calcucation of header
 	lengths. DCE-STYLE data is also padded so remove if (1 || ...)
