@@ -80,7 +80,7 @@ do
 		keeptree=yes
 		shift
 		;;
-	--passhrase)
+	--passphrase)
 		passhrase="$2"
 		shift 2
 		;;
