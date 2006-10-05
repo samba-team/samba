@@ -174,7 +174,7 @@ ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct 
 }
 
 /*******************************************************************
-A write wrapper that will deal with EINTR.
+A recv wrapper that will deal with EINTR.
 ********************************************************************/
 
 ssize_t sys_recv(int fd, void *buf, size_t count, int flags)
