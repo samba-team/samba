@@ -1,0 +1,175 @@
+#!/bin/sh
+# Fetches, builds and store the result of a heimdal build
+# $Id$
+
+fetchmethod=curl	   #options are: wget, curl, ftp, afs
+resultdir=
+email=heimdal-build-log@it.su.se
+baseurl=ftp://ftp.pdc.kth.se/pub/heimdal/src
+afsdir=/afs/pdc.kth.se/public/ftp/pub/heimdal/src
+keeptree=no
+
+# no more use configurabled part below (hopefully)
+
+usage="[--current] [--release version] [--cvs] [--cvs-flags] [--result-directory dir] [--fetch-method method --keep-tree] [--autotools]"
+
+date=`date +%Y%m%d`
+if test "$?" != 0; then
+    echo "have no sane date, punting"
+    exit 1
+fi
+
+hostname=`hostname`
+if test "$?" != 0; then
+    echo "have no sane hostname, punting"
+    exit 1
+fi
+
+dir=
+hversion=
+cvsroot=
+cvsflags=
+autotools=no
+
+while true
+do
+	case $1 in
+	--autotools)
+		autotools=yes
+		;;
+	--current)
+		dir="snapshots/"
+		hversion="heimdal-${date}"
+		shift
+		;;
+	--release)
+		hversion="heimdal-$2"
+		shift 2
+		;;
+	--cvs)
+		hversion="heimdal-cvs-${date}"
+		cvsroot=$2
+		fetchmethod=cvs
+		shift 2
+		;;
+	--cvs-flags)
+		cvsflags="$2"
+		shift 2
+		;;
+	--result-directory)
+		resultdir="$2"
+		if [ ! -d "$resultdir" ]; then
+		    echo "$resultdir doesn't exists"
+		    exit 1
+		fi
+		shift 2
+		;;
+	--fetch-method)
+		fetchmethod="$2"
+		shift 2
+		;;
+	--keep-tree)
+		keeptree=yes
+		shift
+		;;
+	-*)
+		echo "unknown option: $1"
+		break
+		;;
+	*)
+		break
+		;;
+	esac
+done
+if test $# -gt 0; then
+	echo $usage
+	exit 1
+fi
+
+if [ "X${hversion}" = X ]; then
+	echo "no version given"
+	exit 0
+fi
+
+hfile="${hversion}.tar.gz"
+url="${baseurl}/${dir}${hfile}"
+afsfile="${afsdir}/${dir}${hfile}"
+unpack=yes
+
+echo "Removing old source" 
+rm -rf ${hversion}
+
+echo "Fetching ${hversion} using $fetchmethod"
+case "$fetchmethod" in
+wget|ftp)
+	${fetchmethod} $url > /dev/null
+	res=$?
+	;;
+curl)
+	${fetchmethod} -o ${hfile} ${url} > /dev/null
+	res=$?
+	;;
+afs)
+	cp ${afsfile} ${hfile}
+	res=$?
+	;;
+cvs)
+	cvs ${cvsflags} -d "${cvsroot}" co -P -d ${hversion} heimdal
+	res=?
+	unpack=yes
+	autotools=yes
+	;;
+*)
+	echo "unknown fetch method"
+	;;
+esac
+
+if [ "X$res" != X0 ]; then
+	echo "Failed to download the tar-ball"
+	exit 1
+fi
+
+confflags=
+case "${hversion}" in
+    0.7*)
+	#true for Mac OS X, but how about the rest?
+	confflags="--enable-shared --disable-static"
+	;;
+esac
+
+if [ X"$unpack" = Xyes ]; then
+	echo Unpatching source
+	(gzip -dc ${hfile} | tar xf -) || exit 1
+fi
+
+if [ X"$autotools" = Xyes ]; then
+	echo Autotooling (via fix-export)
+	env DATEDVERSION="cvs-${date}" ${hversion}/fix-export ${hversion}
+fi
+
+cd ${hversion} || exit 1
+
+echo "Configuring and building ($hversion)"
+(./configure ${confflags} && make check) > ab.txt 2>&1
+
+if [ "X${resultdir}" != X ] ; then
+	cp ab.txt "${resultdir}/ab-${hversion}-${hostname}-${date}.txt"
+fi
+
+if [ "X${email}" != X ] ; then
+	cat >> email-header <<EOF
+From: ${USER:-unknown-user}@${hostname}
+To: <heimdal-build-log@it.su.se>
+Subject: heimdal-build-log SPAM COOKIE
+
+EOF
+	cat email-header ab.txt | sendmail "${email}"
+fi
+
+cd ..
+if [ X"$keeptree" != Xyes ] ; then
+    rm -rf ${hversion}
+fi
+rm ${hfile}
+
+exit 0
