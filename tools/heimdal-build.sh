@@ -2,7 +2,7 @@
 # Fetches, builds and store the result of a heimdal build
 # Version: $Id$
 
-fetchmethod=curl	   #options are: wget, curl, ftp, afs
+fetchmethod=wget	   #options are: wget, curl, ftp, afs
 resultdir=
 email=heimdal-build-log@it.su.se
 baseurl=ftp://ftp.pdc.kth.se/pub/heimdal/src
@@ -202,6 +202,7 @@ EOF
 		cat >> email-header <<EOF
 autobuild-passphrase: ${passhrase}
 EOF
+	fi
 
 	cat email-header ab.txt | sendmail "${email}"
 fi
