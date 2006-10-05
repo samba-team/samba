@@ -121,8 +121,8 @@ struct socket_info
 	socklen_t peername_len;
 
 	struct {
-		unsigned long long pck_snd;
-		unsigned long long pck_rcv;
+		unsigned long pck_snd;
+		unsigned long pck_rcv;
 	} io;
 
 	struct socket_info *prev, *next;
@@ -464,9 +464,9 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 	const struct sockaddr_in *src_addr;
 	const struct sockaddr_in *dest_addr;
 	const char *file_name;
-	uint32_t tcp_seq = 0;
-	uint32_t tcp_ack = 0;
-	uint8_t tcp_ctl = 0;
+	unsigned long tcp_seq = 0;
+	unsigned long tcp_ack = 0;
+	unsigned char tcp_ctl = 0;
 	int unreachable = 0;
 
 	file_name = socket_wrapper_pcap_file();
