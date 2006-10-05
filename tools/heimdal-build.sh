@@ -97,7 +97,7 @@ afsfile="${afsdir}/${dir}${hfile}"
 unpack=yes
 
 echo "Removing old source" 
-#rm -rf ${hversion}
+rm -rf ${hversion}
 
 echo "Fetching ${hversion} using $fetchmethod"
 case "$fetchmethod" in
@@ -170,6 +170,6 @@ cd ..
 if [ X"$keeptree" != Xyes ] ; then
     rm -rf ${hversion}
 fi
-rm ${hfile}
+rm -f ${hfile}
 
 exit 0
