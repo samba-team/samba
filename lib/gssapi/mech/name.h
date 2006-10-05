@@ -27,8 +27,6 @@
  *	$Id$
  */
 
-#include <sys/queue.h>
-
 struct _gss_mechanism_name {
 	SLIST_ENTRY(_gss_mechanism_name) gmn_link;
 	gssapi_mech_interface	gmn_mech;	/* mechanism ops for MN */

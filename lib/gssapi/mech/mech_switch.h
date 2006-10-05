@@ -27,7 +27,6 @@
  *	$Id$
  */
 
-#include <sys/queue.h>
 #include <gssapi_mech.h>
 
 struct _gss_mech_switch {

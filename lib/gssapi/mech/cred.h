@@ -27,8 +27,6 @@
  *	$Id$
  */
 
-#include <sys/queue.h>
-
 struct _gss_mechanism_cred {
 	SLIST_ENTRY(_gss_mechanism_cred) gmc_link;
 	gssapi_mech_interface	gmc_mech;	/* mechanism ops for MC */
