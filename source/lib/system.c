@@ -105,7 +105,6 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 	return ret;
 }
 
-
 /*******************************************************************
 A pread wrapper that will deal with EINTR and 64-bit file offsets.
 ********************************************************************/
@@ -170,6 +169,20 @@ ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct 
 
 	do {
 		ret = sendto(s, msg, len, flags, to, tolen);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A write wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_recv(int fd, void *buf, size_t count, int flags)
+{
+	ssize_t ret;
+
+	do {
+		ret = recv(fd, buf, count, flags);
 	} while (ret == -1 && errno == EINTR);
 	return ret;
 }
