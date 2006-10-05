@@ -9,11 +9,12 @@ baseurl=ftp://ftp.pdc.kth.se/pub/heimdal/src
 afsdir=/afs/pdc.kth.se/public/ftp/pub/heimdal/src
 keeptree=no
 passhrase=
+builddir=
 noemail=
 
 # no more use configurabled part below (hopefully)
 
-usage="[--current] [--release version] [--cvs SourceRepository] [--cvs-flags] [--result-directory dir] [--fetch-method wget|ftp|curl|cvs] --keep-tree] [--autotools] [--passhrase string] [--no-email]"
+usage="[--current] [--release version] [--cvs SourceRepository] [--cvs-flags] [--result-directory dir] [--fetch-method wget|ftp|curl|cvs] --keep-tree] [--autotools] [--passhrase string] [--no-email] [--build-dir dir]"
 
 date=`date +%Y%m%d`
 if [ "$?" != 0 ]; then
@@ -44,6 +45,11 @@ do
 	case $1 in
 	--autotools)
 		autotools=yes
+		shift
+		;;
+	--build-dir)
+		builddir="$2"
+		shift 2
 		;;
 	--current)
 		dir="snapshots/"
@@ -116,6 +122,11 @@ url="${baseurl}/${dir}${hfile}"
 afsfile="${afsdir}/${dir}${hfile}"
 unpack=yes
 
+if [ "X${builddir}" = X ]; then
+	echo "Changing build dir to ${builddir}"
+	cd "${builddir}"
+fi
+
 echo "Removing old source" 
 rm -rf ${hversion}
 
@@ -158,7 +169,7 @@ case "${hversion}" in
 esac
 
 if [ X"$unpack" = Xyes ]; then
-	echo Unpatching source
+	echo Unpacking source
 	(gzip -dc ${hfile} | tar xf -) || exit 1
 fi
 
