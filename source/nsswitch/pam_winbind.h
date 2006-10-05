@@ -19,7 +19,7 @@
 
 #include <iniparser.h>
 
-#if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD) || defined(AIX)
+#ifndef LINUX
 
 /* Solaris always uses dynamic pam modules */
 #define PAM_EXTERN extern
