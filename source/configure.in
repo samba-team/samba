@@ -352,11 +352,11 @@ EOF
 			samba_cv_fpie=no
 		fi
 		rm -f conftest*])
-fi
-if test x"${samba_cv_fpie}" = x"yes"
-then
-	PIE_CFLAGS="-fPIE"
-	PIE_LDFLAGS="-pie"
+	if test x"${samba_cv_fpie}" = x"yes"
+	then
+		PIE_CFLAGS="-fPIE"
+		PIE_LDFLAGS="-pie"
+	fi
 fi
 
 m4_include(lib/socket_wrapper/config.m4)
