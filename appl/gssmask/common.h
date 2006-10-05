@@ -37,6 +37,13 @@
 #include <config.h>
 #endif
 
+/* 
+ * pthread support is disable because the pthread
+ * test have no "application pthread libflags" variable,
+ * when this is fixed pthread support can be enabled again.
+ */
+#undef ENABLE_PTHREAD_SUPPORT
+
 #include <sys/param.h>
 #ifdef HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
