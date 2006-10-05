@@ -181,7 +181,7 @@ fi
 cd ${hversion} || exit 1
 
 echo "Configuring and building ($hversion)"
-(./configure ${confflags} && make check) > ab.txt 2>&1
+(./configure ${confflags} && make all check) > ab.txt 2>&1
 
 if [ "X${resultdir}" != X ] ; then
 	cp ab.txt "${resultdir}/ab-${hversion}-${hostname}-${date}.txt"
