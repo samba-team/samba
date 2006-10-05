@@ -1,6 +1,6 @@
 #!/bin/sh
 # Fetches, builds and store the result of a heimdal build
-# $Id$
+# Version: $Id$
 
 fetchmethod=curl	   #options are: wget, curl, ftp, afs
 resultdir=
@@ -8,20 +8,28 @@ email=heimdal-build-log@it.su.se
 baseurl=ftp://ftp.pdc.kth.se/pub/heimdal/src
 afsdir=/afs/pdc.kth.se/public/ftp/pub/heimdal/src
 keeptree=no
+passhrase=
+noemail=
 
 # no more use configurabled part below (hopefully)
 
-usage="[--current] [--release version] [--cvs] [--cvs-flags] [--result-directory dir] [--fetch-method method --keep-tree] [--autotools]"
+usage="[--current] [--release version] [--cvs SourceRepository] [--cvs-flags] [--result-directory dir] [--fetch-method wget|ftp|curl|cvs] --keep-tree] [--autotools] [--passhrase string] [--no-email]"
 
 date=`date +%Y%m%d`
-if test "$?" != 0; then
+if [ "$?" != 0 ]; then
     echo "have no sane date, punting"
     exit 1
 fi
 
 hostname=`hostname`
-if test "$?" != 0; then
+if [ "$?" != 0 ]; then
     echo "have no sane hostname, punting"
+    exit 1
+fi
+
+version=`grep "^# Version: " "$0" | cut -f2- -d:`
+if [ "X${version}" = X ]; then
+    echo "Can not figure out what version I am"
     exit 1
 fi
 
@@ -71,6 +79,18 @@ do
 	--keep-tree)
 		keeptree=yes
 		shift
+		;;
+	--passhrase)
+		passhrase="$2"
+		shift 2
+		;;
+	--no-email)
+		noemail="yes"
+		shift
+		;;
+	--version)
+		echo "Version: $version"
+		exit 0
 		;;
 	-*)
 		echo "unknown option: $1"
@@ -156,14 +176,22 @@ if [ "X${resultdir}" != X ] ; then
 	cp ab.txt "${resultdir}/ab-${hversion}-${hostname}-${date}.txt"
 fi
 
-if [ "X${email}" != X ] ; then
-	cat >> email-header <<EOF
+if [ "X${noemail}" = X ] ; then
+	cat > email-header <<EOF
 From: ${USER:-unknown-user}@${hostname}
 To: <heimdal-build-log@it.su.se>
 Subject: heimdal-build-log SPAM COOKIE
 X-heimdal-build: kaka-till-love
 
+Version: $version
+
 EOF
+
+	if [ "X$passhrase" != X ] ; then
+		cat >> email-header <<EOF
+autobuild-passphrase: ${passhrase}
+EOF
+
 	cat email-header ab.txt | sendmail "${email}"
 fi
 
