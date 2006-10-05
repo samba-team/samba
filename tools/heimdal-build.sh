@@ -161,6 +161,7 @@ if [ "X${email}" != X ] ; then
 From: ${USER:-unknown-user}@${hostname}
 To: <heimdal-build-log@it.su.se>
 Subject: heimdal-build-log SPAM COOKIE
+X-heimdal-build: kaka-till-love
 
 EOF
 	cat email-header ab.txt | sendmail "${email}"
