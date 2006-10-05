@@ -133,10 +133,17 @@ testit() {
 	fi
 	name=$1
 	shift 1
-	SERVERS_ARE_UP="no"
-	TEST_LOG="$PREFIX/test_log.$$"
-	trap "rm -f $TEST_LOG" EXIT
 	cmdline="$*"
+
+	SERVERS_ARE_UP="no"
+
+	shname=`echo $name | \
+	sed -e 's%[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\-]%_%g'`
+
+	UNIQUE_PID=`/bin/sh -c 'echo $$'`
+	TEST_LOG="$PREFIX/test_log.${UNIQUE_PID}"
+	TEST_PCAP="$PREFIX/test_${shname}_${UNIQUE_PID}.pcap"
+	trap "rm -f $TEST_LOG $TEST_PCAP" EXIT
 
 	if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 		echo "--==--==--==--==--==--==--==--==--==--==--"
@@ -160,7 +167,12 @@ testit() {
 		fi
 		return 1
 	fi
-	
+
+	if [ x"$MAKE_TEST_ENABLE_PCAP" = x"yes" ];then
+		SOCKET_WRAPPER_PCAP_FILE=$TEST_PCAP
+		export SOCKET_WRAPPER_PCAP_FILE
+	fi
+
 	( $cmdline > $TEST_LOG 2>&1 )
 	status=$?
 	if [ x"$status" != x"0" ]; then
@@ -171,6 +183,9 @@ testit() {
 		samba3_smbd_test_log && echo "SMBD OUTPUT:";
 		samba3_smbd_test_log && cat $SMBD_TEST_LOG;
 		rm -f $TEST_LOG;
+		if [ x"$MAKE_TEST_ENABLE_PCAP" = x"yes" ];then
+			echo "TEST PCAP: $TEST_PCAP"
+		fi
 		if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 			echo "=========================================="
 			echo "TEST FAILED: $name (status $status)"
@@ -180,7 +195,7 @@ testit() {
 		fi
 		return 1;
 	fi
-	rm -f $TEST_LOG;
+	rm -f $TEST_LOG $TEST_PCAP;
 	if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 		echo "ALL OK: $cmdline"
 		echo "=========================================="
