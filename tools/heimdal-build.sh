@@ -97,7 +97,7 @@ afsfile="${afsdir}/${dir}${hfile}"
 unpack=yes
 
 echo "Removing old source" 
-rm -rf ${hversion}
+#rm -rf ${hversion}
 
 echo "Fetching ${hversion} using $fetchmethod"
 case "$fetchmethod" in
@@ -115,7 +115,7 @@ afs)
 	;;
 cvs)
 	cvs ${cvsflags} -d "${cvsroot}" co -P -d ${hversion} heimdal
-	res=?
+	res=$?
 	unpack=yes
 	autotools=yes
 	;;
@@ -143,7 +143,7 @@ if [ X"$unpack" = Xyes ]; then
 fi
 
 if [ X"$autotools" = Xyes ]; then
-	echo Autotooling (via fix-export)
+	echo "Autotooling (via fix-export)"
 	env DATEDVERSION="cvs-${date}" ${hversion}/fix-export ${hversion}
 fi
 
