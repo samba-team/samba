@@ -618,6 +618,7 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 	struct ldb_message_element *el;
 	struct nbt_name *name;
 	uint32_t i, j, num_values;
+	BOOL we_are_owner = False;
 
 	rec = talloc(mem_ctx, struct winsdb_record);
 	if (rec == NULL) {
@@ -678,10 +679,21 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 		goto failed;
 	}
 
-	/* see if it has already expired */
+	if (strcmp(rec->wins_owner, h->local_owner) == 0) {
+		we_are_owner = True;
+	}
+
+	/* 
+	 * see if it has already expired
+	 * 
+	 * NOTE: only expire owned records this way!
+	 *       w2k3 resolves expired replicas
+	 *       which are in active state
+	 */
 	if (!rec->is_static &&
 	    rec->expire_time <= now &&
-	    rec->state == WREPL_STATE_ACTIVE) {
+	    rec->state == WREPL_STATE_ACTIVE &&
+	    we_are_owner) {
 		DEBUG(5,("WINS: expiring name %s (expired at %s)\n", 
 			 nbt_name_string(mem_ctx, rec->name), timestring(mem_ctx, rec->expire_time)));
 		rec->state = WREPL_STATE_RELEASED;
@@ -703,7 +715,8 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 		 */
 		if (!rec->is_static &&
 		    rec->addresses[j]->expire_time <= now &&
-		    rec->state == WREPL_STATE_ACTIVE) {
+		    rec->state == WREPL_STATE_ACTIVE &&
+		    we_are_owner) {
 			DEBUG(5,("WINS: expiring name addr %s of %s (expired at %s)\n", 
 				 rec->addresses[j]->address, nbt_name_string(rec->addresses[j], rec->name),
 				 timestring(rec->addresses[j], rec->addresses[j]->expire_time)));
