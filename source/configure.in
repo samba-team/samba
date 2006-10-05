@@ -5812,6 +5812,14 @@ MSG
 
 fi
 
+dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
+LIB_REMOVE_USR_LIB(LDFLAGS)
+LIB_REMOVE_USR_LIB(LIBS)
+
+dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
+CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
+CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
+
 #################################################
 # Display summary of libraries detected
 
@@ -5844,14 +5852,6 @@ AC_SUBST(builddir)
 # path (if we have them).
 SMBD_LIBS="$samba_fam_libs $samba_dmapi_libs"
 AC_SUBST(SMBD_LIBS)
-
-dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
-LIB_REMOVE_USR_LIB(LDFLAGS)
-LIB_REMOVE_USR_LIB(LIBS)
-
-dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
-CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
-CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
 
 AC_OUTPUT(include/stamp-h Makefile script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh)
 
