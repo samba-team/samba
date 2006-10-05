@@ -120,6 +120,11 @@ struct socket_info
 	struct sockaddr *peername;
 	socklen_t peername_len;
 
+	struct {
+		unsigned long pck_snd;
+		unsigned long pck_rcv;
+	} io;
+
 	struct socket_info *prev, *next;
 };
 
@@ -456,7 +461,13 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 			      enum swrap_packet_type type,
 			      const void *buf, size_t len)
 {
+	const struct sockaddr_in *src_addr;
+	const struct sockaddr_in *dest_addr;
 	const char *file_name;
+	unsigned long tcp_seq = 0;
+	unsigned long tcp_ack = 0;
+	unsigned char tcp_ctl = 0;
+	int unreachable = 0;
 
 	file_name = socket_wrapper_pcap_file();
 	if (!file_name) {
@@ -466,6 +477,237 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 	if (si->family != AF_INET) {
 		return;
 	}
+
+	switch (type) {
+	case SWRAP_CONNECT_SEND:
+		if (si->type != SOCK_STREAM) return;
+
+		src_addr = (const struct sockaddr_in *)si->myname;
+		dest_addr = (const struct sockaddr_in *)addr;
+
+		tcp_seq = si->io.pck_snd;
+		tcp_ack = si->io.pck_rcv;
+		tcp_ctl = 0x02; /* SYN */
+
+		si->io.pck_snd += 1;
+
+		break;
+
+	case SWRAP_CONNECT_RECV:
+		if (si->type != SOCK_STREAM) return;
+
+		dest_addr = (const struct sockaddr_in *)si->myname;
+		src_addr = (const struct sockaddr_in *)addr;
+
+		tcp_seq = si->io.pck_rcv;
+		tcp_ack = si->io.pck_snd;
+		tcp_ctl = 0x12; /** SYN,ACK */
+
+		si->io.pck_rcv += 1;
+
+		break;
+
+	case SWRAP_CONNECT_UNREACH:
+		if (si->type != SOCK_STREAM) return;
+
+		dest_addr = (const struct sockaddr_in *)si->myname;
+		src_addr = (const struct sockaddr_in *)addr;
+
+		/* Unreachable: resend the data of SWRAP_CONNECT_SEND */
+		tcp_seq = si->io.pck_snd - 1;
+		tcp_ack = si->io.pck_rcv;
+		tcp_ctl = 0x02; /* SYN */
+		unreachable = 1;
+
+		break;
+
+	case SWRAP_CONNECT_ACK:
+		if (si->type != SOCK_STREAM) return;
+
+		src_addr = (const struct sockaddr_in *)si->myname;
+		dest_addr = (const struct sockaddr_in *)addr;
+
+		tcp_seq = si->io.pck_snd;
+		tcp_ack = si->io.pck_rcv;
+		tcp_ctl = 0x10; /* ACK */
+
+		break;
+
+	case SWRAP_ACCEPT_SEND:
+		if (si->type != SOCK_STREAM) return;
+
+		dest_addr = (const struct sockaddr_in *)si->myname;
+		src_addr = (const struct sockaddr_in *)addr;
+
+		tcp_seq = si->io.pck_rcv;
+		tcp_ack = si->io.pck_snd;
+		tcp_ctl = 0x02; /* SYN */
+
+		si->io.pck_rcv += 1;
+
+		break;
+
+	case SWRAP_ACCEPT_RECV:
+		if (si->type != SOCK_STREAM) return;
+
+		src_addr = (const struct sockaddr_in *)si->myname;
+		dest_addr = (const struct sockaddr_in *)addr;
+
+		tcp_seq = si->io.pck_snd;
+		tcp_ack = si->io.pck_rcv;
+		tcp_ctl = 0x12; /* SYN,ACK */
+
+		si->io.pck_snd += 1;
+
+		break;
+
+	case SWRAP_ACCEPT_ACK:
+		if (si->type != SOCK_STREAM) return;
+
+		dest_addr = (const struct sockaddr_in *)si->myname;
+		src_addr = (const struct sockaddr_in *)addr;
+
+		tcp_seq = si->io.pck_rcv;
+		tcp_ack = si->io.pck_snd;
+		tcp_ctl = 0x10; /* ACK */
+
+		break;
+
+	case SWRAP_SEND:
+		src_addr = (const struct sockaddr_in *)si->myname;
+		dest_addr = (const struct sockaddr_in *)si->peername;
+
+		tcp_seq = si->io.pck_snd;
+		tcp_ack = si->io.pck_rcv;
+		tcp_ctl = 0x18; /* PSH,ACK */
+
+		si->io.pck_snd += len;
+
+		break;
+
+	case SWRAP_SEND_RST:
+		dest_addr = (const struct sockaddr_in *)si->myname;
+		src_addr = (const struct sockaddr_in *)si->peername;
+
+		if (si->type == SOCK_DGRAM) {
+			swrap_dump_packet(si, si->peername,
+					  SWRAP_SENDTO_UNREACH,
+			      		  buf, len);
+			return;
+		}
+
+		tcp_seq = si->io.pck_rcv;
+		tcp_ack = si->io.pck_snd;
+		tcp_ctl = 0x14; /** RST,ACK */
+
+		break;
+
+	case SWRAP_PENDING_RST:
+		dest_addr = (const struct sockaddr_in *)si->myname;
+		src_addr = (const struct sockaddr_in *)si->peername;
+
+		if (si->type == SOCK_DGRAM) {
+			return;
+		}
+
+		tcp_seq = si->io.pck_rcv;
+		tcp_ack = si->io.pck_snd;
+		tcp_ctl = 0x14; /* RST,ACK */
+
+		break;
+
+	case SWRAP_RECV:
+		dest_addr = (const struct sockaddr_in *)si->myname;
+		src_addr = (const struct sockaddr_in *)si->peername;
+
+		tcp_seq = si->io.pck_rcv;
+		tcp_ack = si->io.pck_snd;
+		tcp_ctl = 0x18; /* PSH,ACK */
+
+		si->io.pck_rcv += len;
+
+		break;
+
+	case SWRAP_RECV_RST:
+		dest_addr = (const struct sockaddr_in *)si->myname;
+		src_addr = (const struct sockaddr_in *)si->peername;
+
+		if (si->type == SOCK_DGRAM) {
+			return;
+		}
+
+		tcp_seq = si->io.pck_rcv;
+		tcp_ack = si->io.pck_snd;
+		tcp_ctl = 0x14; /* RST,ACK */
+
+		break;
+
+	case SWRAP_SENDTO:
+		src_addr = (const struct sockaddr_in *)si->myname;
+		dest_addr = (const struct sockaddr_in *)addr;
+
+		si->io.pck_snd += len;
+
+		break;
+
+	case SWRAP_SENDTO_UNREACH:
+		dest_addr = (const struct sockaddr_in *)si->myname;
+		src_addr = (const struct sockaddr_in *)addr;
+
+		unreachable = 1;
+
+		break;
+
+	case SWRAP_RECVFROM:
+		dest_addr = (const struct sockaddr_in *)si->myname;
+		src_addr = (const struct sockaddr_in *)addr;
+
+		si->io.pck_rcv += len;
+
+		break;
+
+	case SWRAP_CLOSE_SEND:
+		if (si->type != SOCK_STREAM) return;
+
+		src_addr = (const struct sockaddr_in *)si->myname;
+		dest_addr = (const struct sockaddr_in *)si->peername;
+
+		tcp_seq = si->io.pck_snd;
+		tcp_ack = si->io.pck_rcv;
+		tcp_ctl = 0x11; /* FIN, ACK */
+
+		si->io.pck_snd += 1;
+
+		break;
+
+	case SWRAP_CLOSE_RECV:
+		if (si->type != SOCK_STREAM) return;
+
+		dest_addr = (const struct sockaddr_in *)si->myname;
+		src_addr = (const struct sockaddr_in *)si->peername;
+
+		tcp_seq = si->io.pck_rcv;
+		tcp_ack = si->io.pck_snd;
+		tcp_ctl = 0x11; /* FIN,ACK */
+
+		si->io.pck_rcv += 1;
+
+		break;
+
+	case SWRAP_CLOSE_ACK:
+		if (si->type != SOCK_STREAM) return;
+
+		src_addr = (const struct sockaddr_in *)si->myname;
+		dest_addr = (const struct sockaddr_in *)si->peername;
+
+		tcp_seq = si->io.pck_snd;
+		tcp_ack = si->io.pck_rcv;
+		tcp_ctl = 0x10; /* ACK */
+
+		break;
+	}
+
+	/* TODO: contruct the blob and write to the file */
 }
 
 _PUBLIC_ int swrap_socket(int family, int type, int protocol)
