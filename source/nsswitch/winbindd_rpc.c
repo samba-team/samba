@@ -770,48 +770,14 @@ static int get_ldap_seq(const char *server, int port, uint32 *seq)
 static int get_ldap_sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
 	int ret = -1;
-	int i, port = LDAP_PORT;
-	struct ip_service *ip_list = NULL;
-	int count;
-	
-	if ( !NT_STATUS_IS_OK(get_sorted_dc_list(domain->name, &ip_list, &count,
-						 False)) ) {
-		DEBUG(3, ("Could not look up dc's for domain %s\n", domain->name));
-		return False;
-	}
+	fstring ipstr;
 
-	/* Finally return first DC that we can contact */
-
-	for (i = 0; i < count; i++) {
-		fstring ipstr;
-
-		/* since the is an LDAP lookup, default to the LDAP_PORT is
-		 * not set */
-		port = (ip_list[i].port!= PORT_NONE) ?
-			ip_list[i].port : LDAP_PORT;
-
-		fstrcpy( ipstr, inet_ntoa(ip_list[i].ip) );
-		
-		if (is_zero_ip(ip_list[i].ip))
-			continue;
-
-		if ( (ret = get_ldap_seq( ipstr, port,  seq)) == 0 )
-			goto done;
-
-		/* add to failed connection cache */
-		winbind_add_failed_connection_entry( domain, ipstr,
-					     NT_STATUS_UNSUCCESSFUL );
-	}
-
-done:
-	if ( ret == 0 ) {
+	fstrcpy( ipstr, inet_ntoa(domain->dcaddr.sin_addr));
+	if ((ret = get_ldap_seq( ipstr, LDAP_PORT, seq)) == 0) {
 		DEBUG(3, ("get_ldap_sequence_number: Retrieved sequence "
-			  "number for Domain (%s) from DC (%s:%d)\n", 
-			domain->name, inet_ntoa(ip_list[i].ip), port));
-	}
-
-	SAFE_FREE(ip_list);
-
+			  "number for Domain (%s) from DC (%s)\n", 
+			domain->name, ipstr));
+	} 
 	return ret;
 }
 

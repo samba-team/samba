@@ -160,6 +160,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 static void set_domain_online(struct winbindd_domain *domain)
 {
+	extern struct winbindd_methods reconnect_methods;
 	struct timeval now;
 
 	DEBUG(10,("set_domain_online: called for domain %s\n",
@@ -178,6 +179,20 @@ static void set_domain_online(struct winbindd_domain *domain)
 
 	/* Ok, we're out of any startup mode now... */
 	domain->startup = False;
+
+	/* We were offline - now we're online. We default to
+	   using the MS-RPC backend if we started offline,
+	   and if we're going online for the first time we
+	   should really re-initialize the backends and the
+	   checks to see if we're talking to an AD or NT domain.
+	*/
+
+	domain->initialized = False;
+
+	/* 'reconnect_methods' is the MS-RPC backend. */
+	if (domain->backend == &reconnect_methods) {
+		domain->backend = NULL;
+	}
 }
 
 /****************************************************************

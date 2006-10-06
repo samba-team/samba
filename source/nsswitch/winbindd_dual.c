@@ -494,6 +494,9 @@ void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t l
 	/* Set our global state as online. */
 	set_global_winbindd_state_online();
 
+	smb_nscd_flush_user_cache();
+	smb_nscd_flush_group_cache();
+
 	for (child = children; child != NULL; child = child->next) {
 		DEBUG(10,("winbind_msg_online: sending message to pid %u.\n",
 			(unsigned int)child->pid ));
@@ -605,9 +608,6 @@ static void child_msg_online(int msg_type, struct process_id src, void *buf, siz
 
 	/* Set our global state as online. */
 	set_global_winbindd_state_online();
-
-	smb_nscd_flush_user_cache();
-	smb_nscd_flush_group_cache();
 
 	/* Try and mark everything online - delete any negative cache entries
 	   to force a reconnect now. */
