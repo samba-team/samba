@@ -1,5 +1,30 @@
 2006-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/524.c: Adapt to signature change of
+	_krb5_principalname2krb5_principal.
+
+	* kdc/krb5tgs.c: Adapt to signature change of
+	_krb5_principalname2krb5_principal.
+
+	* lib/krb5/get_in_tkt.c: Adapt to signature change of
+	_krb5_principalname2krb5_principal.
+
+	* lib/krb5/rd_cred.c: Adapt to signature change of
+	_krb5_principalname2krb5_principal.
+
+	* lib/krb5/rd_req.c: Adapt to signature change of
+	_krb5_principalname2krb5_principal.
+
+	* lib/krb5/asn1_glue.c (_krb5_principalname2krb5_principal): add
+	krb5_context to signature.
+
+	* kdc/524.c (_krb5_principalname2krb5_principal): adapt to
+	signature change
+
+	* lib/hdb/keytab.c (hdb_get_entry): close and destroy the database
+	later, the hdb_entry_ex might still contain links to the database
+	that it expects to use.
+
 	* kdc/digest.c: Make digest argument o MD5_final unsigned char to
 	help OpenSSL.
 
