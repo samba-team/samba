@@ -232,13 +232,15 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 
 		list->dn = talloc_array(list, char *, el->num_values);
 		if (!list->dn) {
-			break;		
+			talloc_free(msg);
+			return -1;
 		}
 
 		for (j=0;j<el->num_values;j++) {
 			list->dn[list->count] = 
 				talloc_strdup(list->dn, (char *)el->values[j].data);
 			if (!list->dn[list->count]) {
+				talloc_free(msg);
 				return -1;
 			}
 			list->count++;
