@@ -1,0 +1,114 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>    
+  
+  <div id="demoDescription"> 
+    <p>Tests for qx.ui.form.RadioButton. qx.ui.form.RadioButton extends qx.ui.basic.Atom and so it inherits all the options and properties defined there.</p>
+    <p>To group multiple QxRadioButtons you must define a instance of qx.manager.selection.RadioManager and add them to this new instance. All QxRadioButtons assigned to the same group make sure that only one of them is checked at the same time.</p>
+    <p>
+  </div>
+  
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+    
+    var rb1 = new qx.ui.form.RadioButton("Option #1", "rb1");
+    with(rb1)
+    {
+      setTop(80);
+      setLeft(20);
+    };
+    d.add(rb1);
+
+    var rb2 = new qx.ui.form.RadioButton("Option #2", "rb2");
+    with(rb2)
+    {
+      setTop(110);
+      setLeft(20);
+    };
+    d.add(rb2);
+    rb2.setChecked(true);
+    
+    
+    var rb3 = new qx.ui.form.RadioButton("Top RadioButton", "rb3");
+    with(rb3)
+    {
+      setTop(160);
+      setLeft(20);
+      setIconPosition("top");
+    };
+    d.add(rb3);
+    
+    var rb4 = new qx.ui.form.RadioButton("Bottom RadioButton", "rb4");
+    with(rb4)
+    {
+      setTop(160);
+      setLeft(160);
+      setIconPosition("bottom");
+    };
+    d.add(rb4);    
+
+
+    var rb5 = new qx.ui.form.RadioButton("Left RadioButton", "rb5");
+    with(rb5)
+    {
+      setTop(220);
+      setLeft(20);
+      setIconPosition("left");
+    };
+    d.add(rb5);
+    
+    var rb6 = new qx.ui.form.RadioButton("Right RadioButton", "rb6");
+    with(rb6)
+    {
+      setTop(220);
+      setLeft(160);
+      setIconPosition("right");
+    };
+    d.add(rb6);  
+    
+    var rb7 = new qx.ui.form.RadioButton(null, "rb7");
+    with(rb7)
+    {
+      setTop(280);
+      setLeft(20);
+    };
+    d.add(rb7);     
+    
+
+    var rg1 = new qx.manager.selection.RadioManager("mygroup", [rb1, rb2, rb3, rb4, rb5, rb6, rb7]);
+
+
+    
+
+
+    var linfo = new qx.ui.basic.Atom("Current Value: \"" + rg1.getSelected().getLabel() + "\" (" + rg1.getSelected().getValue() + ")", "icon/16/forward.png");
+
+    with(linfo)
+    {
+      setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+      setPadding(2, 4);
+      setBackgroundColor("white");
+      setTop(48);
+      setLeft(20);
+    };
+    
+    rg1.addEventListener("changeSelected", function(e) {
+      linfo.setLabel("Current Value: \"" + e.getData().getLabel() + "\" (" + e.getData().getValue() + ")");
+    });
+    
+    d.add(linfo);
+  });
+  </script>
+</body>
+</html>  

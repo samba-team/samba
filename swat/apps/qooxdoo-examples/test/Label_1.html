@@ -1,0 +1,149 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    Some tests for qx.ui.basic.Label. Click on the third and fifth button like widget to test the reflow possibilities.
+    The debug log gives you information of the preferred dimensions.
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var c1 = new qx.ui.basic.Label("Hello qooxdoo!");
+
+    c1.setLeft(20);
+    c1.setTop(48);
+    c1.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    c1.setPadding(2, 4);
+
+
+
+
+    var c2 = new qx.ui.basic.Label("<h1>Welcome to the qooxdoo universe</h1><p>Enjoy the new era of web interface development.</p>");
+
+    c2.setLeft(20);
+    c2.setTop(100);
+    c2.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    c2.setPadding(8);
+
+
+
+
+    var c3 = new qx.ui.basic.Label("Delete temporary data", null, null, false);
+
+    c3.setLeft(20);
+    c3.setTop(200);
+    c3.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    c3.setPadding(4, 6);
+    c3.setBackgroundColor(new qx.renderer.color.Color("white"));
+
+    c3.addEventListener("click", function() {
+      this.getHtml() == "Delete temporary data" ? this.setHtml("Thank you") : this.setHtml("Delete temporary data");
+    });
+
+
+
+
+    var c4 = new qx.ui.basic.Label("Hello qooxdoo!");
+
+    c4.setLeft(20);
+    c4.setTop(250);
+    c4.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    c4.setPadding(2, 4);
+    c4.setStyleProperty("fontSize", "16px");
+    c4.setStyleProperty("fontWeight", "bold");
+    c4.setStyleProperty("fontStyle", "italic");
+    c4.setStyleProperty("textDecoration", "underline");
+    c4.setStyleProperty("textTransform", "uppercase");
+    c4.setFontPropertiesProfile("extended");
+
+
+
+
+
+    var c5 = new qx.ui.basic.Label("Delete temporary data", null, null, false);
+
+    c5.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    c5.setPadding(4, 6);
+    c5.setBackgroundColor(new qx.renderer.color.Color("white"));
+
+    c5.addEventListener("click", function() {
+      this.getHtml() == "Delete temporary data" ? this.setHtml("Thank you<br/>All your personal data was just deleted.<br/>Have Fun!") : this.setHtml("Delete temporary data");
+    });
+
+
+    var c5w = new qx.ui.layout.CanvasLayout;
+    c5w.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    c5w.setPadding(8);
+    c5w.setLeft(20);
+    c5w.setTop(350);
+    c5w.setWidth("auto");
+    c5w.setHeight("auto");
+
+    c5w.add(c5);
+    d.add(c5w);
+
+
+
+
+    var c6 = new qx.ui.basic.Label("This is a long label", 50);
+
+    c6.setTop(450);
+    c6.setLeft(20);
+    c6.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+
+
+    var c7 = new qx.ui.basic.Label("This is a long label with long-words and more text", 100, null, false);
+
+    c7.setTop(490);
+    c7.setLeft(20);
+    c7.setPadding(4);
+    c7.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    c7.setBackgroundColor("white");
+
+    c7.addEventListener("click", function(e)
+    {
+      switch(this.getWidth())
+      {
+        case 50:
+          this.setWidth(100);
+          break;
+
+        case 100:
+          this.setWidth(150);
+          break;
+
+        case 150:
+          this.setWidth(200);
+          break;
+
+        case 200:
+          this.setWidth("auto");
+          break;
+
+        case "auto":
+          this.setWidth(50);
+          break;
+      };
+    });
+
+
+
+    d.add(c1, c2, c3, c4, c5w, c6, c7);
+
+  });
+  </script>
+</body>
+</html>

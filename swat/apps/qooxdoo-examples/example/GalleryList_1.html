@@ -1,0 +1,129 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+
+  <style type="text/css">
+.qx.ui.embed.GalleryList{
+  position: absolute;
+  visibility: visible;
+}
+
+.qx.ui.embed.GalleryList .galleryFrame{
+  padding: 2px;
+}
+
+.qx.ui.embed.GalleryList .galleryCell{
+  margin: 2px;
+  padding-bottom: 2px;
+  border: 1px solid #EEE;
+
+  background: #fff;
+  overflow: hidden;
+  white-space: normal;
+
+  font-family: Tahoma, Verdana, sans-serif;
+  font-size: 12px;
+
+  cursor: default;
+
+  -moz-user-select: none;
+  user-select: none;
+
+  position: relative;
+}
+
+.qx.ui.embed.GalleryList .galleryCell img{
+  vertical-align: bottom;
+  display: block;
+}
+
+.qx.ui.embed.GalleryList .galleryNumber{
+  width: 45px;
+  padding: 4px;
+
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+
+.qx.ui.embed.GalleryList .galleryImageContainer{
+  position: absolute;
+  top: 0px;
+  left: 50px;
+}
+
+.qx.ui.embed.GalleryList .galleryText{
+  padding: 4px;
+  position: absolute;
+  top: 0px;
+  left: 130px;
+}
+
+.qx.ui.embed.GalleryList .galleryNumber,
+.qx.ui.embed.GalleryList .galleryText h3{
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.qx.ui.embed.GalleryList .galleryText p{
+  font-size: 10px;
+}
+
+.qx.ui.embed.GalleryList .galleryCell-Selected{
+  background: #9BBCFF;
+  border-color: #3B7CFF;
+}
+  </style>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>ListSort implementation</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var imgPath = qx.manager.object.AliasManager.getInstance().resolvePath("icon/48/bug.png");
+
+      var galleryData = [];
+
+      for (var i=0; i<100; i++)
+      {
+        galleryData.push({
+          display : "bmzN9ci5",
+          width : 350,
+          height : 350,
+          thumbWidth : 48,
+          thumbHeight : 48,
+          title : "gohome.png",
+          timestamp : Math.random().toString(),
+          comment : "Cool Comment sadas asd dsa asdas dasd asd asdas dasdasdasd sadasdas dsds as",
+          id : "7686191121780974-10682",
+          src : imgPath,
+          number : "#" + i
+        });
+      };
+
+      var galleryList = new qx.ui.embed.GalleryList(galleryData);
+
+      galleryList.setWidth(400);
+      galleryList.setTop(48);
+      galleryList.setBottom(48);
+      galleryList.setLeft(250);
+
+      galleryList.setBorder(qx.renderer.border.BorderPresets.getInstance().inset);
+      galleryList.setBackgroundColor("white");
+
+      qx.ui.core.ClientDocument.getInstance().add(galleryList);
+    });
+  </script>
+</body>
+</html>

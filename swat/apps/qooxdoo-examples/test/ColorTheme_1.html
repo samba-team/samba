@@ -1,0 +1,235 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Color Theme Test</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var w1 = new qx.ui.basic.Terminator;
+
+    w1.setWidth(100);
+    w1.setHeight(100);
+    w1.setBackgroundColor(new qx.renderer.color.Color("yellow"));
+    w1.setTop(48);
+    w1.setLeft(20);
+
+    d.add(w1);
+
+
+
+    var w2 = new qx.ui.basic.Terminator;
+
+    w2.setWidth(100);
+    w2.setHeight(100);
+    w2.setBackgroundColor(new qx.renderer.color.ColorObject("activecaption"));
+    w2.setTop(48);
+    w2.setLeft(150);
+
+    d.add(w2);
+
+
+
+
+    var w3 = new qx.ui.basic.Terminator;
+
+    w3.setWidth(100);
+    w3.setHeight(100);
+    w3.setBackgroundColor("red");
+    w3.setTop(200);
+    w3.setLeft(20);
+
+    d.add(w3);
+
+
+
+    var w4 = new qx.ui.basic.Terminator;
+
+    w4.setWidth(100);
+    w4.setHeight(100);
+    w4.setBackgroundColor("red");
+    w4.setTop(200);
+    w4.setLeft(150);
+
+    d.add(w4);
+
+
+
+
+    var w5 = new qx.ui.basic.Label("Hello World");
+
+    w5.setTop(320);
+    w5.setLeft(20);
+    w5.setColor("red");
+
+    d.add(w5);
+
+
+
+
+
+    var w6 = new qx.ui.basic.Terminator;
+
+    w6.setWidth(100);
+    w6.setHeight(100);
+    w6.setBackgroundColor("activecaption");
+    w6.setTop(400);
+    w6.setLeft(20);
+
+    d.add(w6);
+
+
+
+    var w7 = new qx.ui.basic.Terminator;
+
+    w7.setWidth(100);
+    w7.setHeight(100);
+    w7.setBackgroundColor("activeCaption");
+    w7.setTop(400);
+    w7.setLeft(150);
+
+    d.add(w7);
+    
+    
+    
+    
+    var w8 = new qx.ui.basic.Label("Hello World");
+    
+    w8.setTop(520);
+    w8.setLeft(20);
+    w8.setColor("ActiveCaption");
+
+    d.add(w8);
+
+
+
+
+
+
+
+    var w9 = new qx.ui.basic.Atom("Super qooxdoo", "icon/48/bell.png");
+
+    w9.setTop(520);
+    w9.setLeft(200);
+    w9.setBorder(new qx.renderer.border.BorderObject(2, "solid", "activeCaption"));
+    w9.setBackgroundColor("threedlightshadow");
+
+    d.add(w9);
+
+
+
+
+
+    var w10 = new qx.ui.basic.Atom("Super qooxdoo", "icon/48/bell.png");
+
+    w10.setTop(520);
+    w10.setLeft(400);
+    w10.setBorder(new qx.renderer.border.BorderObject(2, "solid", new qx.renderer.color.ColorObject("activeCaption")));
+    w10.setBackgroundColor("threedlightshadow");
+
+    d.add(w10);
+
+
+
+
+
+
+    var w11 = new qx.ui.basic.Label("Hello World");
+
+    w11.setTop(600);
+    w11.setLeft(20);
+    w11.setBackgroundColor([232,102,255]);
+    w11.setColor(20,30,60);
+    w11.setBorder(1, "solid", "red");
+
+    d.add(w11);
+
+
+
+    var w12 = new qx.ui.basic.Label("Hello World");
+
+    w12.setTop(600);
+    w12.setLeft(120);
+    w12.setBackgroundColor([232,102,255]);
+    w12.setColor(20,30,60);
+    w12.setBorder([1, "solid", "red"]);
+
+    d.add(w12);
+
+
+
+    var w13 = new qx.ui.basic.Label("Hello World");
+
+    w13.setLocation(220, 600);
+    w13.setBackgroundColor([232,102,255]);
+    w13.setColor(20,30,60);
+    w13.setBorder([1, "solid", "activeCaption"]);
+
+    d.add(w13);
+
+
+
+
+    var myBoundedBorder1 = new qx.renderer.border.Border(1, "solid", [200,10,20]);
+
+
+    var w14 = new qx.ui.basic.Terminator;
+
+    w14.setWidth(100);
+    w14.setHeight(100);
+    w14.setLeft(600);
+    w14.setTop(100);
+    w14.setBorder(myBoundedBorder1);
+
+    d.add(w14);
+
+    // should not work with qx.renderer.border.Border - use qx.renderer.border.BorderObject instead
+    w14.addEventListener("click", function(e) {
+      myBoundedBorder1.setTopColor([100,200,200]);
+      myBoundedBorder1.setTopWidth(10);
+    });
+
+
+
+    var myBoundedBorder2 = new qx.renderer.border.BorderObject(1, "solid", [200,10,20]);
+
+
+    var w15 = new qx.ui.basic.Terminator;
+
+    w15.setWidth(100);
+    w15.setHeight(100);
+    w15.setLeft(600);
+    w15.setTop(210);
+    w15.setBorder(myBoundedBorder2);
+
+    d.add(w15);
+
+    w15.addEventListener("click", function(e) {
+      myBoundedBorder2.setTopColor([100,200,200]);
+      myBoundedBorder2.setTopWidth(10);
+    });
+
+
+
+
+    // Color Themes
+    qx.manager.object.ColorManager.getInstance().createThemeList(d, 350, 128);
+
+  });
+  </script>
+</body>
+</html>

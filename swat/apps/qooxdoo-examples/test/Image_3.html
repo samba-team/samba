@@ -1,0 +1,124 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    Some advanced tests for qx.ui.basic.Image. Click on the fourth and fifth image to test the reflow possibilities.
+    The debug log gives you information of the preferred dimensions.
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var frame = new qx.ui.layout.CanvasLayout;
+    
+    frame.setBorder(qx.renderer.border.BorderPresets.getInstance().ridge);
+    frame.setWidth("auto");
+    frame.setHeight("auto");
+    frame.setPadding(8);
+
+    frame.setLeft(20);
+    frame.setTop(48);
+    
+    d.add(frame);
+
+
+    var out = new qx.ui.layout.CanvasLayout;
+    
+    out.setBorder(qx.renderer.border.BorderPresets.getInstance().inset);
+    out.setWidth("auto");
+    out.setHeight("auto");
+    out.setPadding(8);
+    
+    frame.add(out);
+
+
+
+    var bar = new qx.ui.layout.CanvasLayout;
+    
+    bar.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    bar.setWidth("auto");
+    bar.setHeight("auto");
+    bar.setPadding(4);    
+    bar.setBackgroundColor(new qx.renderer.color.Color("white"));
+    
+    
+    out.add(bar);    
+    
+    
+    
+    
+    var part, icon;
+    var icons = [ "reload", "bookmark", "run" ];
+    
+    
+    for (var j=0; j<5; j++)
+    {    
+      part = new qx.ui.layout.CanvasLayout;
+    
+      part.setWidth("auto");
+      part.setHeight("auto");
+      part.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+      part.setLeft(j*90);
+      part.setTop(0);
+      part.setBackgroundColor(new qx.renderer.color.ColorObject("Threedface"));
+      part.setPadding(4);
+
+      for (var i=0; i<icons.length; i++)
+      {
+        icon = new qx.ui.basic.Image("icon/22/" + icons[i] + ".png");
+        
+        icon.setTop(0);
+        icon.setLeft(26 * i); 
+        icon.setPadding(2);
+               
+        part.add(icon);              
+      };
+      
+      bar.add(part);
+    };
+
+
+    
+    
+    
+    
+    
+    bar.addEventListener("click", function(e)
+    {
+      var parts = bar.getChildren();
+      var icons;
+      var m;
+      var s = (new Date).valueOf();
+      
+      for (var j=0; j<parts.length; j++)
+      {
+        icons = parts[j].getChildren();
+        
+        for (var i=0; i<icons.length; i++)
+        {
+          m = icons[i].getSource().indexOf("/22/") != -1;
+          icons[i].setSource(m ? icons[i].getSource().replace("/22/", "/32/") : icons[i].getSource().replace("/32/", "/22/"));
+          icons[i].setLeft(m ? 36 * i : 26 * i);
+        };
+        
+        parts[j].setLeft(m ? j * 120 : j * 90);
+      };
+      
+      // this.debug("Change Duration: " + ((new Date).valueOf() - s));
+    });
+  });
+  </script>
+</body>
+</html>
