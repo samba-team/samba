@@ -198,12 +198,12 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 
 	cipher = EVP_get_cipherbyname(type);
 	if (cipher == NULL) {
-	    free(type);
 	    free(ivdata);
 	    hx509_set_error_string(context, 0, EINVAL,
 				   "RSA key encrypted with "
 				   "unsupported cipher: %s",
 				   type);
+	    free(type);
 	    return EINVAL;
 	}
 
