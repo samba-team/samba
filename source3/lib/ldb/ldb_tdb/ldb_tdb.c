@@ -219,7 +219,8 @@ static int ltdb_modified(struct ldb_module *module, const struct ldb_dn *dn)
 */
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		talloc_get_type(module->private_data, struct ltdb_private);
 	TDB_DATA tdb_key, tdb_data;
 	int ret;
 
@@ -332,7 +333,8 @@ done:
 */
 int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		talloc_get_type(module->private_data, struct ltdb_private);
 	TDB_DATA tdb_key;
 	int ret;
 
@@ -589,7 +591,8 @@ static int msg_delete_element(struct ldb_module *module,
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg)
 {
 	struct ldb_context *ldb = module->ldb;
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		talloc_get_type(module->private_data, struct ltdb_private);
 	TDB_DATA tdb_key, tdb_data;
 	struct ldb_message *msg2;
 	unsigned i, j;
@@ -873,7 +876,8 @@ done:
 
 static int ltdb_start_trans(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		talloc_get_type(module->private_data, struct ltdb_private);
 
 	if (tdb_transaction_start(ltdb->tdb) != 0) {
 		return ltdb_err_map(tdb_error(ltdb->tdb));
@@ -884,7 +888,8 @@ static int ltdb_start_trans(struct ldb_module *module)
 
 static int ltdb_end_trans(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		talloc_get_type(module->private_data, struct ltdb_private);
 
 	if (tdb_transaction_commit(ltdb->tdb) != 0) {
 		return ltdb_err_map(tdb_error(ltdb->tdb));
@@ -895,7 +900,8 @@ static int ltdb_end_trans(struct ldb_module *module)
 
 static int ltdb_del_trans(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		talloc_get_type(module->private_data, struct ltdb_private);
 
 	if (tdb_transaction_cancel(ltdb->tdb) != 0) {
 		return ltdb_err_map(tdb_error(ltdb->tdb));
