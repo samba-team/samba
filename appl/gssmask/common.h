@@ -49,6 +49,10 @@
 #include <sys/utsname.h>
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #include <assert.h>
 #include <krb5.h>
 #include <gssapi.h>
