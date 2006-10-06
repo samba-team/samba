@@ -55,6 +55,9 @@ static struct hdb_method methods[] = {
     {"ldap:",	hdb_ldap_create},
     {"ldapi:",	hdb_ldapi_create},
 #endif
+#ifdef HAVE_LDB /* Used for integrated samba build */
+    {"ldb:",	hdb_ldb_create},
+#endif
     {NULL,	NULL}
 };
 
