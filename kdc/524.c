@@ -53,7 +53,8 @@ fetch_server (krb5_context context,
     krb5_error_code ret;
     krb5_principal sprinc;
 
-    ret = _krb5_principalname2krb5_principal(&sprinc, t->sname, t->realm);
+    ret = _krb5_principalname2krb5_principal(context, &sprinc,
+					     t->sname, t->realm);
     if (ret) {
 	kdc_log(context, config, 0, "_krb5_principalname2krb5_principal: %s",
 		krb5_get_err_text(context, ret));
