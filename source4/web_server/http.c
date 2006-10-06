@@ -896,6 +896,7 @@ void http_process_input(struct websrv_context *web)
             p = strrchr(web->input.url, '.');
             if (p == NULL) {
                     page_type = page_type_esp;
+		    file_type = "text/html";
             }
             for (i=0;p && i<ARRAY_SIZE(mime_types);i++) {
 		if (strcmp(mime_types[i].extension, p+1) == 0) {
