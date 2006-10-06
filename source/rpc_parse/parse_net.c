@@ -560,7 +560,7 @@ BOOL net_io_r_getdcname(const char *desc, NET_R_GETDCNAME *r_t, prs_struct *ps,
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_ntstatus("status", ps, depth, &r_t->status))
+	if (!prs_werror("status", ps, depth, &r_t->status))
 		return False;
 
 	return True;
