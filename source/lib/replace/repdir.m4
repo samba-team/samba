@@ -8,28 +8,6 @@ AC_CACHE_CHECK([for broken readdir],libreplace_cv_READDIR_NEEDED,[
 ])
 
 #
-# try to replace with getdents() if needed
-#
-if test x"$libreplace_cv_READDIR_NEEDED" = x"yes"; then
-AC_CHECK_FUNCS(getdents)
-AC_CACHE_CHECK([for replacing readdir using getdents()],libreplace_cv_READDIR_GETDENTS,[
-	AC_TRY_RUN([
-#define _LIBREPLACE_REPLACE_H
-#include "$libreplacedir/repdir_getdents.c"
-#define test_readdir_os2_delete main
-#include "$libreplacedir/test/os2_delete.c"],
-	[libreplace_cv_READDIR_GETDENTS=yes],
-	[libreplace_cv_READDIR_GETDENTS=no])
-])
-fi
-if test x"$libreplace_cv_READDIR_GETDENTS" = x"yes"; then
-	AC_DEFINE(REPLACE_READDIR,1,[replace readdir])
-	AC_DEFINE(REPLACE_READDIR_GETDENTS,1,[replace readdir using getdents()])
-	LIBREPLACEOBJ="${LIBREPLACEOBJ} repdir_getdents.o"
-	libreplace_cv_READDIR_NEEDED=no
-fi
-
-#
 # try to replace with getdirentries() if needed
 #
 if test x"$libreplace_cv_READDIR_NEEDED" = x"yes"; then
@@ -65,6 +43,29 @@ if test x"$libreplace_cv_READDIR_GETDIRENTRIES" = x"yes"; then
 	AC_DEFINE(REPLACE_READDIR,1,[replace readdir])
 	AC_DEFINE(REPLACE_READDIR_GETDIRENTRIES,1,[replace readdir using getdirentries()])
 	LIBREPLACEOBJ="${LIBREPLACEOBJ} repdir_getdirentries.o"
+	libreplace_cv_READDIR_NEEDED=no
+fi
+
+#
+# try to replace with getdents() if needed
+#
+if test x"$libreplace_cv_READDIR_NEEDED" = x"yes"; then
+AC_CHECK_FUNCS(getdents)
+AC_CACHE_CHECK([for replacing readdir using getdents()],libreplace_cv_READDIR_GETDENTS,[
+	AC_TRY_RUN([
+#define _LIBREPLACE_REPLACE_H
+#error _donot_use_getdents_replacement_anymore
+#include "$libreplacedir/repdir_getdents.c"
+#define test_readdir_os2_delete main
+#include "$libreplacedir/test/os2_delete.c"],
+	[libreplace_cv_READDIR_GETDENTS=yes],
+	[libreplace_cv_READDIR_GETDENTS=no])
+])
+fi
+if test x"$libreplace_cv_READDIR_GETDENTS" = x"yes"; then
+	AC_DEFINE(REPLACE_READDIR,1,[replace readdir])
+	AC_DEFINE(REPLACE_READDIR_GETDENTS,1,[replace readdir using getdents()])
+	LIBREPLACEOBJ="${LIBREPLACEOBJ} repdir_getdents.o"
 	libreplace_cv_READDIR_NEEDED=no
 fi
 
