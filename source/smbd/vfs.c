@@ -104,7 +104,7 @@ static inline void vfs_set_operation(struct vfs_ops * vfs, vfs_op_type which,
 				struct vfs_handle_struct * handle, void * op)
 {
 	((struct vfs_handle_struct **)&vfs->handles)[which] = handle;
-	((void**)&vfs->ops)[which] = op;
+	((void **)(void *)&vfs->ops)[which] = op;
 }
 
 BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
