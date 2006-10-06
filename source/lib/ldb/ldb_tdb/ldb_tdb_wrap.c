@@ -134,7 +134,9 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 	if (stat(path, &st) == 0) {
 		for (w=tdb_list;w;w=w->next) {
 			if (st.st_dev == w->device && st.st_ino == w->inode) {
-				talloc_reference(mem_ctx, w);
+				if (!talloc_reference(mem_ctx, w)) {
+					return NULL;
+				}
 				return w->tdb;
 			}
 		}
