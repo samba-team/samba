@@ -1,0 +1,101 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Testing mnemonic support.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var c1 = new qx.ui.basic.Label("Hello qooxdoo!");
+
+    c1.setLeft(20);
+    c1.setTop(48);
+    c1.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    c1.setPadding(2, 4);
+    c1.setMnemonic("q");
+
+    d.add(c1);
+
+
+
+    var c2 = new qx.ui.basic.Label("A qx.ui.basic.Label with some more text", "T");
+
+    c2.setLeft(20);
+    c2.setTop(98);
+    c2.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    c2.setPadding(2, 4);
+
+    d.add(c2);
+
+
+
+
+    var c3 = new qx.ui.basic.Label("A qx.ui.basic.Label with some more text", "C");
+
+    c3.setLeft(20);
+    c3.setTop(148);
+    c3.setWidth(80);
+    c3.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    c3.setPadding(2, 4);
+
+    d.add(c3);
+
+
+
+    var c4 = new qx.ui.basic.Label("Well done guy", "Q");
+
+    c4.setLeft(20);
+    c4.setTop(198);
+    c4.setWidth(70);
+    c4.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    c4.setPadding(2, 4);
+
+    d.add(c4);
+
+
+
+    var c5 = new qx.ui.basic.Label("Well done guy", "Q");
+
+    c5.setLeft(20);
+    c5.setTop(248);
+    c5.setWidth("10%");
+    c5.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    c5.setPadding(2, 4);
+
+    d.add(c5);
+
+
+
+
+
+    var a1 = new qx.ui.basic.Atom("Hello World", "icon/48/penguin.png")
+
+    a1.setLocation(250, 48);
+    a1.setWidth(100);
+    a1.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    a1.setHorizontalChildrenAlign("left");
+
+    a1.getLabelObject().setMnemonic("H");
+    a1.getLabelObject().setWidth(50);
+
+    d.add(a1);
+
+
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Color Theme Test</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+
+    // Create Default OS Color Table
+    var w;
+    var c=0;
+    for (var i in qx.renderer.color.Color.themedNames)
+    {
+      w = new qx.ui.basic.Label(i);
+
+      w.setWidth(120);
+      w.setTop(48+(c*18));
+      w.setLeft(20);
+      w.setPadding(1, 2);
+      w.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+      w.setStyleProperty("backgroundColor", i);
+
+      d.add(w);
+
+      c++;
+    };
+
+
+
+    // Create Default OS Color Table
+    var w;
+    var c=0;
+    for (var i in qx.renderer.color.Color.themedNames)
+    {
+      w = new qx.ui.basic.Label(i);
+
+      w.setWidth(120);
+      w.setTop(48+(c*18));
+      w.setLeft(150);
+      w.setPadding(1, 2);
+      w.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+      w.setBackgroundColor(new qx.renderer.color.ColorObject(i));
+
+      d.add(w);
+
+      c++;
+    };
+
+
+
+
+
+
+
+
+    // Color Themes
+    qx.manager.object.ColorManager.getInstance().createThemeList(d, 400, 128);
+  });
+  </script>
+
+</body>
+</html>

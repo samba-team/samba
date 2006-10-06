@@ -1,0 +1,98 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Yet Another qx.ui.pageview.buttonview.ButtonView Example</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      var bs = new qx.ui.pageview.buttonview.ButtonView;
+      bs.set({ left: 20, top: 48, right: 335, bottom: 48 });
+      bs.setBarPosition("left");
+
+      var bsb1 = new qx.ui.pageview.buttonview.ButtonViewButton("Display", "icon/16/display.png");
+      var bsb2 = new qx.ui.pageview.buttonview.ButtonViewButton("Organizer", "icon/16/organizer.png");
+      var bsb3 = new qx.ui.pageview.buttonview.ButtonViewButton("Colorize", "icon/16/colors.png");
+      var bsb4 = new qx.ui.pageview.buttonview.ButtonViewButton("Icons", "icon/16/icons.png");
+      var bsb5 = new qx.ui.pageview.buttonview.ButtonViewButton("Paint", "icon/16/paint.png");
+      var bsb6 = new qx.ui.pageview.buttonview.ButtonViewButton("Applications", "icon/16/run.png");
+      var bsb7 = new qx.ui.pageview.buttonview.ButtonViewButton("System", "icon/16/control-center.png");
+
+      bsb1.setChecked(true);
+
+      bsb1.set({ iconPosition: "left", horizontalChildrenAlign: "left" });
+      bsb2.set({ iconPosition: "left", horizontalChildrenAlign: "left" });
+      bsb3.set({ iconPosition: "left", horizontalChildrenAlign: "left" });
+      bsb4.set({ iconPosition: "left", horizontalChildrenAlign: "left" });
+      bsb5.set({ iconPosition: "left", horizontalChildrenAlign: "left" });
+      bsb6.set({ iconPosition: "left", horizontalChildrenAlign: "left" });
+      bsb7.set({ iconPosition: "left", horizontalChildrenAlign: "left" });
+
+      bs.getBar().add(bsb1, bsb2, bsb3, bsb4, bsb5, bsb6, bsb7);
+
+      bs.getBar().setHorizontalChildrenAlign("center");
+      bs.getBar().setVerticalChildrenAlign("bottom");
+
+      var p1 = new qx.ui.pageview.buttonview.ButtonViewPage(bsb1);
+      var p2 = new qx.ui.pageview.buttonview.ButtonViewPage(bsb2);
+      var p3 = new qx.ui.pageview.buttonview.ButtonViewPage(bsb3);
+      var p4 = new qx.ui.pageview.buttonview.ButtonViewPage(bsb4);
+      var p5 = new qx.ui.pageview.buttonview.ButtonViewPage(bsb5);
+      var p6 = new qx.ui.pageview.buttonview.ButtonViewPage(bsb6);
+      var p7 = new qx.ui.pageview.buttonview.ButtonViewPage(bsb7);
+
+      bs.getPane().add(p1, p2, p3, p4, p5, p6, p7);
+
+      var f1 = new qx.ui.form.TextField("Display Input");
+      var f2 = new qx.ui.form.TextField("Sunshine Input");
+      var f3 = new qx.ui.form.TextField("Paint Input");
+      var f4 = new qx.ui.form.TextField("Icons Input");
+      var f5 = new qx.ui.form.TextField("Images Input");
+      var f6 = new qx.ui.form.TextField("Applications Input");
+      var f7 = new qx.ui.form.TextField("System Input");
+
+      p1.add(f1);
+      p2.add(f2);
+      p3.add(f3);
+      p4.add(f4);
+      p5.add(f5);
+      p6.add(f6);
+      p7.add(f7);
+
+      var r1 = new qx.ui.form.RadioButton("Top", "top");
+      var r2 = new qx.ui.form.RadioButton("Right", "right");
+      var r3 = new qx.ui.form.RadioButton("Bottom", "bottom");
+      var r4 = new qx.ui.form.RadioButton("Left", "left", null, true);
+
+      r1.setTop(50);
+      r2.setTop(70);
+      r3.setTop(90);
+      r4.setTop(110);
+
+      p1.add(r1, r2, r3, r4);
+
+      var rm = new qx.manager.selection.RadioManager(null, [r1, r2, r3, r4]);
+
+      rm.addEventListener("changeSelected", function(e) {
+        bs.setBarPosition(e.getData().getValue());
+      });
+
+      d.add(bs);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Simple test for qooxdoo's transport implementation using some data for an addressbook.</p>
+    <p>Using text content in this case.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var lay = new qx.ui.layout.VerticalBoxLayout;
+    lay.setLocation(20, 48);
+    lay.setRight(335);
+    lay.setBottom(48);
+    qx.ui.core.ClientDocument.getInstance().add(lay);
+
+
+
+    var fsq = new qx.ui.groupbox.GroupBox("Request");
+    fsq.setHeight("auto");
+    lay.add(fsq);
+
+
+    var hlay = new qx.ui.layout.HorizontalBoxLayout;
+    hlay.setVerticalChildrenAlign("middle");
+    hlay.setSpacing(4);
+    hlay.auto();
+    fsq.add(hlay);
+
+
+    var cm1 = new qx.ui.form.ComboBox();
+    cm1.add(new qx.ui.form.ListItem("data/persons/anita.txt"));
+    cm1.add(new qx.ui.form.ListItem("data/persons/harald.txt"));
+    cm1.add(new qx.ui.form.ListItem("data/persons/lisbeth.txt"));
+    cm1.add(new qx.ui.form.ListItem("data/persons/paul.txt"));
+    cm1.setSelected(cm1.getList().getFirstChild());
+    cm1.setWidth(200);
+    cm1.addEventListener("changeSelected", upd);
+
+    hlay.add(cm1);
+
+
+
+    var async = new qx.ui.form.CheckBox("Async");
+    async.setChecked(true);
+    hlay.add(async);
+
+
+    var spin = new qx.ui.form.Spinner(1);
+    hlay.add(spin);
+
+
+
+    var btn = new qx.ui.form.Button("Send", "icon/16/apply.png");
+    btn.addEventListener("execute", upd);
+    hlay.add(btn);
+
+
+    var inf = new qx.ui.form.TextField("State");
+    inf.setWidth(80);
+    inf.setReadOnly(true);
+    hlay.add(inf);
+
+
+    var code = new qx.ui.form.TextField("Code");
+    code.setWidth(30);
+    code.setReadOnly(true);
+    hlay.add(code);
+
+
+    var typ = new qx.ui.form.TextField("Type");
+    typ.setWidth(80);
+    typ.setReadOnly(true);
+    hlay.add(typ);
+
+
+    var len = new qx.ui.form.TextField("Length");
+    len.setWidth(50);
+    len.setReadOnly(true);
+    hlay.add(len);
+
+
+    var checken = new qx.ui.form.CheckBox("enabled");
+    checken.setChecked(true);
+    hlay.add(checken);
+
+    checken.addEventListener("changeChecked", function(e) {
+      qx.io.remote.RemoteRequestQueue.setEnabled(e.getData());
+    });
+
+
+
+
+
+    var fsr = new qx.ui.groupbox.GroupBox("Result");
+    fsr.setHeight("1*");
+    lay.add(fsr);
+
+    var area = new qx.ui.form.TextArea;
+    area.setDimension("100%", "100%");
+    fsr.add(area);
+
+
+
+
+
+
+
+
+
+
+    function upd(e)
+    {
+      var val = cm1.getSelected();
+
+      if (!val) {
+        return;
+      };
+
+      var req;
+      for( var i=0, max=parseInt(spin.getValue()); i<max; i++ )
+      {
+        req = new qx.io.remote.RemoteRequest(val.getLabel(), "GET", "text/plain");
+
+        req.setAsynchronous(async.getChecked());
+        req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+        req.setParameter("test1", "value1");
+        req.setParameter("test2", "value2");
+        req.setParameter("test3", "value3");
+
+        // Force to testing iframe implementation
+        // req.setCrossDomain(true);
+
+        req.addEventListener("sending", function(e) {
+          inf.setValue("Sending");
+        });
+
+        req.addEventListener("receiving", function(e) {
+          inf.setValue("Receiving");
+        });
+
+        req.addEventListener("completed", function(e)
+        {
+          inf.setValue("Completed");
+          typ.setValue(e.getData().getResponseHeader("Content-Type"));
+          len.setValue(e.getData().getResponseHeader("Content-Length"));
+          code.setValue(e.getData().getStatusCode().toString());
+          area.setValue(e.getData().getContent());
+        });
+
+        req.addEventListener("failed", function(e)
+        {
+          inf.setValue("Failed");
+          typ.setValue(e.getData().getResponseHeader("Content-Type"));
+          len.setValue(e.getData().getResponseHeader("Content-Length"));
+          code.setValue(e.getData().getStatusCode().toString());
+          area.setValue(e.getData().getContent());
+        });
+
+        req.addEventListener("timeout", function(e)
+        {
+          inf.setValue("Timeout");
+          typ.setValue(e.getData().getResponseHeader("Content-Type"));
+          len.setValue(e.getData().getResponseHeader("Content-Length"));
+          code.setValue(e.getData().getStatusCode().toString());
+          area.setValue(e.getData().getContent());
+        });
+
+        req.addEventListener("aborted", function(e)
+        {
+          inf.setValue("Aborted");
+          typ.setValue(e.getData().getResponseHeader("Content-Type"));
+          len.setValue(e.getData().getResponseHeader("Content-Length"));
+          code.setValue(e.getData().getStatusCode().toString());
+          area.setValue(e.getData().getContent());
+        });
+
+        req.send();
+      };
+    };
+  });
+  </script>
+</body>
+</html>

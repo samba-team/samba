@@ -1,0 +1,230 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Some test for the enable property in QxObject which will be extended from qx.ui.core.Widget and any other
+    widget which need additional handling on a change of this property. Keep in mind: Disabled QxWidgets will be ignored
+    from the QxEventManager and the qx.event.handler.FocusHandler.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var w1 = new qx.ui.basic.Label("Basic Container");
+
+    with(w1)
+    {
+      setWidth(75);
+      setLeft(20);
+      setTop(48);
+      setHeight(50);
+      setWidth(80);
+      setBackgroundColor("#fff");
+      setColor("blue");
+      setTabIndex(1);
+      setBorder(new qx.renderer.border.Border(2, "solid", "blue"));
+      setEnabled(false);
+    };
+
+    d.add(w1);
+
+    w1.addEventListener("mouseover", function(e)
+    {
+      if( this.getEnabled() )
+        this.getElement().style.color = "red";
+    });
+
+    w1.addEventListener("mouseout", function(e)
+    {
+      if( this.getEnabled() )
+        this.getElement().style.color = "blue";
+    });
+
+    var c1t = new qx.ui.form.CheckBox("Enabled");
+    with(c1t)
+    {
+      setTop(60);
+      setLeft(220);
+      addEventListener("changeChecked", function(e) { w1.setEnabled(e.getData()); });
+    };
+
+    d.add(c1t);
+
+    //------
+    // atom
+    //------
+
+    var a1 = new qx.ui.basic.Atom("Atom", "icon/32/clock.png");
+
+    with(a1)
+    {
+      setTop(190);
+      setLeft(20);
+      setEnabled(false);
+      setPadding(2, 4);
+      setBackgroundColor("#FFFF6D");
+    };
+
+    d.add(a1);
+
+    var swa1 = new qx.ui.form.CheckBox("Enabled");
+    with(swa1)
+    {
+      setTop(196);
+      setLeft(220);
+      addEventListener("changeChecked", function(e) { a1.setEnabled(e.getData()); });
+    };
+
+    d.add(swa1);
+
+    //--------
+    // button
+    //--------
+
+    var btn1 = new qx.ui.form.Button("Button No #1");
+    with(btn1)
+    {
+      setTop(244);
+      setLeft(20);
+      setEnabled(false);
+    };
+
+    d.add(btn1);
+
+    var swbtn1 = new qx.ui.form.CheckBox("Enabled");
+    with(swbtn1)
+    {
+      setTop(244);
+      setLeft(220);
+      addEventListener("changeChecked", function(e) { btn1.setEnabled(e.getData()); });
+    };
+
+    d.add(swbtn1);
+
+    //-------------
+    // radiobutton
+    //-------------
+
+    var rb1 = new qx.ui.form.RadioButton("Radio button");
+    with(rb1)
+    {
+      setTop(292);
+      setLeft(20);
+      setEnabled(false);
+    };
+
+    d.add(rb1);
+
+    var swrb1 = new qx.ui.form.CheckBox("Enabled");
+    with(swrb1)
+    {
+      setTop(292);
+      setLeft(220);
+      addEventListener("changeChecked", function(e) { rb1.setEnabled(e.getData()); });
+    };
+
+    d.add(swrb1);
+
+    //----------
+    // checkbox
+    //----------
+
+    var cb1 = new qx.ui.form.CheckBox("Checkbox");
+    with(cb1)
+    {
+      setTop(340);
+      setLeft(20);
+      setEnabled(false);
+    };
+
+    d.add(cb1);
+
+    var swcb1 = new qx.ui.form.CheckBox("Enabled");
+    with(swcb1)
+    {
+      setTop(340);
+      setLeft(220);
+      addEventListener("changeChecked", function(e) { cb1.setEnabled(e.getData()); });
+    };
+
+    d.add(swcb1);
+
+    //-----------
+    // TextField
+    //-----------
+
+    var tf1 = new qx.ui.form.TextField;
+    with(tf1)
+    {
+      setTop(388);
+      setLeft(20);
+      setEnabled(false);
+    };
+
+    d.add(tf1);
+
+    var swtf1 = new qx.ui.form.CheckBox("Enabled");
+    with(swtf1)
+    {
+      setTop(388);
+      setLeft(220);
+      addEventListener("changeChecked", function(e) { tf1.setEnabled(e.getData()); });
+    };
+
+    d.add(swtf1);
+
+    //-----------
+    // ComboBox
+    //-----------
+
+    var cb1 = new qx.ui.form.ComboBox;
+    with(cb1)
+    {
+      setTop(436);
+      setLeft(20);
+      setEnabled(false);
+      setEditable(true);
+    };
+
+    d.add(cb1);
+
+    cb1.addEventListener("beforeInitialOpen", function(e)
+    {
+      var item;
+
+      for(var i=1; i<=30; i++)
+      {
+        item = new qx.ui.form.ListItem("Item No " + i);
+        !(i % 10) && (item.setEnabled(false));
+        cb1.add(item);
+      };
+    });
+
+    var swcb1 = new qx.ui.form.CheckBox("Enabled");
+    with(swcb1)
+    {
+      setTop(436);
+      setLeft(220);
+      addEventListener("changeChecked", function(e) { cb1.setEnabled(e.getData()); });
+    };
+
+    d.add(swcb1);
+
+  });
+
+  </script>
+</body>
+</html>

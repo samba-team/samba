@@ -1,0 +1,205 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>qx.ui.menu.Menu Implementation.</p>
+    <p>Added qx.client.Command support tests.</p>
+    <p>Create the menu instances on the first opening.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      var q1 = new qx.client.Command("Ctrl+Z");
+      q1.addEventListener("execute", function(e) {
+        alert("Undo");
+      });
+
+      var q2 = new qx.client.Command("Ctrl+Y");
+      q2.addEventListener("execute", function(e) {
+        alert("Redo");
+      });
+
+      var q3 = new qx.client.Command("Ctrl+X");
+      q3.addEventListener("execute", function(e) {
+        alert("Cut");
+      });
+
+      var q4 = new qx.client.Command("Ctrl+C");
+      q4.addEventListener("execute", function(e) {
+        alert("Copy");
+      });
+
+      var q5 = new qx.client.Command("Ctrl+V");
+      q5.addEventListener("execute", function(e) {
+        alert("Paste");
+      });
+
+      var q6 = new qx.client.Command("Del");
+      q6.addEventListener("execute", function(e) {
+        alert("Delete");
+      });
+
+      var q7 = new qx.client.Command("Ctrl+A");
+      q7.addEventListener("execute", function(e) {
+        alert("Select All");
+      });
+
+      var q8 = new qx.client.Command("Ctrl+F");
+      q8.addEventListener("execute", function(e) {
+        alert("Search");
+      });
+
+      var q9 = new qx.client.Command("Ctrl+G");
+      q9.addEventListener("execute", function(e) {
+        alert("Search Again");
+      });
+
+      var q10 = new qx.client.Command();
+      q10.addEventListener("execute", function(e) {
+        alert("Syntax Highlighting");
+      });
+
+      var q11 = new qx.client.Command("Esc");
+      q11.addEventListener("execute", function(e) {
+        alert("Escape");
+      });
+
+      var q12 = new qx.client.Command(null, qx.event.type.KeyEvent.keys.space);
+      q12.addEventListener("execute", function(e) {
+        alert("Space");
+      });
+
+
+      var m1, m2, m3;
+
+      function createMenus()
+      {
+        m2 = new qx.ui.menu.Menu;
+
+        var mb2_01 = new qx.ui.menu.MenuButton("New Window");
+        var mb2_02 = new qx.ui.menu.MenuButton("Overlapping");
+        var mb2_03 = new qx.ui.menu.MenuButton("Split Vertical");
+        var mb2_04 = new qx.ui.menu.MenuButton("Split Horizontal");
+        var mb2_05 = new qx.ui.menu.MenuButton("Next Window");
+        var mb2_06 = new qx.ui.menu.MenuButton("Previous Window");
+
+        m2.add(mb2_01, mb2_02, mb2_03, mb2_04, mb2_05, mb2_06);
+
+
+
+
+        m3 = new qx.ui.menu.Menu;
+
+        var mb3_01 = new qx.ui.menu.MenuButton("Tahoma, 11pt");
+        var mb3_02 = new qx.ui.menu.MenuButton("Tahoma, 12pt");
+        var mb3_03 = new qx.ui.menu.MenuButton("Tahoma, 13pt");
+        var mb3_04 = new qx.ui.menu.MenuButton("Tahoma, 14pt");
+        var mb3_05 = new qx.ui.menu.MenuButton("Tahoma, 15pt");
+
+        m3.add(mb3_01, mb3_02, mb3_03, mb3_04, mb3_05);
+
+
+
+        m1 = new qx.ui.menu.Menu;
+
+        var mb1_01 = new qx.ui.menu.MenuButton("View/Lists", null, q12);
+        var mb1_02 = new qx.ui.menu.MenuButton("Syntax Highlighting", null, q10);
+        var ms1    = new qx.ui.menu.MenuSeparator();
+        var mb1_03 = new qx.ui.menu.MenuButton("Window Font", null, q11);
+        var mb1_04 = new qx.ui.menu.MenuButton("Printer Font", null, null, m3);
+        var ms2    = new qx.ui.menu.MenuSeparator();
+        var mb1_05 = new qx.ui.menu.MenuButton("Undo", null, q1);
+        var mb1_06 = new qx.ui.menu.MenuButton("Redo", null, q2);
+        var ms3    = new qx.ui.menu.MenuSeparator();
+        var mb1_07 = new qx.ui.menu.MenuButton("Cut", "icon/16/edit-cut.png", q3);
+        var mb1_08 = new qx.ui.menu.MenuButton("Copy", "icon/16/edit-copy.png", q4);
+        var mb1_09 = new qx.ui.menu.MenuButton("Paste", "icon/16/edit-paste.png", q5);
+        var mb1_10 = new qx.ui.menu.MenuButton("Delete", "icon/16/edit-delete.png", q6);
+        var mb1_11 = new qx.ui.menu.MenuButton("Select All", null, q7);
+        var ms4    = new qx.ui.menu.MenuSeparator();
+        var mb1_12 = new qx.ui.menu.MenuButton("Search", null, q8);
+        var mb1_13 = new qx.ui.menu.MenuButton("Search Again", null, q9);
+        var ms5    = new qx.ui.menu.MenuSeparator();
+        var mb1_14 = new qx.ui.menu.MenuButton("View", null, null, m2);
+        var mb1_15 = new qx.ui.menu.MenuButton("Editor Settings...");
+        var mb1_16 = new qx.ui.menu.MenuButton("Editor Plugins");
+        var mb1_17 = new qx.ui.menu.MenuButton("Framework Settings");
+
+        m1.add(mb1_01, mb1_02, ms1, mb1_03, mb1_04, ms2, mb1_05, mb1_06, ms3, mb1_07, mb1_08, mb1_09, mb1_10, mb1_11, ms4, mb1_12, mb1_13, ms5, mb1_14, mb1_15, mb1_16, mb1_17);
+
+
+        d.add(m1, m2, m3);
+      };
+
+
+
+
+
+      var w1 = new qx.ui.form.Button("Open");
+
+      w1.setTop(48);
+      w1.setLeft(20);
+
+      w1.addEventListener("click", function(e)
+      {
+        if (!m1) {
+          createMenus();
+        };
+
+        if (m1.isSeeable())
+        {
+          m1.hide();
+        }
+        else
+        {
+          var el = this.getElement();
+
+          m1.setLeft(qx.dom.DomLocation.getPageBoxLeft(el));
+          m1.setTop(qx.dom.DomLocation.getPageBoxBottom(el));
+
+          m1.show();
+        };
+
+        e.setPropagationStopped(true);
+      });
+
+      w1.addEventListener("mousedown", function(e)
+      {
+        e.setPropagationStopped(true);
+      });
+
+
+      d.add(w1);
+
+
+
+
+
+
+
+
+
+      // Icon Themes
+      qx.manager.object.ImageManager.getInstance().createThemeList(d, 180, 48);
+
+      // Color Themes
+      qx.manager.object.ColorManager.getInstance().createThemeList(d, 380, 48);
+
+
+    });
+  </script>
+</body>
+</html>

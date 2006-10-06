@@ -1,0 +1,70 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test for Splitpane functionality.</p>
+  </div>
+
+  <script type="text/javascript">
+
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var frame = new qx.ui.layout.CanvasLayout;
+    frame.setLocation(20, 48);
+    frame.setBottom(48);
+    frame.setRight(300);
+    frame.setBackgroundColor("#134275");
+    frame.setPadding(20);
+    frame.addToDocument();
+
+    // the splitpane itself
+    var splitpane = new qx.ui.splitpane.HorizontalSplitPane("1*", "2*");
+    splitpane.setEdge(0);
+    frame.add(splitpane);
+
+    // left Widget
+    var leftWidget = new qx.ui.form.TextArea("LeftWidget");
+    leftWidget.setWrap(true);
+    leftWidget.setBackgroundColor(new qx.renderer.color.Color("white"));
+    leftWidget.setWidth("100%");
+    leftWidget.setHeight("100%");
+
+    // rightWidget (another splitpane)
+    var rightWidget = new qx.ui.splitpane.VerticalSplitPane;
+    rightWidget.setHeight("100%");
+    rightWidget.setWidth("100%");
+
+    // add widgets to splitpane
+    splitpane.addLeft(leftWidget);
+    splitpane.addRight(rightWidget);
+
+
+
+    // right top widget
+    var topWidget = new qx.ui.form.TextArea("Right Top Widget");
+    topWidget.setBackgroundColor(new qx.renderer.color.Color("white"));
+    topWidget.setHeight("100%");
+    topWidget.setWidth("100%");
+
+    // right bottom widget
+    var bottomWidget = new qx.ui.embed.Iframe("http://www.qooxdoo.org");
+    bottomWidget.setHeight("100%");
+    bottomWidget.setWidth("100%");
+
+    // add widgets to right splitpane
+    rightWidget.addTop(topWidget);
+    rightWidget.addBottom(bottomWidget);
+  });
+  </script>
+</body>
+</html>
