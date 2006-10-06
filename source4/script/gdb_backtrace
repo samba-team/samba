@@ -1,33 +1,82 @@
 #!/bin/sh
 
+BASENAME=`basename $0`
+
 if [ -n "$VALGRIND" -o -n "$SMBD_VALGRIND" ]; then
-    echo "Not running gdb under valgrind"
-    exit 1
+	echo "${BASENAME}: Not running debugger under valgrind"
+	exit 1
 fi
 
 # we want everything on stderr, so the program is not disturbed
 exec 1>&2
 
-PID=$1
-PROG=$2
+BASENAME=`basename $0`
+UNAME=`uname`
 
-TMPFILE=/tmp/gdb.$$
-cat << EOF  > $TMPFILE
+PID=$1
+BINARY=$2
+
+test x"${PID}" = x"" && {
+	echo "Usage: ${BASENAME} <pid> [<binary>]"
+	exit 1
+}
+
+DB_LIST="gdb"
+case "${UNAME}" in
+	#
+	# on Tru64 we need to try ladebug first
+	# because gdb crashes itself...
+	#
+	OSF1)
+		DB_LIST="ladebug ${DB_LIST}"
+	;;
+esac
+
+for DB in ${DB_LIST}; do
+	DB_BIN=`which ${DB} 2>/dev/null`
+	test x"${DB_BIN}" != x"" && {
+		break
+	}
+done
+
+test x"${DB_BIN}" = x"" && {
+	echo "${BASENAME}: ERROR: No debugger found."
+	exit 1
+}
+
+#
+# we first try to use /proc/${PID}/exe
+# then fallback to the binary from the commandline
+# then we search for the commandline argument with
+# 'which'
+#
+test -f "/proc/${PID}/exe" && BINARY="/proc/${PID}/exe"
+test x"${BINARY}" = x"" && BINARY="/proc/${PID}/exe"
+test -f "${BINARY}" || BINARY=`which ${BINARY}`
+
+test -f "${BINARY}" || {
+	echo "${BASENAME}: ERROR: Cannot find binary '${BINARY}'."
+	exit 1
+}
+
+echo "${BASENAME}: Trying to use ${DB_BIN} on ${BINARY} on PID ${PID}"
+
+BATCHFILE=/tmp/gdb_backtrace.$$
+case "${DB}" in
+	ladebug)
+cat << EOF  > ${BATCHFILE}
+where
+quit
+EOF
+	${DB_BIN} -c "${BATCHFILE}" -pid "${PID}" "${BINARY}"
+	;;
+	gdb)
+cat << EOF  > ${BATCHFILE}
 set height 1000
 bt full
 quit
 EOF
-
-if [ ! -f $PROG ]; then
-    PROG=`which $PROG`
-fi
-if [ ! -f $PROG ]; then
-    PROG=/proc/$PID/exe
-fi
-if [ ! -f $PROG ]; then
-    echo "Unable to find binary"
-    exit 1
-fi
-
-gdb -batch -x $TMPFILE $PROG $PID < /dev/null 
-/bin/rm -f $TMPFILE
+	${DB_BIN} -x "${BATCHFILE}" "${BINARY}" "${PID}"
+	;;
+esac
+/bin/rm -f ${BATCHFILE}
