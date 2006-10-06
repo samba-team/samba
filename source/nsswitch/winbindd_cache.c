@@ -90,7 +90,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	/* we have to know what type of domain we are dealing with first */
 
 	if ( !domain->initialized )
-		set_dc_type_and_flags( domain );
+		init_dc_connection( domain );
 
 	/* 
 	   OK.  listen up becasue I'm only going to say this once.
