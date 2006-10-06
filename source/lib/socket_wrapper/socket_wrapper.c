@@ -587,11 +587,11 @@ static struct swrap_packet *swrap_packet_init(struct timeval *tval,
 	size_t packet_len;
 	size_t alloc_len;
 	size_t nonwire_len = sizeof(packet->frame);
-	size_t wire_hdr_len;
-	size_t wire_len;
+	size_t wire_hdr_len = 0;
+	size_t wire_len = 0;
 	size_t icmp_hdr_len = 0;
 	size_t icmp_truncate_len = 0;
-	unsigned char protocol, icmp_protocol;
+	unsigned char protocol = 0, icmp_protocol = 0;
 	unsigned short src_port = src_addr->sin_port;
 	unsigned short dest_port = dest_addr->sin_port;
 
@@ -983,11 +983,14 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		tcp_ctl = 0x10; /* ACK */
 
 		break;
+	default:
+		return;
 	}
 
 	swrapGetTimeOfDay(&tv);
 
-	packet = swrap_packet_init(&tv, src_addr, dest_addr, si->type, buf, len,
+	packet = swrap_packet_init(&tv, src_addr, dest_addr, si->type,
+				   (const unsigned char *)buf, len,
 				   tcp_seq, tcp_ack, tcp_ctl, unreachable,
 				   &packet_len);
 	if (!packet) {
