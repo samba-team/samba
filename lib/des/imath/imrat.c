@@ -829,7 +829,7 @@ mp_result mp_rat_read_cstring(mp_rat r, mp_size radix, const char *str,
     return res;
 
   /* Skip whitespace between numerator and (possible) separator */
-  while(isspace(*endp))
+  while(isspace((unsigned char)*endp))
     ++endp;
   
   /* If there is no separator, we will stop reading at this point. */
@@ -905,7 +905,7 @@ mp_result mp_rat_read_cdecimal(mp_rat r, mp_size radix, const char *str,
   mp_sign   osign;
   char *endp;
 
-  while(isspace((int) *str))
+  while(isspace((unsigned char) *str))
     ++str;
   
   switch(*str) {
@@ -944,7 +944,7 @@ mp_result mp_rat_read_cdecimal(mp_rat r, mp_size radix, const char *str,
       *end = endp;
     return MP_OK;
   }
-  else if(isspace(*endp) || *endp == '-' || *endp == '+') {
+  else if(isspace((unsigned char)*endp) || *endp == '-' || *endp == '+') {
     return MP_TRUNC;
   }
   else {

@@ -243,7 +243,7 @@ send_supported_mechs (OM_uint32 *minor_status,
 
     /* Send the constructed SAM name for this host */
     for (p = hostname; *p != '\0' && *p != '.'; p++) {
-	*p = toupper(*p);
+	*p = toupper((unsigned char)*p);
     }
     *p++ = '$';
     *p = '\0';

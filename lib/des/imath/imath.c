@@ -1798,7 +1798,7 @@ mp_result mp_int_read_cstring(mp_int z, mp_size radix, const char *str, char **e
     return MP_RANGE;
 
   /* Skip leading whitespace */
-  while(isspace((int)*str))
+  while(isspace((unsigned char)*str))
     ++str;
 
   /* Handle leading sign tag (+/-, positive default) */
@@ -3126,10 +3126,10 @@ static int       s_ch2val(char c, int r)
 {
   int out;
 
-  if(isdigit((int)c))
+  if(isdigit((unsigned char)c))
     out = c - '0';
-  else if(r > 10 && isalpha((int)c))
-    out = toupper(c) - 'A' + 10;
+  else if(r > 10 && isalpha((unsigned char)c))
+    out = toupper((unsigned char)c) - 'A' + 10;
   else
     return -1;
 
