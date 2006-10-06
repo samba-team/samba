@@ -195,7 +195,7 @@ Subject: heimdal-build-log SPAM COOKIE
 X-heimdal-build: kaka-till-love
 
 Version: $version
-
+Machine: `uname -a`
 EOF
 
 	if [ "X$passhrase" != X ] ; then
@@ -203,6 +203,9 @@ EOF
 autobuild-passphrase: ${passhrase}
 EOF
 	fi
+		cat >> email-header <<EOF
+------L-O-G------------------------------------
+EOF
 
 	cat email-header ab.txt | sendmail "${email}"
 fi
