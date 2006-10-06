@@ -1,5 +1,11 @@
 Changes in release 0.8
 
+ * GSS-API mechglue from FreebSD
+
+ * Updated SPNEGO supporting RFC4178
+
+ * Support for Cryptosystem Negotiation Extension (RFC 4537)
+
  * PK-INIT support
 
  * HDB extensions support, used by PK-INIT
