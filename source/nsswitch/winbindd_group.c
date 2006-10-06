@@ -157,7 +157,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 			(*num_gr_mem)++;
 			DEBUG(10, ("buf_len + %d = %d\n", len + 1, buf_len));
 		} else {
-			DEBUG(10, ("appending %s at ndx %d\n", name, len));
+			DEBUG(10, ("appending %s at ndx %d\n", name, buf_ndx));
 			safe_strcpy(&buf[buf_ndx], name, len);
 			buf_ndx += len;
 			buf[buf_ndx] = ',';
