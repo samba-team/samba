@@ -417,7 +417,8 @@ test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2,
     }
 
     if (msg.length != out.length) {
-	warnx("decrypted'ed token have wrong length");
+	warnx("decrypted'ed token have wrong length (%lu != %lu)",
+	      (unsigned long)msg.length, (unsigned long)out.length);
 	val = GSMERR_ERROR;
     } else if (memcmp(msg.data, out.data, msg.length) != 0) {
 	warnx("decryptd'ed token have wrong data");
@@ -433,18 +434,20 @@ static int32_t
 test_token(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
 {
     int32_t val;
+    int i;
 
-    test_mic(c1, hc1, c2, hc2);
-    test_mic(c2, hc2, c1, hc1);
-    val = test_wrap(c1, hc1, c2, hc2, 0);
-    if (val) return val;
-    val = test_wrap(c2, hc2, c1, hc1, 0);
-    if (val) return val;
-    val = test_wrap(c1, hc1, c2, hc2, 1);
-    if (val) return val;
-    val = test_wrap(c2, hc2, c1, hc1, 1);
-    if (val) return val;
-
+    for (i = 0; i < 10; i++) {
+	test_mic(c1, hc1, c2, hc2);
+	test_mic(c2, hc2, c1, hc1);
+	val = test_wrap(c1, hc1, c2, hc2, 0);
+	if (val) return val;
+	val = test_wrap(c2, hc2, c1, hc1, 0);
+	if (val) return val;
+	val = test_wrap(c1, hc1, c2, hc2, 1);
+	if (val) return val;
+	val = test_wrap(c2, hc2, c1, hc1, 1);
+	if (val) return val;
+    }
     return GSMERR_OK;
 }
 
