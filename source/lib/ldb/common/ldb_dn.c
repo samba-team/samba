@@ -597,6 +597,7 @@ struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn
 		struct ldb_dn_component dc;
 		const struct ldb_attrib_handler *h;
 
+		memset(&dc, 0, sizeof(dc));
 		dc.name = ldb_attr_casefold(cedn, edn->components[i].name);
 		if (!dc.name) {
 			talloc_free(cedn);
