@@ -260,4 +260,10 @@ function testParse()
 }
 testParse();
 */
+
+/*
+ * Local Variables:
+ * mode: c
+ * End:
+ */
 %>

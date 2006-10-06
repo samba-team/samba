@@ -19,6 +19,10 @@ jsonrpc_include("json.esp");
 /* Bring in the date class */
 jsonrpc_include("jsondate.esp");
 
+/* Load the authentication script */
+jsonrpc_include("json_auth.esp");
+
+
 /* bring the string functions into the global frame */
 string_init(global);
 
@@ -165,22 +169,27 @@ function _jsonValidRequest(req)
         return false;
     }
 
-    if (req.id == undefined)
+    if (typeof(req) != "object")
     {
         return false;
     }
 
-    if (req.service == undefined)
+    if (req["id"] == undefined)
     {
         return false;
     }
 
-    if (req.method == undefined)
+    if (req["service"] == undefined)
     {
         return false;
     }
 
-    if (req.params == undefined)
+    if (req["method"] == undefined)
+    {
+        return false;
+    }
+
+    if (req["params"] == undefined)
     {
         return false;
     }
@@ -411,7 +420,7 @@ if (jsonrpc_include(servicePath))
  * The following completely unreasonable sequence of commands is because:
  *
  *  (a) ejs evaluates all OR'ed expressions even if an early one is false, and
- *      bars on the typeof(method) call if method is undefined
+ *      barfs on the typeof(method) call if method is undefined
  *
  *  (b) ejs does not allow comparing against the string "function"!!!  What
  *      the hell is special about that particular string???
@@ -437,6 +446,15 @@ if (! valid)
     return;
 }
 
+/* Ensure the logged-in user is allowed to issue the requested method */
+if (! json_authenticate(serviceComponents, method))
+{
+    error.setError(jsonrpc.Constant.ErrorCode.PermissionDenied,
+                   "Permission denied");
+    error.Send();
+    return;
+}
+
 /* Most errors from here on out will be Application-generated */
 error.setOrigin(jsonrpc.Constant.ErrorOrigin.Application);
 
@@ -456,4 +474,10 @@ var ret = new Object();
 ret.result = retval;
 ret.id = jsonInput.id;
 sendReply(Json.encode(ret), scriptTransportId);
+
+/*
+ * Local Variables:
+ * mode: c
+ * End:
+ */
 %>
