@@ -1,3 +1,11 @@
+2006-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* imath/imath.c: Cast argument to ctype(3) functions to (unsigned
+	char).
+
+	* imath/imrat.c: Cast argument to ctype(3) functions to (unsigned
+	char).
+	
 2006-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ui.c (read_string): Try to not call signaction for signal 0 and

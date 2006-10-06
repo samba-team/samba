@@ -1,3 +1,20 @@
+2006-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/gssmask/common.h: Maybe include <sys/wait.h>.
+	
+2006-10-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* appl/gssmask/common.h: disable ENABLE_PTHREAD_SUPPORT and
+	explain why
+
+	* tools/heimdal-build.sh: Another mail header.
+
+	* tools/heimdal-build.sh: small fixes
+
+	* fix-export: More liberal parsing of AC_INIT
+
+	* tools/heimdal-build.sh: first cut
+	
 2006-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* configure.in: Call AB_INIT.
