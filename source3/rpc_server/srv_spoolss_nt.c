@@ -4342,29 +4342,27 @@ static BOOL construct_printer_info_7(Printer_entry *print_hnd,
 
 static WERROR enum_all_printers_info_1(uint32 flags, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
-	int snum;
 	int i;
-	int n_services=lp_numservices();
+	struct share_iterator *shares;
+	struct share_params *printer;
 	PRINTER_INFO_1 *printers=NULL;
 	WERROR result = WERR_OK;
 	
 	DEBUG(4,("enum_all_printers_info_1\n"));	
 
-	for (snum=0; snum<n_services; snum++) {
+	if (!(shares = share_list_all(NULL))) {
+		DEBUG(5, ("Could not list printers\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	while ((printer = next_printer(shares)) != NULL) {
 		PRINTER_INFO_1 current_prt;
-		struct share_params params;
-		params.service = snum;
 
-		if (!lp_browseable(snum) || !lp_snum_ok(snum) ||
-		    !lp_print_ok(snum) ) {
-			continue;
-		}
-
-		DEBUG(4,("Found a printer in smb.conf: %s[%x]\n",
-			 lp_servicename(snum), snum));
+		DEBUG(4,("Found a printer in smb.conf: %s\n",
+			 lp_servicename(printer->service)));
 
 		if (!construct_printer_info_1(NULL, flags, &current_prt,
-					      &params)) {
+					      printer)) {
 			continue;
 		}
 
@@ -4373,6 +4371,7 @@ static WERROR enum_all_printers_info_1(uint32 flags, RPC_BUFFER *buffer, uint32 
 			DEBUG(2,("enum_all_printers_info_1: failed to enlarge "
 				 "printers buffer!\n"));
 			*returned=0;
+			TALLOC_FREE(shares);
 			return WERR_NOMEM;
 		}
 		DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n",
@@ -4381,6 +4380,7 @@ static WERROR enum_all_printers_info_1(uint32 flags, RPC_BUFFER *buffer, uint32 
 		memcpy(&printers[*returned], &current_prt,
 		       sizeof(PRINTER_INFO_1));
 		(*returned)++;
+		TALLOC_FREE(printer);
 	}
 		
 	/* check the required size. */	
@@ -4405,6 +4405,7 @@ out:
 	/* clear memory */
 
 	SAFE_FREE(printers);
+	TALLOC_FREE(shares);
 
 	if ( !W_ERROR_IS_OK(result) )
 		*returned = 0;
@@ -4542,27 +4543,27 @@ static WERROR enum_all_printers_info_1_network(fstring name, RPC_BUFFER *buffer,
 
 static WERROR enum_all_printers_info_2(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
-	int snum;
 	int i;
-	int n_services=lp_numservices();
+	struct share_iterator *shares;
+	struct share_params *printer;
 	PRINTER_INFO_2 *printers=NULL;
 	WERROR result = WERR_OK;
 
 	*returned = 0;
 
-	for (snum=0; snum<n_services; snum++) {
+	if (!(shares = share_list_all(NULL))) {
+		DEBUG(5, ("Could not list printers\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	while ((printer = next_printer(shares)) != NULL) {
 		PRINTER_INFO_2 current_prt;
-		struct share_params params;
-		params.service = snum;
-		if (!lp_browseable(snum) || !lp_snum_ok(snum) ||
-		    !lp_print_ok(snum) ) {
-			continue;
-		}
-		DEBUG(4,("Found a printer in smb.conf: %s[%x]\n",
-			 lp_servicename(snum), snum));
+
+		DEBUG(4,("Found a printer in smb.conf: %s\n",
+			 lp_servicename(printer->service)));
 
 		if (!construct_printer_info_2(NULL, &current_prt,
-					      &params)) {
+					      printer)) {
 			continue;
 		}
 		if ( !(printers=SMB_REALLOC_ARRAY(printers, PRINTER_INFO_2,
@@ -4570,6 +4571,7 @@ static WERROR enum_all_printers_info_2(RPC_BUFFER *buffer, uint32 offered, uint3
 			DEBUG(2,("enum_all_printers_info_2: failed to enlarge "
 				 "printers buffer!\n"));
 			*returned = 0;
+			TALLOC_FREE(shares);
 			return WERR_NOMEM;
 		}
 
@@ -4579,6 +4581,7 @@ static WERROR enum_all_printers_info_2(RPC_BUFFER *buffer, uint32 offered, uint3
 		memcpy(&printers[*returned], &current_prt,
 		       sizeof(PRINTER_INFO_2));
 		(*returned)++;
+		TALLOC_FREE(printer);
 	}
 	
 	/* check the required size. */	
@@ -4606,6 +4609,7 @@ out:
 		free_devmode(printers[i].devmode);
 
 	SAFE_FREE(printers);
+	TALLOC_FREE(shares);
 
 	if ( !W_ERROR_IS_OK(result) )
 		*returned = 0;
