@@ -152,7 +152,7 @@ hx509_name_to_string(const hx509_name name, char **str)
 }
 
 int
-_hx509_Name_to_string(const const Name *n, char **str)
+_hx509_Name_to_string(const Name *n, char **str)
 {
     size_t total_len = 0;
     int i, j;
