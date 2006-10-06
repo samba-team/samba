@@ -1,5 +1,7 @@
 2006-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_file.c (parse_rsa_private_key): free type after use
+
 	* name.c (_hx509_Name_to_string): remove dup const
 	
 2006-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
