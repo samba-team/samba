@@ -72,7 +72,7 @@ static int ldb_read_data_file(void *mem_ctx, struct ldb_val *value)
 		goto done;
 	}
 
-	value->data = talloc_size(mem_ctx, statbuf.st_size + 1);
+	value->data = (uint8_t *)talloc_size(mem_ctx, statbuf.st_size + 1);
 	if (value->data == NULL) {
 		ret = -1;
 		goto done;
@@ -680,7 +680,8 @@ struct ldif_read_file_state {
 
 static int fgetc_file(void *private_data)
 {
-	struct ldif_read_file_state *state = private_data;
+	struct ldif_read_file_state *state =
+		(struct ldif_read_file_state *)private_data;
 	return fgetc(state->f);
 }
 
@@ -701,7 +702,8 @@ struct ldif_read_string_state {
 
 static int fgetc_string(void *private_data)
 {
-	struct ldif_read_string_state *state = private_data;
+	struct ldif_read_string_state *state =
+		(struct ldif_read_string_state *)private_data;
 	if (state->s[0] != 0) {
 		return *state->s++;
 	}
@@ -730,7 +732,8 @@ static int fprintf_file(void *private_data, const char *fmt, ...) PRINTF_ATTRIBU
 
 static int fprintf_file(void *private_data, const char *fmt, ...)
 {
-	struct ldif_write_file_state *state = private_data;
+	struct ldif_write_file_state *state =
+		(struct ldif_write_file_state *)private_data;
 	int ret;
 	va_list ap;
 
