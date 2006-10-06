@@ -111,6 +111,7 @@ supported_mechanisms(void *argptr, int argc, char **argv)
     return 0;
 }
 
+#if 0
 /*
  *
  */
@@ -160,6 +161,7 @@ dovecot_server(void *argptr, int argc, char **argv)
     }
     return 0;
 }
+#endif
 
 /*
  *
