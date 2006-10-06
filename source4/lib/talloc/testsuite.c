@@ -1065,27 +1065,27 @@ bool torture_local_talloc(struct torture_context *torture)
 	talloc_disable_null_tracking();
 	talloc_enable_null_tracking();
 
-	ret &= test_ref1();
-	ret &= test_ref2();
-	ret &= test_ref3();
-	ret &= test_ref4();
-	ret &= test_unlink1();
-	ret &= test_misc();
-	ret &= test_realloc();
-	ret &= test_realloc_child();
-	ret &= test_steal();
-	ret &= test_move();
-	ret &= test_unref_reparent();
-	ret &= test_realloc_fn();
-	ret &= test_type();
-	ret &= test_lifeless();
-	ret &= test_loop();
-	ret &= test_free_parent_deny_child();
-	ret &= test_talloc_ptrtype();
+	ret = ret && test_ref1();
+	ret = ret && test_ref2();
+	ret = ret && test_ref3();
+	ret = ret && test_ref4();
+	ret = ret && test_unlink1();
+	ret = ret && test_misc();
+	ret = ret && test_realloc();
+	ret = ret && test_realloc_child();
+	ret = ret && test_steal();
+	ret = ret && test_move();
+	ret = ret && test_unref_reparent();
+	ret = ret && test_realloc_fn();
+	ret = ret && test_type();
+	ret = ret && test_lifeless();
+	ret = ret && test_loop();
+	ret = ret && test_free_parent_deny_child();
+	ret = ret && test_talloc_ptrtype();
 	if (ret) {
-		ret &= test_speed();
+		ret = ret &&  test_speed();
 	}
-	ret &= test_autofree();
+	ret = ret && test_autofree();
 
 	return ret;
 }
