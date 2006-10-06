@@ -201,7 +201,7 @@ _kdc_do_digest(krb5_context context,
 	unsigned char server_nonce[16], identifier;
 
 	RAND_pseudo_bytes(&identifier, sizeof(identifier));
-	RAND_pseudo_bytes(&server_nonce, sizeof(server_nonce));
+	RAND_pseudo_bytes(server_nonce, sizeof(server_nonce));
 
 	server_nonce[0] = kdc_time & 0xff;
 	server_nonce[1] = (kdc_time >> 8) & 0xff;
@@ -488,7 +488,7 @@ _kdc_do_digest(krb5_context context,
 
 	if (strcasecmp(ireq.u.digestRequest.type, "CHAP") == 0) {
 	    MD5_CTX ctx;
-	    char md[MD5_DIGEST_LENGTH];
+	    unsigned char md[MD5_DIGEST_LENGTH];
 	    char id;
 
 	    if (ireq.u.digestRequest.identifier == NULL) {
@@ -519,7 +519,7 @@ _kdc_do_digest(krb5_context context,
 	    }
 	} else if (strcasecmp(ireq.u.digestRequest.type, "SASL-DIGEST-MD5") == 0) {
 	    MD5_CTX ctx;
-	    char md[MD5_DIGEST_LENGTH];
+	    unsigned char md[MD5_DIGEST_LENGTH];
 	    char *A1, *A2;
 
 	    if (ireq.u.digestRequest.nonceCount == NULL) 

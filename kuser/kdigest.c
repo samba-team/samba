@@ -167,7 +167,8 @@ client_request(struct client_request_options *opt, int argc, char **argv)
     char *server_nonce, server_identifier;
     ssize_t size;
     MD5_CTX ctx;
-    char md[16], *h;
+    unsigned char md[16];
+    char *h;
 
     if (opt->server_nonce_string == NULL)
 	errx(1, "server nonce missing");
