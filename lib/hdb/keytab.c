@@ -221,16 +221,17 @@ hdb_get_entry(krb5_context context,
 	return ret;
     }
     ret = (*db->hdb_fetch)(context, db, principal, HDB_F_DECRYPT, &ent);
-    (*db->hdb_close)(context, db);
-    (*db->hdb_destroy)(context, db);
 
-    if(ret == HDB_ERR_NOENTRY)
-	return KRB5_KT_NOTFOUND;
-    else if(ret)
-	return ret;
+    if(ret == HDB_ERR_NOENTRY) {
+	ret = KRB5_KT_NOTFOUND;
+	goto out;
+    }else if(ret)
+	goto out;
+
     if(kvno && ent.entry.kvno != kvno) {
 	hdb_free_entry(context, &ent);
- 	return KRB5_KT_NOTFOUND;
+ 	ret = KRB5_KT_NOTFOUND;
+	goto out;
     }
     if(enctype == 0)
 	if(ent.entry.keys.len > 0)
@@ -248,6 +249,9 @@ hdb_get_entry(krb5_context context,
 	}
     }
     hdb_free_entry(context, &ent);
+out:
+    (*db->hdb_close)(context, db);
+    (*db->hdb_destroy)(context, db);
     return ret;
 }
 
