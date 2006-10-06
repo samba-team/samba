@@ -1006,7 +1006,7 @@ NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 	}
 
 	if (!contact_domain->initialized) {
-		set_dc_type_and_flags(contact_domain);
+		init_dc_connection(contact_domain);
 	}
 
 	if (!contact_domain->active_directory) {
@@ -1217,7 +1217,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 			"request in startup mode.\n", domain->name ));
 
 		winbindd_flush_negative_conn_cache(domain);
-		set_dc_type_and_flags(domain);
+		init_dc_connection(domain);
 	}
 
 	DEBUG(10,("winbindd_dual_pam_auth: domain: %s last was %s\n", domain->name, domain->online ? "online":"offline"));

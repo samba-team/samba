@@ -64,7 +64,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static NTSTATUS init_dc_connection(struct winbindd_domain *domain);
+static void set_dc_type_and_flags( struct winbindd_domain *domain );
 
 /****************************************************************
  Handler triggered if we're offline to try and detect a DC.
@@ -175,24 +175,27 @@ static void set_domain_online(struct winbindd_domain *domain)
 	/* If we are waiting to get a krb5 ticket, trigger immediately. */
 	GetTimeOfDay(&now);
 	set_event_dispatch_time("krb5_ticket_gain_handler", now);
-	domain->online = True;
 
 	/* Ok, we're out of any startup mode now... */
 	domain->startup = False;
 
-	/* We were offline - now we're online. We default to
-	   using the MS-RPC backend if we started offline,
-	   and if we're going online for the first time we
-	   should really re-initialize the backends and the
-	   checks to see if we're talking to an AD or NT domain.
-	*/
+	if (domain->online == False) {
+		/* We were offline - now we're online. We default to
+		   using the MS-RPC backend if we started offline,
+		   and if we're going online for the first time we
+		   should really re-initialize the backends and the
+		   checks to see if we're talking to an AD or NT domain.
+		*/
 
-	domain->initialized = False;
+		domain->initialized = False;
 
-	/* 'reconnect_methods' is the MS-RPC backend. */
-	if (domain->backend == &reconnect_methods) {
-		domain->backend = NULL;
+		/* 'reconnect_methods' is the MS-RPC backend. */
+		if (domain->backend == &reconnect_methods) {
+			domain->backend = NULL;
+		}
 	}
+
+	domain->online = True;
 }
 
 /****************************************************************
@@ -1179,17 +1182,29 @@ static BOOL connection_ok(struct winbindd_domain *domain)
 
 	return True;
 }
-	
+
 /* Initialize a new connection up to the RPC BIND. */
 
-static NTSTATUS init_dc_connection(struct winbindd_domain *domain)
+NTSTATUS init_dc_connection(struct winbindd_domain *domain)
 {
-	if (connection_ok(domain))
+	NTSTATUS result;
+
+	if (connection_ok(domain)) {
+		if (!domain->initialized) {
+			set_dc_type_and_flags(domain);
+		}
 		return NT_STATUS_OK;
+	}
 
 	invalidate_cm_connection(&domain->conn);
 
-	return cm_open_connection(domain, &domain->conn);
+	result = cm_open_connection(domain, &domain->conn);
+
+	if (NT_STATUS_IS_OK(result) && !domain->initialized) {
+		set_dc_type_and_flags(domain);
+	}
+
+	return result;
 }
 
 /******************************************************************************
@@ -1200,7 +1215,7 @@ static NTSTATUS init_dc_connection(struct winbindd_domain *domain)
  is native mode.
 ******************************************************************************/
 
-void set_dc_type_and_flags( struct winbindd_domain *domain )
+static void set_dc_type_and_flags( struct winbindd_domain *domain )
 {
 	NTSTATUS 		result;
 	DS_DOMINFO_CTR		ctr;
@@ -1211,27 +1226,19 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	char *domain_name = NULL;
 	char *dns_name = NULL;
 	DOM_SID *dom_sid = NULL;
-	int try_count = 0;
 
 	ZERO_STRUCT( ctr );
 	
-	domain->native_mode = False;
-	domain->active_directory = False;
-
 	if (domain->internal) {
 		domain->initialized = True;
 		return;
 	}
 
-  try_again:
-
-	result = init_dc_connection(domain);
-	if (!NT_STATUS_IS_OK(result) || try_count > 2) {
-		DEBUG(5, ("set_dc_type_and_flags: Could not open a connection "
-			  "to %s: (%s)\n", domain->name, nt_errstr(result)));
-		domain->initialized = True;
+	if (!connection_ok(domain)) {
 		return;
 	}
+
+	DEBUG(5, ("set_dc_type_and_flags: domain %s\n", domain->name ));
 
 	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_LSARPC_DS,
 				       &result);
@@ -1240,10 +1247,7 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 		DEBUG(5, ("set_dc_type_and_flags: Could not bind to "
 			  "PI_LSARPC_DS on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
-		domain->initialized = True;
-		/* We want to detect network failures asap to try another dc. */
-		try_count++;
-		goto try_again;
+		return;
 	}
 
 	result = rpccli_ds_getprimarydominfo(cli, cli->cli->mem_ctx,
@@ -1252,21 +1256,27 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	cli_rpc_pipe_close(cli);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		domain->initialized = True;
+		DEBUG(5, ("set_dc_type_and_flags: rpccli_ds_getprimarydominfo "
+			  "on domain %s failed: (%s)\n",
+			  domain->name, nt_errstr(result)));
 		return;
 	}
 	
 	if ((ctr.basic->flags & DSROLE_PRIMARY_DS_RUNNING) &&
-	    !(ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE) )
+	    !(ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE)) {
 		domain->native_mode = True;
+	} else {
+		domain->native_mode = False;
+	}
 
 	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_LSARPC, &result);
 
 	if (cli == NULL) {
-		domain->initialized = True;
-		/* We want to detect network failures asap to try another dc. */
-		try_count++;
-		goto try_again;
+		DEBUG(5, ("set_dc_type_and_flags: Could not bind to "
+			  "PI_LSARPC on domain %s: (%s)\n",
+			  domain->name, nt_errstr(result)));
+		cli_rpc_pipe_close(cli);
+		return;
 	}
 
 	mem_ctx = talloc_init("set_dc_type_and_flags on domain %s\n",
@@ -1290,6 +1300,8 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
+		domain->active_directory = True;
+
 		if (domain_name)
 			fstrcpy(domain->name, domain_name);
 
@@ -1298,10 +1310,9 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 
 		if (dom_sid) 
 			sid_copy(&domain->sid, dom_sid);
-
-		domain->active_directory = True;
 	} else {
-		
+		domain->active_directory = False;
+
 		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
 						SEC_RIGHTS_MAXIMUM_ALLOWED,
 						&pol);
@@ -1323,13 +1334,17 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	}
 done:
 
+	DEBUG(5, ("set_dc_type_and_flags: domain %s is %snative mode.\n",
+		  domain->name, domain->native_mode ? "" : "NOT "));
+
+	DEBUG(5,("set_dc_type_and_flags: domain %s is %sactive directory.\n",
+		  domain->name, domain->active_directory ? "" : "NOT "));
+
 	cli_rpc_pipe_close(cli);
 	
 	talloc_destroy(mem_ctx);
 
 	domain->initialized = True;
-	
-	return;
 }
 
 static BOOL cm_get_schannel_dcinfo(struct winbindd_domain *domain,
