@@ -548,11 +548,13 @@ static void jsonrpc_request(struct esp_state *esp)
 }
 
 /*
-  perform pre-authentication on every page is /scripting/preauth.esp
+  perform pre-authentication on every page if /scripting/preauth.esp
   exists.  If this script generates any non-whitepace output at all,
   then we don't run the requested URL.
 
-  note that the preauth is run even for static pages such as images.
+  note that the preauth is run even for static pages such as images, but not
+  for JSON-RPC service requests which do their own authentication via the
+  JSON-RPC server.
 */
 static BOOL http_preauth(struct esp_state *esp)
 {
@@ -900,13 +902,13 @@ void http_process_input(struct websrv_context *web)
             }
             for (i=0;p && i<ARRAY_SIZE(mime_types);i++) {
 		if (strcmp(mime_types[i].extension, p+1) == 0) {
-                    file_type = mime_types[i].mime_type;
                     page_type = mime_types[i].page_type;
+                    file_type = mime_types[i].mime_type;
 		}
             }
             if (file_type == NULL) {
-		file_type = "text/html";
                 page_type = page_type_simple;
+		file_type = "text/html";
             }
         }
 
