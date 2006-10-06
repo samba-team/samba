@@ -667,6 +667,10 @@ common_init(krb5_context context,
 	return NULL;
     }
 
+    /* For 'realms' without a . do not even think of going to DNS */
+    if (!strchr(realm, '.'))
+	kd->flags |= KD_CONFIG_EXISTS;
+
     if (flags & KRB5_KRBHST_FLAGS_LARGE_MSG)
 	kd->flags |= KD_LARGE_MSG;
     kd->end = kd->index = &kd->hosts;
