@@ -2230,7 +2230,7 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct smbcli_tree *tree,
 }
 
 static BOOL enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
-			 int level)
+			 int level, int *num_printers)
 {
 	struct spoolss_EnumPrinters r;
 	NTSTATUS status;
@@ -2272,6 +2272,8 @@ static BOOL enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 			 win_errstr(r.out.result));
 		return False;
 	}
+
+	*num_printers = r.out.count;
 
 	return True;
 }
@@ -2506,10 +2508,20 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 		}
 	}
 
-	if (!enumprinters(mem_ctx, p, 1)) {
-		d_printf("(%s) enumprinters failed\n", __location__);
-		talloc_free(mem_ctx);
-		return False;
+	{
+		int num_enumerated;
+		if (!enumprinters(mem_ctx, p, 1, &num_enumerated)) {
+			d_printf("(%s) enumprinters failed\n", __location__);
+			talloc_free(mem_ctx);
+			return False;
+		}
+		if (num_printers != num_enumerated) {
+			d_printf("(%s) netshareenum gave %d printers, "
+				 "enumprinters gave %d\n", __location__,
+				 num_printers, num_enumerated);
+			talloc_free(mem_ctx);
+			return False;
+		}
 	}
 
 	talloc_free(mem_ctx);
