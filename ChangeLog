@@ -1,5 +1,11 @@
 2006-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/digest.c: Make digest argument o MD5_final unsigned char to
+	help OpenSSL.
+
+	* kuser/kdigest.c: Make digest argument o MD5_final unsigned char
+	to help OpenSSL.
+
 	* appl/gssmask/common.h: Maybe include <sys/wait.h>.
 	
 2006-10-05  Love Hörnquist Åstrand  <lha@it.su.se>
