@@ -2238,7 +2238,7 @@ static BOOL enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 
 	r.in.flags = PRINTER_ENUM_LOCAL;
 	r.in.server = "\\\\localhost";
-	r.in.level = 1;
+	r.in.level = level;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 
@@ -2517,7 +2517,23 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 		}
 		if (num_printers != num_enumerated) {
 			d_printf("(%s) netshareenum gave %d printers, "
-				 "enumprinters gave %d\n", __location__,
+				 "enumprinters lvl 1 gave %d\n", __location__,
+				 num_printers, num_enumerated);
+			talloc_free(mem_ctx);
+			return False;
+		}
+	}
+
+	{
+		int num_enumerated;
+		if (!enumprinters(mem_ctx, p, 2, &num_enumerated)) {
+			d_printf("(%s) enumprinters failed\n", __location__);
+			talloc_free(mem_ctx);
+			return False;
+		}
+		if (num_printers != num_enumerated) {
+			d_printf("(%s) netshareenum gave %d printers, "
+				 "enumprinters lvl 2 gave %d\n", __location__,
 				 num_printers, num_enumerated);
 			talloc_free(mem_ctx);
 			return False;
