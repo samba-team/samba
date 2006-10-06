@@ -147,7 +147,7 @@ afs)
 cvs)
 	cvs ${cvsflags} -d "${cvsroot}" co -P -d ${hversion} heimdal
 	res=$?
-	unpack=yes
+	unpack=no
 	autotools=yes
 	;;
 *)
