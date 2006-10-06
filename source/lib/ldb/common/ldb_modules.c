@@ -44,14 +44,13 @@
 #define LDB_MODULE_PREFIX	"modules:"
 #define LDB_MODULE_PREFIX_LEN	8
 
-static char *talloc_strdup_no_spaces(struct ldb_context *ldb, const char *string)
+static char *ldb_modules_strdup_no_spaces(TALLOC_CTX *mem_ctx, const char *string)
 {
 	int i, len;
 	char *trimmed;
 
-	trimmed = talloc_strdup(ldb, string);
+	trimmed = talloc_strdup(mem_ctx, string);
 	if (!trimmed) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in talloc_strdup_trim_spaces()\n");
 		return NULL;
 	}
 
@@ -81,9 +80,9 @@ const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *m
 	int i;
 
 	/* spaces not admitted */
-	modstr = talloc_strdup_no_spaces((struct ldb_context *)mem_ctx,
-					 string);
+	modstr = ldb_modules_strdup_no_spaces(mem_ctx, string);
 	if ( ! modstr) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_modules_strdup_no_spaces()\n");
 		return NULL;
 	}
 
