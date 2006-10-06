@@ -29,7 +29,7 @@
 /* uid's and gid's for writing deltas to ldif */
 static uint32 ldif_gid = 999;
 static uint32 ldif_uid = 999;
-/* Kkeep track of ldap initialization */
+/* Keep track of ldap initialization */
 static int init_ldap = 1;
 
 static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
@@ -1104,37 +1104,6 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 		fflush(add_fd);
 	}
 
-	/* Write the root entity */
-	fprintf(add_fd, "# root, %s, %s\n", user_attr, suffix);
-	fprintf(add_fd, "dn: uid=root,ou=%s,%s\n", user_attr, suffix);
-	fprintf(add_fd, "cn: root\n");
-	fprintf(add_fd, "sn: root\n");
-	fprintf(add_fd, "objectClass: inetOrgPerson\n");
-	fprintf(add_fd, "objectClass: sambaSAMAccount\n");
-	fprintf(add_fd, "objectClass: posixAccount\n");
-	fprintf(add_fd, "objectClass: shadowAccount\n");
-	fprintf(add_fd, "gidNumber: 0\n");
-	fprintf(add_fd, "uid: root\n");
-	fprintf(add_fd, "uidNumber: 0\n");
-	fprintf(add_fd, "homeDirectory: /home/root\n");
-	fprintf(add_fd, "sambaPwdLastSet: 0\n");
-	fprintf(add_fd, "sambaLogonTime: 0\n");
-	fprintf(add_fd, "sambaLogoffTime: 2147483647\n");
-	fprintf(add_fd, "sambaKickoffTime: 2147483647\n");
-	fprintf(add_fd, "sambaPwdCanChange: 0\n");
-	fprintf(add_fd, "sambaPwdMustChange: 2147483647\n");
-	fprintf(add_fd, "sambaHomePath: \\\\PDC-SRV\\root\n");
-	fprintf(add_fd, "sambaHomeDrive: H:\n");
-	fprintf(add_fd, "sambaProfilePath: \\\\PDC-SRV\\profiles\\root\n");
-	fprintf(add_fd, "sambaprimaryGroupSID: %s-512\n", sid);
-	fprintf(add_fd, "sambaLMPassword: XXX\n");
-	fprintf(add_fd, "sambaNTPassword: XXX\n");
-	fprintf(add_fd, "sambaAcctFlags: [U\n");
-	fprintf(add_fd, "sambaSID: %s-500\n", sid);
-	fprintf(add_fd, "loginShell: /bin/false\n");
-	fprintf(add_fd, "\n");
-	fflush(add_fd);
-
 	/* Write the domain entity */
 	fprintf(add_fd, "# %s, %s\n", lp_workgroup(), suffix);
 	fprintf(add_fd, "dn: sambaDomainName=%s,%s\n", lp_workgroup(),
@@ -1145,37 +1114,6 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	fprintf(add_fd, "sambaSID: %s\n", sid);
 	fprintf(add_fd, "uidNumber: %d\n", ++ldif_uid);
 	fprintf(add_fd, "gidNumber: %d\n", ++ldif_gid);
-	fprintf(add_fd, "\n");
-	fflush(add_fd);
-
-	/* Write user nobody entity */
-	fprintf(add_fd, "# nobody, %s, %s\n", user_attr, suffix);
-	fprintf(add_fd, "dn: uid=nobody,ou=%s,%s\n", user_attr, suffix);
-	fprintf(add_fd, "cn: nobody\n");
-	fprintf(add_fd, "sn: nobody\n");
-	fprintf(add_fd, "objectClass: inetOrgPerson\n");
-	fprintf(add_fd, "objectClass: sambaSAMAccount\n");
-	fprintf(add_fd, "objectClass: posixAccount\n");
-	fprintf(add_fd, "objectClass: shadowAccount\n");
-	fprintf(add_fd, "gidNumber: 514\n");
-	fprintf(add_fd, "uid: nobody\n");
-	fprintf(add_fd, "uidNumber: 999\n");
-	fprintf(add_fd, "homeDirectory: /nobodyshomedir\n");
-	fprintf(add_fd, "sambaPwdLastSet: 0\n");
-	fprintf(add_fd, "sambaLogonTime: 0\n");
-	fprintf(add_fd, "sambaLogoffTime: 2147483647\n");
-	fprintf(add_fd, "sambaKickoffTime: 2147483647\n");
-	fprintf(add_fd, "sambaPwdCanChange: 0\n");
-	fprintf(add_fd, "sambaPwdMustChange: 2147483647\n");
-	fprintf(add_fd, "sambaHomePath: \\\\PDC-SMD3\\homes\\nobody\n");
-	fprintf(add_fd, "sambaHomeDrive: H:\n");
-	fprintf(add_fd, "sambaProfilePath: \\\\PDC-SMB3\\profiles\\nobody\n");
-	fprintf(add_fd, "sambaprimaryGroupSID: %s-514\n", sid);
-	fprintf(add_fd, "sambaLMPassword: NOPASSWORDXXXXXXXXXXXXXXXXXXXXX\n");
-	fprintf(add_fd, "sambaNTPassword: NOPASSWORDXXXXXXXXXXXXXXXXXXXXX\n");
-	fprintf(add_fd, "sambaAcctFlags: [NU\n");
-	fprintf(add_fd, "sambaSID: %s-2998\n", sid);
-	fprintf(add_fd, "loginShell: /bin/false\n");
 	fprintf(add_fd, "\n");
 	fflush(add_fd);
 
