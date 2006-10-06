@@ -1006,7 +1006,8 @@ tgs_parse_request(krb5_context context,
 	goto out;
     }
     
-    _krb5_principalname2krb5_principal(&princ,
+    _krb5_principalname2krb5_principal(context,
+				       &princ,
 				       ap_req.ticket.sname,
 				       ap_req.ticket.realm);
     
@@ -1242,7 +1243,7 @@ tgs_build_reply(krb5_context context,
 	    ret = KRB5KDC_ERR_POLICY;
 	    goto out;
 	}
-	_krb5_principalname2krb5_principal(&p, t->sname, t->realm);
+	_krb5_principalname2krb5_principal(context, &p, t->sname, t->realm);
 	ret = _kdc_db_fetch(context, config, p, 
 			    HDB_F_GET_CLIENT|HDB_F_GET_SERVER, 
 			    NULL, &uu);
@@ -1272,11 +1273,11 @@ tgs_build_reply(krb5_context context,
 	r = adtkt.crealm;
     }
 
-    _krb5_principalname2krb5_principal(&sp, *s, r);
+    _krb5_principalname2krb5_principal(context, &sp, *s, r);
     ret = krb5_unparse_name(context, sp, &spn);	
     if (ret)
 	goto out;
-    _krb5_principalname2krb5_principal(&cp, tgt->cname, tgt->crealm);
+    _krb5_principalname2krb5_principal(context, &cp, tgt->cname, tgt->crealm);
     ret = krb5_unparse_name(context, cp, &cpn);
     if (ret)
 	goto out;
@@ -1448,7 +1449,8 @@ server_lookup:
 		goto out;
 	    }
 
-	    ret = _krb5_principalname2krb5_principal(&client_principal,
+	    ret = _krb5_principalname2krb5_principal(context,
+						     &client_principal,
 						     self.name,
 						     self.realm);
 	    free_PA_S4U2Self(&self);
@@ -1538,7 +1540,8 @@ server_lookup:
 	    goto out;
 	}
 
-	ret = _krb5_principalname2krb5_principal(&client_principal,
+	ret = _krb5_principalname2krb5_principal(context,
+						 &client_principal,
 						 adtkt.cname,
 						 adtkt.crealm);
 	if (ret)

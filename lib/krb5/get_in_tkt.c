@@ -137,7 +137,8 @@ _krb5_extract_ticket(krb5_context context,
     time_t tmp_time;
     krb5_timestamp sec_now;
 
-    ret = _krb5_principalname2krb5_principal (&tmp_principal,
+    ret = _krb5_principalname2krb5_principal (context,
+					      &tmp_principal,
 					      rep->kdc_rep.cname,
 					      rep->kdc_rep.crealm);
     if (ret)
@@ -170,7 +171,8 @@ _krb5_extract_ticket(krb5_context context,
 
     /* compare server */
 
-    ret = _krb5_principalname2krb5_principal (&tmp_principal,
+    ret = _krb5_principalname2krb5_principal (context,
+					      &tmp_principal,
 					      rep->kdc_rep.ticket.sname,
 					      rep->kdc_rep.ticket.realm);
     if (ret)

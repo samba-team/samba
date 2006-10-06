@@ -376,10 +376,14 @@ krb5_verify_ap_req2(krb5_context context,
     if(ret)
 	goto out;
 
-    ret = _krb5_principalname2krb5_principal(&t->server, ap_req->ticket.sname, 
+    ret = _krb5_principalname2krb5_principal(context,
+					     &t->server,
+					     ap_req->ticket.sname, 
 					     ap_req->ticket.realm);
     if (ret) goto out;
-    ret = _krb5_principalname2krb5_principal(&t->client, t->ticket.cname, 
+    ret = _krb5_principalname2krb5_principal(context,
+					     &t->client,
+					     t->ticket.cname, 
 					     t->ticket.crealm);
     if (ret) goto out;
 
@@ -400,10 +404,12 @@ krb5_verify_ap_req2(krb5_context context,
 	krb5_principal p1, p2;
 	krb5_boolean res;
 	
-	_krb5_principalname2krb5_principal(&p1,
+	_krb5_principalname2krb5_principal(context,
+					   &p1,
 					   ac->authenticator->cname,
 					   ac->authenticator->crealm);
-	_krb5_principalname2krb5_principal(&p2, 
+	_krb5_principalname2krb5_principal(context,
+					   &p2, 
 					   t->ticket.cname,
 					   t->ticket.crealm);
 	res = krb5_principal_compare (context, p1, p2);
@@ -601,7 +607,8 @@ krb5_rd_req(krb5_context context,
 	return ret;
 
     if(server == NULL){
-	_krb5_principalname2krb5_principal(&service,
+	_krb5_principalname2krb5_principal(context,
+					   &service,
 					   ap_req.ticket.sname,
 					   ap_req.ticket.realm);
 	server = service;
