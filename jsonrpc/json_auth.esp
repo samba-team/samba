@@ -1,0 +1,13 @@
+<%
+/* Return true to allow access; false otherwise */
+function json_authenticate(serviceComponents, method)
+{
+    return true;
+}
+
+/*
+ * Local Variables:
+ * mode: c
+ * End:
+ */
+%>
