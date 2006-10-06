@@ -132,6 +132,7 @@ cat >$SERVERCONFFILE<<EOF
 
 	kernel oplocks = no
 
+	syslog = no
 	printing = bsd
 	printcap name = /dev/null
 
@@ -145,6 +146,16 @@ cat >$SERVERCONFFILE<<EOF
 [hideunwrite]
 	copy = tmp
 	hide unwriteable files = yes
+[print1]
+	copy = tmp
+	printable = yes
+	printing = test
+[print2]
+	copy = print1
+[print3]
+	copy = print1
+[print4]
+	copy = print1
 EOF
 
 ##
