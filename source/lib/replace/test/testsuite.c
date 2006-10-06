@@ -231,14 +231,12 @@ static int test_opendir(void)
 
 extern int test_readdir_os2_delete(void);
 
-static bool test_readdir(void)
+static int test_readdir(void)
 {
 	printf("testing readdir\n");
 	if (test_readdir_os2_delete() != 0) {
 		return false;
 	}
-
-	/* FIXME */
 	return true;
 }
 
@@ -400,7 +398,7 @@ bool torture_local_replace(struct torture_context *torture)
 	ret &= test_vasprintf();
 	ret &= test_vsnprintf();
 	ret &= test_opendir();
-	ret &= test_readdir() ;
+	ret &= test_readdir();
 	ret &= test_telldir();
 	ret &= test_seekdir();
 	ret &= test_dlopen();
