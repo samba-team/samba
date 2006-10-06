@@ -31,7 +31,7 @@ CFLAGS=$savedCFLAGS
 
 dnl don't try for C99 if we are using gcc, as otherwise we 
 dnl lose immediate structure constants
-if test x"$GCC" = x"no" ; then
+if test x"$GCC" != x"yes" ; then
 AC_PROG_CC_C99
 fi
 
