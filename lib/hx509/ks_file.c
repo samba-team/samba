@@ -210,16 +210,18 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 #define PKCS5_SALT_LEN 8
 
 	ssize = hex_decode(iv, ivdata, size);
+	free(type);
+	type = NULL;
+	iv = NULL;
+
 	if (ssize < 0 || ssize < PKCS5_SALT_LEN || ssize < EVP_CIPHER_iv_length(cipher)) {
 	    free(ivdata);
-	    free(type);
 	    hx509_clear_error_string(context);
 	    return EINVAL;
 	}
 	
 	key = malloc(EVP_CIPHER_key_length(cipher));
 	if (key == NULL) {
-	    free(type);
 	    free(ivdata);
 	    hx509_clear_error_string(context);
 	    return ENOMEM;
@@ -228,7 +230,6 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	ret = EVP_BytesToKey(cipher, EVP_md5(), ivdata,
 			     password, passwordlen,
 			     1, key, NULL);
-	free(type);
 	if (ret <= 0) {
 	    free(key);
 	    free(ivdata);
