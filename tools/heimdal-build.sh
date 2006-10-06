@@ -12,6 +12,11 @@ passhrase=
 builddir=
 noemail=
 
+# Add some bonus paths, to find sendmail and other tools
+# on interesting platforms.
+PATH="${PATH}:/usr/sbin:/usr/bin:/usr/libexec:/usr/lib"
+PATH="${PATH}:/usr/local/bin:/usr/local/sbin"
+
 # no more use configurabled part below (hopefully)
 
 usage="[--current] [--release version] [--cvs SourceRepository] [--cvs-flags] [--result-directory dir] [--fetch-method wget|ftp|curl|cvs] --keep-tree] [--autotools] [--passhrase string] [--no-email] [--build-dir dir]"
