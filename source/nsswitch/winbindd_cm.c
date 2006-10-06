@@ -294,7 +294,7 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	NTSTATUS result;
 	WERROR werr;
 	TALLOC_CTX *mem_ctx;
-
+	unsigned int orig_timeout;
 	fstring tmp;
 	char *p;
 
@@ -320,8 +320,16 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 		return False;
 	}
 
+	/* This call can take a long time - allow the server to time out.
+	   35 seconds should do it. */
+
+	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
+	
 	werr = rpccli_netlogon_getdcname(netlogon_pipe, mem_ctx, our_domain->dcname,
 					   domain->name, tmp);
+
+	/* And restore our original timeout. */
+	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
 
 	talloc_destroy(mem_ctx);
 
