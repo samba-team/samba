@@ -134,7 +134,7 @@ char *ldb_binary_encode(void *mem_ctx, struct ldb_val val)
 char *ldb_binary_encode_string(void *mem_ctx, const char *string)
 {
 	struct ldb_val val;
-	val.data = (uint8_t *)discard_const(string);
+	val.data = discard_const_p(uint8_t, string);
 	val.length = strlen(string);
 	return ldb_binary_encode(mem_ctx, val);
 }
