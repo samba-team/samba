@@ -5197,6 +5197,18 @@ struct share_params *next_share(struct share_iterator *list)
 	return result;
 }
 
+struct share_params *next_printer(struct share_iterator *list)
+{
+	struct share_params *result;
+
+	while ((result = next_share(list)) != NULL) {
+		if (lp_print_ok(result->service)) {
+			break;
+		}
+	}
+	return result;
+}
+
 /*******************************************************************
  A useful volume label function. 
 ********************************************************************/
