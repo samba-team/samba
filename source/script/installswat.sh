@@ -19,6 +19,7 @@ installdir() {
     done
 }
 
+installdir `find . -name '*.html'`
 installdir `find . -name '*.js'`
 installdir `find . -name '*.esp'`
 installdir `find . -name '*.css'`
@@ -32,6 +33,17 @@ cat << EOF
 The swat files have been installed. 
 ======================================================================
 EOF
+
+cd $SRCDIR/.. || exit 1
+
+installdir `find services -name '*.esp'`
+
+cat << EOF
+======================================================================
+The JSON-RPC services have been installed. 
+======================================================================
+EOF
+
 
 exit 0
 
