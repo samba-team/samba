@@ -474,13 +474,25 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 		domain->dcaddr.sin_port = 0;
 	}
 
-	set_dc_type_and_flags(domain);
+	init_dc_connection(domain);
 
+#if 1
+	if (!domain->initialized) {
+		/* If we return error here we can't do any cached authentication,
+		   but we may be in disconnected mode and can't initialize correctly.
+		   Do what the previous code did and just return without initialization,
+		   once we go online we'll re-initialize.
+		*/
+		DEBUG(5, ("winbindd_dual_init_connection: %s returning without initialization "
+			"online = %d\n", domain->name, (int)domain->online ));
+	}
+#else
 	if (!domain->initialized) {
 		DEBUG(1, ("Could not initialize domain %s\n",
 			  state->request.domain_name));
 		return WINBINDD_ERROR;
 	}
+#endif
 
 	fstrcpy(state->response.data.domain_info.name, domain->name);
 	fstrcpy(state->response.data.domain_info.alt_name, domain->alt_name);
@@ -585,7 +597,7 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 		return NULL;
 
 	if (!domain->initialized)
-		set_dc_type_and_flags(domain);
+		init_dc_connection(domain);
 
 	return domain;
 }
@@ -620,7 +632,7 @@ struct winbindd_domain *find_domain_from_sid(const DOM_SID *sid)
 		return NULL;
 
 	if (!domain->initialized)
-		set_dc_type_and_flags(domain);
+		init_dc_connection(domain);
 
 	return domain;
 }
