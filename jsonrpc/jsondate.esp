@@ -1,4 +1,4 @@
-
+<%
 /*
  * Copyright:
  *   (C) 2006 by Derrell Lipman
@@ -190,3 +190,11 @@ function _JSON_Date_create(secondsSinceEpoch)
 JSON_Date = new Object();
 JSON_Date.create = _JSON_Date_create;
 _JSON_Date_create = null;
+
+
+/*
+ * Local Variables:
+ * mode: c
+ * End:
+ */
+%>
