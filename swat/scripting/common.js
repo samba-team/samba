@@ -74,10 +74,18 @@ function page_footer() {
 */
 function always_allowed(uri) {
 	var str = string_init();
+
+        /* allow jsonrpc-based applications to do their own authentication */
+        var s = str.split('/', uri);
+        if (s[0] == "" && s[1] == 'apps') {
+                return true;
+        }
+
 	var s = str.split('.', uri);
 	if (s.length < 2) {
 		return false;
 	}
+
 	var ext = s[s.length-1];
 	var allowed = new Array("ico", "gif", "png","css", "js");
 	for (i in allowed) {
