@@ -22,14 +22,27 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#if !defined(HAVE_ICONV) && defined(HAVE_ICONV_H)
+#define HAVE_ICONV
+#endif
+
+#if !defined(HAVE_GICONV) && defined(HAVE_GICONV_H)
+#define HAVE_GICONV
+#endif
+
+#if !defined(HAVE_BICONV) && defined(HAVE_BICONV_H)
+#define HAVE_BICONV
+#endif
+
 #ifdef HAVE_NATIVE_ICONV
-#ifdef HAVE_ICONV_H
+#if defined(HAVE_ICONV)
 #include <iconv.h>
-#endif
-#ifdef HAVE_GICONV_H
+#elif defined(HAVE_GICONV)
 #include <giconv.h>
+#elif defined(HAVE_BICONV)
+#include <biconv.h>
 #endif
-#endif
+#endif /* HAVE_NATIVE_ICONV */
 
 /* needed for some systems without iconv. Doesn't really matter
    what error code we use */
