@@ -1,0 +1,267 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>qx.ui.basic.Atom is the parent class for buttons, menu entries, icons, checkboxes. While you can do,
+    you usually don't have to instantiate qx.ui.basic.Atom directly.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.lang.Array.merge = function(firstArray, secondArray)
+  {
+    var combinedArray = [], currentValue, indexInSecond;
+
+    for (var i=0, l=firstArray.length; i<l; i++) {
+      (indexInSecond = secondArray.indexOf(currentValue = firstArray[i])) == -1 ? combinedArray.push(currentValue) : qx.lang.Array.append(combinedArray, secondArray.splice(0, indexInSecond+1));
+    };
+
+    return combinedArray.concat(secondArray);
+  };
+
+  var a = [ "before3Mnu", "fileMnu", "editMnu", "saveMnu", "exitMenu" ];
+  var b = [ "before1Mnu", "before2Mnu", "fileMnu", "fooMnu", "editMnu", "saveMnu", "after1Mnu" ];
+
+  //alert(qx.lang.Array.merge(a, b));
+
+  var comp1 =
+  {
+    bars :
+    [
+      {
+        id : "menubar",
+        groups : [ "mainMp", "helpMp" ]
+      },
+
+      {
+        id : "toolbar",
+        groups : [ "openTb", "editTb" ]
+      }
+    ],
+
+    groups :
+    {
+      // Menu Bar Parts
+      "mainMp" : { commands : [ "fileBtn", "editBtn", "viewBtn" ] },
+      "helpMp" : { commands : [ "helpBtn" ] },
+
+      // Tool Bar Parts
+      "openTb" : { commands : [ "openBtn", "openRecentlyBtn" ] },
+      "editTb" : { commands : [ "cutBtn", "copyBtn", "pasteBtn" ] },
+
+      // Menu Content
+      "openMn" : { commands : [ "openBtn", "openWithBtn", "openRecentlyBtn" ] },
+      "saveMn" : { commands : [ "saveBtn", "saveAsBtn" ] },
+      "closeMn" : { commands : [ "closeBtn" ] },
+      "exitMn" : { commands : [ "exitBtn" ] },
+      "undoMn" : { commands : [ "undoBtn", "redoBtn" ] },
+      "editMn" : { commands : [ "cutBtn", "copyBtn", "pasteBtn", "deleteBtn", "clipboardBtn" ] },
+      "searchMn" : { commands : [ "searchBtn", "replaceBtn", "continueSearchBtn" ] },
+
+      "barsMn" : { commands : [] },
+      "fontMn" : { commands : [] },
+
+      "aboutMn" : { commands : [ "aboutBtn" ] },
+      "recentDocsMn" : { commands : [ "doc1Btn", "doc2Btn", "doc3Btn" ] }
+    },
+
+    menus :
+    {
+      "fileMnu" : { groups : [ "openMn", "saveMn", "closeMn", "exitMn" ] },
+      "editMnu" : { groups : [ "undoMn", "editMn", "searchMn" ] },
+      "viewMnu" : { groups : [ "barsMn", "fontMn" ] },
+      "helpMnu" : { groups : [ "aboutMn" ] },
+      "openRecentlyMnu" : { groups : [ "recentDocsMn" ] }
+    },
+
+    commands :
+    {
+      // Menu-Buttons
+      "fileBtn" : { title : "Datei", menu : "fileMnu" },
+      "editBtn" : { title : "Bearbeiten", menu : "editMnu" },
+      "viewBtn" : { title : "Ansicht", menu : "viewMnu" },
+      "helpBtn" : { title : "Hilfe", menu : "helpMnu" },
+
+      // Execute-Buttons: Open
+      "openBtn" : { title : "Öffnen", execute : "open" },
+      "openWithBtn" : { title : "Öffnen mit...", execute : "openWith" },
+      "openRecentlyBtn" : { title : "Letzte öffnen...", menu : "openRecentlyMnu" },
+
+      "saveBtn" : { title : "Speichern", execute : "save" },
+      "saveAsBtn" : { title : "Speichern als...", execute : "saveAs" },
+      "closeBtn" : { title : "Schließen", execute : "close" },
+      "exitBtn" : { title : "Beenden", execute : "exit" },
+
+      "undoBtn" : { title : "Rückgängig", execute : "undo" },
+      "redoBtn" : { title : "Wiederherstellen", execute : "redo" },
+      "deleteBtn" : { title : "Löschen", execute : "delete" },
+      "clipboardBtn" : { title : "Zwischenablage", execute : "clipboard" },
+
+      // Execute-Buttons: Search
+      "searchBtn" : { title : "Suchen", execute : "search" },
+      "replaceBtn" : { title : "Ersetzen", execute : "replace" },
+      "continueSearchBtn" : { title : "Weitersuchen", execute : "continuesearch" },
+
+      // Execute-Buttons: Edit
+      "cutBtn" : { title : "Ausschneiden", execute : "cut" },
+      "copyBtn" : { title : "Kopieren", execute : "copy" },
+      "pasteBtn" : { title : "Einfügen", execute : "paste" },
+
+      // Execute-Buttons: Info
+      "aboutBtn" : { title : "Über", execute : "about" },
+
+      "doc1Btn" : { title : "Dokument 1", execute : "openDoc1" },
+      "doc2Btn" : { title : "Dokument 2", execute : "openDoc2" },
+      "doc3Btn" : { title : "Dokument 3", execute : "openDoc3" }
+    }
+  };
+
+  var comp2 =
+  {
+  };
+
+
+
+
+
+
+  qx.OO.defineClass("qx.Generator", qx.core.Target,
+  function(comp)
+  {
+    this._comp = comp;
+
+  });
+
+  qx.Proto._generateMenu = function(id)
+  {
+    var menu = new qx.ui.menu.Menu;
+
+    var menuData = this._comp.menus[id];
+
+    if (!menuData) {
+      alert("Missing menu: " + id);
+    };
+
+    for (var i=0; i<menuData.groups.length; i++)
+    {
+      var groupcontent = this._comp.groups[menuData.groups[i]];
+
+      if (!groupcontent) {
+        alert("Missing menu: " + menuData.groups[i]);
+      };
+
+      var groupcommandlist = groupcontent.commands;
+
+      for (var j=0; j<groupcommandlist.length; j++)
+      {
+        var commandData = this._comp.commands[groupcommandlist[j]];
+
+        if (!commandData) {
+          alert("Missing command: " + groupcommandlist[j]);
+        };
+
+        if (commandData.menu)
+        {
+          var subMenu = this._generateMenu(commandData.menu);
+          var menuButton = new qx.ui.menu.MenuButton(commandData.title, null, null, subMenu);
+
+        subMenu.addToDocument();
+        }
+        else
+        {
+          var menuButton = new qx.ui.menu.MenuButton(commandData.title);
+        };
+
+        menu.add(menuButton);
+      };
+
+      if (i < menuData.groups.length-1) {
+        menu.add(new qx.ui.menu.MenuSeparator);
+      };
+    };
+
+    return menu;
+  };
+
+  qx.Proto.getWidget = function()
+  {
+    var can = new qx.ui.layout.CanvasLayout;
+    can.auto();
+    can.setLocation(100, 100);
+    can.setBorder("2px solid red");
+
+    for (var i=0; i<this._comp.bars.length; i++)
+    {
+      var tb = new qx.ui.toolbar.ToolBar;
+      tb.setLocation(0, (i * 50));
+      tb.setRight(0);
+      can.add(tb);
+
+
+
+      var bardata = this._comp.bars[i];
+      var groupdata = bardata.groups;
+
+      for(var j=0; j<groupdata.length; j++)
+      {
+        var part = new qx.ui.toolbar.ToolBarPart;
+
+        var groupcontent = this._comp.groups[groupdata[j]];
+        var groupcommandlist = groupcontent.commands;
+
+        if (!groupcommandlist)
+        {
+          alert("Missing commands in: " + groupcontent);
+        };
+
+        for (var k=0; k<groupcommandlist.length; k++)
+        {
+          var commanddata = this._comp.commands[groupcommandlist[k]];
+
+          if (commanddata)
+          {
+            if (typeof commanddata.menu != qx.constant.Type.UNDEFINED)
+            {
+              menu = this._generateMenu(commanddata.menu);
+          menu.addToDocument();
+    
+              btn = new qx.ui.toolbar.ToolBarMenuButton(commanddata.title, menu);
+            }
+            else
+            {
+              btn = new qx.ui.toolbar.ToolBarButton(commanddata.title);
+            };
+
+            part.add(btn);
+          }
+          else
+          {
+            alert("Missing: " + groupcommandlist[k]);
+          };
+        };
+
+        tb.add(part);
+      };
+    };
+
+    return can;
+  };
+
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var c1 = new qx.Generator(comp1);
+    qx.ui.core.ClientDocument.getInstance().add(c1.getWidget());
+  });
+
+  </script>
+</body>
+</html>

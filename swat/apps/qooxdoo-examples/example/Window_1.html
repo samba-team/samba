@@ -1,0 +1,308 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var w1 = new qx.ui.window.Window("First Window", "icon/16/bell.png");
+    w1.setSpace(20, 400, 48, 250);
+    d.add(w1);
+
+    var w2 = new qx.ui.window.Window("Second Window", "icon/16/colors.png");
+    w2.setSpace(250, "auto", 120, "auto");
+    d.add(w2);
+
+    var w3 = new qx.ui.window.Window("Third Window", "icon/16/network.png");
+    w3.setSpace(100, 300, 200, 300);
+    w3.setMaxWidth(450);
+    w3.setMaxHeight(400);
+    d.add(w3);
+
+    var wm1 = new qx.ui.window.Window("First Modal Dialog");
+    wm1.setSpace(150, 200, 150, 200);
+    wm1.setModal(true);
+    d.add(wm1);
+
+    var wm2 = new qx.ui.window.Window("Second Modal Dialog");
+    wm2.setSpace(100, 200, 100, 150);
+    wm2.setModal(true);
+    wm2.setShowClose(false);
+    d.add(wm2);
+
+
+
+
+    var a1 = new qx.ui.basic.Atom("Welcome to your first own Window.<br/>Have fun!", "icon/32/chart.png");
+    a1.set({ top: 4, left: 4 });
+    w1.add(a1);
+
+
+
+
+    var tf1 = new qx.ui.pageview.tabview.TabView;
+    tf1.set({ left: 10, top: 52, right: 10, bottom: 10 });
+
+    var t1_1 = new qx.ui.pageview.tabview.TabViewButton("Explore");
+    var t1_2 = new qx.ui.pageview.tabview.TabViewButton("Internet");
+    var t1_3 = new qx.ui.pageview.tabview.TabViewButton("Future");
+
+    t1_1.setChecked(true);
+
+    tf1.getBar().add(t1_1, t1_2, t1_3);
+
+    var p1_1 = new qx.ui.pageview.tabview.TabViewPage(t1_1);
+    var p1_2 = new qx.ui.pageview.tabview.TabViewPage(t1_2);
+    var p1_3 = new qx.ui.pageview.tabview.TabViewPage(t1_3);
+
+    tf1.getPane().add(p1_1, p1_2, p1_3);
+
+    w1.add(tf1);
+
+
+
+    var at1 = new qx.ui.basic.Atom("Your second window", "icon/22/find.png");
+    at1.setLocation(8, 8);
+    w2.add(at1);
+
+
+
+
+    var btn1 = new qx.ui.form.Button("Open Modal Dialog 1", "icon/16/control-center.png");
+    btn1.setLocation(4, 4);
+    w3.add(btn1);
+
+    btn1.addEventListener("execute", function(e) {
+      wm1.open();
+    });
+
+
+    var btn2 = new qx.ui.form.Button("Open Modal Dialog 2", "icon/16/control-center.png");
+    btn2.setLocation(4, 4);
+    wm1.add(btn2);
+
+    btn2.addEventListener("execute", function(e) {
+      wm2.open();
+    });
+
+
+    var chkm1 = new qx.ui.form.CheckBox("Modal", null, null, true);
+    chkm1.setLocation(4, 50);
+    wm1.add(chkm1);
+
+    chkm1.addEventListener("changeChecked", function(e) {
+      wm1.setModal(e.getData());
+    });
+
+
+
+    var fs1 = new qx.ui.groupbox.GroupBox("Settings");
+    fs1.setLocation(4, 40);
+    fs1.setRight(4);
+    fs1.setBottom(4);
+
+
+    var chk1 = new qx.ui.form.CheckBox("Show Icon");
+    chk1.setLocation(0, 0);
+    chk1.setChecked(true);
+    chk1.addEventListener("changeChecked", function(e) {
+      w2.setShowIcon(e.getData());
+    });
+
+    var chk2 = new qx.ui.form.CheckBox("Show Caption");
+    chk2.setLocation(0, 20);
+    chk2.setChecked(true);
+    chk2.addEventListener("changeChecked", function(e) {
+      w2.setShowCaption(e.getData());
+    });
+
+
+
+    var chk3 = new qx.ui.form.CheckBox("Resizeable");
+    chk3.setLocation(0, 50);
+    chk3.setChecked(true);
+    chk3.addEventListener("changeChecked", function(e) {
+      w2.setResizeable(e.getData());
+    });
+
+    var chk4 = new qx.ui.form.CheckBox("Moveable");
+    chk4.setLocation(0, 70);
+    chk4.setChecked(true);
+    chk4.addEventListener("changeChecked", function(e) {
+      w2.setMoveable(e.getData());
+    });
+
+
+
+    var chk5 = new qx.ui.form.CheckBox("Show Close");
+    chk5.setLocation(140, 0);
+    chk5.setChecked(true);
+    chk5.addEventListener("changeChecked", function(e) {
+      w2.setShowClose(e.getData());
+    });
+
+    var chk6 = new qx.ui.form.CheckBox("Show Maximize/Restore");
+    chk6.setLocation(140, 20);
+    chk6.setChecked(true);
+    chk6.addEventListener("changeChecked", function(e) {
+      w2.setShowMaximize(e.getData());
+    });
+
+    var chk7 = new qx.ui.form.CheckBox("Show Minimize");
+    chk7.setLocation(140, 40);
+    chk7.setChecked(true);
+    chk7.addEventListener("changeChecked", function(e) {
+      w2.setShowMinimize(e.getData());
+    });
+
+
+
+    var chk8 = new qx.ui.form.CheckBox("Allow Close");
+    chk8.setLocation(140, 70);
+    chk8.setChecked(true);
+    chk8.addEventListener("changeChecked", function(e) {
+      w2.setAllowClose(e.getData());
+    });
+
+    var chk9 = new qx.ui.form.CheckBox("Allow Maximize");
+    chk9.setLocation(140, 90);
+    chk9.setChecked(true);
+    chk9.addEventListener("changeChecked", function(e) {
+      w2.setAllowMaximize(e.getData());
+    });
+
+    var chk10 = new qx.ui.form.CheckBox("Allow Minimize");
+    chk10.setLocation(140, 110);
+    chk10.setChecked(true);
+    chk10.addEventListener("changeChecked", function(e) {
+      w2.setAllowMinimize(e.getData());
+    });
+
+
+
+
+    var l1 = new qx.ui.basic.Atom("Move Method", "icon/16/misc.png");
+    l1.setLocation(0, 100);
+
+    var rb1 = new qx.ui.form.RadioButton("Frame", "frame");
+    rb1.setLocation(0, 120);
+
+    var rb2 = new qx.ui.form.RadioButton("Opaque", "opaque");
+    rb2.setLocation(0, 140);
+    rb2.setChecked(true);
+
+    var rb3 = new qx.ui.form.RadioButton("Translucent", "translucent");
+    rb3.setLocation(0, 160);
+
+    var rbm1 = new qx.manager.selection.RadioManager("move", [rb1, rb2, rb3]);
+
+    rbm1.addEventListener("changeSelected", function(e) {
+      w2.setMoveMethod(e.getData().getValue());
+    });
+
+
+
+
+    var l2 = new qx.ui.basic.Atom("Resize Method", "icon/16/misc.png");
+    l2.setLocation(0, 190);
+
+    var rb4 = new qx.ui.form.RadioButton("Frame", "frame");
+    rb4.setLocation(0, 210);
+    rb4.setChecked(true);
+
+    var rb5 = new qx.ui.form.RadioButton("Opaque", "opaque");
+    rb5.setLocation(0, 230);
+
+    var rb6 = new qx.ui.form.RadioButton("Lazy Opaque", "lazyopaque");
+    rb6.setLocation(0, 250);
+
+    var rb7 = new qx.ui.form.RadioButton("Translucent", "translucent");
+    rb7.setLocation(0, 270);
+
+    var rbm2 = new qx.manager.selection.RadioManager("resize", [rb4, rb5, rb6, rb7]);
+
+    rbm2.addEventListener("changeSelected", function(e) {
+      w2.setResizeMethod(e.getData().getValue());
+    });
+
+
+
+
+    var chk11 = new qx.ui.form.CheckBox("Show Statusbar");
+    chk11.setLocation(140, 140);
+    chk11.setChecked(false);
+    chk11.addEventListener("changeChecked", function(e) {
+      w2.setShowStatusbar(e.getData());
+    });
+
+
+
+
+    var btnpack = new qx.ui.form.Button("Pack Window", "icon/16/cdrom.png");
+    btnpack.setLocation(140, 170);
+    btnpack.addEventListener("execute", function(e) {
+      w2.pack();
+    });
+
+
+    fs1.add(chk1, chk2, chk3, chk4, chk5, chk6, chk7, chk8, chk9, chk10, l1, rb1, rb2, rb3, l2, rb4, rb5, rb6, rb7, chk11, btnpack);
+    w2.add(fs1);
+
+
+    var icon1 = new qx.ui.basic.Image("icon/32/error.png");
+    var warn1 = new qx.ui.basic.Label("Do you want to delete<br/>all your personal data?");
+
+    icon1.setTop(10);
+    icon1.setLeft(10);
+
+    warn1.setTop(10);
+    warn1.setLeft(48);
+
+    var btn3 = new qx.ui.form.Button("Yes", "icon/16/button-ok.png");
+    var btn4 = new qx.ui.form.Button("No", "icon/16/button-cancel.png");
+
+    btn3.addEventListener("execute", function(e) {
+      alert("Thank you!");
+      wm2.close();
+    });
+
+    btn4.addEventListener("execute", function(e) {
+      alert("Sorry, please click 'Yes'!");
+    });
+
+    btn3.set({ bottom : 10, right : 10 });
+    btn4.set({ bottom : 10, left : 10 });
+
+    wm2.add(btn3, btn4, icon1, warn1);
+
+
+
+    // Icon & Color Themes
+    //qx.manager.object.ImageManager.getInstance().createThemeList(w3, 20, 248);
+    qx.manager.object.ColorManager.getInstance().createThemeList(w3, 4, 58);
+
+
+
+
+    w1.open();
+    w2.open();
+    w3.open();
+  });
+  </script>
+
+  <div id="demoDescription">
+    <p>This is the qx.ui.window.Window widget. These should emulate the default look and behaviour of the application windows running under Microsoft Windows(TM).</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,162 @@
+body{
+  font-size: 11px;
+  font-family: Arial, "Bitstream Vera Sans", Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+p{
+  margin: 6px 0;
+}
+
+#demoHead,
+#demoFoot{
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  width: 100%;
+  background: #134275;
+  padding: 3px 8px;
+  height: 20px;
+  color: white;
+  font-weight: bold;
+  overflow: hidden;
+  z-index: 1000000000;
+}
+
+#demoHead{
+  top: 0px;
+}
+
+#demoHead span{
+  font-weight: normal;
+}
+
+#demoFoot{
+  bottom: 0px;
+}
+
+#demoFoot a{
+  color: white;
+}
+
+#demoFrame{
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  right: 0;
+  width: 280px;
+  background: #fff;
+  border-left: 10px solid #134275;
+  z-index: 1000000000;
+}
+
+#demoFiles{
+  font-size: 11px;
+  font-family: Tahoma, Verdana, sans-serif;
+
+  position: absolute;
+  top: 24px;
+  right: 50px;
+  width: 215px;
+  z-index: 1000000002;
+}
+
+#demoJump{
+  position: absolute;
+  top: 24px;
+  right: 4px;
+  width: 45px;
+  text-align: right;
+  z-index: 1000000002;
+}
+
+#demoDescription{
+  position: absolute;
+  top: 44px;
+  height : 120px;
+  width: 266px;
+  right: 4px;
+  z-index: 1000000002;
+  overflow: auto;
+  border-bottom: 10px solid #134275;
+  padding: 0px 6px 0px 4px;
+}
+
+#demoDescription p{
+  margin: 4px 0;
+}
+
+#demoDescription h1{
+  font-size: 12px;
+  margin: 8px 0 4px;
+}
+
+#demoDebug{
+  position: absolute;
+  top: 160px;
+  bottom: 24px;
+  right: 4px;
+  width: 266px;
+  font-size: 10px;
+  font-family: "Bitstream Vera Sans Mono", "Courier New", "Courier", monospace;
+  z-index: 1000000102;
+}
+
+#demoDebug .log-body{
+  overflow: auto;
+  position: absolute;
+  top: 30px;
+  bottom: 0px;
+  width: 266px;
+  padding: 4px;
+}
+
+#demoDebug .log-debug{
+  color: gray;
+  padding-left: 6px;
+}
+
+#demoDebug .log-info{
+  background: #DFEBFD;
+  padding-left: 6px;
+}
+
+#demoDebug .log-warn{
+  background: #F5FAAD;
+  padding-left: 6px;
+}
+
+#demoDebug .log-error{
+  background: #D2623E;
+  color: black;
+  padding-left: 6px;
+}
+
+#demoDebug .log-group{
+  margin-top: 4px;
+  margin-bottom: 1px;
+  text-decoration: underline;
+}
+
+#demoDebug .log-head{
+  padding: 8px 2px 4px;
+}
+
+#demoJump button,
+#demoDebug .log-head button{
+  border: 1px solid #335EA8;
+  margin: 0 2px;
+  font-size: 11px;
+  background: #EBE9ED;
+  font-family: Tahoma, Verdana, sans-serif;
+}
+
+#demoDebug .log-head button{
+  visibility: visible;
+}
+
+#demoJump button{
+  width: 16px;
+  -moz-appearance: none !important;
+}

@@ -1,0 +1,83 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test for qx.ui.component.ColorPopup.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var mybtn = new qx.ui.form.Button("Open Popup");
+    mybtn.setLocation(20, 48);
+    mybtn.addEventListener("execute", function() {
+      mypop.setTop(qx.dom.DomLocation.getPageBoxBottom(this.getElement()));
+      mypop.setLeft(qx.dom.DomLocation.getPageBoxLeft(this.getElement()));
+      mypop.show();
+    });
+
+    var myview = new qx.ui.basic.Label("Selected Color");
+    myview.setBorder(qx.renderer.border.BorderPresets.getInstance().inset);
+    myview.setLocation(100, 48);
+    myview.setPadding(3, 6);
+    myview.setBackgroundImage("core/dotted_white.gif");
+    myview.addToDocument();
+
+    var mytables =
+    {
+      core : {
+        label : "Basic Colors",
+        values : [ "#000", "#333", "#666", "#999", "#CCC", "#FFF", "red", "green", "blue", "yellow", "teal", "maroon" ]
+      },
+
+      template : {
+        label : "Template Colors",
+        values : [ "#B07B30", "#B07BC9", "#E3AEC9", "#7A2A53" ]
+      },
+
+      recent : {
+        label : "Recent Colors",
+
+        // In this case we need named colors or rgb-value-strings, hex is not allowed currently
+        values : [ "rgb(122,195,134)", "orange" ]
+      }
+    }
+
+    var mypop = new qx.ui.component.ColorPopup(mytables);
+    mypop.setLocation(100, 100);
+    mypop.setValue(new qx.renderer.color.Color("#23F3C1"));
+
+    mybtn.addToDocument();
+    mypop.addToDocument();
+
+    mypop.addEventListener("changeValue", function(e) {
+      this.debug("Value Listener: " + e.getData());
+      myview.setBackgroundColor(e.getData());
+      myview.setBackgroundImage(e.getData() ? null : "core/dotted_white.gif");
+    });
+
+    mypop.addEventListener("changeRed", function(e) {
+      this.debug("Red Listener: " + e.getData());
+    });
+
+    mypop.addEventListener("changeGreen", function(e) {
+      this.debug("Green Listener: " + e.getData());
+    });
+
+    mypop.addEventListener("changeBlue", function(e) {
+      this.debug("Blue Listener: " + e.getData());
+    });
+  });
+  </script>
+</body>
+</html>

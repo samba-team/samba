@@ -1,0 +1,140 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test table with fixed column widths: 100, 50, 10, 30 and 20 pixel.</p>
+  </div>
+
+  <textarea id="info" style="position:absolute; top:48px; left:20px; width:600px;height:50px;border:1px solid black"></textarea>
+  <div id="view" style="position:absolute;top:148px;left:20px;width:400px;height:500px;border:1px solid black"></div>
+  <div id="scroller" style="position: absolute; top:148px; left:420px;height:500px;width:24px;border:1px solid black;overflow:scroll"><div id="scrollerContent" style="width:1px;height:5000px"></div></div>
+
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var updateCount = 0;
+
+    var tableHeight = 512;
+
+    var entryCount = 1000;
+
+    var rowHeight = 16;
+    var rowCount = Math.floor(tableHeight / rowHeight);
+
+    var view = document.getElementById("view");
+    var info = document.getElementById("info");
+    var scroller = document.getElementById("scroller");
+    var scrollerContent = document.getElementById("scrollerContent");
+
+
+
+    view.style.height = scroller.style.height = tableHeight + "px";
+    scrollerContent.style.height = Math.round(entryCount / rowCount * tableHeight) + "px";
+
+
+
+
+    var data = [];
+
+    for (var i=0; i<1000; i++) {
+      data.push({ col1 : "hello" + i, col2 : "world" + i, col3 : "foo" + i, col4 : "bar" + i, col5 : "baz" + i });
+    };
+
+    var cache = [];
+
+    var undef = "undefined";
+
+    var HTML =
+    {
+      table_start : '<table cellspacing="0" cellpadding="0" style="table-layout:fixed;width:210px"><colgroup><col width="100"/><col width="50"/><col width="10"/><col width="30"/><col width="20"/></colgroup><tbody>',
+      table_end : "</tbody></table>",
+
+      tr_start : "<tr>",
+      tr_start_open : "<tr ",
+      tr_start_close : ">",
+      tr_end : "<tr>",
+
+      td_start : '<td style="overflow:hidden;height:15px;border-right:1px solid red;border-bottom:1px solid red;padding-left:2px;padding-right:2px">',
+      td_end : "</td>"
+    };
+
+    function arrayAppend(arr, a) {
+      Array.prototype.push.apply(arr, a);
+    };
+
+    function getCellHtml(cdata)
+    {
+      var html = [ HTML.td_start, cdata, HTML.td_end ];
+
+      return html;
+    };
+
+    function getRowHtml(rdata, nr)
+    {
+      if (typeof cache[nr] != undef) {
+        return cache[nr];
+      };
+
+      var html = [];
+      html.push(HTML.tr_start_open);
+
+      if (nr % 2 == 0)
+      {
+        html.push("style='background-color:#fff'");
+      };
+
+      html.push(HTML.tr_start_close);
+
+      for (var row in rdata) {
+        arrayAppend(html, getCellHtml(rdata[row]));
+      };
+
+      html.push(HTML.tr_stop);
+
+      cache[nr] = html;
+
+      return html;
+    };
+
+    function buildTableHtml(start, len)
+    {
+      var ttstart = (new Date).valueOf();
+
+      var html = [];
+
+      html.push(HTML.table_start);
+
+      for (var i=start, s=start+len; i<s; i++) {
+        arrayAppend(html, getRowHtml(data[i], i));
+      };
+
+      html.push(HTML.table_end);
+      view.innerHTML = html.join("");
+
+      updateCount++;
+
+      var ttend = (new Date).valueOf();
+      info.value = "Update: " + updateCount + "\nRows: " + start + " - " + (start+len) + "\n" + (ttend-ttstart) + "ms\n";
+    };
+
+    function doscroll() {
+      buildTableHtml(Math.floor(scroller.scrollTop/rowHeight), rowCount);
+    };
+
+    qx.dom.DomEventRegistration.addEventListener(scroller, "scroll", doscroll);
+    doscroll();
+  });
+  </script>
+</body>
+</html>
