@@ -1613,9 +1613,9 @@ account policy value for min password length is now 8
 &rootprompt; pdbedit -P "password history" -C 4
 account policy value for password history was 0
 account policy value for password history is now 4
-&rootprompt; pdbedit -P "maximum password age" -C 90
+&rootprompt; pdbedit -P "maximum password age" -C 7776000
 account policy value for maximum password age was 4294967295
-account policy value for maximum password age is now 90
+account policy value for maximum password age is now 7776000
 &rootprompt; pdbedit -P "minimum password age" -C 7
 account policy value for minimum password age was 0
 account policy value for minimum password age is now 7
