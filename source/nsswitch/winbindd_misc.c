@@ -195,6 +195,7 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 	char *p;
 	struct rpc_pipe_client *netlogon_pipe;
 	NTSTATUS result;
+	WERROR werr;
 
 	state->request.domain_name
 		[sizeof(state->request.domain_name)-1] = '\0';
@@ -209,12 +210,12 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 		return WINBINDD_ERROR;
 	}
 
-	result = rpccli_netlogon_getdcname(netlogon_pipe, state->mem_ctx, domain->dcname,
+	werr = rpccli_netlogon_getdcname(netlogon_pipe, state->mem_ctx, domain->dcname,
 					   state->request.domain_name,
 					   dcname_slash);
 
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(5, ("Error requesting DCname: %s\n", nt_errstr(result)));
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(5, ("Error requesting DCname: %s\n", dos_errstr(werr)));
 		return WINBINDD_ERROR;
 	}
 
