@@ -382,14 +382,14 @@ NTSTATUS rpccli_netlogon_logon_ctrl2(struct rpc_pipe_client *cli, TALLOC_CTX *me
 
 /* GetDCName */
 
-NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
-				   TALLOC_CTX *mem_ctx, const char *mydcname,
-				   const char *domainname, fstring newdcname)
+WERROR rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx, const char *mydcname,
+				 const char *domainname, fstring newdcname)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_GETDCNAME q;
 	NET_R_GETDCNAME r;
-	NTSTATUS result;
+	WERROR result;
 	fstring mydcname_slash;
 
 	ZERO_STRUCT(q);
@@ -402,16 +402,16 @@ NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 
 	/* Marshall data and send request */
 
-	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_GETDCNAME,
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_NETLOGON, NET_GETDCNAME,
 		q, r,
 		qbuf, rbuf,
 		net_io_q_getdcname,
 		net_io_r_getdcname,
-		NT_STATUS_UNSUCCESSFUL);
+		WERR_GENERAL_FAILURE);
 
 	result = r.status;
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (W_ERROR_IS_OK(result)) {
 		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
 	}
 
