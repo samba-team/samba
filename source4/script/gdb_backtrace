@@ -61,22 +61,27 @@ test -f "${BINARY}" || {
 
 echo "${BASENAME}: Trying to use ${DB_BIN} on ${BINARY} on PID ${PID}"
 
-BATCHFILE=/tmp/gdb_backtrace.$$
+BATCHFILE_PRE=/tmp/gdb_backtrace_pre.$$
+BATCHFILE_MAIN=/tmp/gdb_backtrace_main.$$
 case "${DB}" in
 	ladebug)
-cat << EOF  > ${BATCHFILE}
+cat << EOF  > ${BATCHFILE_PRE}
+set \$stoponattach
+EOF
+
+cat << EOF  > ${BATCHFILE_MAIN}
 where
 quit
 EOF
-	${DB_BIN} -c "${BATCHFILE}" -pid "${PID}" "${BINARY}"
+	${DB_BIN} -c "${BATCHFILE_MAIN}" -i "${BATCHFILE_PRE}" -pid "${PID}" "${BINARY}"
 	;;
 	gdb)
-cat << EOF  > ${BATCHFILE}
+cat << EOF  > ${BATCHFILE_MAIN}
 set height 1000
 bt full
 quit
 EOF
-	${DB_BIN} -x "${BATCHFILE}" "${BINARY}" "${PID}"
+	${DB_BIN} -x "${BATCHFILE_MAIN}" "${BINARY}" "${PID}"
 	;;
 esac
-/bin/rm -f ${BATCHFILE}
+/bin/rm -f ${BATCHFILE_PRE} ${BATCHFILE_MAIN}
