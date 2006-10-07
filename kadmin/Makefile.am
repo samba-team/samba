@@ -14,7 +14,7 @@ man_MANS = kadmin.8 kadmind.8
 
 noinst_PROGRAMS = add_random_users
 
-kadmin_SOURCES =				\
+dist_kadmin_SOURCES =				\
 	ank.c					\
 	check.c					\
 	cpw.c					\
@@ -32,8 +32,11 @@ kadmin_SOURCES =				\
 	util.c					\
 	pw_quality.c				\
 	random_password.c			\
-	kadmin-commands.c			\
 	kadmin_locl.h
+
+nodist_kadmin_SOURCES =				\
+	kadmin-commands.c			\
+	kadmin-commands.h
 
 $(kadmin_OBJECTS): kadmin-commands.h
 

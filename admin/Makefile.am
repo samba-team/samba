@@ -10,7 +10,7 @@ man_MANS = ktutil.8
 
 sbin_PROGRAMS = ktutil
 
-ktutil_SOURCES =				\
+dist_ktutil_SOURCES =				\
 	add.c					\
 	change.c				\
 	copy.c					\
@@ -19,8 +19,10 @@ ktutil_SOURCES =				\
 	list.c					\
 	purge.c					\
 	remove.c				\
-	ktutil-commands.c			\
 	rename.c
+
+nodist_ktutil_SOURCES =				\
+	ktutil-commands.c
 
 $(ktutil_OBJECTS): ktutil-commands.h
 
