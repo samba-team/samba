@@ -71,5 +71,3 @@ LDADD = \
 	$(LIB_des)	\
 	$(LIB_roken)				\
 	$(X_LIBS) $(LIB_XauReadAuth) $(X_PRE_LIBS) $(X_EXTRA_LIBS)
-
-EXTRA_DIST = $(man_MANS)
