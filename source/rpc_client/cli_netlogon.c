@@ -418,6 +418,44 @@ WERROR rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* GetAnyDCName */
+
+WERROR rpccli_netlogon_getanydcname(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx, const char *mydcname,
+				    const char *domainname, fstring newdcname)
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_GETANYDCNAME q;
+	NET_R_GETANYDCNAME r;
+	WERROR result;
+	fstring mydcname_slash;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise input parameters */
+
+	slprintf(mydcname_slash, sizeof(fstring)-1, "\\\\%s", mydcname);
+	init_net_q_getanydcname(&q, mydcname_slash, domainname);
+
+	/* Marshall data and send request */
+
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_NETLOGON, NET_GETANYDCNAME,
+		q, r,
+		qbuf, rbuf,
+		net_io_q_getanydcname,
+		net_io_r_getanydcname,
+		WERR_GENERAL_FAILURE);
+
+	result = r.status;
+
+	if (W_ERROR_IS_OK(result)) {
+		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
+	}
+
+	return result;
+}
+
 /* Dsr_GetDCName */
 
 WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
