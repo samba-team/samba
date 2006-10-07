@@ -168,7 +168,7 @@ build_HEADERZ = test-mem.h
 
 nodist_include_HEADERS = roken.h
 
-man_MANS = getarg.3 parse_time.3 rtbl.3
+dist_man_MANS = getarg.3 parse_time.3 rtbl.3
 
 SUFFIXES += .hin
 .hin.h:
