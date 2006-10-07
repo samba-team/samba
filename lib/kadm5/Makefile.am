@@ -24,8 +24,8 @@ buildkadm5include = $(buildinclude)/kadm5
 dist_kadm5include_HEADERS = admin.h private.h kadm5-protos.h
 nodist_kadm5include_HEADERS = kadm5_err.h 
 
-install-build-headers:: $(kadm5include_HEADERS)
-	@foo='$(kadm5include_HEADERS)'; \
+install-build-headers:: $(dist_kadm5include_HEADERS)
+	@foo='$(dist_kadm5include_HEADERS)'; \
 	for f in $$foo; do \
 		f=`basename $$f`; \
 		if test -f "$(srcdir)/$$f"; then file="$(srcdir)/$$f"; \
