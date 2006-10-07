@@ -1,4 +1,18 @@
+2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/Makefile.am: split build files into dist_ and noinst_
+	SOURCES
+
+	* lib/krb5/Makefile.am: split build files into dist_ and noinst_
+	SOURCES
+
+	* kdc/kerberos5.c: Adapt to signature change of
+	_krb5_principalname2krb5_principal.
+	
 2006-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krbhst.c (common_init): don't try DNS when there is
+	realm w/o a dot.
 
 	* kdc/524.c: Adapt to signature change of
 	_krb5_principalname2krb5_principal.
