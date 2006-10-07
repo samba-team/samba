@@ -33,5 +33,9 @@
 
 /* $Id$ */
 
+#ifndef GSSAPI_H_
+#define GSSAPI_H_
+
 #include <gssapi/gssapi.h>
 
+#endif
