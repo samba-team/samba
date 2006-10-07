@@ -241,4 +241,12 @@ int	EVP_BytesToKey(const EVP_CIPHER *, const EVP_MD *,
 		       unsigned int, void *, void *);
 
 
+/*
+ *
+ */
+
+void	OPENSSL_add_all_algorithms(void);
+void	OPENSSL_add_all_algorithms_conf(void);
+void	OPENSSL_add_all_algorithms_noconf(void);
+
 #endif /* HEIM_EVP_H */
