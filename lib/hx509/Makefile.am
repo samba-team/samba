@@ -78,7 +78,8 @@ libhx509_la_LIBADD = \
 	$(LIB_roken) $(LIB_dlopen)
 
 libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_des)
-libhx509_la_SOURCES = $(libhx509_la_files) $(BUILT_SOURCES)
+dist_libhx509_la_SOURCES = $(libhx509_la_files)
+nodist_libhx509_la_SOURCES = $(BUILT_SOURCES)
 
 $(gen_files_ocsp) ocsp_asn1.h: ocsp_asn1_files
 $(gen_files_pkcs10) pkcs10_asn1.h: pkcs10_asn1_files
@@ -102,7 +103,8 @@ $(srcdir)/hx509-protos.h:
 $(srcdir)/hx509-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p hx509-private.h $(libhx509_la_files) || rm -f hx509-private.h
 
-include_HEADERS = hx509.h hx509-protos.h hx509_err.h
+dist_include_HEADERS = hx509.h hx509-protos.h
+nodist_include_HEADERS = hx509_err.h
 
 SLC = $(top_builddir)/lib/sl/slc
 
@@ -111,9 +113,8 @@ bin_PROGRAMS = hxtool
 hxtool-commands.c hxtool-commands.h: hxtool-commands.in $(SLC)
 	$(SLC) $(srcdir)/hxtool-commands.in
 
-hxtool_SOURCES = \
-	hxtool.c \
-	hxtool-commands.c
+dist_hxtool_SOURCES = hxtool.c
+nodist_hxtool_SOURCES = hxtool-commands.c hxtool-commands.h
 
 $(hxtool_SOURCES): hxtool-commands.h
 
@@ -138,11 +139,13 @@ CLEANFILES = $(BUILT_SOURCES) \
 # regression tests
 #
 
-check_PROGRAMS = $(TESTS)
+check_SCRIPTS = $(SCRIPT_TESTS)
 
 LDADD = libhx509.la
 
-TESTS = 			\
+TESTS = $(SCRIPT_TESTS)
+
+SCRIPT_TESTS = 			\
 	test_chain		\
 	test_cms		\
 	test_crypto		\

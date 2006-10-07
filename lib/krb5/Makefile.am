@@ -59,7 +59,7 @@ ERR_FILES = krb5_err.c heim_err.c k524_err.c
 
 libkrb5_la_CPPFLAGS = -DBUILD_KRB5_LIB $(AM_CPPFLAGS)
 
-libkrb5_la_SOURCES =				\
+dist_libkrb5_la_SOURCES =			\
 	acache.c				\
 	acl.c					\
 	add_et_list.c				\
@@ -160,7 +160,9 @@ libkrb5_la_SOURCES =				\
 	verify_user.c				\
 	version.c				\
 	warn.c					\
-	write_message.c				\
+	write_message.c
+
+nodist_libkrb5_la_SOURCES =			\
 	$(ERR_FILES)
 
 libkrb5_la_LDFLAGS = -version-info 21:0:4
@@ -235,7 +237,8 @@ man_MANS =					\
 	krb5_warn.3				\
 	verify_krb5_conf.8
 
-include_HEADERS = krb5.h krb5-protos.h krb5-private.h krb5_err.h heim_err.h k524_err.h krb5_ccapi.h
+dist_include_HEADERS = krb5.h krb5-protos.h krb5-private.h krb5_ccapi.h
+nodist_include_HEADERS = krb5_err.h heim_err.h k524_err.h 
 
 CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h k524_err.c k524_err.h
 
