@@ -1,5 +1,12 @@
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi.h: Add file inclusion protection.
+
+	* gssapi/gssapi.h: Correct header file inclusion protection.
+
+	* gssapi/gssapi.h: Move the gssapi.h from lib/gssapi/ to
+	lib/gssapi/gssapi/ to please automake.
+	
 	* spnego/spnego_locl.h: Maybe include <sys/types.h>.
 
 	* mech/mech_locl.h: Include <roken.h>.
