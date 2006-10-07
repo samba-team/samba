@@ -26,3 +26,5 @@ print_version.h: make-print-version$(EXEEXT)
 	./make-print-version$(EXEEXT) print_version.h
 
 make-print-version.o: $(top_builddir)/include/version.h
+
+EXTRA_DIST = $(BUILD_HEADERZ)
