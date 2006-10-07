@@ -21,8 +21,8 @@ default_keys_SOURCES = default_keys.c
 kadm5includedir = $(includedir)/kadm5
 buildkadm5include = $(buildinclude)/kadm5
 
-dist_kadm5include_HEADERS = admin.h private.h kadm5-protos.h
-nodist_kadm5include_HEADERS = kadm5_err.h 
+dist_kadm5include_HEADERS = admin.h private.h kadm5-protos.h kadm5-private.h
+nodist_kadm5include_HEADERS = kadm5_err.h
 
 install-build-headers:: $(dist_kadm5include_HEADERS) $(nodist_kadm5include_HEADERS)
 	@foo='$(dist_kadm5include_HEADERS) $(nodist_kadm5include_HEADERS)'; \
