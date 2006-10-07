@@ -1,5 +1,11 @@
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* have-struct-field.m4: memset the structure to make sure that we
+	don't get compiler warnings.
+
+	* crypto.m4: OpenSSL_add_all_algorithms is not a openssl specific
+	requirement, hcrypto need to have to too.
+
 	* crypto.m4: Require openssl have OpenSSL_add_all_algorithms
 	
 2006-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
