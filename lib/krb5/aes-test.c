@@ -221,7 +221,7 @@ string_to_key_test(krb5_context context)
 	_krb5_put_int(iter, keys[i].iterations, 4);
 	
 	if (keys[i].pbkdf2) {
-	    char keyout[32];
+	    unsigned char keyout[32];
 
 	    if (keys[i].keylen > sizeof(keyout))
 		abort();
