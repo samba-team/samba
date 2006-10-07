@@ -878,3 +878,24 @@ EVP_BytesToKey(const EVP_CIPHER *type,
     return EVP_CIPHER_key_length(type);
 }
 
+/*
+ *
+ */
+
+void
+OPENSSL_add_all_algorithms(void)
+{
+    return;
+}
+
+void
+OPENSSL_add_all_algorithms_conf(void)
+{
+    return;
+}
+
+void
+OPENSSL_add_all_algorithms_noconf(void)
+{
+    return;
+}
