@@ -437,7 +437,6 @@ mp_result mp_rat_sub_int(mp_rat a, mp_int b, mp_rat c)
  CLEANUP:
   mp_int_clear(&tmp);
   return res;
-  return MP_OK;
 }
 
 /* }}} */
