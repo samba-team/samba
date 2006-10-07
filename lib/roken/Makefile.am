@@ -10,6 +10,9 @@ lib_LTLIBRARIES = libroken.la
 libroken_la_LDFLAGS = -version-info 17:0:1
 libroken_la_CPPFLAGS = -DBUILD_ROKEN_LIB
 
+# XXX this is needed for the LIBOBJS objects
+CPPFLAGS = $(libroken_la_CPPFLAGS)
+
 noinst_PROGRAMS = make-roken snprintf-test resolve-test
 
 nodist_make_roken_SOURCES = make-roken.c
