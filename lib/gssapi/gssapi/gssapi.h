@@ -294,44 +294,10 @@ extern gss_OID GSS_C_NT_ANONYMOUS;
 extern gss_OID GSS_C_NT_EXPORT_NAME;
 
 /*
- * RFC2478, SPNEGO:
- *  The security mechanism of the initial
- *  negotiation token is identified by the Object Identifier
- *  iso.org.dod.internet.security.mechanism.snego (1.3.6.1.5.5.2).
- */
-extern gss_OID GSS_SPNEGO_MECHANISM;
-
-/*
- * This is for kerberos5 names.
- */
-
-extern gss_OID GSS_KRB5_NT_PRINCIPAL_NAME;
-extern gss_OID GSS_KRB5_NT_USER_NAME;
-extern gss_OID GSS_KRB5_NT_MACHINE_UID_NAME;
-extern gss_OID GSS_KRB5_NT_STRING_UID_NAME;
-
-extern gss_OID GSS_KRB5_MECHANISM;
-
-/*
  * Digest mechanism
  */
 
 extern gss_OID GSS_DIGEST_MECHANISM;
-
-/* for compatibility with MIT api */
-
-#define gss_mech_krb5 GSS_KRB5_MECHANISM
-#define gss_krb5_nt_general_name GSS_KRB5_NT_PRINCIPAL_NAME
-
-/* Extensions contexts */
-extern gss_OID GSS_C_PEER_HAS_UPDATED_SPNEGO;
-extern gss_OID GSS_KRB5_COPY_CCACHE_X;
-extern gss_OID GSS_KRB5_GET_TKT_FLAGS_X;
-extern gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X;
-extern gss_OID GSS_KRB5_COMPAT_DES3_MIC_X;
-extern gss_OID GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X;
-/* Extensions creds */
-extern gss_OID GSS_KRB5_IMPORT_CRED_X;
 
 /* Major status codes */
 
@@ -839,49 +805,8 @@ OM_uint32 gss_unseal
            );
 
 /*
- * kerberos mechanism specific functions
+ *
  */
-
-struct krb5_keytab_data;
-struct krb5_ccache_data;
-struct Principal;
-
-OM_uint32
-gss_krb5_ccache_name(OM_uint32 * /*minor_status*/, 
-		     const char * /*name */,
-		     const char ** /*out_name */);
-
-OM_uint32 gsskrb5_register_acceptor_identity
-        (const char */*identity*/);
-
-OM_uint32 gss_krb5_copy_ccache
-	(OM_uint32 */*minor*/,
-	 gss_cred_id_t /*cred*/,
-	 struct krb5_ccache_data */*out*/);
-
-OM_uint32
-gss_krb5_import_cred(OM_uint32 */*minor*/,
-		     struct krb5_ccache_data * /*in*/,
-		     struct Principal * /*keytab_principal*/,
-		     struct krb5_keytab_data * /*keytab*/,
-		     gss_cred_id_t */*out*/);
-
-OM_uint32 gss_krb5_get_tkt_flags
-	(OM_uint32 */*minor*/,
-	 gss_ctx_id_t /*context_handle*/,
-	 OM_uint32 */*tkt_flags*/);
-
-OM_uint32
-gsskrb5_extract_authz_data_from_sec_context
-	(OM_uint32 * /*minor_status*/,
-	 gss_ctx_id_t /*context_handle*/,
-	 int /*ad_type*/,
-	 gss_buffer_t /*ad_data*/);
-
-#define GSS_C_KRB5_COMPAT_DES3_MIC 1
-
-OM_uint32
-gss_krb5_compat_des3_mic(OM_uint32 *, gss_ctx_id_t, int);
 
 OM_uint32
 gss_inquire_sec_context_by_oid (OM_uint32 *minor_status,
@@ -904,5 +829,8 @@ gss_decapsulate_token(gss_buffer_t /* input_token */,
 #ifdef __cplusplus
 }
 #endif
+
+#include <gssapi/gssapi_krb5.h>
+#include <gssapi/gssapi_spnego.h>
 
 #endif /* GSSAPI_GSSAPI_H_ */
