@@ -107,8 +107,6 @@ EXTRA_libroken_la_SOURCES =	\
 	ifaddrs.hin		\
 	vis.hin	
 
-EXTRA_DIST = roken.awk roken.h.in $(man_MANS)
-
 libroken_la_LIBADD = @LTLIBOBJS@
 
 $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h $(XHEADERS)
@@ -184,3 +182,5 @@ roken.h: make-roken$(EXEEXT)
 
 make-roken.c: roken.h.in roken.awk
 	$(AWK) -f $(srcdir)/roken.awk $(srcdir)/roken.h.in > make-roken.c
+
+EXTRA_DIST = roken.awk roken.h.in $(man_MANS) $(build_HEADERZ)
