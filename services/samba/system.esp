@@ -1,0 +1,34 @@
+<%
+/*
+ * Copyright:
+ *   (C) 2006 by Derrell Lipman
+ *       All rights reserved
+ *
+ * License:
+ *   LGPL 2.1: http://creativecommons.org/licenses/LGPL/2.1/
+ */
+
+/*
+ * JSON-RPC mappings to system facilities
+ */
+
+/* We'll be accessing session resources */
+jsonrpc_include("resources.esp");
+
+
+/**
+ * Retrieve the list of open resources (for debugging)
+ */
+function _get_open_resources(params, error)
+{
+    return session.resources.getList(error);
+}
+jsonrpc.method.get_open_resources = _get_open_resources;
+
+
+/*
+ * Local Variables:
+ * mode: c
+ * End:
+ */
+%>

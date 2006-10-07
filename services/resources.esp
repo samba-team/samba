@@ -1,0 +1,161 @@
+<%
+
+/*
+ * Various JSON-RPC calls will want to maintain open resources within a
+ * session, across multiple calls.  We'll provide a standardized way to
+ * maintain those open resources here, with some protection against rogue
+ * scripts.
+ */
+
+function _resourcesCreate()
+{
+    /* The being-created resources object */
+    var o = new Object();
+
+    /*
+     * The maximum number of resources available to a single session.  This
+     * should be more than is ever needed (even by reasonable recursive
+     * functions) but limits rogue scripts ability to generate DOS attacks.
+     */
+    o.RESOURCE_LIMIT = 100;
+
+    /* List of current resources */
+    o.resourceList = new Object();
+
+    /* Resource id values will be constantly incrementing; never reset. */
+    o.resourceList.id = 0;
+
+    /* We'll maintain our own count of the number of open resources */
+    o.resourceList.count = 0;
+
+    /*
+     * Resource types
+     */
+    o.Type = new Object();
+    o.Type.ldb          = 1;    /* database handle */
+    o.Type.tid          = 2;    /* tree id */
+    o.Type.fid          = 3;    /* file id */
+    /* etc., etc., etc. */
+
+
+    /*
+     * Set a new saved resource.
+     */
+    function _set(resource, type, error)
+    {
+        /* Do they already have the maximum number of resources allocated? */
+        if (this.resourceList.count >= this.RESOURCE_LIMIT)
+        {
+            /* Yup. */
+            error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server);
+            error.setError(JsonRpcError_ResourceError,
+                           "Session limit on resources (" +
+                           RESOURCE_LIMIT +
+                           ") exceeded.");
+            return error;
+        }
+
+        /* Allocate an object to hold the new resource and its type */
+        var r = new Object();
+
+        /* Save the resource and its type */
+        r.resource = resource;
+        r.type = type;
+
+        /* Add this resource to the list */
+        this.resourceList[this.resourceList.id] = r;
+
+        /* There's a new resource in the list! */
+        this.resourceList.count++;
+
+        /*
+         * Return the index of the resource, its resource id, and advance to
+         * the next resource id for next time.
+         */
+        var id = this.resourceList.id;
+        this.resourceList.id++;
+        return id;
+    }
+    o.set = _set;
+
+    /*
+     * Get a previously-saved resource
+     */
+    function _get(resourceId, type, error)
+    {
+        /* Does the specified resource id exist? */
+        if (! this.resourceList[resourceId])
+        {
+            /* Nope. */
+            error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server);
+            error.setError(jsonrpc.Constant.ErrorCode.ResourceError,
+                           "Resource not found.");
+            return error;
+        }
+
+        /* Retrieve the resource */
+        var r = this.resourceList[resourceId];
+
+        /* Is the specified resource the correct type? */
+        if (r.type != type)
+        {
+            /* Nope. */
+            error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server);
+            error.setError(jsonrpc.Constant.ErrorCode.ResourceError,
+                           "Incorrect type for specified resource id.");
+            return error;
+        }
+
+        /* Give 'em what they came for! */
+        return r.resource;
+    }
+    o.get = _get;
+
+    /*
+     * Release a previously-saved resource, allowing it to be freed
+     */
+    function _release(resourceId, error)
+    {
+        /* Does the specified resource id exist? */
+        if (! this.resourceList[resourceId])
+        {
+            /* Nope. */
+            error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server);
+            error.setError(jsonrpc.Constant.ErrorCode.ResourceError,
+                           "Resource not found.");
+            return error;
+        }
+
+        /* It exists.  Delete it. */
+        delete this.resourceList[resourceId];
+
+        /* There's now one fewer resources in the list */
+        this.resourceList.count--;
+    }
+    o.release = _release;
+
+    /*
+     * Retrieve the list of resources (for debugging) */
+     */
+    function _getList(error)
+    {
+        return this.resourceList;
+    }
+    o.getList = _getList;
+
+    return o;
+}
+
+/* singleton: create session resources list */
+if (! session.resources)
+{
+    session.resources = _resourcesCreate();
+}
+
+
+/*
+ * Local Variables:
+ * mode: c
+ * End:
+ */
+%>
