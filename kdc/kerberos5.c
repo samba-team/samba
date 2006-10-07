@@ -831,8 +831,10 @@ _kdc_as_rep(krb5_context context,
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No server in request";
     } else{
-	_krb5_principalname2krb5_principal (&server_princ,
-					    *(b->sname), b->realm);
+	_krb5_principalname2krb5_principal (context,
+					    &server_princ,
+					    *(b->sname),
+					    b->realm);
 	ret = krb5_unparse_name(context, server_princ, &server_name);
     }
     if (ret) {
@@ -845,8 +847,10 @@ _kdc_as_rep(krb5_context context,
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No client in request";
     } else {
-	_krb5_principalname2krb5_principal (&client_princ,
-					    *(b->cname), b->realm);
+	_krb5_principalname2krb5_principal (context,
+					    &client_princ,
+					    *(b->cname),
+					    b->realm);
 	ret = krb5_unparse_name(context, client_princ, &client_name);
     }
     if (ret) {
