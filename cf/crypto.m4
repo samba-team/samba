@@ -50,6 +50,7 @@ m4_define([test_body], [
 		#ifdef HAVE_OPENSSL
 		RAND_status();
 		UI_UTIL_read_pw_string(0,0,0,0);
+		OpenSSL_add_all_algorithms();
 		#endif
 
 		AES_encrypt(0,0,0);
