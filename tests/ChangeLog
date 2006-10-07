@@ -1,3 +1,11 @@
+2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss/Makefile.am: splits script tests and binary tests
+
+	* db/Makefile.am: Add tests script depenencies
+
+	* kdc/Makefile.am: Split script tests and binary tests
+	
 2006-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kdc.in: Test pkinit encKey case.
