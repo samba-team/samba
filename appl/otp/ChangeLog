@@ -1,4 +1,8 @@
-2005-05-29  Love Hörquist Åstrand <lha@it.su.se>
+2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add man_MANS to EXTRA_DIST
+	
+2005-05-29  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add LIB_roken as a explit dependency
 	
