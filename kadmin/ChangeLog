@@ -1,4 +1,8 @@
-2006-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: split build files into dist_ and noinst_ SOURCES
+	
+2006-08-28  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* kadmin.c (help): use sl_slc_help().
 	
