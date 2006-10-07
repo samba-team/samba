@@ -4,6 +4,8 @@ include $(top_srcdir)/Makefile.am.common
 
 noinst_DATA = krb5.conf
 
+check_SCRIPTS = loaddump-db add-modify-delete
+
 TESTS = loaddump-db add-modify-delete
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
