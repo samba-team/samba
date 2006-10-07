@@ -49,6 +49,8 @@
 #include <gssapi_asn1.h>
 #include <der.h>
 
+#include <roken.h>
+
 #include <gssapi.h>
 #include <gssapi_mech.h>
 
