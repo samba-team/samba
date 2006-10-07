@@ -67,9 +67,6 @@ static const char *s_error_msg[] = {
 
 /* }}} */
 
-/* Optional library flags */
-#define MP_CAP_DIGITS   1  /* flag bit to capitalize letter digits */
-
 /* Argument checking macros 
    Use CHECK() where a return value is required; NRCHECK() elsewhere */
 #define CHECK(TEST)   assert(TEST)
@@ -82,6 +79,9 @@ static const char *s_error_msg[] = {
    An integer value n requires ceil(log_i(n)) digits to be represented
    in base i.  Since it is easy to compute lg(n), by counting bits, we
    can compute log_i(n) = lg(n) * log_i(2).
+
+   The use of this table eliminates a dependency upon linkage against
+   the standard math libraries.
  */
 static const double s_log2[] = {
    0.000000000, 0.000000000, 1.000000000, 0.630929754, 	/*  0  1  2  3 */
@@ -161,15 +161,23 @@ do{mp_size ua_=MP_USED(X),o_=ua_+ua_;ZERO(MP_DIGITS(Z),o_);\
 #define ADD_WILL_OVERFLOW(W, V) ((MP_WORD_MAX - (V)) < (W))
 
 /* }}} */
+/* {{{ Default configuration settings */
 
 /* Default number of digits allocated to a new mp_int */
-static mp_size default_precision = 8;
+#if IMATH_TEST
+mp_size default_precision = MP_DEFAULT_PREC;
+#else
+static const mp_size default_precision = MP_DEFAULT_PREC;
+#endif
 
 /* Minimum number of digits to invoke recursive multiply */
-static mp_size multiply_threshold = 32;
+#if IMATH_TEST
+mp_size multiply_threshold = MP_MULT_THRESH;
+#else
+static const mp_size multiply_threshold = MP_MULT_THRESH;
+#endif
 
-/* Default library configuration flags */
-static mp_word mp_flags = MP_CAP_DIGITS;
+/* }}} */
 
 /* Allocate a buffer of (at least) num digits, or return
    NULL if that couldn't be done.  */
@@ -311,49 +319,20 @@ void      s_print(char *tag, mp_int z);
 void      s_print_buf(char *tag, mp_digit *buf, mp_size num);
 #endif
 
-/* {{{ get_default_precision() */
-
-mp_size   mp_get_default_precision(void)
-{ 
-  return default_precision; 
-}
-
-/* }}} */
-
-/* {{{ mp_set_default_precision(s) */
-
-void      mp_set_default_precision(mp_size s)
-{ 
-  NRCHECK(s > 0);
-
-  default_precision = (mp_size) ROUND_PREC(s);
-}
-
-/* }}} */
-
-/* {{{ mp_get_multiply_threshold() */
-
-mp_size   mp_get_multiply_threshold(void)
-{
-  return multiply_threshold;
-}
-
-/* }}} */
-
-/* {{{ mp_set_multiply_threshold(s) */
-
-void      mp_set_multiply_threshold(mp_size s)
-{
-  multiply_threshold = s;
-}
-
-/* }}} */
-
 /* {{{ mp_int_init(z) */
 
 mp_result mp_int_init(mp_int z)
 {
-  return mp_int_init_size(z, default_precision);
+  if(z == NULL)
+    return MP_BADARG;
+
+  z->single = 0;
+  z->digits = &(z->single);
+  z->alloc  = 1;
+  z->used   = 1;
+  z->sign   = MP_ZPOS;
+
+  return MP_OK;
 }
 
 /* }}} */
@@ -363,12 +342,9 @@ mp_result mp_int_init(mp_int z)
 mp_int    mp_int_alloc(void)
 {
   mp_int out = malloc(sizeof(mpz_t));
-
-  assert(out != NULL);
-  out->digits = NULL;
-  out->used   = 0;
-  out->alloc  = 0;
-  out->sign   = 0;
+  
+  if(out != NULL) 
+    mp_int_init(out);
 
   return out;
 }
@@ -381,9 +357,13 @@ mp_result mp_int_init_size(mp_int z, mp_size prec)
 {
   CHECK(z != NULL);
 
-  prec = (mp_size) ROUND_PREC(prec);
-  prec = MAX(prec, default_precision);
-
+  if(prec == 0)
+    prec = default_precision;
+  else if(prec == 1) 
+    return mp_int_init(z);
+  else 
+    prec = (mp_size) ROUND_PREC(prec);
+  
   if((MP_DIGITS(z) = s_alloc(prec)) == NULL)
     return MP_MEMORY;
 
@@ -402,15 +382,20 @@ mp_result mp_int_init_size(mp_int z, mp_size prec)
 mp_result mp_int_init_copy(mp_int z, mp_int old)
 {
   mp_result  res;
-  mp_size    uold, target;
+  mp_size    uold;
 
   CHECK(z != NULL && old != NULL);
 
   uold = MP_USED(old);
-  target = MAX(uold, default_precision);
+  if(uold == 1) {
+    mp_int_init(z);
+  }
+  else {
+    mp_size target = MAX(uold, default_precision);
 
-  if((res = mp_int_init_size(z, target)) != MP_OK)
-    return res;
+    if((res = mp_int_init_size(z, target)) != MP_OK)
+      return res;
+  }
 
   MP_USED(z) = uold;
   MP_SIGN(z) = MP_SIGN(old);
@@ -425,14 +410,11 @@ mp_result mp_int_init_copy(mp_int z, mp_int old)
 
 mp_result mp_int_init_value(mp_int z, int value)
 {
-  mp_result res;
+  mpz_t     vtmp;
+  mp_digit  vbuf[MP_VALUE_DIGITS(value)];
 
-  CHECK(z != NULL);
-
-  if((res = mp_int_init(z)) != MP_OK)
-    return res;
-
-  return mp_int_set_value(z, value);
+  s_fake(&vtmp, value, vbuf);
+  return mp_int_init_copy(z, &vtmp);
 }
 
 /* }}} */
@@ -441,20 +423,11 @@ mp_result mp_int_init_value(mp_int z, int value)
 
 mp_result  mp_int_set_value(mp_int z, int value)
 {
-  mp_size  ndig;
+  mpz_t    vtmp;
+  mp_digit vbuf[MP_VALUE_DIGITS(value)];
 
-  CHECK(z != NULL);
-
-  /* How many digits to copy */
-  ndig = (mp_size) MP_VALUE_DIGITS(value);
-
-  if(!s_pad(z, ndig))
-    return MP_MEMORY;
-
-  MP_USED(z) = (mp_size)s_vpack(value, MP_DIGITS(z));
-  MP_SIGN(z) = (value < 0) ? MP_NEG : MP_ZPOS;
-
-  return MP_OK;
+  s_fake(&vtmp, value, vbuf);
+  return mp_int_copy(&vtmp, z);
 }
 
 /* }}} */
@@ -467,7 +440,9 @@ void      mp_int_clear(mp_int z)
     return;
 
   if(MP_DIGITS(z) != NULL) {
-    s_free(MP_DIGITS(z));
+    if((void *) MP_DIGITS(z) != (void *) z)
+      s_free(MP_DIGITS(z));
+
     MP_DIGITS(z) = NULL;
   }
 }
@@ -480,9 +455,7 @@ void      mp_int_free(mp_int z)
 {
   NRCHECK(z != NULL);
 
-  if(z->digits != NULL)
-    mp_int_clear(z);
-
+  mp_int_clear(z);
   free(z);
 }
 
@@ -777,7 +750,8 @@ mp_result mp_int_mul(mp_int a, mp_int b, mp_int c)
      already using, and fix up its fields to reflect that.
    */
   if(out != MP_DIGITS(c)) {
-    s_free(MP_DIGITS(c));
+    if((void *) MP_DIGITS(c) != (void *) c)
+      s_free(MP_DIGITS(c));
     MP_DIGITS(c) = out;
     MP_ALLOC(c) = p;
   }
@@ -855,7 +829,8 @@ mp_result mp_int_sqr(mp_int a, mp_int c)
      fields to reflect the new digit array it's using
    */
   if(out != MP_DIGITS(c)) {
-    s_free(MP_DIGITS(c));
+    if((void *) MP_DIGITS(c) != (void *) c)
+      s_free(MP_DIGITS(c));
     MP_DIGITS(c) = out;
     MP_ALLOC(c) = p;
   }
@@ -977,9 +952,7 @@ mp_result mp_int_mod(mp_int a, mp_int m, mp_int c)
   mp_int    out;
 
   if(m == c) {
-    if((res = mp_int_init(&tmp)) != MP_OK)
-      return res;
-
+    mp_int_init(&tmp);
     out = &tmp;
   } 
   else {
@@ -1012,7 +985,7 @@ mp_result mp_int_div_value(mp_int a, int value, mp_int q, int *r)
   mp_digit  vbuf[MP_VALUE_DIGITS(value)];
   mp_result res;
 
-  if((res = mp_int_init(&rtmp)) != MP_OK) return res;
+  mp_int_init(&rtmp);
   s_fake(&vtmp, value, vbuf);
 
   if((res = mp_int_div(a, &vtmp, q, &rtmp)) != MP_OK)
@@ -1349,8 +1322,7 @@ mp_result mp_int_invmod(mp_int a, mp_int m, mp_int c)
   sa = MP_SIGN(a); /* need this for the result later */
 
   for(last = 0; last < 2; ++last)
-    if((res = mp_int_init(TEMP(last))) != MP_OK)
-      goto CLEANUP;
+    mp_int_init(TEMP(last));
 
   if((res = mp_int_egcd(a, m, TEMP(0), TEMP(1), NULL)) != MP_OK) 
     goto CLEANUP;
@@ -1403,8 +1375,7 @@ mp_result mp_int_gcd(mp_int a, mp_int b, mp_int c)
   else if(cb == 0) 
     return mp_int_abs(a, c);
 
-  if((res = mp_int_init(&t)) != MP_OK)
-    return res;
+  mp_int_init(&t);
   if((res = mp_int_init_copy(&u, a)) != MP_OK)
     goto U;
   if((res = mp_int_init_copy(&v, b)) != MP_OK)
@@ -1494,10 +1465,8 @@ mp_result mp_int_egcd(mp_int a, mp_int b, mp_int c,
 
   /* Initialize temporaries:
      A:0, B:1, C:2, D:3, u:4, v:5, ou:6, ov:7 */
-  for(last = 0; last < 4; ++last) {
-    if((res = mp_int_init(TEMP(last))) != MP_OK)
-      goto CLEANUP;
-  }
+  for(last = 0; last < 4; ++last) 
+    mp_int_init(TEMP(last));
   TEMP(0)->digits[0] = 1;
   TEMP(3)->digits[0] = 1;
 
@@ -1707,7 +1676,7 @@ mp_result mp_int_to_string(mp_int z, mp_size radix,
     return MP_RANGE;
 
   if(CMPZ(z) == 0) {
-    *str++ = s_val2ch(0, mp_flags & MP_CAP_DIGITS);
+    *str++ = s_val2ch(0, 1);
   } 
   else {
     mpz_t tmp;
@@ -1730,7 +1699,7 @@ mp_result mp_int_to_string(mp_int z, mp_size radix,
 	break;
 
       d = s_ddiv(&tmp, (mp_digit)radix);
-      *str++ = s_val2ch(d, mp_flags & MP_CAP_DIGITS);
+      *str++ = s_val2ch(d, 1);
     }
     t = str - 1;
 
@@ -2084,11 +2053,17 @@ int      s_pad(mp_int z, mp_size min)
 {
   if(MP_ALLOC(z) < min) {
     mp_size nsize = ROUND_PREC(min);
-    mp_digit *tmp = s_realloc(MP_DIGITS(z), nsize);
+    mp_digit *tmp;
 
-    if(tmp == NULL)
+    if((void *)z->digits == (void *)z) {
+      if((tmp = s_alloc(nsize)) == NULL)
+        return 0;
+
+      COPY(MP_DIGITS(z), tmp, MP_USED(z));
+    }
+    else if((tmp = s_realloc(MP_DIGITS(z), nsize)) == NULL)
       return 0;
-
+    
     MP_DIGITS(z) = tmp;
     MP_ALLOC(z) = nsize;
   }
@@ -2119,7 +2094,7 @@ static void     s_clamp(mp_int z)
 
 static void      s_fake(mp_int z, int value, mp_digit vbuf[])
 {
-  mp_size uv = (mp_size)s_vpack(value, vbuf);
+  mp_size uv = (mp_size) s_vpack(value, vbuf);
 
   z->used = uv;
   z->alloc = MP_VALUE_DIGITS(value);

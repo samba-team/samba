@@ -32,6 +32,10 @@
 
 #include "imath.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Test whether z is likely to be prime
    MP_YES means it is probably prime
    MP_NO  means it is definitely composite
@@ -41,4 +45,7 @@ mp_result mp_int_is_prime(mp_int z);
 /* Find the first apparent prime in ascending order from z */
 mp_result mp_int_find_prime(mp_int z);
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* IPRIME_H_ */

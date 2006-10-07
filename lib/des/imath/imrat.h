@@ -32,6 +32,10 @@
 
 #include "imath.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct mpq {
   mpz_t   num;    /* Numerator         */
   mpz_t   den;    /* Denominator, <> 0 */
@@ -41,13 +45,12 @@ typedef struct mpq {
 #define MP_DENOM_P(Q)  (&((Q)->den)) /* Pointer to denominator */
 
 /* Rounding constants */
-extern const mp_result MP_ROUND_DOWN;
-extern const mp_result MP_ROUND_HALF_UP;
-extern const mp_result MP_ROUND_UP;
-extern const mp_result MP_ROUND_HALF_DOWN;
-
-void      mp_rat_set_rounding(mp_result rnd);
-mp_result mp_rat_get_rounding(void);
+typedef enum { 
+  MP_ROUND_DOWN, 
+  MP_ROUND_HALF_UP, 
+  MP_ROUND_UP, 
+  MP_ROUND_HALF_DOWN 
+} mp_round_mode;
 
 mp_result mp_rat_init(mp_rat r);
 mp_rat    mp_rat_alloc(void);
@@ -92,7 +95,7 @@ mp_result mp_rat_to_string(mp_rat r, mp_size radix, char *str, int limit);
 /* Convert to decimal format in the specified radix and precision,
    writing at most limit characters including a nul terminator. */
 mp_result mp_rat_to_decimal(mp_rat r, mp_size radix, mp_size prec,
-			    char *str, int limit);
+                            mp_round_mode round, char *str, int limit);
 
 /* Return the number of characters required to represent r in the given
    radix.  May over-estimate. */
@@ -114,4 +117,7 @@ mp_result mp_rat_read_decimal(mp_rat r, mp_size radix, const char *str);
 mp_result mp_rat_read_cdecimal(mp_rat r, mp_size radix, const char *str, 
 			       char **end);
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* IMRAT_H_ */

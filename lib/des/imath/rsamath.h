@@ -32,6 +32,10 @@
 
 #include "imath.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Function to fill a buffer with nonzero random bytes */
 typedef void (*random_f)(unsigned char *, int);
 
@@ -87,5 +91,7 @@ mp_result rsa_pkcs1v15_encode(unsigned char *buf, int msg_len,
 mp_result rsa_pkcs1v15_decode(unsigned char *buf, int buf_len, 
 			      int tag, int *msg_len);
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif /* end RSAMATH_H_ */

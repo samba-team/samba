@@ -33,20 +33,6 @@
 #include <ctype.h>
 #include <assert.h>
 
-/* {{{ Rounding constants */
-
-/* These constants configure the behaviour of numeric rounding for
-   string output of rationals. */
-const mp_result MP_ROUND_DOWN = 0;
-const mp_result MP_ROUND_HALF_UP = 1;
-const mp_result MP_ROUND_UP = 2;
-const mp_result MP_ROUND_HALF_DOWN = 3;
-#define MAX_ROUND_VALUE 3
-
-static mp_result round_output = 0; /* MP_ROUND_DOWN */
-
-/* }}} */
-
 /* {{{ Useful macros */
 
 #define TEMP(K) (temp + (K))
@@ -69,33 +55,11 @@ static mp_result s_rat_reduce(mp_rat r);
 static mp_result s_rat_combine(mp_rat a, mp_rat b, mp_rat c, 
 			       mp_result (*comb_f)(mp_int, mp_int, mp_int));
 
-/* {{{ mp_rat_set_rounding(rnd) */
-
-void      mp_rat_set_rounding(mp_result rnd)
-{
-  NRCHECK(rnd >= 0 && rnd <= MAX_ROUND_VALUE);
-
-  round_output = rnd;
-}
-
-/* }}} */
-
-/* {{{ mp_rat_get_rounding() */
-
-mp_result mp_rat_get_rounding(void)
-{
-  return round_output;
-}
-
-/* }}} */
-
 /* {{{ mp_rat_init(r) */
 
 mp_result mp_rat_init(mp_rat r)
 {
-  mp_size prec = mp_get_default_precision();
-
-  return mp_rat_init_size(r, prec, prec);
+  return mp_rat_init_size(r, 0, 0);
 }
 
 /* }}} */
@@ -106,15 +70,12 @@ mp_rat mp_rat_alloc(void)
 {
   mp_rat out = malloc(sizeof(*out));
 
-  assert(out != NULL);
-  out->num.digits = NULL;
-  out->den.digits = NULL;
-  out->num.alloc = 0;
-  out->den.alloc = 0;
-  out->num.used  = 0;
-  out->den.used  = 0;
-  out->num.sign  = 0;
-  out->den.sign  = 0;
+  if(out != NULL) {
+    if(mp_rat_init(out) != MP_OK) {
+      free(out);
+      return NULL;
+    }
+  }
 
   return out;
 }
@@ -651,9 +612,8 @@ mp_result mp_rat_to_string(mp_rat r, mp_size radix, char *str, int limit)
 /* }}} */
 
 /* {{{ mp_rat_to_decimal(r, radix, prec, *str, limit) */
-
 mp_result mp_rat_to_decimal(mp_rat r, mp_size radix, mp_size prec,
-			    char *str, int limit)
+                            mp_round_mode round, char *str, int limit)
 {
   mpz_t temp[3];
   mp_result res;
@@ -695,32 +655,44 @@ mp_result mp_rat_to_decimal(mp_rat r, mp_size radix, mp_size prec,
            T2 = leftovers, to use for rounding. 
 
      At this point, what we do depends on the rounding mode.  The
-     default is MP_ROUND_DOWN, for which everything is as it should
-     be already. */
+     default is MP_ROUND_DOWN, for which everything is as it should be
+     already.
+  */
+  switch(round) {
+    int cmp;
 
-  if(round_output == MP_ROUND_UP) {
+  case MP_ROUND_UP:
     if(mp_int_compare_zero(TEMP(2)) != 0) {
       if(prec == 0)
 	res = mp_int_add_value(TEMP(0), 1, TEMP(0));
       else
 	res = mp_int_add_value(TEMP(1), 1, TEMP(1));
     }
-  }
-  else if(round_output == MP_ROUND_HALF_UP ||
-	  round_output == MP_ROUND_HALF_DOWN) {
-    int cmp;
+    break;
 
+  case MP_ROUND_HALF_UP:
+  case MP_ROUND_HALF_DOWN:
     if((res = mp_int_mul_pow2(TEMP(2), 1, TEMP(2))) != MP_OK)
       goto CLEANUP;
 
-    cmp = mp_int_compare(TEMP(2), MP_DENOM_P(r));
-    if((round_output == MP_ROUND_HALF_UP && cmp >= 0) ||
-       (round_output == MP_ROUND_HALF_DOWN && cmp > 0)) {
+    cmp = mp_int_compare(TEMP(2), MP_DENOM_P(r));    
+
+    if(round == MP_ROUND_HALF_UP)
+      cmp += 1;
+
+    if(cmp > 0) {
       if(prec == 0)
 	res = mp_int_add_value(TEMP(0), 1, TEMP(0));
       else
 	res = mp_int_add_value(TEMP(1), 1, TEMP(1));
     }
+    break;
+    
+  case MP_ROUND_DOWN:
+    break;  /* No action required */
+
+  default: 
+    return MP_BADARG; /* Invalid rounding specifier */
   }
 
   /* The sign of the output should be the sign of the numerator, but

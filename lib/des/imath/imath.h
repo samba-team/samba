@@ -32,6 +32,10 @@
 
 #include <limits.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef unsigned char      mp_sign;
 typedef unsigned int       mp_size;
 typedef int                mp_result;
@@ -44,6 +48,7 @@ typedef unsigned int       mp_word;
 #endif
 
 typedef struct mpz {
+  mp_digit    single;
   mp_digit   *digits;
   mp_size     alloc;
   mp_size     used;
@@ -85,16 +90,19 @@ extern const mp_result MP_BADARG;
 #define MP_MIN_RADIX    2
 #define MP_MAX_RADIX    36
 
+/* Values with fewer than this many significant digits use the
+   standard multiplication algorithm; otherwise, a recursive algorithm
+   is used.  Choose a value to suit your platform.  
+ */
+#define MP_MULT_THRESH  32
+
+#define MP_DEFAULT_PREC 8   /* default memory allocation, in digits */
+
 extern const mp_sign   MP_NEG;
 extern const mp_sign   MP_ZPOS;
 
 #define mp_int_is_odd(Z)  ((Z)->digits[0] & 1)
 #define mp_int_is_even(Z) !((Z)->digits[0] & 1)
-
-mp_size   mp_get_default_precision(void);
-void      mp_set_default_precision(mp_size s);
-mp_size   mp_get_multiply_threshold(void);
-void      mp_set_multiply_threshold(mp_size s);
 
 mp_result mp_int_init(mp_int z);
 mp_int    mp_int_alloc(void);
@@ -206,4 +214,7 @@ void      s_print(char *tag, mp_int z);
 void      s_print_buf(char *tag, mp_digit *buf, mp_size num);
 #endif
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* end IMATH_H_ */
