@@ -1,3 +1,9 @@
+2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add man_MANS to EXTRA_DIST
+
+	* Makefile.am: Add to all objects BUILD_ROKEN_LIB.
+	
 2006-09-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken.h.in: Add samba socket wrapper fragment.
