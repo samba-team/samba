@@ -50,7 +50,7 @@
 #include <pthread.h>
 #endif
 
-#include <gssapi_spnego.h>
+#include <gssapi/gssapi_spnego.h>
 #include <gssapi.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -58,11 +58,12 @@
 #include <errno.h>
 #include <ctype.h>
 #include <heim_threads.h>
-#include "spnego_asn1.h"
-#include <der.h>
 #include <asn1_err.h>
 
 #include <gssapi_mech.h>
+
+#include "spnego_asn1.h"
+#include <der.h>
 
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 
@@ -86,6 +87,6 @@ typedef struct {
 	HEIMDAL_MUTEX		ctx_id_mutex;
 } *gssspnego_ctx;
 
-#include <spnego-private.h>
+#include <spnego/spnego-private.h>
 
 #endif /* SPNEGO_LOCL_H */
