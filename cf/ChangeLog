@@ -1,5 +1,9 @@
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am.common (install-build-headers): make this function
+	convoluted and deal with dist_, nodist, nobase and all its
+	friends.
+
 	* have-struct-field.m4: memset the structure to make sure that we
 	don't get compiler warnings.
 
