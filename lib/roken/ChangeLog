@@ -1,7 +1,3 @@
-2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
-
-	* Makefile.am: Include manpages in distribution.
-	
 2006-09-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken.h.in: Add samba socket wrapper fragment.
