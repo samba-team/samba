@@ -42,7 +42,7 @@ krb5src = \
 	krb5/export_sec_context.c \
 	krb5/external.c \
 	krb5/get_mic.c \
-	krb5/gssapi_locl.h \
+	krb5/gsskrb5_locl.h \
 	krb5/gsskrb5-private.h \
 	krb5/import_name.c \
 	krb5/import_sec_context.c \
@@ -142,11 +142,13 @@ spnegosrc = \
 	spnego/spnego_locl.h
 
 
-libgssapi_la_SOURCES  = \
-	$(BUILT_SOURCES) \
+dist_libgssapi_la_SOURCES  = \
 	$(krb5src) \
 	$(mechsrc) \
 	$(spnegosrc)
+
+nodist_libgssapi_la_SOURCES  = \
+	$(BUILT_SOURCES)
 
 libgssapi_la_LIBADD = \
 	../krb5/libkrb5.la \
@@ -210,7 +212,9 @@ test_cfx_LDADD = $(test_kcred_LDADD)
 
 # gss
 
-gss_SOURCES = gss.c gss-commands.c gss-commands.h
+dist_gss_SOURCES = gss.c
+nodist_gss_SOURCES = gss-commands.c gss-commands.h
+
 gss_LDADD = libgssapi.la \
  	$(top_builddir)/lib/sl/libsl.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
