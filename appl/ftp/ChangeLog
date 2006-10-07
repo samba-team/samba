@@ -1,3 +1,17 @@
+2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftpd/Makefile.am: Add man_MANS to EXTRA_DIST
+
+	* ftp/Makefile.am: Add man_MANS to EXTRA_DIST
+	
+2006-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftpd/ftpd.c: Add comment by seteuid call isn't not needed.
+
+	* ftpd/ftpd.c: Check return values from seteuid, prompted by MIT
+	advisory.  Thanks to Tom Yu at MIT, and Michael Calmer and Marcus
+	Meissner at SUSE.  Either of CVE-2006-3083 or CVE-2006-3084.
+	
 2006-06-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/gss_userok.c (gss_userok): create a local krb5_context and

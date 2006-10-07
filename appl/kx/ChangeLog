@@ -1,5 +1,9 @@
-2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add man_MANS to EXTRA_DIST
+	
+2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Rename u_intXX_t to uintXX_t
 	
 2005-07-09  Love Hörquist Åstrand  <lha@it.su.se>

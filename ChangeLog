@@ -1,5 +1,7 @@
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/kf/Makefile.am: Add man_MANS to EXTRA_DIST
+
 	* kuser/Makefile.am: split build files into dist_ and noinst_
 	SOURCES
 
