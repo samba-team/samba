@@ -156,7 +156,10 @@ man_MANS = gssapi.3 gss_acquire_cred.3
 
 include_HEADERS = gssapi.h
 noinst_HEADERS = gssapi_mech.h
-nobase_include_HEADERS = gssapi/gssapi.h
+nobase_include_HEADERS = \
+	gssapi/gssapi.h \
+	gssapi/gssapi_krb5.h \
+	gssapi/gssapi_spnego.h
 
 gssapi_files = asn1_GSSAPIContextToken.x
 
