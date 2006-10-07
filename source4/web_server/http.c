@@ -528,7 +528,21 @@ static void esp_request(struct esp_state *esp, const char *url)
 */
 static void jsonrpc_request(struct esp_state *esp)
 {
-	const char *path = http_local_path(esp->web, JSONRPC_SERVER);
+	struct websrv_context *web = esp->web;
+	const char *path = http_local_path(web, JSONRPC_SERVER);
+        MprVar *global;
+        MprVar v;
+        MprVar temp;
+	int size;
+	int res;
+	char *emsg = NULL;
+	char *emsg2 = NULL;
+        char *buf;
+        char *error_script =
+                "error.setOrigin(jsonrpc.Constant.ErrorOrigin.Server); "
+                "error.setError(jsonrpc.Constant.ErrorCode.UnexpectedOutput, "
+                "               global.errorString);"
+                "error.Send();";
 
         /* Ensure we got a valid path. */
 	if (path == NULL) {
@@ -544,7 +558,36 @@ static void jsonrpc_request(struct esp_state *esp)
 	}
 
         /* Call the server request script */
-	esp_request(esp, JSONRPC_SERVER);
+	if (http_readFile(web, &buf, &size, JSONRPC_SERVER) != 0) {
+		http_error_unix(web, JSONRPC_SERVER);
+		return;
+	}
+
+#if HAVE_SETJMP_H
+	if (setjmp(ejs_exception_buf) != 0) {
+		http_error(web, 500, exception_reason);
+		return;
+	}
+#endif
+
+	res = espProcessRequest(esp->req, JSONRPC_SERVER, buf, &emsg);
+	if (res != 0 && emsg) {
+                /* Save the error in a string accessible from javascript */
+                global = ejsGetGlobalObject(0);
+                v = mprString(emsg);
+                mprCreateProperty(global, "errorString", &v);
+
+                /* Create and send a JsonRpcError object */
+                if (ejsEvalScript(0,
+                                  error_script,
+                                  &temp,
+                                  &emsg2) != 0) {
+                        http_writeBlock(web, "<pre>", 5);
+                        http_writeBlock(web, emsg, strlen(emsg));
+                        http_writeBlock(web, "</pre>", 6);
+                }
+	}
+	talloc_free(buf);
 }
 
 /*
