@@ -37,9 +37,6 @@ popper_SOURCES =				\
 	popper.h				\
 	version.h
 
-EXTRA_DIST = pop3.rfc1081 pop3e.rfc1082 \
-	popper.README.release README-FIRST README-KRB4
-
 LDADD = \
 	$(LIB_otp) \
 	$(top_builddir)/lib/gssapi/libgssapi.la \
@@ -50,3 +47,7 @@ LDADD = \
 	$(DBLIB)
 
 man_MANS = popper.8
+
+EXTRA_DIST = pop3.rfc1081 pop3e.rfc1082 \
+	popper.README.release README-FIRST README-KRB4 \
+	$(man_MANS)

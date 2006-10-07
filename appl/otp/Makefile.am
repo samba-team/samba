@@ -14,3 +14,5 @@ man_MANS = otp.1  otpprint.1
 LDADD = \
 	$(top_builddir)/lib/otp/libotp.la	\
 	$(LIB_roken)
+
+EXTRA_DIST = $(man_MANS)
