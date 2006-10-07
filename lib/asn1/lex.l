@@ -62,6 +62,7 @@ static void unterminated(const char *, unsigned);
 %p 5000
 %a 5000
 %n 1000
+%o 10000
 
 %%
 ABSENT			{ return kw_ABSENT; }
