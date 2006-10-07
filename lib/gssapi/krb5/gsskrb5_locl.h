@@ -33,8 +33,8 @@
 
 /* $Id$ */
 
-#ifndef GSSAPI_LOCL_H
-#define GSSAPI_LOCL_H
+#ifndef GSSKRB5_LOCL_H
+#define GSSKRB5_LOCL_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -112,7 +112,7 @@ struct gssapi_thr_context {
  * Prototypes
  */
 
-#include <gsskrb5-private.h>
+#include <krb5/gsskrb5-private.h>
 
 #define GSSAPI_KRB5_INIT() do {					\
     krb5_error_code kret_gss_init;				\
