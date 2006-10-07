@@ -21,8 +21,8 @@ default_keys_SOURCES = default_keys.c
 kadm5includedir = $(includedir)/kadm5
 buildkadm5include = $(buildinclude)/kadm5
 
-kadm5include_HEADERS = kadm5_err.h admin.h private.h \
-	kadm5-protos.h kadm5-private.h
+dist_kadm5include_HEADERS = admin.h private.h kadm5-protos.h
+nodist_kadm5include_HEADERS = kadm5_err.h 
 
 install-build-headers:: $(kadm5include_HEADERS)
 	@foo='$(kadm5include_HEADERS)'; \
@@ -37,10 +37,10 @@ install-build-headers:: $(kadm5include_HEADERS)
 		fi ; \
 	done
 
-SOURCES_client =				\
-	admin.h					\
+dist_libkadm5clnt_la_SOURCES =			\
 	ad.c					\
 	chpass_c.c				\
+	client_glue.c				\
 	common_glue.c				\
 	create_c.c				\
 	delete_c.c				\
@@ -50,7 +50,6 @@ SOURCES_client =				\
 	get_c.c					\
 	get_princs_c.c				\
 	init_c.c				\
-	kadm5_err.c				\
 	kadm5_locl.h				\
 	marshall.c				\
 	modify_c.c				\
@@ -58,9 +57,14 @@ SOURCES_client =				\
 	privs_c.c				\
 	randkey_c.c				\
 	rename_c.c				\
-	send_recv.c
+	send_recv.c				\
+ 	admin.h
 
-SOURCES_server =				\
+nodist_libkadm5clnt_la_SOURCES =		\
+	kadm5_err.c				\
+	kadm5_err.h
+
+dist_libkadm5srv_la_SOURCES =			\
 	acl.c					\
 	admin.h					\
 	bump_pw_expire.c			\
@@ -77,22 +81,23 @@ SOURCES_server =				\
 	get_princs_s.c				\
 	get_s.c					\
 	init_s.c				\
-	kadm5_err.c				\
 	kadm5_locl.h				\
 	keys.c					\
 	log.c					\
 	marshall.c				\
 	modify_s.c				\
+	password_quality.c			\
 	private.h				\
 	privs_s.c				\
 	randkey_s.c				\
 	rename_s.c				\
+	server_glue.c				\
 	set_keys.c				\
-	set_modifier.c				\
-	password_quality.c
+	set_modifier.c
 
-libkadm5srv_la_SOURCES = $(SOURCES_server) server_glue.c
-libkadm5clnt_la_SOURCES = $(SOURCES_client) client_glue.c
+nodist_libkadm5srv_la_SOURCES = 		\
+	kadm5_err.c				\
+	kadm5_err.h
 
 iprop_log_SOURCES = iprop-log.c iprop-commands.c
 
@@ -149,11 +154,13 @@ proto_opts = -q -R '^(_|kadm5_c_|kadm5_s_|kadm5_log)' -P comment
 $(srcdir)/kadm5-protos.h:
 	cd $(srcdir); perl ../../cf/make-proto.pl $(proto_opts) \
 		-o kadm5-protos.h \
-		$(libkadm5clnt_la_SOURCES) $(libkadm5srv_la_SOURCES) \
+		$(dist_libkadm5clnt_la_SOURCES) \
+		$(dist_libkadm5srv_la_SOURCES) \
 		|| rm -f kadm5-protos.h
 
 $(srcdir)/kadm5-private.h:
 	cd $(srcdir); perl ../../cf/make-proto.pl $(proto_opts) \
 		-p kadm5-private.h \
-		$(libkadm5clnt_la_SOURCES) $(libkadm5srv_la_SOURCES) \
+		$(dist_libkadm5clnt_la_SOURCES) \
+		$(dist_libkadm5srv_la_SOURCES) \
 		|| rm -f kadm5-private.h
