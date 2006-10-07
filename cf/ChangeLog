@@ -1,3 +1,7 @@
+2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* crypto.m4: Require openssl have OpenSSL_add_all_algorithms
+	
 2006-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* autobuild.m4: Add autobuild, GPLed, but free to use in projects
