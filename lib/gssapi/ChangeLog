@@ -1,3 +1,11 @@
+2006-10-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Drop some -I no longer needed.
+
+	* gssapi/gssapi_spnego.h: Move gssapi_spengo.h over here.
+
+	* krb5: reference all include files using 'krb5/'
+
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gssapi.h: Add file inclusion protection.
