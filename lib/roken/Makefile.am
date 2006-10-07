@@ -107,7 +107,7 @@ EXTRA_libroken_la_SOURCES =	\
 	ifaddrs.hin		\
 	vis.hin	
 
-EXTRA_DIST = roken.awk roken.h.in
+EXTRA_DIST = roken.awk roken.h.in $(man_MANS)
 
 libroken_la_LIBADD = @LTLIBOBJS@
 
