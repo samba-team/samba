@@ -71,12 +71,23 @@ install-suid-programs:
 
 install-exec-hook: install-suid-programs
 
-install-build-headers:: $(include_HEADERS) $(build_HEADERZ)
-	@foo='$(include_HEADERS) $(nodist_include_HEADERS) $(build_HEADERZ)'; \
+install-build-headers:: $(include_HEADERS) $(dist_include_HEADERS) $(nodist_include_HEADERS) $(build_HEADERZ) $(nobase_include_HEADERS)
+	@foo='$(include_HEADERS) $(dist_include_HEADERS) $(nodist_include_HEADERS) $(build_HEADERZ)'; \
 	for f in $$foo; do \
 		f=`basename $$f`; \
 		if test -f "$(srcdir)/$$f"; then file="$(srcdir)/$$f"; \
 		else file="$$f"; fi; \
+		if cmp -s  $$file $(buildinclude)/$$f 2> /dev/null ; then \
+		: ; else \
+			echo " $(CP) $$file $(buildinclude)/$$f"; \
+			$(CP) $$file $(buildinclude)/$$f; \
+		fi ; \
+	done ; \
+	foo='$(nobase_include_HEADERS)'; \
+	for f in $$foo; do \
+		if test -f "$(srcdir)/$$f"; then file="$(srcdir)/$$f"; \
+		else file="$$f"; fi; \
+		$(mkdir_p) $(buildinclude)/`dirname $$f` ; \
 		if cmp -s  $$file $(buildinclude)/$$f 2> /dev/null ; then \
 		: ; else \
 			echo " $(CP) $$file $(buildinclude)/$$f"; \
