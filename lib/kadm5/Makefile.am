@@ -99,7 +99,8 @@ nodist_libkadm5srv_la_SOURCES = 		\
 	kadm5_err.c				\
 	kadm5_err.h
 
-iprop_log_SOURCES = iprop-log.c iprop-commands.c
+dist_iprop_log_SOURCES = iprop-log.c
+nodist_iprop_log_SOURCES = iprop-commands.c
 
 ipropd_master_SOURCES = ipropd_master.c iprop.h kadm5_locl.h
 

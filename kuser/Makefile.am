@@ -28,9 +28,8 @@ klist_LDADD	= $(kinit_LDADD)
 
 kimpersonate_LDADD = $(kinit_LDADD)
 
-kdigest_SOURCES =				\
-	kdigest.c				\
-	kdigest-commands.c
+dist_kdigest_SOURCES = kdigest.c
+nodist_kdigest_SOURCES = kdigest-commands.c
 
 kdigest_LDADD = \
 	$(top_builddir)/lib/krb5/libkrb5.la \
