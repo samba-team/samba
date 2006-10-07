@@ -55,3 +55,5 @@ LDADD = ../common/libcommon.a \
 	$(LIB_krb4) \
 	$(LIB_des) \
 	$(LIB_roken)
+
+EXTRA_DIST = $(man_MANS)

@@ -45,3 +45,5 @@ LDADD = \
 	$(LIB_des) \
 	$(LIB_roken) \
 	$(LIB_readline)
+
+EXTRA_DIST = $(man_MANS)

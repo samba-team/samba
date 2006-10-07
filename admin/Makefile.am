@@ -39,3 +39,5 @@ LDADD = \
 	$(top_builddir)/lib/sl/libsl.la \
 	$(LIB_readline) \
 	$(LIB_roken)
+
+EXTRA_DIST = $(man_MANS)
