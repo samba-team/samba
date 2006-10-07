@@ -158,6 +158,8 @@ libgssapi_la_LIBADD = \
 man_MANS = gssapi.3 gss_acquire_cred.3
 
 include_HEADERS = gssapi.h
+noinst_HEADERS = gssapi_mech.h
+nobase_include_HEADERS = gssapi/gssapi.h
 
 gssapi_files = asn1_GSSAPIContextToken.x
 
