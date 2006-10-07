@@ -4,8 +4,11 @@ include $(top_srcdir)/Makefile.am.common
 
 noinst_DATA = krb5.conf
 
-TESTS = check-gss check-gssmask
-check_PROGRAMS = $(TESTS)
+SCRIPT_TESTS = check-gss check-gssmask
+
+TESTS = $(SCRIPT_TESTS)
+
+check_SCRIPTS = $(SCRIPT_TESTS)
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
 	-e 's,[@]objdir[@],$(top_builddir)/tests/gss,g'

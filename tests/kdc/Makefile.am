@@ -4,14 +4,16 @@ include $(top_srcdir)/Makefile.am.common
 
 noinst_DATA = krb5.conf
 
-check_PROGRAMS = $(TESTS) ap-req
+check_PROGRAMS = ap-req
+check_SCRIPTS = $(SCRIPT_TESTS) 
 
-LDADD = ../../lib/krb5/libkrb5.la
-
-TESTS = check-kdc check-digest
+SCRIPT_TESTS = check-kdc check-digest
+TESTS = $(SCRIPT_TESTS)
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
 	-e 's,[@]objdir[@],$(top_builddir)/tests/kdc,g'
+
+LDADD = ../../lib/krb5/libkrb5.la
 
 check-kdc: check-kdc.in Makefile
 	$(do_subst) < $(srcdir)/check-kdc.in > check-kdc.tmp
