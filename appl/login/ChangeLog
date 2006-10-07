@@ -1,3 +1,7 @@
+2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add man_MANS to EXTRA_DIST
+
 2006-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* read_string.c: try to not call signaction for signal 0 and use
