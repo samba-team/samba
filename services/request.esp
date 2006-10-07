@@ -13,6 +13,7 @@
  * This is a simple JSON-RPC server.
  */
 
+
 /* Bring in the json format/parse functions */
 jsonrpc_include("json.esp");
 
@@ -45,7 +46,6 @@ jsonrpc.Constant = new Object();
 jsonrpc.Constant.ErrorOrigin = new Object(); /* error origins */
 jsonrpc.Constant.ErrorCode = new Object();   /* server-generated error codes */
 jsonrpc.method = new Object();       /* methods available in requested class */
-
 
 /*
  * ScriptTransport constants
@@ -108,12 +108,15 @@ jsonrpc.Constant.ErrorCode.ClassNotFound         = 3; // not used in this implem
  */
 jsonrpc.Constant.ErrorCode.MethodNotFound        = 4;
 
-/**
+/*
  * Error code, value 5: Parameter Mismatch
  *
  * If a method discovers that the parameters (arguments) provided to it do not
  * match the requisite types for the method's parameters, it should return
  * this error code to indicate so to the caller.
+ *
+ * This error is also used to indicate an illegal parameter value, in server
+ * scripts.
  */
 jsonrpc.Constant.ErrorCode.PaameterMismatch      = 5;
 
@@ -136,7 +139,13 @@ jsonrpc.Constant.ErrorCode.PermissionDenied      = 6;
  */
 jsonrpc.Constant.ErrorCode.UnexpectedOutput      = 7;
 
-
+/*
+ * Error code, value 8: Resource Error
+ *
+ * Too many resources were requested, a system limitation on the total number
+ * of resources has been reached, or a resource or resource id was misused.
+ */
+jsonrpc.Constant.ErrorCode.ResourceError         = 8;
 
 
 
@@ -447,7 +456,7 @@ if (! valid)
 }
 
 /* Ensure the logged-in user is allowed to issue the requested method */
-if (! json_authenticate(serviceComponents, method))
+if (! json_authenticate(serviceComponents, jsonInput.method))
 {
     error.setError(jsonrpc.Constant.ErrorCode.PermissionDenied,
                    "Permission denied");
