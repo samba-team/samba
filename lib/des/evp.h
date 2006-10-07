@@ -89,9 +89,9 @@
 #define PKCS5_PBKDF2_HMAC_SHA1 hc_PKCS5_PBKDF2_HMAC_SHA1
 #define EVP_BytesToKey hc_EVP_BytesToKey
 #define EVP_get_cipherbyname hc_EVP_get_cipherbyname
-#define	OPENSSL_add_all_algorithms hc_OPENSSL_add_all_algorithms
-#define	OPENSSL_add_all_algorithms_conf hc_OPENSSL_add_all_algorithms_conf
-#define	OPENSSL_add_all_algorithms_noconf hc_OPENSSL_add_all_algorithms_noconf
+#define	OpenSSL_add_all_algorithms hc_OpenSSL_add_all_algorithms
+#define	OpenSSL_add_all_algorithms_conf hc_OpenSSL_add_all_algorithms_conf
+#define	OpenSSL_add_all_algorithms_noconf hc_OpenSSL_add_all_algorithms_noconf
 
 /*
  *
@@ -248,8 +248,8 @@ int	EVP_BytesToKey(const EVP_CIPHER *, const EVP_MD *,
  *
  */
 
-void	OPENSSL_add_all_algorithms(void);
-void	OPENSSL_add_all_algorithms_conf(void);
-void	OPENSSL_add_all_algorithms_noconf(void);
+void	OpenSSL_add_all_algorithms(void);
+void	OpenSSL_add_all_algorithms_conf(void);
+void	OpenSSL_add_all_algorithms_noconf(void);
 
 #endif /* HEIM_EVP_H */

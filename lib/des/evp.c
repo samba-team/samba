@@ -883,19 +883,19 @@ EVP_BytesToKey(const EVP_CIPHER *type,
  */
 
 void
-OPENSSL_add_all_algorithms(void)
+OpenSSL_add_all_algorithms(void)
 {
     return;
 }
 
 void
-OPENSSL_add_all_algorithms_conf(void)
+OpenSSL_add_all_algorithms_conf(void)
 {
     return;
 }
 
 void
-OPENSSL_add_all_algorithms_noconf(void)
+OpenSSL_add_all_algorithms_noconf(void)
 {
     return;
 }
