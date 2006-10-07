@@ -1,5 +1,9 @@
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* spnego/spnego_locl.h: Maybe include <sys/types.h>.
+
+	* mech/mech_locl.h: Include <roken.h>.
+
 	* Makefile.am: split build files into dist_ and noinst_ SOURCES
 	
 2006-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
