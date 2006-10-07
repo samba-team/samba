@@ -390,12 +390,10 @@ TESTS = check-der check-gen
 
 asn1_gen_SOURCES = asn1_gen.c
 asn1_print_SOURCES = asn1_print.c
-
 check_der_SOURCES = check-der.c check-common.c
-check_gen_SOURCES = \
-	check-gen.c \
-	check-common.c \
-	$(gen_files_test:.x=.c)
+
+dist_check_gen_SOURCES = check-gen.c check-common.c
+nodist_check_gen_SOURCES = $(gen_files_test:.x=.c)
 
 asn1_compile_SOURCES = 				\
 	gen.c					\
@@ -412,7 +410,7 @@ asn1_compile_SOURCES = 				\
 	parse.y					\
 	symbol.c
 
-libasn1_la_SOURCES =				\
+dist_libasn1_la_SOURCES =			\
 	der.c					\
 	der_get.c				\
 	der_put.c				\
@@ -422,7 +420,9 @@ libasn1_la_SOURCES =				\
 	der_cmp.c				\
 	der_format.c				\
 	extra.c					\
-	timegm.c				\
+	timegm.c
+
+nodist_libasn1_la_SOURCES =			\
 	$(BUILT_SOURCES)
 
 asn1_compile_LDADD = \
@@ -457,16 +457,15 @@ CLEANFILES = lex.c parse.c parse.h \
 	digest_asn1_files digest_asn1.h \
 	test_asn1_files test_asn1.h
 
-
-include_HEADERS = asn1_err.h der.h heim_asn1.h
-include_HEADERS += krb5_asn1.h
-include_HEADERS += pkinit_asn1.h
-include_HEADERS += cms_asn1.h
-include_HEADERS += rfc2459_asn1.h
-include_HEADERS += pkcs8_asn1.h
-include_HEADERS += pkcs9_asn1.h
-include_HEADERS += pkcs12_asn1.h
-include_HEADERS += digest_asn1.h
+nodist_include_HEADERS = asn1_err.h der.h heim_asn1.h
+nodist_include_HEADERS += krb5_asn1.h
+nodist_include_HEADERS += pkinit_asn1.h
+nodist_include_HEADERS += cms_asn1.h
+nodist_include_HEADERS += rfc2459_asn1.h
+nodist_include_HEADERS += pkcs8_asn1.h
+nodist_include_HEADERS += pkcs9_asn1.h
+nodist_include_HEADERS += pkcs12_asn1.h
+nodist_include_HEADERS += digest_asn1.h
 
 $(asn1_compile_OBJECTS): parse.h parse.c
 
