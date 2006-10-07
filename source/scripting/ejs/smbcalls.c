@@ -193,6 +193,7 @@ static int jsonrpc_include(int eid, int argc, char **argv)
         if (file_exist(path)) {
                 ret = ejsEvalFile(eid, path, &result, &emsg);
                 if (ret < 0) {
+                        ejsSetErrorMsg(eid, "Could not eval file");
                         printf("file found; ret=%d (%s)\n", ret, emsg);
                 }
         }
