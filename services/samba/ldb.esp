@@ -1,0 +1,610 @@
+<%
+/*
+ * Copyright:
+ *   (C) 2006 by Derrell Lipman
+ *       All rights reserved
+ *
+ * License:
+ *   LGPL 2.1: http://creativecommons.org/licenses/LGPL/2.1/
+ */
+
+/*
+ * JSON-RPC mappings to the ldb ejs functions
+ */
+
+/* We'll be saving resources in the session */
+jsonrpc_include("resources.esp");
+
+
+/**
+ * Connect to a database
+ *
+ * @param params[0]
+ *   Database name
+ *
+ * @param params[1..n]
+ *   Option (e.g. "modules:modlist")
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: The resource id to be used for future access to the database
+ *   Failure: -1
+ *
+ * @note
+ *   Credentials or session_info may be set up first.
+ */
+function _connect(params, error)
+{
+    if (params.length < 1)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <db_name> [<option> ...]");
+        return error;
+    }
+
+    ldb = ldb_init();
+    var ret = ldb.connect(params[0]);
+    if (ret && ldb.db)
+    {
+        return session.resources.set(ldb,
+                                     session.resources.Type.ldb,
+                                     error);
+    }
+    else
+    {
+        error.setError(-1, "ldb.connect failed");
+        return error;
+    }
+}
+jsonrpc.method.connect = _connect;
+
+
+/**
+ * Close a database
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: True
+ *   Failure: Will only fail with invalid parameters, and throws an error
+ */
+function _close(params, error)
+{
+    if (params.length != 1)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    var ret = ldb.close();
+    
+    /* If close succeeded, release the stored resource */
+    if (ret)
+    {
+        session.resources.release(params[0], error);
+    }
+
+    return ret;
+}
+jsonrpc.method.close = _close;
+
+
+/**
+ * Begin a transaction
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: True
+ *   Failure: False
+ */
+function _transaction_start(params, error)
+{
+    if (params.length != 1)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    return ldb.transaction_start();
+}
+jsonrpc.method.transaction_start = _transaction_start;
+
+
+/**
+ * Cancel a transaction
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: True
+ *   Failure: False
+ */
+function _transaction_cancel(params, error)
+{
+    if (params.length != 1)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    return ldb.transaction_cancel();
+}
+jsonrpc.method.transaction_cancel = _transaction_cancel;
+
+
+/**
+ * Commit a transaction
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: True
+ *   Failure: False
+ */
+function _transaction_commit(params, error)
+{
+    if (params.length != 1)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    return ldb.transaction_commit();
+}
+jsonrpc.method.transaction_commit = _transaction_commit;
+
+
+/**
+ * Issue a Search request
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param params[1]
+ *   Search expression
+ *
+ * @param params[2]
+ *   Base DN
+ *
+ * @param params[3]
+ *   Scope: "default", "base", "one" or "subtree"
+ *
+ * @param params[4]
+ *   Attributes: an array object
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: found object
+ *   Failure: `undefined`
+ *
+ * @note
+ *   If params[4] is missing, assume no attributes
+ *   If params[3..4] are missing, also assume "default" scope
+ *   If params[2..4] are missing, also assume null base DN
+ */
+function _search(params, error)
+{
+    if (params.length < 2 || params.length > 5)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: " +
+                       "<resource_id> <expr> [<baseDN> [<scope> [<attrs>]]]");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    /* Retrieve parameters */
+    var expr = params[1];
+    var baseDN = params[2];
+    var scope = params[3];
+    var attrs = params[4];
+
+    /* Fill in optional parameters */
+    if (params.length < 3) baseDN = null;
+    if (params.length < 4) scope = "one";
+    if (params.length < 5) attrs = null;
+
+    /* Determine scope value */
+    if (scope == "base")
+    {
+        scope = ldb.SCOPE_BASE;
+    }
+    else if (scope == "one")
+    {
+        scope = ldb.SCOPE_ONE;
+    }
+    else if (scope == "subtree")
+    {
+        scope = ldb.SCOPE_SUBTREE;
+    }
+    else if (scope == "default")
+    {
+        scope = ldb.SCOPE_DEFAULT;
+    }
+    else
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "invalid scope");
+        return error;
+    }
+
+    return ldb.transaction_search(expr, baseDN, scope, attrs);
+}
+jsonrpc.method.search = _search;
+
+
+/**
+ * Add data to the database
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param params[1]
+ *   An LDIF string representing the data to be added
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: True
+ *   Failure: False
+ */
+function _add(params, error)
+{
+    if (params.length != 2)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id> <ldif>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    return ldb.add(params[1]);
+}
+jsonrpc.method.add = _add;
+
+
+/**
+ * Modify data in the database
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param params[1]
+ *   An LDIF string representing the data to be modified
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: True
+ *   Failure: False
+ */
+function _modify(params, error)
+{
+    if (params.length != 2)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id> <ldif>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    return ldb.modify(params[1]);
+}
+jsonrpc.method.modify = _modify;
+
+
+/**
+ * Delete data from the database
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param params[1]
+ *   The DN to be located and deleted
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: True
+ *   Failure: False
+ */
+function _del(params, error)
+{
+    if (params.length != 2)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id> <dn>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    return ldb.del(params[1]);
+}
+jsonrpc.method.del = _del;
+
+
+/**
+ * Rename data in the database
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param params[1]
+ *   The DN to be renamed
+ *
+ * @param params[2]
+ *   The new name for the DN being renamed
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: True
+ *   Failure: False
+ */
+function _rename(params, error)
+{
+    if (params.length != 3)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id> <old_dn> <new_dn>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    return ldb.rename(params[1], params[2]);
+}
+jsonrpc.method.rename = _rename;
+
+
+/**
+ * Base64-encode a string
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param params[1]
+ *   The string to be base64 encoded
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: encoded string
+ *   Failure: `undefined`
+ */
+function _base64encode(params, error)
+{
+    if (params.length != 2)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id> <string_to_be_encoded>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    return ldb.base64encode(params[1]);
+}
+jsonrpc.method.base64encode = _base64encode;
+
+
+/**
+ * Base64-decode a string
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param params[1]
+ *   The string to be base64 decoded
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: decoded string
+ *   Failure: `undefined`
+ */
+function _base64decode(params, error)
+{
+    if (params.length != 2)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id> <string_to_be_decoded>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    return ldb.base64decode(params[1]);
+}
+jsonrpc.method.base64decode = _base64decode;
+
+
+/**
+ * escape a DN
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param params[1]
+ *   The DN to be escaped
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: escaped string
+ *   Failure: undefined
+ */
+function _base64decode(params, error)
+{
+    if (params.length != 2)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id> <string_to_be_decoded>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    return ldb.base64decode(params[1]);
+}
+jsonrpc.method.base64decode = _base64decode;
+
+
+/**
+ * Retrieve a description of the most recent error
+ *
+ * @param params[0]
+ *   The resource id of the open database, previously returned by connect()
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   The most recent error string for the ldb specified by the resource id
+ */
+function _errstring(params, error)
+{
+    if (params.length != 1)
+    {
+        error.setError(JsonRpcError_ParameterMismatch,
+                       "usage: <resource_id>");
+        return error;
+    }
+
+    ldb = session.resources.get(params[0],
+                                session.resources.Type.ldb,
+                                error);
+    if (ldb["__type"] == "_JsonRpcError")
+    {
+        return ldb;
+    }
+
+    return ldb.errstring();
+}
+jsonrpc.method.errstring = _errstring;
+
+
+
+
+/*
+ * Local Variables:
+ * mode: c
+ * End:
+ */
+%>
