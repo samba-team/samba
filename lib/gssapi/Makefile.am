@@ -5,10 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 AUTOMAKE_OPTIONS = subdir-objects
 
 AM_CPPFLAGS += -I$(srcdir)/../krb5 \
-	-I$(srcdir)/../asn1 \
 	-I$(srcdir) \
-	-I$(srcdir)/krb5 \
-	-I$(srcdir)/spnego \
 	-I$(srcdir)/mech \
 	$(INCLUDE_des) \
 	$(INCLUDE_krb4)
