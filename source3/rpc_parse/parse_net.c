@@ -566,6 +566,90 @@ BOOL net_io_r_getdcname(const char *desc, NET_R_GETDCNAME *r_t, prs_struct *ps,
 	return True;
 }
 
+
+/*******************************************************************
+ Inits an NET_R_GETANYDCNAME structure.
+********************************************************************/
+void init_net_q_getanydcname(NET_Q_GETANYDCNAME *r_t, const char *logon_server,
+			     const char *domainname)
+{
+	DEBUG(5,("init_r_getanydcname\n"));
+
+	init_unistr2(&r_t->uni_logon_server, logon_server, UNI_STR_TERMINATE);
+	r_t->ptr_domainname = (domainname != NULL);
+	init_unistr2(&r_t->uni_domainname, domainname, UNI_STR_TERMINATE);
+}
+
+/*******************************************************************
+ Reads or writes an NET_Q_GETANYDCNAME structure.
+********************************************************************/
+
+BOOL net_io_q_getanydcname(const char *desc, NET_Q_GETANYDCNAME *r_t, prs_struct *ps,
+			   int depth)
+{
+	if (r_t == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_getanydcname");
+	depth++;
+
+	if (!smb_io_unistr2("logon_server", &r_t->uni_logon_server,
+			    1, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_domainname", ps, depth, &r_t->ptr_domainname))
+		return False;
+
+	if (!smb_io_unistr2("domainname", &r_t->uni_domainname,
+			    r_t->ptr_domainname, ps, depth))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+ Inits an NET_R_GETANYDCNAME structure.
+********************************************************************/
+void init_net_r_getanydcname(NET_R_GETANYDCNAME *r_t, const char *dcname)
+{
+	DEBUG(5,("init_r_getanydcname\n"));
+
+	init_unistr2(&r_t->uni_dcname, dcname, UNI_STR_TERMINATE);
+}
+
+/*******************************************************************
+ Reads or writes an NET_R_GETANYDCNAME structure.
+********************************************************************/
+
+BOOL net_io_r_getanydcname(const char *desc, NET_R_GETANYDCNAME *r_t, prs_struct *ps,
+			   int depth)
+{
+	if (r_t == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_r_getanydcname");
+	depth++;
+
+	if (!prs_uint32("ptr_dcname", ps, depth, &r_t->ptr_dcname))
+		return False;
+
+	if (!smb_io_unistr2("dcname", &r_t->uni_dcname,
+			    r_t->ptr_dcname, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_werror("status", ps, depth, &r_t->status))
+		return False;
+
+	return True;
+}
+
 /*******************************************************************
  Inits an NET_R_TRUST_DOM_LIST structure.
 ********************************************************************/
