@@ -33,8 +33,8 @@
 
 /* $Id$ */
 
-#ifndef GSSAPI_H_
-#define GSSAPI_H_
+#ifndef GSSAPI_GSSAPI_H_
+#define GSSAPI_GSSAPI_H_
 
 /*
  * First, include stddef.h to get size_t defined.
@@ -905,4 +905,4 @@ gss_decapsulate_token(gss_buffer_t /* input_token */,
 }
 #endif
 
-#endif /* GSSAPI_H_ */
+#endif /* GSSAPI_GSSAPI_H_ */
