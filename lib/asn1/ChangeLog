@@ -1,5 +1,7 @@
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lex.l: Grow an even larger output table size.
+
 	* Makefile.am: split build files into dist_ and noinst_ SOURCES
 	
 2006-10-04  Love Hörnquist Åstrand  <lha@it.su.se>

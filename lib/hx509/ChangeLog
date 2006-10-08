@@ -1,3 +1,21 @@
+2006-10-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ks_p11.c: Return HX509_PKCS11_NO_SLOT when there are no slots
+	and HX509_PKCS11_NO_TOKEN when there are no token. For use in PAM
+	modules that want to detect when to use smartcard login and when
+	not to. Patched based on code from Douglas Engert.
+
+	* hx509_err.et: Add new pkcs11 related errors in a new section:
+	keystore related error.  Patched based on code from Douglas
+	Engert.
+	
+2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Make depenency for slc built files just like
+	everywhere else.
+
+	* cert.c: Add all openssl algs and init asn1 et
+	
 2006-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ks_file.c (parse_rsa_private_key): free type earlier.
