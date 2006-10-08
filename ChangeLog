@@ -1,4 +1,16 @@
+2006-10-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/connect.c (handle_vanilla_tcp): shorten length when we
+	shorten the buffer, this matter im the PK-INIT encKey case where a
+	checksum is done over the whole packet. Reported by Olga
+	Kornievskaia
+	
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* include/Makefile.am: crypto-headers.h is a nodist header
+
+	* lib/krb5/aes-test.c: Make argument to PKCS5_PBKDF2_HMAC_SHA1
+	unsigned char to make OpenSSL happy.
 
 	* appl/kf/Makefile.am: Add man_MANS to EXTRA_DIST
 
