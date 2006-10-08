@@ -554,6 +554,23 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
     if (opt->allow_proxy_certificate_flag)
 	hx509_verify_set_proxy_certificate(ctx, 1);
 
+    if (opt->time_string) {
+	const char *p;
+	struct tm tm;
+	time_t t;
+
+	memset(&tm, 0, sizeof(tm));
+
+	p = strptime (opt->time_string, "%Y-%m-%d", &tm);
+	if (p == NULL)
+	    errx(1, "Failed to parse time %s, need to be on format %Y-%m-%d",
+		 opt->time_string);
+	
+	t = tm2time (tm, 0);
+
+	hx509_verify_set_time(ctx, t);
+    }
+
     ret = hx509_revoke_init(context, &revoke_ctx);
     if (ret)
 	errx(1, "hx509_revoke_init: %d", ret);
