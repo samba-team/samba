@@ -1,5 +1,7 @@
 2006-10-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* fix-export: dist_-ify libkadm5clnt_la_SOURCES too
+
 	* doc/heimdal.texi: Update (c) years.
 
 	* appl/gssmask/protocol.h: Clarify protocol.
