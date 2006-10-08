@@ -292,7 +292,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		case account_name:
 			continue_if_field_set(mod->in.change.account_name);
 			mod->in.change.account_name = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
-								     (int)random());
+								      (int)(random()/100));
 			mod->in.change.fields |= USERMOD_FIELD_ACCOUNT_NAME;
 			fldname = "account_name";
 			*username = talloc_strdup(mem_ctx, mod->in.change.account_name);
