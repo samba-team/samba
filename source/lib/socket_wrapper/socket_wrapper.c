@@ -46,10 +46,6 @@
 #include "system/network.h"
 #include "system/filesys.h"
 
-#ifndef _DLINKLIST_H
-#include "lib/util/dlinklist.h"
-#endif
-
 #ifdef malloc
 #undef malloc
 #endif
@@ -78,9 +74,38 @@
 
 #define _PUBLIC_
 
-#error "dlinklist.h missing"
-
 #endif
+
+#define SWRAP_DLIST_ADD(list,item) do { \
+	if (!(list)) { \
+		(item)->prev	= NULL; \
+		(item)->next	= NULL; \
+		(list)		= (item); \
+	} else { \
+		(item)->prev	= NULL; \
+		(item)->next	= (list); \
+		(list)->prev	= (item); \
+		(list)		= (item); \
+	} \
+} while (0)
+
+#define SWRAP_DLIST_REMOVE(list,item) do { \
+	if ((list) == (item)) { \
+		(list)		= (item)->next; \
+		if (list) { \
+			(list)->prev	= NULL; \
+		} \
+	} else { \
+		if ((item)->prev) { \
+			(item)->prev->next	= (item)->next; \
+		} \
+		if ((item)->next) { \
+			(item)->next->prev	= (item)->prev; \
+		} \
+	} \
+	(item)->prev	= NULL; \
+	(item)->next	= NULL; \
+} while (0)
 
 /* LD_PRELOAD doesn't work yet, so REWRITE_CALLS is all we support
  * for now */
@@ -1076,7 +1101,7 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 	si->protocol = protocol;
 	si->fd = fd;
 
-	DLIST_ADD(sockets, si);
+	SWRAP_DLIST_ADD(sockets, si);
 
 	return si->fd;
 }
@@ -1145,7 +1170,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->peername_len = *addrlen;
 	child_si->peername = sockaddr_dup(addr, *addrlen);
 
-	DLIST_ADD(sockets, child_si);
+	SWRAP_DLIST_ADD(sockets, child_si);
 
 	swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_SEND, NULL, 0);
 	swrap_dump_packet(child_si, addr, SWRAP_ACCEPT_RECV, NULL, 0);
@@ -1545,7 +1570,7 @@ _PUBLIC_ int swrap_close(int fd)
 		return real_close(fd);
 	}
 
-	DLIST_REMOVE(sockets, si);
+	SWRAP_DLIST_REMOVE(sockets, si);
 
 	if (si->myname && si->peername) {
 		swrap_dump_packet(si, NULL, SWRAP_CLOSE_SEND, NULL, 0);
