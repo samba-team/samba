@@ -139,16 +139,19 @@ CLEANFILES = $(BUILT_SOURCES) \
 #
 
 check_SCRIPTS = $(SCRIPT_TESTS)
+check_PROGRAMS = $(PROGRAM_TESTS)
 
 LDADD = libhx509.la
 
-TESTS = $(SCRIPT_TESTS)
+TESTS = $(SCRIPT_TESTS) $(PROGRAM_TESTS)
+
+PROGRAM_TESTS = 		\
+	test_name
 
 SCRIPT_TESTS = 			\
 	test_chain		\
 	test_cms		\
 	test_crypto		\
-	test_name		\
 	test_nist		\
 	test_nist_cert		\
 	test_nist_pkcs12	\
