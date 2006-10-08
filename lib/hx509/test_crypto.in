@@ -42,21 +42,25 @@ fi
 
 echo "Bleichenbacher good cert (from eay)"
 ./hxtool verify --missing-revoke \
+    --time=2006-09-25 \
     cert:FILE:$srcdir/data/bleichenbacher-good.pem \
     anchor:FILE:$srcdir/data/bleichenbacher-good.pem > /dev/null || exit 1
 
 echo "Bleichenbacher bad cert (from eay)"
 ./hxtool verify --missing-revoke \
+    --time=2006-09-25 \
     cert:FILE:$srcdir/data/bleichenbacher-bad.pem \
     anchor:FILE:$srcdir/data/bleichenbacher-bad.pem > /dev/null && exit 1
 
 echo "Bleichenbacher good cert (from yutaka)"
 ./hxtool verify --missing-revoke \
+    --time=2006-09-25 \
     cert:FILE:$srcdir/data/yutaka-pad-ok-cert.pem \
     anchor:FILE:$srcdir/data/yutaka-pad-ok-ca.pem > /dev/null || exit 1
 
 echo "Bleichenbacher bad cert (from yutaka)"
 ./hxtool verify --missing-revoke \
+    --time=2006-09-25 \
     cert:FILE:$srcdir/data/yutaka-pad-broken-cert.pem \
     anchor:FILE:$srcdir/data/yutaka-pad-broken-ca.pem > /dev/null && exit 1
 
@@ -64,6 +68,7 @@ echo "Bleichenbacher bad cert (from yutaka)"
 # Andrew Pyshkin <pychkine@cdc.informatik.tu-darmstadt.de>
 echo "Bleichenbacher bad cert (sf pad correct)"
 ./hxtool verify --missing-revoke \
+    --time=2006-09-25 \
     cert:FILE:$srcdir/data/bleichenbacher-sf-pad-correct.pem \
     anchor:FILE:$srcdir/data/sf-class2-root.pem > /dev/null && exit 1
 
