@@ -48,6 +48,7 @@ struct p11_slot {
 #define P11_SESSION_IN_USE	2
 #define P11_LOGIN_REQ		4
 #define P11_LOGIN_DONE		8
+#define P11_TOKEN_PRESENT	16
     CK_SESSION_HANDLE session;
     CK_SLOT_ID id;
     CK_BBOOL token;
@@ -335,9 +336,8 @@ p11_init_slot(hx509_context context,
     asprintf(&slot->name, "%.*s",
 	     i, slot_info.slotDescription);
 
-    if ((slot_info.flags & CKF_TOKEN_PRESENT) == 0) {
+    if ((slot_info.flags & CKF_TOKEN_PRESENT) == 0)
 	return 0;
-    }
 
     ret = P11FUNC(p, GetTokenInfo, (slot->id, &token_info));
     if (ret) {
@@ -345,8 +345,9 @@ p11_init_slot(hx509_context context,
 			       "Failed to init PKCS11 slot %d "
 			       "with error 0x08x",
 			       num, ret);
-	return EINVAL;
+	return HX509_PKCS11_NO_TOKEN;
     }
+    slot->flags |= P11_TOKEN_PRESENT;
 
     if (token_info.flags & CKF_LOGIN_REQUIRED)
 	slot->flags |= P11_LOGIN_REQ;
@@ -884,16 +885,16 @@ p11_init(hx509_context context,
     }
 
    if (p->num_slots == 0) {
-	hx509_set_error_string(context, 0, EINVAL,
-			       "Select PKCS11 module have no slots");
-	ret = EINVAL;
+	hx509_set_error_string(context, 0, HX509_PKCS11_NO_SLOT,
+			       "Selected PKCS11 module have no slots");
+	ret = HX509_PKCS11_NO_SLOT;
 	goto out;
    }
 
 
     {
 	CK_SLOT_ID_PTR slot_ids;
-	int i;
+	int i, num_tokens = 0;
 
 	slot_ids = malloc(p->num_slots * sizeof(*slot_ids));
 	if (slot_ids == NULL) {
@@ -925,9 +926,14 @@ p11_init(hx509_context context,
 	    ret = p11_init_slot(context, p, lock, slot_ids[i], i, &p->slot[i]);
 	    if (ret)
 		break;
+	    if (p->slot[i].flags & P11_TOKEN_PRESENT)
+		num_tokens++;
 	}
 	free(slot_ids);
-	if (ret) {
+	if (ret)
+	    goto out;
+	if (num_tokens == 0) {
+	    ret = HX509_PKCS11_NO_TOKEN;
 	    goto out;
 	}
     }
