@@ -43,8 +43,11 @@ samba3_check_or_start() {
 			if test x"$NMBD_MAXTIME" = x; then
 			    NMBD_MAXTIME=2700
 			fi
+			MAKE_TEST_BINARY=$BINDIR/nmbd
+			export MAKE_TEST_BINARY
 			timelimit $NMBD_MAXTIME $NMBD_VALGRIND $BINDIR/nmbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $NMBD_TEST_LOG 2>&1 &
 			TIMELIMIT_NMBD_PID=$!
+			MAKE_TEST_BINARY=
 			echo $TIMELIMIT_NMBD_PID > $PIDDIR/timelimit.nmbd.pid
 			wait $TIMELIMIT_NMBD_PID
 			ret=$?;
@@ -72,8 +75,11 @@ samba3_check_or_start() {
 			if test x"$SMBD_MAXTIME" = x; then
 			    SMBD_MAXTIME=2700
 			fi
+			MAKE_TEST_BINARY=$BINDIR/smbd
+			export MAKE_TEST_BINARY
 			timelimit $SMBD_MAXTIME $SMBD_VALGRIND $BINDIR/smbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $SMBD_TEST_LOG 2>&1 &
 			TIMELIMIT_SMBD_PID=$!
+			MAKE_TEST_BINARY=
 			echo $TIMELIMIT_SMBD_PID > $PIDDIR/timelimit.smbd.pid
 			wait $TIMELIMIT_SMBD_PID
 			ret=$?;
@@ -133,6 +139,7 @@ testit() {
 	fi
 	name=$1
 	shift 1
+	binary=$1
 	cmdline="$*"
 
 	SERVERS_ARE_UP="no"
@@ -180,8 +187,11 @@ testit() {
 		export SOCKET_WRAPPER_PCAP_FILE
 	fi
 
+	MAKE_TEST_BINARY=$binary
+	export MAKE_TEST_BINARY
 	( $cmdline > $TEST_LOG 2>&1 )
 	status=$?
+	MAKE_TEST_BINARY=
 	# show any additional output from smbd that has happened in this test
 	samba3_nmbd_test_log && {
 		new_log_size=`wc -l < $NMBD_TEST_LOG`;
