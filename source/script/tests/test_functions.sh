@@ -145,6 +145,13 @@ testit() {
 	TEST_PCAP="$PREFIX/test_${shname}_${UNIQUE_PID}.pcap"
 	trap "rm -f $TEST_LOG $TEST_PCAP" EXIT
 
+	if [ -z "$nmbd_log_size" ]; then
+		nmbd_log_size=`wc -l < $NMBD_TEST_LOG`;
+	fi
+	if [ -z "$smbd_log_size" ]; then
+		smbd_log_size=`wc -l < $SMBD_TEST_LOG`;
+	fi
+
 	if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 		echo "--==--==--==--==--==--==--==--==--==--==--"
 		echo "Running test $name (level 0 stdout)"
@@ -175,13 +182,29 @@ testit() {
 
 	( $cmdline > $TEST_LOG 2>&1 )
 	status=$?
+	# show any additional output from smbd that has happened in this test
+	samba3_nmbd_test_log && {
+		new_log_size=`wc -l < $NMBD_TEST_LOG`;
+		test "$new_log_size" = "$nmbd_log_size" || {
+			echo "NMBD OUTPUT:";
+			incr_log_size=`expr $new_log_size - $nmbd_log_size`;
+			tail -$incr_log_size $NMBD_TEST_LOG;
+			nmbd_log_size=$new_log_size;
+		}
+	}
+	samba3_smbd_test_log && {
+		new_log_size=`wc -l < $SMBD_TEST_LOG`;
+		test "$new_log_size" = "$smbd_log_size" || {
+			echo "SMBD OUTPUT:";
+			incr_log_size=`expr $new_log_size - $smbd_log_size`;
+			tail -$incr_log_size $SMBD_TEST_LOG;
+			smbd_log_size=$new_log_size;
+		}
+	}
+
 	if [ x"$status" != x"0" ]; then
 		echo "TEST OUTPUT:"
 		cat $TEST_LOG;
-		samba3_nmbd_test_log && echo "NMBD OUTPUT:";
-		samba3_nmbd_test_log && cat $NMBD_TEST_LOG;
-		samba3_smbd_test_log && echo "SMBD OUTPUT:";
-		samba3_smbd_test_log && cat $SMBD_TEST_LOG;
 		rm -f $TEST_LOG;
 		if [ x"$MAKE_TEST_ENABLE_PCAP" = x"yes" ];then
 			echo "TEST PCAP: $TEST_PCAP"
