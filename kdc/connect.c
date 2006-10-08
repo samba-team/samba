@@ -608,6 +608,7 @@ handle_vanilla_tcp (krb5_context context,
     krb5_storage_free(sp);
     if(d->len - 4 >= len) {
 	memmove(d->buf, d->buf + 4, d->len - 4);
+	d->len -= 4;
 	return 1;
     }
     return 0;
