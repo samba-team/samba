@@ -1,5 +1,7 @@
 2006-10-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/heimdal.texi: Update (c) years.
+
 	* appl/gssmask/protocol.h: Clarify protocol.
 
 	* kdc/hpropd.c: Adapt to signature change of
