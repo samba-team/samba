@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -328,7 +328,7 @@ main(int argc, char **argv)
 	ret = krb5_make_principal(context, &c1, NULL, "kadmin", "hprop", NULL);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_make_principal");
-	_krb5_principalname2krb5_principal(&c2, 
+	_krb5_principalname2krb5_principal(context, &c2, 
 					   authent->cname, authent->crealm);
 	if(!krb5_principal_compare(context, c1, c2)) {
 	    char *s;

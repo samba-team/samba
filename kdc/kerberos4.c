@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -666,7 +666,8 @@ _kdc_encode_v4_ticket(krb5_context context,
 
     {
 	krb5_principal princ;
-	_krb5_principalname2krb5_principal(&princ,
+	_krb5_principalname2krb5_principal(context,
+					   &princ,
 					   *service,
 					   et->crealm);
 	ret = krb5_524_conv_principal(context, 
@@ -678,7 +679,8 @@ _kdc_encode_v4_ticket(krb5_context context,
 	if(ret)
 	    return ret;
 
-	_krb5_principalname2krb5_principal(&princ,
+	_krb5_principalname2krb5_principal(context,
+					   &princ,
 					   et->cname,
 					   et->crealm);
 				     
