@@ -1,5 +1,13 @@
 2006-10-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/gssmask/protocol.h: Clarify protocol.
+
+	* kdc/hpropd.c: Adapt to signature change of
+	_krb5_principalname2krb5_principal.
+
+	* kdc/kerberos4.c: Adapt to signature change of
+	_krb5_principalname2krb5_principal.
+
 	* kdc/connect.c (handle_vanilla_tcp): shorten length when we
 	shorten the buffer, this matter im the PK-INIT encKey case where a
 	checksum is done over the whole packet. Reported by Olga
