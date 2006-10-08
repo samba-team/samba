@@ -106,7 +106,7 @@ cat >$CONFFILE<<EOF
 [global]
 	netbios name = TORTURE_6
 	interfaces = $TORTURE_INTERFACES
-	panic action = $SCRIPTDIR/gdb_backtrace %d
+	panic action = $SCRIPTDIR/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	include = $COMMONCONFFILE
 EOF
 
@@ -123,7 +123,7 @@ cat >$SERVERCONFFILE<<EOF
 	netbios name = $SERVER
 	interfaces = $SERVER_IP/8
 	bind interfaces only = yes
-	panic action = $SCRIPTDIR/gdb_backtrace %d
+	panic action = $SCRIPTDIR/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	include = $COMMONCONFFILE
 
 	; Necessary to add the build farm hacks
@@ -173,6 +173,9 @@ NMBD_TEST_LOG="$PREFIX/nmbd_test.log"
 export NMBD_TEST_LOG
 SMBD_TEST_LOG="$PREFIX/smbd_test.log"
 export SMBD_TEST_LOG
+
+MAKE_TEST_BINARY=""
+export MAKE_TEST_BINARY
 
 # start off with 0 failures
 failed=0
