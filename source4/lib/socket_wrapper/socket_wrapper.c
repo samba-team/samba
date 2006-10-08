@@ -74,6 +74,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#define _PUBLIC_
+
 #error "dlinklist.h missing"
 
 #endif
