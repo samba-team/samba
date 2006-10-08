@@ -1,5 +1,14 @@
 2006-10-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_crypto.in: Put all test stuck at 2006-09-25 since all their
+	chains where valied then.
+
+	* hxtool.c: Implement --time= option.
+
+	* hxtool-commands.in: Add option time.
+
+	* Makefile.am: test_name is a PROGRAM_TESTS
+
 	* ks_p11.c: Return HX509_PKCS11_NO_SLOT when there are no slots
 	and HX509_PKCS11_NO_TOKEN when there are no token. For use in PAM
 	modules that want to detect when to use smartcard login and when
