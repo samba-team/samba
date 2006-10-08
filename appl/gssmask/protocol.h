@@ -206,9 +206,7 @@ enum gssMaggotOp {
      * input:
      *   int32: hostPort
      * return to the port on the host:
-     *   int32: opcode -- controls the rest of the message
-     *          only eLogSetMoniker now
-     *   string: moniker
+     *   int32: opcode - for example eLogSetMoniker
      */
     eChangePassword,
     /* here ended version 7 of the protocol */
