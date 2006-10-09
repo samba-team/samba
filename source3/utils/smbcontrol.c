@@ -882,25 +882,27 @@ static BOOL do_winbind_offline(const struct process_id pid,
 	   5 times. */
 
 	for (retry = 0; retry < 5; retry++) {
-		int err;
 		TDB_DATA d;
+		char buf[4];
+
 		ZERO_STRUCT(d);
+
+		SIVAL(buf, 0, time(NULL));
+		d.dptr = buf;
+		d.dsize = 4;
+
 		tdb_store_bystring(tdb, "WINBINDD_OFFLINE", d, TDB_INSERT);
 
 		ret = send_message(pid, MSG_WINBIND_OFFLINE, NULL, 0, False);
 
 		/* Check that the entry "WINBINDD_OFFLINE" still exists. */
-		/* tdb->ecode = TDB_SUCCESS; */
 		d = tdb_fetch_bystring( tdb, "WINBINDD_OFFLINE" );
-
-		/* As this is a key with no data we don't need to free, we
-		   check for existence by looking at tdb_err. */
-
-		err = tdb_error(tdb);
-
-		if (err == TDB_ERR_NOEXIST) {
+	
+		if (!d.dptr || d.dsize != 4) {
+			SAFE_FREE(d.dptr);
 			DEBUG(10,("do_winbind_offline: offline state not set - retrying.\n"));
 		} else {
+			SAFE_FREE(d.dptr);
 			break;
 		}
 	}
