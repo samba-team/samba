@@ -58,6 +58,10 @@
 
 #else /* _SAMBA_BUILD_ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
