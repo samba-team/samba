@@ -229,7 +229,7 @@ int ldb_msg_add_string(struct ldb_message *msg,
 
 	if (val.length == 0) {
 		/* allow empty strings as non-existant attributes */
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	return ldb_msg_add_value(msg, attr_name, &val);
@@ -595,11 +595,6 @@ int ldb_msg_sanity_check(struct ldb_context *ldb,
 		/* TODO: return also an error string */
 		ldb_set_errstring(ldb, "ldb message lacks a DN!");
 		return LDB_ERR_INVALID_DN_SYNTAX;
-	}
-	if (msg->dn->comp_num == 0) {
-		/* root dse has empty dn */
-		ldb_set_errstring(ldb, "DN on new ldb message is '' (not permitted)!");
-		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 	}
 
 	/* basic syntax checks */
