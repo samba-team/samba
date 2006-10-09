@@ -101,10 +101,10 @@ NTSTATUS pvfs_xattr_unlink_hook(struct pvfs_state *pvfs, const char *fname)
 /*
   load a NDR structure from a xattr
 */
-static NTSTATUS pvfs_xattr_ndr_load(struct pvfs_state *pvfs,
-				    TALLOC_CTX *mem_ctx,
-				    const char *fname, int fd, const char *attr_name,
-				    void *p, ndr_pull_flags_fn_t pull_fn)
+NTSTATUS pvfs_xattr_ndr_load(struct pvfs_state *pvfs,
+			     TALLOC_CTX *mem_ctx,
+			     const char *fname, int fd, const char *attr_name,
+			     void *p, void *pull_fn)
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
@@ -116,7 +116,7 @@ static NTSTATUS pvfs_xattr_ndr_load(struct pvfs_state *pvfs,
 	}
 
 	/* pull the blob */
-	status = ndr_pull_struct_blob(&blob, mem_ctx, p, pull_fn);
+	status = ndr_pull_struct_blob(&blob, mem_ctx, p, (ndr_pull_flags_fn_t)pull_fn);
 
 	data_blob_free(&blob);
 
@@ -126,15 +126,15 @@ static NTSTATUS pvfs_xattr_ndr_load(struct pvfs_state *pvfs,
 /*
   save a NDR structure into a xattr
 */
-static NTSTATUS pvfs_xattr_ndr_save(struct pvfs_state *pvfs,
-				    const char *fname, int fd, const char *attr_name, 
-				    void *p, ndr_push_flags_fn_t push_fn)
+NTSTATUS pvfs_xattr_ndr_save(struct pvfs_state *pvfs,
+			     const char *fname, int fd, const char *attr_name, 
+			     void *p, void *push_fn)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	DATA_BLOB blob;
 	NTSTATUS status;
 
-	status = ndr_push_struct_blob(&blob, mem_ctx, p, push_fn);
+	status = ndr_push_struct_blob(&blob, mem_ctx, p, (ndr_push_flags_fn_t)push_fn);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return status;
