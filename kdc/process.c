@@ -42,14 +42,15 @@ RCSID("$Id$");
  */
 
 int
-krb5_kdc_process_generic_request(krb5_context context, 
-				 krb5_kdc_configuration *config,
-				 unsigned char *buf, 
-				 size_t len, 
-				 krb5_data *reply,
-				 krb5_boolean *prependlength,
-				 const char *from,
-				 struct sockaddr *addr)
+krb5_kdc_process_request(krb5_context context, 
+			 krb5_kdc_configuration *config,
+			 unsigned char *buf, 
+			 size_t len, 
+			 krb5_data *reply,
+			 krb5_boolean *prependlength,
+			 const char *from,
+			 struct sockaddr *addr,
+			 int datagram_reply)
 {
     KDC_REQ req;
     Ticket ticket;
@@ -65,7 +66,7 @@ krb5_kdc_process_generic_request(krb5_context context,
 	req_buffer.length = len;
 
 	ret = _kdc_as_rep(context, config, &req, &req_buffer, 
-			  reply, from, addr);
+			  reply, from, addr, datagram_reply);
 	free_AS_REQ(&req);
 	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
@@ -108,7 +109,8 @@ krb5_kdc_process_krb5_request(krb5_context context,
 			      size_t len, 
 			      krb5_data *reply,
 			      const char *from,
-			      struct sockaddr *addr)
+			      struct sockaddr *addr,
+			      int datagram_reply)
 {
     KDC_REQ req;
     krb5_error_code ret;
@@ -122,7 +124,7 @@ krb5_kdc_process_krb5_request(krb5_context context,
 	req_buffer.length = len;
 
 	ret = _kdc_as_rep(context, config, &req, &req_buffer,
-			  reply, from, addr);
+			  reply, from, addr, datagram_reply);
 	free_AS_REQ(&req);
 	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
