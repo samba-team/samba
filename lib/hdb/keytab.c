@@ -44,7 +44,7 @@ struct hdb_data {
 
 /*
  * the format for HDB keytabs is:
- * HDB:[database:mkey]
+ * HDB:[database:file:mkey]
  */
 
 static krb5_error_code
