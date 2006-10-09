@@ -119,6 +119,8 @@ struct ldb_context {
 	int default_timeout;
 
 	unsigned int flags;
+
+	unsigned int create_perms;
 };
 
 #ifndef ARRAY_SIZE
