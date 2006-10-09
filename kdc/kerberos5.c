@@ -805,7 +805,8 @@ _kdc_as_rep(krb5_context context,
 	    const krb5_data *req_buffer, 
 	    krb5_data *reply,
 	    const char *from,
-	    struct sockaddr *from_addr)
+	    struct sockaddr *from_addr,
+	    int datagram_reply)
 {
     KDC_REQ_BODY *b = &req->req_body;
     AS_REP rep;
@@ -1475,6 +1476,16 @@ _kdc_as_rep(krb5_context context,
 			    reply_key, &e_text, reply);
     free_EncTicketPart(&et);
     free_EncKDCRepPart(&ek);
+    if (ret)
+	goto out;
+
+    /* */
+    if (datagram_reply && reply->length > config->max_datagram_reply_length) {
+	krb5_data_free(reply);
+	ret = KRB5KRB_ERR_RESPONSE_TOO_BIG;
+	e_text = "Reply packet too large";
+    }
+
 out:
     free_AS_REP(&rep);
     if(ret){
