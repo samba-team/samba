@@ -409,6 +409,7 @@ krb5_digest_init_request(krb5_context context,
     krb5_error_code ret;
 
     memset(&ireq, 0, sizeof(ireq));
+    memset(&irep, 0, sizeof(irep));
 
     if (digest->init.type == NULL) {
 	krb5_set_error_string(context, "Type missing from init req");
@@ -685,6 +686,7 @@ krb5_digest_request(krb5_context context,
     krb5_error_code ret;
 
     memset(&ireq, 0, sizeof(ireq));
+    memset(&irep, 0, sizeof(irep));
 
     ireq.element = choice_DigestReqInner_digestRequest;
     ireq.u.digestRequest = digest->request;
