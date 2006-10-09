@@ -419,6 +419,14 @@ configure(krb5_context context, int argc, char **argv)
 				     "kdc", 
 				     "allow-anonymous", NULL);
 
+    config->max_datagram_reply_length =
+	krb5_config_get_int_default(context, 
+				    NULL, 
+				    1400,
+				    "kdc",
+				    "max-kdc-datagram-reply-length",
+				    NULL);
+
     trpolicy_str = 
 	krb5_config_get_string_default(context, NULL, "DEFAULT", "kdc", 
 				       "transited-policy", NULL);
