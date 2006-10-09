@@ -161,7 +161,7 @@ void winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	if (!parse_domain_user(state->request.data.ccache_ntlm_auth.user,
+	if (!canonicalize_username(state->request.data.ccache_ntlm_auth.user,
 				name_domain, name_user)) {
 		DEBUG(5,("winbindd_ccache_ntlm_auth: cannot parse domain and user from name [%s]\n",
 			state->request.data.ccache_ntlm_auth.user));

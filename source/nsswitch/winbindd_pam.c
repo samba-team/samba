@@ -677,7 +677,7 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 	
-	if (!parse_domain_user(state->request.data.auth.user,
+	if (!canonicalize_username(state->request.data.auth.user,
 			       name_domain, name_user)) {
 		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
 		DEBUG(5, ("Plain text authentication for %s returned %s "
@@ -1806,7 +1806,16 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
 	/* Setup crap */
 
-	parse_domain_user(state->request.data.chauthtok.user, domain, user);
+	if (!canonicalize_username(state->request.data.chauthtok.user, domain, user)) {
+		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
+		DEBUG(5, ("winbindd_pam_chauthtok: canonicalize_username %s failed with %s"
+			  "(PAM: %d)\n",
+			  state->request.data.auth.user, 
+			  state->response.data.auth.nt_status_string,
+			  state->response.data.auth.pam_error));
+		request_error(state);
+		return;
+	}
 
 	contact_domain = find_domain_from_name(domain);
 	if (!contact_domain) {
@@ -1941,7 +1950,7 @@ void winbindd_pam_logoff(struct winbindd_cli_state *state)
 	state->request.data.logoff.krb5ccname
 		[sizeof(state->request.data.logoff.krb5ccname)-1]='\0';
 
-	if (!parse_domain_user(state->request.data.logoff.user, name_domain, user)) {
+	if (!canonicalize_username(state->request.data.logoff.user, name_domain, user)) {
 		goto failed;
 	}
 

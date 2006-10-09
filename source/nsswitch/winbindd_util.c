@@ -888,6 +888,26 @@ BOOL parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 	return ((*domain != NULL) && (*user != NULL));
 }
 
+/* Ensure an incoming username from NSS is fully qualified. Replace the
+   incoming fstring with DOMAIN <separator> user. Returns the same
+   values as parse_domain_user() but also replaces the incoming username.
+   Used to ensure all names are fully qualified within winbindd.
+   Used by the NSS protocols of auth, chauthtok, logoff and ccache_ntlm_auth.
+   The protocol definitions of auth_crap, chng_pswd_auth_crap
+   really should be changed to use this instead of doing things
+   by hand. JRA. */
+
+BOOL canonicalize_username(fstring username_inout, fstring domain, fstring user)
+{
+	if (!parse_domain_user(username_inout, domain, user)) {
+		return False;
+	}
+	slprintf(username_inout, sizeof(fstring) - 1, "%s%c%s",
+		 domain, *lp_winbind_separator(),
+		 user);
+	return True;
+}
+
 /*
     Fill DOMAIN\\USERNAME entry accounting 'winbind use default domain' and
     'winbind separator' options.
