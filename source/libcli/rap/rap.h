@@ -343,3 +343,17 @@ struct rap_NetServerEnum2 {
 		union rap_server_info *info;
 	} out;
 };
+
+struct rap_WserverGetInfo {
+	struct {
+		uint16_t level;
+		uint16_t bufsize;
+	} in;
+
+	struct {
+		uint16_t status;
+		uint16_t convert;
+		uint16_t available;
+		union rap_server_info info;
+	} out;
+};
