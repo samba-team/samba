@@ -81,7 +81,8 @@ const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *m
 	int i;
 
 	/* spaces not admitted */
-	modstr = talloc_strdup_no_spaces(mem_ctx, string);
+	modstr = talloc_strdup_no_spaces((struct ldb_context *)mem_ctx,
+					 string);
 	if ( ! modstr) {
 		return NULL;
 	}

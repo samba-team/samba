@@ -67,7 +67,7 @@ struct ldb_val ldb_binary_decode(void *mem_ctx, const char *str)
 	struct ldb_val ret;
 	int slen = str?strlen(str):0;
 
-	ret.data = talloc_size(mem_ctx, slen+1);
+	ret.data = (uint8_t *)talloc_size(mem_ctx, slen+1);
 	ret.length = 0;
 	if (ret.data == NULL) return ret;
 
@@ -134,7 +134,7 @@ char *ldb_binary_encode(void *mem_ctx, struct ldb_val val)
 char *ldb_binary_encode_string(void *mem_ctx, const char *string)
 {
 	struct ldb_val val;
-	val.data = discard_const(string);
+	val.data = discard_const_p(uint8_t, string);
 	val.length = strlen(string);
 	return ldb_binary_encode(mem_ctx, val);
 }
@@ -285,7 +285,7 @@ static enum ldb_parse_op ldb_parse_filtertype(void *mem_ctx, char **type, char *
 	}
 
 	/* save name */
-	name = talloc_memdup(mem_ctx, t, t1 - t + 1);
+	name = (char *)talloc_memdup(mem_ctx, t, t1 - t + 1);
 	if (name == NULL) return 0;
 	name[t1 - t] = '\0';
 
@@ -326,7 +326,7 @@ static enum ldb_parse_op ldb_parse_filtertype(void *mem_ctx, char **type, char *
 
 	while (*p && ((*p != ')') || ((*p == ')') && (*(p - 1) == '\\')))) p++;
 
-	val = talloc_memdup(mem_ctx, t, p - t + 1);
+	val = (char *)talloc_memdup(mem_ctx, t, p - t + 1);
 	if (val == NULL) {
 		talloc_free(name);
 		return 0;

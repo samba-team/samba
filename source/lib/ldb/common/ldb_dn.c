@@ -112,7 +112,7 @@ static struct ldb_val ldb_dn_unescape_value(void *mem_ctx, const char *src)
 
 	LDB_DN_NULL_FAILED(src);
 
-	dst = p = talloc_memdup(mem_ctx, src, strlen(src) + 1);
+	dst = p = (char *)talloc_memdup(mem_ctx, src, strlen(src) + 1);
 	LDB_DN_NULL_FAILED(dst);
 
 	end = &dst[strlen(dst)];
@@ -300,7 +300,8 @@ static struct ldb_dn_component ldb_dn_explode_component(void *mem_ctx, char *raw
 		p[qe] = '\0';
 		p = p + qs + 1;
 		dc.value.length = strlen(p);
-		dc.value.data = talloc_memdup(mem_ctx, p, dc.value.length + 1);
+		dc.value.data = (uint8_t *)talloc_memdup(mem_ctx, p,
+							 dc.value.length + 1);
 		break;
 
 	default: /* mismatched quotes ot other error, bail out */
