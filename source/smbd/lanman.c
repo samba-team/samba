@@ -2691,7 +2691,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 
 		if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
 			for (i=0;i<count;i++) {
-				if (strequal(servers[i].name,get_local_machine_name())) {
+				if (strequal(servers[i].name,global_myname())) {
 					servertype = servers[i].type;
 					push_ascii(comment,servers[i].comment,sizeof(pstring),STR_TERMINATE);
 				}
