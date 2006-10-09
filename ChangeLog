@@ -1,5 +1,8 @@
 2006-10-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/keytab.c: Add more HDB_F flags to hdb_fetch. Pointed out
+	by Andrew Bartlet.
+
 	* kdc/krb5tgs.c (tgs_parse_request): set cusec, not csec from
 	auth->cusec.
 	
