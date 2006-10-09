@@ -2523,7 +2523,6 @@ done:
 BOOL set_global_winbindd_state_offline(void)
 {
 	TDB_DATA data;
-	int err;
 
 	DEBUG(10,("set_global_winbindd_state_offline: offline requested.\n"));
 
@@ -2545,21 +2544,16 @@ BOOL set_global_winbindd_state_offline(void)
 		return True;
 	}
 
-/*	wcache->tdb->ecode = 0; */
-
 	data = tdb_fetch_bystring( wcache->tdb, "WINBINDD_OFFLINE" );
 
-	/* As this is a key with no data we don't need to free, we
-	   check for existence by looking at tdb_err. */
-
-	err = tdb_error(wcache->tdb);
-
-	if (err == TDB_ERR_NOEXIST) {
+	if (!data.dptr || data.dsize != 4) {
 		DEBUG(10,("set_global_winbindd_state_offline: offline state not set.\n"));
+		SAFE_FREE(data.dptr);
 		return False;
 	} else {
 		DEBUG(10,("set_global_winbindd_state_offline: offline state set.\n"));
 		global_winbindd_offline_state = True;
+		SAFE_FREE(data.dptr);
 		return True;
 	}
 }
