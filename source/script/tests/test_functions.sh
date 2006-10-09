@@ -161,7 +161,12 @@ testit() {
 		fi
 		return 1;
 	fi
-	rm -f $TEST_LOG $TEST_PCAP;
+	rm -f $TEST_LOG;
+	if [ x"$MAKE_TEST_KEEP_PCAP" = x"yes" ];then
+		echo "TEST PCAP: $TEST_PCAP"
+	else
+		rm -f $TEST_PCAP;
+	fi
 	if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 		echo "ALL OK: $cmdline"
 		echo "=========================================="
