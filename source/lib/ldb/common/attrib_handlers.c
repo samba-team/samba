@@ -230,7 +230,7 @@ static int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 	out->length = 0;
 	out->data = NULL;
 
-	dn = ldb_dn_explode_casefold(ldb, (char *)in->data);
+	dn = ldb_dn_explode_casefold(ldb, mem_ctx, (char *)in->data);
 	if (dn == NULL) {
 		return -1;
 	}
@@ -258,10 +258,10 @@ static int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
 	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
 	int ret;
 
-	dn1 = ldb_dn_explode_casefold(mem_ctx, (char *)v1->data);
+	dn1 = ldb_dn_explode_casefold(ldb, mem_ctx, (char *)v1->data);
 	if (dn1 == NULL) return -1;
 
-	dn2 = ldb_dn_explode_casefold(mem_ctx, (char *)v2->data);
+	dn2 = ldb_dn_explode_casefold(ldb, mem_ctx, (char *)v2->data);
 	if (dn2 == NULL) {
 		talloc_free(dn1);
 		return -1;
