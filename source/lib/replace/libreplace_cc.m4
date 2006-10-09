@@ -64,6 +64,10 @@ case "$host_os" in
 			AC_MSG_WARN([Enabling HPUX 11.11 header bug workaround])
 			CFLAGS="$CFLAGS -D_LARGEFILE64_SUPPORT -D__LP64__ -DO_LARGEFILE=04000"
 		fi
+		if test "`uname -r`" = "B.11.11"; then
+			AC_MSG_WARN([Enabling HPUX 11.23 machine/sys/getppdp.h bug workaround])
+			CFLAGS="$CFLAGS -D_MACHINE_SYS_GETPPDP_INCLUDED"
+		fi
 		;;
 	*aix*)
 		AC_DEFINE(BROKEN_STRNDUP, 1, [Whether strndup is broken])
