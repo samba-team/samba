@@ -210,10 +210,15 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 	}
 
 	for (i=0;i<count;i++) {
-		el->values[i].data = talloc_memdup(el->values, bval[i]->bv_val, bval[i]->bv_len);
+		/* we have to ensure this is null terminated so that
+		   ldb_msg_find_attr_as_string() can work */
+		el->values[i].data = talloc_size(el->values, bval[i]->bv_len+1);
 		if (!el->values[i].data) {
+			errno = ENOMEM;
 			return -1;
 		}
+		memcpy(el->values[i].data, bval[i]->bv_val, bval[i]->bv_len);
+		el->values[i].data[bval[i]->bv_len] = 0;
 		el->values[i].length = bval[i]->bv_len;
 		el->num_values++;
 	}
