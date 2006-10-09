@@ -1,5 +1,11 @@
 2006-10-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* socket_wrapper.c: Protect AF_INET6 with #ifdef HAVE_IPV6.
+
+	* socket_wrapper.c: Use a symbol for the v6 address.
+
+	* socket_wrapper.c: Add IPv6 suppport.
+	
 	* socket_wrapper.[ch]: Include socket wrapper from samba4 (rev
 	19179).
 	
