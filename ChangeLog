@@ -1,5 +1,18 @@
 2006-10-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/connect.c (do_request): tell krb5_kdc_process_request if its
+	a datagram reply or not
+
+	* kdc/kerberos5.c: Reply KRB5KRB_ERR_RESPONSE_TOO_BIG error if its
+	a datagram reply and the datagram reply length limit is reached.
+
+	* kdc/process.c: Rename krb5_kdc_process_generic_request to
+	krb5_kdc_process_request Add datagram_reply argument.
+
+	* kdc/config.c: check for [kdc]max-kdc-datagram-reply-length
+
+	* kdc/kdc.h (krb5_kdc_config): Add max_datagram_reply_length.
+
 	* lib/hdb/keytab.c: Change || to |, From metze.
 
 	* lib/hdb/keytab.c: Add back :file to sample format.
