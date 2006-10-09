@@ -73,9 +73,9 @@
 #include <stdio.h>
 
 #include "socket_wrapper.h"
+#define HAVE_GETTIMEOFDAY_TZ 1
 
 #define _PUBLIC_
-#define HAVE_GETTIMEOFDAY_TZ 1
 
 #endif
 
@@ -151,6 +151,8 @@
 #define SOCKET_TYPE_CHAR_UDP_V6		'u'
 
 #define MAX_WRAPPED_INTERFACES 16
+
+#define SW_IPV6_ADDRESS 1
 
 static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 {
@@ -283,7 +285,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, sock
 
 		memset(in2, 0, sizeof(*in2));
 		in2->sin6_family = AF_INET6;
-		in2->sin6_addr.s6_addr[0] = iface + 1; /*XXX*/
+		in2->sin6_addr.s6_addr[0] = SW_IPV6_ADDRESS;
 		in2->sin6_port = htons(prt);
 
 		*len = sizeof(*in2);
@@ -365,7 +367,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 		/* XXX no multicast/broadcast */
 
 		prt = ntohs(in->sin6_port);
-		iface = 0 + 1; /* XXX */
+		iface = SW_IPV6_ADDRESS;
 		
 		break;
 	}
@@ -469,7 +471,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		/* XXX no multicast/broadcast */
 
 		prt = ntohs(in->sin6_port);
-		iface = 0 + 1; /* XXX */
+		iface = SW_IPV6_ADDRESS;
 		
 		break;
 	}
@@ -1368,7 +1370,7 @@ static int swrap_auto_bind(struct socket_info *si)
 
 		memset(&in6, 0, sizeof(in6));
 		in6.sin6_family = AF_INET6;
-		in6.sin6_addr.s6_addr[0] = 1; /* XXX */
+		in6.sin6_addr.s6_addr[0] = SW_IPV6_ADDRESS;
 		si->myname_len = sizeof(in6);
 		si->myname = sockaddr_dup(&in6, si->myname_len);
 		break;
