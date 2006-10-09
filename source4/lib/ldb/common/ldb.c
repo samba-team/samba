@@ -161,7 +161,7 @@ static const struct ldb_dn *ldb_set_default_basedn(struct ldb_context *ldb)
 	struct ldb_result *res;
 	struct ldb_dn *basedn=NULL;
 
-	basedn = ldb_get_opaque(ldb, "default_baseDN");
+	basedn = (struct ldb_dn *)ldb_get_opaque(ldb, "default_baseDN");
 	if (basedn) {
 		return basedn;
 	}
@@ -183,7 +183,7 @@ static const struct ldb_dn *ldb_set_default_basedn(struct ldb_context *ldb)
 
 const struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb)
 {
-	return ldb_get_opaque(ldb, "default_baseDN");
+	return (const struct ldb_dn *)ldb_get_opaque(ldb, "default_baseDN");
 }
 
 /* 
