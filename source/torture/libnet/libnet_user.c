@@ -317,8 +317,8 @@ done:
   Generate testing set of random changes
 */
 
-void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r, int num_changes,
-		      char **user_name, enum test_fields req_change)
+static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
+			     int num_changes, char **user_name, enum test_fields req_change)
 {
 	const char* logon_scripts[] = { "start_login.cmd", "login.bat", "start.cmd" };
 	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
