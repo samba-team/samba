@@ -1042,7 +1042,8 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 	/* note that we use quite a large default hash size */
 	ltdb->tdb = ltdb_wrap_open(ltdb, path, 10000, 
-				   tdb_flags, open_flags, 0644, ldb);
+				   tdb_flags, open_flags, 
+				   ldb->create_perms, ldb);
 	if (!ltdb->tdb) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unable to open tdb '%s'\n", path);
 		talloc_free(ltdb);
