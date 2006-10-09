@@ -1,4 +1,9 @@
-2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* socket_wrapper.[ch]: Include socket wrapper from samba4 (rev
+	19179).
+	
+2006-10-07 Love Hörnquist Åstrand <lha@it.su.se>
 
 	* Makefile.am: Add build_HEADERZ to EXTRA_DIST
 
