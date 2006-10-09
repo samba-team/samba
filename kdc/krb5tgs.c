@@ -1103,7 +1103,7 @@ tgs_parse_request(krb5_context context,
 		kdc_log(context, config, 0, "malloc failed");
 		goto out;
 	    }
-	    **csec  = auth->cusec;
+	    **cusec  = auth->cusec;
 	    krb5_free_authenticator(context, &auth);
 	}
     }
