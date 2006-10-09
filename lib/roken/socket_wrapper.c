@@ -167,9 +167,11 @@ static void set_port(int family, int prt, struct sockaddr *addr)
 	case AF_INET:
 		((struct sockaddr_in *)addr)->sin_port = htons(prt);
 		break;
+#ifdef HAVE_IPV6
 	case AF_INET6:
 		((struct sockaddr_in6 *)addr)->sin6_port = htons(prt);
 		break;
+#endif
 	}
 }
 
@@ -274,6 +276,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, sock
 		*len = sizeof(*in2);
 		break;
 	}
+#ifdef HAVE_IPV6
 	case SOCKET_TYPE_CHAR_TCP_V6:
 	case SOCKET_TYPE_CHAR_UDP_V6: {
 		struct sockaddr_in6 *in2 = (struct sockaddr_in6 *)in;
@@ -291,6 +294,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, sock
 		*len = sizeof(*in2);
 		break;
 	}
+#endif
 	default:
 		errno = EINVAL;
 		return -1;
@@ -351,6 +355,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 		}
 		if (bcast) *bcast = is_bcast;
 	}
+#ifdef HAVE_IPV6
 	case AF_INET6: {
 		const struct sockaddr_in6 *in = 
 		    (const struct sockaddr_in6 *)inaddr;
@@ -371,6 +376,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 		
 		break;
 	}
+#endif
 	default:
 		errno = ENETUNREACH;
 		return -1;
@@ -455,6 +461,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			return -1;
 		}
 	}
+#ifdef HAVE_IPV6
 	case AF_INET6: {
 		const struct sockaddr_in6 *in = 
 		    (const struct sockaddr_in6 *)inaddr;
@@ -475,6 +482,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		
 		break;
 	}
+#endif
 	default:
 		errno = ENETUNREACH;
 		return -1;
@@ -520,7 +528,9 @@ static int sockaddr_convert_to_un(struct socket_info *si, const struct sockaddr 
 
 	switch (in_addr->sa_family) {
 	case AF_INET:
+#ifdef HAVE_IPV6
 	case AF_INET6:
+#endif
 		switch (si->type) {
 		case SOCK_STREAM:
 		case SOCK_DGRAM:
@@ -566,7 +576,9 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 
 	switch (family) {
 	case AF_INET:
+#ifdef HAVE_IPV6
 	case AF_INET6:
+#endif
 		switch (si->type) {
 		case SOCK_STREAM:
 		case SOCK_DGRAM:
@@ -909,7 +921,9 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 
 	switch (si->family) {
 	case AF_INET:
+#ifdef HAVE_IPV6
 	case AF_INET6:
+#endif
 		break;
 	default:
 		return;
@@ -1175,7 +1189,9 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 
 	switch (family) {
 	case AF_INET:
+#ifdef HAVE_IPV6
 	case AF_INET6:
+#endif
 		break;
 	case AF_UNIX:
 		return real_socket(family, type, protocol);
@@ -1353,6 +1369,7 @@ static int swrap_auto_bind(struct socket_info *si)
 		si->myname = sockaddr_dup(&in, si->myname_len);
 		break;
 	}
+#ifdef HAVE_IPV6
 	case AF_INET6: {
 		struct sockaddr_in6 in6;
 
@@ -1375,6 +1392,7 @@ static int swrap_auto_bind(struct socket_info *si)
 		si->myname = sockaddr_dup(&in6, si->myname_len);
 		break;
 	}
+#endif
 	default:
 		errno = ESOCKTNOSUPPORT;
 		return -1;
