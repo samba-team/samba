@@ -1,5 +1,7 @@
 2006-10-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/keytab.c: Change || to |, From metze.
+
 	* lib/hdb/keytab.c: Add back :file to sample format.
 
 	* lib/hdb/keytab.c: Add more HDB_F flags to hdb_fetch. Pointed out
