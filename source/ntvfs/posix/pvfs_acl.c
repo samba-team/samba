@@ -27,6 +27,60 @@
 #include "libcli/security/security.h"
 
 
+/* the list of currently registered ACL backends */
+static struct pvfs_acl_backend {
+	const struct pvfs_acl_ops *ops;
+} *backends = NULL;
+static int num_backends;
+
+/*
+  register a pvfs acl backend. 
+
+  The 'name' can be later used by other backends to find the operations
+  structure for this backend.  
+*/
+_PUBLIC_ NTSTATUS pvfs_acl_register(const struct pvfs_acl_ops *ops)
+{
+	struct pvfs_acl_ops *new_ops;
+
+	if (pvfs_acl_backend_byname(ops->name) != NULL) {
+		DEBUG(0,("pvfs acl backend '%s' already registered\n", ops->name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	backends = talloc_realloc(talloc_autofree_context(), backends, struct pvfs_acl_backend, num_backends+1);
+	NT_STATUS_HAVE_NO_MEMORY(backends);
+
+	new_ops = talloc_memdup(backends, ops, sizeof(*ops));
+	new_ops->name = talloc_strdup(new_ops, ops->name);
+
+	backends[num_backends].ops = new_ops;
+
+	num_backends++;
+
+	DEBUG(3,("NTVFS backend '%s' registered\n", ops->name));
+
+	return NT_STATUS_OK;
+}
+
+
+/*
+  return the operations structure for a named backend
+*/
+_PUBLIC_ const struct pvfs_acl_ops *pvfs_acl_backend_byname(const char *name)
+{
+	int i;
+
+	for (i=0;i<num_backends;i++) {
+		if (strcmp(backends[i].ops->name, name) == 0) {
+			return backends[i].ops;
+		}
+	}
+
+	return NULL;
+}
+
+
 /*
   map a single access_mask from generic to specific bits for files/dirs
 */
@@ -67,17 +121,18 @@ static void pvfs_translate_generic_bits(struct security_acl *acl)
 static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 				 struct ntvfs_request *req,
 				 struct pvfs_filename *name, int fd, 
-				 struct xattr_NTACL *acl)
+				 struct security_descriptor **psd)
 {
 	struct security_descriptor *sd;
 	NTSTATUS status;
 	struct security_ace ace;
 	mode_t mode;
 
-	sd = security_descriptor_initialise(req);
-	if (sd == NULL) {
+	*psd = security_descriptor_initialise(req);
+	if (*psd == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	sd = *psd;
 
 	status = sidmap_uid_to_sid(pvfs->sidmap, sd, name->st.st_uid, &sd->owner_sid);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -154,9 +209,6 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	ace.access_mask = SEC_RIGHTS_FILE_ALL;
 	security_descriptor_dacl_add(sd, &ace);
 	
-	acl->version = 1;
-	acl->info.sd = sd;
-
 	return NT_STATUS_OK;
 }
 				 
@@ -190,34 +242,22 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		      uint32_t access_mask,
 		      union smb_setfileinfo *info)
 {
-	struct xattr_NTACL *acl;
 	uint32_t secinfo_flags = info->set_secdesc.in.secinfo_flags;
 	struct security_descriptor *new_sd, *sd, orig_sd;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_NOT_FOUND;
 	uid_t old_uid = -1;
 	gid_t old_gid = -1;
 	uid_t new_uid = -1;
 	gid_t new_gid = -1;
 
-	acl = talloc(req, struct xattr_NTACL);
-	if (acl == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (pvfs->acl_ops != NULL) {
+		status = pvfs->acl_ops->acl_load(pvfs, name, fd, req, &sd);
 	}
-
-	status = pvfs_acl_load(pvfs, name, fd, acl);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		status = pvfs_default_acl(pvfs, req, name, fd, acl);
+		status = pvfs_default_acl(pvfs, req, name, fd, &sd);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	switch (acl->version) {
-	case 1:
-		sd = acl->info.sd;
-		break;
-	default:
-		return NT_STATUS_INVALID_ACL;
 	}
 
 	new_sd = info->set_secdesc.in.sd;
@@ -286,8 +326,8 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	/* we avoid saving if the sd is the same. This means when clients
 	   copy files and end up copying the default sd that we don't
 	   needlessly use xattrs */
-	if (!security_descriptor_equal(sd, &orig_sd)) {
-		status = pvfs_acl_save(pvfs, name, fd, acl);
+	if (!security_descriptor_equal(sd, &orig_sd) && pvfs->acl_ops) {
+		status = pvfs->acl_ops->acl_save(pvfs, name, fd, sd);
 	}
 
 	return status;
@@ -302,29 +342,17 @@ NTSTATUS pvfs_acl_query(struct pvfs_state *pvfs,
 			struct pvfs_filename *name, int fd, 
 			union smb_fileinfo *info)
 {
-	struct xattr_NTACL *acl;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_NOT_FOUND;
 	struct security_descriptor *sd;
 
-	acl = talloc(req, struct xattr_NTACL);
-	if (acl == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (pvfs->acl_ops) {
+		status = pvfs->acl_ops->acl_load(pvfs, name, fd, req, &sd);
 	}
-
-	status = pvfs_acl_load(pvfs, name, fd, acl);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		status = pvfs_default_acl(pvfs, req, name, fd, acl);
+		status = pvfs_default_acl(pvfs, req, name, fd, &sd);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	switch (acl->version) {
-	case 1:
-		sd = acl->info.sd;
-		break;
-	default:
-		return NT_STATUS_INVALID_ACL;
 	}
 
 	normalise_sd_flags(sd, info->query_secdesc.in.secinfo_flags);
