@@ -52,6 +52,7 @@ struct ldb_context *ldb_init(void *mem_ctx)
 	}
 
 	ldb_set_utf8_default(ldb);
+	ldb_set_create_perms(ldb, 0666);
 
 	return ldb;
 }
@@ -453,6 +454,16 @@ int ldb_set_timeout_from_prev_req(struct ldb_context *ldb, struct ldb_request *o
 	newreq->timeout = oldreq->timeout - (now - oldreq->starttime);
 
 	return LDB_SUCCESS;
+}
+
+
+/* 
+   set the permissions for new files to be passed to open() in
+   backends that use local files
+ */
+void ldb_set_create_perms(struct ldb_context *ldb, unsigned int perms)
+{
+	ldb->create_perms = perms;
 }
 
 /*
