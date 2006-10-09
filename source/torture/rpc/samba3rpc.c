@@ -2369,7 +2369,6 @@ static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *pipe,
 	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }
-	
 
 BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 {
@@ -2447,15 +2446,9 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 		r.out.handle = &server_handle;
 
 		status = dcerpc_spoolss_OpenPrinterEx(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
-				 "%s\n", __location__, nt_errstr(status));
-			talloc_free(mem_ctx);
-			return False;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
-				 "%s\n", __location__,
+				 "%s, %s\n", __location__, nt_errstr(status),
 				 win_errstr(r.out.result));
 			talloc_free(mem_ctx);
 			return False;
@@ -2469,15 +2462,9 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 		r.out.handle = &server_handle;
 
 		status = dcerpc_spoolss_ClosePrinter(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 			d_printf("(%s) dcerpc_spoolss_ClosePrinter failed: "
-				 "%s\n", __location__, nt_errstr(status));
-			talloc_free(mem_ctx);
-			return False;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("(%s) dcerpc_spoolss_ClosePrinter failed: "
-				 "%s\n", __location__,
+				 "%s, %s\n", __location__, nt_errstr(status),
 				 win_errstr(r.out.result));
 			talloc_free(mem_ctx);
 			return False;
@@ -2497,15 +2484,9 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 		r.out.handle = &printer_handle;
 
 		status = dcerpc_spoolss_OpenPrinterEx(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
-				 "%s\n", __location__, nt_errstr(status));
-			talloc_free(mem_ctx);
-			return False;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			d_printf("(%s) dcerpc_spoolss_OpenPrinterEx failed: "
-				 "%s\n", __location__,
+				 "%s, %s\n", __location__, nt_errstr(status),
 				 win_errstr(r.out.result));
 			talloc_free(mem_ctx);
 			return False;
