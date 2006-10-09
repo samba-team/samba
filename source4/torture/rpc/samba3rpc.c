@@ -22,8 +22,10 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/rap/rap.h"
 #include "torture/torture.h"
 #include "torture/util.h"
+#include "torture/rap/proto.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr.h"
@@ -2171,6 +2173,32 @@ BOOL torture_samba3_rpc_lsa(struct torture_context *torture)
 	return ret;
 }
 
+static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
+			       char **name)
+{
+	struct rap_WserverGetInfo r;
+	NTSTATUS status;
+	char servername[17];
+
+	r.in.level = 0;
+	r.in.bufsize = 0xffff;
+
+	status = smbcli_rap_netservergetinfo(tree, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	memcpy(servername, r.out.info.info0.name, 16);
+	servername[16] = '\0';
+
+	if (pull_ascii_talloc(mem_ctx, name, servername) < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+
 static NTSTATUS find_printers(TALLOC_CTX *ctx, struct smbcli_tree *tree,
 			      const char ***printers, int *num_printers)
 {
@@ -2230,14 +2258,14 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct smbcli_tree *tree,
 }
 
 static BOOL enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
-			 int level, int *num_printers)
+			 const char *servername, int level, int *num_printers)
 {
 	struct spoolss_EnumPrinters r;
 	NTSTATUS status;
 	DATA_BLOB blob;
 
 	r.in.flags = PRINTER_ENUM_LOCAL;
-	r.in.server = "\\\\localhost";
+	r.in.server = talloc_asprintf(mem_ctx, "\\\\%s", servername);
 	r.in.level = level;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
@@ -2354,6 +2382,7 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 	const char **printers;
 	int num_printers;
 	struct spoolss_UserLevel1 userlevel1;
+	char *servername;
 
 	if (!(mem_ctx = talloc_new(torture))) {
 		return False;
@@ -2363,6 +2392,14 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 		      mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
 		      "IPC$", NULL))) {
 		d_printf("IPC$ connection failed\n");
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	status = get_servername(mem_ctx, cli->tree, &servername);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "(%s) get_servername returned %s\n",
+			  __location__, nt_errstr(status));
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2401,7 +2438,8 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 		struct spoolss_OpenPrinterEx r;
 
 		ZERO_STRUCT(r);
-		r.in.printername = "\\\\localhost";
+		r.in.printername = talloc_asprintf(mem_ctx, "\\\\%s",
+						   servername);
 		r.in.datatype = NULL;
 		r.in.access_mask = 0;
 		r.in.level = 1;
@@ -2451,7 +2489,7 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 
 		ZERO_STRUCT(r);
 		r.in.printername = talloc_asprintf(
-			mem_ctx, "\\\\localhost\\%s", printers[0]);
+			mem_ctx, "\\\\%s\\%s", servername, printers[0]);
 		r.in.datatype = NULL;
 		r.in.access_mask = 0;
 		r.in.level = 1;
@@ -2510,7 +2548,8 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 
 	{
 		int num_enumerated;
-		if (!enumprinters(mem_ctx, p, 1, &num_enumerated)) {
+		if (!enumprinters(mem_ctx, p, servername, 1,
+				  &num_enumerated)) {
 			d_printf("(%s) enumprinters failed\n", __location__);
 			talloc_free(mem_ctx);
 			return False;
@@ -2526,7 +2565,8 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 
 	{
 		int num_enumerated;
-		if (!enumprinters(mem_ctx, p, 2, &num_enumerated)) {
+		if (!enumprinters(mem_ctx, p, servername, 2,
+				  &num_enumerated)) {
 			d_printf("(%s) enumprinters failed\n", __location__);
 			talloc_free(mem_ctx);
 			return False;
