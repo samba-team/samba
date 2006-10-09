@@ -162,7 +162,7 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, struct rap_call *call)
+static NTSTATUS rap_cli_do_call(struct smbcli_tree *tree, struct rap_call *call)
 {
 	NTSTATUS result;
 	DATA_BLOB param_blob;
@@ -177,7 +177,7 @@ static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, struct rap_call *call)
 	params->flags = RAPNDR_FLAGS;
 
 	trans.in.max_param = call->rcv_paramlen;
-	trans.in.max_data = smb_raw_max_trans_data(cli->tree, call->rcv_paramlen);
+	trans.in.max_data = smb_raw_max_trans_data(tree, call->rcv_paramlen);
 	trans.in.max_setup = 0;
 	trans.in.flags = 0;
 	trans.in.timeout = 0;
@@ -198,7 +198,7 @@ static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, struct rap_call *call)
 	trans.in.params = ndr_push_blob(params);
 	trans.in.data = data_blob(NULL, 0);
 
-	result = smb_raw_trans(cli->tree, call, &trans);
+	result = smb_raw_trans(tree, call, &trans);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -218,7 +218,7 @@ static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, struct rap_call *call)
 				goto done; \
                         } while (0)
 
-static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
+static NTSTATUS smbcli_rap_netshareenum(struct smbcli_tree *tree,
 					TALLOC_CTX *mem_ctx,
 					struct rap_NetShareEnum *r)
 {
@@ -226,7 +226,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
-	call = new_rap_cli_call(NULL, RAP_WshareEnum);
+	call = new_rap_cli_call(tree, RAP_WshareEnum);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -244,7 +244,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 		break;
 	}
 
-	result = rap_cli_do_call(cli, call);
+	result = rap_cli_do_call(tree, call);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -288,16 +288,16 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 	return result;
 }
 
-static BOOL test_netshareenum(struct smbcli_state *cli)
+static BOOL test_netshareenum(struct smbcli_tree *tree)
 {
 	struct rap_NetShareEnum r;
 	int i;
-	TALLOC_CTX *tmp_ctx = talloc_new(cli);
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 
 	r.in.level = 1;
 	r.in.bufsize = 8192;
 
-	if (!NT_STATUS_IS_OK(smbcli_rap_netshareenum(cli, tmp_ctx, &r)))
+	if (!NT_STATUS_IS_OK(smbcli_rap_netshareenum(tree, tmp_ctx, &r)))
 		return False;
 
 	for (i=0; i<r.out.count; i++) {
@@ -311,7 +311,7 @@ static BOOL test_netshareenum(struct smbcli_state *cli)
 	return True;
 }
 
-static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
+static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_tree *tree,
 					  TALLOC_CTX *mem_ctx,
 					  struct rap_NetServerEnum2 *r)
 {
@@ -339,7 +339,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 		break;
 	}
 
-	result = rap_cli_do_call(cli, call);
+	result = rap_cli_do_call(tree, call);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -386,11 +386,11 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 	return result;
 }
 
-static BOOL test_netserverenum(struct smbcli_state *cli)
+static BOOL test_netserverenum(struct smbcli_tree *tree)
 {
 	struct rap_NetServerEnum2 r;
 	int i;
-	TALLOC_CTX *tmp_ctx = talloc_new(cli);
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 
 	r.in.level = 0;
 	r.in.bufsize = 8192;
@@ -398,7 +398,7 @@ static BOOL test_netserverenum(struct smbcli_state *cli)
 	r.in.servertype = 0x80000000;
 	r.in.domain = NULL;
 
-	if (!NT_STATUS_IS_OK(smbcli_rap_netserverenum2(cli, tmp_ctx, &r)))
+	if (!NT_STATUS_IS_OK(smbcli_rap_netserverenum2(tree, tmp_ctx, &r)))
 		return False;
 
 	for (i=0; i<r.out.count; i++) {
@@ -419,7 +419,7 @@ static BOOL test_netserverenum(struct smbcli_state *cli)
 	return True;
 }
 
-NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_state *cli,
+NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 				     TALLOC_CTX *mem_ctx,
 				     struct rap_WserverGetInfo *r)
 {
@@ -446,7 +446,7 @@ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_state *cli,
 		goto done;
 	}
 
-	result = rap_cli_do_call(cli, call);
+	result = rap_cli_do_call(tree, call);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -478,34 +478,34 @@ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_state *cli,
 	return result;
 }
 
-static BOOL test_netservergetinfo(struct smbcli_state *cli)
+static BOOL test_netservergetinfo(struct smbcli_tree *tree)
 {
 	struct rap_WserverGetInfo r;
 	BOOL res = True;
 	TALLOC_CTX *mem_ctx;
 
-	if (!(mem_ctx = talloc_new(cli))) {
+	if (!(mem_ctx = talloc_new(tree))) {
 		return False;
 	}
 
 	r.in.bufsize = 0xffff;
 
 	r.in.level = 0;
-	res &= NT_STATUS_IS_OK(smbcli_rap_netservergetinfo(cli, mem_ctx, &r));
+	res &= NT_STATUS_IS_OK(smbcli_rap_netservergetinfo(tree, mem_ctx, &r));
 	r.in.level = 1;
-	res &= NT_STATUS_IS_OK(smbcli_rap_netservergetinfo(cli, mem_ctx, &r));
+	res &= NT_STATUS_IS_OK(smbcli_rap_netservergetinfo(tree, mem_ctx, &r));
 
 	talloc_free(mem_ctx);
 	return res;
 }
 
-static BOOL test_rap(struct smbcli_state *cli)
+static BOOL test_rap(struct smbcli_tree *tree)
 {
 	BOOL res = True;
 
-	res &= test_netserverenum(cli);
-	res &= test_netshareenum(cli);
-	res &= test_netservergetinfo(cli);
+	res &= test_netserverenum(tree);
+	res &= test_netshareenum(tree);
+	res &= test_netservergetinfo(tree);
 
 	return res;
 }
@@ -522,7 +522,7 @@ BOOL torture_rap_basic(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rap_basic");
 
-	if (!test_rap(cli)) {
+	if (!test_rap(cli->tree)) {
 		ret = False;
 	}
 
@@ -548,7 +548,7 @@ BOOL torture_rap_scan(struct torture_context *torture)
 		struct rap_call *call = new_rap_cli_call(mem_ctx, callno);
 		NTSTATUS result;
 
-		result = rap_cli_do_call(cli, call);
+		result = rap_cli_do_call(cli->tree, call);
 
 		if (!NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PARAMETER))
 			continue;
