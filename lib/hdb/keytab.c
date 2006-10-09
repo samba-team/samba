@@ -221,7 +221,7 @@ hdb_get_entry(krb5_context context,
 	return ret;
     }
     ret = (*db->hdb_fetch)(context, db, principal, 
-			   HDB_F_DECRYPT||
+			   HDB_F_DECRYPT|
 			   HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
 			   &ent);
 
