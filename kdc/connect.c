@@ -439,11 +439,13 @@ do_request(krb5_context context,
 {
     krb5_error_code ret;
     krb5_data reply;
-    
+    int datagram_reply = (d->type == SOCK_DGRAM);
+
     krb5_data_zero(&reply);
-    ret = krb5_kdc_process_generic_request(context, config, 
-					   buf, len, &reply, &prependlength,
-					   d->addr_string, d->sa);
+    ret = krb5_kdc_process_request(context, config, 
+				   buf, len, &reply, &prependlength,
+				   d->addr_string, d->sa,
+				   datagram_reply);
     if(reply.length){
 	send_reply(context, config, prependlength, d, &reply);
 	krb5_data_free(&reply);
