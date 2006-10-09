@@ -113,6 +113,12 @@ static void rap_cli_expect_multiple_entries(struct rap_call *call)
 	call->rcv_paramlen += 4; /* uint16_t entry count, uint16_t total */
 }
 
+static void rap_cli_expect_word(struct rap_call *call)
+{
+	rap_cli_push_paramdesc(call, 'h');
+	call->rcv_paramlen += 2;
+}
+
 static void rap_cli_push_string(struct rap_call *call, const char *str)
 {
 	if (str == NULL) {
@@ -313,7 +319,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
-	call = new_rap_cli_call(NULL, RAP_NetServerEnum2);
+	call = new_rap_cli_call(mem_ctx, RAP_NetServerEnum2);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -413,17 +419,93 @@ static BOOL test_netserverenum(struct smbcli_state *cli)
 	return True;
 }
 
+NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_state *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct rap_WserverGetInfo *r)
+{
+	struct rap_call *call;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	if (!(call = new_rap_cli_call(mem_ctx, RAP_WserverGetInfo))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rap_cli_push_word(call, r->in.level);
+	rap_cli_push_rcvbuf(call, r->in.bufsize);
+	rap_cli_expect_word(call);
+
+	switch(r->in.level) {
+	case 0:
+		rap_cli_expect_format(call, "B16");
+		break;
+	case 1:
+		rap_cli_expect_format(call, "B16BBDz");
+		break;
+	default:
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	result = rap_cli_do_call(cli, call);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
+
+	switch(r->in.level) {
+	case 0:
+		NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+				      (uint8_t *)r->out.info.info0.name, 16));
+		break;
+	case 1:
+		NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+				      (uint8_t *)r->out.info.info1.name, 16));
+		NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+				      &r->out.info.info1.version_major, 1));
+		NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+				      &r->out.info.info1.version_minor, 1));
+		NDR_OK(ndr_pull_uint32(call->ndr_pull_data,
+				       NDR_SCALARS, &r->out.info.info1.servertype));
+		NDR_OK(rap_pull_string(mem_ctx, call->ndr_pull_data,
+				       r->out.convert,
+				       &r->out.info.info1.comment));
+	}
+ done:
+	talloc_free(call);
+	return result;
+}
+
+static BOOL test_netservergetinfo(struct smbcli_state *cli)
+{
+	struct rap_WserverGetInfo r;
+	BOOL res = True;
+	TALLOC_CTX *mem_ctx;
+
+	if (!(mem_ctx = talloc_new(cli))) {
+		return False;
+	}
+
+	r.in.bufsize = 0xffff;
+
+	r.in.level = 0;
+	res &= NT_STATUS_IS_OK(smbcli_rap_netservergetinfo(cli, mem_ctx, &r));
+	r.in.level = 1;
+	res &= NT_STATUS_IS_OK(smbcli_rap_netservergetinfo(cli, mem_ctx, &r));
+
+	talloc_free(mem_ctx);
+	return res;
+}
 
 static BOOL test_rap(struct smbcli_state *cli)
 {
 	BOOL res = True;
 
-	if (!test_netserverenum(cli))
-		res = False;
-
-	if (!test_netshareenum(cli))
-		res = False;
+	res &= test_netserverenum(cli);
+	res &= test_netshareenum(cli);
+	res &= test_netservergetinfo(cli);
 
 	return res;
 }
