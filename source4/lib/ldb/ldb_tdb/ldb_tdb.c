@@ -138,7 +138,7 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn)
 	     the rest
 	*/
 
-	dn_folded = ldb_dn_linearize_casefold(ldb, dn);
+	dn_folded = ldb_dn_linearize_casefold(ldb, ldb, dn);
 	if (!dn_folded) {
 		goto failed;
 	}

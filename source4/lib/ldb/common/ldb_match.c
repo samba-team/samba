@@ -149,7 +149,7 @@ static int ldb_match_equality(struct ldb_context *ldb,
 	int ret;
 
 	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
-		valuedn = ldb_dn_explode_casefold(ldb, 
+		valuedn = ldb_dn_explode_casefold(ldb, ldb,
 						  (char *)tree->u.equality.value.data);
 		if (valuedn == NULL) {
 			return 0;

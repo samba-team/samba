@@ -554,10 +554,10 @@ int ldb_dn_cmp(struct ldb_context *ldb, const char *dn0, const char *dn1)
 
 	if (dn0 == NULL || dn1 == NULL) return dn1 - dn0;
 
-	edn0 = ldb_dn_explode_casefold(ldb, dn0);
+	edn0 = ldb_dn_explode_casefold(ldb, ldb, dn0);
 	if (edn0 == NULL) return 1;
 
-	edn1 = ldb_dn_explode_casefold(ldb, dn1);
+	edn1 = ldb_dn_explode_casefold(ldb, ldb, dn1);
 	if (edn1 == NULL) {
 		talloc_free(edn0);
 		return -1;
@@ -575,14 +575,14 @@ int ldb_dn_cmp(struct ldb_context *ldb, const char *dn0, const char *dn1)
   casefold a dn. We need to casefold the attribute names, and canonicalize 
   attribute values of case insensitive attributes.
 */
-struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn)
+struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, void *mem_ctx, const struct ldb_dn *edn)
 {
 	struct ldb_dn *cedn;
-	int i;
+	int i, ret;
 
 	if (edn == NULL) return NULL;
 
-	cedn = ldb_dn_new(ldb);
+	cedn = ldb_dn_new(mem_ctx);
 	if (!cedn) {
 		return NULL;
 	}
@@ -599,14 +599,17 @@ struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn
 		const struct ldb_attrib_handler *h;
 
 		memset(&dc, 0, sizeof(dc));
-		dc.name = ldb_attr_casefold(cedn, edn->components[i].name);
+		dc.name = ldb_attr_casefold(cedn->components, edn->components[i].name);
 		if (!dc.name) {
 			talloc_free(cedn);
 			return NULL;
 		}
 
 		h = ldb_attrib_handler(ldb, dc.name);
-		if (h->canonicalise_fn(ldb, cedn, &(edn->components[i].value), &(dc.value)) != 0) {
+		ret = h->canonicalise_fn(ldb, cedn->components,
+					 &(edn->components[i].value),
+					 &(dc.value));
+		if (ret != 0) {
 			talloc_free(cedn);
 			return NULL;
 		}
@@ -617,7 +620,7 @@ struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn
 	return cedn;
 }
 
-struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, const char *dn)
+struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, void *mem_ctx, const char *dn)
 {
 	struct ldb_dn *edn, *cdn;
 
@@ -626,13 +629,13 @@ struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, const char *dn)
 	edn = ldb_dn_explode(ldb, dn);
 	if (edn == NULL) return NULL;
 
-	cdn = ldb_dn_casefold(ldb, edn);
+	cdn = ldb_dn_casefold(ldb, mem_ctx, edn);
 	
 	talloc_free(edn);
 	return cdn;
 }
 
-char *ldb_dn_linearize_casefold(struct ldb_context *ldb, const struct ldb_dn *edn)
+char *ldb_dn_linearize_casefold(struct ldb_context *ldb, void *mem_ctx, const struct ldb_dn *edn)
 {
 	struct ldb_dn *cdn;
 	char *dn;
@@ -641,11 +644,11 @@ char *ldb_dn_linearize_casefold(struct ldb_context *ldb, const struct ldb_dn *ed
 
 	/* Special DNs */
 	if (ldb_dn_is_special(edn)) {
-		dn = talloc_strdup(ldb, (char *)edn->components[0].value.data);
+		dn = talloc_strdup(mem_ctx, (char *)edn->components[0].value.data);
 		return dn;
 	}
 
-	cdn = ldb_dn_casefold(ldb, edn);
+	cdn = ldb_dn_casefold(ldb, mem_ctx, edn);
 	if (cdn == NULL) return NULL;
 
 	dn = ldb_dn_linearize(ldb, cdn);
