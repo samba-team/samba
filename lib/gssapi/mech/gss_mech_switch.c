@@ -236,6 +236,10 @@ _gss_load_mech(void)
 		if (!name || !oid || !lib || !kobj)
 			continue;
 
+#ifndef RTLD_LOCAL
+#define RTLD_LOCAL 0
+#endif
+
 		so = dlopen(lib, RTLD_LOCAL);
 		if (!so) {
 /*			fprintf(stderr, "dlopen: %s\n", dlerror()); */
