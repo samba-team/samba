@@ -324,7 +324,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		}
 
 		ret = ldb_search(ldb, mods_dn, LDB_SCOPE_BASE, "", attrs, &res);
-		if (res) talloc_steal(mods_dn, res);
+		talloc_steal(mods_dn, res);
 		if (ret == LDB_SUCCESS && (res->count == 0 || res->msgs[0]->num_elements == 0)) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db\n");
 		} else {
