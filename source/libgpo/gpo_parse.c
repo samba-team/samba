@@ -43,11 +43,9 @@ NTSTATUS parse_gpt_ini(TALLOC_CTX *mem_ctx, const char *filename, uint32 *versio
 
 	if ((name = iniparser_getstring(d, GPT_INI_SECTION_GENERAL
 			":"GPT_INI_PARAMETER_DISPLAYNAME, NULL)) == NULL) {
-		DEBUG(1,("parse_gpt_ini: no name\n"));
-		/* 
-		result = NT_STATUS_INTERNAL_DB_CORRUPTION; 
-		goto out;
-		*/
+		/* the default domain policy and the default domain controller
+		 * policy never have a displayname in their gpt.ini file */
+		DEBUG(10,("parse_gpt_ini: no name in %s\n", filename));
 	}
 
 	if (name && display_name) {
