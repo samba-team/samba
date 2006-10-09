@@ -113,6 +113,9 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
 		pvfs_xattr_probe(pvfs);
 	}
+
+	/* enable an ACL backend */
+	pvfs->acl_ops = pvfs_acl_backend_byname(share_string_option(scfg, PVFS_ACL, "xattr"));
 }
 
 static int pvfs_state_destructor(struct pvfs_state *pvfs)

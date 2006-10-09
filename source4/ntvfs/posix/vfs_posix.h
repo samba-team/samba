@@ -83,6 +83,9 @@ struct pvfs_state {
 		const struct dom_sid *creator_owner;
 		const struct dom_sid *creator_group;		
 	} sid_cache;
+
+	/* the acl backend */
+	const struct pvfs_acl_ops *acl_ops;
 };
 
 /* this is the basic information needed about a file from the filesystem */
@@ -220,12 +223,20 @@ enum pvfs_wait_notice {PVFS_WAIT_EVENT, PVFS_WAIT_TIMEOUT, PVFS_WAIT_CANCEL};
 #define PVFS_SHARE_DELAY		"posix:sharedelay"
 #define PVFS_ALLOCATION_ROUNDING	"posix:allocationrounding"
 #define PVFS_SEARCH_INACTIVITY		"posix:searchinactivity"
+#define PVFS_ACL			"posix:acl"
 
 #define PVFS_XATTR_DEFAULT			True
 #define PVFS_FAKE_OPLOCKS_DEFAULT		False
 #define PVFS_SHARE_DELAY_DEFAULT		1000000
 #define PVFS_ALLOCATION_ROUNDING_DEFAULT	512
 #define PVFS_SEARCH_INACTIVITY_DEFAULT		300
+
+struct pvfs_acl_ops {
+	const char *name;
+	NTSTATUS (*acl_load)(struct pvfs_state *, struct pvfs_filename *, int , TALLOC_CTX *, 
+			     struct security_descriptor **);
+	NTSTATUS (*acl_save)(struct pvfs_state *, struct pvfs_filename *, int , struct security_descriptor *);
+};
 
 #include "ntvfs/posix/vfs_posix_proto.h"
 
