@@ -1,3 +1,8 @@
+2006-10-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/krb5tgs.c (tgs_parse_request): set cusec, not csec from
+	auth->cusec.
+	
 2006-10-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* fix-export: dist_-ify libkadm5clnt_la_SOURCES too
