@@ -1,5 +1,9 @@
 2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* socket_wrapper.c: more consitity check, remove dead code, add
+	socket length code, add missing break, make diffrent chars of type
+	type files for case-insensitiv filesystems
+
 	* socket_wrapper.c: try even hard to not use socket wrapper for
 	socket_wrapper itself.
 
