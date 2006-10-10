@@ -21,8 +21,10 @@ static BOOL api_echo_AddOne(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_echo_AddOne(pull, NDR_IN, &r);
@@ -43,6 +45,12 @@ static BOOL api_echo_AddOne(pipes_struct *p)
 	
 	_echo_AddOne(p, r.in.in_data, r.out.out_data);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(echo_AddOne, &r);
 	
@@ -59,7 +67,7 @@ static BOOL api_echo_AddOne(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -84,8 +92,10 @@ static BOOL api_echo_EchoData(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_echo_EchoData(pull, NDR_IN, &r);
@@ -106,6 +116,12 @@ static BOOL api_echo_EchoData(pipes_struct *p)
 	
 	_echo_EchoData(p, r.in.len, r.in.in_data, r.out.out_data);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(echo_EchoData, &r);
 	
@@ -122,7 +138,7 @@ static BOOL api_echo_EchoData(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -147,8 +163,10 @@ static BOOL api_echo_SinkData(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_echo_SinkData(pull, NDR_IN, &r);
@@ -161,6 +179,12 @@ static BOOL api_echo_SinkData(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(echo_SinkData, &r);
 	
 	_echo_SinkData(p, r.in.len, r.in.data);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(echo_SinkData, &r);
@@ -178,7 +202,7 @@ static BOOL api_echo_SinkData(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -203,8 +227,10 @@ static BOOL api_echo_SourceData(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_echo_SourceData(pull, NDR_IN, &r);
@@ -225,6 +251,12 @@ static BOOL api_echo_SourceData(pipes_struct *p)
 	
 	_echo_SourceData(p, r.in.len, r.out.data);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(echo_SourceData, &r);
 	
@@ -241,7 +273,7 @@ static BOOL api_echo_SourceData(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -266,8 +298,10 @@ static BOOL api_echo_TestCall(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_echo_TestCall(pull, NDR_IN, &r);
@@ -288,6 +322,12 @@ static BOOL api_echo_TestCall(pipes_struct *p)
 	
 	_echo_TestCall(p, r.in.s1, r.out.s2);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(echo_TestCall, &r);
 	
@@ -304,7 +344,7 @@ static BOOL api_echo_TestCall(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -329,8 +369,10 @@ static BOOL api_echo_TestCall2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_echo_TestCall2(pull, NDR_IN, &r);
@@ -351,6 +393,12 @@ static BOOL api_echo_TestCall2(pipes_struct *p)
 	
 	r.out.result = _echo_TestCall2(p, r.in.level, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(echo_TestCall2, &r);
 	
@@ -367,7 +415,7 @@ static BOOL api_echo_TestCall2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -392,8 +440,10 @@ static BOOL api_echo_TestSleep(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_echo_TestSleep(pull, NDR_IN, &r);
@@ -406,6 +456,12 @@ static BOOL api_echo_TestSleep(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(echo_TestSleep, &r);
 	
 	r.out.result = _echo_TestSleep(p, r.in.seconds);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(echo_TestSleep, &r);
@@ -423,7 +479,7 @@ static BOOL api_echo_TestSleep(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -448,8 +504,10 @@ static BOOL api_echo_TestEnum(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_echo_TestEnum(pull, NDR_IN, &r);
@@ -467,6 +525,12 @@ static BOOL api_echo_TestEnum(pipes_struct *p)
 	r.out.foo3 = r.in.foo3;
 	_echo_TestEnum(p, r.in.foo1, r.in.foo2, r.in.foo3);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(echo_TestEnum, &r);
 	
@@ -483,7 +547,7 @@ static BOOL api_echo_TestEnum(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -508,8 +572,10 @@ static BOOL api_echo_TestSurrounding(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_echo_TestSurrounding(pull, NDR_IN, &r);
@@ -524,6 +590,12 @@ static BOOL api_echo_TestSurrounding(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.data = r.in.data;
 	_echo_TestSurrounding(p, r.in.data);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(echo_TestSurrounding, &r);
@@ -541,7 +613,7 @@ static BOOL api_echo_TestSurrounding(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -566,8 +638,10 @@ static BOOL api_echo_TestDoublePointer(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_echo_TestDoublePointer(pull, NDR_IN, &r);
@@ -580,6 +654,12 @@ static BOOL api_echo_TestDoublePointer(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(echo_TestDoublePointer, &r);
 	
 	r.out.result = _echo_TestDoublePointer(p, r.in.data);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(echo_TestDoublePointer, &r);
@@ -597,7 +677,7 @@ static BOOL api_echo_TestDoublePointer(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}

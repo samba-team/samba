@@ -21,8 +21,10 @@ static BOOL api_lsa_Close(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_Close(pull, NDR_IN, &r);
@@ -37,6 +39,12 @@ static BOOL api_lsa_Close(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.handle = r.in.handle;
 	r.out.result = _lsa_Close(p, r.in.handle);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_Close, &r);
@@ -54,7 +62,7 @@ static BOOL api_lsa_Close(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -79,8 +87,10 @@ static BOOL api_lsa_Delete(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_Delete(pull, NDR_IN, &r);
@@ -93,6 +103,12 @@ static BOOL api_lsa_Delete(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_Delete, &r);
 	
 	r.out.result = _lsa_Delete(p, r.in.handle);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_Delete, &r);
@@ -110,7 +126,7 @@ static BOOL api_lsa_Delete(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -135,8 +151,10 @@ static BOOL api_lsa_EnumPrivs(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_EnumPrivs(pull, NDR_IN, &r);
@@ -158,6 +176,12 @@ static BOOL api_lsa_EnumPrivs(pipes_struct *p)
 	
 	r.out.result = _lsa_EnumPrivs(p, r.in.handle, r.in.resume_handle, r.in.max_count, r.out.privs);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumPrivs, &r);
 	
@@ -174,7 +198,7 @@ static BOOL api_lsa_EnumPrivs(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -199,8 +223,10 @@ static BOOL api_lsa_QuerySecurity(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QuerySecurity(pull, NDR_IN, &r);
@@ -221,6 +247,12 @@ static BOOL api_lsa_QuerySecurity(pipes_struct *p)
 	
 	r.out.result = _lsa_QuerySecurity(p, r.in.handle, r.in.sec_info, r.out.sdbuf);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_QuerySecurity, &r);
 	
@@ -237,7 +269,7 @@ static BOOL api_lsa_QuerySecurity(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -262,8 +294,10 @@ static BOOL api_lsa_SetSecObj(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_SetSecObj(pull, NDR_IN, &r);
@@ -276,6 +310,12 @@ static BOOL api_lsa_SetSecObj(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_SetSecObj, &r);
 	
 	r.out.result = _lsa_SetSecObj(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_SetSecObj, &r);
@@ -293,7 +333,7 @@ static BOOL api_lsa_SetSecObj(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -318,8 +358,10 @@ static BOOL api_lsa_ChangePassword(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_ChangePassword(pull, NDR_IN, &r);
@@ -332,6 +374,12 @@ static BOOL api_lsa_ChangePassword(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_ChangePassword, &r);
 	
 	r.out.result = _lsa_ChangePassword(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_ChangePassword, &r);
@@ -349,7 +397,7 @@ static BOOL api_lsa_ChangePassword(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -374,8 +422,10 @@ static BOOL api_lsa_OpenPolicy(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_OpenPolicy(pull, NDR_IN, &r);
@@ -396,6 +446,12 @@ static BOOL api_lsa_OpenPolicy(pipes_struct *p)
 	
 	r.out.result = _lsa_OpenPolicy(p, r.in.system_name, r.in.attr, r.in.access_mask, r.out.handle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenPolicy, &r);
 	
@@ -412,7 +468,7 @@ static BOOL api_lsa_OpenPolicy(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -437,8 +493,10 @@ static BOOL api_lsa_QueryInfoPolicy(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QueryInfoPolicy(pull, NDR_IN, &r);
@@ -459,6 +517,12 @@ static BOOL api_lsa_QueryInfoPolicy(pipes_struct *p)
 	
 	r.out.result = _lsa_QueryInfoPolicy(p, r.in.handle, r.in.level, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryInfoPolicy, &r);
 	
@@ -475,7 +539,7 @@ static BOOL api_lsa_QueryInfoPolicy(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -500,8 +564,10 @@ static BOOL api_lsa_SetInfoPolicy(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_SetInfoPolicy(pull, NDR_IN, &r);
@@ -514,6 +580,12 @@ static BOOL api_lsa_SetInfoPolicy(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy, &r);
 	
 	r.out.result = _lsa_SetInfoPolicy(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_SetInfoPolicy, &r);
@@ -531,7 +603,7 @@ static BOOL api_lsa_SetInfoPolicy(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -556,8 +628,10 @@ static BOOL api_lsa_ClearAuditLog(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_ClearAuditLog(pull, NDR_IN, &r);
@@ -570,6 +644,12 @@ static BOOL api_lsa_ClearAuditLog(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_ClearAuditLog, &r);
 	
 	r.out.result = _lsa_ClearAuditLog(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_ClearAuditLog, &r);
@@ -587,7 +667,7 @@ static BOOL api_lsa_ClearAuditLog(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -612,8 +692,10 @@ static BOOL api_lsa_CreateAccount(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CreateAccount(pull, NDR_IN, &r);
@@ -634,6 +716,12 @@ static BOOL api_lsa_CreateAccount(pipes_struct *p)
 	
 	r.out.result = _lsa_CreateAccount(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.acct_handle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CreateAccount, &r);
 	
@@ -650,7 +738,7 @@ static BOOL api_lsa_CreateAccount(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -675,8 +763,10 @@ static BOOL api_lsa_EnumAccounts(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_EnumAccounts(pull, NDR_IN, &r);
@@ -698,6 +788,12 @@ static BOOL api_lsa_EnumAccounts(pipes_struct *p)
 	
 	r.out.result = _lsa_EnumAccounts(p, r.in.handle, r.in.resume_handle, r.in.num_entries, r.out.sids);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumAccounts, &r);
 	
@@ -714,7 +810,7 @@ static BOOL api_lsa_EnumAccounts(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -739,8 +835,10 @@ static BOOL api_lsa_CreateTrustedDomain(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CreateTrustedDomain(pull, NDR_IN, &r);
@@ -761,6 +859,12 @@ static BOOL api_lsa_CreateTrustedDomain(pipes_struct *p)
 	
 	r.out.result = _lsa_CreateTrustedDomain(p, r.in.handle, r.in.info, r.in.access_mask, r.out.trustdom_handle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomain, &r);
 	
@@ -777,7 +881,7 @@ static BOOL api_lsa_CreateTrustedDomain(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -802,8 +906,10 @@ static BOOL api_lsa_EnumTrustDom(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_EnumTrustDom(pull, NDR_IN, &r);
@@ -825,6 +931,12 @@ static BOOL api_lsa_EnumTrustDom(pipes_struct *p)
 	
 	r.out.result = _lsa_EnumTrustDom(p, r.in.handle, r.in.resume_handle, r.in.max_size, r.out.domains);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumTrustDom, &r);
 	
@@ -841,7 +953,7 @@ static BOOL api_lsa_EnumTrustDom(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -866,8 +978,10 @@ static BOOL api_lsa_LookupNames(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupNames(pull, NDR_IN, &r);
@@ -890,6 +1004,12 @@ static BOOL api_lsa_LookupNames(pipes_struct *p)
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupNames(p, r.in.handle, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupNames, &r);
 	
@@ -906,7 +1026,7 @@ static BOOL api_lsa_LookupNames(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -931,8 +1051,10 @@ static BOOL api_lsa_LookupSids(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupSids(pull, NDR_IN, &r);
@@ -955,6 +1077,12 @@ static BOOL api_lsa_LookupSids(pipes_struct *p)
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupSids(p, r.in.handle, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupSids, &r);
 	
@@ -971,7 +1099,7 @@ static BOOL api_lsa_LookupSids(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -996,8 +1124,10 @@ static BOOL api_lsa_CreateSecret(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CreateSecret(pull, NDR_IN, &r);
@@ -1018,6 +1148,12 @@ static BOOL api_lsa_CreateSecret(pipes_struct *p)
 	
 	r.out.result = _lsa_CreateSecret(p, r.in.handle, r.in.name, r.in.access_mask, r.out.sec_handle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CreateSecret, &r);
 	
@@ -1034,7 +1170,7 @@ static BOOL api_lsa_CreateSecret(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1059,8 +1195,10 @@ static BOOL api_lsa_OpenAccount(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_OpenAccount(pull, NDR_IN, &r);
@@ -1081,6 +1219,12 @@ static BOOL api_lsa_OpenAccount(pipes_struct *p)
 	
 	r.out.result = _lsa_OpenAccount(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.acct_handle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenAccount, &r);
 	
@@ -1097,7 +1241,7 @@ static BOOL api_lsa_OpenAccount(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1122,8 +1266,10 @@ static BOOL api_lsa_EnumPrivsAccount(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_EnumPrivsAccount(pull, NDR_IN, &r);
@@ -1144,6 +1290,12 @@ static BOOL api_lsa_EnumPrivsAccount(pipes_struct *p)
 	
 	r.out.result = _lsa_EnumPrivsAccount(p, r.in.handle, r.out.privs);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumPrivsAccount, &r);
 	
@@ -1160,7 +1312,7 @@ static BOOL api_lsa_EnumPrivsAccount(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1185,8 +1337,10 @@ static BOOL api_lsa_AddPrivilegesToAccount(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_AddPrivilegesToAccount(pull, NDR_IN, &r);
@@ -1199,6 +1353,12 @@ static BOOL api_lsa_AddPrivilegesToAccount(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_AddPrivilegesToAccount, &r);
 	
 	r.out.result = _lsa_AddPrivilegesToAccount(p, r.in.handle, r.in.privs);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_AddPrivilegesToAccount, &r);
@@ -1216,7 +1376,7 @@ static BOOL api_lsa_AddPrivilegesToAccount(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1241,8 +1401,10 @@ static BOOL api_lsa_RemovePrivilegesFromAccount(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_RemovePrivilegesFromAccount(pull, NDR_IN, &r);
@@ -1255,6 +1417,12 @@ static BOOL api_lsa_RemovePrivilegesFromAccount(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_RemovePrivilegesFromAccount, &r);
 	
 	r.out.result = _lsa_RemovePrivilegesFromAccount(p, r.in.handle, r.in.remove_all, r.in.privs);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_RemovePrivilegesFromAccount, &r);
@@ -1272,7 +1440,7 @@ static BOOL api_lsa_RemovePrivilegesFromAccount(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1297,8 +1465,10 @@ static BOOL api_lsa_GetQuotasForAccount(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_GetQuotasForAccount(pull, NDR_IN, &r);
@@ -1311,6 +1481,12 @@ static BOOL api_lsa_GetQuotasForAccount(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_GetQuotasForAccount, &r);
 	
 	r.out.result = _lsa_GetQuotasForAccount(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_GetQuotasForAccount, &r);
@@ -1328,7 +1504,7 @@ static BOOL api_lsa_GetQuotasForAccount(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1353,8 +1529,10 @@ static BOOL api_lsa_SetQuotasForAccount(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_SetQuotasForAccount(pull, NDR_IN, &r);
@@ -1367,6 +1545,12 @@ static BOOL api_lsa_SetQuotasForAccount(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_SetQuotasForAccount, &r);
 	
 	r.out.result = _lsa_SetQuotasForAccount(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_SetQuotasForAccount, &r);
@@ -1384,7 +1568,7 @@ static BOOL api_lsa_SetQuotasForAccount(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1409,8 +1593,10 @@ static BOOL api_lsa_GetSystemAccessAccount(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_GetSystemAccessAccount(pull, NDR_IN, &r);
@@ -1423,6 +1609,12 @@ static BOOL api_lsa_GetSystemAccessAccount(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_GetSystemAccessAccount, &r);
 	
 	r.out.result = _lsa_GetSystemAccessAccount(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_GetSystemAccessAccount, &r);
@@ -1440,7 +1632,7 @@ static BOOL api_lsa_GetSystemAccessAccount(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1465,8 +1657,10 @@ static BOOL api_lsa_SetSystemAccessAccount(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_SetSystemAccessAccount(pull, NDR_IN, &r);
@@ -1479,6 +1673,12 @@ static BOOL api_lsa_SetSystemAccessAccount(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_SetSystemAccessAccount, &r);
 	
 	r.out.result = _lsa_SetSystemAccessAccount(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_SetSystemAccessAccount, &r);
@@ -1496,7 +1696,7 @@ static BOOL api_lsa_SetSystemAccessAccount(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1521,8 +1721,10 @@ static BOOL api_lsa_OpenTrustedDomain(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_OpenTrustedDomain(pull, NDR_IN, &r);
@@ -1543,6 +1745,12 @@ static BOOL api_lsa_OpenTrustedDomain(pipes_struct *p)
 	
 	r.out.result = _lsa_OpenTrustedDomain(p, r.in.handle, r.in.sid, r.in.access_mask, r.out.trustdom_handle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenTrustedDomain, &r);
 	
@@ -1559,7 +1767,7 @@ static BOOL api_lsa_OpenTrustedDomain(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1584,8 +1792,10 @@ static BOOL api_lsa_QueryTrustedDomainInfo(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QueryTrustedDomainInfo(pull, NDR_IN, &r);
@@ -1606,6 +1816,12 @@ static BOOL api_lsa_QueryTrustedDomainInfo(pipes_struct *p)
 	
 	r.out.result = _lsa_QueryTrustedDomainInfo(p, r.in.trustdom_handle, r.in.level, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfo, &r);
 	
@@ -1622,7 +1838,7 @@ static BOOL api_lsa_QueryTrustedDomainInfo(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1647,8 +1863,10 @@ static BOOL api_lsa_SetInformationTrustedDomain(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_SetInformationTrustedDomain(pull, NDR_IN, &r);
@@ -1661,6 +1879,12 @@ static BOOL api_lsa_SetInformationTrustedDomain(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_SetInformationTrustedDomain, &r);
 	
 	r.out.result = _lsa_SetInformationTrustedDomain(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_SetInformationTrustedDomain, &r);
@@ -1678,7 +1902,7 @@ static BOOL api_lsa_SetInformationTrustedDomain(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1703,8 +1927,10 @@ static BOOL api_lsa_OpenSecret(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_OpenSecret(pull, NDR_IN, &r);
@@ -1725,6 +1951,12 @@ static BOOL api_lsa_OpenSecret(pipes_struct *p)
 	
 	r.out.result = _lsa_OpenSecret(p, r.in.handle, r.in.name, r.in.access_mask, r.out.sec_handle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenSecret, &r);
 	
@@ -1741,7 +1973,7 @@ static BOOL api_lsa_OpenSecret(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1766,8 +1998,10 @@ static BOOL api_lsa_SetSecret(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_SetSecret(pull, NDR_IN, &r);
@@ -1780,6 +2014,12 @@ static BOOL api_lsa_SetSecret(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_SetSecret, &r);
 	
 	r.out.result = _lsa_SetSecret(p, r.in.sec_handle, r.in.new_val, r.in.old_val);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_SetSecret, &r);
@@ -1797,7 +2037,7 @@ static BOOL api_lsa_SetSecret(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1822,8 +2062,10 @@ static BOOL api_lsa_QuerySecret(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QuerySecret(pull, NDR_IN, &r);
@@ -1842,6 +2084,12 @@ static BOOL api_lsa_QuerySecret(pipes_struct *p)
 	r.out.old_mtime = r.in.old_mtime;
 	r.out.result = _lsa_QuerySecret(p, r.in.sec_handle, r.in.new_val, r.in.new_mtime, r.in.old_val, r.in.old_mtime);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_QuerySecret, &r);
 	
@@ -1858,7 +2106,7 @@ static BOOL api_lsa_QuerySecret(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1883,8 +2131,10 @@ static BOOL api_lsa_LookupPrivValue(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupPrivValue(pull, NDR_IN, &r);
@@ -1905,6 +2155,12 @@ static BOOL api_lsa_LookupPrivValue(pipes_struct *p)
 	
 	r.out.result = _lsa_LookupPrivValue(p, r.in.handle, r.in.name, r.out.luid);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivValue, &r);
 	
@@ -1921,7 +2177,7 @@ static BOOL api_lsa_LookupPrivValue(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1946,8 +2202,10 @@ static BOOL api_lsa_LookupPrivName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupPrivName(pull, NDR_IN, &r);
@@ -1968,6 +2226,12 @@ static BOOL api_lsa_LookupPrivName(pipes_struct *p)
 	
 	r.out.result = _lsa_LookupPrivName(p, r.in.handle, r.in.luid, r.out.name);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivName, &r);
 	
@@ -1984,7 +2248,7 @@ static BOOL api_lsa_LookupPrivName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2009,8 +2273,10 @@ static BOOL api_lsa_LookupPrivDisplayName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupPrivDisplayName(pull, NDR_IN, &r);
@@ -2032,6 +2298,12 @@ static BOOL api_lsa_LookupPrivDisplayName(pipes_struct *p)
 	r.out.language_id = r.in.language_id;
 	r.out.result = _lsa_LookupPrivDisplayName(p, r.in.handle, r.in.name, r.out.disp_name, r.in.language_id, r.in.unknown);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupPrivDisplayName, &r);
 	
@@ -2048,7 +2320,7 @@ static BOOL api_lsa_LookupPrivDisplayName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2073,8 +2345,10 @@ static BOOL api_lsa_DeleteObject(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_DeleteObject(pull, NDR_IN, &r);
@@ -2087,6 +2361,12 @@ static BOOL api_lsa_DeleteObject(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_DeleteObject, &r);
 	
 	r.out.result = _lsa_DeleteObject(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_DeleteObject, &r);
@@ -2104,7 +2384,7 @@ static BOOL api_lsa_DeleteObject(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2129,8 +2409,10 @@ static BOOL api_lsa_EnumAccountsWithUserRight(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_EnumAccountsWithUserRight(pull, NDR_IN, &r);
@@ -2151,6 +2433,12 @@ static BOOL api_lsa_EnumAccountsWithUserRight(pipes_struct *p)
 	
 	r.out.result = _lsa_EnumAccountsWithUserRight(p, r.in.handle, r.in.name, r.out.sids);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumAccountsWithUserRight, &r);
 	
@@ -2167,7 +2455,7 @@ static BOOL api_lsa_EnumAccountsWithUserRight(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2192,8 +2480,10 @@ static BOOL api_lsa_EnumAccountRights(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_EnumAccountRights(pull, NDR_IN, &r);
@@ -2214,6 +2504,12 @@ static BOOL api_lsa_EnumAccountRights(pipes_struct *p)
 	
 	r.out.result = _lsa_EnumAccountRights(p, r.in.handle, r.in.sid, r.out.rights);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumAccountRights, &r);
 	
@@ -2230,7 +2526,7 @@ static BOOL api_lsa_EnumAccountRights(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2255,8 +2551,10 @@ static BOOL api_lsa_AddAccountRights(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_AddAccountRights(pull, NDR_IN, &r);
@@ -2269,6 +2567,12 @@ static BOOL api_lsa_AddAccountRights(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_AddAccountRights, &r);
 	
 	r.out.result = _lsa_AddAccountRights(p, r.in.handle, r.in.sid, r.in.rights);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_AddAccountRights, &r);
@@ -2286,7 +2590,7 @@ static BOOL api_lsa_AddAccountRights(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2311,8 +2615,10 @@ static BOOL api_lsa_RemoveAccountRights(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_RemoveAccountRights(pull, NDR_IN, &r);
@@ -2325,6 +2631,12 @@ static BOOL api_lsa_RemoveAccountRights(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_RemoveAccountRights, &r);
 	
 	r.out.result = _lsa_RemoveAccountRights(p, r.in.handle, r.in.sid, r.in.unknown, r.in.rights);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_RemoveAccountRights, &r);
@@ -2342,7 +2654,7 @@ static BOOL api_lsa_RemoveAccountRights(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2367,8 +2679,10 @@ static BOOL api_lsa_QueryTrustedDomainInfoBySid(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QueryTrustedDomainInfoBySid(pull, NDR_IN, &r);
@@ -2389,6 +2703,12 @@ static BOOL api_lsa_QueryTrustedDomainInfoBySid(pipes_struct *p)
 	
 	r.out.result = _lsa_QueryTrustedDomainInfoBySid(p, r.in.handle, r.in.dom_sid, r.in.level, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfoBySid, &r);
 	
@@ -2405,7 +2725,7 @@ static BOOL api_lsa_QueryTrustedDomainInfoBySid(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2430,8 +2750,10 @@ static BOOL api_lsa_SetTrustedDomainInfo(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_SetTrustedDomainInfo(pull, NDR_IN, &r);
@@ -2444,6 +2766,12 @@ static BOOL api_lsa_SetTrustedDomainInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfo, &r);
 	
 	r.out.result = _lsa_SetTrustedDomainInfo(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_SetTrustedDomainInfo, &r);
@@ -2461,7 +2789,7 @@ static BOOL api_lsa_SetTrustedDomainInfo(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2486,8 +2814,10 @@ static BOOL api_lsa_DeleteTrustedDomain(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_DeleteTrustedDomain(pull, NDR_IN, &r);
@@ -2500,6 +2830,12 @@ static BOOL api_lsa_DeleteTrustedDomain(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_DeleteTrustedDomain, &r);
 	
 	r.out.result = _lsa_DeleteTrustedDomain(p, r.in.handle, r.in.dom_sid);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_DeleteTrustedDomain, &r);
@@ -2517,7 +2853,7 @@ static BOOL api_lsa_DeleteTrustedDomain(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2542,8 +2878,10 @@ static BOOL api_lsa_StorePrivateData(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_StorePrivateData(pull, NDR_IN, &r);
@@ -2556,6 +2894,12 @@ static BOOL api_lsa_StorePrivateData(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_StorePrivateData, &r);
 	
 	r.out.result = _lsa_StorePrivateData(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_StorePrivateData, &r);
@@ -2573,7 +2917,7 @@ static BOOL api_lsa_StorePrivateData(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2598,8 +2942,10 @@ static BOOL api_lsa_RetrievePrivateData(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_RetrievePrivateData(pull, NDR_IN, &r);
@@ -2612,6 +2958,12 @@ static BOOL api_lsa_RetrievePrivateData(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_RetrievePrivateData, &r);
 	
 	r.out.result = _lsa_RetrievePrivateData(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_RetrievePrivateData, &r);
@@ -2629,7 +2981,7 @@ static BOOL api_lsa_RetrievePrivateData(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2654,8 +3006,10 @@ static BOOL api_lsa_OpenPolicy2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_OpenPolicy2(pull, NDR_IN, &r);
@@ -2676,6 +3030,12 @@ static BOOL api_lsa_OpenPolicy2(pipes_struct *p)
 	
 	r.out.result = _lsa_OpenPolicy2(p, r.in.system_name, r.in.attr, r.in.access_mask, r.out.handle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenPolicy2, &r);
 	
@@ -2692,7 +3052,7 @@ static BOOL api_lsa_OpenPolicy2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2717,8 +3077,10 @@ static BOOL api_lsa_GetUserName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_GetUserName(pull, NDR_IN, &r);
@@ -2734,6 +3096,12 @@ static BOOL api_lsa_GetUserName(pipes_struct *p)
 	r.out.account_name = r.in.account_name;
 	r.out.authority_name = r.in.authority_name;
 	r.out.result = _lsa_GetUserName(p, r.in.system_name, r.in.account_name, r.in.authority_name);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_GetUserName, &r);
@@ -2751,7 +3119,7 @@ static BOOL api_lsa_GetUserName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2776,8 +3144,10 @@ static BOOL api_lsa_QueryInfoPolicy2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QueryInfoPolicy2(pull, NDR_IN, &r);
@@ -2798,6 +3168,12 @@ static BOOL api_lsa_QueryInfoPolicy2(pipes_struct *p)
 	
 	r.out.result = _lsa_QueryInfoPolicy2(p, r.in.handle, r.in.level, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryInfoPolicy2, &r);
 	
@@ -2814,7 +3190,7 @@ static BOOL api_lsa_QueryInfoPolicy2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2839,8 +3215,10 @@ static BOOL api_lsa_SetInfoPolicy2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_SetInfoPolicy2(pull, NDR_IN, &r);
@@ -2853,6 +3231,12 @@ static BOOL api_lsa_SetInfoPolicy2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy2, &r);
 	
 	r.out.result = _lsa_SetInfoPolicy2(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_SetInfoPolicy2, &r);
@@ -2870,7 +3254,7 @@ static BOOL api_lsa_SetInfoPolicy2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2895,8 +3279,10 @@ static BOOL api_lsa_QueryTrustedDomainInfoByName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QueryTrustedDomainInfoByName(pull, NDR_IN, &r);
@@ -2917,6 +3303,12 @@ static BOOL api_lsa_QueryTrustedDomainInfoByName(pipes_struct *p)
 	
 	r.out.result = _lsa_QueryTrustedDomainInfoByName(p, r.in.handle, r.in.trusted_domain, r.in.level, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryTrustedDomainInfoByName, &r);
 	
@@ -2933,7 +3325,7 @@ static BOOL api_lsa_QueryTrustedDomainInfoByName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2958,8 +3350,10 @@ static BOOL api_lsa_SetTrustedDomainInfoByName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_SetTrustedDomainInfoByName(pull, NDR_IN, &r);
@@ -2972,6 +3366,12 @@ static BOOL api_lsa_SetTrustedDomainInfoByName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfoByName, &r);
 	
 	r.out.result = _lsa_SetTrustedDomainInfoByName(p, r.in.handle, r.in.trusted_domain, r.in.level, r.in.info);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_SetTrustedDomainInfoByName, &r);
@@ -2989,7 +3389,7 @@ static BOOL api_lsa_SetTrustedDomainInfoByName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3014,8 +3414,10 @@ static BOOL api_lsa_EnumTrustedDomainsEx(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_EnumTrustedDomainsEx(pull, NDR_IN, &r);
@@ -3037,6 +3439,12 @@ static BOOL api_lsa_EnumTrustedDomainsEx(pipes_struct *p)
 	
 	r.out.result = _lsa_EnumTrustedDomainsEx(p, r.in.handle, r.in.resume_handle, r.out.domains, r.in.max_size);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_EnumTrustedDomainsEx, &r);
 	
@@ -3053,7 +3461,7 @@ static BOOL api_lsa_EnumTrustedDomainsEx(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3078,8 +3486,10 @@ static BOOL api_lsa_CreateTrustedDomainEx(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CreateTrustedDomainEx(pull, NDR_IN, &r);
@@ -3092,6 +3502,12 @@ static BOOL api_lsa_CreateTrustedDomainEx(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx, &r);
 	
 	r.out.result = _lsa_CreateTrustedDomainEx(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomainEx, &r);
@@ -3109,7 +3525,7 @@ static BOOL api_lsa_CreateTrustedDomainEx(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3134,8 +3550,10 @@ static BOOL api_lsa_CloseTrustedDomainEx(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CloseTrustedDomainEx(pull, NDR_IN, &r);
@@ -3150,6 +3568,12 @@ static BOOL api_lsa_CloseTrustedDomainEx(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.handle = r.in.handle;
 	r.out.result = _lsa_CloseTrustedDomainEx(p, r.in.handle);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CloseTrustedDomainEx, &r);
@@ -3167,7 +3591,7 @@ static BOOL api_lsa_CloseTrustedDomainEx(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3192,8 +3616,10 @@ static BOOL api_lsa_QueryDomainInformationPolicy(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_QueryDomainInformationPolicy(pull, NDR_IN, &r);
@@ -3214,6 +3640,12 @@ static BOOL api_lsa_QueryDomainInformationPolicy(pipes_struct *p)
 	
 	r.out.result = _lsa_QueryDomainInformationPolicy(p, r.in.handle, r.in.level, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_QueryDomainInformationPolicy, &r);
 	
@@ -3230,7 +3662,7 @@ static BOOL api_lsa_QueryDomainInformationPolicy(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3255,8 +3687,10 @@ static BOOL api_lsa_SetDomainInformationPolicy(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_SetDomainInformationPolicy(pull, NDR_IN, &r);
@@ -3269,6 +3703,12 @@ static BOOL api_lsa_SetDomainInformationPolicy(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_SetDomainInformationPolicy, &r);
 	
 	r.out.result = _lsa_SetDomainInformationPolicy(p, r.in.handle, r.in.level, r.in.info);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_SetDomainInformationPolicy, &r);
@@ -3286,7 +3726,7 @@ static BOOL api_lsa_SetDomainInformationPolicy(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3311,8 +3751,10 @@ static BOOL api_lsa_OpenTrustedDomainByName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_OpenTrustedDomainByName(pull, NDR_IN, &r);
@@ -3333,6 +3775,12 @@ static BOOL api_lsa_OpenTrustedDomainByName(pipes_struct *p)
 	
 	r.out.result = _lsa_OpenTrustedDomainByName(p, r.in.handle, r.in.name, r.in.access_mask, r.out.trustdom_handle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_OpenTrustedDomainByName, &r);
 	
@@ -3349,7 +3797,7 @@ static BOOL api_lsa_OpenTrustedDomainByName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3374,8 +3822,10 @@ static BOOL api_lsa_TestCall(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_TestCall(pull, NDR_IN, &r);
@@ -3388,6 +3838,12 @@ static BOOL api_lsa_TestCall(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_TestCall, &r);
 	
 	r.out.result = _lsa_TestCall(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_TestCall, &r);
@@ -3405,7 +3861,7 @@ static BOOL api_lsa_TestCall(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3430,8 +3886,10 @@ static BOOL api_lsa_LookupSids2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupSids2(pull, NDR_IN, &r);
@@ -3454,6 +3912,12 @@ static BOOL api_lsa_LookupSids2(pipes_struct *p)
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupSids2(p, r.in.handle, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupSids2, &r);
 	
@@ -3470,7 +3934,7 @@ static BOOL api_lsa_LookupSids2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3495,8 +3959,10 @@ static BOOL api_lsa_LookupNames2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupNames2(pull, NDR_IN, &r);
@@ -3519,6 +3985,12 @@ static BOOL api_lsa_LookupNames2(pipes_struct *p)
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupNames2(p, r.in.handle, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupNames2, &r);
 	
@@ -3535,7 +4007,7 @@ static BOOL api_lsa_LookupNames2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3560,8 +4032,10 @@ static BOOL api_lsa_CreateTrustedDomainEx2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CreateTrustedDomainEx2(pull, NDR_IN, &r);
@@ -3574,6 +4048,12 @@ static BOOL api_lsa_CreateTrustedDomainEx2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx2, &r);
 	
 	r.out.result = _lsa_CreateTrustedDomainEx2(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CreateTrustedDomainEx2, &r);
@@ -3591,7 +4071,7 @@ static BOOL api_lsa_CreateTrustedDomainEx2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3616,8 +4096,10 @@ static BOOL api_lsa_CREDRWRITE(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CREDRWRITE(pull, NDR_IN, &r);
@@ -3630,6 +4112,12 @@ static BOOL api_lsa_CREDRWRITE(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITE, &r);
 	
 	r.out.result = _lsa_CREDRWRITE(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRWRITE, &r);
@@ -3647,7 +4135,7 @@ static BOOL api_lsa_CREDRWRITE(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3672,8 +4160,10 @@ static BOOL api_lsa_CREDRREAD(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CREDRREAD(pull, NDR_IN, &r);
@@ -3686,6 +4176,12 @@ static BOOL api_lsa_CREDRREAD(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRREAD, &r);
 	
 	r.out.result = _lsa_CREDRREAD(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRREAD, &r);
@@ -3703,7 +4199,7 @@ static BOOL api_lsa_CREDRREAD(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3728,8 +4224,10 @@ static BOOL api_lsa_CREDRENUMERATE(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CREDRENUMERATE(pull, NDR_IN, &r);
@@ -3742,6 +4240,12 @@ static BOOL api_lsa_CREDRENUMERATE(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRENUMERATE, &r);
 	
 	r.out.result = _lsa_CREDRENUMERATE(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRENUMERATE, &r);
@@ -3759,7 +4263,7 @@ static BOOL api_lsa_CREDRENUMERATE(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3784,8 +4288,10 @@ static BOOL api_lsa_CREDRWRITEDOMAINCREDENTIALS(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CREDRWRITEDOMAINCREDENTIALS(pull, NDR_IN, &r);
@@ -3798,6 +4304,12 @@ static BOOL api_lsa_CREDRWRITEDOMAINCREDENTIALS(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITEDOMAINCREDENTIALS, &r);
 	
 	r.out.result = _lsa_CREDRWRITEDOMAINCREDENTIALS(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRWRITEDOMAINCREDENTIALS, &r);
@@ -3815,7 +4327,7 @@ static BOOL api_lsa_CREDRWRITEDOMAINCREDENTIALS(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3840,8 +4352,10 @@ static BOOL api_lsa_CREDRREADDOMAINCREDENTIALS(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CREDRREADDOMAINCREDENTIALS(pull, NDR_IN, &r);
@@ -3854,6 +4368,12 @@ static BOOL api_lsa_CREDRREADDOMAINCREDENTIALS(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRREADDOMAINCREDENTIALS, &r);
 	
 	r.out.result = _lsa_CREDRREADDOMAINCREDENTIALS(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRREADDOMAINCREDENTIALS, &r);
@@ -3871,7 +4391,7 @@ static BOOL api_lsa_CREDRREADDOMAINCREDENTIALS(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3896,8 +4416,10 @@ static BOOL api_lsa_CREDRDELETE(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CREDRDELETE(pull, NDR_IN, &r);
@@ -3910,6 +4432,12 @@ static BOOL api_lsa_CREDRDELETE(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRDELETE, &r);
 	
 	r.out.result = _lsa_CREDRDELETE(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRDELETE, &r);
@@ -3927,7 +4455,7 @@ static BOOL api_lsa_CREDRDELETE(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -3952,8 +4480,10 @@ static BOOL api_lsa_CREDRGETTARGETINFO(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CREDRGETTARGETINFO(pull, NDR_IN, &r);
@@ -3966,6 +4496,12 @@ static BOOL api_lsa_CREDRGETTARGETINFO(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRGETTARGETINFO, &r);
 	
 	r.out.result = _lsa_CREDRGETTARGETINFO(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRGETTARGETINFO, &r);
@@ -3983,7 +4519,7 @@ static BOOL api_lsa_CREDRGETTARGETINFO(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4008,8 +4544,10 @@ static BOOL api_lsa_CREDRPROFILELOADED(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CREDRPROFILELOADED(pull, NDR_IN, &r);
@@ -4022,6 +4560,12 @@ static BOOL api_lsa_CREDRPROFILELOADED(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRPROFILELOADED, &r);
 	
 	r.out.result = _lsa_CREDRPROFILELOADED(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRPROFILELOADED, &r);
@@ -4039,7 +4583,7 @@ static BOOL api_lsa_CREDRPROFILELOADED(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4064,8 +4608,10 @@ static BOOL api_lsa_LookupNames3(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupNames3(pull, NDR_IN, &r);
@@ -4088,6 +4634,12 @@ static BOOL api_lsa_LookupNames3(pipes_struct *p)
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupNames3(p, r.in.handle, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupNames3, &r);
 	
@@ -4104,7 +4656,7 @@ static BOOL api_lsa_LookupNames3(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4129,8 +4681,10 @@ static BOOL api_lsa_CREDRGETSESSIONTYPES(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CREDRGETSESSIONTYPES(pull, NDR_IN, &r);
@@ -4143,6 +4697,12 @@ static BOOL api_lsa_CREDRGETSESSIONTYPES(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRGETSESSIONTYPES, &r);
 	
 	r.out.result = _lsa_CREDRGETSESSIONTYPES(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRGETSESSIONTYPES, &r);
@@ -4160,7 +4720,7 @@ static BOOL api_lsa_CREDRGETSESSIONTYPES(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4185,8 +4745,10 @@ static BOOL api_lsa_LSARREGISTERAUDITEVENT(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LSARREGISTERAUDITEVENT(pull, NDR_IN, &r);
@@ -4199,6 +4761,12 @@ static BOOL api_lsa_LSARREGISTERAUDITEVENT(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LSARREGISTERAUDITEVENT, &r);
 	
 	r.out.result = _lsa_LSARREGISTERAUDITEVENT(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARREGISTERAUDITEVENT, &r);
@@ -4216,7 +4784,7 @@ static BOOL api_lsa_LSARREGISTERAUDITEVENT(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4241,8 +4809,10 @@ static BOOL api_lsa_LSARGENAUDITEVENT(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LSARGENAUDITEVENT(pull, NDR_IN, &r);
@@ -4255,6 +4825,12 @@ static BOOL api_lsa_LSARGENAUDITEVENT(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LSARGENAUDITEVENT, &r);
 	
 	r.out.result = _lsa_LSARGENAUDITEVENT(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARGENAUDITEVENT, &r);
@@ -4272,7 +4848,7 @@ static BOOL api_lsa_LSARGENAUDITEVENT(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4297,8 +4873,10 @@ static BOOL api_lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LSARUNREGISTERAUDITEVENT(pull, NDR_IN, &r);
@@ -4311,6 +4889,12 @@ static BOOL api_lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LSARUNREGISTERAUDITEVENT, &r);
 	
 	r.out.result = _lsa_LSARUNREGISTERAUDITEVENT(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARUNREGISTERAUDITEVENT, &r);
@@ -4328,7 +4912,7 @@ static BOOL api_lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4353,8 +4937,10 @@ static BOOL api_lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LSARQUERYFORESTTRUSTINFORMATION(pull, NDR_IN, &r);
@@ -4367,6 +4953,12 @@ static BOOL api_lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, &r);
 	
 	r.out.result = _lsa_LSARQUERYFORESTTRUSTINFORMATION(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, &r);
@@ -4384,7 +4976,7 @@ static BOOL api_lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4409,8 +5001,10 @@ static BOOL api_lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LSARSETFORESTTRUSTINFORMATION(pull, NDR_IN, &r);
@@ -4423,6 +5017,12 @@ static BOOL api_lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, &r);
 	
 	r.out.result = _lsa_LSARSETFORESTTRUSTINFORMATION(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, &r);
@@ -4440,7 +5040,7 @@ static BOOL api_lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4465,8 +5065,10 @@ static BOOL api_lsa_CREDRRENAME(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_CREDRRENAME(pull, NDR_IN, &r);
@@ -4479,6 +5081,12 @@ static BOOL api_lsa_CREDRRENAME(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_CREDRRENAME, &r);
 	
 	r.out.result = _lsa_CREDRRENAME(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_CREDRRENAME, &r);
@@ -4496,7 +5104,7 @@ static BOOL api_lsa_CREDRRENAME(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4521,8 +5129,10 @@ static BOOL api_lsa_LookupSids3(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupSids3(pull, NDR_IN, &r);
@@ -4545,6 +5155,12 @@ static BOOL api_lsa_LookupSids3(pipes_struct *p)
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupSids3(p, r.in.sids, r.out.domains, r.in.names, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupSids3, &r);
 	
@@ -4561,7 +5177,7 @@ static BOOL api_lsa_LookupSids3(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4586,8 +5202,10 @@ static BOOL api_lsa_LookupNames4(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LookupNames4(pull, NDR_IN, &r);
@@ -4610,6 +5228,12 @@ static BOOL api_lsa_LookupNames4(pipes_struct *p)
 	r.out.count = r.in.count;
 	r.out.result = _lsa_LookupNames4(p, r.in.num_names, r.in.names, r.out.domains, r.in.sids, r.in.level, r.in.count, r.in.unknown1, r.in.unknown2);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LookupNames4, &r);
 	
@@ -4626,7 +5250,7 @@ static BOOL api_lsa_LookupNames4(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4651,8 +5275,10 @@ static BOOL api_lsa_LSAROPENPOLICYSCE(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LSAROPENPOLICYSCE(pull, NDR_IN, &r);
@@ -4665,6 +5291,12 @@ static BOOL api_lsa_LSAROPENPOLICYSCE(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LSAROPENPOLICYSCE, &r);
 	
 	r.out.result = _lsa_LSAROPENPOLICYSCE(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LSAROPENPOLICYSCE, &r);
@@ -4682,7 +5314,7 @@ static BOOL api_lsa_LSAROPENPOLICYSCE(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4707,8 +5339,10 @@ static BOOL api_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pull, NDR_IN, &r);
@@ -4721,6 +5355,12 @@ static BOOL api_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LSARADTREGISTERSECURITYEVENTSOURCE, &r);
 	
 	r.out.result = _lsa_LSARADTREGISTERSECURITYEVENTSOURCE(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARADTREGISTERSECURITYEVENTSOURCE, &r);
@@ -4738,7 +5378,7 @@ static BOOL api_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4763,8 +5403,10 @@ static BOOL api_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pull, NDR_IN, &r);
@@ -4777,6 +5419,12 @@ static BOOL api_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, &r);
 	
 	r.out.result = _lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, &r);
@@ -4794,7 +5442,7 @@ static BOOL api_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -4819,8 +5467,10 @@ static BOOL api_lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_lsa_LSARADTREPORTSECURITYEVENT(pull, NDR_IN, &r);
@@ -4833,6 +5483,12 @@ static BOOL api_lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_LSARADTREPORTSECURITYEVENT, &r);
 	
 	r.out.result = _lsa_LSARADTREPORTSECURITYEVENT(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(lsa_LSARADTREPORTSECURITYEVENT, &r);
@@ -4850,7 +5506,7 @@ static BOOL api_lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}

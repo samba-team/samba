@@ -21,8 +21,10 @@ static BOOL api_netr_LogonUasLogon(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_LogonUasLogon(pull, NDR_IN, &r);
@@ -43,6 +45,12 @@ static BOOL api_netr_LogonUasLogon(pipes_struct *p)
 	
 	r.out.result = _netr_LogonUasLogon(p, r.in.server_name, r.in.account_name, r.in.workstation, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonUasLogon, &r);
 	
@@ -59,7 +67,7 @@ static BOOL api_netr_LogonUasLogon(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -84,8 +92,10 @@ static BOOL api_netr_LogonUasLogoff(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_LogonUasLogoff(pull, NDR_IN, &r);
@@ -106,6 +116,12 @@ static BOOL api_netr_LogonUasLogoff(pipes_struct *p)
 	
 	r.out.result = _netr_LogonUasLogoff(p, r.in.server_name, r.in.account_name, r.in.workstation, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonUasLogoff, &r);
 	
@@ -122,7 +138,7 @@ static BOOL api_netr_LogonUasLogoff(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -147,8 +163,10 @@ static BOOL api_netr_LogonSamLogon(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_LogonSamLogon(pull, NDR_IN, &r);
@@ -176,6 +194,12 @@ static BOOL api_netr_LogonSamLogon(pipes_struct *p)
 	
 	r.out.result = _netr_LogonSamLogon(p, r.in.server_name, r.in.computer_name, r.in.credential, r.in.return_authenticator, r.in.logon_level, r.in.logon, r.in.validation_level, r.out.validation, r.out.authoritative);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogon, &r);
 	
@@ -192,7 +216,7 @@ static BOOL api_netr_LogonSamLogon(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -217,8 +241,10 @@ static BOOL api_netr_LogonSamLogoff(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_LogonSamLogoff(pull, NDR_IN, &r);
@@ -233,6 +259,12 @@ static BOOL api_netr_LogonSamLogoff(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.return_authenticator = r.in.return_authenticator;
 	r.out.result = _netr_LogonSamLogoff(p, r.in.server_name, r.in.computer_name, r.in.credential, r.in.return_authenticator, r.in.logon_level, r.in.logon);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogoff, &r);
@@ -250,7 +282,7 @@ static BOOL api_netr_LogonSamLogoff(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -275,8 +307,10 @@ static BOOL api_netr_ServerReqChallenge(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_ServerReqChallenge(pull, NDR_IN, &r);
@@ -291,6 +325,12 @@ static BOOL api_netr_ServerReqChallenge(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.credentials = r.in.credentials;
 	r.out.result = _netr_ServerReqChallenge(p, r.in.server_name, r.in.computer_name, r.in.credentials);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerReqChallenge, &r);
@@ -308,7 +348,7 @@ static BOOL api_netr_ServerReqChallenge(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -333,8 +373,10 @@ static BOOL api_netr_ServerAuthenticate(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_ServerAuthenticate(pull, NDR_IN, &r);
@@ -349,6 +391,12 @@ static BOOL api_netr_ServerAuthenticate(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.credentials = r.in.credentials;
 	r.out.result = _netr_ServerAuthenticate(p, r.in.server_name, r.in.account_name, r.in.secure_channel_type, r.in.computer_name, r.in.credentials);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate, &r);
@@ -366,7 +414,7 @@ static BOOL api_netr_ServerAuthenticate(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -391,8 +439,10 @@ static BOOL api_netr_ServerPasswordSet(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_ServerPasswordSet(pull, NDR_IN, &r);
@@ -413,6 +463,12 @@ static BOOL api_netr_ServerPasswordSet(pipes_struct *p)
 	
 	r.out.result = _netr_ServerPasswordSet(p, r.in.server_name, r.in.account_name, r.in.secure_channel_type, r.in.computer_name, r.in.credential, r.in.new_password, r.out.return_authenticator);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordSet, &r);
 	
@@ -429,7 +485,7 @@ static BOOL api_netr_ServerPasswordSet(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -454,8 +510,10 @@ static BOOL api_netr_DatabaseDeltas(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DatabaseDeltas(pull, NDR_IN, &r);
@@ -478,6 +536,12 @@ static BOOL api_netr_DatabaseDeltas(pipes_struct *p)
 	
 	r.out.result = _netr_DatabaseDeltas(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.database_id, r.in.sequence_num, r.in.preferredmaximumlength, r.out.delta_enum_array);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseDeltas, &r);
 	
@@ -494,7 +558,7 @@ static BOOL api_netr_DatabaseDeltas(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -519,8 +583,10 @@ static BOOL api_netr_DatabaseSync(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DatabaseSync(pull, NDR_IN, &r);
@@ -543,6 +609,12 @@ static BOOL api_netr_DatabaseSync(pipes_struct *p)
 	
 	r.out.result = _netr_DatabaseSync(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.database_id, r.in.sync_context, r.in.preferredmaximumlength, r.out.delta_enum_array);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseSync, &r);
 	
@@ -559,7 +631,7 @@ static BOOL api_netr_DatabaseSync(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -584,8 +656,10 @@ static BOOL api_netr_AccountDeltas(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_AccountDeltas(pull, NDR_IN, &r);
@@ -625,6 +699,12 @@ static BOOL api_netr_AccountDeltas(pipes_struct *p)
 	
 	r.out.result = _netr_AccountDeltas(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.uas, r.in.count, r.in.level, r.in.buffersize, r.out.buffer, r.out.count_returned, r.out.total_entries, r.out.recordid);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_AccountDeltas, &r);
 	
@@ -641,7 +721,7 @@ static BOOL api_netr_AccountDeltas(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -666,8 +746,10 @@ static BOOL api_netr_AccountSync(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_AccountSync(pull, NDR_IN, &r);
@@ -708,6 +790,12 @@ static BOOL api_netr_AccountSync(pipes_struct *p)
 	r.out.recordid = r.in.recordid;
 	r.out.result = _netr_AccountSync(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.reference, r.in.level, r.in.buffersize, r.out.buffer, r.out.count_returned, r.out.total_entries, r.out.next_reference, r.in.recordid);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_AccountSync, &r);
 	
@@ -724,7 +812,7 @@ static BOOL api_netr_AccountSync(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -749,8 +837,10 @@ static BOOL api_netr_GetDcName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_GetDcName(pull, NDR_IN, &r);
@@ -771,6 +861,12 @@ static BOOL api_netr_GetDcName(pipes_struct *p)
 	
 	r.out.result = _netr_GetDcName(p, r.in.logon_server, r.in.domainname, r.out.dcname);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_GetDcName, &r);
 	
@@ -787,7 +883,7 @@ static BOOL api_netr_GetDcName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -812,8 +908,10 @@ static BOOL api_netr_LogonControl(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_LogonControl(pull, NDR_IN, &r);
@@ -834,6 +932,12 @@ static BOOL api_netr_LogonControl(pipes_struct *p)
 	
 	r.out.result = _netr_LogonControl(p, r.in.logon_server, r.in.function_code, r.in.level, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonControl, &r);
 	
@@ -850,7 +954,7 @@ static BOOL api_netr_LogonControl(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -875,8 +979,10 @@ static BOOL api_netr_GetAnyDCName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_GetAnyDCName(pull, NDR_IN, &r);
@@ -897,6 +1003,12 @@ static BOOL api_netr_GetAnyDCName(pipes_struct *p)
 	
 	r.out.result = _netr_GetAnyDCName(p, r.in.logon_server, r.in.domainname, r.out.dcname);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_GetAnyDCName, &r);
 	
@@ -913,7 +1025,7 @@ static BOOL api_netr_GetAnyDCName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -938,8 +1050,10 @@ static BOOL api_netr_LogonControl2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_LogonControl2(pull, NDR_IN, &r);
@@ -960,6 +1074,12 @@ static BOOL api_netr_LogonControl2(pipes_struct *p)
 	
 	r.out.result = _netr_LogonControl2(p, r.in.logon_server, r.in.function_code, r.in.level, r.in.data, r.out.query);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonControl2, &r);
 	
@@ -976,7 +1096,7 @@ static BOOL api_netr_LogonControl2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1001,8 +1121,10 @@ static BOOL api_netr_ServerAuthenticate2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_ServerAuthenticate2(pull, NDR_IN, &r);
@@ -1018,6 +1140,12 @@ static BOOL api_netr_ServerAuthenticate2(pipes_struct *p)
 	r.out.credentials = r.in.credentials;
 	r.out.negotiate_flags = r.in.negotiate_flags;
 	r.out.result = _netr_ServerAuthenticate2(p, r.in.server_name, r.in.account_name, r.in.secure_channel_type, r.in.computer_name, r.in.credentials, r.in.negotiate_flags);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate2, &r);
@@ -1035,7 +1163,7 @@ static BOOL api_netr_ServerAuthenticate2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1060,8 +1188,10 @@ static BOOL api_netr_DatabaseSync2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DatabaseSync2(pull, NDR_IN, &r);
@@ -1084,6 +1214,12 @@ static BOOL api_netr_DatabaseSync2(pipes_struct *p)
 	
 	r.out.result = _netr_DatabaseSync2(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.database_id, r.in.restart_state, r.in.sync_context, r.in.preferredmaximumlength, r.out.delta_enum_array);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseSync2, &r);
 	
@@ -1100,7 +1236,7 @@ static BOOL api_netr_DatabaseSync2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1125,8 +1261,10 @@ static BOOL api_netr_DatabaseRedo(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DatabaseRedo(pull, NDR_IN, &r);
@@ -1148,6 +1286,12 @@ static BOOL api_netr_DatabaseRedo(pipes_struct *p)
 	
 	r.out.result = _netr_DatabaseRedo(p, r.in.logon_server, r.in.computername, r.in.credential, r.in.return_authenticator, r.in.change_log_entry, r.in.change_log_entry_size, r.out.delta_enum_array);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DatabaseRedo, &r);
 	
@@ -1164,7 +1308,7 @@ static BOOL api_netr_DatabaseRedo(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1189,8 +1333,10 @@ static BOOL api_netr_LogonControl2Ex(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_LogonControl2Ex(pull, NDR_IN, &r);
@@ -1211,6 +1357,12 @@ static BOOL api_netr_LogonControl2Ex(pipes_struct *p)
 	
 	r.out.result = _netr_LogonControl2Ex(p, r.in.logon_server, r.in.function_code, r.in.level, r.in.data, r.out.query);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonControl2Ex, &r);
 	
@@ -1227,7 +1379,7 @@ static BOOL api_netr_LogonControl2Ex(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1252,8 +1404,10 @@ static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINS(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRENUMERATETRUSTEDDOMAINS(pull, NDR_IN, &r);
@@ -1266,6 +1420,12 @@ static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINS(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINS, &r);
 	
 	r.out.result = _netr_NETRENUMERATETRUSTEDDOMAINS(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINS, &r);
@@ -1283,7 +1443,7 @@ static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINS(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1308,8 +1468,10 @@ static BOOL api_netr_DsRGetDCName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DsRGetDCName(pull, NDR_IN, &r);
@@ -1330,6 +1492,12 @@ static BOOL api_netr_DsRGetDCName(pipes_struct *p)
 	
 	r.out.result = _netr_DsRGetDCName(p, r.in.server_unc, r.in.domain_name, r.in.domain_guid, r.in.site_guid, r.in.flags, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCName, &r);
 	
@@ -1346,7 +1514,7 @@ static BOOL api_netr_DsRGetDCName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1371,8 +1539,10 @@ static BOOL api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRLOGONDUMMYROUTINE1(pull, NDR_IN, &r);
@@ -1385,6 +1555,12 @@ static BOOL api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONDUMMYROUTINE1, &r);
 	
 	r.out.result = _netr_NETRLOGONDUMMYROUTINE1(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONDUMMYROUTINE1, &r);
@@ -1402,7 +1578,7 @@ static BOOL api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1427,8 +1603,10 @@ static BOOL api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRLOGONSETSERVICEBITS(pull, NDR_IN, &r);
@@ -1441,6 +1619,12 @@ static BOOL api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONSETSERVICEBITS, &r);
 	
 	r.out.result = _netr_NETRLOGONSETSERVICEBITS(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONSETSERVICEBITS, &r);
@@ -1458,7 +1642,7 @@ static BOOL api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1483,8 +1667,10 @@ static BOOL api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRLOGONGETTRUSTRID(pull, NDR_IN, &r);
@@ -1497,6 +1683,12 @@ static BOOL api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONGETTRUSTRID, &r);
 	
 	r.out.result = _netr_NETRLOGONGETTRUSTRID(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONGETTRUSTRID, &r);
@@ -1514,7 +1706,7 @@ static BOOL api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1539,8 +1731,10 @@ static BOOL api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRLOGONCOMPUTESERVERDIGEST(pull, NDR_IN, &r);
@@ -1553,6 +1747,12 @@ static BOOL api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONCOMPUTESERVERDIGEST, &r);
 	
 	r.out.result = _netr_NETRLOGONCOMPUTESERVERDIGEST(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONCOMPUTESERVERDIGEST, &r);
@@ -1570,7 +1770,7 @@ static BOOL api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1595,8 +1795,10 @@ static BOOL api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRLOGONCOMPUTECLIENTDIGEST(pull, NDR_IN, &r);
@@ -1609,6 +1811,12 @@ static BOOL api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONCOMPUTECLIENTDIGEST, &r);
 	
 	r.out.result = _netr_NETRLOGONCOMPUTECLIENTDIGEST(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONCOMPUTECLIENTDIGEST, &r);
@@ -1626,7 +1834,7 @@ static BOOL api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1651,8 +1859,10 @@ static BOOL api_netr_ServerAuthenticate3(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_ServerAuthenticate3(pull, NDR_IN, &r);
@@ -1675,6 +1885,12 @@ static BOOL api_netr_ServerAuthenticate3(pipes_struct *p)
 	
 	r.out.result = _netr_ServerAuthenticate3(p, r.in.server_name, r.in.account_name, r.in.secure_channel_type, r.in.computer_name, r.in.credentials, r.in.negotiate_flags, r.out.rid);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerAuthenticate3, &r);
 	
@@ -1691,7 +1907,7 @@ static BOOL api_netr_ServerAuthenticate3(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1716,8 +1932,10 @@ static BOOL api_netr_DsRGetDCNameEx(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DsRGetDCNameEx(pull, NDR_IN, &r);
@@ -1738,6 +1956,12 @@ static BOOL api_netr_DsRGetDCNameEx(pipes_struct *p)
 	
 	r.out.result = _netr_DsRGetDCNameEx(p, r.in.server_unc, r.in.domain_name, r.in.domain_guid, r.in.site_name, r.in.flags, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCNameEx, &r);
 	
@@ -1754,7 +1978,7 @@ static BOOL api_netr_DsRGetDCNameEx(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1779,8 +2003,10 @@ static BOOL api_netr_DsRGetSiteName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DsRGetSiteName(pull, NDR_IN, &r);
@@ -1801,6 +2027,12 @@ static BOOL api_netr_DsRGetSiteName(pipes_struct *p)
 	
 	r.out.result = _netr_DsRGetSiteName(p, r.in.computer_name, r.out.site);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetSiteName, &r);
 	
@@ -1817,7 +2049,7 @@ static BOOL api_netr_DsRGetSiteName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1842,8 +2074,10 @@ static BOOL api_netr_LogonGetDomainInfo(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_LogonGetDomainInfo(pull, NDR_IN, &r);
@@ -1865,6 +2099,12 @@ static BOOL api_netr_LogonGetDomainInfo(pipes_struct *p)
 	
 	r.out.result = _netr_LogonGetDomainInfo(p, r.in.server_name, r.in.computer_name, r.in.credential, r.in.return_authenticator, r.in.level, r.in.query, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonGetDomainInfo, &r);
 	
@@ -1881,7 +2121,7 @@ static BOOL api_netr_LogonGetDomainInfo(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1906,8 +2146,10 @@ static BOOL api_netr_ServerPasswordSet2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_ServerPasswordSet2(pull, NDR_IN, &r);
@@ -1928,6 +2170,12 @@ static BOOL api_netr_ServerPasswordSet2(pipes_struct *p)
 	
 	r.out.result = _netr_ServerPasswordSet2(p, r.in.server_name, r.in.account_name, r.in.secure_channel_type, r.in.computer_name, r.in.credential, r.in.new_password, r.out.return_authenticator);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordSet2, &r);
 	
@@ -1944,7 +2192,7 @@ static BOOL api_netr_ServerPasswordSet2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1969,8 +2217,10 @@ static BOOL api_netr_NETRSERVERPASSWORDGET(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRSERVERPASSWORDGET(pull, NDR_IN, &r);
@@ -1983,6 +2233,12 @@ static BOOL api_netr_NETRSERVERPASSWORDGET(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRSERVERPASSWORDGET, &r);
 	
 	r.out.result = _netr_NETRSERVERPASSWORDGET(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRSERVERPASSWORDGET, &r);
@@ -2000,7 +2256,7 @@ static BOOL api_netr_NETRSERVERPASSWORDGET(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2025,8 +2281,10 @@ static BOOL api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRLOGONSENDTOSAM(pull, NDR_IN, &r);
@@ -2039,6 +2297,12 @@ static BOOL api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONSENDTOSAM, &r);
 	
 	r.out.result = _netr_NETRLOGONSENDTOSAM(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONSENDTOSAM, &r);
@@ -2056,7 +2320,7 @@ static BOOL api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2081,8 +2345,10 @@ static BOOL api_netr_DSRADDRESSTOSITENAMESW(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DSRADDRESSTOSITENAMESW(pull, NDR_IN, &r);
@@ -2095,6 +2361,12 @@ static BOOL api_netr_DSRADDRESSTOSITENAMESW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_DSRADDRESSTOSITENAMESW, &r);
 	
 	r.out.result = _netr_DSRADDRESSTOSITENAMESW(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DSRADDRESSTOSITENAMESW, &r);
@@ -2112,7 +2384,7 @@ static BOOL api_netr_DSRADDRESSTOSITENAMESW(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2137,8 +2409,10 @@ static BOOL api_netr_DsRGetDCNameEx2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DsRGetDCNameEx2(pull, NDR_IN, &r);
@@ -2159,6 +2433,12 @@ static BOOL api_netr_DsRGetDCNameEx2(pipes_struct *p)
 	
 	r.out.result = _netr_DsRGetDCNameEx2(p, r.in.server_unc, r.in.client_account, r.in.mask, r.in.domain_name, r.in.domain_guid, r.in.site_name, r.in.flags, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DsRGetDCNameEx2, &r);
 	
@@ -2175,7 +2455,7 @@ static BOOL api_netr_DsRGetDCNameEx2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2200,8 +2480,10 @@ static BOOL api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pull, NDR_IN, &r);
@@ -2214,6 +2496,12 @@ static BOOL api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN, &r);
 	
 	r.out.result = _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN, &r);
@@ -2231,7 +2519,7 @@ static BOOL api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2256,8 +2544,10 @@ static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINSEX(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRENUMERATETRUSTEDDOMAINSEX(pull, NDR_IN, &r);
@@ -2270,6 +2560,12 @@ static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINSEX(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINSEX, &r);
 	
 	r.out.result = _netr_NETRENUMERATETRUSTEDDOMAINSEX(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINSEX, &r);
@@ -2287,7 +2583,7 @@ static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINSEX(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2312,8 +2608,10 @@ static BOOL api_netr_DSRADDRESSTOSITENAMESEXW(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DSRADDRESSTOSITENAMESEXW(pull, NDR_IN, &r);
@@ -2326,6 +2624,12 @@ static BOOL api_netr_DSRADDRESSTOSITENAMESEXW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_DSRADDRESSTOSITENAMESEXW, &r);
 	
 	r.out.result = _netr_DSRADDRESSTOSITENAMESEXW(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DSRADDRESSTOSITENAMESEXW, &r);
@@ -2343,7 +2647,7 @@ static BOOL api_netr_DSRADDRESSTOSITENAMESEXW(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2368,8 +2672,10 @@ static BOOL api_netr_DSRGETDCSITECOVERAGEW(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DSRGETDCSITECOVERAGEW(pull, NDR_IN, &r);
@@ -2382,6 +2688,12 @@ static BOOL api_netr_DSRGETDCSITECOVERAGEW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_DSRGETDCSITECOVERAGEW, &r);
 	
 	r.out.result = _netr_DSRGETDCSITECOVERAGEW(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DSRGETDCSITECOVERAGEW, &r);
@@ -2399,7 +2711,7 @@ static BOOL api_netr_DSRGETDCSITECOVERAGEW(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2424,8 +2736,10 @@ static BOOL api_netr_LogonSamLogonEx(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_LogonSamLogonEx(pull, NDR_IN, &r);
@@ -2453,6 +2767,12 @@ static BOOL api_netr_LogonSamLogonEx(pipes_struct *p)
 	r.out.flags = r.in.flags;
 	r.out.result = _netr_LogonSamLogonEx(p, r.in.server_name, r.in.computer_name, r.in.logon_level, r.in.logon, r.in.validation_level, r.out.validation, r.out.authoritative, r.in.flags);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogonEx, &r);
 	
@@ -2469,7 +2789,7 @@ static BOOL api_netr_LogonSamLogonEx(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2494,8 +2814,10 @@ static BOOL api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DsrEnumerateDomainTrusts(pull, NDR_IN, &r);
@@ -2522,6 +2844,12 @@ static BOOL api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 	
 	r.out.result = _netr_DsrEnumerateDomainTrusts(p, r.in.server_name, r.in.trust_flags, r.out.count, r.out.trusts);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DsrEnumerateDomainTrusts, &r);
 	
@@ -2538,7 +2866,7 @@ static BOOL api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2563,8 +2891,10 @@ static BOOL api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DSRDEREGISTERDNSHOSTRECORDS(pull, NDR_IN, &r);
@@ -2577,6 +2907,12 @@ static BOOL api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_DSRDEREGISTERDNSHOSTRECORDS, &r);
 	
 	r.out.result = _netr_DSRDEREGISTERDNSHOSTRECORDS(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DSRDEREGISTERDNSHOSTRECORDS, &r);
@@ -2594,7 +2930,7 @@ static BOOL api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2619,8 +2955,10 @@ static BOOL api_netr_NETRSERVERTRUSTPASSWORDSGET(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRSERVERTRUSTPASSWORDSGET(pull, NDR_IN, &r);
@@ -2633,6 +2971,12 @@ static BOOL api_netr_NETRSERVERTRUSTPASSWORDSGET(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRSERVERTRUSTPASSWORDSGET, &r);
 	
 	r.out.result = _netr_NETRSERVERTRUSTPASSWORDSGET(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRSERVERTRUSTPASSWORDSGET, &r);
@@ -2650,7 +2994,7 @@ static BOOL api_netr_NETRSERVERTRUSTPASSWORDSGET(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2675,8 +3019,10 @@ static BOOL api_netr_DSRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_DSRGETFORESTTRUSTINFORMATION(pull, NDR_IN, &r);
@@ -2689,6 +3035,12 @@ static BOOL api_netr_DSRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_DSRGETFORESTTRUSTINFORMATION, &r);
 	
 	r.out.result = _netr_DSRGETFORESTTRUSTINFORMATION(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_DSRGETFORESTTRUSTINFORMATION, &r);
@@ -2706,7 +3058,7 @@ static BOOL api_netr_DSRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2731,8 +3083,10 @@ static BOOL api_netr_NETRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRGETFORESTTRUSTINFORMATION(pull, NDR_IN, &r);
@@ -2745,6 +3099,12 @@ static BOOL api_netr_NETRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRGETFORESTTRUSTINFORMATION, &r);
 	
 	r.out.result = _netr_NETRGETFORESTTRUSTINFORMATION(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRGETFORESTTRUSTINFORMATION, &r);
@@ -2762,7 +3122,7 @@ static BOOL api_netr_NETRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2787,8 +3147,10 @@ static BOOL api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_LogonSamLogonWithFlags(pull, NDR_IN, &r);
@@ -2817,6 +3179,12 @@ static BOOL api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 	r.out.flags = r.in.flags;
 	r.out.result = _netr_LogonSamLogonWithFlags(p, r.in.server_name, r.in.computer_name, r.in.credential, r.in.return_authenticator, r.in.logon_level, r.in.logon, r.in.validation_level, r.out.validation, r.out.authoritative, r.in.flags);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_LogonSamLogonWithFlags, &r);
 	
@@ -2833,7 +3201,7 @@ static BOOL api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -2858,8 +3226,10 @@ static BOOL api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_netr_NETRSERVERGETTRUSTINFO(pull, NDR_IN, &r);
@@ -2872,6 +3242,12 @@ static BOOL api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(netr_NETRSERVERGETTRUSTINFO, &r);
 	
 	r.out.result = _netr_NETRSERVERGETTRUSTINFO(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(netr_NETRSERVERGETTRUSTINFO, &r);
@@ -2889,7 +3265,7 @@ static BOOL api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
