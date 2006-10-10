@@ -1,5 +1,9 @@
 Changes in release 0.8
 
+ * KDC will return the "response too big" error to force TCP retries
+   for large (default 1400 bytes) UDP replies.  This is common for
+   PK-INIT request.
+
  * GSS-API mechglue from FreebSD
 
  * Updated SPNEGO supporting RFC4178
