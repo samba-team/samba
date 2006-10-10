@@ -510,8 +510,8 @@ void winbind_msg_offline(int msg_type, struct process_id src, void *buf, size_t 
 		DEBUG(10,("winbind_msg_offline: sending message to pid %u for domain %s.\n",
 			(unsigned int)child->pid, domain->name ));
 
-		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_OFFLINE, domain->name,
-			strlen(domain->name)+1, False);
+		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_OFFLINE, child->domain->name,
+			strlen(child->domain->name)+1, False);
 	}
 }
 
@@ -561,10 +561,10 @@ void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t l
 		   we only set it online / offline for that domain. */
 
 		DEBUG(10,("winbind_msg_online: sending message to pid %u for domain %s.\n",
-			(unsigned int)child->pid, domain->name ));
+			(unsigned int)child->pid, child->domain->name ));
 
-		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_ONLINE, domain->name,
-			strlen(domain->name)+1, False);
+		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_ONLINE, child->domain->name,
+			strlen(child->domain->name)+1, False);
 	}
 }
 
