@@ -1,5 +1,9 @@
 2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-kdc.in: use wait-kdc.sh script
+
+	* kdc/check-digest.in: use wait-kdc.sh script
+
 	* Heimdal uses TESTS_ENVIRONMENT before every binary being tested
 	directly from the Makefile.  This now uses the same for the
 	scripts, so we can run them under valgrind. From Andrew Bartlet
