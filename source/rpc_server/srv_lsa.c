@@ -30,6 +30,23 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+static BOOL proxy_lsa_call(pipes_struct *p, uint8 opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	lsarpc_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns)
+		return False;
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("LSA function table not sorted\n");
+	}
+
+	return fns[opnum].fn(p);
+}
+
 /***************************************************************************
  api_lsa_open_policy2
  ***************************************************************************/
@@ -218,28 +235,7 @@ static BOOL api_lsa_lookup_names(pipes_struct *p)
 
 static BOOL api_lsa_close(pipes_struct *p)
 {
-	LSA_Q_CLOSE q_u;
-	LSA_R_CLOSE r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!lsa_io_q_close("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_close: lsa_io_q_close failed.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_close(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if (!lsa_io_r_close("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_close: lsa_io_r_close failed.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, DCERPC_LSA_CLOSE);
 }
 
 /***************************************************************************
@@ -248,28 +244,7 @@ static BOOL api_lsa_close(pipes_struct *p)
 
 static BOOL api_lsa_open_secret(pipes_struct *p)
 {
-	LSA_Q_OPEN_SECRET q_u;
-	LSA_R_OPEN_SECRET r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_open_secret("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_open_secret: failed to unmarshall LSA_Q_OPEN_SECRET.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_open_secret(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_open_secret("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_open_secret: Failed to marshall LSA_R_OPEN_SECRET.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, DCERPC_LSA_OPENSECRET);
 }
 
 /***************************************************************************
@@ -771,29 +746,7 @@ static BOOL api_lsa_lookup_priv_value(pipes_struct *p)
 
 static BOOL api_lsa_open_trust_dom(pipes_struct *p)
 {
-	LSA_Q_OPEN_TRUSTED_DOMAIN q_u;
-	LSA_R_OPEN_TRUSTED_DOMAIN r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_open_trusted_domain("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_open_trust_dom: failed to unmarshall LSA_Q_OPEN_TRUSTED_DOMAIN .\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_open_trusted_domain(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_open_trusted_domain("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_open_trust_dom: Failed to marshall LSA_R_OPEN_TRUSTED_DOMAIN.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, DCERPC_LSA_OPENTRUSTEDDOMAIN);
 }
 
 /***************************************************************************
@@ -801,29 +754,7 @@ static BOOL api_lsa_open_trust_dom(pipes_struct *p)
 
 static BOOL api_lsa_create_trust_dom(pipes_struct *p)
 {
-	LSA_Q_CREATE_TRUSTED_DOMAIN q_u;
-	LSA_R_CREATE_TRUSTED_DOMAIN r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_create_trusted_domain("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_create_trust_dom: failed to unmarshall LSA_Q_CREATE_TRUSTED_DOMAIN .\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_create_trusted_domain(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_create_trusted_domain("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_create_trust_dom: Failed to marshall LSA_R_CREATE_TRUSTED_DOMAIN.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, DCERPC_LSA_CREATETRUSTEDDOMAIN);
 }
 
 /***************************************************************************
@@ -831,29 +762,7 @@ static BOOL api_lsa_create_trust_dom(pipes_struct *p)
 
 static BOOL api_lsa_create_secret(pipes_struct *p)
 {
-	LSA_Q_CREATE_SECRET q_u;
-	LSA_R_CREATE_SECRET r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_create_secret("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_create_secret: failed to unmarshall LSA_Q_CREATE_SECRET.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_create_secret(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_create_secret("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_create_secret: Failed to marshall LSA_R_CREATE_SECRET.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, DCERPC_LSA_CREATESECRET);
 }
 
 /***************************************************************************
@@ -861,29 +770,7 @@ static BOOL api_lsa_create_secret(pipes_struct *p)
 
 static BOOL api_lsa_set_secret(pipes_struct *p)
 {
-	LSA_Q_SET_SECRET q_u;
-	LSA_R_SET_SECRET r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_set_secret("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_set_secret: failed to unmarshall LSA_Q_SET_SECRET.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_set_secret(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_set_secret("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_set_secret: Failed to marshall LSA_R_SET_SECRET.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, DCERPC_LSA_SETSECRET);
 }
 
 /***************************************************************************

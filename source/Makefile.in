@@ -324,7 +324,7 @@ REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_pri
                registry/reg_db.o registry/reg_eventlog.o registry/reg_shares.o \
                registry/reg_util.o registry/reg_dynamic.o registry/reg_perfcount.o
 
-RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o
+RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o librpc/gen_ndr/srv_lsa.o
 
 RPC_NETLOG_OBJ = rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o
 
