@@ -122,6 +122,12 @@ void set_domain_offline(struct winbindd_domain *domain)
 		TALLOC_FREE(domain->check_online_event);
 	}
 
+	if (domain->internal) {
+		DEBUG(3,("set_domain_offline: domain %s is internal - logic error.\n",
+			domain->name ));
+		return;
+	}
+
 	domain->online = False;
 
 	/* We only add the timeout handler that checks and
@@ -165,6 +171,12 @@ static void set_domain_online(struct winbindd_domain *domain)
 
 	DEBUG(10,("set_domain_online: called for domain %s\n",
 		domain->name ));
+
+	if (domain->internal) {
+		DEBUG(3,("set_domain_offline: domain %s is internal - logic error.\n",
+			domain->name ));
+		return;
+	}
 
 	if (get_global_winbindd_state_offline()) {
 		DEBUG(10,("set_domain_online: domain %s remaining globally offline\n",
@@ -1197,6 +1209,12 @@ NTSTATUS init_dc_connection(struct winbindd_domain *domain)
 {
 	NTSTATUS result;
 
+	/* Internal connections never use the network. */
+	if (domain->internal) {
+		domain->initialized = True;
+		return NT_STATUS_OK;
+	}
+
 	if (connection_ok(domain)) {
 		if (!domain->initialized) {
 			set_dc_type_and_flags(domain);
@@ -1237,11 +1255,6 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 
 	ZERO_STRUCT( ctr );
 	
-	if (domain->internal) {
-		domain->initialized = True;
-		return;
-	}
-
 	if (!connection_ok(domain)) {
 		return;
 	}
