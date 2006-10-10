@@ -1,5 +1,7 @@
 2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-gssmask.in: use wait-kdc.sh script
+
 	* kdc/check-kdc.in: use wait-kdc.sh script
 
 	* kdc/check-digest.in: use wait-kdc.sh script

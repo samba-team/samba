@@ -1,5 +1,11 @@
-2006-10-09  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* tools/heimdal-build.sh: Add socketwrapper and cputime limit.
+
+	* kdc/connect.c (loop): Log that the kdc have started.
+	
+2006-10-09  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/connect.c (do_request): tell krb5_kdc_process_request if its
 	a datagram reply or not
 
