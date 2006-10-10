@@ -154,8 +154,8 @@
 #define SOCKET_FORMAT "%c%02X%04X"
 #define SOCKET_TYPE_CHAR_TCP		'T'
 #define SOCKET_TYPE_CHAR_UDP		'U'
-#define SOCKET_TYPE_CHAR_TCP_V6		't'
-#define SOCKET_TYPE_CHAR_UDP_V6		'u'
+#define SOCKET_TYPE_CHAR_TCP_V6		'X'
+#define SOCKET_TYPE_CHAR_UDP_V6		'Y'
 
 #define MAX_WRAPPED_INTERFACES 16
 
@@ -181,6 +181,21 @@ static void set_port(int family, int prt, struct sockaddr *addr)
 #endif
 	}
 }
+
+static int socket_length(int family)
+{
+	switch (family) {
+	case AF_INET:
+		return sizeof(struct sockaddr_in);
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		return sizeof(struct sockaddr_in6);
+#endif
+	}
+	return -1;
+}
+
+
 
 struct socket_info
 {
@@ -467,6 +482,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			errno = EADDRNOTAVAIL;
 			return -1;
 		}
+		break;
 	}
 #ifdef HAVE_IPV6
 	case AF_INET6: {
@@ -564,21 +580,14 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 				    socklen_t un_addrlen,
 				    int family,
 				    struct sockaddr *out_addr,
-				    socklen_t *_out_addrlen)
+				    socklen_t *out_addrlen)
 {
-	socklen_t out_addrlen;
-
-	if (out_addr == NULL || _out_addrlen == NULL) 
+	if (out_addr == NULL || out_addrlen == NULL) 
 		return 0;
 
 	if (un_addrlen == 0) {
-		*_out_addrlen = 0;
+		*out_addrlen = 0;
 		return 0;
-	}
-
-	out_addrlen = *_out_addrlen;
-	if (out_addrlen > un_addrlen) {
-		out_addrlen = un_addrlen;
 	}
 
 	switch (family) {
@@ -594,7 +603,7 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
-		return convert_un_in(in_addr, out_addr, _out_addrlen);
+		return convert_un_in(in_addr, out_addr, out_addrlen);
 	default:
 		break;
 	}
@@ -1252,7 +1261,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	struct sockaddr_un un_my_addr;
 	socklen_t un_my_addrlen = sizeof(un_my_addr);
 	struct sockaddr *my_addr;
-	socklen_t my_addrlen;
+	socklen_t my_addrlen, len;
 	int ret;
 
 	parent_si = find_socket_info(s);
@@ -1260,18 +1269,37 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return real_accept(s, addr, addrlen);
 	}
 
+	/* 
+	 * assume out sockaddr have the same size as the in parent
+	 * socket family
+	 */
+	my_addrlen = socket_length(parent_si->family);
+	if (my_addrlen < 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	my_addr = malloc(my_addrlen);
+	if (my_addr == NULL) {
+		return -1;
+	}
+
 	memset(&un_addr, 0, sizeof(un_addr));
 	memset(&un_my_addr, 0, sizeof(un_my_addr));
-	memset(&my_addr, 0, sizeof(my_addr));
 
 	ret = real_accept(s, (struct sockaddr *)&un_addr, &un_addrlen);
-	if (ret == -1) return ret;
+	if (ret == -1) {
+		free(my_addr);
+		return ret;
+	}
 
 	fd = ret;
 
+	len = my_addrlen;
 	ret = sockaddr_convert_from_un(parent_si, &un_addr, un_addrlen,
-				       parent_si->family, addr, addrlen);
+				       parent_si->family, my_addr, &len);
 	if (ret == -1) {
+		free(my_addr);
 		close(fd);
 		return ret;
 	}
@@ -1286,6 +1314,16 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->bound = 1;
 	child_si->is_server = 1;
 
+	child_si->peername_len = len;
+	child_si->peername = sockaddr_dup(my_addr, len);
+
+	if (addr != NULL && addrlen != NULL) {
+	    *addrlen = len;
+	    if (*addrlen >= len)
+		memcpy(addr, my_addr, len);
+	    *addrlen = 0;
+	}
+
 	ret = real_getsockname(fd, (struct sockaddr *)&un_my_addr, &un_my_addrlen);
 	if (ret == -1) {
 		free(child_si);
@@ -1293,16 +1331,9 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return ret;
 	}
 
-	my_addrlen = *addrlen;
-	my_addr = malloc(my_addrlen);
-	if (my_addr == NULL) {
-		free(child_si);
-		close(fd);
-		return -1;
-	}
-
+	len = my_addrlen;
 	ret = sockaddr_convert_from_un(child_si, &un_my_addr, un_my_addrlen,
-				       child_si->family, my_addr, &my_addrlen);
+				       child_si->family, my_addr, &len);
 	if (ret == -1) {
 		free(child_si);
 		free(my_addr);
@@ -1310,12 +1341,9 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return ret;
 	}
 
-	child_si->myname_len = my_addrlen;
-	child_si->myname = sockaddr_dup(my_addr, my_addrlen);
+	child_si->myname_len = len;
+	child_si->myname = sockaddr_dup(my_addr, len);
 	free(my_addr);
-
-	child_si->peername_len = *addrlen;
-	child_si->peername = sockaddr_dup(addr, *addrlen);
 
 	SWRAP_DLIST_ADD(sockets, child_si);
 
@@ -1448,6 +1476,11 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	if (si->bound == 0) {
 		ret = swrap_auto_bind(si);
 		if (ret == -1) return -1;
+	}
+
+	if (si->family != serv_addr->sa_family) {
+		errno = EINVAL;
+		return -1;
 	}
 
 	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)serv_addr, addrlen, &un_addr, 0, NULL);
