@@ -938,8 +938,6 @@ WERROR _winreg_RestoreKey(pipes_struct *p, struct policy_handle *handle, struct 
 	DEBUG(2,("_winreg_RestoreKey: Restoring [%s] from %s in share %s\n", regkey->name, fname, lp_servicename(snum) ));
 
 	return restore_registry_key( regkey, fname );
-
-	return WERR_NOT_SUPPORTED;
 }
 
 /********************************************************************
@@ -1130,6 +1128,7 @@ WERROR _winreg_SaveKeyEx(pipes_struct *p)
 	/* fill in your code here if you think this call should
 	   do anything */
 
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -1472,6 +1471,7 @@ WERROR _winreg_UnLoadKey(pipes_struct *p)
 	/* fill in your code here if you think this call should
 	   do anything */
 
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -1483,6 +1483,7 @@ WERROR _winreg_ReplaceKey(pipes_struct *p)
 	/* fill in your code here if you think this call should
 	   do anything */
 
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -1494,6 +1495,7 @@ WERROR _winreg_LoadKey(pipes_struct *p, struct policy_handle *handle, struct win
 	/* fill in your code here if you think this call should
 	   do anything */
 
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -1505,6 +1507,7 @@ WERROR _winreg_NotifyChangeKeyValue(pipes_struct *p, struct policy_handle *handl
 	/* fill in your code here if you think this call should
 	   do anything */
 
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -1516,6 +1519,7 @@ WERROR _winreg_QueryMultipleValues(pipes_struct *p, struct policy_handle *key_ha
 	/* fill in your code here if you think this call should
 	   do anything */
 
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -1527,6 +1531,7 @@ WERROR _winreg_QueryMultipleValues2(pipes_struct *p)
 	/* fill in your code here if you think this call should
 	   do anything */
 
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 

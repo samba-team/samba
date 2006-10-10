@@ -334,108 +334,126 @@ WERROR _dfs_GetInfo(pipes_struct *p, const char *path, const char *server, const
 WERROR _dfs_SetInfo(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_Rename(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_Move(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_ManagerGetConfigInfo(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_ManagerSendSiteInfo(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_AddFtRoot(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_RemoveFtRoot(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_AddStdRoot(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_RemoveStdRoot(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_ManagerInitialize(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_AddStdRootForced(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_GetDcAddress(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_SetDcAddress(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_FlushFtTable(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_Add2(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_Remove2(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_EnumEx(pipes_struct *p, const char *name, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *total)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
 WERROR _dfs_SetInfo2(pipes_struct *p)
 {
 	/* FIXME: Implement your code here */
+	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
 
