@@ -39,7 +39,7 @@ objdir="@objdir@"
 
 R=EXAMPLE.ORG
 
-kadmin="../../kadmin/kadmin -l -r $R"
+kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG

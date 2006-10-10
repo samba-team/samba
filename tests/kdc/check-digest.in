@@ -41,8 +41,8 @@ R=EXAMPLE.ORG
 
 port=8888
 
-kadmin="../../kadmin/kadmin -l -r $R"
-kdc="../../kdc/kdc --addresses=localhost -P $port"
+kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
+kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
 server=host/datan.example.org
 cache="FILE:${objdir}/cache.krb5"
@@ -50,9 +50,9 @@ ocache="FILE:${objdir}/ocache.krb5"
 keytabfile=${objdir}/server.keytab
 keytab="FILE:${keytabfile}"
 
-kinit="../../kuser/kinit -c $cache --no-afslog"
-klist="../../kuser/klist -c $cache"
-kdigest="../../kuser/kdigest --ccache=$cache"
+kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
+klist="${TESTS_ENVIRONMENT} ../../kuser/klist -c $cache"
+kdigest="${TESTS_ENVIRONMENT} ../../kuser/kdigest --ccache=$cache"
 
 username=foo
 userpassword=digestpassword
@@ -88,7 +88,7 @@ echo $password > ${objdir}/foopassword
 echo Starting kdc
 ${kdc} &
 kdcpid=$!
-sleep 2
+sleep 20
 
 if tail -1 messages.log | grep "No sockets" ; then
     echo "The KDC failed to bind to any sockets, another KDC running ?"

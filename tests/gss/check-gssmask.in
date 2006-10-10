@@ -41,12 +41,12 @@ R=EXAMPLE.ORG
 
 port=8888
 
-kadmin="../../kadmin/kadmin -l -r $R"
-kdc="../../kdc/kdc --addresses=localhost -P $port"
+kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
+kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 keytabfile=${objdir}/server.keytab
 keytab="FILE:${keytabfile}"
 
-gssmask="../../appl/gssmask/gssmask"
+gssmask="${TESTS_ENVIRONMENT} ../../appl/gssmask/gssmask"
 gssmaskn1="${gssmask} -p 8889 --spn=host/n1.example.org@${R} --logfile=n1.log"
 gssmaskn2="${gssmask} -p 8890 --spn=host/n2.example.org@${R} --logfile=n2.log"
 gssmaskn3="${gssmask} -p 8891 --spn=host/n3.example.org@${R} --logfile=n3.log"
@@ -94,6 +94,9 @@ exitcode=0
 echo "Starting client 1"
 ${gssmaskn1} --moniker=n1 &
 n1pid=$!
+#echo $n1pid
+#xterm -display :0 -e g ${gssmaskn1} &
+#read x
 
 echo "Starting client 2"
 ${gssmaskn2} --moniker=n2 &

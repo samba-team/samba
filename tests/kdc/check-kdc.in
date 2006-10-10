@@ -42,8 +42,8 @@ R2=EXAMPLE.COM
 
 port=8888
 
-kadmin="../../kadmin/kadmin -l -r $R"
-kdc="../../kdc/kdc --addresses=localhost -P $port"
+kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
+kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
 server=host/datan.example.org
 server2=host/computer.example.com
@@ -56,14 +56,14 @@ keytab="FILE:${keytabfile}"
 ps="proxy-service@${R}"
 aesenctype="aes256-cts-hmac-sha1-96"
 
-kinit="../../kuser/kinit -c $cache --no-afslog"
-klist="../../kuser/klist -c $cache"
-kgetcred="../../kuser/kgetcred -c $cache"
-kgetcred_imp="../../kuser/kgetcred -c $cache --out-cache=${ocache}"
-kdestroy="../../kuser/kdestroy -c $cache"
-ktutil="../../admin/ktutil"
-hxtool="../../lib/hx509/hxtool"
-kimpersonate="../../kuser/kimpersonate -k ${keytab} --ccache=${ocache}"
+kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
+klist="${TESTS_ENVIRONMENT} ../../kuser/klist -c $cache"
+kgetcred="${TESTS_ENVIRONMENT} ../../kuser/kgetcred -c $cache"
+kgetcred_imp="${TESTS_ENVIRONMENT} ../../kuser/kgetcred -c $cache --out-cache=${ocache}"
+kdestroy="${TESTS_ENVIRONMENT} ../../kuser/kdestroy -c $cache"
+ktutil="${TESTS_ENVIRONMENT} ../../admin/ktutil"
+hxtool="${TESTS_ENVIRONMENT} ../../lib/hx509/hxtool"
+kimpersonate="${TESTS_ENVIRONMENT} ../../kuser/kimpersonate -k ${keytab} --ccache=${ocache}"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
@@ -129,7 +129,7 @@ echo foo > ${objdir}/foopassword
 echo Starting kdc
 ${kdc} &
 kdcpid=$!
-sleep 2
+sleep 20
 
 if tail -1 messages.log | grep "No sockets" ; then
     echo "The KDC failed to bind to any sockets, another KDC running ?"

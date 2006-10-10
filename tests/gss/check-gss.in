@@ -37,8 +37,8 @@
 objdir="@objdir@"
 gssdir="${objdir}/../../lib/gssapi"
 
-${gssdir}/gss help > /dev/null || exit 1
-${gssdir}/gss supported-mechanisms > /dev/null || exit 1
+${TESTS_ENVIRONMENT} ${gssdir}/gss help > /dev/null || exit 1
+${TESTS_ENVIRONMENT} ${gssdir}/gss supported-mechanisms > /dev/null || exit 1
 
 exit 0
 
