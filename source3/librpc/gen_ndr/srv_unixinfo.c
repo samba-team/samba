@@ -21,8 +21,10 @@ static BOOL api_unixinfo_SidToUid(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_unixinfo_SidToUid(pull, NDR_IN, &r);
@@ -43,6 +45,12 @@ static BOOL api_unixinfo_SidToUid(pipes_struct *p)
 	
 	r.out.result = _unixinfo_SidToUid(p, r.in.sid, r.out.uid);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(unixinfo_SidToUid, &r);
 	
@@ -59,7 +67,7 @@ static BOOL api_unixinfo_SidToUid(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -84,8 +92,10 @@ static BOOL api_unixinfo_UidToSid(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_unixinfo_UidToSid(pull, NDR_IN, &r);
@@ -106,6 +116,12 @@ static BOOL api_unixinfo_UidToSid(pipes_struct *p)
 	
 	r.out.result = _unixinfo_UidToSid(p, r.in.uid, r.out.sid);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(unixinfo_UidToSid, &r);
 	
@@ -122,7 +138,7 @@ static BOOL api_unixinfo_UidToSid(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -147,8 +163,10 @@ static BOOL api_unixinfo_SidToGid(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_unixinfo_SidToGid(pull, NDR_IN, &r);
@@ -169,6 +187,12 @@ static BOOL api_unixinfo_SidToGid(pipes_struct *p)
 	
 	r.out.result = _unixinfo_SidToGid(p, r.in.sid, r.out.gid);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(unixinfo_SidToGid, &r);
 	
@@ -185,7 +209,7 @@ static BOOL api_unixinfo_SidToGid(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -210,8 +234,10 @@ static BOOL api_unixinfo_GidToSid(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_unixinfo_GidToSid(pull, NDR_IN, &r);
@@ -232,6 +258,12 @@ static BOOL api_unixinfo_GidToSid(pipes_struct *p)
 	
 	r.out.result = _unixinfo_GidToSid(p, r.in.gid, r.out.sid);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(unixinfo_GidToSid, &r);
 	
@@ -248,7 +280,7 @@ static BOOL api_unixinfo_GidToSid(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -273,8 +305,10 @@ static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_unixinfo_GetPWUid(pull, NDR_IN, &r);
@@ -296,6 +330,12 @@ static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
 	
 	r.out.result = _unixinfo_GetPWUid(p, r.in.count, r.in.uids, r.out.infos);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(unixinfo_GetPWUid, &r);
 	
@@ -312,7 +352,7 @@ static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}

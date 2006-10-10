@@ -21,8 +21,10 @@ static BOOL api_wkssvc_NetWkstaGetInfo(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_wkssvc_NetWkstaGetInfo(pull, NDR_IN, &r);
@@ -43,6 +45,12 @@ static BOOL api_wkssvc_NetWkstaGetInfo(pipes_struct *p)
 	
 	r.out.result = _wkssvc_NetWkstaGetInfo(p, r.in.server_name, r.in.level, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaGetInfo, &r);
 	
@@ -59,7 +67,7 @@ static BOOL api_wkssvc_NetWkstaGetInfo(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -84,8 +92,10 @@ static BOOL api_wkssvc_NetWkstaSetInfo(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_wkssvc_NetWkstaSetInfo(pull, NDR_IN, &r);
@@ -100,6 +110,12 @@ static BOOL api_wkssvc_NetWkstaSetInfo(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.parm_error = r.in.parm_error;
 	r.out.result = _wkssvc_NetWkstaSetInfo(p, r.in.server_name, r.in.level, r.in.info, r.in.parm_error);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaSetInfo, &r);
@@ -117,7 +133,7 @@ static BOOL api_wkssvc_NetWkstaSetInfo(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -142,8 +158,10 @@ static BOOL api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_wkssvc_NetWkstaEnumUsers(pull, NDR_IN, &r);
@@ -172,6 +190,12 @@ static BOOL api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 	r.out.resumehandle = r.in.resumehandle;
 	r.out.result = _wkssvc_NetWkstaEnumUsers(p, r.in.server_name, r.in.level, r.in.users, r.in.prefmaxlen, r.out.entriesread, r.out.totalentries, r.in.resumehandle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaEnumUsers, &r);
 	
@@ -188,7 +212,7 @@ static BOOL api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -213,8 +237,10 @@ static BOOL api_WKSSVC_NETRWKSTAUSERGETINFO(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRWKSTAUSERGETINFO(pull, NDR_IN, &r);
@@ -227,6 +253,12 @@ static BOOL api_WKSSVC_NETRWKSTAUSERGETINFO(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTAUSERGETINFO, &r);
 	
 	r.out.result = _WKSSVC_NETRWKSTAUSERGETINFO(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTAUSERGETINFO, &r);
@@ -244,7 +276,7 @@ static BOOL api_WKSSVC_NETRWKSTAUSERGETINFO(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -269,8 +301,10 @@ static BOOL api_WKSSVC_NETRWKSTAUSERSETINFO(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRWKSTAUSERSETINFO(pull, NDR_IN, &r);
@@ -283,6 +317,12 @@ static BOOL api_WKSSVC_NETRWKSTAUSERSETINFO(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTAUSERSETINFO, &r);
 	
 	r.out.result = _WKSSVC_NETRWKSTAUSERSETINFO(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTAUSERSETINFO, &r);
@@ -300,7 +340,7 @@ static BOOL api_WKSSVC_NETRWKSTAUSERSETINFO(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -325,8 +365,10 @@ static BOOL api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_wkssvc_NetWkstaTransportEnum(pull, NDR_IN, &r);
@@ -350,6 +392,12 @@ static BOOL api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 	r.out.resume_handle = r.in.resume_handle;
 	r.out.result = _wkssvc_NetWkstaTransportEnum(p, r.in.server_name, r.in.level, r.in.ctr, r.in.max_buffer, r.out.totalentries, r.in.resume_handle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(wkssvc_NetWkstaTransportEnum, &r);
 	
@@ -366,7 +414,7 @@ static BOOL api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -391,8 +439,10 @@ static BOOL api_WKSSVC_NETRWKSTATRANSPORTADD(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRWKSTATRANSPORTADD(pull, NDR_IN, &r);
@@ -405,6 +455,12 @@ static BOOL api_WKSSVC_NETRWKSTATRANSPORTADD(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTATRANSPORTADD, &r);
 	
 	r.out.result = _WKSSVC_NETRWKSTATRANSPORTADD(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTATRANSPORTADD, &r);
@@ -422,7 +478,7 @@ static BOOL api_WKSSVC_NETRWKSTATRANSPORTADD(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -447,8 +503,10 @@ static BOOL api_WKSSVC_NETRWKSTATRANSPORTDEL(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRWKSTATRANSPORTDEL(pull, NDR_IN, &r);
@@ -461,6 +519,12 @@ static BOOL api_WKSSVC_NETRWKSTATRANSPORTDEL(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTATRANSPORTDEL, &r);
 	
 	r.out.result = _WKSSVC_NETRWKSTATRANSPORTDEL(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTATRANSPORTDEL, &r);
@@ -478,7 +542,7 @@ static BOOL api_WKSSVC_NETRWKSTATRANSPORTDEL(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -503,8 +567,10 @@ static BOOL api_WKSSVC_NETRUSEADD(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRUSEADD(pull, NDR_IN, &r);
@@ -517,6 +583,12 @@ static BOOL api_WKSSVC_NETRUSEADD(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEADD, &r);
 	
 	r.out.result = _WKSSVC_NETRUSEADD(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEADD, &r);
@@ -534,7 +606,7 @@ static BOOL api_WKSSVC_NETRUSEADD(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -559,8 +631,10 @@ static BOOL api_WKSSVC_NETRUSEGETINFO(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRUSEGETINFO(pull, NDR_IN, &r);
@@ -573,6 +647,12 @@ static BOOL api_WKSSVC_NETRUSEGETINFO(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEGETINFO, &r);
 	
 	r.out.result = _WKSSVC_NETRUSEGETINFO(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEGETINFO, &r);
@@ -590,7 +670,7 @@ static BOOL api_WKSSVC_NETRUSEGETINFO(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -615,8 +695,10 @@ static BOOL api_WKSSVC_NETRUSEDEL(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRUSEDEL(pull, NDR_IN, &r);
@@ -629,6 +711,12 @@ static BOOL api_WKSSVC_NETRUSEDEL(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEDEL, &r);
 	
 	r.out.result = _WKSSVC_NETRUSEDEL(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEDEL, &r);
@@ -646,7 +734,7 @@ static BOOL api_WKSSVC_NETRUSEDEL(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -671,8 +759,10 @@ static BOOL api_WKSSVC_NETRUSEENUM(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRUSEENUM(pull, NDR_IN, &r);
@@ -685,6 +775,12 @@ static BOOL api_WKSSVC_NETRUSEENUM(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEENUM, &r);
 	
 	r.out.result = _WKSSVC_NETRUSEENUM(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEENUM, &r);
@@ -702,7 +798,7 @@ static BOOL api_WKSSVC_NETRUSEENUM(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -727,8 +823,10 @@ static BOOL api_WKSSVC_NETRMESSAGEBUFFERSEND(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRMESSAGEBUFFERSEND(pull, NDR_IN, &r);
@@ -741,6 +839,12 @@ static BOOL api_WKSSVC_NETRMESSAGEBUFFERSEND(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRMESSAGEBUFFERSEND, &r);
 	
 	r.out.result = _WKSSVC_NETRMESSAGEBUFFERSEND(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRMESSAGEBUFFERSEND, &r);
@@ -758,7 +862,7 @@ static BOOL api_WKSSVC_NETRMESSAGEBUFFERSEND(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -783,8 +887,10 @@ static BOOL api_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pull, NDR_IN, &r);
@@ -797,6 +903,12 @@ static BOOL api_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWORKSTATIONSTATISTICSGET, &r);
 	
 	r.out.result = _WKSSVC_NETRWORKSTATIONSTATISTICSGET(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWORKSTATIONSTATISTICSGET, &r);
@@ -814,7 +926,7 @@ static BOOL api_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -839,8 +951,10 @@ static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEADD(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRLOGONDOMAINNAMEADD(pull, NDR_IN, &r);
@@ -853,6 +967,12 @@ static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEADD(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEADD, &r);
 	
 	r.out.result = _WKSSVC_NETRLOGONDOMAINNAMEADD(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEADD, &r);
@@ -870,7 +990,7 @@ static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEADD(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -895,8 +1015,10 @@ static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEDEL(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRLOGONDOMAINNAMEDEL(pull, NDR_IN, &r);
@@ -909,6 +1031,12 @@ static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEDEL(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEDEL, &r);
 	
 	r.out.result = _WKSSVC_NETRLOGONDOMAINNAMEDEL(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEDEL, &r);
@@ -926,7 +1054,7 @@ static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEDEL(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -951,8 +1079,10 @@ static BOOL api_WKSSVC_NETRJOINDOMAIN(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRJOINDOMAIN(pull, NDR_IN, &r);
@@ -965,6 +1095,12 @@ static BOOL api_WKSSVC_NETRJOINDOMAIN(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRJOINDOMAIN, &r);
 	
 	r.out.result = _WKSSVC_NETRJOINDOMAIN(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRJOINDOMAIN, &r);
@@ -982,7 +1118,7 @@ static BOOL api_WKSSVC_NETRJOINDOMAIN(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1007,8 +1143,10 @@ static BOOL api_WKSSVC_NETRUNJOINDOMAIN(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRUNJOINDOMAIN(pull, NDR_IN, &r);
@@ -1021,6 +1159,12 @@ static BOOL api_WKSSVC_NETRUNJOINDOMAIN(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUNJOINDOMAIN, &r);
 	
 	r.out.result = _WKSSVC_NETRUNJOINDOMAIN(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUNJOINDOMAIN, &r);
@@ -1038,7 +1182,7 @@ static BOOL api_WKSSVC_NETRUNJOINDOMAIN(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1063,8 +1207,10 @@ static BOOL api_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pull, NDR_IN, &r);
@@ -1077,6 +1223,12 @@ static BOOL api_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRRENAMEMACHINEINDOMAIN, &r);
 	
 	r.out.result = _WKSSVC_NETRRENAMEMACHINEINDOMAIN(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRRENAMEMACHINEINDOMAIN, &r);
@@ -1094,7 +1246,7 @@ static BOOL api_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1119,8 +1271,10 @@ static BOOL api_WKSSVC_NETRVALIDATENAME(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRVALIDATENAME(pull, NDR_IN, &r);
@@ -1133,6 +1287,12 @@ static BOOL api_WKSSVC_NETRVALIDATENAME(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRVALIDATENAME, &r);
 	
 	r.out.result = _WKSSVC_NETRVALIDATENAME(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRVALIDATENAME, &r);
@@ -1150,7 +1310,7 @@ static BOOL api_WKSSVC_NETRVALIDATENAME(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1175,8 +1335,10 @@ static BOOL api_WKSSVC_NETRGETJOININFORMATION(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRGETJOININFORMATION(pull, NDR_IN, &r);
@@ -1189,6 +1351,12 @@ static BOOL api_WKSSVC_NETRGETJOININFORMATION(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOININFORMATION, &r);
 	
 	r.out.result = _WKSSVC_NETRGETJOININFORMATION(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRGETJOININFORMATION, &r);
@@ -1206,7 +1374,7 @@ static BOOL api_WKSSVC_NETRGETJOININFORMATION(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1231,8 +1399,10 @@ static BOOL api_WKSSVC_NETRGETJOINABLEOUS(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRGETJOINABLEOUS(pull, NDR_IN, &r);
@@ -1245,6 +1415,12 @@ static BOOL api_WKSSVC_NETRGETJOINABLEOUS(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOINABLEOUS, &r);
 	
 	r.out.result = _WKSSVC_NETRGETJOINABLEOUS(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRGETJOINABLEOUS, &r);
@@ -1262,7 +1438,7 @@ static BOOL api_WKSSVC_NETRGETJOINABLEOUS(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1287,8 +1463,10 @@ static BOOL api_wkssvc_NetrJoinDomain2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_wkssvc_NetrJoinDomain2(pull, NDR_IN, &r);
@@ -1301,6 +1479,12 @@ static BOOL api_wkssvc_NetrJoinDomain2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrJoinDomain2, &r);
 	
 	r.out.result = _wkssvc_NetrJoinDomain2(p, r.in.server_name, r.in.domain_name, r.in.account_name, r.in.admin_account, r.in.encrypted_password, r.in.join_flags);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(wkssvc_NetrJoinDomain2, &r);
@@ -1318,7 +1502,7 @@ static BOOL api_wkssvc_NetrJoinDomain2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1343,8 +1527,10 @@ static BOOL api_wkssvc_NetrUnjoinDomain2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_wkssvc_NetrUnjoinDomain2(pull, NDR_IN, &r);
@@ -1357,6 +1543,12 @@ static BOOL api_wkssvc_NetrUnjoinDomain2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrUnjoinDomain2, &r);
 	
 	r.out.result = _wkssvc_NetrUnjoinDomain2(p, r.in.server_name, r.in.account, r.in.encrypted_password, r.in.unjoin_flags);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUnjoinDomain2, &r);
@@ -1374,7 +1566,7 @@ static BOOL api_wkssvc_NetrUnjoinDomain2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1399,8 +1591,10 @@ static BOOL api_wkssvc_NetrRenameMachineInDomain2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_wkssvc_NetrRenameMachineInDomain2(pull, NDR_IN, &r);
@@ -1413,6 +1607,12 @@ static BOOL api_wkssvc_NetrRenameMachineInDomain2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrRenameMachineInDomain2, &r);
 	
 	r.out.result = _wkssvc_NetrRenameMachineInDomain2(p, r.in.server_name, r.in.NewMachineName, r.in.Account, r.in.EncryptedPassword, r.in.RenameOptions);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(wkssvc_NetrRenameMachineInDomain2, &r);
@@ -1430,7 +1630,7 @@ static BOOL api_wkssvc_NetrRenameMachineInDomain2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1455,8 +1655,10 @@ static BOOL api_WKSSVC_NETRVALIDATENAME2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRVALIDATENAME2(pull, NDR_IN, &r);
@@ -1469,6 +1671,12 @@ static BOOL api_WKSSVC_NETRVALIDATENAME2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRVALIDATENAME2, &r);
 	
 	r.out.result = _WKSSVC_NETRVALIDATENAME2(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRVALIDATENAME2, &r);
@@ -1486,7 +1694,7 @@ static BOOL api_WKSSVC_NETRVALIDATENAME2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1511,8 +1719,10 @@ static BOOL api_WKSSVC_NETRGETJOINABLEOUS2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRGETJOINABLEOUS2(pull, NDR_IN, &r);
@@ -1525,6 +1735,12 @@ static BOOL api_WKSSVC_NETRGETJOINABLEOUS2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOINABLEOUS2, &r);
 	
 	r.out.result = _WKSSVC_NETRGETJOINABLEOUS2(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRGETJOINABLEOUS2, &r);
@@ -1542,7 +1758,7 @@ static BOOL api_WKSSVC_NETRGETJOINABLEOUS2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1567,8 +1783,10 @@ static BOOL api_wkssvc_NetrAddAlternateComputerName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_wkssvc_NetrAddAlternateComputerName(pull, NDR_IN, &r);
@@ -1581,6 +1799,12 @@ static BOOL api_wkssvc_NetrAddAlternateComputerName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrAddAlternateComputerName, &r);
 	
 	r.out.result = _wkssvc_NetrAddAlternateComputerName(p, r.in.server_name, r.in.NewAlternateMachineName, r.in.Account, r.in.EncryptedPassword, r.in.Reserved);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(wkssvc_NetrAddAlternateComputerName, &r);
@@ -1598,7 +1822,7 @@ static BOOL api_wkssvc_NetrAddAlternateComputerName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1623,8 +1847,10 @@ static BOOL api_wkssvc_NetrRemoveAlternateComputerName(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_wkssvc_NetrRemoveAlternateComputerName(pull, NDR_IN, &r);
@@ -1637,6 +1863,12 @@ static BOOL api_wkssvc_NetrRemoveAlternateComputerName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrRemoveAlternateComputerName, &r);
 	
 	r.out.result = _wkssvc_NetrRemoveAlternateComputerName(p, r.in.server_name, r.in.AlternateMachineNameToRemove, r.in.Account, r.in.EncryptedPassword, r.in.Reserved);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(wkssvc_NetrRemoveAlternateComputerName, &r);
@@ -1654,7 +1886,7 @@ static BOOL api_wkssvc_NetrRemoveAlternateComputerName(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1679,8 +1911,10 @@ static BOOL api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pull, NDR_IN, &r);
@@ -1693,6 +1927,12 @@ static BOOL api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRSETPRIMARYCOMPUTERNAME, &r);
 	
 	r.out.result = _WKSSVC_NETRSETPRIMARYCOMPUTERNAME(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRSETPRIMARYCOMPUTERNAME, &r);
@@ -1710,7 +1950,7 @@ static BOOL api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1735,8 +1975,10 @@ static BOOL api_WKSSVC_NETRENUMERATECOMPUTERNAMES(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_WKSSVC_NETRENUMERATECOMPUTERNAMES(pull, NDR_IN, &r);
@@ -1749,6 +1991,12 @@ static BOOL api_WKSSVC_NETRENUMERATECOMPUTERNAMES(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(WKSSVC_NETRENUMERATECOMPUTERNAMES, &r);
 	
 	r.out.result = _WKSSVC_NETRENUMERATECOMPUTERNAMES(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRENUMERATECOMPUTERNAMES, &r);
@@ -1766,7 +2014,7 @@ static BOOL api_WKSSVC_NETRENUMERATECOMPUTERNAMES(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}

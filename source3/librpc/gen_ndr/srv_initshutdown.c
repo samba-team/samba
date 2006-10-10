@@ -21,8 +21,10 @@ static BOOL api_initshutdown_Init(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_initshutdown_Init(pull, NDR_IN, &r);
@@ -35,6 +37,12 @@ static BOOL api_initshutdown_Init(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(initshutdown_Init, &r);
 	
 	r.out.result = _initshutdown_Init(p, r.in.hostname, r.in.message, r.in.timeout, r.in.force_apps, r.in.reboot);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(initshutdown_Init, &r);
@@ -52,7 +60,7 @@ static BOOL api_initshutdown_Init(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -77,8 +85,10 @@ static BOOL api_initshutdown_Abort(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_initshutdown_Abort(pull, NDR_IN, &r);
@@ -91,6 +101,12 @@ static BOOL api_initshutdown_Abort(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(initshutdown_Abort, &r);
 	
 	r.out.result = _initshutdown_Abort(p, r.in.server);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(initshutdown_Abort, &r);
@@ -108,7 +124,7 @@ static BOOL api_initshutdown_Abort(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -133,8 +149,10 @@ static BOOL api_initshutdown_InitEx(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_initshutdown_InitEx(pull, NDR_IN, &r);
@@ -147,6 +165,12 @@ static BOOL api_initshutdown_InitEx(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(initshutdown_InitEx, &r);
 	
 	r.out.result = _initshutdown_InitEx(p, r.in.hostname, r.in.message, r.in.timeout, r.in.force_apps, r.in.reboot, r.in.reason);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(initshutdown_InitEx, &r);
@@ -164,7 +188,7 @@ static BOOL api_initshutdown_InitEx(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
