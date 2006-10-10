@@ -39,9 +39,11 @@
    is set.
 */
 
+#define SOCKET_WRAPPER_NOT_REPLACE
+#undef SOCKET_WRAPPER_REPLACE
+
 #ifdef _SAMBA_BUILD_
 
-#define SOCKET_WRAPPER_NOT_REPLACE
 #include "includes.h"
 #include "system/network.h"
 #include "system/filesys.h"
@@ -77,6 +79,7 @@
 #include <stdio.h>
 
 #include "socket_wrapper.h"
+
 #define HAVE_GETTIMEOFDAY_TZ 1
 
 #define _PUBLIC_
