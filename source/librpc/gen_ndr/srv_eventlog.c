@@ -21,8 +21,10 @@ static BOOL api_eventlog_ClearEventLogW(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_ClearEventLogW(pull, NDR_IN, &r);
@@ -35,6 +37,12 @@ static BOOL api_eventlog_ClearEventLogW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogW, &r);
 	
 	r.out.result = _eventlog_ClearEventLogW(p, r.in.handle, r.in.unknown);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogW, &r);
@@ -52,7 +60,7 @@ static BOOL api_eventlog_ClearEventLogW(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -77,8 +85,10 @@ static BOOL api_eventlog_BackupEventLogW(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_BackupEventLogW(pull, NDR_IN, &r);
@@ -91,6 +101,12 @@ static BOOL api_eventlog_BackupEventLogW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogW, &r);
 	
 	r.out.result = _eventlog_BackupEventLogW(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogW, &r);
@@ -108,7 +124,7 @@ static BOOL api_eventlog_BackupEventLogW(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -133,8 +149,10 @@ static BOOL api_eventlog_CloseEventLog(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_CloseEventLog(pull, NDR_IN, &r);
@@ -149,6 +167,12 @@ static BOOL api_eventlog_CloseEventLog(pipes_struct *p)
 	ZERO_STRUCT(r.out);
 	r.out.handle = r.in.handle;
 	r.out.result = _eventlog_CloseEventLog(p, r.in.handle);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_CloseEventLog, &r);
@@ -166,7 +190,7 @@ static BOOL api_eventlog_CloseEventLog(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -191,8 +215,10 @@ static BOOL api_eventlog_DeregisterEventSource(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_DeregisterEventSource(pull, NDR_IN, &r);
@@ -205,6 +231,12 @@ static BOOL api_eventlog_DeregisterEventSource(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_DeregisterEventSource, &r);
 	
 	r.out.result = _eventlog_DeregisterEventSource(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterEventSource, &r);
@@ -222,7 +254,7 @@ static BOOL api_eventlog_DeregisterEventSource(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -247,8 +279,10 @@ static BOOL api_eventlog_GetNumRecords(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_GetNumRecords(pull, NDR_IN, &r);
@@ -269,6 +303,12 @@ static BOOL api_eventlog_GetNumRecords(pipes_struct *p)
 	
 	r.out.result = _eventlog_GetNumRecords(p, r.in.handle, r.out.number);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_GetNumRecords, &r);
 	
@@ -285,7 +325,7 @@ static BOOL api_eventlog_GetNumRecords(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -310,8 +350,10 @@ static BOOL api_eventlog_GetOldestRecord(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_GetOldestRecord(pull, NDR_IN, &r);
@@ -324,6 +366,12 @@ static BOOL api_eventlog_GetOldestRecord(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_GetOldestRecord, &r);
 	
 	r.out.result = _eventlog_GetOldestRecord(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_GetOldestRecord, &r);
@@ -341,7 +389,7 @@ static BOOL api_eventlog_GetOldestRecord(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -366,8 +414,10 @@ static BOOL api_eventlog_ChangeNotify(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_ChangeNotify(pull, NDR_IN, &r);
@@ -380,6 +430,12 @@ static BOOL api_eventlog_ChangeNotify(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_ChangeNotify, &r);
 	
 	r.out.result = _eventlog_ChangeNotify(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_ChangeNotify, &r);
@@ -397,7 +453,7 @@ static BOOL api_eventlog_ChangeNotify(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -422,8 +478,10 @@ static BOOL api_eventlog_OpenEventLogW(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_OpenEventLogW(pull, NDR_IN, &r);
@@ -444,6 +502,12 @@ static BOOL api_eventlog_OpenEventLogW(pipes_struct *p)
 	
 	r.out.result = _eventlog_OpenEventLogW(p, r.in.unknown0, r.in.logname, r.in.servername, r.in.unknown2, r.in.unknown3, r.out.handle);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogW, &r);
 	
@@ -460,7 +524,7 @@ static BOOL api_eventlog_OpenEventLogW(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -485,8 +549,10 @@ static BOOL api_eventlog_RegisterEventSourceW(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_RegisterEventSourceW(pull, NDR_IN, &r);
@@ -499,6 +565,12 @@ static BOOL api_eventlog_RegisterEventSourceW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceW, &r);
 	
 	r.out.result = _eventlog_RegisterEventSourceW(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceW, &r);
@@ -516,7 +588,7 @@ static BOOL api_eventlog_RegisterEventSourceW(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -541,8 +613,10 @@ static BOOL api_eventlog_OpenBackupEventLogW(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_OpenBackupEventLogW(pull, NDR_IN, &r);
@@ -555,6 +629,12 @@ static BOOL api_eventlog_OpenBackupEventLogW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogW, &r);
 	
 	r.out.result = _eventlog_OpenBackupEventLogW(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogW, &r);
@@ -572,7 +652,7 @@ static BOOL api_eventlog_OpenBackupEventLogW(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -597,8 +677,10 @@ static BOOL api_eventlog_ReadEventLogW(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_ReadEventLogW(pull, NDR_IN, &r);
@@ -631,6 +713,12 @@ static BOOL api_eventlog_ReadEventLogW(pipes_struct *p)
 	
 	r.out.result = _eventlog_ReadEventLogW(p, r.in.handle, r.in.flags, r.in.offset, r.in.number_of_bytes, r.out.data, r.out.sent_size, r.out.real_size);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogW, &r);
 	
@@ -647,7 +735,7 @@ static BOOL api_eventlog_ReadEventLogW(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -672,8 +760,10 @@ static BOOL api_eventlog_ReportEventW(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_ReportEventW(pull, NDR_IN, &r);
@@ -686,6 +776,12 @@ static BOOL api_eventlog_ReportEventW(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_ReportEventW, &r);
 	
 	r.out.result = _eventlog_ReportEventW(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventW, &r);
@@ -703,7 +799,7 @@ static BOOL api_eventlog_ReportEventW(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -728,8 +824,10 @@ static BOOL api_eventlog_ClearEventLogA(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_ClearEventLogA(pull, NDR_IN, &r);
@@ -742,6 +840,12 @@ static BOOL api_eventlog_ClearEventLogA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogA, &r);
 	
 	r.out.result = _eventlog_ClearEventLogA(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogA, &r);
@@ -759,7 +863,7 @@ static BOOL api_eventlog_ClearEventLogA(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -784,8 +888,10 @@ static BOOL api_eventlog_BackupEventLogA(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_BackupEventLogA(pull, NDR_IN, &r);
@@ -798,6 +904,12 @@ static BOOL api_eventlog_BackupEventLogA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogA, &r);
 	
 	r.out.result = _eventlog_BackupEventLogA(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogA, &r);
@@ -815,7 +927,7 @@ static BOOL api_eventlog_BackupEventLogA(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -840,8 +952,10 @@ static BOOL api_eventlog_OpenEventLogA(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_OpenEventLogA(pull, NDR_IN, &r);
@@ -854,6 +968,12 @@ static BOOL api_eventlog_OpenEventLogA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogA, &r);
 	
 	r.out.result = _eventlog_OpenEventLogA(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogA, &r);
@@ -871,7 +991,7 @@ static BOOL api_eventlog_OpenEventLogA(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -896,8 +1016,10 @@ static BOOL api_eventlog_RegisterEventSourceA(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_RegisterEventSourceA(pull, NDR_IN, &r);
@@ -910,6 +1032,12 @@ static BOOL api_eventlog_RegisterEventSourceA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceA, &r);
 	
 	r.out.result = _eventlog_RegisterEventSourceA(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceA, &r);
@@ -927,7 +1055,7 @@ static BOOL api_eventlog_RegisterEventSourceA(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -952,8 +1080,10 @@ static BOOL api_eventlog_OpenBackupEventLogA(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_OpenBackupEventLogA(pull, NDR_IN, &r);
@@ -966,6 +1096,12 @@ static BOOL api_eventlog_OpenBackupEventLogA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogA, &r);
 	
 	r.out.result = _eventlog_OpenBackupEventLogA(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogA, &r);
@@ -983,7 +1119,7 @@ static BOOL api_eventlog_OpenBackupEventLogA(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1008,8 +1144,10 @@ static BOOL api_eventlog_ReadEventLogA(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_ReadEventLogA(pull, NDR_IN, &r);
@@ -1022,6 +1160,12 @@ static BOOL api_eventlog_ReadEventLogA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogA, &r);
 	
 	r.out.result = _eventlog_ReadEventLogA(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogA, &r);
@@ -1039,7 +1183,7 @@ static BOOL api_eventlog_ReadEventLogA(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1064,8 +1208,10 @@ static BOOL api_eventlog_ReportEventA(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_ReportEventA(pull, NDR_IN, &r);
@@ -1078,6 +1224,12 @@ static BOOL api_eventlog_ReportEventA(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_ReportEventA, &r);
 	
 	r.out.result = _eventlog_ReportEventA(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventA, &r);
@@ -1095,7 +1247,7 @@ static BOOL api_eventlog_ReportEventA(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1120,8 +1272,10 @@ static BOOL api_eventlog_RegisterClusterSvc(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_RegisterClusterSvc(pull, NDR_IN, &r);
@@ -1134,6 +1288,12 @@ static BOOL api_eventlog_RegisterClusterSvc(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_RegisterClusterSvc, &r);
 	
 	r.out.result = _eventlog_RegisterClusterSvc(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_RegisterClusterSvc, &r);
@@ -1151,7 +1311,7 @@ static BOOL api_eventlog_RegisterClusterSvc(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1176,8 +1336,10 @@ static BOOL api_eventlog_DeregisterClusterSvc(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_DeregisterClusterSvc(pull, NDR_IN, &r);
@@ -1190,6 +1352,12 @@ static BOOL api_eventlog_DeregisterClusterSvc(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_DeregisterClusterSvc, &r);
 	
 	r.out.result = _eventlog_DeregisterClusterSvc(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterClusterSvc, &r);
@@ -1207,7 +1375,7 @@ static BOOL api_eventlog_DeregisterClusterSvc(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1232,8 +1400,10 @@ static BOOL api_eventlog_WriteClusterEvents(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_WriteClusterEvents(pull, NDR_IN, &r);
@@ -1246,6 +1416,12 @@ static BOOL api_eventlog_WriteClusterEvents(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_WriteClusterEvents, &r);
 	
 	r.out.result = _eventlog_WriteClusterEvents(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_WriteClusterEvents, &r);
@@ -1263,7 +1439,7 @@ static BOOL api_eventlog_WriteClusterEvents(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1288,8 +1464,10 @@ static BOOL api_eventlog_GetLogIntormation(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_GetLogIntormation(pull, NDR_IN, &r);
@@ -1302,6 +1480,12 @@ static BOOL api_eventlog_GetLogIntormation(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_GetLogIntormation, &r);
 	
 	r.out.result = _eventlog_GetLogIntormation(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_GetLogIntormation, &r);
@@ -1319,7 +1503,7 @@ static BOOL api_eventlog_GetLogIntormation(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1344,8 +1528,10 @@ static BOOL api_eventlog_FlushEventLog(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_eventlog_FlushEventLog(pull, NDR_IN, &r);
@@ -1358,6 +1544,12 @@ static BOOL api_eventlog_FlushEventLog(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_FlushEventLog, &r);
 	
 	r.out.result = _eventlog_FlushEventLog(p, r.in.handle);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(eventlog_FlushEventLog, &r);
@@ -1375,7 +1567,7 @@ static BOOL api_eventlog_FlushEventLog(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}

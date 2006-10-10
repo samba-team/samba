@@ -21,8 +21,10 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_GetManagerVersion(pull, NDR_IN, &r);
@@ -43,6 +45,12 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 	
 	_dfs_GetManagerVersion(p, r.out.exist_flag);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_GetManagerVersion, &r);
 	
@@ -59,7 +67,7 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -84,8 +92,10 @@ static BOOL api_dfs_Add(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_Add(pull, NDR_IN, &r);
@@ -98,6 +108,12 @@ static BOOL api_dfs_Add(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_Add, &r);
 	
 	r.out.result = _dfs_Add(p, r.in.path, r.in.server, r.in.share, r.in.comment, r.in.flags);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_Add, &r);
@@ -115,7 +131,7 @@ static BOOL api_dfs_Add(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -140,8 +156,10 @@ static BOOL api_dfs_Remove(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_Remove(pull, NDR_IN, &r);
@@ -154,6 +172,12 @@ static BOOL api_dfs_Remove(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_Remove, &r);
 	
 	r.out.result = _dfs_Remove(p, r.in.path, r.in.server, r.in.share);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_Remove, &r);
@@ -171,7 +195,7 @@ static BOOL api_dfs_Remove(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -196,8 +220,10 @@ static BOOL api_dfs_SetInfo(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_SetInfo(pull, NDR_IN, &r);
@@ -210,6 +236,12 @@ static BOOL api_dfs_SetInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_SetInfo, &r);
 	
 	r.out.result = _dfs_SetInfo(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_SetInfo, &r);
@@ -227,7 +259,7 @@ static BOOL api_dfs_SetInfo(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -252,8 +284,10 @@ static BOOL api_dfs_GetInfo(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_GetInfo(pull, NDR_IN, &r);
@@ -274,6 +308,12 @@ static BOOL api_dfs_GetInfo(pipes_struct *p)
 	
 	r.out.result = _dfs_GetInfo(p, r.in.path, r.in.server, r.in.share, r.in.level, r.out.info);
 	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
+	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_GetInfo, &r);
 	
@@ -290,7 +330,7 @@ static BOOL api_dfs_GetInfo(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -315,8 +355,10 @@ static BOOL api_dfs_Enum(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_Enum(pull, NDR_IN, &r);
@@ -332,6 +374,12 @@ static BOOL api_dfs_Enum(pipes_struct *p)
 	r.out.info = r.in.info;
 	r.out.total = r.in.total;
 	r.out.result = _dfs_Enum(p, r.in.level, r.in.bufsize, r.in.info, r.in.unknown, r.in.total);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_Enum, &r);
@@ -349,7 +397,7 @@ static BOOL api_dfs_Enum(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -374,8 +422,10 @@ static BOOL api_dfs_Rename(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_Rename(pull, NDR_IN, &r);
@@ -388,6 +438,12 @@ static BOOL api_dfs_Rename(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_Rename, &r);
 	
 	r.out.result = _dfs_Rename(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_Rename, &r);
@@ -405,7 +461,7 @@ static BOOL api_dfs_Rename(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -430,8 +486,10 @@ static BOOL api_dfs_Move(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_Move(pull, NDR_IN, &r);
@@ -444,6 +502,12 @@ static BOOL api_dfs_Move(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_Move, &r);
 	
 	r.out.result = _dfs_Move(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_Move, &r);
@@ -461,7 +525,7 @@ static BOOL api_dfs_Move(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -486,8 +550,10 @@ static BOOL api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_ManagerGetConfigInfo(pull, NDR_IN, &r);
@@ -500,6 +566,12 @@ static BOOL api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_ManagerGetConfigInfo, &r);
 	
 	r.out.result = _dfs_ManagerGetConfigInfo(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_ManagerGetConfigInfo, &r);
@@ -517,7 +589,7 @@ static BOOL api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -542,8 +614,10 @@ static BOOL api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_ManagerSendSiteInfo(pull, NDR_IN, &r);
@@ -556,6 +630,12 @@ static BOOL api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_ManagerSendSiteInfo, &r);
 	
 	r.out.result = _dfs_ManagerSendSiteInfo(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_ManagerSendSiteInfo, &r);
@@ -573,7 +653,7 @@ static BOOL api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -598,8 +678,10 @@ static BOOL api_dfs_AddFtRoot(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_AddFtRoot(pull, NDR_IN, &r);
@@ -612,6 +694,12 @@ static BOOL api_dfs_AddFtRoot(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_AddFtRoot, &r);
 	
 	r.out.result = _dfs_AddFtRoot(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_AddFtRoot, &r);
@@ -629,7 +717,7 @@ static BOOL api_dfs_AddFtRoot(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -654,8 +742,10 @@ static BOOL api_dfs_RemoveFtRoot(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_RemoveFtRoot(pull, NDR_IN, &r);
@@ -668,6 +758,12 @@ static BOOL api_dfs_RemoveFtRoot(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_RemoveFtRoot, &r);
 	
 	r.out.result = _dfs_RemoveFtRoot(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_RemoveFtRoot, &r);
@@ -685,7 +781,7 @@ static BOOL api_dfs_RemoveFtRoot(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -710,8 +806,10 @@ static BOOL api_dfs_AddStdRoot(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_AddStdRoot(pull, NDR_IN, &r);
@@ -724,6 +822,12 @@ static BOOL api_dfs_AddStdRoot(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_AddStdRoot, &r);
 	
 	r.out.result = _dfs_AddStdRoot(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_AddStdRoot, &r);
@@ -741,7 +845,7 @@ static BOOL api_dfs_AddStdRoot(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -766,8 +870,10 @@ static BOOL api_dfs_RemoveStdRoot(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_RemoveStdRoot(pull, NDR_IN, &r);
@@ -780,6 +886,12 @@ static BOOL api_dfs_RemoveStdRoot(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_RemoveStdRoot, &r);
 	
 	r.out.result = _dfs_RemoveStdRoot(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_RemoveStdRoot, &r);
@@ -797,7 +909,7 @@ static BOOL api_dfs_RemoveStdRoot(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -822,8 +934,10 @@ static BOOL api_dfs_ManagerInitialize(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_ManagerInitialize(pull, NDR_IN, &r);
@@ -836,6 +950,12 @@ static BOOL api_dfs_ManagerInitialize(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_ManagerInitialize, &r);
 	
 	r.out.result = _dfs_ManagerInitialize(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_ManagerInitialize, &r);
@@ -853,7 +973,7 @@ static BOOL api_dfs_ManagerInitialize(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -878,8 +998,10 @@ static BOOL api_dfs_AddStdRootForced(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_AddStdRootForced(pull, NDR_IN, &r);
@@ -892,6 +1014,12 @@ static BOOL api_dfs_AddStdRootForced(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_AddStdRootForced, &r);
 	
 	r.out.result = _dfs_AddStdRootForced(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_AddStdRootForced, &r);
@@ -909,7 +1037,7 @@ static BOOL api_dfs_AddStdRootForced(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -934,8 +1062,10 @@ static BOOL api_dfs_GetDcAddress(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_GetDcAddress(pull, NDR_IN, &r);
@@ -948,6 +1078,12 @@ static BOOL api_dfs_GetDcAddress(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_GetDcAddress, &r);
 	
 	r.out.result = _dfs_GetDcAddress(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_GetDcAddress, &r);
@@ -965,7 +1101,7 @@ static BOOL api_dfs_GetDcAddress(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -990,8 +1126,10 @@ static BOOL api_dfs_SetDcAddress(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_SetDcAddress(pull, NDR_IN, &r);
@@ -1004,6 +1142,12 @@ static BOOL api_dfs_SetDcAddress(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_SetDcAddress, &r);
 	
 	r.out.result = _dfs_SetDcAddress(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_SetDcAddress, &r);
@@ -1021,7 +1165,7 @@ static BOOL api_dfs_SetDcAddress(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1046,8 +1190,10 @@ static BOOL api_dfs_FlushFtTable(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_FlushFtTable(pull, NDR_IN, &r);
@@ -1060,6 +1206,12 @@ static BOOL api_dfs_FlushFtTable(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_FlushFtTable, &r);
 	
 	r.out.result = _dfs_FlushFtTable(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_FlushFtTable, &r);
@@ -1077,7 +1229,7 @@ static BOOL api_dfs_FlushFtTable(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1102,8 +1254,10 @@ static BOOL api_dfs_Add2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_Add2(pull, NDR_IN, &r);
@@ -1116,6 +1270,12 @@ static BOOL api_dfs_Add2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_Add2, &r);
 	
 	r.out.result = _dfs_Add2(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_Add2, &r);
@@ -1133,7 +1293,7 @@ static BOOL api_dfs_Add2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1158,8 +1318,10 @@ static BOOL api_dfs_Remove2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_Remove2(pull, NDR_IN, &r);
@@ -1172,6 +1334,12 @@ static BOOL api_dfs_Remove2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_Remove2, &r);
 	
 	r.out.result = _dfs_Remove2(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_Remove2, &r);
@@ -1189,7 +1357,7 @@ static BOOL api_dfs_Remove2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1214,8 +1382,10 @@ static BOOL api_dfs_EnumEx(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_EnumEx(pull, NDR_IN, &r);
@@ -1231,6 +1401,12 @@ static BOOL api_dfs_EnumEx(pipes_struct *p)
 	r.out.info = r.in.info;
 	r.out.total = r.in.total;
 	r.out.result = _dfs_EnumEx(p, r.in.name, r.in.level, r.in.bufsize, r.in.info, r.in.total);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_EnumEx, &r);
@@ -1248,7 +1424,7 @@ static BOOL api_dfs_EnumEx(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -1273,8 +1449,10 @@ static BOOL api_dfs_SetInfo2(pipes_struct *p)
 	}
 	
 	pull = ndr_pull_init_blob(&blob, mem_ctx);
-	if (pull == NULL)
+	if (pull == NULL) {
+		talloc_free(mem_ctx);
 		return False;
+	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	status = ndr_pull_dfs_SetInfo2(pull, NDR_IN, &r);
@@ -1287,6 +1465,12 @@ static BOOL api_dfs_SetInfo2(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_SetInfo2, &r);
 	
 	r.out.result = _dfs_SetInfo2(p);
+	
+	if (p->rng_fault_state) {
+		talloc_free(mem_ctx);
+		/* Return True here, srv_pipe_hnd.c will take care */
+		return True;
+	}
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(dfs_SetInfo2, &r);
@@ -1304,7 +1488,7 @@ static BOOL api_dfs_SetInfo2(pipes_struct *p)
 	}
 	
 	blob = ndr_push_blob(push);
-	if (!prs_init_data_blob(&p->out_data.rdata, &blob, p->mem_ctx)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
