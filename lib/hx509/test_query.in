@@ -36,98 +36,100 @@
 
 srcdir="@srcdir@"
 
+hxtool="${TESTS_ENVIRONMENT} ./hxtool"
+
 echo "try printing"
-./hxtool print \
+${hxtool} print \
 	--pass=PASS:foobar \
 	PKCS12:$srcdir/data/test.p12 >/dev/null 2>/dev/null || exit 1
 
-./hxtool print \
+${hxtool} print \
 	--pass=PASS:foobar \
 	--info \
 	PKCS12:$srcdir/data/test.p12 >/dev/null 2>/dev/null || exit 1
 
 echo "make sure entry is found (friendlyname)"
-./hxtool query \
+${hxtool} query \
 	--pass=PASS:foobar \
 	--friendlyname=friendlyname-test  \
 	PKCS12:$srcdir/data/test.p12 >/dev/null 2>/dev/null || exit 1
 
 echo "make sure entry is not found  (friendlyname)"
-./hxtool query \
+${hxtool} query \
 	--pass=PASS:foobar \
 	--friendlyname=friendlyname-test-not  \
 	PKCS12:$srcdir/data/test.p12 >/dev/null 2>/dev/null && exit 1
 
 echo "check for ca cert (friendlyname)"
-./hxtool query \
+${hxtool} query \
 	--pass=PASS:foobar \
 	--friendlyname=ca  \
 	PKCS12:$srcdir/data/test.p12 >/dev/null 2>/dev/null || exit 1
 
 echo "make sure entry is not found (friendlyname)"
-./hxtool query \
+${hxtool} query \
 	--pass=PASS:foobar \
 	--friendlyname=friendlyname-test \
 	PKCS12:$srcdir/data/sub-cert.p12 >/dev/null 2>/dev/null && exit 1
 
 echo "make sure entry is found (friendlyname|private key)"
-./hxtool query \
+${hxtool} query \
 	--pass=PASS:foobar \
 	--friendlyname=friendlyname-test  \
 	--private-key \
 	PKCS12:$srcdir/data/test.p12 > /dev/null || exit 1
 
 echo "make sure entry is not found (friendlyname|private key)"
-./hxtool query \
+${hxtool} query \
 	--pass=PASS:foobar \
 	--friendlyname=ca  \
 	--private-key \
 	PKCS12:$srcdir/data/test.p12 >/dev/null 2>/dev/null && exit 1
 
 echo "make sure entry is found (cert ds)"
-./hxtool query \
+${hxtool} query \
 	--digitalSignature \
 	FILE:$srcdir/data/test.crt >/dev/null 2>/dev/null || exit 1
 
 echo "make sure entry is found (cert ke)"
-./hxtool query \
+${hxtool} query \
 	--keyEncipherment \
 	FILE:$srcdir/data/test.crt >/dev/null 2>/dev/null || exit 1
 
 echo "make sure entry is found (cert ke + ds)"
-./hxtool query \
+${hxtool} query \
 	--digitalSignature \
 	--keyEncipherment \
 	FILE:$srcdir/data/test.crt >/dev/null 2>/dev/null || exit 1
 
 echo "make sure entry is found (cert-ds ds)"
-./hxtool query \
+${hxtool} query \
 	--digitalSignature \
 	FILE:$srcdir/data/test-ds-only.crt >/dev/null 2>/dev/null || exit 1
 
 echo "make sure entry is not found (cert-ds ke)"
-./hxtool query \
+${hxtool} query \
 	--keyEncipherment \
 	FILE:$srcdir/data/test-ds-only.crt >/dev/null 2>/dev/null && exit 1
 
 echo "make sure entry is not found (cert-ds ke + ds)"
-./hxtool query \
+${hxtool} query \
 	--digitalSignature \
 	--keyEncipherment \
 	FILE:$srcdir/data/test-ds-only.crt >/dev/null 2>/dev/null && exit 1
 
 echo "make sure entry is not found (cert-ke ds)"
-./hxtool query \
+${hxtool} query \
 	--digitalSignature \
 	FILE:$srcdir/data/test-ke-only.crt >/dev/null 2>/dev/null && exit 1
 
 echo "make sure entry is found (cert-ke ke)"
-./hxtool query \
+${hxtool} query \
 	--keyEncipherment \
 	FILE:$srcdir/data/test-ke-only.crt >/dev/null 2>/dev/null || exit 1
 
 echo "make sure entry is not found (cert-ke ke + ds)"
-./hxtool query \
+${hxtool} query \
 	--digitalSignature \
 	--keyEncipherment \
 	FILE:$srcdir/data/test-ke-only.crt >/dev/null 2>/dev/null && exit 1

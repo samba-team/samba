@@ -42,11 +42,13 @@ echo "nist pkcs12 tests"
 
 test -d "$nistdir" || exit 77
 
+hxtool="${TESTS_ENVIRONMENT} ./hxtool"
+
 for a in $nistdir/*.p12 ; do
 
     echo -n .
 
-    if ./hxtool validate $pass PKCS12:$a > /dev/null; then
+    if ${hxtool} validate $pass PKCS12:$a > /dev/null; then
 	:
     else
 	echo "$a failed"

@@ -39,7 +39,9 @@ nistdir=/sources/pki/nist/PKITS_data
 
 test -d "$nistdir" || exit 77
 
-if ./hxtool validate DIR:$nistdir/certs > /dev/null; then
+hxtool="${TESTS_ENVIRONMENT} ./hxtool"
+
+if ${hxtool} validate DIR:$nistdir/certs > /dev/null; then
    :
 else
    echo "validate failed"

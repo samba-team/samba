@@ -36,19 +36,21 @@
 
 srcdir="@srcdir@"
 
-if ./hxtool info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
+hxtool="${TESTS_ENVIRONMENT} ./hxtool"
+
+if ${hxtool} info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
     exit 77
 fi
 
-./hxtool request-create \
+${hxtool} request-create \
 	 --subject="CN=Love,DC=it,DC=su,DC=se" \
 	 --key=$srcdir/data/key.der \
 	 request.out || exit 1
 
-./hxtool pkcs10-print \
+${hxtool} pkcs10-print \
 	 request.out > /dev/null || exit 1
 
-./hxtool request-create \
+${hxtool} request-create \
 	 --subject="CN=Love,DC=it,DC=su,DC=se" \
 	 --dnsname=nutcracker.it.su.se \
 	 --key=$srcdir/data/key.der \

@@ -36,136 +36,137 @@
 
 srcdir="@srcdir@"
 
-if ./hxtool info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
+hxtool="${TESTS_ENVIRONMENT} ./hxtool"
+if ${hxtool} info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
     exit 77
 fi
 
 echo "cert -> root"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
 	cert:FILE:$srcdir/data/test.crt \
 	chain:FILE:$srcdir/data/test.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "cert -> root"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
 	cert:FILE:$srcdir/data/test.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "cert -> root"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
 	cert:FILE:$srcdir/data/test.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "sub-cert -> root"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
 
 echo "sub-cert -> sub-ca -> root"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "sub-cert -> sub-ca"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	anchor:FILE:$srcdir/data/sub-ca.crt > /dev/null || exit 1
 
 echo "sub-cert -> sub-ca -> root"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "sub-cert -> sub-ca -> root"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "sub-cert -> sub-ca -> root"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "ocsp non-ca responder"
-./hxtool verify \
+${hxtool} verify \
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
     ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp.der > /dev/null || exit 1
 
 echo "ocsp ca responder"
-./hxtool verify \
+${hxtool} verify \
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
     ocsp:FILE:$srcdir/data/ocsp-resp1-ca.der > /dev/null || exit 1
 
 echo "ocsp no-ca responder, missing cert"
-./hxtool verify \
+${hxtool} verify \
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
     ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp-no-cert.der > /dev/null && exit 1
 
 echo "ocsp no-ca responder, missing cert, in pool"
-./hxtool verify \
+${hxtool} verify \
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
     ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp-no-cert.der \
     chain:FILE:$srcdir/data/ocsp-responder.crt > /dev/null || exit 1
 
 echo "ocsp no-ca responder, keyHash"
-./hxtool verify \
+${hxtool} verify \
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
     ocsp:FILE:$srcdir/data/ocsp-resp1-keyhash.der || exit 1
 
 echo "ocsp revoked cert"
-./hxtool verify \
+${hxtool} verify \
     cert:FILE:$srcdir/data/revoke.crt \
     anchor:FILE:$srcdir/data/ca.crt \
     ocsp:FILE:$srcdir/data/ocsp-resp2.der > /dev/null && exit 1
 
 for a in resp1-ocsp-no-cert resp1-ca resp1-keyhash resp2 ; do
 	echo "ocsp print reply $a"
-	./hxtool ocsp-print \
+	${hxtool} ocsp-print \
 	    $srcdir/data/ocsp-resp2.der > /dev/null || exit 1
 done
 
 echo "crl non-revoked cert"
-./hxtool verify \
+${hxtool} verify \
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
     crl:FILE:$srcdir/data/crl1.der > /dev/null || exit 1
 
 echo "crl revoked cert"
-./hxtool verify \
+${hxtool} verify \
     cert:FILE:$srcdir/data/revoke.crt \
     anchor:FILE:$srcdir/data/ca.crt \
     crl:FILE:$srcdir/data/crl1.der > /dev/null && exit 1
 
 echo "proxy cert"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
     --allow-proxy-certificate \
     cert:FILE:$srcdir/data/proxy-test.crt \
     chain:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "proxy cert (negative)"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
     cert:FILE:$srcdir/data/proxy-test.crt \
     chain:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
 
 echo "proxy cert (level fail)"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
     --allow-proxy-certificate \
     cert:FILE:$srcdir/data/proxy-level-test.crt \
     chain:FILE:$srcdir/data/proxy-test.crt \
@@ -173,21 +174,21 @@ echo "proxy cert (level fail)"
     anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
 
 echo "not a proxy cert"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
     --allow-proxy-certificate \
     cert:FILE:$srcdir/data/no-proxy-test.crt \
     chain:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
 
 echo "proxy cert (max level 10)"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
     --allow-proxy-certificate \
     cert:FILE:$srcdir/data/proxy10-test.crt \
     chain:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "proxy cert (second level)"
-./hxtool verify --missing-revoke \
+${hxtool} verify --missing-revoke \
     --allow-proxy-certificate \
     cert:FILE:$srcdir/data/proxy10-child-test.crt \
     chain:FILE:$srcdir/data/proxy10-test.crt \
