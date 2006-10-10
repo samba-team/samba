@@ -417,12 +417,13 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 	ret = gnutls_dh_params_init(&params->dh_params);
 	if (ret < 0) goto init_failed;
 
-	if (dhpfile) {
+	if (dhpfile && *dhpfile) {
 		gnutls_datum_t dhparms;
 		size_t size;
 		dhparms.data = (uint8_t *)file_load(dhpfile, &size, mem_ctx);
 
 		if (!dhparms.data) {
+			DEBUG(0,("Failed to read DH Parms from %s\n", dhpfile));
 			goto init_failed;
 		}
 		dhparms.size = size;
