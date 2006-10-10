@@ -82,10 +82,10 @@ ${kadmin} check ${R} || exit 1
 echo Starting kdc
 ${kdc} &
 kdcpid=$!
-sleep 2
 
-if tail -1 messages.log | grep "No sockets" ; then
-    echo "The KDC failed to bind to any sockets, another KDC running ?"
+sh ${srcdir}/../kdc/wait-kdc.sh
+if [ "$?" != 0 ] ; then
+    kill ${kdcpid}
     exit 1
 fi
 
