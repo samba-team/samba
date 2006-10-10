@@ -11,6 +11,7 @@ keeptree=no
 passhrase=
 builddir=
 noemail=
+cputimelimit=3600
 
 # Add some bonus paths, to find sendmail and other tools
 # on interesting platforms.
@@ -19,7 +20,7 @@ PATH="${PATH}:/usr/local/bin:/usr/local/sbin"
 
 # no more use configurabled part below (hopefully)
 
-usage="[--current] [--release version] [--cvs SourceRepository] [--cvs-flags] [--result-directory dir] [--fetch-method wget|ftp|curl|cvs] --keep-tree] [--autotools] [--passhrase string] [--no-email] [--build-dir dir]"
+usage="[--current] [--release version] [--cvs SourceRepository] [--cvs-flags] [--result-directory dir] [--fetch-method wget|ftp|curl|cvs] --keep-tree] [--autotools] [--passhrase string] [--no-email] [--build-dir dir] [--cputime]"
 
 date=`date +%Y%m%d`
 if [ "$?" != 0 ]; then
@@ -60,6 +61,10 @@ do
 		dir="snapshots/"
 		hversion="heimdal-${date}"
 		shift
+		;;
+	--cputime)
+		cputimelimit="$2"
+		shift 2
 		;;
 	--release)
 		hversion="heimdal-$2"
@@ -127,6 +132,9 @@ url="${baseurl}/${dir}${hfile}"
 afsfile="${afsdir}/${dir}${hfile}"
 unpack=yes
 
+# Limit cpu seconds this all can take
+ulimit -t "$cputimelimit" > /dev/null 2>&1
+
 if [ "X${builddir}" = X ]; then
 	echo "Changing build dir to ${builddir}"
 	cd "${builddir}"
@@ -185,8 +193,23 @@ fi
 
 cd ${hversion} || exit 1
 
+mkdir socket_wrapper_dir
+SOCKET_WRAPPER_DIR=./socket_wrapper_dir
+export SOCKET_WRAPPER_DIR
+
 echo "Configuring and building ($hversion)"
-(./configure ${confflags} && make all check) > ab.txt 2>&1
+./configure --enable-socket-wrapper ${confflags} > ab.txt 2>&1
+if [ $? != 0 ] ; then
+    echo Configure failed
+fi
+make all >> ab.txt 2>&1
+if [ $? != 0 ] ; then
+    echo Make all failed
+fi
+make check >> ab.txt 2>&1
+if [ $? != 0 ] ; then
+    echo Make all failed
+fi
 
 if [ "X${resultdir}" != X ] ; then
 	cp ab.txt "${resultdir}/ab-${hversion}-${hostname}-${date}.txt"
