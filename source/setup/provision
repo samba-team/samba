@@ -113,8 +113,6 @@ for (r in options) {
 
 if (options["ldap-backend"] != undefined) {
 	subobj["LDAPMODULES"] = "entryUUID,paged_searches";
-} else {
-	subobj["LDAPMODULES"] = "objectguid";
 }
 
 var blank = (options["blank"] != undefined);
