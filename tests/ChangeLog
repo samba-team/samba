@@ -1,3 +1,9 @@
+2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Heimdal uses TESTS_ENVIRONMENT before every binary being tested
+	directly from the Makefile.  This now uses the same for the
+	scripts, so we can run them under valgrind. From Andrew Bartlet
+
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss/Makefile.am: splits script tests and binary tests
