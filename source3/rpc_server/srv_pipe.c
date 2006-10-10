@@ -2310,6 +2310,13 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 		return True;
 	}
 
+	if (p->rng_fault_state) {
+		DEBUG(4, ("api_rpcTNP: rng fault return\n"));
+		p->rng_fault_state = False;
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
+		return True;
+	}
+
 	slprintf(name, sizeof(name)-1, "out_%s", rpc_name);
 	offset2 = prs_offset(&p->out_data.rdata);
 	prs_set_offset(&p->out_data.rdata, offset1);
