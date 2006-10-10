@@ -32,7 +32,7 @@
 #include "lib/tls/tls.h"
 
 /* don't allow connections to hang around forever */
-#define HTTP_TIMEOUT 30
+#define HTTP_TIMEOUT 120
 
 /*
   destroy a web connection
