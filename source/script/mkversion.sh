@@ -68,20 +68,40 @@ fi
 if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
     _SAVE_LANG=${LANG}
     LANG=""
-    HAVESVN=no
-    SVN_INFO=`svn info ${SOURCE_DIR} 2>/dev/null`
-    TMP_REVISION=`echo -e "${SVN_INFO}" | grep 'Last Changed Rev.*:' |sed -e 's/Last Changed Rev.*: \([0-9]*\).*/\1/'`
-    if test -n "$TMP_REVISION"; then
-	HAVESVN=yes
+    HAVEVER="no"
+
+    if test x"${HAVEVER}" != x"yes";then
+    	HAVESVN=no
+    	SVN_INFO=`svn info ${SOURCE_DIR} 2>/dev/null`
+    	TMP_REVISION=`echo -e "${SVN_INFO}" | grep 'Last Changed Rev.*:' |sed -e 's/Last Changed Rev.*: \([0-9]*\).*/\1/'`
+    	if test -n "$TMP_REVISION"; then
+	    HAVESVN=yes
+	    HAVEVER=yes
+    	fi
     fi
-    if test x"${HAVESVN}" != x"yes";then
+
+    if test x"${HAVEVER}" != x"yes";then
 	HAVESVK=no
 	SVK_INFO=`svk info ${SOURCE_DIR} 2>/dev/null`
 	TMP_REVISION=`echo -e "${SVK_INFO}" | grep 'Last Changed Rev.*:' |sed -e 's/Last Changed Rev.*: \([0-9]*\).*/\1/'`
 	if test -n "$TMP_REVISION"; then
 	    HAVESVK=yes
+	    HAVEVER=yes
 	fi
 	TMP_MIRRORED_REVISION=`echo -e "${SVK_INFO}" | grep 'Mirrored From:.*samba\.org.*' |sed -e 's/Mirrored From: .* Rev\..* \([0-9]*\).*/\1/'`
+    fi
+
+    if test x"${HAVEVER}" != x"yes";then
+    	HAVEBZR=no
+	BZR_INFO=`bzr version-info --check-clean ${SOURCE_DIR} 2>/dev/null`
+	TMP_REVISION=`echo -e "${BZR_INFO}" | grep 'revno:' |sed -e 's/revno: \([0-9]*\).*/\1/'`
+	if test -n "$TMP_REVISION"; then
+	    HAVEBZR=yes
+	    HAVEVER=yes
+	fi
+	TMP_MIRRORED_REVISION=`echo -e "${BZR_INFO}" | grep 'revision-id: svn-v1:.*@0c0555d6-39d7-0310-84fc-f1cc0bd64818' |sed -e 's/revision-id: svn-v1:\([0-9]*\)@0c0555d6-39d7-0310-84fc-f1cc0bd64818.*/\1/'`
+	TMP_BRANCH_NICK=`echo -e "${BZR_INFO}" | grep 'branch-nick:' |sed -e 's/branch-nick: \(.*\)$/\1/'`
+	TMP_CLEAN_TREE=`echo -e "${BZR_INFO}" | grep 'clean:' |sed -e 's/clean: \([a-zA-Z]*\).*/\1/'`
     fi
 
     if test x"${HAVESVN}" = x"yes";then
@@ -94,6 +114,22 @@ if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
 	    TMP_SVK_REVISION_STR="${TMP_REVISION}-${USER}@${HOSTNAME}"
 	fi
 	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVK-build-${TMP_SVK_REVISION_STR}"
+    elif test x"${HAVEBZR}" = x"yes";then
+	TMP_BZR_REVISION_STR="${TMP_REVISION}"
+
+	if test -n "$TMP_BRANCH_NICK"; then
+	    TMP_BZR_REVISION_STR="${TMP_BZR_REVISION_STR}${TMP_MOD_STR}@${TMP_BRANCH_NICK}"
+	fi
+
+	if test -n "$TMP_MIRRORED_REVISION"; then
+	    TMP_BZR_REVISION_STR="${TMP_BZR_REVISION_STR}-[SVN-${TMP_MIRRORED_REVISION}]"
+	fi
+
+	if test  x"$TMP_CLEAN_TREE" != x"True"; then
+	    TMP_BZR_REVISION_STR="${TMP_BZR_REVISION_STR}-[modified]"
+	fi
+
+	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-BZR-${TMP_BZR_REVISION_STR}"
     else
 	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVN-build-UNKNOWN"
     fi
