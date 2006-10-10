@@ -1,3 +1,11 @@
+2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* socket_wrapper.c: try even hard to not use socket wrapper for
+	socket_wrapper itself.
+
+	* socket_wrapper.c: Force no socket wrapper for socket_wrapper
+	itself.
+	
 2006-10-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* socket_wrapper.c: Maybe include <config.h>.
