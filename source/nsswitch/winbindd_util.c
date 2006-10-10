@@ -462,16 +462,18 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 		fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
 	}
 
-	if (strlen(domain->dcname) > 0) {
-		if (!resolve_name(domain->dcname, &ipaddr, 0x20)) {
-			DEBUG(2, ("Could not resolve DC name %s for domain %s\n",
-				  domain->dcname, domain->name));
-			return WINBINDD_ERROR;
-		}
+	if (!domain->internal) {
+		if (strlen(domain->dcname) > 0) {
+			if (!resolve_name(domain->dcname, &ipaddr, 0x20)) {
+				DEBUG(2, ("Could not resolve DC name %s for domain %s\n",
+					  domain->dcname, domain->name));
+				return WINBINDD_ERROR;
+			}
 
-		domain->dcaddr.sin_family = PF_INET;
-		putip((char *)&(domain->dcaddr.sin_addr), (char *)&ipaddr);
-		domain->dcaddr.sin_port = 0;
+			domain->dcaddr.sin_family = PF_INET;
+			putip((char *)&(domain->dcaddr.sin_addr), (char *)&ipaddr);
+			domain->dcaddr.sin_port = 0;
+		}
 	}
 
 	init_dc_connection(domain);
