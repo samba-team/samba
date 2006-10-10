@@ -816,6 +816,7 @@ loop(krb5_context context,
     ndescr = init_sockets(context, config, &d);
     if(ndescr <= 0)
 	krb5_errx(context, 1, "No sockets!");
+    kdc_log(context, config, 0, "KDC started");
     while(exit_flag == 0){
 	struct timeval tmout;
 	fd_set fds;
