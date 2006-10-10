@@ -70,8 +70,10 @@ sub ParseFunction($$)
 	pidl "}";
 	pidl "";
 	pidl "pull = ndr_pull_init_blob(&blob, mem_ctx);";
-	pidl "if (pull == NULL)";
+	pidl "if (pull == NULL) {";
+	pidl "\ttalloc_free(mem_ctx);";
 	pidl "\treturn False;";
+	pidl "}";
 	pidl "";
 	pidl "pull->flags |= LIBNDR_FLAG_REF_ALLOC;";
 	pidl "status = ndr_pull_$fn->{NAME}(pull, NDR_IN, &r);";
@@ -122,6 +124,12 @@ sub ParseFunction($$)
 	pidl "$ret;";
 
 	pidl "";
+	pidl "if (p->rng_fault_state) {";
+	pidl "\ttalloc_free(mem_ctx);";
+	pidl "\t/* Return True here, srv_pipe_hnd.c will take care */";
+	pidl "\treturn True;";
+	pidl "}";
+	pidl "";
 	pidl "if (DEBUGLEVEL >= 10)";
 	pidl "\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, &r);";
 	pidl "";
@@ -138,7 +146,7 @@ sub ParseFunction($$)
 	pidl "}";
 	pidl "";
 	pidl "blob = ndr_push_blob(push);";
-	pidl "if (!prs_copy_data_in(&p->out_data.rdata, blob.data, (uint32)blob.length)) {";
+	pidl "if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {";
 	pidl "\ttalloc_free(mem_ctx);";
 	pidl "\treturn False;";
 	pidl "}";
