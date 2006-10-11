@@ -982,7 +982,7 @@ p11_release_module(struct p11_module *p)
 		int j;
 
 		for (j = 0 ; j < p->slot[i].mechs.num ; j++)
-		    free(p->slot[i].mechs.infos[i]);
+		    free(p->slot[i].mechs.infos[j]);
 		free(p->slot[i].mechs.infos);
 	    }
 	}
