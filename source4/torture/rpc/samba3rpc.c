@@ -36,6 +36,8 @@
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
+#include "librpc/gen_ndr/ndr_wkssvc.h"
+#include "librpc/gen_ndr/ndr_wkssvc_c.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
@@ -2559,4 +2561,75 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 	talloc_free(mem_ctx);
 
 	return ret;
+}
+
+BOOL torture_samba3_rpc_wkssvc(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	struct smbcli_state *cli;
+	struct dcerpc_pipe *p;
+	NTSTATUS status;
+	char *servername;
+
+	if (!(mem_ctx = talloc_new(torture))) {
+		return False;
+	}
+
+	if (!(torture_open_connection_share(
+		      mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		      "IPC$", NULL))) {
+		d_printf("IPC$ connection failed\n");
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	status = get_servername(mem_ctx, cli->tree, &servername);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "(%s) get_servername returned %s\n",
+			  __location__, nt_errstr(status));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	status = pipe_bind_smb(mem_ctx, cli->tree, "\\wkssvc",
+			       &dcerpc_table_wkssvc, &p);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) pipe_bind_smb failed: %s\n", __location__,
+			 nt_errstr(status));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	{
+		struct wkssvc_NetWkstaInfo100 wks100;
+		union wkssvc_NetWkstaInfo info;
+		struct wkssvc_NetWkstaGetInfo r;
+
+		r.in.server_name = "\\foo";
+		r.in.level = 100;
+		info.info100 = &wks100;
+		r.out.info = &info;
+
+		status = dcerpc_wkssvc_NetWkstaGetInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+			d_printf("(%s) dcerpc_wkssvc_NetWksGetInfo failed: "
+				 "%s, %s\n", __location__, nt_errstr(status),
+				 win_errstr(r.out.result));
+			talloc_free(mem_ctx);
+			return False;
+		}
+
+		if (strcmp(servername,
+			   r.out.info->info100->server_name) != 0) {
+			d_printf("(%s) servername inconsistency: RAP=%s, "
+				 "dcerpc_wkssvc_NetWksGetInfo=%s",
+				 __location__, servername,
+				 r.out.info->info100->server_name);
+			talloc_free(mem_ctx);
+			return False;
+		}
+	}
+
+	talloc_free(mem_ctx);
+	return True;
 }
