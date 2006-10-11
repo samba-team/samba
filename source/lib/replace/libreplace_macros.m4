@@ -264,6 +264,24 @@ define(AC_ADD_INCLUDE,
 EOF
 ])
 
+dnl remove an #include
+dnl AC_REMOVE_INCLUDE(VARIABLE)
+define(AC_REMOVE_INCLUDE,
+[
+grep -v '[#include] $1' confdefs.h >confdefs.h.tmp
+cat confdefs.h.tmp > confdefs.h
+rm confdefs.h.tmp
+])
+
+dnl remove an #define
+dnl AC_REMOVE_DEFINE(VARIABLE)
+define(AC_REMOVE_DEFINE,
+[
+grep -v '[#define] $1 ' confdefs.h |grep -v '[#define] $1[$]'>confdefs.h.tmp
+cat confdefs.h.tmp > confdefs.h
+rm confdefs.h.tmp
+])
+
 dnl AS_HELP_STRING is not available in autoconf 2.57, and AC_HELP_STRING is deprecated
 dnl in autoconf 2.59, so define AS_HELP_STRING to be AC_HELP_STRING unless it is already
 dnl defined.
