@@ -4823,30 +4823,6 @@ if test x"$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT" = x"yes"; then
 fi
 AC_MSG_RESULT([$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT])
 
-AC_ARG_WITH(spinlocks, 
-[  --with-spinlocks        Use spin locks instead of fcntl locks (default=no) ])
-if test "x$with_spinlocks" = "xyes"; then
-    AC_DEFINE(USE_SPINLOCKS,1,[Whether to use spin locks instead of fcntl locks])
-
-    case "$host_cpu" in
-        sparc)
-            AC_DEFINE(SPARC_SPINLOCKS,1,[Whether to use sparc spinlocks])
-            ;;
-
-        i386|i486|i586|i686)
-            AC_DEFINE(INTEL_SPINLOCKS,1,[Whether to use intel spinlocks])
-            ;;
-
-        mips)
-            AC_DEFINE(MIPS_SPINLOCKS,1,[Whether to use mips spinlocks])
-            ;;
-
-        powerpc)
-            AC_DEFINE(POWERPC_SPINLOCKS,1,[Whether to use powerpc spinlocks])
-            ;;
-    esac
-fi
-
 #################################################
 # check for cluster extensions
 
