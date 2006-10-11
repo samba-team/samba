@@ -21,17 +21,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef NO_CONFIG_H /* for some tests */
 #include "lib/replace/replace.h"
 
 /* make sure we have included the correct config.h */
+#ifndef NO_CONFIG_H /* for some tests */
 #ifndef CONFIG_H_IS_FROM_SAMBA
 #error "make sure you have removed all config.h files from standalone builds!"
 #error "the included config.h isn't from samba!"
 #endif
-
 #endif /* NO_CONFIG_H */
- 
+
 #include "local.h"
 
 #ifdef __GNUC__
