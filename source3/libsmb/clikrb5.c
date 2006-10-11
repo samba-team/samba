@@ -956,7 +956,7 @@ krb5_error_code decode_krb5_ap_req(const krb5_data *code, krb5_ap_req **rep);
 		smb_krb5_free_ap_req(context, ap_req);
 	}
 #else
-#error UNKOWN_KRB5_AP_REQ_DECODING_FUNCTION
+#error UNKNOWN_KRB5_AP_REQ_DECODING_FUNCTION
 #endif
 	return ret;
 }
