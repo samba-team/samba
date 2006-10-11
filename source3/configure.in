@@ -872,11 +872,10 @@ AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h 
 AC_CHECK_HEADERS(sys/un.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
-AC_CHECK_HEADERS(sys/sysmacros.h security/_pam_macros.h dlfcn.h)
+AC_CHECK_HEADERS(sys/sysmacros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
 AC_CHECK_HEADERS(xfs/libxfs.h)
-AC_CHECK_HEADERS(security/pam_ext.h)
 
 AC_CHECK_HEADERS(rpcsvc/yp_prot.h,,,[[
 #if HAVE_RPC_RPC_H
@@ -923,19 +922,13 @@ case "$host_os" in
 	;;
 esac
 AC_CHECK_HEADERS(shadow.h)
-AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h)
+AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h)
 AC_CHECK_HEADERS(syscall.h sys/syscall.h)
 
 AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
 AC_CHECK_HEADERS(sys/ea.h sys/proplist.h)
 
 AC_CHECK_HEADERS(sys/cdefs.h glob.h)
-
-AC_CHECK_HEADERS(security/pam_modules.h,,,[[
-#if HAVE_SECURITY_PAM_APPL_H
-#include <security/pam_appl.h>
-#endif
-]])
 
 # For experimental utmp support (lastlog on some BSD-like systems)
 AC_CHECK_HEADERS(utmp.h utmpx.h lastlog.h)
@@ -3942,33 +3935,76 @@ AC_ARG_WITH(cifsmount,
 #################################################
 # check for a PAM clear-text auth, accounts, password and session support
 with_pam_for_crypt=no
-AC_MSG_CHECKING(whether to use PAM)
+try_pam=no
+AC_MSG_CHECKING(whether to try PAM support)
 AC_ARG_WITH(pam,
 [  --with-pam              Include PAM support (default=no)],
 [ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    if test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
-       if test x"$ac_cv_header_security_pam_modules_h" = x"no"; then
-	  if test x"$ac_cv_header_security__pam_macros_h" = x"no"; then
-	     AC_MSG_ERROR(--with-pam specified but no PAM headers found)
-	  fi
-       fi
-    fi
-    AC_DEFINE(WITH_PAM,1,[Whether to include PAM support])
-    AUTH_LIBS="$AUTH_LIBS -lpam"
-    with_pam_for_crypt=yes
+  yes|no)
+    try_pam=$withval
     ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
+  esac
+])
+AC_MSG_RESULT([$try_pam])
 
-# we can't build a pam module if we don't have pam.
-AC_CHECK_LIB(pam, pam_get_data, [AC_DEFINE(HAVE_LIBPAM,1,[Whether libpam is available])])
-AC_CHECK_LIB(pam, pam_vsyslog, [AC_DEFINE(HAVE_PAM_VSYSLOG,1,[Whether pam_vsyslog is available])])
+use_pam=no
+create_pam_modules=no
+if test x"${try_pam}" != x"no";then
+	use_pam=yes
+	create_pam_modules=yes
+
+	AC_CHECK_HEADERS(security/pam_appl.h)
+	if test x"$ac_cv_header_security_pam_appl_h" != x"yes"; then
+		if test x"${try_pam}" = x"yes";then
+			AC_MSG_ERROR([--with-pam=yes but security/pam_appl.h not found])
+		fi
+		use_pam=no
+		create_pam_modules=no
+	fi
+
+	AC_CHECK_LIB_EXT(pam, PAM_LIBS, pam_get_data)
+	if test x"$ac_cv_lib_ext_pam_pam_get_data" != x"yes"; then
+		if test x"${try_pam}" = x"yes";then
+			AC_MSG_ERROR([--with-pam=yes but libpam not found])
+		fi
+		use_pam=no
+		create_pam_modules=no
+	fi
+
+	AC_CHECK_HEADERS(security/pam_modules.h,,,[[
+		#if HAVE_SECURITY_PAM_APPL_H
+		#include <security/pam_appl.h>
+		#endif
+	]])
+	if test x"$ac_cv_header_security_pam_modules_h" = x"no"; then
+		if test x"${try_pam}" = x"yes";then
+			AC_MSG_ERROR([--with-pam=yes but security/pam_modules.h not found])
+		fi
+		create_pam_modules=no
+	fi
+
+	if test x"$use_pam" = x"yes"; then
+		AC_DEFINE(WITH_PAM,1,[Whether to include PAM support])
+		AC_DEFINE(HAVE_LIBPAM,1,[Whether libpam is available])
+		AUTH_LIBS="$AUTH_LIBS $PAM_LIBS"
+		with_pam_for_crypt=yes
+
+		if test x"$create_pam_modules" = x"yes"; then
+			AC_DEFINE(WITH_PAM_MODULES,1,[Whether to include PAM MODULES support])
+			# this checks are optional,
+			# we don't care about the results here
+			AC_CHECK_HEADERS(security/pam_ext.h security/_pam_macros.h)
+			AC_CHECK_FUNC_EXT(pam_vsyslog,$PAM_LIBS)
+		else
+			AC_MSG_WARN([PAM support detected but PAM MODULES support is missing])		
+		fi
+	fi
+	AC_MSG_CHECKING(whether to use PAM support)
+	AC_MSG_RESULT([$use_pam])
+
+	AC_MSG_CHECKING(whether to have PAM MODULES support)
+	AC_MSG_RESULT([$create_pam_modules])
+fi # try_pam != no
 
 #################################################
 # check for pam_smbpass support
@@ -3984,14 +4020,11 @@ AC_ARG_WITH(pam_smbpass,
 
        # Conditions under which pam_smbpass should not be built.
 
-       if test x"$PICFLAG" = x; then
-          AC_MSG_ERROR([No support for PIC code])
-       elif test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
-	  AC_MSG_ERROR([No security/pam_appl.h found])
-       elif test x$ac_cv_lib_pam_pam_get_data = xno; then
-          AC_MSG_ERROR([No libpam found])
+       if test x"$BLDSHARED" != x"true"; then
+          AC_MSG_ERROR([No support for shared modules])
+       elif test x"$create_pam_modules" != x"yes"; then
+	  AC_MSG_ERROR([No support for PAM MODULES])
        else
-	  AUTH_LIBS="$AUTH_LIBS -lpam"
           PAM_MODULES="pam_smbpass"
           INSTALL_PAM_MODULES="installpammodules"
           UNINSTALL_PAM_MODULES="uninstallpammodules"
@@ -5449,7 +5482,7 @@ if test x"$HAVE_WINBIND" = x"yes"; then
         if test $BLDSHARED = true; then
 		SHLIB_PROGS="$SHLIB_PROGS $WINBIND_NSS $WINBIND_WINS_NSS"
 
-		if test x"$with_pam" = x"yes"; then
+		if test x"$create_pam_modules" = x"yes"; then
 			PAM_MODULES="$PAM_MODULES pam_winbind"
 			INSTALL_PAM_MODULES="installpammodules"
 			UNINSTALL_PAM_MODULES="uninstallpammodules"
