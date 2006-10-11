@@ -1508,7 +1508,12 @@ int sys_dup2(int oldfd, int newfd)
 ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size)
 {
 #if defined(HAVE_GETXATTR)
+#ifndef XATTR_ADD_OPT
 	return getxattr(path, name, value, size);
+#else
+	int options = 0;
+	return getxattr(path, name, value, size, 0, options);
+#endif
 #elif defined(HAVE_GETEA)
 	return getea(path, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_FILE)
@@ -1553,6 +1558,9 @@ ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t s
 {
 #if defined(HAVE_LGETXATTR)
 	return lgetxattr(path, name, value, size);
+#elif defined(HAVE_GETXATTR) && defined(XATTR_ADD_OPT)
+	int options = XATTR_NOFOLLOW;
+	return getxattr(path, name, value, size, 0, options);
 #elif defined(HAVE_LGETEA)
 	return lgetea(path, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_LINK)
@@ -1592,7 +1600,12 @@ ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t s
 ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
 {
 #if defined(HAVE_FGETXATTR)
+#ifndef XATTR_ADD_OPT
 	return fgetxattr(filedes, name, value, size);
+#else
+	int options = 0;
+	return fgetxattr(filedes, name, value, size, 0, options);
+#endif
 #elif defined(HAVE_FGETEA)
 	return fgetea(filedes, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_FD)
@@ -1793,7 +1806,12 @@ static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t 
 ssize_t sys_listxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LISTXATTR)
+#ifndef XATTR_ADD_OPT
 	return listxattr(path, list, size);
+#else
+	int options = 0;
+	return listxattr(path, list, size, options);
+#endif
 #elif defined(HAVE_LISTEA)
 	return listea(path, list, size);
 #elif defined(HAVE_EXTATTR_LIST_FILE)
@@ -1812,6 +1830,9 @@ ssize_t sys_llistxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LLISTXATTR)
 	return llistxattr(path, list, size);
+#elif defined(HAVE_LISTXATTR) && defined(XATTR_ADD_OPT)
+	int options = XATTR_NOFOLLOW;
+	return listxattr(path, list, size, options);
 #elif defined(HAVE_LLISTEA)
 	return llistea(path, list, size);
 #elif defined(HAVE_EXTATTR_LIST_LINK)
@@ -1829,7 +1850,12 @@ ssize_t sys_llistxattr (const char *path, char *list, size_t size)
 ssize_t sys_flistxattr (int filedes, char *list, size_t size)
 {
 #if defined(HAVE_FLISTXATTR)
+#ifndef XATTR_ADD_OPT
 	return flistxattr(filedes, list, size);
+#else
+	int options = 0;
+	return flistxattr(filedes, list, size, options);
+#endif
 #elif defined(HAVE_FLISTEA)
 	return flistea(filedes, list, size);
 #elif defined(HAVE_EXTATTR_LIST_FD)
@@ -1847,7 +1873,12 @@ ssize_t sys_flistxattr (int filedes, char *list, size_t size)
 int sys_removexattr (const char *path, const char *name)
 {
 #if defined(HAVE_REMOVEXATTR)
+#ifndef XATTR_ADD_OPT
 	return removexattr(path, name);
+#else
+	int options = 0;
+	return removexattr(path, name, options);
+#endif
 #elif defined(HAVE_REMOVEEA)
 	return removeea(path, name);
 #elif defined(HAVE_EXTATTR_DELETE_FILE)
@@ -1874,6 +1905,9 @@ int sys_lremovexattr (const char *path, const char *name)
 {
 #if defined(HAVE_LREMOVEXATTR)
 	return lremovexattr(path, name);
+#elif defined(HAVE_REMOVEXATTR) && defined(XATTR_ADD_OPT)
+	int options = XATTR_NOFOLLOW;
+	return removexattr(path, name, options);
 #elif defined(HAVE_LREMOVEEA)
 	return lremoveea(path, name);
 #elif defined(HAVE_EXTATTR_DELETE_LINK)
@@ -1899,7 +1933,12 @@ int sys_lremovexattr (const char *path, const char *name)
 int sys_fremovexattr (int filedes, const char *name)
 {
 #if defined(HAVE_FREMOVEXATTR)
+#ifndef XATTR_ADD_OPT
 	return fremovexattr(filedes, name);
+#else
+	int options = 0;
+	return fremovexattr(filedes, name, options);
+#endif
 #elif defined(HAVE_FREMOVEEA)
 	return fremoveea(filedes, name);
 #elif defined(HAVE_EXTATTR_DELETE_FD)
@@ -1930,7 +1969,12 @@ int sys_fremovexattr (int filedes, const char *name)
 int sys_setxattr (const char *path, const char *name, const void *value, size_t size, int flags)
 {
 #if defined(HAVE_SETXATTR)
+#ifndef XATTR_ADD_OPT
 	return setxattr(path, name, value, size, flags);
+#else
+	int options = 0;
+	return setxattr(path, name, value, size, 0, options);
+#endif
 #elif defined(HAVE_SETEA)
 	return setea(path, name, value, size, flags);
 #elif defined(HAVE_EXTATTR_SET_FILE)
@@ -1979,6 +2023,9 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 {
 #if defined(HAVE_LSETXATTR)
 	return lsetxattr(path, name, value, size, flags);
+#elif defined(HAVE_SETXATTR) && defined(XATTR_ADD_OPT)
+	int options = XATTR_NOFOLLOW;
+	return setxattr(path, name, value, size, 0, options);
 #elif defined(LSETEA)
 	return lsetea(path, name, value, size, flags);
 #elif defined(HAVE_EXTATTR_SET_LINK)
@@ -2027,7 +2074,12 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags)
 {
 #if defined(HAVE_FSETXATTR)
+#ifndef XATTR_ADD_OPT
 	return fsetxattr(filedes, name, value, size, flags);
+#else
+	int options = 0;
+	return fsetxattr(filedes, name, value, size, 0, options);
+#endif
 #elif defined(HAVE_FSETEA)
 	return fsetea(filedes, name, value, size, flags);
 #elif defined(HAVE_EXTATTR_SET_FD)
