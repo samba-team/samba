@@ -98,10 +98,10 @@ RSA_free(RSA *rsa)
     if (--rsa->references > 0)
 	return;
 
+    (*rsa->meth->finish)(rsa);
+
     if (rsa->engine)
 	ENGINE_finish(rsa->engine);
-
-    (*rsa->meth->finish)(rsa);
 
 #define free_if(f) if (f) { BN_free(f); }
     free_if(rsa->n);
