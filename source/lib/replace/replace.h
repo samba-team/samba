@@ -28,7 +28,9 @@
 #ifndef _LIBREPLACE_REPLACE_H
 #define _LIBREPLACE_REPLACE_H
 
+#ifndef NO_CONFIG_H
 #include "config.h"
+#endif
 
 #ifdef HAVE_STANDARDS_H
 #include <standards.h>
