@@ -3373,8 +3373,9 @@ if test x"$with_ads_support" != x"no"; then
 fi
 
 # Now we have determined whether we really want ADS support
-
+use_ads=no
 if test x"$with_ads_support" != x"no"; then
+  use_ads=yes
   ac_save_LIBS=$LIBS
 
   # now check for gssapi headers.  This is also done here to allow for
@@ -3714,21 +3715,6 @@ if test x"$with_ads_support" != x"no"; then
               [Whether the krb5_address struct has a magic property])
   fi
 
-  if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" = x"yes"; then
-    AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
-    AC_DEFINE(WITH_ADS,1,[Whether to include Active Directory support])
-    AC_MSG_CHECKING(whether Active Directory and krb5 support is used)
-    AC_MSG_RESULT(yes)
-  else
-    if test x"$with_ads_support" = x"yes"; then
-	AC_MSG_ERROR(libkrb5 is needed for Active Directory support)
-    else
-	AC_MSG_WARN(libkrb5 is needed for Active Directory support)
-    fi
-    KRB5_LIBS=""
-    with_ads_support=no 
-  fi
-
   AC_CACHE_CHECK([for WRFILE: keytab support],
                 samba_cv_HAVE_WRFILE_KEYTAB,[
     AC_TRY_RUN([
@@ -3775,6 +3761,75 @@ if test x"$with_ads_support" != x"no"; then
     AC_DEFINE(HAVE_KRB5_ADDRESSES,1,
                [Whether the type krb5_addresses type exists])
   fi
+
+  #
+  #
+  # Now the decisions whether we can support krb5
+  # 
+  # NOTE: all tests should be done before this block!
+  #
+  #
+  if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" != x"yes"; then
+    AC_MSG_WARN(krb5_mk_req_extended not found in -lkrb5)
+    use_ads=no
+  fi
+
+  if test x"$ac_cv_func_ext_krb5_principal2salt" != x"yes" -a \
+          x"$ac_cv_func_ext_krb5_get_pw_salt" != x"yes"
+  then
+    AC_MSG_WARN(no CREATE_KEY_FUNCTIONS detected)
+    use_ads=no
+  fi
+
+  if test x"$ac_cv_func_ext_krb5_get_permitted_enctypes" != x"yes" -a \
+          x"$ac_cv_func_ext_krb5_get_default_in_tkt_etypes" != x"yes"
+  then
+    AC_MSG_WARN(no GET_ENCTYPES_FUNCTIONS detected)
+    use_ads=no
+  fi
+
+  if test x"$ac_cv_func_ext_krb5_kt_free_entry" != x"yes" -a \
+          x"$ac_cv_func_ext_krb5_free_keytab_entry_contents" != x"yes"
+  then
+    AC_MSG_WARN(no KT_FREE_FUNCTION detected)
+    use_ads=no
+  fi
+
+  if test x"$ac_cv_func_ext_krb5_c_verify_checksum" != x"yes" -a \
+          x"$ac_cv_func_ext_krb5_verify_checksum" != x"yes"
+  then
+    AC_MSG_WARN(no KRB5_VERIFY_CHECKSUM_FUNCTION detected)
+    use_ads=no
+  fi
+
+  if test x"$ac_cv_func_ext_krb5_free_ap_req" != x"yes" -a \
+          x"$ac_cv_func_ext_free_AP_REQ" != x"yes"
+  then
+    AC_MSG_WARN(no KRB5_AP_REQ_FREE_FUNCTION detected)
+    use_ads=no
+  fi
+
+  if test x"$ac_cv_func_ext_krb5_decode_ap_req" != x"yes" -a \
+          x"$ac_cv_func_ext_decode_krb5_ap_req" != x"yes"
+  then
+    AC_MSG_WARN(no KRB5_AP_REQ_DECODING_FUNCTION detected)
+    use_ads=no
+  fi
+
+  if test x"$use_ads" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
+    AC_DEFINE(WITH_ADS,1,[Whether to include Active Directory support])
+  else
+    if test x"$with_ads_support" = x"yes"; then
+	AC_MSG_ERROR(krb5 libs don't have all features required for Active Directory support)
+    else
+	AC_MSG_WARN(krb5 libs don't have all features required for Active Directory support)
+    fi
+    KRB5_LIBS=""
+    with_ads_support=no 
+  fi
+  AC_MSG_CHECKING(whether Active Directory and krb5 support is used)
+  AC_MSG_RESULT([$use_ads])
 
 LIBS="$ac_save_LIBS"
 fi
