@@ -1,5 +1,8 @@
 2006-10-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_p11.c (p11_release_module): j needs to be used as inter loop
+	index. From Douglas Engert.
+
 	* ks_file.c (parse_rsa_private_key): try all passwords and
 	prompter.
 	
