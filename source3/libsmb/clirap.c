@@ -244,7 +244,8 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
                    )) {
 		int res = rparam? SVAL(rparam,0) : -1;
 			
-		if (res == 0 || res == ERRmoredata) {
+		if (res == 0 || res == ERRmoredata ||
+                    (res != -1 && cli_errno(cli) == 0)) {
 			int i;
 			int converter=SVAL(rparam,2);
 
