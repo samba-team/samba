@@ -72,6 +72,9 @@ static BOOL ads_dc_name(const char *domain,
 			SAFE_FREE(sitename);
 			sitename = sitename_fetch();
 			ads_destroy(&ads);
+			/* Ensure we don't cache the DC we just connected to. */
+			namecache_delete(realm, 0x1C);
+			namecache_delete(domain, 0x1C);
 			continue;
 		}
 
