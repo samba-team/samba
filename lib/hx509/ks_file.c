@@ -124,11 +124,73 @@ parse_certificate(hx509_context context, struct hx509_collector *c,
 }
 
 static int
+try_decrypt(hx509_context context,
+	    struct hx509_collector *collector,
+	    const EVP_CIPHER *c,
+	    const void *ivdata,
+	    const void *password,
+	    size_t passwordlen,
+	    const void *cipher,
+	    size_t len)
+{
+    heim_octet_string clear;
+    size_t keylen;
+    void *key;
+    int ret;
+
+    keylen = EVP_CIPHER_key_length(c);
+
+    key = malloc(keylen);
+    if (key == NULL) {
+	hx509_clear_error_string(context);
+	return ENOMEM;
+    }
+
+    ret = EVP_BytesToKey(c, EVP_md5(), ivdata,
+			 password, passwordlen,
+			 1, key, NULL);
+    if (ret <= 0) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "Failed to do string2key for private key");
+	return EINVAL;
+    }
+
+    clear.data = malloc(len);
+    if (clear.data == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM,
+			       "Out of memory to decrypt for private key");
+	ret = ENOMEM;
+	goto out;
+    }
+    clear.length = len;
+
+    {
+	EVP_CIPHER_CTX ctx;
+	EVP_CIPHER_CTX_init(&ctx);
+	EVP_CipherInit_ex(&ctx, c, NULL, key, ivdata, 0);
+	EVP_Cipher(&ctx, clear.data, cipher, len);
+	EVP_CIPHER_CTX_cleanup(&ctx);
+    }	
+
+    ret = _hx509_collector_private_key_add(collector,
+					   hx509_signature_rsa(),
+					   NULL,
+					   &clear,
+					   NULL);
+
+    memset(clear.data, 0, clear.length);
+    free(clear.data);
+out:
+    memset(key, 0, keylen);
+    free(key);
+    return ret;
+}
+
+static int
 parse_rsa_private_key(hx509_context context, struct hx509_collector *c, 
 		      const struct header *headers,
 		      const void *data, size_t len)
 {
-    heim_octet_string keydata;
     int ret;
     const char *enc;
 
@@ -139,11 +201,9 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	ssize_t ssize, size;
 	void *ivdata;
 	const EVP_CIPHER *cipher;
-	const void *password;
-	size_t passwordlen;
-	void *key;
 	const struct _hx509_password *pw;
 	hx509_lock lock;
+	int i, decrypted = 0;
 
 	lock = _hx509_collector_get_lock(c);
 	if (lock == NULL) {
@@ -152,16 +212,6 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 				   "password protected file");
 	    return EINVAL;
 	}
-	pw = _hx509_lock_get_passwords(lock);
-	if (pw == NULL || pw->len < 1) {
-	    hx509_set_error_string(context, 0, EINVAL,
-				   "No passwords when decoding a "
-				   "password protected file");
-	    return EINVAL;
-	}
-
-	password = pw->val[0];
-	passwordlen = strlen(password);
 
 	if (strcmp(enc, "4,ENCRYPTED") != 0) {
 	    hx509_set_error_string(context, 0, EINVAL,
@@ -216,53 +266,60 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 
 	if (ssize < 0 || ssize < PKCS5_SALT_LEN || ssize < EVP_CIPHER_iv_length(cipher)) {
 	    free(ivdata);
-	    hx509_clear_error_string(context);
+	    hx509_set_error_string(context, 0, EINVAL,
+				   "Salt have wrong length in RSA key file");
 	    return EINVAL;
 	}
 	
-	key = malloc(EVP_CIPHER_key_length(cipher));
-	if (key == NULL) {
-	    free(ivdata);
-	    hx509_clear_error_string(context);
-	    return ENOMEM;
+	pw = _hx509_lock_get_passwords(lock);
+	if (pw != NULL) {
+	    const void *password;
+	    size_t passwordlen;
+
+	    for (i = 0; i < pw->len; i++) {
+		password = pw->val[i];
+		passwordlen = strlen(password);
+		
+		ret = try_decrypt(context, c, cipher,
+				  ivdata, password, passwordlen,
+				  data, len);
+		if (ret == 0) {
+		    decrypted = 1;
+		    break;
+		}
+	    }
 	}
+	if (!decrypted) {
+	    hx509_prompt prompt;
+	    char password[128];
 
-	ret = EVP_BytesToKey(cipher, EVP_md5(), ivdata,
-			     password, passwordlen,
-			     1, key, NULL);
-	if (ret <= 0) {
-	    free(key);
-	    free(ivdata);
-	    hx509_set_error_string(context, 0, EINVAL,
-				   "Failed to do string2key for RSA key");
-	    return EINVAL;
+	    memset(&prompt, 0, sizeof(prompt));
+
+	    prompt.prompt = "Password for keyfile: ";
+	    prompt.type = HX509_PROMPT_TYPE_PASSWORD;
+	    prompt.reply.data = password;
+	    prompt.reply.length = sizeof(password);
+
+	    ret = hx509_lock_prompt(lock, &prompt);
+	    if (ret == 0)
+		ret = try_decrypt(context, c, cipher,
+				  ivdata, password, strlen(password),
+				  data, len);
+	    /* XXX add password to lock password collection ? */
+	    memset(password, 0, sizeof(password));
 	}
-
-	keydata.data = malloc(len);
-	keydata.length = len;
-
-	{
-	    EVP_CIPHER_CTX ctx;
-	    EVP_CIPHER_CTX_init(&ctx);
-	    EVP_CipherInit_ex(&ctx, cipher, NULL, key, ivdata, 0);
-	    EVP_Cipher(&ctx, keydata.data, data, len);
-	    EVP_CIPHER_CTX_cleanup(&ctx);
-	}	
-	free(ivdata);
-	free(key);
-
     } else {
+	heim_octet_string keydata;
+
 	keydata.data = rk_UNCONST(data);
 	keydata.length = len;
-    }
 
-    ret = _hx509_collector_private_key_add(c,
-					   hx509_signature_rsa(),
-					   NULL,
-					   &keydata,
-					   NULL);
-    if (keydata.data != data)
-	free(keydata.data);
+	ret = _hx509_collector_private_key_add(c,
+					       hx509_signature_rsa(),
+					       NULL,
+					       &keydata,
+					       NULL);
+    }
 
     return ret;
 }
@@ -406,8 +463,11 @@ parse_pem_file(hx509_context context,
 
     fclose(f);
 
-    if (where != BEFORE)
+    if (where != BEFORE) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "File ends before end of PEM end tag");
 	ret = EINVAL;
+    }
     if (data)
 	free(data);
     if (type)
