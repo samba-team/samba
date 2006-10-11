@@ -1,5 +1,10 @@
-2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_file.c (parse_rsa_private_key): try all passwords and
+	prompter.
+	
+2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* test_*.in: Parameterise the invocation of hxtool, so we can make
 	it run under TESTS_ENVIRONMENT. From Andrew Bartlett
 
