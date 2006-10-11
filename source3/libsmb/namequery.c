@@ -1057,7 +1057,7 @@ static BOOL resolve_ads(const char *name, int name_type,
 	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE))
 		return False;
 		
-	DEBUG(5,("resolve_hosts: Attempting to resolve DC's for %s using DNS\n",
+	DEBUG(5,("resolve_ads: Attempting to resolve DC's for %s using DNS\n",
 		name));
 			
 	if ( (ctx = talloc_init("resolve_ads")) == NULL ) {
