@@ -102,22 +102,21 @@ AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
 
 dnl we need to check that net/if.h really can be used, to cope with hpux
 dnl where including it always fails
-AC_TRY_COMPILE([
-	  #include <stdio.h>
-          #if STDC_HEADERS
-          # include <stdlib.h>
-          # include <stddef.h>
-          #else
-          # if HAVE_STDLIB_H
-          #  include <stdlib.h>
-          # endif
-          #endif
-          #if HAVE_SYS_SOCKET_H
-          # include <sys/socket.h>
-          #endif],
-	  [#include <net/if.h>],
-	  AC_DEFINE(HAVE_NET_IF_H, 1, usability of net/if.h))
-
+AC_CACHE_CHECK([for usable net/if.h],libreplace_cv_USABLE_NET_IF_H,[
+	AC_COMPILE_IFELSE([
+		AC_INCLUDES_DEFAULT
+		#if HAVE_SYS_SOCKET_H
+		# include <sys/socket.h>
+		#endif
+		#include <net/if.h>
+		int main(void) {return 0;}],
+		[libreplace_cv_USABLE_NET_IF_H=yes],
+		[libreplace_cv_USABLE_NET_IF_H=no]
+	)
+])
+if test x"$libreplace_cv_USABLE_NET_IF_H" = x"yes";then
+	AC_DEFINE(HAVE_NET_IF_H, 1, usability of net/if.h)
+fi
 
 AC_CACHE_CHECK([for broken inet_ntoa],samba_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
