@@ -103,13 +103,13 @@ AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
 dnl we need to check that net/if.h really can be used, to cope with hpux
 dnl where including it always fails
 AC_CACHE_CHECK([for usable net/if.h],libreplace_cv_USABLE_NET_IF_H,[
-	AC_COMPILE_IFELSE([
+	AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 		AC_INCLUDES_DEFAULT
 		#if HAVE_SYS_SOCKET_H
 		# include <sys/socket.h>
 		#endif
 		#include <net/if.h>
-		int main(void) {return 0;}],
+		int main(void) {return 0;}])],
 		[libreplace_cv_USABLE_NET_IF_H=yes],
 		[libreplace_cv_USABLE_NET_IF_H=no]
 	)
