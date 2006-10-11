@@ -113,8 +113,10 @@ char *smb_readline(const char *prompt, void (*callback)(void),
 		rl_attempted_completion_function = RL_COMPLETION_CAST completion_fn;
 	}
 
+#if HAVE_DECL_RL_EVENT_HOOK
 	if (callback)
 		rl_event_hook = (Function *)callback;
+#endif
 	ret = readline(prompt);
 	if (ret && *ret)
 		add_history(ret);
@@ -154,7 +156,7 @@ history
 ****************************************************************************/
 int cmd_history(void)
 {
-#if defined(HAVE_LIBREADLINE)
+#if defined(HAVE_LIBREADLINE) && defined(HAVE_HISTORY_LIST)
 	HIST_ENTRY **hlist;
 	int i;
 
