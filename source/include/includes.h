@@ -26,9 +26,7 @@
 #undef SIZEOF_LONG
 #endif
 
-#ifndef NO_CONFIG_H /* for some tests */
 #include "lib/replace/replace.h"
-#endif
 
 /* only do the C++ reserved word check when we compile
    to include --with-developer since too many systems
