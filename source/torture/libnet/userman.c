@@ -292,7 +292,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		case account_name:
 			continue_if_field_set(mod->in.change.account_name);
 			mod->in.change.account_name = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
-								      (int)(random()/100));
+								      (int)(random() % 100));
 			mod->in.change.fields |= USERMOD_FIELD_ACCOUNT_NAME;
 			fldname = "account_name";
 			*username = talloc_strdup(mem_ctx, mod->in.change.account_name);
@@ -319,7 +319,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			homedir = home_dirs[random() % (sizeof(home_dirs)/sizeof(char*))];
 			mod->in.change.home_directory = talloc_strdup(mem_ctx, homedir);
 			mod->in.change.fields |= USERMOD_FIELD_HOME_DIRECTORY;
-			fldname = "home directory";
+			fldname = "home_directory";
 			break;
 
 		case home_drive:
@@ -327,7 +327,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			homedrive = home_drives[random() % (sizeof(home_drives)/sizeof(char*))];
 			mod->in.change.home_drive = talloc_strdup(mem_ctx, homedrive);
 			mod->in.change.fields |= USERMOD_FIELD_HOME_DRIVE;
-			fldname = "home drive";
+			fldname = "home_drive";
 			break;
 
 		case comment:
@@ -343,7 +343,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			logonscript = logon_scripts[random() % (sizeof(logon_scripts)/sizeof(char*))];
 			mod->in.change.logon_script = talloc_strdup(mem_ctx, logonscript);
 			mod->in.change.fields |= USERMOD_FIELD_LOGON_SCRIPT;
-			fldname = "logon script";
+			fldname = "logon_script";
 			break;
 
 		case profile_path:
@@ -351,7 +351,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			mod->in.change.profile_path = talloc_asprintf(mem_ctx, TEST_CHG_PROFILEPATH,
 								     (long int)random(), (unsigned int)random());
 			mod->in.change.fields |= USERMOD_FIELD_PROFILE_PATH;
-			fldname = "profile path";
+			fldname = "profile_path";
 			break;
 
 		case acct_expiry:
@@ -365,7 +365,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		case acct_flags:
 			continue_if_field_set(mod->in.change.acct_flags);
 			mod->in.change.acct_flags = flags[random() % (sizeof(flags)/sizeof(uint32_t))];
-			mod->in.change.fields |= USERMOD_FIELD_ACCT_EXPIRY;
+			mod->in.change.fields |= USERMOD_FIELD_ACCT_FLAGS;
 			fldname = "acct_flags";
 			break;
 
@@ -380,7 +380,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = libnet_rpc_usermod(p, mem_ctx, mod);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to call sync libnet_rpc_usermd - %s\n", nt_errstr(status));
+		printf("Failed to call sync libnet_rpc_usermod - %s\n", nt_errstr(status));
 		return False;
 	}
 
