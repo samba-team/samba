@@ -1183,6 +1183,13 @@ AC_CHECK_LIB(readline, rl_completion_matches,
 	     [],
 	     [$TERMLIBS])
 
+# not all readline libs have rl_event_hook or history_list
+AC_CHECK_DECLS(rl_event_hook, [], [], [#include <readline/readline.h>])
+AC_CHECK_LIB(readline, history_list,
+	     [AC_DEFINE(HAVE_HISTORY_LIST, 1, [Do we have history_list?])],
+	     [],
+	     [$TERMLIBS])
+
 # The following test taken from the cvs sources
 # If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
 # The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
