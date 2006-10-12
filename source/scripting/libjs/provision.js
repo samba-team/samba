@@ -157,7 +157,24 @@ function ldb_delete(ldb)
 */
 function ldb_erase(ldb)
 {
-	var attrs = new Array("dn");
+	var attrs = new Array("namingContexts");
+	var res;
+
+	/* delete within each naming context - this copes with existing partitions */
+     	res = ldb.search("objectClass=*", "", ldb.SCOPE_BASE, attrs);
+	if (typeof(res) != "undefined") {
+		if (res.length > 0) {
+			var names = res[0].namingContexts;
+			for (i=0;i<names.length;i++) {
+				attrs = new Array("dn");
+				res = ldb.search("(objectclass=*)", names[i], ldb.SCOPE_SUBTREE, attrs);
+				var j;
+				for (j=0;j<res.length;j++) {
+					ldb.del(res[j].dn);
+				}
+			}
+		}
+	}
 
 	/* delete the specials */
 	ldb.del("@INDEXLIST");
@@ -168,6 +185,7 @@ function ldb_erase(ldb)
 	ldb.del("@KLUDGEACL");
 
 	/* and the rest */
+	attrs = new Array("dn");
      	var basedn = "";
      	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	var i;
@@ -178,6 +196,7 @@ function ldb_erase(ldb)
 	for (i=0;i<res.length;i++) {
 		ldb.del(res[i].dn);
 	}
+
 
      	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	if (res.length != 0) {
@@ -292,7 +311,7 @@ function setup_ldb(ldif, info, dbname)
 	        failok = arguments[4];
         }
 	var ldb = open_ldb(info, dbname, erase);
-	if (setup_add_ldif(ldif, info, ldb, erase, failok)) {
+	if (setup_add_ldif(ldif, info, ldb, failok)) {
 		var commit_ok = ldb.transaction_commit();
 		if (!commit_ok) {
 			info.message("ldb commit failed: " + ldb.errstring() + "\n");
