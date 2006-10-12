@@ -4,7 +4,7 @@ include $(top_srcdir)/Makefile.am.common
 
 noinst_DATA = krb5.conf
 
-SCRIPT_TESTS = check-gss check-gssmask
+SCRIPT_TESTS = check-gss check-gssmask check-context
 
 TESTS = $(SCRIPT_TESTS)
 
@@ -23,6 +23,11 @@ check-gssmask: check-gssmask.in Makefile
 	chmod +x check-gssmask.tmp
 	mv check-gssmask.tmp check-gssmask
 
+check-context: check-context.in Makefile
+	$(do_subst) < $(srcdir)/check-context.in > check-context.tmp
+	chmod +x check-context.tmp
+	mv check-context.tmp check-context
+
 krb5.conf: krb5.conf.in Makefile
 	$(do_subst) < $(srcdir)/krb5.conf.in > krb5.conf.tmp
 	mv krb5.conf.tmp krb5.conf
@@ -34,4 +39,5 @@ CLEANFILES= \
 	current-db* \
 	*.log \
 	check-gss.tmp \
-	check-gssmask.tmp
+	check-gssmask.tmp \
+	check-context.tmp
