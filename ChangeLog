@@ -1,3 +1,7 @@
+2006-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* include/bits.c: Include Xint64 types.
+	
 2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* tools/heimdal-build.sh: Add socketwrapper and cputime limit.
