@@ -181,6 +181,7 @@ typedef struct {
 	BOOL bWinbindRefreshTickets;
 	BOOL bWinbindOfflineLogon;
 	char **szIdmapBackend;
+	char **szWinbindInitgroupsBlacklist;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
@@ -1278,6 +1279,7 @@ static struct parm_struct parm_table[] = {
 	{"winbind nss info", P_LIST, P_GLOBAL, &Globals.szWinbindNssInfo, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind refresh tickets", P_BOOL, P_GLOBAL, &Globals.bWinbindRefreshTickets, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind offline logon", P_BOOL, P_GLOBAL, &Globals.bWinbindOfflineLogon, NULL, NULL, FLAG_ADVANCED},
+	{"winbind initgroups blacklist", P_LIST, P_GLOBAL, &Globals.szWinbindInitgroupsBlacklist, NULL, NULL, FLAG_ADVANCED},
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -1624,6 +1626,7 @@ static void init_globals(BOOL first_time_only)
 	Globals.szWinbindNssInfo = str_list_make("template", NULL);
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
+	Globals.szWinbindInitgroupsBlacklist = str_list_make("root nobody lp", NULL);
 
 	Globals.bPassdbExpandExplicit = False;
 
@@ -1839,6 +1842,7 @@ FN_GLOBAL_BOOL(lp_winbind_refresh_tickets, &Globals.bWinbindRefreshTickets)
 FN_GLOBAL_BOOL(lp_winbind_offline_logon, &Globals.bWinbindOfflineLogon)
 
 FN_GLOBAL_LIST(lp_idmap_backend, &Globals.szIdmapBackend)
+FN_GLOBAL_LIST(lp_winbind_initgroups_blacklist, &Globals.szWinbindInitgroupsBlacklist)
 FN_GLOBAL_BOOL(lp_passdb_expand_explicit, &Globals.bPassdbExpandExplicit)
 
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
