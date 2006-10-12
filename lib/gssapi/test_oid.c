@@ -57,5 +57,15 @@ main(int argc, char **argv)
     gss_release_buffer(&maj_stat, &data);
     if (ret)
 	return 1;
+
+    maj_stat = gss_oid_to_str(&minor_status, GSS_KRB5_EXPORT_LUCID_CONTEXT_V1_X, &data);
+    if (GSS_ERROR(maj_stat))
+	errx(1, "gss_oid_to_str failed");
+
+    ret = strcmp(data.value, "1 2 752 43 13 6 1");
+    gss_release_buffer(&maj_stat, &data);
+    if (ret)
+	return 1;
+
     return 0;
 }
