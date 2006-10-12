@@ -1,5 +1,7 @@
 2006-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kdc.8: document max-kdc-datagram-reply-length
+
 	* include/bits.c: Include Xint64 types.
 	
 2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
