@@ -2,7 +2,6 @@ dn: @INDEXLIST
 @IDXATTR: name
 @IDXATTR: sAMAccountName
 @IDXATTR: objectSid
-@IDXATTR: objectClass
 @IDXATTR: objectCategory
 @IDXATTR: member
 @IDXATTR: uidNumber
