@@ -177,6 +177,132 @@ static OM_uint32 inquire_sec_context_has_updated_spnego
     return is_updated ? GSS_S_COMPLETE : GSS_S_FAILURE;
 }
 
+/*
+ *
+ */
+
+static OM_uint32
+export_lucid_sec_context_v1(OM_uint32 *minor_status,
+			    gsskrb5_ctx context_handle,
+			    gss_buffer_set_t *data_set)
+{
+    krb5_storage *sp = NULL;
+    OM_uint32 major_status = GSS_S_COMPLETE;
+    krb5_error_code ret;
+    krb5_keyblock *key = NULL;
+    int32_t number;
+    int is_cfx;
+    krb5_data data;
+    
+    *minor_status = 0;
+
+    GSSAPI_KRB5_INIT ();
+
+    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+
+    _gsskrb5i_is_cfx(context_handle, &is_cfx);
+
+    sp = krb5_storage_emem();
+    if (sp == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+
+    ret = krb5_store_int32(sp, 1);
+    if (ret) goto out;
+    ret = krb5_store_int32(sp, (context_handle->more_flags & LOCAL) ? 1 : 0);
+    if (ret) goto out;
+    ret = krb5_store_int32(sp, context_handle->lifetime);
+    if (ret) goto out;
+    krb5_auth_con_getlocalseqnumber (_gsskrb5_context,
+				     context_handle->auth_context,
+				     &number);
+    ret = krb5_store_uint32(sp, (uint32_t)0); /* store top half as zero */
+    ret = krb5_store_uint32(sp, (uint32_t)number);
+    krb5_auth_getremoteseqnumber (_gsskrb5_context,
+				  context_handle->auth_context,
+				  &number);
+    ret = krb5_store_uint32(sp, (uint32_t)0); /* store top half as zero */
+    ret = krb5_store_uint32(sp, (uint32_t)number);
+    ret = krb5_store_int32(sp, (is_cfx) ? 1 : 0);
+    if (ret) goto out;
+
+    ret = _gsskrb5i_get_subkey(context_handle, &key);
+    if (ret) goto out;
+
+    if (is_cfx == 0) {
+	int sign_alg, seal_alg;
+
+	ret = krb5_store_keyblock(sp, *key);
+	if (ret) goto out;
+
+	switch (key->keytype) {
+	case ETYPE_DES_CBC_CRC:
+	case ETYPE_DES_CBC_MD4:
+	case ETYPE_DES_CBC_MD5:
+	    sign_alg = 0;
+	    seal_alg = 0;
+	    break;
+	case ETYPE_DES3_CBC_MD5:
+	case ETYPE_DES3_CBC_SHA1:
+	    sign_alg = 4;
+	    seal_alg = 2;
+	    break;
+	case ETYPE_ARCFOUR_HMAC_MD5:
+	case ETYPE_ARCFOUR_HMAC_MD5_56:
+	    sign_alg = 17;
+	    seal_alg = 16;
+	    break;
+	default:
+	    sign_alg = -1;
+	    seal_alg = -1;
+	    break;
+	}
+	ret = krb5_store_int32(sp, sign_alg);
+	if (ret) goto out;
+	ret = krb5_store_int32(sp, seal_alg);
+	if (ret) goto out;
+    } else {
+	int subkey_p = (context_handle->more_flags & ACCEPTOR_SUBKEY) ? 1 : 0;
+
+	ret = krb5_store_int32(sp, subkey_p);
+	if (ret) goto out;
+	ret = krb5_store_keyblock(sp, *key);
+	if (ret) goto out;
+	if (subkey_p) {
+	    ret = krb5_store_keyblock(sp, *key);
+	    if (ret) goto out;
+	}
+    }
+    ret = krb5_storage_to_data(sp, &data);
+    if (ret) goto out;
+
+    {
+	gss_buffer_desc ad_data;
+
+	ad_data.value = data.data;
+	ad_data.length = data.length;
+
+	ret = gss_add_buffer_set_member(minor_status, &ad_data, data_set);
+	krb5_data_free(&data);
+	if (ret)
+	    goto out;
+    }
+
+out:
+    if (key)
+	krb5_free_keyblock (_gsskrb5_context, key);
+    if (sp)
+	krb5_storage_free(sp);
+    if (ret) {
+	*minor_status = ret;
+	major_status = GSS_S_FAILURE;
+    }
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+    return major_status;
+}
+
+
 OM_uint32 _gsskrb5_inquire_sec_context_by_oid
            (OM_uint32 *minor_status,
             const gss_ctx_id_t context_handle,
@@ -206,6 +332,15 @@ OM_uint32 _gsskrb5_inquire_sec_context_by_oid
 					      ctx,
 					      suffix,
 					      data_set);
+    } else if (oid_prefix_equal(desired_object,
+				GSS_KRB5_EXPORT_LUCID_CONTEXT_X,
+				&suffix)) {
+	if (suffix == 1)
+	    return export_lucid_sec_context_v1(minor_status,
+					       ctx,
+					       data_set);
+	*minor_status = 0;
+	return GSS_S_FAILURE;
     } else {
 	*minor_status = 0;
 	return GSS_S_FAILURE;

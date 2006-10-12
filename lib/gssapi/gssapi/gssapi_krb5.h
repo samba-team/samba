@@ -58,13 +58,16 @@ extern gss_OID GSS_KRB5_MECHANISM;
 #define gss_mech_krb5 GSS_KRB5_MECHANISM
 #define gss_krb5_nt_general_name GSS_KRB5_NT_PRINCIPAL_NAME
 
-/* Extensions contexts */
-extern gss_OID GSS_C_PEER_HAS_UPDATED_SPNEGO;
+/* Extensions set contexts options */
 extern gss_OID GSS_KRB5_COPY_CCACHE_X;
-extern gss_OID GSS_KRB5_GET_TKT_FLAGS_X;
-extern gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X;
 extern gss_OID GSS_KRB5_COMPAT_DES3_MIC_X;
 extern gss_OID GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X;
+/* Extensions inquire context inre */
+extern gss_OID GSS_KRB5_GET_TKT_FLAGS_X;
+extern gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X;
+extern gss_OID GSS_C_PEER_HAS_UPDATED_SPNEGO;
+extern gss_OID GSS_KRB5_EXPORT_LUCID_CONTEXT_X;
+extern gss_OID GSS_KRB5_EXPORT_LUCID_CONTEXT_V1_X;
 /* Extensions creds */
 extern gss_OID GSS_KRB5_IMPORT_CRED_X;
 
@@ -112,6 +115,60 @@ gsskrb5_extract_authz_data_from_sec_context
 
 OM_uint32
 gss_krb5_compat_des3_mic(OM_uint32 *, gss_ctx_id_t, int);
+
+/*
+ * Lucid - NFSv4 interface to GSS-API KRB5 to expose key material to
+ * do GSS content token handling in-kernel.
+ */
+
+typedef struct gss_krb5_lucid_key {
+	OM_uint32	type;
+	OM_uint32	length;
+	void *		data;
+} gss_krb5_lucid_key_t;
+
+typedef struct gss_krb5_rfc1964_keydata {
+	OM_uint32		sign_alg;
+	OM_uint32		seal_alg;
+	gss_krb5_lucid_key_t	ctx_key;
+} gss_krb5_rfc1964_keydata_t;
+
+typedef struct gss_krb5_cfx_keydata {
+	OM_uint32		have_acceptor_subkey;
+	gss_krb5_lucid_key_t	ctx_key;
+	gss_krb5_lucid_key_t	acceptor_subkey;
+} gss_krb5_cfx_keydata_t;
+
+typedef struct gss_krb5_lucid_context_v1 {
+	OM_uint32	version;
+	OM_uint32	initiate;
+	OM_uint32	endtime;
+	OM_uint64	send_seq;
+	OM_uint64	recv_seq;
+	OM_uint32	protocol;
+	gss_krb5_rfc1964_keydata_t rfc1964_kd;
+	gss_krb5_cfx_keydata_t	   cfx_kd;
+} gss_krb5_lucid_context_v1_t;
+
+typedef struct gss_krb5_lucid_context_version {
+	OM_uint32	version;	/* Structure version number */
+} gss_krb5_lucid_context_version_t;
+
+/*
+ * Function declarations
+ */
+
+OM_uint32
+gss_krb5_export_lucid_sec_context(OM_uint32 *minor_status,
+				  gss_ctx_id_t *context_handle,
+				  OM_uint32 version,
+				  void **kctx);
+
+
+OM_uint32
+gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status,
+				void *kctx);
+
 
 
 #ifdef __cplusplus
