@@ -169,12 +169,10 @@ int main(int argc, char **argv)
     flag = print_bt(f, flag);
     try_signed (f, 32);
 #endif /* HAVE_INT32_T */
-#if 0
 #ifndef HAVE_INT64_T
     flag = print_bt(f, flag);
     try_signed (f, 64);
 #endif /* HAVE_INT64_T */
-#endif
 
 #ifndef HAVE_UINT8_T
     flag = print_bt(f, flag);
@@ -188,12 +186,10 @@ int main(int argc, char **argv)
     flag = print_bt(f, flag);
     try_unsigned (f, 32);
 #endif /* HAVE_UINT32_T */
-#if 0
 #ifndef HAVE_UINT64_T
     flag = print_bt(f, flag);
     try_unsigned (f, 64);
 #endif /* HAVE_UINT64_T */
-#endif
 
 #define X(S) fprintf(f, "typedef uint" #S "_t u_int" #S "_t;\n")
 #ifndef HAVE_U_INT8_T
@@ -208,12 +204,10 @@ int main(int argc, char **argv)
     flag = print_bt(f, flag);
     X(32);
 #endif /* HAVE_U_INT32_T */
-#if 0
 #ifndef HAVE_U_INT64_T
     flag = print_bt(f, flag);
     X(64);
 #endif /* HAVE_U_INT64_T */
-#endif
 
     if(flag){
 	fprintf(f, "\n");
