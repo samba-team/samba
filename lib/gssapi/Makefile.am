@@ -206,11 +206,12 @@ test_cfx_SOURCES = krb5/test_cfx.c
 check_PROGRAMS = test_acquire_cred $(TESTS)
 
 bin_PROGRAMS = gss
-noinst_PROGRAMS = test_cred test_kcred
+noinst_PROGRAMS = test_cred test_kcred test_context
 LDADD = libgssapi.la $(LIB_roken)
 
 test_kcred_LDADD = libgssapi.la ../krb5/libkrb5.la $(LIB_roken)
 test_cfx_LDADD = $(test_kcred_LDADD)
+test_context_LDADD = $(test_kcred_LDADD)
 
 # gss
 
