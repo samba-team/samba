@@ -1,5 +1,13 @@
-2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/Makefile.am: Check if the gss context tester test_context
+	works ok.
+
+	* gss/check-context.in: Check if the gss context tester
+	test_context works ok.
+	
+2006-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* gss/check-gssmask.in: use wait-kdc.sh script
 
 	* kdc/check-kdc.in: use wait-kdc.sh script
