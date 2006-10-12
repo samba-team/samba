@@ -1,5 +1,7 @@
 2006-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_oid.c: Test lucid oid.
+
 	* gssapi/gssapi.h: Add OM_uint64_t.
 
 	* krb5/inquire_sec_context_by_oid.c: Add lucid interface.
