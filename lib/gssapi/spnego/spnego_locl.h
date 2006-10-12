@@ -57,6 +57,10 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
+
 #include <heim_threads.h>
 #include <asn1_err.h>
 
