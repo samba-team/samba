@@ -1,5 +1,8 @@
 2006-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c (pk_mk_pa_reply_enckey): add missing break. From
+	Olga Kornievskaia.
+
 	* kdc/kdc.8: document max-kdc-datagram-reply-length
 
 	* include/bits.c: Include Xint64 types.
