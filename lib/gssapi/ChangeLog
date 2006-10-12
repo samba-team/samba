@@ -1,5 +1,16 @@
 2006-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi/gssapi.h: Add OM_uint64_t.
+
+	* krb5/inquire_sec_context_by_oid.c: Add lucid interface.
+
+	* krb5/external.c: Add lucid interface, renumber oids to my
+	delegated space.
+
+	* mech/gss_krb5.c: Add lucid interface.
+
+	* gssapi/gssapi_krb5.h: Add lucid interface.
+
 	* spnego/spnego_locl.h: Maybe include <netdb.h>.
 	
 2006-10-09  Love Hörnquist Åstrand  <lha@it.su.se>
