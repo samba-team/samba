@@ -195,6 +195,9 @@ Permit tickets with no addresses.
 This option is only relevant when check-ticket-addresses is TRUE.
 .It Li allow-anonymous = Va boolean
 Permit anonymous tickets with no addresses.
+.It Li max-kdc-datagram-reply-length = Va number
+Maximum packet size the UDP rely that the KDC will transmit, instead
+the KDC sends back a reply telling the client to use TCP instead.
 .It Li transited-policy = Xo
 .Li always-check \*(Ba
 .Li allow-per-principal |
