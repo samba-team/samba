@@ -233,9 +233,6 @@ export_lucid_sec_context_v1(OM_uint32 *minor_status,
     if (is_cfx == 0) {
 	int sign_alg, seal_alg;
 
-	ret = krb5_store_keyblock(sp, *key);
-	if (ret) goto out;
-
 	switch (key->keytype) {
 	case ETYPE_DES_CBC_CRC:
 	case ETYPE_DES_CBC_MD4:
@@ -262,13 +259,19 @@ export_lucid_sec_context_v1(OM_uint32 *minor_status,
 	if (ret) goto out;
 	ret = krb5_store_int32(sp, seal_alg);
 	if (ret) goto out;
+	/* ctx_key */
+	ret = krb5_store_keyblock(sp, *key);
+	if (ret) goto out;
     } else {
 	int subkey_p = (context_handle->more_flags & ACCEPTOR_SUBKEY) ? 1 : 0;
 
+	/* have_acceptor_subkey */
 	ret = krb5_store_int32(sp, subkey_p);
 	if (ret) goto out;
+	/* ctx_key */
 	ret = krb5_store_keyblock(sp, *key);
 	if (ret) goto out;
+	/* acceptor_subkey */
 	if (subkey_p) {
 	    ret = krb5_store_keyblock(sp, *key);
 	    if (ret) goto out;
