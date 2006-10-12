@@ -3239,6 +3239,10 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		SET_AFLAGS(msg, info16.acct_flags,             "userAccountControl");
 		break;
 
+	case 17:
+		SET_UINT64(msg, info17.acct_expiry,            "accountExpires");
+		break;
+
 	case 20:
 		SET_STRING(msg, info20.parameters.string,      "userParameters");
 		break;
@@ -3246,29 +3250,33 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	case 21:
 #define IFSET(bit) if (bit & r->in.info->info21.fields_present)
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
-			SET_STRING(msg, info21.account_name.string, "samAccountName");
-		IFSET(SAMR_FIELD_FULL_NAME)         
-			SET_STRING(msg, info21.full_name.string,    "displayName");
-		IFSET(SAMR_FIELD_DESCRIPTION)  
-			SET_STRING(msg, info21.description.string,  "description");
-		IFSET(SAMR_FIELD_COMMENT)      
-			SET_STRING(msg, info21.comment.string,      "comment");
-		IFSET(SAMR_FIELD_LOGON_SCRIPT) 
-			SET_STRING(msg, info21.logon_script.string, "scriptPath");
-		IFSET(SAMR_FIELD_PROFILE_PATH)      
-			SET_STRING(msg, info21.profile_path.string, "profilePath");
-		IFSET(SAMR_FIELD_WORKSTATIONS)  
-			SET_STRING(msg, info21.workstations.string, "userWorkstations");
-		IFSET(SAMR_FIELD_LOGON_HOURS)  
-			SET_LHOURS(msg, info21.logon_hours,         "logonHours");
-		IFSET(SAMR_FIELD_ACCT_FLAGS)     
-			SET_AFLAGS(msg, info21.acct_flags,          "userAccountControl");
-		IFSET(SAMR_FIELD_PARAMETERS)     
-			SET_STRING(msg, info21.parameters.string,   "userParameters");
-		IFSET(SAMR_FIELD_COUNTRY_CODE) 
-			SET_UINT  (msg, info21.country_code,        "countryCode");
-		IFSET(SAMR_FIELD_CODE_PAGE)    
-			SET_UINT  (msg, info21.code_page,           "codePage");
+			SET_STRING(msg, info21.account_name.string,   "samAccountName");
+		IFSET(SAMR_FIELD_FULL_NAME) 
+			SET_STRING(msg, info21.full_name.string,      "displayName");
+		IFSET(SAMR_FIELD_DESCRIPTION)
+			SET_STRING(msg, info21.description.string,    "description");
+		IFSET(SAMR_FIELD_COMMENT)
+			SET_STRING(msg, info21.comment.string,        "comment");
+		IFSET(SAMR_FIELD_LOGON_SCRIPT)
+			SET_STRING(msg, info21.logon_script.string,   "scriptPath");
+		IFSET(SAMR_FIELD_PROFILE_PATH)
+			SET_STRING(msg, info21.profile_path.string,   "profilePath");
+		IFSET(SAMR_FIELD_HOME_DIRECTORY)
+			SET_STRING(msg, info21.home_directory.string, "homeDirectory");
+		IFSET(SAMR_FIELD_HOME_DRIVE)
+			SET_STRING(msg, info21.home_drive.string,     "homeDrive");
+		IFSET(SAMR_FIELD_WORKSTATIONS)
+			SET_STRING(msg, info21.workstations.string,   "userWorkstations");
+		IFSET(SAMR_FIELD_LOGON_HOURS)
+			SET_LHOURS(msg, info21.logon_hours,           "logonHours");
+		IFSET(SAMR_FIELD_ACCT_FLAGS)
+			SET_AFLAGS(msg, info21.acct_flags,            "userAccountControl");
+		IFSET(SAMR_FIELD_PARAMETERS)   
+			SET_STRING(msg, info21.parameters.string,     "userParameters");
+		IFSET(SAMR_FIELD_COUNTRY_CODE)
+			SET_UINT  (msg, info21.country_code,          "countryCode");
+		IFSET(SAMR_FIELD_CODE_PAGE)
+			SET_UINT  (msg, info21.code_page,             "codePage");
 
 
 		/* Any reason the rest of these can't be set? */
