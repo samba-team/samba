@@ -153,20 +153,12 @@ static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 static int net_ads_lookup(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	ADS_STATUS status;
-	const char *realm = assume_own_realm();
 
-	ads = ads_init(realm, opt_target_workgroup, opt_host);
-	if (ads) {
-		ads->auth.flags |= ADS_AUTH_NO_BIND;
-	}
-
-	status = ads_connect(ads);
-	if (!ADS_ERR_OK(status) || !ads) {
+	if (!ADS_ERR_OK(ads_startup_nobind(False, &ads))) {
 		d_fprintf(stderr, "Didn't find the cldap server!\n");
 		return -1;
 	}
-	
+
 	if (!ads->config.realm) {
 		ads->config.realm = CONST_DISCARD(char *, opt_target_workgroup);
 		ads->ldap_port = 389;
@@ -180,13 +172,11 @@ static int net_ads_lookup(int argc, const char **argv)
 static int net_ads_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	const char *realm = assume_own_realm();
 
-	if ( (ads = ads_init(realm, opt_target_workgroup, opt_host)) != NULL ) {
-		ads->auth.flags |= ADS_AUTH_NO_BIND;
+	if (!ADS_ERR_OK(ads_startup_nobind(False, &ads))) {
+		d_fprintf(stderr, "Didn't find the ldap server!\n");
+		return -1;
 	}
-
-	ads_connect(ads);
 
 	if (!ads || !ads->config.realm) {
 		d_fprintf(stderr, "Didn't find the ldap server!\n");
@@ -219,24 +209,33 @@ static void use_in_memory_ccache(void) {
 	setenv(KRB5_ENV_CCNAME, "MEMORY:net_ads", 1);
 }
 
-ADS_STATUS ads_startup(BOOL only_own_domain, ADS_STRUCT **ads)
+static ADS_STATUS ads_startup_int(BOOL only_own_domain, uint32 auth_flags, ADS_STRUCT **ads_ret)
 {
+	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	BOOL need_password = False;
 	BOOL second_time = False;
 	char *cp;
 	const char *realm = NULL;
-	
+	BOOL tried_closest_dc = False;
+	BOOL closest_dc = False;
+	BOOL site_matches = False;
+
 	/* lp_realm() should be handled by a command line param, 
 	   However, the join requires that realm be set in smb.conf
 	   and compares our realm with the remote server's so this is
 	   ok until someone needs more flexibility */
 
+	*ads_ret = NULL;
+
+retry_connect:
  	if (only_own_domain) {
 		realm = lp_realm();
+	} else {
+		realm = assume_own_realm();
 	}
-   
-	*ads = ads_init(realm, opt_target_workgroup, opt_host);
+
+	ads = ads_init(realm, opt_target_workgroup, opt_host);
 
 	if (!opt_user_name) {
 		opt_user_name = "administrator";
@@ -248,31 +247,39 @@ ADS_STATUS ads_startup(BOOL only_own_domain, ADS_STRUCT **ads)
 
 retry:
 	if (!opt_password && need_password && !opt_machine_pass) {
-		char *prompt;
+		char *prompt = NULL;
 		asprintf(&prompt,"%s's password: ", opt_user_name);
+		if (!prompt) {
+			ads_destroy(&ads);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
 		opt_password = getpass(prompt);
 		free(prompt);
 	}
 
 	if (opt_password) {
 		use_in_memory_ccache();
-		(*ads)->auth.password = smb_xstrdup(opt_password);
+		SAFE_FREE(ads->auth.password);
+		ads->auth.password = smb_xstrdup(opt_password);
 	}
 
-	(*ads)->auth.user_name = smb_xstrdup(opt_user_name);
+	ads->auth.flags |= auth_flags;
+	SAFE_FREE(ads->auth.user_name);
+	ads->auth.user_name = smb_xstrdup(opt_user_name);
 
        /*
         * If the username is of the form "name@realm", 
         * extract the realm and convert to upper case.
         * This is only used to establish the connection.
         */
-       if ((cp = strchr_m((*ads)->auth.user_name, '@'))!=0) {
-               *cp++ = '\0';
-               (*ads)->auth.realm = smb_xstrdup(cp);
-               strupper_m((*ads)->auth.realm);
+       if ((cp = strchr_m(ads->auth.user_name, '@'))!=0) {
+		*cp++ = '\0';
+		SAFE_FREE(ads->auth.realm);
+		ads->auth.realm = smb_xstrdup(cp);
+		strupper_m(ads->auth.realm);
        }
 
-	status = ads_connect(*ads);
+	status = ads_connect(ads);
 
 	if (!ADS_ERR_OK(status)) {
 		if (!need_password && !second_time) {
@@ -280,12 +287,50 @@ retry:
 			second_time = True;
 			goto retry;
 		} else {
-			ads_destroy(ads);
+			ads_destroy(&ads);
+			return status;
 		}
 	}
+
+	/* when contacting our own domain, make sure we use the closest DC.
+	 * This is done by reconnecting to ADS because only the first call to
+	 * ads_connect will give us our own sitename */
+
+	closest_dc = (ads->config.flags & ADS_CLOSEST);
+	site_matches = ads_sitename_match(ads);
+
+	DEBUG(10,("ads_startup_int: DC %s closest DC\n", closest_dc ? "is":"is *NOT*"));
+	DEBUG(10,("ads_startup_int: sitenames %s match\n", site_matches ? "do":"do *NOT*"));
+
+	if ((only_own_domain || !opt_host) && !tried_closest_dc) {
+
+		tried_closest_dc = True; /* avoid loop */
+
+		if (!closest_dc || !site_matches) {
+
+			namecache_delete(ads->server.realm, 0x1C);
+			namecache_delete(ads->server.workgroup, 0x1C);
+
+			ads_destroy(&ads);
+			ads = NULL;
+
+			goto retry_connect;
+		}
+	}
+
+	*ads_ret = ads;
 	return status;
 }
 
+ADS_STATUS ads_startup(BOOL only_own_domain, ADS_STRUCT **ads)
+{
+	return ads_startup_int(only_own_domain, 0, ads);
+}
+
+ADS_STATUS ads_startup_nobind(BOOL only_own_domain, ADS_STRUCT **ads)
+{
+	return ads_startup_int(only_own_domain, ADS_AUTH_NO_BIND, ads);
+}
 
 /*
   Check to see if connection can be made via ads.
@@ -327,17 +372,9 @@ int net_ads_check(void)
 static int net_ads_workgroup(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	ADS_STATUS status;
-	const char *realm = assume_own_realm();
 	struct cldap_netlogon_reply reply;
 
-	ads = ads_init(realm, opt_target_workgroup, opt_host);
-	if (ads) {
-		ads->auth.flags |= ADS_AUTH_NO_BIND;
-	}
-
-	status = ads_connect(ads);
-	if (!ADS_ERR_OK(status) || !ads) {
+	if (!ADS_ERR_OK(ads_startup_nobind(False, &ads))) {
 		d_fprintf(stderr, "Didn't find the cldap server!\n");
 		return -1;
 	}
