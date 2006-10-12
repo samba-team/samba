@@ -678,6 +678,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 			   buf.data, buf.length,
 			   &kp, &size,ret);
 	free_ReplyKeyPack_Win2k(&kp);
+	break;
     }
     case PKINIT_COMPAT_27: {
 	krb5_crypto ascrypto;
