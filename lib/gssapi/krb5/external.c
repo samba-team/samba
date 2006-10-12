@@ -259,34 +259,50 @@ static gss_OID_desc gss_c_peer_has_updated_spnego_oid_desc =
 gss_OID GSS_C_PEER_HAS_UPDATED_SPNEGO = &gss_c_peer_has_updated_spnego_oid_desc;
 
 /*
- * GSS-API mechanism extensions
- *   {iso(1), org(3), dod(6), internet(1), private(4), enterprise(1),
- *    padl(5322), gssKrb5Extensions(19)}
+ * 1.2.752.43.13 Heimdal GSS-API Extentions
  */
+
+/* 1.2.752.43.13.1 */
 static gss_OID_desc gss_krb5_copy_ccache_x_oid_desc =
-{9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x01"};
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x01")};
 
 gss_OID GSS_KRB5_COPY_CCACHE_X = &gss_krb5_copy_ccache_x_oid_desc;
 
+/* 1.2.752.43.13.2 */
 static gss_OID_desc gss_krb5_get_tkt_flags_x_oid_desc =
-{9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x02"};
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x02")};
 
 gss_OID GSS_KRB5_GET_TKT_FLAGS_X = &gss_krb5_get_tkt_flags_x_oid_desc;
 
+/* 1.2.752.43.13.3 */
 static gss_OID_desc gss_krb5_extract_authz_data_from_sec_context_x_oid_desc =
-{9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x03"};
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x03")};
 
 gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X = &gss_krb5_extract_authz_data_from_sec_context_x_oid_desc;
 
+/* 1.2.752.43.13.4 */
 static gss_OID_desc gss_krb5_compat_des3_mic_x_oid_desc =
-{9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x04"};
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x04")};
 
 gss_OID GSS_KRB5_COMPAT_DES3_MIC_X = &gss_krb5_compat_des3_mic_x_oid_desc;
 
+/* 1.2.752.43.13.5 */
 static gss_OID_desc gss_krb5_register_acceptor_identity_x_desc =
-{9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x05"}; /* XXX */
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x05")};
 
 gss_OID GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X = &gss_krb5_register_acceptor_identity_x_desc;
+
+/* 1.2.752.43.13.6 */
+static gss_OID_desc gss_krb5_export_lucid_context_x_desc =
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x06")};
+
+gss_OID GSS_KRB5_EXPORT_LUCID_CONTEXT_X = &gss_krb5_export_lucid_context_x_desc;
+
+/* 1.2.752.43.13.6.1 */
+static gss_OID_desc gss_krb5_export_lucid_context_v1_x_desc =
+{7, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x06\x01")};
+
+gss_OID GSS_KRB5_EXPORT_LUCID_CONTEXT_V1_X = &gss_krb5_export_lucid_context_v1_x_desc;
 
 /*
  * Context for krb5 calls.
