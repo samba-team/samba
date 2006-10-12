@@ -48,6 +48,7 @@
  */
 
 typedef uint32_t OM_uint32;
+typedef uint64_t OM_uint64;
 
 typedef uint32_t gss_uint32;
 
