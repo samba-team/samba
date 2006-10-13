@@ -3439,6 +3439,7 @@ if test x"$with_ads_support" != x"no"; then
 
   AC_CHECK_FUNC_EXT(krb5_set_real_time, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_set_default_in_tkt_etypes, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_set_default_tgs_enctypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_set_default_tgs_ktypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_principal2salt, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_use_enctype, $KRB5_LIBS)
@@ -3450,20 +3451,18 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_locate_kdc, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_permitted_enctypes, $KRB5_LIBS) 
   AC_CHECK_FUNC_EXT(krb5_get_default_in_tkt_etypes, $KRB5_LIBS) 
-  AC_CHECK_FUNC_EXT(krb5_free_ktypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_data_contents, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_principal_get_comp_string, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_unparsed_name, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_keytab_entry_contents, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_kt_free_entry, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_krbhst_init, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_krbhst_get_addrinfo, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_c_enctype_compare, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_enctypes_compatible_keys, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_crypto_init, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_crypto_destroy, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_decode_ap_req, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(decode_krb5_ap_req, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(krb5_free_ap_req, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(free_AP_REQ, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_c_verify_checksum, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_principal_compare_any_realm, $KRB5_LIBS)
@@ -3473,8 +3472,33 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_get_renewed_creds, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_kdc_cred, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_error_contents, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(initialize_krb5_error_table, $KRB5_LIBS)
 
   LIBS="$KRB5_LIBS $LIBS"
+
+  AC_CACHE_CHECK(whether krb5_ticket contains kvno and enctype,
+	smb_krb5_ticket_has_keyinfo,
+	[
+	    AC_TRY_COMPILE(
+	    [
+		#include <krb5.h>
+	    ],
+	    [
+		krb5_ticket ticket;
+		krb5_kvno kvno;
+		krb5_enctype enctype;
+
+		enctype = ticket.enc_part.enctype;
+		kvno = ticket.enc_part.kvno;
+	    ],
+	    [ smb_krb5_ticket_has_keyinfo=yes ],
+	    [ smb_krb5_ticket_has_keyinfo=no ])
+	])
+
+  if test x"$smb_krb5_ticket_has_keyinfo" = x"yes" ; then
+	AC_DEFINE(KRB5_TICKET_HAS_KEYINFO, 1,
+	    [Whether the krb5_ticket structure contains the kvno and enctype])
+  fi
 
   AC_CACHE_CHECK(whether krb5_verify_checksum takes 7 arguments, smb_krb5_verify_checksum, [
     AC_TRY_COMPILE([
@@ -3832,18 +3856,23 @@ if test x"$with_ads_support" != x"no"; then
     use_ads=no
   fi
 
-  if test x"$ac_cv_func_ext_krb5_free_ap_req" != x"yes" -a \
-          x"$ac_cv_func_ext_free_AP_REQ" != x"yes"
-  then
-    AC_MSG_WARN(no KRB5_AP_REQ_FREE_FUNCTION detected)
-    use_ads=no
-  fi
+  if test x"$smb_krb5_ticket_has_keyinfo" != x"yes" ; then
 
-  if test x"$ac_cv_func_ext_krb5_decode_ap_req" != x"yes" -a \
-          x"$ac_cv_func_ext_decode_krb5_ap_req" != x"yes"
-  then
-    AC_MSG_WARN(no KRB5_AP_REQ_DECODING_FUNCTION detected)
-    use_ads=no
+      # We only need the following functions if we can't get the enctype
+      # and kvno out of the ticket directly (ie. on Heimdal).
+
+      if test x"$ac_cv_func_ext_free_AP_REQ" != x"yes"
+      then
+	AC_MSG_WARN(no KRB5_AP_REQ_FREE_FUNCTION detected)
+	use_ads=no
+      fi
+
+      if test x"$ac_cv_func_ext_decode_krb5_ap_req" != x"yes"
+      then
+	AC_MSG_WARN(no KRB5_AP_REQ_DECODING_FUNCTION detected)
+	use_ads=no
+      fi
+
   fi
 
   if test x"$use_ads" = x"yes"; then
