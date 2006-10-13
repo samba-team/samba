@@ -157,24 +157,7 @@ function ldb_delete(ldb)
 */
 function ldb_erase(ldb)
 {
-	var attrs = new Array("namingContexts");
 	var res;
-
-	/* delete within each naming context - this copes with existing partitions */
-     	res = ldb.search("objectClass=*", "", ldb.SCOPE_BASE, attrs);
-	if (typeof(res) != "undefined") {
-		if (res.length > 0) {
-			var names = res[0].namingContexts;
-			for (i=0;i<names.length;i++) {
-				attrs = new Array("dn");
-				res = ldb.search("(objectclass=*)", names[i], ldb.SCOPE_SUBTREE, attrs);
-				var j;
-				for (j=0;j<res.length;j++) {
-					ldb.del(res[j].dn);
-				}
-			}
-		}
-	}
 
 	/* delete the specials */
 	ldb.del("@INDEXLIST");
@@ -528,6 +511,9 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	setup_add_ldif("provision.ldif", info, samdb, false);
 
 	if (blank != false) {
+		message("Setting up sam.ldb index\n");
+		setup_add_ldif("provision_index.ldif", info, samdb, false);
+
 		var commit_ok = samdb.transaction_commit();
 		if (!commit_ok) {
 			info.message("ldb commit failed: " + samdb.errstring() + "\n");
@@ -542,6 +528,9 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	if (setup_name_mappings(info, subobj, samdb) == false) {
 		return false;
 	}
+
+	message("Setting up sam.ldb index\n");
+	setup_add_ldif("provision_index.ldif", info, samdb, false);
 
 	var commit_ok = samdb.transaction_commit();
 	if (!commit_ok) {
