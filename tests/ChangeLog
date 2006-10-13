@@ -1,5 +1,9 @@
-2006-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-context.in: et KRB5CCNAME in global enviorment
+	
+2006-10-12  Love Hörnquist Åstrand <lha@it.su.se>
+	
 	* gss/Makefile.am: Check if the gss context tester test_context
 	works ok.
 
