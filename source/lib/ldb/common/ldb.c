@@ -208,7 +208,8 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 	}
 
 	if (ldb_load_modules(ldb, options) != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to load modules for '%s'\n", url);
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to load modules for %s: %s\n",
+			  url, ldb_errstring(ldb));
 		return LDB_ERR_OTHER;
 	}
 
@@ -536,8 +537,9 @@ static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ld
 	if (!res || !ares) {
 		goto error;
 	}
-
-	if (ares->type == LDB_REPLY_ENTRY) {
+	
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
 		res->msgs = talloc_realloc(res, res->msgs, struct ldb_message *, res->count + 2);
 		if (! res->msgs) {
 			goto error;
@@ -547,9 +549,8 @@ static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ld
 
 		res->msgs[res->count] = talloc_move(res->msgs, &ares->message);
 		res->count++;
-	}
-
-	if (ares->type == LDB_REPLY_REFERRAL) {
+		break;
+	case LDB_REPLY_REFERRAL:
 		if (res->refs) {
 			for (n = 0; res->refs[n]; n++) /*noop*/ ;
 		} else {
@@ -563,8 +564,11 @@ static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ld
 
 		res->refs[n] = talloc_move(res->refs, &ares->referral);
 		res->refs[n + 1] = NULL;
+	case LDB_REPLY_DONE:
+		/* Should do something here to detect if this never
+		 * happens */
+		break;		
 	}
-
 	talloc_steal(res, ares->controls);
 	talloc_free(ares);
 	return LDB_SUCCESS;
