@@ -202,8 +202,9 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	c->level              = LIBNET_RPC_CONNECT_DC_INFO;
 	if (r->in.binding_string) {
 		c->in.binding = r->in.binding_string;
-
+		c->in.name    = NULL;
 	} else {
+		c->in.binding = NULL;
 		c->in.name    = cli_credentials_get_domain(machine_account);
 	}
 	
