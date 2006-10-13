@@ -53,6 +53,7 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 {
 	struct composite_context *c;	
 	struct rpc_connect_srv_state *s;
+	struct dcerpc_binding *b;
 	struct composite_context *pipe_connect_req;
 
 	/* composite context allocation and setup */
@@ -72,16 +73,21 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 
 	/* prepare binding string */
 	switch (r->level) {
-	case LIBNET_RPC_CONNECT_DC:
-	case LIBNET_RPC_CONNECT_PDC:
 	case LIBNET_RPC_CONNECT_SERVER:
 		s->binding = talloc_asprintf(s, "ncacn_np:%s", r->in.name);
+		break;
+	case LIBNET_RPC_CONNECT_SERVER_ADDRESS:
+		s->binding = talloc_asprintf(s, "ncacn_np:%s", r->in.address);
 		break;
 
 	case LIBNET_RPC_CONNECT_BINDING:
 		s->binding = talloc_strdup(s, r->in.binding);
 		break;
 
+	case LIBNET_RPC_CONNECT_DC:
+	case LIBNET_RPC_CONNECT_PDC:
+		/* this should never happen - DC and PDC level has a separate
+		   composite function */
 	case LIBNET_RPC_CONNECT_DC_INFO:
 		/* this should never happen - DC_INFO level has a separate
 		   composite function */
@@ -89,9 +95,23 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 		return c;
 	}
 
+	/* parse binding string to the structure */
+	c->status = dcerpc_parse_binding(c, s->binding, &b);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DEBUG(0, ("Failed to parse dcerpc binding '%s'\n", s->binding));
+		composite_error(c, c->status);
+		return c;
+	}
+
+	if (r->level == LIBNET_RPC_CONNECT_SERVER_ADDRESS) {
+		b->target_hostname = talloc_reference(b, r->in.name);
+		if (composite_nomem(b->target_hostname, c)) {
+			return c;
+		}
+	}
+
 	/* connect to remote dcerpc pipe */
-	pipe_connect_req = dcerpc_pipe_connect_send(c, &s->r.out.dcerpc_pipe,
-						    s->binding, r->in.dcerpc_iface,
+	pipe_connect_req = dcerpc_pipe_connect_b_send(c, b, r->in.dcerpc_iface,
 						    ctx->cred, c->event_ctx);
 	if (composite_nomem(pipe_connect_req, c)) return c;
 
@@ -112,7 +132,7 @@ static void continue_pipe_connect(struct composite_context *ctx)
 	s = talloc_get_type(c->private_data, struct rpc_connect_srv_state);
 
 	/* receive result of rpc pipe connection */
-	c->status = dcerpc_pipe_connect_recv(ctx, c, &s->r.out.dcerpc_pipe);
+	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->r.out.dcerpc_pipe);
 
 	s->r.out.error_string = NULL;
 	composite_done(c);
@@ -237,7 +257,7 @@ static struct composite_context* libnet_RpcConnectDC_send(struct libnet_context 
 
 
 /*
-  Step 2 of RpcConnectDC: get domain controller name/address and
+  Step 2 of RpcConnectDC: get domain controller name and
   initiate RpcConnect to it
 */
 static void continue_lookup_dc(struct composite_context *ctx)
@@ -256,19 +276,7 @@ static void continue_lookup_dc(struct composite_context *ctx)
 	if (!composite_is_ok(c)) return;
 
 	/* decide on preferred address type depending on DC type */
-	switch (s->r.level) {
-	case LIBNET_RPC_CONNECT_PDC:
-		s->connect_name = s->f.out.dcs[0].name;
-		break;
-
-	case LIBNET_RPC_CONNECT_DC:
-		s->connect_name = s->f.out.dcs[0].address;
-		break;
-
-	default:
-		/* we shouldn't absolutely get here */
-		composite_error(c, NT_STATUS_INVALID_LEVEL);
-	}
+	s->connect_name = s->f.out.dcs[0].name;
 
 	/* prepare a monitor message and post it */
 	msg.type         = net_lookup_dc;
@@ -282,11 +290,12 @@ static void continue_lookup_dc(struct composite_context *ctx)
 	if (s->monitor_fn) s->monitor_fn(&msg);
 
 	/* ok, pdc has been found so do attempt to rpc connect */
-	s->r2.level	       = s->r.level;
+	s->r2.level	       = LIBNET_RPC_CONNECT_SERVER_ADDRESS;
 
 	/* this will cause yet another name resolution, but at least
 	 * we pass the right name down the stack now */
-	s->r2.in.name          = talloc_strdup(c, s->connect_name);
+	s->r2.in.name          = talloc_strdup(s, s->connect_name);
+	s->r2.in.address       = talloc_steal(s, s->f.out.dcs[0].address);
 	s->r2.in.dcerpc_iface  = s->r.in.dcerpc_iface;	
 
 	/* send rpc connect request to the server */
@@ -630,7 +639,7 @@ static void continue_lsa_query_info(struct rpc_request *req)
 	
 	*s->final_binding = *s->lsa_pipe->binding;
 	/* Ensure we keep hold of the member elements */
-	talloc_reference(s->final_binding, s->lsa_pipe->binding);
+	if (composite_nomem(talloc_reference(s->final_binding, s->lsa_pipe->binding), c)) return;
 
 	epm_map_req = dcerpc_epm_map_binding_send(c, s->final_binding, s->r.in.dcerpc_iface,
 						  s->lsa_pipe->conn->event_ctx);
@@ -735,7 +744,11 @@ static NTSTATUS libnet_RpcConnectDCInfo_recv(struct composite_context *c, struct
 		}
 
 	} else {
-		r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
+		if (s->r.out.error_string) {
+			r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
+		} else {
+			r->out.error_string = talloc_asprintf(mem_ctx, "Connection to DC failed: %s", nt_errstr(status));
+		}
 	}
 
 	talloc_free(c);
@@ -761,6 +774,7 @@ struct composite_context* libnet_RpcConnect_send(struct libnet_context *ctx,
 
 	switch (r->level) {
 	case LIBNET_RPC_CONNECT_SERVER:
+	case LIBNET_RPC_CONNECT_SERVER_ADDRESS:
 	case LIBNET_RPC_CONNECT_BINDING:
 		c = libnet_RpcConnectSrv_send(ctx, mem_ctx, r);
 		break;
