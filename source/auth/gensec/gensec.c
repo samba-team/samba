@@ -1092,7 +1092,7 @@ _PUBLIC_ const char *gensec_get_target_service(struct gensec_security *gensec_se
 _PUBLIC_ NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_security, const char *hostname) 
 {
 	gensec_security->target.hostname = talloc_strdup(gensec_security, hostname);
-	if (!gensec_security->target.hostname) {
+	if (hostname && !gensec_security->target.hostname) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
