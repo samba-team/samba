@@ -56,7 +56,10 @@ void nbtd_mailslot_browse_handler(struct dgram_mailslot_handler *dgmslot,
 	struct nbt_name *name = &packet->data.msg.dest_name;
 	NTSTATUS status;
 
-	if (browse == NULL) goto failed;
+	if (browse == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto failed;
+	}
 
 	status = dgram_mailslot_browse_parse(dgmslot, browse, packet, browse);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
