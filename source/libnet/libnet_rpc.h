@@ -26,14 +26,16 @@
  */
 
 enum libnet_RpcConnect_level {
-	LIBNET_RPC_CONNECT_SERVER,       /* connect to a standalone rpc server */
-	LIBNET_RPC_CONNECT_PDC,          /* connect to a domain pdc (resolves domain
-					    name to a pdc address before connecting) */
-	LIBNET_RPC_CONNECT_DC,           /* connect to any DC (resolves domain
-					    name to a DC address before connecting) */
-	LIBNET_RPC_CONNECT_BINDING,      /* specified binding string */
-	LIBNET_RPC_CONNECT_DC_INFO       /* connect to a DC and provide basic domain
-					    information (name, realm, sid, guid) */
+	LIBNET_RPC_CONNECT_SERVER,          /* connect to a standalone rpc server */
+	LIBNET_RPC_CONNECT_SERVER_ADDRESS,  /* connect to a standalone rpc server, 
+					       knowing both name and address */
+	LIBNET_RPC_CONNECT_PDC,             /* connect to a domain pdc (resolves domain
+					       name to a pdc address before connecting) */
+	LIBNET_RPC_CONNECT_DC,              /* connect to any DC (resolves domain
+					       name to a DC address before connecting) */
+	LIBNET_RPC_CONNECT_BINDING,         /* specified binding string */
+	LIBNET_RPC_CONNECT_DC_INFO          /* connect to a DC and provide basic domain
+					       information (name, realm, sid, guid) */
 };
 
 struct libnet_RpcConnect {
@@ -41,6 +43,7 @@ struct libnet_RpcConnect {
 
 	struct {
 		const char *name;
+		const char *address;
 		const char *binding;
 		const struct dcerpc_interface_table *dcerpc_iface;
 	} in;

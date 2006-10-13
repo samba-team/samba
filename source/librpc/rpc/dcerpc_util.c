@@ -358,10 +358,11 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 		b->host = talloc_strdup(b, s);
 		options = NULL;
 	}
-
 	if (!b->host) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	b->target_hostname = b->host;
 
 	b->options = NULL;
 	b->flags = 0;

@@ -193,6 +193,7 @@ struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
 	struct dcerpc_syntax_id object;
 	const char *host;
+	const char *target_hostname;
 	const char *endpoint;
 	const char **options;
 	uint32_t flags;

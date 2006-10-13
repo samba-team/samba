@@ -111,13 +111,10 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *mem_
 	   remote rpc server */
 	conn->in.dest_host              = s->io.binding->host;
 	conn->in.port                   = 0;
-	conn->in.called_name            = strupper_talloc(mem_ctx, s->io.binding->host);
+	conn->in.called_name            = s->io.binding->target_hostname;
 	conn->in.service                = "IPC$";
 	conn->in.service_type           = NULL;
 	conn->in.workgroup              = lp_workgroup();
-
-	/* verify if called_name has been allocated when uppercasing */
-	if (composite_nomem(conn->in.called_name, c)) return c;
 
 	/*
 	 * provide proper credentials - user supplied, but allow a
@@ -281,6 +278,7 @@ NTSTATUS dcerpc_pipe_connect_ncacn_np_smb2(TALLOC_CTX *mem_ctx,
 struct pipe_ip_tcp_state {
 	struct dcerpc_pipe_connect io;
 	const char *host;
+	const char *target_hostname;
 	uint32_t port;
 };
 
@@ -321,12 +319,15 @@ struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CTX *mem_
 	c->private_data = s;
 
 	/* store input parameters in state structure */
-	s->io    = *io;
-	s->host  = talloc_strdup(c, io->binding->host);
-	s->port  = atoi(io->binding->endpoint);   /* port number is a binding endpoint here */
+	s->io               = *io;
+	s->host             = talloc_reference(c, io->binding->host);
+	s->target_hostname  = talloc_reference(c, io->binding->target_hostname);
+                             /* port number is a binding endpoint here */
+	s->port             = atoi(io->binding->endpoint);   
 
 	/* send pipe open request on tcp/ip */
-	pipe_req = dcerpc_pipe_open_tcp_send(s->io.pipe->conn, s->host, s->port);
+	pipe_req = dcerpc_pipe_open_tcp_send(s->io.pipe->conn, s->host, s->target_hostname, 
+					     s->port);
 	composite_continue(c, pipe_req, continue_pipe_open_ncacn_ip_tcp, c);
 	return c;
 }
@@ -822,10 +823,11 @@ NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC_CTX *mem
 	
 	status = composite_wait(c);
 	
-	s = talloc_get_type(c->private_data, struct pipe_connect_state);
-	talloc_steal(mem_ctx, s->pipe);
-	*p = s->pipe;
-
+	if (NT_STATUS_IS_OK(status)) {
+		s = talloc_get_type(c->private_data, struct pipe_connect_state);
+		talloc_steal(mem_ctx, s->pipe);
+		*p = s->pipe;
+	}
 	talloc_free(c);
 	return status;
 }
@@ -864,7 +866,6 @@ static void continue_pipe_connect_b(struct composite_context *ctx);
   The string is to be parsed to a binding structure first.
 */
 struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
-						   struct dcerpc_pipe **pp,
 						   const char *binding,
 						   const struct dcerpc_interface_table *table,
 						   struct cli_credentials *credentials,
@@ -966,7 +967,8 @@ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
 			     struct event_context *ev)
 {
 	struct composite_context *c;
-	c = dcerpc_pipe_connect_send(parent_ctx, pp, binding, table,
+	c = dcerpc_pipe_connect_send(parent_ctx, binding, 
+				     table,
 				     credentials, ev);
 	return dcerpc_pipe_connect_recv(c, parent_ctx, pp);
 }
@@ -1032,6 +1034,7 @@ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p
 	case NCACN_IP_TCP:
 		pipe_tcp_req = dcerpc_pipe_open_tcp_send(s->pipe2->conn,
 							 s->binding->host,
+							 s->binding->target_hostname,
 							 atoi(s->binding->endpoint));
 		composite_continue(c, pipe_tcp_req, continue_open_tcp, c);
 		return c;
