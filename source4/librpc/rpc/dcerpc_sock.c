@@ -206,6 +206,7 @@ struct pipe_open_socket_state {
 	struct socket_context *socket_ctx;
 	struct sock_private *sock;
 	struct socket_address *server;
+	const char *target_hostname;
 	enum dcerpc_transport_t transport;
 };
 
@@ -248,7 +249,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 
 	sock->sock          = s->socket_ctx;
 	sock->pending_reads = 0;
-	sock->server_name   = strupper_talloc(sock, s->server->addr);
+	sock->server_name   = strupper_talloc(sock, s->target_hostname);
 
 	sock->fde = event_add_fd(conn->event_ctx, sock->sock, socket_get_fd(sock->sock),
 				 0, sock_io_handler, conn);
@@ -283,6 +284,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
 						       struct dcerpc_connection *cn,
 						       struct socket_address *server,
+						       const char *target_hostname,
 						       enum dcerpc_transport_t transport)
 {
 	struct composite_context *c;
@@ -300,6 +302,7 @@ struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
 	s->transport = transport;
 	s->server    = talloc_reference(c, server);
 	if (composite_nomem(s->server, c)) return c;
+	s->target_hostname = talloc_reference(s, target_hostname);
 
 	s->sock = talloc(cn, struct sock_private);
 	if (composite_nomem(s->sock, c)) return c;
@@ -328,17 +331,19 @@ NTSTATUS dcerpc_pipe_open_socket_recv(struct composite_context *c)
 */
 NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *conn,
 				 struct socket_address *server,
+				 const char *target_hostname,
 				 enum dcerpc_transport_t transport)
 {
 	struct composite_context *c;
 	
-	c = dcerpc_pipe_open_socket_send(conn, conn, server, transport);
+	c = dcerpc_pipe_open_socket_send(conn, conn, server, target_hostname, transport);
 	return dcerpc_pipe_open_socket_recv(c);
 }
 
 
 struct pipe_tcp_state {
-	const char *server;
+	const char *target_hostname;
+	const char *address;
 	uint32_t port;
 	struct socket_address *srvaddr;
 	struct dcerpc_connection *conn;
@@ -371,11 +376,13 @@ void continue_ipv6_open_socket(struct composite_context *ctx)
 	talloc_free(s->srvaddr);
 
 	/* prepare server address using host:ip and transport name */
-	s->srvaddr = socket_address_from_strings(s->conn, "ipv4", s->server, s->port);
+	s->srvaddr = socket_address_from_strings(s->conn, "ipv4", s->address, s->port);
 	if (composite_nomem(s->srvaddr, c)) return;
 
 	/* try IPv4 if IPv6 fails */
-	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NCACN_IP_TCP);
+	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn, 
+						     s->srvaddr, s->target_hostname, 
+						     NCACN_IP_TCP);
 	composite_continue(c, sock_ipv4_req, continue_ipv4_open_socket, c);
 }
 
@@ -395,8 +402,9 @@ void continue_ipv4_open_socket(struct composite_context *ctx)
 	c->status = dcerpc_pipe_open_socket_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		/* something went wrong... */
-		DEBUG(0, ("Failed to connect host %s on port %d - %s.\n",
-			  s->server, s->port, nt_errstr(c->status)));
+		DEBUG(0, ("Failed to connect host %s (%s) on port %d - %s.\n",
+			  s->address, s->target_hostname, 
+			  s->port, nt_errstr(c->status)));
 
 		composite_error(c, c->status);
 		return;
@@ -411,7 +419,9 @@ void continue_ipv4_open_socket(struct composite_context *ctx)
   tcp/ip transport
 */
 struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *conn,
-						    const char* server, uint32_t port)
+						    const char *address, 
+						    const char *target_hostname,
+						    uint32_t port)
 {
 	struct composite_context *c;
 	struct composite_context *sock_ipv6_req;
@@ -426,16 +436,19 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *co
 	c->private_data = s;
 
 	/* store input parameters in state structure */
-	s->server = talloc_strdup(c, server);
-	s->port   = port;
-	s->conn   = conn;
+	s->address         = talloc_strdup(c, address);
+	s->target_hostname = talloc_strdup(c, target_hostname);
+	s->port            = port;
+	s->conn            = conn;
 	
 	/* prepare server address using host ip:port and transport name */
-	s->srvaddr = socket_address_from_strings(s->conn, "ipv6", s->server, s->port);
+	s->srvaddr = socket_address_from_strings(s->conn, "ipv6", address, s->port);
 	if (composite_nomem(s->srvaddr, c)) return c;
 
 	/* try IPv6 first - send socket open request */
-	sock_ipv6_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NCACN_IP_TCP);
+	sock_ipv6_req = dcerpc_pipe_open_socket_send(c, s->conn, 
+						     s->srvaddr, s->target_hostname,
+						     NCACN_IP_TCP);
 	composite_continue(c, sock_ipv6_req, continue_ipv6_open_socket, c);
 	return c;
 }
@@ -458,11 +471,12 @@ NTSTATUS dcerpc_pipe_open_tcp_recv(struct composite_context *c)
   Open rpc pipe on tcp/ip transport - sync version
 */
 NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_connection *conn, const char *server,
+			      const char *target_hostname,
 			      uint32_t port)
 {
 	struct composite_context *c;
 
-	c = dcerpc_pipe_open_tcp_send(conn, server, port);
+	c = dcerpc_pipe_open_tcp_send(conn, server, target_hostname, port);
 	return dcerpc_pipe_open_tcp_recv(c);
 }
 
@@ -521,7 +535,9 @@ struct composite_context *dcerpc_pipe_open_unix_stream_send(struct dcerpc_connec
 	if (composite_nomem(s->srvaddr, c)) return c;
 
 	/* send socket open request */
-	sock_unix_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NCALRPC);
+	sock_unix_req = dcerpc_pipe_open_socket_send(c, s->conn, 
+						     s->srvaddr, NULL,
+						     NCALRPC);
 	composite_continue(c, sock_unix_req, continue_unix_open_socket, c);
 	return c;
 }
@@ -605,7 +621,7 @@ struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *c
 	if (composite_nomem(s->srvaddr, c)) return c;
 
 	/* send socket open request */
-	sock_np_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NCALRPC);
+	sock_np_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NULL, NCALRPC);
 	composite_continue(c, sock_np_req, continue_np_open_socket, c);
 	return c;
 }

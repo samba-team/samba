@@ -229,7 +229,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	/* Now we know the user's DN, open with LDAP, read and modify a few things */
 
 	remote_ldb_url = talloc_asprintf(tmp_ctx, "ldap://%s", 
-					 drsuapi_binding->host);
+					 drsuapi_binding->target_hostname);
 	if (!remote_ldb_url) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
