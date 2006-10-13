@@ -49,10 +49,13 @@ kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
-context="env KRB5CCNAME=${cache} ${TESTS_ENVIRONMENT} ../../lib/gssapi/test_context"
+context="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_context"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
+
+KRB5CCNAME=${cache}
+export KRB5CCNAME
 
 rm -f ${keytabfile}
 rm -f current-db*
