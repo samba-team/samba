@@ -586,7 +586,6 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	int file;
 	static struct mnttab mnt;
 	static pstring name;
-	pstring devopt;
 #else /* SunOS4 */
 	struct mntent *mnt;
 	static pstring name;
@@ -603,7 +602,8 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 		return(False) ;
   
 	devno = sbuf.st_dev ;
-	DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n", path,(unsigned int)devno));
+	DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n",
+		path, (unsigned int)devno));
 	if ( devno != devno_cached ) {
 		devno_cached = devno ;
 #if defined(SUNOS5)
@@ -611,17 +611,19 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 			return(False) ;
     
 		found = False ;
-		slprintf(devopt, sizeof(devopt) - 1, "dev=%x", (unsigned int)devno);
+
 		while (getmntent(fd, &mnt) == 0) {
-			if( !hasmntopt(&mnt, devopt) )
+			if (sys_stat(mnt.mnt_mountp, &sbuf) == -1)
 				continue;
 
-			DEBUG(5,("disk_quotas: testing \"%s\" %s\n", mnt.mnt_mountp,devopt));
+			DEBUG(5,("disk_quotas: testing \"%s\" devno=%x\n",
+				mnt.mnt_mountp, (unsigned int)devno));
 
 			/* quotas are only on vxfs, UFS or NFS */
-			if ( strcmp( mnt.mnt_fstype, MNTTYPE_UFS ) == 0 ||
+			if ( (sbuf.st_dev == devno) && (
+				strcmp( mnt.mnt_fstype, MNTTYPE_UFS ) == 0 ||
 				strcmp( mnt.mnt_fstype, "nfs" ) == 0    ||
-				strcmp( mnt.mnt_fstype, "vxfs" ) == 0  ) { 
+				strcmp( mnt.mnt_fstype, "vxfs" ) == 0 )) { 
 					found = True ;
 					break;
 			}
