@@ -460,9 +460,11 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	/* prepare connect to the LSA pipe of PDC */
 	if (r->in.level == LIBNET_JOINDOMAIN_AUTOMATIC) {
+		connect_with_info->in.binding = NULL;
 		connect_with_info->in.name    = r->in.domain_name;
 	} else {
 		connect_with_info->in.binding = r->in.binding;
+		connect_with_info->in.name    = NULL;
 	}
 
 	connect_with_info->level              = LIBNET_RPC_CONNECT_DC_INFO;
