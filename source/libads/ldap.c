@@ -133,7 +133,7 @@ BOOL ads_sitename_match(ADS_STRUCT *ads)
 		DEBUG(10,("ads_sitename_match: name %s match\n", ads->config.server_site_name));
 		return True;
 	}
-	DEBUG(10,("ads_sitename_match: no match %s %s\n",
+	DEBUG(10,("ads_sitename_match: no match between server: %s and client: %s\n",
 		ads->config.server_site_name ? ads->config.server_site_name : "NULL",
 		ads->config.client_site_name ? ads->config.client_site_name : "NULL"));
 	return False;
