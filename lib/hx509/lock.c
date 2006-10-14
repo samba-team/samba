@@ -234,7 +234,7 @@ hx509_lock_command_string(hx509_lock lock, const char *string)
 {
     if (strncasecmp(string, "PASS:", 5) == 0) {
 	hx509_lock_add_password(lock, string + 5);
-    } else if (strncasecmp(string, "PROMPT", 6) == 0) {
+    } else if (strcasecmp(string, "PROMPT") == 0) {
 	hx509_lock_set_prompter(lock, default_prompter, NULL);
     } else
 	return HX509_UNKNOWN_LOCK_COMMAND;
