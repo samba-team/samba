@@ -2142,11 +2142,10 @@ DES_PCBC_encrypt_key_ivec(krb5_context context,
 
 void KRB5_LIB_FUNCTION
 _krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
-		      size_t len, const void *aes_key,
+		      size_t len, const AES_KEY *key,
 		      unsigned char *ivec, const int encryptp)
 {
     unsigned char tmp[AES_BLOCK_SIZE];
-    const AES_KEY *key = aes_key; /* XXX remove this when we always have AES */
     int i;
 
     /*
