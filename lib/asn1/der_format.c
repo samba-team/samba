@@ -105,7 +105,7 @@ der_print_hex_heim_integer (const heim_integer *data, char **p)
 }
 
 int
-der_print_heim_oid (const heim_oid *oid, char **str)
+der_print_heim_oid (const heim_oid *oid, char delim, char **str)
 {
     struct rk_strpool *p = NULL;
     int i;
@@ -123,5 +123,42 @@ der_print_heim_oid (const heim_oid *oid, char **str)
     *str = rk_strpoolcollect(p);
     if (*str == NULL)
 	return ENOMEM;
+    return 0;
+}
+
+int
+der_parse_heim_oid (const char *str, const char *sep, heim_oid *data)
+{
+    char *s, *w, *brkt, *endptr;
+    unsigned int *c;
+    long l;
+
+    data->length = 0;
+    data->components = NULL;
+
+    if (sep == NULL)
+	sep = ".";
+
+    s = strdup(str);
+
+    for (w = strtok_r(s, sep, &brkt); 
+	 w != NULL; 
+	 w = strtok_r(NULL, sep, &brkt)) {
+
+	c = realloc(data->components,
+		    (data->length + 1) * sizeof(data->components[0]));
+	if (c == NULL) {
+	    der_free_oid(data);
+	    return ENOMEM;
+	}
+	data->components = c;
+
+	l = strtol(w, &endptr, 10);
+	if (*endptr != '\0' || l < 0 || l > INT_MAX) {
+	    der_free_oid(data);
+	    return EINVAL;
+	}
+	data->components[data->length++] = l;
+    }
     return 0;
 }
