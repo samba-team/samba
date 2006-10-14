@@ -506,7 +506,8 @@ digest_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/digest.asn1
 test_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/test.asn1
 	./asn1_compile$(EXEEXT) --sequence=TESTSeqOf $(srcdir)/test.asn1 test_asn1 || (rm -f test_asn1_files ; exit 1)
 
-$(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h
+$(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h $(srcdir)/der-protos.h
+
 
 $(check_gen_OBJECTS): test_asn1.h
 
@@ -514,4 +515,7 @@ $(asn1_print_OBJECTS): krb5_asn1.h
 
 parse.h: parse.c
 
-EXTRA_DIST = asn1_err.et
+EXTRA_DIST = asn1_err.et der-protos.h
+
+$(srcdir)/der-protos.h:
+	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -o der-protos.h $(dist_libasn1_la_SOURCES) || rm -f der-protos.h
