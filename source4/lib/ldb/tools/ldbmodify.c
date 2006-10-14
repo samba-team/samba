@@ -53,10 +53,10 @@ static void usage(void)
 /*
   process modifies for one file
 */
-static int process_file(struct ldb_context *ldb, FILE *f)
+static int process_file(struct ldb_context *ldb, FILE *f, int *count)
 {
 	struct ldb_ldif *ldif;
-	int ret = -1, count = 0;
+	int ret = LDB_SUCCESS;
 	
 	while ((ldif = ldb_ldif_read_file(ldb, f))) {
 		switch (ldif->changetype) {
@@ -71,24 +71,24 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 			ret = ldb_modify(ldb, ldif->msg);
 			break;
 		}
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			fprintf(stderr, "ERR: \"%s\" on DN %s\n", 
 				ldb_errstring(ldb), ldb_dn_linearize(ldb, ldif->msg->dn));
 			failures++;
 		} else {
-			count++;
+			(*count)++;
 		}
 		ldb_ldif_read_free(ldb, ldif);
 	}
 
-	return count;
+	return ret;
 }
 
 int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
 	int count=0;
-	int i;
+	int i, ret=LDB_SUCCESS;
 	struct ldb_cmdline *options;
 
 	ldb_global_init();
@@ -98,7 +98,7 @@ int main(int argc, const char **argv)
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
 	if (options->argc == 0) {
-		count += process_file(ldb, stdin);
+		ret = process_file(ldb, stdin, &count);
 	} else {
 		for (i=0;i<options->argc;i++) {
 			const char *fname = options->argv[i];
@@ -108,7 +108,7 @@ int main(int argc, const char **argv)
 				perror(fname);
 				exit(1);
 			}
-			count += process_file(ldb, f);
+			ret = process_file(ldb, f, &count);
 		}
 	}
 
@@ -116,9 +116,5 @@ int main(int argc, const char **argv)
 
 	printf("Modified %d records with %d failures\n", count, failures);
 
-	if (failures != 0) {
-		return -1;
-	}
-	
-	return 0;
+	return ret;
 }
