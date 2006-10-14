@@ -382,7 +382,7 @@ der_get_oid (const unsigned char *p, size_t len,
 	    u1 = u * 128 + (*p++ % 128);
 	    /* check that we don't overflow the element */
 	    if (u1 < u) {
-		free_oid(data);
+		der_free_oid(data);
 		return ASN1_OVERRUN;
 	    }
 	    u = u1;
@@ -390,7 +390,7 @@ der_get_oid (const unsigned char *p, size_t len,
 	data->components[n] = u;
     }
     if (n > 2 && p[-1] & 0x80) {
-	free_oid (data);
+	der_free_oid (data);
 	return ASN1_OVERRUN;
     }
     data->length = n;

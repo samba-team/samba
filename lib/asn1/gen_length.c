@@ -247,7 +247,7 @@ length_type (const char *name, const Type *t,
 	if (tname == NULL)
 	    errx(1, "malloc");
 	length_type (name, t->subtype, variable, tname);
-	fprintf (codefile, "ret += %lu + length_len (ret);\n", 
+	fprintf (codefile, "ret += %lu + der_length_len (ret);\n", 
 		 (unsigned long)length_tag(t->tag.tagvalue));
 	free(tname);
 	break;

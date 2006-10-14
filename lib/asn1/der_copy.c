@@ -48,21 +48,21 @@ der_copy_general_string (const heim_general_string *from,
 int
 der_copy_utf8string (const heim_utf8_string *from, heim_utf8_string *to)
 {
-    return copy_general_string(from, to);
+    return der_copy_general_string(from, to);
 }
 
 int
 der_copy_printable_string (const heim_printable_string *from, 
 		       heim_printable_string *to)
 {
-    return copy_general_string(from, to);
+    return der_copy_general_string(from, to);
 }
 
 int
 der_copy_ia5_string (const heim_printable_string *from, 
 		     heim_printable_string *to)
 {
-    return copy_general_string(from, to);
+    return der_copy_general_string(from, to);
 }
 
 int

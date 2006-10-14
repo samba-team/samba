@@ -199,7 +199,7 @@ loop (unsigned char *buf, size_t len, int indent)
 		if (ret)
 		    errx (1, "der_get_oid: %s", error_message (ret));
 		ret = der_print_heim_oid(&o, '.', &p);
-		free_oid(&o);
+		der_free_oid(&o);
 		if (ret)
 		    errx (1, "der_print_heim_oid: %s", error_message (ret));
 		printf("%s\n", p);
