@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -83,7 +83,7 @@ test_integer (void)
 
     return generic_test (tests, ntests, sizeof(int),
 			 (generic_encode)der_put_integer,
-			 (generic_length) length_integer,
+			 (generic_length) der_length_integer,
 			 (generic_decode)der_get_integer,
 			 (generic_free)NULL,
 			 cmp_integer);
@@ -201,7 +201,7 @@ test_unsigned (void)
 
     return generic_test (tests, ntests, sizeof(int),
 			 (generic_encode)der_put_unsigned,
-			 (generic_length)length_unsigned,
+			 (generic_length)der_length_unsigned,
 			 (generic_decode)der_get_unsigned,
 			 (generic_free)NULL,
 			 cmp_unsigned);
@@ -236,9 +236,9 @@ test_octet_string (void)
 
     return generic_test (tests, ntests, sizeof(heim_octet_string),
 			 (generic_encode)der_put_octet_string,
-			 (generic_length)length_octet_string,
+			 (generic_length)der_length_octet_string,
 			 (generic_decode)der_get_octet_string,
-			 (generic_free)free_octet_string,
+			 (generic_free)der_free_octet_string,
 			 cmp_octet_string);
 }
 
@@ -248,7 +248,7 @@ cmp_bmp_string (void *a, void *b)
     heim_bmp_string *oa = (heim_bmp_string *)a;
     heim_bmp_string *ob = (heim_bmp_string *)b;
 
-    return heim_bmp_string_cmp(oa, ob);
+    return der_heim_bmp_string_cmp(oa, ob);
 }
 
 static uint16_t bmp_d1[] = { 32 };
@@ -277,9 +277,9 @@ test_bmp_string (void)
 
     return generic_test (tests, ntests, sizeof(heim_bmp_string),
 			 (generic_encode)der_put_bmp_string,
-			 (generic_length)length_bmp_string,
+			 (generic_length)der_length_bmp_string,
 			 (generic_decode)der_get_bmp_string,
-			 (generic_free)free_bmp_string,
+			 (generic_free)der_free_bmp_string,
 			 cmp_bmp_string);
 }
 
@@ -309,9 +309,9 @@ test_general_string (void)
 
     return generic_test (tests, ntests, sizeof(unsigned char *),
 			 (generic_encode)der_put_general_string,
-			 (generic_length)length_general_string,
+			 (generic_length)der_length_general_string,
 			 (generic_decode)der_get_general_string,
-			 (generic_free)free_general_string,
+			 (generic_free)der_free_general_string,
 			 cmp_general_string);
 }
 
@@ -344,7 +344,7 @@ test_generalized_time (void)
 
     return generic_test (tests, ntests, sizeof(time_t),
 			 (generic_encode)der_put_generalized_time,
-			 (generic_length)length_generalized_time,
+			 (generic_length)der_length_generalized_time,
 			 (generic_decode)der_get_generalized_time,
 			 (generic_free)NULL,
 			 cmp_generalized_time);
@@ -353,7 +353,7 @@ test_generalized_time (void)
 static int
 test_cmp_oid (void *a, void *b)
 {
-    return heim_oid_cmp((heim_oid *)a, (heim_oid *)b);
+    return der_heim_oid_cmp((heim_oid *)a, (heim_oid *)b);
 }
 
 static unsigned oid_comp1[] = { 1, 1, 1 };
@@ -388,16 +388,16 @@ test_oid (void)
 
     return generic_test (tests, ntests, sizeof(heim_oid),
 			 (generic_encode)der_put_oid,
-			 (generic_length)length_oid,
+			 (generic_length)der_length_oid,
 			 (generic_decode)der_get_oid,
-			 (generic_free)free_oid,
+			 (generic_free)der_free_oid,
 			 test_cmp_oid);
 }
 
 static int
 test_cmp_bit_string (void *a, void *b)
 {
-    return heim_bit_string_cmp((heim_bit_string *)a, (heim_bit_string *)b);
+    return der_heim_bit_string_cmp((heim_bit_string *)a, (heim_bit_string *)b);
 }
 
 static int
@@ -421,16 +421,16 @@ test_bit_string (void)
 
     return generic_test (tests, ntests, sizeof(heim_bit_string),
 			 (generic_encode)der_put_bit_string,
-			 (generic_length)length_bit_string,
+			 (generic_length)der_length_bit_string,
 			 (generic_decode)der_get_bit_string,
-			 (generic_free)free_bit_string,
+			 (generic_free)der_free_bit_string,
 			 test_cmp_bit_string);
 }
 
 static int
 test_cmp_heim_integer (void *a, void *b)
 {
-    return heim_integer_cmp((heim_integer *)a, (heim_integer *)b);
+    return der_heim_integer_cmp((heim_integer *)a, (heim_integer *)b);
 }
 
 static int
@@ -467,9 +467,9 @@ test_heim_integer (void)
 
     return generic_test (tests, ntests, sizeof(heim_integer),
 			 (generic_encode)der_put_heim_integer,
-			 (generic_length)length_heim_integer,
+			 (generic_length)der_length_heim_integer,
 			 (generic_decode)der_get_heim_integer,
-			 (generic_free)free_heim_integer,
+			 (generic_free)der_free_heim_integer,
 			 test_cmp_heim_integer);
 }
 
@@ -644,18 +644,18 @@ check_heim_integer_same(const char *p, const char *norm_p, heim_integer *i)
     if (ret)
 	errx(1, "der_parse_hex_heim_integer: %d", ret);
 
-    if (heim_integer_cmp(i, &i2) != 0)
-	errx(1, "heim_integer_cmp: p %s", p);
+    if (der_heim_integer_cmp(i, &i2) != 0)
+	errx(1, "der_heim_integer_cmp: p %s", p);
 
-    free_heim_integer(&i2);
+    der_free_heim_integer(&i2);
     free(str);
 
     ret = der_parse_hex_heim_integer(p, &i2);
     if (ret)
 	errx(1, "der_parse_hex_heim_integer: %d", ret);
 
-    if (heim_integer_cmp(i, &i2) != 0)
-	errx(1, "heim_integer_cmp: norm");
+    if (der_heim_integer_cmp(i, &i2) != 0)
+	errx(1, "der_heim_integer_cmp: norm");
 
     return 0;
 }
@@ -726,8 +726,8 @@ test_heim_oid_format_same(const char *str, const heim_oid *oid)
 	free(p);
 	return ret;
     }
-    ret = heim_oid_cmp(&o2, oid);
-    free_oid(&o2);
+    ret = der_heim_oid_cmp(&o2, oid);
+    der_free_oid(&o2);
 
     return ret;
 }
