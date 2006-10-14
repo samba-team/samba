@@ -1,5 +1,25 @@
-2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add der-protos.h to nodist_include_HEADERS.
+	
+	* der.h: use newly built <der-protos.h>
+
+	* Makefile.am: Generate der prototypes.
+
+	* gen.c: move any definitions here.
+
+	* asn1-common.h: move any definitions here.
+
+	* der.h: remove der_parse_oid prototype, it was never implemented.
+
+	* der.h: New der_print_heim_oid signature.  Test
+	der_parse_heim_oid
+
+	* check-der.c: New der_print_heim_oid signature.  Test
+	der_parse_heim_oid
+	
+2006-10-07  Love Hörnquist Åstrand <lha@it.su.se>
+	
 	* lex.l: Grow an even larger output table size.
 
 	* Makefile.am: split build files into dist_ and noinst_ SOURCES
