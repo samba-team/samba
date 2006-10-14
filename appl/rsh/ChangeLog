@@ -1,3 +1,7 @@
+2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsh_locl.h: Include "crypto-headers.h".
+	
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add man_MANS to EXTRA_DIST
