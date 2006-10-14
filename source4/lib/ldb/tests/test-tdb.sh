@@ -17,6 +17,13 @@ if [ -z "$LDBDIR" ]; then
     export LDBDIR
 fi
 
+cat <<EOF | $VALGRIND ldbadd || exit 1
+dn: @MODULES
+@LIST: rdn_name
+EOF
+
+$VALGRIND ldbadd $LDBDIR/tests/init.ldif || exit 1
+
 . $LDBDIR/tests/test-generic.sh
 
 . $LDBDIR/tests/test-extended.sh
