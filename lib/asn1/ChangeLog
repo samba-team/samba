@@ -1,5 +1,27 @@
 2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* heim_asn1.h: move prototype away from here.
+
+	* der_format.c: Add der_parse_heim_oid
+	
+	* gen_free.c: prefix primitive types with der_
+
+	* der_copy.c: prefix primitive types with der_
+
+	* gen_length.c: prefix primitive types with der_
+
+	* der_length.c: prefix primitive types with der_
+
+	* der_cmp.c: prefix primitive types with der_
+
+	* gen_free.c: prefix primitive types with der_
+
+	* der_free.c: prefix primitive types with der_
+
+	* gen_copy.c: prefix primitive types with der_
+
+	* der_copy.c: rename copy_ to der_copy_
+
 	* Makefile.am: Add der-protos.h to nodist_include_HEADERS.
 	
 	* der.h: use newly built <der-protos.h>
