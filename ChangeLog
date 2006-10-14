@@ -1,5 +1,15 @@
 2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/gssmask/Makefile.am: Add explit depenency on libroken.
+
+	* kdc/krb5tgs.c: Prefix der primitives with der_.
+
+	* kdc/pkinit.c: Prefix der primitives with der_.
+
+	* lib/hdb/ext.c: Prefix der primitives with der_.
+	
+	* lib/hdb/ext.c: Prefix der primitives with der_.
+
 	* lib/krb5/crypto.c: Remove workaround from when there wasn't
 	always aes.
 
