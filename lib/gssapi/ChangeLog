@@ -1,5 +1,12 @@
 2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_oid_to_str.c: Prefix der primitives with der_.
+
+	* krb5/inquire_sec_context_by_oid.c: Prefix der primitives with
+	der_.
+
+	* krb5/encapsulate.c: Prefix der primitives with der_.
+
 	* mech/gss_oid_to_str.c: New der_print_heim_oid signature.
 	
 2006-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
