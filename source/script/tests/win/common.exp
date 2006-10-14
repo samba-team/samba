@@ -338,7 +338,7 @@ proc delete_directory { remote_prompt sharepath } {
 	set default_err_str "Unknown error in function delete_directory"
 	set err_str $default_err_str
 
-	set cmd "rmdir $sharepath\r\n"
+	set cmd "rmdir /S /Q $sharepath\r\n"
 	send $cmd
 	expect {
 		"Access is denied." {
