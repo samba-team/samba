@@ -1,5 +1,7 @@
 2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* timegm.c: rename the buildin timegm to _der_timegm
+
 	* heim_asn1.h: move prototype away from here.
 
 	* der_format.c: Add der_parse_heim_oid

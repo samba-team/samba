@@ -1,3 +1,14 @@
+2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* bn.c: Drop heim_any.h, prefix der primitives with der_
+
+	* rsa.c: Drop heim_any.h.
+	
+2006-10-11  Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* rsa.c (RSA_free): Call the meth->finish before releasing the
+	engine.
+	
 2006-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* imath/imath.c: Cast argument to ctype(3) functions to (unsigned
