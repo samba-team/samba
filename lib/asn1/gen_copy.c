@@ -40,7 +40,7 @@ static int used_fail;
 static void
 copy_primitive (const char *typename, const char *from, const char *to)
 {
-    fprintf (codefile, "if(copy_%s(%s, %s)) goto fail;\n", 
+    fprintf (codefile, "if(der_copy_%s(%s, %s)) goto fail;\n", 
 	     typename, from, to);
     used_fail++;
 }

@@ -40,7 +40,7 @@ length_primitive (const char *typename,
 		  const char *name,
 		  const char *variable)
 {
-    fprintf (codefile, "%s += length_%s(%s);\n", variable, typename, name);
+    fprintf (codefile, "%s += der_length_%s(%s);\n", variable, typename, name);
 }
 
 static size_t

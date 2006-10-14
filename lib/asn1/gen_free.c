@@ -38,7 +38,7 @@ RCSID("$Id$");
 static void
 free_primitive (const char *typename, const char *name)
 {
-    fprintf (codefile, "free_%s(%s);\n", typename, name);
+    fprintf (codefile, "der_free_%s(%s);\n", typename, name);
 }
 
 static void
