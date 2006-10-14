@@ -227,8 +227,6 @@ int heim_bmp_string_cmp(const heim_bmp_string *, const heim_bmp_string *);
 int heim_universal_string_cmp(const heim_universal_string *, 
 			      const heim_universal_string *);
 
-int der_parse_oid(const char *, heim_oid *);
-
 int _heim_fix_dce(size_t reallen, size_t *len);
 int _heim_der_set_sort(const void *, const void *);
 int _heim_time2generalizedtime (time_t, heim_octet_string *, int);
