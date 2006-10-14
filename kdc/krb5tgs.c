@@ -96,7 +96,7 @@ find_KRB5SignedPath(krb5_context context,
     }
 
     if (data)
-	ret = copy_octet_string(&child.val[0].ad_data, data);
+	ret = der_copy_octet_string(&child.val[0].ad_data, data);
     free_AuthorizationData(&child);
     return ret;
 }

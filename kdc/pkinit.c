@@ -156,7 +156,7 @@ pk_check_pkauthenticator(krb5_context context,
 	goto out;
     }
 
-    if (heim_octet_string_cmp(a->paChecksum, &checksum.checksum) != 0) {
+    if (der_heim_octet_string_cmp(a->paChecksum, &checksum.checksum) != 0) {
 	krb5_clear_error_string(context);
 	ret = KRB5KRB_ERR_GENERIC;
     }
@@ -269,7 +269,7 @@ get_dh_param(krb5_context context,
 
     memset(&dhparam, 0, sizeof(dhparam));
 
-    if (heim_oid_cmp(&dh_key_info->algorithm.algorithm, oid_id_dhpublicnumber())) {
+    if (der_heim_oid_cmp(&dh_key_info->algorithm.algorithm, oid_id_dhpublicnumber())) {
 	krb5_set_error_string(context,
 			      "PKINIT invalid oid in clientPublicValue");
 	return KRB5_BADMSGTYPE;
@@ -338,7 +338,7 @@ get_dh_param(krb5_context context,
 	client_params->dh_public_key = integer_to_BN(context,
 						     "subjectPublicKey",
 						     &glue);
-	free_heim_integer(&glue);
+	der_free_heim_integer(&glue);
 	if (client_params->dh_public_key == NULL)
 	    goto out;
     }
@@ -501,7 +501,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	goto out;
     }
 
-    ret = heim_oid_cmp(&contentInfoOid, oid_id_pkcs7_signedData());
+    ret = der_heim_oid_cmp(&contentInfoOid, oid_id_pkcs7_signedData());
     if (ret != 0) {
 	krb5_set_error_string(context, "PK-AS-REQ-Win2k invalid content "
 			      "type oid");
@@ -541,7 +541,7 @@ _kdc_pk_rd_padata(krb5_context context,
     }
 
     /* Signature is correct, now verify the signed message */
-    if (heim_oid_cmp(&eContentType, pa_contentType)) {
+    if (der_heim_oid_cmp(&eContentType, pa_contentType)) {
 	krb5_set_error_string(context, "got wrong oid for pkauthdata");
 	ret = KRB5_BADMSGTYPE;
 	goto out;
@@ -620,8 +620,8 @@ out:
     if (signed_content.data)
 	free(signed_content.data);
     krb5_data_free(&eContent);
-    free_oid(&eContentType);
-    free_oid(&contentInfoOid);
+    der_free_oid(&eContentType);
+    der_free_oid(&contentInfoOid);
     if (ret)
 	_kdc_pk_free_client_param(context, client_params);
     else

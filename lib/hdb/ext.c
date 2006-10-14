@@ -307,7 +307,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 
 	*p = strdup(str);
 
-	free_octet_string(&pw);
+	der_free_octet_string(&pw);
 	if (*p == NULL) {
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
