@@ -497,8 +497,10 @@ static int lldb_parse_result(struct ldb_handle *handle, LDAPMessage *result)
 	char **referralsp = NULL;
 	LDAPControl **serverctrlsp = NULL;
 	int ret = LDB_SUCCESS;
-
+	
 	type = ldap_msgtype(result);
+
+	handle->status = 0;
 
 	switch (type) {
 
@@ -631,15 +633,19 @@ static int lldb_parse_result(struct ldb_handle *handle, LDAPMessage *result)
 	}
 
 	if (matcheddnp) ldap_memfree(matcheddnp);
-	if (errmsgp) {
+	if (errmsgp && *errmsgp) {
 		ldb_set_errstring(ac->module->ldb, errmsgp);
+	} else if (handle->status) {
+		ldb_set_errstring(ac->module->ldb, ldap_err2string(handle->status));
+	}
+	if (errmsgp) {
 		ldap_memfree(errmsgp);
 	}
 	if (referralsp) ldap_value_free(referralsp);
 	if (serverctrlsp) ldap_controls_free(serverctrlsp);
 
 	ldap_msgfree(result);
-	return ret;
+	return lldb_ldap_to_ldb(handle->status);
 
 error:
 	handle->state = LDB_ASYNC_DONE;

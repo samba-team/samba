@@ -54,10 +54,10 @@ static void usage(void)
 /*
   add records from an opened file
 */
-static int process_file(struct ldb_context *ldb, FILE *f)
+static int process_file(struct ldb_context *ldb, FILE *f, int *count)
 {
 	struct ldb_ldif *ldif;
-	int ret, count=0;
+	int ret = LDB_SUCCESS;
 
 	while ((ldif = ldb_ldif_read_file(ldb, f))) {
 		if (ldif->changetype != LDB_CHANGETYPE_ADD &&
@@ -74,12 +74,12 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 				ldb_errstring(ldb), ldb_dn_linearize(ldb, ldif->msg->dn));
 			failures++;
 		} else {
-			count++;
+			(*count)++;
 		}
 		ldb_ldif_read_free(ldb, ldif);
 	}
 
-	return count;
+	return ret;
 }
 
 
@@ -87,7 +87,7 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
-	int i, count=0;
+	int i, ret=0, count=0;
 	struct ldb_cmdline *options;
 
 	ldb_global_init();
@@ -97,7 +97,7 @@ int main(int argc, const char **argv)
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
 	if (options->argc == 0) {
-		count += process_file(ldb, stdin);
+		ret = process_file(ldb, stdin, &count);
 	} else {
 		for (i=0;i<options->argc;i++) {
 			const char *fname = options->argv[i];
@@ -107,7 +107,7 @@ int main(int argc, const char **argv)
 				perror(fname);
 				exit(1);
 			}
-			count += process_file(ldb, f);
+			ret = process_file(ldb, f, &count);
 			fclose(f);
 		}
 	}
@@ -116,5 +116,5 @@ int main(int argc, const char **argv)
 
 	printf("Added %d records with %d failures\n", count, failures);
 	
-	return 0;
+	return ret;
 }
