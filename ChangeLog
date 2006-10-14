@@ -1,5 +1,18 @@
-2006-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/crypto.c: Remove workaround from when there wasn't
+	always aes.
+
+	* lib/krb5/ticket.c: Prefix der primitives with der_.
+	
+	* lib/krb5/digest.c: Prefix der primitives with der_.
+
+	* lib/krb5/crypto.c: Prefix der primitives with der_.
+
+	* lib/krb5/data.c: Prefix der primitives with der_.
+	
+2006-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/pkinit.c (pk_mk_pa_reply_enckey): add missing break. From
 	Olga Kornievskaia.
 
