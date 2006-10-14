@@ -139,40 +139,45 @@ fi
 exitcode=0
 
 echo "Getting client initial tickets"
-${kinit} --password-file=${objdir}/foopassword foo@$R || exitcode=1
+${kinit} --password-file=${objdir}/foopassword foo@$R || \
+	{ exitcode=1 ; echo test failed; }
 echo "Getting tickets"
-${kgetcred} ${server}@${R} || exitcode=1
+${kgetcred} ${server}@${R} || { exitcode=1 ; echo test failed; }
 echo "Listing tickets"
-${klist} > /dev/null || exitcode=1
-./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
+${klist} > /dev/null || { exitcode=1 ; echo test failed; }
+./ap-req ${server}@${R} ${keytab} ${cache} || \
+	{ exitcode=1 ; echo test failed; }
 ${kdestroy}
 
 for a in $enctypes; do
 	echo "Getting client initial tickets ($a)"
-	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@$R || exitcode=1
+	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@$R || { exitcode=1 ; echo test failed; }
 	echo "Getting tickets"
-	${kgetcred} ${server}@${R} || exitcode=1
-	./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
+	${kgetcred} ${server}@${R} || { exitcode=1 ; echo test failed; }
+	./ap-req ${server}@${R} ${keytab} ${cache} || { exitcode=1 ; echo test failed; }
 	${kdestroy}
 done
 
 
 echo "Getting client initial tickets"
-${kinit} --password-file=${objdir}/foopassword foo@$R || exitcode=1
+${kinit} --password-file=${objdir}/foopassword foo@$R || \
+	{ exitcode=1 ; echo test failed; }
 for a in $enctypes; do
 	echo "Getting tickets ($a)"
-	${kgetcred} -e $a ${server}@${R} || exitcode=1
-	./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
+	${kgetcred} -e $a ${server}@${R} || { exitcode=1 ; echo test failed; }
+	./ap-req ${server}@${R} ${keytab} ${cache} || \
+		{ exitcode=1 ; echo test failed; }
 	${kdestroy} --credential=${server}@${R}
 done
 ${kdestroy}
 
 echo "Getting client initial tickets for cross realm case"
-${kinit} --password-file=${objdir}/foopassword foo@$R || exitcode=1
+${kinit} --password-file=${objdir}/foopassword foo@$R || { exitcode=1 ; echo test failed; }
 for a in $enctypes; do
 	echo "Getting cross realm tickets ($a)"
-	${kgetcred} -e $a ${server2}@${R2} || exitcode=1
-	./ap-req ${server2}@${R2} ${keytab} ${cache} || exitcode=1
+	${kgetcred} -e $a ${server2}@${R2} || { exitcode=1 ; echo test failed; }
+	./ap-req ${server2}@${R2} ${keytab} ${cache} || \
+		{ exitcode=1 ; echo test failed; }
 	${kdestroy} --credential=${server2}@${R2}
 done
 ${kdestroy}
@@ -180,34 +185,42 @@ ${kdestroy}
 echo "try all permutations"
 for a in $enctypes; do
 	echo "Getting client initial tickets ($a)"
-	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@$R || exitcode=1
+	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@$R || \
+		{ exitcode=1 ; echo test failed; }
 	for b in $enctypes; do
 		echo "Getting tickets ($a ->  $b)"
-		${kgetcred} -e $b ${server}@${R} || exitcode=1
-		./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
+		${kgetcred} -e $b ${server}@${R} || \
+			{ exitcode=1 ; echo test failed; }
+		./ap-req ${server}@${R} ${keytab} ${cache} || \
+			{ exitcode=1 ; echo test failed; }
 		${kdestroy} --credential=${server}@${R}
 	done
 	${kdestroy}
 done
 
 echo "Getting server initial tickets"
-${kinit} --keytab=${keytab} ${server}@$R || exitcode=1
+${kinit} --keytab=${keytab} ${server}@$R || { exitcode=1 ; echo test failed; }
 echo "Listing tickets"
-${klist} | grep "Principal: ${server}" > /dev/null || exitcode=1
+${klist} | grep "Principal: ${server}" > /dev/null || \
+	{ exitcode=1 ; echo test failed; }
 ${kdestroy}
 
 echo "initial tickets for deleted user test case"
-${kinit} --password-file=${objdir}/foopassword remove@$R || exitcode=1
-${kadmin} delete remove@${R} || exit 1
+${kinit} --password-file=${objdir}/foopassword remove@$R || \
+	{ exitcode=1 ; echo test failed; }
+${kadmin} delete remove@${R} || { exitcode=1 ; echo test failed; }
 echo "try getting ticket with deleted user"
-${kgetcred} ${server}@${R} 2> /dev/null && exitcode=1
+${kgetcred} ${server}@${R} 2> /dev/null && { exitcode=1 ; echo test failed; }
 ${kdestroy}
 
 echo "cross realm case (removed user)"
-${kinit} --password-file=${objdir}/foopassword remove2@$R2 || exitcode=1
-${kgetcred} krbtgt/${R}@${R2} 2> /dev/null || exitcode=1
+${kinit} --password-file=${objdir}/foopassword remove2@$R2 || \
+	{ exitcode=1 ; echo test failed; }
+${kgetcred} krbtgt/${R}@${R2} 2> /dev/null || \
+	{ exitcode=1 ; echo test failed; }
 ${kadmin} delete remove2@${R2} || exit 1
-${kgetcred} ${server}@${R} 2> /dev/null || exitcode=1
+${kgetcred} ${server}@${R} 2> /dev/null || \
+	{ exitcode=1 ; echo test failed; }
 ${kdestroy}
 
 echo deleting all but aes enctypes on krbtgt
@@ -220,15 +233,20 @@ ${kadmin} ext -k ${keytab} ${server}-des3@${R} || exit 1
 echo "try all permutations (only aes)"
 for a in $enctypes; do
 	echo "Getting client initial tickets ($a)"
-	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@${R} || exitcode=1
+	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@${R} ||\
+		{ exitcode=1 ; echo test failed; }
 	for b in $enctypes; do
 		echo "Getting tickets ($a ->  $b)"
-		${kgetcred} -e $b ${server}@${R} || exitcode=1
-		./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
+		${kgetcred} -e $b ${server}@${R} || \
+			{ exitcode=1 ; echo test failed; }
+		./ap-req ${server}@${R} ${keytab} ${cache} || \
+			{ exitcode=1 ; echo test failed; }
 
 		echo "Getting tickets ($a ->  $b) (server des3 only)"
-		${kgetcred} ${server}-des3@${R} || exitcode=1
-		./ap-req ${server}-des3@${R} ${keytab} ${cache} || exitcode=1
+		${kgetcred} ${server}-des3@${R} || \
+			{ exitcode=1 ; echo test failed; }
+		./ap-req ${server}-des3@${R} ${keytab} ${cache} || \
+			{ exitcode=1 ; echo test failed; }
 
 		${kdestroy} --credential=${server}@${R}
 		${kdestroy} --credential=${server}-des3@${R}
@@ -251,16 +269,20 @@ if test "$pkinit" = yes -a "$rsa" = yes ; then
     for type in "" "--pk-use-enckey"; do
 	echo "Trying pk-init (principal in certificate) $type"
 	base="${srcdir}/../../lib/hx509/data"
-	${kinit} $type -C FILE:${base}/pkinit.crt,${base}/pkinit.key bar@${R} || exitcode=1
-	${kgetcred} ${server}@${R} || exitcode=1
+	${kinit} $type -C FILE:${base}/pkinit.crt,${base}/pkinit.key bar@${R} || \
+		{ exitcode=1 ; echo test failed; }
+	${kgetcred} ${server}@${R} || { exitcode=1 ; echo test failed; }
 	${kdestroy}
 	echo "Trying pk-init (principal in pki-mapping) $type"
-	${kinit} $type -C FILE:${base}/pkinit.crt,${base}/pkinit.key foo@${R} || exitcode=1
-	${kgetcred} ${server}@${R} || exitcode=1
+	${kinit} $type -C FILE:${base}/pkinit.crt,${base}/pkinit.key foo@${R} || \
+		{ exitcode=1 ; echo test failed; }
+	${kgetcred} ${server}@${R} || { exitcode=1 ; echo test failed; }
 	${kdestroy}
 	echo "Trying pk-init (password protected key) $type"
-	${kinit} $type -C FILE:${base}/pkinit.crt,${base}/pkinit-pw.key --password-file=${objdir}/foopassword foo@${R} || exitcode=1
-	${kgetcred} ${server}@${R} || exitcode=1
+	${kinit} $type -C FILE:${base}/pkinit.crt,${base}/pkinit-pw.key --password-file=${objdir}/foopassword foo@${R} || \
+		{ exitcode=1 ; echo test failed; }
+	${kgetcred} ${server}@${R} || \
+	{ exitcode=1 ; echo test failed; }
 	${kdestroy}
     done
 else
@@ -268,25 +290,37 @@ else
 fi
 
 echo "tickets for impersonate test case"
-${kinit} --forwardable --password-file=${objdir}/foopassword ${ps} || exitcode=1
-${kgetcred_imp} --impersonate=bar@${R} ${ps} || exitcode=1
-./ap-req ${ps} ${keytab} ${ocache} || exitcode=1
-${kgetcred_imp} --impersonate=bar@${R} foo@${R} 2>/dev/null && exitcode=1
+${kinit} --forwardable --password-file=${objdir}/foopassword ${ps} || \
+	{ exitcode=1 ; echo test failed; }
+${kgetcred_imp} --impersonate=bar@${R} ${ps} || \
+	{ exitcode=1 ; echo test failed; }
+./ap-req ${ps} ${keytab} ${ocache} || \
+	{ exitcode=1 ; echo test failed; }
+${kgetcred_imp} --impersonate=bar@${R} foo@${R} 2>/dev/null && \
+	{ exitcode=1 ; echo test failed; }
 echo test constrained delegation
-${kgetcred_imp} --forward --impersonate=bar@${R} ${ps} || exitcode=1
-${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${server}@${R} || exitcode=1
-./ap-req ${server}@${R} ${keytab} ${o2cache} || exitcode=1
-${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} bar@${R} 2>/dev/null && exitcode=1
+${kgetcred_imp} --forward --impersonate=bar@${R} ${ps} || \
+	{ exitcode=1 ; echo test failed; }
+${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${server}@${R} || \
+	{ exitcode=1 ; echo test failed; }
+./ap-req ${server}@${R} ${keytab} ${o2cache} || \
+	{ exitcode=1 ; echo test failed; }
+${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} bar@${R} 2>/dev/null && \
+	{ exitcode=1 ; echo test failed; }
 
 echo "test constrained delegation impersonation (non forward)"
 rm -f ocache.krb5
-${kimpersonate} -s ${ps} -c bar@${R} -t ${aesenctype} || exitcode=1
-${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${server}@${R} > /dev/null 2>/dev/null && exitcode=1
+${kimpersonate} -s ${ps} -c bar@${R} -t ${aesenctype} || \
+	{ exitcode=1 ; echo test failed; }
+${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${server}@${R} > /dev/null 2>/dev/null && \
+	{ exitcode=1 ; echo test failed; }
 
 echo "test constrained delegation impersonation (missing KRB5SignedPath)"
 rm -f ocache.krb5
-${kimpersonate} -s ${ps} -c bar@${R} -t ${aesenctype} -f forwardable || exitcode=1
-${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${server}@${R} > /dev/null 2>/dev/null && exitcode=1
+${kimpersonate} -s ${ps} -c bar@${R} -t ${aesenctype} -f forwardable || \
+	{ exitcode=1 ; echo test failed; }
+${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${server}@${R} > /dev/null 2>/dev/null && \
+	{ exitcode=1 ; echo test failed; }
 
 ${kdestroy}
 
