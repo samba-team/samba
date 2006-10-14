@@ -10,7 +10,8 @@ swat_menus.main = simple_menu(
 	"Main Menu",
 	"Servers",            session_uri("/?menu=servers"),
 	"Installation",       session_uri("/install/"),
-	"ESP Tests",          session_uri("/esptest/"));
+	"ESP Tests",          session_uri("/esptest/"),
+	"JSON/qooxdoo",       session_uri("/?menu=json"));
 
 swat_menus.servers = simple_menu(
 	"Servers",
@@ -33,6 +34,11 @@ swat_menus.esptest = simple_menu(
 	"environment variables", session_uri("/esptest/showvars.esp"),
 	"qooxdoo",               session_uri("/esptest/qooxdoo.esp"),
 	"registry",              session_uri("/esptest/registry.esp"));
+
+swat_menus.json = simple_menu(
+	"JSON Tests",
+	"ldb browser",          session_uri("/apps/samba/utils/ldbbrowse.html"),
+	"qooxdoo examples",	session_uri("/apps/qooxdoo-examples/index.html"));
 
 
 swat_menus.install = simple_menu(
