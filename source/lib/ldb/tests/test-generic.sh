@@ -10,6 +10,12 @@ echo "LDB_URL: $LDB_URL"
 echo "Adding base elements"
 $VALGRIND ldbadd $LDBDIR/tests/test.ldif || exit 1
 
+echo "Adding again - should fail"
+ldbadd $LDBDIR/tests/test.ldif 2> /dev/null && {
+    echo "Should have failed to add again - gave $?"
+    exit 1
+}
+
 echo "Modifying elements"
 $VALGRIND ldbmodify $LDBDIR/tests/test-modify.ldif || exit 1
 
@@ -32,8 +38,11 @@ if [ $LDB_SPECIALS = 1 ]; then
  $VALGRIND ldbadd $LDBDIR/tests/test-index.ldif  || exit 1
 fi
 
-echo "Adding attributes"
-$VALGRIND ldbadd $LDBDIR/tests/test-wrong_attributes.ldif  || exit 1
+echo "Adding bad attributes - should fail"
+$VALGRIND ldbadd $LDBDIR/tests/test-wrong_attributes.ldif && {
+    echo "Should fhave failed - gave $?"
+    exit 1
+}
 
 echo "testing indexed search"
 $VALGRIND ldbsearch '(uid=uham)'  || exit 1
@@ -75,7 +84,7 @@ echo "Testing binary file attribute value"
 mkdir -p tests/tmp
 cp $LDBDIR/tests/samba4.png tests/tmp/samba4.png
 $VALGRIND ldbmodify $LDBDIR/tests/photo.ldif || exit 1
-count=`$VALGRIND ldbsearch '(cn=Ursula Hampster)' jpegPhoto | grep '^dn' | wc -l`
+count=`$VALGRIND ldbsearch '(cn=Hampster Ursula)' jpegPhoto | grep '^dn' | wc -l`
 if [ $count != 1 ]; then
     echo returned $count records - expected 1
     exit 1
@@ -88,7 +97,7 @@ echo "Testing compare"
 count=`$VALGRIND ldbsearch '(cn>=t)' cn | grep '^dn' | wc -l`
 if [ $count != 2 ]; then
     echo returned $count records - expected 2
-    echo "this fails on opsnLdap ..."
+    echo "this fails on openLdap ..."
 fi
 
 count=`$VALGRIND ldbsearch '(cn<=t)' cn | grep '^dn' | wc -l`
