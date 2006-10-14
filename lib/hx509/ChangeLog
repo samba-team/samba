@@ -1,5 +1,9 @@
 2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* prefix der primitives with der_
+
+	* lock.c: Match the prompt type PROMPT exact.
+
 	* hx_locl.h: Drop heim_any.h
 	
 2006-10-11  Love Hörnquist Åstrand  <lha@it.su.se>
