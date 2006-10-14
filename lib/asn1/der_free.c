@@ -59,7 +59,8 @@ der_free_printable_string (heim_printable_string *str)
 void
 der_free_ia5_string (heim_ia5_string *str)
 {
-    free_general_string(str);
+    free(*str);
+    *str = NULL;
 }
 
 void
