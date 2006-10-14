@@ -289,6 +289,10 @@ der_get_heim_integer (const unsigned char *p, size_t len,
     return 0;
 }
 
+#ifndef HAVE_TIMEGM
+#define timegm(x) _der_timegm(x)
+#endif
+
 static int
 generalizedtime2time (const char *s, time_t *t)
 {
@@ -312,6 +316,7 @@ generalizedtime2time (const char *s, time_t *t)
     *t = timegm (&tm);
     return 0;
 }
+#undef timegm
 
 static int
 der_get_time (const unsigned char *p, size_t len, 
