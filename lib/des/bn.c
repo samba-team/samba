@@ -43,7 +43,6 @@ RCSID("$Id$");
 #include <limits.h>
 
 #include <krb5-types.h>
-#include <heim_asn1.h>
 #include <rfc2459_asn1.h> /* XXX */
 #include <der.h>
 
@@ -87,7 +86,7 @@ BIGNUM *
 BN_dup(const BIGNUM *bn)
 {
     BIGNUM *b = BN_new();
-    if (copy_heim_integer((const heim_integer *)bn, (heim_integer *)b)) {
+    if (der_copy_heim_integer((const heim_integer *)bn, (heim_integer *)b)) {
 	BN_free(b);
 	return NULL;
     }
@@ -222,8 +221,8 @@ BN_bn2hex(const BIGNUM *bn)
 int
 BN_cmp(const BIGNUM *bn1, const BIGNUM *bn2)
 {
-    return heim_integer_cmp((const heim_integer *)bn1, 
-			    (const heim_integer *)bn2);
+    return der_heim_integer_cmp((const heim_integer *)bn1, 
+				(const heim_integer *)bn2);
 }
 
 void
