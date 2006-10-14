@@ -108,6 +108,7 @@ struct krb5_pk_cert;
 struct ContentInfo;
 struct _krb5_krb_auth_data;
 struct krb5_dh_moduli;
+#include "crypto-headers.h"
 #include <krb5-private.h> /* for _krb5_{get,put}_int */
 #endif
 #if defined(KRB4) || defined(KRB5)
