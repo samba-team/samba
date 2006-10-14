@@ -457,7 +457,7 @@ CLEANFILES = lex.c parse.c parse.h \
 	digest_asn1_files digest_asn1.h \
 	test_asn1_files test_asn1.h
 
-nodist_include_HEADERS = asn1_err.h der.h heim_asn1.h
+nodist_include_HEADERS = asn1_err.h der.h der-protos.h heim_asn1.h
 nodist_include_HEADERS += krb5_asn1.h
 nodist_include_HEADERS += pkinit_asn1.h
 nodist_include_HEADERS += cms_asn1.h
