@@ -198,7 +198,7 @@ loop (unsigned char *buf, size_t len, int indent)
 		ret = der_get_oid(buf, length, &o, NULL);
 		if (ret)
 		    errx (1, "der_get_oid: %s", error_message (ret));
-		ret = der_print_heim_oid(&o, &p);
+		ret = der_print_heim_oid(&o, '.', &p);
 		free_oid(&o);
 		if (ret)
 		    errx (1, "der_print_heim_oid: %s", error_message (ret));
