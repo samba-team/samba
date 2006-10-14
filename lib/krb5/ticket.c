@@ -124,7 +124,7 @@ find_type_in_ad(krb5_context context,
      */
     for (i = 0; i < ad->len; i++) {
 	if (!*found && ad->val[i].ad_type == type) {
-	    ret = copy_octet_string(&ad->val[i].ad_data, data);
+	    ret = der_copy_octet_string(&ad->val[i].ad_data, data);
 	    if (ret) {
 		krb5_set_error_string(context, "malloc - out of memory");
 		goto out;

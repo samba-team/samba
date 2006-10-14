@@ -790,7 +790,7 @@ krb5_digest_get_a1_hash(krb5_context context,
     krb5_data_zero(data);
     if (digest->response.hash_a1 == NULL)
 	return 0;
-    ret = copy_octet_string(digest->response.hash_a1, data);
+    ret = der_copy_octet_string(digest->response.hash_a1, data);
     if (ret)
 	krb5_clear_error_string(context);
 

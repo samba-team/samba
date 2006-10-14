@@ -110,7 +110,7 @@ krb5_copy_data(krb5_context context,
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
-    ret = copy_octet_string(indata, *outdata);
+    ret = der_copy_octet_string(indata, *outdata);
     if(ret) {
 	krb5_clear_error_string (context);
 	free(*outdata);

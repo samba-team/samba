@@ -344,8 +344,8 @@ build_auth_pack(krb5_context context,
 	ALLOC(a->clientPublicValue, 1);
 	if (a->clientPublicValue == NULL)
 	    return ENOMEM;
-	ret = copy_oid(oid_id_dhpublicnumber(),
-		       &a->clientPublicValue->algorithm.algorithm);
+	ret = der_copy_oid(oid_id_dhpublicnumber(),
+			   &a->clientPublicValue->algorithm.algorithm);
 	if (ret)
 	    return ret;
 	
@@ -392,7 +392,7 @@ build_auth_pack(krb5_context context,
 
 	ASN1_MALLOC_ENCODE(DHPublicKey, dhbuf.data, dhbuf.length,
 			   &dh_pub_key, &size, ret);
-	free_heim_integer(&dh_pub_key);
+	der_free_heim_integer(&dh_pub_key);
 	if (ret)
 	    return ret;
 	if (size != dhbuf.length)
@@ -413,7 +413,7 @@ _krb5_pk_mk_ContentInfo(krb5_context context,
 {
     krb5_error_code ret;
 
-    ret = copy_oid(oid, &content_info->contentType);
+    ret = der_copy_oid(oid, &content_info->contentType);
     if (ret)
 	return ret;
     ALLOC(content_info->content, 1);
@@ -914,7 +914,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     krb5_data content;
     heim_oid contentType = { 0, NULL };
 
-    if (heim_oid_cmp(oid_id_pkcs7_envelopedData(), &rep->contentType)) {
+    if (der_heim_oid_cmp(oid_id_pkcs7_envelopedData(), &rep->contentType)) {
 	krb5_set_error_string(context, "PKINIT: Invalid content type");
 	return EINVAL;
     }
@@ -950,7 +950,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	    goto out;
 	}
 
-	if (heim_oid_cmp(&ci.contentType, oid_id_pkcs7_signedData())) {
+	if (der_heim_oid_cmp(&ci.contentType, oid_id_pkcs7_signedData())) {
 	    ret = EINVAL; /* XXX */
 	    krb5_set_error_string(context, "PKINIT: Invalid content type");
 	    goto out;
@@ -984,13 +984,13 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
 #if 0
     if (type == COMPAT_WIN2K) {
-	if (heim_oid_cmp(&contentType, oid_id_pkcs7_data()) != 0) {
+	if (der_heim_oid_cmp(&contentType, oid_id_pkcs7_data()) != 0) {
 	    krb5_set_error_string(context, "PKINIT: reply key, wrong oid");
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
 	}
     } else {
-	if (heim_oid_cmp(&contentType, oid_id_pkrkeydata()) != 0) {
+	if (der_heim_oid_cmp(&contentType, oid_id_pkrkeydata()) != 0) {
 	    krb5_set_error_string(context, "PKINIT: reply key, wrong oid");
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
@@ -1016,7 +1016,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
  out:
     if (host)
 	_krb5_pk_cert_free(host);
-    free_oid(&contentType);
+    der_free_oid(&contentType);
     krb5_data_free(&content);
 
     return ret;
@@ -1048,7 +1048,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     krb5_data_zero(&content);
     memset(&kdc_dh_info, 0, sizeof(kdc_dh_info));
 
-    if (heim_oid_cmp(oid_id_pkcs7_signedData(), &rep->contentType)) {
+    if (der_heim_oid_cmp(oid_id_pkcs7_signedData(), &rep->contentType)) {
 	krb5_set_error_string(context, "PKINIT: Invalid content type");
 	return EINVAL;
     }
@@ -1073,7 +1073,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     if (ret)
 	goto out;
 
-    if (heim_oid_cmp(&contentType, oid_id_pkdhkeydata())) {
+    if (der_heim_oid_cmp(&contentType, oid_id_pkdhkeydata())) {
 	krb5_set_error_string(context, "pkinit - dh reply contains wrong oid");
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	goto out;
@@ -1613,9 +1613,9 @@ _krb5_parse_moduli_line(krb5_context context,
     return 0;
 out:
     free(m1->name);
-    free_heim_integer(&m1->p);
-    free_heim_integer(&m1->g);
-    free_heim_integer(&m1->q);
+    der_free_heim_integer(&m1->p);
+    der_free_heim_integer(&m1->g);
+    der_free_heim_integer(&m1->q);
     free(m1);
     return ret;
 }
@@ -1626,9 +1626,9 @@ _krb5_free_moduli(struct krb5_dh_moduli **moduli)
     int i;
     for (i = 0; moduli[i] != NULL; i++) {
 	free(moduli[i]->name);
-	free_heim_integer(&moduli[i]->p);
-	free_heim_integer(&moduli[i]->g);
-	free_heim_integer(&moduli[i]->q);
+	der_free_heim_integer(&moduli[i]->p);
+	der_free_heim_integer(&moduli[i]->g);
+	der_free_heim_integer(&moduli[i]->q);
 	free(moduli[i]);
     }
     free(moduli);
@@ -1737,9 +1737,9 @@ _krb5_dh_group_ok(krb5_context context, unsigned long bits,
 	*name = NULL;
 
     for (i = 0; moduli[i] != NULL; i++) {
-	if (heim_integer_cmp(&moduli[i]->g, g) == 0 &&
-	    heim_integer_cmp(&moduli[i]->p, p) == 0 &&
-	    (q == NULL || heim_integer_cmp(&moduli[i]->q, q) == 0))
+	if (der_heim_integer_cmp(&moduli[i]->g, g) == 0 &&
+	    der_heim_integer_cmp(&moduli[i]->p, p) == 0 &&
+	    (q == NULL || der_heim_integer_cmp(&moduli[i]->q, q) == 0))
 	{
 	    if (bits && bits > moduli[i]->bits) {
 		krb5_set_error_string(context, "PKINIT: DH group parameter %s "

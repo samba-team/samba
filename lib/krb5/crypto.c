@@ -2690,7 +2690,7 @@ krb5_string_to_enctype(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_enctype_to_oid(krb5_context context,
+_krb5_enctype_to_oid(krb5_context context,
 		    krb5_enctype etype,
 		    heim_oid *oid)
 {
@@ -2705,7 +2705,7 @@ krb5_enctype_to_oid(krb5_context context,
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     krb5_clear_error_string(context);
-    return copy_oid(et->oid, oid);
+    return der_copy_oid(et->oid, oid);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -2715,7 +2715,7 @@ _krb5_oid_to_enctype(krb5_context context,
 {
     int i;
     for(i = 0; i < num_etypes; i++) {
-	if(etypes[i]->oid && heim_oid_cmp(etypes[i]->oid, oid) == 0) {
+	if(etypes[i]->oid && der_heim_oid_cmp(etypes[i]->oid, oid) == 0) {
 	    *etype = etypes[i]->type;
 	    return 0;
 	}
