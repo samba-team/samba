@@ -125,9 +125,9 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 	if (ret)
 	    errx(1, "hx509_cms_unwrap_ContentInfo: %d", ret);
 
-	if (heim_oid_cmp(&oid, oid_id_pkcs7_signedData()) != 0)
+	if (der_heim_oid_cmp(&oid, oid_id_pkcs7_signedData()) != 0)
 	    errx(1, "Content is not SignedData");
-	free_oid(&oid);
+	der_free_oid(&oid);
 
 	co = uwco;
     }
@@ -137,7 +137,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     ret = hx509_cms_verify_signed(context, ctx, co.data, co.length,
 				  store, &type, &c, &signers);
     if (co.data != p)
-	free_octet_string(&co);
+	der_free_octet_string(&co);
     if (ret)
 	hx509_err(context, 1, ret, "hx509_cms_verify_signed");
 
@@ -155,7 +155,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "hx509_write_file: %d", ret);
 
-    free_octet_string(&c);
+    der_free_octet_string(&c);
     _hx509_unmap_file(p, sz);
 
     return 0;
@@ -238,7 +238,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	if (ret)
 	    errx(1, "hx509_cms_wrap_ContentInfo: %d", ret);
 
-	free_octet_string(&o);
+	der_free_octet_string(&o);
 	o = wo;
     }
 
@@ -278,9 +278,9 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
 	if (ret)
 	    errx(1, "hx509_cms_unwrap_ContentInfo: %d", ret);
 
-	if (heim_oid_cmp(&oid, oid_id_pkcs7_envelopedData()) != 0)
+	if (der_heim_oid_cmp(&oid, oid_id_pkcs7_envelopedData()) != 0)
 	    errx(1, "Content is not SignedData");
-	free_oid(&oid);
+	der_free_oid(&oid);
 
 	co = uwco;
     }
@@ -294,7 +294,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     ret = hx509_cms_unenvelope(context, certs, 0, co.data, co.length,
 			       NULL, &contentType, &o);
     if (co.data != p)
-	free_octet_string(&co);
+	der_free_octet_string(&co);
     if (ret)
 	hx509_err(context, 1, ret, "hx509_cms_unenvelope");
 
@@ -305,7 +305,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "hx509_write_file: %d", ret);
 
-    free_octet_string(&o);
+    der_free_octet_string(&o);
 
     return 0;
 }
@@ -366,7 +366,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 	if (ret)
 	    errx(1, "hx509_cms_wrap_ContentInfo: %d", ret);
 
-	free_octet_string(&o);
+	der_free_octet_string(&o);
 	o = wo;
     }
 
@@ -376,7 +376,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "hx509_write_file: %d", ret);
 
-    free_octet_string(&o);
+    der_free_octet_string(&o);
 
     return 0;
 }
@@ -753,7 +753,7 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
     }
 
     if (nonce)
-	free_octet_string(nonce);
+	der_free_octet_string(nonce);
 
     return 0;
 }
@@ -846,7 +846,7 @@ request_create(struct request_create_options *opt, int argc, char **argv)
 
     if (ret == 0)
 	rk_dumpdata(outfile, request.data, request.length);
-    free_octet_string(&request);
+    der_free_octet_string(&request);
 
     return 0;
 }

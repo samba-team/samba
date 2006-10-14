@@ -225,7 +225,8 @@ parse_ocsp_basic(const void *data, size_t length, OCSPBasicOCSPResponse *basic)
 	return EINVAL;
     }
 
-    ret = heim_oid_cmp(&resp.responseBytes->responseType, oid_id_pkix_ocsp_basic());
+    ret = der_heim_oid_cmp(&resp.responseBytes->responseType, 
+			   oid_id_pkix_ocsp_basic());
     if (ret != 0) {
 	free_OCSPResponse(&resp);
 	return EINVAL;
@@ -535,7 +536,7 @@ hx509_revoke_verify(hx509_context context,
 	for (i = 0; i < ocsp->ocsp.tbsResponseData.responses.len; i++) {
 	    heim_octet_string os;
 
-	    ret = heim_integer_cmp(&ocsp->ocsp.tbsResponseData.responses.val[i].certID.serialNumber,
+	    ret = der_heim_integer_cmp(&ocsp->ocsp.tbsResponseData.responses.val[i].certID.serialNumber,
 				   &c->tbsCertificate.serialNumber);
 	    if (ret != 0)
 		continue;
@@ -624,7 +625,7 @@ hx509_revoke_verify(hx509_context context,
 	for (j = 0; j < crl->crl.tbsCertList.revokedCertificates->len; j++) {
 	    time_t t;
 
-	    ret = heim_integer_cmp(&crl->crl.tbsCertList.revokedCertificates->val[j].userCertificate,
+	    ret = der_heim_integer_cmp(&crl->crl.tbsCertList.revokedCertificates->val[j].userCertificate,
 				   &c->tbsCertificate.serialNumber);
 	    if (ret != 0)
 		continue;
@@ -787,7 +788,7 @@ hx509_ocsp_request(hx509_context context,
 	es->len = 1;
 	es->val = calloc(es->len, sizeof(es->val[0]));
 	
-	ret = copy_oid(oid_id_pkix_ocsp_nonce(), &es->val[0].extnID);
+	ret = der_copy_oid(oid_id_pkix_ocsp_nonce(), &es->val[0].extnID);
 	if (ret)
 	    abort();
 	
@@ -935,7 +936,7 @@ hx509_ocsp_verify(hx509_context context,
 
     for (i = 0; i < basic.tbsResponseData.responses.len; i++) {
 
-	ret = heim_integer_cmp(&basic.tbsResponseData.responses.val[i].certID.serialNumber,
+	ret = der_heim_integer_cmp(&basic.tbsResponseData.responses.val[i].certID.serialNumber,
 			       &c->tbsCertificate.serialNumber);
 	if (ret != 0)
 	    continue;

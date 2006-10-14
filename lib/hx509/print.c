@@ -82,7 +82,7 @@ hx509_print_func(hx509_vprint_func func, void *ctx, const char *fmt, ...)
 int
 hx509_oid_sprint(const heim_oid *oid, char **str)
 {
-    return der_print_heim_oid(oid, str);
+    return der_print_heim_oid(oid, '.', str);
 }
 
 void
@@ -405,8 +405,8 @@ hx509_validate_cert(hx509_context context,
 	for (i = 0; i < t->extensions->len; i++) {
 
 	    for (j = 0; check_extension[j].name; j++)
-		if (heim_oid_cmp((*check_extension[j].oid)(),
-				 &t->extensions->val[i].extnID) == 0)
+		if (der_heim_oid_cmp((*check_extension[j].oid)(),
+				     &t->extensions->val[i].extnID) == 0)
 		    break;
 	    if (check_extension[j].name == NULL) {
 		int flags = HX509_VALIDATE_F_VERBOSE;

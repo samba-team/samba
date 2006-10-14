@@ -189,7 +189,7 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
     }
 
     if (sig_alg->digest_oid &&
-	heim_oid_cmp(&di.digestAlgorithm.algorithm, 
+	der_heim_oid_cmp(&di.digestAlgorithm.algorithm, 
 		     (*sig_alg->digest_oid)()) != 0) 
     {
 	ret = HX509_CRYPTO_OID_MISMATCH;
@@ -236,15 +236,15 @@ rsa_create_signature(hx509_context context,
     else
 	sig_oid = signer->signature_alg;
 
-    if (heim_oid_cmp(sig_oid, oid_id_pkcs1_sha256WithRSAEncryption()) == 0) {
+    if (der_heim_oid_cmp(sig_oid, oid_id_pkcs1_sha256WithRSAEncryption()) == 0) {
 	digest_alg = hx509_signature_sha256();
-    } else if (heim_oid_cmp(sig_oid, oid_id_pkcs1_sha1WithRSAEncryption()) == 0) {
+    } else if (der_heim_oid_cmp(sig_oid, oid_id_pkcs1_sha1WithRSAEncryption()) == 0) {
 	digest_alg = hx509_signature_sha1();
-    } else if (heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
+    } else if (der_heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
 	digest_alg = hx509_signature_md5();
-    } else if (heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
+    } else if (der_heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
 	digest_alg = hx509_signature_md5();
-    } else if (heim_oid_cmp(sig_oid, oid_id_dsa_with_sha1()) == 0) {
+    } else if (der_heim_oid_cmp(sig_oid, oid_id_dsa_with_sha1()) == 0) {
 	digest_alg = hx509_signature_sha1();
     } else
 	return HX509_ALG_NOT_SUPP;
@@ -285,7 +285,7 @@ rsa_create_signature(hx509_context context,
 			      sig->data, 
 			      signer->private_key.rsa,
 			      RSA_PKCS1_PADDING);
-    free_octet_string(&indata);
+    der_free_octet_string(&indata);
     if (ret <= 0)
 	return HX509_CMS_FAILED_CREATE_SIGATURE;
     if (ret < sig->length)
@@ -317,7 +317,7 @@ create_signature(const struct signature_alg *sig_alg,
     else
 	sig_oid = signer->signature_alg;
 
-    if (heim_oid_cmp(sig_oid, oid_id_dsa_with_sha1()) == 0) {
+    if (der_heim_oid_cmp(sig_oid, oid_id_dsa_with_sha1()) == 0) {
 	mdtype = EVP_sha1();
 	digest_oid = oid_id_secsig_sha_1();
     } else
@@ -791,7 +791,7 @@ find_sig_alg(const heim_oid *oid)
 {
     int i;
     for (i = 0; sig_algs[i]; i++)
-	if (heim_oid_cmp((*sig_algs[i]->sig_oid)(), oid) == 0)
+	if (der_heim_oid_cmp((*sig_algs[i]->sig_oid)(), oid) == 0)
 	    return sig_algs[i];
     return NULL;
 }
@@ -803,7 +803,7 @@ find_key_alg(const heim_oid *oid)
     for (i = 0; sig_algs[i]; i++) {
 	if (sig_algs[i]->key_oid == NULL)
 	    continue;
-	if (heim_oid_cmp((*sig_algs[i]->key_oid)(), oid) == 0)
+	if (der_heim_oid_cmp((*sig_algs[i]->key_oid)(), oid) == 0)
 	    return sig_algs[i];
     }
     return NULL;
@@ -829,7 +829,7 @@ _hx509_verify_signature(const Certificate *signer,
 	const SubjectPublicKeyInfo *spi;
 	spi = &signer->tbsCertificate.subjectPublicKeyInfo;
 
-	if (heim_oid_cmp(&spi->algorithm.algorithm, (*md->key_oid)()) != 0)
+	if (der_heim_oid_cmp(&spi->algorithm.algorithm, (*md->key_oid)()) != 0)
 	    return HX509_SIG_ALG_DONT_MATCH_KEY_ALG;
     }
     return (*md->verify_signature)(md, signer, alg, data, sig);
@@ -947,9 +947,9 @@ _hx509_public_encrypt(const heim_octet_string *cleartext,
     ciphertext->length = ret;
     ciphertext->data = to;
 
-    ret = copy_oid(oid_id_pkcs1_rsaEncryption(), encryption_oid);
+    ret = der_copy_oid(oid_id_pkcs1_rsaEncryption(), encryption_oid);
     if (ret) {
-	free_octet_string(ciphertext);
+	der_free_octet_string(ciphertext);
 	return ENOMEM;
     }
 
@@ -980,7 +980,7 @@ _hx509_private_key_private_decrypt(const heim_octet_string *ciphertext,
 			      p->private_key.rsa,
 			      RSA_PKCS1_PADDING);
     if (ret <= 0) {
-	free_octet_string(cleartext);
+	der_free_octet_string(cleartext);
 	return ENOMEM;
     }
     if (cleartext->length < ret)
@@ -1326,7 +1326,7 @@ CMSRC2CBCParam_set(hx509_context context, const heim_octet_string *param,
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
     }
     if (ivec)
-	ret = copy_octet_string(&rc2param.iv, ivec);
+	ret = der_copy_octet_string(&rc2param.iv, ivec);
     free_CMSRC2CBCParameter(&rc2param);
     if (ret)
 	hx509_clear_error_string(context);
@@ -1405,7 +1405,7 @@ find_cipher_by_oid(const heim_oid *oid)
     int i;
 
     for (i = 0; i < sizeof(ciphers)/sizeof(ciphers[0]); i++)
-	if (heim_oid_cmp(oid, (*ciphers[i].oid_func)()) == 0)
+	if (der_heim_oid_cmp(oid, (*ciphers[i].oid_func)()) == 0)
 	    return &ciphers[i];
 
     return NULL;
@@ -1461,7 +1461,7 @@ hx509_crypto_init(hx509_context context,
     (*crypto)->cipher = cipher;
     (*crypto)->c = (*cipher->evp_func)();
 
-    if (copy_oid(enctype, &(*crypto)->oid)) {
+    if (der_copy_oid(enctype, &(*crypto)->oid)) {
 	hx509_crypto_destroy(*crypto);
 	*crypto = NULL;
 	hx509_clear_error_string(context);
@@ -1535,7 +1535,7 @@ hx509_crypto_set_random_key(hx509_crypto crypto, heim_octet_string *key)
 	return HX509_CRYPTO_INTERNAL_ERROR;
     }
     if (key)
-	return copy_octet_string(&crypto->key, key);
+	return der_copy_octet_string(&crypto->key, key);
     else
 	return 0;
 }
@@ -1806,29 +1806,29 @@ find_string2key(const heim_oid *oid,
 		const EVP_MD **md,
 		PBE_string2key_func *s2k)
 {
-    if (heim_oid_cmp(oid, oid_id_pbewithSHAAnd40BitRC2_CBC()) == 0) {
+    if (der_heim_oid_cmp(oid, oid_id_pbewithSHAAnd40BitRC2_CBC()) == 0) {
 	*c = EVP_rc2_40_cbc();
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
 	return oid_private_rc2_40();
-    } else if (heim_oid_cmp(oid, oid_id_pbeWithSHAAnd128BitRC2_CBC()) == 0) {
+    } else if (der_heim_oid_cmp(oid, oid_id_pbeWithSHAAnd128BitRC2_CBC()) == 0) {
 	*c = EVP_rc2_cbc();
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
 	return oid_id_pkcs3_rc2_cbc();
 #if 0
-    } else if (heim_oid_cmp(oid, oid_id_pbeWithSHAAnd40BitRC4()) == 0) {
+    } else if (der_heim_oid_cmp(oid, oid_id_pbeWithSHAAnd40BitRC4()) == 0) {
 	*c = EVP_rc4_40();
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
 	return NULL;
-    } else if (heim_oid_cmp(oid, oid_id_pbeWithSHAAnd128BitRC4()) == 0) {
+    } else if (der_heim_oid_cmp(oid, oid_id_pbeWithSHAAnd128BitRC4()) == 0) {
 	*c = EVP_rc4();
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
 	return oid_id_pkcs3_rc4();
 #endif
-    } else if (heim_oid_cmp(oid, oid_id_pbeWithSHAAnd3_KeyTripleDES_CBC()) == 0) {
+    } else if (der_heim_oid_cmp(oid, oid_id_pbeWithSHAAnd3_KeyTripleDES_CBC()) == 0) {
 	*c = EVP_des_ede3_cbc();
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
@@ -1912,9 +1912,9 @@ _hx509_pbe_decrypt(hx509_context context,
     }
 out:
     if (key.data)
-	free_octet_string(&key);
+	der_free_octet_string(&key);
     if (iv.data)
-	free_octet_string(&iv);
+	der_free_octet_string(&iv);
     return ret;
 }
 

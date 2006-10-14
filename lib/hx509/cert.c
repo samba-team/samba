@@ -262,8 +262,8 @@ hx509_cert_free(hx509_cert cert)
     free(cert->data);
 
     for (i = 0; i < cert->attrs.len; i++) {
-	free_octet_string(&cert->attrs.val[i]->data);
-	free_oid(&cert->attrs.val[i]->oid);
+	der_free_octet_string(&cert->attrs.val[i]->data);
+	der_free_oid(&cert->attrs.val[i]->oid);
 	free(cert->attrs.val[i]);
     }
     free(cert->attrs.val);
@@ -355,7 +355,7 @@ find_extension(const Certificate *cert, const heim_oid *oid, int *idx)
 	return NULL;
     
     for (;*idx < c->extensions->len; (*idx)++) {
-	if (heim_oid_cmp(&c->extensions->val[*idx].extnID, oid) == 0)
+	if (der_heim_oid_cmp(&c->extensions->val[*idx].extnID, oid) == 0)
 	    return &c->extensions->val[(*idx)++];
     }
     return NULL;
@@ -464,7 +464,7 @@ add_to_list(hx509_octet_string_list *list, const heim_octet_string *entry)
     if (p == NULL)
 	return ENOMEM;
     list->val = p;
-    ret = copy_octet_string(entry, &list->val[list->len]);
+    ret = der_copy_octet_string(entry, &list->val[list->len]);
     if (ret)
 	return ret;
     list->len++;
@@ -476,7 +476,7 @@ hx509_free_octet_string_list(hx509_octet_string_list *list)
 {
     int i;
     for (i = 0; i < list->len; i++)
-	free_octet_string(&list->val[i]);
+	der_free_octet_string(&list->val[i]);
     free(list->val);
     list->val = NULL;
     list->len = 0;
@@ -506,7 +506,7 @@ hx509_cert_find_subjectAltName_otherName(hx509_cert cert,
 
 	for (j = 0; j < sa.len; j++) {
 	    if (sa.val[j].element == choice_GeneralName_otherName &&
-		heim_oid_cmp(&sa.val[j].u.otherName.type_id, oid) == 0) 
+		der_heim_oid_cmp(&sa.val[j].u.otherName.type_id, oid) == 0) 
 	    {
 		ret = add_to_list(list, &sa.val[j].u.otherName.value);
 		if (ret) {
@@ -667,7 +667,7 @@ _hx509_cert_is_parent_cmp(const Certificate *subject,
     if (ai.keyIdentifier == NULL) /* XXX */
 	diff = -1; 
     else
-	diff = heim_octet_string_cmp(ai.keyIdentifier, &si);
+	diff = der_heim_octet_string_cmp(ai.keyIdentifier, &si);
     if (diff)
 	goto out;
 
@@ -938,7 +938,7 @@ AlgorithmIdentifier_cmp(const AlgorithmIdentifier *p,
 			const AlgorithmIdentifier *q)
 {
     int diff;
-    diff = heim_oid_cmp(&p->algorithm, &q->algorithm);
+    diff = der_heim_oid_cmp(&p->algorithm, &q->algorithm);
     if (diff)
 	return diff;
     if (p->parameters) {
@@ -959,15 +959,15 @@ int
 _hx509_Certificate_cmp(const Certificate *p, const Certificate *q)
 {
     int diff;
-    diff = heim_bit_string_cmp(&p->signatureValue, &q->signatureValue);
+    diff = der_heim_bit_string_cmp(&p->signatureValue, &q->signatureValue);
     if (diff)
 	return diff;
     diff = AlgorithmIdentifier_cmp(&p->signatureAlgorithm, 
 				   &q->signatureAlgorithm);
     if (diff)
 	return diff;
-    diff = heim_octet_string_cmp(&p->tbsCertificate._save,
-				 &q->tbsCertificate._save);
+    diff = der_heim_octet_string_cmp(&p->tbsCertificate._save,
+				     &q->tbsCertificate._save);
     return diff;
 }
 
@@ -1002,7 +1002,7 @@ hx509_cert_get_base_subject(hx509_context context, hx509_cert c, hx509_name *nam
 int
 hx509_cert_get_serialnumber(hx509_cert p, heim_integer *i)
 {
-    return copy_heim_integer(&p->data->tbsCertificate.serialNumber, i);
+    return der_copy_heim_integer(&p->data->tbsCertificate.serialNumber, i);
 }
 
 hx509_private_key
@@ -1114,7 +1114,7 @@ match_RDN(const RelativeDistinguishedName *c,
 	return HX509_NAME_CONSTRAINT_ERROR;
     
     for (i = 0; i < n->len; i++) {
-	if (heim_oid_cmp(&c->val[i].type, &n->val[i].type) != 0)
+	if (der_heim_oid_cmp(&c->val[i].type, &n->val[i].type) != 0)
 	    return HX509_NAME_CONSTRAINT_ERROR;
 	if (_hx509_name_ds_cmp(&c->val[i].value, &n->val[i].value) != 0)
 	    return HX509_NAME_CONSTRAINT_ERROR;
@@ -1152,7 +1152,7 @@ match_general_name(const GeneralName *c, const GeneralName *n, int *match)
 
     switch(c->element) {
     case choice_GeneralName_otherName:
-	if (heim_oid_cmp(&c->u.otherName.type_id,
+	if (der_heim_oid_cmp(&c->u.otherName.type_id,
 			 &n->u.otherName.type_id) != 0)
 	    return HX509_NAME_CONSTRAINT_ERROR;
 	if (heim_any_cmp(&c->u.otherName.value,
@@ -1469,8 +1469,8 @@ hx509_verify_path(hx509_context context,
 		j = name.u.rdnSequence.len;
 		if (name.u.rdnSequence.len < 2 
 		    || name.u.rdnSequence.val[j - 1].len > 1
-		    || heim_oid_cmp(&name.u.rdnSequence.val[j - 1].val[0].type,
-				    oid_id_at_commonName()))
+		    || der_heim_oid_cmp(&name.u.rdnSequence.val[j - 1].val[0].type,
+					oid_id_at_commonName()))
 		{
 		    free_ProxyCertInfo(&info);
 		    hx509_clear_error_string(context);
@@ -1724,8 +1724,8 @@ _hx509_set_cert_attribute(hx509_context context,
     if (a == NULL)
 	return ENOMEM;
 
-    copy_octet_string(attr, &a->data);
-    copy_oid(oid, &a->oid);
+    der_copy_octet_string(attr, &a->data);
+    der_copy_oid(oid, &a->oid);
     
     cert->attrs.val[cert->attrs.len] = a;
     cert->attrs.len++;
@@ -1738,7 +1738,7 @@ hx509_cert_get_attribute(hx509_cert cert, const heim_oid *oid)
 {
     int i;
     for (i = 0; i < cert->attrs.len; i++)
-	if (heim_oid_cmp(oid, &cert->attrs.val[i]->oid) == 0)
+	if (der_heim_oid_cmp(oid, &cert->attrs.val[i]->oid) == 0)
 	    return cert->attrs.val[i];
     return NULL;
 }
@@ -1870,7 +1870,7 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	return 0;
 
     if ((q->match & HX509_QUERY_MATCH_SERIALNUMBER)
-	&& heim_integer_cmp(&c->tbsCertificate.serialNumber, q->serial) != 0)
+	&& der_heim_integer_cmp(&c->tbsCertificate.serialNumber, q->serial) != 0)
 	return 0;
 
     if ((q->match & HX509_QUERY_MATCH_ISSUER_NAME)
@@ -1887,7 +1887,7 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 
 	ret = find_extension_subject_key_id(c, &si);
 	if (ret == 0) {
-	    if (heim_octet_string_cmp(&si, q->subject_id) != 0)
+	    if (der_heim_octet_string_cmp(&si, q->subject_id) != 0)
 		ret = 1;
 	    free_SubjectKeyIdentifier(&si);
 	}
@@ -1928,7 +1928,7 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	a = hx509_cert_get_attribute(cert, oid_id_pkcs_9_at_localKeyId());
 	if (a == NULL)
 	    return 0;
-	if (heim_octet_string_cmp(&a->data, q->local_key_id) != 0)
+	if (der_heim_octet_string_cmp(&a->data, q->local_key_id) != 0)
 	    return 0;
     }
 
@@ -1989,13 +1989,13 @@ hx509_cert_check_eku(hx509_context context, hx509_cert cert,
     }
 
     for (i = 0; i < e.len; i++) {
-	if (heim_oid_cmp(eku, &e.val[i]) == 0) {
+	if (der_heim_oid_cmp(eku, &e.val[i]) == 0) {
 	    free_ExtKeyUsage(&e);
 	    return 0;
 	}
 	if (allow_any_eku) {
 #if 0
-	    if (heim_oid_cmp(id_any_eku, &e.val[i]) == 0) {
+	    if (der_heim_oid_cmp(id_any_eku, &e.val[i]) == 0) {
 		free_ExtKeyUsage(&e);
 		return 0;
 	    }

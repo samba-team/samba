@@ -60,7 +60,7 @@ find_attribute(const PKCS12_Attributes *attrs, const heim_oid *oid)
     if (attrs == NULL)
 	return NULL;
     for (i = 0; i < attrs->len; i++)
-	if (heim_oid_cmp(oid, &attrs->val[i].attrId) == 0)
+	if (der_heim_oid_cmp(oid, &attrs->val[i].attrId) == 0)
 	    return &attrs->val[i];
     return NULL;
 }
@@ -98,7 +98,7 @@ ShroudedKeyBag_parser(hx509_context context,
 
     ret = decode_PKCS8PrivateKeyInfo(content.data, content.length,
 				     &ki, NULL);
-    free_octet_string(&content);
+    der_free_octet_string(&content);
     if (ret)
 	return ret;
     
@@ -138,7 +138,7 @@ certBag_parser(hx509_context context,
 	return ret;
 
     ret = decode_Certificate(os.data, os.length, &t, NULL);
-    free_octet_string(&os);
+    der_free_octet_string(&os);
     if (ret)
 	return ret;
 
@@ -209,7 +209,7 @@ safeContent_parser(hx509_context context,
     if (ret)
 	return ret;
     ret = parse_safe_content(context, c, os.data, os.length);
-    free_octet_string(&os);
+    der_free_octet_string(&os);
     return ret;
 };
 
@@ -233,11 +233,11 @@ encryptedData_parser(hx509_context context,
     if (ret)
 	return ret;
 
-    if (heim_oid_cmp(&contentType, oid_id_pkcs7_data()) == 0)
+    if (der_heim_oid_cmp(&contentType, oid_id_pkcs7_data()) == 0)
 	ret = parse_safe_content(context, c, content.data, content.length);
 
-    free_octet_string(&content);
-    free_oid(&contentType);
+    der_free_octet_string(&content);
+    der_free_oid(&contentType);
     return ret;
 }
 
@@ -269,11 +269,11 @@ envelopedData_parser(hx509_context context,
 	return ret;
     }
 
-    if (heim_oid_cmp(&contentType, oid_id_pkcs7_data()) == 0)
+    if (der_heim_oid_cmp(&contentType, oid_id_pkcs7_data()) == 0)
 	ret = parse_safe_content(context, c, content.data, content.length);
 
-    free_octet_string(&content);
-    free_oid(&contentType);
+    der_free_octet_string(&content);
+    der_free_oid(&contentType);
 
     return ret;
 }
@@ -297,7 +297,7 @@ parse_pkcs12_type(hx509_context context,
     int i;
 
     for (i = 0; i < sizeof(bagtypes)/sizeof(bagtypes[0]); i++)
-	if (heim_oid_cmp((*bagtypes[i].oid)(), oid) == 0)
+	if (der_heim_oid_cmp((*bagtypes[i].oid)(), oid) == 0)
 	    (*bagtypes[i].func)(context, c, data, length, attrs);
 }
 
@@ -338,7 +338,7 @@ p12_init(hx509_context context,
     if (ret)
 	goto out;
 
-    if (heim_oid_cmp(&pfx.authSafe.contentType, oid_id_pkcs7_data()) != 0) {
+    if (der_heim_oid_cmp(&pfx.authSafe.contentType, oid_id_pkcs7_data()) != 0) {
 	free_PKCS12_PFX(&pfx);
 	ret = EINVAL;
 	goto out;
@@ -364,7 +364,7 @@ p12_init(hx509_context context,
 					      asdata.length,
 					      &as,
 					      NULL);
-	free_octet_string(&asdata);
+	der_free_octet_string(&asdata);
 	if (ret)
 	    goto out;
     }

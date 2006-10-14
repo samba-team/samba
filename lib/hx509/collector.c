@@ -102,7 +102,7 @@ free_private_key(struct private_key *key)
     free_AlgorithmIdentifier(&key->alg);
     if (key->private_key)
 	_hx509_free_private_key(&key->private_key);
-    free_octet_string(&key->localKeyId);
+    der_free_octet_string(&key->localKeyId);
     free(key);
 }
 
@@ -141,7 +141,7 @@ _hx509_collector_private_key_add(struct hx509_collector *c,
 	    goto out;
     }
     if (localKeyId) {
-	ret = copy_octet_string(localKeyId, &key->localKeyId);
+	ret = der_copy_octet_string(localKeyId, &key->localKeyId);
 	if (ret)
 	    goto out;
     } else

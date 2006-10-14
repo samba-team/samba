@@ -49,7 +49,7 @@ hx509_cms_wrap_ContentInfo(const heim_oid *oid,
     memset(res, 0, sizeof(*res));
     memset(&ci, 0, sizeof(ci));
 
-    ret = copy_oid(oid, &ci.contentType);
+    ret = der_copy_oid(oid, &ci.contentType);
     if (ret)
 	return ret;
     ALLOC(ci.content, 1);
@@ -92,15 +92,15 @@ hx509_cms_unwrap_ContentInfo(const heim_octet_string *in,
     if (ret)
 	return ret;
 
-    ret = copy_oid(&ci.contentType, oid);
+    ret = der_copy_oid(&ci.contentType, oid);
     if (ret) {
 	free_ContentInfo(&ci);
 	return ret;
     }
     if (ci.content) {
-	ret = copy_octet_string(ci.content, out);
+	ret = der_copy_octet_string(ci.content, out);
 	if (ret) {
-	    free_oid(oid);
+	    der_free_oid(oid);
 	    free_ContentInfo(&ci);
 	    return ret;
 	}
@@ -343,7 +343,7 @@ hx509_cms_unenvelope(hx509_context context,
 	goto out;
     }
 
-    ret = copy_oid(&ed.encryptedContentInfo.contentType, contentType);
+    ret = der_copy_oid(&ed.encryptedContentInfo.contentType, contentType);
     if (ret) {
 	hx509_set_error_string(context, 0, ret,
 			       "Failed to copy EnvelopedData content oid");
@@ -393,12 +393,12 @@ hx509_cms_unenvelope(hx509_context context,
 
 out:
 
-    free_octet_string(&key);
+    der_free_octet_string(&key);
     if (ivec.length)
-	free_octet_string(&ivec);
+	der_free_octet_string(&ivec);
     if (ret) {
-	free_oid(contentType);
-	free_octet_string(content);
+	der_free_oid(contentType);
+	der_free_octet_string(content);
     }
 
     return ret;
@@ -460,7 +460,7 @@ hx509_cms_envelope_1(hx509_context context,
     {
 	AlgorithmIdentifier *enc_alg;
 	enc_alg = &ed.encryptedContentInfo.contentEncryptionAlgorithm;
-	ret = copy_oid(encryption_type, &enc_alg->algorithm);
+	ret = der_copy_oid(encryption_type, &enc_alg->algorithm);
 	if (ret) {
 	    hx509_set_error_string(context, 0, ret,
 				   "Failed to set crypto oid "
@@ -525,7 +525,7 @@ hx509_cms_envelope_1(hx509_context context,
     ed.version = 0;
     ed.originatorInfo = NULL;
 
-    ret = copy_oid(contentType, &ed.encryptedContentInfo.contentType);
+    ret = der_copy_oid(contentType, &ed.encryptedContentInfo.contentType);
     if (ret) {
 	hx509_set_error_string(context, 0, ret,
 			       "Failed to copy content oid for "
@@ -547,10 +547,10 @@ hx509_cms_envelope_1(hx509_context context,
 
 out:
     if (ret) {
-	free_octet_string(content);
+	der_free_octet_string(content);
     }
-    free_octet_string(&key);
-    free_octet_string(&ivec);
+    der_free_octet_string(&key);
+    der_free_octet_string(&ivec);
     free_EnvelopedData(&ed);
 
     return ret;
@@ -598,7 +598,7 @@ find_attribute(const CMSAttributes *attr, const heim_oid *oid)
 {
     int i;
     for (i = 0; i < attr->len; i++)
-	if (heim_oid_cmp(&attr->val[i].type, oid) == 0)
+	if (der_heim_oid_cmp(&attr->val[i].type, oid) == 0)
 	    return &attr->val[i];
     return NULL;
 }
@@ -730,7 +730,7 @@ hx509_cms_verify_signed(hx509_context context,
 					  &signer_info->digestAlgorithm,
 					  sd.encapContentInfo.eContent,
 					  &os);
-	    free_octet_string(&os);
+	    der_free_octet_string(&os);
 	    if (ret) {
 		hx509_set_error_string(context, 0, ret,
 				       "Failed to verify messageDigest");
@@ -767,7 +767,7 @@ hx509_cms_verify_signed(hx509_context context,
 	    ALLOC(signed_data, 1);
 	    if (signed_data == NULL) {
 		if (match_oid == &decode_oid)
-		    free_oid(&decode_oid);
+		    der_free_oid(&decode_oid);
 		ret = ENOMEM;
 		hx509_clear_error_string(context);
 		continue;
@@ -780,7 +780,7 @@ hx509_cms_verify_signed(hx509_context context,
 			       &size, ret);
 	    if (ret) {
 		if (match_oid == &decode_oid)
-		    free_oid(&decode_oid);
+		    der_free_oid(&decode_oid);
 		free(signed_data);
 		hx509_clear_error_string(context);
 		continue;
@@ -795,13 +795,13 @@ hx509_cms_verify_signed(hx509_context context,
 	if (ret)
 	    return ret;
 
-	if (heim_oid_cmp(match_oid, &sd.encapContentInfo.eContentType)) {
+	if (der_heim_oid_cmp(match_oid, &sd.encapContentInfo.eContentType)) {
 	    ret = HX509_CMS_DATA_OID_MISMATCH;
 	    hx509_set_error_string(context, 0, ret,
 				   "Oid in message mismatch from the expected");
 	}	
 	if (match_oid == &decode_oid)
-	    free_oid(&decode_oid);
+	    der_free_oid(&decode_oid);
 	
 	if (ret == 0)
 	    ret = hx509_verify_signature(context,
@@ -811,7 +811,7 @@ hx509_cms_verify_signed(hx509_context context,
 					 &signer_info->signature);
 
 	if (signed_data != sd.encapContentInfo.eContent) {
-	    free_octet_string(signed_data);
+	    der_free_octet_string(signed_data);
 	    free(signed_data);
 	}
 	if (ret) {
@@ -836,7 +836,7 @@ hx509_cms_verify_signed(hx509_context context,
 	return ret;
     }
 
-    ret = copy_oid(&sd.encapContentInfo.eContentType, contentType);
+    ret = der_copy_oid(&sd.encapContentInfo.eContentType, contentType);
     if (ret) {
 	hx509_clear_error_string(context);
 	goto out;
@@ -858,8 +858,8 @@ out:
     if (ret) {
 	if (*signer_certs)
 	    hx509_certs_free(signer_certs);
-	free_oid(contentType);
-	free_octet_string(content);
+	der_free_oid(contentType);
+	der_free_octet_string(content);
     }
 
     return ret;
@@ -885,7 +885,7 @@ _hx509_set_digest_alg(DigestAlgorithmIdentifier *id,
 	id->parameters->length = length;
     } else
 	id->parameters = NULL;
-    ret = copy_oid(oid, &id->algorithm);
+    ret = der_copy_oid(oid, &id->algorithm);
     if (ret) {
 	if (id->parameters) {
 	    free(id->parameters->data);
@@ -911,13 +911,13 @@ add_one_attribute(Attribute **attr,
 	return ENOMEM;
     (*attr) = d;
 
-    ret = copy_oid(oid, &(*attr)[*len].type);
+    ret = der_copy_oid(oid, &(*attr)[*len].type);
     if (ret)
 	return ret;
 
     ALLOC_SEQ(&(*attr)[*len].value, 1);
     if ((*attr)[*len].value.val == NULL) {
-	free_oid(&(*attr)[*len].type);
+	der_free_oid(&(*attr)[*len].type);
 	return ENOMEM;
     }
 
@@ -963,7 +963,7 @@ hx509_cms_create_signed_1(hx509_context context,
 
     sd.version = CMSVersion_v3;
 
-    copy_oid(eContentType, &sd.encapContentInfo.eContentType);
+    der_copy_oid(eContentType, &sd.encapContentInfo.eContentType);
     ALLOC(sd.encapContentInfo.eContent, 1);
     if (sd.encapContentInfo.eContent == NULL) {
 	hx509_clear_error_string(context);
@@ -1033,7 +1033,7 @@ hx509_cms_create_signed_1(hx509_context context,
 			   &digest,
 			   &size,
 			   ret);
-	free_octet_string(&digest);
+	der_free_octet_string(&digest);
 	if (ret) {
 	    hx509_clear_error_string(context);
 	    goto out;
@@ -1052,7 +1052,7 @@ hx509_cms_create_signed_1(hx509_context context,
 
     }
 
-    if (heim_oid_cmp(eContentType, oid_id_pkcs7_data()) != 0) {
+    if (der_heim_oid_cmp(eContentType, oid_id_pkcs7_data()) != 0) {
 
 	ASN1_MALLOC_ENCODE(ContentType,
 			   buf.data,
@@ -1103,7 +1103,7 @@ hx509_cms_create_signed_1(hx509_context context,
 				      &signer_info->signatureAlgorithm,
 				      &signer_info->signature);
 				      
-	free_octet_string(&os);
+	der_free_octet_string(&os);
 	if (ret) {
 	    hx509_clear_error_string(context);
 	    goto out;
@@ -1217,7 +1217,7 @@ hx509_cms_decrypt_encrypted(hx509_context context,
 	goto out;
     }
 
-    ret = copy_oid(&ed.encryptedContentInfo.contentType, contentType);
+    ret = der_copy_oid(&ed.encryptedContentInfo.contentType, contentType);
     if (ret) {
 	hx509_clear_error_string(context);
 	goto out;

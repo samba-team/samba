@@ -100,7 +100,7 @@ _hx509_request_add_eku(hx509_context context,
 	return ENOMEM;
     req->eku.val = val;
 
-    ret = copy_oid(oid, &req->eku.val[req->eku.len]);
+    ret = der_copy_oid(oid, &req->eku.val[req->eku.len]);
     if (ret)
 	return ret;
 

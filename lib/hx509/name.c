@@ -119,7 +119,7 @@ oidtostring(const heim_oid *type)
     size_t i, total_len = 0;
     
     for (i = 0; i < sizeof(no)/sizeof(no[0]); i++) {
-	if (heim_oid_cmp((*no[i].o)(), type) == 0)
+	if (der_heim_oid_cmp((*no[i].o)(), type) == 0)
 	    return strdup(no[i].n);
     }
 
@@ -240,7 +240,7 @@ _hx509_name_ds_cmp(const DirectoryString *ds1, const DirectoryString *ds2)
 	c = strcmp(ds1->u.ia5String, ds2->u.ia5String);
 	break;
     case choice_DirectoryString_teletexString:
-	c = heim_octet_string_cmp(&ds1->u.teletexString,
+	c = der_heim_octet_string_cmp(&ds1->u.teletexString,
 				  &ds2->u.teletexString);
 	break;
     case choice_DirectoryString_printableString:
@@ -250,12 +250,12 @@ _hx509_name_ds_cmp(const DirectoryString *ds1, const DirectoryString *ds2)
 	c = strcmp(ds1->u.utf8String, ds2->u.utf8String);
 	break;
     case choice_DirectoryString_universalString:
-	c = heim_universal_string_cmp(&ds1->u.universalString,
-				      &ds2->u.universalString);
+	c = der_heim_universal_string_cmp(&ds1->u.universalString,
+					  &ds2->u.universalString);
 	break;
     case choice_DirectoryString_bmpString:
-	c = heim_bmp_string_cmp(&ds1->u.bmpString,
-				  &ds2->u.bmpString);
+	c = der_heim_bmp_string_cmp(&ds1->u.bmpString,
+				    &ds2->u.bmpString);
 	break;
     default:
 	c = 1;
@@ -279,8 +279,8 @@ _hx509_name_cmp(const Name *n1, const Name *n2)
 	    return c;
 
 	for (j = 0; j < n1->u.rdnSequence.val[i].len; j++) {
-	    c = heim_oid_cmp(&n1->u.rdnSequence.val[i].val[j].type,
-			     &n1->u.rdnSequence.val[i].val[j].type);
+	    c = der_heim_oid_cmp(&n1->u.rdnSequence.val[i].val[j].type,
+				 &n1->u.rdnSequence.val[i].val[j].type);
 	    if (c)
 		return c;
 			     
@@ -398,8 +398,8 @@ hx509_parse_name(const char *str, hx509_name *name)
 	rdn->len = 1;
 
 
-	if (copy_oid(oid, &rdn->val[0].type) != 0) {
-	    /* _hx509_abort("copy_oid"); */
+	if (der_copy_oid(oid, &rdn->val[0].type) != 0) {
+	    /* _hx509_abort("der_copy_oid"); */
 	    goto out;
 	}
 
