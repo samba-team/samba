@@ -18,7 +18,7 @@
 # I was finding that "cat common.exp wintest_setup.exp | expect -f -"
 # fails to run, but exits with 0 status something like 1% of the time.
 
-setup_qfileinfo_test()
+setup_share_test()
 {
 	echo -e "\nSetting up windows environment."
 	cat $WINTEST_DIR/common.exp > $TMPDIR/setup.exp
@@ -29,7 +29,7 @@ setup_qfileinfo_test()
 }
 
 # Clean up the windows environment after the test has run or failed.
-remove_qfileinfo_test()
+remove_share_test()
 {
 	echo -e "\nCleaning up windows environment."
 	cat $WINTEST_DIR/common.exp > $TMPDIR/remove.exp
@@ -59,7 +59,7 @@ fi
 test_name="RAW-QFILEINFO / WINDOWS SERVER"
 echo -e "\n$test_name SETUP PHASE"
 
-setup_qfileinfo_test
+setup_share_test
 
 if [ $err_rtn -ne 0 ]; then
 	# If test setup fails, load VM snapshot and skip test.
