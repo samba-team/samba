@@ -78,7 +78,7 @@ else
 		restore_snapshot "\n$test_name failed."
 	else
 		echo -e "\n$test_name CLEANUP PHASE"
-		remove_qfileinfo_test
+		remove_share_test
 		if [ $err_rtn -ne 0 ]; then
 			# If cleanup fails, restore VM snapshot.
 			restore_snapshot "\n$test_name removal failed."
