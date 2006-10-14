@@ -76,7 +76,7 @@ static void usage(void)
 int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
-	int ret, i;
+	int ret = 0, i;
 	struct ldb_cmdline *options;
 
 	ldb_global_init();
@@ -115,5 +115,5 @@ int main(int argc, const char **argv)
 
 	talloc_free(ldb);
 
-	return 0;
+	return ret;
 }
