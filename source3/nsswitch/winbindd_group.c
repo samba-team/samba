@@ -205,6 +205,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 		
 		*gr_mem = buf;
 		*gr_mem_len = buf_len;
+		*num_gr_mem = 1;
 
 		DEBUG(10, ("num_mem = %u, len = %u, mem = %s\n", (unsigned int)*num_gr_mem, 
 		   (unsigned int)buf_len, *num_gr_mem ? buf : "NULL")); 
