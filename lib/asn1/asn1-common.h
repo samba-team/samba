@@ -43,6 +43,9 @@ typedef struct heim_bit_string {
     void *data;
 } heim_bit_string;
 
+typedef struct heim_octet_string heim_any;
+typedef struct heim_octet_string heim_any_set;
+
 #define ASN1_MALLOC_ENCODE(T, B, BL, S, L, R)                  \
   do {                                                         \
     (BL) = length_##T((S));                                    \

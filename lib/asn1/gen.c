@@ -145,6 +145,9 @@ init_generate (const char *filename, const char *base)
 	     "  size_t length;\n"
 	     "  void *data;\n"
 	     "} heim_bit_string;\n\n");
+    fprintf (headerfile,
+	     "typedef struct heim_octet_string heim_any;\n"
+	     "typedef struct heim_octet_string heim_any_set;\n\n");
     fputs("#define ASN1_MALLOC_ENCODE(T, B, BL, S, L, R)                  \\\n"
 	  "  do {                                                         \\\n"
 	  "    (BL) = length_##T((S));                                    \\\n"
