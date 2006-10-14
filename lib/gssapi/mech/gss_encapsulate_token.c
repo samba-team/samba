@@ -56,7 +56,7 @@ gss_encapsulate_token(gss_buffer_t input_token,
     ASN1_MALLOC_ENCODE(GSSAPIContextToken,
 		       output_token->value, output_token->length,
 		       &ct, &size, ret);
-    free_oid(&ct.thisMech);
+    der_free_oid(&ct.thisMech);
     if (ret) {
 	output_token->length = 0;
 	output_token->value = NULL;

@@ -52,7 +52,7 @@ oid_prefix_equal(gss_OID oid_enc, gss_OID prefix_enc, unsigned *suffix)
     ret = der_get_oid(prefix_enc->elements, prefix_enc->length,
 		      &prefix, NULL);
     if (ret) {
-	free_oid(&oid);
+	der_free_oid(&oid);
 	return 0;
     }
 
@@ -61,12 +61,12 @@ oid_prefix_equal(gss_OID oid_enc, gss_OID prefix_enc, unsigned *suffix)
     if (oid.length - 1 == prefix.length) {
 	*suffix = oid.components[oid.length - 1];
 	oid.length--;
-	ret = (heim_oid_cmp(&oid, &prefix) == 0);
+	ret = (der_heim_oid_cmp(&oid, &prefix) == 0);
 	oid.length++;
     }
 
-    free_oid(&oid);
-    free_oid(&prefix);
+    der_free_oid(&oid);
+    der_free_oid(&prefix);
 
     return ret;
 }

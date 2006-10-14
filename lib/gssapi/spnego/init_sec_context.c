@@ -255,7 +255,7 @@ spnego_initial
     ni.mechListMIC = NULL;
 
     ni_len = length_NegTokenInit(&ni);
-    buf_size = 1 + length_len(ni_len) + ni_len;
+    buf_size = 1 + der_length_len(ni_len) + ni_len;
 
     buf = malloc(buf_size);
     if (buf == NULL) {

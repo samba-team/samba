@@ -45,7 +45,7 @@ _gssapi_encap_length (size_t data_len,
 
     *len = 1 + 1 + mech->length + data_len;
 
-    len_len = length_len(*len);
+    len_len = der_length_len(*len);
 
     *total_len = 1 + len_len + *len;
 }
@@ -82,7 +82,7 @@ _gssapi_make_mech_header(void *ptr,
     size_t len_len, foo;
 
     *p++ = 0x60;
-    len_len = length_len(len);
+    len_len = der_length_len(len);
     e = der_put_length (p + len_len - 1, len_len, len, &foo);
     if(e || foo != len_len)
 	abort ();

@@ -55,20 +55,20 @@ gss_decapsulate_token(gss_buffer_t input_token,
     ret = decode_GSSAPIContextToken(input_token->value, input_token->length,
 				    &ct, NULL);
     if (ret) {
-	free_oid(&o);
+	der_free_oid(&o);
 	return GSS_S_FAILURE;
     }	
     
-    if (heim_oid_cmp(&ct.thisMech, &o) == 0) {
+    if (der_heim_oid_cmp(&ct.thisMech, &o) == 0) {
 	status = GSS_S_COMPLETE;
 	output_token->value = ct.innerContextToken.data;
 	output_token->length = ct.innerContextToken.length;
-	free_oid(&ct.thisMech);
+	der_free_oid(&ct.thisMech);
     } else {
 	free_GSSAPIContextToken(&ct);
  	status = GSS_S_FAILURE;
     }
-    free_oid(&o);
+    der_free_oid(&o);
 
     return status;
 }

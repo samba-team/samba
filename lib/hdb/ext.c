@@ -292,7 +292,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 				    ext->data.u.password.password.length,
 				    &pw);
 	} else {
-	    ret = copy_octet_string(&ext->data.u.password.password, &pw);
+	    ret = der_copy_octet_string(&ext->data.u.password.password, &pw);
 	}
 	if (ret) {
 	    krb5_clear_error_string(context);
