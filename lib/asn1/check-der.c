@@ -706,17 +706,30 @@ test_heim_oid_format_same(const char *str, const heim_oid *oid)
 {
     int ret;
     char *p;
+    heim_oid o2;
 
-    ret = der_print_heim_oid(oid, &p);
+    ret = der_print_heim_oid(oid, ' ', &p);
     if (ret) {
 	printf("fail to print oid: %s\n", str);
 	return 1;
     }
     ret = strcmp(p, str);
-    if (ret)
+    if (ret) {
 	printf("oid %s != formated oid %s\n", str, p);
-    free(p);
-    return ret != 0;
+	free(p);
+	return ret;
+    }
+
+    ret = der_parse_heim_oid(p, " ", &o2);
+    if (ret) {
+	printf("failed to parse %s\n", p);
+	free(p);
+	return ret;
+    }
+    ret = heim_oid_cmp(&o2, oid);
+    free_oid(&o2);
+
+    return ret;
 }
 
 static int
