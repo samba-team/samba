@@ -22,8 +22,15 @@
 
 /*
 Root is as found by:
- source/bin/ldbsearch -H /usr/local/samba/private/sam.ldb -b '' \
-        -s base defaultNamingContext
+  source/bin/ldbsearch -H /usr/local/samba/private/sam.ldb -b '' \
+    -s base defaultNamingContext
+
+Schema page:
+  source/bin/ldbsearch -H /usr/local/samba/private/sam.ldb -b '' \
+    -s base subschemaSubentry
+  source/bin/ldbsearch -H /usr/local/samba/private/sam.ldb -b \
+    'CN=Aggregate,CN=Schema,CN=Configuration,DC=workgroup,DC=example,DC=com' \
+    -s base objectClasses attributeTypes matchingRules ldapSyntaxes        
 */
 
 function setAppearances()
@@ -51,7 +58,7 @@ function setAppearances()
     appearance.initial = function(vTheme)
     {
         var res = oldInitial ? oldInitial.apply(this, arguments) : {};
-        res.width = "96%";
+        res.width = "90%";
         return res;
     }
 }
@@ -185,7 +192,10 @@ function setupTabs(clientDocument)
         new qx.ui.pageview.tabview.TabViewPage(tabView_Schema);
 
     // Build the search page
-    buildPageSearch(tabViewPage_Search);
+    var searchResultsTable = buildPageSearch(tabViewPage_Search);
+
+    // Provide access to the search results table
+    tabView_.searchResultTable = searchResultsTable;
 
     // Build the browse page
     buildPageBrowse(tabViewPage_Browse);
@@ -207,51 +217,109 @@ function setupTabs(clientDocument)
 
 function buildPageSearch(page)
 {
+    // We need a horizontal layout for the combox box and "Find" button
+    var layout = new qx.ui.layout.HorizontalBoxLayout();
+    layout.setWidth("100%");
+
     // Create a combo box for entry of the search expression
     var search = new qx.ui.form.ComboBox();
     search.getField().setWidth("100%");
     search.setEditable(true);
     
-    // Add the combo box to the page
-    page.add(search);
+    // Add the combo box to the horizontal layout
+    layout.add(search);
+
+    // Right-justify the 'Find' button
+    var spacer = new qx.ui.basic.HorizontalSpacer;
+    layout.add(spacer);
+
+    // Create the 'Find' button
+    var find = new qx.ui.form.Button('Find');
+
+    // We'll be setting url and service upon execute; no need to do it now.
+    var rpc = new qx.io.remote.Rpc();
+    rpc.setTimeout(10000);
+    var mycall = null;
+
+    find.addEventListener("execute", function()
+    {
+        // Set the URL and Service
+        rpc.setUrl("/services/");
+        rpc.setServiceName("samba.ldb");
+        rpc.setCrossDomain(false);
+
+        find.setEnabled(false);
+//        abort.setEnabled(true);
+        mycall = rpc.callAsync(function(result, ex, id)
+        {
+            mycall = null;
+            if (ex == null)
+            {
+                var rowData = [];
+                for (var i = 0; i < result.length; i++)
+                {
+                    var o = result[i];
+                    if (typeof(o) != "object")
+                    {
+                        alert("Found unexpected result, type " +
+                              typeof(o) +
+                              ", " +
+                              o +
+                              "\n");
+                        continue;
+                    }
+                    for (var field in o)
+                    {
+                        // skip dn and distinguishedName fields;
+                        // they're shown in each row anyway.
+                        if (field == "dn" || field == "distinguishedName")
+                        {
+                            continue;
+                        }
+                        rowData.push( [
+                                          o["dn"],
+                                          field,
+                                          o[field]
+                                      ] );
+                    }
+
+                    // Tell the table to use the new data
+                    tableModel.setData(rowData);
+                }
+            }
+            else
+            {
+                alert("Async(" + id + ") exception: " + ex);
+            }
+            find.setEnabled(true);
+//            abort.setEnabled(false);
+        },
+        "search",               // method
+        db_handle,              // database handle
+        search.getValue(),      // search expression
+        "",                     // baseDN
+        "default",              // scope
+        [ "*" ]);               // attributes
+    });
+
+    // Add the button to horizontal layout
+    layout.add(find);
+
+    // Add the horizontal box layout to the page
+    page.add(layout);
 
     // Create a simple table model
     var tableModel = new qx.ui.table.SimpleTableModel();
-    tableModel.setColumns([ "Attribute", "Value" ]);
+    tableModel.setColumns([ "Distinguished Name", "Attribute", "Value" ]);
 
-    // Add some garbage data to it
-    var attributeNames =
-        [
-            [ "Nickname" ],
-            [ "Hostname" ],
-            [ "Port" ],
-            [ "Connection caching" ],
-            [ "TLS" ],
-            [ "Client-side caching" ],
-            [ "Connections so far" ],
-            [ "LDAP protocol version" ],
-            [ "Vendor Name" ],
-            [ "Vendor Version" ],
-            [ "Support LDAP Version" ],
-            [ "Supported SASL Mechanisms" ],
-            [ "Junk 1" ],
-            [ "Junk 2" ],
-            [ "Junk 3" ]
-        ];
-            
-
-    var rowData = [];
-    for (var row = 0; row < attributeNames.length; row++)
-    {
-        rowData.push([ attributeNames[row], "" + (Math.random() * 10000) ]);
-    }
-    tableModel.setData(rowData);
     tableModel.setColumnEditable(0, false);
-    tableModel.setColumnEditable(1, true);
+    tableModel.setColumnEditable(1, false);
+    tableModel.setColumnEditable(2, false);
 
     // Create a table
     var table = new qx.ui.table.Table(tableModel);
-    with (table) {
+    with (table)
+    {
       set({
               top: 40,
               left: 0,
@@ -260,12 +328,15 @@ function buildPageSearch(page)
               statusBarVisible: false,
               columnVisibilityButtonVisible: false
           });
-      setColumnWidth(0, 200);
-      setColumnWidth(1, 440);
-      setMetaColumnCounts([1, -1]);
+      setColumnWidth(0, 300);
+      setColumnWidth(1, 180);
+      setColumnWidth(2, 240);
+      setMetaColumnCounts([ 1, -1 ]); // h-scroll attribute and value together
     };
 
     page.add(table);
+
+    return table;
 }
 
 function buildPageBrowse(page)
@@ -531,6 +602,23 @@ function buildPageSchema(page)
 qx.core.Init.getInstance().defineMain(
     function()
     {
+        // Enable JSON-RPC debugging
+        qx.Settings.setCustomOfClass("qx.io.Json", "enableDebug", true);
+
+        if (false)
+        {
+            // We'd like all table columns to do "live resize". Unfortunately,
+            // it's too slow.  Maybe someone wants to work on it...
+            var constructor = qx.OO.classes["qx.ui.table.TablePaneScroller"];
+            qx.Proto = constructor.prototype;
+            qx.OO.changeProperty(
+                {
+                    name         : "liveResize",
+                    type         : qx.constant.Type.BOOLEAN,
+                    defaultValue : true
+                });
+        }
+
         // Set appearances for this application
         setAppearances();
 
@@ -542,6 +630,23 @@ qx.core.Init.getInstance().defineMain(
 
         // Create the tabs and their windows, and attach to client document
         var tabView = setupTabs(clientDocument);
+
+        // Open a database connection.  Uses the dangerous sync request.
+        var rpc = new qx.io.remote.Rpc();
+        rpc.setUrl("/services/");
+        rpc.setServiceName("samba.ldb");
+        rpc.setCrossDomain(false);
+
+        try
+        {
+            // db_handle is global!!!  no 'var' is intentional.
+            db_handle = rpc.callSync("connect",
+                                     "/usr/local/samba/private/sam.ldb");
+        }
+        catch (ex)
+        {
+            alert("Sync exception: " + ex);
+        }
     });
 /*
  * Local Variables:
