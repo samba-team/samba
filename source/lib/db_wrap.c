@@ -65,6 +65,21 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s)
 	return strupper_talloc(mem_ctx, s);
 }
 
+/* check for leaks */
+static int ldb_wrap_destructor(struct ldb_context *ldb)
+{
+	if (talloc_total_blocks(ldb) > 300) {
+		DEBUG(0,("WARNING: probable memory leak in ldb %s - %lu blocks %lu bytes\n",
+			 (char *)ldb_get_opaque(ldb, "wrap_url"), 
+			 (unsigned long)talloc_total_blocks(ldb), 
+			 (unsigned long)talloc_total_size(ldb)));
+#if 0
+		talloc_report_full(ldb, stdout);
+#endif
+	}
+	return 0;
+}				 
+
 /*
   wrapped connection to a ldb database
   to close just talloc_free() the returned ldb_context
@@ -136,11 +151,12 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	talloc_free(real_url);
-
 	ldb_set_debug(ldb, ldb_wrap_debug, NULL);
 
 	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+
+	ldb_set_opaque(ldb, "wrap_url", real_url);
+	talloc_set_destructor(ldb, ldb_wrap_destructor);
 
 	return ldb;
 }
