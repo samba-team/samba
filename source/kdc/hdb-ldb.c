@@ -458,8 +458,6 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	char *short_princ;
 	char *short_princ_talloc;
 
-	char *realm_dn_str;
-
 	struct ldb_result *res = NULL;
 
 	ret = krb5_unparse_name_norealm(context, principal, &short_princ);
@@ -501,13 +499,12 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 
 	lret = ldb_search(ldb_ctx, realm_dn, LDB_SCOPE_SUBTREE, filter, princ_attrs, &res);
 
-	realm_dn_str = ldb_dn_linearize(mem_ctx, realm_dn);
-
 	if (lret != LDB_SUCCESS) {
 		DEBUG(3, ("Failed to search for %s: %s\n", filter, ldb_errstring(ldb_ctx)));
 		return HDB_ERR_NOENTRY;
 	} else if (res->count == 0 || res->count > 1) {
 		DEBUG(3, ("Failed find a single entry for %s: got %d\n", filter, res->count));
+		talloc_free(res);
 		return HDB_ERR_NOENTRY;
 	}
 	talloc_steal(mem_ctx, res->msgs);
