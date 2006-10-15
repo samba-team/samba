@@ -48,7 +48,7 @@ enum winreg_CreateAction {
 };
 
 struct winreg_StringBuf {
-	uint16_t length;/* [value(strlen_m(name)*2)] */
+	uint16_t length;/* [value(strlen_m_term(name)*2)] */
 	uint16_t size;
 	const char *name;/* [unique,length_is(length/2),charset(UTF16),size_is(size/2)] */
 };
