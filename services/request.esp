@@ -118,7 +118,7 @@ jsonrpc.Constant.ErrorCode.MethodNotFound        = 4;
  * This error is also used to indicate an illegal parameter value, in server
  * scripts.
  */
-jsonrpc.Constant.ErrorCode.PaameterMismatch      = 5;
+jsonrpc.Constant.ErrorCode.ParameterMismatch     = 5;
 
 /**
  * Error code, value 6: Permission Denied
@@ -337,7 +337,7 @@ var nameFirstLetter =
 if (strspn(jsonInput.method, nameChars) != strlen(jsonInput.method))
 {
     /* There's some illegal character in the service name */
-    error.setError(JsonRpcError.MethodNotFound,
+    error.setError(jsonrpc.Constant.ErrorCode.MethodNotFound,
                    "Illegal character found in method name.");
     error.Send();
     return;
@@ -364,7 +364,7 @@ if (strspn(substr(jsonInput.method, 0, 1), nameFirstLetter) != 1)
 if (strspn(jsonInput.service, "." + nameChars) != strlen(jsonInput.service))
 {
     /* There's some illegal character in the service name */
-    error.setError(JsonRpcError.IllegalService,
+    error.setError(jsonrpc.Constant.ErrorCode.IllegalService,
                    "Illegal character found in service name.");
     error.Send();
     return;
@@ -379,7 +379,7 @@ if (strspn(jsonInput.service, "." + nameChars) != strlen(jsonInput.service))
  */
 if (typeof(strstr(jsonInput.service, "..")) != "pointer")
 {
-    error.setError(JsonRpcError.IllegalService,
+    error.setError(jsonrpc.Constant.ErrorCode.IllegalService,
                    "Illegal use of two consecutive dots in service name");
     error.Send();
     return;

@@ -39,18 +39,25 @@ function _connect(params, error)
 {
     if (params.length < 1)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <db_name> [<option> ...]");
         return error;
     }
 
+    /* First, see if this database was already opened */
+    var resourceId = session.resources.find("ldb:" + params[0], error);
+    if (resourceId != undefined)
+    {
+        /* It was.  Give 'em the resource id */
+        return resourceId;
+    }
+
+    /* Database was not previously opened.  Connect to it. */
     ldb = ldb_init();
     var ret = ldb.connect(params[0]);
     if (ret && ldb.db)
     {
-        return session.resources.set(ldb,
-                                     session.resources.Type.ldb,
-                                     error);
+        return session.resources.set(ldb, "ldb:" + params[0], error);
     }
     else
     {
@@ -78,14 +85,12 @@ function _close(params, error)
 {
     if (params.length != 1)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -121,14 +126,12 @@ function _transaction_start(params, error)
 {
     if (params.length != 1)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -156,14 +159,12 @@ function _transaction_cancel(params, error)
 {
     if (params.length != 1)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -191,14 +192,12 @@ function _transaction_commit(params, error)
 {
     if (params.length != 1)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -243,15 +242,13 @@ function _search(params, error)
 {
     if (params.length < 2 || params.length > 5)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: " +
                        "<resource_id> <expr> [<baseDN> [<scope> [<attrs>]]]");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -287,12 +284,12 @@ function _search(params, error)
     }
     else
     {
-        error.setError(JsonRpcError_ParameterMismatch,
-                       "invalid scope");
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
+                       "invalid scope: " + scope);
         return error;
     }
 
-    return ldb.transaction_search(expr, baseDN, scope, attrs);
+    return ldb.search(expr, baseDN, scope, attrs);
 }
 jsonrpc.method.search = _search;
 
@@ -317,14 +314,12 @@ function _add(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id> <ldif>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -355,14 +350,12 @@ function _modify(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id> <ldif>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -393,14 +386,12 @@ function _del(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id> <dn>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -434,14 +425,12 @@ function _rename(params, error)
 {
     if (params.length != 3)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id> <old_dn> <new_dn>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -472,14 +461,12 @@ function _base64encode(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id> <string_to_be_encoded>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -510,14 +497,12 @@ function _base64decode(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id> <string_to_be_decoded>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -548,14 +533,12 @@ function _base64decode(params, error)
 {
     if (params.length != 2)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id> <string_to_be_decoded>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
@@ -582,14 +565,12 @@ function _errstring(params, error)
 {
     if (params.length != 1)
     {
-        error.setError(JsonRpcError_ParameterMismatch,
+        error.setError(jsonrpc.Constant.ErrorCode.ParameterMismatch,
                        "usage: <resource_id>");
         return error;
     }
 
-    ldb = session.resources.get(params[0],
-                                session.resources.Type.ldb,
-                                error);
+    ldb = session.resources.get(params[0], error);
     if (ldb["__type"] == "_JsonRpcError")
     {
         return ldb;
