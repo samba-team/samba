@@ -1234,6 +1234,7 @@ AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf)
 AC_CHECK_FUNCS(opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64)
+AC_CHECK_FUNCS(getpwent_r)
 AC_CHECK_FUNCS(getdents getdents64)
 AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
 AC_CHECK_FUNCS(syslog vsyslog timegm)
@@ -5550,6 +5551,23 @@ case "$host_os" in
 		WINBIND_NSS="nsswitch/nss_winbind.$SHLIBEXT"
 		WINBIND_WINS_NSS="nsswitch/nss_wins.$SHLIBEXT"
 		;;
+
+	*netbsd*[[3-9]]*)
+		# NetBSD winbind client is implemented as a wrapper
+		# around the Linux version. It needs getpwent_r() to
+		# indicate libc's use of the correct nsdispatch API.
+		#
+		if test x"$ac_cv_func_getpwent_r" = x"yes"; then
+			WINBIND_NSS_EXTRA_OBJS="\
+			    nsswitch/winbind_nss_netbsd.o \
+			    nsswitch/winbind_nss_linux.o"
+			WINBIND_NSS="nsswitch/nss_winbind.$SHLIBEXT"
+			WINBIND_WINS_NSS="nsswitch/nss_wins.$SHLIBEXT"
+		else
+			HAVE_WINBIND=no
+			winbind_no_reason=", getpwent_r is missing on $host_os so winbind is unsupported"
+		fi
+		;;
 	*irix*)
 		# IRIX has differently named shared libraries
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_irix.o"
@@ -5612,6 +5630,11 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 fi
 
 # Display test results
+
+if test x"$HAVE_WINBIND" = x"no"; then
+	WINBIND_NSS=""
+	WINBIND_WINS_NSS=""
+fi
 
 if test x"$HAVE_WINBIND" = x"yes"; then
         AC_MSG_RESULT(yes)
