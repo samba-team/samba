@@ -42,6 +42,7 @@
 	torture_local_ndr, 
 	torture_local_event, 
 	torture_local_torture,
+	torture_local_dbspeed, 
 	NULL
 };
 
