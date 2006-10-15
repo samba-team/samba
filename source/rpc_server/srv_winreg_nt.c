@@ -613,19 +613,31 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle, uint32_t
 		status = WERR_NOMEM;
 	}
 
-	*value_length =  regval_size( val );
-	*type = val->type;
+	if (type != NULL) {
+		*type = val->type;
+	}
 
-	if ( *data_size == 0 || !data ) {
-		status = WERR_OK;
-	} else if ( *value_length > *data_size ) {
-		status = WERR_MORE_DATA;
-	} else {
-		memcpy( data, regval_data_p(val), *value_length );
+	if (data != NULL) {
+		if ((data_size == NULL) || (value_length == NULL)) {
+			status = WERR_INVALID_PARAM;
+			goto done;
+		}
+
+		if (regval_size(val) > *data_size) {
+			status = WERR_MORE_DATA;
+			goto done;
+		}
+
+		memcpy( data, regval_data_p(val), regval_size(val) );
 		status = WERR_OK;
 	}
 
-	*data_size = *value_length;
+	if (value_length != NULL) {
+		*value_length = regval_size( val );
+	}
+	if (data_size != NULL) {
+		*data_size = regval_size( val );
+	}
 
 done:	
 	free_registry_value( val );
