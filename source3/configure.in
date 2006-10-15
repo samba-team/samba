@@ -813,21 +813,10 @@ main() {
 #
     *darwin*)
 	AC_DEFINE(BROKEN_UNICODE_COMPOSE_CHARACTERS, 1, [Does this system use unicode compose characters])
-# Add Fink directories for various packages, like dlcompat.
-# Note: iconv does that explicitly below, but other packages
-# don't.
-	CPPFLAGS="$CPPFLAGS -I/sw/include"
-	LDFLAGS="$LDFLAGS -L/sw/lib"
 
-# If we have dlsym_prepend_underscore (from Fink's dlcompat),
-# use that instead of plain dlsym.
-
-	AC_CHECK_LIB(dl,dlopen)
-	AC_CHECK_FUNCS(dlsym_prepend_underscore,[CPPFLAGS="$CPPFLAGS -Ddlsym=dlsym_prepend_underscore"])
-
-# Add a system specific charset module.
-
+	# Add a system specific charset module.
 	default_shared_modules="$default_shared_modules charset_macosxfs"
+
 	;;
     *hurd*)
         AC_MSG_CHECKING([for LFS support])
