@@ -60,7 +60,7 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 	TALLOC_CTX *tmp_ctx = talloc_new(mprMemCtx());
 	struct ldb_context *ldb;
 	int ret;
-	struct ldb_result *res;
+	struct ldb_result *res=NULL;
 
 	/* validate arguments */
 	if (argc < 1 || argc > 4) {
@@ -112,7 +112,7 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 	} else {
 		mpr_Return(eid, mprLdbArray(ldb, res->msgs, res->count, "ldb_message"));
 	}
-
+	talloc_free(res);
 	talloc_free(tmp_ctx);
 	return 0;
 
