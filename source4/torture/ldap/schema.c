@@ -124,6 +124,7 @@ static BOOL test_search_rootDSE(struct ldb_context *ldb, struct test_rootDSE *ro
 	if (ret != LDB_SUCCESS) {
 		return False;
 	} else if (r->count != 1) {
+		talloc_free(r);
 		return False;
 	}
 

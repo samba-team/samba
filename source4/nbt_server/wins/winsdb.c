@@ -85,6 +85,7 @@ uint64_t winsdb_set_maxVersion(struct winsdb_handle *h, uint64_t newMaxVersion)
 	ret = ldb_search(wins_db, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
 
 	if (ret != LDB_SUCCESS) goto failed;
+	talloc_steal(tmp_ctx, res);
 	if (res->count > 1) goto failed;
 
 	talloc_steal(tmp_ctx, res);
@@ -588,6 +589,7 @@ NTSTATUS winsdb_lookup(struct winsdb_handle *h,
 	ret = ldb_search(wins_db, winsdb_dn(tmp_ctx, name), LDB_SCOPE_BASE, 
 			 NULL, NULL, &res);
 
+	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS || res->count > 1) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;
@@ -595,8 +597,6 @@ NTSTATUS winsdb_lookup(struct winsdb_handle *h,
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto failed;
 	}
-
-	talloc_steal(tmp_ctx, res);
 
 	status = winsdb_record(h, res->msgs[0], tmp_ctx, now, &rec);
 	if (!NT_STATUS_IS_OK(status)) goto failed;

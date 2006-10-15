@@ -247,6 +247,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	/* search for the user's record */
 	ret = ldb_search(remote_ldb, account_dn, LDB_SCOPE_BASE, 
 			     NULL, attrs, &res);
+	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		r->out.error_string = talloc_asprintf(r, "ldb_search for %s failed - %s",
 						      account_dn_str, ldb_errstring(remote_ldb));

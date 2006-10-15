@@ -172,11 +172,11 @@ static NTSTATUS sldb_list_all(TALLOC_CTX *mem_ctx,
 	ldb = talloc_get_type(ctx->priv_data, struct ldb_context);
 
 	ret = ldb_search(ldb, ldb_dn_explode(tmp_ctx, "CN=SHARES"), LDB_SCOPE_SUBTREE, "(name=*)", NULL, &res);
+	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
-	talloc_steal(tmp_ctx, res);
 
 	n = talloc_array(mem_ctx, const char *, res->count);
 	if (!n) {
@@ -228,11 +228,11 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	ret = ldb_search(ldb, ldb_dn_explode(tmp_ctx, "CN=SHARES"), LDB_SCOPE_SUBTREE, filter, NULL, &res);
+	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
-	talloc_steal(tmp_ctx, res);
 
 	s = talloc(tmp_ctx, struct share_config);
 	if (!s) {

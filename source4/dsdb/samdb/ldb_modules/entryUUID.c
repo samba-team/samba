@@ -468,7 +468,9 @@ static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *sche
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	
+
+	talloc_steal(mem_ctx, objectclass_res);
+
 	return ret;
 }
 
