@@ -3857,7 +3857,7 @@ if test x"$with_ads_support" != x"no"; then
 	use_ads=no
       fi
 
-      if test x"$ac_cv_func_ext_decode_krb5_ap_req" != x"yes"
+      if test x"$ac_cv_func_ext_krb5_decode_ap_req" != x"yes"
       then
 	AC_MSG_WARN(no KRB5_AP_REQ_DECODING_FUNCTION detected)
 	use_ads=no
