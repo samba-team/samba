@@ -1461,7 +1461,7 @@ int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
     kbuf.dsize = strlen(keystr)+1;
     dbuf.dptr = ps->data_p;
     dbuf.dsize = prs_offset(ps);
-    return tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+    return tdb_trans_store(tdb, kbuf, dbuf, TDB_REPLACE);
 }
 
 /* useful function to fetch a structure into rpc wire format */
