@@ -240,6 +240,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct registry_key *h, co
 		DEBUG(0, ("Error opening key '%s': %s\n", ldb_dn_linearize(ldap_path, ldap_path), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	} else if (res->count == 0) {
+		talloc_free(res);
 		return WERR_BADFILE;
 	}
 

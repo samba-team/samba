@@ -198,12 +198,14 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		DEBUG(3,("schannel: Failed to find a record for client: %s\n", computer_name));
+		talloc_free(res);
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	val = ldb_msg_find_ldb_val(res->msgs[0], "sessionKey");
 	if (val == NULL || val->length != 16) {
 		DEBUG(1,("schannel: record in schannel DB must contain a sessionKey of length 16, when searching for client: %s\n", computer_name));
+		talloc_free(res);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -212,6 +214,7 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 	val = ldb_msg_find_ldb_val(res->msgs[0], "seed");
 	if (val == NULL || val->length != 8) {
 		DEBUG(1,("schannel: record in schannel DB must contain a vaid seed of length 8, when searching for client: %s\n", computer_name));
+		talloc_free(res);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -220,6 +223,7 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 	val = ldb_msg_find_ldb_val(res->msgs[0], "clientState");
 	if (val == NULL || val->length != 8) {
 		DEBUG(1,("schannel: record in schannel DB must contain a vaid clientState of length 8, when searching for client: %s\n", computer_name));
+		talloc_free(res);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 	memcpy((*creds)->client.data, val->data, 8);
@@ -227,6 +231,7 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 	val = ldb_msg_find_ldb_val(res->msgs[0], "serverState");
 	if (val == NULL || val->length != 8) {
 		DEBUG(1,("schannel: record in schannel DB must contain a vaid serverState of length 8, when searching for client: %s\n", computer_name));
+		talloc_free(res);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 	memcpy((*creds)->server.data, val->data, 8);
@@ -235,14 +240,27 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 
 	(*creds)->secure_channel_type = ldb_msg_find_attr_as_int(res->msgs[0], "secureChannelType", 0);
 
-	(*creds)->account_name = talloc_reference(*creds, ldb_msg_find_attr_as_string(res->msgs[0], "accountName", NULL));
+	(*creds)->account_name = talloc_strdup(*creds, ldb_msg_find_attr_as_string(res->msgs[0], "accountName", NULL));
+	if ((*creds)->account_name == NULL) {
+		talloc_free(res);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	(*creds)->computer_name = talloc_reference(*creds, ldb_msg_find_attr_as_string(res->msgs[0], "computerName", NULL));
+	(*creds)->computer_name = talloc_strdup(*creds, ldb_msg_find_attr_as_string(res->msgs[0], "computerName", NULL));
+	if ((*creds)->computer_name == NULL) {
+		talloc_free(res);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	(*creds)->domain = talloc_reference(*creds, ldb_msg_find_attr_as_string(res->msgs[0], "flatname", NULL));
+	(*creds)->domain = talloc_strdup(*creds, ldb_msg_find_attr_as_string(res->msgs[0], "flatname", NULL));
+	if ((*creds)->domain == NULL) {
+		talloc_free(res);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	(*creds)->sid = samdb_result_dom_sid(*creds, res->msgs[0], "objectSid");
 
+	talloc_free(res);
 	return NT_STATUS_OK;
 }
 
