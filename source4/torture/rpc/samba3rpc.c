@@ -36,6 +36,8 @@
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
+#include "librpc/gen_ndr/ndr_winreg.h"
+#include "librpc/gen_ndr/ndr_winreg_c.h"
 #include "librpc/gen_ndr/ndr_wkssvc.h"
 #include "librpc/gen_ndr/ndr_wkssvc_c.h"
 #include "lib/cmdline/popt_common.h"
@@ -2632,4 +2634,207 @@ BOOL torture_samba3_rpc_wkssvc(struct torture_context *torture)
 
 	talloc_free(mem_ctx);
 	return True;
+}
+
+static NTSTATUS winreg_close(struct dcerpc_pipe *p,
+			     struct policy_handle *handle)
+{
+	struct winreg_CloseKey c;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	c.in.handle = c.out.handle = handle;
+
+	if (!(mem_ctx = talloc_new(p))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dcerpc_winreg_CloseKey(p, mem_ctx, &c);
+	talloc_free(mem_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!W_ERROR_IS_OK(c.out.result)) {
+		return werror_to_ntstatus(c.out.result);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS enumvalues(struct dcerpc_pipe *p, struct policy_handle *handle,
+			   TALLOC_CTX *mem_ctx)
+{
+	uint32_t enum_index = 0;
+
+	while (1) {
+		struct winreg_EnumValue r;
+		struct winreg_StringBuf name;
+		enum winreg_Type type = 0;
+		uint8_t buf8[1024];
+		NTSTATUS status;
+		uint32_t size, length;
+		
+		r.in.handle = handle;
+		r.in.enum_index = enum_index;
+		name.name = "";
+		name.size = 1024;
+		r.in.name = r.out.name = &name;
+		size = 1024;
+		length = 5;
+		r.in.type = &type;
+		r.in.value = buf8;
+		r.in.size = &size;
+		r.in.length = &length;
+
+		status = dcerpc_winreg_EnumValue(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+			return NT_STATUS_OK;
+		}
+		enum_index += 1;
+	}
+}
+
+static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle, 
+			 TALLOC_CTX *mem_ctx, int depth)
+{
+	struct winreg_EnumKey r;
+	struct winreg_StringBuf class, name;
+	NTSTATUS status;
+	NTTIME t = 0;
+
+	if (depth <= 0) {
+		return NT_STATUS_OK;
+	}
+
+	class.name   = "";
+	class.size   = 1024;
+
+	r.in.handle = handle;
+	r.in.enum_index = 0;
+	r.in.name = &name;
+	r.in.keyclass = &class;
+	r.out.name = &name;
+	r.in.last_changed_time = &t;
+
+	do {
+		TALLOC_CTX *tmp_ctx;
+		struct winreg_OpenKey o;
+		struct policy_handle key_handle;
+		int i;
+
+		if (!(tmp_ctx = talloc_new(mem_ctx))) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		name.name = NULL;
+		name.size = 1024;
+
+		status = dcerpc_winreg_EnumKey(p, tmp_ctx, &r);
+		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+			/* We're done enumerating */
+			talloc_free(tmp_ctx);
+			return NT_STATUS_OK;
+		}
+
+		for (i=0; i<10-depth; i++)
+			printf(" ");
+		printf("%s\n", r.out.name->name);
+			
+
+		o.in.parent_handle = handle;
+		o.in.keyname.name = r.out.name->name;
+		o.in.unknown = 0;
+		o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		o.out.handle = &key_handle;
+
+		status = dcerpc_winreg_OpenKey(p, tmp_ctx, &o);
+		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(o.out.result)) {
+			enumkeys(p, &key_handle, tmp_ctx, depth-1);
+			enumvalues(p, &key_handle, tmp_ctx);
+			status = winreg_close(p, &key_handle);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+
+		talloc_free(tmp_ctx);
+
+		r.in.enum_index += 1;
+	} while(True);
+
+	return NT_STATUS_OK;
+}
+
+typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_pipe *, TALLOC_CTX *, void *);
+
+static BOOL test_Open3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+		       const char *name, winreg_open_fn open_fn)
+{
+	struct policy_handle handle;
+	struct winreg_OpenHKLM r;
+	NTSTATUS status;
+
+	r.in.system_name = 0;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = &handle;
+	
+	status = open_fn(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		d_printf("(%s) %s failed: %s, %s\n", __location__, name,
+			 nt_errstr(status), win_errstr(r.out.result));
+		return False;
+	}
+
+	enumkeys(p, &handle, mem_ctx, 4);
+
+	status = winreg_close(p, &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) dcerpc_CloseKey failed: %s\n",
+			 __location__, nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+BOOL torture_samba3_rpc_winreg(struct torture_context *torture)
+{
+        NTSTATUS status;
+	struct dcerpc_pipe *p;
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+	struct {
+		const char *name;
+		winreg_open_fn fn;
+	} open_fns[] = {
+		{"OpenHKLM", (winreg_open_fn)dcerpc_winreg_OpenHKLM },
+		{"OpenHKU",  (winreg_open_fn)dcerpc_winreg_OpenHKU },
+		{"OpenHKPD", (winreg_open_fn)dcerpc_winreg_OpenHKPD },
+		{"OpenHKPT", (winreg_open_fn)dcerpc_winreg_OpenHKPT },
+		{"OpenHKCR", (winreg_open_fn)dcerpc_winreg_OpenHKCR }};
+	int i;
+
+	mem_ctx = talloc_init("torture_rpc_winreg");
+
+	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_winreg);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+#if 1
+	ret = test_Open3(p, mem_ctx, open_fns[0].name, open_fns[0].fn);
+#else
+	for (i = 0; i < ARRAY_SIZE(open_fns); i++) {
+		if (!test_Open3(p, mem_ctx, open_fns[i].name, open_fns[i].fn))
+			ret = False;
+	}
+#endif
+
+	talloc_free(mem_ctx);
+
+	return ret;
 }
