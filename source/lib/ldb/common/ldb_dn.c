@@ -848,7 +848,7 @@ failed:
 
 struct ldb_dn *ldb_dn_string_compose(void *mem_ctx, const struct ldb_dn *base, const char *child_fmt, ...)
 {
-	struct ldb_dn *dn;
+	struct ldb_dn *dn, *dn1;
 	char *child_str;
 	va_list ap;
 	
@@ -860,9 +860,11 @@ struct ldb_dn *ldb_dn_string_compose(void *mem_ctx, const struct ldb_dn *base, c
 
 	if (child_str == NULL) return NULL;
 
-	dn = ldb_dn_compose(mem_ctx, ldb_dn_explode(mem_ctx, child_str), base);
+	dn1 = ldb_dn_explode(mem_ctx, child_str);
+	dn = ldb_dn_compose(mem_ctx, dn1, base);
 
 	talloc_free(child_str);
+	talloc_free(dn1);
 
 	return dn;
 }
