@@ -1,3 +1,8 @@
+2006-10-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hmac.c (HMAC_CTX_cleanup): destroy the EVP_MD_CTX, so it will be
+	freed.
+	
 2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* bn.c: Drop heim_any.h, prefix der primitives with der_
