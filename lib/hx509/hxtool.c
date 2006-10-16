@@ -950,9 +950,9 @@ random_data(void *opt, int argc, char **argv)
     }
 
     ret = RAND_bytes(ptr, len);
-    if (ret != len) {
+    if (ret != 1) {
 	free(ptr);
-	fprintf(stderr, "requested %d bytes, got %d bytes\n", len, ret);
+	fprintf(stderr, "did not get cryptographic strong random\n");
 	return 1;
     }
 
