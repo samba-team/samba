@@ -58,17 +58,21 @@ if (form['submit'] == "Migrate") {
 		writefln("You need to set 'server role' to 'member server' before starting the migration process");
 	} else {
 		var creds = credentials_init();
+		var samdb;
 		creds.set_username(form.ADMIN);
 		creds.set_password(form.ADMINPASS);
 		creds.set_domain(form.DOMAIN);
 		creds.set_realm(form.REALM);
 
 		var info = new Object();
-		info.message = writefln;
-
 		var paths = provision_default_paths(subobj);
 		var session_info = session.authinfo.session_info;
 		var credentials = session.authinfo.credentials;
+
+		info.credentials = credentials;
+		info.session_info = session_info;
+		info.message = writefln;
+		info.subobj = subobj;
 
 		/* Setup a basic database structure, but don't setup any users */
 		if (!provision(subobj, writefln, true, paths,
@@ -86,7 +90,10 @@ if (form['submit'] == "Migrate") {
 		} else if (!provision_dns(subobj, writefln, paths,
 					  session.authinfo.session_info, session.authinfo.credentials)) {
 			writefln("DNS Provision failed!");
-		} else if (!setup_name_mappings(info, subobj, session_info, credentials)) {
+		} else if (!(samdb = open_ldb(info, paths.samdb, false))) {
+			writefln("Opening " + paths.samdb + " failed!");
+			info.samdb = samdb;
+		} else if (!setup_name_mappings(info, samdb)) {
 			writefln("Setup of name mappings failed!");			
 		} else {
 			var zonepath = paths.dns;
