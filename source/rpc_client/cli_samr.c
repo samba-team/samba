@@ -1459,7 +1459,7 @@ NTSTATUS rpccli_samr_query_dispinfo(struct rpc_pipe_client *cli,
 
 	/* Return output parameters */
 
-        result = r.status;
+	result = r.status;
 
 	if (!NT_STATUS_IS_OK(result) &&
 	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
@@ -1511,7 +1511,7 @@ NTSTATUS rpccli_samr_query_dispinfo2(struct rpc_pipe_client *cli,
 
 	/* Return output parameters */
 
-        result = r.status;
+	result = r.status;
 
 	if (!NT_STATUS_IS_OK(result) &&
 	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
@@ -1562,7 +1562,7 @@ NTSTATUS rpccli_samr_query_dispinfo3(struct rpc_pipe_client *cli,
 
 	/* Return output parameters */
 
-        result = r.status;
+	result = r.status;
 
 	if (!NT_STATUS_IS_OK(result) &&
 	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
@@ -1610,9 +1610,50 @@ NTSTATUS rpccli_samr_get_dispenum_index(struct rpc_pipe_client *cli,
 
 	*idx = 0;
 
-        result = r.status;
+	result = r.status;
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_ERR(result)) {
+		*idx = r.idx;
+	}
+
+	return result;
+}
+
+NTSTATUS rpccli_samr_get_dispenum_index2(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx, 
+					 POLICY_HND *domain_pol,
+					 uint16 switch_value,
+					 const char *name,
+					 uint32 *idx)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_GET_DISPENUM_INDEX q;
+	SAMR_R_GET_DISPENUM_INDEX r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_get_dispenum_index2 for name = %s\n", name));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_samr_q_get_dispenum_index(&q, domain_pol, switch_value, name);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_GET_DISPENUM_INDEX2,
+		q, r,
+		qbuf, rbuf,
+		samr_io_q_get_dispenum_index,
+		samr_io_r_get_dispenum_index,
+		NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	*idx = 0;
+
+	result = r.status;
+
+	if (!NT_STATUS_IS_ERR(result)) {
 		*idx = r.idx;
 	}
 

@@ -1370,9 +1370,10 @@ static NTSTATUS cmd_samr_query_dispinfo3(struct rpc_pipe_client *cli,
 
 /* Query display info index */
 
-static NTSTATUS cmd_samr_get_dispenum_index(struct rpc_pipe_client *cli, 
-					    TALLOC_CTX *mem_ctx,
-					    int argc, const char **argv)
+static NTSTATUS cmd_samr_get_dispenum_index_int(struct rpc_pipe_client *cli, 
+						TALLOC_CTX *mem_ctx,
+						int argc, const char **argv,
+						int opcode)
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -1381,21 +1382,22 @@ static NTSTATUS cmd_samr_get_dispenum_index(struct rpc_pipe_client *cli,
 	uint32 idx;
 
 	if (argc < 2 || argc > 3) {
-		printf("Usage: %s mame [info level]\n", argv[0]);
+		printf("Usage: %s name [info level]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc >= 3)
+	if (argc >= 3) {
 		sscanf(argv[2], "%hd", &info_level);
-        
+	}
 
 	/* Get sam policy handle */
 
 	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				   &connect_pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
@@ -1403,18 +1405,31 @@ static NTSTATUS cmd_samr_get_dispenum_index(struct rpc_pipe_client *cli,
 					 access_mask, 
 					 &domain_sid, &domain_pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
+	}
 
 	/* Query display info index */
 
-	result = rpccli_samr_get_dispenum_index(cli, mem_ctx, &domain_pol,
-						info_level, argv[1], &idx);
-	if (!NT_STATUS_IS_OK(result)) {
+	switch (opcode) {
+	case SAMR_GET_DISPENUM_INDEX:
+		result = rpccli_samr_get_dispenum_index(cli, mem_ctx, &domain_pol,
+							info_level, argv[1], &idx);
+		break;
+	case SAMR_GET_DISPENUM_INDEX2:
+		result = rpccli_samr_get_dispenum_index2(cli, mem_ctx, &domain_pol,
+							info_level, argv[1], &idx);
+		break;
+	default:
+		printf("unknown opcode\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	if (NT_STATUS_IS_ERR(result)) {
 		goto done;
 	};
 
-	printf("idx is: %d\n", idx);
+	printf("idx is: %d (0x%08x)\n", idx, idx);
 
 	rpccli_samr_close(cli, mem_ctx, &domain_pol);
 	rpccli_samr_close(cli, mem_ctx, &connect_pol);
@@ -1422,7 +1437,23 @@ static NTSTATUS cmd_samr_get_dispenum_index(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* Query display info index */
 
+static NTSTATUS cmd_samr_get_dispenum_index(struct rpc_pipe_client *cli, 
+					    TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv)
+{
+	return cmd_samr_get_dispenum_index_int(cli, mem_ctx, argc, argv, SAMR_GET_DISPENUM_INDEX);
+}
+
+/* Query display info index2 */
+
+static NTSTATUS cmd_samr_get_dispenum_index2(struct rpc_pipe_client *cli, 
+					     TALLOC_CTX *mem_ctx,
+					     int argc, const char **argv)
+{
+	return cmd_samr_get_dispenum_index_int(cli, mem_ctx, argc, argv, SAMR_GET_DISPENUM_INDEX2);
+}
 
 /* Query domain info */
 
@@ -2230,6 +2261,7 @@ struct cmd_set samr_commands[] = {
 	{ "querydispinfo2", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dispinfo2, 	NULL, PI_SAMR, NULL,	"Query display info 2",      "" },
 	{ "querydispinfo3", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dispinfo3, 	NULL, PI_SAMR, NULL,	"Query display info 3",      "" },
 	{ "getdispenumindex", 	RPC_RTYPE_NTSTATUS, cmd_samr_get_dispenum_index, 	NULL, PI_SAMR, NULL,	"Query display info index",      "" },
+	{ "getdispenumindex2", 	RPC_RTYPE_NTSTATUS, cmd_samr_get_dispenum_index2, 	NULL, PI_SAMR, NULL,	"Query display info index",      "" },
 	{ "querydominfo", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dominfo, 	NULL, PI_SAMR, NULL,	"Query domain info",       "" },
 	{ "enumdomusers",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_dom_users,       NULL, PI_SAMR, NULL,	"Enumerate domain users", "" },
 	{ "enumdomgroups",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_dom_groups,       NULL, PI_SAMR, NULL,	"Enumerate domain groups", "" },
