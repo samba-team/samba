@@ -820,6 +820,8 @@ _PUBLIC_ NTSTATUS ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void
 	}
 
 	*blob = ndr_push_blob(ndr);
+	talloc_steal(mem_ctx, blob->data);
+	talloc_free(ndr);
 
 	return NT_STATUS_OK;
 }
