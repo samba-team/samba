@@ -296,7 +296,7 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 					    const struct ldb_val *in, struct ldb_val *out)
 {
 	struct ldb_dn *dn1 = NULL;
-	char *oc1;
+	char *oc1, *oc2;
 
 	dn1 = ldb_dn_explode(mem_ctx, (char *)in->data);
 	if (dn1 == NULL) {
@@ -308,9 +308,11 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 		return -1;
 	}
 
-	oc1 = ldb_casefold(ldb, mem_ctx, oc1);
-	out->data = (void *)oc1;
-	out->length = strlen(oc1);
+	oc2 = ldb_casefold(ldb, mem_ctx, oc1);
+	out->data = (void *)oc2;
+	out->length = strlen(oc2);
+	talloc_free(oc1);
+	talloc_free(dn1);
 	return 0;
 }
 
