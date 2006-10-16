@@ -378,6 +378,12 @@ command = {
 	name = "info"
 }
 command = {
+	name = "random-data"
+	min_args="1"
+	argument="bytes"
+	help = "Generates random bytes and prints them to standard output"
+}
+command = {
 	name = "help"
 	name = "?"
 	argument = "[command]"
