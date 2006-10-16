@@ -36,7 +36,7 @@ Schema page:
 function setAppearances()
 {
     // Modify the default appearance of a ComboBox for use in Search tab:
-    //   use most of the available width.
+    //   use more of the available width.
     //
     // If we had multiple uses, we'd create a new appearance.  Since we don't,
     // we can just modify this default appearance.
@@ -58,7 +58,7 @@ function setAppearances()
     appearance.initial = function(vTheme)
     {
         var res = oldInitial ? oldInitial.apply(this, arguments) : {};
-        res.width = "90%";
+        res.width = "80%";
         return res;
     }
 }
@@ -217,9 +217,22 @@ function setupTabs(clientDocument)
 
 function buildPageSearch(page)
 {
-    // We need a horizontal layout for the combox box and "Find" button
-    var layout = new qx.ui.layout.HorizontalBoxLayout();
-    layout.setWidth("100%");
+    // We need a vertical box layout for the various input fields
+    var vlayout = new qx.ui.layout.VerticalBoxLayout();
+    vlayout.setWidth("100%");
+
+    // We need a horizontal box layout for the search combo box and its label
+    var hlayout = new qx.ui.layout.HorizontalBoxLayout();
+    hlayout.setWidth("100%");
+    hlayout.setHeight(25);
+
+    // Create a label for the list of required attributes
+    var label = new qx.ui.basic.Atom("Search Expression:");
+    label.setWidth(100);
+    label.setHorizontalChildrenAlign("right");
+
+    // Add the label to the horizontal layout
+    hlayout.add(label);
 
     // Create a combo box for entry of the search expression
     var search = new qx.ui.form.ComboBox();
@@ -227,14 +240,79 @@ function buildPageSearch(page)
     search.setEditable(true);
     
     // Add the combo box to the horizontal layout
-    layout.add(search);
+    hlayout.add(search);
 
+    // Add the horizontal layout to the vertical layout
+    vlayout.add(hlayout);
+
+    // We need a horizontal box layout for the base combo box and its label
+    hlayout = new qx.ui.layout.HorizontalBoxLayout();
+    hlayout.setWidth("100%");
+    hlayout.setHeight(25);
+
+    // Create a label for the list of required attributes
+    var label = new qx.ui.basic.Atom("Base:");
+    label.setWidth(100);
+    label.setHorizontalChildrenAlign("right");
+
+    // Add the label to the horizontal layout
+    hlayout.add(label);
+
+    // Create a combo box for entry of the search expression
+    var base = new qx.ui.form.ComboBox();
+    base.getField().setWidth("100%");
+    base.setEditable(true);
+    
+    // Add the combo box to the horizontal layout
+    hlayout.add(base);
+
+    // Add the horizontal layout to the vertical layout
+    vlayout.add(hlayout);
+
+    // We need a horizontal box layout for scope radio buttons
+    hlayout = new qx.ui.layout.HorizontalBoxLayout();
+    hlayout.setWidth("100%");
+    hlayout.setHeight(25);
+
+    // Create a label for the list of required attributes
+    var label = new qx.ui.basic.Atom("Scope:");
+    label.setWidth(100);
+    label.setHorizontalChildrenAlign("right");
+
+    // Add the label to the horizontal layout
+    hlayout.add(label);
+
+    // Create a radio button for each scope
+    var rbDefault = new qx.ui.form.RadioButton("Default",   "default");
+    var rbBase    = new qx.ui.form.RadioButton("Base",      "base");
+    var rbOne     = new qx.ui.form.RadioButton("One Level", "one");
+    var rbSubtree = new qx.ui.form.RadioButton("Subtree",   "subtree");
+
+    // Use a default of "Default"
+    rbDefault.setChecked(true);
+
+    // Add the radio buttons to the horizontal layout
+    hlayout.add(rbDefault, rbBase, rbOne, rbSubtree);
+
+    // Group the radio buttons so only one in the group may be selected
+    var scope = new qx.manager.selection.RadioManager("scope",
+                                                      [
+                                                          rbDefault,
+                                                          rbBase,
+                                                          rbOne,
+                                                          rbSubtree
+                                                      ]);
+    
     // Right-justify the 'Find' button
     var spacer = new qx.ui.basic.HorizontalSpacer;
-    layout.add(spacer);
+    hlayout.add(spacer);
 
     // Create the 'Find' button
     var find = new qx.ui.form.Button('Find');
+    hlayout.add(find);
+
+    // Add the Find button line to the vertical layout
+    vlayout.add(hlayout);
 
     // We'll be setting url and service upon execute; no need to do it now.
     var rpc = new qx.io.remote.Rpc();
@@ -294,19 +372,16 @@ function buildPageSearch(page)
             find.setEnabled(true);
 //            abort.setEnabled(false);
         },
-        "search",               // method
-        db_handle,              // database handle
-        search.getValue(),      // search expression
-        "",                     // baseDN
-        "default",              // scope
-        [ "*" ]);               // attributes
+        "search",                       // method
+        db_handle,                      // database handle
+        search.getValue(),              // search expression
+        base.getValue(),                // baseDN
+        scope.getSelected().getValue(), // scope
+        [ "*" ]);                       // attributes
     });
 
-    // Add the button to horizontal layout
-    layout.add(find);
-
     // Add the horizontal box layout to the page
-    page.add(layout);
+    page.add(vlayout);
 
     // Create a simple table model
     var tableModel = new qx.ui.table.SimpleTableModel();
@@ -321,7 +396,7 @@ function buildPageSearch(page)
     with (table)
     {
       set({
-              top: 40,
+              top: 80,
               left: 0,
               right: 0,
               bottom: 10,
