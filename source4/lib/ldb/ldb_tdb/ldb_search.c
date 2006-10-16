@@ -499,12 +499,11 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->handle = init_ltdb_handle(ltdb, module, req->context, req->callback);
+	req->handle = init_ltdb_handle(ltdb, module, req);
 	if (req->handle == NULL) {
 		ltdb_unlock_read(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
 	ltdb_ac = talloc_get_type(req->handle->private_data, struct ltdb_context);
 
 	ltdb_ac->tree = req->op.search.tree;
