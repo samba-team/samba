@@ -130,7 +130,6 @@ static int samldb_find_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	talloc_steal(mem_ctx, res);
 	if (res->count != 1) {
 		talloc_free(res);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -257,6 +256,7 @@ static int samldb_get_new_sid(struct ldb_module *module,
 		ldb_asprintf_errstring(module->ldb,
 					"samldb_get_new_sid: error retrieving domain sid from %s: not found!\n",
 					ldb_dn_linearize(mem_ctx, dom_dn));
+		talloc_free(res);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
