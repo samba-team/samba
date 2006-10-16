@@ -958,7 +958,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	const char *member = NULL;
 	const char *cctype = NULL;
 	int retval = PAM_AUTH_ERR;
-	dictionary *d;
+	dictionary *d = NULL;
 	char *username_ret = NULL;
 
 	/* parse arguments */
@@ -1147,7 +1147,7 @@ PAM_EXTERN
 int pam_sm_close_session(pam_handle_t *pamh, int flags,
 			 int argc, const char **argv)
 {
-	dictionary *d;
+	dictionary *d = NULL;
 	int retval = PAM_SUCCESS;
 
 	/* parse arguments */
@@ -1241,7 +1241,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	char *Announce;
 	
 	int retry = 0;
-	dictionary *d;
+	dictionary *d = NULL;
 
 	ctrl = _pam_parse(pamh, flags, argc, argv, &d);
 	if (ctrl == -1) {
