@@ -68,7 +68,7 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s)
 /* check for leaks */
 static int ldb_wrap_destructor(struct ldb_context *ldb)
 {
-	if (talloc_total_blocks(ldb) > 300) {
+	if (talloc_total_blocks(ldb) > 656) {
 		DEBUG(0,("WARNING: probable memory leak in ldb %s - %lu blocks %lu bytes\n",
 			 (char *)ldb_get_opaque(ldb, "wrap_url"), 
 			 (unsigned long)talloc_total_blocks(ldb), 
