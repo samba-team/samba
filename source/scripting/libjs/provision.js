@@ -282,6 +282,25 @@ function setup_add_ldif(ldif, info, ldb, failok)
 	return add_ok;
 }
 
+function setup_modify_ldif(ldif, info, ldb, failok)
+{
+	var lp = loadparm_init();
+	var src = lp.get("setup directory") + "/" + ldif;
+
+	var data = sys.file_load(src);
+	data = substitute_var(data, info.subobj);
+
+	var mod_ok = ldb.modify(data);
+	if (!mod_ok) {
+		info.message("ldb load failed: " + ldb.errstring() + "\n");
+		if (!failok) {
+			assert(mod_ok);
+	        }
+	}
+	return mod_ok;
+}
+
+
 function setup_ldb(ldif, info, dbname) 
 {
 	var erase = true;
@@ -524,6 +543,19 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 		return true;
 	}
 
+//	message("Activate schema module");
+//	setup_modify_ldif("schema_activation.ldif", info, samdb, false);
+//
+//	// (hack) Reload, now we have the schema loaded.  
+//	var commit_ok = samdb.transaction_commit();
+//	if (!commit_ok) {
+//		info.message("samdb commit failed: " + samdb.errstring() + "\n");
+//		assert(commit_ok);
+//	}
+//	samdb.close();
+//
+//	samdb = open_ldb(info, paths.samdb, false);
+//
 	message("Setting up sam.ldb users and groups\n");
 	setup_add_ldif("provision_users.ldif", info, samdb, false);
 
