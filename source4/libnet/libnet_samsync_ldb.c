@@ -128,11 +128,14 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 	}
 
 	if (database == SAM_DATABASE_DOMAIN) {
+		const struct ldb_dn *partitions_basedn;
 		const char *domain_attrs[] =  {"nETBIOSName", "nCName", NULL};
 		struct ldb_message **msgs_domain;
 		int ret_domain;
 
-		ret_domain = gendb_search(state->sam_ldb, mem_ctx, NULL, &msgs_domain, domain_attrs,
+		partitions_basedn = samdb_partitions_dn(state->sam_ldb, mem_ctx);
+
+		ret_domain = gendb_search(state->sam_ldb, mem_ctx, partitions_basedn, &msgs_domain, domain_attrs,
 					  "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
 					  domain_name);
 		if (ret_domain == -1) {
@@ -354,21 +357,23 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY; 
 	} 
 	
-	/* Passwords.  Ensure there is no plaintext stored against
-	 * this entry, as we only have hashes */
-	samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
-			     "sambaPassword"); 
+	if (!add) {
+		/* Passwords.  Ensure there is no plaintext stored against
+		 * this entry, as we only have hashes */
+		samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
+				     "sambaPassword"); 
+	}
 	if (user->lm_password_present) {
 		samdb_msg_add_hash(state->sam_ldb, mem_ctx, msg,  
 				   "lmPwdHash", &user->lmpassword);
-	} else {
+	} else if (!add) {
 		samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
 				     "lmPwdHash"); 
 	}
 	if (user->nt_password_present) {
 		samdb_msg_add_hash(state->sam_ldb, mem_ctx, msg,  
 				   "ntPwdHash", &user->ntpassword);
-	} else {
+	} else if (!add) {
 		samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
 				     "ntPwdHash"); 
 	}
