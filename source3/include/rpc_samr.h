@@ -130,7 +130,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_UNKNOWN_2f        0x2f
 #define SAMR_QUERY_DISPINFO2   0x30 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 3 */
-#define SAMR_UNKNOWN_31        0x31
+#define SAMR_GET_DISPENUM_INDEX2 0x31
 #define SAMR_CREATE_USER       0x32
 #define SAMR_QUERY_DISPINFO3   0x33 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 4 */
