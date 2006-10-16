@@ -229,7 +229,7 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 		talloc_get_type_abort(private_data, struct getpwsid_state);
 
 	if (!success) {
-		DEBUG(5, ("Could not query user %s SID %s\n", s->domain->name,
+		DEBUG(5, ("Could not query domain %s SID %s\n", s->domain->name,
 			  sid_string_static(&s->user_sid)));
 		request_error(s->state);
 		return;
