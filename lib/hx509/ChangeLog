@@ -1,5 +1,7 @@
 2006-10-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_crypto.in: Test random-data.
+
 	* hxtool.c: RAND_bytes() return 1 for cryptographic strong data,
 	check for that.
 
