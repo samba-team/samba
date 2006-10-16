@@ -88,3 +88,6 @@ _PUBLIC_ const char *dyn_JSDIR = JSDIR;
 
 /** Where to find the winbindd socket */
 _PUBLIC_ const char *dyn_WINBINDD_SOCKET_DIR = WINBINDD_SOCKET_DIR;
+
+/** Directory with subunit torture tests */
+_PUBLIC_ const char *dyn_TORTUREDIR = TORTUREDIR;

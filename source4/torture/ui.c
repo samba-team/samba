@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "torture/ui.h"
+#include "torture/torture.h"
 #include "lib/util/dlinklist.h"
 
 void torture_comment(struct torture_context *context, 
@@ -67,7 +68,7 @@ void _torture_skip_ext(struct torture_context *context,
 
 struct torture_suite *torture_suite_create(TALLOC_CTX *ctx, const char *name)
 {
-	struct torture_suite *suite = talloc(ctx, struct torture_suite);
+	struct torture_suite *suite = talloc_zero(ctx, struct torture_suite);
 
 	suite->name = talloc_strdup(suite, name);
 	suite->testcases = NULL;
@@ -146,6 +147,9 @@ BOOL torture_run_suite(struct torture_context *context,
 	if (context->ui_ops->suite_start)
 		context->ui_ops->suite_start(context, suite);
 
+	if (suite->path)
+		torture_subunit_run_suite(context, suite);
+
 	for (tcase = suite->testcases; tcase; tcase = tcase->next) {
 		ret &= torture_run_tcase(context, tcase);
 	}
@@ -160,6 +164,30 @@ BOOL torture_run_suite(struct torture_context *context,
 	context->level--;
 	
 	return ret;
+}
+
+void torture_ui_test_start(struct torture_context *context,
+							   struct torture_tcase *tcase,
+							   struct torture_test *test)
+{
+	if (context->ui_ops->test_start)
+		context->ui_ops->test_start(context, tcase, test);
+}
+
+void torture_ui_test_result(struct torture_context *context,
+								enum torture_result result,
+								const char *comment)
+{
+	if (context->ui_ops->test_result)
+		context->ui_ops->test_result(context, result, comment);
+
+
+	switch (result) {
+		case TORTURE_SKIP: context->success++; break;
+		case TORTURE_FAIL: context->failed++; break;
+		case TORTURE_TODO: context->todo++; break;
+		case TORTURE_OK: context->success++; break;
+	}
 }
 
 static BOOL internal_torture_run_test(struct torture_context *context, 
@@ -182,8 +210,7 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 	context->active_tcase = tcase;
 	context->active_test = test;
 
-	if (context->ui_ops->test_start)
-		context->ui_ops->test_start(context, tcase, test);
+	torture_ui_test_start(context, tcase, test);
 
 	context->last_reason = NULL;
 	context->last_result = TORTURE_OK;
@@ -195,19 +222,8 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 		context->last_result = TORTURE_FAIL;
 	}
 
-	if (context->ui_ops->test_result)
-		context->ui_ops->test_result(context, 
-									 context->last_result, 
-									 context->last_reason);
-
-
-	switch (context->last_result) {
-		case TORTURE_SKIP: context->success++; break;
-		case TORTURE_FAIL: context->failed++; break;
-		case TORTURE_TODO: context->todo++; break;
-		case TORTURE_OK: context->success++; break;
-	}
-
+	torture_ui_test_result(context, context->last_result, context->last_reason);
+	
 	talloc_free(context->last_reason);
 
 	context->active_test = NULL;

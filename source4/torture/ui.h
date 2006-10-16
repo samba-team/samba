@@ -52,6 +52,14 @@ struct torture_ui_ops
 						 enum torture_result, const char *reason);
 };
 
+void torture_ui_test_start(struct torture_context *context,
+							   struct torture_tcase *tcase,
+							   struct torture_test *test);
+
+void torture_ui_test_result(struct torture_context *context,
+								enum torture_result result,
+								const char *comment);
+
 /*
  * Holds information about a specific run of the testsuite. 
  * The data in this structure should be considered private to 
@@ -121,6 +129,7 @@ struct torture_tcase {
 struct torture_suite
 {
 	const char *name;
+	const char *path; /* Used by subunit tests only */
 	const char *description;
 	struct torture_tcase *testcases;
 	struct torture_suite *children;

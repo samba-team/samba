@@ -22,6 +22,7 @@ sub new($$$)
 	$self->{manpages} = [];
 	$self->{sbin_progs} = [];
 	$self->{bin_progs} = [];
+	$self->{torture_progs} = [];
 	$self->{static_libs} = [];
 	$self->{shared_libs} = [];
 	$self->{installable_shared_libs} = [];
@@ -79,6 +80,7 @@ BASEDIR = $self->{config}->{prefix}
 BINDIR = $self->{config}->{bindir}
 SBINDIR = $self->{config}->{sbindir}
 LIBDIR = $self->{config}->{libdir}
+TORTUREDIR = $self->{config}->{libdir}/torture
 MODULESDIR = $self->{config}->{modulesdir}
 INCLUDEDIR = $self->{config}->{includedir}
 CONFIGDIR = $self->{config}->{sysconfdir}
@@ -364,11 +366,18 @@ sub Binary($$)
 	my ($self,$ctx) = @_;
 
 	my $installdir;
+	my $localdir;
+
+	if (defined($ctx->{INSTALLDIR}) && $ctx->{INSTALLDIR} eq "TORTUREDIR") {
+		$localdir = "bin/torture";
+	} else {
+		$localdir = "bin";
+	}
 	
 	if ($self->{duplicate_build}) {
 		$installdir = "bin/install";
 	} else {
-		$installdir = "bin";
+		$installdir = $localdir;
 	}
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
@@ -378,9 +387,12 @@ sub Binary($$)
 		push (@{$self->{sbin_progs}}, "$installdir/$ctx->{BINARY}");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
 		push (@{$self->{bin_progs}}, "$installdir/$ctx->{BINARY}");
+	} elsif ($ctx->{INSTALLDIR} eq "TORTUREDIR") {
+		push (@{$self->{torture_progs}}, "$installdir/$ctx->{BINARY}");
 	}
 
-	push (@{$self->{binaries}}, "bin/$ctx->{BINARY}");
+
+	push (@{$self->{binaries}}, "$localdir/$ctx->{BINARY}");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
@@ -390,7 +402,7 @@ sub Binary($$)
 	if ($self->{duplicate_build}) {
 	$self->output(<< "__EOD__"
 #
-bin/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) 
+$localdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) 
 	\@echo Linking \$\@
 	\@\$(LD) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
@@ -511,6 +523,7 @@ sub write($$)
 	$self->output("MANPAGES = ".array2oneperline($self->{manpages})."\n");
 	$self->output("BIN_PROGS = " . array2oneperline($self->{bin_progs}) . "\n");
 	$self->output("SBIN_PROGS = " . array2oneperline($self->{sbin_progs}) . "\n");
+	$self->output("TORTURE_PROGS = " . array2oneperline($self->{torture_progs}) . "\n");
 	$self->output("BINARIES = " . array2oneperline($self->{binaries}) . "\n");
 	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");

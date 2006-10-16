@@ -52,12 +52,7 @@ NTSTATUS torture_local_init(void)
 	struct torture_suite *suite = torture_suite_create(
 										talloc_autofree_context(),
 										"LOCAL");
-	struct torture_suite *talloc_suite = torture_suite_create(
-												talloc_autofree_context(),
-												"TALLOC");
 
-	torture_local_talloc(talloc_suite);
-	torture_suite_add_suite(suite, talloc_suite);
 	torture_suite_add_simple_test(suite, "REPLACE", torture_local_replace);
 	torture_suite_add_simple_test(suite, "CRYPTO-SHA1", 
 								  torture_local_crypto_sha1);
