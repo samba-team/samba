@@ -131,7 +131,8 @@ CLEANFILES = $(BUILT_SOURCES) \
 	hxtool-commands.c hxtool-commands.h *.tmp \
 	request.out \
 	sd.data sd.data.out \
-	ev.data ev.data.out
+	ev.data ev.data.out \
+	random-data
 
 
 #
