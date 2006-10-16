@@ -110,8 +110,7 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
 struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
-					  void *context,
-					  int (*callback)(struct ldb_context *, void *, struct ldb_reply *));
+				    struct ldb_request *req);
 struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn);
