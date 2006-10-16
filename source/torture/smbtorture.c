@@ -43,18 +43,18 @@ static bool run_matching(struct torture_context *torture,
 	bool ret = true;
 
 	if (suite == NULL) {
-		struct torture_suite_list *o;
+		struct torture_suite *o;
 
-		for (o = torture_suites; o; o = o->next) {
-			if (gen_fnmatch(expr, o->suite->name) == 0) {
+		for (o = torture_root->children; o; o = o->next) {
+			if (gen_fnmatch(expr, o->name) == 0) {
 				*matched = true;
 				init_iconv();
-				ret &= torture_run_suite(torture, o->suite);
+				ret &= torture_run_suite(torture, o);
 				continue;
 			}
 
 			ret &= run_matching(torture, 
-								o->suite->name, expr, o->suite, matched);
+								o->name, expr, o, matched);
 		}
 	} else {
 		char *name;
@@ -99,11 +99,11 @@ static bool run_test(struct torture_context *torture, const char *name)
 {
 	bool ret = true;
 	bool matched = false;
-	struct torture_suite_list *o;
+	struct torture_suite *o;
 
 	if (strequal(name, "ALL")) {
-		for (o = torture_suites; o; o = o->next) {
-			ret &= torture_run_suite(torture, o->suite);
+		for (o = torture_root->children; o; o = o->next) {
+			ret &= torture_run_suite(torture, o);
 		}
 		return ret;
 	}
@@ -160,7 +160,7 @@ static void parse_dns(const char *dns)
 
 static void usage(poptContext pc)
 {
-	struct torture_suite_list *o;
+	struct torture_suite *o;
 	struct torture_suite *s;
 	struct torture_tcase *t;
 	int i;
@@ -217,24 +217,24 @@ static void usage(poptContext pc)
 
 	printf("Tests are:");
 
-	for (o = torture_suites; o; o = o->next) {
-		printf("\n%s (%s):\n  ", o->suite->description, o->suite->name);
+	for (o = torture_root->children; o; o = o->next) {
+		printf("\n%s (%s):\n  ", o->description, o->name);
 
 		i = 0;
-		for (s = o->suite->children; s; s = s->next) {
-			if (i + strlen(o->suite->name) + strlen(s->name) >= (MAX_COLS - 3)) {
+		for (s = o->children; s; s = s->next) {
+			if (i + strlen(o->name) + strlen(s->name) >= (MAX_COLS - 3)) {
 				printf("\n  ");
 				i = 0;
 			}
-			i+=printf("%s-%s ", o->suite->name, s->name);
+			i+=printf("%s-%s ", o->name, s->name);
 		}
 
-		for (t = o->suite->testcases; t; t = t->next) {
-			if (i + strlen(o->suite->name) + strlen(t->name) >= (MAX_COLS - 3)) {
+		for (t = o->testcases; t; t = t->next) {
+			if (i + strlen(o->name) + strlen(t->name) >= (MAX_COLS - 3)) {
 				printf("\n  ");
 				i = 0;
 			}
-			i+=printf("%s-%s ", o->suite->name, t->name);
+			i+=printf("%s-%s ", o->name, t->name);
 		}
 
 		if (i) printf("\n");
@@ -532,10 +532,10 @@ const static struct torture_ui_ops quiet_ui_ops = {
 
 	subunit_dir = lp_parm_string_list(-1, "torture", "subunitdir", ":");
 	if (subunit_dir == NULL) 
-		torture_subunit_load_testsuites(dyn_TORTUREDIR);
+		torture_subunit_load_testsuites(dyn_TORTUREDIR, true, NULL);
 	else {
 		for (i = 0; subunit_dir[i]; i++)
-			torture_subunit_load_testsuites(subunit_dir[i]);
+			torture_subunit_load_testsuites(subunit_dir[i], true, NULL);
 	}
 
 

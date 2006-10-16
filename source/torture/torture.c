@@ -33,42 +33,23 @@ _PUBLIC_ int torture_seed=0;
 _PUBLIC_ int torture_numasync=100;
 _PUBLIC_ bool torture_showall = false;
 
-struct torture_suite_list *torture_suites = NULL;
+struct torture_suite *torture_root = NULL;
 
-NTSTATUS torture_register_suite(struct torture_suite *suite)
+bool torture_register_suite(struct torture_suite *suite)
 {
-	struct torture_suite_list *p, *n;
+	if (!suite)
+		return true;
 
-	if (!suite) {
-		return NT_STATUS_OK;
-	}
-
-	n = talloc(talloc_autofree_context(), struct torture_suite_list);
-	n->suite = suite;
-
-	for (p = torture_suites; p; p = p->next) {
-		if (strcmp(p->suite->name, suite->name) == 0) {
-			/* Check for duplicates */
-			DEBUG(0,("There already is a suite registered with the name %s!\n", suite->name));
-			return NT_STATUS_OBJECT_NAME_COLLISION;
-		}
-
-		if (strcmp(p->suite->name, suite->name) < 0 && 
-			(!p->next || strcmp(p->next->suite->name, suite->name) > 0)) {
-			DLIST_ADD_AFTER(torture_suites, n, p);
-			return NT_STATUS_OK;
-		}
-	}
-
-	DLIST_ADD_END(torture_suites, n, struct torture_suite_list *);
-
-	return NT_STATUS_OK;
+	return torture_suite_add_suite(torture_root, suite);
 }
 
 int torture_init(void)
 {
 	init_module_fn static_init[] = STATIC_torture_MODULES;
 	init_module_fn *shared_init = load_samba_modules(NULL, "torture");
+
+	torture_root = talloc_zero(talloc_autofree_context(), 
+							struct torture_suite);
 	
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

@@ -366,18 +366,17 @@ sub Binary($$)
 	my ($self,$ctx) = @_;
 
 	my $installdir;
-	my $localdir;
+	my $extradir = "";
 
-	if (defined($ctx->{INSTALLDIR}) && $ctx->{INSTALLDIR} eq "TORTUREDIR") {
-		$localdir = "bin/torture";
-	} else {
-		$localdir = "bin";
+	if (defined($ctx->{INSTALLDIR}) && $ctx->{INSTALLDIR} =~ /^TORTUREDIR/) {
+		$extradir = "/torture" . substr($ctx->{INSTALLDIR}, length("TORTUREDIR"));
 	}
+	my $localdir = "bin$extradir";
 	
 	if ($self->{duplicate_build}) {
-		$installdir = "bin/install";
+		$installdir = "bin/install$extradir";
 	} else {
-		$installdir = $localdir;
+		$installdir = "bin$extradir";
 	}
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
@@ -387,7 +386,7 @@ sub Binary($$)
 		push (@{$self->{sbin_progs}}, "$installdir/$ctx->{BINARY}");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
 		push (@{$self->{bin_progs}}, "$installdir/$ctx->{BINARY}");
-	} elsif ($ctx->{INSTALLDIR} eq "TORTUREDIR") {
+	} elsif ($ctx->{INSTALLDIR} =~ /^TORTUREDIR/) {
 		push (@{$self->{torture_progs}}, "$installdir/$ctx->{BINARY}");
 	}
 

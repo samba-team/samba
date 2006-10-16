@@ -136,12 +136,9 @@ installbin: $(SBIN_PROGS) $(BIN_PROGS) installdirs
 		$(DESTDIR)$(LIBDIR) \
 		$(DESTDIR)$(VARDIR) \
 		$(BIN_PROGS)
-	@$(SHELL) $(srcdir)/script/installbin.sh \
+	@$(SHELL) $(srcdir)/script/installtorture.sh \
 		$(INSTALLPERMS) \
-		$(DESTDIR)$(BASEDIR) \
 		$(DESTDIR)$(TORTUREDIR) \
-		$(DESTDIR)$(LIBDIR) \
-		$(DESTDIR)$(VARDIR) \
 		$(TORTURE_PROGS)
 
 installlib: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
@@ -175,7 +172,7 @@ uninstallmisc:
 uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(BIN_PROGS)
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(TORTUREDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(TORTURE_PROGS)
+	@$(SHELL) $(srcdir)/script/uninstalltorture.sh $(DESTDIR)$(TORTUREDIR) $(TORTURE_PROGS)
 
 uninstalllib:
 	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(LIBDIR) $(SHARED_LIBS)

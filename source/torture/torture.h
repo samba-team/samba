@@ -26,12 +26,7 @@
 
 struct smbcli_state;
 
-struct torture_suite_list {
-	struct torture_suite *suite;
-	struct torture_suite_list *prev, *next;
-};
-
-extern struct torture_suite_list * torture_suites;
+extern struct torture_suite *torture_root;
 
 extern BOOL use_oplocks;
 extern BOOL torture_showall;
