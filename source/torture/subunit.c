@@ -23,40 +23,60 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "torture/ui.h"
+#include "torture/torture.h"
 #include "torture/proto.h"
 
-NTSTATUS torture_register_subunit_testsuite(const char *path)
+struct torture_suite *torture_subunit_suite_create(TALLOC_CTX *mem_ctx,
+														 const char *path)
 {
-	struct torture_suite *suite = talloc_zero(talloc_autofree_context(), 
-											  struct torture_suite);
+	struct torture_suite *suite = talloc_zero(mem_ctx, struct torture_suite);
 
 	suite->path = talloc_strdup(suite, path);
 	suite->name = talloc_strdup(suite, strrchr(path, '/')?strrchr(path, '/')+1:
 									   path);
 	suite->description = talloc_asprintf(suite, "Subunit test %s", suite->name);
 
-	return torture_register_suite(suite);
+	return suite;
 }
 
-int torture_subunit_load_testsuites(const char *directory)
+bool torture_subunit_load_testsuites(const char *directory, bool recursive, 
+									struct torture_suite *parent)
 {
 	DIR *dir;
 	struct dirent *entry;
 	char *filename;
-	int success = 0;
+	bool exists;
+
+	if (parent == NULL)
+		parent = torture_root;
 
 	dir = opendir(directory);
 	if (dir == NULL)
-		return -1;
+		return true;
 
 	while((entry = readdir(dir))) {
+		struct torture_suite *child;
 		if (ISDOT(entry->d_name) || ISDOTDOT(entry->d_name))
+			continue;
+
+		if (!recursive && entry->d_type & DT_DIR)
 			continue;
 
 		filename = talloc_asprintf(NULL, "%s/%s", directory, entry->d_name);
 	
-		if (NT_STATUS_IS_OK(torture_register_subunit_testsuite(filename))) {
-			success++;
+		if (entry->d_type & DT_DIR) {
+			child = torture_find_suite(parent, entry->d_name);
+			exists = (child != NULL);
+			if (child == NULL)
+				child = torture_suite_create(parent, entry->d_name);
+			torture_subunit_load_testsuites(filename, true, child);
+		} else {
+			child = torture_subunit_suite_create(parent, filename);
+			exists = false;
+		}
+
+		if (!exists) {
+			torture_suite_add_suite(parent, child);
 		}
 
 		talloc_free(filename);
@@ -64,7 +84,7 @@ int torture_subunit_load_testsuites(const char *directory)
 
 	closedir(dir);
 
-	return success;
+	return true;
 }
 
 static pid_t piped_child(char* const command[], int *f_in)
@@ -72,11 +92,7 @@ static pid_t piped_child(char* const command[], int *f_in)
 	pid_t pid;
 	int sock[2];
 
-#ifdef HAVE_SOCKETPAIR
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) == -1) {
-#else
-	if (pipe(sock) == -1) {
-#endif
+	if (socketpair(PF_UNIX, SOCK_STREAM, AF_LOCAL, sock) == -1) {
 		DEBUG(0, ("socketpair: %s", strerror(errno)));
 		return -1;
 	}
