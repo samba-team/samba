@@ -91,6 +91,7 @@ libhcrypto_la_SOURCES =	\
 	pkcs12.c	\
 	rand.c		\
 	rand.h		\
+	rand-unix.c	\
 	rc2.c		\
 	rc2.h		\
 	rc4.c		\
