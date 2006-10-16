@@ -35,6 +35,108 @@
 #include "ldb/include/ldb_errors.h"
 #include "schema_syntax.h"
 
+int map_schema_syntax(uint32_t om_syntax, const char *attr_syntax, const struct ldb_val *om_class, enum schema_internal_syntax *syntax)
+{
+	int ret;
+
+	ret = LDB_SUCCESS;
+
+	switch(om_syntax) {
+	case 1:
+		*syntax = SCHEMA_AS_BOOLEAN;
+		break;
+	case 2:
+		*syntax = SCHEMA_AS_INTEGER;
+		break;
+	case 4:
+		if (strcmp(attr_syntax, "2.5.5.10") == 0) {
+			*syntax = SCHEMA_AS_OCTET_STRING;
+			break;
+		}
+		if (strcmp(attr_syntax, "2.5.5.17") == 0) {
+			*syntax = SCHEMA_AS_SID;
+			break;
+		}
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		break;
+	case 6:
+		*syntax = SCHEMA_AS_OID;
+		break;
+	case 10:
+		*syntax = SCHEMA_AS_ENUMERATION;
+		break;
+	case 18:
+		*syntax = SCHEMA_AS_NUMERIC_STRING;
+		break;
+	case 19:
+		*syntax = SCHEMA_AS_PRINTABLE_STRING;
+		break;
+	case 20:
+		*syntax = SCHEMA_AS_CASE_IGNORE_STRING;
+		break;
+	case 22:
+		*syntax = SCHEMA_AS_IA5_STRING;
+		break;
+	case 23:
+		*syntax = SCHEMA_AS_UTC_TIME;
+		break;
+	case 24:
+		*syntax = SCHEMA_AS_GENERALIZED_TIME;
+		break;
+	case 27:
+		*syntax = SCHEMA_AS_CASE_SENSITIVE_STRING;
+		break;
+	case 64:
+		*syntax = SCHEMA_AS_DIRECTORY_STRING;
+		break;
+	case 65:
+		*syntax = SCHEMA_AS_LARGE_INTEGER;
+		break;
+	case 66:
+		*syntax = SCHEMA_AS_OBJECT_SECURITY_DESCRIPTOR;
+		break;
+	case 127:
+		if (!om_class) {
+			ret = LDB_ERR_OPERATIONS_ERROR;
+			break;
+		}
+		
+		if (memcmp(om_class->data, "\x2b\x0c\x02\x87\x73\x1c\x00\x85\x4a\x00", MIN(om_class->length, 10)) == 0) {
+			*syntax = SCHEMA_AS_DN;
+			break;
+		}
+		if (memcmp(om_class->data, "\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x0b", MIN(om_class->length, 10)) == 0) {
+			*syntax = SCHEMA_AS_DN_BINARY;
+			break;
+		}
+		if (memcmp(om_class->data, "\x56\x06\x01\x02\x05\x0b\x1d\x00\x00\x00", MIN(om_class->length, 10)) == 0) {
+			*syntax = SCHEMA_AS_OR_NAME;
+			break;
+		}
+		if (memcmp(om_class->data, "\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x06", MIN(om_class->length, 10)) == 0) {
+			*syntax = SCHEMA_AS_REPLICA_LINK;
+			break;
+		}
+		if (memcmp(om_class->data, "\x2b\x0c\x02\x87\x73\x1c\x00\x85\x5c\x00", MIN(om_class->length, 10)) == 0) {
+			*syntax = SCHEMA_AS_PRESENTATION_ADDRESS;
+			break;
+		}
+		if (memcmp(om_class->data, "\x2b\x0c\x02\x87\x73\x1c\x00\x85\x3e\x00", MIN(om_class->length, 10)) == 0) {
+			*syntax = SCHEMA_AS_ACCESS_POINT;
+			break;
+		}
+		if (memcmp(om_class->data, "\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x0c", MIN(om_class->length, 10)) == 0) {
+			*syntax = SCHEMA_AS_DN_STRING;
+			break;
+		}
+		/* not found will error in default: */
+	default:
+		ret = LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return ret;
+}
+
 static int schema_validate_boolean(struct ldb_val *val, int min, int max)
 {
 

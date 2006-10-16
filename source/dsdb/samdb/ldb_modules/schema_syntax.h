@@ -62,3 +62,12 @@ enum schema_internal_syntax {
 	SCHEMA_AS_DN_STRING = 23
 };
 
+int map_schema_syntax(uint32_t om_syntax,
+		      const char *attr_syntax,
+		      const struct ldb_val *om_class,
+		      enum schema_internal_syntax *syntax);
+
+int schema_validate(struct ldb_message_element *el,
+		    enum schema_internal_syntax type,
+		    bool single, int min, int max);
+
