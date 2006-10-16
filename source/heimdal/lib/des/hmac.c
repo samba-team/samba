@@ -28,7 +28,10 @@ HMAC_CTX_cleanup(HMAC_CTX *ctx)
 	free(ctx->ipad);
 	ctx->ipad = NULL;
     }
-    EVP_MD_CTX_cleanup(ctx->ctx);
+    if (ctx->ctx) {
+	    EVP_MD_CTX_destroy(ctx->ctx);
+	    ctx->ctx = NULL;
+    }
 }
 
 size_t
