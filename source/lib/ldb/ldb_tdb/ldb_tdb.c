@@ -386,6 +386,7 @@ static int ltdb_delete_internal(struct ldb_module *module, const struct ldb_dn *
 
 	ret = ltdb_modified(module, dn);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
