@@ -388,7 +388,7 @@ $server 	= process_servername($opt_host) ||
 
 
 # get the base
-$base 		= $opt_base || 
+$base 		= defined($opt_base)? $opt_base : "" || 
 	 	  get_base_from_rootdse($server,$dse);
 
 # get the realm
