@@ -43,8 +43,8 @@ RCSID("$Id$");
 
 #include <roken.h>
 
-static RAND_METHOD builtin_rand;
-static const RAND_METHOD *selected_meth = &builtin_rand;
+extern RAND_METHOD hc_rand_unix_method;
+static const RAND_METHOD *selected_meth = &hc_rand_unix_method;
 
 void
 RAND_seed(const void *indata, size_t size)
@@ -118,104 +118,3 @@ RAND_egd(const char *filename)
 {
     return 1;
 }
-
-/*
- * Unix /dev/random
- */
-
-static int
-get_device_fd(int flags)
-{
-    static const char *rnd_devices[] = {
-	"/dev/urandom",
-	"/dev/random",
-	"/dev/srandom",
-	"/dev/arandom",
-	NULL
-    };
-    const char **p;
-
-    for(p = rnd_devices; *p; p++) {
-	int fd = open(*p, flags | O_NDELAY);
-	if(fd >= 0)
-	    return fd;
-    }
-    return -1;
-}
-
-static void
-unix_seed(const void *indata, int size)
-{
-    int fd;
-
-    if (size <= 0)
-	return;
-
-    fd = get_device_fd(O_WRONLY);
-    if (fd < 0)
-	return;
-
-    write(fd, indata, size);
-    close(fd);
-
-}
-
-static int 
-unix_bytes(unsigned char *outdata, int size)
-{
-    ssize_t ret;
-    int fd;
-
-    if (size <= 0)
-	return 0;
-
-    fd = get_device_fd(O_RDONLY);
-    if (fd < 0)
-	return 0;
-
-    ret = read(fd, outdata, size);
-    close(fd);
-    if (size != ret)
-	return 0;
-
-    return 1;
-}
-
-static void
-unix_cleanup(void)
-{
-}
-
-static void
-unix_add(const void *indata, int size, double entropi)
-{
-    unix_seed(indata, size);
-}
-
-static int
-unix_pseudorand(unsigned char *outdata, int size)
-{
-    return unix_bytes(outdata, size);
-}
-
-static int
-unix_status(void)
-{
-    int fd;
-
-    fd = get_device_fd(O_RDONLY);
-    if (fd < 0)
-	return 0;
-    close(fd);
-
-    return 1;
-}
-
-static RAND_METHOD builtin_rand = {
-    unix_seed,
-    unix_bytes,
-    unix_cleanup,
-    unix_add,
-    unix_pseudorand,
-    unix_status
-};
