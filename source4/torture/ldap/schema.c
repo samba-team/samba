@@ -226,9 +226,9 @@ static BOOL test_create_schema_type(struct ldb_context *ldb, struct test_rootDSE
 	ctrl[1] = NULL;
 
 	req->operation = LDB_SEARCH;
-	req->op.search.base = ldb_dn_explode(ldb, root->schemadn);
+	req->op.search.base = ldb_dn_explode(req, root->schemadn);
 	req->op.search.scope = LDB_SCOPE_SUBTREE;
-	req->op.search.tree = ldb_parse_tree(ldb, filter);
+	req->op.search.tree = ldb_parse_tree(req, filter);
 	if (req->op.search.tree == NULL) return -1;
 	req->op.search.attrs = NULL;
 	req->controls = ctrl;
