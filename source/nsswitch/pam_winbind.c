@@ -1251,7 +1251,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 			goto out;
 		}
 		
-		pam_set_data(pamh, PAM_WINBIND_PWD_LAST_SET, (void *)pwdlastset_prelim, _pam_winbind_cleanup_func);
+		pam_set_data(pamh, PAM_WINBIND_PWD_LAST_SET, (void *)pwdlastset_prelim, NULL);
 
 		retval = pam_set_item(pamh, PAM_OLDAUTHTOK, (const void *) pass_old);
 		pass_old = NULL;
