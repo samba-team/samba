@@ -102,7 +102,7 @@ static int add_password_hashes(struct ldb_module *module, struct ldb_message *ms
 	
 	sambaPassword = ldb_msg_find_attr_as_string(msg, "sambaPassword", NULL);
 	if (sambaPassword == NULL) { /* impossible, what happened ?! */
-		return LDB_ERR_OPERATIONS_ERROR;
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	if (is_mod) {
@@ -631,6 +631,20 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	}
 	if (lmAttr && (lmAttr->num_values > 1)) {
 		ldb_set_errstring(module->ldb, "mupltiple values for lmPwdHash not allowed!\n");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	if (sambaAttr && sambaAttr->num_values == 0) {
+		ldb_set_errstring(module->ldb, "sambaPassword must have a value!\n");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	if (ntAttr && (ntAttr->num_values == 0)) {
+		ldb_set_errstring(module->ldb, "lmPwdHash must have a value!\n");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+	if (lmAttr && (lmAttr->num_values == 0)) {
+		ldb_set_errstring(module->ldb, "lmPwdHash must have a value!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
