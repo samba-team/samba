@@ -501,7 +501,7 @@ static int build_domain_data_request(struct ph_context *ac)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->dom_req->op.search.tree = ldb_parse_tree(ac->module->ldb, filter);
+	ac->dom_req->op.search.tree = ldb_parse_tree(ac->dom_req, filter);
 	if (ac->dom_req->op.search.tree == NULL) {
 		ldb_set_errstring(ac->module->ldb, "Invalid search filter");
 		talloc_free(ac->dom_req);
