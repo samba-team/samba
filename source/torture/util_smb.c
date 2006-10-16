@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB torture tester utility functions
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Jelmer Vernooij 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,13 +28,15 @@
 #include "system/shmem.h"
 #include "system/wait.h"
 #include "system/time.h"
+#include "torture/ui.h"
 #include "torture/torture.h"
+#include "util/dlinklist.h"
 
 
 /**
   setup a directory ready for a test
 */
-_PUBLIC_ BOOL torture_setup_dir(struct smbcli_state *cli, const char *dname)
+_PUBLIC_ bool torture_setup_dir(struct smbcli_state *cli, const char *dname)
 {
 	smb_raw_exit(cli->session);
 	if (smbcli_deltree(cli->tree, dname) == -1 ||
@@ -279,9 +282,9 @@ void *shm_setup(int size)
   check that a wire string matches the flags specified 
   not 100% accurate, but close enough for testing
 */
-BOOL wire_bad_flags(struct smb_wire_string *str, int flags, struct smbcli_state *cli)
+bool wire_bad_flags(struct smb_wire_string *str, int flags, struct smbcli_state *cli)
 {
-	BOOL server_unicode;
+	bool server_unicode;
 	int len;
 	if (!str || !str->s) return True;
 	len = strlen(str->s);
@@ -350,7 +353,7 @@ void torture_all_info(struct smbcli_tree *tree, const char *fname)
 /*
   set a attribute on a file
 */
-BOOL torture_set_file_attribute(struct smbcli_tree *tree, const char *fname, uint16_t attrib)
+bool torture_set_file_attribute(struct smbcli_tree *tree, const char *fname, uint16_t attrib)
 {
 	union smb_setfileinfo sfinfo;
 	NTSTATUS status;
@@ -459,7 +462,7 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 	return NT_STATUS_EA_CORRUPT_ERROR;
 }
 
-BOOL torture_open_connection_share(TALLOC_CTX *mem_ctx,
+bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 				   struct smbcli_state **c, 
 				   const char *hostname, 
 				   const char *sharename,
@@ -475,13 +478,15 @@ BOOL torture_open_connection_share(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	(*c)->transport->options.use_oplocks = use_oplocks;
-	(*c)->transport->options.use_level2_oplocks = use_level_II_oplocks;
+	(*c)->transport->options.use_oplocks = lp_parm_bool(-1, "torture", 
+														"use_oplocks", False);
+	(*c)->transport->options.use_level2_oplocks = lp_parm_bool(-1, "torture", 
+												"use_level2_oplocks", False);
 
 	return True;
 }
 
-_PUBLIC_ BOOL torture_open_connection(struct smbcli_state **c, int conn_index)
+_PUBLIC_ bool torture_open_connection(struct smbcli_state **c, int conn_index)
 {
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *share = lp_parm_string(-1, "torture", "share");
@@ -511,7 +516,7 @@ _PUBLIC_ BOOL torture_open_connection(struct smbcli_state **c, int conn_index)
 	return torture_open_connection_share(NULL, c, host, share, NULL);
 }
 
-_PUBLIC_ BOOL torture_open_connection_ev(struct smbcli_state **c,
+_PUBLIC_ bool torture_open_connection_ev(struct smbcli_state **c,
 					 int conn_index,
 					 struct event_context *ev)
 {
@@ -546,9 +551,9 @@ _PUBLIC_ BOOL torture_open_connection_ev(struct smbcli_state **c,
 
 
 
-_PUBLIC_ BOOL torture_close_connection(struct smbcli_state *c)
+_PUBLIC_ bool torture_close_connection(struct smbcli_state *c)
 {
-	BOOL ret = True;
+	bool ret = True;
 	if (!c) return True;
 	if (NT_STATUS_IS_ERR(smbcli_tdis(c))) {
 		printf("tdis failed (%s)\n", smbcli_errstr(c->tree));
@@ -560,7 +565,7 @@ _PUBLIC_ BOOL torture_close_connection(struct smbcli_state *c)
 
 
 /* check if the server produced the expected error code */
-_PUBLIC_ BOOL check_error(const char *location, struct smbcli_state *c, 
+_PUBLIC_ bool check_error(const char *location, struct smbcli_state *c, 
 		 uint8_t eclass, uint32_t ecode, NTSTATUS nterr)
 {
 	NTSTATUS status;
@@ -595,11 +600,12 @@ static void sigcont(int sig)
 {
 }
 
-double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result)
+double torture_create_procs(struct torture_context *tctx, 
+							bool (*fn)(struct torture_context *, struct smbcli_state *, int), bool *result)
 {
 	int i, status;
 	volatile pid_t *child_status;
-	volatile BOOL *child_status_out;
+	volatile bool *child_status_out;
 	int synccount;
 	int tries = 8;
 	double start_time_limit = 10 + (torture_nprocs * 1.5);
@@ -617,7 +623,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 		return -1;
 	}
 
-	child_status_out = (volatile BOOL *)shm_setup(sizeof(BOOL)*torture_nprocs);
+	child_status_out = (volatile bool *)shm_setup(sizeof(bool)*torture_nprocs);
 	if (!child_status_out) {
 		printf("Failed to setup result status shared memory\n");
 		return -1;
@@ -664,7 +670,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 				_exit(1);
 			}
 
-			child_status_out[i] = fn(current_cli, i);
+			child_status_out[i] = fn(tctx, current_cli, i);
 			_exit(0);
 		}
 	}
@@ -714,30 +720,139 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 	return timeval_elapsed(&tv);
 }
 
-static BOOL wrap_old_torture_multifn(struct torture_context *torture,
-								const void *_fn)
+static bool wrap_smb_multi_test(struct torture_context *torture,
+								struct torture_tcase *tcase,
+								struct torture_test *test)
 {
-	BOOL (*fn)(struct smbcli_state *, int ) = _fn;
-	BOOL result;
+	bool (*fn)(struct torture_context *, struct smbcli_state *, int ) = test->fn;
+	bool result;
 
-	torture_create_procs(fn, &result);
+	torture_create_procs(torture, fn, &result);
 
 	return result;
 }
 
-_PUBLIC_ NTSTATUS register_torture_multi_op(const char *name, 
-											BOOL (*multi_fn)(struct smbcli_state *, int ))
+_PUBLIC_ struct torture_test *torture_suite_add_smb_multi_test(
+									struct torture_suite *suite,
+									const char *name,
+									bool (*run) (struct torture_context *,
+												 struct smbcli_state *,
+												int i))
 {
-	struct torture_suite *suite;
+	struct torture_test *test; 
+	struct torture_tcase *tcase;
+	
+	tcase = torture_suite_add_tcase(suite, name);
 
-	suite = torture_suite_create(talloc_autofree_context(), name);
+	test = talloc(tcase, struct torture_test);
 
-	torture_suite_add_simple_tcase(suite, name, 
-								   wrap_old_torture_multifn,
-								   multi_fn);
-	torture_register_suite(suite);
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = wrap_smb_multi_test;
+	test->fn = run;
+	test->dangerous = false;
 
-	return NT_STATUS_OK;
+	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+
+	return test;
+
+}
+
+static bool wrap_simple_2smb_test(struct torture_context *torture_ctx,
+									struct torture_tcase *tcase,
+									struct torture_test *test)
+{
+	bool (*fn) (struct torture_context *, struct smbcli_state *,
+				struct smbcli_state *);
+	bool ret;
+
+	struct smbcli_state *cli1, *cli2;
+
+	if (!torture_open_connection(&cli1, 0) || 
+		!torture_open_connection(&cli2, 1))
+		return false;
+
+	fn = test->fn;
+
+	ret = fn(torture_ctx, cli1, cli2);
+
+	talloc_free(cli1);
+	talloc_free(cli2);
+
+	return ret;
+}
+
+
+
+_PUBLIC_ struct torture_test *torture_suite_add_2smb_test(
+									struct torture_suite *suite,
+									const char *name,
+									bool (*run) (struct torture_context *,
+												struct smbcli_state *,
+												struct smbcli_state *))
+{
+	struct torture_test *test; 
+	struct torture_tcase *tcase;
+	
+	tcase = torture_suite_add_tcase(suite, name);
+
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = wrap_simple_2smb_test;
+	test->fn = run;
+	test->dangerous = false;
+
+	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+
+	return test;
+
+}
+
+static bool wrap_simple_1smb_test(struct torture_context *torture_ctx,
+									struct torture_tcase *tcase,
+									struct torture_test *test)
+{
+	bool (*fn) (struct torture_context *, struct smbcli_state *);
+	bool ret;
+
+	struct smbcli_state *cli1;
+
+	if (!torture_open_connection(&cli1, 0))
+		return false;
+
+	fn = test->fn;
+
+	ret = fn(torture_ctx, cli1);
+
+	talloc_free(cli1);
+
+	return ret;
+}
+
+_PUBLIC_ struct torture_test *torture_suite_add_1smb_test(
+									struct torture_suite *suite,
+									const char *name,
+									bool (*run) (struct torture_context *,
+												struct smbcli_state *))
+{
+	struct torture_test *test; 
+	struct torture_tcase *tcase;
+	
+	tcase = torture_suite_add_tcase(suite, name);
+
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = wrap_simple_1smb_test;
+	test->fn = run;
+	test->dangerous = false;
+
+	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+
+	return test;
 }
 
 

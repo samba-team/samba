@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/libcli.h"
+#include "torture/ui.h"
 #include "torture/util.h"
 #include "torture/torture.h"
 #include "system/filesys.h"
@@ -35,7 +36,7 @@ static const char *loadfile;
 #define ival(s) strtol(s, NULL, 0)
 
 /* run a test that simulates an approximate netbench client load */
-static BOOL run_netbench(struct smbcli_state *cli, int client)
+static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli, int client)
 {
 	extern int torture_nprocs;
 	int i;
@@ -211,7 +212,7 @@ BOOL torture_nbench(struct torture_context *torture)
 
 	signal(SIGALRM, nb_alarm);
 	alarm(1);
-	torture_create_procs(run_netbench, &correct);
+	torture_create_procs(torture, run_netbench, &correct);
 	alarm(0);
 
 	if (torture_nprocs > 1) {
@@ -224,6 +225,15 @@ BOOL torture_nbench(struct torture_context *torture)
 
 NTSTATUS torture_nbench_init(void)
 {
-	register_torture_op("BENCH-NBENCH",  torture_nbench);
+	struct torture_suite *suite = torture_suite_create(
+										talloc_autofree_context(),
+										"BENCH");
+
+	torture_suite_add_simple_test(suite, "NBENCH", torture_nbench);
+
+	suite->description = talloc_strdup(suite, 
+								"Benchmarks");
+
+	torture_register_suite(suite);
 	return NT_STATUS_OK;
 }

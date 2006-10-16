@@ -33,15 +33,17 @@ static const char *test_lists_shell_strings[] = {
 	NULL
 };
 
-static BOOL test_lists_shell(struct torture_context *test, const void *_data)
+static bool test_lists_shell(struct torture_context *tctx,
+							 const void *test_data)
 {
-	const char *data = _data;
+	const char *data = test_data;
 	const char **ret1, **ret2, *tmp;
 	BOOL match = True;
+	TALLOC_CTX *mem_ctx = tctx;
 
-	ret1 = str_list_make_shell(test, data, " ");
-	tmp = str_list_join_shell(test, ret1, ' ');
-	ret2 = str_list_make_shell(test, tmp, " ");
+	ret1 = str_list_make_shell(mem_ctx, data, " ");
+	tmp = str_list_join_shell(mem_ctx, ret1, ' ');
+	ret2 = str_list_make_shell(mem_ctx, tmp, " ");
 
 	if ((ret1 == NULL || ret2 == NULL) && ret2 != ret1) {
 		match = False;
@@ -58,17 +60,14 @@ static BOOL test_lists_shell(struct torture_context *test, const void *_data)
 			match = False;
 	}
 
-	if (!match) {
-		torture_fail(test, "str_list_{make,join}_shell: Error double parsing, first run:\n%s\nSecond run: \n%s", data, tmp);
-		return False;
-	}
-
-	return True;
+	torture_assert(tctx, match, talloc_asprintf(tctx, 
+		"str_list_{make,join}_shell: Error double parsing, first run:\n%s\nSecond run: \n%s", data, tmp));
+	return true;
 }
 
 struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-STRLIST");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "STRLIST");
 	int i;
 
 	for (i = 0; test_lists_shell_strings[i]; i++) {

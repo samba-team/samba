@@ -563,8 +563,17 @@ BOOL torture_rap_scan(struct torture_context *torture)
 
 NTSTATUS torture_rap_init(void)
 {
-	register_torture_op("RAP-BASIC", torture_rap_basic);
-	register_torture_op("SCAN-RAP",  torture_rap_scan);
+	struct torture_suite *suite = torture_suite_create(
+									talloc_autofree_context(),
+									"RAP");
+
+	torture_suite_add_simple_test(suite, "BASIC", torture_rap_basic);
+	torture_suite_add_simple_test(suite, "SCAN", torture_rap_scan);
+
+	suite->description = talloc_strdup(suite, 
+						"Remote Administration Protocol tests");
+
+	torture_register_suite(suite);
 
 	return NT_STATUS_OK;
 }

@@ -26,49 +26,46 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "torture/torture.h"
+#include "torture/nbt/proto.h"
 
-#define CHECK_VALUE(v, correct) do { \
-	if ((v) != (correct)) { \
-		printf("(%s) Incorrect value %s=%d - should be %d\n", \
-		       __location__, #v, (int)v, (int)correct); \
-		ret = False; \
-	}} while (0)
+#define CHECK_VALUE(tctx, v, correct) \
+	torture_assert_int_equal(tctx, v, correct, "Incorrect value")
 
-#define CHECK_STRING(v, correct) do { \
-	if (strcasecmp_m(v, correct) != 0) { \
-		printf("(%s) Incorrect value %s='%s' - should be '%s'\n", \
-		       __location__, #v, v, correct); \
-		ret = False; \
-	}} while (0)
+#define CHECK_STRING(tctx, v, correct) \
+	torture_assert_casestr_equal(tctx, v, correct, "Incorrect value")
+
+
+
 
 /*
   test that a server responds correctly to attempted registrations of its name
 */
-static BOOL nbt_register_own(TALLOC_CTX *mem_ctx, struct nbt_name *name, 
-			     const char *address)
+static bool nbt_register_own(struct torture_context *tctx)
 {
 	struct nbt_name_register io;
 	NTSTATUS status;
-	struct nbt_name_socket *nbtsock = nbt_name_socket_init(mem_ctx, NULL);
-	BOOL ret = True;
-	const char *myaddress = iface_best_ip(address);
+	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL);
 	struct socket_address *socket_address;
+	struct nbt_name name;
+	const char *address;
+	const char *myaddress;
 
-	socket_address = socket_address_from_strings(mem_ctx, nbtsock->sock->backend_name,
+	if (!torture_nbt_get_name(tctx, &name, &address))
+		return false;
+
+	myaddress = iface_best_ip(address);
+
+	socket_address = socket_address_from_strings(tctx, nbtsock->sock->backend_name,
 						     myaddress, 0);
-	if (!socket_address) {
-		return False;
-	}
+	torture_assert(tctx, socket_address != NULL, "Unable to get address");
 
 	status = socket_listen(nbtsock->sock, socket_address, 0, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("socket_listen for nbt_register_own failed: %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, 
+				"socket_listen for nbt_register_own failed");
 
-	printf("Testing name defense to name registration\n");
+	torture_comment(tctx, "Testing name defense to name registration\n");
 
-	io.in.name = *name;
+	io.in.name = name;
 	io.in.dest_addr = address;
 	io.in.address = myaddress;
 	io.in.nb_flags = NBT_NODE_B | NBT_NM_ACTIVE;
@@ -79,72 +76,62 @@ static BOOL nbt_register_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	io.in.timeout = 3;
 	io.in.retries = 0;
 	
-	status = nbt_name_register(nbtsock, mem_ctx, &io);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		printf("No response from %s for name register\n", address);
-		return False;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Bad response from %s for name register - %s\n",
-		       address, nt_errstr(status));
-		return False;
-	}
+	status = nbt_name_register(nbtsock, tctx, &io);
+	torture_assert_ntstatus_ok(tctx, status, 
+				talloc_asprintf(tctx, "Bad response from %s for name register",
+		       address));
 	
-	CHECK_STRING(io.out.name.name, name->name);
-	CHECK_VALUE(io.out.name.type, name->type);
-	CHECK_VALUE(io.out.rcode, NBT_RCODE_ACT);
+	CHECK_STRING(tctx, io.out.name.name, name.name);
+	CHECK_VALUE(tctx, io.out.name.type, name.type);
+	CHECK_VALUE(tctx, io.out.rcode, NBT_RCODE_ACT);
 
 	/* check a register demand */
 	io.in.address = myaddress;
 	io.in.register_demand = True;
 
-	status = nbt_name_register(nbtsock, mem_ctx, &io);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		printf("No response from %s for name register demand\n", address);
-		return False;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Bad response from %s for name register demand - %s\n",
-		       address, nt_errstr(status));
-		return False;
-	}
-	
-	CHECK_STRING(io.out.name.name, name->name);
-	CHECK_VALUE(io.out.name.type, name->type);
-	CHECK_VALUE(io.out.rcode, NBT_RCODE_ACT);
+	status = nbt_name_register(nbtsock, tctx, &io);
 
-	return ret;
+	torture_assert_ntstatus_ok(tctx, status, 
+				talloc_asprintf(tctx, "Bad response from %s for name register demand", address));
+	
+	CHECK_STRING(tctx, io.out.name.name, name.name);
+	CHECK_VALUE(tctx, io.out.name.type, name.type);
+	CHECK_VALUE(tctx, io.out.rcode, NBT_RCODE_ACT);
+
+	return true;
 }
 
 
 /*
   test that a server responds correctly to attempted name refresh requests
 */
-static BOOL nbt_refresh_own(TALLOC_CTX *mem_ctx, struct nbt_name *name, 
-			    const char *address)
+static bool nbt_refresh_own(struct torture_context *tctx)
 {
 	struct nbt_name_refresh io;
 	NTSTATUS status;
-	struct nbt_name_socket *nbtsock = nbt_name_socket_init(mem_ctx, NULL);
-	BOOL ret = True;
-	const char *myaddress = iface_best_ip(address);
+	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL);
+	const char *myaddress;
 	struct socket_address *socket_address;
+	struct nbt_name name;
+	const char *address;
 
-	socket_address = socket_address_from_strings(mem_ctx, nbtsock->sock->backend_name,
+	if (!torture_nbt_get_name(tctx, &name, &address))
+		return false;
+	
+	myaddress = iface_best_ip(address);
+
+	socket_address = socket_address_from_strings(tctx, nbtsock->sock->backend_name,
 						     myaddress, 0);
-	if (!socket_address) {
-		return False;
-	}
+	torture_assert(tctx, socket_address != NULL, 
+				   "Can't parse socket address");
 
 	status = socket_listen(nbtsock->sock, socket_address, 0, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("socket_listen for nbt_referesh_own failed: %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, 
+							   "socket_listen for nbt_referesh_own failed");
 
-	printf("Testing name defense to name refresh\n");
+	torture_comment(tctx, "Testing name defense to name refresh\n");
 
-	io.in.name = *name;
+	io.in.name = name;
 	io.in.dest_addr = address;
 	io.in.address = myaddress;
 	io.in.nb_flags = NBT_NODE_B | NBT_NM_ACTIVE;
@@ -153,52 +140,29 @@ static BOOL nbt_refresh_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	io.in.timeout = 3;
 	io.in.retries = 0;
 	
-	status = nbt_name_refresh(nbtsock, mem_ctx, &io);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		printf("No response from %s for name refresh\n", address);
-		return False;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Bad response from %s for name refresh - %s\n",
-		       address, nt_errstr(status));
-		return False;
-	}
+	status = nbt_name_refresh(nbtsock, tctx, &io);
+
+	torture_assert_ntstatus_ok(tctx, status, 
+				talloc_asprintf(tctx, "Bad response from %s for name refresh", address));
 	
-	CHECK_STRING(io.out.name.name, name->name);
-	CHECK_VALUE(io.out.name.type, name->type);
-	CHECK_VALUE(io.out.rcode, NBT_RCODE_ACT);
+	CHECK_STRING(tctx, io.out.name.name, name.name);
+	CHECK_VALUE(tctx, io.out.name.type, name.type);
+	CHECK_VALUE(tctx, io.out.rcode, NBT_RCODE_ACT);
 
-	return ret;
+	return true;
 }
-
 
 
 /*
   test name registration to a server
 */
-BOOL torture_nbt_register(struct torture_context *torture)
+struct torture_suite *torture_nbt_register(void)
 {
-	const char *address;
-	struct nbt_name name;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	NTSTATUS status;
-	BOOL ret = True;
-	
-	make_nbt_name_server(&name, strupper_talloc(mem_ctx, lp_parm_string(-1, "torture", "host")));
+	struct torture_suite *suite;
 
-	/* do an initial name resolution to find its IP */
-	status = resolve_name(&name, mem_ctx, &address, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to resolve %s - %s\n",
-		       name.name, nt_errstr(status));
-		talloc_free(mem_ctx);
-		return False;
-	}
+	suite = torture_suite_create(talloc_autofree_context(), "REGISTER");
+	torture_suite_add_simple_test(suite, "register_own", nbt_register_own);
+	torture_suite_add_simple_test(suite, "refresh_own", nbt_refresh_own);
 
-	ret &= nbt_register_own(mem_ctx, &name, address);
-	ret &= nbt_refresh_own(mem_ctx, &name, address);
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }

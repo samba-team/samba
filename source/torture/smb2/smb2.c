@@ -27,18 +27,24 @@
 
 NTSTATUS torture_smb2_init(void)
 {
-	register_torture_op("SMB2-CONNECT", torture_smb2_connect);
-	register_torture_op("SMB2-SCAN", torture_smb2_scan);
-	register_torture_op("SMB2-SCANGETINFO", torture_smb2_getinfo_scan);
-	register_torture_op("SMB2-SCANSETINFO", torture_smb2_setinfo_scan);
-	register_torture_op("SMB2-SCANFIND", torture_smb2_find_scan);
-	register_torture_op("SMB2-GETINFO", torture_smb2_getinfo);
-	register_torture_op("SMB2-SETINFO", torture_smb2_setinfo);
-	register_torture_op("SMB2-FIND", torture_smb2_find);
-	register_torture_op("SMB2-LOCK", torture_smb2_lock);
-	register_torture_op("SMB2-NOTIFY", torture_smb2_notify);
-	register_torture_op("SMB2-MAXWRITE", torture_smb2_maxwrite);
-	register_torture_op("SMB2-DIR", torture_smb2_dir);
+	struct torture_suite *suite = torture_suite_create(
+										talloc_autofree_context(),
+										"SMB2");
+	torture_suite_add_simple_test(suite, "CONNECT", torture_smb2_connect);
+	torture_suite_add_simple_test(suite, "SCAN", torture_smb2_scan);
+	torture_suite_add_simple_test(suite, "SCANGETINFO", torture_smb2_getinfo_scan);
+	torture_suite_add_simple_test(suite, "SCANSETINFO", torture_smb2_setinfo_scan);
+	torture_suite_add_simple_test(suite, "SCANFIND", torture_smb2_find_scan);
+	torture_suite_add_simple_test(suite, "GETINFO", torture_smb2_getinfo);
+	torture_suite_add_simple_test(suite, "SETINFO", torture_smb2_setinfo);
+	torture_suite_add_simple_test(suite, "FIND", torture_smb2_find);
+	torture_suite_add_simple_test(suite, "LOCK", torture_smb2_lock);
+	torture_suite_add_simple_test(suite, "NOTIFY", torture_smb2_notify);
+
+	suite->description = talloc_strdup(suite, 
+							"SMB2-specific tests");
+
+	torture_register_suite(suite);
 
 	return NT_STATUS_OK;
 }

@@ -75,7 +75,7 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	int i;
 	
 	if (lp_parm_bool(-1, "torture", "dangerous", False)) {
-		data = data_blob_talloc(tree, NULL, 16000000);
+		data = data_blob_talloc(tree, NULL, 160000);
 	} else if (lp_parm_bool(-1, "target", "samba4", False)) {
 		data = data_blob_talloc(tree, NULL, UINT16_MAX);
 	} else {
@@ -89,8 +89,6 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	w.in.file.handle = handle;
 	w.in.offset      = 0;
 	w.in.data        = data;
-
-	printf("writing %d bytes\n", data.length);
 
 	status = smb2_write(tree, &w);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -122,8 +120,6 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	r.in.length      = data.length;
 	r.in.offset      = 0;
 
-	printf("reading %d bytes\n", data.length);
-
 	status = smb2_read(tree, tree, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("read failed - %s\n", nt_errstr(status));
@@ -143,7 +139,8 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 /*
   send a create
 */
-struct smb2_handle torture_smb2_create(struct smb2_tree *tree, const char *fname)
+static struct smb2_handle torture_smb2_create(struct smb2_tree *tree, 
+					      const char *fname)
 {
 	struct smb2_create io;
 	NTSTATUS status;

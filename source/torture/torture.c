@@ -31,13 +31,11 @@ _PUBLIC_ int torture_entries=1000;
 _PUBLIC_ int torture_failures=1;
 _PUBLIC_ int torture_seed=0;
 _PUBLIC_ int torture_numasync=100;
-_PUBLIC_ BOOL use_oplocks;
-_PUBLIC_ BOOL use_level_II_oplocks;
-_PUBLIC_ BOOL torture_showall = False;
+_PUBLIC_ bool torture_showall = false;
 
 struct torture_suite_list *torture_suites = NULL;
 
-_PUBLIC_ NTSTATUS torture_register_suite(struct torture_suite *suite)
+NTSTATUS torture_register_suite(struct torture_suite *suite)
 {
 	struct torture_suite_list *p, *n;
 
@@ -62,26 +60,7 @@ _PUBLIC_ NTSTATUS torture_register_suite(struct torture_suite *suite)
 		}
 	}
 
-	DLIST_ADD(torture_suites, n);
-
-	return NT_STATUS_OK;
-}
-
-static BOOL wrap_old_torture_fn(struct torture_context *torture, const void *_fn)
-{
-	BOOL (*fn)(struct torture_context *) = _fn;
-	return fn(torture);
-}
-
-
-/* Backwards compatibility wrapper */
-_PUBLIC_ NTSTATUS register_torture_op(const char *name, BOOL (*fn)(struct torture_context *))
-{
-	struct torture_suite *suite;
-	suite = torture_suite_create(talloc_autofree_context(), name);
-
-	torture_suite_add_simple_tcase(suite, name, wrap_old_torture_fn, fn);
-	torture_register_suite(suite);
+	DLIST_ADD_END(torture_suites, n, struct torture_suite_list *);
 
 	return NT_STATUS_OK;
 }

@@ -25,37 +25,32 @@
 #include "librpc/rpc/dcerpc.h"
 #include "torture/torture.h"
 
-static BOOL test_BindingString(struct torture_context *torture, 
-							   const void *_binding)
+static bool test_BindingString(struct torture_context *tctx,
+							   const void *test_data)
 {
-	const char *binding = _binding;
+	const char *binding = test_data;
 	struct dcerpc_binding *b, *b2;
 	const char *s, *s2;
 	struct epm_tower tower;
+	TALLOC_CTX *mem_ctx = tctx;
 
 	/* Parse */
-	torture_assert_ntstatus_ok(torture, 
-		dcerpc_parse_binding(torture, binding, &b),
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(mem_ctx, binding, &b),
 		"Error parsing binding string");
 
-	s = dcerpc_binding_string(torture, b);
-	if (!s) {
-		torture_fail(torture, "Error converting binding back to string");
-		return False;
-	}
+	s = dcerpc_binding_string(mem_ctx, b);
+	torture_assert(tctx, s != NULL, "Error converting binding back to string");
 
-	torture_assert_casestr_equal(torture, binding, s, 
+	torture_assert_casestr_equal(tctx, binding, s, 
 		"Mismatch while comparing original and regenerated binding strings");
 
 	/* Generate protocol towers */
-	torture_assert_ntstatus_ok(torture, 
-		dcerpc_binding_build_tower(torture, b, &tower),
+	torture_assert_ntstatus_ok(tctx, dcerpc_binding_build_tower(mem_ctx, b, &tower),
 		"Error generating protocol tower");
 
 	/* Convert back to binding and then back to string and compare */
 
-	torture_assert_ntstatus_ok(torture,
-				dcerpc_binding_from_tower(torture, &tower, &b2),
+	torture_assert_ntstatus_ok(tctx, dcerpc_binding_from_tower(mem_ctx, &tower, &b2),
 			    "Error generating binding from tower for original binding");
 
 	/* Compare to a stripped down version of the binding string because 
@@ -64,25 +59,16 @@ static BOOL test_BindingString(struct torture_context *torture,
 
 	b->flags = 0;
 	
-	s = dcerpc_binding_string(torture, b);
-	if (!s) {
-		torture_fail(torture, "Error converting binding back to string for (stripped down)"); 
-		return False;
-	}
+	s = dcerpc_binding_string(mem_ctx, b);
+	torture_assert(tctx, s != NULL, "Error converting binding back to string for (stripped down)"); 
 
+	s2 = dcerpc_binding_string(mem_ctx, b2);
+	torture_assert(tctx, s != NULL, "Error converting binding back to string"); 
 
-	s2 = dcerpc_binding_string(torture, b2);
-	if (!s) {
-		torture_fail(torture, "Error converting binding back to string"); 
-		return False;
-	}
+	if (is_ipaddress(b->host))
+		torture_assert_casestr_equal(tctx, s, s2, "Mismatch while comparing original and from protocol tower generated binding strings");
 
-	if (is_ipaddress(b->host) && strcasecmp(s, s2) != 0) {
-		torture_fail(torture, "Mismatch while comparing original and from protocol tower generated binding strings: '%s' <> '%s'\n", s, s2);
-		return False;
-	}
-
-	return True;
+	return true;
 }
 
 static const char *test_strings[] = {
@@ -114,7 +100,7 @@ struct torture_suite *torture_local_binding_string(TALLOC_CTX *mem_ctx)
 {
 	int i;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, 
-													   "LOCAL-BINDING");
+													   "BINDING");
 
 	for (i = 0; i < ARRAY_SIZE(test_strings); i++) {
 		torture_suite_add_simple_tcase(suite, test_strings[i],

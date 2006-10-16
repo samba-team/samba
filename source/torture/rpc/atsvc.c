@@ -24,7 +24,7 @@
 #include "librpc/gen_ndr/ndr_atsvc_c.h"
 #include "torture/rpc/rpc.h"
 
-static BOOL test_JobGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint32_t job_id)
+static bool test_JobGetInfo(struct dcerpc_pipe *p, struct torture_context *tctx, uint32_t job_id)
 {
 	NTSTATUS status;
 	struct atsvc_JobGetInfo r;
@@ -32,17 +32,14 @@ static BOOL test_JobGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint32_t
 	r.in.servername = dcerpc_server_name(p);
 	r.in.job_id = job_id;
 
-	status = dcerpc_atsvc_JobGetInfo(p, mem_ctx, &r);
+	status = dcerpc_atsvc_JobGetInfo(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("JobGetInfo failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "JobGetInfo failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_JobDel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint32_t min_job_id,
+static bool test_JobDel(struct dcerpc_pipe *p, struct torture_context *tctx, uint32_t min_job_id,
 			uint32_t max_job_id)
 {
 	NTSTATUS status;
@@ -52,25 +49,20 @@ static BOOL test_JobDel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint32_t min
 	r.in.min_job_id = min_job_id;
 	r.in.max_job_id = max_job_id;
 
-	status = dcerpc_atsvc_JobDel(p, mem_ctx, &r);
+	status = dcerpc_atsvc_JobDel(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("JobDel failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "JobDel failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_JobEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_JobEnum(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct atsvc_JobEnum r;
 	struct atsvc_enum_ctr ctr;
 	uint32_t resume_handle = 0, i;
-	BOOL ret = True;
-
-	printf("\ntesting JobEnum\n");
+	bool ret = true;
 
 	r.in.servername = dcerpc_server_name(p);
 	ctr.entries_read = 0;
@@ -79,15 +71,12 @@ static BOOL test_JobEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.preferred_max_len = 0xffffffff;
 	r.in.resume_handle = r.out.resume_handle = &resume_handle;
 
-	status = dcerpc_atsvc_JobEnum(p, mem_ctx, &r);
+	status = dcerpc_atsvc_JobEnum(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("JobEnum failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "JobEnum failed");
 
 	for (i = 0; i < r.out.ctr->entries_read; i++) {
-		if (!test_JobGetInfo(p, mem_ctx, r.out.ctr->first_entry[i].job_id)) {
+		if (!test_JobGetInfo(p, tctx, r.out.ctr->first_entry[i].job_id)) {
 			ret = False;
 		}
 	}
@@ -95,13 +84,11 @@ static BOOL test_JobEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
-static BOOL test_JobAdd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_JobAdd(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct atsvc_JobAdd r;
 	struct atsvc_JobInfo info;
-
-	printf("\ntesting JobAdd\n");
 
 	r.in.servername = dcerpc_server_name(p);
 	info.job_time = 0x050ae4c0; /* 11:30pm */
@@ -111,56 +98,39 @@ static BOOL test_JobAdd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	info.command = "foo.exe";
 	r.in.job_info = &info;
 
-	status = dcerpc_atsvc_JobAdd(p, mem_ctx, &r);
+	status = dcerpc_atsvc_JobAdd(p, tctx, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("JobAdd failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "JobAdd failed");
 
 	/* Run EnumJobs again in case there were no jobs to begin with */
 
-	if (!test_JobEnum(p, mem_ctx)) {
-		return False;
+	if (!test_JobEnum(tctx, p)) {
+		return false;
 	}
 
-	if (!test_JobGetInfo(p, mem_ctx, r.out.job_id)) {
-		return False;
+	if (!test_JobGetInfo(p, tctx, r.out.job_id)) {
+		return false;
 	}
 
-	if (!test_JobDel(p, mem_ctx, r.out.job_id, r.out.job_id)) {
-		return False;
+	if (!test_JobDel(p, tctx, r.out.job_id, r.out.job_id)) {
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-BOOL torture_rpc_atsvc(struct torture_context *torture)
+struct torture_suite *torture_rpc_atsvc(void)
 {
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	struct torture_suite *suite = torture_suite_create(
+										talloc_autofree_context(),
+										"ATSVC");
+	struct torture_tcase *tcase;
+	
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "atsvc", 
+											  &dcerpc_table_atsvc);
 
-	mem_ctx = talloc_init("torture_rpc_atsvc");
+	torture_rpc_tcase_add_test(tcase, "JobEnum", test_JobEnum);
+	torture_rpc_tcase_add_test(tcase, "JobAdd", test_JobAdd);
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_atsvc);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-
-	if (!test_JobEnum(p, mem_ctx)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-
-	if (!test_JobAdd(p, mem_ctx)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }

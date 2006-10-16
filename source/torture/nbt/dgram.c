@@ -61,13 +61,12 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 
 /* test UDP/138 netlogon requests */
-static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx, 
-			      struct nbt_name name, const char *address)
+static bool nbt_test_netlogon(struct torture_context *tctx)
 {
 	struct dgram_mailslot_handler *dgmslot;
-	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
+	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, NULL);
 	struct socket_address *dest;
-	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
+	const char *myaddress;
 	struct nbt_netlogon_packet logon;
 	struct nbt_name myname;
 	NTSTATUS status;
@@ -76,11 +75,25 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 
 	struct socket_address *socket_address;
 
+	const char *address;
+	struct nbt_name name;
+	
+	name.name = lp_workgroup();
+	name.type = NBT_NAME_LOGON;
+	name.scope = NULL;
+
+	/* do an initial name resolution to find its IP */
+	torture_assert_ntstatus_ok(tctx, 
+							   resolve_name(&name, tctx, &address, event_context_find(tctx)),
+							   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
+
+	myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
+
+
 	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
 						     myaddress, lp_dgram_port());
-	if (!socket_address) {
-		return False;
-	}
+	torture_assert(tctx, socket_address != NULL, 
+				   "Error getting address");
 
 	/* try receiving replies on port 138 first, which will only
 	   work if we are root and smbd/nmbd are not running - fall
@@ -91,9 +104,7 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 		talloc_free(socket_address);
 		socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
 							     myaddress, 0);
-		if (!socket_address) {
-			return False;
-		}
+		torture_assert(tctx, socket_address != NULL, "Error getting address");
 
 		socket_listen(dgmsock->sock, socket_address, 0, 0);
 	}
@@ -115,38 +126,27 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 
 	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
 					   address, 0);
-	if (!dest) {
-		return False;
-	}
+	torture_assert(tctx, dest != NULL, "Error getting address");
 
 	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
 					      &myname, &logon);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to send netlogon request - %s\n", nt_errstr(status));
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
 	while (timeval_elapsed(&tv) < 5 && replies == 0) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	talloc_free(dgmsock);
-	return True;
-
-failed:
-	talloc_free(dgmsock);
-	return False;
+	return true;
 }
 
 
 /* test UDP/138 netlogon requests */
-static BOOL nbt_test_netlogon2(TALLOC_CTX *mem_ctx, 
-			      struct nbt_name name, const char *address)
+static bool nbt_test_netlogon2(struct torture_context *tctx)
 {
 	struct dgram_mailslot_handler *dgmslot;
-	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
+	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, NULL);
 	struct socket_address *dest;
-	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
+	const char *myaddress;
 	struct nbt_netlogon_packet logon;
 	struct nbt_name myname;
 	NTSTATUS status;
@@ -155,11 +155,23 @@ static BOOL nbt_test_netlogon2(TALLOC_CTX *mem_ctx,
 
 	struct socket_address *socket_address;
 
+	const char *address;
+	struct nbt_name name;
+	
+	name.name = lp_workgroup();
+	name.type = NBT_NAME_LOGON;
+	name.scope = NULL;
+
+	/* do an initial name resolution to find its IP */
+	torture_assert_ntstatus_ok(tctx, 
+							   resolve_name(&name, tctx, &address, event_context_find(tctx)),
+							   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
+
+	myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
+
 	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
 						     myaddress, lp_dgram_port());
-	if (!socket_address) {
-		return False;
-	}
+	torture_assert(tctx, socket_address != NULL, "Error getting address");
 
 	/* try receiving replies on port 138 first, which will only
 	   work if we are root and smbd/nmbd are not running - fall
@@ -170,9 +182,8 @@ static BOOL nbt_test_netlogon2(TALLOC_CTX *mem_ctx,
 		talloc_free(socket_address);
 		socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
 							     myaddress, 0);
-		if (!socket_address) {
-			return False;
-		}
+
+		torture_assert(tctx, socket_address != NULL, "Error getting address");
 
 		socket_listen(dgmsock->sock, socket_address, 0, 0);
 	}
@@ -196,27 +207,17 @@ static BOOL nbt_test_netlogon2(TALLOC_CTX *mem_ctx,
 
 	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
 					   address, 0);
-	if (!dest) {
-		goto failed;
-	}
+
+	torture_assert(tctx, dest != NULL, "Error getting address");
 	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
 					      &myname, &logon);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to send netlogon request - %s\n", nt_errstr(status));
-		goto failed;
-	}
-
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
 	while (timeval_elapsed(&tv) < 5 && replies == 0) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	talloc_free(dgmsock);
-	return True;
-
-failed:
-	talloc_free(dgmsock);
-	return False;
+	return true;
 }
 
 
@@ -247,17 +248,16 @@ static void ntlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 
 /* test UDP/138 ntlogon requests */
-static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx, 
-			     struct nbt_name name, const char *address)
+static bool nbt_test_ntlogon(struct torture_context *tctx)
 {
 	struct dgram_mailslot_handler *dgmslot;
-	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
+	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, NULL);
 	struct socket_address *dest;
 	struct test_join *join_ctx;
 	struct cli_credentials *machine_credentials;
 	const struct dom_sid *dom_sid;
 
-	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
+	const char *myaddress;
 	struct nbt_ntlogon_packet logon;
 	struct nbt_name myname;
 	NTSTATUS status;
@@ -265,12 +265,23 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 	int replies = 0;
 
 	struct socket_address *socket_address;
+	const char *address;
+	struct nbt_name name;
+	
+	name.name = lp_workgroup();
+	name.type = NBT_NAME_LOGON;
+	name.scope = NULL;
+
+	/* do an initial name resolution to find its IP */
+	torture_assert_ntstatus_ok(tctx, 
+							   resolve_name(&name, tctx, &address, event_context_find(tctx)),
+							   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
+
+	myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 
 	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
 						     myaddress, lp_dgram_port());
-	if (!socket_address) {
-		return False;
-	}
+	torture_assert(tctx, socket_address != NULL, "Error getting address");
 
 	/* try receiving replies on port 138 first, which will only
 	   work if we are root and smbd/nmbd are not running - fall
@@ -281,20 +292,15 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 		talloc_free(socket_address);
 		socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
 							     myaddress, 0);
-		if (!socket_address) {
-			return False;
-		}
+		torture_assert(tctx, socket_address != NULL, "Error getting address");
 
 		socket_listen(dgmsock->sock, socket_address, 0, 0);
 	}
 
 	join_ctx = torture_join_domain(TEST_NAME, 
 				       ACB_WSTRUST, &machine_credentials);
-	if (join_ctx == NULL) {
-		printf("Failed to join domain %s as %s\n", lp_workgroup(), TEST_NAME);
-		talloc_free(dgmsock);
-		return False;
-	}
+	torture_assert(tctx, join_ctx != NULL, 
+				talloc_asprintf(tctx, "Failed to join domain %s as %s\n", lp_workgroup(), TEST_NAME));
 
 	dom_sid = torture_join_sid(join_ctx);
 
@@ -319,61 +325,31 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 
 	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
 					   address, 0);
-	if (!dest) {
-		goto failed;
-	}
+	torture_assert(tctx, dest != NULL, "Error getting address");
 	status = dgram_mailslot_ntlogon_send(dgmsock, DGRAM_DIRECT_UNIQUE,
 					     &name, dest, &myname, &logon);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to send ntlogon request - %s\n", nt_errstr(status));
-		goto failed;
-	}
-
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
 
 	while (timeval_elapsed(&tv) < 5 && replies == 0) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
 	torture_leave_domain(join_ctx);
-	talloc_free(dgmsock);
-	return True;
-
-failed:
-	torture_leave_domain(join_ctx);
-	talloc_free(dgmsock);
-	return False;
+	return true;
 }
 
 
 /*
   test nbt dgram operations
 */
-BOOL torture_nbt_dgram(struct torture_context *torture)
+struct torture_suite *torture_nbt_dgram(void)
 {
-	const char *address;
-	struct nbt_name name;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	NTSTATUS status;
-	BOOL ret = True;
-	
-	name.name = lp_workgroup();
-	name.type = NBT_NAME_LOGON;
-	name.scope = NULL;
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), 
+													   "DGRAM");
 
-	/* do an initial name resolution to find its IP */
-	status = resolve_name(&name, mem_ctx, &address, event_context_find(mem_ctx));
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to resolve %s - %s\n",
-		       name.name, nt_errstr(status));
-		talloc_free(mem_ctx);
-		return False;
-	}
+	torture_suite_add_simple_test(suite, "netlogon", nbt_test_netlogon);
+	torture_suite_add_simple_test(suite, "netlogon2", nbt_test_netlogon2);
+	torture_suite_add_simple_test(suite, "ntlogon", nbt_test_ntlogon);
 
-	ret &= nbt_test_netlogon(mem_ctx, name, address);
-	ret &= nbt_test_netlogon2(mem_ctx, name, address);
-	ret &= nbt_test_ntlogon(mem_ctx, name, address);
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }

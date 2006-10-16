@@ -24,43 +24,37 @@
 #include "librpc/gen_ndr/ndr_wkssvc_c.h"
 #include "torture/rpc/rpc.h"
 
-
-static BOOL test_NetWkstaGetInfo(struct dcerpc_pipe *p, 
-			   TALLOC_CTX *mem_ctx)
+static bool test_NetWkstaGetInfo(struct torture_context *tctx, 
+								 struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct wkssvc_NetWkstaGetInfo r;
 	union wkssvc_NetWkstaInfo info;
 	uint16_t levels[] = {100, 101, 102, 502};
 	int i;
-	BOOL ret = True;
 
 	r.in.server_name = dcerpc_server_name(p);
 	r.out.info = &info;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.level = levels[i];
-		printf("testing NetWkstaGetInfo level %u\n", r.in.level);
-		status = dcerpc_wkssvc_NetWkstaGetInfo(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetWkstaGetInfo level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetWkstaGetInfo level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
-		}
+		torture_comment(tctx, talloc_asprintf(tctx, "testing NetWkstaGetInfo level %u\n", r.in.level));
+		status = dcerpc_wkssvc_NetWkstaGetInfo(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, 
+			talloc_asprintf(tctx, "NetWkstaGetInfo level %u failed", r.in.level));
+		torture_assert_werr_ok(tctx, r.out.result, 
+			talloc_asprintf(tctx, "NetWkstaGetInfo level %u failed", r.in.level));
 	}
 
-	return ret;
+	return true;
 }
 
 
-static BOOL test_NetWkstaTransportEnum(struct dcerpc_pipe *p, 
-			       TALLOC_CTX *mem_ctx)
+static bool test_NetWkstaTransportEnum(struct torture_context *tctx,
+									   struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct wkssvc_NetWkstaTransportEnum r;
-	BOOL ret = True;
 	uint32_t resume_handle = 0;
 	union wkssvc_NetWkstaTransportCtr ctr;
 	struct wkssvc_NetWkstaTransportCtr0 ctr0;
@@ -76,45 +70,28 @@ static BOOL test_NetWkstaTransportEnum(struct dcerpc_pipe *p,
 	r.out.ctr = &ctr;
 	r.out.resume_handle = &resume_handle;
 
-	printf("testing NetWkstaTransportEnum\n");
-	status = dcerpc_wkssvc_NetWkstaTransportEnum(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("NetWkstaTransportEnum failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("NetWkstaTransportEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
-	}
+	status = dcerpc_wkssvc_NetWkstaTransportEnum(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "NetWkstaTransportEnum failed");
+	torture_assert_werr_ok(tctx, r.out.result, 
+						   talloc_asprintf(tctx, 
+		"NetWkstaTransportEnum level %u failed", r.in.level));
 
-	return ret;
+	return true;
 }
 
 
 
-BOOL torture_rpc_wkssvc(struct torture_context *torture)
+struct torture_suite *torture_rpc_wkssvc(void)
 {
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	struct torture_suite *suite;
+	struct torture_tcase *tcase;
 
-	mem_ctx = talloc_init("torture_rpc_wkssvc");
+	suite = torture_suite_create(talloc_autofree_context(), "WKSSVC");
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "wkssvc", 
+											  &dcerpc_table_wkssvc);
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_wkssvc);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-
-	if (!test_NetWkstaGetInfo(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_NetWkstaTransportEnum(p, mem_ctx)) {
-		ret = False;
-	}
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	torture_rpc_tcase_add_test(tcase, "NetWkstaGetInfo", test_NetWkstaGetInfo);
+	torture_rpc_tcase_add_test(tcase, "NetWkstaTransportEnum", 
+							   test_NetWkstaTransportEnum);
+	return suite;
 }

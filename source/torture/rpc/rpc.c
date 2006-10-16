@@ -26,6 +26,7 @@
 #include "torture/rpc/rpc.h"
 #include "torture/torture.h"
 #include "librpc/rpc/dcerpc_table.h"
+#include "lib/util/dlinklist.h"
 
 /* open a rpc connection to the chosen binding string */
 _PUBLIC_ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
@@ -89,64 +90,136 @@ NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx,
         return status;
 }
 
+static bool torture_rpc_setup (struct torture_context *tctx, void **data)
+{
+	NTSTATUS status;
+	
+	status = torture_rpc_connection(tctx, 
+				(struct dcerpc_pipe **)data, 
+				(const struct dcerpc_interface_table *)tctx->active_tcase->data);
+
+	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
+
+	return true;
+}
+
+static bool torture_rpc_teardown (struct torture_context *tcase, void *data)
+{
+	talloc_free(data);
+	return true;
+}
+
+_PUBLIC_ struct torture_tcase *torture_suite_add_rpc_iface_tcase(struct torture_suite *suite, 
+														const char *name,
+														const struct dcerpc_interface_table *table)
+{
+	struct torture_tcase *tcase = torture_suite_add_tcase(suite, name);
+
+	tcase->setup = torture_rpc_setup;
+	tcase->teardown = torture_rpc_teardown;
+	tcase->data = table;
+
+	return tcase;
+}
+
+static bool torture_rpc_wrap_test(struct torture_context *tctx, 
+								  struct torture_tcase *tcase,
+								  struct torture_test *test)
+{
+	bool (*fn) (struct torture_context *, struct dcerpc_pipe *);
+
+	fn = test->fn;
+
+	return fn(tctx, (struct dcerpc_pipe *)tcase->data);
+}
+
+_PUBLIC_ struct torture_test *torture_rpc_tcase_add_test(
+					struct torture_tcase *tcase, 
+					const char *name, 
+					bool (*fn) (struct torture_context *, struct dcerpc_pipe *))
+{
+	struct torture_test *test;
+
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = torture_rpc_wrap_test;
+	test->dangerous = false;
+	test->data = NULL;
+	test->fn = fn;
+
+	DLIST_ADD(tcase->tests, test);
+
+	return test;
+}
+
 NTSTATUS torture_rpc_init(void)
 {
+	struct torture_suite *suite = torture_suite_create(
+										talloc_autofree_context(),
+										"RPC");
 	dcerpc_init();
 
 	dcerpc_table_init();
 
-	register_torture_op("RPC-LSA", torture_rpc_lsa);
-	register_torture_op("RPC-LSALOOKUP", torture_rpc_lsa_lookup);
-	register_torture_op("RPC-LSA-GETUSER", torture_rpc_lsa_get_user);
-	register_torture_op("RPC-SECRETS", torture_rpc_lsa_secrets);
-	register_torture_op("RPC-ECHO", torture_rpc_echo);
-	register_torture_op("RPC-DFS", torture_rpc_dfs);
-	register_torture_op("RPC-SPOOLSS", torture_rpc_spoolss);
-	register_torture_op("RPC-SAMR", torture_rpc_samr);
-	register_torture_op("RPC-SAMR-USERS", torture_rpc_samr_users);
-	register_torture_op("RPC-SAMR-PASSWORDS", torture_rpc_samr_passwords);
-	register_torture_op("RPC-UNIXINFO", torture_rpc_unixinfo);
-	register_torture_op("RPC-NETLOGON", torture_rpc_netlogon);
-	register_torture_op("RPC-SAMLOGON", torture_rpc_samlogon);
-	register_torture_op("RPC-SAMSYNC", torture_rpc_samsync);
-	register_torture_op("RPC-SCHANNEL", torture_rpc_schannel);
-	register_torture_op("RPC-WKSSVC", torture_rpc_wkssvc);
-	register_torture_op("RPC-SRVSVC", torture_rpc_srvsvc);
-	register_torture_op("RPC-SVCCTL", torture_rpc_svcctl);
-	register_torture_op("RPC-ATSVC", torture_rpc_atsvc);
-	register_torture_op("RPC-EVENTLOG", torture_rpc_eventlog);
-	register_torture_op("RPC-EPMAPPER", torture_rpc_epmapper);
-	register_torture_op("RPC-WINREG", torture_rpc_winreg);
-	register_torture_op("RPC-INITSHUTDOWN", torture_rpc_initshutdown);
-	register_torture_op("RPC-OXIDRESOLVE", torture_rpc_oxidresolve);
-	register_torture_op("RPC-REMACT", torture_rpc_remact);
-	register_torture_op("RPC-MGMT", torture_rpc_mgmt);
-	register_torture_op("RPC-SCANNER", torture_rpc_scanner);
-	register_torture_op("RPC-AUTOIDL", torture_rpc_autoidl);
-	register_torture_op("RPC-COUNTCALLS", torture_rpc_countcalls);
-	register_torture_op("RPC-MULTIBIND", torture_multi_bind);
-	register_torture_op("RPC-AUTHCONTEXT", torture_bind_authcontext);
-	register_torture_op("RPC-BINDSAMBA3", torture_bind_samba3);
-	register_torture_op("RPC-NETLOGSAMBA3", torture_netlogon_samba3);
-	register_torture_op("RPC-SAMBA3SESSIONKEY", torture_samba3_sessionkey);
-	register_torture_op("RPC-SAMBA3-SRVSVC", torture_samba3_rpc_srvsvc);
-	register_torture_op("RPC-SAMBA3-SHARESEC",
+	torture_suite_add_simple_test(suite, "LSA", torture_rpc_lsa);
+	torture_suite_add_simple_test(suite, "LSALOOKUP", torture_rpc_lsa_lookup);
+	torture_suite_add_simple_test(suite, "LSA-GETUSER", torture_rpc_lsa_get_user);
+	torture_suite_add_simple_test(suite, "SECRETS", torture_rpc_lsa_secrets);
+	torture_suite_add_suite(suite, torture_rpc_echo());
+	torture_suite_add_suite(suite, torture_rpc_dfs());
+	torture_suite_add_suite(suite, torture_rpc_unixinfo());
+	torture_suite_add_suite(suite, torture_rpc_eventlog());
+	torture_suite_add_suite(suite, torture_rpc_atsvc());
+	torture_suite_add_suite(suite, torture_rpc_wkssvc());
+	torture_suite_add_simple_test(suite, "SPOOLSS", torture_rpc_spoolss);
+	torture_suite_add_simple_test(suite, "SAMR", torture_rpc_samr);
+	torture_suite_add_simple_test(suite, "SAMR-USERS", torture_rpc_samr_users);
+	torture_suite_add_simple_test(suite, "SAMR-PASSWORDS", torture_rpc_samr_passwords);
+	torture_suite_add_simple_test(suite, "NETLOGON", torture_rpc_netlogon);
+	torture_suite_add_simple_test(suite, "SAMLOGON", torture_rpc_samlogon);
+	torture_suite_add_simple_test(suite, "SAMSYNC", torture_rpc_samsync);
+	torture_suite_add_simple_test(suite, "SCHANNEL", torture_rpc_schannel);
+	torture_suite_add_simple_test(suite, "SRVSVC", torture_rpc_srvsvc);
+	torture_suite_add_simple_test(suite, "SVCCTL", torture_rpc_svcctl);
+	torture_suite_add_simple_test(suite, "EPMAPPER", torture_rpc_epmapper);
+	torture_suite_add_simple_test(suite, "WINREG", torture_rpc_winreg);
+	torture_suite_add_simple_test(suite, "INITSHUTDOWN", torture_rpc_initshutdown);
+	torture_suite_add_simple_test(suite, "OXIDRESOLVE", torture_rpc_oxidresolve);
+	torture_suite_add_simple_test(suite, "REMACT", torture_rpc_remact);
+	torture_suite_add_simple_test(suite, "MGMT", torture_rpc_mgmt);
+	torture_suite_add_simple_test(suite, "SCANNER", torture_rpc_scanner);
+	torture_suite_add_simple_test(suite, "AUTOIDL", torture_rpc_autoidl);
+	torture_suite_add_simple_test(suite, "COUNTCALLS", torture_rpc_countcalls);
+	torture_suite_add_simple_test(suite, "MULTIBIND", torture_multi_bind);
+	torture_suite_add_simple_test(suite, "AUTHCONTEXT", torture_bind_authcontext);
+	torture_suite_add_simple_test(suite, "BINDSAMBA3", torture_bind_samba3);
+	torture_suite_add_simple_test(suite, "NETLOGSAMBA3", torture_netlogon_samba3);
+	torture_suite_add_simple_test(suite, "SAMBA3SESSIONKEY", torture_samba3_sessionkey);
+	torture_suite_add_simple_test(suite, "SAMBA3-SRVSVC", torture_samba3_rpc_srvsvc);
+	torture_suite_add_simple_test(suite, "SAMBA3-SHARESEC",
 			    torture_samba3_rpc_sharesec);
-	register_torture_op("RPC-SAMBA3-GETUSERNAME",
+	torture_suite_add_simple_test(suite, "SAMBA3-GETUSERNAME",
 			    torture_samba3_rpc_getusername);
-	register_torture_op("RPC-SAMBA3-LSA", torture_samba3_rpc_lsa);
-	register_torture_op("RPC-SAMBA3-SPOOLSS", torture_samba3_rpc_spoolss);
-	register_torture_op("RPC-SAMBA3-WKSSVC", torture_samba3_rpc_wkssvc);
-	register_torture_op("RPC-SAMBA3-WINREG", torture_samba3_rpc_winreg);
-	register_torture_op("RPC-DRSUAPI", torture_rpc_drsuapi);
-	register_torture_op("RPC-CRACKNAMES", torture_rpc_drsuapi_cracknames);
-	register_torture_op("RPC-ROT", torture_rpc_rot);
-	register_torture_op("RPC-DSSETUP", torture_rpc_dssetup);
-	register_torture_op("RPC-ALTERCONTEXT", torture_rpc_alter_context);
-	register_torture_op("RPC-JOIN", torture_rpc_join);
-	register_torture_op("RPC-DSSYNC", torture_rpc_dssync);
-	register_torture_op("BENCH-RPC", torture_bench_rpc);
-	register_torture_op("RPC-ASYNCBIND", torture_async_bind);
+	torture_suite_add_simple_test(suite, "SAMBA3-LSA", torture_samba3_rpc_lsa);
+	torture_suite_add_simple_test(suite, "SAMBA3-SPOOLSS", torture_samba3_rpc_spoolss);
+	torture_suite_add_simple_test(suite, "SAMBA3-WKSSVC", torture_samba3_rpc_wkssvc);
+	torture_suite_add_simple_test(suite, "RPC-SAMBA3-WINREG", torture_samba3_rpc_winreg);
+	torture_suite_add_simple_test(suite, "DRSUAPI", torture_rpc_drsuapi);
+	torture_suite_add_simple_test(suite, "CRACKNAMES", torture_rpc_drsuapi_cracknames);
+	torture_suite_add_simple_test(suite, "ROT", torture_rpc_rot);
+	torture_suite_add_simple_test(suite, "DSSETUP", torture_rpc_dssetup);
+	torture_suite_add_simple_test(suite, "ALTERCONTEXT", torture_rpc_alter_context);
+	torture_suite_add_simple_test(suite, "JOIN", torture_rpc_join);
+	torture_suite_add_simple_test(suite, "DSSYNC", torture_rpc_dssync);
+	torture_suite_add_simple_test(suite, "BENCH-RPC", torture_bench_rpc);
+	torture_suite_add_simple_test(suite, "ASYNCBIND", torture_async_bind);
+
+	suite->description = talloc_strdup(suite, 
+						"DCE/RPC protocol and interface tests");
+
+	torture_register_suite(suite);
 
 	return NT_STATUS_OK;
 }

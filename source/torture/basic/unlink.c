@@ -34,49 +34,36 @@
 
   1) the server does not allow an unlink on a file that is open
 */
-BOOL torture_unlinktest(struct torture_context *torture)
+BOOL torture_unlinktest(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	const char *fname = BASEDIR "\\unlink.tst";
 	int fnum;
 	BOOL correct = True;
 	union smb_open io;
 	NTSTATUS status;
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	printf("starting unlink test\n");
-
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), 
+				   talloc_asprintf(tctx, "Failed setting up %s", BASEDIR));
 
 	cli->session->pid = 1;
 
-	printf("Opening a file\n");
+	torture_comment(tctx, "Opening a file\n");
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
-	if (fnum == -1) {
-		printf("open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
-		return False;
-	}
+	torture_assert(tctx, fnum != -1, talloc_asprintf(tctx, "open of %s failed (%s)", fname, smbcli_errstr(cli->tree)));
 
-	printf("Unlinking a open file\n");
+	torture_comment(tctx, "Unlinking a open file\n");
 
-	if (NT_STATUS_IS_OK(smbcli_unlink(cli->tree, fname))) {
-		printf("(%s) error: server allowed unlink on an open file\n", __location__);
-		correct = False;
-	} else {
-		correct = check_error(__location__, cli, ERRDOS, ERRbadshare, 
+	torture_assert(tctx, !NT_STATUS_IS_OK(smbcli_unlink(cli->tree, fname)),
+		"server allowed unlink on an open file");
+	
+	correct = check_error(__location__, cli, ERRDOS, ERRbadshare, 
 				      NT_STATUS_SHARING_VIOLATION);
-	}
 
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
 
-	printf("testing unlink after ntcreatex with DELETE access\n");
+	torture_comment(tctx, "testing unlink after ntcreatex with DELETE access\n");
 
 	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
@@ -92,23 +79,14 @@ BOOL torture_unlinktest(struct torture_context *torture)
 	io.ntcreatex.in.access_mask  = SEC_RIGHTS_FILE_ALL;
 
 	status = smb_raw_open(cli->tree, cli, &io);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("(%s) failed to open %s\n", __location__, fname);
-	}
-	if (NT_STATUS_IS_OK(smbcli_unlink(cli->tree, fname))) {
-		printf("(%s) error: server allowed unlink on an open file\n", __location__);
-		correct = False;
-	} else {
-		correct = check_error(__location__, cli, ERRDOS, ERRbadshare, 
+	torture_assert_ntstatus_ok(tctx, status, talloc_asprintf(tctx, "failed to open %s", fname));
+
+	torture_assert(tctx, !NT_STATUS_IS_OK(smbcli_unlink(cli->tree, fname)),
+		"server allowed unlink on an open file");
+
+	correct = check_error(__location__, cli, ERRDOS, ERRbadshare, 
 				      NT_STATUS_SHARING_VIOLATION);
-	}
 
-	if (!torture_close_connection(cli)) {
-		correct = False;
-	}
-
-	printf("unlink test finished\n");
-	
 	return correct;
 }
 

@@ -7,9 +7,9 @@ PRIVATE_PROTO_HEADER = \
 		proto.h
 OBJ_FILES = \
 		iconv.o \
+		../../lib/talloc/testsuite.o \
 		../../lib/replace/test/testsuite.o \
 		../../lib/replace/test/os2_delete.o \
-		../../lib/talloc/testsuite.o \
 		../../lib/crypto/md4test.o \
 		../../lib/crypto/md5test.o \
 		../../lib/crypto/hmacmd5test.o \
