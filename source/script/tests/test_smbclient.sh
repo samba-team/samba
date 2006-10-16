@@ -18,7 +18,7 @@ failed=0
 runcmd() {
 	name="$1"
 	shift
-	testit "$name" bin/smbclient //$SERVER/tmp -W "$DOMAIN "-U"$USERNAME"%"$PASSWORD" $@
+	testit "$name" $VALGRIND bin/smbclient $CONFIGURATION //$SERVER/tmp -W "$DOMAIN "-U"$USERNAME"%"$PASSWORD" $@
 }
 
 incdir=`dirname $0`

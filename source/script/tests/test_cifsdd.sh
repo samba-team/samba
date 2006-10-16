@@ -29,7 +29,7 @@ runcopy() {
 	message="$1"
 	shift
 	
-	testit "$message" $DD --debuglevel=$DEBUGLEVEL -W "$DOMAIN" -U "$USERNAME"%"$PASSWORD" \
+	testit "$message" $VALGRIND $DD $CONFIGURATION --debuglevel=$DEBUGLEVEL -W "$DOMAIN" -U "$USERNAME"%"$PASSWORD" \
 	    "$@"
 }
 
