@@ -59,7 +59,7 @@ static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli,
 	}
 
 	/* Make sure to wait for our DC's reply */
-	old_timeout = cli_set_timeout(cli->cli, 30000); /* 30 seconds. */
+	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
 	result = rpccli_netlogon_getdcname(cli, mem_ctx, cli->cli->desthost, argv[1], dcname);
 
@@ -90,7 +90,7 @@ static WERROR cmd_netlogon_getanydcname(struct rpc_pipe_client *cli,
 	}
 
 	/* Make sure to wait for our DC's reply */
-	old_timeout = cli_set_timeout(cli->cli, 30000); /* 30 seconds. */
+	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
 	result = rpccli_netlogon_getanydcname(cli, mem_ctx, cli->cli->desthost, argv[1], dcname);
 
