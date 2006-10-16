@@ -508,6 +508,18 @@ static int winbind_auth_request(pam_handle_t * pamh,
 		}
 	}
 
+	/* save the profile path for other PAM modules */
+	if (response.data.auth.info3.profile_path[0] != '\0') {
+
+		int ret2 = pam_set_data(pamh, PAM_WINBIND_PROFILEPATH, 
+					(void *) strdup(response.data.auth.info3.profile_path), 
+					_pam_winbind_cleanup_func);
+		if (ret2) {
+			_pam_log_debug(ctrl, LOG_DEBUG, "Could not set data: %s", 
+				       pam_strerror(pamh, ret2));
+		}
+	}
+
 	return ret;
 }
 
