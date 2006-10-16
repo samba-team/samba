@@ -368,10 +368,12 @@ function provision_default_paths(subobj)
 /*
   setup reasonable name mappings for sam names to unix names
 */
-function setup_name_mappings(info, subobj, ldb)
+function setup_name_mappings(info, ldb)
 {
 	var lp = loadparm_init();
 	var attrs = new Array("objectSid");
+	var subobj = info.subobj;
+
 	res = ldb.search("objectSid=*", subobj.BASEDN, ldb.SCOPE_BASE, attrs);
 	assert(res.length == 1 && res[0].objectSid != undefined);
 	var sid = res[0].objectSid;
@@ -525,7 +527,7 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	message("Setting up sam.ldb users and groups\n");
 	setup_add_ldif("provision_users.ldif", info, samdb, false);
 
-	if (setup_name_mappings(info, subobj, samdb) == false) {
+	if (setup_name_mappings(info, samdb) == false) {
 		return false;
 	}
 
