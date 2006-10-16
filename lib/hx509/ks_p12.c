@@ -164,9 +164,13 @@ certBag_parser(hx509_context context,
 	    const heim_oid *oid = (*(oids[i]))();
 	    attr = find_attribute(attrs, oid);
 	    if (attr)
-		_hx509_set_cert_attribute(context, cert, oid, &attr->attrValues);
+		_hx509_set_cert_attribute(context, cert, oid,
+					  &attr->attrValues);
 	}	
     }
+
+    hx509_cert_free(cert);
+
     return 0;
 }
 

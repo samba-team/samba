@@ -740,12 +740,9 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
     }
 
     ret = _hx509_collector_certs_add(ctx->context, ctx->c, cert);
-    if (ret) {
-	hx509_cert_free(cert);
-	return ret;
-    }
+    hx509_cert_free(cert);
 
-    return 0;
+    return ret;
 }
 
 
@@ -967,8 +964,6 @@ p11_release_module(struct p11_module *p)
 		;
 	}
 
-	if (p->slot[i].certs)
-	    hx509_certs_free(&p->slot[i].certs);
 	if (p->slot[i].name)
 	    free(p->slot[i].name);
 	if (p->slot[i].pin) {
@@ -1002,7 +997,14 @@ p11_release_module(struct p11_module *p)
 static int
 p11_free(hx509_certs certs, void *data)
 {
-    p11_release_module((struct p11_module *)data);
+    struct p11_module *p = data;
+    int i;
+
+    for (i = 0; i < p->num_slots; i++) {
+	if (p->slot[i].certs)
+	    hx509_certs_free(&p->slot[i].certs);
+    }
+    p11_release_module(p);
     return 0;
 }
 
