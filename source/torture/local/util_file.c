@@ -31,66 +31,65 @@
 
 #define TEST_DATA TEST_LINE1 "\n" TEST_LINE2 "\n" TEST_LINE3
 
-static BOOL test_file_load_save(struct torture_context *test, const void *_data)
+static bool test_file_load_save(struct torture_context *tctx)
 {
 	size_t len;
 	char *data;
+	TALLOC_CTX *mem_ctx = tctx;
 	
-	torture_assert(test, 
-				   file_save(TEST_FILENAME, TEST_DATA, strlen(TEST_DATA)),
+	torture_assert(tctx, file_save(TEST_FILENAME, TEST_DATA, strlen(TEST_DATA)),
 				   "saving file");
 
-	data = file_load(TEST_FILENAME, &len, test);
-	torture_assert(test, data, "loading file");
+	data = file_load(TEST_FILENAME, &len, mem_ctx);
+	torture_assert(tctx, data, "loading file");
 
-	torture_assert(test, len == strlen(TEST_DATA), "Length");
+	torture_assert(tctx, len == strlen(TEST_DATA), "Length");
 	
-	torture_assert(test, memcmp(data, TEST_DATA, len) == 0, "Contents");
+	torture_assert(tctx, memcmp(data, TEST_DATA, len) == 0, "Contents");
 
 	unlink(TEST_FILENAME);
-
-	return True;
+	return true;
 }
 
-static BOOL test_afdgets(struct torture_context *test, const void *data)
+
+static bool test_afdgets(struct torture_context *tctx)
 {
 	int fd;
 	char *line;
+	TALLOC_CTX *mem_ctx = tctx;
 	
-	torture_assert(test, 
-				   file_save(TEST_FILENAME, (const void *)TEST_DATA, 
+	torture_assert(tctx, file_save(TEST_FILENAME, (const void *)TEST_DATA, 
 							 strlen(TEST_DATA)),
 				   "saving file");
 
 	fd = open(TEST_FILENAME, O_RDONLY);
 	
-	torture_assert(test, fd != -1, "opening file");
+	torture_assert(tctx, fd != -1, "opening file");
 
-	line = afdgets(fd, test, 8);
-	torture_assert(test, strcmp(line, TEST_LINE1) == 0, "line 1 mismatch");
+	line = afdgets(fd, mem_ctx, 8);
+	torture_assert(tctx, strcmp(line, TEST_LINE1) == 0, "line 1 mismatch");
 
-	line = afdgets(fd, test, 8);
-	torture_assert(test, strcmp(line, TEST_LINE2) == 0, "line 2 mismatch");
+	line = afdgets(fd, mem_ctx, 8);
+	torture_assert(tctx, strcmp(line, TEST_LINE2) == 0, "line 2 mismatch");
 
-	line = afdgets(fd, test, 8);
-	torture_assert(test, strcmp(line, TEST_LINE3) == 0, "line 3 mismatch");
+	line = afdgets(fd, mem_ctx, 8);
+	torture_assert(tctx, strcmp(line, TEST_LINE3) == 0, "line 3 mismatch");
 
 	close(fd);
 
 	unlink(TEST_FILENAME);
-
-	return True;
+	return true;
 }
 
 struct torture_suite *torture_local_util_file(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-FILE");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "FILE");
 
-	torture_suite_add_simple_tcase(suite, "file_load_save", 
-								   test_file_load_save, NULL);
+	torture_suite_add_simple_test(suite, "file_load_save", 
+								   test_file_load_save);
 
-	torture_suite_add_simple_tcase(suite, "afdgets", 
-								   test_afdgets, NULL);
+	torture_suite_add_simple_test(suite, "afdgets", 
+								   test_afdgets);
 
 	return suite;
 }

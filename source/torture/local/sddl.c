@@ -29,37 +29,31 @@
 /*
   test one SDDL example
 */
-static BOOL test_sddl(struct torture_context *mem_ctx, const void *_sddl)
+static bool test_sddl(struct torture_context *tctx, 
+					  const void *test_data)
 {
 	struct security_descriptor *sd, *sd2;
 	struct dom_sid *domain;
-	const char *sddl = _sddl;
+	const char *sddl = test_data;
 	const char *sddl2;
+	TALLOC_CTX *mem_ctx = tctx;
 
 
 	domain = dom_sid_parse_talloc(mem_ctx, "S-1-2-3-4");
 	sd = sddl_decode(mem_ctx, sddl, domain);
-	if (sd == NULL) {
-		printf("Failed to decode '%s'\n", sddl);
-		return False;
-	}
+	torture_assert(tctx, sd != NULL, talloc_asprintf(tctx, 
+					"Failed to decode '%s'\n", sddl));
 
 	sddl2 = sddl_encode(mem_ctx, sd, domain);
-	if (sddl2 == NULL) {
-		printf("Failed to re-encode '%s'\n", sddl);
-		return False;
-	}
+	torture_assert(tctx, sddl2 != NULL, talloc_asprintf(tctx, 
+					"Failed to re-encode '%s'\n", sddl));
 
 	sd2 = sddl_decode(mem_ctx, sddl2, domain);
-	if (sd2 == NULL) {
-		printf("Failed to decode2 '%s'\n", sddl2);
-		return False;
-	}
+	torture_assert(tctx, sd2 != NULL, talloc_asprintf(tctx, 
+					"Failed to decode2 '%s'\n", sddl2));
 
-	if (!security_descriptor_equal(sd, sd2)) {
-		printf("Failed equality test for '%s'\n", sddl);
-		return False;
-	}
+	torture_assert(tctx, security_descriptor_equal(sd, sd2),
+		talloc_asprintf(tctx, "Failed equality test for '%s'\n", sddl));
 
 #if 0
 	/* flags don't have a canonical order ... */
@@ -73,7 +67,7 @@ static BOOL test_sddl(struct torture_context *mem_ctx, const void *_sddl)
 	}
 	talloc_free(sd);
 	talloc_free(domain);
-	return True;
+	return true;
 }
 
 static const char *examples[] = {
@@ -99,7 +93,7 @@ static const char *examples[] = {
 /* test a set of example SDDL strings */
 struct torture_suite *torture_local_sddl(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-SDDL");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SDDL");
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(examples); i++) {

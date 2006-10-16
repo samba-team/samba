@@ -155,17 +155,11 @@ static void gen_name(char *name)
 }
 
 
-BOOL torture_mangle(struct torture_context *torture)
+BOOL torture_mangle(struct torture_context *torture, 
+					struct smbcli_state *cli)
 {
 	extern int torture_numops;
-	static struct smbcli_state *cli;
 	int i;
-
-	printf("starting mangle test\n");
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
 
 	/* we will use an internal tdb to store the names we have used */
 	tdb = tdb_open(NULL, 100000, TDB_INTERNAL, 0, 0);
@@ -203,8 +197,5 @@ BOOL torture_mangle(struct torture_context *torture)
 	printf("\nTotal collisions %u/%u  - %.2f%%   (%u failures)\n",
 	       collisions, total, (100.0*collisions) / total, failures);
 
-	torture_close_connection(cli);
-
-	printf("mangle test finished\n");
 	return (failures == 0);
 }

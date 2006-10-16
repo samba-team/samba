@@ -23,64 +23,59 @@
 #include "torture/torture.h"
 #include "librpc/ndr/libndr.h"
 
-static BOOL test_check_string_terminator(struct torture_context *test,
-										 const void *_data)
+static bool test_check_string_terminator(struct torture_context *tctx)
 {
 	struct ndr_pull *ndr;
 	DATA_BLOB blob;
+	TALLOC_CTX *mem_ctx = tctx;
 
 	/* Simple test */
 	blob = strhex_to_data_blob("0000");
 	
-	ndr = ndr_pull_init_blob(&blob, test);
+	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 
-	torture_assert_ntstatus_ok(test, 
-							   ndr_check_string_terminator(ndr, 1, 2),
+	torture_assert_ntstatus_ok(tctx, ndr_check_string_terminator(ndr, 1, 2),
 							   "simple check_string_terminator test failed");
 
-	torture_assert(test, ndr->offset == 0,
+	torture_assert(tctx, ndr->offset == 0,
 		"check_string_terminator did not reset offset");
 
 	if (NT_STATUS_IS_OK(ndr_check_string_terminator(ndr, 1, 3))) {
-		torture_fail(test, "check_string_terminator checked beyond string boundaries");
-		return False;
+		torture_fail(tctx, "check_string_terminator checked beyond string boundaries");
 	}
 
-	torture_assert(test, ndr->offset == 0, 
+	torture_assert(tctx, ndr->offset == 0, 
 		"check_string_terminator did not reset offset");
 
 	talloc_free(ndr);
 
 	blob = strhex_to_data_blob("11220000");
-	ndr = ndr_pull_init_blob(&blob, test);
+	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 
-	torture_assert_ntstatus_ok(test,
+	torture_assert_ntstatus_ok(tctx, 
 		ndr_check_string_terminator(ndr, 4, 1),
 		"check_string_terminator failed to recognize terminator");
 
-	torture_assert_ntstatus_ok(test,
+	torture_assert_ntstatus_ok(tctx, 
 		ndr_check_string_terminator(ndr, 3, 1),
 		"check_string_terminator failed to recognize terminator");
 
 	if (NT_STATUS_IS_OK(ndr_check_string_terminator(ndr, 2, 1))) {
-		torture_fail(test, 
+		torture_fail(tctx, 
 					 "check_string_terminator erroneously reported terminator");
-		return False;
 	}
 
-	torture_assert (test, ndr->offset == 0,
+	torture_assert(tctx, ndr->offset == 0,
 		"check_string_terminator did not reset offset");
-
-	return True;
+	return true;
 }
 
 struct torture_suite *torture_local_ndr(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-NDR");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "NDR");
 
-	torture_suite_add_simple_tcase(suite, "string terminator", 
-								   test_check_string_terminator,
-								   NULL);
+	torture_suite_add_simple_test(suite, "string terminator", 
+								   test_check_string_terminator);
 
 	return suite;
 }

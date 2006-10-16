@@ -25,68 +25,67 @@
 #include "libcli/resolve/resolve.h"
 #include "torture/torture.h"
 
-static BOOL test_async_resolve(struct torture_context *test, const void *_data)
+static bool test_async_resolve(struct torture_context *tctx)
 {
 	struct nbt_name n;
 	struct event_context *ev;
-	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
-	const char *host = lp_parm_string(-1, "torture", "host");
+	int timelimit = torture_setting_int(tctx, "timelimit", 10);
+	const char *host = torture_setting_string(tctx, "host", NULL);
 	int count = 0;
 	struct timeval tv = timeval_current();
+	TALLOC_CTX *mem_ctx = tctx;
 
-	ev = event_context_init(test);
+	ev = event_context_init(mem_ctx);
 
 	ZERO_STRUCT(n);
 	n.name = host;
 
-	torture_comment(test, "Testing async resolve of localhost for %d seconds",
+	torture_comment(tctx, "Testing async resolve of localhost for %d seconds\n",
 					timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		const char *s;
 		struct composite_context *c = resolve_name_host_send(&n, ev);
-		torture_assert(test, c, "resolve_name_host_send");
-		torture_assert_ntstatus_ok(test, resolve_name_host_recv(c, test, &s),
+		torture_assert(tctx, c != NULL, "resolve_name_host_send");
+		torture_assert_ntstatus_ok(tctx, resolve_name_host_recv(c, mem_ctx, &s),
 								   "async resolve failed");
 		count++;
 	}
 
-	torture_comment(test, "async rate of %.1f resolves/sec", 
+	torture_comment(tctx, "async rate of %.1f resolves/sec\n", 
 					count/timeval_elapsed(&tv));
-
-	return True;
+	return true;
 }
 
 /*
   test resolution using sync method
 */
-static BOOL test_sync_resolve(struct torture_context *test, const void *_data)
+static bool test_sync_resolve(struct torture_context *tctx)
 {
-	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
+	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	struct timeval tv = timeval_current();
 	int count = 0;
-	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *host = torture_setting_string(tctx, "host", NULL);
 
-	torture_comment(test, "Testing sync resolve of localhost for %d seconds", 
+	torture_comment(tctx, "Testing sync resolve of localhost for %d seconds\n", 
 				 timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		sys_inet_ntoa(interpret_addr2(host));
 		count++;
 	}
 	
-	torture_comment(test, "sync rate of %.1f resolves/sec", 
+	torture_comment(tctx, "sync rate of %.1f resolves/sec\n", 
 				 count/timeval_elapsed(&tv));
-
-	return True;
+	return true;
 }
 
 
 struct torture_suite *torture_local_resolve(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx,
-													   "LOCAL-RESOLVE");
+													   "RESOLVE");
 
-	torture_suite_add_simple_tcase(suite, "async", test_async_resolve, NULL);
-	torture_suite_add_simple_tcase(suite, "sync", test_sync_resolve, NULL);
+	torture_suite_add_simple_test(suite, "async", test_async_resolve);
+	torture_suite_add_simple_test(suite, "sync", test_sync_resolve);
 
 	return suite;
 }

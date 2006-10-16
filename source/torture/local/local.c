@@ -49,17 +49,34 @@
 NTSTATUS torture_local_init(void)
 {
 	int i;
-	TALLOC_CTX *mem_ctx = talloc_autofree_context();
+	struct torture_suite *suite = torture_suite_create(
+										talloc_autofree_context(),
+										"LOCAL");
+	struct torture_suite *talloc_suite = torture_suite_create(
+												talloc_autofree_context(),
+												"TALLOC");
 
-	register_torture_op("LOCAL-REPLACE", torture_local_replace);
-	register_torture_op("LOCAL-TALLOC", torture_local_talloc);
-	register_torture_op("LOCAL-CRYPTO-MD4", torture_local_crypto_md4);
-	register_torture_op("LOCAL-CRYPTO-MD5", torture_local_crypto_md5);
-	register_torture_op("LOCAL-CRYPTO-HMACMD5", torture_local_crypto_hmacmd5);
-	register_torture_op("LOCAL-CRYPTO-SHA1", torture_local_crypto_sha1);
-	register_torture_op("LOCAL-CRYPTO-HMACSHA1", torture_local_crypto_hmacsha1);
+	torture_local_talloc(talloc_suite);
+	torture_suite_add_suite(suite, talloc_suite);
+	torture_suite_add_simple_test(suite, "REPLACE", torture_local_replace);
+	torture_suite_add_simple_test(suite, "CRYPTO-SHA1", 
+								  torture_local_crypto_sha1);
+	torture_suite_add_simple_test(suite, 
+								  "CRYPTO-MD4", torture_local_crypto_md4);
+	torture_suite_add_simple_test(suite, "CRYPTO-MD5", 
+								  torture_local_crypto_md5);
+	torture_suite_add_simple_test(suite, "CRYPTO-HMACMD5", 
+								  torture_local_crypto_hmacmd5);
+	torture_suite_add_simple_test(suite, "CRYPTO-HMACSHA1", 
+								  torture_local_crypto_hmacsha1);
 	for (i = 0; suite_generators[i]; i++)
-		torture_register_suite(suite_generators[i](mem_ctx));
+		torture_suite_add_suite(suite,
+						suite_generators[i](talloc_autofree_context()));
+
+	suite->description = talloc_strdup(suite, 
+							"Local, Samba-specific tests");
+
+	torture_register_suite(suite);
 
 	return NT_STATUS_OK;
 }

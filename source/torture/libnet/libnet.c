@@ -24,30 +24,39 @@
 
 NTSTATUS torture_net_init(void)
 {
-	register_torture_op("NET-USERINFO", torture_userinfo);
-	register_torture_op("NET-USERADD", torture_useradd);
-	register_torture_op("NET-USERDEL", torture_userdel);
-	register_torture_op("NET-USERMOD", torture_usermod);
-	register_torture_op("NET-DOMOPEN", torture_domainopen);
-	register_torture_op("NET-API-LOOKUP", torture_lookup);
-	register_torture_op("NET-API-LOOKUPHOST", torture_lookup_host);
-	register_torture_op("NET-API-LOOKUPPDC", torture_lookup_pdc);
-	register_torture_op("NET-API-LOOKUPNAME", torture_lookup_sam_name);
-	register_torture_op("NET-API-CREATEUSER", torture_createuser);
-	register_torture_op("NET-API-DELETEUSER", torture_deleteuser);
-	register_torture_op("NET-API-MODIFYUSER", torture_modifyuser);
-	register_torture_op("NET-API-USERINFO", torture_userinfo_api);
-	register_torture_op("NET-API-RPCCONN-BIND", torture_rpc_connect_binding);
-	register_torture_op("NET-API-RPCCONN-SRV", torture_rpc_connect_srv);
-	register_torture_op("NET-API-RPCCONN-PDC", torture_rpc_connect_pdc);
-	register_torture_op("NET-API-RPCCONN-DC", torture_rpc_connect_dc);
-	register_torture_op("NET-API-RPCCONN-DCINFO", torture_rpc_connect_dc_info);
-	register_torture_op("NET-API-LISTSHARES", torture_listshares);
-	register_torture_op("NET-API-DELSHARE", torture_delshare);
-	register_torture_op("NET-API-DOMOPENLSA", torture_domain_open_lsa);
-	register_torture_op("NET-API-DOMCLOSELSA", torture_domain_close_lsa);
-	register_torture_op("NET-API-DOMOPENSAMR", torture_domain_open_samr);
-	register_torture_op("NET-API-DOMCLOSESAMR", torture_domain_close_samr);
+	struct torture_suite *suite = torture_suite_create(
+										talloc_autofree_context(),
+										"NET");
+
+	torture_suite_add_simple_test(suite, "USERINFO", torture_userinfo);
+	torture_suite_add_simple_test(suite, "USERADD", torture_useradd);
+	torture_suite_add_simple_test(suite, "USERDEL", torture_userdel);
+	torture_suite_add_simple_test(suite, "USERMOD", torture_usermod);
+	torture_suite_add_simple_test(suite, "DOMOPEN", torture_domainopen);
+	torture_suite_add_simple_test(suite, "API-LOOKUP", torture_lookup);
+	torture_suite_add_simple_test(suite, "API-LOOKUPHOST", torture_lookup_host);
+	torture_suite_add_simple_test(suite, "API-LOOKUPPDC", torture_lookup_pdc);
+	torture_suite_add_simple_test(suite, "API-LOOKUPNAME", torture_lookup_sam_name);
+	torture_suite_add_simple_test(suite, "API-CREATEUSER", torture_createuser);
+	torture_suite_add_simple_test(suite, "API-DELETEUSER", torture_deleteuser);
+	torture_suite_add_simple_test(suite, "API-MODIFYUSER", torture_modifyuser);
+	torture_suite_add_simple_test(suite, "API-USERINFO", torture_userinfo_api);
+	torture_suite_add_simple_test(suite, "API-RPCCONN-BIND", torture_rpc_connect_binding);
+	torture_suite_add_simple_test(suite, "API-RPCCONN-SRV", torture_rpc_connect_srv);
+	torture_suite_add_simple_test(suite, "API-RPCCONN-PDC", torture_rpc_connect_pdc);
+	torture_suite_add_simple_test(suite, "API-RPCCONN-DC", torture_rpc_connect_dc);
+	torture_suite_add_simple_test(suite, "API-RPCCONN-DCINFO", torture_rpc_connect_dc_info);
+	torture_suite_add_simple_test(suite, "API-LISTSHARES", torture_listshares);
+	torture_suite_add_simple_test(suite, "API-DELSHARE", torture_delshare);
+	torture_suite_add_simple_test(suite, "API-DOMOPENLSA", torture_domain_open_lsa);
+	torture_suite_add_simple_test(suite, "API-DOMCLOSELSA", torture_domain_close_lsa);
+	torture_suite_add_simple_test(suite, "API-DOMOPENSAMR", torture_domain_open_samr);
+	torture_suite_add_simple_test(suite, "API-DOMCLOSESAMR", torture_domain_close_samr);
+
+	suite->description = talloc_strdup(suite, 
+						"libnet convenience interface tests");
+
+	torture_register_suite(suite);
 
 	return NT_STATUS_OK;
 }

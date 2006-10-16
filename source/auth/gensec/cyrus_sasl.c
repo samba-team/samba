@@ -399,7 +399,7 @@ NTSTATUS gensec_sasl_init(void)
 		if (oldmech) {
 			continue;
 		}
-		newmech = talloc(NULL, struct gensec_security_ops);
+		newmech = talloc(talloc_autofree_context(), struct gensec_security_ops);
 		if (!newmech) {
 			return NT_STATUS_NO_MEMORY;
 		}

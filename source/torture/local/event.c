@@ -40,13 +40,13 @@ static void fde_handler(struct event_context *ev_ctx, struct fd_event *f,
 {
 	int *fd = private;
 
-	torture_comment(test, "event[%d] fd[%d] events[0x%08X]%s%s", fde_count, 
-					*fd, flags, 
+	torture_comment(test, "event[%d] fd[%d] events[0x%08X]%s%s\n", 
+						fde_count, *fd, flags, 
 					(flags & EVENT_FD_READ)?" EVENT_FD_READ":"", 
 					(flags & EVENT_FD_WRITE)?" EVENT_FD_WRITE":"");
 
 	if (fde_count > 5) {
-		torture_fail(test, "got more than fde 5 events - bug!");
+		_torture_fail_ext(test, "got more than fde 5 events - bug!");
 		talloc_free(fde);
 		fde = NULL;
 		return;
@@ -59,13 +59,13 @@ static void fde_handler(struct event_context *ev_ctx, struct fd_event *f,
 static void timed_handler(struct event_context *ev_ctx, struct timed_event *te,
 			  struct timeval tval, void *private)
 {
-	torture_comment(test, "timed_handler called[%d]", te_count);
+	torture_comment(test, "timed_handler called[%d]\n", te_count);
 	if (te_count > 2) {
 		close(write_fd);
 		write_fd = -1;
 	}
 	if (te_count > 5) {
-		torture_comment(test, "remove fd event!");
+		torture_comment(test, "remove fd event!\n");
 		talloc_free(fde);
 		fde = NULL;
 		return;
@@ -74,17 +74,19 @@ static void timed_handler(struct event_context *ev_ctx, struct timed_event *te,
 	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(0,500), timed_handler, private);
 }
 
-static BOOL test_event_context(struct torture_context *torture, const void *_data)
+static bool test_event_context(struct torture_context *torture_ctx,
+							   const void *test_data)
 {
 	struct event_context *ev_ctx;
 	int fd[2] = { -1, -1 };
-	BOOL try_epoll = (BOOL)_data;
+	BOOL try_epoll = (BOOL)test_data;
+	TALLOC_CTX *mem_ctx = torture_ctx;
 
-	ev_ctx = event_context_init_ops(torture, 
+	ev_ctx = event_context_init_ops(mem_ctx, 
 									event_standard_get_ops(), 
 									&try_epoll);
 
-	test = torture;
+	test = torture_ctx;
 
 	/* reset globals */
 	write_fd = -1;
@@ -108,13 +110,12 @@ static BOOL test_event_context(struct torture_context *torture, const void *_dat
 	close(write_fd);
 	
 	talloc_free(ev_ctx);
-
-	return True;
+	return true;
 }
 
 struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-EVENT");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "EVENT");
 
 	torture_suite_add_simple_tcase(suite, "standard with select",
 								   test_event_context,

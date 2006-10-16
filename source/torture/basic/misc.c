@@ -36,7 +36,7 @@
 #include "libcli/composite/composite.h"
 
 extern struct cli_credentials *cmdline_credentials;
-void benchrw_callback(struct smbcli_request *req);
+static void benchrw_callback(struct smbcli_request *req);
 enum benchrw_stage {
 	START,
 	OPEN_CONNECTION,
@@ -53,6 +53,7 @@ enum benchrw_stage {
 };
 
 struct benchrw_state{
+		struct torture_context *tctx;
 		char *dname;
 		char *fname;
 		uint16_t fnum;
@@ -87,7 +88,7 @@ static BOOL wait_lock(struct smbcli_state *c, int fnum, uint32_t offset, uint32_
 }
 
 
-static BOOL rw_torture(struct smbcli_state *c)
+static BOOL rw_torture(struct torture_context *tctx, struct smbcli_state *c)
 {
 	const char *lockfname = "\\torture.lck";
 	char *fname;
@@ -103,7 +104,7 @@ static BOOL rw_torture(struct smbcli_state *c)
 	if (fnum2 == -1)
 		fnum2 = smbcli_open(c->tree, lockfname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
-		printf("open of %s failed (%s)\n", lockfname, smbcli_errstr(c->tree));
+		torture_comment(tctx, "open of %s failed (%s)\n", lockfname, smbcli_errstr(c->tree));
 		return False;
 	}
 
@@ -111,7 +112,7 @@ static BOOL rw_torture(struct smbcli_state *c)
 	for (i=0;i<torture_numops;i++) {
 		uint_t n = (uint_t)random()%10;
 		if (i % 10 == 0) {
-			printf("%d\r", i); fflush(stdout);
+			torture_comment(tctx, "%d\r", i); fflush(stdout);
 		}
 		asprintf(&fname, "\\torture.%u", n);
 
@@ -121,13 +122,13 @@ static BOOL rw_torture(struct smbcli_state *c)
 
 		fnum = smbcli_open(c->tree, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_ALL);
 		if (fnum == -1) {
-			printf("open failed (%s)\n", smbcli_errstr(c->tree));
+			torture_comment(tctx, "open failed (%s)\n", smbcli_errstr(c->tree));
 			correct = False;
 			break;
 		}
 
 		if (smbcli_write(c->tree, fnum, 0, &pid, 0, sizeof(pid)) != sizeof(pid)) {
-			printf("write failed (%s)\n", smbcli_errstr(c->tree));
+			torture_comment(tctx, "write failed (%s)\n", smbcli_errstr(c->tree));
 			correct = False;
 		}
 
@@ -135,7 +136,7 @@ static BOOL rw_torture(struct smbcli_state *c)
 			if (smbcli_write(c->tree, fnum, 0, buf, 
 				      sizeof(pid)+(j*sizeof(buf)), 
 				      sizeof(buf)) != sizeof(buf)) {
-				printf("write failed (%s)\n", smbcli_errstr(c->tree));
+				torture_comment(tctx, "write failed (%s)\n", smbcli_errstr(c->tree));
 				correct = False;
 			}
 		}
@@ -143,27 +144,27 @@ static BOOL rw_torture(struct smbcli_state *c)
 		pid2 = 0;
 
 		if (smbcli_read(c->tree, fnum, &pid2, 0, sizeof(pid)) != sizeof(pid)) {
-			printf("read failed (%s)\n", smbcli_errstr(c->tree));
+			torture_comment(tctx, "read failed (%s)\n", smbcli_errstr(c->tree));
 			correct = False;
 		}
 
 		if (pid2 != pid) {
-			printf("data corruption!\n");
+			torture_comment(tctx, "data corruption!\n");
 			correct = False;
 		}
 
 		if (NT_STATUS_IS_ERR(smbcli_close(c->tree, fnum))) {
-			printf("close failed (%s)\n", smbcli_errstr(c->tree));
+			torture_comment(tctx, "close failed (%s)\n", smbcli_errstr(c->tree));
 			correct = False;
 		}
 
 		if (NT_STATUS_IS_ERR(smbcli_unlink(c->tree, fname))) {
-			printf("unlink failed (%s)\n", smbcli_errstr(c->tree));
+			torture_comment(tctx, "unlink failed (%s)\n", smbcli_errstr(c->tree));
 			correct = False;
 		}
 
 		if (NT_STATUS_IS_ERR(smbcli_unlock(c->tree, fnum2, n*sizeof(int), sizeof(int)))) {
-			printf("unlock failed (%s)\n", smbcli_errstr(c->tree));
+			torture_comment(tctx, "unlock failed (%s)\n", smbcli_errstr(c->tree));
 			correct = False;
 		}
 		free(fname);
@@ -172,55 +173,41 @@ static BOOL rw_torture(struct smbcli_state *c)
 	smbcli_close(c->tree, fnum2);
 	smbcli_unlink(c->tree, lockfname);
 
-	printf("%d\n", i);
+	torture_comment(tctx, "%d\n", i);
 
 	return correct;
 }
 
-static BOOL run_torture(struct smbcli_state *cli, int dummy)
+BOOL run_torture(struct torture_context *tctx, struct smbcli_state *cli, int dummy)
 {
-    BOOL ret;
-
-	ret = rw_torture(cli);
-	
-	if (!torture_close_connection(cli)) {
-		ret = False;
-	}
-
-	return ret;
+	return rw_torture(tctx, cli);
 }
 
 
 /*
   see how many RPC pipes we can open at once
 */
-static BOOL run_pipe_number(struct torture_context *torture)
+BOOL run_pipe_number(struct torture_context *tctx, 
+					 struct smbcli_state *cli1)
 {
-	struct smbcli_state *cli1;
 	const char *pipe_name = "\\WKSSVC";
 	int fnum;
 	int num_pipes = 0;
-
-	printf("starting pipenumber test\n");
-	if (!torture_open_connection(&cli1, 0)) {
-		return False;
-	}
 
 	while(1) {
 		fnum = smbcli_nt_create_full(cli1->tree, pipe_name, 0, SEC_FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 		if (fnum == -1) {
-			printf("Open of pipe %s failed with error (%s)\n", pipe_name, smbcli_errstr(cli1->tree));
+			torture_comment(tctx, "Open of pipe %s failed with error (%s)\n", pipe_name, smbcli_errstr(cli1->tree));
 			break;
 		}
 		num_pipes++;
-		printf("%d\r", num_pipes);
+		torture_comment(tctx, "%d\r", num_pipes);
 		fflush(stdout);
 	}
 
-	printf("pipe_number test - we can open %d %s pipes.\n", num_pipes, pipe_name );
-	torture_close_connection(cli1);
+	torture_comment(tctx, "pipe_number test - we can open %d %s pipes.\n", num_pipes, pipe_name );
 	return True;
 }
 
@@ -232,13 +219,13 @@ static BOOL run_pipe_number(struct torture_context *torture)
   used for testing performance when there are N idle users
   already connected
  */
- static BOOL torture_holdcon(struct torture_context *torture)
+BOOL torture_holdcon(struct torture_context *tctx)
 {
 	int i;
 	struct smbcli_state **cli;
 	int num_dead = 0;
 
-	printf("Opening %d connections\n", torture_numops);
+	torture_comment(tctx, "Opening %d connections\n", torture_numops);
 	
 	cli = malloc_array_p(struct smbcli_state *, torture_numops);
 
@@ -246,11 +233,11 @@ static BOOL run_pipe_number(struct torture_context *torture)
 		if (!torture_open_connection(&cli[i], i)) {
 			return False;
 		}
-		printf("opened %d connections\r", i);
+		torture_comment(tctx, "opened %d connections\r", i);
 		fflush(stdout);
 	}
 
-	printf("\nStarting pings\n");
+	torture_comment(tctx, "\nStarting pings\n");
 
 	while (1) {
 		for (i=0;i<torture_numops;i++) {
@@ -258,7 +245,7 @@ static BOOL run_pipe_number(struct torture_context *torture)
 			if (cli[i]) {
 				status = smbcli_chkpath(cli[i]->tree, "\\");
 				if (!NT_STATUS_IS_OK(status)) {
-					printf("Connection %d is dead\n", i);
+					torture_comment(tctx, "Connection %d is dead\n", i);
 					cli[i] = NULL;
 					num_dead++;
 				}
@@ -267,11 +254,11 @@ static BOOL run_pipe_number(struct torture_context *torture)
 		}
 
 		if (num_dead == torture_numops) {
-			printf("All connections dead - finishing\n");
+			torture_comment(tctx, "All connections dead - finishing\n");
 			break;
 		}
 
-		printf(".");
+		torture_comment(tctx, ".");
 		fflush(stdout);
 	}
 
@@ -281,7 +268,7 @@ static BOOL run_pipe_number(struct torture_context *torture)
 /*
 test how many open files this server supports on the one socket
 */
-static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
+BOOL run_maxfidtest(struct torture_context *tctx, struct smbcli_state *cli, int dummy)
 {
 #define MAXFID_TEMPLATE "\\maxfid\\fid%d\\maxfid.%d.%d"
 	char *fname;
@@ -290,28 +277,28 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 	BOOL correct = True;
 
 	if (retries <= 0) {
-		printf("failed to connect\n");
+		torture_comment(tctx, "failed to connect\n");
 		return False;
 	}
 
 	if (smbcli_deltree(cli->tree, "\\maxfid") == -1) {
-		printf("Failed to deltree \\maxfid - %s\n",
+		torture_comment(tctx, "Failed to deltree \\maxfid - %s\n",
 		       smbcli_errstr(cli->tree));
 		return False;
 	}
 	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\maxfid"))) {
-		printf("Failed to mkdir \\maxfid, error=%s\n", 
+		torture_comment(tctx, "Failed to mkdir \\maxfid, error=%s\n", 
 		       smbcli_errstr(cli->tree));
 		return False;
 	}
 
-	printf("Testing maximum number of open files\n");
+	torture_comment(tctx, "Testing maximum number of open files\n");
 
 	for (i=0; i<0x11000; i++) {
 		if (i % 1000 == 0) {
 			asprintf(&fname, "\\maxfid\\fid%d", i/1000);
 			if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, fname))) {
-				printf("Failed to mkdir %s, error=%s\n", 
+				torture_comment(tctx, "Failed to mkdir %s, error=%s\n", 
 				       fname, smbcli_errstr(cli->tree));
 				return False;
 			}
@@ -321,27 +308,27 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 		if ((fnums[i] = smbcli_open(cli->tree, fname, 
 					O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) ==
 		    -1) {
-			printf("open of %s failed (%s)\n", 
+			torture_comment(tctx, "open of %s failed (%s)\n", 
 			       fname, smbcli_errstr(cli->tree));
-			printf("maximum fnum is %d\n", i);
+			torture_comment(tctx, "maximum fnum is %d\n", i);
 			break;
 		}
 		free(fname);
-		printf("%6d\r", i);
+		torture_comment(tctx, "%6d\r", i);
 	}
-	printf("%6d\n", i);
+	torture_comment(tctx, "%6d\n", i);
 	i--;
 
 	maxfid = i;
 
-	printf("cleaning up\n");
+	torture_comment(tctx, "cleaning up\n");
 	for (i=0;i<maxfid/2;i++) {
 		asprintf(&fname, MAXFID_TEMPLATE, i/1000, i,(int)getpid());
 		if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnums[i]))) {
-			printf("Close of fnum %d failed - %s\n", fnums[i], smbcli_errstr(cli->tree));
+			torture_comment(tctx, "Close of fnum %d failed - %s\n", fnums[i], smbcli_errstr(cli->tree));
 		}
 		if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fname))) {
-			printf("unlink of %s failed (%s)\n", 
+			torture_comment(tctx, "unlink of %s failed (%s)\n", 
 			       fname, smbcli_errstr(cli->tree));
 			correct = False;
 		}
@@ -349,26 +336,26 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 
 		asprintf(&fname, MAXFID_TEMPLATE, (maxfid-i)/1000, maxfid-i,(int)getpid());
 		if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnums[maxfid-i]))) {
-			printf("Close of fnum %d failed - %s\n", fnums[maxfid-i], smbcli_errstr(cli->tree));
+			torture_comment(tctx, "Close of fnum %d failed - %s\n", fnums[maxfid-i], smbcli_errstr(cli->tree));
 		}
 		if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fname))) {
-			printf("unlink of %s failed (%s)\n", 
+			torture_comment(tctx, "unlink of %s failed (%s)\n", 
 			       fname, smbcli_errstr(cli->tree));
 			correct = False;
 		}
 		free(fname);
 
-		printf("%6d %6d\r", i, maxfid-i);
+		torture_comment(tctx, "%6d %6d\r", i, maxfid-i);
 	}
-	printf("%6d\n", 0);
+	torture_comment(tctx, "%6d\n", 0);
 
 	if (smbcli_deltree(cli->tree, "\\maxfid") == -1) {
-		printf("Failed to deltree \\maxfid - %s\n",
+		torture_comment(tctx, "Failed to deltree \\maxfid - %s\n",
 		       smbcli_errstr(cli->tree));
 		return False;
 	}
 
-	printf("maxfid test finished\n");
+	torture_comment(tctx, "maxfid test finished\n");
 	if (!torture_close_connection(cli)) {
 		correct = False;
 	}
@@ -381,9 +368,9 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 /*
   sees what IOCTLs are supported
  */
-static BOOL torture_ioctl_test(struct torture_context *torture)
+BOOL torture_ioctl_test(struct torture_context *tctx, 
+						struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	uint16_t device, function;
 	int fnum;
 	const char *fname = "\\ioctl.dat";
@@ -391,19 +378,13 @@ static BOOL torture_ioctl_test(struct torture_context *torture)
 	union smb_ioctl parms;
 	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	mem_ctx = talloc_named_const(torture, 0, "ioctl_test");
-
-	printf("starting ioctl test\n");
+	mem_ctx = talloc_named_const(tctx, 0, "ioctl_test");
 
 	smbcli_unlink(cli->tree, fname);
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum == -1) {
-		printf("open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
+		torture_comment(tctx, "open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 		return False;
 	}
 
@@ -411,23 +392,19 @@ static BOOL torture_ioctl_test(struct torture_context *torture)
 	parms.ioctl.in.file.fnum = fnum;
 	parms.ioctl.in.request = IOCTL_QUERY_JOB_INFO;
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &parms);
-	printf("ioctl job info: %s\n", smbcli_errstr(cli->tree));
+	torture_comment(tctx, "ioctl job info: %s\n", smbcli_errstr(cli->tree));
 
 	for (device=0;device<0x100;device++) {
-		printf("testing device=0x%x\n", device);
+		torture_comment(tctx, "testing device=0x%x\n", device);
 		for (function=0;function<0x100;function++) {
 			parms.ioctl.in.request = (device << 16) | function;
 			status = smb_raw_ioctl(cli->tree, mem_ctx, &parms);
 
 			if (NT_STATUS_IS_OK(status)) {
-				printf("ioctl device=0x%x function=0x%x OK : %d bytes\n", 
+				torture_comment(tctx, "ioctl device=0x%x function=0x%x OK : %d bytes\n", 
 					device, function, (int)parms.ioctl.out.blob.length);
 			}
 		}
-	}
-
-	if (!torture_close_connection(cli)) {
-		return False;
 	}
 
 	return True;
@@ -437,7 +414,7 @@ static BOOL torture_ioctl_test(struct torture_context *torture)
  	init params using lp_parm_xxx 
  	return number of unclist entries
 */
-int init_benchrw_params(TALLOC_CTX *mem_ctx,struct params *lpar)
+static int init_benchrw_params(struct torture_context *tctx, struct params *lpar)
 {
 	char **unc_list = NULL;
 	int num_unc_names = 0, conn_index=0, empty_lines=0;
@@ -453,11 +430,11 @@ int init_benchrw_params(TALLOC_CTX *mem_ctx,struct params *lpar)
 		char *h, *s;
 		unc_list = file_lines_load(p, &num_unc_names, NULL);
 		if (!unc_list || num_unc_names <= 0) {
-			printf("Failed to load unc names list from '%s'\n", p);
+			torture_comment(tctx, "Failed to load unc names list from '%s'\n", p);
 			exit(1);
 		}
 		
-		lpar->unc = talloc_array(mem_ctx, struct unclist *, (num_unc_names-empty_lines));
+		lpar->unc = talloc_array(tctx, struct unclist *, (num_unc_names-empty_lines));
 		for(conn_index = 0; conn_index < num_unc_names; conn_index++) {
 			/* ignore empty lines */
 			if(strlen(unc_list[conn_index % num_unc_names])==0){
@@ -466,18 +443,18 @@ int init_benchrw_params(TALLOC_CTX *mem_ctx,struct params *lpar)
 			}
 			if (!smbcli_parse_unc(unc_list[conn_index % num_unc_names],
 					      NULL, &h, &s)) {
-				printf("Failed to parse UNC name %s\n",
+				torture_comment(tctx, "Failed to parse UNC name %s\n",
 			       unc_list[conn_index % num_unc_names]);
 				exit(1);
 			}
-		lpar->unc[conn_index-empty_lines] = talloc(mem_ctx,struct unclist);
+		lpar->unc[conn_index-empty_lines] = talloc(tctx,struct unclist);
 		lpar->unc[conn_index-empty_lines]->host = h;
 		lpar->unc[conn_index-empty_lines]->share = s;	
 		}
 		return num_unc_names-empty_lines;
 	}else{
-		lpar->unc = talloc_array(mem_ctx, struct unclist *, 1);
-		lpar->unc[0] = talloc(mem_ctx,struct unclist);
+		lpar->unc = talloc_array(tctx, struct unclist *, 1);
+		lpar->unc[0] = talloc(tctx,struct unclist);
 		lpar->unc[0]->host  = lp_parm_string(-1, "torture", "host");
 		lpar->unc[0]->share = lp_parm_string(-1, "torture", "share");
 		return 1;
@@ -487,14 +464,14 @@ int init_benchrw_params(TALLOC_CTX *mem_ctx,struct params *lpar)
 /*
  Called when the reads & writes are finished. closes the file.
 */
-NTSTATUS benchrw_close(struct smbcli_request *req,
+static NTSTATUS benchrw_close(struct torture_context *tctx,struct smbcli_request *req,
 				struct benchrw_state *state)
 {
 	union smb_close close_parms;
 	
 	NT_STATUS_NOT_OK_RETURN(req->status);
 	
-	printf("Close file %d (%d)\n",state->nr,state->fnum);
+	torture_comment(tctx, "Close file %d (%d)\n",state->nr,state->fnum);
 	close_parms.close.level = RAW_CLOSE_CLOSE;
 	close_parms.close.in.file.fnum = state->fnum ;
 	close_parms.close.in.write_time = 0;
@@ -512,7 +489,7 @@ NTSTATUS benchrw_close(struct smbcli_request *req,
 /*
  Called when the initial write is completed is done. write or read a file.
 */
-NTSTATUS benchrw_readwrite(struct smbcli_request *req,
+static NTSTATUS benchrw_readwrite(struct torture_context *tctx,struct smbcli_request *req,
 					struct benchrw_state *state)
 {
 	union smb_read	rd;
@@ -523,7 +500,7 @@ NTSTATUS benchrw_readwrite(struct smbcli_request *req,
 	state->completed++;
 	/*rotate between writes and reads*/
 	if( state->completed % state->lp_params->writeratio == 0){
-		printf("Callback WRITE file:%d (%d/%d)\n",
+		torture_comment(tctx, "Callback WRITE file:%d (%d/%d)\n",
 				state->nr,state->completed,torture_numops);
 		wr.generic.level = RAW_WRITE_WRITEX  ;
 		wr.writex.in.file.fnum  = state->fnum ;
@@ -535,7 +512,7 @@ NTSTATUS benchrw_readwrite(struct smbcli_request *req,
 		state->readcnt=0;
 		req = smb_raw_write_send(state->cli,&wr);
 	}else{
-		printf("Callback READ file:%d (%d/%d) Offset:%d\n",
+		torture_comment(tctx, "Callback READ file:%d (%d/%d) Offset:%d\n",
 				state->nr,state->completed,torture_numops,
 				(state->readcnt*state->lp_params->blocksize));
 		rd.generic.level = RAW_READ_READ    ;
@@ -564,7 +541,7 @@ NTSTATUS benchrw_readwrite(struct smbcli_request *req,
 /*
  Called when the open is done. writes to the file.
 */
-NTSTATUS benchrw_open(struct smbcli_request *req,
+static NTSTATUS benchrw_open(struct torture_context *tctx,struct smbcli_request *req,
 				struct benchrw_state *state)
 {
 	union smb_write	wr;
@@ -576,11 +553,11 @@ NTSTATUS benchrw_open(struct smbcli_request *req,
 	
 		state->fnum = ((union smb_open*)state->req_params)
 						->openx.out.file.fnum;
-		printf("File opened (%d)\n",state->fnum);
+		torture_comment(tctx, "File opened (%d)\n",state->fnum);
 		state->mode=INITIAL_WRITE;
 	}
 		
-	printf("Write initial test file:%d (%d/%d)\n",state->nr,
+	torture_comment(tctx, "Write initial test file:%d (%d/%d)\n",state->nr,
 		(state->writecnt+1)*state->lp_params->blocksize,
 		(state->lp_params->writeblocks*state->lp_params->blocksize));
 	wr.generic.level = RAW_WRITE_WRITEX  ;
@@ -610,7 +587,7 @@ NTSTATUS benchrw_open(struct smbcli_request *req,
 /*
  Called when the mkdir is done. Opens a file.
 */
-NTSTATUS benchrw_mkdir(struct smbcli_request *req,
+static NTSTATUS benchrw_mkdir(struct torture_context *tctx,struct smbcli_request *req,
 				struct benchrw_state *state)
 {
 	union smb_open *open_parms;	
@@ -619,7 +596,7 @@ NTSTATUS benchrw_mkdir(struct smbcli_request *req,
 	NT_STATUS_NOT_OK_RETURN(req->status);
 	
 	/* open/create the files */
-	printf("Open File %d/%d\n",state->nr+1,torture_nprocs);
+	torture_comment(tctx, "Open File %d/%d\n",state->nr+1,torture_nprocs);
 	open_parms=talloc_zero(state->mem_ctx, union smb_open);
 	NT_STATUS_HAVE_NO_MEMORY(open_parms);
 	open_parms->openx.level = RAW_OPEN_OPENX;
@@ -656,9 +633,10 @@ NTSTATUS benchrw_mkdir(struct smbcli_request *req,
 /*
  handler for completion of a sub-request of the bench-rw test
 */
-void benchrw_callback(struct smbcli_request *req)
+static void benchrw_callback(struct smbcli_request *req)
 {
 	struct benchrw_state *state = req->async.private;
+	struct torture_context *tctx = state->tctx;
 	
 	/*dont send new requests when torture_numops is reached*/
 	if(state->completed >= torture_numops){
@@ -669,8 +647,8 @@ void benchrw_callback(struct smbcli_request *req)
 	switch (state->mode) {
 	
 	case MK_TESTDIR:
-		if (!NT_STATUS_IS_OK(benchrw_mkdir(req,state))) {			
-			printf("Failed to create the test directory - %s\n", 
+		if (!NT_STATUS_IS_OK(benchrw_mkdir(tctx, req,state))) {			
+			torture_comment(tctx, "Failed to create the test directory - %s\n", 
 							nt_errstr(req->status));
 			state->mode=ERROR;
 			return;
@@ -678,33 +656,33 @@ void benchrw_callback(struct smbcli_request *req)
 		break;	
 	case OPEN_FILE:
 	case INITIAL_WRITE:
-		if (!NT_STATUS_IS_OK(benchrw_open(req,state))){
-			printf("Failed to open/write the file - %s\n", 
+		if (!NT_STATUS_IS_OK(benchrw_open(tctx, req,state))){
+			torture_comment(tctx, "Failed to open/write the file - %s\n", 
 							nt_errstr(req->status));
 			state->mode=ERROR;
 			return;
 		}
 		break;
 	case READ_WRITE_DATA:
-		if (!NT_STATUS_IS_OK(benchrw_readwrite(req,state))){
-			printf("Failed to read/write the file - %s\n", 
+		if (!NT_STATUS_IS_OK(benchrw_readwrite(tctx,req,state))){
+			torture_comment(tctx, "Failed to read/write the file - %s\n", 
 							nt_errstr(req->status));
 			state->mode=ERROR;
 			return;
 		}
 		break;
 	case MAX_OPS_REACHED:
-		if (!NT_STATUS_IS_OK(benchrw_close(req,state))){
-			printf("Failed to read/write/close the file - %s\n", 
+		if (!NT_STATUS_IS_OK(benchrw_close(tctx,req,state))){
+			torture_comment(tctx, "Failed to read/write/close the file - %s\n", 
 							nt_errstr(req->status));
 			state->mode=ERROR;
 			return;
 		}
 		break;
 	case CLOSE_FILE:
-		printf("File %d closed\n",state->nr);
+		torture_comment(tctx, "File %d closed\n",state->nr);
 		if (!NT_STATUS_IS_OK(req->status)) {
-			printf("Failed to close the file - %s\n",
+			torture_comment(tctx, "Failed to close the file - %s\n",
 							nt_errstr(req->status));
 			state->mode=ERROR;
 			return;
@@ -718,9 +696,10 @@ void benchrw_callback(struct smbcli_request *req)
 }
 
 /* open connection async callback function*/
-void async_open_callback(struct composite_context *con)
+static void async_open_callback(struct composite_context *con)
 {
 	struct benchrw_state *state = con->async.private_data;
+	struct torture_context *tctx = state->tctx;
 	int retry = state->lp_params->retry;
 	 	
 	if (NT_STATUS_IS_OK(con->status)) {
@@ -729,13 +708,13 @@ void async_open_callback(struct composite_context *con)
 		state->mode=CLEANUP_TESTDIR;
 	}else{
 		if(state->writecnt < retry){
-			printf("Failed to open connection:%d, Retry (%d/%d)\n",
+			torture_comment(tctx, "Failed to open connection:%d, Retry (%d/%d)\n",
 					state->nr,state->writecnt,retry);
 			state->writecnt++;
 			state->mode=START;
 			usleep(1000);	
 		}else{
-			printf("Failed to open connection (%d) - %s\n",
+			torture_comment(tctx, "Failed to open connection (%d) - %s\n",
 					state->nr, nt_errstr(con->status));
 			state->mode=ERROR;
 		}
@@ -746,7 +725,8 @@ void async_open_callback(struct composite_context *con)
 /*
  establishs a smbcli_tree from scratch (async)
 */
-struct composite_context *torture_connect_async(
+static struct composite_context *torture_connect_async(
+				struct torture_context *tctx,
 				struct smb_composite_connect *smb,
 				TALLOC_CTX *mem_ctx,
 				struct event_context *ev,
@@ -754,7 +734,7 @@ struct composite_context *torture_connect_async(
 				const char *share,
 				const char *workgroup)
 {
-	printf("Open Connection to %s/%s\n",host,share);
+	torture_comment(tctx, "Open Connection to %s/%s\n",host,share);
 	smb->in.dest_host=talloc_strdup(mem_ctx,host);
 	smb->in.service=talloc_strdup(mem_ctx,share);
 	smb->in.port=0;
@@ -767,14 +747,13 @@ struct composite_context *torture_connect_async(
 	return smb_composite_connect_send(smb,mem_ctx,ev);
 }
 
-static BOOL run_benchrw(struct torture_context *torture)
+BOOL run_benchrw(struct torture_context *tctx)
 {
 	struct smb_composite_connect *smb_con;
 	const char *fname = "\\rwtest.dat";
 	struct smbcli_request *req;
 	struct benchrw_state **state;
 	int i , num_unc_names;
-	TALLOC_CTX *mem_ctx;
 	struct event_context 	*ev	;	
 	struct composite_context *req1;
 	struct params lpparams;
@@ -782,42 +761,42 @@ static BOOL run_benchrw(struct torture_context *torture)
 	int finished = 0;
 	BOOL success=True;
 	
-	printf("Start BENCH-READWRITE num_ops=%d num_nprocs=%d\n",
+	torture_comment(tctx, "Start BENCH-READWRITE num_ops=%d num_nprocs=%d\n",
 		torture_numops,torture_nprocs);
 
 	/*init talloc context*/
-	mem_ctx = talloc_named_const(torture, 0, "bench-readwrite");
-	ev = event_context_init(mem_ctx);
-	state = talloc_array(mem_ctx, struct benchrw_state *, torture_nprocs);
+	ev = event_context_init(tctx);
+	state = talloc_array(tctx, struct benchrw_state *, torture_nprocs);
 
 	/* init params using lp_parm_xxx */
-	num_unc_names = init_benchrw_params(mem_ctx,&lpparams);
+	num_unc_names = init_benchrw_params(tctx,&lpparams);
 	
 	/* init private data structs*/
 	for(i = 0; i<torture_nprocs;i++){
-		state[i]=talloc(mem_ctx,struct benchrw_state);
+		state[i]=talloc(tctx,struct benchrw_state);
+		state[i]->tctx = tctx;
 		state[i]->completed=0;
 		state[i]->lp_params=&lpparams;
 		state[i]->nr=i;
-		state[i]->dname=talloc_asprintf(mem_ctx,"benchrw%d",i);
-		state[i]->fname=talloc_asprintf(mem_ctx,"%s%s",
+		state[i]->dname=talloc_asprintf(tctx,"benchrw%d",i);
+		state[i]->fname=talloc_asprintf(tctx,"%s%s",
 								state[i]->dname,fname);	
 		state[i]->mode=START;
 		state[i]->writecnt=0;
 	}
 	
-	printf("Starting async requests\n");	
+	torture_comment(tctx, "Starting async requests\n");	
 	while(finished != torture_nprocs){
 		finished=0;
 		for(i = 0; i<torture_nprocs;i++){
 			switch (state[i]->mode){
 			/*open multiple connections with the same userid */
 			case START:
-				smb_con = talloc(mem_ctx,struct smb_composite_connect) ;
+				smb_con = talloc(tctx,struct smb_composite_connect) ;
 				state[i]->req_params=smb_con; 
 				state[i]->mode=OPEN_CONNECTION;
-				req1 = torture_connect_async(smb_con,
-									mem_ctx,ev,
+				req1 = torture_connect_async(tctx, smb_con,
+									tctx,ev,
 									lpparams.unc[i % num_unc_names]->host,
 									lpparams.unc[i % num_unc_names]->share,
 									lpparams.workgroup);
@@ -827,11 +806,11 @@ static BOOL run_benchrw(struct torture_context *torture)
 				break;
 			/*setup test dirs (sync)*/
 			case CLEANUP_TESTDIR:
-				printf("Setup test dir %d\n",i);
+				torture_comment(tctx, "Setup test dir %d\n",i);
 				smb_raw_exit(state[i]->cli->session);
 				if (smbcli_deltree(state[i]->cli, 
 						state[i]->dname) == -1) {
-					printf("Unable to delete %s - %s\n", 
+					torture_comment(tctx, "Unable to delete %s - %s\n", 
 						state[i]->dname,
 						smbcli_errstr(state[i]->cli));
 					state[i]->mode=ERROR;
@@ -852,12 +831,12 @@ static BOOL run_benchrw(struct torture_context *torture)
 				break;
 			/* cleanup , close connection */
 			case CLEANUP:
-				printf("Deleting test dir %s %d/%d\n",state[i]->dname,
+				torture_comment(tctx, "Deleting test dir %s %d/%d\n",state[i]->dname,
 						i+1,torture_nprocs);
 				smbcli_deltree(state[i]->cli,state[i]->dname);
 				if (NT_STATUS_IS_ERR(smb_tree_disconnect(
 										state[i]->cli))) {
-					printf("ERROR: Tree disconnect failed");
+					torture_comment(tctx, "ERROR: Tree disconnect failed");
 					state[i]->mode=ERROR;
 					break;
 				}
@@ -871,23 +850,6 @@ static BOOL run_benchrw(struct torture_context *torture)
 		}
 	}
 				
-	printf("BENCH-READWRITE done. Closing connections.\n");
-	
-	/*free all allocated memory*/
-	talloc_free(mem_ctx);
-
 	return success;	
 }
 
-
-NTSTATUS torture_misc_init(void)
-{
-	register_torture_op("BENCH-HOLDCON", torture_holdcon);
-	register_torture_op("SCAN-PIPE_NUMBER", run_pipe_number);
-	register_torture_op("SCAN-IOCTL", torture_ioctl_test);
-	register_torture_op("BENCH-READWRITE", run_benchrw);
-	register_torture_multi_op("BENCH-TORTURE", run_torture);
-	register_torture_multi_op("SCAN-MAXFID", run_maxfidtest);
-
-	return NT_STATUS_OK;
-}

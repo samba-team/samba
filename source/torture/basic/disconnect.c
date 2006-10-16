@@ -129,11 +129,11 @@ static BOOL test_disconnect_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 */
 BOOL torture_disconnect(struct torture_context *torture)
 {
-	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 	int i;
 	extern int torture_numops;
+	struct smbcli_state *cli;
 
 	mem_ctx = talloc_init("torture_raw_mux");
 
@@ -169,7 +169,6 @@ BOOL torture_disconnect(struct torture_context *torture)
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
-	torture_close_connection(cli);
 	talloc_free(mem_ctx);
 	return ret;
 }

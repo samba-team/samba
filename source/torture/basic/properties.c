@@ -89,20 +89,12 @@ static void show_bits(const struct bitmapping *bm, uint32_t value)
 /*
   print out server properties
  */
-BOOL torture_test_properties(struct torture_context *torture)
+BOOL torture_test_properties(struct torture_context *torture, 
+							 struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	BOOL correct = True;
 	union smb_fsinfo fs;
 	NTSTATUS status;
-	
-	printf("starting properties test\n");
-	
-	ZERO_STRUCT(cli);
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
 	
 	d_printf("Capabilities: 0x%08x\n", cli->transport->negotiate.capabilities);
 	show_bits(capability_bits, cli->transport->negotiate.capabilities);
@@ -120,10 +112,6 @@ BOOL torture_test_properties(struct torture_context *torture)
 		d_printf("max_file_component_length: %d\n", 
 			 fs.attribute_info.out.max_file_component_length);
 		d_printf("fstype: %s\n", fs.attribute_info.out.fs_type.s);
-	}
-
-	if (!torture_close_connection(cli)) {
-		correct = False;
 	}
 
 	return correct;

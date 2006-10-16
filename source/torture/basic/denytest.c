@@ -25,7 +25,6 @@
 #include "libcli/libcli.h"
 #include "torture/util.h"
 
-extern BOOL torture_showall;
 extern int torture_failures;
 
 #define CHECK_MAX_FAILURES(label) do { if (++failures >= torture_failures) goto label; } while (0)
@@ -1401,18 +1400,18 @@ static const struct {
 };
 
 
-static void progress_bar(uint_t i, uint_t total)
+static void progress_bar(struct torture_context *tctx, uint_t i, uint_t total)
 {
-	printf("%5d/%5d\r", i, total);
+	torture_comment(tctx, "%5d/%5d\r", i, total);
 	fflush(stdout);
 }
 
 /*
   this produces a matrix of deny mode behaviour for 1 connection
  */
-BOOL torture_denytest1(struct torture_context *torture)
+BOOL torture_denytest1(struct torture_context *tctx, 
+					   struct smbcli_state *cli1)
 {
-	static struct smbcli_state *cli1;
 	int fnum1, fnum2;
 	int i;
 	BOOL correct = True;
@@ -1420,13 +1419,7 @@ BOOL torture_denytest1(struct torture_context *torture)
 	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
 	int failures=0;
 
-	if (!torture_open_connection(&cli1, 0)) {
-		return False;
-	}
-
-	printf("starting denytest1\n");
-
-	printf("Testing deny modes with 1 connection\n");
+	torture_comment(tctx, "Testing deny modes with 1 connection\n");
 
 	for (i=0;i<2;i++) {
 		smbcli_unlink(cli1->tree, fnames[i]);
@@ -1435,7 +1428,7 @@ BOOL torture_denytest1(struct torture_context *torture)
 		smbcli_close(cli1->tree, fnum1);
 	}
 
-	printf("testing %d entries\n", (int)ARRAY_SIZE(denytable1));
+	torture_comment(tctx, "testing %d entries\n", (int)ARRAY_SIZE(denytable1));
 
 	GetTimeOfDay(&tv_start);
 
@@ -1443,7 +1436,7 @@ BOOL torture_denytest1(struct torture_context *torture)
 		enum deny_result res;
 		const char *fname = fnames[denytable1[i].isexe];
 
-		progress_bar(i, ARRAY_SIZE(denytable1));
+		progress_bar(tctx, i, ARRAY_SIZE(denytable1));
 
 		fnum1 = smbcli_open(cli1->tree, fname, 
 				 denytable1[i].mode1,
@@ -1467,12 +1460,13 @@ BOOL torture_denytest1(struct torture_context *torture)
 			}
 		}
 
-		if (torture_showall || res != denytable1[i].result) {
+		if (lp_parm_bool(-1, "torture", "showall", False) || 
+			res != denytable1[i].result) {
 			int64_t tdif;
 			GetTimeOfDay(&tv);
 			tdif = usec_time_diff(&tv, &tv_start);
 			tdif /= 1000;
-			printf("%lld: %s %8s %10s    %8s %10s    %s (correct=%s)\n",
+			torture_comment(tctx, "%lld: %s %8s %10s    %8s %10s    %s (correct=%s)\n",
 			       (long long)tdif,
 			       fname,
 			       denystr(denytable1[i].deny1),
@@ -1497,11 +1491,7 @@ failed:
 		smbcli_unlink(cli1->tree, fnames[i]);
 	}
 		
-	if (!torture_close_connection(cli1)) {
-		correct = False;
-	}
-	
-	printf("finshed denytest1 (%d failures)\n", failures);
+	torture_comment(tctx, "finshed denytest1 (%d failures)\n", failures);
 	return correct;
 }
 
@@ -1509,24 +1499,16 @@ failed:
 /*
   this produces a matrix of deny mode behaviour with 2 connections
  */
-BOOL torture_denytest2(struct torture_context *torture)
+BOOL torture_denytest2(struct torture_context *tctx, 
+					   struct smbcli_state *cli1, 
+					   struct smbcli_state *cli2)
 {
-	static struct smbcli_state *cli1, *cli2;
 	int fnum1, fnum2;
 	int i;
 	BOOL correct = True;
 	const char *fnames[2] = {"\\denytest2.dat", "\\denytest2.exe"};
 	struct timeval tv, tv_start;
 	int failures=0;
-
-	if (!torture_open_connection(&cli1, 0) ||
-	    !torture_open_connection(&cli2, 1)) {
-		return False;
-	}
-
-	printf("starting denytest2\n");
-
-	printf("Testing deny modes with 2 connections\n");
 
 	for (i=0;i<2;i++) {
 		smbcli_unlink(cli1->tree, fnames[i]);
@@ -1541,7 +1523,7 @@ BOOL torture_denytest2(struct torture_context *torture)
 		enum deny_result res;
 		const char *fname = fnames[denytable2[i].isexe];
 
-		progress_bar(i, ARRAY_SIZE(denytable1));
+		progress_bar(tctx, i, ARRAY_SIZE(denytable1));
 
 		fnum1 = smbcli_open(cli1->tree, fname, 
 				 denytable2[i].mode1,
@@ -1565,12 +1547,13 @@ BOOL torture_denytest2(struct torture_context *torture)
 			}
 		}
 
-		if (torture_showall || res != denytable2[i].result) {
+		if (lp_parm_bool(-1, "torture", "showall", False) || 
+			res != denytable2[i].result) {
 			int64_t tdif;
 			GetTimeOfDay(&tv);
 			tdif = usec_time_diff(&tv, &tv_start);
 			tdif /= 1000;
-			printf("%lld: %s %8s %10s    %8s %10s    %s (correct=%s)\n",
+			torture_comment(tctx, "%lld: %s %8s %10s    %8s %10s    %s (correct=%s)\n",
 			       (long long)tdif,
 			       fname,
 			       denystr(denytable2[i].deny1),
@@ -1595,14 +1578,7 @@ failed:
 		smbcli_unlink(cli1->tree, fnames[i]);
 	}
 
-	if (!torture_close_connection(cli1)) {
-		correct = False;
-	}
-	if (!torture_close_connection(cli2)) {
-		correct = False;
-	}
-	
-	printf("finshed denytest2 (%d failures)\n", failures);
+	torture_comment(tctx, "finshed denytest2 (%d failures)\n", failures);
 	return correct;
 }
 
@@ -1611,22 +1587,12 @@ failed:
 /*
    simple test harness for playing with deny modes
  */
-BOOL torture_denytest3(struct torture_context *torture)
+BOOL torture_denytest3(struct torture_context *tctx, 
+					   struct smbcli_state *cli1,
+					   struct smbcli_state *cli2)
 {
-	struct smbcli_state *cli1, *cli2;
 	int fnum1, fnum2;
 	const char *fname;
-
-	printf("starting deny3 test\n");
-
-	printf("Testing simple deny modes\n");
-	
-	if (!torture_open_connection(&cli1, 0)) {
-		return False;
-	}
-	if (!torture_open_connection(&cli2, 1)) {
-		return False;
-	}
 
 	fname = "\\deny_dos1.dat";
 
@@ -1636,7 +1602,7 @@ BOOL torture_denytest3(struct torture_context *torture)
 	if (fnum1 != -1) smbcli_close(cli1->tree, fnum1);
 	if (fnum2 != -1) smbcli_close(cli1->tree, fnum2);
 	smbcli_unlink(cli1->tree, fname);
-	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
+	torture_comment(tctx, "fnum1=%d fnum2=%d\n", fnum1, fnum2);
 
 
 	fname = "\\deny_dos2.dat";
@@ -1647,11 +1613,7 @@ BOOL torture_denytest3(struct torture_context *torture)
 	if (fnum1 != -1) smbcli_close(cli1->tree, fnum1);
 	if (fnum2 != -1) smbcli_close(cli2->tree, fnum2);
 	smbcli_unlink(cli1->tree, fname);
-	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
-
-
-	torture_close_connection(cli1);
-	torture_close_connection(cli2);
+	torture_comment(tctx, "fnum1=%d fnum2=%d\n", fnum1, fnum2);
 
 	return True;
 }
@@ -1758,7 +1720,8 @@ static NTSTATUS predict_share_conflict(uint32_t sa1, uint32_t am1, uint32_t sa2,
 /*
   a denytest for ntcreatex
  */
-static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *cli2, int client)
+static BOOL torture_ntdenytest(struct torture_context *tctx, 
+							   struct smbcli_state *cli1, struct smbcli_state *cli2, int client)
 {
 	const struct bit_value share_access_bits[] = {
 		{ NTCREATEX_SHARE_ACCESS_READ,   "S_R" },
@@ -1787,7 +1750,7 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 	int failures = 0;
 	uint8_t buf[1];
 
-	printf("format: server correct\n");
+	torture_comment(tctx, "format: server correct\n");
 
 	ZERO_STRUCT(buf);
 
@@ -1812,7 +1775,7 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 	io1.ntcreatex.in.fname = fname;
 	io2 = io1;
 
-	printf("testing %d entries on %s\n", torture_numops, fname);
+	torture_comment(tctx, "testing %d entries on %s\n", torture_numops, fname);
 
 	for (i=0;i<torture_numops;i++) {
 		NTSTATUS status1, status2, status2_p;
@@ -1825,7 +1788,7 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 		int b_am2 = random() & ((1<<nbits2)-1);
 		BOOL read_for_execute;
 
-		progress_bar(i, torture_numops);
+		progress_bar(tctx, i, torture_numops);
 		
 		io1.ntcreatex.in.share_access = map_bits(share_access_bits, b_sa1, nbits1);
 		io1.ntcreatex.in.access_mask  = map_bits(access_mask_bits,  b_am1, nbits2);
@@ -1889,10 +1852,10 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 		GetTimeOfDay(&tv);
 		tdif = usec_time_diff(&tv, &tv_start);
 		tdif /= 1000;
-		if (torture_showall || 
+		if (lp_parm_bool(-1, "torture", "showall", False) || 
 		    !NT_STATUS_EQUAL(status2, status2_p) ||
 		    res != res2) {
-			printf("\n%-20s %-70s\n%-20s %-70s %4s %4s  %s/%s\n",
+			torture_comment(tctx, "\n%-20s %-70s\n%-20s %-70s %4s %4s  %s/%s\n",
 			       bit_string(mem_ctx, share_access_bits, b_sa1, nbits1),
 			       bit_string(mem_ctx, access_mask_bits,  b_am1, nbits2),
 			       bit_string(mem_ctx, share_access_bits, b_sa2, nbits1),
@@ -1916,7 +1879,7 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 failed:
 	smbcli_unlink(cli1->tree, fname);
 	
-	printf("finshed ntdenytest (%d failures)\n", failures);
+	torture_comment(tctx, "finshed ntdenytest (%d failures)\n", failures);
 	return correct;
 }
 
@@ -1925,47 +1888,31 @@ failed:
 /*
   a denytest for ntcreatex
  */
-BOOL torture_ntdenytest1(struct smbcli_state *cli, int client)
+BOOL torture_ntdenytest1(struct torture_context *tctx, struct smbcli_state *cli, int client)
 {
 	extern int torture_seed;
 
 	srandom(torture_seed + client);
 
-	printf("starting ntdenytest1 client %d\n", client);
+	torture_comment(tctx, "starting ntdenytest1 client %d\n", client);
 
-	return torture_ntdenytest(cli, cli, client);
+	return torture_ntdenytest(tctx, cli, cli, client);
 }
 
 /*
   a denytest for ntcreatex
  */
-BOOL torture_ntdenytest2(struct torture_context *torture)
+BOOL torture_ntdenytest2(struct torture_context *torture, 
+						 struct smbcli_state *cli1,
+						 struct smbcli_state *cli2)
 {
-	struct smbcli_state *cli1, *cli2;
-	BOOL ret;
-
-	if (!torture_open_connection(&cli1, 0)) {
-		return False;
-	}
-
-	if (!torture_open_connection(&cli2, 1)) {
-		return False;
-	}
-
-	printf("starting ntdenytest2\n");
-
-	ret = torture_ntdenytest(cli1, cli2, 0);
-
-	torture_close_connection(cli1);
-	torture_close_connection(cli2);
-
-	return ret;
+	return torture_ntdenytest(torture, cli1, cli2, 0);
 }
 
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
+		torture_comment(tctx, "(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = False; \
 		goto done; \
@@ -1973,7 +1920,7 @@ BOOL torture_ntdenytest2(struct torture_context *torture)
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%s) wrong value for %s  0x%x - should be 0x%x\n", \
+		torture_comment(tctx, "(%s) wrong value for %s  0x%x - should be 0x%x\n", \
 		       __location__, #v, (int)(v), (int)correct); \
 		ret = False; \
 	}} while (0)
@@ -1981,9 +1928,9 @@ BOOL torture_ntdenytest2(struct torture_context *torture)
 /*
   test sharing of handles with DENY_DOS on a single connection
 */
-BOOL torture_denydos_sharing(struct torture_context *torture)
+BOOL torture_denydos_sharing(struct torture_context *tctx, 
+							 struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	union smb_open io;
 	union smb_fileinfo finfo;
 	const char *fname = "\\torture_denydos.txt";
@@ -1993,13 +1940,9 @@ BOOL torture_denydos_sharing(struct torture_context *torture)
 	union smb_setfileinfo sfinfo;
 	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
 	mem_ctx = talloc_new(cli);
 
-	printf("Checking DENY_DOS shared handle semantics\n");
+	torture_comment(tctx, "Checking DENY_DOS shared handle semantics\n");
 	smbcli_unlink(cli->tree, fname);
 
 	io.openx.level = RAW_OPEN_OPENX;
@@ -2013,7 +1956,7 @@ BOOL torture_denydos_sharing(struct torture_context *torture)
 	io.openx.in.size = 0;
 	io.openx.in.timeout = 0;
 
-	printf("openx twice with RDWR/DENY_DOS\n");
+	torture_comment(tctx, "openx twice with RDWR/DENY_DOS\n");
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum1 = io.openx.out.file.fnum;
@@ -2022,7 +1965,7 @@ BOOL torture_denydos_sharing(struct torture_context *torture)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.openx.out.file.fnum;
 
-	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
+	torture_comment(tctx, "fnum1=%d fnum2=%d\n", fnum1, fnum2);
 
 	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
 	sfinfo.position_information.in.file.fnum = fnum1;
@@ -2030,7 +1973,7 @@ BOOL torture_denydos_sharing(struct torture_context *torture)
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("two handles should be same file handle\n");
+	torture_comment(tctx, "two handles should be same file handle\n");
 	finfo.position_information.level = RAW_FILEINFO_POSITION_INFORMATION;
 	finfo.position_information.in.file.fnum = fnum1;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
@@ -2046,7 +1989,7 @@ BOOL torture_denydos_sharing(struct torture_context *torture)
 	smbcli_close(cli->tree, fnum1);
 	smbcli_close(cli->tree, fnum2);
 
-	printf("openx twice with RDWR/DENY_NONE\n");
+	torture_comment(tctx, "openx twice with RDWR/DENY_NONE\n");
 	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR | OPENX_MODE_DENY_NONE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -2057,9 +2000,9 @@ BOOL torture_denydos_sharing(struct torture_context *torture)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.openx.out.file.fnum;
 
-	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
+	torture_comment(tctx, "fnum1=%d fnum2=%d\n", fnum1, fnum2);
 
-	printf("two handles should be separate\n");
+	torture_comment(tctx, "two handles should be separate\n");
 	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
 	sfinfo.position_information.in.file.fnum = fnum1;
 	sfinfo.position_information.in.position = 1000;

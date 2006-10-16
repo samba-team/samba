@@ -68,7 +68,7 @@ int main(int argc, const char **argv)
 
 	if (ejsOpen(NULL, NULL, NULL) != 0) {
 		fprintf(stderr, "smbscript: ejsOpen(): unable to initialise "
-			"EJ subsystem\n");
+			"EJS subsystem\n");
 		exit(127);
 	}
 

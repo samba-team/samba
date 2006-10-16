@@ -299,7 +299,7 @@ typedef struct MprVar {
 #if 0 && !BLD_DEBUG && !LINUX && !VXWORKS
 	union {
 #endif
-		int				boolean;				/* Use int for speed */
+		bool 			boolean;
 #if BLD_FEATURE_FLOATING_POINT
 		double			floating;
 #endif

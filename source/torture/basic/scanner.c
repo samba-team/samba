@@ -242,18 +242,12 @@ static BOOL scan_trans2(struct smbcli_state *cli, int op, int level,
 }
 
 
-BOOL torture_trans2_scan(struct torture_context *torture)
+BOOL torture_trans2_scan(struct torture_context *torture, 
+						 struct smbcli_state *cli)
 {
-	static struct smbcli_state *cli;
 	int op, level;
 	const char *fname = "\\scanner.dat";
 	int fnum, dnum, qfnum;
-
-	printf("starting trans2 scan test\n");
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	if (fnum == -1) {
@@ -299,9 +293,6 @@ BOOL torture_trans2_scan(struct torture_context *torture)
 		}
 	}
 
-	torture_close_connection(cli);
-
-	printf("trans2 scan finished\n");
 	return True;
 }
 
@@ -483,18 +474,12 @@ static BOOL scan_nttrans(struct smbcli_state *cli, int op, int level,
 }
 
 
-BOOL torture_nttrans_scan(struct torture_context *torture)
+BOOL torture_nttrans_scan(struct torture_context *torture, 
+						  struct smbcli_state *cli)
 {
-	static struct smbcli_state *cli;
 	int op, level;
 	const char *fname = "\\scanner.dat";
 	int fnum, dnum;
-
-	printf("starting nttrans scan test\n");
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, 
 			 DENY_NONE);

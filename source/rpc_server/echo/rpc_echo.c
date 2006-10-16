@@ -68,7 +68,7 @@ static NTSTATUS echo_SourceData(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 static NTSTATUS echo_TestCall(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestCall *r)
 {
-	*r->out.s2 = talloc_strdup(mem_ctx, "this is a test string");
+	*r->out.s2 = talloc_strdup(mem_ctx, r->in.s1);
 	
 	return NT_STATUS_OK;
 }

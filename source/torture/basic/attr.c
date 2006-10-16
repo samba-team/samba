@@ -87,22 +87,15 @@ static const struct trunc_open_results attr_results[] = {
 };
 
 
-BOOL torture_openattrtest(struct torture_context *torture)
+BOOL torture_openattrtest(struct torture_context *tctx, 
+						  struct smbcli_state *cli1)
 {
-	struct smbcli_state *cli1;
 	const char *fname = "\\openattr.file";
 	int fnum1;
-	BOOL correct = True;
 	uint16_t attr;
 	uint_t i, j, k, l;
 	int failures = 0;
 
-	printf("starting open attr test\n");
-	
-	if (!torture_open_connection(&cli1, 0)) {
-		return False;
-	}
-	
 	for (k = 0, i = 0; i < sizeof(open_attrs_table)/sizeof(uint32_t); i++) {
 		smbcli_setatr(cli1->tree, fname, 0, 0);
 		smbcli_unlink(cli1->tree, fname);
@@ -111,15 +104,13 @@ BOOL torture_openattrtest(struct torture_context *torture)
 					      open_attrs_table[i],
 					      NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 		
-		if (fnum1 == -1) {
-			printf("open %d (1) of %s failed (%s)\n", i, fname, smbcli_errstr(cli1->tree));
-			return False;
-		}
+		torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open %d (1) of %s failed (%s)", i, 
+					   fname, smbcli_errstr(cli1->tree)));
 
-		if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-			printf("close %d (1) of %s failed (%s)\n", i, fname, smbcli_errstr(cli1->tree));
-			return False;
-		}
+		torture_assert_ntstatus_ok(tctx, 
+							smbcli_close(cli1->tree, fnum1),
+							talloc_asprintf(tctx, "close %d (1) of %s failed (%s)", i, fname, 
+							smbcli_errstr(cli1->tree)));
 
 		for (j = 0; j < ARRAY_SIZE(open_attrs_table); j++) {
 			fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
@@ -132,40 +123,37 @@ BOOL torture_openattrtest(struct torture_context *torture)
 			if (fnum1 == -1) {
 				for (l = 0; l < ARRAY_SIZE(attr_results); l++) {
 					if (attr_results[l].num == k) {
-						printf("[%d] trunc open 0x%x -> 0x%x of %s failed - should have succeeded !(%s)\n",
+						torture_comment(tctx, "[%d] trunc open 0x%x -> 0x%x of %s failed - should have succeeded !(%s)\n",
 								k, open_attrs_table[i],
 								open_attrs_table[j],
 								fname, smbcli_errstr(cli1->tree));
-						correct = False;
 						CHECK_MAX_FAILURES(error_exit);
 					}
 				}
-				if (!NT_STATUS_EQUAL(smbcli_nt_error(cli1->tree), NT_STATUS_ACCESS_DENIED)) {
-					printf("[%d] trunc open 0x%x -> 0x%x failed with wrong error code %s\n",
+				torture_assert_ntstatus_equal(tctx, 
+					smbcli_nt_error(cli1->tree), NT_STATUS_ACCESS_DENIED, 
+					talloc_asprintf(tctx, "[%d] trunc open 0x%x -> 0x%x failed with wrong error code %s",
 							k, open_attrs_table[i], open_attrs_table[j],
-							smbcli_errstr(cli1->tree));
-					correct = False;
+							smbcli_errstr(cli1->tree)));
 					CHECK_MAX_FAILURES(error_exit);
-				}
 #if 0
-				printf("[%d] trunc open 0x%x -> 0x%x failed\n", k, open_attrs_table[i], open_attrs_table[j]);
+				torture_comment(tctx, "[%d] trunc open 0x%x -> 0x%x failed\n", k, open_attrs_table[i], open_attrs_table[j]);
 #endif
 				k++;
 				continue;
 			}
 
-			if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-				printf("close %d (2) of %s failed (%s)\n", j, fname, smbcli_errstr(cli1->tree));
-				return False;
-			}
+			torture_assert_ntstatus_ok(tctx, 
+									   smbcli_close(cli1->tree, fnum1),
+									talloc_asprintf(tctx, "close %d (2) of %s failed (%s)", j, 
+									fname, smbcli_errstr(cli1->tree)));
 
-			if (NT_STATUS_IS_ERR(smbcli_getatr(cli1->tree, fname, &attr, NULL, NULL))) {
-				printf("getatr(2) failed (%s)\n", smbcli_errstr(cli1->tree));
-				return False;
-			}
+			torture_assert_ntstatus_ok(tctx, 
+						smbcli_getatr(cli1->tree, fname, &attr, NULL, NULL),
+						talloc_asprintf(tctx, "getatr(2) failed (%s)", smbcli_errstr(cli1->tree)));
 
 #if 0
-			printf("[%d] getatr check [0x%x] trunc [0x%x] got attr 0x%x\n",
+			torture_comment(tctx, "[%d] getatr check [0x%x] trunc [0x%x] got attr 0x%x\n",
 					k,  open_attrs_table[i],  open_attrs_table[j], attr );
 #endif
 
@@ -174,12 +162,11 @@ BOOL torture_openattrtest(struct torture_context *torture)
 					if (attr != attr_results[l].result_attr ||
 					    open_attrs_table[i] != attr_results[l].init_attr ||
 					    open_attrs_table[j] != attr_results[l].trunc_attr) {
-						printf("[%d] getatr check failed. [0x%x] trunc [0x%x] got attr 0x%x, should be 0x%x\n",
+						torture_comment(tctx, "[%d] getatr check failed. [0x%x] trunc [0x%x] got attr 0x%x, should be 0x%x\n",
 						       k, open_attrs_table[i],
 						       open_attrs_table[j],
 						       (uint_t)attr,
 						       attr_results[l].result_attr);
-						correct = False;
 						CHECK_MAX_FAILURES(error_exit);
 					}
 					break;
@@ -192,11 +179,6 @@ error_exit:
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
 
-	printf("open attr test %s.\n", correct ? "passed" : "failed");
-
-	if (!torture_close_connection(cli1)) {
-		correct = False;
-	}
-	return correct;
+	return true;
 }
 

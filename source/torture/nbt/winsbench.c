@@ -27,10 +27,11 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "torture/torture.h"
+#include "torture/nbt/proto.h"
 
 struct wins_state {
 	int num_names;
-	BOOL *registered;
+	bool *registered;
 	int pass_count;
 	int fail_count;
 	const char *wins_server;
@@ -43,10 +44,10 @@ struct idx_state {
 	struct wins_state *state;
 };
 
-struct nbt_name generate_name(TALLOC_CTX *mem_ctx, int idx)
+struct nbt_name generate_name(TALLOC_CTX *tctx, int idx)
 {
 	struct nbt_name name;
-	name.name       = talloc_asprintf(mem_ctx, "WINSBench%6u", idx);
+	name.name       = talloc_asprintf(tctx, "WINSBench%6u", idx);
 	name.type       = 0x4;
 	name.scope      = NULL;
 	return name;
@@ -64,7 +65,7 @@ static void register_handler(struct nbt_name_request *req)
 		state->fail_count++;
 	} else {
 		state->pass_count++;
-		state->registered[istate->idx] = True;
+		state->registered[istate->idx] = true;
 	}
 	talloc_free(istate);	
 }
@@ -87,9 +88,9 @@ static void generate_register(struct nbt_name_socket *nbtsock, struct wins_state
 	io.in.dest_addr       = state->wins_server;
 	io.in.address         = state->my_ip;
 	io.in.nb_flags        = NBT_NODE_H;
-	io.in.register_demand = False;
-	io.in.broadcast       = False;
-	io.in.multi_homed     = False;
+	io.in.register_demand = false;
+	io.in.broadcast       = false;
+	io.in.multi_homed     = false;
 	io.in.ttl             = state->ttl;
 	io.in.timeout         = 2;
 	io.in.retries         = 1;
@@ -116,7 +117,7 @@ static void release_handler(struct nbt_name_request *req)
 		state->fail_count++;
 	} else {
 		state->pass_count++;
-		state->registered[istate->idx] = False;
+		state->registered[istate->idx] = false;
 	}
 	talloc_free(istate);	
 }
@@ -139,7 +140,7 @@ static void generate_release(struct nbt_name_socket *nbtsock, struct wins_state 
 	io.in.dest_addr       = state->wins_server;
 	io.in.address         = state->my_ip;
 	io.in.nb_flags        = NBT_NODE_H;
-	io.in.broadcast       = False;
+	io.in.broadcast       = false;
 	io.in.timeout         = 2;
 	io.in.retries         = 1;
 
@@ -184,8 +185,8 @@ static void generate_query(struct nbt_name_socket *nbtsock, struct wins_state *s
 
 	io.in.name            = generate_name(tmp_ctx, idx);
 	io.in.dest_addr       = state->wins_server;
-	io.in.broadcast       = False;
-	io.in.wins_lookup     = True;
+	io.in.broadcast       = false;
+	io.in.wins_lookup     = true;
 	io.in.timeout         = 2;
 	io.in.retries         = 1;
 
@@ -218,23 +219,28 @@ static void generate_request(struct nbt_name_socket *nbtsock, struct wins_state 
 /*
   benchmark simple name queries
 */
-static BOOL bench_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name, const char *address)
+static bool bench_wins(struct torture_context *tctx)
 {
-	struct nbt_name_socket *nbtsock = nbt_name_socket_init(mem_ctx, NULL);
+	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL);
 	int num_sent=0;
 	struct timeval tv = timeval_current();
-	BOOL ret = True;
-	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
+	bool ret = true;
+	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	struct wins_state *state;
 	extern int torture_entries;
 	struct socket_address *my_ip;
+	struct nbt_name name;
+	const char *address;
+
+	if (!torture_nbt_get_name(tctx, &name, &address))
+		return false;
 
 	state = talloc_zero(nbtsock, struct wins_state);
 
 	state->num_names = torture_entries;
-	state->registered = talloc_zero_array(state, BOOL, state->num_names);
+	state->registered = talloc_zero_array(state, bool, state->num_names);
 	state->wins_server = address;
-	state->my_ip = talloc_strdup(mem_ctx, iface_best_ip(address));
+	state->my_ip = talloc_strdup(tctx, iface_best_ip(address));
 	state->ttl = timelimit;
 
 	my_ip = socket_address_from_strings(nbtsock, nbtsock->sock->backend_name, 
@@ -242,13 +248,13 @@ static BOOL bench_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name, const char *a
 
 	socket_listen(nbtsock->sock, my_ip, 0, 0);
 
-	printf("Running for %d seconds\n", timelimit);
+	torture_comment(tctx, "Running for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		while (num_sent - (state->pass_count+state->fail_count) < 10) {
 			generate_request(nbtsock, state, num_sent % state->num_names);
 			num_sent++;
 			if (num_sent % 50 == 0) {
-				printf("%.1f queries per second (%d failures)  \r", 
+				torture_comment(tctx, "%.1f queries per second (%d failures)  \r", 
 				       state->pass_count / timeval_elapsed(&tv),
 				       state->fail_count);
 			}
@@ -261,7 +267,7 @@ static BOOL bench_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name, const char *a
 		event_loop_once(nbtsock->event_ctx);
 	}
 
-	printf("%.1f queries per second (%d failures)  \n", 
+	torture_comment(tctx, "%.1f queries per second (%d failures)  \n", 
 	       state->pass_count / timeval_elapsed(&tv),
 	       state->fail_count);
 
@@ -274,28 +280,13 @@ static BOOL bench_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name, const char *a
   benchmark how fast a WINS server can respond to a mixture of
   registration/refresh/release and name query requests
 */
-BOOL torture_bench_wins(struct torture_context *torture)
+struct torture_suite *torture_bench_wins(void)
 {
-	const char *address;
-	struct nbt_name name;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	NTSTATUS status;
-	BOOL ret = True;
-	
-	make_nbt_name_server(&name, lp_parm_string(-1, "torture", "host"));
+	struct torture_suite *suite = torture_suite_create(
+										talloc_autofree_context(),
+										"BENCH-WINS");
 
-	/* do an initial name resolution to find its IP */
-	status = resolve_name(&name, mem_ctx, &address, event_context_find(mem_ctx));
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to resolve %s - %s\n",
-		       name.name, nt_errstr(status));
-		talloc_free(mem_ctx);
-		return False;
-	}
+	torture_suite_add_simple_test(suite, "wins", bench_wins);
 
-	ret &= bench_wins(mem_ctx, &name, address);
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }

@@ -30,6 +30,7 @@ PRIVATE_PROTO_HEADER = \
 		basic/proto.h
 OBJ_FILES = \
 		basic/base.o \
+		basic/misc.o \
 		basic/scanner.o \
 		basic/utable.o \
 		basic/charset.o \
@@ -93,11 +94,6 @@ PUBLIC_DEPENDENCIES = \
 #################################
 
 include smb2/config.mk
-
-[MODULE::torture_misc]
-SUBSYSTEM = torture
-INIT_FUNCTION = torture_misc_init
-OBJ_FILES = misc.o
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
@@ -232,7 +228,6 @@ OBJ_FILES = \
 		nbt/winsbench.o \
 		nbt/winsreplication.o \
 		nbt/dgram.o \
-		nbt/browse.o \
 		nbt/nbt.o
 PUBLIC_DEPENDENCIES = \
 		LIBCLI_SMB LIBCLI_NBT LIBCLI_DGRAM LIBCLI_WREPL

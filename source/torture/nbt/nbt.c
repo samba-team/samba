@@ -21,19 +21,42 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "torture/nbt/proto.h"
+#include "torture/ui.h"
+#include "libcli/resolve/resolve.h"
+
+bool torture_nbt_get_name(struct torture_context *tctx, 
+								 struct nbt_name *name, 
+								 const char **address)
+{
+	make_nbt_name_server(name, strupper_talloc(tctx, 
+						 torture_setting_string(tctx, "host", NULL)));
+
+	/* do an initial name resolution to find its IP */
+	torture_assert_ntstatus_ok(tctx, 
+							   resolve_name(name, tctx, address, NULL), 
+							   talloc_asprintf(tctx, 
+							   "Failed to resolve %s", name->name));
+
+	return true;
+}
 
 NTSTATUS torture_nbt_init(void)
 {
+	struct torture_suite *suite = torture_suite_create(
+											talloc_autofree_context(),
+											"NBT");
 	/* nbt tests */
-	register_torture_op("NBT-REGISTER", torture_nbt_register);
-	register_torture_op("NBT-WINS", torture_nbt_wins);
-	register_torture_op("NBT-DGRAM", torture_nbt_dgram);
-	register_torture_op("NBT-BROWSE", torture_nbt_browse);
-	register_torture_op("NBT-WINSREPLICATION-SIMPLE", torture_nbt_winsreplication_simple);
-	register_torture_op("NBT-WINSREPLICATION-REPLICA", torture_nbt_winsreplication_replica);
-	register_torture_op("NBT-WINSREPLICATION-OWNED", torture_nbt_winsreplication_owned);
-	register_torture_op("BENCH-WINS", torture_bench_wins);
-	register_torture_op("BENCH-NBT",     torture_bench_nbt);
-	
+	torture_suite_add_suite(suite, torture_nbt_register());
+	torture_suite_add_suite(suite, torture_nbt_wins());
+	torture_suite_add_suite(suite, torture_nbt_dgram());
+	torture_suite_add_suite(suite, torture_nbt_winsreplication());
+	torture_suite_add_suite(suite, torture_bench_nbt());
+	torture_suite_add_suite(suite, torture_bench_wins());
+
+	suite->description = talloc_strdup(suite, 
+							"NetBIOS over TCP/IP and WINS tests");
+
+	torture_register_suite(suite);
+
 	return NT_STATUS_OK;
 }

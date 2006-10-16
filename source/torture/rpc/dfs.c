@@ -30,6 +30,8 @@
 #include "libcli/libcli.h"
 #include "lib/cmdline/popt_common.h"
 
+#if 0
+
 #define SMBTORTURE_DFS_SHARENAME "smbtorture_dfs_share"
 #define SMBTORTURE_DFS_DIRNAME "\\smbtorture_dfs_dir"
 #define SMBTORTURE_DFS_PATHNAME "C:"SMBTORTURE_DFS_DIRNAME
@@ -139,23 +141,20 @@ static BOOL test_DeleteDir(struct smbcli_state *cli, const char *dir)
 	return True;
 }
 
-static BOOL test_GetManagerVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, enum dfs_ManagerVersion *version)
+static BOOL test_GetManagerVersion(struct torture_context *tctx, struct dcerpc_pipe *p, enum dfs_ManagerVersion *version)
 {
 	NTSTATUS status;
 	struct dfs_GetManagerVersion r;
 
 	r.out.version = version;
 
-	status = dcerpc_dfs_GetManagerVersion(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetManagerVersion failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = dcerpc_dfs_GetManagerVersion(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "GetManagerVersion failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_ManagerInitialize(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host)
+static BOOL test_ManagerInitialize(struct torture_context *tctx, struct dcerpc_pipe *p, const char *host)
 {
 	NTSTATUS status;
 	enum dfs_ManagerVersion version;
@@ -163,14 +162,14 @@ static BOOL test_ManagerInitialize(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, c
 
 	printf("Testing ManagerInitialize\n");
 
-	if (!test_GetManagerVersion(p, mem_ctx, &version)) {
+	if (!test_GetManagerVersion(tctx, p, &version)) {
 		return False;
 	}
 
 	r.in.servername = host;
 	r.in.flags = 0;
 
-	status = dcerpc_dfs_ManagerInitialize(p, mem_ctx, &r);
+	status = dcerpc_dfs_ManagerInitialize(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ManagerInitialize failed - %s\n", nt_errstr(status));
 		return False;
@@ -183,33 +182,31 @@ static BOOL test_ManagerInitialize(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, c
 	return True;
 }
 
-static BOOL test_GetInfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t level,
-			      const char *root)
+static BOOL test_GetInfoLevel(struct torture_context *tctx, struct dcerpc_pipe *p, uint16_t level, const char *root)
 {
 	NTSTATUS status;
 	struct dfs_GetInfo r;
 
-	printf("Testing GetInfo level %u on '%s'\n", level, root);
+	torture_comment(tctx, 
+		talloc_asprintf(tctx, "Testing GetInfo level %u on '%s'\n", level, root));
 
-	r.in.dfs_entry_path = talloc_strdup(mem_ctx, root);
+	r.in.dfs_entry_path = talloc_strdup(tctx, root);
 	r.in.servername = NULL;
 	r.in.sharename = NULL;
 	r.in.level = level;
 
-	status = dcerpc_dfs_GetInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetInfo failed - %s\n", nt_errstr(status));
-		return False;
-	} else if (!W_ERROR_IS_OK(r.out.result) && 
-		   !W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, r.out.result)) {
-		printf("dfs_GetInfo failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
+	status = dcerpc_dfs_GetInfo(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "Info failed");
+	torture_assert(tctx, W_ERROR_IS_OK(r.out.result) ||
+		   W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, r.out.result),
+			talloc_asprintf(tctx, 
+				"dfs_GetInfo failed - %s", win_errstr(r.out.result)));
 
 	return True;
 }
 
-static BOOL test_GetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *root)
+static bool test_Info(struct torture_context *tctx, 
+					  struct dcerpc_pipe *p, const char *root)
 {
 	BOOL ret = True;
 	/* 103, 104, 105, 106 is only available on Set */
@@ -217,14 +214,15 @@ static BOOL test_GetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char 
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		if (!test_GetInfoLevel(p, mem_ctx, levels[i], root)) {
-			ret = False;
+		if (!test_GetInfoLevel(tctx, p, levels[i], root)) {
+			ret = false;
 		}
 	}
 	return ret;
 }
 
-static BOOL test_EnumLevelEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t level, const char *dfs_name)
+static bool test_EnumLevel(struct torture_context *tctx, 
+						   struct dcerpc_pipe *p, uint16_t level)
 {
 	NTSTATUS status;
 	struct dfs_EnumEx rex;
@@ -305,23 +303,18 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t 
 	e.e.info1->s = &s;
 	s.path = NULL;
 	
-	printf("Testing Enum level %u\n", level);
-
-	status = dcerpc_dfs_Enum(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Enum failed - %s\n", nt_errstr(status));
-		return False;
-	} else if (!W_ERROR_IS_OK(r.out.result) && 
-		   !W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, r.out.result)) {
-		printf("dfs_Enum failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
+	status = dcerpc_dfs_Enum(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "Enum failed - %s\n", 
+							   nt_errstr(status));
+	torture_assert(tctx, W_ERROR_IS_OK(r.out.result) || 
+		   W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, r.out.result),
+		"dfs_Enum failed - %s", win_errstr(r.out.result));
 
 	if (level == 1 && r.out.total) {
 		int i;
 		for (i=0;i<*r.out.total;i++) {
 			const char *root = r.out.info->e.info1->s[i].path;
-			if (!test_GetInfo(p, mem_ctx, root)) {
+			if (!test_GetInfo(tctx, p, root)) {
 				ret = False;
 			}
 		}
@@ -332,15 +325,16 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t 
 }
 
 
-static BOOL test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_Enum(struct torture_context *tctx,
+					  struct dcerpc_pipe *p)
 {
 	BOOL ret = True;
 	uint16_t levels[] = {1, 2, 3, 4, 200, 300};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		if (!test_EnumLevel(p, mem_ctx, levels[i])) {
-			ret = False;
+		if (!test_EnumLevel(tctx, p, levels[i])) {
+			ret = false;
 		}
 	}
 
@@ -481,31 +475,35 @@ static BOOL test_StdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char 
 	return ret;
 }
 
-BOOL torture_rpc_dfs(struct torture_context *torture)
+#endif
+
+struct torture_suite *torture_rpc_dfs(void)
 {
-	NTSTATUS status;
-	struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
-	enum dfs_ManagerVersion version;
-	const char *host = lp_parm_string(-1, "torture", "host");
+	struct torture_suite *suite = torture_suite_create(
+									talloc_autofree_context(), "RPC-DFS");
 
-	mem_ctx = talloc_init("torture_rpc_dfs");
+#if 0
+	struct torture_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite, 
+												"dfs", &dcerpc_table_netdfs);
 
-	status = torture_rpc_connection(mem_ctx, 
-					&p, 
-					&dcerpc_table_netdfs);
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
+	torture_rpc_tcase_add_test(tcase, "GetManagerVersion", 
+							   test_GetManagerVersion);
 
-	ret &= test_GetManagerVersion(p, mem_ctx, &version);
-	ret &= test_ManagerInitialize(p, mem_ctx, host);
-	ret &= test_Enum(p, mem_ctx);
-	ret &= test_EnumEx(p, mem_ctx, host);
-	ret &= test_StdRoot(p, mem_ctx, host);
+#if 0
+	torture_rpc_tcase_add_test(tcase, "Add", 
+							   test_Add);
+#endif
+
+	torture_rpc_tcase_add_test(tcase, "Enum", test_Enum);
+	torture_rpc_tcase_add_test(tcase, "EnumEx", test_EnumEx);
+	torture_rpc_tcase_add_test(tcase, "ManagerInitialize", 
+							   test_ManagerInitialize);
+	torture_rpc_tcase_add_test(tcase, "StdRoot", 
+							   test_StdRoot);
 
 	talloc_free(mem_ctx);
 
-	return ret;
+#endif
+
+	return suite;
 }

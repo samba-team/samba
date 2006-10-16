@@ -34,6 +34,10 @@ enum torture_result {
 	TORTURE_SKIP=3
 };
 
+/* 
+ * These callbacks should be implemented by any backend that wishes 
+ * to listen to reports from the torture tests.
+ */
 struct torture_ui_ops
 {
 	void (*comment) (struct torture_context *, const char *);
@@ -44,9 +48,19 @@ struct torture_ui_ops
 	void (*test_start) (struct torture_context *, 
 						struct torture_tcase *,
 						struct torture_test *);
-	void (*test_result) (struct torture_context *, enum torture_result, 
-						 const char *reason);
+	void (*test_result) (struct torture_context *, 
+						 enum torture_result, const char *reason);
 };
+
+/*
+ * Holds information about a specific run of the testsuite. 
+ * The data in this structure should be considered private to 
+ * the torture tests and should only be used directly by the torture 
+ * code and the ui backends.
+ *
+ * Torture tests should instead call the torture_*() macros and functions 
+ * specified below.
+ */
 
 struct torture_context
 {
@@ -61,124 +75,214 @@ struct torture_context
 	int success;
 	int failed;
 
+	bool quiet; /* Whether tests should avoid writing output to stdout */
+
 	enum torture_result last_result;
 	char *last_reason;
 
 	char *outputdir;
+	int level;
+};
+
+/* 
+ * Describes a particular torture test
+ */
+struct torture_test {
+	const char *name;
+	const char *description;
+	bool dangerous;
+	/* Function to call to run this test */
+	bool (*run) (struct torture_context *torture_ctx, 
+				 struct torture_tcase *tcase,
+				 struct torture_test *test);
+
+	struct torture_test *prev, *next;
+
+	/* Pointer to the actual test function. This is run by the 
+	 * run() function above. */
+	void *fn;
+	const void *data;
+};
+
+/* 
+ * Describes a particular test case.
+ */
+struct torture_tcase {
+    const char *name;
+	const char *description;
+	bool (*setup) (struct torture_context *tcase, void **data);
+	bool (*teardown) (struct torture_context *tcase, void *data); 
+	bool fixture_persistent;
+	void *data;
+	struct torture_test *tests;
+	struct torture_tcase *prev, *next;
 };
 
 struct torture_suite
 {
 	const char *name;
 	const char *description;
-	struct torture_tcase {
-	    const char *name;
-		const char *description;
-		BOOL (*setup) (struct torture_context *tcase, void **data);
-		BOOL (*teardown) (struct torture_context *tcase, void *data); 
-		BOOL fixture_persistent;
-		const void *data;
-		struct torture_test {
-			const char *name;
-			const char *description;
-			const void *data;
-			BOOL dangerous;
-			BOOL (*run) (struct torture_context *test, 
-						 const void *tcase_data,
-						 const void *test_data);
-			struct torture_test *prev, *next;
-		} *tests;
-		struct torture_tcase *prev, *next;
-	} *testcases;
+	struct torture_tcase *testcases;
+	struct torture_suite *children;
+
+	/* Pointers to siblings of this torture suite */
+	struct torture_suite *prev, *next;
 };
 
-struct torture_suite *torture_suite_create(TALLOC_CTX *ctx, const char *name);
+/** Create a new torture suite */
+struct torture_suite *torture_suite_create(TALLOC_CTX *mem_ctx, 
+										   const char *name);
+
+/** Change the setup and teardown functions for a testcase */
 void torture_tcase_set_fixture(struct torture_tcase *tcase, 
-		BOOL (*setup) (struct torture_context *, void **),
-		BOOL (*teardown) (struct torture_context *, void *));
+		bool (*setup) (struct torture_context *, void **),
+		bool (*teardown) (struct torture_context *, void *));
+
+/* Add another test to run for a particular testcase */
 struct torture_test *torture_tcase_add_test(struct torture_tcase *tcase, 
 		const char *name, 
-		BOOL (*run) (struct torture_context *test, const void *tcase_data,
+		bool (*run) (struct torture_context *test, const void *tcase_data,
 					 const void *test_data),
 		const void *test_data);
+
+/* Add a testcase to a testsuite */
 struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite, 
 							 const char *name);
+
+/* Convenience wrapper that adds a testcase against only one 
+ * test will be run */
 struct torture_tcase *torture_suite_add_simple_tcase(
 		struct torture_suite *suite, 
 		const char *name,
-		BOOL (*run) (struct torture_context *test, const void *test_data),
+		bool (*run) (struct torture_context *test, const void *test_data),
 		const void *data);
 
-BOOL torture_run_suite(struct torture_context *context, 
+/* Convenience wrapper that adds a test that doesn't need any 
+ * testcase data */
+struct torture_tcase *torture_suite_add_simple_test(
+		struct torture_suite *suite, 
+		const char *name,
+		bool (*run) (struct torture_context *test));
+
+/* Add a child testsuite to an existing testsuite */
+bool torture_suite_add_suite(struct torture_suite *suite,
+							 struct torture_suite *child);
+
+/* Run the specified testsuite recursively */
+bool torture_run_suite(struct torture_context *context, 
 					   struct torture_suite *suite);
 
-BOOL torture_run_tcase(struct torture_context *context, 
+/* Run the specified testcase */
+bool torture_run_tcase(struct torture_context *context, 
 					   struct torture_tcase *tcase);
 
-BOOL torture_run_test(struct torture_context *context, 
+/* Run the specified test */
+bool torture_run_test(struct torture_context *context, 
 					  struct torture_tcase *tcase,
 					  struct torture_test *test);
 
-#define torture_assert(ctx,expr,string) \
+void _torture_fail_ext(struct torture_context *test, const char *reason, ...) PRINTF_ATTRIBUTE(2,3);
+void torture_comment(struct torture_context *test, const char *comment, ...) PRINTF_ATTRIBUTE(2,3);
+void _torture_skip_ext(struct torture_context *test, const char *reason, ...) PRINTF_ATTRIBUTE(2,3);
+
+#define torture_assert(torture_ctx,expr,cmt) \
 	if (!(expr)) { \
-		torture_fail(ctx, "%s:%d (%s): %s", __FILE__, __LINE__, string, \
-					 __STRING(expr)); \
-		return False; \
+		torture_comment(torture_ctx, __location__": Expression `%s' failed\n", __STRING(expr)); \
+		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		return false; \
 	}
 
-#define torture_assert_werr_equal(ctx,got,expected,string) \
+#define torture_assert_werr_equal(torture_ctx, got, expected, cmt) \
 	do { WERROR __got = got, __expected = expected; \
 	if (!W_ERROR_EQUAL(__got, __expected)) { \
-		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
-					 __LINE__, string, win_errstr(__got), win_errstr(__expected)); \
-		return False; \
+		torture_comment(torture_ctx, __location__": "#got" was %s, expected %s\n", \
+						win_errstr(__got), win_errstr(__expected)); \
+		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		return false; \
 	} \
 	} while (0)
 
-#define torture_assert_ntstatus_equal(ctx,got,expected,string) \
+#define torture_assert_ntstatus_equal(torture_ctx,got,expected,cmt) \
 	do { NTSTATUS __got = got, __expected = expected; \
 	if (!NT_STATUS_EQUAL(__got, __expected)) { \
-		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
-					 __LINE__, string, nt_errstr(__got), nt_errstr(__expected)); \
-		return False; \
+		torture_comment(torture_ctx, __location__": "#got" was %s, expected %s\n", \
+						nt_errstr(__got), nt_errstr(__expected)); \
+		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		return false; \
 	}\
 	} while(0)
 
 
-#define torture_assert_casestr_equal(ctx,got,expected,string) \
-	do { const char *__got = got, *__expected = expected; \
-	if (strcasecmp(__got, __expected) != 0) { \
-		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
-					 __LINE__, string, got, expected); \
-		return False; \
+#define torture_assert_casestr_equal(torture_ctx,got,expected,cmt) \
+	do { const char *__got = (got), *__expected = (expected); \
+	if (!strequal(__got, __expected)) { \
+		torture_comment(torture_ctx, __location__": "#got" was %s, expected %s\n", __got, __expected); \
+		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		return false; \
 	} \
 	} while(0)
 
-#define torture_assert_str_equal(ctx,got,expected,string) \
-	do { const char *__got = got, *__expected = expected; \
-	if (strcmp(__got, __expected) != 0) { \
-		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
-					 __LINE__, string, __got, __expected); \
-		return False; \
+#define torture_assert_str_equal(torture_ctx,got,expected,cmt)\
+	do { const char *__got = (got), *__expected = (expected); \
+	if (strcmp_safe(__got, __expected) != 0) { \
+		torture_comment(torture_ctx, __location__": "#got" was %s, expected %s\n", __got, __expected); \
+		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		return false; \
 	} \
 	} while(0)
 
+#define torture_assert_int_equal(torture_ctx,got,expected,cmt)\
+	do { int __got = (got), __expected = (expected); \
+	if (__got != __expected) { \
+		torture_comment(torture_ctx, __location__": "#got" was %d, expected %d\n", __got, __expected); \
+		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		return false; \
+	} \
+	} while(0)
+
+#define torture_assert_errno_equal(torture_ctx,expected,cmt)\
+	do { int __expected = (expected); \
+	if (errno != __expected) { \
+		torture_comment(torture_ctx, __location__": errno was %d, expected %s\n", errno, strerror(__expected)); \
+		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		return false; \
+	} \
+	} while(0)
+
+
+
+#define torture_skip(torture_ctx,cmt) do {\
+		_torture_skip_ext(torture_ctx, __location__": %s", cmt);\
+		return true; \
+	} while(0)
+#define torture_fail(torture_ctx,cmt) do {\
+		_torture_fail_ext(torture_ctx, __location__": %s", cmt);\
+		return false; \
+	} while (0)
+
+#define torture_out stderr
 
 /* Convenience macros */
+#define torture_assert_ntstatus_ok(torture_ctx,expr,cmt) \
+		torture_assert_ntstatus_equal(torture_ctx,expr,NT_STATUS_OK,cmt)
 
-#define torture_assert_ntstatus_ok(ctx,expr,string) \
-		torture_assert_ntstatus_equal(ctx,expr,NT_STATUS_OK,string)
+#define torture_assert_werr_ok(torture_ctx,expr,cmt) \
+		torture_assert_werr_equal(torture_ctx,expr,WERR_OK,cmt)
 
-#define torture_assert_werr_ok(ctx,expr,string) \
-		torture_assert_werr_equal(ctx,expr,WERR_OK,string)
+/* Getting settings */
+const char *torture_setting_string(struct torture_context *test, \
+								   const char *name, 
+								   const char *default_value);
 
-void torture_comment(struct torture_context *test, const char *comment, ...) PRINTF_ATTRIBUTE(2,3);
-void torture_fail(struct torture_context *test, const char *reason, ...) PRINTF_ATTRIBUTE(2,3);
-void torture_skip(struct torture_context *test, const char *reason, ...) PRINTF_ATTRIBUTE(2,3);
-const char *torture_setting(struct torture_context *test, const char *name, 
-							const char *default_value);
+int torture_setting_int(struct torture_context *test, 
+						const char *name, 
+						int default_value);
+
+bool torture_setting_bool(struct torture_context *test, 
+						  const char *name, 
+						  bool default_value);
 
 /* Helper function commonly used */
-BOOL torture_teardown_free(struct torture_context *torture, void *data);
+bool torture_teardown_free(struct torture_context *torture, void *data);
 
 #endif /* __TORTURE_UI_H__ */

@@ -27,58 +27,57 @@
 #include "libcli/raw/libcliraw.h"
 #include "torture/util.h"
 
-static BOOL test_tempdir(struct torture_context *torture, 
-							   const void *_data)
+static bool test_tempdir(struct torture_context *tctx)
 {
 	char *location = NULL;
+	TALLOC_CTX *mem_ctx = tctx;
 	
-	torture_assert_ntstatus_ok(torture, torture_temp_dir(torture, "tempdir", &location), 
+	torture_assert_ntstatus_ok(tctx, torture_temp_dir(mem_ctx, "tempdir", &location), 
 								"torture_temp_dir should return NT_STATUS_OK" );
 
-	torture_assert(torture, directory_exist(location), 
+	torture_assert(tctx, directory_exist(location), 
 				   "created dir doesn't exist");
-
-	return True;
+	return true;
 }
 
-static BOOL test_setup_server(struct torture_context *torture, 
-							   const void *_data)
+static bool test_setup_server(struct torture_context *tctx)
 {
 	pid_t pid;
+	TALLOC_CTX *mem_ctx = tctx;
 
-	torture_assert_ntstatus_ok(torture, torture_setup_server(torture, 
+	torture_assert_ntstatus_ok(tctx, torture_setup_server(mem_ctx, 
 									"setupserver-success",
 									"./script/tests/mktestsetup.sh",
 									"./bin/smbd", &pid),
 							   "starting smbd failed");
 
-	torture_assert(torture, pid > 0, "Pid invalid");
+	torture_assert(tctx, pid > 0, "Pid invalid");
 
-	torture_comment(torture, "Created smbd with pid %d", pid);
+	torture_comment(tctx, "Created smbd with pid %d\n", pid);
 
 	kill(pid, SIGINT);
 
 	waitpid(pid, NULL, 0);
 
-	torture_assert_ntstatus_equal(torture, torture_setup_server(torture, 
+	torture_assert_ntstatus_equal(tctx, torture_setup_server(mem_ctx, 
 									"setupserver-fail",
 									"./invalid-script",
 									"./bin/smbd", &pid), 
 								  NT_STATUS_UNSUCCESSFUL,
 							   "invalid script specified");
 
-	torture_assert(torture, pid == -1, "Pid not -1 after failure");
-
-	return True;
+	torture_assert(tctx, pid == -1, "Pid not -1 after failure");
+	return true;
 }
+
 
 struct torture_suite *torture_local_torture(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, 
-													   "LOCAL-TORTURE");
+													   "TORTURE");
 
-	torture_suite_add_simple_tcase(suite, "tempdir", test_tempdir, NULL);
-	torture_suite_add_simple_tcase(suite, "setup server", test_setup_server, NULL);
+	torture_suite_add_simple_test(suite, "tempdir", test_tempdir);
+	torture_suite_add_simple_test(suite, "setup server", test_setup_server);
 
 	return suite;
 }

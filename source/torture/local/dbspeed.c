@@ -73,13 +73,13 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 		if (!tdb_add_record(tdbw, 
 				    "S-1-5-21-53173311-3623041448-2049097239-%u",
 				    "UID %u", i)) {
-			torture_fail(torture, "Failed to add SID %d", i);
+			_torture_fail_ext(torture, "Failed to add SID %d", i);
 			goto failed;
 		}
 		if (!tdb_add_record(tdbw, 
 				    "UID %u",
 				    "S-1-5-21-53173311-3623041448-2049097239-%u", i)) {
-			torture_fail(torture, "Failed to add UID %d", i);
+			_torture_fail_ext(torture, "Failed to add UID %d", i);
 			goto failed;
 		}
 	}
@@ -95,7 +95,7 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 		key.dsize = strlen((char *)key.dptr)+1;
 		data = tdb_fetch(tdbw->tdb, key);
 		if (data.dptr == NULL) {
-			torture_fail(torture, "Failed to fetch SID %d", i);
+			_torture_fail_ext(torture, "Failed to fetch SID %d", i);
 			goto failed;
 		}
 		free(data.dptr);
@@ -103,7 +103,7 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 		key.dsize = strlen((char *)key.dptr)+1;
 		data = tdb_fetch(tdbw->tdb, key);
 		if (data.dptr == NULL) {
-			torture_fail(torture, "Failed to fetch UID %d", i);
+			_torture_fail_ext(torture, "Failed to fetch UID %d", i);
 			goto failed;
 		}
 		free(data.dptr);
@@ -186,13 +186,13 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 
 	for (i=0;i<torture_entries;i++) {
 		if (!ldb_add_record(ldb, i)) {
-			torture_fail(torture, "Failed to add SID %d", i);
+			_torture_fail_ext(torture, "Failed to add SID %d", i);
 			goto failed;
 		}
 	}
 
 	if (talloc_total_blocks(torture) > 100) {
-		torture_fail(torture, "memory leak in ldb add");
+		_torture_fail_ext(torture, "memory leak in ldb add");
 		goto failed;
 	}
 
@@ -210,14 +210,16 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 					i);
 		if (ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res) != LDB_SUCCESS ||
 		    res->count != 1) {
-			torture_fail(torture, "Failed to find SID %d", i);
+			torture_fail(torture, talloc_asprintf(torture,
+												  "Failed to find SID %d", i));
 		}
 		talloc_free(res);
 		talloc_free(dn);
 		expr = talloc_asprintf(tmp_ctx, "(UID=%u)", i);
 		if (ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res) != LDB_SUCCESS ||
 		    res->count != 1) {
-			torture_fail(torture, "Failed to find UID %d", i);
+			torture_fail(torture, talloc_asprintf(torture, 
+												  "Failed to find UID %d", i));
 		}
 		talloc_free(res);
 		talloc_free(expr);
