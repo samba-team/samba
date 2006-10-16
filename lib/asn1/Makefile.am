@@ -467,7 +467,12 @@ nodist_include_HEADERS += pkcs9_asn1.h
 nodist_include_HEADERS += pkcs12_asn1.h
 nodist_include_HEADERS += digest_asn1.h
 
-$(asn1_compile_OBJECTS): parse.h parse.c
+$(asn1_compile_OBJECTS): parse.h parse.c $(srcdir)/der-protos.h
+$(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h $(srcdir)/der-protos.h
+$(check_gen_OBJECTS): test_asn1.h
+$(asn1_print_OBJECTS): krb5_asn1.h
+
+parse.h: parse.c
 
 $(gen_files_k5) krb5_asn1.h: krb5_asn1_files
 $(gen_files_pkinit) pkinit_asn1.h: pkinit_asn1_files
@@ -505,15 +510,6 @@ digest_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/digest.asn1
 
 test_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/test.asn1
 	./asn1_compile$(EXEEXT) --sequence=TESTSeqOf $(srcdir)/test.asn1 test_asn1 || (rm -f test_asn1_files ; exit 1)
-
-$(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h $(srcdir)/der-protos.h
-
-
-$(check_gen_OBJECTS): test_asn1.h
-
-$(asn1_print_OBJECTS): krb5_asn1.h
-
-parse.h: parse.c
 
 EXTRA_DIST = asn1_err.et der-protos.h
 
