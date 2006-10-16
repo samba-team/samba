@@ -105,8 +105,9 @@ cat >$CONFFILE<<EOF
 	server max protocol = SMB2
 	notify:inotify = false
 	ldb:nosync = true
+	torture:subunitdir = $SRCDIR/bin/torture
 
-system:anonymous = true
+	system:anonymous = true
 
 [tmp]
 	path = $TMPDIR

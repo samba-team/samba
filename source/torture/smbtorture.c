@@ -27,6 +27,7 @@
 #include "libcli/libcli.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/events/events.h"
+#include "dynconfig.h"
 
 #include "torture/torture.h"
 #include "build.h"
@@ -326,25 +327,27 @@ static void subunit_test_result (struct torture_context *context,
 {
 	switch (res) {
 	case TORTURE_OK:
-		printf("success: %s\n", context->active_test->name);
+		printf("success: %s", context->active_test->name);
 		break;
 	case TORTURE_FAIL:
-		printf("failure: %s [ %s ]\n", context->active_test->name, reason);
+		printf("failure: %s", context->active_test->name);
 		break;
 	case TORTURE_TODO:
-		printf("todo: %s\n", context->active_test->name);
+		printf("todo: %s", context->active_test->name);
 		break;
 	case TORTURE_SKIP:
-		printf("skip: %s\n", context->active_test->name);
+		printf("skip: %s", context->active_test->name);
 		break;
 	}
+	if (reason)
+		printf(" [ %s ]", reason);
+	printf("\n");
 }
 
 static void subunit_comment (struct torture_context *test, 
 							 const char *comment)
 {
-	/* FIXME Add # sign before each line */
-	printf("%s", comment);
+	fprintf(stderr, "%s", comment);
 }
 
 const static struct torture_ui_ops subunit_ui_ops = {
@@ -438,6 +441,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	char **argv_new;
 	poptContext pc;
 	static const char *target = "other";
+	const char **subunit_dir;
 	static const char *ui_ops_name = "simple";
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC};
@@ -525,6 +529,17 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	}
 
 	torture_init();
+
+	subunit_dir = lp_parm_string_list(-1, "torture", "subunitdir", ":");
+	if (subunit_dir == NULL) 
+		torture_subunit_load_testsuites(dyn_TORTUREDIR);
+	else {
+		for (i = 0; subunit_dir[i]; i++)
+			torture_subunit_load_testsuites(subunit_dir[i]);
+	}
+
+
+
 	ldb_global_init();
 
 	if (torture_seed == 0) {

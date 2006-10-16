@@ -61,6 +61,7 @@ showlayout:
 	@echo '  jsdir:       $(JSDIR)'
 	@echo '  swatdir:     $(SWATDIR)'
 	@echo '  mandir:      $(MANDIR)'
+	@echo '  torturedir:  $(TORTUREDIR)'
 	@echo '  datadir:     $(DATADIR)'
 	@echo '  winbindd_socket_dir:  $(WINBINDD_SOCKET_DIR)'
 
@@ -105,6 +106,7 @@ installdirs:
 		$(DESTDIR)$(BASEDIR) \
 		$(DESTDIR)$(BINDIR) \
 		$(DESTDIR)$(SBINDIR) \
+		$(DESTDIR)$(TORTUREDIR) \
 		$(DESTDIR)$(LIBDIR) \
 		$(DESTDIR)$(MODULESDIR) \
 		$(DESTDIR)$(MANDIR) \
@@ -134,6 +136,13 @@ installbin: $(SBIN_PROGS) $(BIN_PROGS) installdirs
 		$(DESTDIR)$(LIBDIR) \
 		$(DESTDIR)$(VARDIR) \
 		$(BIN_PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh \
+		$(INSTALLPERMS) \
+		$(DESTDIR)$(BASEDIR) \
+		$(DESTDIR)$(TORTUREDIR) \
+		$(DESTDIR)$(LIBDIR) \
+		$(DESTDIR)$(VARDIR) \
+		$(TORTURE_PROGS)
 
 installlib: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
 	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) "$(SHLIBEXT)" $(INSTALLABLE_SHARED_LIBS) 
@@ -166,6 +175,7 @@ uninstallmisc:
 uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(BIN_PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(TORTUREDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(TORTURE_PROGS)
 
 uninstalllib:
 	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(LIBDIR) $(SHARED_LIBS)
@@ -242,7 +252,7 @@ clean:: clean_pch
 	@echo Removing hostcc objects
 	@-find . -name '*.ho' -exec rm -f '{}' \;
 	@echo Removing binaries
-	@-rm -f $(BIN_PROGS) $(SBIN_PROGS) $(BINARIES)
+	@-rm -f $(BIN_PROGS) $(SBIN_PROGS) $(BINARIES) $(TORTURE_PROGS)
 	@echo Removing libraries
 	@-rm -f $(STATIC_LIBRARIES) $(SHARED_LIBRARIES)
 	@-rm -f bin/*.$(SHLIBEXT)*
