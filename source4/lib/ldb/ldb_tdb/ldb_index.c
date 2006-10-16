@@ -1030,6 +1030,12 @@ int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg)
 	char *dn;
 	unsigned int i, j;
 
+	/* find the list of indexed fields */	
+	if (ltdb->cache->indexlist->num_elements == 0) {
+		/* no indexed fields */
+		return 0;
+	}
+
 	if (ldb_dn_is_special(msg->dn)) {
 		return 0;
 	}
@@ -1037,12 +1043,6 @@ int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg)
 	dn = ldb_dn_linearize(ltdb, msg->dn);
 	if (dn == NULL) {
 		return -1;
-	}
-
-	/* find the list of indexed fields */	
-	if (ltdb->cache->indexlist->num_elements == 0) {
-		/* no indexed fields */
-		return 0;
 	}
 
 	for (i = 0; i < msg->num_elements; i++) {
