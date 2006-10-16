@@ -34,38 +34,72 @@ static void init_lsa_String(struct lsa_String *name, const char *s)
 	name->size = name->length;
 }
 
-static BOOL test_GetNumRecords(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			       struct policy_handle *handle)
+static bool get_policy_handle(struct torture_context *tctx, 
+							  struct dcerpc_pipe *p,
+							  struct policy_handle *handle)
 {
-	NTSTATUS status;
-	struct eventlog_GetNumRecords r;
+	struct eventlog_OpenEventLogW r;
+	struct eventlog_OpenUnknown0 unknown0;
 
-	printf("\ntesting GetNumRecords\n");
+	unknown0.unknown0 = 0x005c;
+	unknown0.unknown1 = 0x0001;
 
-	r.in.handle = handle;
+	r.in.unknown0 = &unknown0;
+	init_lsa_String(&r.in.logname, "dns server");
+	init_lsa_String(&r.in.servername, NULL);
+	r.in.unknown2 = 0x00000001;
+	r.in.unknown3 = 0x00000001;
+	r.out.handle = handle;
 
-	status = dcerpc_eventlog_GetNumRecords(p, mem_ctx, &r);
+	torture_assert_ntstatus_ok(tctx, 
+			dcerpc_eventlog_OpenEventLogW(p, tctx, &r), 
+			"OpenEventLog failed");
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetNumRecords failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, r.out.result, "OpenEventLog failed");
 
-	printf("%d records\n", r.out.number);
-
-	return True;
+	return true;
 }
 
-static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			      struct policy_handle *handle)
+
+
+static bool test_GetNumRecords(struct torture_context *tctx, struct dcerpc_pipe *p)
+{
+	struct eventlog_GetNumRecords r;
+	struct eventlog_CloseEventLog cr;
+	struct policy_handle handle;
+
+	if (!get_policy_handle(tctx, p, &handle))
+		return false;
+
+	r.in.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx, 
+			dcerpc_eventlog_GetNumRecords(p, tctx, &r), 
+			"GetNumRecords failed");
+
+	torture_comment(tctx, talloc_asprintf(tctx, "%d records\n", r.out.number));
+
+	cr.in.handle = cr.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx, 
+					dcerpc_eventlog_CloseEventLog(p, tctx, &cr), 
+					"CloseEventLog failed");
+	return true;
+}
+
+static bool test_ReadEventLog(struct torture_context *tctx, 
+							  struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct eventlog_ReadEventLogW r;
+	struct eventlog_CloseEventLog cr;
+	struct policy_handle handle;
 
-	printf("\ntesting ReadEventLog\n");
+	if (!get_policy_handle(tctx, p, &handle))
+		return false;
 
 	r.in.offset = 0;
-	r.in.handle = handle;
+	r.in.handle = &handle;
 	r.in.flags = EVENTLOG_BACKWARDS_READ|EVENTLOG_SEQUENTIAL_READ;
 
 	while (1) {
@@ -78,185 +112,142 @@ static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.number_of_bytes = 0;
 		r.out.data = NULL;
 
-		status = dcerpc_eventlog_ReadEventLogW(p, mem_ctx, &r);
+		status = dcerpc_eventlog_ReadEventLogW(p, tctx, &r);
 
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_END_OF_FILE)) {
 			break;
 		}
 
-		if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_BUFFER_TOO_SMALL)) {
-			printf("ReadEventLog failed - %s\n", nt_errstr(r.out.result));
-			return False;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "ReadEventLog failed");
+
+		torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_BUFFER_TOO_SMALL,
+			"ReadEventLog failed");
 		
 		/* Now read the actual record */
 
 		r.in.number_of_bytes = r.out.real_size;
-		r.out.data = talloc_size(mem_ctx, r.in.number_of_bytes);
+		r.out.data = talloc_size(tctx, r.in.number_of_bytes);
 
-		status = dcerpc_eventlog_ReadEventLogW(p, mem_ctx, &r);
+		status = dcerpc_eventlog_ReadEventLogW(p, tctx, &r);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("ReadEventLog failed - %s\n", nt_errstr(status));
-			return False;
-		}
+		torture_assert_ntstatus_ok(tctx, status, "ReadEventLog failed");
 		
 		/* Decode a user-marshalled record */
 
 		blob.length = r.out.sent_size;
-		blob.data = talloc_steal(mem_ctx, r.out.data);
+		blob.data = talloc_steal(tctx, r.out.data);
 
-		ndr = ndr_pull_init_blob(&blob, mem_ctx);
+		ndr = ndr_pull_init_blob(&blob, tctx);
 
 		status = ndr_pull_eventlog_Record(
 			ndr, NDR_SCALARS|NDR_BUFFERS, &rec);
 
 		NDR_PRINT_DEBUG(eventlog_Record, &rec);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("ReadEventLog failed parsing event log record "
-			       "- %s\n", nt_errstr(status));
-			return False;
-		}
+		torture_assert_ntstatus_ok(tctx, status, 
+				"ReadEventLog failed parsing event log record");
 
 		r.in.offset++;
 	}
 
-	return True;
+	cr.in.handle = cr.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx, 
+					dcerpc_eventlog_CloseEventLog(p, tctx, &cr), 
+					"CloseEventLog failed");
+
+	return true;
 }
 
-static BOOL test_CloseEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			       struct policy_handle *handle)
+static bool test_FlushEventLog(struct torture_context *tctx, 
+							   struct dcerpc_pipe *p)
 {
-	NTSTATUS status;
-	struct eventlog_CloseEventLog r;
-
-	r.in.handle = r.out.handle = handle;
-
-	printf("Testing CloseEventLog\n");
-
-	status = dcerpc_eventlog_CloseEventLog(p, mem_ctx, &r);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("CloseEventLog failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	return True;
-}
-
-static BOOL test_FlushEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			       struct policy_handle *handle)
-{
-	NTSTATUS status;
 	struct eventlog_FlushEventLog r;
+	struct eventlog_CloseEventLog cr;
+	struct policy_handle handle;
 
-	r.in.handle = handle;
+	if (!get_policy_handle(tctx, p, &handle))
+		return false;
 
-	printf("Testing FlushEventLog\n");
-
-	status = dcerpc_eventlog_FlushEventLog(p, mem_ctx, &r);
+	r.in.handle = &handle;
 
 	/* Huh?  Does this RPC always return access denied? */
+	torture_assert_ntstatus_equal(tctx, 
+			dcerpc_eventlog_FlushEventLog(p, tctx, &r),
+			NT_STATUS_ACCESS_DENIED, 
+			"FlushEventLog failed");
 
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("FlushEventLog failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	cr.in.handle = cr.out.handle = &handle;
 
-	return True;
+	torture_assert_ntstatus_ok(tctx, 
+					dcerpc_eventlog_CloseEventLog(p, tctx, &cr), 
+					"CloseEventLog failed");
+
+	return true;
 }
 
-static BOOL test_ClearEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			       struct policy_handle *handle)
+static bool test_ClearEventLog(struct dcerpc_pipe *p, TALLOC_CTX *tctx)
 {
-	NTSTATUS status;
 	struct eventlog_ClearEventLogW r;
+	struct eventlog_CloseEventLog cr;
+	struct policy_handle handle;
 
-	r.in.handle = handle;
+	if (!get_policy_handle(tctx, p, &handle))
+		return false;
+
+	r.in.handle = &handle;
 	r.in.unknown = NULL;
 
-	printf("Testing ClearEventLog\n");
+	torture_assert_ntstatus_ok(tctx, 
+			dcerpc_eventlog_ClearEventLogW(p, tctx, &r), 
+			"ClearEventLog failed");
 
-	status = dcerpc_eventlog_ClearEventLogW(p, mem_ctx, &r);
+	cr.in.handle = cr.out.handle = &handle;
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ClearEventLog failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, 
+					dcerpc_eventlog_CloseEventLog(p, tctx, &cr), 
+					"CloseEventLog failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			      struct policy_handle *handle)
+static bool test_OpenEventLog(struct torture_context *tctx, 
+							  struct dcerpc_pipe *p)
 {
-	NTSTATUS status;
-	struct eventlog_OpenEventLogW r;
-	struct eventlog_OpenUnknown0 unknown0;
-
-	printf("\ntesting OpenEventLog\n");
-
-	unknown0.unknown0 = 0x005c;
-	unknown0.unknown1 = 0x0001;
-
-	r.in.unknown0 = &unknown0;
-	init_lsa_String(&r.in.logname, "dns server");
-	init_lsa_String(&r.in.servername, NULL);
-	r.in.unknown2 = 0x00000001;
-	r.in.unknown3 = 0x00000001;
-	r.out.handle = handle;
-
-	status = dcerpc_eventlog_OpenEventLogW(p, mem_ctx, &r);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenEventLog failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		printf("OpenEventLog failed - %s\n", nt_errstr(r.out.result));
-		return False;
-	}
-
-	return True;
-}
-
-BOOL torture_rpc_eventlog(struct torture_context *torture)
-{
-	NTSTATUS status;
-	struct dcerpc_pipe *p;
 	struct policy_handle handle;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	struct eventlog_CloseEventLog cr;
 
-	mem_ctx = talloc_init("torture_rpc_atsvc");
+	if (!get_policy_handle(tctx, p, &handle))
+		return false;
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_eventlog);
+	cr.in.handle = cr.out.handle = &handle;
 
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, 
+					dcerpc_eventlog_CloseEventLog(p, tctx, &cr), 
+					"CloseEventLog failed");
 
-	if (!test_OpenEventLog(p, mem_ctx, &handle)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
+	return true;
+}
+
+struct torture_suite *torture_rpc_eventlog(void)
+{
+	struct torture_suite *suite;
+	struct torture_tcase *tcase;
+
+	suite = torture_suite_create(talloc_autofree_context(), "EVENTLOG");
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "eventlog", 
+											  &dcerpc_table_eventlog);
+
+	torture_rpc_tcase_add_test(tcase, "OpenEventLog", test_OpenEventLog);
 
 #if 0
-	ret &= test_ClearEventLog(p, mem_ctx, &handle); /* Destructive test */
+	/* Destructive test */
+	torture_rpc_tcase_add_test(tcase, "ClearEventLog", test_ClearEventLog);
 #endif
 	
-	ret &= test_GetNumRecords(p, mem_ctx, &handle);
+	torture_rpc_tcase_add_test(tcase, "GetNumRecords", test_GetNumRecords);
+	torture_rpc_tcase_add_test(tcase, "ReadEventLog", test_ReadEventLog);
+	torture_rpc_tcase_add_test(tcase, "FlushEventLog", test_FlushEventLog);
 
-	ret &= test_ReadEventLog(p, mem_ctx, &handle);
-
-	ret &= test_FlushEventLog(p, mem_ctx, &handle);
-
-	ret &= test_CloseEventLog(p, mem_ctx, &handle);
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }

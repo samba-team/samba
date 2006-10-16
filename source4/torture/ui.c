@@ -23,7 +23,8 @@
 #include "torture/ui.h"
 #include "lib/util/dlinklist.h"
 
-void torture_comment(struct torture_context *context, const char *comment, ...)
+void torture_comment(struct torture_context *context, 
+						 const char *comment, ...)
 {
 	va_list ap;
 	char *tmp;
@@ -39,7 +40,8 @@ void torture_comment(struct torture_context *context, const char *comment, ...)
 	talloc_free(tmp);
 }
 
-void torture_fail(struct torture_context *context, const char *fmt, ...)
+void _torture_fail_ext(struct torture_context *context, 
+					  const char *fmt, ...)
 {
 	va_list ap;
 
@@ -51,7 +53,8 @@ void torture_fail(struct torture_context *context, const char *fmt, ...)
 	context->last_result = TORTURE_FAIL;
 }
 
-void torture_skip(struct torture_context *context, const char *fmt, ...)
+void _torture_skip_ext(struct torture_context *context, 
+					  const char *fmt, ...)
 {
 	va_list ap;
 	context->skipped++;
@@ -68,6 +71,7 @@ struct torture_suite *torture_suite_create(TALLOC_CTX *ctx, const char *name)
 
 	suite->name = talloc_strdup(suite, name);
 	suite->testcases = NULL;
+	suite->children = NULL;
 
 	return suite;
 }
@@ -80,9 +84,22 @@ void torture_tcase_set_fixture(struct torture_tcase *tcase,
 	tcase->teardown = teardown;
 }
 
+static bool wrap_test_with_testcase(struct torture_context *torture_ctx,
+									struct torture_tcase *tcase,
+									struct torture_test *test)
+{
+	bool (*fn) (struct torture_context *, 
+				 const void *tcase_data,
+				 const void *test_data);
+
+	fn = test->fn;
+
+	return fn(torture_ctx, tcase->data, test->data);
+}
+
 struct torture_test *torture_tcase_add_test(struct torture_tcase *tcase, 
 						const char *name, 
-						BOOL (*run) (struct torture_context *, 
+						bool (*run) (struct torture_context *, 
 									 const void *tcase_data,
 									 const void *test_data),
 						const void *data)
@@ -91,7 +108,8 @@ struct torture_test *torture_tcase_add_test(struct torture_tcase *tcase,
 
 	test->name = talloc_strdup(test, name);
 	test->description = NULL;
-	test->run = run;
+	test->run = wrap_test_with_testcase;
+	test->fn = run;
 	test->dangerous = False;
 	test->data = data;
 
@@ -112,7 +130,7 @@ struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite,
 	tcase->fixture_persistent = True;
 	tcase->tests = NULL;
 
-	DLIST_ADD(suite->testcases, tcase);
+	DLIST_ADD_END(suite->testcases, tcase, struct torture_tcase *);
 
 	return tcase;
 }
@@ -122,7 +140,9 @@ BOOL torture_run_suite(struct torture_context *context,
 {
 	BOOL ret = True;
 	struct torture_tcase *tcase;
+	struct torture_suite *tsuite;
 
+	context->level++;
 	if (context->ui_ops->suite_start)
 		context->ui_ops->suite_start(context, suite);
 
@@ -130,8 +150,14 @@ BOOL torture_run_suite(struct torture_context *context,
 		ret &= torture_run_tcase(context, tcase);
 	}
 
+	for (tsuite = suite->children; tsuite; tsuite = tsuite->next) {
+		ret &= torture_run_suite(context, tsuite);
+	}
+
 	if (context->ui_ops->suite_finish)
 		context->ui_ops->suite_finish(context, suite);
+
+	context->level--;
 	
 	return ret;
 }
@@ -139,19 +165,18 @@ BOOL torture_run_suite(struct torture_context *context,
 static BOOL internal_torture_run_test(struct torture_context *context, 
 					  struct torture_tcase *tcase,
 					  struct torture_test *test,
-					  BOOL already_setup,
-					  const void *tcase_data)
+					  BOOL already_setup)
 {
 	BOOL ret;
-	void *data = NULL;
 
-	if (test->dangerous && !lp_parm_bool(-1, "torture", "dangerous", False)) {
-		torture_skip(context, "disabled %s - enable dangerous tests to use", 
-					 test->name);
+	if (test->dangerous && !torture_setting_bool(context, "dangerous", False)) {
+		_torture_skip_ext(context, 
+				"disabled %s - enable dangerous tests to use", test->name);
 		return True;
 	}
 
-	if (!already_setup && tcase->setup && !tcase->setup(context, &data))
+	if (!already_setup && tcase->setup && 
+		!tcase->setup(context, &(tcase->data)))
 		return False;
 
 	context->active_tcase = tcase;
@@ -163,14 +188,16 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 	context->last_reason = NULL;
 	context->last_result = TORTURE_OK;
 
-	ret = test->run(context, !already_setup?data:tcase_data, test->data);
+	ret = test->run(context, tcase, test);
 	if (!ret) {
-		context->last_reason = talloc_strdup(context, "...");
+		if (context->last_reason == NULL)
+			context->last_reason = talloc_strdup(context, "...");
 		context->last_result = TORTURE_FAIL;
 	}
 
 	if (context->ui_ops->test_result)
-		context->ui_ops->test_result(context, context->last_result, 
+		context->ui_ops->test_result(context, 
+									 context->last_result, 
 									 context->last_reason);
 
 
@@ -186,7 +213,7 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 	context->active_test = NULL;
 	context->active_tcase = NULL;
 
-	if (!already_setup && tcase->teardown && !tcase->teardown(context, data))
+	if (!already_setup && tcase->teardown && !tcase->teardown(context, tcase->data))
 		return False;
 
 	return ret;
@@ -196,27 +223,27 @@ BOOL torture_run_tcase(struct torture_context *context,
 					   struct torture_tcase *tcase)
 {
 	BOOL ret = True;
-	void *data = NULL;
 	struct torture_test *test;
+
+	context->level++;
 
 	context->active_tcase = tcase;
 	if (context->ui_ops->tcase_start)
 		context->ui_ops->tcase_start(context, tcase);
 
 	if (tcase->fixture_persistent && tcase->setup 
-		&& !tcase->setup(context, &data)) {
+		&& !tcase->setup(context, &tcase->data)) {
 		ret = False;
 		goto done;
 	}
 
 	for (test = tcase->tests; test; test = test->next) {
 		ret &= internal_torture_run_test(context, tcase, test, 
-				tcase->fixture_persistent,
-				(tcase->setup?data:tcase->data));
+				tcase->fixture_persistent);
 	}
 
 	if (tcase->fixture_persistent && tcase->teardown &&
-		!tcase->teardown(context, data))
+		!tcase->teardown(context, tcase->data))
 		ret = False;
 
 done:
@@ -225,6 +252,8 @@ done:
 	if (context->ui_ops->tcase_finish)
 		context->ui_ops->tcase_finish(context, tcase);
 
+	context->level--;
+
 	return ret;
 }
 
@@ -232,10 +261,22 @@ BOOL torture_run_test(struct torture_context *context,
 					  struct torture_tcase *tcase,
 					  struct torture_test *test)
 {
-	return internal_torture_run_test(context, tcase, test, False, NULL);
+	return internal_torture_run_test(context, tcase, test, False);
 }
 
-const char *torture_setting(struct torture_context *test, const char *name, 
+int torture_setting_int(struct torture_context *test, const char *name, 
+							int default_value)
+{
+	return lp_parm_int(-1, "torture", name, default_value);
+}
+
+bool torture_setting_bool(struct torture_context *test, const char *name, 
+							bool default_value)
+{
+	return lp_parm_bool(-1, "torture", name, default_value);
+}
+
+const char *torture_setting_string(struct torture_context *test, const char *name, 
 							const char *default_value)
 {
 	const char *ret = lp_parm_string(-1, "torture", name);
@@ -246,27 +287,72 @@ const char *torture_setting(struct torture_context *test, const char *name,
 	return ret;
 }
 
-static BOOL simple_tcase_helper(struct torture_context *test, 
-								const void *tcase_data,
-								const void *test_data)
+static bool wrap_test_with_simple_tcase(struct torture_context *torture_ctx,
+									struct torture_tcase *tcase,
+									struct torture_test *test)
 {
-	BOOL (*run) (struct torture_context *, const void *) = test_data;
+	bool (*fn) (struct torture_context *, const void *tcase_data);
 
-	return run(test, tcase_data);
+	fn = test->fn;
+
+	return fn(torture_ctx, test->data);
 }
 
 struct torture_tcase *torture_suite_add_simple_tcase(
 					struct torture_suite *suite, 
 					const char *name,
-					BOOL (*run) (struct torture_context *test, const void *),
+					bool (*run) (struct torture_context *test, const void *),
 					const void *data)
 {
 	struct torture_tcase *tcase;
+	struct torture_test *test; 
 	
 	tcase = torture_suite_add_tcase(suite, name);
-	tcase->data = data;
 
-	torture_tcase_add_test(tcase, name, simple_tcase_helper, run);
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = wrap_test_with_simple_tcase;
+	test->fn = run;
+	test->data = data;
+	test->dangerous = False;
+
+	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+
+	return tcase;
+}
+
+static bool wrap_simple_test(struct torture_context *torture_ctx,
+									struct torture_tcase *tcase,
+									struct torture_test *test)
+{
+	bool (*fn) (struct torture_context *);
+
+	fn = test->fn;
+
+	return fn(torture_ctx);
+}
+
+struct torture_tcase *torture_suite_add_simple_test(
+					struct torture_suite *suite, 
+					const char *name,
+					bool (*run) (struct torture_context *test))
+{
+	struct torture_test *test; 
+	struct torture_tcase *tcase;
+	
+	tcase = torture_suite_add_tcase(suite, name);
+
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = wrap_simple_test;
+	test->fn = run;
+	test->dangerous = false;
+
+	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
 
 	return tcase;
 }
@@ -274,4 +360,27 @@ struct torture_tcase *torture_suite_add_simple_tcase(
 BOOL torture_teardown_free(struct torture_context *torture, void *data)
 {
 	return talloc_free(data);
+}
+
+
+bool torture_suite_add_suite(struct torture_suite *suite, 
+							 struct torture_suite *child)
+{
+	if (child == NULL)
+		return false;
+
+	DLIST_ADD_END(suite->children, child, struct torture_suite *);
+
+	/* FIXME: Check for duplicates and return false if the 
+	 * added suite already exists as a child */
+
+	return true;
+}
+
+
+struct torture_suite *torture_find_suite(const char *name)
+{
+	/* FIXME */
+
+	return NULL;
 }

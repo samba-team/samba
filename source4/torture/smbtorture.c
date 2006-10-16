@@ -33,35 +33,85 @@
 #include "lib/util/dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
 
+static bool run_matching(struct torture_context *torture,
+						 const char *prefix, 
+						 const char *expr,
+						 struct torture_suite *suite,
+						 bool *matched)
+{
+	bool ret = true;
+
+	if (suite == NULL) {
+		struct torture_suite_list *o;
+
+		for (o = torture_suites; o; o = o->next) {
+			if (gen_fnmatch(expr, o->suite->name) == 0) {
+				*matched = true;
+				init_iconv();
+				ret &= torture_run_suite(torture, o->suite);
+				continue;
+			}
+
+			ret &= run_matching(torture, 
+								o->suite->name, expr, o->suite, matched);
+		}
+	} else {
+		char *name;
+		struct torture_suite *c;
+		struct torture_tcase *t;
+
+		for (c = suite->children; c; c = c->next) {
+			asprintf(&name, "%s-%s", prefix, c->name);
+			if (gen_fnmatch(expr, name) == 0) {
+				*matched = true;
+				init_iconv();
+				ret &= torture_run_suite(torture, c);
+				free(name);
+				continue;
+			}
+			
+			ret &= run_matching(torture, name, expr, c, matched);
+
+			free(name);
+		}
+
+		for (t = suite->testcases; t; t = t->next) {
+			asprintf(&name, "%s-%s", prefix, t->name);
+			if (gen_fnmatch(expr, name) == 0) {
+				*matched = true;
+				init_iconv();
+				ret &= torture_run_tcase(torture, t);
+			}
+			free(name);
+		}
+	}
+
+	return ret;
+}
+
 #define MAX_COLS 80 /* FIXME: Determine this at run-time */
 
 /****************************************************************************
 run a specified test or "ALL"
 ****************************************************************************/
-static BOOL run_test(struct torture_context *torture, const char *name)
+static bool run_test(struct torture_context *torture, const char *name)
 {
-	BOOL ret = True;
+	bool ret = true;
+	bool matched = false;
 	struct torture_suite_list *o;
-	BOOL matched = False;
 
-	if (strequal(name,"ALL")) {
+	if (strequal(name, "ALL")) {
 		for (o = torture_suites; o; o = o->next) {
 			ret &= torture_run_suite(torture, o->suite);
 		}
 		return ret;
 	}
 
-	for (o = torture_suites; o; o = o->next) {
-		if (gen_fnmatch(name, o->suite->name) == 0) {
-			matched = True;
-			init_iconv();
-			ret &= torture_run_suite(torture, o->suite);
-		}
-	}
+	ret = run_matching(torture, NULL, name, NULL, &matched);
 
 	if (!matched) {
 		printf("Unknown torture operation '%s'\n", name);
-		ret = False;
+		return false;
 	}
 
 	return ret;
@@ -110,7 +160,8 @@ static void parse_dns(const char *dns)
 static void usage(poptContext pc)
 {
 	struct torture_suite_list *o;
-	char last_prefix[64];
+	struct torture_suite *s;
+	struct torture_tcase *t;
 	int i;
 
 	poptPrintUsage(pc, stdout, 0);
@@ -165,35 +216,35 @@ static void usage(poptContext pc)
 
 	printf("Tests are:");
 
-	i = 0;
-	last_prefix[0] = '\0';
 	for (o = torture_suites; o; o = o->next) {
-		const char * sep;
+		printf("\n%s (%s):\n  ", o->suite->description, o->suite->name);
 
-		if ((sep = strchr(o->suite->name, '-'))) {
-			if (strncmp(o->suite->name, last_prefix, sep-o->suite->name) != 0) {
-				strncpy(last_prefix, o->suite->name,
-					MIN(sizeof(last_prefix),
-					    sep - o->suite->name));
-				printf("\n\n  ");
+		i = 0;
+		for (s = o->suite->children; s; s = s->next) {
+			if (i + strlen(o->suite->name) + strlen(s->name) >= (MAX_COLS - 3)) {
+				printf("\n  ");
 				i = 0;
 			}
+			i+=printf("%s-%s ", o->suite->name, s->name);
 		}
 
-		if (i + strlen(o->suite->name) >= (MAX_COLS - 2)) {
-			printf("\n  ");
-			i = 0;
+		for (t = o->suite->testcases; t; t = t->next) {
+			if (i + strlen(o->suite->name) + strlen(t->name) >= (MAX_COLS - 3)) {
+				printf("\n  ");
+				i = 0;
+			}
+			i+=printf("%s-%s ", o->suite->name, t->name);
 		}
-		i+=printf("%s ", o->suite->name);
+
+		if (i) printf("\n");
 	}
-	printf("\n\n");
 
-	printf("The default test is ALL.\n");
+	printf("\nThe default test is ALL.\n");
 
 	exit(1);
 }
 
-static BOOL is_binding_string(const char *binding_string)
+static bool is_binding_string(const char *binding_string)
 {
 	TALLOC_CTX *mem_ctx = talloc_named_const(NULL, 0, "is_binding_string");
 	struct dcerpc_binding *binding_struct;
@@ -249,9 +300,10 @@ static void simple_test_result (struct torture_context *context,
 	}
 }
 
-static void simple_comment (struct torture_context *test, const char *comment)
+static void simple_comment (struct torture_context *test, 
+							const char *comment)
 {
-	printf("# %s\n", comment);
+	printf("%s", comment);
 }
 
 const static struct torture_ui_ops std_ui_ops = {
@@ -288,9 +340,11 @@ static void subunit_test_result (struct torture_context *context,
 	}
 }
 
-static void subunit_comment (struct torture_context *test, const char *comment)
+static void subunit_comment (struct torture_context *test, 
+							 const char *comment)
 {
-	printf("# %s\n", comment);
+	/* FIXME Add # sign before each line */
+	printf("%s", comment);
 }
 
 const static struct torture_ui_ops subunit_ui_ops = {
@@ -324,7 +378,8 @@ static void harness_test_result (struct torture_context *context,
 	}
 }
 
-static void harness_comment (struct torture_context *test, const char *comment)
+static void harness_comment (struct torture_context *test, 
+							 const char *comment)
 {
 	printf("# %s\n", comment);
 }
@@ -338,7 +393,11 @@ const static struct torture_ui_ops harness_ui_ops = {
 static void quiet_suite_start(struct torture_context *ctx,
 				       		  struct torture_suite *suite)
 {
+	int i;
+	ctx->quiet = true;
+	for (i = 1; i < ctx->level; i++) putchar('\t');
 	printf("%s: ", suite->name);
+	fflush(stdout);
 }
 
 static void quiet_suite_finish(struct torture_context *ctx,
@@ -348,8 +407,9 @@ static void quiet_suite_finish(struct torture_context *ctx,
 }
 
 static void quiet_test_result (struct torture_context *context, 
-								enum torture_result res, const char *reason)
+							   enum torture_result res, const char *reason)
 {
+	fflush(stdout);
 	switch (res) {
 	case TORTURE_OK: putchar('.'); break;
 	case TORTURE_FAIL: putchar('E'); break;
@@ -371,7 +431,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
  int main(int argc,char *argv[])
 {
 	int opt, i;
-	BOOL correct = True;
+	bool correct = true;
 	int max_runtime=0;
 	int argc_new;
 	struct torture_context *torture;
@@ -390,7 +450,6 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		{"num-progs",	  0, POPT_ARG_INT,  &torture_nprocs, 	0,	"num progs",	NULL},
 		{"num-ops",	  0, POPT_ARG_INT,  &torture_numops, 	0, 	"num ops",	NULL},
 		{"entries",	  0, POPT_ARG_INT,  &torture_entries, 	0,	"entries",	NULL},
-		{"use-oplocks",	'L', POPT_ARG_NONE, &use_oplocks, 	0,	"use oplocks", 	NULL},
 		{"show-all",	  0, POPT_ARG_NONE, &torture_showall, 	0,	"show all", 	NULL},
 		{"loadfile",	  0, POPT_ARG_STRING,	NULL, 	OPT_LOADFILE,	"loadfile", 	NULL},
 		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
@@ -416,7 +475,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	setlinebuf(stdout);
 
 	/* we are never interested in SIGPIPE */
-	BlockSignals(True,SIGPIPE);
+	BlockSignals(true,SIGPIPE);
 
 	pc = poptGetContext("smbtorture", argc, (const char **) argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
@@ -513,7 +572,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		lp_set_cmdline("torture:binding", binding);
 	}
 
-	torture = talloc_zero(NULL, struct torture_context);
+	torture = talloc_zero(talloc_autofree_context(), struct torture_context);
 	if (!strcmp(ui_ops_name, "simple")) {
 		torture->ui_ops = &std_ui_ops;
 	} else if (!strcmp(ui_ops_name, "subunit")) {
@@ -534,15 +593,19 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		double rate;
 		for (i=2;i<argc_new;i++) {
 			if (!run_test(torture, argv_new[i])) {
-				correct = False;
+				correct = false;
 			}
 		}
 
 		total = torture->skipped+torture->success+torture->failed;
-		rate = ((total - torture->failed) * (100.0 / total));
-		printf("Tests: %d, Errors: %d, Skipped: %d. Success rate: %.2f%%\n",
+		if (total == 0) {
+			printf("No tests run.\n");
+		} else {
+			rate = ((total - torture->failed) * (100.0 / total));
+			printf("Tests: %d, Errors: %d, Skipped: %d. Success rate: %.2f%%\n",
 			   total, torture->failed, torture->skipped,
 			   rate);
+		}
 	}
 
 	talloc_free(torture);

@@ -51,24 +51,21 @@ static BOOL test_sidtouid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 /*
   test the UidToSid interface
 */
-static BOOL test_uidtosid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_uidtosid(struct torture_context *tctx, 
+						  struct dcerpc_pipe *p)
 {
-	NTSTATUS status;
 	struct unixinfo_UidToSid r;
 
 	r.in.uid = 1000;
 
-	status = dcerpc_unixinfo_UidToSid(p, mem_ctx, &r);
-	if (NT_STATUS_EQUAL(NT_STATUS_NO_SUCH_USER, status)) {
-	} else if (!NT_STATUS_IS_OK(status)) {
-		printf("UidToSid failed == %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, dcerpc_unixinfo_UidToSid(p, tctx, &r), 
+							   "UidToSid failed");
 
-	return True;
+	return true;
 }
 
-static BOOL test_getpwuid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_getpwuid(struct torture_context *tctx, 
+						  struct dcerpc_pipe *p)
 {
 	uint64_t uids[512];
 	uint32_t num_uids = ARRAY_SIZE(uids);
@@ -83,11 +80,13 @@ static BOOL test_getpwuid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.count = &num_uids;
 	r.in.uids = uids;
 	r.out.count = &num_uids;
-	r.out.infos = talloc_array(mem_ctx, struct unixinfo_GetPWUidInfo, num_uids);
+	r.out.infos = talloc_array(tctx, struct unixinfo_GetPWUidInfo, num_uids);
 
-	result = dcerpc_unixinfo_GetPWUid(p, mem_ctx, &r);
+	result = dcerpc_unixinfo_GetPWUid(p, tctx, &r);
 
-	return NT_STATUS_IS_OK(result);
+	torture_assert_ntstatus_ok(tctx, result, "GetPWUid failed");
+	
+	return true;
 }
 
 /*
@@ -115,44 +114,32 @@ static BOOL test_sidtogid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 /*
   test the GidToSid interface
 */
-static BOOL test_gidtosid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static BOOL test_gidtosid(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct unixinfo_GidToSid r;
 
 	r.in.gid = 1000;
 
-	status = dcerpc_unixinfo_GidToSid(p, mem_ctx, &r);
+	status = dcerpc_unixinfo_GidToSid(p, tctx, &r);
 	if (NT_STATUS_EQUAL(NT_STATUS_NO_SUCH_GROUP, status)) {
-	} else if (!NT_STATUS_IS_OK(status)) {
-		printf("GidToSid failed == %s\n", nt_errstr(status));
-		return False;
-	}
+	} else torture_assert_ntstatus_ok(tctx, status, "GidToSid failed");
 
-	return True;
+	return true;
 }
 
-BOOL torture_rpc_unixinfo(struct torture_context *torture)
+struct torture_suite *torture_rpc_unixinfo(void)
 {
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	struct torture_suite *suite;
+	struct torture_tcase *tcase;
 
-	mem_ctx = talloc_init("torture_rpc_unixinfo");
+	suite = torture_suite_create(talloc_autofree_context(), "UNIXINFO");
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "unixinfo", 
+											  &dcerpc_table_unixinfo);
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_unixinfo);
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
+	torture_rpc_tcase_add_test(tcase, "uidtosid", test_uidtosid);
+	torture_rpc_tcase_add_test(tcase, "getpwuid", test_getpwuid);
+	torture_rpc_tcase_add_test(tcase, "gidtosid", test_gidtosid);
 
-	ret &= test_uidtosid(p, mem_ctx);
-	ret &= test_getpwuid(p, mem_ctx);
-	ret &= test_gidtosid(p, mem_ctx);
-
-	printf("\n");
-	
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }

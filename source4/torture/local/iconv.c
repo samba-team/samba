@@ -107,7 +107,7 @@ static void show_buf(const char *name, uint8_t *buf, size_t size)
   "charset", then convert it back again and ensure we get the same
   buffer back
 */
-static int test_buffer(struct torture_context *test, 
+static bool test_buffer(struct torture_context *test, 
 					   uint8_t *inbuf, size_t size, const char *charset)
 {
 	uint8_t buf1[1000], buf2[1000], buf3[1000];
@@ -116,7 +116,6 @@ static int test_buffer(struct torture_context *test,
 	char *ptr_out;
 	size_t size_in1, size_in2, size_in3;
 	size_t ret1, ret2, ret3, len1, len2;
-	int ok = 1;
 	int errno1, errno2;
 	static iconv_t cd;
 	static smb_iconv_t cd2, cd3;
@@ -133,7 +132,7 @@ static int test_buffer(struct torture_context *test,
 		cd = iconv_open(charset, "UTF-16LE");
 		if (cd == (iconv_t)-1) {
 			cd = NULL;
-			return False;
+			return false;
 		}
 		cd2 = smb_iconv_open(charset, "UTF-16LE");
 		cd3 = smb_iconv_open("UTF-16LE", charset);
@@ -169,42 +168,30 @@ static int test_buffer(struct torture_context *test,
 	if (len2 > len1 && 
 	    memcmp(buf1, buf2, len1) == 0 && 
 	    get_codepoint((char *)(buf2+len1), len2-len1, charset) >= (1<<20)) {
-		return ok;
+		return true;
 	}
 	if (len1 > len2 && 
 	    memcmp(buf1, buf2, len2) == 0 && 
 	    get_codepoint((char *)(buf1+len2), len1-len2, charset) >= (1<<20)) {
-		return ok;
+		return true;
 	}
 
-	if (ret1 != ret2) {
-		torture_fail(test, "ret1=%d ret2=%d", (int)ret1, (int)ret2);
-		ok = 0;
-	}
+	torture_assert_int_equal(test, ret1, ret2, "ret mismatch");
 
 	if (errno1 != errno2) {
-		torture_fail(test, "e1=%s e2=%s", strerror(errno1), strerror(errno2));
 		show_buf(" rem1:", inbuf+(size-size_in1), size_in1);
 		show_buf(" rem2:", inbuf+(size-size_in2), size_in2);
-		ok = 0;
+		torture_fail(test, talloc_asprintf(test, 
+					"e1=%s e2=%s", strerror(errno1), strerror(errno2)));
 	}
 	
-	if (outsize1 != outsize2) {
-		torture_fail(test, "outsize mismatch outsize1=%d outsize2=%d",
-		       (int)outsize1, (int)outsize2);
-		ok = 0;
-	}
+	torture_assert_int_equal(test, outsize1, outsize2, "outsize mismatch");
 	
-	if (size_in1 != size_in2) {
-		torture_fail(test, "size_in mismatch size_in1=%d size_in2=%d",
-		       (int)size_in1, (int)size_in2);
-		ok = 0;
-	}
+	torture_assert_int_equal(test, size_in1, size_in2, "size_in mismatch");
 
-	if (!ok ||
-	    len1 != len2 ||
+	if (len1 != len2 ||
 	    memcmp(buf1, buf2, len1) != 0) {
-		torture_fail(test, "size=%d ret1=%d ret2=%d", (int)size, (int)ret1, (int)ret2);
+		torture_comment(test, "size=%d ret1=%d ret2=%d", (int)size, (int)ret1, (int)ret2);
 		show_buf(" IN1:", inbuf, size-size_in1);
 		show_buf(" IN2:", inbuf, size-size_in2);
 		show_buf("OUT1:", buf1, len1);
@@ -218,7 +205,7 @@ static int test_buffer(struct torture_context *test,
 			       get_codepoint((char *)(buf1+len2),len1-len2, charset));
 		}
 
-		ok = 0;
+		torture_fail(test, "failed");
 	}
 
 	/* convert back to UTF-16, putting result in buf3 */
@@ -236,42 +223,33 @@ static int test_buffer(struct torture_context *test,
 	    get_codepoint((char *)(inbuf+sizeof(buf3) - outsize3), 
 			  size - (sizeof(buf3) - outsize3),
 			  "UTF-16LE") >= (1<<20)) {
-		return ok;
+		return true;
 	}
 
-	if (ret3 != 0) {
-		torture_fail(test, "pull failed - %s", strerror(errno));
-		ok = 0;
-	}
+	torture_assert_int_equal(test, ret3, 0, talloc_asprintf(test, 
+								"pull failed - %s", strerror(errno)));
 
 	if (strncmp(charset, "UTF", 3) != 0) {
 		/* don't expect perfect mappings for non UTF charsets */
-		return ok;
+		return true;
 	}
 
 
-	if (outsize3 != sizeof(buf3) - size) {
-		torture_fail(test, "wrong outsize3 - %d should be %d", 
-		       (int)outsize3, (int)(sizeof(buf3) - size));
-		ok = 0;
-	}
+	torture_assert_int_equal(test, outsize3, sizeof(buf3) - size, 
+		"wrong outsize3");
 	
 	if (memcmp(buf3, inbuf, size) != 0) {
-		torture_fail(test, "pull bytes mismatch:");
+		torture_comment(test, "pull bytes mismatch:");
 		show_buf("inbuf", inbuf, size);
 		show_buf(" buf3", buf3, sizeof(buf3) - outsize3);
-		ok = 0;
+		torture_fail(test, "");
 		torture_comment(test, "next codepoint is %u\n", 
 		       get_codepoint((char *)(inbuf+sizeof(buf3) - outsize3), 
 				     size - (sizeof(buf3) - outsize3),
 				     "UTF-16LE"));
 	}
 
-	if (!ok) {
-		torture_fail(test, "test_buffer failed for charset %s", charset);
-	}
-
-	return ok;
+	return true;
 }
 
 
@@ -279,18 +257,14 @@ static int test_buffer(struct torture_context *test,
   test the push_codepoint() and next_codepoint() functions for a given
   codepoint
 */
-static int test_codepoint(struct torture_context *test, const void *data)
+static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 {
 	uint8_t buf[10];
 	size_t size, size2;
-	unsigned int codepoint = *((const unsigned int *)data);
 	codepoint_t c;
 
 	size = push_codepoint((char *)buf, codepoint);
-	if (size == -1) {
-		torture_assert(test, codepoint >= 0xd800 && codepoint <= 0x10000, "Invalid Codepoint range");
-		return True;
-	}
+	torture_assert(tctx, size != -1 || (codepoint >= 0xd800 && codepoint <= 0x10000), "Invalid Codepoint range");
 	buf[size] = random();
 	buf[size+1] = random();
 	buf[size+2] = random();
@@ -298,31 +272,27 @@ static int test_codepoint(struct torture_context *test, const void *data)
 
 	c = next_codepoint((char *)buf, &size2);
 
-	if (c != codepoint) {
-		torture_fail(test, "next_codepoint(%u) failed - gave %u", codepoint, c);
-		return False;
-	}
+	torture_assert(tctx, c == codepoint, talloc_asprintf(tctx, 
+					"next_codepoint(%u) failed - gave %u", codepoint, c));
 
-	if (size2 != size) {
-		torture_fail(test, "next_codepoint(%u) gave wrong size %d (should be %d)\n", 
-		       codepoint, (int)size2, (int)size);
-		return False;
-	}
+	torture_assert(tctx, size2 == size, 
+			talloc_asprintf(tctx, "next_codepoint(%u) gave wrong size %d (should be %d)\n", 
+		       codepoint, (int)size2, (int)size));
 
-	return True;
+	return true;
 }
 
-static BOOL test_next_codepoint(struct torture_context *test, const void *data)
+static bool test_next_codepoint(struct torture_context *tctx)
 {
 	unsigned int codepoint;
 	for (codepoint=0;codepoint<(1<<20);codepoint++) {
-		if (!test_codepoint(test, &codepoint))
-			return False;
+		if (!test_codepoint(tctx, codepoint))
+			return false;
 	}
-	return True;
+	return true;
 }
 
-static BOOL test_first_1m(struct torture_context *test, const void *data)
+static bool test_first_1m(struct torture_context *tctx)
 {
 	unsigned int codepoint;
 	size_t size;
@@ -339,14 +309,13 @@ static BOOL test_first_1m(struct torture_context *test, const void *data)
 			}
 		}
 
-		if (!test_buffer(test, inbuf, size, "UTF-8"))
-			return False;
+		if (!test_buffer(tctx, inbuf, size, "UTF-8"))
+			return false;
 	}
-
-	return True;
+	return true;
 }
 
-static BOOL test_random_5m(struct torture_context *test, const void *data)
+static bool test_random_5m(struct torture_context *tctx)
 {
 	unsigned char inbuf[1000];
 	unsigned int i;
@@ -356,7 +325,7 @@ static BOOL test_random_5m(struct torture_context *test, const void *data)
 
 		if (i % 1000 == 0) {
 			if (!lp_parm_bool(-1, "torture", "progress", True)) {
-				torture_comment(test, "i=%u              \r", i);
+				torture_comment(tctx, "i=%u              \r", i);
 			}
 		}
 
@@ -374,20 +343,19 @@ static BOOL test_random_5m(struct torture_context *test, const void *data)
 				inbuf[c] |= 0xdc;
 			}
 		}
-		if (!test_buffer(test, inbuf, size, "UTF-8"))
-			return False;
+		if (!test_buffer(tctx, inbuf, size, "UTF-8"))
+			return false;
 
-		if (!test_buffer(test, inbuf, size, "CP850"))
-			return False;
+		if (!test_buffer(tctx, inbuf, size, "CP850"))
+			return false;
 	}
-
-	return True;
+	return true;
 }
 
 struct torture_suite *torture_local_iconv(TALLOC_CTX *mem_ctx)
 {
 	static iconv_t cd;
-	struct torture_suite *suite;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "ICONV");
 
 	if (!lp_parm_bool(-1, "iconv", "native", True)) {
 		printf("system iconv disabled - skipping test\n");
@@ -401,18 +369,15 @@ struct torture_suite *torture_local_iconv(TALLOC_CTX *mem_ctx)
 	}
 	iconv_close(cd);
 
-	suite = torture_suite_create(mem_ctx, "LOCAL-ICONV");
 	srandom(time(NULL));
+	torture_suite_add_simple_test(suite, "next_codepoint()",
+								   test_next_codepoint);
 
-	torture_suite_add_simple_tcase(suite, "next_codepoint()",
-								   test_next_codepoint, NULL);
+	torture_suite_add_simple_test(suite, "first 1M codepoints",
+								   test_first_1m);
 
-	torture_suite_add_simple_tcase(suite, "first 1M codepoints",
-								   test_first_1m, NULL);
-
-	torture_suite_add_simple_tcase(suite, "5M random UTF-16LE sequences",
-								   test_random_5m, NULL);
-
+	torture_suite_add_simple_test(suite, "5M random UTF-16LE sequences",
+								   test_random_5m);
 	return suite;
 }
 

@@ -34,22 +34,16 @@ static void list_fn(struct clilist_file_info *finfo, const char *name, void *sta
 /*
   test directory listing speed
  */
-BOOL torture_dirtest1(struct torture_context *torture)
+BOOL torture_dirtest1(struct torture_context *tctx, 
+					  struct smbcli_state *cli)
 {
 	int i;
-	struct smbcli_state *cli;
 	int fnum;
 	BOOL correct = True;
 	extern int torture_numops;
 	struct timeval tv;
 
-	printf("starting dirtest1\n");
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
-
-	printf("Creating %d random filenames\n", torture_numops);
+	torture_comment(tctx, "Creating %d random filenames\n", torture_numops);
 
 	srandom(0);
 	tv = timeval_current();
@@ -66,11 +60,11 @@ BOOL torture_dirtest1(struct torture_context *torture)
 		free(fname);
 	}
 
-	printf("Matched %d\n", smbcli_list(cli->tree, "a*.*", 0, list_fn, NULL));
-	printf("Matched %d\n", smbcli_list(cli->tree, "b*.*", 0, list_fn, NULL));
-	printf("Matched %d\n", smbcli_list(cli->tree, "xyzabc", 0, list_fn, NULL));
+	torture_comment(tctx, "Matched %d\n", smbcli_list(cli->tree, "a*.*", 0, list_fn, NULL));
+	torture_comment(tctx, "Matched %d\n", smbcli_list(cli->tree, "b*.*", 0, list_fn, NULL));
+	torture_comment(tctx, "Matched %d\n", smbcli_list(cli->tree, "xyzabc", 0, list_fn, NULL));
 
-	printf("dirtest core %g seconds\n", timeval_elapsed(&tv));
+	torture_comment(tctx, "dirtest core %g seconds\n", timeval_elapsed(&tv));
 
 	srandom(0);
 	for (i=0;i<torture_numops;i++) {
@@ -80,34 +74,22 @@ BOOL torture_dirtest1(struct torture_context *torture)
 		free(fname);
 	}
 
-	if (!torture_close_connection(cli)) {
-		correct = False;
-	}
-
-	printf("finished dirtest1\n");
-
 	return correct;
 }
 
-BOOL torture_dirtest2(struct torture_context *torture)
+BOOL torture_dirtest2(struct torture_context *tctx, 
+					  struct smbcli_state *cli)
 {
 	int i;
-	struct smbcli_state *cli;
 	int fnum, num_seen;
 	BOOL correct = True;
 	extern int torture_entries;
-
-	printf("starting dirtest2\n");
-
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
 
 	if (!torture_setup_dir(cli, "\\LISTDIR")) {
 		return False;
 	}
 
-	printf("Creating %d files\n", torture_entries);
+	torture_comment(tctx, "Creating %d files\n", torture_entries);
 
 	/* Create torture_entries files and torture_entries directories. */
 	for (i=0;i<torture_entries;i++) {
@@ -139,7 +121,7 @@ BOOL torture_dirtest2(struct torture_context *torture)
 
 	/* Now ensure that doing an old list sees both files and directories. */
 	num_seen = smbcli_list_old(cli->tree, "\\LISTDIR\\*", FILE_ATTRIBUTE_DIRECTORY, list_fn, NULL);
-	printf("num_seen = %d\n", num_seen );
+	torture_comment(tctx, "num_seen = %d\n", num_seen );
 	/* We should see (torture_entries) each of files & directories + . and .. */
 	if (num_seen != (2*torture_entries)+2) {
 		correct = False;
@@ -152,7 +134,7 @@ BOOL torture_dirtest2(struct torture_context *torture)
 	 * relevant entries.
 	 */
 	num_seen = smbcli_list_old(cli->tree, "\\LISTDIR\\*", (FILE_ATTRIBUTE_DIRECTORY<<8)|FILE_ATTRIBUTE_DIRECTORY, list_fn, NULL);
-	printf("num_seen = %d\n", num_seen );
+	torture_comment(tctx, "num_seen = %d\n", num_seen );
 	if (num_seen != torture_entries+2) {
 		correct = False;
 		fprintf(stderr,"(%s) entry count mismatch, should be %d, was %d\n",
@@ -160,7 +142,7 @@ BOOL torture_dirtest2(struct torture_context *torture)
 	}
 
 	num_seen = smbcli_list_old(cli->tree, "\\LISTDIR\\*", (FILE_ATTRIBUTE_ARCHIVE<<8)|FILE_ATTRIBUTE_DIRECTORY, list_fn, NULL);
-	printf("num_seen = %d\n", num_seen );
+	torture_comment(tctx, "num_seen = %d\n", num_seen );
 	if (num_seen != torture_entries) {
 		correct = False;
 		fprintf(stderr,"(%s) entry count mismatch, should be %d, was %d\n",
@@ -175,16 +157,10 @@ BOOL torture_dirtest2(struct torture_context *torture)
 	}
 
 #if 0
-	printf("Matched %d\n", smbcli_list(cli->tree, "a*.*", 0, list_fn, NULL));
-	printf("Matched %d\n", smbcli_list(cli->tree, "b*.*", 0, list_fn, NULL));
-	printf("Matched %d\n", smbcli_list(cli->tree, "xyzabc", 0, list_fn, NULL));
+	torture_comment(tctx, "Matched %d\n", smbcli_list(cli->tree, "a*.*", 0, list_fn, NULL));
+	torture_comment(tctx, "Matched %d\n", smbcli_list(cli->tree, "b*.*", 0, list_fn, NULL));
+	torture_comment(tctx, "Matched %d\n", smbcli_list(cli->tree, "xyzabc", 0, list_fn, NULL));
 #endif
-
-	if (!torture_close_connection(cli)) {
-		correct = False;
-	}
-
-	printf("finished dirtest1\n");
 
 	return correct;
 }

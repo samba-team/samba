@@ -32,7 +32,7 @@
 
 #define BASEDIR "\\delaywrite"
 
-static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_delayed_write_update(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_fileinfo finfo1, finfo2;
 	const char *fname = BASEDIR "\\torture_file.txt";
@@ -42,15 +42,13 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 	ssize_t written;
 	time_t t;
 
-	printf("Testing delayed update of write time\n");
-
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
-		printf("Failed to open %s\n", fname);
+		torture_comment(tctx, "Failed to open %s\n", fname);
 		return False;
 	}
 
@@ -58,15 +56,15 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 	finfo1.basic_info.in.file.fnum = fnum1;
 	finfo2 = finfo1;
 
-	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 		return False;
 	}
 	
-	printf("Initial write time %s\n", 
-	       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time));
+	torture_comment(tctx, "Initial write time %s\n", 
+	       nt_time_string(tctx, finfo1.basic_info.out.write_time));
 
 	/* 3 second delay to ensure we get past any 2 second time
 	   granularity (older systems may have that) */
@@ -75,7 +73,7 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
 
 	if (written != 1) {
-		printf("write failed - wrote %d bytes (%s)\n", 
+		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
 		       (int)written, __location__);
 		return False;
 	}
@@ -83,17 +81,17 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 	t = time(NULL);
 
 	while (time(NULL) < t+120) {
-		status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 			ret = False;
 			break;
 		}
-		printf("write time %s\n", 
-		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+		torture_comment(tctx, "write time %s\n", 
+		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-			printf("Server updated write_time after %d seconds\n",
+			torture_comment(tctx, "Server updated write_time after %d seconds\n",
 			       (int)(time(NULL) - t));
 			break;
 		}
@@ -102,7 +100,7 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 	}
 	
 	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
-		printf("Server did not update write time?!\n");
+		torture_comment(tctx, "Server did not update write time?!\n");
 		ret = False;
 	}
 
@@ -119,9 +117,9 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
  * Do as above, but using 2 connections.
  */
 
-static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbcli_state *cli, 
+									   struct smbcli_state *cli2)
 {
-	struct smbcli_state *cli2=NULL;
 	union smb_fileinfo finfo1, finfo2;
 	const char *fname = BASEDIR "\\torture_file.txt";
 	NTSTATUS status;
@@ -132,19 +130,13 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	time_t t;
 	union smb_flush flsh;
 
-	printf("Testing delayed update of write time using 2 connections\n");
-
-	if (!torture_open_connection(&cli2, 1)) {
-		return False;
-	}
-
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
-		printf("Failed to open %s\n", fname);
+		torture_comment(tctx, "Failed to open %s\n", fname);
 		return False;
 	}
 
@@ -152,15 +144,15 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	finfo1.basic_info.in.file.fnum = fnum1;
 	finfo2 = finfo1;
 
-	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 		return False;
 	}
 	
-	printf("Initial write time %s\n", 
-	       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time));
+	torture_comment(tctx, "Initial write time %s\n", 
+	       nt_time_string(tctx, finfo1.basic_info.out.write_time));
 
 	/* 3 second delay to ensure we get past any 2 second time
 	   granularity (older systems may have that) */
@@ -198,17 +190,17 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	while (time(NULL) < t+120) {
 		finfo2.basic_info.in.file.path = fname;
 	
-		status = smb_raw_pathinfo(cli2->tree, mem_ctx, &finfo2);
+		status = smb_raw_pathinfo(cli2->tree, tctx, &finfo2);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 			ret = False;
 			break;
 		}
-		printf("write time %s\n", 
-		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+		torture_comment(tctx, "write time %s\n", 
+		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-			printf("Server updated write_time after %d seconds\n",
+			torture_comment(tctx, "Server updated write_time after %d seconds\n",
 			       (int)(time(NULL) - t));
 			break;
 		}
@@ -217,7 +209,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	}
 	
 	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
-		printf("Server did not update write time?!\n");
+		torture_comment(tctx, "Server did not update write time?!\n");
 		ret = False;
 	}
 
@@ -227,23 +219,23 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	finfo1.basic_info.in.file.fnum = fnum1;
 	finfo2 = finfo1;
 
-	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 		return False;
 	}
 	
-	printf("Modified write time %s\n", 
-	       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time));
+	torture_comment(tctx, "Modified write time %s\n", 
+	       nt_time_string(tctx, finfo1.basic_info.out.write_time));
 
 
-	printf("Doing a 10 byte write to extend the file and see if this changes the last write time.\n");
+	torture_comment(tctx, "Doing a 10 byte write to extend the file and see if this changes the last write time.\n");
 
 	written =  smbcli_write(cli->tree, fnum1, 0, "0123456789", 1, 10);
 
 	if (written != 10) {
-		printf("write failed - wrote %d bytes (%s)\n", 
+		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
 		       (int)written, __location__);
 		return False;
 	}
@@ -251,7 +243,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	/* Just to prove to tridge that the an smbflush has no effect on
 	   the write time :-). The setfileinfo IS STICKY. JRA. */
 
-	printf("Doing flush after write\n");
+	torture_comment(tctx, "Doing flush after write\n");
 
 	flsh.flush.level	= RAW_FLUSH_FLUSH;
 	flsh.flush.in.file.fnum = fnum1;
@@ -267,17 +259,17 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	   don't have any effect. But make sure. */
 
 	while (time(NULL) < t+15) {
-		status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 			ret = False;
 			break;
 		}
-		printf("write time %s\n", 
-		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+		torture_comment(tctx, "write time %s\n", 
+		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-			printf("Server updated write_time after %d seconds\n",
+			torture_comment(tctx, "Server updated write_time after %d seconds\n",
 			       (int)(time(NULL) - t));
 			break;
 		}
@@ -286,47 +278,47 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	}
 	
 	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
-		printf("Server did not update write time\n");
+		torture_comment(tctx, "Server did not update write time\n");
 	}
 
 	fnum2 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
-		printf("Failed to open %s\n", fname);
+		torture_comment(tctx, "Failed to open %s\n", fname);
 		return False;
 	}
 	
-	printf("Doing a 10 byte write to extend the file via second fd and see if this changes the last write time.\n");
+	torture_comment(tctx, "Doing a 10 byte write to extend the file via second fd and see if this changes the last write time.\n");
 
 	written =  smbcli_write(cli->tree, fnum2, 0, "0123456789", 11, 10);
 
 	if (written != 10) {
-		printf("write failed - wrote %d bytes (%s)\n", 
+		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
 		       (int)written, __location__);
 		return False;
 	}
 
-	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 		return False;
 	}
-	printf("write time %s\n", 
-	       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+	torture_comment(tctx, "write time %s\n", 
+	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-		printf("Server updated write_time\n");
+		torture_comment(tctx, "Server updated write_time\n");
 	}
 
-	printf("Closing the first fd to see if write time updated.\n");
+	torture_comment(tctx, "Closing the first fd to see if write time updated.\n");
 	smbcli_close(cli->tree, fnum1);
 	fnum1 = -1;
 
-	printf("Doing a 10 byte write to extend the file via second fd and see if this changes the last write time.\n");
+	torture_comment(tctx, "Doing a 10 byte write to extend the file via second fd and see if this changes the last write time.\n");
 
 	written =  smbcli_write(cli->tree, fnum2, 0, "0123456789", 21, 10);
 
 	if (written != 10) {
-		printf("write failed - wrote %d bytes (%s)\n", 
+		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
 		       (int)written, __location__);
 		return False;
 	}
@@ -334,16 +326,16 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	finfo1.basic_info.in.file.fnum = fnum2;
 	finfo2 = finfo1;
-	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 		return False;
 	}
-	printf("write time %s\n", 
-	       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+	torture_comment(tctx, "write time %s\n", 
+	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-		printf("Server updated write_time\n");
+		torture_comment(tctx, "Server updated write_time\n");
 	}
 
 	t = time(NULL);
@@ -352,17 +344,17 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	   don't have any effect. But make sure. */
 
 	while (time(NULL) < t+15) {
-		status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 			ret = False;
 			break;
 		}
-		printf("write time %s\n", 
-		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+		torture_comment(tctx, "write time %s\n", 
+		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-			printf("Server updated write_time after %d seconds\n",
+			torture_comment(tctx, "Server updated write_time after %d seconds\n",
 			       (int)(time(NULL) - t));
 			break;
 		}
@@ -371,17 +363,17 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	}
 	
 	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
-		printf("Server did not update write time\n");
+		torture_comment(tctx, "Server did not update write time\n");
 	}
 
-	printf("Closing both fd's to see if write time updated.\n");
+	torture_comment(tctx, "Closing both fd's to see if write time updated.\n");
 
 	smbcli_close(cli->tree, fnum2);
 	fnum2 = -1;
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum1 == -1) {
-		printf("Failed to open %s\n", fname);
+		torture_comment(tctx, "Failed to open %s\n", fname);
 		return False;
 	}
 
@@ -389,23 +381,23 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	finfo1.basic_info.in.file.fnum = fnum1;
 	finfo2 = finfo1;
 
-	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 		return False;
 	}
 	
-	printf("Second open initial write time %s\n", 
-	       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time));
+	torture_comment(tctx, "Second open initial write time %s\n", 
+	       nt_time_string(tctx, finfo1.basic_info.out.write_time));
 
 	sleep(10);
-	printf("Doing a 10 byte write to extend the file to see if this changes the last write time.\n");
+	torture_comment(tctx, "Doing a 10 byte write to extend the file to see if this changes the last write time.\n");
 
 	written =  smbcli_write(cli->tree, fnum1, 0, "0123456789", 31, 10);
 
 	if (written != 10) {
-		printf("write failed - wrote %d bytes (%s)\n", 
+		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
 		       (int)written, __location__);
 		return False;
 	}
@@ -413,16 +405,16 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	finfo1.basic_info.in.file.fnum = fnum1;
 	finfo2 = finfo1;
-	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 		return False;
 	}
-	printf("write time %s\n", 
-	       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+	torture_comment(tctx, "write time %s\n", 
+	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-		printf("Server updated write_time\n");
+		torture_comment(tctx, "Server updated write_time\n");
 	}
 
 	t = time(NULL);
@@ -431,17 +423,17 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	   don't have any effect. But make sure. */
 
 	while (time(NULL) < t+15) {
-		status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
+		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
 			ret = False;
 			break;
 		}
-		printf("write time %s\n", 
-		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+		torture_comment(tctx, "write time %s\n", 
+		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-			printf("Server updated write_time after %d seconds\n",
+			torture_comment(tctx, "Server updated write_time after %d seconds\n",
 			       (int)(time(NULL) - t));
 			break;
 		}
@@ -450,7 +442,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	}
 	
 	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
-		printf("Server did not update write time\n");
+		torture_comment(tctx, "Server did not update write time\n");
 	}
 
 
@@ -458,9 +450,6 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	   second connection to ensure it's the same. This is very easy for a Windows
 	   server but a bastard to get right on a POSIX server. JRA. */
 
-	if (cli2 != NULL) {
-		torture_close_connection(cli2);
-	}
 	if (fnum1 != -1)
 		smbcli_close(cli->tree, fnum1);
 	smbcli_unlink(cli->tree, fname);
@@ -480,7 +469,8 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
  * nasty....
  */
 
-static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_state *cli, 
+								   struct smbcli_state *cli2)
 {
 	union smb_fileinfo finfo1, finfo2;
 	const char *fname = BASEDIR "\\torture_file.txt";
@@ -489,9 +479,6 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	int fnum2;
 	BOOL ret = True;
 	ssize_t written;
-	struct smbcli_state *cli2=NULL;
-
-	printf("Testing finfo update on close\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -506,7 +493,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	finfo1.basic_info.in.file.fnum = fnum1;
 
-	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
@@ -519,19 +506,15 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
 
 	if (written != 1) {
-		printf("(%s) written gave %d - should have been 1\n", 
+		torture_comment(tctx, "(%s) written gave %d - should have been 1\n", 
 		       __location__, (int)written);
 		ret = False;
 		goto done;
 	}
 
-	if (!torture_open_connection(&cli2, 1)) {
-		return False;
-	}
-
 	fnum2 = smbcli_open(cli2->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
-		printf("(%s) failed to open 2nd time - %s\n", 
+		torture_comment(tctx, "(%s) failed to open 2nd time - %s\n", 
 		       __location__, smbcli_errstr(cli2->tree));
 		ret = False;
 		goto done;
@@ -540,7 +523,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	written =  smbcli_write(cli2->tree, fnum2, 0, "x", 0, 1);
 	
 	if (written != 1) {
-		printf("(%s) written gave %d - should have been 1\n", 
+		torture_comment(tctx, "(%s) written gave %d - should have been 1\n", 
 		       __location__, (int)written);
 		ret = False;
 		goto done;
@@ -549,7 +532,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	finfo2.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	finfo2.basic_info.in.file.path = fname;
 	
-	status = smb_raw_pathinfo(cli2->tree, mem_ctx, &finfo2);
+	status = smb_raw_pathinfo(cli2->tree, tctx, &finfo2);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("(%s) fileinfo failed: %s\n", 
@@ -560,31 +543,31 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	
 	if (finfo1.basic_info.out.create_time !=
 	    finfo2.basic_info.out.create_time) {
-		printf("(%s) create_time changed\n", __location__);
+		torture_comment(tctx, "(%s) create_time changed\n", __location__);
 		ret = False;
 		goto done;
 	}
 	
 	if (finfo1.basic_info.out.access_time !=
 	    finfo2.basic_info.out.access_time) {
-		printf("(%s) access_time changed\n", __location__);
+		torture_comment(tctx, "(%s) access_time changed\n", __location__);
 		ret = False;
 		goto done;
 	}
 	
 	if (finfo1.basic_info.out.write_time !=
 	    finfo2.basic_info.out.write_time) {
-		printf("(%s) write_time changed\n", __location__);
-		printf("write time conn 1 = %s, conn 2 = %s\n", 
-		       nt_time_string(mem_ctx, finfo1.basic_info.out.write_time),
-		       nt_time_string(mem_ctx, finfo2.basic_info.out.write_time));
+		torture_comment(tctx, "(%s) write_time changed\n", __location__);
+		torture_comment(tctx, "write time conn 1 = %s, conn 2 = %s\n", 
+		       nt_time_string(tctx, finfo1.basic_info.out.write_time),
+		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		ret = False;
 		goto done;
 	}
 	
 	if (finfo1.basic_info.out.change_time !=
 	    finfo2.basic_info.out.change_time) {
-		printf("(%s) change_time changed\n", __location__);
+		torture_comment(tctx, "(%s) change_time changed\n", __location__);
 		ret = False;
 		goto done;
 	}
@@ -595,14 +578,13 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	 * *not* have updated the stat on disk */
 	
 	smbcli_close(cli2->tree, fnum2);
-	torture_close_connection(cli2);
 	cli2 = NULL;
 
 	/* This call is only for the people looking at ethereal :-) */
 	finfo2.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	finfo2.basic_info.in.file.path = fname;
 
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo2);
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo2);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
@@ -615,9 +597,6 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 		smbcli_close(cli->tree, fnum1);
 	smbcli_unlink(cli->tree, fname);
 	smbcli_deltree(cli->tree, BASEDIR);
-	if (cli2 != NULL) {
-		torture_close_connection(cli2);
-	}
 
 	return ret;
 }
@@ -626,23 +605,13 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 /* 
    testing of delayed update of write_time
 */
-BOOL torture_delay_write(struct torture_context *torture)
+struct torture_suite *torture_delay_write(void)
 {
-	struct smbcli_state *cli;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "DELAYWRITE");
 
-	if (!torture_open_connection(&cli, 0)) {
-		return False;
-	}
+	torture_suite_add_2smb_test(suite, "finfo update on close", test_finfo_after_write);
+	torture_suite_add_1smb_test(suite, "delayed update of write time", test_delayed_write_update);
+	torture_suite_add_2smb_test(suite, "delayed update of write time using 2 connections", test_delayed_write_update2);
 
-	mem_ctx = talloc_init("torture_delay_write");
-
-	ret &= test_finfo_after_write(cli, mem_ctx);
-	ret &= test_delayed_write_update(cli, mem_ctx);
-	ret &= test_delayed_write_update2(cli, mem_ctx);
-
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
-	return ret;
+	return suite;
 }

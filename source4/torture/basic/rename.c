@@ -28,20 +28,13 @@
 /*
   Test rename on files open with share delete and no share delete.
  */
-BOOL torture_test_rename(struct torture_context *torture)
+BOOL torture_test_rename(struct torture_context *tctx,
+						 struct smbcli_state *cli1)
 {
-	struct smbcli_state *cli1;
 	const char *fname = "\\test.txt";
 	const char *fname1 = "\\test1.txt";
-	BOOL correct = True;
 	int fnum1;
 
-	printf("starting rename test\n");
-	
-	if (!torture_open_connection(&cli1, 0)) {
-		return False;
-	}
-	
 	smbcli_unlink(cli1->tree, fname);
 	smbcli_unlink(cli1->tree, fname1);
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
@@ -50,24 +43,14 @@ BOOL torture_test_rename(struct torture_context *torture)
 				      NTCREATEX_SHARE_ACCESS_READ, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
-	if (fnum1 == -1) {
-		printf("(%s) First open failed - %s\n", 
-		       __location__, smbcli_errstr(cli1->tree));
-		return False;
-	}
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "First open failed - %s", 
+		       smbcli_errstr(cli1->tree)));
 
-	if (NT_STATUS_IS_ERR(smbcli_rename(cli1->tree, fname, fname1))) {
-		printf("First rename failed (this is correct) - %s\n", smbcli_errstr(cli1->tree));
-	} else {
-		printf("(%s) First rename succeeded - this should have failed !\n",
-		       __location__);
-		correct = False;
-	}
+	torture_assert(tctx, NT_STATUS_IS_ERR(smbcli_rename(cli1->tree, fname, fname1)), 
+					"First rename succeeded - this should have failed !");
 
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("(%s) close - 1 failed (%s)\n", __location__, smbcli_errstr(cli1->tree));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum1),
+		talloc_asprintf(tctx, "close - 1 failed (%s)", smbcli_errstr(cli1->tree)));
 
 	smbcli_unlink(cli1->tree, fname);
 	smbcli_unlink(cli1->tree, fname1);
@@ -77,24 +60,17 @@ BOOL torture_test_rename(struct torture_context *torture)
 				      NTCREATEX_SHARE_ACCESS_DELETE|NTCREATEX_SHARE_ACCESS_READ, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
-	if (fnum1 == -1) {
-		printf("(%s) Second open failed - %s\n", __location__, smbcli_errstr(cli1->tree));
-		return False;
-	}
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, 
+				   "Second open failed - %s", smbcli_errstr(cli1->tree)));
 
-	if (NT_STATUS_IS_ERR(smbcli_rename(cli1->tree, fname, fname1))) {
-		printf("(%s) Second rename failed - this should have succeeded - %s\n", 
-		       __location__, smbcli_errstr(cli1->tree));
-		correct = False;
-	} else {
-		printf("Second rename succeeded\n");
-	}
+	torture_assert_ntstatus_ok(tctx, smbcli_rename(cli1->tree, fname, fname1),
+		talloc_asprintf(tctx, 
+				"Second rename failed - this should have succeeded - %s", 
+		       smbcli_errstr(cli1->tree)));
 
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("(%s) close - 2 failed (%s)\n", 
-		       __location__, smbcli_errstr(cli1->tree));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum1),
+		talloc_asprintf(tctx, 
+		"close - 2 failed (%s)", smbcli_errstr(cli1->tree)));
 
 	smbcli_unlink(cli1->tree, fname);
 	smbcli_unlink(cli1->tree, fname1);
@@ -105,33 +81,19 @@ BOOL torture_test_rename(struct torture_context *torture)
 				      NTCREATEX_SHARE_ACCESS_NONE, 
 				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
-	if (fnum1 == -1) {
-		printf("(%s) Third open failed - %s\n", __location__, smbcli_errstr(cli1->tree));
-		return False;
-	}
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "Third open failed - %s", 
+			smbcli_errstr(cli1->tree)));
 
+	torture_assert_ntstatus_ok(tctx, smbcli_rename(cli1->tree, fname, fname1),
+		talloc_asprintf(tctx, "Third rename failed - this should have succeeded - %s", 
+		       smbcli_errstr(cli1->tree)));
 
-	if (NT_STATUS_IS_ERR(smbcli_rename(cli1->tree, fname, fname1))) {
-		printf("(%s) Third rename failed - this should have succeeded - %s\n", 
-		       __location__, smbcli_errstr(cli1->tree));
-		correct = False;
-	} else {
-		printf("Third rename succeeded\n");
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("(%s) close - 3 failed (%s)\n", 
-		       __location__, smbcli_errstr(cli1->tree));
-		return False;
-	}
+	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum1), 
+		talloc_asprintf(tctx, "close - 3 failed (%s)", smbcli_errstr(cli1->tree)));
 
 	smbcli_unlink(cli1->tree, fname);
 	smbcli_unlink(cli1->tree, fname1);
 
-	if (!torture_close_connection(cli1)) {
-		correct = False;
-	}
-	
-	return correct;
+	return true;
 }
 

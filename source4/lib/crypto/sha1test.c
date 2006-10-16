@@ -17,6 +17,7 @@
  */
 
 #include "includes.h"
+#include "torture/ui.h"
 
 #include "lib/crypto/crypto.h"
 
@@ -50,7 +51,8 @@ static const char *resultarray[4] =
     "DE A3 56 A2 CD DD 90 C7 A7 EC ED C5 EB B5 63 93 4F 46 04 52 "
 };
 
-BOOL torture_local_crypto_sha1(struct torture_context *torture) 
+
+bool torture_local_crypto_sha1(struct torture_context *tctx)
 {
     struct SHA1Context sha;
     int i, j, err;
@@ -64,52 +66,33 @@ BOOL torture_local_crypto_sha1(struct torture_context *torture)
     for(j = 0; j < 4; ++j)
     {
     	ZERO_STRUCT(tmp);
-        printf( "\nTest %d: %d, '%s'\n",
+        torture_comment(tctx, "Test %d: %d, '%s'\n",
                 j+1,
                 repeatcount[j],
                 testarray[j]);
 
         err = SHA1Init(&sha);
-        if (err)
-        {
-            fprintf(stderr, "SHA1Init Error %d.\n", err );
-	    ret = False;
-            break;    /* out of for j loop */
-        }
+        torture_assert_int_equal(tctx, err, 0, "SHA1Init Error");
 
         for(i = 0; i < repeatcount[j]; ++i)
         {
             err = SHA1Update(&sha,
                   (const unsigned char *) testarray[j],
                   strlen(testarray[j]));
-            if (err)
-            {
-                fprintf(stderr, "SHA1Update Error %d.\n", err );
-		ret = False;
-                break;    /* out of for i loop */
-            }
+			torture_assert_int_equal(tctx, err, 0, "SHA1Update Error");
         }
 
         err = SHA1Final(Message_Digest, &sha);
-        if (err)
+		torture_assert_int_equal(tctx, err, 0, 
+            "SHA1Result Error, could not compute message digest.");
+        torture_comment(tctx, "\t");
+        for(i = 0; i < 20 ; ++i)
         {
-            fprintf(stderr,
-            "SHA1Result Error %d, could not compute message digest.\n",
-            err );
-	    ret = False;
-        }
-        else
-        {
-            printf("\t");
-            for(i = 0; i < 20 ; ++i)
-            {
 	    	snprintf(tmp+(i*3), sizeof(tmp) - (i*3),"%02X ", Message_Digest[i]);
-                printf("%02X ", Message_Digest[i]);
-            }
-            printf("\n");
+            torture_comment(tctx, "%02X ", Message_Digest[i]);
         }
-        printf("Should match:\n");
-        printf("\t%s\n", resultarray[j]);
+        torture_comment(tctx, "\n");
+        torture_comment(tctx, "Should match:\n\t%s\n", resultarray[j]);
 	if (strcmp(resultarray[j], tmp) != 0) {
 	    ret = False;	
 	}
@@ -117,10 +100,11 @@ BOOL torture_local_crypto_sha1(struct torture_context *torture)
 
     /* Test some error returns */
     err = SHA1Update(&sha,(const unsigned char *) testarray[1], 1);
-    if (err != shaStateError) ret = False;
-    printf ("\nError %d. Should be %d.\n", err, shaStateError );
+    torture_assert_int_equal(tctx, err, shaStateError, "SHA1Update failed");
     err = SHA1Init(0);
-    if (err != shaNull) ret = False;
-    printf ("\nError %d. Should be %d.\n", err, shaNull );
-    return ret;
+    torture_assert_int_equal(tctx, err, shaNull, "SHA1Init failed");
+
+	return true;
 }
+
+

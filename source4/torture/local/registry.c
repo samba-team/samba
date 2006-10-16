@@ -36,50 +36,51 @@ const static struct test_backend_settings {
 	{ NULL, NULL }
 };
 
-static BOOL test_hive(struct torture_context *ctx, const void *_backend)
+static bool test_hive(struct torture_context *tctx,
+					  const void *test_data)
 {
 	WERROR error;
 	struct registry_key *root, *subkey;
 	uint32_t count;
-	const struct test_backend_settings *backend = _backend;
+	const struct test_backend_settings *backend = test_data;
+	TALLOC_CTX *mem_ctx = tctx;
 
 	if (!reg_has_backend(backend->name)) {
-		torture_skip(ctx, "Backend '%s' support not compiled in", 
-					 backend->name);
-		return True;
+		torture_skip(tctx, talloc_asprintf(tctx, 
+						"Backend '%s' support not compiled in", backend->name));
 	}
 
-	error = reg_open_hive(ctx, backend->name, 
+	error = reg_open_hive(mem_ctx, backend->name, 
 						  backend->location, NULL, cmdline_credentials, &root);
-	torture_assert_werr_ok(ctx, error, "reg_open_hive()");
+	torture_assert_werr_ok(tctx, error, "reg_open_hive()");
 
 	/* This is a new backend. There should be no subkeys and no 
 	 * values */
 	error = reg_key_num_subkeys(root, &count);
-	torture_assert_werr_ok(ctx, error, "reg_key_num_subkeys()");
+	torture_assert_werr_ok(tctx, error, "reg_key_num_subkeys()");
 
-	torture_assert(ctx, count != 0, "New key has non-zero subkey count");
+	torture_assert(tctx, count != 0, "New key has non-zero subkey count");
 
 	error = reg_key_num_values(root, &count);
-	torture_assert_werr_ok(ctx, error, "reg_key_num_values");
+	torture_assert_werr_ok(tctx, error, "reg_key_num_values");
 
-	torture_assert(ctx, count != 0, "New key has non-zero value count");
+	torture_assert(tctx, count != 0, "New key has non-zero value count");
 
-	error = reg_key_add_name(ctx, root, "Nested\\Key", SEC_MASK_GENERIC, NULL, &subkey);
-	torture_assert_werr_ok(ctx, error, "reg_key_add_name");
+	error = reg_key_add_name(mem_ctx, root, "Nested\\Key", SEC_MASK_GENERIC, NULL, &subkey);
+	torture_assert_werr_ok(tctx, error, "reg_key_add_name");
 
 	error = reg_key_del(root, "Nested\\Key");
-	torture_assert_werr_ok(ctx, error, "reg_key_del");
+	torture_assert_werr_ok(tctx, error, "reg_key_del");
 
 	talloc_free(root);
-
-	return True;
+	return true;
 }
+
 
 struct torture_suite *torture_registry(TALLOC_CTX *mem_ctx) 
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, 
-													   "LOCAL-REGISTRY");
+													   "REGISTRY");
 	int i;
 
 	registry_init();

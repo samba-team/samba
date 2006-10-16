@@ -29,5 +29,6 @@
 #include "librpc/rpc/dcerpc.h"
 #include "libcli/raw/libcliraw.h"
 #include "torture/rpc/proto.h"
+#include "torture/ui.h"
 
 #endif /* __TORTURE_RPC_H__ */
