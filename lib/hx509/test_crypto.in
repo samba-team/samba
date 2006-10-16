@@ -74,4 +74,6 @@ ${hxtool} verify --missing-revoke \
     cert:FILE:$srcdir/data/bleichenbacher-sf-pad-correct.pem \
     anchor:FILE:$srcdir/data/sf-class2-root.pem > /dev/null && exit 1
 
+${hxtool} random-data 1MByte > random-data || exit 1
+
 exit 0
