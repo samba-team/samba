@@ -550,6 +550,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	if (!chunk) {
 		goto failed;
 	}
+	talloc_steal(ldif, chunk);
 
 	msg->private_data = chunk;
 	s = chunk;
