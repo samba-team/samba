@@ -1,4 +1,8 @@
-2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: extra depencies on der-protos.h
+	
+2006-10-14 Love Hörnquist Åstrand <lha@it.su.se>
 
 	* check-der.c: Prefix primitive types with der_.
 

@@ -1,5 +1,7 @@
 2006-10-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hx_locl.h: Include <parse_bytes.h>.
+
 	* test_crypto.in: Test random-data.
 
 	* hxtool.c: RAND_bytes() return 1 for cryptographic strong data,
