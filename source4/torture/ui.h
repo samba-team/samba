@@ -294,4 +294,8 @@ bool torture_setting_bool(struct torture_context *test,
 /* Helper function commonly used */
 bool torture_teardown_free(struct torture_context *torture, void *data);
 
+struct torture_suite *torture_find_suite(struct torture_suite *parent, 
+										 const char *name);
+
+
 #endif /* __TORTURE_UI_H__ */

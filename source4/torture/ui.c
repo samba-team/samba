@@ -394,9 +394,14 @@ bool torture_suite_add_suite(struct torture_suite *suite,
 }
 
 
-struct torture_suite *torture_find_suite(const char *name)
+struct torture_suite *torture_find_suite(struct torture_suite *parent, 
+										 const char *name)
 {
-	/* FIXME */
+	struct torture_suite *child;
+
+	for (child = parent->children; child; child = child->next) 
+		if (!strcmp(child->name, name))
+			return child;
 
 	return NULL;
 }
