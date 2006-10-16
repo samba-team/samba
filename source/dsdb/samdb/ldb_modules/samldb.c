@@ -751,7 +751,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	down_req = talloc(module, struct ldb_request);
+	down_req = talloc(req, struct ldb_request);
 	if (down_req == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
