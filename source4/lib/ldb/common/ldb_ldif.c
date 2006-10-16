@@ -232,6 +232,8 @@ static int fold_string(int (*fprintf_fn)(void *, const char *, ...), void *priva
 	return total;
 }
 
+#undef CHECK_RET
+
 /*
   encode as base64 to a file
 */
@@ -264,6 +266,9 @@ static const struct {
 	{NULL, 0}
 };
 
+/* this macro is used to handle the return checking on fprintf_fn() */
+#define CHECK_RET do { if (ret < 0) { talloc_free(mem_ctx); return ret; } total += ret; } while (0)
+
 /*
   write to ldif, using a caller supplied write method
 */
@@ -272,9 +277,12 @@ int ldb_ldif_write(struct ldb_context *ldb,
 		   void *private_data,
 		   const struct ldb_ldif *ldif)
 {
+	TALLOC_CTX *mem_ctx;
 	unsigned int i, j;
 	int total=0, ret;
 	const struct ldb_message *msg;
+
+	mem_ctx = talloc_named_const(NULL, 0, "ldb_ldif_write");
 
 	msg = ldif->msg;
 
@@ -290,6 +298,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 		if (!ldb_changetypes[i].name) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: Invalid ldif changetype %d\n",
 				  ldif->changetype);
+			talloc_free(mem_ctx);
 			return -1;
 		}
 		ret = fprintf_fn(private_data, "changetype: %s\n", ldb_changetypes[i].name);
@@ -320,7 +329,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 
 		for (j=0;j<msg->elements[i].num_values;j++) {
 			struct ldb_val v;
-			ret = h->ldif_write_fn(ldb, ldb, &msg->elements[i].values[j], &v);
+			ret = h->ldif_write_fn(ldb, mem_ctx, &msg->elements[i].values[j], &v);
 			CHECK_RET;
 			if (ldb_should_b64_encode(&v)) {
 				ret = fprintf_fn(private_data, "%s:: ", 
