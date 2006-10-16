@@ -787,7 +787,7 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 		goto done;
 
 	/* Make sure to wait for our DC's reply */
-	old_timeout = cli_set_timeout(cli->cli, 30000); /* 30 seconds. */
+	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
 	result = rpccli_samr_query_groupmem(cli, mem_ctx, &group_pol,
 					 &num_members, &group_rids,
