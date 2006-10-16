@@ -615,6 +615,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	unsigned int j;
 	fstring sid_string;
 	struct rpc_pipe_client *cli;
+	unsigned int orig_timeout;
 
 	DEBUG(10,("rpc: lookup_groupmem %s sid=%s\n", domain->name,
 		  sid_to_string(sid_string, group_sid)));
@@ -637,9 +638,17 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         /* Step #1: Get a list of user rids that are the members of the
            group. */
 
+	/* This call can take a long time - allow the server to time out.
+	   35 seconds should do it. */
+
+	orig_timeout = cli_set_timeout(cli->cli, 35000);
+
         result = rpccli_samr_query_groupmem(cli, mem_ctx,
 					    &group_pol, num_names, &rid_mem,
 					    name_types);
+
+	/* And restore our original timeout. */
+	cli_set_timeout(cli->cli, orig_timeout);
 
 	rpccli_samr_close(cli, mem_ctx, &group_pol);
 
