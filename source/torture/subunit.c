@@ -72,7 +72,11 @@ static pid_t piped_child(char* const command[], int *f_in)
 	pid_t pid;
 	int sock[2];
 
-	if (socketpair(PF_UNIX, SOCK_STREAM, AF_LOCAL, sock) == -1) {
+#ifdef HAVE_SOCKETPAIR
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) == -1) {
+#else
+	if (pipe(sock) == -1) {
+#endif
 		DEBUG(0, ("socketpair: %s", strerror(errno)));
 		return -1;
 	}
