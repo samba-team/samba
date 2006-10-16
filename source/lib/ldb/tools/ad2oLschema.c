@@ -330,7 +330,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		int j;
 
 		/* We have been asked to skip some attributes/objectClasses */
-		if (str_list_check_ci(attrs_skip, name)) {
+		if (attrs_skip && str_list_check_ci(attrs_skip, name)) {
 			ret.skipped++;
 			continue;
 		}
@@ -436,7 +436,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		int j;
 
 		/* We have been asked to skip some attributes/objectClasses */
-		if (str_list_check_ci(attrs_skip, name)) {
+		if (attrs_skip && str_list_check_ci(attrs_skip, name)) {
 			ret.skipped++;
 			continue;
 		}
