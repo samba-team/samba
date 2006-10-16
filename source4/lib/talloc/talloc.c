@@ -886,6 +886,23 @@ static void talloc_report_depth_FILE_helper(const void *ptr, int depth, int max_
 		(unsigned long)talloc_total_size(ptr),
 		(unsigned long)talloc_total_blocks(ptr),
 		(int)talloc_reference_count(ptr));
+
+#if 0
+	fprintf(f, "content: ");
+	if (talloc_total_size(ptr)) {
+		int tot = talloc_total_size(ptr);
+		int i;
+
+		for (i = 0; i < tot; i++) {
+			if ((((char *)ptr)[i] > 31) && (((char *)ptr)[i] < 126)) {
+				fprintf(f, "%c", ((char *)ptr)[i]);
+			} else {
+				fprintf(f, "~%02x", ((char *)ptr)[i]);
+			}
+		}
+	}
+	fprintf(f, "\n");
+#endif
 }
 
 /*
