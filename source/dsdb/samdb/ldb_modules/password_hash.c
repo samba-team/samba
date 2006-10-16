@@ -724,12 +724,6 @@ static int password_hash_add_do_add(struct ldb_handle *h) {
 			return ret;
 		}
 		
-		/* add also kr5 keys based on NT the hash */
-		ret = add_krb5_keys_from_NThash(ac->module, msg, smb_krb5_context);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		
 		/* if both the domain properties and the user account controls do not permit
 		 * clear text passwords then wipe out the sambaPassword */
 		user_account_control = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
@@ -740,6 +734,12 @@ static int password_hash_add_do_add(struct ldb_handle *h) {
 		}
 	}
 
+	/* add also krb5 keys based on NT the hash (we might have ntPwdHash, but not the cleartext */
+	ret = add_krb5_keys_from_NThash(ac->module, msg, smb_krb5_context);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+		
 	/* don't touch it if a value is set. It could be an incoming samsync */
 	if (ldb_msg_find_attr_as_uint64(msg, "pwdLastSet", 0) == 0) {
 		if (set_pwdLastSet(ac->module, msg, 0) != LDB_SUCCESS) {
