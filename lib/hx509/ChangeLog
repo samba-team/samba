@@ -1,5 +1,20 @@
-2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: RAND_bytes() return 1 for cryptographic strong data,
+	check for that.
+
+	* Makefile.am: clean random-data
+
+	* hxtool.c: Add random-data command, use sl_slc_help.
+
+	* hxtool-commands.in: Add random-data.
+
+	* ks_p12.c: Remember to release certs.
+
+	* ks_p11.c: Remember to release certs.
+	
+2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* prefix der primitives with der_
 
 	* lock.c: Match the prompt type PROMPT exact.
