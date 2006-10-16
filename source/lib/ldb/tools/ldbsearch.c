@@ -215,7 +215,7 @@ static int do_search(struct ldb_context *ldb,
 	req->operation = LDB_SEARCH;
 	req->op.search.base = basedn;
 	req->op.search.scope = options->scope;
-	req->op.search.tree = ldb_parse_tree(ldb, expression);
+	req->op.search.tree = ldb_parse_tree(req, expression);
 	if (req->op.search.tree == NULL) return -1;
 	req->op.search.attrs = attrs;
 	req->controls = sctx->req_ctrls;
