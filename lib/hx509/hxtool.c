@@ -928,42 +928,46 @@ info(void *opt, int argc, char **argv)
 	    printf("dh: %s\n", m->name);
     }
 
+    return 0;
+}
+
+int
+random_data(void *opt, int argc, char **argv)
+{
+    void *ptr;
+    int len, ret;
+
+    len = parse_bytes(argv[0], "byte");
+    if (len <= 0) {
+	fprintf(stderr, "bad argument to random-data\n");
+	return 1;
+    }
+
+    ptr = malloc(len);
+    if (ptr == NULL) {
+	fprintf(stderr, "out of memory\n");
+	return 1;
+    }
+
+    ret = RAND_bytes(ptr, len);
+    if (ret != len) {
+	free(ptr);
+	fprintf(stderr, "requested %d bytes, got %d bytes\n", len, ret);
+	return 1;
+    }
+
+    fwrite(ptr, len, 1, stdout);
+    fflush(stdout);
+
+    free(ptr);
 
     return 0;
 }
 
-
 int
 help(void *opt, int argc, char **argv)
 {
-    if(argc == 0) {
-	sl_help(commands, 1, argv - 1 /* XXX */);
-    } else {
-	SL_cmd *c = sl_match (commands, argv[0], 0);
- 	if(c == NULL) {
-	    fprintf (stderr, "No such command: %s. "
-		     "Try \"help\" for a list of commands\n",
-		     argv[0]);
-	} else {
-	    if(c->func) {
-		char *fake[] = { NULL, "--help", NULL };
-		fake[0] = argv[0];
-		(*c->func)(2, fake);
-		fprintf(stderr, "\n");
-	    }
-	    if(c->help && *c->help)
-		fprintf (stderr, "%s\n", c->help);
-	    if((++c)->name && c->func == NULL) {
-		int f = 0;
-		fprintf (stderr, "Synonyms:");
-		while (c->name && c->func == NULL) {
-		    fprintf (stderr, "%s%s", f ? ", " : " ", (c++)->name);
-		    f = 1;
-		}
-		fprintf (stderr, "\n");
-	    }
-	}
-    }
+    sl_slc_help(commands, argc, argv);
     return 0;
 }
 
