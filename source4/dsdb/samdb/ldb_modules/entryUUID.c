@@ -510,7 +510,7 @@ static int find_base_dns(struct ldb_module *module,
 		"namingContexts",
 		NULL
 	};
-	req = talloc(module, struct ldb_request);
+	req = talloc(entryUUID_private, struct ldb_request);
 	if (req == NULL) {
 		ldb_set_errstring(module->ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
