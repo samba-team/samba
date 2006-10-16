@@ -167,6 +167,7 @@ static int ltdb_attributes_load(struct ldb_module *module)
 		if (ldb_set_attrib_handlers(module->ldb, &h2, 1) != 0) {
 			goto failed;
 		}
+		talloc_steal(module->ldb->schema.attrib_handlers, h2.attr);
 	}
 
 	return 0;
