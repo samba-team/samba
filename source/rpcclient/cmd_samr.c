@@ -785,6 +785,7 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int i;
 	fstring			server;
+	unsigned int old_timeout;
 	
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s rid [access mask]\n", argv[0]);
@@ -819,9 +820,14 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
+	/* Make sure to wait for our DC's reply */
+	old_timeout = cli_set_timeout(cli->cli, 30000); /* 30 seconds. */
+
 	result = rpccli_samr_query_groupmem(cli, mem_ctx, &group_pol,
 					 &num_members, &group_rids,
 					 &group_attrs);
+
+	cli_set_timeout(cli->cli, old_timeout);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
