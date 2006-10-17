@@ -50,6 +50,7 @@
 .Nm krb5_get_fcache_version ,
 .Nm krb5_set_dns_canonize_hostname ,
 .Nm krb5_get_dns_canonize_hostname ,
+.Nm krb5_get_kdc_sec_offset ,
 .Nm krb5_set_config_files ,
 .Nm krb5_prepend_config_files ,
 .Nm krb5_prepend_config_files_default ,
@@ -130,6 +131,12 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Ft krb5_boolean
 .Fn krb5_get_dns_canonize_hostname
 .Fa "krb5_context context"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_get_kdc_sec_offset
+.Fa "krb5_context context"
+.Fc "int32_t *sec"
+.Fc "int32_t *usec"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_set_config_files
@@ -232,6 +239,15 @@ sets if the context is configured to canonicalize hostnames using DNS.
 .Pp
 .Fn krb5_get_dns_canonize_hostname
 returns if the context is configured to canonicalize hostnames using DNS.
+.Pp
+.Fn krb5_get_kdc_sec_offset
+returns the offset between the localtime and the KDC's time.
+.Fa sec
+and
+.Fa usec
+are both optional argument and
+.Dv NULL
+can be passed in.
 .Pp
 .Fn krb5_set_config_files
 set the list of configuration files to use and re-initialize the
