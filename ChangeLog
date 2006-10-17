@@ -1,5 +1,8 @@
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/principal.c: Add krb5_unparse_name_flags and
+	krb5_unparse_name_fixed_flags.
+
 	* lib/krb5/krb5_principal.3: Document krb5_parse_name_flags.
 
 	* lib/krb5/principal.c: Add krb5_parse_name_flags.
