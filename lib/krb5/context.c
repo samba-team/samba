@@ -181,6 +181,7 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, bool, srv_lookup, context->srv_lookup, "dns_lookup_kdc");
     INIT_FIELD(context, int, large_msg_size, 6000, "large_message_size");
+    INIT_FIELD(context, bool, dns_canonize_hostname, TRUE, "dns_canonize_hostname");
     context->default_cc_name = NULL;
     return 0;
 }
@@ -680,4 +681,16 @@ krb5_is_thread_safe(void)
 #else
     return FALSE;
 #endif
+}
+
+void KRB5_LIB_FUNCTION
+krb5_set_dns_canonize_hostname (krb5_context context, krb5_boolean flag)
+{
+    context->dns_canonize_hostname = flag;
+}
+
+krb5_boolean KRB5_LIB_FUNCTION
+krb5_get_dns_canonize_hostname (krb5_context context)
+{
+    return context->dns_canonize_hostname;
 }
