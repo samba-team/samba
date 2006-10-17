@@ -292,10 +292,13 @@ unparse_name_fixed(krb5_context context,
 		   krb5_const_principal principal,
 		   char *name,
 		   size_t len,
-		   krb5_boolean short_form)
+		   int flags)
 {
     size_t idx = 0;
     int i;
+    int short_form = (flags & KRB5_PRINCIPAL_UNPARSE_SHORT) != 0;
+    int no_realm = (flags & KRB5_PRINCIPAL_UNPARSE_NO_REALM) != 0;
+
     for(i = 0; i < princ_num_comp(principal); i++){
 	if(i)
 	    add_char(name, idx, len, '/');
@@ -304,7 +307,7 @@ unparse_name_fixed(krb5_context context,
 	    return ERANGE;
     } 
     /* add realm if different from default realm */
-    if(short_form) {
+    if(short_form && !no_realm) {
 	krb5_realm r;
 	krb5_error_code ret;
 	ret = krb5_get_default_realm(context, &r);
@@ -314,7 +317,7 @@ unparse_name_fixed(krb5_context context,
 	    short_form = 0;
 	free(r);
     }
-    if(!short_form) {
+    if(!short_form && !no_realm) {
 	add_char(name, idx, len, '@');
 	idx = quote_string(princ_realm(principal), name, idx, len);
 	if(idx == len)
@@ -329,7 +332,7 @@ krb5_unparse_name_fixed(krb5_context context,
 			char *name,
 			size_t len)
 {
-    return unparse_name_fixed(context, principal, name, len, FALSE);
+    return unparse_name_fixed(context, principal, name, len, 0);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -338,14 +341,25 @@ krb5_unparse_name_fixed_short(krb5_context context,
 			      char *name,
 			      size_t len)
 {
-    return unparse_name_fixed(context, principal, name, len, TRUE);
+    return unparse_name_fixed(context, principal, name, len, 
+			      KRB5_PRINCIPAL_UNPARSE_SHORT);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_unparse_name_fixed_flags(krb5_context context,
+			      krb5_const_principal principal,
+			      int flags,
+			      char *name,
+			      size_t len)
+{
+    return unparse_name_fixed(context, principal, name, len, flags);
 }
 
 static krb5_error_code
 unparse_name(krb5_context context,
 	     krb5_const_principal principal,
 	     char **name,
-	     krb5_boolean short_flag)
+	     int flags)
 {
     size_t len = 0, plen;
     int i;
@@ -371,7 +385,7 @@ unparse_name(krb5_context context,
 	krb5_set_error_string (context, "malloc: out of memory");
 	return ENOMEM;
     }
-    ret = unparse_name_fixed(context, principal, *name, len, short_flag);
+    ret = unparse_name_fixed(context, principal, *name, len, flags);
     if(ret) {
 	free(*name);
 	*name = NULL;
@@ -384,7 +398,16 @@ krb5_unparse_name(krb5_context context,
 		  krb5_const_principal principal,
 		  char **name)
 {
-    return unparse_name(context, principal, name, FALSE);
+    return unparse_name(context, principal, name, 0);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_unparse_name_flags(krb5_context context,
+			krb5_const_principal principal,
+			int flags,
+			char **name)
+{
+    return unparse_name(context, principal, name, flags);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -392,7 +415,7 @@ krb5_unparse_name_short(krb5_context context,
 			krb5_const_principal principal,
 			char **name)
 {
-    return unparse_name(context, principal, name, TRUE);
+    return unparse_name(context, principal, name, KRB5_PRINCIPAL_UNPARSE_SHORT);
 }
 
 #if 0 /* not implemented */
@@ -408,7 +431,7 @@ krb5_unparse_name_ext(krb5_context context,
 
 #endif
 
-krb5_realm*
+krb5_realm * KRB5_LIB_FUNCTION
 krb5_princ_realm(krb5_context context,
 		 krb5_principal principal)
 {
