@@ -191,7 +191,7 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 		      const struct header *headers,
 		      const void *data, size_t len)
 {
-    int ret;
+    int ret = 0;
     const char *enc;
 
     enc = find_header(headers, "Proc-Type");
@@ -308,6 +308,8 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	    /* XXX add password to lock password collection ? */
 	    memset(password, 0, sizeof(password));
 	}
+	free(ivdata);
+
     } else {
 	heim_octet_string keydata;
 
