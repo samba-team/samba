@@ -120,6 +120,3 @@ kill ${kdcpid} ${n1pid} ${n2pid} ${n3pid} 2> /dev/null
 exit $exitcode
 
 
-exit 0
-
-
