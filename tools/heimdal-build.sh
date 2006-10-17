@@ -135,7 +135,7 @@ unpack=yes
 # Limit cpu seconds this all can take
 ulimit -t "$cputimelimit" > /dev/null 2>&1
 
-if [ "X${builddir}" = X ]; then
+if [ "X${builddir}" != X ]; then
 	echo "Changing build dir to ${builddir}"
 	cd "${builddir}"
 fi
