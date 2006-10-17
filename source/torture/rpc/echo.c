@@ -258,23 +258,26 @@ static bool test_sleep(struct torture_context *tctx,
 					   "Event context loop failed");
 		for (i=0;i<ASYNC_COUNT;i++) {
 			if (done[i] == False && req[i]->state == RPC_REQUEST_DONE) {
+				int rounded_tdiff;
 				total_done++;
 				done[i] = True;
 				rcv[i]	= timeval_current();
 				diff[i]	= timeval_until(&snd[i], &rcv[i]);
+				rounded_tdiff = (int)(0.5 + diff[i].tv_sec + (1.0e-6*diff[i].tv_usec));
 				status	= dcerpc_ndr_request_recv(req[i]);
+				printf("rounded_tdiff=%d\n", rounded_tdiff);
 				torture_assert_ntstatus_ok(tctx, status, 
 							talloc_asprintf(tctx, "TestSleep(%d) failed", i));
 				torture_assert(tctx, r[i].out.result == r[i].in.seconds,
 					talloc_asprintf(tctx, "Failed - Asked to sleep for %u seconds (server replied with %u seconds and the reply takes only %u seconds)", 
 					       	r[i].out.result, r[i].in.seconds, (uint_t)diff[i].tv_sec));
-				torture_assert(tctx, r[i].out.result <= diff[i].tv_sec, 
+				torture_assert(tctx, r[i].out.result <= rounded_tdiff, 
 					talloc_asprintf(tctx, "Failed - Slept for %u seconds (but reply takes only %u.%06u seconds)", 
 						r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec));
-				if (r[i].out.result+1 == diff[i].tv_sec) {
+				if (r[i].out.result+1 == rounded_tdiff) {
 					torture_comment(tctx, "Slept for %u seconds (but reply takes %u.%06u seconds - busy server?)\n", 
 							r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
-				} else if (r[i].out.result == diff[i].tv_sec) {
+				} else if (r[i].out.result == rounded_tdiff) {
 					torture_comment(tctx, "Slept for %u seconds (reply takes %u.%06u seconds - ok)\n", 
 							r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
 				} else {
