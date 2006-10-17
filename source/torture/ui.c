@@ -49,7 +49,8 @@ void _torture_fail_ext(struct torture_context *context,
 	va_start(ap, fmt);
 	context->last_reason = talloc_vasprintf(context, fmt, ap);
 	/* make sure the reason for the failure is displayed */
-	context->ui_ops->comment(context, context->last_reason);
+	if (context->ui_ops->comment)
+		context->ui_ops->comment(context, context->last_reason);
 	va_end(ap);
 	context->last_result = TORTURE_FAIL;
 }
