@@ -376,7 +376,7 @@ sub Binary($$)
 	my $localdir = "bin$extradir";
 
 	my $dynconfig = "dynconfig.o";
-	my $dynconfig_install;
+	my $dynconfig_install = "dynconfig.o";
 	
 	if ($self->{duplicate_build}) {
 		$installdir = "bin/install$extradir";
