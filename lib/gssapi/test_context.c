@@ -38,7 +38,8 @@
 RCSID("$Id$");
 
 static void
-loop(const char *target, gss_ctx_id_t *sctx, gss_ctx_id_t *cctx)
+loop(gss_OID nameoid, const char *target,
+     gss_ctx_id_t *sctx, gss_ctx_id_t *cctx)
 {
     int server_done = 0, client_done = 0;
     OM_uint32 maj_stat, min_stat;
@@ -47,15 +48,13 @@ loop(const char *target, gss_ctx_id_t *sctx, gss_ctx_id_t *cctx)
     OM_uint32 flags = 0, ret_cflags, ret_sflags;
     gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
 
-    printf("target: %s\n", target);
-
     input_token.value = rk_UNCONST(target);
     input_token.length = strlen(target);
 
 
     maj_stat = gss_import_name(&min_stat,
 			       &input_token,
-			       GSS_KRB5_NT_PRINCIPAL_NAME,
+			       nameoid,
 			       &gss_target_name);
     if (GSS_ERROR(maj_stat))
 	err(1, "import name creds failed with: %d", maj_stat);
@@ -118,11 +117,13 @@ loop(const char *target, gss_ctx_id_t *sctx, gss_ctx_id_t *cctx)
 }
 
 
+static char *type_string = NULL;
 static int dns_canon_flag = -1;
 static int version_flag = 0;
 static int help_flag	= 0;
 
 static struct getargs args[] = {
+    {"name-type",0,	arg_string, &type_string,  "type of name", NULL },
     {"dns-canon",0,	arg_negative_flag, &dns_canon_flag, 
      "use dns to canonlize", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
@@ -144,6 +145,7 @@ main(int argc, char **argv)
     OM_uint32 min_stat, maj_stat;
     gss_ctx_id_t cctx, sctx;
     void *ctx;
+    gss_OID nameoid;
 
     cctx = sctx = GSS_C_NO_CONTEXT;
 
@@ -167,7 +169,16 @@ main(int argc, char **argv)
     if (dns_canon_flag != -1)
 	gsskrb5_set_dns_canonlize(dns_canon_flag);
 
-    loop(argv[0], &sctx, &cctx);
+    if (type_string == NULL)
+	nameoid = GSS_C_NT_HOSTBASED_SERVICE;
+    else if (strcmp(type_string, "hostbased-service") == 0)
+	nameoid = GSS_C_NT_HOSTBASED_SERVICE;
+    else if (strcmp(type_string, "krb5-principal-name") == 0)
+	nameoid = GSS_KRB5_NT_PRINCIPAL_NAME;
+    else
+	errx(1, "%s not suppported", type_string);
+
+    loop(nameoid, argv[0], &sctx, &cctx);
     
     /* client */
     maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
