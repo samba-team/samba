@@ -1,5 +1,9 @@
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* roken.h.in: Revert prevois for now, the problem is that we have
+	to include symbols unconditionally, even for those that just needs
+	protos.
+
 	* roken.h.in: Provide symbol renaming, let see what breaks.
 
 	* socket_wrapper.c: Maybe include <sys/filio.h>.
