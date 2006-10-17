@@ -146,6 +146,7 @@ static void run_subunit_message(struct torture_context *context,
 
 	switch (field) {
 	case SUBUNIT_TEST:
+		test.description = comment;
 		torture_ui_test_start(context, NULL, &test);
 		break;
 	case SUBUNIT_FAILURE:
