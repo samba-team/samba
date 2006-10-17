@@ -29,8 +29,9 @@ struct torture_tcase;
 
 enum torture_result { 
 	TORTURE_OK=0, 
-	TORTURE_FAIL=1, 
-	TORTURE_SKIP=2
+	TORTURE_FAIL=1,
+	TORTURE_ERROR=2,
+	TORTURE_SKIP=3
 };
 
 /* 
@@ -81,6 +82,7 @@ struct torture_context
 	int todo;
 	int success;
 	int failed;
+	int errors;
 
 	bool quiet; /* Whether tests should avoid writing output to stdout */
 
