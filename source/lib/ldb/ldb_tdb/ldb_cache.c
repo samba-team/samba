@@ -71,13 +71,7 @@ static void ltdb_attributes_unload(struct ldb_module *module)
 
 	msg = ltdb->cache->attributes;
 	for (i=0;i<msg->num_elements;i++) {
-		const struct ldb_attrib_handler *h;
-		/* this is rather ugly - a consequence of const handling */
-		h = ldb_attrib_handler(module->ldb, msg->elements[i].name);
 		ldb_remove_attrib_handler(module->ldb, msg->elements[i].name);
-		if (strcmp(h->attr, msg->elements[i].name) == 0) {
-			talloc_steal(msg, h->attr);
-		}
 	}
 
 	talloc_free(ltdb->cache->attributes);
@@ -163,11 +157,11 @@ static int ltdb_attributes_load(struct ldb_module *module)
 			goto failed;
 		}
 		h2 = *h;
-		h2.attr = talloc_strdup(module, msg->elements[i].name);
+		h2.attr = msg->elements[i].name;
+		h2.flags |= LDB_ATTR_FLAG_ALLOCATED;
 		if (ldb_set_attrib_handlers(module->ldb, &h2, 1) != 0) {
 			goto failed;
 		}
-		talloc_steal(module->ldb->schema.attrib_handlers, h2.attr);
 	}
 
 	return 0;

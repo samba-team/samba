@@ -39,6 +39,7 @@ int ldb_set_attrib_handlers(struct ldb_context *ldb,
 			    const struct ldb_attrib_handler *handlers, 
 			    unsigned num_handlers)
 {
+	int i;
 	struct ldb_attrib_handler *h;
 	h = talloc_realloc(ldb, ldb->schema.attrib_handlers,
 			   struct ldb_attrib_handler,
@@ -50,6 +51,16 @@ int ldb_set_attrib_handlers(struct ldb_context *ldb,
 	ldb->schema.attrib_handlers = h;
 	memcpy(h + ldb->schema.num_attrib_handlers, 
 	       handlers, sizeof(*h) * num_handlers);
+	for (i=0;i<num_handlers;i++) {
+		if (h[ldb->schema.num_attrib_handlers+i].flags & LDB_ATTR_FLAG_ALLOCATED) {
+			h[ldb->schema.num_attrib_handlers+i].attr = talloc_strdup(ldb->schema.attrib_handlers,
+										  h[ldb->schema.num_attrib_handlers+i].attr);
+			if (h[ldb->schema.num_attrib_handlers+i].attr == NULL) {
+				ldb_oom(ldb);
+				return -1;
+			}
+		}
+	}
 	ldb->schema.num_attrib_handlers += num_handlers;
 	return 0;
 }
@@ -128,6 +139,9 @@ void ldb_remove_attrib_handler(struct ldb_context *ldb, const char *attrib)
 	h = ldb_attrib_handler(ldb, attrib);
 	if (h == &ldb_default_attrib_handler) {
 		return;
+	}
+	if (h->flags & LDB_ATTR_FLAG_ALLOCATED) {
+		talloc_free(h->attr);
 	}
 	i = h - ldb->schema.attrib_handlers;
 	if (i < ldb->schema.num_attrib_handlers - 1) {
