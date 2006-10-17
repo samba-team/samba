@@ -729,6 +729,12 @@ enum {
     KRB5_KRBHST_FLAGS_LARGE_MSG	  = 2
 };
 
+/* flags for krb5_parse_name_flags */
+enum {
+    KRB5_PRINCIPAL_PARSE_NO_REALM = 1,
+    KRB5_PRINCIPAL_PARSE_MUST_REALM = 2,
+};
+
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;
 struct sockaddr;
