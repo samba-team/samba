@@ -20,6 +20,18 @@
 
 <script type="text/javascript">
 
+// All of our variables which must be in a global scope will be part of this
+// object
+globals = new Object();
+
+// Default database File to open
+globals.dbFile = "/usr/local/samba/private/sam.ldb";
+
+// No database is yet open
+globals.dbHandle = null;
+        
+
+
 /*
 Root is as found by:
   source/bin/ldbsearch -H /usr/local/samba/private/sam.ldb -b '' \
@@ -327,7 +339,6 @@ function buildPageSearch(page)
         rpc.setCrossDomain(false);
 
         find.setEnabled(false);
-//        abort.setEnabled(true);
         mycall = rpc.callAsync(function(result, ex, id)
         {
             mycall = null;
@@ -370,10 +381,9 @@ function buildPageSearch(page)
                 alert("Async(" + id + ") exception: " + ex);
             }
             find.setEnabled(true);
-//            abort.setEnabled(false);
         },
         "search",                       // method
-        db_handle,                      // database handle
+        globals.dbHandle,               // database handle
         search.getValue(),              // search expression
         base.getValue(),                // baseDN
         scope.getSelected().getValue(), // scope
@@ -416,12 +426,27 @@ function buildPageSearch(page)
 
 function buildPageBrowse(page)
 {
+    /*
+     * Reset the default of always showing the plus/minus symbol.  The
+     * default is 'false'.  We want to always display it for each folder
+     * (and then stop displaying it if we determine upon open that there
+     * are no contents).
+     */
+    var constructor = qx.OO.classes["qx.ui.treefullcontrol.TreeFolder"];
+    qx.Proto = constructor.prototype;
+    qx.OO.changeProperty(
+        {
+            name         : "alwaysShowPlusMinusSymbol",
+            type         : qx.constant.Type.BOOLEAN,
+            defaultValue : true
+        });
+
     // Create a vertical splitpane for tree (top) and table (bottom)
     var splitpane = new qx.ui.splitpane.VerticalSplitPane("1*", "2*");
     splitpane.setEdge(0);
 
     // Create a tree row structure for the tree root
-    var trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard("Root");
+    var trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(globals.dbFile);
 
     // Create the tree and set its characteristics
     var tree = new qx.ui.treefullcontrol.Tree(trs);
@@ -434,8 +459,224 @@ function buildPageBrowse(page)
             top: 10,
             left: 0,
             right: 0,
-            bottom: 10
+            bottom: 10,
+            open: false
         });
+
+    var addChildren = function(parent, children, retrieve)
+    {
+        var t;
+        var trs;
+        var child;
+
+        // Any children?
+        if (! children || children["length"] == 0)
+        {
+            // Nope.  Allow parent's expand/contract button to be removed
+            parent.setAlwaysShowPlusMinusSymbol(false);
+            return;
+        }
+
+        for (i = 0; i < children.length; i++)
+        {
+            var name;
+
+            child = children[i];
+
+            // Determine name for new tree row.  If first level, use entire
+            // DN.  Otherwise, strip off first additional component.
+            if (retrieve == "defaultNamingContext")
+            {
+                name = child["defaultNamingContext"];
+            }
+            else
+            {
+                name = child["dn"].split(",")[0];
+            }
+
+            // Build a standard tree row
+            trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(name);
+
+            // This row is a "folder" (it can have children)
+            t = new qx.ui.treefullcontrol.TreeFolder(trs);
+
+            // Add this row to its parent
+            parent.add(t);
+        }
+
+        // Force flushing of pending DOM updates.  This is actually a
+        // work-around for a bug.  Without this, occasionally, updates to the
+        // gui aren't displayed until some 'action' takes place, e.g. key
+        // press or mouse movement.
+        qx.ui.core.Widget.flushGlobalQueues(true);
+    }
+
+    // Prepare to issue RPC calls
+    var rpc = new qx.io.remote.Rpc();
+    rpc.setUrl("/services/");
+    rpc.setServiceName("samba.ldb");
+    rpc.setCrossDomain(false);
+
+    /*
+     * All subtrees will use this root node's event listeners.  Create an
+     * event listener for an open while empty.
+     */
+    tree.addEventListener(
+        qx.constant.Event.TREEOPENWHILEEMPTY,
+        function(e)
+        {
+            var parent = e.getData();
+            var hierarchy = parent.getHierarchy(new Array());
+
+            parent.debug("Requesting children...");
+
+            // Strip off the root node
+            hierarchy.shift();
+
+            // Determine the children.  Differs depending on root or otherwise
+            var attributes;
+            var scope;
+            var baseDN;
+            
+            // If parent is the root...
+            if (parent == tree)
+            {
+                // ... then we want the defaultNamingContext, ...
+                attributes = "defaultNamingContext";
+
+                // ... and we want only base scope
+                scope = "base";
+
+                // ... and an empty base DN
+                baseDN = "";
+            }
+            else
+            {
+                // otherwise, retrieve the DN,
+                attributes = "dn";
+
+                // ... and we want one level of scope
+                scope = "one";
+
+                // ... and base DN is the parent
+                baseDN = hierarchy.reverse().join(",");
+            }
+
+            mycall = rpc.callAsync(function(result, ex, id)
+            {
+                mycall = null;
+                if (ex == null)
+                {
+                    parent.debug("Children obtained.  Rendering...");
+                    addChildren(parent, result, attributes);
+                    parent.debug("Rendering complete.");
+                }
+                else
+                {
+                    alert("Async(" + id + ") exception: " + ex);
+                }
+            },
+            "search",                       // method
+            globals.dbHandle,               // database handle
+            "(objectclass=*)",              // search expression
+            baseDN,                         // baseDN
+            scope,                          // scope
+            [ attributes ]);                // attributes
+        });
+
+    /*
+     * All subtrees will use this root node's event listeners.  Create an
+     * event listener for selection changed, to populate attribute/value table
+     */
+    tree.getManager().addEventListener(
+        qx.constant.Event.CHANGESELECTION,
+        function(e)
+        {
+            var element = e.getData()[0];
+            var hierarchy = element.getHierarchy(new Array());
+
+            // Strip off the root node
+            hierarchy.shift();
+
+            // Determine the children.  Differs depending on root or otherwise
+            var attributes;
+            var scope;
+            var baseDN;
+            
+            // If element is the root...
+            if (element == tree)
+            {
+                // ... then just clear out the attribute/value table.
+                tableModel.setData([]);
+                return;
+            }
+
+            // We want all attributes
+            attributes = "*";
+
+            // We want the attributes only for the current element
+            scope = "base";
+
+            // Base DN is the current element
+            baseDN = hierarchy.reverse().join(",");
+
+            mycall = rpc.callAsync(function(result, ex, id)
+            {
+                mycall = null;
+                if (ex == null)
+                {
+                    // If we received an empty list, ...
+                    if (result == null)
+                    {
+                        // ... then just clear the attribute/value table.
+                        tableModel.setData([]);
+                        return;
+                    }
+
+                    // Start with an empty table dataset
+                    var rowData = [];
+
+                    // The result contains a single object: attributes
+                    var attributes = result[0];
+
+                    // For each attribute we received...
+                    for (var attr in attributes)
+                    {
+                        // If it's multi-valued (type is an array)...
+                        if (typeof(attributes[attr]) == "object")
+                        {
+                            // ... then add each value with same name
+                            var a = attributes[attr];
+                            for (var i = 0; i < a.length; i++)
+                            {
+                                rowData.push([ attr, a[i] ]);
+                            }
+                        }
+                        else    // single-valued
+                        {
+                            // ... add its name and value to the table dataset
+                            rowData.push([ attr, attributes[attr] ]);
+                        }
+                    }
+
+                    // Add the dataset to the table
+                    tableModel.setData(rowData);
+                }
+                else
+                {
+                    alert("Async(" + id + ") exception: " + ex);
+                }
+            },
+            "search",                       // method
+            globals.dbHandle,               // database handle
+            "(objectclass=*)",              // search expression
+            baseDN,                         // baseDN
+            scope,                          // scope
+            [ attributes ]);                // attributes
+        });
+
+
+
 
     // Add the tree to the page.
     splitpane.addTop(tree);
@@ -444,33 +685,6 @@ function buildPageBrowse(page)
     var tableModel = new qx.ui.table.SimpleTableModel();
     tableModel.setColumns([ "Attribute", "Value" ]);
 
-    // Add some garbage data to it
-    var attributeNames =
-        [
-            [ "Nickname" ],
-            [ "Hostname" ],
-            [ "Port" ],
-            [ "Connection caching" ],
-            [ "TLS" ],
-            [ "Client-side caching" ],
-            [ "Connections so far" ],
-            [ "LDAP protocol version" ],
-            [ "Vendor Name" ],
-            [ "Vendor Version" ],
-            [ "Support LDAP Version" ],
-            [ "Supported SASL Mechanisms" ],
-            [ "Junk 1" ],
-            [ "Junk 2" ],
-            [ "Junk 3" ]
-        ];
-            
-
-    var rowData = [];
-    for (var row = 0; row < attributeNames.length; row++)
-    {
-        rowData.push([ attributeNames[row], "" + (Math.random() * 10000) ]);
-    }
-    tableModel.setData(rowData);
     tableModel.setColumnEditable(0, false);
     tableModel.setColumnEditable(1, true);
 
@@ -490,6 +704,7 @@ function buildPageBrowse(page)
       setMetaColumnCounts([1, -1]);
     };
 
+    // Add the table to the bottom portion of the splitpane
     splitpane.addBottom(table);
 
     // Add the first splitpane to the page
@@ -503,7 +718,7 @@ function buildPageSchema(page)
     splitpane1.setEdge(0);
 
     // Create a tree row structure for the tree root
-    var trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard("Root");
+    var trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(globals.dbFile);
 
     // Create the tree and set its characteristics
     var tree = new qx.ui.treefullcontrol.Tree(trs);
@@ -714,9 +929,8 @@ qx.core.Init.getInstance().defineMain(
 
         try
         {
-            // db_handle is global!!!  no 'var' is intentional.
-            db_handle = rpc.callSync("connect",
-                                     "/usr/local/samba/private/sam.ldb");
+            // Database handle
+            globals.dbHandle = rpc.callSync("connect", globals.dbFile);
         }
         catch (ex)
         {
