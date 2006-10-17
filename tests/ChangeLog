@@ -1,5 +1,9 @@
-2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-context.in: test with and without dns-canon
+	
+2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/check-kdc.in: Be more explit about what test failed.
 	
 2006-10-13  Love Hörnquist Åstrand  <lha@it.su.se>
