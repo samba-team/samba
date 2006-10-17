@@ -215,6 +215,8 @@ if [ $? != 0 ] ; then
 fi
 status=${status:-ok}
 
+echo "done: ${status}"
+
 if [ "X${resultdir}" != X ] ; then
 	cp ab.txt "${resultdir}/ab-${hversion}-${hostname}-${date}.txt"
 fi
