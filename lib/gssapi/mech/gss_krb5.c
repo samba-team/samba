@@ -246,7 +246,7 @@ gss_krb5_export_lucid_sec_context(OM_uint32 *minor_status,
     major_status =
 	gss_inquire_sec_context_by_oid (minor_status,
 					*context_handle,
-					GSS_KRB5_EXPORT_LUCID_CONTEXT_X,
+					GSS_KRB5_EXPORT_LUCID_CONTEXT_V1_X,
 					&data_set);
     if (major_status)
 	return major_status;
@@ -262,7 +262,7 @@ gss_krb5_export_lucid_sec_context(OM_uint32 *minor_status,
 	goto out;
 
     ctx = calloc(1, sizeof(*ctx));
-    if (ctx) {
+    if (ctx == NULL) {
 	ret = ENOMEM;
 	goto out;
     }
@@ -370,7 +370,8 @@ gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status, void *c)
     gss_krb5_lucid_context_v1_t *ctx = c;
 
     if (ctx->version != 1) {
-	*minor_status = 0;
+	if (minor_status)
+	    *minor_status = 0;
 	return GSS_S_FAILURE;
     }
 
