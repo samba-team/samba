@@ -208,7 +208,7 @@ if [ $? != 0 ] ; then
 fi
 make check >> ab.txt 2>&1
 if [ $? != 0 ] ; then
-    echo Make all failed
+    echo Make check failed
 fi
 
 if [ "X${resultdir}" != X ] ; then
