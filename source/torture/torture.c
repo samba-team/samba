@@ -43,6 +43,21 @@ bool torture_register_suite(struct torture_suite *suite)
 	return torture_suite_add_suite(torture_root, suite);
 }
 
+struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx, 
+											 const char *known_failures_file, 
+											 const struct torture_ui_ops *ui_ops)
+{
+	int numlines;
+	struct torture_context *torture = talloc_zero(mem_ctx, 
+												  struct torture_context);
+	torture->expected_failures = file_lines_load(known_failures_file, &numlines,
+												 torture);
+	torture->ui_ops = ui_ops;
+
+	return torture;
+}
+
+
 int torture_init(void)
 {
 	init_module_fn static_init[] = STATIC_torture_MODULES;

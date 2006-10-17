@@ -53,8 +53,7 @@ static bool run_matching(struct torture_context *torture,
 				continue;
 			}
 
-			ret &= run_matching(torture, 
-								o->name, expr, o, matched);
+			ret &= run_matching(torture, o->name, expr, o, matched);
 		}
 	} else {
 		char *name;
@@ -435,6 +434,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	int max_runtime=0;
 	int argc_new;
 	struct torture_context *torture;
+	const struct torture_ui_ops *ui_ops;
 	char **argv_new;
 	poptContext pc;
 	static const char *target = "other";
@@ -581,39 +581,73 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		lp_set_cmdline("torture:binding", binding);
 	}
 
-	torture = talloc_zero(talloc_autofree_context(), struct torture_context);
 	if (!strcmp(ui_ops_name, "simple")) {
-		torture->ui_ops = &std_ui_ops;
+		ui_ops = &std_ui_ops;
 	} else if (!strcmp(ui_ops_name, "subunit")) {
-		torture->ui_ops = &subunit_ui_ops;
+		ui_ops = &subunit_ui_ops;
 	} else if (!strcmp(ui_ops_name, "harness")) {
-		torture->ui_ops = &harness_ui_ops;
+		ui_ops = &harness_ui_ops;
 	} else if (!strcmp(ui_ops_name, "quiet")) {
-		torture->ui_ops = &quiet_ui_ops;
+		ui_ops = &quiet_ui_ops;
 	} else {
 		printf("Unknown output format '%s'\n", ui_ops_name);
 		exit(1);
 	}
+
+	torture = torture_context_init(talloc_autofree_context(), "KNOWN_FAILURES", 
+						 ui_ops);
 
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");
 	} else {
 		int total;
 		double rate;
+		int unexpected_failures;
 		for (i=2;i<argc_new;i++) {
 			if (!run_test(torture, argv_new[i])) {
 				correct = false;
 			}
 		}
 
-		total = torture->skipped+torture->success+torture->failed;
+
+		unexpected_failures = str_list_length(torture->results.unexpected_failures);
+
+		total = torture->results.skipped+torture->results.success+torture->results.failed+torture->results.errors;
 		if (total == 0) {
 			printf("No tests run.\n");
 		} else {
-			rate = ((total - torture->failed) * (100.0 / total));
-			printf("Tests: %d, Errors: %d, Skipped: %d. Success rate: %.2f%%\n",
-			   total, torture->failed, torture->skipped,
-			   rate);
+			rate = ((total - unexpected_failures - torture->results.errors) * (100.0 / total));
+		
+			printf("Tests: %d, Failures: %d", total, torture->results.failed);
+			if (torture->results.failed - unexpected_failures) {
+				printf(" (%d expected)", torture->results.failed - unexpected_failures);
+			}
+			printf(", Errors: %d, Skipped: %d. Success rate: %.2f%%\n",
+			   torture->results.errors, torture->results.skipped, rate);
+		}
+
+		if (unexpected_failures) {
+			printf("The following tests failed:\n");
+			for (i = 0; torture->results.unexpected_failures[i]; i++) {
+				printf("  %s\n", torture->results.unexpected_failures[i]);
+			}
+			printf("\n");
+		}
+
+		if (str_list_length(torture->results.unexpected_errors)) {
+			printf("Errors occurred while running the following tests:\n");
+			for (i = 0; torture->results.unexpected_errors[i]; i++) {
+				printf("  %s\n", torture->results.unexpected_errors[i]);
+			}
+			printf("\n");
+		}
+
+		if (str_list_length(torture->results.unexpected_successes)) {
+			printf("The following tests were expected to fail but succeeded:\n");
+			for (i = 0; torture->results.unexpected_successes[i]; i++) {
+				printf("  %s\n", torture->results.unexpected_successes[i]);
+			}
+			printf("\n");
 		}
 	}
 
