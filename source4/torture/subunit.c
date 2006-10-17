@@ -59,12 +59,14 @@ bool torture_subunit_load_testsuites(const char *directory, bool recursive,
 		if (entry->d_name[0] == '.')
 			continue;
 
-		if (!recursive && entry->d_type & DT_DIR)
-			continue;
-
 		filename = talloc_asprintf(NULL, "%s/%s", directory, entry->d_name);
-	
-		if (entry->d_type & DT_DIR) {
+		
+		if (!recursive && directory_exist(filename)) {
+			talloc_free(filename);
+			continue;
+		}
+
+		if (directory_exist(filename)) {
 			child = torture_find_suite(parent, entry->d_name);
 			exists = (child != NULL);
 			if (child == NULL)
