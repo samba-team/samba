@@ -1058,10 +1058,17 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		talloc_free(ltdb);
 		return -1;
 	}
+	talloc_set_name_const(*module, "ldb_tdb backend");
 	(*module)->ldb = ldb;
 	(*module)->prev = (*module)->next = NULL;
 	(*module)->private_data = ltdb;
 	(*module)->ops = &ltdb_ops;
+
+	if (ltdb_cache_load(*module) != 0) {
+		talloc_free(*module);
+		talloc_free(ltdb);
+		return -1;
+	}
 
 	return 0;
 }
