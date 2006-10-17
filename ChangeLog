@@ -1,5 +1,8 @@
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/get_host_realm.c (krb5_get_host_realm): make sure we
+	don't recurse
+
 	* lib/krb5/get_host_realm.c (krb5_get_host_realm): no components
 	-> no dns. no mapping, try local realm and hope KDC knows better.
 

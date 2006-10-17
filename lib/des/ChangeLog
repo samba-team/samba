@@ -1,5 +1,13 @@
-2006-10-15  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: add rand-unix.c
+
+	* rand.c: Move out rand-unix functions from the core lib.
+
+	* rand-unix.c: Move out rand-unix functions from the core lib.
+	
+2006-10-15  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* hmac.c (HMAC_CTX_cleanup): destroy the EVP_MD_CTX, so it will be
 	freed.
 	
