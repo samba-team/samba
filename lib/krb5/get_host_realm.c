@@ -217,9 +217,10 @@ _krb5_get_host_realm_int (krb5_context context,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_host_realm(krb5_context context,
-		    const char *host,
+		    const char *targethost,
 		    krb5_realm **realms)
 {
+    const char *host = targethost;
     char hostname[MAXHOSTNAMELEN];
     krb5_error_code ret;
     int use_dns;
@@ -239,11 +240,11 @@ krb5_get_host_realm(krb5_context context,
     use_dns = (strchr(host, '.') != NULL);
 
     ret = _krb5_get_host_realm_int (context, host, use_dns, realms);
-    if (ret) {
+    if (ret && targethost != NULL) {
 	/*
-	 * If there was no realm mapping for the host guess at the
-	 * local realm, maybe our KDC knows better then we do and we
-	 * get a referral back.
+	 * If there was no realm mapping for the host (and we wasn't
+	 * looking for ourself), guess at the local realm, maybe our
+	 * KDC knows better then we do and we get a referral back.
 	 */
 	ret = krb5_get_default_realms(context, realms);
 	if (ret) {
@@ -252,5 +253,5 @@ krb5_get_host_realm(krb5_context context,
 	    return KRB5_ERR_HOST_REALM_UNKNOWN;
 	}
     }
-    return 0;
+    return ret;
 }
