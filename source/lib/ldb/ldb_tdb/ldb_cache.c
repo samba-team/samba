@@ -320,6 +320,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	struct ldb_dn *baseinfo_dn = NULL;
 	struct ldb_dn *indexlist_dn = NULL;
 	uint64_t seq;
+	struct ldb_message *baseinfo;
 
 	if (ltdb->cache == NULL) {
 		ltdb->cache = talloc_zero(ltdb, struct ltdb_cache);
@@ -334,30 +335,29 @@ int ltdb_cache_load(struct ldb_module *module)
 		}
 	}
 
-	talloc_free(ltdb->cache->baseinfo);
-	ltdb->cache->baseinfo = talloc(ltdb->cache, struct ldb_message);
-	if (ltdb->cache->baseinfo == NULL) goto failed;
+	baseinfo = talloc(ltdb->cache, struct ldb_message);
+	if (baseinfo == NULL) goto failed;
 
 	baseinfo_dn = ldb_dn_explode(module->ldb, LTDB_BASEINFO);
 	if (baseinfo_dn == NULL) goto failed;
 
-	if (ltdb_search_dn1(module, baseinfo_dn, ltdb->cache->baseinfo) == -1) {
+	if (ltdb_search_dn1(module, baseinfo_dn, baseinfo) == -1) {
 		goto failed;
 	}
 	
 	/* possibly initialise the baseinfo */
-	if (!ltdb->cache->baseinfo->dn) {
+	if (!baseinfo->dn) {
 		if (ltdb_baseinfo_init(module) != 0) {
 			goto failed;
 		}
-		if (ltdb_search_dn1(module, baseinfo_dn, ltdb->cache->baseinfo) != 1) {
+		if (ltdb_search_dn1(module, baseinfo_dn, baseinfo) != 1) {
 			goto failed;
 		}
 	}
 
 	/* if the current internal sequence number is the same as the one
 	   in the database then assume the rest of the cache is OK */
-	seq = ldb_msg_find_attr_as_uint64(ltdb->cache->baseinfo, LTDB_SEQUENCE_NUMBER, 0);
+	seq = ldb_msg_find_attr_as_uint64(baseinfo, LTDB_SEQUENCE_NUMBER, 0);
 	if (seq == ltdb->sequence_number) {
 		goto done;
 	}
@@ -396,11 +396,13 @@ int ltdb_cache_load(struct ldb_module *module)
 	}
 
 done:
+	talloc_free(baseinfo);
 	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
 	return 0;
 
 failed:
+	talloc_free(baseinfo);
 	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
 	return -1;

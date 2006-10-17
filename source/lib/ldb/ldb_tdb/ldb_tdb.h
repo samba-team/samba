@@ -22,7 +22,6 @@ struct ltdb_private {
 	unsigned long long sequence_number;
 
 	struct ltdb_cache {
-		struct ldb_message *baseinfo;
 		struct ldb_message *indexlist;
 		struct ldb_message *attributes;
 		struct ldb_message *subclasses;
