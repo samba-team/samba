@@ -374,6 +374,7 @@ struct entry libdefaults_entries[] = {
     { "default_keytab_modify_name", krb5_config_string, NULL },
     { "default_keytab_name", krb5_config_string, NULL },
     { "default_realm", krb5_config_string, NULL },
+    { "dns_canonize_hostname", krb5_config_string, check_boolean },
     { "dns_proxy", krb5_config_string, NULL },
     { "dns_lookup_kdc", krb5_config_string, check_boolean },
     { "dns_lookup_realm", krb5_config_string, check_boolean },
