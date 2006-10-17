@@ -1,5 +1,17 @@
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_init_context.3: Add krb5_set_dns_canonize_hostname
+	and krb5_get_dns_canonize_hostname
+
+	* lib/krb5/verify_krb5_conf.c:
+	add [libdefaults]dns_canonize_hostname
+
+	* lib/krb5/expand_hostname.c: use dns_canonize_hostname to
+	determin if we should talk to dns to find the canonical name of
+	the host.
+
+	* lib/krb5/krb5.h (krb5_context): add dns_canonize_hostname.
+
 	* tools/heimdal-build.sh: Set status.
 
 	* appl/gssmask/gssmask.c: handle more bits
