@@ -776,6 +776,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 		talloc_free(ildb);
 		return -1;
 	}
+	talloc_set_name_const(*module, "ldb_ildap backend");
 	(*module)->ldb = ldb;
 	(*module)->prev = (*module)->next = NULL;
 	(*module)->private_data = ildb;
