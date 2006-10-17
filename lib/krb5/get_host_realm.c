@@ -211,7 +211,8 @@ _krb5_get_host_realm_int (krb5_context context,
 }
 
 /*
- * Return the realm(s) of `host' as a NULL-terminated list in `realms'.
+ * Return the realm(s) of `host' as a NULL-terminated list in
+ * `realms'. Free `realms' with krb5_free_host_realm().
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -220,12 +221,36 @@ krb5_get_host_realm(krb5_context context,
 		    krb5_realm **realms)
 {
     char hostname[MAXHOSTNAMELEN];
+    krb5_error_code ret;
+    int use_dns;
 
     if (host == NULL) {
-	if (gethostname (hostname, sizeof(hostname)))
+	if (gethostname (hostname, sizeof(hostname))) {
+	    *realms = NULL;
 	    return errno;
+	}
 	host = hostname;
     }
 
-    return _krb5_get_host_realm_int (context, host, 1, realms);
+    /* 
+     * If our local hostname is without components, don't even try to dns.
+     */
+
+    use_dns = (strchr(host, '.') != NULL);
+
+    ret = _krb5_get_host_realm_int (context, host, use_dns, realms);
+    if (ret) {
+	/*
+	 * If there was no realm mapping for the host guess at the
+	 * local realm, maybe our KDC knows better then we do and we
+	 * get a referral back.
+	 */
+	ret = krb5_get_default_realms(context, realms);
+	if (ret) {
+	    krb5_set_error_string(context, "Unable to find realm of host %s",
+				  host);
+	    return KRB5_ERR_HOST_REALM_UNKNOWN;
+	}
+    }
+    return 0;
 }
