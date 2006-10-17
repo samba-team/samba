@@ -304,6 +304,13 @@ static gss_OID_desc gss_krb5_export_lucid_context_v1_x_desc =
 
 gss_OID GSS_KRB5_EXPORT_LUCID_CONTEXT_V1_X = &gss_krb5_export_lucid_context_v1_x_desc;
 
+/* 1.2.752.43.13.7 */
+static gss_OID_desc gss_krb5_set_dns_canonize_x_desc =
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x07")};
+
+gss_OID GSS_KRB5_SET_DNS_CANONIZE_X = &gss_krb5_set_dns_canonize_x_desc;
+
+
 /*
  * Context for krb5 calls.
  */
