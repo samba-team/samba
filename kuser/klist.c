@@ -133,6 +133,13 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	exit(1);
     printf("Server: %s\n", str);
     free (str);
+
+    ret = krb5_unparse_name(context, cred->client, &str);
+    if(ret)
+	exit(1);
+    printf("Client: %s\n", str);
+    free (str);
+
     {
 	Ticket t;
 	size_t len;
@@ -223,6 +230,7 @@ print_tickets (krb5_context context,
     char *str;
     krb5_cc_cursor cursor;
     krb5_creds creds;
+    int32_t sec, usec;
 
     rtbl_t ct = NULL;
 
@@ -241,12 +249,14 @@ print_tickets (krb5_context context,
 	printf ("%17s: %d\n", "Cache version",
 		krb5_cc_get_version(context, ccache));
     
-    if (do_verbose && context->kdc_sec_offset) {
+    krb5_get_kdc_sec_offset(context, &sec, &usec);
+
+    if (do_verbose && sec != 0) {
 	char buf[BUFSIZ];
 	int val;
 	int sig;
 
-	val = context->kdc_sec_offset;
+	val = sec;
 	sig = 1;
 	if (val < 0) {
 	    sig = -1;
