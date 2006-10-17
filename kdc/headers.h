@@ -91,7 +91,7 @@
 #include <digest_asn1.h>
 #include <hdb.h>
 #include <hdb_err.h>
-#include <der.h> /* copy_octet_string */
+#include <der.h>
 
 #undef ALLOC
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
