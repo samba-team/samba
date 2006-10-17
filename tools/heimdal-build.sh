@@ -194,7 +194,7 @@ fi
 cd ${hversion} || exit 1
 
 mkdir socket_wrapper_dir
-SOCKET_WRAPPER_DIR=./socket_wrapper_dir
+SOCKET_WRAPPER_DIR=`pwd`/socket_wrapper_dir
 export SOCKET_WRAPPER_DIR
 
 echo "Configuring and building ($hversion)"
