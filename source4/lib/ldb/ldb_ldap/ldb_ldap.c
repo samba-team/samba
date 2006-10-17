@@ -822,6 +822,7 @@ static int lldb_connect(struct ldb_context *ldb,
 		talloc_free(lldb);
 		return -1;
 	}
+	talloc_set_name_const(*module, "ldb_ldap backend");
 	(*module)->ldb = ldb;
 	(*module)->prev = (*module)->next = NULL;
 	(*module)->private_data = lldb;
