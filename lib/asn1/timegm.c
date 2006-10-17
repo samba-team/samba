@@ -53,7 +53,8 @@ _der_timegm (struct tm *tm)
   time_t res = 0;
   unsigned i;
 
-  /* XXX this is wrong, needs to handle out of months, days, hours, min, sec */ 
+  /* XXX this is wrong, needs to handle out of range
+   * months, days, hours, min, sec */ 
   if (tm->tm_mon < 0 || tm->tm_mon > 11) 
       return -1;
 
