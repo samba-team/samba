@@ -53,6 +53,10 @@ _der_timegm (struct tm *tm)
   time_t res = 0;
   unsigned i;
 
+  /* XXX this is wrong, needs to handle out of months, days, hours, min, sec */ 
+  if (tm->tm_mon < 0 || tm->tm_mon > 11) 
+      return -1;
+
   for (i = 70; i < tm->tm_year; ++i)
     res += is_leap(i) ? 366 : 365;
 
