@@ -1,20 +1,20 @@
 Changes in release 0.8
 
- * KDC will return the "response too big" error to force TCP retries
-   for large (default 1400 bytes) UDP replies.  This is common for
-   PK-INIT request.
-
- * GSS-API mechglue from FreebSD
-
- * Updated SPNEGO supporting RFC4178
-
- * Support for Cryptosystem Negotiation Extension (RFC 4537)
-
  * PK-INIT support
 
  * HDB extensions support, used by PK-INIT
 
  * New ASN.1 compiler
+
+ * GSS-API mechglue from FreeBSD
+
+ * Updated SPNEGO supporting RFC4178
+
+ * Support for Cryptosystem Negotiation Extension (RFC 4537)
+
+ * KDC will return the "response too big" error to force TCP retries
+   for large (default 1400 bytes) UDP replies.  This is common for
+   PK-INIT request.
 
  * Libkafs defaults to use 2b tokens
 
