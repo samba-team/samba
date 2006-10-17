@@ -1,5 +1,20 @@
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_context.c: add test for dns canon flag
+
+	* mech/gss_krb5.c: Add gsskrb5_set_dns_canonlize.
+
+	* gssapi/gssapi_krb5.h: remove gss_krb5_compat_des3_mic
+
+	* gssapi/gssapi_krb5.h: Add gsskrb5_set_dns_canonlize.
+
+	* krb5/set_sec_context_option.c: implement
+	GSS_KRB5_SET_DNS_CANONIZE_X
+
+	* gssapi/gssapi_krb5.h: add GSS_KRB5_SET_DNS_CANONIZE_X
+
+	* krb5/external.c: add GSS_KRB5_SET_DNS_CANONIZE_X
+
 	* mech/gss_krb5.c: add bits to make lucid context work
 	
 2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
