@@ -1,5 +1,7 @@
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* tools/heimdal-build.sh: Set status.
+
 	* appl/gssmask/gssmask.c: handle more bits
 
 	* kdc/kerberos5.c: Prefix asn1 primitives with der_.
