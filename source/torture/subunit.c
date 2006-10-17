@@ -190,12 +190,12 @@ bool torture_subunit_run_suite(struct torture_context *context,
 		return false;
 
 	if (waitpid(pid, &status, 0) == -1) {
-		torture_comment(context, "waitpid(%d) failed\n", pid);
+		torture_result(context, TORTURE_ERROR, "waitpid(%d) failed\n", pid);
 		return false;
 	}
 
 	if (WEXITSTATUS(status) != 0) {
-		torture_comment(context, "failed with status %d\n", WEXITSTATUS(status));
+		torture_result(context, TORTURE_ERROR, "failed with status %d\n", WEXITSTATUS(status));
 		return false;
 	}
 
@@ -258,7 +258,7 @@ bool torture_subunit_run_suite(struct torture_context *context,
 	}
 
 	if (name != NULL) {
-		torture_comment(context, "Interrupted during %s\n", name);
+		torture_result(context, TORTURE_ERROR, "Interrupted during %s\n", name);
 		return false;
 	}
 

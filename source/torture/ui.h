@@ -75,14 +75,23 @@ struct torture_context
 	const struct torture_ui_ops *ui_ops;
 	void *ui_data;
 
+	char *active_testname;
 	struct torture_test *active_test;
 	struct torture_tcase *active_tcase;
 
-	int skipped;
-	int todo;
-	int success;
-	int failed;
-	int errors;
+	char **expected_failures;
+
+	struct torture_results {
+		int skipped;
+		int todo;
+		int success;
+		int failed;
+		int errors;
+
+		const char **unexpected_failures;
+		const char **unexpected_successes;
+		const char **unexpected_errors;
+	} results;
 
 	bool quiet; /* Whether tests should avoid writing output to stdout */
 
