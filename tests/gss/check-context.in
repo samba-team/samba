@@ -69,8 +69,11 @@ ${kadmin} \
     --realm-max-renewable-life=1month \
     ${R} || exit 1
 
+# add both lucid and lucid.example.org to simulate aliases
 ${kadmin} add -p p1 --use-defaults host/lucid.example.org@${R} || exit 1
 ${kadmin} ext -k ${keytab} host/lucid.example.org@${R} || exit 1
+${kadmin} add -p p1 --use-defaults host/lucid@${R} || exit 1
+${kadmin} ext -k ${keytab} host/lucid@${R} || exit 1
 
 ${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
 
@@ -95,13 +98,30 @@ echo "Getting client initial tickets"
 ${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
 
 echo plain
-${context} host/lucid.example.org@${R} || { exitcode=1 ; echo test failed; }
+${context} --name-type=hostbased-service host@lucid.example.org || \
+	{ exitcode=1 ; echo test failed; }
+echo "plain (krb5)"
+${context} --name-type=krb5-principal-name host/lucid.example.org@${R} || \
+	{ exitcode=1 ; echo test failed; }
+echo "plain (krb5 realmless)"
+${context} --name-type=krb5-principal-name host/lucid.example.org || \
+	{ exitcode=1 ; echo test failed; }
 echo "dns canon on (long name)"
-${context} --dns-canon host/lucid.example.org@${R} || \
+${context} --dns-canon host@lucid.example.org || \
 	{ exitcode=1 ; echo test failed; }
 echo "dns canon off (long name)"
-${context} --no-dns-canon host/lucid.example.org@${R} || \
+${context} --no-dns-canon host@lucid.example.org || \
 	{ exitcode=1 ; echo test failed; }
+echo "dns canon off (short name)"
+${context} --no-dns-canon host@lucid || \
+	{ exitcode=1 ; echo test failed; }
+echo "dns canon off (short name, krb5)"
+${context}  --no-dns-canon --name-type=krb5-principal-name host/lucid@${R} || \
+	{ exitcode=1 ; echo test failed; }
+echo "dns canon off (short name, krb5)"
+${context}  --no-dns-canon --name-type=krb5-principal-name host/lucid || \
+	{ exitcode=1 ; echo test failed; }
+
 
 echo "killing kdc (${kdcpid})"
 kill ${kdcpid} 2> /dev/null
