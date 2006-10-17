@@ -1,5 +1,7 @@
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-gssmask.in: remove dup exit
+
 	* gss/check-context.in: More name tests.
 
 	* gss/check-context.in: test with and without dns-canon
