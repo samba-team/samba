@@ -24,8 +24,7 @@
 #include "torture/torture.h"
 #include "lib/util/dlinklist.h"
 
-void torture_comment(struct torture_context *context, 
-						 const char *comment, ...)
+void torture_comment(struct torture_context *context, const char *comment, ...)
 {
 	va_list ap;
 	char *tmp;
@@ -172,6 +171,7 @@ void torture_ui_test_result(struct torture_context *context,
 
 	switch (result) {
 		case TORTURE_SKIP: context->skipped++; break;
+		case TORTURE_ERROR: context->errors++; break;
 		case TORTURE_FAIL: context->failed++; break;
 		case TORTURE_OK: context->success++; break;
 	}
@@ -205,8 +205,8 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 	ret = test->run(context, tcase, test);
 	if (!ret) {
 		if (context->last_reason == NULL)
-			context->last_reason = talloc_strdup(context, "...");
-		context->last_result = TORTURE_FAIL;
+			context->last_reason = talloc_strdup(context, "Unknown error/failure");
+		context->last_result = TORTURE_ERROR;
 	}
 
 	torture_ui_test_result(context, context->last_result, context->last_reason);
