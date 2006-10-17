@@ -291,9 +291,6 @@ static void simple_test_result (struct torture_context *context,
 	case TORTURE_FAIL:
 		printf("TEST %s FAILED! - %s\n", context->active_test->name, reason);
 		break;
-	case TORTURE_TODO:
-		printf("TODO: %s - %s\n", context->active_test->name, reason);
-		break;
 	case TORTURE_SKIP:
 		printf("SKIP: %s - %s\n", context->active_test->name, reason);
 		break;
@@ -332,9 +329,6 @@ static void subunit_test_result (struct torture_context *context,
 	case TORTURE_FAIL:
 		printf("failure: %s", context->active_test->name);
 		break;
-	case TORTURE_TODO:
-		printf("todo: %s", context->active_test->name);
-		break;
 	case TORTURE_SKIP:
 		printf("skip: %s", context->active_test->name);
 		break;
@@ -371,9 +365,6 @@ static void harness_test_result (struct torture_context *context,
 		break;
 	case TORTURE_FAIL:
 		printf("not ok %s - %s\n", context->active_test->name, reason);
-		break;
-	case TORTURE_TODO:
-		printf("todo %s - %s\n", context->active_test->name, reason);
 		break;
 	case TORTURE_SKIP:
 		printf("skip %s - %s\n", context->active_test->name, reason);
@@ -415,9 +406,8 @@ static void quiet_test_result (struct torture_context *context,
 	fflush(stdout);
 	switch (res) {
 	case TORTURE_OK: putchar('.'); break;
-	case TORTURE_FAIL: putchar('E'); break;
-	case TORTURE_TODO: putchar('T'); break;
-	case TORTURE_SKIP: putchar('S'); break;
+	case TORTURE_FAIL: putchar('F'); break;
+	case TORTURE_SKIP: putchar('I'); break;
 	}
 }
 

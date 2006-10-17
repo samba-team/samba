@@ -30,8 +30,7 @@ struct torture_tcase;
 enum torture_result { 
 	TORTURE_OK=0, 
 	TORTURE_FAIL=1, 
-	TORTURE_TODO=2, 
-	TORTURE_SKIP=3
+	TORTURE_SKIP=2
 };
 
 /* 
@@ -190,23 +189,20 @@ bool torture_run_test(struct torture_context *context,
 					  struct torture_tcase *tcase,
 					  struct torture_test *test);
 
-void _torture_fail_ext(struct torture_context *test, const char *reason, ...) PRINTF_ATTRIBUTE(2,3);
 void torture_comment(struct torture_context *test, const char *comment, ...) PRINTF_ATTRIBUTE(2,3);
-void _torture_skip_ext(struct torture_context *test, const char *reason, ...) PRINTF_ATTRIBUTE(2,3);
+void torture_result(struct torture_context *test, 
+			enum torture_result, const char *reason, ...) PRINTF_ATTRIBUTE(3,4);
 
 #define torture_assert(torture_ctx,expr,cmt) \
 	if (!(expr)) { \
-		torture_comment(torture_ctx, __location__": Expression `%s' failed\n", __STRING(expr)); \
-		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": Expression `%s' failed: %s", __STRING(expr), cmt); \
 		return false; \
 	}
 
 #define torture_assert_werr_equal(torture_ctx, got, expected, cmt) \
 	do { WERROR __got = got, __expected = expected; \
 	if (!W_ERROR_EQUAL(__got, __expected)) { \
-		torture_comment(torture_ctx, __location__": "#got" was %s, expected %s\n", \
-						win_errstr(__got), win_errstr(__expected)); \
-		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": "#got" was %s, expected %s: %s", win_errstr(__got), win_errstr(__expected), cmt); \
 		return false; \
 	} \
 	} while (0)
@@ -214,9 +210,7 @@ void _torture_skip_ext(struct torture_context *test, const char *reason, ...) PR
 #define torture_assert_ntstatus_equal(torture_ctx,got,expected,cmt) \
 	do { NTSTATUS __got = got, __expected = expected; \
 	if (!NT_STATUS_EQUAL(__got, __expected)) { \
-		torture_comment(torture_ctx, __location__": "#got" was %s, expected %s\n", \
-						nt_errstr(__got), nt_errstr(__expected)); \
-		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": "#got" was %s, expected %s: %s", nt_errstr(__got), nt_errstr(__expected), cmt); \
 		return false; \
 	}\
 	} while(0)
@@ -225,8 +219,7 @@ void _torture_skip_ext(struct torture_context *test, const char *reason, ...) PR
 #define torture_assert_casestr_equal(torture_ctx,got,expected,cmt) \
 	do { const char *__got = (got), *__expected = (expected); \
 	if (!strequal(__got, __expected)) { \
-		torture_comment(torture_ctx, __location__": "#got" was %s, expected %s\n", __got, __expected); \
-		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": "#got" was %s, expected %s: %s", __got, __expected, cmt); \
 		return false; \
 	} \
 	} while(0)
@@ -234,8 +227,9 @@ void _torture_skip_ext(struct torture_context *test, const char *reason, ...) PR
 #define torture_assert_str_equal(torture_ctx,got,expected,cmt)\
 	do { const char *__got = (got), *__expected = (expected); \
 	if (strcmp_safe(__got, __expected) != 0) { \
-		torture_comment(torture_ctx, __location__": "#got" was %s, expected %s\n", __got, __expected); \
-		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+					   __location__": "#got" was %s, expected %s: %s", \
+					   __got, __expected, cmt); \
 		return false; \
 	} \
 	} while(0)
@@ -243,8 +237,9 @@ void _torture_skip_ext(struct torture_context *test, const char *reason, ...) PR
 #define torture_assert_int_equal(torture_ctx,got,expected,cmt)\
 	do { int __got = (got), __expected = (expected); \
 	if (__got != __expected) { \
-		torture_comment(torture_ctx, __location__": "#got" was %d, expected %d\n", __got, __expected); \
-		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+					 __location__": "#got" was %d, expected %d: %s", \
+					   __got, __expected, cmt); \
 		return false; \
 	} \
 	} while(0)
@@ -252,8 +247,10 @@ void _torture_skip_ext(struct torture_context *test, const char *reason, ...) PR
 #define torture_assert_errno_equal(torture_ctx,expected,cmt)\
 	do { int __expected = (expected); \
 	if (errno != __expected) { \
-		torture_comment(torture_ctx, __location__": errno was %d, expected %s\n", errno, strerror(__expected)); \
-		_torture_fail_ext(torture_ctx, __location__": %s", cmt); \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": errno was %d (%s), expected %d: %s: %s", \
+					   errno, strerror(errno), __expected, \
+					   strerror(__expected), cmt); \
 		return false; \
 	} \
 	} while(0)
@@ -261,11 +258,11 @@ void _torture_skip_ext(struct torture_context *test, const char *reason, ...) PR
 
 
 #define torture_skip(torture_ctx,cmt) do {\
-		_torture_skip_ext(torture_ctx, __location__": %s", cmt);\
+		torture_result(torture_ctx, TORTURE_SKIP, __location__": %s", cmt);\
 		return true; \
 	} while(0)
 #define torture_fail(torture_ctx,cmt) do {\
-		_torture_fail_ext(torture_ctx, __location__": %s", cmt);\
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": %s", cmt);\
 		return false; \
 	} while (0)
 

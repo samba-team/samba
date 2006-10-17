@@ -46,7 +46,8 @@ static void fde_handler(struct event_context *ev_ctx, struct fd_event *f,
 					(flags & EVENT_FD_WRITE)?" EVENT_FD_WRITE":"");
 
 	if (fde_count > 5) {
-		_torture_fail_ext(test, "got more than fde 5 events - bug!");
+		torture_result(test, TORTURE_FAIL, 
+					   __location__": got more than fde 5 events - bug!");
 		talloc_free(fde);
 		fde = NULL;
 		return;

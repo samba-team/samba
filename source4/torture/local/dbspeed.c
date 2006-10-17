@@ -73,13 +73,13 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 		if (!tdb_add_record(tdbw, 
 				    "S-1-5-21-53173311-3623041448-2049097239-%u",
 				    "UID %u", i)) {
-			_torture_fail_ext(torture, "Failed to add SID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to add SID %d", i);
 			goto failed;
 		}
 		if (!tdb_add_record(tdbw, 
 				    "UID %u",
 				    "S-1-5-21-53173311-3623041448-2049097239-%u", i)) {
-			_torture_fail_ext(torture, "Failed to add UID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to add UID %d", i);
 			goto failed;
 		}
 	}
@@ -95,7 +95,7 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 		key.dsize = strlen((char *)key.dptr)+1;
 		data = tdb_fetch(tdbw->tdb, key);
 		if (data.dptr == NULL) {
-			_torture_fail_ext(torture, "Failed to fetch SID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to fetch SID %d", i);
 			goto failed;
 		}
 		free(data.dptr);
@@ -103,7 +103,7 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 		key.dsize = strlen((char *)key.dptr)+1;
 		data = tdb_fetch(tdbw->tdb, key);
 		if (data.dptr == NULL) {
-			_torture_fail_ext(torture, "Failed to fetch UID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to fetch UID %d", i);
 			goto failed;
 		}
 		free(data.dptr);
@@ -186,13 +186,13 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 
 	for (i=0;i<torture_entries;i++) {
 		if (!ldb_add_record(ldb, i)) {
-			_torture_fail_ext(torture, "Failed to add SID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to add SID %d", i);
 			goto failed;
 		}
 	}
 
 	if (talloc_total_blocks(torture) > 100) {
-		_torture_fail_ext(torture, "memory leak in ldb add");
+		torture_result(torture, TORTURE_FAIL, "memory leak in ldb add");
 		goto failed;
 	}
 
