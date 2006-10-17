@@ -92,9 +92,10 @@ krb5_principal_get_comp_string(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_parse_name(krb5_context context,
-		const char *name,
-		krb5_principal *principal)
+krb5_parse_name_flags(krb5_context context,
+		      const char *name,
+		      int flags,
+		      krb5_principal *principal)
 {
     krb5_error_code ret;
     heim_general_string *comp;
@@ -111,6 +112,15 @@ krb5_parse_name(krb5_context context,
     int got_realm = 0;
   
     *principal = NULL;
+
+#define RFLAGS (KRB5_PRINCIPAL_PARSE_NO_REALM|KRB5_PRINCIPAL_PARSE_MUST_REALM)
+
+    if ((flags & RFLAGS) == RFLAGS) {
+	krb5_set_error_string(context, "Can't require both realm and "
+			      "no realm at the same time");
+	return KRB5_ERR_NO_SERVICE;
+    }
+#undef RFLAGS
 
     /* count number of component */
     ncomp = 1;
@@ -187,6 +197,12 @@ krb5_parse_name(krb5_context context,
 	*q++ = c;
     }
     if(got_realm){
+	if (flags & KRB5_PRINCIPAL_PARSE_NO_REALM) {
+	    krb5_set_error_string (context, "realm found in 'short' principal "
+				   "expected to be without one");
+	    ret = KRB5_PARSE_MALFORMED;
+	    goto exit;
+	}
 	realm = malloc(q - start + 1);
 	if (realm == NULL) {
 	    krb5_set_error_string (context, "malloc: out of memory");
@@ -196,9 +212,18 @@ krb5_parse_name(krb5_context context,
 	memcpy(realm, start, q - start);
 	realm[q - start] = 0;
     }else{
-	ret = krb5_get_default_realm (context, &realm);
-	if (ret)
+	if (flags & KRB5_PRINCIPAL_PARSE_MUST_REALM) {
+	    krb5_set_error_string (context, "realm NOT found in principal "
+				   "expected to be with one");
+	    ret = KRB5_PARSE_MALFORMED;
 	    goto exit;
+	} else if (flags & KRB5_PRINCIPAL_PARSE_NO_REALM) {
+	    realm = NULL;
+	} else {
+	    ret = krb5_get_default_realm (context, &realm);
+	    if (ret)
+		goto exit;
+	}
 
 	comp[n] = malloc(q - start + 1);
 	if (comp[n] == NULL) {
@@ -230,6 +255,14 @@ exit:
     free(realm);
     free(s);
     return ret;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_parse_name(krb5_context context,
+		const char *name,
+		krb5_principal *principal)
+{
+    return krb5_parse_name_flags(context, name, 0, principal);
 }
 
 static const char quotable_chars[] = " \n\t\b\\/@";
