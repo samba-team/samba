@@ -47,6 +47,8 @@ loop(const char *target, gss_ctx_id_t *sctx, gss_ctx_id_t *cctx)
     OM_uint32 flags = 0, ret_cflags, ret_sflags;
     gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
 
+    printf("target: %s\n", target);
+
     input_token.value = rk_UNCONST(target);
     input_token.length = strlen(target);
 
@@ -116,10 +118,13 @@ loop(const char *target, gss_ctx_id_t *sctx, gss_ctx_id_t *cctx)
 }
 
 
+static int dns_canon_flag = -1;
 static int version_flag = 0;
 static int help_flag	= 0;
 
 static struct getargs args[] = {
+    {"dns-canon",0,	arg_negative_flag, &dns_canon_flag, 
+     "use dns to canonlize", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
     {"help",	0,	arg_flag,	&help_flag,  NULL, NULL }
 };
@@ -158,6 +163,9 @@ main(int argc, char **argv)
 
     if (argc != 1)
 	usage(1);
+
+    if (dns_canon_flag != -1)
+	gsskrb5_set_dns_canonlize(dns_canon_flag);
 
     loop(argv[0], &sctx, &cctx);
     
