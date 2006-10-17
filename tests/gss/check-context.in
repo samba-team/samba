@@ -94,7 +94,14 @@ exitcode=0
 echo "Getting client initial tickets"
 ${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
 
-${context} host/lucid.example.org@${R} || exitcode=1
+echo plain
+${context} host/lucid.example.org@${R} || { exitcode=1 ; echo test failed; }
+echo "dns canon on (long name)"
+${context} --dns-canon host/lucid.example.org@${R} || \
+	{ exitcode=1 ; echo test failed; }
+echo "dns canon off (long name)"
+${context} --no-dns-canon host/lucid.example.org@${R} || \
+	{ exitcode=1 ; echo test failed; }
 
 echo "killing kdc (${kdcpid})"
 kill ${kdcpid} 2> /dev/null
