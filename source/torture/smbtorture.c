@@ -518,6 +518,12 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		}
 	}
 
+	if (strcmp(target, "samba3") == 0) {
+		lp_set_cmdline("target:samba3", "true");
+	} else if (strcmp(target, "samba4") == 0) {
+		lp_set_cmdline("target:samba4", "true");
+	}
+
 	if (max_runtime) {
 		/* this will only work if nobody else uses alarm(),
 		   which means it won't work for some tests, but we
@@ -529,6 +535,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	}
 
 	torture_init();
+	ldb_global_init();
 
 	subunit_dir = lp_parm_string_list(-1, "torture", "subunitdir", ":");
 	if (subunit_dir == NULL) 
@@ -537,10 +544,6 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		for (i = 0; subunit_dir[i]; i++)
 			torture_subunit_load_testsuites(subunit_dir[i], true, NULL);
 	}
-
-
-
-	ldb_global_init();
 
 	if (torture_seed == 0) {
 		torture_seed = time(NULL);
@@ -561,12 +564,6 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	if (argc_new < 3) {
 		usage(pc);
 		exit(1);
-	}
-
-	if (strcmp(target, "samba3") == 0) {
-		lp_set_cmdline("target:samba3", "true");
-	} else if (strcmp(target, "samba4") == 0) {
-		lp_set_cmdline("target:samba4", "true");
 	}
 
 	/* see if its a RPC transport specifier */
