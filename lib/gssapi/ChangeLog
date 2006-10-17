@@ -1,5 +1,9 @@
-2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_krb5.c: add bits to make lucid context work
+	
+2006-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* mech/gss_oid_to_str.c: Prefix der primitives with der_.
 
 	* krb5/inquire_sec_context_by_oid.c: Prefix der primitives with
