@@ -1,5 +1,24 @@
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_principal.3: Document krb5_parse_name_flags.
+
+	* lib/krb5/principal.c: Add krb5_parse_name_flags.
+
+	* lib/krb5/principal.c: Add krb5_parse_name_flags.
+
+	* lib/krb5/krb5.h: Add krb5_parse_name_flags flags.
+
+	* lib/krb5/krb5_locl.h: Hide krb5_context_data from public
+	exposure.
+
+	* lib/krb5/krb5.h: Hide krb5_context_data from public exposure.
+
+	* kuser/klist.c: Use krb5_get_kdc_sec_offset.
+
+	* lib/krb5/context.c: Document krb5_get_kdc_sec_offset()
+	
+	* lib/krb5/krb5_init_context.3: Add krb5_get_kdc_sec_offset()
+	
 	* lib/krb5/krb5_init_context.3: Add krb5_set_dns_canonize_hostname
 	and krb5_get_dns_canonize_hostname
 
