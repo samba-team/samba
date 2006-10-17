@@ -45,6 +45,7 @@
 .Nm krb5_free_principal ,
 .Nm krb5_make_principal ,
 .Nm krb5_parse_name ,
+.Nm krb5_parse_name_flags ,
 .Nm krb5_princ_realm ,
 .Nm krb5_princ_set_realm ,
 .Nm krb5_principal_compare ,
@@ -72,6 +73,8 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn krb5_free_principal "krb5_context context" "krb5_principal principal"
 .Ft krb5_error_code
 .Fn krb5_parse_name "krb5_context context" "const char *name" "krb5_principal *principal"
+.Ft krb5_error_code
+.Fn krb5_parse_name_flags "krb5_context context" "const char *name" "int flags" "krb5_principal *principal"
 .Ft krb5_error_code
 .Fn "krb5_unparse_name" "krb5_context context" "krb5_const_principal principal" "char **name"
 .Ft krb5_error_code
@@ -135,9 +138,24 @@ Examples of a principal are
 and
 .Li host/datan.kth.se@KTH.SE .
 .Fn krb5_parse_name
+and
+.Fn krb5_parse_name_flags
 passes a principal name in
 .Fa name
 to the kerberos principal structure.
+.Fn krb5_parse_name_flags
+takes an extra
+.Fa flags
+argument the following flags can be passed in
+.Bl -tag -width Ds
+.It Dv KRB5_PRINCIPAL_PARSE_NO_REALM
+requries the input string to be without a realm, and no realm is
+stored in the
+.Fa principal
+return argument.
+.It Dv KRB5_PRINCIPAL_PARSE_MUST_REALM
+requries the input string to with a realm.
+.El
 .Pp
 .Fn krb5_unparse_name
 prints the principal
