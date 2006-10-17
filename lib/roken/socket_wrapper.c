@@ -68,6 +68,9 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#ifdef HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
 #include <errno.h>
 #include <sys/un.h>
 #include <netinet/in.h>
