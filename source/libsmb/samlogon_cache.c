@@ -67,7 +67,8 @@ void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
            winbindd_cache.tdb open.  Open the tdb if a NULL is passed. */
 
 	if (!tdb) {
-		tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000,
+		tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 
+				   WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
 				   TDB_DEFAULT, O_RDWR, 0600);
 		if (!tdb) {
 			DEBUG(5, ("netsamlogon_clear_cached_user: failed to open cache\n"));
