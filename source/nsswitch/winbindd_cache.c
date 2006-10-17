@@ -1291,6 +1291,8 @@ do_query:
 	status = domain->backend->name_to_sid(domain, mem_ctx, domain_name, name, sid, type);
 
 	/* and save it */
+	refresh_sequence_number(domain, False);
+
 	if (domain->online && !is_null_sid(sid)) {
 		wcache_save_name_to_sid(domain, status, domain_name, name, sid, *type);
 	}
@@ -2144,6 +2146,7 @@ void cache_name2sid(struct winbindd_domain *domain,
 		    const char *domain_name, const char *name,
 		    enum SID_NAME_USE type, const DOM_SID *sid)
 {
+	refresh_sequence_number(domain, False);
 	wcache_save_name_to_sid(domain, NT_STATUS_OK, domain_name, name,
 				sid, type);
 }
