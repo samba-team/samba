@@ -955,7 +955,7 @@ out:
 		*kvno = get_kvno_from_ap_req(&ap_req);
 		*enctype = get_enctype_from_ap_req(&ap_req);
 
- 		free_AP_REQ(ap_req);
+ 		free_AP_REQ(&ap_req);
  		return 0;
 	}
 #endif
