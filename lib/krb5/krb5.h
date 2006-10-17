@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -427,45 +427,6 @@ struct krb5_config_binding {
 typedef struct krb5_config_binding krb5_config_binding;
 
 typedef krb5_config_binding krb5_config_section;
-
-typedef struct krb5_context_data {
-    krb5_enctype *etypes;
-    krb5_enctype *etypes_des;
-    char **default_realms;
-    time_t max_skew;
-    time_t kdc_timeout;
-    unsigned max_retries;
-    int32_t kdc_sec_offset;
-    int32_t kdc_usec_offset;
-    krb5_config_section *cf;
-    struct et_list *et_list;
-    struct krb5_log_facility *warn_dest;
-    krb5_cc_ops *cc_ops;
-    int num_cc_ops;
-    const char *http_proxy;
-    const char *time_fmt;
-    krb5_boolean log_utc;
-    const char *default_keytab;
-    const char *default_keytab_modify;
-    krb5_boolean use_admin_kdc;
-    krb5_addresses *extra_addresses;
-    krb5_boolean scan_interfaces;	/* `ifconfig -a' */
-    krb5_boolean srv_lookup;		/* do SRV lookups */
-    krb5_boolean srv_try_txt;		/* try TXT records also */
-    int32_t fcache_vno;			/* create cache files w/ this
-                                           version */
-    int num_kt_types;			/* # of registered keytab types */
-    struct krb5_keytab_data *kt_types;  /* registered keytab types */
-    const char *date_fmt;
-    char *error_string;
-    char error_buf[256];
-    krb5_addresses *ignore_addresses;
-    char *default_cc_name;
-    int pkinit_flags;
-    void *mutex;			/* protects error_string/error_buf */
-    int large_msg_size;
-    int dns_canonize_hostname;
-} krb5_context_data;
 
 enum {
     KRB5_PKINIT_WIN2K		= 1,	/* wire compatible with Windows 2k */
