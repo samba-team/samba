@@ -694,3 +694,13 @@ krb5_get_dns_canonize_hostname (krb5_context context)
 {
     return context->dns_canonize_hostname;
 }
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
+{
+    if (sec)
+	*sec = context->kdc_sec_offset;
+    if (usec)
+	*usec = context->kdc_usec_offset;
+    return 0;
+}
