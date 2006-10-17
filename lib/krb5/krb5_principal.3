@@ -59,7 +59,9 @@
 .Nm krb5_sname_to_principal ,
 .Nm krb5_sock_to_principal ,
 .Nm krb5_unparse_name ,
+.Nm krb5_unparse_name_flags ,
 .Nm krb5_unparse_name_fixed ,
+.Nm krb5_unparse_name_fixed_flags ,
 .Nm krb5_unparse_name_fixed_short ,
 .Nm krb5_unparse_name_short
 .Nd Kerberos 5 principal handling functions
@@ -78,7 +80,11 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Ft krb5_error_code
 .Fn "krb5_unparse_name" "krb5_context context" "krb5_const_principal principal" "char **name"
 .Ft krb5_error_code
+.Fn "krb5_unparse_name_flags" "krb5_context context" "krb5_const_principal principal" "int flags" "char **name"
+.Ft krb5_error_code
 .Fn krb5_unparse_name_fixed "krb5_context context" "krb5_const_principal principal" "char *name" "size_t len"
+.Ft krb5_error_code
+.Fn krb5_unparse_name_fixed_flags "krb5_context context" "krb5_const_principal principal" "int flags" "char *name" "size_t len"
 .Ft krb5_error_code
 .Fn "krb5_unparse_name_short" "krb5_context context" "krb5_const_principal principal" "char **name"
 .Ft krb5_error_code
@@ -158,6 +164,8 @@ requries the input string to with a realm.
 .El
 .Pp
 .Fn krb5_unparse_name
+and
+.Fn krb5_unparse_name_flags
 prints the principal
 .Fa princ
 to the string
@@ -165,11 +173,22 @@ to the string
 .Fa name
 should be freed with
 .Xr free 3 .
+To the 
+.Fa flags
+argument the following flags can be passed in
+.Bl -tag -width Ds
+.It Dv KRB5_PRINCIPAL_UNPARSE_SHORT
+no realm if the realm is one of the local realms.
+.It Dv KRB5_PRINCIPAL_UNPARSE_NO_REALM
+never include any realm in the principal name.
+.El
 On failure
 .Fa name
 is set to
 .Dv NULL .
 .Fn krb5_unparse_name_fixed
+and
+.Fn krb5_unparse_name_fixed_flags
 behaves just like
 .Fn krb5_unparse ,
 but instead unparses the principal into a fixed size buffer.
