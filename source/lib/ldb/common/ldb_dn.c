@@ -337,6 +337,9 @@ failed:
 	return NULL;
 }
 
+/*
+  explode a DN string into a ldb_dn structure
+*/
 struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
 {
 	struct ldb_dn *edn; /* the exploded dn */
