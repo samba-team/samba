@@ -203,6 +203,31 @@ gsskrb5_register_acceptor_identity(const char *identity)
 	return (GSS_S_COMPLETE);
 }
 
+OM_uint32
+gsskrb5_set_dns_canonlize(int flag)
+{
+        struct _gss_mech_switch	*m;
+	gss_buffer_desc buffer;
+	OM_uint32 junk;
+	char b = (flag != 0);
+
+	_gss_load_mech();
+
+	buffer.value = &b;
+	buffer.length = sizeof(b);
+
+	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+		if (m->gm_mech.gm_set_sec_context_option == NULL)
+			continue;
+		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
+		    GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X, &buffer);
+	}
+
+	return (GSS_S_COMPLETE);
+}
+
+
+
 static krb5_error_code
 set_key(krb5_keyblock *keyblock, gss_krb5_lucid_key_t *key)
 {
