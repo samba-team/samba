@@ -201,15 +201,19 @@ echo "Configuring and building ($hversion)"
 ./configure --enable-socket-wrapper ${confflags} > ab.txt 2>&1
 if [ $? != 0 ] ; then
     echo Configure failed
+    status=${status:-configure}
 fi
 make all >> ab.txt 2>&1
 if [ $? != 0 ] ; then
     echo Make all failed
+    status=${status:-make all}
 fi
 make check >> ab.txt 2>&1
 if [ $? != 0 ] ; then
     echo Make check failed
+    status=${status:-make check}
 fi
+status=${status:-ok}
 
 if [ "X${resultdir}" != X ] ; then
 	cp ab.txt "${resultdir}/ab-${hversion}-${hostname}-${date}.txt"
@@ -224,6 +228,7 @@ X-heimdal-build: kaka-till-love
 
 Version: $version
 Machine: `uname -a`
+Status: $status
 EOF
 
 	if [ "X$passhrase" != X ] ; then
