@@ -41,28 +41,14 @@ void torture_comment(struct torture_context *context,
 	talloc_free(tmp);
 }
 
-void _torture_fail_ext(struct torture_context *context, 
-					  const char *fmt, ...)
+void torture_result(struct torture_context *context, 
+					enum torture_result result, const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	context->last_reason = talloc_vasprintf(context, fmt, ap);
-	/* make sure the reason for the failure is displayed */
-	if (context->ui_ops->comment)
-		context->ui_ops->comment(context, context->last_reason);
-	va_end(ap);
-	context->last_result = TORTURE_FAIL;
-}
 
-void _torture_skip_ext(struct torture_context *context, 
-					  const char *fmt, ...)
-{
-	va_list ap;
-	context->skipped++;
-
-	va_start(ap, fmt);
-	context->last_result = TORTURE_SKIP;
+	context->last_result = result;
 	context->last_reason = talloc_vasprintf(context, fmt, ap);
 	va_end(ap);
 }
@@ -182,11 +168,11 @@ void torture_ui_test_result(struct torture_context *context,
 	if (context->ui_ops->test_result)
 		context->ui_ops->test_result(context, result, comment);
 
+	/* FIXME: */
 
 	switch (result) {
-		case TORTURE_SKIP: context->success++; break;
+		case TORTURE_SKIP: context->skipped++; break;
 		case TORTURE_FAIL: context->failed++; break;
-		case TORTURE_TODO: context->todo++; break;
 		case TORTURE_OK: context->success++; break;
 	}
 }
@@ -199,7 +185,7 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 	BOOL ret;
 
 	if (test->dangerous && !torture_setting_bool(context, "dangerous", False)) {
-		_torture_skip_ext(context, 
+		torture_result(context, TORTURE_SKIP,
 				"disabled %s - enable dangerous tests to use", test->name);
 		return True;
 	}
