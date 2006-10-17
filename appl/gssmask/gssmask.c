@@ -276,7 +276,7 @@ static int
 HandleOP(GetVersionInfo)
 {
     put32(c, GSSMAGGOTPROTOCOL);
-    return 0;
+    errx(1, "GetVersionInfo");
 }
 
 static int
@@ -349,6 +349,8 @@ HandleOP(InitContext)
 	
     if ((flags & GSS_C_DELEG_FLAG) != 0)
 	logmessage(c, __FILE__, __LINE__, 0, "init_sec_context delegating");
+    if ((flags & GSS_C_DCE_STYLE) != 0)
+	logmessage(c, __FILE__, __LINE__, 0, "init_sec_context dce-style");
 
     maj_stat = gss_init_sec_context(&min_stat,
 				    creds,
@@ -460,6 +462,8 @@ HandleOP(AcceptContext)
 	out_token.data = output_token.value;
 	out_token.length = output_token.length;
     }
+    if ((ret_flags & GSS_C_DCE_STYLE) != 0)
+	logmessage(c, __FILE__, __LINE__, 0, "accept_sec_context dce-style");
     if ((ret_flags & GSS_C_DELEG_FLAG) != 0) {
 	deleg_hcred = add_handle(c, handle_cred, deleg_cred);
 	logmessage(c, __FILE__, __LINE__, 0,
@@ -543,18 +547,6 @@ out:
 }
 
 static int
-HandleOP(Encrypt)
-{
-    return 0;
-}
-
-static int
-HandleOP(Decrypt)
-{
-    return 0;
-}
-
-static int
 HandleOP(Sign)
 {
     OM_uint32 maj_stat, min_stat;
@@ -570,7 +562,7 @@ HandleOP(Sign)
 
     ctx = find_handle(c->handle, hContext, handle_context);
     if (ctx == NULL)
-	errx(1, "wrap: reference to unknown context");
+	errx(1, "sign: reference to unknown context");
 
     input_token.length = token.length;
     input_token.value = token.data;
@@ -607,7 +599,7 @@ HandleOP(Verify)
 
     ctx = find_handle(c->handle, hContext, handle_context);
     if (ctx == NULL)
-	errx(1, "wrap: reference to unknown context");
+	errx(1, "verify: reference to unknown context");
 
     ret32(c, flags);
     ret32(c, seqno);
@@ -676,7 +668,6 @@ HandleOP(GetTargetName)
 static int
 HandleOP(SetLoggingSocket)
 {
-    struct sockaddr_storage sa;
     int32_t portnum;
     int fd, ret;
 
@@ -685,15 +676,12 @@ HandleOP(SetLoggingSocket)
     logmessage(c, __FILE__, __LINE__, 0,
 	       "logging port on peer is: %d", (int)portnum);
 
-    sa = c->sa;
     socket_set_port((struct sockaddr *)(&c->sa), htons(portnum));
 
-    logmessage(c, __FILE__, __LINE__, 0, "socket");
     fd = socket(((struct sockaddr *)&c->sa)->sa_family, SOCK_STREAM, 0);
     if (fd < 0)
 	return 0;
 
-    logmessage(c, __FILE__, __LINE__, 0, "connect");
     ret = connect(fd, (struct sockaddr *)&c->sa, c->salen);
     if (ret < 0) {
 	logmessage(c, __FILE__, __LINE__, 0, "failed connect to log port: %s",
@@ -702,14 +690,13 @@ HandleOP(SetLoggingSocket)
 	return 0;
     }
 
-    logmessage(c, __FILE__, __LINE__, 0, "sp");
     if (c->logging)
 	krb5_storage_free(c->logging);
     c->logging = krb5_storage_from_fd(fd);
     close(fd);
 
     krb5_store_int32(c->logging, eLogSetMoniker);
-    store_string(c->logging, "gssmask");
+    store_string(c->logging, c->moniker);
     
     logmessage(c, __FILE__, __LINE__, 0, "logging turned on");
 
@@ -720,13 +707,13 @@ HandleOP(SetLoggingSocket)
 static int
 HandleOP(ChangePassword)
 {
-    return 0;
+    errx(1, "ChangePassword");
 }
 
 static int
 HandleOP(SetPasswordSelf)
 {
-    return 0;
+    errx(1, "SetPasswordSelf");
 }
 
 static int
@@ -817,9 +804,21 @@ HandleOP(Unwrap)
 }
 
 static int
+HandleOP(Encrypt)
+{
+    return handleWrap(op, c);
+}
+
+static int
+HandleOP(Decrypt)
+{
+    return handleUnwrap(op, c);
+}
+
+static int
 HandleOP(ConnectLoggingService2)
 {
-    return 0;
+    errx(1, "ConnectLoggingService2");
 }
 
 static int
@@ -832,13 +831,13 @@ HandleOP(GetMoniker)
 static int
 HandleOP(CallExtension)
 {
-    return 0;
+    errx(1, "CallExtension");
 }
 
 static int
 HandleOP(AcquirePKInitCreds)
 {
-    return 0;
+    errx(1, "AcquirePKInitCreds");
 }
 
 /*
