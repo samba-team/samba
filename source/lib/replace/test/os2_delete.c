@@ -21,7 +21,7 @@
 
 static int test_readdir_os2_delete_ret;
 
-#define FAILED(d) (fprintf(stderr, "Failed for %s - %d = %s\n", d, errno, strerror(errno)), test_readdir_os2_delete_ret = 1, 1)
+#define FAILED(d) (printf("failure: readdir [\nFailed for %s - %d = %s\n]\n", d, errno, strerror(errno)), test_readdir_os2_delete_ret = 1, 1)
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -107,7 +107,7 @@ int test_readdir_os2_delete(void)
 	}
 	closedir(d);
 
-	printf("Deleted %d files of %d\n", total_deleted, NUM_FILES);
+	fprintf(stderr, "Deleted %d files of %d\n", total_deleted, NUM_FILES);
 
 	rmdir(TESTDIR) == 0 || FAILED("rmdir");
 
