@@ -121,7 +121,7 @@ installdirs:
 		$(DESTDIR)$(PKGCONFIGDIR) \
 		$(DESTDIR)$(CONFIGDIR) \
 
-installbin: $(SBIN_PROGS) $(BIN_PROGS) installdirs
+installbin: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh \
 		$(INSTALLPERMS) \
 		$(DESTDIR)$(BASEDIR) \
