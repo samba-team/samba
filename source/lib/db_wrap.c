@@ -65,13 +65,16 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s)
 	return strupper_talloc(mem_ctx, s);
 }
 
-/* check for leaks */
+/* check for memory leaks on the ldb context */
 static int ldb_wrap_destructor(struct ldb_context *ldb)
 {
-	if (talloc_total_blocks(ldb) > 656) {
-		DEBUG(0,("WARNING: probable memory leak in ldb %s - %lu blocks %lu bytes\n",
+	size_t *startup_blocks = (size_t *)ldb_get_opaque(ldb, "startup_blocks");
+	if (startup_blocks &&
+	    talloc_total_blocks(ldb) > *startup_blocks + 100) {
+		DEBUG(0,("WARNING: probable memory leak in ldb %s - %lu blocks (startup %lu) %lu bytes\n",
 			 (char *)ldb_get_opaque(ldb, "wrap_url"), 
 			 (unsigned long)talloc_total_blocks(ldb), 
+			 (unsigned long)*startup_blocks,
 			 (unsigned long)talloc_total_size(ldb)));
 #if 0
 		talloc_report_full(ldb, stdout);
@@ -97,6 +100,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	int ret;
 	struct event_context *ev;
 	char *real_url = NULL;
+	size_t *startup_blocks;
 
 	ldb = ldb_init(mem_ctx);
 	if (ldb == NULL) {
@@ -155,7 +159,12 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 
 	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 
+	/* setup for leak detection */
 	ldb_set_opaque(ldb, "wrap_url", real_url);
+	startup_blocks = talloc(ldb, size_t);
+	*startup_blocks = talloc_total_blocks(ldb);
+	ldb_set_opaque(ldb, "startup_blocks", startup_blocks);
+	
 	talloc_set_destructor(ldb, ldb_wrap_destructor);
 
 	return ldb;
