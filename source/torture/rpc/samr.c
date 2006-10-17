@@ -337,6 +337,14 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_STRING(21, profile_path, 21, profile_path, "xx21-21 profile_path", 
 			   SAMR_FIELD_PROFILE_PATH);
 
+	TEST_USERINFO_STRING(10, home_directory, 3, home_directory, "xx10-3 home_directory", 0);
+	TEST_USERINFO_STRING(10, home_directory, 5, home_directory, "xx10-5 home_directory", 0);
+	TEST_USERINFO_STRING(10, home_directory, 21, home_directory, "xx10-21 home_directory", 0);
+	TEST_USERINFO_STRING(21, home_directory, 21, home_directory, "xx21-21 home_directory",
+			     SAMR_FIELD_HOME_DIRECTORY);
+	TEST_USERINFO_STRING(21, home_directory, 10, home_directory, "xx21-10 home_directory",
+			     SAMR_FIELD_HOME_DIRECTORY);
+	
 	TEST_USERINFO_STRING(13, description,  1, description, "xx13-1 description", 0);
 	TEST_USERINFO_STRING(13, description,  5, description, "xx13-5 description", 0);
 	TEST_USERINFO_STRING(13, description, 21, description, "xx13-21 description", 0);
