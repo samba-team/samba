@@ -28,9 +28,9 @@ DEVEL_PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" -DBINDIR=\"$(builddir)/bin\" \
 	 -DSWATDIR=\"$(srcdir)/../swat\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\" \
 	 -DMODULESDIR=\"$(builddir)/bin/modules\" \
 	 -DJSDIR=\"$(srcdir)/scripting/libjs\" \
-	 -DSETUPDIR=\"$(srcdir)/setup\" \
+	 -DSETUPDIR=\"$(srcdir)/setup\" -DTORTUREDIR=\"$(srcdir)/bin/torture\" \
 	 -DWINBINDD_SOCKET_DIR=\"$(WINBINDD_SOCKET_DIR)\"
 
 dynconfig-devel.o: dynconfig.c Makefile
 	@echo Compiling $<
-	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) $(DEVEL_PATH_FLAGS) -c $< -o $@
+	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` -Ilib/replace $(CFLAGS) $(PICFLAG) $(DEVEL_PATH_FLAGS) -c $< -o $@

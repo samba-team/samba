@@ -110,9 +110,11 @@ sub _prepare_compiler_linker($)
 	my $builddir_headers = "";
 
 	$self->{duplicate_build} = 0;
+	if ($self->{developer}) {
+		$self->{duplicate_build} = 1;
+	}
 	if ($self->{config}->{LIBRARY_OUTPUT_TYPE} eq "SHARED_LIBRARY") {
-		if ($self->{developer}) {
-			$self->{duplicate_build} = 1;
+		if ($self->{duplicate_build}) {
 			$devld_local = " -Wl,-rpath,\$(builddir)/bin";
 		}
 		$devld_install = " -Wl,-rpath-link,\$(builddir)/bin";
@@ -372,9 +374,14 @@ sub Binary($$)
 		$extradir = "/torture" . substr($ctx->{INSTALLDIR}, length("TORTUREDIR"));
 	}
 	my $localdir = "bin$extradir";
+
+	my $dynconfig = "dynconfig.o";
+	my $dynconfig_install;
 	
 	if ($self->{duplicate_build}) {
 		$installdir = "bin/install$extradir";
+		$dynconfig = "dynconfig-devel.o";
+		$dynconfig_install = "dynconfig.o";
 	} else {
 		$installdir = "bin$extradir";
 	}
@@ -401,20 +408,20 @@ sub Binary($$)
 	if ($self->{duplicate_build}) {
 	$self->output(<< "__EOD__"
 #
-$localdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) 
+$localdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $dynconfig
 	\@echo Linking \$\@
-	\@\$(LD) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \$(INSTALL_LINK_FLAGS) \\
-		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
+	\@\$(LD) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) $dynconfig \\
+		\$(INSTALL_LINK_FLAGS) \$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
 );
 	}
 
 $self->output(<< "__EOD__"
-$installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) 
+$installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $dynconfig_install
 	\@echo Linking \$\@
 	\@\$(LD) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
+		$dynconfig_install \$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
 );

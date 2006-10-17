@@ -56,7 +56,7 @@ bool torture_subunit_load_testsuites(const char *directory, bool recursive,
 
 	while((entry = readdir(dir))) {
 		struct torture_suite *child;
-		if (ISDOT(entry->d_name) || ISDOTDOT(entry->d_name))
+		if (entry->d_name[0] == '.')
 			continue;
 
 		if (!recursive && entry->d_type & DT_DIR)
