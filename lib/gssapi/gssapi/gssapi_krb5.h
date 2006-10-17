@@ -112,11 +112,6 @@ gsskrb5_extract_authz_data_from_sec_context
 	 int /*ad_type*/,
 	 gss_buffer_t /*ad_data*/);
 
-#define GSS_C_KRB5_COMPAT_DES3_MIC 1
-
-OM_uint32
-gss_krb5_compat_des3_mic(OM_uint32 *, gss_ctx_id_t, int);
-
 OM_uint32
 gsskrb5_set_dns_canonlize(int);
 
