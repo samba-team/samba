@@ -62,6 +62,7 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/filio.h>
 #include <errno.h>
 #include <sys/un.h>
 #include <netinet/in.h>
