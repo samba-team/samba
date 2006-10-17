@@ -374,12 +374,6 @@ struct torture_tcase *torture_suite_add_simple_test(
 	return tcase;
 }
 
-BOOL torture_teardown_free(struct torture_context *torture, void *data)
-{
-	return talloc_free(data);
-}
-
-
 bool torture_suite_add_suite(struct torture_suite *suite, 
 							 struct torture_suite *child)
 {
