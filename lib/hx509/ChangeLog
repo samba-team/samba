@@ -1,3 +1,7 @@
+2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ks_file.c: set ret, remember to free ivdata
+	
 2006-10-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hx_locl.h: Include <parse_bytes.h>.
