@@ -39,35 +39,15 @@
 RCSID("$Id$");
 
 static OM_uint32
-set_compat_des3_mic_context_option
-           (OM_uint32 *minor_status,
-            gss_ctx_id_t *context_handle,
-            const gss_buffer_t value)
+get_bool(OM_uint32 *minor_status,
+	 const gss_buffer_t value,
+	 int *flag)
 {
-    gsskrb5_ctx ctx;
-    const char *p;
-
-    if (*context_handle == GSS_C_NO_CONTEXT) {
-	*minor_status = EINVAL;
-	return GSS_S_NO_CONTEXT;
-    }
-
     if (value->value == NULL || value->length != 1) {
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
-    p = (const char *)value->value;
-
-    ctx = (gsskrb5_ctx)*context_handle;
-    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
-    if (*p) {
-	ctx->more_flags |= COMPAT_OLD_DES3;
-    } else {
-	ctx->more_flags &= ~COMPAT_OLD_DES3;
-    }
-    ctx->more_flags |= COMPAT_OLD_DES3_SELECTED;
-    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
-
+    *flag = *((const char *)value->value) != 0;
     return GSS_S_COMPLETE;
 }
 
@@ -78,6 +58,8 @@ _gsskrb5_set_sec_context_option
             const gss_OID desired_object,
             const gss_buffer_t value)
 {
+    OM_uint32 maj_stat;
+
     GSSAPI_KRB5_INIT ();
 
     if (value == GSS_C_NO_BUFFER) {
@@ -86,9 +68,37 @@ _gsskrb5_set_sec_context_option
     }
 
     if (gss_oid_equal(desired_object, GSS_KRB5_COMPAT_DES3_MIC_X)) {
-	return set_compat_des3_mic_context_option(minor_status,
-						  context_handle,
-						  value);
+	gsskrb5_ctx ctx;
+	int flag;
+
+	if (*context_handle == GSS_C_NO_CONTEXT) {
+	    *minor_status = EINVAL;
+	    return GSS_S_NO_CONTEXT;
+	}
+
+	maj_stat = get_bool(minor_status, value, &flag);
+	if (maj_stat != GSS_S_COMPLETE)
+	    return maj_stat;
+
+	ctx = (gsskrb5_ctx)*context_handle;
+	HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+	if (flag)
+	    ctx->more_flags |= COMPAT_OLD_DES3;
+	else
+	    ctx->more_flags &= ~COMPAT_OLD_DES3;
+	ctx->more_flags |= COMPAT_OLD_DES3_SELECTED;
+	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	return GSS_S_COMPLETE;
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_SET_DNS_CANONIZE_X)) {
+	int flag;
+
+	maj_stat = get_bool(minor_status, value, &flag);
+	if (maj_stat != GSS_S_COMPLETE)
+	    return maj_stat;
+
+	krb5_set_dns_canonize_hostname(_gsskrb5_context, flag);
+	return GSS_S_COMPLETE;
+
     } else if (gss_oid_equal(desired_object, GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X)) {
 	char *str;
 
