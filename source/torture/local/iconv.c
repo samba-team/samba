@@ -264,7 +264,11 @@ static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 	codepoint_t c;
 
 	size = push_codepoint((char *)buf, codepoint);
-	torture_assert(tctx, size != -1 || (codepoint >= 0xd800 && codepoint <= 0x10000), "Invalid Codepoint range");
+	torture_assert(tctx, size != -1 || (codepoint >= 0xd800 && codepoint <= 0x10000), 
+		       "Invalid Codepoint range");
+
+	if (size == -1) return true;
+
 	buf[size] = random();
 	buf[size+1] = random();
 	buf[size+2] = random();
@@ -272,8 +276,9 @@ static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 
 	c = next_codepoint((char *)buf, &size2);
 
-	torture_assert(tctx, c == codepoint, talloc_asprintf(tctx, 
-					"next_codepoint(%u) failed - gave %u", codepoint, c));
+	torture_assert(tctx, c == codepoint, 
+		       talloc_asprintf(tctx, 
+				       "next_codepoint(%u) failed - gave %u", codepoint, c));
 
 	torture_assert(tctx, size2 == size, 
 			talloc_asprintf(tctx, "next_codepoint(%u) gave wrong size %d (should be %d)\n", 
