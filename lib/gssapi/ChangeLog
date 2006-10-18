@@ -1,5 +1,10 @@
 2006-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gssapi.asn1: Make it into a heim_any_set, its doesn't
+	except a tag.
+
+	* mech/gssapi.asn1: GSSAPIContextToken is IMPLICIT SEQUENCE
+
 	* gssapi/gssapi_krb5.h: add GSS_KRB5_GET_ACCEPTOR_SUBKEY_X
 
 	* krb5/external.c: Add GSS_KRB5_GET_ACCEPTOR_SUBKEY_X.
