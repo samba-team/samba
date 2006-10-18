@@ -316,6 +316,12 @@ int ltdb_cache_load(struct ldb_module *module)
 	uint64_t seq;
 	struct ldb_message *baseinfo;
 
+	/* a very fast check to avoid extra database reads */
+	if (ltdb->cache != NULL && 
+	    tdb_get_seqnum(ltdb->tdb) == ltdb->tdb_seqnum) {
+		return 0;
+	}
+
 	if (ltdb->cache == NULL) {
 		ltdb->cache = talloc_zero(ltdb, struct ltdb_cache);
 		if (ltdb->cache == NULL) goto failed;
@@ -348,6 +354,8 @@ int ltdb_cache_load(struct ldb_module *module)
 			goto failed;
 		}
 	}
+
+	ltdb->tdb_seqnum = tdb_get_seqnum(ltdb->tdb);
 
 	/* if the current internal sequence number is the same as the one
 	   in the database then assume the rest of the cache is OK */

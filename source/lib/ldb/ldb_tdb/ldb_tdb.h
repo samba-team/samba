@@ -21,6 +21,10 @@ struct ltdb_private {
 	   handling. It has plenty of digits of precision */
 	unsigned long long sequence_number;
 
+	/* the low level tdb seqnum - used to avoid loading BASEINFO when
+	   possible */
+	int tdb_seqnum;
+
 	struct ltdb_cache {
 		struct ldb_message *indexlist;
 		struct ldb_message *attributes;
