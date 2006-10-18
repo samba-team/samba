@@ -198,16 +198,19 @@ SOCKET_WRAPPER_DIR=`pwd`/socket_wrapper_dir
 export SOCKET_WRAPPER_DIR
 
 echo "Configuring and building ($hversion)"
-./configure --enable-socket-wrapper ${confflags} > ab.txt 2>&1
+echo "./configure --enable-socket-wrapper ${confflags}" > ab.txt
+./configure --enable-socket-wrapper ${confflags} >> ab.txt 2>&1
 if [ $? != 0 ] ; then
     echo Configure failed
     status=${status:-configure}
 fi
+echo make all >> ab.txt
 make all >> ab.txt 2>&1
 if [ $? != 0 ] ; then
     echo Make all failed
     status=${status:-make all}
 fi
+echo make check >> ab.txt
 make check >> ab.txt 2>&1
 if [ $? != 0 ] ; then
     echo Make check failed
@@ -228,7 +231,8 @@ To: <heimdal-build-log@it.su.se>
 Subject: heimdal-build-log SPAM COOKIE
 X-heimdal-build: kaka-till-love
 
-Version: $version
+Script-version: ${version}
+Heimdal-version: ${hversion}
 Machine: `uname -a`
 Status: $status
 EOF
