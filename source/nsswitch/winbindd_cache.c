@@ -1124,7 +1124,7 @@ do_query:
 		centry_put_string(centry, (*info)[i].shell);
 		centry_put_sid(centry, &(*info)[i].user_sid);
 		centry_put_sid(centry, &(*info)[i].group_sid);
-		if (domain->backend->consistent) {
+		if (domain->backend && domain->backend->consistent) {
 			/* when the backend is consistent we can pre-prime some mappings */
 			wcache_save_name_to_sid(domain, NT_STATUS_OK, 
 						domain->name,
