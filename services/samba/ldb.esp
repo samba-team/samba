@@ -30,7 +30,7 @@ jsonrpc_include("resources.esp");
  *
  * @return
  *   Success: The resource id to be used for future access to the database
- *   Failure: -1
+ *   Failure: error event
  *
  * @note
  *   Credentials or session_info may be set up first.
@@ -52,9 +52,23 @@ function _connect(params, error)
         return resourceId;
     }
 
+    /* Ensure there are no slashes in the database name */
+    var components = split('/', params[0]);
+    if (components.length > 1)
+    {
+        error.setError(1, "Invalid database name (contains '/')");
+        return error;
+    }
+
+    /* Get access to loadparm functions */
+    var lp = loadparm_init();
+
+    /* Determine the private directory */
+    var private_dir = lp.get("private dir");
+
     /* Database was not previously opened.  Connect to it. */
     ldb = ldb_init();
-    var ret = ldb.connect(params[0]);
+    var ret = ldb.connect(private_dir + "/" + params[0]);
     if (ret && ldb.db)
     {
         return session.resources.set(ldb, "ldb:" + params[0], error);
