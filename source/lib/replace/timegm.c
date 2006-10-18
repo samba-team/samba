@@ -44,13 +44,22 @@ static int is_leap(unsigned y)
 	return (y % 4) == 0 && ((y % 100) != 0 || (y % 400) == 0);
 }
 
-time_t timegm(struct tm *tm)
+time_t rep_timegm(struct tm *tm)
 {
 	static const unsigned ndays[2][12] ={
 		{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
 		{31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
 	time_t res = 0;
 	unsigned i;
+
+	if (tm->tm_mon > 12 ||
+	    tm->tm_mday > 31 ||
+	    tm->tm_min > 60 ||
+	    tm->tm_sec > 60 ||
+	    tm->tm_hour > 24) {
+		/* invalid tm structure */
+		return 0;
+	}
 	
 	for (i = 70; i < tm->tm_year; ++i)
 		res += is_leap(i) ? 366 : 365;
