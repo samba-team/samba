@@ -17,6 +17,34 @@ jsonrpc_include("resources.esp");
 
 
 /**
+ * Local function to determine if the requested database is one which we allow
+ * access to.
+ *
+ * @param dbRequested
+ *   Name of the database which is being requested to be opened
+ *
+ * @return
+ *   true if access is allowed; false otherwise.
+ */
+function accessAllowed(dbRequested)
+{
+    /* Databases allowed to connect to */
+    dbAllowed = new Array();
+    dbAllowed[dbAllowed.length] = "sam.ldb";
+
+    for (var i = 0; i < dbAllowed.length; i++)
+    {
+        if (dbRequested == dbAllowed[i])
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+/**
  * Connect to a database
  *
  * @param params[0]
@@ -52,11 +80,10 @@ function _connect(params, error)
         return resourceId;
     }
 
-    /* Ensure there are no slashes in the database name */
-    var components = split('/', params[0]);
-    if (components.length > 1)
+    /* Ensure that the database name is one that is allowed to be opened */
+    if (! accessAllowed(params[0]))
     {
-        error.setError(1, "Invalid database name (contains '/')");
+        error.setError(-1, "Invalid or disallowed database name");
         return error;
     }
 
