@@ -590,3 +590,24 @@ int rep_setenv(const char *name, const char *value, int overwrite)
 }
 #endif
 
+#ifndef HAVE_SOCKETPAIR
+int rep_socketpair(int d, int type, int protocol, int sv[2])
+{
+	if (d != AF_UNIX) {
+		errno = EAFNOSUPPORT;
+		return -1;
+	}
+
+	if (protocol != 0) {
+		errno = EPROTONOSUPPORT;
+		return -1;
+	}
+
+	if (type != SOCK_STREAM) {
+		errno = EOPNOTSUPP;
+		return -1;
+	}
+
+	return pipe(sock);
+}
+#endif
