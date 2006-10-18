@@ -1,5 +1,7 @@
 2006-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kgetcred.c: Avoid memory leak.
+
 	* tools/heimdal-build.sh: Add more verbose logging, add version of
 	script and heimdal to the mail.
 
