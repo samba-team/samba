@@ -1,5 +1,13 @@
-2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi/gssapi_krb5.h: add GSS_KRB5_GET_INITIATOR_SUBKEY_X and
+	GSS_KRB5_GET_SUBKEY_X
+
+	* krb5/external.c: add GSS_KRB5_GET_INITIATOR_SUBKEY_X,
+	GSS_KRB5_GET_SUBKEY_X
+	
+2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* test_context.c: Support switching on name type oid's
 
 	* test_context.c: add test for dns canon flag
