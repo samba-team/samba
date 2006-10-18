@@ -608,6 +608,6 @@ int rep_socketpair(int d, int type, int protocol, int sv[2])
 		return -1;
 	}
 
-	return pipe(sock);
+	return pipe(sv);
 }
 #endif
