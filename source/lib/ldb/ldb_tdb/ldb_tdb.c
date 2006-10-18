@@ -1021,7 +1021,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		path = url;
 	}
 
-	tdb_flags = TDB_DEFAULT;
+	tdb_flags = TDB_DEFAULT | TDB_SEQNUM;
 
 	/* check for the 'nosync' option */
 	if (flags & LDB_FLG_NOSYNC) {

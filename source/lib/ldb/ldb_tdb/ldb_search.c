@@ -248,25 +248,13 @@ int ltdb_search_dn1(struct ldb_module *module, const struct ldb_dn *dn, struct l
 	return 1;
 }
 
-/* the lock key for search locking. Note that this is not a DN, its
-   just an arbitrary key to give to tdb. Also note that as we and
-   using transactions for all write operations and transactions take
-   care of their own locks, we don't need to do any locking anywhere
-   other than in ldb_search() */
-#define LDBLOCK	"INT_LDBLOCK"
-
 /*
   lock the database for read - use by ltdb_search
 */
 static int ltdb_lock_read(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = module->private_data;
-	TDB_DATA key;
-
-	key.dptr = discard_const(LDBLOCK);
-	key.dsize = strlen(LDBLOCK);
-
-	return tdb_chainlock_read(ltdb->tdb, key);
+	return tdb_lockall_read(ltdb->tdb);
 }
 
 /*
@@ -275,12 +263,7 @@ static int ltdb_lock_read(struct ldb_module *module)
 static int ltdb_unlock_read(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = module->private_data;
-	TDB_DATA key;
-
-	key.dptr = discard_const(LDBLOCK);
-	key.dsize = strlen(LDBLOCK);
-
-	return tdb_chainunlock_read(ltdb->tdb, key);
+	return tdb_unlockall_read(ltdb->tdb);
 }
 
 /*
