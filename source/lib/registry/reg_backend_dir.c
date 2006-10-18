@@ -99,9 +99,9 @@ static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx, const struct registry_ke
 			if(S_ISDIR(stbuf.st_mode)) {
 				if(i == idx) {
 					(*key) = talloc(mem_ctx, struct registry_key);
-					(*key)->name = e->d_name;
+					(*key)->name = talloc_strdup(*key, e->d_name);
 					(*key)->path = NULL;
-					(*key)->backend_data = talloc_strdup(mem_ctx, thispath);
+					(*key)->backend_data = talloc_strdup(*key, thispath);
 					SAFE_FREE(thispath);
 					closedir(d);
 					return WERR_OK;
