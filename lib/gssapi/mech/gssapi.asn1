@@ -4,7 +4,7 @@ GSS-API DEFINITIONS ::= BEGIN
 
 IMPORTS heim_any FROM heim;
 
-GSSAPIContextToken ::= [APPLICATION 0] SEQUENCE {
+GSSAPIContextToken ::= [APPLICATION 0] IMPLICIT SEQUENCE {
 	thisMech OBJECT IDENTIFIER,
 	innerContextToken heim_any
 }
