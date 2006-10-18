@@ -63,12 +63,14 @@ extern gss_OID GSS_KRB5_COPY_CCACHE_X;
 extern gss_OID GSS_KRB5_COMPAT_DES3_MIC_X;
 extern gss_OID GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X;
 extern gss_OID GSS_KRB5_SET_DNS_CANONIZE_X;
-/* Extensions inquire context inre */
+/* Extensions inquire context */
 extern gss_OID GSS_KRB5_GET_TKT_FLAGS_X;
 extern gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X;
 extern gss_OID GSS_C_PEER_HAS_UPDATED_SPNEGO;
 extern gss_OID GSS_KRB5_EXPORT_LUCID_CONTEXT_X;
 extern gss_OID GSS_KRB5_EXPORT_LUCID_CONTEXT_V1_X;
+extern gss_OID GSS_KRB5_GET_SUBKEY_X;
+extern gss_OID GSS_KRB5_GET_INITIATOR_SUBKEY_X;
 /* Extensions creds */
 extern gss_OID GSS_KRB5_IMPORT_CRED_X;
 
