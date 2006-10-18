@@ -142,7 +142,7 @@ BOOL torture_run_suite(struct torture_context *context,
 		context->active_testname = talloc_strdup(context, suite->name);
 
 	if (suite->path)
-		torture_subunit_run_suite(context, suite);
+		ret &= torture_subunit_run_suite(context, suite);
 
 	for (tcase = suite->testcases; tcase; tcase = tcase->next) {
 		ret &= torture_run_tcase(context, tcase);
@@ -206,12 +206,14 @@ void torture_ui_test_result(struct torture_context *context,
 					context->results.unexpected_errors, 
 					talloc_reference(context, context->active_testname));
 		context->results.errors++;
+		context->results.returncode = false;
 	} else if (result == TORTURE_FAIL) {
 		if (0 == str_list_match(context->active_testname, 
 						   context->expected_failures)) {
 			context->results.unexpected_failures = str_list_add(
 					context->results.unexpected_failures, 
 					talloc_reference(context, context->active_testname));
+			context->results.returncode = false;
 		} 
 		context->results.failed++;
 	}
