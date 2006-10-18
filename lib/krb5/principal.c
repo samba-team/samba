@@ -299,12 +299,20 @@ unparse_name_fixed(krb5_context context,
     int short_form = (flags & KRB5_PRINCIPAL_UNPARSE_SHORT) != 0;
     int no_realm = (flags & KRB5_PRINCIPAL_UNPARSE_NO_REALM) != 0;
 
+    if (!no_realm && princ_realm(principal) == NULL) {
+	krb5_set_error_string(context, "Realm missing from principal, "
+			      "can't unparse");
+	return ERANGE;
+    }
+
     for(i = 0; i < princ_num_comp(principal); i++){
 	if(i)
 	    add_char(name, idx, len, '/');
 	idx = quote_string(princ_ncomp(principal, i), name, idx, len);
-	if(idx == len)
+	if(idx == len) {
+	    krb5_set_error_string(context, "Out of space printing principal");
 	    return ERANGE;
+	}
     } 
     /* add realm if different from default realm */
     if(short_form && !no_realm) {
@@ -320,8 +328,11 @@ unparse_name_fixed(krb5_context context,
     if(!short_form && !no_realm) {
 	add_char(name, idx, len, '@');
 	idx = quote_string(princ_realm(principal), name, idx, len);
-	if(idx == len)
+	if(idx == len) {
+	    krb5_set_error_string(context, 
+				  "Out of space printing realm of principal");
 	    return ERANGE;
+	}
     }
     return 0;
 }
@@ -365,12 +376,15 @@ unparse_name(krb5_context context,
     int i;
     krb5_error_code ret;
     /* count length */
-    plen = strlen(princ_realm(principal));
-    if(strcspn(princ_realm(principal), quotable_chars) == plen)
-	len += plen;
-    else
-	len += 2*plen;
-    len++;
+    if (princ_realm(principal)) {
+	plen = strlen(princ_realm(principal));
+
+	if(strcspn(princ_realm(principal), quotable_chars) == plen)
+	    len += plen;
+	else
+	    len += 2*plen;
+	len++; /* '@' */
+    }
     for(i = 0; i < princ_num_comp(principal); i++){
 	plen = strlen(princ_ncomp(principal, i));
 	if(strcspn(princ_ncomp(principal, i), quotable_chars) == plen)
@@ -379,7 +393,7 @@ unparse_name(krb5_context context,
 	    len += 2*plen;
 	len++;
     }
-    len++;
+    len++; /* '\0' */
     *name = malloc(len);
     if(*name == NULL) {
 	krb5_set_error_string (context, "malloc: out of memory");
