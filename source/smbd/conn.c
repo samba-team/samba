@@ -107,7 +107,7 @@ find_again:
                 int             newsz = bmap->n + BITMAP_BLOCK_SZ;
                 struct bitmap * nbmap;
 
-                if (newsz <= 0) {
+                if (newsz <= oldsz) {
                         /* Integer wrap. */
 		        DEBUG(0,("ERROR! Out of connection structures\n"));
                         return NULL;
@@ -129,6 +129,16 @@ find_again:
                 find_offset = oldsz; /* Start next search in the new portion. */
 
                 goto find_again;
+	}
+
+	/* The bitmap position is used below as the connection number
+	 * conn->cnum). This ends up as the TID field in the SMB header,
+	 * which is limited to 16 bits (we skip 0xffff which is the
+	 * NULL TID).
+	 */
+	if (i > 65534) {
+		DEBUG(0, ("Maximum connection limit reached\n"));
+		return NULL;
 	}
 
 	if ((mem_ctx=talloc_init("connection_struct"))==NULL) {
