@@ -1460,7 +1460,7 @@ BOOL torture_denytest1(struct torture_context *tctx,
 			}
 		}
 
-		if (lp_parm_bool(-1, "torture", "showall", False) || 
+		if (torture_setting_bool(tctx, "showall", False) || 
 			res != denytable1[i].result) {
 			int64_t tdif;
 			GetTimeOfDay(&tv);
@@ -1547,7 +1547,7 @@ BOOL torture_denytest2(struct torture_context *tctx,
 			}
 		}
 
-		if (lp_parm_bool(-1, "torture", "showall", False) || 
+		if (torture_setting_bool(tctx, "showall", False) || 
 			res != denytable2[i].result) {
 			int64_t tdif;
 			GetTimeOfDay(&tv);
@@ -1852,7 +1852,7 @@ static BOOL torture_ntdenytest(struct torture_context *tctx,
 		GetTimeOfDay(&tv);
 		tdif = usec_time_diff(&tv, &tv_start);
 		tdif /= 1000;
-		if (lp_parm_bool(-1, "torture", "showall", False) || 
+		if (torture_setting_bool(tctx, "showall", False) || 
 		    !NT_STATUS_EQUAL(status2, status2_p) ||
 		    res != res2) {
 			torture_comment(tctx, "\n%-20s %-70s\n%-20s %-70s %4s %4s  %s/%s\n",

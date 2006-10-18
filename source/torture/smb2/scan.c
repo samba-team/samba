@@ -202,8 +202,8 @@ BOOL torture_smb2_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
-	const char *host = lp_parm_string(-1, "torture", "host");
-	const char *share = lp_parm_string(-1, "torture", "share");
+	const char *host = torture_setting_string(torture, "host", NULL);
+	const char *share = torture_setting_string(torture, "share", NULL);
 	struct cli_credentials *credentials = cmdline_credentials;
 	NTSTATUS status;
 	int opcode;

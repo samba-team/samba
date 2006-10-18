@@ -475,7 +475,7 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
-	if (lp_parm_bool(-1, "target", "samba3", False)) {
+	if (lp_parm_bool(-1, "torture", "samba3", False)) {
 		printf("SAMBA3: ignore wrong nread[%d] should be [%d]\n",
 			io.readx.out.nread, 0);
 	} else {

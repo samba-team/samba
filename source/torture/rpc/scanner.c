@@ -143,7 +143,7 @@ BOOL torture_rpc_scanner(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx, *loop_ctx;
 	BOOL ret = True;
 	const struct dcerpc_interface_list *l;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = torture_setting_string(torture, "binding", NULL);
 	struct dcerpc_binding *b;
 
 	mem_ctx = talloc_init("torture_rpc_scanner");

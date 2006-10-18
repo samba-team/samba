@@ -313,7 +313,7 @@ BOOL torture_userinfo(struct torture_context *torture)
 	uint32_t rid;
 
 	mem_ctx = talloc_init("test_userinfo");
-	binding = lp_parm_string(-1, "torture", "binding");
+	binding = torture_setting_string(torture, "binding", NULL);
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p,
