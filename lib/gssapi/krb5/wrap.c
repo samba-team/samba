@@ -35,46 +35,64 @@
 
 RCSID("$Id$");
 
-OM_uint32
-_gsskrb5i_get_subkey(const gsskrb5_ctx ctx,
-		     krb5_keyblock **key)
-{
-    krb5_keyblock *skey = NULL;
+/*
+ * Return initiator subkey, or if that doesn't exists, the subkey.
+ */
 
-    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+krb5_error_code
+_gsskrb5i_get_initiator_subkey(const gsskrb5_ctx ctx, krb5_keyblock **key)
+{
+    krb5_error_code ret;
+    *key = NULL;
+
     if (ctx->more_flags & LOCAL) {
-	krb5_auth_con_getremotesubkey(_gsskrb5_context,
-				      ctx->auth_context, 
-				      &skey);
-    } else {
-	krb5_auth_con_getlocalsubkey(_gsskrb5_context,
+	ret = krb5_auth_con_getlocalsubkey(_gsskrb5_context,
 				     ctx->auth_context, 
-				     &skey);
+				     key);
+    } else {
+	ret = krb5_auth_con_getremotesubkey(_gsskrb5_context,
+				      ctx->auth_context, 
+				      key);
     }
-    /*
-     * Only use the initiator subkey or ticket session key if
-     * an acceptor subkey was not required.
-     */
-    if (skey == NULL &&
-	(ctx->more_flags & ACCEPTOR_SUBKEY) == 0) {
-	if (ctx->more_flags & LOCAL) {
-	    krb5_auth_con_getlocalsubkey(_gsskrb5_context,
-					 ctx->auth_context,
-					 &skey);
-	} else {
-	    krb5_auth_con_getremotesubkey(_gsskrb5_context,
-					  ctx->auth_context,
-					  &skey);
-	}
-	if(skey == NULL)
-	    krb5_auth_con_getkey(_gsskrb5_context,
-				 ctx->auth_context, 
-				 &skey);
+    if (*key == NULL)
+	ret = krb5_auth_con_getkey(_gsskrb5_context,
+				   ctx->auth_context, 
+				   key);
+    return ret;
+}
+
+krb5_error_code
+_gsskrb5i_get_acceptor_subkey(const gsskrb5_ctx ctx, krb5_keyblock **key)
+{
+    krb5_error_code ret;
+    *key = NULL;
+
+    if (ctx->more_flags & LOCAL) {
+	ret = krb5_auth_con_getremotesubkey(_gsskrb5_context,
+				      ctx->auth_context, 
+				      key);
+    } else {
+	ret = krb5_auth_con_getlocalsubkey(_gsskrb5_context,
+				     ctx->auth_context, 
+				     key);
     }
-    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
-    if(skey == NULL)
-	return GSS_KRB5_S_KG_NO_SUBKEY; /* XXX */
-    *key = skey;
+    return ret;
+}
+
+OM_uint32
+_gsskrb5i_get_token_key(const gsskrb5_ctx ctx, krb5_keyblock **key)
+{
+    _gsskrb5i_get_acceptor_subkey(ctx, key);
+    if(*key == NULL) {
+	/*
+	 * Only use the initiator subkey or ticket session key if an
+	 * acceptor subkey was not required.
+	 */
+	if ((ctx->more_flags & ACCEPTOR_SUBKEY) == 0)
+	    _gsskrb5i_get_initiator_subkey(ctx, key);
+    }
+    if (*key == NULL)
+	return GSS_KRB5_S_KG_NO_SUBKEY;
     return 0;
 }
 
@@ -117,7 +135,9 @@ _gsskrb5_wrap_size_limit (
   krb5_keytype keytype;
   const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
 
-  ret = _gsskrb5i_get_subkey(ctx, &key);
+  HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+  ret = _gsskrb5i_get_token_key(ctx, &key);
+  HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
   if (ret) {
       _gsskrb5_set_error_string ();
       *minor_status = ret;
@@ -476,7 +496,9 @@ OM_uint32 _gsskrb5_wrap
   krb5_keytype keytype;
   const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
 
-  ret = _gsskrb5i_get_subkey(ctx, &key);
+  HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+  ret = _gsskrb5i_get_token_key(ctx, &key);
+  HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
   if (ret) {
       _gsskrb5_set_error_string ();
       *minor_status = ret;

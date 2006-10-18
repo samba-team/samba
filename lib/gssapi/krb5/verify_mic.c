@@ -278,7 +278,9 @@ _gsskrb5_verify_mic_internal
     OM_uint32 ret;
     krb5_keytype keytype;
 
-    ret = _gsskrb5i_get_subkey(context_handle, &key);
+    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    ret = _gsskrb5i_get_token_key(context_handle, &key);
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (ret) {
 	_gsskrb5_set_error_string ();
 	*minor_status = ret;

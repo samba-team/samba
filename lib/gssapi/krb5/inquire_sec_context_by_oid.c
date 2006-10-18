@@ -100,6 +100,75 @@ static OM_uint32 inquire_sec_context_tkt_flags
 				     data_set);
 }
 
+enum keytype { ACCEPTOR_KEY, INITIATOR_KEY, TOKEN_KEY };
+
+static OM_uint32 inquire_sec_context_get_subkey
+           (OM_uint32 *minor_status,
+            const gsskrb5_ctx context_handle,
+	    enum keytype keytype,
+            gss_buffer_set_t *data_set)
+{
+    krb5_keyblock *key = NULL;
+    krb5_storage *sp = NULL;
+    krb5_data data;
+    OM_uint32 maj_stat = GSS_S_COMPLETE;
+    krb5_error_code ret = EINVAL;
+
+    krb5_data_zero(&data);
+
+    sp = krb5_storage_emem();
+    if (sp == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+
+    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    switch(keytype) {
+    case ACCEPTOR_KEY:
+	ret = _gsskrb5i_get_acceptor_subkey(context_handle, &key);
+	break;
+    case INITIATOR_KEY:
+	ret = _gsskrb5i_get_initiator_subkey(context_handle, &key);
+	break;
+    case TOKEN_KEY:
+	ret = _gsskrb5i_get_token_key(context_handle, &key);
+	break;
+    }
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+    if (ret) 
+	goto out;
+
+    ret = krb5_store_keyblock(sp, *key);
+    krb5_free_keyblock (_gsskrb5_context, key);
+    if (ret)
+	goto out;
+
+    ret = krb5_storage_to_data(sp, &data);
+    if (ret)
+	goto out;
+
+    {
+	gss_buffer_desc value;
+	
+	value.length = data.length;
+	value.value = data.data;
+	
+	maj_stat = gss_add_buffer_set_member(minor_status,
+					     &value,
+					     data_set);
+    }
+
+out:
+    krb5_data_free(&data);
+    if (sp)
+	krb5_storage_free(sp);
+    if (ret) {
+	*minor_status = ret;
+	maj_stat = GSS_S_FAILURE;
+    }
+    return maj_stat;
+}
+
 static OM_uint32 inquire_sec_context_authz_data
            (OM_uint32 *minor_status,
             const gsskrb5_ctx context_handle,
@@ -227,7 +296,9 @@ export_lucid_sec_context_v1(OM_uint32 *minor_status,
     ret = krb5_store_int32(sp, (is_cfx) ? 1 : 0);
     if (ret) goto out;
 
-    ret = _gsskrb5i_get_subkey(context_handle, &key);
+    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    ret = _gsskrb5i_get_token_key(context_handle, &key);
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (ret) goto out;
 
     if (is_cfx == 0) {
@@ -328,6 +399,21 @@ OM_uint32 _gsskrb5_inquire_sec_context_by_oid
 	return inquire_sec_context_has_updated_spnego(minor_status,
 						      ctx,
 						      data_set);
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_GET_SUBKEY_X)) {
+	return inquire_sec_context_get_subkey(minor_status,
+					      ctx,
+					      TOKEN_KEY,
+					      data_set);
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_GET_INITIATOR_SUBKEY_X)) {
+	return inquire_sec_context_get_subkey(minor_status,
+					      ctx,
+					      INITIATOR_KEY,
+					      data_set);
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_GET_ACCEPTOR_SUBKEY_X)) {
+	return inquire_sec_context_get_subkey(minor_status,
+					      ctx,
+					      ACCEPTOR_SUBKEY,
+					      data_set);
     } else if (oid_prefix_equal(desired_object,
 				GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X,
 				&suffix)) {

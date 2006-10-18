@@ -376,7 +376,9 @@ OM_uint32 _gsskrb5_unwrap
 
   if (qop_state != NULL)
       *qop_state = GSS_C_QOP_DEFAULT;
-  ret = _gsskrb5i_get_subkey(ctx, &key);
+  HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+  ret = _gsskrb5i_get_token_key(ctx, &key);
+  HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
   if (ret) {
       _gsskrb5_set_error_string ();
       *minor_status = ret;
