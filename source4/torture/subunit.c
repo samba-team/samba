@@ -89,23 +89,26 @@ bool torture_subunit_load_testsuites(const char *directory, bool recursive,
 	return true;
 }
 
-static pid_t piped_child(char* const command[], int *f_in)
+static pid_t piped_child(char* const command[], int *f_stdout, int *f_stderr)
 {
 	pid_t pid;
-	int sock[2];
+	int sock_out[2], sock_err[2];
 
-#ifdef HAVE_SOCKETPAIR
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) == -1) {
-#else
-	if (pipe(sock) == -1) {
-#endif
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock_out) == -1) {
 		DEBUG(0, ("socketpair: %s", strerror(errno)));
 		return -1;
 	}
 
-	*f_in = sock[0];
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock_err) == -1) {
+		DEBUG(0, ("socketpair: %s", strerror(errno)));
+		return -1;
+	}
 
-	fcntl(sock[0], F_SETFL, O_NONBLOCK);
+	*f_stdout = sock_out[0];
+	*f_stderr = sock_err[0];
+
+	fcntl(sock_out[0], F_SETFL, O_NONBLOCK);
+	fcntl(sock_err[0], F_SETFL, O_NONBLOCK);
 
 	pid = fork();
 
@@ -118,15 +121,18 @@ static pid_t piped_child(char* const command[], int *f_in)
 		close(0);
 		close(1);
 		close(2);
-		close(sock[0]);
+		close(sock_out[0]);
+		close(sock_err[0]);
 
-		dup2(sock[1], 0);
-		dup2(sock[1], 1);
+		dup2(sock_out[1], 0);
+		dup2(sock_out[1], 1);
+		dup2(sock_err[1], 2);
 		execvp(command[0], command);
 		exit(-1);
 	}
 
-	close(sock[1]);
+	close(sock_out[1]);
+	close(sock_err[1]);
 
 	return pid;
 }
@@ -171,7 +177,7 @@ bool torture_subunit_run_suite(struct torture_context *context,
 					   struct torture_suite *suite)
 {
 	static char *command[2];
-	int fd;
+	int fd_out, fd_err;
 	pid_t pid;
 	size_t size;
 	char *p, *q;
@@ -185,7 +191,7 @@ bool torture_subunit_run_suite(struct torture_context *context,
 	command[0] = talloc_strdup(context, suite->path);
 	command[1] = NULL;
 
-	pid = piped_child(command, &fd);
+	pid = piped_child(command, &fd_out, &fd_err);
 	if (pid == -1)
 		return false;
 
@@ -199,7 +205,7 @@ bool torture_subunit_run_suite(struct torture_context *context,
 		return false;
 	}
 
-	while ((size = read(fd, buffer+offset, sizeof(buffer-offset) > 0))) {
+	while ((size = read(fd_out, buffer+offset, sizeof(buffer-offset) > 0))) {
 		char *eol;
 		buffer[offset+size] = '\0';
 
