@@ -199,7 +199,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 
 	/* ensure there is only one process initialising at once */
-	if (tdb->methods->tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0) == -1) {
+	if (tdb->methods->tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: failed to get global lock on %s: %s\n",
 			 name, strerror(errno)));
 		goto fail;	/* errno set by tdb_brlock */
@@ -207,7 +207,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 	/* we need to zero database if we are the only one with it open */
 	if ((tdb_flags & TDB_CLEAR_IF_FIRST) &&
-	    (locked = (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))) {
+	    (locked = (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0, 1) == 0))) {
 		open_flags |= O_CREAT;
 		if (ftruncate(tdb->fd, 0) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
@@ -273,7 +273,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 	tdb_mmap(tdb);
 	if (locked) {
-		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0) == -1) {
+		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0, 1) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
 				 "failed to take ACTIVE_LOCK on %s: %s\n",
 				 name, strerror(errno)));
@@ -288,7 +288,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
 		/* leave this lock in place to indicate it's in use */
-		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
+		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0, 1) == -1)
 			goto fail;
 	}
 
@@ -301,7 +301,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	/* Internal (memory-only) databases skip all the code above to
 	 * do with disk files, and resume here by releasing their
 	 * global lock and hooking into the active list. */
-	if (tdb->methods->tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0) == -1)
+	if (tdb->methods->tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1) == -1)
 		goto fail;
 	tdb->next = tdbs;
 	tdbs = tdb;
@@ -391,7 +391,7 @@ int tdb_reopen(struct tdb_context *tdb)
 		return 0; /* Nothing to do. */
 	}
 
-	if (tdb->num_locks != 0) {
+	if (tdb->num_locks != 0 || tdb->global_lock.count) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_reopen: reopen not allowed with locks held\n"));
 		goto fail;
 	}
@@ -413,7 +413,7 @@ int tdb_reopen(struct tdb_context *tdb)
 		goto fail;
 	}
 	if ((tdb->flags & TDB_CLEAR_IF_FIRST) && 
-	    (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)) {
+	    (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0, 1) == -1)) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: failed to obtain active lock\n"));
 		goto fail;
 	}
