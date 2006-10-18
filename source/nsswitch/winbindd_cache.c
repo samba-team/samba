@@ -443,6 +443,11 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 
 	status = domain->backend->sequence_number(domain, &domain->sequence_number);
 
+	/* the above call could have set our domain->backend to NULL when
+	 * coming from offline to online mode, make sure to reinitialize the
+	 * backend - Guenther */
+	get_cache( domain );
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("refresh_sequence_number: failed with %s\n", nt_errstr(status)));
 		domain->sequence_number = DOM_SEQUENCE_NONE;
