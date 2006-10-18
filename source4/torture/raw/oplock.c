@@ -769,7 +769,7 @@ BOOL torture_bench_oplock(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
 	extern int torture_nprocs;
 	int i, count=0;
-	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
+	int timelimit = torture_setting_int(torture, "timelimit", 10);
 	union smb_open io;
 	struct timeval tv;
 	struct event_context *ev = event_context_find(mem_ctx);

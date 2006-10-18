@@ -43,9 +43,9 @@ BOOL torture_lookup(struct torture_context *torture)
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 
-	lookup.in.hostname = lp_parm_string(-1, "torture", "host");
+	lookup.in.hostname = torture_setting_string(torture, "host", NULL);
 	if (lookup.in.hostname == NULL) {
-		bindstr = lp_parm_string(-1, "torture", "binding");
+		bindstr = torture_setting_string(torture, "binding", NULL);
 		status = dcerpc_parse_binding(mem_ctx, bindstr, &bind);
 		if (NT_STATUS_IS_OK(status)) {
 			lookup.in.hostname = bind->host;
@@ -89,9 +89,9 @@ BOOL torture_lookup_host(struct torture_context *torture)
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 
-	lookup.in.hostname = lp_parm_string(-1, "torture", "host");
+	lookup.in.hostname = torture_setting_string(torture, "host", NULL);
 	if (lookup.in.hostname == NULL) {
-		bindstr = lp_parm_string(-1, "torture", "binding");
+		bindstr = torture_setting_string(torture, "binding", NULL);
 		status = dcerpc_parse_binding(mem_ctx, bindstr, &bind);
 		if (NT_STATUS_IS_OK(status)) {
 			lookup.in.hostname = bind->host;

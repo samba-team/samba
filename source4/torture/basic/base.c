@@ -1569,7 +1569,7 @@ static BOOL torture_samba3_errorpaths(struct torture_context *tctx)
 		}
 	}
 
-	if (!lp_parm_bool(-1, "target", "samba3", False)) {
+	if (!torture_setting_bool(tctx, "samba3", False)) {
 		goto done;
 	}
 

@@ -419,13 +419,13 @@ static int init_benchrw_params(struct torture_context *tctx, struct params *lpar
 	char **unc_list = NULL;
 	int num_unc_names = 0, conn_index=0, empty_lines=0;
 	const char *p;
-	lpar->retry = lp_parm_int(-1, "torture", "retry",3);
-	lpar->blocksize = lp_parm_int(-1, "torture", "blocksize",65535);
-	lpar->writeblocks = lp_parm_int(-1, "torture", "writeblocks",15);
-	lpar->writeratio = lp_parm_int(-1, "torture", "writeratio",5);
+	lpar->retry = torture_setting_int(tctx, "retry",3);
+	lpar->blocksize = torture_setting_int(tctx, "blocksize",65535);
+	lpar->writeblocks = torture_setting_int(tctx, "writeblocks",15);
+	lpar->writeratio = torture_setting_int(tctx, "writeratio",5);
 	lpar->workgroup = lp_workgroup();
 	
-	p = lp_parm_string(-1, "torture", "unclist");
+	p = torture_setting_string(tctx, "unclist", NULL);
 	if (p) {
 		char *h, *s;
 		unc_list = file_lines_load(p, &num_unc_names, NULL);
@@ -455,8 +455,8 @@ static int init_benchrw_params(struct torture_context *tctx, struct params *lpar
 	}else{
 		lpar->unc = talloc_array(tctx, struct unclist *, 1);
 		lpar->unc[0] = talloc(tctx,struct unclist);
-		lpar->unc[0]->host  = lp_parm_string(-1, "torture", "host");
-		lpar->unc[0]->share = lp_parm_string(-1, "torture", "share");
+		lpar->unc[0]->host  = torture_setting_string(tctx, "host", NULL);
+		lpar->unc[0]->share = torture_setting_string(tctx, "share", NULL);
 		return 1;
 	}
 }

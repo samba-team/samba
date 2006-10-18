@@ -139,7 +139,7 @@ BOOL torture_rpc_connect_srv(struct torture_context *torture)
 	struct dcerpc_binding *binding;
 	const char *bindstr;;
 
-	bindstr = lp_parm_string(-1, "torture", "binding");
+	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to parse binding string\n");
@@ -157,7 +157,7 @@ BOOL torture_rpc_connect_pdc(struct torture_context *torture)
 	struct dcerpc_binding *binding;
 	const char *bindstr;
 	
-	bindstr = lp_parm_string(-1, "torture", "binding");
+	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to parse binding string\n");
@@ -175,7 +175,7 @@ BOOL torture_rpc_connect_dc(struct torture_context *torture)
 	struct dcerpc_binding *binding;
 	const char *bindstr;
 	
-	bindstr = lp_parm_string(-1, "torture", "binding");
+	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to parse binding string\n");
@@ -193,7 +193,7 @@ BOOL torture_rpc_connect_dc_info(struct torture_context *torture)
 	struct dcerpc_binding *binding;
 	const char *bindstr;
 	
-	bindstr = lp_parm_string(-1, "torture", "binding");
+	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to parse binding string\n");
@@ -211,7 +211,7 @@ BOOL torture_rpc_connect_binding(struct torture_context *torture)
 	struct dcerpc_binding *binding;
 	const char *bindstr;
 	
-	bindstr = lp_parm_string(-1, "torture", "binding");
+	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to parse binding string\n");

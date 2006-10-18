@@ -175,14 +175,14 @@ BOOL torture_nbench(struct torture_context *torture)
 	struct smbcli_state *cli;
 	const char *p;
 
-	p = lp_parm_string(-1, "torture", "timelimit");
+	p = torture_setting_string(torture, "timelimit", NULL);
 	if (p && *p) {
 		timelimit = atoi(p);
 	}
 
 	warmup = timelimit / 20;
 
-	loadfile =  lp_parm_string(-1, "torture", "loadfile");
+	loadfile = torture_setting_string(torture, "loadfile", NULL);
 	if (!loadfile || !*loadfile) {
 		loadfile = "client.txt";
 	}

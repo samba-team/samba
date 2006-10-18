@@ -826,7 +826,7 @@ BOOL torture_rpc_winreg(struct torture_context *torture)
 		return False;
 	}
 
-	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
+	if (!torture_setting_bool(torture, "dangerous", False)) {
 		printf("winreg_InitiateShutdown disabled - enable dangerous tests to use\n");
 	} else {
 		ret &= test_InitiateSystemShutdown(p, mem_ctx, "spottyfood", 30);
