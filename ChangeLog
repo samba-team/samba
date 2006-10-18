@@ -1,5 +1,8 @@
 2006-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* tools/heimdal-build.sh: Add more verbose logging, add version of
+	script and heimdal to the mail.
+
 	* lib/hdb/db3.c: Wrap function call pointer calls in (*func) to
 	avoid macros rewriting open and close.
 
