@@ -1279,13 +1279,11 @@ struct torture_suite *torture_test_delete(void)
 	torture_suite_add_2smb_test(suite, "deltest13", deltest13);
 	torture_suite_add_2smb_test(suite, "deltest14", deltest14);
 	torture_suite_add_2smb_test(suite, "deltest15", deltest15);
-	if (!lp_parm_bool(-1, "target", "samba3", False)) {
-		torture_suite_add_2smb_test(suite, "deltest16", deltest16);
-		torture_suite_add_2smb_test(suite, "deltest17", deltest17);
-		torture_suite_add_2smb_test(suite, "deltest18", deltest18);
-		torture_suite_add_2smb_test(suite, "deltest19", deltest19);
-		torture_suite_add_2smb_test(suite, "deltest20", deltest20);
-	}
+	torture_suite_add_2smb_test(suite, "deltest16", deltest16);
+	torture_suite_add_2smb_test(suite, "deltest17", deltest17);
+	torture_suite_add_2smb_test(suite, "deltest18", deltest18);
+	torture_suite_add_2smb_test(suite, "deltest19", deltest19);
+	torture_suite_add_2smb_test(suite, "deltest20", deltest20);
 	torture_suite_add_simple_test(suite, "deltest21", deltest21);
 
 	return suite;
