@@ -487,7 +487,7 @@ BOOL torture_ldap_schema(struct torture_context *torture)
 	struct ldb_context *ldb;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *host = torture_setting_string(torture, "host", NULL);
 	char *url;
 	struct test_rootDSE rootDSE;
 	struct dsdb_schema *schema = NULL;

@@ -93,7 +93,7 @@ BOOL torture_bind_authcontext(struct torture_context *torture)
 	}
 
 	status = smbcli_full_connection(mem_ctx, &cli,
-					lp_parm_string(-1, "torture", "host"),
+					torture_setting_string(torture, "host", NULL),
 					"IPC$", NULL, cmdline_credentials,
 					NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -298,7 +298,7 @@ BOOL torture_bind_samba3(struct torture_context *torture)
 	}
 
 	status = smbcli_full_connection(mem_ctx, &cli,
-					lp_parm_string(-1, "torture", "host"),
+					torture_setting_string(torture, "host", NULL),
 					"IPC$", NULL, cmdline_credentials,
 					NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1125,7 +1125,7 @@ BOOL torture_netlogon_samba3(struct torture_context *torture)
 	const char *wks_name;
 	int i;
 
-	wks_name = lp_parm_string(-1, "torture", "wksname");
+	wks_name = torture_setting_string(torture, "wksname", NULL);
 	if (wks_name == NULL) {
 		wks_name = get_myname();
 	}
@@ -1143,7 +1143,7 @@ BOOL torture_netlogon_samba3(struct torture_context *torture)
 	}
 
 	status = smbcli_full_connection(mem_ctx, &cli,
-					lp_parm_string(-1, "torture", "host"),
+					torture_setting_string(torture, "host", NULL),
 					"IPC$", NULL, anon_creds, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
@@ -1285,10 +1285,7 @@ BOOL torture_samba3_sessionkey(struct torture_context *torture)
 	struct cli_credentials *anon_creds;
 	const char *wks_name;
 
-	wks_name = lp_parm_string(-1, "torture", "wksname");
-	if (wks_name == NULL) {
-		wks_name = get_myname();
-	}
+	wks_name = torture_setting_string(torture, "wksname", get_myname());
 
 	mem_ctx = talloc_init("torture_samba3_sessionkey");
 
@@ -1304,7 +1301,7 @@ BOOL torture_samba3_sessionkey(struct torture_context *torture)
 
 	ret = True;
 
-	if (!lp_parm_bool(-1, "target", "samba3", False)) {
+	if (!torture_setting_bool(torture, "samba3", False)) {
 
 		/* Samba3 in the build farm right now does this happily. Need
 		 * to fix :-) */
@@ -1590,7 +1587,7 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 	}
 
 	status = smbcli_full_connection(
-		mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		"IPC$", NULL, cmdline_credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) smbcli_full_connection failed: %s\n",
@@ -1614,7 +1611,7 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 	}
 
 	status = smbcli_full_connection(
-		mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		"IPC$", NULL, anon_creds, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) anon smbcli_full_connection failed: %s\n",
@@ -1827,7 +1824,7 @@ BOOL torture_samba3_rpc_srvsvc(struct torture_context *torture)
 	}
 
 	if (!(torture_open_connection_share(
-		      mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		      mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		      "IPC$", NULL))) {
 		talloc_free(mem_ctx);
 		return False;
@@ -2066,7 +2063,7 @@ BOOL torture_samba3_rpc_sharesec(struct torture_context *torture)
 	}
 
 	if (!(torture_open_connection_share(
-		      mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		      mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		      "IPC$", NULL))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
@@ -2079,20 +2076,20 @@ BOOL torture_samba3_rpc_sharesec(struct torture_context *torture)
 		return False;
 	}
 
-	sd = get_sharesec(mem_ctx, cli->session, lp_parm_string(-1, "torture",
-								"share"));
+	sd = get_sharesec(mem_ctx, cli->session, torture_setting_string(torture,
+								"share", NULL));
 
 	ret &= try_tcon(mem_ctx, sd, cli->session,
-			lp_parm_string(-1, "torture", "share"),
+			torture_setting_string(torture, "share", NULL),
 			user_sid, 0, NT_STATUS_ACCESS_DENIED, NT_STATUS_OK);
 
 	ret &= try_tcon(mem_ctx, sd, cli->session,
-			lp_parm_string(-1, "torture", "share"),
+			torture_setting_string(torture, "share", NULL),
 			user_sid, SEC_FILE_READ_DATA, NT_STATUS_OK,
 			NT_STATUS_NETWORK_ACCESS_DENIED);
 
 	ret &= try_tcon(mem_ctx, sd, cli->session,
-			lp_parm_string(-1, "torture", "share"),
+			torture_setting_string(torture, "share", NULL),
 			user_sid, SEC_FILE_ALL, NT_STATUS_OK, NT_STATUS_OK);
 
 	talloc_free(mem_ctx);
@@ -2114,7 +2111,7 @@ BOOL torture_samba3_rpc_lsa(struct torture_context *torture)
 	}
 
 	if (!(torture_open_connection_share(
-		      mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		      mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		      "IPC$", NULL))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
@@ -2392,7 +2389,7 @@ BOOL torture_samba3_rpc_spoolss(struct torture_context *torture)
 	}
 
 	if (!(torture_open_connection_share(
-		      mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		      mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		      "IPC$", NULL))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
@@ -2578,7 +2575,7 @@ BOOL torture_samba3_rpc_wkssvc(struct torture_context *torture)
 	}
 
 	if (!(torture_open_connection_share(
-		      mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		      mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		      "IPC$", NULL))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);

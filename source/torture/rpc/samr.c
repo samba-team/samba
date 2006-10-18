@@ -159,7 +159,7 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	s.in.sec_info = 7;
 	s.in.sdbuf = r.out.sdbuf;
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping SetSecurity test against Samba4\n");
 		return True;
 	}
@@ -383,7 +383,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_INT(21, logon_hours.bits[3], 21, logon_hours.bits[3], 4, 
 			  SAMR_FIELD_LOGON_HOURS);
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping Set Account Flag tests against Samba4\n");
 		return ret;
 	}
@@ -1662,7 +1662,7 @@ static BOOL test_alias_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping MultipleMembers Alias tests against Samba4\n");
 		return ret;
 	}
@@ -3315,7 +3315,7 @@ static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping SetMemberAttributesOfGroup test against Samba4\n");
 	} else {
 		/* this one is quite strange. I am using random inputs in the
@@ -3503,7 +3503,7 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret &= test_QueryDisplayInfo3(p, mem_ctx, &domain_handle);
 		ret &= test_QueryDisplayInfo_continue(p, mem_ctx, &domain_handle);
 		
-		if (lp_parm_bool(-1, "target", "samba4", False)) {
+		if (lp_parm_bool(-1, "torture", "samba4", False)) {
 			printf("skipping GetDisplayEnumerationIndex test against Samba4\n");
 		} else {
 			ret &= test_GetDisplayEnumerationIndex(p, mem_ctx, &domain_handle);

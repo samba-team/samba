@@ -52,7 +52,7 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 {
 	struct timeval tv;
 	struct tdb_wrap *tdbw;
-	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
+	int timelimit = torture_setting_int(torture, "timelimit", 10);
 	int i, count;
 	TALLOC_CTX *tmp_ctx = talloc_new(torture);
 
@@ -158,7 +158,7 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 {
 	struct timeval tv;
 	struct ldb_context *ldb;
-	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
+	int timelimit = torture_setting_int(torture, "timelimit", 10);
 	int i, count;
 	TALLOC_CTX *tmp_ctx = talloc_new(torture);
 	struct ldb_ldif *ldif;

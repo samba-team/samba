@@ -516,10 +516,10 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	}
 
 	if (strcmp(target, "samba3") == 0) {
-		lp_set_cmdline("target:samba3", "true");
+		lp_set_cmdline("torture:samba3", "true");
 		lp_set_cmdline("torture:knownfail", "samba3-knownfail");
 	} else if (strcmp(target, "samba4") == 0) {
-		lp_set_cmdline("target:samba4", "true");
+		lp_set_cmdline("torture:samba4", "true");
 		lp_set_cmdline("torture:knownfail", "samba4-knownfail");
 	}
 

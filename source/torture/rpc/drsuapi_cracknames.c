@@ -797,7 +797,8 @@ BOOL torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 
 	ret &= test_DsBind(p, mem_ctx, &priv);
 
-	ret &= test_DsCrackNames(p, mem_ctx, &priv, lp_parm_string(-1, "torture", "host"));
+	ret &= test_DsCrackNames(p, mem_ctx, &priv, 
+							 torture_setting_string(torture, "host", NULL));
 
 	ret &= test_DsUnbind(p, mem_ctx, &priv);
 

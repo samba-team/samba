@@ -50,12 +50,12 @@ BOOL torture_async_bind(struct torture_context *torture)
 	struct dcerpc_pipe **pipe;
 	const struct dcerpc_interface_table **table;
 
-	if (!lp_parm_bool(-1, "torture", "async", False)) {
+	if (!torture_setting_bool(torture, "async", False)) {
 		printf("async bind test disabled - enable async tests to use\n");
 		return True;
 	}
 	
-	binding_string = lp_parm_string(-1, "torture", "binding");
+	binding_string = torture_setting_string(torture, "binding", NULL);
 
 	/* talloc context */
 	mem_ctx = talloc_init("torture_async_bind");

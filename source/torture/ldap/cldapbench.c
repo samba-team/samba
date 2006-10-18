@@ -110,7 +110,7 @@ BOOL torture_bench_cldap(struct torture_context *torture)
 	NTSTATUS status;
 	BOOL ret = True;
 	
-	make_nbt_name_server(&name, lp_parm_string(-1, "torture", "host"));
+	make_nbt_name_server(&name, torture_setting_string(torture, "host", NULL));
 
 	/* do an initial name resolution to find its IP */
 	status = resolve_name(&name, mem_ctx, &address, event_context_find(mem_ctx));

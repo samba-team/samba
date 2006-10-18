@@ -46,7 +46,7 @@ BOOL torture_multi_bind(struct torture_context *torture)
 {
 	struct dcerpc_pipe *p;
 	struct dcerpc_binding *binding;
-	const char *binding_string = lp_parm_string(-1, "torture", "binding");
+	const char *binding_string = torture_setting_string(torture, "binding", NULL);
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	BOOL ret;

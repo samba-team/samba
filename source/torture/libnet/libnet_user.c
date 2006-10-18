@@ -221,7 +221,7 @@ BOOL torture_createuser(struct torture_context *torture)
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_createuser");
-	binding = lp_parm_string(-1, "torture", "binding");
+	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
@@ -269,7 +269,7 @@ BOOL torture_deleteuser(struct torture_context *torture)
 	BOOL ret = True;
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
-	binding = lp_parm_string(-1, "torture", "binding");
+	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
@@ -459,7 +459,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	BOOL ret = True;
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
-	binding = lp_parm_string(-1, "torture", "binding");
+	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
@@ -599,7 +599,7 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 	struct libnet_UserInfo req;
 
 	prep_mem_ctx = talloc_init("prepare torture user info");
-	binding = lp_parm_string(-1, "torture", "binding");
+	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;

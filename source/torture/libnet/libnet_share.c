@@ -127,7 +127,7 @@ BOOL torture_listshares(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("test_listshares");
-	binding = lp_parm_string(-1, "torture", "binding");
+	binding = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(mem_ctx, binding, &bind);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Error while parsing the binding string\n");
@@ -211,8 +211,8 @@ BOOL torture_delshare(struct torture_context *torture)
 	struct libnet_DelShare share;
 	
 	mem_ctx = talloc_init("test_listshares");
-	host = lp_parm_string(-1, "torture", "host");
-	binding = lp_parm_string(-1, "torture", "binding");
+	host = torture_setting_string(torture, "host", NULL);
+	binding = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(mem_ctx, binding, &bind);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Error while parsing the binding string\n");

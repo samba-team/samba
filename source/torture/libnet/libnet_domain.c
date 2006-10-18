@@ -133,7 +133,7 @@ BOOL torture_domain_open_lsa(struct torture_context *torture)
 	struct policy_handle h;
 	const char *bindstr;
 	
-	bindstr = lp_parm_string(-1, "torture", "binding");
+	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to parse binding string\n");
@@ -190,7 +190,7 @@ BOOL torture_domain_close_lsa(struct torture_context *torture)
 	struct dcerpc_pipe *p;
 	struct libnet_DomainClose r;
 
-	bindstr = lp_parm_string(-1, "torture", "binding");
+	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to parse binding string\n");
@@ -263,7 +263,7 @@ BOOL torture_domain_open_samr(struct torture_context *torture)
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_domainopen_lsa");
-	binding = lp_parm_string(-1, "torture", "binding");
+	binding = torture_setting_string(torture, "binding", NULL);
 
 	ctx = libnet_context_init(evt_ctx);
 	ctx->cred = cmdline_credentials;
@@ -322,7 +322,7 @@ BOOL torture_domain_close_samr(struct torture_context *torture)
 	struct dcerpc_pipe *p;
 	struct libnet_DomainClose r;
 
-	bindstr = lp_parm_string(-1, "torture", "binding");
+	bindstr = torture_setting_string(torture, "binding", NULL);
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to parse binding string\n");

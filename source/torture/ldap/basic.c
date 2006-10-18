@@ -194,9 +194,9 @@ BOOL torture_ldap_basic(struct torture_context *torture)
         struct ldap_connection *conn;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	const char *host = lp_parm_string(-1, "torture", "host");
-	const char *userdn = lp_parm_string(-1, "torture", "ldap_userdn");
-	const char *secret = lp_parm_string(-1, "torture", "ldap_secret");
+	const char *host = torture_setting_string(torture, "host", NULL);
+	const char *userdn = torture_setting_string(torture, "ldap_userdn", NULL);
+	const char *secret = torture_setting_string(torture, "ldap_secret", NULL);
 	char *url;
 	char *basedn;
 

@@ -53,8 +53,8 @@ BOOL torture_samba3_checkfsp(struct torture_context *torture)
 	}
 
 	if (!torture_open_connection_share(
-		    torture, &cli, lp_parm_string(-1, "torture", "host"),
-		    lp_parm_string(-1, "torture", "share"), NULL)) {
+		    torture, &cli, torture_setting_string(torture, "host", NULL),
+		    torture_setting_string(torture, "share", NULL), NULL)) {
 		d_printf("torture_open_connection_share failed\n");
 		ret = False;
 		goto done;
@@ -63,7 +63,7 @@ BOOL torture_samba3_checkfsp(struct torture_context *torture)
 	smbcli_deltree(cli->tree, dirname);
 
 	status = torture_second_tcon(torture, cli->session,
-				     lp_parm_string(-1, "torture", "share"),
+				     torture_setting_string(torture, "share", NULL),
 				     &tree2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	if (!NT_STATUS_IS_OK(status))

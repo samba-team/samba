@@ -41,7 +41,7 @@ static BOOL test_LogonUasLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_LogonUasLogon r;
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping LogonUasLogon test against Samba4\n");
 		return True;
 	}
@@ -67,7 +67,7 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_LogonUasLogoff r;
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping LogonUasLogoff test against Samba4\n");
 		return True;
 	}
@@ -629,7 +629,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	BOOL ret = True;
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping DatabaseSync test against Samba4\n");
 		return True;
 	}
@@ -695,7 +695,7 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	BOOL ret = True;
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping DatabaseDeltas test against Samba4\n");
 		return True;
 	}
@@ -829,7 +829,7 @@ static BOOL test_GetDcName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_GetDcName r;
 
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping GetDCName test against Samba4\n");
 		return True;
 	}	
@@ -860,7 +860,7 @@ static BOOL test_LogonControl(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	int i;
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping LogonControl test against Samba4\n");
 		return True;
 	}
@@ -892,7 +892,7 @@ static BOOL test_GetAnyDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_GetAnyDCName r;
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping GetAnyDCName test against Samba4\n");
 		return True;
 	}
@@ -926,7 +926,7 @@ static BOOL test_LogonControl2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	int i;
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping LogonControl2 test against Samba4\n");
 		return True;
 	}
@@ -1012,7 +1012,7 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	BOOL ret = True;
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping DatabaseSync2 test against Samba4\n");
 		return True;
 	}
@@ -1068,7 +1068,7 @@ static BOOL test_LogonControl2Ex(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	int i;
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping DatabaseSync2 test against Samba4\n");
 		return True;
 	}
@@ -1174,7 +1174,7 @@ static BOOL test_netr_DsRGetSiteName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_DsRGetSiteName r;
 	BOOL ret = True;
 
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		printf("skipping DsRGetSiteName test against Samba4\n");
 		return True;
 	}

@@ -488,7 +488,7 @@ BOOL torture_useradd(struct torture_context *torture)
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_useradd");
-	binding = lp_parm_string(-1, "torture", "binding");
+	binding = torture_setting_string(torture, "binding", NULL);
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p,
@@ -547,7 +547,7 @@ BOOL torture_userdel(struct torture_context *torture)
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_userdel");
-	binding = lp_parm_string(-1, "torture", "binding");
+	binding = torture_setting_string(torture, "binding", NULL);
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p,
@@ -592,7 +592,7 @@ BOOL torture_usermod(struct torture_context *torture)
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("test_userdel");
-	binding = lp_parm_string(-1, "torture", "binding");
+	binding = torture_setting_string(torture, "binding", NULL);
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p,

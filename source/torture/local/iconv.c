@@ -304,8 +304,8 @@ static bool test_first_1m(struct torture_context *tctx)
 		}
 
 		if (codepoint % 1000 == 0) {
-			if (!lp_parm_bool(-1, "torture", "progress", True)) {
-				printf("codepoint=%u   \r", codepoint);
+			if (!torture_setting_bool(tctx, "progress", True)) {
+				torture_comment(tctx, "codepoint=%u   \r", codepoint);
 			}
 		}
 
@@ -324,7 +324,7 @@ static bool test_random_5m(struct torture_context *tctx)
 		unsigned int c;
 
 		if (i % 1000 == 0) {
-			if (!lp_parm_bool(-1, "torture", "progress", True)) {
+			if (!torture_setting_bool(tctx, "progress", true)) {
 				torture_comment(tctx, "i=%u              \r", i);
 			}
 		}

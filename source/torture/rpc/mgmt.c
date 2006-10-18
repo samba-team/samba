@@ -180,7 +180,7 @@ BOOL torture_rpc_mgmt(struct torture_context *torture)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx, *loop_ctx;
 	BOOL ret = True;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = torture_setting_string(torture, "binding", NULL);
 	const struct dcerpc_interface_list *l;
 	struct dcerpc_binding *b;
 

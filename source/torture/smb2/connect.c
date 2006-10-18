@@ -76,7 +76,7 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	
 	if (lp_parm_bool(-1, "torture", "dangerous", False)) {
 		data = data_blob_talloc(tree, NULL, 160000);
-	} else if (lp_parm_bool(-1, "target", "samba4", False)) {
+	} else if (lp_parm_bool(-1, "torture", "samba4", False)) {
 		data = data_blob_talloc(tree, NULL, UINT16_MAX);
 	} else {
 		data = data_blob_talloc(tree, NULL, 120000);

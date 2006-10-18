@@ -256,7 +256,7 @@ BOOL torture_cldap(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *host = torture_setting_string(torture, "host", NULL);
 
 	mem_ctx = talloc_init("torture_cldap");
 

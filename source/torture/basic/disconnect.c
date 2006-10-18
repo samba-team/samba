@@ -156,7 +156,7 @@ BOOL torture_disconnect(struct torture_context *torture)
 			return False;
 		}
 
-		if (lp_parm_bool(-1, "target", "samba3", False)) {
+		if (torture_setting_bool(torture, "samba3", False)) {
 			/*
 			 * In Samba3 it might happen that the old smbd from
 			 * test_disconnect_lock is not scheduled before the

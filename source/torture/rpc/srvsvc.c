@@ -1092,7 +1092,7 @@ BOOL torture_rpc_srvsvc(struct torture_context *torture)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = torture_setting_string(torture, "binding", NULL);
 	struct cli_credentials *anon_credentials;
 
 	mem_ctx = talloc_init("torture_rpc_srvsvc");

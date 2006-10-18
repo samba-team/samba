@@ -1482,7 +1482,7 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 	char *user_password;
 	const char *old_user_password;
 	char *test_machine_account;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = torture_setting_string(torture, "binding", NULL);
 	const char *userdomain;
 	int i;
 	int ci;
@@ -1508,10 +1508,7 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 		return False;
 	}
 
-	userdomain = lp_parm_string(-1, "torture", "userdomain");
-	if (!userdomain) {
-		userdomain = lp_workgroup();
-	}
+	userdomain = torture_setting_string(torture, "userdomain", lp_workgroup());
 
 	user_ctx = torture_create_testuser(TEST_USER_NAME,
 					   userdomain,

@@ -136,8 +136,8 @@ BOOL torture_samba3_hide(struct torture_context *torture)
 	struct smbcli_tree *hideunwrite;
 
 	if (!torture_open_connection_share(
-		    torture, &cli, lp_parm_string(-1, "torture", "host"),
-		    lp_parm_string(-1, "torture", "share"), NULL)) {
+		    torture, &cli, torture_setting_string(torture, "host", NULL),
+		    torture_setting_string(torture, "share", NULL), NULL)) {
 		d_printf("torture_open_connection_share failed\n");
 		return False;
 	}
