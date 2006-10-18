@@ -272,7 +272,7 @@ digest_request(krb5_context context,
      */
 
     ret = krb5_make_principal(context, &principal, 
-			      realm, KRB5_DIGEST_NAME, realm, NULL);
+			      r, KRB5_DIGEST_NAME, r, NULL);
     if (ret)
 	goto out;
 
@@ -327,7 +327,7 @@ digest_request(krb5_context context,
     if (size != data.length)
 	krb5_abortx(context, "ASN.1 internal encoder error");
 
-    ret = krb5_sendto_kdc(context, &data, &realm, &data2);
+    ret = krb5_sendto_kdc(context, &data, &r, &data2);
     if (ret)
 	goto out;
 
