@@ -91,6 +91,8 @@ struct torture_context
 		const char **unexpected_failures;
 		const char **unexpected_successes;
 		const char **unexpected_errors;
+
+		bool returncode;
 	} results;
 
 	bool quiet; /* Whether tests should avoid writing output to stdout */

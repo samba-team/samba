@@ -517,8 +517,10 @@ const static struct torture_ui_ops quiet_ui_ops = {
 
 	if (strcmp(target, "samba3") == 0) {
 		lp_set_cmdline("target:samba3", "true");
+		lp_set_cmdline("torture:knownfail", "samba3-knownfail");
 	} else if (strcmp(target, "samba4") == 0) {
 		lp_set_cmdline("target:samba4", "true");
+		lp_set_cmdline("torture:knownfail", "samba4-knownfail");
 	}
 
 	if (max_runtime) {
@@ -594,8 +596,8 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		exit(1);
 	}
 
-	torture = torture_context_init(talloc_autofree_context(), "KNOWN_FAILURES", 
-						 ui_ops);
+	torture = torture_context_init(talloc_autofree_context(), 
+				lp_parm_string(-1, "torture", "knownfail"), ui_ops);
 
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");
@@ -651,9 +653,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		}
 	}
 
-	talloc_free(torture);
-
-	if (correct) {
+	if (torture->results.returncode) {
 		return(0);
 	} else {
 		return(1);
