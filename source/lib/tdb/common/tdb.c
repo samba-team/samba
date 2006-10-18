@@ -42,7 +42,7 @@ static void tdb_increment_seqnum(struct tdb_context *tdb)
 		return;
 	}
 
-	if (tdb_brlock(tdb, TDB_SEQNUM_OFS, F_WRLCK, F_SETLKW, 1) != 0) {
+	if (tdb_brlock(tdb, TDB_SEQNUM_OFS, F_WRLCK, F_SETLKW, 1, 1) != 0) {
 		return;
 	}
 
@@ -53,7 +53,7 @@ static void tdb_increment_seqnum(struct tdb_context *tdb)
 	seqnum++;
 	tdb_ofs_write(tdb, TDB_SEQNUM_OFS, &seqnum);
 
-	tdb_brlock(tdb, TDB_SEQNUM_OFS, F_UNLCK, F_SETLKW, 1);
+	tdb_brlock(tdb, TDB_SEQNUM_OFS, F_UNLCK, F_SETLKW, 1, 1);
 }
 
 

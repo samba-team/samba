@@ -36,8 +36,8 @@
 
    note that a len of zero means lock to end of file
 */
-int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset, 
-		   int rw_type, int lck_type, int probe, size_t len)
+int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, 
+	       int rw_type, int lck_type, int probe, size_t len)
 {
 	struct flock fl;
 	int ret;
@@ -88,7 +88,7 @@ int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len)
 	int count = 1000;
 	while (count--) {
 		struct timeval tv;
-		if (tdb_brlock_len(tdb, offset, F_WRLCK, F_SETLKW, 1, len) == 0) {
+		if (tdb_brlock(tdb, offset, F_WRLCK, F_SETLKW, 1, len) == 0) {
 			return 0;
 		}
 		if (errno != EDEADLK) {
@@ -104,20 +104,19 @@ int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len)
 }
 
 
-/* a byte range locking function - return 0 on success
-   this functions locks/unlocks 1 byte at the specified offset.
-
-   On error, errno is also set so that errors are passed back properly
-   through tdb_open(). */
-int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, 
-	       int rw_type, int lck_type, int probe)
-{
-	return tdb_brlock_len(tdb, offset, rw_type, lck_type, probe, 1);
-}
-
 /* lock a list in the database. list -1 is the alloc list */
 int tdb_lock(struct tdb_context *tdb, int list, int ltype)
 {
+	/* a global lock allows us to avoid per chain locks */
+	if (tdb->global_lock.count && 
+	    (ltype == tdb->global_lock.ltype || ltype == F_RDLCK)) {
+		return 0;
+	}
+
+	if (tdb->global_lock.count) {
+		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
+	}
+
 	if (list < -1 || list >= (int)tdb->header.hash_size) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,"tdb_lock: invalid list %d for ltype=%d\n", 
 			   list, ltype));
@@ -129,7 +128,7 @@ int tdb_lock(struct tdb_context *tdb, int list, int ltype)
 	/* Since fcntl locks don't nest, we do a lock for the first one,
 	   and simply bump the count for future ones */
 	if (tdb->locked[list+1].count == 0) {
-		if (tdb->methods->tdb_brlock(tdb,FREELIST_TOP+4*list,ltype,F_SETLKW, 0)) {
+		if (tdb->methods->tdb_brlock(tdb,FREELIST_TOP+4*list,ltype,F_SETLKW, 0, 1)) {
 			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_lock failed on list %d ltype=%d (%s)\n", 
 				 list, ltype, strerror(errno)));
 			return -1;
@@ -148,6 +147,16 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 {
 	int ret = -1;
 
+	/* a global lock allows us to avoid per chain locks */
+	if (tdb->global_lock.count && 
+	    (ltype == tdb->global_lock.ltype || ltype == F_RDLCK)) {
+		return 0;
+	}
+
+	if (tdb->global_lock.count) {
+		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
+	}
+
 	if (tdb->flags & TDB_NOLOCK)
 		return 0;
 
@@ -164,7 +173,7 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 
 	if (tdb->locked[list+1].count == 1) {
 		/* Down to last nested lock: unlock underneath */
-		ret = tdb->methods->tdb_brlock(tdb, FREELIST_TOP+4*list, F_UNLCK, F_SETLKW, 0);
+		ret = tdb->methods->tdb_brlock(tdb, FREELIST_TOP+4*list, F_UNLCK, F_SETLKW, 0, 1);
 		tdb->num_locks--;
 	} else {
 		ret = 0;
@@ -179,33 +188,90 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 
 
 /* lock/unlock entire database */
-int tdb_lockall(struct tdb_context *tdb)
+static int _tdb_lockall(struct tdb_context *tdb, int ltype)
 {
-	u32 i;
-
 	/* There are no locks on read-only dbs */
 	if (tdb->read_only || tdb->traverse_read)
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
-	for (i = 0; i < tdb->header.hash_size; i++) 
-		if (tdb_lock(tdb, i, F_WRLCK))
-			break;
 
-	/* If error, release locks we have... */
-	if (i < tdb->header.hash_size) {
-		u32 j;
-
-		for ( j = 0; j < i; j++)
-			tdb_unlock(tdb, j, F_WRLCK);
-		return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
+	if (tdb->global_lock.count && tdb->global_lock.ltype == ltype) {
+		tdb->global_lock.count++;
+		return 0;
 	}
+
+	if (tdb->global_lock.count) {
+		/* a global lock of a different type exists */
+		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
+	}
+	
+	if (tdb->num_locks != 0) {
+		/* can't combine global and chain locks */
+		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
+	}
+
+	if (tdb->methods->tdb_brlock(tdb, FREELIST_TOP, ltype, F_SETLKW, 
+				     0, 4*tdb->header.hash_size)) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_lockall failed (%s)\n", strerror(errno)));
+		return -1;
+	}
+
+	tdb->global_lock.count = 1;
+	tdb->global_lock.ltype = ltype;
 
 	return 0;
 }
-void tdb_unlockall(struct tdb_context *tdb)
+
+/* unlock entire db */
+static int _tdb_unlockall(struct tdb_context *tdb, int ltype)
 {
-	u32 i;
-	for (i=0; i < tdb->header.hash_size; i++)
-		tdb_unlock(tdb, i, F_WRLCK);
+	/* There are no locks on read-only dbs */
+	if (tdb->read_only || tdb->traverse_read) {
+		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
+	}
+
+	if (tdb->global_lock.ltype != ltype || tdb->global_lock.count == 0) {
+		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
+	}
+
+	if (tdb->global_lock.count > 1) {
+		tdb->global_lock.count--;
+		return 0;
+	}
+
+	if (tdb->methods->tdb_brlock(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 
+				     0, 4*tdb->header.hash_size)) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlockall failed (%s)\n", strerror(errno)));
+		return -1;
+	}
+
+	tdb->global_lock.count = 0;
+	tdb->global_lock.ltype = 0;
+
+	return 0;
+}
+
+/* lock entire database with write lock */
+int tdb_lockall(struct tdb_context *tdb)
+{
+	return _tdb_lockall(tdb, F_WRLCK);
+}
+
+/* unlock entire database with write lock */
+int tdb_unlockall(struct tdb_context *tdb)
+{
+	return _tdb_unlockall(tdb, F_WRLCK);
+}
+
+/* lock entire database with read lock */
+int tdb_lockall_read(struct tdb_context *tdb)
+{
+	return _tdb_lockall(tdb, F_RDLCK);
+}
+
+/* unlock entire database with read lock */
+int tdb_unlockall_read(struct tdb_context *tdb)
+{
+	return _tdb_unlockall(tdb, F_RDLCK);
 }
 
 /* lock/unlock one hash chain. This is meant to be used to reduce
@@ -235,7 +301,7 @@ int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key)
 /* record lock stops delete underneath */
 int tdb_lock_record(struct tdb_context *tdb, tdb_off_t off)
 {
-	return off ? tdb->methods->tdb_brlock(tdb, off, F_RDLCK, F_SETLKW, 0) : 0;
+	return off ? tdb->methods->tdb_brlock(tdb, off, F_RDLCK, F_SETLKW, 0, 1) : 0;
 }
 
 /*
@@ -249,7 +315,7 @@ int tdb_write_lock_record(struct tdb_context *tdb, tdb_off_t off)
 	for (i = &tdb->travlocks; i; i = i->next)
 		if (i->off == off)
 			return -1;
-	return tdb->methods->tdb_brlock(tdb, off, F_WRLCK, F_SETLK, 1);
+	return tdb->methods->tdb_brlock(tdb, off, F_WRLCK, F_SETLK, 1, 1);
 }
 
 /*
@@ -258,7 +324,7 @@ int tdb_write_lock_record(struct tdb_context *tdb, tdb_off_t off)
 */
 int tdb_write_unlock_record(struct tdb_context *tdb, tdb_off_t off)
 {
-	return tdb->methods->tdb_brlock(tdb, off, F_UNLCK, F_SETLK, 0);
+	return tdb->methods->tdb_brlock(tdb, off, F_UNLCK, F_SETLK, 0, 1);
 }
 
 /* fcntl locks don't stack: avoid unlocking someone else's */
@@ -272,5 +338,5 @@ int tdb_unlock_record(struct tdb_context *tdb, tdb_off_t off)
 	for (i = &tdb->travlocks; i; i = i->next)
 		if (i->off == off)
 			count++;
-	return (count == 1 ? tdb->methods->tdb_brlock(tdb, off, F_UNLCK, F_SETLKW, 0) : 0);
+	return (count == 1 ? tdb->methods->tdb_brlock(tdb, off, F_UNLCK, F_SETLKW, 0, 1) : 0);
 }

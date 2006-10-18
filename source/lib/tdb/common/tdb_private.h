@@ -141,7 +141,7 @@ struct tdb_methods {
 	void (*next_hash_chain)(struct tdb_context *, u32 *);
 	int (*tdb_oob)(struct tdb_context *, tdb_off_t , int );
 	int (*tdb_expand_file)(struct tdb_context *, tdb_off_t , tdb_off_t );
-	int (*tdb_brlock)(struct tdb_context *, tdb_off_t , int, int, int);
+	int (*tdb_brlock)(struct tdb_context *, tdb_off_t , int, int, int, size_t);
 };
 
 struct tdb_context {
@@ -151,6 +151,7 @@ struct tdb_context {
 	tdb_len_t map_size; /* how much space has been mapped */
 	int read_only; /* opened read-only */
 	int traverse_read; /* read-only traversal */
+	struct tdb_lock_type global_lock;
 	struct tdb_lock_type *locked; /* array of chain locks */
 	enum TDB_ERROR ecode; /* error code for last tdb error */
 	struct tdb_header header; /* a cached copy of the header */
@@ -176,10 +177,8 @@ int tdb_munmap(struct tdb_context *tdb);
 void tdb_mmap(struct tdb_context *tdb);
 int tdb_lock(struct tdb_context *tdb, int list, int ltype);
 int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
-int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, int rw_type, int lck_type, int probe);
+int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, int rw_type, int lck_type, int probe, size_t len);
 int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len);
-int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset, 
-		   int rw_type, int lck_type, int probe, size_t len);
 int tdb_write_lock_record(struct tdb_context *tdb, tdb_off_t off);
 int tdb_write_unlock_record(struct tdb_context *tdb, tdb_off_t off);
 int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);

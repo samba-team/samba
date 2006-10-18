@@ -357,7 +357,7 @@ static int transaction_expand_file(struct tdb_context *tdb, tdb_off_t size,
   brlock during a transaction - ignore them
 */
 int transaction_brlock(struct tdb_context *tdb, tdb_off_t offset, 
-		       int rw_type, int lck_type, int probe)
+		       int rw_type, int lck_type, int probe, size_t len)
 {
 	return 0;
 }
@@ -393,7 +393,7 @@ int tdb_transaction_start(struct tdb_context *tdb)
 		return 0;
 	}
 
-	if (tdb->num_locks != 0) {
+	if (tdb->num_locks != 0 || tdb->global_lock.count) {
 		/* the caller must not have any locks when starting a
 		   transaction as otherwise we'll be screwed by lack
 		   of nested locks in posix */
@@ -420,7 +420,7 @@ int tdb_transaction_start(struct tdb_context *tdb)
 	/* get the transaction write lock. This is a blocking lock. As
 	   discussed with Volker, there are a number of ways we could
 	   make this async, which we will probably do in the future */
-	if (tdb_brlock_len(tdb, TRANSACTION_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
+	if (tdb_brlock(tdb, TRANSACTION_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_start: failed to get transaction lock\n"));
 		tdb->ecode = TDB_ERR_LOCK;
 		SAFE_FREE(tdb->transaction);
@@ -429,7 +429,7 @@ int tdb_transaction_start(struct tdb_context *tdb)
 	
 	/* get a read lock from the freelist to the end of file. This
 	   is upgraded to a write lock during the commit */
-	if (tdb_brlock_len(tdb, FREELIST_TOP, F_RDLCK, F_SETLKW, 0, 0) == -1) {
+	if (tdb_brlock(tdb, FREELIST_TOP, F_RDLCK, F_SETLKW, 0, 0) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_start: failed to get hash locks\n"));
 		tdb->ecode = TDB_ERR_LOCK;
 		goto fail;
@@ -471,8 +471,8 @@ int tdb_transaction_start(struct tdb_context *tdb)
 	return 0;
 	
 fail:
-	tdb_brlock_len(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 0, 0);
-	tdb_brlock_len(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0, 1);
+	tdb_brlock(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 0, 0);
+	tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0, 1);
 	SAFE_FREE(tdb->transaction->hash_heads);
 	SAFE_FREE(tdb->transaction);
 	return -1;
@@ -505,12 +505,18 @@ int tdb_transaction_cancel(struct tdb_context *tdb)
 		free(el);
 	}
 
+	/* remove any global lock created during the transaction */
+	if (tdb->global_lock.count != 0) {
+		tdb_brlock(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 0, 4*tdb->header.hash_size);
+		tdb->global_lock.count = 0;
+	}
+
 	/* remove any locks created during the transaction */
 	if (tdb->num_locks != 0) {
 		int h;
 		for (h=0;h<tdb->header.hash_size+1;h++) {
 			if (tdb->locked[h].count != 0) {
-				tdb_brlock_len(tdb,FREELIST_TOP+4*h,F_UNLCK,F_SETLKW, 0, 1);
+				tdb_brlock(tdb,FREELIST_TOP+4*h,F_UNLCK,F_SETLKW, 0, 1);
 				tdb->locked[h].count = 0;
 			}
 		}
@@ -520,8 +526,8 @@ int tdb_transaction_cancel(struct tdb_context *tdb)
 	/* restore the normal io methods */
 	tdb->methods = tdb->transaction->io_methods;
 
-	tdb_brlock_len(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 0, 0);
-	tdb_brlock_len(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0, 1);
+	tdb_brlock(tdb, FREELIST_TOP, F_UNLCK, F_SETLKW, 0, 0);
+	tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0, 1);
 	SAFE_FREE(tdb->transaction->hash_heads);
 	SAFE_FREE(tdb->transaction);
 	
@@ -800,7 +806,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 	
 	/* if there are any locks pending then the caller has not
 	   nested their locks properly, so fail the transaction */
-	if (tdb->num_locks) {
+	if (tdb->num_locks || tdb->global_lock.count) {
 		tdb->ecode = TDB_ERR_LOCK;
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_commit: locks pending on commit\n"));
 		tdb_transaction_cancel(tdb);
@@ -817,7 +823,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 
 	/* get the global lock - this prevents new users attaching to the database
 	   during the commit */
-	if (tdb_brlock_len(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
+	if (tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_commit: failed to get global lock\n"));
 		tdb->ecode = TDB_ERR_LOCK;
 		tdb_transaction_cancel(tdb);
@@ -828,7 +834,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 		/* write the recovery data to the end of the file */
 		if (transaction_setup_recovery(tdb, &magic_offset) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_commit: failed to setup recovery data\n"));
-			tdb_brlock_len(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
+			tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
 			tdb_transaction_cancel(tdb);
 			return -1;
 		}
@@ -841,7 +847,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 					     tdb->transaction->old_map_size) == -1) {
 			tdb->ecode = TDB_ERR_IO;
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_commit: expansion failed\n"));
-			tdb_brlock_len(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
+			tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
 			tdb_transaction_cancel(tdb);
 			return -1;
 		}
@@ -863,7 +869,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 			tdb_transaction_recover(tdb); 
 
 			tdb_transaction_cancel(tdb);
-			tdb_brlock_len(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
+			tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
 
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_commit: write failed\n"));
 			return -1;
@@ -891,7 +897,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 		}
 	}
 
-	tdb_brlock_len(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
+	tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
 
 	/*
 	  TODO: maybe write to some dummy hdr field, or write to magic
