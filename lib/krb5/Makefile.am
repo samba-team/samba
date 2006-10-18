@@ -29,6 +29,7 @@ TESTS =						\
 	test_crypto_wrapping			\
 	test_keytab				\
 	test_mem				\
+	test_princ				\
 	test_pkinit_dh2key			\
 	test_time
 
