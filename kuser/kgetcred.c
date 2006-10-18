@@ -108,10 +108,6 @@ main(int argc, char **argv)
     if (argc != 1)
 	usage (1);
 
-    ret = krb5_cc_default(context, &cache);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_default");
-
     if(cache_str) {
 	ret = krb5_cc_resolve(context, cache_str, &cache);
 	if (ret)
