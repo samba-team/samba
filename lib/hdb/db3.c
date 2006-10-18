@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -51,9 +51,9 @@ DB_close(krb5_context context, HDB *db)
     DB *d = (DB*)db->hdb_db;
     DBC *dbcp = (DBC*)db->hdb_dbc;
 
-    dbcp->c_close(dbcp);
+    (*dbcp->c_close)(dbcp);
     db->hdb_dbc = 0;
-    d->close(d, 0);
+    (*d->close)(d, 0);
     return 0;
 }
 
@@ -100,10 +100,10 @@ DB_seq(krb5_context context, HDB *db,
 
     memset(&key, 0, sizeof(DBT));
     memset(&value, 0, sizeof(DBT));
-    if (db->hdb_lock(context, db, HDB_RLOCK))
+    if ((*db->hdb_lock)(context, db, HDB_RLOCK))
 	return HDB_ERR_DB_INUSE;
-    code = dbcp->c_get(dbcp, &key, &value, flag);
-    db->hdb_unlock(context, db); /* XXX check value */
+    code = (*dbcp->c_get)(dbcp, &key, &value, flag);
+    (*db->hdb_unlock)(context, db); /* XXX check value */
     if (code == DB_NOTFOUND)
 	return HDB_ERR_NOENTRY;
     if (code)
@@ -179,10 +179,10 @@ DB__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
     k.data = key.data;
     k.size = key.length;
     k.flags = 0;
-    if ((code = db->hdb_lock(context, db, HDB_RLOCK)))
+    if ((code = (*db->hdb_lock)(context, db, HDB_RLOCK)))
 	return code;
-    code = d->get(d, NULL, &k, &v, 0);
-    db->hdb_unlock(context, db);
+    code = (*d->get)(d, NULL, &k, &v, 0);
+    (*db->hdb_unlock)(context, db);
     if(code == DB_NOTFOUND)
 	return HDB_ERR_NOENTRY;
     if(code)
@@ -208,10 +208,10 @@ DB__put(krb5_context context, HDB *db, int replace,
     v.data = value.data;
     v.size = value.length;
     v.flags = 0;
-    if ((code = db->hdb_lock(context, db, HDB_WLOCK)))
+    if ((code = (*db->hdb_lock)(context, db, HDB_WLOCK)))
 	return code;
-    code = d->put(d, NULL, &k, &v, replace ? 0 : DB_NOOVERWRITE);
-    db->hdb_unlock(context, db);
+    code = (*d->put)(d, NULL, &k, &v, replace ? 0 : DB_NOOVERWRITE);
+    (*db->hdb_unlock)(context, db);
     if(code == DB_KEYEXIST)
 	return HDB_ERR_EXISTS;
     if(code)
@@ -229,11 +229,11 @@ DB__del(krb5_context context, HDB *db, krb5_data key)
     k.data = key.data;
     k.size = key.length;
     k.flags = 0;
-    code = db->hdb_lock(context, db, HDB_WLOCK);
+    code = (*db->hdb_lock)(context, db, HDB_WLOCK);
     if(code)
 	return code;
-    code = d->del(d, NULL, &k, 0);
-    db->hdb_unlock(context, db);
+    code = (*d->del)(d, NULL, &k, 0);
+    (*db->hdb_unlock)(context, db);
     if(code == DB_NOTFOUND)
 	return HDB_ERR_NOENTRY;
     if(code)
@@ -270,17 +270,19 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
     db->hdb_db = d;
 
 #if (DB_VERSION_MAJOR >= 4) && (DB_VERSION_MINOR >= 1)
-    ret = d->open(db->hdb_db, NULL, fn, NULL, DB_BTREE, myflags, mode);
+    ret = (*d->open)(db->hdb_db, NULL, fn, NULL, DB_BTREE, myflags, mode);
 #else
-    ret = d->open(db->hdb_db, fn, NULL, DB_BTREE, myflags, mode);
+    ret = (*d->open)(db->hdb_db, fn, NULL, DB_BTREE, myflags, mode);
 #endif
 
     if (ret == ENOENT) {
 	/* try to open without .db extension */
 #if (DB_VERSION_MAJOR >= 4) && (DB_VERSION_MINOR >= 1)
-	ret = d->open(db->hdb_db, NULL, db->hdb_name, NULL, DB_BTREE, myflags, mode);
+	ret = (*d->open)(db->hdb_db, NULL, db->hdb_name, NULL, DB_BTREE,
+			 myflags, mode);
 #else
-	ret = d->open(db->hdb_db, db->hdb_name, NULL, DB_BTREE, myflags, mode);
+	ret = (*d->open)(db->hdb_db, db->hdb_name, NULL, DB_BTREE, 
+			 myflags, mode);
 #endif
     }
 
@@ -292,7 +294,7 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
     }
     free(fn);
 
-    ret = d->cursor(d, NULL, (DBC **)&db->hdb_dbc, 0);
+    ret = (*d->cursor)(d, NULL, (DBC **)&db->hdb_dbc, 0);
     if (ret) {
 	krb5_set_error_string(context, "d->cursor: %s", strerror(ret));
         return ret;
