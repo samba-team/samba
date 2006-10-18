@@ -360,6 +360,9 @@ static void continue_domain_open_delete(struct composite_context *ctx)
 }
 
 
+/*
+ * Stage 1: receive result of userdel call and finish the composite function
+ */
 static void continue_rpc_userdel(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -442,6 +445,14 @@ static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod
 static void continue_rpc_userinfo(struct composite_context *ctx);
 
 
+/**
+ * Sends request to modify user account
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r pointer to structure containing arguments and result of this call
+ * @param monitor function pointer for receiving monitor messages
+ */
 struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
 						 TALLOC_CTX *mem_ctx,
 						 struct libnet_ModifyUser *r,
@@ -482,6 +493,10 @@ struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
 }
 
 
+/*
+ * Stage 0.5 (optional): receive result of domain open request
+ * and send userinfo request
+ */
 static void continue_domain_open_modify(struct composite_context *ctx)
 {
 	const uint16_t level = 21;
@@ -509,6 +524,10 @@ static void continue_domain_open_modify(struct composite_context *ctx)
 }
 
 
+/*
+ * Stage 1: receive result of userinfo call, prepare user changes
+ * (set the fields a caller required to change) and send usermod request
+ */
 static void continue_rpc_userinfo(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -533,6 +552,10 @@ static void continue_rpc_userinfo(struct composite_context *ctx)
 }
 
 
+/*
+ * Prepare user changes: compare userinfo result to requested changes and
+ * set the field values and flags accordingly for user modify call
+ */
 static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod,
 				 struct libnet_rpc_userinfo *info, struct libnet_ModifyUser *r)
 {
@@ -576,6 +599,9 @@ static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod
 }
 
 
+/*
+ * Stage 2: receive result of usermod request and finish the composite function
+ */
 static void continue_rpc_usermod(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -593,6 +619,14 @@ static void continue_rpc_usermod(struct composite_context *ctx)
 }
 
 
+/**
+ * Receive result of ModifyUser call
+ *
+ * @param c composite context returned by send request routine
+ * @param mem_ctx memory context of this call
+ * @param r pointer to a structure containing arguments and result of this call
+ * @return nt status
+ */
 NTSTATUS libnet_ModifyUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				struct libnet_ModifyUser *r)
 {
@@ -601,6 +635,14 @@ NTSTATUS libnet_ModifyUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 }
 
 
+/**
+ * Synchronous version of ModifyUser call
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r pointer to a structure containing arguments and result of this call
+ * @return nt status
+ */
 NTSTATUS libnet_ModifyUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			   struct libnet_ModifyUser *r)
 {
@@ -629,6 +671,15 @@ static void continue_domain_open_info(struct composite_context *ctx);
 static void continue_info_received(struct composite_context *ctx);
 
 
+/**
+ * Sends request to get user account information
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r pointer to a structure containing arguments and results of this call
+ * @param monitor function pointer for receiving monitor messages
+ * @return compostite context of this request
+ */
 struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 					       TALLOC_CTX *mem_ctx,
 					       struct libnet_UserInfo *r,
@@ -639,6 +690,7 @@ struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 	struct composite_context *prereq_ctx;
 	struct composite_context *lookup_req;
 
+	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ctx->event_ctx);
 	if (c == NULL) return NULL;
 
@@ -647,26 +699,35 @@ struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 
 	c->private_data = s;
 
+	/* store arguments in the state structure */
 	s->monitor_fn = monitor;
 	s->ctx = ctx;
 	s->domain_name = talloc_strdup(c, r->in.domain_name);
 	s->user_name = talloc_strdup(c, r->in.user_name);
 
+	/* prerequisite: make sure the domain is opened */
 	prereq_ctx = domain_opened(ctx, s->domain_name, c, &s->domopen,
 				   continue_domain_open_info, monitor);
 	if (prereq_ctx) return prereq_ctx;
 
+	/* prepare arguments for LookupName call */
 	s->lookup.in.domain_name = s->domain_name;
 	s->lookup.in.name        = s->user_name;
 
+	/* send the request */
 	lookup_req = libnet_LookupName_send(ctx, c, &s->lookup, s->monitor_fn);
 	if (composite_nomem(lookup_req, c)) return c;
 
+	/* set the next stage */
 	composite_continue(c, lookup_req, continue_name_found, c);
 	return c;
 }
 
 
+/*
+ * Stage 0.5 (optional): receive result of domain open request
+ * and send LookupName request
+ */
 static void continue_domain_open_info(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -677,21 +738,29 @@ static void continue_domain_open_info(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct user_info_state);
 
+	/* receive result of DomainOpen call */
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domopen);
 	if (!composite_is_ok(c)) return;
-	
+
+	/* send monitor message */
 	if (s->monitor_fn) s->monitor_fn(&msg);
 
+	/* prepare arguments for LookupName call */
 	s->lookup.in.domain_name = s->domain_name;
 	s->lookup.in.name        = s->user_name;
-
+	
+	/* send the request */
 	lookup_req = libnet_LookupName_send(s->ctx, c, &s->lookup, s->monitor_fn);
 	if (composite_nomem(lookup_req, c)) return;
-	
+
+	/* set the next stage */
 	composite_continue(c, lookup_req, continue_rpc_userinfo, c);
 }
 
 
+/*
+ * Stage 1: receive the name (if found) and send userinfo request
+ */
 static void continue_name_found(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -701,25 +770,33 @@ static void continue_name_found(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct user_info_state);
 
+	/* receive result of LookupName call */
 	c->status = libnet_LookupName_recv(ctx, c, &s->lookup);
 	if (!composite_is_ok(c)) return;
 
+	/* we're only interested in user accounts this time */
 	if (s->lookup.out.sid_type != SID_NAME_USER) {
 		composite_error(c, NT_STATUS_NO_SUCH_USER);
 		return;
 	}
 
+	/* prepare arguments for UserInfo call */
 	s->userinfo.in.domain_handle = s->ctx->samr.handle;
 	s->userinfo.in.sid = s->lookup.out.sidstr;
 	s->userinfo.in.level = 21;
 
+	/* send the request */
 	info_req = libnet_rpc_userinfo_send(s->ctx->samr.pipe, &s->userinfo, s->monitor_fn);
 	if (composite_nomem(info_req, c)) return;
 
+	/* set the next stage */
 	composite_continue(c, info_req, continue_info_received, c);
 }
 
 
+/*
+ * Stage 2: receive user account information and finish the composite function
+ */
 static void continue_info_received(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -728,6 +805,7 @@ static void continue_info_received(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct user_info_state);
 	
+	/* receive result of userinfo call */
 	c->status = libnet_rpc_userinfo_recv(ctx, c, &s->userinfo);
 	if (!composite_is_ok(c)) return;
 
@@ -735,6 +813,14 @@ static void continue_info_received(struct composite_context *ctx)
 }
 
 
+/**
+ * Receive result of UserInfo call
+ *
+ * @param c composite context returned by send request routine
+ * @param mem_ctx memory context of this call
+ * @param r pointer to a structure containing arguments and result of this call
+ * @return nt status
+ */
 NTSTATUS libnet_UserInfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 			      struct libnet_UserInfo *r)
 {
@@ -787,6 +873,14 @@ NTSTATUS libnet_UserInfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 }
 
 
+/**
+ * Synchronous version of UserInfo call
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r pointer to a structure containing arguments and result of this call
+ * @return nt status
+ */
 NTSTATUS libnet_UserInfo(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			 struct libnet_UserInfo *r)
 {
