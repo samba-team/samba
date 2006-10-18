@@ -1,5 +1,9 @@
 2006-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi/gssapi_krb5.h: add GSS_KRB5_GET_ACCEPTOR_SUBKEY_X
+
+	* krb5/external.c: Add GSS_KRB5_GET_ACCEPTOR_SUBKEY_X.
+
 	* gssapi/gssapi_krb5.h: add GSS_KRB5_GET_INITIATOR_SUBKEY_X and
 	GSS_KRB5_GET_SUBKEY_X
 
