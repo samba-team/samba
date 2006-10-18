@@ -209,6 +209,10 @@ void *rep_dlsym(void *handle, const char *symbol);
 int rep_dlclose(void *handle);
 #endif
 
+#ifndef HAVE_SOCKETPAIR
+#define socketpair rep_socketpair
+int rep_socketpair(int d, int type, int protocol, int sv[2]);
+#endif
 
 #ifndef PRINTF_ATTRIBUTE
 #if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )

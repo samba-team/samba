@@ -376,6 +376,46 @@ static int test_MAX(void)
 	return true;
 }
 
+static bool test_socketpair(void)
+{
+	int sock[2];
+	char buf[20];
+
+	printf("test: socketpair\n");
+
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) == -1) {
+		printf("failure: socketpair [\n"
+			   "socketpair() failed\n"
+			   "]\n");
+		return false;
+	}
+
+	if (write(sock[0], "automatisch", 12) == -1) {
+		printf("failure: socketpair [\n"
+			   "write() failed: %s\n"
+			   "]\n", strerror(errno));
+		return false;
+	}
+
+	if (read(sock[1], buf, 12) == -1) {
+		printf("failure: socketpair [\n"
+			   "read() failed: %s\n"
+			   "]\n", strerror(errno));
+		return false;
+	}
+
+	if (strcmp(buf, "automatisch") != 0) {
+		printf("failure: socketpair [\n"
+			   "expected: automatisch, got: %s\n"
+			   "]\n", buf);
+		return false;
+	}
+
+	printf("success: socketpair\n");
+
+	return true;
+}
+
 struct torture_context;
 
 int main()
@@ -424,6 +464,7 @@ int main()
 	ret &= test_FUNCTION();
 	ret &= test_MIN();
 	ret &= test_MAX();
+	ret &= test_socketpair();
 
 	if (ret) 
 		return 0;
