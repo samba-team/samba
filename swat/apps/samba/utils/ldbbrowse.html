@@ -24,34 +24,19 @@
 // object
 globals = new Object();
 
-// Default database File to open
-globals.dbFile = "/usr/local/samba/private/sam.ldb";
-
 // No database is yet open
 globals.dbHandle = null;
         
-
-
-/*
-Root is as found by:
-  source/bin/ldbsearch -H /usr/local/samba/private/sam.ldb -b '' \
-    -s base defaultNamingContext
-
-Schema page:
-  source/bin/ldbsearch -H /usr/local/samba/private/sam.ldb -b '' \
-    -s base subschemaSubentry
-  source/bin/ldbsearch -H /usr/local/samba/private/sam.ldb -b \
-    'CN=Aggregate,CN=Schema,CN=Configuration,DC=workgroup,DC=example,DC=com' \
-    -s base objectClasses attributeTypes matchingRules ldapSyntaxes        
-*/
 
 function setAppearances()
 {
     // Modify the default appearance of a ComboBox for use in Search tab:
     //   use more of the available width.
     //
-    // If we had multiple uses, we'd create a new appearance.  Since we don't,
-    // we can just modify this default appearance.
+    // If we had multiple uses, we'd create a new appearance which didn't
+    // contain a width.  That way, we'd be able to assign a specific width to
+    // each ComboBox instance.  Since we don't have multiple of them, we can
+    // just modify this default appearance.
     //
     // See http://qooxdoo.org/documentation/user_manual/appearance for an
     // explanation of what's going on here.  The missing significant point in
@@ -75,105 +60,13 @@ function setAppearances()
     }
 }
 
-function setupMenu(clientDocument)
-{
-    var c1 = new qx.client.Command();
-    c1.addEventListener("execute", function(e) {
-                            this.debug("Execute: " + e.getData().getLabel());
-                        });
-
-    // Create the File menu pulldown
-    var fileMenu_ = new qx.ui.menu.Menu();
-      
-    // Create items for within File menu
-    var fileMenu_NewTab_ = new qx.ui.menu.Menu();
-    {
-        var fileMenu_NewTab_Search =
-            new qx.ui.menu.MenuButton("Search", null, c1);
-        var fileMenu_NewTab_Browse =
-            new qx.ui.menu.MenuButton("Browse", null, c1);
-        var fileMenu_NewTab_Schema =
-            new qx.ui.menu.MenuButton("Schema", null, c1);
-        fileMenu_NewTab_.add(fileMenu_NewTab_Search,
-                             fileMenu_NewTab_Browse,
-                             fileMenu_NewTab_Schema);
-    }
-    var fileMenu_NewTab =
-        new qx.ui.menu.MenuButton("New tab", null, null, fileMenu_NewTab_);
-
-    var fileMenu_Preferences =
-        new qx.ui.menu.MenuButton("Preferences", null, c1);
-    var fileMenu_CloseTab =
-        new qx.ui.menu.MenuButton("Close Tab", null, c1);
-    var fileMenu_ShowMessageLog =
-        new qx.ui.menu.MenuButton("Show Message Log", null, c1);
-    var fileMenu_Quit =
-        new qx.ui.menu.MenuButton("Quit", null, c1);
-      
-    // Add the menu items to the menu
-    fileMenu_.add(fileMenu_NewTab,
-                  fileMenu_Preferences,
-                  fileMenu_CloseTab,
-                  fileMenu_ShowMessageLog,
-                  fileMenu_Quit);
-
-
-    // Create the Filter menu pulldown
-    var filterMenu_ = new qx.ui.menu.Menu();
-
-    // Create items for within Filter menu
-    var filterMenu_NewFilter =
-        new qx.ui.menu.MenuButton("New Filter", null, c1);
-    var filterMenu_EditFilters =
-        new qx.ui.menu.MenuButton("Edit Filters", null, c1);
-    var filterMenu_Separator =
-        new qx.ui.menu.MenuSeparator();
-
-    // Add the menu items to the menu
-    filterMenu_.add(filterMenu_NewFilter,
-                    filterMenu_EditFilters,
-                    filterMenu_Separator);
-
-
-    // Add the menu items to the document
-    clientDocument.add(fileMenu_,
-                       fileMenu_NewTab_,
-                       filterMenu_);
-
-
-    // Create and position the toolbar which will act as our menubar
-    var toolBar = new qx.ui.toolbar.ToolBar();
-    toolBar.set(
-        {
-            top: 28,
-            left: 20,
-            right: 300
-        });
-      
-    // Create the toolbar menu items and associate them with the pulldowns
-    var fileMenuButton =
-        new qx.ui.toolbar.ToolBarMenuButton("File", fileMenu_);
-    var filterMenuButton =
-        new qx.ui.toolbar.ToolBarMenuButton("Filters", filterMenu_);
-            
-    // Add the toolbar items to the toolbar
-    toolBar.add(fileMenuButton,
-                filterMenuButton);
-      
-    // Add the toolbar to the document
-    clientDocument.add(toolBar);
-
-    // Give 'em what we built!
-    return toolBar;
-}
-
 function setupTabs(clientDocument)
 {
     // Create and position the tabview
     var tabView_ = new qx.ui.pageview.tabview.TabView;
     tabView_.set(
         {
-            top: 60,
+            top: 40,
             left: 20,
             right: 300,
             bottom: 30
@@ -184,24 +77,19 @@ function setupTabs(clientDocument)
         new qx.ui.pageview.tabview.TabViewButton("Search");
     var tabView_Browse =
         new qx.ui.pageview.tabview.TabViewButton("Browse");
-    var tabView_Schema =
-        new qx.ui.pageview.tabview.TabViewButton("Schema");
 
     // Specify the initially-selected tab
     tabView_Search.setChecked(true);
 
     // Add each of the tabs to the tabview
     tabView_.getBar().add(tabView_Search,
-                          tabView_Browse,
-                          tabView_Schema);
+                          tabView_Browse);
 
     // Create the pages to display when each tab is selected
     var tabViewPage_Search =
         new qx.ui.pageview.tabview.TabViewPage(tabView_Search);
     var tabViewPage_Browse =
         new qx.ui.pageview.tabview.TabViewPage(tabView_Browse);
-    var tabViewPage_Schema =
-        new qx.ui.pageview.tabview.TabViewPage(tabView_Schema);
 
     // Build the search page
     var searchResultsTable = buildPageSearch(tabViewPage_Search);
@@ -212,13 +100,9 @@ function setupTabs(clientDocument)
     // Build the browse page
     buildPageBrowse(tabViewPage_Browse);
 
-    // Build the schema page
-    buildPageSchema(tabViewPage_Schema);
-
     // Add the pages to the tabview
     tabView_.getPane().add(tabViewPage_Search,
-                           tabViewPage_Browse,
-                           tabViewPage_Schema);
+                           tabViewPage_Browse);
 
     // Add the tabview to the document
     clientDocument.add(tabView_);
@@ -301,7 +185,7 @@ function buildPageSearch(page)
     var rbSubtree = new qx.ui.form.RadioButton("Subtree",   "subtree");
 
     // Use a default of "Default"
-    rbDefault.setChecked(true);
+    rbBase.setChecked(true);
 
     // Add the radio buttons to the horizontal layout
     hlayout.add(rbDefault, rbBase, rbOne, rbSubtree);
@@ -328,7 +212,7 @@ function buildPageSearch(page)
 
     // We'll be setting url and service upon execute; no need to do it now.
     var rpc = new qx.io.remote.Rpc();
-    rpc.setTimeout(10000);
+    rpc.setTimeout(60000);
     var mycall = null;
 
     find.addEventListener("execute", function()
@@ -345,6 +229,10 @@ function buildPageSearch(page)
             if (ex == null)
             {
                 var rowData = [];
+
+                // Track the maximum length of the attribute values
+                var maxLen = 0;
+
                 for (var i = 0; i < result.length; i++)
                 {
                     var o = result[i];
@@ -365,12 +253,42 @@ function buildPageSearch(page)
                         {
                             continue;
                         }
-                        rowData.push( [
-                                          o["dn"],
-                                          field,
-                                          o[field]
-                                      ] );
+
+                        // If it's multi-valued (type is an array)...
+                        if (typeof(o[field]) == "object")
+                        {
+                            // ... then add each value with same name
+                            var a = o[field];
+                            for (var i = 0; i < a.length; i++)
+                            {
+                                if (a[i].length > maxLen)
+                                {
+                                    maxLen = a[i].length;
+                                }
+                                rowData.push( [
+                                                  o["dn"],
+                                                  field,
+                                                  a[i]
+                                              ] );
+                            }
+                        }
+                        else    // single-valued
+                        {
+                            // ... add its name and value to the table dataset
+                            if (o[field].length > maxLen)
+                            {
+                                maxLen = o[field].length;
+                            }
+                            rowData.push( [
+                                              o["dn"],
+                                              field,
+                                              o[field]
+                                          ] );
+                        }
                     }
+
+                    // Adjust the width of the value column based on maxLen
+                    table.setColumnWidth(2, maxLen * 7);
 
                     // Tell the table to use the new data
                     tableModel.setData(rowData);
@@ -446,7 +364,7 @@ function buildPageBrowse(page)
     splitpane.setEdge(0);
 
     // Create a tree row structure for the tree root
-    var trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(globals.dbFile);
+    var trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard("sam.ldb");
 
     // Create the tree and set its characteristics
     var tree = new qx.ui.treefullcontrol.Tree(trs);
@@ -508,11 +426,12 @@ function buildPageBrowse(page)
         // work-around for a bug.  Without this, occasionally, updates to the
         // gui aren't displayed until some 'action' takes place, e.g. key
         // press or mouse movement.
-        qx.ui.core.Widget.flushGlobalQueues(true);
+        qx.ui.core.Widget.flushGlobalQueues();
     }
 
     // Prepare to issue RPC calls
     var rpc = new qx.io.remote.Rpc();
+    rpc.setTimeout(60000);
     rpc.setUrl("/services/");
     rpc.setServiceName("samba.ldb");
     rpc.setCrossDomain(false);
@@ -639,6 +558,9 @@ function buildPageBrowse(page)
                     // The result contains a single object: attributes
                     var attributes = result[0];
 
+                    // Track the maximum length of the attribute values
+                    var maxLen = 0;
+
                     // For each attribute we received...
                     for (var attr in attributes)
                     {
@@ -649,18 +571,36 @@ function buildPageBrowse(page)
                             var a = attributes[attr];
                             for (var i = 0; i < a.length; i++)
                             {
+                                if (a[i].length > maxLen)
+                                {
+                                    maxLen = a[i].length;
+                                }
                                 rowData.push([ attr, a[i] ]);
                             }
                         }
                         else    // single-valued
                         {
                             // ... add its name and value to the table dataset
+                            if (attributes[attr].length > maxLen)
+                            {
+                                maxLen = attributes[attr].length;
+                            }
                             rowData.push([ attr, attributes[attr] ]);
                         }
                     }
 
+                    // Adjust the width of the value column based on maxLen
+                    table.setColumnWidth(1, maxLen * 7);
+
                     // Add the dataset to the table
                     tableModel.setData(rowData);
+
+                    // Force flushing of pending DOM updates.  This is
+                    // actually a work-around for a bug.  Without this,
+                    // occasionally, updates to the gui aren't displayed until
+                    // some 'action' takes place, e.g. key press or mouse
+                    // movement.
+                    qx.ui.core.Widget.flushGlobalQueues();
                 }
                 else
                 {
@@ -686,7 +626,7 @@ function buildPageBrowse(page)
     tableModel.setColumns([ "Attribute", "Value" ]);
 
     tableModel.setColumnEditable(0, false);
-    tableModel.setColumnEditable(1, true);
+    tableModel.setColumnEditable(1, false);
 
     // Create a table
     var table = new qx.ui.table.Table(tableModel);
@@ -709,184 +649,6 @@ function buildPageBrowse(page)
 
     // Add the first splitpane to the page
     page.add(splitpane);
-}
-
-function buildPageSchema(page)
-{
-    // Create a vertical splitpane for tree (top) and remainder (bottom)
-    var splitpane1 = new qx.ui.splitpane.VerticalSplitPane("1*", "2*");
-    splitpane1.setEdge(0);
-
-    // Create a tree row structure for the tree root
-    var trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(globals.dbFile);
-
-    // Create the tree and set its characteristics
-    var tree = new qx.ui.treefullcontrol.Tree(trs);
-    tree.set(
-        {
-            backgroundColor: 255,
-            border: qx.renderer.border.BorderPresets.getInstance().inset,
-            overflow: "auto",
-            height: null,
-            top: 10,
-            left: 0,
-            right: 0,
-            bottom: 10
-        });
-
-    // Add the tree to the page.
-    splitpane1.addTop(tree);
-
-    // Create another vertical splitpane for table (top) and required/allowed
-    // attributes lists (bottom)
-    var splitpane2 = new qx.ui.splitpane.VerticalSplitPane("1*", "2*");
-    splitpane2.setEdge(0);
-
-    // Create a simple table model
-    var tableModel = new qx.ui.table.SimpleTableModel();
-    tableModel.setColumns([ "Attribute", "Value" ]);
-
-    // Add some garbage data to it
-    var attributeNames =
-        [
-            [ "Nickname" ],
-            [ "Hostname" ],
-            [ "Port" ],
-            [ "Connection caching" ],
-            [ "TLS" ],
-            [ "Client-side caching" ],
-            [ "Connections so far" ],
-            [ "LDAP protocol version" ],
-            [ "Vendor Name" ],
-            [ "Vendor Version" ],
-            [ "Support LDAP Version" ],
-            [ "Supported SASL Mechanisms" ],
-            [ "Junk 1" ],
-            [ "Junk 2" ],
-            [ "Junk 3" ]
-        ];
-            
-
-    var rowData = [];
-    for (var row = 0; row < attributeNames.length; row++)
-    {
-        rowData.push([ attributeNames[row], "" + (Math.random() * 10000) ]);
-    }
-    tableModel.setData(rowData);
-    tableModel.setColumnEditable(0, false);
-    tableModel.setColumnEditable(1, true);
-
-    // Create a table
-    var table = new qx.ui.table.Table(tableModel);
-    with (table) {
-      set({
-              top: 10,
-              left: 0,
-              right: 0,
-              bottom: 10,
-              statusBarVisible: false,
-              columnVisibilityButtonVisible: false
-          });
-      setColumnWidth(0, 200);
-      setColumnWidth(1, 440);
-      setMetaColumnCounts([1, -1]);
-    };
-
-    splitpane2.addTop(table);
-
-    // Create a horizontal splitpane for required attributes (left) and
-    // allowed attributes (right)
-    var splitpane3 = new qx.ui.splitpane.HorizontalSplitPane("1*", "1*");
-    splitpane3.setEdge(0);
-
-    // Create a vertical box layout for a label and list
-    var layout = new qx.ui.layout.VerticalBoxLayout();
-    layout.setWidth("100%");
-    layout.setHeight("100%");
-
-    // Create a label for the list of required attributes
-    var label = new qx.ui.basic.Atom("Required Attributes");
-
-    // Add the label to the vertical box layout
-    layout.add(label);
-
-    // Create a list for required attributes
-    var requiredAttributes = new qx.ui.form.List();
-    requiredAttributes.setWidth("100%");
-      
-    requiredAttributes.set(
-        {
-            top: 0,
-            left: 0,
-            width: "98%",
-            height: "90%",
-            overflow : "scrollY"
-        });
-      
-    var item;
-    for( var i=1; i<=35; i++ ) 
-    {
-        item = new qx.ui.form.ListItem("Item No " + i);
-        !(i % 9) && (item.setEnabled(false));
-        requiredAttributes.add(item);
-    };
-    
-    // Add the required attributes to the layout
-    layout.add(requiredAttributes);
-
-    // Add the vertical box layout to the left of the third splitpane
-    splitpane3.addLeft(layout);
-
-    // Create a vertical box layout for a label and list
-    layout = new qx.ui.layout.VerticalBoxLayout();
-    layout.set(
-        {
-            width: "100%",
-            height: "100%"
-        });
-
-    // Create a label for the list of allowed attributes
-    var label = new qx.ui.basic.Atom("Allowed Attributes");
-    label.setLeft(10);
-
-    // Add the label to the vertical box layout
-    layout.add(label);
-
-    // Create a list for allowed attributes
-    var allowedAttributes = new qx.ui.form.List();
-    allowedAttributes.setWidth("100%");
-      
-    allowedAttributes.set(
-        {
-            top: 0,
-            left: 10,
-            width: "98%",
-            height: "90%",
-            overflow : "scrollY"
-        });
-      
-    var item;
-    for( var i=1; i<=35; i++ ) 
-    {
-        item = new qx.ui.form.ListItem("Item No " + i);
-        !(i % 9) && (item.setEnabled(false));
-        allowedAttributes.add(item);
-    };
-    
-    // Add the allowed attributes to the layout
-    layout.add(allowedAttributes);
-
-    // Add the vertical box layout to the left of the third splitpane
-    splitpane3.addRight(layout);
-
-    // Add the third splitpane to the bottom of the second splitpane
-    splitpane2.addBottom(splitpane3);
-
-    // Add the second splitpane to the bottom of the first splitpane
-    splitpane1.addBottom(splitpane2);
-
-    // Add the first splitpane to the page
-    page.add(splitpane1);
 }
 
 qx.core.Init.getInstance().defineMain(
@@ -915,14 +677,12 @@ qx.core.Init.getInstance().defineMain(
         // Get the client document
         var clientDocument = qx.ui.core.ClientDocument.getInstance();
 
-        // Create the toolbar and attach it to the client document
-        var toolBar = setupMenu(clientDocument);
-
         // Create the tabs and their windows, and attach to client document
         var tabView = setupTabs(clientDocument);
 
         // Open a database connection.  Uses the dangerous sync request.
         var rpc = new qx.io.remote.Rpc();
+        rpc.setTimeout(60000);
         rpc.setUrl("/services/");
         rpc.setServiceName("samba.ldb");
         rpc.setCrossDomain(false);
@@ -930,7 +690,7 @@ qx.core.Init.getInstance().defineMain(
         try
         {
             // Database handle
-            globals.dbHandle = rpc.callSync("connect", globals.dbFile);
+            globals.dbHandle = rpc.callSync("connect", "sam.ldb");
         }
         catch (ex)
         {
