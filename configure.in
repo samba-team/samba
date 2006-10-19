@@ -424,7 +424,6 @@ AC_CHECK_FUNCS([				\
 	setutent				\
 	sigaction				\
 	strstr					\
-	timegm					\
 	ttyname					\
 	ttyslot					\
 	umask					\
