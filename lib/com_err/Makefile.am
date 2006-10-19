@@ -17,7 +17,7 @@ bin_PROGRAMS = compile_et
 
 include_HEADERS = com_err.h com_right.h
 
-compile_et_SOURCES = compile_et.c compile_et.h parse.y lex.l
+compile_et_SOURCES = compile_et.c compile_et.h parse.y lex.l lex.h
 
 libcom_err_la_SOURCES = error.c com_err.c roken_rename.h $(ES)
 
