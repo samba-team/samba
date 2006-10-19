@@ -403,6 +403,7 @@ asn1_compile_SOURCES = 				\
 	gen_free.c				\
 	gen_glue.c				\
 	gen_length.c				\
+	gen_locl.h				\
 	gen_seq.c				\
 	hash.c					\
 	lex.l					\
