@@ -77,8 +77,10 @@ ${kadmin} add -p p1 --use-defaults host/lucid.example.org@${R} || exit 1
 ${kadmin} ext -k ${keytab} host/lucid.example.org@${R} || exit 1
 ${kadmin} add -p p1 --use-defaults host/lucid@${R} || exit 1
 ${kadmin} ext -k ${keytab} host/lucid@${R} || exit 1
+${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
 
 ${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
+${kadmin} modify --attributes=+allow-digest user1@${R} || exit 1
 
 echo "Doing database check"
 ${kadmin} check ${R} || exit 1
@@ -124,6 +126,12 @@ ${context}  --no-dns-canon --name-type=krb5-principal-name host/lucid@${R} || \
 echo "dns canon off (short name, krb5)"
 ${context}  --no-dns-canon --name-type=krb5-principal-name host/lucid || \
 	{ exitcode=1 ; echo test failed; }
+
+#echo "sasl-digest-md5"
+#${context}  --mech-type=sasl-digest-md5 \
+#    --name-type=hostbased-service \
+#    host@lucid.example.org || \
+#	{ exitcode=1 ; echo test failed; }
 
 
 echo "killing kdc (${kdcpid})"
