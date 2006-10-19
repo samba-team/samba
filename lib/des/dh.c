@@ -207,7 +207,7 @@ DH_compute_key(unsigned char *shared_key,
     int codes;
 
     if (!DH_check_pubkey(dh, peer_pub_key, &codes) || codes != 0)
-	return 0;
+	return -1;
 
     return dh->meth->compute_key(shared_key, peer_pub_key, dh);
 }
