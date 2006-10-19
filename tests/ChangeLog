@@ -1,5 +1,13 @@
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-context.in: give path to have-db
+	
+	* gss/check-gssmask.in: give path to have-db
+	
+	* kdc/check-kdc.in: give path to have-db
+	
+	* kdc/check-digest.in: give path to have-db
+	
 	* gss/check-gssmask.in: If there is no useful db support compile
 	in, disable test
 
