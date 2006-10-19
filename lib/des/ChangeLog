@@ -1,5 +1,7 @@
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add hash.h and des-tables.h.
+
 	* dh.c (DH_compute_key): return -1 on bad public key.
 
 	* rsa.c: remove stray ;
