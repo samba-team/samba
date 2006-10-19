@@ -376,7 +376,7 @@ static int test_MAX(void)
 	return true;
 }
 
-static bool test_socketpair(void)
+static int test_socketpair(void)
 {
 	int sock[2];
 	char buf[20];
@@ -410,6 +410,9 @@ static bool test_socketpair(void)
 			   "]\n", buf);
 		return false;
 	}
+
+	close(sock[0]);
+	close(sock[1]);
 
 	printf("success: socketpair\n");
 
