@@ -757,7 +757,7 @@ p11_list_keys(hx509_context context,
     struct p11_collector ctx;
     CK_OBJECT_CLASS key_class;
     CK_ATTRIBUTE search_data[] = {
-	{CKA_CLASS, &key_class, sizeof(key_class)},
+	{CKA_CLASS, NULL, 0},
     };
     CK_ATTRIBUTE query_data[3] = {
 	{CKA_ID, NULL, 0},
@@ -765,6 +765,9 @@ p11_list_keys(hx509_context context,
 	{CKA_LABEL, NULL, 0}
     };
     int ret;
+
+    search_data[0].pValue = &key_class;
+    search_data[0].ulValueLen = sizeof(key_class);
 
     if (lock == NULL)
 	lock = _hx509_empty_lock;
