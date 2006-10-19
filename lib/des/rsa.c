@@ -209,10 +209,10 @@ name(int flen,const unsigned char* f, unsigned char* t, RSA* r, int p){\
     return body; \
 }
 
-RSAFUNC(RSA_public_encrypt, (r)->meth->rsa_pub_enc(flen, f, t, r, p));
-RSAFUNC(RSA_public_decrypt, (r)->meth->rsa_pub_dec(flen, f, t, r, p));
-RSAFUNC(RSA_private_encrypt, (r)->meth->rsa_priv_enc(flen, f, t, r, p));
-RSAFUNC(RSA_private_decrypt, (r)->meth->rsa_priv_dec(flen, f, t, r, p));
+RSAFUNC(RSA_public_encrypt, (r)->meth->rsa_pub_enc(flen, f, t, r, p))
+RSAFUNC(RSA_public_decrypt, (r)->meth->rsa_pub_dec(flen, f, t, r, p))
+RSAFUNC(RSA_private_encrypt, (r)->meth->rsa_priv_enc(flen, f, t, r, p))
+RSAFUNC(RSA_private_decrypt, (r)->meth->rsa_priv_dec(flen, f, t, r, p))
 
 /* XXX */
 int
@@ -236,10 +236,10 @@ RSA_verify(int type, const unsigned char *from, unsigned int flen,
  * support.
  */
 
-static RSAFUNC(null_rsa_public_encrypt, -1);
-static RSAFUNC(null_rsa_public_decrypt, -1);
-static RSAFUNC(null_rsa_private_encrypt, -1);
-static RSAFUNC(null_rsa_private_decrypt, -1);
+static RSAFUNC(null_rsa_public_encrypt, -1)
+static RSAFUNC(null_rsa_public_decrypt, -1)
+static RSAFUNC(null_rsa_private_encrypt, -1)
+static RSAFUNC(null_rsa_private_decrypt, -1)
 
 static int 
 null_rsa_init(RSA *rsa)
