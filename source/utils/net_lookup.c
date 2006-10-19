@@ -215,7 +215,7 @@ static int net_lookup_kdc(int argc, const char **argv)
 		realm.length = strlen(argv[0]);
 	} else if (lp_realm() && *lp_realm()) {
 		realm.data = lp_realm();
-		realm.length = strlen(realm.data);
+		realm.length = strlen((const char *)realm.data);
 	} else {
 		rc = krb5_get_host_realm(ctx, NULL, &realms);
 		if (rc) {
@@ -224,7 +224,7 @@ static int net_lookup_kdc(int argc, const char **argv)
 			return -1;
 		}
 		realm.data = (char *) *realms;
-		realm.length = strlen(realm.data);
+		realm.length = strlen((const char *)realm.data);
 	}
 
 	rc = krb5_locate_kdc(ctx, &realm, (struct sockaddr **)(void *)&addrs, &num_kdcs, 0);
