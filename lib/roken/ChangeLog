@@ -1,3 +1,8 @@
+2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* socket_wrapper.c: Maybe include <sys/time.h> and/or maybe
+	include <time.h>.
+	
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken.h.in: Revert prevois for now, the problem is that we have
