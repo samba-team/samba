@@ -53,6 +53,7 @@ time_t rep_timegm(struct tm *tm)
 	unsigned i;
 
 	if (tm->tm_mon > 12 ||
+	    tm->tm_mon < 0 ||
 	    tm->tm_mday > 31 ||
 	    tm->tm_min > 60 ||
 	    tm->tm_sec > 60 ||
