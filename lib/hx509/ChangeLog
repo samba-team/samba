@@ -1,3 +1,7 @@
+2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add more files.
+	
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ks_file.c: set ret, remember to free ivdata
