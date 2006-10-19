@@ -113,7 +113,7 @@ init_ccapi(krb5_context context)
 	return KRB5_CC_NOSUPP;
     }
 
-    init_func = dlsym(cc_handle, "cc_initialize");
+    init_func = (cc_initialize_func)dlsym(cc_handle, "cc_initialize");
     HEIMDAL_MUTEX_unlock(&acc_mutex);
     if (init_func == NULL) {
 	krb5_set_error_string(context, "Failed to find cc_initialize"
