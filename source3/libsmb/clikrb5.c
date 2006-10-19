@@ -216,7 +216,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 		return ret;
 	}
 	
-	ret = krb5_string_to_key_salt(context, enctype, password->data, salt, key);
+	ret = krb5_string_to_key_salt(context, enctype, (const char *)password->data, salt, key);
 	krb5_free_salt(context, salt);
 	return ret;
 }
@@ -735,7 +735,7 @@ failed:
 	static krb5_data kdata;
 
 	kdata.data = (char *)krb5_principal_get_comp_string(context, principal, i);
-	kdata.length = strlen(kdata.data);
+	kdata.length = strlen((const char *)kdata.data);
 	return &kdata;
 }
 #endif
