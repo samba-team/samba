@@ -450,8 +450,6 @@ static void init_child_recv(void *private_data, BOOL success)
 enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domain,
 						   struct winbindd_cli_state *state)
 {
-	struct in_addr ipaddr;
-
 	/* Ensure null termination */
 	state->request.domain_name
 		[sizeof(state->request.domain_name)-1]='\0';
@@ -460,20 +458,6 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 
 	if (strlen(state->request.data.init_conn.dcname) > 0) {
 		fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
-	}
-
-	if (!domain->internal) {
-		if (strlen(domain->dcname) > 0) {
-			if (!resolve_name(domain->dcname, &ipaddr, 0x20)) {
-				DEBUG(2, ("Could not resolve DC name %s for domain %s\n",
-					  domain->dcname, domain->name));
-				return WINBINDD_ERROR;
-			}
-
-			domain->dcaddr.sin_family = PF_INET;
-			putip((char *)&(domain->dcaddr.sin_addr), (char *)&ipaddr);
-			domain->dcaddr.sin_port = 0;
-		}
 	}
 
 	init_dc_connection(domain);
