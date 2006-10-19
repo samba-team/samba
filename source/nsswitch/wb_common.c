@@ -518,6 +518,18 @@ int read_reply(struct winbindd_response *response)
 	return result1 + result2;
 }
 
+BOOL winbind_env_set( void )
+{
+	char *env;
+	
+	if ((env=getenv(WINBINDD_DONT_ENV)) != NULL) {
+		if(strcmp(env, "1") == 0) {
+			return True;
+		}
+	}
+	return False;
+}
+
 /* 
  * send simple types of requests 
  */
@@ -628,14 +640,3 @@ BOOL winbind_on( void )
 	return putenv(s) != -1;
 }
 
-BOOL winbind_env_set( void )
-{
-	char *env;
-	
-	if ((env=getenv(WINBINDD_DONT_ENV)) != NULL) {
-		if(strequal(env, "1")) {
-			return True;
-		}
-	}
-	return False;
-}
