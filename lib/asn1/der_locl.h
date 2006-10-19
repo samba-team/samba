@@ -53,10 +53,7 @@
 #include <asn1_err.h>
 #include <der.h>
 
-#ifndef HAVE_TIMEGM
 time_t _der_timegm (struct tm *);
-#endif
-
 size_t _heim_len_unsigned (unsigned);
 size_t _heim_len_int (int);
 
