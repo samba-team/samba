@@ -56,7 +56,7 @@ BOOL gencache_init(void)
 	/* skip file open if it's already opened */
 	if (cache) return True;
 
-	asprintf(&cache_fname, "%s/%s", lp_lockdir(), "gencache.tdb");
+	asprintf(&cache_fname, "%s/%s", lock_path("gencache.tdb"));
 	if (cache_fname == NULL) {
 		DEBUG(0, ("Filename allocation failed.\n"));
 		return False;
