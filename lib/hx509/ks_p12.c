@@ -215,7 +215,7 @@ safeContent_parser(hx509_context context,
     ret = parse_safe_content(context, c, os.data, os.length);
     der_free_octet_string(&os);
     return ret;
-};
+}
 
 static int
 encryptedData_parser(hx509_context context,
