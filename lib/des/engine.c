@@ -257,7 +257,7 @@ ENGINE_by_dso(const char *path, const char *id)
 	unsigned long version;
 	openssl_v_check v_check;
 
-	v_check = dlsym(handle, "v_check");
+	v_check = (openssl_v_check)dlsym(handle, "v_check");
 	if (v_check == NULL) {
 	    dlclose(handle);
 	    free(engine);
@@ -275,7 +275,7 @@ ENGINE_by_dso(const char *path, const char *id)
     {
 	openssl_bind_engine bind_engine;
 
-	bind_engine = dlsym(handle, "bind_engine");
+	bind_engine = (openssl_bind_engine)dlsym(handle, "bind_engine");
 	if (bind_engine == NULL) {
 	    dlclose(handle);
 	    free(engine);
