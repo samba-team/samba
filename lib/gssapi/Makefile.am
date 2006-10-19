@@ -134,7 +134,6 @@ spnegosrc = \
 	spnego/context_stubs.c \
 	spnego/cred_stubs.c \
 	spnego/external.c \
-	spnego/gssapi_spnego.h \
 	spnego/init_sec_context.c \
 	spnego/spnego_locl.h
 
