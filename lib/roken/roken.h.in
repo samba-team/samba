@@ -693,6 +693,12 @@ int ROKEN_LIB_FUNCTION
 closefrom(int);
 #endif
 
+#if !defined(HAVE_TIMEGM)
+#define timegm rk_timegm
+time_t ROKEN_LIB_FUNCTION
+rk_timegm(struct tm *tm);
+#endif
+
 #ifdef SOCKET_WRAPPER_REPLACE
 #include <socket_wrapper.h>
 #endif
