@@ -1,5 +1,9 @@
-2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am (libeditline_la_SOURCES): add edit_locl.h
+	
+2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* editline.c (TTYinfo): only call tgetent if we found it using
 	autoconf
 
