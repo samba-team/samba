@@ -181,8 +181,8 @@ ENGINE_get_default_##type(void)			\
     return type##_engine;			\
 }
 
-SG_default_engine(RSA);
-SG_default_engine(DH);
+SG_default_engine(RSA)
+SG_default_engine(DH)
 
 #undef SG_default_engine
 
