@@ -242,7 +242,6 @@ dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(SONAMEFLAG)
-AC_SUBST(NSSSONAMEVERSIONSUFFIX)
 AC_SUBST(SHLD)
 AC_SUBST(HOST_OS)
 AC_SUBST(PICFLAGS)
@@ -1639,7 +1638,6 @@ BLDSHARED="false"
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
 SONAMEFLAG="#"
-NSSSONAMEVERSIONSUFFIX=""
 SHLD="\${CC} \${CFLAGS}"
 PICFLAGS=""
 PICSUFFIX="po"
@@ -1664,7 +1662,6 @@ if test "$enable_shared" = "yes"; then
 			DYNEXP="-Wl,--export-dynamic"
 			PICFLAGS="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
-			NSSSONAMEVERSIONSUFFIX=".2"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 		*solaris*) AC_DEFINE(SUNOS5,1,[Whether the host os is solaris])
@@ -1674,7 +1671,6 @@ if test "$enable_shared" = "yes"; then
 			if test "${GCC}" = "yes"; then
 				PICFLAGS="-fPIC"
 				SONAMEFLAG="-Wl,-soname="
-				NSSSONAMEVERSIONSUFFIX=".1"
 				if test "${ac_cv_prog_gnu_ld}" = "yes"; then
 					DYNEXP="-Wl,-E"
 				fi
@@ -5283,14 +5279,17 @@ HAVE_WINBIND=yes
 WINBIND_NSS="nsswitch/libnss_winbind.$SHLIBEXT"
 WINBIND_WINS_NSS="nsswitch/libnss_wins.$SHLIBEXT"
 WINBIND_NSS_LDSHFLAGS=$LDSHFLAGS
+NSSSONAMEVERSIONSUFFIX=""
 
 case "$host_os" in
 	*linux*)
+		NSSSONAMEVERSIONSUFFIX=".2"
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_linux.o"
 		;;
 	*freebsd[[5-9]]*)
 		# FreeBSD winbind client is implemented as a wrapper around
 		# the Linux version.
+		NSSSONAMEVERSIONSUFFIX=".1"
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_freebsd.o \
 		    nsswitch/winbind_nss_linux.o"
 		WINBIND_NSS="nsswitch/nss_winbind.$SHLIBEXT"
@@ -5305,6 +5304,7 @@ case "$host_os" in
 	*solaris*)
 		# Solaris winbind client is implemented as a wrapper around
 		# the Linux version.
+		NSSSONAMEVERSIONSUFFIX=".1"
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o \
 		    nsswitch/winbind_nss_linux.o"
 		WINBIND_NSS_EXTRA_LIBS="-lsocket"
@@ -5331,6 +5331,7 @@ AC_SUBST(WINBIND_WINS_NSS)
 AC_SUBST(WINBIND_NSS_LDSHFLAGS)
 AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
+AC_SUBST(NSSSONAMEVERSIONSUFFIX)
 
 # Check the setting of --with-winbind
 
