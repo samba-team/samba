@@ -1,5 +1,7 @@
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am (libel_compat_la_SOURCES): add edit_compat.h
+
 	* Makefile.am (libeditline_la_SOURCES): add edit_locl.h
 	
 2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>

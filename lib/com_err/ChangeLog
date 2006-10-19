@@ -1,3 +1,7 @@
+2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am (compile_et_SOURCES): add lex.h
+	
 2005-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* com_err.3: Document the _r functions.
