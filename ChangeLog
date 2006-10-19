@@ -1,5 +1,7 @@
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5.h: Remove bonus , that Love sneeked in.
+
 	* configure.in: make --disable-pk-init help text also negative
 	
 2006-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
