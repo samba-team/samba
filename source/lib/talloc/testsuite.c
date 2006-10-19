@@ -791,6 +791,8 @@ static bool test_speed(void)
 {
 	void *ctx = talloc_new(NULL);
 	unsigned count;
+	const int loop = 1000;
+	int i;
 	struct timeval tv;
 
 	printf("test: speed [\nTALLOC VS MALLOC SPEED\n]\n");
@@ -799,11 +801,13 @@ static bool test_speed(void)
 	count = 0;
 	do {
 		void *p1, *p2, *p3;
-		p1 = talloc_size(ctx, count);
-		p2 = talloc_strdup(p1, "foo bar");
-		p3 = talloc_size(p1, 300);
-		talloc_free(p1);
-		count += 3;
+		for (i=0;i<loop;i++) {
+			p1 = talloc_size(ctx, loop % 100);
+			p2 = talloc_strdup(p1, "foo bar");
+			p3 = talloc_size(p1, 300);
+			talloc_free(p1);
+		}
+		count += 3 * loop;
 	} while (timeval_elapsed(&tv) < 5.0);
 
 	fprintf(stderr, "talloc: %.0f ops/sec\n", count/timeval_elapsed(&tv));
@@ -814,15 +818,16 @@ static bool test_speed(void)
 	count = 0;
 	do {
 		void *p1, *p2, *p3;
-		p1 = malloc(count);
-		p2 = strdup("foo bar");
-		p3 = malloc(300);
-		free(p1);
-		free(p2);
-		free(p3);
-		count += 3;
+		for (i=0;i<loop;i++) {
+			p1 = malloc(loop % 100);
+			p2 = strdup("foo bar");
+			p3 = malloc(300);
+			free(p1);
+			free(p2);
+			free(p3);
+		}
+		count += 3 * loop;
 	} while (timeval_elapsed(&tv) < 5.0);
-
 	fprintf(stderr, "malloc: %.0f ops/sec\n", count/timeval_elapsed(&tv));
 
 	printf("success: speed\n");
