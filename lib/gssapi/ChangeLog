@@ -1,5 +1,14 @@
-2006-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_context.c: Allow specifing mech.
+
+	* krb5/external.c: add GSS_SASL_DIGEST_MD5_MECHANISM (for now)
+
+	* gssapi/gssapi.h: Rename GSS_DIGEST_MECHANISM to
+	GSS_SASL_DIGEST_MD5_MECHANISM
+	
+2006-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* mech/gssapi.asn1: Make it into a heim_any_set, its doesn't
 	except a tag.
 

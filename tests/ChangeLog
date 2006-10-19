@@ -1,5 +1,22 @@
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-gssmask.in: If there is no useful db support compile
+	in, disable test
+
+	* gss/check-context.in: Add commeted out digest check.
+
+	* kdc/check-digest.in: If there is no useful db support compile
+	in, disable test
+
+	* kdc/check-kdc.in: If there is no useful db support compile in,
+	disable test
+
+	* db/loaddump-db.in: If there is no useful db support compile in,
+	disable test
+
+	* db/have-db.in: Check if the kdc have any useful builtin
+	database.
+
 	* kdc/check-kdc.in: Fix awk statement, put RE on the right side.
 	
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
