@@ -381,7 +381,7 @@ gen_files_digest =					\
 	asn1_DigestREQ.x				\
 	asn1_DigestRepInner.x				\
 	asn1_DigestREP.x
-	
+
 
 noinst_PROGRAMS = asn1_compile asn1_print asn1_gen
 
@@ -418,14 +418,6 @@ asn1_compile_SOURCES = 				\
 	symbol.h
 
 dist_libasn1_la_SOURCES =			\
-	CMS.asn1				\
-	digest.asn1				\
-	k5.asn1					\
-	pkcs12.asn1				\
-	pkcs8.asn1				\
-	pkcs9.asn1				\
-	pkinit.asn1				\
-	rfc2459.asn1				\
 	der-protos.h 				\
 	der_locl.h 				\
 	der.c					\
@@ -441,8 +433,7 @@ dist_libasn1_la_SOURCES =			\
 	extra.c					\
 	timegm.c
 
-nodist_libasn1_la_SOURCES =			\
-	$(BUILT_SOURCES)
+nodist_libasn1_la_SOURCES = $(BUILT_SOURCES)
 
 asn1_compile_LDADD = \
 	$(LIB_roken) $(LEXLIB)
@@ -476,7 +467,9 @@ CLEANFILES = lex.c parse.c parse.h \
 	digest_asn1_files digest_asn1.h \
 	test_asn1_files test_asn1.h
 
-nodist_include_HEADERS = asn1_err.h der.h heim_asn1.h
+dist_include_HEADERS = der.h heim_asn1.h der-protos.h
+
+nodist_include_HEADERS = asn1_err.h
 nodist_include_HEADERS += krb5_asn1.h
 nodist_include_HEADERS += pkinit_asn1.h
 nodist_include_HEADERS += cms_asn1.h
@@ -530,7 +523,16 @@ digest_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/digest.asn1
 test_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/test.asn1
 	./asn1_compile$(EXEEXT) --sequence=TESTSeqOf $(srcdir)/test.asn1 test_asn1 || (rm -f test_asn1_files ; exit 1)
 
-EXTRA_DIST = asn1_err.et
+EXTRA_DIST =		\
+	asn1_err.et	\
+	CMS.asn1	\
+	digest.asn1	\
+	k5.asn1		\
+	pkcs12.asn1	\
+	pkcs8.asn1	\
+	pkcs9.asn1	\
+	pkinit.asn1	\
+	rfc2459.asn1
 
 $(srcdir)/der-protos.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -o der-protos.h $(dist_libasn1_la_SOURCES) || rm -f der-protos.h
