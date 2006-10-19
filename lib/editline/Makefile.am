@@ -38,7 +38,7 @@ libeditline_la_SOURCES = \
 
 EXTRA_SOURCE = $(ES) 
 
-libel_compat_la_SOURCES = edit_compat.c
+libel_compat_la_SOURCES = edit_compat.c edit_compat.h
 
 EXTRA_DIST = $(man_MANS)
 
