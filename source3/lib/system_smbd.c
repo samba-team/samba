@@ -120,19 +120,15 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups,
 static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 {
 	int retval;
-	char *winbindd_env;
+	BOOL winbind_env;
 
 	DEBUG(10,("sys_getgrouplist: user [%s]\n", user));
 
-	/* Save the winbindd state and not just blindly turn it back on */
-
-	winbindd_env = getenv(WINBINDD_DONT_ENV);
-	
 	/* This is only ever called for Unix users, remote memberships are
 	 * always determined by the info3 coming back from auth3 or the
 	 * PAC. */
-
-	winbind_off() ;
+	winbind_env = winbind_env_set();
+	winbind_off();
 
 #ifdef HAVE_GETGROUPLIST
 	retval = getgrouplist(user, gid, groups, grpcnt);
@@ -142,9 +138,8 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 	unbecome_root();
 #endif
 
-	/* allow winbindd lookups , but only if they were not already disabled */
-
-	if ( !(winbindd_env && strequal(winbindd_env, "1")) ) {
+	/* allow winbindd lookups, but only if they were not already disabled */
+	if (!winbind_env) {
 		winbind_on();
 	}
 
