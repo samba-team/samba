@@ -1,28 +1,33 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <title>qooxdoo &raquo; Demo</title>
-  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <title>ldbbrowse</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout-samba.css"/>
   <!--[if IE]>
   <link
-   type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+   type="text/css" rel="stylesheet" href="../../resource/css/layout-samba_ie.css"/>
   <![endif]-->
   <script type="text/javascript" src="../../script/qx.js"></script>
 </head>
 <body>
-  <script type="text/javascript" src="../../script/layout.js"></script>
+  <script type="text/javascript" src="../../script/layout-samba.js"></script>
 
+<div style="position: absolute; background-color: transparent; right:0; top:0; z-index: 1000000001;">
+     <img src="../../../images/logo.png">
+</div>
+<div id="demoHead">
+     ldbbrowse
+</div>
 
-  <div id="demoDescription">
-    <p>
-    A simple LDB browser.
-  </div>
 
 <script type="text/javascript">
 
 // All of our variables which must be in a global scope will be part of this
 // object
 globals = new Object();
+
+// Name of database to use
+globals.dbFile = "sam.ldb";
 
 // No database is yet open
 globals.dbHandle = null;
@@ -66,7 +71,7 @@ function setupTabs(clientDocument)
     var tabView_ = new qx.ui.pageview.tabview.TabView;
     tabView_.set(
         {
-            top: 40,
+            top: 100,
             left: 20,
             right: 300,
             bottom: 30
@@ -364,7 +369,7 @@ function buildPageBrowse(page)
     splitpane.setEdge(0);
 
     // Create a tree row structure for the tree root
-    var trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard("sam.ldb");
+    var trs = qx.ui.treefullcontrol.TreeRowStructure.getInstance().standard(globals.dbFile);
 
     // Create the tree and set its characteristics
     var tree = new qx.ui.treefullcontrol.Tree(trs);
@@ -690,7 +695,7 @@ qx.core.Init.getInstance().defineMain(
         try
         {
             // Database handle
-            globals.dbHandle = rpc.callSync("connect", "sam.ldb");
+            globals.dbHandle = rpc.callSync("connect", globals.dbFile);
         }
         catch (ex)
         {
