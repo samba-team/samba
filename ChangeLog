@@ -1,5 +1,9 @@
-2006-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* configure.in: make --disable-pk-init help text also negative
+	
+2006-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kuser/kgetcred.c: Avoid memory leak.
 
 	* tools/heimdal-build.sh: Add more verbose logging, add version of
