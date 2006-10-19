@@ -55,7 +55,6 @@ AC_CHECK_HEADERS([\
 	fnmatch.h				\
 	grp.h					\
 	ifaddrs.h				\
-	netdb.h					\
 	netinet/in.h				\
 	netinet/in6.h				\
 	netinet/in_systm.h			\
@@ -71,7 +70,6 @@ AC_CHECK_HEADERS([\
 	sys/mman.h				\
 	sys/param.h				\
 	sys/resource.h				\
-	sys/socket.h				\
 	sys/sockio.h				\
 	sys/stat.h				\
 	sys/time.h				\
@@ -99,12 +97,30 @@ AC_CHECK_HEADERS(vis.h, , , [
 #error invis
 #endif])
 	
+AC_CHECK_HEADERS(netdb.h, , , [AC_INCLUDES_DEFAULT
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+])
+
+AC_CHECK_HEADERS(sys/socket.h, , , [AC_INCLUDES_DEFAULT
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+])
+
 AC_CHECK_HEADERS(net/if.h, , , [AC_INCLUDES_DEFAULT
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif])
 
 AC_CHECK_HEADERS(netinet6/in6_var.h, , , [AC_INCLUDES_DEFAULT
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -568,11 +584,21 @@ dnl
 rk_CHECK_VAR(timezone,[#include <time.h>])
 rk_CHECK_VAR(altzone,[#include <time.h>])
 
-AC_HAVE_TYPE([sa_family_t],[#include <sys/socket.h>])
-AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
-AC_HAVE_TYPE([struct sockaddr], [#include <sys/socket.h>])
-AC_HAVE_TYPE([struct sockaddr_storage], [#include <sys/socket.h>])
-AC_HAVE_TYPE([struct addrinfo], [#include <netdb.h>])
+AC_HAVE_TYPE([sa_family_t],[
+#include <sys/types.h>
+#include <sys/socket.h>])
+AC_HAVE_TYPE([socklen_t],[
+#include <sys/types.h>
+#include <sys/socket.h>])
+AC_HAVE_TYPE([struct sockaddr], [
+#include <sys/types.h>
+#include <sys/socket.h>])
+AC_HAVE_TYPE([struct sockaddr_storage], [
+#include <sys/types.h>
+#include <sys/socket.h>])
+AC_HAVE_TYPE([struct addrinfo], [
+#include <sys/types.h>
+#include <netdb.h>])
 AC_HAVE_TYPE([struct ifaddrs], [#include <ifaddrs.h>])
 AC_HAVE_TYPE([struct iovec],[
 #include <sys/types.h>
