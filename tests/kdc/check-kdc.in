@@ -116,7 +116,7 @@ ${kadmin} check ${R2} || exit 1
 echo "Extracting enctypes"
 ${ktutil} -k ${keytab} list > tempfile || exit 1
 grep -ve '^FILE:' tempfile | grep -ve '^Vno' | grep -ve '^$' | \
-    awk '/1/ !~ $1 { exit 1 }' || exit 1
+    awk '$1 !~ /1/  { exit 1 }' || exit 1
 
 ${kadmin} get foo@${R} > tempfile || exit 1
 enctypes=`grep Keytypes: tempfile | sed 's/(pw-salt)//g' | sed 's/,//g' | sed 's/Keytypes://'`
