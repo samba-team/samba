@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-YFLAGS = -dt
+YFLAGS = -d -t
 
 lib_LTLIBRARIES = libasn1.la
 libasn1_la_LDFLAGS = -version-info 6:1:1
@@ -396,6 +396,9 @@ dist_check_gen_SOURCES = check-gen.c check-common.c
 nodist_check_gen_SOURCES = $(gen_files_test:.x=.c)
 
 asn1_compile_SOURCES = 				\
+	asn1-common.h				\
+	asn1_queue.h				\
+	der.h					\
 	gen.c					\
 	gen_copy.c				\
 	gen_decode.c				\
@@ -406,13 +409,27 @@ asn1_compile_SOURCES = 				\
 	gen_locl.h				\
 	gen_seq.c				\
 	hash.c					\
+	hash.h					\
 	lex.l					\
+	lex.h					\
 	main.c					\
 	parse.y					\
-	symbol.c
+	symbol.c				\
+	symbol.h
 
 dist_libasn1_la_SOURCES =			\
+	CMS.asn1				\
+	digest.asn1				\
+	k5.asn1					\
+	pkcs12.asn1				\
+	pkcs8.asn1				\
+	pkcs9.asn1				\
+	pkinit.asn1				\
+	rfc2459.asn1				\
+	der-protos.h 				\
+	der_locl.h 				\
 	der.c					\
+	der.h					\
 	der_get.c				\
 	der_put.c				\
 	der_free.c				\
@@ -420,6 +437,7 @@ dist_libasn1_la_SOURCES =			\
 	der_copy.c				\
 	der_cmp.c				\
 	der_format.c				\
+	heim_asn1.h				\
 	extra.c					\
 	timegm.c
 
@@ -458,7 +476,7 @@ CLEANFILES = lex.c parse.c parse.h \
 	digest_asn1_files digest_asn1.h \
 	test_asn1_files test_asn1.h
 
-nodist_include_HEADERS = asn1_err.h der.h der-protos.h heim_asn1.h
+nodist_include_HEADERS = asn1_err.h der.h heim_asn1.h
 nodist_include_HEADERS += krb5_asn1.h
 nodist_include_HEADERS += pkinit_asn1.h
 nodist_include_HEADERS += cms_asn1.h
@@ -512,7 +530,7 @@ digest_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/digest.asn1
 test_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/test.asn1
 	./asn1_compile$(EXEEXT) --sequence=TESTSeqOf $(srcdir)/test.asn1 test_asn1 || (rm -f test_asn1_files ; exit 1)
 
-EXTRA_DIST = asn1_err.et der-protos.h
+EXTRA_DIST = asn1_err.et
 
 $(srcdir)/der-protos.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -o der-protos.h $(dist_libasn1_la_SOURCES) || rm -f der-protos.h
