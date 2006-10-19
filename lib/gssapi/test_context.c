@@ -37,8 +37,16 @@
 
 RCSID("$Id$");
 
+static char *type_string;
+static char *mech_string;
+static int dns_canon_flag = -1;
+static int version_flag = 0;
+static int verbose_flag = 0;
+static int help_flag	= 0;
+
 static void
-loop(gss_OID nameoid, const char *target,
+loop(gss_OID mechoid,
+     gss_OID nameoid, const char *target,
      gss_ctx_id_t *sctx, gss_ctx_id_t *cctx)
 {
     int server_done = 0, client_done = 0;
@@ -50,7 +58,6 @@ loop(gss_OID nameoid, const char *target,
 
     input_token.value = rk_UNCONST(target);
     input_token.length = strlen(target);
-
 
     maj_stat = gss_import_name(&min_stat,
 			       &input_token,
@@ -68,7 +75,7 @@ loop(gss_OID nameoid, const char *target,
 					GSS_C_NO_CREDENTIAL,
 					cctx,
 					gss_target_name,
-					GSS_KRB5_MECHANISM, 
+					mechoid, 
 					flags,
 					0, 
 					NULL,
@@ -99,7 +106,10 @@ loop(gss_OID nameoid, const char *target,
 					  NULL,
 					  &deleg_cred);
 	if (GSS_ERROR(maj_stat))
-	    ;
+	    errx(1, "accept_sec_context: %d", (int)maj_stat);
+
+	if (verbose_flag)
+	    printf("%.*s", (int)input_token.length, (char *)input_token.value);
 
 	if (input_token.length != 0)
 	    gss_release_buffer(&min_stat, &input_token);
@@ -117,16 +127,13 @@ loop(gss_OID nameoid, const char *target,
 }
 
 
-static char *type_string = NULL;
-static int dns_canon_flag = -1;
-static int version_flag = 0;
-static int help_flag	= 0;
-
 static struct getargs args[] = {
     {"name-type",0,	arg_string, &type_string,  "type of name", NULL },
+    {"mech-type",0,	arg_string, &mech_string,  "type of mech", NULL },
     {"dns-canon",0,	arg_negative_flag, &dns_canon_flag, 
      "use dns to canonlize", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
+    {"verbose",	'v',	arg_flag,	&verbose_flag, "verbose", NULL },
     {"help",	0,	arg_flag,	&help_flag,  NULL, NULL }
 };
 
@@ -145,7 +152,7 @@ main(int argc, char **argv)
     OM_uint32 min_stat, maj_stat;
     gss_ctx_id_t cctx, sctx;
     void *ctx;
-    gss_OID nameoid;
+    gss_OID nameoid, mechoid;
 
     cctx = sctx = GSS_C_NO_CONTEXT;
 
@@ -178,31 +185,44 @@ main(int argc, char **argv)
     else
 	errx(1, "%s not suppported", type_string);
 
-    loop(nameoid, argv[0], &sctx, &cctx);
+    if (mech_string == NULL)
+	mechoid = GSS_KRB5_MECHANISM;
+    else if (strcmp(mech_string, "krb5") == 0)
+	mechoid = GSS_KRB5_MECHANISM;
+    else if (strcmp(mech_string, "spnego") == 0)
+	mechoid = GSS_SPNEGO_MECHANISM;
+    else if (strcmp(mech_string, "sasl-digest-md5") == 0)
+	mechoid = GSS_SASL_DIGEST_MD5_MECHANISM;
+    else
+	errx(1, "%s not suppported", mech_string);
+
+    loop(mechoid, nameoid, argv[0], &sctx, &cctx);
     
-    /* client */
-    maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
-						 &cctx,
-						 1, /* version */
-						 &ctx);
-    if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "gss_krb5_export_lucid_sec_context failed");
-
-
-    maj_stat = gss_krb5_free_lucid_sec_context(&maj_stat, ctx);
-    if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "gss_krb5_free_lucid_sec_context failed");
-
-    /* server */
-    maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
-						 &sctx,
-						 1, /* version */
-						 &ctx);
-    if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "gss_krb5_export_lucid_sec_context failed");
-    maj_stat = gss_krb5_free_lucid_sec_context(&maj_stat, ctx);
-    if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "gss_krb5_free_lucid_sec_context failed");
+    if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) {
+	/* client */
+	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
+						     &cctx,
+						     1, /* version */
+						     &ctx);
+	if (maj_stat != GSS_S_COMPLETE)
+	    errx(1, "gss_krb5_export_lucid_sec_context failed");
+	
+	
+	maj_stat = gss_krb5_free_lucid_sec_context(&maj_stat, ctx);
+	if (maj_stat != GSS_S_COMPLETE)
+	    errx(1, "gss_krb5_free_lucid_sec_context failed");
+	
+	/* server */
+	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
+						     &sctx,
+						     1, /* version */
+						     &ctx);
+	if (maj_stat != GSS_S_COMPLETE)
+	    errx(1, "gss_krb5_export_lucid_sec_context failed");
+	maj_stat = gss_krb5_free_lucid_sec_context(&maj_stat, ctx);
+	if (maj_stat != GSS_S_COMPLETE)
+	    errx(1, "gss_krb5_free_lucid_sec_context failed");
+    }
 
     return 0;
 }
