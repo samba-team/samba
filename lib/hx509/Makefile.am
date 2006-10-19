@@ -58,7 +58,10 @@ dist_libhx509_la_SOURCES = \
 	crypto.c \
 	error.c \
 	file.c \
+	hx509-private.h \
+	hx509-protos.h \
 	hx509.h \
+	hx_locl.h \
 	keyset.c \
 	ks_dir.c \
 	ks_file.c \
@@ -69,6 +72,10 @@ dist_libhx509_la_SOURCES = \
 	lock.c \
 	name.c \
 	print.c \
+	ref/pkcs11.h \
+	ref/pkcs11f.h \
+	ref/pkcs11t.h \
+	ref/pkcs11u.h \
 	req.c \
 	revoke.c
 
@@ -121,7 +128,10 @@ hxtool_CPPFLAGS = $(INCLUDE_des)
 hxtool_LDADD = libhx509.la $(LIB_roken) ../sl/libsl.la $(LIB_des)
 hxtool_LDFLAGS = -pthread
 
-EXTRA_DIST = hx509_err.et
+EXTRA_DIST = \
+	hx509_err.et \
+	pkcs10.asn1 ocsp.asn1 crmf.asn1 \
+	hxtool-commands.in
 
 CLEANFILES = $(BUILT_SOURCES) \
 	$(gen_files_ocsp) ocsp_asn1_files ocsp_asn1.h \
