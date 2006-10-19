@@ -1,5 +1,9 @@
-2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-kdc.in: Fix awk statement, put RE on the right side.
+	
+2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* gss/check-gssmask.in: remove dup exit
 
 	* gss/check-context.in: More name tests.
