@@ -732,7 +732,7 @@ enum {
 /* flags for krb5_parse_name_flags */
 enum {
     KRB5_PRINCIPAL_PARSE_NO_REALM = 1,
-    KRB5_PRINCIPAL_PARSE_MUST_REALM = 2,
+    KRB5_PRINCIPAL_PARSE_MUST_REALM = 2
 };
 
 /* flags for krb5_unparse_name_flags */
