@@ -525,15 +525,11 @@ int read_reply(struct winbindd_response *response)
 NSS_STATUS winbindd_send_request(int req_type, struct winbindd_request *request)
 {
 	struct winbindd_request lrequest;
-	char *env;
-	int  value;
-	
+
 	/* Check for our tricky environment variable */
 
-	if ( (env = getenv(WINBINDD_DONT_ENV)) != NULL ) {
-		value = atoi(env);
-		if ( value == 1 )
-			return NSS_STATUS_NOTFOUND;
+	if (winbind_env_set()) {
+		return NSS_STATUS_NOTFOUND;
 	}
 
 	if (!request) {
@@ -632,3 +628,14 @@ BOOL winbind_on( void )
 	return putenv(s) != -1;
 }
 
+BOOL winbind_env_set( void )
+{
+	char *env;
+	
+	if ((env=getenv(WINBINDD_DONT_ENV)) != NULL) {
+		if(strequal(env, "1")) {
+			return True;
+		}
+	}
+	return False;
+}
