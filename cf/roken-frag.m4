@@ -337,6 +337,7 @@ AC_BROKEN([					\
 	strtok_r				\
 	strupr					\
 	swab					\
+	timegm					\
 	unsetenv				\
 	verr					\
 	verrx					\
