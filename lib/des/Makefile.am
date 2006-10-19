@@ -68,6 +68,7 @@ libhcrypto_la_SOURCES =	\
 	aes.h		\
 	bn.c		\
 	bn.h		\
+	des-tables.h	\
 	des.c		\
 	des.h		\
 	dh.c		\
@@ -79,6 +80,7 @@ libhcrypto_la_SOURCES =	\
 	evp.h		\
 	engine.c	\
 	engine.h	\
+	hash.h		\
 	hmac.c		\
 	hmac.h		\
 	md2.c		\
