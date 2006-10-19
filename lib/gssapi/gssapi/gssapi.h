@@ -298,7 +298,7 @@ extern gss_OID GSS_C_NT_EXPORT_NAME;
  * Digest mechanism
  */
 
-extern gss_OID GSS_DIGEST_MECHANISM;
+extern gss_OID GSS_SASL_DIGEST_MD5_MECHANISM;
 
 /* Major status codes */
 
