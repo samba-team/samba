@@ -1,5 +1,9 @@
-2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* der_locl.h: Rename timegm to _der_timegm.
+	
+2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* timegm.c: vJust fail if tm_mon is out of range for now XXXX this
 	is wrong.
 	
