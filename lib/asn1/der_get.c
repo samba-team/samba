@@ -289,10 +289,6 @@ der_get_heim_integer (const unsigned char *p, size_t len,
     return 0;
 }
 
-#ifndef HAVE_TIMEGM
-#define timegm(x) _der_timegm(x)
-#endif
-
 static int
 generalizedtime2time (const char *s, time_t *t)
 {
@@ -313,7 +309,7 @@ generalizedtime2time (const char *s, time_t *t)
     }
     tm.tm_year -= 1900;
     tm.tm_mon -= 1;
-    *t = timegm (&tm);
+    *t = _der_timegm (&tm);
     return 0;
 }
 #undef timegm
