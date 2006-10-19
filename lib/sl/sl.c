@@ -39,26 +39,6 @@ RCSID("$Id$");
 #include "sl_locl.h"
 #include <setjmp.h>
 
-static size_t
-print_sl (FILE *stream, int mdoc, int longp, SL_cmd *c)
-    __attribute__ ((unused));
-
-static size_t
-print_sl (FILE *stream, int mdoc, int longp, SL_cmd *c)
-{
-    if(mdoc){
-	if(longp)
-	    fprintf(stream, "= Ns");
-	fprintf(stream, " Ar ");
-    }else
-	if (longp)
-	    putc ('=', stream);
-	else
-	    putc (' ', stream);
-
-    return 1;
-}
-
 static void
 mandoc_template(SL_cmd *cmds,
 		const char *extra_string)
@@ -94,7 +74,6 @@ mandoc_template(SL_cmd *cmds,
 /*	if (c->func == NULL)
 	    continue; */
 	printf(".Op Fl %s", c->name);
-/*	print_sl(stdout, 1, 0, c);*/
 	printf("\n");
 	
     }
