@@ -27,6 +27,7 @@ testit_LDADD = \
 include_HEADERS = editline.h
 
 libeditline_la_SOURCES = \
+	edit_locl.h \
 	complete.c \
 	editline.c \
 	sysunix.c \
