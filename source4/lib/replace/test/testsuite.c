@@ -411,9 +411,6 @@ static int test_socketpair(void)
 		return false;
 	}
 
-	close(sock[0]);
-	close(sock[1]);
-
 	printf("success: socketpair\n");
 
 	return true;
