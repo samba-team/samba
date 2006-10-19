@@ -1,5 +1,11 @@
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-timegm.c: Add check for _der_timegm.
+
+	* der_get.c (generalizedtime2time): always use _der_timegm.
+
+	* timegm.c: make more strict
+
 	* der_locl.h: Rename timegm to _der_timegm.
 	
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>

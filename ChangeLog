@@ -1,5 +1,8 @@
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* configure.in: Don't check for timegm, libroken provides it for
+	us.
+
 	* lib/krb5/acache.c: Does function typecasts instead of void *
 	type-casts.
 

@@ -1,5 +1,9 @@
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* roken.h.in: Add timegm glue.
+
+	* timegm.c: add timegm()
+	
 	* socket_wrapper.c: Include <roken.h>, gives os socklen_t on IRIX
 	6.4.
 	
