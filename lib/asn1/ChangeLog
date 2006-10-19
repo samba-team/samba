@@ -1,5 +1,7 @@
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am (asn1_compile_SOURCES): add gen_locl.h
+
 	* check-timegm.c: Add check for _der_timegm.
 
 	* der_get.c (generalizedtime2time): always use _der_timegm.
