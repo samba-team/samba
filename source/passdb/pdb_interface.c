@@ -1327,27 +1327,25 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 	struct group *grp;
 	char **gr;
 	struct passwd *pwd;
-	char *winbindd_env;
+	BOOL winbind_env;
  
 	*pp_uids = NULL;
 	*p_num = 0;
 
 	/* We only look at our own sam, so don't care about imported stuff */
-
-	winbindd_env = getenv(WINBINDD_DONT_ENV);
+	winbind_env = winbind_env_set();
 	winbind_off();
 
 	if ((grp = getgrgid(gid)) == NULL) {
 		/* allow winbindd lookups, but only if they weren't already disabled */
-		if ( !(winbindd_env && strequal(winbindd_env, "1")) ) {
+		if (!winbind_env) {
 			winbind_on();
 		}
-
+		
 		return False;
 	}
 
 	/* Primary group members */
-
 	setpwent();
 	while ((pwd = getpwent()) != NULL) {
 		if (pwd->pw_gid == gid) {
@@ -1358,7 +1356,6 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 	endpwent();
 
 	/* Secondary group members */
-
 	for (gr = grp->gr_mem; (*gr != NULL) && ((*gr)[0] != '\0'); gr += 1) {
 		struct passwd *pw = getpwnam(*gr);
 
@@ -1368,11 +1365,10 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 	}
 
 	/* allow winbindd lookups, but only if they weren't already disabled */
-
-	if ( !(winbindd_env && strequal(winbindd_env, "1")) ) {
+	if (!winbind_env) {
 		winbind_on();
 	}
-
+	
 	return True;
 }
 
