@@ -358,34 +358,22 @@ gen_files_pkcs9 =					\
 	asn1_PKCS9_friendlyName.x
 
 gen_files_test =					\
-	asn1_TESTAlloc.c				\
 	asn1_TESTAlloc.x				\
-	asn1_TESTAllocInner.c				\
 	asn1_TESTAllocInner.x				\
 	asn1_TESTCONTAINING.x				\
 	asn1_TESTCONTAININGENCODEDBY.x			\
 	asn1_TESTCONTAININGENCODEDBY2.x			\
-	asn1_TESTChoice1.c				\
 	asn1_TESTChoice1.x				\
-	asn1_TESTChoice2.c				\
 	asn1_TESTChoice2.x				\
 	asn1_TESTDer.x					\
 	asn1_TESTENCODEDBY.x				\
-	asn1_TESTImplicit.c				\
 	asn1_TESTImplicit.x				\
-	asn1_TESTImplicit2.c				\
 	asn1_TESTImplicit2.x				\
-	asn1_TESTInteger.c				\
 	asn1_TESTInteger.x				\
-	asn1_TESTInteger2.c				\
 	asn1_TESTInteger2.x				\
-	asn1_TESTInteger3.c				\
 	asn1_TESTInteger3.x				\
-	asn1_TESTLargeTag.c				\
 	asn1_TESTLargeTag.x				\
-	asn1_TESTSeq.c					\
 	asn1_TESTSeq.x					\
-	asn1_TESTSeqOf.c				\
 	asn1_TESTUSERCONSTRAINED.x			\
 	asn1_TESTSeqOf.x
 
@@ -403,8 +391,8 @@ gen_files_digest =					\
 
 noinst_PROGRAMS = asn1_compile asn1_print asn1_gen
 
-check_PROGRAMS = check-der check-gen
-TESTS = check-der check-gen
+TESTS = check-der check-gen check-timegm
+check_PROGRAMS = $(TESTS)
 
 asn1_gen_SOURCES = asn1_gen.c
 asn1_print_SOURCES = asn1_print.c
@@ -463,6 +451,7 @@ check_der_LDADD = \
 check_gen_LDADD = $(check_der_LDADD)
 asn1_print_LDADD = $(check_der_LDADD)
 asn1_gen_LDADD = $(check_der_LDADD)
+check_timegm_LDADD = $(check_der_LDADD)
 
 CLEANFILES = lex.c parse.c parse.h \
 	$(BUILT_SOURCES) \
