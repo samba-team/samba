@@ -328,6 +328,12 @@ static gss_OID_desc gss_krb5_get_acceptor_subkey_x_desc =
 
 gss_OID GSS_KRB5_GET_ACCEPTOR_SUBKEY_X = &gss_krb5_get_acceptor_subkey_x_desc;
 
+/* 1.2.752.43.13.11 */
+static gss_OID_desc gss_krb5_send_to_kdc_x_desc =
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0b")};
+
+gss_OID GSS_KRB5_SEND_TO_KDC_X = &gss_krb5_send_to_kdc_x_desc;
+
 /* 1.2.752.43.14.1 */
 static gss_OID_desc gss_sasl_digest_md5_mechanism_desc =
 {6, rk_UNCONST("\x2a\x85\x70\x2b\x0e\x01") };
