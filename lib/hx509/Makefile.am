@@ -206,7 +206,7 @@ test_query: test_query.in Makefile
 	chmod +x test_query.tmp
 	mv test_query.tmp test_query
 
-EXTRA_DIST = 
+EXTRA_DIST = \
 	hx509_err.et \
 	pkcs10.asn1 \
 	ocsp.asn1 \
