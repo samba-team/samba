@@ -33,6 +33,7 @@ krb5.conf: krb5.conf.in Makefile
 
 CLEANFILES= \
 	$(TESTS) \
+	have-db \
 	db-dump* \
 	current-db* \
 	out-text-dump* \
