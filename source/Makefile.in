@@ -191,7 +191,7 @@ TDBBASE_OBJ = tdb/common/tdb.o tdb/common/dump.o tdb/common/error.o \
 	tdb/common/freelist.o tdb/common/io.o tdb/common/lock.o \
 	tdb/common/open.o tdb/common/transaction.o tdb/common/traverse.o
 
-TDB_OBJ = $(TDBBASE_OBJ) tdb/common/tdbutil.o tdb/common/tdbback.o
+TDB_OBJ = $(TDBBASE_OBJ) lib/util_tdb.o tdb/common/tdbback.o
 
 SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
