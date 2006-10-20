@@ -1,9 +1,12 @@
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_p11.c (p11_list_keys): make element of search_data[0]
+	constants and set them later
+
 	* Makefile.am: Add more files.
 	
 2006-10-17  Love Hörnquist Åstrand  <lha@it.su.se>
-
+	
 	* ks_file.c: set ret, remember to free ivdata
 	
 2006-10-16  Love Hörnquist Åstrand  <lha@it.su.se>
