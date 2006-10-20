@@ -157,10 +157,6 @@ struct ether_addr;
 #include <socks.h>
 #endif
 
-#include <err.h>
-#include <roken.h>
-/* krb.h? */
-
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
 #include <libtelnet/auth.h>
 #include <libtelnet/encrypt.h>
@@ -177,6 +173,9 @@ struct ether_addr;
 #include "externs.h"
 #include "defines.h"
 #include "types.h"
+
+#include <err.h>
+#include <roken.h>
 
 /* prototypes */
 
