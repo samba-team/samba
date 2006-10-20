@@ -6,6 +6,8 @@ AUTOMAKE_OPTIONS = no-texinfo.tex
 
 MAKEINFOFLAGS = --no-split --css-include=$(srcdir)/heimdal.css
 
+TEXI2DVI = true # ARGH, make distcheck can't be disabled to not build dvifiles
+
 info_TEXINFOS = heimdal.texi
 heimdal_TEXINFOS = \
 	ack.texi \
