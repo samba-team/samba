@@ -1,5 +1,9 @@
-2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* make-print-version.c: Avoid creating a file called --version.
+	
+2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: fix spelling of build_HEADERZ
 
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
