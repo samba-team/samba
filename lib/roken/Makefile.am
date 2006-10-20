@@ -147,7 +147,7 @@ endif
 XHEADERS = $(err_h) $(fnmatch_h) $(glob_h) $(ifaddrs_h) $(vis_h)
 CLEANFILES += err.h fnmatch.h glob.h ifaddrs.h vis.h
 
-include_HEADERS = 				\
+dist_include_HEADERS = 				\
 	base64.h				\
 	getarg.h				\
 	hex.h					\
@@ -157,8 +157,7 @@ include_HEADERS = 				\
 	resolve.h 				\
 	roken-common.h 				\
 	rtbl.h 					\
-	xdbm.h					\
-	$(XHEADERS) 
+	xdbm.h
 
 if have_socket_wrapper
 libroken_la_SOURCES += socket_wrapper.c socket_wrapper.h
@@ -167,7 +166,7 @@ endif
 
 build_HEADERZ = test-mem.h
 
-nodist_include_HEADERS = roken.h
+nodist_include_HEADERS = roken.h $(XHEADERS)
 
 man_MANS = getarg.3 parse_time.3 rtbl.3
 
