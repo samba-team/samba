@@ -63,6 +63,7 @@ extern gss_OID GSS_KRB5_COPY_CCACHE_X;
 extern gss_OID GSS_KRB5_COMPAT_DES3_MIC_X;
 extern gss_OID GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X;
 extern gss_OID GSS_KRB5_SET_DNS_CANONIZE_X;
+extern gss_OID GSS_KRB5_SEND_TO_KDC_X;
 /* Extensions inquire context */
 extern gss_OID GSS_KRB5_GET_TKT_FLAGS_X;
 extern gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X;
@@ -117,6 +118,14 @@ gsskrb5_extract_authz_data_from_sec_context
 
 OM_uint32
 gsskrb5_set_dns_canonlize(int);
+
+struct gsskrb5_send_to_kdc {
+    void *func;
+    void *ptr;
+};
+
+OM_uint32
+gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *);
 
 /*
  * Lucid - NFSv4 interface to GSS-API KRB5 to expose key material to
