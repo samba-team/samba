@@ -439,3 +439,46 @@ gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
 
     return (GSS_S_COMPLETE);
 }
+
+OM_uint32
+gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
+					  gss_ctx_id_t context_handle,
+					  time_t *authtime)
+{
+    gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
+    unsigned char buf[4];
+    OM_uint32 maj_stat;
+
+    if (context_handle == GSS_C_NO_CONTEXT) {
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+    
+    maj_stat =
+	gss_inquire_sec_context_by_oid (minor_status,
+					context_handle,
+					GSS_KRB5_GET_AUTHTIME_X,
+					&data_set);
+    if (maj_stat)
+	return maj_stat;
+    
+    if (data_set == GSS_C_NO_BUFFER_SET || data_set->count != 1) {
+	gss_release_buffer_set(minor_status, &data_set);
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+
+    if (data_set->elements[0].length != sizeof(buf)) {
+	gss_release_buffer_set(minor_status, &data_set);
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+
+    memcpy(buf, data_set->elements[0].value, sizeof(buf));
+    gss_release_buffer_set(minor_status, &data_set);
+    
+    *authtime = (buf[0] <<24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
+
+    *minor_status = 0;
+    return GSS_S_COMPLETE;
+}
