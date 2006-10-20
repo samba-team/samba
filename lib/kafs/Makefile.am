@@ -68,7 +68,7 @@ afskrb5_c = afskrb5.c
 endif
 
 if do_roken_rename
-ROKEN_SRCS = resolve.c strtok_r.c strlcpy.c strsep.c
+ROKEN_SRCS = resolve.c strtok_r.c strlcpy.c strsep.c roken_rename.h
 endif
 
 libkafs_la_SOURCES =				\
@@ -85,7 +85,7 @@ libkafs_la_SOURCES =				\
 
 EXTRA_libkafs_la_SOURCES = afskrb.c afskrb5.c dlfcn.c afslib.c dlfcn.h
 
-EXTRA_DIST = README.dlfcn afsl.exp afslib.exp
+EXTRA_DIST = README.dlfcn afsl.exp afslib.exp $(man_MANS)
 
 man_MANS = kafs.3
 
