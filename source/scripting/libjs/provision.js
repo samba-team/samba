@@ -475,7 +475,7 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	/* only install a new shares config db if there is none */
 	st = sys.stat(paths.shareconf);
 	if (st == undefined) {
-		message("Setting up sconf.ldb\n");
+		message("Setting up share.ldb\n");
 		setup_ldb("share.ldif", info, paths.shareconf);
 	}
 	message("Setting up secrets.ldb\n");
