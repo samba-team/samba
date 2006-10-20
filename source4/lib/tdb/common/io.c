@@ -102,7 +102,7 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 /* Endian conversion: we only ever deal with 4 byte quantities */
 void *tdb_convert(void *buf, u32 size)
 {
-	u32 i, *p = buf;
+	u32 i, *p = (u32 *)buf;
 	for (i = 0; i < size / 4; i++)
 		p[i] = TDB_BYTEREV(p[i]);
 	return buf;
@@ -282,7 +282,8 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	tdb->map_size += size;
 
 	if (tdb->flags & TDB_INTERNAL) {
-		char *new_map_ptr = realloc(tdb->map_ptr, tdb->map_size);
+		char *new_map_ptr = (char *)realloc(tdb->map_ptr,
+						    tdb->map_size);
 		if (!new_map_ptr) {
 			tdb->map_size -= size;
 			goto fail;
