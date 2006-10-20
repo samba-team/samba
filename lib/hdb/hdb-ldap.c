@@ -847,7 +847,7 @@ LDAP__lookup_princ(krb5_context context,
 
 static krb5_error_code
 LDAP_principal2message(krb5_context context, HDB * db,
-		       krb5_principal princ, LDAPMessage ** msg)
+		       krb5_const_principal princ, LDAPMessage ** msg)
 {
     char *name, *name_short = NULL;
     krb5_error_code ret;
@@ -1478,13 +1478,13 @@ LDAP_open(krb5_context context, HDB * db, int flags, mode_t mode)
 }
 
 static krb5_error_code
-LDAP_fetch(krb5_context context, HDB * db, unsigned flags,
-	   hdb_entry_ex * entry)
+LDAP_fetch(krb5_context context, HDB * db, krb5_const_principal principal,
+	   unsigned flags, hdb_entry_ex * entry)
 {
     LDAPMessage *msg, *e;
     krb5_error_code ret;
 
-    ret = LDAP_principal2message(context, db, entry->entry.principal, &msg);
+    ret = LDAP_principal2message(context, db, principal, &msg);
     if (ret)
 	return ret;
 
