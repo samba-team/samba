@@ -41,4 +41,4 @@ LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_door_create) \
 	$(LIB_pidfile)
 
-
+EXTRA_DIST = $(man_MANS)
