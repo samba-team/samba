@@ -19,7 +19,6 @@ crypto-headers.h: make_crypto$(EXEEXT)
 	./make_crypto$(EXEEXT) crypto-headers.h
 
 CLEANFILES =		\
-	--version	\
 	cms_asn1.h 	\
 	der-protos.h 	\
 	digest_asn1.h 	\
