@@ -428,3 +428,14 @@ int tdb_hash_size(struct tdb_context *tdb)
 {
 	return tdb->header.hash_size;
 }
+
+size_t tdb_map_size(struct tdb_context *tdb)
+{
+	return tdb->map_size;
+}
+
+int tdb_get_flags(struct tdb_context *tdb)
+{
+	return tdb->flags;
+}
+
