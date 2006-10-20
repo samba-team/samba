@@ -1,5 +1,9 @@
-2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: split dist and nondist HEADERS
+	
+2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* roken.h.in: Add timegm glue.
 
 	* timegm.c: add timegm()
