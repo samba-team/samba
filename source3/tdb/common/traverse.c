@@ -100,7 +100,7 @@ static int tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock *tloc
 
 			/* Detect infinite loops. From "Shlomi Yaakobovich" <Shlomi@exanet.com>. */
 			if (tlock->off == rec->next) {
-				TDB_LOG((tdb, 0, "tdb_next_lock: loop detected.\n"));
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_next_lock: loop detected.\n"));
 				goto fail;
 			}
 
@@ -127,7 +127,7 @@ static int tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock *tloc
  fail:
 	tlock->off = 0;
 	if (tdb_unlock(tdb, tlock->hash, tlock->lock_rw) != 0)
-		TDB_LOG((tdb, 0, "tdb_next_lock: On error unlock failed!\n"));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_next_lock: On error unlock failed!\n"));
 	return -1;
 }
 
@@ -163,7 +163,7 @@ static int tdb_traverse_internal(struct tdb_context *tdb,
 			if (tdb_unlock(tdb, tl->hash, tl->lock_rw) != 0)
 				goto out;
 			if (tdb_unlock_record(tdb, tl->off) != 0)
-				TDB_LOG((tdb, 0, "tdb_traverse: key.dptr == NULL and unlock_record failed!\n"));
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_traverse: key.dptr == NULL and unlock_record failed!\n"));
 			goto out;
 		}
 		key.dsize = rec.key_len;
@@ -180,7 +180,7 @@ static int tdb_traverse_internal(struct tdb_context *tdb,
 			/* They want us to terminate traversal */
 			ret = count;
 			if (tdb_unlock_record(tdb, tl->off) != 0) {
-				TDB_LOG((tdb, 0, "tdb_traverse: unlock_record failed!\n"));;
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_traverse: unlock_record failed!\n"));;
 				ret = -1;
 			}
 			SAFE_FREE(key.dptr);
@@ -208,8 +208,8 @@ int tdb_traverse_read(struct tdb_context *tdb,
 	
 	/* we need to get a read lock on the transaction lock here to
 	   cope with the lock ordering semantics of solaris10 */
-	if (tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_RDLCK, F_SETLKW, 0) == -1) {
-		TDB_LOG((tdb, 0, "tdb_traverse_read: failed to get transaction lock\n"));
+	if (tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_RDLCK, F_SETLKW, 0, 1) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_traverse_read: failed to get transaction lock\n"));
 		tdb->ecode = TDB_ERR_LOCK;
 		return -1;
 	}
@@ -218,7 +218,7 @@ int tdb_traverse_read(struct tdb_context *tdb,
 	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
 	tdb->traverse_read--;
 
-	tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0);
+	tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0, 1);
 
 	return ret;
 }
@@ -237,15 +237,15 @@ int tdb_traverse(struct tdb_context *tdb,
 		return tdb_traverse_read(tdb, fn, private_data);
 	}
 	
-	if (tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_WRLCK, F_SETLKW, 0) == -1) {
-		TDB_LOG((tdb, 0, "tdb_traverse: failed to get transaction lock\n"));
+	if (tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_traverse: failed to get transaction lock\n"));
 		tdb->ecode = TDB_ERR_LOCK;
 		return -1;
 	}
 
 	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
 
-	tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0);
+	tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0, 1);
 
 	return ret;
 }
@@ -269,7 +269,7 @@ TDB_DATA tdb_firstkey(struct tdb_context *tdb)
 	key.dsize = rec.key_len;
 	key.dptr =tdb_alloc_read(tdb,tdb->travlocks.off+sizeof(rec),key.dsize);
 	if (tdb_unlock(tdb, BUCKET(tdb->travlocks.hash), F_WRLCK) != 0)
-		TDB_LOG((tdb, 0, "tdb_firstkey: error occurred while tdb_unlocking!\n"));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_firstkey: error occurred while tdb_unlocking!\n"));
 	return key;
 }
 
@@ -311,7 +311,7 @@ TDB_DATA tdb_nextkey(struct tdb_context *tdb, TDB_DATA oldkey)
 			return tdb_null;
 		tdb->travlocks.hash = BUCKET(rec.full_hash);
 		if (tdb_lock_record(tdb, tdb->travlocks.off) != 0) {
-			TDB_LOG((tdb, 0, "tdb_nextkey: lock_record failed (%s)!\n", strerror(errno)));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_nextkey: lock_record failed (%s)!\n", strerror(errno)));
 			return tdb_null;
 		}
 	}
@@ -325,11 +325,11 @@ TDB_DATA tdb_nextkey(struct tdb_context *tdb, TDB_DATA oldkey)
 					  key.dsize);
 		/* Unlock the chain of this new record */
 		if (tdb_unlock(tdb, tdb->travlocks.hash, F_WRLCK) != 0)
-			TDB_LOG((tdb, 0, "tdb_nextkey: WARNING tdb_unlock failed!\n"));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_nextkey: WARNING tdb_unlock failed!\n"));
 	}
 	/* Unlock the chain of old record */
 	if (tdb_unlock(tdb, BUCKET(oldhash), F_WRLCK) != 0)
-		TDB_LOG((tdb, 0, "tdb_nextkey: WARNING tdb_unlock failed!\n"));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_nextkey: WARNING tdb_unlock failed!\n"));
 	return key;
 }
 

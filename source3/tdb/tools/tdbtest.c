@@ -1,48 +1,43 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <signal.h>
-#include "tdb.h"
-#include <gdbm.h>
-
 /* a test program for tdb - the trivial database */
 
+#include "replace.h"
+#include "tdb.h"
+#include "system/filesys.h"
+#include "system/time.h"
+
+#include <gdbm.h>
 
 
 #define DELETE_PROB 7
 #define STORE_PROB 5
 
-static TDB_CONTEXT *db;
+static struct tdb_context *db;
 static GDBM_FILE gdbm;
 
 struct timeval tp1,tp2;
 
-static void start_timer(void)
+static void _start_timer(void)
 {
 	gettimeofday(&tp1,NULL);
 }
 
-static double end_timer(void)
+static double _end_timer(void)
 {
 	gettimeofday(&tp2,NULL);
 	return((tp2.tv_sec - tp1.tv_sec) + 
 	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
 }
 
-static void fatal(char *why)
+static void fatal(const char *why)
 {
 	perror(why);
 	exit(1);
 }
 
-static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
+#ifdef PRINTF_ATTRIBUTE
+static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+#endif
+static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...)
 {
 	va_list ap;
     
@@ -179,7 +174,7 @@ static void addrec_gdbm(void)
 	free(d);
 }
 
-static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 #if 0
 	printf("[%s] [%s]\n", key.dptr, dbuf.dptr);
@@ -192,14 +187,15 @@ static void merge_test(void)
 {
 	int i;
 	char keys[5][2];
+	char tdata[] = "test";
 	TDB_DATA key, data;
 	
 	for (i = 0; i < 5; i++) {
-		sprintf(keys[i], "%d", i);
+		snprintf(keys[i],2, "%d", i);
 		key.dptr = keys[i];
 		key.dsize = 2;
 		
-		data.dptr = "test";
+		data.dptr = tdata;
 		data.dsize = 4;
 		
 		if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
@@ -219,16 +215,17 @@ static void merge_test(void)
 	tdb_delete(db, key);
 }
 	
-int main(int argc, char *argv[])
+ int main(int argc, const char *argv[])
 {
 	int i, seed=0;
 	int loops = 10000;
+	char test_gdbm[] = "test.gdbm";
 
 	unlink("test.gdbm");
 
 	db = tdb_open("test.tdb", 0, TDB_CLEAR_IF_FIRST, 
 		      O_RDWR | O_CREAT | O_TRUNC, 0600);
-	gdbm = gdbm_open("test.gdbm", 512, GDBM_WRITER|GDBM_NEWDB|GDBM_FAST, 
+	gdbm = gdbm_open(test_gdbm, 512, GDBM_WRITER|GDBM_NEWDB|GDBM_FAST, 
 			 0600, NULL);
 
 	if (!db || !gdbm) {
@@ -239,17 +236,17 @@ int main(int argc, char *argv[])
 	
 #if 1
 	srand(seed);
-	start_timer();
+	_start_timer();
 	for (i=0;i<loops;i++) addrec_gdbm();
-	printf("gdbm got %.2f ops/sec\n", i/end_timer());
+	printf("gdbm got %.2f ops/sec\n", i/_end_timer());
 #endif
 
 	merge_test();
 
 	srand(seed);
-	start_timer();
+	_start_timer();
 	for (i=0;i<loops;i++) addrec_db();
-	printf("tdb got %.2f ops/sec\n", i/end_timer());
+	printf("tdb got %.2f ops/sec\n", i/_end_timer());
 
 	compare_db();
 

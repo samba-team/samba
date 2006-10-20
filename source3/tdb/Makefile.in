@@ -1,25 +1,40 @@
+#!gmake
 #
 # Makefile for tdb directory
 #
 
-CFLAGS = -Iinclude @CFLAGS@
 CC = @CC@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
 includedir = @includedir@
 libdir = @libdir@
+VPATH = @srcdir@:@libreplacedir@
+srcdir = @srcdir@
+builddir = @builddir@
+CFLAGS = -I$(srcdir)/include -Iinclude -I@libreplacedir@ @CFLAGS@
+
+.PHONY: test
 
 PROGS = bin/tdbtool bin/tdbtorture
-TDB_OBJ = common/tdb.o common/dump.o common/io.o common/lock.o \
-	common/open.o common/traverse.o common/freelist.o common/error.o \
-	common/transaction.o
+TDB_OBJ = @TDBOBJ@ @LIBREPLACEOBJ@
 
-all: $(PROGS)
+DIRS = bin common tools
+
+all: showflags dirs $(PROGS)
+
+showflags:
+	@echo 'tdb will be compiled with flags:'
+	@echo '  CFLAGS = $(CFLAGS)'
+	@echo '  LIBS = $(LIBS)'
 
 .c.o:
 	@echo Compiling $*.c
+	@mkdir -p `dirname $@`
 	@$(CC) $(CFLAGS) -c $< -o $@
+
+dirs:
+	@mkdir -p $(DIRS)
 
 install: all
 	mkdir -p $(bindir)
@@ -27,28 +42,40 @@ install: all
 	mkdir -p $(libdir) 
 	mkdir -p $(libdir)/pkgconfig
 	cp $(PROGS) $(bindir)
-	cp include/tdb.h $(includedir)
+	cp $(srcdir)/include/tdb.h $(includedir)
 	cp tdb.pc $(libdir)/pkgconfig
 
-bin/tdbtest: tools/tdbtest.o $(TDB_OBJ)
-	$(CC) $(CFLAGS) -o bin/tdbtest tools/tdbtest.o $(TDB_OBJ) -lgdbm
+libtdb.a: $(TDB_OBJ)
+	ar -rv libtdb.a $(TDB_OBJ)
 
-bin/tdbtool: tools/tdbtool.o $(TDB_OBJ)
-	$(CC) $(CFLAGS) -o bin/tdbtool tools/tdbtool.o $(TDB_OBJ)
+bin/tdbtest: tools/tdbtest.o libtdb.a
+	$(CC) $(CFLAGS) -o bin/tdbtest tools/tdbtest.o -L. -ltdb -lgdbm
 
-bin/tdbtorture: tools/tdbtorture.o $(TDB_OBJ)
-	$(CC) $(CFLAGS) -o bin/tdbtorture tools/tdbtorture.o $(TDB_OBJ)
+bin/tdbtool: tools/tdbtool.o libtdb.a
+	$(CC) $(CFLAGS) -o bin/tdbtool tools/tdbtool.o -L. -ltdb
 
-bin/tdbdump: tools/tdbdump.o $(TDB_OBJ)
-	$(CC) $(CFLAGS) -o bin/tdbdump tools/tdbdump.o $(TDB_OBJ)
+bin/tdbtorture: tools/tdbtorture.o libtdb.a
+	$(CC) $(CFLAGS) -o bin/tdbtorture tools/tdbtorture.o -L. -ltdb
 
-bin/tdbbackup: tools/tdbbackup.o $(TDB_OBJ)
-	$(CC) $(CFLAGS) -o bin/tdbbackup tools/tdbbackup.o $(TDB_OBJ)
+bin/tdbdump: tools/tdbdump.o libtdb.a
+	$(CC) $(CFLAGS) -o bin/tdbdump tools/tdbdump.o -L. -ltdb
+
+bin/tdbbackup: tools/tdbbackup.o libtdb.a
+	$(CC) $(CFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb
+
+test: bin/tdbtorture
+	bin/tdbtorture
+
+installcheck: test install
 
 clean:
-	rm -f $(PROGS) common/*.o tools/*.o *~ *.bak */*~ */*.bak *% core test.db test.tdb test.gdbm
+	rm -f $(PROGS) *.o *.a common/*.o tools/*.o tdb.pc
+	rm -f test.db test.tdb torture.tdb test.gdbm
 
-installcheck: install
-	$(bindir)/tdbtorture
+distclean: clean
+	rm -f *~ */*~
+	rm -f config.log config.status include/config.h config.cache
+	rm -f Makefile
 
-test: installcheck
+realdistclean: distclean
+	rm -f configure include/config.h.in
