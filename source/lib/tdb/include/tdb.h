@@ -123,6 +123,7 @@ int tdb_transaction_commit(struct tdb_context *tdb);
 int tdb_transaction_cancel(struct tdb_context *tdb);
 int tdb_transaction_recover(struct tdb_context *tdb);
 int tdb_get_seqnum(struct tdb_context *tdb);
+int tdb_hash_size(struct tdb_context *tdb);
 
 /* Low level locking functions: use with care */
 int tdb_chainlock(struct tdb_context *tdb, TDB_DATA key);

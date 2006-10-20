@@ -54,7 +54,7 @@ static int tdb_new_database(struct tdb_context *tdb, int hash_size)
 
 	/* We make it up in memory, then write it out if not internal */
 	size = sizeof(struct tdb_header) + (hash_size+1)*sizeof(tdb_off_t);
-	if (!(newdb = calloc(size, 1)))
+	if (!(newdb = (struct tdb_header *)calloc(size, 1)))
 		return TDB_ERRCODE(TDB_ERR_OOM, -1);
 
 	/* Fill in the header */
@@ -140,7 +140,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	unsigned char *vp;
 	u32 vertest;
 
-	if (!(tdb = calloc(1, sizeof *tdb))) {
+	if (!(tdb = (struct tdb_context *)calloc(1, sizeof *tdb))) {
 		/* Can't log this */
 		errno = ENOMEM;
 		goto fail;
@@ -263,7 +263,8 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	tdb->map_size = st.st_size;
 	tdb->device = st.st_dev;
 	tdb->inode = st.st_ino;
-	tdb->locked = calloc(tdb->header.hash_size+1, sizeof(tdb->locked[0]));
+	tdb->locked = (struct tdb_lock_type *)calloc(tdb->header.hash_size+1,
+						     sizeof(tdb->locked[0]));
 	if (!tdb->locked) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
 			 "failed to allocate lock structure for %s\n",
