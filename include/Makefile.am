@@ -19,6 +19,37 @@ crypto-headers.h: make_crypto$(EXEEXT)
 	./make_crypto$(EXEEXT) crypto-headers.h
 
 CLEANFILES =		\
+	--version	\
+	cms_asn1.h 	\
+	der-protos.h 	\
+	digest_asn1.h 	\
+	gssapi/gssapi.h	\
+	gssapi/gssapi_krb5.h \
+	gssapi/gssapi_spnego.h \
+	hdb-protos.h	\
+	heim_asn1.h	\
+	hex.h		\
+	hx509-protos.h	\
+	hx509.h		\
+	hx509_err.h	\
+	k524_err.h	\
+	kadm5/kadm5-private.h \
+	kadm5/kadm5-protos.h \
+	kdc-protos.h	\
+	kdc.h		\
+	krb5_asn1.h	\
+	krb5_ccapi.h	\
+	parse_bytes.h	\
+	pkcs12_asn1.h	\
+	pkcs8_asn1.h	\
+	pkcs9_asn1.h	\
+	pkinit_asn1.h	\
+	rfc2459_asn1.h	\
+	rtbl.h		\
+	test-mem.h	\
+	vers.h		\
+	version.h	\
+	version.h.in	\
 	asn1.h		\
 	asn1_err.h	\
 	base64.h	\
