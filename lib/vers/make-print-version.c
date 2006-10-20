@@ -52,6 +52,10 @@ main(int argc, char **argv)
     FILE *f;
     if(argc != 2)
 	return 1;
+    if (strcmp(argv[1], "--version")) {
+	printf("some version");
+	return 0;
+    }
     f = fopen(argv[1], "w");
     if(f == NULL)
 	return 1;
