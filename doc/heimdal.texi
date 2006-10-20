@@ -20,7 +20,7 @@
 @set VERSION 0.8
 
 @ifinfo
-@dircategory Heimdal
+@dircategory Security
 @direntry
 * Heimdal: (heimdal).           The Kerberos 5 distribution from KTH
 @end direntry
