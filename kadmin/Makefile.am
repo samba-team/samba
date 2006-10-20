@@ -81,3 +81,5 @@ add_random_users_LDADD = \
 	$(top_builddir)/lib/kadm5/libkadm5srv.la \
 	$(LDADD_common) \
 	$(LIB_dlopen)
+
+EXTRA_DIST = $(man_MANS) kadmin-commands.in

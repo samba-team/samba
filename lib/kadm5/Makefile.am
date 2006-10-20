@@ -58,7 +58,8 @@ dist_libkadm5clnt_la_SOURCES =			\
 	randkey_c.c				\
 	rename_c.c				\
 	send_recv.c				\
- 	admin.h
+	kadm5-pwcheck.h				\
+	admin.h
 
 nodist_libkadm5clnt_la_SOURCES =		\
 	kadm5_err.c				\
@@ -93,7 +94,9 @@ dist_libkadm5srv_la_SOURCES =			\
 	rename_s.c				\
 	server_glue.c				\
 	set_keys.c				\
-	set_modifier.c
+	set_modifier.c				\
+	kadm5-pwcheck.h				\
+	admin.h
 
 nodist_libkadm5srv_la_SOURCES = 		\
 	kadm5_err.c				\
@@ -165,3 +168,5 @@ $(srcdir)/kadm5-private.h:
 		$(dist_libkadm5clnt_la_SOURCES) \
 		$(dist_libkadm5srv_la_SOURCES) \
 		|| rm -f kadm5-private.h
+
+EXTRA_DIST = kadm5_err.et iprop-commands.in $(man_MANS)

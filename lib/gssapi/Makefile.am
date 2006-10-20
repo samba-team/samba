@@ -125,6 +125,8 @@ mechsrc = \
 	mech/gss_wrap_size_limit.c \
 	mech/gss_inquire_sec_context_by_oid.c \
 	mech/mech_switch.h \
+	mech/mechqueue.h \
+	mech/mech_locl.h \
 	mech/name.h \
 	mech/utils.h
 
@@ -135,7 +137,8 @@ spnegosrc = \
 	spnego/cred_stubs.c \
 	spnego/external.c \
 	spnego/init_sec_context.c \
-	spnego/spnego_locl.h
+	spnego/spnego_locl.h \
+	spnego/spnego-private.h
 
 
 dist_libgssapi_la_SOURCES  = \
@@ -218,7 +221,7 @@ dist_gss_SOURCES = gss.c
 nodist_gss_SOURCES = gss-commands.c gss-commands.h
 
 gss_LDADD = libgssapi.la \
- 	$(top_builddir)/lib/sl/libsl.la \
+	$(top_builddir)/lib/sl/libsl.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_readline) \
 	$(LIB_roken)
@@ -229,3 +232,5 @@ gss-commands.c gss-commands.h: gss-commands.in
 	$(SLC) $(srcdir)/gss-commands.in
 
 $(gss_OBJECTS): gss-commands.h
+
+EXTRA_DIST = $(man_MANS) mech/gssapi.asn1 spnego/spnego.asn1 gss-commands.in

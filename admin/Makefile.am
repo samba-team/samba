@@ -16,6 +16,7 @@ dist_ktutil_SOURCES =				\
 	copy.c					\
 	get.c					\
 	ktutil.c				\
+	ktutil_locl.h				\
 	list.c					\
 	purge.c					\
 	remove.c				\
@@ -40,4 +41,4 @@ LDADD = \
 	$(LIB_readline) \
 	$(LIB_roken)
 
-EXTRA_DIST = $(man_MANS)
+EXTRA_DIST = $(man_MANS) ktutil-commands.in

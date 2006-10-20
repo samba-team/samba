@@ -26,6 +26,8 @@ kdc_SOURCES = connect.c	\
 	main.c
 
 libkdc_la_SOURCES = 		\
+	kdc-private.h	 	\
+	kdc-protos.h	 	\
 	default_config.c 	\
 	digest.c		\
 	kdc_locl.h		\
@@ -96,3 +98,5 @@ LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 kdc_LDADD = libkdc.la $(LDADD) $(LIB_pidfile)
 
 include_HEADERS = kdc.h kdc-protos.h
+
+EXTRA_DIST = $(man_MANS)

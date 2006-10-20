@@ -58,6 +58,8 @@ dist_libhdb_la_SOURCES =			\
 	ext.c					\
 	$(ldap)					\
 	hdb.c					\
+	hdb_locl.h				\
+	hdb-private.h				\
 	keys.c					\
 	keytab.c				\
 	mkey.c					\
@@ -103,3 +105,5 @@ $(convert_db_OBJECTS): hdb_asn1.h hdb_err.h
 # to help stupid solaris make
 
 hdb_err.h: hdb_err.et
+
+EXTRA_DIST = hdb.asn1 hdb_err.et
