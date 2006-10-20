@@ -123,15 +123,16 @@ struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
 }
 
 /* a default logging function */
-static void null_log_fn(struct tdb_context *tdb, int level, const char *fmt, ...)
+static void null_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
+static void null_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...)
 {
 }
 
 
 struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
-			 int open_flags, mode_t mode,
-			 tdb_log_func log_fn,
-			 tdb_hash_func hash_fn)
+				int open_flags, mode_t mode,
+				const struct tdb_logging_context *log_ctx,
+				tdb_hash_func hash_fn)
 {
 	struct tdb_context *tdb;
 	struct stat st;
@@ -150,7 +151,12 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	tdb->map_ptr = NULL;
 	tdb->flags = tdb_flags;
 	tdb->open_flags = open_flags;
-	tdb->log_fn = log_fn?log_fn:null_log_fn;
+	if (log_ctx) {
+		tdb->log = *log_ctx;
+	} else {
+		tdb->log.log_fn = null_log_fn;
+		tdb->log.log_private = NULL;
+	}
 	tdb->hash_fn = hash_fn ? hash_fn : default_tdb_hash;
 
 	/* cache the page size */
@@ -160,7 +166,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
-		TDB_LOG((tdb, 0, "tdb_open_ex: can't open tdb %s write-only\n",
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: can't open tdb %s write-only\n",
 			 name));
 		errno = EINVAL;
 		goto fail;
@@ -180,31 +186,31 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		tdb->flags |= (TDB_NOLOCK | TDB_NOMMAP);
 		tdb->flags &= ~TDB_CLEAR_IF_FIRST;
 		if (tdb_new_database(tdb, hash_size) != 0) {
-			TDB_LOG((tdb, 0, "tdb_open_ex: tdb_new_database failed!"));
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: tdb_new_database failed!"));
 			goto fail;
 		}
 		goto internal;
 	}
 
 	if ((tdb->fd = open(name, open_flags, mode)) == -1) {
-		TDB_LOG((tdb, 5, "tdb_open_ex: could not open file %s: %s\n",
+		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_open_ex: could not open file %s: %s\n",
 			 name, strerror(errno)));
 		goto fail;	/* errno set by open(2) */
 	}
 
 	/* ensure there is only one process initialising at once */
-	if (tdb->methods->tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0) == -1) {
-		TDB_LOG((tdb, 0, "tdb_open_ex: failed to get global lock on %s: %s\n",
+	if (tdb->methods->tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0, 1) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: failed to get global lock on %s: %s\n",
 			 name, strerror(errno)));
 		goto fail;	/* errno set by tdb_brlock */
 	}
 
 	/* we need to zero database if we are the only one with it open */
 	if ((tdb_flags & TDB_CLEAR_IF_FIRST) &&
-	    (locked = (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))) {
+	    (locked = (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0, 1) == 0))) {
 		open_flags |= O_CREAT;
 		if (ftruncate(tdb->fd, 0) == -1) {
-			TDB_LOG((tdb, 0, "tdb_open_ex: "
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
 				 "failed to truncate %s: %s\n",
 				 name, strerror(errno)));
 			goto fail; /* errno set by ftruncate */
@@ -236,13 +242,13 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		goto fail;
 
 	if (tdb->header.rwlocks != 0) {
-		TDB_LOG((tdb, 5, "tdb_open_ex: spinlocks no longer supported\n"));
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: spinlocks no longer supported\n"));
 		goto fail;
 	}
 
 	/* Is it already in the open list?  If so, fail. */
 	if (tdb_already_open(st.st_dev, st.st_ino)) {
-		TDB_LOG((tdb, 2, "tdb_open_ex: "
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
 			 "%s (%d,%d) is already open in this process\n",
 			 name, (int)st.st_dev, (int)st.st_ino));
 		errno = EBUSY;
@@ -260,7 +266,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	tdb->locked = (struct tdb_lock_type *)calloc(tdb->header.hash_size+1,
 						     sizeof(tdb->locked[0]));
 	if (!tdb->locked) {
-		TDB_LOG((tdb, 2, "tdb_open_ex: "
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
 			 "failed to allocate lock structure for %s\n",
 			 name));
 		errno = ENOMEM;
@@ -268,8 +274,8 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 	tdb_mmap(tdb);
 	if (locked) {
-		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0) == -1) {
-			TDB_LOG((tdb, 0, "tdb_open_ex: "
+		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0, 1) == -1) {
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
 				 "failed to take ACTIVE_LOCK on %s: %s\n",
 				 name, strerror(errno)));
 			goto fail;
@@ -283,7 +289,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
 		/* leave this lock in place to indicate it's in use */
-		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
+		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0, 1) == -1)
 			goto fail;
 	}
 
@@ -296,7 +302,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	/* Internal (memory-only) databases skip all the code above to
 	 * do with disk files, and resume here by releasing their
 	 * global lock and hooking into the active list. */
-	if (tdb->methods->tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0) == -1)
+	if (tdb->methods->tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1) == -1)
 		goto fail;
 	tdb->next = tdbs;
 	tdbs = tdb;
@@ -317,7 +323,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	SAFE_FREE(tdb->name);
 	if (tdb->fd != -1)
 		if (close(tdb->fd) != 0)
-			TDB_LOG((tdb, 5, "tdb_open_ex: failed to close tdb->fd on error!\n"));
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: failed to close tdb->fd on error!\n"));
 	SAFE_FREE(tdb->locked);
 	SAFE_FREE(tdb);
 	errno = save_errno;
@@ -365,11 +371,16 @@ int tdb_close(struct tdb_context *tdb)
 }
 
 /* register a loging function */
-void tdb_logging_function(struct tdb_context *tdb, void (*fn)(struct tdb_context *, int , const char *, ...))
+void tdb_set_logging_function(struct tdb_context *tdb,
+                              const struct tdb_logging_context *log)
 {
-	tdb->log_fn = fn?fn:null_log_fn;
+        tdb->log = *log;
 }
 
+void *tdb_get_logging_private(struct tdb_context *tdb)
+{
+	return tdb->log.log_private;
+}
 
 /* reopen a tdb - this can be used after a fork to ensure that we have an independent
    seek pointer from our parent and to re-establish locks */
@@ -381,38 +392,38 @@ int tdb_reopen(struct tdb_context *tdb)
 		return 0; /* Nothing to do. */
 	}
 
-	if (tdb->num_locks != 0) {
-		TDB_LOG((tdb, 0, "tdb_reopen: reopen not allowed with locks held\n"));
+	if (tdb->num_locks != 0 || tdb->global_lock.count) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_reopen: reopen not allowed with locks held\n"));
 		goto fail;
 	}
 
 	if (tdb->transaction != 0) {
-		TDB_LOG((tdb, 0, "tdb_reopen: reopen not allowed inside a transaction\n"));
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_reopen: reopen not allowed inside a transaction\n"));
 		goto fail;
 	}
 
 	if (tdb_munmap(tdb) != 0) {
-		TDB_LOG((tdb, 0, "tdb_reopen: munmap failed (%s)\n", strerror(errno)));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: munmap failed (%s)\n", strerror(errno)));
 		goto fail;
 	}
 	if (close(tdb->fd) != 0)
-		TDB_LOG((tdb, 0, "tdb_reopen: WARNING closing tdb->fd failed!\n"));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: WARNING closing tdb->fd failed!\n"));
 	tdb->fd = open(tdb->name, tdb->open_flags & ~(O_CREAT|O_TRUNC), 0);
 	if (tdb->fd == -1) {
-		TDB_LOG((tdb, 0, "tdb_reopen: open failed (%s)\n", strerror(errno)));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: open failed (%s)\n", strerror(errno)));
 		goto fail;
 	}
 	if ((tdb->flags & TDB_CLEAR_IF_FIRST) && 
-	    (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)) {
-		TDB_LOG((tdb, 0, "tdb_reopen: failed to obtain active lock\n"));
+	    (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0, 1) == -1)) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: failed to obtain active lock\n"));
 		goto fail;
 	}
 	if (fstat(tdb->fd, &st) != 0) {
-		TDB_LOG((tdb, 0, "tdb_reopen: fstat failed (%s)\n", strerror(errno)));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: fstat failed (%s)\n", strerror(errno)));
 		goto fail;
 	}
 	if (st.st_ino != tdb->inode || st.st_dev != tdb->device) {
-		TDB_LOG((tdb, 0, "tdb_reopen: file dev/inode has changed!\n"));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: file dev/inode has changed!\n"));
 		goto fail;
 	}
 	tdb_mmap(tdb);

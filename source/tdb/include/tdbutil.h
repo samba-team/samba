@@ -67,7 +67,5 @@ int tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr,
 			      uint32 *oldval, uint32 change_val);
 int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key,
 				unsigned int timeout);
-int tdb_get_flags(struct tdb_context *tdb);
-size_t tdb_map_size(struct tdb_context *tdb);
 
 #endif /* __TDBUTIL_H__ */

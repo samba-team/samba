@@ -37,7 +37,7 @@ static int rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_str
 	if (rec->magic == TDB_MAGIC) {
 		/* this happens when a app is showdown while deleting a record - we should
 		   not completely fail when this happens */
-		TDB_LOG((tdb, 0,"rec_free_read non-free magic 0x%x at offset=%d - fixing\n", 
+		TDB_LOG((tdb, TDB_DEBUG_WARNING, "rec_free_read non-free magic 0x%x at offset=%d - fixing\n", 
 			 rec->magic, off));
 		rec->magic = TDB_FREE_MAGIC;
 		if (tdb->methods->tdb_write(tdb, off, rec, sizeof(*rec)) == -1)
@@ -47,7 +47,7 @@ static int rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_str
 	if (rec->magic != TDB_FREE_MAGIC) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_CORRUPT;
-		TDB_LOG((tdb, 0,"rec_free_read bad magic 0x%x at offset=%d\n", 
+		TDB_LOG((tdb, TDB_DEBUG_WARNING, "rec_free_read bad magic 0x%x at offset=%d\n", 
 			   rec->magic, off));
 		return TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
 	}
@@ -73,7 +73,7 @@ static int remove_from_freelist(struct tdb_context *tdb, tdb_off_t off, tdb_off_
 		/* Follow chain (next offset is at start of record) */
 		last_ptr = i;
 	}
-	TDB_LOG((tdb, 0,"remove_from_freelist: not on list at off=%d\n", off));
+	TDB_LOG((tdb, TDB_DEBUG_FATAL,"remove_from_freelist: not on list at off=%d\n", off));
 	return TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
 }
 
@@ -102,7 +102,7 @@ int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 
 	/* set an initial tailer, so if we fail we don't leave a bogus record */
 	if (update_tailer(tdb, offset, rec) != 0) {
-		TDB_LOG((tdb, 0, "tdb_free: upfate_tailer failed!\n"));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed!\n"));
 		goto fail;
 	}
 
@@ -112,14 +112,14 @@ int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 		struct list_struct r;
 
 		if (tdb->methods->tdb_read(tdb, right, &r, sizeof(r), DOCONV()) == -1) {
-			TDB_LOG((tdb, 0, "tdb_free: right read failed at %u\n", right));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: right read failed at %u\n", right));
 			goto left;
 		}
 
 		/* If it's free, expand to include it. */
 		if (r.magic == TDB_FREE_MAGIC) {
 			if (remove_from_freelist(tdb, right, r.next) == -1) {
-				TDB_LOG((tdb, 0, "tdb_free: right free failed at %u\n", right));
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: right free failed at %u\n", right));
 				goto left;
 			}
 			rec->rec_len += sizeof(r) + r.rec_len;
@@ -135,7 +135,7 @@ left:
 		
 		/* Read in tailer and jump back to header */
 		if (tdb_ofs_read(tdb, left, &leftsize) == -1) {
-			TDB_LOG((tdb, 0, "tdb_free: left offset read failed at %u\n", left));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left offset read failed at %u\n", left));
 			goto update;
 		}
 
@@ -148,14 +148,14 @@ left:
 
 		/* Now read in record */
 		if (tdb->methods->tdb_read(tdb, left, &l, sizeof(l), DOCONV()) == -1) {
-			TDB_LOG((tdb, 0, "tdb_free: left read failed at %u (%u)\n", left, leftsize));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left read failed at %u (%u)\n", left, leftsize));
 			goto update;
 		}
 
 		/* If it's free, expand to include it. */
 		if (l.magic == TDB_FREE_MAGIC) {
 			if (remove_from_freelist(tdb, left, l.next) == -1) {
-				TDB_LOG((tdb, 0, "tdb_free: left free failed at %u\n", left));
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left free failed at %u\n", left));
 				goto update;
 			} else {
 				offset = left;
@@ -166,7 +166,7 @@ left:
 
 update:
 	if (update_tailer(tdb, offset, rec) == -1) {
-		TDB_LOG((tdb, 0, "tdb_free: update_tailer failed at %u\n", offset));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed at %u\n", offset));
 		goto fail;
 	}
 
@@ -176,7 +176,7 @@ update:
 	if (tdb_ofs_read(tdb, FREELIST_TOP, &rec->next) == -1 ||
 	    tdb_rec_write(tdb, offset, rec) == -1 ||
 	    tdb_ofs_write(tdb, FREELIST_TOP, &offset) == -1) {
-		TDB_LOG((tdb, 0, "tdb_free record write failed at offset=%d\n", offset));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free record write failed at offset=%d\n", offset));
 		goto fail;
 	}
 

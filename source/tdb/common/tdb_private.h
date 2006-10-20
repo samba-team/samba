@@ -24,41 +24,12 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _SAMBA_BUILD_
-#include <stdlib.h>
-#include <stdio.h>
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/time.h"
+#include "system/shmem.h"
+#include "system/select.h"
 #include "tdb.h"
-
-#ifndef HAVE_PREAD_DECL
-ssize_t pread(int fd, void *buf, size_t count, off_t offset);
-#endif
-#ifndef HAVE_PWRITE_DECL
-ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset);
-#endif
-
-#else
-#include "includes.h"
-#undef malloc
-#undef realloc
-#undef calloc
-#undef strdup
-#endif
 
 #ifndef u32
 #define u32 unsigned
@@ -100,20 +71,12 @@ typedef u32 tdb_off_t;
 /* NB assumes there is a local variable called "tdb" that is the
  * current context, also takes doubly-parenthesized print-style
  * argument. */
-#define TDB_LOG(x) tdb->log_fn x
+#define TDB_LOG(x) tdb->log.log_fn x
 
 /* lock offsets */
 #define GLOBAL_LOCK      0
 #define ACTIVE_LOCK      4
 #define TRANSACTION_LOCK 8
-
-#ifndef MAP_FILE
-#define MAP_FILE 0
-#endif
-
-#ifndef MAP_FAILED
-#define MAP_FAILED ((void *)-1)
-#endif
 
 /* free memory if the pointer is valid and zero the pointer */
 #ifndef SAFE_FREE
@@ -178,7 +141,7 @@ struct tdb_methods {
 	void (*next_hash_chain)(struct tdb_context *, u32 *);
 	int (*tdb_oob)(struct tdb_context *, tdb_off_t , int );
 	int (*tdb_expand_file)(struct tdb_context *, tdb_off_t , tdb_off_t );
-	int (*tdb_brlock)(struct tdb_context *, tdb_off_t , int, int, int);
+	int (*tdb_brlock)(struct tdb_context *, tdb_off_t , int, int, int, size_t);
 };
 
 struct tdb_context {
@@ -188,6 +151,7 @@ struct tdb_context {
 	tdb_len_t map_size; /* how much space has been mapped */
 	int read_only; /* opened read-only */
 	int traverse_read; /* read-only traversal */
+	struct tdb_lock_type global_lock;
 	struct tdb_lock_type *locked; /* array of chain locks */
 	enum TDB_ERROR ecode; /* error code for last tdb error */
 	struct tdb_header header; /* a cached copy of the header */
@@ -196,7 +160,7 @@ struct tdb_context {
 	struct tdb_context *next; /* all tdbs to avoid multiple opens */
 	dev_t device;	/* uniquely identifies this tdb */
 	ino_t inode;	/* uniquely identifies this tdb */
-	void (*log_fn)(struct tdb_context *tdb, int level, const char *, ...) PRINTF_ATTRIBUTE(3,4); /* logging function */
+	struct tdb_logging_context log;
 	unsigned int (*hash_fn)(TDB_DATA *key);
 	int open_flags; /* flags used in the open - needed by reopen */
 	unsigned int num_locks; /* number of chain locks held */
@@ -213,10 +177,8 @@ int tdb_munmap(struct tdb_context *tdb);
 void tdb_mmap(struct tdb_context *tdb);
 int tdb_lock(struct tdb_context *tdb, int list, int ltype);
 int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
-int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, int rw_type, int lck_type, int probe);
+int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, int rw_type, int lck_type, int probe, size_t len);
 int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len);
-int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset, 
-		   int rw_type, int lck_type, int probe, size_t len);
 int tdb_write_lock_record(struct tdb_context *tdb, tdb_off_t off);
 int tdb_write_unlock_record(struct tdb_context *tdb, tdb_off_t off);
 int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);

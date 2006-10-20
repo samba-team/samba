@@ -42,7 +42,7 @@ static void tdb_increment_seqnum(struct tdb_context *tdb)
 		return;
 	}
 
-	if (tdb_brlock(tdb, TDB_SEQNUM_OFS, F_WRLCK, F_SETLKW, 1) != 0) {
+	if (tdb_brlock(tdb, TDB_SEQNUM_OFS, F_WRLCK, F_SETLKW, 1, 1) != 0) {
 		return;
 	}
 
@@ -53,7 +53,7 @@ static void tdb_increment_seqnum(struct tdb_context *tdb)
 	seqnum++;
 	tdb_ofs_write(tdb, TDB_SEQNUM_OFS, &seqnum);
 
-	tdb_brlock(tdb, TDB_SEQNUM_OFS, F_UNLCK, F_SETLKW, 1);
+	tdb_brlock(tdb, TDB_SEQNUM_OFS, F_UNLCK, F_SETLKW, 1, 1);
 }
 
 
@@ -236,7 +236,7 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash)
 	}
 
 	if (tdb_unlock(tdb, BUCKET(rec.full_hash), F_WRLCK) != 0)
-		TDB_LOG((tdb, 0, "tdb_delete: WARNING tdb_unlock failed!\n"));
+		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_delete: WARNING tdb_unlock failed!\n"));
 	return ret;
 }
 
@@ -403,7 +403,7 @@ int tdb_fd(struct tdb_context *tdb)
 */
 tdb_log_func tdb_log_fn(struct tdb_context *tdb)
 {
-	return tdb->log_fn;
+	return tdb->log.log_fn;
 }
 
 
@@ -429,3 +429,14 @@ int tdb_hash_size(struct tdb_context *tdb)
 {
 	return tdb->header.hash_size;
 }
+
+size_t tdb_map_size(struct tdb_context *tdb)
+{
+	return tdb->map_size;
+}
+
+int tdb_get_flags(struct tdb_context *tdb)
+{
+	return tdb->flags;
+}
+
