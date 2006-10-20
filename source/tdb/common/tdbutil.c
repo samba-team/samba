@@ -19,8 +19,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "tdb_private.h"
-#include <fnmatch.h>
+#include "includes.h"
+#undef malloc
+#undef realloc
+#undef calloc
+#undef strdup
 
 /***************************************************************
  Allow a caller to set a "alarm" flag that tdb can check to abort
@@ -91,7 +94,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 		if (gotalarm) {
 			DEBUG(0,("tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
-				timeout, key.dptr, tdb->name ));
+				timeout, key.dptr, tdb_name(tdb)));
 			/* TODO: If we time out waiting for a lock, it might
 			 * be nice to use F_GETLK to get the pid of the
 			 * process currently holding the lock and print that
@@ -657,7 +660,7 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
  Log tdb messages via DEBUG().
 ****************************************************************************/
 
-static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
+static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, const char *format, ...)
 {
 	va_list ap;
 	char *ptr = NULL;
@@ -669,7 +672,7 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 	if (!ptr || !*ptr)
 		return;
 
-	DEBUG(level, ("tdb(%s): %s", tdb->name ? tdb->name : "unnamed", ptr));
+	DEBUG((int)level, ("tdb(%s): %s", tdb_name(tdb) ? tdb_name(tdb) : "unnamed", ptr));
 	SAFE_FREE(ptr);
 }
 
@@ -682,12 +685,16 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode)
 {
 	TDB_CONTEXT *tdb;
+	struct tdb_logging_context log_ctx;
 
 	if (!lp_use_mmap())
 		tdb_flags |= TDB_NOMMAP;
 
+	log_ctx.log_fn = tdb_log;
+	log_ctx.log_private = NULL;
+
 	tdb = tdb_open_ex(name, hash_size, tdb_flags, 
-				    open_flags, mode, tdb_log, NULL);
+			  open_flags, mode, &log_ctx, NULL);
 	if (!tdb)
 		return NULL;
 
@@ -771,16 +778,6 @@ void tdb_search_list_free(TDB_LIST_NODE* node)
 		SAFE_FREE(node);
 		node = next_node;
 	};
-}
-
-size_t tdb_map_size(struct tdb_context *tdb)
-{
-	return tdb->map_size;
-}
-
-int tdb_get_flags(struct tdb_context *tdb)
-{
-	return tdb->flags;
 }
 
 /****************************************************************************
