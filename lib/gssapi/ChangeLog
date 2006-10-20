@@ -1,5 +1,14 @@
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/set_sec_context_option.c: Implement GSS_KRB5_SEND_TO_KDC_X.
+
+	* mech/gss_krb5.c: Add gsskrb5_set_send_to_kdc
+
+	* gssapi/gssapi_krb5.h: Add GSS_KRB5_SEND_TO_KDC_X and
+	gsskrb5_set_send_to_kdc
+
+	* krb5/external.c: add GSS_KRB5_SEND_TO_KDC_X
+
 	* Makefile.am: more files
 	
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
