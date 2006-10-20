@@ -104,6 +104,7 @@ dist_libkrb5_la_SOURCES =			\
 	get_in_tkt_with_keytab.c		\
 	get_in_tkt_with_skey.c			\
 	get_port.c				\
+	heim_threads.h				\
 	init_creds.c				\
 	init_creds_pw.c				\
 	kcm.c					\
@@ -112,9 +113,11 @@ dist_libkrb5_la_SOURCES =			\
 	keytab.c				\
 	keytab_any.c				\
 	keytab_file.c				\
-	keytab_memory.c				\
 	keytab_keyfile.c			\
 	keytab_krb4.c				\
+	keytab_memory.c				\
+	krb5_locl.h				\
+	krb5-v4compat.h				\
 	krbhst.c				\
 	kuserok.c				\
 	log.c					\
@@ -244,6 +247,8 @@ nodist_include_HEADERS = krb5_err.h heim_err.h k524_err.h
 CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h k524_err.c k524_err.h
 
 $(libkrb5_la_OBJECTS): krb5_err.h heim_err.h k524_err.h
+
+EXTRA_DIST = krb5_err.et heim_err.et k524_err.et $(man_MANS)
 
 #sysconf_DATA = krb5.moduli
 
