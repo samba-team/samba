@@ -423,3 +423,8 @@ int tdb_get_seqnum(struct tdb_context *tdb)
 	tdb_ofs_read(tdb, TDB_SEQNUM_OFS, &seqnum);
 	return seqnum;
 }
+
+int tdb_hash_size(struct tdb_context *tdb)
+{
+	return tdb->header.hash_size;
+}

@@ -258,7 +258,8 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 	     off > tdb->transaction->old_map_size)) {
 		unsigned char *data = best_el->data;
 		el = best_el;
-		el->data = realloc(el->data, el->length + len);
+		el->data = (unsigned char *)realloc(el->data,
+						    el->length + len);
 		if (el->data == NULL) {
 			tdb->ecode = TDB_ERR_OOM;
 			tdb->transaction->transaction_error = 1;
@@ -275,7 +276,7 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 	}
 
 	/* add a new entry at the end of the list */
-	el = malloc(sizeof(*el));
+	el = (struct tdb_transaction_el *)malloc(sizeof(*el));
 	if (el == NULL) {
 		tdb->ecode = TDB_ERR_OOM;
 		tdb->transaction->transaction_error = 1;		
@@ -285,7 +286,7 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 	el->prev = tdb->transaction->elements_last;
 	el->offset = off;
 	el->length = len;
-	el->data = malloc(len);
+	el->data = (unsigned char *)malloc(len);
 	if (el->data == NULL) {
 		free(el);
 		tdb->ecode = TDB_ERR_OOM;
@@ -411,7 +412,8 @@ int tdb_transaction_start(struct tdb_context *tdb)
 		return -1;
 	}
 
-	tdb->transaction = calloc(sizeof(struct tdb_transaction), 1);
+	tdb->transaction = (struct tdb_transaction *)
+		calloc(sizeof(struct tdb_transaction), 1);
 	if (tdb->transaction == NULL) {
 		tdb->ecode = TDB_ERR_OOM;
 		return -1;
@@ -437,7 +439,8 @@ int tdb_transaction_start(struct tdb_context *tdb)
 
 	/* setup a copy of the hash table heads so the hash scan in
 	   traverse can be fast */
-	tdb->transaction->hash_heads = calloc(tdb->header.hash_size+1, sizeof(tdb_off_t));
+	tdb->transaction->hash_heads = (u32 *)
+		calloc(tdb->header.hash_size+1, sizeof(u32));
 	if (tdb->transaction->hash_heads == NULL) {
 		tdb->ecode = TDB_ERR_OOM;
 		goto fail;
@@ -684,7 +687,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 		return -1;
 	}
 
-	data = malloc(recovery_size + sizeof(*rec));
+	data = (unsigned char *)malloc(recovery_size + sizeof(*rec));
 	if (data == NULL) {
 		tdb->ecode = TDB_ERR_OOM;
 		return -1;
@@ -966,7 +969,7 @@ int tdb_transaction_recover(struct tdb_context *tdb)
 
 	recovery_eof = rec.key_len;
 
-	data = malloc(rec.data_len);
+	data = (unsigned char *)malloc(rec.data_len);
 	if (data == NULL) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_recover: failed to allocate recovery data\n"));		
 		tdb->ecode = TDB_ERR_OOM;
