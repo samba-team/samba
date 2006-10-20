@@ -16,4 +16,5 @@ EXTRA_DIST = \
 	Makefile.am.common \
 	krb5.conf \
 	cf/make-proto.pl \
-	cf/check-symbols.sh
+	cf/check-symbols.sh \
+	cf/install-catman.sh
