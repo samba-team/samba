@@ -81,14 +81,15 @@ mpz2BN(mpz_t *s)
  *
  */
 
-#definen DH_NUM_TRIES 10
+#define DH_NUM_TRIES 10
 
 static int
 dh_generate_key(DH *dh)
 {
     mpz_t pub, priv_key, g, p;
     int have_private_key = (dh->priv_key != NULL);
-    int times = 0;
+    int codes, times = 0;
+    mp_result res;
 
     if (dh->p == NULL || dh->g == NULL)
 	return 0;
@@ -134,13 +135,13 @@ dh_generate_key(DH *dh)
 	if (dh->pub_key == NULL)
 	    return 0;
 	
-	if (DH_check_pubkey(dh, peer_pub_key, &codes) && codes == 0)
+	if (DH_check_pubkey(dh, dh->pub_key, &codes) && codes == 0)
 	    break;
 	if (have_private_key)
-	    reurn 0;
+	    return 0;
     }
 
-    if (i > DH_NUM_TRIES) {
+    if (times >= DH_NUM_TRIES) {
 	if (!have_private_key && dh->priv_key) {
 	    BN_free(dh->priv_key);
 	    dh->priv_key = NULL;
