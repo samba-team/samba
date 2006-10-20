@@ -617,7 +617,7 @@ typedef int BOOL;
 #include "intl.h"
 #include "dlinklist.h"
 #include "tdb.h"
-#include "tdbutil.h"
+#include "util_tdb.h"
 #include "tdbback.h"
 
 #include "lib/talloc/talloc.h"
