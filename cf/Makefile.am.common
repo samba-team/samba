@@ -207,9 +207,13 @@ dist-cat8-mans:
 dist-hook: dist-cat1-mans dist-cat3-mans dist-cat5-mans dist-cat8-mans
 
 install-cat-mans:
-	$(SHELL) $(top_srcdir)/cf/install-catman.sh "$(INSTALL_DATA)" "$(mkinstalldirs)" "$(srcdir)" "$(DESTDIR)$(mandir)" '$(CATMANEXT)' $(man_MANS) $(man1_MANS) $(man3_MANS) $(man5_MANS) $(man8_MANS)
+	$(SHELL) $(top_srcdir)/cf/install-catman.sh install "$(INSTALL_DATA)" "$(mkinstalldirs)" "$(srcdir)" "$(DESTDIR)$(mandir)" '$(CATMANEXT)' $(man_MANS) $(man1_MANS) $(man3_MANS) $(man5_MANS) $(man8_MANS)
+
+uninstall-cat-mans:
+	$(SHELL) $(top_srcdir)/cf/install-catman.sh uninstall "$(INSTALL_DATA)" "$(mkinstalldirs)" "$(srcdir)" "$(DESTDIR)$(mandir)" '$(CATMANEXT)' $(man_MANS) $(man1_MANS) $(man3_MANS) $(man5_MANS) $(man8_MANS)
 
 install-data-hook: install-cat-mans
+uninstall-hook: uninstall-cat-mans
 
 
 .et.h:
