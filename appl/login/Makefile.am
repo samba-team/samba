@@ -15,6 +15,7 @@ login_SOURCES =					\
 		login_access.c			\
 		login_locl.h			\
 		login_protos.h			\
+		loginpaths.h			\
 		limits_conf.c			\
 		osfc2.c				\
 		read_string.c			\
