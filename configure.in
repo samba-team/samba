@@ -518,8 +518,9 @@ AH_BOTTOM([#ifdef ROKEN_RENAME
 
 AC_CONFIG_FILES(Makefile 		\
 	include/Makefile		\
-	include/kadm5/Makefile		\
+	include/gssapi/Makefile		\
 	include/hcrypto/Makefile	\
+	include/kadm5/Makefile		\
 	lib/Makefile			\
 	lib/45/Makefile			\
 	lib/auth/Makefile		\
