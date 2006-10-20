@@ -1,4 +1,10 @@
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: more files
+	
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* Makefile.am: remove spnego/gssapi_spnego.h, its now in gssapi/
 
 	* test_context.c: Allow specifing mech.
 
