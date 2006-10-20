@@ -435,9 +435,9 @@ krb5_sendto_kdc_flags(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_set_send_recv_func(krb5_context context, 
-			krb5_send_to_kdc_func func,
-			void *data)
+krb5_set_send_to_kdc_func(krb5_context context, 
+			  krb5_send_to_kdc_func func,
+			  void *data)
 {
     free(context->send_to_kdc);
     if (func == NULL) {
