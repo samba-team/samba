@@ -1,4 +1,16 @@
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kcm/Makefile.am: more files
+
+	* kdc/Makefile.am: more files
+
+	* lib/hdb/Makefile.am: more files
+
+	* lib/krb5/Makefile.am: add more files
+	
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* tools/Makefile.am: Add heimdal-build.sh to EXTRA_DIST.
 
 	* configure.in: Don't check for timegm, libroken provides it for
 	us.
