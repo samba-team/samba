@@ -47,4 +47,5 @@ CLEANFILES= \
 EXTRA_DIST = \
 	check-kdc.in \
 	check-digest.in \
-	krb5.conf.in
+	krb5.conf.in \
+	wait-kdc.sh
