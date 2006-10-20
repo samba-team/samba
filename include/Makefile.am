@@ -22,9 +22,6 @@ CLEANFILES =		\
 	cms_asn1.h 	\
 	der-protos.h 	\
 	digest_asn1.h 	\
-	gssapi/gssapi.h	\
-	gssapi/gssapi_krb5.h \
-	gssapi/gssapi_spnego.h \
 	hdb-protos.h	\
 	heim_asn1.h	\
 	hex.h		\
@@ -32,8 +29,6 @@ CLEANFILES =		\
 	hx509.h		\
 	hx509_err.h	\
 	k524_err.h	\
-	kadm5/kadm5-private.h \
-	kadm5/kadm5-protos.h \
 	kdc-protos.h	\
 	kdc.h		\
 	krb5_asn1.h	\
