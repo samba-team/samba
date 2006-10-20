@@ -390,9 +390,9 @@ TESTS = check-der check-gen
 
 asn1_gen_SOURCES = asn1_gen.c
 asn1_print_SOURCES = asn1_print.c
-check_der_SOURCES = check-der.c check-common.c
+check_der_SOURCES = check-der.c check-common.c check-common.h
 
-dist_check_gen_SOURCES = check-gen.c check-common.c
+dist_check_gen_SOURCES = check-gen.c check-common.c check-common.h
 nodist_check_gen_SOURCES = $(gen_files_test:.x=.c)
 
 asn1_compile_SOURCES = 				\
@@ -528,6 +528,7 @@ EXTRA_DIST =		\
 	CMS.asn1	\
 	digest.asn1	\
 	k5.asn1		\
+	test.asn1	\
 	pkcs12.asn1	\
 	pkcs8.asn1	\
 	pkcs9.asn1	\
