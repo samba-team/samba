@@ -28,9 +28,9 @@ gssapi_client_LDADD = $(gssapi_server_LDADD)
 
 http_client_LDADD = $(top_builddir)/lib/gssapi/libgssapi.la $(LDADD)
 
-nt_gss_client_SOURCES = nt_gss_client.c nt_gss_common.c common.c
+nt_gss_client_SOURCES = nt_gss_client.c nt_gss_common.c nt_gss_common.h common.c
 
-nt_gss_server_SOURCES = nt_gss_server.c nt_gss_common.c
+nt_gss_server_SOURCES = nt_gss_server.c nt_gss_common.c nt_gss_common.h
 
 nt_gss_client_LDADD = $(gssapi_server_LDADD)
 
