@@ -41,3 +41,9 @@ CLEANFILES= \
 	check-gss.tmp \
 	check-gssmask.tmp \
 	check-context.tmp
+
+EXTRA_DIST = \
+	check-gss.in \
+	check-gssmask.in \
+	check-context.in \
+	krb5.conf.in

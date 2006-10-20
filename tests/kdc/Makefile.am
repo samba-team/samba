@@ -43,3 +43,8 @@ CLEANFILES= \
 	tempfile \
 	server.keytab \
 	client-cache
+
+EXTRA_DIST = \
+	check-kdc.in \
+	check-digest.in \
+	krb5.conf.in

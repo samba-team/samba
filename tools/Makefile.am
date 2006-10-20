@@ -2,8 +2,6 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-EXTRA_DIST = krb5-config.1 heimdal-build.sh
-
 CLEANFILES = krb5-config krb5-config.new
 
 bin_SCRIPTS = krb5-config
@@ -33,3 +31,5 @@ krb5-config: krb5-config.in
 		$(srcdir)/krb5-config.in > $@.new
 	mv $@.new $@
 	chmod +x $@
+
+EXTRA_DIST = heimdal-build.sh krb5-config.in $(man_MANS)

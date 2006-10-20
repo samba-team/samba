@@ -24,3 +24,5 @@ LDADD = \
 	$(LIB_openpty) \
 	$(LIB_kdfs) \
 	$(LIB_roken)
+
+EXTRA_DIST = $(man_MANS)

@@ -41,3 +41,14 @@ CLEANFILES= \
 	krb5.conf krb5.conf.tmp \
 	tempfile \
 	messages.log
+
+EXTRA_DIST = \
+	loaddump-db.in \
+	add-modify-delete.in \
+	have-db.in \
+	krb5.conf.in \
+	text-dump-0.7 \
+	text-dump-known-ext \
+	text-dump-no-ext \
+	text-dump-unknown-ext
+
