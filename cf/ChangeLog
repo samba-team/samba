@@ -1,5 +1,11 @@
-2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am.common: provide uninstall hook for cat/manpages.
+
+	* install-catman.sh: provide uninstall command
+	
+2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* roken-frag.m4: Add check for timegm.
 
 	* roken-frag.m4: Include sys/types.h for sys/socket.h and netdb.h.
