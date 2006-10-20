@@ -34,6 +34,8 @@ krb5.conf: krb5.conf.in Makefile
 
 CLEANFILES= \
 	$(TESTS) \
+	foopassword \
+	krb5ccfile \
 	server.keytab \
 	krb5.conf \
 	current-db* \
