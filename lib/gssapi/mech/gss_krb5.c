@@ -412,3 +412,30 @@ gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status, void *c)
 	*minor_status = 0;
     return GSS_S_COMPLETE;
 }
+
+OM_uint32
+gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
+{
+    struct _gss_mech_switch *m;
+    gss_buffer_desc buffer;
+    OM_uint32 junk;
+
+    _gss_load_mech();
+
+    if (c) {
+	buffer.value = c;
+	buffer.length = sizeof(*c);
+    } else {
+	buffer.value = NULL;
+	buffer.length = 0;
+    }
+
+    SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	if (m->gm_mech.gm_set_sec_context_option == NULL)
+	    continue;
+	m->gm_mech.gm_set_sec_context_option(&junk, NULL,
+	    GSS_KRB5_SEND_TO_KDC_X, &buffer);
+    }
+
+    return (GSS_S_COMPLETE);
+}
