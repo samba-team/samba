@@ -173,7 +173,7 @@ dh_compute_key(unsigned char *shared, const BIGNUM * pub, DH *dh)
     BN2mpz(&peer_pub, pub);
 
     /* check if peers pubkey is reasonable */
-    if (MP_SIGN(&peer_pub) != 1
+    if (MP_SIGN(&peer_pub) == MP_NEG
 	|| mp_int_compare(&peer_pub, &p) >= 0
 	|| mp_int_compare_value(&peer_pub, 1) <= 0)
     {
