@@ -136,6 +136,8 @@ struct sockaddr_dl;
 
 #include <krb5_asn1.h>
 
+struct send_to_kdc;
+
 /* XXX glue for pkinit */
 struct krb5_pk_identity;
 struct krb5_pk_cert;
@@ -230,6 +232,7 @@ typedef struct krb5_context_data {
     void *mutex;			/* protects error_string/error_buf */
     int large_msg_size;
     int dns_canonize_hostname;
+    struct send_to_kdc *send_to_kdc;
 } krb5_context_data;
 
 /*
