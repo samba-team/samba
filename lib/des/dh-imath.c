@@ -134,7 +134,7 @@ dh_compute_key(unsigned char *shared, const BIGNUM * pub, DH *dh)
     mp_result res;
 
     if (dh->pub_key == NULL || dh->g == NULL || dh->priv_key == NULL)
-	return 0;
+	return -1;
 
     mp_int_init(&p);
     BN2mpz(&p, dh->p);
@@ -149,7 +149,7 @@ dh_compute_key(unsigned char *shared, const BIGNUM * pub, DH *dh)
     {
 	mp_int_clear(&p);
 	mp_int_clear(&peer_pub);
-	return 0;
+	return -1;
     }
 
     mp_int_init(&priv_key);
