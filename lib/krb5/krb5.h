@@ -729,6 +729,12 @@ enum {
     KRB5_KRBHST_FLAGS_LARGE_MSG	  = 2
 };
 
+typedef krb5_error_code (*krb5_send_to_kdc_func)(krb5_context, 
+						 void *, 
+						 krb5_krbhst_info *,
+						 const krb5_data *,
+						 krb5_data *);
+
 /* flags for krb5_parse_name_flags */
 enum {
     KRB5_PRINCIPAL_PARSE_NO_REALM = 1,
