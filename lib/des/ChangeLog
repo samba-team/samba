@@ -1,5 +1,7 @@
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* imath/imath.c: Allocate more bits.
+
 	* dh-imath.c (dh_compute_key): fix signness test
 
 	* dh-imath.c: Try harder to generate a good keypair.
