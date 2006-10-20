@@ -1,5 +1,17 @@
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* include/Makefile.am: add gssapi to subdirs
+
+	* lib/hdb/hdb-ldap.c: Make compile.
+
+	* configure.in: add include/gssapi/Makefile.
+
+	* include/Makefile.am: clean more files
+
+	* include/make_crypto.c: Avoid creating a file called --version.
+
+	* include/bits.c: Avoid creating a file called --version.
+
 	* appl/test/Makefile.am: add nt_gss_common.h
 
 	* doc/Makefile.am: Disable TEXI2DVI for now.
