@@ -1,5 +1,7 @@
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* dh-imath.c: Try harder to generate a good keypair.
+
 	* dh-imath.c: Return -1 dh_compute_key on failure, pointed out by
 	Olga Kornievskaia.
 	
