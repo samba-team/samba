@@ -128,6 +128,10 @@ struct gsskrb5_send_to_kdc {
 OM_uint32
 gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *);
 
+OM_uint32
+gsskrb5_extract_authtime_from_sec_context(OM_uint32 *, gss_ctx_id_t, time_t *);
+
+
 /*
  * Lucid - NFSv4 interface to GSS-API KRB5 to expose key material to
  * do GSS content token handling in-kernel.
