@@ -160,6 +160,7 @@ int net_run_function2(int argc, const char **argv, const char *whoami,
 /****************************************************************************
 connect to \\server\service 
 ****************************************************************************/
+
 NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 					const char *server_name, 
 					const char *service_name, 
@@ -173,13 +174,13 @@ NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 			opt_password = SMB_STRDUP(pass);
 		}
 	}
-	
+
 	nt_status = cli_full_connection(c, NULL, server_name, 
 					server_ip, opt_port,
 					service_name, service_type,  
 					opt_user_name, opt_workgroup,
 					opt_password, 0, Undefined, NULL);
-	
+
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
@@ -236,20 +237,53 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 }
 
 /****************************************************************************
+ Return malloced user@realm for krb5 login.
+****************************************************************************/
+
+static char *get_user_and_realm(const char *username)
+{
+	char *user_and_realm = NULL;
+
+	if (strchr_m(username, '@')) {
+		user_and_realm = SMB_STRDUP(username);
+	} else {
+		if (asprintf(&user_and_realm, "%s@%s", username, lp_realm()) == -1) {
+			user_and_realm = NULL;
+		}
+	}
+	return user_and_realm;
+}
+
+/****************************************************************************
 connect to \\server\ipc$ using KRB5
 ****************************************************************************/
 NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
 			struct in_addr *server_ip, const char *server_name)
 {
 	NTSTATUS nt_status;
+	char *user_and_realm = NULL;
+
+	if (!opt_password && !opt_machine_pass) {
+		char *pass = getpass("Password:");
+		if (pass) {
+			opt_password = SMB_STRDUP(pass);
+		}
+	}
+
+	user_and_realm = get_user_and_realm(opt_user_name);
+	if (!user_and_realm) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	nt_status = cli_full_connection(c, NULL, server_name, 
 					server_ip, opt_port,
 					"IPC$", "IPC",  
-					opt_user_name, opt_workgroup,
+					user_and_realm, opt_workgroup,
 					opt_password, CLI_FULL_CONNECTION_USE_KERBEROS, 
 					Undefined, NULL);
 	
+	SAFE_FREE(user_and_realm);
+
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
