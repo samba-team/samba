@@ -1,3 +1,7 @@
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: more files
+	
 2006-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rcp.c: Check return values from seteuid, prompted by MIT

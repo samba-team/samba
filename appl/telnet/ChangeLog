@@ -1,3 +1,9 @@
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnet/Makefile.am: more files
+	
+	* telnetd/Makefile.am: more files
+	
 2006-09-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnetd/telnetd.8: Add documentation for -e, require encryption.
