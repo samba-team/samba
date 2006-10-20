@@ -7,6 +7,7 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = \
 		DB_WRAP \
 		NDR_IRPC \
-		UNIX_PRIVS
+		UNIX_PRIVS \
+		UTIL_TDB 
 # End SUBSYSTEM MESSAGING
 ################################################

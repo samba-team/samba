@@ -7,7 +7,7 @@ DESCRIPTION = Trivial Database Library
 OBJ_FILES = \
 	common/tdb.o common/dump.o common/io.o common/lock.o \
 	common/open.o common/traverse.o common/freelist.o \
-	common/error.o common/transaction.o common/tdbutil.o
+	common/error.o common/transaction.o
 CFLAGS = -Ilib/tdb/include
 PUBLIC_HEADERS = include/tdb.h
 #
