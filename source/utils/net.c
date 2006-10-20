@@ -244,6 +244,9 @@ static char *get_user_and_realm(const char *username)
 {
 	char *user_and_realm = NULL;
 
+	if (!username) {
+		return NULL;
+	}
 	if (strchr_m(username, '@')) {
 		user_and_realm = SMB_STRDUP(username);
 	} else {
@@ -257,6 +260,7 @@ static char *get_user_and_realm(const char *username)
 /****************************************************************************
 connect to \\server\ipc$ using KRB5
 ****************************************************************************/
+
 NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
 			struct in_addr *server_ip, const char *server_name)
 {
