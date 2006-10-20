@@ -1191,11 +1191,11 @@ mp_result mp_int_exptmod(mp_int a, mp_int b, mp_int m, mp_int c)
     return MP_RANGE;
 
   um = MP_USED(m);
-  SETUP(mp_int_init_size(TEMP(0), 2 * um), last);
-  SETUP(mp_int_init_size(TEMP(1), 2 * um), last);
+  SETUP(mp_int_init_size(TEMP(0), 3 * um), last);
+  SETUP(mp_int_init_size(TEMP(1), 3 * um), last);
 
   if(c == b || c == m) {
-    SETUP(mp_int_init_size(TEMP(2), 2 * um), last);
+    SETUP(mp_int_init_size(TEMP(2), 3 * um), last);
     s = TEMP(2);
   } 
   else {
