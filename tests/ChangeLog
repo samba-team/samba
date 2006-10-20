@@ -1,5 +1,9 @@
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/Makefile.am: Clean temporary files
+
+	* db/Makefile.am: clean have-db
+
 	* kdc/Makefile.am: Add pki-mapping to dist file.
 
 	* kdc/Makefile.am: more files
