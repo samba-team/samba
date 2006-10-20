@@ -1,3 +1,7 @@
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: add more files
+	
 2006-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kafs.3: Spelling, from Björn Sandell.
