@@ -49,3 +49,13 @@ PUBLIC_DEPENDENCIES = XATTR
 #
 # End SUBSYSTEM WRAP_XATTR
 ################################################
+
+################################################
+# Start SUBSYSTEM UTIL_TDB
+[SUBSYSTEM::UTIL_TDB]
+PUBLIC_PROTO_HEADER = util_tdb.h
+OBJ_FILES = \
+		util_tdb.o
+PUBLIC_DEPENDENCIES = LIBTDB
+# End SUBSYSTEM UTIL_TDB
+################################################

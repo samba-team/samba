@@ -22,7 +22,8 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "lib/tdb/include/tdbutil.h"
+#include "lib/tdb/include/tdb.h"
+#include "lib/util/util_tdb.h"
 #include "lib/samba3/samba3.h"
 
 #define TDB_FORMAT_STRING_V0       "ddddddBBBBBBBBBBBBddBBwdwdBwwd"

@@ -29,9 +29,10 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/messaging/irpc.h"
 #include "db_wrap.h"
-#include "lib/tdb/include/tdbutil.h"
 #include "lib/util/unix_privs.h"
 #include "librpc/rpc/dcerpc.h"
+#include "lib/tdb/include/tdb.h"
+#include "lib/util/util_tdb.h"
 
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGING_VERSION 1
