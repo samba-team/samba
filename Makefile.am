@@ -12,4 +12,8 @@ SUBDIRS+= $(kcm_dir) appl doc tools tests
 ## ACLOCAL = @ACLOCAL@ -I cf
 ACLOCAL_AMFLAGS = -I cf
 
-EXTRA_DIST = Makefile.am.common krb5.conf
+EXTRA_DIST = \
+	Makefile.am.common \
+	krb5.conf \
+	cf/make-proto.pl \
+	cf/check-symbols.sh
