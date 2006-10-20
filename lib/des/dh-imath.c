@@ -81,47 +81,76 @@ mpz2BN(mpz_t *s)
  *
  */
 
+#definen DH_NUM_TRIES 10
+
 static int
 dh_generate_key(DH *dh)
 {
     mpz_t pub, priv_key, g, p;
+    int have_private_key = (dh->priv_key != NULL);
+    int times = 0;
 
     if (dh->p == NULL || dh->g == NULL)
 	return 0;
 
-    if (dh->priv_key == NULL) {
-	size_t bits = BN_num_bits(dh->p);
-	dh->priv_key = BN_new();
-	if (dh->priv_key == NULL)
-	    return 0;
-	if (!BN_rand(dh->priv_key, bits - 1, 0, 0)) {
-	    BN_clear_free(dh->priv_key);
-	    dh->priv_key = NULL;
-	    return 0;
+    while (times++ < DH_NUM_TRIES) {
+	if (!have_private_key) {
+	    size_t bits = BN_num_bits(dh->p);
+
+	    if (dh->priv_key)
+		BN_free(dh->priv_key);
+
+	    dh->priv_key = BN_new();
+	    if (dh->priv_key == NULL)
+		return 0;
+	    if (!BN_rand(dh->priv_key, bits - 1, 0, 0)) {
+		BN_clear_free(dh->priv_key);
+		dh->priv_key = NULL;
+		return 0;
+	    }
 	}
+	if (dh->pub_key)
+	    BN_free(dh->pub_key);
+
+	mp_int_init(&pub);
+	mp_int_init(&priv_key);
+	mp_int_init(&g);
+	mp_int_init(&p);
+	
+	BN2mpz(&priv_key, dh->priv_key);
+	BN2mpz(&g, dh->g);
+	BN2mpz(&p, dh->p);
+	
+	res = mp_int_exptmod(&g, &priv_key, &p, &pub);
+
+	mp_int_clear(&priv_key);
+	mp_int_clear(&g);
+	mp_int_clear(&p);
+	if (res != MP_OK)
+	    continue;
+
+	dh->pub_key = mpz2BN(&pub);
+	mp_int_clear(&pub);
+	if (dh->pub_key == NULL)
+	    return 0;
+	
+	if (DH_check_pubkey(dh, peer_pub_key, &codes) && codes == 0)
+	    break;
+	if (have_private_key)
+	    reurn 0;
     }
-    if (dh->pub_key)
-	BN_free(dh->pub_key);
 
-    mp_int_init(&pub);
-    mp_int_init(&priv_key);
-    mp_int_init(&g);
-    mp_int_init(&p);
-
-    BN2mpz(&priv_key, dh->priv_key);
-    BN2mpz(&g, dh->g);
-    BN2mpz(&p, dh->p);
-
-    mp_int_exptmod(&g, &priv_key, &p, &pub);
-
-    mp_int_clear(&priv_key);
-    mp_int_clear(&g);
-    mp_int_clear(&p);
-
-    dh->pub_key = mpz2BN(&pub);
-    mp_int_clear(&pub);
-    if (dh->pub_key == NULL)
+    if (i > DH_NUM_TRIES) {
+	if (!have_private_key && dh->priv_key) {
+	    BN_free(dh->priv_key);
+	    dh->priv_key = NULL;
+	}
+	if (dh->pub_key) {
+	    BN_free(dh->pub_key);
+	    dh->pub_key = NULL;
+	}
 	return 0;
+    }
 
     return 1;
 }
