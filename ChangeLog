@@ -1,5 +1,9 @@
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/Makefile.am: Disable TEXI2DVI for now.
+
+	* tools/Makefile.am: more files
+
 	* lib/krb5/context.c (krb5_free_context): free send_to_kdc context
 
 	* doc/heimdal.texi: Put Heimdal in the dircategory Security.
