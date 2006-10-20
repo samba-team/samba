@@ -114,6 +114,11 @@ int main(int argc, char **argv)
     int flag;
     const char *fn, *hb;
     
+    if (argc < 1 && strcmp(argv[1], "--version")) {
+	printf("some version");
+	return 0;
+    }
+
     if(argc < 2){
 	fn = "bits.h";
 	hb = "__BITS_H__";

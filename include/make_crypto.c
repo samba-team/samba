@@ -49,6 +49,10 @@ main(int argc, char **argv)
 	fprintf(stderr, "Usage: make_crypto file\n");
 	exit(1);
     }
+    if (strcmp(argv[1], "--version")) {
+	printf("some version");
+	return 0;
+    }
     f = fopen(argv[1], "w");
     if(f == NULL) {
 	perror(argv[1]);
