@@ -52,7 +52,7 @@ main(int argc, char **argv)
     FILE *f;
     if(argc != 2)
 	return 1;
-    if (strcmp(argv[1], "--version")) {
+    if (strcmp(argv[1], "--version") == 0) {
 	printf("some version");
 	return 0;
     }
