@@ -8,7 +8,6 @@
 
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 	
-	
 	* Makefile.am: Add build_HEADERZ to EXTRA_DIST
 	
 2005-01-01  Love Hörnquist Åstrand  <lha@it.su.se>
