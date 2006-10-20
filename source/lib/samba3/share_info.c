@@ -23,7 +23,8 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "lib/tdb/include/tdbutil.h"
+#include "lib/tdb/include/tdb.h"
+#include "lib/util/util_tdb.h"
 #include "lib/samba3/samba3.h"
 #include "system/filesys.h"
 

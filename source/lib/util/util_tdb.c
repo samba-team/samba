@@ -3,7 +3,7 @@
 
    tdb utility functions
 
-   Copyright (C) Andrew Tridgell 1992-2005
+   Copyright (C) Andrew Tridgell 1992-2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,17 +19,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
-/*
-  NOTE: these utility functions are specific to Samba, and are not part
-  of the core tdb code
-*/
 
 #include "includes.h"
-#include "lib/tdb/include/tdbutil.h"
-#include "system/glob.h"
-#include "system/wait.h"
-#include "system/filesys.h"
-#include "lib/util/dlinklist.h"
+#include "lib/tdb/include/tdb.h"
 #include "pstring.h"
 
 /* these are little tdb utility functions that are meant to make

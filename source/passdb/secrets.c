@@ -23,12 +23,13 @@
    such as the local SID and machine trust password */
 
 #include "includes.h"
-#include "lib/tdb/include/tdbutil.h"
 #include "secrets.h"
 #include "param/param.h"
 #include "system/filesys.h"
 #include "db_wrap.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/tdb/include/tdb.h"
+#include "lib/util/util_tdb.h"
 #include "dsdb/samdb/samdb.h"
 
 static struct tdb_wrap *tdb;
