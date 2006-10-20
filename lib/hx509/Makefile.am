@@ -128,11 +128,6 @@ hxtool_CPPFLAGS = $(INCLUDE_des)
 hxtool_LDADD = libhx509.la $(LIB_roken) ../sl/libsl.la $(LIB_des)
 hxtool_LDFLAGS = -pthread
 
-EXTRA_DIST = \
-	hx509_err.et \
-	pkcs10.asn1 ocsp.asn1 crmf.asn1 \
-	hxtool-commands.in
-
 CLEANFILES = $(BUILT_SOURCES) \
 	$(gen_files_ocsp) ocsp_asn1_files ocsp_asn1.h \
 	$(gen_files_pkcs10) pkcs10_asn1_files pkcs10_asn1.h \
@@ -210,3 +205,92 @@ test_query: test_query.in Makefile
 	$(do_subst) < $(srcdir)/test_query.in > test_query.tmp
 	chmod +x test_query.tmp
 	mv test_query.tmp test_query
+
+EXTRA_DIST = 
+	hx509_err.et \
+	pkcs10.asn1 \
+	ocsp.asn1 \
+	crmf.asn1 \
+	hxtool-commands.in \
+	test_chain.in \
+	test_cms.in \
+	test_crypto.in \
+	test_nist.in \
+	test_nist_cert.in \
+	test_nist_pkcs12.in \
+	test_req.in \
+	test_query.in \
+	data/bleichenbacher-bad.pem \
+	data/bleichenbacher-good.pem \
+	data/bleichenbacher-sf-pad-correct.pem \
+	data/ca.crt \
+	data/ca.key \
+	data/crl1.crl \
+	data/crl1.der \
+	data/gen-req.sh \
+	data/index.txt \
+	data/index.txt.attr \
+	data/kdc.crt \
+	data/kdc.key \
+	data/key.der \
+	data/nist-data \
+	data/no-proxy-test.crt \
+	data/no-proxy-test.key \
+	data/ocsp-req1.der \
+	data/ocsp-req2.der \
+	data/ocsp-resp1-2.der \
+	data/ocsp-resp1-3.der \
+	data/ocsp-resp1-ca.der \
+	data/ocsp-resp1-keyhash.der \
+	data/ocsp-resp1-ocsp-no-cert.der \
+	data/ocsp-resp1-ocsp.der \
+	data/ocsp-resp1.der \
+	data/ocsp-resp2.der \
+	data/ocsp-responder.crt \
+	data/ocsp-responder.key \
+	data/openssl.cnf \
+	data/pkinit-pw.key \
+	data/pkinit.crt \
+	data/pkinit.key \
+	data/proxy-level-test.crt \
+	data/proxy-level-test.key \
+	data/proxy-test.crt \
+	data/proxy-test.key \
+	data/proxy10-child-test.crt \
+	data/proxy10-child-test.key \
+	data/proxy10-test.crt \
+	data/proxy10-test.key \
+	data/revoke.crt \
+	data/revoke.key \
+	data/serial \
+	data/sf-class2-root.pem \
+	data/static-file \
+	data/sub-ca.crt \
+	data/sub-ca.key \
+	data/sub-cert.crt \
+	data/sub-cert.key \
+	data/sub-cert.p12 \
+	data/test-ds-only.crt \
+	data/test-ds-only.key \
+	data/test-enveloped-aes-128 \
+	data/test-enveloped-aes-256 \
+	data/test-enveloped-des \
+	data/test-enveloped-des-ede3 \
+	data/test-enveloped-rc2-128 \
+	data/test-enveloped-rc2-40 \
+	data/test-enveloped-rc2-64 \
+	data/test-ke-only.crt \
+	data/test-ke-only.key \
+	data/test-pw.key \
+	data/test-signed-data \
+	data/test-signed-data-noattr \
+	data/test-signed-data-noattr-nocerts \
+	data/test.combined.crt \
+	data/test.crt \
+	data/test.key \
+	data/test.p12 \
+	data/yutaka-pad-broken-ca.pem \
+	data/yutaka-pad-broken-cert.pem \
+	data/yutaka-pad-ok-ca.pem \
+	data/yutaka-pad-ok-cert.pem \
+	data/yutaka-pad.key
