@@ -376,6 +376,39 @@ out:
     return major_status;
 }
 
+static OM_uint32
+get_authtime(OM_uint32 *minor_status,
+	     gsskrb5_ctx ctx, 
+	     gss_buffer_set_t *data_set)
+
+{
+    gss_buffer_desc value;
+    unsigned char buf[4];
+    OM_uint32 authtime;
+
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+    if (ctx->ticket == NULL) {
+	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+    
+    authtime = ctx->ticket->ticket.authtime;
+    
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+
+    _gsskrb5_encode_om_uint32(authtime, buf);
+    value.length = sizeof(buf);
+    value.value = buf;
+
+    return gss_add_buffer_set_member(minor_status,
+				     &value,
+				     data_set);
+}
+
+/*
+ *
+ */
 
 OM_uint32 _gsskrb5_inquire_sec_context_by_oid
            (OM_uint32 *minor_status,
@@ -414,6 +447,8 @@ OM_uint32 _gsskrb5_inquire_sec_context_by_oid
 					      ctx,
 					      ACCEPTOR_SUBKEY,
 					      data_set);
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_GET_AUTHTIME_X)) {
+	return get_authtime(minor_status, ctx, data_set);
     } else if (oid_prefix_equal(desired_object,
 				GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X,
 				&suffix)) {
