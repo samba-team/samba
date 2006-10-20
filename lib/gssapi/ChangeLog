@@ -1,4 +1,17 @@
+2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_krb5.c: Add gsskrb5_extract_authtime_from_sec_context.
+
+	* gssapi/gssapi_krb5.h: add
+	gsskrb5_extract_authtime_from_sec_context
+	
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* krb5/inquire_sec_context_by_oid.c: Add get_authtime.
+
+	* krb5/external.c: add GSS_KRB5_GET_AUTHTIME_X
+
+	* gssapi/gssapi_krb5.h: add GSS_KRB5_GET_AUTHTIME_X
 
 	* krb5/set_sec_context_option.c: Implement GSS_KRB5_SEND_TO_KDC_X.
 
