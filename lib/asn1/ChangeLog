@@ -1,4 +1,10 @@
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: More files, now for make check.
+	
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add missing files
 
 	* Makefile.am (asn1_compile_SOURCES): add gen_locl.h
 
