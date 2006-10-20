@@ -32,17 +32,25 @@ krb5.conf: krb5.conf.in Makefile
 
 CLEANFILES= \
 	$(TESTS) \
-	check-kdc.tmp \
-	check-digest.tmp \
-	krb5.conf krb5.conf.tmp \
-	digest-reply cdigest-reply o2digest-reply \
-	messages.log \
-	current-db* \
-	foopassword \
 	barpassword \
-	tempfile \
+	cache.krb5 \
+	cdigest-reply \
+	check-digest.tmp \
+	check-kdc.tmp \
+	client-cache \
+	current-db* \
+	digest-reply \
+	foopassword \
+	krb5.conf krb5.conf.tmp \
+	messages.log \
+	o2cache.krb5 \
+	o2digest-reply \
+	ocache.krb5 \
+	s2digest-reply \
+	sdigest-reply \
 	server.keytab \
-	client-cache
+	tempfile
+
 
 EXTRA_DIST = \
 	check-kdc.in \
