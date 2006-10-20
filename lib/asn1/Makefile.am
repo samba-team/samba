@@ -463,7 +463,7 @@ CLEANFILES = lex.c parse.c parse.h \
 	$(gen_files_pkcs9) \
 	$(gen_files_pkcs12) \
 	$(gen_files_digest) \
-	$(gen_files_test) \
+	$(gen_files_test) $(nodist_check_gen_SOURCES) \
 	rfc2459_asn1_files rfc2459_asn1.h \
 	cms_asn1_files cms_asn1.h \
 	krb5_asn1_files krb5_asn1.h \
