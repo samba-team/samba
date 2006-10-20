@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-SUBDIRS = kadm5 hcrypto
+SUBDIRS = kadm5 hcrypto gssapi
 
 noinst_PROGRAMS = bits make_crypto
 CHECK_LOCAL =
