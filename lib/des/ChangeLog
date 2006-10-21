@@ -1,4 +1,11 @@
+2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsa.c: Try to not leak memory.
+	
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rand-unix.c (unix_bytes): read until the other side give us all
+	or fail.
 
 	* imath: import imath-1.7, fixes buffer overrun problems
 
