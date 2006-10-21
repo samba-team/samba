@@ -109,6 +109,10 @@ do
 		prependpath="$2"
 		shift 2
 		;;
+	--test-environment)
+		testenvironment="$2"
+		shift 2
+		;;
 	--no-email)
 		noemail="yes"
 		shift
@@ -211,6 +215,11 @@ fi
 
 cd ${hversion} || exit 1
 
+makecheckenv=
+if [ X"${testenvironment}" != X ] ; then
+    makecheckenv="${makecheckenv} TESTS_ENVIRONMENT=\"${testenvironment}\""
+fi
+
 mkdir socket_wrapper_dir
 SOCKET_WRAPPER_DIR=`pwd`/socket_wrapper_dir
 export SOCKET_WRAPPER_DIR
@@ -229,7 +238,7 @@ if [ $? != 0 ] ; then
     status=${status:-make all}
 fi
 echo make check >> ab.txt
-make check >> ab.txt 2>&1
+eval env $makecheckenv make check >> ab.txt 2>&1
 if [ $? != 0 ] ; then
     echo Make check failed
     status=${status:-make check}
