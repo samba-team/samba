@@ -1,5 +1,9 @@
-2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_engine_dso.c: Add more dh tests.
+	
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* imath/imath.c: Allocate more bits.
 
 	* dh-imath.c (dh_compute_key): fix signness test

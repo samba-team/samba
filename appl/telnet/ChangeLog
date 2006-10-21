@@ -1,5 +1,7 @@
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* telnetd/telnetd.h: HP/UX defines SE in sys/uio.h, #undef it.
+
 	* telnetd/sys_term.c: Dont't include some streamspty headers here.
 
 	* telnetd/telnetd.c: Dont't include some streamspty headers here.
