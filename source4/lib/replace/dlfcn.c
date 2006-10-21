@@ -26,28 +26,28 @@
 #include "replace.h"
 
 #ifndef HAVE_DLOPEN
-void *dlopen(const char *name, int flags)
+void *rep_dlopen(const char *name, int flags)
 {
 	return NULL;
 }
 #endif
 
 #ifndef HAVE_DLSYM
-void *dlsym(void *handle, const char *symbol)
+void *rep_dlsym(void *handle, const char *symbol)
 {
     return NULL;
 }
 #endif
 
 #ifndef HAVE_DLERROR
-char *dlerror(void)
+char *rep_dlerror(void)
 {
 	return "dynamic loading of objects not supported on this platform";
 }
 #endif
 
 #ifndef HAVE_DLCLOSE
-int dlclose(void *handle)
+int rep_dlclose(void *handle)
 {
 	return 0;
 }
