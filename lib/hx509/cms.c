@@ -705,14 +705,14 @@ hx509_cms_verify_signed(hx509_context context,
 				       "SignerInfo have signed attributes "
 				       "but messageDigest (signature) "
 				       "is missing");
-		continue;
+		goto next_sigature;
 	    }
 	    if (attr->value.len != 1) {
 		ret = HX509_CRYPTO_SIGNATURE_MISSING;
 		hx509_set_error_string(context, 0, ret,
 				       "SignerInfo have more then one "
 				       "messageDigest (signature)");
-		continue;
+		goto next_sigature;
 	    }
 	    
 	    ret = decode_MessageDigest(attr->value.val[0].data, 
@@ -723,7 +723,7 @@ hx509_cms_verify_signed(hx509_context context,
 		hx509_set_error_string(context, 0, ret,
 				       "Failed to decode "
 				       "messageDigest (signature)");
-		continue;
+		goto next_sigature;
 	    }
 
 	    ret = _hx509_verify_signature(NULL,
@@ -734,7 +734,7 @@ hx509_cms_verify_signed(hx509_context context,
 	    if (ret) {
 		hx509_set_error_string(context, 0, ret,
 				       "Failed to verify messageDigest");
-		continue;
+		goto next_sigature;
 	    }
 
 	    /* 
@@ -749,7 +749,8 @@ hx509_cms_verify_signed(hx509_context context,
 		    ret = HX509_CMS_DATA_OID_MISMATCH;
 		    hx509_set_error_string(context, 0, ret,
 					   "More then one oid in signedAttrs");
-		    continue;
+		    goto next_sigature;
+
 		}
 		ret = decode_ContentType(attr->value.val[0].data, 
 					 attr->value.val[0].length,
@@ -759,7 +760,7 @@ hx509_cms_verify_signed(hx509_context context,
 		    hx509_set_error_string(context, 0, ret,
 					   "Failed to decode "
 					   "oid in signedAttrs");
-		    continue;
+		    goto next_sigature;
 		}
 		match_oid = &decode_oid;
 	    }
@@ -770,7 +771,7 @@ hx509_cms_verify_signed(hx509_context context,
 		    der_free_oid(&decode_oid);
 		ret = ENOMEM;
 		hx509_clear_error_string(context);
-		continue;
+		goto next_sigature;
 	    }
 	    
 	    ASN1_MALLOC_ENCODE(CMSAttributes,
@@ -783,7 +784,7 @@ hx509_cms_verify_signed(hx509_context context,
 		    der_free_oid(&decode_oid);
 		free(signed_data);
 		hx509_clear_error_string(context);
-		continue;
+		goto next_sigature;
 	    }
 	    if (size != signed_data->length)
 		_hx509_abort("internal ASN.1 encoder error");
@@ -792,17 +793,15 @@ hx509_cms_verify_signed(hx509_context context,
 	    signed_data = sd.encapContentInfo.eContent;
 	    match_oid = oid_id_pkcs7_data();
 	}
-	if (ret)
-	    return ret;
 
 	if (der_heim_oid_cmp(match_oid, &sd.encapContentInfo.eContentType)) {
 	    ret = HX509_CMS_DATA_OID_MISMATCH;
 	    hx509_set_error_string(context, 0, ret,
 				   "Oid in message mismatch from the expected");
-	}	
+	}
 	if (match_oid == &decode_oid)
 	    der_free_oid(&decode_oid);
-	
+
 	if (ret == 0)
 	    ret = hx509_verify_signature(context,
 					 cert,
@@ -814,23 +813,23 @@ hx509_cms_verify_signed(hx509_context context,
 	    der_free_octet_string(signed_data);
 	    free(signed_data);
 	}
-	if (ret) {
-	    hx509_cert_free(cert);
-	    continue;
-	}
+	if (ret)
+	    goto next_sigature;
 
 	ret = hx509_verify_path(context, ctx, cert, certs);
-	if (ret) {
-	    hx509_cert_free(cert);
-	    continue;
-	}
+	if (ret)
+	    goto next_sigature;
 
 	ret = hx509_certs_add(context, *signer_certs, hx509_cert_ref(cert));
-	if (ret) {
-	    hx509_cert_free(cert);
-	    continue;
-	}
+	if (ret)
+	    goto next_sigature;
+
 	found_valid_sig++;
+
+    next_sigature:
+	if (cert)
+	    hx509_cert_free(cert);
+	cert = NULL;
     }
     if (found_valid_sig == 0) {
 	return ret;
