@@ -790,7 +790,7 @@ static bool test_wrepl_is_applied(struct torture_context *tctx,
 		
 	status = wrepl_pull_names(ctx->pull, ctx->pull, &pull_names);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
-	torture_assert(tctx, pull_names.out.num_names == expected, 
+	torture_assert(tctx, pull_names.out.num_names == (expected?1:0), 
 		       talloc_asprintf(tctx, "Invalid number of records returned - expected %d got %d", expected, pull_names.out.num_names));
 
 	names = pull_names.out.names;
