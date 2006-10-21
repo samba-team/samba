@@ -3084,10 +3084,7 @@ static NTSTATUS rpc_share_del_internals(const DOM_SID *domain_sid,
 					int argc,
 					const char **argv)
 {
-	NTSTATUS result;
-
-	result = rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx, NULL, argv[0], 0);
-	return NT_STATUS_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx, NULL, argv[0], 0);
 }
 
 /** 
