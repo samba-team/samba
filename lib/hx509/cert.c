@@ -129,6 +129,7 @@ hx509_context_set_missing_revoke(hx509_context context, int flag)
 void
 hx509_context_free(hx509_context *context)
 {
+    hx509_clear_error_string(*context);
     if ((*context)->ks_ops) {
 	free((*context)->ks_ops);
 	(*context)->ks_ops = NULL;
@@ -204,12 +205,11 @@ hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
     (*cert)->release = NULL;
     (*cert)->ctx = NULL;
 
-    (*cert)->data = malloc(sizeof(*(*cert)->data));
+    (*cert)->data = calloc(1, sizeof(*(*cert)->data));
     if ((*cert)->data == NULL) {
 	free(*cert);
 	return ENOMEM;
     }
-    memset((*cert)->data, 0, sizeof(*(*cert)->data));
     ret = copy_Certificate(c, (*cert)->data);
     if (ret) {
 	free((*cert)->data);

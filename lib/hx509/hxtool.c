@@ -312,6 +312,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
 
     _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
+    hx509_certs_free(&certs);
 
     ret = _hx509_write_file(argv[1], o.data, o.length);
     if (ret)
@@ -369,6 +370,8 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "hx509_cms_envelope_1: %d", ret);
 
+    hx509_cert_free(cert);
+    hx509_certs_free(&certs);
     _hx509_unmap_file(p, sz);
 
     if (opt->content_info_flag) {
@@ -700,6 +703,7 @@ query(struct query_options *opt, int argc, char **argv)
     }
 
     hx509_cert_free(c);
+    hx509_certs_free(&certs);
 
     hx509_lock_free(lock);
 
@@ -766,6 +770,9 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 
     if (nonce)
 	der_free_octet_string(nonce);
+
+    hx509_certs_free(&reqcerts);
+    hx509_certs_free(&pool);
 
     return 0;
 }
