@@ -108,7 +108,7 @@ static void show_buf(const char *name, uint8_t *buf, size_t size)
   buffer back
 */
 static bool test_buffer(struct torture_context *test, 
-					   uint8_t *inbuf, size_t size, const char *charset)
+			uint8_t *inbuf, size_t size, const char *charset)
 {
 	uint8_t buf1[1000], buf2[1000], buf3[1000];
 	size_t outsize1, outsize2, outsize3;
@@ -131,6 +131,10 @@ static bool test_buffer(struct torture_context *test,
 	if (!cd) {
 		cd = iconv_open(charset, "UTF-16LE");
 		if (cd == (iconv_t)-1) {
+			torture_fail(test, 
+				     talloc_asprintf(test, 
+						     "failed to open %s to UTF-16LE\n",
+						     charset));
 			cd = NULL;
 			return false;
 		}
@@ -348,11 +352,15 @@ static bool test_random_5m(struct torture_context *tctx)
 				inbuf[c] |= 0xdc;
 			}
 		}
-		if (!test_buffer(tctx, inbuf, size, "UTF-8"))
+		if (!test_buffer(tctx, inbuf, size, "UTF-8")) {
+			printf("i=%d failed UTF-8\n", i);
 			return false;
+		}
 
-		if (!test_buffer(tctx, inbuf, size, "CP850"))
+		if (!test_buffer(tctx, inbuf, size, "CP850")) {
+			printf("i=%d failed CP850\n", i);
 			return false;
+		}
 	}
 	return true;
 }
@@ -374,7 +382,15 @@ struct torture_suite *torture_local_iconv(TALLOC_CTX *mem_ctx)
 	}
 	iconv_close(cd);
 
+	cd = iconv_open("UTF-16LE", "CP850");
+	if (cd == (iconv_t)-1) {
+		printf("unable to test - system iconv library does not support UTF-16LE -> CP850\n");
+		return NULL;
+	}
+	iconv_close(cd);
+
 	srandom(time(NULL));
+
 	torture_suite_add_simple_test(suite, "next_codepoint()",
 								   test_next_codepoint);
 
