@@ -1,9 +1,13 @@
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* imath: import imath-1.7, fixes buffer overrun problems
+
+	* rsa.c (RSA_free): free the whole key
+
 	* test_engine_dso.c: Add more dh tests.
-	
+
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
-	
+
 	* imath/imath.c: Allocate more bits.
 
 	* dh-imath.c (dh_compute_key): fix signness test
