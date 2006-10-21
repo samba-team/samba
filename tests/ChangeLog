@@ -1,3 +1,9 @@
+2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* db/add-modify-delete.in: Use EGREP.
+
+	* db/Makefile.am: add EGREP to do_subst
+	
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss/Makefile.am: Clean temporary files
