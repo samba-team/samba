@@ -100,6 +100,7 @@ hx509_revoke_free(hx509_revoke_ctx *ctx)
 
     for (i = 0; i < (*ctx)->ocsps.len; i++)
 	free_ocsp(&(*ctx)->ocsps.val[i]);
+    free((*ctx)->ocsps.val);
 
     free((*ctx)->crls.val);
 

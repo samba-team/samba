@@ -649,6 +649,7 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
     hx509_certs_free(&chain);
     hx509_certs_free(&anchors);
 
+    hx509_revoke_free(&revoke_ctx);
 
     return ret;
 }
