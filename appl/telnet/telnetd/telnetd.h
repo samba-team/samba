@@ -122,6 +122,27 @@
 #include <pty.h>
 #endif
 
+#ifdef	STREAMSPTY
+#ifdef HAVE_SAC_H
+#include <sac.h>
+#endif
+#ifdef HAVE_SYS_STROPTS_H
+#include <sys/stropts.h>
+#endif
+
+# include <stropts.h>
+
+#ifdef  HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+#ifdef	HAVE_SYS_STREAM_H
+#include <sys/stream.h>
+#endif
+
+#endif /* STREAMSPTY */
+
+#undef NOERROR
+
 #include "defs.h"
 
 #ifndef _POSIX_VDISABLE
