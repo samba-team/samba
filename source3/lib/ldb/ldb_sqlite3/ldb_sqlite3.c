@@ -2101,6 +2101,7 @@ static int lsqlite3_connect(struct ldb_context *ldb,
 		ldb_oom(ldb);
 		goto failed;
 	}
+	talloc_set_name_const(*module, "ldb_sqlite3 backend");
 	(*module)->ldb = ldb;
 	(*module)->prev = (*module)->next = NULL;
 	(*module)->private_data = lsqlite3;

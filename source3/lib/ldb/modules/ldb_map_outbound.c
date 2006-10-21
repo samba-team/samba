@@ -202,7 +202,16 @@ static int ldb_msg_replace(struct ldb_message *msg, const struct ldb_message_ele
 		}
 	}
 
-	*old = *el;			/* copy new element */
+	/* copy new element */
+	*old = *el;
+
+	/* and make sure we reference the contents */
+	if (!talloc_reference(msg->elements, el->name)) {
+		return -1;
+	}
+	if (!talloc_reference(msg->elements, el->values)) {
+		return -1;
+	}
 
 	return 0;
 }

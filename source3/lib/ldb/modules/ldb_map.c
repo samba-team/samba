@@ -1233,11 +1233,13 @@ static int map_init_dns(struct ldb_module *module, struct ldb_map_context *data,
 	if (res->count == 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
 			  "No results for '%s=%s'!\n", MAP_DN_NAME, name);
+		talloc_free(res);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	if (res->count > 1) {
 		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
 			  "Too many results for '%s=%s'!\n", MAP_DN_NAME, name);
+		talloc_free(res);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 

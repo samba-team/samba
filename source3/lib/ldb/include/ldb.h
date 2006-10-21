@@ -357,6 +357,9 @@ struct ldb_attrib_handler {
 */
 #define LDB_ATTR_FLAG_HIDDEN       (1<<0) 
 
+/* the attribute handler name should be freed when released */
+#define LDB_ATTR_FLAG_ALLOCATED    (1<<1) 
+
 /**
    The attribute is constructed from other attributes
 */

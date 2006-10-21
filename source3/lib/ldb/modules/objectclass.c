@@ -464,7 +464,7 @@ static int objectclass_search_self(struct ldb_handle *h) {
 	ac->search_req->operation = LDB_SEARCH;
 	ac->search_req->op.search.base = ac->orig_req->op.mod.message->dn;
 	ac->search_req->op.search.scope = LDB_SCOPE_BASE;
-	ac->search_req->op.search.tree = ldb_parse_tree(ac->module->ldb, NULL);
+	ac->search_req->op.search.tree = ldb_parse_tree(ac->search_req, NULL);
 	if (ac->search_req->op.search.tree == NULL) {
 		ldb_set_errstring(ac->module->ldb, "objectclass: Internal error producing null search");
 		return LDB_ERR_OPERATIONS_ERROR;

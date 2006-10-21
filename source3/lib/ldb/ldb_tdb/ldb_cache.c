@@ -71,13 +71,7 @@ static void ltdb_attributes_unload(struct ldb_module *module)
 
 	msg = ltdb->cache->attributes;
 	for (i=0;i<msg->num_elements;i++) {
-		const struct ldb_attrib_handler *h;
-		/* this is rather ugly - a consequence of const handling */
-		h = ldb_attrib_handler(module->ldb, msg->elements[i].name);
 		ldb_remove_attrib_handler(module->ldb, msg->elements[i].name);
-		if (strcmp(h->attr, msg->elements[i].name) == 0) {
-			talloc_steal(msg, h->attr);
-		}
 	}
 
 	talloc_free(ltdb->cache->attributes);
@@ -163,7 +157,8 @@ static int ltdb_attributes_load(struct ldb_module *module)
 			goto failed;
 		}
 		h2 = *h;
-		h2.attr = talloc_strdup(module, msg->elements[i].name);
+		h2.attr = msg->elements[i].name;
+		h2.flags |= LDB_ATTR_FLAG_ALLOCATED;
 		if (ldb_set_attrib_handlers(module->ldb, &h2, 1) != 0) {
 			goto failed;
 		}
@@ -319,6 +314,13 @@ int ltdb_cache_load(struct ldb_module *module)
 	struct ldb_dn *baseinfo_dn = NULL;
 	struct ldb_dn *indexlist_dn = NULL;
 	uint64_t seq;
+	struct ldb_message *baseinfo;
+
+	/* a very fast check to avoid extra database reads */
+	if (ltdb->cache != NULL && 
+	    tdb_get_seqnum(ltdb->tdb) == ltdb->tdb_seqnum) {
+		return 0;
+	}
 
 	if (ltdb->cache == NULL) {
 		ltdb->cache = talloc_zero(ltdb, struct ltdb_cache);
@@ -333,30 +335,31 @@ int ltdb_cache_load(struct ldb_module *module)
 		}
 	}
 
-	talloc_free(ltdb->cache->baseinfo);
-	ltdb->cache->baseinfo = talloc(ltdb->cache, struct ldb_message);
-	if (ltdb->cache->baseinfo == NULL) goto failed;
+	baseinfo = talloc(ltdb->cache, struct ldb_message);
+	if (baseinfo == NULL) goto failed;
 
 	baseinfo_dn = ldb_dn_explode(module->ldb, LTDB_BASEINFO);
 	if (baseinfo_dn == NULL) goto failed;
 
-	if (ltdb_search_dn1(module, baseinfo_dn, ltdb->cache->baseinfo) == -1) {
+	if (ltdb_search_dn1(module, baseinfo_dn, baseinfo) == -1) {
 		goto failed;
 	}
 	
 	/* possibly initialise the baseinfo */
-	if (!ltdb->cache->baseinfo->dn) {
+	if (!baseinfo->dn) {
 		if (ltdb_baseinfo_init(module) != 0) {
 			goto failed;
 		}
-		if (ltdb_search_dn1(module, baseinfo_dn, ltdb->cache->baseinfo) != 1) {
+		if (ltdb_search_dn1(module, baseinfo_dn, baseinfo) != 1) {
 			goto failed;
 		}
 	}
 
+	ltdb->tdb_seqnum = tdb_get_seqnum(ltdb->tdb);
+
 	/* if the current internal sequence number is the same as the one
 	   in the database then assume the rest of the cache is OK */
-	seq = ldb_msg_find_attr_as_uint64(ltdb->cache->baseinfo, LTDB_SEQUENCE_NUMBER, 0);
+	seq = ldb_msg_find_attr_as_uint64(baseinfo, LTDB_SEQUENCE_NUMBER, 0);
 	if (seq == ltdb->sequence_number) {
 		goto done;
 	}
@@ -395,11 +398,13 @@ int ltdb_cache_load(struct ldb_module *module)
 	}
 
 done:
+	talloc_free(baseinfo);
 	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
 	return 0;
 
 failed:
+	talloc_free(baseinfo);
 	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
 	return -1;
