@@ -169,13 +169,13 @@ struct ether_addr;
 #define KLUDGELINEMODE
 #endif
 
+#include <err.h>
+#include <roken.h>
+
 #include "ring.h"
 #include "externs.h"
 #include "defines.h"
 #include "types.h"
-
-#include <err.h>
-#include <roken.h>
 
 /* prototypes */
 
