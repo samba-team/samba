@@ -692,7 +692,7 @@ test_taglessalloc (void)
 			 (generic_free)free_TESTAlloc,
 			 cmp_TESTAlloc);
 
-    free(c1.tagless)
+    free(c1.tagless);
 
     return ret;
 }
