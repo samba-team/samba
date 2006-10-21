@@ -1,5 +1,11 @@
-2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lex.l: add missing */
+	
+	* lex.c: need %e for hpux lex
+
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: remove dups from gen_files_test, add check-timegm.
 	
 	* Makefile.am: include more test.asn1 built files
