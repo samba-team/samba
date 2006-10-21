@@ -81,7 +81,7 @@ dist_libkafs_la_SOURCES =			\
 	afssysdefs.h				\
 	roken_rename.h
 
-dist_libkafs_la_SOURCES = $(ROKEN_SRCS)
+nodist_libkafs_la_SOURCES = $(ROKEN_SRCS)
 
 EXTRA_libkafs_la_SOURCES = afskrb.c afskrb5.c dlfcn.c afslib.c dlfcn.h
 
