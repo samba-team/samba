@@ -1,5 +1,8 @@
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-common.c: Try to align data, IA64's gets upset if its
+	unaligned.
+
 	* lex.l: add missing */
 	
 	* lex.c: need %e for hpux lex
