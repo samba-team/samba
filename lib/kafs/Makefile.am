@@ -68,10 +68,10 @@ afskrb5_c = afskrb5.c
 endif
 
 if do_roken_rename
-ROKEN_SRCS = resolve.c strtok_r.c strlcpy.c strsep.c roken_rename.h
+ROKEN_SRCS = resolve.c strtok_r.c strlcpy.c strsep.c
 endif
 
-libkafs_la_SOURCES =				\
+dist_libkafs_la_SOURCES =			\
 	afssys.c				\
 	afskrb.c				\
 	$(afskrb5_c)				\
@@ -79,9 +79,9 @@ libkafs_la_SOURCES =				\
 	$(AIX_SRC)				\
 	kafs_locl.h				\
 	afssysdefs.h				\
-	$(ROKEN_SRCS)
+	roken_rename.h
 
-#afslib_so_SOURCES = afslib.c
+dist_libkafs_la_SOURCES = $(ROKEN_SRCS)
 
 EXTRA_libkafs_la_SOURCES = afskrb.c afskrb5.c dlfcn.c afslib.c dlfcn.h
 
