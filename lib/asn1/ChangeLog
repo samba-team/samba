@@ -1,5 +1,7 @@
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-common.c: Print size_t as (unsigned long) and cast.
+
 	* check-common.c: Try to align data, IA64's gets upset if its
 	unaligned.
 
