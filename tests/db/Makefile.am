@@ -9,7 +9,8 @@ check_SCRIPTS = have-db loaddump-db add-modify-delete
 TESTS = loaddump-db add-modify-delete
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
-	-e 's,[@]objdir[@],$(top_builddir)/tests/db,g'
+	-e 's,[@]objdir[@],$(top_builddir)/tests/db,g' \
+	-e 's,[@]EGREP[@],$(EGREP),g' 
 
 loaddump-db: loaddump-db.in Makefile
 	$(do_subst) < $(srcdir)/loaddump-db.in > loaddump-db.tmp
