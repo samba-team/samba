@@ -126,7 +126,6 @@ $(hxtool_OBJECTS): hxtool-commands.h
 
 hxtool_CPPFLAGS = $(INCLUDE_des)
 hxtool_LDADD = libhx509.la $(LIB_roken) ../sl/libsl.la $(LIB_des)
-hxtool_LDFLAGS = -pthread
 
 CLEANFILES = $(BUILT_SOURCES) \
 	$(gen_files_ocsp) ocsp_asn1_files ocsp_asn1.h \
