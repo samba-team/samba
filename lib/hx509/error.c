@@ -66,12 +66,12 @@ hx509_set_error_stringv(hx509_context context, int flags, int code,
 
     msg = calloc(1, sizeof(*msg));
     if (msg == NULL) {
-	free_error_string(context->error);
-	context->error = NULL;
+	hx509_clear_error_string(context);
 	return;
     }
 
     if (vasprintf(&msg->msg, fmt, ap) == -1) {
+	hx509_clear_error_string(context);
 	free(msg);
 	return;
     }
