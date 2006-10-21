@@ -67,6 +67,10 @@ do
 		cputimelimit="$2"
 		shift 2
 		;;
+	--ccache-dir)
+		ccachedir="$2"
+		shift 2
+		;;
 	--cvs)
 		hversion="heimdal-cvs-${date}"
 		cvsroot=$2
@@ -198,6 +202,11 @@ fi
 if [ X"$autotools" = Xyes ]; then
 	echo "Autotooling (via fix-export)"
 	env DATEDVERSION="cvs-${date}" ${hversion}/fix-export ${hversion}
+fi
+
+if [ X"$ccachedir" != X ]; then
+	CCACHE_DIR="${ccachedir}"
+	export CCACHE_DIR
 fi
 
 cd ${hversion} || exit 1
