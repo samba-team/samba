@@ -1,5 +1,7 @@
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-gen.c: avoid leaking memory
+
 	* check-der.c: avoid leaking memory
 
 	* der_format.c (der_parse_heim_oid): avoid leaking memory
