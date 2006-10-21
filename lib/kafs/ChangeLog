@@ -1,5 +1,9 @@
-2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: unbreak previous
+	
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: add more files
 	
 2006-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
