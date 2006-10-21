@@ -664,9 +664,6 @@ hx509_cms_verify_signed(hx509_context context,
 	    goto out;
     }
 
-    hx509_clear_error_string(context);
-
-    ret = HX509_CMS_SIGNER_NOT_FOUND;
     for (found_valid_sig = 0, i = 0; i < sd.signerInfos.len; i++) {
 	heim_octet_string *signed_data;
 	const heim_oid *match_oid;
@@ -832,7 +829,12 @@ hx509_cms_verify_signed(hx509_context context,
 	cert = NULL;
     }
     if (found_valid_sig == 0) {
-	return ret;
+	if (ret == 0) {
+	    ret = HX509_CMS_SIGNER_NOT_FOUND;
+	    hx509_set_error_string(context, 0, ret,
+				   "No signers where found");
+	}
+	goto out;
     }
 
     ret = der_copy_oid(&sd.encapContentInfo.eContentType, contentType);
