@@ -149,6 +149,7 @@ der_parse_heim_oid (const char *str, const char *sep, heim_oid *data)
 		    (data->length + 1) * sizeof(data->components[0]));
 	if (c == NULL) {
 	    der_free_oid(data);
+	    free(s);
 	    return ENOMEM;
 	}
 	data->components = c;
@@ -156,9 +157,11 @@ der_parse_heim_oid (const char *str, const char *sep, heim_oid *data)
 	l = strtol(w, &endptr, 10);
 	if (*endptr != '\0' || l < 0 || l > INT_MAX) {
 	    der_free_oid(data);
+	    free(s);
 	    return EINVAL;
 	}
 	data->components[data->length++] = l;
     }
+    free(s);
     return 0;
 }
