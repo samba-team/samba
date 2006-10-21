@@ -188,18 +188,19 @@ out:
  Delete a security descriptor.
 ********************************************************************/
 
-BOOL delete_share_security(int snum)
+BOOL delete_share_security(const struct share_params *params)
 {
 	TDB_DATA kbuf;
 	fstring key;
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
+	slprintf(key, sizeof(key)-1, "SECDESC/%s",
+		 lp_servicename(params->service));
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 
-	if (tdb_delete(share_tdb, kbuf) != 0) {
+	if (tdb_trans_delete(share_tdb, kbuf) != 0) {
 		DEBUG(0,("delete_share_security: Failed to delete entry for share %s\n",
-				lp_servicename(snum) ));
+			 lp_servicename(params->service) ));
 		return False;
 	}
 
