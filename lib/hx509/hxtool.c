@@ -833,6 +833,7 @@ request_create(struct request_create_options *opt, int argc, char **argv)
 	    hx509_name_to_string(name, &s);
 	    printf("%s\n", s);
 	}
+	hx509_name_free(&name);
     }
 
     for (i = 0; i < opt->email_strings.num_strings; i++) {
@@ -864,6 +865,7 @@ request_create(struct request_create_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "_hx509_request_to_pkcs10: %d\n", ret);
 
+    _hx509_free_private_key(&signer)
     _hx509_request_free(&req);
 
     if (ret == 0)
