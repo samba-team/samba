@@ -1029,6 +1029,8 @@ int main(void)
 {
 	bool ret = true;
 
+	setlinebuf(stdout);
+
 	talloc_disable_null_tracking();
 	talloc_enable_null_tracking();
 
