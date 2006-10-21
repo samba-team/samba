@@ -144,7 +144,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     {
 	char *str;
 	der_print_heim_oid(&type, '.', &str);
-	printf("type: %s\n");
+	printf("type: %s\n", str);
 	free(str);
 	der_free_oid(&type);
     }
