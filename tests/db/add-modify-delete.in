@@ -36,6 +36,7 @@
 
 srcdir="@srcdir@"
 objdir="@objdir@"
+EGREP="@EGREP@"
 
 # If there is no useful db support compile in, disable test
 ./have-db || exit 77
@@ -61,19 +62,19 @@ ${kadmin} \
 echo test add
 ${kadmin} add -r --use-defaults foo || exit 1
 ${kadmin} list '*' > /dev/null || exit 1
-${kadmin} list '*' | grep -e '^foo$' > /dev/null || exit 1
+${kadmin} list '*' | ${EGREP} '^foo$' > /dev/null || exit 1
 
 echo "test add (double)"
 ${kadmin} add -r --use-defaults foo 2>/dev/null && exit 1
 
 echo test rename
 ${kadmin} rename foo bar
-${kadmin} list '*' | grep -e '^foo$' > /dev/null && exit 1
-${kadmin} list '*' | grep -e '^bar$' > /dev/null || exit 1
+${kadmin} list '*' | ${EGREP} '^foo$' > /dev/null && exit 1
+${kadmin} list '*' | ${EGREP} '^bar$' > /dev/null || exit 1
 
 echo test delete
 ${kadmin} delete bar || exit 1
-${kadmin} list '*' | grep -e '^bar$' > /dev/null && exit 1
+${kadmin} list '*' | ${EGREP} '^bar$' > /dev/null && exit 1
 
 echo "test delete (double)"
 ${kadmin} delete bar 2> /dev/null && exit 1
@@ -82,30 +83,30 @@ echo "creating sample user"
 ${kadmin} add -r --use-defaults foo  || exit 1
 ${kadmin} get foo > tempfile  || exit 1
 echo checking principal
-grep -e " *Principal: foo@EXAMPLE.ORG$" tempfile > /dev/null || exit 1
+${EGREP} " *Principal: foo@EXAMPLE.ORG$" tempfile > /dev/null || exit 1
 echo checking kvno
-grep -e " *Kvno: 1$" tempfile > /dev/null || exit 1
+${EGREP} " *Kvno: 1$" tempfile > /dev/null || exit 1
 echo checking failed login count
-grep -e " *Failed login count: 0$" tempfile > /dev/null || exit 1
+${EGREP} " *Failed login count: 0$" tempfile > /dev/null || exit 1
 echo checking modifier
-grep -e " *Modifier: kadmin/admin@EXAMPLE.ORG$" tempfile > /dev/null || exit 1
+${EGREP} " *Modifier: kadmin/admin@EXAMPLE.ORG$" tempfile > /dev/null || exit 1
 echo checking attributes
-grep -e " *Attributes: $" tempfile > /dev/null || exit 1
+${EGREP} " *Attributes: $" tempfile > /dev/null || exit 1
 echo checking renew time
-grep -e " *Max renewable life: 1 week$" tempfile > /dev/null || exit 1
+${EGREP} " *Max renewable life: 1 week$" tempfile > /dev/null || exit 1
 
 echo modifing renewable-life
 ${kadmin} modify --max-renewable-life=2months foo
 echo checking renew time
 ${kadmin} get foo > tempfile  || exit 1
-grep -e " *Max renewable life: 2 months$" tempfile > /dev/null || exit 1
+${EGREP} " *Max renewable life: 2 months$" tempfile > /dev/null || exit 1
 
 echo "creating sample server"
 ${kadmin} add -r --use-defaults host/datan.example.org  || exit 1
 ${kadmin} get host/datan.example.org > tempfile  || exit 1
 echo checking principal
-grep -e " *Principal: host/datan.example.org@EXAMPLE.ORG$" tempfile > /dev/null || exit 1
+${EGREP} " *Principal: host/datan.example.org@EXAMPLE.ORG$" tempfile > /dev/null || exit 1
 echo checking kvno
-grep -e " *Kvno: 1$" tempfile > /dev/null || exit 1
+${EGREP} " *Kvno: 1$" tempfile > /dev/null || exit 1
 
 exit 0
