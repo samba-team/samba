@@ -94,21 +94,18 @@ static pid_t piped_child(char* const command[], int *f_stdout, int *f_stderr)
 	pid_t pid;
 	int sock_out[2], sock_err[2];
 
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock_out) == -1) {
+	if (pipe(sock_out) == -1) {
 		DEBUG(0, ("socketpair: %s", strerror(errno)));
 		return -1;
 	}
 
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock_err) == -1) {
+	if (pipe(sock_err) == -1) {
 		DEBUG(0, ("socketpair: %s", strerror(errno)));
 		return -1;
 	}
 
 	*f_stdout = sock_out[0];
 	*f_stderr = sock_err[0];
-
-	fcntl(sock_out[0], F_SETFL, O_NONBLOCK);
-	fcntl(sock_err[0], F_SETFL, O_NONBLOCK);
 
 	pid = fork();
 
@@ -124,7 +121,7 @@ static pid_t piped_child(char* const command[], int *f_stdout, int *f_stderr)
 		close(sock_out[0]);
 		close(sock_err[0]);
 
-		dup2(sock_out[1], 0);
+		open("/dev/null", O_RDONLY);
 		dup2(sock_out[1], 1);
 		dup2(sock_err[1], 2);
 		execvp(command[0], command);
@@ -195,19 +192,11 @@ bool torture_subunit_run_suite(struct torture_context *context,
 	if (pid == -1)
 		return false;
 
-	if (waitpid(pid, &status, 0) == -1) {
-		torture_result(context, TORTURE_ERROR, "waitpid(%d) failed\n", pid);
-		return false;
-	}
-
-	if (WEXITSTATUS(status) != 0) {
-		torture_result(context, TORTURE_ERROR, "failed with status %d\n", WEXITSTATUS(status));
-		return false;
-	}
-
 	while ((size = read(fd_out, buffer+offset, sizeof(buffer-offset) > 0))) {
 		char *eol;
 		buffer[offset+size] = '\0';
+
+		write(1, buffer+offset, size);
 
 		for (p = buffer; p; p = eol+1) {
 			eol = strchr(p, '\n');
@@ -261,6 +250,16 @@ bool torture_subunit_run_suite(struct torture_context *context,
 
 		offset += size-(p-buffer);
 		memcpy(buffer, p, offset);
+	}
+
+	if (waitpid(pid, &status, 0) == -1) {
+		torture_result(context, TORTURE_ERROR, "waitpid(%d) failed\n", pid);
+		return false;
+	}
+
+	if (WEXITSTATUS(status) != 0) {
+		torture_result(context, TORTURE_ERROR, "failed with status %d\n", WEXITSTATUS(status));
+		return false;
 	}
 
 	if (name != NULL) {
