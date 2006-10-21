@@ -58,7 +58,8 @@ static void unterminated(const char *, unsigned);
 
 %}
 
-/* This is for Solaris 10 lex that doesn't grow its tables automagicly */
+/* This is for broken old lexes (solaris 10 and hpux)
+%e 2000
 %p 5000
 %a 5000
 %n 1000
