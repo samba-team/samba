@@ -87,7 +87,7 @@ unix_seed(const void *indata, int size)
 static int 
 unix_bytes(unsigned char *outdata, int size)
 {
-    ssize_t ret;
+    ssize_t count;
     int fd;
 
     if (size <= 0)
@@ -97,10 +97,18 @@ unix_bytes(unsigned char *outdata, int size)
     if (fd < 0)
 	return 0;
 
-    ret = read(fd, outdata, size);
+    while (size > 0) {
+	count = read (fd, outdata, size);
+	if (count < 0 && errno == EINTR)
+	    continue;
+	else if (count <= 0) {
+	    close(fd);
+	    return 0;
+	}
+	outdata += count;
+	size -= count;
+    }
     close(fd);
-    if (size != ret)
-	return 0;
 
     return 1;
 }
