@@ -266,6 +266,7 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 		if (current == NULL) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+		talloc_set_name(current, "ldb_module: %s", module_list[i]);
 		
 		current->ldb = ldb;
 		current->ops = ops;
