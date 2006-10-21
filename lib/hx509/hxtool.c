@@ -236,6 +236,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     hx509_certs_free(&anchors);
     hx509_certs_free(&pool);
     hx509_certs_free(&store);
+    hx509_cert_free(cert);
     _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
 

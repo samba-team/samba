@@ -367,12 +367,15 @@ hx509_cms_unenvelope(hx509_context context,
 	
 	if (params) {
 	    ret = hx509_crypto_set_params(context, crypto, params, &ivec);
-	    if (ret)
+	    if (ret) {
+		hx509_crypto_destroy(crypto);
 		goto out;
+	    }
 	}
 
 	ret = hx509_crypto_set_key_data(crypto, key.data, key.length);
 	if (ret) {
+	    hx509_crypto_destroy(crypto);
 	    hx509_set_error_string(context, 0, ret,
 				   "Failed to set key for decryption "
 				   "of EnvelopedData");
@@ -384,6 +387,7 @@ hx509_cms_unenvelope(hx509_context context,
 				   enccontent->length,
 				   ivec.length ? &ivec : NULL,
 				   content);
+	hx509_crypto_destroy(crypto);
 	if (ret) {
 	    hx509_set_error_string(context, 0, ret,
 				   "Failed to decrypt EnvelopedData");
@@ -393,6 +397,7 @@ hx509_cms_unenvelope(hx509_context context,
 
 out:
 
+    free_EnvelopedData(&ed);
     der_free_octet_string(&key);
     if (ivec.length)
 	der_free_octet_string(&ivec);
@@ -416,7 +421,7 @@ hx509_cms_envelope_1(hx509_context context,
     KeyTransRecipientInfo *ri;
     heim_octet_string ivec;
     heim_octet_string key;
-    hx509_crypto crypto;
+    hx509_crypto crypto = NULL;
     EnvelopedData ed;
     size_t size;
     int ret;
@@ -441,7 +446,6 @@ hx509_cms_envelope_1(hx509_context context,
     if (ret) {
 	hx509_set_error_string(context, 0, ret,
 			       "Create random key for EnvelopedData content");
-	hx509_crypto_destroy(crypto);
 	goto out;
     }
 
@@ -453,7 +457,6 @@ hx509_cms_envelope_1(hx509_context context,
     if (ret) {
 	hx509_set_error_string(context, 0, ret,
 			       "Failed to encrypt EnvelopedData content");
-	hx509_crypto_destroy(crypto);
 	goto out;
     }
 
@@ -465,7 +468,6 @@ hx509_cms_envelope_1(hx509_context context,
 	    hx509_set_error_string(context, 0, ret,
 				   "Failed to set crypto oid "
 				   "for EnvelopedData");
-	    hx509_crypto_destroy(crypto);
 	    goto out;
 	}	
 	ALLOC(enc_alg->parameters, 1);
@@ -474,7 +476,6 @@ hx509_cms_envelope_1(hx509_context context,
 	    hx509_set_error_string(context, 0, ret,
 				   "Failed to allocate crypto paramaters "
 				   "for EnvelopedData");
-	    hx509_crypto_destroy(crypto);
 	    goto out;
 	}
 
@@ -482,7 +483,6 @@ hx509_cms_envelope_1(hx509_context context,
 				      crypto,
 				      &ivec,
 				      enc_alg->parameters);
-	hx509_crypto_destroy(crypto);
 	if (ret) {
 	    goto out;
 	}
@@ -546,9 +546,10 @@ hx509_cms_envelope_1(hx509_context context,
 	_hx509_abort("internal ASN.1 encoder error");
 
 out:
-    if (ret) {
+    if (crypto)
+	hx509_crypto_destroy(crypto);
+    if (ret)
 	der_free_octet_string(content);
-    }
     der_free_octet_string(&key);
     der_free_octet_string(&ivec);
     free_EnvelopedData(&ed);
