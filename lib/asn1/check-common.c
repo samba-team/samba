@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -62,16 +62,20 @@ map_alloc(enum map_type type, const void *buf,
 {
 #ifndef HAVE_MMAP
     unsigned char *p;
+    size_t len = size + sizeof(long) * 2;
+    int i;
     
     *map = ecalloc(1, sizeof(**map));
 
-    p = emalloc(size + 2);
+    p = emalloc(len);
     (*map)->type = type;
     (*map)->start = p;
-    (*map)->size = size + 2;
-    p[0] = 0xff;
-    p[(*map)->size] = 0xff;
-    (*map)->data_start = p + 1;
+    (*map)->size = len;
+    (*map)->data_start = p + sizeof(long);
+    for (i = sizeof(long); i > 0; i--)
+	p[sizeof(long) - i] = 0xff - i;
+    for (i = sizeof(long); i > 0; i--)
+	p[len - i] = 0xff - i;
 #else
     unsigned char *p;
     int flags, ret, fd;
@@ -131,11 +135,14 @@ map_free(struct map_page *map, const char *test_name, const char *map_name)
 {
 #ifndef HAVE_MMAP
     unsigned char *p = map->start;
+    int i;
     
-    if (p[0] != 0xff)
-	errx(1, "%s: %s underrun %x\n", test_name, map_name, p[0]);
-    if (p[map->size] != 0xff)
-	errx(1, "%s: %s overrun %x\n", test_name, map_name, p[map->size - 1]);
+    for (i = sizeof(long); i > 0; i--)
+	if (p[sizeof(long) - i] != 0xff - i)
+	    errx(1, "%s: %s underrun %d\n", test_name, map_name, i);
+    for (i = sizeof(long); i > 0; i--)
+	if (p[map->size - i] != 0xff - i)
+	    errx(1, "%s: %s overrun %x\n", test_name, map_name, map->size - i);
     free(map->start);
 #else
     int ret;
