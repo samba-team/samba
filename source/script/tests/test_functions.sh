@@ -159,6 +159,7 @@ testit() {
    		else
 			echo "TEST FAILED: $cmdline (status $status)"
 		fi
+		trap "" EXIT
 		return 1;
 	fi
 	rm -f $TEST_LOG;
@@ -173,6 +174,7 @@ testit() {
 		echo "TEST PASSED: $name"
 		echo "=========================================="
 	fi
+	trap "" EXIT
 	return 0;
 }
 
