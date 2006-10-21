@@ -63,17 +63,7 @@ int	registerd_host_only = 0;
 int	require_encryption = 0;
 #endif
 
-#undef NOERROR
-
-#ifdef	STREAMSPTY
-# include <stropts.h>
-# include <termios.h>
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif /* HAVE_SYS_UIO_H */
-#ifdef HAVE_SYS_STREAM_H
-#include <sys/stream.h>
-#endif
+#ifdef STREAMPTY
 
 #ifdef _AIX
 #include <sys/termio.h>
