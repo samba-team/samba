@@ -1,3 +1,7 @@
+2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* make-print-version.c: include <string.h>
+
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* make-print-version.c: Avoid creating a file called --version.
