@@ -184,6 +184,7 @@ bool torture_subunit_run_suite(struct torture_context *context,
 	int status;
 	char buffer[4096];
 	size_t offset = 0;
+	
 
 	command[0] = talloc_strdup(context, suite->path);
 	command[1] = NULL;
@@ -192,8 +193,30 @@ bool torture_subunit_run_suite(struct torture_context *context,
 	if (pid == -1)
 		return false;
 
-	while ((size = read(fd_out, buffer+offset, sizeof(buffer-offset) > 0))) {
+	while (1) {
+		fd_set fds;
 		char *eol;
+
+		FD_ZERO(&fds);
+
+		FD_SET(fd_out, &fds);
+		FD_SET(fd_err, &fds);
+
+		if (select(MAX(fd_out,fd_err)+1, &fds, NULL, NULL, NULL) <= 0) break;
+
+		if (FD_ISSET(fd_err, &fds)) {
+			size = read(fd_err, buffer+offset, sizeof(buffer) - (offset+1));
+			if (size <= 0) break;
+			write(2, buffer+offset, size);
+			continue;
+		}
+
+		if (!FD_ISSET(fd_out, &fds)) continue;
+
+		size = read(fd_out, buffer+offset, sizeof(buffer) - (offset+1));
+
+		if (size <= 0) break;
+
 		buffer[offset+size] = '\0';
 
 		write(1, buffer+offset, size);
@@ -247,7 +270,7 @@ bool torture_subunit_run_suite(struct torture_context *context,
 				}
 			}
 		}
-
+		
 		offset += size-(p-buffer);
 		memcpy(buffer, p, offset);
 	}
