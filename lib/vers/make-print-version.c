@@ -37,6 +37,7 @@ RCSID("$Id$");
 #endif
 
 #include <stdio.h>
+#include <string.h>
 
 #ifdef KRB5
 extern const char *heimdal_version;
