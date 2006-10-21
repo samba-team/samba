@@ -35,11 +35,11 @@
 #endif
 
 #ifdef HAVE_NATIVE_ICONV
-#if defined(HAVE_ICONV)
+#if defined(HAVE_ICONV_H)
 #include <iconv.h>
-#elif defined(HAVE_GICONV)
+#elif defined(HAVE_GICONV_H)
 #include <giconv.h>
-#elif defined(HAVE_BICONV)
+#elif defined(HAVE_BICONV_H)
 #include <biconv.h>
 #endif
 #endif /* HAVE_NATIVE_ICONV */
