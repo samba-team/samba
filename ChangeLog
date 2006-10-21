@@ -1,5 +1,9 @@
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* tools/heimdal-build.sh: Add --test-environment
+
+	* tools/heimdal-build.sh: Add --ccache-dir
+
 	* lib/hdb/Makefile.am: remove dependency on et files covert_db
 	that now is removed
 	
