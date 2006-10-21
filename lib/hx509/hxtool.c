@@ -853,6 +853,7 @@ request_create(struct request_create_options *opt, int argc, char **argv)
     ret = _hx509_request_set_SubjectPublicKeyInfo(context,
 						  req,
 						  &key);
+    free_SubjectPublicKeyInfo(&key);
     if (ret)
 	errx(1, "_hx509_request_set_SubjectPublicKeyInfo: %d", ret);
 

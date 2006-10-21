@@ -59,7 +59,13 @@ _hx509_request_init(hx509_context context, hx509_request *req)
 void
 _hx509_request_free(hx509_request *req)
 {
+    if ((*req)->name)
+	hx509_name_free(&(*req)->name);
+    free_SubjectPublicKeyInfo(&(*req)->key);
+    free_ExtKeyUsage(&(*req)->eku);
+    free_GeneralNames(&(*req)->san);
     free(*req);
+    memset(*req, 0, sizeof(**req));
     *req = NULL;
 }
 
