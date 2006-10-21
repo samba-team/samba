@@ -809,3 +809,32 @@ int tdb_trans_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 
 	return res;
 }
+
+/****************************************************************************
+ tdb_delete, wrapped in a transaction. This way we make sure that a process
+ that dies within deleting does not leave a corrupt tdb behind.
+****************************************************************************/
+
+int tdb_trans_delete(struct tdb_context *tdb, TDB_DATA key)
+{
+	int res;
+
+	if ((res = tdb_transaction_start(tdb)) != 0) {
+		DEBUG(5, ("tdb_transaction_start failed\n"));
+		return res;
+	}
+
+	if ((res = tdb_delete(tdb, key)) != 0) {
+		DEBUG(10, ("tdb_delete failed\n"));
+		if (tdb_transaction_cancel(tdb) != 0) {
+			smb_panic("Cancelling transaction failed\n");
+		}
+		return res;
+	}
+
+	if ((res = tdb_transaction_commit(tdb)) != 0) {
+		DEBUG(5, ("tdb_transaction_commit failed\n"));
+	}
+
+	return res;
+}
