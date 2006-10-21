@@ -63,7 +63,7 @@ int	registerd_host_only = 0;
 int	require_encryption = 0;
 #endif
 
-#ifdef STREAMPTY
+#ifdef STREAMSPTY
 
 #ifdef _AIX
 #include <sys/termio.h>
