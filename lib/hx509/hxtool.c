@@ -324,7 +324,6 @@ int
 cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 {
     heim_octet_string o;
-    heim_oid contentType = { 0, NULL };
     const heim_oid *enctype = NULL;
     hx509_query *q;
     hx509_certs certs;
@@ -363,7 +362,8 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
 
-    ret = hx509_cms_envelope_1(context, cert, p, sz, enctype, &contentType, &o);
+    ret = hx509_cms_envelope_1(context, cert, p, sz, enctype, 
+			       oid_id_pkcs7_data(), &o);
     if (ret)
 	errx(1, "hx509_cms_envelope_1: %d", ret);
 
