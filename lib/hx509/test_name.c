@@ -52,6 +52,7 @@ test_name(const char *name)
     if (strcmp(s, name) != 0)
 	return 1;
 
+    hx509_name_free(&n);
     free(s);
 
     return 0;
