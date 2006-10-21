@@ -108,6 +108,8 @@ RSA_free(RSA *rsa)
     free_if(rsa->d);
     free_if(rsa->p);
     free_if(rsa->q);
+    free_if(rsa->dmp1);
+    free_if(rsa->dmq1);
 #undef free_if
 
     memset(rsa, 0, sizeof(*rsa));
