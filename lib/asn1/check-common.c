@@ -142,7 +142,8 @@ map_free(struct map_page *map, const char *test_name, const char *map_name)
 	    errx(1, "%s: %s underrun %d\n", test_name, map_name, i);
     for (i = sizeof(long); i > 0; i--)
 	if (p[map->size - i] != 0xff - i)
-	    errx(1, "%s: %s overrun %x\n", test_name, map_name, map->size - i);
+	    errx(1, "%s: %s overrun %lu\n", test_name, map_name, 
+		 (unsigned long)map->size - i);
     free(map->start);
 #else
     int ret;
