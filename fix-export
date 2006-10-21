@@ -86,6 +86,22 @@ find . -name .cvsignore -print | xargs rm
 find . -name .__afs\* -print | xargs rm
 rm -fr autom4te*.cache
 
+yaccify () {
+}
+lexify () {
+}
+
+yaccify lib/sl/slc-gram.y
+yaccify lib/sl/parse.y
+yaccify appl/ftp/ftpd/ftpcmd.y
+yaccify lib/asn1/parse.y
+yaccify lib/com_err/parse.y
+yaccify lib/sl/parse.y
+lexify lib/asn1/lex.l
+lexify lib/com_err/lex.l
+lexify lib/sl/lex.l
+lexify lib/sl/slc-lex.l
+
 echo "tar cf - ${distdir} | gzip -9 > ${distdir}.tar.gz"
 echo "gpg -ba -u 0x45D901D8 ${distdir}.tar.gz"
 
