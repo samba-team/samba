@@ -1,5 +1,9 @@
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-der.c: avoid leaking memory
+
+	* der_format.c (der_parse_heim_oid): avoid leaking memory
+
 	* check-common.c: Print size_t as (unsigned long) and cast.
 
 	* check-common.c: Try to align data, IA64's gets upset if its
