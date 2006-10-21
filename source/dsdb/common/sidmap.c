@@ -216,6 +216,47 @@ allocated_sid:
 
 
 /*
+  see if a sid is a group - very inefficient!
+*/
+_PUBLIC_ BOOL sidmap_sid_is_group(struct sidmap_context *sidmap, struct dom_sid *sid)
+{
+	const char *attrs[] = { "sAMAccountType", NULL };
+	int ret;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_message **res;
+	NTSTATUS status;
+	struct dom_sid *domain_sid;
+	BOOL is_group;
+
+	tmp_ctx = talloc_new(sidmap);
+
+	ret = gendb_search(sidmap->samctx, tmp_ctx, NULL, &res, attrs, 
+			   "objectSid=%s", ldap_encode_ndr_dom_sid(tmp_ctx, sid));
+	if (ret == 1) {
+		is_group = is_group_account(res[0]);
+		talloc_free(tmp_ctx);
+		return is_group;
+	}
+
+	status = sidmap_primary_domain_sid(sidmap, tmp_ctx, &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return False;
+	}
+
+	if (dom_sid_in_domain(domain_sid, sid)) {
+		uint32_t rid = sid->sub_auths[sid->num_auths-1];
+		if (rid >= SIDMAP_LOCAL_GROUP_BASE) {
+			talloc_free(tmp_ctx);
+			return True;
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return False;
+}
+
+/*
   map a sid to a unix gid
 */
 _PUBLIC_ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
