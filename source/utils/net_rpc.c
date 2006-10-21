@@ -3137,6 +3137,25 @@ static NTSTATUS get_share_info(struct rpc_pipe_client *pipe_hnd,
 				uint32 *numentries)
 {
 	union srvsvc_NetShareInfo info;
+	NTSTATUS status;
+
+	switch(level) {
+	case 1:
+		if (!(ctr->ctr1 = TALLOC_ZERO_P(
+			      mem_ctx, struct srvsvc_NetShareCtr1))) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		break;
+	case 502:
+		if (!(ctr->ctr502 = TALLOC_ZERO_P(
+			      mem_ctx, struct srvsvc_NetShareCtr502))) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		break;
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+		break;
+	}
 
 	/* no specific share requested, enumerate all */
 	if (argc == 0) {
@@ -3147,7 +3166,29 @@ static NTSTATUS get_share_info(struct rpc_pipe_client *pipe_hnd,
 	}
 
 	/* request just one share */
-	return rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx, NULL, argv[0], level, &info);
+	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx, NULL,
+					       argv[0], level, &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*numentries = 1;
+
+	switch(level) {
+	case 1:
+		ctr->ctr1->count = 1;
+		ctr->ctr1->array = info.info1;
+		break;
+	case 502:
+		ctr->ctr501->count = 1;
+		ctr->ctr502->array = info.info502;
+		break;
+	default:
+		return NT_STATUS_INTERNAL_ERROR;
+		break;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /** 
