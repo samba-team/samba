@@ -1191,11 +1191,11 @@ mp_result mp_int_exptmod(mp_int a, mp_int b, mp_int m, mp_int c)
     return MP_RANGE;
 
   um = MP_USED(m);
-  SETUP(mp_int_init_size(TEMP(0), 3 * um), last);
-  SETUP(mp_int_init_size(TEMP(1), 3 * um), last);
+  SETUP(mp_int_init_size(TEMP(0), 2 * um), last);
+  SETUP(mp_int_init_size(TEMP(1), 2 * um), last);
 
   if(c == b || c == m) {
-    SETUP(mp_int_init_size(TEMP(2), 3 * um), last);
+    SETUP(mp_int_init_size(TEMP(2), 2 * um), last);
     s = TEMP(2);
   } 
   else {
@@ -1767,7 +1767,7 @@ mp_result mp_int_read_cstring(mp_int z, mp_size radix, const char *str, char **e
     return MP_RANGE;
 
   /* Skip leading whitespace */
-  while(isspace((unsigned char)*str))
+  while(isspace((int)*str))
     ++str;
 
   /* Handle leading sign tag (+/-, positive default) */
@@ -2196,7 +2196,7 @@ static mp_digit s_uadd(mp_digit *da, mp_digit *db, mp_digit *dc,
 
   /* Add corresponding digits until the shorter number runs out */
   for(pos = 0; pos < size_b; ++pos, ++da, ++db, ++dc) {
-    w = w + (mp_word)*da + (mp_word)*db;
+    w = w + (mp_word) *da + (mp_word) *db;
     *dc = LOWER_HALF(w);
     w = UPPER_HALF(w);
   }
@@ -2321,10 +2321,10 @@ static int       s_kmul(mp_digit *da, mp_digit *db, mp_digit *dc,
     /* Assemble the output value */
     COPY(t1, dc, buf_size);
     (void) s_uadd(t3, dc + bot_size, dc + bot_size,
-		  buf_size + 1, buf_size + 1);
-
+		  buf_size + 1, buf_size + 1); 
+    
     (void) s_uadd(t2, dc + 2*bot_size, dc + 2*bot_size,
-		  buf_size, buf_size);
+		  buf_size, buf_size); 
     
     s_free(t1); /* note t2 and t3 are just internal pointers to t1 */
   } 
@@ -2909,7 +2909,7 @@ mp_result s_embar(mp_int a, mp_int b, mp_int m, mp_int mu, mp_int c)
   umu = MP_USED(mu); db = MP_DIGITS(b); dbt = db + MP_USED(b) - 1;
 
   while(last < 3) 
-    SETUP(mp_int_init_size(TEMP(last), 2 * umu), last);
+    SETUP(mp_int_init_size(TEMP(last), 4 * umu), last);
 
   (void) mp_int_set_value(c, 1);
 
@@ -3101,10 +3101,10 @@ static int       s_ch2val(char c, int r)
 {
   int out;
 
-  if(isdigit((unsigned char)c))
+  if(isdigit((unsigned char) c))
     out = c - '0';
-  else if(r > 10 && isalpha((unsigned char)c))
-    out = toupper((unsigned char)c) - 'A' + 10;
+  else if(r > 10 && isalpha((unsigned char) c))
+    out = toupper(c) - 'A' + 10;
   else
     return -1;
 
