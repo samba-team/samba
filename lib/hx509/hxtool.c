@@ -141,6 +141,13 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     if (ret)
 	hx509_err(context, 1, ret, "hx509_cms_verify_signed");
 
+    {
+	char *str;
+	der_print_heim_oid(&type, &str);
+	printf("type: %s\n");
+	free(str);
+	der_free_oid(&type);
+    }
     printf("signers:\n");
     hx509_certs_iter(context, signers, hx509_ci_print_names, stdout);
 
@@ -246,6 +253,8 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     ret = _hx509_write_file(argv[1], o.data, o.length);
     if (ret)
 	errx(1, "hx509_write_file: %d", ret);
+
+    free(o.data);
 
     return 0;
 }
