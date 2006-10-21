@@ -79,13 +79,12 @@ static int ltdb_err_map(enum TDB_ERROR tdb_code)
 
 
 struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
-					  void *context,
-					  int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
+				    struct ldb_request *req)
 {
 	struct ltdb_context *ac;
 	struct ldb_handle *h;
 
-	h = talloc_zero(ltdb, struct ldb_handle);
+	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, "Out of Memory");
 		return NULL;
@@ -106,8 +105,8 @@ struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module
 	h->status = LDB_SUCCESS;
 
 	ac->module = module;
-	ac->context = context;
-	ac->callback = callback;
+	ac->context = req->context;
+	ac->callback = req->callback;
 
 	return h;
 }
@@ -307,7 +306,7 @@ static int ltdb_add(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 	
-	req->handle = init_ltdb_handle(ltdb, module, req->context, req->callback);
+	req->handle = init_ltdb_handle(ltdb, module, req);
 	if (req->handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -387,6 +386,7 @@ static int ltdb_delete_internal(struct ldb_module *module, const struct ldb_dn *
 
 	ret = ltdb_modified(module, dn);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -416,7 +416,7 @@ static int ltdb_delete(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->handle = init_ltdb_handle(ltdb, module, req->context, req->callback);
+	req->handle = init_ltdb_handle(ltdb, module, req);
 	if (req->handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -772,7 +772,7 @@ static int ltdb_modify(struct ldb_module *module, struct ldb_request *req)
 	
 	req->handle = NULL;
 
-	req->handle = init_ltdb_handle(ltdb, module, req->context, req->callback);
+	req->handle = init_ltdb_handle(ltdb, module, req);
 	if (req->handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -826,7 +826,7 @@ static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->handle = init_ltdb_handle(ltdb, module, req->context, req->callback);
+	req->handle = init_ltdb_handle(ltdb, module, req);
 	if (req->handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -1021,7 +1021,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		path = url;
 	}
 
-	tdb_flags = TDB_DEFAULT;
+	tdb_flags = TDB_DEFAULT | TDB_SEQNUM;
 
 	/* check for the 'nosync' option */
 	if (flags & LDB_FLG_NOSYNC) {
@@ -1058,10 +1058,17 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		talloc_free(ltdb);
 		return -1;
 	}
+	talloc_set_name_const(*module, "ldb_tdb backend");
 	(*module)->ldb = ldb;
 	(*module)->prev = (*module)->next = NULL;
 	(*module)->private_data = ltdb;
 	(*module)->ops = &ltdb_ops;
+
+	if (ltdb_cache_load(*module) != 0) {
+		talloc_free(*module);
+		talloc_free(ltdb);
+		return -1;
+	}
 
 	return 0;
 }
