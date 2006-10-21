@@ -1031,7 +1031,8 @@ _hx509_private_key2SPKI(hx509_context context,
 {
     const struct signature_alg *md = private_key->md;
     if (md->private_key2SPKI == NULL) {
-	hx509_set_error_string(context, 0, EINVAL, "private key have no key2SPKI function");
+	hx509_set_error_string(context, 0, EINVAL,
+			       "Private key have no key2SPKI function");
 	return EINVAL;
     }
     return (*md->private_key2SPKI)(private_key, spki);
