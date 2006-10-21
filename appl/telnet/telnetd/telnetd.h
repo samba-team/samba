@@ -134,6 +134,9 @@
 
 #ifdef  HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#ifdef __hpux
+#undef SE
+#endif
 #endif
 #ifdef	HAVE_SYS_STREAM_H
 #include <sys/stream.h>
