@@ -87,7 +87,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     hx509_verify_ctx ctx = NULL;
     heim_oid type;
     heim_octet_string c, co;
-    hx509_certs store;
+    hx509_certs store = NULL;
     hx509_certs signers = NULL;
     hx509_certs anchors = NULL;
     hx509_lock lock;
@@ -153,6 +153,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 
     hx509_verify_destroy_ctx(ctx);
 
+    hx509_certs_free(&store);
     hx509_certs_free(&signers);
     hx509_certs_free(&anchors);
 
