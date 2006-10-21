@@ -87,8 +87,11 @@ find . -name .__afs\* -print | xargs rm
 rm -fr autom4te*.cache
 
 yaccify () {
+    :
 }
+
 lexify () {
+    :
 }
 
 yaccify lib/sl/slc-gram.y
