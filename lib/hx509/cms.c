@@ -585,10 +585,9 @@ any_to_certs(hx509_context context, const SignedData *sd, hx509_certs certs)
 	if (ret)
 	    return ret;
 	ret = hx509_certs_add(context, certs, c);
-	if (ret) {
-	    hx509_cert_free(c);
+	hx509_cert_free(c);
+	if (ret)
 	    return ret;
-	}
     }
 
     return 0;
@@ -818,7 +817,7 @@ hx509_cms_verify_signed(hx509_context context,
 	if (ret)
 	    goto next_sigature;
 
-	ret = hx509_certs_add(context, *signer_certs, hx509_cert_ref(cert));
+	ret = hx509_certs_add(context, *signer_certs, cert);
 	if (ret)
 	    goto next_sigature;
 
