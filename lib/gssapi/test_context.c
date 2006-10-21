@@ -154,6 +154,8 @@ main(int argc, char **argv)
     void *ctx;
     gss_OID nameoid, mechoid;
 
+    setprogname(argv[0]);
+
     cctx = sctx = GSS_C_NO_CONTEXT;
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
