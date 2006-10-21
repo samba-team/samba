@@ -19,7 +19,6 @@ RCSID("$Id$");
 #include <X11/Intrinsic.h>
 #include <X11/keysym.h>
 #include <X11/Shell.h>
-#include <X11/Xos.h>
 #ifdef strerror
 #undef strerror
 #endif
