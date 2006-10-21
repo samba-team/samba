@@ -225,6 +225,12 @@ hx509_ci_print_names(hx509_context context, void *ctx, hx509_cert c)
     return 0;
 }
 
+/*
+ * The receiving keyset `certs´ will either increase reference counter
+ * of the `cert´ or make a deep copy, either way, the caller needs to
+ * free the `cert´ itself.
+ */
+
 int
 hx509_certs_add(hx509_context context, hx509_certs certs, hx509_cert cert)
 {
