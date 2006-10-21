@@ -64,8 +64,8 @@ _hx509_request_free(hx509_request *req)
     free_SubjectPublicKeyInfo(&(*req)->key);
     free_ExtKeyUsage(&(*req)->eku);
     free_GeneralNames(&(*req)->san);
-    free(*req);
     memset(*req, 0, sizeof(**req));
+    free(*req);
     *req = NULL;
 }
 
