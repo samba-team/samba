@@ -71,7 +71,7 @@ test_integer (void)
 
     int values[] = {0, 127, 128, 256, -128, -129, -1, -255, 255,
 		    0x80000000, 0x7fffffff};
-    int i;
+    int i, ret;
     int ntests = sizeof(tests) / sizeof(*tests);
 
     for (i = 0; i < ntests; ++i) {
@@ -81,12 +81,17 @@ test_integer (void)
 	    errx(1, "malloc");
     }
 
-    return generic_test (tests, ntests, sizeof(int),
-			 (generic_encode)der_put_integer,
+    ret = generic_test (tests, ntests, sizeof(int),
+			(generic_encode)der_put_integer,
 			 (generic_length) der_length_integer,
 			 (generic_decode)der_get_integer,
 			 (generic_free)NULL,
 			 cmp_integer);
+
+    for (i = 0; i < ntests; ++i)
+	free (tests[i].name);
+
+    return ret;
 }
 
 static int
@@ -656,6 +661,8 @@ check_heim_integer_same(const char *p, const char *norm_p, heim_integer *i)
 
     if (der_heim_integer_cmp(i, &i2) != 0)
 	errx(1, "der_heim_integer_cmp: norm");
+
+    der_free_heim_integer(&i2);
 
     return 0;
 }

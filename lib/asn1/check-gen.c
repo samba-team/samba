@@ -115,7 +115,7 @@ test_principal (void)
 	{ { KRB5_NT_PRINCIPAL, { 2, lharoot_princ } },  "SU.SE" },
 	{ { KRB5_NT_SRV_HST, { 2, datan_princ } },  "E.KTH.SE" }
     };
-    int i;
+    int i, ret;
     int ntests = sizeof(tests) / sizeof(*tests);
 
     for (i = 0; i < ntests; ++i) {
@@ -123,12 +123,16 @@ test_principal (void)
 	asprintf (&tests[i].name, "Principal %d", i);
     }
 
-    return generic_test (tests, ntests, sizeof(Principal),
-			 (generic_encode)encode_Principal,
-			 (generic_length)length_Principal,
-			 (generic_decode)decode_Principal,
-			 (generic_free)free_Principal,
-			 cmp_principal);
+    ret = generic_test (tests, ntests, sizeof(Principal),
+			(generic_encode)encode_Principal,
+			(generic_length)length_Principal,
+			(generic_decode)decode_Principal,
+			(generic_free)free_Principal,
+			cmp_principal);
+    for (i = 0; i < ntests; ++i)
+	free (tests[i].name);
+
+    return ret;
 }
 
 static int
@@ -687,6 +691,8 @@ test_taglessalloc (void)
 			 (generic_decode)decode_TESTAlloc,
 			 (generic_free)free_TESTAlloc,
 			 cmp_TESTAlloc);
+
+    free(c1.tagless)
 
     return ret;
 }
