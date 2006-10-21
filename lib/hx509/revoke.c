@@ -291,6 +291,7 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
 		continue;
 	    
 	    ret = hx509_certs_add(context, certs, c);
+	    hx509_cert_free(c);
 	    if (ret)
 		continue;
 	}
