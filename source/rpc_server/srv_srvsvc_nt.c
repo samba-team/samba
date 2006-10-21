@@ -1680,12 +1680,11 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc, uint32_t lev
 
 WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc, const char *share_name, uint32_t reserved)
 {
-	pstring command;
+	char *command;
 	int ret;
-	int snum;
+	struct share_params *params;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
 	BOOL is_disk_op;
-	fstring tmp_share_name;
 
 	DEBUG(5,("_srv_net_share_del: %d\n", __LINE__));
 
@@ -1696,14 +1695,12 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc, const char *
 		return WERR_ACCESS_DENIED;
 	}
 
-	fstrcpy(tmp_share_name, share_name);
-	snum = find_service(tmp_share_name);
-
-	if (snum < 0)
+	if (!(params = get_share_params(p->mem_ctx, share_name))) {
 		return WERR_NO_SUCH_SHARE;
+	}
 
 	/* No change to printer shares. */
-	if (lp_print_ok(snum))
+	if (lp_print_ok(params->service))
 		return WERR_ACCESS_DENIED;
 
 	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
@@ -1715,9 +1712,12 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc, const char *
 		DEBUG(10,("_srv_net_share_del: No delete share command\n"));
 		return WERR_ACCESS_DENIED;
 	}
-		
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
-			lp_delete_share_cmd(), dyn_CONFIGFILE, lp_servicename(snum));
+
+	if (asprintf(&command, "%s \"%s\" \"%s\"",
+		     lp_delete_share_cmd(), dyn_CONFIGFILE,
+		     lp_servicename(params->service)) == -1) {
+		return WERR_NOMEM;
+	}
 
 	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
 
@@ -1733,6 +1733,8 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc, const char *
 
 	if ( is_disk_op )
 		unbecome_root();
+
+	SAFE_FREE(command);
 		
 	/********* END SeDiskOperatorPrivilege BLOCK *********/
 
@@ -1742,9 +1744,9 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc, const char *
 		return WERR_ACCESS_DENIED;
 
 	/* Delete the SD in the database. */
-	delete_share_security(snum);
+	delete_share_security(params);
 
-	lp_killservice(snum);
+	lp_killservice(params->service);
 
 	return WERR_OK;
 }

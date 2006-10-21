@@ -4879,7 +4879,7 @@ int load_usershare_shares(void)
 			/* Remove from the share ACL db. */
 			DEBUG(10,("load_usershare_shares: Removing deleted usershare %s\n",
 				lp_servicename(iService) ));
-			delete_share_security(iService);
+			delete_share_security(snum2params_static(iService));
 			free_service_byindex(iService);
 		}
 	}
@@ -5113,7 +5113,7 @@ int lp_servicenumber(const char *pszServiceName)
 
 		if (!usershare_exists(iService, &last_mod)) {
 			/* Remove the share security tdb entry for it. */
-			delete_share_security(iService);
+			delete_share_security(snum2params_static(iService));
 			/* Remove it from the array. */
 			free_service_byindex(iService);
 			/* Doesn't exist anymore. */
@@ -5146,12 +5146,16 @@ struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
 				      const char *sharename)
 {
 	struct share_params *result;
-	fstring sname;
+	char *sname;
 	int snum;
 
-	fstrcpy(sname, sharename);
+	if (!(sname = SMB_STRDUP(sharename))) {
+		return NULL;
+	}
 
 	snum = find_service(sname);
+	SAFE_FREE(sname);
+
 	if (snum < 0) {
 		return NULL;
 	}
@@ -5211,6 +5215,18 @@ struct share_params *next_printer(struct share_iterator *list)
 		}
 	}
 	return result;
+}
+
+/*
+ * This is a hack for a transition period until we transformed all code from
+ * service numbers to struct share_params.
+ */
+
+struct share_params *snum2params_static(int snum)
+{
+	static struct share_params result;
+	result.service = snum;
+	return &result;
 }
 
 /*******************************************************************
