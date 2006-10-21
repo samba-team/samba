@@ -2,6 +2,8 @@
 
 	* Makefile.am: unbreak previous
 	
+	* Makefile.am: split dist and nodist sources
+	
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* Makefile.am: add more files
