@@ -302,7 +302,8 @@ heim_int2BN(const heim_integer *i)
     BIGNUM *bn;
 
     bn = BN_bin2bn(i->data, i->length, NULL);
-    BN_set_negative(bn, i->negative);
+    if (bn)
+	BN_set_negative(bn, i->negative);
     return bn;
 }
 
@@ -350,8 +351,15 @@ d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
     k->q = heim_int2BN(&data.prime2);
     k->dmp1 = heim_int2BN(&data.exponent1);
     k->dmq1 = heim_int2BN(&data.exponent2);
-
     free_RSAPrivateKey(&data);
+
+    if (k->n == NULL || k->e == NULL || k->d == NULL || k->p == NULL ||
+	k->q == NULL || k->dmp1 == NULL || k->dmq1 == NULL) 
+    {
+	RSA_free(k);
+	return NULL;
+    }
+	
     return k;
 }
 
@@ -362,11 +370,18 @@ i2d_RSAPublicKey(RSA *rsa, unsigned char **pp)
     size_t size;
     int ret;
 
-    ret = bn2heim_int(rsa->n, &data.modulus);
-    ret = bn2heim_int(rsa->e, &data.publicExponent);
+    memset(&data, 0, sizeof(data));
+
+    if (bn2heim_int(rsa->n, &data.modulus) ||
+	bn2heim_int(rsa->e, &data.publicExponent))
+    {
+	free_RSAPublicKey(&data);
+	return -1;
+    }
 
     if (pp == NULL) {
 	size = length_RSAPublicKey(&data);
+	free_RSAPublicKey(&data);
     } else {
 	void *p;
 	size_t len;
@@ -379,7 +394,8 @@ i2d_RSAPublicKey(RSA *rsa, unsigned char **pp)
 	    abort();
     
 	memcpy(*pp, p, size);
-    
+	free(p);
+
 	*pp += size;
     }
     
