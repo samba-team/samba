@@ -9,6 +9,16 @@ OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE pvfs_acl_nfs4
+[MODULE::pvfs_acl_nfs4]
+INIT_FUNCTION = pvfs_acl_nfs4_init 
+SUBSYSTEM = ntvfs
+OBJ_FILES = \
+		pvfs_acl_nfs4.o
+# End MODULE pvfs_acl_nfs4
+################################################
+
+################################################
 # Start MODULE ntvfs_posix
 [MODULE::ntvfs_posix]
 SUBSYSTEM = ntvfs
@@ -42,7 +52,7 @@ OBJ_FILES = \
 		pvfs_notify.o \
 		xattr_system.o \
 		xattr_tdb.o
-PRIVATE_DEPENDENCIES = pvfs_acl_xattr
+PRIVATE_DEPENDENCIES = pvfs_acl_xattr pvfs_acl_nfs4
 PUBLIC_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING
 # End MODULE ntvfs_posix
 ################################################
