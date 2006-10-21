@@ -12,6 +12,7 @@ passhrase=
 builddir=
 noemail=
 cputimelimit=3600
+confflags=
 
 # Add some bonus paths, to find sendmail and other tools
 # on interesting platforms.
@@ -66,10 +67,6 @@ do
 		cputimelimit="$2"
 		shift 2
 		;;
-	--release)
-		hversion="heimdal-$2"
-		shift 2
-		;;
 	--cvs)
 		hversion="heimdal-cvs-${date}"
 		cvsroot=$2
@@ -78,6 +75,10 @@ do
 		;;
 	--cvs-flags)
 		cvsflags="$2"
+		shift 2
+		;;
+	--release)
+		hversion="heimdal-$2"
 		shift 2
 		;;
 	--result-directory)
@@ -98,6 +99,10 @@ do
 		;;
 	--passphrase)
 		passhrase="$2"
+		shift 2
+		;;
+	--prepend-path)
+		prependpath="$2"
 		shift 2
 		;;
 	--no-email)
@@ -131,6 +136,11 @@ hfile="${hversion}.tar.gz"
 url="${baseurl}/${dir}${hfile}"
 afsfile="${afsdir}/${dir}${hfile}"
 unpack=yes
+
+# extra paths for the user
+if [ "X${prependpath}" != X ]; then
+	PATH="${prependpath}:${PATH}"
+fi
 
 # Limit cpu seconds this all can take
 ulimit -t "$cputimelimit" > /dev/null 2>&1
@@ -173,11 +183,10 @@ if [ "X$res" != X0 ]; then
 	exit 1
 fi
 
-confflags=
 case "${hversion}" in
     0.7*)
 	#true for Mac OS X, but how about the rest?
-	confflags="--enable-shared --disable-static"
+	confflags="${confflags} --enable-shared --disable-static"
 	;;
 esac
 
