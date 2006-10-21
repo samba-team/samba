@@ -236,8 +236,8 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 
     hx509_certs_free(&anchors);
     hx509_certs_free(&pool);
-    hx509_certs_free(&store);
     hx509_cert_free(cert);
+    hx509_certs_free(&store);
     _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
 
@@ -313,6 +313,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
     hx509_certs_free(&certs);
+    der_free_oid(&contentType);
 
     ret = _hx509_write_file(argv[1], o.data, o.length);
     if (ret)

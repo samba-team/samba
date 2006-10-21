@@ -1484,6 +1484,8 @@ hx509_crypto_destroy(hx509_crypto crypto)
 	free(crypto->name);
     if (crypto->key.data)
 	free(crypto->key.data);
+    if (crypto->param)
+	free(crypto->param);
     der_free_oid(&crypto->oid);
     memset(crypto, 0, sizeof(*crypto));
     free(crypto);
