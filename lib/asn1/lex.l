@@ -58,7 +58,7 @@ static void unterminated(const char *, unsigned);
 
 %}
 
-/* This is for broken old lexes (solaris 10 and hpux)
+/* This is for broken old lexes (solaris 10 and hpux) */
 %e 2000
 %p 5000
 %a 5000
