@@ -74,9 +74,7 @@ ${hxtool} verify --missing-revoke \
     cert:FILE:$srcdir/data/bleichenbacher-sf-pad-correct.pem \
     anchor:FILE:$srcdir/data/sf-class2-root.pem > /dev/null && exit 1
 
-#
-# Not all build hosts have a /dev/random, time to write better RAND_
-# support.
-#${hxtool} random-data 1MByte > random-data || exit 1
+echo Read 50 kilobyte random data
+${hxtool} random-data 50kilobyte > random-data || exit 1
 
 exit 0
