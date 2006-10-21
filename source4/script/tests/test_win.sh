@@ -42,7 +42,7 @@ remove_share_test()
 restore_snapshot()
 {
 	echo -e $1
-	perl -I$WINTEST_DIR $WINTEST_DIR/vm_load_snapshot.pl
+	vmrun revertToSnapshot "$VM_CFG_PATH"
 	echo "Snapshot restored."
 }
 
