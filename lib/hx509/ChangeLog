@@ -1,9 +1,15 @@
+2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool.c: use a sensable content type
+
+	* cms.c: Try harder to free certificate.
+	
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add make check data.
 	
 2006-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
-
+	
 	* ks_p11.c (p11_list_keys): make element of search_data[0]
 	constants and set them later
 
