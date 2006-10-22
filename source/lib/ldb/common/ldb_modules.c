@@ -160,6 +160,7 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 		ldb_objectclass_init,	\
 		ldb_paged_results_init,	\
 		ldb_sort_init,		\
+		ldb_asq_init,		\
 		NULL			\
 	}
 #endif
