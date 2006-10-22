@@ -1,3 +1,33 @@
+2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: remove valgrind target, it doesn't belong here.
+
+	* kuser/kinit.c: Try to not leak memory.
+
+	* kuser/kgetcred.c: Try to not leak memory.
+
+	* kdc/krb5tgs.c (check_KRB5SignedPath): free KRB5SignedPath on
+	successful completion too, not just the error cases.
+
+	* fix-export: Make make fix-export less verbose.
+
+	* kuser/kgetcred.c: Try to not leak memory.
+
+	* lib/hdb/keys.c (hdb_generate_key_set): free list of enctype when
+	done.
+
+	* lib/krb5/crypto.c: Allocate the memory we later use.
+
+	* lib/krb5/test_princ.c: Try to not leak memory.
+
+	* lib/krb5/test_crypto_wrapping.c: Try to not leak memory.
+
+	* lib/krb5/test_cc.c: Try to not leak memory.
+
+	* lib/krb5/addr_families.c (arange_free): Try to not leak memory.
+
+	* lib/krb5/crypto.c (AES_string_to_key): Try to not leak memory.
+
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* tools/heimdal-build.sh: Add --test-environment
