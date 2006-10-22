@@ -4,7 +4,7 @@ include $(top_srcdir)/Makefile.am.common
 
 noinst_DATA = krb5.conf
 
-noinst_SCRIPT = have-db
+noinst_SCRIPTS = have-db
 
 check_SCRIPTS = loaddump-db add-modify-delete
 
