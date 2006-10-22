@@ -243,6 +243,9 @@ static NTSTATUS cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli,
                                           int argc, const char **argv)
 {
 	uint32 info_level = 2;
+	struct srvsvc_NetShareCtr1 ctr1;
+	struct srvsvc_NetShareCtr2 ctr2;
+	struct srvsvc_NetShareCtr502 ctr502;
 	union srvsvc_NetShareCtr ctr;
 	NTSTATUS result;
 	uint32 hnd;
@@ -263,20 +266,17 @@ static NTSTATUS cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli,
 
 	switch (info_level) {
 	case 1: {
-		struct srvsvc_NetShareCtr1 ctr1;
 		ZERO_STRUCT(ctr1);
 		ctr.ctr1 = &ctr1;
 		}
 		break;
 
 	case 2: {
-		struct srvsvc_NetShareCtr2 ctr2;
 		ZERO_STRUCT(ctr2);
 		ctr.ctr2 = &ctr2;
 		}
 		break;
 	case 502: {
-		struct srvsvc_NetShareCtr502 ctr502;
 		ZERO_STRUCT(ctr502);
 		ctr.ctr502 = &ctr502;
 		}
