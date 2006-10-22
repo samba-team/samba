@@ -114,9 +114,9 @@ test_mcache(krb5_context context)
     n = estrdup(nc);
     t = estrdup(tc);
 
-    asprintf(&c, "%s:%s", t, n);
-
     krb5_cc_close(context, id);
+
+    asprintf(&c, "%s:%s", t, n);
 
     ret = krb5_cc_resolve(context, c, &id2);
     if (ret)
@@ -142,6 +142,7 @@ test_mcache(krb5_context context)
 	krb5_errx(context, 1, "krb5_cc_get_principal");
 
     krb5_cc_destroy(context, id2);
+    free(c);
 }
 
 /*
