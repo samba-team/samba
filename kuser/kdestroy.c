@@ -122,6 +122,7 @@ main (int argc, char **argv)
 		krb5_err(context, 1, ret, 
 			 "Failed to remove principal %s", credential);
 
+	    krb5_cc_close(ccache);
 	    krb5_free_principal(context, mcred.server);
 	    krb5_free_context(context);
 	    return 0;

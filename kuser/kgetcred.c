@@ -210,6 +210,7 @@ main(int argc, char **argv)
     krb5_free_principal(context, server);
     krb5_get_creds_opt_free(context, opt);
     krb5_cc_close (context, cache);
+    krb5_free_context (context);
 
     return 0;
 }
