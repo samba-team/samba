@@ -1,5 +1,9 @@
-2005-05-02  Dave Love  <fx@gnu.org>
+2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* pam/Makefile.am: use libtool to build binaries
+	
+2005-05-02  Dave Love  <fx@gnu.org>
+	
 	* afskauthlib/Makefile.am (afskauthlib.so): Use libtool.
 	(.c.o): Use CC (like SIA module), not COMPILE.
 
