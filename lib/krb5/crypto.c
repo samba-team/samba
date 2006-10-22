@@ -610,15 +610,11 @@ AES_string_to_key(krb5_context context,
     if (et == NULL)
 	return KRB5_PROG_KEYTYPE_NOSUPP;
 
-    key->keytype = enctype;
-    ret = krb5_data_alloc(&key->keyvalue, et->keytype->size);
+    kd.schedule = NULL;
+    kd.key->keytype = enctype;
+    ret = krb5_data_alloc(&kd.key->keyvalue, et->keytype->size);
     if (ret) {
 	krb5_set_error_string(context, "Failed to allocate pkcs5 key");
-	return ret;
-    }
-    ret = krb5_copy_keyblock(context, key, &kd.key);
-    if (ret) {
-	krb5_free_keyblock(context, key);
 	return ret;
     }
 
@@ -626,8 +622,8 @@ AES_string_to_key(krb5_context context,
 				 salt.saltvalue.data, salt.saltvalue.length,
 				 iter, 
 				 et->keytype->size, kd.key->keyvalue.data);
-    kd.schedule = NULL;
     if (ret != 1) {
+	free_key_data(context, &kd);
 	krb5_set_error_string(context, "Error calculating s2k");
 	return KRB5_PROG_KEYTYPE_NOSUPP;
     }
