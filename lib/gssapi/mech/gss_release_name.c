@@ -48,7 +48,8 @@ gss_release_name(OM_uint32 *minor_status,
 			free(mn);
 		}
 		gss_release_buffer(minor_status, &name->gn_value);
-		*input_name = 0;
+		free(name);
+		*input_name = GSS_C_NO_NAME;
 	}
 	return (GSS_S_COMPLETE);
 }
