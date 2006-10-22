@@ -207,5 +207,7 @@ main(int argc, char **argv)
     }
 
     krb5_free_cred_contents(context, out);
+    krb5_get_creds_opt_free(context, opt);
+
     return 0;
 }

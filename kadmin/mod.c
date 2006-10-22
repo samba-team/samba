@@ -77,6 +77,7 @@ do_mod_entry(krb5_principal principal, void *data)
 	    krb5_principal p;
 	    size_t size;
 	    
+	    memset(&ext, 0, sizeof(ext));
 	    ext.mandatory = FALSE;
 	    ext.data.element = choice_HDB_extension_data_allowed_to_delegate_to;
 	    ext.data.u.allowed_to_delegate_to.len = 1;
@@ -90,6 +91,7 @@ do_mod_entry(krb5_principal principal, void *data)
 	    
 	    ASN1_MALLOC_ENCODE(HDB_extension, buf.data, buf.length,
 			       &ext, &size, ret);
+	    free_HDB_extension(&ext);
 	    if (ret)
 		abort();
 	    if (buf.length != size)
@@ -101,6 +103,7 @@ do_mod_entry(krb5_principal principal, void *data)
 	    tl->tl_data_length = buf.length;
 	    tl->tl_data_contents = buf.data;
 
+	    princ.n_tl_data++;
 	    ptl = &princ.tl_data;
 	    while (*ptl != NULL)
 		ptl = &(*ptl)->tl_data_next;

@@ -69,7 +69,6 @@ perform_tl_data(krb5_context context,
 		hdb_entry_ex *ent, 
 		const krb5_tl_data *tl_data)
 {
-    HDB_extension ext;
     kadm5_ret_t ret = 0;
 
     if (tl_data->tl_data_type == KRB5_TL_PASSWORD) {
@@ -94,6 +93,8 @@ perform_tl_data(krb5_context context,
 	ret = hdb_entry_set_pw_change_time(context, &ent->entry, t);
 
     } else if (tl_data->tl_data_type == KRB5_TL_EXTENSION) {
+	HDB_extension ext;
+
 	ret = decode_HDB_extension(tl_data->tl_data_contents,
 				   tl_data->tl_data_length,
 				   &ext,
@@ -102,7 +103,7 @@ perform_tl_data(krb5_context context,
 	    return KADM5_BAD_TL_TYPE;
 	
 	ret = hdb_replace_extension(context, &ent->entry, &ext);
-
+	free_HDB_extension(&ext);
     } else {
 	return KADM5_BAD_TL_TYPE;
     }
