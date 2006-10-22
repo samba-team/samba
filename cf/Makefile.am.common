@@ -233,3 +233,10 @@ endif
 if DCE
 LIB_kdfs = $(top_builddir)/lib/kdfs/libkdfs.la
 endif
+
+#
+# Useful target for debugging
+#
+
+check-valgrind:
+	env TESTS_ENVIRONMENT="$(top_builddir)/libtool --mode execute valgrind --leak-check=full --quiet --suppressions=$(top_srcdir)/cf/valgrind-suppressions" make check
