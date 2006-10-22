@@ -36,7 +36,7 @@
 #define SWAT_SESSION_KEY "SwatSessionId"
 #define HTTP_PREAUTH_URI "/scripting/preauth.esp"
 #define JSONRPC_REQUEST "/services"
-#define JSONRPC_SERVER "/services/request.esp"
+#define JSONRPC_SERVER "/request.esp"
 
 /* state of the esp subsystem for a specific request */
 struct esp_state {
@@ -105,7 +105,9 @@ static void http_output_headers(struct websrv_context *web)
 /*
   return the local path for a URL
 */
-static const char *http_local_path(struct websrv_context *web, const char *url)
+static const char *http_local_path(struct websrv_context *web,
+                                   const char *url,
+                                   const char *base_dir)
 {
 	int i;
 	char *path;
@@ -120,7 +122,7 @@ static const char *http_local_path(struct websrv_context *web, const char *url)
 		}
 	}
 
-	path = talloc_asprintf(web, "%s/%s", lp_swat_directory(), url+1);
+	path = talloc_asprintf(web, "%s/%s", base_dir, url+1);
 	if (path == NULL) return NULL;
 
 	if (directory_exist(path)) {
@@ -132,14 +134,18 @@ static const char *http_local_path(struct websrv_context *web, const char *url)
 /*
   called when esp wants to read a file to support include() calls
 */
-static int http_readFile(EspHandle handle, char **buf, int *len, const char *path)
+static int http_readFile(EspHandle handle,
+                         char **buf,
+                         int *len,
+                         const char *path,
+                         const char *base_dir)
 {
 	struct websrv_context *web = talloc_get_type(handle, struct websrv_context);
 	int fd = -1;
 	struct stat st;
 	*buf = NULL;
 
-	path = http_local_path(web, path);
+	path = http_local_path(web, path, base_dir);
 	if (path == NULL) goto failed;
 
 	fd = open(path, O_RDONLY);
@@ -163,6 +169,16 @@ failed:
 	*buf = NULL;
 	return -1;
 }
+
+static int http_readFileFromSwatDir(EspHandle handle,
+                                    char **buf,
+                                    int *len,
+                                    const char *path)
+{
+    return http_readFile(handle, buf, len, path, lp_swat_directory());
+}
+
+
 
 /*
   called when esp wants to find the real path of a file
@@ -374,7 +390,7 @@ static void http_simple_request(struct websrv_context *web)
 	const char *path;
 	struct stat st;
 
-	path = http_local_path(web, url);
+	path = http_local_path(web, url, lp_swat_directory());
 	if (path == NULL) goto invalid;
 
 	/* looks ok */
@@ -502,7 +518,7 @@ static void esp_request(struct esp_state *esp, const char *url)
 	int res;
 	char *emsg = NULL, *buf;
 
-	if (http_readFile(web, &buf, &size, url) != 0) {
+	if (http_readFile(web, &buf, &size, url, lp_swat_directory()) != 0) {
 		http_error_unix(web, url);
 		return;
 	}
@@ -529,7 +545,9 @@ static void esp_request(struct esp_state *esp, const char *url)
 static void jsonrpc_request(struct esp_state *esp)
 {
 	struct websrv_context *web = esp->web;
-	const char *path = http_local_path(web, JSONRPC_SERVER);
+	const char *path = http_local_path(web,
+                                           JSONRPC_SERVER,
+                                           lp_jsonrpc_services_dir());
         MprVar *global;
         MprVar v;
         MprVar temp;
@@ -558,7 +576,8 @@ static void jsonrpc_request(struct esp_state *esp)
 	}
 
         /* Call the server request script */
-	if (http_readFile(web, &buf, &size, JSONRPC_SERVER) != 0) {
+	if (http_readFile(web, &buf, &size,
+                          JSONRPC_SERVER, lp_jsonrpc_services_dir()) != 0) {
 		http_error_unix(web, JSONRPC_SERVER);
 		return;
 	}
@@ -601,7 +620,9 @@ static void jsonrpc_request(struct esp_state *esp)
 */
 static BOOL http_preauth(struct esp_state *esp)
 {
-	const char *path = http_local_path(esp->web, HTTP_PREAUTH_URI);
+	const char *path = http_local_path(esp->web,
+                                           HTTP_PREAUTH_URI,
+                                           lp_swat_directory());
 	int i;
 	if (path == NULL) {
 		http_error(esp->web, 500, "Internal server error");
@@ -814,7 +835,7 @@ static const struct Esp esp_control = {
 	.setHeader       = http_setHeader,
 	.redirect        = http_redirect,
 	.setResponseCode = http_setResponseCode,
-	.readFile        = http_readFile,
+	.readFile        = http_readFileFromSwatDir,
 	.mapToStorage    = http_mapToStorage,
 	.setCookie       = http_setCookie,
 	.createSession   = http_createSession,
