@@ -1,5 +1,8 @@
 2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_add_oid_set_member.c: Use old implementation of
+	gss_add_oid_set_member, it leaks less memory.
+
 	* krb5/test_cfx.c: free krb5_crypto.
 
 	* krb5/test_cfx.c: free krb5_context
