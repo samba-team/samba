@@ -46,11 +46,11 @@ OBJS = pam.o
 
 pam_krb4.so: $(OBJS)
 	@if test -f $(top_builddir)/lib/krb/.libs/libkrb.a; then \
-		echo "$(CC) -shared -o $@ $(LDFLAGS) $(OBJS) $(L)"; \
-		$(CC) -shared -o $@ $(LDFLAGS) $(OBJS) $(L); \
+		echo "$(LIBTOOL) --mode=link --tag=CC $(CC) -shared -o $@ $(LDFLAGS) $(OBJS) $(L)"; \
+		$(LIBTOOL) --mode=link --tag=CC $(CC) -shared -o $@ $(LDFLAGS) $(OBJS) $(L); \
 	elif test -f $(top_builddir)/lib/krb/.libs/libkrb.so; then \
-		echo "$(CC) -shared -o $@ $(LDFLAGS) $(OBJS) $(L_shared)"; \
-		$(CC) -shared -o $@ $(LDFLAGS) $(OBJS) $(L_shared); \
+		echo "$(LIBTOOL) --mode=link --tag=CC $(CC) -shared -o $@ $(LDFLAGS) $(OBJS) $(L_shared)"; \
+		$(LIBTOOL) --mode=link --tag=CC $(CC) -shared -o $@ $(LDFLAGS) $(OBJS) $(L_shared); \
 	else \
 		echo "missing libraries"; exit 1; \
 	fi
@@ -62,6 +62,7 @@ SUFFIXES += .c .o
 # XXX inline COMPILE since automake wont add it
 
 .c.o:
-	$(CC) $(DEFS) $(DEFAULT_AM_CPPFLAGS) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(LIBTOOL) --mode=compile --tag=CC $(CC) \
+	$(DEFS) $(DEFAULT_AM_CPPFLAGS) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
 	-c `test -f '$<' || echo '$(srcdir)/'`$<
