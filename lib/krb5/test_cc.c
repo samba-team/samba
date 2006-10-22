@@ -75,6 +75,10 @@ test_default_name(krb5_context context)
     
     if (strcmp(p3, test_cc_name) != 0)
 	krb5_errx (context, 1, "krb5_cc_set_default_name 1 failed");
+
+    free(p1);
+    free(p2);
+    free(p3);
 }
 
 /*
