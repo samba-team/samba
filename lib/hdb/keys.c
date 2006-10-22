@@ -334,6 +334,9 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
     *ret_key_set = key_set;
 
  out:
+    if (ktypes != default_keytypes)
+	krb5_config_free_strings(ktypes);
+
     if (ret) {
 	krb5_warn(context, ret, 
 		  "failed to parse the [kadmin]default_keys values");
