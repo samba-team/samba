@@ -1,3 +1,16 @@
+2006-10-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kdc.in: run eval on the testfailed variable so we run
+	all commands
+	
+2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* db/Makefile.am: make have-db being built in the "make all"
+	target.
+
+	* kdc/check-kdc.in: tell more what the kdc though about the
+	failure.
+	
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* db/add-modify-delete.in: Use EGREP.
