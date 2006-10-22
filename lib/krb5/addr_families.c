@@ -551,6 +551,7 @@ arange_free (krb5_context context, krb5_address *addr)
     a = addr->address.data;
     krb5_free_address(context, &a->low);
     krb5_free_address(context, &a->high);
+    krb5_data_free(&addr->address);
     return 0;
 }
 
