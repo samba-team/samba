@@ -1,3 +1,13 @@
+2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool.c: Try to not leak memory.
+
+	* req.c: clean memory before free
+
+	* crypto.c (_hx509_private_key2SPKI): indent
+
+	* req.c: Try to not leak memory.
+	
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_crypto.in: Read 50 kilobyte random data

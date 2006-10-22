@@ -1,5 +1,7 @@
 2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mod.c: Try to not leak memory.
+
 	* check.c: Try to not leak memory.
 	
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>

@@ -1,5 +1,8 @@
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* telnet/telnet_locl.h: Include roken.h before the local
+	headerfiles.
+
 	* telnetd/telnetd.h: HP/UX defines SE in sys/uio.h, #undef it.
 
 	* telnetd/sys_term.c: Dont't include some streamspty headers here.
