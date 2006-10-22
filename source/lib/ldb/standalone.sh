@@ -14,8 +14,9 @@ make clean
 
 ./autogen.sh
 
-mkdir build
-cd  build
+mkdir -p build
+cd build
 
 ../configure
-make
+make dirs
+make all
