@@ -468,6 +468,7 @@ get_new_tickets(krb5_context context,
     krb5_deltat start_time = 0;
     krb5_deltat renew = 0;
     char *renewstr = NULL;
+    krb5_enctype *enctype = NULL;
 
     passwd[0] = '\0';
 
@@ -552,8 +553,8 @@ get_new_tickets(krb5_context context,
     }
 
     if(etype_str.num_strings) {
-	krb5_enctype *enctype = NULL;
 	int i;
+
 	enctype = malloc(etype_str.num_strings * sizeof(*enctype));
 	if(enctype == NULL)
 	    errx(1, "out of memory");
@@ -681,6 +682,9 @@ get_new_tickets(krb5_context context,
 	krb5_err (context, 1, ret, "krb5_cc_store_cred");
 
     krb5_free_cred_contents (context, &cred);
+
+    if (enctype)
+	free(enctype);
 
     return 0;
 }
