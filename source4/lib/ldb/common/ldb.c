@@ -522,7 +522,7 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
   Use talloc_free to free the ldb_message returned in 'res', if successful
 
 */
-static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct ldb_result *res;
 	int n;
@@ -564,6 +564,7 @@ static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ld
 
 		res->refs[n] = talloc_move(res->refs, &ares->referral);
 		res->refs[n + 1] = NULL;
+	case LDB_REPLY_EXTENDED:
 	case LDB_REPLY_DONE:
 		/* Should do something here to detect if this never
 		 * happens */
@@ -769,7 +770,7 @@ int ldb_search(struct ldb_context *ldb,
 					attrs,
 					NULL,
 					res,
-					ldb_search_callback);
+					ldb_search_default_callback);
 
 	if (ret != LDB_SUCCESS) goto done;
 
