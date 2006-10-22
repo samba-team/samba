@@ -167,7 +167,8 @@ match_localkeyid(hx509_context context,
     int ret;
 
     if (value->localKeyId.length == 0) {
-	hx509_set_error_string(context, 0, EINVAL, "local key on private key too short");
+	hx509_set_error_string(context, 0, EINVAL,
+			       "local key on private key too short");
 	return EINVAL;
     }
 
