@@ -163,19 +163,19 @@ static int ejs_version(MprVarHandle eid, int argc, struct MprVar **argv)
 
 /*
  * jsonrpc_include() allows you to include jsonrpc files from a path based at
- * "jsonrpc base =" in smb.conf.
+ * "jsonrpc services directory =" in smb.conf.
  */
 static int jsonrpc_include(int eid, int argc, char **argv)
 {
         int ret = -1;
         char *path;
         char *emsg;
-	const char *jsonrpc_base = lp_jsonrpc_base();
+	const char *jsonrpc_services_dir = lp_jsonrpc_services_dir();
         struct MprVar result;
 
 
-	if (jsonrpc_base == NULL || jsonrpc_base == NULL) {
-		ejsSetErrorMsg(eid, "js include path not set");
+	if (jsonrpc_services_dir == NULL || jsonrpc_services_dir == NULL) {
+		ejsSetErrorMsg(eid, "'jsonrpc services directory' not set");
 		return -1;
 	}
 
@@ -184,7 +184,9 @@ static int jsonrpc_include(int eid, int argc, char **argv)
 		return 0;
         }
 
-        path = talloc_asprintf(mprMemCtx(), "%s/%s", jsonrpc_base, argv[0]);
+        path = talloc_asprintf(mprMemCtx(), "%s/%s",
+                               jsonrpc_services_dir,
+                               argv[0]);
         if (path == NULL) {
                 mpr_Return(eid, mprCreateIntegerVar(-1));
                 return 0;

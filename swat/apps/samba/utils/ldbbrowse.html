@@ -248,65 +248,75 @@ function buildPageSearch(page)
                 // Track the maximum length of the attribute values
                 var maxLen = 0;
 
-                for (var i = 0; i < result.length; i++)
+                if (result && result["length"])
                 {
-                    var o = result[i];
-                    if (typeof(o) != "object")
+                    len = result["length"];
+                    for (var i = 0; i < result["length"]; i++)
                     {
-                        alert("Found unexpected result, type " +
-                              typeof(o) +
-                              ", " +
-                              o +
-                              "\n");
-                        continue;
-                    }
-                    for (var field in o)
-                    {
-                        // skip dn and distinguishedName fields;
-                        // they're shown in each row anyway.
-                        if (field == "dn" || field == "distinguishedName")
+                        var o = result[i];
+                        if (typeof(o) != "object")
                         {
+                            alert("Found unexpected result, type " +
+                                  typeof(o) +
+                                  ", " +
+                                  o +
+                                  "\n");
                             continue;
                         }
-
-                        // If it's multi-valued (type is an array)...
-                        if (typeof(o[field]) == "object")
+                        for (var field in o)
                         {
-                            // ... then add each value with same name
-                            var a = o[field];
-                            for (var i = 0; i < a.length; i++)
+                            // skip dn and distinguishedName fields;
+                            // they're shown in each row anyway.
+                            if (field == "dn" || field == "distinguishedName")
                             {
-                                if (a[i].length > maxLen)
+                                continue;
+                            }
+
+                            // If it's multi-valued (type is an array)...
+                            if (typeof(o[field]) == "object")
+                            {
+                                // ... then add each value with same name
+                                var a = o[field];
+                                for (var i = 0; i < a.length; i++)
                                 {
-                                    maxLen = a[i].length;
+                                    if (a[i].length > maxLen)
+                                    {
+                                        maxLen = a[i].length;
+                                    }
+                                    rowData.push( [
+                                                      o["dn"],
+                                                      field,
+                                                      a[i]
+                                                      ] );
+                                }
+                            }
+                            else    // single-valued
+                            {
+                                // ... add its name and value to the table
+                                // dataset
+                                if (o[field].length > maxLen)
+                                {
+                                    maxLen = o[field].length;
                                 }
                                 rowData.push( [
                                                   o["dn"],
                                                   field,
-                                                  a[i]
-                                              ] );
+                                                  o[field]
+                                                  ] );
                             }
                         }
-                        else    // single-valued
-                        {
-                            // ... add its name and value to the table dataset
-                            if (o[field].length > maxLen)
-                            {
-                                maxLen = o[field].length;
-                            }
-                            rowData.push( [
-                                              o["dn"],
-                                              field,
-                                              o[field]
-                                          ] );
-                        }
+
+                        // Adjust the width of the value column based on
+                        // maxLen
+                        table.setColumnWidth(2, maxLen * 7);
+
+                        // Tell the table to use the new data
+                        tableModel.setData(rowData);
                     }
-
-                    // Adjust the width of the value column based on maxLen
-                    table.setColumnWidth(2, maxLen * 7);
-
-                    // Tell the table to use the new data
-                    tableModel.setData(rowData);
+                }
+                else
+                {
+                    alert("No rows returned.");
                 }
             }
             else

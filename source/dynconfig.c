@@ -80,6 +80,9 @@ _PUBLIC_ const char *dyn_PRIVATE_DIR = PRIVATE_DIR;
 /** SWAT data file (images, etc) directory */
 _PUBLIC_ const char *dyn_SWATDIR = SWATDIR;
 
+/** JSON-RPC Services script directory */
+_PUBLIC_ const char *dyn_SERVICESDIR = SERVICESDIR;
+
 /** SETUP files (source files used by the provision) */
 _PUBLIC_ const char *dyn_SETUPDIR = SETUPDIR;
 

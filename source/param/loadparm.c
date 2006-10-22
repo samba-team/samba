@@ -114,7 +114,7 @@ typedef struct
 	char *szWINS_URL;
 	char *szPrivateDir;
 	char **jsInclude;
-	char *jsonrpcBase;
+	char *jsonrpcServicesDir;
 	char **szPasswordServers;
 	char *szSocketOptions;
 	char *szRealm;
@@ -543,7 +543,7 @@ static struct parm_struct parm_table[] = {
 	{"modules dir", P_STRING, P_GLOBAL, &Globals.szModulesDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"pid directory", P_STRING, P_GLOBAL, &Globals.szPidDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER}, 
 	{"js include", P_LIST, P_GLOBAL, &Globals.jsInclude, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"jsonrpc base", P_STRING, P_GLOBAL, &Globals.jsonrpcBase, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"jsonrpc services directory", P_STRING, P_GLOBAL, &Globals.jsonrpcServicesDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"setup directory", P_STRING, P_GLOBAL, &Globals.szSetupDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"socket address", P_STRING, P_GLOBAL, &Globals.szSocketAddress, NULL, NULL, FLAG_DEVELOPER},
@@ -707,6 +707,7 @@ static void init_globals(void)
 	do_parameter("kpasswd port", "464", NULL);
 	do_parameter("web port", "901", NULL);
 	do_parameter("swat directory", dyn_SWATDIR, NULL);
+	do_parameter("jsonrpc services directory", dyn_SERVICESDIR, NULL);
 
 	do_parameter("nt status support", "True", NULL);
 
@@ -913,7 +914,7 @@ _PUBLIC_ FN_GLOBAL_LIST(lp_auth_methods, &Globals.AuthMethods)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, &Globals.paranoid_server_security)
 static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 _PUBLIC_ FN_GLOBAL_LIST(lp_js_include, &Globals.jsInclude)
-_PUBLIC_ FN_GLOBAL_STRING(lp_jsonrpc_base, &Globals.jsonrpcBase)
+_PUBLIC_ FN_GLOBAL_STRING(lp_jsonrpc_services_dir, &Globals.jsonrpcServicesDir)
 _PUBLIC_ 
 _PUBLIC_ 
 _PUBLIC_ FN_LOCAL_STRING(lp_servicename, szService)
