@@ -1,5 +1,9 @@
 2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/digest.c: Try to not leak memory.
+
+	* kdc/digest.c: Try to not leak memory.
+
 	* Makefile.am: remove valgrind target, it doesn't belong here.
 
 	* kuser/kinit.c: Try to not leak memory.
