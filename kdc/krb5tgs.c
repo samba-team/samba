@@ -290,13 +290,14 @@ check_KRB5SignedPath(krb5_context context,
 	    }
 
 	    ret = copy_KRB5SignedPathPrincipals(*delegated, sp.delegated);
-	    free_KRB5SignedPath(&sp);
 	    if (ret) {
+		free_KRB5SignedPath(&sp);
 		free(*delegated);
 		*delegated = NULL;
 		return ret;
 	    }
 	}
+	free_KRB5SignedPath(&sp);
 	
     } else {
 	if (require_signedpath)
