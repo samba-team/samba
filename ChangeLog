@@ -1,3 +1,7 @@
+2006-10-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: heimdal 0.8-RC1
+
 2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/digest.c: Try to not leak memory.
