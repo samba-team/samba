@@ -839,6 +839,145 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 */
 const struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb);
 
+
+/**
+  The Default iasync search callback function 
+
+  \param ldb the context associated with the database (from ldb_init())
+  \param context the callback context
+  \param ares a single reply from the async core
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+
+  \note this function expects the context to always be an struct ldb_result pointer
+  AND a talloc context, this function will steal on the context each message
+  from the ares reply passed on by the async core so that in the end all the
+  messages will be in the context (ldb_result)  memory tree.
+  Freeing the passed context (ldb_result tree) will free all the resources
+  (the request need to be freed separately and the result doe not depend on the
+  request that can be freed as sson as the search request is finished)
+*/
+
+int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares);
+
+/**
+  Helper function to build a search request
+
+  \param ret_req the request structure is returned here (talloced on mem_ctx)
+  \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param base the Base Distinguished Name for the query (use ldb_dn_new() for an empty one)
+  \param scope the search scope for the query
+  \param expression the search expression to use for this query
+  \param attrs the search attributes for the query (pass NULL if none required)
+  \param controls an array of controls
+  \param context the callback function context
+  \param the callback function to handle the async replies
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+
+int ldb_build_search_req(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			void *mem_ctx,
+			const struct ldb_dn *base,
+	       		enum ldb_scope scope,
+			const char *expression,
+			const char * const *attrs,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback);
+
+/**
+  Helper function to build an add request
+
+  \param ret_req the request structure is returned here (talloced on mem_ctx)
+  \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param message contains the entry to be added 
+  \param controls an array of controls
+  \param context the callback function context
+  \param the callback function to handle the async replies
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+
+int ldb_build_add_req(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			void *mem_ctx,
+			const struct ldb_message *message,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback);
+
+/**
+  Helper function to build a modify request
+
+  \param ret_req the request structure is returned here (talloced on mem_ctx)
+  \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param message contains the entry to be modified
+  \param controls an array of controls
+  \param context the callback function context
+  \param the callback function to handle the async replies
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+
+int ldb_build_mod_req(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			void *mem_ctx,
+			const struct ldb_message *message,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback);
+
+/**
+  Helper function to build a delete request
+
+  \param ret_req the request structure is returned here (talloced on mem_ctx)
+  \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param dn the DN to be deleted
+  \param controls an array of controls
+  \param context the callback function context
+  \param the callback function to handle the async replies
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+
+int ldb_build_del_req(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			void *mem_ctx,
+			const struct ldb_dn *dn,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback);
+
+/**
+  Helper function to build a rename request
+
+  \param ret_req the request structure is returned here (talloced on mem_ctx)
+  \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param olddn the old DN
+  \param newdn the new DN
+  \param controls an array of controls
+  \param context the callback function context
+  \param the callback function to handle the async replies
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+
+int ldb_build_rename_req(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			void *mem_ctx,
+			const struct ldb_dn *olddn,
+			const struct ldb_dn *newdn,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback);
+
 /**
   Search the database
 
@@ -846,7 +985,7 @@ const struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb);
   records that match an LDAP-like search expression
 
   \param ldb the context associated with the database (from ldb_init())
-  \param base the Base Distinguished Name for the query (pass NULL for root DN)
+  \param base the Base Distinguished Name for the query (use ldb_dn_new() for an empty one)
   \param scope the search scope for the query
   \param expression the search expression to use for this query
   \param attrs the search attributes for the query (pass NULL if none required)
