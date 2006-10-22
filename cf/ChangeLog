@@ -1,5 +1,11 @@
-2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am.common: Add target for valgrind debugging
+	
+	* valgrind-suppressions: valgrind suppressions
+	
+2006-10-21  Love Hörnquist Åstrand <lha@it.su.se>
+	
 	* check-lex.m4: Borrow test for autoconf cvs to help hpux hosts
 	
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
