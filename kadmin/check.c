@@ -67,20 +67,20 @@ check(void *opt, int argc, char **argv)
 {
     kadm5_principal_ent_rec ent;
     krb5_error_code ret;
-    char *realm, *p, *p2;
+    char *realm = NULL, *p, *p2;
     int found;
 
     if (argc == 0) {
 	ret = krb5_get_default_realm(context, &realm);
 	if (ret) {
 	    krb5_warn(context, ret, "krb5_get_default_realm");
-	    return 1;
+	    goto fail;
 	}
     } else {
 	realm = strdup(argv[0]);
 	if (realm == NULL) {
 	    krb5_warnx(context, "malloc");
-	    return 1;
+	    goto fail;
 	}
     }
 
@@ -92,7 +92,7 @@ check(void *opt, int argc, char **argv)
 
     if (asprintf(&p, "%s/%s@%s", KRB5_TGS_NAME, realm, realm) == -1) {
 	krb5_warn(context, errno, "asprintf");
-	return 1;
+	goto fail;
     }
 
     ret = get_check_entry(p, &ent);
@@ -100,7 +100,7 @@ check(void *opt, int argc, char **argv)
 	printf("%s doesn't exist, are you sure %s is a realm in your database",
 	       p, realm);
 	free(p);
-	return 1;
+	goto fail;
     }
     free(p);    
 
@@ -112,7 +112,7 @@ check(void *opt, int argc, char **argv)
 
     if (asprintf(&p, "kadmin/admin@%s", realm) == -1) {
 	krb5_warn(context, errno, "asprintf");
-	return 1;
+	goto fail;
     }
 
     ret = get_check_entry(p, &ent);
@@ -120,7 +120,7 @@ check(void *opt, int argc, char **argv)
 	printf("%s doesn't exist, "
 	       "there is no way to do remote administration", p);
 	free(p);
-	return 1;
+	goto fail;
     }
     free(p);
 
@@ -132,7 +132,7 @@ check(void *opt, int argc, char **argv)
 
     if (asprintf(&p, "kadmin/changepw@%s", realm) == -1) {
 	krb5_warn(context, errno, "asprintf");
-	return 1;
+	goto fail;
     }
 
     ret = get_check_entry(p, &ent);
@@ -140,7 +140,7 @@ check(void *opt, int argc, char **argv)
 	printf("%s doesn't exist, "
 	       "there is no way to do change password", p);
 	free(p);
-	return 1;
+	goto fail;
     }
     free(p);
 
@@ -154,14 +154,14 @@ check(void *opt, int argc, char **argv)
     if (p2 == NULL) {
 	krb5_warn(context, errno, "malloc");
 	free(p);
-	return 1;
+	goto fail;
     }
     strlwr(p2);
 
     if (asprintf(&p, "afs/%s@%s", p2, realm) == -1) {
 	krb5_warn(context, errno, "asprintf");
 	free(p2);
-	return 1;
+	goto fail;
     }
     free(p2);
 
@@ -175,7 +175,7 @@ check(void *opt, int argc, char **argv)
 
     if (asprintf(&p, "afs@%s", realm) == -1) {
 	krb5_warn(context, errno, "asprintf");
-	return 1;
+	goto fail;
     }
 
     ret = get_check_entry(p, &ent);
@@ -184,9 +184,13 @@ check(void *opt, int argc, char **argv)
 	kadm5_free_principal_ent(kadm_handle, &ent);
 	if (found) {
 	    krb5_warnx(context, "afs@REALM and afs/cellname@REALM both exists");
-	    return 1;
+	    goto fail;
 	}
     }
 
+    free(realm);
     return 0;
+fail:
+    free(realm);
+    return 1;
 }
