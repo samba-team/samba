@@ -18,7 +18,7 @@ SLAPD = @SLAPD@
 EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
 
-CFLAGS=-I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
+CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
        @POPT_CFLAGS@ -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
 
@@ -41,6 +41,10 @@ MODULES_OBJ=$(MODDIR)/operational.o $(MODDIR)/schema.o $(MODDIR)/rdn_name.o \
 	   $(MODDIR)/objectclass.o \
 	   $(MODDIR)/paged_results.o $(MODDIR)/sort.o $(MODDIR)/asq.o
 
+NSSDIR=nssldb
+NSS_OBJ= $(NSSDIR)/ldb-nss.o $(NSSDIR)/ldb-pwd.o $(NSSDIR)/ldb-grp.o
+NSS_LIB = lib/libnss_ldb.so.2
+
 OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) @TDBOBJ@ @TALLOCOBJ@ @POPTOBJ@ @LIBREPLACEOBJ@ $(EXTRA_OBJ) 
 
 LDB_LIB = lib/libldb.a
@@ -53,7 +57,7 @@ EXAMPLES = examples/ldbreader examples/ldifreader
 
 DIRS = lib bin common ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples
 
-all: showflags dirs $(OBJS) $(LDB_LIB) $(BINS) $(EXAMPLES) manpages
+all: showflags dirs $(OBJS) $(LDB_LIB) $(BINS) $(EXAMPLES) manpages $(NSS_LIB)
 
 showflags:
 	@echo 'ldb will be compiled with flags:'
@@ -71,6 +75,9 @@ dirs:
 lib/libldb.a: $(OBJS)
 	ar -rv $@ $(OBJS)
 	@-ranlib $@
+
+lib/libnss_ldb.so.2: $(NSS_OBJ) $(LIBS)
+	$(CC) -shared -Wl,-soname,libnss_ldb.so.2 -o lib/libnss_ldb.so.2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
 
 bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS)
@@ -112,7 +119,7 @@ doxygen:
 
 clean:
 	rm -f *.o */*.o *.gcov */*.gc?? tdbtest.ldb*
-	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB)
+	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) $(NSS_LIB)
 	rm -f man/*.1 man/*.3 man/*.html
 	rm -f $(EXAMPLES)
 	rm -rf apidocs/
