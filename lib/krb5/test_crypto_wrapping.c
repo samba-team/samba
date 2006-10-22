@@ -89,6 +89,7 @@ test_wrapping(krb5_context context,
 	krb5_data_free(&data);
     }
 
+    free(etype_name);
     free(buf);
     krb5_crypto_destroy(context, crypto);
     krb5_free_keyblock_contents(context, &key);

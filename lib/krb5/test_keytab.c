@@ -163,7 +163,8 @@ test_memory_keytab(krb5_context context, const char *keytab, const char *keytab2
     if (ret)
 	krb5_err(context, 1, ret, "krb5_kt_close");
 
-
+    krb5_free_principal(context, entry3.principal);
+    krb5_free_keyblock_contents(context, &entry3.keyblock);
 }
 
 int

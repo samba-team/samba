@@ -337,6 +337,7 @@ test_cache_find(krb5_context context, const char *type, const char *principal,
 
     if (id)
 	krb5_cc_close(context, id);
+    krb5_free_principal(context, client);
 }
 
 

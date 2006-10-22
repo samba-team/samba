@@ -60,6 +60,8 @@ test_dh2key(int i,
     if (key.keyvalue.length != result->length ||
 	memcmp(key.keyvalue.data, result->data, result->length) != 0)
 	krb5_errx(context, 1, "resulting key wrong: %d", i);
+
+    krb5_free_keyblock_contents(context, &key);
 }
 
 

@@ -81,5 +81,7 @@ main(int argc, char **argv)
     check_set_time(context);
     check_set_time(context);
 
+    krb5_free_context(context);
+
     return 0;
 }
