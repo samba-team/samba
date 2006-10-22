@@ -4,6 +4,14 @@
 	
 2006-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* util.c: Check return values from setuid, prompted by MIT
+	advisory.  Thanks to Tom Yu at MIT, and Michael Calmer and Marcus
+	Meissner at SUSE.  Either of CVE-2006-3083 or CVE-2006-3084.
+
+	* rcp.c: Check return values from setuid, prompted by MIT
+	advisory.  Thanks to Tom Yu at MIT, and Michael Calmer and Marcus
+	Meissner at SUSE.  Either of CVE-2006-3083 or CVE-2006-3084.
+
 	* rcp.c: Check return values from seteuid, prompted by MIT
 	advisory.  Thanks to Tom Yu at MIT, and Michael Calmer and Marcus
 	Meissner at SUSE.  Either of CVE-2006-3083 or CVE-2006-3084.
