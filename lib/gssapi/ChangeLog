@@ -1,3 +1,12 @@
+2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/test_cfx.c: free krb5_crypto.
+
+	* krb5/test_cfx.c: free krb5_context
+
+	* mech/gss_release_name.c (gss_release_name): free input_name
+	it-self.
+	
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_context.c: Call setprogname.
