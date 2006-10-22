@@ -495,13 +495,15 @@ main(int argc, char **argv)
     test_def_cc_name(context);
     test_cache_iter(context, "MEMORY", 0);
     {
-	krb5_ccache id;
+	krb5_ccache id1, id2;
 	krb5_principal p;
-	krb5_cc_new_unique(context, "MEMORY", "bar", &id);
-	krb5_cc_new_unique(context, "MEMORY", "baz", &id);
+	krb5_cc_new_unique(context, "MEMORY", "bar", &id1);
+	krb5_cc_new_unique(context, "MEMORY", "baz", &id2);
 	krb5_parse_name(context, "lha@SU.SE", &p);
-	krb5_cc_initialize(context, id, p);
+	krb5_cc_initialize(context, id1, p);
 	krb5_free_principal(context, p);
+	krb5_cc_destroy(context, id1);
+	krb5_cc_destroy(context, id2);
     }
 
     test_cache_find(context, "MEMORY", "lha@SU.SE", 1);
