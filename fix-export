@@ -13,12 +13,9 @@ if test "$DATEDVERSION"; then
 w
 q
 END
-
 	error=WARN
-	exitcmd=:
 else
     	error=ERROR
-	exitcmd=exit
 fi
 
 ver=`sed -n 's/AC_INIT([^,]*,\([^,]*\),.*/\1/p' configure.in`
@@ -48,11 +45,13 @@ find . -name Makefile.am | while read f; do
 		y=`dirname $f`/`echo $i | sed 's/[0-9]$/cat&/'`
 		echo `grog -Tascii $x` \> $y
 		`grog -Tascii $x` > $y
-		perl -p -e 'exit 1 if (/NetBSD|FreeBSD|OpenBSD|Linux|OSF|Solaris/); exit 0;' $y
-		if [ $? != 0 ] ; then
-		    echo "$error: catfile $y contains operating system"
-		    head -1 $y
-		    $exitcmd
+		if [ "X${error}" = "ERROR" ] ; then
+			perl -p -e 'exit 1 if (/NetBSD|FreeBSD|OpenBSD|Linux|OSF|Solaris/); exit 0;' $y
+			if [ $? != 0 ] ; then
+		    		echo "$error: catfile $y contains operating system"
+		    		head -1 $y
+				exit 1
+			fi
 		fi
 	done
 done
@@ -81,10 +80,7 @@ make_proto appl/login login_protos.h /dev/null '$(login_SOURCES)'
 make_proto kcm kcm_protos.h /dev/null '$(kcm_SOURCES)'
 make_proto kdc kdc-protos.h kdc-private.h '$(libkdc_la_SOURCES)'
 
-rm fix-export make-release make-release.el
-find . -name .cvsignore -print | xargs rm
-find . -name .__afs\* -print | xargs rm
-rm -fr autom4te*.cache
+# this assumes flex and bison
 
 yaccify () {
     :
@@ -104,6 +100,15 @@ lexify lib/asn1/lex.l
 lexify lib/com_err/lex.l
 lexify lib/sl/lex.l
 lexify lib/sl/slc-lex.l
+
+#clean
+
+rm fix-export make-release make-release.el
+find . -name .cvsignore -print | xargs rm
+find . -name .__afs\* -print | xargs rm
+rm -fr autom4te*.cache
+
+
 
 echo "tar cf - ${distdir} | gzip -9 > ${distdir}.tar.gz"
 echo "gpg -ba -u 0x45D901D8 ${distdir}.tar.gz"
