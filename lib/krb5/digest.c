@@ -252,6 +252,8 @@ digest_request(krb5_context context,
 
     krb5_data_zero(&data);
     krb5_data_zero(&data2);
+    memset(&req, 0, sizeof(req));
+    memset(&rep, 0, sizeof(rep));
 
     if (ccache == NULL) {
 	ret = krb5_cc_default(context, &id);
@@ -394,6 +396,9 @@ out:
 
     krb5_data_free(&data);
     krb5_data_free(&data2);
+
+    free_DigestREQ(&req);
+    free_DigestREP(&rep);
 
     return ret;
 }

@@ -330,6 +330,7 @@ _kdc_do_digest(krb5_context context,
 	    krb5_abortx(context, "ASN1 internal error");
 
 	hex_encode(buf.data, buf.length, &r.u.initReply.opaque);
+	free(buf.data);
 	if (r.u.initReply.opaque == NULL) {
 	    krb5_clear_error_string(context);
 	    ret = ENOMEM;
@@ -474,6 +475,7 @@ _kdc_do_digest(krb5_context context,
 	ret = _kdc_db_fetch(context, config, clientprincipal,
 			    HDB_F_GET_CLIENT, &db, &user);
 
+	krb5_free_principal(context, clientprincipal);
 	if (ret)
 	    goto out;
 
@@ -680,6 +682,8 @@ _kdc_do_digest(krb5_context context,
 
     
 out:
+    if (ac)
+	krb5_auth_con_free(context, ac);
     if (ret)
 	krb5_warn(context, ret, "Digest request from %s failed", from);
     if (ticket)
