@@ -18,3 +18,10 @@ EXTRA_DIST = \
 	cf/make-proto.pl \
 	cf/check-symbols.sh \
 	cf/install-catman.sh
+
+#
+# Useful target for debugging
+#
+
+check-valgrind:
+	env TESTS_ENVIRONMENT="$(objdir)/libtool --mode execute valgrind --leak-check=full --quiet --suppressions=$(srcdir)/tools/valgrind-suppressions" make check
