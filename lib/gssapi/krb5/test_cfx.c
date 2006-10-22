@@ -149,5 +149,7 @@ main(int argc, char **argv)
 
     krb5_free_keyblock_contents(context, &keyblock);
 
+    krb5_free_context(context);
+
     return 0;
 }
