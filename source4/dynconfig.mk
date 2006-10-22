@@ -8,7 +8,8 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" \
 	 -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\" -DDATADIR=\"$(DATADIR)\" \
 	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"$(SHLIBEXT)\" \
 	 -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
-	 -DSWATDIR=\"$(SWATDIR)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\" \
+	 -DSWATDIR=\"$(SWATDIR)\" -DSERVICESDIR=\"$(SERVICESDIR)\" \
+	 -DPRIVATE_DIR=\"$(PRIVATEDIR)\" \
 	 -DMODULESDIR=\"$(MODULESDIR)\" -DJSDIR=\"$(JSDIR)\" \
 	 -DTORTUREDIR=\"$(TORTUREDIR)\" \
 	 -DSETUPDIR=\"$(SETUPDIR)\" -DWINBINDD_SOCKET_DIR=\"$(WINBINDD_SOCKET_DIR)\"
@@ -25,9 +26,11 @@ DEVEL_PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" -DBINDIR=\"$(builddir)/bin\" \
 	 -DPIDDIR=\"$(PIDDIR)\" -DDATADIR=\"$(srcdir)/codepages\" \
 	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"$(SHLIBEXT)\" \
 	 -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
-	 -DSWATDIR=\"$(srcdir)/../swat\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\" \
+	 -DSWATDIR=\"$(srcdir)/../../swat\" \
+	 -DSERVICESDIR=\"$(srcdir)/../../services\"\
+	 -DPRIVATE_DIR=\"$(PRIVATEDIR)\" \
 	 -DMODULESDIR=\"$(builddir)/bin/modules\" \
-	 -DJSDIR=\"$(srcdir)/scripting/libjs\" \
+	 -DJSDIR=\"$(srcdir)/../scripting/libjs\" \
 	 -DSETUPDIR=\"$(srcdir)/setup\" -DTORTUREDIR=\"$(srcdir)/bin/torture\" \
 	 -DWINBINDD_SOCKET_DIR=\"$(WINBINDD_SOCKET_DIR)\"
 

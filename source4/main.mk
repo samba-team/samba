@@ -60,6 +60,7 @@ showlayout:
 	@echo '  setupdir:    $(SETUPDIR)'
 	@echo '  jsdir:       $(JSDIR)'
 	@echo '  swatdir:     $(SWATDIR)'
+	@echo '  servicesdir: $(SERVICESDIR)'
 	@echo '  mandir:      $(MANDIR)'
 	@echo '  torturedir:  $(TORTUREDIR)'
 	@echo '  datadir:     $(DATADIR)'
@@ -153,6 +154,7 @@ installdat: installdirs
 
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installjsonrpc.sh $(DESTDIR)$(SERVICESDIR) $(srcdir)
 
 installman: manpages installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)

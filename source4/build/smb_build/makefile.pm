@@ -86,6 +86,7 @@ INCLUDEDIR = $self->{config}->{includedir}
 CONFIGDIR = $self->{config}->{sysconfdir}
 DATADIR = $self->{config}->{datadir}
 SWATDIR = $self->{config}->{datadir}/swat
+SERVICESDIR = $self->{config}->{datadir}/services
 JSDIR = $self->{config}->{datadir}/js
 SETUPDIR = $self->{config}->{datadir}/setup
 VARDIR = $self->{config}->{localstatedir}
