@@ -611,6 +611,11 @@ AES_string_to_key(krb5_context context,
 	return KRB5_PROG_KEYTYPE_NOSUPP;
 
     kd.schedule = NULL;
+    ALLOC(kd.key, 1);
+    if(kd.key == NULL) {
+	krb5_set_error_string (context, "malloc: out of memory");
+	return ENOMEM;
+    }
     kd.key->keytype = enctype;
     ret = krb5_data_alloc(&kd.key->keyvalue, et->keytype->size);
     if (ret) {
