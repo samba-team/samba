@@ -818,46 +818,6 @@ static NTSTATUS gensec_gssapi_unwrap(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
-/* Find out the size of the signature, assuming (incorrectly) that it
- * GSSAPI provides any guarantees as to it's size.
- *
- * This is needed by the DCE/RPC code, which uses AEAD 
- * (signed headers, including signature legnth and a sealed body)
- */
-static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t data_size) 
-{
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
-	OM_uint32 maj_stat, min_stat;
-	OM_uint32 output_size;
-	if ((gensec_gssapi_state->gss_oid->length != gss_mech_krb5->length)
-	    || (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
-		       gensec_gssapi_state->gss_oid->length) != 0)) {
-		DEBUG(1, ("NO sig size available for this mech\n"));
-		return 0;
-	}
-		
-	maj_stat = gsskrb5_wrap_size(&min_stat, 
-				     gensec_gssapi_state->gssapi_context,
-				     gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL),
-				     GSS_C_QOP_DEFAULT,
-				     data_size, 
-				     &output_size);
-	if (GSS_ERROR(maj_stat)) {
-		TALLOC_CTX *mem_ctx = talloc_new(NULL); 
-		DEBUG(1, ("gensec_gssapi_sig_size: determinaing signature size with gsskrb5_wrap_size failed: %s\n", 
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
-		talloc_free(mem_ctx);
-		return 0;
-	}
-
-	if (output_size < data_size) {
-		return 0;
-	}
-
-	/* The difference between the max output and the max input must be the signature */
-	return output_size - data_size;
-}
-
 /* Find out the maximum input size negotiated on this connection */
 
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security) 
@@ -918,14 +878,12 @@ static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_securit
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sig_length = gensec_gssapi_sig_size(gensec_security, length);
-
-	/* Caller must pad to right boundary */
-	if (output_token.length != (length + sig_length)) {
-		DEBUG(1, ("gensec_gssapi_seal_packet: GSS Wrap length [%ld] does not match caller length [%ld] plus sig size [%ld] = [%ld]\n", 
-			  (long)output_token.length, (long)length, (long)sig_length, (long)(length + sig_length)));
+	if (output_token.length < input_token.length) {
+		DEBUG(1, ("gensec_gssapi_seal_packet: GSS Wrap length [%ld] *less* than caller length [%ld]\n", 
+			  (long)output_token.length, (long)length));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+	sig_length = output_token.length - input_token.length;
 
 	memcpy(data, ((uint8_t *)output_token.value) + sig_length, length);
 	*sig = data_blob_talloc(mem_ctx, (uint8_t *)output_token.value, sig_length);
@@ -1021,18 +979,14 @@ static NTSTATUS gensec_gssapi_sign_packet(struct gensec_security *gensec_securit
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (output_token.length < length) {
+	if (output_token.length < input_token.length) {
+		DEBUG(1, ("gensec_gssapi_sign_packet: GSS Wrap length [%ld] *less* than caller length [%ld]\n", 
+			  (long)output_token.length, (long)length));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-
-	sig_length = gensec_gssapi_sig_size(gensec_security, length);
 
 	/* Caller must pad to right boundary */
-	if (output_token.length != (length + sig_length)) {
-		DEBUG(1, ("gensec_gssapi_sign_packet: GSS Wrap length [%ld] does not match caller length [%ld] plus sig size [%ld] = [%ld]\n", 
-			  (long)output_token.length, (long)length, (long)sig_length, (long)(length + sig_length)));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
+	sig_length = output_token.length - input_token.length;
 
 	*sig = data_blob_talloc(mem_ctx, (uint8_t *)output_token.value, sig_length);
 
@@ -1352,7 +1306,6 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.update 	= gensec_gssapi_update,
 	.session_key	= gensec_gssapi_session_key,
 	.session_info	= gensec_gssapi_session_info,
-	.sig_size	= gensec_gssapi_sig_size,
 	.sign_packet	= gensec_gssapi_sign_packet,
 	.check_packet	= gensec_gssapi_check_packet,
 	.seal_packet	= gensec_gssapi_seal_packet,
