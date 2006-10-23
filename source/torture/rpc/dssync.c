@@ -332,9 +332,6 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 			case DRSUAPI_ATTRIBUTE_supplementalCredentials:
 				name	= "supplementalCredentials";
 				break;
-			case DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber:
-				name	= "msDS-KeyVersionNumber";
-				break;
 			case DRSUAPI_ATTRIBUTE_priorValue:
 				name	= "priorValue";
 				break;
