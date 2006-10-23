@@ -47,7 +47,7 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 			} else if (strcasecmp(argv[1], "MEMBER") == 0) {
 				secure_channel_type = SEC_CHAN_WKSTA;
 			} else {
-				d_fprintf(stderr, "net_join: 2nd argument must be MEMBER or BDC\n");
+				d_fprintf(stderr, "net_join: Invalid 2nd argument (%s) must be MEMBER or BDC\n", argv[1]);
 				return net_join_usage(ctx, argc, argv);
 			}
 			break;
