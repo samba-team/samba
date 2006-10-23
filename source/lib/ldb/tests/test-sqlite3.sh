@@ -1,20 +1,23 @@
 #!/bin/sh
 
 
-LDB_URL="sqlite://sqltest.ldb"
+LDB_URL="sqlite3://sqltest.ldb"
 export LDB_URL
-
-PATH=bin:$PATH
-export PATH
 
 rm -f sqltest.ldb
 
 if [ -z "$LDBDIR" ]; then
-    LDBDIR="."
+    LDBDIR=`dirname $0`/..
     export LDBDIR
 fi
 
-. $LDBDIR/tests/test-generic.sh
+PATH=bin:$PATH
+export PATH
+
+LDB_SPECIALS=0
+export LDB_SPECIALS
+
+$LDBDIR/tests/test-generic.sh
 
 #. $LDBDIR/tests/test-extended.sh
 

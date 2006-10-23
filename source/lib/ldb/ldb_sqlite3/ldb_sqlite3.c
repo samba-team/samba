@@ -2,7 +2,7 @@
    ldb database library
    
    Copyright (C) Derrell Lipman  2005
-   Copyright (C) Simo Sorce 2005
+   Copyright (C) Simo Sorce 2005-2006
    
    ** NOTE! The following LGPL license applies to the ldb
    ** library. This does NOT imply that all of Samba is released
@@ -57,9 +57,9 @@ struct lsql_context {
 	int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
 };
 
-static struct ldb_handle *init_handle(struct lsqlite3_private *lsqlite3, struct ldb_module *module,
-					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
+static struct ldb_handle *init_handle(struct lsqlite3_private *lsqlite3,
+					struct ldb_module *module,
+					struct ldb_request *req)
 {
 	struct lsql_context *ac;
 	struct ldb_handle *h;
@@ -85,8 +85,8 @@ static struct ldb_handle *init_handle(struct lsqlite3_private *lsqlite3, struct 
 	h->status = LDB_SUCCESS;
 
 	ac->module = module;
-	ac->context = context;
-	ac->callback = callback;
+	ac->context = req->context;
+	ac->callback = req->callback;
 
 	return h;
 }
@@ -370,6 +370,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 		} else if (strcasecmp(t->u.equality.attr, "dn") == 0) {
 			/* DN query is a special ldb case */
 		 	char *cdn = ldb_dn_linearize_casefold(module->ldb,
+							      mem_ctx,
 							      ldb_dn_explode(module->ldb,
 							      (const char *)value.data));
 
@@ -828,7 +829,7 @@ static long long lsqlite3_get_eid(struct ldb_module *module, const struct ldb_dn
 		return -1;
 	}
 
-	cdn = ldb_dn_linearize(local_ctx, ldb_dn_casefold(module->ldb, dn));
+	cdn = ldb_dn_linearize(local_ctx, ldb_dn_casefold(module->ldb, local_ctx, dn));
 	if (!cdn) goto done;
 
 	eid = lsqlite3_get_eid_ndn(lsqlite3->sqlite, local_ctx, cdn);
@@ -842,53 +843,8 @@ done:
  * Interface functions referenced by lsqlite3_ops
  */
 
-static int lsql_search_sync_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
-{
-	struct ldb_result *res = NULL;
-	
- 	if (!context) {
-		ldb_set_errstring(ldb, "NULL Context in callback");
-		goto error;
-	}	
-
-	res = *((struct ldb_result **)context);
-
-	if (!res || !ares) {
-		goto error;
-	}
-
-	if (ares->type == LDB_REPLY_ENTRY) {
-		res->msgs = talloc_realloc(res, res->msgs, struct ldb_message *, res->count + 2);
-		if (! res->msgs) {
-			goto error;
-		}
-
-		res->msgs[res->count + 1] = NULL;
-
-		res->msgs[res->count] = talloc_move(res->msgs, &ares->message);
-		res->count++;
-	} else {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "unrecognized async reply in ltdb_search_sync_callback!\n");
-		goto error;
-	}
-
-	talloc_free(ares);
-	return LDB_SUCCESS;
-
-error:
-	if (ares) talloc_free(ares);
-	if (res) talloc_free(res);
-	if (context) *((struct ldb_result **)context) = NULL;
-	return LDB_ERR_OPERATIONS_ERROR;
-}
-
 /* search for matching records, by tree */
-int lsql_search_async(struct ldb_module *module, const struct ldb_dn *base,
-		      enum ldb_scope scope, struct ldb_parse_tree *tree,
-		      const char * const *attrs,
-		      void *context,
-		      int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
-		      struct ldb_handle **handle)
+int lsql_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lsqlite3_private *lsqlite3 = talloc_get_type(module->private_data, struct lsqlite3_private);
 	struct lsql_context *lsql_ac;
@@ -898,32 +854,29 @@ int lsql_search_async(struct ldb_module *module, const struct ldb_dn *base,
 	char *query = NULL;
         int ret;
 
-	*handle = init_handle(lsqlite3, module, context, callback);
-	if (*handle == NULL) {
-		talloc_free(*handle);
+	req->handle = init_handle(lsqlite3, module, req);
+	if (req->handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_context);
+	lsql_ac = talloc_get_type(req->handle->private_data, struct lsql_context);
 
-	if (base) {
-		norm_basedn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, base));
+	if ((req->op.search.base == NULL || req->op.search.base->comp_num == 0) &&
+	    (req->op.search.scope == LDB_SCOPE_BASE || req->op.search.scope == LDB_SCOPE_ONELEVEL))
+		return LDB_ERR_OPERATIONS_ERROR;
+
+	if (req->op.search.base) {
+		norm_basedn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, lsql_ac, req->op.search.base));
 		if (norm_basedn == NULL) {
 			ret = LDB_ERR_INVALID_DN_SYNTAX;
 			goto failed;
 		}
 	} else norm_basedn = talloc_strdup(lsql_ac, "");
 
-	if (*norm_basedn == '\0' &&
-		(scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL)) {
-			ret = LDB_ERR_UNWILLING_TO_PERFORM;
-			goto failed;
-		}
-
         /* Convert filter into a series of SQL conditions (constraints) */
-	sqlfilter = parsetree_to_sql(module, lsql_ac, tree);
+	sqlfilter = parsetree_to_sql(module, lsql_ac, req->op.search.tree);
         
-        switch(scope) {
+        switch(req->op.search.scope) {
         case LDB_SCOPE_DEFAULT:
         case LDB_SCOPE_SUBTREE:
 		if (*norm_basedn != '\0') {
@@ -1033,12 +986,12 @@ int lsql_search_async(struct ldb_module *module, const struct ldb_dn *base,
 	/ * */
 
 	lsql_ac->current_eid = 0;
-	lsql_ac->attrs = attrs;
+	lsql_ac->attrs = req->op.search.attrs;
 	lsql_ac->ares = NULL;
 
-	(*handle)->state = LDB_ASYNC_PENDING;
+	req->handle->state = LDB_ASYNC_PENDING;
 
-	ret = sqlite3_exec(lsqlite3->sqlite, query, lsqlite3_search_callback, *handle, &errmsg);
+	ret = sqlite3_exec(lsqlite3->sqlite, query, lsqlite3_search_callback, req->handle, &errmsg);
 	if (ret != SQLITE_OK) {
 		if (errmsg) {
 			ldb_set_errstring(module->ldb, errmsg);
@@ -1053,70 +1006,39 @@ int lsql_search_async(struct ldb_module *module, const struct ldb_dn *base,
 		if (lsql_ac->ares->message == NULL)
 			goto failed;
 			
-		(*handle)->status = lsql_ac->callback(module->ldb, lsql_ac->context, lsql_ac->ares);
-		if ((*handle)->status != LDB_SUCCESS)
+		req->handle->status = lsql_ac->callback(module->ldb, lsql_ac->context, lsql_ac->ares);
+		if (req->handle->status != LDB_SUCCESS)
 			goto failed;
 	}
 
-	(*handle)->state = LDB_ASYNC_DONE;
+	req->handle->state = LDB_ASYNC_DONE;
 
 	return LDB_SUCCESS;
 
 failed:
-        talloc_free(*handle);
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int lsql_search_bytree(struct ldb_module * module, const struct ldb_dn* base,
-			      enum ldb_scope scope, struct ldb_parse_tree * tree,
-			      const char * const * attrs, struct ldb_result ** res)
-{
-	struct ldb_handle *handle;
-	int ret;
-
-	*res = talloc_zero(module, struct ldb_result);
-	if (! *res) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = lsql_search_async(module, base, scope, tree, attrs,
-				res, &lsql_search_sync_callback,
-				&handle);
-
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(handle, LDB_WAIT_ALL);
-		talloc_free(handle);
-	}
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(*res);
-	}
-
-	return ret;
-}
-
 /* add a record */
-static int lsql_add_async(struct ldb_module *module, struct ldb_message *msg,
-			  void *context,
-			  int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
-			  struct ldb_handle **handle)
+static int lsql_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lsqlite3_private *lsqlite3 = talloc_get_type(module->private_data, struct lsqlite3_private);
 	struct lsql_context *lsql_ac;
+	struct ldb_message *msg = req->op.add.message;
         long long eid;
 	char *dn, *ndn;
 	char *errmsg;
 	char *query;
 	int i;
-	int ret = LDB_ERR_OPERATIONS_ERROR;
+	int ret = LDB_SUCCESS;
 
-	*handle = init_handle(lsqlite3, module, context, callback);
-	if (*handle == NULL) {
-		goto failed;
+	req->handle = init_handle(lsqlite3, module, req);
+	if (req->handle == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_context);
-	(*handle)->state = LDB_ASYNC_DONE;
-	(*handle)->status = LDB_SUCCESS;
+	lsql_ac = talloc_get_type(req->handle->private_data, struct lsql_context);
+	req->handle->state = LDB_ASYNC_DONE;
+	req->handle->status = LDB_SUCCESS;
 
         /* See if this is an ltdb special */
 	if (ldb_dn_is_special(msg->dn)) {
@@ -1126,26 +1048,28 @@ static int lsql_add_async(struct ldb_module *module, struct ldb_message *msg,
 		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
 #warning "insert subclasses into object class tree"
 			ret = LDB_ERR_UNWILLING_TO_PERFORM;
-			goto failed;
+			goto done;
 		}
 
 /*
 		c = ldb_dn_explode(local_ctx, "@INDEXLIST");
 		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
 #warning "should we handle indexes somehow ?"
-			goto failed;
+			ret = LDB_ERR_UNWILLING_TO_PERFORM;
+			goto done;
 		}
 */
-                /* Others are implicitly ignored */
-                return LDB_SUCCESS;
+                /* Others return an error */
+		ret = LDB_ERR_UNWILLING_TO_PERFORM;
+		goto done;
 	}
 
 	/* create linearized and normalized dns */
 	dn = ldb_dn_linearize(lsql_ac, msg->dn);
-	ndn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, msg->dn));
+	ndn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, lsql_ac, msg->dn));
 	if (dn == NULL || ndn == NULL) {
 		ret = LDB_ERR_OTHER;
-		goto failed;
+		goto done;
 	}
 
 	query = lsqlite3_tprintf(lsql_ac,
@@ -1156,7 +1080,7 @@ static int lsql_add_async(struct ldb_module *module, struct ldb_message *msg,
 				dn, ndn);
 	if (query == NULL) {
 		ret = LDB_ERR_OTHER;
-		goto failed;
+		goto done;
 	}
 
 	ret = sqlite3_exec(lsqlite3->sqlite, query, NULL, NULL, &errmsg);
@@ -1166,13 +1090,13 @@ static int lsql_add_async(struct ldb_module *module, struct ldb_message *msg,
 			free(errmsg);
 		}
 		ret = LDB_ERR_OTHER;
-		goto failed;
+		goto done;
 	}
 
 	eid = lsqlite3_get_eid_ndn(lsqlite3->sqlite, lsql_ac, ndn);
 	if (eid == -1) {
 		ret = LDB_ERR_OTHER;
-		goto failed;
+		goto done;
 	}
 
 	for (i = 0; i < msg->num_elements; i++) {
@@ -1185,7 +1109,7 @@ static int lsql_add_async(struct ldb_module *module, struct ldb_message *msg,
 		attr = ldb_attr_casefold(lsql_ac, el->name);
 		if (attr == NULL) {
 			ret = LDB_ERR_OTHER;
-			goto failed;
+			goto done;
 		}
 
 		h = ldb_attrib_handler(module->ldb, el->name);
@@ -1199,7 +1123,7 @@ static int lsql_add_async(struct ldb_module *module, struct ldb_message *msg,
 			h->canonicalise_fn(module->ldb, lsql_ac, &(el->values[j]), &value);
 			if (value.data == NULL) {
 				ret = LDB_ERR_OTHER;
-				goto failed;
+				goto done;
 			}
 
 			insert = lsqlite3_tprintf(lsql_ac,
@@ -1211,7 +1135,7 @@ static int lsql_add_async(struct ldb_module *module, struct ldb_message *msg,
 					el->values[j].data, value.data);
 			if (insert == NULL) {
 				ret = LDB_ERR_OTHER;
-				goto failed;
+				goto done;
 			}
 
 			ret = sqlite3_exec(lsqlite3->sqlite, insert, NULL, NULL, &errmsg);
@@ -1221,58 +1145,38 @@ static int lsql_add_async(struct ldb_module *module, struct ldb_message *msg,
 					free(errmsg);
 				}
 				ret = LDB_ERR_OTHER;
-				goto failed;
+				goto done;
 			}
 		}
 	}
 
-	if (lsql_ac->callback)
-		(*handle)->status = lsql_ac->callback(module->ldb, lsql_ac->context, NULL);
+	if (lsql_ac->callback) {
+		req->handle->status = lsql_ac->callback(module->ldb, lsql_ac->context, NULL);
+	}
 	
-        return LDB_SUCCESS;
-
-failed:
-	talloc_free(*handle);
+done:
+	req->handle->state = LDB_ASYNC_DONE;
 	return ret;
 }
-
-static int lsql_add(struct ldb_module *module, const struct ldb_message *msg)
-{
-	struct ldb_handle *handle;
-	int ret;
-
-	ret = lsql_add_async(module, msg, NULL, NULL, &handle);
-
-	if (ret != LDB_SUCCESS)
-		return ret;
-
-	ret = ldb_wait(handle, LDB_WAIT_ALL);
-
-	talloc_free(handle);
-	return ret;
-}
-
 
 /* modify a record */
-static int lsql_modify_async(struct ldb_module *module, const struct ldb_message *msg,
-			     void *context,
-			     int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
-			     struct ldb_handle **handle)
+static int lsql_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lsqlite3_private *lsqlite3 = talloc_get_type(module->private_data, struct lsqlite3_private);
 	struct lsql_context *lsql_ac;
+	struct ldb_message *msg = req->op.mod.message;
         long long eid;
 	char *errmsg;
 	int i;
-	int ret = LDB_ERR_OPERATIONS_ERROR;
+	int ret = LDB_SUCCESS;
 
-	*handle = init_handle(lsqlite3, module, context, callback);
-	if (*handle == NULL) {
-		goto failed;
+	req->handle = init_handle(lsqlite3, module, req);
+	if (req->handle == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_context);
-	(*handle)->state = LDB_ASYNC_DONE;
-	(*handle)->status = LDB_SUCCESS;
+	lsql_ac = talloc_get_type(req->handle->private_data, struct lsql_context);
+	req->handle->state = LDB_ASYNC_DONE;
+	req->handle->status = LDB_SUCCESS;
 
         /* See if this is an ltdb special */
 	if (ldb_dn_is_special(msg->dn)) {
@@ -1282,17 +1186,18 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
 #warning "modify subclasses into object class tree"
 			ret = LDB_ERR_UNWILLING_TO_PERFORM;
-			goto failed;
+			goto done;
 		}
 
-                /* Others are implicitly ignored */
-                return LDB_SUCCESS;
+                /* Others return an error */
+		ret = LDB_ERR_UNWILLING_TO_PERFORM;
+                goto done;
 	}
 
 	eid = lsqlite3_get_eid(module, msg->dn);
 	if (eid == -1) {
 		ret = LDB_ERR_OTHER;
-		goto failed;
+		goto done;
 	}
 
 	for (i = 0; i < msg->num_elements; i++) {
@@ -1307,7 +1212,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 		attr = ldb_attr_casefold(lsql_ac, el->name);
 		if (attr == NULL) {
 			ret = LDB_ERR_OTHER;
-			goto failed;
+			goto done;
 		}
 
 		h = ldb_attrib_handler(module->ldb, el->name);
@@ -1324,7 +1229,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 						eid, attr);
 			if (mod == NULL) {
 				ret = LDB_ERR_OTHER;
-				goto failed;
+				goto done;
 			}
 
 			ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
@@ -1334,7 +1239,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 					free(errmsg);
 				}
 				ret = LDB_ERR_OTHER;
-				goto failed;
+				goto done;
                         }
 
 			/* MISSING break is INTENTIONAL */
@@ -1349,7 +1254,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 				h->canonicalise_fn(module->ldb, lsql_ac, &(el->values[j]), &value);
 				if (value.data == NULL) {
 					ret = LDB_ERR_OTHER;
-					goto failed;
+					goto done;
 				}
 
 				mod = lsqlite3_tprintf(lsql_ac,
@@ -1362,7 +1267,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 
 				if (mod == NULL) {
 					ret = LDB_ERR_OTHER;
-					goto failed;
+					goto done;
 				}
 
 				ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
@@ -1372,7 +1277,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 						free(errmsg);
 					}
 					ret = LDB_ERR_OTHER;
-					goto failed;
+					goto done;
 				}
 			}
 
@@ -1388,7 +1293,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 							eid, attr);
 				if (mod == NULL) {
 					ret = LDB_ERR_OTHER;
-					goto failed;
+					goto done;
 				}
 
 				ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
@@ -1398,7 +1303,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 						free(errmsg);
 					}
 					ret = LDB_ERR_OTHER;
-					goto failed;
+					goto done;
                         	}
 			}
 
@@ -1410,7 +1315,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 				h->canonicalise_fn(module->ldb, lsql_ac, &(el->values[j]), &value);
 				if (value.data == NULL) {
 					ret = LDB_ERR_OTHER;
-					goto failed;
+					goto done;
 				}
 
 				mod = lsqlite3_tprintf(lsql_ac,
@@ -1422,7 +1327,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 
 				if (mod == NULL) {
 					ret = LDB_ERR_OTHER;
-					goto failed;
+					goto done;
 				}
 
 				ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
@@ -1432,7 +1337,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 						free(errmsg);
 					}
 					ret = LDB_ERR_OTHER;
-					goto failed;
+					goto done;
 				}
 			}
 
@@ -1440,57 +1345,37 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 		}
 	}
 
-	if (lsql_ac->callback)
-		(*handle)->status = lsql_ac->callback(module->ldb, lsql_ac->context, NULL);
+	if (lsql_ac->callback) {
+		req->handle->status = lsql_ac->callback(module->ldb, lsql_ac->context, NULL);
+	}
 	
-        return LDB_SUCCESS;
-
-failed:
-	talloc_free(*handle);
-	return ret;
-}
-
-static int lsql_modify(struct ldb_module *module, const struct ldb_message *msg)
-{
-	struct ldb_handle *handle;
-	int ret;
-
-	ret = lsql_modify_async(module, msg, NULL, NULL, &handle);
-
-	if (ret != LDB_SUCCESS)
-		return ret;
-
-	ret = ldb_wait(handle, LDB_WAIT_ALL);
-
-	talloc_free(handle);
+done:
+	req->handle->state = LDB_ASYNC_DONE;
 	return ret;
 }
 
 /* delete a record */
-static int lsql_delete_async(struct ldb_module *module, const struct ldb_dn *dn,
-			     void *context,
-			     int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
-			     struct ldb_handle **handle)
+static int lsql_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lsqlite3_private *lsqlite3 = talloc_get_type(module->private_data, struct lsqlite3_private);
 	struct lsql_context *lsql_ac;
         long long eid;
 	char *errmsg;
 	char *query;
-	int ret = LDB_ERR_OPERATIONS_ERROR;
+	int ret = LDB_SUCCESS;
 
 
-	*handle = init_handle(lsqlite3, module, context, callback);
-	if (*handle == NULL) {
-		goto failed;
+	req->handle = init_handle(lsqlite3, module, req);
+	if (req->handle == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_context);
-	(*handle)->state = LDB_ASYNC_DONE;
-	(*handle)->status = LDB_SUCCESS;
+	lsql_ac = talloc_get_type(req->handle->private_data, struct lsql_context);
+	req->handle->state = LDB_ASYNC_DONE;
+	req->handle->status = LDB_SUCCESS;
 
-	eid = lsqlite3_get_eid(module, dn);
+	eid = lsqlite3_get_eid(module, req->op.del.dn);
 	if (eid == -1) {
-		goto failed;
+		goto done;
 	}
 
 	query = lsqlite3_tprintf(lsql_ac,
@@ -1501,7 +1386,7 @@ static int lsql_delete_async(struct ldb_module *module, const struct ldb_dn *dn,
 				eid, eid);
 	if (query == NULL) {
 		ret = LDB_ERR_OTHER;
-		goto failed;
+		goto done;
 	}
 
 	ret = sqlite3_exec(lsqlite3->sqlite, query, NULL, NULL, &errmsg);
@@ -1510,68 +1395,43 @@ static int lsql_delete_async(struct ldb_module *module, const struct ldb_dn *dn,
 			ldb_set_errstring(module->ldb, errmsg);
 			free(errmsg);
 		}
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto failed;
+		req->handle->status = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
 
-	if (lsql_ac->callback)
-		(*handle)->status = lsql_ac->callback(module->ldb, lsql_ac->context, NULL);
+	if (lsql_ac->callback) {
+		ret = lsql_ac->callback(module->ldb, lsql_ac->context, NULL);
+	}
 	
-        return LDB_SUCCESS;
-
-failed:
-	talloc_free(*handle);
-	return ret;
-}
-
-static int lsql_delete(struct ldb_module *module, const struct ldb_dn *dn)
-{
-	struct ldb_handle *handle;
-	int ret;
-
-	/* ignore ltdb specials */
-	if (ldb_dn_is_special(dn)) {
-		return LDB_SUCCESS;
-	}
-
-	ret = lsql_delete_async(module, dn, NULL, NULL, &handle);
-
-	if (ret != LDB_SUCCESS)
-		return ret;
-
-	ret = ldb_wait(handle, LDB_WAIT_ALL);
-
-	talloc_free(handle);
+done:
+	req->handle->state = LDB_ASYNC_DONE;
 	return ret;
 }
 
 /* rename a record */
-static int lsql_rename_async(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn,
-			     void *context,
-			     int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
-			     struct ldb_handle **handle)
+static int lsql_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lsqlite3_private *lsqlite3 = talloc_get_type(module->private_data, struct lsqlite3_private);
 	struct lsql_context *lsql_ac;
 	char *new_dn, *new_cdn, *old_cdn;
 	char *errmsg;
 	char *query;
-	int ret = LDB_ERR_OPERATIONS_ERROR;
+	int ret = LDB_SUCCESS;
 
-	*handle = init_handle(lsqlite3, module, context, callback);
-	if (*handle == NULL) {
-		goto failed;
+	req->handle = init_handle(lsqlite3, module, req);
+	if (req->handle == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_context);
-	(*handle)->state = LDB_ASYNC_DONE;
-	(*handle)->status = LDB_SUCCESS;
+	lsql_ac = talloc_get_type(req->handle->private_data, struct lsql_context);
+	req->handle->state = LDB_ASYNC_DONE;
+	req->handle->status = LDB_SUCCESS;
 
 	/* create linearized and normalized dns */
-	old_cdn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, olddn));
-	new_cdn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, newdn));
-	new_dn = ldb_dn_linearize(lsql_ac, newdn);
+	old_cdn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, lsql_ac, req->op.rename.olddn));
+	new_cdn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, lsql_ac, req->op.rename.newdn));
+	new_dn = ldb_dn_linearize(lsql_ac, req->op.rename.newdn);
 	if (old_cdn == NULL || new_cdn == NULL || new_dn == NULL) {
-		goto failed;
+		goto done;
 	}
 
 	/* build the SQL query */
@@ -1580,7 +1440,7 @@ static int lsql_rename_async(struct ldb_module *module, const struct ldb_dn *old
 				 "WHERE norm_dn = '%q';",
 				 new_dn, new_cdn, old_cdn);
 	if (query == NULL) {
-		goto failed;
+		goto done;
 	}
 
 	/* execute */
@@ -1591,38 +1451,15 @@ static int lsql_rename_async(struct ldb_module *module, const struct ldb_dn *old
 			free(errmsg);
 		}
 		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto failed;
+		goto done;
 	}
 
-	if (lsql_ac->callback)
-		(*handle)->status = lsql_ac->callback(module->ldb, lsql_ac->context, NULL);
-	
-        return LDB_SUCCESS;
-
-failed:
-	talloc_free(*handle);
-	return ret;
-}
-
-static int lsql_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
-{
-	struct ldb_handle *handle;
-	int ret;
-
-	/* ignore ltdb specials */
-	if (ldb_dn_is_special(olddn) || ldb_dn_is_special(newdn)) {
-		return LDB_SUCCESS;
+	if (lsql_ac->callback) {
+		ret = lsql_ac->callback(module->ldb, lsql_ac->context, NULL);
 	}
 
-
-	ret = lsql_rename_async(module, olddn, newdn, NULL, NULL, &handle);
-
-	if (ret != LDB_SUCCESS)
-		return ret;
-
-	ret = ldb_wait(handle, LDB_WAIT_ALL);
-
-	talloc_free(handle);
+done:
+	req->handle->state = LDB_ASYNC_DONE;
 	return ret;
 }
 
@@ -1686,6 +1523,41 @@ static int lsql_del_trans(struct ldb_module *module)
 
 	return -1;
 }
+
+static int destructor(struct lsqlite3_private *lsqlite3)
+{        
+	if (lsqlite3->sqlite) {
+		sqlite3_close(lsqlite3->sqlite);
+	}
+	return 0;
+}
+
+static int lsql_request(struct ldb_module *module, struct ldb_request *req)
+{
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
+static int lsql_wait(struct ldb_handle *handle, enum ldb_wait_type type)
+{
+	return handle->status;
+}
+
+/*
+ * Table of operations for the sqlite3 backend
+ */
+static const struct ldb_module_ops lsqlite3_ops = {
+	.name              = "sqlite",
+	.search            = lsql_search,
+	.add               = lsql_add,
+        .modify            = lsql_modify,
+        .del               = lsql_delete,
+        .rename            = lsql_rename,
+	.request           = lsql_request,
+	.start_transaction = lsql_start_trans,
+	.end_transaction   = lsql_end_trans,
+	.del_transaction   = lsql_del_trans,
+	.wait              = lsql_wait,
+};
 
 /*
  * Static functions
@@ -1796,12 +1668,12 @@ static int initialize(struct lsqlite3_private *lsqlite3,
                 "    ('TOP', '0001');");
         
         /* Skip protocol indicator of url  */
-        if (strncmp(url, "sqlite://", 9) != 0) {
+        if (strncmp(url, "sqlite3://", 10) != 0) {
                 return SQLITE_MISUSE;
         }
         
         /* Update pointer to just after the protocol indicator */
-        url += 9;
+        url += 10;
         
         /* Try to open the (possibly empty/non-existent) database */
         if ((ret = sqlite3_open(url, &lsqlite3->sqlite)) != SQLITE_OK) {
@@ -1958,112 +1830,6 @@ failed:
 	sqlite3_close(lsqlite3->sqlite);
 	return -1;
 }
-
-static int destructor(struct lsqlite3_private *lsqlite3)
-{        
-	if (lsqlite3->sqlite) {
-		sqlite3_close(lsqlite3->sqlite);
-	}
-	return 0;
-}
-
-static int lsql_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
-	return handle->status;
-}
-
-static int lsql_request(struct ldb_module *module, struct ldb_request *req)
-{
-	/* check for oustanding critical controls and return an error if found */
-
-	if (req->controls != NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Controls should not reach the ldb_sqlite3 backend!\n");
-	}
-
-	if (check_critical_controls(req->controls)) {
-		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-	}
-	
-	switch (req->operation) {
-
-	case LDB_SEARCH:
-		return lsql_search_bytree(module,
-					  req->op.search.base,
-					  req->op.search.scope, 
-					  req->op.search.tree, 
-					  req->op.search.attrs, 
-					  &req->op.search.res);
-
-	case LDB_ADD:
-		return lsql_add(module, req->op.add.message);
-
-	case LDB_MODIFY:
-		return lsql_modify(module, req->op.mod.message);
-
-	case LDB_DELETE:
-		return lsql_delete(module, req->op.del.dn);
-
-	case LDB_RENAME:
-		return lsql_rename(module,
-					req->op.rename.olddn,
-					req->op.rename.newdn);
-
-	case LDB_SEARCH:
-		return lsql_search_async(module,
-					req->op.search.base,
-					req->op.search.scope, 
-					req->op.search.tree, 
-					req->op.search.attrs,
-					req->context,
-					req->callback,
-					&req->handle);
-/*
-	case LDB_ADD:
-		return lsql_add_async(module,
-					req->op.add.message,
-					req->context,
-					req->callback,
-					&req->handle);
-
-	case LDB_MODIFY:
-		return lsql_modify_async(module,
-					req->op.mod.message,
-					req->context,
-					req->callback,
-					&req->handle);
-*/
-	case LDB_DELETE:
-		return lsql_delete_async(module,
-					req->op.del.dn,
-					req->context,
-					req->callback,
-					&req->handle);
-
-	case LDB_RENAME:
-		return lsql_rename_async(module,
-					req->op.rename.olddn,
-					req->op.rename.newdn,
-					req->context,
-					req->callback,
-					&req->handle);
-
-	default:
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	}
-}
-
-/*
- * Table of operations for the sqlite3 backend
- */
-static const struct ldb_module_ops lsqlite3_ops = {
-	.name              = "sqlite",
-	.request           = lsql_request,
-	.start_transaction = lsql_start_trans,
-	.end_transaction   = lsql_end_trans,
-	.del_transaction   = lsql_del_trans,
-	.wait              = lsql_wait,
-};
 
 /*
  * connect to the database
