@@ -369,6 +369,9 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	switch (c->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		/* We hope this length is accruate.  If must be if the
+		 * GENSEC mech does AEAD signing of the packet
+		 * headers */
 		c->security_state.auth_info->credentials
 			= data_blob_talloc(mem_ctx, NULL, gensec_sig_size(c->security_state.generic_state, 
 									  payload_length));
@@ -405,6 +408,8 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	   in these earlier as we don't know the signature length (it
 	   could be variable length) */
 	dcerpc_set_frag_length(blob, blob->length);
+	/* We hope this value is accruate.  If must be if the GENSEC
+	 * mech does AEAD signing of the packet headers */
 	dcerpc_set_auth_length(blob, c->security_state.auth_info->credentials.length);
 
 	/* sign or seal the packet */
@@ -421,7 +426,20 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		memcpy(blob->data + blob->length - creds2.length, creds2.data, creds2.length);
+		status = data_blob_realloc(mem_ctx, blob,
+					   blob->length - c->security_state.auth_info->credentials.length + 
+					   creds2.length);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		memcpy(blob->data + blob->length - c->security_state.auth_info->credentials.length,
+		       creds2.data, creds2.length);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		dcerpc_set_auth_length(blob, creds2.length);
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -436,7 +454,20 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		memcpy(blob->data + blob->length - creds2.length, creds2.data, creds2.length);
+		status = data_blob_realloc(mem_ctx, blob,
+					   blob->length - c->security_state.auth_info->credentials.length + 
+					   creds2.length);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		memcpy(blob->data + blob->length - c->security_state.auth_info->credentials.length,
+		       creds2.data, creds2.length);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		dcerpc_set_auth_length(blob, creds2.length);
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:

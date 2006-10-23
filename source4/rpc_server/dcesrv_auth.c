@@ -393,6 +393,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	NTSTATUS status;
 	struct ndr_push *ndr;
 	uint32_t payload_length;
+	DATA_BLOB creds2;
 
 	/* non-signed packets are simple */
 	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.gensec_security) {
@@ -427,14 +428,20 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 			return False;
 		}
 	} else {
+
+		/* We hope this length is accruate.  If must be if the
+		 * GENSEC mech does AEAD signing of the packet
+		 * headers */
 		dce_conn->auth_state.auth_info->credentials
 			= data_blob_talloc(call, NULL, 
 					   gensec_sig_size(dce_conn->auth_state.gensec_security, 
 							   payload_length));
+		data_blob_clear(&dce_conn->auth_state.auth_info->credentials);
 	}
 
 	/* add the auth verifier */
-	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, dce_conn->auth_state.auth_info);
+	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, 
+				      dce_conn->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -446,6 +453,9 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	   in these earlier as we don't know the signature length (it
 	   could be variable length) */
 	dcerpc_set_frag_length(blob, blob->length);
+
+	/* We hope this value is accruate.  If must be if the GENSEC
+	 * mech does AEAD signing of the packet headers */
 	dcerpc_set_auth_length(blob, dce_conn->auth_state.auth_info->credentials.length);
 
 	/* sign or seal the packet */
@@ -457,7 +467,23 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 					    payload_length,
 					    blob->data,
 					    blob->length - dce_conn->auth_state.auth_info->credentials.length,
-					    &dce_conn->auth_state.auth_info->credentials);
+					    &creds2);
+
+		if (NT_STATUS_IS_OK(status)) {
+			status = data_blob_realloc(call, blob,
+						   blob->length - dce_conn->auth_state.auth_info->credentials.length + 
+						   creds2.length);
+		}
+
+		if (NT_STATUS_IS_OK(status)) {
+			memcpy(blob->data + blob->length - dce_conn->auth_state.auth_info->credentials.length,
+			       creds2.data, creds2.length);
+		}
+
+		/* If we did AEAD signing of the packet headers, then we hope
+		 * this value didn't change... */
+		dcerpc_set_auth_length(blob, creds2.length);
+		data_blob_free(&creds2);
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -467,8 +493,23 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 					    payload_length,
 					    blob->data,
 					    blob->length - dce_conn->auth_state.auth_info->credentials.length,
-					    &dce_conn->auth_state.auth_info->credentials);
+					    &creds2);
+		if (NT_STATUS_IS_OK(status)) {
+			status = data_blob_realloc(call, blob,
+						   blob->length - dce_conn->auth_state.auth_info->credentials.length + 
+						   creds2.length);
+		}
 
+		if (NT_STATUS_IS_OK(status)) {
+			memcpy(blob->data + blob->length - dce_conn->auth_state.auth_info->credentials.length,
+			       creds2.data, creds2.length);
+		}
+
+		/* If we did AEAD signing of the packet headers, then we hope
+		 * this value didn't change... */
+		dcerpc_set_auth_length(blob, creds2.length);
+
+		data_blob_free(&creds2);
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
@@ -479,14 +520,11 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 		break;
 	}
 
+	data_blob_free(&dce_conn->auth_state.auth_info->credentials);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}	
-
-	memcpy(blob->data + blob->length - dce_conn->auth_state.auth_info->credentials.length, 
-	       dce_conn->auth_state.auth_info->credentials.data, dce_conn->auth_state.auth_info->credentials.length);
-	
-	data_blob_free(&dce_conn->auth_state.auth_info->credentials);
 
 	return True;
 }
