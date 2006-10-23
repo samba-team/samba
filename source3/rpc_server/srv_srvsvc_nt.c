@@ -503,6 +503,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 	TALLOC_CTX *ctx = p->mem_ctx;
 	struct share_iterator *shares;
 	struct share_params *share;
+	WERROR result = WERR_NOMEM;
 
 	DEBUG(5,("init_srv_share_info_ctr\n"));
 
@@ -526,39 +527,69 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 
 	switch (info_level) {
 	case 0:
-		ctr->ctr0 = talloc_zero(p->mem_ctx, struct srvsvc_NetShareCtr0);
+		if (!(ctr->ctr0 = talloc_zero(
+			      p->mem_ctx, struct srvsvc_NetShareCtr0))) {
+			goto done;
+		}
 		break;
 	case 1:
-		ctr->ctr1 = talloc_zero(p->mem_ctx, struct srvsvc_NetShareCtr1);
+		if (!(ctr->ctr1 = talloc_zero(
+			      p->mem_ctx, struct srvsvc_NetShareCtr1))) {
+			goto done;
+		}
 		break;
 	case 2:
-		ctr->ctr2 = talloc_zero(p->mem_ctx, struct srvsvc_NetShareCtr2);
+		if (!(ctr->ctr2 = talloc_zero(
+			      p->mem_ctx, struct srvsvc_NetShareCtr2))) {
+			goto done;
+		}
 		break;
 	case 501:
-		ctr->ctr501 = talloc_zero(p->mem_ctx, struct srvsvc_NetShareCtr501);
+		if (!(ctr->ctr501 = talloc_zero(
+			      p->mem_ctx, struct srvsvc_NetShareCtr501))) {
+			goto done;
+		}
 		break;
 	case 502:
-		ctr->ctr502 = talloc_zero(p->mem_ctx, struct srvsvc_NetShareCtr502);
+		if (!(ctr->ctr502 = talloc_zero(
+			      p->mem_ctx, struct srvsvc_NetShareCtr502))) {
+			goto done;
+		}
 		break;
 	case 1004:
-		ctr->ctr1004 = talloc_zero(p->mem_ctx, struct srvsvc_NetShareCtr1004);
+		if (!(ctr->ctr1004 = talloc_zero(
+			      p->mem_ctx, struct srvsvc_NetShareCtr1004))) {
+			goto done;
+		}
 		break;
 	case 1005:
-		ctr->ctr1005 = talloc_zero(p->mem_ctx, struct srvsvc_NetShareCtr1005);
+		if (!(ctr->ctr1005 = talloc_zero(
+			      p->mem_ctx, struct srvsvc_NetShareCtr1005))) {
+			goto done;
+		}
 		break;
 	case 1006:
-		ctr->ctr1006 = talloc_zero(p->mem_ctx, struct srvsvc_NetShareCtr1006);
+		if (!(ctr->ctr1006 = talloc_zero(
+			      p->mem_ctx, struct srvsvc_NetShareCtr1006))) {
+			goto done;
+		}
 		break;
 	case 1007:
-		ctr->ctr1007 = talloc_zero(p->mem_ctx, struct srvsvc_NetShareCtr1007);
+		if (!(ctr->ctr1007 = talloc_zero(
+			      p->mem_ctx, struct srvsvc_NetShareCtr1007))) {
+			goto done;
+		}
 		break;
 	case 1501:
-		ctr->ctr1501 = talloc_zero(p->mem_ctx, struct srvsvc_NetShareCtr1501);
+		if (!(ctr->ctr1501 = talloc_zero(
+			      p->mem_ctx, struct srvsvc_NetShareCtr1501))) {
+			goto done;
+		}
 		break;
 	default:
-			DEBUG(5,("init_srv_share_info_ctr: unsupported switch "
-				 "value %d\n", info_level));
-			return WERR_UNKNOWN_LEVEL;
+		DEBUG(5,("init_srv_share_info_ctr: unsupported switch "
+			 "value %d\n", info_level));
+		return WERR_UNKNOWN_LEVEL;
 	}
 
 	while ((share = next_share(shares)) != NULL) {
@@ -707,7 +738,10 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		TALLOC_FREE(share);
 	}
 
-	return WERR_OK;
+	result = WERR_OK;
+ done:
+	TALLOC_FREE(shares);
+	return result;
 }
 
 /*******************************************************************
