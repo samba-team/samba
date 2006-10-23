@@ -1249,7 +1249,13 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 		if (E_deshash(new_pass, local_lmNewHash.hash)) {
 			lmNewHash = &local_lmNewHash;
 		}
-		E_md4hash(new_pass, local_ntNewHash.hash);
+		if (!E_md4hash(new_pass, local_ntNewHash.hash)) {
+			/* If we can't convert this password to UCS2, then we should not accept it */
+			if (reject_reason) {
+				*reject_reason = SAMR_REJECT_OTHER;
+			}
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
 		ntNewHash = &local_ntNewHash;
 	}
 
