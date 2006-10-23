@@ -2476,6 +2476,7 @@ net_share_enum_rpc(struct cli_state *cli,
 	uint32 enum_hnd;
         uint32 info_level = 1;
 	uint32 preferred_len = 0xffffffff;
+	struct srvsvc_NetShareCtr1 ctr1;
 	union srvsvc_NetShareCtr ctr;
         void *mem_ctx;
 	struct rpc_pipe_client *pipe_hnd;
@@ -2496,6 +2497,9 @@ net_share_enum_rpc(struct cli_state *cli,
                 cli_rpc_pipe_close(pipe_hnd);
                 return -1; 
         }
+
+	ZERO_STRUCT(ctr1);
+	ctr.ctr1 = &ctr1;
 
         /* Issue the NetShareEnum RPC call and retrieve the response */
 	enum_hnd = 0;
