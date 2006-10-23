@@ -63,18 +63,24 @@ BOOL SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
  * @param p16 return password hashed with md4, caller allocated 16 byte buffer
  */
  
-void E_md4hash(const char *passwd, uint8_t p16[16])
+BOOL E_md4hash(const char *passwd, uint8_t p16[16])
 {
 	int len;
 	void *wpwd;
 
 	len = push_ucs2_talloc(NULL, &wpwd, passwd);
-	SMB_ASSERT(len >= 2);
+	if (len < 2) {
+		/* We don't want to return fixed data, as most callers
+		 * don't check */
+		mdfour(p16, passwd, strlen(passwd));
+		return False;
+	}
 	
 	len -= 2;
 	mdfour(p16, wpwd, len);
 
 	talloc_free(wpwd);
+	return True;
 }
 
 /**
