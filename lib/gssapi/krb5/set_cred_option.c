@@ -122,6 +122,8 @@ out:
 	krb5_kt_close(_gsskrb5_context, keytab);
     if (str)
 	free(str);
+    if (sp)
+	krb5_storage_free(sp);
 
     return major_stat;
 }
