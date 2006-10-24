@@ -325,7 +325,7 @@ hx509_cms_unenvelope(hx509_context context,
 
 	hx509_cert_free(cert);
 	if (ret == 0)
-	    break;
+	    break; /* succuessfully decrypted cert */
 	cert = NULL;
 	ret2 = unparse_CMSIdentifier(context, &ri->rid, &str);
 	if (ret2 == 0) {
