@@ -65,16 +65,24 @@ dir_init(hx509_context context,
 	int ret;
 
 	ret = stat(residue, &sb);
-	if (ret == -1)
+	if (ret == -1) {
+	    hx509_set_error_string(context, 0, ENOENT,
+				   "No such file %s", residue);
 	    return ENOENT;
+	}
 
-	if ((sb.st_mode & S_IFDIR) == 0)
-	    return EINVAL;
+	if ((sb.st_mode & S_IFDIR) == 0) {
+	    hx509_set_error_string(context, 0, ENOTDIR,
+				   "%s is not a directory", residue);
+	    return ENOTDIR;
+	}
     }
 
     *data = strdup(residue);
-    if (*data == NULL)
+    if (*data == NULL) {
+	hx509_clear_error_string(context);
 	return ENOMEM;
+    }
 
     return 0;
 }
@@ -97,11 +105,14 @@ dir_iter_start(hx509_context context,
     *cursor = NULL;
 
     d = calloc(1, sizeof(*d));
-    if (d == NULL)
+    if (d == NULL) {
+	hx509_clear_error_string(context);
 	return ENOMEM;
+    }
 
     d->dir = opendir(data);
     if (d->dir == NULL) {
+	hx509_clear_error_string(context);
 	free(d);
 	return errno;
     }
