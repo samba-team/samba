@@ -52,7 +52,7 @@ static int dcerpc_connection_destructor(struct dcerpc_connection *c)
 /* initialise a dcerpc connection. 
    the event context is optional
 */
-struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx, 
+static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx, 
 						 struct event_context *ev)
 {
 	struct dcerpc_connection *c;
@@ -734,22 +734,6 @@ NTSTATUS dcerpc_bind_recv(struct composite_context *ctx)
 }
 
 /* 
-   perform a bind using the given syntax 
-
-   the auth_info structure is updated with the reply authentication info
-   on success
-*/
-NTSTATUS dcerpc_bind(struct dcerpc_pipe *p, 
-		     TALLOC_CTX *mem_ctx,
-		     const struct dcerpc_syntax_id *syntax,
-		     const struct dcerpc_syntax_id *transfer_syntax)
-{
-	struct composite_context *creq;
-	creq = dcerpc_bind_send(p, mem_ctx, syntax, transfer_syntax);
-	return dcerpc_bind_recv(creq);
-}
-
-/* 
    perform a continued bind (and auth3)
 */
 NTSTATUS dcerpc_auth3(struct dcerpc_connection *c, 
@@ -781,41 +765,6 @@ NTSTATUS dcerpc_auth3(struct dcerpc_connection *c,
 	}
 
 	return status;	
-}
-
-
-/*
-  return the rpc syntax and transfer syntax given the pipe uuid and version
-*/
-NTSTATUS dcerpc_init_syntaxes(const struct dcerpc_interface_table *table,
-			      struct dcerpc_syntax_id *syntax,
-			      struct dcerpc_syntax_id *transfer_syntax)
-{
-	syntax->uuid = table->syntax_id.uuid;
-	syntax->if_version = table->syntax_id.if_version;
-
-	*transfer_syntax = ndr_transfer_syntax;
-
-	return NT_STATUS_OK;
-}
-
-/* perform a dcerpc bind, using the uuid as the key */
-NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p, 
-			    TALLOC_CTX *mem_ctx,
-			    const struct dcerpc_interface_table *table)
-{
-	struct dcerpc_syntax_id syntax;
-	struct dcerpc_syntax_id transfer_syntax;
-	NTSTATUS status;
-
-	status = dcerpc_init_syntaxes(table,
-				      &syntax, &transfer_syntax);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2,("Invalid uuid string in dcerpc_bind_byuuid\n"));
-		return status;
-	}
-
-	return dcerpc_bind(p, mem_ctx, &syntax, &transfer_syntax);
 }
 
 

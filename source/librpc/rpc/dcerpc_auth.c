@@ -27,6 +27,21 @@
 #include "auth/gensec/gensec.h"
 #include "librpc/rpc/dcerpc.h"
 
+/*
+  return the rpc syntax and transfer syntax given the pipe uuid and version
+*/
+static NTSTATUS dcerpc_init_syntaxes(const struct dcerpc_interface_table *table,
+			      struct dcerpc_syntax_id *syntax,
+			      struct dcerpc_syntax_id *transfer_syntax)
+{
+	syntax->uuid = table->syntax_id.uuid;
+	syntax->if_version = table->syntax_id.if_version;
+
+	*transfer_syntax = ndr_transfer_syntax;
+
+	return NT_STATUS_OK;
+}
+
 
 /*
   Send request to do a non-authenticated dcerpc bind
