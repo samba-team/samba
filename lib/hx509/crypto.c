@@ -98,7 +98,8 @@ struct signature_alg {
 			    const heim_octet_string *,
 			    AlgorithmIdentifier *,
 			    heim_octet_string *);
-    int (*parse_private_key)(const struct signature_alg *,
+    int (*parse_private_key)(hx509_context,
+			     const struct signature_alg *,
 			     const void *data,
 			     size_t len,
 			     hx509_private_key private_key);
@@ -349,7 +350,8 @@ create_signature(const struct signature_alg *sig_alg,
 #endif
 
 static int
-rsa_parse_private_key(const struct signature_alg *sig_alg,
+rsa_parse_private_key(hx509_context context,
+		      const struct signature_alg *sig_alg,
 		      const void *data,
 		      size_t len,
 		      hx509_private_key private_key)
@@ -358,8 +360,11 @@ rsa_parse_private_key(const struct signature_alg *sig_alg,
 
     private_key->private_key.rsa = 
 	d2i_RSAPrivateKey(NULL, &p, len);
-    if (private_key->private_key.rsa == NULL)
-	return EINVAL;
+    if (private_key->private_key.rsa == NULL) {
+	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
+			       "Failed to parse RSA key");
+	return HX509_PARSING_KEY_FAILED;
+    }
     private_key->signature_alg = oid_id_pkcs1_sha1WithRSAEncryption();
 
     return 0;
@@ -478,7 +483,8 @@ dsa_verify_signature(const struct signature_alg *sig_alg,
 }
 
 static int
-dsa_parse_private_key(const struct signature_alg *sig_alg,
+dsa_parse_private_key(hx509_context context,
+		      const struct signature_alg *sig_alg,
 		      const void *data,
 		      size_t len,
 		      hx509_private_key private_key)
@@ -494,7 +500,9 @@ dsa_parse_private_key(const struct signature_alg *sig_alg,
 
     return 0;
 #else
-    return EINVAL;
+    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
+			   "No support to parse DSA keys");
+    return HX509_PARSING_KEY_FAILED;
 #endif
 }
 
@@ -993,7 +1001,8 @@ _hx509_private_key_private_decrypt(const heim_octet_string *ciphertext,
 
 
 int
-_hx509_parse_private_key(const heim_oid *key_oid,
+_hx509_parse_private_key(hx509_context context,
+			 const heim_oid *key_oid,
 			 const void *data,
 			 size_t len,
 			 hx509_private_key *private_key)
@@ -1004,14 +1013,18 @@ _hx509_parse_private_key(const heim_oid *key_oid,
     *private_key = NULL;
 
     md = find_key_alg(key_oid);
-    if (md == NULL)
+    if (md == NULL) {
+	hx509_clear_error_string(context);
 	return HX509_SIG_ALG_NO_SUPPORTED;
+    }
 
     ret = _hx509_new_private_key(private_key);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	return ret;
+    }
 
-    ret = (*md->parse_private_key)(md, data, len, *private_key);
+    ret = (*md->parse_private_key)(context, md, data, len, *private_key);
     if (ret)
 	_hx509_free_private_key(private_key);
     else

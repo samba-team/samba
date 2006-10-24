@@ -107,7 +107,8 @@ free_private_key(struct private_key *key)
 }
 
 int
-_hx509_collector_private_key_add(struct hx509_collector *c, 
+_hx509_collector_private_key_add(hx509_context context,
+				 struct hx509_collector *c, 
 				 const AlgorithmIdentifier *alg,
 				 hx509_private_key private_key,
 				 const heim_octet_string *key_data,
@@ -124,17 +125,21 @@ _hx509_collector_private_key_add(struct hx509_collector *c,
     d = realloc(c->val.data, (c->val.len + 1) * sizeof(c->val.data[0]));
     if (d == NULL) {
 	free(key);
+	hx509_set_error_string(context, 0, ENOMEM, "Out of memory");
 	return ENOMEM;
     }
     c->val.data = d;
 	
     ret = copy_AlgorithmIdentifier(alg, &key->alg);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Failed to copy "
+			       "AlgorithmIdentifier");
 	goto out;
+    }
     if (private_key) {
 	key->private_key = private_key;
     } else {
-	ret = _hx509_parse_private_key(&alg->algorithm,
+	ret = _hx509_parse_private_key(context, &alg->algorithm,
 				       key_data->data, key_data->length,
 				       &key->private_key);
 	if (ret)
@@ -142,8 +147,11 @@ _hx509_collector_private_key_add(struct hx509_collector *c,
     }
     if (localKeyId) {
 	ret = der_copy_octet_string(localKeyId, &key->localKeyId);
-	if (ret)
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, 
+				   "Failed to copy localKeyId");
 	    goto out;
+	}
     } else
 	memset(&key->localKeyId, 0, sizeof(key->localKeyId));
 
