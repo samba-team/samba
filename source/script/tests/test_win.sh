@@ -7,13 +7,6 @@
 # Copyright Brad Henry <brad@samba.org> 2006
 # Released under the GNU GPL v2 or later.
 
-. script/tests/test_functions.sh
-
-. script/tests/wintest_functions.sh
-
-# This variable is defined in the per-hosts .fns file.
-. $WINTESTCONF
-
 # Index variable to count the total number of tests which fail.
 all_errs=0
 
@@ -40,19 +33,6 @@ $WINTEST_DIR/wintest_net.sh $SMBTORTURE_REMOTE_HOST $SMBTORTURE_USERNAME \
 	$SMBTORTURE_PASSWORD $SMBTORTURE_WORKGROUP \
 	|| all_errs=`expr $all_errs + $?`
 
-test_name="WINDOWS CLIENT / SAMBA SERVER SHARE"
-old_errs=$all_errs
-cat $WINTEST_DIR/common.exp > $TMPDIR/client_test.exp
-cat $WINTEST_DIR/wintest_client.exp >> $TMPDIR/client_test.exp
-
-testit "$test_name" \
-	expect $TMPDIR/client_test.exp || all_errs=`expr $all_errs + 1`
-
-if [ $old_errs -lt $all_errs ]; then
-	# Restore snapshot to ensure VM is in a known state.
-	restore_snapshot "\n$test_name failed."
-	echo "Snapshot restored."
-fi
-rm -f $TMPDIR/client_test.exp
+$WINTEST_DIR/wintest_client.sh || all_errs=`expr $all_errs + $?`
 
 testok $0 $all_errs
