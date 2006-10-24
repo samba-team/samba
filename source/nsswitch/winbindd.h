@@ -169,6 +169,8 @@ struct winbindd_domain {
 	BOOL primary;                          /* is this our primary domain ? */
 	BOOL internal;                         /* BUILTIN and member SAM */
 	BOOL online;			       /* is this domain available ? */
+	time_t startup_time;		       /* When we set "startup" true. */
+	BOOL startup;                          /* are we in the first 30 seconds after startup_time ? */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
@@ -198,6 +200,10 @@ struct winbindd_domain {
 	/* The child pid we're talking to */
 
 	struct winbindd_child child;
+
+	/* Callback we use to try put us back online. */
+
+	struct timed_event *check_online_event;
 
 	/* Linked list info */
 
@@ -244,6 +250,15 @@ struct winbindd_methods {
 				char **domain_name,
 				char **name,
 				enum SID_NAME_USE *type);
+
+	NTSTATUS (*rids_to_names)(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const DOM_SID *domain_sid,
+				  uint32 *rids,
+				  size_t num_rids,
+				  char **domain_name,
+				  char ***names,
+				  enum SID_NAME_USE **types);
 
 	/* lookup user info for a given SID */
 	NTSTATUS (*query_user)(struct winbindd_domain *domain, 

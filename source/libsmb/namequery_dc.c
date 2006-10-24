@@ -26,33 +26,80 @@
 #include "includes.h"
 
 /**************************************************************************
- Find the name and IP address for a server in he realm/domain
+ Find the name and IP address for a server in the realm/domain
  *************************************************************************/
  
-static BOOL ads_dc_name(const char *domain, const char *realm, struct in_addr *dc_ip, fstring srv_name)
+static BOOL ads_dc_name(const char *domain,
+			const char *realm,
+			struct in_addr *dc_ip,
+			fstring srv_name)
 {
 	ADS_STRUCT *ads;
+	char *sitename = sitename_fetch();
+	int i;
 
-	if (!realm && strequal(domain, lp_workgroup()))
+	if (!realm && strequal(domain, lp_workgroup())) {
 		realm = lp_realm();
+	}
 
-	ads = ads_init(realm, domain, NULL);
-	if (!ads)
-		return False;
+	/* Try this 3 times then give up. */
+	for( i =0 ; i < 3; i++) {
+		ads = ads_init(realm, domain, NULL);
+		if (!ads) {
+			SAFE_FREE(sitename);
+			return False;
+		}
 
-	DEBUG(4,("ads_dc_name: domain=%s\n", domain));
+		DEBUG(4,("ads_dc_name: domain=%s\n", domain));
 
 #ifdef HAVE_ADS
-	/* we don't need to bind, just connect */
-	ads->auth.flags |= ADS_AUTH_NO_BIND;
-
-	ads_connect(ads);
+		/* we don't need to bind, just connect */
+		ads->auth.flags |= ADS_AUTH_NO_BIND;
+		ads_connect(ads);
 #endif
 
-	if (!ads->config.realm) {
-		ads_destroy(&ads);
+		if (!ads->config.realm) {
+			SAFE_FREE(sitename);
+			ads_destroy(&ads);
+			return False;
+		}
+
+		/* Now we've found a server, see if our sitename
+		   has changed. If so, we need to re-do the DNS query
+		   to ensure we only find servers in our site. */
+
+		if (stored_sitename_changed(sitename)) {
+			SAFE_FREE(sitename);
+			sitename = sitename_fetch();
+			ads_destroy(&ads);
+			/* Ensure we don't cache the DC we just connected to. */
+			namecache_delete(realm, 0x1C);
+			namecache_delete(domain, 0x1C);
+			continue;
+		}
+
+#ifdef HAVE_KRB5
+		if ((ads->config.flags & ADS_KDC) && ads_sitename_match(ads)) {
+			/* We're going to use this KDC for this realm/domain.
+			   If we are using sites, then force the krb5 libs
+			   to use this KDC. */
+
+			create_local_private_krb5_conf_for_domain(realm,
+								domain,
+								ads->ldap_ip);
+		}
+#endif
+		break;
+	}
+
+	if (i == 3) {
+		DEBUG(1,("ads_dc_name: sitename (now \"%s\") keeps changing ???\n",
+			sitename ? sitename : ""));
+		SAFE_FREE(sitename);
 		return False;
 	}
+
+	SAFE_FREE(sitename);
 
 	fstrcpy(srv_name, ads->config.ldap_server_name);
 	strupper_m(srv_name);
@@ -81,7 +128,8 @@ static BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip
 
 	/* get a list of all domain controllers */
 	
-	if ( !get_sorted_dc_list(domain, &ip_list, &count, False) ) {
+	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, &ip_list, &count,
+						False))) {
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
 	}
@@ -156,4 +204,3 @@ BOOL get_dc_name(const char *domain, const char *realm, fstring srv_name, struct
 
 	return ret;
 }
-

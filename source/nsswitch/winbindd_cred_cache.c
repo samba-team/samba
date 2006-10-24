@@ -1,9 +1,11 @@
 /*
    Unix SMB/CIFS implementation.
 
-   Winbind daemon - krb5 credential cache funcions
+   Winbind daemon - krb5 credential cache functions
+   and in-memory cache functions.
 
-   Copyright (C) Guenther Deschner 2005
+   Copyright (C) Guenther Deschner 2005-2006
+   Copyright (C) Jeremy Allison 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,25 +27,15 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-#define MAX_CCACHES 100 
+#define MAX_CCACHES 100
 
 static struct WINBINDD_CCACHE_ENTRY *ccache_list;
 
-static TALLOC_CTX *mem_ctx;
+/****************************************************************
+ Find an entry by name.
+****************************************************************/
 
-const char *get_ccache_name_by_username(const char *username) 
-{
-	struct WINBINDD_CCACHE_ENTRY *entry;
-
-	for (entry = ccache_list; entry; entry = entry->next) {
-		if (strequal(entry->username, username)) {
-			return entry->ccname;
-		}
-	}
-	return NULL;
-}
-
-struct WINBINDD_CCACHE_ENTRY *get_ccache_by_username(const char *username)
+static struct WINBINDD_CCACHE_ENTRY *get_ccache_by_username(const char *username)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry;
 
@@ -54,6 +46,10 @@ struct WINBINDD_CCACHE_ENTRY *get_ccache_by_username(const char *username)
 	}
 	return NULL;
 }
+
+/****************************************************************
+ How many do we have ?
+****************************************************************/
 
 static int ccache_entry_count(void)
 {
@@ -66,38 +62,9 @@ static int ccache_entry_count(void)
 	return i;
 }
 
-NTSTATUS remove_ccache_by_ccname(const char *ccname)
-{
-	struct WINBINDD_CCACHE_ENTRY *entry;
-
-	for (entry = ccache_list; entry; entry = entry->next) {
-		if (strequal(entry->ccname, ccname)) {
-			DLIST_REMOVE(ccache_list, entry);
-			TALLOC_FREE(entry->event); /* unregisters events */
-#ifdef HAVE_MUNLOCK
-			if (entry->pass) {	
-				size_t len = strlen(entry->pass)+1;
-#ifdef DEBUG_PASSWORD
-				DEBUG(10,("unlocking memory: %p\n", entry->pass));
-#endif
-				memset(entry->pass, 0, len);
-				if ((munlock(entry->pass, len)) == -1) {
-					DEBUG(0,("failed to munlock memory: %s (%d)\n", 
-						strerror(errno), errno));
-					return map_nt_error_from_unix(errno);
-				}
-#ifdef DEBUG_PASSWORD
-				DEBUG(10,("munlocked memory: %p\n", entry->pass));
-#endif
-			}
-#endif /* HAVE_MUNLOCK */
-			TALLOC_FREE(entry);
-			DEBUG(10,("remove_ccache_by_ccname: removed ccache %s\n", ccname));
-			return NT_STATUS_OK;
-		}
-	}
-	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-}
+/****************************************************************
+ Do the work of refreshing the ticket.
+****************************************************************/
 
 static void krb5_ticket_refresh_handler(struct timed_event *te,
 					const struct timeval *now,
@@ -105,10 +72,11 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 {
 	struct WINBINDD_CCACHE_ENTRY *entry =
 		talloc_get_type_abort(private_data, struct WINBINDD_CCACHE_ENTRY);
+#ifdef HAVE_KRB5
 	int ret;
 	time_t new_start;
-	struct timeval t;
-
+	struct WINBINDD_MEMORY_CREDS *cred_ptr = entry->cred_ptr;
+#endif
 
 	DEBUG(10,("krb5_ticket_refresh_handler called\n"));
 	DEBUGADD(10,("event called for: %s, %s\n", entry->ccname, entry->username));
@@ -120,12 +88,12 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 	/* Kinit again if we have the user password and we can't renew the old
 	 * tgt anymore */
 
-	if ((entry->renew_until < time(NULL)) && (entry->pass != NULL)) {
+	if ((entry->renew_until < time(NULL)) && cred_ptr && cred_ptr->pass) {
 	     
 		set_effective_uid(entry->uid);
 
 		ret = kerberos_kinit_password_ext(entry->principal_name,
-						  entry->pass,
+						  cred_ptr->pass,
 						  0, /* hm, can we do time correction here ? */
 						  &entry->refresh_time,
 						  &entry->renew_until,
@@ -136,12 +104,14 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 		gain_root_privilege();
 
 		if (ret) {
-			DEBUG(3,("could not re-kinit: %s\n", error_message(ret)));
+			DEBUG(3,("krb5_ticket_refresh_handler: could not re-kinit: %s\n",
+				error_message(ret)));
 			TALLOC_FREE(entry->event);
 			return;
 		}
 
-		DEBUG(10,("successful re-kinit for: %s in ccache: %s\n", 
+		DEBUG(10,("krb5_ticket_refresh_handler: successful re-kinit "
+			"for: %s in ccache: %s\n", 
 			entry->principal_name, entry->ccname));
 
 		new_start = entry->refresh_time;
@@ -158,17 +128,25 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 	gain_root_privilege();
 
 	if (ret) {
-		DEBUG(3,("could not renew tickets: %s\n", error_message(ret)));
+		DEBUG(3,("krb5_ticket_refresh_handler: could not renew tickets: %s\n",
+			error_message(ret)));
 		/* maybe we are beyond the renewing window */
+
+		/* avoid breaking the renewal chain: retry in lp_winbind_cache_time()
+		 * seconds when the KDC was not available right now. */
+
+		if (ret == KRB5_KDC_UNREACH) {
+			new_start = time(NULL) + MAX(30, lp_winbind_cache_time());
+			goto done;
+		}
+
 		return;
 	}
 
 done:
 
-	t = timeval_set(new_start, 0);
-
-	entry->event = add_timed_event(mem_ctx, 
-				       t,
+	entry->event = add_timed_event(entry, 
+				       timeval_set(new_start, 0),
 				       "krb5_ticket_refresh_handler",
 				       krb5_ticket_refresh_handler,
 				       entry);
@@ -176,34 +154,139 @@ done:
 #endif
 }
 
+/****************************************************************
+ Do the work of regaining a ticket when coming from offline auth.
+****************************************************************/
+
+static void krb5_ticket_gain_handler(struct timed_event *te,
+					const struct timeval *now,
+					void *private_data)
+{
+	struct WINBINDD_CCACHE_ENTRY *entry =
+		talloc_get_type_abort(private_data, struct WINBINDD_CCACHE_ENTRY);
+#ifdef HAVE_KRB5
+	int ret;
+	time_t new_start;
+	struct timeval t;
+	struct WINBINDD_MEMORY_CREDS *cred_ptr = entry->cred_ptr;
+	struct winbindd_domain *domain = NULL;
+#endif
+
+	DEBUG(10,("krb5_ticket_gain_handler called\n"));
+	DEBUGADD(10,("event called for: %s, %s\n", entry->ccname, entry->username));
+
+	TALLOC_FREE(entry->event);
+
+#ifdef HAVE_KRB5
+
+	if (!cred_ptr || !cred_ptr->pass) {
+		DEBUG(10,("krb5_ticket_gain_handler: no memory creds\n"));
+		return;
+	}
+
+	if ((domain = find_domain_from_name(entry->realm)) == NULL) {
+		DEBUG(0,("krb5_ticket_gain_handler: unknown domain\n"));
+		return;
+	}
+
+	if (domain->online) {
+
+		set_effective_uid(entry->uid);
+
+		ret = kerberos_kinit_password_ext(entry->principal_name,
+						cred_ptr->pass,
+						0, /* hm, can we do time correction here ? */
+						&entry->refresh_time,
+						&entry->renew_until,
+						entry->ccname,
+						False, /* no PAC required anymore */
+						True,
+						WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
+		gain_root_privilege();
+
+		if (ret) {
+			DEBUG(3,("krb5_ticket_gain_handler: could not kinit: %s\n",
+				error_message(ret)));
+			goto retry_later;
+		}
+
+		DEBUG(10,("krb5_ticket_gain_handler: successful kinit for: %s in ccache: %s\n",
+			entry->principal_name, entry->ccname));
+
+		new_start = entry->refresh_time;
+
+		goto got_ticket;
+	}
+
+  retry_later:
+
+	entry->event = add_timed_event(entry,
+					timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0),
+					"krb5_ticket_gain_handler",
+					krb5_ticket_gain_handler,
+					entry);
+
+	return;
+
+  got_ticket:
+
+#if 0 /* TESTING */
+	t = timeval_set(time(NULL) + 30, 0);
+#else
+	t = timeval_set(new_start, 0);
+#endif /* TESTING */
+
+	entry->event = add_timed_event(entry,
+					t,
+					"krb5_ticket_refresh_handler",
+					krb5_ticket_refresh_handler,
+					entry);
+
+	return;
+#endif
+}
+
+/****************************************************************
+ Ensure we're changing the correct entry.
+****************************************************************/
+
+BOOL ccache_entry_identical(const char *username, uid_t uid, const char *ccname)
+{
+	struct WINBINDD_CCACHE_ENTRY *entry = get_ccache_by_username(username);
+
+	if (!entry) {
+		return False;
+	}
+
+	if (entry->uid != uid) {
+		DEBUG(0,("cache_entry_identical: uid's differ: %u != %u\n",
+			(unsigned int)entry->uid, (unsigned int)uid ));
+		return False;
+	}
+	if (!strcsequal(entry->ccname, ccname)) {
+		DEBUG(0,("cache_entry_identical: ccnames differ: (cache) %s != (client) %s\n",
+                        entry->ccname, ccname));
+		return False;
+	}
+	return True;
+}
+
 NTSTATUS add_ccache_to_list(const char *princ_name,
 			    const char *ccname,
 			    const char *service,
 			    const char *username, 
-			    const char *sid_string,
-			    const char *pass,
+			    const char *realm,
 			    uid_t uid,
 			    time_t create_time, 
 			    time_t ticket_end, 
 			    time_t renew_until, 
-			    BOOL schedule_refresh_event)
+			    BOOL schedule_refresh_event,
+			    BOOL postponed_request)
 {
-	struct WINBINDD_CCACHE_ENTRY *new_entry = NULL;
-	struct WINBINDD_CCACHE_ENTRY *old_entry = NULL;
-	NTSTATUS status;
+	struct WINBINDD_CCACHE_ENTRY *entry = NULL;
 
-	if ((username == NULL && sid_string == NULL && princ_name == NULL) || 
-	    ccname == NULL) {
+	if ((username == NULL && princ_name == NULL) || ccname == NULL || uid < 0) {
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = init_ccache_list();
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (mem_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (ccache_entry_count() + 1 > MAX_CCACHES) {
@@ -211,117 +294,375 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		return NT_STATUS_NO_MORE_ENTRIES;
 	}
 
-	/* get rid of old entries */
-	old_entry = get_ccache_by_username(username);
-	if (old_entry) {
-		status = remove_ccache_by_ccname(old_entry->ccname);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10,("add_ccache_to_list: failed to delete old ccache entry\n"));
-			return status;
+	/* Reference count old entries */
+	entry = get_ccache_by_username(username);
+	if (entry) {
+		/* Check cached entries are identical. */
+		if (!ccache_entry_identical(username, uid, ccname)) {
+			return NT_STATUS_INVALID_PARAMETER;
 		}
+		entry->ref_count++;
+		DEBUG(10,("add_ccache_to_list: ref count on entry %s is now %d\n",
+			username, entry->ref_count));
+		return NT_STATUS_OK;
 	}
 	
-	new_entry = TALLOC_P(mem_ctx, struct WINBINDD_CCACHE_ENTRY);
-	if (new_entry == NULL) {
+	entry = TALLOC_P(NULL, struct WINBINDD_CCACHE_ENTRY);
+	if (!entry) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ZERO_STRUCTP(new_entry);
+	ZERO_STRUCTP(entry);
 
 	if (username) {
-		new_entry->username = talloc_strdup(mem_ctx, username);
-		NT_STATUS_HAVE_NO_MEMORY(new_entry->username);
-	}
-	if (sid_string) {
-		new_entry->sid_string = talloc_strdup(mem_ctx, sid_string);
-		NT_STATUS_HAVE_NO_MEMORY(new_entry->sid_string);
+		entry->username = talloc_strdup(entry, username);
+		if (!entry->username) {
+			goto no_mem;
+		}
 	}
 	if (princ_name) {
-		new_entry->principal_name = talloc_strdup(mem_ctx, princ_name);
-		NT_STATUS_HAVE_NO_MEMORY(new_entry->principal_name);
+		entry->principal_name = talloc_strdup(entry, princ_name);
+		if (!entry->principal_name) {
+			goto no_mem;
+		}
 	}
 	if (service) {
-		new_entry->service = talloc_strdup(mem_ctx, service);
-		NT_STATUS_HAVE_NO_MEMORY(new_entry->service);
+		entry->service = talloc_strdup(entry, service);
+		if (!entry->service) {
+			goto no_mem;
+		}
 	}
 
-	if (schedule_refresh_event && pass) {
-#ifdef HAVE_MLOCK
-		size_t len = strlen(pass)+1;
-		
-		new_entry->pass = TALLOC_ZERO(mem_ctx, len);
-		NT_STATUS_HAVE_NO_MEMORY(new_entry->pass);
-		
-#ifdef DEBUG_PASSWORD
-		DEBUG(10,("mlocking memory: %p\n", new_entry->pass));
-#endif		
-		if ((mlock(new_entry->pass, len)) == -1) {
-			DEBUG(0,("failed to mlock memory: %s (%d)\n", 
-				strerror(errno), errno));
-			return map_nt_error_from_unix(errno);
-		} 
-		
-#ifdef DEBUG_PASSWORD
-		DEBUG(10,("mlocked memory: %p\n", new_entry->pass));
-#endif		
-		memcpy(new_entry->pass, pass, len);
-#else
-		new_entry->pass = talloc_strdup(mem_ctx, pass);
-		NT_STATUS_HAVE_NO_MEMORY(new_entry->pass);
-#endif /* HAVE_MLOCK */
+	entry->ccname = talloc_strdup(entry, ccname);
+	if (!entry->ccname) {
+		goto no_mem;
 	}
 
-	new_entry->create_time = create_time;
-	new_entry->renew_until = renew_until;
-	new_entry->ccname = talloc_strdup(mem_ctx, ccname);
-	if (new_entry->ccname == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	entry->realm = talloc_strdup(entry, realm);
+	if (!entry->realm) {
+		goto no_mem;
 	}
-	new_entry->uid = uid;
 
+	entry->create_time = create_time;
+	entry->renew_until = renew_until;
+	entry->uid = uid;
+	entry->ref_count = 1;
 
 	if (schedule_refresh_event && renew_until > 0) {
+		if (postponed_request) {
+			entry->event = add_timed_event(entry,
+						timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0),
+						"krb5_ticket_gain_handler",
+						krb5_ticket_gain_handler,
+						entry);
+		} else {
+			entry->event = add_timed_event(entry,
+						timeval_set((ticket_end - 1), 0),
+						"krb5_ticket_refresh_handler",
+						krb5_ticket_refresh_handler,
+						entry);
+		}
 
-		struct timeval t = timeval_set((ticket_end -1 ), 0);
+		if (!entry->event) {
+			goto no_mem;
+		}
 
-		new_entry->event = add_timed_event(mem_ctx, 
-						   t,
-						   "krb5_ticket_refresh_handler",
-						   krb5_ticket_refresh_handler,
-						   new_entry);
+		DEBUG(10,("add_ccache_to_list: added krb5_ticket handler\n"));
 	}
 
-	DLIST_ADD(ccache_list, new_entry);
+	DLIST_ADD(ccache_list, entry);
 
 	DEBUG(10,("add_ccache_to_list: added ccache [%s] for user [%s] to the list\n", ccname, username));
 
 	return NT_STATUS_OK;
+
+ no_mem:
+
+	TALLOC_FREE(entry);
+	return NT_STATUS_NO_MEMORY;
 }
 
-NTSTATUS destroy_ccache_list(void)
+NTSTATUS remove_ccache(const char *username)
 {
-#ifdef HAVE_MUNLOCKALL
-	if ((munlockall()) == -1) {
-		DEBUG(0,("failed to unlock memory: %s (%d)\n", 
-			strerror(errno), errno));
-		return map_nt_error_from_unix(errno);
+	struct WINBINDD_CCACHE_ENTRY *entry = get_ccache_by_username(username);
+
+	if (!entry) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-#endif /* HAVE_MUNLOCKALL */
-	return talloc_destroy(mem_ctx) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+
+	if (entry->ref_count <= 0) {
+		DEBUG(0,("remove_ccache: logic error. ref count for user %s = %d\n",
+			username, entry->ref_count));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	entry->ref_count--;
+	if (entry->ref_count <= 0) {
+		DLIST_REMOVE(ccache_list, entry);
+		TALLOC_FREE(entry->event); /* unregisters events */
+		TALLOC_FREE(entry);
+	 	DEBUG(10,("remove_ccache: removed ccache for user %s\n", username));
+	} else {
+		DEBUG(10,("remove_ccache: entry %s ref count now %d\n",
+			username, entry->ref_count ));
+	}
+
+	return NT_STATUS_OK;
 }
 
-NTSTATUS init_ccache_list(void)
+/*******************************************************************
+ In memory credentials cache code.
+*******************************************************************/
+
+static struct WINBINDD_MEMORY_CREDS *memory_creds_list;
+
+/***********************************************************
+ Find an entry on the list by name.
+***********************************************************/
+
+struct WINBINDD_MEMORY_CREDS *find_memory_creds_by_name(const char *username)
 {
-	if (ccache_list) {
-		return NT_STATUS_OK;
+	struct WINBINDD_MEMORY_CREDS *p;
+
+	for (p = memory_creds_list; p; p = p->next) {
+		if (strequal(p->username, username)) {
+			return p;
+		}
+	}
+	return NULL;
+}
+
+/***********************************************************
+ Store the required creds and mlock them.
+***********************************************************/
+
+static NTSTATUS store_memory_creds(struct WINBINDD_MEMORY_CREDS *memcredp, const char *pass)
+{
+#if !defined(HAVE_MLOCK)
+	return NT_STATUS_OK;
+#else
+	/* new_entry->nt_hash is the base pointer for the block
+	   of memory pointed into by new_entry->lm_hash and
+	   new_entry->pass (if we're storing plaintext). */
+
+	memcredp->len = NT_HASH_LEN + LM_HASH_LEN;
+	if (pass) {
+		memcredp->len += strlen(pass)+1;
 	}
 
-	mem_ctx = talloc_init("winbindd_ccache_krb5_handling");
-	if (mem_ctx == NULL) {
+	memcredp->nt_hash = (unsigned char *)TALLOC_ZERO(memcredp, memcredp->len);
+	if (!memcredp->nt_hash) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ZERO_STRUCTP(ccache_list);
+	memcredp->lm_hash = memcredp->nt_hash + NT_HASH_LEN;
+#ifdef DEBUG_PASSWORD
+	DEBUG(10,("mlocking memory: %p\n", memcredp->nt_hash));
+#endif		
+
+	if ((mlock(memcredp->nt_hash, memcredp->len)) == -1) {
+		DEBUG(0,("failed to mlock memory: %s (%d)\n", 
+			strerror(errno), errno));
+		return map_nt_error_from_unix(errno);
+	}
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(10,("mlocked memory: %p\n", memcredp->nt_hash));
+#endif		
+
+	/* Create and store the password hashes. */
+	E_md4hash(pass, memcredp->nt_hash);
+	E_deshash(pass, memcredp->lm_hash);
+
+	if (pass) {
+		memcredp->pass = (char *)memcredp->lm_hash + LM_HASH_LEN;
+		memcpy(memcredp->pass, pass, memcredp->len - NT_HASH_LEN - LM_HASH_LEN);
+	}
 
 	return NT_STATUS_OK;
+#endif
+}
+
+/***********************************************************
+ Destroy existing creds.
+***********************************************************/
+
+static NTSTATUS delete_memory_creds(struct WINBINDD_MEMORY_CREDS *memcredp)
+{
+#if !defined(HAVE_MUNLOCK)
+	return NT_STATUS_OK;
+#else
+	if (munlock(memcredp->nt_hash, memcredp->len) == -1) {
+		DEBUG(0,("failed to munlock memory: %s (%d)\n", 
+			strerror(errno), errno));
+		return map_nt_error_from_unix(errno);
+	}
+	memset(memcredp->nt_hash, '\0', memcredp->len);
+	TALLOC_FREE(memcredp->nt_hash);
+	memcredp->lm_hash = NULL;
+	memcredp->pass = NULL;
+	memcredp->len = 0;
+	return NT_STATUS_OK;
+#endif
+}
+
+/***********************************************************
+ Replace the required creds with new ones (password change).
+***********************************************************/
+
+static NTSTATUS winbindd_replace_memory_creds_internal(struct WINBINDD_MEMORY_CREDS *memcredp,
+						const char *pass)
+{
+	NTSTATUS status = delete_memory_creds(memcredp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return store_memory_creds(memcredp, pass);
+}
+
+/*************************************************************
+ Store credentials in memory in a list.
+*************************************************************/
+
+static NTSTATUS winbindd_add_memory_creds_internal(const char *username, uid_t uid, const char *pass)
+{
+	/* Shortcut to ensure we don't store if no mlock. */
+#if !defined(HAVE_MLOCK) || !defined(HAVE_MUNLOCK)
+	return NT_STATUS_OK;
+#else
+	NTSTATUS status;
+	struct WINBINDD_MEMORY_CREDS *memcredp = find_memory_creds_by_name(username);
+
+	if (uid == (uid_t)-1) {
+		DEBUG(0,("winbindd_add_memory_creds_internal: invalid uid for user %s.\n",
+			username ));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (memcredp) {
+		/* Already exists. Increment the reference count and replace stored creds. */
+		if (uid != memcredp->uid) {
+			DEBUG(0,("winbindd_add_memory_creds_internal: uid %u for user %s doesn't "
+				"match stored uid %u. Replacing.\n",
+				(unsigned int)uid, username, (unsigned int)memcredp->uid ));
+			memcredp->uid = uid;
+		}
+		memcredp->ref_count++;
+		DEBUG(10,("winbindd_add_memory_creds_internal: ref count for user %s is now %d\n",
+			username, memcredp->ref_count ));
+		return winbindd_replace_memory_creds_internal(memcredp, pass);
+	}
+
+	memcredp = TALLOC_ZERO_P(NULL, struct WINBINDD_MEMORY_CREDS);
+	if (!memcredp) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	memcredp->username = talloc_strdup(memcredp, username);
+	if (!memcredp->username) {
+		talloc_destroy(memcredp);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = store_memory_creds(memcredp, pass);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_destroy(memcredp);
+		return status;
+	}
+
+	memcredp->uid = uid;
+	memcredp->ref_count = 1;
+	DLIST_ADD(memory_creds_list, memcredp);
+
+	DEBUG(10,("winbindd_add_memory_creds_internal: added entry for user %s\n",
+		username ));
+
+	return NT_STATUS_OK;
+#endif
+}
+
+/*************************************************************
+ Store users credentials in memory. If we also have a 
+ struct WINBINDD_CCACHE_ENTRY for this username with a
+ refresh timer, then store the plaintext of the password
+ and associate the new credentials with the struct WINBINDD_CCACHE_ENTRY.
+*************************************************************/
+
+NTSTATUS winbindd_add_memory_creds(const char *username, uid_t uid, const char *pass)
+{
+	struct WINBINDD_CCACHE_ENTRY *entry = get_ccache_by_username(username);
+	NTSTATUS status;
+
+	status = winbindd_add_memory_creds_internal(username, uid, pass);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (entry) {
+		struct WINBINDD_MEMORY_CREDS *memcredp = find_memory_creds_by_name(username);
+		if (memcredp) {
+			entry->cred_ptr = memcredp;
+		}
+	}
+
+	return status;
+}
+
+/*************************************************************
+ Decrement the in-memory ref count - delete if zero.
+*************************************************************/
+
+NTSTATUS winbindd_delete_memory_creds(const char *username)
+{
+	struct WINBINDD_MEMORY_CREDS *memcredp = find_memory_creds_by_name(username);
+	struct WINBINDD_CCACHE_ENTRY *entry = get_ccache_by_username(username);
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (!memcredp) {
+		DEBUG(10,("winbindd_delete_memory_creds: unknown user %s\n",
+			username ));
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (memcredp->ref_count <= 0) {
+		DEBUG(0,("winbindd_delete_memory_creds: logic error. ref count for user %s = %d\n",
+			username, memcredp->ref_count));
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	memcredp->ref_count--;
+	if (memcredp->ref_count <= 0) {
+		delete_memory_creds(memcredp);
+		DLIST_REMOVE(memory_creds_list, memcredp);
+		talloc_destroy(memcredp);
+		DEBUG(10,("winbindd_delete_memory_creds: deleted entry for user %s\n",
+			username));
+	} else {
+		DEBUG(10,("winbindd_delete_memory_creds: entry for user %s ref_count now %d\n",
+			username, memcredp->ref_count));
+	}
+
+	if (entry) {
+		entry->cred_ptr = NULL; /* Ensure we have no dangling references to this. */
+	}
+	return status;
+}
+
+/***********************************************************
+ Replace the required creds with new ones (password change).
+***********************************************************/
+
+NTSTATUS winbindd_replace_memory_creds(const char *username, const char *pass)
+{
+	struct WINBINDD_MEMORY_CREDS *memcredp = find_memory_creds_by_name(username);
+
+	if (!memcredp) {
+		DEBUG(10,("winbindd_replace_memory_creds: unknown user %s\n",
+			username ));
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	DEBUG(10,("winbindd_replace_memory_creds: replaced creds for user %s\n",
+		username ));
+
+	return winbindd_replace_memory_creds_internal(memcredp, pass);
 }

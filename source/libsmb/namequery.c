@@ -77,6 +77,30 @@ BOOL saf_store( const char *domain, const char *servername )
 	return ret;
 }
 
+BOOL saf_delete( const char *domain, const char *servername )
+{
+	char *key;
+	BOOL ret = False;
+	
+	if ( !domain || !servername ) {
+		DEBUG(2,("saf_delete: Refusing to store empty domain or servername!\n"));
+		return False;
+	}
+	
+	if ( !gencache_init() ) 
+		return False;
+	
+	key = saf_key(domain);
+	ret = gencache_del(key);
+	
+	if (ret) {
+		DEBUG(10,("saf_delete: domain = [%s], server = [%s]\n",
+			domain, servername));
+	}
+	SAFE_FREE( key );
+	return ret;
+}
+
 /****************************************************************************
 ****************************************************************************/
 
@@ -110,7 +134,6 @@ char *saf_fetch( const char *domain )
 		
 	return server;
 }
-
 
 /****************************************************************************
  Generate a random trn_id.
@@ -1031,7 +1054,7 @@ static BOOL resolve_ads(const char *name, int name_type,
 	int			numdcs = 0;
 	int			numaddrs = 0;
 
-	if ( name_type != 0x1c )
+	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE))
 		return False;
 		
 	DEBUG(5,("resolve_ads: Attempting to resolve DC's for %s using DNS\n",
@@ -1041,8 +1064,12 @@ static BOOL resolve_ads(const char *name, int name_type,
 		DEBUG(0,("resolve_ads: talloc_init() failed!\n"));
 		return False;
 	}
-		
-	status = ads_dns_query_dcs( ctx, name, &dcs, &numdcs );
+
+	if (name_type == KDC_NAME_TYPE) {
+		status = ads_dns_query_kdcs(ctx, name, &dcs, &numdcs);
+	} else {
+		status = ads_dns_query_dcs(ctx, name, &dcs, &numdcs);
+	}
 	if ( !NT_STATUS_IS_OK( status ) ) {
 		talloc_destroy(ctx);
 		return False;
@@ -1187,6 +1214,15 @@ BOOL internal_resolve_name(const char *name, int name_type,
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
 			if (resolve_hosts(name, name_type, return_iplist, return_count)) {
 				result = True;
+				goto done;
+			}
+		} else if(strequal( tok, "kdc")) {
+			/* deal with KDC_NAME_TYPE names here.  This will result in a
+				SRV record lookup */
+			if (resolve_ads(name, KDC_NAME_TYPE, return_iplist, return_count)) {
+				result = True;
+				/* Ensure we don't namecache this with the KDC port. */
+				name_type = KDC_NAME_TYPE;
 				goto done;
 			}
 		} else if(strequal( tok, "ads")) {
@@ -1356,13 +1392,17 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 	return True;
 }
 
+/* Private enum type for lookups. */
+
+enum dc_lookup_type { DC_NORMAL_LOOKUP, DC_ADS_ONLY, DC_KDC_ONLY };
+
 /********************************************************
  Get the IP address list of the domain controllers for
  a domain.
 *********************************************************/
 
-static BOOL get_dc_list(const char *domain, struct ip_service **ip_list, 
-                 int *count, BOOL ads_only, int *ordered)
+static NTSTATUS get_dc_list(const char *domain, struct ip_service **ip_list, 
+                            int *count, enum dc_lookup_type lookup_type, int *ordered)
 {
 	fstring resolve_order;
 	char *saf_servername;
@@ -1388,7 +1428,7 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 
 	fstrcpy( resolve_order, lp_name_resolve_order() );
 	strlower_m( resolve_order );
-	if ( ads_only )  {
+	if ( lookup_type == DC_ADS_ONLY)  {
 		if ( strstr( resolve_order, "host" ) ) {
 			fstrcpy( resolve_order, "ads" );
 
@@ -1398,6 +1438,11 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 		} else {
                         fstrcpy( resolve_order, "NULL" );
 		}
+	} else if (lookup_type == DC_KDC_ONLY) {
+		/* DNS SRV lookups used by the ads/kdc resolver
+		   are already sorted by priority and weight */
+		*ordered = True;
+		fstrcpy( resolve_order, "kdc" );
 	}
 
 	/* fetch the server we have affinity for.  Add the 
@@ -1420,7 +1465,14 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 
 	if ( !*pserver ) {
 		DEBUG(10,("get_dc_list: no preferred domain controllers.\n"));
-		return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
+		/* TODO: change return type of internal_resolve_name to
+		 * NTSTATUS */
+		if (internal_resolve_name(domain, 0x1C, ip_list, count,
+					  resolve_order)) {
+			return NT_STATUS_OK;
+		} else {
+			return NT_STATUS_NO_LOGON_SERVERS;
+		}
 	}
 
 	DEBUG(3,("get_dc_list: preferred server list: \"%s\"\n", pserver ));
@@ -1435,7 +1487,8 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 	p = pserver;
 	while (next_token(&p,name,LIST_SEP,sizeof(name))) {
 		if (strequal(name, "*")) {
-			if ( internal_resolve_name(domain, 0x1C, &auto_ip_list, &auto_count, resolve_order) )
+			if (internal_resolve_name(domain, 0x1C, &auto_ip_list,
+						  &auto_count, resolve_order))
 				num_addresses += auto_count;
 			done_auto_lookup = True;
 			DEBUG(8,("Adding %d DC's from auto lookup\n", auto_count));
@@ -1449,16 +1502,20 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 		   
 	if ( (num_addresses == 0) ) {
 		if ( !done_auto_lookup ) {
-			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
+			if (internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order)) {
+				return NT_STATUS_OK;
+			} else {
+				return NT_STATUS_NO_LOGON_SERVERS;
+			}
 		} else {
 			DEBUG(4,("get_dc_list: no servers found\n")); 
-			return False;
+			return NT_STATUS_NO_LOGON_SERVERS;
 		}
 	}
 
 	if ( (return_iplist = SMB_MALLOC_ARRAY(struct ip_service, num_addresses)) == NULL ) {
 		DEBUG(3,("get_dc_list: malloc fail !\n"));
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	p = pserver;
@@ -1536,22 +1593,29 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 	*ip_list = return_iplist;
 	*count = local_count;
 
-	return (*count != 0);
+	return ( *count != 0 ? NT_STATUS_OK : NT_STATUS_NO_LOGON_SERVERS );
 }
 
 /*********************************************************************
  Small wrapper function to get the DC list and sort it if neccessary.
 *********************************************************************/
 
-BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *count, BOOL ads_only )
+NTSTATUS get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *count, BOOL ads_only )
 {
 	BOOL ordered;
-	
+	NTSTATUS status;
+	enum dc_lookup_type lookup_type = DC_NORMAL_LOOKUP;
+
 	DEBUG(8,("get_sorted_dc_list: attempting lookup using [%s]\n",
 		(ads_only ? "ads" : lp_name_resolve_order())));
 	
-	if ( !get_dc_list(domain, ip_list, count, ads_only, &ordered) ) {
-		return False; 
+	if (ads_only) {
+		lookup_type = DC_ADS_ONLY;
+	}
+
+	status = get_dc_list(domain, ip_list, count, lookup_type, &ordered);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status; 
 	}
 		
 	/* only sort if we don't already have an ordered list */
@@ -1559,5 +1623,31 @@ BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *c
 		sort_ip_list2( *ip_list, *count );
 	}
 		
-	return True;
+	return NT_STATUS_OK;
+}
+
+/*********************************************************************
+ Get the KDC list - re-use all the logic in get_dc_list.
+*********************************************************************/
+
+NTSTATUS get_kdc_list( const char *realm, struct ip_service **ip_list, int *count)
+{
+	BOOL ordered;
+	NTSTATUS status;
+
+	*count = 0;
+	*ip_list = NULL;
+
+	status = get_dc_list(realm, ip_list, count, DC_KDC_ONLY, &ordered);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status; 
+	}
+
+	/* only sort if we don't already have an ordered list */
+	if ( !ordered ) {
+		sort_ip_list2( *ip_list, *count );
+	}
+
+	return NT_STATUS_OK;
 }

@@ -31,12 +31,13 @@ NTSTATUS winbindd_get_creds(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
 			    const DOM_SID *sid,
 			    NET_USER_INFO_3 **info3,
-			    const uint8 *cached_nt_pass[NT_HASH_LEN])
+			    const uint8 *cached_nt_pass[NT_HASH_LEN],
+			    const uint8 *cred_salt[NT_HASH_LEN])
 {
 	NET_USER_INFO_3 *info;
 	NTSTATUS status;
 
-	status = wcache_get_creds(domain, mem_ctx, sid, cached_nt_pass);
+	status = wcache_get_creds(domain, mem_ctx, sid, cached_nt_pass, cred_salt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

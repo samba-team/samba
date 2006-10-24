@@ -47,28 +47,33 @@ static SIG_ATOMIC_T gotalarm;
 /***************************************************************
  Signal function to tell us we timed out.
 ****************************************************************/
-                                                                                                                   
+
 static void gotalarm_sig(void)
 {
 	gotalarm = 1;
 }
-                                                                                                                   
+
  LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to)
 {
 	LDAP *ldp = NULL;
-                                                                                                                   
+
 	/* Setup timeout */
 	gotalarm = 0;
 	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
 	alarm(to);
 	/* End setup timeout. */
-                                                                                                                   
+
 	ldp = ldap_open(server, port);
-                                                                                                                   
+
+	if (ldp == NULL) {
+		DEBUG(2,("Could not open LDAP connection to %s:%d: %s\n",
+			 server, port, strerror(errno)));
+	}
+
 	/* Teardown timeout. */
 	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 	alarm(0);
-                                                                                                                   
+
 	return ldp;
 }
 
@@ -110,6 +115,30 @@ static int ldap_search_with_timeout(LDAP *ld,
 	return result;
 }
 
+/**********************************************
+ Do client and server sitename match ?
+**********************************************/
+
+BOOL ads_sitename_match(ADS_STRUCT *ads)
+{
+	if (ads->config.server_site_name == NULL &&
+	    ads->config.client_site_name == NULL ) {
+		DEBUG(10,("ads_sitename_match: both null\n"));
+		return True;
+	}
+	if (ads->config.server_site_name &&
+	    ads->config.client_site_name &&
+	    strequal(ads->config.server_site_name,
+		     ads->config.client_site_name)) {
+		DEBUG(10,("ads_sitename_match: name %s match\n", ads->config.server_site_name));
+		return True;
+	}
+	DEBUG(10,("ads_sitename_match: no match between server: %s and client: %s\n",
+		ads->config.server_site_name ? ads->config.server_site_name : "NULL",
+		ads->config.client_site_name ? ads->config.client_site_name : "NULL"));
+	return False;
+}
+
 /*
   try a connection to a given ldap server, returning True and setting the servers IP
   in the ads struct if successful
@@ -134,6 +163,7 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 
 	if ( !ads_cldap_netlogon( srv, ads->server.realm, &cldap_reply ) ) {
 		DEBUG(3,("ads_try_connect: CLDAP request %s failed.\n", srv));
+		SAFE_FREE( srv );
 		return False;
 	}
 
@@ -151,21 +181,32 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 	SAFE_FREE(ads->config.realm);
 	SAFE_FREE(ads->config.bind_path);
 	SAFE_FREE(ads->config.ldap_server_name);
+	SAFE_FREE(ads->config.server_site_name);
+	SAFE_FREE(ads->config.client_site_name);
 	SAFE_FREE(ads->server.workgroup);
 
+	ads->config.flags	       = cldap_reply.flags;
 	ads->config.ldap_server_name   = SMB_STRDUP(cldap_reply.hostname);
 	strupper_m(cldap_reply.domain);
 	ads->config.realm              = SMB_STRDUP(cldap_reply.domain);
 	ads->config.bind_path          = ads_build_dn(ads->config.realm);
+	if (*cldap_reply.server_site_name) {
+		ads->config.server_site_name =
+			SMB_STRDUP(cldap_reply.server_site_name);
+	}
+	if (*cldap_reply.client_site_name) {
+		ads->config.client_site_name =
+			SMB_STRDUP(cldap_reply.client_site_name);
+	}
+
 	ads->server.workgroup          = SMB_STRDUP(cldap_reply.netbios_domain);
 
 	ads->ldap_port = LDAP_PORT;
 	ads->ldap_ip = *interpret_addr2(srv);
 	SAFE_FREE(srv);
 	
-	/* cache the successful connection */
-
-	saf_store( ads->server.workgroup, server );
+	/* Store our site name. */
+	sitename_store( cldap_reply.client_site_name );
 
 	return True;
 }
@@ -223,7 +264,7 @@ again:
 	DEBUG(6,("ads_find_dc: looking for %s '%s'\n", 
 		(got_realm ? "realm" : "domain"), realm));
 
-	if ( !get_sorted_dc_list(realm, &ip_list, &count, got_realm) ) {
+	if ( !NT_STATUS_IS_OK(get_sorted_dc_list(realm, &ip_list, &count, got_realm))) {
 		/* fall back to netbios if we can */
 		if ( got_realm && !lp_disable_netbios() ) {
 			got_realm = False;
@@ -241,6 +282,26 @@ again:
 		
 		if ( !NT_STATUS_IS_OK(check_negative_conn_cache(realm, server)) )
 			continue;
+
+		if (!got_realm) {
+			/* realm in this case is a workgroup name. We need
+			   to ignore any IP addresses in the negative connection
+			   cache that match ip addresses returned in the ad realm
+			   case. It sucks that I have to reproduce the logic above... */
+			c_realm = ads->server.realm;
+			if ( !c_realm || !*c_realm ) {
+				if ( !ads->server.workgroup || !*ads->server.workgroup ) {
+					c_realm = lp_realm();
+				}
+			}
+			if (c_realm && *c_realm &&
+					!NT_STATUS_IS_OK(check_negative_conn_cache(c_realm, server))) {
+				/* Ensure we add the workgroup name for this
+				   IP address as negative too. */
+				add_failed_connection_entry( realm, server, NT_STATUS_UNSUCCESSFUL );
+				continue;
+			}
+		}
 			
 		if ( ads_try_connect(ads, server) ) {
 			SAFE_FREE(ip_list);
@@ -325,6 +386,13 @@ got_connection:
 	{
 		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
 	}
+
+	/* cache the successful connection for workgroup and realm */
+	if (ads_sitename_match(ads)) {
+		saf_store( ads->server.workgroup, inet_ntoa(ads->ldap_ip));
+		saf_store( ads->server.realm, inet_ntoa(ads->ldap_ip));
+	}
+
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
 	status = ADS_ERROR(smb_ldap_start_tls(ads->ld, version));
@@ -2741,4 +2809,173 @@ out:
 	return name;
 }
 
+#if 0
+
+   SAVED CODE - we used to join via ldap - remember how we did this. JRA.
+
+/**
+ * Join a machine to a realm
+ *  Creates the machine account and sets the machine password
+ * @param ads connection to ads server
+ * @param machine name of host to add
+ * @param org_unit Organizational unit to place machine in
+ * @return status of join
+ **/
+ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
+			uint32 account_type, const char *org_unit)
+{
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	char *machine;
+
+	/* machine name must be lowercase */
+	machine = SMB_STRDUP(machine_name);
+	strlower_m(machine);
+
+	/*
+	status = ads_find_machine_acct(ads, (void **)&res, machine);
+	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
+		DEBUG(0, ("Host account for %s already exists - deleting old account\n", machine));
+		status = ads_leave_realm(ads, machine);
+		if (!ADS_ERR_OK(status)) {
+			DEBUG(0, ("Failed to delete host '%s' from the '%s' realm.\n",
+				machine, ads->config.realm));
+			return status;
+		}
+	}
+	*/
+	status = ads_add_machine_acct(ads, machine, account_type, org_unit);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0, ("ads_join_realm: ads_add_machine_acct failed (%s): %s\n", machine, ads_errstr(status)));
+		SAFE_FREE(machine);
+		return status;
+	}
+
+	status = ads_find_machine_acct(ads, (void **)(void *)&res, machine);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0, ("ads_join_realm: Host account test failed for machine %s\n", machine));
+		SAFE_FREE(machine);
+		return status;
+	}
+
+	SAFE_FREE(machine);
+	ads_msgfree(ads, res);
+
+	return status;
+}
+#endif
+
+/**
+ * Delete a machine from the realm
+ * @param ads connection to ads server
+ * @param hostname Machine to remove
+ * @return status of delete
+ **/
+ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
+{
+	ADS_STATUS status;
+	void *res, *msg;
+	char *hostnameDN, *host;
+	int rc;
+	LDAPControl ldap_control;
+	LDAPControl  * pldap_control[2] = {NULL, NULL};
+
+	pldap_control[0] = &ldap_control;
+	memset(&ldap_control, 0, sizeof(LDAPControl));
+	ldap_control.ldctl_oid = (char *)LDAP_SERVER_TREE_DELETE_OID;
+
+	/* hostname must be lowercase */
+	host = SMB_STRDUP(hostname);
+	strlower_m(host);
+
+	status = ads_find_machine_acct(ads, &res, host);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0, ("Host account for %s does not exist.\n", host));
+		return status;
+	}
+
+	msg = ads_first_entry(ads, res);
+	if (!msg) {
+		return ADS_ERROR_SYSTEM(ENOENT);
+	}
+
+	hostnameDN = ads_get_dn(ads, (LDAPMessage *)msg);
+
+	rc = ldap_delete_ext_s(ads->ld, hostnameDN, pldap_control, NULL);
+	if (rc) {
+		DEBUG(3,("ldap_delete_ext_s failed with error code %d\n", rc));
+	}else {
+		DEBUG(3,("ldap_delete_ext_s succeeded with error code %d\n", rc));
+	}
+
+	if (rc != LDAP_SUCCESS) {
+		const char *attrs[] = { "cn", NULL };
+		void *msg_sub;
+
+		/* we only search with scope ONE, we do not expect any further
+		 * objects to be created deeper */
+
+		status = ads_do_search_retry(ads, hostnameDN, LDAP_SCOPE_ONE,
+					"(objectclass=*)", attrs, &res);
+
+		if (!ADS_ERR_OK(status)) {
+			SAFE_FREE(host);
+			ads_memfree(ads, hostnameDN);
+			return status;
+		}
+
+		for (msg_sub = ads_first_entry(ads, res); msg_sub;
+			msg_sub = ads_next_entry(ads, msg_sub)) {
+
+			char *dn = NULL;
+
+			if ((dn = ads_get_dn(ads, msg_sub)) == NULL) {
+				SAFE_FREE(host);
+				ads_memfree(ads, hostnameDN);
+				return ADS_ERROR(LDAP_NO_MEMORY);
+			}
+
+			status = ads_del_dn(ads, dn);
+			if (!ADS_ERR_OK(status)) {
+				DEBUG(3,("failed to delete dn %s: %s\n", dn, ads_errstr(status)));
+				SAFE_FREE(host);
+				ads_memfree(ads, dn);
+				ads_memfree(ads, hostnameDN);
+				return status;
+			}
+
+			ads_memfree(ads, dn);
+		}
+
+		/* there should be no subordinate objects anymore */
+		status = ads_do_search_retry(ads, hostnameDN, LDAP_SCOPE_ONE,
+					"(objectclass=*)", attrs, &res);
+
+		if (!ADS_ERR_OK(status) || ( (ads_count_replies(ads, res)) > 0 ) ) {
+			SAFE_FREE(host);
+			ads_memfree(ads, hostnameDN);
+			return status;
+		}
+
+		/* delete hostnameDN now */
+		status = ads_del_dn(ads, hostnameDN);
+		if (!ADS_ERR_OK(status)) {
+			SAFE_FREE(host);
+			DEBUG(3,("failed to delete dn %s: %s\n", hostnameDN, ads_errstr(status)));
+			ads_memfree(ads, hostnameDN);
+			return status;
+		}
+	}
+
+	ads_memfree(ads, hostnameDN);
+
+	status = ads_find_machine_acct(ads, &res, host);
+	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
+		DEBUG(3, ("Failed to remove host account.\n"));
+		return status;
+	}
+
+	SAFE_FREE(host);
+	return status;
+}
 #endif

@@ -1288,6 +1288,55 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* User change password given blobs */
+
+NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx, 
+				    const char *username, 
+				    DATA_BLOB new_nt_password,
+				    DATA_BLOB old_nt_hash_enc,
+				    DATA_BLOB new_lm_password,
+				    DATA_BLOB old_lm_hash_enc)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_CHGPASSWD_USER q;
+	SAMR_R_CHGPASSWD_USER r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
+
+	DEBUG(10,("rpccli_samr_chng_pswd_auth_crap\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_samr_q_chgpasswd_user(&q, srv_name_slash, username, 
+				   new_nt_password.data, 
+				   old_nt_hash_enc.data, 
+				   new_lm_password.data,
+				   old_lm_hash_enc.data);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CHGPASSWD_USER,
+		q, r,
+		qbuf, rbuf,
+		samr_io_q_chgpasswd_user,
+		samr_io_r_chgpasswd_user,
+		NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+ done:
+
+	return result;
+}
+
+
 /* change password 3 */
 
 NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,

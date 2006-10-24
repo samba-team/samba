@@ -245,7 +245,7 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 {
 	NTSTATUS result;
 	DOM_SID *sids = NULL;
-	uint32 *types = NULL;
+	enum SID_NAME_USE *types = NULL;
 	const char *full_name;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
@@ -277,7 +277,7 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	/* Return rid and type if lookup successful */
 
 	sid_copy(sid, &sids[0]);
-	*type = (enum SID_NAME_USE)types[0];
+	*type = types[0];
 
 	return NT_STATUS_OK;
 }
@@ -294,7 +294,7 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 {
 	char **domains;
 	char **names;
-	uint32 *types;
+	enum SID_NAME_USE *types;
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
@@ -316,6 +316,58 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	*name = names[0];
 	DEBUG(5,("Mapped sid to [%s]\\[%s]\n", domains[0], *name));
 	return NT_STATUS_OK;
+}
+
+NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
+			     TALLOC_CTX *mem_ctx,
+			     const DOM_SID *sid,
+			     uint32 *rids,
+			     size_t num_rids,
+			     char **domain_name,
+			     char ***names,
+			     enum SID_NAME_USE **types)
+{
+	char **domains;
+	NTSTATUS result;
+	struct rpc_pipe_client *cli;
+	POLICY_HND lsa_policy;
+	DOM_SID *sids;
+	size_t i;
+
+	DEBUG(3, ("rids_to_names [rpc] for domain %s\n", domain->name ));
+
+	sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_rids);
+	if (sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_rids; i++) {
+		if (!sid_compose(&sids[i], sid, rids[i])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+
+	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	result = rpccli_lsa_lookup_sids(cli, mem_ctx, &lsa_policy,
+					num_rids, sids, &domains,
+					names, types);
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
+		return result;
+	}
+
+	for (i=0; i<num_rids; i++) {
+		if ((*types)[i] != SID_NAME_UNKNOWN) {
+			*domain_name = domains[i];
+			break;
+		}
+	}
+
+	return result;
 }
 
 /* Lookup user information from a rid or username. */
@@ -721,53 +773,20 @@ static int get_ldap_seq(const char *server, int port, uint32 *seq)
 
 /**********************************************************************
  Get the sequence number for a Windows AD native mode domain using
- LDAP queries
+ LDAP queries. 
 **********************************************************************/
 
-static int get_ldap_sequence_number( const char* domain, uint32 *seq)
+static int get_ldap_sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
 	int ret = -1;
-	int i, port = LDAP_PORT;
-	struct ip_service *ip_list = NULL;
-	int count;
-	
-	if ( !get_sorted_dc_list(domain, &ip_list, &count, False) ) {
-		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
-		return False;
-	}
+	fstring ipstr;
 
-	/* Finally return first DC that we can contact */
-
-	for (i = 0; i < count; i++) {
-		fstring ipstr;
-
-		/* since the is an LDAP lookup, default to the LDAP_PORT is
-		 * not set */
-		port = (ip_list[i].port!= PORT_NONE) ?
-			ip_list[i].port : LDAP_PORT;
-
-		fstrcpy( ipstr, inet_ntoa(ip_list[i].ip) );
-		
-		if (is_zero_ip(ip_list[i].ip))
-			continue;
-
-		if ( (ret = get_ldap_seq( ipstr, port,  seq)) == 0 )
-			goto done;
-
-		/* add to failed connection cache */
-		add_failed_connection_entry( domain, ipstr,
-					     NT_STATUS_UNSUCCESSFUL );
-	}
-
-done:
-	if ( ret == 0 ) {
+	fstrcpy( ipstr, inet_ntoa(domain->dcaddr.sin_addr));
+	if ((ret = get_ldap_seq( ipstr, LDAP_PORT, seq)) == 0) {
 		DEBUG(3, ("get_ldap_sequence_number: Retrieved sequence "
-			  "number for Domain (%s) from DC (%s:%d)\n", 
-			domain, inet_ntoa(ip_list[i].ip), port));
-	}
-
-	SAFE_FREE(ip_list);
-
+			  "number for Domain (%s) from DC (%s)\n", 
+			domain->name, ipstr));
+	} 
 	return ret;
 }
 
@@ -781,7 +800,6 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	NTSTATUS result;
 	POLICY_HND dom_pol;
 	BOOL got_seq_num = False;
-	int retry;
 	struct rpc_pipe_client *cli;
 
 	DEBUG(10,("rpc: fetch sequence_number for %s\n", domain->name));
@@ -791,8 +809,6 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	if (!(mem_ctx = talloc_init("sequence_number[rpc]")))
 		return NT_STATUS_NO_MEMORY;
 
-	retry = 0;
-
 #ifdef HAVE_LDAP
 	if ( domain->native_mode ) 
 	{
@@ -801,7 +817,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 		DEBUG(8,("using get_ldap_seq() to retrieve the "
 			 "sequence number\n"));
 
-		res =  get_ldap_sequence_number( domain->name, seq );
+		res =  get_ldap_sequence_number( domain, seq );
 		if (res == 0)
 		{			
 			result = NT_STATUS_OK;
@@ -994,6 +1010,7 @@ struct winbindd_methods msrpc_methods = {
 	enum_local_groups,
 	msrpc_name_to_sid,
 	msrpc_sid_to_name,
+	msrpc_rids_to_names,
 	query_user,
 	lookup_usergroups,
 	msrpc_lookup_useraliases,

@@ -46,6 +46,9 @@
 #  define T_A   	ns_t_a
 #endif
 #  define T_SRV 	ns_t_srv
+#if !defined(T_NS)	/* AIX 5.3 already defines T_NS */
+#  define T_NS 		ns_t_ns
+#endif
 #else
 #  ifdef HFIXEDSZ
 #    define NS_HFIXEDSZ HFIXEDSZ
@@ -197,6 +200,46 @@ static BOOL ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	return True;
 }
 
+/*********************************************************************
+*********************************************************************/
+
+static BOOL ads_dns_parse_rr_ns( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
+                       uint8 **ptr, struct dns_rr_ns *nsrec )
+{
+	struct dns_rr rr;
+	uint8 *p;
+	pstring nsname;
+	int namelen;
+
+	if ( !start || !end || !nsrec || !*ptr)
+		return -1;
+
+	/* Parse the RR entry.  Coming out of the this, ptr is at the beginning 
+	   of the next record */
+
+	if ( !ads_dns_parse_rr( ctx, start, end, ptr, &rr ) ) {
+		DEBUG(1,("ads_dns_parse_rr_ns: Failed to parse RR record\n"));
+		return False;
+	}
+
+	if ( rr.type != T_NS ) {
+		DEBUG(1,("ads_dns_parse_rr_ns: Bad answer type (%d)\n", rr.type));
+		return False;
+	}
+
+	p = rr.rdata;
+
+	/* ame server hostname */
+	
+	namelen = dn_expand( start, end, p, nsname, sizeof(nsname) );
+	if ( namelen < 0 ) {
+		DEBUG(1,("ads_dns_parse_rr_ns: Failed to uncompress name!\n"));
+		return False;
+	}
+	nsrec->hostname = talloc_strdup( ctx, nsname );
+
+	return True;
+}
 
 /*********************************************************************
  Sort SRV record list based on weight and priority.  See RFC 2782.
@@ -224,27 +267,16 @@ static int dnssrvcmp( struct dns_rr_srv *a, struct dns_rr_srv *b )
 }
 
 /*********************************************************************
- Simple wrapper for a DNS SRV query
+ Simple wrapper for a DNS query
 *********************************************************************/
 
-NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dns_rr_srv **dclist, int *numdcs )
+static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type, 
+                              uint8 **buf, int *resp_length )
 {
 	uint8 *buffer = NULL;
 	size_t buf_len;
-	int resp_len = NS_PACKETSZ;
-	struct dns_rr_srv *dcs = NULL;
-	int query_count, answer_count, auth_count, additional_count;
-	uint8 *p = buffer;
-	int rrnum;
-	int idx = 0;
-
-	if ( !ctx || !name || !dclist ) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	int resp_len = NS_PACKETSZ;	
 	
-	/* Send the request.  May have to loop several times in case 
-	   of large replies */
-
 	do {
 		if ( buffer )
 			TALLOC_FREE( buffer );
@@ -256,13 +288,47 @@ NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dns_rr_sr
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if ( (resp_len = res_query(name, C_IN, T_SRV, buffer, buf_len)) < 0 ) {
-			DEBUG(1,("ads_dns_lookup_srv: Failed to resolve %s (%s)\n", name, strerror(errno)));
+		if ( (resp_len = res_query(name, C_IN, q_type, buffer, buf_len)) < 0 ) {
+			DEBUG(3,("ads_dns_lookup_srv: Failed to resolve %s (%s)\n", name, strerror(errno)));
 			TALLOC_FREE( buffer );
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} while ( buf_len < resp_len && resp_len < MAX_DNS_PACKET_SIZE );
+	
+	*buf = buffer;
+	*resp_length = resp_len;
 
+	return NT_STATUS_OK;
+}
+
+/*********************************************************************
+ Simple wrapper for a DNS SRV query
+*********************************************************************/
+
+static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dns_rr_srv **dclist, int *numdcs )
+{
+	uint8 *buffer = NULL;
+	int resp_len = 0;
+	struct dns_rr_srv *dcs = NULL;
+	int query_count, answer_count, auth_count, additional_count;
+	uint8 *p = buffer;
+	int rrnum;
+	int idx = 0;
+	NTSTATUS status;
+
+	if ( !ctx || !name || !dclist ) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	/* Send the request.  May have to loop several times in case 
+	   of large replies */
+
+	status = dns_send_req( ctx, name, T_SRV, &buffer, &resp_len );
+	if ( !NT_STATUS_IS_OK(status) ) {
+		DEBUG(3,("ads_dns_lookup_srv: Failed to send DNS query (%s)\n",
+			nt_errstr(status)));
+		return status;
+	}
 	p = buffer;
 
 	/* For some insane reason, the ns_initparse() et. al. routines are only
@@ -383,15 +449,273 @@ NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dns_rr_sr
 	return NT_STATUS_OK;
 }
 
+/*********************************************************************
+ Simple wrapper for a DNS NS query
+*********************************************************************/
+
+NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_rr_ns **nslist, int *numns )
+{
+	uint8 *buffer = NULL;
+	int resp_len = 0;
+	struct dns_rr_ns *nsarray = NULL;
+	int query_count, answer_count, auth_count, additional_count;
+	uint8 *p;
+	int rrnum;
+	int idx = 0;
+	NTSTATUS status;
+
+	if ( !ctx || !dnsdomain || !nslist ) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	/* Send the request.  May have to loop several times in case 
+	   of large replies */
+	   
+	status = dns_send_req( ctx, dnsdomain, T_NS, &buffer, &resp_len );
+	if ( !NT_STATUS_IS_OK(status) ) {
+		DEBUG(3,("ads_dns_lookup_ns: Failed to send DNS query (%s)\n",
+			nt_errstr(status)));
+		return status;
+	}
+	p = buffer;
+
+	/* For some insane reason, the ns_initparse() et. al. routines are only
+	   available in libresolv.a, and not the shared lib.  Who knows why....
+	   So we have to parse the DNS reply ourselves */
+
+	/* Pull the answer RR's count from the header.  Use the NMB ordering macros */
+
+	query_count      = RSVAL( p, 4 );
+	answer_count     = RSVAL( p, 6 );
+	auth_count       = RSVAL( p, 8 );
+	additional_count = RSVAL( p, 10 );
+
+	DEBUG(4,("ads_dns_lookup_ns: %d records returned in the answer section.\n", 
+		answer_count));
+		
+	if ( (nsarray = TALLOC_ARRAY(ctx, struct dns_rr_ns, answer_count)) == NULL ) {
+		DEBUG(0,("ads_dns_lookup_ns: talloc() failure for %d char*'s\n", 
+			answer_count));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* now skip the header */
+
+	p += NS_HFIXEDSZ;
+
+	/* parse the query section */
+
+	for ( rrnum=0; rrnum<query_count; rrnum++ ) {
+		struct dns_query q;
+
+		if ( !ads_dns_parse_query( ctx, buffer, buffer+resp_len, &p, &q ) ) {
+			DEBUG(1,("ads_dns_lookup_ns: Failed to parse query record!\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	/* now we are at the answer section */
+
+	for ( rrnum=0; rrnum<answer_count; rrnum++ ) {
+		if ( !ads_dns_parse_rr_ns( ctx, buffer, buffer+resp_len, &p, &nsarray[rrnum] ) ) {
+			DEBUG(1,("ads_dns_lookup_ns: Failed to parse answer record!\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}		
+	}
+	idx = rrnum;
+
+	/* Parse the authority section */
+	/* just skip these for now */
+
+	for ( rrnum=0; rrnum<auth_count; rrnum++ ) {
+		struct dns_rr rr;
+
+		if ( !ads_dns_parse_rr( ctx, buffer, buffer+resp_len, &p, &rr ) ) {
+			DEBUG(1,("ads_dns_lookup_ns: Failed to parse authority record!\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	/* Parse the additional records section */
+
+	for ( rrnum=0; rrnum<additional_count; rrnum++ ) {
+		struct dns_rr rr;
+		int i;
+
+		if ( !ads_dns_parse_rr( ctx, buffer, buffer+resp_len, &p, &rr ) ) {
+			DEBUG(1,("ads_dns_lookup_ns: Failed to parse additional records section!\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		/* only interested in A records as a shortcut for having to come 
+		   back later and lookup the name */
+
+		if ( (rr.type != T_A) || (rr.rdatalen != 4) ) 
+			continue;
+
+		for ( i=0; i<idx; i++ ) {
+			if ( strcmp( rr.hostname, nsarray[i].hostname ) == 0 ) {
+				uint8 *buf = (uint8*)&nsarray[i].ip.s_addr;
+				memcpy( buf, rr.rdata, 4 );
+			}
+		}
+	}
+	
+	*nslist = nsarray;
+	*numns = idx;
+	
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Store and fetch the AD client sitename.
+****************************************************************************/
+
+#define SITENAME_KEY	"AD_SITENAME"
+
+/****************************************************************************
+ Store the AD client sitename.
+ We store indefinately as every new CLDAP query will re-write this.
+ If the sitename is "Default-First-Site-Name" we don't store it
+ as this isn't a valid DNS name.
+****************************************************************************/
+
+BOOL sitename_store(const char *sitename)
+{
+	time_t expire;
+	BOOL ret = False;
+
+	if (!gencache_init()) {
+		return False;
+	}
+	
+	if (!sitename || (sitename && !*sitename)) {
+		DEBUG(5,("sitename_store: deleting empty sitename!\n"));
+		return gencache_del(SITENAME_KEY);
+	}
+
+	expire = get_time_t_max(); /* Store indefinately. */
+	
+	DEBUG(10,("sitename_store: sitename = [%s], expire = [%u]\n",
+		sitename, (unsigned int)expire ));
+
+	ret = gencache_set( SITENAME_KEY, sitename, expire );
+	return ret;
+}
+
+/****************************************************************************
+ Fetch the AD client sitename.
+ Caller must free.
+****************************************************************************/
+
+char *sitename_fetch(void)
+{
+	char *sitename = NULL;
+	time_t timeout;
+	BOOL ret = False;
+	
+	if (!gencache_init()) {
+		return False;
+	}
+	
+	ret = gencache_get( SITENAME_KEY, &sitename, &timeout );
+	if ( !ret ) {
+		DEBUG(5,("sitename_fetch: No stored sitename\n"));
+	} else {
+		DEBUG(5,("sitename_fetch: Returning sitename \"%s\"\n",
+			sitename ));
+	}
+	return sitename;
+}
+
+/****************************************************************************
+ Did the sitename change ?
+****************************************************************************/
+
+BOOL stored_sitename_changed(const char *sitename)
+{
+	BOOL ret = False;
+	char *new_sitename = sitename_fetch();
+
+	if (sitename && new_sitename && !strequal(sitename, new_sitename)) {
+		ret = True;
+	} else if ((sitename && !new_sitename) ||
+			(!sitename && new_sitename)) {
+		ret = True;
+	}
+	SAFE_FREE(new_sitename);
+	return ret;
+}
+
 /********************************************************************
+ Query with optional sitename.
 ********************************************************************/
 
-NTSTATUS ads_dns_query_dcs( TALLOC_CTX *ctx, const char *domain, struct dns_rr_srv **dclist, int *numdcs )
+NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
+				const char *servicename,
+				const char *realm,
+				const char *sitename,
+				struct dns_rr_srv **dclist,
+				int *numdcs )
 {
-	pstring name;
-
-	snprintf( name, sizeof(name), "_ldap._tcp.dc._msdcs.%s", domain );
-
+	char *name;
+	if (sitename) {
+		name = talloc_asprintf(ctx, "%s._tcp.%s._sites.dc._msdcs.%s",
+				servicename, sitename, realm );
+	} else {
+		name = talloc_asprintf(ctx, "%s._tcp.dc._msdcs.%s",
+				servicename, realm );
+	}
+	if (!name) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	return ads_dns_lookup_srv( ctx, name, dclist, numdcs );
 }
 
+/********************************************************************
+ Query for AD DC's. Transparently use sitename.
+********************************************************************/
+
+NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
+			const char *realm,
+			struct dns_rr_srv **dclist,
+			int *numdcs )
+{
+	NTSTATUS status;
+	char *sitename = sitename_fetch();
+
+	status = ads_dns_query_internal(ctx, "_ldap", realm, sitename,
+					dclist, numdcs);
+	if (sitename && !NT_STATUS_IS_OK(status)) {
+		/* Sitename DNS query may have failed. Try without. */
+		status = ads_dns_query_internal(ctx, "_ldap", realm, NULL,
+						dclist, numdcs);
+	}
+	SAFE_FREE(sitename);
+	return status;
+}
+
+/********************************************************************
+ Query for AD KDC's. Transparently use sitename.
+ Even if our underlying kerberos libraries are UDP only, this
+ is pretty safe as it's unlikely that a KDC supports TCP and not UDP.
+********************************************************************/
+
+NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
+			const char *realm,
+			struct dns_rr_srv **dclist,
+			int *numdcs )
+{
+	NTSTATUS status;
+	char *sitename = sitename_fetch();
+
+	status = ads_dns_query_internal(ctx, "_kerberos", realm, sitename,
+					dclist, numdcs);
+	if (sitename && !NT_STATUS_IS_OK(status)) {
+		/* Sitename DNS query may have failed. Try without. */
+		status = ads_dns_query_internal(ctx, "_kerberos", realm, NULL,
+						dclist, numdcs);
+	}
+	SAFE_FREE(sitename);
+	return status;
+}

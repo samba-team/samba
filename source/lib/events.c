@@ -59,7 +59,8 @@ struct timed_event *add_timed_event(TALLOC_CTX *mem_ctx,
 	te->handler = handler;
 	te->private_data = private_data;
 
-	/* keep the list ordered */
+	/* keep the list ordered - this is NOT guarenteed as event times
+	   may be changed after insertion */
 	last_te = NULL;
 	for (cur_te = timed_events; cur_te; cur_te = cur_te->next) {
 		/* if the new event comes before the current one break */
@@ -80,27 +81,24 @@ struct timed_event *add_timed_event(TALLOC_CTX *mem_ctx,
 
 void run_events(void)
 {
-	struct timeval now;
+	/* Run all events that are pending, not just one (as we
+	   did previously. */
 
-	if (timed_events == NULL) {
-		/* No syscall if there are no events */
-		DEBUG(11, ("run_events: No events\n"));
-		return;
+	while (timed_events) {
+		struct timeval now;
+		GetTimeOfDay(&now);
+
+		if (timeval_compare(&now, &timed_events->when) < 0) {
+			/* Nothing to do yet */
+			DEBUG(11, ("run_events: Nothing to do\n"));
+			return;
+		}
+
+		DEBUG(10, ("Running event \"%s\" %lx\n", timed_events->event_name,
+			(unsigned long)timed_events));
+
+		timed_events->handler(timed_events, &now, timed_events->private_data);
 	}
-
-	GetTimeOfDay(&now);
-
-	if (timeval_compare(&now, &timed_events->when) < 0) {
-		/* Nothing to do yet */
-		DEBUG(11, ("run_events: Nothing to do\n"));
-		return;
-	}
-
-	DEBUG(10, ("Running event \"%s\" %lx\n", timed_events->event_name,
-		(unsigned long)timed_events));
-
-	timed_events->handler(timed_events, &now, timed_events->private_data);
-	return;
 }
 
 struct timeval *get_timed_events_timeout(struct timeval *to_ret)
@@ -118,4 +116,18 @@ struct timeval *get_timed_events_timeout(struct timeval *to_ret)
 		(int)to_ret->tv_usec));
 
 	return to_ret;
+}
+
+int set_event_dispatch_time(const char *event_name, struct timeval when)
+{
+	int num_events = 0;
+	struct timed_event *te;
+
+	for (te = timed_events; te; te = te->next) {
+		if (strcmp(event_name, te->event_name) == 0) {
+			te->when = when;
+			num_events++;
+		}
+	}
+	return num_events;
 }

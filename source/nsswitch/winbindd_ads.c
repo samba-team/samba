@@ -171,8 +171,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       NULL};
 	int i, count;
 	ADS_STATUS rc;
-	void *res = NULL;
-	void *msg = NULL;
+	LDAPMessage *res = NULL;
+	LDAPMessage *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	*num_entries = 0;
@@ -279,8 +279,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 			       "name", "objectSid", NULL};
 	int i, count;
 	ADS_STATUS rc;
-	void *res = NULL;
-	void *msg = NULL;
+	LDAPMessage *res = NULL;
+	LDAPMessage *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	const char *filter;
 	BOOL enum_dom_local_groups = False;
@@ -413,7 +413,7 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		      const char *dn,
 		      char **name, uint32 *name_type, DOM_SID *sid)
 {
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
 			       "objectSid", "sAMAccountType", NULL};
 	ADS_STATUS rc;
@@ -469,7 +469,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			       NULL};
 	ADS_STATUS rc;
 	int count;
-	void *msg = NULL;
+	LDAPMessage *msg = NULL;
 	char *ldap_exp;
 	char *sidstr;
 	uint32 group_rid;
@@ -551,8 +551,8 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int count;
-	void *res = NULL;
-	void *msg = NULL;
+	LDAPMessage *res = NULL;
+	LDAPMessage *msg = NULL;
 	char *ldap_exp;
 	ADS_STRUCT *ads;
 	const char *group_attrs[] = {"objectSid", NULL};
@@ -640,7 +640,7 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int count;
-	void *res = NULL;
+	LDAPMessage *res = NULL;
 	ADS_STRUCT *ads;
 	const char *attrs[] = {"memberOf", NULL};
 	size_t num_groups = 0;
@@ -749,7 +749,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	rc = ads_search_retry_sid(ads, (void**)(void *)&msg, sid, attrs);
+	rc = ads_search_retry_sid(ads, &msg, sid, attrs);
 
 	if (!ADS_ERR_OK(rc)) {
 		status = ads_ntstatus(rc);
@@ -860,7 +860,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 {
 	ADS_STATUS rc;
 	int count;
-	void *res=NULL;
+	LDAPMessage *res=NULL;
 	ADS_STRUCT *ads = NULL;
 	char *ldap_exp;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -1119,6 +1119,7 @@ struct winbindd_methods ads_methods = {
 	enum_local_groups,
 	msrpc_name_to_sid,
 	msrpc_sid_to_name,
+	msrpc_rids_to_names,
 	query_user,
 	lookup_usergroups,
 	msrpc_lookup_useraliases,

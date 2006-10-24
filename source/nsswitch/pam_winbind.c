@@ -16,39 +16,92 @@
 
 #define MAX_PASSWD_TRIES	3
 
-/* some syslogging */
-static void _pam_log(int err, const char *format, ...)
+/*
+ * Work around the pam API that has functions with void ** as parameters.
+ * These lead to strict aliasing warnings with gcc.
+ */
+static int _pam_get_item(const pam_handle_t *pamh, int item_type,
+			 const void *_item)
 {
-	va_list args;
-
-	va_start(args, format);
-	openlog(MODULE_NAME, LOG_CONS|LOG_PID, LOG_AUTH);
-	vsyslog(err, format, args);
-	va_end(args);
-	closelog();
+	const void **item = (const void **)_item;
+	return pam_get_item(pamh, item_type, item);
+}
+static int _pam_get_data(const pam_handle_t *pamh,
+			 const char *module_data_name, const void *_data)
+{
+	const void **data = (const void **)_data;
+	return pam_get_data(pamh, module_data_name, data);
 }
 
-static void _pam_log_debug(int ctrl, int err, const char *format, ...)
+/* some syslogging */
+
+static void _pam_log_int(const pam_handle_t *pamh, int err, const char *format, va_list args)
+{
+
+#ifdef HAVE_PAM_VSYSLOG
+	pam_vsyslog(pamh, err, format, args);
+#else
+	{
+
+	char *format2 = NULL;
+	const char *service;
+
+	_pam_get_item(pamh, PAM_SERVICE, &service);
+
+	format2 = malloc(strlen(MODULE_NAME)+strlen(format)+strlen(service)+5);
+	if (format2 == NULL) {
+		/* what else todo ? */
+		vsyslog(err, format, args);
+		return;
+	}
+
+	sprintf(format2, "%s(%s): %s", MODULE_NAME, service, format);
+	vsyslog(err, format2, args);
+	SAFE_FREE(format2);
+	}
+#endif
+}
+
+static void _pam_log(const pam_handle_t *pamh, int ctrl, int err, const char *format, ...)
 {
 	va_list args;
+
+	if (ctrl & WINBIND_SILENT) {
+		return;
+	}
+
+	va_start(args, format);
+	_pam_log_int(pamh, err, format, args);
+	va_end(args);
+}
+
+static void _pam_log_debug(const pam_handle_t *pamh, int ctrl, int err, const char *format, ...)
+{
+	va_list args;
+
+	if (ctrl & WINBIND_SILENT) {
+		return;
+	}
 
 	if (!(ctrl & WINBIND_DEBUG_ARG)) {
 		return;
 	}
 
 	va_start(args, format);
-	openlog(MODULE_NAME, LOG_CONS|LOG_PID, LOG_AUTH);
-	vsyslog(err, format, args);
+	_pam_log_int(pamh, err, format, args);
 	va_end(args);
-	closelog();
 }
 
-static int _pam_parse(int argc, const char **argv, dictionary **d)
+static int _pam_parse(const pam_handle_t *pamh, int flags, int argc, const char **argv, dictionary **d)
 {
 	int ctrl = 0;
 	const char *config_file = NULL;
 	int i;
 	const char **v;
+
+	if (flags & PAM_SILENT) {
+		ctrl |= WINBIND_SILENT;
+	}
 
 	if (d == NULL) {
 		goto config_from_pam;
@@ -66,29 +119,33 @@ static int _pam_parse(int argc, const char **argv, dictionary **d)
 		config_file = PAM_WINBIND_CONFIG_FILE;
 	}
 
-	*d = iniparser_load(CONST_DISCARD(char *, config_file));
+	*d = iniparser_load(config_file);
 	if (*d == NULL) {
 		goto config_from_pam;
 	}
 
-	if (iniparser_getboolean(*d, CONST_DISCARD(char *, "global:debug"), False)) {
+	if (iniparser_getboolean(*d, "global:debug", False)) {
 		ctrl |= WINBIND_DEBUG_ARG;
 	}
 
-	if (iniparser_getboolean(*d, CONST_DISCARD(char *, "global:cached_login"), False)) {
+	if (iniparser_getboolean(*d, "global:cached_login", False)) {
 		ctrl |= WINBIND_CACHED_LOGIN;
 	}
 
-	if (iniparser_getboolean(*d, CONST_DISCARD(char *, "global:krb5_auth"), False)) {
+	if (iniparser_getboolean(*d, "global:krb5_auth", False)) {
 		ctrl |= WINBIND_KRB5_AUTH;
 	}
 
-	if (iniparser_getstr(*d, CONST_DISCARD(char *,"global:krb5_ccache_type")) != NULL) {
+	if (iniparser_getboolean(*d, "global:silent", False)) {
+		ctrl |= WINBIND_SILENT;
+	}
+
+	if (iniparser_getstr(*d, "global:krb5_ccache_type") != NULL) {
 		ctrl |= WINBIND_KRB5_CCACHE_TYPE;
 	}
 	
-	if ((iniparser_getstr(*d, CONST_DISCARD(char *, "global:require-membership-of")) != NULL) ||
-	    (iniparser_getstr(*d, CONST_DISCARD(char *, "global:require_membership_of")) != NULL)) {
+	if ((iniparser_getstr(*d, "global:require-membership-of") != NULL) ||
+	    (iniparser_getstr(*d, "global:require_membership_of") != NULL)) {
 		ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 	}
 
@@ -118,7 +175,7 @@ config_from_pam:
 		else if (!strcasecmp(*v, "cached_login"))
 			ctrl |= WINBIND_CACHED_LOGIN;
 		else {
-			_pam_log(LOG_ERR, "pam_parse: unknown option; %s", *v);
+			_pam_log(pamh, ctrl, LOG_ERR, "pam_parse: unknown option; %s", *v);
 		}
 
 	}
@@ -129,6 +186,7 @@ static void _pam_winbind_cleanup_func(pam_handle_t *pamh, void *data, int error_
 {
 	SAFE_FREE(data);
 }
+
 
 static const struct ntstatus_errors {
 	const char *ntstatus_string;
@@ -175,7 +233,7 @@ static int converse(pam_handle_t *pamh, int nargs,
 	int retval;
 	struct pam_conv *conv;
 
-	retval = pam_get_item(pamh, PAM_CONV, (const void **) &conv );
+	retval = _pam_get_item(pamh, PAM_CONV, &conv );
 	if (retval == PAM_SUCCESS) {
 		retval = conv->conv(nargs, (const struct pam_message **)message,
 				    response, conv->appdata_ptr);
@@ -229,14 +287,14 @@ static int pam_winbind_request(pam_handle_t * pamh, int ctrl,
 	init_request(request, req_type);
 	
 	if (write_sock(request, sizeof(*request), 0) == -1) {
-		_pam_log(LOG_ERR, "write to socket failed!");
+		_pam_log(pamh, ctrl, LOG_ERR, "pam_winbind_request: write to socket failed!");
 		close_sock();
 		return PAM_SERVICE_ERR;
 	}
 	
 	/* Wait for reply */
 	if (read_reply(response) == -1) {
-		_pam_log(LOG_ERR, "read from socket failed!");
+		_pam_log(pamh, ctrl, LOG_ERR, "pam_winbind_request: read from socket failed!");
 		close_sock();
 		return PAM_SERVICE_ERR;
 	}
@@ -247,14 +305,14 @@ static int pam_winbind_request(pam_handle_t * pamh, int ctrl,
 	/* Copy reply data from socket */
 	if (response->result != WINBINDD_OK) {
 		if (response->data.auth.pam_error != PAM_SUCCESS) {
-			_pam_log(LOG_ERR, "request failed: %s, PAM error was %s (%d), NT error was %s", 
+			_pam_log(pamh, ctrl, LOG_ERR, "request failed: %s, PAM error was %s (%d), NT error was %s", 
 				 response->data.auth.error_string,
 				 pam_strerror(pamh, response->data.auth.pam_error),
 				 response->data.auth.pam_error,
 				 response->data.auth.nt_status_string);
 			return response->data.auth.pam_error;
 		} else {
-			_pam_log(LOG_ERR, "request failed, but PAM error 0!");
+			_pam_log(pamh, ctrl, LOG_ERR, "request failed, but PAM error 0!");
 			return PAM_SERVICE_ERR;
 		}
 	}
@@ -262,7 +320,7 @@ static int pam_winbind_request(pam_handle_t * pamh, int ctrl,
 	return PAM_SUCCESS;
 }
 
-static int pam_winbind_request_log(pam_handle_t * pamh, 
+static int pam_winbind_request_log(pam_handle_t * pamh,
 				   int ctrl,
 				   enum winbindd_cmd req_type,
 				   struct winbindd_request *request,
@@ -276,23 +334,23 @@ static int pam_winbind_request_log(pam_handle_t * pamh,
 	switch (retval) {
 	case PAM_AUTH_ERR:
 		/* incorrect password */
-		_pam_log(LOG_WARNING, "user `%s' denied access (incorrect password or invalid membership)", user);
+		_pam_log(pamh, ctrl, LOG_WARNING, "user '%s' denied access (incorrect password or invalid membership)", user);
 		return retval;
 	case PAM_ACCT_EXPIRED:
 		/* account expired */
-		_pam_log(LOG_WARNING, "user `%s' account expired", user);
+		_pam_log(pamh, ctrl, LOG_WARNING, "user '%s' account expired", user);
 		return retval;
 	case PAM_AUTHTOK_EXPIRED:
 		/* password expired */
-		_pam_log(LOG_WARNING, "user `%s' password expired", user);
+		_pam_log(pamh, ctrl, LOG_WARNING, "user '%s' password expired", user);
 		return retval;
 	case PAM_NEW_AUTHTOK_REQD:
 		/* new password required */
-		_pam_log(LOG_WARNING, "user `%s' new password required", user);
+		_pam_log(pamh, ctrl, LOG_WARNING, "user '%s' new password required", user);
 		return retval;
 	case PAM_USER_UNKNOWN:
 		/* the user does not exist */
-		_pam_log_debug(ctrl, LOG_NOTICE, "user `%s' not found", user);
+		_pam_log_debug(pamh, ctrl, LOG_NOTICE, "user '%s' not found", user);
 		if (ctrl & WINBIND_UNKNOWN_OK_ARG) {
 			return PAM_IGNORE;
 		}	 
@@ -300,33 +358,34 @@ static int pam_winbind_request_log(pam_handle_t * pamh,
 	case PAM_SUCCESS:
 		if (req_type == WINBINDD_PAM_AUTH) {
 			/* Otherwise, the authentication looked good */
-			_pam_log(LOG_NOTICE, "user '%s' granted access", user);
+			_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' granted access", user);
 		} else if (req_type == WINBINDD_PAM_CHAUTHTOK) {
 			/* Otherwise, the authentication looked good */
-			_pam_log(LOG_NOTICE, "user '%s' password changed", user);
+			_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' password changed", user);
 		} else { 
 			/* Otherwise, the authentication looked good */
-			_pam_log(LOG_NOTICE, "user '%s' OK", user);
+			_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' OK", user);
 		}
 	
 		return retval;
 	default:
 		/* we don't know anything about this return value */
-		_pam_log(LOG_ERR, "internal module error (retval = %d, user = `%s')",
+		_pam_log(pamh, ctrl, LOG_ERR, "internal module error (retval = %d, user = '%s')",
 			 retval, user);
 		return retval;
 	}
 }
 
 /* talk to winbindd */
-static int winbind_auth_request(pam_handle_t * pamh, 
+static int winbind_auth_request(pam_handle_t * pamh,
 				int ctrl, 
 				const char *user, 
 				const char *pass, 
 				const char *member, 
 				const char *cctype,
 				int process_result,
-				time_t *pwd_last_set)
+				time_t *pwd_last_set,
+				char **user_ret)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -354,7 +413,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 		struct passwd *pwd = NULL;
 
-		_pam_log_debug(ctrl, LOG_DEBUG, "enabling krb5 login flag\n"); 
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "enabling krb5 login flag\n"); 
 
 		request.flags |= WBFLAG_PAM_KRB5 | WBFLAG_PAM_FALLBACK_AFTER_KRB5;
 
@@ -366,14 +425,19 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	}
 
 	if (ctrl & WINBIND_CACHED_LOGIN) {
-		_pam_log_debug(ctrl, LOG_DEBUG, "enabling cached login flag\n"); 
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "enabling cached login flag\n"); 
 		request.flags |= WBFLAG_PAM_CACHED_LOGIN;
+	}
+
+	if (user_ret) {
+		*user_ret = NULL;
+		request.flags |= WBFLAG_PAM_UNIX_NAME;
 	}
 
 	if (cctype != NULL) {
 		strncpy(request.data.auth.krb5_cc_type, cctype, 
 			sizeof(request.data.auth.krb5_cc_type) - 1);
-		_pam_log_debug(ctrl, LOG_DEBUG, "enabling request for a %s krb5 ccache\n", cctype); 
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "enabling request for a %s krb5 ccache\n", cctype); 
 	}
 
 	request.data.auth.require_membership_of_sid[0] = '\0';
@@ -392,14 +456,14 @@ static int winbind_auth_request(pam_handle_t * pamh,
 		ZERO_STRUCT(sid_request);
 		ZERO_STRUCT(sid_response);
 
-		_pam_log_debug(ctrl, LOG_DEBUG, "no sid given, looking up: %s\n", member);
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "no sid given, looking up: %s\n", member);
 
 		/* fortunatly winbindd can handle non-separated names */
 		strncpy(sid_request.data.name.name, member,
 			sizeof(sid_request.data.name.name) - 1);
 
 		if (pam_winbind_request_log(pamh, ctrl, WINBINDD_LOOKUPNAME, &sid_request, &sid_response, user)) {
-			_pam_log(LOG_INFO, "could not lookup name: %s\n", member); 
+			_pam_log(pamh, ctrl, LOG_INFO, "could not lookup name: %s\n", member); 
 			return PAM_AUTH_ERR;
 		}
 
@@ -420,14 +484,14 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 		char var[PATH_MAX];
 
-		_pam_log_debug(ctrl, LOG_DEBUG, "request returned KRB5CCNAME: %s", 
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "request returned KRB5CCNAME: %s", 
 			       response.data.auth.krb5ccname);
 	
 		snprintf(var, sizeof(var), "KRB5CCNAME=%s", response.data.auth.krb5ccname);
 	
 		ret = pam_putenv(pamh, var);
 		if (ret != PAM_SUCCESS) {
-			_pam_log(LOG_ERR, "failed to set KRB5CCNAME to %s", var);
+			_pam_log(pamh, ctrl, LOG_ERR, "failed to set KRB5CCNAME to %s", var);
 			return ret;
 		}
 	}
@@ -457,7 +521,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 		ret = PAM_AUTHTOK_EXPIRED;
 
-		_pam_log_debug(ctrl, LOG_DEBUG,"Password has expired (Password was last set: %d, "
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG,"Password has expired (Password was last set: %d, "
 			       "the policy says it should expire here %d (now it's: %d)\n",
 			       response.data.auth.info3.pass_last_set_time,
 			       response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire,
@@ -480,7 +544,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 	if (response.data.auth.info3.user_flgs & LOGON_CACHED_ACCOUNT) {
 		_make_remark(pamh, PAM_ERROR_MSG, "Logging on using cached account. Network ressources can be unavailable");
-		_pam_log_debug(ctrl, LOG_DEBUG,"User %s logged on using cached account\n", user);
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG,"User %s logged on using cached account\n", user);
 	}
 
 	/* save the CIFS homedir for pam_cifs / pam_mount */
@@ -490,7 +554,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 					(void *) strdup(response.data.auth.info3.home_dir),
 					_pam_winbind_cleanup_func);
 		if (ret2) {
-			_pam_log_debug(ctrl, LOG_DEBUG, "Could not set data: %s", 
+			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Could not set data: %s", 
 				       pam_strerror(pamh, ret2));
 		}
 
@@ -503,7 +567,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 					(void *) strdup(response.data.auth.info3.logon_script), 
 					_pam_winbind_cleanup_func);
 		if (ret2) {
-			_pam_log_debug(ctrl, LOG_DEBUG, "Could not set data: %s", 
+			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Could not set data: %s", 
 				       pam_strerror(pamh, ret2));
 		}
 	}
@@ -515,9 +579,15 @@ static int winbind_auth_request(pam_handle_t * pamh,
 					(void *) strdup(response.data.auth.info3.profile_path), 
 					_pam_winbind_cleanup_func);
 		if (ret2) {
-			_pam_log_debug(ctrl, LOG_DEBUG, "Could not set data: %s", 
+			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "Could not set data: %s", 
 				       pam_strerror(pamh, ret2));
 		}
+	}
+
+	/* If winbindd returned a username, return the pointer to it here. */
+	if (user_ret && response.extra_data.data) {
+		/* We have to trust it's a null terminated string. */
+		*user_ret = (char *)response.extra_data.data;
 	}
 
 	return ret;
@@ -601,7 +671,7 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 				_make_remark(pamh, PAM_ERROR_MSG, "Password does not meet complexity requirements");
 				break;
 			default:
-				_pam_log_debug(ctrl, LOG_DEBUG,
+				_pam_log_debug(pamh, ctrl, LOG_DEBUG,
 					       "unknown password change reject reason: %d", 
 					       response.data.auth.reject_reason);
 				break;
@@ -632,7 +702,7 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
  *	 0  = OK
  * 	-1  = System error
  */
-static int valid_user(const char *user, pam_handle_t *pamh, int ctrl)
+static int valid_user(pam_handle_t *pamh, int ctrl, const char *user)
 {
 	/* check not only if the user is available over NSS calls, also make
 	 * sure it's really a winbind user, this is important when stacking PAM
@@ -707,10 +777,10 @@ static int _winbind_read_password(pam_handle_t * pamh,
 	 */
 
 	if (on(WINBIND_TRY_FIRST_PASS_ARG, ctrl) || on(WINBIND_USE_FIRST_PASS_ARG, ctrl)) {
-		retval = pam_get_item(pamh, authtok_flag, (const void **) &item);
+		retval = _pam_get_item(pamh, authtok_flag, &item);
 		if (retval != PAM_SUCCESS) {
 			/* very strange. */
-			_pam_log(LOG_ALERT, 
+			_pam_log(pamh, ctrl, LOG_ALERT, 
 				 "pam_get_item returned error to unix-read-password"
 			    );
 			return retval;
@@ -779,7 +849,7 @@ static int _winbind_read_password(pam_handle_t * pamh,
 						}
 					}
 				} else {
-					_pam_log(LOG_NOTICE, "could not recover authentication token");
+					_pam_log(pamh, ctrl, LOG_NOTICE, "could not recover authentication token");
 					retval = PAM_AUTHTOK_RECOVER_ERR;
 				}
 
@@ -798,7 +868,7 @@ static int _winbind_read_password(pam_handle_t * pamh,
 	}
 
 	if (retval != PAM_SUCCESS) {
-		_pam_log_debug(ctrl, LOG_DEBUG,
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
 			         "unable to obtain a password");
 		return retval;
 	}
@@ -809,9 +879,9 @@ static int _winbind_read_password(pam_handle_t * pamh,
 	retval = pam_set_item(pamh, authtok_flag, token);
 	_pam_delete(token);	/* clean it up */
 	if (retval != PAM_SUCCESS || 
-	    (retval = pam_get_item(pamh, authtok_flag, (const void **) &item)) != PAM_SUCCESS) {
+	    (retval = _pam_get_item(pamh, authtok_flag, &item)) != PAM_SUCCESS) {
 		
-		_pam_log(LOG_CRIT, "error manipulating password");
+		_pam_log(pamh, ctrl, LOG_CRIT, "error manipulating password");
 		return retval;
 		
 	}
@@ -822,19 +892,20 @@ static int _winbind_read_password(pam_handle_t * pamh,
 	return PAM_SUCCESS;
 }
 
-const char *get_conf_item_string(int argc, 
+const char *get_conf_item_string(const pam_handle_t *pamh,
+				 int argc, 
 				 const char **argv, 
 				 int ctrl,
 				 dictionary *d,
 				 const char *item, 
-				 int flag)
+				 int config_flag)
 {
 	int i = 0;
 	char *parm = NULL;
 	const char *parm_opt = NULL;
 	char *key = NULL;
 
-	if (!(ctrl & flag)) {
+	if (!(ctrl & config_flag)) {
 		goto out;
 	}
 
@@ -858,36 +929,36 @@ const char *get_conf_item_string(int argc,
 			parm = strdup(argv[i]);
 
 			if ( (p = strchr( parm, '=' )) == NULL) {
-				_pam_log(LOG_INFO, "no \"=\" delimiter for \"%s\" found\n", item);
+				_pam_log(pamh, ctrl, LOG_INFO, "no \"=\" delimiter for \"%s\" found\n", item);
 				goto out;
 			}
 			SAFE_FREE(parm);
-			_pam_log_debug(ctrl, LOG_INFO, "PAM config: %s '%s'\n", item, p+1);
+			_pam_log_debug(pamh, ctrl, LOG_INFO, "PAM config: %s '%s'\n", item, p+1);
 			return p + 1;
 		}
 	}
 
 	if (d != NULL) {
-		_pam_log_debug(ctrl, LOG_INFO, "CONFIG file: %s '%s'\n", item, parm_opt);
+		_pam_log_debug(pamh, ctrl, LOG_INFO, "CONFIG file: %s '%s'\n", item, parm_opt);
 	}
 out:
 	SAFE_FREE(parm);
 	return parm_opt;
 }
 
-const char *get_krb5_cc_type_from_config(int argc, const char **argv, int ctrl, dictionary *d)
+const char *get_krb5_cc_type_from_config(const pam_handle_t *pamh, int argc, const char **argv, int ctrl, dictionary *d)
 {
-	return get_conf_item_string(argc, argv, ctrl, d, "krb5_ccache_type", WINBIND_KRB5_CCACHE_TYPE);
+	return get_conf_item_string(pamh, argc, argv, ctrl, d, "krb5_ccache_type", WINBIND_KRB5_CCACHE_TYPE);
 }
 
-const char *get_member_from_config(int argc, const char **argv, int ctrl, dictionary *d)
+const char *get_member_from_config(const pam_handle_t *pamh, int argc, const char **argv, int ctrl, dictionary *d)
 {
 	const char *ret = NULL;
-	ret = get_conf_item_string(argc, argv, ctrl, d, "require_membership_of", WINBIND_REQUIRED_MEMBERSHIP);
+	ret = get_conf_item_string(pamh, argc, argv, ctrl, d, "require_membership_of", WINBIND_REQUIRED_MEMBERSHIP);
 	if (ret) {
 		return ret;
 	}
-	return get_conf_item_string(argc, argv, ctrl, d, "require-membership-of", WINBIND_REQUIRED_MEMBERSHIP);
+	return get_conf_item_string(pamh, argc, argv, ctrl, d, "require-membership-of", WINBIND_REQUIRED_MEMBERSHIP);
 }
 
 PAM_EXTERN
@@ -900,20 +971,21 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	const char *cctype = NULL;
 	int retval = PAM_AUTH_ERR;
 	dictionary *d = NULL;
+	char *username_ret = NULL;
 
 	/* parse arguments */
-	int ctrl = _pam_parse(argc, argv, &d);
+	int ctrl = _pam_parse(pamh, flags, argc, argv, &d);
 	if (ctrl == -1) {
 		retval = PAM_SYSTEM_ERR;
 		goto out;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_authenticate (flags: 0x%04x)", flags);
+	_pam_log_debug(pamh, ctrl, LOG_DEBUG, "pam_winbind: pam_sm_authenticate (flags: 0x%04x)", flags);
 
 	/* Get the username */
 	retval = pam_get_user(pamh, &username, NULL);
 	if ((retval != PAM_SUCCESS) || (!username)) {
-		_pam_log_debug(ctrl, LOG_DEBUG, "can not get the username");
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG, "can not get the username");
 		retval = PAM_SERVICE_ERR;
 		goto out;
 	}
@@ -923,7 +995,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 					&password);
 
 	if (retval != PAM_SUCCESS) {
-		_pam_log(LOG_ERR, "Could not retrieve user's password");
+		_pam_log(pamh, ctrl, LOG_ERR, "Could not retrieve user's password");
 		retval = PAM_AUTHTOK_ERR;
 		goto out;
 	}
@@ -931,18 +1003,19 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	/* Let's not give too much away in the log file */
 
 #ifdef DEBUG_PASSWORD
-	_pam_log_debug(ctrl, LOG_INFO, "Verify user `%s' with password `%s'", 
+	_pam_log_debug(pamh, ctrl, LOG_INFO, "Verify user '%s' with password '%s'", 
 		       username, password);
 #else
-	_pam_log_debug(ctrl, LOG_INFO, "Verify user `%s'", username);
+	_pam_log_debug(pamh, ctrl, LOG_INFO, "Verify user '%s'", username);
 #endif
 
-	member = get_member_from_config(argc, argv, ctrl, d);
+	member = get_member_from_config(pamh, argc, argv, ctrl, d);
 
-	cctype = get_krb5_cc_type_from_config(argc, argv, ctrl, d);
+	cctype = get_krb5_cc_type_from_config(pamh, argc, argv, ctrl, d);
 
 	/* Now use the username to look up password */
-	retval = winbind_auth_request(pamh, ctrl, username, password, member, cctype, True, NULL);
+	retval = winbind_auth_request(pamh, ctrl, username, password, member,
+				      cctype, True, NULL, &username_ret);
 
 	if (retval == PAM_NEW_AUTHTOK_REQD ||
 	    retval == PAM_AUTHTOK_EXPIRED) {
@@ -961,6 +1034,12 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	}
 
 out:
+	if (username_ret) {
+		pam_set_item (pamh, PAM_USER, username_ret);
+		_pam_log_debug(pamh, ctrl, LOG_INFO, "Returned user was '%s'", username_ret);
+		free(username_ret);
+	}
+
 	if (d) {
 		iniparser_freedict(d);
 	}
@@ -972,12 +1051,12 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 		   int argc, const char **argv)
 {
 	/* parse arguments */
-	int ctrl = _pam_parse(argc, argv, NULL);
+	int ctrl = _pam_parse(pamh, flags, argc, argv, NULL);
 	if (ctrl == -1) {
 		return PAM_SYSTEM_ERR;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_setcred (flags: 0x%04x)", flags);
+	_pam_log_debug(pamh, ctrl, LOG_DEBUG, "pam_winbind: pam_sm_setcred (flags: 0x%04x)", flags);
 
 	if (flags & PAM_DELETE_CRED) {
 		return pam_sm_close_session(pamh, flags, argc, argv);
@@ -999,30 +1078,30 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 	void *tmp = NULL;
 
 	/* parse arguments */
-	int ctrl = _pam_parse(argc, argv, NULL);
+	int ctrl = _pam_parse(pamh, flags, argc, argv, NULL);
 	if (ctrl == -1) {
 		return PAM_SYSTEM_ERR;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_acct_mgmt (flags: 0x%04x)", flags);
+	_pam_log_debug(pamh, ctrl, LOG_DEBUG, "pam_winbind: pam_sm_acct_mgmt (flags: 0x%04x)", flags);
 
 
 	/* Get the username */
 	retval = pam_get_user(pamh, &username, NULL);
 	if ((retval != PAM_SUCCESS) || (!username)) {
-		_pam_log_debug(ctrl, LOG_DEBUG,"can not get the username");
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG,"can not get the username");
 		return PAM_SERVICE_ERR;
 	}
 
 	/* Verify the username */
-	retval = valid_user(username, pamh, ctrl);
+	retval = valid_user(pamh, ctrl, username);
 	switch (retval) {
 	case -1:
 		/* some sort of system error. The log was already printed */
 		return PAM_SERVICE_ERR;
 	case 1:
 		/* the user does not exist */
-		_pam_log_debug(ctrl, LOG_NOTICE, "user `%s' not found", username);
+		_pam_log_debug(pamh, ctrl, LOG_NOTICE, "user '%s' not found", username);
 		if (ctrl & WINBIND_UNKNOWN_OK_ARG) {
 			return PAM_IGNORE;
 		}
@@ -1030,29 +1109,29 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 	case 0:
 		pam_get_data( pamh, PAM_WINBIND_NEW_AUTHTOK_REQD, (const void **)&tmp);
 		if (tmp != NULL) {
-			retval = atoi(tmp);
+			retval = atoi((const char *)tmp);
 			switch (retval) {
 			case PAM_AUTHTOK_EXPIRED:
 				/* fall through, since new token is required in this case */
 			case PAM_NEW_AUTHTOK_REQD:
-				_pam_log(LOG_WARNING, "pam_sm_acct_mgmt success but %s is set", 
+				_pam_log(pamh, ctrl, LOG_WARNING, "pam_sm_acct_mgmt success but %s is set", 
 					 PAM_WINBIND_NEW_AUTHTOK_REQD);
-				_pam_log(LOG_NOTICE, "user '%s' needs new password", username);
+				_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' needs new password", username);
 				/* PAM_AUTHTOKEN_REQD does not exist, but is documented in the manpage */
 				return PAM_NEW_AUTHTOK_REQD; 
 			default:
-				_pam_log(LOG_WARNING, "pam_sm_acct_mgmt success");
-				_pam_log(LOG_NOTICE, "user '%s' granted access", username);
+				_pam_log(pamh, ctrl, LOG_WARNING, "pam_sm_acct_mgmt success");
+				_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' granted access", username);
 				return PAM_SUCCESS;
 			}
 		}
 
 		/* Otherwise, the authentication looked good */
-		_pam_log(LOG_NOTICE, "user '%s' granted access", username);
+		_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' granted access", username);
 		return PAM_SUCCESS;
 	default:
 		/* we don't know anything about this return value */
-		_pam_log(LOG_ERR, "internal module error (retval = %d, user = `%s')", 
+		_pam_log(pamh, ctrl, LOG_ERR, "internal module error (retval = %d, user = '%s')", 
 			 retval, username);
 		return PAM_SERVICE_ERR;
 	}
@@ -1066,12 +1145,12 @@ int pam_sm_open_session(pam_handle_t *pamh, int flags,
 			int argc, const char **argv)
 {
 	/* parse arguments */
-	int ctrl = _pam_parse(argc, argv, NULL);
+	int ctrl = _pam_parse(pamh, flags, argc, argv, NULL);
 	if (ctrl == -1) {
 		return PAM_SYSTEM_ERR;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_open_session handler (flags: 0x%04x)", flags);
+	_pam_log_debug(pamh, ctrl, LOG_DEBUG, "pam_winbind: pam_sm_open_session handler (flags: 0x%04x)", flags);
 
 	return PAM_SUCCESS;
 }
@@ -1084,13 +1163,13 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 	int retval = PAM_SUCCESS;
 
 	/* parse arguments */
-	int ctrl = _pam_parse(argc, argv, &d);
+	int ctrl = _pam_parse(pamh, flags, argc, argv, &d);
 	if (ctrl == -1) {
 		retval = PAM_SYSTEM_ERR;
 		goto out;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_close_session handler (flags: 0x%04x)", flags);
+	_pam_log_debug(pamh, ctrl, LOG_DEBUG, "pam_winbind: pam_sm_close_session handler (flags: 0x%04x)", flags);
 
 	if (!(flags & PAM_DELETE_CRED)) {
 		retval = PAM_SUCCESS;
@@ -1112,30 +1191,30 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 		retval = pam_get_user(pamh, &user, "Username: ");
 		if (retval == PAM_SUCCESS) {
 			if (user == NULL) {
-				_pam_log(LOG_ERR, "username was NULL!");
+				_pam_log(pamh, ctrl, LOG_ERR, "username was NULL!");
 				retval = PAM_USER_UNKNOWN;
 				goto out;
 			}
 			if (retval == PAM_SUCCESS) {
-				_pam_log_debug(ctrl, LOG_DEBUG, "username [%s] obtained", user);
+				_pam_log_debug(pamh, ctrl, LOG_DEBUG, "username [%s] obtained", user);
 			}
 		} else {
-			_pam_log_debug(ctrl, LOG_DEBUG, "could not identify user");
+			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "could not identify user");
 			goto out;
 		}
 
 		ccname = pam_getenv(pamh, "KRB5CCNAME");
 		if (ccname == NULL) {
-			_pam_log_debug(ctrl, LOG_DEBUG, "user has no KRB5CCNAME environment");
-			retval = PAM_SUCCESS;
-			goto out;
+			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "user has no KRB5CCNAME environment");
 		}
 
 		strncpy(request.data.logoff.user, user,
 			sizeof(request.data.logoff.user) - 1);
 
-		strncpy(request.data.logoff.krb5ccname, ccname,
-			sizeof(request.data.logoff.krb5ccname) - 1);
+		if (ccname) {
+			strncpy(request.data.logoff.krb5ccname, ccname,
+				sizeof(request.data.logoff.krb5ccname) - 1);
+		}
 
 		pwd = getpwnam(user);
 		if (pwd == NULL) {
@@ -1176,13 +1255,13 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	int retry = 0;
 	dictionary *d = NULL;
 
-	ctrl = _pam_parse(argc, argv, &d);
+	ctrl = _pam_parse(pamh, flags, argc, argv, &d);
 	if (ctrl == -1) {
 		retval = PAM_SYSTEM_ERR;
 		goto out;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_chauthtok (flags: 0x%04x)", flags);
+	_pam_log_debug(pamh, ctrl, LOG_DEBUG, "pam_winbind: pam_sm_chauthtok (flags: 0x%04x)", flags);
 
 	/* clearing offline bit for the auth in the password change */
 	ctrl &= ~WINBIND_CACHED_LOGIN;
@@ -1193,22 +1272,22 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	retval = pam_get_user(pamh, &user, "Username: ");
 	if (retval == PAM_SUCCESS) {
 		if (user == NULL) {
-			_pam_log(LOG_ERR, "username was NULL!");
+			_pam_log(pamh, ctrl, LOG_ERR, "username was NULL!");
 			retval = PAM_USER_UNKNOWN;
 			goto out;
 		}
 		if (retval == PAM_SUCCESS) {
-			_pam_log_debug(ctrl, LOG_DEBUG, "username [%s] obtained",
+			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "username [%s] obtained",
 				 user);
 		}
 	} else {
-		_pam_log_debug(ctrl, LOG_DEBUG,
+		_pam_log_debug(pamh, ctrl, LOG_DEBUG,
 			 "password - could not identify user");
 		goto out;
 	}
 
 	/* check if this is really a user in winbindd, not only in NSS */
-	retval = valid_user(user, pamh, ctrl);
+	retval = valid_user(pamh, ctrl, user);
 	switch (retval) {
 		case 1:
 			retval = PAM_USER_UNKNOWN;
@@ -1233,7 +1312,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 #define greeting "Changing password for "
 		Announce = (char *) malloc(sizeof(greeting) + strlen(user));
 		if (Announce == NULL) {
-			_pam_log(LOG_CRIT, "password - out of memory");
+			_pam_log(pamh, ctrl, LOG_CRIT, "password - out of memory");
 			retval = PAM_BUF_ERR;
 			goto out;
 		}
@@ -1248,12 +1327,13 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 						NULL,
 						(const char **) &pass_old);
 		if (retval != PAM_SUCCESS) {
-			_pam_log(LOG_NOTICE, "password - (old) token not obtained");
+			_pam_log(pamh, ctrl, LOG_NOTICE, "password - (old) token not obtained");
 			goto out;
 		}
 		/* verify that this is the password for this user */
 		
-		retval = winbind_auth_request(pamh, ctrl, user, pass_old, NULL, NULL, False, &pwdlastset_prelim);
+		retval = winbind_auth_request(pamh, ctrl, user, pass_old,
+					NULL, NULL, False, &pwdlastset_prelim, NULL);
 
 		if (retval != PAM_ACCT_EXPIRED && 
 		    retval != PAM_AUTHTOK_EXPIRED &&
@@ -1268,7 +1348,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		retval = pam_set_item(pamh, PAM_OLDAUTHTOK, (const void *) pass_old);
 		pass_old = NULL;
 		if (retval != PAM_SUCCESS) {
-			_pam_log(LOG_CRIT, "failed to set PAM_OLDAUTHTOK");
+			_pam_log(pamh, ctrl, LOG_CRIT, "failed to set PAM_OLDAUTHTOK");
 		}
 	} else if (flags & PAM_UPDATE_AUTHTOK) {
 	
@@ -1282,11 +1362,10 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		 * get the old token back. 
 		 */
 		
-		retval = pam_get_item(pamh, PAM_OLDAUTHTOK,
-				      (const void **) &pass_old);
+		retval = _pam_get_item(pamh, PAM_OLDAUTHTOK, &pass_old);
 		
 		if (retval != PAM_SUCCESS) {
-			_pam_log(LOG_NOTICE, "user not authenticated");
+			_pam_log(pamh, ctrl, LOG_NOTICE, "user not authenticated");
 			goto out;
 		}
 		
@@ -1310,7 +1389,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 							(const char **) &pass_new);
 			
 			if (retval != PAM_SUCCESS) {
-				_pam_log_debug(ctrl, LOG_ALERT
+				_pam_log_debug(pamh, ctrl, LOG_ALERT
 					 ,"password - new password not obtained");
 				pass_old = NULL;/* tidy up */
 				goto out;
@@ -1331,7 +1410,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		 * By reaching here we have approved the passwords and must now
 		 * rebuild the password database file.
 		 */
-		pam_get_data( pamh, PAM_WINBIND_PWD_LAST_SET, (const void **)&pwdlastset_update);
+		_pam_get_data( pamh, PAM_WINBIND_PWD_LAST_SET,
+			       &pwdlastset_update);
 
 		retval = winbind_chauthtok_request(pamh, ctrl, user, pass_old, pass_new, pwdlastset_update);
 		if (retval) {
@@ -1345,10 +1425,11 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 		if (ctrl & WINBIND_KRB5_AUTH) {
 
-			const char *member = get_member_from_config(argc, argv, ctrl, d);
-			const char *cctype = get_krb5_cc_type_from_config(argc, argv, ctrl, d);
+			const char *member = get_member_from_config(pamh, argc, argv, ctrl, d);
+			const char *cctype = get_krb5_cc_type_from_config(pamh, argc, argv, ctrl, d);
 
-			retval = winbind_auth_request(pamh, ctrl, user, pass_new, member, cctype, False, NULL);
+			retval = winbind_auth_request(pamh, ctrl, user, pass_new,
+							member, cctype, False, NULL, NULL);
 			_pam_overwrite(pass_new);
 			_pam_overwrite(pass_old);
 			pass_old = pass_new = NULL;

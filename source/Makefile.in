@@ -723,7 +723,8 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_dual.o \
 		nsswitch/winbindd_async.o \
 		nsswitch/winbindd_creds.o \
-		nsswitch/winbindd_cred_cache.o 
+		nsswitch/winbindd_cred_cache.o \
+		nsswitch/winbindd_ccache_access.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \

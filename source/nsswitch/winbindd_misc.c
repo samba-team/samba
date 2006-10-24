@@ -124,6 +124,12 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 						  &num_domains, &names,
 						  &alt_names, &sids);
 
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(3, ("winbindd_dual_list_trusted_domains: trusted_domains returned %s\n",
+			nt_errstr(result) ));
+		return WINBINDD_ERROR;
+	}
+
 	extra_data = talloc_strdup(state->mem_ctx, "");
 
 	if (num_domains > 0)
@@ -190,6 +196,7 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 	struct rpc_pipe_client *netlogon_pipe;
 	NTSTATUS result;
 	WERROR werr;
+	unsigned int orig_timeout;
 
 	state->request.domain_name
 		[sizeof(state->request.domain_name)-1] = '\0';
@@ -204,9 +211,16 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 		return WINBINDD_ERROR;
 	}
 
+	/* This call can take a long time - allow the server to time out.
+	   35 seconds should do it. */
+
+	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
+
 	werr = rpccli_netlogon_getdcname(netlogon_pipe, state->mem_ctx, domain->dcname,
 					   state->request.domain_name,
 					   dcname_slash);
+	/* And restore our original timeout. */
+	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5, ("Error requesting DCname: %s\n", dos_errstr(werr)));
@@ -296,7 +310,8 @@ void winbindd_show_sequence(struct winbindd_cli_state *state)
 
 static void sequence_recv(void *private_data, BOOL success)
 {
-	struct sequence_state *state = private_data;
+	struct sequence_state *state =
+		(struct sequence_state *)private_data;
 	uint32 seq = DOM_SEQUENCE_NONE;
 
 	if ((success) && (state->response->result == WINBINDD_OK))
@@ -417,7 +432,8 @@ void winbindd_domain_info(struct winbindd_cli_state *state)
 
 static void domain_info_init_recv(void *private_data, BOOL success)
 {
-	struct domain_info_state *istate = private_data;
+	struct domain_info_state *istate =
+		(struct domain_info_state *)private_data;
 	struct winbindd_cli_state *state = istate->cli_state;
 	struct winbindd_domain *domain = istate->domain;
 

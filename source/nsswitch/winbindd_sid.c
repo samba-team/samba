@@ -124,6 +124,34 @@ static void lookupname_recv(void *private_data, BOOL success,
 	return;
 }
 
+void winbindd_lookuprids(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	DOM_SID domain_sid;
+	
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	DEBUG(10, ("lookup_rids: %s\n", state->request.data.sid));
+
+	if (!string_to_sid(&domain_sid, state->request.data.sid)) {
+		DEBUG(5, ("Could not convert %s to SID\n",
+			  state->request.data.sid));
+		request_error(state);
+		return;
+	}
+
+	domain = find_lookup_domain_from_sid(&domain_sid);
+	if (domain == NULL) {
+		DEBUG(10, ("Could not find domain for name %s\n",
+			   state->request.domain_name));
+		request_error(state);
+		return;
+	}
+
+	sendto_domain(state, domain);
+}
+
 static struct winbindd_child static_idmap_child;
 
 void init_idmap_child(void)
@@ -167,7 +195,7 @@ void winbindd_sid_to_uid(struct winbindd_cli_state *state)
 
 	/* Query only the local tdb, everything else might possibly block */
 
-	result = idmap_sid_to_uid(&sid, &(state->response.data.uid),
+	result = idmap_sid_to_uid(&sid, &state->response.data.uid,
 				  ID_QUERY_ONLY|ID_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(result)) {
@@ -225,7 +253,7 @@ void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 
 	/* Query only the local tdb, everything else might possibly block */
 
-	result = idmap_sid_to_gid(&sid, &(state->response.data.gid),
+	result = idmap_sid_to_gid(&sid, &state->response.data.gid,
 				  ID_QUERY_ONLY|ID_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(result)) {
@@ -286,7 +314,7 @@ void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 	}
 
 	status = idmap_uid_to_sid(&sid, state->request.data.uid,
-				  ID_QUERY_ONLY | ID_CACHE_ONLY);
+				  ID_QUERY_ONLY|ID_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(status)) {
 		sid_to_string(state->response.data.sid.sid, &sid);
@@ -300,7 +328,8 @@ void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 
 static void uid2sid_recv(void *private_data, BOOL success, const char *sid)
 {
-	struct winbindd_cli_state *state = private_data;
+	struct winbindd_cli_state *state =
+		(struct winbindd_cli_state *)private_data;
 	struct uid2sid_state *uid2sid_state;
 
 	if (success) {
@@ -430,7 +459,7 @@ void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 	}
 
 	status = idmap_gid_to_sid(&sid, state->request.data.gid,
-				  ID_QUERY_ONLY | ID_CACHE_ONLY);
+				  ID_QUERY_ONLY|ID_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(status)) {
 		sid_to_string(state->response.data.sid.sid, &sid);
@@ -444,7 +473,8 @@ void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 
 static void gid2sid_recv(void *private_data, BOOL success, const char *sid)
 {
-	struct winbindd_cli_state *state = private_data;
+	struct winbindd_cli_state *state =
+		(struct winbindd_cli_state *)private_data;
 	struct gid2sid_state *gid2sid_state;
 
 	if (success) {
@@ -534,7 +564,8 @@ static void gid2sid_lookupname_recv(void *private_data, BOOL success,
 
 static void gid2sid_idmap_set_mapping_recv(void *private_data, BOOL success)
 {
-	struct gid2sid_state *state = private_data;
+	struct gid2sid_state *state =
+		(struct gid2sid_state *)private_data;
 
 	/* don't fail if we can't store it */
 

@@ -28,8 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-extern userdom_struct current_user_info;
-
 static BOOL fillup_pw_field(const char *lp_template, 
 			    const char *username, 
 			    const char *domname,
@@ -53,15 +51,16 @@ static BOOL fillup_pw_field(const char *lp_template,
 	   shell. */
 	
 	/* The substitution of %U and %D in the 'template homedir' is done
-	   by alloc_sub_specified() below. */
+	   by talloc_sub_specified() below. */
 
-	templ = alloc_sub_specified(lp_template, username, domname, uid, gid);
+	templ = talloc_sub_specified(NULL, lp_template, username, domname,
+				     uid, gid);
 		
 	if (!templ)
 		return False;
 
 	safe_strcpy(out, templ, sizeof(fstring) - 1);
-	SAFE_FREE(templ);
+	TALLOC_FREE(templ);
 		
 	return True;
 	
@@ -109,11 +108,6 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	   defaults are /tmp for the home directory and /bin/false for
 	   shell. */
 	
-	/* The substitution of %U and %D in the 'template homedir' is done
-	   by alloc_sub_specified() below. */
-
-	fstrcpy(current_user_info.domain, dom_name);
-
 	if (!fillup_pw_field(lp_template_homedir(), user_name, dom_name, 
 			     pw->pw_uid, pw->pw_gid, homedir, pw->pw_dir))
 		return False;
@@ -293,8 +287,6 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
 	safe_strcpy(pw->pw_gecos, s->fullname, sizeof(pw->pw_gecos) - 1);
 
-	fstrcpy(current_user_info.domain, s->domain->name);
-
 	if (!fillup_pw_field(lp_template_homedir(), s->username, s->domain->name, 
 			     pw->pw_uid, pw->pw_gid, s->homedir, pw->pw_dir)) {
 		DEBUG(5, ("Could not compose homedir\n"));
@@ -370,7 +362,8 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 static void getpwnam_name2sid_recv(void *private_data, BOOL success,
 				   const DOM_SID *sid, enum SID_NAME_USE type)
 {
-	struct winbindd_cli_state *state = private_data;
+	struct winbindd_cli_state *state =
+		(struct winbindd_cli_state *)private_data;
 
 	if (!success) {
 		DEBUG(5, ("Could not lookup name for user %s\n",
@@ -390,7 +383,8 @@ static void getpwnam_name2sid_recv(void *private_data, BOOL success,
 
 static void getpwuid_recv(void *private_data, BOOL success, const char *sid)
 {
-	struct winbindd_cli_state *state = private_data;
+	struct winbindd_cli_state *state =
+		(struct winbindd_cli_state *)private_data;
 	DOM_SID user_sid;
 
 	if (!success) {
@@ -542,7 +536,6 @@ static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 	uint32 num_entries;
 	WINBIND_USERINFO *info;
 	struct getpwent_user *name_list = NULL;
-	BOOL result = False;
 	struct winbindd_domain *domain;
 	struct winbindd_methods *methods;
 	unsigned int i;
@@ -570,12 +563,18 @@ static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 	status = methods->query_user_list(domain, mem_ctx, &num_entries, 
 					  &info);
 		
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("get_sam_user_entries: query_user_list failed with %s\n",
+			nt_errstr(status) ));
+		return False;
+	}
+
 	if (num_entries) {
 		name_list = SMB_REALLOC_ARRAY(name_list, struct getpwent_user, ent->num_sam_entries + num_entries);
 		
 		if (!name_list) {
 			DEBUG(0,("get_sam_user_entries realloc failed.\n"));
-			goto done;
+			return False;
 		}
 	}
 
@@ -620,11 +619,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 	
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
-	result = ent->num_sam_entries > 0;
-
- done:
-
-	return result;
+	return ent->num_sam_entries > 0;
 }
 
 /* Fetch next passwd entry from ntdom database */
@@ -699,7 +694,7 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 				break;
 		}
 
-		name_list = ent->sam_entries;
+		name_list = (struct getpwent_user *)ent->sam_entries;
 
 		/* Lookup user info */
 		
@@ -775,13 +770,18 @@ void winbindd_list_users(struct winbindd_cli_state *state)
 		status = methods->query_user_list(domain, state->mem_ctx, 
 						  &num_entries, &info);
 
+		if (!NT_STATUS_IS_OK(status)) {
+			continue;
+		}
+
 		if (num_entries == 0)
 			continue;
 
 		/* Allocate some memory for extra data */
 		total_entries += num_entries;
 			
-		extra_data = SMB_REALLOC(extra_data, sizeof(fstring) * total_entries);
+		extra_data = (char *)SMB_REALLOC(
+			extra_data, sizeof(fstring) * total_entries);
 			
 		if (!extra_data) {
 			DEBUG(0,("failed to enlarge buffer!\n"));

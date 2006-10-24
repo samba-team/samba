@@ -90,7 +90,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	/* we have to know what type of domain we are dealing with first */
 
 	if ( !domain->initialized )
-		set_dc_type_and_flags( domain );
+		init_dc_connection( domain );
 
 	/* 
 	   OK.  listen up becasue I'm only going to say this once.
@@ -259,7 +259,7 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 		smb_panic("centry_string");
 	}
 
-	ret = TALLOC(mem_ctx, len+1);
+	ret = TALLOC_ARRAY(mem_ctx, char, len+1);
 	if (!ret) {
 		smb_panic("centry_string out of memory\n");
 	}
@@ -282,13 +282,13 @@ static char *centry_hash16(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 	if (len != 16) {
 		DEBUG(0,("centry corruption? hash len (%u) != 16\n", 
 			len ));
-		smb_panic("centry_hash16");
+		return NULL;
 	}
 
 	if (centry->len - centry->ofs < 16) {
 		DEBUG(0,("centry corruption? needed 16 bytes, have %d\n", 
 			 centry->len - centry->ofs));
-		smb_panic("centry_hash16");
+		return NULL;
 	}
 
 	ret = TALLOC_ARRAY(mem_ctx, char, 16);
@@ -443,6 +443,11 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 
 	status = domain->backend->sequence_number(domain, &domain->sequence_number);
 
+	/* the above call could have set our domain->backend to NULL when
+	 * coming from offline to online mode, make sure to reinitialize the
+	 * backend - Guenther */
+	get_cache( domain );
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("refresh_sequence_number: failed with %s\n", nt_errstr(status)));
 		domain->sequence_number = DOM_SEQUENCE_NONE;
@@ -473,12 +478,10 @@ static BOOL centry_expired(struct winbindd_domain *domain, const char *keystr, s
 		return False;
 	}
 
-	/* when the domain is offline and we havent checked in the last 30
-	 * seconds if it has become online again, return the cached entry.
+	/* when the domain is offline return the cached entry.
 	 * This deals with transient offline states... */
 
-	if (!domain->online && 
-	    !NT_STATUS_IS_OK(check_negative_conn_cache(domain->name, domain->dcname))) {
+	if (!domain->online) {
 		DEBUG(10,("centry_expired: Key %s for domain %s valid as domain is offline.\n",
 			keystr, domain->name ));
 		return False;
@@ -591,6 +594,24 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	return centry;
 }
 
+static void wcache_delete(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
+static void wcache_delete(const char *format, ...)
+{
+	va_list ap;
+	char *kstr;
+	TDB_DATA key;
+
+	va_start(ap, format);
+	smb_xvasprintf(&kstr, format, ap);
+	va_end(ap);
+
+	key.dptr = kstr;
+	key.dsize = strlen(kstr);
+
+	tdb_delete(wcache->tdb, key);
+	free(kstr);
+}
+
 /*
   make sure we have at least len bytes available in a centry 
 */
@@ -599,7 +620,8 @@ static void centry_expand(struct cache_entry *centry, uint32 len)
 	if (centry->len - centry->ofs >= len)
 		return;
 	centry->len *= 2;
-	centry->data = SMB_REALLOC(centry->data, centry->len);
+	centry->data = SMB_REALLOC_ARRAY(centry->data, unsigned char,
+					 centry->len);
 	if (!centry->data) {
 		DEBUG(0,("out of memory: needed %d bytes in centry_expand\n", centry->len));
 		smb_panic("out of memory in centry_expand");
@@ -882,11 +904,14 @@ NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const DOM_SID
 	return NT_STATUS_OK;
 }
 
-/* Lookup creds for a SID */
+/* Lookup creds for a SID - copes with old (unsalted) creds as well
+   as new salted ones. */
+
 NTSTATUS wcache_get_creds(struct winbindd_domain *domain, 
 			  TALLOC_CTX *mem_ctx, 
 			  const DOM_SID *sid,
-			  const uint8 **cached_nt_pass)
+			  const uint8 **cached_nt_pass,
+			  const uint8 **cached_salt)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -906,19 +931,48 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 		return NT_STATUS_INVALID_SID;
 	}
 
+	/* Try and get a salted cred first. If we can't
+	   fall back to an unsalted cred. */
+
 	centry = wcache_fetch(cache, domain, "CRED/%s", sid_string_static(sid));
-	
 	if (!centry) {
 		DEBUG(10,("wcache_get_creds: entry for [CRED/%s] not found\n", 
-			sid_string_static(sid)));
+				sid_string_static(sid)));
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	t = centry_time(centry);
+
+	/* In the salted case this isn't actually the nt_hash itself,
+	   but the MD5 of the salt + nt_hash. Let the caller
+	   sort this out. It can tell as we only return the cached_salt
+	   if we are returning a salted cred. */
+
 	*cached_nt_pass = (const uint8 *)centry_hash16(centry, mem_ctx);
+	if (*cached_nt_pass == NULL) {
+		const char *sidstr = sid_string_static(sid);
+
+		/* Bad (old) cred cache. Delete and pretend we
+		   don't have it. */
+		DEBUG(0,("wcache_get_creds: bad entry for [CRED/%s] - deleting\n", 
+				sidstr));
+		wcache_delete("CRED/%s", sidstr);
+		centry_free(centry);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	/* We only have 17 bytes more data in the salted cred case. */
+	if (centry->len - centry->ofs == 17) {
+		*cached_salt = (const uint8 *)centry_hash16(centry, mem_ctx);
+	} else {
+		*cached_salt = NULL;
+	}
 
 #if DEBUG_PASSWORD
-	dump_data(100, (const char *)cached_nt_pass, NT_HASH_LEN);
+	dump_data(100, (const char *)*cached_nt_pass, NT_HASH_LEN);
+	if (*cached_salt) {
+		dump_data(100, (const char *)*cached_salt, NT_HASH_LEN);
+	}
 #endif
 	status = centry->status;
 
@@ -929,6 +983,8 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	return status;
 }
 
+/* Store creds for a SID - only writes out new salted ones. */
+
 NTSTATUS wcache_save_creds(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
 			   const DOM_SID *sid, 
@@ -937,6 +993,8 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 	struct cache_entry *centry;
 	fstring sid_string;
 	uint32 rid;
+	uint8 cred_salt[NT_HASH_LEN];
+	uint8 salted_hash[NT_HASH_LEN];
 
 	if (is_null_sid(sid)) {
 		return NT_STATUS_INVALID_SID;
@@ -956,7 +1014,13 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 #endif
 
 	centry_put_time(centry, time(NULL));
-	centry_put_hash16(centry, nt_pass);
+
+	/* Create a salt and then salt the hash. */
+	generate_random_buffer(cred_salt, NT_HASH_LEN);
+	E_md5hash(cred_salt, nt_pass, salted_hash);
+
+	centry_put_hash16(centry, salted_hash);
+	centry_put_hash16(centry, cred_salt);
 	centry_end(centry, "CRED/%s", sid_to_string(sid_string, sid));
 
 	DEBUG(10,("wcache_save_creds: %s\n", sid_string));
@@ -1060,7 +1124,7 @@ do_query:
 		centry_put_string(centry, (*info)[i].shell);
 		centry_put_sid(centry, &(*info)[i].user_sid);
 		centry_put_sid(centry, &(*info)[i].group_sid);
-		if (domain->backend->consistent) {
+		if (domain->backend && domain->backend->consistent) {
 			/* when the backend is consistent we can pre-prime some mappings */
 			wcache_save_name_to_sid(domain, NT_STATUS_OK, 
 						domain->name,
@@ -1367,6 +1431,128 @@ do_query:
 	 * later name2sid would give the wrong sid. */
 
 	return status;
+}
+
+static NTSTATUS rids_to_names(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      const DOM_SID *domain_sid,
+			      uint32 *rids,
+			      size_t num_rids,
+			      char **domain_name,
+			      char ***names,
+			      enum SID_NAME_USE **types)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	size_t i;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	BOOL have_mapped;
+	BOOL have_unmapped;
+
+	*domain_name = NULL;
+	*names = NULL;
+	*types = NULL;
+
+	if (!cache->tdb) {
+		goto do_query;
+	}
+
+	if (num_rids == 0) {
+		return NT_STATUS_OK;
+	}
+
+	*names = TALLOC_ARRAY(mem_ctx, char *, num_rids);
+	*types = TALLOC_ARRAY(mem_ctx, enum SID_NAME_USE, num_rids);
+
+	if ((*names == NULL) || (*types == NULL)) {
+		result = NT_STATUS_NO_MEMORY;
+		goto error;
+	}
+
+	have_mapped = have_unmapped = False;
+
+	for (i=0; i<num_rids; i++) {
+		DOM_SID sid;
+		struct cache_entry *centry;
+
+		if (!sid_compose(&sid, domain_sid, rids[i])) {
+			result = NT_STATUS_INTERNAL_ERROR;
+			goto error;
+		}
+
+		centry = wcache_fetch(cache, domain, "SN/%s",
+				      sid_string_static(&sid));
+		if (!centry) {
+			goto do_query;
+		}
+
+		(*types)[i] = SID_NAME_UNKNOWN;
+		(*names)[i] = talloc_strdup(*names, "");
+
+		if (NT_STATUS_IS_OK(centry->status)) {
+			char *dom;
+			have_mapped = True;
+			(*types)[i] = (enum SID_NAME_USE)centry_uint32(centry);
+			dom = centry_string(centry, mem_ctx);
+			if (*domain_name == NULL) {
+				*domain_name = dom;
+			} else {
+				talloc_free(dom);
+			}
+			(*names)[i] = centry_string(centry, *names);
+		} else {
+			have_unmapped = True;
+		}
+
+		centry_free(centry);
+	}
+
+	if (!have_mapped) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+	if (!have_unmapped) {
+		return NT_STATUS_OK;
+	}
+	return STATUS_SOME_UNMAPPED;
+
+ do_query:
+
+	TALLOC_FREE(*names);
+	TALLOC_FREE(*types);
+
+	result = domain->backend->rids_to_names(domain, mem_ctx, domain_sid,
+						rids, num_rids, domain_name,
+						names, types);
+
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
+		return result;
+	}
+
+	refresh_sequence_number(domain, False);
+
+	for (i=0; i<num_rids; i++) {
+		DOM_SID sid;
+		NTSTATUS status;
+
+		if (!sid_compose(&sid, domain_sid, rids[i])) {
+			result = NT_STATUS_INTERNAL_ERROR;
+			goto error;
+		}
+
+		status = (*types)[i] == SID_NAME_UNKNOWN ?
+			NT_STATUS_NONE_MAPPED : NT_STATUS_OK;
+
+		wcache_save_sid_to_name(domain, status, &sid, *domain_name,
+					(*names)[i], (*types)[i]);
+	}
+
+	return result;
+
+ error:
+	
+	TALLOC_FREE(*names);
+	TALLOC_FREE(*types);
+	return result;
 }
 
 /* Lookup user information from a rid */
@@ -1967,7 +2153,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 
 	fstr_sprintf(key_str, "DR/%d", pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str), 
-		      make_tdb_data((void *)response, sizeof(*response)),
+		      make_tdb_data((const char *)response, sizeof(*response)),
 		      TDB_REPLACE) == -1)
 		return;
 
@@ -1981,7 +2167,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 
 	fstr_sprintf(key_str, "DE/%d", pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str),
-		      make_tdb_data(response->extra_data.data,
+		      make_tdb_data((const char *)response->extra_data.data,
 				    response->length - sizeof(*response)),
 		      TDB_REPLACE) == 0)
 		return;
@@ -2345,7 +2531,6 @@ done:
 BOOL set_global_winbindd_state_offline(void)
 {
 	TDB_DATA data;
-	int err;
 
 	DEBUG(10,("set_global_winbindd_state_offline: offline requested.\n"));
 
@@ -2367,21 +2552,16 @@ BOOL set_global_winbindd_state_offline(void)
 		return True;
 	}
 
-	wcache->tdb->ecode = 0;
-
 	data = tdb_fetch_bystring( wcache->tdb, "WINBINDD_OFFLINE" );
 
-	/* As this is a key with no data we don't need to free, we
-	   check for existence by looking at tdb_err. */
-
-	err = tdb_error(wcache->tdb);
-
-	if (err == TDB_ERR_NOEXIST) {
+	if (!data.dptr || data.dsize != 4) {
 		DEBUG(10,("set_global_winbindd_state_offline: offline state not set.\n"));
+		SAFE_FREE(data.dptr);
 		return False;
 	} else {
 		DEBUG(10,("set_global_winbindd_state_offline: offline state set.\n"));
 		global_winbindd_offline_state = True;
+		SAFE_FREE(data.dptr);
 		return True;
 	}
 }
@@ -2409,7 +2589,7 @@ void set_global_winbindd_state_online(void)
 	tdb_delete_bystring(wcache->tdb, "WINBINDD_OFFLINE");
 }
 
-BOOL get_global_winbindd_state_online(void)
+BOOL get_global_winbindd_state_offline(void)
 {
 	return global_winbindd_offline_state;
 }
@@ -2422,6 +2602,7 @@ struct winbindd_methods cache_methods = {
 	enum_local_groups,
 	name_to_sid,
 	sid_to_name,
+	rids_to_names,
 	query_user,
 	lookup_usergroups,
 	lookup_useraliases,

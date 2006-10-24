@@ -29,7 +29,6 @@
 #undef SIZEOF_LONG
 #endif
 
-
 /* Include header files from data in config.h file */
 
 #ifndef NO_CONFIG_H
@@ -96,7 +95,7 @@ typedef char fstring[FSTRING_LEN];
 #endif
 
 #ifndef _BOOL
-#define _BOOL			/* So we don't typedef BOOL again in vfs.h */
+#define _BOOL
 #define False (0)
 #define True (1)
 #define Auto (2)

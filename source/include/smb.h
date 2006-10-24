@@ -1803,6 +1803,9 @@ struct ip_service {
 	unsigned port;
 };
 
+/* Special name type used to cause a _kerberos DNS lookup. */
+#define KDC_NAME_TYPE 0xDCDC
+
 /* Used by the SMB signing functions. */
 
 typedef struct smb_sign_info {

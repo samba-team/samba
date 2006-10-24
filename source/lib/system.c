@@ -2164,3 +2164,28 @@ int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct
 	return -1;
 }
 #endif /* WITH_AIO */
+
+int sys_getpeereid( int s, uid_t *uid)
+{
+#if defined(HAVE_PEERCRED)
+	struct ucred cred;
+	socklen_t cred_len = sizeof(struct ucred);
+	int ret;
+
+	ret = getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&cred, &cred_len);
+	if (ret != 0) {
+		return -1;
+	}
+
+	if (cred_len != sizeof(struct ucred)) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*uid = cred.uid;
+	return 0;
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}

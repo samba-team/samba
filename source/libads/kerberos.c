@@ -45,7 +45,8 @@ kerb_prompter(krb5_context ctx, void *data,
 	memset(prompts[0].reply->data, '\0', prompts[0].reply->length);
 	if (prompts[0].reply->length > 0) {
 		if (data) {
-			strncpy(prompts[0].reply->data, data, prompts[0].reply->length-1);
+			strncpy(prompts[0].reply->data, (const char *)data,
+				prompts[0].reply->length-1);
 			prompts[0].reply->length = strlen(prompts[0].reply->data);
 		} else {
 			prompts[0].reply->length = 0;
@@ -85,8 +86,9 @@ int kerberos_kinit_password_ext(const char *principal,
 		krb5_set_real_time(ctx, time(NULL) + time_offset, 0);
 	}
 
-	DEBUG(10,("kerberos_kinit_password: using %s as ccache\n",
-			cache_name ? cache_name: krb5_cc_default_name(ctx)));
+	DEBUG(10,("kerberos_kinit_password: using [%s] as ccache and config [%s]\n",
+			cache_name ? cache_name: krb5_cc_default_name(ctx),
+			getenv("KRB5_CONFIG")));
 
 	if ((code = krb5_cc_resolve(ctx, cache_name ? cache_name : krb5_cc_default_name(ctx), &cc))) {
 		krb5_free_context(ctx);
@@ -463,4 +465,220 @@ int kerberos_kinit_password(const char *principal,
 					   0);
 }
 
+/************************************************************************
+ Create a string list of available kdc's, possibly searching by sitename.
+ Does DNS queries.
+************************************************************************/
+
+static char *get_kdc_ip_string(char *mem_ctx, const char *realm, struct in_addr primary_ip)
+{
+	struct ip_service *ip_srv;
+	int count, i;
+	char *kdc_str = talloc_asprintf(mem_ctx, "\tkdc = %s\n",
+					inet_ntoa(primary_ip));
+
+	if (kdc_str == NULL) {
+		return NULL;
+	}
+
+	if (!NT_STATUS_IS_OK(get_kdc_list(realm, &ip_srv, &count))) {
+		DEBUG(10,("get_kdc_ip_string: get_kdc_list failed. Returning %s\n",
+			kdc_str ));
+		return kdc_str;
+	}
+
+	for (i = 0; i < count; i++) {
+		if (ip_equal(ip_srv[i].ip, primary_ip)) {
+			continue;
+		}
+		/* Append to the string - inefficient but not done often. */
+		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+			kdc_str, inet_ntoa(ip_srv[i].ip));
+		if (!kdc_str) {
+			SAFE_FREE(ip_srv);
+			return NULL;
+		}
+	}
+
+	SAFE_FREE(ip_srv);
+
+	DEBUG(10,("get_kdc_ip_string: Returning %s\n",
+		kdc_str ));
+
+	return kdc_str;
+}
+
+/************************************************************************
+ Create  a specific krb5.conf file in the private directory pointing
+ at a specific kdc for a realm. Keyed off domain name. Sets
+ KRB5_CONFIG environment variable to point to this file. Must be
+ run as root or will fail (which is a good thing :-).
+************************************************************************/
+
+BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *domain, struct in_addr ip)
+{
+	char *dname = talloc_asprintf(NULL, "%s/smb_krb5", lp_lockdir());
+	char *tmpname = NULL;
+	char *fname = NULL;
+	char *file_contents = NULL;
+	char *kdc_ip_string = NULL;
+	size_t flen = 0;
+	ssize_t ret;
+	int fd;
+	char *realm_upper = NULL;
+
+	if (!dname) {
+		return False;
+	}
+	if ((mkdir(dname, 0755)==-1) && (errno != EEXIST)) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: "
+			"failed to create directory %s. Error was %s\n",
+			dname, strerror(errno) ));
+		TALLOC_FREE(dname);
+		return False;
+	}
+
+	tmpname = talloc_asprintf(dname, "%s/smb_tmp_krb5.XXXXXX", lp_lockdir());
+	if (!tmpname) {
+		TALLOC_FREE(dname);
+		return False;
+	}
+
+	fname = talloc_asprintf(dname, "%s/krb5.conf.%s", dname, domain);
+	if (!fname) {
+		TALLOC_FREE(dname);
+		return False;
+	}
+
+	DEBUG(10,("create_local_private_krb5_conf_for_domain: fname = %s, realm = %s, domain = %s\n",
+		fname, realm, domain ));
+
+	realm_upper = talloc_strdup(fname, realm);
+	strupper_m(realm_upper);
+
+	kdc_ip_string = get_kdc_ip_string(dname, realm, ip);
+	if (!kdc_ip_string) {
+		TALLOC_FREE(dname);
+		return False;
+	}
+		
+	file_contents = talloc_asprintf(fname, "[libdefaults]\n\tdefault_realm = %s\n\n"
+				"[realms]\n\t%s = {\n"
+				"\t\t%s\t}\n",
+				realm_upper, realm_upper, kdc_ip_string);
+
+	if (!file_contents) {
+		TALLOC_FREE(dname);
+		return False;
+	}
+
+	flen = strlen(file_contents);
+
+	fd = smb_mkstemp(tmpname);
+	if (fd == -1) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: smb_mkstemp failed,"
+			" for file %s. Errno %s\n",
+			tmpname, strerror(errno) ));
+	}
+
+	if (fchmod(fd, 0644)==-1) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: fchmod failed for %s."
+			" Errno %s\n",
+			tmpname, strerror(errno) ));
+		unlink(tmpname);
+		close(fd);
+		TALLOC_FREE(dname);
+		return False;
+	}
+
+	ret = write(fd, file_contents, flen);
+	if (flen != ret) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: write failed,"
+			" returned %d (should be %u). Errno %s\n",
+			(int)ret, (unsigned int)flen, strerror(errno) ));
+		unlink(tmpname);
+		close(fd);
+		TALLOC_FREE(dname);
+		return False;
+	}
+	if (close(fd)==-1) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: close failed."
+			" Errno %s\n", strerror(errno) ));
+		unlink(tmpname);
+		TALLOC_FREE(dname);
+		return False;
+	}
+
+	if (rename(tmpname, fname) == -1) {
+		DEBUG(0,("create_local_private_krb5_conf_for_domain: rename "
+			"of %s to %s failed. Errno %s\n",
+			tmpname, fname, strerror(errno) ));
+		unlink(tmpname);
+		TALLOC_FREE(dname);
+		return False;
+	}
+
+	DEBUG(5,("create_local_private_krb5_conf_for_domain: wrote "
+		"file %s with realm %s KDC = %s\n",
+		fname, realm_upper, inet_ntoa(ip) ));
+
+	/* Set the environment variable to this file. */
+	setenv("KRB5_CONFIG", fname, 1);
+
+#if defined(OVERWRITE_SYSTEM_KRB5_CONF)
+
+#define SYSTEM_KRB5_CONF_PATH "/etc/krb5.conf"
+	/* Insanity, sheer insanity..... */
+
+	if (strequal(realm, lp_realm())) {
+		pstring linkpath;
+		int lret;
+
+		lret = readlink(SYSTEM_KRB5_CONF_PATH, linkpath, sizeof(linkpath)-1);
+		linkpath[sizeof(pstring)-1] = '\0';
+
+		if (lret == 0 || strcmp(linkpath, fname) == 0) {
+			/* Symlink already exists. */
+			TALLOC_FREE(dname);
+			return True;
+		}
+
+		/* Try and replace with a symlink. */
+		if (symlink(fname, SYSTEM_KRB5_CONF_PATH) == -1) {
+			if (errno != EEXIST) {
+				DEBUG(0,("create_local_private_krb5_conf_for_domain: symlink "
+					"of %s to %s failed. Errno %s\n",
+					fname, SYSTEM_KRB5_CONF_PATH, strerror(errno) ));
+				TALLOC_FREE(dname);
+				return True; /* Not a fatal error. */
+			}
+
+			pstrcpy(linkpath, SYSTEM_KRB5_CONF_PATH);
+			pstrcat(linkpath, ".saved");
+
+			/* Yes, this is a race conditon... too bad. */
+			if (rename(SYSTEM_KRB5_CONF_PATH, linkpath) == -1) {
+				DEBUG(0,("create_local_private_krb5_conf_for_domain: rename "
+					"of %s to %s failed. Errno %s\n",
+					SYSTEM_KRB5_CONF_PATH, linkpath,
+					strerror(errno) ));
+				TALLOC_FREE(dname);
+				return True; /* Not a fatal error. */
+			}
+
+			if (symlink(fname, "/etc/krb5.conf") == -1) {
+				DEBUG(0,("create_local_private_krb5_conf_for_domain: "
+					"forced symlink of %s to /etc/krb5.conf failed. Errno %s\n",
+					fname, strerror(errno) ));
+				TALLOC_FREE(dname);
+				return True; /* Not a fatal error. */
+			}
+		}
+	}
+#endif
+
+	TALLOC_FREE(dname);
+
+	return True;
+}
 #endif

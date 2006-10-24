@@ -48,8 +48,14 @@ struct dns_rr_srv {
 	uint16 weight;
 	uint16 port;
 	size_t num_ips;
-	struct in_addr *ips;    /* support multi-homed hosts */
+	struct in_addr *ips;	/* support multi-homed hosts */
+};
 
+/* NS records */
+
+struct dns_rr_ns {
+	const char *hostname;
+	struct in_addr ip;
 };
 
 

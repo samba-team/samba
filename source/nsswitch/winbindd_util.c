@@ -236,7 +236,7 @@ static void trustdom_recv(void *private_data, BOOL success)
 		return;
 	}
 
-	p = response->extra_data.data;
+	p = (char *)response->extra_data.data;
 
 	while ((p != NULL) && (*p != '\0')) {
 		char *q, *sidstr, *alt_name;
@@ -350,6 +350,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 
 	if ((request == NULL) || (response == NULL) || (state == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(mem_ctx);
 		continuation(private_data, False);
 		return WINBINDD_ERROR;
 	}
@@ -449,8 +450,6 @@ static void init_child_recv(void *private_data, BOOL success)
 enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domain,
 						   struct winbindd_cli_state *state)
 {
-	struct in_addr ipaddr;
-
 	/* Ensure null termination */
 	state->request.domain_name
 		[sizeof(state->request.domain_name)-1]='\0';
@@ -461,25 +460,25 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 		fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
 	}
 
-	if (strlen(domain->dcname) > 0) {
-		if (!resolve_name(domain->dcname, &ipaddr, 0x20)) {
-			DEBUG(2, ("Could not resolve DC name %s for domain %s\n",
-				  domain->dcname, domain->name));
-			return WINBINDD_ERROR;
-		}
+	init_dc_connection(domain);
 
-		domain->dcaddr.sin_family = PF_INET;
-		putip((char *)&(domain->dcaddr.sin_addr), (char *)&ipaddr);
-		domain->dcaddr.sin_port = 0;
+#if 1
+	if (!domain->initialized) {
+		/* If we return error here we can't do any cached authentication,
+		   but we may be in disconnected mode and can't initialize correctly.
+		   Do what the previous code did and just return without initialization,
+		   once we go online we'll re-initialize.
+		*/
+		DEBUG(5, ("winbindd_dual_init_connection: %s returning without initialization "
+			"online = %d\n", domain->name, (int)domain->online ));
 	}
-
-	set_dc_type_and_flags(domain);
-
+#else
 	if (!domain->initialized) {
 		DEBUG(1, ("Could not initialize domain %s\n",
 			  state->request.domain_name));
 		return WINBINDD_ERROR;
 	}
+#endif
 
 	fstrcpy(state->response.data.domain_info.name, domain->name);
 	fstrcpy(state->response.data.domain_info.alt_name, domain->alt_name);
@@ -584,7 +583,7 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 		return NULL;
 
 	if (!domain->initialized)
-		set_dc_type_and_flags(domain);
+		init_dc_connection(domain);
 
 	return domain;
 }
@@ -619,7 +618,7 @@ struct winbindd_domain *find_domain_from_sid(const DOM_SID *sid)
 		return NULL;
 
 	if (!domain->initialized)
-		set_dc_type_and_flags(domain);
+		init_dc_connection(domain);
 
 	return domain;
 }
@@ -873,6 +872,26 @@ BOOL parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 	*domain = talloc_strdup(mem_ctx, fstr_domain);
 	*user = talloc_strdup(mem_ctx, fstr_user);
 	return ((*domain != NULL) && (*user != NULL));
+}
+
+/* Ensure an incoming username from NSS is fully qualified. Replace the
+   incoming fstring with DOMAIN <separator> user. Returns the same
+   values as parse_domain_user() but also replaces the incoming username.
+   Used to ensure all names are fully qualified within winbindd.
+   Used by the NSS protocols of auth, chauthtok, logoff and ccache_ntlm_auth.
+   The protocol definitions of auth_crap, chng_pswd_auth_crap
+   really should be changed to use this instead of doing things
+   by hand. JRA. */
+
+BOOL canonicalize_username(fstring username_inout, fstring domain, fstring user)
+{
+	if (!parse_domain_user(username_inout, domain, user)) {
+		return False;
+	}
+	slprintf(username_inout, sizeof(fstring) - 1, "%s%c%s",
+		 domain, *lp_winbind_separator(),
+		 user);
+	return True;
 }
 
 /*

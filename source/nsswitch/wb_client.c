@@ -113,6 +113,116 @@ BOOL winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	return True;
 }
 
+BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
+			 const DOM_SID *domain_sid,
+			 int num_rids, uint32 *rids,
+			 const char **domain_name,
+			 const char ***names, enum SID_NAME_USE **types)
+{
+	size_t i, buflen;
+	ssize_t len;
+	char *ridlist;
+	char *p;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+
+	if (num_rids == 0) {
+		return False;
+	}
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.sid, sid_string_static(domain_sid));
+	
+	len = 0;
+	buflen = 0;
+	ridlist = NULL;
+
+	for (i=0; i<num_rids; i++) {
+		sprintf_append(mem_ctx, &ridlist, &len, &buflen,
+			       "%ld\n", rids[i]);
+	}
+
+	if ((num_rids != 0) && (ridlist == NULL)) {
+		return False;
+	}
+
+	request.extra_data.data = ridlist;
+	request.extra_len = strlen(ridlist)+1;
+
+	result = winbindd_request_response(WINBINDD_LOOKUPRIDS,
+					   &request, &response);
+
+	TALLOC_FREE(ridlist);
+
+	if (result != NSS_STATUS_SUCCESS) {
+		return False;
+	}
+
+	*domain_name = talloc_strdup(mem_ctx, response.data.domain_name);
+
+	*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
+	*types = TALLOC_ARRAY(mem_ctx, enum SID_NAME_USE, num_rids);
+
+	if ((*names == NULL) || (*types == NULL)) {
+		goto fail;
+	}
+
+	p = (char *)response.extra_data.data;
+
+	for (i=0; i<num_rids; i++) {
+		char *q;
+
+		if (*p == '\0') {
+			DEBUG(10, ("Got invalid reply: %s\n",
+				   (char *)response.extra_data.data));
+			goto fail;
+		}
+			
+		(*types)[i] = (enum SID_NAME_USE)strtoul(p, &q, 10);
+
+		if (*q != ' ') {
+			DEBUG(10, ("Got invalid reply: %s\n",
+				   (char *)response.extra_data.data));
+			goto fail;
+		}
+
+		p = q+1;
+
+		q = strchr(p, '\n');
+		if (q == NULL) {
+			DEBUG(10, ("Got invalid reply: %s\n",
+				   (char *)response.extra_data.data));
+			goto fail;
+		}
+
+		*q = '\0';
+
+		(*names)[i] = talloc_strdup(*names, p);
+
+		p = q+1;
+	}
+
+	if (*p != '\0') {
+		DEBUG(10, ("Got invalid reply: %s\n",
+			   (char *)response.extra_data.data));
+		goto fail;
+	}
+
+	SAFE_FREE(response.extra_data.data);
+
+	return True;
+
+ fail:
+	TALLOC_FREE(*names);
+	TALLOC_FREE(*types);
+	return False;
+}
+
 /* Call winbindd to convert SID to uid */
 
 BOOL winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid)

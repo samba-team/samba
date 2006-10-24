@@ -214,6 +214,7 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
 	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
 	{ WINBINDD_PAM_LOGOFF, winbindd_pam_logoff, "PAM_LOGOFF" },
+	{ WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, winbindd_pam_chng_pswd_auth_crap, "CHNG_PSWD_AUTH_CRAP" },
 
 	/* Enumeration functions */
 
@@ -227,6 +228,7 @@ static struct winbindd_dispatch_table {
 
 	{ WINBINDD_LOOKUPSID, winbindd_lookupsid, "LOOKUPSID" },
 	{ WINBINDD_LOOKUPNAME, winbindd_lookupname, "LOOKUPNAME" },
+	{ WINBINDD_LOOKUPRIDS, winbindd_lookuprids, "LOOKUPRIDS" },
 
 	/* Lookup related functions */
 
@@ -250,6 +252,9 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir,
 	  "WINBINDD_PRIV_PIPE_DIR" },
 	{ WINBINDD_GETDCNAME, winbindd_getdcname, "GETDCNAME" },
+
+	/* Credential cache access */
+	{ WINBINDD_CCACHE_NTLMAUTH, winbindd_ccache_ntlm_auth, "NTLMAUTH" },
 
 	/* WINS functions */
 
@@ -629,36 +634,36 @@ static void remove_client(struct winbindd_cli_state *state)
 {
 	/* It's a dead client - hold a funeral */
 	
-	if (state != NULL) {
-		
-		/* Close socket */
-		
-		close(state->sock);
-		
-		/* Free any getent state */
-		
-		free_getent_state(state->getpwent_state);
-		free_getent_state(state->getgrent_state);
-		
-		/* We may have some extra data that was not freed if the
-		   client was killed unexpectedly */
-
-		SAFE_FREE(state->response.extra_data.data);
-
-		if (state->mem_ctx != NULL) {
-			talloc_destroy(state->mem_ctx);
-			state->mem_ctx = NULL;
-		}
-
-		remove_fd_event(&state->fd_event);
-		
-		/* Remove from list and free */
-		
-		winbindd_remove_client(state);
-		TALLOC_FREE(state);
+	if (state == NULL) {
+		return;
 	}
-}
+		
+	/* Close socket */
+		
+	close(state->sock);
+		
+	/* Free any getent state */
+		
+	free_getent_state(state->getpwent_state);
+	free_getent_state(state->getgrent_state);
+		
+	/* We may have some extra data that was not freed if the client was
+	   killed unexpectedly */
 
+	SAFE_FREE(state->response.extra_data.data);
+
+	if (state->mem_ctx != NULL) {
+		talloc_destroy(state->mem_ctx);
+		state->mem_ctx = NULL;
+	}
+
+	remove_fd_event(&state->fd_event);
+		
+	/* Remove from list and free */
+		
+	winbindd_remove_client(state);
+	TALLOC_FREE(state);
+}
 
 /* Shutdown client connection which has been idle for the longest time */
 
@@ -956,6 +961,10 @@ int main(int argc, char **argv)
 	if (!reload_services_file()) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
+	}
+
+	if (!directory_exist(lp_lockdir(), NULL)) {
+		mkdir(lp_lockdir(), 0755);
 	}
 
 	/* Setup names. */

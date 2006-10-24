@@ -345,6 +345,7 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	
 	{ WINBINDD_LOOKUPSID,            winbindd_dual_lookupsid,             "LOOKUPSID" },
 	{ WINBINDD_LOOKUPNAME,           winbindd_dual_lookupname,            "LOOKUPNAME" },
+	{ WINBINDD_LOOKUPRIDS,           winbindd_dual_lookuprids,            "LOOKUPRIDS" },
 	{ WINBINDD_LIST_TRUSTDOM,        winbindd_dual_list_trusted_domains,  "LIST_TRUSTDOM" },
 	{ WINBINDD_INIT_CONNECTION,      winbindd_dual_init_connection,       "INIT_CONNECTION" },
 	{ WINBINDD_GETDCNAME,            winbindd_dual_getdcname,             "GETDCNAME" },
@@ -352,6 +353,7 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_PAM_AUTH,             winbindd_dual_pam_auth,              "PAM_AUTH" },
 	{ WINBINDD_PAM_AUTH_CRAP,        winbindd_dual_pam_auth_crap,         "AUTH_CRAP" },
 	{ WINBINDD_PAM_LOGOFF,           winbindd_dual_pam_logoff,            "PAM_LOGOFF" },
+	{ WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP,winbindd_dual_pam_chng_pswd_auth_crap,"CHNG_PSWD_AUTH_CRAP" },
 	{ WINBINDD_CHECK_MACHACC,        winbindd_dual_check_machine_acct,    "CHECK_MACHACC" },
 	{ WINBINDD_DUAL_SID2UID,         winbindd_dual_sid2uid,               "DUAL_SID2UID" },
 	{ WINBINDD_DUAL_SID2GID,         winbindd_dual_sid2gid,               "DUAL_SID2GID" },
@@ -367,6 +369,7 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_ALLOCATE_GID,         winbindd_dual_allocate_gid,          "ALLOCATE_GID" },
 	{ WINBINDD_GETUSERDOMGROUPS,     winbindd_dual_getuserdomgroups,      "GETUSERDOMGROUPS" },
 	{ WINBINDD_DUAL_GETSIDALIASES,   winbindd_dual_getsidaliases,         "GETSIDALIASES" },
+	{ WINBINDD_CCACHE_NTLMAUTH,      winbindd_dual_ccache_ntlm_auth,      "CCACHE_NTLM_AUTH" },
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
@@ -451,10 +454,22 @@ void winbind_child_died(pid_t pid)
 	schedule_async_request(child);
 }
 
-/* Forward the online/offline messages to our children. */
+/* Ensure any negative cache entries with the netbios or realm names are removed. */
+
+void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
+{
+	flush_negative_conn_cache_for_domain(domain->name);
+	if (*domain->alt_name) {
+		flush_negative_conn_cache_for_domain(domain->alt_name);
+	}
+}
+
+/* Set our domains as offline and forward the offline message to our children. */
+
 void winbind_msg_offline(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	struct winbindd_child *child;
+	struct winbindd_domain *domain;
 
 	DEBUG(10,("winbind_msg_offline: got offline message.\n"));
 
@@ -469,17 +484,43 @@ void winbind_msg_offline(int msg_type, struct process_id src, void *buf, size_t 
 		return;
 	}
 
+	/* Set all our domains as offline. */
+	for (domain = domain_list(); domain; domain = domain->next) {
+		if (domain->internal) {
+			continue;
+		}
+		DEBUG(5,("winbind_msg_offline: marking %s offline.\n", domain->name));
+		set_domain_offline(domain);
+	}
+
 	for (child = children; child != NULL; child = child->next) {
-		DEBUG(10,("winbind_msg_offline: sending message to pid %u.\n",
-			(unsigned int)child->pid ));
-		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_OFFLINE, NULL, 0, False);
+		/* Don't send message to idmap child. */
+		if (!child->domain || (child == idmap_child())) {
+			continue;
+		}
+
+		/* Or internal domains (this should not be possible....) */
+		if (child->domain->internal) {
+			continue;
+		}
+
+		/* Each winbindd child should only process requests for one domain - make sure
+		   we only set it online / offline for that domain. */
+
+		DEBUG(10,("winbind_msg_offline: sending message to pid %u for domain %s.\n",
+			(unsigned int)child->pid, domain->name ));
+
+		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_OFFLINE, child->domain->name,
+			strlen(child->domain->name)+1, False);
 	}
 }
 
-/* Forward the online/offline messages to our children. */
+/* Set our domains as online and forward the online message to our children. */
+
 void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	struct winbindd_child *child;
+	struct winbindd_domain *domain;
 
 	DEBUG(10,("winbind_msg_online: got online message.\n"));
 
@@ -491,10 +532,39 @@ void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t l
 	/* Set our global state as online. */
 	set_global_winbindd_state_online();
 
+	smb_nscd_flush_user_cache();
+	smb_nscd_flush_group_cache();
+
+	/* Set all our domains as online. */
+	for (domain = domain_list(); domain; domain = domain->next) {
+		if (domain->internal) {
+			continue;
+		}
+		DEBUG(5,("winbind_msg_online: requesting %s to go online.\n", domain->name));
+
+		winbindd_flush_negative_conn_cache(domain);
+		set_domain_online_request(domain);
+	}
+
 	for (child = children; child != NULL; child = child->next) {
-		DEBUG(10,("winbind_msg_online: sending message to pid %u.\n",
-			(unsigned int)child->pid ));
-		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_ONLINE, NULL, 0, False);
+		/* Don't send message to idmap child. */
+		if (!child->domain || (child == idmap_child())) {
+			continue;
+		}
+
+		/* Or internal domains (this should not be possible....) */
+		if (child->domain->internal) {
+			continue;
+		}
+
+		/* Each winbindd child should only process requests for one domain - make sure
+		   we only set it online / offline for that domain. */
+
+		DEBUG(10,("winbind_msg_online: sending message to pid %u for domain %s.\n",
+			(unsigned int)child->pid, child->domain->name ));
+
+		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_ONLINE, child->domain->name,
+			strlen(child->domain->name)+1, False);
 	}
 }
 
@@ -522,7 +592,8 @@ static void account_lockout_policy_handler(struct timed_event *te,
 					   const struct timeval *now,
 					   void *private_data)
 {
-	struct winbindd_child *child = private_data;
+	struct winbindd_child *child =
+		(struct winbindd_child *)private_data;
 
 	struct winbindd_methods *methods;
 	SAM_UNK_INFO_12 lockout_policy;
@@ -554,8 +625,13 @@ static void account_lockout_policy_handler(struct timed_event *te,
 static void child_msg_offline(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	struct winbindd_domain *domain;
+	const char *domainname = (const char *)buf;
 
-	DEBUG(5,("child_msg_offline received.\n"));
+	if (buf == NULL || len == 0) {
+		return;
+	}
+
+	DEBUG(5,("child_msg_offline received for domain %s.\n", domainname));
 
 	if (!lp_winbind_offline_logon()) {
 		DEBUG(10,("child_msg_offline: rejecting offline message.\n"));
@@ -568,11 +644,16 @@ static void child_msg_offline(int msg_type, struct process_id src, void *buf, si
 		return;
 	}
 
-	/* Mark all our domains as offline. */
+	/* Mark the requested domain offline. */
 
 	for (domain = domain_list(); domain; domain = domain->next) {
-		DEBUG(5,("child_msg_offline: marking %s offline.\n", domain->name));
-		domain->online = False;
+		if (domain->internal) {
+			continue;
+		}
+		if (strequal(domain->name, domainname)) {
+			DEBUG(5,("child_msg_offline: marking %s offline.\n", domain->name));
+			set_domain_offline(domain);
+		}
 	}
 }
 
@@ -581,8 +662,13 @@ static void child_msg_offline(int msg_type, struct process_id src, void *buf, si
 static void child_msg_online(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	struct winbindd_domain *domain;
+	const char *domainname = (const char *)buf;
 
-	DEBUG(5,("child_msg_online received.\n"));
+	if (buf == NULL || len == 0) {
+		return;
+	}
+
+	DEBUG(5,("child_msg_online received for domain %s.\n", domainname));
 
 	if (!lp_winbind_offline_logon()) {
 		DEBUG(10,("child_msg_online: rejecting online message.\n"));
@@ -592,16 +678,18 @@ static void child_msg_online(int msg_type, struct process_id src, void *buf, siz
 	/* Set our global state as online. */
 	set_global_winbindd_state_online();
 
-	smb_nscd_flush_user_cache();
-	smb_nscd_flush_group_cache();
-
-	/* Mark everything online - delete any negative cache entries
-	   to force an immediate reconnect. */
+	/* Try and mark everything online - delete any negative cache entries
+	   to force a reconnect now. */
 
 	for (domain = domain_list(); domain; domain = domain->next) {
-		DEBUG(5,("child_msg_online: marking %s online.\n", domain->name));
-		domain->online = True;
-		check_negative_conn_cache_timeout(domain->name, domain->dcname, 0);
+		if (domain->internal) {
+			continue;
+		}
+		if (strequal(domain->name, domainname)) {
+			DEBUG(5,("child_msg_online: requesting %s to go online.\n", domain->name));
+			winbindd_flush_negative_conn_cache(domain);
+			set_domain_online_request(domain);
+		}
 	}
 }
 
@@ -611,7 +699,7 @@ static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
 	char *buf = NULL;
 
 	if ((buf = talloc_asprintf(mem_ctx, "global:%s ", 
-				   get_global_winbindd_state_online() ? 
+				   get_global_winbindd_state_offline() ? 
 				   "Offline":"Online")) == NULL) {
 		return NULL;
 	}
@@ -751,6 +839,11 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	message_register(MSG_WINBIND_ONLINE,child_msg_online);
 	message_register(MSG_WINBIND_ONLINESTATUS,child_msg_onlinestatus);
 
+	if ( child->domain ) {
+		child->domain->startup = True;
+		child->domain->startup_time = time(NULL);
+	}
+
 	while (1) {
 
 		int ret;
@@ -766,6 +859,14 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		run_events();
 
 		GetTimeOfDay(&now);
+
+		if (child->domain && child->domain->startup &&
+				(now.tv_sec > child->domain->startup_time + 30)) {
+			/* No longer in "startup" mode. */
+			DEBUG(10,("fork_domain_child: domain %s no longer in 'startup' mode.\n",
+				child->domain->name ));
+			child->domain->startup = False;
+		}
 
 		tp = get_timed_events_timeout(&t);
 		if (tp) {
@@ -822,7 +923,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		 * structure needs to be fetched via the
 		 * winbindd_cache. Hmm. That needs fixing... */
 
-		if (write_data(state.sock, (void *)&state.response.result,
+		if (write_data(state.sock,
+			       (const char *)&state.response.result,
 			       sizeof(state.response.result)) !=
 		    sizeof(state.response.result)) {
 			DEBUG(0, ("Could not write result\n"));

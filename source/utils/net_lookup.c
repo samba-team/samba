@@ -165,7 +165,7 @@ static int net_lookup_dc(int argc, const char **argv)
 	asprintf(&pdc_str, "%s", inet_ntoa(addr));
 	d_printf("%s\n", pdc_str);
 
-	if (!get_sorted_dc_list(domain, &ip_list, &count, False)) {
+	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, &ip_list, &count, False))) {
 		SAFE_FREE(pdc_str);
 		return 0;
 	}
@@ -211,11 +211,11 @@ static int net_lookup_kdc(int argc, const char **argv)
 	}
 
 	if (argc>0) {
-                realm.data = CONST_DISCARD(krb5_pointer, argv[0]);
+                realm.data = CONST_DISCARD(char *, argv[0]);
 		realm.length = strlen(argv[0]);
 	} else if (lp_realm() && *lp_realm()) {
-		realm.data = (krb5_pointer) lp_realm();
-		realm.length = strlen(realm.data);
+		realm.data = lp_realm();
+		realm.length = strlen((const char *)realm.data);
 	} else {
 		rc = krb5_get_host_realm(ctx, NULL, &realms);
 		if (rc) {
@@ -223,8 +223,8 @@ static int net_lookup_kdc(int argc, const char **argv)
 				 error_message(rc)));
 			return -1;
 		}
-		realm.data = (krb5_pointer) *realms;
-		realm.length = strlen(realm.data);
+		realm.data = (char *) *realms;
+		realm.length = strlen((const char *)realm.data);
 	}
 
 	rc = krb5_locate_kdc(ctx, &realm, (struct sockaddr **)(void *)&addrs, &num_kdcs, 0);

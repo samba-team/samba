@@ -4,23 +4,9 @@
    Shirish Kalele 2000
 */
 
-#ifdef HAVE_FEATURES_H
-#include <features.h>
-#endif
-
-#include <stdlib.h>
-#include <unistd.h>
-#include <limits.h>
-#include <string.h>
-#include <syslog.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <time.h>
-
-#include <config.h>
+#include "lib/replace/replace.h"
+#include "system/syslog.h"
+#include "system/time.h"
 
 #define MODULE_NAME "pam_winbind"
 #define PAM_SM_AUTH
@@ -33,7 +19,7 @@
 
 #include <iniparser.h>
 
-#if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD) || defined(AIX)
+#ifndef LINUX
 
 /* Solaris always uses dynamic pam modules */
 #define PAM_EXTERN extern
@@ -43,7 +29,7 @@
 #define PAM_AUTHTOK_RECOVER_ERR PAM_AUTHTOK_RECOVERY_ERR
 #endif
 
-#endif
+#endif /* defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD) || defined(AIX) */
 
 #ifdef HAVE_SECURITY_PAM_MODULES_H
 #include <security/pam_modules.h>
@@ -82,6 +68,10 @@ do {                             \
 #define _pam_drop(X) SAFE_FREE(X)
 
 #define  x_strdup(s)  ( (s) ? strdup(s):NULL )     
+#endif /* HAVE_SECURITY__PAM_MACROS_H */
+
+#ifdef HAVE_SECURITY_PAM_EXT_H
+#include <security/pam_ext.h>
 #endif
 
 #define WINBIND_DEBUG_ARG (1<<0)
@@ -95,6 +85,7 @@ do {                             \
 #define WINBIND_KRB5_CCACHE_TYPE (1<<8)
 #define WINBIND_CACHED_LOGIN (1<<9)
 #define WINBIND_CONFIG_FILE (1<<10)
+#define WINBIND_SILENT (1<<11)
 
 /*
  * here is the string to inform the user that the new passwords they

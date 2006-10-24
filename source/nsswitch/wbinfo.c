@@ -151,6 +151,34 @@ static BOOL wbinfo_get_userinfo(char *user)
 	return True;
 }
 
+/* pull grent for a given group */
+static BOOL wbinfo_get_groupinfo(char *group)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	fstrcpy(request.data.groupname, group);
+
+	result = winbindd_request_response(WINBINDD_GETGRNAM, &request,
+					   &response);
+
+	if ( result != NSS_STATUS_SUCCESS)
+		return False;
+
+  	d_printf( "%s:%s:%d\n",
+		  response.data.gr.gr_name,
+		  response.data.gr.gr_passwd,
+		  response.data.gr.gr_gid );
+	
+	return True;
+}
+
 /* List groups a user is a member of */
 
 static BOOL wbinfo_get_usergroups(char *user)
@@ -201,7 +229,7 @@ static BOOL wbinfo_get_usersids(char *user_sid)
 	if (result != NSS_STATUS_SUCCESS)
 		return False;
 
-	s = response.extra_data.data;
+	s = (const char *)response.extra_data.data;
 	for (i = 0; i < response.data.num_entries; i++) {
 		d_printf("%s\n", s);
 		s += strlen(s) + 1;
@@ -380,7 +408,10 @@ static BOOL wbinfo_domain_info(const char *domain_name)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	fstrcpy(request.domain_name, domain_name);
+	if ((strequal(domain_name, ".")) || (domain_name[0] == '\0'))
+		fstrcpy(request.domain_name, get_winbind_domain());
+	else
+		fstrcpy(request.domain_name, domain_name);
 
 	/* Send request */
 
@@ -602,6 +633,64 @@ static BOOL wbinfo_lookupsid(char *sid)
 		 winbind_separator(), response.data.name.name, 
 		 response.data.name.type);
 
+	return True;
+}
+
+/* Lookup a list of RIDs */
+
+static BOOL wbinfo_lookuprids(char *domain_sid, char *arg)
+{
+	size_t i;
+	DOM_SID sid;
+	int num_rids;
+	uint32 *rids;
+	const char *p;
+	char ridstr[32];
+	const char **names;
+	enum SID_NAME_USE *types;
+	const char *domain_name;
+	TALLOC_CTX *mem_ctx;
+
+	if (!string_to_sid(&sid, domain_sid)) {
+		d_printf("Could not convert %s to sid\n", domain_sid);
+		return False;
+	}
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		d_printf("talloc_new failed\n");
+		return False;
+	}
+
+	num_rids = 0;
+	rids = NULL;
+	p = arg;
+
+	while (next_token(&p, ridstr, " ,\n", sizeof(ridstr))) {
+		uint32 rid = strtoul(ridstr, NULL, 10);
+		ADD_TO_ARRAY(mem_ctx, uint32, rid, &rids, &num_rids);
+	}
+
+	if (rids == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
+	if (!winbind_lookup_rids(mem_ctx, &sid, num_rids, rids,
+				 &domain_name, &names, &types)) {
+		d_printf("winbind_lookup_rids failed\n");
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
+	d_printf("Domain: %s\n", domain_name);
+
+	for (i=0; i<num_rids; i++) {
+		d_printf("%8d: %s (%s)\n", rids[i], names[i],
+			 sid_type_lookup(types[i]));
+	}
+
+	TALLOC_FREE(mem_ctx);
 	return True;
 }
 
@@ -905,9 +994,9 @@ static BOOL print_domain_users(const char *domain)
 	ZERO_STRUCT(response);
 	
 	if (domain) {
-		/* '.' is the special sign for our own domwin */
+		/* '.' is the special sign for our own domain */
 		if ( strequal(domain, ".") )
-			fstrcpy( request.domain_name, lp_workgroup() );
+			fstrcpy( request.domain_name, get_winbind_domain() );
 		else
 			fstrcpy( request.domain_name, domain );
 	}
@@ -945,7 +1034,7 @@ static BOOL print_domain_groups(const char *domain)
 
 	if (domain) {
 		if ( strequal(domain, ".") )
-			fstrcpy( request.domain_name, lp_workgroup() );
+			fstrcpy( request.domain_name, get_winbind_domain() );
 		else
 			fstrcpy( request.domain_name, domain );
 	}
@@ -1089,7 +1178,8 @@ enum {
 	OPT_ALLOCATE_GID,
 	OPT_SEPARATOR,
 	OPT_LIST_ALL_DOMAINS,
-	OPT_LIST_OWN_DOMAIN
+	OPT_LIST_OWN_DOMAIN,
+	OPT_GROUP_INFO,
 };
 
 int main(int argc, char **argv)
@@ -1114,6 +1204,7 @@ int main(int argc, char **argv)
 		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I', "Converts IP address to NetBIOS name", "IP" },
 		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n', "Converts name to sid", "NAME" },
 		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's', "Converts sid to name", "SID" },
+		{ "lookup-rids", 'R', POPT_ARG_STRING, &string_arg, 'R', "Converts RIDs to names", "RIDs" },
 		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U', "Converts uid to sid" , "UID" },
 		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid", "GID" },
 		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid", "SID" },
@@ -1129,6 +1220,7 @@ int main(int argc, char **argv)
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
 		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D', "Show most of the info we have about the domain" },
 		{ "user-info", 'i', POPT_ARG_STRING, &string_arg, 'i', "Get user info", "USER" },
+		{ "group-info", 0, POPT_ARG_STRING, &string_arg, OPT_GROUP_INFO, "Get group info", "GROUP" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
 		{ "user-domgroups", 0, POPT_ARG_STRING, &string_arg,
 		  OPT_USERDOMGROUPS, "Get user domain groups", "SID" },
@@ -1204,6 +1296,12 @@ int main(int argc, char **argv)
 		case 's':
 			if (!wbinfo_lookupsid(string_arg)) {
 				d_fprintf(stderr, "Could not lookup sid %s\n", string_arg);
+				goto done;
+			}
+			break;
+		case 'R':
+			if (!wbinfo_lookuprids(opt_domain_name, string_arg)) {
+				d_fprintf(stderr, "Could not lookup RIDs %s\n", string_arg);
 				goto done;
 			}
 			break;
@@ -1295,6 +1393,13 @@ int main(int argc, char **argv)
 				goto done;
 			}
 			break;
+		case OPT_GROUP_INFO:
+			if ( !wbinfo_get_groupinfo(string_arg)) {
+				d_fprintf(stderr, "Could not get info for "
+					  "group %s\n", string_arg);
+				goto done;
+			}
+            break;
 		case 'r':
 			if (!wbinfo_get_usergroups(string_arg)) {
 				d_fprintf(stderr, "Could not get groups for user %s\n", 
