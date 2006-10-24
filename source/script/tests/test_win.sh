@@ -36,6 +36,10 @@ $WINTEST_DIR/wintest_rpc.sh $SMBTORTURE_REMOTE_HOST $SMBTORTURE_USERNAME \
 	$SMBTORTURE_PASSWORD $SMBTORTURE_WORKGROUP \
 	|| all_errs=`expr $all_errs + $?`
 
+$WINTEST_DIR/wintest_net.sh $SMBTORTURE_REMOTE_HOST $SMBTORTURE_USERNAME \
+	$SMBTORTURE_PASSWORD $SMBTORTURE_WORKGROUP \
+	|| all_errs=`expr $all_errs + $?`
+
 test_name="WINDOWS CLIENT / SAMBA SERVER SHARE"
 old_errs=$all_errs
 cat $WINTEST_DIR/common.exp > $TMPDIR/client_test.exp
