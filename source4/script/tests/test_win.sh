@@ -24,44 +24,13 @@ if [ -z $SMBTORTURE_REMOTE_HOST ]; then
 	exit 1
 fi
 
-share_tests="BASE-UNLINK BASE-ATTR BASE-DELETE BASE-TCON BASE-OPEN BASE-CHKPATH"
-share_tests="$share_tests RAW-QFILEINFO RAW-SFILEINFO RAW-MKDIR RAW-SEEK"
-share_tests="$share_tests RAW-OPEN RAW-WRITE RAW-UNLINK RAW-READ RAW-CLOSE"
-share_tests="$share_tests RAW-IOCTL RAW-RENAME RAW-EAS RAW-STREAMS"
+$WINTEST_DIR/wintest_base.sh $SMBTORTURE_REMOTE_HOST $SMBTORTURE_USERNAME \
+	$SMBTORTURE_PASSWORD $SMBTORTURE_WORKGROUP \
+	|| all_errs=`expr $all_errs + $?`
 
-for t in $share_tests; do
-	test_name="$t / WINDOWS SERVER"
-	echo -e "\n$test_name SETUP PHASE"
-
-	setup_share_test
-
-	if [ $err_rtn -ne 0 ]; then
-		# If test setup fails, load VM snapshot and skip test.
-		restore_snapshot "\n$test_name setup failed, skipping test."
-	else
-		echo -e "\n$test_name setup completed successfully."
-		old_errs=$all_errs
-
-		testit "$test_name" $SMBTORTURE_BIN_PATH \
-			-U $SMBTORTURE_USERNAME%$SMBTORTURE_PASSWORD \
-			-d 10 -W $SMBTORTURE_WORKGROUP \
-			//$SMBTORTURE_REMOTE_HOST/$SMBTORTURE_REMOTE_SHARE_NAME \
-			$t || all_errs=`expr $all_errs + 1`
-		if [ $old_errs -lt $all_errs ]; then
-			# If test fails, load VM snapshot and skip cleanup.
-			restore_snapshot "\n$test_name failed."
-		else
-			echo -e "\n$test_name CLEANUP PHASE"
-			remove_share_test
-			if [ $err_rtn -ne 0 ]; then
-				# If cleanup fails, restore VM snapshot.
-				restore_snapshot "\n$test_name removal failed."
-			else
-				echo -e "\n$test_name removal completed successfully."
-			fi
-		fi
-	fi
-done
+$WINTEST_DIR/wintest_raw.sh $SMBTORTURE_REMOTE_HOST $SMBTORTURE_USERNAME \
+	$SMBTORTURE_PASSWORD $SMBTORTURE_WORKGROUP \
+	|| all_errs=`expr $all_errs + $?`
 
 rpc_tests="RPC-WINREG RPC-ASYNCBIND RPC-ATSVC RPC-DSSETUP RPC-EPMAPPER"
 rpc_tests="$rpc_tests RPC-INITSHUTDOWN RPC-LSA-GETUSER RPC-MULTIBIND RPC-ROT"
