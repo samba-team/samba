@@ -1,3 +1,14 @@
+2006-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_buffer_set.c (gss_release_buffer_set): don't leak the
+	->elements memory.
+
+	* test_context.c: make compile
+
+	* krb5/cfx.c (_gssapi_verify_mic_cfx): always free crypto context.
+
+	* krb5/set_cred_option.c (import_cred): free sp
+	
 2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* mech/gss_add_oid_set_member.c: Use old implementation of
