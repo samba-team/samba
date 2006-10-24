@@ -8,7 +8,7 @@ ncacn_ip_tcp_tests="NET-API-LOOKUP NET-API-LOOKUPHOST NET-API-LOOKUPPDC NET-API-
 
 if [ $# -lt 4 ]; then
 cat <<EOF
-Usage: test_rpc.sh SERVER USERNAME PASSWORD DOMAIN
+Usage: test_net.sh SERVER USERNAME PASSWORD DOMAIN
 EOF
 exit 1;
 fi
