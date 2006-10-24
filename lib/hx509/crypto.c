@@ -852,7 +852,7 @@ _hx509_verify_signature_bitstring(const Certificate *signer,
     heim_octet_string os;
 
     if (sig->length & 7)
-	return EINVAL;
+	return HX509_CRYPTO_SIG_INVALID_FORMAT;
 
     os.data = sig->data;
     os.length = sig->length / 8;
@@ -947,7 +947,7 @@ _hx509_public_encrypt(const heim_octet_string *cleartext,
     RSA_free(rsa);
     if (ret < 0) {
 	free(to);
-	return EINVAL;
+	return HX509_CRYPTO_RSA_PUBLIC_ENCRYPT;
     }
     if (ret > tosize)
 	_hx509_abort("internal rsa decryption failure: ret > tosize");
@@ -976,7 +976,7 @@ _hx509_private_key_private_decrypt(const heim_octet_string *ciphertext,
     cleartext->length = 0;
 
     if (p->private_key.rsa == NULL)
-	return EINVAL;
+	return HX509_PRIVATE_KEY_MISSING;
 
     cleartext->length = RSA_size(p->private_key.rsa);
     cleartext->data = malloc(cleartext->length);
@@ -1044,9 +1044,9 @@ _hx509_private_key2SPKI(hx509_context context,
 {
     const struct signature_alg *md = private_key->md;
     if (md->private_key2SPKI == NULL) {
-	hx509_set_error_string(context, 0, EINVAL,
+	hx509_set_error_string(context, 0, HX509_UNIMPLEMENTED_OPERATION,
 			       "Private key have no key2SPKI function");
-	return EINVAL;
+	return HX509_UNIMPLEMENTED_OPERATION;
     }
     return (*md->private_key2SPKI)(private_key, spki);
 }
