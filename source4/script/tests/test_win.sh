@@ -34,5 +34,3 @@ $WINTEST_DIR/wintest_net.sh $SMBTORTURE_REMOTE_HOST $SMBTORTURE_USERNAME \
 	|| all_errs=`expr $all_errs + $?`
 
 $WINTEST_DIR/wintest_client.sh || all_errs=`expr $all_errs + $?`
-
-testok $0 $all_errs
