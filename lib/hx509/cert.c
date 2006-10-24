@@ -996,10 +996,11 @@ hx509_cert_get_base_subject(hx509_context context, hx509_cert c,
     if (c->basename)
 	return hx509_name_copy(context, c->basename, name);
     if (is_proxy_cert(context, c->data, NULL) == 0) {
+	int ret = HX509_PROXY_CERTIFICATE_NOT_CANONICALIZED;
 	hx509_set_error_string(context, 0, ret,
 			       "Proxy certificate have not been "
 			       "canonicalize yet, no base name");
-	return HX509_PROXY_CERTIFICATE_NOT_CANONICALIZED;
+	return ret;
     }
     return _hx509_name_from_Name(&c->data->tbsCertificate.subject, name);
 }
