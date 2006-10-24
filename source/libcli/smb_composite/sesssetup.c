@@ -80,6 +80,8 @@ static void request_handler(struct smbcli_request *req)
 		/* This doesn't work, as this only happens on old
 		 * protocols, where this comparison won't match. */
 		if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
+			/* we neet to reset the vuid for a new try */
+			session->vuid = 0;
 			if (cli_credentials_wrong_password(state->io->in.credentials)) {
 				nt_status = session_setup_old(c, session, 
 							      state->io, 
@@ -97,6 +99,8 @@ static void request_handler(struct smbcli_request *req)
 	case RAW_SESSSETUP_NT1:
 		state->io->out.vuid = state->setup.nt1.out.vuid;
 		if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
+			/* we neet to reset the vuid for a new try */
+			session->vuid = 0;
 			if (cli_credentials_wrong_password(state->io->in.credentials)) {
 				nt_status = session_setup_nt1(c, session, 
 							      state->io, 
@@ -112,8 +116,10 @@ static void request_handler(struct smbcli_request *req)
 		break;
 
 	case RAW_SESSSETUP_SPNEGO:
-		session->vuid = state->io->out.vuid = state->setup.spnego.out.vuid;
+		state->io->out.vuid = state->setup.spnego.out.vuid;
 		if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
+			/* we neet to reset the vuid for a new try */
+			session->vuid = 0;
 			if (cli_credentials_wrong_password(state->io->in.credentials)) {
 				nt_status = session_setup_spnego(c, session, 
 								      state->io, 
@@ -160,7 +166,14 @@ static void request_handler(struct smbcli_request *req)
 		}
 
 		if (state->setup.spnego.in.secblob.length) {
+			/* 
+			 * set the session->vuid value only for calling
+			 * smb_raw_sesssetup_send()
+			 */
+			uint16_t vuid = session->vuid;
+			session->vuid = state->io->out.vuid;
 			state->req = smb_raw_sesssetup_send(session, &state->setup);
+			session->vuid = vuid;
 			state->req->async.fn = request_handler;
 			state->req->async.private = c;
 			return;
@@ -342,8 +355,6 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 	state->setup.spnego.in.os           = "Unix";
 	state->setup.spnego.in.lanman       = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
 	state->setup.spnego.in.workgroup    = io->in.workgroup;
-
-	state->setup.spnego.out.vuid        = session->vuid;
 
 	smbcli_temp_set_signing(session->transport);
 
