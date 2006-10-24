@@ -52,7 +52,7 @@ struct client {
     krb5_storage *logging;
     char *moniker;
     int32_t nHandle;
-    struct handle *handle;
+    struct handle *handles;
     struct sockaddr_storage sa;
     socklen_t salen;
     char servername[MAXHOSTNAMELEN];
@@ -110,8 +110,8 @@ add_handle(struct client *c, enum handle_type type, void *data)
     h->idx = ++c->nHandle;
     h->type = type;
     h->ptr = data;
-    h->next = c->handle;
-    c->handle = h;
+    h->next = c->handles;
+    c->handles = h;
 
     return h->idx;
 }
@@ -138,6 +138,7 @@ del_handle(struct handle **h, int32_t idx)
 		gss_release_cred(&min_stat, &c);
 		break; }
 	    }
+	    free(p);
 	    return;
 	}
 	h = &((*h)->next);
@@ -311,10 +312,10 @@ HandleOP(InitContext)
 	       "targetname: <%.*s>", (int)target_name.length,
 	       (char *)target_name.data);
 
-    ctx = find_handle(c->handle, hContext, handle_context);
+    ctx = find_handle(c->handles, hContext, handle_context);
     if (ctx == NULL)
 	hContext = 0;
-    creds = find_handle(c->handle, hCred, handle_cred);
+    creds = find_handle(c->handles, hCred, handle_cred);
     if (creds == NULL)
 	abort();
 
@@ -367,7 +368,7 @@ HandleOP(InitContext)
 				    NULL);
     if (GSS_ERROR(maj_stat)) {
 	if (hContext != 0)
-	    del_handle(&c->handle, hContext);
+	    del_handle(&c->handles, hContext);
 	new_context_id = 0;
 	logmessage(c, __FILE__, __LINE__, 0,
 		   "gss_init_sec_context returns code: %d/%d", 
@@ -421,7 +422,7 @@ HandleOP(AcceptContext)
     ret32(c, flags);
     retdata(c, in_token);
 
-    ctx = find_handle(c->handle, hContext, handle_context);
+    ctx = find_handle(c->handles, hContext, handle_context);
     if (ctx == NULL)
 	hContext = 0;
 
@@ -447,7 +448,7 @@ HandleOP(AcceptContext)
 				      &deleg_cred);
     if (GSS_ERROR(maj_stat)) {
 	if (hContext != 0)
-	    del_handle(&c->handle, hContext);
+	    del_handle(&c->handles, hContext);
 	logmessage(c, __FILE__, __LINE__, 0,
 		   "gss_accept_sec_context returns code: %d/%d", 
 		   maj_stat, min_stat);
@@ -495,7 +496,7 @@ HandleOP(ToastResource)
 
     ret32(c, handle);
     logmessage(c, __FILE__, __LINE__, 0, "toasting %d", handle);
-    del_handle(&c->handle, handle);
+    del_handle(&c->handles, handle);
     put32(c, GSMERR_OK);
 
     return 0;
@@ -562,7 +563,7 @@ HandleOP(Sign)
     ret32(c, seqno);
     retdata(c, token);
 
-    ctx = find_handle(c->handle, hContext, handle_context);
+    ctx = find_handle(c->handles, hContext, handle_context);
     if (ctx == NULL)
 	errx(1, "sign: reference to unknown context");
 
@@ -599,7 +600,7 @@ HandleOP(Verify)
 
     ret32(c, hContext);
 
-    ctx = find_handle(c->handle, hContext, handle_context);
+    ctx = find_handle(c->handles, hContext, handle_context);
     if (ctx == NULL)
 	errx(1, "verify: reference to unknown context");
 
@@ -733,7 +734,7 @@ HandleOP(Wrap)
     ret32(c, seqno);
     retdata(c, token);
 
-    ctx = find_handle(c->handle, hContext, handle_context);
+    ctx = find_handle(c->handles, hContext, handle_context);
     if (ctx == NULL)
 	errx(1, "wrap: reference to unknown context");
 
@@ -775,7 +776,7 @@ HandleOP(Unwrap)
     ret32(c, seqno);
     retdata(c, token);
 
-    ctx = find_handle(c->handle, hContext, handle_context);
+    ctx = find_handle(c->handles, hContext, handle_context);
     if (ctx == NULL)
 	errx(1, "unwrap: reference to unknown context");
 
