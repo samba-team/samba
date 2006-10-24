@@ -98,22 +98,21 @@ gss_add_buffer_set_member
 }
 
 OM_uint32
-gss_release_buffer_set
-	   (OM_uint32 * minor_status,
-	    gss_buffer_set_t *buffer_set)
+gss_release_buffer_set(OM_uint32 * minor_status,
+		       gss_buffer_set_t *buffer_set)
 {
     int i;
     OM_uint32 minor;
 
     *minor_status = 0;
 
-    if (*buffer_set == GSS_C_NO_BUFFER_SET) {
+    if (*buffer_set == GSS_C_NO_BUFFER_SET)
 	return GSS_S_COMPLETE;
-    }
 
-    for (i = 0; i < (*buffer_set)->count; i++) {
+    for (i = 0; i < (*buffer_set)->count; i++)
 	gss_release_buffer(&minor, &((*buffer_set)->elements[i]));
-    }
+
+    free((*buffer_set)->elements);
 
     (*buffer_set)->elements = NULL;
     (*buffer_set)->count = 0;
