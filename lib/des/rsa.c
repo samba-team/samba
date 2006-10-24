@@ -332,7 +332,7 @@ d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
 
     ret = decode_RSAPrivateKey(*pp, len, &data, &size);
     if (ret)
-	return 0;
+	return NULL;
     
     *pp += size;
 
