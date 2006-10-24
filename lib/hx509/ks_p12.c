@@ -102,7 +102,8 @@ ShroudedKeyBag_parser(hx509_context context,
     if (ret)
 	return ret;
     
-    _hx509_collector_private_key_add(c,
+    _hx509_collector_private_key_add(context,
+				     c,
 				     &ki.privateKeyAlgorithm,
 				     NULL,
 				     &ki.privateKey,
