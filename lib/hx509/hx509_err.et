@@ -61,6 +61,10 @@ error_code SIG_INVALID_FORMAT, "Invalid format on signature"
 error_code OID_MISMATCH, "Mismatch bewteen oids"
 error_code NO_PROMPTER, "No prompter function defined"
 error_code SIGNATURE_WITHOUT_SIGNER, "Signature require signer, but non available"
+error_code RSA_PUBLIC_ENCRYPT, "RSA public encyption failed"
+error_code RSA_PRIVATE_ENCRYPT, "RSA public encyption failed"
+error_code RSA_PUBLIC_DECRYPT, "RSA private decryption failed"
+error_code RSA_PRIVATE_DECRYPT, "RSA private decryption failed"
 
 # revoke related errors
 index 96
@@ -71,11 +75,15 @@ error_code CRL_INVALID_FORMAT, "CRL have invalid format"
 error_code CRL_CERT_REVOKED, "Certificate is included in CRL"
 error_code REVOKE_STATUS_MISSING, "No revoke status found for certificates"
 error_code CRL_UNKNOWN_EXTENSION, "Unknown extension"
+error_code REVOKE_WRONG_DATA, "Got wrong CRL/OCSP data from server"
+error_code REVOKE_NOT_SAME_PARENT, "Doesn't have same parent as other certificaes"
 
 # misc error
 index 108
 error_code LOCAL_ATTRIBUTE_MISSING, "No local key attribute"
 error_code PARSING_KEY_FAILED, "Failed to parse key"
+error_code UNSUPPORTED_OPERATION, "Unsupported operation"
+error_code UNIMPLEMENTED_OPERATION, "Unimplemented operation"
 
 # keystore related error
 index 128
