@@ -100,7 +100,9 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 	}
 
 	size = atoi(argv[1]);
-	out_data = (uint8 *)SMB_MALLOC(size);
+	if (!(out_data = (uint8 *)SMB_MALLOC(size))) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	result = rpccli_echo_SourceData(cli, mem_ctx, size, out_data);
 
@@ -108,7 +110,7 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 		goto done;
 
 	for (i = 0; i < size; i++) {
-		if (out_data && out_data[i] != (i & 0xff)) {
+		if (out_data[i] != (i & 0xff)) {
 			printf("mismatch at offset %d, %d != %d\n",
 			       i, out_data[i], i & 0xff);
 			result = NT_STATUS_UNSUCCESSFUL;
