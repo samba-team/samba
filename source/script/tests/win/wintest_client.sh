@@ -15,7 +15,7 @@ cat $WINTEST_DIR/wintest_client.exp >> $TMPDIR/client_test.exp
 testit "$test_name" \
 	expect $TMPDIR/client_test.exp || all_errs=`expr $all_errs + 1`
 
-if [ $all_errs -gt 0 ]; then
+if [ $all_errs > 0 ]; then
 	# Restore snapshot to ensure VM is in a known state.
 	restore_snapshot "\n$test_name failed."
 	echo "Snapshot restored."
