@@ -507,7 +507,7 @@ HandleOP(AcquireCreds)
     char *name, *password;
     int32_t gsm_error, flags, handle = 0;
     krb5_principal principal = NULL;
-    krb5_get_init_creds_opt *opt;
+    krb5_get_init_creds_opt *opt = NULL;
     krb5_error_code ret;
 
     retstring(c, name);
@@ -535,6 +535,8 @@ out:
     logmessage(c, __FILE__, __LINE__, 0,
 	       "AcquireCreds handle: %d return code: %d", handle, gsm_error);
 
+    if (opt)
+	krb5_get_init_creds_opt_free (context, opt);
     if (principal)
 	krb5_free_principal(context, principal);
     free(name);
