@@ -1,5 +1,12 @@
-2006-10-23  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/gssmask/gssmask.c: make compile
+
+	* appl/gssmask/gssmask.c (AcquireCreds): free
+	krb5_get_init_creds_opt
+	
+2006-10-23  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* configure.in: heimdal 0.8-RC1
 
 2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
