@@ -226,5 +226,8 @@ main(int argc, char **argv)
 	    errx(1, "gss_krb5_free_lucid_sec_context failed");
     }
 
+    gss_delete_sec_context(&min_stat, &cctx);
+    gss_delete_sec_context(&min_stat, &sctx);
+
     return 0;
 }
