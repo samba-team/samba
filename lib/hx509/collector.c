@@ -167,9 +167,9 @@ match_localkeyid(hx509_context context,
     int ret;
 
     if (value->localKeyId.length == 0) {
-	hx509_set_error_string(context, 0, EINVAL,
-			       "local key on private key too short");
-	return EINVAL;
+	hx509_set_error_string(context, 0, HX509_LOCAL_ATTRIBUTE_MISSING,
+			       "No local key attribute on private key");
+	return HX509_LOCAL_ATTRIBUTE_MISSING;
     }
 
     _hx509_query_clear(&q);
@@ -197,8 +197,9 @@ match_keys(hx509_context context, struct private_key *value, hx509_certs certs)
     int ret, found = HX509_CERT_NOT_FOUND;
 
     if (value->private_key == NULL) {
-	hx509_set_error_string(context, 0, EINVAL, "no private key to compare with");
-	return EINVAL;
+	hx509_set_error_string(context, 0, HX509_PRIVATE_KEY_MISSING, 
+			       "No private key to compare with");
+	return HX509_PRIVATE_KEY_MISSING;
     }
 
     ret = hx509_certs_start_seq(context, certs, &cursor);
