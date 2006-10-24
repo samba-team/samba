@@ -1246,8 +1246,8 @@ _kdc_pk_check_client(krb5_context context,
     if (ret)
 	return ret;
 
-    kdc_log(context, config, 5,
-	    "Trying to authorize subject DN %s", 
+    kdc_log(context, config, 0,
+	    "Trying to authorize PK-INIT subject DN %s", 
 	    *subject_name);
 
     if (config->enable_pkinit_princ_in_cert) {
