@@ -248,15 +248,15 @@ p11_mech_info(hx509_context context,
 
     ret = P11FUNC(p, GetMechanismList, (slot->id, NULL_PTR, &i));
     if (ret) {
-	hx509_set_error_string(context, 0, EINVAL,
+	hx509_set_error_string(context, 0, HX509_PKCS11_NO_MECH,
 			       "Failed to get mech list count for slot %d",
 			       num);
-	return EINVAL;
+	return HX509_PKCS11_NO_MECH;
     }
     if (i == 0) {
-	hx509_set_error_string(context, 0, EINVAL,
+	hx509_set_error_string(context, 0, HX509_PKCS11_NO_MECH,
 			       "no mech supported for slot %d", num);
-	return EINVAL;
+	return HX509_PKCS11_NO_MECH;
     }
     slot->mechs.list = calloc(i, sizeof(slot->mechs.list[0]));
     if (slot->mechs.list == NULL) {
@@ -267,10 +267,10 @@ p11_mech_info(hx509_context context,
     slot->mechs.num = i;
     ret = P11FUNC(p, GetMechanismList, (slot->id, slot->mechs.list, &i));
     if (ret) {
-	hx509_set_error_string(context, 0, EINVAL,
+	hx509_set_error_string(context, 0, HX509_PKCS11_NO_MECH,
 			       "Failed to get mech list for slot %d",
 			       num);
-	return EINVAL;
+	return HX509_PKCS11_NO_MECH;
     }
     assert(i == slot->mechs.num);
 
@@ -291,10 +291,10 @@ p11_mech_info(hx509_context context,
 	ret = P11FUNC(p, GetMechanismInfo, (slot->id, slot->mechs.list[i],
 					    slot->mechs.infos[i]));
 	if (ret) {
-	    hx509_set_error_string(context, 0, EINVAL,
+	    hx509_set_error_string(context, 0, HX509_PKCS11_NO_MECH,
 				   "Failed to get mech info for slot %d",
 				   num);
-	    return EINVAL;
+	    return HX509_PKCS11_NO_MECH;
 	}
     }
 
@@ -319,10 +319,10 @@ p11_init_slot(hx509_context context,
 
     ret = P11FUNC(p, GetSlotInfo, (slot->id, &slot_info));
     if (ret) {
-	hx509_set_error_string(context, 0, EINVAL,
+	hx509_set_error_string(context, 0, HX509_PKCS11_TOKEN_CONFUSED,
 			       "Failed to init PKCS11 slot %d",
 			       num);
-	return EINVAL;
+	return HX509_PKCS11_TOKEN_CONFUSED;
     }
 
     for (i = sizeof(slot_info.slotDescription) - 1; i > 0; i--) {
@@ -341,7 +341,7 @@ p11_init_slot(hx509_context context,
 
     ret = P11FUNC(p, GetTokenInfo, (slot->id, &token_info));
     if (ret) {
-	hx509_set_error_string(context, 0, EINVAL,
+	hx509_set_error_string(context, 0, HX509_PKCS11_NO_TOKEN,
 			       "Failed to init PKCS11 slot %d "
 			       "with error 0x08x",
 			       num, ret);
@@ -392,11 +392,11 @@ p11_get_session(hx509_context context,
 				   &slot->session));
     if (ret != CKR_OK) {
 	if (context)
-	    hx509_set_error_string(context, 0, EINVAL,
+	    hx509_set_error_string(context, 0, HX509_PKCS11_OPEN_SESSION,
 				   "Failed to OpenSession for slot id %d "
 				   "with error: 0x%08x",
 				   (int)slot->id, ret);
-	return EINVAL;
+	return HX509_PKCS11_OPEN_SESSION;
     }
     
     slot->flags |= P11_SESSION;
@@ -452,12 +452,12 @@ p11_get_session(hx509_context context,
 				 (unsigned char*)pin, strlen(pin)));
 	if (ret != CKR_OK) {
 	    if (context)
-		hx509_set_error_string(context, 0, EINVAL,
+		hx509_set_error_string(context, 0, HX509_PKCS11_LOGIN,
 				       "Failed to login on slot id %d "
 				       "with error: 0x%08x",
 				       (int)slot->id, ret);
 	    p11_put_session(p, slot, slot->session);
-	    return EINVAL;
+	    return HX509_PKCS11_LOGIN;
 	}
 	if (slot->pin == NULL) {
 	    slot->pin = strdup(pin);
@@ -847,49 +847,49 @@ p11_init(hx509_context context,
     p->dl_handle = dlopen(list, RTLD_NOW);
     free(list);
     if (p->dl_handle == NULL) {
-	hx509_set_error_string(context, 0, EINVAL,
+	ret = HX509_PKCS11_LOAD;
+	hx509_set_error_string(context, 0, ret,
 			       "Failed to open %s: %s", list, dlerror());
-	ret = EINVAL; /* XXX */
 	goto out;
     }
 
     getFuncs = dlsym(p->dl_handle, "C_GetFunctionList");
     if (getFuncs == NULL) {
-	hx509_set_error_string(context, 0, EINVAL,
+	ret = HX509_PKCS11_LOAD;
+	hx509_set_error_string(context, 0, ret,
 			       "C_GetFunctionList missing in %s: %s", 
 			       list, dlerror());
-	ret = EINVAL;
 	goto out;
     }
 
     ret = (*getFuncs)(&p->funcs);
     if (ret) {
-	hx509_set_error_string(context, 0, EINVAL,
+	ret = HX509_PKCS11_LOAD;
+	hx509_set_error_string(context, 0, ret,
 			       "C_GetFunctionList failed in %s", list);
-	ret = EINVAL;
 	goto out;
     }
 
     ret = P11FUNC(p, Initialize, (NULL_PTR));
     if (ret != CKR_OK) {
-	hx509_set_error_string(context, 0, EINVAL,
+	ret = HX509_PKCS11_TOKEN_CONFUSED;
+	hx509_set_error_string(context, 0, ret,
 			       "Failed initialize the PKCS11 module");
-	ret = EINVAL;
 	goto out;
     }
 
     ret = P11FUNC(p, GetSlotList, (FALSE, NULL, &p->num_slots));
     if (ret) {
-	hx509_set_error_string(context, 0, EINVAL,
+	ret = HX509_PKCS11_TOKEN_CONFUSED;
+	hx509_set_error_string(context, 0, ret,
 			       "Failed to get number of PKCS11 slots");
-	ret = EINVAL;
 	goto out;
     }
 
    if (p->num_slots == 0) {
-	hx509_set_error_string(context, 0, HX509_PKCS11_NO_SLOT,
-			       "Selected PKCS11 module have no slots");
 	ret = HX509_PKCS11_NO_SLOT;
+	hx509_set_error_string(context, 0, ret,
+			       "Selected PKCS11 module have no slots");
 	goto out;
    }
 
@@ -908,10 +908,10 @@ p11_init(hx509_context context,
 	ret = P11FUNC(p, GetSlotList, (FALSE, slot_ids, &p->num_slots));
 	if (ret) {
 	    free(slot_ids);
-	    hx509_set_error_string(context, 0, EINVAL,
+	    hx509_set_error_string(context, 0, HX509_PKCS11_TOKEN_CONFUSED,
 				   "Failed getting slot-list from "
 				   "PKCS11 module");
-	    ret = EINVAL;
+	    ret = HX509_PKCS11_TOKEN_CONFUSED;
 	    goto out;
 	}
 
