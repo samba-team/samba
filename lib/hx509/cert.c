@@ -990,12 +990,17 @@ hx509_cert_get_subject(hx509_cert p, hx509_name *name)
 }
 
 int
-hx509_cert_get_base_subject(hx509_context context, hx509_cert c, hx509_name *name)
+hx509_cert_get_base_subject(hx509_context context, hx509_cert c,
+			    hx509_name *name)
 {
     if (c->basename)
 	return hx509_name_copy(context, c->basename, name);
-    if (is_proxy_cert(context, c->data, NULL) == 0)
-	return EINVAL; /* XXX */
+    if (is_proxy_cert(context, c->data, NULL) == 0) {
+	hx509_set_error_string(context, 0, ret,
+			       "Proxy certificate have not been "
+			       "canonicalize yet, no base name");
+	return HX509_PROXY_CERTIFICATE_NOT_CANONICALIZED;
+    }
     return _hx509_name_from_Name(&c->data->tbsCertificate.subject, name);
 }
 
@@ -1021,7 +1026,7 @@ _hx509_cert_private_decrypt(const heim_octet_string *ciphertext,
     cleartext->length = 0;
 
     if (p->private_key == NULL)
-	return EINVAL; /* XXX */
+	return HX509_PRIVATE_KEY_MISSING;
 
     return _hx509_private_key_private_decrypt(ciphertext,
 					      encryption_oid,
