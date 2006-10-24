@@ -536,7 +536,7 @@ out:
 	       "AcquireCreds handle: %d return code: %d", handle, gsm_error);
 
     if (opt)
-	krb5_get_init_creds_opt_free (context, opt);
+	krb5_get_init_creds_opt_free (opt);
     if (principal)
 	krb5_free_principal(context, principal);
     free(name);
