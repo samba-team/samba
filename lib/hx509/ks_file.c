@@ -172,7 +172,8 @@ try_decrypt(hx509_context context,
 	EVP_CIPHER_CTX_cleanup(&ctx);
     }	
 
-    ret = _hx509_collector_private_key_add(collector,
+    ret = _hx509_collector_private_key_add(context,
+					   collector,
 					   hx509_signature_rsa(),
 					   NULL,
 					   &clear,
@@ -207,14 +208,14 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 
 	lock = _hx509_collector_get_lock(c);
 	if (lock == NULL) {
-	    hx509_set_error_string(context, 0, EINVAL,
+	    hx509_set_error_string(context, 0, HX509_ALG_NOT_SUPP,
 				   "Failed to get password for "
 				   "password protected file");
 	    return EINVAL;
 	}
 
 	if (strcmp(enc, "4,ENCRYPTED") != 0) {
-	    hx509_set_error_string(context, 0, EINVAL,
+	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
 				   "RSA key encrypted in unknown method %s",
 				   enc);
 	    hx509_clear_error_string(context);
@@ -223,7 +224,7 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 
 	dek = find_header(headers, "DEK-Info");
 	if (dek == NULL) {
-	    hx509_set_error_string(context, 0, EINVAL,
+	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
 				   "Encrypted RSA missing DEK-Info");
 	    return EINVAL;
 	}
@@ -249,7 +250,7 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	cipher = EVP_get_cipherbyname(type);
 	if (cipher == NULL) {
 	    free(ivdata);
-	    hx509_set_error_string(context, 0, EINVAL,
+	    hx509_set_error_string(context, 0, HX509_ALG_NOT_SUPP,
 				   "RSA key encrypted with "
 				   "unsupported cipher: %s",
 				   type);
@@ -266,9 +267,9 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 
 	if (ssize < 0 || ssize < PKCS5_SALT_LEN || ssize < EVP_CIPHER_iv_length(cipher)) {
 	    free(ivdata);
-	    hx509_set_error_string(context, 0, EINVAL,
+	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
 				   "Salt have wrong length in RSA key file");
-	    return EINVAL;
+	    return HX509_PARSING_KEY_FAILED;
 	}
 	
 	pw = _hx509_lock_get_passwords(lock);
@@ -316,7 +317,8 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	keydata.data = rk_UNCONST(data);
 	keydata.length = len;
 
-	ret = _hx509_collector_private_key_add(c,
+	ret = _hx509_collector_private_key_add(context,
+					       c,
 					       hx509_signature_rsa(),
 					       NULL,
 					       &keydata,
@@ -466,9 +468,9 @@ parse_pem_file(hx509_context context,
     fclose(f);
 
     if (where != BEFORE) {
-	hx509_set_error_string(context, 0, EINVAL,
+	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
 			       "File ends before end of PEM end tag");
-	ret = EINVAL;
+	ret = HX509_PARSING_KEY_FAILED;
     }
     if (data)
 	free(data);
