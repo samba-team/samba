@@ -283,6 +283,16 @@ HandleOP(GetVersionInfo)
 static int
 HandleOP(GoodBye)
 {
+    struct handle *h = c->handles;
+    int i = 0;
+
+    while (h) {
+	h = h->next;
+	i++;
+    }
+
+    logmessage(c, __FILE__, __LINE__, 0, "did not toast all resources: %d", i);
+
     return 1;
 }
 
@@ -929,6 +939,19 @@ create_client(int fd, int port, const char *moniker)
     return c;
 }
 
+static void
+free_client(struct client *c)
+{
+    while(c->handles)
+	del_handle(&c->handles, c->handles->idx);
+
+    free(c->moniker);
+    krb5_storage_free(c->sock);
+    if (c->logging)
+	krb5_storage_free(c->logging);
+    free(c);
+}
+
 
 static void *
 handleServer(void *ptr)
@@ -957,9 +980,6 @@ handleServer(void *ptr)
 	if ((handler->func)(handler->op, c))
 	    break;
     }
-    krb5_storage_free(c->sock);
-    if (c->logging)
-	krb5_storage_free(c->logging);
 
     return NULL;
 }
@@ -1049,6 +1069,8 @@ main(int argc, char **argv)
 	/* close(0); */
 
 	handleServer(c);
+
+	free_client(c);
     }
 
     krb5_free_context(context);
