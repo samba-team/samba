@@ -150,9 +150,9 @@ try_decrypt(hx509_context context,
 			 password, passwordlen,
 			 1, key, NULL);
     if (ret <= 0) {
-	hx509_set_error_string(context, 0, EINVAL,
+	hx509_set_error_string(context, 0, HX509_CRYPTO_INTERNAL_ERROR,
 			       "Failed to do string2key for private key");
-	return EINVAL;
+	return HX509_CRYPTO_INTERNAL_ERROR;
     }
 
     clear.data = malloc(len);
@@ -211,7 +211,7 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	    hx509_set_error_string(context, 0, HX509_ALG_NOT_SUPP,
 				   "Failed to get password for "
 				   "password protected file");
-	    return EINVAL;
+	    return HX509_ALG_NOT_SUPP;
 	}
 
 	if (strcmp(enc, "4,ENCRYPTED") != 0) {
@@ -219,14 +219,14 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 				   "RSA key encrypted in unknown method %s",
 				   enc);
 	    hx509_clear_error_string(context);
-	    return EINVAL;
+	    return HX509_PARSING_KEY_FAILED;
 	}
 
 	dek = find_header(headers, "DEK-Info");
 	if (dek == NULL) {
 	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
 				   "Encrypted RSA missing DEK-Info");
-	    return EINVAL;
+	    return HX509_PARSING_KEY_FAILED;
 	}
 
 	type = strdup(dek);
@@ -255,7 +255,7 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 				   "unsupported cipher: %s",
 				   type);
 	    free(type);
-	    return EINVAL;
+	    return HX509_ALG_NOT_SUPP;
 	}
 
 #define PKCS5_SALT_LEN 8
@@ -447,7 +447,7 @@ parse_pem_file(hx509_context context,
 		}
 	    }
 	    if (j == sizeof(formats)/sizeof(formats[0])) {
-		ret = EINVAL;
+		ret = HX509_UNSUPPORTED_OPERATION;
 		hx509_set_error_string(context, 0, ret,
 				       "Found no matching PEM format for %s",
 				       type);
