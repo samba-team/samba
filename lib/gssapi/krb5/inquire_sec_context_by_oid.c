@@ -296,9 +296,7 @@ export_lucid_sec_context_v1(OM_uint32 *minor_status,
     ret = krb5_store_int32(sp, (is_cfx) ? 1 : 0);
     if (ret) goto out;
 
-    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
     ret = _gsskrb5i_get_token_key(context_handle, &key);
-    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (ret) goto out;
 
     if (is_cfx == 0) {
