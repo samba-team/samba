@@ -35,6 +35,7 @@ error_code PROXY_CERT_NAME_WRONG, "Proxy certificate is invalid"
 error_code NAME_MALFORMED, "Name is malformated"
 error_code CERTIFICATE_MALFORMED, "Certificate is malformated"
 error_code CERTIFICATE_MISSING_EKU, "Certificate is missing a required EKU"
+error_code PROXY_CERTIFICATE_NOT_CANONICALIZED, "Proxy certificate not canonicalize" 
 
 # cms related errors
 index 32
@@ -62,7 +63,7 @@ error_code NO_PROMPTER, "No prompter function defined"
 error_code SIGNATURE_WITHOUT_SIGNER, "Signature require signer, but non available"
 
 # revoke related errors
-index 94
+index 96
 prefix HX509
 error_code CRL_USED_BEFORE_TIME, "CRL used before it became valid"
 error_code CRL_USED_AFTER_TIME, "CRL used after it became invalid"
@@ -70,6 +71,10 @@ error_code CRL_INVALID_FORMAT, "CRL have invalid format"
 error_code CRL_CERT_REVOKED, "Certificate is included in CRL"
 error_code REVOKE_STATUS_MISSING, "No revoke status found for certificates"
 error_code CRL_UNKNOWN_EXTENSION, "Unknown extension"
+
+# misc error
+index 108
+error_code LOCAL_ATTRIBUTE_MISSING, "No local key attribute"
 
 # keystore related error
 index 128
