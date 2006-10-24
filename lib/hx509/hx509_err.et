@@ -75,6 +75,7 @@ error_code CRL_UNKNOWN_EXTENSION, "Unknown extension"
 # misc error
 index 108
 error_code LOCAL_ATTRIBUTE_MISSING, "No local key attribute"
+error_code PARSING_KEY_FAILED, "Failed to parse key"
 
 # keystore related error
 index 128
