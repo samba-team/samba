@@ -87,7 +87,13 @@ error_code UNIMPLEMENTED_OPERATION, "Unimplemented operation"
 
 # keystore related error
 index 128
-error_code PKCS11_NO_SLOT,  "No smartcard reader/device found"
-error_code PKCS11_NO_TOKEN,  "No smartcard in reader"
+prefix HX509_PKCS11
+error_code NO_SLOT,  "No smartcard reader/device found"
+error_code NO_TOKEN,  "No smartcard in reader"
+error_code NO_MECH,  "No supported mech(s)"
+error_code TOKEN_CONFUSED,  "Token or slot failed in inconsistent way"
+error_code OPEN_SESSION,  "Failed to open session to slot"
+error_code LOGIN,  "Failed to login to slot"
+error_code LOAD,  "Failed to load PKCS module"
 
 end
