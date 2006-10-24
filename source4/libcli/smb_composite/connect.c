@@ -179,6 +179,9 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 		 * have been given a uid in the NTLMSSP_CHALLENGE reply. This
 		 * would lead to an invalid uid in the anonymous fallback */
 		state->session->vuid = 0;
+		data_blob_free(&state->session->user_session_key);
+		talloc_free(state->session->gensec);
+		state->session->gensec = NULL;
 
 		state->creq = smb_composite_sesssetup_send(state->session,
 							   state->io_setup);
@@ -441,7 +444,7 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) goto failed;
 
-	state = talloc(c, struct connect_state);
+	state = talloc_zero(c, struct connect_state);
 	if (state == NULL) goto failed;
 
 	if (event_ctx == NULL) {
