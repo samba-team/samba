@@ -89,7 +89,7 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 	if (io->in.methods) {
 		methods = io->in.methods;
 	} else {
-		methods = (const char**)ctx->name_res_methods;
+		methods = ctx->name_res_methods;
 	}
 
 	c->private_data	= s;
