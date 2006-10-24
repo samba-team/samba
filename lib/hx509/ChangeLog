@@ -1,5 +1,7 @@
 2006-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hx509_err.et: more error-codes
+
 	* revoke.c: Return less EINVAL.
 
 	* ks_dir.c: sprinkel more hx509_set_error_string
