@@ -209,7 +209,9 @@ int ldb_msg_add_steal_value(struct ldb_message *msg,
 	ret = ldb_msg_add_value(msg, attr_name, val);
 	if (ret == LDB_SUCCESS) {
 		struct ldb_message_element *el;
-		el = ldb_msg_find_element(msg, attr_name);
+		if (!(el = ldb_msg_find_element(msg, attr_name))) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 		talloc_steal(el->values, val->data);
 	}
 	return ret;
