@@ -346,12 +346,16 @@ p12_init(hx509_context context,
     if (der_heim_oid_cmp(&pfx.authSafe.contentType, oid_id_pkcs7_data()) != 0) {
 	free_PKCS12_PFX(&pfx);
 	ret = EINVAL;
+	hx509_set_error_string(context, 0, ret,
+			       "PKCS PFX isn't a pkcs7-data container");
 	goto out;
     }
 
     if (pfx.authSafe.content == NULL) {
 	free_PKCS12_PFX(&pfx);
 	ret = EINVAL;
+	hx509_set_error_string(context, 0, ret,
+			       "PKCS PFX missing data");
 	goto out;
     }
 
@@ -363,15 +367,19 @@ p12_init(hx509_context context,
 					&asdata,
 					NULL);
 	free_PKCS12_PFX(&pfx);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
+	}
 	ret = decode_PKCS12_AuthenticatedSafe(asdata.data, 
 					      asdata.length,
 					      &as,
 					      NULL);
 	der_free_octet_string(&asdata);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
+	}
     }
 
     for (i = 0; i < as.len; i++)
