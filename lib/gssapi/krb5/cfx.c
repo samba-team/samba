@@ -869,10 +869,10 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
 			       buf,
 			       sizeof(*token) + message_buffer->length,
 			       &cksum);
+    krb5_crypto_destroy(_gsskrb5_context, crypto);
     if (ret != 0) {
 	_gsskrb5_set_error_string();
 	*minor_status = ret;
-	krb5_crypto_destroy(_gsskrb5_context, crypto);
 	free(buf);
 	return GSS_S_BAD_MIC;
     }
