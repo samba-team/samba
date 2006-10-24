@@ -817,7 +817,7 @@ static int lldb_connect(struct ldb_context *ldb,
 	}
 
 	*module = talloc(ldb, struct ldb_module);
-	if (!module) {
+	if (*module == NULL) {
 		ldb_oom(ldb);
 		talloc_free(lldb);
 		return -1;
