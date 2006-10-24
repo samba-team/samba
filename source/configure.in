@@ -2501,32 +2501,40 @@ fi
 # Check if FAM notifications are available. For FAM info, see
 #	http://oss.sgi.com/projects/fam/
 #	http://savannah.nongnu.org/projects/fam/
+AC_ARG_ENABLE(fam,
+[  --enable-fam            Turn on FAM support (default=auto)])
 
-AC_CHECK_HEADERS(fam.h, [samba_cv_HAVE_FAM_H=yes], [samba_cv_HAVE_FAM_H=no])
-if test x"$samba_cv_HAVE_FAM_H" = x"yes"; then
-    # On IRIX, libfam requires libC, but other FAM implementations might not
-    # need it.
-    AC_CHECK_LIB(fam, FAMOpen2,
-	    [samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam"],
-	    [samba_cv_HAVE_LIBFAM=no])
+if test x$enable_fam != xno; then
+    AC_CHECK_HEADERS(fam.h, [samba_cv_HAVE_FAM_H=yes], [samba_cv_HAVE_FAM_H=no])
+    if test x"$samba_cv_HAVE_FAM_H" = x"yes"; then
+        # On IRIX, libfam requires libC, but other FAM implementations
+	# might not need it.
+        AC_CHECK_LIB(fam, FAMOpen2,
+            [samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam"],
+            [samba_cv_HAVE_LIBFAM=no])
 
-    if test x"$samba_cv_HAVE_LIBFAM" = x"no" ; then
-	samba_fam_xtra=-lC
-	AC_CHECK_LIB_EXT(fam, samba_fam_xtra, FAMOpen2,
-		[samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam -lC"],
-		[samba_cv_HAVE_LIBFAM=no])
-	unset samba_fam_xtra
+        if test x"$samba_cv_HAVE_LIBFAM" = x"no" ; then
+            samba_fam_xtra=-lC
+            AC_CHECK_LIB_EXT(fam, samba_fam_xtra, FAMOpen2,
+                [samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam -lC"],
+                [samba_cv_HAVE_LIBFAM=no])
+            unset samba_fam_xtra
+        fi
     fi
-fi
 
-if test x"$samba_cv_HAVE_LIBFAM" = x"yes" ; then
-    AC_DEFINE(HAVE_FAM_CHANGE_NOTIFY, 1,
-	    [Whether FAM is file notifications are available])
-    AC_TRY_COMPILE([#include <fam.h>],
-		[FAMCodes code = FAMChanged;],
-		AC_DEFINE(HAVE_FAM_H_FAMCODES_TYPEDEF, 1,
-		    [Whether fam.h contains a typedef for enum FAMCodes]),
-		[])
+    if test x"$samba_cv_HAVE_LIBFAM" = x"yes" ; then
+        AC_DEFINE(HAVE_FAM_CHANGE_NOTIFY, 1,
+                [Whether FAM file notifications are available])
+        AC_TRY_COMPILE([#include <fam.h>],
+                    [FAMCodes code = FAMChanged;],
+                    AC_DEFINE(HAVE_FAM_H_FAMCODES_TYPEDEF, 1,
+                        [Whether fam.h contains a typedef for enum FAMCodes]),
+                    [])
+    fi
+
+    if test x$enable_fam = xyes && test x"$samba_cv_HAVE_LIBFAM" != xyes ; then
+        AC_MSG_ERROR(FAM support requested but FAM library not available )
+    fi
 fi
 
 #################################################
