@@ -181,20 +181,6 @@ gsskrb5_get_creds(
 
     *cred = NULL;
 
-    kret = krb5_cc_get_principal(_gsskrb5_context, ccache, &ctx->source);
-    if (kret) {
-	_gsskrb5_set_error_string ();
-	*minor_status = kret;
-	return GSS_S_FAILURE;
-    }
-
-    kret = krb5_copy_principal(_gsskrb5_context, target_name, &ctx->target);
-    if (kret) {
-	_gsskrb5_set_error_string ();
-	*minor_status = kret;
-	return GSS_S_FAILURE;
-    }
-
     memset(&this_cred, 0, sizeof(this_cred));
     this_cred.client = ctx->source;
     this_cred.server = ctx->target;
@@ -380,9 +366,7 @@ init_auth
     } else
 	ccache = initiator_cred_handle->ccache;
 
-    kret = krb5_cc_get_principal (_gsskrb5_context,
-				  ccache,
-				  &ctx->source);
+    kret = krb5_cc_get_principal (_gsskrb5_context, ccache, &ctx->source);
     if (kret) {
 	_gsskrb5_set_error_string ();
 	*minor_status = kret;
