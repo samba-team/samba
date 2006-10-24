@@ -492,11 +492,13 @@ p11_put_session(struct p11_module *p,
 }
 
 static int
-iterate_entries(struct p11_module *p, struct p11_slot *slot,
+iterate_entries(hx509_context context,
+		struct p11_module *p, struct p11_slot *slot,
 		CK_SESSION_HANDLE session,
 		CK_ATTRIBUTE *search_data, int num_search_data,
 		CK_ATTRIBUTE *query, int num_query,
-		int (*func)(struct p11_module *, struct p11_slot *,
+		int (*func)(hx509_context,
+			    struct p11_module *, struct p11_slot *,
 			    CK_SESSION_HANDLE session,
 			    CK_OBJECT_HANDLE object,
 			    void *, CK_ATTRIBUTE *, int), void *ptr)
@@ -539,7 +541,7 @@ iterate_entries(struct p11_module *p, struct p11_slot *slot,
 	    goto out;
 	}
 	
-	ret = (*func)(p, slot, session, object, ptr, query, num_query);
+	ret = (*func)(context, p, slot, session, object, ptr, query, num_query);
 	if (ret)
 	    goto out;
 
@@ -600,18 +602,14 @@ getattr_bn(struct p11_module *p,
     return bn;
 }
 
-struct p11_collector {
-    hx509_context context;
-    struct hx509_collector *c;
-};
-
 static int
-collect_private_key(struct p11_module *p, struct p11_slot *slot,
+collect_private_key(hx509_context context,
+		    struct p11_module *p, struct p11_slot *slot,
 		    CK_SESSION_HANDLE session,
 		    CK_OBJECT_HANDLE object,
 		    void *ptr, CK_ATTRIBUTE *query, int num_query)
 {
-    struct p11_collector *ctx = ptr;
+    struct hx509_collector *collector = ptr;
     AlgorithmIdentifier alg;
     hx509_private_key key;
     heim_octet_string localKeyId;
@@ -661,7 +659,8 @@ collect_private_key(struct p11_module *p, struct p11_slot *slot,
 
     _hx509_private_key_assign_rsa(key, rsa);
 
-    ret = _hx509_collector_private_key_add(ctx->c,
+    ret = _hx509_collector_private_key_add(context,
+					   collector,
 					   &alg,
 					   key,
 					   NULL,
@@ -683,12 +682,13 @@ p11_cert_release(hx509_cert cert, void *ctx)
 
 
 static int
-collect_cert(struct p11_module *p, struct p11_slot *slot,
+collect_cert(hx509_context context, 
+	     struct p11_module *p, struct p11_slot *slot,
 	     CK_SESSION_HANDLE session,
 	     CK_OBJECT_HANDLE object,
 	     void *ptr, CK_ATTRIBUTE *query, int num_query)
 {
-    struct p11_collector *ctx = ptr;
+    struct hx509_collector *collector = ptr;
     hx509_cert cert;
     Certificate t;
     int ret;
@@ -702,10 +702,12 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
 
     ret = decode_Certificate(query[1].pValue, query[1].ulValueLen,
 			     &t, NULL);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	return 0;
+    }
 
-    ret = hx509_cert_init(ctx->context, &t, &cert);
+    ret = hx509_cert_init(context, &t, &cert);
     free_Certificate(&t);
     if (ret)
 	return ret;
@@ -722,7 +724,7 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
 	data.data = query[0].pValue;
 	data.length = query[0].ulValueLen;
 	
-	_hx509_set_cert_attribute(ctx->context,
+	_hx509_set_cert_attribute(context,
 				  cert,
 				  oid_id_pkcs_9_at_localKeyId(),
 				  &data);
@@ -739,7 +741,7 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
 	}
     }
 
-    ret = _hx509_collector_certs_add(ctx->context, ctx->c, cert);
+    ret = _hx509_collector_certs_add(context, collector, cert);
     hx509_cert_free(cert);
 
     return ret;
@@ -754,7 +756,7 @@ p11_list_keys(hx509_context context,
 	      hx509_lock lock,
 	      hx509_certs *certs)
 {
-    struct p11_collector ctx;
+    struct hx509_collector *collector;
     CK_OBJECT_CLASS key_class;
     CK_ATTRIBUTE search_data[] = {
 	{CKA_CLASS, NULL, 0},
@@ -772,32 +774,32 @@ p11_list_keys(hx509_context context,
     if (lock == NULL)
 	lock = _hx509_empty_lock;
 
-    ctx.context = context;
-
-    ctx.c = _hx509_collector_alloc(context, lock);
-    if (ctx.c == NULL)
+    collector = _hx509_collector_alloc(context, lock);
+    if (collector == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
+    }
 
     key_class = CKO_PRIVATE_KEY;
-    ret = iterate_entries(p, slot, session,
+    ret = iterate_entries(context, p, slot, session,
 			  search_data, 1,
 			  query_data, 1,
-			  collect_private_key, &ctx);
+			  collect_private_key, collector);
     if (ret)
 	goto out;
 
     key_class = CKO_CERTIFICATE;
-    ret = iterate_entries(p, slot, session,
+    ret = iterate_entries(context, p, slot, session,
 			  search_data, 1,
 			  query_data, 3,
-			  collect_cert, &ctx);
+			  collect_cert, collector);
     if (ret)
 	goto out;
 
-    ret = _hx509_collector_collect(context, ctx.c, &slot->certs);
+    ret = _hx509_collector_collect(context, collector, &slot->certs);
 
 out:
-    _hx509_collector_free(ctx.c);
+    _hx509_collector_free(collector);
 
     return ret;
 }
