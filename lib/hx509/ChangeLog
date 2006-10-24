@@ -1,4 +1,31 @@
+2006-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* revoke.c: Return less EINVAL.
+
+	* ks_dir.c: sprinkel more hx509_set_error_string
+
+	* ks_file.c: Return less EINVAL.
+
+	* hxtool.c: Pass in context to _hx509_parse_private_key.
+
+	* ks_file.c: Sprinkle more hx509_context so we can return propper
+	errors.
+
+	* hx509_err.et: add HX509_PARSING_KEY_FAILED
+
+	* crypto.c: Sprinkle more hx509_context so we can return propper
+	errors.
+
+	* collector.c: No more EINVAL.
+
+	* hx509_err.et: add HX509_LOCAL_ATTRIBUTE_MISSING
+
+	* cert.c (hx509_cert_get_base_subject): one less EINVAL
+	(_hx509_cert_private_decrypt): one less EINVAL
+	
 2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* collector.c: indent
 
 	* hxtool.c: Try to not leak memory.
 
