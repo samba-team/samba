@@ -807,7 +807,8 @@ request_create(struct request_create_options *opt, int argc, char **argv)
 	if (ret)
 	    err(1, "map_file: %s: %d", opt->key_string, ret);
 	
-	ret = _hx509_parse_private_key(oid_id_pkcs1_rsaEncryption(),
+	ret = _hx509_parse_private_key(context,
+				       oid_id_pkcs1_rsaEncryption(),
 				       data,
 				       len,
 				       &signer);
