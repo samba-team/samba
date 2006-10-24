@@ -109,7 +109,7 @@ echo "Starting client 3"
 ${gssmaskn3} --moniker=n3 &
 n3pid=$!
 
-sleep 2
+sleep 10
 
 ${gssmaestro} \
     --slaves=localhost:8889 \
