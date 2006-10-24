@@ -159,7 +159,9 @@ verify_ocsp(hx509_context context,
 
 	ret = _hx509_cert_is_parent_cmp(s, p, 0);
 	if (ret != 0) {
-	    ret = EINVAL;
+	    ret = HX509_PARENT_NOT_CA;
+	    hx509_set_error_string(context, 0, ret, "Revoke OSCP signer is "
+				   "doesn't have CA as signer certificate");
 	    goto out;
 	}
 
@@ -210,7 +212,7 @@ parse_ocsp_basic(const void *data, size_t length, OCSPBasicOCSPResponse *basic)
 	return ret;
     if (length != size) {
 	free_OCSPResponse(&resp);
-	return EINVAL;
+	return ASN1_EXTRA_DATA;
     }
 
     switch (resp.responseStatus) {
@@ -218,7 +220,7 @@ parse_ocsp_basic(const void *data, size_t length, OCSPBasicOCSPResponse *basic)
 	break;
     default:
 	free_OCSPResponse(&resp);
-	return EINVAL;
+	return HX509_REVOKE_WRONG_DATA;
     }
 
     if (resp.responseBytes == NULL) {
@@ -230,7 +232,7 @@ parse_ocsp_basic(const void *data, size_t length, OCSPBasicOCSPResponse *basic)
 			   oid_id_pkix_ocsp_basic());
     if (ret != 0) {
 	free_OCSPResponse(&resp);
-	return EINVAL;
+	return HX509_REVOKE_WRONG_DATA;
     }
 
     ret = decode_OCSPBasicOCSPResponse(resp.responseBytes->response.data,
@@ -244,7 +246,7 @@ parse_ocsp_basic(const void *data, size_t length, OCSPBasicOCSPResponse *basic)
     if (size != resp.responseBytes->response.length) {
 	free_OCSPResponse(&resp);
 	free_OCSPBasicOCSPResponse(basic);
-	return EINVAL;
+	return ASN1_EXTRA_DATA;
     }
     free_OCSPResponse(&resp);
 
@@ -320,8 +322,11 @@ hx509_revoke_add_ocsp(hx509_context context,
     int ret;
     size_t i;
 
-    if (strncmp(path, "FILE:", 5) != 0)
-	return EINVAL;
+    if (strncmp(path, "FILE:", 5) != 0) {
+	hx509_set_error_string(context, 0, HX509_UNSUPPORTED_OPERATION,
+			       "unsupport type in %s", path);
+	return HX509_UNSUPPORTED_OPERATION;
+    }
 
     path += 5;
 
@@ -332,8 +337,10 @@ hx509_revoke_add_ocsp(hx509_context context,
 
     data = realloc(ctx->ocsps.val, 
 		   (ctx->ocsps.len + 1) * sizeof(ctx->ocsps.val[0]));
-    if (data == NULL)
+    if (data == NULL) {
+	hx509_clear_error_string(context);
 	return ENOMEM;
+    }
 
     ctx->ocsps.val = data;
 
@@ -341,8 +348,10 @@ hx509_revoke_add_ocsp(hx509_context context,
 	   sizeof(ctx->ocsps.val[0]));
 
     ctx->ocsps.val[ctx->ocsps.len].path = strdup(path);
-    if (ctx->ocsps.val[ctx->ocsps.len].path == NULL)
+    if (ctx->ocsps.val[ctx->ocsps.len].path == NULL) {
+	hx509_clear_error_string(context);
 	return ENOMEM;
+    }
 
     ret = load_ocsp(context, &ctx->ocsps.val[ctx->ocsps.len]);
     if (ret) {
@@ -397,7 +406,9 @@ verify_crl(hx509_context context,
 
 	ret = _hx509_cert_is_parent_cmp(s, p, 0);
 	if (ret != 0) {
-	    ret = EINVAL;
+	    ret = HX509_PARENT_NOT_CA;
+	    hx509_set_error_string(context, 0, ret, "Revoke CRL signer is "
+				   "doesn't have CA as signer certificate");
 	    goto out;
 	}
 
@@ -450,7 +461,7 @@ load_crl(const char *path, time_t *t, CRLCertificateList *crl)
     /* check signature is aligned */
     if (crl->signatureValue.length & 7) {
 	free_CRLCertificateList(crl);
-	return EINVAL;
+	return HX509_CRYPTO_SIG_INVALID_FORMAT;
     }
     return 0;
 }
@@ -464,8 +475,12 @@ hx509_revoke_add_crl(hx509_context context,
     size_t i;
     int ret;
 
-    if (strncmp(path, "FILE:", 5) != 0)
-	return EINVAL;
+    if (strncmp(path, "FILE:", 5) != 0) {
+	hx509_set_error_string(context, 0, HX509_UNSUPPORTED_OPERATION,
+			       "unsupport type in %s", path);
+	return HX509_UNSUPPORTED_OPERATION;
+    }
+
     
     path += 5;
 
@@ -476,16 +491,19 @@ hx509_revoke_add_crl(hx509_context context,
 
     data = realloc(ctx->crls.val, 
 		   (ctx->crls.len + 1) * sizeof(ctx->crls.val[0]));
-    if (data == NULL)
+    if (data == NULL) {
+	hx509_clear_error_string(context);
 	return ENOMEM;
-
+    }
     ctx->crls.val = data;
 
     memset(&ctx->crls.val[ctx->crls.len], 0, sizeof(ctx->crls.val[0]));
 
     ctx->crls.val[ctx->crls.len].path = strdup(path);
-    if (ctx->crls.val[ctx->crls.len].path == NULL)
+    if (ctx->crls.val[ctx->crls.len].path == NULL) {
+	hx509_clear_error_string(context);
 	return ENOMEM;
+    }
 
     ret = load_crl(path, 
 		   &ctx->crls.val[ctx->crls.len].last_modfied,
@@ -693,7 +711,10 @@ add_to_req(hx509_context context, void *ptr, hx509_cert cert)
 
     if (ctx->parent) {
 	if (hx509_cert_cmp(ctx->parent, parent) != 0) {
-	    ret = EINVAL;
+	    ret = HX509_REVOKE_NOT_SAME_PARENT;
+	    hx509_set_error_string(context, 0, ret,
+				   "Not same parent certifate as "
+				   "last certificate in request");
 	    goto out;
 	}
     } else
