@@ -291,8 +291,9 @@ HandleOP(GoodBye)
 	i++;
     }
 
-    logmessage(c, __FILE__, __LINE__, 0, "did not toast all resources: %d", i);
-
+    if (i != 0)
+	logmessage(c, __FILE__, __LINE__, 0,
+		   "Did not toast all resources: %d", i);
     return 1;
 }
 
