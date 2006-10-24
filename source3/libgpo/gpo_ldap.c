@@ -31,7 +31,7 @@ ADS_STATUS ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 			    struct GP_EXT *gp_ext)
 {
 	char **ext_list;
-	char **ext_strings;
+	char **ext_strings = NULL;
 	int i;
 
 	DEBUG(20,("ads_parse_gp_ext: %s\n", extension_raw));
