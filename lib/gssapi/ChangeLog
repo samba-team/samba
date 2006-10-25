@@ -1,5 +1,11 @@
 2006-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_accept_sec_context.c: SLIST_INIT the ->gc_mc'
+	
+	* mech/gss_acquire_cred.c : SLIST_INIT the ->gc_mc' 
+
+	* krb5/init_sec_context.c: Avoid leaking memory.
+
 	* mech/gss_buffer_set.c (gss_release_buffer_set): don't leak the
 	->elements memory.
 
