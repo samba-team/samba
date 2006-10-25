@@ -498,12 +498,10 @@ static int lpdb_local_search_callback(struct ldb_context *ldb, void *context, st
 						  ares->message->elements[i].name);
 			if (!el) {
 				if (ldb_msg_add_empty(local_context->remote_res->message, 
-						      ares->message->elements[i].name, 0) != LDB_SUCCESS) {
+						      ares->message->elements[i].name, 0, &el) != LDB_SUCCESS) {
 					talloc_free(ares);
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
-				el = ldb_msg_find_element(local_context->remote_res->message, 
-							  ares->message->elements[i].name);
 				*el = ares->message->elements[i];
 			}
 		}

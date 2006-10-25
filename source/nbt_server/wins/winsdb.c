@@ -105,11 +105,11 @@ uint64_t winsdb_set_maxVersion(struct winsdb_handle *h, uint64_t newMaxVersion)
 	msg->dn = dn;
 
 
-	ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE);
+	ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE, NULL);
 	if (ret != 0) goto failed;
 	ret = ldb_msg_add_string(msg, "objectClass", "winsMaxVersion");
 	if (ret != 0) goto failed;
-	ret = ldb_msg_add_empty(msg, "maxVersion", LDB_FLAG_MOD_REPLACE);
+	ret = ldb_msg_add_empty(msg, "maxVersion", LDB_FLAG_MOD_REPLACE, NULL);
 	if (ret != 0) goto failed;
 	ret = ldb_msg_add_fmt(msg, "maxVersion", "%llu", (long long)newMaxVersion);
 	if (ret != 0) goto failed;
@@ -343,7 +343,7 @@ static int ldb_msg_add_winsdb_addr(struct ldb_message *msg, struct winsdb_record
 	val.data = discard_const_p(uint8_t, str);
 	val.length = strlen(str);
 
-	return ldb_msg_add_value(msg, attr_name, &val);
+	return ldb_msg_add_value(msg, attr_name, &val, NULL);
 }
 
 struct winsdb_addr **winsdb_addr_list_make(TALLOC_CTX *mem_ctx)
@@ -794,17 +794,17 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 	ret |= ldb_msg_add_fmt(msg, "recordState", "%u", rec->state);
 	ret |= ldb_msg_add_fmt(msg, "nodeType", "%u", rec->node);
 	ret |= ldb_msg_add_fmt(msg, "isStatic", "%u", rec->is_static);
-	ret |= ldb_msg_add_empty(msg, "expireTime", 0);
+	ret |= ldb_msg_add_empty(msg, "expireTime", 0, NULL);
 	if (!(rec->is_static && rec->state == WREPL_STATE_ACTIVE)) {
 		ret |= ldb_msg_add_string(msg, "expireTime", expire_time);
 	}
 	ret |= ldb_msg_add_fmt(msg, "versionID", "%llu", (long long)rec->version);
 	ret |= ldb_msg_add_string(msg, "winsOwner", rec->wins_owner);
-	ret |= ldb_msg_add_empty(msg, "address", 0);
+	ret |= ldb_msg_add_empty(msg, "address", 0, NULL);
 	for (i=0;rec->addresses[i];i++) {
 		ret |= ldb_msg_add_winsdb_addr(msg, rec, "address", rec->addresses[i]);
 	}
-	ret |= ldb_msg_add_empty(msg, "registeredBy", 0);
+	ret |= ldb_msg_add_empty(msg, "registeredBy", 0, NULL);
 	if (rec->registered_by) {
 		ret |= ldb_msg_add_string(msg, "registeredBy", rec->registered_by);
 		if (ret != 0) goto failed;

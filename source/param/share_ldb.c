@@ -280,7 +280,7 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 	} } while(0)
 
 #define SHARE_ADD_BLOB(name, value) do { \
-	err = ldb_msg_add_value(msg, name, value); \
+	err = ldb_msg_add_value(msg, name, value, NULL); \
 	if (err != LDB_SUCCESS) { \
 		DEBUG(2,("ERROR: unable to add blob share option %s to ldb msg\n", name)); \
 		ret = NT_STATUS_UNSUCCESSFUL; \
@@ -383,7 +383,7 @@ done:
 }
 
 #define SHARE_MOD_STRING(name, value) do { \
-	err = ldb_msg_add_empty(msg, name, LDB_FLAG_MOD_REPLACE); \
+	err = ldb_msg_add_empty(msg, name, LDB_FLAG_MOD_REPLACE, NULL); \
 	if (err != LDB_SUCCESS) { \
 		DEBUG(2,("ERROR: unable to add string share option %s to ldb msg\n", name)); \
 		ret = NT_STATUS_UNSUCCESSFUL; \
@@ -397,7 +397,7 @@ done:
 	} } while(0)
 
 #define SHARE_MOD_INT(name, value) do { \
-	err = ldb_msg_add_empty(msg, name, LDB_FLAG_MOD_REPLACE); \
+	err = ldb_msg_add_empty(msg, name, LDB_FLAG_MOD_REPLACE, NULL); \
 	if (err != LDB_SUCCESS) { \
 		DEBUG(2,("ERROR: unable to add string share option %s to ldb msg\n", name)); \
 		ret = NT_STATUS_UNSUCCESSFUL; \
@@ -411,13 +411,13 @@ done:
 	} } while(0)
 
 #define SHARE_MOD_BLOB(name, value) do { \
-	err = ldb_msg_add_empty(msg, name, LDB_FLAG_MOD_REPLACE); \
+	err = ldb_msg_add_empty(msg, name, LDB_FLAG_MOD_REPLACE, NULL); \
 	if (err != LDB_SUCCESS) { \
 		DEBUG(2,("ERROR: unable to add string share option %s to ldb msg\n", name)); \
 		ret = NT_STATUS_UNSUCCESSFUL; \
 		goto done; \
 	} \
-	err = ldb_msg_add_value(msg, name, value); \
+	err = ldb_msg_add_value(msg, name, value, NULL); \
 	if (err != LDB_SUCCESS) { \
 		DEBUG(2,("ERROR: unable to add blob share option %s to ldb msg\n", name)); \
 		ret = NT_STATUS_UNSUCCESSFUL; \

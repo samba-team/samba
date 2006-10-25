@@ -151,7 +151,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_msg_add_value(msg, "objectGUID", &v);
+	ret = ldb_msg_add_value(msg, "objectGUID", &v, NULL);
 	if (ret) {
 		talloc_free(down_req);
 		return ret;

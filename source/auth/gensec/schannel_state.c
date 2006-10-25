@@ -109,10 +109,10 @@ NTSTATUS schannel_store_session_key_ldb(TALLOC_CTX *mem_ctx,
 	server_state.length = sizeof(creds->server.data);
 
 	ldb_msg_add_string(msg, "objectClass", "schannelState");
-	ldb_msg_add_value(msg, "sessionKey", &val);
-	ldb_msg_add_value(msg, "seed", &seed);
-	ldb_msg_add_value(msg, "clientState", &client_state);
-	ldb_msg_add_value(msg, "serverState", &server_state);
+	ldb_msg_add_value(msg, "sessionKey", &val, NULL);
+	ldb_msg_add_value(msg, "seed", &seed, NULL);
+	ldb_msg_add_value(msg, "clientState", &client_state, NULL);
+	ldb_msg_add_value(msg, "serverState", &server_state, NULL);
 	ldb_msg_add_string(msg, "negotiateFlags", f);
 	ldb_msg_add_string(msg, "secureChannelType", sct);
 	ldb_msg_add_string(msg, "accountName", creds->account_name);
