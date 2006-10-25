@@ -169,6 +169,7 @@ BOOL torture_bind_authcontext(struct torture_context *torture)
 			 nt_errstr(status));
 		goto done;
 	}
+	session2->vuid = setup.out.vuid;
 
 	tmp = cli->tree->session;
 	cli->tree->session = session2;
@@ -1684,6 +1685,7 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 			ret = False;
 			goto done;
 		}
+		session2->vuid = setup.out.vuid;
 
 		if (!NT_STATUS_IS_OK(secondary_tcon(mem_ctx, session2,
 						    "IPC$", &tree))) {
@@ -2811,7 +2813,9 @@ BOOL torture_samba3_rpc_winreg(struct torture_context *torture)
 		{"OpenHKPD", (winreg_open_fn)dcerpc_winreg_OpenHKPD },
 		{"OpenHKPT", (winreg_open_fn)dcerpc_winreg_OpenHKPT },
 		{"OpenHKCR", (winreg_open_fn)dcerpc_winreg_OpenHKCR }};
+#if 0
 	int i;
+#endif
 
 	mem_ctx = talloc_init("torture_rpc_winreg");
 
