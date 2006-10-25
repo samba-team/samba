@@ -1,4 +1,11 @@
+2006-10-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/accept_sec_context.c (gsskrb5_accept_delegated_token): need
+	to free ccache
+	
 2006-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* test_context.c (loop): free target_name
 
 	* mech/gss_accept_sec_context.c: SLIST_INIT the ->gc_mc'
 	
