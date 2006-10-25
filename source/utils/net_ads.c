@@ -271,6 +271,14 @@ retry:
 	status = ads_connect(ads);
 
 	if (!ADS_ERR_OK(status)) {
+
+		if (NT_STATUS_EQUAL(ads_ntstatus(status), 
+				    NT_STATUS_NO_LOGON_SERVERS)) {
+			DEBUG(0,("ads_connect: %s\n", ads_errstr(status)));
+			ads_destroy(&ads);
+			return status;
+		}
+	
 		if (!need_password && !second_time) {
 			need_password = True;
 			second_time = True;
