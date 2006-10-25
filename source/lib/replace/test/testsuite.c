@@ -417,8 +417,7 @@ static int test_socketpair(void)
 }
 
 struct torture_context;
-
-int main()
+bool torture_local_replace(struct torture_context *ctx)
 {
 	bool ret = true;
 	ret &= test_ftruncate();
@@ -466,7 +465,15 @@ int main()
 	ret &= test_MAX();
 	ret &= test_socketpair();
 
+	return ret;
+}
+
+#ifndef _SAMBA_BUILD_
+int main()
+{
+	bool ret = torture_local_replace(NULL);
 	if (ret) 
 		return 0;
 	return -1;
 }
+#endif
