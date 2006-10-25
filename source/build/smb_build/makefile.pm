@@ -106,18 +106,10 @@ sub _prepare_compiler_linker($)
 {
 	my ($self) = @_;
 
-	my $devld_local = "";
 	my $devld_install = "";
 	my $builddir_headers = "";
 
-	$self->{duplicate_build} = 0;
-	if ($self->{developer}) {
-		$self->{duplicate_build} = 1;
-	}
 	if ($self->{config}->{LIBRARY_OUTPUT_TYPE} eq "SHARED_LIBRARY") {
-		if ($self->{duplicate_build}) {
-			$devld_local = " -Wl,-rpath,\$(builddir)/bin";
-		}
 		$devld_install = " -Wl,-rpath-link,\$(builddir)/bin";
 	}
 	
@@ -138,7 +130,6 @@ CFLAGS=$self->{config}->{CFLAGS} \$(CPPFLAGS)
 PICFLAG=$self->{config}->{PICFLAG}
 HOSTCC=$self->{config}->{HOSTCC}
 
-LOCAL_LINK_FLAGS=$devld_local
 INSTALL_LINK_FLAGS=$devld_install
 
 LD=$self->{config}->{LD} 
@@ -219,11 +210,7 @@ sub SharedLibrary($$)
 	my $installdir;
 	my $init_obj = "";
 	
-	if ($self->{duplicate_build}) {
-		$installdir = $ctx->{RELEASEDIR};
-	} else {
-		$installdir = $ctx->{DEBUGDIR};
-	}
+	$installdir = $ctx->{DEBUGDIR};
 
 	if ($ctx->{TYPE} eq "LIBRARY") {
 		push (@{$self->{shared_libs}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
@@ -379,13 +366,7 @@ sub Binary($$)
 	my $dynconfig = "dynconfig.o";
 	my $dynconfig_install = "dynconfig.o";
 	
-	if ($self->{duplicate_build}) {
-		$installdir = "bin/install$extradir";
-		$dynconfig = "dynconfig-devel.o";
-		$dynconfig_install = "dynconfig.o";
-	} else {
-		$installdir = "bin$extradir";
-	}
+	$installdir = "bin$extradir";
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 		
@@ -405,18 +386,6 @@ sub Binary($$)
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
-
-	if ($self->{duplicate_build}) {
-	$self->output(<< "__EOD__"
-#
-$localdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $dynconfig
-	\@echo Linking \$\@
-	\@\$(LD) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) $dynconfig \\
-		\$(INSTALL_LINK_FLAGS) \$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
-
-__EOD__
-);
-	}
 
 $self->output(<< "__EOD__"
 $installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $dynconfig_install
@@ -544,12 +513,6 @@ sub write($$)
 
 	$self->output("\ninstallplugins: \$(PLUGINS)\n".$self->{install_plugins}."\n");
 	$self->output("\nuninstallplugins:\n".$self->{uninstall_plugins}."\n");
-
-	# nasty hack to allow running locally
-	if ($self->{duplicate_build}) {
-		$self->output("bin/libdynconfig.\$(SHLIBEXT).0.0.1: dynconfig-devel.o\n");
-		$self->output("bin/libdynconfig.\$(SHLIBEXT).0.0.1: LIBRARY_DYNCONFIG_OBJ_LIST=dynconfig-devel.o\n");
-	}
 
 	$self->_prepare_mk_files();
 

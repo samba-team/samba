@@ -1025,7 +1025,8 @@ static bool test_autofree(void)
 	return true;
 }
 
-int main(void)
+struct torture_context;
+bool torture_local_talloc(struct torture_context *tctx)
 {
 	bool ret = true;
 
@@ -1057,7 +1058,15 @@ int main(void)
 	}
 	ret &= test_autofree();
 
+	return ret;
+}
+
+#ifndef _SAMBA_BUILD_
+int main(void)
+{
+	bool ret = torture_local_talloc(NULL);
 	if (!ret)
 		return -1;
 	return 0;
 }
+#endif

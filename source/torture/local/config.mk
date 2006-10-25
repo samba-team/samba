@@ -12,6 +12,9 @@ OBJ_FILES = \
 		../../lib/crypto/hmacmd5test.o \
 		../../lib/crypto/sha1test.o \
 		../../lib/crypto/hmacsha1test.o \
+		../../lib/talloc/testsuite.o \
+		../../lib/replace/test/os2_delete.o \
+		../../lib/replace/test/testsuite.o \
 		messaging.o \
 		binding_string.o \
 		idtree.o \
