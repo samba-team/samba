@@ -1,4 +1,11 @@
+2006-10-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* include/Makefile.am: Move version.h and version.h.in to
+	DISTCLEANFILES.
+	
 2006-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/gssmask/gssmask.c: Only log when there are resources left.
 
 	* appl/gssmask/gssmask.c: make compile
 
