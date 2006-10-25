@@ -183,13 +183,14 @@ int ldb_msg_add_value(struct ldb_message *msg,
 {
 	struct ldb_message_element *el;
 	struct ldb_val *vals;
+	int ret;
 
 	el = ldb_msg_find_element(msg, attr_name);
 	if (!el) {
-		ldb_msg_add_empty(msg, attr_name, 0, &el);
-	}
-	if (!el) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = ldb_msg_add_empty(msg, attr_name, 0, &el);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	}
 
 	vals = talloc_realloc(msg, el->values, struct ldb_val, el->num_values+1);
