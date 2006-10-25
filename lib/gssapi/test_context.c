@@ -123,7 +123,7 @@ loop(gss_OID mechoid,
 	gss_release_buffer(&min_stat, &output_token);
     if (input_token.length != 0)
 	gss_release_buffer(&min_stat, &input_token);
-
+    gss_release_name(&min_stat, &gss_target_name);
 }
 
 
