@@ -53,6 +53,9 @@ NTSTATUS torture_local_init(void)
 										talloc_autofree_context(),
 										"LOCAL");
 
+	torture_suite_add_simple_test(suite, "TALLOC", torture_local_talloc);
+	torture_suite_add_simple_test(suite, "REPLACE", torture_local_replace);
+
 	torture_suite_add_simple_test(suite, "CRYPTO-SHA1", 
 								  torture_local_crypto_sha1);
 	torture_suite_add_simple_test(suite, 

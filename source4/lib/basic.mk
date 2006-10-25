@@ -4,7 +4,6 @@ include socket/config.mk
 include charset/config.mk
 include ldb/config.mk
 include talloc/config.mk
-include replace/config.mk
 include tdb/config.mk
 include tls/config.mk
 include registry/config.mk
