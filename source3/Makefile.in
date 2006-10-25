@@ -1862,10 +1862,10 @@ proto: headers
 .PHONY: headers proto
 
 etags:
-	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
+	etags `find $(srcdir) -name "*.[ch]" | grep -v /.svn/`
 
 ctags:
-	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
+	ctags `find $(srcdir) -name "*.[ch]" | grep -v /.svn/`
 
 realclean: clean delheaders
 	-rm -f config.log bin/.dummy script/findsmb script/gen-8bit-gap.sh
