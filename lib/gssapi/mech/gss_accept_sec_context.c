@@ -198,6 +198,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 				*minor_status = ENOMEM;
 				return (GSS_S_FAILURE);
 			}
+			SLIST_INIT(&dcred->gc_mc);
 			dmc = malloc(sizeof(struct _gss_mechanism_cred));
 			if (!dmc) {
 				free(dcred);

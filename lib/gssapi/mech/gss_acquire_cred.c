@@ -109,6 +109,7 @@ gss_acquire_cred(OM_uint32 *minor_status,
 		if (!mc) {
 			continue;
 		}
+		SLIST_INIT(&cred->gc_mc);
 		mc->gmc_mech = m;
 		mc->gmc_mech_oid = &m->gm_mech_oid;
 
