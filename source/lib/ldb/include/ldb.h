@@ -1227,7 +1227,10 @@ struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
 /**
    add a new empty element to a ldb_message
 */
-int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags);
+int ldb_msg_add_empty(struct ldb_message *msg,
+		      const char *attr_name,
+		      int flags,
+		      struct ldb_message_element **return_el);
 
 /**
    add a element to a ldb_message
@@ -1237,7 +1240,8 @@ int ldb_msg_add(struct ldb_message *msg,
 		int flags);
 int ldb_msg_add_value(struct ldb_message *msg, 
 		      const char *attr_name,
-		      const struct ldb_val *val);
+		      const struct ldb_val *val,
+		      struct ldb_message_element **return_el);
 int ldb_msg_add_steal_value(struct ldb_message *msg, 
 		      const char *attr_name,
 		      struct ldb_val *val);
