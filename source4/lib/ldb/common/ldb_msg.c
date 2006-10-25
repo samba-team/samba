@@ -119,7 +119,10 @@ struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v)
 /*
   add an empty element to a message
 */
-int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags)
+int ldb_msg_add_empty(	struct ldb_message *msg,
+			const char *attr_name,
+			int flags,
+			struct ldb_message_element **return_el)
 {
 	struct ldb_message_element *els;
 
@@ -146,6 +149,10 @@ int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags)
 	msg->elements = els;
 	msg->num_elements++;
 
+	if (return_el) {
+		*return_el = &els[msg->num_elements-1];
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -156,7 +163,7 @@ int ldb_msg_add(struct ldb_message *msg,
 		const struct ldb_message_element *el, 
 		int flags)
 {
-	if (ldb_msg_add_empty(msg, el->name, flags) != 0) {
+	if (ldb_msg_add_empty(msg, el->name, flags, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -171,15 +178,15 @@ int ldb_msg_add(struct ldb_message *msg,
 */
 int ldb_msg_add_value(struct ldb_message *msg, 
 		      const char *attr_name,
-		      const struct ldb_val *val)
+		      const struct ldb_val *val,
+		      struct ldb_message_element **return_el)
 {
 	struct ldb_message_element *el;
 	struct ldb_val *vals;
 
 	el = ldb_msg_find_element(msg, attr_name);
 	if (!el) {
-		ldb_msg_add_empty(msg, attr_name, 0);
-		el = ldb_msg_find_element(msg, attr_name);
+		ldb_msg_add_empty(msg, attr_name, 0, &el);
 	}
 	if (!el) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -194,6 +201,10 @@ int ldb_msg_add_value(struct ldb_message *msg,
 	el->values[el->num_values] = *val;
 	el->num_values++;
 
+	if (return_el) {
+		*return_el = el;
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -206,10 +217,10 @@ int ldb_msg_add_steal_value(struct ldb_message *msg,
 			    struct ldb_val *val)
 {
 	int ret;
-	ret = ldb_msg_add_value(msg, attr_name, val);
+	struct ldb_message_element *el;
+
+	ret = ldb_msg_add_value(msg, attr_name, val, &el);
 	if (ret == LDB_SUCCESS) {
-		struct ldb_message_element *el;
-		el = ldb_msg_find_element(msg, attr_name);
 		talloc_steal(el->values, val->data);
 	}
 	return ret;
@@ -232,7 +243,7 @@ int ldb_msg_add_string(struct ldb_message *msg,
 		return LDB_SUCCESS;
 	}
 
-	return ldb_msg_add_value(msg, attr_name, &val);
+	return ldb_msg_add_value(msg, attr_name, &val, NULL);
 }
 
 /*
@@ -576,7 +587,7 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 		if (!el) {
 			if (ldb_msg_add_empty(mod, 
 					      msg1->elements[i].name,
-					      LDB_FLAG_MOD_DELETE) != 0) {
+					      LDB_FLAG_MOD_DELETE, NULL) != 0) {
 				return NULL;
 			}
 		}

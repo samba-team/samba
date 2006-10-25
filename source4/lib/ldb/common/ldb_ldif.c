@@ -613,7 +613,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 		}
 
 		if (empty) {
-			if (ldb_msg_add_empty(msg, (char *)value.data, flags) != 0) {
+			if (ldb_msg_add_empty(msg, (char *)value.data, flags, NULL) != 0) {
 				goto failed;
 			}
 			continue;

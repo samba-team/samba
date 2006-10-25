@@ -192,12 +192,7 @@ static int ldb_msg_replace(struct ldb_message *msg, const struct ldb_message_ele
 
 	/* no local result, add as new element */
 	if (old == NULL) {
-		if (ldb_msg_add_empty(msg, el->name, 0) != 0) {
-			return -1;
-		}
-
-		old = ldb_msg_find_element(msg, el->name);
-		if (old == NULL) {
+		if (ldb_msg_add_empty(msg, el->name, 0, &old) != 0) {
 			return -1;
 		}
 	}

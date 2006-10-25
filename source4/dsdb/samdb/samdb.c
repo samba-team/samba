@@ -773,7 +773,7 @@ int samdb_msg_add_dom_sid(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, stru
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
-	return ldb_msg_add_value(msg, attr_name, &v);
+	return ldb_msg_add_value(msg, attr_name, &v, NULL);
 }
 
 
@@ -785,7 +785,7 @@ int samdb_msg_add_delete(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 {
 	/* we use an empty replace rather than a delete, as it allows for 
 	   samdb_replace() to be used everywhere */
-	return ldb_msg_add_empty(msg, attr_name, LDB_FLAG_MOD_REPLACE);
+	return ldb_msg_add_empty(msg, attr_name, LDB_FLAG_MOD_REPLACE, NULL);
 }
 
 /*
@@ -890,7 +890,7 @@ int samdb_msg_add_hash(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct 
 		return -1;
 	}
 	val.length = 16;
-	return ldb_msg_add_value(msg, attr_name, &val);
+	return ldb_msg_add_value(msg, attr_name, &val, NULL);
 }
 
 /*
@@ -909,7 +909,7 @@ int samdb_msg_add_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 	for (i=0;i<count;i++) {
 		memcpy(i*16 + (char *)val.data, hashes[i].hash, 16);
 	}
-	return ldb_msg_add_value(msg, attr_name, &val);
+	return ldb_msg_add_value(msg, attr_name, &val, NULL);
 }
 
 /*
@@ -930,7 +930,7 @@ int samdb_msg_add_logon_hours(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, 
 	struct ldb_val val;
 	val.length = hours->units_per_week / 8;
 	val.data = hours->bits;
-	return ldb_msg_add_value(msg, attr_name, &val);
+	return ldb_msg_add_value(msg, attr_name, &val, NULL);
 }
 
 /*
@@ -939,7 +939,7 @@ int samdb_msg_add_logon_hours(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, 
 int samdb_msg_add_value(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			      const char *attr_name, const struct ldb_val *val)
 {
-	return ldb_msg_add_value(msg, attr_name, val);
+	return ldb_msg_add_value(msg, attr_name, val, NULL);
 }
 
 /*
@@ -954,7 +954,7 @@ int samdb_msg_set_value(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct
 	if (el) {
 		el->num_values = 0;
 	}
-	return ldb_msg_add_value(msg, attr_name, val);
+	return ldb_msg_add_value(msg, attr_name, val, NULL);
 }
 
 /*

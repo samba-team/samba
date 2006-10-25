@@ -345,7 +345,7 @@ int map_modify_do_local(struct ldb_handle *handle)
 		/* Add local 'IS_MAPPED' */
 		/* TODO: use GUIDs here instead */
 		dn = ldb_dn_linearize(msg, ac->remote_req->op.mod.message->dn);
-		if (ldb_msg_add_empty(msg, IS_MAPPED, LDB_FLAG_MOD_ADD) != 0) {
+		if (ldb_msg_add_empty(msg, IS_MAPPED, LDB_FLAG_MOD_ADD, NULL) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		if (ldb_msg_add_string(msg, IS_MAPPED, dn) != 0) {
