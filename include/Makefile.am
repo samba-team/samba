@@ -42,8 +42,6 @@ CLEANFILES =		\
 	rtbl.h		\
 	test-mem.h	\
 	vers.h		\
-	version.h	\
-	version.h.in	\
 	asn1.h		\
 	asn1_err.h	\
 	base64.h	\
@@ -74,3 +72,7 @@ CLEANFILES =		\
 	roken.h		\
 	sl.h		\
 	xdbm.h
+
+DISTCLEANFILES = 	\
+	version.h	\
+	version.h.in
