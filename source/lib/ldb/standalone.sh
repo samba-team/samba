@@ -18,7 +18,7 @@ rm -fr build
 mkdir build
 cd build
 
-../configure
+../configure $*
 make dirs
 make all
 

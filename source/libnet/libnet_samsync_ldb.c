@@ -174,7 +174,7 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 				return nt_status;
 			}
 			
-			ldb_msg_add_value(msg, "objectGUID", &v);
+			ldb_msg_add_value(msg, "objectGUID", &v, NULL);
 		}
 	} else if (database == SAM_DATABASE_BUILTIN) {
 		/* work out the builtin_dn - useful for so many calls its worth

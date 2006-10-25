@@ -77,14 +77,14 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CT
 	case REG_SZ:
 	case REG_EXPAND_SZ:
 		val.length = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8, (void *)data.data, data.length, (void **)&val.data);
-		ldb_msg_add_value(msg, "data", &val);
+		ldb_msg_add_value(msg, "data", &val, NULL);
 		break;
 
 	case REG_DWORD:
 		ldb_msg_add_string(msg, "data", talloc_asprintf(mem_ctx, "0x%x", IVAL(data.data, 0)));
 		break;
 	default:
-		ldb_msg_add_value(msg, "data", &data);
+		ldb_msg_add_value(msg, "data", &data, NULL);
 	}
 
 

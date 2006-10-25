@@ -54,7 +54,7 @@ static BOOL samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *ms
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
-	return (ldb_msg_add_value(msg, name, &v) == 0);
+	return (ldb_msg_add_value(msg, name, &v, NULL) == 0);
 }
 
 /*

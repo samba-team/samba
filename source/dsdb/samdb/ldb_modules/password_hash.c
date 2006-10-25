@@ -106,10 +106,10 @@ static int add_password_hashes(struct ldb_module *module, struct ldb_message *ms
 	}
 
 	if (is_mod) {
-		if (ldb_msg_add_empty(msg, "ntPwdHash", LDB_FLAG_MOD_REPLACE) != 0) {
+		if (ldb_msg_add_empty(msg, "ntPwdHash", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if (ldb_msg_add_empty(msg, "lmPwdHash", LDB_FLAG_MOD_REPLACE) != 0) {
+		if (ldb_msg_add_empty(msg, "lmPwdHash", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}	
@@ -250,7 +250,7 @@ static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_mes
 			hdb_free_keys (smb_krb5_context->krb5_context, num_keys, keys);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		ret = ldb_msg_add_value(msg, "krb5Key", &val);
+		ret = ldb_msg_add_value(msg, "krb5Key", &val, NULL);
 		if (ret != LDB_SUCCESS) {
 			hdb_free_keys (smb_krb5_context->krb5_context, num_keys, keys);
 			return ret;
@@ -301,7 +301,7 @@ static int add_krb5_keys_from_NThash(struct ldb_module *module, struct ldb_messa
 	if (!val.data) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (ldb_msg_add_value(msg, "krb5Key", &val) != 0) {
+	if (ldb_msg_add_value(msg, "krb5Key", &val, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -319,12 +319,12 @@ static int set_pwdLastSet(struct ldb_module *module, struct ldb_message *msg, in
 		/* be sure there isn't a 0 value set (eg. coming from the template) */
 		ldb_msg_remove_attr(msg, "pwdLastSet");
 		/* add */
-		if (ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_ADD) != 0) {
+		if (ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_ADD, NULL) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	} else {
 		/* replace */
-		if (ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_REPLACE) != 0) {
+		if (ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
@@ -339,7 +339,7 @@ static int set_pwdLastSet(struct ldb_module *module, struct ldb_message *msg, in
 static int add_keyVersionNumber(struct ldb_module *module, struct ldb_message *msg, int previous)
 {
 	/* replace or add */
-	if (ldb_msg_add_empty(msg, "msDS-KeyVersionNumber", LDB_FLAG_MOD_REPLACE) != 0) {
+	if (ldb_msg_add_empty(msg, "msDS-KeyVersionNumber", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -385,7 +385,7 @@ static int setPwdHistory(struct ldb_module *module, struct ldb_message *msg, str
 	} else {
 		ZERO_STRUCT(new_nt_history[0]);
 	}
-	if (ldb_msg_add_empty(msg, "sambaNTPwdHistory", LDB_FLAG_MOD_REPLACE) != LDB_SUCCESS) {
+	if (ldb_msg_add_empty(msg, "sambaNTPwdHistory", LDB_FLAG_MOD_REPLACE, NULL) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	if (samdb_msg_add_hashes(msg, msg, "sambaNTPwdHistory", new_nt_history, nt_hist_len) != LDB_SUCCESS) {
@@ -408,7 +408,7 @@ static int setPwdHistory(struct ldb_module *module, struct ldb_message *msg, str
 	} else {
 		ZERO_STRUCT(new_lm_history[0]);
 	}
-	if (ldb_msg_add_empty(msg, "sambaLMPwdHistory", LDB_FLAG_MOD_REPLACE) != LDB_SUCCESS) {
+	if (ldb_msg_add_empty(msg, "sambaLMPwdHistory", LDB_FLAG_MOD_REPLACE, NULL) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	if (samdb_msg_add_hashes(msg, msg, "sambaLMPwdHistory", new_lm_history, lm_hist_len) != LDB_SUCCESS) {
@@ -1005,7 +1005,7 @@ static int password_hash_mod_do_mod(struct ldb_handle *h) {
 	}
 
 	/* we are going to replace the existing krb5key or delete it */
-	if (ldb_msg_add_empty(msg, "krb5key", LDB_FLAG_MOD_REPLACE) != 0) {
+	if (ldb_msg_add_empty(msg, "krb5key", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

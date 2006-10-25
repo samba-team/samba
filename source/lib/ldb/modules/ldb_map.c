@@ -964,7 +964,7 @@ struct ldb_request *map_build_fixup_req(struct map_context *ac, const struct ldb
 	if (dn == NULL) {
 		goto failed;
 	}
-	if (ldb_msg_add_empty(msg, IS_MAPPED, LDB_FLAG_MOD_REPLACE) != 0) {
+	if (ldb_msg_add_empty(msg, IS_MAPPED, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 		goto failed;
 	}
 	if (ldb_msg_add_string(msg, IS_MAPPED, dn) != 0) {

@@ -902,7 +902,7 @@ static int schema_add_build_down_req(struct schema_context *sctx)
 
 	/* rebuild the objectclass list */
 	ldb_msg_remove_attr(msg, "objectClass");
-	ret = ldb_msg_add_empty(msg, "objectClass", 0);
+	ret = ldb_msg_add_empty(msg, "objectClass", 0, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
