@@ -91,7 +91,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		attribute->num_values = 0;
 	}
 
-	if (ldb_msg_add_value(msg, "name", &rdn->value) != 0) {
+	if (ldb_msg_add_value(msg, "name", &rdn->value, NULL) != 0) {
 		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -99,7 +99,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	attribute = rdn_name_find_attribute(msg, rdn->name);
 
 	if (!attribute) {
-		if (ldb_msg_add_value(msg, rdn->name, &rdn->value) != 0) {
+		if (ldb_msg_add_value(msg, rdn->name, &rdn->value, NULL) != 0) {
 			talloc_free(down_req);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -213,16 +213,16 @@ static int rdn_name_rename_do_mod(struct ldb_handle *h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (ldb_msg_add_empty(msg, rdn->name, LDB_FLAG_MOD_REPLACE) != 0) {
+	if (ldb_msg_add_empty(msg, rdn->name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (ldb_msg_add_value(msg, rdn->name, &rdn->value) != 0) {
+	if (ldb_msg_add_value(msg, rdn->name, &rdn->value, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (ldb_msg_add_empty(msg, "name", LDB_FLAG_MOD_REPLACE) != 0) {
+	if (ldb_msg_add_empty(msg, "name", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (ldb_msg_add_value(msg, "name", &rdn->value) != 0) {
+	if (ldb_msg_add_value(msg, "name", &rdn->value, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

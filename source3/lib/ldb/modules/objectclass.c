@@ -250,7 +250,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ldb_msg_remove_attr(msg, "objectClass");
-	ret = ldb_msg_add_empty(msg, "objectClass", 0);
+	ret = ldb_msg_add_empty(msg, "objectClass", 0, NULL);
 	
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
@@ -351,7 +351,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		 * because we need it sorted */
 		
 		ldb_msg_remove_attr(msg, "objectClass");
-		ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE);
+		ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE, NULL);
 		
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
@@ -537,7 +537,7 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 	 * We could do a constrained add/del, but we are meant to be
 	 * in a transaction... */
 
-	ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE);
+	ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE, NULL);
 	if (ret != LDB_SUCCESS) {
 		ldb_set_errstring(ac->module->ldb, "objectclass: could not clear objectclass in modify msg");
 		talloc_free(mem_ctx);
