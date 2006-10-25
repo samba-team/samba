@@ -181,6 +181,7 @@ gsskrb5_accept_delegated_token
 	handle = (gsskrb5_cred) *delegated_cred_handle;
     
 	handle->cred_flags |= GSS_CF_DESTROY_CRED_ON_RELEASE;
+	krb5_cc_close(_gsskrb5_context, ccache);
 	ccache = NULL;
     }
 
