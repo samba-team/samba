@@ -3429,7 +3429,9 @@ if test x"$with_ads_support" != x"no"; then
 
   ########################################################
   # now see if we can find the gssapi libs in standard paths
-  AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS,gss_display_status,[],[],have_gssapi=yes)
+  if test x"$have_gssapi" != x"yes"; then
+     AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS,gss_display_status,[],[],have_gssapi=yes)
+  fi
 
   AC_CHECK_FUNC_EXT(krb5_set_real_time, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_set_default_in_tkt_etypes, $KRB5_LIBS)
