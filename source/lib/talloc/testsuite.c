@@ -1012,6 +1012,8 @@ static bool test_talloc_ptrtype(void)
 
 static bool test_autofree(void)
 {
+#ifndef _SAMBA_BUILD_
+	/* autofree test would kill smbtorture */
 	void *p;
 	printf("test: autofree [\nTALLOC AUTOFREE CONTEXT\n]\n");
 
@@ -1022,6 +1024,7 @@ static bool test_autofree(void)
 	talloc_free(p);
 
 	printf("success: autofree\n");
+#endif
 	return true;
 }
 
