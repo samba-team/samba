@@ -45,21 +45,21 @@ static NTSTATUS cmd_netlogon_logon_ctrl2(struct rpc_pipe_client *cli,
 	return result;
 }
 
-static NTSTATUS cmd_netlogon_getdcname(struct rpc_pipe_client *cli, 
-				       TALLOC_CTX *mem_ctx, int argc, 
-				       const char **argv)
+static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli, 
+				     TALLOC_CTX *mem_ctx, int argc, 
+				     const char **argv)
 {
 	fstring dcname;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result = WERR_GENERAL_FAILURE;
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s domainname\n", argv[0]);
-		return NT_STATUS_OK;
+		return WERR_OK;
 	}
 
 	result = rpccli_netlogon_getdcname(cli, mem_ctx, cli->cli->desthost, argv[1], dcname);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* Display results */
@@ -369,7 +369,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "NETLOGON" },
 
 	{ "logonctrl2", RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl2, NULL, PI_NETLOGON, NULL, "Logon Control 2",     "" },
-	{ "getdcname", RPC_RTYPE_NTSTATUS, cmd_netlogon_getdcname, NULL, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
+	{ "getdcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getdcname, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
 	{ "dsr_getdcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcname, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
 	{ "dsr_getsitename", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getsitename, PI_NETLOGON, NULL, "Get sitename",     "" },
 	{ "logonctrl",  RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl,  NULL, PI_NETLOGON, NULL, "Logon Control",       "" },

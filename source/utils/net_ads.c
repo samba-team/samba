@@ -273,6 +273,14 @@ retry:
 	status = ads_connect(ads);
 
 	if (!ADS_ERR_OK(status)) {
+
+		if (NT_STATUS_EQUAL(ads_ntstatus(status), 
+				    NT_STATUS_NO_LOGON_SERVERS)) {
+			DEBUG(0,("ads_connect: %s\n", ads_errstr(status)));
+			ads_destroy(&ads);
+			return status;
+		}
+	
 		if (!need_password && !second_time) {
 			need_password = True;
 			second_time = True;
@@ -1426,7 +1434,8 @@ static int net_ads_printer_info(int argc, const char **argv)
 	rc = ads_find_printer_on_server(ads, &res, printername, servername);
 
 	if (!ADS_ERR_OK(rc)) {
-		d_fprintf(stderr, "ads_find_printer_on_server: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "Server '%s' not found: %s\n", 
+			servername, ads_errstr(rc));
 		ads_msgfree(ads, res);
 		ads_destroy(&ads);
 		return -1;

@@ -508,6 +508,18 @@ static int winbind_auth_request(pam_handle_t * pamh,
 		}
 	}
 
+	/* save the profile path for other PAM modules */
+	if (response.data.auth.info3.profile_path[0] != '\0') {
+
+		int ret2 = pam_set_data(pamh, PAM_WINBIND_PROFILEPATH, 
+					(void *) strdup(response.data.auth.info3.profile_path), 
+					_pam_winbind_cleanup_func);
+		if (ret2) {
+			_pam_log_debug(ctrl, LOG_DEBUG, "Could not set data: %s", 
+				       pam_strerror(pamh, ret2));
+		}
+	}
+
 	return ret;
 }
 
@@ -887,7 +899,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	const char *member = NULL;
 	const char *cctype = NULL;
 	int retval = PAM_AUTH_ERR;
-	dictionary *d;
+	dictionary *d = NULL;
 
 	/* parse arguments */
 	int ctrl = _pam_parse(argc, argv, &d);
@@ -1068,7 +1080,7 @@ PAM_EXTERN
 int pam_sm_close_session(pam_handle_t *pamh, int flags,
 			 int argc, const char **argv)
 {
-	dictionary *d;
+	dictionary *d = NULL;
 	int retval = PAM_SUCCESS;
 
 	/* parse arguments */
@@ -1162,7 +1174,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	char *Announce;
 	
 	int retry = 0;
-	dictionary *d;
+	dictionary *d = NULL;
 
 	ctrl = _pam_parse(argc, argv, &d);
 	if (ctrl == -1) {
@@ -1251,7 +1263,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 			goto out;
 		}
 		
-		pam_set_data(pamh, PAM_WINBIND_PWD_LAST_SET, (void *)pwdlastset_prelim, _pam_winbind_cleanup_func);
+		pam_set_data(pamh, PAM_WINBIND_PWD_LAST_SET, (void *)pwdlastset_prelim, NULL);
 
 		retval = pam_set_item(pamh, PAM_OLDAUTHTOK, (const void *) pass_old);
 		pass_old = NULL;

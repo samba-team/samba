@@ -67,7 +67,7 @@ static void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 {
 	struct do_async_state *state;
 
-	state = TALLOC_P(mem_ctx, struct do_async_state);
+	state = TALLOC_ZERO_P(mem_ctx, struct do_async_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		cont(mem_ctx, False, NULL, c, private_data);
@@ -94,7 +94,7 @@ void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 {
 	struct do_async_state *state;
 
-	state = TALLOC_P(mem_ctx, struct do_async_state);
+	state = TALLOC_ZERO_P(mem_ctx, struct do_async_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		cont(mem_ctx, False, NULL, c, private_data);
@@ -981,7 +981,7 @@ void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
 	struct winbindd_request request;
 	struct gettoken_state *state;
 
-	state = TALLOC_P(mem_ctx, struct gettoken_state);
+	state = TALLOC_ZERO_P(mem_ctx, struct gettoken_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		cont(private_data, False, NULL, 0);
@@ -1147,7 +1147,7 @@ void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		return;
 	}
 
-	state = TALLOC_P(mem_ctx, struct sid2uid_state);
+	state = TALLOC_ZERO_P(mem_ctx, struct sid2uid_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		cont(private_data, False, 0);
@@ -1309,7 +1309,7 @@ void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		return;
 	}
 
-	state = TALLOC_P(mem_ctx, struct sid2gid_state);
+	state = TALLOC_ZERO_P(mem_ctx, struct sid2gid_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		cont(private_data, False, 0);

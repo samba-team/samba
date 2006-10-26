@@ -2405,7 +2405,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 
 	if (values) {
 
-		filter = talloc_asprintf(mem_ctx, "(&(objectClass=%s)(|", LDAP_OBJ_SAMBAACCOUNT);
+		filter = talloc_asprintf(mem_ctx, "(&(objectClass=%s)(|", LDAP_OBJ_SAMBASAMACCOUNT);
 		if (filter == NULL) {
 			ret = NT_STATUS_NO_MEMORY;
 			goto done;

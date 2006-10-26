@@ -1,6 +1,6 @@
                    ===============================
                    Release Notes for Samba 3.0.23d
-                             Oct 3, 2006
+                             Oct 28, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version 
@@ -9,7 +9,7 @@ bug-fixes.  Please read the changes in this section and for the
 original 3.0.23 release regarding new features and difference 
 in behavior from previous releases.
 
-Common bugs fixed in 3.0.23c include:
+Common bugs fixed in 3.0.23d include:
 
   o
 
@@ -19,7 +19,7 @@ Common bugs fixed in 3.0.23c include:
 Changes
 #######
 
-Changes since 3.0.23b
+Changes since 3.0.23c
 ---------------------
 
 commits

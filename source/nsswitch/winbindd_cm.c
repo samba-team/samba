@@ -104,6 +104,7 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	struct winbindd_domain *our_domain = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	NTSTATUS result;
+	WERROR werr;
 	TALLOC_CTX *mem_ctx;
 
 	fstring tmp;
@@ -131,14 +132,14 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 		return False;
 	}
 
-	result = rpccli_netlogon_getdcname(netlogon_pipe, mem_ctx, our_domain->dcname,
+	werr = rpccli_netlogon_getdcname(netlogon_pipe, mem_ctx, our_domain->dcname,
 					   domain->name, tmp);
 
 	talloc_destroy(mem_ctx);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(10, ("rpccli_netlogon_getdcname failed: %s\n",
-			   nt_errstr(result)));
+			   dos_errstr(werr)));
 		return False;
 	}
 

@@ -206,20 +206,23 @@ static int net_sam_set_pwnoexp(int argc, const char **argv)
 }
 
 /*
- * Set pass last change time, based on force pass change now
+ * Set a user's time field
  */
 
-static int net_sam_set_pwdmustchangenow(int argc, const char **argv)
+static int net_sam_set_time(int argc, const char **argv, const char *field,
+			    BOOL (*fn)(struct samu *, time_t,
+				       enum pdb_value_state))
 {
 	struct samu *sam_acct = NULL;
 	DOM_SID sid;
 	enum SID_NAME_USE type;
 	const char *dom, *name;
 	NTSTATUS status;
+	time_t new_time;
 
-	if ((argc != 2) || (!strequal(argv[1], "yes") &&
-			    !strequal(argv[1], "no"))) {
-		d_fprintf(stderr, "usage: net sam set pwdmustchangenow <user> [yes|no]\n");
+	if (argc != 2) {
+		d_fprintf(stderr, "usage: net sam set %s <user> "
+			  "[now|YYYY-MM-DD HH:MM]\n", field);
 		return -1;
 	}
 
@@ -235,6 +238,22 @@ static int net_sam_set_pwdmustchangenow(int argc, const char **argv)
 		return -1;
 	}
 
+	if (strequal(argv[1], "now")) {
+		new_time = time(NULL);
+	} else {
+		struct tm tm;
+		char *end;
+		ZERO_STRUCT(tm);
+		end = strptime(argv[1], "%Y-%m-%d %H:%M", &tm);
+		new_time = mktime(&tm);
+		if ((end == NULL) || (*end != '\0') || (new_time == -1)) {
+			d_fprintf(stderr, "Could not parse time string %s\n",
+				  argv[1]);
+			return -1;
+		}
+	}
+
+
 	if ( !(sam_acct = samu_new( NULL )) ) {
 		d_fprintf(stderr, "Internal error\n");
 		return -1;
@@ -245,10 +264,9 @@ static int net_sam_set_pwdmustchangenow(int argc, const char **argv)
 		return -1;
 	}
 
-	if (strequal(argv[1], "yes")) {
-		pdb_set_pass_last_set_time(sam_acct, 0, PDB_CHANGED);
-	} else {
-		pdb_set_pass_last_set_time(sam_acct, time(NULL), PDB_CHANGED);
+	if (!fn(sam_acct, new_time, PDB_CHANGED)) {
+		d_fprintf(stderr, "Internal error\n");
+		return -1;
 	}
 
 	status = pdb_update_sam_account(sam_acct);
@@ -260,11 +278,21 @@ static int net_sam_set_pwdmustchangenow(int argc, const char **argv)
 
 	TALLOC_FREE(sam_acct);
 
-	d_fprintf(stderr, "Updated 'user must change password at next logon' for %s\\%s to %s\n", dom,
-		  name, argv[1]);
+	d_printf("Updated %s for %s\\%s to %s\n", field, dom, name, argv[1]);
 	return 0;
 }
 
+static int net_sam_set_pwdmustchange(int argc, const char **argv)
+{
+	return net_sam_set_time(argc, argv, "pwdmustchange",
+				pdb_set_pass_must_change_time);
+}
+
+static int net_sam_set_pwdcanchange(int argc, const char **argv)
+{
+	return net_sam_set_time(argc, argv, "pwdcanchange",
+				pdb_set_pass_can_change_time);
+}
 
 /*
  * Set a user's or a group's comment
@@ -348,8 +376,10 @@ static int net_sam_set(int argc, const char **argv)
 		  "Disable/Enable a user's lockout flag" },
 		{ "pwnoexp", net_sam_set_pwnoexp,
 		  "Disable/Enable whether a user's pw does not expire" },
-		{ "pwdmustchangenow", net_sam_set_pwdmustchangenow,
-		  "Force users password must change at next logon" },
+		{ "pwdmustchange", net_sam_set_pwdmustchange,
+		  "Set a users password must change time" },
+		{ "pwdcanchange", net_sam_set_pwdcanchange,
+		  "Set a users password can change time" },
 		{NULL, NULL}
 	};
 

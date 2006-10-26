@@ -199,7 +199,7 @@ static void winbindd_getpwsid(struct winbindd_cli_state *state,
 {
 	struct getpwsid_state *s;
 
-	s = TALLOC_P(state->mem_ctx, struct getpwsid_state);
+	s = TALLOC_ZERO_P(state->mem_ctx, struct getpwsid_state);
 	if (s == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto error;
@@ -235,8 +235,8 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 		talloc_get_type_abort(private_data, struct getpwsid_state);
 
 	if (!success) {
-		DEBUG(5, ("Could not query user %s\\%s\n", s->domain->name,
-			  s->username));
+		DEBUG(5, ("Could not query domain %s SID %s\n", s->domain->name,
+			  sid_string_static(&s->user_sid)));
 		request_error(s->state);
 		return;
 	}

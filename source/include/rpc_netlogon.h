@@ -431,7 +431,7 @@ typedef struct net_q_getdcname {
 typedef struct net_r_getdcname {
 	uint32  ptr_dcname;
 	UNISTR2 uni_dcname;
-	NTSTATUS status;
+	WERROR status;
 } NET_R_GETDCNAME;
 
 /* NET_Q_TRUST_DOM_LIST - LSA Query Trusted Domains */
