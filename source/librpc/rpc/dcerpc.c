@@ -426,16 +426,9 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		status = data_blob_realloc(mem_ctx, blob,
-					   blob->length - c->security_state.auth_info->credentials.length + 
-					   creds2.length);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		memcpy(blob->data + blob->length - c->security_state.auth_info->credentials.length,
-		       creds2.data, creds2.length);
-
+		blob->length -= c->security_state.auth_info->credentials.length;
+		status = data_blob_append(mem_ctx, blob,
+					  creds2.data, creds2.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -454,16 +447,9 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		status = data_blob_realloc(mem_ctx, blob,
-					   blob->length - c->security_state.auth_info->credentials.length + 
-					   creds2.length);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		memcpy(blob->data + blob->length - c->security_state.auth_info->credentials.length,
-		       creds2.data, creds2.length);
-
+		blob->length -= c->security_state.auth_info->credentials.length;
+		status = data_blob_append(mem_ctx, blob,
+					  creds2.data, creds2.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
