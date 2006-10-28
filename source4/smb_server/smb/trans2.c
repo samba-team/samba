@@ -595,6 +595,10 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 	case RAW_SFILEINFO_1039:
 	case RAW_SFILEINFO_1040:
 		return NT_STATUS_INVALID_LEVEL;
+
+	default:
+		/* we need a default here to cope with invalid values on the wire */
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	return smbsrv_pull_passthru_sfileinfo(st, passthru_level, st,
