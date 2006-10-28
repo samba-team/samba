@@ -522,6 +522,11 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);	
 
+	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
+		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
+		goto done;
+	}
+
 	printf("Trying large offset read\n");
 	io.readx.in.offset = ((uint64_t)0x2) << 32;
 	io.readx.in.mincnt = 10;
