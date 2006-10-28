@@ -241,6 +241,7 @@ _PUBLIC_ void *map_file(const char *fname, size_t size)
 
 /**
 parse a buffer into lines
+'p' will be freed on error, and otherwise will be made a child of the returned array
 **/
 static char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx)
 {
@@ -259,7 +260,7 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *
 		return NULL;
 	}	
 	
-	talloc_reference(ret, p);
+	talloc_steal(ret, p);
 	
 	memset(ret, 0, sizeof(ret[0])*(i+2));
 	if (numlines) *numlines = i;
@@ -285,17 +286,12 @@ must be freed with talloc_free().
 _PUBLIC_ char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	char *p;
-	char **lines;
 	size_t size;
 
 	p = file_load(fname, &size, mem_ctx);
 	if (!p) return NULL;
 
-	lines = file_lines_parse(p, size, numlines, mem_ctx);
-
-	talloc_free(p);
-
-	return lines;
+	return file_lines_parse(p, size, numlines, mem_ctx);
 }
 
 /**
@@ -306,17 +302,12 @@ the list.
 _PUBLIC_ char **fd_lines_load(int fd, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	char *p;
-	char **lines;
 	size_t size;
 
 	p = fd_load(fd, &size, mem_ctx);
 	if (!p) return NULL;
 
-	lines = file_lines_parse(p, size, numlines, mem_ctx);
-
-	talloc_free(p);
-
-	return lines;
+	return file_lines_parse(p, size, numlines, mem_ctx);
 }
 
 
@@ -384,4 +375,25 @@ _PUBLIC_ int fdprintf(int fd, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
 	ret = vfdprintf(fd, format, ap);
 	va_end(ap);
 	return ret;
+}
+
+
+/*
+  try to determine if the filesystem supports large files
+*/
+_PUBLIC_ bool large_file_support(const char *path)
+{
+	int fd;
+	ssize_t ret;
+	char c;
+
+	fd = open(path, O_RDWR|O_CREAT, 0600);
+	unlink(path);
+	if (fd == -1) {
+		/* have to assume large files are OK */
+		return true;
+	}
+	ret = pread(fd, &c, 1, ((uint64_t)1)<<32);
+	close(fd);
+	return ret == 0;
 }
