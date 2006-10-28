@@ -272,7 +272,6 @@ static NTSTATUS ncacn_pull_request_auth(struct dcerpc_connection *c, TALLOC_CTX 
 		return status;
 	}
 	
-	
 	/* check signature or unseal the packet */
 	switch (c->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
@@ -433,6 +432,13 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 			return status;
 		}
 		dcerpc_set_auth_length(blob, creds2.length);
+		if (c->security_state.auth_info->credentials.length == 0) {
+			/* this is needed for krb5 only, to correct the total packet
+			   length */
+			dcerpc_set_frag_length(blob, 
+					       dcerpc_get_frag_length(blob)
+					       +creds2.length);
+		}
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -454,6 +460,13 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 			return status;
 		}
 		dcerpc_set_auth_length(blob, creds2.length);
+		if (c->security_state.auth_info->credentials.length == 0) {
+			/* this is needed for krb5 only, to correct the total packet
+			   length */
+			dcerpc_set_frag_length(blob, 
+					       dcerpc_get_frag_length(blob)
+					       +creds2.length);
+		}
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
