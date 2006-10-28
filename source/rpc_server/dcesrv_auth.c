@@ -470,19 +470,14 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 					    &creds2);
 
 		if (NT_STATUS_IS_OK(status)) {
-			status = data_blob_realloc(call, blob,
-						   blob->length - dce_conn->auth_state.auth_info->credentials.length + 
-						   creds2.length);
-		}
-
-		if (NT_STATUS_IS_OK(status)) {
-			memcpy(blob->data + blob->length - dce_conn->auth_state.auth_info->credentials.length,
-			       creds2.data, creds2.length);
+			blob->length -= dce_conn->auth_state.auth_info->credentials.length;
+			status = data_blob_append(call, blob, creds2.data, creds2.length);
 		}
 
 		/* If we did AEAD signing of the packet headers, then we hope
 		 * this value didn't change... */
 		dcerpc_set_auth_length(blob, creds2.length);
+		dcerpc_set_frag_length(blob, dcerpc_get_frag_length(blob)+creds2.length);
 		data_blob_free(&creds2);
 		break;
 
@@ -495,20 +490,14 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 					    blob->length - dce_conn->auth_state.auth_info->credentials.length,
 					    &creds2);
 		if (NT_STATUS_IS_OK(status)) {
-			status = data_blob_realloc(call, blob,
-						   blob->length - dce_conn->auth_state.auth_info->credentials.length + 
-						   creds2.length);
-		}
-
-		if (NT_STATUS_IS_OK(status)) {
-			memcpy(blob->data + blob->length - dce_conn->auth_state.auth_info->credentials.length,
-			       creds2.data, creds2.length);
+			blob->length -= dce_conn->auth_state.auth_info->credentials.length;
+			status = data_blob_append(call, blob, creds2.data, creds2.length);
 		}
 
 		/* If we did AEAD signing of the packet headers, then we hope
 		 * this value didn't change... */
 		dcerpc_set_auth_length(blob, creds2.length);
-
+		dcerpc_set_frag_length(blob, dcerpc_get_frag_length(blob)+creds2.length);
 		data_blob_free(&creds2);
 		break;
 
