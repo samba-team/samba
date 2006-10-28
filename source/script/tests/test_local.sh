@@ -5,10 +5,16 @@ local_tests="$local_tests LOCAL-IDTREE LOCAL-EVENT"
 local_tests="$local_tests LOCAL-SOCKET LOCAL-MESSAGING LOCAL-IRPC"
 local_tests="$local_tests LOCAL-NDR LOCAL-BINDING LOCAL-FILE LOCAL-REGISTRY"
 local_tests="$local_tests LOCAL-SDDL LOCAL-PAC LOCAL-DBSPEED"
-local_tests="$local_tests LOCAL-NTLMSSP LOCAL-CRYPTO-MD4 LOCAL-ICONV"
+local_tests="$local_tests LOCAL-NTLMSSP LOCAL-CRYPTO-MD4"
 local_tests="$local_tests LOCAL-CRYPTO-MD5 LOCAL-CRYPTO-HMACMD5"
 local_tests="$local_tests LOCAL-CRYPTO-SHA1 LOCAL-CRYPTO-HMACSHA1"
 local_tests="$local_tests LOCAL-RESOLVE LOCAL-TORTURE"
+
+if [ `uname` = "Linux" ]; then
+    # testing against the system iconv only makes sense for our 'reference' iconv
+    # behaviour
+    local_tests="$local_tests LOCAL-ICONV"
+fi
 
 if [ $# -lt 0 ]; then
 cat <<EOF
