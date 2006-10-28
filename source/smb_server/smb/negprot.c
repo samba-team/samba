@@ -250,6 +250,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	time_t t = req->request_time.tv_sec;
 	NTTIME nttime;
 	BOOL negotiate_spnego = False;
+	char *large_test_path;
 
 	unix_to_nt_time(&nttime, t);
 
@@ -277,8 +278,11 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	if (lp_large_readwrite()) {
 		capabilities |= CAP_LARGE_READX | CAP_LARGE_WRITEX | CAP_W2K_SMBS;
 	}
-	
-	capabilities |= CAP_LARGE_FILES;
+
+	large_test_path = lock_path(req, "large_test.dat");
+	if (large_file_support(large_test_path)) {
+		capabilities |= CAP_LARGE_FILES;
+	}
 
 	if (lp_readraw() && lp_writeraw()) {
 		capabilities |= CAP_RAW_MODE;

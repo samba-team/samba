@@ -182,6 +182,11 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Setting file as sparse\n");
 	status = torture_set_sparse(cli->tree, fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
+
+	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
+		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
+		goto done;
+	}
 	
 	printf("Trying 2^32 offset\n");
 	setup_buffer(buf, seed, maxsize);
