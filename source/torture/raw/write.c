@@ -188,6 +188,11 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		goto done;
 	}
 	
+	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
+		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
+		goto done;
+	}
+
 	printf("Trying 2^32 offset\n");
 	setup_buffer(buf, seed, maxsize);
 	io.write.in.file.fnum = fnum;
@@ -198,7 +203,7 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.write.out.nwritten, 4000);
 	CHECK_ALL_INFO(io.write.in.count + (uint64_t)io.write.in.offset, size);
-
+	
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, io.write.in.offset, 4000) != 4000) {
 		printf("read failed at %s\n", __location__);
@@ -342,6 +347,11 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = torture_set_sparse(cli->tree, fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	
+	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
+		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
+		goto done;
+	}
+
 	printf("Trying 2^32 offset\n");
 	setup_buffer(buf, seed, maxsize);
 	io.writex.in.file.fnum = fnum;
@@ -505,6 +515,11 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = torture_set_sparse(cli->tree, fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	
+	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
+		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
+		goto done;
+	}
+
 	printf("Trying 2^32 offset\n");
 	setup_buffer(buf, seed, maxsize);
 	io.writeunlock.in.file.fnum = fnum;
@@ -655,6 +670,11 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = torture_set_sparse(cli->tree, fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	
+	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
+		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
+		goto done;
+	}
+
 	printf("Trying 2^32 offset\n");
 	setup_buffer(buf, seed, maxsize);
 	io.writeclose.in.file.fnum = fnum;
