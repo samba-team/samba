@@ -2,7 +2,7 @@
 # Start MODULE pvfs_acl_xattr
 [MODULE::pvfs_acl_xattr]
 INIT_FUNCTION = pvfs_acl_xattr_init 
-SUBSYSTEM = ntvfs_posix
+SUBSYSTEM = ntvfs
 OBJ_FILES = \
 		pvfs_acl_xattr.o
 PRIVATE_DEPENDENCIES = NDR_XATTR
