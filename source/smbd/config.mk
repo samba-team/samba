@@ -12,7 +12,7 @@ PUBLIC_DEPENDENCIES = \
 
 #######################
 # Start SUBSERVICE
-[SUBSYSTEM::service]
+[LIBRARY::service]
 PRIVATE_PROTO_HEADER = service_proto.h
 OBJ_FILES = \
 		service.o \

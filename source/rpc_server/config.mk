@@ -141,7 +141,8 @@ PUBLIC_DEPENDENCIES = \
 		SAMDB \
 		DCERPC_COMMON \
 		NDR_LSA \
-		LIBCLI_AUTH
+		LIBCLI_AUTH \
+		NDR_DSSETUP
 # End MODULE dcerpc_lsa
 ################################################
 

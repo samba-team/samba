@@ -43,7 +43,7 @@ static BOOL single_search_callback(void *private, union smb_search_data *file)
 /*
   do a single file (non-wildcard) search 
 */
-NTSTATUS torture_single_search(struct smbcli_state *cli, 
+_PUBLIC_ NTSTATUS torture_single_search(struct smbcli_state *cli, 
 			       TALLOC_CTX *mem_ctx,
 			       const char *pattern,
 			       enum smb_search_level level,

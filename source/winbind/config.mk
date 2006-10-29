@@ -31,7 +31,8 @@ PUBLIC_DEPENDENCIES = \
 		process_model \
 		RPC_NDR_LSA \
 		RPC_NDR_SAMR \
-		PAM_ERRORS
+		PAM_ERRORS \
+		LIBCLI_LDAP
 # End SUBSYSTEM WINBIND
 #######################
 

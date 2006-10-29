@@ -462,7 +462,7 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 	return NT_STATUS_EA_CORRUPT_ERROR;
 }
 
-bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
+_PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 				   struct smbcli_state **c, 
 				   const char *hostname, 
 				   const char *sharename,

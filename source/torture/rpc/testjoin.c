@@ -280,7 +280,7 @@ failed:
 }
 
 
-struct test_join *torture_join_domain(const char *machine_name, 
+_PUBLIC_ struct test_join *torture_join_domain(const char *machine_name, 
 				      uint32_t acct_flags,
 				      struct cli_credentials **machine_credentials)
 {
@@ -462,7 +462,7 @@ NTSTATUS torture_leave_ads_domain(TALLOC_CTX *mem_ctx, struct libnet_JoinDomain 
   leave the domain, deleting the machine acct
 */
 
-void torture_leave_domain(struct test_join *join)
+_PUBLIC_ void torture_leave_domain(struct test_join *join)
 {
 	struct samr_DeleteUser d;
 	NTSTATUS status;
@@ -491,7 +491,7 @@ void torture_leave_domain(struct test_join *join)
 /*
   return the dom sid for a test join
 */
-const struct dom_sid *torture_join_sid(struct test_join *join)
+_PUBLIC_ const struct dom_sid *torture_join_sid(struct test_join *join)
 {
 	return join->dom_sid;
 }

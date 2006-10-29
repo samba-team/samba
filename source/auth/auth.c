@@ -51,7 +51,7 @@ BOOL auth_challenge_may_be_modified(struct auth_context *auth_ctx)
  Try to get a challenge out of the various authentication modules.
  Returns a const char of length 8 bytes.
 ****************************************************************************/
-NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal)
+_PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal)
 {
 	NTSTATUS nt_status;
 	struct auth_method_context *method;

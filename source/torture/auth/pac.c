@@ -626,7 +626,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	return true;
 }
 
-struct torture_suite *torture_pac(TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct torture_suite *torture_pac(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "PAC");
 

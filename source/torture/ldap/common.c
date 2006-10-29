@@ -39,7 +39,7 @@ NTSTATUS torture_ldap_bind(struct ldap_connection *conn, const char *userdn, con
 	return status;
 }
 
-NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn, 
+_PUBLIC_ NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn, 
 				struct cli_credentials *creds)
 {
         NTSTATUS status;
@@ -54,7 +54,7 @@ NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn,
 }
 
 /* open a ldap connection to a server */
-NTSTATUS torture_ldap_connection(TALLOC_CTX *mem_ctx, struct ldap_connection **conn, 
+_PUBLIC_ NTSTATUS torture_ldap_connection(TALLOC_CTX *mem_ctx, struct ldap_connection **conn, 
 				const char *url)
 {
 	NTSTATUS status;

@@ -65,7 +65,9 @@ OBJ_FILES = pam_errors.o
 
 #######################
 # Start SUBSYSTEM auth
-[SUBSYSTEM::auth]
+[LIBRARY::auth]
+VERSION = 0.0.1
+SO_VERSION = 0
 PUBLIC_HEADERS = auth.h
 PUBLIC_PROTO_HEADER = auth_proto.h
 OBJ_FILES = \

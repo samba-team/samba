@@ -169,7 +169,10 @@ _PUBLIC_ char *smbd_tmp_path(TALLOC_CTX *mem_ctx, const char *name)
 
 static char *modules_path(TALLOC_CTX* mem_ctx, const char *name)
 {
-	return talloc_asprintf(mem_ctx, "%s/%s", lp_modulesdir(), name);
+	const char *env_moduledir = getenv("LD_SAMBA_MODULE_PATH");
+	return talloc_asprintf(mem_ctx, "%s/%s", 
+						   env_moduledir?env_moduledir:lp_modulesdir(), 
+						   name);
 }
 
 /**

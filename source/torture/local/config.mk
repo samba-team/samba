@@ -38,7 +38,9 @@ PUBLIC_DEPENDENCIES = \
 		registry \
 		LIBCRYPTO \
 		POPT_CREDENTIALS \
-		TORTURE_UI
+		TORTURE_UI \
+		TORTURE_AUTH \
+		TORTURE_UTIL
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 
