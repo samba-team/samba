@@ -1,3 +1,4 @@
+source/lib/gencache/gencache.h
 source/lib/ldb/bin
 *.pc
 autom4te.cache

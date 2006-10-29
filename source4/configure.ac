@@ -32,7 +32,6 @@ m4_include(lib/ldb/libldb.m4)
 m4_include(lib/tls/config.m4)
 m4_include(lib/events/config.m4)
 
-dnl disabled until we support external heimdal again
 dnl m4_include(auth/kerberos/config.m4)
 
 m4_include(auth/gensec/config.m4)
@@ -50,6 +49,15 @@ m4_include(ntvfs/sysdep/config.m4)
 m4_include(lib/appweb/config.m4)
 m4_include(nsswitch/config.m4)
 m4_include(libcli/config.m4)
+
+dnl disabled until we support external heimdal again
+AC_ARG_ENABLE(dso,
+[  --enable-dso 		Enable building internal libraries as DSO's (experimental)],
+[ if test x$enable_dso != xno; then
+ 	BLDSHARED=true
+  fi], 
+[BLDSHARED=false])
+
 
 #################################################
 # add *_CFLAGS only for the real build

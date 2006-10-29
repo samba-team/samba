@@ -14,7 +14,7 @@ PUBLIC_DEPENDENCIES = \
 
 ################################################
 # Start SUBSYSTEM ntptr
-[SUBSYSTEM::ntptr]
+[LIBRARY::ntptr]
 PRIVATE_PROTO_HEADER = ntptr_proto.h
 OBJ_FILES = \
 		ntptr_base.o \

@@ -432,7 +432,7 @@ static void ldap_connect_recv_unix_conn(struct composite_context *ctx)
 	ldap_connect_got_sock(state->ctx, conn);
 }
 
-NTSTATUS ldap_connect_recv(struct composite_context *ctx)
+_PUBLIC_ NTSTATUS ldap_connect_recv(struct composite_context *ctx)
 {
 	NTSTATUS status = composite_wait(ctx);
 	talloc_free(ctx);

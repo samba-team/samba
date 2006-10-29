@@ -207,17 +207,26 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 	char *path;
 	void *handle;
 	int (*init_fn) (void);
+	char *modulesdir;
 
 #ifdef HAVE_DLOPEN
+	if (getenv("LD_LDB_MODULE_PATH") != NULL) {
+		modulesdir = talloc_strdup(ldb, getenv("LD_LDB_MODULE_PATH"));
+	} else {
 #ifdef _SAMBA_BUILD_
-	path = talloc_asprintf(ldb, "%s/ldb/%s.%s", dyn_MODULESDIR, name, dyn_SHLIBEXT);
+		modulesdir = talloc_asprintf(ldb, "%s/ldb", dyn_MODULESDIR);
 #else
-	path = talloc_asprintf(ldb, "%s/%s.%s", MODULESDIR, name, SHLIBEXT);
+		modulesdir = talloc_strdup(ldb, MODULESDIR);
 #endif
+	}
+
+	path = talloc_asprintf(ldb, "%s/%s.%s", modulesdir, name, SHLIBEXT);
+
+	talloc_free(modulesdir);
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "trying to load %s from %s\n", name, path);
 
-	handle = dlopen(path, 0);
+	handle = dlopen(path, RTLD_NOW);
 	if (handle == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "unable to load %s from %s: %s\n", name, path, dlerror());
 		return -1;

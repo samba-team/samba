@@ -101,7 +101,7 @@ NTSTATUS pvfs_xattr_unlink_hook(struct pvfs_state *pvfs, const char *fname)
 /*
   load a NDR structure from a xattr
 */
-NTSTATUS pvfs_xattr_ndr_load(struct pvfs_state *pvfs,
+_PUBLIC_ NTSTATUS pvfs_xattr_ndr_load(struct pvfs_state *pvfs,
 			     TALLOC_CTX *mem_ctx,
 			     const char *fname, int fd, const char *attr_name,
 			     void *p, void *pull_fn)
@@ -126,7 +126,7 @@ NTSTATUS pvfs_xattr_ndr_load(struct pvfs_state *pvfs,
 /*
   save a NDR structure into a xattr
 */
-NTSTATUS pvfs_xattr_ndr_save(struct pvfs_state *pvfs,
+_PUBLIC_ NTSTATUS pvfs_xattr_ndr_save(struct pvfs_state *pvfs,
 			     const char *fname, int fd, const char *attr_name, 
 			     void *p, void *push_fn)
 {
