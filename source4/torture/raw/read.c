@@ -161,12 +161,14 @@ static BOOL test_read(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		goto done;
 	}
 
-	printf("Trying max offset\n");
-	io.read.in.offset = ~0;
-	io.read.in.count = strlen(test_data);
-	status = smb_raw_read(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.read.out.nread, 0);
+	if (cli->transport->negotiate.capabilities & CAP_LARGE_FILES) {
+		printf("Trying max offset\n");
+		io.read.in.offset = ~0;
+		io.read.in.count = strlen(test_data);
+		status = smb_raw_read(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_VALUE(io.read.out.nread, 0);
+	}
 
 	setup_buffer(buf, seed, maxsize);
 	smbcli_write(cli->tree, fnum, 0, buf, 0, maxsize);
@@ -301,12 +303,14 @@ static BOOL test_lockread(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		goto done;
 	}
 
-	printf("Trying max offset\n");
-	io.lockread.in.offset = ~0;
-	io.lockread.in.count = strlen(test_data);
-	status = smb_raw_read(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.lockread.out.nread, 0);
+	if (cli->transport->negotiate.capabilities & CAP_LARGE_FILES) {
+		printf("Trying max offset\n");
+		io.lockread.in.offset = ~0;
+		io.lockread.in.count = strlen(test_data);
+		status = smb_raw_read(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_VALUE(io.lockread.out.nread, 0);
+	}
 
 	setup_buffer(buf, seed, maxsize);
 	smbcli_write(cli->tree, fnum, 0, buf, 0, maxsize);
@@ -442,15 +446,17 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		goto done;
 	}
 
-	printf("Trying max offset\n");
-	io.readx.in.offset = 0xffffffff;
-	io.readx.in.mincnt = strlen(test_data);
-	io.readx.in.maxcnt = strlen(test_data);
-	status = smb_raw_read(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.readx.out.nread, 0);
-	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
-	CHECK_VALUE(io.readx.out.compaction_mode, 0);
+	if (cli->transport->negotiate.capabilities & CAP_LARGE_FILES) {
+		printf("Trying max offset\n");
+		io.readx.in.offset = 0xffffffff;
+		io.readx.in.mincnt = strlen(test_data);
+		io.readx.in.maxcnt = strlen(test_data);
+		status = smb_raw_read(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_VALUE(io.readx.out.nread, 0);
+		CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
+		CHECK_VALUE(io.readx.out.compaction_mode, 0);
+	}
 
 	setup_buffer(buf, seed, maxsize);
 	smbcli_write(cli->tree, fnum, 0, buf, 0, maxsize);
@@ -638,13 +644,15 @@ static BOOL test_readbraw(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		goto done;
 	}
 
-	printf("Trying max offset\n");
-	io.readbraw.in.offset = ~0;
-	io.readbraw.in.mincnt = strlen(test_data);
-	io.readbraw.in.maxcnt = strlen(test_data);
-	status = smb_raw_read(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.readbraw.out.nread, 0);
+	if (cli->transport->negotiate.capabilities & CAP_LARGE_FILES) {
+		printf("Trying max offset\n");
+		io.readbraw.in.offset = ~0;
+		io.readbraw.in.mincnt = strlen(test_data);
+		io.readbraw.in.maxcnt = strlen(test_data);
+		status = smb_raw_read(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_VALUE(io.readbraw.out.nread, 0);
+	}
 
 	setup_buffer(buf, seed, maxsize);
 	smbcli_write(cli->tree, fnum, 0, buf, 0, maxsize);
@@ -705,14 +713,16 @@ static BOOL test_readbraw(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readbraw.out.nread, 0);
 
-	printf("Trying large offset read\n");
-	io.readbraw.in.offset = ((uint64_t)0x2) << 32;
-	io.readbraw.in.mincnt = 10;
-	io.readbraw.in.maxcnt = 10;
-	io.readbraw.in.timeout = 0;
-	status = smb_raw_read(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.readbraw.out.nread, 0);
+	if (cli->transport->negotiate.capabilities & CAP_LARGE_FILES) {
+		printf("Trying large offset read\n");
+		io.readbraw.in.offset = ((uint64_t)0x2) << 32;
+		io.readbraw.in.mincnt = 10;
+		io.readbraw.in.maxcnt = 10;
+		io.readbraw.in.timeout = 0;
+		status = smb_raw_read(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_VALUE(io.readbraw.out.nread, 0);
+	}
 
 done:
 	smbcli_close(cli->tree, fnum);
