@@ -61,9 +61,6 @@ _PUBLIC_ const char *dyn_DATADIR = DATADIR;
 
 _PUBLIC_ const char *dyn_MODULESDIR = MODULESDIR;
 
-/** Shared library extension */
-_PUBLIC_ const char *dyn_SHLIBEXT = SHLIBEXT;
-
 /**
  * @brief Directory holding lock files.
  *

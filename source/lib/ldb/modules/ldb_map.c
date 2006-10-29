@@ -1296,13 +1296,13 @@ static int map_init_maps(struct ldb_module *module, struct ldb_map_context *data
 }
 
 /* Copy the list of provided module operations. */
-struct ldb_module_ops ldb_map_get_ops(void)
+_PUBLIC_ struct ldb_module_ops ldb_map_get_ops(void)
 {
 	return map_ops;
 }
 
 /* Initialize global private data. */
-int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attrs, 
+_PUBLIC_ int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attrs, 
 		 const struct ldb_map_objectclass *ocls,
 		 const char * const *wildcard_attributes,
 		 const char *name)

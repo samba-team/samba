@@ -419,7 +419,7 @@ static BOOL test_netserverenum(struct smbcli_tree *tree)
 	return True;
 }
 
-NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 				     TALLOC_CTX *mem_ctx,
 				     struct rap_WserverGetInfo *r)
 {

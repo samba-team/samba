@@ -60,7 +60,7 @@ static NTSTATUS gensec_socket_init_fn(struct socket_context *sock)
 
 /* These functions are for use here only (public because SPNEGO must
  * use them for recursion) */
-NTSTATUS gensec_wrap_packets(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_wrap_packets(struct gensec_security *gensec_security, 
 			     TALLOC_CTX *mem_ctx, 
 			     const DATA_BLOB *in, 
 			     DATA_BLOB *out,
