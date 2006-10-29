@@ -207,21 +207,18 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $installdir;
 	my $init_obj = "";
 	
-	$installdir = $ctx->{DEBUGDIR};
-
 	if ($ctx->{TYPE} eq "LIBRARY") {
 		push (@{$self->{shared_libs}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
-		push (@{$self->{installable_shared_libs}}, "$installdir/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
+		push (@{$self->{installable_shared_libs}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
 	} elsif ($ctx->{TYPE} eq "MODULE") {
 		push (@{$self->{shared_modules}}, "$ctx->{TARGET}");
-		push (@{$self->{plugins}}, "$installdir/$ctx->{LIBRARY_REALNAME}");
+		push (@{$self->{plugins}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}");
 
-		$self->{install_plugins} .= "\t\@echo Installing $installdir/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
+		$self->{install_plugins} .= "\t\@echo Installing $ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
 		$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/\n";
-		$self->{install_plugins} .= "\t\@cp $installdir/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
+		$self->{install_plugins} .= "\t\@cp $ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
 		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
 		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
 		if (defined($ctx->{ALIASES})) {
@@ -268,47 +265,31 @@ __EOD__
 	}
 
 	my $singlesoarg = "";
-	
-	if ($ctx->{DEBUGDIR} ne $installdir) {
-		$self->output(<< "__EOD__"
-#
 
-$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
-	\@echo Linking \$\@
-	\@mkdir -p $ctx->{DEBUGDIR}
-	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
-		$init_obj $soargdebug
-__EOD__
-);
-		if (defined($ctx->{ALIASES})) {
-			foreach (@{$ctx->{ALIASES}}) {
-				$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$_.\$(SHLIBEXT)\n");
-			}
-		}
-
-		$self->output("\n");
-	} else {
-		if ($self->{config}->{SONAMEFLAG} ne "" and 
-			defined($ctx->{LIBRARY_SONAME}) and 
-			$ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-			$singlesoarg = "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $installdir/$ctx->{LIBRARY_SONAME}";
-		}
-
+	if ($self->{config}->{SONAMEFLAG} ne "" and 
+		defined($ctx->{LIBRARY_SONAME}) and 
+		$ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
+		$singlesoarg = "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$ctx->{LIBRARY_SONAME}";
 	}
 
 	$self->output(<< "__EOD__"
 #
 
-$installdir/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
+$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
-	\@mkdir -p $installdir
+	\@mkdir -p $ctx->{DEBUGDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
 		$init_obj $singlesoarg
-
 __EOD__
 );
+
+	if (defined($ctx->{ALIASES})) {
+		foreach (@{$ctx->{ALIASES}}) {
+			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$_.\$(SHLIBEXT)\n");
+		}
+	}
+	$self->output("\n");
 }
 
 sub StaticLibrary($$)
