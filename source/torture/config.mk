@@ -279,7 +279,8 @@ PRIVATE_DEPENDENCIES = \
 		POPT_CREDENTIALS \
 		TORTURE_UI \
 		dcerpc \
-		LIBCLI_SMB
+		LIBCLI_SMB \
+		SMBREADLINE
 MANPAGE = man/smbtorture.1
 # End BINARY smbtorture
 #################################
