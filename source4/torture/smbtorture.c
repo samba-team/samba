@@ -24,6 +24,8 @@
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/filesys.h"
+#include "system/readline.h"
+#include "lib/smbreadline/smbreadline.h"
 #include "libcli/libcli.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/events/events.h"
@@ -423,11 +425,55 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	.test_result = quiet_test_result
 };
 
+void run_shell(struct torture_context *tctx)
+{
+	char *cline;
+	int argc;
+	char **argv;
+	int ret;
+
+	while (1) {
+		cline = smb_readline("torture> ", NULL, NULL);
+
+		if (cline == NULL)
+			return;
+	
+		ret = poptParseArgvString(cline, &argc, &argv);
+		if (ret != 0) {
+			fprintf(stderr, "Error parsing line\n");
+			continue;
+		}
+
+		if (!strcmp(argv[0], "quit")) {
+			return;
+		} else if (!strcmp(argv[0], "set")) {
+			if (argc < 3) {
+				fprintf(stderr, "Usage: set <variable> <value>\n");
+			} else {
+				char *name = talloc_asprintf(NULL, "torture:%s", argv[1]);
+				lp_set_cmdline(name, argv[2]);
+				talloc_free(name);
+			}
+		} else if (!strcmp(argv[0], "help")) {
+			fprintf(stderr, "Available commands:\n"
+							" help - This help command\n"
+							" run - Run test\n"
+							" set - Change variables\n"
+							"\n");
+		} else if (!strcmp(argv[0], "run")) {
+			if (argc < 2) {
+				fprintf(stderr, "Usage: run TEST-NAME [OPTIONS...]\n");
+			} else {
+				run_test(tctx, argv[1]);
+			}
+		}
+	}
+}
 
 /****************************************************************************
   main program
 ****************************************************************************/
- int main(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
 	int opt, i;
 	bool correct = true;
@@ -439,6 +485,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	poptContext pc;
 	static const char *target = "other";
 	const char **subunit_dir;
+	int shell = False;
 	static const char *ui_ops_name = "simple";
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC};
@@ -458,6 +505,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		{"parse-dns",	'D', POPT_ARG_STRING,	NULL, 	OPT_DNS,	"parse-dns", 	NULL},
 		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,
 		 "run dangerous tests (eg. wiping out password database)", NULL},
+		{"shell", 		's', POPT_ARG_NONE, &shell, True, "Run shell", NULL},
 		{"target", 		'T', POPT_ARG_STRING, &target, 0, "samba3|samba4|other", NULL},
 		{"async",       'a', POPT_ARG_NONE,     NULL,   OPT_ASYNC,
 		 "run async tests", NULL},
@@ -505,12 +553,6 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		case OPT_SMB_PORTS:
 			lp_set_cmdline("smb ports", poptGetOptArg(pc));
 			break;
-		default:
-			d_printf("Invalid option %s: %s\n", 
-				 poptBadOption(pc, 0), poptStrerror(opt));
-			torture_init();
-			usage(pc);
-			exit(1);
 		}
 	}
 
@@ -559,7 +601,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		}
 	}
 
-	if (argc_new < 3) {
+	if (!(argc_new >= 3 || (shell && argc_new >= 2))) {
 		usage(pc);
 		exit(1);
 	}
@@ -600,6 +642,8 @@ const static struct torture_ui_ops quiet_ui_ops = {
 
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");
+	} else if (shell) {
+		run_shell(torture);
 	} else {
 		int total;
 		double rate;
@@ -609,7 +653,6 @@ const static struct torture_ui_ops quiet_ui_ops = {
 				correct = false;
 			}
 		}
-
 
 		unexpected_failures = str_list_length(torture->results.unexpected_failures);
 
