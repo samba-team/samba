@@ -28,14 +28,12 @@ struct smbcli_state;
 
 extern struct torture_suite *torture_root;
 
-extern BOOL use_oplocks;
 extern BOOL torture_showall;
 extern int torture_entries;
 extern int torture_seed;
 extern int torture_numops;
 extern int torture_failures;
 extern int torture_numasync;
-extern BOOL use_level_II_oplocks;
 
 struct torture_test;
 
