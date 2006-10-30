@@ -31,7 +31,6 @@ extern struct torture_suite *torture_root;
 extern BOOL use_oplocks;
 extern BOOL torture_showall;
 extern int torture_entries;
-extern int torture_nprocs;
 extern int torture_seed;
 extern int torture_numops;
 extern int torture_failures;

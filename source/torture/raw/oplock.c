@@ -767,7 +767,7 @@ BOOL torture_bench_oplock(struct torture_context *torture)
 	struct smbcli_state **cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
-	extern int torture_nprocs;
+	int torture_nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
 	int i, count=0;
 	int timelimit = torture_setting_int(torture, "timelimit", 10);
 	union smb_open io;
