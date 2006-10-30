@@ -25,7 +25,6 @@
 #include "build.h"
 #include "lib/util/dlinklist.h"
 
-_PUBLIC_ int torture_nprocs=4;
 _PUBLIC_ int torture_numops=10;
 _PUBLIC_ int torture_entries=1000;
 _PUBLIC_ int torture_failures=1;
