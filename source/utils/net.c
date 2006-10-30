@@ -77,6 +77,7 @@ const char *opt_target_workgroup = NULL;
 int opt_machine_pass = 0;
 BOOL opt_localgroup = False;
 BOOL opt_domaingroup = False;
+static BOOL do_talloc_report=False;
 const char *opt_newntname = "";
 int opt_rid = 0;
 int opt_acls = 0;
@@ -159,6 +160,7 @@ int net_run_function2(int argc, const char **argv, const char *whoami,
 /****************************************************************************
 connect to \\server\service 
 ****************************************************************************/
+
 NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 					const char *server_name, 
 					const char *service_name, 
@@ -172,13 +174,13 @@ NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 			opt_password = SMB_STRDUP(pass);
 		}
 	}
-	
+
 	nt_status = cli_full_connection(c, NULL, server_name, 
 					server_ip, opt_port,
 					service_name, service_type,  
 					opt_user_name, opt_workgroup,
 					opt_password, 0, Undefined, NULL);
-	
+
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
@@ -235,20 +237,57 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 }
 
 /****************************************************************************
+ Return malloced user@realm for krb5 login.
+****************************************************************************/
+
+static char *get_user_and_realm(const char *username)
+{
+	char *user_and_realm = NULL;
+
+	if (!username) {
+		return NULL;
+	}
+	if (strchr_m(username, '@')) {
+		user_and_realm = SMB_STRDUP(username);
+	} else {
+		if (asprintf(&user_and_realm, "%s@%s", username, lp_realm()) == -1) {
+			user_and_realm = NULL;
+		}
+	}
+	return user_and_realm;
+}
+
+/****************************************************************************
 connect to \\server\ipc$ using KRB5
 ****************************************************************************/
+
 NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
 			struct in_addr *server_ip, const char *server_name)
 {
 	NTSTATUS nt_status;
+	char *user_and_realm = NULL;
+
+	if (!opt_password && !opt_machine_pass) {
+		char *pass = getpass("Password:");
+		if (pass) {
+			opt_password = SMB_STRDUP(pass);
+		}
+	}
+
+	user_and_realm = get_user_and_realm(opt_user_name);
+	if (!user_and_realm) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	nt_status = cli_full_connection(c, NULL, server_name, 
 					server_ip, opt_port,
 					"IPC$", "IPC",  
-					opt_user_name, opt_workgroup,
+					user_and_realm, opt_workgroup,
 					opt_password, CLI_FULL_CONNECTION_USE_KERBEROS, 
 					Undefined, NULL);
 	
+	SAFE_FREE(user_and_realm);
+
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
@@ -480,7 +519,7 @@ static int net_group(int argc, const char **argv)
 
 static int net_join(int argc, const char **argv)
 {
-	if (net_ads_check() == 0) {
+	if (net_ads_check_our_domain() == 0) {
 		if (net_ads_join(argc, argv) == 0)
 			return 0;
 		else
@@ -491,7 +530,7 @@ static int net_join(int argc, const char **argv)
 
 static int net_changetrustpw(int argc, const char **argv)
 {
-	if (net_ads_check() == 0)
+	if (net_ads_check_our_domain() == 0)
 		return net_ads_changetrustpw(argc, argv);
 
 	return net_rpc_changetrustpw(argc, argv);
@@ -513,7 +552,7 @@ static int net_changesecretpw(int argc, const char **argv)
 			set_line_buffering(stdout);
 			set_line_buffering(stderr);
 		}
-		
+
 		trust_pw = get_pass("Enter machine password: ", opt_stdin);
 
 		if (!secrets_store_machine_password(trust_pw, lp_workgroup(), sec_channel_type)) {
@@ -884,6 +923,7 @@ static struct functable net_func[] = {
 		{"timestamps",	0, POPT_ARG_NONE,     &opt_timestamps},
 		{"exclude",	'e', POPT_ARG_STRING, &opt_exclude},
 		{"destination",	0, POPT_ARG_STRING,   &opt_destination},
+		{"tallocreport", 0, POPT_ARG_NONE, &do_talloc_report},
 
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
@@ -945,6 +985,10 @@ static struct functable net_func[] = {
 			argc_new = i;
 			break;
 		}
+	}
+
+	if (do_talloc_report) {
+		talloc_enable_leak_report();
 	}
 
 	if (opt_requester_name) {

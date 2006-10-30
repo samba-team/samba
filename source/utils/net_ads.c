@@ -276,7 +276,7 @@ retry:
 				    NT_STATUS_NO_LOGON_SERVERS)) {
 			DEBUG(0,("ads_connect: %s\n", ads_errstr(status)));
 			ads_destroy(&ads);
-			return status;
+			return NULL;
 		}
 	
 		if (!need_password && !second_time) {
