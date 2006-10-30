@@ -38,7 +38,7 @@ static const char *loadfile;
 /* run a test that simulates an approximate netbench client load */
 static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli, int client)
 {
-	extern int torture_nprocs;
+	int torture_nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
 	int i;
 	pstring line;
 	char *cname;
@@ -171,7 +171,7 @@ done:
 BOOL torture_nbench(struct torture_context *torture)
 {
 	BOOL correct = True;
-	extern int torture_nprocs;
+	int torture_nprocs = lp_parm_int(-1, "torture", "nprocs", 4);
 	struct smbcli_state *cli;
 	const char *p;
 
