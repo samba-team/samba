@@ -44,7 +44,7 @@ static BOOL mapping_upgrade(const char *tdb_path);
 		  "dn: @INDEXLIST\n" \
 		  "@IDXATTR: gidNumber\n" \
 		  "@IDXATTR: ntName\n" \
-		  "@IDXATTR: memberOf\n" };
+		  "@IDXATTR: member\n" };
 	const char *db_path, *tdb_path;
 	int ret;
 	int flags = 0;
@@ -121,8 +121,8 @@ static struct ldb_dn *mapping_dn(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 	}
 	/* we split by domain and rid so we can do a subtree search
 	   when we only want one domain */
-	return ldb_dn_string_compose(mem_ctx, NULL, "domain=%s,rid=%u", 
-				     string_sid, rid);
+	return ldb_dn_string_compose(mem_ctx, NULL, "rid=%u,domain=%s", 
+				     rid, string_sid);
 }
 
 /*
@@ -405,7 +405,7 @@ failed:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	expr = talloc_asprintf(ldb, "(&(memberOf=%s)(objectClass=groupMap))", 
+	expr = talloc_asprintf(ldb, "(&(member=%s)(objectClass=groupMap))", 
 			       string_sid);
 	if (expr == NULL) goto failed;
 
@@ -439,7 +439,7 @@ failed:
 }
 
 /*
-  add/remove a memberOf field
+  add/remove a member field
 */
 static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 				int operation)
@@ -479,7 +479,7 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 	msg.num_elements = 1;
 	msg.elements = &el;
 	el.flags = operation;
-	el.name = talloc_strdup(tmp_ctx, "memberOf");
+	el.name = talloc_strdup(tmp_ctx, "member");
 	el.num_values = 1;
 	el.values = &val;
 	sid_to_string(string_sid, member);
@@ -513,12 +513,12 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 
 
 /*
-  enumerate sids that have the given alias set in memberOf
+  enumerate sids that have the given alias set in member
 */
  NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 {
 	const char *attrs[] = {
-		"memberOf",
+		"member",
 		NULL
 	};
 	int ret, i;
@@ -549,7 +549,7 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	el = ldb_msg_find_element(res->msgs[0], "memberOf");
+	el = ldb_msg_find_element(res->msgs[0], "member");
 	if (el == NULL) {
 		talloc_free(dn);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
