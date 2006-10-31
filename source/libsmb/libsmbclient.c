@@ -413,7 +413,15 @@ smbc_parse_path(SMBCCTX *context,
 
 	}
 
-        safe_strcpy(path, p, path_len - 1);
+        /*
+         * Prepend a leading slash if there's a file path, as required by
+         * NetApp filers.
+         */
+        *path = '\0';
+        if (*p != '\0') {
+                *path = '/';
+                safe_strcpy(path + 1, p, path_len - 2);
+        }
 
 	all_string_sub(path, "/", "\\", 0);
 
