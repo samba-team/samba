@@ -4,9 +4,23 @@
    Shirish Kalele 2000
 */
 
-#include "lib/replace/replace.h"
-#include "system/syslog.h"
-#include "system/time.h"
+#ifdef HAVE_FEATURES_H
+#include <features.h>
+#endif
+
+#include <stdlib.h>
+#include <unistd.h>
+#include <limits.h>
+#include <string.h>
+#include <syslog.h>
+#include <stdarg.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <time.h>
+
+#include <config.h>
 
 #define MODULE_NAME "pam_winbind"
 #define PAM_SM_AUTH
