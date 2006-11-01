@@ -316,7 +316,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		ac = talloc_get_type(h->private_data, struct partition_context);
 		
 		/* Search from the base DN */
-		if (!req->op.search.base || req->op.search.base->comp_num == 0) {
+		if (!req->op.search.base || (ldb_dn_get_comp_num(req->op.search.base) == 0)) {
 			return partition_send_all(module, ac, req);
 		}
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {

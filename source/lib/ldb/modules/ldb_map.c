@@ -181,60 +181,16 @@ BOOL map_check_local_db(struct ldb_module *module)
 	return True;
 }
 
-/* WARK: verbatim copy from ldb_dn.c */
-static struct ldb_dn_component ldb_dn_copy_component(void *mem_ctx, struct ldb_dn_component *src)
-{
-	struct ldb_dn_component dst;
-
-	memset(&dst, 0, sizeof(dst));
-
-	if (src == NULL) {
-		return dst;
-	}
-
-	dst.value = ldb_val_dup(mem_ctx, &(src->value));
-	if (dst.value.data == NULL) {
-		return dst;
-	}
-
-	dst.name = talloc_strdup(mem_ctx, src->name);
-	if (dst.name == NULL) {
-		talloc_free(dst.value.data);
-	}
-
-	return dst;
-}
-
-/* Copy a DN but replace the old with the new base DN. */
-static struct ldb_dn *ldb_dn_rebase(void *mem_ctx, const struct ldb_dn *old, const struct ldb_dn *old_base, const struct ldb_dn *new_base)
-{
-	struct ldb_dn *new;
-	int i, offset;
-
-	/* Perhaps we don't need to rebase at all? */
-	if (!old_base || !new_base) {
-		return ldb_dn_copy(mem_ctx, old);
-	}
-
-	offset = old->comp_num - old_base->comp_num;
-	new = ldb_dn_copy_partial(mem_ctx, new_base, offset + new_base->comp_num);
-	for (i = 0; i < offset; i++) {
-		new->components[i] = ldb_dn_copy_component(new->components, &(old->components[i]));
-	}
-
-	return new;
-}
-
 /* Copy a DN with the base DN of the local partition. */
 static struct ldb_dn *ldb_dn_rebase_local(void *mem_ctx, const struct ldb_map_context *data, const struct ldb_dn *dn)
 {
-	return ldb_dn_rebase(mem_ctx, dn, data->remote_base_dn, data->local_base_dn);
+	return ldb_dn_copy_rebase(mem_ctx, dn, data->remote_base_dn, data->local_base_dn);
 }
 
 /* Copy a DN with the base DN of the remote partition. */
 static struct ldb_dn *ldb_dn_rebase_remote(void *mem_ctx, const struct ldb_map_context *data, const struct ldb_dn *dn)
 {
-	return ldb_dn_rebase(mem_ctx, dn, data->local_base_dn, data->remote_base_dn);
+	return ldb_dn_copy_rebase(mem_ctx, dn, data->local_base_dn, data->remote_base_dn);
 }
 
 /* Run a request and make sure it targets the remote partition. */
@@ -460,23 +416,23 @@ int map_attrs_merge(struct ldb_module *module, void *mem_ctx, const char ***attr
  * ================== */
 
 /* Map an ldb value into the remote partition. */
-struct ldb_val ldb_val_map_local(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, struct ldb_val val)
+struct ldb_val ldb_val_map_local(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, const struct ldb_val *val)
 {
 	if (map && (map->type == MAP_CONVERT) && (map->u.convert.convert_local)) {
-		return map->u.convert.convert_local(module, mem_ctx, &val);
+		return map->u.convert.convert_local(module, mem_ctx, val);
 	}
 
-	return ldb_val_dup(mem_ctx, &val);
+	return ldb_val_dup(mem_ctx, val);
 }
 
 /* Map an ldb value back into the local partition. */
-struct ldb_val ldb_val_map_remote(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, struct ldb_val val)
+struct ldb_val ldb_val_map_remote(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, const struct ldb_val *val)
 {
 	if (map && (map->type == MAP_CONVERT) && (map->u.convert.convert_remote)) {
-		return map->u.convert.convert_remote(module, mem_ctx, &val);
+		return map->u.convert.convert_remote(module, mem_ctx, val);
 	}
 
-	return ldb_val_dup(mem_ctx, &val);
+	return ldb_val_dup(mem_ctx, val);
 }
 
 
@@ -500,10 +456,11 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, const 
 {
 	const struct ldb_map_context *data = map_get_context(module);
 	struct ldb_dn *newdn;
-	struct ldb_dn_component *old, *new;
 	const struct ldb_map_attribute *map;
 	enum ldb_map_attr_type map_type;
-	int i;
+	const char *name;
+	struct ldb_val value;
+	int i, ret;
 
 	if (dn == NULL) {
 		return NULL;
@@ -516,10 +473,8 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, const 
 	}
 
 	/* For each RDN, map the component name and possibly the value */
-	for (i = 0; i < newdn->comp_num; i++) {
-		old = &dn->components[i];
-		new = &newdn->components[i];
-		map = map_attr_find_local(data, old->name);
+	for (i = 0; i < ldb_dn_get_comp_num(newdn); i++) {
+		map = map_attr_find_local(data, ldb_dn_get_component_name(dn, i));
 
 		/* Unknown attribute - leave this RDN as is and hope the best... */
 		if (map == NULL) {
@@ -533,21 +488,30 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, const 
 		case MAP_GENERATE:
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "MAP_IGNORE/MAP_GENERATE attribute '%s' "
-				  "used in DN!\n", old->name);
+				  "used in DN!\n", ldb_dn_get_component_name(dn, i));
 			goto failed;
 
 		case MAP_CONVERT:
 			if (map->u.convert.convert_local == NULL) {
 				ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
 					  "'convert_local' not set for attribute '%s' "
-					  "used in DN!\n", old->name);
+					  "used in DN!\n", ldb_dn_get_component_name(dn, i));
 				goto failed;
 			}
 			/* fall through */
 		case MAP_KEEP:
 		case MAP_RENAME:
-			new->name = discard_const_p(char, map_attr_map_local(newdn->components, map, old->name));
-			new->value = ldb_val_map_local(module, newdn->components, map, old->value);
+			name = map_attr_map_local(newdn, map, ldb_dn_get_component_name(dn, i));
+			if (name == NULL) goto failed;
+
+			value = ldb_val_map_local(module, newdn, map, ldb_dn_get_component_val(dn, i));
+			if (value.data == NULL) goto failed;
+
+			ret = ldb_dn_set_component(newdn, i, name, value);
+			if (ret != LDB_SUCCESS) {
+				goto failed;
+			}
+
 			break;
 		}
 	}
@@ -564,10 +528,11 @@ struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, const
 {
 	const struct ldb_map_context *data = map_get_context(module);
 	struct ldb_dn *newdn;
-	struct ldb_dn_component *old, *new;
 	const struct ldb_map_attribute *map;
 	enum ldb_map_attr_type map_type;
-	int i;
+	const char *name;
+	struct ldb_val value;
+	int i, ret;
 
 	if (dn == NULL) {
 		return NULL;
@@ -580,10 +545,8 @@ struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, const
 	}
 
 	/* For each RDN, map the component name and possibly the value */
-	for (i = 0; i < newdn->comp_num; i++) {
-		old = &dn->components[i];
-		new = &newdn->components[i];
-		map = map_attr_find_remote(data, old->name);
+	for (i = 0; i < ldb_dn_get_comp_num(newdn); i++) {
+		map = map_attr_find_remote(data, ldb_dn_get_component_name(dn, i));
 
 		/* Unknown attribute - leave this RDN as is and hope the best... */
 		if (map == NULL) {
@@ -597,21 +560,30 @@ struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, const
 		case MAP_GENERATE:
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "MAP_IGNORE/MAP_GENERATE attribute '%s' "
-				  "used in DN!\n", old->name);
+				  "used in DN!\n", ldb_dn_get_component_name(dn, i));
 			goto failed;
 
 		case MAP_CONVERT:
 			if (map->u.convert.convert_remote == NULL) {
 				ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
 					  "'convert_remote' not set for attribute '%s' "
-					  "used in DN!\n", old->name);
+					  "used in DN!\n", ldb_dn_get_component_name(dn, i));
 				goto failed;
 			}
 			/* fall through */
 		case MAP_KEEP:
 		case MAP_RENAME:
-			new->name = discard_const_p(char, map_attr_map_remote(newdn->components, map, old->name));
-			new->value = ldb_val_map_remote(module, newdn->components, map, old->value);
+			name = map_attr_map_remote(newdn, map, ldb_dn_get_component_name(dn, i));
+			if (name == NULL) goto failed;
+
+			value = ldb_val_map_remote(module, newdn, map, ldb_dn_get_component_val(dn, i));
+			if (value.data == NULL) goto failed;
+
+			ret = ldb_dn_set_component(newdn, i, name, value);
+			if (ret != LDB_SUCCESS) {
+				goto failed;
+			}
+
 			break;
 		}
 	}

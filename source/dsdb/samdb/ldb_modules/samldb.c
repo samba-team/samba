@@ -433,7 +433,7 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 	int ret;
 	const char *name;
 	struct ldb_message *msg2;
-	struct ldb_dn_component *rdn;
+	const char *rdn_name;
 	TALLOC_CTX *mem_ctx = talloc_new(msg);
 	const char *errstr;
 	if (!mem_ctx) {
@@ -457,10 +457,10 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 		return ret;
 	}
 
-	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
+	rdn_name = ldb_dn_get_rdn_name(msg2->dn);
 
-	if (strcasecmp(rdn->name, "cn") != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad RDN (%s) for group!\n", rdn->name);
+	if (strcasecmp(rdn_name, "cn") != 0) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad RDN (%s) for group!\n", rdn_name);
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -496,7 +496,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	int ret;
 	char *name;
 	struct ldb_message *msg2;
-	struct ldb_dn_component *rdn;
+	const char *rdn_name;
 	TALLOC_CTX *mem_ctx = talloc_new(msg);
 	const char *errstr;
 	if (!mem_ctx) {
@@ -556,10 +556,10 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		}
 	}
 
-	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
+	rdn_name = ldb_dn_get_rdn_name(msg2->dn);
 
-	if (strcasecmp(rdn->name, "cn") != 0) {
-		ldb_asprintf_errstring(module->ldb, "Bad RDN (%s=) for user/computer, should be CN=!\n", rdn->name);
+	if (strcasecmp(rdn_name, "cn") != 0) {
+		ldb_asprintf_errstring(module->ldb, "Bad RDN (%s=) for user/computer, should be CN=!\n", rdn_name);
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -598,7 +598,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 						       struct ldb_message **ret_msg)
 {
 	struct ldb_message *msg2;
-	struct ldb_dn_component *rdn;
+	const char *rdn_name;
 	struct dom_sid *dom_sid;
 	struct dom_sid *sid;
 	const char *dom_attrs[] = { "name", NULL };
@@ -631,10 +631,10 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 		return ret;
 	}
 
-	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
+	rdn_name = ldb_dn_get_rdn_name(msg2->dn);
 
-	if (strcasecmp(rdn->name, "cn") != 0) {
-		ldb_asprintf_errstring(module->ldb, "Bad RDN (%s=) for ForeignSecurityPrincipal, should be CN=!", rdn->name);
+	if (strcasecmp(rdn_name, "cn") != 0) {
+		ldb_asprintf_errstring(module->ldb, "Bad RDN (%s=) for ForeignSecurityPrincipal, should be CN=!", rdn_name);
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -643,7 +643,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 	 * domain SIDs ending up there, it would cause all sorts of
 	 * pain */
 
-	sid = dom_sid_parse_talloc(msg2, (const char *)rdn->value.data);
+	sid = dom_sid_parse_talloc(msg2, (const char *)ldb_dn_get_rdn_val(msg2->dn)->data);
 	if (!sid) {
 		ldb_set_errstring(module->ldb, "No valid found SID in ForeignSecurityPrincipal CN!");
 		talloc_free(mem_ctx);

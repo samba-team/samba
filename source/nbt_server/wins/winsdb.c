@@ -179,6 +179,7 @@ static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct n
 {
 	NTSTATUS status;
 	struct nbt_name *name;
+	unsigned int comp_num;
 	uint32_t cur = 0;
 
 	name = talloc(mem_ctx, struct nbt_name);
@@ -187,20 +188,22 @@ static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct n
 		goto failed;
 	}
 
-	if (dn->comp_num > 3) {
+	comp_num = ldb_dn_get_comp_num(dn);
+
+	if (comp_num > 3) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;
 	}
 
-	if (dn->comp_num > cur && strcasecmp("scope", dn->components[cur].name) == 0) {
-		name->scope	= (const char *)talloc_steal(name, dn->components[cur].value.data);
+	if (comp_num > cur && strcasecmp("scope", ldb_dn_get_component_name(dn, cur)) == 0) {
+		name->scope	= (const char *)talloc_strdup(name, (char *)ldb_dn_get_component_val(dn, cur)->data);
 		cur++;
 	} else {
 		name->scope	= NULL;
 	}
 
-	if (dn->comp_num > cur && strcasecmp("name", dn->components[cur].name) == 0) {
-		name->name	= (const char *)talloc_steal(name, dn->components[cur].value.data);
+	if (comp_num > cur && strcasecmp("name", ldb_dn_get_component_name(dn, cur)) == 0) {
+		name->name	= (const char *)talloc_strdup(name, (char *)ldb_dn_get_component_val(dn, cur)->data);
 		cur++;
 	} else {
 		name->name	= talloc_strdup(name, "");
@@ -210,8 +213,8 @@ static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct n
 		}
 	}
 
-	if (dn->comp_num > cur && strcasecmp("type", dn->components[cur].name) == 0) {
-		name->type	= strtoul((char *)dn->components[cur].value.data, NULL, 0);
+	if (comp_num > cur && strcasecmp("type", ldb_dn_get_component_name(dn, cur)) == 0) {
+		name->type	= strtoul((char *)ldb_dn_get_component_val(dn, cur)->data, NULL, 0);
 		cur++;
 	} else {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
