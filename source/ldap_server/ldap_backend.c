@@ -25,6 +25,8 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/db_wrap.h"
+#include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
 
 #define VALID_DN_SYNTAX(dn,i) do {\
 	if (!(dn)) {\
@@ -54,7 +56,35 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 	if (conn->ldb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	ldb_set_opaque(conn->ldb, "server_credentials", conn->server_credentials);
+
+	if (conn->server_credentials) {
+		char **sasl_mechs = NULL;
+		struct gensec_security_ops **backends = gensec_security_all();
+		enum credentials_use_kerberos use_kerberos
+			= cli_credentials_get_kerberos_state(conn->server_credentials);
+		struct gensec_security_ops **ops
+			= gensec_use_kerberos_mechs(conn, backends, use_kerberos);
+		int i, j = 0;
+		for (i = 0; ops && ops[i]; i++) {
+			if (ops[i]->sasl_name && ops[i]->server_start) {
+				char *sasl_name = talloc_strdup(conn, ops[i]->sasl_name);
+
+				if (!sasl_name) {
+					return NT_STATUS_NO_MEMORY;
+				}
+				sasl_mechs = talloc_realloc(conn, sasl_mechs, char *, j + 2);
+				if (!sasl_mechs) {
+					return NT_STATUS_NO_MEMORY;
+				}
+				sasl_mechs[j] = sasl_name;
+				talloc_steal(sasl_mechs, sasl_name);
+				sasl_mechs[j+1] = NULL;
+				j++;
+			}
+		}
+		talloc_free(ops);
+		ldb_set_opaque(conn->ldb, "supportedSASLMechanims", sasl_mechs);
+	}
 
 	if (conn->global_catalog) {
 		ldb_set_opaque(conn->ldb, "global_catalog", (void *)(-1));
