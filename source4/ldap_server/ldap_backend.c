@@ -31,7 +31,7 @@
 #define VALID_DN_SYNTAX(dn,i) do {\
 	if (!(dn)) {\
 		return NT_STATUS_NO_MEMORY;\
-	} else if ((dn)->comp_num < (i)) {\
+	} else if (ldb_dn_get_comp_num(dn) < (i)) {\
 		result = LDAP_INVALID_DN_SYNTAX;\
 		errstr = "Invalid DN (" #i " components needed for '" #dn "')";\
 		goto reply;\
@@ -641,7 +641,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 		goto reply;
 	}
 
-	if (newrdn->comp_num > 1) {
+	if (ldb_dn_get_comp_num(newrdn) > 1) {
 		result = LDAP_NAMING_VIOLATION;
 		errstr = "Error new RDN invalid";
 		goto reply;
@@ -652,7 +652,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 		VALID_DN_SYNTAX(parentdn, 0);
 		DEBUG(10, ("ModifyDNRequest: newsuperior: [%s]\n", req->newsuperior));
 		
-		if (parentdn->comp_num < 1) {
+		if (ldb_dn_get_comp_num(parentdn) < 1) {
 			result = LDAP_AFFECTS_MULTIPLE_DSAS;
 			errstr = "Error new Superior DN invalid";
 			goto reply;
@@ -664,7 +664,10 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 		NT_STATUS_HAVE_NO_MEMORY(parentdn);
 	}
 
-	newdn = ldb_dn_make_child(local_ctx, ldb_dn_get_rdn(local_ctx, newrdn), parentdn);
+	newdn = ldb_dn_build_child(local_ctx,
+				   ldb_dn_get_rdn_name(newrdn),
+				   (char *)ldb_dn_get_rdn_val(newrdn)->data,
+				   parentdn);
 	NT_STATUS_HAVE_NO_MEMORY(newdn);
 
 reply:

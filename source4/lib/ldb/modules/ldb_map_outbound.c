@@ -235,7 +235,7 @@ static struct ldb_message_element *ldb_msg_el_map_remote(struct ldb_module *modu
 	el->name = map_attr_map_remote(el, map, old->name);
 
 	for (i = 0; i < el->num_values; i++) {
-		el->values[i] = ldb_val_map_remote(module, el->values, map, old->values[i]);
+		el->values[i] = ldb_val_map_remote(module, el->values, map, &old->values[i]);
 	}
 
 	return el;
@@ -729,21 +729,21 @@ int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, 
 				*new = NULL;
 				return 0;
 			}
-			*(*new)->u.substring.chunks[i] = ldb_val_map_local(module, *new, map, *tree->u.substring.chunks[i]);
+			*(*new)->u.substring.chunks[i] = ldb_val_map_local(module, *new, map, tree->u.substring.chunks[i]);
 			(*new)->u.substring.chunks[i+1] = NULL;
 		}
 		break;
 	}
 	case LDB_OP_EQUALITY:
-		(*new)->u.equality.value = ldb_val_map_local(module, *new, map, tree->u.equality.value);
+		(*new)->u.equality.value = ldb_val_map_local(module, *new, map, &tree->u.equality.value);
 		break;
 	case LDB_OP_LESS:
 	case LDB_OP_GREATER:
 	case LDB_OP_APPROX:
-		(*new)->u.comparison.value = ldb_val_map_local(module, *new, map, tree->u.comparison.value);
+		(*new)->u.comparison.value = ldb_val_map_local(module, *new, map, &tree->u.comparison.value);
 		break;
 	case LDB_OP_EXTENDED:
-		(*new)->u.extended.value = ldb_val_map_local(module, *new, map, tree->u.extended.value);
+		(*new)->u.extended.value = ldb_val_map_local(module, *new, map, &tree->u.extended.value);
 		(*new)->u.extended.rule_id = talloc_strdup(*new, tree->u.extended.rule_id);
 		break;
 	default:			/* unknown kind of simple subtree */

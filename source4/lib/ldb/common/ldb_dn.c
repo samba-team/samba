@@ -41,6 +41,19 @@
 
 #define LDB_SPECIAL "@SPECIAL"
 
+/**
+   internal ldb exploded dn structures
+*/
+struct ldb_dn_component {
+	char *name;  
+	struct ldb_val value;
+};
+
+struct ldb_dn {
+	int comp_num;
+	struct ldb_dn_component *components;
+};
+
 int ldb_dn_is_special(const struct ldb_dn *dn)
 {
 	if (dn == NULL || dn->comp_num != 1) return 0;
@@ -688,6 +701,26 @@ static struct ldb_dn_component ldb_dn_copy_component(void *mem_ctx, struct ldb_d
 	return dst;
 }
 
+/* Copy a DN but replace the old with the new base DN. */
+struct ldb_dn *ldb_dn_copy_rebase(void *mem_ctx, const struct ldb_dn *old, const struct ldb_dn *old_base, const struct ldb_dn *new_base)
+{
+	struct ldb_dn *new;
+	int i, offset;
+
+	/* Perhaps we don't need to rebase at all? */
+	if (!old_base || !new_base) {
+		return ldb_dn_copy(mem_ctx, old);
+	}
+
+	offset = old->comp_num - old_base->comp_num;
+	new = ldb_dn_copy_partial(mem_ctx, new_base, offset + new_base->comp_num);
+	for (i = 0; i < offset; i++) {
+		new->components[i] = ldb_dn_copy_component(new->components, &(old->components[i]));
+	}
+
+	return new;
+}
+
 /* copy specified number of elements of a dn into a new one
    element are copied from top level up to the unique rdn
    num_el may be greater than dn->comp_num (see ldb_dn_make_child)
@@ -799,15 +832,6 @@ failed:
 
 }
 
-struct ldb_dn *ldb_dn_make_child(void *mem_ctx, const struct ldb_dn_component *component,
-						const struct ldb_dn *base)
-{
-	if (component == NULL) return NULL;
-
-	return ldb_dn_build_child(mem_ctx, component->name, 
-				  (char *)component->value.data, base);
-}
-
 struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const struct ldb_dn *dn2)
 {
 	int i;
@@ -870,28 +894,6 @@ struct ldb_dn *ldb_dn_string_compose(void *mem_ctx, const struct ldb_dn *base, c
 	talloc_free(dn1);
 
 	return dn;
-}
-
-struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn)
-{
-	struct ldb_dn_component *rdn;
-
-	if (dn == NULL) return NULL;
-
-	if (dn->comp_num < 1) {
-		return NULL;
-	}
-
-	rdn = talloc(mem_ctx, struct ldb_dn_component);
-	if (rdn == NULL) return NULL;
-
-	*rdn = ldb_dn_copy_component(mem_ctx, &dn->components[0]);
-	if (rdn->name == NULL) {
-		talloc_free(rdn);
-		return NULL;
-	}
-
-	return rdn;
 }
 
 /* Create a 'canonical name' string from a DN:
@@ -961,4 +963,59 @@ char *ldb_dn_canonical_string(void *mem_ctx, const struct ldb_dn *dn) {
 
 char *ldb_dn_canonical_ex_string(void *mem_ctx, const struct ldb_dn *dn) {
 	return ldb_dn_canonical(mem_ctx, dn, 1);
+}
+
+int ldb_dn_get_comp_num(const struct ldb_dn *dn)
+{
+	return dn->comp_num;
+}
+
+const char *ldb_dn_get_component_name(const struct ldb_dn *dn, unsigned int num)
+{
+	if (num >= dn->comp_num) return NULL;
+	return dn->components[num].name;
+}
+
+const struct ldb_val *ldb_dn_get_component_val(const struct ldb_dn *dn, unsigned int num)
+{
+	if (num >= dn->comp_num) return NULL;
+	return &dn->components[num].value;
+}
+
+const char *ldb_dn_get_rdn_name(const struct ldb_dn *dn) {
+	if (dn->comp_num == 0) return NULL;
+	return dn->components[0].name;
+}
+
+const struct ldb_val *ldb_dn_get_rdn_val(const struct ldb_dn *dn) {
+	if (dn->comp_num == 0) return NULL;
+	return &dn->components[0].value;
+}
+
+int ldb_dn_set_component(struct ldb_dn *dn, int num, const char *name, const struct ldb_val val)
+{
+	char *n;
+	struct ldb_val v;
+
+	if (num >= dn->comp_num) {
+		return LDB_ERR_OTHER;
+	}
+
+	n = talloc_strdup(dn, name);
+	if ( ! n) {
+		return LDB_ERR_OTHER;
+	}
+
+	v.length = val.length;
+	v.data = (uint8_t *)talloc_memdup(dn, val.data, v.length+1);
+	if ( ! v.data) {
+		return LDB_ERR_OTHER;
+	}
+
+	talloc_free(dn->components[num].name);
+	talloc_free(dn->components[num].value.data);
+	dn->components[num].name = n;
+	dn->components[num].value = v;
+
+	return LDB_SUCCESS;
 }
