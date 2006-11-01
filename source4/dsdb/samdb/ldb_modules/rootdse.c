@@ -25,7 +25,6 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
-#include "auth/gensec/gensec.h"
 #include "system/time.h"
 
 struct private_data {
@@ -52,7 +51,7 @@ static int do_attribute(const char * const *attrs, const char *name)
 static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *msg, const char * const *attrs)
 {
 	struct private_data *priv = talloc_get_type(module->private_data, struct private_data);
-	struct cli_credentials *server_creds;
+	char **server_sasl;
 
 	msg->dn = ldb_dn_explode(msg, "");
 
@@ -93,25 +92,18 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
  		}
 	}
 
-	server_creds = talloc_get_type(ldb_get_opaque(module->ldb, "server_credentials"), 
-				       struct cli_credentials);
-	if (server_creds && do_attribute(attrs, "supportedSASLMechanisms")) {
-		struct gensec_security_ops **backends = gensec_security_all();
-		enum credentials_use_kerberos use_kerberos
-			= cli_credentials_get_kerberos_state(server_creds);
-		struct gensec_security_ops **ops
-			= gensec_use_kerberos_mechs(msg, backends, use_kerberos);
+	server_sasl = talloc_get_type(ldb_get_opaque(module->ldb, "supportedSASLMechanims"), 
+				       char *);
+	if (server_sasl && do_attribute(attrs, "supportedSASLMechanisms")) {
 		int i;
-		for (i = 0; ops && ops[i]; i++) {
-			if (ops[i]->sasl_name && ops[i]->server_start) {
-				char *sasl_name = talloc_strdup(msg, ops[i]->sasl_name);
-				if (!sasl_name) {
-					goto failed;
-				}
-				if (ldb_msg_add_steal_string(msg, "supportedSASLMechanisms",
-							     sasl_name) != 0) {
-					goto failed;
-				}
+		for (i = 0; server_sasl && server_sasl[i]; i++) {
+			char *sasl_name = talloc_strdup(msg, server_sasl[i]);
+			if (!sasl_name) {
+				goto failed;
+			}
+			if (ldb_msg_add_steal_string(msg, "supportedSASLMechanisms",
+						     sasl_name) != 0) {
+				goto failed;
 			}
 		}
 	}
