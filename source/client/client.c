@@ -50,6 +50,10 @@ extern int max_protocol;
 static int process_tok(pstring tok);
 static int cmd_help(void);
 
+static TALLOC_CTX *ctx;
+#define CREATE_ACCESS_READ READ_CONTROL_ACCESS
+static pstring cwd;
+
 /* 30 second timeout on most commands */
 #define CLIENT_TIMEOUT (30*1000)
 #define SHORT_TIMEOUT (5*1000)
@@ -73,6 +77,7 @@ extern BOOL tar_reset;
 static BOOL prompt = True;
 
 static BOOL recurse = False;
+static BOOL showacls = False;
 BOOL lowercase = False;
 
 static struct in_addr dest_ip;
@@ -377,12 +382,46 @@ static void display_finfo(file_info *finfo)
 {
 	if (do_this_one(finfo)) {
 		time_t t = finfo->mtime_ts.tv_sec; /* the time is assumed to be passed as GMT */
-		d_printf("  %-30s%7.7s %8.0f  %s",
-			 finfo->name,
-			 attrib_string(finfo->mode),
-			 (double)finfo->size,
-			 time_to_asc(&t));
-		dir_total += finfo->size;
+		if (!showacls) {
+			d_printf("  %-30s%7.7s %8.0f  %s",
+				 finfo->name,
+				 attrib_string(finfo->mode),
+			 	(double)finfo->size,
+				time_to_asc(&t));
+			dir_total += finfo->size;
+		} else {
+			pstring afname;
+			int fnum;
+
+			/* skip if this is . or .. */
+			if ( strequal(finfo->name,"..") || strequal(finfo->name,".") )
+				return;
+			/* create absolute filename for cli_nt_create() FIXME */
+			pstrcpy( afname, cwd);
+			pstrcat( afname, "\\");
+			pstrcat( afname, finfo->name);
+			/* print file meta date header */
+			d_printf( "FILENAME:%s\n", afname);
+			d_printf( "MODE:%s\n", attrib_string(finfo->mode));
+			d_printf( "SIZE:%.0f\n", (double)finfo->size);
+			d_printf( "MTIME:%s", time_to_asc(&t));
+			fnum = cli_nt_create(cli, afname, CREATE_ACCESS_READ);
+			if (fnum == -1) {
+				DEBUG( 0, ("display_finfo() Failed to open %s: %s\n",
+					afname,
+					cli_errstr( cli)));
+			} else {
+				SEC_DESC *sd = NULL;
+				sd = cli_query_secdesc(cli, fnum, ctx);
+				if (!sd) {
+					DEBUG( 0, ("display_finfo() failed to "
+						"get security descriptor: %s",
+						cli_errstr( cli)));
+				} else {
+					display_sec_desc(sd);
+				}
+			}
+		}
 	}
 }
 
@@ -618,8 +657,11 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 					save_ch = next_file +
 						strlen(next_file) - 2;
 					*save_ch = '\0';
+					if (showacls) /* cwd is only used if showacls is on */
+						pstrcpy( cwd, next_file);
 				}
-				d_printf("\n%s\n",next_file);
+				if (!showacls) /* don't disturbe the showacls output */
+					d_printf("\n%s\n",next_file);
 				if (save_ch) {
 					*save_ch = CLI_DIRSEP_CHAR;
 				}
@@ -1085,6 +1127,7 @@ static BOOL do_altname(char *name)
 static int cmd_quit(void)
 {
 	cli_cm_shutdown();
+	talloc_destroy( ctx);
 	exit(0);
 	/* NOTREACHED */
 	return 0;
@@ -2584,6 +2627,25 @@ static int cmd_setcase(void)
 }
 
 /****************************************************************************
+ Toggle the showacls flag.
+****************************************************************************/
+
+static int cmd_showacls(void)
+{
+	showacls = !showacls;
+	DEBUG(2,("showacls is now %s\n",showacls?"on":"off"));
+
+	if (!ctx && showacls)
+		ctx = talloc_init("smbclient:showacls");
+		if (!ctx) {
+			DEBUG( 0, ("cmd_showacls() out of memory.  talloc_init() failed.\n"));
+	}
+
+	return 0;
+}
+
+
+/****************************************************************************
  Toggle the recurse flag.
 ****************************************************************************/
 
@@ -2986,6 +3048,7 @@ static struct
   {"reput",cmd_reput,"<local name> [remote name] put a file restarting at end of remote file",{COMPL_LOCAL,COMPL_REMOTE}},
   {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
+  {"showacls",cmd_showacls,"toggle if ACLs are shown or not",{COMPL_NONE,COMPL_NONE}},  
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
   {"stat",cmd_stat,"filename Do a UNIX extensions stat call on a file",{COMPL_REMOTE,COMPL_REMOTE}},
   {"symlink",cmd_symlink,"<oldname> <newname> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
@@ -3822,5 +3885,6 @@ static int do_message_op(void)
 		return 1;
 	}
 
+	talloc_destroy( ctx);
 	return rc;
 }
