@@ -433,6 +433,7 @@ static int ads_user_add(int argc, const char **argv)
 	char *upn, *userdn;
 	void *res=NULL;
 	int rc = -1;
+	char *ou_str = NULL;
 
 	if (argc < 1) return net_ads_user_usage(argc, argv);
 	
@@ -452,11 +453,13 @@ static int ads_user_add(int argc, const char **argv)
 		goto done;
 	}
 
-	if (opt_container == NULL) {
-		opt_container = ads_default_ou_string(ads, WELL_KNOWN_GUID_USERS);
+	if (opt_container) {
+		ou_str = SMB_STRDUP(opt_container);
+	} else {
+		ou_str = ads_default_ou_string(ads, WELL_KNOWN_GUID_USERS);
 	}
 
-	status = ads_add_user_acct(ads, argv[0], opt_container, opt_comment);
+	status = ads_add_user_acct(ads, argv[0], ou_str, opt_comment);
 
 	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, "Could not add user %s: %s\n", argv[0],
@@ -497,6 +500,7 @@ static int ads_user_add(int argc, const char **argv)
 	if (res)
 		ads_msgfree(ads, res);
 	ads_destroy(&ads);
+	SAFE_FREE(ou_str);
 	return rc;
 }
 
@@ -638,6 +642,7 @@ static int ads_group_add(int argc, const char **argv)
 	ADS_STATUS status;
 	void *res=NULL;
 	int rc = -1;
+	char *ou_str = NULL;
 
 	if (argc < 1) {
 		return net_ads_group_usage(argc, argv);
@@ -659,11 +664,13 @@ static int ads_group_add(int argc, const char **argv)
 		goto done;
 	}
 
-	if (opt_container == NULL) {
-		opt_container = ads_default_ou_string(ads, WELL_KNOWN_GUID_USERS);
+	if (opt_container) {
+		ou_str = SMB_STRDUP(opt_container);
+	} else {
+		ou_str = ads_default_ou_string(ads, WELL_KNOWN_GUID_USERS);
 	}
 
-	status = ads_add_group_acct(ads, argv[0], opt_container, opt_comment);
+	status = ads_add_group_acct(ads, argv[0], ou_str, opt_comment);
 
 	if (ADS_ERR_OK(status)) {
 		d_printf("Group %s added\n", argv[0]);
@@ -677,6 +684,7 @@ static int ads_group_add(int argc, const char **argv)
 	if (res)
 		ads_msgfree(ads, res);
 	ads_destroy(&ads);
+	SAFE_FREE(ou_str);
 	return rc;
 }
 
@@ -1104,8 +1112,10 @@ static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
 	LDAPMessage *res = NULL;
 
 	ou_str = ads_ou_string(ads, ou);
-	asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path);
-	free(ou_str);
+	if ((asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path)) == -1) {
+		SAFE_FREE(ou_str);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
 
 	rc = ads_search_dn(ads, (void **)&res, dn, NULL);
 	ads_msgfree(ads, res);
@@ -1120,6 +1130,7 @@ static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
 		}
 	}
 
+	SAFE_FREE( ou_str );
 	SAFE_FREE( dn );
 
 	return rc;
