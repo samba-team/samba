@@ -173,7 +173,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 
 	/* see if its for the rootDSE */
 	if (req->op.search.scope != LDB_SCOPE_BASE ||
-	    (req->op.search.base && req->op.search.base->comp_num != 0)) {
+	    (req->op.search.base && ldb_dn_get_comp_num(req->op.search.base) != 0)) {
 		return ldb_next_request(module, req);
 	}
 

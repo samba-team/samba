@@ -3,7 +3,7 @@
 
    Copyright (C) Andrew Tridgell  2004
    Copyright (C) Stefan Metzmacher  2004
-   Copyright (C) Simo Sorce  2005
+   Copyright (C) Simo Sorce  2005-2006
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -86,18 +86,9 @@ struct ldb_val {
 #endif
 /*! \endcond */
 
-/**
-   internal ldb exploded dn structures
-*/
-struct ldb_dn_component {
-	char *name;  
-	struct ldb_val value;
-};
-
-struct ldb_dn {
-	int comp_num;
-	struct ldb_dn_component *components;
-};
+/* opaque ldb_dn structures, see ldb_dn.c for internals */
+struct ldb_dn_component;
+struct ldb_dn;
 
 /**
  There are a number of flags that are used with ldap_modify() in
@@ -192,12 +183,6 @@ enum ldb_scope {LDB_SCOPE_DEFAULT=-1,
 		LDB_SCOPE_SUBTREE=2};
 
 struct ldb_context;
-
-/*
-  the fuction type for the callback used in traversing the database
-*/
-typedef int (*ldb_traverse_fn)(struct ldb_context *, const struct ldb_message *);
-
 
 /* debugging uses one of the following levels */
 enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR, 
@@ -333,22 +318,25 @@ char *ldb_binary_encode_string(void *mem_ctx, const char *string);
 typedef int (*ldb_attr_handler_t)(struct ldb_context *, void *mem_ctx, const struct ldb_val *, struct ldb_val *);
 typedef int (*ldb_attr_comparison_t)(struct ldb_context *, void *mem_ctx, const struct ldb_val *, const struct ldb_val *);
 
-struct ldb_attrib_handler {
-	const char *attr;
+/*
+  attribute handler structure
 
-	/* LDB_ATTR_FLAG_* */
+  attr			-> The attribute name
+  flags			-> LDB_ATTR_FLAG_*
+  ldif_read_fn		-> convert from ldif to binary format
+  ldif_write_fn		-> convert from binary to ldif format
+  canonicalise_fn	-> canonicalise a value, for use by indexing and dn construction
+  comparison_fn		-> compare two values
+*/
+
+struct ldb_attrib_handler {
+
+	const char *attr;
 	unsigned flags;
 
-	/* convert from ldif to binary format */
 	ldb_attr_handler_t ldif_read_fn;
-
-	/* convert from binary to ldif format */
 	ldb_attr_handler_t ldif_write_fn;
-	
-	/* canonicalise a value, for use by indexing and dn construction */
 	ldb_attr_handler_t canonicalise_fn;
-
-	/* compare two values */
 	ldb_attr_comparison_t comparison_fn;
 };
 
@@ -1295,18 +1283,25 @@ struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, void *mem_ctx, const str
 struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, void *mem_ctx, const char *dn);
 struct ldb_dn *ldb_dn_copy_partial(void *mem_ctx, const struct ldb_dn *dn, int num_el);
 struct ldb_dn *ldb_dn_copy(void *mem_ctx, const struct ldb_dn *dn);
+struct ldb_dn *ldb_dn_copy_rebase(void *mem_ctx, const struct ldb_dn *old, const struct ldb_dn *old_base, const struct ldb_dn *new_base);
 struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, const struct ldb_dn *dn);
 struct ldb_dn_component *ldb_dn_build_component(void *mem_ctx, const char *attr,
 							       const char *val);
 struct ldb_dn *ldb_dn_build_child(void *mem_ctx, const char *attr,
 						 const char * value,
 						 const struct ldb_dn *base);
-struct ldb_dn *ldb_dn_make_child(void *mem_ctx,
-				 const struct ldb_dn_component *component,
-				 const struct ldb_dn *base);
 struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const struct ldb_dn *dn2);
 struct ldb_dn *ldb_dn_string_compose(void *mem_ctx, const struct ldb_dn *base, const char *child_fmt, ...) PRINTF_ATTRIBUTE(3,4);
-struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn);
+char *ldb_dn_canonical_string(void *mem_ctx, const struct ldb_dn *dn);
+char *ldb_dn_canonical_ex_string(void *mem_ctx, const struct ldb_dn *dn);
+int ldb_dn_get_comp_num(const struct ldb_dn *dn);
+const char *ldb_dn_get_component_name(const struct ldb_dn *dn, unsigned int num);
+const struct ldb_val *ldb_dn_get_component_val(const struct ldb_dn *dn, unsigned int num);
+const char *ldb_dn_get_rdn_name(const struct ldb_dn *dn);
+const struct ldb_val *ldb_dn_get_rdn_val(const struct ldb_dn *dn);
+int ldb_dn_set_component(struct ldb_dn *dn, int num, const char *name, const struct ldb_val val);
+
+
 
 /* useful functions for ldb_message structure manipulation */
 int ldb_dn_cmp(struct ldb_context *ldb, const char *dn1, const char *dn2);
@@ -1545,9 +1540,6 @@ char *ldb_timestring(void *mem_ctx, time_t t);
    \return the time structure, or 0 if the string cannot be converted
 */
 time_t ldb_string_to_time(const char *s);
-
-char *ldb_dn_canonical_string(void *mem_ctx, const struct ldb_dn *dn);
-char *ldb_dn_canonical_ex_string(void *mem_ctx, const struct ldb_dn *dn);
 
 
 void ldb_qsort (void *const pbase, size_t total_elems, size_t size, void *opaque, ldb_qsort_cmp_fn_t cmp);
