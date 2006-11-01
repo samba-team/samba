@@ -672,7 +672,6 @@ static int ads_group_add(int argc, const char **argv)
 	
 	if (ads_count_replies(ads, res)) {
 		d_fprintf(stderr, "ads_group_add: Group %s already exists\n", argv[0]);
-		ads_msgfree(ads, res);
 		goto done;
 	}
 
