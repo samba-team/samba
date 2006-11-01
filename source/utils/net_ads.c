@@ -685,7 +685,7 @@ static int ads_group_delete(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	void *res;
+	void *res = NULL;
 	char *groupdn;
 
 	if (argc < 1) {
@@ -697,8 +697,9 @@ static int ads_group_delete(int argc, const char **argv)
 	}
 
 	rc = ads_find_user_acct(ads, &res, argv[0]);
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || ads_count_replies(ads, res) != 1) {
 		DEBUG(0, ("Group %s does not exist\n", argv[0]));
+		ads_msgfree(ads, res);
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -706,7 +707,7 @@ static int ads_group_delete(int argc, const char **argv)
 	ads_msgfree(ads, res);
 	rc = ads_del_dn(ads, groupdn);
 	ads_memfree(ads, groupdn);
-	if (!ADS_ERR_OK(rc)) {
+	if (ADS_ERR_OK(rc)) {
 		d_printf("Group %s deleted\n", argv[0]);
 		ads_destroy(&ads);
 		return 0;
