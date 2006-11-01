@@ -195,6 +195,7 @@ static int ldb_msg_replace(struct ldb_message *msg, const struct ldb_message_ele
 		if (ldb_msg_add_empty(msg, el->name, 0, &old) != 0) {
 			return -1;
 		}
+		talloc_free(old->name);
 	}
 
 	/* copy new element */
