@@ -1224,6 +1224,7 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 	}
 	
 	ret = ldap_delete_s(ads->ld, utf8_dn);
+	SAFE_FREE(utf8_dn);
 	return ADS_ERROR(ret);
 }
 
