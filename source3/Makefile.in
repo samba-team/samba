@@ -965,6 +965,10 @@ dynconfig.o: dynconfig.c Makefile
 		echo "$(CC) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/dynconfig.c -o $@" 1>&2;\
 		$(CC) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/dynconfig.c -o $@ >/dev/null 2>&1
 
+lib/pidfile.o: lib/pidfile.c
+	@echo Compiling $*.c
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/lib/pidfile.c -o $@
+
 lib/version.o: lib/version.c include/version.h
 	@echo Compiling $*.c
 	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/lib/version.c -o $@ 
