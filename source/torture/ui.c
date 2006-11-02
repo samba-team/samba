@@ -135,7 +135,7 @@ BOOL torture_run_suite(struct torture_context *context,
 		context->ui_ops->suite_start(context, suite);
 
 	old_testname = context->active_testname;
-	if (context->active_testname)
+	if (old_testname != NULL)
 		context->active_testname = talloc_asprintf(context, "%s-%s", 
 											   old_testname, suite->name);
 	else
