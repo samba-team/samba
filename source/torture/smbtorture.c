@@ -64,10 +64,13 @@ static bool run_matching(struct torture_context *torture,
 
 		for (c = suite->children; c; c = c->next) {
 			asprintf(&name, "%s-%s", prefix, c->name);
+
 			if (gen_fnmatch(expr, name) == 0) {
 				*matched = true;
 				init_iconv();
+				torture->active_testname = talloc_strdup(torture, prefix);
 				ret &= torture_run_suite(torture, c);
+				talloc_free(torture);
 				free(name);
 				continue;
 			}
@@ -82,7 +85,9 @@ static bool run_matching(struct torture_context *torture,
 			if (gen_fnmatch(expr, name) == 0) {
 				*matched = true;
 				init_iconv();
+				torture->active_testname = talloc_strdup(torture, prefix);
 				ret &= torture_run_tcase(torture, t);
+				talloc_free(torture->active_testname);
 			}
 			free(name);
 		}
