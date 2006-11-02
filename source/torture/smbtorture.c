@@ -438,7 +438,7 @@ void run_recipe(struct torture_context *tctx, const char *recipe)
 
 	for (i = 0; i < numlines; i++) {
 		int argc;
-		char **argv;
+		const char **argv;
 
 		ret = poptParseArgvString(lines[i], &argc, &argv);
 		if (ret != 0) {
@@ -456,7 +456,7 @@ void run_shell(struct torture_context *tctx)
 {
 	char *cline;
 	int argc;
-	char **argv;
+	const char **argv;
 	int ret;
 
 	while (1) {
