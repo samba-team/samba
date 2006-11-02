@@ -58,33 +58,33 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 
 	unlink("test.tdb");
 
-	torture_comment(torture, "Testing tdb speed for sidmap");
+	torture_comment(torture, "Testing tdb speed for sidmap\n");
 
 	tdbw = tdb_wrap_open(tmp_ctx, "test.tdb", 
 			     10000, 0, O_RDWR|O_CREAT|O_TRUNC, 0600);
 	if (!tdbw) {
-		torture_fail(torture, "Failed to open test.tdb");
+		torture_fail(torture, "Failed to open test.tdb\n");
 		goto failed;
 	}
 
-	torture_comment(torture, "Adding %d SID records", torture_entries);
+	torture_comment(torture, "Adding %d SID records\n", torture_entries);
 
 	for (i=0;i<torture_entries;i++) {
 		if (!tdb_add_record(tdbw, 
 				    "S-1-5-21-53173311-3623041448-2049097239-%u",
 				    "UID %u", i)) {
-			torture_result(torture, TORTURE_FAIL, "Failed to add SID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to add SID %d\n", i);
 			goto failed;
 		}
 		if (!tdb_add_record(tdbw, 
 				    "UID %u",
 				    "S-1-5-21-53173311-3623041448-2049097239-%u", i)) {
-			torture_result(torture, TORTURE_FAIL, "Failed to add UID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to add UID %d\n", i);
 			goto failed;
 		}
 	}
 
-	torture_comment(torture, "Testing for %d seconds", timelimit);
+	torture_comment(torture, "Testing for %d seconds\n", timelimit);
 
 	tv = timeval_current();
 
@@ -95,7 +95,7 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 		key.dsize = strlen((char *)key.dptr)+1;
 		data = tdb_fetch(tdbw->tdb, key);
 		if (data.dptr == NULL) {
-			torture_result(torture, TORTURE_FAIL, "Failed to fetch SID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to fetch SID %d\n", i);
 			goto failed;
 		}
 		free(data.dptr);
@@ -103,13 +103,13 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 		key.dsize = strlen((char *)key.dptr)+1;
 		data = tdb_fetch(tdbw->tdb, key);
 		if (data.dptr == NULL) {
-			torture_result(torture, TORTURE_FAIL, "Failed to fetch UID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to fetch UID %d\n", i);
 			goto failed;
 		}
 		free(data.dptr);
 	}
 
-	torture_comment(torture, "tdb speed %.2f ops/sec", count/timeval_elapsed(&tv));
+	torture_comment(torture, "tdb speed %.2f ops/sec\n", count/timeval_elapsed(&tv));
 	
 
 	unlink("test.tdb");
@@ -167,12 +167,12 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 
 	unlink("./test.ldb");
 
-	torture_comment(torture, "Testing ldb speed for sidmap");
+	torture_comment(torture, "Testing ldb speed for sidmap\n");
 
 	ldb = ldb_wrap_connect(tmp_ctx, "tdb://test.ldb", 
 				NULL, NULL, LDB_FLG_NOSYNC, NULL);
 	if (!ldb) {
-		torture_fail(torture, "Failed to open test.ldb");
+		torture_fail(torture, "Failed to open test.ldb\n");
 		goto failed;
 	}
 
@@ -182,21 +182,21 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 	if (ldb_add(ldb, ldif->msg) != LDB_SUCCESS) goto failed;
 	talloc_free(ldif);
 
-	torture_comment(torture, "Adding %d SID records", torture_entries);
+	torture_comment(torture, "Adding %d SID records\n", torture_entries);
 
 	for (i=0;i<torture_entries;i++) {
 		if (!ldb_add_record(ldb, i)) {
-			torture_result(torture, TORTURE_FAIL, "Failed to add SID %d", i);
+			torture_result(torture, TORTURE_FAIL, "Failed to add SID %d\n", i);
 			goto failed;
 		}
 	}
 
 	if (talloc_total_blocks(torture) > 100) {
-		torture_result(torture, TORTURE_FAIL, "memory leak in ldb add");
+		torture_result(torture, TORTURE_FAIL, "memory leak in ldb add\n");
 		goto failed;
 	}
 
-	torture_comment(torture, "Testing for %d seconds", timelimit);
+	torture_comment(torture, "Testing for %d seconds\n", timelimit);
 
 	tv = timeval_current();
 
@@ -211,7 +211,7 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 		if (ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res) != LDB_SUCCESS ||
 		    res->count != 1) {
 			torture_fail(torture, talloc_asprintf(torture,
-												  "Failed to find SID %d", i));
+												  "Failed to find SID %d\n", i));
 		}
 		talloc_free(res);
 		talloc_free(dn);
@@ -219,18 +219,18 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 		if (ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res) != LDB_SUCCESS ||
 		    res->count != 1) {
 			torture_fail(torture, talloc_asprintf(torture, 
-												  "Failed to find UID %d", i));
+												  "Failed to find UID %d\n", i));
 		}
 		talloc_free(res);
 		talloc_free(expr);
 	}
 	
 	if (talloc_total_blocks(torture) > 100) {
-		torture_fail(torture, "memory leak in ldb search");
+		torture_fail(torture, "memory leak in ldb search\n");
 		goto failed;
 	}
 
-	torture_comment(torture, "ldb speed %.2f ops/sec", count/timeval_elapsed(&tv));
+	torture_comment(torture, "ldb speed %.2f ops/sec\n", count/timeval_elapsed(&tv));
 	
 
 	unlink("./test.ldb");
