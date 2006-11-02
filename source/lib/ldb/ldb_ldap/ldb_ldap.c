@@ -463,8 +463,8 @@ static int lldb_rename(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	newrdn = talloc_asprintf(lldb_ac, "%s=%s",
-				 req->op.rename.newdn->components[0].name,
-				 ldb_dn_escape_value(lldb, req->op.rename.newdn->components[0].value));
+				 ldb_dn_get_rdn_name(req->op.rename.newdn),
+				 ldb_dn_escape_value(lldb, *(ldb_dn_get_rdn_val(req->op.rename.newdn))));
 	if (!newrdn) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
