@@ -33,7 +33,7 @@
 # define NULL ((void *)0)
 #endif
 
- int open(char *name, int flags, mode_t mode)
+ int open(const char *name, int flags, mode_t mode)
 {
 	if (smbw_path(name)) {
 		return smbw_open(name, flags, mode);
@@ -43,7 +43,7 @@
 }
 
 #ifdef HAVE__OPEN
- int _open(char *name, int flags, mode_t mode) 
+ int _open(const char *name, int flags, mode_t mode) 
 {
 	return open(name, flags, mode);
 }
@@ -56,7 +56,7 @@
 
 
 #ifdef HAVE_OPEN64
- int open64(char *name, int flags, mode_t mode)
+ int open64(const char *name, int flags, mode_t mode)
 {
 	if (smbw_path(name)) {
 		return smbw_open(name, flags, mode);
@@ -68,12 +68,12 @@
 
 #ifndef NO_OPEN64_ALIAS
 #ifdef HAVE__OPEN64
- int _open64(char *name, int flags, mode_t mode) 
+ int _open64(const char *name, int flags, mode_t mode) 
 {
 	return open64(name, flags, mode);
 }
 #elif HAVE___OPEN64
- int __open64(char *name, int flags, mode_t mode) 
+ int __open64(const char *name, int flags, mode_t mode) 
 {
 	return open64(name, flags, mode);
 }
@@ -91,7 +91,7 @@
 }
 #endif
 
-#if defined(HAVE_PREAD64) && defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT)
+#if 0 && defined(HAVE_PREAD64) && defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT)
  ssize_t pread64(int fd, void *buf, size_t size, off64_t ofs)
 {
 	if (smbw_fd(fd)) {
@@ -103,7 +103,7 @@
 #endif
 
 #ifdef HAVE_PWRITE
- ssize_t pwrite(int fd, void *buf, size_t size, off_t ofs)
+ ssize_t pwrite(int fd, const void *buf, size_t size, off_t ofs)
 {
 	if (smbw_fd(fd)) {
 		return smbw_pwrite(fd, buf, size, ofs);
@@ -113,8 +113,8 @@
 }
 #endif
 
-#if defined(HAVE_PWRITE64) && defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT)
- ssize_t pwrite64(int fd, void *buf, size_t size, off64_t ofs)
+#if 0 && defined(HAVE_PWRITE64) && defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT)
+ ssize_t pwrite64(int fd, const void *buf, size_t size, off64_t ofs)
 {
 	if (smbw_fd(fd)) {
 		return smbw_pwrite(fd, buf, size, ofs);
@@ -125,18 +125,18 @@
 #endif
 
 
- int chdir(char *name)
+ int chdir(const char *name)
 {
 	return smbw_chdir(name);
 }
 
 #ifdef HAVE___CHDIR
- int __chdir(char *name)
+ int __chdir(const char *name)
 {
 	return chdir(name);
 }
 #elif HAVE__CHDIR
- int _chdir(char *name)
+ int _chdir(const char *name)
 {
 	return chdir(name);
 }
@@ -279,7 +279,7 @@
 #endif
 
 
- ssize_t write(int fd, void *buf, size_t count)
+ ssize_t write(int fd, const void *buf, size_t count)
 {
 	if (smbw_fd(fd)) {
 		return smbw_write(fd, buf, count);
@@ -289,12 +289,12 @@
 }
 
 #ifdef HAVE___WRITE
- ssize_t __write(int fd, void *buf, size_t count)
+ ssize_t __write(int fd, const void *buf, size_t count)
 {
 	return write(fd, buf, count);
 }
 #elif HAVE__WRITE
- ssize_t _write(int fd, void *buf, size_t count)
+ ssize_t _write(int fd, const void *buf, size_t count)
 {
 	return write(fd, buf, count);
 }
@@ -302,7 +302,7 @@
 
 
 
- int access(char *name, int mode)
+ int access(const char *name, int mode)
 {
 	if (smbw_path(name)) {
 		return smbw_access(name, mode);
@@ -313,7 +313,7 @@
 
 
 
- int chmod(char *name,mode_t mode)
+ int chmod(const char *name,mode_t mode)
 {
 	if (smbw_path(name)) {
 		return smbw_chmod(name, mode);
@@ -324,7 +324,7 @@
 
 
 
- int chown(char *name,uid_t owner, gid_t group)
+ int chown(const char *name,uid_t owner, gid_t group)
 {
 	if (smbw_path(name)) {
 		return smbw_chown(name, owner, group);
@@ -342,7 +342,7 @@
 
 
 
- int mkdir(char *name, mode_t mode)
+ int mkdir(const char *name, mode_t mode)
 {
 	if (smbw_path(name)) {
 		return smbw_mkdir(name, mode);
@@ -369,7 +369,7 @@
 #endif
 
 #if HAVE___XSTAT
- int __xstat(int vers, char *name, void *st)
+ int __xstat(int vers, const char *name, void *st)
 {
 	double xx[32];
 	int ret;
@@ -386,7 +386,7 @@
 
 
 #if HAVE___LXSTAT
- int __lxstat(int vers, char *name, void *st)
+ int __lxstat(int vers, const char *name, void *st)
 {
 	double xx[32];
 	int ret;
@@ -402,7 +402,7 @@
 #endif
 
 
- int stat(char *name, void *st)
+ int stat(const char *name, void *st)
 {
 #if HAVE___XSTAT
 	return __xstat(0, name, st);
@@ -414,7 +414,7 @@
 #endif
 }
 
- int lstat(char *name, void *st)
+ int lstat(const char *name, void *st)
 {
 #if HAVE___LXSTAT
 	return __lxstat(0, name, st);
@@ -439,7 +439,7 @@
 }
 
 
- int unlink(char *name)
+ int unlink(const char *name)
 {
 	if (smbw_path(name)) {
 		return smbw_unlink(name);
@@ -450,7 +450,7 @@
 
 
 #ifdef HAVE_UTIME
- int utime(char *name,void *tvp)
+ int utime(const char *name,void *tvp)
 {
 	if (smbw_path(name)) {
 		return smbw_utime(name, tvp);
@@ -471,7 +471,7 @@
 }
 #endif
 
- int readlink(char *path, char *buf, size_t bufsize)
+ int readlink(const char *path, char *buf, size_t bufsize)
 {
 	if (smbw_path(path)) {
 		return smbw_readlink(path, buf, bufsize);
@@ -481,7 +481,7 @@
 }
 
 
- int rename(char *oldname,char *newname)
+ int rename(const char *oldname,const char *newname)
 {
 	int p1, p2;
 	p1 = smbw_path(oldname); 
@@ -498,7 +498,7 @@
 	return real_rename(oldname, newname);
 }
 
- int rmdir(char *name)
+ int rmdir(const char *name)
 {
 	if (smbw_path(name)) {
 		return smbw_rmdir(name);
@@ -508,7 +508,7 @@
 }
 
 
- int symlink(char *topath,char *frompath)
+ int symlink(const char *topath,const char *frompath)
 {
 	int p1, p2;
 	p1 = smbw_path(topath); 
@@ -545,7 +545,7 @@
 }
 
 #ifdef real_opendir
- void *opendir(char *name)
+ void *opendir(const char *name)
 {
 	if (smbw_path(name)) {
 		return (void *)smbw_opendir(name);
@@ -624,14 +624,14 @@
 }
 #endif
 
- int creat(char *path, mode_t mode)
+ int creat(const char *path, mode_t mode)
 {
 	extern int creat_bits;
 	return open(path, creat_bits, mode);
 }
 
 #ifdef HAVE_CREAT64
- int creat64(char *path, mode_t mode)
+ int creat64(const char *path, mode_t mode)
 {
 	extern int creat_bits;
 	return open64(path, creat_bits, mode);
@@ -639,7 +639,7 @@
 #endif
 
 #ifdef HAVE_STAT64
-  int stat64(char *name, void *st64)
+  int stat64(const char *name, void *st64)
 {
 	if (smbw_path(name)) {
 		double xx[32];
@@ -661,7 +661,7 @@
 	return real_fstat64(fd, st64);
 }
 
-  int lstat64(char *name, void *st64)
+  int lstat64(const char *name, void *st64)
 {
 	if (smbw_path(name)) {
 		double xx[32];
