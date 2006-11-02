@@ -873,6 +873,17 @@ dynconfig.@PICSUFFIX@: dynconfig.c Makefile
 	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c $(srcdir)/dynconfig.c -o $@
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
 
+lib/pidfile.o: lib/pidfile.c
+	@echo Compiling $*.c
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PIE_CFLAGS@ -c $(srcdir)/lib/pidfile.c -o $@ 
+
+lib/pidfile.@PICSUFFIX@: lib/pidfile.c
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
+	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+	@echo Compiling $*.c with @PICFLAGS@
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c $(srcdir)/lib/pidfile.c -o $@
+@BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
+
 lib/version.o: lib/version.c include/version.h
 	@echo Compiling $*.c
 	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PIE_CFLAGS@ -c $(srcdir)/lib/version.c -o $@ 
