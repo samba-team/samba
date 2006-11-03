@@ -1,3 +1,8 @@
+2006-11-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/gssmask/common.c (add_list): fix alloc statement.
+	From Alex Deiter
+	
 2006-10-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* include/Makefile.am: Move version.h and version.h.in to
