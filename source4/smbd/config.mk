@@ -23,6 +23,10 @@ PUBLIC_DEPENDENCIES = \
 # End SUBSYSTEM SERVER
 #######################
 
+[SUBSYSTEM::PIDFILE]
+OBJ_FILES = pidfile.o
+PUBLIC_PROTO_HEADER = pidfile.h
+
 #################################
 # Start BINARY smbd
 [BINARY::smbd]
@@ -35,8 +39,8 @@ PRIVATE_DEPENDENCIES = \
 		service \
 		LIBSAMBA-CONFIG \
 		LIBSAMBA-UTIL \
-		PIDFILE \
 		POPT_SAMBA \
+		PIDFILE \
 		LIBPOPT \
 		gensec \
 		registry \

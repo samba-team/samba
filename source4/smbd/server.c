@@ -38,7 +38,7 @@
 #include "smbd/process_model.h"
 #include "smbd/service.h"
 #include "passdb/secrets.h"
-#include "lib/util/pidfile.h"
+#include "smbd/pidfile.h"
 
 /*
   recursively delete a directory tree

@@ -23,10 +23,6 @@
 #include "includes.h"
 #include "system/filesys.h"
 
-#ifndef O_NONBLOCK
-#define O_NONBLOCK
-#endif
-
 /**
  * @file
  * @brief Pid file handling
@@ -36,7 +32,7 @@
  * return the pid in a pidfile. return 0 if the process (or pidfile)
  * does not exist 
  */
-_PUBLIC_ pid_t pidfile_pid(const char *name)
+pid_t pidfile_pid(const char *name)
 {
 	int fd;
 	char pidstr[20];
