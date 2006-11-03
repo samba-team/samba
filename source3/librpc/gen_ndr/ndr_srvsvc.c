@@ -13135,7 +13135,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevEnum(struct ndr_print *ndr, const char 
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->in.ctr);
 		ndr->depth++;
-		if (r->in.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->in.ctr, *r->in.level);
 		ndr_print_srvsvc_NetCharDevCtr(ndr, "ctr", r->in.ctr);
 		ndr->depth--;
@@ -13157,7 +13156,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevEnum(struct ndr_print *ndr, const char 
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
-		if (r->out.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level);
 		ndr_print_srvsvc_NetCharDevCtr(ndr, "ctr", r->out.ctr);
 		ndr->depth--;
@@ -13578,7 +13576,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevQEnum(struct ndr_print *ndr, const char
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->in.ctr);
 		ndr->depth++;
-		if (r->in.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->in.ctr, *r->in.level);
 		ndr_print_srvsvc_NetCharDevQCtr(ndr, "ctr", r->in.ctr);
 		ndr->depth--;
@@ -13600,7 +13597,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevQEnum(struct ndr_print *ndr, const char
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
-		if (r->out.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level);
 		ndr_print_srvsvc_NetCharDevQCtr(ndr, "ctr", r->out.ctr);
 		ndr->depth--;
@@ -14271,7 +14267,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetConnEnum(struct ndr_print *ndr, const char *na
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->in.ctr);
 		ndr->depth++;
-		if (r->in.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->in.ctr, *r->in.level);
 		ndr_print_srvsvc_NetConnCtr(ndr, "ctr", r->in.ctr);
 		ndr->depth--;
@@ -14293,7 +14288,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetConnEnum(struct ndr_print *ndr, const char *na
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
-		if (r->out.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level);
 		ndr_print_srvsvc_NetConnCtr(ndr, "ctr", r->out.ctr);
 		ndr->depth--;
@@ -14548,7 +14542,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetFileEnum(struct ndr_print *ndr, const char *na
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->in.ctr);
 		ndr->depth++;
-		if (r->in.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->in.ctr, *r->in.level);
 		ndr_print_srvsvc_NetFileCtr(ndr, "ctr", r->in.ctr);
 		ndr->depth--;
@@ -14570,7 +14563,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetFileEnum(struct ndr_print *ndr, const char *na
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
-		if (r->out.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level);
 		ndr_print_srvsvc_NetFileCtr(ndr, "ctr", r->out.ctr);
 		ndr->depth--;
@@ -15003,7 +14995,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessEnum(struct ndr_print *ndr, const char *na
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->in.ctr);
 		ndr->depth++;
-		if (r->in.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->in.ctr, *r->in.level);
 		ndr_print_srvsvc_NetSessCtr(ndr, "ctr", r->in.ctr);
 		ndr->depth--;
@@ -15025,7 +15016,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessEnum(struct ndr_print *ndr, const char *na
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
-		if (r->out.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level);
 		ndr_print_srvsvc_NetSessCtr(ndr, "ctr", r->out.ctr);
 		ndr->depth--;
@@ -15485,7 +15475,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareEnumAll(struct ndr_print *ndr, const char
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->in.ctr);
 		ndr->depth++;
-		if (r->in.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->in.ctr, *r->in.level);
 		ndr_print_srvsvc_NetShareCtr(ndr, "ctr", r->in.ctr);
 		ndr->depth--;
@@ -15507,7 +15496,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareEnumAll(struct ndr_print *ndr, const char
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
-		if (r->out.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level);
 		ndr_print_srvsvc_NetShareCtr(ndr, "ctr", r->out.ctr);
 		ndr->depth--;
@@ -16847,7 +16835,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetTransportEnum(struct ndr_print *ndr, const cha
 		ndr->depth--;
 		ndr_print_ptr(ndr, "transports", r->in.transports);
 		ndr->depth++;
-		if (r->in.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->in.transports, *r->in.level);
 		ndr_print_srvsvc_NetTransportCtr(ndr, "transports", r->in.transports);
 		ndr->depth--;
@@ -16869,7 +16856,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetTransportEnum(struct ndr_print *ndr, const cha
 		ndr->depth--;
 		ndr_print_ptr(ndr, "transports", r->out.transports);
 		ndr->depth++;
-		if (r->out.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->out.transports, *r->out.level);
 		ndr_print_srvsvc_NetTransportCtr(ndr, "transports", r->out.transports);
 		ndr->depth--;
@@ -17943,7 +17929,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareEnum(struct ndr_print *ndr, const char *n
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->in.ctr);
 		ndr->depth++;
-		if (r->in.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->in.ctr, *r->in.level);
 		ndr_print_srvsvc_NetShareCtr(ndr, "ctr", r->in.ctr);
 		ndr->depth--;
@@ -17965,7 +17950,6 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareEnum(struct ndr_print *ndr, const char *n
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
-		if (r->out.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level);
 		ndr_print_srvsvc_NetShareCtr(ndr, "ctr", r->out.ctr);
 		ndr->depth--;
