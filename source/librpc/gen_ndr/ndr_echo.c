@@ -1167,7 +1167,6 @@ _PUBLIC_ void ndr_print_echo_TestEnum(struct ndr_print *ndr, const char *name, i
 		ndr->depth--;
 		ndr_print_ptr(ndr, "foo3", r->in.foo3);
 		ndr->depth++;
-		if (r->in.foo1 == NULL) return;
 		ndr_print_set_switch_value(ndr, r->in.foo3, *r->in.foo1);
 		ndr_print_echo_Enum3(ndr, "foo3", r->in.foo3);
 		ndr->depth--;
@@ -1186,7 +1185,6 @@ _PUBLIC_ void ndr_print_echo_TestEnum(struct ndr_print *ndr, const char *name, i
 		ndr->depth--;
 		ndr_print_ptr(ndr, "foo3", r->out.foo3);
 		ndr->depth++;
-		if (r->out.foo1 == NULL) return;
 		ndr_print_set_switch_value(ndr, r->out.foo3, *r->out.foo1);
 		ndr_print_echo_Enum3(ndr, "foo3", r->out.foo3);
 		ndr->depth--;

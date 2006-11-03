@@ -2829,7 +2829,6 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportEnum(struct ndr_print *ndr, cons
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->in.ctr);
 		ndr->depth++;
-		if (r->in.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->in.ctr, *r->in.level);
 		ndr_print_wkssvc_NetWkstaTransportCtr(ndr, "ctr", r->in.ctr);
 		ndr->depth--;
@@ -2849,7 +2848,6 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportEnum(struct ndr_print *ndr, cons
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
-		if (r->out.level == NULL) return;
 		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level);
 		ndr_print_wkssvc_NetWkstaTransportCtr(ndr, "ctr", r->out.ctr);
 		ndr->depth--;
