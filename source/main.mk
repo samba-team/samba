@@ -310,6 +310,11 @@ valgrindtest-all: all
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
 
+valgrindtest-env: all
+	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
+	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
+	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} xterm SOCKET_WRAPPER
+
 gdbtest: gdbtest-quick
 
 gdbtest-quick: all
