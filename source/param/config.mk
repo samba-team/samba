@@ -8,6 +8,7 @@ OBJ_FILES = loadparm.o \
 			util.o \
 			../lib/version.o
 PUBLIC_DEPENDENCIES = LIBSAMBA-UTIL 
+PRIVATE_DEPENDENCIES = DYNCONFIG
 PUBLIC_PROTO_HEADER = proto.h
 PUBLIC_HEADERS = param.h
 

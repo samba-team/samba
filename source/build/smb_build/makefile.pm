@@ -344,9 +344,6 @@ sub Binary($$)
 	}
 	my $localdir = "bin$extradir";
 
-	my $dynconfig = "dynconfig.o";
-	my $dynconfig_install = "dynconfig.o";
-	
 	$installdir = "bin$extradir";
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
@@ -369,10 +366,10 @@ sub Binary($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 $self->output(<< "__EOD__"
-$installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $dynconfig_install
+$installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@\$(LD) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		$dynconfig_install \$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
+		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
 );
