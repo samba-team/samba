@@ -1,3 +1,3 @@
-REGISTRY-*
-RESOLVE-async
-ICONV-next_codepoint()
+LOCAL-REGISTRY-*
+LOCAL-RESOLVE-async
+LOCAL-ICONV-next_codepoint()
