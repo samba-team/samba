@@ -153,6 +153,7 @@ sub RegisterScalars()
 sub enum_type_fn($)
 {
 	my $enum = shift;
+	$enum->{TYPE} eq "ENUM" or die("not an enum");
 	if (has_property($enum->{PARENT}, "enum8bit")) {
 		return "uint8";
 	} elsif (has_property($enum->{PARENT}, "v1_enum")) {
