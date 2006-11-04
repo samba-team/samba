@@ -110,8 +110,8 @@ static bool torture_rpc_teardown (struct torture_context *tcase, void *data)
 }
 
 _PUBLIC_ struct torture_tcase *torture_suite_add_rpc_iface_tcase(struct torture_suite *suite, 
-														const char *name,
-														const struct dcerpc_interface_table *table)
+								const char *name,
+								const struct dcerpc_interface_table *table)
 {
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, name);
 
