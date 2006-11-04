@@ -1863,6 +1863,7 @@ hx509_query_match_cmp_func(hx509_query *q,
 	q->match &= ~HX509_QUERY_MATCH_FUNCTION;
     q->cmp_func = func;
     q->cmp_func_ctx = ctx;
+    return 0;
 }
 
 
