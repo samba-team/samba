@@ -425,11 +425,11 @@ failed:
 struct torture_suite *torture_rpc_echo(void)
 {
 	struct torture_suite *suite = torture_suite_create(
-									talloc_autofree_context(), "ECHO");
+		talloc_autofree_context(), "ECHO");
 	struct torture_tcase *tcase;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "echo", 
-											  &dcerpc_table_rpcecho);
+						  &dcerpc_table_rpcecho);
 
 	torture_rpc_tcase_add_test(tcase, "addone", test_addone);
 	torture_rpc_tcase_add_test(tcase, "sinkdata", test_sinkdata);
