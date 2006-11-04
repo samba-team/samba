@@ -62,7 +62,7 @@ krb5_expand_hostname (krb5_context context,
     struct addrinfo *ai, *a, hints;
     int error;
 
-    if (!context->dns_canonize_hostname)
+    if (!context->dns_canonicalize_hostname)
 	return copy_hostname (context, orig_hostname, new_hostname);
 
     memset (&hints, 0, sizeof(hints));
@@ -127,7 +127,7 @@ krb5_expand_hostname_realms (krb5_context context,
     int error;
     krb5_error_code ret = 0;
 
-    if (!context->dns_canonize_hostname)
+    if (!context->dns_canonicalize_hostname)
 	return vanilla_hostname (context, orig_hostname, new_hostname,
 				 realms);
 
