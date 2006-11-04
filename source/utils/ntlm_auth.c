@@ -402,7 +402,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			state->gensec_state = NULL;
 		}
 	} else if ( (strncmp(buf, "OK", 2) == 0)) {
-		/* do nothing */
+		/* Just return BH, like ntlm_auth from Samba 3 does. */
+		mux_printf(mux_id, "BH\n");
 		data_blob_free(&in);
 		return;
 	} else if ( (strncmp(buf, "TT ", 3) != 0) &&
