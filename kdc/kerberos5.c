@@ -1055,10 +1055,32 @@ _kdc_as_rep(krb5_context context,
 	    }
 	    free_PA_ENC_TS_ENC(&p);
 	    if (abs(kdc_time - p.patimestamp) > context->max_skew) {
-		ret = KRB5KDC_ERR_PREAUTH_FAILED;
+		char client_time[100];
+		
+		krb5_format_time(context, p.patimestamp, 
+				 client_time, sizeof(client_time), TRUE); 
+
+ 		ret = KRB5KRB_AP_ERR_SKEW;
+ 		kdc_log(context, config, 0,
+			"Too large time skew, "
+			"client time %s is out by %u > %u seconds -- %s", 
+			client_time, 
+			(unsigned)abs(kdc_time - p.patimestamp), 
+			context->max_skew,
+			client_name);
+#if 0
+		/* This code is from samba, needs testing */
+		/* 
+		 * the following is needed to make windows clients
+		 * to retry using the timestamp in the error message
+		 *
+		 * this is maybe a bug in windows to not trying when e_text
+		 * is present...
+		 */
+		e_text = NULL;
+#else
 		e_text = "Too large time skew";
-		kdc_log(context, config, 0,
-			"Too large time skew -- %s", client_name);
+#endif
 		goto out;
 	    }
 	    et.flags.pre_authent = 1;
