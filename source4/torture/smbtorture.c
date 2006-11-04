@@ -70,7 +70,6 @@ static bool run_matching(struct torture_context *torture,
 				init_iconv();
 				torture->active_testname = talloc_strdup(torture, prefix);
 				ret &= torture_run_suite(torture, c);
-				talloc_free(torture);
 				free(name);
 				continue;
 			}
