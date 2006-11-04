@@ -1,4 +1,15 @@
+2006-11-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hx_locl.h: add context variable to cmp function.
+
+	* cert.c (hx509_query_match_cmp_func): allow setting the match
+	function.
+	
 2006-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ks_p11.c: Return less EINVAL.
+
+	* hx509_err.et: add more pkcs11 errors
 
 	* hx509_err.et: more error-codes
 
