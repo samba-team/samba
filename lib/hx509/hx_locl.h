@@ -127,7 +127,8 @@ struct hx509_query_data {
     Name *subject_name;
     hx509_path *path;
     char *friendlyname;
-    int (*cmp_func)(hx509_cert);
+    int (*cmp_func)(void *, hx509_cert);
+    void *cmp_func_ctx;
     heim_octet_string *keyhash_sha1;
 };
 
