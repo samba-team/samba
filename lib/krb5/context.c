@@ -705,3 +705,15 @@ krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
 	*usec = context->kdc_usec_offset;
     return 0;
 }
+
+time_t KRB5_LIB_FUNCTION
+krb5_get_time_wrap (krb5_context context)
+{
+    return context->max_skew;
+}
+
+void KRB5_LIB_FUNCTION
+krb5_set_time_wrap (krb5_context context, time_t t)
+{
+    context->max_skew = t;
+}
