@@ -130,8 +130,8 @@ loop(gss_OID mechoid,
 static struct getargs args[] = {
     {"name-type",0,	arg_string, &type_string,  "type of name", NULL },
     {"mech-type",0,	arg_string, &mech_string,  "type of mech", NULL },
-    {"dns-canon",0,	arg_negative_flag, &dns_canon_flag, 
-     "use dns to canonlize", NULL },
+    {"dns-canonicalize",0,arg_negative_flag, &dns_canon_flag, 
+     "use dns to canonicalize", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
     {"verbose",	'v',	arg_flag,	&verbose_flag, "verbose", NULL },
     {"help",	0,	arg_flag,	&help_flag,  NULL, NULL }
@@ -176,7 +176,7 @@ main(int argc, char **argv)
 	usage(1);
 
     if (dns_canon_flag != -1)
-	gsskrb5_set_dns_canonlize(dns_canon_flag);
+	gsskrb5_set_dns_canonicalize(dns_canon_flag);
 
     if (type_string == NULL)
 	nameoid = GSS_C_NT_HOSTBASED_SERVICE;

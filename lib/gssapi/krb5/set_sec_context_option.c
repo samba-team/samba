@@ -89,14 +89,14 @@ _gsskrb5_set_sec_context_option
 	ctx->more_flags |= COMPAT_OLD_DES3_SELECTED;
 	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	return GSS_S_COMPLETE;
-    } else if (gss_oid_equal(desired_object, GSS_KRB5_SET_DNS_CANONIZE_X)) {
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_SET_DNS_CANONICALIZE_X)) {
 	int flag;
 
 	maj_stat = get_bool(minor_status, value, &flag);
 	if (maj_stat != GSS_S_COMPLETE)
 	    return maj_stat;
 
-	krb5_set_dns_canonize_hostname(_gsskrb5_context, flag);
+	krb5_set_dns_canonicalize_hostname(_gsskrb5_context, flag);
 	return GSS_S_COMPLETE;
 
     } else if (gss_oid_equal(desired_object, GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X)) {

@@ -204,7 +204,7 @@ gsskrb5_register_acceptor_identity(const char *identity)
 }
 
 OM_uint32
-gsskrb5_set_dns_canonlize(int flag)
+gsskrb5_set_dns_canonicalize(int flag)
 {
         struct _gss_mech_switch	*m;
 	gss_buffer_desc buffer;
@@ -220,7 +220,7 @@ gsskrb5_set_dns_canonlize(int flag)
 		if (m->gm_mech.gm_set_sec_context_option == NULL)
 			continue;
 		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
-		    GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X, &buffer);
+		    GSS_KRB5_SET_DNS_CANONICALIZE_X, &buffer);
 	}
 
 	return (GSS_S_COMPLETE);
