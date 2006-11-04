@@ -94,6 +94,7 @@ static const char *opt_domain;
 static const char *opt_workstation;
 static const char *opt_password;
 static int opt_multiplex;
+static int use_cached_creds;
 
 
 static void mux_printf(unsigned int mux_id, const char *format, ...) PRINTF_ATTRIBUTE(2, 3);
@@ -978,6 +979,7 @@ enum {
 	OPT_DIAGNOSTICS,
 	OPT_REQUIRE_MEMBERSHIP,
 	OPT_MULTIPLEX,
+	OPT_USE_CACHED_CREDS,
 };
 
 int main(int argc, const char **argv)
@@ -1003,6 +1005,7 @@ int main(int argc, const char **argv)
 		{ "username", 0, POPT_ARG_STRING, &opt_username, OPT_PASSWORD, "Username"},		
 		{ "password", 0, POPT_ARG_STRING, &opt_password, OPT_PASSWORD, "User's plaintext password"},		
 		{ "multiplex", 0, POPT_ARG_NONE, &opt_multiplex, OPT_MULTIPLEX, "Multiplex Mode"},
+		{ "use-cached-creds", 0, POPT_ARG_NONE, &use_cached_creds, OPT_USE_CACHED_CREDS, "silently ignored for compatibility reasons"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		{ NULL }
