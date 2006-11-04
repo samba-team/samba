@@ -1,5 +1,13 @@
 2006-11-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/expand_hostname.c: Rename various routines and
+	constants from canonize to canonicalize.  From Andrew Bartlett
+
+	* lib/krb5/context.c: Add krb5_[gs]et_time_wrap
+
+	* lib/krb5/krb5_locl.h: Rename various routines and constants from
+	canonize to canonicalize.  From Andrew Bartlett
+
 	* appl/gssmask/common.c (add_list): fix alloc statement.
 	From Alex Deiter
 	
