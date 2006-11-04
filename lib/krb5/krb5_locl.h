@@ -231,7 +231,7 @@ typedef struct krb5_context_data {
     int pkinit_flags;
     void *mutex;			/* protects error_string/error_buf */
     int large_msg_size;
-    int dns_canonize_hostname;
+    int dns_canonicalize_hostname;
     struct send_to_kdc *send_to_kdc;
 } krb5_context_data;
 
