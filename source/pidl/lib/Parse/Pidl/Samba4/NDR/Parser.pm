@@ -1694,7 +1694,7 @@ sub ParseUnionPull($$)
 	pidl "int level;";
 	if (defined($switch_type)) {
 		if (Parse::Pidl::Typelist::typeIs($switch_type, "ENUM")) {
-			$switch_type = Parse::Pidl::Typelist::enum_type_fn(getType($switch_type));
+			$switch_type = Parse::Pidl::Typelist::enum_type_fn(getType($switch_type)->{DATA});
 		}
 		pidl mapType($switch_type) . " _level;";
 	}
