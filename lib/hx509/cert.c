@@ -1852,6 +1852,20 @@ hx509_query_match_friendly_name(hx509_query *q, const char *name)
     return 0;
 }
 
+int
+hx509_query_match_cmp_func(hx509_query *q,
+			   int (*func)(void *, hx509_cert),
+			   void *ctx)
+{
+    if (func)
+	q->match |= HX509_QUERY_MATCH_FUNCTION;
+    else
+	q->match &= ~HX509_QUERY_MATCH_FUNCTION;
+    q->cmp_func = func;
+    q->cmp_func_ctx = ctx;
+}
+
+
 void
 hx509_query_free(hx509_context context, hx509_query *q)
 {
@@ -1953,7 +1967,7 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	    return 0;
     }
     if (q->match & HX509_QUERY_MATCH_FUNCTION) {
-	int ret = (*q->cmp_func)(cert);
+	int ret = (*q->cmp_func)(q->cmp_func_ctx, cert);
 	if (ret != 0)
 	    return 0;
     }
