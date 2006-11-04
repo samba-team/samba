@@ -256,9 +256,9 @@ sub Bitmap($$$)
 	register_type($name, "offset = $dissectorname(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);", "FT_UINT$size", "BASE_HEX", "0", "NULL", $size/8);
 }
 
-sub ElementLevel($$$$$)
+sub ElementLevel($$$$$$)
 {
-	my ($e,$l,$hf,$myname,$pn) = @_;
+	my ($e,$l,$hf,$myname,$pn,$ifname) = @_;
 
 	my $param = 0;
 
@@ -327,10 +327,7 @@ sub ElementLevel($$$$$)
 				$call= $conformance->{types}->{$l->{DATA_TYPE}}->{DISSECTOR_NAME};
 				$conformance->{types}->{$l->{DATA_TYPE}}->{USED} = 1;
 			} else {
-				if ($l->{DATA_TYPE} =~ /^([a-z]+)\_(.*)$/)
-				{
-					pidl_code "offset = $1_dissect_struct_$2(tvb,offset,pinfo,tree,drep,$hf,$param);";
-				}
+				pidl_code "offset = $ifname\_dissect_struct_" . $l->{DATA_TYPE} . "(tvb,offset,pinfo,tree,drep,$hf,$param);";
 
 				return;
 			}
@@ -402,7 +399,7 @@ sub Element($$$)
 		pidl_code "{";
 		indent;
 
-		ElementLevel($e,$_,$hf,$dissectorname.$add,$pn);
+		ElementLevel($e,$_,$hf,$dissectorname.$add,$pn,$ifname);
 
 		pidl_code "";
 		pidl_code "return offset;";
