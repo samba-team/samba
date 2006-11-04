@@ -441,7 +441,7 @@ sub Function($$$)
 		pidl_code "guint32 status;\n";
 	} elsif (my $type = getType($fn->{RETURN_TYPE})) {
 		if ($type->{DATA}->{TYPE} eq "ENUM") {
-			pidl_code "g".Parse::Pidl::Typelist::enum_type_fn($type) . " status;\n";
+			pidl_code "g".Parse::Pidl::Typelist::enum_type_fn($type->{DATA}) . " status;\n";
 		} else {
 	    	print "$fn->{FILE}:$fn->{LINE}: error: return type `$fn->{RETURN_TYPE}' not yet supported\n";
 		}
@@ -471,8 +471,8 @@ sub Function($$$)
 		$return_types{$ifname}->{"werror"} = ["WERROR", "Windows Error"];
 	} elsif (my $type = getType($fn->{RETURN_TYPE})) {
 		if ($type->{DATA}->{TYPE} eq "ENUM") {
-			my $return_type = "g".Parse::Pidl::Typelist::enum_type_fn($type);
-			my $return_dissect = "dissect_ndr_" .Parse::Pidl::Typelist::enum_type_fn($type);
+			my $return_type = "g".Parse::Pidl::Typelist::enum_type_fn($type->{DATA});
+			my $return_dissect = "dissect_ndr_" .Parse::Pidl::Typelist::enum_type_fn($type->{DATA});
 
 			pidl_code "offset = $return_dissect(tvb, offset, pinfo, tree, drep, hf\_$ifname\_$fn->{RETURN_TYPE}_status, &status);";
 			pidl_code "if (status != 0 && check_col(pinfo->cinfo, COL_INFO))";
@@ -578,8 +578,8 @@ sub Union($$$)
 	my $switch_dissect;
 	my $switch_dt = getType($e->{SWITCH_TYPE});
 	if ($switch_dt->{DATA}->{TYPE} eq "ENUM") {
-		$switch_type = "g".Parse::Pidl::Typelist::enum_type_fn($switch_dt);
-		$switch_dissect = "dissect_ndr_" .Parse::Pidl::Typelist::enum_type_fn($switch_dt);
+		$switch_type = "g".Parse::Pidl::Typelist::enum_type_fn($switch_dt->{DATA});
+		$switch_dissect = "dissect_ndr_" .Parse::Pidl::Typelist::enum_type_fn($switch_dt->{DATA});
 	} elsif ($switch_dt->{DATA}->{TYPE} eq "SCALAR") {
 		$switch_type = "g$e->{SWITCH_TYPE}";
 		$switch_dissect = "dissect_ndr_$e->{SWITCH_TYPE}";
