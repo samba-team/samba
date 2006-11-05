@@ -1,5 +1,3 @@
-#error "deliberate breakage to test build farm scripts"
-
 /* 
    Unix SMB/CIFS implementation.
    SMB torture tester
