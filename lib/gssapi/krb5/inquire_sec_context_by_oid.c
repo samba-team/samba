@@ -84,6 +84,7 @@ static OM_uint32 inquire_sec_context_tkt_flags
 
     if (context_handle->ticket == NULL) {
 	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+	_gsskrb5_set_status("No ticket from which to obtain flags");
 	*minor_status = EINVAL;
 	return GSS_S_BAD_MECH;
     }
@@ -163,6 +164,7 @@ out:
     if (sp)
 	krb5_storage_free(sp);
     if (ret) {
+	_gsskrb5_set_error_string ();
 	*minor_status = ret;
 	maj_stat = GSS_S_FAILURE;
     }
@@ -195,6 +197,7 @@ static OM_uint32 inquire_sec_context_authz_data
 						  &data);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (ret) {
+	_gsskrb5_set_error_string ();
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
@@ -387,6 +390,7 @@ get_authtime(OM_uint32 *minor_status,
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
     if (ctx->ticket == NULL) {
 	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	_gsskrb5_set_status("No ticket to obtain auth time from");
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
@@ -404,6 +408,66 @@ get_authtime(OM_uint32 *minor_status,
 				     data_set);
 }
 
+
+static OM_uint32 
+get_service_keyblock(OM_uint32 *minor_status,
+		     gsskrb5_ctx ctx, 
+		     gss_buffer_set_t *data_set)
+{
+    krb5_storage *sp = NULL;
+    krb5_data data;
+    OM_uint32 maj_stat = GSS_S_COMPLETE;
+    krb5_error_code ret = EINVAL;
+    
+    sp = krb5_storage_emem();
+    if (sp == NULL) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+    if (ctx->service_keyblock == NULL) {
+	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	_gsskrb5_set_status("No service keyblock on gssapi context");
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE; 
+    }
+
+    krb5_data_zero(&data);
+
+    ret = krb5_store_keyblock(sp, *ctx->service_keyblock);
+
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+
+    if (ret)
+	goto out;
+
+    ret = krb5_storage_to_data(sp, &data);
+    if (ret)
+	goto out;
+
+    {
+	gss_buffer_desc value;
+	
+	value.length = data.length;
+	value.value = data.data;
+	
+	maj_stat = gss_add_buffer_set_member(minor_status,
+					     &value,
+					     data_set);
+    }
+
+out:
+    krb5_data_free(&data);
+    if (sp)
+	krb5_storage_free(sp);
+    if (ret) {
+	_gsskrb5_set_error_string ();
+	*minor_status = ret;
+	maj_stat = GSS_S_FAILURE;
+    }
+    return maj_stat;
+}
 /*
  *
  */
@@ -463,6 +527,8 @@ OM_uint32 _gsskrb5_inquire_sec_context_by_oid
 					       data_set);
 	*minor_status = 0;
 	return GSS_S_FAILURE;
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_GET_SERVICE_KEYBLOCK_X)) {
+	return get_service_keyblock(minor_status, ctx, data_set);
     } else {
 	*minor_status = 0;
 	return GSS_S_FAILURE;
