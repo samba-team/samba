@@ -1,3 +1,33 @@
+2006-11-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_context.c: Test gsskrb5_extract_service_keyblock, needed in
+	PAC valication.  From Andrew Bartlett
+
+	* mech/gss_krb5.c: Add gsskrb5_extract_authz_data_from_sec_context
+	and keyblock extraction functions.
+
+	* gssapi/gssapi_krb5.h: Add extraction of keyblock function, from
+	Andrew Bartlett.
+
+	* krb5/external.c: Add GSS_KRB5_GET_SERVICE_KEYBLOCK_X
+	
+2006-11-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_context.c: Rename various routines and constants from
+	canonize to canonicalize.  From Andrew Bartlett
+
+	* mech/gss_krb5.c: Rename various routines and constants from
+	canonize to canonicalize.  From Andrew Bartlett
+
+	* krb5/set_sec_context_option.c: Rename various routines and
+	constants from canonize to canonicalize.  From Andrew Bartlett
+
+	* krb5/external.c: Rename various routines and constants from
+	canonize to canonicalize.  From Andrew Bartlett
+	
+	* gssapi/gssapi_krb5.h: Rename various routines and constants from
+	canonize to canonicalize.  From Andrew Bartlett
+	
 2006-10-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* krb5/accept_sec_context.c (gsskrb5_accept_delegated_token): need
