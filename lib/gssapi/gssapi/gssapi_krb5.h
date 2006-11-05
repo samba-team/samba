@@ -74,6 +74,7 @@ extern gss_OID GSS_KRB5_GET_SUBKEY_X;
 extern gss_OID GSS_KRB5_GET_INITIATOR_SUBKEY_X;
 extern gss_OID GSS_KRB5_GET_ACCEPTOR_SUBKEY_X;
 extern gss_OID GSS_KRB5_GET_AUTHTIME_X;
+extern gss_OID GSS_KRB5_GET_SERVICE_KEYBLOCK_X;
 /* Extensions creds */
 extern gss_OID GSS_KRB5_IMPORT_CRED_X;
 
@@ -131,6 +132,20 @@ gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *);
 OM_uint32
 gsskrb5_extract_authtime_from_sec_context(OM_uint32 *, gss_ctx_id_t, time_t *);
 
+struct EncryptionKey;
+
+OM_uint32 
+gsskrb5_extract_service_keyblock(OM_uint32 *minor_status,
+				 gss_ctx_id_t context_handle,
+				 struct EncryptionKey **out);
+OM_uint32 
+gsskrb5_get_initiator_subkey(OM_uint32 *minor_status,
+				 gss_ctx_id_t context_handle,
+				 struct EncryptionKey **out);
+OM_uint32 
+gsskrb5_get_subkey(OM_uint32 *minor_status,
+		   gss_ctx_id_t context_handle,
+		   struct EncryptionKey **out);
 
 /*
  * Lucid - NFSv4 interface to GSS-API KRB5 to expose key material to
