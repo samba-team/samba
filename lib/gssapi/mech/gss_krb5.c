@@ -263,7 +263,10 @@ gss_krb5_export_lucid_sec_context(OM_uint32 *minor_status,
     krb5_storage *sp = NULL;
     uint32_t num;
 
-    if (context_handle == NULL || *context_handle == GSS_C_NO_CONTEXT) {
+    if (context_handle == NULL
+	|| *context_handle == GSS_C_NO_CONTEXT
+	|| version != 1)
+    {
 	ret = EINVAL;
 	return GSS_S_FAILURE;
     }
@@ -481,4 +484,202 @@ gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 
     *minor_status = 0;
     return GSS_S_COMPLETE;
+}
+
+OM_uint32
+gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
+					    gss_ctx_id_t context_handle,
+					    int ad_type,
+					    gss_buffer_t ad_data)
+{
+    gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
+    OM_uint32 maj_stat;
+    gss_OID_desc oid_flat;
+    heim_oid baseoid, oid;
+    size_t size;
+
+    if (context_handle == GSS_C_NO_CONTEXT) {
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+
+    /* All this to append an integer to an oid... */
+
+    if (der_get_oid(GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X->elements,
+		    GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X->length,
+		    &baseoid, NULL) != 0) {
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+    
+    oid.length = baseoid.length + 1;
+    oid.components = calloc(oid.length, sizeof(*oid.components));
+    if (oid.components == NULL) {
+	der_free_oid(&baseoid);
+
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+    memcpy(oid.components, baseoid.components, 
+	   baseoid.length * sizeof(*baseoid.components));
+    
+    der_free_oid(&baseoid);
+
+    oid.components[oid.length - 1] = ad_type;
+
+    oid_flat.length = der_length_oid(&oid);
+    oid_flat.elements = malloc(oid_flat.length);
+    if (oid_flat.elements == NULL) {
+	free(oid.components);
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+    if (der_put_oid((unsigned char *)oid_flat.elements + oid_flat.length - 1, 
+		    oid_flat.length, &oid, &size) != 0) {
+	free(oid.components);
+
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+    if (oid_flat.length != size)
+	abort();
+
+    free(oid.components);
+
+    /* FINALLY, we have the OID */
+
+    maj_stat = gss_inquire_sec_context_by_oid (minor_status,
+					       context_handle,
+					       &oid_flat,
+					       &data_set);
+
+    free(oid_flat.elements);
+
+    if (maj_stat)
+	return maj_stat;
+    
+    if (data_set == GSS_C_NO_BUFFER_SET || data_set->count != 1) {
+	gss_release_buffer_set(minor_status, &data_set);
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+
+    ad_data->value = malloc(data_set->elements[0].length);
+    if (ad_data->value == NULL) {
+	gss_release_buffer_set(minor_status, &data_set);
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+    ad_data->length = data_set->elements[0].length;
+    memcpy(ad_data->value, data_set->elements[0].value, ad_data->length);
+    gss_release_buffer_set(minor_status, &data_set);
+    
+    *minor_status = 0;
+    return GSS_S_COMPLETE;
+}
+
+static OM_uint32
+gsskrb5_extract_key(OM_uint32 *minor_status,
+		    gss_ctx_id_t context_handle,
+		    const gss_OID oid, 
+		    krb5_keyblock **keyblock)
+{
+    krb5_error_code ret;
+    gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
+    OM_uint32 major_status;
+    krb5_context context = NULL;
+    krb5_storage *sp = NULL;
+
+    if (context_handle == GSS_C_NO_CONTEXT) {
+	ret = EINVAL;
+	return GSS_S_FAILURE;
+    }
+    
+    ret = krb5_init_context(&context);
+    if(ret) {
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
+
+    major_status =
+	gss_inquire_sec_context_by_oid (minor_status,
+					context_handle,
+					oid,
+					&data_set);
+    if (major_status)
+	return major_status;
+    
+    if (data_set == GSS_C_NO_BUFFER_SET || data_set->count != 1) {
+	gss_release_buffer_set(minor_status, &data_set);
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+
+    sp = krb5_storage_from_mem(data_set->elements[0].value,
+			       data_set->elements[0].length);
+    if (sp == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+    
+    *keyblock = calloc(1, sizeof(**keyblock));
+    if (keyblock == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+
+    ret = krb5_ret_keyblock(sp, *keyblock);
+
+out: 
+    gss_release_buffer_set(minor_status, &data_set);
+    if (sp)
+	krb5_storage_free(sp);
+    if (ret && keyblock) {
+	krb5_free_keyblock(context, *keyblock);
+	*keyblock = NULL;
+    }
+    if (context)
+	krb5_free_context(context);
+
+    *minor_status = ret;
+    if (ret)
+	return GSS_S_FAILURE;
+
+    return GSS_S_COMPLETE;
+}
+
+OM_uint32
+gsskrb5_extract_service_keyblock(OM_uint32 *minor_status,
+				 gss_ctx_id_t context_handle,
+				 krb5_keyblock **keyblock)
+{
+    return gsskrb5_extract_key(minor_status,
+			       context_handle,
+			       GSS_KRB5_GET_SERVICE_KEYBLOCK_X,
+			       keyblock);
+}
+
+OM_uint32
+gsskrb5_get_initiator_subkey(OM_uint32 *minor_status,
+			     gss_ctx_id_t context_handle,
+			     krb5_keyblock **keyblock)
+{
+    return gsskrb5_extract_key(minor_status,
+			       context_handle,
+			       GSS_KRB5_GET_INITIATOR_SUBKEY_X,
+			       keyblock);
+}
+
+OM_uint32
+gsskrb5_get_subkey(OM_uint32 *minor_status,
+		   gss_ctx_id_t context_handle,
+		   krb5_keyblock **keyblock)
+{
+    return gsskrb5_extract_key(minor_status,
+			       context_handle,
+			       GSS_KRB5_GET_ACCEPTOR_SUBKEY_X,
+			       keyblock);
 }
