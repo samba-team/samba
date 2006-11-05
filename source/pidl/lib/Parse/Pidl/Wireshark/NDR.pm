@@ -438,6 +438,8 @@ sub Function($$$)
 	} elsif (my $type = getType($fn->{RETURN_TYPE})) {
 		if ($type->{DATA}->{TYPE} eq "ENUM") {
 			pidl_code "g".Parse::Pidl::Typelist::enum_type_fn($type->{DATA}) . " status;\n";
+		} elsif ($type->{DATA}->{TYPE} eq "SCALAR") {
+			pidl_code "g$fn->{RETURN_TYPE} status;\n";
 		} else {
 	    	print "$fn->{FILE}:$fn->{LINE}: error: return type `$fn->{RETURN_TYPE}' not yet supported\n";
 		}
@@ -473,6 +475,11 @@ sub Function($$$)
 			pidl_code "offset = $return_dissect(tvb, offset, pinfo, tree, drep, hf\_$ifname\_$fn->{RETURN_TYPE}_status, &status);";
 			pidl_code "if (status != 0 && check_col(pinfo->cinfo, COL_INFO))";
 			pidl_code "\tcol_append_fstr(pinfo->cinfo, COL_INFO, \", Status: %s\", val_to_str(status, $ifname\_$fn->{RETURN_TYPE}\_vals, \"Unknown " . $fn->{RETURN_TYPE} . " error 0x%08x\"));\n";
+			$return_types{$ifname}->{$fn->{RETURN_TYPE}."_status"} = [$fn->{RETURN_TYPE}, $fn->{RETURN_TYPE}];
+		} elsif ($type->{DATA}->{TYPE} eq "SCALAR") {
+			pidl_code "offset = dissect_ndr_$fn->{RETURN_TYPE}(tvb, offset, pinfo, tree, drep, hf\_$ifname\_$fn->{RETURN_TYPE}_status, &status);";
+			pidl_code "if (status != 0 && check_col(pinfo->cinfo, COL_INFO))";
+			pidl_code "\tcol_append_fstr(pinfo->cinfo, COL_INFO, \", Status: %d\", status);\n";
 			$return_types{$ifname}->{$fn->{RETURN_TYPE}."_status"} = [$fn->{RETURN_TYPE}, $fn->{RETURN_TYPE}];
 		}
 	}
