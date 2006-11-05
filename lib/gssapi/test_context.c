@@ -44,6 +44,32 @@ static int version_flag = 0;
 static int verbose_flag = 0;
 static int help_flag	= 0;
 
+static char *gssapi_err(OM_uint32 maj_stat, OM_uint32 min_stat, 
+			gss_OID mech)
+{
+	OM_uint32 disp_min_stat, disp_maj_stat;
+	gss_buffer_desc maj_error_message;
+	gss_buffer_desc min_error_message;
+	OM_uint32 msg_ctx = 0;
+
+	char *ret = NULL;
+
+	maj_error_message.value = NULL;
+	min_error_message.value = NULL;
+	
+	disp_maj_stat = gss_display_status(&disp_min_stat, maj_stat, GSS_C_GSS_CODE,
+			   mech, &msg_ctx, &maj_error_message);
+	disp_maj_stat = gss_display_status(&disp_min_stat, min_stat, GSS_C_MECH_CODE,
+			   mech, &msg_ctx, &min_error_message);
+	asprintf(&ret, "%s: %s", (char *)maj_error_message.value, (char *)min_error_message.value);
+
+	gss_release_buffer(&disp_min_stat, &maj_error_message);
+	gss_release_buffer(&disp_min_stat, &min_error_message);
+
+	return ret;
+}
+
+
 static void
 loop(gss_OID mechoid,
      gss_OID nameoid, const char *target,
@@ -55,6 +81,7 @@ loop(gss_OID mechoid,
     gss_buffer_desc input_token, output_token;
     OM_uint32 flags = 0, ret_cflags, ret_sflags;
     gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
+    gss_OID mechoid_out;
 
     input_token.value = rk_UNCONST(target);
     input_token.length = strlen(target);
@@ -85,7 +112,8 @@ loop(gss_OID mechoid,
 					&ret_cflags,
 					NULL);
 	if (GSS_ERROR(maj_stat))
-	    errx(1, "init_sec_context: %d", (int)maj_stat);
+	    errx(1, "init_sec_context: %s",
+		 gssapi_err(maj_stat, min_stat, mechoid));
 	if (maj_stat & GSS_S_CONTINUE_NEEDED)
 	    ;
 	else
@@ -100,13 +128,14 @@ loop(gss_OID mechoid,
 					  &output_token,
 					  GSS_C_NO_CHANNEL_BINDINGS,
 					  NULL,
-					  NULL,
+					  &mechoid_out,
 					  &input_token,
 					  &ret_sflags,
 					  NULL,
 					  &deleg_cred);
 	if (GSS_ERROR(maj_stat))
-	    errx(1, "accept_sec_context: %d", (int)maj_stat);
+		errx(1, "accept_sec_context: %s",
+		     gssapi_err(maj_stat, min_stat, mechoid_out));
 
 	if (verbose_flag)
 	    printf("%.*s", (int)input_token.length, (char *)input_token.value);
@@ -201,18 +230,23 @@ main(int argc, char **argv)
     loop(mechoid, nameoid, argv[0], &sctx, &cctx);
     
     if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) {
+	time_t time;
+	gss_buffer_desc authz_data;
+	krb5_keyblock *keyblock;
 	/* client */
 	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
 						     &cctx,
 						     1, /* version */
 						     &ctx);
 	if (maj_stat != GSS_S_COMPLETE)
-	    errx(1, "gss_krb5_export_lucid_sec_context failed");
+		errx(1, "gss_krb5_export_lucid_sec_context failed: %s",
+		     gssapi_err(maj_stat, min_stat, mechoid));
 	
 	
 	maj_stat = gss_krb5_free_lucid_sec_context(&maj_stat, ctx);
 	if (maj_stat != GSS_S_COMPLETE)
-	    errx(1, "gss_krb5_free_lucid_sec_context failed");
+	    errx(1, "gss_krb5_free_lucid_sec_context failed: %s",
+		     gssapi_err(maj_stat, min_stat, mechoid));
 	
 	/* server */
 	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
@@ -220,10 +254,53 @@ main(int argc, char **argv)
 						     1, /* version */
 						     &ctx);
 	if (maj_stat != GSS_S_COMPLETE)
-	    errx(1, "gss_krb5_export_lucid_sec_context failed");
+	    errx(1, "gss_krb5_export_lucid_sec_context failed: %s",
+		     gssapi_err(maj_stat, min_stat, mechoid));
 	maj_stat = gss_krb5_free_lucid_sec_context(&maj_stat, ctx);
 	if (maj_stat != GSS_S_COMPLETE)
-	    errx(1, "gss_krb5_free_lucid_sec_context failed");
+	    errx(1, "gss_krb5_free_lucid_sec_context failed: %s",
+		     gssapi_err(maj_stat, min_stat, mechoid));
+
+ 	maj_stat = gsskrb5_extract_authtime_from_sec_context(&min_stat,
+							     sctx,
+							     &time);
+	if (maj_stat != GSS_S_COMPLETE)
+	    errx(1, "gss_krb5_extract_authtime_from_sec_context failed: %s",
+		     gssapi_err(maj_stat, min_stat, mechoid));
+
+ 	maj_stat = gsskrb5_extract_service_keyblock(&min_stat,
+						    sctx,
+						    &keyblock);
+	if (maj_stat != GSS_S_COMPLETE)
+	    errx(1, "gss_krb5_export_service_keyblock failed: %s",
+		     gssapi_err(maj_stat, min_stat, mechoid));
+
+	krb5_free_keyblock(_gsskrb5_context, keyblock);
+
+ 	maj_stat = gsskrb5_get_subkey(&min_stat,
+				      sctx,
+				      &keyblock);
+	if (maj_stat != GSS_S_COMPLETE)
+	    errx(1, "gss_krb5_get_subkey failed: %s",
+		     gssapi_err(maj_stat, min_stat, mechoid));
+
+	krb5_free_keyblock(_gsskrb5_context, keyblock);
+
+ 	maj_stat = gsskrb5_get_initiator_subkey(&min_stat,
+						    sctx,
+						    &keyblock);
+	if (maj_stat != GSS_S_COMPLETE)
+	    errx(1, "gss_krb5_get_initiator_subkey failed: %s",
+		     gssapi_err(maj_stat, min_stat, mechoid));
+
+	krb5_free_keyblock(_gsskrb5_context, keyblock);
+
+ 	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat,
+							       sctx,
+							       128,
+							       &authz_data);
+	if (maj_stat == GSS_S_COMPLETE)
+	    gss_release_buffer(&min_stat, &authz_data);
     }
 
     gss_delete_sec_context(&min_stat, &cctx, NULL);
