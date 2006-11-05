@@ -263,7 +263,6 @@ sub ElementLevel($$$$$$)
 	my $param = 0;
 
 	if (defined($conformance->{dissectorparams}->{$myname})) {
-#		$conformance->{dissectorparams}->{$myname}->{PARAM} = 1;
 		$param = $conformance->{dissectorparams}->{$myname}->{PARAM};
 	}
 
@@ -425,8 +424,6 @@ sub Function($$$)
 	
 	my $fn_name = $_->{NAME};
 	$fn_name =~ s/^${ifname}_//;
-
-	print "$fn_name\n";
 
 	PrintIdl DumpFunction($fn->{ORIGINAL});
 	pidl_fn_start "$ifname\_dissect\_$fn_name\_response";
