@@ -519,18 +519,19 @@ int main(int argc,char *argv[])
 	int shell = False;
 	static const char *ui_ops_name = "simple";
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
-	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC};
+	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS};
 	
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"format", 0, POPT_ARG_STRING, &ui_ops_name, 0, "Output format (one of: simple, subunit, harness)", NULL },
 		{"smb-ports",	'p', POPT_ARG_STRING, NULL,     OPT_SMB_PORTS,	"SMB ports", 	NULL},
 		{"seed",	  0, POPT_ARG_INT,  &torture_seed, 	0,	"seed", 	NULL},
+		{"num-progs",	  0, POPT_ARG_INT,  NULL, 	OPT_NUMPROGS,	"num progs",	NULL},
 		{"num-ops",	  0, POPT_ARG_INT,  &torture_numops, 	0, 	"num ops",	NULL},
 		{"entries",	  0, POPT_ARG_INT,  &torture_entries, 	0,	"entries",	NULL},
 		{"loadfile",	  0, POPT_ARG_STRING,	NULL, 	OPT_LOADFILE,	"loadfile", 	NULL},
 		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
-		{"timelimit",	't', POPT_ARG_STRING,	NULL, 	OPT_TIMELIMIT,	"timelimit", 	NULL},
+		{"timelimit",	't', POPT_ARG_INT,	NULL, 	OPT_TIMELIMIT,	"timelimit", 	NULL},
 		{"failures",	'f', POPT_ARG_INT,  &torture_failures, 	0,	"failures", 	NULL},
 		{"parse-dns",	'D', POPT_ARG_STRING,	NULL, 	OPT_DNS,	"parse-dns", 	NULL},
 		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,
@@ -570,6 +571,9 @@ int main(int argc,char *argv[])
 			break;
 		case OPT_TIMELIMIT:
 			lp_set_cmdline("torture:timelimit", poptGetOptArg(pc));
+			break;
+		case OPT_NUMPROGS:
+			lp_set_cmdline("torture:nprocs", poptGetOptArg(pc));
 			break;
 		case OPT_DNS:
 			parse_dns(poptGetOptArg(pc));
