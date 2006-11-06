@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: talloc 
 Description: A hierarchical pool based memory system with destructors
 Version: 4.0
-Libs: @LIBS@ -L${libdir} -ltalloc
-Cflags: -I${includedir} @CFLAGS@
+Libs: -L${libdir} -ltalloc
+Cflags: -I${includedir} 
