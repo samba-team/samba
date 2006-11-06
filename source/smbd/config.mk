@@ -25,7 +25,7 @@ PUBLIC_DEPENDENCIES = \
 
 [SUBSYSTEM::PIDFILE]
 OBJ_FILES = pidfile.o
-PUBLIC_PROTO_HEADER = pidfile.h
+PRIVATE_PROTO_HEADER = pidfile.h
 
 #################################
 # Start BINARY smbd

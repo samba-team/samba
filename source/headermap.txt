@@ -73,7 +73,7 @@ libcli/libcli_proto.h: client/proto.h
 librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
 librpc/gen_ndr/svcctl.h: gen_ndr/nbt.h
 lib/cmdline/popt_common.h: samba/popt.h
-include/dlinklist.h: dlinklist.h
+lib/util/dlinklist.h: dlinklist.h
 version.h: samba/version.h
 param/proto.h: param/proto.h
 param/param.h: param.h
@@ -85,3 +85,10 @@ libcli/util/error.h: core/error.h
 libcli/util/proto.h: core/error_proto.h
 lib/db_wrap.h: db_wrap.h
 lib/db_wrap_proto.h: db_wrap/proto.h
+torture/ui.h: torture/ui.h
+torture/torture.h: torture/torture.h
+librpc/gen_ndr/winbind.h: winbind.h
+param/share.h: param/share.h
+param/share_proto.h: param/share_proto.h
+lib/util/util_tdb.h: util_tdb.h
+lib/util/wrap_xattr.h: wrap_xattr.h
