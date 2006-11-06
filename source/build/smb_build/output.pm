@@ -53,17 +53,15 @@ sub generate_shared_library($)
 	if (defined($lib->{LIBRARY_REALNAME})) {
 		$lib->{BASEDIR} =~ s/^\.\///g;
 		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}";
-		$lib->{DEBUGDIR} = $lib->{RELEASEDIR} = $lib->{BASEDIR};
+		$lib->{SHAREDDIR} = $lib->{BASEDIR};
 	} else {
 		if ($lib->{TYPE} eq "MODULE") {
-			$lib->{DEBUGDIR} = "bin/modules/$lib->{SUBSYSTEM}";
-			$lib->{RELEASEDIR} = "bin/install/modules/$lib->{SUBSYSTEM}";
+			$lib->{SHAREDDIR} = "bin/modules/$lib->{SUBSYSTEM}";
 			$lib->{LIBRARY_REALNAME} = $link_name;
 			$lib->{LIBRARY_REALNAME} =~ s/^$lib->{SUBSYSTEM}_//g;
 			$lib->{LIBRARY_REALNAME}.= ".\$(SHLIBEXT)";
 		} else {
-			$lib->{DEBUGDIR} = "bin";
-			$lib->{RELEASEDIR} = "bin/install";
+			$lib->{SHAREDDIR} = "bin/shared";
 			$lib->{LIBRARY_REALNAME} = "$lib_name.\$(SHLIBEXT)";
 		}
 	}
@@ -73,7 +71,7 @@ sub generate_shared_library($)
 		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}.$lib->{VERSION}";
 	} 
 	
-	$lib->{TARGET} = "$lib->{DEBUGDIR}/$lib->{LIBRARY_REALNAME}";
+	$lib->{TARGET} = "$lib->{SHAREDDIR}/$lib->{LIBRARY_REALNAME}";
 	$lib->{OUTPUT} = $lib->{TARGET};
 }
 
@@ -105,7 +103,6 @@ sub generate_binary($)
 	$bin->{DEPEND_LIST} = [];
 	push(@{$bin->{LINK_FLAGS}}, "\$($bin->{TYPE}_$bin->{NAME}\_OBJ_LIST)");
 
-	$bin->{RELEASEDIR} = "bin/install";
 	$bin->{DEBUGDIR} = "bin/";
 	$bin->{TARGET} = $bin->{OUTPUT} = "$bin->{DEBUGDIR}/$bin->{NAME}";
 	$bin->{BINARY} = $bin->{NAME};

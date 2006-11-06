@@ -108,9 +108,13 @@ sub _prepare_compiler_linker($)
 
 	my $devld_install = "";
 	my $builddir_headers = "";
+	my $libdir;
 
-	if ($self->{config}->{LIBRARY_OUTPUT_TYPE} eq "SHARED_LIBRARY") {
-		$devld_install = " -Wl,-rpath-link,\$(builddir)/bin";
+	if ($self->{config}->{USESHARED} eq "true") {
+		$libdir = "\$(builddir)/bin/shared";
+		$devld_install = " -Wl,-rpath-link,\$(builddir)/bin/shared";
+	} else {
+		$libdir = "\$(builddir)/bin";
 	}
 	
 	if (!(abs_path($self->{config}->{srcdir}) eq abs_path($self->{config}->{builddir}))) {
@@ -133,13 +137,13 @@ HOSTCC=$self->{config}->{HOSTCC}
 INSTALL_LINK_FLAGS=$devld_install
 
 LD=$self->{config}->{LD} 
-LDFLAGS=$self->{config}->{LDFLAGS} -L\$(builddir)/bin
+LDFLAGS=$self->{config}->{LDFLAGS} -L$libdir
 
 STLD=$self->{config}->{STLD}
 STLD_FLAGS=$self->{config}->{STLD_FLAGS}
 
 SHLD=$self->{config}->{SHLD}
-SHLD_FLAGS=$self->{config}->{SHLD_FLAGS} -L\$(builddir)/bin
+SHLD_FLAGS=$self->{config}->{SHLD_FLAGS} -L$libdir
 SHLIBEXT=$self->{config}->{SHLIBEXT}
 
 XSLTPROC=$self->{config}->{XSLTPROC}
@@ -210,15 +214,15 @@ sub SharedLibrary($$)
 	my $init_obj = "";
 	
 	if ($ctx->{TYPE} eq "LIBRARY") {
-		push (@{$self->{shared_libs}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
-		push (@{$self->{installable_shared_libs}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
+		push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
+		push (@{$self->{installable_shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
 	} elsif ($ctx->{TYPE} eq "MODULE") {
 		push (@{$self->{shared_modules}}, "$ctx->{TARGET}");
-		push (@{$self->{plugins}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}");
+		push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
 
-		$self->{install_plugins} .= "\t\@echo Installing $ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
+		$self->{install_plugins} .= "\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
 		$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/\n";
-		$self->{install_plugins} .= "\t\@cp $ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
+		$self->{install_plugins} .= "\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
 		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
 		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
 		if (defined($ctx->{ALIASES})) {
@@ -244,14 +248,14 @@ sub SharedLibrary($$)
 		$proto_fn =~ s/\(\*\)/$ctx->{INIT_FUNCTION}/;
 
 		$self->output(<< "__EOD__"
-bin/$ctx->{NAME}_init_module.c:
+$ctx->{SHAREDDIR}/$ctx->{NAME}_init_module.c:
 	\@echo Creating \$\@
 	\@echo \"#include \\\"includes.h\\\"\" > \$\@
 	\@echo \"$proto_fn;\" >> \$\@
 	\@echo -e \"_PUBLIC_ $init_fn \\n{\\n\\treturn $ctx->{INIT_FUNCTION}();\\n}\\n\" >> \$\@
 __EOD__
 );
-		$init_obj = "bin/$ctx->{NAME}_init_module.o";
+		$init_obj = "$ctx->{SHAREDDIR}/$ctx->{NAME}_init_module.o";
 	}
 
 	my $soarg = "";
@@ -260,7 +264,7 @@ __EOD__
 		defined($ctx->{LIBRARY_SONAME})) {
 		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME} ";
 		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-			$soargdebug = "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$ctx->{LIBRARY_SONAME}";
+			$soargdebug = "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
 		}
 	}
 
@@ -269,15 +273,15 @@ __EOD__
 	if ($self->{config}->{SONAMEFLAG} ne "" and 
 		defined($ctx->{LIBRARY_SONAME}) and 
 		$ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-		$singlesoarg = "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$ctx->{LIBRARY_SONAME}";
+		$singlesoarg = "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
 	}
 
 	$self->output(<< "__EOD__"
 #
 
-$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
+$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
-	\@mkdir -p $ctx->{DEBUGDIR}
+	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
 		$init_obj $singlesoarg
@@ -286,7 +290,7 @@ __EOD__
 
 	if (defined($ctx->{ALIASES})) {
 		foreach (@{$ctx->{ALIASES}}) {
-			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$_.\$(SHLIBEXT)\n");
+			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
 		}
 	}
 	$self->output("\n");
