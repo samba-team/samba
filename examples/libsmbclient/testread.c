@@ -55,6 +55,7 @@ int main(int argc, char * argv[])
     {
         ret = smbc_read(fd, buffer, sizeof(buffer));
         savedErrno = errno;
+        if (ret > 0) fwrite(buffer, 1, ret, stdout);
     } while (ret > 0);
 
     smbc_close(fd);

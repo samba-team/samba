@@ -1156,6 +1156,7 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 	}
 	
 	ret = ldap_delete_s(ads->ld, utf8_dn);
+	SAFE_FREE(utf8_dn);
 	return ADS_ERROR(ret);
 }
 
@@ -1222,6 +1223,7 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 	SAFE_FREE(base);
 
 	if (ads_count_replies(ads, res) != 1) {
+		ads_msgfree(ads, res);
 		return NULL;
 	}
 
@@ -1237,7 +1239,7 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 
 	new_ln = wkn_ln - bind_ln;
 
-	ret = wkn_dn_exp[0];
+	ret = SMB_STRDUP(wkn_dn_exp[0]);
 
 	for (i=1; i < new_ln; i++) {
 		char *s;
@@ -1246,6 +1248,7 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 		free(s);
 	}
 
+	ads_msgfree(ads, res);
 	ads_memfree(ads, wkn_dn);
 	ldap_value_free(wkn_dn_exp);
 	ldap_value_free(bind_dn_exp);

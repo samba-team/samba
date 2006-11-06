@@ -1076,7 +1076,8 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 	if (fetch_sid_from_uid_cache(psid, uid))
 		return;
 
-	if (lp_idmap_uid(&low, &high) && (uid >= low) && (uid <= high) &&
+	if ((lp_winbind_trusted_domains_only() ||
+	     (lp_idmap_uid(&low, &high) && (uid >= low) && (uid <= high))) &&
 	    winbind_uid_to_sid(psid, uid)) {
 
 		DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
@@ -1121,7 +1122,8 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 	if (fetch_sid_from_gid_cache(psid, gid))
 		return;
 
-	if (lp_idmap_gid(&low, &high) && (gid >= low) && (gid <= high) &&
+	if ((lp_winbind_trusted_domains_only() ||
+	     (lp_idmap_gid(&low, &high) && (gid >= low) && (gid <= high))) &&
 	    winbind_gid_to_sid(psid, gid)) {
 
 		DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
