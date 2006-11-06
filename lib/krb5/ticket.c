@@ -101,13 +101,13 @@ static int
 find_type_in_ad(krb5_context context,
 		int type, 
 		krb5_data *data,
-		int *found,
-		int failp,
+		krb5_boolean *found,
+		krb5_boolean failp,
 		krb5_keyblock *sessionkey,
 		const AuthorizationData *ad,
 		int level)
 {
-    krb5_error_code ret = ENOENT;
+    krb5_error_code ret = 0;
     int i;
 
     if (level > 9) {
@@ -129,7 +129,7 @@ find_type_in_ad(krb5_context context,
 		krb5_set_error_string(context, "malloc - out of memory");
 		goto out;
 	    }
-	    *found = 1;
+	    *found = TRUE;
 	    continue;
 	}
 	switch (ad->val[i].ad_type) {
@@ -144,8 +144,8 @@ find_type_in_ad(krb5_context context,
 				      "IF_RELEVANT with %d", ret);
 		goto out;
 	    }
-	    ret = find_type_in_ad(context, type, data, found, 0, sessionkey,
-				  &child, level + 1);
+	    ret = find_type_in_ad(context, type, data, found, FALSE,
+				  sessionkey, &child, level + 1);
 	    free_AuthorizationData(&child);
 	    if (ret)
 		goto out;
@@ -242,7 +242,7 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
 {
     AuthorizationData *ad;
     krb5_error_code ret;
-    int found = 0;
+    krb5_boolean found = 0;
 
     krb5_data_zero(data);
 
@@ -252,8 +252,8 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
 	return ENOENT; /* XXX */
     }
 
-    ret = find_type_in_ad(context, type, data, &found, 1, &ticket->ticket.key,
-			  ticket->ticket.authorization_data, 0);
+    ret = find_type_in_ad(context, type, data, found, TRUE,
+			  &ticket->ticket.key, ad, 0);
     if (ret)
 	return ret;
     if (!found) {
