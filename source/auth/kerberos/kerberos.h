@@ -122,10 +122,6 @@ char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TAL
 			  struct cli_credentials *credentials,
 			  struct smb_krb5_context *smb_krb5_context,
 				 krb5_ccache ccache);
-krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx, 
-						struct cli_credentials *machine_account, 
-						struct smb_krb5_context *smb_krb5_context,
-						krb5_principal *salt_princ);
 krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx, 
 					   struct cli_credentials *credentials, 
 					   struct smb_krb5_context *smb_krb5_context,

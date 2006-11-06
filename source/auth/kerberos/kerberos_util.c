@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include "auth/auth.h"
+#include "auth/credentials/credentials.h"
 
 struct principal_container {
 	struct smb_krb5_context *smb_krb5_context;
@@ -39,10 +39,10 @@ static int free_principal(struct principal_container *pc)
 	return 0;
 }
 
-krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx, 
-						struct cli_credentials *machine_account, 
-						struct smb_krb5_context *smb_krb5_context,
-						krb5_principal *salt_princ)
+static krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx, 
+						       struct cli_credentials *machine_account, 
+						       struct smb_krb5_context *smb_krb5_context,
+						       krb5_principal *salt_princ)
 {
 	krb5_error_code ret;
 	char *machine_username;
@@ -150,7 +150,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 	const char *password;
 	time_t kdc_time = 0;
 	krb5_principal princ;
-
+	int tries;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 
 	if (!mem_ctx) {
@@ -164,33 +164,54 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 	}
 
 	password = cli_credentials_get_password(credentials);
-	
-	if (password) {
-		ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, ccache, 
-						 princ, 
-						 password, NULL, &kdc_time);
-	} else {
-		/* No password available, try to use a keyblock instead */
 
-		krb5_keyblock keyblock;
-		const struct samr_Password *mach_pwd;
-		mach_pwd = cli_credentials_get_nt_hash(credentials, mem_ctx);
-		if (!mach_pwd) {
-			talloc_free(mem_ctx);
-			DEBUG(1, ("kinit_to_ccache: No password available for kinit\n"));
-			return EINVAL;
+	tries = 2;
+	while (tries--) {
+		if (password) {
+			ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, ccache, 
+							 princ, 
+							 password, NULL, &kdc_time);
+		} else {
+			/* No password available, try to use a keyblock instead */
+			
+			krb5_keyblock keyblock;
+			const struct samr_Password *mach_pwd;
+			mach_pwd = cli_credentials_get_nt_hash(credentials, mem_ctx);
+			if (!mach_pwd) {
+				talloc_free(mem_ctx);
+				DEBUG(1, ("kinit_to_ccache: No password available for kinit\n"));
+				return EINVAL;
+			}
+			ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
+						 ETYPE_ARCFOUR_HMAC_MD5,
+						 mach_pwd->hash, sizeof(mach_pwd->hash), 
+						 &keyblock);
+			
+			if (ret == 0) {
+				ret = kerberos_kinit_keyblock_cc(smb_krb5_context->krb5_context, ccache, 
+								 princ,
+								 &keyblock, NULL, &kdc_time);
+				krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &keyblock);
+			}
 		}
-		ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
-					 ETYPE_ARCFOUR_HMAC_MD5,
-					 mach_pwd->hash, sizeof(mach_pwd->hash), 
-					 &keyblock);
-		
-		if (ret == 0) {
-			ret = kerberos_kinit_keyblock_cc(smb_krb5_context->krb5_context, ccache, 
-							 princ,
-							 &keyblock, NULL, &kdc_time);
-			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &keyblock);
+
+		if (ret == KRB5KRB_AP_ERR_SKEW || ret == KRB5_KDCREP_SKEW) {
+			/* Perhaps we have been given an invalid skew, so try again without it */
+			time_t t = time(NULL);
+			krb5_set_real_time(smb_krb5_context->krb5_context, t, 0);
+		} else {
+			/* not a skew problem */
+			break;
 		}
+	}
+
+	if (ret == KRB5KRB_AP_ERR_SKEW || ret == KRB5_KDCREP_SKEW) {
+		DEBUG(1,("kinit for %s failed (%s)\n", 
+			 cli_credentials_get_principal(credentials, mem_ctx), 
+			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
+						    ret, mem_ctx)));
+		talloc_free(mem_ctx);
+		return ret;
 	}
 
 	/* cope with ticket being in the future due to clock skew */
@@ -201,15 +222,6 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 		krb5_set_real_time(smb_krb5_context->krb5_context, t + time_offset + 1, 0);
 	}
 	
-	if (ret == KRB5KRB_AP_ERR_SKEW || ret == KRB5_KDCREP_SKEW) {
-		DEBUG(1,("kinit for %s failed (%s)\n", 
-			 cli_credentials_get_principal(credentials, mem_ctx), 
-			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
-						    ret, mem_ctx)));
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
 	if (ret == KRB5KDC_ERR_PREAUTH_FAILED && cli_credentials_wrong_password(credentials)) {
 		ret = kinit_to_ccache(parent_ctx,
 				      credentials,
