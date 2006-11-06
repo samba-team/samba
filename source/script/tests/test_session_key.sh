@@ -19,7 +19,7 @@ incdir=`dirname $0`
 
 failed=0
 transport="ncacn_np"
-for bindoptions in $VALIDATE seal; do
+for bindoptions in bigendian seal; do
  for keyexchange in "yes" "no"; do
  for ntlm2 in "yes" "no"; do
  for lm_key in "yes" "no"; do
