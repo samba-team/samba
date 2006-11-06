@@ -56,9 +56,13 @@ sub show($$)
 		    ? "yes" : "no (install GNU make >= 3.81 and see --enable-automatic-dependencies)") .
 	     "\n";
 	
-	print "Using shared libraries: " .
+	print "Building shared libraries: " .
 	    (enabled($config->{BLDSHARED})
 		    ? "yes" : "no (not supported on this system)") .
+	    "\n";
+	print "Using shared libraries internally: " .
+	    (enabled($config->{USESHARED})
+		    ? "yes" : "no (specify --enable-dso)") .
 	    "\n";
 
 	print "\n";

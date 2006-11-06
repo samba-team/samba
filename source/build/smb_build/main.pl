@@ -21,41 +21,42 @@ my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}
 
 my $library_output_type;
 if ($config::config{USESHARED} eq "true") {
-	$library_output_type = "SHARED_LIBRARY";
+	$library_output_type = ["SHARED_LIBRARY", "STATIC_LIBRARY"];
 } else {
-	$library_output_type = "STATIC_LIBRARY";
+	$library_output_type = ["STATIC_LIBRARY"];
+	push (@$library_output_type, "SHARED_LIBRARY") if 
+						($config::config{BLDSHARED} eq "true")
 }
 
 my $module_output_type;
 if ($config::config{USESHARED} eq "true") {
-	$module_output_type = "SHARED_LIBRARY";
+	$module_output_type = ["SHARED_LIBRARY"];
 } else {
-	$module_output_type = "INTEGRATED";
+	$module_output_type = ["INTEGRATED"];
 }
 
 my $DEPEND = smb_build::input::check($INPUT, \%config::enabled, 
-	"STATIC_LIBRARY", $library_output_type, $module_output_type);
+	["STATIC_LIBRARY"], $library_output_type, $module_output_type);
 my $OUTPUT = output::create_output($DEPEND, \%config::config);
-$config::config{SUBSYSTEM_OUTPUT_TYPE} = "STATIC_LIBRARY";
+$config::config{SUBSYSTEM_OUTPUT_TYPE} = ["STATIC_LIBRARY"];
 $config::config{LIBRARY_OUTPUT_TYPE} = $library_output_type;
 $config::config{MODULE_OUTPUT_TYPE} = $module_output_type;
 my $mkenv = new smb_build::makefile(\%config::config, $mkfile);
 
-
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
-	$mkenv->Integrated($key) if $key->{OUTPUT_TYPE} eq "INTEGRATED";
+	$mkenv->Integrated($key) if grep(/INTEGRATED/, @{$key->{OUTPUT_TYPE}});
 }
 
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
-	$mkenv->StaticLibrary($key) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
-	$mkenv->PkgConfig($key) if ($key->{OUTPUT_TYPE} eq "SHARED_LIBRARY") and
-						defined($key->{VERSION});
-	$mkenv->SharedLibrary($key) if $key->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
-	$mkenv->Binary($key) if $key->{OUTPUT_TYPE} eq "BINARY";
+	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
+	$mkenv->PkgConfig($key) if grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}}) 
+							and defined($key->{VERSION});
+	$mkenv->SharedLibrary($key) if grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
+	$mkenv->Binary($key) if grep(/BINARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->Manpage($key) if defined($key->{MANPAGE});
 	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
 	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER}) or 
