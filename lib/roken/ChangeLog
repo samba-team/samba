@@ -1,3 +1,13 @@
+2006-11-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* socket_wrapper.c: A few fixes to have Heimdal pass the make
+	check under socket_wrapper. The first is a missing 'break' before
+	the (heimdal specific) IPv6 support. The second works around the
+	fact that sendto() *may* object to a destination being specified.
+	It appears to be that on Linux, this objects (with EISCONN) for
+	unix stream sockets, but not for TCP sockets. The alternate fix
+	would be to have the KDC use 'send()' in this case. Andrew Bartlett.
+
 2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: split dist and nondist HEADERS
