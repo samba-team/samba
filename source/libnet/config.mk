@@ -1,7 +1,7 @@
 [LIBRARY::LIBSAMBA-NET]
 VERSION = 0.0.1
 SO_VERSION = 0
-DESCRIPTION = User-friendly access to Samba interfaces
+DESCRIPTION = Convenient high level access to Samba management interfaces
 PRIVATE_PROTO_HEADER = libnet_proto.h
 PUBLIC_HEADERS = libnet.h libnet_join.h libnet_lookup.h libnet_passwd.h \
 				 libnet_rpc.h libnet_share.h libnet_time.h \
@@ -23,5 +23,6 @@ OBJ_FILES = \
 		libnet_lookup.o \
 		libnet_domain.o \
 		userinfo.o \
-		userman.o
+		userman.o \
+		prereq_domain.o
 PUBLIC_DEPENDENCIES = dcerpc RPC_NDR_SAMR RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI LIBCLI_COMPOSITE LIBCLI_RESOLVE LIBCLI_FINDDCS LIBSAMBA3 LIBCLI_CLDAP LIBCLI_FINDDCS gensec_schannel
