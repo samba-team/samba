@@ -37,7 +37,7 @@ architecture.
 	</para>
 
 	<para>
-It a taxonomy of databases ldb would sit half way between key/value
+In a taxonomy of databases ldb would sit half way between key/value
 pair databases (such as berkley db or tdb) and a full LDAP
 database. With a structured attribute oriented API like LDAP and good
 indexing capabilities, ldb can be used for quite sophisticated
