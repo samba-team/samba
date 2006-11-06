@@ -41,6 +41,7 @@ NTSTATUS torture_net_init(void)
 	torture_suite_add_simple_test(suite, "API-DELETEUSER", torture_deleteuser);
 	torture_suite_add_simple_test(suite, "API-MODIFYUSER", torture_modifyuser);
 	torture_suite_add_simple_test(suite, "API-USERINFO", torture_userinfo_api);
+	torture_suite_add_simple_test(suite, "API-USERLIST", torture_userlist);
 	torture_suite_add_simple_test(suite, "API-RPCCONN-BIND", torture_rpc_connect_binding);
 	torture_suite_add_simple_test(suite, "API-RPCCONN-SRV", torture_rpc_connect_srv);
 	torture_suite_add_simple_test(suite, "API-RPCCONN-PDC", torture_rpc_connect_pdc);
