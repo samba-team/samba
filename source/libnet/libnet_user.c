@@ -26,6 +26,9 @@
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/samr.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/lsa.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
+#include "libcli/security/security.h"
 
 
 /**
@@ -754,7 +757,7 @@ static void continue_domain_open_info(struct composite_context *ctx)
 	if (composite_nomem(lookup_req, c)) return;
 
 	/* set the next stage */
-	composite_continue(c, lookup_req, continue_rpc_userinfo, c);
+	composite_continue(c, lookup_req, continue_name_found, c);
 }
 
 
@@ -888,4 +891,198 @@ NTSTATUS libnet_UserInfo(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	
 	c = libnet_UserInfo_send(ctx, mem_ctx, r, NULL);
 	return libnet_UserInfo_recv(c, mem_ctx, r);
+}
+
+
+struct userlist_state {
+	struct libnet_context *ctx;
+	int page_size;
+	uint32_t resume;
+	struct lsa_SidArray sids;
+	struct lsa_TransNameArray names;
+	struct lsa_RefDomainList domains;
+	struct userlist *users;
+	uint32_t num_resolved;
+
+	struct libnet_DomainOpen domain_open;
+	struct lsa_EnumAccounts user_list;
+	struct lsa_LookupSids lookup_sids;
+
+	void (*monitor_fn)(struct monitor_msg*);
+};
+
+
+static void continue_domain_open_userlist(struct composite_context *ctx);
+static void continue_users_enumerated(struct rpc_request *req);
+static void continue_sids_resolved(struct rpc_request *req);
+
+
+struct composite_context* libnet_UserList_send(struct libnet_context *ctx,
+					       TALLOC_CTX *mem_ctx,
+					       struct libnet_UserList *r,
+					       void (*monitor)(struct monitor_msg*))
+{
+	struct composite_context *c;
+	struct userlist_state *s;
+	struct composite_context *prereq_ctx;
+	struct rpc_request *enum_req;
+	
+	c = composite_create(ctx, ctx->event_ctx);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct userlist_state);
+	if (composite_nomem(s, c)) return c;
+
+	c->private_data = s;
+	
+	s->ctx        = ctx;
+	s->page_size  = r->in.page_size;
+	s->resume     = (uint32_t)r->in.restore_index;
+	s->monitor_fn = monitor;
+
+	prereq_ctx = lsa_domain_opened(ctx, r->in.domain_name, c, &s->domain_open,
+				       continue_domain_open_userlist, monitor);
+	if (prereq_ctx) return prereq_ctx;
+
+	s->user_list.in.handle = &ctx->lsa.handle;
+	s->user_list.in.num_entries = s->page_size;
+	s->user_list.in.resume_handle = &s->resume;
+	s->user_list.out.resume_handle = &s->resume;
+	s->user_list.out.sids = &s->sids;
+
+	enum_req = dcerpc_lsa_EnumAccounts_send(ctx->lsa.pipe, c, &s->user_list);
+	if (composite_nomem(enum_req, c)) return c;
+
+	composite_continue_rpc(c, enum_req, continue_users_enumerated, c);
+	return c;
+}
+
+
+static void continue_domain_open_userlist(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct userlist_state *s;
+	struct rpc_request *enum_req;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct userlist_state);
+
+	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
+
+	s->user_list.in.handle = &s->ctx->lsa.handle;
+	s->user_list.in.num_entries = s->page_size;
+	s->user_list.in.resume_handle = &s->resume;
+	s->user_list.out.resume_handle = &s->resume;
+	s->user_list.out.sids = &s->sids;
+
+	enum_req = dcerpc_lsa_EnumAccounts_send(s->ctx->lsa.pipe, c, &s->user_list);
+	if (composite_nomem(enum_req, c)) return;
+
+	composite_continue_rpc(c, enum_req, continue_users_enumerated, c);
+}
+
+
+static void continue_users_enumerated(struct rpc_request *req)
+{
+	struct composite_context *c;
+	struct userlist_state *s;
+	struct rpc_request *sidres_req;
+	int i, count;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct userlist_state);
+	
+	c->status = dcerpc_ndr_request_recv(req);
+
+	if (NT_STATUS_IS_OK(c->status) ||
+	    NT_STATUS_EQUAL(c->status, STATUS_MORE_ENTRIES) ||
+	    NT_STATUS_EQUAL(c->status, NT_STATUS_NO_MORE_ENTRIES)) {
+		
+		count = s->user_list.out.sids->num_sids;
+		s->users = talloc_array(c, struct userlist, count);
+		for (i = 0; i < count; i++) {
+			s->users[i].sid = dom_sid_string(c, s->user_list.out.sids->sids[i].sid);
+		}
+		
+		s->lookup_sids.in.handle = &s->ctx->lsa.handle;
+		s->lookup_sids.in.sids   = &s->sids;
+		s->lookup_sids.in.names  = &s->names;
+		s->lookup_sids.in.level  = 2;
+		s->lookup_sids.in.count  = &s->num_resolved;
+		s->lookup_sids.out.names = &s->names;
+		s->lookup_sids.out.count = &s->num_resolved;
+		
+		sidres_req = dcerpc_lsa_LookupSids_send(s->ctx->lsa.pipe, c, &s->lookup_sids);
+		if (composite_nomem(sidres_req, c)) return;
+
+		composite_continue_rpc(c, sidres_req, continue_sids_resolved, c);
+
+	} else {
+		composite_error(c, c->status);
+	}
+}
+
+
+static void continue_sids_resolved(struct rpc_request *req)
+{
+	struct composite_context *c;
+	struct userlist_state *s;
+	int i, count;
+	struct lsa_TransNameArray *names;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct userlist_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	
+	count = (int)s->lookup_sids.out.names->count;
+	for (i = 0; i < count; i++) {
+		names = s->lookup_sids.out.names;
+		s->users[i].username = talloc_strdup(c, names->names[i].name.string);
+	}
+
+	composite_done(c);
+}
+
+
+NTSTATUS libnet_UserList_recv(struct composite_context* c, TALLOC_CTX *mem_ctx,
+			      struct libnet_UserList *r)
+{
+	NTSTATUS status;
+	struct userlist_state *s;
+
+	if (c == NULL || mem_ctx == NULL || r == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status) ||
+	    NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
+		
+		s = talloc_get_type(c->private_data, struct userlist_state);
+
+		r->out.count = s->user_list.out.sids->num_sids;
+		r->out.restore_index = (uint)s->resume;
+		r->out.users = talloc_steal(mem_ctx, s->users);
+
+		r->out.error_string = talloc_strdup(mem_ctx, "Success");
+
+	} else {
+		r->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
+	}
+
+	return status;
+}
+
+
+NTSTATUS libnet_UserList(struct libnet_context *ctx,
+			 TALLOC_CTX *mem_ctx,
+			 struct libnet_UserList *r)
+{
+	struct composite_context *c;
+
+	c = libnet_UserList_send(ctx, mem_ctx, r, NULL);
+	return libnet_UserList_recv(c, mem_ctx, r);
 }
