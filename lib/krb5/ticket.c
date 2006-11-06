@@ -242,7 +242,7 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
 {
     AuthorizationData *ad;
     krb5_error_code ret;
-    krb5_boolean found = 0;
+    krb5_boolean found = FALSE;
 
     krb5_data_zero(data);
 
@@ -252,7 +252,7 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
 	return ENOENT; /* XXX */
     }
 
-    ret = find_type_in_ad(context, type, data, found, TRUE,
+    ret = find_type_in_ad(context, type, data, &found, TRUE,
 			  &ticket->ticket.key, ad, 0);
     if (ret)
 	return ret;
