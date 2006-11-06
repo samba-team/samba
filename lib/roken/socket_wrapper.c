@@ -388,6 +388,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 			return -1;
 		}
 		if (bcast) *bcast = is_bcast;
+		break;
 	}
 #ifdef HAVE_IPV6
 	case AF_INET6: {
@@ -1673,38 +1674,45 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		return real_sendto(s, buf, len, flags, to, tolen);
 	}
 
-	if (si->bound == 0) {
-		ret = swrap_auto_bind(si);
-		if (ret == -1) return -1;
-	}
-
-	ret = sockaddr_convert_to_un(si, to, tolen, &un_addr, 0, &bcast);
-	if (ret == -1) return -1;
-
-	if (bcast) {
-		struct stat st;
-		unsigned int iface;
-		unsigned int prt = ntohs(((const struct sockaddr_in *)to)->sin_port);
-		char type;
-
-		type = SOCKET_TYPE_CHAR_UDP;
-
-		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
-			snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT, 
-				 socket_wrapper_dir(), type, iface, prt);
-			if (stat(un_addr.sun_path, &st) != 0) continue;
-
-			/* ignore the any errors in broadcast sends */
-			real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
+	switch (si->type) {
+	case SOCK_STREAM:
+		ret = real_send(s, buf, len, flags);
+		break;
+	case SOCK_DGRAM:
+		if (si->bound == 0) {
+			ret = swrap_auto_bind(si);
+			if (ret == -1) return -1;
 		}
-
-		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
-
-		return len;
+		
+		ret = sockaddr_convert_to_un(si, to, tolen, &un_addr, 0, &bcast);
+		if (ret == -1) return -1;
+		
+		if (bcast) {
+			struct stat st;
+			unsigned int iface;
+			unsigned int prt = ntohs(((const struct sockaddr_in *)to)->sin_port);
+			char type;
+			
+			type = SOCKET_TYPE_CHAR_UDP;
+			
+			for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
+				snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT, 
+					 socket_wrapper_dir(), type, iface, prt);
+				if (stat(un_addr.sun_path, &st) != 0) continue;
+				
+				/* ignore the any errors in broadcast sends */
+				real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
+			}
+			
+			swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
+			
+			return len;
+		}
+		
+		ret = real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
+		break;
 	}
-
-	ret = real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
-
+		
 	/* to give better errors */
 	if (ret == -1 && errno == ENOENT) {
 		errno = EHOSTUNREACH;
