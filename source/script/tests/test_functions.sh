@@ -96,7 +96,7 @@ testit() {
 	TEST_PCAP="$PREFIX/test_${shname}_${UNIQUE_PID}.pcap"
 	trap "rm -f $TEST_LOG $TEST_PCAP" EXIT
 
-        if [ -z "$smbd_log_size" ]; then
+        if [ -n "$SMBD_TEST_LOG" -a -z "$smbd_log_size" ]; then
 	    smbd_log_size=`wc -l < $SMBD_TEST_LOG`;
 	fi
 
