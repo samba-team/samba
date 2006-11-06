@@ -6,13 +6,15 @@
 
 #include "idl_types.h"
 
+import "lsa.idl", "samr.idl", "security.idl";
+
+
 [
   uuid("12345678-1234-abcd-ef00-01234567cffb"),
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\netlogon]","ncacn_ip_tcp:","ncalrpc:"),
   pointer_default(unique),
-  pointer_default_top(unique),
-  depends(lsa,samr,security)
+  pointer_default_top(unique)
 ]
 
 interface netlogon
