@@ -9,7 +9,9 @@
 */
 
 import "security.idl", "svcctl.idl";
-
+[
+helper("libcli/nbt/nbtname.h")
+]
 interface nbt
 {
 	const int NBT_NAME_SERVICE_PORT  = 137;
@@ -697,4 +699,3 @@ interface nbt
 	} nbt_browse_packet;
 }
 
-include "libcli/nbt/nbtname.h";
