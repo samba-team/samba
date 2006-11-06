@@ -50,14 +50,16 @@ m4_include(lib/appweb/config.m4)
 m4_include(nsswitch/config.m4)
 m4_include(libcli/config.m4)
 
-dnl disabled until we support external heimdal again
-AC_ARG_ENABLE(dso,
-[  --enable-dso 		Enable building internal libraries as DSO's (experimental)],
-[ if test x$enable_dso != xno; then
- 	BLDSHARED=true
-  fi], 
-[BLDSHARED=false])
+USESHARED=$BLDSHARED
 
+AC_ARG_ENABLE(dso,
+[  --enable-dso 		Enable using shared libraries internally (experimental)],
+[ if test x$enable_dso != xno; then
+ 	USESHARED=true
+  fi], 
+[USESHARED=false])
+
+AC_SUBST(USESHARED)
 
 #################################################
 # add *_CFLAGS only for the real build
