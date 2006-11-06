@@ -37,7 +37,7 @@
 #include "auth/gensec/gensec.h"
 #include "smbd/process_model.h"
 #include "smbd/service.h"
-#include "passdb/secrets.h"
+#include "param/secrets.h"
 #include "smbd/pidfile.h"
 
 /*
