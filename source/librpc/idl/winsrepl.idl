@@ -9,10 +9,11 @@
    Written by Andrew Tridgell <tridge@osdl.org>
 */
 
+import "nbt.idl";
+
 [
   pointer_default(unique),
-  pointer_default_top(unique),
-  depends(nbt)
+  pointer_default_top(unique)
 ]
 interface wrepl
 {

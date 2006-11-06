@@ -8,8 +8,9 @@
    about a file in a architecture independent manner
 */
 
+import "security.idl";
+
 [
-  depends(security),
   pointer_default(unique)
 ]
 interface xattr

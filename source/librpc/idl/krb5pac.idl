@@ -4,12 +4,13 @@
 
 #include "idl_types.h"
 
+import "security.idl", "netlogon.idl", "samr.idl";
+
 [
   uuid("12345778-1234-abcd-0000-00000000"),
   version(0.0),
   pointer_default(unique),
-  helpstring("Active Directory KRB5 PAC"),
-  depends(security,netlogon,samr)
+  helpstring("Active Directory KRB5 PAC")
 ]
 interface krb5pac
 {

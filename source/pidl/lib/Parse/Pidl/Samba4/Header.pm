@@ -321,7 +321,7 @@ sub HeaderInclude
 {
 	my @includes = @_;
 	foreach (@includes) {
-		pidl "#include \"$_\"\n";
+		pidl "#include $_\n";
 	}
 }
 

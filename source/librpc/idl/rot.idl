@@ -1,9 +1,10 @@
+import "orpc.idl";
+
 [
 	uuid("b9e79e60-3d52-11ce-aaa1-00006901293f"),
 	version(0.2),
     	pointer_default(unique),
   	pointer_default_top(unique),
-	depends(orpc),
  	endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", 
 		  "ncalrpc:[EPMAPPER]")
 ] interface rot

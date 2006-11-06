@@ -23,26 +23,31 @@ idl:
 	| idl importlib { push(@{$_[1]}, $_[2]); $_[1] }
 ;
 
-import: 'import' commalisttext ';' {{
+import: 'import' commalist ';' {{
 			"TYPE" => "IMPORT", 
-			"PATHS" => [ $_[2] ],
+			"PATHS" => $_[2],
 		   "FILE" => $_[0]->YYData->{INPUT_FILENAME},
 		   "LINE" => $_[0]->YYData->{LINE}
 		}}
 ;
-include: 'import' commalisttext ';' {{ 
+include: 'include' commalist ';' {{ 
 			"TYPE" => "INCLUDE", 
-			"PATHS" => [ $_[2] ],
+			"PATHS" => $_[2],
 		   "FILE" => $_[0]->YYData->{INPUT_FILENAME},
 		   "LINE" => $_[0]->YYData->{LINE}
 		}}
 ;
-importlib: 'importlib' commalisttext ';' {{ 
+importlib: 'importlib' commalist ';' {{ 
 			"TYPE" => "IMPORTLIB", 
-			"PATHS" => [ $_[2] ],
+			"PATHS" => $_[2],
 		   "FILE" => $_[0]->YYData->{INPUT_FILENAME},
 		   "LINE" => $_[0]->YYData->{LINE}
 		}}
+;
+
+commalist: 
+      text { [ $_[1] ] }
+    | commalist ',' text { push(@{$_[1]}, $_[3]); $_[1] }
 ;
 
 coclass: property_list 'coclass' identifier '{' interface_names '}' optional_semicolon
