@@ -44,3 +44,7 @@ PUBLIC_DEPENDENCIES = ldb
 # End MODULE share_ldb
 ################################################
 
+[SUBSYSTEM::SECRETS]
+PRIVATE_PROTO_HEADER = secrets_proto.h
+OBJ_FILES = secrets.o
+PRIVATE_DEPENDENCIES = DB_WRAP UTIL_TDB

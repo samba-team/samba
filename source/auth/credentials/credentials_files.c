@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
-#include "passdb/secrets.h"
+#include "param/secrets.h"
 #include "system/filesys.h"
 #include "db_wrap.h"
 #include "auth/credentials/credentials.h"

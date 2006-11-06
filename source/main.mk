@@ -31,7 +31,6 @@ include libcli/config.mk
 include scripting/ejs/config.mk
 include scripting/swig/config.mk
 include kdc/config.mk
-include passdb/config.mk
 
 DEFAULT_HEADERS = $(srcdir)/include/core.h \
 				  $(srcdir)/lib/util/dlinklist.h \

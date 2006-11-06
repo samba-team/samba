@@ -31,7 +31,7 @@
 #include "winbind/wb_server.h"
 #include "lib/stream/packet.h"
 #include "smbd/service.h"
-#include "passdb/secrets.h"
+#include "param/secrets.h"
 
 void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *reason)
 {

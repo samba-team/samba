@@ -30,7 +30,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
-#include "passdb/secrets.h"
+#include "param/secrets.h"
 #include "db_wrap.h"
 #include "librpc/gen_ndr/ndr_dssetup.h"
 

@@ -32,7 +32,7 @@
 #include "system/kerberos.h"
 #include "heimdal/lib/gssapi/gssapi_locl.h"
 
-#include "passdb/secrets.h"
+#include "param/secrets.h"
 
 #ifdef HAVE_SETPROCTITLE
 #ifdef HAVE_SETPROCTITLE_H
