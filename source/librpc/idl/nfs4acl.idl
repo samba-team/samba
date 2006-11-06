@@ -5,10 +5,11 @@
   see http://www.suse.de/~agruen/nfs4acl/
 */
 
+import "misc.idl", "security.idl";
+
 [ uuid("18763978-8625-abc3-54ca-9892bacdf321"),
   version(1.0),
-  pointer_default(unique),
-  depends(misc,security)
+  pointer_default(unique)
 ]
 interface nfs4acl
 {

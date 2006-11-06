@@ -4,9 +4,10 @@
   security IDL structures
 */
 
+import "misc.idl";
+
 [
-	pointer_default(unique),
-	depends(misc,security)
+	pointer_default(unique)
 ]
 interface security
 {

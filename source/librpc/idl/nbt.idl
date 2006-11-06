@@ -8,10 +8,9 @@
    encoding if it doesn't work out
 */
 
-[
-  depends(security,svcctl),
-  helper("libcli/nbt/nbtname.h")
-] interface nbt
+import "security.idl", "svcctl.idl";
+
+interface nbt
 {
 	const int NBT_NAME_SERVICE_PORT  = 137;
 	const int NBT_DGRAM_SERVICE_PORT = 138;
@@ -697,3 +696,5 @@
 		[switch_is(opcode)] nbt_browse_payload payload;	
 	} nbt_browse_packet;
 }
+
+include "libcli/nbt/nbtname.h";

@@ -1,12 +1,13 @@
 #include "idl_types.h"
 
+import "security.idl", "nbt.idl";
+
 /*
   definitions for irpc primitives
 */
 [ uuid("e770c620-0b06-4b5e-8d87-a26e20f28340"),
   version(1.0),
-  pointer_default(unique),
-  depends(security,nbt)
+  pointer_default(unique)
 ] interface irpc
 {
 	typedef bitmap {

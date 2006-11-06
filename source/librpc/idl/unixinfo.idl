@@ -3,12 +3,13 @@
   Unixinfo interface definition
 */
 
+import "security.idl";
+
 [ uuid("9c54e310-a955-4885-bd31-78787147dfa6"),
   version(0.0),
   endpoint("ncacn_np:[\\pipe\\unixinfo]", "ncacn_ip_tcp:", "ncalrpc:"),
   pointer_default(unique),
-  helpstring("Unixinfo specific stuff"),
-  depends(security)
+  helpstring("Unixinfo specific stuff")
 ] interface unixinfo
 {
 	/******************/

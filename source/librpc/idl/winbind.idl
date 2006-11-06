@@ -3,13 +3,14 @@
 */
 
 #include "idl_types.h"
+  
+import "netlogon.idl";
 
 [
   uuid("245f3e6b-3c5d-6e21-3a2d-2a3d645b7221"),
   version(1.0),
   pointer_default(unique),
-  pointer_default_top(unique),
-  depends(netlogon)
+  pointer_default_top(unique)
 ]
 
 interface winbind
