@@ -24,6 +24,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "torture/libnet/usertest.h"
@@ -135,8 +136,8 @@ static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-static BOOL test_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		       struct policy_handle *domain_handle)
+static BOOL test_samr_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			    struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
 	struct samr_Close r;
@@ -146,10 +147,29 @@ static BOOL test_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_samr_Close(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Close failed - %s\n", nt_errstr(status));
+		printf("Close samr domain failed - %s\n", nt_errstr(status));
 		return False;
 	}
 	
+	return True;
+}
+
+
+static BOOL test_lsa_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			   struct policy_handle *domain_handle)
+{
+	NTSTATUS status;
+	struct lsa_Close r;
+
+	r.in.handle = domain_handle;
+	r.out.handle = domain_handle;
+	
+	status = dcerpc_lsa_Close(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Close lsa domain failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
 	return True;
 }
 
@@ -243,7 +263,7 @@ BOOL torture_createuser(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
+	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
 		printf("domain close failed\n");
 		ret = False;
 	}
@@ -571,7 +591,7 @@ cleanup:
 		goto done;
 	}
 
-	if (!test_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
+	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
 		printf("domain close failed\n");
 		ret = False;
 	}
@@ -591,7 +611,7 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 	const char *binding;
 	BOOL ret = True;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx=NULL, *prep_mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL, *prep_mem_ctx;
 	struct libnet_context *ctx;
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
@@ -643,7 +663,52 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
+	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
+		printf("domain close failed\n");
+		ret = False;
+	}
+
+	talloc_free(ctx);
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+
+BOOL torture_userlist(struct torture_context *torture)
+{
+	const char *binding;
+	BOOL ret = True;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct libnet_context *ctx;
+	struct lsa_String domain_name;
+	struct libnet_UserList req;
+
+	binding = torture_setting_string(torture, "binding", NULL);
+
+	ctx = libnet_context_init(NULL);
+	ctx->cred = cmdline_credentials;
+
+	domain_name.string = lp_workgroup();
+	mem_ctx = talloc_init("torture user list");
+
+	ZERO_STRUCT(req);
+	
+	req.in.domain_name = domain_name.string;
+	req.in.page_size   = 30;
+	req.in.restore_index = 0;
+
+	status = libnet_UserList(ctx, mem_ctx, &req);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("libnet_UserList call failed: %s\n", nt_errstr(status));
+		ret = False;
+		talloc_free(mem_ctx);
+		goto done;
+	}
+
+	if (!test_lsa_close(ctx->lsa.pipe, mem_ctx, &ctx->lsa.handle)) {
 		printf("domain close failed\n");
 		ret = False;
 	}
