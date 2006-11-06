@@ -253,7 +253,7 @@ clean:: clean_pch
 	@-rm -f $(BIN_PROGS) $(SBIN_PROGS) $(BINARIES) $(TORTURE_PROGS)
 	@echo Removing libraries
 	@-rm -f $(STATIC_LIBRARIES) $(SHARED_LIBRARIES)
-	@-rm -f bin/*.a bin/shared/*.$(SHLIBEXT)
+	@-rm -f bin/static/*.a bin/shared/*.$(SHLIBEXT)
 	@echo Removing modules
 	@-rm -f bin/modules/*/*.$(SHLIBEXT)
 	@-rm -f bin/*_init_module.c
