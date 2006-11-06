@@ -86,12 +86,13 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 
 	if (!NT_STATUS_IS_OK(result)) {
 
-		/* Password must change is the only valid error condition here
-		 * from where we can proceed, the rest like account locked out
-		 * or logon failure will lead to errors later anyway */
+		/* Password must change or Password expired are the only valid
+		 * error conditions here from where we can proceed, the rest like
+		 * account locked out or logon failure will lead to errors later
+		 * anyway */
 
-		if (!NT_STATUS_EQUAL(result,
-				     NT_STATUS_PASSWORD_MUST_CHANGE)) {
+		if (!NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_MUST_CHANGE) &&
+		    !NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_EXPIRED)) {
 			slprintf(err_str, err_str_len-1, "Could not "
 				 "connect to machine %s: %s\n",
 				 remote_machine, cli_errstr(cli));
