@@ -75,8 +75,7 @@ foreach my $p (@ARGV)
 {
 	my $p2 = findmap($p);
 	unless ($p2) {
-	    warn("Unable to map $p");
-	    next;
+	    die("Unable to map $p");
 	}
  	print "Installing $p as $includedir/$p2\n";
 
