@@ -23,7 +23,7 @@ smbd_check_or_start() {
 			if [ -z "$SMBD_MAXTIME" ]; then
 			    SMBD_MAXTIME=5400
 			fi
-			$SMBD_VALGRIND $SRCDIR/bin/smbd --maximum-runtime=$SMBD_MAXTIME -d1 -s $CONFFILE -M single -i --leak-report-full < $SMBD_TEST_FIFO > $SMBD_TEST_LOG 2>&1;
+			$SMBD_VALGRIND $SRCDIR/bin/smbd --maximum-runtime=$SMBD_MAXTIME -s $CONFFILE -M single -i --leak-report-full < $SMBD_TEST_FIFO > $SMBD_TEST_LOG 2>&1;
 			ret=$?;
 			rm -f $SMBD_TEST_FIFO;
 			if [ -n "$SOCKET_WRAPPER_DIR" -a -d "$SOCKET_WRAPPER_DIR" ]; then
