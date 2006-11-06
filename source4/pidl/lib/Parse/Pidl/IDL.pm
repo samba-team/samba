@@ -509,9 +509,10 @@ sub new {
 		ACTIONS => {
 			'' => 2,
 			"importlib" => 3,
-			"import" => 6
+			"import" => 6,
+			"include" => 11
 		},
-		DEFAULT => -90,
+		DEFAULT => -92,
 		GOTOS => {
 			'importlib' => 9,
 			'interface' => 8,
@@ -526,17 +527,11 @@ sub new {
 	},
 	{#State 3
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
+			'TEXT' => 13
 		},
-		DEFAULT => -100,
 		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 12,
-			'constant' => 13,
-			'commalisttext' => 15
+			'commalist' => 12,
+			'text' => 14
 		}
 	},
 	{#State 4
@@ -544,24 +539,18 @@ sub new {
 	},
 	{#State 5
 		ACTIONS => {
-			"coclass" => 19,
-			"[" => 21,
-			"interface" => 20
+			"coclass" => 15,
+			"[" => 17,
+			"interface" => 16
 		}
 	},
 	{#State 6
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
+			'TEXT' => 13
 		},
-		DEFAULT => -100,
 		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 12,
-			'constant' => 13,
-			'commalisttext' => 22
+			'commalist' => 18,
+			'text' => 14
 		}
 	},
 	{#State 7
@@ -577,1011 +566,730 @@ sub new {
 		DEFAULT => -3
 	},
 	{#State 11
-		DEFAULT => -119
+		ACTIONS => {
+			'TEXT' => 13
+		},
+		GOTOS => {
+			'commalist' => 19,
+			'text' => 14
+		}
 	},
 	{#State 12
 		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
-		},
-		DEFAULT => -98
+			";" => 20,
+			"," => 21
+		}
 	},
 	{#State 13
-		DEFAULT => -102
+		DEFAULT => -125
 	},
 	{#State 14
-		DEFAULT => -122
+		DEFAULT => -10
 	},
 	{#State 15
 		ACTIONS => {
-			";" => 38,
-			"," => 39
+			'IDENTIFIER' => 22
+		},
+		GOTOS => {
+			'identifier' => 23
 		}
 	},
 	{#State 16
-		DEFAULT => -123
+		ACTIONS => {
+			'IDENTIFIER' => 22
+		},
+		GOTOS => {
+			'identifier' => 24
+		}
 	},
 	{#State 17
-		DEFAULT => -101
+		ACTIONS => {
+			'IDENTIFIER' => 22
+		},
+		GOTOS => {
+			'identifier' => 26,
+			'property' => 27,
+			'properties' => 25
+		}
 	},
 	{#State 18
-		DEFAULT => -103
+		ACTIONS => {
+			";" => 28,
+			"," => 21
+		}
 	},
 	{#State 19
 		ACTIONS => {
-			'IDENTIFIER' => 11
-		},
-		GOTOS => {
-			'identifier' => 40
+			";" => 29,
+			"," => 21
 		}
 	},
 	{#State 20
-		ACTIONS => {
-			'IDENTIFIER' => 11
-		},
-		GOTOS => {
-			'identifier' => 41
-		}
+		DEFAULT => -9
 	},
 	{#State 21
 		ACTIONS => {
-			'IDENTIFIER' => 11
+			'TEXT' => 13
 		},
 		GOTOS => {
-			'identifier' => 43,
-			'property' => 44,
-			'properties' => 42
+			'text' => 30
 		}
 	},
 	{#State 22
-		ACTIONS => {
-			";" => 45,
-			"," => 39
-		}
+		DEFAULT => -121
 	},
 	{#State 23
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 46,
-			'constant' => 13
+			"{" => 31
 		}
 	},
 	{#State 24
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
+			":" => 32
 		},
-		DEFAULT => -100,
+		DEFAULT => -16,
 		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 47,
-			'constant' => 13
+			'base_interface' => 33
 		}
 	},
 	{#State 25
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 48,
-			'constant' => 13
+			"," => 34,
+			"]" => 35
 		}
 	},
 	{#State 26
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
+			"(" => 36
 		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 49,
-			'constant' => 13
-		}
+		DEFAULT => -96
 	},
 	{#State 27
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 50,
-			'constant' => 13
-		}
+		DEFAULT => -94
 	},
 	{#State 28
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 51,
-			'constant' => 13
-		}
+		DEFAULT => -7
 	},
 	{#State 29
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 12,
-			'constant' => 13,
-			'commalisttext' => 52
-		}
+		DEFAULT => -8
 	},
 	{#State 30
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 53,
-			'constant' => 13
-		}
+		DEFAULT => -11
 	},
 	{#State 31
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
+		DEFAULT => -13,
 		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 54,
-			'constant' => 13
+			'interface_names' => 37
 		}
 	},
 	{#State 32
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -100,
 		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 55,
-			'constant' => 13
+			'identifier' => 38
 		}
 	},
 	{#State 33
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 12,
-			'constant' => 13,
-			'commalisttext' => 56
+			"{" => 39
 		}
 	},
 	{#State 34
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -100,
 		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 57,
-			'constant' => 13
+			'identifier' => 26,
+			'property' => 40
 		}
 	},
 	{#State 35
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 58,
-			'constant' => 13
-		}
+		DEFAULT => -93
 	},
 	{#State 36
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -100,
+		DEFAULT => -102,
 		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 59,
-			'constant' => 13
+			'identifier' => 45,
+			'text' => 46,
+			'listtext' => 42,
+			'anytext' => 41,
+			'constant' => 43
 		}
 	},
 	{#State 37
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 60,
-			'constant' => 13
+			"}" => 47,
+			"interface" => 48
 		}
 	},
 	{#State 38
-		DEFAULT => -9
+		DEFAULT => -17
 	},
 	{#State 39
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
+			"typedef" => 49,
+			"union" => 50,
+			"enum" => 63,
+			"bitmap" => 64,
+			"declare" => 56,
+			"const" => 58,
+			"struct" => 61
 		},
-		DEFAULT => -100,
+		DEFAULT => -92,
 		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 61,
-			'constant' => 13
+			'typedecl' => 62,
+			'function' => 51,
+			'bitmap' => 65,
+			'definitions' => 52,
+			'definition' => 55,
+			'property_list' => 54,
+			'usertype' => 53,
+			'declare' => 67,
+			'const' => 66,
+			'struct' => 57,
+			'enum' => 59,
+			'typedef' => 60,
+			'union' => 68
 		}
 	},
 	{#State 40
-		ACTIONS => {
-			"{" => 62
-		}
+		DEFAULT => -95
 	},
 	{#State 41
 		ACTIONS => {
-			":" => 63
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
 		},
-		DEFAULT => -14,
-		GOTOS => {
-			'base_interface' => 64
-		}
+		DEFAULT => -98
 	},
 	{#State 42
 		ACTIONS => {
-			"," => 65,
-			"]" => 66
+			"," => 84,
+			")" => 85
 		}
 	},
 	{#State 43
-		ACTIONS => {
-			"(" => 67
-		},
-		DEFAULT => -94
+		DEFAULT => -104
 	},
 	{#State 44
-		DEFAULT => -92
+		DEFAULT => -124
 	},
 	{#State 45
-		DEFAULT => -7
+		DEFAULT => -103
 	},
 	{#State 46
-		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
-		},
-		DEFAULT => -113
+		DEFAULT => -105
 	},
 	{#State 47
 		ACTIONS => {
-			":" => 23,
-			"<" => 26,
-			"~" => 27,
-			"?" => 25,
-			"{" => 29,
-			"=" => 32
+			";" => 86
 		},
-		DEFAULT => -104
+		DEFAULT => -126,
+		GOTOS => {
+			'optional_semicolon' => 87
+		}
 	},
 	{#State 48
 		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -112
+		GOTOS => {
+			'identifier' => 88
+		}
 	},
 	{#State 49
-		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
-		},
-		DEFAULT => -108
+		DEFAULT => -92,
+		GOTOS => {
+			'property_list' => 89
+		}
 	},
 	{#State 50
 		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
+			'IDENTIFIER' => 90
 		},
-		DEFAULT => -116
+		DEFAULT => -123,
+		GOTOS => {
+			'optional_identifier' => 91
+		}
 	},
 	{#State 51
-		ACTIONS => {
-			":" => 23,
-			"<" => 26,
-			"~" => 27,
-			"?" => 25,
-			"{" => 29,
-			"=" => 32
-		},
-		DEFAULT => -115
+		DEFAULT => -20
 	},
 	{#State 52
 		ACTIONS => {
-			"}" => 68,
-			"," => 39
+			"}" => 92,
+			"typedef" => 49,
+			"union" => 50,
+			"enum" => 63,
+			"bitmap" => 64,
+			"declare" => 56,
+			"const" => 58,
+			"struct" => 61
+		},
+		DEFAULT => -92,
+		GOTOS => {
+			'typedecl' => 62,
+			'function' => 51,
+			'bitmap' => 65,
+			'definition' => 93,
+			'property_list' => 54,
+			'usertype' => 53,
+			'const' => 66,
+			'struct' => 57,
+			'declare' => 67,
+			'enum' => 59,
+			'typedef' => 60,
+			'union' => 68
 		}
 	},
 	{#State 53
 		ACTIONS => {
-			":" => 23,
-			"<" => 26,
-			"~" => 27,
-			"?" => 25,
-			"{" => 29,
-			"=" => 32
-		},
-		DEFAULT => -110
+			";" => 94
+		}
 	},
 	{#State 54
 		ACTIONS => {
-			":" => 23,
-			"<" => 26,
-			"~" => 27,
-			"?" => 25,
-			"{" => 29,
-			"=" => 32
+			'IDENTIFIER' => 22,
+			"signed" => 100,
+			"union" => 50,
+			"enum" => 63,
+			"bitmap" => 64,
+			'void' => 95,
+			"unsigned" => 101,
+			"[" => 17,
+			"struct" => 61
 		},
-		DEFAULT => -111
+		GOTOS => {
+			'existingtype' => 99,
+			'bitmap' => 65,
+			'usertype' => 96,
+			'identifier' => 97,
+			'struct' => 57,
+			'enum' => 59,
+			'type' => 102,
+			'union' => 68,
+			'sign' => 98
+		}
 	},
 	{#State 55
-		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
-		},
-		DEFAULT => -114
+		DEFAULT => -18
 	},
 	{#State 56
-		ACTIONS => {
-			"," => 39,
-			")" => 69
+		DEFAULT => -92,
+		GOTOS => {
+			'property_list' => 103
 		}
 	},
 	{#State 57
-		ACTIONS => {
-			":" => 23,
-			"<" => 26,
-			"~" => 27,
-			"?" => 25,
-			"{" => 29,
-			"=" => 32
-		},
-		DEFAULT => -109
+		DEFAULT => -36
 	},
 	{#State 58
 		ACTIONS => {
-			":" => 23,
-			"<" => 26,
-			"~" => 27,
-			"?" => 25,
-			"{" => 29,
-			"=" => 32
-		},
-		DEFAULT => -106
-	},
-	{#State 59
-		ACTIONS => {
-			":" => 23,
-			"<" => 26,
-			"~" => 27,
-			"?" => 25,
-			"{" => 29,
-			"=" => 32
-		},
-		DEFAULT => -105
-	},
-	{#State 60
-		ACTIONS => {
-			":" => 23,
-			"<" => 26,
-			"~" => 27,
-			"?" => 25,
-			"{" => 29,
-			"=" => 32
-		},
-		DEFAULT => -107
-	},
-	{#State 61
-		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
-		},
-		DEFAULT => -99
-	},
-	{#State 62
-		DEFAULT => -11,
-		GOTOS => {
-			'interface_names' => 70
-		}
-	},
-	{#State 63
-		ACTIONS => {
-			'IDENTIFIER' => 11
-		},
-		GOTOS => {
-			'identifier' => 71
-		}
-	},
-	{#State 64
-		ACTIONS => {
-			"{" => 72
-		}
-	},
-	{#State 65
-		ACTIONS => {
-			'IDENTIFIER' => 11
-		},
-		GOTOS => {
-			'identifier' => 43,
-			'property' => 73
-		}
-	},
-	{#State 66
-		DEFAULT => -91
-	},
-	{#State 67
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'listtext' => 75,
-			'anytext' => 74,
-			'constant' => 13
-		}
-	},
-	{#State 68
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 76,
-			'constant' => 13
-		}
-	},
-	{#State 69
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'text' => 18,
-			'anytext' => 77,
-			'constant' => 13
-		}
-	},
-	{#State 70
-		ACTIONS => {
-			"}" => 78,
-			"interface" => 79
-		}
-	},
-	{#State 71
-		DEFAULT => -15
-	},
-	{#State 72
-		ACTIONS => {
-			"typedef" => 80,
-			"union" => 81,
-			"enum" => 94,
-			"bitmap" => 95,
-			"declare" => 87,
-			"const" => 89,
-			"struct" => 92
-		},
-		DEFAULT => -90,
-		GOTOS => {
-			'typedecl' => 93,
-			'function' => 82,
-			'bitmap' => 96,
-			'definitions' => 83,
-			'definition' => 86,
-			'property_list' => 85,
-			'usertype' => 84,
-			'declare' => 98,
-			'const' => 97,
-			'struct' => 88,
-			'enum' => 90,
-			'typedef' => 91,
-			'union' => 99
-		}
-	},
-	{#State 73
-		DEFAULT => -93
-	},
-	{#State 74
-		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
-		},
-		DEFAULT => -96
-	},
-	{#State 75
-		ACTIONS => {
-			"," => 100,
-			")" => 101
-		}
-	},
-	{#State 76
-		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
-		},
-		DEFAULT => -118
-	},
-	{#State 77
-		ACTIONS => {
-			":" => 23,
-			"<" => 26,
-			"~" => 27,
-			"?" => 25,
-			"{" => 29,
-			"=" => 32
-		},
-		DEFAULT => -117
-	},
-	{#State 78
-		ACTIONS => {
-			";" => 102
-		},
-		DEFAULT => -124,
-		GOTOS => {
-			'optional_semicolon' => 103
-		}
-	},
-	{#State 79
-		ACTIONS => {
-			'IDENTIFIER' => 11
+			'IDENTIFIER' => 22
 		},
 		GOTOS => {
 			'identifier' => 104
 		}
 	},
-	{#State 80
-		DEFAULT => -90,
+	{#State 59
+		DEFAULT => -38
+	},
+	{#State 60
+		DEFAULT => -22
+	},
+	{#State 61
+		ACTIONS => {
+			'IDENTIFIER' => 90
+		},
+		DEFAULT => -123,
 		GOTOS => {
-			'property_list' => 105
+			'optional_identifier' => 105
 		}
 	},
-	{#State 81
+	{#State 62
+		DEFAULT => -24
+	},
+	{#State 63
 		ACTIONS => {
-			'IDENTIFIER' => 106
+			'IDENTIFIER' => 90
 		},
-		DEFAULT => -121,
+		DEFAULT => -123,
+		GOTOS => {
+			'optional_identifier' => 106
+		}
+	},
+	{#State 64
+		ACTIONS => {
+			'IDENTIFIER' => 90
+		},
+		DEFAULT => -123,
 		GOTOS => {
 			'optional_identifier' => 107
 		}
 	},
+	{#State 65
+		DEFAULT => -39
+	},
+	{#State 66
+		DEFAULT => -21
+	},
+	{#State 67
+		DEFAULT => -23
+	},
+	{#State 68
+		DEFAULT => -37
+	},
+	{#State 69
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 108,
+			'text' => 46,
+			'constant' => 43
+		}
+	},
+	{#State 70
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 109,
+			'text' => 46,
+			'constant' => 43
+		}
+	},
+	{#State 71
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 110,
+			'text' => 46,
+			'constant' => 43
+		}
+	},
+	{#State 72
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 111,
+			'text' => 46,
+			'constant' => 43
+		}
+	},
+	{#State 73
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 112,
+			'text' => 46,
+			'constant' => 43
+		}
+	},
+	{#State 74
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 113,
+			'text' => 46,
+			'constant' => 43
+		}
+	},
+	{#State 75
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 114,
+			'text' => 46,
+			'constant' => 43
+		}
+	},
+	{#State 76
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 115,
+			'text' => 46,
+			'constant' => 43,
+			'commalisttext' => 116
+		}
+	},
+	{#State 77
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 117,
+			'text' => 46,
+			'constant' => 43
+		}
+	},
+	{#State 78
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 118,
+			'text' => 46,
+			'constant' => 43
+		}
+	},
+	{#State 79
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 119,
+			'text' => 46,
+			'constant' => 43
+		}
+	},
+	{#State 80
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 115,
+			'text' => 46,
+			'constant' => 43,
+			'commalisttext' => 120
+		}
+	},
+	{#State 81
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 121,
+			'text' => 46,
+			'constant' => 43
+		}
+	},
 	{#State 82
-		DEFAULT => -18
+		ACTIONS => {
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 122,
+			'text' => 46,
+			'constant' => 43
+		}
 	},
 	{#State 83
 		ACTIONS => {
-			"}" => 108,
-			"typedef" => 80,
-			"union" => 81,
-			"enum" => 94,
-			"bitmap" => 95,
-			"declare" => 87,
-			"const" => 89,
-			"struct" => 92
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -90,
+		DEFAULT => -102,
 		GOTOS => {
-			'typedecl' => 93,
-			'function' => 82,
-			'bitmap' => 96,
-			'definition' => 109,
-			'property_list' => 85,
-			'usertype' => 84,
-			'const' => 97,
-			'struct' => 88,
-			'declare' => 98,
-			'enum' => 90,
-			'typedef' => 91,
-			'union' => 99
+			'identifier' => 45,
+			'anytext' => 123,
+			'text' => 46,
+			'constant' => 43
 		}
 	},
 	{#State 84
 		ACTIONS => {
-			";" => 110
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 124,
+			'text' => 46,
+			'constant' => 43
 		}
 	},
 	{#State 85
-		ACTIONS => {
-			'IDENTIFIER' => 11,
-			"signed" => 116,
-			"union" => 81,
-			"enum" => 94,
-			"bitmap" => 95,
-			'void' => 111,
-			"unsigned" => 117,
-			"[" => 21,
-			"struct" => 92
-		},
-		GOTOS => {
-			'existingtype' => 115,
-			'bitmap' => 96,
-			'usertype' => 112,
-			'identifier' => 113,
-			'struct' => 88,
-			'enum' => 90,
-			'type' => 118,
-			'union' => 99,
-			'sign' => 114
-		}
+		DEFAULT => -97
 	},
 	{#State 86
-		DEFAULT => -16
+		DEFAULT => -127
 	},
 	{#State 87
-		DEFAULT => -90,
-		GOTOS => {
-			'property_list' => 119
-		}
+		DEFAULT => -12
 	},
 	{#State 88
-		DEFAULT => -34
-	},
-	{#State 89
-		ACTIONS => {
-			'IDENTIFIER' => 11
-		},
-		GOTOS => {
-			'identifier' => 120
-		}
-	},
-	{#State 90
-		DEFAULT => -36
-	},
-	{#State 91
-		DEFAULT => -20
-	},
-	{#State 92
-		ACTIONS => {
-			'IDENTIFIER' => 106
-		},
-		DEFAULT => -121,
-		GOTOS => {
-			'optional_identifier' => 121
-		}
-	},
-	{#State 93
-		DEFAULT => -22
-	},
-	{#State 94
-		ACTIONS => {
-			'IDENTIFIER' => 106
-		},
-		DEFAULT => -121,
-		GOTOS => {
-			'optional_identifier' => 122
-		}
-	},
-	{#State 95
-		ACTIONS => {
-			'IDENTIFIER' => 106
-		},
-		DEFAULT => -121,
-		GOTOS => {
-			'optional_identifier' => 123
-		}
-	},
-	{#State 96
-		DEFAULT => -37
-	},
-	{#State 97
-		DEFAULT => -19
-	},
-	{#State 98
-		DEFAULT => -21
-	},
-	{#State 99
-		DEFAULT => -35
-	},
-	{#State 100
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'anytext' => 124,
-			'text' => 18,
-			'constant' => 13
-		}
-	},
-	{#State 101
-		DEFAULT => -95
-	},
-	{#State 102
-		DEFAULT => -125
-	},
-	{#State 103
-		DEFAULT => -10
-	},
-	{#State 104
 		ACTIONS => {
 			";" => 125
 		}
 	},
-	{#State 105
+	{#State 89
 		ACTIONS => {
-			'IDENTIFIER' => 11,
-			"signed" => 116,
-			"union" => 81,
-			"enum" => 94,
-			"bitmap" => 95,
-			'void' => 111,
-			"unsigned" => 117,
-			"[" => 21,
-			"struct" => 92
+			'IDENTIFIER' => 22,
+			"signed" => 100,
+			"union" => 50,
+			"enum" => 63,
+			"bitmap" => 64,
+			'void' => 95,
+			"unsigned" => 101,
+			"[" => 17,
+			"struct" => 61
 		},
 		GOTOS => {
-			'existingtype' => 115,
-			'bitmap' => 96,
-			'usertype' => 112,
-			'identifier' => 113,
-			'struct' => 88,
-			'enum' => 90,
+			'existingtype' => 99,
+			'bitmap' => 65,
+			'usertype' => 96,
+			'identifier' => 97,
+			'struct' => 57,
+			'enum' => 59,
 			'type' => 126,
-			'union' => 99,
-			'sign' => 114
+			'union' => 68,
+			'sign' => 98
 		}
 	},
-	{#State 106
-		DEFAULT => -120
+	{#State 90
+		DEFAULT => -122
 	},
-	{#State 107
+	{#State 91
 		ACTIONS => {
 			"{" => 128
 		},
-		DEFAULT => -75,
+		DEFAULT => -77,
 		GOTOS => {
 			'union_body' => 129,
 			'opt_union_body' => 127
 		}
 	},
-	{#State 108
+	{#State 92
 		ACTIONS => {
-			";" => 102
+			";" => 86
 		},
-		DEFAULT => -124,
+		DEFAULT => -126,
 		GOTOS => {
 			'optional_semicolon' => 130
 		}
 	},
-	{#State 109
-		DEFAULT => -17
+	{#State 93
+		DEFAULT => -19
 	},
-	{#State 110
-		DEFAULT => -38
+	{#State 94
+		DEFAULT => -40
 	},
-	{#State 111
+	{#State 95
+		DEFAULT => -48
+	},
+	{#State 96
 		DEFAULT => -46
 	},
-	{#State 112
-		DEFAULT => -44
+	{#State 97
+		DEFAULT => -45
 	},
-	{#State 113
-		DEFAULT => -43
-	},
-	{#State 114
+	{#State 98
 		ACTIONS => {
-			'IDENTIFIER' => 11
+			'IDENTIFIER' => 22
 		},
 		GOTOS => {
 			'identifier' => 131
 		}
 	},
-	{#State 115
-		DEFAULT => -45
+	{#State 99
+		DEFAULT => -47
 	},
-	{#State 116
-		DEFAULT => -39
+	{#State 100
+		DEFAULT => -41
 	},
-	{#State 117
-		DEFAULT => -40
+	{#State 101
+		DEFAULT => -42
 	},
-	{#State 118
+	{#State 102
 		ACTIONS => {
-			'IDENTIFIER' => 11
+			'IDENTIFIER' => 22
 		},
 		GOTOS => {
 			'identifier' => 132
 		}
 	},
-	{#State 119
+	{#State 103
 		ACTIONS => {
 			"union" => 133,
 			"enum" => 138,
 			"bitmap" => 139,
-			"[" => 21
+			"[" => 17
 		},
 		GOTOS => {
 			'decl_enum' => 134,
@@ -1590,670 +1298,983 @@ sub new {
 			'decl_union' => 136
 		}
 	},
-	{#State 120
-		DEFAULT => -79,
+	{#State 104
+		DEFAULT => -81,
 		GOTOS => {
 			'pointers' => 140
 		}
 	},
-	{#State 121
+	{#State 105
 		ACTIONS => {
 			"{" => 142
 		},
-		DEFAULT => -65,
+		DEFAULT => -67,
 		GOTOS => {
 			'struct_body' => 141,
 			'opt_struct_body' => 143
 		}
 	},
-	{#State 122
+	{#State 106
 		ACTIONS => {
 			"{" => 144
 		},
-		DEFAULT => -48,
+		DEFAULT => -50,
 		GOTOS => {
 			'opt_enum_body' => 146,
 			'enum_body' => 145
 		}
 	},
-	{#State 123
+	{#State 107
 		ACTIONS => {
 			"{" => 148
 		},
-		DEFAULT => -56,
+		DEFAULT => -58,
 		GOTOS => {
 			'bitmap_body' => 149,
 			'opt_bitmap_body' => 147
 		}
 	},
+	{#State 108
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
+		},
+		DEFAULT => -115
+	},
+	{#State 109
+		ACTIONS => {
+			":" => 69,
+			"<" => 71,
+			"~" => 72,
+			"?" => 75,
+			"{" => 76,
+			"=" => 79
+		},
+		DEFAULT => -106
+	},
+	{#State 110
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
+		},
+		DEFAULT => -110
+	},
+	{#State 111
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
+		},
+		DEFAULT => -118
+	},
+	{#State 112
+		ACTIONS => {
+			":" => 69,
+			"<" => 71,
+			"~" => 72,
+			"?" => 75,
+			"{" => 76,
+			"=" => 79
+		},
+		DEFAULT => -117
+	},
+	{#State 113
+		ACTIONS => {
+			":" => 69,
+			"<" => 71,
+			"~" => 72,
+			"?" => 75,
+			"{" => 76,
+			"=" => 79
+		},
+		DEFAULT => -108
+	},
+	{#State 114
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
+		},
+		DEFAULT => -114
+	},
+	{#State 115
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
+		},
+		DEFAULT => -100
+	},
+	{#State 116
+		ACTIONS => {
+			"}" => 150,
+			"," => 151
+		}
+	},
+	{#State 117
+		ACTIONS => {
+			":" => 69,
+			"<" => 71,
+			"~" => 72,
+			"?" => 75,
+			"{" => 76,
+			"=" => 79
+		},
+		DEFAULT => -112
+	},
+	{#State 118
+		ACTIONS => {
+			":" => 69,
+			"<" => 71,
+			"~" => 72,
+			"?" => 75,
+			"{" => 76,
+			"=" => 79
+		},
+		DEFAULT => -113
+	},
+	{#State 119
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
+		},
+		DEFAULT => -116
+	},
+	{#State 120
+		ACTIONS => {
+			"," => 151,
+			")" => 152
+		}
+	},
+	{#State 121
+		ACTIONS => {
+			":" => 69,
+			"<" => 71,
+			"~" => 72,
+			"?" => 75,
+			"{" => 76,
+			"=" => 79
+		},
+		DEFAULT => -111
+	},
+	{#State 122
+		ACTIONS => {
+			":" => 69,
+			"<" => 71,
+			"~" => 72,
+			"?" => 75,
+			"{" => 76,
+			"=" => 79
+		},
+		DEFAULT => -107
+	},
+	{#State 123
+		ACTIONS => {
+			":" => 69,
+			"<" => 71,
+			"~" => 72,
+			"?" => 75,
+			"{" => 76,
+			"=" => 79
+		},
+		DEFAULT => -109
+	},
 	{#State 124
 		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
 		},
-		DEFAULT => -97
+		DEFAULT => -99
 	},
 	{#State 125
-		DEFAULT => -12
+		DEFAULT => -14
 	},
 	{#State 126
 		ACTIONS => {
-			'IDENTIFIER' => 11
-		},
-		GOTOS => {
-			'identifier' => 150
-		}
-	},
-	{#State 127
-		DEFAULT => -77
-	},
-	{#State 128
-		DEFAULT => -72,
-		GOTOS => {
-			'union_elements' => 151
-		}
-	},
-	{#State 129
-		DEFAULT => -76
-	},
-	{#State 130
-		DEFAULT => -13
-	},
-	{#State 131
-		DEFAULT => -42
-	},
-	{#State 132
-		ACTIONS => {
-			"(" => 152
-		}
-	},
-	{#State 133
-		DEFAULT => -32
-	},
-	{#State 134
-		DEFAULT => -27
-	},
-	{#State 135
-		DEFAULT => -28
-	},
-	{#State 136
-		DEFAULT => -29
-	},
-	{#State 137
-		ACTIONS => {
-			'IDENTIFIER' => 11
+			'IDENTIFIER' => 22
 		},
 		GOTOS => {
 			'identifier' => 153
 		}
 	},
-	{#State 138
+	{#State 127
+		DEFAULT => -79
+	},
+	{#State 128
+		DEFAULT => -74,
+		GOTOS => {
+			'union_elements' => 154
+		}
+	},
+	{#State 129
+		DEFAULT => -78
+	},
+	{#State 130
+		DEFAULT => -15
+	},
+	{#State 131
+		DEFAULT => -44
+	},
+	{#State 132
+		ACTIONS => {
+			"(" => 155
+		}
+	},
+	{#State 133
+		DEFAULT => -34
+	},
+	{#State 134
+		DEFAULT => -29
+	},
+	{#State 135
 		DEFAULT => -30
 	},
-	{#State 139
+	{#State 136
 		DEFAULT => -31
+	},
+	{#State 137
+		ACTIONS => {
+			'IDENTIFIER' => 22
+		},
+		GOTOS => {
+			'identifier' => 156
+		}
+	},
+	{#State 138
+		DEFAULT => -32
+	},
+	{#State 139
+		DEFAULT => -33
 	},
 	{#State 140
 		ACTIONS => {
-			'IDENTIFIER' => 11,
-			"*" => 155
+			'IDENTIFIER' => 22,
+			"*" => 158
 		},
 		GOTOS => {
-			'identifier' => 154
+			'identifier' => 157
 		}
 	},
 	{#State 141
-		DEFAULT => -66
+		DEFAULT => -68
 	},
 	{#State 142
-		DEFAULT => -81,
+		DEFAULT => -83,
 		GOTOS => {
-			'element_list1' => 156
+			'element_list1' => 159
 		}
 	},
 	{#State 143
-		DEFAULT => -67
+		DEFAULT => -69
 	},
 	{#State 144
 		ACTIONS => {
-			'IDENTIFIER' => 11
+			'IDENTIFIER' => 22
 		},
 		GOTOS => {
-			'identifier' => 157,
-			'enum_element' => 158,
-			'enum_elements' => 159
+			'identifier' => 160,
+			'enum_element' => 161,
+			'enum_elements' => 162
 		}
 	},
 	{#State 145
-		DEFAULT => -49
+		DEFAULT => -51
 	},
 	{#State 146
-		DEFAULT => -50
+		DEFAULT => -52
 	},
 	{#State 147
-		DEFAULT => -58
+		DEFAULT => -60
 	},
 	{#State 148
 		ACTIONS => {
-			'IDENTIFIER' => 11
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -61,
+		DEFAULT => -63,
 		GOTOS => {
-			'identifier' => 162,
-			'bitmap_element' => 161,
-			'bitmap_elements' => 160,
-			'opt_bitmap_elements' => 163
+			'identifier' => 165,
+			'bitmap_element' => 164,
+			'bitmap_elements' => 163,
+			'opt_bitmap_elements' => 166
 		}
 	},
 	{#State 149
-		DEFAULT => -57
+		DEFAULT => -59
 	},
 	{#State 150
 		ACTIONS => {
-			"[" => 164
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -87,
+		DEFAULT => -102,
 		GOTOS => {
-			'array_len' => 165
+			'identifier' => 45,
+			'anytext' => 167,
+			'text' => 46,
+			'constant' => 43
 		}
 	},
 	{#State 151
 		ACTIONS => {
-			"}" => 166
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -90,
+		DEFAULT => -102,
 		GOTOS => {
-			'optional_base_element' => 168,
-			'property_list' => 167
+			'identifier' => 45,
+			'anytext' => 168,
+			'text' => 46,
+			'constant' => 43
 		}
 	},
 	{#State 152
 		ACTIONS => {
-			"," => -83,
-			"void" => 172,
-			")" => -83
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -90,
+		DEFAULT => -102,
 		GOTOS => {
-			'base_element' => 169,
-			'element_list2' => 171,
-			'property_list' => 170
+			'identifier' => 45,
+			'anytext' => 169,
+			'text' => 46,
+			'constant' => 43
 		}
 	},
 	{#State 153
 		ACTIONS => {
-			";" => 173
+			"[" => 170
+		},
+		DEFAULT => -89,
+		GOTOS => {
+			'array_len' => 171
 		}
 	},
 	{#State 154
 		ACTIONS => {
-			"[" => 164,
-			"=" => 175
+			"}" => 172
 		},
+		DEFAULT => -92,
 		GOTOS => {
-			'array_len' => 174
+			'optional_base_element' => 174,
+			'property_list' => 173
 		}
 	},
 	{#State 155
-		DEFAULT => -80
+		ACTIONS => {
+			"," => -85,
+			"void" => 178,
+			")" => -85
+		},
+		DEFAULT => -92,
+		GOTOS => {
+			'base_element' => 175,
+			'element_list2' => 177,
+			'property_list' => 176
+		}
 	},
 	{#State 156
 		ACTIONS => {
-			"}" => 176
-		},
-		DEFAULT => -90,
-		GOTOS => {
-			'base_element' => 177,
-			'property_list' => 170
+			";" => 179
 		}
 	},
 	{#State 157
 		ACTIONS => {
-			"=" => 178
+			"[" => 170,
+			"=" => 181
 		},
-		DEFAULT => -53
+		GOTOS => {
+			'array_len' => 180
+		}
 	},
 	{#State 158
-		DEFAULT => -51
+		DEFAULT => -82
 	},
 	{#State 159
 		ACTIONS => {
-			"}" => 179,
-			"," => 180
+			"}" => 182
+		},
+		DEFAULT => -92,
+		GOTOS => {
+			'base_element' => 183,
+			'property_list' => 176
 		}
 	},
 	{#State 160
 		ACTIONS => {
-			"," => 181
+			"=" => 184
 		},
-		DEFAULT => -62
+		DEFAULT => -55
 	},
 	{#State 161
-		DEFAULT => -59
+		DEFAULT => -53
 	},
 	{#State 162
 		ACTIONS => {
-			"=" => 182
+			"}" => 185,
+			"," => 186
 		}
 	},
 	{#State 163
 		ACTIONS => {
-			"}" => 183
-		}
+			"," => 187
+		},
+		DEFAULT => -64
 	},
 	{#State 164
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			"]" => 184,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'anytext' => 185,
-			'text' => 18,
-			'constant' => 13
-		}
+		DEFAULT => -61
 	},
 	{#State 165
 		ACTIONS => {
-			";" => 186
+			"=" => 188
 		}
 	},
 	{#State 166
-		DEFAULT => -74
+		ACTIONS => {
+			"}" => 189
+		}
 	},
 	{#State 167
 		ACTIONS => {
-			"[" => 21
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
 		},
-		DEFAULT => -90,
-		GOTOS => {
-			'base_or_empty' => 187,
-			'base_element' => 188,
-			'empty_element' => 189,
-			'property_list' => 190
-		}
+		DEFAULT => -120
 	},
 	{#State 168
-		DEFAULT => -73
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
+		},
+		DEFAULT => -101
 	},
 	{#State 169
-		DEFAULT => -85
+		ACTIONS => {
+			":" => 69,
+			"<" => 71,
+			"~" => 72,
+			"?" => 75,
+			"{" => 76,
+			"=" => 79
+		},
+		DEFAULT => -119
 	},
 	{#State 170
 		ACTIONS => {
-			'IDENTIFIER' => 11,
-			"signed" => 116,
-			"union" => 81,
-			"enum" => 94,
-			"bitmap" => 95,
-			'void' => 111,
-			"unsigned" => 117,
-			"[" => 21,
-			"struct" => 92
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			"]" => 190,
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -41,
+		DEFAULT => -102,
 		GOTOS => {
-			'existingtype' => 115,
-			'bitmap' => 96,
-			'usertype' => 112,
-			'identifier' => 113,
-			'struct' => 88,
-			'enum' => 90,
-			'type' => 191,
-			'union' => 99,
-			'sign' => 114
+			'identifier' => 45,
+			'anytext' => 191,
+			'text' => 46,
+			'constant' => 43
 		}
 	},
 	{#State 171
 		ACTIONS => {
-			"," => 192,
-			")" => 193
+			";" => 192
 		}
 	},
 	{#State 172
-		DEFAULT => -84
+		DEFAULT => -76
 	},
 	{#State 173
-		DEFAULT => -26
+		ACTIONS => {
+			"[" => 17
+		},
+		DEFAULT => -92,
+		GOTOS => {
+			'base_or_empty' => 193,
+			'base_element' => 194,
+			'empty_element' => 195,
+			'property_list' => 196
+		}
 	},
 	{#State 174
-		ACTIONS => {
-			"=" => 194
-		}
+		DEFAULT => -75
 	},
 	{#State 175
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'anytext' => 195,
-			'text' => 18,
-			'constant' => 13
-		}
+		DEFAULT => -87
 	},
 	{#State 176
-		DEFAULT => -64
+		ACTIONS => {
+			'IDENTIFIER' => 22,
+			"signed" => 100,
+			"union" => 50,
+			"enum" => 63,
+			"bitmap" => 64,
+			'void' => 95,
+			"unsigned" => 101,
+			"[" => 17,
+			"struct" => 61
+		},
+		DEFAULT => -43,
+		GOTOS => {
+			'existingtype' => 99,
+			'bitmap' => 65,
+			'usertype' => 96,
+			'identifier' => 97,
+			'struct' => 57,
+			'enum' => 59,
+			'type' => 197,
+			'union' => 68,
+			'sign' => 98
+		}
 	},
 	{#State 177
 		ACTIONS => {
-			";" => 196
+			"," => 198,
+			")" => 199
 		}
 	},
 	{#State 178
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'anytext' => 197,
-			'text' => 18,
-			'constant' => 13
-		}
+		DEFAULT => -86
 	},
 	{#State 179
-		DEFAULT => -47
+		DEFAULT => -28
 	},
 	{#State 180
 		ACTIONS => {
-			'IDENTIFIER' => 11
-		},
-		GOTOS => {
-			'identifier' => 157,
-			'enum_element' => 198
+			"=" => 200
 		}
 	},
 	{#State 181
 		ACTIONS => {
-			'IDENTIFIER' => 11
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
 		},
+		DEFAULT => -102,
 		GOTOS => {
-			'identifier' => 162,
-			'bitmap_element' => 199
+			'identifier' => 45,
+			'anytext' => 201,
+			'text' => 46,
+			'constant' => 43
 		}
 	},
 	{#State 182
-		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'anytext' => 200,
-			'text' => 18,
-			'constant' => 13
-		}
+		DEFAULT => -66
 	},
 	{#State 183
-		DEFAULT => -55
+		ACTIONS => {
+			";" => 202
+		}
 	},
 	{#State 184
 		ACTIONS => {
-			"[" => 164
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -87,
+		DEFAULT => -102,
 		GOTOS => {
-			'array_len' => 201
+			'identifier' => 45,
+			'anytext' => 203,
+			'text' => 46,
+			'constant' => 43
 		}
 	},
 	{#State 185
-		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"?" => 25,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"&" => 30,
-			"{" => 29,
-			"/" => 31,
-			"=" => 32,
-			"|" => 34,
-			"(" => 33,
-			"*" => 35,
-			"." => 36,
-			"]" => 202,
-			">" => 37
-		}
+		DEFAULT => -49
 	},
 	{#State 186
-		DEFAULT => -33
+		ACTIONS => {
+			'IDENTIFIER' => 22
+		},
+		GOTOS => {
+			'identifier' => 160,
+			'enum_element' => 204
+		}
 	},
 	{#State 187
-		DEFAULT => -71
+		ACTIONS => {
+			'IDENTIFIER' => 22
+		},
+		GOTOS => {
+			'identifier' => 165,
+			'bitmap_element' => 205
+		}
 	},
 	{#State 188
 		ACTIONS => {
-			";" => 203
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
+		},
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 206,
+			'text' => 46,
+			'constant' => 43
 		}
 	},
 	{#State 189
-		DEFAULT => -70
+		DEFAULT => -57
 	},
 	{#State 190
 		ACTIONS => {
-			'IDENTIFIER' => 11,
-			"signed" => 116,
-			"union" => 81,
-			";" => 204,
-			"enum" => 94,
-			"bitmap" => 95,
-			'void' => 111,
-			"unsigned" => 117,
-			"[" => 21,
-			"struct" => 92
+			"[" => 170
 		},
-		DEFAULT => -41,
+		DEFAULT => -89,
 		GOTOS => {
-			'existingtype' => 115,
-			'bitmap' => 96,
-			'usertype' => 112,
-			'identifier' => 113,
-			'struct' => 88,
-			'enum' => 90,
-			'type' => 191,
-			'union' => 99,
-			'sign' => 114
+			'array_len' => 207
 		}
 	},
 	{#State 191
-		DEFAULT => -79,
-		GOTOS => {
-			'pointers' => 205
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"?" => 75,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"&" => 77,
+			"{" => 76,
+			"/" => 78,
+			"=" => 79,
+			"|" => 81,
+			"(" => 80,
+			"*" => 74,
+			"." => 82,
+			"]" => 208,
+			">" => 83
 		}
 	},
 	{#State 192
-		DEFAULT => -90,
-		GOTOS => {
-			'base_element' => 206,
-			'property_list' => 170
-		}
+		DEFAULT => -35
 	},
 	{#State 193
-		ACTIONS => {
-			";" => 207
-		}
+		DEFAULT => -73
 	},
 	{#State 194
 		ACTIONS => {
-			'CONSTANT' => 14,
-			'TEXT' => 16,
-			'IDENTIFIER' => 11
-		},
-		DEFAULT => -100,
-		GOTOS => {
-			'identifier' => 17,
-			'anytext' => 208,
-			'text' => 18,
-			'constant' => 13
+			";" => 209
 		}
 	},
 	{#State 195
-		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"?" => 25,
-			"<" => 26,
-			";" => 209,
-			"+" => 28,
-			"~" => 27,
-			"&" => 30,
-			"{" => 29,
-			"/" => 31,
-			"=" => 32,
-			"|" => 34,
-			"(" => 33,
-			"*" => 35,
-			"." => 36,
-			">" => 37
-		}
+		DEFAULT => -72
 	},
 	{#State 196
-		DEFAULT => -82
+		ACTIONS => {
+			'IDENTIFIER' => 22,
+			"signed" => 100,
+			"union" => 50,
+			";" => 210,
+			"enum" => 63,
+			"bitmap" => 64,
+			'void' => 95,
+			"unsigned" => 101,
+			"[" => 17,
+			"struct" => 61
+		},
+		DEFAULT => -43,
+		GOTOS => {
+			'existingtype' => 99,
+			'bitmap' => 65,
+			'usertype' => 96,
+			'identifier' => 97,
+			'struct' => 57,
+			'enum' => 59,
+			'type' => 197,
+			'union' => 68,
+			'sign' => 98
+		}
 	},
 	{#State 197
-		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
-		},
-		DEFAULT => -54
+		DEFAULT => -81,
+		GOTOS => {
+			'pointers' => 211
+		}
 	},
 	{#State 198
-		DEFAULT => -52
+		DEFAULT => -92,
+		GOTOS => {
+			'base_element' => 212,
+			'property_list' => 176
+		}
 	},
 	{#State 199
-		DEFAULT => -60
+		ACTIONS => {
+			";" => 213
+		}
 	},
 	{#State 200
 		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"<" => 26,
-			"+" => 28,
-			"~" => 27,
-			"*" => 35,
-			"?" => 25,
-			"{" => 29,
-			"&" => 30,
-			"/" => 31,
-			"=" => 32,
-			"(" => 33,
-			"|" => 34,
-			"." => 36,
-			">" => 37
+			'CONSTANT' => 44,
+			'TEXT' => 13,
+			'IDENTIFIER' => 22
 		},
-		DEFAULT => -63
+		DEFAULT => -102,
+		GOTOS => {
+			'identifier' => 45,
+			'anytext' => 214,
+			'text' => 46,
+			'constant' => 43
+		}
 	},
 	{#State 201
-		DEFAULT => -88
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"?" => 75,
+			"<" => 71,
+			";" => 215,
+			"+" => 73,
+			"~" => 72,
+			"&" => 77,
+			"{" => 76,
+			"/" => 78,
+			"=" => 79,
+			"|" => 81,
+			"(" => 80,
+			"*" => 74,
+			"." => 82,
+			">" => 83
+		}
 	},
 	{#State 202
-		ACTIONS => {
-			"[" => 164
-		},
-		DEFAULT => -87,
-		GOTOS => {
-			'array_len' => 210
-		}
+		DEFAULT => -84
 	},
 	{#State 203
-		DEFAULT => -69
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
+		},
+		DEFAULT => -56
 	},
 	{#State 204
-		DEFAULT => -68
+		DEFAULT => -54
 	},
 	{#State 205
-		ACTIONS => {
-			'IDENTIFIER' => 11,
-			"*" => 155
-		},
-		GOTOS => {
-			'identifier' => 211
-		}
+		DEFAULT => -62
 	},
 	{#State 206
-		DEFAULT => -86
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"<" => 71,
+			"+" => 73,
+			"~" => 72,
+			"*" => 74,
+			"?" => 75,
+			"{" => 76,
+			"&" => 77,
+			"/" => 78,
+			"=" => 79,
+			"(" => 80,
+			"|" => 81,
+			"." => 82,
+			">" => 83
+		},
+		DEFAULT => -65
 	},
 	{#State 207
-		DEFAULT => -25
+		DEFAULT => -90
 	},
 	{#State 208
 		ACTIONS => {
-			"-" => 24,
-			":" => 23,
-			"?" => 25,
-			"<" => 26,
-			";" => 212,
-			"+" => 28,
-			"~" => 27,
-			"&" => 30,
-			"{" => 29,
-			"/" => 31,
-			"=" => 32,
-			"|" => 34,
-			"(" => 33,
-			"*" => 35,
-			"." => 36,
-			">" => 37
+			"[" => 170
+		},
+		DEFAULT => -89,
+		GOTOS => {
+			'array_len' => 216
 		}
 	},
 	{#State 209
-		DEFAULT => -23
+		DEFAULT => -71
 	},
 	{#State 210
-		DEFAULT => -89
+		DEFAULT => -70
 	},
 	{#State 211
 		ACTIONS => {
-			"[" => 164
+			'IDENTIFIER' => 22,
+			"*" => 158
 		},
-		DEFAULT => -87,
 		GOTOS => {
-			'array_len' => 213
+			'identifier' => 217
 		}
 	},
 	{#State 212
-		DEFAULT => -24
+		DEFAULT => -88
 	},
 	{#State 213
-		DEFAULT => -78
+		DEFAULT => -27
+	},
+	{#State 214
+		ACTIONS => {
+			"-" => 70,
+			":" => 69,
+			"?" => 75,
+			"<" => 71,
+			";" => 218,
+			"+" => 73,
+			"~" => 72,
+			"&" => 77,
+			"{" => 76,
+			"/" => 78,
+			"=" => 79,
+			"|" => 81,
+			"(" => 80,
+			"*" => 74,
+			"." => 82,
+			">" => 83
+		}
+	},
+	{#State 215
+		DEFAULT => -25
+	},
+	{#State 216
+		DEFAULT => -91
+	},
+	{#State 217
+		ACTIONS => {
+			"[" => 170
+		},
+		DEFAULT => -89,
+		GOTOS => {
+			'array_len' => 219
+		}
+	},
+	{#State 218
+		DEFAULT => -26
+	},
+	{#State 219
+		DEFAULT => -80
 	}
 ],
                                   yyrules  =>
@@ -2300,7 +2321,7 @@ sub
 #line 26 "pidl/idl.yp"
 {{
 			"TYPE" => "IMPORT", 
-			"PATHS" => [ $_[2] ],
+			"PATHS" => $_[2],
 		   "FILE" => $_[0]->YYData->{INPUT_FILENAME},
 		   "LINE" => $_[0]->YYData->{LINE}
 		}}
@@ -2311,7 +2332,7 @@ sub
 #line 33 "pidl/idl.yp"
 {{ 
 			"TYPE" => "INCLUDE", 
-			"PATHS" => [ $_[2] ],
+			"PATHS" => $_[2],
 		   "FILE" => $_[0]->YYData->{INPUT_FILENAME},
 		   "LINE" => $_[0]->YYData->{LINE}
 		}}
@@ -2322,15 +2343,27 @@ sub
 #line 40 "pidl/idl.yp"
 {{ 
 			"TYPE" => "IMPORTLIB", 
-			"PATHS" => [ $_[2] ],
+			"PATHS" => $_[2],
 		   "FILE" => $_[0]->YYData->{INPUT_FILENAME},
 		   "LINE" => $_[0]->YYData->{LINE}
 		}}
 	],
 	[#Rule 10
-		 'coclass', 7,
+		 'commalist', 1,
 sub
 #line 49 "pidl/idl.yp"
+{ [ $_[1] ] }
+	],
+	[#Rule 11
+		 'commalist', 3,
+sub
+#line 50 "pidl/idl.yp"
+{ push(@{$_[1]}, $_[3]); $_[1] }
+	],
+	[#Rule 12
+		 'coclass', 7,
+sub
+#line 54 "pidl/idl.yp"
 {{
                "TYPE" => "COCLASS", 
 	       "PROPERTIES" => $_[1],
@@ -2340,19 +2373,19 @@ sub
 		   "LINE" => $_[0]->YYData->{LINE},
           }}
 	],
-	[#Rule 11
+	[#Rule 13
 		 'interface_names', 0, undef
 	],
-	[#Rule 12
+	[#Rule 14
 		 'interface_names', 4,
 sub
-#line 61 "pidl/idl.yp"
+#line 66 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
-	[#Rule 13
+	[#Rule 15
 		 'interface', 8,
 sub
-#line 65 "pidl/idl.yp"
+#line 70 "pidl/idl.yp"
 {{
                "TYPE" => "INTERFACE", 
 	       "PROPERTIES" => $_[1],
@@ -2363,32 +2396,26 @@ sub
 		   "LINE" => $_[0]->YYData->{LINE},
           }}
 	],
-	[#Rule 14
+	[#Rule 16
 		 'base_interface', 0, undef
 	],
-	[#Rule 15
+	[#Rule 17
 		 'base_interface', 2,
 sub
-#line 78 "pidl/idl.yp"
+#line 83 "pidl/idl.yp"
 { $_[2] }
 	],
-	[#Rule 16
+	[#Rule 18
 		 'definitions', 1,
 sub
-#line 82 "pidl/idl.yp"
+#line 87 "pidl/idl.yp"
 { [ $_[1] ] }
 	],
-	[#Rule 17
+	[#Rule 19
 		 'definitions', 2,
 sub
-#line 83 "pidl/idl.yp"
+#line 88 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
-	],
-	[#Rule 18
-		 'definition', 1, undef
-	],
-	[#Rule 19
-		 'definition', 1, undef
 	],
 	[#Rule 20
 		 'definition', 1, undef
@@ -2400,9 +2427,15 @@ sub
 		 'definition', 1, undef
 	],
 	[#Rule 23
+		 'definition', 1, undef
+	],
+	[#Rule 24
+		 'definition', 1, undef
+	],
+	[#Rule 25
 		 'const', 7,
 sub
-#line 91 "pidl/idl.yp"
+#line 96 "pidl/idl.yp"
 {{
                      "TYPE"  => "CONST", 
 		     "DTYPE"  => $_[2],
@@ -2413,10 +2446,10 @@ sub
 		     "LINE" => $_[0]->YYData->{LINE},
         }}
 	],
-	[#Rule 24
+	[#Rule 26
 		 'const', 8,
 sub
-#line 101 "pidl/idl.yp"
+#line 106 "pidl/idl.yp"
 {{
                      "TYPE"  => "CONST", 
 		     "DTYPE"  => $_[2],
@@ -2428,10 +2461,10 @@ sub
 		     "LINE" => $_[0]->YYData->{LINE},
         }}
 	],
-	[#Rule 25
+	[#Rule 27
 		 'function', 7,
 sub
-#line 115 "pidl/idl.yp"
+#line 120 "pidl/idl.yp"
 {{
 		"TYPE" => "FUNCTION",
 		"NAME" => $_[3],
@@ -2442,10 +2475,10 @@ sub
 		"LINE" => $_[0]->YYData->{LINE},
 	  }}
 	],
-	[#Rule 26
+	[#Rule 28
 		 'declare', 5,
 sub
-#line 127 "pidl/idl.yp"
+#line 132 "pidl/idl.yp"
 {{
 	             "TYPE" => "DECLARE", 
                      "PROPERTIES" => $_[2],
@@ -2455,43 +2488,43 @@ sub
 		     "LINE" => $_[0]->YYData->{LINE},
         }}
 	],
-	[#Rule 27
-		 'decl_type', 1, undef
-	],
-	[#Rule 28
-		 'decl_type', 1, undef
-	],
 	[#Rule 29
 		 'decl_type', 1, undef
 	],
 	[#Rule 30
+		 'decl_type', 1, undef
+	],
+	[#Rule 31
+		 'decl_type', 1, undef
+	],
+	[#Rule 32
 		 'decl_enum', 1,
 sub
-#line 141 "pidl/idl.yp"
+#line 146 "pidl/idl.yp"
 {{
                      "TYPE" => "ENUM"
         }}
 	],
-	[#Rule 31
+	[#Rule 33
 		 'decl_bitmap', 1,
 sub
-#line 147 "pidl/idl.yp"
+#line 152 "pidl/idl.yp"
 {{
                      "TYPE" => "BITMAP"
         }}
 	],
-	[#Rule 32
+	[#Rule 34
 		 'decl_union', 1,
 sub
-#line 153 "pidl/idl.yp"
+#line 158 "pidl/idl.yp"
 {{
                      "TYPE" => "UNION"
         }}
 	],
-	[#Rule 33
+	[#Rule 35
 		 'typedef', 6,
 sub
-#line 159 "pidl/idl.yp"
+#line 164 "pidl/idl.yp"
 {{
 	             "TYPE" => "TYPEDEF", 
                      "PROPERTIES" => $_[2],
@@ -2502,12 +2535,6 @@ sub
 		     "LINE" => $_[0]->YYData->{LINE},
         }}
 	],
-	[#Rule 34
-		 'usertype', 1, undef
-	],
-	[#Rule 35
-		 'usertype', 1, undef
-	],
 	[#Rule 36
 		 'usertype', 1, undef
 	],
@@ -2515,156 +2542,162 @@ sub
 		 'usertype', 1, undef
 	],
 	[#Rule 38
-		 'typedecl', 2,
-sub
-#line 172 "pidl/idl.yp"
-{ $_[1] }
+		 'usertype', 1, undef
 	],
 	[#Rule 39
-		 'sign', 1, undef
+		 'usertype', 1, undef
 	],
 	[#Rule 40
-		 'sign', 1, undef
-	],
-	[#Rule 41
-		 'existingtype', 0, undef
-	],
-	[#Rule 42
-		 'existingtype', 2,
+		 'typedecl', 2,
 sub
 #line 177 "pidl/idl.yp"
-{ "$_[1] $_[2]" }
+{ $_[1] }
+	],
+	[#Rule 41
+		 'sign', 1, undef
+	],
+	[#Rule 42
+		 'sign', 1, undef
 	],
 	[#Rule 43
-		 'existingtype', 1, undef
+		 'existingtype', 0, undef
 	],
 	[#Rule 44
-		 'type', 1, undef
+		 'existingtype', 2,
+sub
+#line 182 "pidl/idl.yp"
+{ "$_[1] $_[2]" }
 	],
 	[#Rule 45
-		 'type', 1, undef
+		 'existingtype', 1, undef
 	],
 	[#Rule 46
-		 'type', 1,
-sub
-#line 181 "pidl/idl.yp"
-{ "void" }
+		 'type', 1, undef
 	],
 	[#Rule 47
-		 'enum_body', 3,
-sub
-#line 183 "pidl/idl.yp"
-{ $_[2] }
+		 'type', 1, undef
 	],
 	[#Rule 48
-		 'opt_enum_body', 0, undef
-	],
-	[#Rule 49
-		 'opt_enum_body', 1, undef
-	],
-	[#Rule 50
-		 'enum', 3,
+		 'type', 1,
 sub
 #line 186 "pidl/idl.yp"
+{ "void" }
+	],
+	[#Rule 49
+		 'enum_body', 3,
+sub
+#line 188 "pidl/idl.yp"
+{ $_[2] }
+	],
+	[#Rule 50
+		 'opt_enum_body', 0, undef
+	],
+	[#Rule 51
+		 'opt_enum_body', 1, undef
+	],
+	[#Rule 52
+		 'enum', 3,
+sub
+#line 191 "pidl/idl.yp"
 {{
              "TYPE" => "ENUM", 
 			 "NAME" => $_[2],
 		     "ELEMENTS" => $_[3]
         }}
 	],
-	[#Rule 51
+	[#Rule 53
 		 'enum_elements', 1,
 sub
-#line 194 "pidl/idl.yp"
+#line 199 "pidl/idl.yp"
 { [ $_[1] ] }
 	],
-	[#Rule 52
+	[#Rule 54
 		 'enum_elements', 3,
 sub
-#line 195 "pidl/idl.yp"
+#line 200 "pidl/idl.yp"
 { push(@{$_[1]}, $_[3]); $_[1] }
 	],
-	[#Rule 53
+	[#Rule 55
 		 'enum_element', 1, undef
 	],
-	[#Rule 54
+	[#Rule 56
 		 'enum_element', 3,
 sub
-#line 199 "pidl/idl.yp"
+#line 204 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 55
+	[#Rule 57
 		 'bitmap_body', 3,
 sub
-#line 202 "pidl/idl.yp"
+#line 207 "pidl/idl.yp"
 { $_[2] }
 	],
-	[#Rule 56
+	[#Rule 58
 		 'opt_bitmap_body', 0, undef
 	],
-	[#Rule 57
+	[#Rule 59
 		 'opt_bitmap_body', 1, undef
 	],
-	[#Rule 58
+	[#Rule 60
 		 'bitmap', 3,
 sub
-#line 205 "pidl/idl.yp"
+#line 210 "pidl/idl.yp"
 {{
              "TYPE" => "BITMAP", 
 			 "NAME" => $_[2],
 		     "ELEMENTS" => $_[3]
         }}
 	],
-	[#Rule 59
+	[#Rule 61
 		 'bitmap_elements', 1,
 sub
-#line 213 "pidl/idl.yp"
+#line 218 "pidl/idl.yp"
 { [ $_[1] ] }
 	],
-	[#Rule 60
+	[#Rule 62
 		 'bitmap_elements', 3,
 sub
-#line 214 "pidl/idl.yp"
+#line 219 "pidl/idl.yp"
 { push(@{$_[1]}, $_[3]); $_[1] }
 	],
-	[#Rule 61
+	[#Rule 63
 		 'opt_bitmap_elements', 0, undef
 	],
-	[#Rule 62
+	[#Rule 64
 		 'opt_bitmap_elements', 1, undef
 	],
-	[#Rule 63
+	[#Rule 65
 		 'bitmap_element', 3,
 sub
-#line 219 "pidl/idl.yp"
+#line 224 "pidl/idl.yp"
 { "$_[1] ( $_[3] )" }
 	],
-	[#Rule 64
+	[#Rule 66
 		 'struct_body', 3,
 sub
-#line 222 "pidl/idl.yp"
+#line 227 "pidl/idl.yp"
 { $_[2] }
 	],
-	[#Rule 65
+	[#Rule 67
 		 'opt_struct_body', 0, undef
 	],
-	[#Rule 66
+	[#Rule 68
 		 'opt_struct_body', 1, undef
 	],
-	[#Rule 67
+	[#Rule 69
 		 'struct', 3,
 sub
-#line 226 "pidl/idl.yp"
+#line 231 "pidl/idl.yp"
 {{
              "TYPE" => "STRUCT", 
 			 "NAME" => $_[2],
 		     "ELEMENTS" => $_[3]
         }}
 	],
-	[#Rule 68
+	[#Rule 70
 		 'empty_element', 2,
 sub
-#line 234 "pidl/idl.yp"
+#line 239 "pidl/idl.yp"
 {{
 		 "NAME" => "",
 		 "TYPE" => "EMPTY",
@@ -2675,53 +2708,53 @@ sub
 		 "LINE" => $_[0]->YYData->{LINE},
 	 }}
 	],
-	[#Rule 69
+	[#Rule 71
 		 'base_or_empty', 2, undef
 	],
-	[#Rule 70
+	[#Rule 72
 		 'base_or_empty', 1, undef
 	],
-	[#Rule 71
+	[#Rule 73
 		 'optional_base_element', 2,
 sub
-#line 248 "pidl/idl.yp"
+#line 253 "pidl/idl.yp"
 { $_[2]->{PROPERTIES} = FlattenHash([$_[1],$_[2]->{PROPERTIES}]); $_[2] }
 	],
-	[#Rule 72
+	[#Rule 74
 		 'union_elements', 0, undef
 	],
-	[#Rule 73
+	[#Rule 75
 		 'union_elements', 2,
 sub
-#line 253 "pidl/idl.yp"
+#line 258 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
-	[#Rule 74
+	[#Rule 76
 		 'union_body', 3,
 sub
-#line 256 "pidl/idl.yp"
+#line 261 "pidl/idl.yp"
 { $_[2] }
 	],
-	[#Rule 75
+	[#Rule 77
 		 'opt_union_body', 0, undef
 	],
-	[#Rule 76
+	[#Rule 78
 		 'opt_union_body', 1, undef
 	],
-	[#Rule 77
+	[#Rule 79
 		 'union', 3,
 sub
-#line 260 "pidl/idl.yp"
+#line 265 "pidl/idl.yp"
 {{
              "TYPE" => "UNION", 
 		     "NAME" => $_[2],
 		     "ELEMENTS" => $_[3]
         }}
 	],
-	[#Rule 78
+	[#Rule 80
 		 'base_element', 5,
 sub
-#line 268 "pidl/idl.yp"
+#line 273 "pidl/idl.yp"
 {{
 			   "NAME" => $_[4],
 			   "TYPE" => $_[2],
@@ -2732,238 +2765,238 @@ sub
 		       "LINE" => $_[0]->YYData->{LINE},
               }}
 	],
-	[#Rule 79
+	[#Rule 81
 		 'pointers', 0,
 sub
-#line 282 "pidl/idl.yp"
+#line 287 "pidl/idl.yp"
 { 0 }
 	],
-	[#Rule 80
+	[#Rule 82
 		 'pointers', 2,
 sub
-#line 283 "pidl/idl.yp"
+#line 288 "pidl/idl.yp"
 { $_[1]+1 }
 	],
-	[#Rule 81
+	[#Rule 83
 		 'element_list1', 0, undef
 	],
-	[#Rule 82
+	[#Rule 84
 		 'element_list1', 3,
 sub
-#line 288 "pidl/idl.yp"
+#line 293 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
-	[#Rule 83
+	[#Rule 85
 		 'element_list2', 0, undef
 	],
-	[#Rule 84
+	[#Rule 86
 		 'element_list2', 1, undef
 	],
-	[#Rule 85
+	[#Rule 87
 		 'element_list2', 1,
 sub
-#line 294 "pidl/idl.yp"
+#line 299 "pidl/idl.yp"
 { [ $_[1] ] }
 	],
-	[#Rule 86
+	[#Rule 88
 		 'element_list2', 3,
 sub
-#line 295 "pidl/idl.yp"
+#line 300 "pidl/idl.yp"
 { push(@{$_[1]}, $_[3]); $_[1] }
 	],
-	[#Rule 87
+	[#Rule 89
 		 'array_len', 0, undef
 	],
-	[#Rule 88
+	[#Rule 90
 		 'array_len', 3,
 sub
-#line 300 "pidl/idl.yp"
+#line 305 "pidl/idl.yp"
 { push(@{$_[3]}, "*"); $_[3] }
 	],
-	[#Rule 89
+	[#Rule 91
 		 'array_len', 4,
 sub
-#line 301 "pidl/idl.yp"
+#line 306 "pidl/idl.yp"
 { push(@{$_[4]}, "$_[2]"); $_[4] }
 	],
-	[#Rule 90
+	[#Rule 92
 		 'property_list', 0, undef
 	],
-	[#Rule 91
+	[#Rule 93
 		 'property_list', 4,
 sub
-#line 307 "pidl/idl.yp"
+#line 312 "pidl/idl.yp"
 { FlattenHash([$_[1],$_[3]]); }
 	],
-	[#Rule 92
+	[#Rule 94
 		 'properties', 1,
 sub
-#line 310 "pidl/idl.yp"
+#line 315 "pidl/idl.yp"
 { $_[1] }
 	],
-	[#Rule 93
+	[#Rule 95
 		 'properties', 3,
 sub
-#line 311 "pidl/idl.yp"
+#line 316 "pidl/idl.yp"
 { FlattenHash([$_[1], $_[3]]); }
 	],
-	[#Rule 94
+	[#Rule 96
 		 'property', 1,
 sub
-#line 314 "pidl/idl.yp"
+#line 319 "pidl/idl.yp"
 {{ "$_[1]" => "1"     }}
 	],
-	[#Rule 95
+	[#Rule 97
 		 'property', 4,
 sub
-#line 315 "pidl/idl.yp"
+#line 320 "pidl/idl.yp"
 {{ "$_[1]" => "$_[3]" }}
 	],
-	[#Rule 96
+	[#Rule 98
 		 'listtext', 1, undef
 	],
-	[#Rule 97
+	[#Rule 99
 		 'listtext', 3,
 sub
-#line 320 "pidl/idl.yp"
+#line 325 "pidl/idl.yp"
 { "$_[1] $_[3]" }
 	],
-	[#Rule 98
+	[#Rule 100
 		 'commalisttext', 1, undef
 	],
-	[#Rule 99
+	[#Rule 101
 		 'commalisttext', 3,
 sub
-#line 325 "pidl/idl.yp"
+#line 330 "pidl/idl.yp"
 { "$_[1],$_[3]" }
 	],
-	[#Rule 100
+	[#Rule 102
 		 'anytext', 0,
 sub
-#line 329 "pidl/idl.yp"
+#line 334 "pidl/idl.yp"
 { "" }
-	],
-	[#Rule 101
-		 'anytext', 1, undef
-	],
-	[#Rule 102
-		 'anytext', 1, undef
 	],
 	[#Rule 103
 		 'anytext', 1, undef
 	],
 	[#Rule 104
-		 'anytext', 3,
-sub
-#line 331 "pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]" }
+		 'anytext', 1, undef
 	],
 	[#Rule 105
-		 'anytext', 3,
-sub
-#line 332 "pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]" }
+		 'anytext', 1, undef
 	],
 	[#Rule 106
-		 'anytext', 3,
-sub
-#line 333 "pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]" }
-	],
-	[#Rule 107
-		 'anytext', 3,
-sub
-#line 334 "pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]" }
-	],
-	[#Rule 108
-		 'anytext', 3,
-sub
-#line 335 "pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]" }
-	],
-	[#Rule 109
 		 'anytext', 3,
 sub
 #line 336 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 110
+	[#Rule 107
 		 'anytext', 3,
 sub
 #line 337 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 111
+	[#Rule 108
 		 'anytext', 3,
 sub
 #line 338 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 112
+	[#Rule 109
 		 'anytext', 3,
 sub
 #line 339 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 113
+	[#Rule 110
 		 'anytext', 3,
 sub
 #line 340 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 114
+	[#Rule 111
 		 'anytext', 3,
 sub
 #line 341 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 115
+	[#Rule 112
 		 'anytext', 3,
 sub
 #line 342 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 116
+	[#Rule 113
 		 'anytext', 3,
 sub
 #line 343 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 117
-		 'anytext', 5,
+	[#Rule 114
+		 'anytext', 3,
 sub
 #line 344 "pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]$_[4]$_[5]" }
+{ "$_[1]$_[2]$_[3]" }
 	],
-	[#Rule 118
-		 'anytext', 5,
+	[#Rule 115
+		 'anytext', 3,
 sub
 #line 345 "pidl/idl.yp"
-{ "$_[1]$_[2]$_[3]$_[4]$_[5]" }
+{ "$_[1]$_[2]$_[3]" }
+	],
+	[#Rule 116
+		 'anytext', 3,
+sub
+#line 346 "pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]" }
+	],
+	[#Rule 117
+		 'anytext', 3,
+sub
+#line 347 "pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]" }
+	],
+	[#Rule 118
+		 'anytext', 3,
+sub
+#line 348 "pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 119
-		 'identifier', 1, undef
+		 'anytext', 5,
+sub
+#line 349 "pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]$_[4]$_[5]" }
 	],
 	[#Rule 120
-		 'optional_identifier', 1, undef
+		 'anytext', 5,
+sub
+#line 350 "pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]$_[4]$_[5]" }
 	],
 	[#Rule 121
-		 'optional_identifier', 0, undef
+		 'identifier', 1, undef
 	],
 	[#Rule 122
-		 'constant', 1, undef
+		 'optional_identifier', 1, undef
 	],
 	[#Rule 123
-		 'text', 1,
-sub
-#line 359 "pidl/idl.yp"
-{ "\"$_[1]\"" }
+		 'optional_identifier', 0, undef
 	],
 	[#Rule 124
-		 'optional_semicolon', 0, undef
+		 'constant', 1, undef
 	],
 	[#Rule 125
+		 'text', 1,
+sub
+#line 364 "pidl/idl.yp"
+{ "\"$_[1]\"" }
+	],
+	[#Rule 126
+		 'optional_semicolon', 0, undef
+	],
+	[#Rule 127
 		 'optional_semicolon', 1, undef
 	]
 ],
@@ -2971,7 +3004,7 @@ sub
     bless($self,$class);
 }
 
-#line 370 "pidl/idl.yp"
+#line 375 "pidl/idl.yp"
 
 
 #####################################################################

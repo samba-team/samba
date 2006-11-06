@@ -3,6 +3,7 @@
 /*
   spoolss interface definitions
 */
+import "security.idl";
 
 [ uuid("12345678-1234-abcd-ef00-0123456789ab"),
   version(1.0),
@@ -10,7 +11,6 @@
   pointer_default(unique),
   pointer_default_top(unique),
   helpstring("Spooler SubSystem"),
-  depends(security),
   helper("librpc/ndr/ndr_spoolss_buf.h")
 ] interface spoolss
 {

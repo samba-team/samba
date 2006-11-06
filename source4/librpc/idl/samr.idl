@@ -3,6 +3,7 @@
 /*
   samr interface definition
 */
+import "misc.idl", "lsa.idl", "security.idl";
 
 /*
   Thanks to Todd Sabin for some information from his samr.idl in acltools
@@ -12,8 +13,7 @@
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\samr]","ncacn_ip_tcp:", "ncalrpc:"),
   pointer_default(unique),
-  pointer_default_top(unique),
-  depends(misc,lsa,security)
+  pointer_default_top(unique)
 ] interface samr
 {
 	declare bitmap security_secinfo;

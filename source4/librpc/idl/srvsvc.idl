@@ -3,14 +3,14 @@
 /*
   srvsvc interface definitions
 */
+import "security.idl", "svcctl.idl";
 
 [ uuid("4b324fc8-1670-01d3-1278-5a47bf6ee188"),
   version(3.0),
   endpoint("ncacn_np:[\\pipe\\srvsvc]", "ncacn_ip_tcp:", "ncalrpc:"),
   pointer_default(unique),
   pointer_default_top(unique),
-  helpstring("Server Service"),
-  depends(security,svcctl)
+  helpstring("Server Service")
 ] interface srvsvc
 {
 	declare bitmap svcctl_ServerType;

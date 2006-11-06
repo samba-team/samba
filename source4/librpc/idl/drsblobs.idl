@@ -1,11 +1,12 @@
 #include "idl_types.h"
 
+import "drsuapi.idl";
+
 [
   uuid("12345778-1234-abcd-0001-00000001"),
   version(0.0),
   pointer_default(unique),
-  helpstring("Active Directory Replication LDAP Blobs"),
-  depends(drsuapi)
+  helpstring("Active Directory Replication LDAP Blobs")
 ]
 interface drsblobs {
 	declare bitmap drsuapi_DsReplicaSyncOptions;

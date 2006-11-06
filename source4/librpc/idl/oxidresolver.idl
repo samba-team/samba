@@ -10,13 +10,14 @@
  (used by DCOM)
  */
 
+import "dcom.idl", "orpc.idl";
+
 [ 
 	uuid("99fcfec4-5260-101b-bbcb-00aa0021347a"),
 	helpstring("Object Exporter ID Resolver"),
 	endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", "ncalrpc:"),
 	pointer_default(unique),
-  	pointer_default_top(unique),
-	depends(dcom, orpc)
+  	pointer_default_top(unique)
 ]
 interface IOXIDResolver
 {

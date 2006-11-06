@@ -4,9 +4,8 @@
   schannel structures
 */
 
-[
-	depends(netlogon,nbt)
-]
+import "netlogon.idl", "nbt.idl";
+
 interface schannel
 {
 	/*
