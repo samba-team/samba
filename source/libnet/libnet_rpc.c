@@ -112,7 +112,7 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 
 	/* connect to remote dcerpc pipe */
 	pipe_connect_req = dcerpc_pipe_connect_b_send(c, b, r->in.dcerpc_iface,
-						    ctx->cred, c->event_ctx);
+						      ctx->cred, c->event_ctx);
 	if (composite_nomem(pipe_connect_req, c)) return c;
 
 	composite_continue(c, pipe_connect_req, continue_pipe_connect, c);
@@ -134,7 +134,6 @@ static void continue_pipe_connect(struct composite_context *ctx)
 	/* receive result of rpc pipe connection */
 	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->r.out.dcerpc_pipe);
 
-	s->r.out.error_string = NULL;
 	composite_done(c);
 }
 
@@ -173,8 +172,11 @@ static NTSTATUS libnet_RpcConnectSrv_recv(struct composite_context *c,
 		} else if (r->in.dcerpc_iface == &dcerpc_table_lsarpc) {
 			ctx->lsa.pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
 		}
+
+		r->out.error_string = talloc_strdup(mem_ctx, "Success");
+
 	} else {
-		r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
+		r->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
 	}
 
 	talloc_free(c);
