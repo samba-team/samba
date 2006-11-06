@@ -94,10 +94,11 @@ sub check_module($$$)
 		$mod->{OUTPUT_TYPE} = $default_ot;
 	}
 
-	if ($mod->{OUTPUT_TYPE} eq "SHARED_LIBRARY") {
+	if (grep(/SHARED_LIBRARY/, @{$mod->{OUTPUT_TYPE}})) {
 		$mod->{INSTALLDIR} = "MODULESDIR/$mod->{SUBSYSTEM}";
 		push (@{$mod->{PRIVATE_DEPENDENCIES}}, $mod->{SUBSYSTEM});
-	} else { 
+	} 
+	if (grep(/INTEGRATED/, @{$mod->{OUTPUT_TYPE}})) {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
 	}
 	add_libreplace($mod);
@@ -137,7 +138,7 @@ sub check_binary($$)
 
 	($bin->{BINARY} = (lc $bin->{NAME})) if not defined($bin->{BINARY});
 
-	$bin->{OUTPUT_TYPE} = "BINARY";
+	$bin->{OUTPUT_TYPE} = ["BINARY"];
 	add_libreplace($bin);
 }
 
@@ -147,7 +148,7 @@ sub import_integrated($$)
 
 	foreach my $mod (values %$depend) {
 		next if(not defined($mod->{OUTPUT_TYPE}));
-		next if($mod->{OUTPUT_TYPE} ne "INTEGRATED");
+		next if(not grep(/INTEGRATED/, @{$mod->{OUTPUT_TYPE}}));
 		next if(not defined($mod->{SUBSYSTEM}));
 		next if($mod->{SUBSYSTEM} ne $lib->{NAME});
 		next if($mod->{ENABLE} ne "YES");
@@ -174,8 +175,8 @@ sub calc_unique_deps($$$$$$)
 
  		if (defined ($dep->{OUTPUT_TYPE}) && 
 			($withlibs or 
-			($dep->{OUTPUT_TYPE} eq "INTEGRATED") or 
-			($dep->{OUTPUT_TYPE} eq "STATIC_LIBRARY"))) {
+			(@{$dep->{OUTPUT_TYPE}}[0] eq "INTEGRATED") or 
+			(@{$dep->{OUTPUT_TYPE}}[0] eq "STATIC_LIBRARY"))) {
 				push (@$busy, $dep->{NAME});
 			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PUBLIC_DEPENDENCIES}, $udeps, $withlibs, $busy);
 			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PRIVATE_DEPENDENCIES}, $udeps, $withlibs, $busy);

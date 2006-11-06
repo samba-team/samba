@@ -185,10 +185,3 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 	    AC_MSG_RESULT(yes),
 	    AC_MSG_ERROR([we cannot link with the selected cc and ld flags. Aborting configure]),
 	    AC_MSG_WARN([cannot run when cross-compiling]))
-
-AC_ARG_ENABLE(dso,
-[  --enable-dso 		Enable building internal libraries as DSO's (experimental)],
-[ if test x$enable_dso != xyes; then
- 	BLDSHARED=false
-  fi], 
-[BLDSHARED=false])

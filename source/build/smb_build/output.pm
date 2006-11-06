@@ -38,7 +38,6 @@ sub generate_shared_library($)
 	my $lib_name;
 
 	$lib->{DEPEND_LIST} = [];
-	push(@{$lib->{LINK_FLAGS}}, "\$($lib->{TYPE}_$lib->{NAME}\_FULL_OBJ_LIST)");
 
 	$link_name = lc($lib->{NAME});
 	$lib_name = $link_name;
@@ -71,8 +70,8 @@ sub generate_shared_library($)
 		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}.$lib->{VERSION}";
 	} 
 	
-	$lib->{TARGET} = "$lib->{SHAREDDIR}/$lib->{LIBRARY_REALNAME}";
-	$lib->{OUTPUT} = $lib->{TARGET};
+	$lib->{TARGET_SHARED_LIBRARY} = "$lib->{SHAREDDIR}/$lib->{LIBRARY_REALNAME}";
+	$lib->{OUTPUT_SHARED_LIBRARY} = $lib->{TARGET_SHARED_LIBRARY};
 }
 
 sub generate_static_library($)
@@ -86,14 +85,13 @@ sub generate_static_library($)
 	$link_name =~ s/^LIB//;
 
 	$lib->{LIBRARY_NAME} = "lib".lc($link_name).".a";
-	push(@{$lib->{LINK_FLAGS}}, "\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
 
 	if (defined($lib->{OBJ_FILES})) {
-		$lib->{TARGET} = "bin/static/$lib->{LIBRARY_NAME}";
+		$lib->{TARGET_STATIC_LIBRARY} = "bin/static/$lib->{LIBRARY_NAME}";
 	} else {
-		$lib->{TARGET} = "";
+		$lib->{TARGET_STATIC_LIBRARY} = "";
 	}
-	$lib->{OUTPUT} = $lib->{TARGET};
+	$lib->{OUTPUT_STATIC_LIBRARY} = $lib->{TARGET_STATIC_LIBRARY};
 }
 
 sub generate_binary($)
@@ -104,7 +102,7 @@ sub generate_binary($)
 	push(@{$bin->{LINK_FLAGS}}, "\$($bin->{TYPE}_$bin->{NAME}\_OBJ_LIST)");
 
 	$bin->{DEBUGDIR} = "bin/";
-	$bin->{TARGET} = $bin->{OUTPUT} = "$bin->{DEBUGDIR}/$bin->{NAME}";
+	$bin->{TARGET_BINARY} = $bin->{OUTPUT_BINARY} = "$bin->{DEBUGDIR}/$bin->{NAME}";
 	$bin->{BINARY} = $bin->{NAME};
 }
 
@@ -123,7 +121,6 @@ sub merge_array($$)
 	}
 }
 
-
 sub create_output($$)
 {
 	my ($depend, $config) = @_;
@@ -135,10 +132,11 @@ sub create_output($$)
 		# Combine object lists
 		push(@{$part->{OBJ_LIST}}, add_dir($part->{BASEDIR}, $part->{OBJ_FILES})) if defined($part->{OBJ_FILES});
 
-		generate_binary($part) if $part->{OUTPUT_TYPE} eq "BINARY";
-		generate_shared_library($part) if $part->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
-		generate_static_library($part) if $part->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
-
+		generate_binary($part) if grep(/BINARY/, @{$part->{OUTPUT_TYPE}});
+		generate_shared_library($part) if grep(/SHARED_LIBRARY/, @{$part->{OUTPUT_TYPE}});
+		generate_static_library($part) if grep(/STATIC_LIBRARY/, @{$part->{OUTPUT_TYPE}});
+		$part->{OUTPUT} = $part->{"OUTPUT_" . @{$part->{OUTPUT_TYPE}}[0]};
+		$part->{TARGET} = $part->{"TARGET_" . @{$part->{OUTPUT_TYPE}}[0]};
 	}
 
 	foreach $part (values %{$depend}) {

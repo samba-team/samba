@@ -51,7 +51,7 @@ my $section_types = {
 
 		"ENABLE"		=> "bool",
 
-		"OUTPUT_TYPE"		=> "string",
+		"OUTPUT_TYPE"		=> "list",
 
 		"MANPAGE"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",

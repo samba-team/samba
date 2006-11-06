@@ -106,13 +106,11 @@ sub _prepare_compiler_linker($)
 {
 	my ($self) = @_;
 
-	my $devld_install = "";
 	my $builddir_headers = "";
 	my $libdir;
 
 	if ($self->{config}->{USESHARED} eq "true") {
 		$libdir = "\$(builddir)/bin/shared";
-		$devld_install = " -Wl,-rpath-link,\$(builddir)/bin/shared";
 	} else {
 		$libdir = "\$(builddir)/bin/static";
 	}
@@ -134,7 +132,7 @@ CFLAGS=$self->{config}->{CFLAGS} \$(CPPFLAGS)
 PICFLAG=$self->{config}->{PICFLAG}
 HOSTCC=$self->{config}->{HOSTCC}
 
-INSTALL_LINK_FLAGS=$devld_install
+INSTALL_LINK_FLAGS=-Wl,-rpath-link,\$(builddir)/bin/shared
 
 LD=$self->{config}->{LD} 
 LDFLAGS=$self->{config}->{LDFLAGS} -L$libdir
@@ -217,7 +215,7 @@ sub SharedLibrary($$)
 		push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
 		push (@{$self->{installable_shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
 	} elsif ($ctx->{TYPE} eq "MODULE") {
-		push (@{$self->{shared_modules}}, "$ctx->{TARGET}");
+		push (@{$self->{shared_modules}}, "$ctx->{TARGET_SHARED_LIBRARY}");
 		push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
 
 		$self->{install_plugins} .= "\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
@@ -283,8 +281,9 @@ $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
-		$init_obj $singlesoarg
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
+		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) $soarg \\
+		$init_obj $singlesoarg 
 __EOD__
 );
 
@@ -302,19 +301,17 @@ sub StaticLibrary($$)
 
 	return unless (defined($ctx->{OBJ_FILES}));
 
-	push (@{$self->{static_libs}}, $ctx->{TARGET}) if ($ctx->{TYPE} eq "LIBRARY");
+	push (@{$self->{static_libs}}, $ctx->{TARGET_STATIC_LIBRARY}) if ($ctx->{TYPE} eq "LIBRARY");
 
 	$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 
-	$self->_prepare_list($ctx, "LINK_FLAGS");
-
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 		
 	$self->output(<< "__EOD__"
 #
-$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$@
 	\@rm -f \$@
 	\@\$(STLD) \$(STLD_FLAGS) \$@ \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
