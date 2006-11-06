@@ -89,7 +89,7 @@ sub generate_static_library($)
 	push(@{$lib->{LINK_FLAGS}}, "\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
 
 	if (defined($lib->{OBJ_FILES})) {
-		$lib->{TARGET} = "bin/$lib->{LIBRARY_NAME}";
+		$lib->{TARGET} = "bin/static/$lib->{LIBRARY_NAME}";
 	} else {
 		$lib->{TARGET} = "";
 	}

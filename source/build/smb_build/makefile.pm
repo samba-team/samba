@@ -114,7 +114,7 @@ sub _prepare_compiler_linker($)
 		$libdir = "\$(builddir)/bin/shared";
 		$devld_install = " -Wl,-rpath-link,\$(builddir)/bin/shared";
 	} else {
-		$libdir = "\$(builddir)/bin";
+		$libdir = "\$(builddir)/bin/static";
 	}
 	
 	if (!(abs_path($self->{config}->{srcdir}) eq abs_path($self->{config}->{builddir}))) {
@@ -248,14 +248,14 @@ sub SharedLibrary($$)
 		$proto_fn =~ s/\(\*\)/$ctx->{INIT_FUNCTION}/;
 
 		$self->output(<< "__EOD__"
-$ctx->{SHAREDDIR}/$ctx->{NAME}_init_module.c:
+bin/$ctx->{NAME}_init_module.c:
 	\@echo Creating \$\@
 	\@echo \"#include \\\"includes.h\\\"\" > \$\@
 	\@echo \"$proto_fn;\" >> \$\@
 	\@echo -e \"_PUBLIC_ $init_fn \\n{\\n\\treturn $ctx->{INIT_FUNCTION}();\\n}\\n\" >> \$\@
 __EOD__
 );
-		$init_obj = "$ctx->{SHAREDDIR}/$ctx->{NAME}_init_module.o";
+		$init_obj = "bin/$ctx->{NAME}_init_module.o";
 	}
 
 	my $soarg = "";
