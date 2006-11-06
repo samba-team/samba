@@ -112,3 +112,23 @@ struct libnet_UserInfo {
 		const char *error_string;
 	} out;
 };
+
+
+struct libnet_UserList {
+	struct {
+		const char *domain_name;
+		int page_size;
+		uint restore_index;
+	} in;
+	struct {
+		int count;
+		uint restore_index;
+
+		struct userlist {
+			const char *sid;
+			const char *username;
+		} *users;
+
+		const char *error_string;
+	} out;
+};
