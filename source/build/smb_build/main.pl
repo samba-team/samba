@@ -20,18 +20,14 @@ my $INPUT = {};
 my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, "main.mk");
 
 my $library_output_type;
-if (defined($ENV{"LIBRARY_OUTPUT_TYPE"})) {
-	$library_output_type = $ENV{LIBRARY_OUTPUT_TYPE};
-} elsif ($config::config{BLDSHARED} eq "true") {
+if ($config::config{USESHARED} eq "true") {
 	$library_output_type = "SHARED_LIBRARY";
 } else {
 	$library_output_type = "STATIC_LIBRARY";
 }
 
 my $module_output_type;
-if (defined($ENV{"MODULE_OUTPUT_TYPE"})) {
-	$module_output_type = $ENV{MODULE_OUTPUT_TYPE};
-} elsif ($config::config{BLDSHARED} eq "true") {
+if ($config::config{USESHARED} eq "true") {
 	$module_output_type = "SHARED_LIBRARY";
 } else {
 	$module_output_type = "INTEGRATED";
