@@ -1,4 +1,4 @@
-all: basics showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries libraries modules
+all: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries libraries modules
 
 include dynconfig.mk
 include heimdal_build/config.mk
@@ -33,8 +33,8 @@ include scripting/swig/config.mk
 include kdc/config.mk
 
 DEFAULT_HEADERS = $(srcdir)/include/core.h \
-				  $(srcdir)/lib/util/dlinklist.h \
-		  		  $(srcdir)/version.h
+		  $(srcdir)/lib/util/dlinklist.h \
+		  $(srcdir)/version.h
 
 binaries: $(BINARIES)
 libraries: $(STATIC_LIBS) $(SHARED_LIBS)
