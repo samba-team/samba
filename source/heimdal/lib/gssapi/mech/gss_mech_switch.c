@@ -213,7 +213,9 @@ _gss_load_mech(void)
 	}
 
 	add_builtin(__gss_krb5_initialize());
+#ifndef _SAMBA_BUILD_
 	add_builtin(__gss_spnego_initialize());
+#endif
 
 	fp = fopen(_PATH_GSS_MECH, "r");
 	if (!fp) {

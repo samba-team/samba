@@ -122,18 +122,6 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/mech/gss_release_name.o \
 	../heimdal/lib/gssapi/mech/gss_set_cred_option.o \
 	../heimdal/lib/gssapi/mech/asn1_GSSAPIContextToken.o \
-	../heimdal/lib/gssapi/spnego/init_sec_context.o \
-	../heimdal/lib/gssapi/spnego/external.o \
-	../heimdal/lib/gssapi/spnego/compat.o \
-	../heimdal/lib/gssapi/spnego/context_stubs.o \
-	../heimdal/lib/gssapi/spnego/cred_stubs.o \
-	../heimdal/lib/gssapi/spnego/accept_sec_context.o \
-	../heimdal/lib/gssapi/spnego/asn1_ContextFlags.o \
-	../heimdal/lib/gssapi/spnego/asn1_MechType.o \
-	../heimdal/lib/gssapi/spnego/asn1_MechTypeList.o \
-	../heimdal/lib/gssapi/spnego/asn1_NegHints.o \
-	../heimdal/lib/gssapi/spnego/asn1_NegTokenInit.o \
-	../heimdal/lib/gssapi/spnego/asn1_NegTokenResp.o \
 	../heimdal/lib/gssapi/krb5/copy_ccache.o \
 	../heimdal/lib/gssapi/krb5/delete_sec_context.o \
 	../heimdal/lib/gssapi/krb5/init_sec_context.o \
