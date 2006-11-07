@@ -83,46 +83,45 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/mech/gss_canonicalize_name.o \
 	../heimdal/lib/gssapi/mech/gss_inquire_sec_context_by_oid.o \
 	../heimdal/lib/gssapi/mech/gss_inquire_names_for_mech.o \
-../heimdal/lib/gssapi/mech/gss_inquire_mechs_for_name.o \
-../heimdal/lib/gssapi/mech/gss_wrap_size_limit.o \
-../heimdal/lib/gssapi/mech/gss_names.o \
-../heimdal/lib/gssapi/mech/gss_verify.o \
-../heimdal/lib/gssapi/mech/gss_display_name.o \
-../heimdal/lib/gssapi/mech/gss_duplicate_oid.o \
-../heimdal/lib/gssapi/mech/gss_display_status.o \
-../heimdal/lib/gssapi/mech/gss_release_buffer.o \
-../heimdal/lib/gssapi/mech/gss_release_oid.o \
-../heimdal/lib/gssapi/mech/gss_test_oid_set_member.o \
-../heimdal/lib/gssapi/mech/gss_release_cred.o \
-../heimdal/lib/gssapi/mech/gss_set_sec_context_option.o \
-../heimdal/lib/gssapi/mech/gss_export_name.o \
-../heimdal/lib/gssapi/mech/gss_seal.o \
-../heimdal/lib/gssapi/mech/mech_switch.h \
-../heimdal/lib/gssapi/mech/gss_acquire_cred.o \
-../heimdal/lib/gssapi/mech/gss_unseal.o \
-../heimdal/lib/gssapi/mech/gss_verify_mic.o \
-../heimdal/lib/gssapi/mech/gss_accept_sec_context.o \
-../heimdal/lib/gssapi/mech/gss_inquire_cred_by_mech.o \
-../heimdal/lib/gssapi/mech/gss_indicate_mechs.o \
-../heimdal/lib/gssapi/mech/gss_delete_sec_context.o \
-../heimdal/lib/gssapi/mech/gss_sign.o \
-../heimdal/lib/gssapi/mech/gss_utils.o \
-../heimdal/lib/gssapi/mech/gss_init_sec_context.o \
-../heimdal/lib/gssapi/mech/gss_oid_equal.o \
-../heimdal/lib/gssapi/mech/gss_context_time.o \
-../heimdal/lib/gssapi/mech/gss_encapsulate_token.o \
-../heimdal/lib/gssapi/mech/gss_get_mic.o \
-../heimdal/lib/gssapi/mech/gss_import_sec_context.o \
-../heimdal/lib/gssapi/mech/gss_inquire_cred.o \
-../heimdal/lib/gssapi/mech/gss_wrap.o \
-../heimdal/lib/gssapi/mech/gss_import_name.o \
-../heimdal/lib/gssapi/mech/gss_duplicate_name.o \
-../heimdal/lib/gssapi/mech/gss_unwrap.o \
-../heimdal/lib/gssapi/mech/gss_export_sec_context.o \
-../heimdal/lib/gssapi/mech/gss_inquire_context.o \
-../heimdal/lib/gssapi/mech/gss_release_name.o \
-../heimdal/lib/gssapi/mech/gss_set_cred_option.o \
-../heimdal/lib/gssapi/mech/asn1_GSSAPIContextToken.o \
+	../heimdal/lib/gssapi/mech/gss_inquire_mechs_for_name.o \
+	../heimdal/lib/gssapi/mech/gss_wrap_size_limit.o \
+	../heimdal/lib/gssapi/mech/gss_names.o \
+	../heimdal/lib/gssapi/mech/gss_verify.o \
+	../heimdal/lib/gssapi/mech/gss_display_name.o \
+	../heimdal/lib/gssapi/mech/gss_duplicate_oid.o \
+	../heimdal/lib/gssapi/mech/gss_display_status.o \
+	../heimdal/lib/gssapi/mech/gss_release_buffer.o \
+	../heimdal/lib/gssapi/mech/gss_release_oid.o \
+	../heimdal/lib/gssapi/mech/gss_test_oid_set_member.o \
+	../heimdal/lib/gssapi/mech/gss_release_cred.o \
+	../heimdal/lib/gssapi/mech/gss_set_sec_context_option.o \
+	../heimdal/lib/gssapi/mech/gss_export_name.o \
+	../heimdal/lib/gssapi/mech/gss_seal.o \
+	../heimdal/lib/gssapi/mech/gss_acquire_cred.o \
+	../heimdal/lib/gssapi/mech/gss_unseal.o \
+	../heimdal/lib/gssapi/mech/gss_verify_mic.o \
+	../heimdal/lib/gssapi/mech/gss_accept_sec_context.o \
+	../heimdal/lib/gssapi/mech/gss_inquire_cred_by_mech.o \
+	../heimdal/lib/gssapi/mech/gss_indicate_mechs.o \
+	../heimdal/lib/gssapi/mech/gss_delete_sec_context.o \
+	../heimdal/lib/gssapi/mech/gss_sign.o \
+	../heimdal/lib/gssapi/mech/gss_utils.o \
+	../heimdal/lib/gssapi/mech/gss_init_sec_context.o \
+	../heimdal/lib/gssapi/mech/gss_oid_equal.o \
+	../heimdal/lib/gssapi/mech/gss_context_time.o \
+	../heimdal/lib/gssapi/mech/gss_encapsulate_token.o \
+	../heimdal/lib/gssapi/mech/gss_get_mic.o \
+	../heimdal/lib/gssapi/mech/gss_import_sec_context.o \
+	../heimdal/lib/gssapi/mech/gss_inquire_cred.o \
+	../heimdal/lib/gssapi/mech/gss_wrap.o \
+	../heimdal/lib/gssapi/mech/gss_import_name.o \
+	../heimdal/lib/gssapi/mech/gss_duplicate_name.o \
+	../heimdal/lib/gssapi/mech/gss_unwrap.o \
+	../heimdal/lib/gssapi/mech/gss_export_sec_context.o \
+	../heimdal/lib/gssapi/mech/gss_inquire_context.o \
+	../heimdal/lib/gssapi/mech/gss_release_name.o \
+	../heimdal/lib/gssapi/mech/gss_set_cred_option.o \
+	../heimdal/lib/gssapi/mech/asn1_GSSAPIContextToken.o \
 	../heimdal/lib/gssapi/spnego/init_sec_context.o \
 	../heimdal/lib/gssapi/spnego/external.o \
 	../heimdal/lib/gssapi/spnego/compat.o \
