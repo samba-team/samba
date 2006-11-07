@@ -169,8 +169,11 @@ verify_ocsp(hx509_context context,
 						&s->signatureAlgorithm,
 						&s->tbsCertificate._save,
 						&s->signatureValue);
-	if (ret)
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret,
+				   "OSCP signer signature invalid");
 	    goto out;
+	}
 
 	ret = hx509_cert_check_eku(context, signer, 
 				   oid_id_kp_OCSPSigning(), 0);
@@ -182,8 +185,10 @@ verify_ocsp(hx509_context context,
 					    &ocsp->ocsp.signatureAlgorithm,
 					    &ocsp->ocsp.tbsResponseData._save,
 					    &ocsp->ocsp.signature);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "OSCP signature invalid");
 	goto out;
+    }
 
     ocsp->signer = signer;
     signer = NULL;
@@ -416,8 +421,11 @@ verify_crl(hx509_context context,
 						&s->signatureAlgorithm,
 						&s->tbsCertificate._save,
 						&s->signatureValue);
-	if (ret)
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret,
+				   "CRL signer signature invalid");
 	    goto out;
+	}
 
 	ret = _hx509_check_key_usage(context, signer, 1 << 6, TRUE); /* crl */
 	if (ret != 0)
@@ -428,8 +436,10 @@ verify_crl(hx509_context context,
 					    &crl->signatureAlgorithm,
 					    &crl->tbsCertList._save,
 					    &crl->signatureValue);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "CRL signature invalid");
 	goto out;
+    }
 
 out:
     hx509_cert_free(signer);
