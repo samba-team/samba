@@ -78,6 +78,9 @@ typedef struct krb5_get_creds_opt_data *krb5_get_creds_opt;
 struct krb5_digest;
 typedef struct krb5_digest *krb5_digest;
 
+typedef struct krb5_rd_req_in_ctx *krb5_rd_req_in_ctx;
+typedef struct krb5_rd_req_out_ctx *krb5_rd_req_out_ctx;
+
 typedef CKSUMTYPE krb5_cksumtype;
 
 typedef Checksum krb5_checksum;
