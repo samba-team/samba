@@ -1,3 +1,15 @@
+2006-11-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.h: krb5_rd_req{,_in,_out}_ctx.
+
+	* lib/krb5/rd_req.c (krb5_rd_req_ctx): Add context all singing-all
+	dancing version of the krb5_rd_req and implement krb5_rd_req and
+	krb5_rd_req_with_keyblock using it.
+
+2006-11-04 Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* kdc/kerberos5.c (_kdc_as_rep): More verbose time skew logging.
+	
 2006-11-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/expand_hostname.c: Rename various routines and
