@@ -112,9 +112,7 @@ static void sig_hup(int sig)
 
 static void fault_continue(void)
 {
-#if DUMP_CORE
 	dump_core();
-#endif
 }
 
 /**************************************************************************** **
