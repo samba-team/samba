@@ -53,6 +53,16 @@ time_t timegm(struct tm *tm)
 	time_t res = 0;
 	unsigned i;
 	
+	if (tm->tm_mon > 12 ||
+	    tm->tm_mon < 0 ||
+	    tm->tm_mday > 31 ||
+	    tm->tm_min > 60 ||
+	    tm->tm_sec > 60 ||
+	    tm->tm_hour > 24) {
+		/* invalid tm structure */
+		return 0;
+	}
+
 	for (i = 70; i < tm->tm_year; ++i)
 		res += is_leap(i) ? 366 : 365;
 	
