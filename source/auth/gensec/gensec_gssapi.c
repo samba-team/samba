@@ -164,6 +164,9 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	if (lp_parm_bool(-1, "gensec_gssapi", "delegation", True)) {
 		gensec_gssapi_state->want_flags |= GSS_C_DELEG_FLAG;
 	}
+	if (lp_parm_bool(-1, "gensec_gssapi", "replay", True)) {
+		gensec_gssapi_state->want_flags |= GSS_C_REPLAY_FLAG;
+	}
 	if (lp_parm_bool(-1, "gensec_gssapi", "sequence", True)) {
 		gensec_gssapi_state->want_flags |= GSS_C_SEQUENCE_FLAG;
 	}
