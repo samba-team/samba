@@ -16,6 +16,10 @@ if test -z "$SHARE_BACKEND"; then
 	SHARE_BACKEND=classic
 fi
 
+if test -z "$SMBD_LOGLEVEL"; then
+	SMBD_LOGLEVEL=1
+fi
+
 DOMAIN=SAMBADOMAIN
 USERNAME=administrator
 REALM=SAMBA.EXAMPLE.COM
@@ -108,6 +112,10 @@ cat >$CONFFILE<<EOF
 	torture:subunitdir = $SRCDIR/bin/torture
 
 	system:anonymous = true
+#We don't want to pass our self-tests if the PAC code is wrong
+        gensec:require_pac = true
+
+        log level = $SMBD_LOGLEVEL
 
 [tmp]
 	path = $TMPDIR
