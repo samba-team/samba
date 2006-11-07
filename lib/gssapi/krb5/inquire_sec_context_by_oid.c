@@ -149,6 +149,11 @@ static OM_uint32 inquire_sec_context_get_subkey
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (ret) 
 	goto out;
+    if (key == NULL) {
+	_gsskrb5_set_status("have no subkey of type %d", keytype);
+	ret = EINVAL;
+	goto out;
+    }
 
     ret = krb5_store_keyblock(sp, *key);
     krb5_free_keyblock (_gsskrb5_context, key);
