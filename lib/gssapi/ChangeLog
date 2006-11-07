@@ -1,5 +1,7 @@
 2006-11-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* spnego/spnego_locl.h: Include <roken.h> for compatiblity.
+
 	* krb5/arcfour.c: Use IS_DCE_STYLE flag. There is no padding in
 	DCE-STYLE, don't try to use to.  From Andrew Bartlett.
 
