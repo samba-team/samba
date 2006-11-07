@@ -3144,7 +3144,7 @@ sub parse_file($$)
 	if (! defined $cpp) {
 		$cpp = "cpp";
 	}
-	my $includes = map { " -I$_" } @$incdirs;
+	my $includes = join('',map { " -I$_" } @$incdirs);
 	my $data = `$cpp -D__PIDL__$includes -xc $filename`;
 	$/ = $saved_delim;
 
