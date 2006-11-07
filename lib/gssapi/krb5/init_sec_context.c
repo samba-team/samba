@@ -549,18 +549,18 @@ failure:
 
 static OM_uint32
 repl_mutual
-           (OM_uint32 * minor_status,
-	    gsskrb5_ctx ctx,
-            const gss_OID mech_type,
-            OM_uint32 req_flags,
-            OM_uint32 time_req,
-            const gss_channel_bindings_t input_chan_bindings,
-            const gss_buffer_t input_token,
-            gss_OID * actual_mech_type,
-            gss_buffer_t output_token,
-            OM_uint32 * ret_flags,
-            OM_uint32 * time_rec
-           )
+(OM_uint32 * minor_status,
+ gsskrb5_ctx ctx,
+ const gss_OID mech_type,
+ OM_uint32 req_flags,
+ OM_uint32 time_req,
+ const gss_channel_bindings_t input_chan_bindings,
+ const gss_buffer_t input_token,
+ gss_OID * actual_mech_type,
+ gss_buffer_t output_token,
+ OM_uint32 * ret_flags,
+ OM_uint32 * time_rec
+    )
 {
     OM_uint32 ret;
     krb5_error_code kret;
@@ -574,13 +574,22 @@ repl_mutual
     if (actual_mech_type)
 	*actual_mech_type = GSS_KRB5_MECHANISM;
 
-    ret = _gsskrb5_decapsulate (minor_status, input_token, &indata,
-				   "\x02\x00", GSS_KRB5_MECHANISM);
-    if (ret) {
-	/* XXX - Handle AP_ERROR */
-	return ret;
+    if (ctx->flags & GSS_C_DCE_STYLE) {
+	/* There is no OID wrapping. */
+	indata.length	= input_token->length;
+	indata.data	= input_token->value;
+    } else {
+	ret = _gsskrb5_decapsulate (minor_status,
+				    input_token,
+				    &indata,
+				    "\x02\x00",
+				    GSS_KRB5_MECHANISM);
+	if (ret) {
+	    /* XXX - Handle AP_ERROR */
+	    return ret;
+	}
     }
-    
+
     kret = krb5_rd_rep (_gsskrb5_context,
 			ctx->auth_context,
 			&indata,
@@ -610,8 +619,8 @@ repl_mutual
     *minor_status = 0;
     if (time_rec) {
 	ret = _gsskrb5_lifetime_left(minor_status,
-				   ctx->lifetime,
-				   time_rec);
+				     ctx->lifetime,
+				     time_rec);
     } else {
 	ret = GSS_S_COMPLETE;
     }
