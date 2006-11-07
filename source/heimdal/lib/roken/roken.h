@@ -268,6 +268,8 @@ vis(char *, int, int, int);
 int ROKEN_LIB_FUNCTION
 closefrom(int);
 
+
+
 ROKEN_CPP_END
 #define ROKEN_VERSION 0.8pre-samba
 
