@@ -680,6 +680,6 @@ gsskrb5_get_subkey(OM_uint32 *minor_status,
 {
     return gsskrb5_extract_key(minor_status,
 			       context_handle,
-			       GSS_KRB5_GET_ACCEPTOR_SUBKEY_X,
+			       GSS_KRB5_GET_SUBKEY_X,
 			       keyblock);
 }
