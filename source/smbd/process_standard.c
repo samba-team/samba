@@ -27,8 +27,9 @@
 #include "lib/tdb/include/tdb.h"
 #include "lib/socket/socket.h"
 #include "smbd/process_model.h"
-
 #include "param/secrets.h"
+
+#include "system/filesys.h"
 
 #ifdef HAVE_SETPROCTITLE
 #ifdef HAVE_SETPROCTITLE_H
