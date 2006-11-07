@@ -59,7 +59,7 @@ sub PkgConfig($$$$$$$$$$)
 
 	print __FILE__.": creating $path\n";
 
-	if ($self->{config}->{samba_cv_immediate_structures} eq "yes") {
+	if ($self->{config}->{libreplace_cv_immediate_structures} eq "yes") {
 		$cflags .= " -DHAVE_IMMEDIATE_STRUCTURES=1";
 	}
 
