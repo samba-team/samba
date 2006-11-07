@@ -134,8 +134,6 @@ PICFLAG=$self->{config}->{PICFLAG}
 HOSTCC=$self->{config}->{HOSTCC}
 HOSTCC_CFLAGS=-D_SAMBA_HOSTCC_ $self->{config}->{CFLAGS} \$(CPPFLAGS)
 
-INSTALL_LINK_FLAGS=-Wl,-rpath-link,\$(builddir)/bin/shared
-
 LD=$self->{config}->{LD} 
 LDFLAGS=$self->{config}->{LDFLAGS} -L$libdir
 
@@ -282,7 +280,7 @@ __EOD__
 $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
-	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) $soarg \\
 		$init_obj $singlesoarg 
@@ -371,8 +369,7 @@ sub Binary($$)
 $self->output(<< "__EOD__"
 $installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
-	\@\$(LD) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
+	\@\$(LD) \$(LDFLAGS) -o \$\@ \$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS)
 
 __EOD__
 );
