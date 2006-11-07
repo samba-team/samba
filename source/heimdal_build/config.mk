@@ -5,14 +5,26 @@ CFLAGS = -Iheimdal_build -Iheimdal/kdc
 OBJ_FILES = \
 	../heimdal/kdc/default_config.o \
 	../heimdal/kdc/kerberos5.o \
+	../heimdal/kdc/krb5tgs.o \
 	../heimdal/kdc/pkinit.o \
 	../heimdal/kdc/log.o \
 	../heimdal/kdc/misc.o \
 	../heimdal/kdc/524.o \
 	../heimdal/kdc/kerberos4.o \
 	../heimdal/kdc/kaserver.o \
-	../heimdal/kdc/process.o
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB
+	../heimdal/kdc/digest.o \
+	../heimdal/kdc/process.o \
+	../heimdal/lib/asn1/asn1_DigestREQ.o \
+	../heimdal/lib/asn1/asn1_DigestRequest.o \
+	../heimdal/lib/asn1/asn1_DigestInit.o \
+	../heimdal/lib/asn1/asn1_DigestReqInner.o \
+	../heimdal/lib/asn1/asn1_DigestREP.o \
+	../heimdal/lib/asn1/asn1_DigestRepInner.o \
+	../heimdal/lib/asn1/asn1_DigestResponse.o \
+	../heimdal/lib/asn1/asn1_DigestInitReply.o \
+	../heimdal/lib/asn1/asn1_DigestError.o \
+	../heimdal/lib/asn1/asn1_KRB5SignedPath.o
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_ASN1 HEIMDAL_DES
 # End SUBSYSTEM HEIMDAL_KDC
 #######################
 
@@ -42,61 +54,136 @@ OBJ_FILES = \
 	../heimdal/lib/hdb/asn1_HDB_Ext_Constrained_delegation_acl.o \
 	../heimdal/lib/hdb/asn1_HDB_Ext_Lan_Manager_OWF.o \
 	../heimdal/lib/hdb/asn1_HDB_Ext_PKINIT_acl.o \
-	../heimdal/lib/hdb/asn1_HDB_Ext_PKINIT_certificate.o \
+	../heimdal/lib/hdb/asn1_HDB_Ext_PKINIT_hash.o \
 	../heimdal/lib/hdb/asn1_HDB_Ext_Password.o \
 	../heimdal/lib/hdb/asn1_HDB_extension.o \
 	../heimdal/lib/hdb/asn1_HDB_extensions.o \
 	../heimdal/lib/hdb/asn1_hdb_entry.o \
 	../heimdal/lib/hdb/hdb_err.o
-PUBLIC_DEPENDENCIES = HDB_LDB HEIMDAL_HDB_KEYS HEIMDAL_ROKEN
+PRIVATE_DEPENDENCIES = HDB_LDB HEIMDAL_HDB_KEYS HEIMDAL_ROKEN
 # End SUBSYSTEM HEIMDAL_HDB
 #######################
 
 #######################
 # Start SUBSYSTEM HEIMDAL_GSSAPI
 [SUBSYSTEM::HEIMDAL_GSSAPI]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/gssapi
+CFLAGS = -Iheimdal_build -Iheimdal/lib/gssapi/spnego -Iheimdal/lib/gssapi -Iheimdal/lib/gssapi/krb5 -I heimdal/lib/gssapi/mech
 OBJ_FILES = \
-	../heimdal/lib/gssapi/init_sec_context.o \
-	../heimdal/lib/gssapi/inquire_cred.o \
-	../heimdal/lib/gssapi/release_buffer.o \
-	../heimdal/lib/gssapi/release_cred.o \
-	../heimdal/lib/gssapi/release_name.o \
-	../heimdal/lib/gssapi/release_oid_set.o \
-	../heimdal/lib/gssapi/sequence.o \
-	../heimdal/lib/gssapi/test_oid_set_member.o \
-	../heimdal/lib/gssapi/unwrap.o \
-	../heimdal/lib/gssapi/verify_mic.o \
-	../heimdal/lib/gssapi/wrap.o \
-	../heimdal/lib/gssapi/address_to_krb5addr.o \
-	../heimdal/lib/gssapi/asn1_ContextFlags.o \
-	../heimdal/lib/gssapi/asn1_MechType.o \
-	../heimdal/lib/gssapi/asn1_MechTypeList.o \
-	../heimdal/lib/gssapi/asn1_NegotiationToken.o \
-	../heimdal/lib/gssapi/asn1_NegTokenInit.o \
-	../heimdal/lib/gssapi/asn1_NegTokenTarg.o \
-	../heimdal/lib/gssapi/8003.o \
-	../heimdal/lib/gssapi/accept_sec_context.o \
-	../heimdal/lib/gssapi/acquire_cred.o \
-	../heimdal/lib/gssapi/add_oid_set_member.o \
-	../heimdal/lib/gssapi/arcfour.o \
-	../heimdal/lib/gssapi/ccache_name.o \
-	../heimdal/lib/gssapi/copy_ccache.o \
-	../heimdal/lib/gssapi/cfx.o \
-	../heimdal/lib/gssapi/compat.o \
-	../heimdal/lib/gssapi/context_time.o \
-	../heimdal/lib/gssapi/create_emtpy_oid_set.o \
-	../heimdal/lib/gssapi/decapsulate.o \
-	../heimdal/lib/gssapi/delete_sec_context.o \
-	../heimdal/lib/gssapi/display_name.o \
-	../heimdal/lib/gssapi/display_status.o \
-	../heimdal/lib/gssapi/duplicate_name.o \
-	../heimdal/lib/gssapi/encapsulate.o \
-	../heimdal/lib/gssapi/external.o \
-	../heimdal/lib/gssapi/get_mic.o \
-	../heimdal/lib/gssapi/import_name.o \
-	../heimdal/lib/gssapi/init.o
-PUBLIC_DEPENDENCIES = HEIMDAL_KRB5 
+	../heimdal/lib/gssapi/mech/gss_krb5.o \
+	../heimdal/lib/gssapi/mech/gss_mech_switch.o \
+	../heimdal/lib/gssapi/mech/gss_process_context_token.o \
+	../heimdal/lib/gssapi/mech/gss_buffer_set.o \
+	../heimdal/lib/gssapi/mech/gss_add_cred.o \
+	../heimdal/lib/gssapi/mech/gss_add_oid_set_member.o \
+	../heimdal/lib/gssapi/mech/gss_compare_name.o \
+	../heimdal/lib/gssapi/mech/gss_release_oid_set.o \
+	../heimdal/lib/gssapi/mech/gss_create_empty_oid_set.o \
+	../heimdal/lib/gssapi/mech/gss_decapsulate_token.o \
+	../heimdal/lib/gssapi/mech/gss_inquire_cred_by_oid.o \
+	../heimdal/lib/gssapi/mech/gss_canonicalize_name.o \
+	../heimdal/lib/gssapi/mech/gss_inquire_sec_context_by_oid.o \
+	../heimdal/lib/gssapi/mech/gss_inquire_names_for_mech.o \
+../heimdal/lib/gssapi/mech/gss_inquire_mechs_for_name.o \
+../heimdal/lib/gssapi/mech/gss_wrap_size_limit.o \
+../heimdal/lib/gssapi/mech/gss_names.o \
+../heimdal/lib/gssapi/mech/gss_verify.o \
+../heimdal/lib/gssapi/mech/gss_display_name.o \
+../heimdal/lib/gssapi/mech/gss_duplicate_oid.o \
+../heimdal/lib/gssapi/mech/gss_display_status.o \
+../heimdal/lib/gssapi/mech/gss_release_buffer.o \
+../heimdal/lib/gssapi/mech/gss_release_oid.o \
+../heimdal/lib/gssapi/mech/gss_test_oid_set_member.o \
+../heimdal/lib/gssapi/mech/gss_release_cred.o \
+../heimdal/lib/gssapi/mech/gss_set_sec_context_option.o \
+../heimdal/lib/gssapi/mech/gss_export_name.o \
+../heimdal/lib/gssapi/mech/gss_seal.o \
+../heimdal/lib/gssapi/mech/mech_switch.h \
+../heimdal/lib/gssapi/mech/gss_acquire_cred.o \
+../heimdal/lib/gssapi/mech/gss_unseal.o \
+../heimdal/lib/gssapi/mech/gss_verify_mic.o \
+../heimdal/lib/gssapi/mech/gss_accept_sec_context.o \
+../heimdal/lib/gssapi/mech/gss_inquire_cred_by_mech.o \
+../heimdal/lib/gssapi/mech/gss_indicate_mechs.o \
+../heimdal/lib/gssapi/mech/gss_delete_sec_context.o \
+../heimdal/lib/gssapi/mech/gss_sign.o \
+../heimdal/lib/gssapi/mech/gss_utils.o \
+../heimdal/lib/gssapi/mech/gss_init_sec_context.o \
+../heimdal/lib/gssapi/mech/gss_oid_equal.o \
+../heimdal/lib/gssapi/mech/gss_context_time.o \
+../heimdal/lib/gssapi/mech/gss_encapsulate_token.o \
+../heimdal/lib/gssapi/mech/gss_get_mic.o \
+../heimdal/lib/gssapi/mech/gss_import_sec_context.o \
+../heimdal/lib/gssapi/mech/gss_inquire_cred.o \
+../heimdal/lib/gssapi/mech/gss_wrap.o \
+../heimdal/lib/gssapi/mech/gss_import_name.o \
+../heimdal/lib/gssapi/mech/gss_duplicate_name.o \
+../heimdal/lib/gssapi/mech/gss_unwrap.o \
+../heimdal/lib/gssapi/mech/gss_export_sec_context.o \
+../heimdal/lib/gssapi/mech/gss_inquire_context.o \
+../heimdal/lib/gssapi/mech/gss_release_name.o \
+../heimdal/lib/gssapi/mech/gss_set_cred_option.o \
+../heimdal/lib/gssapi/mech/asn1_GSSAPIContextToken.o \
+	../heimdal/lib/gssapi/spnego/init_sec_context.o \
+	../heimdal/lib/gssapi/spnego/external.o \
+	../heimdal/lib/gssapi/spnego/compat.o \
+	../heimdal/lib/gssapi/spnego/context_stubs.o \
+	../heimdal/lib/gssapi/spnego/cred_stubs.o \
+	../heimdal/lib/gssapi/spnego/accept_sec_context.o \
+	../heimdal/lib/gssapi/spnego/asn1_ContextFlags.o \
+	../heimdal/lib/gssapi/spnego/asn1_MechType.o \
+	../heimdal/lib/gssapi/spnego/asn1_MechTypeList.o \
+	../heimdal/lib/gssapi/spnego/asn1_NegHints.o \
+	../heimdal/lib/gssapi/spnego/asn1_NegTokenInit.o \
+	../heimdal/lib/gssapi/spnego/asn1_NegTokenResp.o \
+	../heimdal/lib/gssapi/krb5/copy_ccache.o \
+	../heimdal/lib/gssapi/krb5/delete_sec_context.o \
+	../heimdal/lib/gssapi/krb5/init_sec_context.o \
+	../heimdal/lib/gssapi/krb5/context_time.o \
+	../heimdal/lib/gssapi/krb5/init.o \
+	../heimdal/lib/gssapi/krb5/address_to_krb5addr.o \
+	../heimdal/lib/gssapi/krb5/get_mic.o \
+	../heimdal/lib/gssapi/krb5/inquire_context.o \
+	../heimdal/lib/gssapi/krb5/add_cred.o \
+	../heimdal/lib/gssapi/krb5/inquire_cred.o \
+	../heimdal/lib/gssapi/krb5/inquire_cred_by_oid.o \
+	../heimdal/lib/gssapi/krb5/inquire_cred_by_mech.o \
+	../heimdal/lib/gssapi/krb5/inquire_mechs_for_name.o \
+	../heimdal/lib/gssapi/krb5/inquire_names_for_mech.o \
+	../heimdal/lib/gssapi/krb5/indicate_mechs.o \
+	../heimdal/lib/gssapi/krb5/inquire_sec_context_by_oid.o \
+	../heimdal/lib/gssapi/krb5/export_sec_context.o \
+	../heimdal/lib/gssapi/krb5/import_sec_context.o \
+	../heimdal/lib/gssapi/krb5/duplicate_name.o \
+	../heimdal/lib/gssapi/krb5/import_name.o \
+	../heimdal/lib/gssapi/krb5/compare_name.o \
+	../heimdal/lib/gssapi/krb5/export_name.o \
+	../heimdal/lib/gssapi/krb5/canonicalize_name.o \
+	../heimdal/lib/gssapi/krb5/unwrap.o \
+	../heimdal/lib/gssapi/krb5/wrap.o \
+	../heimdal/lib/gssapi/krb5/release_name.o \
+	../heimdal/lib/gssapi/krb5/cfx.o \
+	../heimdal/lib/gssapi/krb5/add_oid_set_member.o \
+	../heimdal/lib/gssapi/krb5/release_oid_set.o \
+	../heimdal/lib/gssapi/krb5/create_emtpy_oid_set.o \
+	../heimdal/lib/gssapi/krb5/8003.o \
+	../heimdal/lib/gssapi/krb5/arcfour.o \
+	../heimdal/lib/gssapi/krb5/encapsulate.o \
+	../heimdal/lib/gssapi/krb5/display_name.o \
+	../heimdal/lib/gssapi/krb5/sequence.o \
+	../heimdal/lib/gssapi/krb5/display_status.o \
+	../heimdal/lib/gssapi/krb5/release_buffer.o \
+	../heimdal/lib/gssapi/krb5/test_oid_set_member.o \
+	../heimdal/lib/gssapi/krb5/external.o \
+	../heimdal/lib/gssapi/krb5/compat.o \
+	../heimdal/lib/gssapi/krb5/acquire_cred.o \
+	../heimdal/lib/gssapi/krb5/release_cred.o \
+	../heimdal/lib/gssapi/krb5/set_cred_option.o \
+	../heimdal/lib/gssapi/krb5/decapsulate.o \
+	../heimdal/lib/gssapi/krb5/verify_mic.o \
+	../heimdal/lib/gssapi/krb5/accept_sec_context.o \
+	../heimdal/lib/gssapi/krb5/set_sec_context_option.o \
+	../heimdal/lib/gssapi/krb5/process_context_token.o
+PRIVATE_DEPENDENCIES = HEIMDAL_KRB5 HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_ASN1 HEIMDAL_GLUE 
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
 
@@ -202,8 +289,9 @@ OBJ_FILES = \
 	../heimdal/lib/asn1/der_length.o \
 	../heimdal/lib/asn1/der_copy.o \
 	../heimdal/lib/asn1/der_cmp.o \
+	../heimdal/lib/asn1/extra.o \
+	../heimdal/lib/asn1/timegm.o \
 	../heimdal/lib/asn1/asn1_AD_IF_RELEVANT.o \
-	../heimdal/lib/asn1/asn1_AD_KDCIssued.o \
 	../heimdal/lib/asn1/asn1_APOptions.o \
 	../heimdal/lib/asn1/asn1_AP_REP.o \
 	../heimdal/lib/asn1/asn1_AP_REQ.o \
@@ -211,7 +299,7 @@ OBJ_FILES = \
 	../heimdal/lib/asn1/asn1_AS_REQ.o \
 	../heimdal/lib/asn1/asn1_Authenticator.o \
 	../heimdal/lib/asn1/asn1_AuthorizationData.o \
-	../heimdal/lib/asn1/asn1_CBCParameter.o \
+	../heimdal/lib/asn1/asn1_AuthorizationDataElement.o \
 	../heimdal/lib/asn1/asn1_CKSUMTYPE.o \
 	../heimdal/lib/asn1/asn1_ChangePasswdDataMS.o \
 	../heimdal/lib/asn1/asn1_Checksum.o \
@@ -251,15 +339,17 @@ OBJ_FILES = \
 	../heimdal/lib/asn1/asn1_PA_DATA.o \
 	../heimdal/lib/asn1/asn1_PA_ENC_TS_ENC.o \
 	../heimdal/lib/asn1/asn1_PA_PAC_REQUEST.o \
+	../heimdal/lib/asn1/asn1_PA_S4U2Self.o \
 	../heimdal/lib/asn1/asn1_Principal.o \
 	../heimdal/lib/asn1/asn1_PrincipalName.o \
-	../heimdal/lib/asn1/asn1_RC2CBCParameter.o \
 	../heimdal/lib/asn1/asn1_Realm.o \
 	../heimdal/lib/asn1/asn1_TGS_REP.o \
 	../heimdal/lib/asn1/asn1_TGS_REQ.o \
 	../heimdal/lib/asn1/asn1_Ticket.o \
 	../heimdal/lib/asn1/asn1_TicketFlags.o \
 	../heimdal/lib/asn1/asn1_TransitedEncoding.o \
+	../heimdal/lib/asn1/asn1_KRB5SignedPathData.o \
+	../heimdal/lib/asn1/asn1_KRB5SignedPathPrincipals.o \
 	../heimdal/lib/asn1/asn1_err.o \
 	../heimdal/lib/asn1/asn1_krb5int32.o \
 	../heimdal/lib/asn1/asn1_krb5uint32.o
@@ -287,6 +377,8 @@ OBJ_FILES = \
 	../heimdal/lib/des/ui.o \
 	../heimdal/lib/des/evp.o \
 	../heimdal/lib/des/pkcs5.o \
+	../heimdal/lib/des/rand.o \
+	../heimdal/lib/des/rand-unix.o \
 	../heimdal/lib/des/hmac.o
 # End SUBSYSTEM HEIMDAL_DES
 #######################
@@ -294,19 +386,19 @@ OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_GAI_STRERROR
 [SUBSYSTEM::HEIMDAL_ROKEN_GAI_STRERROR]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 OBJ_FILES = ../heimdal/lib/roken/gai_strerror.o
 
 [SUBSYSTEM::HEIMDAL_ROKEN_INET_ATON]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
 
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 OBJ_FILES = ../heimdal/lib/roken/getprogname.o
 
-[SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME_H]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+[SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME_H] 
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 OBJ_FILES = ../heimdal/lib/roken/getprogname.ho
 
 #######################
@@ -326,7 +418,7 @@ PRIVATE_DEPENDENCIES = EXT_SOCKET
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
 [SUBSYSTEM::HEIMDAL_ROKEN]
-CFLAGS =  -Iheimdal_build -Iheimdal/lib/roken
+CFLAGS =  -Iheimdal_build -Iheimdal/lib/roken -Ilib/socket_wrapper
 OBJ_FILES = \
 	../heimdal/lib/roken/base64.o \
 	../heimdal/lib/roken/hex.o \
@@ -347,6 +439,7 @@ OBJ_FILES = \
 	../heimdal/lib/roken/strsep.o \
 	../heimdal/lib/roken/strupr.o \
 	../heimdal/lib/roken/strpool.o \
+	../heimdal/lib/roken/estrdup.o \
 	replace.o
 PUBLIC_DEPENDENCIES = \
 			HEIMDAL_ROKEN_ADDRINFO \
@@ -363,7 +456,7 @@ PUBLIC_DEPENDENCIES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_GLUE
 [SUBSYSTEM::HEIMDAL_GLUE]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/asn1 -Iheimdal/lib/com_err
+CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/asn1 -Iheimdal/lib/com_err 
 OBJ_FILES = glue.o
 PUBLIC_DEPENDENCIES = LIBNETIF
 # End SUBSYSTEM HEIMDAL_GLUE
@@ -383,7 +476,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
 #######################
 # Start SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_ASN1_COMPILE_LEX]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1 -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1 -Iheimdal/lib/roken  -Ilib/socket_wrapper
 OBJ_FILES = ../heimdal/lib/asn1/lex.ho 
 # End SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 #######################
@@ -402,6 +495,7 @@ OBJ_FILES = \
 	../heimdal/lib/asn1/gen_free.ho \
 	../heimdal/lib/asn1/gen_glue.ho \
 	../heimdal/lib/asn1/gen_length.ho \
+	../heimdal/lib/asn1/gen_seq.ho \
 	../heimdal/lib/asn1/hash.ho \
 	../heimdal/lib/asn1/parse.ho \
 	../heimdal/lib/roken/emalloc.ho \
@@ -421,7 +515,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_COM_ERR_COMPILE_LEX]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err -Iheimdal/lib/roken  -Ilib/socket_wrapper
 OBJ_FILES = ../heimdal/lib/com_err/lex.ho 
 # End SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 #######################
@@ -444,8 +538,10 @@ PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H
 #######################
 
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hdb/hdb.asn1 hdb_asn1|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/spnego.asn1 spnego_asn1|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 --encode-rfc1510-bit-string|
+include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/spnego/spnego.asn1 spnego_asn1|
+include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/mech/gssapi.asn1 gssapi_asn1|
+include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData|
+include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/digest.asn1 digest_asn1|
 
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/asn1/asn1_err.et|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/hdb/hdb_err.et|

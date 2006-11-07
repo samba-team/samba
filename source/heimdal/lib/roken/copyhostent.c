@@ -36,7 +36,7 @@
 RCSID("$Id: copyhostent.c,v 1.3 2005/04/12 11:28:36 lha Exp $");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * return a malloced copy of `h'

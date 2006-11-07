@@ -462,7 +462,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 
 	struct ldb_result *res = NULL;
 
-	ret = krb5_unparse_name_norealm(context, principal, &short_princ);
+	ret = krb5_unparse_name_flags(context, principal,  KRB5_PRINCIPAL_UNPARSE_NO_REALM, &short_princ);
 
 	if (ret != 0) {
 		krb5_set_error_string(context, "LDB_lookup_principal: could not parse principal");
@@ -713,7 +713,9 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 		struct ldb_dn *user_dn, *domain_dn;
 		char *principal_string;
 		
-		ret = krb5_unparse_name_norealm(context, principal, &principal_string);
+		ret = krb5_unparse_name_flags(context, principal, 
+					      KRB5_PRINCIPAL_UNPARSE_NO_REALM, 
+					      &principal_string);
 		if (ret != 0) {
 			return ret;
 		}

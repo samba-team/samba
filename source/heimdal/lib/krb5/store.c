@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id: store.c,v 1.58 2006/05/05 07:15:18 lha Exp $");
+RCSID("$Id: store.c,v 1.59 2006/08/18 08:39:13 lha Exp $");
 
 #define BYTEORDER_IS(SP, V) (((SP)->flags & KRB5_STORAGE_BYTEORDER_MASK) == (V))
 #define BYTEORDER_IS_LE(SP) BYTEORDER_IS((SP), KRB5_STORAGE_BYTEORDER_LE)
@@ -429,6 +429,76 @@ krb5_ret_stringz(krb5_storage *sp,
 	s[len - 1] = c;
 	if(c == 0)
 	    break;
+    }
+    if(ret != 1){
+	free(s);
+	if(ret == 0)
+	    return sp->eof_code;
+	return ret;
+    }
+    *string = s;
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_stringnl(krb5_storage *sp, const char *s)
+{
+    size_t len = strlen(s);
+    ssize_t ret;
+
+    ret = sp->store(sp, s, len);
+    if(ret != len) {
+	if(ret < 0)
+	    return ret;
+	else
+	    return sp->eof_code;
+    }
+    ret = sp->store(sp, "\n", 1);
+    if(ret != 1) {
+	if(ret < 0)
+	    return ret;
+	else
+	    return sp->eof_code;
+    }
+
+    return 0;
+
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_stringnl(krb5_storage *sp,
+		  char **string)
+{
+    int expect_nl = 0;
+    char c;
+    char *s = NULL;
+    size_t len = 0;
+    ssize_t ret;
+
+    while((ret = sp->fetch(sp, &c, 1)) == 1){
+	char *tmp;
+
+	if (c == '\r') {
+	    expect_nl = 1;
+	    continue;
+	}
+	if (expect_nl && c != '\n') {
+	    free(s);
+	    return KRB5_BADMSGTYPE;
+	}
+
+	len++;
+	tmp = realloc (s, len);
+	if (tmp == NULL) {
+	    free (s);
+	    return ENOMEM;
+	}
+	s = tmp;
+	if(c == '\n') {
+	    s[len - 1] = '\0';
+	    break;
+	}
+	s[len - 1] = c;
     }
     if(ret != 1){
 	free(s);

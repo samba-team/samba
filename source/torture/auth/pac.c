@@ -97,14 +97,16 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 		torture_fail(tctx, "auth_anonymous_server_info");
 	}
 
-	ret = krb5_parse_name_norealm(smb_krb5_context->krb5_context, 
-				      server_info->account_name, &client_principal);
+	ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, 
+				    server_info->account_name, 
+				    KRB5_PRINCIPAL_PARSE_NO_REALM, 
+				    &client_principal);
 	if (ret) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &krbtgt_keyblock);
-		torture_fail(tctx, "krb5_parse_name_norealm");
+		torture_fail(tctx, "krb5_parse_name_flags(norealm)");
 	}
 
 	/* OK, go ahead and make a PAC */

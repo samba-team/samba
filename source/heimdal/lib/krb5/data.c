@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: data.c,v 1.20 2006/04/02 01:06:07 lha Exp $");
+RCSID("$Id: data.c,v 1.21 2006/10/14 09:45:41 lha Exp $");
 
 void KRB5_LIB_FUNCTION
 krb5_data_zero(krb5_data *p)
@@ -110,7 +110,7 @@ krb5_copy_data(krb5_context context,
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
-    ret = copy_octet_string(indata, *outdata);
+    ret = der_copy_octet_string(indata, *outdata);
     if(ret) {
 	krb5_clear_error_string (context);
 	free(*outdata);

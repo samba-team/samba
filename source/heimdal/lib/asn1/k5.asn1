@@ -1,4 +1,4 @@
--- $Id: k5.asn1,v 1.47 2006/03/27 22:52:11 lha Exp $
+-- $Id: k5.asn1,v 1.50 2006/09/11 13:28:59 lha Exp $
 
 KERBEROS5 DEFINITIONS ::=
 BEGIN
@@ -70,10 +70,11 @@ PADATA-TYPE ::= INTEGER {
 	KRB5-PADATA-TD-REQ-NONCE(107),		-- INTEGER
 	KRB5-PADATA-TD-REQ-SEQ(108),		-- INTEGER
 	KRB5-PADATA-PA-PAC-REQUEST(128),	-- jbrezak@exchange.microsoft.com
-	KRB5-PADATA-PK-AS-09-BINDING(132)	-- client send this to 
+	KRB5-PADATA-PK-AS-09-BINDING(132),	-- client send this to 
 						-- tell KDC that is supports 
 						-- the asCheckSum in the
 						--  PK-AS-REP
+	KRB5-PADATA-S4U2SELF(-17)
 }
 
 AUTHDATA-TYPE ::= INTEGER {
@@ -89,7 +90,8 @@ AUTHDATA-TYPE ::= INTEGER {
 	KRB5-AUTHDATA-SESAME(65),
 	KRB5-AUTHDATA-OSF-DCE-PKI-CERTID(66),
 	KRB5-AUTHDATA-WIN2K-PAC(128),
-	KRB5-AUTHDATA-GSS-API-ETYPE-NEGOTIATION(129) -- Authenticator only
+	KRB5-AUTHDATA-GSS-API-ETYPE-NEGOTIATION(129), -- Authenticator only
+	KRB5-AUTHDATA-SIGNTICKET(-17)
 }
 
 -- checksumtypes
@@ -138,12 +140,7 @@ ENCTYPE ::= INTEGER {
 	ETYPE_DES_CFB64_NONE(-0x1002),
 	ETYPE_DES_PCBC_NONE(-0x1003),
 	ETYPE_DIGEST_MD5_NONE(-0x1004),		-- private use, lukeh@padl.com
-	ETYPE_CRAM_MD5_NONE(-0x1005),		-- private use, lukeh@padl.com
-	ETYPE_RC2_CBC_NONE(-0x1006),
-	ETYPE_AES128_CBC_NONE(-0x1007),
-	ETYPE_AES192_CBC_NONE(-0x1008),
-	ETYPE_AES256_CBC_NONE(-0x1009),
-	ETYPE_DES3_CBC_NONE_CMS(-0x100a)
+	ETYPE_CRAM_MD5_NONE(-0x1005)		-- private use, lukeh@padl.com
 }
 
 
@@ -186,10 +183,12 @@ HostAddresses ::= SEQUENCE OF HostAddress
 
 KerberosTime ::= GeneralizedTime -- Specifying UTC time zone (Z)
 
-AuthorizationData ::= SEQUENCE OF SEQUENCE {
+AuthorizationDataElement ::= SEQUENCE {
 	ad-type[0]		krb5int32,
 	ad-data[1]		OCTET STRING
 }
+
+AuthorizationData ::= SEQUENCE OF AuthorizationDataElement
 
 APOptions ::= BIT STRING {
 	reserved(0),
@@ -307,7 +306,7 @@ Authenticator ::= [APPLICATION 2] SEQUENCE    {
 	subkey[6]		EncryptionKey OPTIONAL,
 	seq-number[7]		krb5uint32 OPTIONAL,
 	authorization-data[8]	AuthorizationData OPTIONAL
-	}
+}
 
 PA-DATA ::= SEQUENCE {
 	-- might be encoded AP-REQ
@@ -601,16 +600,29 @@ PA-ENC-SAM-RESPONSE-ENC ::= SEQUENCE {
 	...
 }
 
--- This is really part of CMS, but its here because KCRYPTO provides
--- the crypto framework for CMS glue in heimdal.
-
-RC2CBCParameter ::= SEQUENCE {
-	rc2ParameterVersion	krb5int32,
-	iv			OCTET STRING -- exactly 8 octets
+PA-S4U2Self ::= SEQUENCE {
+	name[0]		PrincipalName,
+        realm[1]	Realm,
+        cksum[2]	Checksum,
+        auth[3]		GeneralString
 }
 
-CBCParameter ::= OCTET STRING
+KRB5SignedPathPrincipals ::= SEQUENCE OF Principal
 
+-- never encoded on the wire, just used to checksum over
+KRB5SignedPathData ::= SEQUENCE {
+	encticket[0]	EncTicketPart,
+	delegated[1]	KRB5SignedPathPrincipals OPTIONAL
+}
+
+KRB5SignedPath ::= SEQUENCE {
+	-- DERcoded KRB5SignedPathData
+	-- krbtgt key (etype), KeyUsage = XXX 
+	etype[0]	ENCTYPE,
+	cksum[1]	Checksum,
+	-- srvs delegated though
+	delegated[2]	KRB5SignedPathPrincipals OPTIONAL
+}
 
 END
 

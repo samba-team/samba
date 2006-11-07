@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_rep.c,v 1.25 2005/06/17 07:49:33 lha Exp $");
+RCSID("$Id: rd_rep.c,v 1.26 2006/08/21 09:19:22 lha Exp $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_rep(krb5_context context,
@@ -92,7 +92,10 @@ krb5_rd_rep(krb5_context context,
   
     if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) { 
 	if ((*repl)->ctime != auth_context->authenticator->ctime ||
-	    (*repl)->cusec != auth_context->authenticator->cusec) {
+	    (*repl)->cusec != auth_context->authenticator->cusec) 
+	{
+	    krb5_free_ap_rep_enc_part(context, *repl);
+	    *repl = NULL;
 	    ret = KRB5KRB_AP_ERR_MUT_FAIL;
 	    krb5_clear_error_string (context);
 	    goto out;
@@ -114,6 +117,8 @@ void KRB5_LIB_FUNCTION
 krb5_free_ap_rep_enc_part (krb5_context context,
 			   krb5_ap_rep_enc_part *val)
 {
-    free_EncAPRepPart (val);
-    free (val);
+    if (val) {
+	free_EncAPRepPart (val);
+	free (val);
+    }
 }

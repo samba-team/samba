@@ -280,7 +280,8 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	ret = krb5_parse_name_norealm(context, logon_name->account_name, &client_principal_pac);
+	ret = krb5_parse_name_flags(context, logon_name->account_name, KRB5_PRINCIPAL_PARSE_NO_REALM, 
+				    &client_principal_pac);
 	if (ret) {
 		DEBUG(2, ("Could not parse name from incoming PAC: [%s]: %s\n", 
 			  logon_name->account_name, 
@@ -591,7 +592,8 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	u_LOGON_INFO->logon_info.info		= LOGON_INFO;
 	LOGON_INFO->info3 = *sam3;
 
-	ret = krb5_unparse_name_norealm(context, client_principal, &name);
+	ret = krb5_unparse_name_flags(context, client_principal, 
+				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &name);
 	if (ret) {
 		return ret;
 	}

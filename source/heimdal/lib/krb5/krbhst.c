@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <resolve.h>
 
-RCSID("$Id: krbhst.c,v 1.55 2006/04/02 10:32:20 lha Exp $");
+RCSID("$Id: krbhst.c,v 1.57 2006/10/06 17:11:02 lha Exp $");
 
 static int
 string_to_proto(const char *string)
@@ -422,6 +422,15 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
     struct addrinfo hints;
     char portstr[NI_MAXSERV];
 
+    /* 
+     * Don't try forever in case the DNS server keep returning us
+     * entries (like wildcard entries or the .nu TLD)
+     */
+    if(kd->fallback_count >= 5) {
+	kd->flags |= KD_FALLBACK;
+	return 0;
+    }
+
     if(kd->fallback_count == 0)
 	asprintf(&host, "%s.%s.", serv_string, kd->realm);
     else
@@ -659,9 +668,8 @@ common_init(krb5_context context,
     }
 
     /* For 'realms' without a . do not even think of going to DNS */
-    if (!strchr(realm, '.')) {
+    if (!strchr(realm, '.'))
 	kd->flags |= KD_CONFIG_EXISTS;
-    }
 
     if (flags & KRB5_KRBHST_FLAGS_LARGE_MSG)
 	kd->flags |= KD_LARGE_MSG;

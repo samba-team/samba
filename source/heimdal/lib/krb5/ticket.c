@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: ticket.c,v 1.14 2005/10/27 13:21:42 lha Exp $");
+RCSID("$Id: ticket.c,v 1.15 2006/10/14 09:53:19 lha Exp $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_ticket(krb5_context context,
@@ -107,12 +107,16 @@ find_type_in_ad(krb5_context context,
 		const AuthorizationData *ad,
 		int level)
 {
-    krb5_error_code ret = ENOENT;
+    /* It is not an error if nothing in here, that is reported by *found */
+    /* Setting a default error causes found to be set to FALSE, on
+     * recursion to an second embedded authz data even if the first
+     * element contains the required type */
+    krb5_error_code ret = 0;
     int i;
 
     if (level > 9) {
 	krb5_set_error_string(context, "Authorization data nested deeper "
-			      "than %d levels, stop searching", level);
+			      "then %d levels, stop searching", level);
 	ret = ENOENT; /* XXX */
 	goto out;
     }
@@ -124,7 +128,7 @@ find_type_in_ad(krb5_context context,
      */
     for (i = 0; i < ad->len; i++) {
 	if (!*found && ad->val[i].ad_type == type) {
-	    ret = copy_octet_string(&ad->val[i].ad_data, data);
+	    ret = der_copy_octet_string(&ad->val[i].ad_data, data);
 	    if (ret) {
 		krb5_set_error_string(context, "malloc - out of memory");
 		goto out;

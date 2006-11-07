@@ -36,7 +36,7 @@
 RCSID("$Id: freeaddrinfo.c,v 1.5 2005/04/12 11:28:41 lha Exp $");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * free the list of `struct addrinfo' starting at `ai'

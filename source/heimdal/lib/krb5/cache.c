@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: cache.c,v 1.79 2006/04/02 00:54:48 lha Exp $");
+RCSID("$Id: cache.c,v 1.82 2006/09/12 17:35:33 lha Exp $");
 
 /*
  * Add a new ccache type with operations `ops', overwriting any
@@ -188,7 +188,7 @@ krb5_cc_new_unique(krb5_context context, const char *type,
     const krb5_cc_ops *ops;
 
     if (type == NULL)
-	type = "FILE";
+	type = KRB5_DEFAULT_CCNAME;
 
     ops = krb5_cc_get_prefix_ops(context, type);
     if (ops == NULL) {
@@ -423,7 +423,7 @@ krb5_cc_initialize(krb5_context context,
 		   krb5_ccache id,
 		   krb5_principal primary_principal)
 {
-    return id->ops->init(context, id, primary_principal);
+    return (*id->ops->init)(context, id, primary_principal);
 }
 
 
@@ -438,7 +438,7 @@ krb5_cc_destroy(krb5_context context,
 {
     krb5_error_code ret;
 
-    ret = id->ops->destroy(context, id);
+    ret = (*id->ops->destroy)(context, id);
     krb5_cc_close (context, id);
     return ret;
 }
@@ -453,7 +453,7 @@ krb5_cc_close(krb5_context context,
 	      krb5_ccache id)
 {
     krb5_error_code ret;
-    ret = id->ops->close(context, id);
+    ret = (*id->ops->close)(context, id);
     free(id);
     return ret;
 }
@@ -468,7 +468,7 @@ krb5_cc_store_cred(krb5_context context,
 		   krb5_ccache id,
 		   krb5_creds *creds)
 {
-    return id->ops->store(context, id, creds);
+    return (*id->ops->store)(context, id, creds);
 }
 
 /*
@@ -488,8 +488,8 @@ krb5_cc_retrieve_cred(krb5_context context,
     krb5_cc_cursor cursor;
 
     if (id->ops->retrieve != NULL) {
-	return id->ops->retrieve(context, id, whichfields,
-				 mcreds, creds);
+	return (*id->ops->retrieve)(context, id, whichfields,
+				    mcreds, creds);
     }
 
     krb5_cc_start_seq_get(context, id, &cursor);
@@ -514,7 +514,7 @@ krb5_cc_get_principal(krb5_context context,
 		      krb5_ccache id,
 		      krb5_principal *principal)
 {
-    return id->ops->get_princ(context, id, principal);
+    return (*id->ops->get_princ)(context, id, principal);
 }
 
 /*
@@ -528,7 +528,7 @@ krb5_cc_start_seq_get (krb5_context context,
 		       const krb5_ccache id,
 		       krb5_cc_cursor *cursor)
 {
-    return id->ops->get_first(context, id, cursor);
+    return (*id->ops->get_first)(context, id, cursor);
 }
 
 /*
@@ -543,7 +543,7 @@ krb5_cc_next_cred (krb5_context context,
 		   krb5_cc_cursor *cursor,
 		   krb5_creds *creds)
 {
-    return id->ops->get_next(context, id, cursor, creds);
+    return (*id->ops->get_next)(context, id, cursor, creds);
 }
 
 /* like krb5_cc_next_cred, but allow for selective retrieval */
@@ -576,7 +576,7 @@ krb5_cc_end_seq_get (krb5_context context,
 		     const krb5_ccache id,
 		     krb5_cc_cursor *cursor)
 {
-    return id->ops->end_get(context, id, cursor);
+    return (*id->ops->end_get)(context, id, cursor);
 }
 
 /*
@@ -607,7 +607,7 @@ krb5_cc_set_flags(krb5_context context,
 		  krb5_ccache id,
 		  krb5_flags flags)
 {
-    return id->ops->set_flags(context, id, flags);
+    return (*id->ops->set_flags)(context, id, flags);
 }
 		    
 /*
@@ -672,7 +672,7 @@ krb5_cc_get_version(krb5_context context,
 		    const krb5_ccache id)
 {
     if(id->ops->get_version)
-	return id->ops->get_version(context, id);
+	return (*id->ops->get_version)(context, id);
     else
 	return 0;
 }

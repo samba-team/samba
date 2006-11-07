@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_get.c,v 1.45 2006/01/20 10:03:50 lha Exp $");
+RCSID("$Id: der_get.c,v 1.50 2006/10/19 16:27:44 lha Exp $");
 
 #include <version.h>
 
@@ -254,6 +254,8 @@ der_get_heim_integer (const unsigned char *p, size_t len,
 	data->data = malloc(data->length);
 	if (data->data == NULL) {
 	    data->length = 0;
+	    if (size)
+		*size = 0;
 	    return ENOMEM;
 	}
 	q = &((unsigned char*)data->data)[data->length - 1];
@@ -276,6 +278,8 @@ der_get_heim_integer (const unsigned char *p, size_t len,
 	data->data = malloc(data->length);
 	if (data->data == NULL && data->length != 0) {
 	    data->length = 0;
+	    if (size)
+		*size = 0;
 	    return ENOMEM;
 	}
 	memcpy(data->data, p, data->length);
@@ -305,9 +309,10 @@ generalizedtime2time (const char *s, time_t *t)
     }
     tm.tm_year -= 1900;
     tm.tm_mon -= 1;
-    *t = timegm (&tm);
+    *t = _der_timegm (&tm);
     return 0;
 }
+#undef timegm
 
 static int
 der_get_time (const unsigned char *p, size_t len, 
@@ -378,7 +383,7 @@ der_get_oid (const unsigned char *p, size_t len,
 	    u1 = u * 128 + (*p++ % 128);
 	    /* check that we don't overflow the element */
 	    if (u1 < u) {
-		free_oid(data);
+		der_free_oid(data);
 		return ASN1_OVERRUN;
 	    }
 	    u = u1;
@@ -386,7 +391,7 @@ der_get_oid (const unsigned char *p, size_t len,
 	data->components[n] = u;
     }
     if (n > 2 && p[-1] & 0x80) {
-	free_oid (data);
+	der_free_oid (data);
 	return ASN1_OVERRUN;
     }
     data->length = n;

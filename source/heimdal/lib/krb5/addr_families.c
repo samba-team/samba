@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: addr_families.c,v 1.52 2006/05/05 09:26:22 lha Exp $");
+RCSID("$Id: addr_families.c,v 1.53 2006/10/22 06:54:00 lha Exp $");
 
 struct addr_operations {
     int af;
@@ -551,6 +551,7 @@ arange_free (krb5_context context, krb5_address *addr)
     a = addr->address.data;
     krb5_free_address(context, &a->low);
     krb5_free_address(context, &a->high);
+    krb5_data_free(&addr->address);
     return 0;
 }
 

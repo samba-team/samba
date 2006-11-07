@@ -1,5 +1,5 @@
 -- From RFC 3369 --
--- $Id: CMS.asn1,v 1.4 2006/04/15 10:53:25 lha Exp $ --
+-- $Id: CMS.asn1,v 1.5 2006/09/07 12:20:42 lha Exp $ --
 
 CMS DEFINITIONS ::= BEGIN
 
@@ -17,7 +17,13 @@ id-pkcs7-signedAndEnvelopedData OBJECT IDENTIFIER ::= 	{ id-pkcs7 4 }
 id-pkcs7-digestedData OBJECT IDENTIFIER ::= 		{ id-pkcs7 5 }
 id-pkcs7-encryptedData OBJECT IDENTIFIER ::= 		{ id-pkcs7 6 }
 
-CMSVersion ::= INTEGER { v0(0), v1(1), v2(2), v3(3), v4(4) }
+CMSVersion ::= INTEGER {
+	   CMSVersion_v0(0), 
+	   CMSVersion_v1(1), 
+	   CMSVersion_v2(2),
+	   CMSVersion_v3(3),
+	   CMSVersion_v4(4)
+}
 
 DigestAlgorithmIdentifier ::= AlgorithmIdentifier
 DigestAlgorithmIdentifiers ::= SET OF DigestAlgorithmIdentifier

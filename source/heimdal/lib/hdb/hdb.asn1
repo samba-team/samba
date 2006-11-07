@@ -1,4 +1,4 @@
--- $Id: hdb.asn1,v 1.13 2005/08/11 13:15:44 lha Exp $
+-- $Id: hdb.asn1,v 1.17 2006/08/24 10:45:19 lha Exp $
 HDB DEFINITIONS ::=
 BEGIN
 
@@ -41,7 +41,10 @@ HDBFlags ::= BIT STRING {
 	require-hwauth(10),		-- must use hwauth
 	ok-as-delegate(11),		-- as in TicketFlags
 	user-to-user(12),		-- may use user-to-user auth
-	immutable(13)			-- may not be deleted
+	immutable(13),			-- may not be deleted
+	trusted-for-delegation(14),	-- Trusted to print forwardabled tickets
+	allow-kerberos4(15),		-- Allow Kerberos 4 requests
+	allow-digest(16)		-- Allow digest requests
 }
 
 GENERATION ::= SEQUENCE {
@@ -52,10 +55,14 @@ GENERATION ::= SEQUENCE {
 
 HDB-Ext-PKINIT-acl ::= SEQUENCE OF SEQUENCE {
 	subject[0]	UTF8String,
-	issuer[1]	UTF8String
+	issuer[1]	UTF8String OPTIONAL,
+	anchor[2]	UTF8String OPTIONAL
 }
 
-HDB-Ext-PKINIT-certificate ::= SEQUENCE OF OCTET STRING
+HDB-Ext-PKINIT-hash ::= SEQUENCE OF SEQUENCE {
+	digest-type[0] OBJECT IDENTIFIER,
+	digest[1] OCTET STRING
+}
 
 HDB-Ext-Constrained-delegation-acl ::= SEQUENCE OF Principal
 
@@ -80,7 +87,7 @@ HDB-extension ::= SEQUENCE {
                                         --   be rejected
         data[1]          CHOICE {
 	        pkinit-acl[0]			HDB-Ext-PKINIT-acl,
-	        pkinit-cert[1]  		HDB-Ext-PKINIT-certificate,
+	        pkinit-cert-hash[1]  		HDB-Ext-PKINIT-hash,
 		allowed-to-delegate-to[2]   HDB-Ext-Constrained-delegation-acl,
 --		referral-info[3]		HDB-Ext-Referrals,
 		lm-owf[4]			HDB-Ext-Lan-Manager-OWF,

@@ -37,7 +37,7 @@
 #include <dlfcn.h>
 #endif
 
-RCSID("$Id: acache.c,v 1.15 2006/03/27 04:22:23 lha Exp $");
+RCSID("$Id: acache.c,v 1.16 2006/10/19 11:41:38 lha Exp $");
 
 /* XXX should we fetch these for each open ? */
 static HEIMDAL_MUTEX acc_mutex = HEIMDAL_MUTEX_INITIALIZER;
@@ -113,7 +113,7 @@ init_ccapi(krb5_context context)
 	return KRB5_CC_NOSUPP;
     }
 
-    init_func = dlsym(cc_handle, "cc_initialize");
+    init_func = (cc_initialize_func)dlsym(cc_handle, "cc_initialize");
     HEIMDAL_MUTEX_unlock(&acc_mutex);
     if (init_func == NULL) {
 	krb5_set_error_string(context, "Failed to find cc_initialize"

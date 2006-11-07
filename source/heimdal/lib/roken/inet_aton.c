@@ -36,7 +36,7 @@
 RCSID("$Id: inet_aton.c,v 1.14 2005/04/12 11:28:52 lha Exp $");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 /* Minimal implementation of inet_aton.
  * Cannot distinguish between failure and a local broadcast address. */

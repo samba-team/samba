@@ -34,7 +34,7 @@
 #include "der_locl.h"
 #include <hex.h>
 
-RCSID("$Id: der_format.c,v 1.2 2006/01/16 23:01:11 lha Exp $");
+RCSID("$Id: der_format.c,v 1.6 2006/10/21 18:24:15 lha Exp $");
 
 int
 der_parse_hex_heim_integer (const char *p, heim_integer *data)
@@ -73,13 +73,13 @@ der_parse_hex_heim_integer (const char *p, heim_integer *data)
     }
 
     {
-	unsigned char *p = data->data;
-	while(*p == 0 && len > 0) {
-	    p++;
+	unsigned char *q = data->data;
+	while(*q == 0 && len > 0) {
+	    q++;
 	    len--;
 	}
 	data->length = len;
-	memmove(data->data, p, len);
+	memmove(data->data, q, len);
     }
     return 0;
 }
@@ -101,5 +101,67 @@ der_print_hex_heim_integer (const heim_integer *data, char **p)
 	    return ENOMEM;
 	*p = q;
     }
+    return 0;
+}
+
+int
+der_print_heim_oid (const heim_oid *oid, char delim, char **str)
+{
+    struct rk_strpool *p = NULL;
+    int i;
+
+    for (i = 0; i < oid->length ; i++) {
+	p = rk_strpoolprintf(p, "%d%s", 
+			     oid->components[i],
+			     i < oid->length - 1 ? " " : "");
+	if (p == NULL) {
+	    *str = NULL;
+	    return ENOMEM;
+	}
+    }
+
+    *str = rk_strpoolcollect(p);
+    if (*str == NULL)
+	return ENOMEM;
+    return 0;
+}
+
+int
+der_parse_heim_oid (const char *str, const char *sep, heim_oid *data)
+{
+    char *s, *w, *brkt, *endptr;
+    unsigned int *c;
+    long l;
+
+    data->length = 0;
+    data->components = NULL;
+
+    if (sep == NULL)
+	sep = ".";
+
+    s = strdup(str);
+
+    for (w = strtok_r(s, sep, &brkt); 
+	 w != NULL; 
+	 w = strtok_r(NULL, sep, &brkt)) {
+
+	c = realloc(data->components,
+		    (data->length + 1) * sizeof(data->components[0]));
+	if (c == NULL) {
+	    der_free_oid(data);
+	    free(s);
+	    return ENOMEM;
+	}
+	data->components = c;
+
+	l = strtol(w, &endptr, 10);
+	if (*endptr != '\0' || l < 0 || l > INT_MAX) {
+	    der_free_oid(data);
+	    free(s);
+	    return EINVAL;
+	}
+	data->components[data->length++] = l;
+    }
+    free(s);
     return 0;
 }

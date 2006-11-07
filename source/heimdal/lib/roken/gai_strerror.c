@@ -36,7 +36,7 @@
 RCSID("$Id: gai_strerror.c,v 1.7 2005/08/05 09:31:35 lha Exp $");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 static struct gai_error {
     int code;

@@ -36,7 +36,7 @@
 RCSID("$Id: getprogname.c,v 1.3 2005/04/12 11:28:48 lha Exp $");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 #ifndef HAVE___PROGNAME
 const char *__progname;

@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: mit_glue.c,v 1.7 2005/05/18 04:21:44 lha Exp $");
+RCSID("$Id: mit_glue.c,v 1.8 2006/10/14 09:51:02 lha Exp $");
 
 /*
  * Glue for MIT API
@@ -98,7 +98,7 @@ krb5_c_get_checksum(krb5_context context, const krb5_checksum *cksum,
 	if (*data == NULL)
 	    return ENOMEM;
 
-	ret = copy_octet_string(&cksum->checksum, *data);
+	ret = der_copy_octet_string(&cksum->checksum, *data);
 	if (ret) {
 	    free(*data);
 	    *data = NULL;
@@ -113,7 +113,7 @@ krb5_c_set_checksum(krb5_context context, krb5_checksum *cksum,
 		    krb5_cksumtype type, const krb5_data *data)
 {
     cksum->cksumtype = type;
-    return copy_octet_string(data, &cksum->checksum);
+    return der_copy_octet_string(data, &cksum->checksum);
 }
 
 void KRB5_LIB_FUNCTION 

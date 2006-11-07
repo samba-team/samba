@@ -36,7 +36,7 @@
 RCSID("$Id: getaddrinfo.c,v 1.14 2005/06/16 17:49:29 lha Exp $");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * uses hints->ai_socktype and hints->ai_protocol

@@ -34,7 +34,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: process.c,v 1.3 2005/08/12 08:25:48 lha Exp $");
+RCSID("$Id: process.c,v 1.5 2006/10/09 15:37:39 lha Exp $");
 
 /*
  * handle the request in `buf, len', from `addr' (or `from' as a string),
@@ -42,17 +42,19 @@ RCSID("$Id: process.c,v 1.3 2005/08/12 08:25:48 lha Exp $");
  */
 
 int
-krb5_kdc_process_generic_request(krb5_context context, 
-				 krb5_kdc_configuration *config,
-				 unsigned char *buf, 
-				 size_t len, 
-				 krb5_data *reply,
-				 krb5_boolean *prependlength,
-				 const char *from,
-				 struct sockaddr *addr)
+krb5_kdc_process_request(krb5_context context, 
+			 krb5_kdc_configuration *config,
+			 unsigned char *buf, 
+			 size_t len, 
+			 krb5_data *reply,
+			 krb5_boolean *prependlength,
+			 const char *from,
+			 struct sockaddr *addr,
+			 int datagram_reply)
 {
     KDC_REQ req;
     Ticket ticket;
+    DigestREQ digestreq;
     krb5_error_code ret;
     size_t i;
 
@@ -64,7 +66,7 @@ krb5_kdc_process_generic_request(krb5_context context,
 	req_buffer.length = len;
 
 	ret = _kdc_as_rep(context, config, &req, &req_buffer, 
-			  reply, from, addr);
+			  reply, from, addr, datagram_reply);
 	free_AS_REQ(&req);
 	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
@@ -74,6 +76,10 @@ krb5_kdc_process_generic_request(krb5_context context,
     }else if(decode_Ticket(buf, len, &ticket, &i) == 0){
 	ret = _kdc_do_524(context, config, &ticket, reply, from, addr);
 	free_Ticket(&ticket);
+	return ret;
+    }else if(decode_DigestREQ(buf, len, &digestreq, &i) == 0){
+	ret = _kdc_do_digest(context, config, &digestreq, reply, from, addr);
+	free_DigestREQ(&digestreq);
 	return ret;
     } else if(_kdc_maybe_version4(buf, len)){
 	*prependlength = FALSE; /* elbitapmoc sdrawkcab XXX */
@@ -103,7 +109,8 @@ krb5_kdc_process_krb5_request(krb5_context context,
 			      size_t len, 
 			      krb5_data *reply,
 			      const char *from,
-			      struct sockaddr *addr)
+			      struct sockaddr *addr,
+			      int datagram_reply)
 {
     KDC_REQ req;
     krb5_error_code ret;
@@ -117,7 +124,7 @@ krb5_kdc_process_krb5_request(krb5_context context,
 	req_buffer.length = len;
 
 	ret = _kdc_as_rep(context, config, &req, &req_buffer,
-			  reply, from, addr);
+			  reply, from, addr, datagram_reply);
 	free_AS_REQ(&req);
 	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){

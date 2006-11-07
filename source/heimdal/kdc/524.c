@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: 524.c,v 1.37 2006/04/27 11:33:20 lha Exp $");
+RCSID("$Id: 524.c,v 1.40 2006/10/06 17:06:30 lha Exp $");
 
 #include <krb5-v4compat.h>
 
@@ -53,7 +53,8 @@ fetch_server (krb5_context context,
     krb5_error_code ret;
     krb5_principal sprinc;
 
-    ret = _krb5_principalname2krb5_principal(context, &sprinc, t->sname, t->realm);
+    ret = _krb5_principalname2krb5_principal(context, &sprinc,
+					     t->sname, t->realm);
     if (ret) {
 	kdc_log(context, config, 0, "_krb5_principalname2krb5_principal: %s",
 		krb5_get_err_text(context, ret));
@@ -66,7 +67,8 @@ fetch_server (krb5_context context,
 		krb5_get_err_text(context, ret));
 	return ret;
     }
-    ret = _kdc_db_fetch(context, config, sprinc, HDB_F_GET_SERVER, server);
+    ret = _kdc_db_fetch(context, config, sprinc, HDB_F_GET_SERVER, 
+			NULL, server);
     krb5_free_principal(context, sprinc);
     if (ret) {
 	kdc_log(context, config, 0,
@@ -90,7 +92,8 @@ log_524 (krb5_context context,
     char *cpn;
     krb5_error_code ret;
 
-    ret = _krb5_principalname2krb5_principal(context, &client, et->cname, et->crealm);
+    ret = _krb5_principalname2krb5_principal(context, &client, 
+					     et->cname, et->crealm);
     if (ret) {
 	kdc_log(context, config, 0, "_krb5_principalname2krb5_principal: %s",
 		krb5_get_err_text (context, ret));

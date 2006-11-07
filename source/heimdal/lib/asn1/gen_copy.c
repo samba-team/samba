@@ -33,14 +33,14 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_copy.c,v 1.16 2005/07/12 06:27:26 lha Exp $");
+RCSID("$Id: gen_copy.c,v 1.18 2006/10/14 05:34:19 lha Exp $");
 
 static int used_fail;
 
 static void
 copy_primitive (const char *typename, const char *from, const char *to)
 {
-    fprintf (codefile, "if(copy_%s(%s, %s)) goto fail;\n", 
+    fprintf (codefile, "if(der_copy_%s(%s, %s)) goto fail;\n", 
 	     typename, from, to);
     used_fail++;
 }
@@ -86,7 +86,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 	if ((t->type == TSequence || t->type == TChoice) && preserve) {
 	    fprintf(codefile,
 		    "{ int ret;\n"
-		    "ret = copy_octet_string(&(%s)->_save, &(%s)->_save);\n"
+		    "ret = der_copy_octet_string(&(%s)->_save, &(%s)->_save);\n"
 		    "if (ret) goto fail;\n"
 		    "}\n",
 		    from, to);
@@ -140,7 +140,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 	    if (have_ellipsis) {
 		fprintf(codefile, "case %s: {\n"
 			"int ret;\n"
-			"ret = copy_octet_string(&(%s)->u.%s, &(%s)->u.%s);\n"
+			"ret=der_copy_octet_string(&(%s)->u.%s, &(%s)->u.%s);\n"
 			"if (ret) goto fail;\n"
 			"break;\n"
 			"}\n",

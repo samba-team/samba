@@ -35,7 +35,7 @@
  */
 
 /* 
- * $Id: kdc.h,v 1.6 2006/05/03 12:03:29 lha Exp $ 
+ * $Id: kdc.h,v 1.9 2006/10/09 15:34:07 lha Exp $ 
  */
 
 #ifndef __KDC_H__
@@ -65,10 +65,12 @@ typedef struct krb5_kdc_configuration {
 
     char *v4_realm;
     krb5_boolean enable_v4;
-    krb5_boolean enable_kaserver;
-	
-    krb5_boolean enable_524;
     krb5_boolean enable_v4_cross_realm;
+    krb5_boolean enable_v4_per_principal;
+
+    krb5_boolean enable_kaserver;
+
+    krb5_boolean enable_524;
 
     krb5_boolean enable_pkinit;
     krb5_boolean enable_pkinit_princ_in_cert;
@@ -77,6 +79,9 @@ typedef struct krb5_kdc_configuration {
     krb5_log_facility *logf;
 
     int pkinit_dh_min_bits;
+
+    int enable_digest;
+    size_t max_datagram_reply_length;
 
 } krb5_kdc_configuration;
 

@@ -34,7 +34,7 @@
 #include "hdb_locl.h"
 #include <der.h>
 
-RCSID("$Id: ext.c,v 1.2 2006/04/25 10:20:22 lha Exp $");
+RCSID("$Id: ext.c,v 1.6 2006/10/14 10:13:03 lha Exp $");
 
 krb5_error_code
 hdb_entry_check_mandatory(krb5_context context, const hdb_entry *ent)
@@ -220,6 +220,20 @@ hdb_entry_get_pkinit_acl(const hdb_entry *entry, const HDB_Ext_PKINIT_acl **a)
 }
 
 krb5_error_code
+hdb_entry_get_pkinit_hash(const hdb_entry *entry, const HDB_Ext_PKINIT_hash **a)
+{
+    const HDB_extension *ext;
+
+    ext = hdb_find_extension(entry, choice_HDB_extension_data_pkinit_cert_hash);
+    if (ext)
+	*a = &ext->data.u.pkinit_cert_hash;
+    else
+	*a = NULL;
+
+    return 0;
+}
+
+krb5_error_code
 hdb_entry_get_pw_change_time(const hdb_entry *entry, time_t *t)
 {
     const HDB_extension *ext;
@@ -278,7 +292,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 				    ext->data.u.password.password.length,
 				    &pw);
 	} else {
-	    ret = copy_octet_string(&ext->data.u.password.password, &pw);
+	    ret = der_copy_octet_string(&ext->data.u.password.password, &pw);
 	}
 	if (ret) {
 	    krb5_clear_error_string(context);
@@ -293,7 +307,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 
 	*p = strdup(str);
 
-	free_octet_string(&pw);
+	der_free_octet_string(&pw);
 	if (*p == NULL) {
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
@@ -363,4 +377,20 @@ hdb_entry_clear_password(krb5_context context, hdb_entry *entry)
 {
     return hdb_clear_extension(context, entry, 
 			       choice_HDB_extension_data_password);
+}
+
+krb5_error_code
+hdb_entry_get_ConstrainedDelegACL(const hdb_entry *entry, 
+				  const HDB_Ext_Constrained_delegation_acl **a)
+{
+    const HDB_extension *ext;
+
+    ext = hdb_find_extension(entry, 
+			     choice_HDB_extension_data_allowed_to_delegate_to);
+    if (ext)
+	*a = &ext->data.u.allowed_to_delegate_to;
+    else
+	*a = NULL;
+
+    return 0;
 }

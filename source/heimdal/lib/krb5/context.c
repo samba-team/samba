@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <com_err.h>
 
-RCSID("$Id: context.c,v 1.102 2005/05/18 04:20:50 lha Exp $");
+RCSID("$Id: context.c,v 1.108 2006/10/20 22:26:10 lha Exp $");
 
 #define INIT_FIELD(C, T, E, D, F)					\
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
@@ -181,8 +181,8 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, bool, srv_lookup, context->srv_lookup, "dns_lookup_kdc");
     INIT_FIELD(context, int, large_msg_size, 6000, "large_message_size");
+    INIT_FIELD(context, bool, dns_canonicalize_hostname, TRUE, "dns_canonize_hostname");
     context->default_cc_name = NULL;
-    INIT_FIELD(context, bool, fdns, TRUE, "fdns");
     return 0;
 }
 
@@ -263,7 +263,7 @@ krb5_free_context(krb5_context context)
 	krb5_closelog(context, context->warn_dest);
     krb5_set_extra_addresses(context, NULL);
     krb5_set_ignore_addresses(context, NULL);
-    free(context->send_and_recv);
+    krb5_set_send_to_kdc_func(context, NULL, NULL);
     if (context->mutex != NULL) {
 	HEIMDAL_MUTEX_destroy(context->mutex);
 	free(context->mutex);
@@ -424,13 +424,17 @@ krb5_free_config_files(char **filenames)
 }
 
 /*
- * set `etype' to a malloced list of the default enctypes
+ * Returns the list of Kerberos encryption types sorted in order of
+ * most preferred to least preferred encryption type.  The array ends
+ * with ETYPE_NULL.  Note that some encryption types might be
+ * disabled, so you need to check with krb5_enctype_valid() before
+ * using the encryption type.
  */
 
-static krb5_error_code
-default_etypes(krb5_context context, krb5_enctype **etype)
+const krb5_enctype * KRB5_LIB_FUNCTION
+krb5_kerberos_enctypes(krb5_context context)
 {
-    krb5_enctype p[] = {
+    static const krb5_enctype p[] = {
 	ETYPE_AES256_CTS_HMAC_SHA1_96,
 	ETYPE_AES128_CTS_HMAC_SHA1_96,
 	ETYPE_DES3_CBC_SHA1,
@@ -438,12 +442,26 @@ default_etypes(krb5_context context, krb5_enctype **etype)
 	ETYPE_ARCFOUR_HMAC_MD5,
 	ETYPE_DES_CBC_MD5,
 	ETYPE_DES_CBC_MD4,
-	ETYPE_DES_CBC_CRC
+	ETYPE_DES_CBC_CRC,
+	ETYPE_NULL
     };
+    return p;
+}
+
+/*
+ * set `etype' to a malloced list of the default enctypes
+ */
+
+static krb5_error_code
+default_etypes(krb5_context context, krb5_enctype **etype)
+{
+    const krb5_enctype *p;
     krb5_enctype *e = NULL, *ep;
     int i, n = 0;
 
-    for (i = 0; i < sizeof(p)/sizeof(p[0]); i++) {
+    p = krb5_kerberos_enctypes(context);
+
+    for (i = 0; p[i] != ETYPE_NULL; i++) {
 	if (krb5_enctype_valid(context, p[i]) != 0)
 	    continue;
 	ep = realloc(e, (n + 2) * sizeof(*e));
@@ -537,6 +555,9 @@ krb5_init_ets(krb5_context context)
 	krb5_add_et_list(context, initialize_asn1_error_table_r);
 	krb5_add_et_list(context, initialize_heim_error_table_r);
 	krb5_add_et_list(context, initialize_k524_error_table_r);
+#ifdef PKINIT
+	krb5_add_et_list(context, initialize_hx_error_table_r);
+#endif
     }
 }
 
@@ -661,4 +682,26 @@ krb5_is_thread_safe(void)
 #else
     return FALSE;
 #endif
+}
+
+void KRB5_LIB_FUNCTION
+krb5_set_dns_canonicalize_hostname (krb5_context context, krb5_boolean flag)
+{
+    context->dns_canonicalize_hostname = flag;
+}
+
+krb5_boolean KRB5_LIB_FUNCTION
+krb5_get_dns_canonize_hostname (krb5_context context)
+{
+    return context->dns_canonicalize_hostname;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
+{
+    if (sec)
+	*sec = context->kdc_sec_offset;
+    if (usec)
+	*usec = context->kdc_usec_offset;
+    return 0;
 }

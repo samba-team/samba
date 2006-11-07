@@ -28,10 +28,6 @@
 #include "lib/socket/socket.h"
 #include "smbd/process_model.h"
 
-/* For specifiying event context to GSSAPI below */
-#include "system/kerberos.h"
-#include "heimdal/lib/gssapi/gssapi_locl.h"
-
 #include "param/secrets.h"
 
 #ifdef HAVE_SETPROCTITLE
@@ -114,9 +110,6 @@ static void standard_accept_connection(struct event_context *ev,
 	if (tdb_reopen_all(1) == -1) {
 		DEBUG(0,("standard_accept_connection: tdb_reopen_all failed.\n"));
 	}
-
-	/* Hack to ensure that GSSAPI uses the right event context */
-	gssapi_krb5_init_ev(ev2);
 
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();

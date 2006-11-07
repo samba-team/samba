@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kaserver.c,v 1.35 2006/05/05 10:49:50 lha Exp $");
+RCSID("$Id: kaserver.c,v 1.36 2006/08/23 11:43:44 lha Exp $");
 
 #include <krb5-v4compat.h>
 #include <rx.h>
@@ -465,7 +465,8 @@ do_authenticate (krb5_context context,
 	    client_name, from, server_name);
 
     ret = _kdc_db_fetch4 (context, config, name, instance, 
-			  config->v4_realm, HDB_F_GET_CLIENT, &client_entry);
+			  config->v4_realm, HDB_F_GET_CLIENT,
+			  &client_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Client not found in database: %s: %s",
 		client_name, krb5_get_err_text(context, ret));

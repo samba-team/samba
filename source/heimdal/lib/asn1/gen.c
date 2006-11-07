@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen.c,v 1.67 2006/03/31 02:52:21 lha Exp $");
+RCSID("$Id: gen.c,v 1.69 2006/10/14 05:11:52 lha Exp $");
 
 FILE *headerfile, *codefile, *logfile;
 
@@ -145,6 +145,9 @@ init_generate (const char *filename, const char *base)
 	     "  size_t length;\n"
 	     "  void *data;\n"
 	     "} heim_bit_string;\n\n");
+    fprintf (headerfile,
+	     "typedef struct heim_octet_string heim_any;\n"
+	     "typedef struct heim_octet_string heim_any_set;\n\n");
     fputs("#define ASN1_MALLOC_ENCODE(T, B, BL, S, L, R)                  \\\n"
 	  "  do {                                                         \\\n"
 	  "    (BL) = length_##T((S));                                    \\\n"
@@ -774,6 +777,7 @@ generate_type (const Symbol *s)
     generate_type_free (s);
     generate_type_length (s);
     generate_type_copy (s);
+    generate_type_seq (s);
     generate_glue (s->type, s->gen_name);
     fprintf(headerfile, "\n\n");
     close_codefile();

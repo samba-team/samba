@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id: store_fd.c,v 1.12 2004/05/25 21:43:57 lha Exp $");
+RCSID("$Id: store_fd.c,v 1.13 2006/06/30 21:23:19 lha Exp $");
 
 typedef struct fd_storage {
     int fd;
@@ -74,13 +74,16 @@ krb5_storage_from_fd(int fd)
     fd = dup(fd);
     if (fd < 0)
 	return NULL;
-    sp = malloc(sizeof(krb5_storage));
 
-    if (sp == NULL)
+    sp = malloc(sizeof(krb5_storage));
+    if (sp == NULL) {
+	close(fd);
 	return NULL;
+    }
 
     sp->data = malloc(sizeof(fd_storage));
     if (sp->data == NULL) {
+	close(fd);
 	free(sp);
 	return NULL;
     }

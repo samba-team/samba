@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2002 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1999 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,7 +35,7 @@
 
 /* keytab backend for HDB databases */
 
-RCSID("$Id: keytab.c,v 1.11 2006/04/27 11:01:30 lha Exp $");
+RCSID("$Id: keytab.c,v 1.16 2006/10/09 12:36:40 lha Exp $");
 
 struct hdb_data {
     char *dbname;
@@ -59,7 +59,7 @@ hdb_resolve(krb5_context context, const char *name, krb5_keytab id)
 	return ENOMEM;
     }
     db = name;
-    mkey = strrchr(name, ':');
+    mkey = strchr(name, ':');
     if(mkey == NULL || mkey[1] == '\0') {
 	if(*name == '\0')
 	    d->dbname = NULL;
@@ -201,6 +201,8 @@ hdb_get_entry(krb5_context context,
     const char *dbname = d->dbname;
     const char *mkey   = d->mkey;
 
+    memset(&ent, 0, sizeof(ent));
+
     if (dbname == NULL)
 	find_db (context, &dbname, &mkey, principal);
 
@@ -218,26 +220,21 @@ hdb_get_entry(krb5_context context,
 	(*db->hdb_destroy)(context, db);
 	return ret;
     }
-    ret = (*db->hdb_fetch)(context, db, principal, HDB_F_DECRYPT|HDB_F_GET_CLIENT|HDB_F_GET_SERVER, &ent);
+    ret = (*db->hdb_fetch)(context, db, principal, 
+			   HDB_F_DECRYPT|
+			   HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
+			   &ent);
 
-
-    /* Shutdown the hdb on error */
     if(ret == HDB_ERR_NOENTRY) {
-	(*db->hdb_close)(context, db);
-	(*db->hdb_destroy)(context, db);
-	return KRB5_KT_NOTFOUND;
-    } else if (ret) {
-	(*db->hdb_close)(context, db);
-	(*db->hdb_destroy)(context, db);
-	return ret;
-    }
+	ret = KRB5_KT_NOTFOUND;
+	goto out;
+    }else if(ret)
+	goto out;
+
     if(kvno && ent.entry.kvno != kvno) {
-	/* The order here matters, we must free these in this order
-	 * due to hdb-ldb and Samba4's talloc */
 	hdb_free_entry(context, &ent);
-	(*db->hdb_close)(context, db);
-	(*db->hdb_destroy)(context, db);
- 	return KRB5_KT_NOTFOUND;
+ 	ret = KRB5_KT_NOTFOUND;
+	goto out;
     }
     if(enctype == 0)
 	if(ent.entry.keys.len > 0)
@@ -254,9 +251,8 @@ hdb_get_entry(krb5_context context,
 	    break;
 	}
     }
-    /* The order here matters, we must free these in this order
-     * due to hdb-ldb and Samba4's talloc */
     hdb_free_entry(context, &ent);
+out:
     (*db->hdb_close)(context, db);
     (*db->hdb_destroy)(context, db);
     return ret;

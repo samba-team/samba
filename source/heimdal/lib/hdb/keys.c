@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: keys.c,v 1.5 2006/04/25 08:09:38 lha Exp $");
+RCSID("$Id: keys.c,v 1.6 2006/10/22 09:40:12 lha Exp $");
 
 /*
  * free all the memory used by (len, keys)
@@ -334,6 +334,9 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
     *ret_key_set = key_set;
 
  out:
+    if (ktypes != default_keytypes)
+	krb5_config_free_strings(ktypes);
+
     if (ret) {
 	krb5_warn(context, ret, 
 		  "failed to parse the [kadmin]default_keys values");

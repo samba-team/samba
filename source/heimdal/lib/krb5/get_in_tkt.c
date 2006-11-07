@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: get_in_tkt.c,v 1.116 2005/06/15 02:53:20 lha Exp $");
+RCSID("$Id: get_in_tkt.c,v 1.119 2006/10/06 17:05:08 lha Exp $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_init_etype (krb5_context context,
@@ -137,7 +137,7 @@ _krb5_extract_ticket(krb5_context context,
     time_t tmp_time;
     krb5_timestamp sec_now;
 
-    ret = _krb5_principalname2krb5_principal (context, 
+    ret = _krb5_principalname2krb5_principal (context,
 					      &tmp_principal,
 					      rep->kdc_rep.cname,
 					      rep->kdc_rep.crealm);
@@ -171,7 +171,7 @@ _krb5_extract_ticket(krb5_context context,
 
     /* compare server */
 
-    ret = _krb5_principalname2krb5_principal (context, 
+    ret = _krb5_principalname2krb5_principal (context,
 					      &tmp_principal,
 					      rep->kdc_rep.ticket.sname,
 					      rep->kdc_rep.ticket.realm);
@@ -411,7 +411,7 @@ add_padata(krb5_context context,
 
 static krb5_error_code
 init_as_req (krb5_context context,
-	     krb5_kdc_flags opts,
+	     KDCOptions opts,
 	     krb5_creds *creds,
 	     const krb5_addresses *addrs,
 	     const krb5_enctype *etypes,
@@ -429,7 +429,7 @@ init_as_req (krb5_context context,
 
     a->pvno = 5;
     a->msg_type = krb_as_req;
-    a->req_body.kdc_options = opts.b;
+    a->req_body.kdc_options = opts;
     a->req_body.cname = malloc(sizeof(*a->req_body.cname));
     if (a->req_body.cname == NULL) {
 	ret = ENOMEM;
@@ -649,14 +649,14 @@ krb5_get_in_cred(krb5_context context,
     krb5_salt salt;
     krb5_keyblock *key;
     size_t size;
-    krb5_kdc_flags opts;
+    KDCOptions opts;
     PA_DATA *pa;
     krb5_enctype etype;
     krb5_preauthdata *my_preauth = NULL;
     unsigned nonce;
     int done;
 
-    opts.i = options;
+    opts = int2KDCOptions(options);
 
     krb5_generate_random_block (&nonce, sizeof(nonce));
     nonce &= 0xffffffff;
@@ -771,7 +771,7 @@ krb5_get_in_cred(krb5_context context,
 			       NULL, 
 			       nonce, 
 			       FALSE, 
-			       opts.b.request_anonymous,
+			       opts.request_anonymous,
 			       decrypt_proc, 
 			       decryptarg);
     memset (key->keyvalue.data, 0, key->keyvalue.length);
@@ -801,12 +801,9 @@ krb5_get_in_tkt(krb5_context context,
 		krb5_kdc_rep *ret_as_reply)
 {
     krb5_error_code ret;
-    krb5_kdc_flags opts;
-    opts.i = 0;
-    opts.b = int2KDCOptions(options);
     
     ret = krb5_get_in_cred (context,
-			    opts.i,
+			    options,
 			    addrs,
 			    etypes,
 			    ptypes,

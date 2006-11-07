@@ -34,9 +34,6 @@
 #ifndef __HEIM_ANY_H__
 #define __HEIM_ANY_H__ 1
 
-typedef struct heim_octet_string heim_any;
-typedef struct heim_octet_string heim_any_set;
-
 int	encode_heim_any(unsigned char *, size_t, const heim_any *, size_t *);
 int	decode_heim_any(const unsigned char *, size_t, heim_any *, size_t *);
 void	free_heim_any(heim_any *);

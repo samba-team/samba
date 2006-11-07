@@ -154,8 +154,8 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 	enum drsuapi_DsNameStatus namestatus;
 	
 	/* parse principal */
-	ret = krb5_parse_name_norealm(smb_krb5_context->krb5_context, 
-				      name, &principal);
+	ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, 
+				    name, KRB5_PRINCIPAL_PARSE_NO_REALM, &principal);
 	if (ret) {
 		DEBUG(2, ("Could not parse principal: %s: %s",
 			  name, smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
@@ -196,7 +196,8 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 	}
 	
 	/* reform principal */
-	ret = krb5_unparse_name_norealm(smb_krb5_context->krb5_context, principal, &new_princ);
+	ret = krb5_unparse_name_flags(smb_krb5_context->krb5_context, principal, 
+				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &new_princ);
 
 	krb5_free_principal(smb_krb5_context->krb5_context, principal);
 	
@@ -231,7 +232,8 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	ret = krb5_parse_name_mustrealm(smb_krb5_context->krb5_context, name, &principal);
+	ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
+				    KRB5_PRINCIPAL_PARSE_MUST_REALM, &principal);
 	if (ret) {
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		return WERR_OK;
@@ -243,7 +245,8 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 					"(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
 					ldb_binary_encode_string(mem_ctx, *realm), 
 					ldb_binary_encode_string(mem_ctx, *realm));
-	ret = krb5_unparse_name_norealm(smb_krb5_context->krb5_context, principal, &unparsed_name_short);
+	ret = krb5_unparse_name_flags(smb_krb5_context->krb5_context, principal, 
+				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &unparsed_name_short);
 	krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		
 	if (ret) {
@@ -445,11 +448,13 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		krb5_principal principal;
 		char *unparsed_name_short;
 		char *service;
-		ret = krb5_parse_name_norealm(smb_krb5_context->krb5_context, name, &principal);
+		ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
+					    KRB5_PRINCIPAL_PARSE_NO_REALM, &principal);
 		if (ret) {
 			/* perhaps it's a principal with a realm, so return the right 'domain only' response */
 			char **realm;
-			ret = krb5_parse_name_mustrealm(smb_krb5_context->krb5_context, name, &principal);
+			ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
+						    KRB5_PRINCIPAL_PARSE_MUST_REALM, &principal);
 			if (ret) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 				return WERR_OK;
@@ -473,7 +478,8 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 		domain_filter = NULL;
 		
-		ret = krb5_unparse_name_norealm(smb_krb5_context->krb5_context, principal, &unparsed_name_short);
+		ret = krb5_unparse_name_flags(smb_krb5_context->krb5_context, principal, 
+					      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &unparsed_name_short);
 		if (ret) {
 			krb5_free_principal(smb_krb5_context->krb5_context, principal);
 			return WERR_NOMEM;
