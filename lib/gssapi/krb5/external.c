@@ -340,11 +340,17 @@ static gss_OID_desc gss_krb5_get_authtime_x_desc =
 
 gss_OID GSS_KRB5_GET_AUTHTIME_X = &gss_krb5_get_authtime_x_desc;
 
-/* 1.2.752.43.13.14 */
+/* 1.2.752.43.13.13 */
 static gss_OID_desc gss_krb5_get_service_keyblock_x_desc =
 {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0d")};
 
 gss_OID GSS_KRB5_GET_SERVICE_KEYBLOCK_X = &gss_krb5_get_service_keyblock_x_desc;
+
+/* 1.2.752.43.13.14 */
+static gss_OID_desc gss_krb5_set_allowable_enctypes_x_desc =
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0e")};
+
+gss_OID GSS_KRB5_SET_ALLOWABLE_ENCTYPES_X = &gss_krb5_set_allowable_enctypes_x_desc;
 
 /* 1.2.752.43.14.1 */
 static gss_OID_desc gss_sasl_digest_md5_mechanism_desc =
