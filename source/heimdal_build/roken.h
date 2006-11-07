@@ -49,5 +49,7 @@
 #define HAVE_SSIZE_T
 #endif
 
-#include "heimdal/lib/roken/roken.h"
+#undef SOCKET_WRAPPER_REPLACE
+
+#include "heimdal/lib/roken/roken.h.in"
 #endif
