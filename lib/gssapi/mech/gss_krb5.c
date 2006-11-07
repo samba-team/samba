@@ -472,11 +472,8 @@ gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 {
     gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
     OM_uint32 maj_stat;
-    krb5_error_code ret;
-    OM_uint32 time32;
 
     if (context_handle == GSS_C_NO_CONTEXT) {
-	_gsskrb5_set_status("no context handle");
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
@@ -490,14 +487,12 @@ gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 	return maj_stat;
     
     if (data_set == GSS_C_NO_BUFFER_SET) {
-	_gsskrb5_set_status("no buffers returned");
 	gss_release_buffer_set(minor_status, &data_set);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
     if (data_set->count != 1) {
-	_gsskrb5_set_status("%d != 1 buffers returned", data_set->count);
 	gss_release_buffer_set(minor_status, &data_set);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
@@ -505,21 +500,17 @@ gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 
     if (data_set->elements[0].length != 4) {
 	gss_release_buffer_set(minor_status, &data_set);
-	_gsskrb5_set_status("Error extracting authtime from security context: "
-			    "only got %d != 4 bytes",
-			    data_set->elements[0].length);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
-    ret = _gsskrb5_decode_om_uint32(data_set->elements[0].value, &time32);
-    gss_release_buffer_set(minor_status, &data_set);
-    if (ret) {
-	*minor_status = ret;
-	return GSS_S_FAILURE;
+    {
+	unsigned char *buf = data_set->elements[0].value;
+	*authtime = (buf[3] <<24) | (buf[2] << 16) | 
+	    (buf[1] << 8) | (buf[0] << 0);
     }
 
-    *authtime = time32;
+    gss_release_buffer_set(minor_status, &data_set);
 
     *minor_status = 0;
     return GSS_S_COMPLETE;
