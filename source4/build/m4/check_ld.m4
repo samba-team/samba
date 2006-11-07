@@ -185,3 +185,21 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 	    AC_MSG_RESULT(yes),
 	    AC_MSG_ERROR([we cannot link with the selected cc and ld flags. Aborting configure]),
 	    AC_MSG_WARN([cannot run when cross-compiling]))
+
+try_dso=no
+USESHARED=false
+AC_SUBST(USESHARED)
+
+AC_ARG_ENABLE(dso,
+[  --enable-dso 		Enable using shared libraries internally (experimental)])
+
+if test x"$enable_dso" = x"yes" -a x"$BLDSHARED" != x"true"; then
+	AC_MSG_ERROR([--enable-dso: no support for shared libraries])
+fi
+
+if test x"$enable_dso" != x"no"; then
+	USESHARED=$BLDSHARED
+fi
+
+AC_MSG_CHECKING([if binaries will use shared libraries])
+AC_MSG_RESULT([$USESHARED])
