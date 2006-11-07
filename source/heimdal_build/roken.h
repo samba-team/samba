@@ -14,7 +14,7 @@
 #define MaxHostNameLen (64+4)
 #define MaxPathLen (1024+4)
 
-#define VERSIONLIST {"Lorikeet-Heimdal, Modified for Samba4 0.7rc1"}
+#define VERSIONLIST {"Lorikeet-Heimdal, Modified for Samba4 0.8pre"}
 
 #define VERSION "Samba"
 
