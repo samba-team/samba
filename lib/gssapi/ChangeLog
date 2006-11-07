@@ -1,5 +1,13 @@
 2006-11-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_krb5.c: No depenency of the krb5 gssapi mech.
+
+	* mech/gss_krb5.c (gsskrb5_extract_authtime_from_sec_context): use
+	_gsskrb5_decode_om_uint32. From Andrew Bartlet.
+
+	* mech/gss_krb5.c: Add dummy gss_krb5_set_allowable_enctypes for
+	now.
+
 	* spnego/spnego_locl.h: Include <roken.h> for compatiblity.
 
 	* krb5/arcfour.c: Use IS_DCE_STYLE flag. There is no padding in
