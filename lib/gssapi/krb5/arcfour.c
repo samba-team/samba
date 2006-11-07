@@ -355,15 +355,16 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     if (conf_state)
 	*conf_state = 0;
 
-    datalen = input_message_buffer->length + 1 /* padding */;
+    datalen = input_message_buffer->length;
 
-    if ((context_handle->flags & GSS_C_DCE_STYLE) == 0) {
-	len = datalen + GSS_ARCFOUR_WRAP_TOKEN_SIZE;
-	_gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
-    } else {
+    if (IS_DCE_STYLE(context_handle)) {
 	len = GSS_ARCFOUR_WRAP_TOKEN_SIZE;
 	_gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
 	total_len += datalen;
+    } else {
+	datalen += 1; /* padding */
+	len = datalen + GSS_ARCFOUR_WRAP_TOKEN_SIZE;
+	_gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
     }
 
     output_message_buffer->length = total_len;
@@ -416,7 +417,8 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     p = p0 + GSS_ARCFOUR_WRAP_TOKEN_SIZE;
     memcpy(p, input_message_buffer->value, input_message_buffer->length);
 
-    p[input_message_buffer->length] = 1; /* PADDING */
+    if (!IS_DCE_STYLE(context_handle))
+	p[input_message_buffer->length] = 1; /* padding */
 
     ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SEAL,
 			    p0 + 16, 8, /* SGN_CKSUM */ 
@@ -505,7 +507,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     u_char *p, *p0;
     int cmp;
     int conf_flag;
-    size_t padlen, len;
+    size_t padlen = 0, len;
     
     if (conf_state)
 	*conf_state = 0;
@@ -514,13 +516,13 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 
     p0 = input_message_buffer->value;
 
-    if ((context_handle->flags & GSS_C_DCE_STYLE) == 0) {
-	len = input_message_buffer->length;
-    } else {
+    if (IS_DCE_STYLE(context_handle)) {
 	len = GSS_ARCFOUR_WRAP_TOKEN_SIZE + 
 	    GSS_ARCFOUR_WRAP_TOKEN_DCE_DER_HEADER_SIZE;
 	if (input_message_buffer->length < len)
 	    return GSS_S_BAD_MECH;
+    } else {
+	len = input_message_buffer->length;
     }
 
     omret = _gssapi_verify_mech_header(&p0,
@@ -631,13 +633,15 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     }
     memset(k6_data, 0, sizeof(k6_data));
 
-    ret = _gssapi_verify_pad(output_message_buffer, datalen, &padlen);
-    if (ret) {
-	_gsskrb5_release_buffer(minor_status, output_message_buffer);
-	*minor_status = 0;
-	return ret;
+    if (!IS_DCE_STYLE(context_handle)) {
+	ret = _gssapi_verify_pad(output_message_buffer, datalen, &padlen);
+	if (ret) {
+	    _gsskrb5_release_buffer(minor_status, output_message_buffer);
+	    *minor_status = 0;
+	    return ret;
+	}
+	output_message_buffer->length -= padlen;
     }
-    output_message_buffer->length -= padlen;
 
     ret = arcfour_mic_cksum(key, KRB5_KU_USAGE_SEAL,
 			    cksum_data, sizeof(cksum_data),
@@ -682,7 +686,7 @@ max_wrap_length_arcfour(const gsskrb5_ctx ctx,
      *  - we only need to encapsulate the WRAP token
      * However, since this is a fixed since, we just 
      */
-    if (ctx->flags & GSS_C_DCE_STYLE) {
+    if (IS_DCE_STYLE(ctx)) {
 	size_t len, total_len;
 
 	len = GSS_ARCFOUR_WRAP_TOKEN_SIZE;
