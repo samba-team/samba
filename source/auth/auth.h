@@ -22,10 +22,7 @@
 #ifndef _SAMBA_AUTH_H
 #define _SAMBA_AUTH_H
 
-#include "libcli/auth/credentials.h"
-#include "auth/gensec/gensec.h"
-#include "auth/gensec/spnego.h"
-#include "lib/ldb/include/ldb.h"
+union netr_Validation;
 
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change

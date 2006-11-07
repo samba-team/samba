@@ -49,6 +49,7 @@
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "auth/auth.h"
+#include "auth/credentials/credentials.h"
 
 struct ildb_private {
 	struct ldap_connection *ldap;

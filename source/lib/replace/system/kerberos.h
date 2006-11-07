@@ -126,7 +126,6 @@
 #define KRB5_PRINC_REALM_RETURNS_REALM 1
 
 #include "heimdal/lib/krb5/krb5.h"
-#include "heimdal/lib/gssapi/gssapi.h"
 #include "heimdal/lib/com_err/com_err.h"
 #endif
 

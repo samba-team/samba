@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "auth/auth.h"
+#include "auth/credentials/credentials.h"
 #include "scripting/ejs/smbcalls.h"
 #include "lib/events/events.h"
 #include "lib/messaging/irpc.h"

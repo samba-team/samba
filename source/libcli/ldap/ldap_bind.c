@@ -26,7 +26,7 @@
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "lib/tls/tls.h"
-#include "auth/auth.h"
+#include "auth/gensec/gensec.h"
 #include "auth/gensec/socket.h"
 #include "lib/stream/packet.h"
 

@@ -24,6 +24,8 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_schannel.h"
 #include "auth/auth.h"
+#include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
 #include "auth/gensec/schannel.h"
 #include "auth/gensec/schannel_state.h"
 #include "auth/gensec/schannel_proto.h"

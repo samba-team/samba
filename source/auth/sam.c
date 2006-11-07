@@ -27,6 +27,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "libcli/ldap/ldap.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 const char *user_attrs[] = {
 	/* required for the krb5 kdc */

@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
+#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 
 /*

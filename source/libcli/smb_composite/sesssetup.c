@@ -27,6 +27,8 @@
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/auth.h"
+#include "auth/gensec/gensec.h"
+#include "auth/credentials/credentials.h"
 #include "version.h"
 
 struct sesssetup_state {

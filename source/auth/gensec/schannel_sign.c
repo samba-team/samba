@@ -25,6 +25,8 @@
 #include "lib/crypto/crypto.h"
 #include "auth/auth.h"
 #include "auth/gensec/schannel.h"
+#include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
 
 #define NETSEC_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
 #define NETSEC_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }

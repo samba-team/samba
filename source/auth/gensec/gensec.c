@@ -26,6 +26,8 @@
 #include "lib/events/events.h"
 #include "build.h"
 #include "librpc/rpc/dcerpc.h"
+#include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
 
 /* the list of currently registered GENSEC backends */
 static struct gensec_security_ops **generic_security_ops;

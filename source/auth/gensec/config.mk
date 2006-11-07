@@ -18,7 +18,7 @@ PUBLIC_DEPENDENCIES = \
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_krb5_init
 OBJ_FILES = gensec_krb5.o 
-PUBLIC_DEPENDENCIES = KERBEROS auth auth_sam
+PUBLIC_DEPENDENCIES = CREDENTIALS_KRB5 KERBEROS auth auth_sam
 # End MODULE gensec_krb5
 ################################################
 
@@ -28,7 +28,7 @@ PUBLIC_DEPENDENCIES = KERBEROS auth auth_sam
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_gssapi_init
 OBJ_FILES = gensec_gssapi.o 
-PUBLIC_DEPENDENCIES = KERBEROS auth HEIMDAL_GSSAPI
+PUBLIC_DEPENDENCIES = CREDENTIALS_KRB5 KERBEROS auth HEIMDAL_GSSAPI
 # End MODULE gensec_gssapi
 ################################################
 
@@ -38,7 +38,7 @@ PUBLIC_DEPENDENCIES = KERBEROS auth HEIMDAL_GSSAPI
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_sasl_init
 OBJ_FILES = cyrus_sasl.o 
-PUBLIC_DEPENDENCIES = SASL auth
+PUBLIC_DEPENDENCIES = CREDENTIALS SASL auth
 # End MODULE cyrus_sasl
 ################################################
 
@@ -49,6 +49,7 @@ SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_spnego_init
 PRIVATE_PROTO_HEADER = spnego_proto.h
 PRIVATE_DEPENDENCIES = ASN1_UTIL GENSEC_SOCKET
+PUBLIC_DEPENDENCIES = CREDENTIALS
 OBJ_FILES = spnego.o \
 			spnego_parse.o
 # End MODULE gensec_spnego
@@ -62,7 +63,7 @@ PRIVATE_PROTO_HEADER = schannel_proto.h
 INIT_FUNCTION = gensec_schannel_init
 OBJ_FILES = schannel.o \
 			schannel_sign.o
-PUBLIC_DEPENDENCIES = auth SCHANNELDB NDR_SCHANNEL
+PUBLIC_DEPENDENCIES = auth SCHANNELDB NDR_SCHANNEL CREDENTIALS
 OUTPUT_TYPE = INTEGRATED
 # End MODULE gensec_schannel
 ################################################

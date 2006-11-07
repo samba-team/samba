@@ -96,7 +96,7 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/get_mic.o \
 	../heimdal/lib/gssapi/import_name.o \
 	../heimdal/lib/gssapi/init.o
-PUBLIC_DEPENDENCIES = KERBEROS HEIMDAL_KRB5 
+PUBLIC_DEPENDENCIES = HEIMDAL_KRB5 
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
 
@@ -483,7 +483,7 @@ SO_VERSION = 0
 CFLAGS = -Iheimdal_build
 OBJ_FILES = ../heimdal/lib/vers/print_version.o
 PUBLIC_DEPENDENCIES = \
-		HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS
+		HEIMDAL_GSSAPI HEIMDAL_KRB5
 # End SUBSYSTEM HEIMDAL
 #######################
 
