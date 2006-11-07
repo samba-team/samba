@@ -21,11 +21,12 @@
 */
 
 #include "includes.h"
-#include "auth/auth.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
 #include "db_wrap.h"
+#include "libcli/auth/libcli_auth.h"
+#include "auth/auth.h"
 
 /**
   connect to the schannel ldb

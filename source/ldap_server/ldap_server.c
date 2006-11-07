@@ -25,6 +25,8 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "auth/auth.h"
+#include "auth/credentials/credentials.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 #include "lib/util/dlinklist.h"
 #include "libcli/util/asn_1.h"
 #include "ldap_server/ldap_server.h"

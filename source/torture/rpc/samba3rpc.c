@@ -47,7 +47,6 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/auth/libcli_auth.h"
-#include "libcli/auth/credentials.h"
 #include "lib/crypto/crypto.h"
 #include "libcli/security/proto.h"
 

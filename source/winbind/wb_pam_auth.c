@@ -25,7 +25,7 @@
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
-#include "libcli/auth/credentials.h"
+#include "auth/credentials/credentials.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"

@@ -23,7 +23,6 @@
 #define _REGISTRY_H 
 
 #include "librpc/gen_ndr/security.h"
-#include "auth/credentials/credentials.h"
 
 /* Handles for the predefined keys */
 #define HKEY_CLASSES_ROOT		 0x80000000
@@ -127,6 +126,8 @@ struct hive_operations {
 	WERROR (*set_value)(const struct registry_key *, const char *name, uint32_t type, const DATA_BLOB data); 
 	WERROR (*del_value)(const struct registry_key *, const char *valname);
 };
+
+struct cli_credentials;
 
 struct registry_hive
 {

@@ -24,7 +24,8 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
-#include "auth/gensec/gensec.h"
+#include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 #include "libcli/auth/libcli_auth.h"
 
 /**

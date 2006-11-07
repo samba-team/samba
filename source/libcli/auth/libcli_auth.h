@@ -19,7 +19,7 @@
 #define __LIBCLI_AUTH_H__
 
 #include "librpc/gen_ndr/netlogon.h"
-#include "auth/credentials/credentials.h"
+#include "libcli/auth/credentials.h"
 #include "libcli/auth/proto.h"
 
 #endif /* __LIBCLI_AUTH_H__ */

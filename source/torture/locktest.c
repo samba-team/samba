@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "system/time.h"
 #include "pstring.h"
+#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/libcli.h"
 

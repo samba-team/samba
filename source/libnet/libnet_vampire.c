@@ -25,6 +25,7 @@
 #include "libnet/libnet.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/gensec.h"
+#include "auth/credentials/credentials.h"
 #include "auth/gensec/schannel_proto.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"

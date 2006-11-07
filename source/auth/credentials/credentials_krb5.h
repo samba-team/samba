@@ -1,10 +1,10 @@
 /* 
-   Unix SMB/CIFS implementation.
+   samba -- Unix SMB/CIFS implementation.
 
-   dcerpc schannel operations
+   Client credentials structure
 
-   Copyright (C) Andrew Tridgell 2004
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
+   Copyright (C) Jelmer Vernooij 2004-2006
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,17 +21,14 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "libcli/auth/credentials.h"
+struct EncryptionKey;
 
-enum schannel_position {
-	SCHANNEL_STATE_START = 0,
-	SCHANNEL_STATE_UPDATE_1
+#include "heimdal/lib/gssapi/gssapi.h"
+
+struct ccache_container;
+
+struct gssapi_creds_container {
+	gss_cred_id_t creds;
 };
 
-struct schannel_state {
-	enum schannel_position state;
-	uint32_t seq_num;
-	BOOL initiator;
-	struct creds_CredentialState *creds;
-};
-
+#include "auth/credentials/credentials_krb5_proto.h"

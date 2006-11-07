@@ -23,10 +23,10 @@
 */
 
 #include "includes.h"
-#include "auth/auth.h"
-#include "auth/gensec/spnego_proto.h"
+#include "auth/gensec/spnego.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
-#include "lib/socket/socket.h"
+#include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
 #include "auth/gensec/socket.h"
 
 enum spnego_state_position {

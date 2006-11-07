@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 NTSTATUS auth_convert_server_info_sambaseinfo(TALLOC_CTX *mem_ctx, 
 					      struct auth_serversupplied_info *server_info, 

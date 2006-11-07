@@ -42,6 +42,8 @@ enum gensec_priority {
 	GENSEC_OTHER = 0
 };
 
+enum credentials_use_kerberos;
+
 struct gensec_security;
 struct gensec_target {
 	const char *principal;
@@ -167,7 +169,6 @@ struct gensec_critical_sizes {
 	int sizeof_gensec_security;
 };
 
-#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec_proto.h"
 
 #endif /* __GENSEC_H__ */

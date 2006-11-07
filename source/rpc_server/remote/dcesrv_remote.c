@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
 #include "auth/auth.h"
+#include "auth/credentials/credentials.h"
 #include "librpc/rpc/dcerpc_table.h"
 
 

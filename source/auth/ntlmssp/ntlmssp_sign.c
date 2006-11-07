@@ -25,6 +25,8 @@
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/ntlmssp/msrpc_parse.h"
 #include "lib/crypto/crypto.h"
+#include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
 
 #define CLI_SIGN "session key to client-to-server signing key magic constant"
 #define CLI_SEAL "session key to client-to-server sealing key magic constant"

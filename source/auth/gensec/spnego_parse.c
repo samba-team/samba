@@ -22,7 +22,8 @@
 */
 
 #include "includes.h"
-#include "auth/auth.h"
+#include "auth/gensec/spnego.h"
+#include "auth/gensec/gensec.h"
 #include "libcli/util/asn_1.h"
 
 static BOOL read_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenInit *token)

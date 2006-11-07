@@ -21,8 +21,10 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "system/time.h"
 #include "db_wrap.h"
+#include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
 #include "auth/auth_sam.h"
 #include "dsdb/samdb/samdb.h"

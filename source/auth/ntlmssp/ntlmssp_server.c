@@ -23,13 +23,15 @@
 */
 
 #include "includes.h"
-#include "auth/auth.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/ntlmssp/msrpc_parse.h"
 #include "lib/crypto/crypto.h"
 #include "pstring.h"
 #include "system/filesys.h"
 #include "libcli/auth/libcli_auth.h"
+#include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
+#include "auth/auth.h"
 
 /** 
  * Set a username on an NTLMSSP context - ensures it is talloc()ed 

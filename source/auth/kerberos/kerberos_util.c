@@ -25,6 +25,7 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 
 struct principal_container {
 	struct smb_krb5_context *smb_krb5_context;

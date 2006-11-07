@@ -21,9 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef SAMBA_SPNEGO_H
-#define SAMBA_SPNEGO_H
-
 #define SPNEGO_DELEG_FLAG    0x01
 #define SPNEGO_MUTUAL_FLAG   0x02
 #define SPNEGO_REPLAY_FLAG   0x04
@@ -66,4 +63,4 @@ enum spnego_message_type {
 	SPNEGO_NEG_TOKEN_TARG = 1,
 };
 
-#endif
+#include "auth/gensec/spnego_proto.h"

@@ -25,6 +25,8 @@
 #include "includes.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
+#include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 
 int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
 				     struct smb_krb5_context **smb_krb5_context) 
@@ -333,9 +335,9 @@ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
    to the credentials system.
 */
 
- int cli_credentials_set_client_gss_creds(struct cli_credentials *cred, 
-					  gss_cred_id_t gssapi_cred,
-					  enum credentials_obtained obtained) 
+int cli_credentials_set_client_gss_creds(struct cli_credentials *cred, 
+					 gss_cred_id_t gssapi_cred,
+					 enum credentials_obtained obtained) 
 {
 	int ret;
 	OM_uint32 maj_stat, min_stat;

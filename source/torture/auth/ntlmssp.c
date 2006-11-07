@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "auth/auth.h"
+#include "auth/gensec/gensec.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/torture.h"

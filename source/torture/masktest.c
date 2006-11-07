@@ -25,6 +25,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "pstring.h"
+#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 
 static struct cli_credentials *credentials;

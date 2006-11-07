@@ -25,6 +25,7 @@
 #include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/security.h"
+#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 
 #define NSERVERS 2
