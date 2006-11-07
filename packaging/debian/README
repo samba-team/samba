@@ -1,0 +1,30 @@
+The Debian packaging for Samba 4 is maintained in the SVN 
+repository of the Debian Samba packaging team. 
+
+(parts of this file are from their README.building)
+
+To build:
+
+: Check out the official Debian packaging:
+
+  svn co svn://svn.debian.org/pkg-samba/branches/samba4 samba4/debian
+
+: Samba is not a native Debian package, so you will need to create
+: an .orig.tar.gz tarball. Do something along the lines of:
+
+  VER=$( dpkg-parsechangelog -lsamba4/debian/changelog | sed -n 's/^Version: \(.*:\|\)//p' | sed 's/-[0-9.]\+$//' )
+  svn export samba4 samba-$VER
+  ( cd samba-$VER/source && ./autogen.sh )
+  ( cd samba-$VER/source && ./script/mkversion.sh VERSION include/version.h ../../samba4/source/ )
+  tar zcf samba_$VER.orig.tar.gz samba-$VER
+
+: With the .orig.tar.gz in place, you can now also export the debian/
+: directory:
+
+  svn export samba4/debian samba-$VER/debian
+
+: Finally, build the package using whatever method you prefer:
+
+  cd samba-$VER
+  debuild
+
