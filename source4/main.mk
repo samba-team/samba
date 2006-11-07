@@ -1,4 +1,4 @@
-all: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries libraries modules
+all: basics showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries libraries modules
 
 include dynconfig.mk
 include heimdal_build/config.mk
