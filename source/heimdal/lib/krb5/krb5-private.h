@@ -17,7 +17,7 @@ _krb5_aes_cts_encrypt (
 	const unsigned char */*in*/,
 	unsigned char */*out*/,
 	size_t /*len*/,
-	const void */*aes_key*/,
+	const AES_KEY */*key*/,
 	unsigned char */*ivec*/,
 	const int /*encryptp*/);
 
@@ -45,6 +45,12 @@ _krb5_dh_group_ok (
 	heim_integer */*q*/,
 	struct krb5_dh_moduli **/*moduli*/,
 	char **/*name*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+_krb5_enctype_to_oid (
+	krb5_context /*context*/,
+	krb5_enctype /*etype*/,
+	heim_oid */*oid*/);
 
 krb5_error_code
 _krb5_expand_default_cc_name (
@@ -101,7 +107,16 @@ _krb5_get_init_creds_opt_copy (
 	krb5_get_init_creds_opt **/*out*/);
 
 void KRB5_LIB_FUNCTION
+_krb5_get_init_creds_opt_free_krb5_error (krb5_get_init_creds_opt */*opt*/);
+
+void KRB5_LIB_FUNCTION
 _krb5_get_init_creds_opt_free_pkinit (krb5_get_init_creds_opt */*opt*/);
+
+void KRB5_LIB_FUNCTION
+_krb5_get_init_creds_opt_set_krb5_error (
+	krb5_context /*context*/,
+	krb5_get_init_creds_opt */*opt*/,
+	const KRB_ERROR */*error*/);
 
 krb5_ssize_t KRB5_LIB_FUNCTION
 _krb5_get_int (
@@ -312,8 +327,8 @@ _krb5_pk_load_id (
 	struct krb5_pk_identity **/*ret_id*/,
 	const char */*user_id*/,
 	const char */*anchor_id*/,
-	char * const */*chain*/,
-	char * const */*revoke*/,
+	char * const */*chain_list*/,
+	char * const */*revoke_list*/,
 	krb5_prompter_fct /*prompter*/,
 	void */*prompter_data*/,
 	char */*password*/);
@@ -372,7 +387,7 @@ _krb5_principal2principalname (
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_principalname2krb5_principal (
-	krb5_context /* context */,
+	krb5_context /*context*/,
 	krb5_principal */*principal*/,
 	const PrincipalName /*from*/,
 	const Realm /*realm*/);
@@ -382,6 +397,12 @@ _krb5_put_int (
 	void */*buffer*/,
 	unsigned long /*value*/,
 	size_t /*size*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+_krb5_s4u2self_to_checksumdata (
+	krb5_context /*context*/,
+	const PA_S4U2Self */*self*/,
+	krb5_data */*data*/);
 
 int
 _krb5_send_and_recv_tcp (

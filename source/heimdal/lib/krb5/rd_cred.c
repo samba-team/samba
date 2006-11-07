@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_cred.c,v 1.28 2006/04/02 02:27:33 lha Exp $");
+RCSID("$Id: rd_cred.c,v 1.29 2006/10/06 17:04:47 lha Exp $");
 
 static krb5_error_code
 compare_addrs(krb5_context context,
@@ -265,7 +265,8 @@ krb5_rd_cred(krb5_context context,
 	    krb5_abortx(context, "internal error in ASN.1 encoder");
 	copy_EncryptionKey (&kci->key, &creds->session);
 	if (kci->prealm && kci->pname)
-	    _krb5_principalname2krb5_principal (context, &creds->client,
+	    _krb5_principalname2krb5_principal (context,
+						&creds->client,
 						*kci->pname,
 						*kci->prealm);
 	if (kci->flags)

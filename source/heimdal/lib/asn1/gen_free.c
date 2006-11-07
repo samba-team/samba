@@ -33,12 +33,12 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_free.c,v 1.14 2005/07/25 21:28:29 lha Exp $");
+RCSID("$Id: gen_free.c,v 1.16 2006/10/14 05:33:58 lha Exp $");
 
 static void
 free_primitive (const char *typename, const char *name)
 {
-    fprintf (codefile, "free_%s(%s);\n", typename, name);
+    fprintf (codefile, "der_free_%s(%s);\n", typename, name);
 }
 
 static void
@@ -78,7 +78,7 @@ free_type (const char *name, const Type *t, int preserve)
 	    break;
 
 	if ((t->type == TSequence || t->type == TChoice) && preserve)
-	    fprintf(codefile, "free_octet_string(&data->_save);\n");
+	    fprintf(codefile, "der_free_octet_string(&data->_save);\n");
 
 	if(t->type == TChoice)
 	    fprintf(codefile, "switch((%s)->element) {\n", name);
@@ -115,7 +115,7 @@ free_type (const char *name, const Type *t, int preserve)
 	    if (have_ellipsis)
 		fprintf(codefile,
 			"case %s:\n"
-			"free_octet_string(&(%s)->u.%s);\n"
+			"der_free_octet_string(&(%s)->u.%s);\n"
 			"break;",
 			have_ellipsis->label,
 			name, have_ellipsis->gen_name);

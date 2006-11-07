@@ -33,14 +33,14 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_length.c,v 1.19 2005/08/23 11:51:41 lha Exp $");
+RCSID("$Id: gen_length.c,v 1.21 2006/10/14 05:28:28 lha Exp $");
 
 static void
 length_primitive (const char *typename,
 		  const char *name,
 		  const char *variable)
 {
-    fprintf (codefile, "%s += length_%s(%s);\n", variable, typename, name);
+    fprintf (codefile, "%s += der_length_%s(%s);\n", variable, typename, name);
 }
 
 static size_t
@@ -247,7 +247,7 @@ length_type (const char *name, const Type *t,
 	if (tname == NULL)
 	    errx(1, "malloc");
 	length_type (name, t->subtype, variable, tname);
-	fprintf (codefile, "ret += %lu + length_len (ret);\n", 
+	fprintf (codefile, "ret += %lu + der_length_len (ret);\n", 
 		 (unsigned long)length_tag(t->tag.tagvalue));
 	free(tname);
 	break;

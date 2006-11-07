@@ -33,31 +33,12 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: send_to_kdc.c,v 1.58 2006/04/02 02:32:03 lha Exp $");
+RCSID("$Id: send_to_kdc.c,v 1.60 2006/10/20 18:42:01 lha Exp $");
 
-struct send_and_recv {
-	krb5_send_and_recv_func_t func;
-	krb5_send_and_recv_close_func_t close;
-	void *data;
+struct send_to_kdc {
+    krb5_send_to_kdc_func func;
+    void *data;
 };
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_set_send_recv_func(krb5_context context,
-			krb5_send_and_recv_func_t func,
-			krb5_send_and_recv_close_func_t close_fn,
-			void *data)
-{
-	free(context->send_and_recv);
-	context->send_and_recv = malloc(sizeof(*context->send_and_recv));
-	if (!context->send_and_recv) {
-		return ENOMEM;
-	}
-	context->send_and_recv->func = func;
-	context->send_and_recv->close = close_fn;
-	context->send_and_recv->data = data;
-	return 0;
-}
-
 
 /*
  * send the data in `req' on the socket `fd' (which is datagram iff udp)
@@ -346,7 +327,7 @@ krb5_sendto (krb5_context context,
 	     krb5_krbhst_handle handle,	     
 	     krb5_data *receive)
 {
-     krb5_error_code ret = 0;
+     krb5_error_code ret;
      int fd;
      int i;
 
@@ -356,27 +337,22 @@ krb5_sendto (krb5_context context,
 	 while (krb5_krbhst_next(context, handle, &hi) == 0) {
 	     struct addrinfo *ai, *a;
 
-	     if (context->send_and_recv) {
-		 ret = context->send_and_recv->func(context, 
-						    context->send_and_recv->data, 
-						    hi, send_data, receive);
-		 if (ret) {
-		     continue;
-		 } else if (receive->length != 0) {
-		     return 0;
-		 } else {
-		     continue;
-		 }
+	     if (context->send_to_kdc) {
+		 struct send_to_kdc *s = context->send_to_kdc;
+
+		 ret = (*s->func)(context, s->data, 
+				  hi, send_data, receive);
+		 if (ret == 0 && receive->length != 0)
+		     goto out;
+		 continue;
 	     }
 
 	     if(hi->proto == KRB5_KRBHST_HTTP && context->http_proxy) {
-		 if (send_via_proxy (context, hi, send_data, receive)) {
-		     /* Try again, with next host */
-		     continue;
-		 } else {
-		     /* Success */
-		     return 0;
+		 if (send_via_proxy (context, hi, send_data, receive) == 0) {
+		     ret = 0;
+		     goto out;
 		 }
+		 continue;
 	     }
 
 	     ret = krb5_krbhst_get_addrinfo(context, hi, &ai);
@@ -406,15 +382,16 @@ krb5_sendto (krb5_context context,
 		     break;
 		 }
 		 close (fd);
-		 if(ret == 0 && receive->length != 0) {
-		     return 0;
-		 }
+		 if(ret == 0 && receive->length != 0)
+		     goto out;
 	     }
 	 }
 	 krb5_krbhst_reset(context, handle);
      }
      krb5_clear_error_string (context);
-     return KRB5_KDC_UNREACH;
+     ret = KRB5_KDC_UNREACH;
+out:
+     return ret;
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -456,3 +433,27 @@ krb5_sendto_kdc_flags(krb5_context context,
 			      "unable to reach any KDC in realm %s", *realm);
     return ret;
 }
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_set_send_to_kdc_func(krb5_context context, 
+			  krb5_send_to_kdc_func func,
+			  void *data)
+{
+    free(context->send_to_kdc);
+    if (func == NULL) {
+	context->send_to_kdc = NULL;
+	return 0;
+    }
+
+    context->send_to_kdc = malloc(sizeof(*context->send_to_kdc));
+    if (context->send_to_kdc == NULL) {
+	krb5_set_error_string(context, "Out of memory");
+	return ENOMEM;
+    }
+
+    context->send_to_kdc->func = func;
+    context->send_to_kdc->data = data;
+    return 0;
+}
+
+

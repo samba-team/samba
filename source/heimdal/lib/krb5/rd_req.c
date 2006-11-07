@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001, 2003 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001, 2003 - 2005 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_req.c,v 1.63 2006/04/10 10:14:44 lha Exp $");
+RCSID("$Id: rd_req.c,v 1.66 2006/10/06 17:04:29 lha Exp $");
 
 static krb5_error_code
 decrypt_tkt_enc_part (krb5_context context,
@@ -376,12 +376,14 @@ krb5_verify_ap_req2(krb5_context context,
     if(ret)
 	goto out;
 
-    ret = _krb5_principalname2krb5_principal(context, 
-					     &t->server, ap_req->ticket.sname, 
+    ret = _krb5_principalname2krb5_principal(context,
+					     &t->server,
+					     ap_req->ticket.sname, 
 					     ap_req->ticket.realm);
     if (ret) goto out;
-    ret = _krb5_principalname2krb5_principal(context, 
-					     &t->client, t->ticket.cname, 
+    ret = _krb5_principalname2krb5_principal(context,
+					     &t->client,
+					     t->ticket.cname, 
 					     t->ticket.crealm);
     if (ret) goto out;
 
@@ -402,10 +404,12 @@ krb5_verify_ap_req2(krb5_context context,
 	krb5_principal p1, p2;
 	krb5_boolean res;
 	
-	_krb5_principalname2krb5_principal(context, &p1,
+	_krb5_principalname2krb5_principal(context,
+					   &p1,
 					   ac->authenticator->cname,
 					   ac->authenticator->crealm);
-	_krb5_principalname2krb5_principal(context, &p2, 
+	_krb5_principalname2krb5_principal(context,
+					   &p2, 
 					   t->ticket.cname,
 					   t->ticket.crealm);
 	res = krb5_principal_compare (context, p1, p2);
@@ -607,7 +611,8 @@ krb5_rd_req_return_keyblock(krb5_context context,
 	return ret;
 
     if(server == NULL){
-	_krb5_principalname2krb5_principal(context, &service,
+	_krb5_principalname2krb5_principal(context,
+					   &service,
 					   ap_req.ticket.sname,
 					   ap_req.ticket.realm);
 	server = service;

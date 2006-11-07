@@ -41,17 +41,6 @@ void
 krb5_kdc_default_config (krb5_kdc_configuration */*config*/);
 
 int
-krb5_kdc_process_generic_request (
-	krb5_context /*context*/,
-	krb5_kdc_configuration */*config*/,
-	unsigned char */*buf*/,
-	size_t /*len*/,
-	krb5_data */*reply*/,
-	krb5_boolean */*prependlength*/,
-	const char */*from*/,
-	struct sockaddr */*addr*/);
-
-int
 krb5_kdc_process_krb5_request (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
@@ -59,7 +48,20 @@ krb5_kdc_process_krb5_request (
 	size_t /*len*/,
 	krb5_data */*reply*/,
 	const char */*from*/,
-	struct sockaddr */*addr*/);
+	struct sockaddr */*addr*/,
+	int /*datagram_reply*/);
+
+int
+krb5_kdc_process_request (
+	krb5_context /*context*/,
+	krb5_kdc_configuration */*config*/,
+	unsigned char */*buf*/,
+	size_t /*len*/,
+	krb5_data */*reply*/,
+	krb5_boolean */*prependlength*/,
+	const char */*from*/,
+	struct sockaddr */*addr*/,
+	int /*datagram_reply*/);
 
 #ifdef __cplusplus
 }

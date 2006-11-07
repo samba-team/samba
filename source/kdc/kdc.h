@@ -37,7 +37,8 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		      DATA_BLOB *input, 
 		      DATA_BLOB *reply,
 		      struct socket_address *peer_addr, 
-		      struct socket_address *my_addr);
+		      struct socket_address *my_addr,
+		      int datagram_reply);
 
 /*
   top level context structure for the kdc server

@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: ui.c,v 1.5 2006/01/08 21:47:29 lha Exp $");
+RCSID("$Id: ui.c,v 1.6 2006/09/22 15:45:57 lha Exp $");
 #endif
 
 #include <stdio.h>
@@ -53,11 +53,16 @@ intr(int sig)
     intr_flag++;
 }
 
+#ifndef NSIG
+#define NSIG 47
+#endif
+
 static int
 read_string(const char *preprompt, const char *prompt, 
 	    char *buf, size_t len, int echo)
 {
-    struct sigaction sigs[47];
+    struct sigaction sigs[NSIG];
+    int oksigs[NSIG];
     struct sigaction sa;
     FILE *tty;
     int ret = 0;
@@ -68,12 +73,16 @@ read_string(const char *preprompt, const char *prompt,
 
     struct termios t_new, t_old;
 
+    memset(&oksigs, 0, sizeof(oksigs));
+
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = intr;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
-    for(i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++)
-	if (i != SIGALRM) sigaction(i, &sa, &sigs[i]);
+    for(i = 1; i < sizeof(sigs) / sizeof(sigs[0]); i++)
+	if (i != SIGALRM) 
+	    if (sigaction(i, &sa, &sigs[i]) == 0)
+		oksigs[i] = 1;
 
     if((tty = fopen("/dev/tty", "r")) == NULL)
 	tty = stdin;
@@ -114,8 +123,9 @@ read_string(const char *preprompt, const char *prompt,
     if(tty != stdin)
 	fclose(tty);
 
-    for(i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++)
-	if (i != SIGALRM) sigaction(i, &sigs[i], NULL);
+    for(i = 1; i < sizeof(sigs) / sizeof(sigs[0]); i++)
+	if (oksigs[i])
+	    sigaction(i, &sigs[i], NULL);
     
     if(ret)
 	return -3;

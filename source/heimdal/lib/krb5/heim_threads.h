@@ -53,7 +53,7 @@
 /* 
  * NetBSD have a thread lib that we can use that part of libc that
  * works regardless if application are linked to pthreads or not.
- * NetBSD newer than 2.99.11 just use pthread.h, and the same thing
+ * NetBSD newer then 2.99.11 just use pthread.h, and the same thing
  * will happen.
  */
 #include <threadlib.h>

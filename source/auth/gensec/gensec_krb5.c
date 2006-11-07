@@ -527,6 +527,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	struct PAC_LOGON_INFO *logon_info;
 
 	krb5_principal client_principal;
+	char *principal_string;
 	
 	DATA_BLOB pac;
 	krb5_data pac_data;
@@ -538,30 +539,63 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		return NT_STATUS_NO_MEMORY;
 	}
 	
+	ret = krb5_ticket_get_client(context, gensec_krb5_state->ticket, &client_principal);
+	if (ret) {
+		DEBUG(5, ("krb5_ticket_get_client failed to get cleint principal: %s\n", 
+			  smb_get_krb5_error_message(context, 
+						     ret, mem_ctx)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	ret = krb5_unparse_name(gensec_krb5_state->smb_krb5_context->krb5_context, 
+				client_principal, &principal_string);
+	if (ret) {
+		DEBUG(1, ("Unable to parse client principal: %s\n",
+			  smb_get_krb5_error_message(context, 
+						     ret, mem_ctx)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	ret = krb5_ticket_get_authorization_data_type(context, gensec_krb5_state->ticket, 
 						      KRB5_AUTHDATA_WIN2K_PAC, 
 						      &pac_data);
 	
-	if (ret) {
+	if (ret && lp_parm_bool(-1, "gensec", "require_pac", False)) {
+		DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access: %s \n",
+			  principal_string,
+			  smb_get_krb5_error_message(context, 
+						     ret, mem_ctx)));
+		krb5_free_principal(context, client_principal);
+		free(principal_string);
+		return NT_STATUS_ACCESS_DENIED;
+	} else if (ret) {
+		/* NO pac */
 		DEBUG(5, ("krb5_ticket_get_authorization_data_type failed to find PAC: %s\n", 
 			  smb_get_krb5_error_message(context, 
 						     ret, mem_ctx)));
+		nt_status = sam_get_server_info_principal(mem_ctx, principal_string,
+							  &server_info);
+		krb5_free_principal(context, client_principal);
+		free(principal_string);
+		
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
+			return nt_status;
+		}
 	} else {
+		/* Found pac */
+		union netr_Validation validation;
+		free(principal_string);
+
 		pac = data_blob_talloc(mem_ctx, pac_data.data, pac_data.length);
 		if (!pac.data) {
+			krb5_free_principal(context, client_principal);
 			talloc_free(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		ret = krb5_ticket_get_client(context, gensec_krb5_state->ticket, &client_principal);
-		if (ret) {
-			DEBUG(5, ("krb5_ticket_get_client failed to get cleint principal: %s\n", 
-				  smb_get_krb5_error_message(context, 
-							     ret, mem_ctx)));
-			talloc_free(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-		
 		/* decode and verify the pac */
 		nt_status = kerberos_pac_logon_info(gensec_krb5_state, &logon_info, pac,
 						    gensec_krb5_state->smb_krb5_context->krb5_context,
@@ -570,46 +604,16 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 						    gensec_krb5_state->ticket->ticket.authtime, NULL);
 		krb5_free_principal(context, client_principal);
 
-		if (NT_STATUS_IS_OK(nt_status)) {
-			union netr_Validation validation;
-			validation.sam3 = &logon_info->info3;
-			nt_status = make_server_info_netlogon_validation(mem_ctx, 
-									 NULL,
-									 3, &validation,
-									 &server_info); 
-		}
-	}
-
-		
-		
-	/* IF we have the PAC - otherwise we need to get this
-	 * data from elsewere - local ldb, or (TODO) lookup of some
-	 * kind... 
-	 */
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		/* NO pac, or can't parse or verify it */
-		char *principal_string;
-		ret = krb5_ticket_get_client(context, gensec_krb5_state->ticket, &client_principal);
-		if (ret) {
-			DEBUG(5, ("krb5_ticket_get_client failed to get cleint principal: %s\n", 
-				  smb_get_krb5_error_message(context, 
-							     ret, mem_ctx)));
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-		
-		ret = krb5_unparse_name(gensec_krb5_state->smb_krb5_context->krb5_context, 
-					client_principal, &principal_string);
-		krb5_free_principal(context, client_principal);
-		if (ret) {
-			talloc_free(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
+			return nt_status;
 		}
 
-		nt_status = sam_get_server_info_principal(mem_ctx, principal_string,
-							  &server_info);
-		free(principal_string);
-		
+		validation.sam3 = &logon_info->info3;
+		nt_status = make_server_info_netlogon_validation(mem_ctx, 
+								 NULL,
+								 3, &validation,
+								 &server_info); 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
 			return nt_status;

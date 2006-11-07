@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_locl.h,v 1.87 2006/02/09 11:36:27 lha Exp $ */
+/* $Id: krb5_locl.h,v 1.93 2006/10/20 18:13:31 lha Exp $ */
 
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
@@ -136,6 +136,8 @@ struct sockaddr_dl;
 
 #include <krb5_asn1.h>
 
+struct send_to_kdc;
+
 /* XXX glue for pkinit */
 struct krb5_pk_identity;
 struct krb5_pk_cert;
@@ -151,6 +153,9 @@ struct _krb5_krb_auth_data;
 #include <krb5.h>
 #include <krb5_err.h>
 #include <asn1_err.h>
+#ifdef PKINIT
+#include <hx509_err.h>
+#endif
 #include <krb5-private.h>
 
 #include "heim_threads.h"
@@ -171,10 +176,10 @@ struct _krb5_krb_auth_data;
 #define KRB5_BUFSIZ 1024
 
 typedef enum {
-    KRB5_PA_PAC_DONT_CARE = 0, 
-    KRB5_PA_PAC_REQ_TRUE,
-    KRB5_PA_PAC_REQ_FALSE
-} krb5_get_init_creds_req_pac;
+    KRB5_INIT_CREDS_TRISTATE_UNSET = 0,
+    KRB5_INIT_CREDS_TRISTATE_TRUE,
+    KRB5_INIT_CREDS_TRISTATE_FALSE
+} krb5_get_init_creds_tristate;
 
 struct _krb5_get_init_creds_opt_private {
     int refcount;
@@ -182,11 +187,56 @@ struct _krb5_get_init_creds_opt_private {
     const char *password;
     krb5_s2k_proc key_proc;
     /* PA_PAC_REQUEST */
-    krb5_get_init_creds_req_pac req_pac;
+    krb5_get_init_creds_tristate req_pac;
     /* PKINIT */
     krb5_pk_init_ctx pk_init_ctx;
     int canonicalize;
+    KRB_ERROR *error;
+    krb5_get_init_creds_tristate addressless;
 };
+
+typedef struct krb5_context_data {
+    krb5_enctype *etypes;
+    krb5_enctype *etypes_des;
+    char **default_realms;
+    time_t max_skew;
+    time_t kdc_timeout;
+    unsigned max_retries;
+    int32_t kdc_sec_offset;
+    int32_t kdc_usec_offset;
+    krb5_config_section *cf;
+    struct et_list *et_list;
+    struct krb5_log_facility *warn_dest;
+    krb5_cc_ops *cc_ops;
+    int num_cc_ops;
+    const char *http_proxy;
+    const char *time_fmt;
+    krb5_boolean log_utc;
+    const char *default_keytab;
+    const char *default_keytab_modify;
+    krb5_boolean use_admin_kdc;
+    krb5_addresses *extra_addresses;
+    krb5_boolean scan_interfaces;	/* `ifconfig -a' */
+    krb5_boolean srv_lookup;		/* do SRV lookups */
+    krb5_boolean srv_try_txt;		/* try TXT records also */
+    int32_t fcache_vno;			/* create cache files w/ this
+                                           version */
+    int num_kt_types;			/* # of registered keytab types */
+    struct krb5_keytab_data *kt_types;  /* registered keytab types */
+    const char *date_fmt;
+    char *error_string;
+    char error_buf[256];
+    krb5_addresses *ignore_addresses;
+    char *default_cc_name;
+    int pkinit_flags;
+    void *mutex;			/* protects error_string/error_buf */
+    int large_msg_size;
+    int dns_canonicalize_hostname;
+    struct send_to_kdc *send_to_kdc;
+    void *mem_ctx;                      /* Some parts of Samba4 need a valid 
+                                           memory context (under the event 
+					   context) to use */
+} krb5_context_data;
 
 /*
  * Configurable options
@@ -201,7 +251,7 @@ struct _krb5_get_init_creds_opt_private {
 #endif
 
 #ifndef KRB5_ADDRESSLESS_DEFAULT
-#define KRB5_ADDRESSLESS_DEFAULT FALSE
+#define KRB5_ADDRESSLESS_DEFAULT TRUE
 #endif
 
 #endif /* __KRB5_LOCL_H__ */

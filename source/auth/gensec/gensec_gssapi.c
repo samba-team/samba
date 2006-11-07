@@ -24,7 +24,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
-#include "heimdal/lib/gssapi/gssapi.h"
+#include "heimdal/lib/gssapi/gssapi/gssapi.h"
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "auth/auth.h"
@@ -73,6 +73,7 @@ struct gensec_gssapi_state {
 				  * layer... */
 
 	size_t max_wrap_buf_size;
+	int gss_exchange_count;
 };
 
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security);
@@ -133,12 +134,14 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	krb5_error_code ret;
-	
+	struct gsskrb5_send_to_kdc send_to_kdc;
+
 	gensec_gssapi_state = talloc(gensec_security, struct gensec_gssapi_state);
 	if (!gensec_gssapi_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
+	gensec_gssapi_state->gss_exchange_count = 0;
 	gensec_gssapi_state->max_wrap_buf_size
 		= lp_parm_int(-1, "gensec_gssapi", "max wrap buf size", 65536);
 		
@@ -186,10 +189,18 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 
 	gensec_gssapi_state->gss_oid = gss_mech_krb5;
 	
+	send_to_kdc.func = smb_krb5_send_and_recv_func;
+	send_to_kdc.ptr = gensec_security->event_ctx;
+
+	ret = gsskrb5_set_send_to_kdc(&send_to_kdc);
+	if (ret) {
+		DEBUG(1,("gensec_krb5_start: gsskrb5_set_send_to_kdc failed\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 	ret = smb_krb5_init_context(gensec_gssapi_state, 
 				    &gensec_gssapi_state->smb_krb5_context);
 	if (ret) {
-		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n", 					
+		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n",
 			 error_message(ret)));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -431,6 +442,8 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			
 		}
 
+		gensec_gssapi_state->gss_exchange_count++;
+
 		if (maj_stat == GSS_S_COMPLETE) {
 			*out = data_blob_talloc(out_mem_ctx, output_token.value, output_token.length);
 			gss_release_buffer(&min_stat2, &output_token);
@@ -493,12 +506,14 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 				/* garbage input, possibly from the auto-mech detection */
 				return NT_STATUS_INVALID_PARAMETER;
 			default:
-				DEBUG(1, ("GSS(krb5) Update failed: %s\n", 
+				DEBUG(1, ("GSS Update(krb5)(%d) Update failed: %s\n", 
+					  gensec_gssapi_state->gss_exchange_count,
 					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return nt_status;
 			}
 		} else {
-			DEBUG(1, ("GSS Update failed: %s\n", 
+			DEBUG(1, ("GSS Update(%d) failed: %s\n", 
+				  gensec_gssapi_state->gss_exchange_count,
 				  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 			return nt_status;
 		}
@@ -583,7 +598,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 					    &conf_state,
 					    &output_token);
 			if (GSS_ERROR(maj_stat)) {
-				DEBUG(1, ("gensec_gssapi_wrap: GSS Wrap failed: %s\n", 
+				DEBUG(1, ("GSS Update(SSF_NEG): GSS Wrap failed: %s\n", 
 					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -648,7 +663,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 					    &conf_state,
 					    &output_token);
 			if (GSS_ERROR(maj_stat)) {
-				DEBUG(1, ("gensec_gssapi_wrap: GSS Wrap failed: %s\n", 
+				DEBUG(1, ("GSS Update(SSF_NEG): GSS Wrap failed: %s\n", 
 					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -1185,38 +1200,57 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	maj_stat = gss_krb5_copy_service_keyblock(&min_stat, 
-						  gensec_gssapi_state->gssapi_context, 
-						  &keyblock);
-
-	if (maj_stat == 0) {
-		maj_stat = gsskrb5_extract_authtime_from_sec_context(&min_stat,
-								     gensec_gssapi_state->gssapi_context, 
-								     &authtime);
-	}
-
-	if (maj_stat == 0) {
-		maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat, 
-								       gensec_gssapi_state->gssapi_context, 
-								       KRB5_AUTHDATA_WIN2K_PAC,
-								       &pac);
-	}
-
+	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat, 
+							       gensec_gssapi_state->gssapi_context, 
+							       KRB5_AUTHDATA_WIN2K_PAC,
+							       &pac);
+	
+	
 	if (maj_stat == 0) {
 		pac_blob = data_blob_talloc(mem_ctx, pac.value, pac.length);
 		gss_release_buffer(&min_stat, &pac);
+
+	} else {
+		pac_blob = data_blob(NULL, 0);
 	}
 	
 	/* IF we have the PAC - otherwise we need to get this
 	 * data from elsewere - local ldb, or (TODO) lookup of some
 	 * kind... 
 	 */
-	if (maj_stat == 0) {
+	if (pac_blob.length) {
 		krb5_error_code ret;
+		union netr_Validation validation;
 
-		ret = krb5_parse_name(gensec_gssapi_state->smb_krb5_context->krb5_context,
-				      principal_string, &principal);
+		maj_stat = gsskrb5_extract_authtime_from_sec_context(&min_stat,
+								     gensec_gssapi_state->gssapi_context, 
+								     &authtime);
+		
+		if (GSS_ERROR(maj_stat)) {
+			DEBUG(1, ("gsskrb5_extract_authtime_from_sec_context: %s\n", 
+				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+			talloc_free(mem_ctx);
+			return NT_STATUS_FOOBAR;
+		}
+
+		maj_stat = gsskrb5_extract_service_keyblock(&min_stat, 
+							    gensec_gssapi_state->gssapi_context, 
+							    &keyblock);
+		
+		if (GSS_ERROR(maj_stat)) {
+			DEBUG(1, ("gsskrb5_copy_service_keyblock failed: %s\n", 
+				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+			talloc_free(mem_ctx);
+			return NT_STATUS_FOOBAR;
+		} 
+
+		ret = krb5_parse_name_flags(gensec_gssapi_state->smb_krb5_context->krb5_context,
+					    principal_string, 
+					    KRB5_PRINCIPAL_PARSE_MUST_REALM,
+					    &principal);
 		if (ret) {
+			krb5_free_keyblock(gensec_gssapi_state->smb_krb5_context->krb5_context,
+					   keyblock);
 			talloc_free(mem_ctx);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -1226,25 +1260,25 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 						    gensec_gssapi_state->smb_krb5_context->krb5_context,
 						    NULL, keyblock, principal, authtime, NULL);
 		krb5_free_principal(gensec_gssapi_state->smb_krb5_context->krb5_context, principal);
+		krb5_free_keyblock(gensec_gssapi_state->smb_krb5_context->krb5_context,
+				   keyblock);
 
-		if (NT_STATUS_IS_OK(nt_status)) {
-			union netr_Validation validation;
-			validation.sam3 = &logon_info->info3;
-			nt_status = make_server_info_netlogon_validation(gensec_gssapi_state, 
-									 NULL,
-									 3, &validation,
-									 &server_info); 
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				talloc_free(mem_ctx);
-				return nt_status;
-			}
-		} else {
-			maj_stat = 1;
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
+			return nt_status;
 		}
-	}
-	
-	if (maj_stat) {
-		DEBUG(1, ("Unable to use PAC, resorting to local user lookup!\n"));
+		validation.sam3 = &logon_info->info3;
+		nt_status = make_server_info_netlogon_validation(gensec_gssapi_state, 
+								 NULL,
+								 3, &validation,
+								 &server_info); 
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
+			return nt_status;
+		}
+	} else if (!lp_parm_bool(-1, "gensec", "require_pac", False)) {
+		DEBUG(1, ("Unable to find PAC, resorting to local user lookup: %s\n",
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		nt_status = sam_get_server_info_principal(mem_ctx, principal_string,
 							  &server_info);
 
@@ -1252,6 +1286,11 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 			talloc_free(mem_ctx);
 			return nt_status;
 		}
+	} else {
+		DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access: %s\n",
+			  principal_string,
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* references the server_info into the session_info */

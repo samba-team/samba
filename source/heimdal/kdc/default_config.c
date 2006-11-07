@@ -42,8 +42,9 @@
 void
 krb5_kdc_default_config(krb5_kdc_configuration *config)
 {
+    memset(config, 0, sizeof(*config));
     config->require_preauth = TRUE;
-    config->kdc_warn_pwexpire = -1;
+    config->kdc_warn_pwexpire = 0;
     config->encode_as_rep_as_tgs_rep = FALSE; /* bug compatibility */
     config->check_ticket_addresses = TRUE;
     config->allow_null_ticket_addresses = TRUE;

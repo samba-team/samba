@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: db.c,v 1.35 2005/12/13 11:52:55 lha Exp $");
+RCSID("$Id: db.c,v 1.36 2006/09/12 18:12:37 lha Exp $");
 
 #if HAVE_DB1
 
@@ -47,7 +47,7 @@ static krb5_error_code
 DB_close(krb5_context context, HDB *db)
 {
     DB *d = (DB*)db->hdb_db;
-    d->close(d);
+    (*d->close)(d);
     return 0;
 }
 
@@ -95,7 +95,7 @@ DB_seq(krb5_context context, HDB *db,
     code = db->hdb_lock(context, db, HDB_RLOCK);
     if(code == -1)
 	return HDB_ERR_DB_INUSE;
-    code = d->seq(d, &key, &value, flag);
+    code = (*d->seq)(d, &key, &value, flag);
     db->hdb_unlock(context, db); /* XXX check value */
     if(code == -1)
 	return errno;
@@ -172,7 +172,7 @@ DB__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
     code = db->hdb_lock(context, db, HDB_RLOCK);
     if(code)
 	return code;
-    code = d->get(d, &k, &v, 0);
+    code = (*d->get)(d, &k, &v, 0);
     db->hdb_unlock(context, db);
     if(code < 0)
 	return errno;
@@ -198,7 +198,7 @@ DB__put(krb5_context context, HDB *db, int replace,
     code = db->hdb_lock(context, db, HDB_WLOCK);
     if(code)
 	return code;
-    code = d->put(d, &k, &v, replace ? 0 : R_NOOVERWRITE);
+    code = (*d->put)(d, &k, &v, replace ? 0 : R_NOOVERWRITE);
     db->hdb_unlock(context, db);
     if(code < 0)
 	return errno;
@@ -218,7 +218,7 @@ DB__del(krb5_context context, HDB *db, krb5_data key)
     code = db->hdb_lock(context, db, HDB_WLOCK);
     if(code)
 	return code;
-    code = d->del(d, &k, 0);
+    code = (*d->del)(d, &k, 0);
     db->hdb_unlock(context, db);
     if(code == 1)
 	return HDB_ERR_NOENTRY;

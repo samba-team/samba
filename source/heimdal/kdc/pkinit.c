@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.65 2006/05/06 13:22:33 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.72 2006/10/24 17:51:33 lha Exp $");
 
 #ifdef PKINIT
 
@@ -156,7 +156,7 @@ pk_check_pkauthenticator(krb5_context context,
 	goto out;
     }
 
-    if (heim_octet_string_cmp(a->paChecksum, &checksum.checksum) != 0) {
+    if (der_heim_octet_string_cmp(a->paChecksum, &checksum.checksum) != 0) {
 	krb5_clear_error_string(context);
 	ret = KRB5KRB_ERR_GENERIC;
     }
@@ -269,7 +269,7 @@ get_dh_param(krb5_context context,
 
     memset(&dhparam, 0, sizeof(dhparam));
 
-    if (heim_oid_cmp(&dh_key_info->algorithm.algorithm, oid_id_dhpublicnumber())) {
+    if (der_heim_oid_cmp(&dh_key_info->algorithm.algorithm, oid_id_dhpublicnumber())) {
 	krb5_set_error_string(context,
 			      "PKINIT invalid oid in clientPublicValue");
 	return KRB5_BADMSGTYPE;
@@ -338,7 +338,7 @@ get_dh_param(krb5_context context,
 	client_params->dh_public_key = integer_to_BN(context,
 						     "subjectPublicKey",
 						     &glue);
-	free_heim_integer(&glue);
+	der_free_heim_integer(&glue);
 	if (client_params->dh_public_key == NULL)
 	    goto out;
     }
@@ -426,7 +426,7 @@ _kdc_pk_rd_padata(krb5_context context,
     krb5_data signed_content = { 0, NULL };
     const char *type = "unknown type";
     const heim_oid *pa_contentType;
-    int have_data;
+    int have_data = 0;
 
     *ret_params = NULL;
     
@@ -444,7 +444,6 @@ _kdc_pk_rd_padata(krb5_context context,
 
     if (pa->padata_type == KRB5_PADATA_PK_AS_REQ_WIN) {
 	PA_PK_AS_REQ_Win2k r;
-	int have_data;
 
 	type = "PK-INIT-Win2k";
 	pa_contentType = oid_id_pkcs7_data();
@@ -502,7 +501,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	goto out;
     }
 
-    ret = heim_oid_cmp(&contentInfoOid, oid_id_pkcs7_signedData());
+    ret = der_heim_oid_cmp(&contentInfoOid, oid_id_pkcs7_signedData());
     if (ret != 0) {
 	krb5_set_error_string(context, "PK-AS-REQ-Win2k invalid content "
 			      "type oid");
@@ -542,7 +541,7 @@ _kdc_pk_rd_padata(krb5_context context,
     }
 
     /* Signature is correct, now verify the signed message */
-    if (heim_oid_cmp(&eContentType, pa_contentType)) {
+    if (der_heim_oid_cmp(&eContentType, pa_contentType)) {
 	krb5_set_error_string(context, "got wrong oid for pkauthdata");
 	ret = KRB5_BADMSGTYPE;
 	goto out;
@@ -621,8 +620,8 @@ out:
     if (signed_content.data)
 	free(signed_content.data);
     krb5_data_free(&eContent);
-    free_oid(&eContentType);
-    free_oid(&contentInfoOid);
+    der_free_oid(&eContentType);
+    der_free_oid(&contentInfoOid);
     if (ret)
 	_kdc_pk_free_client_param(context, client_params);
     else
@@ -657,10 +656,11 @@ pk_mk_pa_reply_enckey(krb5_context context,
 		      ContentInfo *content_info)
 {
     krb5_error_code ret;
-    krb5_data buf, o;
+    krb5_data buf, signed_data;
     size_t size;
 
     krb5_data_zero(&buf);
+    krb5_data_zero(&signed_data);
 
     switch (client_params->type) {
     case PKINIT_COMPAT_WIN2K: {
@@ -678,6 +678,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 			   buf.data, buf.length,
 			   &kp, &size,ret);
 	free_ReplyKeyPack_Win2k(&kp);
+	break;
     }
     case PKINIT_COMPAT_27: {
 	krb5_crypto ascrypto;
@@ -724,21 +725,55 @@ pk_mk_pa_reply_enckey(krb5_context context,
     if (buf.length != size)
 	krb5_abortx(context, "Internal ASN.1 encoder error");
 
+    {
+	hx509_query *q;
+	hx509_cert cert;
+	
+	ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
+	if (ret)
+	    goto out;
+	
+	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+	
+	ret = hx509_certs_find(kdc_identity->hx509ctx, 
+			       kdc_identity->certs, 
+			       q, 
+			       &cert);
+	hx509_query_free(kdc_identity->hx509ctx, q);
+	if (ret)
+	    goto out;
+	
+	ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
+					oid_id_pkrkeydata(),
+					buf.data,
+					buf.length,
+					NULL,
+					cert,
+					kdc_identity->anchors,
+					kdc_identity->certpool,
+					&signed_data);
+	hx509_cert_free(cert);
+    }
+
+    krb5_data_free(&buf);
+    if (ret) 
+	goto out;
+
     ret = hx509_cms_envelope_1(kdc_identity->hx509ctx,
 			       client_params->cert,
-			       buf.data, buf.length, NULL,
-			       oid_id_pkcs7_signedData(), &o);
+			       signed_data.data, signed_data.length, NULL,
+			       oid_id_pkcs7_signedData(), &buf);
     if (ret)
 	goto out;
     
     ret = _krb5_pk_mk_ContentInfo(context,
-				  &o,
+				  &buf,
 				  oid_id_pkcs7_envelopedData(),
 				  content_info);
-    free_octet_string(&o);
-
- out:
+out:
     krb5_data_free(&buf);
+    krb5_data_free(&signed_data);
     return ret;
 }
 
@@ -1195,6 +1230,7 @@ _kdc_pk_check_client(krb5_context context,
 		     pk_client_params *client_params,
 		     char **subject_name)
 {
+    const HDB_Ext_PKINIT_acl *acl;
     krb5_error_code ret;
     hx509_name name;
     int i;
@@ -1210,8 +1246,8 @@ _kdc_pk_check_client(krb5_context context,
     if (ret)
 	return ret;
 
-    kdc_log(context, config, 5,
-	    "Trying to authorize subject DN %s", 
+    kdc_log(context, config, 0,
+	    "Trying to authorize PK-INIT subject DN %s", 
 	    *subject_name);
 
     if (config->enable_pkinit_princ_in_cert) {
@@ -1221,6 +1257,28 @@ _kdc_pk_check_client(krb5_context context,
 	if (ret == 0) {
 	    kdc_log(context, config, 5,
 		    "Found matching PK-INIT SAN in certificate");
+	    return 0;
+	}
+    }
+
+    ret = hdb_entry_get_pkinit_acl(&client->entry, &acl);
+    if (ret == 0 && acl != NULL) {
+	/*
+	 * Cheat here and compare the generated name with the string
+	 * and not the reverse.
+	 */
+	for (i = 0; i < acl->len; i++) {
+	    if (strcmp(*subject_name, acl->val[0].subject) != 0)
+		continue;
+
+	    /* Don't support isser and anchor checking right now */
+	    if (acl->val[0].issuer)
+		continue;
+	    if (acl->val[0].anchor)
+		continue;
+
+	    kdc_log(context, config, 5,
+		    "Found matching PK-INIT database ACL");
 	    return 0;
 	}
     }
@@ -1235,11 +1293,14 @@ _kdc_pk_check_client(krb5_context context,
 	    continue;
 	if (strcmp(principal_mappings.val[i].subject, *subject_name) != 0)
 	    continue;
+	kdc_log(context, config, 5,
+		"Found matching PK-INIT FILE ACL");
 	return 0;
     }
-    free(*subject_name);
 
+    free(*subject_name);
     *subject_name = NULL;
+
     krb5_set_error_string(context, "PKINIT no matching principals");
     return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
 }
@@ -1282,7 +1343,7 @@ _kdc_pk_initialize(krb5_context context,
 		   const char *user_id,
 		   const char *anchors,
 		   char **pool,
-		   char **revoke)
+		   char **revoke_list)
 {
     const char *file; 
     krb5_error_code ret;
@@ -1305,7 +1366,7 @@ _kdc_pk_initialize(krb5_context context,
 			   user_id,
 			   anchors,
 			   pool,
-			   revoke,
+			   revoke_list,
 			   NULL,
 			   NULL,
 			   NULL);

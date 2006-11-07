@@ -32,7 +32,7 @@
 struct krb5_dh_moduli;
 struct _krb5_krb_auth_data;
 
-#include "heimdal/lib/krb5/krb5-private.h"
+#include "heimdal/lib/krb5/krb5_locl.h"
 
 /* Given the right private pointer from hdb_ldb, get a PAC from the attached ldb messages */
 static krb5_error_code samba_get_pac(krb5_context context, 

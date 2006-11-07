@@ -36,7 +36,7 @@
 RCSID("$Id: freehostent.c,v 1.3 2005/04/12 11:28:41 lha Exp $");
 #endif
 
-#include <roken.h>
+#include "roken.h"
 
 /*
  * free a malloced hostent

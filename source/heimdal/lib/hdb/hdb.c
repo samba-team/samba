@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: hdb.c,v 1.61 2006/04/24 20:57:58 lha Exp $");
+RCSID("$Id: hdb.c,v 1.62 2006/10/06 16:47:22 lha Exp $");
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -56,6 +56,9 @@ static struct hdb_method methods[] = {
     {"ldapi:",	hdb_ldapi_create},
 #endif
 #ifdef _SAMBA_BUILD_
+    {"ldb:",	hdb_ldb_create},
+#endif
+#ifdef HAVE_LDB /* Used for integrated samba build */
     {"ldb:",	hdb_ldb_create},
 #endif
     {NULL,	NULL}
@@ -262,7 +265,7 @@ find_dynamic_method (krb5_context context,
     if (prefix == NULL)
 	krb5_errx(context, 1, "out of memory");
     
-    if (asprintf(&path, HDBDIR "/hdb_%s.so", prefix) == -1)
+    if (asprintf(&path, LIBDIR "/hdb_%s.so", prefix) == -1)
 	krb5_errx(context, 1, "out of memory");
 
 #ifndef RTLD_NOW
@@ -398,6 +401,6 @@ hdb_create(krb5_context context, HDB **db, const char *filename)
 	h = find_dynamic_method (context, filename, &residual);
 #endif
     if (h == NULL)
-	krb5_errx(context, 1, "No database support! (hdb_create(%s))", filename);
+	krb5_errx(context, 1, "No database support for %s", filename);
     return (*h->create)(context, db, residual);
 }

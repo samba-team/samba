@@ -37,7 +37,7 @@ RCSID("$Id: signal.c,v 1.13 2005/04/12 11:29:05 lha Exp $");
 #endif
 
 #include <signal.h>
-#include <roken.h>
+#include "roken.h"
 
 /*
  * We would like to always use this signal but there is a link error

@@ -376,7 +376,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	cred.enc_part.cipher.length = buf_size;
     } else {
 	/* 
-	 * Here older versions than 0.7.2 of Heimdal used the local or
+	 * Here older versions then 0.7.2 of Heimdal used the local or
 	 * remote subkey. That is wrong, the session key should be
 	 * used. Heimdal 0.7.2 and newer have code to try both in the
 	 * receiving end.

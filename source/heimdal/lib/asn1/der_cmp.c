@@ -34,7 +34,7 @@
 #include "der_locl.h"
 
 int
-heim_oid_cmp(const heim_oid *p, const heim_oid *q)
+der_heim_oid_cmp(const heim_oid *p, const heim_oid *q)
 {
     if (p->length != q->length)
 	return p->length - q->length;
@@ -44,7 +44,8 @@ heim_oid_cmp(const heim_oid *p, const heim_oid *q)
 }
 
 int
-heim_octet_string_cmp(const heim_octet_string *p, const heim_octet_string *q)
+der_heim_octet_string_cmp(const heim_octet_string *p, 
+			  const heim_octet_string *q)
 {
     if (p->length != q->length)
 	return p->length - q->length;
@@ -52,7 +53,8 @@ heim_octet_string_cmp(const heim_octet_string *p, const heim_octet_string *q)
 }
 
 int
-heim_bit_string_cmp(const heim_bit_string *p, const heim_bit_string *q)
+der_heim_bit_string_cmp(const heim_bit_string *p,
+			const heim_bit_string *q)
 {
     int i, r1, r2;
     if (p->length != q->length)
@@ -72,7 +74,8 @@ heim_bit_string_cmp(const heim_bit_string *p, const heim_bit_string *q)
 }
 
 int
-heim_integer_cmp(const heim_integer *p, const heim_integer *q)
+der_heim_integer_cmp(const heim_integer *p,
+		     const heim_integer *q)
 {
     if (p->negative != q->negative)
 	return q->negative - p->negative;
@@ -82,7 +85,7 @@ heim_integer_cmp(const heim_integer *p, const heim_integer *q)
 }
 
 int
-heim_bmp_string_cmp(const heim_bmp_string *p, const heim_bmp_string *q)
+der_heim_bmp_string_cmp(const heim_bmp_string *p, const heim_bmp_string *q)
 {
     if (p->length != q->length)
 	return p->length - q->length;
@@ -90,8 +93,8 @@ heim_bmp_string_cmp(const heim_bmp_string *p, const heim_bmp_string *q)
 }
 
 int
-heim_universal_string_cmp(const heim_universal_string *p, 
-			  const heim_universal_string *q)
+der_heim_universal_string_cmp(const heim_universal_string *p, 
+			      const heim_universal_string *q)
 {
     if (p->length != q->length)
 	return p->length - q->length;

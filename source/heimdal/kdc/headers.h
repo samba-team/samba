@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,7 +32,7 @@
  */
 
 /* 
- * $Id: headers.h,v 1.16 2005/04/24 13:49:00 lha Exp $ 
+ * $Id: headers.h,v 1.18 2006/10/17 02:22:17 lha Exp $ 
  */
 
 #ifndef __HEADERS_H__
@@ -88,9 +88,10 @@
 #include <parse_units.h>
 #include <krb5.h>
 #include <krb5_locl.h>
+#include <digest_asn1.h>
 #include <hdb.h>
 #include <hdb_err.h>
-#include <der.h> /* copy_octet_string */
+#include <der.h>
 
 #undef ALLOC
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))

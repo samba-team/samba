@@ -34,7 +34,7 @@
 #include "gen_locl.h"
 #include "lex.h"
 
-RCSID("$Id: gen_decode.c,v 1.29 2005/09/21 00:30:37 lha Exp $");
+RCSID("$Id: gen_decode.c,v 1.30 2006/09/24 09:13:12 lha Exp $");
 
 static void
 decode_primitive (const char *typename, const char *name, const char *forwstr)
@@ -307,7 +307,7 @@ decode_type (const char *name, const Type *t, int optional,
 	    decode_type (s, m->type, m->optional, forwstr, m->gen_name);
 	    free (s);
 	}
-
+	
 	break;
     }
     case TSet: {
@@ -632,7 +632,7 @@ generate_type_decode (const Symbol *s)
     case TType:
     case TChoice:
 	fprintf (codefile,
-		 "size_t ret = 0, reallen;\n"
+		 "size_t ret = 0;\n"
 		 "size_t l;\n"
 		 "int e;\n");
 	if (preserve)
@@ -640,7 +640,6 @@ generate_type_decode (const Symbol *s)
 
 	fprintf (codefile, "\n");
 	fprintf (codefile, "memset(data, 0, sizeof(*data));\n"); /* hack to avoid `unused variable' */
-	fprintf (codefile, "reallen = 0;\n"); 
 
 	decode_type ("data", s->type, 0, "goto fail", "Top");
 	if (preserve)
