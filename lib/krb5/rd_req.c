@@ -555,6 +555,23 @@ krb5_rd_req_in_set_keyblock(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_out_get_ap_req_options(krb5_context context, 
+				   krb5_rd_req_out_ctx out,
+				   krb5_flags *ap_req_options)
+{
+    *ap_req_options = out->ap_req_options;
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_out_get_ticket(krb5_context context, 
+			    krb5_rd_req_out_ctx out,
+			    krb5_ticket **ticket)
+{
+    return krb5_copy_ticket(context, out->ticket, ticket);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_req_out_get_keyblock(krb5_context context, 
 			    krb5_rd_req_out_ctx out,
 			    krb5_keyblock **keyblock)
@@ -774,14 +791,12 @@ krb5_rd_req_ctx(krb5_context context,
 				 &o->keyblock);
 	if (ret)
 	    goto out;
-
     } else if(inctx->keyblock){
 	ret = krb5_copy_keyblock(context,
 				 inctx->keyblock,
 				 &o->keyblock);
 	if (ret)
 	    goto out;
-
     } else {
 	krb5_keytab keytab = NULL;
 
