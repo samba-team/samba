@@ -725,9 +725,7 @@ static void exit_server_common(enum server_exit_reason how,
 		}
 
 		DEBUGLEVEL = oldlevel;
-#if DUMP_CORE
 		dump_core();
-#endif
 
 	} else {    
 		DEBUG(3,("Server exit (%s)\n",
