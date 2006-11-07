@@ -102,6 +102,7 @@ exitcode=0
 echo "Getting client initial tickets"
 ${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
 
+echo test naming combinations
 echo plain
 ${context} --name-type=hostbased-service host@lucid.example.org || \
 	{ exitcode=1 ; echo test failed; }
@@ -126,6 +127,16 @@ ${context}  --no-dns-canon --name-type=krb5-principal-name host/lucid@${R} || \
 echo "dns canon off (short name, krb5)"
 ${context}  --no-dns-canon --name-type=krb5-principal-name host/lucid || \
 	{ exitcode=1 ; echo test failed; }
+
+echo "test context building"
+echo "mutual"
+${context} --mutual --name-type=hostbased-service host@lucid.example.org || \
+	{ exitcode=1 ; echo test failed; }
+
+#echo "dce-style"
+#${context} --dce-style --name-type=hostbased-service host@lucid.example.org || \
+#	{ exitcode=1 ; echo test failed; }
+
 
 #echo "sasl-digest-md5"
 #${context}  --mech-type=sasl-digest-md5 \
