@@ -65,9 +65,7 @@ static BOOL reload_services_file(void)
 
 static void fault_quit(void)
 {
-#if DUMP_CORE
 	dump_core();
-#endif
 }
 
 static void winbindd_status(void)
