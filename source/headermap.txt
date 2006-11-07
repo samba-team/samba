@@ -52,6 +52,8 @@ librpc/rpc/dcerpc_proto.h: dcerpc/proto.h
 lib/tdr/tdr_proto.h: tdr/proto.h
 auth/credentials/credentials.h: credentials.h
 auth/credentials/credentials_proto.h: credentials/proto.h
+auth/credentials/credentials_krb5.h: credentials/krb5.h
+auth/credentials/credentials_krb5_proto.h: credentials/krb5_proto.h
 rpc_server/dcerpc_server.h: dcerpc_server.h
 rpc_server/common/common.h: dcerpc_server/common.h
 rpc_server/common/proto.h: dcerpc_server/common_proto.h
