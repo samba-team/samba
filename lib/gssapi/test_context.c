@@ -40,6 +40,8 @@ RCSID("$Id$");
 static char *type_string;
 static char *mech_string;
 static int dns_canon_flag = -1;
+static int mutual_auth_flag = 0;
+static int dce_style_flag = 0;
 static int version_flag = 0;
 static int verbose_flag = 0;
 static int help_flag	= 0;
@@ -83,6 +85,11 @@ loop(gss_OID mechoid,
     gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
     gss_OID mechoid_out;
 
+    if (mutual_auth_flag)
+	flags |= GSS_C_MUTUAL_FLAG;
+    if (dce_style_flag)
+	flags |= GSS_C_DCE_STYLE;
+
     input_token.value = rk_UNCONST(target);
     input_token.length = strlen(target);
 
@@ -96,7 +103,7 @@ loop(gss_OID mechoid,
     input_token.length = 0;
     input_token.value = NULL;
 
-    while (!server_done && !client_done) {
+    while (!server_done || !client_done) {
 
 	maj_stat = gss_init_sec_context(&min_stat,
 					GSS_C_NO_CREDENTIAL,
@@ -119,6 +126,9 @@ loop(gss_OID mechoid,
 	else
 	    client_done = 1;
 
+	if (client_done && server_done)
+	    break;
+
 	if (input_token.length != 0)
 	    gss_release_buffer(&min_stat, &input_token);
 
@@ -140,8 +150,8 @@ loop(gss_OID mechoid,
 	if (verbose_flag)
 	    printf("%.*s", (int)input_token.length, (char *)input_token.value);
 
-	if (input_token.length != 0)
-	    gss_release_buffer(&min_stat, &input_token);
+	if (output_token.length != 0)
+	    gss_release_buffer(&min_stat, &output_token);
 
 	if (maj_stat & GSS_S_CONTINUE_NEEDED)
 	    ;
@@ -155,12 +165,40 @@ loop(gss_OID mechoid,
     gss_release_name(&min_stat, &gss_target_name);
 }
 
+static void
+wrapunwrap(gss_ctx_id_t cctx, gss_ctx_id_t sctx, gss_OID mechoid)
+{
+    gss_buffer_desc input_token, output_token, output_token2;
+    OM_uint32 min_stat, maj_stat;
+    int32_t flags = 0;
+    gss_qop_t qop_state;
+    int conf_state;
+
+    input_token.value = "foo";
+    input_token.length = 3;
+
+    maj_stat = gss_wrap(&min_stat, cctx, flags, 0, &input_token,
+			&conf_state, &output_token);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_wrap failed: %s",
+	     gssapi_err(maj_stat, min_stat, mechoid));
+
+    maj_stat = gss_unwrap(&min_stat, sctx, &output_token,
+			  &output_token2, &conf_state, &qop_state);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_unwrap failed: %s",
+	     gssapi_err(maj_stat, min_stat, mechoid));
+}
+
+
 
 static struct getargs args[] = {
     {"name-type",0,	arg_string, &type_string,  "type of name", NULL },
     {"mech-type",0,	arg_string, &mech_string,  "type of mech", NULL },
     {"dns-canonicalize",0,arg_negative_flag, &dns_canon_flag, 
      "use dns to canonicalize", NULL },
+    {"mutual-auth",0,	arg_flag,	&mutual_auth_flag,"mutual auth", NULL },
+    {"dce-style",0,	arg_flag,	&dce_style_flag, "dce-style", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
     {"verbose",	'v',	arg_flag,	&verbose_flag, "verbose", NULL },
     {"help",	0,	arg_flag,	&help_flag,  NULL, NULL }
@@ -287,8 +325,8 @@ main(int argc, char **argv)
 	krb5_free_keyblock(_gsskrb5_context, keyblock);
 
  	maj_stat = gsskrb5_get_initiator_subkey(&min_stat,
-						    sctx,
-						    &keyblock);
+						sctx,
+						&keyblock);
 	if (maj_stat != GSS_S_COMPLETE)
 	    errx(1, "gss_krb5_get_initiator_subkey failed: %s",
 		     gssapi_err(maj_stat, min_stat, mechoid));
@@ -301,6 +339,9 @@ main(int argc, char **argv)
 							       &authz_data);
 	if (maj_stat == GSS_S_COMPLETE)
 	    gss_release_buffer(&min_stat, &authz_data);
+
+	wrapunwrap(cctx, sctx, mechoid);
+	wrapunwrap(sctx, cctx, mechoid);
     }
 
     gss_delete_sec_context(&min_stat, &cctx, NULL);
