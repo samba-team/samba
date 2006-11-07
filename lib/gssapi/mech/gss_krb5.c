@@ -416,6 +416,24 @@ gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status, void *c)
     return GSS_S_COMPLETE;
 }
 
+/*
+ *
+ */
+
+OM_uint32
+gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status, 
+				gss_cred_id_t cred,
+				OM_uint32 num_enctypes,
+				krb5_enctype *enctypes)
+{
+    *minor_status = 0;
+    return GSS_S_COMPLETE;
+}
+
+/*
+ *
+ */
+
 OM_uint32
 gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
 {
@@ -442,6 +460,10 @@ gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
 
     return (GSS_S_COMPLETE);
 }
+
+/*
+ *
+ */
 
 OM_uint32
 gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
@@ -485,6 +507,10 @@ gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
     *minor_status = 0;
     return GSS_S_COMPLETE;
 }
+
+/*
+ *
+ */
 
 OM_uint32
 gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
@@ -581,6 +607,10 @@ gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
+/*
+ *
+ */
+
 static OM_uint32
 gsskrb5_extract_key(OM_uint32 *minor_status,
 		    gss_ctx_id_t context_handle,
@@ -650,6 +680,10 @@ out:
 
     return GSS_S_COMPLETE;
 }
+
+/*
+ *
+ */
 
 OM_uint32
 gsskrb5_extract_service_keyblock(OM_uint32 *minor_status,
