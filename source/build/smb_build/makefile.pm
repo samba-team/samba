@@ -130,7 +130,9 @@ CPPFLAGS=$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\
 CC=$self->{config}->{CC}
 CFLAGS=$self->{config}->{CFLAGS} \$(CPPFLAGS)
 PICFLAG=$self->{config}->{PICFLAG}
+
 HOSTCC=$self->{config}->{HOSTCC}
+HOSTCC_CFLAGS=-D_SAMBA_HOSTCC_ $self->{config}->{CFLAGS} \$(CPPFLAGS)
 
 INSTALL_LINK_FLAGS=-Wl,-rpath-link,\$(builddir)/bin/shared
 

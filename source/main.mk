@@ -341,7 +341,7 @@ unused_macros:
 
 .c.hd:
 	@echo "Generating host-compiler dependencies for $<"
-	@$(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
+	@$(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ `$(PERL) $(srcdir)/script/cflags.pl $@` $(HOSTCC_CFLAGS) $< -o $@
 
 include/includes.d: include/includes.h
 	@echo "Generating dependencies for $<"
@@ -366,10 +366,10 @@ include/includes.d: include/includes.h
 
 .c.ho:
 	@echo "Compiling $*.c with host compiler"
-	@$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $*.c -o $@ && exit 0;\
+	@$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(HOSTCC_CFLAGS) -c $*.c -o $@ && exit 0;\
 		echo "The following command failed:" 1>&2;\
-		echo "$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $*.c -o $@" 1>&2;\
-		$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $*.c -o $@ >/dev/null 2>&1
+		echo "$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(HOSTCC_CFLAGS) -c $*.c -o $@" 1>&2;\
+		$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(HOSTCC_CFLAGS) -c $*.c -o $@ >/dev/null 2>&1
 
 .h.h.gch:
 	@echo "Precompiling $<"
