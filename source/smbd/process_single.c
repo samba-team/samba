@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "smbd/process_model.h"
+#include "system/filesys.h"
 
 /*
   called when the process model is selected
