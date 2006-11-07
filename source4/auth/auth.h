@@ -23,6 +23,8 @@
 #define _SAMBA_AUTH_H
 
 union netr_Validation;
+struct netr_SamBaseInfo;
+struct netr_SamInfo3;
 
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
