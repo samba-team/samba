@@ -45,6 +45,8 @@
 
 	krb5_get_init_creds_opt_init(&options);
 
+	krb5_get_init_creds_opt_set_default_flags(ctx, NULL, NULL, &options);
+
 	if ((code = krb5_get_init_creds_keyblock(ctx, &my_creds, principal, keyblock,
 						 0, NULL, &options))) {
 		return code;
@@ -86,6 +88,8 @@
 	krb5_get_init_creds_opt options;
 
 	krb5_get_init_creds_opt_init(&options);
+
+	krb5_get_init_creds_opt_set_default_flags(ctx, NULL, NULL, &options);
 
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, principal, password, 
 						 NULL, 

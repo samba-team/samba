@@ -21,9 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct EncryptionKey;
-
-#include "heimdal/lib/gssapi/gssapi.h"
+#include "heimdal/lib/gssapi/gssapi/gssapi.h"
 
 struct ccache_container;
 

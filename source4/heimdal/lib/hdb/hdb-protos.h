@@ -71,6 +71,11 @@ hdb_entry_clear_password (
 	krb5_context /*context*/,
 	hdb_entry */*entry*/);
 
+krb5_error_code
+hdb_entry_get_ConstrainedDelegACL (
+	const hdb_entry */*entry*/,
+	const HDB_Ext_Constrained_delegation_acl **/*a*/);
+
 int
 hdb_entry_get_password (
 	krb5_context /*context*/,
@@ -82,6 +87,11 @@ krb5_error_code
 hdb_entry_get_pkinit_acl (
 	const hdb_entry */*entry*/,
 	const HDB_Ext_PKINIT_acl **/*a*/);
+
+krb5_error_code
+hdb_entry_get_pkinit_hash (
+	const hdb_entry */*entry*/,
+	const HDB_Ext_PKINIT_hash **/*a*/);
 
 krb5_error_code
 hdb_entry_get_pw_change_time (

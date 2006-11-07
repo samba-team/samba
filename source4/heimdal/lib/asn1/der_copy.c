@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,10 +33,11 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_copy.c,v 1.14 2006/01/04 23:41:29 lha Exp $");
+RCSID("$Id: der_copy.c,v 1.16 2006/10/14 05:30:02 lha Exp $");
 
 int
-copy_general_string (const heim_general_string *from, heim_general_string *to)
+der_copy_general_string (const heim_general_string *from, 
+			 heim_general_string *to)
 {
     *to = strdup(*from);
     if(*to == NULL)
@@ -45,27 +46,27 @@ copy_general_string (const heim_general_string *from, heim_general_string *to)
 }
 
 int
-copy_utf8string (const heim_utf8_string *from, heim_utf8_string *to)
+der_copy_utf8string (const heim_utf8_string *from, heim_utf8_string *to)
 {
-    return copy_general_string(from, to);
+    return der_copy_general_string(from, to);
 }
 
 int
-copy_printable_string (const heim_printable_string *from, 
+der_copy_printable_string (const heim_printable_string *from, 
 		       heim_printable_string *to)
 {
-    return copy_general_string(from, to);
+    return der_copy_general_string(from, to);
 }
 
 int
-copy_ia5_string (const heim_printable_string *from, 
-		       heim_printable_string *to)
+der_copy_ia5_string (const heim_printable_string *from, 
+		     heim_printable_string *to)
 {
-    return copy_general_string(from, to);
+    return der_copy_general_string(from, to);
 }
 
 int
-copy_bmp_string (const heim_bmp_string *from, heim_bmp_string *to)
+der_copy_bmp_string (const heim_bmp_string *from, heim_bmp_string *to)
 {
     to->length = from->length;
     to->data   = malloc(to->length * sizeof(to->data[0]));
@@ -76,8 +77,8 @@ copy_bmp_string (const heim_bmp_string *from, heim_bmp_string *to)
 }
 
 int
-copy_universal_string (const heim_universal_string *from,
-		       heim_universal_string *to)
+der_copy_universal_string (const heim_universal_string *from,
+			   heim_universal_string *to)
 {
     to->length = from->length;
     to->data   = malloc(to->length * sizeof(to->data[0]));
@@ -88,7 +89,7 @@ copy_universal_string (const heim_universal_string *from,
 }
 
 int
-copy_octet_string (const heim_octet_string *from, heim_octet_string *to)
+der_copy_octet_string (const heim_octet_string *from, heim_octet_string *to)
 {
     to->length = from->length;
     to->data   = malloc(to->length);
@@ -99,7 +100,7 @@ copy_octet_string (const heim_octet_string *from, heim_octet_string *to)
 }
 
 int
-copy_heim_integer (const heim_integer *from, heim_integer *to)
+der_copy_heim_integer (const heim_integer *from, heim_integer *to)
 {
     to->length = from->length;
     to->data   = malloc(to->length);
@@ -111,7 +112,7 @@ copy_heim_integer (const heim_integer *from, heim_integer *to)
 }
 
 int
-copy_oid (const heim_oid *from, heim_oid *to)
+der_copy_oid (const heim_oid *from, heim_oid *to)
 {
     to->length     = from->length;
     to->components = malloc(to->length * sizeof(*to->components));
@@ -123,7 +124,7 @@ copy_oid (const heim_oid *from, heim_oid *to)
 }
 
 int
-copy_bit_string (const heim_bit_string *from, heim_bit_string *to)
+der_copy_bit_string (const heim_bit_string *from, heim_bit_string *to)
 {
     size_t len;
 

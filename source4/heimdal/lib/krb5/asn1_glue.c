@@ -37,7 +37,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: asn1_glue.c,v 1.9 2004/12/29 18:54:15 lha Exp $");
+RCSID("$Id: asn1_glue.c,v 1.10 2006/10/06 17:02:48 lha Exp $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_principal2principalname (PrincipalName *p,

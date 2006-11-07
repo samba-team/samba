@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.99 2006/05/07 12:32:38 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.110 2006/10/14 09:52:50 lha Exp $");
 
 struct krb5_dh_moduli {
     char *name;
@@ -69,7 +69,7 @@ struct krb5_pk_identity {
     hx509_certs certs;
     hx509_certs anchors;
     hx509_certs certpool;
-    hx509_revoke_ctx revoke;
+    hx509_revoke_ctx revokectx;
 };
 
 struct krb5_pk_cert {
@@ -344,8 +344,8 @@ build_auth_pack(krb5_context context,
 	ALLOC(a->clientPublicValue, 1);
 	if (a->clientPublicValue == NULL)
 	    return ENOMEM;
-	ret = copy_oid(oid_id_dhpublicnumber(),
-		       &a->clientPublicValue->algorithm.algorithm);
+	ret = der_copy_oid(oid_id_dhpublicnumber(),
+			   &a->clientPublicValue->algorithm.algorithm);
 	if (ret)
 	    return ret;
 	
@@ -392,7 +392,7 @@ build_auth_pack(krb5_context context,
 
 	ASN1_MALLOC_ENCODE(DHPublicKey, dhbuf.data, dhbuf.length,
 			   &dh_pub_key, &size, ret);
-	free_heim_integer(&dh_pub_key);
+	der_free_heim_integer(&dh_pub_key);
 	if (ret)
 	    return ret;
 	if (size != dhbuf.length)
@@ -413,7 +413,7 @@ _krb5_pk_mk_ContentInfo(krb5_context context,
 {
     krb5_error_code ret;
 
-    ret = copy_oid(oid, &content_info->contentType);
+    ret = der_copy_oid(oid, &content_info->contentType);
     if (ret)
 	return ret;
     ALLOC(content_info->content, 1);
@@ -672,8 +672,16 @@ _krb5_pk_verify_sign(krb5_context context,
 				  contentType,
 				  content,
 				  &signer_certs);
-    if (ret)
+    if (ret) {
+	char *s = hx509_get_error_string(id->hx509ctx, ret);
+	if (s) {
+	    krb5_set_error_string(context,
+				  "CMS verify signed failed with %s", s);
+	    free(s);
+	} else
+	    krb5_clear_error_string(context);
 	return ret;
+    }
 
     *signer = calloc(1, sizeof(**signer));
     if (*signer == NULL) {
@@ -833,7 +841,9 @@ pk_verify_host(krb5_context context,
 						       oid_id_pkinit_san(),
 						       &list);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_set_error_string(context, "Failed to find the PK-INIT "
+				  "subjectAltName in the KDC certificate");
+
 	    return ret;
 	}
 
@@ -845,7 +855,9 @@ pk_verify_host(krb5_context context,
 					   &r,
 					   NULL);
 	    if (ret) {
-		krb5_clear_error_string(context);
+		krb5_set_error_string(context, "Failed to decode the PK-INIT "
+				      "subjectAltName in the KDC certificate");
+
 		break;
 	    }
 
@@ -856,7 +868,7 @@ pk_verify_host(krb5_context context,
 	    {
 		krb5_set_error_string(context, "KDC have wrong realm name in "
 				      "the certificate");
-		ret = EINVAL;
+		ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
 	    }
 
 	    free_KRB5PrincipalName(&r);
@@ -875,7 +887,8 @@ pk_verify_host(krb5_context context,
 				    hi->ai->ai_addr, hi->ai->ai_addrlen);
 
 	if (ret)
-	    krb5_set_error_string(context, "Address mismatch in the KDC certificate");
+	    krb5_set_error_string(context, "Address mismatch in "
+				  "the KDC certificate");
     }
     return ret;
 }
@@ -901,7 +914,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     krb5_data content;
     heim_oid contentType = { 0, NULL };
 
-    if (heim_oid_cmp(oid_id_pkcs7_envelopedData(), &rep->contentType)) {
+    if (der_heim_oid_cmp(oid_id_pkcs7_envelopedData(), &rep->contentType)) {
 	krb5_set_error_string(context, "PKINIT: Invalid content type");
 	return EINVAL;
     }
@@ -913,8 +926,10 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
     ret = hx509_cms_unenvelope(ctx->id->hx509ctx,
 			       ctx->id->certs,
+			       HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT,
 			       rep->content->data,
 			       rep->content->length,
+			       NULL,
 			       &contentType,
 			       &content);
     if (ret)
@@ -935,7 +950,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	    goto out;
 	}
 
-	if (heim_oid_cmp(&ci.contentType, oid_id_pkcs7_signedData())) {
+	if (der_heim_oid_cmp(&ci.contentType, oid_id_pkcs7_signedData())) {
 	    ret = EINVAL; /* XXX */
 	    krb5_set_error_string(context, "PKINIT: Invalid content type");
 	    goto out;
@@ -964,19 +979,18 @@ pk_rd_pa_reply_enckey(krb5_context context,
     /* make sure that it is the kdc's certificate */
     ret = pk_verify_host(context, realm, hi, ctx, host);
     if (ret) {
-	krb5_set_error_string(context, "PKINIT: failed verify host: %d", ret);
 	goto out;
     }
 
 #if 0
     if (type == COMPAT_WIN2K) {
-	if (heim_oid_cmp(&contentType, oid_id_pkcs7_data()) != 0) {
+	if (der_heim_oid_cmp(&contentType, oid_id_pkcs7_data()) != 0) {
 	    krb5_set_error_string(context, "PKINIT: reply key, wrong oid");
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
 	}
     } else {
-	if (heim_oid_cmp(&contentType, oid_id_pkrkeydata()) != 0) {
+	if (der_heim_oid_cmp(&contentType, oid_id_pkrkeydata()) != 0) {
 	    krb5_set_error_string(context, "PKINIT: reply key, wrong oid");
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
@@ -1002,7 +1016,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
  out:
     if (host)
 	_krb5_pk_cert_free(host);
-    free_oid(&contentType);
+    der_free_oid(&contentType);
     krb5_data_free(&content);
 
     return ret;
@@ -1034,7 +1048,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     krb5_data_zero(&content);
     memset(&kdc_dh_info, 0, sizeof(kdc_dh_info));
 
-    if (heim_oid_cmp(oid_id_pkcs7_signedData(), &rep->contentType)) {
+    if (der_heim_oid_cmp(oid_id_pkcs7_signedData(), &rep->contentType)) {
 	krb5_set_error_string(context, "PKINIT: Invalid content type");
 	return EINVAL;
     }
@@ -1059,7 +1073,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     if (ret)
 	goto out;
 
-    if (heim_oid_cmp(&contentType, oid_id_pkdhkeydata())) {
+    if (der_heim_oid_cmp(&contentType, oid_id_pkdhkeydata())) {
 	krb5_set_error_string(context, "pkinit - dh reply contains wrong oid");
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	goto out;
@@ -1324,20 +1338,28 @@ hx_pass_prompter(void *data, const hx509_prompt *prompter)
    
     password_data.data   = prompter->reply.data;
     password_data.length = prompter->reply.length;
-    prompt.prompt = "Enter your private key passphrase: ";
-    prompt.hidden = 1;
+
+    prompt.prompt = prompter->prompt;
+    prompt.hidden = hx509_prompt_hidden(prompter->type);
     prompt.reply  = &password_data;
-    if (prompter->hidden)
+
+    switch (prompter->type) {
+    case HX509_PROMPT_TYPE_INFO:
+	prompt.type   = KRB5_PROMPT_TYPE_INFO;
+	break;
+    case HX509_PROMPT_TYPE_PASSWORD:
+    case HX509_PROMPT_TYPE_QUESTION:
+    default:
 	prompt.type   = KRB5_PROMPT_TYPE_PASSWORD;
-    else
-	prompt.type   = KRB5_PROMPT_TYPE_PREAUTH; /* XXX */
+	break;
+    }	
    
     ret = (*p->prompter)(p->context, p->prompter_data, NULL, NULL, 1, &prompt);
     if (ret) {
 	memset (prompter->reply.data, 0, prompter->reply.length);
-	return 0;
+	return 1;
     }
-    return strlen(prompter->reply.data);
+    return 0;
 }
 
 
@@ -1354,8 +1376,8 @@ _krb5_pk_load_id(krb5_context context,
 		 struct krb5_pk_identity **ret_id,
 		 const char *user_id,
 		 const char *anchor_id,
-		 char * const *chain,
-		 char * const *revoke,
+		 char * const *chain_list,
+		 char * const *revoke_list,
 		 krb5_prompter_fct prompter,
 		 void *prompter_data,
 		 char *password)
@@ -1392,7 +1414,7 @@ _krb5_pk_load_id(krb5_context context,
 	goto out;
 
     ret = hx509_lock_init(id->hx509ctx, &lock);
-    if (password)
+    if (password && password[0])
 	hx509_lock_add_password(lock, password);
 
     if (prompter) {
@@ -1405,7 +1427,7 @@ _krb5_pk_load_id(krb5_context context,
 	    goto out;
     }
 
-    ret = hx509_certs_init(id->hx509ctx, user_id, 0, NULL, &id->certs);
+    ret = hx509_certs_init(id->hx509ctx, user_id, 0, lock, &id->certs);
     if (ret)
 	goto out;
 
@@ -1418,33 +1440,36 @@ _krb5_pk_load_id(krb5_context context,
     if (ret)
 	goto out;
 
-    while (chain && *chain) {
-	ret = hx509_certs_append(id->hx509ctx, id->certpool, NULL, *chain);
+    while (chain_list && *chain_list) {
+	ret = hx509_certs_append(id->hx509ctx, id->certpool,
+				 NULL, *chain_list);
 	if (ret) {
 	    krb5_set_error_string(context,
 				  "pkinit failed to load chain %s",
-				  *chain);
+				  *chain_list);
 	    goto out;
 	}
-	chain++;
+	chain_list++;
     }
 
-    if (revoke) {
-	ret = hx509_revoke_init(id->hx509ctx, &id->revoke);
+    if (revoke_list) {
+	ret = hx509_revoke_init(id->hx509ctx, &id->revokectx);
 	if (ret) {
 	    krb5_set_error_string(context, "revoke failed to init");
 	    goto out;
 	}
 
-	while (*revoke) {
-	    ret = hx509_revoke_add_crl(id->hx509ctx, id->revoke, *revoke);
+	while (*revoke_list) {
+	    ret = hx509_revoke_add_crl(id->hx509ctx, 
+				       id->revokectx,
+				       *revoke_list);
 	    if (ret) {
 		krb5_set_error_string(context,
 				      "pkinit failed to load revoke %s",
-				      *revoke);
+				      *revoke_list);
 		goto out;
 	    }
-	    revoke++;
+	    revoke_list++;
 	}
     } else
 	hx509_context_set_missing_revoke(id->hx509ctx, 1);
@@ -1454,7 +1479,7 @@ _krb5_pk_load_id(krb5_context context,
 	goto out;
 
     hx509_verify_attach_anchors(id->verify_ctx, id->anchors);
-    hx509_verify_attach_revoke(id->verify_ctx, id->revoke);
+    hx509_verify_attach_revoke(id->verify_ctx, id->revokectx);
 
 out:
     if (ret) {
@@ -1462,7 +1487,7 @@ out:
 	hx509_certs_free(&id->certs);
 	hx509_certs_free(&id->anchors);
 	hx509_certs_free(&id->certpool);
-	hx509_revoke_free(&id->revoke);
+	hx509_revoke_free(&id->revokectx);
 	hx509_context_free(&id->hx509ctx);
 	free(id);
     } else
@@ -1588,9 +1613,9 @@ _krb5_parse_moduli_line(krb5_context context,
     return 0;
 out:
     free(m1->name);
-    free_heim_integer(&m1->p);
-    free_heim_integer(&m1->g);
-    free_heim_integer(&m1->q);
+    der_free_heim_integer(&m1->p);
+    der_free_heim_integer(&m1->g);
+    der_free_heim_integer(&m1->q);
     free(m1);
     return ret;
 }
@@ -1601,9 +1626,9 @@ _krb5_free_moduli(struct krb5_dh_moduli **moduli)
     int i;
     for (i = 0; moduli[i] != NULL; i++) {
 	free(moduli[i]->name);
-	free_heim_integer(&moduli[i]->p);
-	free_heim_integer(&moduli[i]->g);
-	free_heim_integer(&moduli[i]->q);
+	der_free_heim_integer(&moduli[i]->p);
+	der_free_heim_integer(&moduli[i]->g);
+	der_free_heim_integer(&moduli[i]->q);
 	free(moduli[i]);
     }
     free(moduli);
@@ -1712,9 +1737,9 @@ _krb5_dh_group_ok(krb5_context context, unsigned long bits,
 	*name = NULL;
 
     for (i = 0; moduli[i] != NULL; i++) {
-	if (heim_integer_cmp(&moduli[i]->g, g) == 0 &&
-	    heim_integer_cmp(&moduli[i]->p, p) == 0 &&
-	    (q == NULL || heim_integer_cmp(&moduli[i]->q, q) == 0))
+	if (der_heim_integer_cmp(&moduli[i]->g, g) == 0 &&
+	    der_heim_integer_cmp(&moduli[i]->p, p) == 0 &&
+	    (q == NULL || der_heim_integer_cmp(&moduli[i]->q, q) == 0))
 	{
 	    if (bits && bits > moduli[i]->bits) {
 		krb5_set_error_string(context, "PKINIT: DH group parameter %s "
@@ -1769,8 +1794,8 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   krb5_principal principal,
 				   const char *user_id,
 				   const char *x509_anchors,
-				   char * const * chain,
-				   char * const * revoke,
+				   char * const * pool,
+				   char * const * pki_revoke,
 				   int flags,
 				   krb5_prompter_fct prompter,
 				   void *prompter_data,
@@ -1778,6 +1803,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 {
 #ifdef PKINIT
     krb5_error_code ret;
+    char *anchors = NULL;
 
     if (opt->opt_private == NULL) {
 	krb5_set_error_string(context, "PKINIT: on non extendable opt");
@@ -1797,12 +1823,33 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     opt->opt_private->pk_init_ctx->require_eku = 1;
     opt->opt_private->pk_init_ctx->require_krbtgt_otherName = 1;
 
+
+    /* XXX implement krb5_appdefault_strings  */
+    if (pool == NULL)
+	pool = krb5_config_get_strings(context, NULL,
+				       "appdefaults", 
+				       "pkinit-pool", 
+				       NULL);
+
+    if (pki_revoke == NULL)
+	pki_revoke = krb5_config_get_strings(context, NULL,
+					     "appdefaults", 
+					     "pkinit-revoke", 
+					     NULL);
+
+    if (x509_anchors == NULL) {
+	krb5_appdefault_string(context, "kinit",
+			       krb5_principal_get_realm(context, principal), 
+			       "pkinit-anchors", NULL, &anchors);
+	x509_anchors = anchors;
+    }
+
     ret = _krb5_pk_load_id(context,
 			   &opt->opt_private->pk_init_ctx->id,
 			   user_id,
 			   x509_anchors,
-			   chain,
-			   revoke,
+			   pool,
+			   pki_revoke,
 			   prompter,
 			   prompter_data,
 			   password);

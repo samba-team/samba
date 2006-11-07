@@ -20,9 +20,11 @@ heimdal_basics: \
        heimdal/lib/roken/vis.h \
        heimdal/lib/roken/err.h \
        heimdal/lib/hdb/hdb_asn1.h \
-       heimdal/lib/gssapi/spnego_asn1.h \
+       heimdal/lib/gssapi/spnego/spnego_asn1.h \
+       heimdal/lib/gssapi/mech/gssapi_asn1.h \
        heimdal/lib/asn1/krb5_asn1.h \
        heimdal/lib/asn1/asn1_err.h \
+       heimdal/lib/asn1/digest_asn1.h \
        heimdal/lib/hdb/hdb_err.h \
        heimdal/lib/krb5/heim_err.h \
        heimdal/lib/krb5/k524_err.h \

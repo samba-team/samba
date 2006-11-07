@@ -25,18 +25,11 @@
 #include "includes.h"
 #include "smbd/process_model.h"
 
-/* For sepecifiying event context to GSSAPI below */
-#include "system/kerberos.h"
-#include "heimdal/lib/gssapi/gssapi_locl.h"
-
-
 /*
   called when the process model is selected
 */
 static void single_model_init(struct event_context *ev)
 {
-	/* Hack to ensure that GSSAPI uses the right event context */
-	gssapi_krb5_init_ev(ev);
 }
 
 /*

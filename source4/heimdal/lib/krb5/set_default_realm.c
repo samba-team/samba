@@ -77,19 +77,8 @@ krb5_set_default_realm(krb5_context context,
 					  "libdefaults",
 					  "default_realm",
 					  NULL);
-	if (realms == NULL) {
-	    char hostname[MAXHOSTNAMELEN];
-	    if (gethostname (hostname, sizeof(hostname))) {
-	    	return errno;
-	    }
-
-	    if (strchr(hostname, '.') == NULL) {
-		/* There is no way we can get this mapping, as we can't do DNS */
-	    	return KRB5_CONFIG_NODEFREALM;
-	    }
-	    ret = krb5_get_host_realm(context, hostname,
-				      &realms);
-	}
+	if (realms == NULL)
+	    ret = krb5_get_host_realm(context, NULL, &realms);
     } else {
 	ret = string_to_list (context, realm, &realms);
     }

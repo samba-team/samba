@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "heimdal/lib/krb5/krb5_locl.h"
 #include "auth/kerberos/kerberos.h"
 #include "lib/socket/socket.h"
 #include "system/network.h"
@@ -69,7 +70,7 @@ static void smb_krb5_debug_close(void *private) {
 
 static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *private) 
 {
-	DEBUG(3, ("Kerberos: %s\n", msg));
+	DEBUG(2, ("Kerberos: %s\n", msg));
 }
 
 /*
@@ -224,11 +225,11 @@ static void smb_krb5_socket_handler(struct event_context *ev, struct fd_event *f
 }
 
 
-static krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
-						   void *data,
-						   krb5_krbhst_info *hi,
-						   const krb5_data *send_buf,
-						   krb5_data *recv_buf)
+krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
+					    void *data,
+					    krb5_krbhst_info *hi,
+					    const krb5_data *send_buf,
+					    krb5_data *recv_buf)
 {
 	krb5_error_code ret;
 	NTSTATUS status;
@@ -363,13 +364,6 @@ static krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 	return KRB5_KDC_UNREACH;
 }
 
-/* NO internal data, so nothing to free */
-static void smb_krb5_send_and_recv_close_func(krb5_context context, void *data) 
-{
-	return;
-}
-
-
 krb5_error_code smb_krb5_init_context(void *parent_ctx, 
 				       struct smb_krb5_context **smb_krb5_context) 
 {
@@ -437,9 +431,9 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 
 	ev = event_context_find(*smb_krb5_context);
 	/* Set use of our socket lib */
-	ret = krb5_set_send_recv_func((*smb_krb5_context)->krb5_context, 
-				      smb_krb5_send_and_recv_func, 
-				      smb_krb5_send_and_recv_close_func, ev);
+	ret = krb5_set_send_to_kdc_func((*smb_krb5_context)->krb5_context, 
+					smb_krb5_send_and_recv_func, 
+					ev);
 	if (ret) {
 		DEBUG(1,("krb5_set_send_recv_func failed (%s)\n", 
 			 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
@@ -454,12 +448,8 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 
 	/* Set options in kerberos */
 
-	(*smb_krb5_context)->krb5_context->fdns = FALSE;
+	krb5_set_dns_canonicalize_hostname((*smb_krb5_context)->krb5_context, FALSE);
 
 	return 0;
 }
 
- void smb_krb5_free_context(struct smb_krb5_context *smb_krb5_context) 
-{
-	talloc_free(smb_krb5_context);
-}

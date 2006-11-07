@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <resolve.h>
 
-RCSID("$Id: get_host_realm.c,v 1.35 2005/08/23 08:14:02 lha Exp $");
+RCSID("$Id: get_host_realm.c,v 1.37 2006/10/17 19:28:36 lha Exp $");
 
 /* To automagically find the correct realm of a host (without
  * [domain_realm] in krb5.conf) add a text record for your domain with
@@ -187,18 +187,15 @@ _krb5_get_host_realm_int (krb5_context context,
 		return 0;
 	}
     }
-
-    *realms = malloc(2 * sizeof(krb5_realm));
-    if (*realms == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    return ENOMEM;
-    }
-    
-    (*realms)[1] = NULL;
-
     p = strchr(host, '.');
     if(p != NULL) {
 	p++;
+	*realms = malloc(2 * sizeof(krb5_realm));
+	if (*realms == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    return ENOMEM;
+	}
+
 	(*realms)[0] = strdup(p);
 	if((*realms)[0] == NULL) {
 	    free(*realms);
@@ -206,46 +203,55 @@ _krb5_get_host_realm_int (krb5_context context,
 	    return ENOMEM;
 	}
 	strupr((*realms)[0]);
-    } else {
-	krb5_error_code ret;
-	ret = krb5_get_default_realm(context, &(*realms)[0]);
-	if(ret) {
-	    free(*realms);
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    return ENOMEM;
-	}
-	if((*realms)[0] == NULL) {
-	    free(*realms);
-	    krb5_set_error_string(context, "unable to find realm of host %s", host);
-	    return KRB5_ERR_HOST_REALM_UNKNOWN;
-	}
+	(*realms)[1] = NULL;
+	return 0;
     }
-    return 0;
+    krb5_set_error_string(context, "unable to find realm of host %s", host);
+    return KRB5_ERR_HOST_REALM_UNKNOWN;
 }
 
 /*
- * Return the realm(s) of `host' as a NULL-terminated list in `realms'.
+ * Return the realm(s) of `host' as a NULL-terminated list in
+ * `realms'. Free `realms' with krb5_free_host_realm().
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_host_realm(krb5_context context,
-		    const char *host,
+		    const char *targethost,
 		    krb5_realm **realms)
 {
+    const char *host = targethost;
     char hostname[MAXHOSTNAMELEN];
-    krb5_boolean use_dns;
+    krb5_error_code ret;
+    int use_dns;
 
     if (host == NULL) {
-	if (gethostname (hostname, sizeof(hostname)))
+	if (gethostname (hostname, sizeof(hostname))) {
+	    *realms = NULL;
 	    return errno;
+	}
 	host = hostname;
     }
 
-    if (strchr(host, '.') == NULL) {
-	    use_dns = FALSE;
-    } else {
-	    use_dns = TRUE;
-    }
+    /* 
+     * If our local hostname is without components, don't even try to dns.
+     */
 
-    return _krb5_get_host_realm_int (context, host, use_dns, realms);
+    use_dns = (strchr(host, '.') != NULL);
+
+    ret = _krb5_get_host_realm_int (context, host, use_dns, realms);
+    if (ret && targethost != NULL) {
+	/*
+	 * If there was no realm mapping for the host (and we wasn't
+	 * looking for ourself), guess at the local realm, maybe our
+	 * KDC knows better then we do and we get a referral back.
+	 */
+	ret = krb5_get_default_realms(context, realms);
+	if (ret) {
+	    krb5_set_error_string(context, "Unable to find realm of host %s",
+				  host);
+	    return KRB5_ERR_HOST_REALM_UNKNOWN;
+	}
+    }
+    return ret;
 }

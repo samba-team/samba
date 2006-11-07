@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: der_locl.h,v 1.6 2005/07/12 06:27:22 lha Exp $ */
+/* $Id: der_locl.h,v 1.8 2006/10/19 16:24:02 lha Exp $ */
 
 #ifndef __DER_LOCL_H__
 #define __DER_LOCL_H__
@@ -53,10 +53,7 @@
 #include <asn1_err.h>
 #include <der.h>
 
-#ifndef HAVE_TIMEGM
-time_t timegm (struct tm *);
-#endif
-
+time_t _der_timegm (struct tm *);
 size_t _heim_len_unsigned (unsigned);
 size_t _heim_len_int (int);
 

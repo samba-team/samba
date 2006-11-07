@@ -17,14 +17,19 @@
 #include <md4.h>
 #include <md5.h>
 
+typedef int (*evp_md_init)(EVP_MD_CTX *);
+typedef int (*evp_md_update)(EVP_MD_CTX *,const void *, size_t);
+typedef int (*evp_md_final)(void *, EVP_MD_CTX *);
+typedef int (*evp_md_cleanup)(EVP_MD_CTX *);
+
 struct hc_evp_md {
     int hash_size;
     int block_size;
     int ctx_size;
-    int (*init)(EVP_MD_CTX *);
-    int (*update)(EVP_MD_CTX *,const void *, size_t );
-    int (*final)(void *, EVP_MD_CTX *);
-    int (*cleanup)(EVP_MD_CTX *);
+    evp_md_init init;
+    evp_md_update update;
+    evp_md_final final;
+    evp_md_cleanup cleanup;
 };
 
 /*
@@ -151,19 +156,18 @@ EVP_Digest(const void *data, size_t dsize, void *hash, unsigned int *hsize,
  *
  */
 
-static const struct hc_evp_md sha256 = {
-    32,
-    64,
-    sizeof(SHA256_CTX),
-    (void *)SHA256_Init,
-    (void *)SHA256_Update,
-    (void *)SHA256_Final,
-    NULL
-};
-
 const EVP_MD *
 EVP_sha256(void)
 {
+    static const struct hc_evp_md sha256 = {
+	32,
+	64,
+	sizeof(SHA256_CTX),
+	(evp_md_init)SHA256_Init,
+	(evp_md_update)SHA256_Update,
+	(evp_md_final)SHA256_Final,
+	NULL
+    };
     return &sha256;
 }
 
@@ -171,9 +175,9 @@ static const struct hc_evp_md sha1 = {
     20,
     64,
     sizeof(SHA_CTX),
-    (void *)SHA1_Init,
-    (void *)SHA1_Update,
-    (void *)SHA1_Final,
+    (evp_md_init)SHA1_Init,
+    (evp_md_update)SHA1_Update,
+    (evp_md_final)SHA1_Final,
     NULL
 };
 
@@ -196,9 +200,9 @@ EVP_md5(void)
 	16,
 	64,
 	sizeof(MD5_CTX),
-	(void *)MD5_Init,
-	(void *)MD5_Update,
-	(void *)MD5_Final,
+	(evp_md_init)MD5_Init,
+	(evp_md_update)MD5_Update,
+	(evp_md_final)MD5_Final,
 	NULL
     };
     return &md5;
@@ -211,9 +215,9 @@ EVP_md4(void)
 	16,
 	64,
 	sizeof(MD4_CTX),
-	(void *)MD4_Init,
-	(void *)MD4_Update,
-	(void *)MD4_Final,
+	(evp_md_init)MD4_Init,
+	(evp_md_update)MD4_Update,
+	(evp_md_final)MD4_Final,
 	NULL
     };
     return &md4;
@@ -226,9 +230,9 @@ EVP_md2(void)
 	16,
 	16,
 	sizeof(MD2_CTX),
-	(void *)MD2_Init,
-	(void *)MD2_Update,
-	(void *)MD2_Final,
+	(evp_md_init)MD2_Init,
+	(evp_md_update)MD2_Update,
+	(evp_md_final)MD2_Final,
 	NULL
     };
     return &md2;
@@ -258,9 +262,9 @@ EVP_md_null(void)
 	0,
 	0,
 	0,
-	(void *)null_Init,
-	(void *)null_Update,
-	(void *)null_Final,
+	(evp_md_init)null_Init,
+	(evp_md_update)null_Update,
+	(evp_md_final)null_Final,
 	NULL
     };
     return &null;
@@ -878,3 +882,24 @@ EVP_BytesToKey(const EVP_CIPHER *type,
     return EVP_CIPHER_key_length(type);
 }
 
+/*
+ *
+ */
+
+void
+OpenSSL_add_all_algorithms(void)
+{
+    return;
+}
+
+void
+OpenSSL_add_all_algorithms_conf(void)
+{
+    return;
+}
+
+void
+OpenSSL_add_all_algorithms_noconf(void)
+{
+    return;
+}

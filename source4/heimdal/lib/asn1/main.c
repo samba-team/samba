@@ -35,11 +35,12 @@
 #include <getarg.h>
 #include "lex.h"
 
-RCSID("$Id: main.c,v 1.15 2005/08/23 10:50:12 lha Exp $");
+RCSID("$Id: main.c,v 1.16 2006/09/05 12:27:29 lha Exp $");
 
 extern FILE *yyin;
 
 static getarg_strings preserve;
+static getarg_strings seq;
 
 int
 preserve_type(const char *p)
@@ -47,6 +48,16 @@ preserve_type(const char *p)
     int i;
     for (i = 0; i < preserve.num_strings; i++)
 	if (strcmp(preserve.strings[i], p) == 0)
+	    return 1;
+    return 0;
+}
+
+int
+seq_type(const char *p)
+{
+    int i;
+    for (i = 0; i < seq.num_strings; i++)
+	if (strcmp(seq.strings[i], p) == 0)
 	    return 1;
     return 0;
 }
@@ -59,6 +70,7 @@ struct getargs args[] = {
     { "encode-rfc1510-bit-string", 0, arg_flag, &rfc1510_bitstring },
     { "decode-dce-ber", 0, arg_flag, &dce_fix },
     { "preserve-binary", 0, arg_strings, &preserve },
+    { "sequence", 0, arg_strings, &seq },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };

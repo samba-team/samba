@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_length.c,v 1.18 2006/01/20 10:04:46 lha Exp $");
+RCSID("$Id: der_length.c,v 1.19 2006/10/14 05:26:06 lha Exp $");
 
 size_t
 _heim_len_unsigned (unsigned val)
@@ -98,7 +98,7 @@ len_oid (const heim_oid *oid)
 }
 
 size_t
-length_len (size_t len)
+der_length_len (size_t len)
 {
     if (len < 128)
 	return 1;
@@ -113,67 +113,67 @@ length_len (size_t len)
 }
 
 size_t
-length_integer (const int *data)
+der_length_integer (const int *data)
 {
     return _heim_len_int (*data);
 }
 
 size_t
-length_unsigned (const unsigned *data)
+der_length_unsigned (const unsigned *data)
 {
     return _heim_len_unsigned(*data);
 }
 
 size_t
-length_enumerated (const unsigned *data)
+der_length_enumerated (const unsigned *data)
 {
   return _heim_len_int (*data);
 }
 
 size_t
-length_general_string (const heim_general_string *data)
+der_length_general_string (const heim_general_string *data)
 {
     return strlen(*data);
 }
 
 size_t
-length_utf8string (const heim_utf8_string *data)
+der_length_utf8string (const heim_utf8_string *data)
 {
     return strlen(*data);
 }
 
 size_t
-length_printable_string (const heim_printable_string *data)
+der_length_printable_string (const heim_printable_string *data)
 {
     return strlen(*data);
 }
 
 size_t
-length_ia5_string (const heim_ia5_string *data)
+der_length_ia5_string (const heim_ia5_string *data)
 {
     return strlen(*data);
 }
 
 size_t
-length_bmp_string (const heim_bmp_string *data)
+der_length_bmp_string (const heim_bmp_string *data)
 {
     return data->length * 2;
 }
 
 size_t
-length_universal_string (const heim_universal_string *data)
+der_length_universal_string (const heim_universal_string *data)
 {
     return data->length * 4;
 }
 
 size_t
-length_octet_string (const heim_octet_string *k)
+der_length_octet_string (const heim_octet_string *k)
 {
     return k->length;
 }
 
 size_t
-length_heim_integer (const heim_integer *k)
+der_length_heim_integer (const heim_integer *k)
 {
     if (k->length == 0)
 	return 1;
@@ -184,13 +184,13 @@ length_heim_integer (const heim_integer *k)
 }
 
 size_t
-length_oid (const heim_oid *k)
+der_length_oid (const heim_oid *k)
 {
     return len_oid (k);
 }
 
 size_t
-length_generalized_time (const time_t *t)
+der_length_generalized_time (const time_t *t)
 {
     heim_octet_string k;
     size_t ret;
@@ -202,7 +202,7 @@ length_generalized_time (const time_t *t)
 }
 
 size_t
-length_utctime (const time_t *t)
+der_length_utctime (const time_t *t)
 {
     heim_octet_string k;
     size_t ret;
@@ -214,13 +214,13 @@ length_utctime (const time_t *t)
 }
 
 size_t
-length_boolean (const int *k)
+der_length_boolean (const int *k)
 {
     return 1;
 }
 
 size_t
-length_bit_string (const heim_bit_string *k)
+der_length_bit_string (const heim_bit_string *k)
 {
     return (k->length + 7) / 8 + 1;
 }

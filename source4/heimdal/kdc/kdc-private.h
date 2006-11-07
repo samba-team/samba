@@ -5,6 +5,16 @@
 #include <stdarg.h>
 
 krb5_error_code
+_kdc_add_KRB5SignedPath (
+	krb5_context /*context*/,
+	krb5_kdc_configuration */*config*/,
+	hdb_entry_ex */*krbtgt*/,
+	krb5_enctype /*enctype*/,
+	krb5_const_principal /*server*/,
+	KRB5SignedPathPrincipals */*principals*/,
+	EncTicketPart */*tkt*/);
+
+krb5_error_code
 _kdc_as_rep (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
@@ -12,7 +22,15 @@ _kdc_as_rep (
 	const krb5_data */*req_buffer*/,
 	krb5_data */*reply*/,
 	const char */*from*/,
-	struct sockaddr */*from_addr*/);
+	struct sockaddr */*from_addr*/,
+	int /*datagram_reply*/);
+
+krb5_boolean
+_kdc_check_addresses (
+	krb5_context /*context*/,
+	krb5_kdc_configuration */*config*/,
+	HostAddresses */*addresses*/,
+	const struct sockaddr */*from*/);
 
 krb5_error_code
 _kdc_check_flags (
@@ -30,6 +48,7 @@ _kdc_db_fetch (
 	krb5_kdc_configuration */*config*/,
 	krb5_const_principal /*principal*/,
 	unsigned /*flags*/,
+	HDB **/*db*/,
 	hdb_entry_ex **/*h*/);
 
 krb5_error_code
@@ -47,6 +66,15 @@ _kdc_do_524 (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
 	const Ticket */*t*/,
+	krb5_data */*reply*/,
+	const char */*from*/,
+	struct sockaddr */*addr*/);
+
+krb5_error_code
+_kdc_do_digest (
+	krb5_context /*context*/,
+	krb5_kdc_configuration */*config*/,
+	const DigestREQ */*req*/,
 	krb5_data */*reply*/,
 	const char */*from*/,
 	struct sockaddr */*addr*/);
@@ -72,6 +100,21 @@ _kdc_do_version4 (
 	struct sockaddr_in */*addr*/);
 
 krb5_error_code
+_kdc_encode_reply (
+	krb5_context /*context*/,
+	krb5_kdc_configuration */*config*/,
+	KDC_REP */*rep*/,
+	const EncTicketPart */*et*/,
+	EncKDCRepPart */*ek*/,
+	krb5_enctype /*etype*/,
+	int /*skvno*/,
+	const EncryptionKey */*skey*/,
+	int /*ckvno*/,
+	const EncryptionKey */*ckey*/,
+	const char **/*e_text*/,
+	krb5_data */*reply*/);
+
+krb5_error_code
 _kdc_encode_v4_ticket (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
@@ -80,6 +123,24 @@ _kdc_encode_v4_ticket (
 	const EncTicketPart */*et*/,
 	const PrincipalName */*service*/,
 	size_t */*size*/);
+
+krb5_error_code
+_kdc_find_etype (
+	krb5_context /*context*/,
+	const hdb_entry_ex */*princ*/,
+	krb5_enctype */*etypes*/,
+	unsigned /*len*/,
+	Key **/*ret_key*/,
+	krb5_enctype */*ret_etype*/);
+
+PA_DATA*
+_kdc_find_padata (
+	KDC_REQ */*req*/,
+	int */*start*/,
+	int /*type*/);
+
+void
+_kdc_fix_time (time_t **/*t*/);
 
 void
 _kdc_free_ent (
@@ -93,6 +154,28 @@ _kdc_get_des_key (
 	krb5_boolean /*is_server*/,
 	krb5_boolean /*prefer_afs_key*/,
 	Key **/*ret_key*/);
+
+krb5_error_code
+_kdc_get_preferred_key (
+	krb5_context /*context*/,
+	krb5_kdc_configuration */*config*/,
+	hdb_entry_ex */*h*/,
+	const char */*name*/,
+	krb5_enctype */*enctype*/,
+	Key **/*key*/);
+
+void
+_kdc_log_timestamp (
+	krb5_context /*context*/,
+	krb5_kdc_configuration */*config*/,
+	const char */*type*/,
+	KerberosTime /*authtime*/,
+	KerberosTime */*starttime*/,
+	KerberosTime /*endtime*/,
+	KerberosTime */*renew_till*/);
+
+krb5_error_code
+_kdc_make_anonymous_principalname (PrincipalName */*pn*/);
 
 int
 _kdc_maybe_version4 (
@@ -120,7 +203,7 @@ _kdc_pk_initialize (
 	const char */*user_id*/,
 	const char */*anchors*/,
 	char **/*pool*/,
-	char **/*revoke*/);
+	char **/*revoke_list*/);
 
 krb5_error_code
 _kdc_pk_mk_pa_reply (

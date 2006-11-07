@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds.c,v 1.23 2006/04/02 01:08:30 lha Exp $");
+RCSID("$Id: init_creds.c,v 1.28 2006/09/04 14:28:54 lha Exp $");
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
@@ -97,6 +97,39 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
 }
 
 void KRB5_LIB_FUNCTION
+_krb5_get_init_creds_opt_free_krb5_error(krb5_get_init_creds_opt *opt)
+{
+    if (opt->opt_private == NULL || opt->opt_private->error == NULL)
+	return;
+    free_KRB_ERROR(opt->opt_private->error);
+    free(opt->opt_private->error);
+    opt->opt_private->error = NULL;
+}
+
+void KRB5_LIB_FUNCTION
+_krb5_get_init_creds_opt_set_krb5_error(krb5_context context,
+					krb5_get_init_creds_opt *opt, 
+					const KRB_ERROR *error)
+{
+    krb5_error_code ret;
+
+    if (opt->opt_private == NULL)
+	return;
+
+    _krb5_get_init_creds_opt_free_krb5_error(opt);
+
+    opt->opt_private->error = malloc(sizeof(*opt->opt_private->error));
+    if (opt->opt_private->error == NULL)
+	return;
+    ret = copy_KRB_ERROR(error, opt->opt_private->error);
+    if (ret) {
+	free(opt->opt_private->error);
+	opt->opt_private->error = NULL;
+    }	
+}
+
+
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
 {
     if (opt->opt_private == NULL)
@@ -104,6 +137,7 @@ krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
     if (opt->opt_private->refcount < 1) /* abort ? */
 	return;
     if (--opt->opt_private->refcount == 0) {
+	_krb5_get_init_creds_opt_free_krb5_error(opt);
 	_krb5_get_init_creds_opt_free_pkinit(opt);
 	free(opt->opt_private);
     }
@@ -160,8 +194,6 @@ get_config_bool (krb5_context context,
  * [realms] or [libdefaults] for some of the values.
  */
 
-static krb5_addresses no_addrs = {0, NULL};
-
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_default_flags(krb5_context context,
 					  const char *appname,
@@ -192,9 +224,9 @@ krb5_get_init_creds_opt_set_default_flags(krb5_context context,
 	krb5_get_init_creds_opt_set_renew_life(opt, t);
 
     krb5_appdefault_boolean(context, appname, realm, "no-addresses", 
-			    KRB5_ADDRESSLESS_DEFAULT, &b);
+			    FALSE, &b);
     if (b)
-	krb5_get_init_creds_opt_set_address_list (opt, &no_addrs);
+	krb5_get_init_creds_opt_set_addressless (context, opt, TRUE);
 
 #if 0
     krb5_appdefault_boolean(context, appname, realm, "anonymous", FALSE, &b);
@@ -326,7 +358,52 @@ krb5_get_init_creds_opt_set_pac_request(krb5_context context,
     if (ret)
 	return ret;
     opt->opt_private->req_pac = req_pac ?
-	KRB5_PA_PAC_REQ_TRUE :
-	KRB5_PA_PAC_REQ_FALSE;
+	KRB5_INIT_CREDS_TRISTATE_TRUE :
+	KRB5_INIT_CREDS_TRISTATE_FALSE;
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_get_error(krb5_context context,
+				  krb5_get_init_creds_opt *opt,
+				  KRB_ERROR **error)
+{
+    krb5_error_code ret;
+
+    *error = NULL;
+
+    ret = require_ext_opt(context, opt, "init_creds_opt_get_error");
+    if (ret)
+	return ret;
+
+    if (opt->opt_private->error == NULL)
+	return 0;
+
+    *error = malloc(sizeof(**error));
+    if (*error == NULL) {
+	krb5_set_error_string(context, "malloc - out memory");
+	return ENOMEM;
+    }
+
+    ret = copy_KRB_ERROR(*error, opt->opt_private->error);
+    if (ret)
+	krb5_clear_error_string(context);
+
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_set_addressless(krb5_context context,
+					krb5_get_init_creds_opt *opt,
+					krb5_boolean addressless)
+{
+    krb5_error_code ret;
+    ret = require_ext_opt(context, opt, "init_creds_opt_set_pac_req");
+    if (ret)
+	return ret;
+    if (addressless)
+	opt->opt_private->addressless = KRB5_INIT_CREDS_TRISTATE_TRUE;
+    else
+	opt->opt_private->addressless = KRB5_INIT_CREDS_TRISTATE_FALSE;
     return 0;
 }

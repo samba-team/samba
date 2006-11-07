@@ -1,4 +1,4 @@
-/* $Id: asn1-common.h,v 1.5 2005/07/12 06:27:14 lha Exp $ */
+/* $Id: asn1-common.h,v 1.6 2006/10/14 05:09:47 lha Exp $ */
 
 #include <stddef.h>
 #include <time.h>
@@ -42,6 +42,9 @@ typedef struct heim_bit_string {
     size_t length;
     void *data;
 } heim_bit_string;
+
+typedef struct heim_octet_string heim_any;
+typedef struct heim_octet_string heim_any_set;
 
 #define ASN1_MALLOC_ENCODE(T, B, BL, S, L, R)                  \
   do {                                                         \

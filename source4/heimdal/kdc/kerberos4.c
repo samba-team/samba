@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,7 +35,7 @@
 
 #include <krb5-v4compat.h>
 
-RCSID("$Id: kerberos4.c,v 1.60 2006/05/05 10:50:44 lha Exp $");
+RCSID("$Id: kerberos4.c,v 1.63 2006/10/08 13:43:27 lha Exp $");
 
 #ifndef swap32
 static uint32_t
@@ -80,7 +80,7 @@ valid_princ(krb5_context context,
     ret = krb5_unparse_name(context, princ, &s);
     if (ret)
 	return FALSE;
-    ret = _kdc_db_fetch(context, ctx->config, princ, ctx->flags, &ent);
+    ret = _kdc_db_fetch(context, ctx->config, princ, ctx->flags, NULL, &ent);
     if (ret) {
 	kdc_log(context, ctx->config, 7, "Lookup %s failed: %s", s,
 		krb5_get_err_text (context, ret));
@@ -111,7 +111,7 @@ _kdc_db_fetch4(krb5_context context,
 				       valid_princ, &ctx, 0, &p);
     if(ret)
 	return ret;
-    ret = _kdc_db_fetch(context, config, p, flags, ent);
+    ret = _kdc_db_fetch(context, config, p, flags, NULL, ent);
     krb5_free_principal(context, p);
     return ret;
 }
@@ -218,6 +218,17 @@ _kdc_do_version4(krb5_context context,
 	    /* good error code? */
 	    make_err_reply(context, reply, KERB_ERR_NAME_EXP,
 			   "operation not allowed");
+	    goto out1;
+	}
+
+	if (config->enable_v4_per_principal &&
+	    client->entry.flags.allow_kerberos4 == 0)
+	{
+	    kdc_log(context, config, 0,
+		    "Per principal Kerberos 4 flag not turned on for %s",
+		    client_name);
+	    make_err_reply(context, reply, KERB_ERR_NULL_KEY,
+			   "allow kerberos4 flag required");
 	    goto out1;
 	}
 
@@ -372,7 +383,7 @@ _kdc_do_version4(krb5_context context,
 	}
 
 	ret = _kdc_db_fetch(context, config, tgt_princ,
-			    HDB_F_GET_KRBTGT, &tgt);
+			    HDB_F_GET_KRBTGT, NULL, &tgt);
 	if(ret){
 	    char *s;
 	    s = kdc_log_msg(context, config, 0, "Ticket-granting ticket not "
@@ -668,7 +679,7 @@ _kdc_encode_v4_ticket(krb5_context context,
 	if(ret)
 	    return ret;
 
-	_krb5_principalname2krb5_principal(context, 
+	_krb5_principalname2krb5_principal(context,
 					   &princ,
 					   et->cname,
 					   et->crealm);

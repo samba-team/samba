@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: misc.c,v 1.29 2006/04/27 11:33:21 lha Exp $");
+RCSID("$Id: misc.c,v 1.32 2006/08/28 14:41:49 lha Exp $");
 
 struct timeval _kdc_now;
 
@@ -42,6 +42,7 @@ _kdc_db_fetch(krb5_context context,
 	      krb5_kdc_configuration *config,
 	      krb5_const_principal principal,
 	      unsigned flags,
+	      HDB **db,
 	      hdb_entry_ex **h)
 {
     hdb_entry_ex *ent;
@@ -66,6 +67,8 @@ _kdc_db_fetch(krb5_context context,
 				       ent);
 	config->db[i]->hdb_close(context, config->db[i]);
 	if(ret == 0) {
+	    if (db)
+		*db = config->db[i];
 	    *h = ent;
 	    return 0;
 	}
@@ -79,5 +82,38 @@ _kdc_free_ent(krb5_context context, hdb_entry_ex *ent)
 {
     hdb_free_entry (context, ent);
     free (ent);
+}
+
+/*
+ * Use the order list of preferred encryption types and sort the
+ * available keys and return the most preferred key.
+ */
+
+krb5_error_code
+_kdc_get_preferred_key(krb5_context context,
+		       krb5_kdc_configuration *config,
+		       hdb_entry_ex *h,
+		       const char *name,
+		       krb5_enctype *enctype,
+		       Key **key)
+{
+    const krb5_enctype *p;
+    krb5_error_code ret;
+    int i;
+
+    p = krb5_kerberos_enctypes(context);
+
+    for (i = 0; p[i] != ETYPE_NULL; i++) {
+	if (krb5_enctype_valid(context, p[i]) != 0)
+	    continue;
+	ret = hdb_enctype2key(context, &h->entry, p[i], key);
+	if (ret == 0) {
+	    *enctype = p[i];
+	    return 0;
+	}
+    }
+
+    krb5_set_error_string(context, "No valid kerberos key found for %s", name);
+    return EINVAL;
 }
 
