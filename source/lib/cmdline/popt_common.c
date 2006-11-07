@@ -32,6 +32,7 @@
  *		-l,--log-base
  *		-n,--netbios-name
  *		-W,--workgroup
+ *		-r,--realm
  *		-i,--scope
  */
 
@@ -108,6 +109,10 @@ static void popt_common_callback(poptContext con,
 	case 'W':
 		lp_set_cmdline("workgroup", arg);
 		break;
+
+	case 'r':
+		lp_set_cmdline("realm", arg);
+		break;
 		
 	case 'n':
 		lp_set_cmdline("netbios name", arg);
@@ -149,6 +154,7 @@ struct poptOption popt_common_connection[] = {
 	{ "socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use", "SOCKETOPTIONS" },
 	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
 	{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
+	{ "realm", 'r', POPT_ARG_STRING, NULL, 'r', "Set the realm name", "REALM" },
 	{ "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },
 	{ "maxprotocol", 'm', POPT_ARG_STRING, NULL, 'm', "Set max protocol level", "MAXPROTOCOL" },
 	{ NULL }
