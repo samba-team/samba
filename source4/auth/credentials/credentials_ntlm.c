@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
+#include "auth/credentials/credentials.h"
 
 void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
 					      const char **username, 

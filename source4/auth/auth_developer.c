@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 
 static NTSTATUS name_to_ntstatus_want_check(struct auth_method_context *ctx,
 			      		    TALLOC_CTX *mem_ctx,

@@ -28,7 +28,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
-
+#include "auth/credentials/credentials.h"
 
 struct schannel_key_state {
 	struct dcerpc_pipe *pipe;

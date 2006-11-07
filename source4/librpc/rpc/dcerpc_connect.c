@@ -32,6 +32,7 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 
 
 struct pipe_np_smb_state {

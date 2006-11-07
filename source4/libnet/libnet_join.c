@@ -30,6 +30,7 @@
 #include "db_wrap.h"
 #include "libcli/security/security.h"
 #include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
 /*

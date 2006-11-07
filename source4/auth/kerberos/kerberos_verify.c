@@ -26,8 +26,8 @@
 #include "includes.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-
-#ifdef HAVE_KRB5
+#include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 
 /**********************************************************************************
  Verify an incoming ticket and parse out the principal name and 
@@ -100,5 +100,3 @@
 
 	return NT_STATUS_OK;
 }
-
-#endif /* HAVE_KRB5 */

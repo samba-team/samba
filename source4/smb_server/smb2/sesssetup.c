@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+#include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
 #include "auth/auth.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"

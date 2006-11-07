@@ -29,6 +29,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "auth/auth.h"
+#include "auth/credentials/credentials.h"
 #include "ntvfs/ntvfs.h"
 #include "lib/util/dlinklist.h"
 
