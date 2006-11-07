@@ -24,12 +24,16 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "heimdal/lib/gssapi/gssapi.h"
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "auth/auth.h"
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth_sam.h"
 #include "librpc/rpc/dcerpc.h"
+#include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
+#include "auth/gensec/gensec.h"
 
 enum gensec_gssapi_sasl_state 
 {
@@ -75,7 +79,8 @@ static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_securi
 static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_security);
 
 static char *gssapi_error_string(TALLOC_CTX *mem_ctx, 
-				 OM_uint32 maj_stat, OM_uint32 min_stat)
+				 OM_uint32 maj_stat, OM_uint32 min_stat, 
+				 const gss_OID_desc *mech)
 {
 	OM_uint32 disp_min_stat, disp_maj_stat;
 	gss_buffer_desc maj_error_message;
@@ -88,9 +93,9 @@ static char *gssapi_error_string(TALLOC_CTX *mem_ctx,
 	min_error_message.value = NULL;
 	
 	disp_maj_stat = gss_display_status(&disp_min_stat, maj_stat, GSS_C_GSS_CODE,
-			   GSS_C_NULL_OID, &msg_ctx, &maj_error_message);
+			   mech, &msg_ctx, &maj_error_message);
 	disp_maj_stat = gss_display_status(&disp_min_stat, min_stat, GSS_C_MECH_CODE,
-			   GSS_C_NULL_OID, &msg_ctx, &min_error_message);
+			   mech, &msg_ctx, &min_error_message);
 	ret = talloc_asprintf(mem_ctx, "%s: %s", (char *)maj_error_message.value, (char *)min_error_message.value);
 
 	gss_release_buffer(&disp_min_stat, &maj_error_message);
@@ -304,7 +309,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	if (maj_stat) {
 		DEBUG(2, ("GSS Import name of %s failed: %s\n",
 			  (char *)name_token.value,
-			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -374,7 +379,8 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 				   TALLOC_CTX *out_mem_ctx, 
 				   const DATA_BLOB in, DATA_BLOB *out) 
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	OM_uint32 maj_stat, min_stat;
 	OM_uint32 min_stat2;
@@ -477,23 +483,23 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			switch (min_stat) {
 			case KRB5_KDC_UNREACH:
 				DEBUG(3, ("Cannot reach a KDC we require: %s\n",
-					  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+					  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 			case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
 				DEBUG(3, ("Server is not registered with our KDC: %s\n", 
-					  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+					  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 			case KRB5KRB_AP_ERR_MSG_TYPE:
 				/* garbage input, possibly from the auto-mech detection */
 				return NT_STATUS_INVALID_PARAMETER;
 			default:
 				DEBUG(1, ("GSS(krb5) Update failed: %s\n", 
-					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat)));
+					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return nt_status;
 			}
 		} else {
 			DEBUG(1, ("GSS Update failed: %s\n", 
-				  gssapi_error_string(out_mem_ctx, maj_stat, min_stat)));
+				  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 			return nt_status;
 		}
 		break;
@@ -526,7 +532,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 					      &qop_state);
 			if (GSS_ERROR(maj_stat)) {
 				DEBUG(1, ("gensec_gssapi_update: GSS UnWrap of SASL protection negotiation failed: %s\n", 
-					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat)));
+					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			
@@ -578,7 +584,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 					    &output_token);
 			if (GSS_ERROR(maj_stat)) {
 				DEBUG(1, ("gensec_gssapi_wrap: GSS Wrap failed: %s\n", 
-					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat)));
+					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			
@@ -643,7 +649,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 					    &output_token);
 			if (GSS_ERROR(maj_stat)) {
 				DEBUG(1, ("gensec_gssapi_wrap: GSS Wrap failed: %s\n", 
-					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat)));
+					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			
@@ -676,7 +682,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 				      &qop_state);
 		if (GSS_ERROR(maj_stat)) {
 			DEBUG(1, ("gensec_gssapi_update: GSS UnWrap of SASL protection negotiation failed: %s\n", 
-				  gssapi_error_string(out_mem_ctx, maj_stat, min_stat)));
+				  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 			
@@ -734,7 +740,8 @@ static NTSTATUS gensec_gssapi_wrap(struct gensec_security *gensec_security,
 				   const DATA_BLOB *in, 
 				   DATA_BLOB *out)
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc input_token, output_token;
 	int conf_state;
@@ -750,7 +757,7 @@ static NTSTATUS gensec_gssapi_wrap(struct gensec_security *gensec_security,
 			    &output_token);
 	if (GSS_ERROR(maj_stat)) {
 		DEBUG(1, ("gensec_gssapi_wrap: GSS Wrap failed: %s\n", 
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -780,7 +787,8 @@ static NTSTATUS gensec_gssapi_unwrap(struct gensec_security *gensec_security,
 				     const DATA_BLOB *in, 
 				     DATA_BLOB *out)
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc input_token, output_token;
 	int conf_state;
@@ -804,7 +812,7 @@ static NTSTATUS gensec_gssapi_unwrap(struct gensec_security *gensec_security,
 			      &qop_state);
 	if (GSS_ERROR(maj_stat)) {
 		DEBUG(1, ("gensec_gssapi_unwrap: GSS UnWrap failed: %s\n", 
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -822,7 +830,8 @@ static NTSTATUS gensec_gssapi_unwrap(struct gensec_security *gensec_security,
 
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security) 
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	OM_uint32 maj_stat, min_stat;
 	OM_uint32 max_input_size;
 
@@ -835,7 +844,7 @@ static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_securi
 	if (GSS_ERROR(maj_stat)) {
 		TALLOC_CTX *mem_ctx = talloc_new(NULL); 
 		DEBUG(1, ("gensec_gssapi_max_input_size: determinaing signature size with gss_wrap_size_limit failed: %s\n", 
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		talloc_free(mem_ctx);
 		return 0;
 	}
@@ -846,7 +855,7 @@ static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_securi
 /* Find out the maximum output size negotiated on this connection */
 static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_security) 
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	struct gensec_gssapi_state *gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);;
 	return gensec_gssapi_state->max_wrap_buf_size;
 }
 
@@ -856,7 +865,8 @@ static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_securit
 					  const uint8_t *whole_pdu, size_t pdu_length, 
 					  DATA_BLOB *sig)
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc input_token, output_token;
 	int conf_state;
@@ -874,7 +884,7 @@ static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_securit
 			    &output_token);
 	if (GSS_ERROR(maj_stat)) {
 		DEBUG(1, ("gensec_gssapi_seal_packet: GSS Wrap failed: %s\n", 
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -907,7 +917,8 @@ static NTSTATUS gensec_gssapi_unseal_packet(struct gensec_security *gensec_secur
 					    const uint8_t *whole_pdu, size_t pdu_length,
 					    const DATA_BLOB *sig)
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc input_token, output_token;
 	int conf_state;
@@ -932,7 +943,7 @@ static NTSTATUS gensec_gssapi_unseal_packet(struct gensec_security *gensec_secur
 			      &qop_state);
 	if (GSS_ERROR(maj_stat)) {
 		DEBUG(1, ("gensec_gssapi_unseal_packet: GSS UnWrap failed: %s\n", 
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -957,7 +968,8 @@ static NTSTATUS gensec_gssapi_sign_packet(struct gensec_security *gensec_securit
 					  const uint8_t *whole_pdu, size_t pdu_length, 
 					  DATA_BLOB *sig)
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc input_token, output_token;
 	int conf_state;
@@ -975,7 +987,7 @@ static NTSTATUS gensec_gssapi_sign_packet(struct gensec_security *gensec_securit
 			    &output_token);
 	if (GSS_ERROR(maj_stat)) {
 		DEBUG(1, ("GSS Wrap failed: %s\n", 
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -1003,7 +1015,8 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 					   const uint8_t *whole_pdu, size_t pdu_length, 
 					   const DATA_BLOB *sig)
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc input_token, output_token;
 	int conf_state;
@@ -1028,7 +1041,7 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 			      &qop_state);
 	if (GSS_ERROR(maj_stat)) {
 		DEBUG(1, ("GSS UnWrap failed: %s\n", 
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -1045,7 +1058,8 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security, 
 				       uint32_t feature) 
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	if (feature & GENSEC_FEATURE_SIGN) {
 		/* If we are going GSSAPI SASL, then we honour the second negotiation */
 		if (gensec_gssapi_state->sasl 
@@ -1090,43 +1104,34 @@ static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_security, 
 					  DATA_BLOB *session_key) 
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
-	
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
+	OM_uint32 maj_stat, min_stat;
+	krb5_keyblock *subkey;
+
 	if (gensec_gssapi_state->session_key.data) {
 		*session_key = gensec_gssapi_state->session_key;
 		return NT_STATUS_OK;
 	}
 
-	/* Ensure we only call this for GSSAPI/krb5, otherwise things
-	 * could get very ugly */
-	if ((gensec_gssapi_state->gss_oid->length == gss_mech_krb5->length)
-	    && (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
-		       gensec_gssapi_state->gss_oid->length) == 0)) {
-		OM_uint32 maj_stat, min_stat;
-		gss_buffer_desc skey;
-		
-		maj_stat = gsskrb5_get_initiator_subkey(&min_stat, 
-							gensec_gssapi_state->gssapi_context, 
-							&skey);
-		
-		if (maj_stat == 0) {
-			DEBUG(10, ("Got KRB5 session key of length %d\n",  
-				   (int)skey.length));
-			gensec_gssapi_state->session_key = data_blob_talloc(gensec_gssapi_state, 
-									    skey.value, skey.length);
-			*session_key = gensec_gssapi_state->session_key;
-			dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
-			
-			gss_release_buffer(&min_stat, &skey);
-			return NT_STATUS_OK;
-		}
+	maj_stat = gsskrb5_get_initiator_subkey(&min_stat, 
+						gensec_gssapi_state->gssapi_context,
+						&subkey);
+	if (maj_stat != 0) {
+		DEBUG(1, ("NO session key for this mech\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 	
-	DEBUG(1, ("NO session key for this mech\n"));
-	return NT_STATUS_NO_USER_SESSION_KEY;
-}
+	DEBUG(10, ("Got KRB5 session key of length %d\n",  
+		   (int)KRB5_KEY_LENGTH(subkey)));
+	gensec_gssapi_state->session_key = data_blob_talloc(gensec_gssapi_state, 
+							    KRB5_KEY_DATA(subkey), KRB5_KEY_LENGTH(subkey));
+	krb5_free_keyblock(gensec_gssapi_state->smb_krb5_context->krb5_context, subkey);
+	*session_key = gensec_gssapi_state->session_key;
+	dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
 
+	return NT_STATUS_OK;
+}
 
 /* Get some basic (and authorization) information about the user on
  * this session.  This uses either the PAC (if present) or a local
@@ -1136,7 +1141,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 {
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx;
-	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
 	struct PAC_LOGON_INFO *logon_info;
@@ -1163,7 +1169,9 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 				     gensec_gssapi_state->client_name,
 				     &name_token,
 				     NULL);
-	if (maj_stat) {
+	if (GSS_ERROR(maj_stat)) {
+		DEBUG(1, ("GSS display_name failed: %s\n", 
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		talloc_free(mem_ctx);
 		return NT_STATUS_FOOBAR;
 	}
