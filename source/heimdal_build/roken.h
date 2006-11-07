@@ -49,6 +49,10 @@
 #define HAVE_SSIZE_T
 #endif
 
+#ifndef HAVE_TIMEGM
+#define HAVE_TIMEGM
+#endif
+
 #undef SOCKET_WRAPPER_REPLACE
 
 #include "heimdal/lib/roken/roken.h.in"
