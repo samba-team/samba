@@ -1,3 +1,27 @@
+2006-11-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/arcfour.c: Use IS_DCE_STYLE flag. There is no padding in
+	DCE-STYLE, don't try to use to.  From Andrew Bartlett.
+
+	* test_context.c: test wrap/unwrap, add flag for dce-style and
+	mutual auth, also support multi-roundtrip sessions
+
+	* krb5/gsskrb5_locl.h: Add IS_DCE_STYLE macro.
+
+	* krb5/accept_sec_context.c (gsskrb5_acceptor_start): use
+	krb5_rd_req_ctx
+
+	* mech/gss_krb5.c (gsskrb5_get_subkey): return the per message
+	token subkey
+
+	* krb5/inquire_sec_context_by_oid.c: check if there is any key at
+	all
+	
+2006-11-06  Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* krb5/inquire_sec_context_by_oid.c: Set more error strings, use
+	right enum for acceptor subkey.  From Andrew Bartlett.
+	
 2006-11-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_context.c: Test gsskrb5_extract_service_keyblock, needed in
