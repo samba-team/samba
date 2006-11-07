@@ -283,15 +283,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (((gensec_security->want_features & GENSEC_FEATURE_SIGN)
-	     || (gensec_security->want_features & GENSEC_FEATURE_SEAL))
-	    && (gensec_security->want_features & GENSEC_FEATURE_DCE_STYLE)
-	    && !lp_parm_bool(-1, "gensec_gssapi", "dce_signseal", 
-			     cli_credentials_get_kerberos_state(creds) == CRED_MUST_USE_KERBEROS)) {
-		DEBUG(2, ("GSSAPI sign/seal disabled for DCE/RPC. "));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	nt_status = gensec_gssapi_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
