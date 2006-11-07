@@ -196,8 +196,15 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 	}
 
 	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
-	if (ret != LDB_SUCCESS || res->count != 1) {
-		DEBUG(3,("schannel: Failed to find a record for client: %s\n", computer_name));
+	talloc_free(expr);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(3,("schannel: Failed to find a record for client %s: %s\n", computer_name, ldb_errstring(ldb)));
+		talloc_free(res);
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	talloc_steal(mem_ctx, res);
+	if (res->count != 1) {
+		DEBUG(3,("schannel: Failed to find a record for client: %s (found %d records)\n", computer_name, res->count));
 		talloc_free(res);
 		return NT_STATUS_INVALID_HANDLE;
 	}
