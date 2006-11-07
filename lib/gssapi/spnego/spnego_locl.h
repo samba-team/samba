@@ -69,6 +69,8 @@
 #include "spnego_asn1.h"
 #include <der.h>
 
+#include <roken.h>
+
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 
 typedef struct {
