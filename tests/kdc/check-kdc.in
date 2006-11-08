@@ -36,6 +36,7 @@
 
 srcdir="@srcdir@"
 objdir="@objdir@"
+EGREP="@EGREP@"
 
 testfailed="echo test failed; cat messages.log; exit 1"
 
@@ -120,7 +121,7 @@ ${kadmin} check ${R2} || exit 1
 
 echo "Extracting enctypes"
 ${ktutil} -k ${keytab} list > tempfile || exit 1
-grep -ve '^FILE:' tempfile | grep -ve '^Vno' | grep -ve '^$' | \
+${EGREP} -v '^FILE:' tempfile | ${EGREP} -v '^Vno' | ${EGREP} -v '^$' | \
     awk '$1 !~ /1/  { exit 1 }' || exit 1
 
 ${kadmin} get foo@${R} > tempfile || exit 1
