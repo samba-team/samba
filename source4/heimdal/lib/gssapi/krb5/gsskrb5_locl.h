@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gsskrb5_locl.h,v 1.6 2006/10/07 22:14:49 lha Exp $ */
+/* $Id: gsskrb5_locl.h,v 1.7 2006/11/07 17:57:43 lha Exp $ */
 
 #ifndef GSSKRB5_LOCL_H
 #define GSSKRB5_LOCL_H
@@ -56,6 +56,7 @@ struct gss_msg_order;
 typedef struct {
   struct krb5_auth_context_data *auth_context;
   krb5_principal source, target;
+#define IS_DCE_STYLE(ctx) (((ctx)->flags & GSS_C_DCE_STYLE) != 0)
   OM_uint32 flags;
   enum { LOCAL = 1, OPEN = 2, 
 	 COMPAT_OLD_DES3 = 4,

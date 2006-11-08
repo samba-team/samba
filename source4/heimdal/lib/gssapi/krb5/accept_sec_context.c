@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: accept_sec_context.c,v 1.64 2006/10/25 04:19:45 lha Exp $");
+RCSID("$Id: accept_sec_context.c,v 1.65 2006/11/07 14:52:05 lha Exp $");
 
 HEIMDAL_MUTEX gssapi_keytab_mutex = HEIMDAL_MUTEX_INITIALIZER;
 krb5_keytab _gsskrb5_keytab;
@@ -264,9 +264,7 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
     OM_uint32 ret = GSS_S_COMPLETE;
     krb5_data indata;
     krb5_flags ap_options;
-    krb5_ticket *ticket = NULL;
     krb5_keytab keytab = NULL;
-    krb5_keyblock *keyblock = NULL;
     int is_cfx = 0;
     const gsskrb5_cred acceptor_cred = (gsskrb5_cred)acceptor_cred_handle;
 
@@ -298,34 +296,65 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
     /*
      * We need to check the ticket and create the AP-REP packet
      */
-    kret = krb5_rd_req_return_keyblock(_gsskrb5_context,
-				       &ctx->auth_context,
-				       &indata,
-				       (acceptor_cred == NULL) ? NULL : acceptor_cred->principal,
-				       keytab,
-				       &ap_options,
-				       &ticket,
-				       &keyblock);
-    if (kret) {
-	ret = GSS_S_FAILURE;
-	*minor_status = kret;
-	_gsskrb5_set_error_string ();
-	return ret;
+
+    {
+	krb5_rd_req_in_ctx in = NULL;
+	krb5_rd_req_out_ctx out = NULL;
+
+	kret = krb5_rd_req_in_ctx_alloc(_gsskrb5_context, &in);
+	if (kret == 0)
+	    kret = krb5_rd_req_in_set_keytab(_gsskrb5_context, in, keytab);
+	if (kret) {
+	    if (in)
+		krb5_rd_req_in_ctx_free(_gsskrb5_context, in);
+	    ret = GSS_S_FAILURE;
+	    *minor_status = kret;
+	    _gsskrb5_set_error_string ();
+	    return ret;
+	}
+
+	kret = krb5_rd_req_ctx(_gsskrb5_context,
+			       &ctx->auth_context,
+			       &indata,
+			       (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) ? NULL : acceptor_cred->principal,
+			       in, &out);
+	krb5_rd_req_in_ctx_free(_gsskrb5_context, in);
+	if (kret) {
+	    ret = GSS_S_FAILURE;
+	    *minor_status = kret;
+	    _gsskrb5_set_error_string ();
+	    return ret;
+	}
+
+	/*
+	 * We need to remember some data on the context_handle.
+	 */
+	kret = krb5_rd_req_out_get_ap_req_options(_gsskrb5_context, out,
+						  &ap_options);
+	if (kret == 0)
+	    kret = krb5_rd_req_out_get_ticket(_gsskrb5_context, out, 
+					      &ctx->ticket);
+	if (kret == 0)
+	    kret = krb5_rd_req_out_get_keyblock(_gsskrb5_context, out,
+						&ctx->service_keyblock);
+	ctx->lifetime = ctx->ticket->ticket.endtime;
+
+	krb5_rd_req_out_ctx_free(_gsskrb5_context, out);
+	if (kret) {
+	    ret = GSS_S_FAILURE;
+	    *minor_status = kret;
+	    _gsskrb5_set_error_string ();
+	    return ret;
+	}
     }
     
-    /*
-     * We need to remember some data on the context_handle.
-     */
-    ctx->ticket = ticket;
-    ctx->service_keyblock = keyblock;
-    ctx->lifetime = ticket->ticket.endtime;
     
     /*
      * We need to copy the principal names to the context and the
      * calling layer.
      */
     kret = krb5_copy_principal(_gsskrb5_context,
-			       ticket->client,
+			       ctx->ticket->client,
 			       &ctx->source);
     if (kret) {
 	ret = GSS_S_FAILURE;
@@ -333,7 +362,9 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	_gsskrb5_set_error_string ();
     }
 
-    kret = krb5_copy_principal(_gsskrb5_context, ticket->server, &ctx->target);
+    kret = krb5_copy_principal(_gsskrb5_context, 
+			       ctx->ticket->server,
+			       &ctx->target);
     if (kret) {
 	ret = GSS_S_FAILURE;
 	*minor_status = kret;
@@ -351,7 +382,7 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 
     if (src_name != NULL) {
 	kret = krb5_copy_principal (_gsskrb5_context,
-				    ticket->client,
+				    ctx->ticket->client,
 				    (gsskrb5_name*)src_name);
 	if (kret) {
 	    ret = GSS_S_FAILURE;
@@ -471,7 +502,7 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 
     /* Remember the flags */
     
-    ctx->lifetime = ticket->ticket.endtime;
+    ctx->lifetime = ctx->ticket->ticket.endtime;
     ctx->more_flags |= OPEN;
     
     if (mech_type)

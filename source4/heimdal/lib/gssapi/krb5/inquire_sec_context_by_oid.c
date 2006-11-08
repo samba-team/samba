@@ -32,7 +32,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: inquire_sec_context_by_oid.c,v 1.8 2006/10/24 15:55:28 lha Exp $");
+RCSID("$Id: inquire_sec_context_by_oid.c,v 1.11 2006/11/07 14:34:35 lha Exp $");
 
 static int
 oid_prefix_equal(gss_OID oid_enc, gss_OID prefix_enc, unsigned *suffix)
@@ -149,6 +149,11 @@ static OM_uint32 inquire_sec_context_get_subkey
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (ret) 
 	goto out;
+    if (key == NULL) {
+	_gsskrb5_set_status("have no subkey of type %d", keytype);
+	ret = EINVAL;
+	goto out;
+    }
 
     ret = krb5_store_keyblock(sp, *key);
     krb5_free_keyblock (_gsskrb5_context, key);
@@ -400,6 +405,7 @@ get_authtime(OM_uint32 *minor_status,
 
 {
     gss_buffer_desc value;
+    unsigned char buf[4];
     OM_uint32 authtime;
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
@@ -414,14 +420,9 @@ get_authtime(OM_uint32 *minor_status,
     
     HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
-    value.length = 4;
-    value.value = malloc(value.length);
-    if (!value.value) {
-	_gsskrb5_clear_status();
-	*minor_status = ENOMEM;
-	return GSS_S_FAILURE;
-    }
-    _gsskrb5_encode_om_uint32(authtime, value.value);
+    _gsskrb5_encode_om_uint32(authtime, buf);
+    value.length = sizeof(buf);
+    value.value = buf;
 
     return gss_add_buffer_set_member(minor_status,
 				     &value,

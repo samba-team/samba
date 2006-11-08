@@ -427,48 +427,61 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 	{
 		DATA_BLOB unwrapped_in;
 		DATA_BLOB unwrapped_out = data_blob(NULL, 0);
+		krb5_data inbuf, outbuf;
 		uint8_t tok_id[2];
+		struct keytab_container *keytab;
+		krb5_principal server_in_keytab;
 
 		if (!in.data) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}	
 
+		/* Grab the keytab, however generated */
+		ret = cli_credentials_get_keytab(gensec_get_credentials(gensec_security), &keytab);
+		if (ret) {
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+		
+		/* This ensures we lookup the correct entry in that keytab */
+		ret = principal_from_credentials(out_mem_ctx, gensec_get_credentials(gensec_security), 
+						 gensec_krb5_state->smb_krb5_context, 
+						 &server_in_keytab);
+
+		if (ret) {
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+
 		/* Parse the GSSAPI wrapping, if it's there... (win2k3 allows it to be omited) */
 		if (gensec_krb5_state->gssapi
 		    && gensec_gssapi_parse_krb5_wrap(out_mem_ctx, &in, &unwrapped_in, tok_id)) {
-			nt_status = ads_verify_ticket(out_mem_ctx, 
-						      gensec_krb5_state->smb_krb5_context,
-						      &gensec_krb5_state->auth_context, 
-						      gensec_get_credentials(gensec_security),
-						      gensec_get_target_service(gensec_security), &unwrapped_in, 
-						      &gensec_krb5_state->ticket, &unwrapped_out,
-						      &gensec_krb5_state->keyblock);
+			inbuf.data = unwrapped_in.data;
+			inbuf.length = unwrapped_in.length;
 		} else {
-			/* TODO: check the tok_id */
-			nt_status = ads_verify_ticket(out_mem_ctx, 
-						      gensec_krb5_state->smb_krb5_context,
-						      &gensec_krb5_state->auth_context, 
-						      gensec_get_credentials(gensec_security),
-						      gensec_get_target_service(gensec_security), 
-						      &in, 
-						      &gensec_krb5_state->ticket, &unwrapped_out,
-						      &gensec_krb5_state->keyblock);
+			inbuf.data = in.data;
+			inbuf.length = in.length;
 		}
 
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
+		ret = smb_rd_req_return_stuff(gensec_krb5_state->smb_krb5_context->krb5_context,
+					      &gensec_krb5_state->auth_context, 
+					      &inbuf, keytab->keytab, server_in_keytab,  
+					      &outbuf, 
+					      &gensec_krb5_state->ticket, 
+					      &gensec_krb5_state->keyblock);
 
-		if (NT_STATUS_IS_OK(nt_status)) {
-			gensec_krb5_state->state_position = GENSEC_KRB5_DONE;
-			/* wrap that up in a nice GSS-API wrapping */
-			if (gensec_krb5_state->gssapi) {
-				*out = gensec_gssapi_gen_krb5_wrap(out_mem_ctx, &unwrapped_out, TOK_ID_KRB_AP_REP);
-			} else {
-				*out = unwrapped_out;
-			}
+		if (ret) {
+			return NT_STATUS_LOGON_FAILURE;
 		}
-		return nt_status;
+		unwrapped_out.data = outbuf.data;
+		unwrapped_out.length = outbuf.length;
+		gensec_krb5_state->state_position = GENSEC_KRB5_DONE;
+		/* wrap that up in a nice GSS-API wrapping */
+		if (gensec_krb5_state->gssapi) {
+			*out = gensec_gssapi_gen_krb5_wrap(out_mem_ctx, &unwrapped_out, TOK_ID_KRB_AP_REP);
+		} else {
+			*out = data_blob_talloc(out_mem_ctx, outbuf.data, outbuf.length);
+		}
+		krb5_data_free(&outbuf);
+		return NT_STATUS_OK;
 	}
 
 	case GENSEC_KRB5_DONE:
