@@ -120,6 +120,27 @@ _gsskrb5_set_sec_context_option
 	*minor_status = 0;
 	return GSS_S_COMPLETE;
 
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_SET_DEFAULT_REALM_X)) {
+	char *str;
+
+	if (value == NULL || value->length == 0) {
+	    *minor_status = 0;
+	    return GSS_S_CALL_INACCESSIBLE_READ;
+	}
+	str = malloc(value->length + 1);
+	if (str) {
+	    *minor_status = 0;
+	    return GSS_S_UNAVAILABLE;
+	}
+	memcpy(str, value->value, value->length);
+	str[value->length] = '\0';
+
+	krb5_set_default_realm(_gsskrb5_context, str);
+	free(str);
+
+	*minor_status = 0;
+	return GSS_S_COMPLETE;
+
     } else if (gss_oid_equal(desired_object, GSS_KRB5_SEND_TO_KDC_X)) {
 
 	if (value == NULL || value->length == 0) {
