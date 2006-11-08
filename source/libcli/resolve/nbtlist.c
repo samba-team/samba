@@ -48,6 +48,7 @@ static void nbtlist_handler(struct nbt_name_request *req)
 	struct composite_context *c = talloc_get_type(req->async.private, 
 						      struct composite_context);
 	struct nbtlist_state *state = talloc_get_type(c->private_data, struct nbtlist_state);
+	struct nbt_name_query *q;
 	int i;
 
 	for (i=0;i<state->num_queries;i++) {
@@ -56,46 +57,39 @@ static void nbtlist_handler(struct nbt_name_request *req)
 
 	if (i == state->num_queries) {
 		/* not for us?! */
-		c->status = NT_STATUS_INTERNAL_ERROR;
-		c->state = COMPOSITE_STATE_ERROR;		
-		goto done;
+		composite_error(c, NT_STATUS_INTERNAL_ERROR);
+		return;
 	}
 
-	c->status = nbt_name_query_recv(req, state, &state->io_queries[i]);
-	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = COMPOSITE_STATE_ERROR;
+	q = &state->io_queries[i];
 
-	} else {
-		if (state->io_queries[i].out.num_addrs < 1) {
-			c->state = COMPOSITE_STATE_ERROR;
-			c->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	c->status = nbt_name_query_recv(req, state, q);
 
-		} else {
-			struct nbt_name_query *q = &state->io_queries[i];
-			c->state = COMPOSITE_STATE_DONE;
-			/* favor a local address if possible */
-			state->reply_addr = NULL;
+	/* free the network resource directly */
+	talloc_free(state->nbtsock);
+	if (!composite_is_ok(c)) return;
 
-			for (i=0;i<q->out.num_addrs;i++) {
-				if (iface_is_local(q->out.reply_addrs[i])) {
-					state->reply_addr = talloc_steal(state, 
-									 q->out.reply_addrs[i]);
-					break;
-				}
-			}
+	if (state->io_queries[i].out.num_addrs < 1) {
+		composite_error(c, NT_STATUS_UNEXPECTED_NETWORK_ERROR);
+		return;
+	}
 
-			if (state->reply_addr == NULL) {
-				state->reply_addr = talloc_steal(state, 
-								 q->out.reply_addrs[0]);
-			}
+	/* favor a local address if possible */
+	state->reply_addr = NULL;
+	for (i=0;i<q->out.num_addrs;i++) {
+		if (iface_is_local(q->out.reply_addrs[i])) {
+			state->reply_addr = talloc_steal(state, 
+							 q->out.reply_addrs[i]);
+			break;
 		}
 	}
 
-done:
-	talloc_free(state->nbtsock);
-	if (c->async.fn) {
-		c->async.fn(c);
+	if (state->reply_addr == NULL) {
+		state->reply_addr = talloc_steal(state, 
+						 q->out.reply_addrs[0]);
 	}
+
+	composite_done(c);
 }
 
 /*
@@ -110,41 +104,44 @@ struct composite_context *resolve_name_nbtlist_send(struct nbt_name *name,
 	struct composite_context *c;
 	struct nbtlist_state *state;
 	int i;
-	NTSTATUS status;
 
-	c = talloc_zero(NULL, struct composite_context);
-	if (c == NULL) goto failed;
+	c = composite_create(event_ctx, event_ctx);
+	if (c == NULL) return NULL;
+
+	c->event_ctx = talloc_reference(c, event_ctx);
+	if (composite_nomem(c->event_ctx, c)) return c;
 
 	state = talloc(c, struct nbtlist_state);
-	if (state == NULL) goto failed;
+	if (composite_nomem(state, c)) return c;
+	c->private_data = state;
 
-	status = nbt_name_dup(state, name, &state->name);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	c->status = nbt_name_dup(state, name, &state->name);
+	if (!composite_is_ok(c)) return c;
 
 	state->name.name = strupper_talloc(state, state->name.name);
-	if (state->name.name == NULL) goto failed;
+	if (composite_nomem(state->name.name, c)) return c;
 	if (state->name.scope) {
 		state->name.scope = strupper_talloc(state, state->name.scope);
-		if (state->name.scope == NULL) goto failed;
+		if (composite_nomem(state->name.scope, c)) return c;
 	}
 
 	state->nbtsock = nbt_name_socket_init(state, event_ctx);
-	if (state->nbtsock == NULL) goto failed;
+	if (composite_nomem(state->nbtsock, c)) return c;
 
 	/* count the address_list size */
 	for (i=0;address_list[i];i++) /* noop */ ;
 
 	state->num_queries = i;
 	state->io_queries = talloc_array(state, struct nbt_name_query, state->num_queries);
-	if (!state->io_queries) goto failed;
+	if (composite_nomem(state->io_queries, c)) return c;
 
 	state->queries = talloc_array(state, struct nbt_name_request *, state->num_queries);
-	if (!state->queries) goto failed;
+	if (composite_nomem(state->queries, c)) return c;
 
 	for (i=0;i<state->num_queries;i++) {
 		state->io_queries[i].in.name        = state->name;
 		state->io_queries[i].in.dest_addr   = talloc_strdup(state->io_queries, address_list[i]);
-		if (!state->io_queries[i].in.dest_addr) goto failed;
+		if (composite_nomem(state->io_queries[i].in.dest_addr, c)) return c;
 
 		state->io_queries[i].in.broadcast   = broadcast;
 		state->io_queries[i].in.wins_lookup = wins_lookup;
@@ -152,21 +149,13 @@ struct composite_context *resolve_name_nbtlist_send(struct nbt_name *name,
 		state->io_queries[i].in.retries     = 2;
 
 		state->queries[i] = nbt_name_query_send(state->nbtsock, &state->io_queries[i]);
-		if (!state->queries[i]) goto failed;
+		if (composite_nomem(state->queries[i], c)) return c;
 
 		state->queries[i]->async.fn      = nbtlist_handler;
 		state->queries[i]->async.private = c;
 	}
 
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->private_data = state;
-	c->event_ctx = talloc_reference(c, state->nbtsock->event_ctx);
-
 	return c;
-
-failed:
-	talloc_free(c);
-	return NULL;
 }
 
 /*
