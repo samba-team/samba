@@ -11,7 +11,8 @@ SCRIPT_TESTS = check-kdc check-digest
 TESTS = $(SCRIPT_TESTS)
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
-	-e 's,[@]objdir[@],$(top_builddir)/tests/kdc,g'
+	-e 's,[@]objdir[@],$(top_builddir)/tests/kdc,g' \
+	-e 's,[@]EGREP[@],$(EGREP),g' 
 
 LDADD = ../../lib/krb5/libkrb5.la
 
