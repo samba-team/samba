@@ -352,6 +352,13 @@ static gss_OID_desc gss_krb5_set_allowable_enctypes_x_desc =
 
 gss_OID GSS_KRB5_SET_ALLOWABLE_ENCTYPES_X = &gss_krb5_set_allowable_enctypes_x_desc;
 
+/* 1.2.752.43.13.15 */
+static gss_OID_desc gss_krb5_set_default_realm_x_desc =
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0f")};
+
+gss_OID GSS_KRB5_SET_DEFAULT_REALM_X = &gss_krb5_set_default_realm_x_desc;
+
+
 /* 1.2.752.43.14.1 */
 static gss_OID_desc gss_sasl_digest_md5_mechanism_desc =
 {6, rk_UNCONST("\x2a\x85\x70\x2b\x0e\x01") };
