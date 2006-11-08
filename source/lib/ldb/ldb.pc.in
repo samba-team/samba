@@ -12,3 +12,4 @@ Requires: talloc
 Libs: -L${libdir} -lldb
 Cflags: -I${includedir} @CFLAGS@
 Modulesdir: ${modulesdir}
+URL: http://ldb.samba.org/
