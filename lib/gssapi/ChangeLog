@@ -1,5 +1,14 @@
-2006-11-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/set_sec_context_option.c: Support
+	GSS_KRB5_SET_DEFAULT_REALM_X.
+
+	* gssapi/gssapi_krb5.h: add GSS_KRB5_SET_DEFAULT_REALM_X
+
+	* krb5/external.c: add GSS_KRB5_SET_DEFAULT_REALM_X
+	
+2006-11-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* test_context.c: rename krb5_[gs]et_time_wrap to
 	krb5_[gs]et_max_time_skew
 
