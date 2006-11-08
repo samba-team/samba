@@ -1123,9 +1123,9 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 		return NT_STATUS_OK;
 	}
 
-	maj_stat = gsskrb5_get_subkey(&min_stat, 
-				      gensec_gssapi_state->gssapi_context,
-				      &subkey);
+	maj_stat = gsskrb5_get_initiator_subkey(&min_stat, 
+						gensec_gssapi_state->gssapi_context,
+						&subkey);
 	if (maj_stat != 0) {
 		DEBUG(1, ("NO session key for this mech\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
