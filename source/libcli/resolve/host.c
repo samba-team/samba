@@ -99,31 +99,23 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 	   relationship, and even if they did then giving an error is
 	   the right thing to do */
 	ret = read(state->child_fd, address, sizeof(address)-1);
-	if (ret <= 0) goto failed;
+	if (ret <= 0) {
+		composite_error(c, NT_STATUS_BAD_NETWORK_NAME);
+		return;
+	}
 
 	/* enusre the address looks good */
 	address[ret] = 0;
 	if (strcmp(address, "0.0.0.0") == 0 ||
 	    inet_addr(address) == INADDR_NONE) {
-		goto failed;
+		composite_error(c, NT_STATUS_BAD_NETWORK_NAME);
+		return;
 	}
 
 	state->reply_addr = talloc_strdup(state, address);
-	if (state->reply_addr == NULL) goto failed;
+	if (composite_nomem(state->reply_addr, c)) return;
 
-	c->status = NT_STATUS_OK;
-	c->state = COMPOSITE_STATE_DONE;
-	if (c->async.fn) {
-		c->async.fn(c);
-	}
-	return;
-
-failed:
-	c->status = NT_STATUS_BAD_NETWORK_NAME;
-	c->state = COMPOSITE_STATE_ERROR;
-	if (c->async.fn) {
-		c->async.fn(c);
-	}
+	composite_done(c);
 }
 
 /*
@@ -134,26 +126,28 @@ struct composite_context *resolve_name_host_send(struct nbt_name *name,
 {
 	struct composite_context *c;
 	struct host_state *state;
-	NTSTATUS status;
 	int fd[2] = { -1, -1 };
 	int ret;
 
-	c = talloc_zero(NULL, struct composite_context);
-	if (c == NULL) goto failed;
+	c = composite_create(event_ctx, event_ctx);
+	if (c == NULL) return NULL;
+
+	c->event_ctx = talloc_reference(c, event_ctx);
+	if (composite_nomem(c->event_ctx, c)) return c;
 
 	state = talloc(c, struct host_state);
-	if (state == NULL) goto failed;
-
-	status = nbt_name_dup(state, name, &state->name);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
-
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	if (composite_nomem(state, c)) return c;
 	c->private_data = state;
-	c->event_ctx = talloc_reference(c, event_ctx);
+
+	c->status = nbt_name_dup(state, name, &state->name);
+	if (!composite_is_ok(c)) return c;
 
 	/* setup a pipe to chat to our child */
 	ret = pipe(fd);
-	if (ret == -1) goto failed;
+	if (ret == -1) {
+		composite_error(c, map_nt_error_from_unix(errno));
+		return c;
+	}
 
 	state->child_fd = fd[0];
 	state->event_ctx = c->event_ctx;
@@ -162,10 +156,10 @@ struct composite_context *resolve_name_host_send(struct nbt_name *name,
 	   we know when the gethostbyname() has finished */
 	state->fde = event_add_fd(c->event_ctx, c, state->child_fd, EVENT_FD_READ, 
 				  pipe_handler, c);
-	if (state->fde == NULL) {
+	if (composite_nomem(state->fde, c)) {
 		close(fd[0]);
 		close(fd[1]);
-		goto failed;
+		return c;
 	}
 
 	/* signal handling in posix really sucks - doing this in a library
@@ -174,7 +168,8 @@ struct composite_context *resolve_name_host_send(struct nbt_name *name,
 
 	state->child = fork();
 	if (state->child == (pid_t)-1) {
-		goto failed;
+		composite_error(c, map_nt_error_from_unix(errno));
+		return c;
 	}
 
 	if (state->child == 0) {
@@ -187,11 +182,7 @@ struct composite_context *resolve_name_host_send(struct nbt_name *name,
 	/* cleanup wayward children */
 	talloc_set_destructor(state, host_destructor);
 
-	return c;	
-
-failed:
-	talloc_free(c);
-	return NULL;
+	return c;
 }
 
 /*
