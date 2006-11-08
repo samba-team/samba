@@ -268,9 +268,16 @@ main(int argc, char **argv)
     loop(mechoid, nameoid, argv[0], &sctx, &cctx);
     
     if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) {
-	time_t time;
+	time_t time, skew;
 	gss_buffer_desc authz_data;
 	krb5_keyblock *keyblock;
+	krb5_timestamp now;
+	krb5_error_code ret;
+
+	ret = krb5_timeofday(_gsskrb5_context, &now);
+	if (ret) 
+		errx(1, "krb5_timeofday failed");
+	
 	/* client */
 	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
 						     &cctx,
@@ -294,7 +301,7 @@ main(int argc, char **argv)
 	if (maj_stat != GSS_S_COMPLETE)
 	    errx(1, "gss_krb5_export_lucid_sec_context failed: %s",
 		     gssapi_err(maj_stat, min_stat, mechoid));
-	maj_stat = gss_krb5_free_lucid_sec_context(&maj_stat, ctx);
+	maj_stat = gss_krb5_free_lucid_sec_context(&min_stat, ctx);
 	if (maj_stat != GSS_S_COMPLETE)
 	    errx(1, "gss_krb5_free_lucid_sec_context failed: %s",
 		     gssapi_err(maj_stat, min_stat, mechoid));
@@ -303,14 +310,22 @@ main(int argc, char **argv)
 							     sctx,
 							     &time);
 	if (maj_stat != GSS_S_COMPLETE)
-	    errx(1, "gss_krb5_extract_authtime_from_sec_context failed: %s",
+	    errx(1, "gsskrb5_extract_authtime_from_sec_context failed: %s",
 		     gssapi_err(maj_stat, min_stat, mechoid));
+
+	skew = abs(time - now);
+	if (skew > _gsskrb5_context->max_skew) {
+	    errx(1, "gsskrb5_extract_authtime_from_sec_context failed: "
+		 "time skew too great %llu > %llu", 
+		 (unsigned long long)skew, 
+		 (unsigned long long)krb5_get_time_wrap(_gsskrb5_context));
+	}
 
  	maj_stat = gsskrb5_extract_service_keyblock(&min_stat,
 						    sctx,
 						    &keyblock);
 	if (maj_stat != GSS_S_COMPLETE)
-	    errx(1, "gss_krb5_export_service_keyblock failed: %s",
+	    errx(1, "gsskrb5_export_service_keyblock failed: %s",
 		     gssapi_err(maj_stat, min_stat, mechoid));
 
 	krb5_free_keyblock(_gsskrb5_context, keyblock);
@@ -318,20 +333,24 @@ main(int argc, char **argv)
  	maj_stat = gsskrb5_get_subkey(&min_stat,
 				      sctx,
 				      &keyblock);
-	if (maj_stat != GSS_S_COMPLETE)
-	    errx(1, "gss_krb5_get_subkey failed: %s",
+	if (maj_stat != GSS_S_COMPLETE 
+	    && (!(maj_stat == GSS_S_FAILURE && min_stat == GSS_KRB5_S_KG_NO_SUBKEY)))
+	    errx(1, "gsskrb5_get_subkey failed: %s",
 		     gssapi_err(maj_stat, min_stat, mechoid));
 
-	krb5_free_keyblock(_gsskrb5_context, keyblock);
+	if (maj_stat == GSS_S_COMPLETE)
+	    krb5_free_keyblock(_gsskrb5_context, keyblock);
 
  	maj_stat = gsskrb5_get_initiator_subkey(&min_stat,
 						sctx,
 						&keyblock);
-	if (maj_stat != GSS_S_COMPLETE)
-	    errx(1, "gss_krb5_get_initiator_subkey failed: %s",
+	if (maj_stat != GSS_S_COMPLETE 
+	    && (!(maj_stat == GSS_S_FAILURE && min_stat == GSS_KRB5_S_KG_NO_SUBKEY)))
+	    errx(1, "gsskrb5_get_initiator_subkey failed: %s",
 		     gssapi_err(maj_stat, min_stat, mechoid));
 
-	krb5_free_keyblock(_gsskrb5_context, keyblock);
+	if (maj_stat == GSS_S_COMPLETE)
+	    krb5_free_keyblock(_gsskrb5_context, keyblock);
 
  	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat,
 							       sctx,
