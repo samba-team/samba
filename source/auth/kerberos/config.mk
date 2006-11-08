@@ -4,7 +4,7 @@
 PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = kerberos.o \
 			clikrb5.o \
-			kerberos_verify.o \
+			kerberos_heimdal.o \
 			kerberos_util.o \
 			kerberos_pac.o \
 			gssapi_parse.o \

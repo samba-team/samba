@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.72 2006/10/24 17:51:33 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.73 2006/11/07 17:24:57 lha Exp $");
 
 #ifdef PKINIT
 
@@ -528,8 +528,10 @@ _kdc_pk_rd_padata(krb5_context context,
 				      &eContent,
 				      &signer_certs);
 	if (ret) {
-	    kdc_log(context, config, 0,
-		    "PK-INIT failed to verify signature %d", ret);
+	    char *s = hx509_get_error_string(kdc_identity->hx509ctx, ret);
+	    krb5_warnx(context, "PKINIT: failed to verify signature: %s: %d",
+		       s, ret);
+	    free(s);
 	    goto out;
 	}
 
@@ -1374,6 +1376,36 @@ _kdc_pk_initialize(krb5_context context,
 	krb5_warn(context, ret, "PKINIT: failed to load");
 	config->enable_pkinit = 0;
 	return ret;
+    }
+
+    {
+	hx509_query *q;
+	hx509_cert cert;
+	
+	ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
+	if (ret) {
+	    krb5_warnx(context, "PKINIT: out of memory");
+	    return ENOMEM;
+	}
+	
+	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+	
+	ret = hx509_certs_find(kdc_identity->hx509ctx,
+			       kdc_identity->certs,
+			       q,
+			       &cert);
+	hx509_query_free(kdc_identity->hx509ctx, q);
+	if (ret == 0) {
+	    if (hx509_cert_check_eku(kdc_identity->hx509ctx, cert,
+				     oid_id_pkkdcekuoid(), 0))
+		krb5_warnx(context, "WARNING Found KDC certificate "
+			   "is missing the PK-INIT KDC EKU, this is bad for "
+			   "interoperability.");
+	    hx509_cert_free(cert);
+	} else
+	    krb5_warnx(context, "PKINIT: failed to find a signing "
+		       "certifiate with a public key");
     }
 
     ret = krb5_config_get_bool_default(context, 

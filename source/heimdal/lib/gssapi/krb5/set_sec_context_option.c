@@ -36,7 +36,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: set_sec_context_option.c,v 1.6 2006/10/20 18:58:22 lha Exp $");
+RCSID("$Id: set_sec_context_option.c,v 1.7 2006/11/04 03:01:14 lha Exp $");
 
 static OM_uint32
 get_bool(OM_uint32 *minor_status,

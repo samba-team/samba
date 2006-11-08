@@ -103,7 +103,6 @@ _gsskrb5i_get_token_key(const gsskrb5_ctx ctx, krb5_keyblock **key)
 	_gsskrb5_set_status("No token key available");
 	return GSS_KRB5_S_KG_NO_SUBKEY;
     }
-    _gsskrb5_clear_status();
     return 0;
 }
 

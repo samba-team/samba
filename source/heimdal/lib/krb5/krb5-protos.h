@@ -1866,7 +1866,7 @@ krb5_get_default_realms (
 	krb5_realm **/*realms*/);
 
 krb5_boolean KRB5_LIB_FUNCTION
-krb5_get_dns_canonize_hostname (krb5_context /*context*/);
+krb5_get_dns_canonicalize_hostname (krb5_context /*context*/);
 
 const char* KRB5_LIB_FUNCTION
 krb5_get_err_text (
@@ -2176,6 +2176,9 @@ krb5_get_server_rcache (
 	krb5_context /*context*/,
 	const krb5_data */*piece*/,
 	krb5_rcache */*id*/);
+
+time_t KRB5_LIB_FUNCTION
+krb5_get_time_wrap (krb5_context /*context*/);
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_get_use_admin_kdc (krb5_context /*context*/);
@@ -2865,15 +2868,58 @@ krb5_rd_req (
 	krb5_ticket **/*ticket*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_rd_req_return_keyblock (
+krb5_rd_req_ctx (
 	krb5_context /*context*/,
 	krb5_auth_context */*auth_context*/,
 	const krb5_data */*inbuf*/,
 	krb5_const_principal /*server*/,
-	krb5_keytab /*keytab*/,
-	krb5_flags */*ap_req_options*/,
-	krb5_ticket **/*ticket*/,
-	krb5_keyblock **/*return_keyblock*/);
+	krb5_rd_req_in_ctx /*inctx*/,
+	krb5_rd_req_out_ctx */*outctx*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_in_ctx_alloc (
+	krb5_context /*context*/,
+	krb5_rd_req_in_ctx */*ctx*/);
+
+void KRB5_LIB_FUNCTION
+krb5_rd_req_in_ctx_free (
+	krb5_context /*context*/,
+	krb5_rd_req_in_ctx /*ctx*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_in_set_keyblock (
+	krb5_context /*context*/,
+	krb5_rd_req_in_ctx /*in*/,
+	krb5_keyblock */*keyblock*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_in_set_keytab (
+	krb5_context /*context*/,
+	krb5_rd_req_in_ctx /*in*/,
+	krb5_keytab /*keytab*/);
+
+void KRB5_LIB_FUNCTION
+krb5_rd_req_out_ctx_free (
+	krb5_context /*context*/,
+	krb5_rd_req_out_ctx /*ctx*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_out_get_ap_req_options (
+	krb5_context /*context*/,
+	krb5_rd_req_out_ctx /*out*/,
+	krb5_flags */*ap_req_options*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_out_get_keyblock (
+	krb5_context /*context*/,
+	krb5_rd_req_out_ctx /*out*/,
+	krb5_keyblock **/*keyblock*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_out_get_ticket (
+	krb5_context /*context*/,
+	krb5_rd_req_out_ctx /*out*/,
+	krb5_ticket **/*ticket*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_req_with_keyblock (
@@ -3150,6 +3196,11 @@ krb5_set_send_to_kdc_func (
 	krb5_context /*context*/,
 	krb5_send_to_kdc_func /*func*/,
 	void */*data*/);
+
+void KRB5_LIB_FUNCTION
+krb5_set_time_wrap (
+	krb5_context /*context*/,
+	time_t /*t*/);
 
 void KRB5_LIB_FUNCTION
 krb5_set_use_admin_kdc (

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kerberos5.c,v 1.223 2006/10/17 02:16:29 lha Exp $");
+RCSID("$Id: kerberos5.c,v 1.224 2006/11/04 17:05:28 lha Exp $");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
@@ -1063,13 +1063,14 @@ _kdc_as_rep(krb5_context context,
 	    free_PA_ENC_TS_ENC(&p);
 	    if (abs(kdc_time - p.patimestamp) > context->max_skew) {
 		char client_time[100];
-
+		
 		krb5_format_time(context, p.patimestamp, 
 				 client_time, sizeof(client_time), TRUE); 
 
-		ret = KRB5KRB_AP_ERR_SKEW;
-		kdc_log(context, config, 0,
-			"Too large time skew, client time %s is out by %u > %u seconds -- %s", 
+ 		ret = KRB5KRB_AP_ERR_SKEW;
+ 		kdc_log(context, config, 0,
+			"Too large time skew, "
+			"client time %s is out by %u > %u seconds -- %s", 
 			client_time, 
 			(unsigned)abs(kdc_time - p.patimestamp), 
 			context->max_skew,

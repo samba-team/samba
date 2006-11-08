@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001, 2003 - 2005 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997 - 2001, 2003 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_req.c,v 1.66 2006/10/06 17:04:29 lha Exp $");
+RCSID("$Id: rd_req.c,v 1.68 2006/11/07 17:11:31 lha Exp $");
 
 static krb5_error_code
 decrypt_tkt_enc_part (krb5_context context,
@@ -506,6 +506,151 @@ krb5_verify_ap_req2(krb5_context context,
     return ret;
 }
 		   
+/*
+ *
+ */
+
+struct krb5_rd_req_in_ctx {
+    krb5_keytab keytab;
+    krb5_keyblock *keyblock;
+};
+
+struct krb5_rd_req_out_ctx {
+    krb5_keyblock *keyblock;
+    krb5_flags ap_req_options;
+    krb5_ticket *ticket;
+};
+
+/*
+ *
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_in_ctx_alloc(krb5_context context, krb5_rd_req_in_ctx *ctx)
+{
+    *ctx = calloc(1, sizeof(**ctx));
+    if (*ctx == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_in_set_keytab(krb5_context context, 
+			  krb5_rd_req_in_ctx in,
+			  krb5_keytab keytab)
+{
+    in->keytab = keytab; /* XXX should make copy */
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_in_set_keyblock(krb5_context context, 
+			    krb5_rd_req_in_ctx in,
+			    krb5_keyblock *keyblock)
+{
+    in->keyblock = keyblock; /* XXX should make copy */
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_out_get_ap_req_options(krb5_context context, 
+				   krb5_rd_req_out_ctx out,
+				   krb5_flags *ap_req_options)
+{
+    *ap_req_options = out->ap_req_options;
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_out_get_ticket(krb5_context context, 
+			    krb5_rd_req_out_ctx out,
+			    krb5_ticket **ticket)
+{
+    return krb5_copy_ticket(context, out->ticket, ticket);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req_out_get_keyblock(krb5_context context, 
+			    krb5_rd_req_out_ctx out,
+			    krb5_keyblock **keyblock)
+{
+    return krb5_copy_keyblock(context, out->keyblock, keyblock);
+}
+
+void  KRB5_LIB_FUNCTION
+krb5_rd_req_in_ctx_free(krb5_context context, krb5_rd_req_in_ctx ctx)
+{
+    free(ctx);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+_krb5_rd_req_out_ctx_alloc(krb5_context context, krb5_rd_req_out_ctx *ctx)
+{
+    *ctx = calloc(1, sizeof(**ctx));
+    if (*ctx == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+void  KRB5_LIB_FUNCTION
+krb5_rd_req_out_ctx_free(krb5_context context, krb5_rd_req_out_ctx ctx)
+{
+    krb5_free_keyblock(context, ctx->keyblock);
+    free(ctx);
+}
+
+/*
+ *
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_rd_req(krb5_context context,
+	    krb5_auth_context *auth_context,
+	    const krb5_data *inbuf,
+	    krb5_const_principal server,
+	    krb5_keytab keytab,
+	    krb5_flags *ap_req_options,
+	    krb5_ticket **ticket)
+{
+    krb5_error_code ret;
+    krb5_rd_req_in_ctx in;
+    krb5_rd_req_out_ctx out;
+
+    ret = krb5_rd_req_in_ctx_alloc(context, &in);
+    if (ret)
+	return ret;
+    
+    ret = krb5_rd_req_in_set_keytab(context, in, keytab);
+    if (ret) {
+	krb5_rd_req_in_ctx_free(context, in);
+	return ret;
+    }
+
+    ret = krb5_rd_req_ctx(context, auth_context, inbuf, server, in, &out);
+    krb5_rd_req_in_ctx_free(context, in);
+    if (ret)
+	return ret;
+
+    if (ap_req_options)
+	*ap_req_options = out->ap_req_options;
+    if (ticket) {
+	ret = krb5_copy_ticket(context, out->ticket, ticket);
+	if (ret)
+	    goto out;
+    }
+
+out:
+    krb5_rd_req_out_ctx_free(context, out);
+    return ret;
+}
+
+/*
+ *
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_req_with_keyblock(krb5_context context,
@@ -517,30 +662,40 @@ krb5_rd_req_with_keyblock(krb5_context context,
 			  krb5_ticket **ticket)
 {
     krb5_error_code ret;
-    krb5_ap_req ap_req;
+    krb5_rd_req_in_ctx in;
+    krb5_rd_req_out_ctx out;
 
-    if (*auth_context == NULL) {
-	ret = krb5_auth_con_init(context, auth_context);
-	if (ret)
-	    return ret;
+    ret = krb5_rd_req_in_ctx_alloc(context, &in);
+    if (ret)
+	return ret;
+    
+    ret = krb5_rd_req_in_set_keyblock(context, in, keyblock);
+    if (ret) {
+	krb5_rd_req_in_ctx_free(context, in);
+	return ret;
     }
 
-    ret = krb5_decode_ap_req(context, inbuf, &ap_req);
-    if(ret)
+    ret = krb5_rd_req_ctx(context, auth_context, inbuf, server, in, &out);
+    krb5_rd_req_in_ctx_free(context, in);
+    if (ret)
 	return ret;
 
-    ret = krb5_verify_ap_req(context,
-			     auth_context,
-			     &ap_req,
-			     server,
-			     keyblock,
-			     0,
-			     ap_req_options,
-			     ticket);
+    if (ap_req_options)
+	*ap_req_options = out->ap_req_options;
+    if (ticket) {
+	ret = krb5_copy_ticket(context, out->ticket, ticket);
+	if (ret)
+	    goto out;
+    }
 
-    free_AP_REQ(&ap_req);
+out:
+    krb5_rd_req_out_ctx_free(context, out);
     return ret;
 }
+
+/*
+ *
+ */
 
 static krb5_error_code
 get_key_from_keytab(krb5_context context,
@@ -582,39 +737,44 @@ out:
     return ret;
 }
 
+/*
+ *
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_rd_req_return_keyblock(krb5_context context,
-			    krb5_auth_context *auth_context,
-			    const krb5_data *inbuf,
-			    krb5_const_principal server,
-			    krb5_keytab keytab,
-			    krb5_flags *ap_req_options,
-			    krb5_ticket **ticket, 
-			    krb5_keyblock **return_keyblock)
+krb5_rd_req_ctx(krb5_context context,
+		krb5_auth_context *auth_context,
+		const krb5_data *inbuf,
+		krb5_const_principal server,
+		krb5_rd_req_in_ctx inctx,
+		krb5_rd_req_out_ctx *outctx)
 {
     krb5_error_code ret;
     krb5_ap_req ap_req;
-    krb5_keyblock *keyblock = NULL;
     krb5_principal service = NULL;
+    krb5_rd_req_out_ctx o = NULL;
 
-    if (return_keyblock)
-	*return_keyblock = NULL;
+    ret = _krb5_rd_req_out_ctx_alloc(context, &o);
+    if (ret)
+	goto out;
 
     if (*auth_context == NULL) {
 	ret = krb5_auth_con_init(context, auth_context);
 	if (ret)
-	    return ret;
+	    goto out;
     }
 
     ret = krb5_decode_ap_req(context, inbuf, &ap_req);
     if(ret)
-	return ret;
+	goto out;
 
     if(server == NULL){
-	_krb5_principalname2krb5_principal(context,
-					   &service,
-					   ap_req.ticket.sname,
-					   ap_req.ticket.realm);
+	ret = _krb5_principalname2krb5_principal(context,
+						 &service,
+						 ap_req.ticket.sname,
+						 ap_req.ticket.realm);
+	if (ret)
+	    goto out;
 	server = service;
     }
     if (ap_req.ap_options.use_session_key &&
@@ -625,20 +785,31 @@ krb5_rd_req_return_keyblock(krb5_context context,
 	goto out;
     }
 
-    if((*auth_context)->keyblock == NULL){
+    if((*auth_context)->keyblock){
+	ret = krb5_copy_keyblock(context,
+				 (*auth_context)->keyblock,
+				 &o->keyblock);
+	if (ret)
+	    goto out;
+    } else if(inctx->keyblock){
+	ret = krb5_copy_keyblock(context,
+				 inctx->keyblock,
+				 &o->keyblock);
+	if (ret)
+	    goto out;
+    } else {
+	krb5_keytab keytab = NULL;
+
+	if (inctx && inctx->keytab)
+	    keytab = inctx->keytab;
+
 	ret = get_key_from_keytab(context, 
 				  auth_context, 
 				  &ap_req,
 				  server,
 				  keytab,
-				  &keyblock);
+				  &o->keyblock);
 	if(ret)
-	    goto out;
-    } else {
-	ret = krb5_copy_keyblock(context,
-				 (*auth_context)->keyblock,
-				 &keyblock);
-	if (ret)
 	    goto out;
     }
 
@@ -646,40 +817,19 @@ krb5_rd_req_return_keyblock(krb5_context context,
 			     auth_context,
 			     &ap_req,
 			     server,
-			     keyblock,
+			     o->keyblock,
 			     0,
-			     ap_req_options,
-			     ticket);
-
-    if (ret == 0 && return_keyblock)
-	*return_keyblock = keyblock;
-    else
-        krb5_free_keyblock(context, keyblock);
+			     &o->ap_req_options,
+			     &o->ticket);
 
 out:
+    if (ret || outctx == NULL) {
+	krb5_rd_req_out_ctx_free(context, o);
+    } else 
+	*outctx = o;
+
     free_AP_REQ(&ap_req);
     if(service)
 	krb5_free_principal(context, service);
     return ret;
 }
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_rd_req(krb5_context context,
-	    krb5_auth_context *auth_context,
-	    const krb5_data *inbuf,
-	    krb5_const_principal server,
-	    krb5_keytab keytab,
-	    krb5_flags *ap_req_options,
-	    krb5_ticket **ticket)
-{
-    return krb5_rd_req_return_keyblock(context,
-				       auth_context,
-				       inbuf,
-				       server,
-				       keytab,
-				       ap_req_options,
-				       ticket,
-				       NULL);
-
-}
-

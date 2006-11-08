@@ -399,6 +399,11 @@ _krb5_put_int (
 	size_t /*size*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
+_krb5_rd_req_out_ctx_alloc (
+	krb5_context /*context*/,
+	krb5_rd_req_out_ctx */*ctx*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
 _krb5_s4u2self_to_checksumdata (
 	krb5_context /*context*/,
 	const PA_S4U2Self */*self*/,

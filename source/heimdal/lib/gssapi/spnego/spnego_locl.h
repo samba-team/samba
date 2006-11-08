@@ -30,7 +30,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: spnego_locl.h,v 1.11 2006/10/12 06:28:06 lha Exp $ */
+/* $Id: spnego_locl.h,v 1.12 2006/11/07 19:53:40 lha Exp $ */
 
 #ifndef SPNEGO_LOCL_H
 #define SPNEGO_LOCL_H
@@ -68,6 +68,8 @@
 
 #include "spnego_asn1.h"
 #include <der.h>
+
+#include <roken.h>
 
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 
