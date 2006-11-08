@@ -59,7 +59,7 @@ hdb_resolve(krb5_context context, const char *name, krb5_keytab id)
 	return ENOMEM;
     }
     db = name;
-    mkey = strchr(name, ':');
+    mkey = strrchr(name, ':');
     if(mkey == NULL || mkey[1] == '\0') {
 	if(*name == '\0')
 	    d->dbname = NULL;
