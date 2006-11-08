@@ -314,7 +314,7 @@ main(int argc, char **argv)
 		     gssapi_err(maj_stat, min_stat, mechoid));
 
 	skew = abs(time - now);
-	if (skew > _gsskrb5_context->max_skew) {
+	if (skew > krb5_get_time_wrap(_gsskrb5_context)) {
 	    errx(1, "gsskrb5_extract_authtime_from_sec_context failed: "
 		 "time skew too great %llu > %llu", 
 		 (unsigned long long)skew, 
