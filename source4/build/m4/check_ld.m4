@@ -19,6 +19,7 @@ AC_SUBST(LD)
 AC_SUBST(LDFLAGS)
 AC_SUBST(SHLD)
 AC_SUBST(SHLD_FLAGS)
+AC_SUBST(SHLD_UNDEF_FLAGS)
 AC_SUBST(SHLIBEXT)
 AC_SUBST(SONAMEFLAG)
 AC_SUBST(PICFLAG)
@@ -42,7 +43,8 @@ AC_MSG_CHECKING([ability to build shared libraries])
 case "$host_os" in
 	*linux*)
 		BLDSHARED="true"
-		SHLD_FLAGS="-shared -Wl,-Bsymbolic -Wl,--allow-shlib-undefined" 
+		SHLD_FLAGS="-shared -Wl,-Bsymbolic"
+		SHLD_UNDEF_FLAGS="-Wl,--allow-shlib-undefined"
 		LDFLAGS="-Wl,--export-dynamic"
 		PICFLAG="-fPIC"
 		SONAMEFLAG="-Wl,-soname="
