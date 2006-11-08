@@ -8,3 +8,4 @@ Description: A hierarchical pool based memory system with destructors
 Version: 4.0
 Libs: -L${libdir} -ltalloc
 Cflags: -I${includedir} 
+URL: http://talloc.samba.org/
