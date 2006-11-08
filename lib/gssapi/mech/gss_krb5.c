@@ -725,3 +725,25 @@ gsskrb5_get_subkey(OM_uint32 *minor_status,
 			       GSS_KRB5_GET_SUBKEY_X,
 			       keyblock);
 }
+
+OM_uint32
+gsskrb5_set_default_realm(const char *realm)
+{
+        struct _gss_mech_switch	*m;
+	gss_buffer_desc buffer;
+	OM_uint32 junk;
+
+	_gss_load_mech();
+
+	buffer.value = rk_UNCONST(realm);
+	buffer.length = strlen(realm);
+
+	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+		if (m->gm_mech.gm_set_sec_context_option == NULL)
+			continue;
+		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
+		    GSS_KRB5_SET_DEFAULT_REALM_X, &buffer);
+	}
+
+	return (GSS_S_COMPLETE);
+}
