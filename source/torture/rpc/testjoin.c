@@ -438,6 +438,8 @@ NTSTATUS torture_leave_ads_domain(TALLOC_CTX *mem_ctx, struct libnet_JoinDomain 
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	ldb_set_opaque(ldb_ctx, "credentials", cmdline_credentials);
+
 	rtn = ldb_connect(ldb_ctx, remote_ldb_url, 0, NULL);
 	if (rtn != 0) {
 		libnet_r->out.error_string = NULL;
