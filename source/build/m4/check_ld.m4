@@ -187,9 +187,6 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 	    AC_MSG_WARN([cannot run when cross-compiling]))
 
 
-# TODO: remove this line when our shared libs correctly link without unresolved symbols
-BLDSHARED=false
-
 USESHARED=false
 AC_SUBST(USESHARED)
 
