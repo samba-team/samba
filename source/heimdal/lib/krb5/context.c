@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <com_err.h>
 
-RCSID("$Id: context.c,v 1.108 2006/10/20 22:26:10 lha Exp $");
+RCSID("$Id: context.c,v 1.110 2006/11/04 03:27:47 lha Exp $");
 
 #define INIT_FIELD(C, T, E, D, F)					\
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
@@ -181,7 +181,7 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, bool, srv_lookup, context->srv_lookup, "dns_lookup_kdc");
     INIT_FIELD(context, int, large_msg_size, 6000, "large_message_size");
-    INIT_FIELD(context, bool, dns_canonicalize_hostname, TRUE, "dns_canonize_hostname");
+    INIT_FIELD(context, bool, dns_canonicalize_hostname, TRUE, "dns_canonicalize_hostname");
     context->default_cc_name = NULL;
     return 0;
 }
@@ -691,7 +691,7 @@ krb5_set_dns_canonicalize_hostname (krb5_context context, krb5_boolean flag)
 }
 
 krb5_boolean KRB5_LIB_FUNCTION
-krb5_get_dns_canonize_hostname (krb5_context context)
+krb5_get_dns_canonicalize_hostname (krb5_context context)
 {
     return context->dns_canonicalize_hostname;
 }
@@ -704,4 +704,16 @@ krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
     if (usec)
 	*usec = context->kdc_usec_offset;
     return 0;
+}
+
+time_t KRB5_LIB_FUNCTION
+krb5_get_time_wrap (krb5_context context)
+{
+    return context->max_skew;
+}
+
+void KRB5_LIB_FUNCTION
+krb5_set_time_wrap (krb5_context context, time_t t)
+{
+    context->max_skew = t;
 }

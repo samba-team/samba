@@ -27,12 +27,11 @@
  */
 
 #include "mech_locl.h"
-#include "krb5/gsskrb5_locl.h"
-RCSID("$Id: gss_krb5.c,v 1.13 2006/10/20 22:05:02 lha Exp $");
+RCSID("$Id: gss_krb5.c,v 1.16 2006/11/07 14:41:35 lha Exp $");
 
 #include <krb5.h>
 #include <roken.h>
-
+#include "krb5/gsskrb5_locl.h"
 
 OM_uint32
 gss_krb5_copy_ccache(OM_uint32 *minor_status,
@@ -264,7 +263,10 @@ gss_krb5_export_lucid_sec_context(OM_uint32 *minor_status,
     krb5_storage *sp = NULL;
     uint32_t num;
 
-    if (context_handle == NULL || *context_handle == GSS_C_NO_CONTEXT || version != 1) {
+    if (context_handle == NULL
+	|| *context_handle == GSS_C_NO_CONTEXT
+	|| version != 1)
+    {
 	ret = EINVAL;
 	return GSS_S_FAILURE;
     }
@@ -509,9 +511,8 @@ gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
 {
     gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
     OM_uint32 maj_stat;
-    gss_OID_desc authz_oid_flat;
-    heim_oid authz_oid;
-    heim_oid new_authz_oid;
+    gss_OID_desc oid_flat;
+    heim_oid baseoid, oid;
     size_t size;
 
     if (context_handle == GSS_C_NO_CONTEXT) {
@@ -523,57 +524,55 @@ gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
 
     if (der_get_oid(GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X->elements,
 		    GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X->length,
-		    &authz_oid, NULL) != 0) {
+		    &baseoid, NULL) != 0) {
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
     
-    new_authz_oid.length = authz_oid.length + 1;
-    new_authz_oid.components = malloc(new_authz_oid.length * sizeof(*new_authz_oid.components));
-    if (!new_authz_oid.components) {
-	free(authz_oid.components);
+    oid.length = baseoid.length + 1;
+    oid.components = calloc(oid.length, sizeof(*oid.components));
+    if (oid.components == NULL) {
+	der_free_oid(&baseoid);
 
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
 
-    memcpy(new_authz_oid.components, authz_oid.components, 
-	   authz_oid.length * sizeof(*authz_oid.components));
+    memcpy(oid.components, baseoid.components, 
+	   baseoid.length * sizeof(*baseoid.components));
     
-    free(authz_oid.components);
+    der_free_oid(&baseoid);
 
-    new_authz_oid.components[new_authz_oid.length - 1] = ad_type;
+    oid.components[oid.length - 1] = ad_type;
 
-    authz_oid_flat.length = der_length_oid(&new_authz_oid);
-    authz_oid_flat.elements = malloc(authz_oid_flat.length);
-
-    if (!authz_oid_flat.elements) {
-	free(new_authz_oid.components);
-
+    oid_flat.length = der_length_oid(&oid);
+    oid_flat.elements = malloc(oid_flat.length);
+    if (oid_flat.elements == NULL) {
+	free(oid.components);
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
 
-    if (der_put_oid((unsigned char *)authz_oid_flat.elements + authz_oid_flat.length - 1, 
-		    authz_oid_flat.length,
-		    &new_authz_oid, &size) != 0) {
-	free(new_authz_oid.components);
+    if (der_put_oid((unsigned char *)oid_flat.elements + oid_flat.length - 1, 
+		    oid_flat.length, &oid, &size) != 0) {
+	free(oid.components);
 
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
+    if (oid_flat.length != size)
+	abort();
 
-    free(new_authz_oid.components);
+    free(oid.components);
 
     /* FINALLY, we have the OID */
 
-    maj_stat =
-	gss_inquire_sec_context_by_oid (minor_status,
-					context_handle,
-					&authz_oid_flat,
-					&data_set);
+    maj_stat = gss_inquire_sec_context_by_oid (minor_status,
+					       context_handle,
+					       &oid_flat,
+					       &data_set);
 
-    free(authz_oid_flat.elements);
+    free(oid_flat.elements);
 
     if (maj_stat)
 	return maj_stat;
@@ -608,20 +607,20 @@ gsskrb5_extract_key(OM_uint32 *minor_status,
     krb5_error_code ret;
     gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
     OM_uint32 major_status;
+    krb5_context context = NULL;
     krb5_storage *sp = NULL;
 
-    ret = _gsskrb5_init();
+    if (context_handle == GSS_C_NO_CONTEXT) {
+	ret = EINVAL;
+	return GSS_S_FAILURE;
+    }
+    
+    ret = krb5_init_context(&context);
     if(ret) {
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
 
-    if (context_handle == GSS_C_NO_CONTEXT) {
-	_gsskrb5_set_status("no context handle");
-	*minor_status = EINVAL;
-	return GSS_S_FAILURE;
-    }
-    
     major_status =
 	gss_inquire_sec_context_by_oid (minor_status,
 					context_handle,
@@ -630,15 +629,7 @@ gsskrb5_extract_key(OM_uint32 *minor_status,
     if (major_status)
 	return major_status;
     
-    if (data_set == GSS_C_NO_BUFFER_SET) {
-	_gsskrb5_set_status("no buffers returned");
-	gss_release_buffer_set(minor_status, &data_set);
-	*minor_status = EINVAL;
-	return GSS_S_FAILURE;
-    }
-
-    if (data_set->count != 1) {
-	_gsskrb5_set_status("%d != 1 buffers returned", data_set->count);
+    if (data_set == GSS_C_NO_BUFFER_SET || data_set->count != 1) {
 	gss_release_buffer_set(minor_status, &data_set);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
@@ -663,16 +654,17 @@ out:
     gss_release_buffer_set(minor_status, &data_set);
     if (sp)
 	krb5_storage_free(sp);
-    if (ret) {
-	_gsskrb5_set_error_string();
-	if (keyblock) {
-	    krb5_free_keyblock(_gsskrb5_context, *keyblock);
-	}
-
-	*minor_status = ret;
-	return GSS_S_FAILURE;
+    if (ret && keyblock) {
+	krb5_free_keyblock(context, *keyblock);
+	*keyblock = NULL;
     }
-    *minor_status = 0;
+    if (context)
+	krb5_free_context(context);
+
+    *minor_status = ret;
+    if (ret)
+	return GSS_S_FAILURE;
+
     return GSS_S_COMPLETE;
 }
 
@@ -705,6 +697,6 @@ gsskrb5_get_subkey(OM_uint32 *minor_status,
 {
     return gsskrb5_extract_key(minor_status,
 			       context_handle,
-			       GSS_KRB5_GET_ACCEPTOR_SUBKEY_X,
+			       GSS_KRB5_GET_SUBKEY_X,
 			       keyblock);
 }

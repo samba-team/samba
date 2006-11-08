@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: init_sec_context.c,v 1.72 2006/10/24 23:03:19 lha Exp $");
+RCSID("$Id: init_sec_context.c,v 1.73 2006/11/07 17:40:01 lha Exp $");
 
 /*
  * copy the addresses from `input_chan_bindings' (if any) to
@@ -549,18 +549,18 @@ failure:
 
 static OM_uint32
 repl_mutual
-           (OM_uint32 * minor_status,
-	    gsskrb5_ctx ctx,
-            const gss_OID mech_type,
-            OM_uint32 req_flags,
-            OM_uint32 time_req,
-            const gss_channel_bindings_t input_chan_bindings,
-            const gss_buffer_t input_token,
-            gss_OID * actual_mech_type,
-            gss_buffer_t output_token,
-            OM_uint32 * ret_flags,
-            OM_uint32 * time_rec
-           )
+(OM_uint32 * minor_status,
+ gsskrb5_ctx ctx,
+ const gss_OID mech_type,
+ OM_uint32 req_flags,
+ OM_uint32 time_req,
+ const gss_channel_bindings_t input_chan_bindings,
+ const gss_buffer_t input_token,
+ gss_OID * actual_mech_type,
+ gss_buffer_t output_token,
+ OM_uint32 * ret_flags,
+ OM_uint32 * time_rec
+    )
 {
     OM_uint32 ret;
     krb5_error_code kret;
@@ -574,7 +574,7 @@ repl_mutual
     if (actual_mech_type)
 	*actual_mech_type = GSS_KRB5_MECHANISM;
 
-    if (req_flags & GSS_C_DCE_STYLE) {
+    if (ctx->flags & GSS_C_DCE_STYLE) {
 	/* There is no OID wrapping. */
 	indata.length	= input_token->length;
 	indata.data	= input_token->value;
@@ -619,8 +619,8 @@ repl_mutual
     *minor_status = 0;
     if (time_rec) {
 	ret = _gsskrb5_lifetime_left(minor_status,
-				   ctx->lifetime,
-				   time_rec);
+				     ctx->lifetime,
+				     time_rec);
     } else {
 	ret = GSS_S_COMPLETE;
     }

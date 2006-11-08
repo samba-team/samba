@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h,v 1.253 2006/10/20 18:12:06 lha Exp $ */
+/* $Id: krb5.h,v 1.254 2006/11/07 00:17:42 lha Exp $ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
@@ -77,6 +77,9 @@ typedef struct krb5_get_creds_opt_data *krb5_get_creds_opt;
 
 struct krb5_digest;
 typedef struct krb5_digest *krb5_digest;
+
+typedef struct krb5_rd_req_in_ctx *krb5_rd_req_in_ctx;
+typedef struct krb5_rd_req_out_ctx *krb5_rd_req_out_ctx;
 
 typedef CKSUMTYPE krb5_cksumtype;
 
