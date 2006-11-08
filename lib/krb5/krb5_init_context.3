@@ -35,29 +35,31 @@
 .Dt KRB5_CONTEXT 3
 .Os HEIMDAL
 .Sh NAME
-.Nm krb5_context ,
-.Nm krb5_init_context ,
-.Nm krb5_free_context ,
-.Nm krb5_init_ets ,
 .Nm krb5_add_et_list ,
 .Nm krb5_add_extra_addresses ,
 .Nm krb5_add_ignore_addresses ,
-.Nm krb5_get_extra_addresses ,
-.Nm krb5_get_ignore_addresses ,
-.Nm krb5_set_extra_addresses ,
-.Nm krb5_set_ignore_addresses ,
-.Nm krb5_set_fcache_version ,
-.Nm krb5_get_fcache_version ,
-.Nm krb5_set_dns_canonize_hostname ,
+.Nm krb5_context ,
+.Nm krb5_free_config_files ,
+.Nm krb5_free_context ,
+.Nm krb5_get_default_config_files ,
 .Nm krb5_get_dns_canonize_hostname ,
+.Nm krb5_get_extra_addresses ,
+.Nm krb5_get_fcache_version ,
+.Nm krb5_get_ignore_addresses ,
 .Nm krb5_get_kdc_sec_offset ,
-.Nm krb5_set_config_files ,
+.Nm krb5_get_max_time_skew ,
+.Nm krb5_get_use_admin_kdc
+.Nm krb5_init_context ,
+.Nm krb5_init_ets ,
 .Nm krb5_prepend_config_files ,
 .Nm krb5_prepend_config_files_default ,
-.Nm krb5_get_default_config_files ,
-.Nm krb5_free_config_files ,
+.Nm krb5_set_config_files ,
+.Nm krb5_set_dns_canonize_hostname ,
+.Nm krb5_set_extra_addresses ,
+.Nm krb5_set_fcache_version ,
+.Nm krb5_set_ignore_addresses ,
+.Nm krb5_set_max_time_skew ,
 .Nm krb5_set_use_admin_kdc ,
-.Nm krb5_get_use_admin_kdc
 .Nd create, modify and delete krb5_context structures
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
@@ -170,6 +172,15 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Ft krb5_boolean
 .Fo krb5_get_use_admin_kdc
 .Fa "krb5_context context"
+.Fc
+.Ft time_t
+.Fo krb5_get_max_time_skew
+.Fa "krb5_context context"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_set_max_time_skew
+.Fa "krb5_context context"
+.Fa "time_t time"
 .Fc
 .Sh DESCRIPTION
 The
@@ -284,6 +295,11 @@ sets if all KDC requests should go admin KDC.
 .Pp
 .Fn krb5_get_use_admin_kdc
 gets if all KDC requests should go admin KDC.
+.Pp
+.Fn krb5_get_max_time_skew
+and
+.Fn krb5_set_max_time_skew
+get and sets the maximum allowed time skew between client and server.
 .Sh SEE ALSO
 .Xr errno 2 ,
 .Xr krb5 3 ,
