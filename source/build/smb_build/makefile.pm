@@ -146,6 +146,7 @@ STLD_FLAGS=$self->{config}->{STLD_FLAGS}
 
 SHLD=$self->{config}->{SHLD}
 SHLD_FLAGS=$self->{config}->{SHLD_FLAGS} -L$libdir
+SHLD_UNDEF_FLAGS=$self->{config}->{SHLD_UNDEF_FLAGS}
 SHLIBEXT=$self->{config}->{SHLIBEXT}
 
 XSLTPROC=$self->{config}->{XSLTPROC}
@@ -243,11 +244,13 @@ sub SharedLibrary($$)
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 
+	my $extraflags = "";
 	if ($ctx->{TYPE} eq "MODULE" and defined($ctx->{INIT_FUNCTION})) {
 		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
 		$init_fn =~ s/\(\*\)/init_module/;
 		my $proto_fn = $ctx->{INIT_FUNCTION_TYPE};
 		$proto_fn =~ s/\(\*\)/$ctx->{INIT_FUNCTION}/;
+		$extraflags = "\$(SHLD_UNDEF_FLAGS)";
 
 		$self->output(<< "__EOD__"
 bin/$ctx->{NAME}_init_module.c:
@@ -285,7 +288,7 @@ $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $extraflags \\
 		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) $soarg \\
 		$init_obj $singlesoarg 
 __EOD__
