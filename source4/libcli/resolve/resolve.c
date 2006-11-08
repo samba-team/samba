@@ -123,49 +123,45 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 {
 	struct composite_context *c;
 	struct resolve_state *state;
-	NTSTATUS status;
 
-	c = talloc_zero(NULL, struct composite_context);
-	if (c == NULL) goto failed;
+	c = composite_create(event_ctx, event_ctx);
+	if (c == NULL) return NULL;
 
-	state = talloc(c, struct resolve_state);
-	if (state == NULL) goto failed;
-
-	status = nbt_name_dup(state, name, &state->name);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
-
-	if (methods == NULL) goto failed;
-	state->methods = str_list_copy(state, methods);
-	if (state->methods == NULL) goto failed;
-
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->private_data = state;
+	if (methods == NULL) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER);
+		return c;
+	}
 
 	if (event_ctx == NULL) {
 		c->event_ctx = event_context_init(c);
-		if (c->event_ctx == NULL) goto failed;
-
 	} else {
 		c->event_ctx = talloc_reference(c, event_ctx);
 	}
+	if (composite_nomem(c->event_ctx, c)) return c;
+
+	state = talloc(c, struct resolve_state);
+	if (composite_nomem(state, c)) return c;
+	c->private_data = state;
+
+	c->status = nbt_name_dup(state, name, &state->name);
+	if (!composite_is_ok(c)) return c;
+	
+	state->methods = str_list_copy(state, methods);
+	if (composite_nomem(state->methods, c)) return c;
 
 	if (is_ipaddress(state->name.name) || 
 	    strcasecmp(state->name.name, "localhost") == 0) {
 		struct ipv4_addr ip = interpret_addr2(state->name.name);
 		state->reply_addr = talloc_strdup(state, sys_inet_ntoa(ip));
-		if (!state->reply_addr) goto failed;
+		if (composite_nomem(state->reply_addr, c)) return c;
 		composite_done(c);
 		return c;
 	}
 
 	state->creq = setup_next_method(c);
-	if (state->creq == NULL) goto failed;
+	if (composite_nomem(state->creq, c)) return c;
 	
 	return c;
-
-failed:
-	talloc_free(c);
-	return NULL;
 }
 
 /*
