@@ -32,7 +32,7 @@
  *		-l,--log-base
  *		-n,--netbios-name
  *		-W,--workgroup
- *		-r,--realm
+ *		--realm
  *		-i,--scope
  */
 
@@ -154,7 +154,7 @@ struct poptOption popt_common_connection[] = {
 	{ "socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use", "SOCKETOPTIONS" },
 	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
 	{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
-	{ "realm", 'r', POPT_ARG_STRING, NULL, 'r', "Set the realm name", "REALM" },
+	{ "realm", 0, POPT_ARG_STRING, NULL, 'r', "Set the realm name", "REALM" },
 	{ "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },
 	{ "maxprotocol", 'm', POPT_ARG_STRING, NULL, 'm', "Set max protocol level", "MAXPROTOCOL" },
 	{ NULL }
