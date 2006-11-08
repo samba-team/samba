@@ -1,5 +1,11 @@
 2006-11-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_context.c: rename krb5_[gs]et_time_wrap to
+	krb5_[gs]et_max_time_skew
+
+	* krb5/copy_ccache.c: _gsskrb5_extract_authz_data_from_sec_context
+	no longer used, bye bye
+
 	* mech/gss_krb5.c: No depenency of the krb5 gssapi mech.
 
 	* mech/gss_krb5.c (gsskrb5_extract_authtime_from_sec_context): use
