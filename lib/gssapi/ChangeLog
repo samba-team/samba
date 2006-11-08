@@ -1,5 +1,7 @@
 2006-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_krb5.c: Add gsskrb5_set_default_realm.
+
 	* krb5/set_sec_context_option.c: Support
 	GSS_KRB5_SET_DEFAULT_REALM_X.
 
