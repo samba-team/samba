@@ -764,6 +764,15 @@ static BOOL vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, i
 	return result;
 }
 
+static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+				uint32 share_mode)
+{
+	START_PROFILE(syscall_kernel_flock);
+	kernel_flock(fd, share_mode);
+	END_PROFILE(syscall_kernel_flock);
+	return 0;
+}
+
 static BOOL vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
 	BOOL result;
@@ -1188,6 +1197,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_ftruncate),	SMB_VFS_OP_FTRUNCATE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_lock),	SMB_VFS_OP_LOCK,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_kernel_flock),	SMB_VFS_OP_KERNEL_FLOCK,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_getlock),	SMB_VFS_OP_GETLOCK,
 	 SMB_VFS_LAYER_OPAQUE},
