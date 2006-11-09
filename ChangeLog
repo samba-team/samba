@@ -1,5 +1,31 @@
-2006-11-06  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_c_make_checksum.3: Document krb5_c_keylength.
+
+	* lib/krb5/mit_glue.c: Add krb5_c_keylength.
+	
+2006-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pac.c: Almost enough code to do PAC parsing and
+	verification, missing in the unix2NTTIME and ucs2 corner. The
+	later will be adressed by finally adding libwind.
+
+	* lib/krb5/krb5_init_context.3: document krb5_[gs]et_max_time_skew
+
+	* kdc/hpropd.c: Remove support dumping to a kerberos 4 database.
+	
+2006-11-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/context.c: rename krb5_[gs]et_time_wrap to
+	krb5_[gs]et_max_time_skew
+
+	* kdc/pkinit.c: Catch error string from hx509_cms_verify_signed.
+	Check for id-pKKdcEkuOID and warn if its not there.
+
+	* lib/krb5/rd_req.c: Add more krb5_rd_req_out_get functions.
+
+2006-11-06  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/krb5/krb5.h: krb5_rd_req{,_in,_out}_ctx.
 
 	* lib/krb5/rd_req.c (krb5_rd_req_ctx): Add context all singing-all
