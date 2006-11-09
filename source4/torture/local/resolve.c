@@ -40,11 +40,11 @@ static bool test_async_resolve(struct torture_context *tctx)
 	ZERO_STRUCT(n);
 	n.name = host;
 
-	torture_comment(tctx, "Testing async resolve of localhost for %d seconds\n",
-					timelimit);
+	torture_comment(tctx, "Testing async resolve of '%s' for %d seconds\n",
+			host, timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		const char *s;
-		struct composite_context *c = resolve_name_host_send(&n, ev);
+		struct composite_context *c = resolve_name_host_send(mem_ctx, ev, &n);
 		torture_assert(tctx, c != NULL, "resolve_name_host_send");
 		torture_assert_ntstatus_ok(tctx, resolve_name_host_recv(c, mem_ctx, &s),
 								   "async resolve failed");
@@ -52,7 +52,7 @@ static bool test_async_resolve(struct torture_context *tctx)
 	}
 
 	torture_comment(tctx, "async rate of %.1f resolves/sec\n", 
-					count/timeval_elapsed(&tv));
+			count/timeval_elapsed(&tv));
 	return true;
 }
 
@@ -66,23 +66,22 @@ static bool test_sync_resolve(struct torture_context *tctx)
 	int count = 0;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 
-	torture_comment(tctx, "Testing sync resolve of localhost for %d seconds\n", 
-				 timelimit);
+	torture_comment(tctx, "Testing sync resolve of '%s' for %d seconds\n", 
+			host, timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		sys_inet_ntoa(interpret_addr2(host));
 		count++;
 	}
 	
 	torture_comment(tctx, "sync rate of %.1f resolves/sec\n", 
-				 count/timeval_elapsed(&tv));
+			count/timeval_elapsed(&tv));
 	return true;
 }
 
 
 struct torture_suite *torture_local_resolve(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx,
-													   "RESOLVE");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "RESOLVE");
 
 	torture_suite_add_simple_test(suite, "async", test_async_resolve);
 	torture_suite_add_simple_test(suite, "sync", test_sync_resolve);
