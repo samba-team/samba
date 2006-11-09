@@ -164,6 +164,10 @@ enum profile_stats_values
 #define syscall_fcntl_lock_count __profile_stats_value(PR_VALUE_SYSCALL_FCNTL_LOCK, count)
 #define syscall_fcntl_lock_time __profile_stats_value(PR_VALUE_SYSCALL_FCNTL_LOCK, time)
 
+	PR_VALUE_SYSCALL_KERNEL_FLOCK,
+#define syscall_kernel_flock_count __profile_stats_value(PR_VALUE_SYSCALL_KERNEL_FLOCK, count)
+#define syscall_kernel_flock_time __profile_stats_value(PR_VALUE_SYSCALL_KERNEL_FLOCK, time)
+
 	PR_VALUE_SYSCALL_FCNTL_GETLOCK,
 #define syscall_fcntl_getlock_count __profile_stats_value(PR_VALUE_SYSCALL_FCNTL_GETLOCK, count)
 #define syscall_fcntl_getlock_time __profile_stats_value(PR_VALUE_SYSCALL_FCNTL_GETLOCK, time)
