@@ -35,10 +35,6 @@
 #include "lib/util/mutex.h"
 #include "smbd/process_model.h"
 
-/* For specifying event context to GSSAPI below */
-#include "system/kerberos.h"
-#include "heimdal/lib/gssapi/gssapi_locl.h"
-
 static pthread_key_t title_key;
 
 struct new_conn_state {
@@ -534,9 +530,6 @@ static void thread_model_init(struct event_context *event_context)
 	d_ops.log_task_id = thread_log_task_id;
 
 	register_debug_handlers("thread", &d_ops);
-
-	/* Hack to ensure that GSSAPI uses the right event context */
-	gssapi_krb5_init_ev(event_context);
 }
 
 
