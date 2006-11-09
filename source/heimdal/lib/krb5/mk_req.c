@@ -64,9 +64,7 @@ krb5_mk_req_exact(krb5_context context,
     if (auth_context && *auth_context && (*auth_context)->keytype)
 	this_cred.session.keytype = (*auth_context)->keytype;
 
-    /* This is the network contact with the KDC */
     ret = krb5_get_credentials (context, 0, ccache, &this_cred, &cred);
-
     krb5_free_cred_contents(context, &this_cred);
     if (ret)
 	return ret;

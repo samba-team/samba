@@ -34,7 +34,7 @@
 #include "krb5/gsskrb5_locl.h"
 #include <gssapi_mech.h>
 
-RCSID("$Id: external.c,v 1.21 2006/11/07 21:05:03 lha Exp $");
+RCSID("$Id: external.c,v 1.22 2006/11/08 23:00:20 lha Exp $");
 
 /*
  * The implementation must reserve static storage for a
@@ -351,6 +351,13 @@ static gss_OID_desc gss_krb5_set_allowable_enctypes_x_desc =
 {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0e")};
 
 gss_OID GSS_KRB5_SET_ALLOWABLE_ENCTYPES_X = &gss_krb5_set_allowable_enctypes_x_desc;
+
+/* 1.2.752.43.13.15 */
+static gss_OID_desc gss_krb5_set_default_realm_x_desc =
+{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0f")};
+
+gss_OID GSS_KRB5_SET_DEFAULT_REALM_X = &gss_krb5_set_default_realm_x_desc;
+
 
 /* 1.2.752.43.14.1 */
 static gss_OID_desc gss_sasl_digest_md5_mechanism_desc =

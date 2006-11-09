@@ -335,9 +335,6 @@ der_put_utctime (unsigned char *p, size_t len,
     return 0;
 }
 
-/* This API is not what you might expect.  p is a pointer to the *end*
- * (last byte) of the buffer, of length len */
-
 int
 der_put_oid (unsigned char *p, size_t len,
 	     const heim_oid *data, size_t *size)

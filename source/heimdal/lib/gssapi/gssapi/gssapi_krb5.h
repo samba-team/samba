@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi_krb5.h,v 1.12 2006/11/05 00:06:09 lha Exp $ */
+/* $Id: gssapi_krb5.h,v 1.14 2006/11/08 23:01:01 lha Exp $ */
 
 #ifndef GSSAPI_KRB5_H_
 #define GSSAPI_KRB5_H_
@@ -64,6 +64,7 @@ extern gss_OID GSS_KRB5_COMPAT_DES3_MIC_X;
 extern gss_OID GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X;
 extern gss_OID GSS_KRB5_SET_DNS_CANONICALIZE_X;
 extern gss_OID GSS_KRB5_SEND_TO_KDC_X;
+extern gss_OID GSS_KRB5_SET_DEFAULT_REALM_X;
 /* Extensions inquire context */
 extern gss_OID GSS_KRB5_GET_TKT_FLAGS_X;
 extern gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X;
@@ -128,6 +129,9 @@ struct gsskrb5_send_to_kdc {
 
 OM_uint32
 gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *);
+
+OM_uint32
+gsskrb5_set_default_realm(const char *);
 
 OM_uint32
 gsskrb5_extract_authtime_from_sec_context(OM_uint32 *, gss_ctx_id_t, time_t *);
