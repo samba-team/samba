@@ -43,6 +43,7 @@
 .Nm krb5_c_get_checksum ,
 .Nm krb5_c_is_coll_proof_cksum ,
 .Nm krb5_c_is_keyed_cksum ,
+.Nm krb5_c_keylength ,
 .Nm krb5_c_make_checksum ,
 .Nm krb5_c_make_random_key ,
 .Nm krb5_c_set_checksum ,
@@ -153,6 +154,12 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Ft krb5_boolean
 .Fo krb5_c_is_keyed_cksum
 .Fa "krb5_cksumtype ctype"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_c_keylength
+.Fa "krb5_context context"
+.Fa "krb5_enctype enctype"
+.Fa "size_t *length"
 .Fc
 .Sh DESCRIPTION
 The functions starting with krb5_c are compat functions with MIT kerberos.
@@ -272,6 +279,12 @@ is a keyed checksum type.
 returns true if
 .Fa ctype
 is a collition proof checksum type.
+.Pp
+.Fn krb5_c_keylength
+return the key
+.Fa length
+for the
+.Fa enctype .
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_create_checksum 3 ,
