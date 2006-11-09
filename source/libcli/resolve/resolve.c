@@ -38,7 +38,7 @@ static struct composite_context *setup_next_method(struct composite_context *c);
 /* pointers to the resolver backends */
 static const struct resolve_method {
 	const char *name;
-	struct composite_context *(*send_fn)(struct nbt_name *, struct event_context *);
+	struct composite_context *(*send_fn)(TALLOC_CTX *mem_ctx, struct event_context *, struct nbt_name *);
 	NTSTATUS (*recv_fn)(struct composite_context *, TALLOC_CTX *, const char **);
 
 } resolve_methods[] = {
@@ -101,7 +101,7 @@ static struct composite_context *setup_next_method(struct composite_context *c)
 	do {
 		const struct resolve_method *method = find_method(state->methods[0]);
 		if (method) {
-			creq = method->send_fn(&state->name, c->event_ctx);
+			creq = method->send_fn(c, c->event_ctx, &state->name);
 		}
 		if (creq == NULL && state->methods[0]) state->methods++;
 

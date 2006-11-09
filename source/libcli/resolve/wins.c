@@ -27,19 +27,20 @@
 /*
   wins name resolution method - async send
  */
-struct composite_context *resolve_name_wins_send(struct nbt_name *name, 
-						 struct event_context *event_ctx)
+struct composite_context *resolve_name_wins_send(TALLOC_CTX *mem_ctx, 
+						 struct event_context *event_ctx,
+						 struct nbt_name *name)
 {
 	const char **address_list = lp_wins_server_list();
 	if (address_list == NULL) return NULL;
-	return resolve_name_nbtlist_send(name, event_ctx, address_list, False, True);
+	return resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, False, True);
 }
 
 /*
   wins name resolution method - recv side
  */
 NTSTATUS resolve_name_wins_recv(struct composite_context *c, 
-				 TALLOC_CTX *mem_ctx, const char **reply_addr)
+				TALLOC_CTX *mem_ctx, const char **reply_addr)
 {
 	return resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
 }
@@ -51,7 +52,7 @@ NTSTATUS resolve_name_wins(struct nbt_name *name,
 			    TALLOC_CTX *mem_ctx,
 			    const char **reply_addr)
 {
-	struct composite_context *c = resolve_name_wins_send(name, NULL);
+	struct composite_context *c = resolve_name_wins_send(mem_ctx, NULL, name);
 	return resolve_name_wins_recv(c, mem_ctx, reply_addr);
 }
 

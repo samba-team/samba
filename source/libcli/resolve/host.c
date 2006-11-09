@@ -77,6 +77,7 @@ static void run_child(struct composite_context *c, int fd)
 	if (address != NULL) {
 		write(fd, address, strlen(address)+1);
 	}
+	close(fd);
 }
 
 /*
@@ -121,15 +122,16 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 /*
   gethostbyname name resolution method - async send
  */
-struct composite_context *resolve_name_host_send(struct nbt_name *name, 
-						struct event_context *event_ctx)
+struct composite_context *resolve_name_host_send(TALLOC_CTX *mem_ctx,
+						 struct event_context *event_ctx,
+						 struct nbt_name *name)
 {
 	struct composite_context *c;
 	struct host_state *state;
 	int fd[2] = { -1, -1 };
 	int ret;
 
-	c = composite_create(event_ctx, event_ctx);
+	c = composite_create(mem_ctx, event_ctx);
 	if (c == NULL) return NULL;
 
 	c->event_ctx = talloc_reference(c, event_ctx);
@@ -172,6 +174,7 @@ struct composite_context *resolve_name_host_send(struct nbt_name *name,
 		return c;
 	}
 
+
 	if (state->child == 0) {
 		close(fd[0]);
 		run_child(c, fd[1]);
@@ -189,7 +192,7 @@ struct composite_context *resolve_name_host_send(struct nbt_name *name,
   gethostbyname name resolution method - recv side
 */
 NTSTATUS resolve_name_host_recv(struct composite_context *c, 
-				 TALLOC_CTX *mem_ctx, const char **reply_addr)
+				TALLOC_CTX *mem_ctx, const char **reply_addr)
 {
 	NTSTATUS status;
 
@@ -211,7 +214,7 @@ NTSTATUS resolve_name_host(struct nbt_name *name,
 			    TALLOC_CTX *mem_ctx,
 			    const char **reply_addr)
 {
-	struct composite_context *c = resolve_name_host_send(name, NULL);
+	struct composite_context *c = resolve_name_host_send(mem_ctx, NULL, name);
 	return resolve_name_host_recv(c, mem_ctx, reply_addr);
 }
 

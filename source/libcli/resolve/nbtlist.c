@@ -95,11 +95,12 @@ static void nbtlist_handler(struct nbt_name_request *req)
 /*
   nbtlist name resolution method - async send
  */
-struct composite_context *resolve_name_nbtlist_send(struct nbt_name *name, 
-						   struct event_context *event_ctx,
-						   const char **address_list,
-						   BOOL broadcast,
-						   BOOL wins_lookup)
+struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
+						    struct event_context *event_ctx,
+						    struct nbt_name *name, 
+						    const char **address_list,
+						    BOOL broadcast,
+						    BOOL wins_lookup)
 {
 	struct composite_context *c;
 	struct nbtlist_state *state;
@@ -186,8 +187,8 @@ NTSTATUS resolve_name_nbtlist(struct nbt_name *name,
 			      BOOL broadcast, BOOL wins_lookup,
 			      const char **reply_addr)
 {
-	struct composite_context *c = resolve_name_nbtlist_send(name, NULL, address_list, 
-							       broadcast, wins_lookup);
+	struct composite_context *c = resolve_name_nbtlist_send(mem_ctx, NULL, name, address_list, 
+							        broadcast, wins_lookup);
 	return resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
 }
 

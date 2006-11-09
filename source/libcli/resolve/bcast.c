@@ -28,15 +28,16 @@
 /*
   broadcast name resolution method - async send
  */
-struct composite_context *resolve_name_bcast_send(struct nbt_name *name, 
-						 struct event_context *event_ctx)
+struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx, 
+						  struct event_context *event_ctx,
+						  struct nbt_name *name)
 {
 	int num_interfaces = iface_count();
 	const char **address_list;
 	struct composite_context *c;
 	int i, count=0;
 
-	address_list = talloc_array(NULL, const char *, num_interfaces+1);
+	address_list = talloc_array(mem_ctx, const char *, num_interfaces+1);
 	if (address_list == NULL) return NULL;
 
 	for (i=0;i<num_interfaces;i++) {
@@ -51,7 +52,7 @@ struct composite_context *resolve_name_bcast_send(struct nbt_name *name,
 	}
 	address_list[count] = NULL;
 
-	c = resolve_name_nbtlist_send(name, event_ctx, address_list, True, False);
+	c = resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, True, False);
 	talloc_free(address_list);
 
 	return c;	
@@ -73,7 +74,7 @@ NTSTATUS resolve_name_bcast(struct nbt_name *name,
 			    TALLOC_CTX *mem_ctx,
 			    const char **reply_addr)
 {
-	struct composite_context *c = resolve_name_bcast_send(name, NULL);
+	struct composite_context *c = resolve_name_bcast_send(mem_ctx, NULL, name);
 	return resolve_name_bcast_recv(c, mem_ctx, reply_addr);
 }
 
