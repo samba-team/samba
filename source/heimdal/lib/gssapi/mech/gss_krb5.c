@@ -27,11 +27,11 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_krb5.c,v 1.16 2006/11/07 14:41:35 lha Exp $");
+RCSID("$Id: gss_krb5.c,v 1.20 2006/11/08 23:11:03 lha Exp $");
 
 #include <krb5.h>
 #include <roken.h>
-#include "krb5/gsskrb5_locl.h"
+
 
 OM_uint32
 gss_krb5_copy_ccache(OM_uint32 *minor_status,
@@ -416,6 +416,24 @@ gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status, void *c)
     return GSS_S_COMPLETE;
 }
 
+/*
+ *
+ */
+
+OM_uint32
+gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status, 
+				gss_cred_id_t cred,
+				OM_uint32 num_enctypes,
+				krb5_enctype *enctypes)
+{
+    *minor_status = 0;
+    return GSS_S_COMPLETE;
+}
+
+/*
+ *
+ */
+
 OM_uint32
 gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
 {
@@ -443,6 +461,10 @@ gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
     return (GSS_S_COMPLETE);
 }
 
+/*
+ *
+ */
+
 OM_uint32
 gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 					  gss_ctx_id_t context_handle,
@@ -450,11 +472,8 @@ gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 {
     gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
     OM_uint32 maj_stat;
-    krb5_error_code ret;
-    OM_uint32 time32;
 
     if (context_handle == GSS_C_NO_CONTEXT) {
-	_gsskrb5_set_status("no context handle");
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
@@ -468,14 +487,12 @@ gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 	return maj_stat;
     
     if (data_set == GSS_C_NO_BUFFER_SET) {
-	_gsskrb5_set_status("no buffers returned");
 	gss_release_buffer_set(minor_status, &data_set);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
     if (data_set->count != 1) {
-	_gsskrb5_set_status("%d != 1 buffers returned", data_set->count);
 	gss_release_buffer_set(minor_status, &data_set);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
@@ -483,25 +500,25 @@ gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 
     if (data_set->elements[0].length != 4) {
 	gss_release_buffer_set(minor_status, &data_set);
-	_gsskrb5_set_status("Error extracting authtime from security context: only got %d < 4 bytes",
-			    data_set->elements[0].length);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
-    ret = _gsskrb5_decode_om_uint32(data_set->elements[0].value, &time32);
-    if (ret) {
-	gss_release_buffer_set(minor_status, &data_set);
-	*minor_status = ret;
-	return GSS_S_FAILURE;
+    {
+	unsigned char *buf = data_set->elements[0].value;
+	*authtime = (buf[3] <<24) | (buf[2] << 16) | 
+	    (buf[1] << 8) | (buf[0] << 0);
     }
-    *authtime = time32;
 
     gss_release_buffer_set(minor_status, &data_set);
-    
+
     *minor_status = 0;
     return GSS_S_COMPLETE;
 }
+
+/*
+ *
+ */
 
 OM_uint32
 gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
@@ -598,6 +615,10 @@ gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
+/*
+ *
+ */
+
 static OM_uint32
 gsskrb5_extract_key(OM_uint32 *minor_status,
 		    gss_ctx_id_t context_handle,
@@ -668,6 +689,10 @@ out:
     return GSS_S_COMPLETE;
 }
 
+/*
+ *
+ */
+
 OM_uint32
 gsskrb5_extract_service_keyblock(OM_uint32 *minor_status,
 				 gss_ctx_id_t context_handle,
@@ -699,4 +724,26 @@ gsskrb5_get_subkey(OM_uint32 *minor_status,
 			       context_handle,
 			       GSS_KRB5_GET_SUBKEY_X,
 			       keyblock);
+}
+
+OM_uint32
+gsskrb5_set_default_realm(const char *realm)
+{
+        struct _gss_mech_switch	*m;
+	gss_buffer_desc buffer;
+	OM_uint32 junk;
+
+	_gss_load_mech();
+
+	buffer.value = rk_UNCONST(realm);
+	buffer.length = strlen(realm);
+
+	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+		if (m->gm_mech.gm_set_sec_context_option == NULL)
+			continue;
+		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
+		    GSS_KRB5_SET_DEFAULT_REALM_X, &buffer);
+	}
+
+	return (GSS_S_COMPLETE);
 }

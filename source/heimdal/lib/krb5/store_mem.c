@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id: store_mem.c,v 1.12 2004/05/25 21:44:17 lha Exp $");
+RCSID("$Id: store_mem.c,v 1.13 2006/11/07 23:02:53 lha Exp $");
 
 typedef struct mem_storage{
     unsigned char *base;
@@ -62,6 +62,12 @@ mem_store(krb5_storage *sp, const void *data, size_t size)
     memmove(s->ptr, data, size);
     sp->seek(sp, size, SEEK_CUR);
     return size;
+}
+
+static ssize_t
+mem_no_store(krb5_storage *sp, const void *data, size_t size)
+{
+    return -1;
 }
 
 static off_t
@@ -116,4 +122,29 @@ krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_from_data(krb5_data *data)
 {
 	return krb5_storage_from_mem(data->data, data->length);
+}
+
+krb5_storage * KRB5_LIB_FUNCTION
+krb5_storage_from_readonly_mem(const void *buf, size_t len)
+{
+    krb5_storage *sp = malloc(sizeof(krb5_storage));
+    mem_storage *s;
+    if(sp == NULL)
+	return NULL;
+    s = malloc(sizeof(*s));
+    if(s == NULL) {
+	free(sp);
+	return NULL;
+    }
+    sp->data = s;
+    sp->flags = 0;
+    sp->eof_code = HEIM_ERR_EOF;
+    s->base = rk_UNCONST(buf);
+    s->size = len;
+    s->ptr = rk_UNCONST(buf);
+    sp->fetch = mem_fetch;
+    sp->store = mem_no_store;
+    sp->seek = mem_seek;
+    sp->free = NULL;
+    return sp;
 }

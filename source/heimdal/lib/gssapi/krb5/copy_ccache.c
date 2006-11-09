@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 - 2001, 2003 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 2000 - 2001, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: copy_ccache.c,v 1.15 2006/10/07 22:14:22 lha Exp $");
+RCSID("$Id: copy_ccache.c,v 1.16 2006/11/08 02:42:50 lha Exp $");
 
 #if 0
 OM_uint32
@@ -188,4 +188,3 @@ out:
     *minor_status = kret;
     return GSS_S_FAILURE;
 }
-

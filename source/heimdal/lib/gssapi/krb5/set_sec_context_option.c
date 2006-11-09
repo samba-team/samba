@@ -36,7 +36,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: set_sec_context_option.c,v 1.7 2006/11/04 03:01:14 lha Exp $");
+RCSID("$Id: set_sec_context_option.c,v 1.8 2006/11/08 23:06:42 lha Exp $");
 
 static OM_uint32
 get_bool(OM_uint32 *minor_status,
@@ -115,6 +115,27 @@ _gsskrb5_set_sec_context_option
 	}
 
 	_gsskrb5_register_acceptor_identity(str);
+	free(str);
+
+	*minor_status = 0;
+	return GSS_S_COMPLETE;
+
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_SET_DEFAULT_REALM_X)) {
+	char *str;
+
+	if (value == NULL || value->length == 0) {
+	    *minor_status = 0;
+	    return GSS_S_CALL_INACCESSIBLE_READ;
+	}
+	str = malloc(value->length + 1);
+	if (str) {
+	    *minor_status = 0;
+	    return GSS_S_UNAVAILABLE;
+	}
+	memcpy(str, value->value, value->length);
+	str[value->length] = '\0';
+
+	krb5_set_default_realm(_gsskrb5_context, str);
 	free(str);
 
 	*minor_status = 0;
