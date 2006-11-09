@@ -1276,8 +1276,8 @@ char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit)
 char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 {
 	ADS_STATUS status;
-	LDAPMessage *res;
-	char *base, *wkn_dn, *ret, **wkn_dn_exp, **bind_dn_exp;
+	LDAPMessage *res = NULL;
+	char *base, *wkn_dn, *ret = NULL, **wkn_dn_exp, **bind_dn_exp;
 	const char *attrs[] = {"distinguishedName", NULL};
 	int new_ln, wkn_ln, bind_ln, i;
 
@@ -1293,20 +1293,28 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 	status = ads_search_dn(ads, &res, base, attrs);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(1,("Failed while searching for: %s\n", base));
-		SAFE_FREE(base);
-		return NULL;
+		goto out;
 	}
-	SAFE_FREE(base);
 
 	if (ads_count_replies(ads, res) != 1) {
-		ads_msgfree(ads, res);
-		return NULL;
+		goto out;
 	}
 
 	/* substitute the bind-path from the well-known-guid-search result */
 	wkn_dn = ads_get_dn(ads, res);
+	if (!wkn_dn) {
+		goto out;
+	}
+
 	wkn_dn_exp = ldap_explode_dn(wkn_dn, 0);
+	if (!wkn_dn_exp) {
+		goto out;
+	}
+
 	bind_dn_exp = ldap_explode_dn(ads->config.bind_path, 0);
+	if (!bind_dn_exp) {
+		goto out;
+	}
 
 	for (wkn_ln=0; wkn_dn_exp[wkn_ln]; wkn_ln++)
 		;
@@ -1316,18 +1324,36 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 	new_ln = wkn_ln - bind_ln;
 
 	ret = SMB_STRDUP(wkn_dn_exp[0]);
-
-	for (i=1; i < new_ln; i++) {
-		char *s;
-		asprintf(&s, "%s,%s", ret, wkn_dn_exp[i]);
-		ret = SMB_STRDUP(s);
-		free(s);
+	if (!ret) {
+		goto out;
 	}
 
+	for (i=1; i < new_ln; i++) {
+		char *s = NULL;
+		
+		if (asprintf(&s, "%s,%s", ret, wkn_dn_exp[i]) == -1) {
+			SAFE_FREE(ret);
+			goto out;
+		}
+
+		SAFE_FREE(ret);
+		ret = SMB_STRDUP(s);
+		free(s);
+		if (!ret) {
+			goto out;
+		}
+	}
+
+ out:
+	SAFE_FREE(base);
 	ads_msgfree(ads, res);
 	ads_memfree(ads, wkn_dn);
-	ldap_value_free(wkn_dn_exp);
-	ldap_value_free(bind_dn_exp);
+	if (wkn_dn_exp) {
+		ldap_value_free(wkn_dn_exp);
+	}
+	if (bind_dn_exp) {
+		ldap_value_free(bind_dn_exp);
+	}
 
 	return ret;
 }
