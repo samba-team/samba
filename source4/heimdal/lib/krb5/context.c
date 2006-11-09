@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <com_err.h>
 
-RCSID("$Id: context.c,v 1.110 2006/11/04 03:27:47 lha Exp $");
+RCSID("$Id: context.c,v 1.111 2006/11/08 02:55:46 lha Exp $");
 
 #define INIT_FIELD(C, T, E, D, F)					\
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
@@ -707,13 +707,13 @@ krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
 }
 
 time_t KRB5_LIB_FUNCTION
-krb5_get_time_wrap (krb5_context context)
+krb5_get_max_time_skew (krb5_context context)
 {
     return context->max_skew;
 }
 
 void KRB5_LIB_FUNCTION
-krb5_set_time_wrap (krb5_context context, time_t t)
+krb5_set_max_time_skew (krb5_context context, time_t t)
 {
     context->max_skew = t;
 }

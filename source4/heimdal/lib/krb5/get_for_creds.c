@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -162,8 +162,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 {
     krb5_error_code ret;
     krb5_creds *out_creds;
-    krb5_addresses *paddrs = NULL;
-    krb5_addresses addrs;
+    krb5_addresses addrs, *paddrs;
     KRB_CRED cred;
     KrbCredInfo *krb_cred_info;
     EncKrbCredPart enc_krb_cred_part;
@@ -172,53 +171,58 @@ krb5_get_forwarded_creds (krb5_context	    context,
     size_t buf_size;
     krb5_kdc_flags kdc_flags;
     krb5_crypto crypto;
+    struct addrinfo *ai;
     int save_errno;
     krb5_creds *ticket;
     char *realm;
-    krb5_boolean noaddr_ever;
-
-    addrs.len = 0;
-    addrs.val = NULL;
 
     realm = in_creds->client->realm;
 
-    krb5_appdefault_boolean(context, NULL, realm, "no-addresses-ever", 
-			    TRUE, &noaddr_ever);
-    if (!noaddr_ever) {
-	    struct addrinfo *ai;
-	    paddrs = &addrs;
-	    
-	    /*
-	     * If tickets are address-less, forward address-less tickets.
-	     */
-	    
-	    ret = _krb5_get_krbtgt (context,
-				    ccache,
-				    realm,
-				    &ticket);
-	    if(ret == 0) {
-		    if (ticket->addresses.len == 0)
-			    paddrs = NULL;
-		    krb5_free_creds (context, ticket);
-	    }
-	    
-	    if (paddrs != NULL) {
-		    
-		    ret = getaddrinfo (hostname, NULL, NULL, &ai);
-		    if (ret) {
-			    save_errno = errno;
-			    krb5_set_error_string(context, "resolving %s: %s",
-						  hostname, gai_strerror(ret));
-			    return krb5_eai_to_heim_errno(ret, save_errno);
-		    }
-		    
-		    ret = add_addrs (context, &addrs, ai);
-		    freeaddrinfo (ai);
-		    if (ret)
-			    return ret;
-	    }
-    }
+    addrs.len = 0;
+    addrs.val = NULL;
+    paddrs = &addrs;
 
+    {
+	krb5_boolean noaddr;
+	krb5_appdefault_boolean(context, NULL, realm,
+				"no-addresses", KRB5_ADDRESSLESS_DEFAULT,
+				&noaddr);
+	if (noaddr)
+	    paddrs = NULL;
+    }
+	
+    /*
+     * If tickets are address-less, forward address-less tickets.
+     */
+
+    if (paddrs) {
+	ret = _krb5_get_krbtgt (context,
+				ccache,
+				realm,
+				&ticket);
+	if(ret == 0) {
+	    if (ticket->addresses.len == 0)
+		paddrs = NULL;
+	    krb5_free_creds (context, ticket);
+	}
+    }
+    
+    if (paddrs != NULL) {
+
+	ret = getaddrinfo (hostname, NULL, NULL, &ai);
+	if (ret) {
+	    save_errno = errno;
+	    krb5_set_error_string(context, "resolving %s: %s",
+				  hostname, gai_strerror(ret));
+	    return krb5_eai_to_heim_errno(ret, save_errno);
+	}
+	
+	ret = add_addrs (context, &addrs, ai);
+	freeaddrinfo (ai);
+	if (ret)
+	    return ret;
+    }
+    
     kdc_flags.b = int2KDCOptions(flags);
 
     ret = krb5_get_kdc_cred (context,
