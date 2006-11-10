@@ -929,7 +929,6 @@ _kdc_as_rep(krb5_context context,
 
 	    ret = _kdc_pk_check_client(context,
 				       config,
-				       client_princ, 
 				       client,
 				       pkp,
 				       &client_cert);
