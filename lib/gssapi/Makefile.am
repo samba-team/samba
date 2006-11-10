@@ -250,5 +250,7 @@ EXTRA_DIST = \
 
 # to help stupid solaris make
 
+$(libgssapi_la_OBJECTS): gkrb5_err.h
+
 gkrb5_err.h gkrb5_err.c: krb5/gkrb5_err.et
 	$(COMPILE_ET) $<
