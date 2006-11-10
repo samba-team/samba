@@ -209,7 +209,7 @@ OM_uint32
 gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status, 
 				gss_cred_id_t cred,
 				OM_uint32 num_enctypes,
-				krb5_enctype *enctypes);
+				int32_t *enctypes);
 
 #ifdef __cplusplus
 }
