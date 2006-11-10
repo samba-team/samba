@@ -147,6 +147,8 @@ dist_libgssapi_la_SOURCES  = \
 	$(spnegosrc)
 
 nodist_libgssapi_la_SOURCES  = \
+	gkrb5_err.c \
+	gkrb5_err.h \
 	$(BUILT_SOURCES)
 
 libgssapi_la_LIBADD = \
@@ -162,6 +164,9 @@ nobase_include_HEADERS = \
 	gssapi/gssapi.h \
 	gssapi/gssapi_krb5.h \
 	gssapi/gssapi_spnego.h
+
+gssapidir = $(includedir)/gssapi
+nodist_gssapi_HEADERS = gkrb5_err.h
 
 gssapi_files = asn1_GSSAPIContextToken.x
 
@@ -180,6 +185,7 @@ $(libgssapi_la_OBJECTS): $(srcdir)/spnego/spnego-private.h
 BUILT_SOURCES = $(spnego_files:.x=.c) $(gssapi_files:.x=.c)
 
 CLEANFILES = $(BUILT_SOURCES) \
+	gkrb5_err.h gkrb5_err.c \
 	$(spnego_files) spnego_asn1.h spnego_asn1_files \
 	$(gssapi_files) gssapi_asn1.h gssapi_asn1_files \
 	gss-commands.h gss-commands.c
@@ -233,4 +239,16 @@ gss-commands.c gss-commands.h: gss-commands.in
 
 $(gss_OBJECTS): gss-commands.h
 
-EXTRA_DIST = $(man_MANS) mech/gssapi.asn1 spnego/spnego.asn1 gss-commands.in
+include $(srcdir)/Makefile-digest.am
+
+EXTRA_DIST = \
+	$(man_MANS) \
+	krb5/gkrb5_err.et \
+	mech/gssapi.asn1 \
+	spnego/spnego.asn1 \
+	gss-commands.in
+
+# to help stupid solaris make
+
+gkrb5_err.h gkrb5_err.c: krb5/gkrb5_err.et
+	$(COMPILE_ET) $<
