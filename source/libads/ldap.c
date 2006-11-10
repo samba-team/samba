@@ -139,6 +139,30 @@ BOOL ads_sitename_match(ADS_STRUCT *ads)
 	return False;
 }
 
+/**********************************************
+ Is this the closest DC ?
+**********************************************/
+
+BOOL ads_closest_dc(ADS_STRUCT *ads)
+{
+	if (ads->config.flags & ADS_CLOSEST) {
+		DEBUG(10,("ads_closest_dc: ADS_CLOSEST flag set\n"));
+		return True;
+	}
+
+	/* not sure if this can ever happen */
+	if (ads_sitename_match(ads)) {
+		DEBUG(10,("ads_closest_dc: ADS_CLOSEST flag not set but sites match\n"));
+		return True;
+	}
+
+	DEBUG(10,("ads_closest_dc: %s is not the closest DC\n", 
+		ads->config.ldap_server_name));
+
+	return False;
+}
+
+
 /*
   try a connection to a given ldap server, returning True and setting the servers IP
   in the ads struct if successful
@@ -388,7 +412,7 @@ got_connection:
 	}
 
 	/* cache the successful connection for workgroup and realm */
-	if (ads_sitename_match(ads)) {
+	if (ads_closest_dc(ads)) {
 		saf_store( ads->server.workgroup, inet_ntoa(ads->ldap_ip));
 		saf_store( ads->server.realm, inet_ntoa(ads->ldap_ip));
 	}

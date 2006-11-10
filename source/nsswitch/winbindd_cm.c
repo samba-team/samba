@@ -820,7 +820,7 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 
 			DEBUG(10,("dcip_to_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
 
-			if ((ads->config.flags & ADS_KDC) && ads_sitename_match(ads)) {
+			if ((ads->config.flags & ADS_KDC) && ads_closest_dc(ads)) {
 				/* We're going to use this KDC for this realm/domain.
 				   If we are using sites, then force the krb5 libs
 				   to use this KDC. */
