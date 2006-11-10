@@ -1711,6 +1711,10 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		
 		ret = real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
 		break;
+	default:
+		ret = -1;
+		errno = EHOSTUNREACH;
+		break;
 	}
 		
 	/* to give better errors */
