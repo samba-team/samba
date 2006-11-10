@@ -65,7 +65,13 @@ struct krb5_pac {
 #define PAC_PRIVSVR_CHECKSUM	7
 #define PAC_LOGON_NAME		10
 
-#define VCHECK(r,f,l) if (((r) = f ) != 0) goto l
+#define VCHECK(r,f,l)						\
+	do {							\
+		if (((r) = f ) != 0) {				\
+			krb5_clear_error_string(context);	\
+			goto l;					\
+		}						\
+	} while(0)
 
 /*
  *
@@ -89,8 +95,8 @@ _krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
 
     sp = krb5_storage_from_readonly_mem(ptr, len);
     if (sp == NULL) {
-	krb5_clear_error_string(context);
 	ret = ENOMEM;
+	krb5_set_error_string(context, "out of memory");
 	goto out;
     }
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
@@ -98,10 +104,12 @@ _krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
     VCHECK(ret, krb5_ret_uint32(sp, &tmp), out);
     VCHECK(ret, krb5_ret_uint32(sp, &tmp2), out);
     if (tmp < 1) {
+	krb5_set_error_string(context, "PAC have too few buffer");
 	ret = EINVAL; /* Too few buffers */
 	goto out;
     }
     if (tmp2 != 0) {
+	krb5_set_error_string(context, "PAC have wrong version");
 	ret = EINVAL; /* Wrong version */
 	goto out;
     }
@@ -109,8 +117,8 @@ _krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
     p->pac = calloc(1, 
 		    sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * (tmp - 1)));
     if (p->pac == NULL) {
-	ret = ENOMEM;
 	krb5_set_error_string(context, "out of memory");
+	ret = ENOMEM;
 	goto out;
     }
 
@@ -131,22 +139,27 @@ _krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
 
 	/* consistency checks */
 	if (p->pac->buffers[i].offset_lo & (PAC_ALIGNMENT - 1)) {
+	    krb5_set_error_string(context, "PAC out of allignment");
 	    ret = EINVAL;
 	    goto out;
 	}
 	if (p->pac->buffers[i].offset_hi) {
+	    krb5_set_error_string(context, "PAC high offset set");
 	    ret = EINVAL;
 	    goto out;
 	}
 	if (p->pac->buffers[i].offset_lo > len) {
+	    krb5_set_error_string(context, "PAC offset off end");
 	    ret = EINVAL;
 	    goto out;
 	}
 	if (p->pac->buffers[i].offset_lo < header_end) {
+	    krb5_set_error_string(context, "PAC offset inside header");
 	    ret = EINVAL;
 	    goto out;
 	}
 	if (p->pac->buffers[i].buffersize > len - p->pac->buffers[i].offset_lo){
+	    krb5_set_error_string(context, "PAC length off end");
 	    ret = EINVAL;
 	    goto out;
 	}
@@ -154,18 +167,21 @@ _krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
 	/* let save pointer to data we need later */
 	if (p->pac->buffers[i].type == PAC_SERVER_CHECKSUM) {
 	    if (p->server_checksum) {
+		krb5_set_error_string(context, "PAC have two server checksums");
 		ret = EINVAL;
 		goto out;
 	    }
 	    p->server_checksum = &p->pac->buffers[i];
 	} else if (p->pac->buffers[i].type == PAC_PRIVSVR_CHECKSUM) {
 	    if (p->privsvr_checksum) {
+		krb5_set_error_string(context, "PAC have two KDC checksums");
 		ret = EINVAL;
 		goto out;
 	    }
 	    p->privsvr_checksum = &p->pac->buffers[i];
 	} else if (p->pac->buffers[i].type == PAC_LOGON_NAME) {
 	    if (p->logon_name) {
+		krb5_set_error_string(context, "PAC have two logon names");
 		ret = EINVAL;
 		goto out;
 	    }
@@ -244,6 +260,7 @@ verify_checksum(krb5_context context,
     }
     ret = krb5_storage_read(sp, cksum.checksum.data, cksum.checksum.length);
     if (ret != cksum.checksum.length) {
+	krb5_set_error_string(context, "PAC checksum missing checksum");
 	ret = EINVAL;
 	goto out;
     }
@@ -414,12 +431,18 @@ _krb5_pac_verify(krb5_context context,
 {
     krb5_error_code ret;
 
-    if (pac->server_checksum == NULL)
+    if (pac->server_checksum == NULL) {
+	krb5_set_error_string(context, "PAC missing server checksum");
 	return EINVAL;
-    if (pac->privsvr_checksum == NULL)
+    }
+    if (pac->privsvr_checksum == NULL) {
+	krb5_set_error_string(context, "PAC missing kdc checksum");
 	return EINVAL;
-    if (pac->logon_name == NULL)
+    }
+    if (pac->logon_name == NULL) {
+	krb5_set_error_string(context, "PAC missing logon name");
 	return EINVAL;
+    }
 
     ret = verify_logonname(context, 
 			   pac->logon_name,
