@@ -1,5 +1,11 @@
 2006-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/test_pac.c: PAC testing.
+
+	* lib/krb5/pac.c: Sprinkle error strings.
+
+	* lib/krb5/pac.c: Verify LOGON_NAME.
+
 	* kdc/pkinit.c (_kdc_pk_check_client): drop client_princ as an
 	argument
 
