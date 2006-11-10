@@ -1,5 +1,11 @@
 2006-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c (_kdc_pk_check_client): drop client_princ as an
+	argument
+
+	* kdc/kerberos5.c (_kdc_as_rep): drop client_princ from
+	_kdc_pk_check_client since its not valid in canonicalize case
+
 	* lib/krb5/krb5_c_make_checksum.3: Document krb5_c_keylength.
 
 	* lib/krb5/mit_glue.c: Add krb5_c_keylength.
