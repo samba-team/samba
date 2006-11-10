@@ -72,10 +72,11 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 		/*
 		 * Token must start with [APPLICATION 0] SEQUENCE.
 		 * But if it doesn't assume its DCE-STYLE Kerberos!
+		 * And if it's not there at all, then we are requesting a mech list from SPNEGO
 		 */
-		if (len == 0)
-			return (GSS_S_DEFECTIVE_TOKEN);
-		if  (*p != 0x60) {
+		if (len == 0) {
+			mech_oid = *GSS_SPNEGO_MECHANISM;
+		} else if  (*p != 0x60) {
 			mech_oid = *GSS_KRB5_MECHANISM;
 		} else {
 			p++;
