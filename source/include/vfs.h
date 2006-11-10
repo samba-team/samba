@@ -62,7 +62,8 @@
 /* Changed to version 14 as we had to change DIR to SMB_STRUCT_DIR. JRA */
 /* Changed to version 15 as we added the statvfs call. JRA */
 /* Changed to version 16 as we added the getlock call. JRA */
-#define SMB_VFS_INTERFACE_VERSION 16
+/* Changed to version 17 to add kernel_flock call.  Note in 3.0 dev branch it's different - jmcd */
+#define SMB_VFS_INTERFACE_VERSION 17
 
 
 /* to bug old modules which are trying to compile with the old functions */
