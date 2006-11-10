@@ -367,6 +367,28 @@ FILE *sys_fopen(const char *path, const char *type)
 }
 
 /*******************************************************************
+ A flock() wrapper that will perform the kernel flock.
+********************************************************************/
+
+void kernel_flock(int fd, uint32 share_mode)
+{
+#if HAVE_KERNEL_SHARE_MODES
+	int kernel_mode = 0;
+	if (share_mode == FILE_SHARE_WRITE) {
+		kernel_mode = LOCK_MAND|LOCK_WRITE;
+	} else if (share_mode == FILE_SHARE_READ) {
+		kernel_mode = LOCK_MAND|LOCK_READ;
+	} else if (share_mode == FILE_SHARE_NONE) {
+		kernel_mode = LOCK_MAND;
+	}
+	if (kernel_mode) {
+		flock(fd, kernel_mode);
+	}
+#endif
+	;
+}
+
+/*******************************************************************
  An opendir wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 

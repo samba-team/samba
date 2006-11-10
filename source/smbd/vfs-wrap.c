@@ -764,6 +764,15 @@ BOOL vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, 
 	return result;
 }
 
+int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp, 
+			 int fd, uint32 share_mode)
+{
+	START_PROFILE(syscall_kernel_flock);
+	kernel_flock(fd, share_mode);
+	END_PROFILE(syscall_kernel_flock);
+	return 0;
+}
+
 BOOL vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
 	BOOL result;

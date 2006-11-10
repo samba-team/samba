@@ -774,29 +774,6 @@ static void defer_open(struct share_mode_lock *lck,
 }
 
 /****************************************************************************
- Set a kernel flock on a file for NFS interoperability.
- This requires a patch to Linux.
-****************************************************************************/
-
-static void kernel_flock(files_struct *fsp, uint32 share_mode)
-{
-#if HAVE_KERNEL_SHARE_MODES
-	int kernel_mode = 0;
-	if (share_mode == FILE_SHARE_WRITE) {
-		kernel_mode = LOCK_MAND|LOCK_WRITE;
-	} else if (share_mode == FILE_SHARE_READ) {
-		kernel_mode = LOCK_MAND|LOCK_READ;
-	} else if (share_mode == FILE_SHARE_NONE) {
-		kernel_mode = LOCK_MAND;
-	}
-	if (kernel_mode) {
-		flock(fsp->fh->fd, kernel_mode);
-	}
-#endif
-	;
-}
-
-/****************************************************************************
  On overwrite open ensure that the attributes match.
 ****************************************************************************/
 
@@ -1115,6 +1092,8 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	struct share_mode_lock *lck = NULL;
 	uint32 open_access_mask = access_mask;
 	NTSTATUS status;
+	int ret_flock;
+
 
 	if (conn->printer) {
 		/* 
@@ -1631,9 +1610,20 @@ files_struct *open_file_ntcreate(connection_struct *conn,
            these only read them. Nobody but Samba can ever set a deny
            mode and we have already checked our more authoritative
            locking database for permission to set this deny mode. If
-           the kernel refuses the operations then the kernel is wrong */
+           the kernel refuses the operations then the kernel is wrong.
+	   note that GPFS supports it as well - jmcd */
 
-	kernel_flock(fsp, share_access);
+	ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, fsp->fh->fd, share_access);
+	if(ret_flock == -1 ){
+
+		talloc_free(lck);
+		fd_close(conn, fsp);
+		file_free(fsp);
+		
+		set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
+		return NULL;
+	}
+
 
 	/*
 	 * At this point onwards, we can guarentee that the share entry

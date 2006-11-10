@@ -374,6 +374,7 @@ VFS_EXPAND_MSDFS_OBJ = modules/vfs_expand_msdfs.o
 VFS_SHADOW_COPY_OBJ = modules/vfs_shadow_copy.o
 VFS_AFSACL_OBJ = modules/vfs_afsacl.o
 VFS_CATIA_OBJ = modules/vfs_catia.o
+VFS_GPFS_OBJ = modules/vfs_gpfs.o modules/gpfs.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -1373,6 +1374,10 @@ bin/catia.@SHLIBEXT@: $(VFS_CATIA_OBJ:.o=.@PICSUFFIX@)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CATIA_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
+bin/gpfs.@SHLIBEXT@: $(VFS_GPFS_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_GPFS_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@

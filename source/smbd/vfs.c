@@ -97,6 +97,7 @@ static struct vfs_ops default_vfs = {
 		vfswrap_utime,
 		vfswrap_ftruncate,
 		vfswrap_lock,
+		vfswrap_kernel_flock,
 		vfswrap_getlock,
 		vfswrap_symlink,
 		vfswrap_readlink,

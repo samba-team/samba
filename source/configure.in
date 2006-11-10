@@ -1286,6 +1286,20 @@ AC_CHECK_HEADERS(execinfo.h libexc.h libunwind.h)
 AC_CHECK_FUNCS(backtrace_symbols)
 AC_CHECK_LIB(exc, trace_back_stack)
 
+echo -n "checking for GPFS GPL libs... "
+save_LIBS="$LIBS"
+LIBS="$LIBS -lgpfs_gpl"
+AC_TRY_LINK([#include <gpfs_gpl.h>],
+          [gpfs_set_share(0,GPFS_SHARE_READ,GPFS_DENY_NONE)],
+          samba_cv_HAVE_GPFS=yes,
+          samba_cv_HAVE_GPFS=no)
+echo $samba_cv_HAVE_GPFS
+if test x"$samba_cv_HAVE_GPFS" = x"yes"; then
+    AC_DEFINE(HAVE_GPFS,1,[Whether GPFS GPL libs are available])
+    default_shared_modules="$default_shared_modules vfs_gpfs"
+fi
+LIBS="$save_LIBS"
+
 # Note that all the libunwind symbols in the API are defined to internal
 # platform-specific version, so we must include libunwind.h before checking
 # any of them.
@@ -5598,6 +5612,7 @@ SMB_MODULE(vfs_expand_msdfs, \$(VFS_EXPAND_MSDFS_OBJ), "bin/expand_msdfs.$SHLIBE
 SMB_MODULE(vfs_shadow_copy, \$(VFS_SHADOW_COPY_OBJ), "bin/shadow_copy.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_afsacl, \$(VFS_AFSACL_OBJ), "bin/afsacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_catia, \$(VFS_CATIA_OBJ), "bin/catia.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_gpfs, \$(VFS_GPFS_OBJ), "bin/gpfs.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
