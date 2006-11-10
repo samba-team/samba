@@ -63,9 +63,9 @@
 /* Changed to version 15 as we added the statvfs call. JRA */
 /* Changed to version 16 as we added the getlock call. JRA */
 /* Changed to version 17 as we removed redundant connection_struct parameters. --jpeach */
-/* Changed to version 18 to add fsp parameter to the open call -- jpeach */
-/* Changed to version 19 to add kernel_flock call - jmcd */
-#define SMB_VFS_INTERFACE_VERSION 19
+/* Changed to version 18 to add fsp parameter to the open call -- jpeach 
+   Also include kernel_flock call - jmcd */
+#define SMB_VFS_INTERFACE_VERSION 18
 
 
 /* to bug old modules which are trying to compile with the old functions */
