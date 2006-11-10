@@ -190,7 +190,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		gensec_gssapi_state->want_flags |= GSS_C_DCE_STYLE;
 	}
 
-	gensec_gssapi_state->gss_oid = gss_mech_krb5;
+	gensec_gssapi_state->gss_oid = GSS_C_NULL_OID;
 	
 	send_to_kdc.func = smb_krb5_send_and_recv_func;
 	send_to_kdc.ptr = gensec_security->event_ctx;
@@ -308,6 +308,8 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 
+	gensec_gssapi_state->gss_oid = gss_mech_krb5;
+
 	principal = gensec_get_target_principal(gensec_security);
 	if (principal && lp_client_use_spnego_principal()) {
 		name_token.value  = discard_const_p(uint8_t, principal);
@@ -408,7 +410,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	OM_uint32 maj_stat, min_stat;
 	OM_uint32 min_stat2;
 	gss_buffer_desc input_token, output_token;
-	gss_OID gss_oid_p;
+	gss_OID gss_oid_p = NULL;
 	input_token.length = in.length;
 	input_token.value = in.data;
 
@@ -427,10 +429,13 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 							0, 
 							gensec_gssapi_state->input_chan_bindings,
 							&input_token, 
-							NULL, 
+							&gss_oid_p,
 							&output_token, 
 							&gensec_gssapi_state->got_flags, /* ret flags */
 							NULL);
+			if (gss_oid_p) {
+				gensec_gssapi_state->gss_oid = gss_oid_p;
+			}
 			break;
 		}
 		case GENSEC_SERVER:
@@ -446,7 +451,9 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 							  &gensec_gssapi_state->got_flags, 
 							  NULL, 
 							  &gensec_gssapi_state->delegated_cred_handle);
-			gensec_gssapi_state->gss_oid = gss_oid_p;
+			if (gss_oid_p) {
+				gensec_gssapi_state->gss_oid = gss_oid_p;
+			}
 			break;
 		}
 		default:
@@ -502,9 +509,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			gss_release_buffer(&min_stat2, &output_token);
 			
 			return NT_STATUS_MORE_PROCESSING_REQUIRED;
-		} else if ((gensec_gssapi_state->gss_oid->length == gss_mech_krb5->length)
-			   && (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
-				      gensec_gssapi_state->gss_oid->length) == 0)) {
+		} else if (gss_oid_equal(gensec_gssapi_state->gss_oid, gss_mech_krb5)) {
 			switch (min_stat) {
 			case KRB5_KDC_UNREACH:
 				DEBUG(3, ("Cannot reach a KDC we require: %s\n",
@@ -1107,8 +1112,7 @@ static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	}
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
 		/* Only for GSSAPI/Krb5 */
-		if ((gensec_gssapi_state->gss_oid->length == gss_mech_krb5->length)
-		    && (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, gensec_gssapi_state->gss_oid->length) == 0)) {
+		if (gss_oid_equal(gensec_gssapi_state->gss_oid, gss_mech_krb5)) {
 			return True;
 		}
 	}
@@ -1354,6 +1358,35 @@ static const char *gensec_gssapi_krb5_oids[] = {
 	NULL 
 };
 
+static const char *gensec_gssapi_spnego_oids[] = { 
+	GENSEC_OID_SPNEGO,
+	NULL 
+};
+
+/* As a server, this could in theory accept any GSSAPI mech */
+static const struct gensec_security_ops gensec_gssapi_spnego_security_ops = {
+	.name		= "gssapi_spnego",
+	.sasl_name	= "GSS-SPNEGO",
+	.auth_type	= DCERPC_AUTH_TYPE_SPNEGO,
+	.oid            = gensec_gssapi_spnego_oids,
+	.client_start   = gensec_gssapi_client_start,
+	.server_start   = gensec_gssapi_server_start,
+	.magic  	= gensec_gssapi_magic,
+	.update 	= gensec_gssapi_update,
+	.session_key	= gensec_gssapi_session_key,
+	.session_info	= gensec_gssapi_session_info,
+	.sign_packet	= gensec_gssapi_sign_packet,
+	.check_packet	= gensec_gssapi_check_packet,
+	.seal_packet	= gensec_gssapi_seal_packet,
+	.unseal_packet	= gensec_gssapi_unseal_packet,
+	.wrap           = gensec_gssapi_wrap,
+	.unwrap         = gensec_gssapi_unwrap,
+	.have_feature   = gensec_gssapi_have_feature,
+	.enabled        = False,
+	.kerberos       = True,
+	.priority       = GENSEC_GSSAPI
+};
+
 /* As a server, this could in theory accept any GSSAPI mech */
 static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.name		= "gssapi_krb5",
@@ -1399,6 +1432,13 @@ static const struct gensec_security_ops gensec_gssapi_sasl_krb5_security_ops = {
 NTSTATUS gensec_gssapi_init(void)
 {
 	NTSTATUS ret;
+
+	ret = gensec_register(&gensec_gssapi_spnego_security_ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' gensec backend!\n",
+			gensec_gssapi_spnego_security_ops.name));
+		return ret;
+	}
 
 	ret = gensec_register(&gensec_gssapi_krb5_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
