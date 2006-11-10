@@ -41,6 +41,7 @@
 #endif
 
 #include <krb5_locl.h>
+#include <gkrb5_err.h>
 #include <gssapi.h>
 #include <gssapi_mech.h>
 #include <assert.h>
