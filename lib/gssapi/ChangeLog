@@ -1,5 +1,21 @@
-2006-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi/gssapi_krb5.h: add GSS_KRB5_SET_ALLOWABLE_ENCTYPES_X
+
+	* mech/gss_krb5.c: implement gss_krb5_set_allowable_enctypes
+
+	* gssapi/gssapi.h: GSS_KRB5_S_
+
+	* krb5/gsskrb5_locl.h: Include <gkrb5_err.h>.
+
+	* gssapi/gssapi_krb5.h: Add gss_krb5_set_allowable_enctypes.
+
+	* Makefile.am: Build and install gkrb5_err.h
+
+	* krb5/gkrb5_err.et: Move the GSS_KRB5_S error here.
+	
+2006-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* mech/gss_krb5.c: Add gsskrb5_set_default_realm.
 
 	* krb5/set_sec_context_option.c: Support
