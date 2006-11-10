@@ -1,5 +1,11 @@
 2006-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_accept_sec_context.c: Try better guessing what is mech
+	we are going to select by looking harder at the input_token, idea
+	from Luke Howard's mechglue branch.
+
+	* Makefile.am: libgssapi_la_OBJECTS: add depency on gkrb5_err.h
+
 	* gssapi/gssapi_krb5.h: add GSS_KRB5_SET_ALLOWABLE_ENCTYPES_X
 
 	* mech/gss_krb5.c: implement gss_krb5_set_allowable_enctypes
