@@ -239,8 +239,6 @@ gss-commands.c gss-commands.h: gss-commands.in
 
 $(gss_OBJECTS): gss-commands.h
 
-include $(srcdir)/Makefile-digest.am
-
 EXTRA_DIST = \
 	$(man_MANS) \
 	krb5/gkrb5_err.et \
