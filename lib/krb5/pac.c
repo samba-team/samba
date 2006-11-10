@@ -40,7 +40,7 @@ struct PAC_INFO_BUFFER {
     uint32_t buffersize;
     uint32_t offset_hi;
     uint32_t offset_lo;
-} PAC_INFO_BUFFER;
+};
 
 struct PACTYPE {
     uint32_t numbuffers;
@@ -106,7 +106,8 @@ _krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
 	goto out;
     }
 
-    p->pac = calloc(1, sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * (tmp - 1)));
+    p->pac = calloc(1, 
+		    sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * (tmp - 1)));
     if (p->pac == NULL) {
 	ret = ENOMEM;
 	krb5_set_error_string(context, "out of memory");
@@ -277,60 +278,92 @@ out:
  *
  */
 
-krb5_error_code
-_krb5_pac_verify(krb5_context context, 
-		 struct krb5_pac *pac,
+#define NTTIME_EPOCH 0x019DB1DED53E8000LL
+
+static uint64_t
+unix2nttime(time_t unix_time)
+{
+    long long wt;
+    wt = unix_time * (uint64_t)10000000 + (uint64_t)NTTIME_EPOCH;
+    return wt;
+}
+
+static krb5_error_code
+verify_logonname(krb5_context context,
+		 const struct PAC_INFO_BUFFER *logon_name,
+		 krb5_data *data,
 		 time_t authtime,
-		 krb5_principal principal,
-		 krb5_keyblock *server,
-		 krb5_keyblock *privsvr)
+		 krb5_principal principal)
 {
     krb5_error_code ret;
+    krb5_principal p2;
+    uint32_t time1, time2;
+    krb5_storage *sp;
+    uint16_t len;
+    char *s;
 
-    if (pac->server_checksum == NULL)
-	return EINVAL;
-    if (pac->privsvr_checksum == NULL)
-	return EINVAL;
-    if (pac->logon_name == NULL)
-	return EINVAL;
+    sp = krb5_storage_from_mem((char *)data->data + logon_name->offset_lo,
+			       logon_name->buffersize);
+    if (sp == NULL) {
+	krb5_set_error_string(context, "Out of memory");
+	return ENOMEM;
+    }
 
-    if (authtime && principal) {
-	uint32_t time1, time2;
-	krb5_storage *sp;
-	uint16_t len;
-	char *s;
+    krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
 
-	sp = krb5_storage_from_mem((char *)pac->data.data
-				   + pac->logon_name->offset_lo,
-				   pac->logon_name->buffersize);
-	if (sp == NULL)
-	    return EINVAL;
+    VCHECK(ret, krb5_ret_uint32(sp, &time1), out);
+    VCHECK(ret, krb5_ret_uint32(sp, &time2), out);
 
-	krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
-
-	VCHECK(ret, krb5_ret_uint32(sp, &time1), out);
-	VCHECK(ret, krb5_ret_uint32(sp, &time2), out);
-	/* XXX check timestamp */
-	/* t = time1 + (time2 << 32) * 10000000; */
-	/* t2 = to_windows_time(authtime, &t2); */
-	/* if (t != t2) { return EINVAL; } */
-	VCHECK(ret, krb5_ret_uint16(sp, &len), out);
-	if (len == 0)
-	    return EINVAL;
-
-	s = malloc(len);
-	if (s == NULL) {
+    {
+	uint64_t t1, t2;
+	t1 = unix2nttime(authtime);
+	t2 = ((uint64_t)time2 << 32) | time1;
+	if (t1 != t2) {
 	    krb5_storage_free(sp);
-	    return ENOMEM;
-	}
-	ret = krb5_storage_read(sp, s, len);
-	if (ret != len) {
-	    krb5_storage_free(sp);
+	    krb5_set_error_string(context, "PAC timestamp mismatch");
 	    return EINVAL;
 	}
+    }
+    VCHECK(ret, krb5_ret_uint16(sp, &len), out);
+    if (len == 0) {
 	krb5_storage_free(sp);
-#if 0
-	krb5_principal p2;
+	krb5_set_error_string(context, "PAC logon name length missing");
+	return EINVAL;
+    }
+
+    s = malloc(len);
+    if (s == NULL) {
+	krb5_storage_free(sp);
+	krb5_set_error_string(context, "Out of memory");
+	return ENOMEM;
+    }
+    ret = krb5_storage_read(sp, s, len);
+    if (ret != len) {
+	krb5_storage_free(sp);
+	krb5_set_error_string(context, "Failed to read pac logon name");
+	return EINVAL;
+    }
+    krb5_storage_free(sp);
+#if 1 /* cheat for know */
+    {
+	size_t i;
+
+	if (len & 1) {
+	    krb5_set_error_string(context, "PAC logon name mailformed");
+	    return EINVAL;
+	}
+
+	for (i = 0; i < len / 2; i++) {
+	    if (s[(i * 2) + 1]) {
+		krb5_set_error_string(context, "PAC logon name not ASCII");
+		return EINVAL;
+	    }
+	    s[i] = s[i * 2];
+	}
+	s[i] = '\0';
+    }
+#else
+    {
 	uint16_t *ucs2;
 	ssize_t ucs2len;
 	size_t u8len;
@@ -350,17 +383,51 @@ _krb5_pac_verify(krb5_context context,
 	    abort();
 	wind_ucs2toutf8(ucs2, ucs2len, s, &u8len);
 	free(ucs2);
-
-	ret = krb5_parse_name_flags(context, s, &p2);
-	free(s);
-
-	if (krb5_principal_compare_any_realm(context, principal, p2) != TRUE)
-	    ret = EINVAL;
-	krb5_free_principal(context, p2);
-	if (ret)
-	    return ret;
-#endif
     }
+#endif
+    ret = krb5_parse_name_flags(context, s, KRB5_PRINCIPAL_PARSE_NO_REALM, &p2);
+    free(s);
+    if (ret)
+	return ret;
+    
+    if (krb5_principal_compare_any_realm(context, principal, p2) != TRUE) {
+	krb5_set_error_string(context, "PAC logon name mismatch");
+	ret = EINVAL;
+    }
+    krb5_free_principal(context, p2);
+    return ret;
+out:
+    return ret;
+}
+
+/*
+ *
+ */
+
+krb5_error_code
+_krb5_pac_verify(krb5_context context, 
+		 struct krb5_pac *pac,
+		 time_t authtime,
+		 krb5_principal principal,
+		 krb5_keyblock *server,
+		 krb5_keyblock *privsvr)
+{
+    krb5_error_code ret;
+
+    if (pac->server_checksum == NULL)
+	return EINVAL;
+    if (pac->privsvr_checksum == NULL)
+	return EINVAL;
+    if (pac->logon_name == NULL)
+	return EINVAL;
+
+    ret = verify_logonname(context, 
+			   pac->logon_name,
+			   &pac->data,
+			   authtime,
+			   principal);
+    if (ret)
+	return ret;
 
     /* 
      * in the service case, clean out data option of the privsvr and
@@ -409,19 +476,6 @@ _krb5_pac_verify(krb5_context context,
     }
 
     return 0;
-
- out:
-    return ret;
-}
-
-/*
- *
- */
-
-krb5_error_code
-_krb5_pac_make(krb5_context context, struct krb5_pac *pac, krb5_data *data)
-{
-    return EINVAL;
 }
 
 /*
@@ -443,7 +497,7 @@ _krb5_pac_sign(krb5_context context,
 	num++;
     if (pac->privsvr_checksum == NULL)
 	num++;
-    if (pac->privsvr_checksum == NULL)
+    if (pac->logon_name == NULL)
 	num++;
     if (num) {
 	void *ptr;
@@ -460,6 +514,10 @@ _krb5_pac_sign(krb5_context context,
 	if (pac->privsvr_checksum == NULL) {
 	    pac->privsvr_checksum = &pac->pac->buffers[pac->pac->numbuffers++];
 	    memset(pac->privsvr_checksum, 0, sizeof(*pac->privsvr_checksum));
+	}
+	if (pac->logon_name == NULL) {
+	    pac->logon_name = &pac->pac->buffers[pac->pac->numbuffers++];
+	    memset(pac->logon_name, 0, sizeof(*pac->logon_name));
 	}
     }
 
