@@ -205,6 +205,11 @@ gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status,
 				void *kctx);
 
 
+OM_uint32
+gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status, 
+				gss_cred_id_t cred,
+				OM_uint32 num_enctypes,
+				krb5_enctype *enctypes);
 
 #ifdef __cplusplus
 }
