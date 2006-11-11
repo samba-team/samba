@@ -1542,7 +1542,7 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc, const ch
 					    &sd_size);
 
 		if (old_sd && !sec_desc_equal(old_sd, psd)) {
-			if (!set_share_security(p->mem_ctx, share_name, psd))
+			if (!set_share_security(share_name, psd))
 				DEBUG(0,("_srv_net_share_set_info: Failed to change security info in share %s.\n",
 					share_name ));
 		}
@@ -1691,7 +1691,7 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc, uint32_t lev
 		return WERR_ACCESS_DENIED;
 
 	if (psd) {
-		if (!set_share_security(p->mem_ctx, share_name, psd)) {
+		if (!set_share_security(share_name, psd)) {
 			DEBUG(0,("_srv_net_share_add: Failed to add security info to share %s.\n", share_name ));
 		}
 	}
