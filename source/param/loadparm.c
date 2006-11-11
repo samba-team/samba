@@ -4573,7 +4573,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	/* Should we allow printers to be shared... ? */
 	ctx = talloc_init("usershare_sd_xctx");
 	if (!ctx) {
-		SAFE_FREE(lines);
+		file_lines_free(lines);
 		return 1;
 	}
 
@@ -4581,11 +4581,11 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 			iService, lines, numlines, sharepath,
 			comment, &psd, &guest_ok) != USERSHARE_OK) {
 		talloc_destroy(ctx);
-		SAFE_FREE(lines);
+		file_lines_free(lines);
 		return -1;
 	}
 
-	SAFE_FREE(lines);
+	file_lines_free(lines);
 
 	/* Everything ok - add the service possibly using a template. */
 	if (iService < 0) {
