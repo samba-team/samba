@@ -632,7 +632,6 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 	struct ldb_message **realm_ref_msg = NULL;
 	const struct ldb_dn *realm_dn;
 
-	krb5_principal alloc_principal = NULL;
 	if (principal->name.name_string.len != 2
 	    || (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) != 0)) {
 		/* Not a krbtgt */
@@ -642,33 +641,8 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 	/* krbtgt case.  Either us or a trusted realm */
 	if ((LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
 			      mem_ctx, principal->name.name_string.val[1], &realm_ref_msg) == 0)) {
-		/* us */
-		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
-		 * is in our db, then direct the caller at our primary
-		 * krgtgt */
-		
-		const char *dnsdomain = ldb_msg_find_attr_as_string(realm_ref_msg[0], "dnsRoot", NULL);
-		char *realm_fixed = strupper_talloc(mem_ctx, dnsdomain);
-		if (!realm_fixed) {
-			krb5_set_error_string(context, "strupper_talloc: out of memory");
-			return ENOMEM;
-		}
-		
-		ret = krb5_copy_principal(context, principal, &alloc_principal);
-		if (ret) {
-			return ret;
-		}
-
-		free(alloc_principal->name.name_string.val[1]);
-		alloc_principal->name.name_string.val[1] = strdup(realm_fixed);
-		talloc_free(realm_fixed);
-		if (!alloc_principal->name.name_string.val[1]) {
-			krb5_set_error_string(context, "LDB_fetch: strdup() failed!");
-			return ENOMEM;
-		}
-		principal = alloc_principal;
+		/* us */		
 		realm_dn = samdb_result_dn(mem_ctx, realm_ref_msg[0], "nCName", NULL);
-		
 	} else {
 		/* we should lookup trusted domains */
 		return HDB_ERR_NOENTRY;
