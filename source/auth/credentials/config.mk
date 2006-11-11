@@ -7,7 +7,7 @@ OBJ_FILES = credentials.o \
 		credentials_files.o \
 		credentials_ntlm.o
 PUBLIC_DEPENDENCIES = \
-		LIBCLI_AUTH SECRETS LIBCRYPTO
+		LIBCLI_AUTH SECRETS LIBCRYPTO KERBEROS
 PRIVATE_DEPENDENCIES = CREDENTIALS_KRB5
 # End SUBSYSTEM CREDENTIALS
 #################################
