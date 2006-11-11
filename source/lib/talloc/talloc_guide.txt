@@ -56,6 +56,22 @@ talloc API
 The following is a complete guide to the talloc API. Read it all at
 least twice.
 
+Multi-threading
+---------------
+
+talloc itself does not deal with threads. It is thread-safe (assuming  
+the underlying "malloc" is), as long as each thread uses different  
+memory contexts.
+If two threads uses the same context then they need to synchronize in  
+order to be safe. In particular:
+- when using talloc_enable_leak_report(), giving directly NULL as a  
+parent context implicitly refers to a hidden "null context" global  
+variable, so this should not be used in a multi-threaded environment  
+without proper synchronization ;
+- the context returned by talloc_autofree_context() is also global so  
+shouldn't be used by several threads simultaneously without  
+synchronization.
+
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 (type *)talloc(const void *context, type);
