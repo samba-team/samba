@@ -95,7 +95,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 
 	/* always try with wins first */
 	if (resolve_wins(name,0x20,&ret,count)) {
-		if ( count == 0 )
+		if ( *count == 0 )
 			return NULL;
 		if ( (return_ip = SMB_MALLOC_ARRAY(struct in_addr, *count)) == NULL ) {
 			free( ret );
