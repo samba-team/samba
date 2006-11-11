@@ -402,7 +402,7 @@ int main(int argc, const char *argv[])
 				return -1;
 			}
 			
-			if ( !set_share_security( ctx, lp_servicename(snum), secdesc ) ) {
+			if ( !set_share_security( lp_servicename(snum), secdesc ) ) {
 				fprintf( stderr, "Failed to store acl for share [%s]\n", sharename );
 				return 2;
 			}
