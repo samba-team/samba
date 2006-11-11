@@ -131,11 +131,20 @@ _krb5_extract_ticket(krb5_context context,
 		     krb5_const_pointer decryptarg)
 {
     krb5_error_code ret;
-    krb5_principal tmp_principal;
+    krb5_principal tmp_principal, srv_principal = NULL;
     int tmp;
     size_t len;
     time_t tmp_time;
     krb5_timestamp sec_now;
+
+/*
+ * HACK:
+ * this is really a ugly hack, to support using the Netbios Domain Name
+ * as realm against windows KDC's, they always return the full realm
+ * based on the DNS Name.
+ */
+allow_server_mismatch = 1;
+ignore_cname = 1;
 
     ret = _krb5_principalname2krb5_principal (context,
 					      &tmp_principal,
@@ -168,28 +177,6 @@ _krb5_extract_ticket(krb5_context context,
 	krb5_abortx(context, "internal error in ASN.1 encoder");
     creds->second_ticket.length = 0;
     creds->second_ticket.data   = NULL;
-
-    /* compare server */
-
-    ret = _krb5_principalname2krb5_principal (context,
-					      &tmp_principal,
-					      rep->kdc_rep.ticket.sname,
-					      rep->kdc_rep.ticket.realm);
-    if (ret)
-	goto out;
-    if(allow_server_mismatch){
-	krb5_free_principal(context, creds->server);
-	creds->server = tmp_principal;
-	tmp_principal = NULL;
-    }else{
-	tmp = krb5_principal_compare (context, tmp_principal, creds->server);
-	krb5_free_principal (context, tmp_principal);
-	if (!tmp) {
-	    ret = KRB5KRB_AP_ERR_MODIFIED;
-	    krb5_clear_error_string (context);
-	    goto out;
-	}
-    }
     
     /* decrypt */
 
@@ -206,6 +193,47 @@ _krb5_extract_ticket(krb5_context context,
     if(ret)
 	goto out;
 #endif
+
+    /* compare server */
+
+    ret = _krb5_principalname2krb5_principal (context,
+					      &srv_principal,
+					      rep->kdc_rep.ticket.sname,
+					      rep->kdc_rep.ticket.realm);
+    if (ret)
+	goto out;
+
+    ret = _krb5_principalname2krb5_principal (context,
+					      &tmp_principal,
+					      rep->enc_part.sname,
+					      rep->enc_part.srealm);
+    if (ret)
+	goto out;
+
+    /* 
+     * see if the service principal matches in the ticket
+     * and in the enc_part
+     */
+    tmp = krb5_principal_compare (context, tmp_principal, srv_principal);
+    krb5_free_principal (context, tmp_principal);
+    if (!tmp) {
+	ret = KRB5KRB_AP_ERR_MODIFIED;
+	krb5_clear_error_string (context);
+	goto out;
+    }
+
+    if(allow_server_mismatch){
+	krb5_free_principal(context, creds->server);
+	creds->server = srv_principal;
+	srv_principal = NULL;
+    }else{
+	tmp = krb5_principal_compare (context, srv_principal, creds->server);
+	if (!tmp) {
+	    ret = KRB5KRB_AP_ERR_MODIFIED;
+	    krb5_clear_error_string (context);
+	    goto out;
+	}
+    }
 
     /* compare nonces */
 
@@ -301,6 +329,8 @@ _krb5_extract_ticket(krb5_context context,
 out:
     memset (rep->enc_part.key.keyvalue.data, 0,
 	    rep->enc_part.key.keyvalue.length);
+    if (srv_principal)
+        krb5_free_principal (context, srv_principal);
     return ret;
 }
 
