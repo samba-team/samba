@@ -53,6 +53,11 @@ END {
   printf "BOOL %s(const struct share_params *p );\n", a[2]
 }
 
+/^FN_LOCAL_PARM_INTEGER/ {
+  split($0,a,"[,()]")
+  printf "int %s(const struct share_params *p );\n", a[2]
+}
+
 /^FN_LOCAL_LIST/ {
   split($0,a,"[,()]")
   printf "const char **%s(int );\n", a[2]
