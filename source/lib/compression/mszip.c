@@ -641,7 +641,7 @@ static int32_t Zipinflate_block(struct decomp_state *decomp_state, int32_t *e)
   return 2;
 }
 
-struct decomp_state *ZIPdecomp_state(TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct decomp_state *ZIPdecomp_state(TALLOC_CTX *mem_ctx)
 {
 	return talloc_zero(mem_ctx, struct decomp_state);
 }

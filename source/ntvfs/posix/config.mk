@@ -5,7 +5,7 @@ INIT_FUNCTION = pvfs_acl_xattr_init
 SUBSYSTEM = ntvfs
 OBJ_FILES = \
 		pvfs_acl_xattr.o
-PRIVATE_DEPENDENCIES = NDR_XATTR
+PRIVATE_DEPENDENCIES = NDR_XATTR ntvfs_posix
 # End MODULE pvfs_acl_xattr
 ################################################
 
@@ -16,6 +16,7 @@ INIT_FUNCTION = pvfs_acl_nfs4_init
 SUBSYSTEM = ntvfs
 OBJ_FILES = \
 		pvfs_acl_nfs4.o
+PRIVATE_DEPENDENCIES = NDR_NFS4ACL SAMDB ntvfs_posix
 # End MODULE pvfs_acl_nfs4
 ################################################
 
@@ -23,6 +24,7 @@ OBJ_FILES = \
 # Start MODULE ntvfs_posix
 [MODULE::ntvfs_posix]
 SUBSYSTEM = ntvfs
+OUTPUT_TYPE = INTEGRATED
 INIT_FUNCTION = ntvfs_posix_init 
 PRIVATE_PROTO_HEADER = vfs_posix_proto.h
 OBJ_FILES = \
