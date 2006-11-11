@@ -145,7 +145,7 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
  Store a security descriptor in the share db.
  ********************************************************************/
 
-BOOL set_share_security(TALLOC_CTX *ctx, const char *share_name, SEC_DESC *psd)
+BOOL set_share_security(const char *share_name, SEC_DESC *psd)
 {
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
