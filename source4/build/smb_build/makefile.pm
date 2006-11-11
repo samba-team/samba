@@ -288,8 +288,9 @@ $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $extraflags \\
-		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) $soarg \\
+		 $soarg \\
 		$init_obj $singlesoarg 
 __EOD__
 );
