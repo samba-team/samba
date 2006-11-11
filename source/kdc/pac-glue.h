@@ -31,17 +31,17 @@
  krb5_error_code hdb_ldb_authz_data_as_req(krb5_context context, struct hdb_entry_ex *entry_ex, 
 					   METHOD_DATA* pa_data_seq,
 					   time_t authtime,
-					   EncryptionKey *tgtkey,
-					   EncryptionKey *sessionkey,
+					   const EncryptionKey *tgtkey,
+					   const EncryptionKey *sessionkey,
 					   AuthorizationData **out);
 
  krb5_error_code hdb_ldb_authz_data_tgs_req(krb5_context context, struct hdb_entry_ex *entry_ex, 
 					    krb5_principal client, 
 					    AuthorizationData *in, 
 					    time_t authtime,
-					    EncryptionKey *tgtkey,
-					    EncryptionKey *servicekey,
-					    EncryptionKey *sessionkey,
+					    const EncryptionKey *tgtkey,
+					    const EncryptionKey *servicekey,
+					    const EncryptionKey *sessionkey,
 					    AuthorizationData **out);
  krb5_error_code hdb_ldb_check_client_access(krb5_context context, hdb_entry_ex *entry_ex, 
 					     HostAddresses *addresses);

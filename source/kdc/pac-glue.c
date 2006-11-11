@@ -38,8 +38,8 @@ struct _krb5_krb_auth_data;
 static krb5_error_code samba_get_pac(krb5_context context, 
 				     struct hdb_ldb_private *private,
 				     krb5_principal client, 
-				     krb5_keyblock *krbtgt_keyblock, 
-				     krb5_keyblock *server_keyblock, 
+				     const krb5_keyblock *krbtgt_keyblock, 
+				     const krb5_keyblock *server_keyblock, 
 				     time_t tgs_authtime,
 				     krb5_data *pac)
 {
@@ -150,11 +150,11 @@ static krb5_error_code wrap_pac(krb5_context context, krb5_data *pac, Authorizat
 */
 
 krb5_error_code hdb_ldb_authz_data_as_req(krb5_context context, struct hdb_entry_ex *entry_ex, 
-					   METHOD_DATA* pa_data_seq,
-					   time_t authtime,
-					   EncryptionKey *tgtkey,
-					   EncryptionKey *sessionkey,
-					   AuthorizationData **out)
+					  METHOD_DATA* pa_data_seq,
+					  time_t authtime,
+					  const EncryptionKey *tgtkey,
+					  const EncryptionKey *sessionkey,
+					  AuthorizationData **out)
 {
 	krb5_error_code ret;
 	int i;
@@ -210,13 +210,13 @@ krb5_error_code hdb_ldb_authz_data_as_req(krb5_context context, struct hdb_entry
 /* Resign (and reform, including possibly new groups) a PAC */
 
 krb5_error_code hdb_ldb_authz_data_tgs_req(krb5_context context, struct hdb_entry_ex *entry_ex, 
-					    krb5_principal client, 
-					    AuthorizationData *in, 
-					    time_t authtime,
-					    EncryptionKey *tgtkey,
-					    EncryptionKey *servicekey,
-					    EncryptionKey *sessionkey,
-					    AuthorizationData **out)
+					   krb5_principal client, 
+					   AuthorizationData *in, 
+					   time_t authtime,
+					   const EncryptionKey *tgtkey,
+					   const EncryptionKey *servicekey,
+					   const EncryptionKey *sessionkey,
+					   AuthorizationData **out)
 {
 	NTSTATUS nt_status;
 	krb5_error_code ret;

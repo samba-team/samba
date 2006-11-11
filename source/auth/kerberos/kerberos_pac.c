@@ -35,7 +35,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 					  DATA_BLOB pac_data,
 					  struct PAC_SIGNATURE_DATA *sig,
 					  krb5_context context,
-					  krb5_keyblock *keyblock)
+					  const krb5_keyblock *keyblock)
 {
 	krb5_error_code ret;
 	krb5_crypto crypto;
@@ -69,8 +69,8 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 			      struct PAC_DATA **pac_data_out,
 			      DATA_BLOB blob,
 			      krb5_context context,
-			      krb5_keyblock *krbtgt_keyblock,
-			      krb5_keyblock *service_keyblock,
+			      const krb5_keyblock *krbtgt_keyblock,
+			      const krb5_keyblock *service_keyblock,
 			      krb5_const_principal client_principal,
 			      time_t tgs_authtime,
 			      krb5_error_code *k5ret)
@@ -317,8 +317,8 @@ _PUBLIC_  NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 				  struct PAC_LOGON_INFO **logon_info,
 				  DATA_BLOB blob,
 				  krb5_context context,
-				  krb5_keyblock *krbtgt_keyblock,
-				  krb5_keyblock *service_keyblock,
+				  const krb5_keyblock *krbtgt_keyblock,
+				  const krb5_keyblock *service_keyblock,
 				  krb5_const_principal client_principal,
 				  time_t tgs_authtime, 
 				  krb5_error_code *k5ret)
@@ -355,7 +355,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *pac_data,
 					 struct PAC_SIGNATURE_DATA *sig,
 					 krb5_context context,
-					 krb5_keyblock *keyblock)
+					 const krb5_keyblock *keyblock)
 {
 	krb5_error_code ret;
 	krb5_crypto crypto;
@@ -399,8 +399,8 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
  krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
 				    struct PAC_DATA *pac_data,
 				    krb5_context context,
-				    krb5_keyblock *krbtgt_keyblock,
-				    krb5_keyblock *service_keyblock,
+				    const krb5_keyblock *krbtgt_keyblock,
+				    const krb5_keyblock *service_keyblock,
 				    DATA_BLOB *pac) 
 {
 	NTSTATUS nt_status;
@@ -496,8 +496,8 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
  krb5_error_code kerberos_create_pac(TALLOC_CTX *mem_ctx,
 				     struct auth_serversupplied_info *server_info,
 				     krb5_context context,
-				     krb5_keyblock *krbtgt_keyblock,
-				     krb5_keyblock *service_keyblock,
+				     const krb5_keyblock *krbtgt_keyblock,
+				     const krb5_keyblock *service_keyblock,
 				     krb5_principal client_principal,
 				     time_t tgs_authtime,
 				     DATA_BLOB *pac)
