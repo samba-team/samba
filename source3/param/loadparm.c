@@ -1752,6 +1752,8 @@ static char *lp_string(const char *s)
 
 #define FN_LOCAL_PARM_BOOL(fn_name,val) \
  BOOL fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
+#define FN_LOCAL_PARM_INTEGER(fn_name,val) \
+ int fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 #define FN_LOCAL_PARM_STRING(fn_name,val) \
  char *fn_name(const struct share_params *p) {return(lp_string((LP_SNUM_OK(p->service) && ServicePtrs[(p->service)]->val) ? ServicePtrs[(p->service)]->val : sDefault.val));}
 #define FN_LOCAL_CHAR(fn_name,val) \
@@ -2020,9 +2022,9 @@ FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_store_dos_attributes, bStoreDosAttributes)
 FN_LOCAL_BOOL(lp_dmapi_support, bDmapiSupport)
-FN_LOCAL_BOOL(lp_locking, bLocking)
-FN_LOCAL_INTEGER(lp_strict_locking, iStrictLocking)
-FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
+FN_LOCAL_PARM_BOOL(lp_locking, bLocking)
+FN_LOCAL_PARM_INTEGER(lp_strict_locking, iStrictLocking)
+FN_LOCAL_PARM_BOOL(lp_posix_locking, bPosixLocking)
 FN_LOCAL_BOOL(lp_share_modes, bShareModes)
 FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks, bLevel2OpLocks)
