@@ -80,8 +80,7 @@ BOOL is_locked(files_struct *fsp,
 		SMB_BIG_UINT offset, 
 		enum brl_type lock_type)
 {
-	int snum = SNUM(fsp->conn);
-	int strict_locking = lp_strict_locking(snum);
+	int strict_locking = lp_strict_locking(fsp->conn->params);
 	enum brl_flavour lock_flav = lp_posix_cifsu_locktype();
 	BOOL ret = True;
 	
@@ -89,7 +88,7 @@ BOOL is_locked(files_struct *fsp,
 		return False;
 	}
 
-	if (!lp_locking(snum) || !strict_locking) {
+	if (!lp_locking(fsp->conn->params) || !strict_locking) {
 		return False;
 	}
 
@@ -156,7 +155,7 @@ NTSTATUS query_lock(files_struct *fsp,
 		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!lp_locking(SNUM(fsp->conn))) {
+	if (!lp_locking(fsp->conn->params)) {
 		return NT_STATUS_OK;
 	}
 
@@ -197,7 +196,7 @@ struct byte_range_lock *do_lock(files_struct *fsp,
 		return NULL;
 	}
 
-	if (!lp_locking(SNUM(fsp->conn))) {
+	if (!lp_locking(fsp->conn->params)) {
 		*perr = NT_STATUS_OK;
 		return NULL;
 	}
@@ -243,7 +242,7 @@ NTSTATUS do_unlock(files_struct *fsp,
 		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
 	
-	if (!lp_locking(SNUM(fsp->conn))) {
+	if (!lp_locking(fsp->conn->params)) {
 		return NT_STATUS_OK;
 	}
 	
@@ -290,7 +289,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 			NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
 	
-	if (!lp_locking(SNUM(fsp->conn))) {
+	if (!lp_locking(fsp->conn->params)) {
 		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 	}
 
@@ -327,7 +326,7 @@ void locking_close_file(files_struct *fsp)
 {
 	struct byte_range_lock *br_lck;
 
-	if (!lp_locking(SNUM(fsp->conn))) {
+	if (!lp_locking(fsp->conn->params)) {
 		return;
 	}
 

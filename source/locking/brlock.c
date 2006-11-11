@@ -333,7 +333,7 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	   be mapped into a lower level POSIX one, and if so can
 	   we get it ? */
 
-	if (!IS_PENDING_LOCK(plock->lock_type) && lp_posix_locking(SNUM(fsp->conn))) {
+	if (!IS_PENDING_LOCK(plock->lock_type) && lp_posix_locking(fsp->conn->params)) {
 		int errno_ret;
 		if (!set_posix_lock_windows_flavour(fsp,
 				plock->start,
@@ -654,7 +654,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	   be mapped into a lower level POSIX one, and if so can
 	   we get it ? */
 
-	if (!IS_PENDING_LOCK(plock->lock_type) && lp_posix_locking(SNUM(br_lck->fsp->conn))) {
+	if (!IS_PENDING_LOCK(plock->lock_type) && lp_posix_locking(br_lck->fsp->conn->params)) {
 		int errno_ret;
 
 		/* The lower layer just needs to attempt to
@@ -829,7 +829,7 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 	br_lck->modified = True;
 
 	/* Unlock the underlying POSIX regions. */
-	if(lp_posix_locking(SNUM(br_lck->fsp->conn))) {
+	if(lp_posix_locking(br_lck->fsp->conn->params)) {
 		release_posix_lock_windows_flavour(br_lck->fsp,
 				plock->start,
 				plock->size,
@@ -978,7 +978,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 	}
 
 	/* Unlock any POSIX regions. */
-	if(lp_posix_locking(SNUM(br_lck->fsp->conn))) {
+	if(lp_posix_locking(br_lck->fsp->conn->params)) {
 		release_posix_lock_posix_flavour(br_lck->fsp,
 						plock->start,
 						plock->size,
@@ -1103,7 +1103,7 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 	 * This only conflicts with Windows locks, not POSIX locks.
 	 */
 
-	if(lp_posix_locking(SNUM(fsp->conn)) && (lock_flav == WINDOWS_LOCK)) {
+	if(lp_posix_locking(fsp->conn->params) && (lock_flav == WINDOWS_LOCK)) {
 		ret = is_posix_locked(fsp, &start, &size, &lock_type, WINDOWS_LOCK);
 
 		DEBUG(10,("brl_locktest: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
@@ -1169,7 +1169,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 	 * see if there is a POSIX lock from a UNIX or NFS process.
 	 */
 
-	if(lp_posix_locking(SNUM(fsp->conn))) {
+	if(lp_posix_locking(fsp->conn->params)) {
 		BOOL ret = is_posix_locked(fsp, pstart, psize, plock_type, POSIX_LOCK);
 
 		DEBUG(10,("brl_lockquery: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
@@ -1252,7 +1252,7 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 	struct process_id pid = procid_self();
 	BOOL unlock_individually = False;
 
-	if(lp_posix_locking(SNUM(fsp->conn))) {
+	if(lp_posix_locking(fsp->conn->params)) {
 
 		/* Check if there are any Windows locks associated with this dev/ino
 		   pair that are not this fnum. If so we need to call unlock on each
@@ -1358,7 +1358,7 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 		}
 	}
 
-	if(lp_posix_locking(SNUM(fsp->conn)) && num_deleted_windows_locks) {
+	if(lp_posix_locking(fsp->conn->params) && num_deleted_windows_locks) {
 		/* Reduce the Windows lock POSIX reference count on this dev/ino pair. */
 		reduce_windows_lock_ref_count(fsp, num_deleted_windows_locks);
 	}
