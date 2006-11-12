@@ -620,7 +620,7 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	return NT_STATUS_OK;
 }
 
-struct auth_session_info *system_session(TALLOC_CTX *mem_ctx) 
+_PUBLIC_ struct auth_session_info *system_session(TALLOC_CTX *mem_ctx) 
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
