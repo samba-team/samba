@@ -110,6 +110,7 @@ cat >$CONFFILE<<EOF
 	notify:inotify = false
 	ldb:nosync = true
 	torture:subunitdir = $SRCDIR/bin/torture
+	torture:basedir = $TEST_DATA_PREFIX
 
 	system:anonymous = true
 #We don't want to pass our self-tests if the PAC code is wrong
