@@ -1,3 +1,22 @@
+2006-11-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_locl.h: Add plugin api
+
+	* lib/krb5/Makefile.am: Add plugin api.
+
+	* lib/krb5/krbhst.c: Use the resolve plugin interface.
+
+	* lib/krb5/locate_plugin.h: Add plugin interface for resolving
+	that is API compatible with MITs version.
+
+	* lib/krb5/plugin.c: Add first version of the plugin interface.
+
+	* lib/krb5/test_pac.c: Test signing.
+
+	* lib/krb5/pac.c: Add code to sign PACs, only arcfour for now.
+
+	* lib/krb5/krb5.h: Add struct krb5_pac.
+	
 2006-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/test_pac.c: PAC testing.
