@@ -74,6 +74,6 @@ OBJ_FILES = \
 		auth.o \
 		auth_util.o \
 		auth_simple.o
-PUBLIC_DEPENDENCIES = LIBSECURITY process_model SAMDB CREDENTIALS
+PUBLIC_DEPENDENCIES = LIBSECURITY SAMDB CREDENTIALS
 # End SUBSYSTEM auth
 #######################
