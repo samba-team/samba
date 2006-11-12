@@ -65,13 +65,15 @@ struct krb5_pac {
 #define PAC_PRIVSVR_CHECKSUM	7
 #define PAC_LOGON_NAME		10
 
-#define VCHECK(r,f,l)						\
+#define DCHECK(r,f,l)						\
 	do {							\
 		if (((r) = f ) != 0) {				\
 			krb5_clear_error_string(context);	\
 			goto l;					\
 		}						\
 	} while(0)
+
+static const char zeros[PAC_ALIGNMENT] = { 0 };
 
 /*
  *
@@ -101,8 +103,8 @@ _krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
     }
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
 
-    VCHECK(ret, krb5_ret_uint32(sp, &tmp), out);
-    VCHECK(ret, krb5_ret_uint32(sp, &tmp2), out);
+    DCHECK(ret, krb5_ret_uint32(sp, &tmp), out);
+    DCHECK(ret, krb5_ret_uint32(sp, &tmp2), out);
     if (tmp < 1) {
 	krb5_set_error_string(context, "PAC have too few buffer");
 	ret = EINVAL; /* Too few buffers */
@@ -132,10 +134,10 @@ _krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
     }
 
     for (i = 0; i < p->pac->numbuffers; i++) {
-	VCHECK(ret, krb5_ret_uint32(sp, &p->pac->buffers[i].type), out);
-	VCHECK(ret, krb5_ret_uint32(sp, &p->pac->buffers[i].buffersize), out);
-	VCHECK(ret, krb5_ret_uint32(sp, &p->pac->buffers[i].offset_lo), out);
-	VCHECK(ret, krb5_ret_uint32(sp, &p->pac->buffers[i].offset_hi), out);
+	DCHECK(ret, krb5_ret_uint32(sp, &p->pac->buffers[i].type), out);
+	DCHECK(ret, krb5_ret_uint32(sp, &p->pac->buffers[i].buffersize), out);
+	DCHECK(ret, krb5_ret_uint32(sp, &p->pac->buffers[i].offset_lo), out);
+	DCHECK(ret, krb5_ret_uint32(sp, &p->pac->buffers[i].offset_hi), out);
 
 	/* consistency checks */
 	if (p->pac->buffers[i].offset_lo & (PAC_ALIGNMENT - 1)) {
@@ -154,7 +156,8 @@ _krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
 	    goto out;
 	}
 	if (p->pac->buffers[i].offset_lo < header_end) {
-	    krb5_set_error_string(context, "PAC offset inside header");
+	    krb5_set_error_string(context, "PAC offset inside header: %d %d",
+				  p->pac->buffers[i].offset_lo, header_end);
 	    ret = EINVAL;
 	    goto out;
 	}
@@ -248,7 +251,7 @@ verify_checksum(krb5_context context,
     }
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
 
-    VCHECK(ret, krb5_ret_uint32(sp, &type), out);
+    DCHECK(ret, krb5_ret_uint32(sp, &type), out);
     cksum.cksumtype = type;
     cksum.checksum.length = 
 	sig->buffersize - krb5_storage_seek(sp, 0, SEEK_CUR);
@@ -291,6 +294,39 @@ out:
     return ret;
 }
 
+static krb5_error_code
+create_checksum(krb5_context context,
+		krb5_keyblock *key,
+		void *data, size_t datalen,
+		void *sig, size_t siglen)
+{
+    krb5_crypto crypto = NULL;
+    krb5_error_code ret;
+    Checksum cksum;
+
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if (ret)
+	return ret;
+
+    ret = krb5_create_checksum(context, crypto, KRB5_KU_OTHER_CKSUM, 0,
+			       data, datalen, &cksum);
+    krb5_crypto_destroy(context, crypto);
+    if (ret)
+	return ret;
+
+    if (cksum.checksum.length != siglen) {
+	krb5_set_error_string(context, "pac checksum wrong length");
+	free_Checksum(&cksum);
+	return EINVAL;
+    }
+
+    memcpy(sig, cksum.checksum.data, siglen);
+    free_Checksum(&cksum);
+
+    return 0;
+}
+
+
 /*
  *
  */
@@ -328,8 +364,8 @@ verify_logonname(krb5_context context,
 
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
 
-    VCHECK(ret, krb5_ret_uint32(sp, &time1), out);
-    VCHECK(ret, krb5_ret_uint32(sp, &time2), out);
+    DCHECK(ret, krb5_ret_uint32(sp, &time1), out);
+    DCHECK(ret, krb5_ret_uint32(sp, &time2), out);
 
     {
 	uint64_t t1, t2;
@@ -341,7 +377,7 @@ verify_logonname(krb5_context context,
 	    return EINVAL;
 	}
     }
-    VCHECK(ret, krb5_ret_uint16(sp, &len), out);
+    DCHECK(ret, krb5_ret_uint16(sp, &len), out);
     if (len == 0) {
 	krb5_storage_free(sp);
 	krb5_set_error_string(context, "PAC logon name length missing");
@@ -366,7 +402,7 @@ verify_logonname(krb5_context context,
 	size_t i;
 
 	if (len & 1) {
-	    krb5_set_error_string(context, "PAC logon name mailformed");
+	    krb5_set_error_string(context, "PAC logon name malformed");
 	    return EINVAL;
 	}
 
@@ -416,6 +452,79 @@ verify_logonname(krb5_context context,
 out:
     return ret;
 }
+
+/*
+ *
+ */
+
+static krb5_error_code
+build_logon_name(krb5_context context, 
+		 time_t authtime,
+		 krb5_const_principal principal, 
+		 krb5_data *logon)
+{
+    krb5_error_code ret;
+    krb5_storage *sp;
+    uint64_t t;
+    char *s, *s2;
+    size_t i, len;
+
+    t = unix2nttime(authtime);
+
+    krb5_data_zero(logon);
+
+    sp = krb5_storage_emem();
+    if (sp == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
+
+    DCHECK(ret, krb5_store_uint32(sp, t & 0xffffffff), out);
+    DCHECK(ret, krb5_store_uint32(sp, t >> 32), out);
+
+    ret = krb5_unparse_name_flags(context, principal,
+				  KRB5_PRINCIPAL_UNPARSE_NO_REALM, &s);
+    if (ret)
+	goto out;
+
+    len = strlen(s);
+    
+    DCHECK(ret, krb5_store_uint16(sp, len * 2), out);
+
+#if 1
+    s2 = malloc(len * 2);
+    if (s2 == NULL) {
+	ret = ENOMEM;
+	free(s);
+	goto out;
+    }
+    for (i = 0; i < len; i++) {
+	s2[i * 2] = s[i];
+	s2[i * 2 + 1] = 0;
+    }
+    free(s);
+#else
+    /* write libwind code here */
+#endif
+
+    ret = krb5_storage_write(sp, s2, len * 2);
+    free(s2);
+    if (ret != len * 2) {
+	ret = ENOMEM;
+	goto out;
+    }
+    ret = krb5_storage_to_data(sp, logon);
+    if (ret)
+	goto out;
+    krb5_storage_free(sp);
+
+    return 0;
+out:
+    krb5_storage_free(sp);
+    return ret;
+}
+
 
 /*
  *
@@ -505,44 +614,229 @@ _krb5_pac_verify(krb5_context context,
  *
  */
 
+static krb5_error_code
+fill_zeros(krb5_context context, krb5_storage *sp, size_t len)
+{
+    ssize_t sret;
+
+    while (len) {
+	sret = krb5_storage_write(sp, zeros, MIN(len, sizeof(zeros)));
+	if (sret <= 0) {
+	    krb5_set_error_string(context, "out of memory");
+	    return ENOMEM;
+	}
+	len -= sret;
+    }
+    return 0;
+}
+
 krb5_error_code
 _krb5_pac_sign(krb5_context context,
-	       struct krb5_pac *pac,
+	       struct krb5_pac *p,
 	       time_t authtime,
 	       krb5_principal principal,
-	       krb5_keyblock *service_key,
+	       krb5_keyblock *server_key,
 	       krb5_keyblock *priv_key,
 	       krb5_data *data)
 {
-    int num = 0;
+    krb5_error_code ret;
+    krb5_storage *sp = NULL, *spdata = NULL;
+    uint32_t end;
+    size_t server_size, priv_size;
+    uint32_t server_offset = 0, priv_offset = 0;
+    uint32_t server_cksumtype = 0, priv_cksumtype = 0;
+    int i, num = 0;
+    krb5_data logon, d;
 
-    if (pac->server_checksum == NULL)
+    krb5_data_zero(&logon);
+
+    if (p->server_checksum == NULL)
 	num++;
-    if (pac->privsvr_checksum == NULL)
+    if (p->privsvr_checksum == NULL)
 	num++;
-    if (pac->logon_name == NULL)
+    if (p->logon_name == NULL)
 	num++;
+
     if (num) {
 	void *ptr;
 
-	ptr = realloc(pac->pac, sizeof(*pac->pac) + (sizeof(pac->pac->buffers[0]) * (pac->pac->numbuffers + num - 1)));
-	if (ptr == NULL)
-	    abort();
-	pac->pac = ptr;
+	ptr = realloc(p->pac, sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * (p->pac->numbuffers + num - 1)));
+	if (ptr == NULL) {
+	    krb5_set_error_string(context, "out of memory");
+	    return ENOMEM;
+	}
+	p->pac = ptr;
 
-	if (pac->server_checksum == NULL) {
-	    pac->server_checksum = &pac->pac->buffers[pac->pac->numbuffers++];
-	    memset(pac->server_checksum, 0, sizeof(*pac->server_checksum));
+	if (p->server_checksum == NULL) {
+	    p->server_checksum = &p->pac->buffers[p->pac->numbuffers++];
+	    memset(p->server_checksum, 0, sizeof(*p->server_checksum));
+	    p->server_checksum->type = PAC_SERVER_CHECKSUM;
 	}
-	if (pac->privsvr_checksum == NULL) {
-	    pac->privsvr_checksum = &pac->pac->buffers[pac->pac->numbuffers++];
-	    memset(pac->privsvr_checksum, 0, sizeof(*pac->privsvr_checksum));
+	if (p->privsvr_checksum == NULL) {
+	    p->privsvr_checksum = &p->pac->buffers[p->pac->numbuffers++];
+	    memset(p->privsvr_checksum, 0, sizeof(*p->privsvr_checksum));
+	    p->privsvr_checksum->type = PAC_PRIVSVR_CHECKSUM;
 	}
-	if (pac->logon_name == NULL) {
-	    pac->logon_name = &pac->pac->buffers[pac->pac->numbuffers++];
-	    memset(pac->logon_name, 0, sizeof(*pac->logon_name));
+	if (p->logon_name == NULL) {
+	    p->logon_name = &p->pac->buffers[p->pac->numbuffers++];
+	    memset(p->logon_name, 0, sizeof(*p->logon_name));
+	    p->logon_name->type = PAC_LOGON_NAME;
 	}
     }
 
+    /* Calculate LOGON NAME */
+    ret = build_logon_name(context, authtime, principal, &logon);
+    if (ret)
+	goto out;
+
+    /* Set lengths for checksum */
+
+    /* XXX */
+#if 0
+    ret = krb5_checksumsize(context, server_key->keytype, &server_size);
+    ret = krb5_checksumsize(context, priv_key->keytype, &priv_size);
+#else
+    if (server_key->keytype != ETYPE_ARCFOUR_HMAC_MD5 || priv_key->keytype != ETYPE_ARCFOUR_HMAC_MD5)
+    {
+	krb5_set_error_string(context, "only support arcfour for now");
+	return EINVAL;
+    }
+    server_size = 16;
+    server_cksumtype = -138;
+    priv_size = 16;
+    priv_cksumtype = -138;
+#endif
+
+    /* Encode PAC */
+    sp = krb5_storage_emem();
+    if (sp == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
+
+    spdata = krb5_storage_emem();
+    if (spdata == NULL) {
+	krb5_storage_free(sp);
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    krb5_storage_set_flags(spdata, KRB5_STORAGE_BYTEORDER_LE);
+
+    DCHECK(ret, krb5_store_uint32(sp, p->pac->numbuffers), out);
+    DCHECK(ret, krb5_store_uint32(sp, p->pac->version), out);
+
+    end = PACTYPE_SIZE + (PAC_INFO_BUFFER_SIZE * p->pac->numbuffers);
+
+    for (i = 0; i < p->pac->numbuffers; i++) {
+	uint32_t len;
+	size_t sret;
+	void *ptr = NULL;
+
+	/* store data */
+
+	if (p->pac->buffers[i].type == PAC_SERVER_CHECKSUM) {
+	    len = server_size + 4;
+	    server_offset = end + 4;
+	    DCHECK(ret, krb5_store_uint32(spdata, server_cksumtype), out);
+	    DCHECK(ret, fill_zeros(context, spdata, server_size), out);
+	} else if (p->pac->buffers[i].type == PAC_PRIVSVR_CHECKSUM) {
+	    len = priv_size + 4;
+	    priv_offset = end + 4;
+	    DCHECK(ret, krb5_store_uint32(spdata, priv_cksumtype), out);
+	    DCHECK(ret, fill_zeros(context, spdata, priv_size), out);
+	} else if (p->pac->buffers[i].type == PAC_LOGON_NAME) {
+	    len = krb5_storage_write(spdata, logon.data, logon.length);
+	    if (logon.length != len) {
+		ret = EINVAL;
+		goto out;
+	    }
+	} else {
+	    len = p->pac->buffers[i].buffersize;
+	    ptr = (char *)p->data.data + p->pac->buffers[i].offset_lo;
+
+	    sret = krb5_storage_write(spdata, ptr, len);
+	    if (sret != len) {
+		krb5_set_error_string(context, "out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+	}
+
+	/* write header */
+	DCHECK(ret, krb5_store_uint32(sp, p->pac->buffers[i].type), out);
+	DCHECK(ret, krb5_store_uint32(sp, len), out);
+	DCHECK(ret, krb5_store_uint32(sp, end), out);
+	DCHECK(ret, krb5_store_uint32(sp, 0), out);
+
+	/* advance data endpointer and align */
+	{
+	    int32_t e;
+
+	    end += len;
+	    e = ((end + PAC_ALIGNMENT - 1) / PAC_ALIGNMENT) * PAC_ALIGNMENT;
+	    if (end != e) {
+		DCHECK(ret, fill_zeros(context, spdata, e - end), out);
+	    }
+	    end = e;
+	}
+
+    }
+
+    /* assert (server_offset != 0 && priv_offset != 0); */
+
+    /* export PAC */
+    ret = krb5_storage_to_data(spdata, &d);
+    if (ret) {
+	krb5_set_error_string(context, "out of memory");
+	goto out;
+    }
+    ret = krb5_storage_write(sp, d.data, d.length);
+    if (ret != d.length) {
+	krb5_data_free(&d);
+	krb5_set_error_string(context, "out of memory");
+	ret = ENOMEM;
+	goto out;
+    }
+    krb5_data_free(&d);
+
+    ret = krb5_storage_to_data(sp, &d);
+    if (ret) {
+	krb5_set_error_string(context, "out of memory");
+	goto out;
+    }
+
+    /* sign */
+
+    ret = create_checksum(context, server_key,
+			  d.data, d.length,
+			  (char *)d.data + server_offset, server_size);
+    if (ret) {
+	krb5_data_free(&d);
+	goto out;
+    }
+
+    ret = create_checksum(context, priv_key,
+			  (char *)d.data + server_offset, server_size,
+			  (char *)d.data + priv_offset, priv_size);
+    if (ret) {
+	krb5_data_free(&d);
+	goto out;
+    }
+
+    /* done */
+    *data = d;
+
+    krb5_data_free(&logon);
+    krb5_storage_free(sp);
+    krb5_storage_free(spdata);
+
     return 0;
+out:
+    krb5_data_free(&logon);
+    if (sp)
+	krb5_storage_free(sp);
+    if (spdata)
+	krb5_storage_free(spdata);
+    return ret;
 }
