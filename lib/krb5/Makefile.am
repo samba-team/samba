@@ -30,6 +30,7 @@ TESTS =						\
 	test_keytab				\
 	test_mem				\
 	test_pac				\
+	test_plugin				\
 	test_princ				\
 	test_pkinit_dh2key			\
 	test_time
@@ -157,6 +158,7 @@ dist_libkrb5_la_SOURCES =			\
 	store_emem.c				\
 	store_fd.c				\
 	store_mem.c				\
+	plugin.c				\
 	ticket.c				\
 	time.c					\
 	transited.c				\
@@ -244,6 +246,10 @@ man_MANS =					\
 
 dist_include_HEADERS = krb5.h krb5-protos.h krb5-private.h krb5_ccapi.h
 nodist_include_HEADERS = krb5_err.h heim_err.h k524_err.h 
+
+# XXX use nobase_include_HEADERS = krb5/locate_plugin.h
+krb5dir = $(includedir)/krb5
+krb5_HEADERS = locate_plugin.h
 
 CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h k524_err.c k524_err.h
 
