@@ -76,6 +76,7 @@ my $section_types = {
 		"PUBLIC_HEADERS"	=> "list", 
 
 		"CFLAGS"		=> "list",
+		"LDFLAGS"		=> "list",
 		"STANDARD_VISIBILITY"	=> "string",
 
 		"USE_HOSTCC"		=> "bool"

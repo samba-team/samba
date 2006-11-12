@@ -50,6 +50,7 @@ PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		NDR_XATTR \
 		WRAP_XATTR
+
 # End BINARY getntacl
 #################################
 
