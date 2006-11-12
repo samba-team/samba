@@ -40,6 +40,7 @@ SO_VERSION = 0
 PRIVATE_PROTO_HEADER = process_model_proto.h
 OBJ_FILES = \
 		process_model.o
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSAMBA-CONFIG
 #
 # End SUBSYSTEM process_model
 ################################################
