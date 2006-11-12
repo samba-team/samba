@@ -655,7 +655,7 @@ int smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 	return ret;
 }
 
-int smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
+_PUBLIC_ int smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
 				  struct cli_credentials *machine_account,
 				  struct smb_krb5_context *smb_krb5_context,
 				  struct keytab_container **keytab_container) 
