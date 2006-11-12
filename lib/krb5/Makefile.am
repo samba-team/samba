@@ -29,12 +29,12 @@ TESTS =						\
 	test_crypto_wrapping			\
 	test_keytab				\
 	test_mem				\
+	test_pac				\
 	test_princ				\
 	test_pkinit_dh2key			\
 	test_time
 
 check_PROGRAMS = $(TESTS) test_hostname
-
 
 LDADD = libkrb5.la \
 	$(LIB_des) \
@@ -133,6 +133,7 @@ dist_libkrb5_la_SOURCES =			\
 	net_read.c				\
 	net_write.c				\
 	n-fold.c				\
+	pac.c					\
 	padata.c				\
 	pkinit.c				\
 	principal.c				\
