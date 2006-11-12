@@ -250,5 +250,5 @@ EXTRA_DIST = \
 
 $(libgssapi_la_OBJECTS): gkrb5_err.h
 
-gkrb5_err.h gkrb5_err.c: krb5/gkrb5_err.et
+gkrb5_err.h gkrb5_err.c: $(srcdir)/krb5/gkrb5_err.et
 	$(COMPILE_ET) $(srcdir)/krb5/gkrb5_err.et
