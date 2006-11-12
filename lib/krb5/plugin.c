@@ -52,7 +52,9 @@ struct plugin {
 };
 
 static HEIMDAL_MUTEX plugin_mutex = HEIMDAL_MUTEX_INITIALIZER;
-struct plugin *registered = NULL;
+static struct plugin *registered = NULL;
+
+static const char *plugin_dir = LIBDIR "/plugin/krb5";
 
 /*
  *
@@ -146,7 +148,8 @@ _krb5_plugin_find(krb5_context context,
     struct krb5_plugin *e;
     struct plugin *p;
     krb5_error_code ret;
-    const char *dir;
+    char *sysdirs[2] = { NULL, NULL };
+    char **dirs = NULL, **di;
     struct dirent *entry;
     char *path;
     DIR *d = NULL;
@@ -173,40 +176,49 @@ _krb5_plugin_find(krb5_context context,
     }
     HEIMDAL_MUTEX_unlock(&plugin_mutex);
 
-    dir = "/usr/heimdal/lib/krb5/plugins";
-
-    /* XXX allow more directories */
-
-    d = opendir(dir);
-    if (d == NULL) {
-	if (*list == NULL) {
-	    ret = errno;
-	    krb5_set_error_string(context, "failed to open directory %s", dir);
-	    return ret;
-	}
-	return 0;
+    dirs = krb5_config_get_strings(context, NULL, "libdefaults", 
+				   "plugin_dir", NULL);
+    if (dirs == NULL) {
+	sysdirs[0] = rk_UNCONST(plugin_dir);
+	dirs = sysdirs;
     }
 
-    while ((entry = readdir(d)) != NULL) {
-	asprintf(&path, "%s/%s", dir, entry->d_name);
-	if (path == NULL) {
-	    krb5_set_error_string(context, "out of memory");
-	    ret = ENOMEM;
-	    goto out;
-	}
-	ret = loadlib(context, type, name, path, &e);
-	free(path);
-	if (ret)
+    for (di = dirs; *di != NULL; di++) {
+
+	d = opendir(*di);
+	if (d == NULL)
 	    continue;
 
-	e->next = *list;
-	*list = e;
+	while ((entry = readdir(d)) != NULL) {
+	    asprintf(&path, "%s/%s", *di, entry->d_name);
+	    if (path == NULL) {
+		krb5_set_error_string(context, "out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+	    ret = loadlib(context, type, name, path, &e);
+	    free(path);
+	    if (ret)
+		continue;
+	    
+	    e->next = *list;
+	    *list = e;
+	}
+	closedir(d);
     }
-    closedir(d);
+    if (dirs != sysdirs)
+	krb5_config_free_strings(dirs);
+
+    if (*list == NULL) {
+	krb5_set_error_string(context, "Did not find a plugin for %s", name);
+	return ENOENT;
+    }
 
     return 0;
 
 out:
+    if (dirs && dirs != sysdirs)
+	krb5_config_free_strings(dirs);
     if (d)
 	closedir(d);
     _krb5_plugin_free(*list);
