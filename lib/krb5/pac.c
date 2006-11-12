@@ -397,7 +397,7 @@ verify_logonname(krb5_context context,
 	return EINVAL;
     }
     krb5_storage_free(sp);
-#if 1 /* cheat for know */
+#if 1 /* cheat for now */
     {
 	size_t i;
 
@@ -492,7 +492,7 @@ build_logon_name(krb5_context context,
     
     DCHECK(ret, krb5_store_uint16(sp, len * 2), out);
 
-#if 1
+#if 1 /* cheat for now */
     s2 = malloc(len * 2);
     if (s2 == NULL) {
 	ret = ENOMEM;
