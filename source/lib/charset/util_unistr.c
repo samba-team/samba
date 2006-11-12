@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/locale.h"
+#include "dynconfig.h"
 
 /**
  * @file
@@ -44,8 +45,8 @@ static void load_case_tables(void)
 	if (!mem_ctx) {
 		smb_panic("No memory for case_tables");
 	}
-	upcase_table = map_file(data_path(mem_ctx, "upcase.dat"), 0x20000);
-	lowcase_table = map_file(data_path(mem_ctx, "lowcase.dat"), 0x20000);
+	upcase_table = map_file(talloc_asprintf(mem_ctx, "%s/upcase.dat", dyn_DATADIR), 0x20000);
+	lowcase_table = map_file(talloc_asprintf(mem_ctx, "%s/lowcase.dat", dyn_DATADIR), 0x20000);
 	talloc_free(mem_ctx);
 	if (upcase_table == NULL) {
 		/* try also under codepages for testing purposes */
