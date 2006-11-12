@@ -145,7 +145,7 @@ STLD=$self->{config}->{STLD}
 STLD_FLAGS=$self->{config}->{STLD_FLAGS}
 
 SHLD=$self->{config}->{SHLD}
-SHLD_FLAGS=$self->{config}->{SHLD_FLAGS} -L$libdir
+SHLD_FLAGS=$self->{config}->{SHLD_FLAGS} -L\$(builddir)/bin/shared
 SHLD_UNDEF_FLAGS=$self->{config}->{SHLD_UNDEF_FLAGS}
 SHLIBEXT=$self->{config}->{SHLIBEXT}
 
