@@ -177,7 +177,9 @@ OBJ_FILES = \
 		common/ldb_controls.o \
 		common/qsort.o
 PUBLIC_DEPENDENCIES = \
-		LIBTALLOC
+		LIBTALLOC \
+		DYNCONFIG \
+																		SOCKET_WRAPPER
 MANPAGE = man/ldb.3
 PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
 #

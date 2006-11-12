@@ -21,6 +21,7 @@ DESCRIPTION = Services Configuration Library
 PUBLIC_HEADERS = share.h
 PUBLIC_PROTO_HEADER = share_proto.h
 OBJ_FILES = share.o
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 # End SUBSYSTEM share
 #################################
 

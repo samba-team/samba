@@ -1345,7 +1345,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 /*
   receive the answer from a dcerpc_ndr_request_send()
 */
-NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
+_PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 {
 	struct dcerpc_pipe *p = req->p;
 	NTSTATUS status;
