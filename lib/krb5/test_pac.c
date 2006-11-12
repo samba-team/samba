@@ -101,6 +101,7 @@ main(int argc, char **argv)
     krb5_error_code ret;
     krb5_context context;
     struct krb5_pac *pac;
+    krb5_data data;
     krb5_principal p;
 
     ret = krb5_init_context(&context);
@@ -119,6 +120,22 @@ main(int argc, char **argv)
 			   &member_keyblock, &kdc_keyblock);
     if (ret)
 	krb5_err(context, 1, ret, "_krb5_pac_verify");
+
+    ret = _krb5_pac_sign(context, pac, authtime, p, 
+			 &member_keyblock, &kdc_keyblock, &data);
+    if (ret)
+	krb5_err(context, 1, ret, "_krb5_pac_sign");
+
+    _krb5_pac_free(context, pac);
+
+    ret = _krb5_pac_parse(context, data.data, data.length, &pac);
+    if (ret)
+	krb5_err(context, 1, ret, "_krb5_pac_parse 2");
+
+    ret = _krb5_pac_verify(context, pac, authtime, p,
+			   &member_keyblock, &kdc_keyblock);
+    if (ret)
+	krb5_err(context, 1, ret, "_krb5_pac_verify 2");
 
     _krb5_pac_free(context, pac);
 
