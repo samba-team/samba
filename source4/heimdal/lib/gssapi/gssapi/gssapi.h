@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi.h,v 1.5 2006/10/19 07:11:14 lha Exp $ */
+/* $Id: gssapi.h,v 1.6 2006/11/10 00:39:50 lha Exp $ */
 
 #ifndef GSSAPI_GSSAPI_H_
 #define GSSAPI_GSSAPI_H_
@@ -376,57 +376,6 @@ extern gss_OID GSS_SASL_DIGEST_MD5_MECHANISM;
 #define GSS_S_OLD_TOKEN (1ul << (GSS_C_SUPPLEMENTARY_OFFSET + 2))
 #define GSS_S_UNSEQ_TOKEN (1ul << (GSS_C_SUPPLEMENTARY_OFFSET + 3))
 #define GSS_S_GAP_TOKEN (1ul << (GSS_C_SUPPLEMENTARY_OFFSET + 4))
-
-/*
- * From RFC1964:
- *
- * 4.1.1. Non-Kerberos-specific codes
- */
-
-#define GSS_KRB5_S_G_BAD_SERVICE_NAME 1
-           /* "No @ in SERVICE-NAME name string" */
-#define GSS_KRB5_S_G_BAD_STRING_UID 2
-           /* "STRING-UID-NAME contains nondigits" */
-#define GSS_KRB5_S_G_NOUSER 3
-           /* "UID does not resolve to username" */
-#define GSS_KRB5_S_G_VALIDATE_FAILED 4
-           /* "Validation error" */
-#define GSS_KRB5_S_G_BUFFER_ALLOC 5
-           /* "Couldn't allocate gss_buffer_t data" */
-#define GSS_KRB5_S_G_BAD_MSG_CTX 6
-           /* "Message context invalid" */
-#define GSS_KRB5_S_G_WRONG_SIZE 7
-           /* "Buffer is the wrong size" */
-#define GSS_KRB5_S_G_BAD_USAGE 8
-           /* "Credential usage type is unknown" */
-#define GSS_KRB5_S_G_UNKNOWN_QOP 9
-           /* "Unknown quality of protection specified" */
-
-  /*
-   * 4.1.2. Kerberos-specific-codes
-   */
-
-#define GSS_KRB5_S_KG_CCACHE_NOMATCH 10
-           /* "Principal in credential cache does not match desired name" */
-#define GSS_KRB5_S_KG_KEYTAB_NOMATCH 11
-           /* "No principal in keytab matches desired name" */
-#define GSS_KRB5_S_KG_TGT_MISSING 12
-           /* "Credential cache has no TGT" */
-#define GSS_KRB5_S_KG_NO_SUBKEY 13
-           /* "Authenticator has no subkey" */
-#define GSS_KRB5_S_KG_CONTEXT_ESTABLISHED 14
-           /* "Context is already fully established" */
-#define GSS_KRB5_S_KG_BAD_SIGN_TYPE 15
-           /* "Unknown signature type in token" */
-#define GSS_KRB5_S_KG_BAD_LENGTH 16
-           /* "Invalid field length in token" */
-#define GSS_KRB5_S_KG_CTX_INCOMPLETE 17
-           /* "Attempt to use incomplete security context" */
-
-/*
- * This is used to make sure mechs that don't want to have external
- * references don't get any prototypes, and thus can get warnings.
- */
 
 /*
  * Finally, function prototypes for the GSS-API routines.

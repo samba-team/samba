@@ -251,6 +251,7 @@ OBJ_FILES = \
 	../heimdal/lib/krb5/n-fold.o \
 	../heimdal/lib/krb5/padata.o \
 	../heimdal/lib/krb5/pkinit.o \
+	../heimdal/lib/krb5/plugin.o \
 	../heimdal/lib/krb5/principal.o \
 	../heimdal/lib/krb5/rd_cred.o \
 	../heimdal/lib/krb5/rd_error.o \
@@ -427,6 +428,7 @@ OBJ_FILES = \
 	../heimdal/lib/roken/issuid.o \
 	../heimdal/lib/roken/net_read.o \
 	../heimdal/lib/roken/net_write.o \
+	../heimdal/lib/roken/socket.o \
 	../heimdal/lib/roken/parse_time.o \
 	../heimdal/lib/roken/parse_units.o \
 	../heimdal/lib/roken/resolve.o \
@@ -542,11 +544,12 @@ include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/mech/gssapi.asn1 gs
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/digest.asn1 digest_asn1|
 
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/asn1/asn1_err.et|
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/hdb/hdb_err.et|
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/heim_err.et|
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/k524_err.et|
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/asn1/asn1_err.et heimdal/lib/asn1|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/hdb/hdb_err.et heimdal/lib/hdb|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/heim_err.et heimdal/lib/krb5|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/k524_err.et heimdal/lib/krb5|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et heimdal/lib/krb5|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/gssapi/krb5/gkrb5_err.et heimdal/lib/gssapi|
 
 .SUFFIXES: .hin 
 .hin.h:

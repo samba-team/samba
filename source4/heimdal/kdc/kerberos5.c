@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kerberos5.c,v 1.224 2006/11/04 17:05:28 lha Exp $");
+RCSID("$Id: kerberos5.c,v 1.225 2006/11/10 03:36:32 lha Exp $");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
@@ -936,7 +936,6 @@ _kdc_as_rep(krb5_context context,
 
 	    ret = _kdc_pk_check_client(context,
 				       config,
-				       client_princ, 
 				       client,
 				       pkp,
 				       &client_cert);

@@ -499,6 +499,12 @@ krb5_boolean KRB5_LIB_FUNCTION
 krb5_c_is_keyed_cksum (krb5_cksumtype /*ctype*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_c_keylength (
+	krb5_context /*context*/,
+	krb5_enctype /*enctype*/,
+	size_t */*len*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_c_make_checksum (
 	krb5_context /*context*/,
 	krb5_cksumtype /*cksumtype*/,
@@ -2165,6 +2171,9 @@ krb5_get_krbhst (
 	const krb5_realm */*realm*/,
 	char ***/*hostlist*/);
 
+time_t KRB5_LIB_FUNCTION
+krb5_get_max_time_skew (krb5_context /*context*/);
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_pw_salt (
 	krb5_context /*context*/,
@@ -2176,9 +2185,6 @@ krb5_get_server_rcache (
 	krb5_context /*context*/,
 	const krb5_data */*piece*/,
 	krb5_rcache */*id*/);
-
-time_t KRB5_LIB_FUNCTION
-krb5_get_time_wrap (krb5_context /*context*/);
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_get_use_admin_kdc (krb5_context /*context*/);
@@ -3165,6 +3171,11 @@ krb5_set_ignore_addresses (
 	krb5_context /*context*/,
 	const krb5_addresses */*addresses*/);
 
+void KRB5_LIB_FUNCTION
+krb5_set_max_time_skew (
+	krb5_context /*context*/,
+	time_t /*t*/);
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_password (
 	krb5_context /*context*/,
@@ -3196,11 +3207,6 @@ krb5_set_send_to_kdc_func (
 	krb5_context /*context*/,
 	krb5_send_to_kdc_func /*func*/,
 	void */*data*/);
-
-void KRB5_LIB_FUNCTION
-krb5_set_time_wrap (
-	krb5_context /*context*/,
-	time_t /*t*/);
 
 void KRB5_LIB_FUNCTION
 krb5_set_use_admin_kdc (
@@ -3269,6 +3275,11 @@ krb5_storage_from_fd (int /*fd*/);
 krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_from_mem (
 	void */*buf*/,
+	size_t /*len*/);
+
+krb5_storage * KRB5_LIB_FUNCTION
+krb5_storage_from_readonly_mem (
+	const void */*buf*/,
 	size_t /*len*/);
 
 krb5_flags KRB5_LIB_FUNCTION

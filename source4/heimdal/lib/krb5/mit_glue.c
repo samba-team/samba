@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: mit_glue.c,v 1.8 2006/10/14 09:51:02 lha Exp $");
+RCSID("$Id: mit_glue.c,v 1.9 2006/11/09 21:24:16 lha Exp $");
 
 /*
  * Glue for MIT API
@@ -324,4 +324,12 @@ krb5_c_make_random_key(krb5_context context,
 		       krb5_keyblock *random_key)
 {
     return krb5_generate_random_keyblock(context, enctype, random_key);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_c_keylength(krb5_context context,
+		 krb5_enctype enctype,
+		 size_t *len)
+{
+    return krb5_enctype_keysize(context, enctype, len);
 }

@@ -33,8 +33,9 @@
 
 #include "krb5_locl.h"
 #include <resolve.h>
+#include "locate_plugin.h"
 
-RCSID("$Id: krbhst.c,v 1.57 2006/10/06 17:11:02 lha Exp $");
+RCSID("$Id: krbhst.c,v 1.58 2006/11/12 20:05:20 lha Exp $");
 
 static int
 string_to_proto(const char *string)
@@ -147,6 +148,7 @@ struct krb5_krbhst_data {
 #define KD_FALLBACK		16
 #define KD_CONFIG_EXISTS	32
 #define KD_LARGE_MSG		64
+#define KD_PLUGIN	       128
     krb5_error_code (*get_next)(krb5_context, struct krb5_krbhst_data *, 
 				krb5_krbhst_info**);
 
@@ -460,8 +462,8 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 	hi->proto = proto;
 	hi->port  = hi->def_port = port;
 	hi->ai    = ai;
-	memmove(hi->hostname, host, hostlen - 1);
-	hi->hostname[hostlen - 1] = '\0';
+	memmove(hi->hostname, host, hostlen);
+	hi->hostname[hostlen] = '\0';
 	free(host);
 	append_host_hostinfo(kd, hi);
 	kd->fallback_count++;
@@ -469,12 +471,101 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
     return 0;
 }
 
+/*
+ * Fetch hosts from plugin
+ */
+
+static krb5_error_code 
+add_locate(void *ctx, int type, struct sockaddr *addr)
+{
+    struct krb5_krbhst_info *hi;
+    struct krb5_krbhst_data *kd = ctx;
+    char host[NI_MAXHOST], port[NI_MAXSERV];
+    struct addrinfo hints, *ai;
+    socklen_t socklen;
+    size_t hostlen;
+    int ret;
+
+    socklen = socket_sockaddr_size(addr);
+
+    ret = getnameinfo(addr, socklen, host, sizeof(host), port, sizeof(port),
+		      NI_NUMERICHOST|NI_NUMERICSERV);
+    if (ret != 0)
+	return 0;
+
+    memset(&hints, 0, sizeof(hints));
+    ret = getaddrinfo(host, port, &hints, &ai);
+    if (ret)
+	return 0;
+
+    hostlen = strlen(host);
+
+    hi = calloc(1, sizeof(*hi) + hostlen);
+    if(hi == NULL) {
+	free(host);
+	return ENOMEM;
+    }
+    
+    hi->proto = krbhst_get_default_proto(kd);
+    hi->port  = hi->def_port = socket_get_port(addr);
+    hi->ai    = ai;
+    memmove(hi->hostname, host, hostlen);
+    hi->hostname[hostlen] = '\0';
+    append_host_hostinfo(kd, hi);
+
+    return 0;
+}
+
+static void
+plugin_get_hosts(krb5_context context,
+		 struct krb5_krbhst_data *kd,
+		 enum locate_service_type type)
+{
+    struct krb5_plugin *list, *e;
+    krb5_error_code ret;
+
+    ret = _krb5_plugin_find(context, PLUGIN_TYPE_DATA, "resolve", &list);
+    if(ret != 0 || list == NULL)
+	return;
+
+    kd->flags |= KD_CONFIG_EXISTS;
+
+    for (e = list; e != NULL; e = _krb5_plugin_get_next(e)) {
+	krb5plugin_service_locate_ftable *service;
+	void *ctx;
+
+	service = _krb5_plugin_get_symbol(e);
+	if (service->minor_version != 0)
+	    continue;
+	
+	(*service->init)(context, &ctx);
+	ret = (*service->lookup)(ctx, type, kd->realm, 0, 0, add_locate, kd);
+	(*service->fini)(ctx);
+	if (ret) {
+	    krb5_set_error_string(context, "Plugin failed to lookup");
+	    break;
+	}
+    }
+    _krb5_plugin_free(list);
+}
+
+/*
+ *
+ */
+
 static krb5_error_code
 kdc_get_next(krb5_context context,
 	     struct krb5_krbhst_data *kd,
 	     krb5_krbhst_info **host)
 {
     krb5_error_code ret;
+
+    if ((kd->flags & KD_PLUGIN) == 0) {
+	plugin_get_hosts(context, kd, locate_service_kdc);
+	kd->flags |= KD_PLUGIN;
+	if(get_next(kd, host))
+	    return 0;
+    }
 
     if((kd->flags & KD_CONFIG) == 0) {
 	config_get_hosts(context, kd, "kdc");

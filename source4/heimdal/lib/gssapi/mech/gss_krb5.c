@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_krb5.c,v 1.20 2006/11/08 23:11:03 lha Exp $");
+RCSID("$Id: gss_krb5.c,v 1.21 2006/11/10 00:57:27 lha Exp $");
 
 #include <krb5.h>
 #include <roken.h>
@@ -421,13 +421,41 @@ gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status, void *c)
  */
 
 OM_uint32
-gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status, 
+gss_krb5_set_allowable_enctypes(OM_uint32 *min_status, 
 				gss_cred_id_t cred,
 				OM_uint32 num_enctypes,
-				krb5_enctype *enctypes)
+				int32_t *enctypes)
 {
-    *minor_status = 0;
-    return GSS_S_COMPLETE;
+    OM_uint32 maj_status;
+    gss_buffer_desc buffer;
+    krb5_storage *sp;
+    krb5_data data;
+
+    sp = krb5_storage_emem();
+    if (sp == NULL) {
+	*min_status = ENOMEM;
+	maj_status = GSS_S_FAILURE;
+	goto out;
+    }
+
+    while(*enctypes) {
+	krb5_store_int32(sp, *enctypes);
+	enctypes++;
+    }
+
+    krb5_storage_to_data(sp, &data);
+
+    buffer.value = data.data;
+    buffer.length = data.length;
+
+    maj_status = gss_set_cred_option(min_status,
+				     &cred,
+				     GSS_KRB5_SET_ALLOWABLE_ENCTYPES_X,
+				     &buffer);
+out:
+    if (sp)
+	krb5_storage_free(sp);
+    return maj_status;
 }
 
 /*
