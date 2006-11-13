@@ -1,5 +1,12 @@
 2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_context.c: Create our own krb5_context.
+
+	* krb5: Switch from using a specific error message context in the
+	TLS to have a whole krb5_context in TLS. This have some
+	interestion side-effekts for the configruration setting options
+	since they operate on per-thread basis now.
+
 	* mech/gss_set_cred_option.c: When calling ->gm_set_cred_option
 	and checking for success, use GSS_S_COMPLETE. From Andrew Bartlet.
 	
