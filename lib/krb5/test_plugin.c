@@ -67,7 +67,7 @@ resolve_lookup(void *ctx,
     s.sin_port = htons(88);
     s.sin_addr.s_addr = htonl(0x7f000002);
 
-    if (strcmp(realm, "EXAMPLE.COM") == 0)
+    if (strcmp(realm, "NOTHERE.H5L.SE") == 0)
 	(*add)(addctx, type, (struct sockaddr *)&s);
 
     return 0;
@@ -103,7 +103,7 @@ main(int argc, char **argv)
 
 
     ret = krb5_krbhst_init_flags(context,
-				 "EXAMPLE.COM",
+				 "NOTHERE.H5L.SE",
 				 KRB5_KRBHST_KDC,
 				 0,
 				 &handle);
@@ -113,7 +113,7 @@ main(int argc, char **argv)
     
     while(krb5_krbhst_next_as_string(context, handle, host, sizeof(host)) == 0){
 	found++;
-	if (strcmp(host, "127.0.0.2") != 0)
+ 	if (strcmp(host, "127.0.0.2") != 0)
 	    krb5_errx(context, 1, "wrong address: %s", host);
     }
     if (!found)
