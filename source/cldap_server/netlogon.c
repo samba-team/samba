@@ -59,8 +59,8 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	const char *dns_domain;
 	const char *pdc_dns_name;
 	const char *flatname;
-	const char *site_name;
-	const char *site_name2;
+	const char *server_site;
+	const char *client_site;
 	const char *pdc_ip;
 	const struct ldb_dn *partitions_basedn;
 
@@ -153,8 +153,8 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 					   dns_domain);
 
 	flatname         = samdb_result_string(ref_res[0], "nETBIOSName", lp_workgroup());
-	site_name        = "Default-First-Site-Name";
-	site_name2       = "Default-First-Site-Name";
+	server_site      = "Default-First-Site-Name";
+	client_site      = "Default-First-Site-Name";
 	pdc_ip           = iface_best_ip(src_address);
 
 	ZERO_STRUCTP(netlogon);
@@ -198,8 +198,8 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 		netlogon->logon5.domain       = flatname;
 		netlogon->logon5.pdc_name     = lp_netbios_name();
 		netlogon->logon5.user_name    = user;
-		netlogon->logon5.site_name    = site_name;
-		netlogon->logon5.site_name2   = site_name2;
+		netlogon->logon5.server_site  = server_site;
+		netlogon->logon5.client_site  = client_site;
 		netlogon->logon5.lmnt_token   = 0xFFFF;
 		netlogon->logon5.lm20_token   = 0xFFFF;
 		break;
@@ -213,8 +213,8 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 		netlogon->logon13.domain       = flatname;
 		netlogon->logon13.pdc_name     = lp_netbios_name();
 		netlogon->logon13.user_name    = user;
-		netlogon->logon13.site_name    = site_name;
-		netlogon->logon13.site_name2   = site_name2;
+		netlogon->logon13.server_site  = server_site;
+		netlogon->logon13.client_site  = client_site;
 		netlogon->logon13.unknown      = 10;
 		netlogon->logon13.unknown2     = 2;
 		netlogon->logon13.pdc_ip       = pdc_ip;
