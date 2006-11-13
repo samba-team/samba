@@ -299,6 +299,37 @@ _krb5_oid_to_enctype (
 	const heim_oid */*oid*/,
 	krb5_enctype */*etype*/);
 
+void
+_krb5_pac_free (
+	krb5_context /*context*/,
+	struct krb5_pac */*pac*/);
+
+krb5_error_code
+_krb5_pac_parse (
+	krb5_context /*context*/,
+	const void */*ptr*/,
+	size_t /*len*/,
+	struct krb5_pac **/*pac*/);
+
+krb5_error_code
+_krb5_pac_sign (
+	krb5_context /*context*/,
+	struct krb5_pac */*p*/,
+	time_t /*authtime*/,
+	krb5_principal /*principal*/,
+	krb5_keyblock */*server_key*/,
+	krb5_keyblock */*priv_key*/,
+	krb5_data */*data*/);
+
+krb5_error_code
+_krb5_pac_verify (
+	krb5_context /*context*/,
+	struct krb5_pac */*pac*/,
+	time_t /*authtime*/,
+	krb5_principal /*principal*/,
+	krb5_keyblock */*server*/,
+	krb5_keyblock */*privsvr*/);
+
 krb5_error_code
 _krb5_parse_moduli (
 	krb5_context /*context*/,
@@ -379,6 +410,29 @@ _krb5_pk_verify_sign (
 	heim_oid */*contentType*/,
 	krb5_data */*content*/,
 	struct krb5_pk_cert **/*signer*/);
+
+krb5_error_code
+_krb5_plugin_find (
+	krb5_context /*context*/,
+	enum plugin_type /*type*/,
+	const char */*name*/,
+	struct krb5_plugin **/*list*/);
+
+void
+_krb5_plugin_free (struct krb5_plugin */*list*/);
+
+struct krb5_plugin *
+_krb5_plugin_get_next (struct krb5_plugin */*p*/);
+
+void *
+_krb5_plugin_get_symbol (struct krb5_plugin */*p*/);
+
+krb5_error_code
+_krb5_plugin_register (
+	krb5_context /*context*/,
+	enum plugin_type /*type*/,
+	const char */*name*/,
+	void */*symbol*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_principal2principalname (

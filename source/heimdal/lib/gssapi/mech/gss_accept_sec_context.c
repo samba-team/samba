@@ -27,7 +27,108 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_accept_sec_context.c,v 1.6 2006/10/25 00:45:12 lha Exp $");
+RCSID("$Id: gss_accept_sec_context.c,v 1.7 2006/11/10 03:30:12 lha Exp $");
+
+static OM_uint32
+parse_header(const gss_buffer_t input_token, gss_OID mech_oid)
+{
+	unsigned char *p = input_token->value;
+	size_t len = input_token->length;
+	size_t a, b;
+	
+	/*
+	 * Token must start with [APPLICATION 0] SEQUENCE.
+	 * But if it doesn't assume its DCE-STYLE Kerberos!
+	 */
+	if (len == 0)
+		return (GSS_S_DEFECTIVE_TOKEN);
+	
+	p++;
+	len--;
+		
+	/*
+	 * Decode the length and make sure it agrees with the
+	 * token length.
+	 */
+	if (len == 0)
+		return (GSS_S_DEFECTIVE_TOKEN);
+	if ((*p & 0x80) == 0) {
+		a = *p;
+		p++;
+		len--;
+	} else {
+		b = *p & 0x7f;
+		p++;
+		len--;
+		if (len < b)
+		    return (GSS_S_DEFECTIVE_TOKEN);
+		a = 0;
+		while (b) {
+		    a = (a << 8) | *p;
+		    p++;
+		    len--;
+		    b--;
+		}
+	}
+	if (a != len)
+		return (GSS_S_DEFECTIVE_TOKEN);
+		
+	/*
+	 * Decode the OID for the mechanism. Simplify life by
+	 * assuming that the OID length is less than 128 bytes.
+	 */
+	if (len < 2 || *p != 0x06)
+		return (GSS_S_DEFECTIVE_TOKEN);
+	if ((p[1] & 0x80) || p[1] > (len - 2))
+		return (GSS_S_DEFECTIVE_TOKEN);
+	mech_oid->length = p[1];
+	p += 2;
+	len -= 2;
+	mech_oid->elements = p;
+	
+	return GSS_S_COMPLETE;
+}		       
+
+static gss_OID_desc krb5_mechanism =
+    {9, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02")};
+static gss_OID_desc spnego_mechanism =
+    {6, rk_UNCONST("\x2b\x06\x01\x05\x05\x02")};
+
+static OM_uint32
+choose_mech(const gss_buffer_t input, gss_OID mech_oid)
+{
+	OM_uint32 status;
+
+	/*
+	 * First try to parse the gssapi token header and see if its a
+	 * correct header, use that in the first hand.
+	 */
+
+	status = parse_header(input, mech_oid);
+	if (status == GSS_S_COMPLETE)
+	    return GSS_S_COMPLETE;
+    
+	/*
+	 * Lets guess what mech is really is, callback function to mech ??
+	 */
+
+	if (input->length != 0 && ((const char *)input->value)[0] == 0x6E) {
+		/* Could be a raw AP-REQ (check for APPLICATION tag) */
+		*mech_oid = krb5_mechanism;
+		return GSS_S_COMPLETE;
+	} else if (input->length == 0) {
+		/* 
+		 * There is the a wiered mode of SPNEGO (in CIFS and
+		 * SASL GSS-SPENGO where the first token is zero
+		 * length and the acceptor returns a mech_list, lets
+		 * home that is what is happening now.
+		 */
+		*mech_oid = spnego_mechanism;
+		return GSS_S_COMPLETE;
+	}
+	return status;
+}
+
 
 OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
     gss_ctx_id_t *context_handle,
@@ -64,64 +165,12 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 	 * parse the input token to figure out the mechanism to use.
 	 */
 	if (*context_handle == GSS_C_NO_CONTEXT) {
-		unsigned char *p = input_token->value;
-		size_t len = input_token->length;
-		size_t a, b;
 		gss_OID_desc mech_oid;
 
-		/*
-		 * Token must start with [APPLICATION 0] SEQUENCE.
-		 * But if it doesn't assume its DCE-STYLE Kerberos!
-		 * And if it's not there at all, then we are requesting a mech list from SPNEGO
-		 */
-		if (len == 0) {
-			mech_oid = *GSS_SPNEGO_MECHANISM;
-		} else if  (*p != 0x60) {
-			mech_oid = *GSS_KRB5_MECHANISM;
-		} else {
-			p++;
-			len--;
-	
-			/*
-			 * Decode the length and make sure it agrees with the
-			 * token length.
-			 */
-			if (len == 0)
-				return (GSS_S_DEFECTIVE_TOKEN);
-			if ((*p & 0x80) == 0) {
-				a = *p;
-				p++;
-				len--;
-			} else {
-				b = *p & 0x7f;
-				p++;
-				len--;
-				if (len < b)
-					return (GSS_S_DEFECTIVE_TOKEN);
-				a = 0;
-				while (b) {
-					a = (a << 8) | *p;
-					p++;
-					len--;
-					b--;
-				}
-			}
-			if (a != len)
-				return (GSS_S_DEFECTIVE_TOKEN);
-	
-			/*
-			 * Decode the OID for the mechanism. Simplify life by
-			 * assuming that the OID length is less than 128 bytes.
-			 */
-			if (len < 2 || *p != 0x06)
-				return (GSS_S_DEFECTIVE_TOKEN);
-			if ((p[1] & 0x80) || p[1] > (len - 2))
-				return (GSS_S_DEFECTIVE_TOKEN);
-			mech_oid.length = p[1];
-			p += 2;
-			len -= 2;
-			mech_oid.elements = p;
-		}
+		major_status = choose_mech(input_token, &mech_oid);
+		if (major_status != GSS_S_COMPLETE)
+			return major_status;
+
 		/*
 		 * Now that we have a mechanism, we can find the
 		 * implementation.

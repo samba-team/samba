@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi_krb5.h,v 1.14 2006/11/08 23:01:01 lha Exp $ */
+/* $Id: gssapi_krb5.h,v 1.17 2006/11/10 01:05:34 lha Exp $ */
 
 #ifndef GSSAPI_KRB5_H_
 #define GSSAPI_KRB5_H_
@@ -78,6 +78,7 @@ extern gss_OID GSS_KRB5_GET_AUTHTIME_X;
 extern gss_OID GSS_KRB5_GET_SERVICE_KEYBLOCK_X;
 /* Extensions creds */
 extern gss_OID GSS_KRB5_IMPORT_CRED_X;
+extern gss_OID GSS_KRB5_SET_ALLOWABLE_ENCTYPES_X;
 
 /*
  * kerberos mechanism specific functions
@@ -205,6 +206,11 @@ gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status,
 				void *kctx);
 
 
+OM_uint32
+gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status, 
+				gss_cred_id_t cred,
+				OM_uint32 num_enctypes,
+				int32_t *enctypes);
 
 #ifdef __cplusplus
 }
