@@ -154,7 +154,6 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 		LDAP_INIT \
 		SQLITE3_INIT \
 		ldb_tdb_init, 	\
-		ldb_schema_init,	\
 		ldb_operational_init,	\
 		ldb_rdn_name_init,	\
 		ldb_objectclass_init,	\
