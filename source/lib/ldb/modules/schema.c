@@ -201,12 +201,7 @@ static int get_attr_list_recursive(struct ldb_module *module, struct schema_stru
 		}
 
 		ret = ldb_search(module->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &srch);
-		if (ret != 1) {
-			return ret;
-		}
-		talloc_steal(schema_struct, srch);
-
-		if (ret <= 0) {
+		if (ret != LDB_SUCCESS) {
 			/* Schema DB Error: Error occurred retrieving
 			   Object Class Description */
 			ldb_debug_set(module->ldb, LDB_DEBUG_ERROR, 
@@ -214,7 +209,10 @@ static int get_attr_list_recursive(struct ldb_module *module, struct schema_stru
 				      schema_struct->objectclasses.attr[i].name);
 			return -1;
 		}
-		if (ret > 1) {
+
+		talloc_steal(schema_struct, srch);
+
+		if (srch->count > 1) {
 			/* Schema DB Error: Too Many Records */
 			ldb_debug_set(module->ldb, LDB_DEBUG_ERROR, 
 				      "Too many records found retrieving Objectclass %s.\n", 
