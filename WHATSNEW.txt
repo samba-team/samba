@@ -1,6 +1,6 @@
                    ===============================
                    Release Notes for Samba 3.0.23d
-                             Oct 28, 2006
+                             Nov 13, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version 
@@ -25,6 +25,123 @@ Changes since 3.0.23c
 commits
 -------
 
+o   Jeremy Allison <jra@samba.org>
+    * Changes to ntlm_auth to better support Firefox's NTLM 
+      authentication.
+    * Make max usershares an advisory limit.
+    * BUG 4095: Cleanup bad subsitution causing the username 
+      to be translated to domain\user twice in spnego path. 
+    * BUG 4097: Ensure all pdb_XXX calls are wrapped in 
+      [un]become_root() pairs.
+    * Ensure we always return the canonicalized name 
+    * Add in fixes to mangling dir code.
+    * Do not assume that gencache can always be opened for RW access.
+      Fall back to RO.
+    * Always initialize variables in winbindd request/response 
+      structure.
+    * Fix libsmbclient bug with Konqueror and NetApp filers that 
+      need a leading / in OpenAndX calls. 
+    * Added showacls toogle in the smbclient code.
+    * Add a suffix to the pidfile's program name if this is a process
+      with a non-default configuration file name.
+    * Fix protection from invalid struct tm values.
+    * BUG 4187: Possible crash in signing on/off code.
+
+
+o   Timur Bakeyev <timur@com.bat.ru>
+    * BUG 3856: Set the nss soname version on FreeBSD.
+    * BUG 4109: Fix bug causing smbd to turn off winbindd and 
+      fail to disable the _NO_WINBIND environment.
+    * BUG 3868: Prevent --with-aio-support from trimping on the 
+      $LIBS variable in configure.in.
+
+
+o   Dmitry Butskoy <dmitry@butskoy.name>
+    * BUG 4075: Allow smbd to use winbindd to lookup uids/gids 
+      outside the idmap range if 'winbind trusted domains 
+      only = yes'.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix primary group lookup failures.  Use the Get_Pwnam_alloc() 
+      call to ensure it finds the Unix user first.
+    * Only grant privs to Administrators if privileges are enabled 
+      to avoid bogus error messages in the logs.
+
+
+o   Alex Deiter <tiamat@komi.mts.ru>
+    * BUG 3524: Fix for quota support on Solaris.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Close socket when the CLDAP request has failed.
+    * Memory leak fixes in the libads/ldap.c code.
+    * Printer publishing fixes for "net ads".
+    * Fix error code returns in the CLDAP client codee.
+    * Do not anonymously query for AD schema items in winbindd.
+    * Protect against storing null-sids in the winbind cache.
+    * Fallback to non-paging LDAP searches for anonymous bound 
+      connections.
+    * More workarounds when nscd.
+    * Fix error code typoe in the GetDcName() netlogon call  
+      (including two new error codes).
+    * Fix valgrind warnings in pam_winbind
+    * Add two missing refresh_sequence_number calls where they are 
+      missing just before writing to the winbind cache tdb.
+    * Attempt to locate a valid domain controller before prompting
+      for credentials in "net ads".
+    * Set 35 second timeout in winbindd's netlogon code when sending 
+      a GETDC request.
+    * Stop "net ads {user,group} delete" from doing funny things.
+    * Fix container handling for "net ads user" and "net ads group" 
+      functions.
+    * Fix various memleaks and seg faults in "net ads {user,group}".
+
+
+o   Udo Eberhardt <udo.eberhardt@thesycon.de>
+    * BUG 4100: FIx crash in the server spooler code by initializing 
+      values for smb_io_notify_info_data_strings.
+
+
+o   Olaf Flebbe <o.flebbe@science-computing.de>
+    * BUG 4133: pam_winbind.c compile fix on AIX 5.1.
+
+
+o   David Hu <david.hu@hp.com>
+    * BUG 4212: Fix memleak in the default_ou_string handling.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * NTLMSSP LanMan session key fixes.
+    * Various potential seg fault fixes.
+    * Extra logic in share access checks for bad smb.conf parameter 
+      settings.
+    * Fixes to allow smbclient to connect to Vista RC1 workstations.
+    * Fix bad search filter in ldapsam when enumerating group 
+      members.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Correctly handle the password expiration policy on Samba DCs.
+
+
+o   Nils Nordman <nils.nordman@nordman.org>
+    * BUG 4085: Allow smbpasswd to change expired passwords on 
+      remote servers.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Merge uid2sid and gid2sid async calls for SAMBA_3_0.
+    * Better fqdn handling when parsing the /etc/hosts file.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Fix string alignment problem in password change code.
+
+
+o   Jim Wang
+    * BUG 4211: Logic error when enforcing "acl group control"
+      behavior.
 
 
 Release Notes for older release follow:
