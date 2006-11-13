@@ -268,13 +268,18 @@ main(int argc, char **argv)
     loop(mechoid, nameoid, argv[0], &sctx, &cctx);
     
     if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) {
+	krb5_context context;
 	time_t time, skew;
 	gss_buffer_desc authz_data;
 	krb5_keyblock *keyblock;
 	krb5_timestamp now;
 	krb5_error_code ret;
 
-	ret = krb5_timeofday(_gsskrb5_context, &now);
+	ret = krb5_init_context(&context);
+	if (ret)
+	    errx(1, "krb5_init_context");
+
+	ret = krb5_timeofday(context, &now);
 	if (ret) 
 		errx(1, "krb5_timeofday failed");
 	
@@ -314,11 +319,11 @@ main(int argc, char **argv)
 		     gssapi_err(maj_stat, min_stat, mechoid));
 
 	skew = abs(time - now);
-	if (skew > krb5_get_max_time_skew(_gsskrb5_context)) {
+	if (skew > krb5_get_max_time_skew(context)) {
 	    errx(1, "gsskrb5_extract_authtime_from_sec_context failed: "
 		 "time skew too great %llu > %llu", 
 		 (unsigned long long)skew, 
-		 (unsigned long long)krb5_get_max_time_skew(_gsskrb5_context));
+		 (unsigned long long)krb5_get_max_time_skew(context));
 	}
 
  	maj_stat = gsskrb5_extract_service_keyblock(&min_stat,
@@ -328,7 +333,7 @@ main(int argc, char **argv)
 	    errx(1, "gsskrb5_export_service_keyblock failed: %s",
 		     gssapi_err(maj_stat, min_stat, mechoid));
 
-	krb5_free_keyblock(_gsskrb5_context, keyblock);
+	krb5_free_keyblock(context, keyblock);
 
  	maj_stat = gsskrb5_get_subkey(&min_stat,
 				      sctx,
@@ -339,7 +344,7 @@ main(int argc, char **argv)
 		     gssapi_err(maj_stat, min_stat, mechoid));
 
 	if (maj_stat == GSS_S_COMPLETE)
-	    krb5_free_keyblock(_gsskrb5_context, keyblock);
+	    krb5_free_keyblock(context, keyblock);
 
  	maj_stat = gsskrb5_get_initiator_subkey(&min_stat,
 						sctx,
@@ -350,7 +355,7 @@ main(int argc, char **argv)
 		     gssapi_err(maj_stat, min_stat, mechoid));
 
 	if (maj_stat == GSS_S_COMPLETE)
-	    krb5_free_keyblock(_gsskrb5_context, keyblock);
+	    krb5_free_keyblock(context, keyblock);
 
  	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat,
 							       sctx,
@@ -361,6 +366,8 @@ main(int argc, char **argv)
 
 	wrapunwrap(cctx, sctx, mechoid);
 	wrapunwrap(sctx, cctx, mechoid);
+
+	krb5_free_context(context);
     }
 
     gss_delete_sec_context(&min_stat, &cctx, NULL);
