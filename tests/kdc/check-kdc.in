@@ -44,7 +44,7 @@ testfailed="echo test failed; cat messages.log; exit 1"
 ../db/have-db || exit 77
 
 R=TEST.H5L.SE
-R2=TEST.H5L.SE.COM
+R2=TEST2.H5L.SE
 
 port=8888
 

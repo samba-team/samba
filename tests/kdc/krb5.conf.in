@@ -11,7 +11,7 @@
 	TEST.H5L.SE = {
 		kdc = localhost:8888
 	}
-	TEST.H5L.SE.COM = {
+	TEST2.H5L.SE = {
 		kdc = localhost:8888
 	}
 
