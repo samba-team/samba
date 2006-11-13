@@ -94,7 +94,7 @@ subjectKeyIdentifier	= hash
 proxyCertInfo=critical,language:id-ppl-anyLanguage,pathlen:1,policy:text:foo
 
 [pkinitc_princ_name] 
-realm = EXP:0, GeneralString:EXAMPLE.SE
+realm = EXP:0, GeneralString:TEST.H5L.SE
 principal_name = EXP:1, SEQUENCE:pkinitc_principal_seq
 
 [ pkinit_client_cert ]
@@ -118,7 +118,7 @@ subjectKeyIdentifier	= hash
 subjectAltName=otherName:1.3.6.1.5.2.2;SEQUENCE:pkinitkdc_princ_name 
 
 [pkinitkdc_princ_name] 
-realm = EXP:0, GeneralString:EXAMPLE.ORG
+realm = EXP:0, GeneralString:TEST.H5L.SE
 principal_name = EXP:1, SEQUENCE:pkinitkdc_principal_seq
 
 [pkinitkdc_principal_seq] 
@@ -127,7 +127,7 @@ name_string = EXP:1, SEQUENCE:pkinitkdc_principals
 
 [pkinitkdc_principals] 
 princ1 = GeneralString:krbtgt
-princ2 = GeneralString:TEST.H5L.ORG
+princ2 = GeneralString:TEST.H5L.SE
 
 [ proxy10_cert ]
 basicConstraints=CA:FALSE
