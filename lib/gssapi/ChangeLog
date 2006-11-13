@@ -1,4 +1,17 @@
+2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_set_cred_option.c: When calling ->gm_set_cred_option
+	and checking for success, use GSS_S_COMPLETE. From Andrew Bartlet.
+	
+2006-11-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Help solaris make even more.
+
+	* Makefile.am: Help solaris make.
+	
 2006-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* Makefile.am: remove include $(srcdir)/Makefile-digest.am for now
 
 	* mech/gss_accept_sec_context.c: Try better guessing what is mech
 	we are going to select by looking harder at the input_token, idea
