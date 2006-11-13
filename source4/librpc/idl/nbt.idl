@@ -242,7 +242,7 @@ interface nbt
 
 	const string NBT_MAILSLOT_NETLOGON = "\\MAILSLOT\\NET\\NETLOGON";
 	const string NBT_MAILSLOT_NTLOGON  = "\\MAILSLOT\\NET\\NTLOGON";
-	const string NBT_MAILSLOT_GETDC    = "\\MAILSLOT\\GETDC";
+	const string NBT_MAILSLOT_GETDC    = "\\MAILSLOT\\NET\\GETDC";
 	const string NBT_MAILSLOT_BROWSE   = "\\MAILSLOT\\BROWSE";
 
 	typedef [enum8bit] enum {
