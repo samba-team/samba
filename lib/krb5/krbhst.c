@@ -493,7 +493,7 @@ add_locate(void *ctx, int type, struct sockaddr *addr)
     if (ret != 0)
 	return 0;
 
-    memset(&hints, 0, sizeof(hints));
+    make_hints(&hints, krbhst_get_default_proto(kd));
     ret = getaddrinfo(host, port, &hints, &ai);
     if (ret)
 	return 0;
