@@ -73,7 +73,7 @@ copy_import(void)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_gen_new");
 
-    maj_stat = gss_krb5_copy_ccache(&min_stat, cred1, id);
+    maj_stat = gss_krb5_copy_ccache(&min_stat, context, cred1, id);
     if (maj_stat != GSS_S_COMPLETE)
 	errx(1, "gss_krb5_copy_ccache");
 

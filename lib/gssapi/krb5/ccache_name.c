@@ -42,11 +42,12 @@ _gsskrb5_krb5_ccache_name(OM_uint32 *minor_status,
 			  const char *name,
 			  const char **out_name)
 {
+    krb5_context context;
     krb5_error_code kret;
 
     *minor_status = 0;
 
-    GSSAPI_KRB5_INIT();
+    GSSAPI_KRB5_INIT(&context);
 
     if (out_name) {
 	const char *n;
@@ -56,10 +57,9 @@ _gsskrb5_krb5_ccache_name(OM_uint32 *minor_status,
 	    last_out_name = NULL;
 	}
 
-	n = krb5_cc_default_name(_gsskrb5_context);
+	n = krb5_cc_default_name(context);
 	if (n == NULL) {
 	    *minor_status = ENOMEM;
-	    _gsskrb5_set_error_string ();
 	    return GSS_S_FAILURE;
 	}
 	last_out_name = strdup(n);
@@ -70,10 +70,9 @@ _gsskrb5_krb5_ccache_name(OM_uint32 *minor_status,
 	*out_name = last_out_name;
     }
 
-    kret = krb5_cc_set_default_name(_gsskrb5_context, name);
+    kret = krb5_cc_set_default_name(context, name);
     if (kret) {
 	*minor_status = kret;
-	_gsskrb5_set_error_string ();
 	return GSS_S_FAILURE;
     }
     return GSS_S_COMPLETE;

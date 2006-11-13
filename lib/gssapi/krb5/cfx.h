@@ -62,19 +62,4 @@ typedef struct gss_cfx_delete_token_desc_struct {
 	u_char SND_SEQ[8];
 } gss_cfx_delete_token_desc, *gss_cfx_delete_token;
 
-krb5_error_code
-_gsskrb5cfx_wrap_length_cfx(krb5_crypto crypto,
-			    int conf_req_flag,
-			    size_t input_length,
-			    size_t *output_length,
-			    size_t *cksumsize,
-			    uint16_t *padlength);
-
-krb5_error_code
-_gsskrb5cfx_max_wrap_length_cfx(krb5_crypto crypto,
-				int conf_req_flag,
-				size_t input_length,
-				OM_uint32 *output_length);
-
-
 #endif /* GSSAPI_CFX_H_ */

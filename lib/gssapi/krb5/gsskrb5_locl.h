@@ -100,8 +100,6 @@ typedef struct Principal *gsskrb5_name;
  *
  */
 
-extern krb5_context _gsskrb5_context;
-
 extern krb5_keytab _gsskrb5_keytab;
 extern HEIMDAL_MUTEX gssapi_keytab_mutex;
 
@@ -116,9 +114,9 @@ struct gssapi_thr_context {
 
 #include <krb5/gsskrb5-private.h>
 
-#define GSSAPI_KRB5_INIT() do {					\
+#define GSSAPI_KRB5_INIT(ctx) do {				\
     krb5_error_code kret_gss_init;				\
-    if((kret_gss_init = _gsskrb5_init ()) != 0) {		\
+    if((kret_gss_init = _gsskrb5_init (ctx)) != 0) {		\
 	*minor_status = kret_gss_init;				\
 	return GSS_S_FAILURE;					\
     }								\

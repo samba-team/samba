@@ -60,7 +60,8 @@ test_range(const struct range *r, int integ,
 	size_t cksumsize;
 	uint16_t padsize;
 
-	ret = _gsskrb5cfx_max_wrap_length_cfx(crypto,
+	ret = _gsskrb5cfx_max_wrap_length_cfx(context,
+					      crypto,
 					      integ,
 					      size,
 					      &max_wrap_size);
@@ -69,7 +70,8 @@ test_range(const struct range *r, int integ,
 	if (max_wrap_size == 0)
 	    continue;
 
-	ret = _gsskrb5cfx_wrap_length_cfx(crypto,
+	ret = _gsskrb5cfx_wrap_length_cfx(context,
+					  crypto,
 					  integ,
 					  max_wrap_size,
 					  &rsize, &cksumsize, &padsize);
@@ -93,14 +95,16 @@ test_special(krb5_context context, krb5_crypto crypto,
     size_t cksumsize;
     uint16_t padsize;
 
-    ret = _gsskrb5cfx_max_wrap_length_cfx(crypto,
+    ret = _gsskrb5cfx_max_wrap_length_cfx(context,
+					  crypto,
 					  integ,
 					  testsize,
 					  &max_wrap_size);
     if (ret)
 	krb5_errx(context, 1, "_gsskrb5cfx_max_wrap_length_cfx: %d", ret);
     
-    ret = _gsskrb5cfx_wrap_length_cfx(crypto,
+    ret = _gsskrb5cfx_wrap_length_cfx(context,
+				      crypto,
 				      integ,
 				      max_wrap_size,
 				      &rsize, &cksumsize, &padsize);

@@ -47,6 +47,7 @@ OM_uint32 _gsskrb5_inquire_context (
 	int * open_context
     )
 {
+    krb5_context context;
     OM_uint32 ret;
     gsskrb5_ctx ctx = (gsskrb5_ctx)context_handle;
     gss_name_t name;
@@ -55,6 +56,8 @@ OM_uint32 _gsskrb5_inquire_context (
 	*src_name = GSS_C_NO_NAME;
     if (targ_name)
 	*targ_name = GSS_C_NO_NAME;
+
+    GSSAPI_KRB5_INIT (&context);
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
@@ -74,6 +77,7 @@ OM_uint32 _gsskrb5_inquire_context (
 
     if (lifetime_rec) {
 	ret = _gsskrb5_lifetime_left(minor_status, 
+				     context,
 				     ctx->lifetime,
 				     lifetime_rec);
 	if (ret)

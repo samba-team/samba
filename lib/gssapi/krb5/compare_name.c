@@ -44,10 +44,11 @@ OM_uint32 _gsskrb5_compare_name
 {
     krb5_const_principal princ1 = (krb5_const_principal)name1;
     krb5_const_principal princ2 = (krb5_const_principal)name2;
+    krb5_context context;
 
-    GSSAPI_KRB5_INIT();
+    GSSAPI_KRB5_INIT(&context);
 
-    *name_equal = krb5_principal_compare (_gsskrb5_context,
+    *name_equal = krb5_principal_compare (context,
 					  princ1, princ2);
     *minor_status = 0;
     return GSS_S_COMPLETE;

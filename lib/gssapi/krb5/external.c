@@ -369,7 +369,7 @@ gss_OID GSS_SASL_DIGEST_MD5_MECHANISM = &gss_sasl_digest_md5_mechanism_desc;
  * Context for krb5 calls.
  */
 
-krb5_context _gsskrb5_context;
+krb5_context context;
 
 /*
  *

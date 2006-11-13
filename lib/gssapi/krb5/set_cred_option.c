@@ -41,6 +41,7 @@ gss_OID GSS_KRB5_IMPORT_CRED_X = &gss_krb5_import_cred_x_oid_desc;
 
 static OM_uint32
 import_cred(OM_uint32 *minor_status,
+	    krb5_context context,
             gss_cred_id_t *cred_handle,
             const gss_buffer_t value)
 {
@@ -71,7 +72,7 @@ import_cred(OM_uint32 *minor_status,
 	goto out;
     }
     if (str[0]) {
-	ret = krb5_cc_resolve(_gsskrb5_context, str, &id);
+	ret = krb5_cc_resolve(context, str, &id);
 	if (ret) {
 	    *minor_status = ret;
 	    major_stat =  GSS_S_FAILURE;
@@ -84,7 +85,7 @@ import_cred(OM_uint32 *minor_status,
     /* keytab principal name */
     ret = krb5_ret_string(sp, &str);
     if (ret == 0 && str[0])
-	ret = krb5_parse_name(_gsskrb5_context, str, &keytab_principal);
+	ret = krb5_parse_name(context, str, &keytab_principal);
     if (ret) {
 	*minor_status = ret;
 	major_stat = GSS_S_FAILURE;
@@ -101,7 +102,7 @@ import_cred(OM_uint32 *minor_status,
 	goto out;
     }
     if (str[0]) {
-	ret = krb5_kt_resolve(_gsskrb5_context, str, &keytab);
+	ret = krb5_kt_resolve(context, str, &keytab);
 	if (ret) {
 	    *minor_status = ret;
 	    major_stat =  GSS_S_FAILURE;
@@ -115,11 +116,11 @@ import_cred(OM_uint32 *minor_status,
 				      keytab, cred_handle);
 out:
     if (id)
-	krb5_cc_close(_gsskrb5_context, id);
+	krb5_cc_close(context, id);
     if (keytab_principal)
-	krb5_free_principal(_gsskrb5_context, keytab_principal);
+	krb5_free_principal(context, keytab_principal);
     if (keytab)
-	krb5_kt_close(_gsskrb5_context, keytab);
+	krb5_kt_close(context, keytab);
     if (str)
 	free(str);
     if (sp)
@@ -136,7 +137,9 @@ _gsskrb5_set_cred_option
             const gss_OID desired_object,
             const gss_buffer_t value)
 {
-    GSSAPI_KRB5_INIT ();
+    krb5_context context;
+
+    GSSAPI_KRB5_INIT (&context);
 
     if (value == GSS_C_NO_BUFFER) {
 	*minor_status = EINVAL;
@@ -144,7 +147,7 @@ _gsskrb5_set_cred_option
     }
 
     if (gss_oid_equal(desired_object, GSS_KRB5_IMPORT_CRED_X)) {
-	return import_cred(minor_status, cred_handle, value);
+	return import_cred(minor_status, context, cred_handle, value);
     }
 
     *minor_status = EINVAL;

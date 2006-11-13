@@ -42,6 +42,7 @@ _gsskrb5_export_sec_context (
     gss_buffer_t interprocess_token
     )
 {
+    krb5_context context;
     const gsskrb5_ctx ctx = (const gsskrb5_ctx) *context_handle;
     krb5_storage *sp;
     krb5_auth_context ac;
@@ -52,7 +53,7 @@ _gsskrb5_export_sec_context (
     OM_uint32 minor;
     krb5_error_code kret;
 
-    GSSAPI_KRB5_INIT ();
+    GSSAPI_KRB5_INIT (&context);
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
