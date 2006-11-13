@@ -102,7 +102,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 	
 			major_status = m->gm_set_cred_option(minor_status,
 			    &mc->gmc_cred, object, value);
-			if (major_status == GSS_S_BAD_MECH)
+			if (major_status == GSS_S_COMPLETE)
 				one_ok = 1;
 		}
 	}
