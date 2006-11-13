@@ -689,12 +689,14 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, uint16_t *hostname, str
 
 	/* pull the message string and perform necessary sanity checks on it */
 
+	chkmsg[0] = '\0';
+
 	if ( message && message->name && message->name->name ) {
 		if ( (msg = talloc_strdup(p->mem_ctx, message->name->name )) == NULL ) {
 			return WERR_NOMEM;
 		}
+		alpha_strcpy (chkmsg, msg, NULL, sizeof(chkmsg));
 	} 
-	alpha_strcpy (chkmsg, msg?msg:"", NULL, strlen(msg));
 		
 	fstr_sprintf(str_timeout, "%d", timeout);
 	fstr_sprintf(r, reboot ? SHUTDOWN_R_STRING : "");
