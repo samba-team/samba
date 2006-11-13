@@ -60,6 +60,9 @@ resolve_lookup(void *ctx,
 
     memset(&s, 0, sizeof(s));
 
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+    s.sin_len = sizeof(s);
+#endif
     s.sin_family = AF_INET;
     s.sin_port = htons(88);
     s.sin_addr.s_addr = htonl(0x7f000001);
