@@ -127,7 +127,7 @@ name_string = EXP:1, SEQUENCE:pkinitkdc_principals
 
 [pkinitkdc_principals] 
 princ1 = GeneralString:krbtgt
-princ2 = GeneralString:EXAMPLE.ORG
+princ2 = GeneralString:TEST.H5L.ORG
 
 [ proxy10_cert ]
 basicConstraints=CA:FALSE
