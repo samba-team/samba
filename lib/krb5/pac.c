@@ -618,9 +618,13 @@ static krb5_error_code
 fill_zeros(krb5_context context, krb5_storage *sp, size_t len)
 {
     ssize_t sret;
+    size_t l;
 
     while (len) {
-	sret = krb5_storage_write(sp, zeros, MIN(len, sizeof(zeros)));
+	l = len;
+	if (l > sizeof(zeros))
+	    l = sizeof(zeros);
+	sret = krb5_storage_write(sp, zeros, l);
 	if (sret <= 0) {
 	    krb5_set_error_string(context, "out of memory");
 	    return ENOMEM;
