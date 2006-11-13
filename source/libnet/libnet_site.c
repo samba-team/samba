@@ -69,7 +69,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_JoinSite *r)
 		}
 	} else {
 		site_name_str = talloc_asprintf(tmp_ctx, "%s",
-					search.out.netlogon.logon5.site_name);
+					search.out.netlogon.logon5.client_site);
 		if (!site_name_str) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_ctx);

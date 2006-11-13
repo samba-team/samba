@@ -406,8 +406,8 @@ interface nbt
 		nbt_string           domain;
 		nbt_string           pdc_name;
 		nbt_string           user_name;
-		nbt_string           site_name;
-		nbt_string           site_name2;
+		nbt_string           server_site;
+		nbt_string           client_site;
 		uint8                unknown;
 		uint32               unknown2;
 		[flag(NDR_BIG_ENDIAN)] 
@@ -505,8 +505,8 @@ interface nbt
 		nbt_string           domain;
 		nbt_string           pdc_name;
 		nbt_string           user_name;
-		nbt_string           site_name;
-		nbt_string           site_name2;
+		nbt_string           server_site;
+		nbt_string           client_site;
 		[value(5)] uint32    nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
@@ -522,8 +522,8 @@ interface nbt
 		nbt_string           domain;
 		nbt_string           pdc_name;
 		nbt_string           user_name;
-		nbt_string           site_name;
-		nbt_string           site_name2;
+		nbt_string           server_site;
+		nbt_string           client_site;
 		uint8                unknown;
 		uint32               unknown2;
 		[flag(NDR_BIG_ENDIAN)] 

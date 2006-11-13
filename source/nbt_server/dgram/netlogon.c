@@ -194,8 +194,8 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	pdc->pdc_name         = lp_netbios_name();
 	pdc->user_name        = netlogon->req.pdc2.user_name;
 	/* TODO: we need to make sure these are in our DNS zone */
-	pdc->site_name        = "Default-First-Site-Name";
-	pdc->site_name2       = "Default-First-Site-Name";
+	pdc->server_site      = "Default-First-Site-Name";
+	pdc->client_site      = "Default-First-Site-Name";
 	pdc->unknown          = 0x10; /* what is this? */
 	pdc->unknown2         = 2; /* and this ... */
 	pdc->pdc_ip           = my_ip;
