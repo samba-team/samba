@@ -793,7 +793,7 @@ LDB_TDB_OBJ=lib/ldb/ldb_tdb/ldb_tdb.o \
        lib/ldb/ldb_tdb/ldb_pack.o lib/ldb/ldb_tdb/ldb_search.o lib/ldb/ldb_tdb/ldb_index.o \
        lib/ldb/ldb_tdb/ldb_cache.o lib/ldb/ldb_tdb/ldb_tdb_wrap.o
 
-LDB_MODULES_OBJ=lib/ldb/modules/operational.o lib/ldb/modules/schema.o lib/ldb/modules/rdn_name.o \
+LDB_MODULES_OBJ=lib/ldb/modules/operational.o lib/ldb/modules/rdn_name.o \
           lib/ldb/modules/objectclass.o \
           lib/ldb/modules/paged_results.o lib/ldb/modules/sort.o lib/ldb/modules/asq.o
 
