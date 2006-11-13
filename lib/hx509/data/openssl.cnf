@@ -94,7 +94,7 @@ subjectKeyIdentifier	= hash
 proxyCertInfo=critical,language:id-ppl-anyLanguage,pathlen:1,policy:text:foo
 
 [pkinitc_princ_name] 
-realm = EXP:0, GeneralString:EXAMPLE.ORG
+realm = EXP:0, GeneralString:EXAMPLE.SE
 principal_name = EXP:1, SEQUENCE:pkinitc_principal_seq
 
 [ pkinit_client_cert ]
