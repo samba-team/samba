@@ -1,3 +1,13 @@
+2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Use TEST{,2}.H5L.SE for testing
+
+2006-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/Makefile.am: Use EGREP.
+
+	* kdc/check-kdc.in: Use EGREP.
+	
 2006-10-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kdc.in: run eval on the testfailed variable so we run
