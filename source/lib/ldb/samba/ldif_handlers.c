@@ -183,6 +183,9 @@ static BOOL ldb_comparision_objectGUID_isString(const struct ldb_val *v)
 
 	if (v->length < 33) return False;
 
+	/* see if the input if null-terninated (safety check for the below) */
+	if (v->data[v->length] != '\0') return False;
+
 	status = GUID_from_string((const char *)v->data, &guid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
