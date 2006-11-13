@@ -1293,7 +1293,7 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 {
 	ADS_STATUS status;
 	void *res = NULL;
-	char *base, *wkn_dn, *ret = NULL, **wkn_dn_exp, **bind_dn_exp;
+	char *base, *wkn_dn = NULL, *ret = NULL, **wkn_dn_exp = NULL, **bind_dn_exp = NULL;
 	const char *attrs[] = {"distinguishedName", NULL};
 	int new_ln, wkn_ln, bind_ln, i;
 
