@@ -1,17 +1,17 @@
 # $Id$
 
 [libdefaults]
-	default_realm = EXAMPLE.ORG
+	default_realm = TEST.H5L.SE
 	no-addresses = TRUE
 
 [appdefaults]
 	pkinit-anchors = FILE:@srcdir@/../../lib/hx509/data/ca.crt
 
 [realms]
-	EXAMPLE.ORG = {
+	TEST.H5L.SE = {
 		kdc = localhost:8888
 	}
-	EXAMPLE.COM = {
+	TEST.H5L.SE.COM = {
 		kdc = localhost:8888
 	}
 
@@ -27,7 +27,7 @@
 
 	database = {
 		dbname = @objdir@/current-db
-		realm = EXAMPLE.ORG
+		realm = TEST.H5L.SE
 		mkey_file = @objdir@/mkey.file
 	}
 

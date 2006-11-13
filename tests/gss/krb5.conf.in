@@ -1,19 +1,19 @@
 # $Id$
 
 [libdefaults]
-	default_realm = EXAMPLE.ORG
+	default_realm = TEST.H5L.SE
 	no-addresses = TRUE
 	default_keytab_name = @objdir@/server.keytab
 
 [realms]
-	EXAMPLE.ORG = {
+	TEST.H5L.SE = {
 		kdc = localhost:8888
 	}
 
 [kdc]
 	database = {
 		dbname = @objdir@/current-db
-		realm = EXAMPLE.ORG
+		realm = TEST.H5L.SE
 		mkey_file = @objdir@/mkey.file
 	}
 

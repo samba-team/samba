@@ -43,8 +43,8 @@ testfailed="echo test failed; cat messages.log; exit 1"
 # If there is no useful db support compile in, disable test
 ../db/have-db || exit 77
 
-R=EXAMPLE.ORG
-R2=EXAMPLE.COM
+R=TEST.H5L.SE
+R2=TEST.H5L.SE.COM
 
 port=8888
 
