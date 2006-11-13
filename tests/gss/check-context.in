@@ -72,9 +72,9 @@ ${kadmin} \
     --realm-max-renewable-life=1month \
     ${R} || exit 1
 
-# add both lucid and lucid.example.org to simulate aliases
-${kadmin} add -p p1 --use-defaults host/lucid.example.org@${R} || exit 1
-${kadmin} ext -k ${keytab} host/lucid.example.org@${R} || exit 1
+# add both lucid and lucid.test.h5l.se to simulate aliases
+${kadmin} add -p p1 --use-defaults host/lucid.test.h5l.se@${R} || exit 1
+${kadmin} ext -k ${keytab} host/lucid.test.h5l.se@${R} || exit 1
 ${kadmin} add -p p1 --use-defaults host/lucid@${R} || exit 1
 ${kadmin} ext -k ${keytab} host/lucid@${R} || exit 1
 ${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
@@ -104,19 +104,19 @@ ${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
 
 echo test naming combinations
 echo plain
-${context} --name-type=hostbased-service host@lucid.example.org || \
+${context} --name-type=hostbased-service host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo test failed; }
 echo "plain (krb5)"
-${context} --name-type=krb5-principal-name host/lucid.example.org@${R} || \
+${context} --name-type=krb5-principal-name host/lucid.test.h5l.se@${R} || \
 	{ exitcode=1 ; echo test failed; }
 echo "plain (krb5 realmless)"
-${context} --name-type=krb5-principal-name host/lucid.example.org || \
+${context} --name-type=krb5-principal-name host/lucid.test.h5l.se || \
 	{ exitcode=1 ; echo test failed; }
 echo "dns canon on (long name)"
-${context} --dns-canon host@lucid.example.org || \
+${context} --dns-canon host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo test failed; }
 echo "dns canon off (long name)"
-${context} --no-dns-canon host@lucid.example.org || \
+${context} --no-dns-canon host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo test failed; }
 echo "dns canon off (short name)"
 ${context} --no-dns-canon host@lucid || \
@@ -130,18 +130,18 @@ ${context}  --no-dns-canon --name-type=krb5-principal-name host/lucid || \
 
 echo "test context building"
 echo "mutual"
-${context} --mutual --name-type=hostbased-service host@lucid.example.org || \
+${context} --mutual --name-type=hostbased-service host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo test failed; }
 
 #echo "dce-style"
-#${context} --dce-style --name-type=hostbased-service host@lucid.example.org || \
+#${context} --dce-style --name-type=hostbased-service host@lucid.test.h5l.se || \
 #	{ exitcode=1 ; echo test failed; }
 
 
 #echo "sasl-digest-md5"
 #${context}  --mech-type=sasl-digest-md5 \
 #    --name-type=hostbased-service \
-#    host@lucid.example.org || \
+#    host@lucid.test.h5l.se || \
 #	{ exitcode=1 ; echo test failed; }
 
 

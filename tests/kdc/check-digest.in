@@ -47,7 +47,7 @@ port=8888
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
-server=host/datan.example.org
+server=host/datan.test.h5l.se
 cache="FILE:${objdir}/cache.krb5"
 ocache="FILE:${objdir}/ocache.krb5"
 keytabfile=${objdir}/server.keytab

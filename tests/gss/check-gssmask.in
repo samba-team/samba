@@ -50,9 +50,9 @@ keytabfile=${objdir}/server.keytab
 keytab="FILE:${keytabfile}"
 
 gssmask="${TESTS_ENVIRONMENT} ../../appl/gssmask/gssmask"
-gssmaskn1="${gssmask} -p 8889 --spn=host/n1.example.org@${R} --logfile=n1.log"
-gssmaskn2="${gssmask} -p 8890 --spn=host/n2.example.org@${R} --logfile=n2.log"
-gssmaskn3="${gssmask} -p 8891 --spn=host/n3.example.org@${R} --logfile=n3.log"
+gssmaskn1="${gssmask} -p 8889 --spn=host/n1.test.h5l.se@${R} --logfile=n1.log"
+gssmaskn2="${gssmask} -p 8890 --spn=host/n2.test.h5l.se@${R} --logfile=n2.log"
+gssmaskn3="${gssmask} -p 8891 --spn=host/n3.test.h5l.se@${R} --logfile=n3.log"
 gssmaestro="../../appl/gssmask/gssmaestro"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
@@ -70,12 +70,12 @@ ${kadmin} \
     --realm-max-renewable-life=1month \
     ${R} || exit 1
 
-${kadmin} add -p p1 --use-defaults host/n1.example.org@${R} || exit 1
-${kadmin} add -p p2 --use-defaults host/n2.example.org@${R} || exit 1
-${kadmin} add -p p3 --use-defaults host/n3.example.org@${R} || exit 1
-${kadmin} ext -k ${keytab} host/n1.example.org@${R} || exit 1
-${kadmin} ext -k ${keytab} host/n2.example.org@${R} || exit 1
-${kadmin} ext -k ${keytab} host/n3.example.org@${R} || exit 1
+${kadmin} add -p p1 --use-defaults host/n1.test.h5l.se@${R} || exit 1
+${kadmin} add -p p2 --use-defaults host/n2.test.h5l.se@${R} || exit 1
+${kadmin} add -p p3 --use-defaults host/n3.test.h5l.se@${R} || exit 1
+${kadmin} ext -k ${keytab} host/n1.test.h5l.se@${R} || exit 1
+${kadmin} ext -k ${keytab} host/n2.test.h5l.se@${R} || exit 1
+${kadmin} ext -k ${keytab} host/n3.test.h5l.se@${R} || exit 1
 
 ${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
 
