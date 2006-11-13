@@ -19,5 +19,5 @@
 */
 
 char *add_suffix(const char *name, const char *suffix);
-int backup_tdb(const char *old_name, const char *new_name);
+int backup_tdb(const char *old_name, const char *new_name, int hash_size);
 int verify_tdb(const char *fname, const char *bak_name);
