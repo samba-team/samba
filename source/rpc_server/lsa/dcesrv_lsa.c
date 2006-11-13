@@ -2606,13 +2606,13 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		if (!r->out.old_val) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		/* Decrypt */
 		prior_val = ldb_msg_find_ldb_val(res[0], "priorValue");
 		
 		if (prior_val && prior_val->length) {
 			secret.data = prior_val->data;
 			secret.length = prior_val->length;
 		
+			/* Encrypt */
 			crypt_secret = sess_encrypt_blob(mem_ctx, &secret, &session_key);
 			if (!crypt_secret.length) {
 				return NT_STATUS_NO_MEMORY;
@@ -2642,13 +2642,13 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		/* Decrypt */
 		new_val = ldb_msg_find_ldb_val(res[0], "currentValue");
 		
 		if (new_val && new_val->length) {
 			secret.data = new_val->data;
 			secret.length = new_val->length;
 		
+			/* Encrypt */
 			crypt_secret = sess_encrypt_blob(mem_ctx, &secret, &session_key);
 			if (!crypt_secret.length) {
 				return NT_STATUS_NO_MEMORY;
