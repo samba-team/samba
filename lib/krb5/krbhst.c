@@ -619,6 +619,13 @@ admin_get_next(krb5_context context,
 {
     krb5_error_code ret;
 
+    if ((kd->flags & KD_PLUGIN) == 0) {
+	plugin_get_hosts(context, kd, locate_service_kadmin);
+	kd->flags |= KD_PLUGIN;
+	if(get_next(kd, host))
+	    return 0;
+    }
+
     if((kd->flags & KD_CONFIG) == 0) {
 	config_get_hosts(context, kd, "admin_server");
 	kd->flags |= KD_CONFIG;
@@ -659,6 +666,13 @@ kpasswd_get_next(krb5_context context,
 		 krb5_krbhst_info **host)
 {
     krb5_error_code ret;
+
+    if ((kd->flags & KD_PLUGIN) == 0) {
+	plugin_get_hosts(context, kd, locate_service_kpasswd);
+	kd->flags |= KD_PLUGIN;
+	if(get_next(kd, host))
+	    return 0;
+    }
 
     if((kd->flags & KD_CONFIG) == 0) {
 	config_get_hosts(context, kd, "kpasswd_server");
@@ -705,6 +719,13 @@ krb524_get_next(krb5_context context,
 		struct krb5_krbhst_data *kd,
 		krb5_krbhst_info **host)
 {
+    if ((kd->flags & KD_PLUGIN) == 0) {
+	plugin_get_hosts(context, kd, locate_service_krb524);
+	kd->flags |= KD_PLUGIN;
+	if(get_next(kd, host))
+	    return 0;
+    }
+
     if((kd->flags & KD_CONFIG) == 0) {
 	config_get_hosts(context, kd, "krb524_server");
 	if(get_next(kd, host))
