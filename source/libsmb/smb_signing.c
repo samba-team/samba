@@ -613,6 +613,10 @@ BOOL client_set_trans_sign_state_on(struct cli_state *cli, uint16 mid)
 		return True;
 	}
 
+	if (!data) {
+		return False;
+	}
+
 	if (!set_sequence_can_delete_flag(&data->outstanding_packet_list, mid, False)) {
 		return False;
 	}
@@ -632,6 +636,10 @@ BOOL client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid)
 
 	if (!si->doing_signing) {
 		return True;
+	}
+
+	if (!data) {
+		return False;
 	}
 
 	if (!set_sequence_can_delete_flag(&data->outstanding_packet_list, mid, True)) {
