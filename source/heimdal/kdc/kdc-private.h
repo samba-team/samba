@@ -186,7 +186,6 @@ krb5_error_code
 _kdc_pk_check_client (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
-	krb5_principal /*client_princ*/,
 	const hdb_entry_ex */*client*/,
 	pk_client_params */*client_params*/,
 	char **/*subject_name*/);

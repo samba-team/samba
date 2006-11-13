@@ -9,6 +9,7 @@
 
 /* HDB module dir - set to Samba LIBDIR/hdb ? */
 #define HDBDIR "/usr/heimdal/lib"
+#define LIBDIR "/usr/heimdal/lib"
 
 /* Maximum values on all known systems */
 #define MaxHostNameLen (64+4)

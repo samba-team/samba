@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.73 2006/11/07 17:24:57 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.74 2006/11/10 03:37:43 lha Exp $");
 
 #ifdef PKINIT
 
@@ -1227,7 +1227,6 @@ out:
 krb5_error_code
 _kdc_pk_check_client(krb5_context context,
 		     krb5_kdc_configuration *config,
-		     krb5_principal client_princ,
 		     const hdb_entry_ex *client,
 		     pk_client_params *client_params,
 		     char **subject_name)
@@ -1255,7 +1254,7 @@ _kdc_pk_check_client(krb5_context context,
     if (config->enable_pkinit_princ_in_cert) {
 	ret = pk_principal_from_X509(context, config, 
 				     client_params->cert,
-				     client_princ);
+				     client->entry.principal);
 	if (ret == 0) {
 	    kdc_log(context, config, 5,
 		    "Found matching PK-INIT SAN in certificate");
@@ -1289,7 +1288,7 @@ _kdc_pk_check_client(krb5_context context,
 	krb5_boolean b;
 
 	b = krb5_principal_compare(context,
-				   client_princ,
+				   client->entry.principal,
 				   principal_mappings.val[i].principal);
 	if (b == FALSE)
 	    continue;

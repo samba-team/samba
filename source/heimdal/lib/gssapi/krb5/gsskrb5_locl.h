@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gsskrb5_locl.h,v 1.7 2006/11/07 17:57:43 lha Exp $ */
+/* $Id: gsskrb5_locl.h,v 1.8 2006/11/10 00:36:40 lha Exp $ */
 
 #ifndef GSSKRB5_LOCL_H
 #define GSSKRB5_LOCL_H
@@ -41,6 +41,7 @@
 #endif
 
 #include <krb5_locl.h>
+#include <gkrb5_err.h>
 #include <gssapi.h>
 #include <gssapi_mech.h>
 #include <assert.h>

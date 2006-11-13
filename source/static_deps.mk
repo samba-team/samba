@@ -29,6 +29,7 @@ heimdal_basics: \
        heimdal/lib/krb5/heim_err.h \
        heimdal/lib/krb5/k524_err.h \
        heimdal/lib/krb5/krb5_err.h \
+       heimdal/lib/gssapi/gkrb5_err.h \
        heimdal/lib/des/hcrypto
 
 proto: basics
