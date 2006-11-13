@@ -1,5 +1,13 @@
-2006-11-04  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* data/openssl.cnf: Change REALM to TEST.H5L.SE
+	
+2006-11-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* revoke.c: Sprinkle error strings.
+	
+2006-11-04  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* hx_locl.h: add context variable to cmp function.
 
 	* cert.c (hx509_query_match_cmp_func): allow setting the match
