@@ -1229,7 +1229,7 @@ BOOL winbindd_upgrade_idmap(void)
 	pstrcpy(backup_name, idmap_name);
 	pstrcat(backup_name, ".bak");
 
-	if (backup_tdb(idmap_name, backup_name) != 0) {
+	if (backup_tdb(idmap_name, backup_name, 0) != 0) {
 		DEBUG(0, ("Could not backup idmap database\n"));
 		return False;
 	}
