@@ -284,8 +284,9 @@ static BOOL test_GetInfo(struct DsSyncTest *ctx)
 		ctx->site_name = talloc_asprintf(ctx, "%s", "Default-First-Site-Name");
 		printf("cldap_netlogon() returned %s. Defaulting to Site-Name: %s\n", errstr, ctx->site_name);		
 	} else {
-		ctx->site_name = talloc_steal(ctx, search.out.netlogon.logon5.site_name);
-		printf("cldap_netlogon() returned Site-Name: %s.\n",ctx->site_name);
+		ctx->site_name = talloc_steal(ctx, search.out.netlogon.logon5.client_site);
+		printf("cldap_netlogon() returned Client Site-Name: %s.\n",ctx->site_name);
+		printf("cldap_netlogon() returned Server Site-Name: %s.\n",search.out.netlogon.logon5.server_site);
 	}
 
 
