@@ -84,16 +84,15 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-							   resolve_name(&name, tctx, &address, event_context_find(tctx)),
-							   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
+				   resolve_name(&name, tctx, &address, event_context_find(tctx)),
+				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
 	myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 
 
 	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
 						     myaddress, lp_dgram_port());
-	torture_assert(tctx, socket_address != NULL, 
-				   "Error getting address");
+	torture_assert(tctx, socket_address != NULL, "Error getting address");
 
 	/* try receiving replies on port 138 first, which will only
 	   work if we are root and smbd/nmbd are not running - fall
@@ -164,8 +163,8 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-							   resolve_name(&name, tctx, &address, event_context_find(tctx)),
-							   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
+				   resolve_name(&name, tctx, &address, event_context_find(tctx)),
+				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
 	myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 
@@ -182,7 +181,6 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 		talloc_free(socket_address);
 		socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
 							     myaddress, 0);
-
 		torture_assert(tctx, socket_address != NULL, "Error getting address");
 
 		socket_listen(dgmsock->sock, socket_address, 0, 0);
@@ -274,8 +272,8 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-							   resolve_name(&name, tctx, &address, event_context_find(tctx)),
-							   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
+				   resolve_name(&name, tctx, &address, event_context_find(tctx)),
+				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
 	myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 
@@ -299,8 +297,9 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 
 	join_ctx = torture_join_domain(TEST_NAME, 
 				       ACB_WSTRUST, &machine_credentials);
-	torture_assert(tctx, join_ctx != NULL, 
-				talloc_asprintf(tctx, "Failed to join domain %s as %s\n", lp_workgroup(), TEST_NAME));
+	torture_assert(tctx, join_ctx != NULL,
+		       talloc_asprintf(tctx, "Failed to join domain %s as %s\n",
+		       		       lp_workgroup(), TEST_NAME));
 
 	dom_sid = torture_join_sid(join_ctx);
 
@@ -344,8 +343,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 */
 struct torture_suite *torture_nbt_dgram(void)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), 
-													   "DGRAM");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "DGRAM");
 
 	torture_suite_add_simple_test(suite, "netlogon", nbt_test_netlogon);
 	torture_suite_add_simple_test(suite, "netlogon2", nbt_test_netlogon2);
