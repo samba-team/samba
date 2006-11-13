@@ -2,13 +2,14 @@
 # Makefile for tdb directory
 #
 
-CFLAGS = -DSTANDALONE -DTDB_DEBUG -g -DHAVE_MMAP=1
+CFLAGS = -DSTANDALONE -DTDB_DEBUG -g -DHAVE_MMAP=1 -I../include
 CC = gcc
 
 ADMINPROGS = tdbdump tdbbackup
 PROGS = tdbtest tdbtool tdbtorture
 TDB_OBJ = tdb.o spinlock.o tdbback.o
 
+all: $(PROGS) $(ADMINPROGS)
 default: $(PROGS)
 
 admintools: $(ADMINPROGS)

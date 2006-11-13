@@ -95,7 +95,7 @@ static int test_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
   only doing the backup if its OK
   this function is also used for restore
 */
-int backup_tdb(const char *old_name, const char *new_name)
+int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 {
 	TDB_CONTEXT *tdb;
 	TDB_CONTEXT *tdb_new;
@@ -122,7 +122,7 @@ int backup_tdb(const char *old_name, const char *new_name)
 
 	/* create the new tdb */
 	unlink(tmp_name);
-	tdb_new = tdb_open(tmp_name, tdb->header.hash_size, 
+	tdb_new = tdb_open(tmp_name, hash_size ? hash_size : tdb->header.hash_size, 
 			   TDB_DEFAULT, O_RDWR|O_CREAT|O_EXCL, 
 			   st.st_mode & 0777);
 	if (!tdb_new) {
@@ -217,7 +217,7 @@ int verify_tdb(const char *fname, const char *bak_name)
 	/* count is < 0 means an error */
 	if (count < 0) {
 		printf("restoring %s\n", fname);
-		return backup_tdb(bak_name, fname);
+		return backup_tdb(bak_name, fname, 0);
 	}
 
 	printf("%s : %d records\n", fname, count);

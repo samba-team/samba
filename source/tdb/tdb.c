@@ -531,7 +531,7 @@ static int update_tailer(TDB_CONTEXT *tdb, tdb_off offset,
 			 &totalsize);
 }
 
-static tdb_off tdb_dump_record(TDB_CONTEXT *tdb, tdb_off offset)
+static tdb_off tdb_dump_record(TDB_CONTEXT *tdb, int hash, tdb_off offset)
 {
 	struct list_struct rec;
 	tdb_off tailer_ofs, tailer;
@@ -541,8 +541,8 @@ static tdb_off tdb_dump_record(TDB_CONTEXT *tdb, tdb_off offset)
 		return 0;
 	}
 
-	printf(" rec: offset=%u next=%d rec_len=%d key_len=%d data_len=%d full_hash=0x%x magic=0x%x\n",
-	       offset, rec.next, rec.rec_len, rec.key_len, rec.data_len, rec.full_hash, rec.magic);
+	printf(" rec: hash=%d, offset=%u next=%d rec_len=%d key_len=%d data_len=%d full_hash=0x%x magic=0x%x\n",
+	       hash, offset, rec.next, rec.rec_len, rec.key_len, rec.data_len, rec.full_hash, rec.magic);
 
 	tailer_ofs = offset + sizeof(rec) + rec.rec_len - sizeof(tdb_off);
 	if (ofs_read(tdb, tailer_ofs, &tailer) == -1) {
@@ -574,7 +574,7 @@ static int tdb_dump_chain(TDB_CONTEXT *tdb, int i)
 		printf("hash=%d\n", i);
 
 	while (rec_ptr) {
-		rec_ptr = tdb_dump_record(tdb, rec_ptr);
+		rec_ptr = tdb_dump_record(tdb, i, rec_ptr);
 		hash_length += 1;
 	}
 

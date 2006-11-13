@@ -93,6 +93,7 @@ static void usage(void)
 	printf("   -h            this help message\n");
 	printf("   -s suffix     set the backup suffix\n");
 	printf("   -v            verify mode (restore if corrupt)\n");
+	printf("   -n hashsize   set the new hash size for the backup\n");
 }
 		
 
@@ -102,9 +103,10 @@ static void usage(void)
 	int ret = 0;
 	int c;
 	int verify = 0;
+	int hashsize = 0;
 	const char *suffix = ".bak";
 
-	while ((c = getopt(argc, argv, "vhs:")) != -1) {
+	while ((c = getopt(argc, argv, "vhs:n:")) != -1) {
 		switch (c) {
 		case 'h':
 			usage();
@@ -114,6 +116,9 @@ static void usage(void)
 			break;
 		case 's':
 			suffix = optarg;
+			break;
+		case 'n':
+			hashsize = atoi(optarg);
 			break;
 		}
 	}
@@ -138,7 +143,7 @@ static void usage(void)
 			}
 		} else {
 			if (file_newer(fname, bak_name) &&
-			    backup_tdb(fname, bak_name) != 0) {
+			    backup_tdb(fname, bak_name, hashsize) != 0) {
 				ret = 1;
 			}
 		}
