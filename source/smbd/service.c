@@ -422,6 +422,9 @@ static NTSTATUS find_forced_group(BOOL force_user,
 	BOOL user_must_be_member = False;
 	gid_t gid;
 
+	ZERO_STRUCTP(pgroup_sid);
+	*pgid = (gid_t)-1;
+
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
@@ -477,6 +480,12 @@ static NTSTATUS find_forced_group(BOOL force_user,
 			*pgid = gid;
 			DEBUG(3,("Forced group %s for member %s\n",
 				 groupname, username));
+		} else {
+			DEBUG(0,("find_forced_group: forced user %s is not a member "
+				"of forced group %s. Disallowing access.\n",
+				username, groupname ));
+			result = NT_STATUS_MEMBER_NOT_IN_GROUP;
+			goto done;
 		}
 	} else {
 		sid_copy(pgroup_sid, &group_sid);
