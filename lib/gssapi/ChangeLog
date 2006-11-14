@@ -1,5 +1,8 @@
 2006-11-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_init_sec_context.c (_gss_mech_cred_find): break out the
+	cred finding to its own function
+
 	* krb5/wrap.c: Better error strings, from Andrew Bartlet.
 	
 2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
