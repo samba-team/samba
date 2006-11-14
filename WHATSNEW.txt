@@ -1,6 +1,6 @@
                    ===============================
                    Release Notes for Samba 3.0.23d
-                             Nov 13, 2006
+                             Nov 14, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version 
