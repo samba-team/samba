@@ -1,5 +1,9 @@
-2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/wrap.c: Better error strings, from Andrew Bartlet.
+	
+2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* test_context.c: Create our own krb5_context.
 
 	* krb5: Switch from using a specific error message context in the
