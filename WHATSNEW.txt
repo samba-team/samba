@@ -45,6 +45,7 @@ o   Jeremy Allison <jra@samba.org>
       with a non-default configuration file name.
     * Fix protection from invalid struct tm values.
     * BUG 4187: Possible crash in signing on/off code.
+    * BUG 4214: Fix crash bug in find_forced_group().
 
 
 o   Timur Bakeyev <timur@com.bat.ru>
@@ -132,7 +133,7 @@ o   Nils Nordman <nils.nordman@nordman.org>
 o   Simo Sorce <idra@samba.org>
     * Merge uid2sid and gid2sid async calls for SAMBA_3_0.
     * Better fqdn handling when parsing the /etc/hosts file.
-
+    * Fix crash bug in pam_winbind.
 
 o   Andrew Tridgell <tridge@samba.org>
     * Fix string alignment problem in password change code.

@@ -861,7 +861,6 @@ const char *get_conf_item_string(int argc,
 				_pam_log(LOG_INFO, "no \"=\" delimiter for \"%s\" found\n", item);
 				goto out;
 			}
-			SAFE_FREE(parm);
 			_pam_log_debug(ctrl, LOG_INFO, "PAM config: %s '%s'\n", item, p+1);
 			return p + 1;
 		}
