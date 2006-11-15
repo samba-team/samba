@@ -143,65 +143,6 @@ NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	return NT_STATUS_OK;
 }
 
-static int ldapsrv_SearchCallback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
-{
-	struct ldb_result *res;
-	int n;
-	
- 	if (!context || !ares) {
-		DEBUG(3, ("NULL Context or Ares in ldapsrv_SearchCallback"));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}	
-
-	res = talloc_get_type(context, struct ldb_result);
-
-	if (ares->type == LDB_REPLY_ENTRY) {
-		res->msgs = talloc_realloc(res, res->msgs, struct ldb_message *, res->count + 2);
-		if (! res->msgs) {
-			goto error;
-		}
-
-		res->msgs[res->count + 1] = NULL;
-
-		res->msgs[res->count] = talloc_steal(res->msgs, ares->message);
-		if (! res->msgs[res->count]) {
-			goto error;
-		}
-
-		res->count++;
-	}
-
-	if (ares->type == LDB_REPLY_REFERRAL) {
-		if (res->refs) {
-			for (n = 0; res->refs[n]; n++) /*noop*/ ;
-		} else {
-			n = 0;
-		}
-
-		res->refs = talloc_realloc(res, res->refs, char *, n + 2);
-		if (! res->refs) {
-			goto error;
-		}
-
-		res->refs[n] = talloc_steal(res->refs, ares->referral);
-		res->refs[n + 1] = NULL;
-	}
-
-	if (ares->controls) {
-		res->controls = talloc_steal(res, ares->controls);
-		if (! res->controls) {
-			goto error;
-		}
-	}
-
-	talloc_free(ares);
-	return LDB_SUCCESS;
-
-error:
-	talloc_free(ares);
-	return LDB_ERR_OPERATIONS_ERROR;
-}
-
 static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 {
 	struct ldap_SearchRequest *req = &call->request->r.SearchRequest;
@@ -285,7 +226,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	lreq->controls = call->request->controls;
 
 	lreq->context = res;
-	lreq->callback = ldapsrv_SearchCallback;
+	lreq->callback = ldb_search_default_callback;
 
 	/* Copy the timeout from the incoming call */
 	ldb_set_timeout(samdb, lreq, req->timelimit);
