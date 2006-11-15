@@ -80,10 +80,12 @@ static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 
 static BOOL ldb_comparision_objectSid_isString(const struct ldb_val *v)
 {
-	/* see if the input if null-terninated */
-	if (v->data[v->length] != '\0') return False;
-	
+	if (v->length < 3) {
+		return False;
+	}
+
 	if (strncmp("S-", (const char *)v->data, 2) != 0) return False;
+	
 	return True;
 }
 
@@ -179,10 +181,10 @@ static BOOL ldb_comparision_objectGUID_isString(const struct ldb_val *v)
 	struct GUID guid;
 	NTSTATUS status;
 
-	/* see if the input if null-terninated */
-	if (v->data[v->length] != '\0') return False;
-
 	if (v->length < 33) return False;
+
+	/* see if the input if null-terninated (safety check for the below) */
+	if (v->data[v->length] != '\0') return False;
 
 	status = GUID_from_string((const char *)v->data, &guid);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -301,9 +303,9 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 	dn1 = ldb_dn_explode(mem_ctx, (char *)in->data);
 	if (dn1 == NULL) {
 		oc1 = talloc_strndup(mem_ctx, (char *)in->data, in->length);
-	} else if (dn1->comp_num >= 1 && strcasecmp(dn1->components[0].name, "cn") == 0) {
-		oc1 = talloc_strndup(mem_ctx, (char *)dn1->components[0].value.data, 
-				     dn1->components[0].value.length);
+	} else if (ldb_dn_get_comp_num(dn1) >= 1 && strcasecmp(ldb_dn_get_rdn_name(dn1), "cn") == 0) {
+		const struct ldb_val *val = ldb_dn_get_rdn_val(dn1);
+		oc1 = talloc_strndup(mem_ctx, (char *)val->data, val->length);
 	} else {
 		return -1;
 	}
@@ -326,9 +328,9 @@ static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx
 	dn1 = ldb_dn_explode(mem_ctx, (char *)v1->data);
 	if (dn1 == NULL) {
 		oc1 = talloc_strndup(mem_ctx, (char *)v1->data, v1->length);
-	} else if (dn1->comp_num >= 1 && strcasecmp(dn1->components[0].name, "cn") == 0) {
-		oc1 = talloc_strndup(mem_ctx, (char *)dn1->components[0].value.data, 
-				     dn1->components[0].value.length);
+	} else if (ldb_dn_get_comp_num(dn1) >= 1 && strcasecmp(ldb_dn_get_rdn_name(dn1), "cn") == 0) {
+		const struct ldb_val *val = ldb_dn_get_rdn_val(dn1);
+		oc1 = talloc_strndup(mem_ctx, (char *)val->data, val->length);
 	} else {
 		oc1 = NULL;
 	}
@@ -336,9 +338,9 @@ static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx
 	dn2 = ldb_dn_explode(mem_ctx, (char *)v2->data);
 	if (dn2 == NULL) {
 		oc2 = talloc_strndup(mem_ctx, (char *)v2->data, v2->length);
-	} else if (dn2->comp_num >= 2 && strcasecmp(dn2->components[0].name, "cn") == 0) {
-		oc2 = talloc_strndup(mem_ctx, (char *)dn2->components[0].value.data, 
-				     dn2->components[0].value.length);
+	} else if (ldb_dn_get_comp_num(dn2) >= 2 && strcasecmp(ldb_dn_get_rdn_name(dn2), "cn") == 0) {
+		const struct ldb_val *val = ldb_dn_get_rdn_val(dn2);
+		oc2 = talloc_strndup(mem_ctx, (char *)val->data, val->length);
 	} else {
 		oc2 = NULL;
 	}

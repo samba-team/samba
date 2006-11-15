@@ -170,6 +170,7 @@ int ldb_operational_init(void);
 int ldb_paged_results_init(void);
 int ldb_rdn_name_init(void);
 int ldb_schema_init(void);
+int ldb_asq_init(void);
 int ldb_sort_init(void);
 int ldb_ldap_init(void);
 int ldb_ildap_init(void);

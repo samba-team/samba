@@ -119,10 +119,10 @@ struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v)
 /*
   add an empty element to a message
 */
-int ldb_msg_add_empty(struct ldb_message *msg,
-		      const char *attr_name,
-		      int flags,
-		      struct ldb_message_element **return_el)
+int ldb_msg_add_empty(	struct ldb_message *msg,
+			const char *attr_name,
+			int flags,
+			struct ldb_message_element **return_el)
 {
 	struct ldb_message_element *els;
 

@@ -3,7 +3,7 @@
 
    Copyright (C) Andrew Tridgell  2004
    Copyright (C) Stefan Metzmacher  2004
-   Copyright (C) Simo Sorce  2005
+   Copyright (C) Simo Sorce  2005-2006
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -86,18 +86,9 @@ struct ldb_val {
 #endif
 /*! \endcond */
 
-/**
-   internal ldb exploded dn structures
-*/
-struct ldb_dn_component {
-	char *name;  
-	struct ldb_val value;
-};
-
-struct ldb_dn {
-	int comp_num;
-	struct ldb_dn_component *components;
-};
+/* opaque ldb_dn structures, see ldb_dn.c for internals */
+struct ldb_dn_component;
+struct ldb_dn;
 
 /**
  There are a number of flags that are used with ldap_modify() in
@@ -192,12 +183,6 @@ enum ldb_scope {LDB_SCOPE_DEFAULT=-1,
 		LDB_SCOPE_SUBTREE=2};
 
 struct ldb_context;
-
-/*
-  the fuction type for the callback used in traversing the database
-*/
-typedef int (*ldb_traverse_fn)(struct ldb_context *, const struct ldb_message *);
-
 
 /* debugging uses one of the following levels */
 enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR, 
@@ -333,22 +318,25 @@ char *ldb_binary_encode_string(void *mem_ctx, const char *string);
 typedef int (*ldb_attr_handler_t)(struct ldb_context *, void *mem_ctx, const struct ldb_val *, struct ldb_val *);
 typedef int (*ldb_attr_comparison_t)(struct ldb_context *, void *mem_ctx, const struct ldb_val *, const struct ldb_val *);
 
-struct ldb_attrib_handler {
-	const char *attr;
+/*
+  attribute handler structure
 
-	/* LDB_ATTR_FLAG_* */
+  attr			-> The attribute name
+  flags			-> LDB_ATTR_FLAG_*
+  ldif_read_fn		-> convert from ldif to binary format
+  ldif_write_fn		-> convert from binary to ldif format
+  canonicalise_fn	-> canonicalise a value, for use by indexing and dn construction
+  comparison_fn		-> compare two values
+*/
+
+struct ldb_attrib_handler {
+
+	const char *attr;
 	unsigned flags;
 
-	/* convert from ldif to binary format */
 	ldb_attr_handler_t ldif_read_fn;
-
-	/* convert from binary to ldif format */
 	ldb_attr_handler_t ldif_write_fn;
-	
-	/* canonicalise a value, for use by indexing and dn construction */
 	ldb_attr_handler_t canonicalise_fn;
-
-	/* compare two values */
 	ldb_attr_comparison_t comparison_fn;
 };
 
@@ -839,6 +827,145 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 */
 const struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb);
 
+
+/**
+  The Default iasync search callback function 
+
+  \param ldb the context associated with the database (from ldb_init())
+  \param context the callback context
+  \param ares a single reply from the async core
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+
+  \note this function expects the context to always be an struct ldb_result pointer
+  AND a talloc context, this function will steal on the context each message
+  from the ares reply passed on by the async core so that in the end all the
+  messages will be in the context (ldb_result)  memory tree.
+  Freeing the passed context (ldb_result tree) will free all the resources
+  (the request need to be freed separately and the result doe not depend on the
+  request that can be freed as sson as the search request is finished)
+*/
+
+int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares);
+
+/**
+  Helper function to build a search request
+
+  \param ret_req the request structure is returned here (talloced on mem_ctx)
+  \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param base the Base Distinguished Name for the query (use ldb_dn_new() for an empty one)
+  \param scope the search scope for the query
+  \param expression the search expression to use for this query
+  \param attrs the search attributes for the query (pass NULL if none required)
+  \param controls an array of controls
+  \param context the callback function context
+  \param the callback function to handle the async replies
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+
+int ldb_build_search_req(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			void *mem_ctx,
+			const struct ldb_dn *base,
+	       		enum ldb_scope scope,
+			const char *expression,
+			const char * const *attrs,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback);
+
+/**
+  Helper function to build an add request
+
+  \param ret_req the request structure is returned here (talloced on mem_ctx)
+  \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param message contains the entry to be added 
+  \param controls an array of controls
+  \param context the callback function context
+  \param the callback function to handle the async replies
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+
+int ldb_build_add_req(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			void *mem_ctx,
+			const struct ldb_message *message,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback);
+
+/**
+  Helper function to build a modify request
+
+  \param ret_req the request structure is returned here (talloced on mem_ctx)
+  \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param message contains the entry to be modified
+  \param controls an array of controls
+  \param context the callback function context
+  \param the callback function to handle the async replies
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+
+int ldb_build_mod_req(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			void *mem_ctx,
+			const struct ldb_message *message,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback);
+
+/**
+  Helper function to build a delete request
+
+  \param ret_req the request structure is returned here (talloced on mem_ctx)
+  \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param dn the DN to be deleted
+  \param controls an array of controls
+  \param context the callback function context
+  \param the callback function to handle the async replies
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+
+int ldb_build_del_req(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			void *mem_ctx,
+			const struct ldb_dn *dn,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback);
+
+/**
+  Helper function to build a rename request
+
+  \param ret_req the request structure is returned here (talloced on mem_ctx)
+  \param ldb the context associated with the database (from ldb_init())
+  \param mem_ctx a talloc emmory context (used as parent of ret_req)
+  \param olddn the old DN
+  \param newdn the new DN
+  \param controls an array of controls
+  \param context the callback function context
+  \param the callback function to handle the async replies
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+
+int ldb_build_rename_req(struct ldb_request **ret_req,
+			struct ldb_context *ldb,
+			void *mem_ctx,
+			const struct ldb_dn *olddn,
+			const struct ldb_dn *newdn,
+			struct ldb_control **controls,
+			void *context,
+			ldb_request_callback_t callback);
+
 /**
   Search the database
 
@@ -846,7 +973,7 @@ const struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb);
   records that match an LDAP-like search expression
 
   \param ldb the context associated with the database (from ldb_init())
-  \param base the Base Distinguished Name for the query (pass NULL for root DN)
+  \param base the Base Distinguished Name for the query (use ldb_dn_new() for an empty one)
   \param scope the search scope for the query
   \param expression the search expression to use for this query
   \param attrs the search attributes for the query (pass NULL if none required)
@@ -1156,18 +1283,25 @@ struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, void *mem_ctx, const str
 struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, void *mem_ctx, const char *dn);
 struct ldb_dn *ldb_dn_copy_partial(void *mem_ctx, const struct ldb_dn *dn, int num_el);
 struct ldb_dn *ldb_dn_copy(void *mem_ctx, const struct ldb_dn *dn);
+struct ldb_dn *ldb_dn_copy_rebase(void *mem_ctx, const struct ldb_dn *old, const struct ldb_dn *old_base, const struct ldb_dn *new_base);
 struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, const struct ldb_dn *dn);
 struct ldb_dn_component *ldb_dn_build_component(void *mem_ctx, const char *attr,
 							       const char *val);
 struct ldb_dn *ldb_dn_build_child(void *mem_ctx, const char *attr,
 						 const char * value,
 						 const struct ldb_dn *base);
-struct ldb_dn *ldb_dn_make_child(void *mem_ctx,
-				 const struct ldb_dn_component *component,
-				 const struct ldb_dn *base);
 struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const struct ldb_dn *dn2);
 struct ldb_dn *ldb_dn_string_compose(void *mem_ctx, const struct ldb_dn *base, const char *child_fmt, ...) PRINTF_ATTRIBUTE(3,4);
-struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn);
+char *ldb_dn_canonical_string(void *mem_ctx, const struct ldb_dn *dn);
+char *ldb_dn_canonical_ex_string(void *mem_ctx, const struct ldb_dn *dn);
+int ldb_dn_get_comp_num(const struct ldb_dn *dn);
+const char *ldb_dn_get_component_name(const struct ldb_dn *dn, unsigned int num);
+const struct ldb_val *ldb_dn_get_component_val(const struct ldb_dn *dn, unsigned int num);
+const char *ldb_dn_get_rdn_name(const struct ldb_dn *dn);
+const struct ldb_val *ldb_dn_get_rdn_val(const struct ldb_dn *dn);
+int ldb_dn_set_component(struct ldb_dn *dn, int num, const char *name, const struct ldb_val val);
+
+
 
 /* useful functions for ldb_message structure manipulation */
 int ldb_dn_cmp(struct ldb_context *ldb, const char *dn1, const char *dn2);
@@ -1228,9 +1362,9 @@ struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
    add a new empty element to a ldb_message
 */
 int ldb_msg_add_empty(struct ldb_message *msg,
-		      const char *attr_name,
-		      int flags,
-		      struct ldb_message_element **return_el);
+		const char *attr_name,
+		int flags,
+		struct ldb_message_element **return_el);
 
 /**
    add a element to a ldb_message
@@ -1239,9 +1373,9 @@ int ldb_msg_add(struct ldb_message *msg,
 		const struct ldb_message_element *el, 
 		int flags);
 int ldb_msg_add_value(struct ldb_message *msg, 
-		      const char *attr_name,
-		      const struct ldb_val *val,
-		      struct ldb_message_element **return_el);
+		const char *attr_name,
+		const struct ldb_val *val,
+		struct ldb_message_element **return_el);
 int ldb_msg_add_steal_value(struct ldb_message *msg, 
 		      const char *attr_name,
 		      struct ldb_val *val);
@@ -1406,9 +1540,6 @@ char *ldb_timestring(void *mem_ctx, time_t t);
    \return the time structure, or 0 if the string cannot be converted
 */
 time_t ldb_string_to_time(const char *s);
-
-char *ldb_dn_canonical_string(void *mem_ctx, const struct ldb_dn *dn);
-char *ldb_dn_canonical_ex_string(void *mem_ctx, const struct ldb_dn *dn);
 
 
 void ldb_qsort (void *const pbase, size_t total_elems, size_t size, void *opaque, ldb_qsort_cmp_fn_t cmp);
