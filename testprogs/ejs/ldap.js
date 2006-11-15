@@ -203,14 +203,16 @@ objectClass: user
 
 	assert(res[0].dn == res3[0].dn);
 
-	println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog");
-	var res3gc = gc_ldb.search("(&(cn=ldaptestuser)(objectCategory=PerSon))");
-	if (res3gc.length != 1) {
-		println("Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog");
-		assert(res3gc.length == 1);
+	if (gc_ldb != undefined) {
+		println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog");
+		var res3gc = gc_ldb.search("(&(cn=ldaptestuser)(objectCategory=PerSon))");
+		if (res3gc.length != 1) {
+			println("Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog");
+			assert(res3gc.length == 1);
+		}
+	
+		assert(res[0].dn == res3gc[0].dn);
 	}
-
-	assert(res[0].dn == res3gc[0].dn);
 
 	ok = ldb.del(res[0].dn);
 	if (!ok) {
@@ -248,14 +250,16 @@ objectClass: user
 
 	assert(res[0].dn == res2[0].dn);
 
-	println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + ")) in Global Catlog");
-	var res2gc = gc_ldb.search("(&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
-	if (res2gc.length != 1) {
-		println("Could not find (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + ")) in Global Catlog");
-		assert(res2gc.length == 1);
-	}
+	if (gc_ldb != undefined) {
+		println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + ")) in Global Catlog");
+		var res2gc = gc_ldb.search("(&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
+		if (res2gc.length != 1) {
+			println("Could not find (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + ")) in Global Catlog");
+			assert(res2gc.length == 1);
+		}
 
-	assert(res[0].dn == res2[0].dn);
+		assert(res[0].dn == res2gc[0].dn);
+	}
 
 	println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=compuTER))");
 	var res3 = ldb.search("(&(cn=ldaptestcomputer)(objectCategory=compuTER))");
@@ -266,14 +270,16 @@ objectClass: user
 
 	assert(res[0].dn == res3[0].dn);
 
-	println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=compuTER)) in Global Catalog");
-	var res3gc = gc_ldb.search("(&(cn=ldaptestcomputer)(objectCategory=compuTER))");
-	if (res3gc.length != 1) {
-		println("Could not find (&(cn=ldaptestcomputer)(objectCategory=compuTER)) in Global Catalog");
-		assert(res3gc.length == 1);
-	}
+	if (gc_ldb != undefined) {
+		println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=compuTER)) in Global Catalog");
+		var res3gc = gc_ldb.search("(&(cn=ldaptestcomputer)(objectCategory=compuTER))");
+		if (res3gc.length != 1) {
+			println("Could not find (&(cn=ldaptestcomputer)(objectCategory=compuTER)) in Global Catalog");
+			assert(res3gc.length == 1);
+		}
 
-	assert(res[0].dn == res3gc[0].dn);
+		assert(res[0].dn == res3gc[0].dn);
+	}
 
 	println("Testing ldb.search for (&(cn=ldaptestcomp*r)(objectCategory=compuTER))");
 	var res4 = ldb.search("(&(cn=ldaptestcomp*r)(objectCategory=compuTER))");
@@ -399,20 +405,22 @@ objectClass: user
 	var res = ldb.search("objectClass=crossRef", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	assert (res.length == 0);
 
-	println("Testing that we do find configuration elements in the global catlog");
-	var attrs = new Array("cn");
-	var res = gc_ldb.search("objectClass=crossRef", base_dn, ldb.SCOPE_SUBTREE, attrs);
-	assert (res.length > 0);
+	if (gc_ldb != undefined) {
+		println("Testing that we do find configuration elements in the global catlog");
+		var attrs = new Array("cn");
+		var res = gc_ldb.search("objectClass=crossRef", base_dn, ldb.SCOPE_SUBTREE, attrs);
+		assert (res.length > 0);
+	
+		println("Testing that we do find configuration elements and user elements at the same time");
+		var attrs = new Array("cn");
+		var res = gc_ldb.search("(|(objectClass=crossRef)(objectClass=person))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+		assert (res.length > 0);
 
-	println("Testing that we do find configuration elements and user elements at the same time");
-	var attrs = new Array("cn");
-	var res = gc_ldb.search("(|(objectClass=crossRef)(objectClass=person))", base_dn, ldb.SCOPE_SUBTREE, attrs);
-	assert (res.length > 0);
-
-	println("Testing that we do find configuration elements in the global catlog, with the configuration basedn");
-	var attrs = new Array("cn");
-	var res = gc_ldb.search("objectClass=crossRef", configuration_dn, ldb.SCOPE_SUBTREE, attrs);
-	assert (res.length > 0);
+		println("Testing that we do find configuration elements in the global catlog, with the configuration basedn");
+		var attrs = new Array("cn");
+		var res = gc_ldb.search("objectClass=crossRef", configuration_dn, ldb.SCOPE_SUBTREE, attrs);
+		assert (res.length > 0);
+	}
 
 	println("Testing that we can get at the configuration DN on the main LDAP port");
 	var attrs = new Array("cn");
@@ -448,6 +456,9 @@ var configuration_dn = find_configurationdn(ldb);
 printf("baseDN: %s\n", base_dn);
 
 var ok = gc_ldb.connect("ldap://" + host + ":3268");
+if (!ok) {
+	gc_ldb = undefined;
+}
 
 basic_tests(ldb, gc_ldb, base_dn, configuration_dn)
 
