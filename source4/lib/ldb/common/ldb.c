@@ -532,12 +532,13 @@ int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct l
 		return LDB_ERR_OPERATIONS_ERROR;
 	}	
 
-	res = *((struct ldb_result **)context);
+	res = talloc_get_type(context, struct ldb_result);
 
 	if (!res || !ares) {
+		ldb_set_errstring(ldb, "NULL res or ares in callback");
 		goto error;
 	}
-	
+
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		res->msgs = talloc_realloc(res, res->msgs, struct ldb_message *, res->count + 2);
@@ -566,18 +567,15 @@ int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct l
 		res->refs[n + 1] = NULL;
 	case LDB_REPLY_EXTENDED:
 	case LDB_REPLY_DONE:
-		/* Should do something here to detect if this never
-		 * happens */
+		/* TODO: we should really support controls on entries and referrals too! */
+		res->controls = talloc_move(res, &ares->controls);
 		break;		
 	}
-	talloc_steal(res, ares->controls);
 	talloc_free(ares);
 	return LDB_SUCCESS;
 
 error:
 	talloc_free(ares);
-	talloc_free(res);
-	*((struct ldb_result **)context) = NULL;
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
@@ -753,16 +751,19 @@ int ldb_search(struct ldb_context *ldb,
 	       enum ldb_scope scope,
 	       const char *expression,
 	       const char * const *attrs, 
-	       struct ldb_result **res)
+	       struct ldb_result **_res)
 {
 	struct ldb_request *req;
 	int ret;
+	struct ldb_result *res;
 
-	*res = talloc_zero(ldb, struct ldb_result);
-	if (! *res) {
+	*_res = NULL;
+
+	res = talloc_zero(ldb, struct ldb_result);
+	if (!res) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
+
 	ret = ldb_build_search_req(&req, ldb, ldb,
 					base?base:ldb_get_default_basedn(ldb),
 	       				scope,
@@ -786,10 +787,10 @@ int ldb_search(struct ldb_context *ldb,
 
 done:
 	if (ret != LDB_SUCCESS) {
-		talloc_free(*res);
-		*res = NULL;
+		talloc_free(res);
 	}
 
+	*_res = res;
 	return ret;
 }
 
