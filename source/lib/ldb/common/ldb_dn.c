@@ -704,7 +704,7 @@ static struct ldb_dn_component ldb_dn_copy_component(void *mem_ctx, struct ldb_d
 /* Copy a DN but replace the old with the new base DN. */
 struct ldb_dn *ldb_dn_copy_rebase(void *mem_ctx, const struct ldb_dn *old, const struct ldb_dn *old_base, const struct ldb_dn *new_base)
 {
-	struct ldb_dn *new;
+	struct ldb_dn *new_dn;
 	int i, offset;
 
 	/* Perhaps we don't need to rebase at all? */
@@ -713,12 +713,12 @@ struct ldb_dn *ldb_dn_copy_rebase(void *mem_ctx, const struct ldb_dn *old, const
 	}
 
 	offset = old->comp_num - old_base->comp_num;
-	new = ldb_dn_copy_partial(mem_ctx, new_base, offset + new_base->comp_num);
+	new_dn = ldb_dn_copy_partial(mem_ctx, new_base, offset + new_base->comp_num);
 	for (i = 0; i < offset; i++) {
-		new->components[i] = ldb_dn_copy_component(new->components, &(old->components[i]));
+		new_dn->components[i] = ldb_dn_copy_component(new_dn->components, &(old->components[i]));
 	}
 
-	return new;
+	return new_dn;
 }
 
 /* copy specified number of elements of a dn into a new one
