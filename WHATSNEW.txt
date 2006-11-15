@@ -46,6 +46,7 @@ o   Jeremy Allison <jra@samba.org>
     * Fix protection from invalid struct tm values.
     * BUG 4187: Possible crash in signing on/off code.
     * BUG 4214: Fix crash bug in find_forced_group().
+    * BUG 4224: Fix enforcement of the deadtime parameter.
 
 
 o   Timur Bakeyev <timur@com.bat.ru>

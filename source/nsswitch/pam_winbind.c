@@ -830,7 +830,6 @@ const char *get_conf_item_string(int argc,
 				 int flag)
 {
 	int i = 0;
-	char *parm = NULL;
 	const char *parm_opt = NULL;
 	char *key = NULL;
 
@@ -855,9 +854,7 @@ const char *get_conf_item_string(int argc,
 		if ((strncmp(argv[i], item, strlen(item)) == 0)) {
 			char *p;
 
-			parm = strdup(argv[i]);
-
-			if ( (p = strchr( parm, '=' )) == NULL) {
+			if ( (p = strchr( argv[i], '=' )) == NULL) {
 				_pam_log(LOG_INFO, "no \"=\" delimiter for \"%s\" found\n", item);
 				goto out;
 			}
@@ -870,7 +867,6 @@ const char *get_conf_item_string(int argc,
 		_pam_log_debug(ctrl, LOG_INFO, "CONFIG file: %s '%s'\n", item, parm_opt);
 	}
 out:
-	SAFE_FREE(parm);
 	return parm_opt;
 }
 

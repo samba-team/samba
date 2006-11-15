@@ -187,6 +187,7 @@ BOOL conn_idle_all(time_t t, int deadtime)
 		/* Update if connection wasn't idle. */
 		if (conn->lastused != conn->lastused_count) {
 			conn->lastused = t;
+			conn->lastused_count = t;
 		}
 
 		/* close dirptrs on connections that are idle */
