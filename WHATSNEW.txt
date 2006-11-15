@@ -112,6 +112,10 @@ o   David Hu <david.hu@hp.com>
     * BUG 4212: Fix memleak in the default_ou_string handling.
 
 
+o   Mikhail Kshevetskiy <kl@laska.dorms.spbu.ru>
+    * BUG 4229: Compile fix for systems without kerberos.
+
+
 o   Volker Lendecke <vl@samba.org>
     * NTLMSSP LanMan session key fixes.
     * Various potential seg fault fixes.
