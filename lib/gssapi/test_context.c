@@ -42,6 +42,7 @@ static char *mech_string;
 static int dns_canon_flag = -1;
 static int mutual_auth_flag = 0;
 static int dce_style_flag = 0;
+static int deleg_flag = 0;
 static int version_flag = 0;
 static int verbose_flag = 0;
 static int help_flag	= 0;
@@ -75,20 +76,23 @@ static char *gssapi_err(OM_uint32 maj_stat, OM_uint32 min_stat,
 static void
 loop(gss_OID mechoid,
      gss_OID nameoid, const char *target,
-     gss_ctx_id_t *sctx, gss_ctx_id_t *cctx)
+     gss_cred_id_t init_cred,
+     gss_ctx_id_t *sctx, gss_ctx_id_t *cctx,
+     gss_cred_id_t *deleg_cred)
 {
     int server_done = 0, client_done = 0;
     OM_uint32 maj_stat, min_stat;
     gss_name_t gss_target_name;
     gss_buffer_desc input_token, output_token;
     OM_uint32 flags = 0, ret_cflags, ret_sflags;
-    gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
     gss_OID mechoid_out;
 
     if (mutual_auth_flag)
 	flags |= GSS_C_MUTUAL_FLAG;
     if (dce_style_flag)
 	flags |= GSS_C_DCE_STYLE;
+    if (deleg_flag)
+	flags |= GSS_C_DELEG_FLAG;
 
     input_token.value = rk_UNCONST(target);
     input_token.length = strlen(target);
@@ -106,7 +110,7 @@ loop(gss_OID mechoid,
     while (!server_done || !client_done) {
 
 	maj_stat = gss_init_sec_context(&min_stat,
-					GSS_C_NO_CREDENTIAL,
+					init_cred,
 					cctx,
 					gss_target_name,
 					mechoid, 
@@ -142,7 +146,7 @@ loop(gss_OID mechoid,
 					  &input_token,
 					  &ret_sflags,
 					  NULL,
-					  &deleg_cred);
+					  deleg_cred);
 	if (GSS_ERROR(maj_stat))
 		errx(1, "accept_sec_context: %s",
 		     gssapi_err(maj_stat, min_stat, mechoid_out));
@@ -199,6 +203,7 @@ static struct getargs args[] = {
      "use dns to canonicalize", NULL },
     {"mutual-auth",0,	arg_flag,	&mutual_auth_flag,"mutual auth", NULL },
     {"dce-style",0,	arg_flag,	&dce_style_flag, "dce-style", NULL },
+    {"delegate",0,	arg_flag,	&deleg_flag, "delegate credential", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
     {"verbose",	'v',	arg_flag,	&verbose_flag, "verbose", NULL },
     {"help",	0,	arg_flag,	&help_flag,  NULL, NULL }
@@ -220,6 +225,8 @@ main(int argc, char **argv)
     gss_ctx_id_t cctx, sctx;
     void *ctx;
     gss_OID nameoid, mechoid;
+    gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
+
 
     setprogname(argv[0]);
 
@@ -265,7 +272,8 @@ main(int argc, char **argv)
     else
 	errx(1, "%s not suppported", mech_string);
 
-    loop(mechoid, nameoid, argv[0], &sctx, &cctx);
+    loop(mechoid, nameoid, argv[0], GSS_C_NO_CREDENTIAL,
+	 &sctx, &cctx, &deleg_cred);
     
     if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) {
 	krb5_context context;
@@ -372,6 +380,15 @@ main(int argc, char **argv)
 
     gss_delete_sec_context(&min_stat, &cctx, NULL);
     gss_delete_sec_context(&min_stat, &sctx, NULL);
+
+    if (deleg_cred != GSS_C_NO_CREDENTIAL) {
+
+	loop(mechoid, nameoid, argv[0], deleg_cred, &cctx, &sctx, NULL);
+
+	gss_delete_sec_context(&min_stat, &cctx, NULL);
+	gss_delete_sec_context(&min_stat, &sctx, NULL);
+
+    }
 
     return 0;
 }
