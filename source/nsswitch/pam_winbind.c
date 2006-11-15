@@ -901,7 +901,6 @@ const char *get_conf_item_string(const pam_handle_t *pamh,
 				 int config_flag)
 {
 	int i = 0;
-	char *parm = NULL;
 	const char *parm_opt = NULL;
 	char *key = NULL;
 
@@ -926,9 +925,7 @@ const char *get_conf_item_string(const pam_handle_t *pamh,
 		if ((strncmp(argv[i], item, strlen(item)) == 0)) {
 			char *p;
 
-			parm = strdup(argv[i]);
-
-			if ( (p = strchr( parm, '=' )) == NULL) {
+			if ( (p = strchr( argv[i], '=' )) == NULL) {
 				_pam_log(pamh, ctrl, LOG_INFO, "no \"=\" delimiter for \"%s\" found\n", item);
 				goto out;
 			}
@@ -941,7 +938,6 @@ const char *get_conf_item_string(const pam_handle_t *pamh,
 		_pam_log_debug(pamh, ctrl, LOG_INFO, "CONFIG file: %s '%s'\n", item, parm_opt);
 	}
 out:
-	SAFE_FREE(parm);
 	return parm_opt;
 }
 
