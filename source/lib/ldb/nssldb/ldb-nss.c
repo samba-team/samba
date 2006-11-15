@@ -336,7 +336,7 @@ done:
 
 #define _LDB_NSS_ALLOC_CHECK(mem) do { if (!mem) { errno = ENOMEM; return NSS_STATUS_UNAVAIL; } } while(0)
 
-NSS_STATUS _ldb_nss_group_request(struct ldb_result **res,
+NSS_STATUS _ldb_nss_group_request(struct ldb_result **_res,
 					struct ldb_dn *group_dn,
 					const char * const *attrs,
 					const char *mattr)
@@ -346,8 +346,9 @@ NSS_STATUS _ldb_nss_group_request(struct ldb_result **res,
 	struct ldb_asq_control *asqc;
 	struct ldb_request *req;
 	int ret;
+	struct ldb_result *res = *_res;
 
-	ctrls = talloc_array(*res, struct ldb_control *, 2);
+	ctrls = talloc_array(res, struct ldb_control *, 2);
 	_LDB_NSS_ALLOC_CHECK(ctrls);
 
 	ctrl = talloc(ctrls, struct ldb_control);
@@ -370,7 +371,7 @@ NSS_STATUS _ldb_nss_group_request(struct ldb_result **res,
 	ret = ldb_build_search_req(
 				&req,
 				_ldb_nss_ctx->ldb,
-				*res,
+				res,
 				group_dn,
 				LDB_SCOPE_BASE,
 				"(objectClass=*)",
