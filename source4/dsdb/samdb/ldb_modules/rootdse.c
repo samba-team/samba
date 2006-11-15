@@ -151,6 +151,15 @@ static int rootdse_callback(struct ldb_context *ldb, void *context, struct ldb_r
 	ac = talloc_get_type(context, struct rootdse_context);
 
 	if (ares->type == LDB_REPLY_ENTRY) {
+		/*
+		 * if the client explicit asks for the 'netlogon' attribute
+		 * the reply_entry needs to be skipped
+		 */
+		if (ac->attrs && ldb_attr_in_list(ac->attrs, "netlogon")) {
+			talloc_free(ares);
+			return LDB_SUCCESS;
+		}
+
 		/* for each record returned post-process to add any dynamic
 		   attributes that have been asked for */
 		if (rootdse_add_dynamic(ac->module, ares->message, ac->attrs) != LDB_SUCCESS) {
