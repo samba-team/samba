@@ -154,10 +154,19 @@ for mech in krb5 spnego ; do
 		{ exitcode=1 ; echo test failed; }
 done
 
-#echo "dce-style"
-#${context} --dce-style --name-type=hostbased-service host@lucid.test.h5l.se || \
-#	{ exitcode=1 ; echo test failed; }
+#add spnego !
+echo dce-style 
+for mech in krb5 ; do
 
+	echo "${mech}: dce-style"
+	${context} \
+	    --mech-type=${mech} \
+	    --mutual \
+	    --dce-style \
+	    --name-type=hostbased-service host@lucid.test.h5l.se || \
+	    { exitcode=1 ; echo test failed; }
+
+done
 
 #echo "sasl-digest-md5"
 #${context}  --mech-type=sasl-digest-md5 \
