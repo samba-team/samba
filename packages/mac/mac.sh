@@ -39,7 +39,9 @@ sed -e $replace < ${base}/Info.plist.in > ./Info.plist
     -r ${base}/Resources \
     -i ./Info.plist || exit 1
 
-cd $base
+cd ..
 /usr/bin/hdiutil create -volname "Heimdal-${version}" -srcfolder ${imgdir} "heimdal-${version}.dmg" || exit 1
+
+rm -rf ${destdir} ${builddir} ${imgdir} || exit 1
 
 exit 0
