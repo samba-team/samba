@@ -50,11 +50,10 @@ spnego_reply_internal(OM_uint32 *minor_status,
 		      gss_buffer_t mech_token,
 		      gss_buffer_t output_token)
 {
-    NegTokenResp resp;
+    NegotiationToken nt;
     gss_buffer_desc mic_buf;
     OM_uint32 ret;
-    gss_buffer_desc data;
-    u_char *buf;
+    size_t size;
 
     if (mech_buf == GSS_C_NO_BUFFER && mech_token->length == 0) {
 	output_token->length = 0;
@@ -63,41 +62,43 @@ spnego_reply_internal(OM_uint32 *minor_status,
 	return context_handle->open ? GSS_S_COMPLETE : GSS_S_FAILURE;
     }
 
-    memset(&resp, 0, sizeof(resp));
+    memset(&nt, 0, sizeof(nt));
 
-    ALLOC(resp.negResult, 1);
-    if (resp.negResult == NULL) {
+    nt.element = choice_NegotiationToken_negTokenResp;
+
+    ALLOC(nt.u.negTokenResp.negResult, 1);
+    if (nt.u.negTokenResp.negResult == NULL) {
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
 
-    resp.supportedMech = NULL;
+    nt.u.negTokenResp.supportedMech = NULL;
 
     output_token->length = 0;
     output_token->value = NULL;
 
     if (mech_token->length == 0) {
-	resp.responseToken = NULL;
-	*(resp.negResult)  = accept_completed;
+	nt.u.negTokenResp.responseToken = NULL;
+	*(nt.u.negTokenResp.negResult)  = accept_completed;
     } else {
-	ALLOC(resp.responseToken, 1);
-	if (resp.responseToken == NULL) {
-	    free_NegTokenResp(&resp);
+	ALLOC(nt.u.negTokenResp.responseToken, 1);
+	if (nt.u.negTokenResp.responseToken == NULL) {
+	    free_NegotiationToken(&nt);
 	    *minor_status = ENOMEM;
 	    return GSS_S_FAILURE;
 	}
-	resp.responseToken->length = mech_token->length;
-	resp.responseToken->data   = mech_token->value;
+	nt.u.negTokenResp.responseToken->length = mech_token->length;
+	nt.u.negTokenResp.responseToken->data   = mech_token->value;
 	mech_token->length = 0;
 	mech_token->value  = NULL;
 
-	*(resp.negResult)  = accept_incomplete;
+	*(nt.u.negTokenResp.negResult)  = accept_incomplete;
     }
 
     if (mech_buf != GSS_C_NO_BUFFER) {
-	ALLOC(resp.mechListMIC, 1);
-	if (resp.mechListMIC == NULL) {
-	    free_NegTokenResp(&resp);
+	ALLOC(nt.u.negTokenResp.mechListMIC, 1);
+	if (nt.u.negTokenResp.mechListMIC == NULL) {
+	    free_NegotiationToken(&nt);
 	    *minor_status = ENOMEM;
 	    return GSS_S_FAILURE;
 	}
@@ -108,40 +109,32 @@ spnego_reply_internal(OM_uint32 *minor_status,
 			  mech_buf,
 			  &mic_buf);
 	if (ret) {
-	    free_NegTokenResp(&resp);
+	    free_NegotiationToken(&nt);
 	    *minor_status = ENOMEM;
 	    return GSS_S_FAILURE;
 	}
 
-	resp.mechListMIC->length = mic_buf.length;
-	resp.mechListMIC->data   = mic_buf.value;
+	nt.u.negTokenResp.mechListMIC->length = mic_buf.length;
+	nt.u.negTokenResp.mechListMIC->data   = mic_buf.value;
     } else {
-	resp.mechListMIC = NULL;
+	nt.u.negTokenResp.mechListMIC = NULL;
     }
 
-    ret = _gss_spnego_encode_response (minor_status, &resp,
-				       &data, &buf);
+    ASN1_MALLOC_ENCODE(NegotiationToken,
+		       output_token->value, output_token->length,
+		       &nt, &size, ret);
     if (ret) {
-	free_NegTokenResp(&resp);
-	return ret;
+	free_NegotiationToken(&nt);
+	*minor_status = ret;
+	return GSS_S_FAILURE;
     }
 
-    output_token->value = malloc(data.length);
-    if (output_token->value == NULL) {
-	*minor_status = ENOMEM;
-	ret = GSS_S_FAILURE;
-    } else {
-	output_token->length = data.length;
-	memcpy(output_token->value, data.value, output_token->length);
-    }
-    free(buf);
-
-    if (*(resp.negResult) == accept_completed)
+    if (*(nt.u.negTokenResp.negResult) == accept_completed)
 	ret = GSS_S_COMPLETE;
     else
 	ret = GSS_S_CONTINUE_NEEDED;
 
-    free_NegTokenResp(&resp);
+    free_NegotiationToken(&nt);
     return ret;
 }
 
