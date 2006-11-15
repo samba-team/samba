@@ -56,7 +56,7 @@ static struct ldb_message_element *ldb_msg_el_map_local(struct ldb_module *modul
 	el->name = map_attr_map_local(el, map, old->name);
 
 	for (i = 0; i < el->num_values; i++) {
-		el->values[i] = ldb_val_map_local(module, el->values, map, old->values[i]);
+		el->values[i] = ldb_val_map_local(module, el->values, map, &old->values[i]);
 	}
 
 	return el;

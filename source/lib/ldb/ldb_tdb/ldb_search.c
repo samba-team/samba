@@ -464,7 +464,7 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_reply *ares;
 	int ret;
 
-	if ((req->op.search.base == NULL || req->op.search.base->comp_num == 0) &&
+	if ((req->op.search.base == NULL || ldb_dn_get_comp_num(req->op.search.base) == 0) &&
 	    (req->op.search.scope == LDB_SCOPE_BASE || req->op.search.scope == LDB_SCOPE_ONELEVEL))
 		return LDB_ERR_OPERATIONS_ERROR;
 

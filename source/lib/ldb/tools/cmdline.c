@@ -29,6 +29,7 @@
 #if (_SAMBA_BUILD_ >= 4)
 #include "lib/cmdline/popt_common.h"
 #include "lib/ldb/samba/ldif_handlers.h"
+#include "auth/gensec/gensec.h"
 #include "auth/auth.h"
 #include "db_wrap.h"
 #endif
