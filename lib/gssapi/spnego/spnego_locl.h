@@ -86,10 +86,11 @@ typedef struct {
 	OM_uint32		mech_time_rec;
 	gss_name_t		mech_src_name;
 	gss_cred_id_t		delegated_cred_id;
-	int			open : 1;
-	int			local : 1;
-	int			require_mic : 1;
-	int			verified_mic : 1;
+	unsigned int		open : 1;
+	unsigned int		local : 1;
+	unsigned int		require_mic : 1;
+	unsigned int		verified_mic : 1;
+	unsigned int		maybe_open : 1;
 	HEIMDAL_MUTEX		ctx_id_mutex;
 } *gssspnego_ctx;
 
