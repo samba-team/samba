@@ -785,6 +785,7 @@ _gss_spnego_accept_sec_context
 	 */
 	if ((mech_output_token != GSS_C_NO_BUFFER &&
 	     mech_output_token->length != 0)
+	    || ctx->open
 	    || require_response
 	    || get_mic) {
 	    ret2 = send_accept (minor_status,
