@@ -143,7 +143,7 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
 {
     OM_uint32 ret;
     gss_OID_set supported_mechs = GSS_C_NO_OID_SET;
-    int i, count;
+    int i, count, first = -1;
 
     if (cred_handle != NULL) {
 	ret = gss_inquire_cred(minor_status,
@@ -179,6 +179,9 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
     }
 
     for (i = 0; i < supported_mechs->count; i++) {
+	if (gss_oid_equal(&supported_mechs->elements[i], GSS_SPNEGO_MECHANISM))
+	    continue;
+
 	ret = _gss_spnego_add_mech_type(&supported_mechs->elements[i],
 					includeMSCompatOID,
 					mechtypelist);
@@ -187,11 +190,19 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
 	    ret = GSS_S_FAILURE;
 	    break;
 	}
+	if (first == -1)
+	    first = i;
+    }
+    if (mechtypelist->len == 0) {
+	free_MechTypeList(mechtypelist);
+	gss_release_oid_set(minor_status, &supported_mechs);
+	*minor_status = 0;
+	return GSS_S_BAD_MECH;
     }
 
     if (ret == GSS_S_COMPLETE && preferred_mech != NULL) {
 	ret = gss_duplicate_oid(minor_status,
-				&supported_mechs->elements[0],
+				&supported_mechs->elements[first],
 				preferred_mech);
     }
 
