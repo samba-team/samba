@@ -1,5 +1,22 @@
-2006-11-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_context.c: Add delegate flag and check that the delegated
+	cred works.
+
+	* spnego/init_sec_context.c: Keep track of the opportunistic token
+	in the inital message, it might be a complete gss-api context, in
+	that case we'll get back accept_completed without any token. With
+	this change, krb5 w/o mutual authentication works.
+
+	* spnego/accept_sec_context.c: Use ASN.1 encoder functions to
+	encode CHOICE structure now that we can handle it.
+
+	* spnego/accept_sec_context.c: Filter out SPNEGO from the out
+	supported mechs list and make sure we don't select that for the
+	preferred mechamism.
+	
+2006-11-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* mech/gss_init_sec_context.c (_gss_mech_cred_find): break out the
 	cred finding to its own function
 
