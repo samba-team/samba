@@ -198,7 +198,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	}
 
 	if (req->num_attributes >= 1) {
-		attrs = talloc_array(samdb, const char *, req->num_attributes+1);
+		attrs = talloc_array(local_ctx, const char *, req->num_attributes+1);
 		NT_STATUS_HAVE_NO_MEMORY(attrs);
 
 		for (i=0; i < req->num_attributes; i++) {
@@ -368,7 +368,8 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 
 			msg->elements[i].num_values = req->mods[i].attrib.num_values;
 			if (msg->elements[i].num_values > 0) {
-				msg->elements[i].values = talloc_array(msg, struct ldb_val, msg->elements[i].num_values);
+				msg->elements[i].values = talloc_array(msg->elements, struct ldb_val,
+								       msg->elements[i].num_values);
 				NT_STATUS_HAVE_NO_MEMORY(msg->elements[i].values);
 
 				for (j=0; j < msg->elements[i].num_values; j++) {
@@ -456,7 +457,8 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 			
 			if (req->attributes[i].num_values > 0) {
 				msg->elements[i].num_values = req->attributes[i].num_values;
-				msg->elements[i].values = talloc_array(msg, struct ldb_val, msg->elements[i].num_values);
+				msg->elements[i].values = talloc_array(msg->elements, struct ldb_val,
+								       msg->elements[i].num_values);
 				NT_STATUS_HAVE_NO_MEMORY(msg->elements[i].values);
 
 				for (j=0; j < msg->elements[i].num_values; j++) {
@@ -671,7 +673,7 @@ reply:
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_search(samdb, dn, LDB_SCOPE_BASE, filter, attrs, &res);
-		talloc_steal(samdb, res);
+		talloc_steal(local_ctx, res);
 		if (ldb_ret != LDB_SUCCESS) {
 			result = map_ldb_error(samdb, ldb_ret, &errstr);
 			DEBUG(10,("CompareRequest: error: %s\n", errstr));
