@@ -58,7 +58,8 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
 	struct ldb_message_element *attribute;
-	struct ldb_dn_component *rdn;
+	const char *rdn_name;
+	struct ldb_val rdn_val;
 	int i, ret;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_add_record\n");
@@ -80,43 +81,45 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	rdn = ldb_dn_get_rdn(msg, msg->dn);
-	if (rdn == NULL) {
+	rdn_name = ldb_dn_get_rdn_name(msg->dn);
+	if (rdn_name == NULL) {
 		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+	
+	rdn_val = ldb_val_dup(msg, ldb_dn_get_rdn_val(msg->dn));
 	
 	/* Perhaps someone above us tried to set this? */
 	if ((attribute = rdn_name_find_attribute(msg, "name")) != NULL ) {
 		attribute->num_values = 0;
 	}
 
-	if (ldb_msg_add_value(msg, "name", &rdn->value, NULL) != 0) {
+	if (ldb_msg_add_value(msg, "name", &rdn_val, NULL) != 0) {
 		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	attribute = rdn_name_find_attribute(msg, rdn->name);
+	attribute = rdn_name_find_attribute(msg, rdn_name);
 
 	if (!attribute) {
-		if (ldb_msg_add_value(msg, rdn->name, &rdn->value, NULL) != 0) {
+		if (ldb_msg_add_value(msg, rdn_name, &rdn_val, NULL) != 0) {
 			talloc_free(down_req);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	} else {
-		const struct ldb_attrib_handler *handler = ldb_attrib_handler(module->ldb, rdn->name);
+		const struct ldb_attrib_handler *handler = ldb_attrib_handler(module->ldb, rdn_name);
 
 		for (i = 0; i < attribute->num_values; i++) {
-			if (handler->comparison_fn(module->ldb, msg, &rdn->value, &attribute->values[i]) == 0) {
+			if (handler->comparison_fn(module->ldb, msg, &rdn_val, &attribute->values[i]) == 0) {
 				/* overwrite so it matches in case */
-				attribute->values[i] = rdn->value;
+				attribute->values[i] = rdn_val;
 				break;
 			}
 		}
 		if (i == attribute->num_values) {
 			ldb_debug_set(module->ldb, LDB_DEBUG_FATAL, 
-				      "RDN mismatch on %s: %s", 
-				      ldb_dn_linearize(msg, msg->dn), rdn->name);
+				      "RDN mismatch on %s: %s (%s)", 
+				      ldb_dn_linearize(msg, msg->dn), rdn_name, rdn_val.data);
 			talloc_free(down_req);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -190,16 +193,12 @@ static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 static int rdn_name_rename_do_mod(struct ldb_handle *h) {
 
 	struct rename_context *ac;
-	struct ldb_dn_component *rdn;
+	const char *rdn_name;
+	struct ldb_val rdn_val;
 	struct ldb_message *msg;
 
 	ac = talloc_get_type(h->private_data, struct rename_context);
 
-	rdn = ldb_dn_get_rdn(ac, ac->orig_req->op.rename.newdn);
-	if (rdn == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
 	ac->mod_req = talloc_zero(ac, struct ldb_request);
 
 	ac->mod_req->operation = LDB_MODIFY;
@@ -213,16 +212,23 @@ static int rdn_name_rename_do_mod(struct ldb_handle *h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (ldb_msg_add_empty(msg, rdn->name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+	rdn_name = ldb_dn_get_rdn_name(ac->orig_req->op.rename.newdn);
+	if (rdn_name == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (ldb_msg_add_value(msg, rdn->name, &rdn->value, NULL) != 0) {
+	
+	rdn_val = ldb_val_dup(msg, ldb_dn_get_rdn_val(ac->orig_req->op.rename.newdn));
+	
+	if (ldb_msg_add_empty(msg, rdn_name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if (ldb_msg_add_value(msg, rdn_name, &rdn_val, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	if (ldb_msg_add_empty(msg, "name", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	if (ldb_msg_add_value(msg, "name", &rdn->value, NULL) != 0) {
+	if (ldb_msg_add_value(msg, "name", &rdn_val, NULL) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

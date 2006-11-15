@@ -454,8 +454,7 @@ static int asq_init(struct ldb_module *module)
 
 	ret = ldb_request(module->ldb, req);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "asq: Unable to register control with rootdse!\n");
-		return LDB_ERR_OTHER;
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "asq: Unable to register control with rootdse!\n");
 	}
 
 	return ldb_next_init(module);
