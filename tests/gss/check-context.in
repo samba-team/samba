@@ -129,9 +129,30 @@ ${context}  --no-dns-canon --name-type=krb5-principal-name host/lucid || \
 	{ exitcode=1 ; echo test failed; }
 
 echo "test context building"
-echo "mutual"
-${context} --mutual --name-type=hostbased-service host@lucid.test.h5l.se || \
-	{ exitcode=1 ; echo test failed; }
+for mech in krb5 spnego ; do
+	echo "${mech} no-mutual"
+	${context} --mech-type=${mech} \
+	    --name-type=hostbased-service host@lucid.test.h5l.se || \
+		{ exitcode=1 ; echo test failed; }
+
+	echo "${mech} mutual"
+	${context} --mech-type=${mech} \
+	    --mutual \
+	    --name-type=hostbased-service host@lucid.test.h5l.se || \
+		{ exitcode=1 ; echo test failed; }
+
+	echo "${mech}: delegate"
+	${context} --mech-type=${mech} \
+	    --delegate \
+	    --name-type=hostbased-service host@lucid.test.h5l.se || \
+		{ exitcode=1 ; echo test failed; }
+
+	echo "${mech}: mutual delegate"
+	${context} --mech-type=${mech} \
+	    --mutual --delegate \
+	    --name-type=hostbased-service host@lucid.test.h5l.se || \
+		{ exitcode=1 ; echo test failed; }
+done
 
 #echo "dce-style"
 #${context} --dce-style --name-type=hostbased-service host@lucid.test.h5l.se || \
