@@ -636,6 +636,34 @@ NTSTATUS cldap_empty_reply(struct cldap_socket *cldap,
 	return status;
 }
 
+/*
+  send an error reply (used on any error, so the client doesn't keep waiting
+  or send the bad request again)
+*/
+NTSTATUS cldap_error_reply(struct cldap_socket *cldap, 
+			   uint32_t message_id,
+			   struct socket_address *src,
+			   int resultcode,
+			   const char *errormessage)
+{
+	NTSTATUS status;
+	struct cldap_reply reply;
+	struct ldap_Result result;
+
+	reply.messageid    = message_id;
+	reply.dest         = src;
+	reply.response     = NULL;
+	reply.result       = &result;
+
+	ZERO_STRUCT(result);
+	result.resultcode	= resultcode;
+	result.errormessage	= errormessage;
+
+	status = cldap_reply_send(cldap, &reply);
+
+	return status;
+}
+
 
 /*
   send a netlogon reply 
