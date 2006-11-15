@@ -220,27 +220,27 @@ static OM_uint32
 send_supported_mechs (OM_uint32 *minor_status,
 		      gss_buffer_t output_token)
 {
-    NegTokenInit ni;
+    NegotiationToken nt;
     char hostname[MAXHOSTNAMELEN], *p;
     gss_buffer_desc name_buf;
     gss_OID name_type;
     gss_name_t target_princ;
     gss_name_t canon_princ;
     OM_uint32 ret, minor;
-    u_char *buf;
-    size_t buf_size, buf_len;
+    size_t buf_len;
     gss_buffer_desc data;
 
-    memset(&ni, 0, sizeof(ni));
+    memset(&nt, 0, sizeof(nt));
 
-    ni.reqFlags = NULL;
-    ni.mechToken = NULL;
-    ni.negHints = NULL;
-    ni.mechListMIC = NULL;
+    nt.element = choice_NegotiationToken_negTokenInit;
+    nt.u.negTokenInit.reqFlags = NULL;
+    nt.u.negTokenInit.mechToken = NULL;
+    nt.u.negTokenInit.negHints = NULL;
+    nt.u.negTokenInit.mechListMIC = NULL;
 
     ret = _gss_spnego_indicate_mechtypelist(minor_status, 1,
 					    NULL,
-					    &ni.mechTypes, NULL);
+					    &nt.u.negTokenInit.mechTypes, NULL);
     if (ret != GSS_S_COMPLETE) {
 	return ret;
     }
@@ -248,7 +248,7 @@ send_supported_mechs (OM_uint32 *minor_status,
     memset(&target_princ, 0, sizeof(target_princ));
     if (gethostname(hostname, sizeof(hostname) - 1) != 0) {
 	*minor_status = errno;
-	free_NegTokenInit(&ni);
+	free_NegotiationToken(&nt);
 	return GSS_S_FAILURE;
     }
 
@@ -266,6 +266,7 @@ send_supported_mechs (OM_uint32 *minor_status,
 			  GSS_C_NO_OID,
 			  &target_princ);
     if (ret != GSS_S_COMPLETE) {
+	free_NegotiationToken(&nt);
 	return ret;
     }
 
@@ -278,6 +279,7 @@ send_supported_mechs (OM_uint32 *minor_status,
 				GSS_C_NO_OID,
 				&canon_princ);
     if (ret != GSS_S_COMPLETE) {
+	free_NegotiationToken(&nt);
 	gss_release_name(&minor, &target_princ);
 	return ret;
     }
@@ -285,6 +287,7 @@ send_supported_mechs (OM_uint32 *minor_status,
     ret = gss_display_name(minor_status, canon_princ,
 			   &name_buf, &name_type);
     if (ret != GSS_S_COMPLETE) {
+	free_NegotiationToken(&nt);
 	gss_release_name(&minor, &canon_princ);
 	gss_release_name(&minor, &target_princ);
 	return ret;
@@ -293,81 +296,38 @@ send_supported_mechs (OM_uint32 *minor_status,
     gss_release_name(&minor, &canon_princ);
     gss_release_name(&minor, &target_princ);
 
-    ALLOC(ni.negHints, 1);
-    if (ni.negHints == NULL) {
+    ALLOC(nt.u.negTokenInit.negHints, 1);
+    if (nt.u.negTokenInit.negHints == NULL) {
 	*minor_status = ENOMEM;
 	gss_release_buffer(&minor, &name_buf);
-	free_NegTokenInit(&ni);
+	free_NegotiationToken(&nt);
 	return GSS_S_FAILURE;
     }
 
-    ALLOC(ni.negHints->hintName, 1);
-    if (ni.negHints->hintName == NULL) {
+    ALLOC(nt.u.negTokenInit.negHints->hintName, 1);
+    if (nt.u.negTokenInit.negHints->hintName == NULL) {
 	*minor_status = ENOMEM;
 	gss_release_buffer(&minor, &name_buf);
-	free_NegTokenInit(&ni);
+	free_NegotiationToken(&nt);
 	return GSS_S_FAILURE;
     }
 
-    *(ni.negHints->hintName) = name_buf.value;
+    *(nt.u.negTokenInit.negHints->hintName) = name_buf.value;
     name_buf.value = NULL;
-    ni.negHints->hintAddress = NULL;
+    nt.u.negTokenInit.negHints->hintAddress = NULL;
 
-    buf_size = 1024;
-    buf = malloc(buf_size);
-    if (buf == NULL) {
-	free_NegTokenInit(&ni);
-	*minor_status = ENOMEM;
-	return GSS_S_FAILURE;
+    ASN1_MALLOC_ENCODE(NegotiationToken, data.value, data.length, &nt, &buf_len, ret);
+    if (ret) {
+	free_NegotiationToken(&nt);
+	return ret;
     }
+    if (data.length != buf_len)
+	abort();
 
-    do {
-	ret = encode_NegTokenInit(buf + buf_size - 1,
-				  buf_size,
-				  &ni, &buf_len);
-	if (ret == 0) {
-	    size_t tmp;
+    ret = gss_encapsulate_token(&data, GSS_SPNEGO_MECHANISM, output_token);
 
-	    ret = der_put_length_and_tag(buf + buf_size - buf_len - 1,
-					 buf_size - buf_len,
-					 buf_len,
-					 ASN1_C_CONTEXT,
-					 CONS,
-					 0,
-					 &tmp);
-	    if (ret == 0)
-		buf_len += tmp;
-	}
-	if (ret) {
-	    if (ret == ASN1_OVERFLOW) {
-		u_char *tmp;
-
-		buf_size *= 2;
-		tmp = realloc (buf, buf_size);
-		if (tmp == NULL) {
-		    *minor_status = ENOMEM;
-		    free(buf);
-		    free_NegTokenInit(&ni);
-		    return GSS_S_FAILURE;
-		}
-		buf = tmp;
-	    } else {
-		*minor_status = ret;
-		free(buf);
-		free_NegTokenInit(&ni);
-		return GSS_S_FAILURE;
-	    }
-	}
-    } while (ret == ASN1_OVERFLOW);
-
-    data.value  = buf + buf_size - buf_len;
-    data.length = buf_len;
-
-    ret = gss_encapsulate_token(&data,
-				GSS_SPNEGO_MECHANISM,
-				output_token);
-    free (buf);
-    free_NegTokenInit (&ni);
+    free (data.value);
+    free_NegotiationToken(&nt);
 
     if (ret != GSS_S_COMPLETE)
 	return ret;
