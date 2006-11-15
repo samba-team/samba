@@ -228,6 +228,8 @@ spnego_initial
 	_gss_spnego_internal_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return sub;
     }
+    if (sub == GSS_S_COMPLETE)
+	ctx->maybe_open = 1;
 
     if (mech_token.length != 0) {
 	ALLOC(ni.mechToken, 1);
@@ -439,6 +441,9 @@ spnego_reply
 	if (ret == GSS_S_COMPLETE) {
 	    ctx->open = 1;
 	}
+    } else if (*(resp.negResult) == accept_completed) {
+	if (ctx->maybe_open)
+	    ctx->open = 1;
     }
 
     if (*(resp.negResult) == request_mic) {
