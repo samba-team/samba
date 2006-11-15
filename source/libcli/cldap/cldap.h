@@ -135,6 +135,15 @@ struct cldap_reply {
 
 NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io);
 
+NTSTATUS cldap_empty_reply(struct cldap_socket *cldap, 
+			   uint32_t message_id,
+			   struct socket_address *src);
+NTSTATUS cldap_error_reply(struct cldap_socket *cldap, 
+			   uint32_t message_id,
+			   struct socket_address *src,
+			   int resultcode,
+			   const char *errormessage);
+
 /*
   a netlogon cldap request  
 */
@@ -161,11 +170,6 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 			     struct cldap_netlogon *io);
 NTSTATUS cldap_netlogon(struct cldap_socket *cldap, 
 			TALLOC_CTX *mem_ctx, struct cldap_netlogon *io);
-
-
-NTSTATUS cldap_empty_reply(struct cldap_socket *cldap, 
-			   uint32_t message_id,
-			   struct socket_address *src);
 NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap, 
 			      uint32_t message_id,
 			      struct socket_address *src,
