@@ -393,13 +393,6 @@ objectClass: user
 		assert(res[0].cn == "ldaptestutf8user2 èùéìòà");
 	}
 
-	println("Testing for highestCommittedUSN");
-	var attrs = new Array("highestCommittedUSN");
-	var res = ldb.search("", "", ldb.SCOPE_BASE, attrs);
-	assert(res.length == 1);
-	assert(res[0].highestCommittedUSN != undefined);
-	assert(res[0].highestCommittedUSN != 0);
-
 	println("Testing that we can't get at the configuration DN from the main search base");
 	var attrs = new Array("cn");
 	var res = ldb.search("objectClass=crossRef", base_dn, ldb.SCOPE_SUBTREE, attrs);
@@ -427,6 +420,31 @@ objectClass: user
 	var res = ldb.search("objectClass=crossRef", configuration_dn, ldb.SCOPE_SUBTREE, attrs);
 	assert (res.length > 0);
 
+}
+
+function basedn_tests(ldb, gc_ldb)
+{
+	println("Testing for all rootDSE attributes");
+	var attrs = new Array();
+	var res = ldb.search("", "", ldb.SCOPE_BASE, attrs);
+	assert(res.length == 1);
+
+	println("Testing for highestCommittedUSN");
+	var attrs = new Array("highestCommittedUSN");
+	var res = ldb.search("", "", ldb.SCOPE_BASE, attrs);
+	assert(res.length == 1);
+	assert(res[0].highestCommittedUSN != undefined);
+	assert(res[0].highestCommittedUSN != 0);
+
+	println("Testing for netlogon via LDAP");
+	var attrs = new Array("netlogon");
+	var res = ldb.search("", "", ldb.SCOPE_BASE, attrs);
+	assert(res.length == 0);
+
+	println("Testing for netlogon and highestCommittedUSN via LDAP");
+	var attrs = new Array("netlogon", "highestCommittedUSN");
+	var res = ldb.search("", "", ldb.SCOPE_BASE, attrs);
+	assert(res.length == 0);
 }
 
 function find_basedn(ldb)
@@ -461,5 +479,7 @@ if (!ok) {
 }
 
 basic_tests(ldb, gc_ldb, base_dn, configuration_dn)
+
+basedn_tests(ldb, gc_ldb)
 
 return 0;
