@@ -1,5 +1,10 @@
 2006-11-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* spnego/accept_sec_context.c (_gss_spnego_accept_sec_context):
+	send back ad accept_completed when the security context is ->open,
+	w/o this the client doesn't know that the server have completed
+	the transaction.
+
 	* test_context.c: Add delegate flag and check that the delegated
 	cred works.
 
