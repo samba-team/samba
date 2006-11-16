@@ -4789,28 +4789,34 @@ AC_ARG_WITH(acl-support,
 	*sysv5*)
 		AC_MSG_RESULT(Using UnixWare ACLs)
 		AC_DEFINE(HAVE_UNIXWARE_ACLS,1,[Whether UnixWare ACLs are available])
+		default_static_modules="$default_static_modules vfs_solarisacl"
 		;;
 	*solaris*)
 		AC_MSG_RESULT(Using solaris ACLs)
 		AC_DEFINE(HAVE_SOLARIS_ACLS,1,[Whether solaris ACLs are available])
 		ACL_LIBS="$ACL_LIBS -lsec"
+		default_static_modules="$default_static_modules vfs_solarisacl"
 		;;
 	*hpux*)
 		AC_MSG_RESULT(Using HPUX ACLs)
 		AC_DEFINE(HAVE_HPUX_ACLS,1,[Whether HPUX ACLs are available])
+		default_static_modules="$default_static_modules vfs_hpuxacl"
 		;;
 	*irix*)
 		AC_MSG_RESULT(Using IRIX ACLs)
 		AC_DEFINE(HAVE_IRIX_ACLS,1,[Whether IRIX ACLs are available])
+		default_static_modules="$default_static_modules vfs_irixacl"
 		;;
 	*aix*)
 		AC_MSG_RESULT(Using AIX ACLs)
 		AC_DEFINE(HAVE_AIX_ACLS,1,[Whether AIX ACLs are available])
+		default_static_modules="$default_static_modules vfs_aixacl"
 		;;
 	*osf*)
 		AC_MSG_RESULT(Using Tru64 ACLs)
 		AC_DEFINE(HAVE_TRU64_ACLS,1,[Whether Tru64 ACLs are available])
 		ACL_LIBS="$ACL_LIBS -lpacl"
+		default_static_modules="$default_static_modules vfs_tru64acl"
 		;;
 	*freebsd[[5-9]]*)
 		AC_MSG_RESULT(Using FreeBSD posix ACLs)
@@ -4821,54 +4827,84 @@ AC_ARG_WITH(acl-support,
 		AC_CHECK_LIB(attr,getxattr,[ACL_LIBS="$ACL_LIBS -lattr"])
        		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
 		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
-		acl_LIBS=$LIBS
-		LIBS="$LIBS -lacl"
-		AC_TRY_LINK([#include <sys/types.h>
-#include <sys/acl.h>],
-[ acl_t acl; int entry_id; acl_entry_t *entry_p; return acl_get_entry( acl, entry_id, entry_p);],
-samba_cv_HAVE_POSIX_ACLS=yes,samba_cv_HAVE_POSIX_ACLS=no)
-		LIBS=$acl_LIBS])
-			if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
-				AC_MSG_RESULT(Using posix ACLs)
-				AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
-				AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
+			acl_LIBS=$LIBS
+			LIBS="$LIBS -lacl"
+			AC_TRY_LINK([
+				#include <sys/types.h>
+				#include <sys/acl.h>
+			],[
+				acl_t acl;
+				int entry_id;
+				acl_entry_t *entry_p;
+				return acl_get_entry(acl, entry_id, entry_p);
+			],
+			[samba_cv_HAVE_POSIX_ACLS=yes],
+			[samba_cv_HAVE_POSIX_ACLS=no])
+			LIBS=$acl_LIBS
+		])
+		if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
+			AC_MSG_RESULT(Using posix ACLs)
+			AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
+			AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
 				acl_LIBS=$LIBS
 				LIBS="$LIBS -lacl"
-				AC_TRY_LINK([#include <sys/types.h>
-#include <sys/acl.h>],
-[ acl_permset_t permset_d; acl_perm_t perm; return acl_get_perm_np( permset_d, perm);],
-samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
-				LIBS=$acl_LIBS])
-				if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
-					AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
-				fi
+				AC_TRY_LINK([
+					#include <sys/types.h>
+					#include <sys/acl.h>
+				],[
+					acl_permset_t permset_d;
+					acl_perm_t perm;
+					return acl_get_perm_np(permset_d, perm);
+				],
+				[samba_cv_HAVE_ACL_GET_PERM_NP=yes],
+				[samba_cv_HAVE_ACL_GET_PERM_NP=no])
+				LIBS=$acl_LIBS
+			])
+			if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
+				AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
 			fi
+		fi
             ;;
          *)
 		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
 		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
-		acl_LIBS=$LIBS
-		LIBS="$LIBS -lacl"
-		AC_TRY_LINK([#include <sys/types.h>
-#include <sys/acl.h>],
-[ acl_t acl; int entry_id; acl_entry_t *entry_p; return acl_get_entry( acl, entry_id, entry_p);],
-samba_cv_HAVE_POSIX_ACLS=yes,samba_cv_HAVE_POSIX_ACLS=no)
-		LIBS=$acl_LIBS])
-			if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
-				AC_MSG_RESULT(Using posix ACLs)
-				AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
-				AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
+			acl_LIBS=$LIBS
+			LIBS="$LIBS -lacl"
+			AC_TRY_LINK([
+				#include <sys/types.h>
+				#include <sys/acl.h>
+			],[
+				acl_t acl;
+				int entry_id;
+				acl_entry_t *entry_p;
+				return acl_get_entry( acl, entry_id, entry_p);
+			],
+			[samba_cv_HAVE_POSIX_ACLS=yes],
+			[samba_cv_HAVE_POSIX_ACLS=no])
+			LIBS=$acl_LIBS
+		])
+		if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
+			AC_MSG_RESULT(Using posix ACLs)
+			AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
+			AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
 				acl_LIBS=$LIBS
 				LIBS="$LIBS -lacl"
-				AC_TRY_LINK([#include <sys/types.h>
-#include <sys/acl.h>],
-[ acl_permset_t permset_d; acl_perm_t perm; return acl_get_perm_np( permset_d, perm);],
-samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
-				LIBS=$acl_LIBS])
-				if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
-					AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
-				fi
+				AC_TRY_LINK([
+					#include <sys/types.h>
+					#include <sys/acl.h>
+				],[
+					acl_permset_t permset_d;
+					acl_perm_t perm;
+					return acl_get_perm_np( permset_d, perm);
+				],
+				[samba_cv_HAVE_ACL_GET_PERM_NP=yes],
+				[samba_cv_HAVE_ACL_GET_PERM_NP=no])
+				LIBS=$acl_LIBS
+			])
+			if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
+				AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
 			fi
+		fi
             ;;
         esac
         ;;
@@ -4880,6 +4916,10 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
   AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support should be built in])
   AC_MSG_RESULT(no)
 )
+
+if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
+   default_static_modules="$default_static_modules vfs_posixacl"
+fi
 
 #################################################
 # check for AIO support
@@ -5611,6 +5651,13 @@ SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_expand_msdfs, \$(VFS_EXPAND_MSDFS_OBJ), "bin/expand_msdfs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_shadow_copy, \$(VFS_SHADOW_COPY_OBJ), "bin/shadow_copy.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_afsacl, \$(VFS_AFSACL_OBJ), "bin/afsacl.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_posixacl, \$(VFS_POSIXACL_OBJ), "bin/posixacl.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_aixacl, \$(VFS_AIXACL_OBJ), "bin/aixacl.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_aixacl2, \$(VFS_AIXACL2_OBJ), "bin/aixacl2.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_solarisacl, \$(VFS_SOLARISACL_OBJ), "bin/solarisacl.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_irixacl, \$(VFS_IRIXACL_OBJ), "bin/irixacl.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_hpuxacl, \$(VFS_HPUXACL_OBJ), "bin/hpuxacl.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_tru64acl, \$(VFS_TRU64ACL_OBJ), "bin/tru64acl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_catia, \$(VFS_CATIA_OBJ), "bin/catia.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_gpfs, \$(VFS_GPFS_OBJ), "bin/gpfs.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)

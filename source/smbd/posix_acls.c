@@ -575,6 +575,9 @@ static void print_canon_ace(canon_ace *pace, int num)
 		case SMB_ACL_OTHER:
 			dbgtext( "SMB_ACL_OTHER ");
 			break;
+		default:
+			dbgtext( "MASK " );
+			break;
 	}
 	if (pace->inherited)
 		dbgtext( "(inherited) ");
@@ -898,7 +901,7 @@ static mode_t map_nt_perms( SEC_ACCESS sec_access, int type)
  Unpack a SEC_DESC into a UNIX owner and group.
 ****************************************************************************/
 
-static BOOL unpack_nt_owners(int snum, SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd)
+BOOL unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, SEC_DESC *psd)
 {
 	DOM_SID owner_sid;
 	DOM_SID grp_sid;
@@ -2436,17 +2439,6 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	}
 
 	/*
-	 * Check if the ACL is valid.
-	 */
-
-	if (SMB_VFS_SYS_ACL_VALID(conn, the_acl) == -1) {
-		DEBUG(0,("set_canon_ace_list: ACL type (%s) is invalid for set (%s).\n",
-				the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
-				strerror(errno) ));
-		goto fail;
-	}
-
-	/*
 	 * Finally apply it to the file or directory.
 	 */
 
@@ -2997,7 +2989,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
      then allow chown to the currently authenticated user.
 ****************************************************************************/
 
-static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
+int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 {
 	int ret;
 	files_struct *fsp;
@@ -3114,7 +3106,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	 * Unpack the user/group/world id's.
 	 */
 
-	if (!unpack_nt_owners( SNUM(conn), &sbuf, &user, &grp, security_info_sent, psd)) {
+	if (!unpack_nt_owners( SNUM(conn), &user, &grp, security_info_sent, psd)) {
 		return False;
 	}
 

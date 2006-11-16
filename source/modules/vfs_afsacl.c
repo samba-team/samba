@@ -48,7 +48,7 @@ struct afs_ace {
 	BOOL positive;
 	char *name;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	uint32 rights;
 	struct afs_ace *next;
 };
@@ -110,7 +110,7 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 				   const char *name, uint32 rights)
 {
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	struct afs_ace *result;
 
 	if (strcmp(name, "system:administrators") == 0) {
@@ -589,7 +589,7 @@ static uint32 nt_to_afs_file_rights(const char *filename, const SEC_ACE *ace)
 static size_t afs_to_nt_acl(struct afs_acl *afs_acl, 
 			    struct files_struct *fsp,
 			    uint32 security_info,
-			    struct security_descriptor_info **ppdesc)
+			    struct security_descriptor **ppdesc)
 {
 	SEC_ACE *nt_ace_list;
 	DOM_SID owner_sid, group_sid;
@@ -691,7 +691,7 @@ static BOOL mappable_sid(const DOM_SID *sid)
 
 static BOOL nt_to_afs_acl(const char *filename,
 			  uint32 security_info_sent,
-			  struct security_descriptor_info *psd,
+			  struct security_descriptor *psd,
 			  uint32 (*nt_to_afs_rights)(const char *filename,
 						     const SEC_ACE *ace),
 			  struct afs_acl *afs_acl)
@@ -713,7 +713,7 @@ static BOOL nt_to_afs_acl(const char *filename,
 	for (i = 0; i < dacl->num_aces; i++) {
 		SEC_ACE *ace = &(dacl->ace[i]);
 		const char *dom_name, *name;
-		enum SID_NAME_USE name_type;
+		enum lsa_SidType name_type;
 		char *p;
 
 		if (ace->type != SEC_ACE_TYPE_ACCESS_ALLOWED) {
@@ -827,7 +827,7 @@ static BOOL afs_get_afs_acl(char *filename, struct afs_acl *acl)
 }
 
 static size_t afs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
-			     struct security_descriptor_info **ppdesc)
+			     struct security_descriptor **ppdesc)
 {
 	struct afs_acl acl;
 	size_t sd_size;
@@ -881,7 +881,7 @@ static void merge_unknown_aces(struct afs_acl *src, struct afs_acl *dst)
 
 static BOOL afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info_sent,
-			   struct security_descriptor_info *psd)
+			   struct security_descriptor *psd)
 {
 	struct afs_acl old_afs_acl, new_afs_acl;
 	struct afs_acl dir_acl, file_acl;
@@ -982,14 +982,14 @@ static BOOL afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 static size_t afsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 int fd,  uint32 security_info,
-				 struct security_descriptor_info **ppdesc)
+				 struct security_descriptor **ppdesc)
 {
 	return afs_get_nt_acl(fsp, security_info, ppdesc);
 }
 static size_t afsacl_get_nt_acl(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				const char *name,  uint32 security_info,
-				struct security_descriptor_info **ppdesc)
+				struct security_descriptor **ppdesc)
 {
 	return afs_get_nt_acl(fsp, security_info, ppdesc);
 }
@@ -1011,7 +1011,6 @@ BOOL afsacl_set_nt_acl(vfs_handle_struct *handle,
 }
 
 static int afsacl_connect(vfs_handle_struct *handle, 
-			  connection_struct *conn, 
 			  const char *service, 
 			  const char *user)
 {
@@ -1022,7 +1021,7 @@ static int afsacl_connect(vfs_handle_struct *handle,
 	if (spc != NULL)
 		space_replacement = spc[0];
 	
-	return SMB_VFS_NEXT_CONNECT(handle, conn, service, user);
+	return SMB_VFS_NEXT_CONNECT(handle, service, user);
 }
 
 /* VFS operations structure */

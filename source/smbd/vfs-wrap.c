@@ -925,12 +925,12 @@ void * vfswrap_sys_acl_get_qualifier(vfs_handle_struct *handle, connection_struc
 
 SMB_ACL_T vfswrap_sys_acl_get_file(vfs_handle_struct *handle, connection_struct *conn, const char *path_p, SMB_ACL_TYPE_T type)
 {
-	return sys_acl_get_file(path_p, type);
+	return sys_acl_get_file(handle, path_p, type);
 }
 
 SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
 {
-	return sys_acl_get_fd(fd);
+	return sys_acl_get_fd(handle, fsp, fd);
 }
 
 int vfswrap_sys_acl_clear_perms(vfs_handle_struct *handle, connection_struct *conn, SMB_ACL_PERMSET_T permset)
@@ -980,17 +980,17 @@ int vfswrap_sys_acl_valid(vfs_handle_struct *handle, connection_struct *conn, SM
 
 int vfswrap_sys_acl_set_file(vfs_handle_struct *handle, connection_struct *conn, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
-	return sys_acl_set_file(name, acltype, theacl);
+	return sys_acl_set_file(handle, name, acltype, theacl);
 }
 
 int vfswrap_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_ACL_T theacl)
 {
-	return sys_acl_set_fd(fd, theacl);
+	return sys_acl_set_fd(handle, fsp, fd, theacl);
 }
 
 int vfswrap_sys_acl_delete_def_file(vfs_handle_struct *handle, connection_struct *conn, const char *path)
 {
-	return sys_acl_delete_def_file(path);
+	return sys_acl_delete_def_file(handle, path);
 }
 
 int vfswrap_sys_acl_get_perm(vfs_handle_struct *handle, connection_struct *conn, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
