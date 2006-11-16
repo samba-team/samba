@@ -1551,7 +1551,7 @@ bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ)
 	@echo "Linking shared library $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_OBJ) -lpam $(DYNEXP) $(LIBS) $(LDAP_LIBS) $(KRB5LIBS)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_OBJ) -lpam $(DYNEXP) $(LIBS) $(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS)
 
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
