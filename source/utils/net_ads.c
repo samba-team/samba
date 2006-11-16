@@ -819,6 +819,7 @@ static int net_ads_leave(int argc, const char **argv)
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *ctx;
 	DOM_SID *dom_sid = NULL;
+	char *short_domain_name = NULL;      
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
@@ -845,15 +846,15 @@ static int net_ads_leave(int argc, const char **argv)
 		goto done;
 	}
 	
-	saf_store( cli->server_domain, cli->desthost );
-
-	if ( !NT_STATUS_IS_OK(netdom_get_domain_sid( ctx, cli, &dom_sid )) ) {
+	if ( !NT_STATUS_IS_OK(netdom_get_domain_sid( ctx, cli, &short_domain_name, &dom_sid )) ) {
 		goto done;
 	}
 
+	saf_delete( short_domain_name );
+
 	status = netdom_leave_domain(ctx, cli, dom_sid);
 
-	/* Ty and delete it via LDAP - the old way we used to. */
+	/* Try and delete it via LDAP - the old way we used to. */
 
 	adsret = ads_leave_realm(ads, global_myname());
 	if (ADS_ERR_OK(adsret)) {
@@ -962,7 +963,8 @@ static NTSTATUS check_ads_config( void )
  ********************************************************************/
 
 static NTSTATUS net_join_domain(TALLOC_CTX *ctx, const char *servername, 
-				struct in_addr *ip, DOM_SID **dom_sid, 
+				struct in_addr *ip, char **domain, 
+				DOM_SID **dom_sid, 
 				const char *password)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -973,12 +975,15 @@ static NTSTATUS net_join_domain(TALLOC_CTX *ctx, const char *servername,
 		goto done;
 	}
 	
-	saf_store( cli->server_domain, cli->desthost );
-
-	ret = netdom_get_domain_sid( ctx, cli, dom_sid );
+	ret = netdom_get_domain_sid( ctx, cli, domain, dom_sid );
 	if ( !NT_STATUS_IS_OK(ret) ) {
 		goto done;
 	}
+
+	/* cli->server_domain is not filled in when using krb5 
+	   session setups */
+
+	saf_store( *domain, cli->desthost );
 
 	ret = netdom_join_domain( ctx, cli, *dom_sid, password, ND_TYPE_AD );
 
@@ -1331,9 +1336,8 @@ int net_ads_join(int argc, const char **argv)
 	ADS_STATUS status;
 	NTSTATUS nt_status;
 	char *machine_account = NULL;
-	const char *short_domain_name = NULL;
+	char *short_domain_name = NULL;
 	char *tmp_password, *password;
-	struct cldap_netlogon_reply cldap_reply;
 	TALLOC_CTX *ctx = NULL;
 	DOM_SID *domain_sid = NULL;
 	BOOL createupn = False;
@@ -1410,29 +1414,20 @@ int net_ads_join(int argc, const char **argv)
 	password = talloc_strdup(ctx, tmp_password);
 	
 	nt_status = net_join_domain(ctx, ads->config.ldap_server_name, 
-				    &ads->ldap_ip, &domain_sid, password);
+				    &ads->ldap_ip, &short_domain_name, &domain_sid, password);
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(1, ("call of net_join_domain failed: %s\n", 
 			  get_friendly_nt_error_msg(nt_status)));
 		goto fail;
 	}
-	
+
 	/* Check the short name of the domain */
 	
-	ZERO_STRUCT( cldap_reply );
-	
-	if ( ads_cldap_netlogon( ads->config.ldap_server_name, 
-		ads->server.realm, &cldap_reply ) ) 
-	{
-		short_domain_name = talloc_strdup( ctx, cldap_reply.netbios_domain );
-		if ( !strequal(lp_workgroup(), short_domain_name) ) {
-			d_printf("The workgroup in smb.conf does not match the short\n");
-			d_printf("domain name obtained from the server.\n");
-			d_printf("Using the name [%s] from the server.\n", short_domain_name);
-			d_printf("You should set \"workgroup = %s\" in smb.conf.\n", short_domain_name);
-		}
-	} else {
-		short_domain_name = lp_workgroup();
+	if ( !strequal(lp_workgroup(), short_domain_name) ) {
+		d_printf("The workgroup in smb.conf does not match the short\n");
+		d_printf("domain name obtained from the server.\n");
+		d_printf("Using the name [%s] from the server.\n", short_domain_name);
+		d_printf("You should set \"workgroup = %s\" in smb.conf.\n", short_domain_name);
 	}
 	
 	d_printf("Using short domain name -- %s\n", short_domain_name);
@@ -1519,7 +1514,7 @@ int net_ads_join(int argc, const char **argv)
 	/* exit from this block using machine creds */
 #endif
 
-	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->config.realm);
+	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->server.realm);
 
 	SAFE_FREE(machine_account);
 	TALLOC_FREE( ctx );

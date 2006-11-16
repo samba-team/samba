@@ -157,12 +157,12 @@ int netdom_store_machine_account( const char *domain, DOM_SID *sid, const char *
 /*******************************************************************
  ********************************************************************/
 
-NTSTATUS netdom_get_domain_sid( TALLOC_CTX *mem_ctx, struct cli_state *cli, DOM_SID **sid )
+NTSTATUS netdom_get_domain_sid( TALLOC_CTX *mem_ctx, struct cli_state *cli, 
+				char **domain, DOM_SID **sid )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	POLICY_HND lsa_pol;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	char *domain = NULL;
 
 	if ( (pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &status)) == NULL ) {
 		DEBUG(0, ("Error connecting to LSA pipe. Error was %s\n",
@@ -176,7 +176,7 @@ NTSTATUS netdom_get_domain_sid( TALLOC_CTX *mem_ctx, struct cli_state *cli, DOM_
 		return status;
 
 	status = rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, 
-			&lsa_pol, 5, &domain, sid);
+			&lsa_pol, 5, domain, sid);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
