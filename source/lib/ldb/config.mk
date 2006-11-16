@@ -75,16 +75,6 @@ OBJ_FILES = \
 # End MODULE ldb_rdn_name
 ################################################
 
-# ################################################
-# # Start MODULE ldb_schema
-# [MODULE::ldb_schema]
-# INIT_FUNCTION = ldb_schema_init
-# SUBSYSTEM = ldb
-# OBJ_FILES = \
-# 		modules/schema.o
-# # End MODULE ldb_schema
-# ################################################
-
 ################################################
 # Start MODULE ldb_ildap
 [MODULE::ldb_ildap]
