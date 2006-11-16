@@ -111,8 +111,8 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 		mpr_Return(eid, mprCreateUndefinedVar());
 	} else {
 		mpr_Return(eid, mprLdbArray(ldb, res->msgs, res->count, "ldb_message"));
+		talloc_free(res);
 	}
-	talloc_free(res);
 	talloc_free(tmp_ctx);
 	return 0;
 

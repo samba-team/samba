@@ -200,9 +200,12 @@ static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX
 	do {
 		ret = ldb_search(module->ldb, sdn, LDB_SCOPE_BASE, 
 				 "(|(objectClass=domain)(objectClass=builtinDomain))", attrs, &res);
-		talloc_steal(local_ctx, res);
-		if (ret == LDB_SUCCESS && res->count == 1)
-			break;
+		if (ret == LDB_SUCCESS) {
+			talloc_steal(local_ctx, res);
+			if (res->count == 1) {
+				break;
+			}
+		}
 	} while ((sdn = ldb_dn_get_parent(local_ctx, sdn)));
 
 	if (ret != LDB_SUCCESS || res->count != 1) {
