@@ -118,7 +118,8 @@ hx509_get_error_string(hx509_context context, int error_code)
     }
 
     for (msg = context->error; msg; msg = msg->next)
-	p = rk_strpoolprintf(p, "%s", msg->msg);
+	p = rk_strpoolprintf(p, "%s%s", msg->msg, 
+			     msg->next != NULL ? "; " : "");
 
     return rk_strpoolcollect(p);
 }
