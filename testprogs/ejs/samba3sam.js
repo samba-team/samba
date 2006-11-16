@@ -43,7 +43,7 @@ function setup_modules(ldb, s3, s4, ldif)
 	var ldif = "
 dn: @MAP=samba3sam
 @FROM: " + s4.BASEDN + "
-@TO: " + s3.BASEDN + "
+@TO: sambaDomainName=TESTS," + s3.BASEDN + "
 
 dn: @MODULES
 @LIST: rootdse,paged_results,server_sort,extended_dn,asq,samldb,objectclass,password_hash,operational,objectguid,rdn_name,samba3sam,partition
@@ -79,7 +79,7 @@ function test_s3sam_search(ldb)
 	var msg = ldb.search("(cn=Replicator)");
 	assert(msg.length == 1);
 	println(msg[0].dn);
-	assert(msg[0].dn == "cn=Replicator,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl");
+	assert(msg[0].dn == "cn=Replicator,ou=Groups,dc=vernstok,dc=nl");
 	assert(msg[0].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
 
 	println("Checking mapping of objectClass");
@@ -94,30 +94,36 @@ function test_s3sam_search(ldb)
 	assert(msg != undefined);
 	assert(msg.length == 2);
 	for (var i = 0; i < msg.length; i++) {
-		assert((msg[i].dn == "unixName=Administrator,ou=Users,sambaDomainName=TESTS,dc=vernstok,dc=nl") ||
-		       (msg[i].dn == "unixName=nobody,ou=Users,sambaDomainName=TESTS,dc=vernstok,dc=nl"));
+		assert((msg[i].dn == "unixName=Administrator,ou=Users,dc=vernstok,dc=nl") ||
+		       (msg[i].dn == "unixName=nobody,ou=Users,dc=vernstok,dc=nl"));
 	}
 }
 
 function test_s3sam_modify(ldb, s3)
 {
+	var msg, ok;
 	println("Adding a record that will be fallbacked");
 	ok = ldb.add("
-dn: cn=Foo,dc=idealx,dc=org
+dn: cn=Foo
 foo: bar
 blah: Blie
 cn: Foo
 showInAdvancedViewOnly: TRUE
 ");
+	if (!ok) {
+		println(ldb.errstring());
+		assert(ok);
+	}
 	assert(ok);
 
 	println("Checking for existence of record (local)");
 	/* TODO: This record must be searched in the local database, which is currently only supported for base searches
 	 * msg = ldb.search("(cn=Foo)", new Array('foo','blah','cn','showInAdvancedViewOnly'));
 	 * TODO: Actually, this version should work as well but doesn't...
-	 * msg = ldb.search("(cn=Foo)", "dc=idealx,dc=org", ldb.LDB_SCOPE_SUBTREE new Array('foo','blah','cn','showInAdvancedViewOnly'));
+	 * 
 	 */
-	msg = ldb.search("", "cn=Foo,dc=idealx,dc=org", ldb.LDB_SCOPE_BASE new Array('foo','blah','cn','showInAdvancedViewOnly'));
+	var attrs =  new Array('foo','blah','cn','showInAdvancedViewOnly');
+	msg = ldb.search("(cn=Foo)", "cn=Foo", ldb.LDB_SCOPE_BASE, attrs);
 	assert(msg.length == 1);
 	assert(msg[0].showInAdvancedViewOnly == "TRUE");
 	assert(msg[0].foo == "bar");
@@ -125,12 +131,16 @@ showInAdvancedViewOnly: TRUE
 
 	println("Adding record that will be mapped");
 	ok = ldb.add("
-dn: cn=Niemand,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Niemand,cn=Users,dc=vernstok,dc=nl
 objectClass: user
 unixName: bin
 unicodePwd: geheim
 cn: Niemand
 ");
+	if (!ok) {
+		println(ldb.errstring());
+		assert(ok);
+	}
 	assert(ok);
 
 	println("Checking for existence of record (remote)");
@@ -148,6 +158,7 @@ cn: Niemand
 
 	println("Checking for existence of record (local || remote)");
 	msg = ldb.search("(|(unixName=bin)(unicodePwd=geheim))", new Array('unixName','cn','dn', 'unicodePwd'));
+	println("got " + msg.length + " replies");
 	assert(msg.length == 1);		// TODO: should check with more records
 	assert(msg[0].cn == "Niemand");
 	assert(msg[0].unixName == "bin" || msg[0].unicodePwd == "geheim");
@@ -160,11 +171,15 @@ cn: Niemand
 
 	println("Adding attribute...");
 	ok = ldb.modify("
-dn: cn=Niemand,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Niemand,cn=Users,dc=vernstok,dc=nl
 changetype: modify
 add: description
 description: Blah
 ");
+	if (!ok) {
+		println(ldb.errstring());
+		assert(ok);
+	}
 	assert(ok);
 
 	println("Checking whether changes are still there...");
@@ -175,11 +190,15 @@ description: Blah
 
 	println("Modifying attribute...");
 	ok = ldb.modify("
-dn: cn=Niemand,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Niemand,cn=Users,dc=vernstok,dc=nl
 changetype: modify
 replace: description
 description: Blie
 ");
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
 	assert(ok);
 
 	println("Checking whether changes are still there...");
@@ -189,10 +208,14 @@ description: Blie
 
 	println("Deleting attribute...");
 	ok = ldb.modify("
-dn: cn=Niemand,sambaDomainName=TESTS,dc=vernstok,dc=nl
+dn: cn=Niemand,cn=Users,dc=vernstok,dc=nl
 changetype: modify
 delete: description
 ");
+	if (!ok) {
+		println(ldb.errstring());
+		assert(ok);
+	}
 	assert(ok);
 
 	println("Checking whether changes are no longer there...");
@@ -201,19 +224,23 @@ delete: description
 	assert(msg[0].description == undefined);
 
 	println("Renaming record...");
-	ok = ldb.rename("cn=Niemand,sambaDomainName=TESTS,dc=vernstok,dc=nl", "cn=Niemand,dc=vernstok,dc=nl");
-
-	println("Checking whether DN has changed...");
-	msg = ldb.search("(cn=Niemand)");
-	assert(msg.length == 1);
-	assert(msg[0].dn == "cn=Niemand,dc=vernstok,dc=nl");
-
-	println("Deleting record...");
-	ok = ldb.del("cn=Niemand,dc=vernstok,dc=nl");
+	ok = ldb.rename("cn=Niemand,cn=Users,dc=vernstok,dc=nl", "cn=Niemand2,cn=Users,dc=vernstok,dc=nl");
 	assert(ok);
 
+	println("Checking whether DN has changed...");
+	msg = ldb.search("(cn=Niemand2)");
+	assert(msg.length == 1);
+	assert(msg[0].dn == "cn=Niemand2,cn=Users,dc=vernstok,dc=nl");
+
+	println("Deleting record...");
+	ok = ldb.del("cn=Niemand2,cn=Users,dc=vernstok,dc=nl");
+	if (!ok) {
+		println(ldb.errstring());
+		assert(ok);
+	}
+
 	println("Checking whether record is gone...");
-	msg = ldb.search("(cn=Niemand)");
+	msg = ldb.search("(cn=Niemand2)");
 	assert(msg.length == 0);
 }
 
@@ -401,13 +428,13 @@ description: y
 	/* In most cases, this even works when the mapping is missing
 	 * a `convert_operator' by enumerating the remote db. */
 	attrs = new Array("objectCategory", "lastLogon", "primaryGroupID");
-	res = ldb.search("(primaryGroupID=1-5-21-4231626423-2410014848-2360679739-512)", NULL, ldb. SCOPE_DEFAULT, attrs);
+	res = ldb.search("(primaryGroupID=512)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res != undefined);
 	assert(res.length == 1);
 	assert(res[0].dn == s4.dn("cn=A"));
 	assert(res[0].objectCategory == undefined);
 	assert(res[0].lastLogon == "x");
-	assert(res[0].primaryGroupID == "1-5-21-4231626423-2410014848-2360679739-512");
+	assert(res[0].primaryGroupID == "512");
 
 	/* TODO: There should actually be two results, A and X.  The
 	 * primaryGroupID of X seems to get corrupted somewhere, and the
@@ -1107,6 +1134,11 @@ function make_dn(rdn)
 	return rdn + ",sambaDomainName=TESTS," + this.BASEDN;
 }
 
+function make_s4dn(rdn)
+{
+	return rdn + "," + this.BASEDN;
+}
+
 var ldb = ldb_init();
 
 sys = sys_init();
@@ -1118,12 +1150,12 @@ samba4.file = prefix + "/" + "samba4.ldb";
 samba4.url = "tdb://" + samba4.file;
 samba4.BASEDN = "dc=vernstok,dc=nl";
 samba4.db = ldb_init();
-samba4.dn = make_dn;
+samba4.dn = make_s4dn;
 
 var samba3 = new Object("samba3 partition info");
 samba3.file = prefix + "/" + "samba3.ldb";
 samba3.url = "tdb://" + samba3.file;
-samba3.BASEDN = "cn=Samba3Sam," + samba4.BASEDN;
+samba3.BASEDN = "cn=Samba3Sam";
 samba3.db = ldb_init();
 samba3.dn = make_dn;
 
