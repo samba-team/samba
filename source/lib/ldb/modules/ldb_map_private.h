@@ -36,6 +36,8 @@ struct map_context {
 	const struct ldb_dn *local_dn;
 	const struct ldb_parse_tree *local_tree;
 	const char * const *local_attrs;
+	const char * const *remote_attrs;
+	const char * const *all_attrs;
 
 	struct ldb_request *orig_req;
 	struct ldb_request *local_req;

@@ -390,13 +390,14 @@ const char *map_attr_map_remote(void *mem_ctx, const struct ldb_map_attribute *m
 
 
 /* Merge two lists of attributes into a single one. */
-int map_attrs_merge(struct ldb_module *module, void *mem_ctx, const char ***attrs, const char * const *more_attrs)
+int map_attrs_merge(struct ldb_module *module, void *mem_ctx, 
+		    const char ***attrs, const char * const *more_attrs)
 {
 	int i, j, k;
 
 	for (i = 0; *attrs && (*attrs)[i]; i++) /* noop */ ;
 	for (j = 0; more_attrs && more_attrs[j]; j++) /* noop */ ;
-
+	
 	*attrs = talloc_realloc(mem_ctx, *attrs, const char *, i+j+1);
 	if (*attrs == NULL) {
 		map_oom(module);
@@ -404,7 +405,7 @@ int map_attrs_merge(struct ldb_module *module, void *mem_ctx, const char ***attr
 	}
 
 	for (k = 0; k < j; k++) {
-		(*attrs)[i+k] = more_attrs[k];
+		(*attrs)[i + k] = more_attrs[k];
 	}
 
 	(*attrs)[i+k] = NULL;
@@ -416,7 +417,8 @@ int map_attrs_merge(struct ldb_module *module, void *mem_ctx, const char ***attr
  * ================== */
 
 /* Map an ldb value into the remote partition. */
-struct ldb_val ldb_val_map_local(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, const struct ldb_val *val)
+struct ldb_val ldb_val_map_local(struct ldb_module *module, void *mem_ctx, 
+				 const struct ldb_map_attribute *map, const struct ldb_val *val)
 {
 	if (map && (map->type == MAP_CONVERT) && (map->u.convert.convert_local)) {
 		return map->u.convert.convert_local(module, mem_ctx, val);
@@ -426,7 +428,8 @@ struct ldb_val ldb_val_map_local(struct ldb_module *module, void *mem_ctx, const
 }
 
 /* Map an ldb value back into the local partition. */
-struct ldb_val ldb_val_map_remote(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, const struct ldb_val *val)
+struct ldb_val ldb_val_map_remote(struct ldb_module *module, void *mem_ctx, 
+				  const struct ldb_map_attribute *map, const struct ldb_val *val)
 {
 	if (map && (map->type == MAP_CONVERT) && (map->u.convert.convert_remote)) {
 		return map->u.convert.convert_remote(module, mem_ctx, val);
@@ -679,7 +682,7 @@ static void map_objectclass_generate_remote(struct ldb_module *module, const cha
 	int i;
 
 	/* Find old local objectClass */
-	oc = ldb_msg_find_element(old, local_attr);
+	oc = ldb_msg_find_element(old, "objectClass");
 	if (oc == NULL) {
 		return;
 	}
@@ -743,14 +746,14 @@ static struct ldb_val map_objectclass_convert_remote(struct ldb_module *module, 
 }
 
 /* Generate a local message with a mapped objectClass. */
-static struct ldb_message_element *map_objectclass_generate_local(struct ldb_module *module, void *mem_ctx, const char *remote_attr, const struct ldb_message *remote)
+static struct ldb_message_element *map_objectclass_generate_local(struct ldb_module *module, void *mem_ctx, const char *local_attr, const struct ldb_message *remote)
 {
 	struct ldb_message_element *el, *oc;
 	struct ldb_val val;
 	int i;
 
 	/* Find old remote objectClass */
-	oc = ldb_msg_find_element(remote, remote_attr);
+	oc = ldb_msg_find_element(remote, "objectClass");
 	if (oc == NULL) {
 		return NULL;
 	}
@@ -772,7 +775,7 @@ static struct ldb_message_element *map_objectclass_generate_local(struct ldb_mod
 	}
 
 	/* Copy remote element name "objectClass" */
-	el->name = talloc_strdup(el, remote_attr);
+	el->name = talloc_strdup(el, local_attr);
 
 	/* Convert all remote objectClasses */
 	for (i = 0; i < el->num_values; i++) {
