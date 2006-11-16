@@ -154,7 +154,8 @@ static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	const char *s1=(const char *)v1->data, *s2=(const char *)v2->data;
-	char *b1, *b2, *u1, *u2;
+	const char *u1, *u2;
+	char *b1, *b2;
 	int ret;
 	while (*s1 == ' ') s1++;
 	while (*s2 == ' ') s2++;
@@ -185,11 +186,14 @@ static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 
 utf8str:
 	/* no need to recheck from the start, just from the first utf8 char found */
-	b1 = u1 = ldb_casefold(ldb, mem_ctx, s1);
-	b2 = u2 = ldb_casefold(ldb, mem_ctx, s2);
+	b1 = ldb_casefold(ldb, mem_ctx, s1);
+	b2 = ldb_casefold(ldb, mem_ctx, s2);
 
-	if (u1 && u2) {
+	if (b1 && b2) {
 		/* Both strings converted correctly */
+
+		u1 = b1;
+		u2 = b2;
 	} else {
 		/* One of the strings was not UTF8, so we have no options but to do a binary compare */
 
