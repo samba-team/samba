@@ -1202,7 +1202,7 @@ bin/libaddns.a: $(LIBADDNS_OBJ)
 bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_OBJ)
 	@echo Linking libsmbclient shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_OBJ) $(LDFLAGS) $(LIBS) \
-		$(KRB5LIBS) $(LDAP_LIBS) \
+		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
 
 bin/libsmbclient.a: $(LIBSMBCLIENT_OBJ)
