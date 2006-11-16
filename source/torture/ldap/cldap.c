@@ -210,7 +210,9 @@ static BOOL test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
 	NTSTATUS status;
 	struct cldap_search search;
 	BOOL ret = True;
-	const char *attrs[] = { "currentTime", "highestCommittedUSN", NULL };
+	const char *attrs1[] = { "currentTime", "highestCommittedUSN", NULL };
+	const char *attrs2[] = { "currentTime", "highestCommittedUSN", "netlogon", NULL };
+	const char *attrs3[] = { "netlogon", NULL };
 
 	ZERO_STRUCT(search);
 	search.in.dest_address = dest;
@@ -231,22 +233,39 @@ static BOOL test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
 
 	printf("fetching currentTime and USN\n");
 	search.in.filter = "(objectclass=*)";
-	search.in.attributes = attrs;
+	search.in.attributes = attrs1;
 
 	status = cldap_search(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	
+	if (DEBUGLVL(3)) cldap_dump_results(&search);
+
+	printf("Testing currentTime, USN and netlogon\n");
+	search.in.filter = "(objectclass=*)";
+	search.in.attributes = attrs2;
+
+	status = cldap_search(cldap, mem_ctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	if (DEBUGLVL(3)) cldap_dump_results(&search);
+
+	printf("Testing objectClass=* and netlogon\n");
+	search.in.filter = "(objectclass2=*)";
+	search.in.attributes = attrs2;
+
+	status = cldap_search(cldap, mem_ctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
 	if (DEBUGLVL(3)) cldap_dump_results(&search);
 
 	printf("Testing a false expression\n");
 	search.in.filter = "(&(objectclass=*)(highestCommittedUSN=2))";
-	search.in.attributes = attrs;
+	search.in.attributes = attrs1;
 
 	status = cldap_search(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
-	if (DEBUGLVL(3)) cldap_dump_results(&search);
-	
+
+	if (DEBUGLVL(3)) cldap_dump_results(&search);	
 
 done:
 	return ret;	
@@ -261,9 +280,7 @@ BOOL torture_cldap(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_cldap");
 
 	ret &= test_cldap_netlogon(mem_ctx, host);
-
-	/* at the moment don't consider this failing to be a failure */
-	test_cldap_generic(mem_ctx, host);
+	ret &= test_cldap_generic(mem_ctx, host);
 
 	talloc_free(mem_ctx);
 
