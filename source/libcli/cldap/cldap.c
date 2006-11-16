@@ -450,7 +450,7 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 
 	if (!ldap_decode(&req->asn1, ldap_msg)) {
 		talloc_free(req);
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 	}
 
 	ZERO_STRUCT(io->out);
@@ -464,13 +464,13 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 		/* decode the 2nd part */
 		if (!ldap_decode(&req->asn1, ldap_msg)) {
 			talloc_free(req);
-			return NT_STATUS_INVALID_PARAMETER;
+			return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 		}
 	}
 
 	if (ldap_msg->type != LDAP_TAG_SearchResultDone) {
 		talloc_free(req);
-		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 	}
 
 	io->out.result = talloc(mem_ctx, struct ldap_Result);
@@ -478,6 +478,10 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 	*io->out.result = ldap_msg->r.SearchResultDone;
 
 	talloc_free(req);
+
+	if (io->out.result->resultcode != LDAP_SUCCESS) {
+		return NT_STATUS_LDAP(io->out.result->resultcode);
+	}
 	return NT_STATUS_OK;
 }
 
