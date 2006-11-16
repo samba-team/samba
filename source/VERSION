@@ -47,7 +47,7 @@ SAMBA_VERSION_REVISION=
 # e.g. SAMBA_VERSION_TP_RELEASE=1                      #
 #  ->  "4.0.0tp1"                                      #
 ########################################################
-SAMBA_VERSION_TP_RELEASE=3
+SAMBA_VERSION_TP_RELEASE=4
 
 ########################################################
 # For 'pre' releases the version will be               #
