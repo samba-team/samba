@@ -654,7 +654,7 @@ const char **ldb_attr_list_copy(TALLOC_CTX *mem_ctx, const char * const *attrs)
 
 /*
   copy an attribute list. This only copies the array, not the elements
-  (ie. the elements are left as the same pointers)
+  (ie. the elements are left as the same pointers).  The new attribute is added to the list.
 */
 const char **ldb_attr_list_copy_add(TALLOC_CTX *mem_ctx, const char * const *attrs, const char *new_attr)
 {
@@ -735,6 +735,18 @@ void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr)
 		}
 		msg->num_elements--;
 	}
+}
+
+/*
+  remove the specified element in a search result
+*/
+void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element *el)
+{
+	int n = (el - msg->elements);
+	if (n != msg->num_elements-1) {
+		memmove(el, el+1, ((msg->num_elements-1) - n)*sizeof(*el));
+	}
+	msg->num_elements--;
 }
 
 /*

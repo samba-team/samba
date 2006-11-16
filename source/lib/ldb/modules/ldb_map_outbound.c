@@ -75,7 +75,8 @@ failed:
 }
 
 /* Collect attributes that are mapped into the remote partition. */
-static const char **map_attrs_collect_remote(struct ldb_module *module, void *mem_ctx, const char * const *attrs)
+static const char **map_attrs_collect_remote(struct ldb_module *module, void *mem_ctx, 
+					     const char * const *attrs)
 {
 	const struct ldb_map_context *data = map_get_context(module);
 	const char **result;
@@ -172,10 +173,10 @@ failed:
 
 /* Split attributes that stay in the local partition from those that
  * are mapped into the remote partition. */
-static int map_attrs_partition(struct ldb_module *module, void *local_ctx, void *remote_ctx, const char ***local_attrs, const char ***remote_attrs, const char * const *attrs)
+static int map_attrs_partition(struct ldb_module *module, void *mem_ctx, const char ***local_attrs, const char ***remote_attrs, const char * const *attrs)
 {
-	*local_attrs = map_attrs_select_local(module, local_ctx, attrs);
-	*remote_attrs = map_attrs_collect_remote(module, remote_ctx, attrs);
+	*local_attrs = map_attrs_select_local(module, mem_ctx, attrs);
+	*remote_attrs = map_attrs_collect_remote(module, mem_ctx, attrs);
 
 	return 0;
 }
@@ -213,7 +214,11 @@ static int ldb_msg_replace(struct ldb_message *msg, const struct ldb_message_ele
 }
 
 /* Map a message element back into the local partition. */
-static struct ldb_message_element *ldb_msg_el_map_remote(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, const struct ldb_message_element *old)
+static struct ldb_message_element *ldb_msg_el_map_remote(struct ldb_module *module, 
+							 void *mem_ctx, 
+							 const struct ldb_map_attribute *map, 
+							 const char *attr_name,
+							 const struct ldb_message_element *old)
 {
 	struct ldb_message_element *el;
 	int i;
@@ -232,7 +237,12 @@ static struct ldb_message_element *ldb_msg_el_map_remote(struct ldb_module *modu
 		return NULL;
 	}
 
-	el->name = map_attr_map_remote(el, map, old->name);
+	el->name = talloc_strdup(el, attr_name);
+	if (el->name == NULL) {
+		talloc_free(el);
+		map_oom(module);
+		return NULL;
+	}
 
 	for (i = 0; i < el->num_values; i++) {
 		el->values[i] = ldb_val_map_remote(module, el->values, map, &old->values[i]);
@@ -242,37 +252,64 @@ static struct ldb_message_element *ldb_msg_el_map_remote(struct ldb_module *modu
 }
 
 /* Merge a remote message element into a local message. */
-static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local, struct ldb_message *remote, const char *attr_name, const struct ldb_message_element *old)
+static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local, 
+			    struct ldb_message *remote, const char *attr_name)
 {
 	const struct ldb_map_context *data = map_get_context(module);
-	const struct ldb_map_attribute *map = map_attr_find_remote(data, attr_name);
-	struct ldb_message_element *el=NULL;
+	const struct ldb_map_attribute *map;
+	struct ldb_message_element *old, *el=NULL;
+	const char *remote_name = NULL;
+
+	/* We handle wildcards in ldb_msg_el_merge_wildcard */
+	if (ldb_attr_cmp(attr_name, "*") == 0) {
+		return 0;
+	}
+
+	map = map_attr_find_local(data, attr_name);
 
 	/* Unknown attribute in remote message:
 	 * skip, attribute was probably auto-generated */
 	if (map == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "ldb_map: "
-			  "Skipping attribute '%s': no mapping found\n",
-			  old->name);
 		return 0;
 	}
 
 	switch (map->type) {
 	case MAP_IGNORE:
-		return -1;
+		break;
+	case MAP_CONVERT:
+		remote_name = map->u.convert.remote_name;
+		break;
+	case MAP_KEEP:
+		remote_name = attr_name;
+		break;
+	case MAP_RENAME:
+		remote_name = map->u.rename.remote_name;
+		break;
+	case MAP_GENERATE:
+		break;
+	}
+
+	switch (map->type) {
+	case MAP_IGNORE:
+		return 0;
 
 	case MAP_CONVERT:
 		if (map->u.convert.convert_remote == NULL) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "Skipping attribute '%s': "
 				  "'convert_remote' not set\n",
-				  old->name);
+				  attr_name);
 			return 0;
 		}
 		/* fall through */
 	case MAP_KEEP:
 	case MAP_RENAME:
-		el = ldb_msg_el_map_remote(module, local, map, old);
+		old = ldb_msg_find_element(remote, remote_name);
+		if (old) {
+			el = ldb_msg_el_map_remote(module, local, map, attr_name, old);
+		} else {
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+		}
 		break;
 
 	case MAP_GENERATE:
@@ -280,19 +317,70 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "Skipping attribute '%s': "
 				  "'generate_local' not set\n",
-				  old->name);
+				  attr_name);
 			return 0;
 		}
 
-		el = map->u.generate.generate_local(module, local, old->name, remote);
+		el = map->u.generate.generate_local(module, local, attr_name, remote);
+		if (!el) {
+			/* Generation failure is probably due to lack of source attributes */
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+		}
 		break;
 	}
 
 	if (el == NULL) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	return ldb_msg_replace(local, el);
+}
+
+/* Handle wildcard parts of merging a remote message element into a local message. */
+static int ldb_msg_el_merge_wildcard(struct ldb_module *module, struct ldb_message *local, 
+				     struct ldb_message *remote)
+{
+	const struct ldb_map_context *data = map_get_context(module);
+	const struct ldb_map_attribute *map = map_attr_find_local(data, "*");
+	struct ldb_message_element *el=NULL;
+	int i, ret;
+
+	/* Perhaps we have a mapping for "*" */
+	if (map && map->type == MAP_KEEP) {
+		/* We copy everything over, and hope that anything with a 
+		   more specific rule is overwritten, or caught by the test below */
+		for (i = 0; i < remote->num_elements; i++) {
+			if (map_attr_find_local(data, remote->elements[i].name)) {
+				/* The name this would have been copied to has a more specific mapping */
+				continue;
+			}
+			el = ldb_msg_el_map_remote(module, local, map, remote->elements[i].name,
+						   &remote->elements[i]);
+			if (el == NULL) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			
+			ret = ldb_msg_replace(local, el);
+			if (ret) {
+				return ret;
+			}
+		}
+	}
+	
+	/* Now walk the list of possible mappings, and apply each */
+	for (i = 0; data->attribute_maps[i].local_name; i++) {
+		ret = ldb_msg_el_merge(module, local, remote, 
+				       data->attribute_maps[i].local_name);
+		if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
+			continue;
+		} else if (ret) {
+			return ret;
+		} else {
+			continue;
+		}
+	}
+
+	return 0;
 }
 
 /* Mapping messages
@@ -314,16 +402,36 @@ static int ldb_msg_merge_local(struct ldb_module *module, struct ldb_message *ms
 }
 
 /* Merge a local and a remote message into a single local one. */
-static int ldb_msg_merge_remote(struct ldb_module *module, struct ldb_message *local, struct ldb_message *remote)
+static int ldb_msg_merge_remote(struct map_context *ac, struct ldb_message *local, 
+				struct ldb_message *remote)
 {
 	int i, ret;
+	const char * const *attrs = ac->all_attrs;
+	if (!attrs) {
+		ret = ldb_msg_el_merge_wildcard(ac->module, local, remote);
+		if (ret) {
+			return ret;
+		}
+	}
+
+	for (i = 0; attrs && attrs[i]; i++) {
+		if (ldb_attr_cmp(attrs[i], "*") == 0) {
+			ret = ldb_msg_el_merge_wildcard(ac->module, local, remote);
+			if (ret) {
+				return ret;
+			}
+			break;
+		}
+	}
 
 	/* Try to map each attribute back;
 	 * Add to local message is possible,
 	 * Overwrite old local attribute if necessary */
-	for (i = 0; i < remote->num_elements; i++) {
-		ret = ldb_msg_el_merge(module, local, remote, remote->elements[i].name, &remote->elements[i]);
-		if (ret) {
+	for (i = 0; attrs && attrs[i]; i++) {
+		ret = ldb_msg_el_merge(ac->module, local, remote, 
+				       attrs[i]);
+		if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
+		} else if (ret) {
 			return ret;
 		}
 	}
@@ -335,7 +443,7 @@ static int ldb_msg_merge_remote(struct ldb_module *module, struct ldb_message *l
  * ====================== */
 
 /* Map a search result back into the local partition. */
-static int map_reply_remote(struct ldb_module *module, struct ldb_reply *ares)
+static int map_reply_remote(struct map_context *ac, struct ldb_reply *ares)
 {
 	struct ldb_message *msg;
 	struct ldb_dn *dn;
@@ -349,19 +457,19 @@ static int map_reply_remote(struct ldb_module *module, struct ldb_reply *ares)
 	/* Create a new result message */
 	msg = ldb_msg_new(ares);
 	if (msg == NULL) {
-		map_oom(module);
+		map_oom(ac->module);
 		return -1;
 	}
 
 	/* Merge remote message into new message */
-	ret = ldb_msg_merge_remote(module, msg, ares->message);
+	ret = ldb_msg_merge_remote(ac, msg, ares->message);
 	if (ret) {
 		talloc_free(msg);
 		return ret;
 	}
 
 	/* Create corresponding local DN */
-	dn = ldb_dn_map_rebase_remote(module, msg, ares->message->dn);
+	dn = ldb_dn_map_rebase_remote(ac->module, msg, ares->message->dn);
 	if (dn == NULL) {
 		talloc_free(msg);
 		return -1;
@@ -419,7 +527,8 @@ static int ldb_parse_tree_collect_attrs(struct ldb_module *module, void *mem_ctx
 	case LDB_OP_OR:
 	case LDB_OP_AND:		/* attributes stored in list of subtrees */
 		for (i = 0; i < tree->u.list.num_elements; i++) {
-			ret = ldb_parse_tree_collect_attrs(module, mem_ctx, attrs, tree->u.list.elements[i]);
+			ret = ldb_parse_tree_collect_attrs(module, mem_ctx, 
+							   attrs, tree->u.list.elements[i]);
 			if (ret) {
 				return ret;
 			}
@@ -827,23 +936,34 @@ static int ldb_parse_tree_partition(struct ldb_module *module, void *local_ctx, 
 /* Collect a list of attributes required either explicitly from a
  * given list or implicitly  from a given parse tree; split the
  * collected list into local and remote parts. */
-static int map_attrs_collect_and_partition(struct ldb_module *module, void *local_ctx, void *remote_ctx, const char ***local_attrs, const char ***remote_attrs, const char * const *search_attrs, const struct ldb_parse_tree *tree)
+static int map_attrs_collect_and_partition(struct ldb_module *module, struct map_context *ac,
+					   const char * const *search_attrs, 
+					   const struct ldb_parse_tree *tree)
 {
 	void *tmp_ctx;
 	const char **tree_attrs;
+	const char **remote_attrs;
+	const char **local_attrs;
 	int ret;
 
 	/* Clear initial lists of partitioned attributes */
-	*local_attrs = NULL;
-	*remote_attrs = NULL;
+
+	/* Clear initial lists of partitioned attributes */
 
 	/* There is no tree, just partition the searched attributes */
 	if (tree == NULL) {
-		return map_attrs_partition(module, local_ctx, remote_ctx, local_attrs, remote_attrs, search_attrs);
+		ret = map_attrs_partition(module, ac, 
+					  &local_attrs, &remote_attrs, search_attrs);
+		if (ret == 0) {
+			ac->local_attrs = local_attrs;
+			ac->remote_attrs = remote_attrs;
+			ac->all_attrs = search_attrs;
+		}
+		return ret; 
 	}
 
 	/* Create context for temporary memory */
-	tmp_ctx = talloc_new(local_ctx);
+	tmp_ctx = talloc_new(ac);
 	if (tmp_ctx == NULL) {
 		goto oom;
 	}
@@ -869,8 +989,15 @@ static int map_attrs_collect_and_partition(struct ldb_module *module, void *loca
 	}
 
 	/* Split local from remote attributes */
-	ret = map_attrs_partition(module, local_ctx, remote_ctx, local_attrs, remote_attrs, tree_attrs);
-
+	ret = map_attrs_partition(module, ac, &local_attrs, 
+				  &remote_attrs, tree_attrs);
+	
+	if (ret == 0) {
+		ac->local_attrs = local_attrs;
+		ac->remote_attrs = remote_attrs;
+		talloc_steal(ac, tree_attrs);
+		ac->all_attrs = tree_attrs;
+	}
 done:
 	/* Free temporary memory */
 	talloc_free(tmp_ctx);
@@ -911,10 +1038,12 @@ int map_up_callback(struct ldb_context *ldb, const struct ldb_request *req, stru
 
 	/* Limit result to requested attrs */
 	if ((req->op.search.attrs) && (!ldb_attr_in_list(req->op.search.attrs, "*"))) {
-		for (i = 0; i < ares->message->num_elements; i++) {
+		for (i = 0; i < ares->message->num_elements; ) {
 			const struct ldb_message_element *el = &ares->message->elements[i];
 			if (!ldb_attr_in_list(req->op.search.attrs, el->name)) {
-				ldb_msg_remove_attr(ares->message, el->name);
+				ldb_msg_remove_element(ares->message, el);
+			} else {
+				i++;
 			}
 		}
 	}
@@ -995,7 +1124,7 @@ int map_remote_search_callback(struct ldb_context *ldb, void *context, struct ld
 	}
 
 	/* Map result record into a local message */
-	ret = map_reply_remote(ac->module, ares);
+	ret = map_reply_remote(ac, ares);
 	if (ret) {
 		talloc_free(ares);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1042,7 +1171,6 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_handle *h;
 	struct map_context *ac;
 	struct ldb_parse_tree *local_tree, *remote_tree;
-	const char **local_attrs, **remote_attrs;
 	int ret;
 
 	const char *wildcard[] = { "*", NULL };
@@ -1096,16 +1224,18 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* Split local from remote attrs */
-	ret = map_attrs_collect_and_partition(module, ac, ac->search_reqs[0], &local_attrs, &remote_attrs, attrs, req->op.search.tree);
+	ret = map_attrs_collect_and_partition(module, ac, 
+					      attrs, req->op.search.tree);
 	if (ret) {
 		goto failed;
 	}
 
-	ac->local_attrs = local_attrs;
-	ac->search_reqs[0]->op.search.attrs = remote_attrs;
+	ac->search_reqs[0]->op.search.attrs = ac->remote_attrs;
 
 	/* Split local from remote tree */
-	ret = ldb_parse_tree_partition(module, ac, ac->search_reqs[0], &local_tree, &remote_tree, req->op.search.tree);
+	ret = ldb_parse_tree_partition(module, ac, ac->search_reqs[0], 
+				       &local_tree, &remote_tree, 
+				       req->op.search.tree);
 	if (ret) {
 		goto failed;
 	}

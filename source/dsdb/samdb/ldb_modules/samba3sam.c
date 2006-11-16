@@ -52,22 +52,25 @@
 /* In Samba4 but not in Samba3:
 */
 
-static struct ldb_message_element *generate_primaryGroupID(struct ldb_module *module, TALLOC_CTX *ctx, const char *attr, const struct ldb_message *remote)
+/* From a sambaPrimaryGroupSID, generate a primaryGroupID (integer) attribute */
+static struct ldb_message_element *generate_primaryGroupID(struct ldb_module *module, TALLOC_CTX *ctx, const char *local_attr, const struct ldb_message *remote)
 {
 	struct ldb_message_element *el;
-	const char *sid = ldb_msg_find_attr_as_string(remote, attr, NULL);
-
+	const char *sid = ldb_msg_find_attr_as_string(remote, "sambaPrimaryGroupSID", NULL);
+	const char *p;
+	
 	if (!sid)
 		return NULL;
 
-	if (strchr(sid, '-') == NULL)
+	p = strrchr(sid, '-');
+	if (!p)
 		return NULL;
 
 	el = talloc_zero(ctx, struct ldb_message_element);
 	el->name = talloc_strdup(ctx, "primaryGroupID");
 	el->num_values = 1;
 	el->values = talloc_array(ctx, struct ldb_val, 1);
-	el->values[0].data = (uint8_t *)talloc_strdup(el->values, strchr(sid, '-')+1);
+	el->values[0].data = (uint8_t *)talloc_strdup(el->values, strrchr(sid, '-')+1);
 	el->values[0].length = strlen((char *)el->values[0].data);
 
 	return el;
@@ -80,6 +83,7 @@ static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char 
 	struct dom_sid *sid;
 	NTSTATUS status;
 
+	/* We need the domain, so we get it from the objectSid that we hope is here... */
 	sidval = ldb_msg_find_ldb_val(local, "objectSid");
 
 	if (!sidval) 
