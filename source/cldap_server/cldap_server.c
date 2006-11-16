@@ -29,6 +29,11 @@
 #include "cldap_server/cldap_server.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
+#include "dsdb/samdb/samdb.h"
+#include "db_wrap.h"
+#include "auth/auth.h"
 
 /*
   handle incoming cldap requests
@@ -41,21 +46,38 @@ static void cldapd_request_handler(struct cldap_socket *cldap,
 	if (ldap_msg->type != LDAP_TAG_SearchRequest) {
 		DEBUG(0,("Invalid CLDAP request type %d from %s:%d\n", 
 			 ldap_msg->type, src->addr, src->port));
+		cldap_error_reply(cldap, ldap_msg->messageid, src,
+				  LDAP_OPERATIONS_ERROR, "Invalid CLDAP request");
 		return;
 	}
 
 	search = &ldap_msg->r.SearchRequest;
 
+	if (strcmp("", search->basedn) != 0) {
+		DEBUG(0,("Invalid CLDAP basedn '%s' from %s:%d\n", 
+			 search->basedn, src->addr, src->port));
+		cldap_error_reply(cldap, ldap_msg->messageid, src,
+				  LDAP_OPERATIONS_ERROR, "Invalid CLDAP basedn");
+		return;
+	}
+
+	if (search->scope != LDAP_SEARCH_SCOPE_BASE) {
+		DEBUG(0,("Invalid CLDAP scope %d from %s:%d\n", 
+			 search->scope, src->addr, src->port));
+		cldap_error_reply(cldap, ldap_msg->messageid, src,
+				  LDAP_OPERATIONS_ERROR, "Invalid CLDAP scope");
+		return;
+	}
+
 	if (search->num_attributes == 1 &&
 	    strcasecmp(search->attributes[0], "netlogon") == 0) {
 		cldapd_netlogon_request(cldap, ldap_msg->messageid,
 					search->tree, src);
-	} else {
-		DEBUG(0,("Unknown CLDAP search for '%s'\n", 
-			 ldb_filter_from_tree(ldap_msg, 
-					      ldap_msg->r.SearchRequest.tree)));
-		cldap_empty_reply(cldap, ldap_msg->messageid, src);
+		return;
 	}
+
+	cldapd_rootdse_request(cldap, ldap_msg->messageid,
+			       search, src);
 }
 
 
@@ -146,7 +168,11 @@ static void cldapd_task_init(struct task_server *task)
 	}
 
 	cldapd->task = task;
-	cldapd->samctx = NULL;
+	cldapd->samctx = samdb_connect(cldapd, anonymous_session(cldapd));
+	if (cldapd->samctx == NULL) {
+		task_server_terminate(task, "cldapd failed to open samdb");
+		return;
+	}
 
 	/* start listening on the configured network interfaces */
 	status = cldapd_startup_interfaces(cldapd);
