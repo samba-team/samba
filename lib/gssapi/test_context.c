@@ -78,6 +78,7 @@ loop(gss_OID mechoid,
      gss_OID nameoid, const char *target,
      gss_cred_id_t init_cred,
      gss_ctx_id_t *sctx, gss_ctx_id_t *cctx,
+     gss_OID *actual_mech, 
      gss_cred_id_t *deleg_cred)
 {
     int server_done = 0, client_done = 0;
@@ -85,7 +86,10 @@ loop(gss_OID mechoid,
     gss_name_t gss_target_name;
     gss_buffer_desc input_token, output_token;
     OM_uint32 flags = 0, ret_cflags, ret_sflags;
-    gss_OID mechoid_out;
+    gss_OID actual_mech_client; 
+    gss_OID actual_mech_server; 
+
+    *actual_mech = GSS_C_NO_OID;
 
     if (mutual_auth_flag)
 	flags |= GSS_C_MUTUAL_FLAG;
@@ -118,7 +122,7 @@ loop(gss_OID mechoid,
 					0, 
 					NULL,
 					&input_token,
-					NULL,
+					&actual_mech_client,
 					&output_token,
 					&ret_cflags,
 					NULL);
@@ -142,14 +146,14 @@ loop(gss_OID mechoid,
 					  &output_token,
 					  GSS_C_NO_CHANNEL_BINDINGS,
 					  NULL,
-					  &mechoid_out,
+					  &actual_mech_server,
 					  &input_token,
 					  &ret_sflags,
 					  NULL,
 					  deleg_cred);
 	if (GSS_ERROR(maj_stat))
 		errx(1, "accept_sec_context: %s",
-		     gssapi_err(maj_stat, min_stat, mechoid_out));
+		     gssapi_err(maj_stat, min_stat, actual_mech_server));
 
 	if (verbose_flag)
 	    printf("%.*s", (int)input_token.length, (char *)input_token.value);
@@ -167,6 +171,10 @@ loop(gss_OID mechoid,
     if (input_token.length != 0)
 	gss_release_buffer(&min_stat, &input_token);
     gss_release_name(&min_stat, &gss_target_name);
+
+    if (gss_oid_equal(actual_mech_server, actual_mech_client) == 0)
+	errx(1, "mech mismatch");
+    *actual_mech = actual_mech_server;
 }
 
 static void
@@ -224,7 +232,7 @@ main(int argc, char **argv)
     OM_uint32 min_stat, maj_stat;
     gss_ctx_id_t cctx, sctx;
     void *ctx;
-    gss_OID nameoid, mechoid;
+    gss_OID nameoid, mechoid, actual_mech;
     gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
 
 
@@ -273,13 +281,13 @@ main(int argc, char **argv)
 	errx(1, "%s not suppported", mech_string);
 
     loop(mechoid, nameoid, argv[0], GSS_C_NO_CREDENTIAL,
-	 &sctx, &cctx, &deleg_cred);
+	 &sctx, &cctx, &actual_mech, &deleg_cred);
     
-    if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) {
+    if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) { /* XXX should be actual_mech */
 	krb5_context context;
 	time_t time, skew;
 	gss_buffer_desc authz_data;
-	krb5_keyblock *keyblock;
+	krb5_keyblock *keyblock, *keyblock2;
 	krb5_timestamp now;
 	krb5_error_code ret;
 
@@ -298,13 +306,13 @@ main(int argc, char **argv)
 						     &ctx);
 	if (maj_stat != GSS_S_COMPLETE)
 		errx(1, "gss_krb5_export_lucid_sec_context failed: %s",
-		     gssapi_err(maj_stat, min_stat, mechoid));
+		     gssapi_err(maj_stat, min_stat, actual_mech));
 	
 	
 	maj_stat = gss_krb5_free_lucid_sec_context(&maj_stat, ctx);
 	if (maj_stat != GSS_S_COMPLETE)
 	    errx(1, "gss_krb5_free_lucid_sec_context failed: %s",
-		     gssapi_err(maj_stat, min_stat, mechoid));
+		     gssapi_err(maj_stat, min_stat, actual_mech));
 	
 	/* server */
 	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
@@ -313,18 +321,18 @@ main(int argc, char **argv)
 						     &ctx);
 	if (maj_stat != GSS_S_COMPLETE)
 	    errx(1, "gss_krb5_export_lucid_sec_context failed: %s",
-		     gssapi_err(maj_stat, min_stat, mechoid));
+		     gssapi_err(maj_stat, min_stat, actual_mech));
 	maj_stat = gss_krb5_free_lucid_sec_context(&min_stat, ctx);
 	if (maj_stat != GSS_S_COMPLETE)
 	    errx(1, "gss_krb5_free_lucid_sec_context failed: %s",
-		     gssapi_err(maj_stat, min_stat, mechoid));
+		     gssapi_err(maj_stat, min_stat, actual_mech));
 
  	maj_stat = gsskrb5_extract_authtime_from_sec_context(&min_stat,
 							     sctx,
 							     &time);
 	if (maj_stat != GSS_S_COMPLETE)
 	    errx(1, "gsskrb5_extract_authtime_from_sec_context failed: %s",
-		     gssapi_err(maj_stat, min_stat, mechoid));
+		     gssapi_err(maj_stat, min_stat, actual_mech));
 
 	skew = abs(time - now);
 	if (skew > krb5_get_max_time_skew(context)) {
@@ -339,7 +347,7 @@ main(int argc, char **argv)
 						    &keyblock);
 	if (maj_stat != GSS_S_COMPLETE)
 	    errx(1, "gsskrb5_export_service_keyblock failed: %s",
-		     gssapi_err(maj_stat, min_stat, mechoid));
+		     gssapi_err(maj_stat, min_stat, actual_mech));
 
 	krb5_free_keyblock(context, keyblock);
 
@@ -348,11 +356,42 @@ main(int argc, char **argv)
 				      &keyblock);
 	if (maj_stat != GSS_S_COMPLETE 
 	    && (!(maj_stat == GSS_S_FAILURE && min_stat == GSS_KRB5_S_KG_NO_SUBKEY)))
-	    errx(1, "gsskrb5_get_subkey failed: %s",
-		     gssapi_err(maj_stat, min_stat, mechoid));
+	    errx(1, "gsskrb5_get_subkey server failed: %s",
+		     gssapi_err(maj_stat, min_stat, actual_mech));
 
-	if (maj_stat == GSS_S_COMPLETE)
+	if (maj_stat != GSS_S_COMPLETE)
+	    keyblock = NULL;
+	
+ 	maj_stat = gsskrb5_get_subkey(&min_stat,
+				      cctx,
+				      &keyblock2);
+	if (maj_stat != GSS_S_COMPLETE 
+	    && (!(maj_stat == GSS_S_FAILURE && min_stat == GSS_KRB5_S_KG_NO_SUBKEY)))
+	    errx(1, "gsskrb5_get_subkey client failed: %s",
+		     gssapi_err(maj_stat, min_stat, actual_mech));
+
+	if (maj_stat != GSS_S_COMPLETE)
+	    keyblock2 = NULL;
+
+	if (keyblock || keyblock2) {
+	    if (keyblock == NULL)
+		errx(1, "server missing token keyblock");
+	    if (keyblock2 == NULL)
+		errx(1, "client missing token keyblock");
+
+	    if (keyblock->keytype != keyblock2->keytype)
+		errx(1, "enctype mismatch");
+	    if (keyblock->keyvalue.length != keyblock2->keyvalue.length)
+		errx(1, "key length mismatch");
+	    if (memcmp(keyblock->keyvalue.data, keyblock2->keyvalue.data, 
+		       keyblock2->keyvalue.length) != 0)
+		errx(1, "key data mismatch");
+	}
+
+	if (keyblock)
 	    krb5_free_keyblock(context, keyblock);
+	if (keyblock2)
+	    krb5_free_keyblock(context, keyblock2);
 
  	maj_stat = gsskrb5_get_initiator_subkey(&min_stat,
 						sctx,
@@ -360,7 +399,7 @@ main(int argc, char **argv)
 	if (maj_stat != GSS_S_COMPLETE 
 	    && (!(maj_stat == GSS_S_FAILURE && min_stat == GSS_KRB5_S_KG_NO_SUBKEY)))
 	    errx(1, "gsskrb5_get_initiator_subkey failed: %s",
-		     gssapi_err(maj_stat, min_stat, mechoid));
+		     gssapi_err(maj_stat, min_stat, actual_mech));
 
 	if (maj_stat == GSS_S_COMPLETE)
 	    krb5_free_keyblock(context, keyblock);
@@ -372,8 +411,8 @@ main(int argc, char **argv)
 	if (maj_stat == GSS_S_COMPLETE)
 	    gss_release_buffer(&min_stat, &authz_data);
 
-	wrapunwrap(cctx, sctx, mechoid);
-	wrapunwrap(sctx, cctx, mechoid);
+	wrapunwrap(cctx, sctx, actual_mech);
+	wrapunwrap(sctx, cctx, actual_mech);
 
 	krb5_free_context(context);
     }
@@ -383,7 +422,7 @@ main(int argc, char **argv)
 
     if (deleg_cred != GSS_C_NO_CREDENTIAL) {
 
-	loop(mechoid, nameoid, argv[0], deleg_cred, &cctx, &sctx, NULL);
+	loop(mechoid, nameoid, argv[0], deleg_cred, &cctx, &sctx, &actual_mech, NULL);
 
 	gss_delete_sec_context(&min_stat, &cctx, NULL);
 	gss_delete_sec_context(&min_stat, &sctx, NULL);
