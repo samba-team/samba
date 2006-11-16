@@ -15,15 +15,13 @@
    
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-   
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.   
 */
 
 #include "includes.h"
 
 /* nmbd.c sets this to True. */
 BOOL global_in_nmbd = False;
-
 
 /****************************
  * SERVER AFFINITY ROUTINES *
@@ -77,13 +75,13 @@ BOOL saf_store( const char *domain, const char *servername )
 	return ret;
 }
 
-BOOL saf_delete( const char *domain, const char *servername )
+BOOL saf_delete( const char *domain )
 {
 	char *key;
 	BOOL ret = False;
 	
-	if ( !domain || !servername ) {
-		DEBUG(2,("saf_delete: Refusing to store empty domain or servername!\n"));
+	if ( !domain ) {
+		DEBUG(2,("saf_delete: Refusing to delete empty domain\n"));		
 		return False;
 	}
 	
@@ -94,10 +92,11 @@ BOOL saf_delete( const char *domain, const char *servername )
 	ret = gencache_del(key);
 	
 	if (ret) {
-		DEBUG(10,("saf_delete: domain = [%s], server = [%s]\n",
-			domain, servername));
+		DEBUG(10,("saf_delete: domain = [%s]\n", domain ));		
 	}
+
 	SAFE_FREE( key );
+
 	return ret;
 }
 
