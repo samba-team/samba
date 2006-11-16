@@ -64,14 +64,6 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	const char *pdc_ip;
 	const struct ldb_dn *partitions_basedn;
 
-	if (cldapd->samctx == NULL) {
-		cldapd->samctx = samdb_connect(cldapd, anonymous_session(cldapd));
-		if (cldapd->samctx == NULL) {
-			DEBUG(2,("Unable to open sam in cldap netlogon reply\n"));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-	}
-
 	partitions_basedn = samdb_partitions_dn(cldapd->samctx, mem_ctx);
 
 	/* the domain has an optional trailing . */
