@@ -348,12 +348,8 @@ static int ldb_msg_el_merge_wildcard(struct ldb_module *module, struct ldb_messa
 	/* Perhaps we have a mapping for "*" */
 	if (map && map->type == MAP_KEEP) {
 		/* We copy everything over, and hope that anything with a 
-		   more specific rule is overwritten, or caught by the test below */
+		   more specific rule is overwritten */
 		for (i = 0; i < remote->num_elements; i++) {
-			if (map_attr_find_local(data, remote->elements[i].name)) {
-				/* The name this would have been copied to has a more specific mapping */
-				continue;
-			}
 			el = ldb_msg_el_map_remote(module, local, map, remote->elements[i].name,
 						   &remote->elements[i]);
 			if (el == NULL) {
@@ -1039,7 +1035,7 @@ int map_up_callback(struct ldb_context *ldb, const struct ldb_request *req, stru
 	/* Limit result to requested attrs */
 	if ((req->op.search.attrs) && (!ldb_attr_in_list(req->op.search.attrs, "*"))) {
 		for (i = 0; i < ares->message->num_elements; ) {
-			const struct ldb_message_element *el = &ares->message->elements[i];
+			struct ldb_message_element *el = &ares->message->elements[i];
 			if (!ldb_attr_in_list(req->op.search.attrs, el->name)) {
 				ldb_msg_remove_element(ares->message, el);
 			} else {
