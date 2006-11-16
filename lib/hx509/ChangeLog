@@ -1,3 +1,8 @@
+2006-11-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* error.c (hx509_get_error_string): Put ", " between strings in
+	error message.
+	
 2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* data/openssl.cnf: Change realm to TEST.H5L.SE
