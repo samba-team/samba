@@ -986,6 +986,7 @@ static void continue_domain_open_userlist(struct composite_context *ctx)
 
 	/* receive lsa domain handle */
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
+	if (!composite_is_ok(c)) return;
 
 	/* prepare arguments */
 	s->user_list.in.handle = &s->ctx->lsa.handle;
