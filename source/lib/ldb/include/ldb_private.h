@@ -211,6 +211,8 @@ int check_critical_controls(struct ldb_control **controls);
 /* The following definitions come from lib/ldb/common/ldb_utf8.c */
 char *ldb_casefold_default(void *context, void *mem_ctx, const char *s);
 
+void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element *el);
+
 /**
   Obtain current/next database sequence number
 */
