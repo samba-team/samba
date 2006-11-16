@@ -141,7 +141,7 @@ void ldb_remove_attrib_handler(struct ldb_context *ldb, const char *attrib)
 		return;
 	}
 	if (h->flags & LDB_ATTR_FLAG_ALLOCATED) {
-		talloc_free(h->attr);
+		talloc_free(discard_const_p(char, h->attr));
 	}
 	i = h - ldb->schema.attrib_handlers;
 	if (i < ldb->schema.num_attrib_handlers - 1) {
