@@ -59,3 +59,26 @@
    fun:gaih_inet
    fun:getaddrinfo
 }
+{
+   glibc dlopen failure called from /bin/ls
+   Memcheck:Addr4
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/tls/libc-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   fun:_dl_open
+   obj:/lib/tls/libc-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   fun:__libc_dlopen_mode
+   fun:__nss_lookup_function
+   obj:/lib/tls/libnss_compat-2.3.6.so
+   fun:_nss_compat_getpwuid_r
+   fun:getpwuid_r
+   fun:getpwuid
+   obj:/bin/ls
+   obj:/bin/ls
+   obj:/bin/ls
+   obj:/bin/ls
+   fun:__libc_start_main
+}
