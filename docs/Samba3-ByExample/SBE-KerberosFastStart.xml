@@ -923,10 +923,11 @@
 	Kerberos was, until recently, a technology that was restricted from being exported from the United States.
 	For many years that hindered global adoption of more secure networking technologies both within the United States
 	and abroad. A free and unencumbered implementation of MIT Kerberos has been produced in Europe
-	and is available from the University of Paderborn, Sweden. It is known as the Heimdal Kerberos project.
-	In recent times the U.S. government has removed sanctions affecting the global distribution of MIT Kerberos.
-	It is likely that there will be a significant surge forward in the development of Kerberos-enabled applications
-	and in the general deployment and use of Kerberos across the spectrum of the information technology industry.
+	and is available from the <ulink url="http://www.pdc.kth.se/heimdal/">Royal Institute</ulink> of
+	Technology (KTH), Sweden. It is known as the Heimdal Kerberos project.  In recent times the U.S. government
+	has removed sanctions affecting the global distribution of MIT Kerberos.  It is likely that there will be a
+	significant surge forward in the development of Kerberos-enabled applications and in the general deployment
+	and use of Kerberos across the spectrum of the information technology industry.
 	</para>
 
 	<para>
