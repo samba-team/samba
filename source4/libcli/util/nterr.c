@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "pstring.h"
+#include "libcli/ldap/ldap.h"
 
 typedef struct
 {
@@ -30,6 +31,7 @@ typedef struct
 } nt_err_code_struct;
 
 #define DOS_CODE(class, code) { #class ":" #code, NT_STATUS_DOS(class, code) }
+#define LDAP_CODE(code) { #code, NT_STATUS_LDAP(code) }
 
 static const nt_err_code_struct nt_errs[] =
 {
@@ -671,6 +673,46 @@ static const nt_err_code_struct nt_errs[] =
 	DOS_CODE(ERRHRD, ERRsharebufexc),
 	DOS_CODE(ERRHRD, ERRdiskfull),
 
+	LDAP_CODE(LDAP_SUCCESS),
+	LDAP_CODE(LDAP_OPERATIONS_ERROR),
+	LDAP_CODE(LDAP_PROTOCOL_ERROR),
+	LDAP_CODE(LDAP_TIME_LIMIT_EXCEEDED),
+	LDAP_CODE(LDAP_SIZE_LIMIT_EXCEEDED),
+	LDAP_CODE(LDAP_COMPARE_FALSE),
+	LDAP_CODE(LDAP_COMPARE_TRUE),
+	LDAP_CODE(LDAP_AUTH_METHOD_NOT_SUPPORTED),
+	LDAP_CODE(LDAP_STRONG_AUTH_REQUIRED),
+	LDAP_CODE(LDAP_REFERRAL),
+	LDAP_CODE(LDAP_ADMIN_LIMIT_EXCEEDED),
+	LDAP_CODE(LDAP_UNAVAILABLE_CRITICAL_EXTENSION),
+	LDAP_CODE(LDAP_CONFIDENTIALITY_REQUIRED),
+	LDAP_CODE(LDAP_SASL_BIND_IN_PROGRESS),
+	LDAP_CODE(LDAP_NO_SUCH_ATTRIBUTE),
+	LDAP_CODE(LDAP_UNDEFINED_ATTRIBUTE_TYPE),
+	LDAP_CODE(LDAP_INAPPROPRIATE_MATCHING),
+	LDAP_CODE(LDAP_CONSTRAINT_VIOLATION),
+	LDAP_CODE(LDAP_ATTRIBUTE_OR_VALUE_EXISTS),
+	LDAP_CODE(LDAP_INVALID_ATTRIBUTE_SYNTAX),
+	LDAP_CODE(LDAP_NO_SUCH_OBJECT),
+	LDAP_CODE(LDAP_ALIAS_PROBLEM),
+	LDAP_CODE(LDAP_INVALID_DN_SYNTAX),
+	LDAP_CODE(LDAP_ALIAS_DEREFERENCING_PROBLEM),
+	LDAP_CODE(LDAP_INAPPROPRIATE_AUTHENTICATION),
+	LDAP_CODE(LDAP_INVALID_CREDENTIALS),
+	LDAP_CODE(LDAP_INSUFFICIENT_ACCESS_RIGHTs),
+	LDAP_CODE(LDAP_BUSY),
+	LDAP_CODE(LDAP_UNAVAILABLE),
+	LDAP_CODE(LDAP_UNWILLING_TO_PERFORM),
+	LDAP_CODE(LDAP_LOOP_DETECT),
+	LDAP_CODE(LDAP_NAMING_VIOLATION),
+	LDAP_CODE(LDAP_OBJECT_CLASS_VIOLATION),
+	LDAP_CODE(LDAP_NOT_ALLOWED_ON_NON_LEAF),
+	LDAP_CODE(LDAP_NOT_ALLOWED_ON_RDN),
+	LDAP_CODE(LDAP_ENTRY_ALREADY_EXISTS),
+	LDAP_CODE(LDAP_OBJECT_CLASS_MODS_PROHIBITED),
+	LDAP_CODE(LDAP_AFFECTS_MULTIPLE_DSAS),
+	LDAP_CODE(LDAP_OTHER),
+
 	{ NULL, NT_STATUS(0) }
 };
 
@@ -772,7 +814,6 @@ static const nt_err_code_struct nt_err_desc[] =
 	{ NULL, NT_STATUS(0) }
 };
 
-
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
@@ -781,17 +822,17 @@ const char *nt_errstr(NTSTATUS nt_code)
         static char msg[40];
         int idx = 0;
 
-	if (NT_STATUS_IS_LDAP(nt_code)) {
-		slprintf(msg, sizeof(msg), "LDAP code %u", NT_STATUS_LDAP_CODE(nt_code));
-		return msg;
-	}
-
 	while (nt_errs[idx].nt_errstr != NULL) {
 		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == 
                     NT_STATUS_V(nt_code)) {
                         return nt_errs[idx].nt_errstr;
 		}
 		idx++;
+	}
+
+	if (NT_STATUS_IS_LDAP(nt_code)) {
+		slprintf(msg, sizeof(msg), "LDAP code %u", NT_STATUS_LDAP_CODE(nt_code));
+		return msg;
 	}
 
 	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
