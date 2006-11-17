@@ -1,0 +1,61 @@
+#!gmake
+#
+CC = @CC@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+includedir = @includedir@
+libdir = @libdir@
+bindir = @bindir@
+VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@
+srcdir = @srcdir@
+builddir = @builddir@
+EXTRA_OBJ=@EXTRA_OBJ@
+
+CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) \
+       -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
+	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
+
+LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ -lpopt
+
+EVENTS_OBJ = lib/events/events.o lib/events/events_standard.o 
+
+CTDB_OBJ = ctdb_tcp_child.o ctdb_tcp.o util.o
+
+OBJS = @TDBOBJ@ @TALLOCOBJ@ @LIBREPLACEOBJ@ $(EXTRA_OBJ) $(EVENTS_OBJ) $(CTDB_OBJ)
+
+BINS = bin/ctdb_test
+
+DIRS = lib bin
+
+all: showflags dirs $(OBJS) $(BINS)
+
+showflags:
+	@echo 'ctdb will be compiled with flags:'
+	@echo '  CFLAGS = $(CFLAGS)'
+	@echo '  LIBS = $(LIBS)'
+
+.c.o:
+	@echo Compiling $*.c
+	@mkdir -p `dirname $@`
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+dirs:
+	@mkdir -p $(DIRS)
+
+bin/ctdb_test: $(OBJS) ctdb_test.o
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ ctdb_test.o $(OBJS) $(LIB_FLAGS)
+
+clean:
+	rm -f *.o */*.o
+	rm -f $(BINS)
+
+distclean: clean
+	rm -f *~ */*~
+	rm -rf bin lib
+	rm -f config.log config.status config.cache include/config.h
+	rm -f Makefile
+
+realdistclean: distclean
+	rm -f configure.in include/config.h.in
