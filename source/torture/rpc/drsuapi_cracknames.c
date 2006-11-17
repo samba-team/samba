@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "torture/rpc/rpc.h"
 #include "ldb/include/ldb.h"
+#include "libcli/security/security.h"
 
 static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				    struct DsPrivate *priv, const char *dn,
@@ -220,6 +221,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const char *service_principal_name;
 	const char *canonical_name;
 	const char *canonical_ex_name;
+	const char *dc_sid;
 
 	ZERO_STRUCT(r);
 	r.in.bind_handle		= &priv->bind_handle;
@@ -230,9 +232,12 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.req.req1.names		= names;
 	r.in.req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
 
-	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_CANONICAL;
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
-	names[0].str = talloc_asprintf(mem_ctx, "%s/", lp_realm());
+
+	dc_sid = dom_sid_string(mem_ctx, torture_join_sid(priv->join));
+	
+	names[0].str = dc_sid;
 
 	printf("testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
@@ -319,20 +324,20 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	realm_canonical = ldb_dn_canonical_string(mem_ctx, realm_dn);
 
 	if (strcmp(realm_canonical, 
-		   talloc_asprintf(mem_ctx, "%s/", lp_realm()))!= 0) {
+		   talloc_asprintf(mem_ctx, "%s/", dns_domain))!= 0) {
 		printf("local Round trip on canonical name failed: %s != %s!\n",
 		       realm_canonical, 
-		       talloc_asprintf(mem_ctx, "%s/", lp_realm()));
+		       talloc_asprintf(mem_ctx, "%s/", dns_domain));
 		    return False;
 	};
 
 	realm_canonical_ex = ldb_dn_canonical_ex_string(mem_ctx, realm_dn);
 
 	if (strcmp(realm_canonical_ex, 
-		   talloc_asprintf(mem_ctx, "%s\n", lp_realm()))!= 0) {
+		   talloc_asprintf(mem_ctx, "%s\n", dns_domain))!= 0) {
 		printf("local Round trip on canonical ex name failed: %s != %s!\n",
 		       realm_canonical, 
-		       talloc_asprintf(mem_ctx, "%s\n", lp_realm()));
+		       talloc_asprintf(mem_ctx, "%s\n", dns_domain));
 		    return False;
 	};
 
@@ -560,7 +565,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_DISPLAY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = test_dc,
-				.comment = "DISPAY NAME search for DC short name",
+				.comment = "DISLPAY NAME search for DC short name",
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			},
 			{
@@ -693,7 +698,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.comment = "Realm as an NT4 domain lookup",
-				.str = talloc_asprintf(mem_ctx, "%s\\", lp_realm()),
+				.str = talloc_asprintf(mem_ctx, "%s\\", dns_domain),
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			}, 
 			{
@@ -713,6 +718,21 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
 				.str = SID_BUILTIN_ADMINISTRATORS,
+				.status = DRSUAPI_DS_NAME_STATUS_OK
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.comment = "DC SID -> DN",
+				.str = dc_sid,
+				.expected_str = FQDN_1779_name,
+				.status = DRSUAPI_DS_NAME_STATUS_OK
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
+				.comment = "DC SID -> NT4 account",
+				.str = dc_sid,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{

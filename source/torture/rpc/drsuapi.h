@@ -32,5 +32,6 @@ struct DsPrivate {
 	const char *domain_dns_name;
 	struct GUID domain_guid;
 	struct drsuapi_DsGetDCInfo2 dcinfo;
+	struct test_join *join;
 };
 
