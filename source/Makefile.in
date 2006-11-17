@@ -268,9 +268,8 @@ PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o lib/sharesec.o
 
 KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o 
 
-LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsrequest.o libaddns/dnsresponse.o \
-	       libaddns/dnsutils.o  libaddns/dnssock.o libaddns/dnsuprequest.o \
-	       libaddns/dnsupresp.o libaddns/dnsupdate.o libaddns/dnsgss.o
+LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
+	       libaddns/dnsgss.o libaddns/dnsmarshall.o
 LIBADDNS_OBJ = $(LIBADDNS_OBJ0) $(TALLOC_OBJ)
 
 LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_parse.o libgpo/gpo_util.o \
