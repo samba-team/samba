@@ -23,7 +23,7 @@
 	pkinit_anchors = FILE:@srcdir@/../../lib/hx509/data/ca.crt
 	pkinit_pool = FILE:@srcdir@/../../lib/hx509/data/sub-ca.crt
 #	pkinit_revoke = CRL:@srcdir@/../../lib/hx509/data/crl1.crl
-	pkinit_mappings-file = @srcdir@/pki-mapping
+	pkinit_mappings_file = @srcdir@/pki-mapping
 
 	database = {
 		dbname = @objdir@/current-db
