@@ -13,7 +13,7 @@
     group if the name was not found in the NIS netgroup database.</para>
 
     <para>A name starting with '+' is interpreted only 
-    by looking in the UNIX group database. A name starting with 
+    by looking in the UNIX group database via the NSS getgrnam() interface. A name starting with 
     '&amp;' is interpreted only by looking in the NIS netgroup database 
     (this requires NIS to be working on your system). The characters 
     '+' and '&amp;' may be used at the start of the name in either order 
