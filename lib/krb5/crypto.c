@@ -1076,6 +1076,21 @@ krb5_enctype_keysize(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_enctype_keybits(krb5_context context,
+		     krb5_enctype type,
+		     size_t *keybits)
+{
+    struct encryption_type *et = _find_enctype(type);
+    if(et == NULL) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      type);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    *keybits = et->keytype->bits;
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_generate_random_keyblock(krb5_context context,
 			      krb5_enctype type,
 			      krb5_keyblock *key)
