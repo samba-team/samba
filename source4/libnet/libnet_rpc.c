@@ -412,6 +412,7 @@ static void continue_lsa_query_info(struct rpc_request *req);
 static void continue_lsa_query_info2(struct rpc_request *req);
 static void continue_epm_map_binding(struct composite_context *ctx);
 static void continue_secondary_conn(struct composite_context *ctx);
+static void continue_epm_map_binding_send(struct composite_context *c);
 
 
 /**
@@ -530,8 +531,16 @@ static void continue_lsa_policy(struct rpc_request *req)
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(s->lsa_query_info2.out.result)) {
-		composite_error(c, s->lsa_query_info2.out.result);
+	if (NT_STATUS_EQUAL(s->lsa_open_policy.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+		s->r.out.realm = NULL;
+		s->r.out.guid  = NULL;
+		s->r.out.domain_name = NULL;
+		s->r.out.domain_sid  = NULL;
+		/* Skip to the creating the actual connection, no info available on this transport */
+		continue_epm_map_binding_send(c);
+		return;
+	} else if (!NT_STATUS_IS_OK(s->lsa_open_policy.out.result)) {
+		composite_error(c, s->lsa_open_policy.out.result);
 		return;
 	}
 
@@ -610,12 +619,11 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 
 
 /*
-  Step 5 of RpcConnectDCInfo: Get domain name and sid and request endpoint
-  map binding
+  Step 5 of RpcConnectDCInfo: Get domain name and sid
 */
 static void continue_lsa_query_info(struct rpc_request *req)
 {
-	struct composite_context *c, *epm_map_req;
+	struct composite_context *c;
 	struct rpc_connect_dci_state *s;
 
 	c = talloc_get_type(req->async.private, struct composite_context);
@@ -634,6 +642,20 @@ static void continue_lsa_query_info(struct rpc_request *req)
 	s->r.out.domain_sid  = s->lsa_query_info.out.info->domain.sid;
 	s->r.out.domain_name = s->lsa_query_info.out.info->domain.name.string;
 
+	continue_epm_map_binding_send(c);
+}
+
+/* 
+   Step 5 (continued) of RpcConnectDCInfo: request endpoint
+   map binding.
+
+   We may short-cut to this step if we dont' support LSA OpenPolicy on this transport
+*/
+static void continue_epm_map_binding_send(struct composite_context *c)
+{
+	struct rpc_connect_dci_state *s;
+	struct composite_context *epm_map_req;
+	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
 	/* prepare to get endpoint mapping for the requested interface */
 	s->final_binding = talloc(s, struct dcerpc_binding);
@@ -649,7 +671,6 @@ static void continue_lsa_query_info(struct rpc_request *req)
 
 	composite_continue(c, epm_map_req, continue_epm_map_binding, c);
 }
-
 
 /*
   Step 6 of RpcConnectDCInfo: Receive endpoint mapping and create secondary
@@ -682,7 +703,7 @@ static void continue_epm_map_binding(struct composite_context *ctx)
 
 
 /*
-  Step 7 of RpcConnectDCInfo: Get actual lsa pipe to be returned
+  Step 7 of RpcConnectDCInfo: Get actual pipe to be returned
   and complete this composite call
 */
 static void continue_secondary_conn(struct composite_context *ctx)
