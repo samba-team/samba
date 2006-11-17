@@ -1828,19 +1828,19 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     if (pool == NULL)
 	pool = krb5_config_get_strings(context, NULL,
 				       "appdefaults", 
-				       "pkinit-pool", 
+				       "pkinit_pool", 
 				       NULL);
 
     if (pki_revoke == NULL)
 	pki_revoke = krb5_config_get_strings(context, NULL,
 					     "appdefaults", 
-					     "pkinit-revoke", 
+					     "pkinit_revoke", 
 					     NULL);
 
     if (x509_anchors == NULL) {
 	krb5_appdefault_string(context, "kinit",
 			       krb5_principal_get_realm(context, principal), 
-			       "pkinit-anchors", NULL, &anchors);
+			       "pkinit_anchors", NULL, &anchors);
 	x509_anchors = anchors;
     }
 

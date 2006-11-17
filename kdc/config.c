@@ -512,7 +512,7 @@ configure(krb5_context context, int argc, char **argv)
 				     NULL, 
 				     config->enable_pkinit,
 				     "kdc",
-				     "enable-pkinit",
+				     "pkinit_enable",
 				     NULL);
     if (config->enable_pkinit) {
 	const char *user_id, *anchors, *ocsp_file;
@@ -520,26 +520,26 @@ configure(krb5_context context, int argc, char **argv)
 
 	user_id = krb5_config_get_string(context, NULL,
 					 "kdc",
-					 "pki-identity",
+					 "pkinit_identity",
 					 NULL);
 	if (user_id == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no identity");
 
 	anchors = krb5_config_get_string(context, NULL,
 					 "kdc",
-					 "pki-anchors",
+					 "pkinit_anchors",
 					 NULL);
 	if (anchors == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
 
 	pool_list = krb5_config_get_strings(context, NULL,
 					    "kdc",
-					    "pki-pool",
+					    "pkinit_pool",
 					    NULL);
 
 	revoke_list = krb5_config_get_strings(context, NULL,
 					      "kdc",
-					      "pki-revoke",
+					      "pkinit_revoke",
 					      NULL);
 
 	ocsp_file = 
@@ -563,7 +563,7 @@ configure(krb5_context context, int argc, char **argv)
 					 NULL,
 					 config->enable_pkinit_princ_in_cert,
 					 "kdc",
-					 "pkinit-principal-in-certificate",
+					 "pkinit_principal_in_certificate",
 					 NULL);
     }
 
@@ -572,7 +572,7 @@ configure(krb5_context context, int argc, char **argv)
 				    NULL, 
 				    0,
 				    "kdc",
-				    "pkinit-dh-min-bits",
+				    "pkinit_dh_min_bits",
 				    NULL);
 
 #endif

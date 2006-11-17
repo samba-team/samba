@@ -5,7 +5,7 @@
 	no-addresses = TRUE
 
 [appdefaults]
-	pkinit-anchors = FILE:@srcdir@/../../lib/hx509/data/ca.crt
+	pkinit_anchors = FILE:@srcdir@/../../lib/hx509/data/ca.crt
 
 [realms]
 	TEST.H5L.SE = {
@@ -18,12 +18,12 @@
 [kdc]
 	enable-digest = true
 
-	enable-pkinit = true
-	pki-identity = FILE:@srcdir@/../../lib/hx509/data/kdc.crt,@srcdir@/../../lib/hx509/data/kdc.key
-	pki-anchors = FILE:@srcdir@/../../lib/hx509/data/ca.crt
-	pki-pool = FILE:@srcdir@/../../lib/hx509/data/sub-ca.crt
-#	pki-revoke = CRL:@srcdir@/../../lib/hx509/data/crl1.crl
-	pki-mappings-file = @srcdir@/pki-mapping
+	pkinit_enable = true
+	pkinit_identity = FILE:@srcdir@/../../lib/hx509/data/kdc.crt,@srcdir@/../../lib/hx509/data/kdc.key
+	pkinit_anchors = FILE:@srcdir@/../../lib/hx509/data/ca.crt
+	pkinit_pool = FILE:@srcdir@/../../lib/hx509/data/sub-ca.crt
+#	pkinit_revoke = CRL:@srcdir@/../../lib/hx509/data/crl1.crl
+	pkinit_mappings-file = @srcdir@/pki-mapping
 
 	database = {
 		dbname = @objdir@/current-db

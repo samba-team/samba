@@ -1254,14 +1254,14 @@ Write about the kdc.
 
 @example
 [appdefaults]
-	pkinit-anchors = FILE:/path/to/trust-anchors.pem
+	pkinit_anchors = FILE:/path/to/trust-anchors.pem
 
 [realms]
         EXAMPLE.COM = @{
 		pkinit_require_eku = true
 		pkinit_require_krbtgt_otherName = true
-		win2k_pkinit = no
-		win2k_pkinit_require_binding = yes
+		pkinit_win2k = no
+		pkinit_win2k_require_binding = yes
 	@}
 
 @end example
@@ -1270,12 +1270,12 @@ Write about the kdc.
 
 @example
 [kdc]
-	enable-pkinit = yes
-	pki-identity = FILE:/secure/kdc.crt,/secure/kdc.key
-	pki-anchors = FILE:/path/to/trust-anchors.pem
-	pki-pool = PKCS12:/path/to/useful-intermediate-certs.pfx
-	pki-pool = FILE:/path/to/other-useful-intermediate-certs.pem
-	pki-allow-proxy-certificate = false
+	pkinit_enable = yes
+	pkinit_identity = FILE:/secure/kdc.crt,/secure/kdc.key
+	pkinit_anchors = FILE:/path/to/trust-anchors.pem
+	pkinit_pool = PKCS12:/path/to/useful-intermediate-certs.pfx
+	pkinit_pool = FILE:/path/to/other-useful-intermediate-certs.pem
+	pkinit_allow-proxy-certificate = false
 @end example
 
 @subsection Using pki-mapping file
@@ -1354,7 +1354,7 @@ openssl ca -extensions user_certificate
 Clients using a Windows KDC with PK-INIT need configuration since
 windows uses pre-standard format and this can't be autodetected.
 
-The win2k_pkinit_require_binding option requires the reply for the KDC
+The pkinit_win2k_require_binding option requires the reply for the KDC
 to be of the new, secure, type that binds the request to reply. Before
 clients should fake the reply from the KDC. To use this option you
 have to apply a fix from Microsoft.
@@ -1362,8 +1362,8 @@ have to apply a fix from Microsoft.
 @example
 [realms]
         MY.MS.REALM = @{
-                win2k_pkinit = yes
-                win2k_pkinit_require_binding = no
+                pkinit_win2k = yes
+                pkinit_win2k_require_binding = no
 	@}
 @end example
 
