@@ -25,7 +25,7 @@
 ########################################################
 SAMBA_VERSION_MAJOR=3
 SAMBA_VERSION_MINOR=0
-SAMBA_VERSION_RELEASE=23
+SAMBA_VERSION_RELEASE=24
 
 ########################################################
 # Bug fix releases use a letter for the patch revision #
@@ -36,7 +36,7 @@ SAMBA_VERSION_RELEASE=23
 # e.g. SAMBA_VERSION_REVISION=a                        #
 #  ->  "2.2.8a"                                        #
 ########################################################
-SAMBA_VERSION_REVISION=d
+SAMBA_VERSION_REVISION=
 
 ########################################################
 # For 'pre' releases the version will be               #
@@ -46,7 +46,7 @@ SAMBA_VERSION_REVISION=d
 # e.g. SAMBA_VERSION_PRE_RELEASE=1                     #
 #  ->  "2.2.9pre1"                                     #
 ########################################################
-SAMBA_VERSION_PRE_RELEASE=
+SAMBA_VERSION_PRE_RELEASE=1
 
 ########################################################
 # For 'rc' releases the version will be                #
