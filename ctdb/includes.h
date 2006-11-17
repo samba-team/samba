@@ -4,7 +4,7 @@
 #include "talloc.h"
 #include "tdb.h"
 #include "ctdb.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 typedef bool BOOL;
 
