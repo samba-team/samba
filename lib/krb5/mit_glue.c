@@ -327,10 +327,10 @@ krb5_c_make_random_key(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_c_keylength(krb5_context context,
-		 krb5_enctype enctype,
-		 size_t *ilen,
-		 size_t *keylen)
+krb5_c_keylengths(krb5_context context,
+		  krb5_enctype enctype,
+		  size_t *ilen,
+		  size_t *keylen)
 {
     krb5_error_code ret;
 
