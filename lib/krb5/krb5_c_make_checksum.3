@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd May  1, 2006
+.Dd Nov  17, 2006
 .Dt KRB5_C_MAKE_CHECKSUM 3
 .Os HEIMDAL
 .Sh NAME
@@ -156,10 +156,11 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_cksumtype ctype"
 .Fc
 .Ft krb5_error_code
-.Fo krb5_c_keylength
+.Fo krb5_c_keylengths
 .Fa "krb5_context context"
 .Fa "krb5_enctype enctype"
-.Fa "size_t *length"
+.Fa "size_t *inlength"
+.Fa "size_t *keylength"
 .Fc
 .Sh DESCRIPTION
 The functions starting with krb5_c are compat functions with MIT kerberos.
@@ -280,9 +281,13 @@ returns true if
 .Fa ctype
 is a collition proof checksum type.
 .Pp
-.Fn krb5_c_keylength
-return the key
-.Fa length
+.Fn krb5_c_keylengths
+return the minimum length (
+.Fa inlength )
+bytes needed to create a key and the
+length (
+.Fa keylength )
+of the resulting key
 for the
 .Fa enctype .
 .Sh SEE ALSO
