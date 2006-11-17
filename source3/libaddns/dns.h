@@ -189,22 +189,6 @@
 
 #define DNS_OPCODE_UPDATE	1
 
-#define BAIL_ON_ERROR(x) \
-	if ((x)){ \
-		goto error; \
-	}
-
-#define BAIL_ON_DNS_ERROR(x) \
-	if ( !ERR_DNS_IS_OK((x)) ) { \
-		goto error; \
-	}
-
-#define BAIL_ON_SEC_ERROR(dwMajorStatus) \
-	if ((dwMajorStatus!= GSS_S_COMPLETE)\
-			&& (dwMajorStatus != GSS_S_CONTINUE_NEEDED)) {\
-		goto sec_error; \
-	}
-
 /* DNS Class Types */
 
 #define DNS_CLASS_IN		1
@@ -264,6 +248,17 @@ TXT             16 text strings
 #define SENDBUFFER_SIZE		65536
 #define RECVBUFFER_SIZE		65536
 
+/*
+ * TKEY Modes from rfc2930
+ */
+
+#define DNS_TKEY_MODE_SERVER   1
+#define DNS_TKEY_MODE_DH       2
+#define DNS_TKEY_MODE_GSSAPI   3
+#define DNS_TKEY_MODE_RESOLVER 4
+#define DNS_TKEY_MODE_DELETE   5
+
+
 #define DNS_ONE_DAY_IN_SECS	86400
 #define DNS_TEN_HOURS_IN_SECS	36000
 
@@ -285,286 +280,219 @@ typedef int BOOL;
 #endif
 
 
-typedef struct dns_domain_label {
-	struct dns_domain_label *pNext;
-	char *pszLabel;
-	int32 dwLength;
-} DNS_DOMAIN_LABEL;
+struct dns_domain_label {
+	struct dns_domain_label *next;
+	char *label;
+	size_t len;
+};
 
-typedef struct {
-	DNS_DOMAIN_LABEL *pLabelList;
-} DNS_DOMAIN_NAME;
+struct dns_domain_name {
+	struct dns_domain_label *pLabelList;
+};
 
-typedef struct {
-	DNS_DOMAIN_NAME *pDomainName;
-	int16 wQueryType;
-	int16 wQueryClass;
-} DNS_QUESTION_RECORD;
+struct dns_question {
+	struct dns_domain_name *name;
+	uint16 q_type;
+	uint16 q_class;
+};
 
+/*
+ * Before changing the definition of dns_zone, look
+ * dns_marshall_update_request(), we rely on this being the same as
+ * dns_question right now.
+ */
 
-typedef struct {
-	DNS_DOMAIN_NAME *pDomainName;
-	int16 wZoneType;
-	int16 wZoneClass;
-} DNS_ZONE_RECORD;
+struct dns_zone {
+	struct dns_domain_name *name;
+	uint16 z_type;
+	uint16 z_class;
+};
 
+struct dns_rrec {
+	struct dns_domain_name *name;
+	uint16 type;
+	uint16 r_class;
+	uint32 ttl;
+	uint16 data_length;
+	uint8 *data;
+};
 
-typedef struct {
-	DNS_DOMAIN_NAME *pDomainName;
-	int16 wType;
-	int16 wClass;
-	int32 dwTTL;
-	int16 wRDataSize;
-	uint8 *pRData;
-} DNS_RR_HEADER;
+struct dns_tkey_record {
+	struct dns_domain_name *algorithm;
+	time_t inception;
+	time_t expiration;
+	uint16 mode;
+	uint16 error;
+	uint16 key_length;
+	uint8 *key;
+};
 
+struct dns_request {
+	uint16 id;
+	uint16 flags;
+	uint16 num_questions;
+	uint16 num_answers;
+	uint16 num_auths;
+	uint16 num_additionals;
+	struct dns_question **questions;
+	struct dns_rrec **answers;
+	struct dns_rrec **auths;
+	struct dns_rrec **additionals;
+};
 
-typedef struct {
-	uint8 *pDefData;
-} DNS_DEF_RDATA;
+/*
+ * Before changing the definition of dns_update_request, look
+ * dns_marshall_update_request(), we rely on this being the same as
+ * dns_request right now.
+ */
 
-typedef struct {
-	int16 wAlgorithmOffset;
-	int16 wInceptionOffset;
-	int16 wExpirationOffset;
-	int16 wModeOffset;
-	int16 wErrorOffset;
-	int16 wKeySizeOffset;
-	int16 wKeyDataOffset;
-	int16 wOtherSizeOffset;
-	int16 wOtherDataOffset;
-} DNS_TKEY_OFFSETS;
+struct dns_update_request {
+	uint16 id;
+	uint16 flags;
+	uint16 num_zones;
+	uint16 num_preqs;
+	uint16 num_updates;
+	uint16 num_additionals;
+	struct dns_zone **zones;
+	struct dns_rrec **preqs;
+	struct dns_rrec **updates;
+	struct dns_rrec **additionals;
+};
 
-typedef struct {
-	int16 wAlgorithmOffset;
-	int16 wTimeSignedOffset;
-	int16 wFudgeOffset;
-	int16 wMacSizeOffset;
-	int16 wMacDataOffset;
-	int16 wOriginalMessageIdOffset;
-	int16 wErrorOffset;
-	int16 wOtherSizeOffset;
-	int16 wOtherDataOffset;
-} DNS_TSIG_OFFSETS;
-
-
-typedef struct {
-	DNS_RR_HEADER RRHeader;
-	union {
-		DNS_TKEY_OFFSETS TKey;
-		DNS_TSIG_OFFSETS TSig;
-	} Offsets;
-	uint8 *pRData;
-} DNS_RR_RECORD;
-
-
-typedef struct {
-	int16 wIdentification;
-	int16 wParameter;
-	int16 wQuestions;
-	int16 wAnswers;
-	int16 wAuthoritys;
-	int16 wAdditionals;
-	DNS_QUESTION_RECORD **ppQuestionRRSet;
-	DNS_RR_RECORD **ppAnswerRRSet;
-	DNS_RR_RECORD **ppAuthorityRRSet;
-	DNS_RR_RECORD **ppAdditionalRRSet;
-} DNS_REQUEST;
-
-
-typedef struct {
-	int16 wIdentification;
-	int16 wParameter;
-	int16 wZones;
-	int16 wPRs;
-	int16 wUpdates;
-	int16 wAdditionals;
-	DNS_ZONE_RECORD **ppZoneRRSet;
-	DNS_RR_RECORD **ppPRRRSet;
-	DNS_RR_RECORD **ppUpdateRRSet;
-	DNS_RR_RECORD **ppAdditionalRRSet;
-} DNS_UPDATE_REQUEST;
-
-
-typedef struct {
-	int16 wIdentification;
-	int16 wParameter;
-	int16 wQuestions;
-	int16 wAnswers;
-	int16 wAuthoritys;
-	int16 wAdditionals;
-	DNS_QUESTION_RECORD **ppQuestionRRSet;
-	DNS_RR_RECORD **ppAnswerRRSet;
-	DNS_RR_RECORD **ppAuthorityRRSet;
-	DNS_RR_RECORD **ppAdditionalRRSet;
-	uint8 *pDNSOutBuffer;
-	int32 dwNumBytes;
-} DNS_RESPONSE;
-
-typedef struct {
-	int16 wIdentification;
-	int16 wParameter;
-	int16 wZones;
-	int16 wPRs;
-	int16 wUpdates;
-	int16 wAdditionals;
-	DNS_ZONE_RECORD **ppZoneRRSet;
-	DNS_RR_RECORD **ppPRRRSet;
-	DNS_RR_RECORD **ppUpdateRRSet;
-	DNS_RR_RECORD **ppAdditionalRRSet;
-	uint8 *pDNSOutBuffer;
-	int32 dwNumBytes;
-} DNS_UPDATE_RESPONSE;
-
-typedef struct {
+struct dns_connection {
 	int32 hType;
 	int s;
 	struct sockaddr RecvAddr;
-} DNS_CONNECTION_CONTEXT;
+};
 
-typedef struct {
-	uint8 *pSendBuffer;
-	int32 dwBufferSize;
-	int32 dwBytesWritten;
-	int32 dwBufferOffset;
-} DNS_SENDBUFFER_CONTEXT;
-
-typedef struct {
-	uint8 *pRecvBuffer;
-	int32 dwBufferSize;
-	int32 dwBytesRecvd;
-	int32 dwBytesRead;
-} DNS_RECEIVEBUFFER_CONTEXT;
+struct dns_buffer {
+	uint8 *data;
+	size_t size;
+	size_t offset;
+	DNS_ERROR error;
+};
 
 /* from dnsutils.c */
 
-int32 DNSGenerateIdentifier( int16 * pwIdentifer ); 
-int32 DNSGetDomainNameLength( DNS_DOMAIN_NAME * pDomainName, int32 * pdwLength ); 
-int32 DNSCopyDomainName( uint8 * pBuffer, DNS_DOMAIN_NAME * pDomainName, int32 * pdwCopied ); 
-int32 DNSAllocateString( char *pszInputString, char **ppszOutputString );
-int32 DNSGenerateKeyName( char **pszKeyName ); 
-int32 DNSMakeRRHeader( DNS_RR_HEADER * pDNSRR, char *szOwnerName, int16 wType, int32 dwTTL ); 
-int32 DNSDomainNameFromString( const char *pszDomainName, DNS_DOMAIN_NAME ** ppDomainName ); 
-int32 DNSAppendLabel( DNS_DOMAIN_LABEL * pLabelList, DNS_DOMAIN_LABEL * pLabel, DNS_DOMAIN_LABEL ** ppNewLabelList ); 
-int32 DNSGenerateKeyName( char **ppszKeyName ); 
-void DNSRecordGenerateOffsets( DNS_RR_RECORD * pDNSRecord );
-int32 MapDNSResponseCodes( int16 wResponseCode ); 
-int32 GetLastError( void );
-int32 WSAGetLastError( void );
-int32 DNSAllocateMemory(int32 dwSize, void * ppMemory);
-int32 DNSReallocMemory(void *  pMemory, void * ppNewMemory, int32 dwSize);
-void DNSFreeMemory( void * pMemory );
-int32 DNSAllocateString(char *pszInputString, char **ppszOutputString);
-void DNSFreeString(char * pszString);
-void DNSFreeDomainName(DNS_DOMAIN_NAME *pDomainName);
+DNS_ERROR dns_domain_name_from_string( TALLOC_CTX *mem_ctx,
+				       const char *pszDomainName,
+				       struct dns_domain_name **presult );
+char *dns_generate_keyname( TALLOC_CTX *mem_ctx );
 
 /* from dnsrecord.c */
 
-int32 DNSCreateDeleteRecord( char *szHost, int16 wClass, int16 wType, DNS_RR_RECORD ** ppDNSRecord ); 
-int32 DNSCreateARecord( char *szHost, int16 wClass, int16 wType, int32 dwIP, DNS_RR_RECORD ** ppDNSRecord ); 
-int32 DNSCreateTKeyRecord( char *szKeyName, uint8 * pKeyData, int16 dwKeyLen, DNS_RR_RECORD ** ppDNSRecord ); 
-int32 DNSCreateTSIGRecord( char *szKeyName, int32 dwTimeSigned, int16 wFudge, int16 wOriginalID, uint8 * pMac, int16 wMacSize, DNS_RR_RECORD ** ppDNSRecord ); 
-int32 DNSCreateQuestionRecord( char *pszQName, int16 wQType, int16 wQClass, DNS_QUESTION_RECORD ** ppDNSQuestionRecord ); 
-int32 DNSAddQuestionSection( DNS_REQUEST * pDNSRequest, DNS_QUESTION_RECORD * pDNSQuestion ); 
-int32 DNSAddAdditionalSection( DNS_REQUEST * pDNSRequest, DNS_RR_RECORD * pDNSRecord );
-int32 DNSAddAnswerSection( DNS_REQUEST * pDNSRequest, DNS_RR_RECORD * pDNSRecord );
-int32 DNSAddAuthoritySection( DNS_REQUEST * pDNSRequest, DNS_RR_RECORD * pDNSRecord );
-int32 DNSCreateZoneRecord( const char *pszZName, DNS_ZONE_RECORD ** ppDNSZoneRecord );
-int32 DNSFreeZoneRecord( DNS_ZONE_RECORD * pDNSZoneRecord );
-int32 DNSCreateNameInUseRecord( char *pszName, int32 qtype, struct in_addr *addr, DNS_RR_RECORD ** ppDNSRRRecord );
-int32 DNSCreateNameNotInUseRecord( char *pszName, int32 qtype, DNS_RR_RECORD ** ppDNSRRRecord );
-
-/* from dnsresponse.c */
-
-int32 DNSStdReceiveStdResponse( HANDLE hDNSHandle, DNS_RESPONSE ** ppDNSResponse ); 
-int32 DNSUnmarshallDomainName( HANDLE hRecvBuffer, DNS_DOMAIN_NAME ** ppDomainName ); 
-int32 DNSUnmarshallRRHeader( HANDLE hRecvBuffer, DNS_RR_HEADER * pRRHeader ); 
-int32 DNSUnmarshallRData( HANDLE hRecvBuffer, int32 dwSize, uint8 ** ppRData, int32 * pdwRead ); 
-int32 DNSUpdateGetResponseCode( DNS_UPDATE_RESPONSE * pDNSUpdateResponse, int32 * pdwResponseCode );
-
-/* from dnsrequest.c */
-
-int32 DNSStdSendMarshallSection( HANDLE hSendBuffer, DNS_RR_RECORD ** ppDNSAnswerRRRecords, int16 wAnswers ); 
-int32 DNSMarshallDomainName( HANDLE hSendBuffer, DNS_DOMAIN_NAME * pDomainName ); 
-int32 DNSMarshallRRHeader( HANDLE hSendBuffer, DNS_RR_RECORD * pDNSRecord ); 
-int32 DNSMarshallRData( HANDLE hSendBuffer, DNS_RR_RECORD * pDNSRecord ); 
-int32 DNSWriteDomainName( HANDLE hDNSHandle, DNS_DOMAIN_NAME * pDomainName );
-void DNSFreeRequest( DNS_REQUEST * pDNSRequest );
-int32 DNSStdAddQuestionSection( DNS_REQUEST * pDNSRequest, DNS_QUESTION_RECORD * pDNSQuestion ); 
-int32 DNSStdAddAdditionalSection( DNS_REQUEST * pDNSRequest, DNS_RR_RECORD * pDNSRecord ); 
-int32 DNSStdCreateStdRequest( DNS_REQUEST ** ppDNSRequest );
-int32 DNSStdSendStdRequest2( HANDLE hDNSServer, DNS_REQUEST * pDNSRequest );
-
-/* from dnsuprequest.c */
-
-int32 DNSUpdateSendUpdateRequest2( HANDLE hSendBuffer, DNS_UPDATE_REQUEST * pDNSRequest );
-int32 DNSUpdateBuildRequestMessage( DNS_UPDATE_REQUEST * pDNSRequest, HANDLE * phSendBuffer );
-void DNSUpdateFreeRequest( DNS_UPDATE_REQUEST * pDNSRequest ); 
-int32 DNSWriteDomainName( HANDLE hDNSHandle, DNS_DOMAIN_NAME * pDomainName ); 
-void DNSUpdateFreeRequest( DNS_UPDATE_REQUEST * pDNSRequest ); 
-int32 DNSUpdateAddZoneSection( DNS_UPDATE_REQUEST * pDNSRequest, DNS_ZONE_RECORD * pDNSZone ); 
-int32 DNSUpdateAddAdditionalSection( DNS_UPDATE_REQUEST * pDNSRequest, DNS_RR_RECORD * pDNSRecord ); 
-int32 DNSUpdateAddPRSection( DNS_UPDATE_REQUEST * pDNSRequest, DNS_RR_RECORD * pDNSRecord ); 
-int32 DNSUpdateAddUpdateSection( DNS_UPDATE_REQUEST * pDNSRequest, DNS_RR_RECORD * pDNSRecord ); 
-int32 DNSUpdateCreateUpdateRequest( DNS_UPDATE_REQUEST ** ppDNSRequest );
+DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,
+			    uint16 q_type, uint16 q_class,
+			    struct dns_request **preq );
+DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
+			     struct dns_update_request **preq );
+DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
+			   const char *host, int num_ips,
+			   const struct in_addr *iplist,
+			   struct dns_update_request **preq);
+DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
+			  uint16 type, uint16 r_class, uint32 ttl,
+			  uint16 data_length, uint8 *data,
+			  struct dns_rrec **prec);
+DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
+		       uint16 *num_records, struct dns_rrec ***records);
+DNS_ERROR dns_create_tkey_record(TALLOC_CTX *mem_ctx, const char *keyname,
+				 const char *algorithm_name, time_t inception,
+				 time_t expiration, uint16 mode, uint16 error,
+				 uint16 key_length, const uint8 *key,
+				 struct dns_rrec **prec);
+DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
+					const char *name,
+					const in_addr_t *ip,
+					struct dns_rrec **prec);
+DNS_ERROR dns_create_delete_record(TALLOC_CTX *mem_ctx, const char *name,
+				   uint16 type, uint16 r_class,
+				   struct dns_rrec **prec);
+DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
+			      uint32 ttl, in_addr_t ip,
+			      struct dns_rrec **prec);
+DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
+				     struct dns_tkey_record **ptkey);
+DNS_ERROR dns_create_tsig_record(TALLOC_CTX *mem_ctx, const char *keyname,
+				 const char *algorithm_name,
+				 time_t time_signed, uint16 fudge,
+				 uint16 mac_length, const uint8 *mac,
+				 uint16 original_id, uint16 error,
+				 struct dns_rrec **prec);
+DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
+		       uint16 *num_records, struct dns_rrec ***records);
 
 /* from dnssock.c */
 
-DNS_ERROR DNSOpen( char *nameserver, int32 dwType, HANDLE * phDNSServer );
-int32 DNSReceiveBufferContext( HANDLE hDNSHandle, HANDLE hDNSRecvBuffer, int32 * pdwBytesRead );
-int32 DNSCreateSendBuffer( HANDLE * phDNSSendBuffer );
-int32 DNSMarshallBuffer( HANDLE hDNSSendBuffer, uint8 * pDNSSendBuffer, int32 dwBufferSize, int32 * pdwBytesWritten );
-int32 DNSSendBufferContext( HANDLE hDNSServer, HANDLE hSendBuffer, int32 * pdwBytesSent );
-int32 DNSCreateReceiveBuffer( HANDLE * phDNSRecvBuffer );
-int32 DNSUnmarshallBuffer( HANDLE hDNSRecvBuffer, uint8 * pDNSRecvBuffer, int32 dwBufferSize, int32 * pdwBytesRead );
-int32 DNSUnmarshallDomainNameAtOffset( HANDLE hRecvBuffer, int16 wOffset, DNS_DOMAIN_NAME ** ppDomainName );
-int32 DNSReceiveBufferMoveBackIndex( HANDLE hRecvBuffer, int16 wOffset );
-void DNSFreeSendBufferContext( HANDLE hSendBuffer );
-int32 DNSGetSendBufferContextSize( HANDLE hSendBuffer );
-uint8 *DNSGetSendBufferContextBuffer( HANDLE hSendBuffer );
+DNS_ERROR dns_open( const char *nameserver, int32 dwType,
+		    TALLOC_CTX *mem_ctx,
+		    struct dns_connection **conn );
+DNS_ERROR dns_send(struct dns_connection *conn, const struct dns_buffer *buf);
+DNS_ERROR dns_receive(TALLOC_CTX *mem_ctx, struct dns_connection *conn,
+		      struct dns_buffer **presult);
+DNS_ERROR dns_transaction(TALLOC_CTX *mem_ctx, struct dns_connection *conn,
+			  const struct dns_request *req,
+			  struct dns_request **resp);
+DNS_ERROR dns_update_transaction(TALLOC_CTX *mem_ctx,
+				 struct dns_connection *conn,
+				 struct dns_update_request *up_req,
+				 struct dns_update_request **up_resp);
 
+/* from dnsmarshall.c */
+
+struct dns_buffer *dns_create_buffer(TALLOC_CTX *mem_ctx);
+void dns_marshall_buffer(struct dns_buffer *buf, const uint8 *data,
+			 size_t len);
+void dns_marshall_uint16(struct dns_buffer *buf, uint16 val);
+void dns_marshall_uint32(struct dns_buffer *buf, uint32 val);
+void dns_unmarshall_buffer(struct dns_buffer *buf, uint8 *data,
+			   size_t len);
+void dns_unmarshall_uint16(struct dns_buffer *buf, uint16 *val);
+void dns_unmarshall_uint32(struct dns_buffer *buf, uint32 *val);
+void dns_unmarshall_domain_name(TALLOC_CTX *mem_ctx,
+				struct dns_buffer *buf,
+				struct dns_domain_name **pname);
+void dns_marshall_domain_name(struct dns_buffer *buf,
+			      const struct dns_domain_name *name);
+void dns_unmarshall_domain_name(TALLOC_CTX *mem_ctx,
+				struct dns_buffer *buf,
+				struct dns_domain_name **pname);
+DNS_ERROR dns_marshall_request(TALLOC_CTX *mem_ctx,
+			       const struct dns_request *req,
+			       struct dns_buffer **pbuf);
+DNS_ERROR dns_unmarshall_request(TALLOC_CTX *mem_ctx,
+				 struct dns_buffer *buf,
+				 struct dns_request **preq);
+DNS_ERROR dns_marshall_update_request(TALLOC_CTX *mem_ctx,
+				      struct dns_update_request *update,
+				      struct dns_buffer **pbuf);
+DNS_ERROR dns_unmarshall_update_request(TALLOC_CTX *mem_ctx,
+					struct dns_buffer *buf,
+					struct dns_update_request **pupreq);
+struct dns_request *dns_update2request(struct dns_update_request *update);
+struct dns_update_request *dns_request2update(struct dns_request *request);
+uint16 dns_response_code(uint16 flags);
 
 /* from dnsgss.c */
 
 #ifdef HAVE_GSSAPI_SUPPORT
 
-int32 DNSVerifyResponseMessage_GSSSuccess( gss_ctx_id_t * pGSSContext, DNS_RR_RECORD * pClientTKeyRecord, DNS_RESPONSE * pDNSResponse ); 
-int32 DNSVerifyResponseMessage_GSSContinue( gss_ctx_id_t * pGSSContext, DNS_RR_RECORD * pClientTKeyRecord, DNS_RESPONSE * pDNSResponse, uint8 ** ppServerKeyData, int16 * pwServerKeyDataSize );
-int32 DNSResponseGetRCode( DNS_RESPONSE * pDNSResponse, int16 * pwRCode );
-int32 DNSResponseGetTSIGRecord( DNS_RESPONSE * pDNSResponse, DNS_RR_RECORD ** ppTSIGRecord ); 
-int32 DNSCompareTKeyRecord( DNS_RR_RECORD * pClientTKeyRecord, DNS_RR_RECORD * pTKeyRecord );
-int32 DNSBuildTKeyQueryRequest( char *szKeyName, uint8 * pKeyData, int32 dwKeyLen, DNS_REQUEST ** ppDNSRequest ); 
-int32 DNSResponseGetTKeyRecord( DNS_RESPONSE * pDNSResponse, DNS_RR_RECORD ** ppTKeyRecord ); 
-int32 DNSGetTKeyData( DNS_RR_RECORD * pTKeyRecord, uint8 ** ppKeyData, int16 * pwKeyDataSize ); 
-int32 DNSNegotiateSecureContext( HANDLE hDNSServer, char *szDomain, char *szServerName, char *szKeyName, gss_ctx_id_t * pGSSContext ); 
 void display_status( const char *msg, OM_uint32 maj_stat, OM_uint32 min_stat ); 
-int32 DNSNegotiateContextAndSecureUpdate( HANDLE hDNSServer, char *szServiceName, char *szDomainName, char *szHost, int32 dwIPAddress );
+DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
+				 const char *servername,
+				 const char *keyname,
+				 gss_ctx_id_t *gss_ctx );
+DNS_ERROR dns_sign_update(struct dns_update_request *req,
+			  gss_ctx_id_t gss_ctx,
+			  const char *keyname,
+			  const char *algorithmname,
+			  time_t time_signed, uint16 fudge);
+DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
+				    const char *domainname,
+				    const char *hostname,
+				    in_addr_t ip_addr,
+				    struct dns_update_request **preq);
 
 #endif	/* HAVE_GSSAPI_SUPPORT */
-
-/* from dnsupdate.c */
-
-int32 DNSSendUpdate( HANDLE hDNSServer, const char *szDomainName, char *szHost, struct in_addr *iplist, int num_addrs, DNS_UPDATE_RESPONSE ** ppDNSUpdateResponse );
-int32 DNSBuildSignatureBuffer( int32 dwMaxSignatureSize, uint8 ** ppSignature ); 
-int32 DNSBuildMessageBuffer( DNS_UPDATE_REQUEST * pDNSUpdateRequest, char *szKeyName, int32 * pdwTimeSigned, int16 * pwFudge, uint8 ** ppMessageBuffer, int32 * pdwMessageSize ); 
-int32 DNSClose( HANDLE hDNSUpdate );
-
-#ifdef HAVE_GSSAPI_SUPPORT
-int32 DNSSendSecureUpdate( HANDLE hDNSServer, gss_ctx_id_t * pGSSContext, char *pszKeyName, char *szDomainName, char *szHost, int32 dwIP, DNS_UPDATE_RESPONSE ** ppDNSUpdateResponse );
-int32 DNSUpdateGenerateSignature( gss_ctx_id_t * pGSSContext, DNS_UPDATE_REQUEST * pDNSUpdateRequest, char *pszKeyName ); 
-#endif  /* HAVE_GSSAPI_SUPPORT */
-
-/* from dnsupresp.c */
-
-int32 DNSUpdateReceiveUpdateResponse( HANDLE hDNSHandle, DNS_UPDATE_RESPONSE ** ppDNSResponse );
-
-/* from dnssign.c */
-
-#ifdef HAVE_GSSAPI_SUPPORT
-int32 DNSGenerateHash( gss_ctx_id_t * gss_context, uint8 * pRequestBuffer, uint8 ** ppMAC, int32 * pdwMacLen );
-int32 BuildHashInputBuffer( DNS_REQUEST * pDNSRequest, int32 dwLength, uint8 ** ppHashInputBuffer, int32 * pdwHashInputBufferLen );
-int32 DNSStdValidateAndGetTSIGRecord( gss_ctx_id_t * gss_context, DNS_RESPONSE * pDNSResponse, DNS_RR_RECORD ** ppDNSTSIGRecord );
-#endif  /* HAVE_GSSAPI_SUPPORT */
-
 
 #endif	/* _DNS_H */

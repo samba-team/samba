@@ -48,480 +48,6 @@ static int strupr( char *szDomainName )
 /*********************************************************************
 *********************************************************************/
 
-int32 DNSBuildTKeyQueryRequest( char *szKeyName,
-			  uint8 * pKeyData,
-			  int32 dwKeyLen, DNS_REQUEST ** ppDNSRequest )
-{
-	int32 dwError = 0;
-	DNS_RR_RECORD *pDNSTKeyRecord = NULL;
-	DNS_REQUEST *pDNSRequest = NULL;
-	DNS_QUESTION_RECORD *pDNSQuestionRecord = NULL;
-
-	dwError = DNSStdCreateStdRequest( &pDNSRequest );
-	BAIL_ON_ERROR( dwError );
-
-	dwError = DNSCreateQuestionRecord( szKeyName,
-					   QTYPE_TKEY,
-					   DNS_CLASS_IN,
-					   &pDNSQuestionRecord );
-	BAIL_ON_ERROR( dwError );
-
-	dwError = DNSStdAddQuestionSection( pDNSRequest, pDNSQuestionRecord );
-	BAIL_ON_ERROR( dwError );
-
-	dwError = DNSCreateTKeyRecord( szKeyName,
-				       pKeyData,
-				       ( int16 ) dwKeyLen, &pDNSTKeyRecord );
-	BAIL_ON_ERROR( dwError );
-
-	dwError = DNSStdAddAdditionalSection( pDNSRequest, pDNSTKeyRecord );
-	BAIL_ON_ERROR( dwError );
-
-	*ppDNSRequest = pDNSRequest;
-
-	return dwError;
-
-      error:
-
-	*ppDNSRequest = NULL;
-
-	return dwError;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSVerifyResponseMessage_GSSSuccess( gss_ctx_id_t * pGSSContext,
-				     DNS_RR_RECORD * pClientTKeyRecord,
-				     DNS_RESPONSE * pDNSResponse )
-{
-	int32 dwError = 0;
-	DNS_RR_RECORD *pTKeyRecord = NULL;
-	DNS_RR_RECORD *pTSIGRecord = NULL;
-	int16 wRCode = 0;
-
-	dwError = DNSResponseGetRCode( pDNSResponse, &wRCode );
-	BAIL_ON_ERROR( dwError );
-
-	if ( wRCode != 0 ) {
-		dwError = ERROR_BAD_RESPONSE;
-		BAIL_ON_ERROR( dwError );
-
-	}
-
-	dwError = DNSResponseGetTKeyRecord( pDNSResponse, &pTKeyRecord );
-	BAIL_ON_ERROR( dwError );
-
-	dwError = DNSCompareTKeyRecord( pClientTKeyRecord, pTKeyRecord );
-	BAIL_ON_ERROR( dwError );
-
-	dwError = DNSResponseGetTSIGRecord( pDNSResponse, &pTSIGRecord );
-	BAIL_ON_ERROR( dwError );
-
-/*				
-	dwMajorStatus = GSS_VerifyMIC(
-						pDNSResponse->pDNSResponseBuffer,
-						pDNSResponse->dwNumBytes,
-						pDNSRRRecord->RData.TSIGRData.pMAC,
-						pDNSRRRecord->RData.TSIGRData.wMaxSize
-						)
-	BAIL_ON_ERROR(dwMajorStatus);*/
-
-      error:
-
-	return dwError;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSVerifyResponseMessage_GSSContinue( gss_ctx_id_t * pGSSContext,
-				      DNS_RR_RECORD * pClientTKeyRecord,
-				      DNS_RESPONSE * pDNSResponse,
-				      uint8 ** ppServerKeyData,
-				      int16 * pwServerKeyDataSize )
-{
-	int32 dwError = 0;
-	DNS_RR_RECORD *pTKeyRecord = NULL;
-	int16 wRCode = 0;
-	uint8 *pServerKeyData = NULL;
-	int16 wServerKeyDataSize = 0;
-
-
-	dwError = DNSResponseGetRCode( pDNSResponse, &wRCode );
-	BAIL_ON_ERROR( dwError );
-	if ( wRCode != 0 ) {
-		dwError = ERROR_BAD_RESPONSE;
-		BAIL_ON_ERROR( dwError );
-
-	}
-
-	dwError = DNSResponseGetTKeyRecord( pDNSResponse, &pTKeyRecord );
-	BAIL_ON_ERROR( dwError );
-
-
-	dwError = DNSCompareTKeyRecord( pClientTKeyRecord, pTKeyRecord );
-	BAIL_ON_ERROR( dwError );
-
-	dwError = DNSGetTKeyData( pTKeyRecord,
-				  &pServerKeyData, &wServerKeyDataSize );
-	BAIL_ON_ERROR( dwError );
-
-	*ppServerKeyData = pServerKeyData;
-	*pwServerKeyDataSize = wServerKeyDataSize;
-
-	return dwError;
-
-      error:
-
-	*ppServerKeyData = NULL;
-	*pwServerKeyDataSize = 0;
-	return dwError;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSResponseGetRCode( DNS_RESPONSE * pDNSResponse, int16 * pwRCode )
-{
-	int32 dwError = 0;
-	int16 wnParameter = 0;
-	uint8 uChar = 0;
-
-	wnParameter = htons( pDNSResponse->wParameter );
-
-	/* Byte 0 is the most significate byte
-	   Bit 12, 13, 14, 15 or Bit 4, 5, 6, 7 represent the RCode */
-
-	memcpy( &uChar, ( uint8 * ) & wnParameter + 1, 1 );
-	uChar >>= 4;
-	*pwRCode = ( int16 ) uChar;
-
-	return dwError;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSResponseGetTKeyRecord( DNS_RESPONSE * pDNSResponse,
-			  DNS_RR_RECORD ** ppTKeyRecord )
-{
-	int32 dwError = 0;
-	int16 wAnswers = 0;
-	DNS_RR_RECORD *pDNSRecord = NULL;
-	int32 i = 0;
-
-
-	wAnswers = pDNSResponse->wAnswers;
-	if ( !wAnswers ) {
-		dwError = ERROR_INVALID_PARAMETER;
-		BAIL_ON_ERROR( dwError );
-	}
-
-	for ( i = 0; i < wAnswers; i++ ) {
-		pDNSRecord = *( pDNSResponse->ppAnswerRRSet + i );
-		if ( pDNSRecord->RRHeader.wType == QTYPE_TKEY ) {
-			*ppTKeyRecord = pDNSRecord;
-			return dwError;
-		}
-	}
-	dwError = ERROR_RECORD_NOT_FOUND;
-
-      error:
-	*ppTKeyRecord = NULL;
-	return dwError;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSResponseGetTSIGRecord( DNS_RESPONSE * pDNSResponse,
-			  DNS_RR_RECORD ** ppTSIGRecord )
-{
-	int32 dwError = 0;
-	int16 wAdditionals = 0;
-	DNS_RR_RECORD *pDNSRecord = NULL;
-
-	int32 i = 0;
-
-	wAdditionals = pDNSResponse->wAdditionals;
-	if ( !wAdditionals ) {
-		dwError = ERROR_INVALID_PARAMETER;
-		BAIL_ON_ERROR( dwError );
-	}
-
-	for ( i = 0; i < wAdditionals; i++ ) {
-		pDNSRecord = *( pDNSResponse->ppAdditionalRRSet + i );
-		if ( pDNSRecord->RRHeader.wType == QTYPE_TSIG ) {
-			*ppTSIGRecord = pDNSRecord;
-			return dwError;
-		}
-	}
-	dwError = ERROR_RECORD_NOT_FOUND;
-
-      error:
-	*ppTSIGRecord = NULL;
-	return dwError;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSCompareTKeyRecord( DNS_RR_RECORD * pClientTKeyRecord,
-		      DNS_RR_RECORD * pTKeyRecord )
-{
-	int32 dwError = 0;
-
-	return dwError;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSNegotiateContextAndSecureUpdate( HANDLE hDNSServer,
-				    char *szServiceName,
-				    char *szDomainName,
-				    char *szHost, int32 dwIPAddress )
-{
-	int32 dwError = 0;
-	char *pszKeyName = NULL;
-	gss_ctx_id_t ContextHandle = 0;
-	gss_ctx_id_t *pContextHandle = &ContextHandle;
-
-	dwError = DNSGenerateKeyName( &pszKeyName );
-	BAIL_ON_ERROR( dwError );
-
-	dwError =
-		DNSNegotiateSecureContext( hDNSServer, szDomainName, szHost,
-					   pszKeyName, pContextHandle );
-	BAIL_ON_ERROR( dwError );
-
-      error:
-
-	return dwError;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSGetTKeyData( DNS_RR_RECORD * pTKeyRecord,
-		uint8 ** ppKeyData, int16 * pwKeyDataSize )
-{
-	int32 dwError = 0;
-	int16 wKeyDataSize = 0;
-	int16 wnKeyDataSize = 0;
-	int32 dwKeyDataSizeOffset = 0;
-	int32 dwKeyDataOffset = 0;
-	uint8 *pKeyData = NULL;
-
-	DNSRecordGenerateOffsets( pTKeyRecord );
-	dwKeyDataSizeOffset = pTKeyRecord->Offsets.TKey.wKeySizeOffset;
-	dwKeyDataOffset = pTKeyRecord->Offsets.TKey.wKeyDataOffset;
-	memcpy( &wnKeyDataSize, pTKeyRecord->pRData + dwKeyDataSizeOffset,
-		sizeof( int16 ) );
-	wKeyDataSize = ntohs( wnKeyDataSize );
-
-	dwError = DNSAllocateMemory( wKeyDataSize, ( void * ) &pKeyData );
-	BAIL_ON_ERROR( dwError );
-
-	memcpy( pKeyData, pTKeyRecord->pRData + dwKeyDataOffset,
-		wKeyDataSize );
-
-	*ppKeyData = pKeyData;
-	*pwKeyDataSize = wKeyDataSize;
-
-	return dwError;
-
-
-      error:
-
-	*ppKeyData = NULL;
-	*pwKeyDataSize = 0;
-	return dwError;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSNegotiateSecureContext( HANDLE hDNSServer,
-			   char *szDomain,
-			   char *szServerName,
-			   char *szKeyName, gss_ctx_id_t * pGSSContext )
-{
-	int32 dwError = 0;
-	int32 dwMajorStatus = 0;
-	char szUpperCaseDomain[256];
-	char szTargetName[256];
-	DNS_ERROR dns_status;
-
-	gss_buffer_desc input_name;
-	gss_buffer_desc input_desc, output_desc;
-	DNS_REQUEST *pDNSRequest = NULL;
-	DNS_RESPONSE *pDNSResponse = NULL;
-	DNS_RR_RECORD *pClientTKeyRecord = NULL;
-	HANDLE hDNSTcpServer = ( HANDLE ) NULL;
-
-	uint8 *pServerKeyData = NULL;
-	int16 wServerKeyDataSize = 0;
-
-	OM_uint32 ret_flags = 0;
-
-	int32 dwMinorStatus = 0;
-	gss_name_t targ_name;
-	gss_cred_id_t creds;
-
-	krb5_principal host_principal;
-	krb5_context ctx = NULL;
-
-	gss_OID_desc nt_host_oid_desc =
-		{ 10, ( char * ) ( ( void * ) "\052\206\110\206\367\022\001\002\002\002" ) };
-	gss_OID_desc krb5_oid_desc =
-		{ 9, ( char * ) ( ( void * ) "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02" ) };
-
-	input_desc.value = NULL;
-	input_desc.length = 0;
-
-	dns_status = DNSOpen( szServerName, DNS_TCP, &hDNSTcpServer );
-	BAIL_ON_DNS_ERROR( dns_status );
-
-
-	memset( szUpperCaseDomain, 0, sizeof( szUpperCaseDomain ) );
-	memcpy( szUpperCaseDomain, szDomain, strlen( szDomain ) );
-	strupr( szUpperCaseDomain );
-
-	dwMajorStatus = gss_acquire_cred( ( OM_uint32 * ) & dwMinorStatus,
-					  GSS_C_NO_NAME,
-					  GSS_C_INDEFINITE,
-					  GSS_C_NO_OID_SET,
-					  GSS_C_INITIATE,
-					  &creds, NULL, NULL );
-	BAIL_ON_SEC_ERROR( dwMajorStatus );
-	printf( "After gss_acquire_cred %d\n", dwMajorStatus );
-
-	sprintf( szTargetName, "dns/%s@%s", szServerName, szUpperCaseDomain );
-	printf( "%s\n", szTargetName );
-
-	krb5_init_context( &ctx );
-	krb5_parse_name( ctx, szTargetName, &host_principal );
-	krb5_free_context( ctx );
-
-	input_name.value = &host_principal;
-	input_name.length = sizeof( host_principal );
-
-	dwMajorStatus = gss_import_name( ( OM_uint32 * ) & dwMinorStatus,
-					 &input_name,
-					 &nt_host_oid_desc, &targ_name );
-	printf( "After gss_import_name %d\n", dwMajorStatus );
-	BAIL_ON_SEC_ERROR( dwMajorStatus );
-	printf( "After gss_import_name %d\n", dwMajorStatus );
-
-	memset( pGSSContext, 0, sizeof( gss_ctx_id_t ) );
-	*pGSSContext = GSS_C_NO_CONTEXT;
-
-	do {
-
-		dwMajorStatus = gss_init_sec_context( ( OM_uint32 * ) &
-						      dwMinorStatus, creds,
-						      pGSSContext, targ_name,
-						      &krb5_oid_desc,
-						      GSS_C_REPLAY_FLAG |
-						      GSS_C_MUTUAL_FLAG |
-						      GSS_C_SEQUENCE_FLAG |
-						      GSS_C_CONF_FLAG |
-						      GSS_C_INTEG_FLAG |
-						      GSS_C_DELEG_FLAG, 0,
-						      NULL, &input_desc, NULL,
-						      &output_desc,
-						      &ret_flags, NULL );
-		display_status( "gss_init_context", dwMajorStatus,
-				dwMinorStatus );
-		BAIL_ON_SEC_ERROR( dwMajorStatus );
-		printf( "After gss_init_sec_context %d\n", dwMajorStatus );
-
-		switch ( dwMajorStatus ) {
-
-		case GSS_S_COMPLETE:
-			if ( output_desc.length != 0 ) {
-
-				dwError = DNSBuildTKeyQueryRequest( szKeyName,
-								    (uint8 *)output_desc.
-								    value,
-								    output_desc.
-								    length,
-								    &pDNSRequest );
-				BAIL_ON_ERROR( dwError );
-
-				dwError =
-					DNSStdSendStdRequest2( hDNSTcpServer,
-							       pDNSRequest );
-				BAIL_ON_ERROR( dwError );
-
-
-				dwError =
-					DNSStdReceiveStdResponse
-					( hDNSTcpServer, &pDNSResponse );
-				BAIL_ON_ERROR( dwError );
-
-				dwError =
-					DNSVerifyResponseMessage_GSSSuccess
-					( pGSSContext, pClientTKeyRecord,
-					  pDNSResponse );
-				BAIL_ON_ERROR( dwError );
-			}
-			break;
-
-
-		case GSS_S_CONTINUE_NEEDED:
-			if ( output_desc.length != 0 ) {
-
-				dwError = DNSBuildTKeyQueryRequest( szKeyName,
-								    (uint8 *)output_desc.
-								    value,
-								    output_desc.
-								    length,
-								    &pDNSRequest );
-				BAIL_ON_ERROR( dwError );
-
-				dwError =
-					DNSStdSendStdRequest2( hDNSTcpServer,
-							       pDNSRequest );
-				BAIL_ON_ERROR( dwError );
-
-				dwError =
-					DNSStdReceiveStdResponse
-					( hDNSTcpServer, &pDNSResponse );
-				BAIL_ON_ERROR( dwError );
-
-				dwError =
-					DNSVerifyResponseMessage_GSSContinue
-					( pGSSContext, pClientTKeyRecord,
-					  pDNSResponse, &pServerKeyData,
-					  &wServerKeyDataSize );
-				BAIL_ON_ERROR( dwError );
-
-				input_desc.value = pServerKeyData;
-				input_desc.length = wServerKeyDataSize;
-			}
-			break;
-
-		default:
-			BAIL_ON_ERROR( dwError );
-		}
-
-	} while ( dwMajorStatus == GSS_S_CONTINUE_NEEDED );
-
-	/* If we arrive here, we have a valid security context */
-
-      sec_error:
-      error:
-
-	return dwError;
-
-}
-
-/*********************************************************************
-*********************************************************************/
-
 static void display_status_1( const char *m, OM_uint32 code, int type )
 {
 	OM_uint32 maj_stat, min_stat;
@@ -549,6 +75,254 @@ void display_status( const char *msg, OM_uint32 maj_stat, OM_uint32 min_stat )
 {
 	display_status_1( msg, maj_stat, GSS_C_GSS_CODE );
 	display_status_1( msg, min_stat, GSS_C_MECH_CODE );
+}
+
+static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
+					    struct dns_connection *conn,
+					    const char *keyname,
+					    const gss_name_t target_name,
+					    gss_ctx_id_t *ctx )
+{
+	struct gss_buffer_desc_struct input_desc, *input_ptr, output_desc;
+	OM_uint32 major, minor;
+	OM_uint32 ret_flags;
+	DNS_ERROR err;
+
+	gss_OID_desc krb5_oid_desc =
+		{ 9, (char *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x02" };
+
+	*ctx = GSS_C_NO_CONTEXT;
+	input_ptr = NULL;
+
+	do {
+		major = gss_init_sec_context(
+			&minor, NULL, ctx, target_name, &krb5_oid_desc,
+			GSS_C_REPLAY_FLAG | GSS_C_MUTUAL_FLAG |
+			GSS_C_SEQUENCE_FLAG | GSS_C_CONF_FLAG |
+			GSS_C_INTEG_FLAG | GSS_C_DELEG_FLAG,
+			0, NULL, input_ptr, NULL, &output_desc,
+			&ret_flags, NULL );
+
+		if (input_ptr != NULL) {
+			TALLOC_FREE(input_desc.value);
+		}
+
+		if (output_desc.length != 0) {
+
+			struct dns_request *req;
+			struct dns_rrec *rec;
+			struct dns_buffer *buf;
+
+			time_t t = time(NULL);
+
+			err = dns_create_query(mem_ctx, keyname, QTYPE_TKEY,
+					       DNS_CLASS_IN, &req);
+			if (!ERR_DNS_IS_OK(err)) goto error;
+
+			err = dns_create_tkey_record(
+				req, keyname, "gss.microsoft.com", t,
+				t + 86400, DNS_TKEY_MODE_GSSAPI, 0,
+				output_desc.length, (uint8 *)output_desc.value,
+				&rec);
+			if (!ERR_DNS_IS_OK(err)) goto error;
+
+			err = dns_add_rrec(req, rec, &req->num_additionals,
+					   &req->additionals);
+			if (!ERR_DNS_IS_OK(err)) goto error;
+
+			err = dns_marshall_request(req, req, &buf);
+			if (!ERR_DNS_IS_OK(err)) goto error;
+
+			err = dns_send(conn, buf);
+			if (!ERR_DNS_IS_OK(err)) goto error;
+
+			TALLOC_FREE(req);
+		}
+
+		gss_release_buffer(&minor, &output_desc);
+
+		if ((major != GSS_S_COMPLETE) &&
+		    (major != GSS_S_CONTINUE_NEEDED)) {
+			return ERROR_DNS_GSS_ERROR;
+		}
+
+		if (major == GSS_S_CONTINUE_NEEDED) {
+
+			struct dns_request *resp;
+			struct dns_buffer *buf;
+			struct dns_tkey_record *tkey;
+
+			err = dns_receive(mem_ctx, conn, &buf);
+			if (!ERR_DNS_IS_OK(err)) goto error;
+
+			err = dns_unmarshall_request(buf, buf, &resp);
+			if (!ERR_DNS_IS_OK(err)) goto error;
+
+			/*
+			 * TODO: Compare id and keyname
+			 */
+			
+			if ((resp->num_additionals != 1) ||
+			    (resp->answers[0]->type != QTYPE_TKEY)) {
+				err = ERROR_DNS_INVALID_MESSAGE;
+				goto error;
+			}
+
+			err = dns_unmarshall_tkey_record(
+				mem_ctx, resp->answers[0], &tkey);
+			if (!ERR_DNS_IS_OK(err)) goto error;
+
+			input_desc.length = tkey->key_length;
+			input_desc.value = talloc_move(mem_ctx, &tkey->key);
+
+			input_ptr = &input_desc;
+
+			TALLOC_FREE(buf);
+		}
+
+	} while ( major == GSS_S_CONTINUE_NEEDED );
+
+	/* If we arrive here, we have a valid security context */
+
+	err = ERROR_DNS_SUCCESS;
+
+      error:
+
+	return err;
+}
+
+DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
+				 const char *servername,
+				 const char *keyname,
+				 gss_ctx_id_t *gss_ctx )
+{
+	OM_uint32 major, minor;
+
+	char *upcaserealm, *targetname;
+	DNS_ERROR err;
+
+	gss_buffer_desc input_name;
+	struct dns_connection *conn;
+
+	gss_name_t targ_name;
+
+	krb5_principal host_principal;
+	krb5_context krb_ctx = NULL;
+
+	gss_OID_desc nt_host_oid_desc =
+		{ 10, (char *)"\052\206\110\206\367\022\001\002\002\002" };
+
+	TALLOC_CTX *mem_ctx;
+
+	if (!(mem_ctx = talloc_init("dns_negotiate_sec_ctx"))) {
+		return ERROR_DNS_NO_MEMORY;
+	}
+
+	err = dns_open( servername, DNS_TCP, mem_ctx, &conn );
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	if (!(upcaserealm = talloc_strdup(mem_ctx, target_realm))) {
+		err = ERROR_DNS_NO_MEMORY;
+		goto error;
+	}
+
+	strupr(upcaserealm);
+
+	if (!(targetname = talloc_asprintf(mem_ctx, "dns/%s@%s",
+					   servername, upcaserealm))) {
+		err = ERROR_DNS_NO_MEMORY;
+		goto error;
+	}
+
+	krb5_init_context( &krb_ctx );
+	krb5_parse_name( krb_ctx, targetname, &host_principal );
+
+	input_name.value = &host_principal;
+	input_name.length = sizeof( host_principal );
+
+	major = gss_import_name( &minor, &input_name,
+				 &nt_host_oid_desc, &targ_name );
+
+	krb5_free_principal( krb_ctx, host_principal );
+	krb5_free_context( krb_ctx );
+
+	if (major) {
+		err = ERROR_DNS_GSS_ERROR;
+		goto error;
+	}
+
+	err = dns_negotiate_gss_ctx_int(mem_ctx, conn, keyname, targ_name,
+					gss_ctx);
+
+	gss_release_name( &minor, &targ_name );
+
+ error:
+	TALLOC_FREE(mem_ctx);
+
+	return err;
+}
+
+DNS_ERROR dns_sign_update(struct dns_update_request *req,
+			  gss_ctx_id_t gss_ctx,
+			  const char *keyname,
+			  const char *algorithmname,
+			  time_t time_signed, uint16 fudge)
+{
+	struct dns_buffer *buf;
+	DNS_ERROR err;
+	struct dns_domain_name *key, *algorithm;
+	struct gss_buffer_desc_struct msg, mic;
+	OM_uint32 major, minor;
+	struct dns_rrec *rec;
+
+	err = dns_marshall_update_request(req, req, &buf);
+	if (!ERR_DNS_IS_OK(err)) return err;
+
+	err = dns_domain_name_from_string(buf, keyname, &key);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	err = dns_domain_name_from_string(buf, algorithmname, &algorithm);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	dns_marshall_domain_name(buf, key);
+	dns_marshall_uint16(buf, DNS_CLASS_ANY);
+	dns_marshall_uint32(buf, 0); /* TTL */
+	dns_marshall_domain_name(buf, algorithm);
+	dns_marshall_uint16(buf, 0); /* Time prefix for 48-bit time_t */
+	dns_marshall_uint32(buf, time_signed);
+	dns_marshall_uint16(buf, fudge);
+	dns_marshall_uint16(buf, 0); /* error */
+	dns_marshall_uint16(buf, 0); /* other len */
+
+	err = buf->error;
+	if (!ERR_DNS_IS_OK(buf->error)) goto error;
+
+	msg.value = (void *)buf->data;
+	msg.length = buf->offset;
+
+	major = gss_get_mic(&minor, gss_ctx, 0, &msg, &mic);
+	if (major != 0) {
+		err = ERROR_DNS_GSS_ERROR;
+		goto error;
+	}
+
+	if (mic.length > 0xffff) {
+		gss_release_buffer(&minor, &mic);
+		err = ERROR_DNS_GSS_ERROR;
+		goto error;
+	}
+
+	err = dns_create_tsig_record(buf, keyname, algorithmname, time_signed,
+				     fudge, mic.length, (uint8 *)mic.value,
+				     req->id, 0, &rec);
+	gss_release_buffer(&minor, &mic);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	err = dns_add_rrec(req, rec, &req->num_additionals, &req->additionals);
+
+ error:
+	TALLOC_FREE(buf);
+	return err;
 }
 
 #endif	/* HAVE_GSSAPI_SUPPORT */
