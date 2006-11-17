@@ -70,7 +70,7 @@ static struct ldb_message_element *generate_primaryGroupID(struct ldb_module *mo
 	el->name = talloc_strdup(ctx, "primaryGroupID");
 	el->num_values = 1;
 	el->values = talloc_array(ctx, struct ldb_val, 1);
-	el->values[0].data = (uint8_t *)talloc_strdup(el->values, strrchr(sid, '-')+1);
+	el->values[0].data = (uint8_t *)talloc_strdup(el->values, p+1);
 	el->values[0].length = strlen((char *)el->values[0].data);
 
 	return el;
