@@ -1220,79 +1220,79 @@ static BOOL net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 *******************************************************************/
 
 #if defined(WITH_DNS_UPDATES)
-static BOOL net_update_dns( TALLOC_CTX *ctx, ADS_STRUCT *ads ) 
+#include "dns.h"
+DNS_ERROR DoDNSUpdate(ADS_STRUCT *ads, char *pszServerName,
+		      const char *pszDomainName,
+		      const char *pszHostName,
+		      const struct in_addr *iplist, int num_addrs );
+
+
+static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
+					const char *machine_name,
+					const struct in_addr *addrs,
+					int num_addrs)
 {
-	int num_addrs;
-	struct in_addr *iplist = NULL;
 	struct dns_rr_ns *nameservers = NULL;
 	int ns_count = 0;
-	int ret = 0;
-	NTSTATUS dns_status;
-	fstring machine_name;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	DNS_ERROR dns_err;
 	fstring dns_server;
 	const char *dnsdomain;
-	ADS_STRUCT *ads_s = NULL;
-		
 	name_to_fqdn( machine_name, global_myname() );
-	strlower_m( machine_name );
 
 	if ( (dnsdomain = strchr_m( machine_name, '.')) == NULL ) {
-		d_printf("No DNS domain configured for %s.  Unable to perform DNS Update.\n",
-			machine_name);
+		d_printf("No DNS domain configured for %s. "
+			 "Unable to perform DNS Update.\n", machine_name);
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}
 	dnsdomain++;
 
-	dns_status = ads_dns_lookup_ns( ctx, dnsdomain, &nameservers, &ns_count );
-	if ( !NT_STATUS_IS_OK(dns_status) || (ns_count == 0)) {
-		DEBUG(3,("net_ads_join: Failed to find name server for the %s realm\n",
-			ads->config.realm));
+	status = ads_dns_lookup_ns( ctx, dnsdomain, &nameservers, &ns_count );
+	if ( !NT_STATUS_IS_OK(status) || (ns_count == 0)) {
+		DEBUG(3,("net_ads_join: Failed to find name server for the %s "
+			 "realm\n", ads->config.realm));
 		goto done;
 	}
 
-	/* Get our ip address (not the 127.0.0.x address but a real ip address) */
-
-	num_addrs = get_my_ip_address( &iplist );
-	if ( num_addrs <= 0 ) {
-		DEBUG(4,("net_ads_join: Failed to find my non-loopback IP addresses!\n"));
-		ret = -1;
-		goto done;
-	}
-
-	/* Drop the user creds  */
-
-	ads_kdestroy( NULL );
-
-	ads_s = ads_init( ads->server.realm, ads->server.workgroup, ads->server.ldap_server );
-	if ( !ads_s ) {
-		DEBUG(1,("net_ads_join: ads_init() failed!\n"));
-		ret = -1;
-		goto done;
-	}
-
-	/* kinit with the machine password */
-
-	asprintf( &ads_s->auth.user_name, "%s$", global_myname() );
-	ads_s->auth.password = secrets_fetch_machine_password( lp_workgroup(), NULL, NULL );
-	ads_s->auth.realm = SMB_STRDUP( lp_realm() );
-	ads_kinit_password( ads_s );
-
-	/* Now perform the dns update - we'll try non-secure and if we fail, we'll 
-	   follow it up with a secure update */
+	/* Now perform the dns update - we'll try non-secure and if we fail,
+	   we'll follow it up with a secure update */
 
 	fstrcpy( dns_server, nameservers[0].hostname );
 
-	ret = DoDNSUpdate(dns_server, dnsdomain, machine_name, iplist, num_addrs );
-	if ( ret ) {
-		DEBUG(1, ("Error creating dns update!\n"));
+	dns_err = DoDNSUpdate(ads, dns_server, dnsdomain, machine_name, addrs, num_addrs);
+	if (!ERR_DNS_IS_OK(dns_err)) {
+		status = NT_STATUS_UNSUCCESSFUL;
 	}
 
 done:
+	return status;
+	}
+
+static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads)
+{
+	int num_addrs;
+	struct in_addr *iplist = NULL;
+	fstring machine_name;
+	NTSTATUS status;
+
+	name_to_fqdn( machine_name, global_myname() );
+	strlower_m( machine_name );
+
+	/* Get our ip address (not the 127.0.0.x address but a real ip
+	 * address) */
+
+	num_addrs = get_my_ip_address( &iplist );
+	if ( num_addrs <= 0 ) {
+		DEBUG(4,("net_ads_join: Failed to find my non-loopback IP "
+			 "addresses!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = net_update_dns_internal(mem_ctx, ads, machine_name,
+					 iplist, num_addrs);
 	SAFE_FREE( iplist );
-	if ( ads_s )
-		ads_destroy( &ads_s );
-		
-	return (ret == 0);
+	return status;
 }
 #endif
 
@@ -1506,8 +1506,22 @@ int net_ads_join(int argc, const char **argv)
 
 #if defined(WITH_DNS_UPDATES)
 	/* We enter this block with user creds */
+	ads_kdestroy( NULL );	
+	ads_destroy(&ads);
+	ads = NULL;
 	
-	if ( !net_update_dns( ctx, ads ) ) {
+	if ( (ads = ads_init( lp_realm(), NULL, NULL )) != NULL ) {
+		/* kinit with the machine password */
+
+		use_in_memory_ccache();
+		asprintf( &ads->auth.user_name, "%s$", global_myname() );
+		ads->auth.password = secrets_fetch_machine_password(
+			lp_workgroup(), NULL, NULL );
+		ads->auth.realm = SMB_STRDUP( lp_realm() );
+		ads_kinit_password( ads );
+	}
+	
+	if ( !ads || !NT_STATUS_IS_OK(net_update_dns( ctx, ads )) ) {
 		d_fprintf( stderr, "DNS update failed!\n" );
 	}
 	
@@ -1554,42 +1568,72 @@ static int net_ads_dns_usage(int argc, const char **argv)
 /*******************************************************************
  ********************************************************************/
  
-static int net_ads_dns(int argc, const char **argv)
+static int net_ads_dns_register(int argc, const char **argv)
 {
 #if defined(WITH_DNS_UPDATES)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	TALLOC_CTX *ctx;
-	BOOL register_dns = False;
-	int i;
+	fstring name;
+	int num_addrs;
+	struct in_addr *iplist = NULL;
 	
-	status = ads_startup(True, &ads);
-	if ( !ADS_ERR_OK(status) ) {
-		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
+#ifdef DEVELOPER
+	talloc_enable_leak_report();
+#endif
+	
+	if (argc > 2) {
+		d_fprintf(stderr, "net ads dns register <name> <ip>\n");
 		return -1;
 	}
 
 	if (!(ctx = talloc_init("net_ads_dns"))) {
-		DEBUG(0, ("Could not initialise talloc context\n"));
+		d_fprintf(stderr, "Could not initialise talloc context\n");
 		return -1;
 	}
 
-	/* process additional command line args */
+	if (argc > 0) {
+		fstrcpy(name, argv[0]);
+	} else {
+		name_to_fqdn(name, global_myname());
+	}
+	strlower_m(name);
 	
-	for ( i=0; i<argc; i++ ) {
-		if ( strequal(argv[i], "register") ) {
-			register_dns = True;
+	if (argc > 1) {
+		if (!(iplist = SMB_MALLOC_ARRAY(struct in_addr, 1))) {
+			d_fprintf(stderr, "net_ads_dns_register: malloc "
+				  "failed\n");
+			return -1;
 		}
-		else {
-			d_fprintf(stderr, "Bad option: %s\n", argv[i]);
+		if (inet_aton(argv[1], iplist) == 0) {
+			d_fprintf(stderr, "net_ads_dns_register: %s is not "
+				  "a valid IP address\n", argv[1]);
+			SAFE_FREE(iplist);
+			return -1;
+		}
+		num_addrs = 1;
+	} else {
+		num_addrs = get_my_ip_address( &iplist );
+		if ( num_addrs <= 0 ) {
+			d_fprintf(stderr, "net_ads_dns_regiser: Failed to "
+				  "find my non-loopback IP addresses!\n");
 			return -1;
 		}
 	}
 	
-	if ( !net_update_dns( ctx, ads ) ) {
+	status = ads_startup_nobind(True, &ads);
+	if ( !ADS_ERR_OK(status) ) {
+		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
+		TALLOC_FREE(ctx);
+		return -1;
+	}
+
+	if ( !NT_STATUS_IS_OK(net_update_dns_internal(ctx, ads, name,
+						      iplist, num_addrs)) ) {
 		d_fprintf( stderr, "DNS update failed!\n" );
 		ads_destroy( &ads );
 		TALLOC_FREE( ctx );
+		SAFE_FREE(iplist);
 		return -1;
 	}
 	
@@ -1597,12 +1641,50 @@ static int net_ads_dns(int argc, const char **argv)
 
 	ads_destroy(&ads);
 	TALLOC_FREE( ctx );
+	SAFE_FREE(iplist);
 	
 	return 0;
 #else
 	d_fprintf(stderr, "DNS update support not enabled at compile time!\n");
 	return -1;
 #endif
+}
+
+#if defined(WITH_DNS_UPDATES)
+DNS_ERROR do_gethostbyname(const char *server, const char *host);
+#endif
+
+static int net_ads_dns_gethostbyname(int argc, const char **argv)
+{
+#if defined(WITH_DNS_UPDATES)
+	DNS_ERROR err;
+	
+#ifdef DEVELOPER
+	talloc_enable_leak_report();
+#endif
+
+	if (argc != 2) {
+		d_fprintf(stderr, "net ads dns gethostbyname <server> "
+			  "<name>\n");
+		return -1;
+	}
+
+	err = do_gethostbyname(argv[0], argv[1]);
+
+	d_printf("do_gethostbyname returned %d\n", ERROR_DNS_V(err));
+#endif
+	return 0;
+}
+
+static int net_ads_dns(int argc, const char *argv[])
+{
+	struct functable func[] = {
+		{"REGISTER", net_ads_dns_register},
+		{"GETHOSTBYNAME", net_ads_dns_gethostbyname},
+		{NULL, NULL}
+	};
+
+	return net_run_function(argc, argv, func, net_ads_dns_usage);
 }
 
 /*******************************************************************

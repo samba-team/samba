@@ -37,7 +37,7 @@
 
 /* Setup the DNS_ERROR typedef.  Technique takes from nt_status.h */
 
-#if defined(HAVE_IMMEDIATE_STRUCTURES_XX_DISABLED)
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
 typedef struct {uint32 v;} DNS_ERROR;
 #define ERROR_DNS(x) ((DNS_ERROR) { x })
 #define ERROR_DNS_V(x) ((x).v)
@@ -61,6 +61,16 @@ typedef uint32 DNS_ERROR;
 #define ERROR_DNS_NO_MEMORY		ERROR_DNS(4)
 #define ERROR_DNS_INVALID_NAME_SERVER	ERROR_DNS(5)
 #define ERROR_DNS_CONNECTION_FAILED	ERROR_DNS(6)
+#define ERROR_DNS_GSS_ERROR		ERROR_DNS(7)
+#define ERROR_DNS_INVALID_NAME		ERROR_DNS(8)
+#define ERROR_DNS_INVALID_MESSAGE	ERROR_DNS(9)
+#define ERROR_DNS_SOCKET_ERROR		ERROR_DNS(10)
+#define ERROR_DNS_UPDATE_FAILED		ERROR_DNS(11)
+
+/*
+ * About to be removed, transitional error
+ */
+#define ERROR_DNS_UNSUCCESSFUL		ERROR_DNS(999)
 
 
 #define ERROR_BAD_RESPONSE		1
@@ -69,6 +79,11 @@ typedef uint32 DNS_ERROR;
 #if !defined(ERROR_INVALID_PARAMETER)
 #define ERROR_INVALID_PARAMETER         87
 #endif
+
+/*
+ * About to be removed, transitional error
+ */
+#define ERROR_UNSUCCESSFUL 999
 
 #endif	/* _DNSERR_H */
 

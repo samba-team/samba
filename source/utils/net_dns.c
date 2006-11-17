@@ -30,41 +30,115 @@
 /*********************************************************************
 *********************************************************************/
 
-int DoDNSUpdate( char *pszServerName, const char *pszDomainName,
-		 char *pszHostName, struct in_addr *iplist, int num_addrs )
+DNS_ERROR DoDNSUpdate(ADS_STRUCT *ads, char *pszServerName,
+		      const char *pszDomainName, const char *pszHostName,
+		      const struct in_addr *iplist, int num_addrs )
 {
-	int32 dwError = 0;
-	DNS_ERROR dns_status;
-	HANDLE hDNSServer = ( HANDLE ) NULL;
-	int32 dwResponseCode = 0;
-	DNS_UPDATE_RESPONSE *pDNSUpdateResponse = NULL;
-#if 0
-	DNS_UPDATE_RESPONSE *pDNSSecureUpdateResponse = NULL;
-#endif
+	DNS_ERROR err;
+	struct dns_connection *conn;
+	TALLOC_CTX *mem_ctx;
+	OM_uint32 minor;
+	struct dns_update_request *req, *resp;
 
 	if ( (num_addrs <= 0) || !iplist ) {
-		return -1;
+		return ERROR_DNS_INVALID_PARAMETER;
+	}
+
+	if (!(mem_ctx = talloc_init("DoDNSUpdate"))) {
+		return ERROR_DNS_NO_MEMORY;
 	}
 		
-	dns_status = DNSOpen( pszServerName, DNS_TCP, &hDNSServer );
-	BAIL_ON_DNS_ERROR( dns_status );
-
-	dwError = DNSSendUpdate( hDNSServer, pszDomainName, pszHostName, 
-	                         iplist, num_addrs, &pDNSUpdateResponse );
-	BAIL_ON_ERROR( dwError );
-
-	dwError = DNSUpdateGetResponseCode( pDNSUpdateResponse,
-					    &dwResponseCode );
-	if ( dwResponseCode == DNS_REFUSED ) {
-		dwError = -1;
+	err = dns_open( pszServerName, DNS_TCP, mem_ctx, &conn );
+	if (!ERR_DNS_IS_OK(err)) {
+		goto error;
 	}
-	BAIL_ON_ERROR( dwError );
 
-cleanup:
-	return dwError;
+	/*
+	 * Probe if everything's fine
+	 */
+
+	err = dns_create_probe(mem_ctx, pszDomainName, pszHostName,
+			       num_addrs, iplist, &req);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	err = dns_update_transaction(mem_ctx, conn, req, &resp);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	if (dns_response_code(resp->flags) == DNS_NO_ERROR) {
+		TALLOC_FREE(mem_ctx);
+		return ERROR_DNS_SUCCESS;
+	}
+
+	/*
+	 * First try without signing
+	 */
+
+	err = dns_create_update_request(mem_ctx, pszDomainName, pszHostName,
+					iplist[0].s_addr, &req);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	err = dns_update_transaction(mem_ctx, conn, req, &resp);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	if (dns_response_code(resp->flags) == DNS_NO_ERROR) {
+		TALLOC_FREE(mem_ctx);
+		return ERROR_DNS_SUCCESS;
+	}
+
+	/*
+	 * Okay, we have to try with signing
+	 */
+	{
+		ADS_STRUCT *ads_s;
+		gss_ctx_id_t gss_context;
+		int res;
+		char *keyname;
+
+		if (!(keyname = dns_generate_keyname( mem_ctx ))) {
+			err = ERROR_DNS_NO_MEMORY;
+			goto error;
+		}
+
+		if (!(ads_s = ads_init(ads->server.realm, ads->server.workgroup,
+				       ads->server.ldap_server))) {
+			return ERROR_DNS_NO_MEMORY;
+		}
+		
+		/* kinit with the machine password */
+		setenv(KRB5_ENV_CCNAME, "MEMORY:net_ads", 1);
+		asprintf( &ads_s->auth.user_name, "%s$", global_myname() );
+		ads_s->auth.password = secrets_fetch_machine_password(
+			lp_workgroup(), NULL, NULL );
+		ads_s->auth.realm = SMB_STRDUP( lp_realm() );
+		res = ads_kinit_password( ads_s );
+		ads_destroy(&ads_s);
+		if (res) {
+			err = ERROR_DNS_GSS_ERROR;
+			goto error;
+		}
+
+		err = dns_negotiate_sec_ctx( pszDomainName, pszServerName,
+					     keyname, &gss_context );
+		if (!ERR_DNS_IS_OK(err)) goto error;
+
+		err = dns_sign_update(req, gss_context, keyname,
+				      "gss.microsoft.com", time(NULL), 3600);
+
+		gss_delete_sec_context(&minor, &gss_context, GSS_C_NO_BUFFER);
+
+		if (!ERR_DNS_IS_OK(err)) goto error;
+
+		err = dns_update_transaction(mem_ctx, conn, req, &resp);
+		if (!ERR_DNS_IS_OK(err)) goto error;
+
+		err = (dns_response_code(resp->flags) == DNS_NO_ERROR) ?
+			ERROR_DNS_SUCCESS : ERROR_DNS_UPDATE_FAILED;
+	}
+
 
 error:
-	goto cleanup;
+	TALLOC_FREE(mem_ctx);
+	return err;
 }
 
 /*********************************************************************
@@ -94,6 +168,25 @@ int get_my_ip_address( struct in_addr **ips )
 	*ips = list;
 
 	return count;
+}
+
+DNS_ERROR do_gethostbyname(const char *server, const char *host)
+{
+	struct dns_connection *conn;
+	struct dns_request *req, *resp;
+	DNS_ERROR err;
+
+	err = dns_open(server, DNS_UDP, NULL, &conn);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	err = dns_create_query(conn, host, QTYPE_A, DNS_CLASS_IN, &req);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	err = dns_transaction(conn, conn, req, &resp);
+
+ error:
+	TALLOC_FREE(conn);
+	return err;
 }
 
 #endif	/* defined(WITH_DNS_UPDATES) */

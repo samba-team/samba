@@ -25,524 +25,383 @@
 
 #include "dns.h"
 
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSCreateDeleteRecord( char *szHost, int16 wClass,
-			     int16 wType, DNS_RR_RECORD ** ppDNSRecord )
+DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,
+			    uint16 q_type, uint16 q_class,
+			    struct dns_request **preq )
 {
-	int32 dwError = 0;
-	DNS_RR_RECORD *pDNSRRRecord = NULL;
-	DNS_DOMAIN_NAME *pDomainName = NULL;
+	struct dns_request *req;
+	struct dns_question *q;
+	DNS_ERROR err;
 
-	dwError = DNSDomainNameFromString( szHost, &pDomainName );
-	BAIL_ON_ERROR( dwError );
-
-	dwError = DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				     ( void * ) &pDNSRRRecord );
-	BAIL_ON_ERROR( dwError );
-
-	pDNSRRRecord->RRHeader.dwTTL = 0;
-	pDNSRRRecord->RRHeader.wClass = wClass;
-	pDNSRRRecord->RRHeader.wType = wType;
-	pDNSRRRecord->RRHeader.pDomainName = pDomainName;
-	pDNSRRRecord->RRHeader.wRDataSize = 0;
-
-	*ppDNSRecord = pDNSRRRecord;
-
-	return dwError;
-      error:
-
-	if ( pDomainName ) {
-		DNSFreeDomainName( pDomainName );
-	}
-	if ( pDNSRRRecord ) {
-		DNSFreeMemory( pDNSRRRecord );
+	if (!(req = TALLOC_ZERO_P(mem_ctx, struct dns_request)) ||
+	    !(req->questions = TALLOC_ARRAY(req, struct dns_question *, 1)) ||
+	    !(req->questions[0] = talloc(req->questions,
+					 struct dns_question))) {
+		TALLOC_FREE(req);
+		return ERROR_DNS_NO_MEMORY;
 	}
 
-	*ppDNSRecord = NULL;
-	return dwError;
+	req->id = random();
+
+	req->num_questions = 1;
+	q = req->questions[0];
+
+	err = dns_domain_name_from_string(q, name, &q->name);
+	if (!ERR_DNS_IS_OK(err)) {
+		TALLOC_FREE(req);
+		return err;
+	}
+
+	q->q_type = q_type;
+	q->q_class = q_class;
+
+	*preq = req;
+	return ERROR_DNS_SUCCESS;
 }
 
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSCreateARecord( char *szHost, int16 wClass,
-		  int16 wType, int32 dwIP, DNS_RR_RECORD ** ppDNSRecord )
+DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
+			     struct dns_update_request **preq )
 {
-	int32 dwError = 0;
-	DNS_RR_RECORD *pDNSRRRecord = NULL;
-	DNS_DOMAIN_NAME *pDomainName = NULL;
-	uint8 *pRData = NULL;
-	int32 dwnIP = 0;
+	struct dns_update_request *req;
+	struct dns_zone *z;
+	DNS_ERROR err;
 
-	dwError = DNSDomainNameFromString( szHost, &pDomainName );
-	BAIL_ON_ERROR( dwError );
-
-	dwError =
-		DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				   ( void * ) &pDNSRRRecord );
-	BAIL_ON_ERROR( dwError );
-
-	pDNSRRRecord->RRHeader.wType = wType;
-	pDNSRRRecord->RRHeader.pDomainName = pDomainName;
-
-	pDNSRRRecord->RRHeader.wClass = wClass;
-	pDNSRRRecord->RRHeader.wRDataSize = 0;
-	pDNSRRRecord->RRHeader.dwTTL = 0;
-
-	if ( wClass != DNS_CLASS_ANY ) {
-		pDNSRRRecord->RRHeader.dwTTL = DNS_ONE_DAY_IN_SECS;
-		pDNSRRRecord->RRHeader.wRDataSize = sizeof( int32 );
-		dwError =
-			DNSAllocateMemory( sizeof( int32 ),
-					   ( void * ) &pRData );
-		dwnIP = htonl( dwIP );
-		memcpy( pRData, &dwnIP, sizeof( int32 ) );
-		pDNSRRRecord->pRData = pRData;
+	if (!(req = TALLOC_ZERO_P(mem_ctx, struct dns_update_request)) ||
+	    !(req->zones = TALLOC_ARRAY(req, struct dns_zone *, 1)) ||
+	    !(req->zones[0] = talloc(req->zones, struct dns_zone))) {
+		TALLOC_FREE(req);
+		return ERROR_DNS_NO_MEMORY;
 	}
 
-	*ppDNSRecord = pDNSRRRecord;
+	req->id = random();
+	req->flags = 0x2800;	/* Dynamic update */
 
-	return dwError;
-      error:
+	req->num_zones = 1;
+	z = req->zones[0];
 
-	if ( pDomainName ) {
-		DNSFreeDomainName( pDomainName );
-	}
-	if ( pDNSRRRecord ) {
-		DNSFreeMemory( pDNSRRRecord );
+	err = dns_domain_name_from_string(z, name, &z->name);
+	if (!ERR_DNS_IS_OK(err)) {
+		TALLOC_FREE(req);
+		return err;
 	}
 
-	if ( pDNSRRRecord ) {
-		DNSFreeMemory( pRData );
-	}
-	*ppDNSRecord = NULL;
-	return dwError;
+	z->z_type = QTYPE_SOA;
+	z->z_class = DNS_CLASS_IN;
+
+	*preq = req;
+	return ERROR_DNS_SUCCESS;
 }
 
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSCreateTKeyRecord( char *szKeyName, uint8 * pKeyData,
-		     int16 wKeySize, DNS_RR_RECORD ** ppDNSRecord )
+DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
+			  uint16 type, uint16 r_class, uint32 ttl,
+			  uint16 data_length, uint8 *data,
+			  struct dns_rrec **prec)
 {
-	int32 dwError = 0;
-	DNS_RR_RECORD *pDNSRecord = NULL;
-	DNS_DOMAIN_NAME *pAlgorithmName = NULL;
-	DNS_DOMAIN_NAME *pDomainName = NULL;
-	time_t t;
+	struct dns_rrec *rec;
+	DNS_ERROR err;
 
-	int32 dwRDataSize = 0;
-	int32 dwnInception, dwInception = 0;
-	int32 dwnExpiration, dwExpiration = 0;
-	int16 wnMode, wMode = 0;
-	int16 wnError, wError = 0;
-	int16 wnKeySize = 0;
-	int16 wnOtherSize, wOtherSize = 0;
-
-	int32 dwAlgorithmLen = 0;
-	int32 dwCopied = 0;
-	int32 dwOffset = 0;
-
-	uint8 *pRData = NULL;
-
-	char szTemp[20];
-
-	dwError =
-		DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				   ( void * ) &pDNSRecord );
-	BAIL_ON_ERROR( dwError );
-
-	dwError = DNSDomainNameFromString( szKeyName, &pDomainName );
-	BAIL_ON_ERROR( dwError );
-
-	strncpy( szTemp, "gss.microsoft.com", sizeof( szTemp ) );
-	dwError = DNSDomainNameFromString( szTemp, &pAlgorithmName );
-	BAIL_ON_ERROR( dwError );
-
-	pDNSRecord->RRHeader.dwTTL = 0;
-	pDNSRecord->RRHeader.pDomainName = pDomainName;
-	pDNSRecord->RRHeader.wClass = DNS_CLASS_ANY;
-	pDNSRecord->RRHeader.wType = QTYPE_TKEY;
-
-	time( &t );
-	dwExpiration = ( int32 ) t + DNS_ONE_DAY_IN_SECS;
-	dwInception = ( int32 ) t;
-	wError = 0;
-	wMode = 3;
-
-	dwError = DNSGetDomainNameLength( pAlgorithmName, &dwAlgorithmLen );
-	BAIL_ON_ERROR( dwError );
-
-	dwRDataSize = dwAlgorithmLen +
-		sizeof( dwExpiration ) + sizeof( dwInception ) +
-		sizeof( wError ) + sizeof( wMode ) + +sizeof( wError ) +
-		sizeof( wKeySize ) + wKeySize + sizeof( wOtherSize ) +
-		wOtherSize;
-
-	dwError = DNSAllocateMemory( dwRDataSize, ( void * ) &pRData );
-	BAIL_ON_ERROR( dwError );
-
-	dwnInception = htonl( dwInception );
-	dwnExpiration = htonl( dwExpiration );
-	wnMode = htons( wMode );
-	wnError = htons( wError );
-	wnKeySize = htons( wKeySize );
-	wnOtherSize = htons( wOtherSize );
-
-	dwError = DNSCopyDomainName( pRData, pAlgorithmName, &dwCopied );
-	BAIL_ON_ERROR( dwError );
-	dwOffset += dwCopied;
-
-	memcpy( pRData + dwOffset, &dwnInception, sizeof( int32 ) );
-	dwOffset += sizeof( int32 );
-
-	memcpy( pRData + dwOffset, &dwnExpiration, sizeof( int32 ) );
-	dwOffset += sizeof( int32 );
-
-	memcpy( pRData + dwOffset, &wnMode, sizeof( int16 ) );
-	dwOffset += sizeof( int16 );
-
-	memcpy( pRData + dwOffset, &wnError, sizeof( int16 ) );
-	dwOffset += sizeof( int16 );
-
-	memcpy( pRData + dwOffset, &wnKeySize, sizeof( int16 ) );
-	dwOffset += sizeof( int16 );
-
-	memcpy( pRData + dwOffset, pKeyData, wKeySize );
-	dwOffset += wKeySize;
-
-	memcpy( pRData + dwOffset, &wnOtherSize, sizeof( int16 ) );
-	dwOffset += sizeof( int16 );
-
-	pDNSRecord->RRHeader.wRDataSize = ( int16 ) dwRDataSize;
-
-	pDNSRecord->pRData = pRData;
-	*ppDNSRecord = pDNSRecord;
-
-	return dwError;
-
-      error:
-
-
-	if ( pDNSRecord ) {
-		DNSFreeMemory( pDNSRecord );
+	if (!(rec = talloc(mem_ctx, struct dns_rrec))) {
+		return ERROR_DNS_NO_MEMORY;
 	}
 
-	if ( pDomainName ) {
-		DNSFreeDomainName( pDomainName );
+	err = dns_domain_name_from_string(rec, name, &rec->name);
+	if (!(ERR_DNS_IS_OK(err))) {
+		TALLOC_FREE(rec);
+		return err;
 	}
 
-	if ( pAlgorithmName ) {
-		DNSFreeDomainName( pAlgorithmName );
-	}
+	rec->type = type;
+	rec->r_class = r_class;
+	rec->ttl = ttl;
+	rec->data_length = data_length;
+	rec->data = talloc_move(rec, &data);
 
-	*ppDNSRecord = NULL;
-	return dwError;
+	*prec = rec;
+	return ERROR_DNS_SUCCESS;
 }
 
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSCreateTSIGRecord( char *szKeyName, int32 dwTimeSigned,
-		     int16 wFudge, int16 wOriginalID, uint8 * pMac,
-		     int16 wMacSize, DNS_RR_RECORD ** ppDNSRecord )
+DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
+			      uint32 ttl, in_addr_t ip,
+			      struct dns_rrec **prec)
 {
-	int32 dwError = 0;
-	DNS_RR_RECORD *pDNSRecord = NULL;
-	DNS_DOMAIN_NAME *pAlgorithmName = NULL;
-	DNS_DOMAIN_NAME *pDomainName = NULL;
-	time_t t;
+	uint8 *data;
+	DNS_ERROR err;
 
-	int32 dwRDataSize = 0;
-
-	int16 wnFudge = 0;
-	int16 wnError = 0, wError = 0;
-	int16 wnMacSize = 0;
-	int16 wnOriginalID = 0;
-	int16 wnOtherLen = 0, wOtherLen = 0;
-
-	int32 dwAlgorithmLen = 0;
-	int32 dwCopied = 0;
-	int32 dwOffset = 0;
-
-	uint8 *pRData = NULL;
-
-	int32 dwnTimeSigned = 0;
-	int16 wnTimePrefix = 0;
-	int16 wTimePrefix = 0;
-
-	char szTemp[20];
-
-	dwError =
-		DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				   ( void * ) &pDNSRecord );
-	BAIL_ON_ERROR( dwError );
-
-	dwError = DNSDomainNameFromString( szKeyName, &pDomainName );
-	BAIL_ON_ERROR( dwError );
-
-	strncpy( szTemp, "gss.microsoft.com", sizeof( szTemp ) );
-	dwError = DNSDomainNameFromString( szTemp, &pAlgorithmName );
-	BAIL_ON_ERROR( dwError );
-
-	pDNSRecord->RRHeader.dwTTL = 0;
-	pDNSRecord->RRHeader.pDomainName = pDomainName;
-	pDNSRecord->RRHeader.wClass = DNS_CLASS_ANY;
-	pDNSRecord->RRHeader.wType = QTYPE_TSIG;
-
-	/* This needs to be a 48bit value - 6 octets. */
-
-	time( &t );
-
-	dwError = DNSGetDomainNameLength( pAlgorithmName, &dwAlgorithmLen );
-	BAIL_ON_ERROR( dwError );
-
-	dwRDataSize = dwAlgorithmLen + 6 + sizeof( wFudge ) + sizeof( wMacSize ) +
-		wMacSize + sizeof( wOriginalID ) + sizeof( wError ) +
-		sizeof( wOtherLen );
-
-	dwError = DNSAllocateMemory( dwRDataSize, ( void * ) &pRData );
-	BAIL_ON_ERROR( dwError );
-
-	/* Convert t to 48 bit network order */
-
-	wnTimePrefix = htons( wTimePrefix );
-	dwnTimeSigned = htonl( dwTimeSigned );
-	wnFudge = htons( wFudge );
-	wnMacSize = htons( wMacSize );
-	wnOriginalID = htons( wOriginalID );
-	wnError = htons( wError );
-	wnOtherLen = htons( wOtherLen );
-
-	dwError = DNSCopyDomainName( pRData, pAlgorithmName, &dwCopied );
-	BAIL_ON_ERROR( dwError );
-	dwOffset += dwCopied;
-
-	memcpy( pRData + dwOffset, &wnTimePrefix, sizeof( int16 ) );
-	dwOffset += sizeof( int16 );
-
-	memcpy( pRData + dwOffset, &dwnTimeSigned, sizeof( int32 ) );
-	dwOffset += sizeof( int32 );
-
-	memcpy( pRData + dwOffset, &wnFudge, sizeof( int16 ) );
-	dwOffset += sizeof( int16 );
-
-
-	memcpy( pRData + dwOffset, &wnMacSize, sizeof( int16 ) );
-	dwOffset += sizeof( int16 );
-
-	memcpy( pRData + dwOffset, pMac, wMacSize );
-	dwOffset += wMacSize;
-
-	memcpy( pRData + dwOffset, &wnOriginalID, sizeof( int16 ) );
-	dwOffset += sizeof( int16 );
-
-	memcpy( pRData + dwOffset, &wnError, sizeof( int16 ) );
-	dwOffset += sizeof( int16 );
-
-	memcpy( pRData + dwOffset, &wnOtherLen, sizeof( int16 ) );
-	dwOffset += sizeof( int16 );
-
-	pDNSRecord->RRHeader.wRDataSize = ( int16 ) dwRDataSize;
-
-	pDNSRecord->pRData = pRData;
-	*ppDNSRecord = pDNSRecord;
-
-	return dwError;
-
-      error:
-
-
-	if ( pDNSRecord ) {
-		DNSFreeMemory( pDNSRecord );
+	if (!(data = (uint8 *)TALLOC_MEMDUP(mem_ctx, (const void *)&ip,
+					    sizeof(ip)))) {
+		return ERROR_DNS_NO_MEMORY;
 	}
 
-	if ( pDomainName ) {
-		DNSFreeDomainName( pDomainName );
+	err = dns_create_rrec(mem_ctx, host, QTYPE_A, DNS_CLASS_IN, ttl,
+			      sizeof(ip), data, prec);
+
+	if (!ERR_DNS_IS_OK(err)) {
+		TALLOC_FREE(data);
 	}
 
-	if ( pAlgorithmName ) {
-		DNSFreeDomainName( pAlgorithmName );
-	}
-
-	*ppDNSRecord = NULL;
-	return dwError;
+	return err;
 }
 
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSCreateQuestionRecord( char *pszQName, int16 wQType,
-                               int16 wQClass,
-                               DNS_QUESTION_RECORD ** ppDNSQuestionRecord )
+DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
+					const char *name,
+					const in_addr_t *ip,
+					struct dns_rrec **prec)
 {
-	int32 dwError = 0;
-	DNS_QUESTION_RECORD *pDNSQuestionRecord = NULL;
-	DNS_DOMAIN_NAME *pDomainName = NULL;
-
-	dwError = DNSDomainNameFromString( pszQName, &pDomainName );
-	BAIL_ON_ERROR( dwError );
-
-	dwError =
-		DNSAllocateMemory( sizeof( DNS_QUESTION_RECORD ),
-				   ( void * ) &pDNSQuestionRecord );
-	BAIL_ON_ERROR( dwError );
-
-	pDNSQuestionRecord->pDomainName = pDomainName;
-	pDNSQuestionRecord->wQueryClass = wQClass;
-	pDNSQuestionRecord->wQueryType = wQType;
-
-	*ppDNSQuestionRecord = pDNSQuestionRecord;
-
-	return dwError;
-      error:
-
-	if ( pDomainName ) {
-		DNSFreeDomainName( pDomainName );
+	if (ip != NULL) {
+		return dns_create_a_record(mem_ctx, name, 0, *ip, prec);
 	}
-	if ( pDNSQuestionRecord ) {
-		DNSFreeMemory( pDNSQuestionRecord );
-	}
-	*ppDNSQuestionRecord = NULL;
-	return dwError;
+
+	return dns_create_rrec(mem_ctx, name, QTYPE_ANY, DNS_CLASS_IN, 0, 0,
+			       NULL, prec);
 }
 
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSCreateZoneRecord( const char *pszZName, DNS_ZONE_RECORD ** ppDNSZoneRecord )
+DNS_ERROR dns_create_name_not_in_use_record(TALLOC_CTX *mem_ctx,
+					    const char *name, uint32 type,
+					    struct dns_rrec **prec)
 {
-	int32 dwError = 0;
-	DNS_ZONE_RECORD *pDNSZoneRecord = NULL;
-	DNS_DOMAIN_NAME *pDomainName = NULL;
-
-	dwError = DNSDomainNameFromString( pszZName, &pDomainName );
-	BAIL_ON_ERROR( dwError );
-
-	dwError =
-		DNSAllocateMemory( sizeof( DNS_ZONE_RECORD ),
-				   ( void * ) &pDNSZoneRecord );
-	BAIL_ON_ERROR( dwError );
-
-	pDNSZoneRecord->pDomainName = pDomainName;
-	pDNSZoneRecord->wZoneClass = DNS_CLASS_IN;
-	pDNSZoneRecord->wZoneType = QTYPE_SOA;
-
-	*ppDNSZoneRecord = pDNSZoneRecord;
-
-	return dwError;
-      error:
-
-	if ( pDomainName ) {
-		DNSFreeDomainName( pDomainName );
-	}
-	if ( pDNSZoneRecord ) {
-		DNSFreeMemory( pDNSZoneRecord );
-	}
-	*ppDNSZoneRecord = NULL;
-	return dwError;
+	return dns_create_rrec(mem_ctx, name, type, DNS_CLASS_NONE, 0,
+			       0, NULL, prec);
 }
 
-int32 DNSFreeZoneRecord( DNS_ZONE_RECORD * pDNSZoneRecord )
+DNS_ERROR dns_create_delete_record(TALLOC_CTX *mem_ctx, const char *name,
+				   uint16 type, uint16 r_class,
+				   struct dns_rrec **prec)
 {
-	int32 dwError = 0;
-
-	return dwError;
-
+	return dns_create_rrec(mem_ctx, name, type, r_class, 0, 0, NULL, prec);
 }
 
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSCreateNameInUseRecord( char *pszName, int32 qtype,
-				struct in_addr * ip,
-				DNS_RR_RECORD * *ppDNSRRRecord )
+DNS_ERROR dns_create_tkey_record(TALLOC_CTX *mem_ctx, const char *keyname,
+				 const char *algorithm_name, time_t inception,
+				 time_t expiration, uint16 mode, uint16 error,
+				 uint16 key_length, const uint8 *key,
+				 struct dns_rrec **prec)
 {
-	int32 dwError = 0;
-	DNS_RR_RECORD *pDNSRRRecord = NULL;
-	DNS_DOMAIN_NAME *pDomainName = NULL;
+	struct dns_buffer *buf;
+	struct dns_domain_name *algorithm;
+	DNS_ERROR err;
 
-	dwError = DNSDomainNameFromString( pszName, &pDomainName );
-	BAIL_ON_ERROR( dwError );
-
-	dwError =
-		DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				   ( void * ) &pDNSRRRecord );
-	BAIL_ON_ERROR( dwError );
-
-	pDNSRRRecord->RRHeader.pDomainName = pDomainName;
-	pDNSRRRecord->RRHeader.dwTTL = 0;
-	pDNSRRRecord->RRHeader.wType = qtype;
-
-	if ( !ip ) {
-		pDNSRRRecord->RRHeader.wClass = DNS_CLASS_ANY;
-		pDNSRRRecord->RRHeader.wRDataSize = 0;
-	} else {
-		pDNSRRRecord->RRHeader.wClass = DNS_CLASS_IN;
-		pDNSRRRecord->RRHeader.wRDataSize = 4;
-		dwError =
-			DNSAllocateMemory( 4,
-					   ( void * ) &pDNSRRRecord->
-					   pRData );
-		BAIL_ON_ERROR( dwError );
-		memcpy( pDNSRRRecord->pRData, &ip->s_addr, 4 );
+	if (!(buf = dns_create_buffer(mem_ctx))) {
+		return ERROR_DNS_NO_MEMORY;
 	}
 
-	*ppDNSRRRecord = pDNSRRRecord;
+	err = dns_domain_name_from_string(buf, algorithm_name, &algorithm);
+	if (!ERR_DNS_IS_OK(err)) goto error;
 
-	return dwError;
-      error:
+	dns_marshall_domain_name(buf, algorithm);
+	dns_marshall_uint32(buf, inception);
+	dns_marshall_uint32(buf, expiration);
+	dns_marshall_uint16(buf, mode);
+	dns_marshall_uint16(buf, error);
+	dns_marshall_uint16(buf, key_length);
+	dns_marshall_buffer(buf, key, key_length);
+	dns_marshall_uint16(buf, 0); /* Other Size */
 
-	if ( pDomainName ) {
-		DNSFreeDomainName( pDomainName );
+	if (!ERR_DNS_IS_OK(buf->error)) {
+		err = buf->error;
+		goto error;
 	}
-	if ( pDNSRRRecord ) {
-		DNSFreeMemory( pDNSRRRecord );
-	}
-	*ppDNSRRRecord = NULL;
 
-	return dwError;
+	err = dns_create_rrec(mem_ctx, keyname, QTYPE_TKEY, DNS_CLASS_ANY, 0,
+			      buf->offset, buf->data, prec);
+
+ error:
+	TALLOC_FREE(buf);
+	return err;
 }
 
-/*********************************************************************
-*********************************************************************/
-
-int32 DNSCreateNameNotInUseRecord( char *pszName, int32 qtype,
-				   DNS_RR_RECORD * *ppDNSRRRecord )
+DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
+				     struct dns_tkey_record **ptkey)
 {
-	int32 dwError = 0;
-	DNS_RR_RECORD *pDNSRRRecord = NULL;
-	DNS_DOMAIN_NAME *pDomainName = NULL;
-
-	dwError = DNSDomainNameFromString( pszName, &pDomainName );
-	BAIL_ON_ERROR( dwError );
-
-	dwError =
-		DNSAllocateMemory( sizeof( DNS_RR_RECORD ),
-				   ( void * ) &pDNSRRRecord );
-	BAIL_ON_ERROR( dwError );
-
-	pDNSRRRecord->RRHeader.pDomainName = pDomainName;
-	pDNSRRRecord->RRHeader.wClass = DNS_CLASS_NONE;
-	pDNSRRRecord->RRHeader.wType = qtype;
-	pDNSRRRecord->RRHeader.dwTTL = 0;
-	pDNSRRRecord->RRHeader.wRDataSize = 0;
-
-	*ppDNSRRRecord = pDNSRRRecord;
-
-	return dwError;
-      error:
-
-	if ( pDomainName ) {
-		DNSFreeDomainName( pDomainName );
+	struct dns_tkey_record *tkey;
+	struct dns_buffer buf;
+	uint32 tmp_inception, tmp_expiration;
+	
+	if (!(tkey = talloc(mem_ctx, struct dns_tkey_record))) {
+		return ERROR_DNS_NO_MEMORY;
 	}
-	if ( pDNSRRRecord ) {
-		DNSFreeMemory( pDNSRRRecord );
-	}
-	*ppDNSRRRecord = NULL;
-	return dwError;
 
+	buf.data = rec->data;
+	buf.size = rec->data_length;
+	buf.offset = 0;
+	buf.error = ERROR_DNS_SUCCESS;
+
+	dns_unmarshall_domain_name(tkey, &buf, &tkey->algorithm);
+	dns_unmarshall_uint32(&buf, &tmp_inception);
+	dns_unmarshall_uint32(&buf, &tmp_expiration);
+	dns_unmarshall_uint16(&buf, &tkey->mode);
+	dns_unmarshall_uint16(&buf, &tkey->error);
+	dns_unmarshall_uint16(&buf, &tkey->key_length);
+
+	if (!ERR_DNS_IS_OK(buf.error)) goto error;
+
+	if (!(tkey->key = TALLOC_ARRAY(tkey, uint8, tkey->key_length))) {
+		buf.error = ERROR_DNS_NO_MEMORY;
+		goto error;
+	}
+
+	dns_unmarshall_buffer(&buf, tkey->key, tkey->key_length);
+	if (!ERR_DNS_IS_OK(buf.error)) goto error;
+
+	tkey->inception = (time_t)tmp_inception;
+	tkey->expiration = (time_t)tmp_expiration;
+
+	*ptkey = tkey;
+	return ERROR_DNS_SUCCESS;
+
+ error:
+	TALLOC_FREE(tkey);
+	return buf.error;
 }
 
+DNS_ERROR dns_create_tsig_record(TALLOC_CTX *mem_ctx, const char *keyname,
+				 const char *algorithm_name,
+				 time_t time_signed, uint16 fudge,
+				 uint16 mac_length, const uint8 *mac,
+				 uint16 original_id, uint16 error,
+				 struct dns_rrec **prec)
+{
+	struct dns_buffer *buf;
+	struct dns_domain_name *algorithm;
+	DNS_ERROR err;
+
+	if (!(buf = dns_create_buffer(mem_ctx))) {
+		return ERROR_DNS_NO_MEMORY;
+	}
+
+	err = dns_domain_name_from_string(buf, algorithm_name, &algorithm);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	dns_marshall_domain_name(buf, algorithm);
+	dns_marshall_uint16(buf, 0); /* time prefix */
+	dns_marshall_uint32(buf, time_signed);
+	dns_marshall_uint16(buf, fudge);
+	dns_marshall_uint16(buf, mac_length);
+	dns_marshall_buffer(buf, mac, mac_length);
+	dns_marshall_uint16(buf, original_id);
+	dns_marshall_uint16(buf, error);
+	dns_marshall_uint16(buf, 0); /* Other Size */
+
+	if (!ERR_DNS_IS_OK(buf->error)) {
+		err = buf->error;
+		goto error;
+	}
+
+	err = dns_create_rrec(mem_ctx, keyname, QTYPE_TSIG, DNS_CLASS_ANY, 0,
+			      buf->offset, buf->data, prec);
+
+ error:
+	TALLOC_FREE(buf);
+	return err;
+}
+
+DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
+		       uint16 *num_records, struct dns_rrec ***records)
+{
+	struct dns_rrec **new_records;
+
+	if (!(new_records = TALLOC_REALLOC_ARRAY(mem_ctx, *records,
+						 struct dns_rrec *,
+						 (*num_records)+1))) {
+		return ERROR_DNS_NO_MEMORY;
+	}
+
+	new_records[*num_records] = talloc_move(new_records, &rec);
+
+	*num_records += 1;
+	*records = new_records;
+	return ERROR_DNS_SUCCESS;
+}
+
+/*
+ * Create a request that probes a server whether the list of IP addresses
+ * provides meets our expectations
+ */
+
+DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
+			   const char *host, int num_ips,
+			   const struct in_addr *iplist,
+			   struct dns_update_request **preq)
+{
+	struct dns_update_request *req;
+	struct dns_rrec *rec;
+	DNS_ERROR err;
+	uint16 i;
+
+	err = dns_create_update(mem_ctx, zone, &req);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	err = dns_create_name_not_in_use_record(req, host, QTYPE_CNAME,	&rec);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	err = dns_add_rrec(req, rec, &req->num_preqs, &req->preqs);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	for (i=0; i<num_ips; i++) {
+		err = dns_create_name_in_use_record(req, host,
+						    &iplist[i].s_addr, &rec);
+		if (!ERR_DNS_IS_OK(err)) goto error;
+
+		err = dns_add_rrec(req, rec, &req->num_preqs, &req->preqs);
+		if (!ERR_DNS_IS_OK(err)) goto error;
+	}
+
+	*preq = req;
+	return ERROR_DNS_SUCCESS;
+
+ error:
+	TALLOC_FREE(req);
+	return err;
+}
+			   
+DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
+				    const char *domainname,
+				    const char *hostname,
+				    in_addr_t ip_addr,
+				    struct dns_update_request **preq)
+{
+	struct dns_update_request *req;
+	struct dns_rrec *rec;
+	DNS_ERROR err;
+
+	err = dns_create_update(mem_ctx, domainname, &req);
+	if (!ERR_DNS_IS_OK(err)) return err;
+
+	/*
+	 * The zone must be used at all
+	 */
+
+	err = dns_create_rrec(req, domainname, QTYPE_ANY, DNS_CLASS_ANY,
+			      0, 0, NULL, &rec);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	err = dns_add_rrec(req, rec, &req->num_preqs, &req->preqs);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	/*
+	 * Delete any existing A records
+	 */
+
+	err = dns_create_delete_record(req, hostname, QTYPE_A, DNS_CLASS_ANY,
+				       &rec);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+	
+	err = dns_add_rrec(req, rec, &req->num_updates, &req->updates);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	/*
+	 * .. and add our IP
+	 */
+
+	err = dns_create_a_record(req, hostname, 3600, ip_addr, &rec);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	err = dns_add_rrec(req, rec, &req->num_updates, &req->updates);
+	if (!ERR_DNS_IS_OK(err)) goto error;
+
+	*preq = req;
+	return ERROR_DNS_SUCCESS;
+
+ error:
+	TALLOC_FREE(req);
+	return err;
+}
