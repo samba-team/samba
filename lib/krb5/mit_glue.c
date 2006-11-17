@@ -334,9 +334,9 @@ krb5_c_keylengths(krb5_context context,
 {
     krb5_error_code ret;
 
-    ret = krb5_enctype_bits(context, enctype, ilen);
+    ret = krb5_enctype_keybits(context, enctype, ilen);
     if (ret)
 	return ret;
     *ilen = (*ilen + 7) / 8;
-    return krb5_enctype_keysize(context, enctype, len);
+    return krb5_enctype_keysize(context, enctype, keylen);
 }
