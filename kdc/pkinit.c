@@ -1411,7 +1411,7 @@ _kdc_pk_initialize(krb5_context context,
 				       NULL,
 				       FALSE,
 				       "kdc",
-				       "pki-allow-proxy-certificate",
+				       "pkinit_allow_proxy_certificate",
 				       NULL);
     _krb5_pk_allow_proxy_certificate(kdc_identity, ret);
 
@@ -1419,7 +1419,7 @@ _kdc_pk_initialize(krb5_context context,
 					  NULL,
 					  HDB_DB_DIR "/pki-mapping",
 					  "kdc",
-					  "pki-mappings-file",
+					  "pkinit_mappings_file",
 					  NULL);
     f = fopen(file, "r");
     if (f == NULL) {

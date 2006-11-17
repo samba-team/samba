@@ -607,7 +607,7 @@ _krb5_pk_mk_padata(krb5_context context,
 						FALSE,
 						"realms",
 						req_body->realm,
-						"win2k_pkinit",
+						"pkinit_win2k",
 						NULL);
     if (context->pkinit_flags & KRB5_PKINIT_WIN2K)
 	win2k_compat = 1;
@@ -618,7 +618,7 @@ _krb5_pk_mk_padata(krb5_context context,
 					 FALSE,
 					 "realms",
 					 req_body->realm,
-					 "win2k_pkinit_require_binding",
+					 "pkinit_win2k_require_binding",
 					 NULL);
 	type = COMPAT_WIN2K;
     } else
