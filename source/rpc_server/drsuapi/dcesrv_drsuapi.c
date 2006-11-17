@@ -259,7 +259,70 @@ WERROR drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_
 static WERROR drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsWriteAccountSpn *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct drsuapi_bind_state *b_state;
+	struct dcesrv_handle *h;
+
+	r->out.level = r->in.level;
+
+	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
+	b_state = h->data;
+
+	switch (r->in.level) {
+		case 1: {
+			struct drsuapi_DsWriteAccountSpnRequest1 *req;
+			struct ldb_message *msg;
+			int count, i, ret;
+			req = &r->in.req.req1;
+			count = req->count;
+
+			msg = ldb_msg_new(mem_ctx);
+			if (msg == NULL) {
+				return WERR_NOMEM;
+			}
+
+			msg->dn = ldb_dn_explode(msg, req->object_dn);
+			if (msg->dn == NULL) {
+				r->out.res.res1.status = WERR_OK;
+				return WERR_OK;
+			}
+			
+			/* construct mods */
+			for (i = 0; i < count; i++) {
+				samdb_msg_add_string(b_state->sam_ctx, 
+						     msg, msg, "servicePrincipalName",
+						     req->spn_names[i].str);
+			}
+			for (i=0;i<msg->num_elements;i++) {
+				switch (req->operation) {
+				case DRSUAPI_DS_SPN_OPERATION_ADD:
+ 					msg->elements[i].flags = LDB_FLAG_MOD_ADD;
+					break;
+				case DRSUAPI_DS_SPN_OPERATION_REPLACE:
+					msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+					break;
+				case DRSUAPI_DS_SPN_OPERATION_DELETE:
+					msg->elements[i].flags = LDB_FLAG_MOD_DELETE;
+					break;
+				}
+			}
+   
+			/* Apply to database */
+
+			ret = samdb_modify(b_state->sam_ctx, mem_ctx, msg);
+			if (ret != 0) {
+				DEBUG(0,("Failed to modify SPNs on %s: %s\n",
+					 ldb_dn_linearize(mem_ctx, msg->dn), 
+					 ldb_errstring(b_state->sam_ctx)));
+				r->out.res.res1.status = WERR_ACCESS_DENIED;
+			} else {
+				r->out.res.res1.status = WERR_OK;
+			}
+
+			return WERR_OK;
+		}
+	}
+	
+	return WERR_UNKNOWN_LEVEL;
 }
 
 
