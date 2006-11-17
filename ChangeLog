@@ -1,5 +1,26 @@
-2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: Make all pkinit options prefixed with pkinit_
+
+	* kdc/config.c: Make all pkinit options prefixed with pkinit_
+
+	* kdc/pkinit.c: Make app pkinit options prefixed with pkinit_
+
+	* lib/krb5/pkinit.c: Make app pkinit options prefixed with pkinit_
+
+	* lib/krb5/mit_glue.c (krb5_c_keylengths): make compile again.
+
+	* lib/krb5/mit_glue.c (krb5_c_keylengths): rename.
+
+	* lib/krb5/mit_glue.c (krb5_c_keylength): mit changed the api,
+	deal.
+	
+2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/pac.c (fill_zeros): stop using MIN.
+
+	* kuser/kinit.c: Forward decl
+	
 	* lib/krb5/test_plugin.c: Use NOTHERE.H5L.SE.
 
 	* lib/krb5/krbhst.c: Fill in hints for picky getaddrinfo()s.
