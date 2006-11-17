@@ -27,6 +27,8 @@
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "torture/rpc/rpc.h"
 
+#define TEST_MACHINE_NAME "torturetest"
+
 BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		 struct DsPrivate *priv)
 {
@@ -64,6 +66,11 @@ static BOOL test_DsGetDCInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct drsuapi_DsGetDomainControllerInfo r;
 	BOOL ret = True;
+
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+		printf("skipping DsGetDCInfo test against Samba4\n");
+		return True;
+	}
 
 	r.in.bind_handle = &priv->bind_handle;
 	r.in.level = 1;
@@ -189,7 +196,7 @@ static BOOL test_DsGetDCInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			struct DsPrivate *priv)
+				   struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	struct drsuapi_DsWriteAccountSpn r;
@@ -316,6 +323,11 @@ static BOOL test_DsReplicaGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	};
 
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+		printf("skipping DsGetDCInfo test against Samba4\n");
+		return True;
+	}
+
 	r.in.bind_handle	= &priv->bind_handle;
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
@@ -389,6 +401,11 @@ static BOOL test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return True;
 	}
 
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+		printf("skipping DsReplicaSync test against Samba4\n");
+		return True;
+	}
+
 	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
 
@@ -446,6 +463,11 @@ static BOOL test_DsReplicaUpdateRefs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			1
 		}
 	};
+
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+		printf("skipping DsReplicaUpdateRefs test against Samba4\n");
+		return True;
+	}
 
 	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
@@ -508,6 +530,11 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			8
 		}
 	};
+
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+		printf("skipping DsGetNCChanges test against Samba4\n");
+		return True;
+	}
 
 	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
@@ -630,26 +657,36 @@ BOOL torture_rpc_drsuapi(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct DsPrivate priv;
+	struct cli_credentials *machine_credentials;
 
 	mem_ctx = talloc_init("torture_rpc_drsuapi");
-
-	status = torture_rpc_connection(mem_ctx, 
-					&p, 
-					&dcerpc_table_drsuapi);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
 
 	printf("Connected to DRAUAPI pipe\n");
 
 	ZERO_STRUCT(priv);
 
+	priv.join = torture_join_domain(TEST_MACHINE_NAME, ACB_SVRTRUST, 
+				       &machine_credentials);
+	if (!priv.join) {
+		talloc_free(mem_ctx);
+		printf("Failed to join as BDC\n");
+		return False;
+	}
+
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
+					&dcerpc_table_drsuapi);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_leave_domain(priv.join);
+		talloc_free(mem_ctx);
+		return False;
+	}
+
 	ret &= test_DsBind(p, mem_ctx, &priv);
 
 	ret &= test_DsGetDCInfo(p, mem_ctx, &priv);
 
-	ret &= test_DsCrackNames(p, mem_ctx, &priv, priv.dcinfo.netbios_name);
+	ret &= test_DsCrackNames(p, mem_ctx, &priv, TEST_MACHINE_NAME);
 
 	ret &= test_DsWriteAccountSpn(p, mem_ctx, &priv);
 
@@ -664,6 +701,8 @@ BOOL torture_rpc_drsuapi(struct torture_context *torture)
 	ret &= test_DsUnbind(p, mem_ctx, &priv);
 
 	talloc_free(mem_ctx);
+
+	torture_leave_domain(priv.join);
 
 	return ret;
 }
