@@ -333,3 +333,13 @@ int ctdb_start(struct ctdb_context *ctdb)
 
 	return 0;
 }
+
+/*
+  make a remote ctdb call
+*/
+int ctdb_call(struct ctdb_context *ctdb, TDB_DATA key, int call_id, 
+	      TDB_DATA *call_data, TDB_DATA *reply_data)
+{
+	printf("ctdb_call not implemented\n");
+	return -1;
+}
