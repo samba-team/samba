@@ -4,3 +4,4 @@ bin
 common
 config.log
 push.sh
+ctdb_test
