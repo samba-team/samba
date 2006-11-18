@@ -1238,7 +1238,6 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 	DNS_ERROR dns_err;
 	fstring dns_server;
 	const char *dnsdomain;
-	name_to_fqdn( machine_name, global_myname() );
 
 	if ( (dnsdomain = strchr_m( machine_name, '.')) == NULL ) {
 		d_printf("No DNS domain configured for %s. "
