@@ -405,7 +405,7 @@ static BOOL sync_eventlog_params( EVENTLOG_INFO *info )
 	uiRetention = 604800;
 
 	/* the general idea is to internally open the registry 
-	   key and retreive the values.  That way we can continue 
+	   key and retrieve the values.  That way we can continue 
 	   to use the same fetch/store api that we use in 
 	   srv_reg_nt.c */
 
