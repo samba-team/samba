@@ -120,10 +120,10 @@ main(int argc, char * argv[])
             (no_auth ? no_auth_data_fn : get_auth_data_fn);
     }
 
-    /* If we've been asked to log to stderr instead of stdout... */
+    /* If we've been asked to log to stderr instead of stdout, ... */
     if (debug_stderr) {
         /* ... then set the option to do so */
-        smbc_option_set(context, "debug_stderr", (void *) 1);
+        smbc_option_set(context, "debug_to_stderr", 1);
     }
 	
     /* Initialize the context using the previously specified options */

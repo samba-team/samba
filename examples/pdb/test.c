@@ -45,10 +45,10 @@ static void testsam_endsampwent(struct pdb_methods *methods)
 }
 
 /*****************************************************************
- Get one SAM_ACCOUNT from the list (next in line)
+ Get one struct samu from the list (next in line)
 *****************************************************************/
 
-static NTSTATUS testsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT *user)
+static NTSTATUS testsam_getsampwent(struct pdb_methods *methods, struct samu *user)
 {
 	DEBUG(10, ("testsam_getsampwent called\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -58,7 +58,7 @@ static NTSTATUS testsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT *us
  Lookup a name in the SAM database
 ******************************************************************/
 
-static NTSTATUS testsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user, const char *sname)
+static NTSTATUS testsam_getsampwnam (struct pdb_methods *methods, struct samu *user, const char *sname)
 {
 	DEBUG(10, ("testsam_getsampwnam called\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -68,47 +68,47 @@ static NTSTATUS testsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *u
  Search by sid
  **************************************************************************/
 
-static NTSTATUS testsam_getsampwsid (struct pdb_methods *methods, SAM_ACCOUNT *user, const DOM_SID *sid)
+static NTSTATUS testsam_getsampwsid (struct pdb_methods *methods, struct samu *user, const DOM_SID *sid)
 {
 	DEBUG(10, ("testsam_getsampwsid called\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /***************************************************************************
- Delete a SAM_ACCOUNT
+ Delete a struct samu
 ****************************************************************************/
 
-static NTSTATUS testsam_delete_sam_account(struct pdb_methods *methods, SAM_ACCOUNT *sam_pass)
+static NTSTATUS testsam_delete_sam_account(struct pdb_methods *methods, struct samu *sam_pass)
 {
 	DEBUG(10, ("testsam_delete_sam_account called\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /***************************************************************************
- Modifies an existing SAM_ACCOUNT
+ Modifies an existing struct samu
 ****************************************************************************/
 
-static NTSTATUS testsam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+static NTSTATUS testsam_update_sam_account (struct pdb_methods *methods, struct samu *newpwd)
 {
 	DEBUG(10, ("testsam_update_sam_account called\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /***************************************************************************
- Adds an existing SAM_ACCOUNT
+ Adds an existing struct samu
 ****************************************************************************/
 
-static NTSTATUS testsam_add_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+static NTSTATUS testsam_add_sam_account (struct pdb_methods *methods, struct samu *newpwd)
 {
 	DEBUG(10, ("testsam_add_sam_account called\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS testsam_init(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+NTSTATUS testsam_init(struct pdb_methods **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 
-	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
+	if (!NT_STATUS_IS_OK(nt_status = make_pdb_method( pdb_method ))) {
 		return nt_status;
 	}
 
