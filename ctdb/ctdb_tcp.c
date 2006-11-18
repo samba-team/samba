@@ -254,7 +254,11 @@ static void ctdb_incoming_read(struct event_context *ev, struct fd_event *fde,
 	struct ctdb_incoming *in = talloc_get_type(private, struct ctdb_incoming);
 	char c;
 	printf("Incoming data\n");
-	
+	if (read(in->fd, &c, 1) <= 0) {
+		/* socket is dead */
+		close(in->fd);
+		talloc_free(in);
+	}
 }
 
 
@@ -330,6 +334,14 @@ static int ctdb_listen(struct ctdb_context *ctdb)
 }
 
 /*
+  check if two addresses are the same
+*/
+static bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2)
+{
+	return strcmp(a1->address, a2->address) == 0 && a1->port == a2->port;
+}
+
+/*
   start the protocol going
 */
 int ctdb_start(struct ctdb_context *ctdb)
@@ -342,6 +354,7 @@ int ctdb_start(struct ctdb_context *ctdb)
 	/* startup connections to the other servers - will happen on
 	   next event loop */
 	for (node=ctdb->nodes;node;node=node->next) {
+		if (ctdb_same_address(&ctdb->address, &node->address)) continue;
 		event_add_timed(ctdb->ev, node, timeval_zero(), 
 				ctdb_node_connect, node);
 	}
