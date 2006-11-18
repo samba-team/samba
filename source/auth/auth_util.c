@@ -515,10 +515,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
 
 static int server_info_dtor(auth_serversupplied_info *server_info)
 {
-	if (server_info->sam_account != NULL) {
-		TALLOC_FREE(server_info->sam_account);
-	}
-
+	TALLOC_FREE(server_info->sam_account);
 	ZERO_STRUCTP(server_info);
 	return 0;
 }
