@@ -46,12 +46,13 @@ static BOOL fname_equal(const char *name1, const char *name2, BOOL case_sensitiv
  Mangle the 2nd name and check if it is then equal to the first name.
 ****************************************************************************/
 
-static BOOL mangled_equal(const char *name1, const char *name2, int snum)
+static BOOL mangled_equal(const char *name1, const char *name2,
+			  const struct share_params *p)
 {
 	pstring tmpname;
 	
 	pstrcpy(tmpname, name2);
-	mangle_map(tmpname, True, False, snum);
+	mangle_map(tmpname, True, False, p);
 	return strequal(name1, tmpname);
 }
 
@@ -189,7 +190,8 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	 * sensitive then searching won't help.
 	 */
 
-	if (conn->case_sensitive && !mangle_is_mangled(name, SNUM(conn)) && !*lp_mangled_map(SNUM(conn)))
+	if (conn->case_sensitive && !mangle_is_mangled(name, conn->params) &&
+	    !*lp_mangled_map(conn->params))
 		return(False);
 
 	name_has_wildcard = ms_has_wild(start);
@@ -199,7 +201,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	 * just a component. JRA.
 	 */
 
-	if (mangle_is_mangled(start, SNUM(conn)))
+	if (mangle_is_mangled(start, conn->params))
 		component_was_mangled = True;
 
 	/* 
@@ -318,7 +320,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				 * purposes. Fix inspired by Thomas Neumann <t.neumann@iku-ag.de>.
 				 */
 				if (!conn->case_preserve ||
-						(mangle_is_8_3(start, False, SNUM(conn)) &&
+				    (mangle_is_8_3(start, False, conn->params) &&
 						 !conn->short_case_preserve)) {
 					strnorm(start, lp_defaultcase(SNUM(conn)));
 				}
@@ -328,8 +330,8 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				 * base of the filename.
 				 */
 
-				if (mangle_is_mangled(start, SNUM(conn))) {
-					mangle_check_cache( start, sizeof(pstring) - 1 - (start - name), SNUM(conn));
+				if (mangle_is_mangled(start, conn->params)) {
+					mangle_check_cache( start, sizeof(pstring) - 1 - (start - name), conn->params);
 				}
 
 				DEBUG(5,("New file %s\n",start));
@@ -444,7 +446,7 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 	BOOL mangled;
 	long curpos;
 
-	mangled = mangle_is_mangled(name, SNUM(conn));
+	mangled = mangle_is_mangled(name, conn->params);
 
 	/* handle null paths */
 	if (*path == 0)
@@ -466,7 +468,7 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 	 */
 
 	if (mangled && !conn->case_sensitive) {
-		mangled = !mangle_check_cache( name, maxlength, SNUM(conn));
+		mangled = !mangle_check_cache( name, maxlength, conn->params);
 	}
 
 	/* open the directory */
@@ -495,7 +497,7 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 		 * against unmangled name.
 		 */
 
-		if ((mangled && mangled_equal(name,dname,SNUM(conn))) || fname_equal(name, dname, conn->case_sensitive)) {
+		if ((mangled && mangled_equal(name,dname,conn->params)) || fname_equal(name, dname, conn->case_sensitive)) {
 			/* we've found the file, change it's name and return */
 			safe_strcpy(name, dname, maxlength);
 			CloseDir(cur_dir);

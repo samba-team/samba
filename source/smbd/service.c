@@ -629,7 +629,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		    sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
 	conn->lastused = conn->lastused_count = time(NULL);
-	conn->service = snum;
+	conn->params->service = snum;
 	conn->used = True;
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
 	conn->ipc = ( (strncmp(dev,"IPC",3) == 0) ||
@@ -655,7 +655,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
 
-	conn->read_only = lp_readonly(conn->service);
+	conn->read_only = lp_readonly(SNUM(conn));
 	conn->admin_user = False;
 
 	/*

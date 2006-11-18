@@ -1117,7 +1117,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		if(!(got_match = *got_exact_match = exact_match(conn, fname, mask)))
 			got_match = mask_match(fname, mask, conn->case_sensitive);
 
-		if(!got_match && check_mangled_names && !mangle_is_8_3(fname, False, SNUM(conn))) {
+		if(!got_match && check_mangled_names &&
+		   !mangle_is_8_3(fname, False, conn->params)) {
 
 			/*
 			 * It turns out that NT matches wildcards against
@@ -1128,7 +1129,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 			pstring newname;
 			pstrcpy( newname, fname);
-			mangle_map( newname, True, False, SNUM(conn));
+			mangle_map( newname, True, False, conn->params);
 			if(!(got_match = *got_exact_match = exact_match(conn, newname, mask)))
 				got_match = mask_match(newname, mask, conn->case_sensitive);
 		}
@@ -1202,7 +1203,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		}
 	}
 
-	mangle_map(fname,False,True,SNUM(conn));
+	mangle_map(fname,False,True,conn->params);
 
 	p = pdata;
 	last_entry_ptr = p;
@@ -1338,7 +1339,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_BOTH_DIRECTORY_INFO\n"));
-			was_8_3 = mangle_is_8_3(fname, True, SNUM(conn));
+			was_8_3 = mangle_is_8_3(fname, True, conn->params);
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
 			put_long_date(p,cdate); p += 8;
@@ -1361,7 +1362,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			if (!was_8_3 && check_mangled_names) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
-				mangle_map(mangled_name,True,True,SNUM(conn));
+				mangle_map(mangled_name,True,True,
+					   conn->params);
 				mangled_name[12] = 0;
 				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
 				if (len < 24) {
@@ -1480,7 +1482,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 		case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_ID_BOTH_DIRECTORY_INFO\n"));
-			was_8_3 = mangle_is_8_3(fname, True, SNUM(conn));
+			was_8_3 = mangle_is_8_3(fname, True, conn->params);
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
 			put_long_date(p,cdate); p += 8;
@@ -1503,7 +1505,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			if (!was_8_3 && check_mangled_names) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
-				mangle_map(mangled_name,True,True,SNUM(conn));
+				mangle_map(mangled_name,True,True,
+					   conn->params);
 				mangled_name[12] = 0;
 				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
 				SSVAL(p, 0, len);
@@ -1871,8 +1874,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	 * (see PR#13758). JRA.
 	 */
 
-	if(!mangle_is_8_3_wildcards( mask, False, SNUM(conn)))
-		mangle_map(mask, True, True, SNUM(conn));
+	if(!mangle_is_8_3_wildcards( mask, False, conn->params))
+		mangle_map(mask, True, True, conn->params);
 
 	return(-1);
 }
@@ -2068,8 +2071,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		 * could be mangled. Ensure we check the unmangled name.
 		 */
 
-		if (mangle_is_mangled(resume_name, SNUM(conn))) {
-			mangle_check_cache(resume_name, sizeof(resume_name)-1, SNUM(conn));
+		if (mangle_is_mangled(resume_name, conn->params)) {
+			mangle_check_cache(resume_name, sizeof(resume_name)-1,
+					   conn->params);
 		}
 
 		/*
@@ -3229,8 +3233,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ALTERNATE_NAME_INFORMATION\n"));
 			pstrcpy(short_name,base_name);
 			/* Mangle if not already 8.3 */
-			if(!mangle_is_8_3(short_name, True, SNUM(conn))) {
-				mangle_map(short_name,True,True,SNUM(conn));
+			if(!mangle_is_8_3(short_name, True, conn->params)) {
+				mangle_map(short_name,True,True,conn->params);
 			}
 			len = srvstr_push(outbuf, pdata+4, short_name, -1, STR_UNICODE);
 			data_size = 4 + len;

@@ -1456,7 +1456,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 				/* this is a hack to speed up torture tests
 				   in 'make test' */
-				timeout_usecs = lp_parm_int(conn->service,
+				timeout_usecs = lp_parm_int(SNUM(conn),
 							    "smbd","sharedelay",
 							    SHARING_VIOLATION_USEC_WAIT);
 

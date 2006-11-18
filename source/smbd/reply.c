@@ -1994,8 +1994,8 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 	
-	if (!rc && mangle_is_mangled(mask,SNUM(conn)))
-		mangle_check_cache( mask, sizeof(pstring)-1, SNUM(conn));
+	if (!rc && mangle_is_mangled(mask,conn->params))
+		mangle_check_cache( mask, sizeof(pstring)-1, conn->params );
 	
 	if (!has_wild) {
 		pstrcat(directory,"/");
@@ -4408,14 +4408,14 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, ui
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!rc && mangle_is_mangled(mask,SNUM(conn)))
-		mangle_check_cache( mask, sizeof(pstring)-1, SNUM(conn));
+	if (!rc && mangle_is_mangled(mask, conn->params))
+		mangle_check_cache( mask, sizeof(pstring)-1, conn->params );
 
 	if (!has_wild) {
 		/*
 		 * No wildcards - just process the one file.
 		 */
-		BOOL is_short_name = mangle_is_8_3(name, True, SNUM(conn));
+		BOOL is_short_name = mangle_is_8_3(name, True, conn->params);
 
 		/* Add a terminating '/' to the directory name. */
 		pstrcat(directory,"/");
@@ -4926,8 +4926,8 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!rc && mangle_is_mangled(mask, SNUM(conn)))
-		mangle_check_cache( mask, sizeof(pstring)-1, SNUM(conn));
+	if (!rc && mangle_is_mangled(mask, conn->params))
+		mangle_check_cache( mask, sizeof(pstring)-1, conn->params );
 
 	has_wild = path_contains_wcard1;
 

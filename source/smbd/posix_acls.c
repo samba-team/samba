@@ -4350,12 +4350,19 @@ SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	pstring filename;
 	
 	ZERO_STRUCT( conn );
-	conn.service = -1;
 	
 	if ( !(conn.mem_ctx = talloc_init( "novfs_get_nt_acl" )) ) {
 		DEBUG(0,("get_nt_acl_no_snum: talloc() failed!\n"));
 		return NULL;
 	}
+	
+	if (!(conn.params = TALLOC_P(conn.mem_ctx, struct share_params))) {
+		DEBUG(0,("get_nt_acl_no_snum: talloc() failed!\n"));
+		TALLOC_FREE(conn.mem_ctx);
+		return NULL;
+	}
+
+	conn.params->service = -1;
 	
 	pstrcpy( path, "/" );
 	set_conn_connectpath(&conn, path);

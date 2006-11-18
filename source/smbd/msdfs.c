@@ -135,7 +135,6 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, char *path)
 
 	ZERO_STRUCTP(conn);
 
-	conn->service = snum;
 	pstrcpy(connpath, path);
 	pstring_sub(connpath , "%S", lp_servicename(snum));
 
@@ -145,6 +144,13 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, char *path)
                 DEBUG(0,("talloc_init(connection_struct) failed!\n"));
                 return False;
         }
+	
+	if (!(conn->params = TALLOC_P(conn->mem_ctx, struct share_params))) {
+		DEBUG(0, ("TALLOC failed\n"));
+		return False;
+	}
+	
+	conn->params->service = snum;
 	
 	set_conn_connectpath(conn, connpath);
 

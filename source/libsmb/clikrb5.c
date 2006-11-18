@@ -130,12 +130,34 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 }
 #endif
 
-#if defined(HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES) && !defined(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES)
+#if !defined(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES)
+
+#if defined(HAVE_KRB5_SET_DEFAULT_TGS_ENCTYPES)
+
+/* With MIT kerberos, we should use krb5_set_default_tgs_enctypes in preference
+ * to krb5_set_default_tgs_ktypes. See
+ *         http://lists.samba.org/archive/samba-technical/2006-July/048271.html
+ *
+ * If the MIT libraries are not exporting internal symbols, we will end up in
+ * this branch, which is correct. Otherwise we will continue to use the
+ * internal symbol
+ */
+ krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc)
+{
+    return krb5_set_default_tgs_enctypes(ctx, enc);
+}
+
+#elif defined(HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES)
+
+/* Heimdal */
  krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc)
 {
 	return krb5_set_default_in_tkt_etypes(ctx, enc);
 }
-#endif
+
+#endif /* HAVE_KRB5_SET_DEFAULT_TGS_ENCTYPES */
+
+#endif /* HAVE_KRB5_SET_DEFAULT_TGS_KTYPES */
 
 #if defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS)
 /* HEIMDAL */
@@ -194,7 +216,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 		return ret;
 	}
 	
-	ret = krb5_string_to_key_salt(context, enctype, password->data, salt, key);
+	ret = krb5_string_to_key_salt(context, enctype, (const char *)password->data, salt, key);
 	krb5_free_salt(context, salt);
 	return ret;
 }
@@ -238,18 +260,6 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 #else
 #error UNKNOWN_GET_ENCTYPES_FUNCTIONS
 #endif
-
- void free_kerberos_etypes(krb5_context context, 
-			   krb5_enctype *enctypes)
-{
-#if defined(HAVE_KRB5_FREE_KTYPES)
-	krb5_free_ktypes(context, enctypes);
-	return;
-#else
-	SAFE_FREE(enctypes);
-	return;
-#endif
-}
 
 #if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
  krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context,
@@ -373,6 +383,14 @@ BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 }
 
 #if !defined(HAVE_KRB5_LOCATE_KDC)
+
+/* krb5_locate_kdc is an internal MIT symbol. MIT are not yet willing to commit
+ * to a public interface for this functionality, so we have to be able to live
+ * without it if the MIT libraries are hiding their internal symbols.
+ */
+
+#if defined(KRB5_KRBHST_INIT)
+/* Heimdal */
  krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters)
 {
 	krb5_krbhst_handle hnd;
@@ -431,7 +449,19 @@ BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 	*addr_pp = sa;
 	return 0;
 }
-#endif
+
+#else /* ! defined(KRB5_KRBHST_INIT) */
+
+ krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm,
+		struct sockaddr **addr_pp, int *naddrs, int get_masters)
+{
+	DEBUG(0, ("unable to explicitly locate the KDC on this platform\n"));
+	return KRB5_KDC_UNREACH;
+}
+
+#endif /* KRB5_KRBHST_INIT */
+
+#endif /* HAVE_KRB5_LOCATE_KDC */
 
 #if !defined(HAVE_KRB5_FREE_UNPARSED_NAME)
  void krb5_free_unparsed_name(krb5_context context, char *val)
@@ -705,7 +735,7 @@ failed:
 	static krb5_data kdata;
 
 	kdata.data = (char *)krb5_principal_get_comp_string(context, principal, i);
-	kdata.length = strlen(kdata.data);
+	kdata.length = strlen((const char *)kdata.data);
 	return &kdata;
 }
 #endif
@@ -906,31 +936,16 @@ out:
 	return ret;
 }
 
- void smb_krb5_free_ap_req(krb5_context context, 
-			  krb5_ap_req *ap_req)
-{
-#ifdef HAVE_KRB5_FREE_AP_REQ /* MIT */
-	krb5_free_ap_req(context, ap_req);
-#elif defined(HAVE_FREE_AP_REQ) /* Heimdal */
-	free_AP_REQ(ap_req);
-#else
-#error UNKNOWN_KRB5_AP_REQ_FREE_FUNCTION
-#endif
-}
-
 /* Prototypes */
-#if defined(HAVE_DECODE_KRB5_AP_REQ) /* MIT */
-krb5_error_code decode_krb5_ap_req(const krb5_data *code, krb5_ap_req **rep);
-#endif
 
  krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context, 
 						 const krb5_data *inbuf, 
 						 krb5_kvno *kvno, 
 						 krb5_enctype *enctype)
 {
-	krb5_error_code ret;
 #ifdef HAVE_KRB5_DECODE_AP_REQ /* Heimdal */
 	{
+		krb5_error_code ret;
 		krb5_ap_req ap_req;
 		
 		ret = krb5_decode_ap_req(context, inbuf, &ap_req);
@@ -940,25 +955,13 @@ krb5_error_code decode_krb5_ap_req(const krb5_data *code, krb5_ap_req **rep);
 		*kvno = get_kvno_from_ap_req(&ap_req);
 		*enctype = get_enctype_from_ap_req(&ap_req);
 
-		smb_krb5_free_ap_req(context, &ap_req);
+ 		free_AP_REQ(&ap_req);
+ 		return 0;
 	}
-#elif defined(HAVE_DECODE_KRB5_AP_REQ) /* MIT */
-	{
-		krb5_ap_req *ap_req = NULL;
-
-		ret = decode_krb5_ap_req(inbuf, &ap_req);
-		if (ret)
-			return ret;
-		
-		*kvno = get_kvno_from_ap_req(ap_req);
-		*enctype = get_enctype_from_ap_req(ap_req);
-
-		smb_krb5_free_ap_req(context, ap_req);
-	}
-#else
-#error UNKOWN_KRB5_AP_REQ_DECODING_FUNCTION
 #endif
-	return ret;
+
+ 	/* Possibly not an appropriate error code. */
+ 	return KRB5KDC_ERR_BADOPTION;
 }
 
  krb5_error_code krb5_rd_req_return_keyblock_from_keytab(krb5_context context,
@@ -986,10 +989,15 @@ krb5_error_code decode_krb5_ap_req(const krb5_data *code, krb5_ap_req **rep);
 		return ret;
 	}
 	
+#ifdef KRB5_TICKET_HAS_KEYINFO
+	enctype = (*ticket)->enc_part.enctype;
+	kvno = (*ticket)->enc_part.kvno;
+#else
 	ret = smb_krb5_get_keyinfo_from_ap_req(context, inbuf, &kvno, &enctype);
 	if (ret) {
 		return ret;
 	}
+#endif
 
 	ret = get_key_from_keytab(context, 
 				  server,
