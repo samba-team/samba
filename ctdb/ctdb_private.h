@@ -50,10 +50,19 @@ struct ctdb_node {
 	int fd;
 };
 
+/*
+  state associated with an incoming connection
+*/
+struct ctdb_incoming {
+	struct ctdb_context *ctdb;
+	int fd;
+};
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
 	struct ctdb_address address;
+	int listen_fd;
 	struct ctdb_node *nodes; /* list of nodes in the cluster */
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	char *err_msg;

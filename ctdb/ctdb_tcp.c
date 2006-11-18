@@ -236,3 +236,100 @@ int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags,
 	return 0;
 }
 
+/*
+  called when an incoming connection is readable
+*/
+static void ctdb_incoming_read(struct event_context *ev, struct fd_event *fde, 
+			       uint16_t flags, void *private)
+{
+	struct ctdb_incoming *in = talloc_get_type(private, struct ctdb_incoming);
+	printf("Incoming data\n");
+}
+
+
+/*
+  called when we get contacted by another node
+  currently makes no attempt to check if the connection is really from a ctdb
+  node in our cluster
+*/
+static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde, 
+			      uint16_t flags, void *private)
+{
+	struct ctdb_context *ctdb;
+	struct sockaddr addr;
+	socklen_t len;
+	int fd;
+	struct ctdb_incoming *in;
+
+	ctdb = talloc_get_type(private, struct ctdb_context);
+	fd = accept(ctdb->listen_fd, &addr, &len);
+	if (fd == -1) return;
+
+	in = talloc(ctdb, struct ctdb_incoming);
+	in->fd = fd;
+	in->ctdb = ctdb;
+
+	event_add_fd(ctdb->ev, in, in->fd, EVENT_FD_READ, 
+		     ctdb_incoming_read, in);	
+}
+
+
+/*
+  listen on our own address
+*/
+static int ctdb_listen(struct ctdb_context *ctdb)
+{
+        struct sockaddr_in sock;
+	int one = 1;
+
+        sock.sin_port = htons(ctdb->address.port);
+        sock.sin_family = PF_INET;
+	inet_pton(AF_INET, ctdb->address.address, &sock.sin_addr);
+
+        ctdb->listen_fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (ctdb->listen_fd == -1) {
+		ctdb_set_error(ctdb, "socket failed\n");
+		return -1;
+        }
+
+        setsockopt(ctdb->listen_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+
+        if (bind(ctdb->listen_fd, (struct sockaddr * )&sock, sizeof(sock)) != 0) {
+		ctdb_set_error(ctdb, "bind failed\n");
+		close(ctdb->listen_fd);
+		ctdb->listen_fd = -1;
+                return -1;
+        }
+
+	if (listen(ctdb->listen_fd, 10) == -1) {
+		ctdb_set_error(ctdb, "listen failed\n");
+		close(ctdb->listen_fd);
+		ctdb->listen_fd = -1;
+		return -1;
+	}
+
+	event_add_fd(ctdb->ev, ctdb, ctdb->listen_fd, EVENT_FD_READ, 
+		     ctdb_listen_event, ctdb);	
+
+	return 0;
+}
+
+/*
+  start the protocol going
+*/
+int ctdb_start(struct ctdb_context *ctdb)
+{
+	struct ctdb_node *node;
+
+	/* listen on our own address */
+	if (ctdb_listen(ctdb) != 0) return -1;
+
+	/* startup connections to the other servers - will happen on
+	   next event loop */
+	for (node=ctdb->nodes;node;node=node->next) {
+		event_add_timed(ctdb->ev, node, timeval_zero(), 
+				ctdb_node_connect, node);
+	}
+
+	return 0;
+}
