@@ -151,6 +151,14 @@ int main(int argc, const char *argv[])
 	key.dptr = "test";
 	key.dsize = strlen("test")+1;
 
+
+#if 1
+	/* loop for testing */
+	while (1) {
+		event_loop_once(ev);
+	}
+#endif
+
 	/* add some random data */
 	for (i=0;i<100;i++) {
 		int v = random();

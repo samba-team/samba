@@ -89,8 +89,15 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	socklen_t len;
 
 	if (getsockopt(node->fd, SOL_SOCKET, SO_ERROR, &error, &len) != 0 ||
-	    errno != 0) {
+	    error != 0) {
+		if (error == EINPROGRESS) {
+			printf("connect in progress\n");
+			return;
+		}
+		printf("getsockopt errno=%s\n", strerror(errno));
+		talloc_free(fde);
 		close(node->fd);
+		node->fd = -1;
 		event_add_timed(ctdb->ev, node, timeval_current_ofs(1, 0), 
 				ctdb_node_connect, node);
 		return;
@@ -109,7 +116,7 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 static void ctdb_node_connect(struct event_context *ev, struct timed_event *te, 
 			      struct timeval t, void *private)
 {
-	struct ctdb_node *node = talloc_get_type(node, struct ctdb_node);
+	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
 	struct ctdb_context *ctdb = node->ctdb;
         unsigned v;
         struct sockaddr_in sock_out;
@@ -245,7 +252,9 @@ static void ctdb_incoming_read(struct event_context *ev, struct fd_event *fde,
 			       uint16_t flags, void *private)
 {
 	struct ctdb_incoming *in = talloc_get_type(private, struct ctdb_incoming);
+	char c;
 	printf("Incoming data\n");
+	
 }
 
 
@@ -258,13 +267,15 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 			      uint16_t flags, void *private)
 {
 	struct ctdb_context *ctdb;
-	struct sockaddr addr;
+	struct sockaddr_in addr;
 	socklen_t len;
 	int fd;
 	struct ctdb_incoming *in;
 
 	ctdb = talloc_get_type(private, struct ctdb_context);
-	fd = accept(ctdb->listen_fd, &addr, &len);
+	memset(&addr, 0, sizeof(addr));
+	len = sizeof(addr);
+	fd = accept(ctdb->listen_fd, (struct sockaddr *)&addr, &len);
 	if (fd == -1) return;
 
 	in = talloc(ctdb, struct ctdb_incoming);
@@ -273,6 +284,8 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 
 	event_add_fd(ctdb->ev, in, in->fd, EVENT_FD_READ, 
 		     ctdb_incoming_read, in);	
+
+	printf("New incoming socket %d\n", in->fd);
 }
 
 
