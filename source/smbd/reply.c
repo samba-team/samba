@@ -132,13 +132,22 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 					break;
 			}
 		} else {
-			switch(next_mb_char_size(s)) {
+			size_t siz;
+			/* Get the size of the next MB character. */
+			next_codepoint(s,&siz);
+			switch(siz) {
+				case 5:
+					*d++ = *s++;
+					/*fall through*/
 				case 4:
 					*d++ = *s++;
+					/*fall through*/
 				case 3:
 					*d++ = *s++;
+					/*fall through*/
 				case 2:
 					*d++ = *s++;
+					/*fall through*/
 				case 1:
 					*d++ = *s++;
 					break;
@@ -266,7 +275,13 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *
 			}
 			*d++ = *s++;
 		} else {
-			switch(next_mb_char_size(s)) {
+			size_t siz;
+			/* Get the size of the next MB character. */
+			next_codepoint(s,&siz);
+			switch(siz) {
+				case 5:
+					*d++ = *s++;
+					/*fall through*/
 				case 4:
 					*d++ = *s++;
 					/*fall through*/
@@ -374,7 +389,13 @@ NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
 		if (!(*s & 0x80)) {
 			*d++ = *s++;
 		} else {
-			switch(next_mb_char_size(s)) {
+			size_t siz;
+			/* Get the size of the next MB character. */
+			next_codepoint(s,&siz);
+			switch(siz) {
+				case 5:
+					*d++ = *s++;
+					/*fall through*/
 				case 4:
 					*d++ = *s++;
 					/*fall through*/
