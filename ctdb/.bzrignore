@@ -3,3 +3,4 @@ Makefile
 bin
 common
 config.log
+push.sh
