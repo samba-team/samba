@@ -67,7 +67,8 @@ static void ctdb_node_read(struct event_context *ev, struct fd_event *fde,
 			   uint16_t flags, void *private)
 {
 	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
-	printf("connection to node %s:%u is readable\n", node->address, node->port);
+	printf("connection to node %s:%u is readable\n", 
+	       node->address.address, node->address.port);
 	event_set_fd_flags(fde, 0);
 }
 
@@ -93,7 +94,8 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 		return;
 	}
 
-	printf("Established connection to %s:%u\n", node->address, node->port);
+	printf("Established connection to %s:%u\n", 
+	       node->address.address, node->address.port);
 	talloc_free(fde);
 	event_add_fd(node->ctdb->ev, node, node->fd, EVENT_FD_READ, 
 		     ctdb_node_read, node);
@@ -115,8 +117,8 @@ static void ctdb_node_connect(struct event_context *ev, struct timed_event *te,
 	v = fcntl(node->fd, F_GETFL, 0);
         fcntl(node->fd, F_SETFL, v | O_NONBLOCK);
 
-	inet_pton(AF_INET, node->address, &sock_out.sin_addr);
-	sock_out.sin_port = htons(node->port);
+	inet_pton(AF_INET, node->address.address, &sock_out.sin_addr);
+	sock_out.sin_port = htons(node->address.port);
 	sock_out.sin_family = PF_INET;
 	
 	if (connect(node->fd, &sock_out, sizeof(sock_out)) != 0 &&
@@ -133,6 +135,25 @@ static void ctdb_node_connect(struct event_context *ev, struct timed_event *te,
 		     ctdb_node_connect_write, node);
 }
 
+/*
+  parse a IP:port pair
+*/
+static int ctdb_parse_address(struct ctdb_context *ctdb,
+			      TALLOC_CTX *mem_ctx, const char *str,
+			      struct ctdb_address *address)
+{
+	char *p;
+	p = strchr(str, ':');
+	if (p == NULL) {
+		ctdb_set_error(ctdb, "Badly formed node '%s'\n", str);
+		return -1;
+	}
+
+	address->address = talloc_strndup(mem_ctx, str, p-str);
+	address->port = strtoul(p+1, NULL, 0);
+	return 0;
+}
+
 
 /*
   add a node to the list of active nodes
@@ -141,23 +162,14 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 {
 	struct ctdb_node *node;
 
-	/* expected to be in IP:port format */
-	char *p;
-	p = strchr(nstr, ':');
-	if (p == NULL) {
-		ctdb_set_error(ctdb, "Badly formed node '%s'\n", nstr);
+	node = talloc(ctdb, struct ctdb_node);
+	if (ctdb_parse_address(ctdb, node, nstr, &node->address) != 0) {
 		return -1;
 	}
-	*p++ = 0;
-
-	node = talloc(ctdb, struct ctdb_node);
-	node->address = talloc_strdup(node, nstr);
-	node->port = strtoul(p, NULL, 0);
 	node->fd = -1;
 	node->ctdb = ctdb;
 
 	DLIST_ADD(ctdb->nodes, node);	
-	event_add_timed(ctdb->ev, node, timeval_zero(), ctdb_node_connect, node);
 	return 0;
 }
 
@@ -185,6 +197,14 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 	
 	talloc_free(lines);
 	return 0;
+}
+
+/*
+  setup the node list from a file
+*/
+int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
+{
+	return ctdb_parse_address(ctdb, ctdb, address, &ctdb->address);
 }
 
 /*

@@ -40,11 +40,20 @@ struct ctdb_call {
 struct ctdb_context *ctdb_init(TALLOC_CTX *mem_ctx);
 
 /*
+  tell ctdb what address to listen on, in transport specific format
+*/
+int ctdb_set_address(struct ctdb_context *ctdb, const char *address);
+
+/*
   tell ctdb what nodes are available. This takes a filename, which will contain
   1 node address per line, in a transport specific format
 */
 int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist);
 
+/*
+  start the ctdb protocol
+*/
+int ctdb_start(struct ctdb_context *ctdb);
 
 /*
   error string for last ctdb error

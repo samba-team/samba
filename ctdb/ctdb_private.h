@@ -35,20 +35,25 @@ struct ctdb_registered_call {
 	ctdb_fn_t fn;
 };
 
+struct ctdb_address {
+	const char *address;
+	int port;
+};
+
 /*
   state associated with one node
 */
 struct ctdb_node {
 	struct ctdb_context *ctdb;
 	struct ctdb_node *next, *prev;
-	const char *address;
-	int port;
+	struct ctdb_address address;
 	int fd;
 };
 
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
+	struct ctdb_address address;
 	struct ctdb_node *nodes; /* list of nodes in the cluster */
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	char *err_msg;
