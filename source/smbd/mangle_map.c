@@ -201,11 +201,11 @@ static void mangled_map(char *s, const char *MangledMap)
   front end routine to the mangled map code 
   personally I think that the whole idea of "mangled map" is completely bogus
 */
-void mangle_map_filename(fstring fname, int snum)
+void mangle_map_filename(fstring fname, const struct share_params *p)
 {
 	char *map;
 
-	map = lp_mangled_map(snum);
+	map = lp_mangled_map(p);
 	if (!map || !*map) return;
 
 	mangled_map(fname, map);

@@ -26,9 +26,7 @@
 #undef SIZEOF_LONG
 #endif
 
-#ifndef NO_CONFIG_H /* for some tests */
-#include "config.h"
-#endif
+#include "lib/replace/replace.h"
 
 /* only do the C++ reserved word check when we compile
    to include --with-developer since too many systems
@@ -66,14 +64,12 @@
 #undef HAVE_TERMIOS_H
 #endif
 
-#if (__GNUC__ >= 3 ) && (__GNUC_MINOR__ >= 1 )
-/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
- * the parameter containing the format, and a2 the index of the first
- * argument. Note that some gcc 2.x versions don't handle this
- * properly **/
-#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#ifndef _PUBLIC_
+#ifdef HAVE_VISIBILITY_ATTR
+#  define _PUBLIC_ __attribute__((visibility("default")))
 #else
-#define PRINTF_ATTRIBUTE(a1, a2)
+#  define _PUBLIC_
+#endif
 #endif
 
 #if defined(__GNUC__) && !defined(__cplusplus)
@@ -95,281 +91,22 @@
 #endif
 #endif /* RELIANTUNIX */
 
-#include <sys/types.h>
-
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-
-#ifdef TIME_WITH_SYS_TIME
-#include <sys/time.h>
-#include <time.h>
-#else
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
-#endif
-
-#ifdef HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#include <stdio.h>
-#include <stddef.h>
-
-#ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
-#ifdef HAVE_UNIXSOCKET
-#include <sys/un.h>
-#endif
-
-#ifdef HAVE_SYS_SYSCALL_H
-#include <sys/syscall.h>
-#elif HAVE_SYSCALL_H
-#include <syscall.h>
-#endif
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif
-
-#ifdef HAVE_MEMORY_H
-#include <memory.h>
-#endif
-
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#else
-#ifdef HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
-#endif
-#endif
-
-#include <sys/stat.h>
-
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#endif
-
-#ifdef HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h>
-#endif
-
-#ifdef HAVE_SYS_FILIO_H
-#include <sys/filio.h>
-#endif
-
-#include <signal.h>
-
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
-#ifdef HAVE_CTYPE_H
-#include <ctype.h>
-#endif
-#ifdef HAVE_GRP_H
-#include <grp.h>
-#endif
-#ifdef HAVE_SYS_PRIV_H
-#include <sys/priv.h>
-#endif
-#ifdef HAVE_SYS_ID_H
-#include <sys/id.h>
-#endif
-
-#include <errno.h>
-
-#ifdef HAVE_UTIME_H
-#include <utime.h>
-#endif
-
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-
-#ifdef HAVE_SYS_MODE_H
-/* apparently AIX needs this for S_ISLNK */
-#ifndef S_ISLNK
-#include <sys/mode.h>
-#endif
-#endif
-
-#ifdef HAVE_GLOB_H
-#include <glob.h>
-#endif
-
-#include <pwd.h>
-
-#ifdef HAVE_STDARG_H
-#include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
-
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-
-#ifdef HAVE_SYSLOG_H
-#include <syslog.h>
-#else
-#ifdef HAVE_SYS_SYSLOG_H
-#include <sys/syslog.h>
-#endif
-#endif
-
-#include <sys/file.h>
-
-#ifdef HAVE_NETINET_TCP_H
-#include <netinet/tcp.h>
-#endif
-
-/*
- * The next three defines are needed to access the IPTOS_* options
- * on some systems.
- */
-
-#ifdef HAVE_NETINET_IN_SYSTM_H
-#include <netinet/in_systm.h>
-#endif
-
-#ifdef HAVE_NETINET_IN_IP_H
-#include <netinet/in_ip.h>
-#endif
-
-#ifdef HAVE_NETINET_IP_H
-#include <netinet/ip.h>
-#endif
-
-#if defined(HAVE_TERMIOS_H)
-/* POSIX terminal handling. */
-#include <termios.h>
-#elif defined(HAVE_TERMIO_H)
-/* Older SYSV terminal handling - don't use if we can avoid it. */
-#include <termio.h>
-#elif defined(HAVE_SYS_TERMIO_H)
-/* Older SYSV terminal handling - don't use if we can avoid it. */
-#include <sys/termio.h>
-#endif
-
-#if HAVE_DIRENT_H
-# include <dirent.h>
-# define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-# define dirent direct
-# define NAMLEN(dirent) (dirent)->d_namlen
-# if HAVE_SYS_NDIR_H
-#  include <sys/ndir.h>
-# endif
-# if HAVE_SYS_DIR_H
-#  include <sys/dir.h>
-# endif
-# if HAVE_NDIR_H
-#  include <ndir.h>
-# endif
-#endif
-
-#ifdef HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#endif
-
-#ifdef HAVE_NET_IF_H
-#include <net/if.h>
-#endif
-
-
-#ifdef HAVE_SYS_MOUNT_H
-#include <sys/mount.h>
-#endif
-
-#ifdef HAVE_SYS_VFS_H
-#include <sys/vfs.h>
-#endif
-
-#ifdef HAVE_SYS_ACL_H
-#include <sys/acl.h>
-#endif
-
-#ifdef HAVE_SYS_FS_S5PARAM_H 
-#include <sys/fs/s5param.h>
-#endif
-
-#if defined (HAVE_SYS_FILSYS_H) && !defined (_CRAY)
-#include <sys/filsys.h> 
-#endif
-
-#ifdef HAVE_SYS_STATFS_H
-# include <sys/statfs.h>
-#endif
-
-#ifdef HAVE_DUSTAT_H              
-#include <sys/dustat.h>
-#endif
-
-#ifdef HAVE_SYS_STATVFS_H          
-#include <sys/statvfs.h>
-#endif
-
-#ifdef HAVE_SHADOW_H
-/*
- * HP-UX 11.X has TCP_NODELAY and TCP_MAXSEG defined in <netinet/tcp.h> which
- * was included above.  However <rpc/rpc.h> includes <sys/xti.h> which defines
- * them again without checking if they already exsist.  This generates
- * two "Redefinition of macro" warnings for every single .c file that is
- * compiled.
- */
-#if defined(HPUX) && defined(TCP_NODELAY)
-#undef TCP_NODELAY
-#endif
-#if defined(HPUX) && defined(TCP_MAXSEG)
-#undef TCP_MAXSEG
-#endif
-#include <shadow.h>
-#endif
-
-#ifdef HAVE_GETPWANAM
-#include <sys/label.h>
-#include <sys/audit.h>
-#include <pwdadj.h>
-#endif
-
-#ifdef HAVE_SYS_SECURITY_H
-#include <sys/security.h>
-#include <prot.h>
-#define PASSWORD_LENGTH 16
-#endif  /* HAVE_SYS_SECURITY_H */
-
-#ifdef HAVE_STROPTS_H
-#include <stropts.h>
-#endif
-
-#ifdef HAVE_POLL_H
-#include <poll.h>
-#endif
+#include "system/capability.h"
+#include "system/dir.h"
+#include "system/filesys.h"
+#include "system/glob.h"
+#include "system/iconv.h"
+#include "system/locale.h"
+#include "system/network.h"
+#include "system/passwd.h"
+#include "system/printing.h"
+#include "system/readline.h"
+#include "system/select.h"
+#include "system/shmem.h"
+#include "system/syslog.h"
+#include "system/terminal.h"
+#include "system/time.h"
+#include "system/wait.h"
 
 #if defined(HAVE_RPC_RPC_H)
 /*
@@ -419,26 +156,6 @@
 #include <rpcsvc/ypclnt.h>
 #endif
 #endif /* HAVE_NETGROUP */
-
-#if defined(HAVE_SYS_IPC_H)
-#include <sys/ipc.h>
-#endif /* HAVE_SYS_IPC_H */
-
-#if defined(HAVE_SYS_SHM_H)
-#include <sys/shm.h>
-#endif /* HAVE_SYS_SHM_H */
-
-#ifdef HAVE_NATIVE_ICONV
-#ifdef HAVE_ICONV
-#include <iconv.h>
-#endif
-#ifdef HAVE_GICONV
-#include <giconv.h>
-#endif
-#ifdef HAVE_BICONV
-#include <biconv.h>
-#endif
-#endif
 
 #if HAVE_KRB5_H
 #include <krb5.h>
@@ -508,10 +225,6 @@
 
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
-#endif
-
-#if HAVE_LOCALE_H
-#include <locale.h>
 #endif
 
 #if HAVE_LANGINFO_H
@@ -881,13 +594,9 @@ struct timespec {
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
-#ifndef HAVE_STRERROR
-extern char *sys_errlist[];
-#define strerror(i) sys_errlist[i]
-#endif
-
-#ifndef HAVE_ERRNO_DECL
-extern int errno;
+#ifndef _UPPER_BOOL
+typedef int BOOL;
+#define _UPPER_BOOL
 #endif
 
 #ifdef HAVE_BROKEN_GETGROUPS
@@ -900,11 +609,6 @@ extern int errno;
 #define NGROUPS_MAX 32 /* Guess... */
 #endif
 
-#ifdef SOCKET_WRAPPER
-#define SOCKET_WRAPPER_REPLACE
-#include "include/socket_wrapper.h"
-#endif
-
 /* Our own pstrings and fstrings */
 #include "pstring.h"
 
@@ -912,11 +616,11 @@ extern int errno;
 #include "xfile.h"
 #include "intl.h"
 #include "dlinklist.h"
-#include "tdb/tdb.h"
-#include "tdb/spinlock.h"
-#include "tdb/tdbutil.h"
+#include "tdb.h"
+#include "util_tdb.h"
+#include "tdbback.h"
 
-#include "talloc.h"
+#include "lib/talloc/talloc.h"
 /* And a little extension. Abort on type mismatch */
 #define talloc_get_type_abort(ptr, type) \
 	(type *)talloc_check_name_abort(ptr, #type)
@@ -1128,10 +832,6 @@ enum flush_reason_enum {
 #define PASSWORD_LENGTH 8
 #endif
 
-#ifdef REPLACE_INET_NTOA
-#define inet_ntoa rep_inet_ntoa
-#endif
-
 #ifndef HAVE_PIPE
 #define SYNC_DNS 1
 #endif
@@ -1160,71 +860,12 @@ enum flush_reason_enum {
 #define ULTRIX_AUTH 1
 #endif
 
-#ifndef HAVE_STRDUP
-char *strdup(const char *s);
-#endif
-
-#ifndef HAVE_STRNDUP
-char *strndup(const char *s, size_t size);
-#endif
-
-#ifndef HAVE_MEMMOVE
-void *memmove(void *dest,const void *src,int size);
-#endif
-
-#ifndef HAVE_INITGROUPS
-int initgroups(char *name,gid_t id);
-#endif
-
-#ifndef HAVE_RENAME
-int rename(const char *zfrom, const char *zto);
-#endif
-
-#ifndef HAVE_MKTIME
-time_t mktime(struct tm *t);
-#endif
-
-#ifndef HAVE_STRLCPY
-size_t strlcpy(char *d, const char *s, size_t bufsize);
-#endif
-
-#ifndef HAVE_STRLCAT
-size_t strlcat(char *d, const char *s, size_t bufsize);
-#endif
-
-#ifndef HAVE_FTRUNCATE
-int ftruncate(int f,long l);
-#endif
-
-#ifndef HAVE_STRNDUP
-char *strndup(const char *s, size_t n);
-#endif
-
-#ifndef HAVE_STRNLEN
-size_t strnlen(const char *s, size_t n);
-#endif
-
-#ifndef HAVE_STRTOUL
-unsigned long strtoul(const char *nptr, char **endptr, int base);
-#endif
-
-#ifndef HAVE_SETENV
-int setenv(const char *name, const char *value, int overwrite); 
-#endif
-
 #if (defined(USE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
 /* stupid glibc */
 int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 #endif
 #if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
-#endif
-#ifndef HAVE_VASPRINTF_DECL
-int vasprintf(char **ptr, const char *format, va_list ap);
-#endif
-
-#ifdef REPLACE_GETPASS
-#define getpass(prompt) getsmbpass((prompt))
 #endif
 
 /*
@@ -1399,28 +1040,6 @@ int fdprintf(int , const char *, ...) PRINTF_ATTRIBUTE(2,3);
 int d_printf(const char *, ...) PRINTF_ATTRIBUTE(1,2);
 /*PRINTFLIKE2 */
 int d_fprintf(FILE *f, const char *, ...) PRINTF_ATTRIBUTE(2,3);
-#ifndef HAVE_SNPRINTF_DECL
-/*PRINTFLIKE3 */
-int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
-#endif
-#ifndef HAVE_ASPRINTF_DECL
-/*PRINTFLIKE2 */
-int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
-#endif
-
-/* Fix prototype problem with non-C99 compliant snprintf implementations, esp
-   HPUX 11.  Don't change the sense of this #if statement.  Read the comments
-   in lib/snprint.c if you think you need to.  See also bugzilla bug 174. */
-
-#if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
-#define snprintf smb_snprintf
-#define vsnprintf smb_vsnprintf
-
-/* PRINTFLIKE3 */
-int smb_snprintf(char *str,size_t count,const char *fmt,...);
-int smb_vsnprintf (char *str, size_t count, const char *fmt, va_list args);
-
-#endif
 
 /* PRINTFLIKE2 */
 void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
@@ -1448,14 +1067,6 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 #else
 #define VA_COPY(dest, src) (dest) = (src)
 #endif
-#endif
-
-#ifndef HAVE_VSYSLOG
-void vsyslog (int facility_priority, const char *format, va_list arglist);
-#endif
-
-#ifndef HAVE_TIMEGM
-time_t timegm(struct tm *tm);
 #endif
 
 /*
@@ -1492,6 +1103,14 @@ krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context, krb5_auth_con
 void krb5_free_unparsed_name(krb5_context ctx, char *val);
 #endif
 
+/* Stub out initialize_krb5_error_table since it is not present in all
+ * Kerberos implementations. If it's not present, it's not necessary to
+ * call it.
+ */
+#ifndef HAVE_INITIALIZE_KRB5_ERROR_TABLE
+#define initialize_krb5_error_table()
+#endif
+
 /* Samba wrapper function for krb5 functionality. */
 void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
 int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
@@ -1500,7 +1119,6 @@ BOOL get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_tick
 krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
-void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
 BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote);
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
 krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context, krb5_principal host_princ, int enctype);

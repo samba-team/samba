@@ -122,7 +122,7 @@
 /* the service number for the [globals] defaults */ 
 #define GLOBAL_SECTION_SNUM	(-1)
 /* translates a connection number into a service number */
-#define SNUM(conn)         	((conn)?(conn)->service:GLOBAL_SECTION_SNUM)
+#define SNUM(conn)         	((conn)?(conn)->params->service:GLOBAL_SECTION_SNUM)
 
 
 /* access various service details */
@@ -133,10 +133,10 @@
 #define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))
 #define GUEST_ONLY(snum)   (VALID_SNUM(snum) && lp_guest_only(snum))
 #define CAN_SETDIR(snum)   (!lp_no_set_dir(snum))
-#define CAN_PRINT(conn)    ((conn) && lp_print_ok((conn)->service))
-#define MAP_HIDDEN(conn)   ((conn) && lp_map_hidden((conn)->service))
-#define MAP_SYSTEM(conn)   ((conn) && lp_map_system((conn)->service))
-#define MAP_ARCHIVE(conn)   ((conn) && lp_map_archive((conn)->service))
+#define CAN_PRINT(conn)    ((conn) && lp_print_ok(SNUM(conn)))
+#define MAP_HIDDEN(conn)   ((conn) && lp_map_hidden(SNUM(conn)))
+#define MAP_SYSTEM(conn)   ((conn) && lp_map_system(SNUM(conn)))
+#define MAP_ARCHIVE(conn)   ((conn) && lp_map_archive(SNUM(conn)))
 #define IS_HIDDEN_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->hide_list,(conn)->case_sensitive))
 #define IS_VETO_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_list,(conn)->case_sensitive))
 #define IS_VETO_OPLOCK_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_oplock_list,(conn)->case_sensitive))

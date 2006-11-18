@@ -752,7 +752,7 @@ BOOL dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
 
 static BOOL mangle_mask_match(connection_struct *conn, fstring filename, char *mask)
 {
-	mangle_map(filename,True,False,SNUM(conn));
+	mangle_map(filename,True,False,conn->params);
 	return mask_match_search(filename,mask,False);
 }
 
@@ -798,8 +798,9 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,uint32 dirtype, pstring fn
 		    mask_match_search(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
 
-			if (!mangle_is_8_3(filename, False, SNUM(conn)))
-				mangle_map(filename,True,False,SNUM(conn));
+			if (!mangle_is_8_3(filename, False, conn->params))
+				mangle_map(filename,True,False,
+					   conn->params);
 
 			pstrcpy(fname,filename);
 			*path = 0;

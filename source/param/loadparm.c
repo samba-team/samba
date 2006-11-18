@@ -1741,10 +1741,17 @@ static char *lp_string(const char *s)
  const char **fn_name(int i) {return(const char **)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
  BOOL fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
-#define FN_LOCAL_CHAR(fn_name,val) \
- char fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
+
+#define FN_LOCAL_PARM_BOOL(fn_name,val) \
+ BOOL fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
+#define FN_LOCAL_PARM_INTEGER(fn_name,val) \
+ int fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
+#define FN_LOCAL_PARM_STRING(fn_name,val) \
+ char *fn_name(const struct share_params *p) {return(lp_string((LP_SNUM_OK(p->service) && ServicePtrs[(p->service)]->val) ? ServicePtrs[(p->service)]->val : sDefault.val));}
+#define FN_LOCAL_CHAR(fn_name,val) \
+ char fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 
 FN_GLOBAL_STRING(lp_smb_ports, &Globals.smb_ports)
 FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)

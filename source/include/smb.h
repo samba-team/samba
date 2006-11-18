@@ -52,11 +52,6 @@
 #define Auto (2)
 #define Required (3)
 
-#ifndef _BOOL
-typedef int BOOL;
-#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
-#endif
-
 #define SIZEOFWORD 2
 
 #ifndef DEF_CREATE_MASK
@@ -178,6 +173,10 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 /* Copy into a smb_ucs2_t from a possibly unaligned buffer. Return the copied smb_ucs2_t */
 #define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((unsigned char *)(src))[0],\
 				((unsigned char *)(dest))[1] = ((unsigned char *)(src))[1], (dest))
+
+/* Large data type for manipulating uint32 unicode codepoints */
+typedef uint32 codepoint_t;
+#define INVALID_CODEPOINT ((codepoint_t)-1)
 
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
@@ -533,11 +532,19 @@ struct dfree_cached_info {
 
 struct dptr_struct;
 
+struct share_params {
+	int service;
+};
+
+struct share_iterator {
+	int next_id;
+};
+
 typedef struct connection_struct {
 	struct connection_struct *next, *prev;
 	TALLOC_CTX *mem_ctx;
 	unsigned cnum; /* an index passed over the wire */
-	int service;
+	struct share_params *params;
 	BOOL force_user;
 	BOOL force_group;
 	struct vuid_cache vuid_cache;

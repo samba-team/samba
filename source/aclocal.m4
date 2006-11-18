@@ -1,28 +1,3 @@
-dnl AC_VALIDATE_CACHE_SYSTEM_TYPE[(cmd)]
-dnl if the cache file is inconsistent with the current host,
-dnl target and build system types, execute CMD or print a default
-dnl error message.
-AC_DEFUN(AC_VALIDATE_CACHE_SYSTEM_TYPE, [
-    AC_REQUIRE([AC_CANONICAL_SYSTEM])
-    AC_MSG_CHECKING([config.cache system type])
-    if { test x"${ac_cv_host_system_type+set}" = x"set" &&
-         test x"$ac_cv_host_system_type" != x"$host"; } ||
-       { test x"${ac_cv_build_system_type+set}" = x"set" &&
-         test x"$ac_cv_build_system_type" != x"$build"; } ||
-       { test x"${ac_cv_target_system_type+set}" = x"set" &&
-         test x"$ac_cv_target_system_type" != x"$target"; }; then
-	AC_MSG_RESULT([different])
-	ifelse($#, 1, [$1],
-		[AC_MSG_ERROR(["you must remove config.cache and restart configure"])])
-    else
-	AC_MSG_RESULT([same])
-    fi
-    ac_cv_host_system_type="$host"
-    ac_cv_build_system_type="$build"
-    ac_cv_target_system_type="$target"
-])
-
-
 dnl test whether dirent has a d_off member
 AC_DEFUN(AC_DIRENT_D_OFF,
 [AC_CACHE_CHECK([for d_off in dirent], ac_cv_dirent_d_off,
@@ -77,32 +52,6 @@ AC_DEFUN(SMB_SUBSYSTEM,
 	AC_DEFINE_UNQUOTED([static_decl_]translit([$1], [A-Z], [a-z]), [$decl_static_modules_]translit([$1], [A-Z], [a-z]), [Decl of Static init functions])
     	ifelse([$2], , :, [rm -f $2])
 ])
-
-dnl AC_PROG_CC_FLAG(flag)
-AC_DEFUN(AC_PROG_CC_FLAG,
-[AC_CACHE_CHECK(whether ${CC-cc} accepts -$1, ac_cv_prog_cc_$1,
-[echo 'void f(){}' > conftest.c
-if test -z "`${CC-cc} -$1 -c conftest.c 2>&1`"; then
-  ac_cv_prog_cc_$1=yes
-else
-  ac_cv_prog_cc_$1=no
-fi
-rm -f conftest*
-])])
-
-dnl see if a declaration exists for a function or variable
-dnl defines HAVE_function_DECL if it exists
-dnl AC_HAVE_DECL(var, includes)
-AC_DEFUN(AC_HAVE_DECL,
-[
- AC_CACHE_CHECK([for $1 declaration],ac_cv_have_$1_decl,[
-    AC_TRY_COMPILE([$2],[int i = (int)$1],
-        ac_cv_have_$1_decl=yes,ac_cv_have_$1_decl=no)])
- if test x"$ac_cv_have_$1_decl" = x"yes"; then
-    AC_DEFINE([HAVE_]translit([$1], [a-z], [A-Z])[_DECL],1,[Whether $1() is available])
- fi
-])
-
 
 dnl AC_LIBTESTFUNC(lib, function, [actions if found], [actions if not found])
 dnl Check for a function in a library, but don't keep adding the same library
@@ -303,285 +252,6 @@ else
 fi])
 ])
 
-# Configure paths for LIBXML2
-# Toshio Kuratomi 2001-04-21
-# Adapted from:
-# Configure paths for GLIB
-# Owen Taylor     97-11-3
-
-dnl AM_PATH_XML2([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]]])
-dnl Test for XML, and define XML_CFLAGS and XML_LIBS
-dnl
-AC_DEFUN(AM_PATH_XML2,[ 
-AC_ARG_WITH(xml-prefix,
-            [  --with-xml-prefix=PFX   Prefix where libxml is installed (optional)],
-            xml_config_prefix="$withval", xml_config_prefix="")
-AC_ARG_WITH(xml-exec-prefix,
-            [  --with-xml-exec-prefix=PFX Exec prefix where libxml is installed (optional)],
-            xml_config_exec_prefix="$withval", xml_config_exec_prefix="")
-AC_ARG_ENABLE(xmltest,
-              [  --disable-xmltest       Do not try to compile and run a test LIBXML program],,
-              enable_xmltest=yes)
-
-  if test x$xml_config_exec_prefix != x ; then
-     xml_config_args="$xml_config_args --exec-prefix=$xml_config_exec_prefix"
-     if test x${XML2_CONFIG+set} != xset ; then
-        XML2_CONFIG=$xml_config_exec_prefix/bin/xml2-config
-     fi
-  fi
-  if test x$xml_config_prefix != x ; then
-     xml_config_args="$xml_config_args --prefix=$xml_config_prefix"
-     if test x${XML2_CONFIG+set} != xset ; then
-        XML2_CONFIG=$xml_config_prefix/bin/xml2-config
-     fi
-  fi
-
-  AC_PATH_PROG(XML2_CONFIG, xml2-config, no)
-  min_xml_version=ifelse([$1], ,2.0.0,[$1])
-  AC_MSG_CHECKING(for libxml - version >= $min_xml_version)
-  no_xml=""
-  if test "$XML2_CONFIG" = "no" ; then
-    no_xml=yes
-  else
-    XML_CFLAGS=`$XML2_CONFIG $xml_config_args --cflags`
-    XML_LIBS=`$XML2_CONFIG $xml_config_args --libs`
-    xml_config_major_version=`$XML2_CONFIG $xml_config_args --version | \
-           sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\1/'`
-    xml_config_minor_version=`$XML2_CONFIG $xml_config_args --version | \
-           sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\2/'`
-    xml_config_micro_version=`$XML2_CONFIG $xml_config_args --version | \
-           sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\3/'`
-    if test "x$enable_xmltest" = "xyes" ; then
-      ac_save_CFLAGS="$CFLAGS"
-      ac_save_LIBS="$LIBS"
-      CFLAGS="$CFLAGS $XML_CFLAGS"
-      LIBS="$XML_LIBS $LIBS"
-dnl
-dnl Now check if the installed libxml is sufficiently new.
-dnl (Also sanity checks the results of xml2-config to some extent)
-dnl
-      rm -f conf.xmltest
-      AC_TRY_RUN([
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <libxml/xmlversion.h>
-
-int 
-main()
-{
-  int xml_major_version, xml_minor_version, xml_micro_version;
-  int major, minor, micro;
-  char *tmp_version;
-
-  system("touch conf.xmltest");
-
-  /* Capture xml2-config output via autoconf/configure variables */
-  /* HP/UX 9 (%@#!) writes to sscanf strings */
-  tmp_version = (char *)strdup("$min_xml_version");
-  if (sscanf(tmp_version, "%d.%d.%d", &major, &minor, &micro) != 3) {
-     printf("%s, bad version string from xml2-config\n", "$min_xml_version");
-     exit(1);
-   }
-   free(tmp_version);
-
-   /* Capture the version information from the header files */
-   tmp_version = (char *)strdup(LIBXML_DOTTED_VERSION);
-   if (sscanf(tmp_version, "%d.%d.%d", &xml_major_version, &xml_minor_version, &xml_micro_version) != 3) {
-     printf("%s, bad version string from libxml includes\n", "LIBXML_DOTTED_VERSION");
-     exit(1);
-   }
-   free(tmp_version);
-
- /* Compare xml2-config output to the libxml headers */
-  if ((xml_major_version != $xml_config_major_version) ||
-      (xml_minor_version != $xml_config_minor_version) ||
-      (xml_micro_version != $xml_config_micro_version))
-    {
-      printf("*** libxml header files (version %d.%d.%d) do not match\n",
-         xml_major_version, xml_minor_version, xml_micro_version);
-      printf("*** xml2-config (version %d.%d.%d)\n",
-         $xml_config_major_version, $xml_config_minor_version, $xml_config_micro_version);
-      return 1;
-    } 
-/* Compare the headers to the library to make sure we match */
-  /* Less than ideal -- doesn't provide us with return value feedback, 
-   * only exits if there's a serious mismatch between header and library.
-   */
-    LIBXML_TEST_VERSION;
-
-    /* Test that the library is greater than our minimum version */
-    if ((xml_major_version > major) ||
-        ((xml_major_version == major) && (xml_minor_version > minor)) ||
-        ((xml_major_version == major) && (xml_minor_version == minor) &&
-        (xml_micro_version >= micro)))
-      {
-        return 0;
-       }
-     else
-      {
-        printf("\n*** An old version of libxml (%d.%d.%d) was found.\n",
-               xml_major_version, xml_minor_version, xml_micro_version);
-        printf("*** You need a version of libxml newer than %d.%d.%d. The latest version of\n",
-           major, minor, micro);
-        printf("*** libxml is always available from ftp://ftp.xmlsoft.org.\n");
-        printf("***\n");
-        printf("*** If you have already installed a sufficiently new version, this error\n");
-        printf("*** probably means that the wrong copy of the xml2-config shell script is\n");
-        printf("*** being found. The easiest way to fix this is to remove the old version\n");
-        printf("*** of LIBXML, but you can also set the XML2_CONFIG environment to point to the\n");
-        printf("*** correct copy of xml2-config. (In this case, you will have to\n");
-        printf("*** modify your LD_LIBRARY_PATH enviroment variable, or edit /etc/ld.so.conf\n");
-        printf("*** so that the correct libraries are found at run-time))\n");
-    }
-  return 1;
-}
-],, no_xml=yes,[echo $ac_n "cross compiling; assumed OK... $ac_c"])
-       CFLAGS="$ac_save_CFLAGS"
-       LIBS="$ac_save_LIBS"
-     fi
-  fi
-
-  if test "x$no_xml" = x ; then
-     AC_MSG_RESULT(yes (version $xml_config_major_version.$xml_config_minor_version.$xml_config_micro_version))
-     ifelse([$2], , :, [$2])     
-  else
-     AC_MSG_RESULT(no)
-     if test "$XML2_CONFIG" = "no" ; then
-       echo "*** The xml2-config script installed by LIBXML could not be found"
-       echo "*** If libxml was installed in PREFIX, make sure PREFIX/bin is in"
-       echo "*** your path, or set the XML2_CONFIG environment variable to the"
-       echo "*** full path to xml2-config."
-     else
-       if test -f conf.xmltest ; then
-        :
-       else
-          echo "*** Could not run libxml test program, checking why..."
-          CFLAGS="$CFLAGS $XML_CFLAGS"
-          LIBS="$LIBS $XML_LIBS"
-          AC_TRY_LINK([
-#include <libxml/xmlversion.h>
-#include <stdio.h>
-],      [ LIBXML_TEST_VERSION; return 0;],
-        [ echo "*** The test program compiled, but did not run. This usually means"
-          echo "*** that the run-time linker is not finding LIBXML or finding the wrong"
-          echo "*** version of LIBXML. If it is not finding LIBXML, you'll need to set your"
-          echo "*** LD_LIBRARY_PATH environment variable, or edit /etc/ld.so.conf to point"
-          echo "*** to the installed location  Also, make sure you have run ldconfig if that"
-          echo "*** is required on your system"
-          echo "***"
-          echo "*** If you have an old version installed, it is best to remove it, although"
-          echo "*** you may also be able to get things to work by modifying LD_LIBRARY_PATH" ],
-        [ echo "*** The test program failed to compile or link. See the file config.log for the"
-          echo "*** exact error that occured. This usually means LIBXML was incorrectly installed"
-          echo "*** or that you have moved LIBXML since it was installed. In the latter case, you"
-          echo "*** may want to edit the xml2-config script: $XML2_CONFIG" ])
-          CFLAGS="$ac_save_CFLAGS"
-          LIBS="$ac_save_LIBS"
-       fi
-     fi
-
-     XML_CFLAGS=""
-     XML_LIBS=""
-     ifelse([$3], , :, [$3])
-  fi
-  AC_SUBST(XML_CFLAGS)
-  AC_SUBST(XML_LIBS)
-  rm -f conf.xmltest
-])
-
-# =========================================================================
-# AM_PATH_MYSQL : MySQL library
-
-dnl AM_PATH_MYSQL([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]]])
-dnl Test for MYSQL, and define MYSQL_CFLAGS and MYSQL_LIBS
-dnl
-AC_DEFUN(AM_PATH_MYSQL,
-[dnl
-dnl Get the cflags and libraries from the mysql_config script
-dnl
-AC_ARG_WITH(mysql-prefix,[  --with-mysql-prefix=PFX   Prefix where MYSQL is installed (optional)],
-            mysql_prefix="$withval", mysql_prefix="")
-AC_ARG_WITH(mysql-exec-prefix,[  --with-mysql-exec-prefix=PFX Exec prefix where MYSQL is installed (optional)],
-            mysql_exec_prefix="$withval", mysql_exec_prefix="")
-
-  if test x$mysql_exec_prefix != x ; then
-     mysql_args="$mysql_args --exec-prefix=$mysql_exec_prefix"
-     if test x${MYSQL_CONFIG+set} != xset ; then
-        MYSQL_CONFIG=$mysql_exec_prefix/bin/mysql_config
-     fi
-  fi
-  if test x$mysql_prefix != x ; then
-     mysql_args="$mysql_args --prefix=$mysql_prefix"
-     if test x${MYSQL_CONFIG+set} != xset ; then
-        MYSQL_CONFIG=$mysql_prefix/bin/mysql_config
-     fi
-  fi
-
-  AC_REQUIRE([AC_CANONICAL_TARGET])
-  AC_PATH_PROG(MYSQL_CONFIG, mysql_config, no)
-  AC_MSG_CHECKING(for MYSQL)
-  no_mysql=""
-  if test "$MYSQL_CONFIG" = "no" ; then
-    MYSQL_CFLAGS=""
-    MYSQL_LIBS=""
-    AC_MSG_RESULT(no)
-     ifelse([$2], , :, [$2])
-  else
-    MYSQL_CFLAGS=`$MYSQL_CONFIG $mysqlconf_args --cflags | sed -e "s/'//g"`
-    MYSQL_LIBS=`$MYSQL_CONFIG $mysqlconf_args --libs | sed -e "s/'//g"`
-    AC_MSG_RESULT(yes)
-    ifelse([$1], , :, [$1])
-  fi
-  AC_SUBST(MYSQL_CFLAGS)
-  AC_SUBST(MYSQL_LIBS)
-])
-
-# =========================================================================
-# AM_PATH_PGSQL : pgSQL library
-
-dnl AM_PATH_PGSQL([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]]])
-dnl Test for PGSQL, and define PGSQL_CFLAGS and PGSQL_LIBS
-dnl
-AC_DEFUN(AM_PATH_PGSQL,
-[dnl
-dnl Get the cflags and libraries from the pg_config script
-dnl
-AC_ARG_WITH(pgsql-prefix,[  --with-pgsql-prefix=PFX   Prefix where PostgreSQL is installed (optional)],
-            pgsql_prefix="$withval", pgsql_prefix="")
-AC_ARG_WITH(pgsql-exec-prefix,[  --with-pgsql-exec-prefix=PFX Exec prefix where PostgreSQL is installed (optional)],
-            pgsql_exec_prefix="$withval", pgsql_exec_prefix="")
-
-  if test x$pgsql_exec_prefix != x ; then
-     if test x${PGSQL_CONFIG+set} != xset ; then
-        PGSQL_CONFIG=$pgsql_exec_prefix/bin/pg_config
-     fi
-  fi
-  if test x$pgsql_prefix != x ; then
-     if test x${PGSQL_CONFIG+set} != xset ; then
-        PGSQL_CONFIG=$pgsql_prefix/bin/pg_config
-     fi
-  fi
-
-  AC_REQUIRE([AC_CANONICAL_TARGET])
-  AC_PATH_PROG(PGSQL_CONFIG, pg_config, no, [$PATH:/usr/lib/postgresql/bin])
-  AC_MSG_CHECKING(for PGSQL)
-  no_pgsql=""
-  if test "$PGSQL_CONFIG" = "no" ; then
-    PGSQL_CFLAGS=""
-    PGSQL_LIBS=""
-    AC_MSG_RESULT(no)
-     ifelse([$2], , :, [$2])
-  else
-    PGSQL_CFLAGS=-I`$PGSQL_CONFIG --includedir`
-    PGSQL_LIBS="-lpq -L`$PGSQL_CONFIG --libdir`"
-    AC_MSG_RESULT(yes)
-    ifelse([$1], , :, [$1])
-  fi
-  AC_SUBST(PGSQL_CFLAGS)
-  AC_SUBST(PGSQL_LIBS)
-])
-
 dnl Removes -I/usr/include/? from given variable
 AC_DEFUN(CFLAGS_REMOVE_USR_INCLUDE,[
   ac_new_flags=""
@@ -593,14 +263,33 @@ AC_DEFUN(CFLAGS_REMOVE_USR_INCLUDE,[
   done
   $1=[$]ac_new_flags
 ])
-    
-dnl Removes -L/usr/lib/? from given variable
+
+dnl Removes '-L/usr/lib[/]', '-Wl,-rpath,/usr/lib[/]'
+dnl and '-Wl,-rpath -Wl,/usr/lib[/]' from given variable
 AC_DEFUN(LIB_REMOVE_USR_LIB,[
   ac_new_flags=""
+  l=""
   for i in [$]$1; do
-    case [$]i in
-    -L/usr/lib|-L/usr/lib/) ;;
-    *) ac_new_flags="[$]ac_new_flags [$]i" ;;
+    case [$]l[$]i in
+    -L/usr/lib) ;;
+    -L/usr/lib/) ;;
+    -Wl,-rpath,/usr/lib) ;;
+    -Wl,-rpath,/usr/lib/) ;;
+    -Wl,-rpath) l=[$]i;;
+    -Wl,-rpath-Wl,/usr/lib) l="";;
+    -Wl,-rpath-Wl,/usr/lib/) l="";;
+    *)
+    	s=" "
+        if test x"[$]ac_new_flags" = x""; then
+            s="";
+	fi
+        if test x"[$]l" = x""; then
+            ac_new_flags="[$]ac_new_flags[$]s[$]i";
+        else
+            ac_new_flags="[$]ac_new_flags[$]s[$]l [$]i";
+        fi
+        l=""
+        ;;
     esac
   done
   $1=[$]ac_new_flags
@@ -981,3 +670,98 @@ clockid_t clk = $1;
 	AC_MSG_RESULT(no)
     ])
 ])
+
+dnl SMB_IF_RTSIGNAL_BUG([actions if true],
+dnl			[actions if false],
+dnl			[actions if cross compiling])
+dnl Test whether we can call sigaction with RT_SIGNAL_NOTIFY and
+dnl RT_SIGNAL_LEASE (also RT_SIGNAL_AIO for good measure, though
+dnl I don't believe that triggers any bug.
+dnl
+dnl See the samba-technical thread titled "Failed to setup
+dnl RT_SIGNAL_NOTIFY handler" for details on the bug in question.
+AC_DEFUN([SMB_IF_RTSIGNAL_BUG],
+[
+    rt_signal_notify_works=yes
+    rt_signal_lease_works=yes
+    rt_signal_aio_works=yes
+
+    AC_MSG_CHECKING(if sigaction works with realtime signals)
+    AC_TRY_RUN(
+	[
+#include <sys/types.h>
+#include <fcntl.h>
+#include <signal.h>
+
+/* from smbd/notify_kernel.c */
+#ifndef RT_SIGNAL_NOTIFY
+#define RT_SIGNAL_NOTIFY (SIGRTMIN+2)
+#endif
+
+/* from smbd/aio.c */
+#ifndef RT_SIGNAL_AIO
+#define RT_SIGNAL_AIO (SIGRTMIN+3)
+#endif
+
+/* from smbd/oplock_linux.c */
+#ifndef RT_SIGNAL_LEASE
+#define RT_SIGNAL_LEASE (SIGRTMIN+1)
+#endif
+
+static void signal_handler(int sig, siginfo_t *info, void *unused)
+{
+    int do_nothing = 0;
+}
+
+int main(void)
+{
+    int result = 0;
+    struct sigaction act = {0};
+
+    act.sa_sigaction = signal_handler;
+    act.sa_flags = SA_SIGINFO;
+    sigemptyset( &act.sa_mask );
+
+    if (sigaction(RT_SIGNAL_LEASE, &act, 0) != 0) {
+	    /* Failed to setup RT_SIGNAL_LEASE handler */
+	    result += 1;
+    }
+
+    if (sigaction(RT_SIGNAL_NOTIFY, &act, 0) != 0) {
+	    /* Failed to setup RT_SIGNAL_NOTIFY handler */
+	    result += 10;
+    }
+
+    if (sigaction(RT_SIGNAL_AIO, &act, 0) != 0) {
+	    /* Failed to setup RT_SIGNAL_AIO handler */
+	    result += 100;
+    }
+
+    /* zero on success */
+    return result;
+}
+	],
+	[
+	    AC_MSG_RESULT(yes)
+	    $2
+	],
+	[
+	    AC_MSG_RESULT(no)
+	    case "$ac_status" in
+		1|11|101|111)  rt_signal_lease_ok=no ;;
+	    esac
+	    case "$ac_status" in
+		10|11|110|111)  rt_signal_notify_ok=no ;;
+	    esac
+	    case "$ac_status" in
+		100|110|101|111)  rt_signal_aio_ok=no ;;
+	    esac
+	    $2
+	],
+	[
+	    AC_MSG_RESULT(cross)
+	    $3
+	])
+])
+
+m4_include(lib/replace/libreplace.m4)

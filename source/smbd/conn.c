@@ -57,7 +57,7 @@ BOOL conn_snum_used(int snum)
 {
 	connection_struct *conn;
 	for (conn=Connections;conn;conn=conn->next) {
-		if (conn->service == snum) {
+		if (conn->params->service == snum) {
 			return(True);
 		}
 	}
@@ -315,7 +315,7 @@ void msg_force_tdis(int msg_type, struct process_id pid, void *buf, size_t len)
 
 	for (conn=Connections;conn;conn=next) {
 		next=conn->next;
-		if (strequal(lp_servicename(conn->service), sharename)) {
+		if (strequal(lp_servicename(SNUM(conn)), sharename)) {
 			DEBUG(1,("Forcing close of share %s cnum=%d\n",
 				 sharename, conn->cnum));
 			close_cnum(conn, (uint16)-1);
