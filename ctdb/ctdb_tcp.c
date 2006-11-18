@@ -35,11 +35,13 @@
   and to simplify the code.
 */
 
-struct ctdb_context *ctdb_init(TALLOC_CTX *mem_ctx)
+struct ctdb_context *ctdb_init(struct event_context *ev)
 {
 	struct ctdb_context *ctdb;
 
-	ctdb = talloc_zero(mem_ctx, struct ctdb_context);
+	ctdb = talloc_zero(ev, struct ctdb_context);
+	ctdb->ev = ev;
+
 	return ctdb;
 }
 

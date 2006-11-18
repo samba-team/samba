@@ -18,11 +18,9 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "replace.h"
+#include "includes.h"
+#include "lib/events/events.h"
 #include "system/filesys.h"
-#include "tdb.h"
-#include "talloc.h"
-#include "ctdb.h"
 #include "popt.h"
 
 enum my_functions {FUNC_SORT=1, FUNC_FETCH=2};
@@ -88,6 +86,7 @@ int main(int argc, const char *argv[])
 	int i, ret;
 	TDB_DATA key, data;
 	poptContext pc;
+	struct event_context *ev;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -112,8 +111,10 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
+	ev = event_context_init(NULL);
+
 	/* initialise ctdb */
-	ctdb = ctdb_init(NULL);
+	ctdb = ctdb_init(ev);
 	if (ctdb == NULL) {
 		printf("Failed to init ctdb\n");
 		exit(1);

@@ -33,11 +33,12 @@ struct ctdb_call {
 #define CTDB_ERR_INVALID 1
 #define CTDB_ERR_NOMEM 2
 
+struct event_context;
 
 /*
   initialise ctdb subsystem
 */
-struct ctdb_context *ctdb_init(TALLOC_CTX *mem_ctx);
+struct ctdb_context *ctdb_init(struct event_context *ev);
 
 /*
   tell ctdb what address to listen on, in transport specific format
