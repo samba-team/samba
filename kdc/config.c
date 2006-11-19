@@ -512,7 +512,7 @@ configure(krb5_context context, int argc, char **argv)
 				     NULL, 
 				     config->enable_pkinit,
 				     "kdc",
-				     "pkinit_enable",
+				     "enable-pkinit",
 				     NULL);
     if (config->enable_pkinit) {
 	const char *user_id, *anchors, *ocsp_file;

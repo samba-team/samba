@@ -1270,7 +1270,7 @@ Write about the kdc.
 
 @example
 [kdc]
-	pkinit_enable = yes
+	enable-pkinit = yes
 	pkinit_identity = FILE:/secure/kdc.crt,/secure/kdc.key
 	pkinit_anchors = FILE:/path/to/trust-anchors.pem
 	pkinit_pool = PKCS12:/path/to/useful-intermediate-certs.pfx
