@@ -336,6 +336,7 @@ int cac_RegCreateKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	struct RegOpenKey rok;
 	struct winreg_String key_string, class_string;
 	enum winreg_CreateAction action = 0;
+	enum winreg_CreateAction *paction = &action;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -382,7 +383,7 @@ int cac_RegCreateKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		rpccli_winreg_CreateKey( pipe_hnd, mem_ctx, op->in.parent_key,
 					 key_string, class_string, 0,
 					 op->in.access, NULL, key_out,
-					 &action );
+					 &paction );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 		return CAC_FAILURE;
@@ -671,9 +672,12 @@ int cac_RegQueryValue( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	REGVAL_BUFFER buffer;
 	REG_VALUE_DATA *data_out = NULL;
 	enum winreg_Type val_type;
+	enum winreg_Type *pval_type = &val_type;
 	uint8 *buf;
 	uint32 buf_size = 4096;
+	uint32 *pbuf_size = &buf_size;
 	uint32 length = 0;
+	uint32 *plength = &length;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -702,8 +706,8 @@ int cac_RegQueryValue( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	}
 
 	hnd->status = rpccli_winreg_QueryValue( pipe_hnd, mem_ctx, op->in.key,
-						value_string, &val_type, buf,
-						&buf_size, &length );
+						value_string, &pval_type, &buf,
+						&pbuf_size, &plength );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) )
 		return CAC_FAILURE;
@@ -834,8 +838,11 @@ int cac_RegEnumValues( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		
 	do {
 		uint32 data_size = maxvalbufsize;
+		uint32 *pdata_size = &data_size;
 		uint32 data_length = 0;
+		uint32 *pdata_length = &data_length;
 		struct winreg_StringBuf name_buf;
+		enum winreg_Type *ptype = &types_out[num_values_out];
 
 		memset( name_buffer, 0x0, max_valnamelen );
 		name_buf.name = name_buffer;
@@ -845,8 +852,9 @@ int cac_RegEnumValues( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		hnd->status = rpccli_winreg_EnumValue( pipe_hnd, mem_ctx, 
 						       op->in.key,
 						       resume_idx, &name_buf,
-						       &types_out[num_values_out],
-						       buffer, &data_size, &data_length );
+						       &ptype, &buffer,
+						       &pdata_size,
+						       &pdata_length );
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) )
 			break;
