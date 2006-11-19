@@ -369,9 +369,11 @@ WERROR regkey_open_internal( TALLOC_CTX *mem_ctx,
 	/* initialization */
 	
 	keyinfo->type = REG_KEY_GENERIC;
-	keyinfo->name = talloc_strdup( keyinfo, path );
-	
-	
+	if (!(keyinfo->name = talloc_strdup(keyinfo, path))) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
 	/* Tag this as a Performance Counter Key */
 
 	if( StrnCaseCmp(path, KEY_HKPD, strlen(KEY_HKPD)) == 0 )
