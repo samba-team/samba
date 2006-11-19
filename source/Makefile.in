@@ -1887,8 +1887,6 @@ distclean: realclean
 	-rm -f include/config.h Makefile
 	-rm -f config.status config.cache so_locations
 	-rm -rf .deps TAGS
-	#-cd $(srcdir)/pidl && make distclean
-	#-rm -rf $(srcdir)/librpc/gen_ndr
 
 realdistclean: distclean
 	-rm -f include/config.h.in
