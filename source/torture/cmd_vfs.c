@@ -94,7 +94,7 @@ static NTSTATUS cmd_show_data(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 
 static NTSTATUS cmd_connect(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	SMB_VFS_CONNECT(vfs->conn, lp_servicename(vfs->conn->service), "vfstest");
+	SMB_VFS_CONNECT(vfs->conn, lp_servicename(SNUM(vfs->conn)), "vfstest");
 	return NT_STATUS_OK;
 }
 
