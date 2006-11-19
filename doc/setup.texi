@@ -1275,7 +1275,7 @@ Write about the kdc.
 	pkinit_anchors = FILE:/path/to/trust-anchors.pem
 	pkinit_pool = PKCS12:/path/to/useful-intermediate-certs.pfx
 	pkinit_pool = FILE:/path/to/other-useful-intermediate-certs.pem
-	pkinit_allow-proxy-certificate = false
+	pkinit_allow_proxy_certificate = false
 @end example
 
 @subsection Using pki-mapping file
