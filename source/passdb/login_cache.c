@@ -140,7 +140,7 @@ BOOL login_cache_write(const struct samu *sampass, LOGIN_CACHE entry)
 			 entry.acct_ctrl,
 			 entry.bad_password_count,
 			 entry.bad_password_time);
-	databuf.dptr = SMB_MALLOC(databuf.dsize);
+	databuf.dptr = SMB_MALLOC_ARRAY(char, databuf.dsize);
 	if (!databuf.dptr) {
 		SAFE_FREE(keybuf.dptr);
 		return False;

@@ -50,10 +50,8 @@ const char *my_sam_name(void)
 /**********************************************************************
 ***********************************************************************/
 
-static int samu_destroy(void *p) 
+static int samu_destroy(struct samu *user) 
 {
-	struct samu *user = p;
-
 	data_blob_clear_free( &user->lm_pw );
 	data_blob_clear_free( &user->nt_pw );
 
@@ -111,7 +109,7 @@ struct samu *samu_new( TALLOC_CTX *ctx )
 	user->profile_path = "";
 	user->acct_desc = "";
 	user->workstations = "";
-	user->unknown_str = "";
+	user->comment = "";
 	user->munged_dial = "";
 
 	user->plaintext_pw = NULL;
@@ -996,7 +994,7 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 
 	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
-		uint8 *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
+		uint8 *pw_hist = (uint8 *)SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
 			ret = False;
 			goto done;
@@ -1023,7 +1021,6 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 	}
 
 	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
-	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	pdb_set_logon_count(sampass, logon_count, PDB_SET);
@@ -1107,7 +1104,7 @@ uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_onl
 	logoff_time = (uint32)pdb_get_logoff_time(sampass);
 	kickoff_time = (uint32)pdb_get_kickoff_time(sampass);
 	bad_password_time = (uint32)pdb_get_bad_password_time(sampass);
-	pass_can_change_time = (uint32)pdb_get_pass_can_change_time(sampass);
+	pass_can_change_time = (uint32)pdb_get_pass_can_change_time_noncalc(sampass);
 	pass_must_change_time = (uint32)pdb_get_pass_must_change_time(sampass);
 	pass_last_set_time = (uint32)pdb_get_pass_last_set_time(sampass);
 

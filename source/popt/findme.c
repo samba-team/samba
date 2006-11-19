@@ -22,8 +22,8 @@ const char * findProgramPath(const char * argv0) {
 
     if (path == NULL) return NULL;
 
-    start = pathbuf = alloca(strlen(path) + 1);
-    buf = malloc(strlen(path) + strlen(argv0) + sizeof("/"));
+    start = pathbuf = (char *)alloca(strlen(path) + 1);
+    buf = (char *)malloc(strlen(path) + strlen(argv0) + sizeof("/"));
     if (buf == NULL) return NULL;	/* XXX can't happen */
     strcpy(pathbuf, path);
 

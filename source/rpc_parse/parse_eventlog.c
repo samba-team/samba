@@ -54,7 +54,7 @@ BOOL eventlog_io_q_open_eventlog(const char *desc, EVENTLOG_Q_OPEN_EVENTLOG *q_u
 	if(!prs_align(ps))
 		return False;
 
-	if ( !prs_pointer("", ps, depth, (void**)&q_u->unknown0, sizeof(EVENTLOG_OPEN_UNKNOWN0), (PRS_POINTER_CAST)prs_ev_open_unknown0))
+	if ( !prs_pointer("", ps, depth, (void*)&q_u->unknown0, sizeof(EVENTLOG_OPEN_UNKNOWN0), (PRS_POINTER_CAST)prs_ev_open_unknown0))
 		return False;
 
 	if ( !prs_unistr4("logname", ps, depth, &q_u->logname) )

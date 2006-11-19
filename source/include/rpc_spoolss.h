@@ -984,6 +984,12 @@ typedef struct printer_info_5
 }
 PRINTER_INFO_5;
 
+typedef struct printer_info_6
+{
+	uint32 status;
+}
+PRINTER_INFO_6;
+
 #define SPOOL_DS_PUBLISH	1
 #define SPOOL_DS_UPDATE		2
 #define SPOOL_DS_UNPUBLISH	4
@@ -1556,7 +1562,7 @@ typedef struct {
 	uint32 previousnames_len;
 	uint32 previousnames_ptr;
 	NTTIME	driverdate;
-	UINT64_S	driverversion;
+	uint64	driverversion;
 	uint32	dummy4;
 	uint32 mfgname_ptr;
 	uint32 oemurl_ptr;

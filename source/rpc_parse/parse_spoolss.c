@@ -606,7 +606,7 @@ static BOOL spool_io_user_level(const char *desc, SPOOL_USER_CTR *q_u, prs_struc
 	switch ( q_u->level ) 
 	{	
 		case 1:
-			if ( !prs_pointer( "" , ps, depth, (void**)&q_u->user.user1, 
+			if ( !prs_pointer( "" , ps, depth, (void*)&q_u->user.user1, 
 				sizeof(SPOOL_USER_1), (PRS_POINTER_CAST)spool_io_user_level_1 )) 
 			{
 				return False;
@@ -2452,6 +2452,24 @@ BOOL smb_io_printer_info_5(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_5 
 }
 
 /*******************************************************************
+ Parse a PRINTER_INFO_6 structure.
+********************************************************************/  
+
+BOOL smb_io_printer_info_6(const char *desc, RPC_BUFFER *buffer,
+			   PRINTER_INFO_6 *info, int depth)
+{
+	prs_struct *ps=&buffer->prs;
+
+	prs_debug(ps, depth, desc, "smb_io_printer_info_6");
+	depth++;	
+	
+	if (!prs_uint32("status", ps, depth, &info->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Parse a PRINTER_INFO_7 structure.
 ********************************************************************/  
 
@@ -2643,9 +2661,7 @@ BOOL smb_io_printer_driver_info_6(const char *desc, RPC_BUFFER *buffer, DRIVER_I
 	if (!smb_io_relarraystr("previousdrivernames", buffer, depth, &info->previousdrivernames))
 		return False;
 
-	if (!prs_uint32("date.low", ps, depth, &info->driver_date.low))
-		return False;
-	if (!prs_uint32("date.high", ps, depth, &info->driver_date.high))
+	if (!prs_uint64("date", ps, depth, &info->driver_date))
 		return False;
 
 	if (!prs_uint32("padding", ps, depth, &info->padding))
@@ -3112,6 +3128,14 @@ uint32 spoolss_size_printer_info_5(PRINTER_INFO_5 *info)
 	return size;
 }
 
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/
+
+uint32 spoolss_size_printer_info_6(PRINTER_INFO_6 *info)
+{
+	return sizeof(uint32);
+}
 
 /*******************************************************************
 return the size required by a struct in the stream
@@ -3777,10 +3801,8 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 		q_u->secdesc_ctr = SMB_MALLOC_P(SEC_DESC_BUF);
 		if (!q_u->secdesc_ctr)
 			return False;
-		q_u->secdesc_ctr->ptr = (secdesc != NULL) ? 1: 0;
-		q_u->secdesc_ctr->max_len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
-		q_u->secdesc_ctr->len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
-		q_u->secdesc_ctr->sec = secdesc;
+		q_u->secdesc_ctr->sd = secdesc;
+		q_u->secdesc_ctr->sd_size = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
 
 		q_u->devmode_ctr.devmode_ptr = (devmode != NULL) ? 1 : 0;
 		q_u->devmode_ctr.size = (devmode != NULL) ? sizeof(DEVICEMODE) + (3*sizeof(uint32)) : 0;
@@ -3801,10 +3823,8 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 		q_u->secdesc_ctr = SMB_MALLOC_P(SEC_DESC_BUF);
 		if (!q_u->secdesc_ctr)
 			return False;
-		q_u->secdesc_ctr->ptr = (secdesc != NULL) ? 1: 0;
-		q_u->secdesc_ctr->max_len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
-		q_u->secdesc_ctr->len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
-		q_u->secdesc_ctr->sec = secdesc;
+		q_u->secdesc_ctr->sd_size = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
+		q_u->secdesc_ctr->sd = secdesc;
 
 		break;
 	case 7:
@@ -6265,6 +6285,11 @@ void free_printer_info_4(PRINTER_INFO_4 *printer)
 }
 
 void free_printer_info_5(PRINTER_INFO_5 *printer)
+{
+	SAFE_FREE(printer);
+}
+
+void free_printer_info_6(PRINTER_INFO_6 *printer)
 {
 	SAFE_FREE(printer);
 }

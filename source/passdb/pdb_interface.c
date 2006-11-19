@@ -48,43 +48,6 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 				  const char **name,
 				  enum SID_NAME_USE *psid_name_use,
 				  union unid_t *unix_id);
-/*******************************************************************
- Clean up uninitialised passwords.  The only way to tell 
- that these values are not 'real' is that they do not
- have a valid last set time.  Instead, the value is fixed at 0. 
- Therefore we use that as the key for 'is this a valid password'.
- However, it is perfectly valid to have a 'default' last change
- time, such LDAP with a missing attribute would produce.
-********************************************************************/
-
-static void pdb_force_pw_initialization(struct samu *pass) 
-{
-	const uint8 *lm_pwd, *nt_pwd;
-	
-	/* only reset a password if the last set time has been 
-	   explicitly been set to zero.  A default last set time 
-	   is ignored */
-
-	if ( (pdb_get_init_flags(pass, PDB_PASSLASTSET) != PDB_DEFAULT) 
-		&& (pdb_get_pass_last_set_time(pass) == 0) ) 
-	{
-		
-		if (pdb_get_init_flags(pass, PDB_LMPASSWD) != PDB_DEFAULT) 
-		{
-			lm_pwd = pdb_get_lanman_passwd(pass);
-			if (lm_pwd) 
-				pdb_set_lanman_passwd(pass, NULL, PDB_CHANGED);
-		}
-		if (pdb_get_init_flags(pass, PDB_NTPASSWD) != PDB_DEFAULT) 
-		{
-			nt_pwd = pdb_get_nt_passwd(pass);
-			if (nt_pwd) 
-				pdb_set_nt_passwd(pass, NULL, PDB_CHANGED);
-		}
-	}
-
-	return;
-}
 
 NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function init) 
 {
@@ -250,7 +213,7 @@ BOOL pdb_getsampwent(struct samu *user)
 	if ( !NT_STATUS_IS_OK(pdb->getsampwent(pdb, user) ) ) {
 		return False;
 	}
-	pdb_force_pw_initialization( user );
+
 	return True;
 }
 
@@ -266,8 +229,6 @@ BOOL pdb_getsampwnam(struct samu *sam_acct, const char *username)
 		TALLOC_FREE(csamuser);
 	}
 
-	pdb_force_pw_initialization( sam_acct );
-	
 	csamuser = samu_new( NULL );
 	if (!csamuser) {
 		return False;
@@ -369,6 +330,15 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		if (add_ret == 0) {
 			smb_nscd_flush_user_cache();
 		}
+
+#ifdef ENABLE_BUILD_FARM_HACKS
+		if (add_ret != 0) {
+			DEBUG(1, ("Creating a faked user %s for build farm "
+				  "purposes\n", name));
+			faked_create_user(name);
+		}
+#endif
+
 		flush_pwnam_cache();
 
 		pwd = Get_Pwnam_alloc(tmp_ctx, name);
@@ -988,8 +958,7 @@ NTSTATUS pdb_lookup_rids(const DOM_SID *domain_sid,
 			 uint32 *attrs)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->lookup_rids(pdb, domain_sid,
-					    num_rids, rids, names, attrs);
+	return pdb->lookup_rids(pdb, domain_sid, num_rids, rids, names, attrs);
 }
 
 NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
@@ -999,8 +968,7 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 			  uint32 *attrs)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->lookup_names(pdb, domain_sid,
-					     num_names, names, rids, attrs);
+	return pdb->lookup_names(pdb, domain_sid, num_names, names, rids, attrs);
 }
 
 BOOL pdb_get_account_policy(int policy_index, uint32 *value)
@@ -1738,7 +1706,7 @@ struct user_search {
 static BOOL next_entry_users(struct pdb_search *s,
 			     struct samr_displayentry *entry)
 {
-	struct user_search *state = s->private_data;
+	struct user_search *state = (struct user_search *)s->private_data;
 	struct samu *user = NULL;
 
  next:
@@ -1813,7 +1781,7 @@ struct group_search {
 static BOOL next_entry_groups(struct pdb_search *s,
 			      struct samr_displayentry *entry)
 {
-	struct group_search *state = s->private_data;
+	struct group_search *state = (struct group_search *)s->private_data;
 	uint32 rid;
 	GROUP_MAP *map = &state->groups[state->current_group];
 
@@ -1831,7 +1799,8 @@ static BOOL next_entry_groups(struct pdb_search *s,
 
 static void search_end_groups(struct pdb_search *search)
 {
-	struct group_search *state = search->private_data;
+	struct group_search *state =
+		(struct group_search *)search->private_data;
 	SAFE_FREE(state->groups);
 }
 

@@ -606,7 +606,7 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 	/* Change from V1 is addition of password history field. */
 	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
-		uint8 *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
+		uint8 *pw_hist = SMB_MALLOC_ARRAY(uint8, pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
 			ret = False;
 			goto done;
@@ -901,7 +901,7 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
 		
 		/* save a copy of the key */
 		
-		ptr->key.dptr = memdup( key.dptr, key.dsize );
+		ptr->key.dptr = (char *)memdup( key.dptr, key.dsize );
 		if (!ptr->key.dptr) {
 			DEBUG(0,("tdbsam_traverse_setpwent: memdup failed\n"));
 			/* just return 0 and let the traversal continue */

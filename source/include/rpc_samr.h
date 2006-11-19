@@ -4,7 +4,7 @@
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1997-2000
-   Copyright (C) Jean François Micouleau      1998-2001
+   Copyright (C) Jean FranÃ§ois Micouleau      1998-2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    
    
@@ -121,7 +121,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_USERGROUPS  0x27
 
 #define SAMR_QUERY_DISPINFO    0x28
-#define SAMR_UNKNOWN_29        0x29
+#define SAMR_GET_DISPENUM_INDEX 0x29
 #define SAMR_UNKNOWN_2a        0x2a
 #define SAMR_UNKNOWN_2b        0x2b
 #define SAMR_GET_USRDOM_PWINFO 0x2c
@@ -174,7 +174,7 @@ typedef struct sam_user_info_23
 	UNIHDR hdr_profile_path; /* profile path unicode string header */
 	UNIHDR hdr_acct_desc  ;  /* user description */
 	UNIHDR hdr_workstations; /* comma-separated workstations user can log in from */
-	UNIHDR hdr_unknown_str ; /* don't know what this is, yet. */
+	UNIHDR hdr_comment;
 	UNIHDR hdr_munged_dial ; /* munged path name and dial-back tel number */
 
 	uint8 lm_pwd[16];    /* lm user passwords */
@@ -211,7 +211,7 @@ typedef struct sam_user_info_23
 	UNISTR2 uni_profile_path; /* profile path unicode string */
 	UNISTR2 uni_acct_desc  ;  /* user description unicode string */
 	UNISTR2 uni_workstations; /* login from workstations unicode string */
-	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
+	UNISTR2 uni_comment;
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
 
 	LOGON_HRS logon_hrs;
@@ -222,7 +222,7 @@ typedef struct sam_user_info_23
 typedef struct sam_user_info_24
 {
 	uint8 pass[516];
-	uint16 pw_len;
+	uint8 pw_len;
 } SAM_USER_INFO_24;
 
 /*
@@ -250,7 +250,7 @@ typedef struct sam_user_info_25
 	UNIHDR hdr_profile_path; /* profile path unicode string header */
 	UNIHDR hdr_acct_desc  ;  /* user description */
 	UNIHDR hdr_workstations; /* comma-separated workstations user can log in from */
-	UNIHDR hdr_unknown_str ; /* don't know what this is, yet. */
+	UNIHDR hdr_comment;
 	UNIHDR hdr_munged_dial ; /* munged path name and dial-back tel number */
 
 	uint8 lm_pwd[16];    /* lm user passwords */
@@ -274,7 +274,7 @@ typedef struct sam_user_info_25
 	UNISTR2 uni_profile_path; /* profile path unicode string */
 	UNISTR2 uni_acct_desc  ;  /* user description unicode string */
 	UNISTR2 uni_workstations; /* login from workstations unicode string */
-	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
+	UNISTR2 uni_comment;
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
 } SAM_USER_INFO_25;
 
@@ -304,7 +304,7 @@ typedef struct sam_user_info_21
 	UNIHDR hdr_profile_path; /* profile path unicode string header */
 	UNIHDR hdr_acct_desc  ;  /* user description */
 	UNIHDR hdr_workstations; /* comma-separated workstations user can log in from */
-	UNIHDR hdr_unknown_str ; /* don't know what this is, yet. */
+	UNIHDR hdr_comment;
 	UNIHDR hdr_munged_dial ; /* munged path name and dial-back tel number */
 
 	uint8 lm_pwd[16];    /* lm user passwords */
@@ -340,7 +340,7 @@ typedef struct sam_user_info_21
 	UNISTR2 uni_profile_path; /* profile path unicode string */
 	UNISTR2 uni_acct_desc  ;  /* user description unicode string */
 	UNISTR2 uni_workstations; /* login from workstations unicode string */
-	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
+	UNISTR2 uni_comment;
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel number */
 
 	LOGON_HRS logon_hrs;
@@ -1047,6 +1047,22 @@ typedef struct r_samr_query_dispinfo_info
 
 } SAMR_R_QUERY_DISPINFO;
 
+/* SAMR_Q_GET_DISPENUM_INDEX */
+typedef struct q_samr_get_dispenum_index
+{
+	POLICY_HND domain_pol;
+	uint16 switch_level;
+	LSA_STRING name;
+
+} SAMR_Q_GET_DISPENUM_INDEX;
+
+/* SAMR_R_GET_DISPENUM_INDEX */
+typedef struct r_samr_get_dispenum_index
+{
+	uint32 idx;
+	NTSTATUS status;
+	
+} SAMR_R_GET_DISPENUM_INDEX;
 
 /* SAMR_Q_DELETE_DOM_GROUP - delete domain group */
 typedef struct q_samr_delete_dom_group_info

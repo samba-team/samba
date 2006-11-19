@@ -302,7 +302,7 @@ WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_
 		return WERR_BADFID;
 			
 	/* perform access checks.  Use the root token in order to ensure that we 
-	   retreive the security descriptor */
+	   retrieve the security descriptor */
 	
 	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, service, get_root_nt_token() )) )
 		return WERR_NOMEM;
