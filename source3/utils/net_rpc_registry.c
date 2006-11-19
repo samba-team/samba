@@ -154,8 +154,10 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	idx = 0;
 	while ( NT_STATUS_IS_OK(status) ) {
 		struct winreg_StringBuf class_namebuf;
+		struct winreg_StringBuf *p_class_namebuf = &class_namebuf;
 		fstring kname;
 		NTTIME modtime;
+		NTTIME *p_modtime = &modtime;
 
 		class_namebuf.name = NULL;
 		class_namebuf.size = 0;
@@ -168,8 +170,9 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		memset( name_buffer, 0x0, max_subkeylen );
 		subkey_namebuf.name = name_buffer;
 
-		status = rpccli_winreg_EnumKey(pipe_hnd, mem_ctx, &pol_key, idx, 
-			&subkey_namebuf, &class_namebuf, &modtime);
+		status = rpccli_winreg_EnumKey(pipe_hnd, mem_ctx, &pol_key,
+					       idx, &subkey_namebuf,
+					       &p_class_namebuf, &p_modtime);
 			
 		if ( W_ERROR_EQUAL(ntstatus_to_werror(status), WERR_NO_MORE_ITEMS) ) {
 			status = NT_STATUS_OK;
@@ -209,10 +212,13 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	status = NT_STATUS_OK;
 	idx = 0;
 	while ( NT_STATUS_IS_OK(status) ) {
-		enum winreg_Type type;
+		enum winreg_Type type = REG_NONE;
+		enum winreg_Type *ptype = &type;
 		fstring name;
 		uint8 *data;
 		uint32 data_size, value_length;
+		uint32 *pdata_size = &data_size;
+		uint32 *pvalue_length = &value_length;
 		struct winreg_StringBuf value_namebuf;
 		REGVAL_BUFFER value;
 		
@@ -229,8 +235,10 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		data_size = max_valbufsize;
 		value_length = 0;
 
-		status = rpccli_winreg_EnumValue(pipe_hnd, mem_ctx, &pol_key, idx, 
-			&value_namebuf, &type, data, &data_size, &value_length );
+		status = rpccli_winreg_EnumValue(pipe_hnd, mem_ctx, &pol_key,
+						 idx, &value_namebuf, &ptype,
+						 &data, &pdata_size,
+						 &pvalue_length );
 			
 		if ( W_ERROR_EQUAL(ntstatus_to_werror(status), WERR_NO_MORE_ITEMS) ) {
 			status = NT_STATUS_OK;
