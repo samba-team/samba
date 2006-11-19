@@ -2,9 +2,9 @@
 #ifndef __CLI_RPCECHO__
 #define __CLI_RPCECHO__
 NTSTATUS rpccli_echo_AddOne(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t in_data, uint32_t *out_data);
-NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t len, uint8_t *in_data, uint8_t *out_data);
+NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t len, uint8_t *in_data, uint8_t **out_data);
 NTSTATUS rpccli_echo_SinkData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t len, uint8_t *data);
-NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t len, uint8_t *data);
+NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t len, uint8_t **data);
 NTSTATUS rpccli_echo_TestCall(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *s1, const char **s2);
 NTSTATUS rpccli_echo_TestCall2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint16_t level, union echo_Info *info);
 NTSTATUS rpccli_echo_TestSleep(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t seconds);
