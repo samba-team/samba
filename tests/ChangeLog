@@ -1,5 +1,16 @@
-2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/krb5.conf.in: revert the enable-pkinit change, and make it
+	consistant with all other other enable- options
+
+2006-11-15  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* gss/check-context.in: Add dce-style context building test.
+
+	* gss/check-context.in: test more combination of context building
+	
+2006-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Use TEST{,2}.H5L.SE for testing
 
 2006-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
