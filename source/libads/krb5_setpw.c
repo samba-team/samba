@@ -667,7 +667,9 @@ kerb_prompter(krb5_context ctx, void *data,
 	memset(prompts[0].reply->data, 0, prompts[0].reply->length);
 	if (prompts[0].reply->length > 0) {
 		if (data) {
-			strncpy(prompts[0].reply->data, data, prompts[0].reply->length-1);
+			strncpy(prompts[0].reply->data,
+				(const char *)data,
+				prompts[0].reply->length-1);
 			prompts[0].reply->length = strlen(prompts[0].reply->data);
 		} else {
 			prompts[0].reply->length = 0;

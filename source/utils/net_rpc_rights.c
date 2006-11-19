@@ -29,7 +29,7 @@ static NTSTATUS sid_to_name(struct rpc_pipe_client *pipe_hnd,
 				fstring name)
 {
 	POLICY_HND pol;
-	uint32 *sid_types;
+	enum lsa_SidType *sid_types;
 	NTSTATUS result;
 	char **domains, **names;
 
@@ -60,7 +60,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *pipe_hnd,
 			    DOM_SID *sid, const char *name)
 {
 	POLICY_HND pol;
-	uint32 *sid_types;
+	enum lsa_SidType *sid_types;
 	NTSTATUS result;
 	DOM_SID *sids;
 

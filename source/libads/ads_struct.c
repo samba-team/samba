@@ -42,7 +42,7 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 
 	len = (numbits+1)*(strlen(field)+1) + strlen(r) + 1;
 
-	ret = SMB_MALLOC(len);
+	ret = (char *)SMB_MALLOC(len);
 	if (!ret)
 		return NULL;
 
@@ -136,6 +136,8 @@ void ads_destroy(ADS_STRUCT **ads)
 		SAFE_FREE((*ads)->config.realm);
 		SAFE_FREE((*ads)->config.bind_path);
 		SAFE_FREE((*ads)->config.ldap_server_name);
+		SAFE_FREE((*ads)->config.server_site_name);
+		SAFE_FREE((*ads)->config.client_site_name);
 		
 		SAFE_FREE((*ads)->schema.posix_uidnumber_attr);
 		SAFE_FREE((*ads)->schema.posix_gidnumber_attr);

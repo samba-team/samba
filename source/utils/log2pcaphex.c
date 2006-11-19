@@ -142,7 +142,7 @@ void print_netbios_packet(FILE *out, unsigned char *data, long length, long actu
 	long newlen;
 	
 	newlen = length+sizeof(HDR_IP)+sizeof(HDR_TCP);
-	newdata = malloc(newlen);
+	newdata = (unsigned char *)malloc(newlen);
 
 	HDR_IP.packet_length = htons(newlen);
 	HDR_TCP.window = htons(0x2000);
@@ -165,7 +165,7 @@ void read_log_msg(FILE *in, unsigned char **_buffer, long *buffersize, long *dat
 	int tmp; long i;
 	assert(fscanf(in, " size=%ld\n", buffersize));
 	*buffersize+=4; /* for netbios */
-	buffer = malloc(*buffersize);
+	buffer = (unsigned char *)malloc(*buffersize);
 	memset(buffer, 0, *buffersize);
 	/* NetBIOS */
 	buffer[0] = 0x00;

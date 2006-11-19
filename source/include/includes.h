@@ -627,6 +627,7 @@ typedef int BOOL;
 
 #include "nt_status.h"
 #include "ads.h"
+#include "gpo.h"
 #include "ads_dns.h"
 #include "interfaces.h"
 #include "trans2.h"
@@ -769,6 +770,10 @@ enum flush_reason_enum {
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
+#endif
+
+#ifdef HAVE_LDAP
+#include "ads_protos.h"
 #endif
 
 /* We need this after proto.h to reference GetTimeOfDay(). */
