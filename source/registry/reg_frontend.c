@@ -345,8 +345,7 @@ BOOL regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted, 
 /***********************************************************************
 ***********************************************************************/
 
-WERROR regkey_open_internal( TALLOC_CTX *mem_ctx,
-			     REGISTRY_KEY **regkey, const char *path, 
+WERROR regkey_open_internal( REGISTRY_KEY **regkey, const char *path, 
                              NT_USER_TOKEN *token, uint32 access_desired )
 {
 	WERROR     	result = WERR_OK;
@@ -359,7 +358,7 @@ WERROR regkey_open_internal( TALLOC_CTX *mem_ctx,
 
 	DEBUG(7,("regkey_open_internal: name = [%s]\n", path));
 
-	if ( !(*regkey = TALLOC_ZERO_P(mem_ctx, REGISTRY_KEY)) ) {
+	if ( !(*regkey = TALLOC_ZERO_P(NULL, REGISTRY_KEY)) ) {
 		regdb_close();
 		return WERR_NOMEM;
 	}

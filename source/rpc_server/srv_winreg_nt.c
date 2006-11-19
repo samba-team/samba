@@ -86,9 +86,7 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
 	
 	/* now do the internal open */
 		
-	result = regkey_open_internal( NULL, keyinfo, keypath,
-				       p->pipe_user.nt_user_token,
-				       access_desired );
+	result = regkey_open_internal( keyinfo, keypath, p->pipe_user.nt_user_token, access_desired );
 	if ( !W_ERROR_IS_OK(result) )
 		return result;
 	
