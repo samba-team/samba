@@ -2474,6 +2474,7 @@ net_share_enum_rpc(struct cli_state *cli,
         int i;
 	NTSTATUS result;
 	uint32 enum_hnd;
+	uint32 *penum_hnd = &enum_hnd;
         uint32 info_level = 1;
 	uint32 preferred_len = 0xffffffff;
 	struct srvsvc_NetShareCtr1 ctr1;
@@ -2503,14 +2504,9 @@ net_share_enum_rpc(struct cli_state *cli,
 
         /* Issue the NetShareEnum RPC call and retrieve the response */
 	enum_hnd = 0;
-	result = rpccli_srvsvc_NetShareEnum(pipe_hnd,
-                                              mem_ctx,
-											  NULL,
-                                              &info_level,
-                                              &ctr,
-                                              preferred_len,
-											  &numentries,
-                                              &enum_hnd);
+	result = rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, NULL,
+					    &info_level, &ctr, preferred_len,
+					    &numentries, &penum_hnd);
 
         /* Was it successful? */
 	if (!NT_STATUS_IS_OK(result) || numentries == 0) {
