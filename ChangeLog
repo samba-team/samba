@@ -1,5 +1,7 @@
 2006-11-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: fix pkinit option (s/-/_/)
+
 	* kdc/config.c: revert the enable-pkinit change, and make it
 	consistant with all other other enable- options
 	
