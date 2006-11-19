@@ -123,7 +123,7 @@ static void popt_common_callback(poptContext con,
 }
 
 struct poptOption popt_common_connection[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_common_callback },
 	{ "socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use",
 	  "SOCKETOPTIONS" },
 	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
@@ -134,7 +134,7 @@ struct poptOption popt_common_connection[] = {
 };
 
 struct poptOption popt_common_samba[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, (void *)popt_common_callback },
 	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
 	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternate configuration file", "CONFIGFILE" },
 	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Base name for log files", "LOGFILEBASE" },
@@ -143,7 +143,7 @@ struct poptOption popt_common_samba[] = {
 };
 
 struct poptOption popt_common_version[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_common_callback },
 	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
 	POPT_TABLEEND
 };
@@ -248,7 +248,7 @@ static void popt_dynconfig_callback(poptContext con,
 
 const struct poptOption popt_common_dynconfig[] = {
 
-	{ NULL, '\0', POPT_ARG_CALLBACK, popt_dynconfig_callback },
+	{ NULL, '\0', POPT_ARG_CALLBACK, (void *)popt_dynconfig_callback },
 
 	{ "sbindir", '\0' , POPT_ARG_STRING, NULL, DYN_SBINDIR,
 	    "Path to sbin directory", "SBINDIR" },
@@ -515,7 +515,7 @@ static void popt_common_credentials_callback(poptContext con,
 
 
 struct poptOption popt_common_credentials[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_credentials_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, (void *)popt_common_credentials_callback },
 	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set the network username", "USERNAME" },
 	{ "no-pass", 'N', POPT_ARG_NONE, &cmdline_auth_info.got_pass, 0, "Don't ask for a password" },
 	{ "kerberos", 'k', POPT_ARG_NONE, &cmdline_auth_info.use_kerberos, 'k', "Use kerberos (active directory) authentication" },

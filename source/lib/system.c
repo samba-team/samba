@@ -105,7 +105,6 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 	return ret;
 }
 
-
 /*******************************************************************
 A pread wrapper that will deal with EINTR and 64-bit file offsets.
 ********************************************************************/
@@ -170,6 +169,20 @@ ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct 
 
 	do {
 		ret = sendto(s, msg, len, flags, to, tolen);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A recv wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_recv(int fd, void *buf, size_t count, int flags)
+{
+	ssize_t ret;
+
+	do {
+		ret = recv(fd, buf, count, flags);
 	} while (ret == -1 && errno == EINTR);
 	return ret;
 }
@@ -366,6 +379,7 @@ FILE *sys_fopen(const char *path, const char *type)
 #endif
 }
 
+
 /*******************************************************************
  A flock() wrapper that will perform the kernel flock.
 ********************************************************************/
@@ -387,6 +401,8 @@ void kernel_flock(int fd, uint32 share_mode)
 #endif
 	;
 }
+
+
 
 /*******************************************************************
  An opendir wrapper that will deal with 64 bit filesizes.
@@ -944,6 +960,82 @@ void sys_endpwent(void)
  Wrappers for getpwnam(), getpwuid(), getgrnam(), getgrgid()
 ****************************************************************************/
 
+#ifdef ENABLE_BUILD_FARM_HACKS
+
+/*
+ * In the build farm we want to be able to join machines to the domain. As we
+ * don't have root access, we need to bypass direct access to /etc/passwd
+ * after a user has been created via samr. Fake those users.
+ */
+
+static struct passwd *fake_pwd;
+static int num_fake_pwd;
+
+struct passwd *sys_getpwnam(const char *name)
+{
+	int i;
+
+	for (i=0; i<num_fake_pwd; i++) {
+		if (strcmp(fake_pwd[i].pw_name, name) == 0) {
+			DEBUG(10, ("Returning fake user %s\n", name));
+			return &fake_pwd[i];
+		}
+	}
+
+	return getpwnam(name);
+}
+
+struct passwd *sys_getpwuid(uid_t uid)
+{
+	int i;
+
+	for (i=0; i<num_fake_pwd; i++) {
+		if (fake_pwd[i].pw_uid == uid) {
+			DEBUG(10, ("Returning fake user %s\n",
+				   fake_pwd[i].pw_name));
+			return &fake_pwd[i];
+		}
+	}
+
+	return getpwuid(uid);
+}
+
+void faked_create_user(const char *name)
+{
+	int i;
+	uid_t uid;
+	struct passwd new_pwd;
+
+	for (i=0; i<10; i++) {
+		generate_random_buffer((unsigned char *)&uid,
+				       sizeof(uid));
+		if (getpwuid(uid) == NULL) {
+			break;
+		}
+	}
+
+	if (i==10) {
+		/* Weird. No free uid found... */
+		return;
+	}
+
+	new_pwd.pw_name = SMB_STRDUP(name);
+	new_pwd.pw_passwd = SMB_STRDUP("x");
+	new_pwd.pw_uid = uid;
+	new_pwd.pw_gid = 100;
+	new_pwd.pw_gecos = SMB_STRDUP("faked user");
+	new_pwd.pw_dir = SMB_STRDUP("/nodir");
+	new_pwd.pw_shell = SMB_STRDUP("/bin/false");
+
+	ADD_TO_ARRAY(NULL, struct passwd, new_pwd, &fake_pwd,
+		     &num_fake_pwd);
+
+	DEBUG(10, ("Added fake user %s, have %d fake users\n",
+		   name, num_fake_pwd));
+}
+
+#else
+
 struct passwd *sys_getpwnam(const char *name)
 {
 	return getpwnam(name);
@@ -953,6 +1045,8 @@ struct passwd *sys_getpwuid(uid_t uid)
 {
 	return getpwuid(uid);
 }
+
+#endif
 
 struct group *sys_getgrnam(const char *name)
 {
@@ -1439,7 +1533,12 @@ int sys_dup2(int oldfd, int newfd)
 ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size)
 {
 #if defined(HAVE_GETXATTR)
+#ifndef XATTR_ADD_OPT
 	return getxattr(path, name, value, size);
+#else
+	int options = 0;
+	return getxattr(path, name, value, size, 0, options);
+#endif
 #elif defined(HAVE_GETEA)
 	return getea(path, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_FILE)
@@ -1484,6 +1583,9 @@ ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t s
 {
 #if defined(HAVE_LGETXATTR)
 	return lgetxattr(path, name, value, size);
+#elif defined(HAVE_GETXATTR) && defined(XATTR_ADD_OPT)
+	int options = XATTR_NOFOLLOW;
+	return getxattr(path, name, value, size, 0, options);
 #elif defined(HAVE_LGETEA)
 	return lgetea(path, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_LINK)
@@ -1523,7 +1625,12 @@ ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t s
 ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
 {
 #if defined(HAVE_FGETXATTR)
+#ifndef XATTR_ADD_OPT
 	return fgetxattr(filedes, name, value, size);
+#else
+	int options = 0;
+	return fgetxattr(filedes, name, value, size, 0, options);
+#endif
 #elif defined(HAVE_FGETEA)
 	return fgetea(filedes, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_FD)
@@ -1724,7 +1831,12 @@ static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t 
 ssize_t sys_listxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LISTXATTR)
+#ifndef XATTR_ADD_OPT
 	return listxattr(path, list, size);
+#else
+	int options = 0;
+	return listxattr(path, list, size, options);
+#endif
 #elif defined(HAVE_LISTEA)
 	return listea(path, list, size);
 #elif defined(HAVE_EXTATTR_LIST_FILE)
@@ -1743,6 +1855,9 @@ ssize_t sys_llistxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LLISTXATTR)
 	return llistxattr(path, list, size);
+#elif defined(HAVE_LISTXATTR) && defined(XATTR_ADD_OPT)
+	int options = XATTR_NOFOLLOW;
+	return listxattr(path, list, size, options);
 #elif defined(HAVE_LLISTEA)
 	return llistea(path, list, size);
 #elif defined(HAVE_EXTATTR_LIST_LINK)
@@ -1760,7 +1875,12 @@ ssize_t sys_llistxattr (const char *path, char *list, size_t size)
 ssize_t sys_flistxattr (int filedes, char *list, size_t size)
 {
 #if defined(HAVE_FLISTXATTR)
+#ifndef XATTR_ADD_OPT
 	return flistxattr(filedes, list, size);
+#else
+	int options = 0;
+	return flistxattr(filedes, list, size, options);
+#endif
 #elif defined(HAVE_FLISTEA)
 	return flistea(filedes, list, size);
 #elif defined(HAVE_EXTATTR_LIST_FD)
@@ -1778,7 +1898,12 @@ ssize_t sys_flistxattr (int filedes, char *list, size_t size)
 int sys_removexattr (const char *path, const char *name)
 {
 #if defined(HAVE_REMOVEXATTR)
+#ifndef XATTR_ADD_OPT
 	return removexattr(path, name);
+#else
+	int options = 0;
+	return removexattr(path, name, options);
+#endif
 #elif defined(HAVE_REMOVEEA)
 	return removeea(path, name);
 #elif defined(HAVE_EXTATTR_DELETE_FILE)
@@ -1805,6 +1930,9 @@ int sys_lremovexattr (const char *path, const char *name)
 {
 #if defined(HAVE_LREMOVEXATTR)
 	return lremovexattr(path, name);
+#elif defined(HAVE_REMOVEXATTR) && defined(XATTR_ADD_OPT)
+	int options = XATTR_NOFOLLOW;
+	return removexattr(path, name, options);
 #elif defined(HAVE_LREMOVEEA)
 	return lremoveea(path, name);
 #elif defined(HAVE_EXTATTR_DELETE_LINK)
@@ -1830,7 +1958,12 @@ int sys_lremovexattr (const char *path, const char *name)
 int sys_fremovexattr (int filedes, const char *name)
 {
 #if defined(HAVE_FREMOVEXATTR)
+#ifndef XATTR_ADD_OPT
 	return fremovexattr(filedes, name);
+#else
+	int options = 0;
+	return fremovexattr(filedes, name, options);
+#endif
 #elif defined(HAVE_FREMOVEEA)
 	return fremoveea(filedes, name);
 #elif defined(HAVE_EXTATTR_DELETE_FD)
@@ -1861,7 +1994,12 @@ int sys_fremovexattr (int filedes, const char *name)
 int sys_setxattr (const char *path, const char *name, const void *value, size_t size, int flags)
 {
 #if defined(HAVE_SETXATTR)
+#ifndef XATTR_ADD_OPT
 	return setxattr(path, name, value, size, flags);
+#else
+	int options = 0;
+	return setxattr(path, name, value, size, 0, options);
+#endif
 #elif defined(HAVE_SETEA)
 	return setea(path, name, value, size, flags);
 #elif defined(HAVE_EXTATTR_SET_FILE)
@@ -1910,6 +2048,9 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 {
 #if defined(HAVE_LSETXATTR)
 	return lsetxattr(path, name, value, size, flags);
+#elif defined(HAVE_SETXATTR) && defined(XATTR_ADD_OPT)
+	int options = XATTR_NOFOLLOW;
+	return setxattr(path, name, value, size, 0, options);
 #elif defined(LSETEA)
 	return lsetea(path, name, value, size, flags);
 #elif defined(HAVE_EXTATTR_SET_LINK)
@@ -1958,7 +2099,12 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags)
 {
 #if defined(HAVE_FSETXATTR)
+#ifndef XATTR_ADD_OPT
 	return fsetxattr(filedes, name, value, size, flags);
+#else
+	int options = 0;
+	return fsetxattr(filedes, name, value, size, 0, options);
+#endif
 #elif defined(HAVE_FSETEA)
 	return fsetea(filedes, name, value, size, flags);
 #elif defined(HAVE_EXTATTR_SET_FD)

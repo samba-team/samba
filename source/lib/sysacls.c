@@ -111,15 +111,15 @@ int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm)
 	    && perm != SMB_ACL_EXECUTE) {
 		errno = EINVAL;
 		return -1;
-	}
-
+		}
+ 
 	if (permset_d == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
 
 	*permset_d |= perm;
-
+ 
 	return 0;
 }
 
@@ -141,7 +141,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 	 */
 	len	= 0;
 	maxlen	= 20 * acl_d->count;
-	if ((text = SMB_MALLOC(maxlen)) == NULL) {
+	if ((text = (char *)SMB_MALLOC(maxlen)) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -164,10 +164,10 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 			 */
 			default:
 				slprintf(tagbuf, sizeof(tagbuf)-1, "0x%x",
-					ap->a_type);
+					 ap->a_type);
 				tag = tagbuf;
 				break;
-
+ 
 			case SMB_ACL_USER:
 				id = uidtoname(ap->uid);
 			case SMB_ACL_USER_OBJ:
@@ -181,7 +181,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 					id = idbuf;
 				} else {
 					id = gr->gr_name;
-				}
+	}
 			case SMB_ACL_GROUP_OBJ:
 				tag = "group";
 				break;
@@ -212,11 +212,11 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 		 */
 		if ((len + nbytes) > maxlen) {
 			maxlen += nbytes + 20 * (acl_d->count - i);
-			if ((text = SMB_REALLOC(text, maxlen)) == NULL) {
-				errno = ENOMEM;
+			if ((text = (char *)SMB_REALLOC(text, maxlen)) == NULL) {
+			errno = ENOMEM;
 				return NULL;
-			}
 		}
+	}
 
 		slprintf(&text[len], nbytes-1, "%s:%s:%s\n", tag, id, perms);
 		len += nbytes - 1;
@@ -249,14 +249,13 @@ SMB_ACL_T sys_acl_init(int count)
 		errno = ENOMEM;
 		return NULL;
 	}
-
+ 
 	a->size = count + 1;
 	a->count = 0;
 	a->next = -1;
 
 	return a;
 }
-
 
 int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p)
 {
@@ -277,6 +276,7 @@ int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p)
 	entry_d->a_type	= SMB_ACL_TAG_INVALID;
 	entry_d->uid	= -1;
 	entry_d->gid	= -1;
+	entry_d->a_perm	= 0;
 	*entry_p	= entry_d;
 
 	return 0;
@@ -296,7 +296,7 @@ int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type)
 		default:
 			errno = EINVAL;
 			return -1;
-	}
+		}
 
 	return 0;
 }
@@ -324,7 +324,7 @@ int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d)
 	}
 
 	entry_d->a_perm = *permset_d;
-
+ 
 	return 0;
 }
 
@@ -356,7 +356,7 @@ int sys_acl_valid(SMB_ACL_T acl_d)
  * sys_acl_delete_def_file are to be redirected to the default
  * statically-bound acl vfs module, but they are replacable.
  */
-
+ 
 #if defined(HAVE_POSIX_ACLS)
  
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle, 
@@ -599,7 +599,7 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return -1;
 }
 
-#endif /* No ACLs. */
+#endif
 
 /************************************************************************
  Deliberately outside the ACL defines. Return 1 if this is a "no acls"

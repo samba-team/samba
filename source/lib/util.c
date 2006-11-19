@@ -199,10 +199,10 @@ void gfree_all( void )
 	gfree_case_tables();
 	gfree_debugsyms();
 	gfree_charcnv();
-	gfree_messsges();
+	gfree_messages();
 
 	/* release the talloc null_context memory last */
-	talloc_nc_free();
+	talloc_disable_null_tracking();
 }
 
 const char *my_netbios_names(int i)
@@ -760,7 +760,7 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 	size_t num_to_read_thistime;
 	size_t num_written = 0;
 
-	if ((buf = SMB_MALLOC(TRANSFER_BUF_SIZE)) == NULL)
+	if ((buf = SMB_MALLOC_ARRAY(char, TRANSFER_BUF_SIZE)) == NULL)
 		return -1;
 
 	while (total < n) {
@@ -1479,6 +1479,10 @@ BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
 
 BOOL process_exists(const struct process_id pid)
 {
+	if (procid_is_me(&pid)) {
+		return True;
+	}
+
 	if (!procid_is_local(&pid)) {
 		/* This *SEVERELY* needs fixing. */
 		return True;

@@ -73,7 +73,7 @@ static struct dispatch_fns {
  Free global objects.
 ****************************************************************************/
 
-void gfree_messsges(void)
+void gfree_messages(void)
 {
 	struct dispatch_fns *dfn, *next;
 
@@ -104,7 +104,7 @@ static void sig_usr1(void)
 static void ping_message(int msg_type, struct process_id src,
 			 void *buf, size_t len)
 {
-	const char *msg = buf ? buf : "none";
+	const char *msg = buf ? (const char *)buf : "none";
 
 	DEBUG(1,("INFO: Received PING message from PID %s [%s]\n",
 		 procid_str_static(&src), msg));
@@ -117,7 +117,10 @@ static void ping_message(int msg_type, struct process_id src,
 
 BOOL message_init(void)
 {
-	if (tdb) return True;
+	sec_init();
+
+	if (tdb)
+		return True;
 
 	tdb = tdb_open_log(lock_path("messages.tdb"), 
 		       0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
@@ -164,6 +167,9 @@ static TDB_DATA message_key_pid(struct process_id pid)
 static BOOL message_notify(struct process_id procid)
 {
 	pid_t pid = procid.pid;
+	int ret;
+	uid_t euid = geteuid();
+
 	/*
 	 * Doing kill with a non-positive pid causes messages to be
 	 * sent to places we don't want.
@@ -171,7 +177,17 @@ static BOOL message_notify(struct process_id procid)
 
 	SMB_ASSERT(pid > 0);
 
-	if (kill(pid, SIGUSR1) == -1) {
+	if (euid != 0) {
+		become_root_uid_only();
+	}
+
+	ret = kill(pid, SIGUSR1);
+
+	if (euid != 0) {
+		unbecome_root_uid_only();
+	}
+
+	if (ret == -1) {
 		if (errno == ESRCH) {
 			DEBUG(2,("pid %d doesn't exist - deleting messages record\n", (int)pid));
 			tdb_delete(tdb, message_key_pid(procid));
@@ -180,6 +196,7 @@ static BOOL message_notify(struct process_id procid)
 		}
 		return False;
 	}
+
 	return True;
 }
 
@@ -219,7 +236,7 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 
 	kbuf = message_key_pid(pid);
 
-	dbuf.dptr = (void *)SMB_MALLOC(len + sizeof(rec));
+	dbuf.dptr = (char *)SMB_MALLOC(len + sizeof(rec));
 	if (!dbuf.dptr)
 		return False;
 

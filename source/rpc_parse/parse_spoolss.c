@@ -3,7 +3,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Jean François Micouleau      1998-2000,
+ *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2000,
  *  Copyright (C) Gerald Carter                2000-2002,
  *  Copyright (C) Tim Potter		       2001-2002.
  *
@@ -2661,7 +2661,9 @@ BOOL smb_io_printer_driver_info_6(const char *desc, RPC_BUFFER *buffer, DRIVER_I
 	if (!smb_io_relarraystr("previousdrivernames", buffer, depth, &info->previousdrivernames))
 		return False;
 
-	if (!prs_uint64("date", ps, depth, &info->driver_date))
+	if (!prs_uint32("date.low", ps, depth, &info->driver_date.low))
+		return False;
+	if (!prs_uint32("date.high", ps, depth, &info->driver_date.high))
 		return False;
 
 	if (!prs_uint32("padding", ps, depth, &info->padding))
@@ -3801,8 +3803,10 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 		q_u->secdesc_ctr = SMB_MALLOC_P(SEC_DESC_BUF);
 		if (!q_u->secdesc_ctr)
 			return False;
-		q_u->secdesc_ctr->sd = secdesc;
-		q_u->secdesc_ctr->sd_size = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
+		q_u->secdesc_ctr->ptr = (secdesc != NULL) ? 1: 0;
+		q_u->secdesc_ctr->max_len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
+		q_u->secdesc_ctr->len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
+		q_u->secdesc_ctr->sec = secdesc;
 
 		q_u->devmode_ctr.devmode_ptr = (devmode != NULL) ? 1 : 0;
 		q_u->devmode_ctr.size = (devmode != NULL) ? sizeof(DEVICEMODE) + (3*sizeof(uint32)) : 0;
@@ -3823,8 +3827,10 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 		q_u->secdesc_ctr = SMB_MALLOC_P(SEC_DESC_BUF);
 		if (!q_u->secdesc_ctr)
 			return False;
-		q_u->secdesc_ctr->sd_size = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
-		q_u->secdesc_ctr->sd = secdesc;
+		q_u->secdesc_ctr->ptr = (secdesc != NULL) ? 1: 0;
+		q_u->secdesc_ctr->max_len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
+		q_u->secdesc_ctr->len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
+		q_u->secdesc_ctr->sec = secdesc;
 
 		break;
 	case 7:
