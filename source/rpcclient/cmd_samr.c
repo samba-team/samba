@@ -77,7 +77,7 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	unistr2_to_ascii(temp, &usr->uni_workstations, sizeof(temp)-1);
 	printf("\tWorkstations:\t%s\n", temp);
 	
-	unistr2_to_ascii(temp, &usr->uni_unknown_str, sizeof(temp)-1);
+	unistr2_to_ascii(temp, &usr->uni_comment, sizeof(temp)-1);
 	printf("\tUnknown Str :\t%s\n", temp);
 	
 	unistr2_to_ascii(temp, &usr->uni_munged_dial, sizeof(temp)-1);
@@ -128,7 +128,6 @@ static const char *display_time(NTTIME nttime)
 
 	if (nttime.high==0x80000000 && nttime.low==0)
 		return "Never";
-
 	high = 65536;	
 	high = high/10000;
 	high = high*65536;
