@@ -159,7 +159,7 @@ static TDB_DATA name_record_to_wins_record(const struct name_record *namerec)
 	len = (2 + 1 + (7*4)); /* "wbddddddd" */
 	len += (namerec->data.num_ips * 4);
 
-	data.dptr = SMB_MALLOC(len);
+	data.dptr = (char *)SMB_MALLOC(len);
 	if (!data.dptr) {
 		return data;
 	}
