@@ -16,7 +16,7 @@
 	}
 
 [kdc]
-	digest_enable = true
+	enable-digest = true
 
 	pkinit_enable = true
 	pkinit_identity = FILE:@srcdir@/../../lib/hx509/data/kdc.crt,@srcdir@/../../lib/hx509/data/kdc.key
