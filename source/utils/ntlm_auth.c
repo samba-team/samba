@@ -6,6 +6,7 @@
    Copyright (C) Tim Potter      2000-2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003-2004
    Copyright (C) Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it> 2000 
+   Copyright (C) Robert O'Callahan 2006 (added cached credential code).
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,6 +39,7 @@ enum stdio_helper_mode {
 	GSS_SPNEGO,
 	GSS_SPNEGO_CLIENT,
 	NTLM_SERVER_1,
+	NTLM_CHANGE_PASSWORD_1,
 	NUM_HELPER_MODES
 };
 
@@ -62,6 +64,8 @@ static void manage_gss_spnego_client_request (enum stdio_helper_mode stdio_helpe
 static void manage_ntlm_server_1_request (enum stdio_helper_mode stdio_helper_mode, 
 					  char *buf, int length);
 
+static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_mode, char *buf, int length);
+
 static const struct {
 	enum stdio_helper_mode mode;
 	const char *name;
@@ -74,6 +78,7 @@ static const struct {
 	{ GSS_SPNEGO, "gss-spnego", manage_gss_spnego_request},
 	{ GSS_SPNEGO_CLIENT, "gss-spnego-client", manage_gss_spnego_client_request},
 	{ NTLM_SERVER_1, "ntlm-server-1", manage_ntlm_server_1_request},
+	{ NTLM_CHANGE_PASSWORD_1, "ntlm-change-password-1", manage_ntlm_change_password_1_request},
 	{ NUM_HELPER_MODES, NULL, NULL}
 };
 
@@ -88,6 +93,7 @@ static DATA_BLOB opt_lm_response;
 static DATA_BLOB opt_nt_response;
 static int request_lm_key;
 static int request_user_session_key;
+static int use_cached_creds;
 
 static const char *require_membership_of;
 static const char *require_membership_of_sid;
@@ -390,10 +396,90 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	free_response(&response);
 	return nt_status;
 }
-				   
+
+/* contact server to change user password using auth crap */
+static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
+						      const char *domain,
+						      const DATA_BLOB new_nt_pswd,
+						      const DATA_BLOB old_nt_hash_enc,
+						      const DATA_BLOB new_lm_pswd,
+						      const DATA_BLOB old_lm_hash_enc,
+						      char  **error_string)
+{
+	NTSTATUS nt_status;
+	NSS_STATUS result;
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	if (!get_require_membership_sid())
+	{
+		if(error_string)
+			*error_string = smb_xstrdup("Can't get membership sid.");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if(username != NULL)
+		fstrcpy(request.data.chng_pswd_auth_crap.user, username);
+	if(domain != NULL)
+		fstrcpy(request.data.chng_pswd_auth_crap.domain,domain);
+
+	if(new_nt_pswd.length)
+	{
+		memcpy(request.data.chng_pswd_auth_crap.new_nt_pswd, new_nt_pswd.data, sizeof(request.data.chng_pswd_auth_crap.new_nt_pswd));
+		request.data.chng_pswd_auth_crap.new_nt_pswd_len = new_nt_pswd.length;
+	}
+
+	if(old_nt_hash_enc.length)
+	{
+		memcpy(request.data.chng_pswd_auth_crap.old_nt_hash_enc, old_nt_hash_enc.data, sizeof(request.data.chng_pswd_auth_crap.old_nt_hash_enc));
+		request.data.chng_pswd_auth_crap.old_nt_hash_enc_len = old_nt_hash_enc.length;
+	}
+
+	if(new_lm_pswd.length)
+	{
+		memcpy(request.data.chng_pswd_auth_crap.new_lm_pswd, new_lm_pswd.data, sizeof(request.data.chng_pswd_auth_crap.new_lm_pswd));
+		request.data.chng_pswd_auth_crap.new_lm_pswd_len = new_lm_pswd.length;
+	}
+
+	if(old_lm_hash_enc.length)
+	{
+		memcpy(request.data.chng_pswd_auth_crap.old_lm_hash_enc, old_lm_hash_enc.data, sizeof(request.data.chng_pswd_auth_crap.old_lm_hash_enc));
+		request.data.chng_pswd_auth_crap.old_lm_hash_enc_len = old_lm_hash_enc.length;
+	}
+	
+	result = winbindd_request_response(WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, &request, &response);
+
+	/* Display response */
+
+	if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0))
+	{
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		if (error_string)
+			*error_string = smb_xstrdup("Reading winbind reply failed!");
+		free_response(&response);
+		return nt_status;
+	}
+	
+	nt_status = (NT_STATUS(response.data.auth.nt_status));
+	if (!NT_STATUS_IS_OK(nt_status))
+	{
+		if (error_string) 
+			*error_string = smb_xstrdup(response.data.auth.error_string);
+		free_response(&response);
+		return nt_status;
+	}
+
+	free_response(&response);
+	
+    return nt_status;
+}
+
 static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
-	static const char zeros[16];
+	static const char zeros[16] = { 0, };
 	NTSTATUS nt_status;
 	char *error_string;
 	uint8 lm_key[8]; 
@@ -499,14 +585,17 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(NTLMSSP_STATE **client_ntlmssp_st
 		return status;
 	}
 
-	status = ntlmssp_set_password(*client_ntlmssp_state, opt_password);
+	if (opt_password) {
+		status = ntlmssp_set_password(*client_ntlmssp_state, opt_password);
 	
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not set password: %s\n",
-			  nt_errstr(status)));
-		ntlmssp_end(client_ntlmssp_state);
-		return status;
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Could not set password: %s\n",
+				  nt_errstr(status)));
+			ntlmssp_end(client_ntlmssp_state);
+			return status;
+		}
 	}
+
 	return NT_STATUS_OK;
 }
 
@@ -515,7 +604,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(NTLMSSP_STATE **ntlmssp_state)
 	NTSTATUS status = ntlmssp_server_start(ntlmssp_state);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
+		DEBUG(1, ("Could not start NTLMSSP server: %s\n",
 			  nt_errstr(status)));
 		return status;
 	}
@@ -533,10 +622,69 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(NTLMSSP_STATE **ntlmssp_state)
 	return NT_STATUS_OK;
 }
 
+/*******************************************************************
+ Used by firefox to drive NTLM auth to IIS servers.
+*******************************************************************/
+
+static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_msg,
+				DATA_BLOB *reply)
+{
+	struct winbindd_request wb_request;
+	struct winbindd_response wb_response;
+	NSS_STATUS result;
+
+	/* get winbindd to do the ntlmssp step on our behalf */
+	ZERO_STRUCT(wb_request);
+	ZERO_STRUCT(wb_response);
+
+	fstr_sprintf(wb_request.data.ccache_ntlm_auth.user,
+		"%s%c%s", opt_domain, winbind_separator(), opt_username);
+	wb_request.data.ccache_ntlm_auth.uid = geteuid();
+	wb_request.data.ccache_ntlm_auth.initial_blob_len = initial_msg.length;
+	wb_request.data.ccache_ntlm_auth.challenge_blob_len = challenge_msg.length;
+	wb_request.extra_len = initial_msg.length + challenge_msg.length;
+
+	if (wb_request.extra_len > 0) {
+		wb_request.extra_data.data = SMB_MALLOC_ARRAY(char, wb_request.extra_len);
+		if (wb_request.extra_data.data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		memcpy(wb_request.extra_data.data, initial_msg.data, initial_msg.length);
+		memcpy(wb_request.extra_data.data + initial_msg.length,
+			challenge_msg.data, challenge_msg.length);
+	}
+
+	result = winbindd_request_response(WINBINDD_CCACHE_NTLMAUTH, &wb_request, &wb_response);
+	SAFE_FREE(wb_request.extra_data.data);
+
+	if (result != NSS_STATUS_SUCCESS) {
+		free_response(&wb_response);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (reply) {
+		*reply = data_blob(wb_response.extra_data.data,
+				wb_response.data.ccache_ntlm_auth.auth_blob_len);
+		if (wb_response.data.ccache_ntlm_auth.auth_blob_len > 0 &&
+				reply->data == NULL) {
+			free_response(&wb_response);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	free_response(&wb_response);
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+}
+
 static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode, 
 					 char *buf, int length) 
 {
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
+	static char* want_feature_list = NULL;
+	static uint32 neg_flags = 0;
+	static BOOL have_session_key = False;
+	static DATA_BLOB session_key;
 	DATA_BLOB request, reply;
 	NTSTATUS nt_status;
 
@@ -547,6 +695,13 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	}
 
 	if (strlen(buf) > 3) {
+		if(strncmp(buf, "SF ", 3) == 0){
+			DEBUG(10, ("Setting flags to negotioate\n"));
+			SAFE_FREE(want_feature_list);
+			want_feature_list = SMB_STRNDUP(buf+3, strlen(buf)-3);
+			x_fprintf(x_stdout, "OK\n");
+			return;
+		}
 		request = base64_decode_data_blob(buf + 3);
 	} else {
 		request = data_blob(NULL, 0);
@@ -574,6 +729,23 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 			ntlmssp_end(&ntlmssp_state);
 	} else if (strncmp(buf, "KK", 2) == 0) {
 		
+	} else if (strncmp(buf, "GF", 2) == 0) {
+		DEBUG(10, ("Requested negotiated NTLMSSP flags\n"));
+		x_fprintf(x_stdout, "GF 0x%08lx\n", have_session_key?neg_flags:0l);
+		data_blob_free(&request);
+		return;
+	} else if (strncmp(buf, "GK", 2) == 0) {
+		DEBUG(10, ("Requested NTLMSSP session key\n"));
+		if(have_session_key) {
+			char *key64 = base64_encode_data_blob(session_key);
+			x_fprintf(x_stdout, "GK %s\n", key64?key64:"<NULL>");
+			SAFE_FREE(key64);
+		} else {
+			x_fprintf(x_stdout, "BH\n");
+		}
+			
+		data_blob_free(&request);
+		return;
 	} else {
 		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
@@ -585,6 +757,7 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 			x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 			return;
 		}
+		ntlmssp_want_feature_list(ntlmssp_state, want_feature_list);
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
@@ -609,6 +782,13 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	} else {
 		x_fprintf(x_stdout, "AF %s\n", (char *)ntlmssp_state->auth_context);
 		DEBUG(10, ("NTLMSSP OK!\n"));
+		
+		if(have_session_key)
+			data_blob_free(&session_key);
+		session_key = data_blob(ntlmssp_state->session_key.data, 
+				ntlmssp_state->session_key.length);
+		neg_flags = ntlmssp_state->neg_flags;
+		have_session_key = True;
 	}
 
 	data_blob_free(&request);
@@ -617,11 +797,25 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode, 
 					 char *buf, int length) 
 {
+	/* The statics here are *HORRIBLE* and this entire concept
+	   needs to be rewritten. Essentially it's using these statics
+	   as the state in a state machine. BLEEEGH ! JRA. */
+
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
+	static DATA_BLOB initial_message;
+	static char* want_feature_list = NULL;
+	static uint32 neg_flags = 0;
+	static BOOL have_session_key = False;
+	static DATA_BLOB session_key;
 	DATA_BLOB request, reply;
 	NTSTATUS nt_status;
 	BOOL first = False;
 	
+	if (!opt_username || !*opt_username) {
+		x_fprintf(x_stderr, "username must be specified!\n\n");
+		exit(1);
+	}
+
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
@@ -629,6 +823,13 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 	}
 
 	if (strlen(buf) > 3) {
+		if(strncmp(buf, "SF ", 3) == 0) {
+			DEBUG(10, ("Looking for flags to negotiate\n"));
+			SAFE_FREE(want_feature_list);
+			want_feature_list = SMB_STRNDUP(buf+3, strlen(buf)-3);
+			x_fprintf(x_stdout, "OK\n");
+			return;
+		}
 		request = base64_decode_data_blob(buf + 3);
 	} else {
 		request = data_blob(NULL, 0);
@@ -651,7 +852,18 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		return;
 	}
 
-	if (opt_password == NULL) {
+	if (!ntlmssp_state && use_cached_creds) {
+		/* check whether credentials are usable. */
+		DATA_BLOB empty_blob = data_blob(NULL, 0);
+
+		nt_status = do_ccache_ntlm_auth(empty_blob, empty_blob, NULL);
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			/* failed to use cached creds */
+			use_cached_creds = False;
+		}
+	}
+
+	if (opt_password == NULL && !use_cached_creds) {
 		
 		/* Request a password from the calling process.  After
 		   sending it, the calling process should retry asking for the negotiate. */
@@ -666,6 +878,25 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 			ntlmssp_end(&ntlmssp_state);
 	} else if (strncmp(buf, "TT", 2) == 0) {
 		
+	} else if (strncmp(buf, "GF", 2) == 0) {
+		DEBUG(10, ("Requested negotiated NTLMSSP flags\n"));
+		x_fprintf(x_stdout, "GF 0x%08lx\n", have_session_key?neg_flags:0l);
+		data_blob_free(&request);
+		return;
+	} else if (strncmp(buf, "GK", 2) == 0 ) {
+		DEBUG(10, ("Requested session key\n"));
+
+		if(have_session_key) {
+			char *key64 = base64_encode_data_blob(session_key);
+			x_fprintf(x_stdout, "GK %s\n", key64?key64:"<NULL>");
+			SAFE_FREE(key64);
+		}
+		else {
+			x_fprintf(x_stdout, "BH\n");
+		}
+
+		data_blob_free(&request);
+		return;
 	} else {
 		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
@@ -677,13 +908,19 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 			x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 			return;
 		}
+		ntlmssp_want_feature_list(ntlmssp_state, want_feature_list);
 		first = True;
+		initial_message = data_blob(NULL, 0);
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
 	dump_data(10, (const char *)request.data, request.length);
 
-	nt_status = ntlmssp_update(ntlmssp_state, request, &reply);
+	if (use_cached_creds && !opt_password && !first) {
+		nt_status = do_ccache_ntlm_auth(initial_message, request, &reply);
+	} else {
+		nt_status = ntlmssp_update(ntlmssp_state, request, &reply);
+	}
 	
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		char *reply_base64 = base64_encode_data_blob(reply);
@@ -693,12 +930,25 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 			x_fprintf(x_stdout, "KK %s\n", reply_base64);
 		}
 		SAFE_FREE(reply_base64);
-		data_blob_free(&reply);
+		if (first) {
+			initial_message = reply;
+		} else {
+			data_blob_free(&reply);
+		}
 		DEBUG(10, ("NTLMSSP challenge\n"));
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		char *reply_base64 = base64_encode_data_blob(reply);
 		x_fprintf(x_stdout, "AF %s\n", reply_base64);
 		SAFE_FREE(reply_base64);
+
+		if(have_session_key)
+			data_blob_free(&session_key);
+
+		session_key = data_blob(ntlmssp_state->session_key.data, 
+				ntlmssp_state->session_key.length);
+		neg_flags = ntlmssp_state->neg_flags;
+		have_session_key = True;
+
 		DEBUG(10, ("NTLMSSP OK!\n"));
 		if (ntlmssp_state)
 			ntlmssp_end(&ntlmssp_state);
@@ -718,7 +968,7 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 	char *user, *pass;	
 	user=buf;
 	
-	pass=memchr(buf,' ',length);
+	pass=(char *)memchr(buf,' ',length);
 	if (!pass) {
 		DEBUG(2, ("Password not found. Denying access\n"));
 		x_fprintf(x_stdout, "ERR\n");
@@ -1162,7 +1412,8 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 		return False;
 	}
 
-	principal = SMB_MALLOC(spnego.negTokenInit.mechListMIC.length+1);
+	principal = (char *)SMB_MALLOC(
+		spnego.negTokenInit.mechListMIC.length+1);
 
 	if (principal == NULL) {
 		DEBUG(1, ("Could not malloc principal\n"));
@@ -1259,6 +1510,11 @@ static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper
 	DATA_BLOB request;
 	SPNEGO_DATA spnego;
 	ssize_t len;
+
+	if (!opt_username || !*opt_username) {
+		x_fprintf(x_stderr, "username must be specified!\n\n");
+		exit(1);
+	}
 
 	if (strlen(buf) <= 3) {
 		DEBUG(1, ("SPNEGO query [%s] too short\n", buf));
@@ -1579,6 +1835,216 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	}
 }
 
+static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_mode, char *buf, int length)
+{
+	char *request, *parameter;	
+	static DATA_BLOB new_nt_pswd;
+	static DATA_BLOB old_nt_hash_enc;
+	static DATA_BLOB new_lm_pswd;
+	static DATA_BLOB old_lm_hash_enc;
+	static char *full_username = NULL;
+	static char *username = NULL;
+	static char *domain = NULL;
+	static char *newpswd =  NULL;
+	static char *oldpswd = NULL;
+
+	if (strequal(buf, "."))	{
+		if(newpswd && oldpswd) {
+			uchar old_nt_hash[16];
+			uchar old_lm_hash[16];
+			uchar new_nt_hash[16];
+			uchar new_lm_hash[16];
+
+			new_nt_pswd = data_blob(NULL, 516);
+			old_nt_hash_enc = data_blob(NULL, 16);
+			
+			/* Calculate the MD4 hash (NT compatible) of the
+			 * password */
+			E_md4hash(oldpswd, old_nt_hash);
+			E_md4hash(newpswd, new_nt_hash);
+
+			/* E_deshash returns false for 'long'
+			   passwords (> 14 DOS chars).  
+			   
+			   Therefore, don't send a buffer
+			   encrypted with the truncated hash
+			   (it could allow an even easier
+			   attack on the password)
+
+			   Likewise, obey the admin's restriction
+			*/
+
+			if (lp_client_lanman_auth() &&
+			    E_deshash(newpswd, new_lm_hash) &&
+			    E_deshash(oldpswd, old_lm_hash)) {
+				new_lm_pswd = data_blob(NULL, 516);
+				old_lm_hash_enc = data_blob(NULL, 16);
+				encode_pw_buffer(new_lm_pswd.data, newpswd,
+						 STR_UNICODE);
+
+				SamOEMhash(new_lm_pswd.data, old_nt_hash, 516);
+				E_old_pw_hash(new_nt_hash, old_lm_hash,
+					      old_lm_hash_enc.data);
+			} else {
+				new_lm_pswd.data = NULL;
+				new_lm_pswd.length = 0;
+				old_lm_hash_enc.data = NULL;
+				old_lm_hash_enc.length = 0;
+			}
+
+			encode_pw_buffer(new_nt_pswd.data, newpswd,
+					 STR_UNICODE);
+	
+			SamOEMhash(new_nt_pswd.data, old_nt_hash, 516);
+			E_old_pw_hash(new_nt_hash, old_nt_hash,
+				      old_nt_hash_enc.data);
+		}
+		
+		if (!full_username && !username) {	
+			x_fprintf(x_stdout, "Error: No username supplied!\n");
+		} else if ((!new_nt_pswd.data || !old_nt_hash_enc.data) &&
+			   (!new_lm_pswd.data || old_lm_hash_enc.data) ) {
+			x_fprintf(x_stdout, "Error: No NT or LM password "
+				  "blobs supplied!\n");
+		} else {
+			char *error_string = NULL;
+			
+			if (full_username && !username)	{
+				fstring fstr_user;
+				fstring fstr_domain;
+				
+				if (!parse_ntlm_auth_domain_user(full_username,
+								 fstr_user,
+								 fstr_domain)) {
+					/* username might be 'tainted', don't
+					 * print into our new-line
+					 * deleimianted stream */
+					x_fprintf(x_stdout, "Error: Could not "
+						  "parse into domain and "
+						  "username\n");
+					SAFE_FREE(username);
+					username = smb_xstrdup(full_username);
+				} else {
+					SAFE_FREE(username);
+					SAFE_FREE(domain);
+					username = smb_xstrdup(fstr_user);
+					domain = smb_xstrdup(fstr_domain);
+				}
+				
+			}
+
+			if(!NT_STATUS_IS_OK(contact_winbind_change_pswd_auth_crap(
+						    username, domain,
+						    new_nt_pswd,
+						    old_nt_hash_enc,
+						    new_lm_pswd,
+						    old_lm_hash_enc,
+						    &error_string))) {
+				x_fprintf(x_stdout, "Password-Change: No\n");
+				x_fprintf(x_stdout, "Password-Change-Error: "
+					  "%s\n.\n", error_string);
+			} else {
+				x_fprintf(x_stdout, "Password-Change: Yes\n");
+			}
+
+			SAFE_FREE(error_string);
+		}
+		/* clear out the state */
+		new_nt_pswd = data_blob(NULL, 0);
+		old_nt_hash_enc = data_blob(NULL, 0);
+		new_lm_pswd = data_blob(NULL, 0);
+		old_nt_hash_enc = data_blob(NULL, 0);
+		SAFE_FREE(full_username);
+		SAFE_FREE(username);
+		SAFE_FREE(domain);
+		SAFE_FREE(newpswd);
+		SAFE_FREE(oldpswd);
+		x_fprintf(x_stdout, ".\n");
+
+		return;
+	}
+
+	request = buf;
+
+	/* Indicates a base64 encoded structure */
+	parameter = strstr_m(request, ":: ");
+	if (!parameter) {
+		parameter = strstr_m(request, ": ");
+		
+		if (!parameter)	{
+			DEBUG(0, ("Parameter not found!\n"));
+			x_fprintf(x_stdout, "Error: Parameter not found!\n.\n");
+			return;
+		}
+		
+		parameter[0] ='\0';
+		parameter++;
+		parameter[0] ='\0';
+		parameter++;
+	} else {
+		parameter[0] ='\0';
+		parameter++;
+		parameter[0] ='\0';
+		parameter++;
+		parameter[0] ='\0';
+		parameter++;
+
+		base64_decode_inplace(parameter);
+	}
+
+	if (strequal(request, "new-nt-password-blob")) {
+		new_nt_pswd = strhex_to_data_blob(NULL, parameter);
+		if (new_nt_pswd.length != 516) {
+			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
+				  "(got %d bytes, expected 516)\n.\n", 
+				  parameter,
+				  (int)new_nt_pswd.length);
+			new_nt_pswd = data_blob(NULL, 0);
+		}
+	} else if (strequal(request, "old-nt-hash-blob")) {
+		old_nt_hash_enc = strhex_to_data_blob(NULL, parameter);
+		if (old_nt_hash_enc.length != 16) {
+			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
+				  "(got %d bytes, expected 16)\n.\n", 
+				  parameter,
+				  (int)old_nt_hash_enc.length);
+			old_nt_hash_enc = data_blob(NULL, 0);
+		}
+	} else if (strequal(request, "new-lm-password-blob")) {
+		new_lm_pswd = strhex_to_data_blob(NULL, parameter);
+		if (new_lm_pswd.length != 516) {
+			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
+				  "(got %d bytes, expected 516)\n.\n", 
+				  parameter,
+				  (int)new_lm_pswd.length);
+			new_lm_pswd = data_blob(NULL, 0);
+		}
+	}
+	else if (strequal(request, "old-lm-hash-blob"))	{
+		old_lm_hash_enc = strhex_to_data_blob(NULL, parameter);
+		if (old_lm_hash_enc.length != 16)
+		{
+			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
+				  "(got %d bytes, expected 16)\n.\n", 
+				  parameter,
+				  (int)old_lm_hash_enc.length);
+			old_lm_hash_enc = data_blob(NULL, 0);
+		}
+	} else if (strequal(request, "nt-domain")) {
+		domain = smb_xstrdup(parameter);
+	} else if(strequal(request, "username")) {
+		username = smb_xstrdup(parameter);
+	} else if(strequal(request, "full-username")) {
+		username = smb_xstrdup(parameter);
+	} else if(strequal(request, "new-password")) {
+		newpswd = smb_xstrdup(parameter);
+	} else if (strequal(request, "old-password")) {
+		oldpswd = smb_xstrdup(parameter);
+	} else {
+		x_fprintf(x_stdout, "Error: Unknown request %s\n.\n", request);
+	}
+}
+
 static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helper_function fn) 
 {
 	char buf[SQUID_BUFFER_SIZE+1];
@@ -1597,7 +2063,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helpe
 		exit(0);
 	}
     
-	c=memchr(buf,'\n',sizeof(buf)-1);
+	c=(char *)memchr(buf,'\n',sizeof(buf)-1);
 	if (c) {
 		*c = '\0';
 		length = c-buf;
@@ -1709,7 +2175,8 @@ enum {
 	OPT_LM_KEY,
 	OPT_USER_SESSION_KEY,
 	OPT_DIAGNOSTICS,
-	OPT_REQUIRE_MEMBERSHIP
+	OPT_REQUIRE_MEMBERSHIP,
+	OPT_USE_CACHED_CREDS
 };
 
  int main(int argc, const char **argv)
@@ -1744,6 +2211,7 @@ enum {
 		{ "password", 0, POPT_ARG_STRING, &opt_password, OPT_PASSWORD, "User's plaintext password"},		
 		{ "request-lm-key", 0, POPT_ARG_NONE, &request_lm_key, OPT_LM_KEY, "Retrieve LM session key"},
 		{ "request-nt-key", 0, POPT_ARG_NONE, &request_user_session_key, OPT_USER_SESSION_KEY, "Retrieve User (NT) session key"},
+		{ "use-cached-creds", 0, POPT_ARG_NONE, &use_cached_creds, OPT_USE_CACHED_CREDS, "Use cached credentials if no password is given"},
 		{ "diagnostics", 0, POPT_ARG_NONE, &diagnostics, OPT_DIAGNOSTICS, "Perform diagnostics on the authentictaion chain"},
 		{ "require-membership-of", 0, POPT_ARG_STRING, &require_membership_of, OPT_REQUIRE_MEMBERSHIP, "Require that a user be a member of this group (either name or SID) for authentication to succeed" },
 		POPT_COMMON_SAMBA

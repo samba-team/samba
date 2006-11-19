@@ -64,6 +64,52 @@ struct smbpasswd_privates
 
 enum pwf_access_type { PWF_READ, PWF_UPDATE, PWF_CREATE };
 
+static SIG_ATOMIC_T gotalarm;
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+
+static void gotalarm_sig(void)
+{
+	gotalarm = 1;
+}
+
+/***************************************************************
+ Lock or unlock a fd for a known lock type. Abandon after waitsecs 
+ seconds.
+****************************************************************/
+
+static BOOL do_file_lock(int fd, int waitsecs, int type)
+{
+	SMB_STRUCT_FLOCK lock;
+	int             ret;
+	void (*oldsig_handler)(int);
+
+	gotalarm = 0;
+	oldsig_handler = CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+
+	lock.l_type = type;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 1;
+	lock.l_pid = 0;
+
+	alarm(waitsecs);
+	/* Note we must *NOT* use sys_fcntl here ! JRA */
+	ret = fcntl(fd, SMB_F_SETLKW, &lock);
+	alarm(0);
+	CatchSignal(SIGALRM, SIGNAL_CAST oldsig_handler);
+
+	if (gotalarm) {
+		DEBUG(0, ("do_file_lock: failed to %s file.\n",
+			type == F_UNLCK ? "unlock" : "lock"));
+		return False;
+	}
+
+	return (ret == 0);
+}
+
 /***************************************************************
  Lock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
@@ -584,7 +630,8 @@ static char *format_new_smbpasswd_entry(const struct smb_passwd *newpwd)
  Routine to add an entry to the smbpasswd file.
 *************************************************************************/
 
-static BOOL add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, struct smb_passwd *newpwd)
+static NTSTATUS add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state,
+				     struct smb_passwd *newpwd)
 {
 	const char *pfile = smbpasswd_state->smbpasswd_file;
 	struct smb_passwd *pwd = NULL;
@@ -605,7 +652,7 @@ static BOOL add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, str
 
 	if (fp == NULL) {
 		DEBUG(0, ("add_smbfilepwd_entry: unable to open file.\n"));
-		return False;
+		return map_nt_error_from_unix(errno);
 	}
 
 	/*
@@ -616,7 +663,7 @@ static BOOL add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, str
 		if (strequal(newpwd->smb_name, pwd->smb_name)) {
 			DEBUG(0, ("add_smbfilepwd_entry: entry with name %s already exists\n", pwd->smb_name));
 			endsmbfilepwent(fp, &smbpasswd_state->pw_file_lock_depth);
-			return False;
+			return NT_STATUS_USER_EXISTS;
 		}
 	}
 
@@ -630,17 +677,18 @@ static BOOL add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, str
 	fd = fileno(fp);
 
 	if((offpos = sys_lseek(fd, 0, SEEK_END)) == -1) {
+		NTSTATUS result = map_nt_error_from_unix(errno);
 		DEBUG(0, ("add_smbfilepwd_entry(sys_lseek): Failed to add entry for user %s to file %s. \
 Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 		endsmbfilepwent(fp, &smbpasswd_state->pw_file_lock_depth);
-		return False;
+		return result;
 	}
 
 	if((new_entry = format_new_smbpasswd_entry(newpwd)) == NULL) {
 		DEBUG(0, ("add_smbfilepwd_entry(malloc): Failed to add entry for user %s to file %s. \
 Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 		endsmbfilepwent(fp, &smbpasswd_state->pw_file_lock_depth);
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	new_entry_length = strlen(new_entry);
@@ -651,6 +699,7 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 #endif
 
 	if ((wr_len = write(fd, new_entry, new_entry_length)) != new_entry_length) {
+		NTSTATUS result = map_nt_error_from_unix(errno);
 		DEBUG(0, ("add_smbfilepwd_entry(write): %d Failed to add entry for user %s to file %s. \
 Error was %s\n", wr_len, newpwd->smb_name, pfile, strerror(errno)));
 
@@ -663,12 +712,12 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
 
 		endsmbfilepwent(fp, &smbpasswd_state->pw_file_lock_depth);
 		free(new_entry);
-		return False;
+		return result;
 	}
 
 	free(new_entry);
 	endsmbfilepwent(fp, &smbpasswd_state->pw_file_lock_depth);
-	return True;
+	return NT_STATUS_OK;
 }
 
 /************************************************************************
@@ -1308,7 +1357,7 @@ static NTSTATUS smbpasswd_getsampwnam(struct pdb_methods *my_methods,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
-	void *fp = NULL;
+	FILE *fp = NULL;
 
 	DEBUG(10, ("getsampwnam (smbpasswd): search by name: %s\n", username));
 
@@ -1352,7 +1401,7 @@ static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, struct sam
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
-	void *fp = NULL;
+	FILE *fp = NULL;
 	fstring sid_str;
 	uint32 rid;
 	
@@ -1423,11 +1472,7 @@ static NTSTATUS smbpasswd_add_sam_account(struct pdb_methods *my_methods, struct
 	}
 	
 	/* add the entry */
-	if(!add_smbfilepwd_entry(smbpasswd_state, &smb_pw)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	return NT_STATUS_OK;
+	return add_smbfilepwd_entry(smbpasswd_state, &smb_pw);
 }
 
 static NTSTATUS smbpasswd_update_sam_account(struct pdb_methods *my_methods, struct samu *sampass)

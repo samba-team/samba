@@ -259,9 +259,10 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		/* We must create the entry. */
-		db_data.dptr = malloc((2*sizeof(struct share_mode_entry)) +
-					strlen(sharepath) + 1 +
-					strlen(filename) + 1);
+		db_data.dptr = (char *)malloc(
+			(2*sizeof(struct share_mode_entry)) +
+			strlen(sharepath) + 1 +
+			strlen(filename) + 1);
 		if (!db_data.dptr) {
 			return -1;
 		}
@@ -294,7 +295,8 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 	}
 
 	/* Entry exists, we must add a new entry. */
-	new_data_p = malloc(db_data.dsize + sizeof(struct share_mode_entry));
+	new_data_p = (char *)malloc(
+		db_data.dsize + sizeof(struct share_mode_entry));
 	if (!new_data_p) {
 		free(db_data.dptr);
 		return -1;
@@ -391,7 +393,8 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	}
 
 	/* More than one - allocate a new record minus the one we'll delete. */
-	new_data_p = malloc(db_data.dsize - sizeof(struct share_mode_entry));
+	new_data_p = (char *)malloc(
+		db_data.dsize - sizeof(struct share_mode_entry));
 	if (!new_data_p) {
 		free(db_data.dptr);
 		return -1;

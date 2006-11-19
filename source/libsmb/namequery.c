@@ -57,6 +57,11 @@ BOOL saf_store( const char *domain, const char *servername )
 		DEBUG(2,("saf_store: Refusing to store empty domain or servername!\n"));
 		return False;
 	}
+
+	if ( (strlen(domain) == 0) || (strlen(servername) == 0) ) {
+		DEBUG(0,("saf_store: refusing to store 0 length domain or servername!\n"));
+		return False;
+	}
 	
 	if ( !gencache_init() ) 
 		return False;
@@ -110,7 +115,7 @@ char *saf_fetch( const char *domain )
 	BOOL ret = False;
 	char *key = NULL;
 
-	if ( !domain ) {
+	if ( !domain || strlen(domain) == 0) {
 		DEBUG(2,("saf_fetch: Empty domain name!\n"));
 		return NULL;
 	}

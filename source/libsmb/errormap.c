@@ -1522,7 +1522,7 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 	{ EISDIR, ERRDOS, ERRnoaccess, NT_STATUS_FILE_IS_A_DIRECTORY},
 	{ EMLINK, ERRDOS, ERRgeneral, NT_STATUS_TOO_MANY_LINKS },
 #ifdef EDQUOT
-	{ EDQUOT, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
+	{ EDQUOT, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL }, /* Windows apps need this, not NT_STATUS_QUOTA_EXCEEDED */
 #endif
 #ifdef ENOTEMPTY
 	{ ENOTEMPTY, ERRDOS, ERRnoaccess, NT_STATUS_DIRECTORY_NOT_EMPTY },
@@ -1538,6 +1538,9 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 #endif
 #ifdef EFBIG
 	{ EFBIG, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
+#endif
+#ifdef ENOBUFS
+	{ ENOBUFS, ERRDOS, ERRnomem, NT_STATUS_INSUFFICIENT_RESOURCES },
 #endif
 	{ 0, 0, 0, NT_STATUS_OK }
 };

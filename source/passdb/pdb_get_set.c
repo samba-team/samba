@@ -976,8 +976,8 @@ BOOL pdb_set_pass_can_change(struct samu *sampass, BOOL canchange)
 	return pdb_set_pass_can_change_time(sampass, 
 				     canchange ? 0 : get_time_t_max(),
 				     PDB_CHANGED);
-	}
-	
+}
+
 
 /*********************************************************************
  Set the user's PLAINTEXT password.  Used as an interface to the above.

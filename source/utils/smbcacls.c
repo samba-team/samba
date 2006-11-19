@@ -108,7 +108,7 @@ static void SidToString(fstring str, DOM_SID *sid)
 {
 	char **domains = NULL;
 	char **names = NULL;
-	uint32 *types = NULL;
+	enum lsa_SidType *types = NULL;
 
 	sid_to_string(str, sid);
 
@@ -135,7 +135,7 @@ static void SidToString(fstring str, DOM_SID *sid)
 /* convert a string to a SID, either numeric or username/group */
 static BOOL StringToSid(DOM_SID *sid, const char *str)
 {
-	uint32 *types = NULL;
+	enum lsa_SidType *types = NULL;
 	DOM_SID *sids = NULL;
 	BOOL result = True;
 

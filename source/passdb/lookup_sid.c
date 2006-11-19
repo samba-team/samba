@@ -373,7 +373,7 @@ BOOL lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 				ret_sid, ret_type)) {
 		return True;
 	}
-
+	
 	/* Finally try with "Unix Users" or "Unix Group" */
 	qualified_name = talloc_asprintf(mem_ctx, "%s\\%s",
 				flags & LOOKUP_NAME_GROUP ?
@@ -390,10 +390,10 @@ BOOL lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 }
 
 static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
-				const DOM_SID *domain_sid,
-				int num_rids, uint32 *rids,
-				const char **domain_name,
-				const char **names, uint32 *types)
+			   const DOM_SID *domain_sid,
+			   int num_rids, uint32 *rids,
+			   const char **domain_name,
+			   const char **names, enum lsa_SidType *types)
 {
 	int i;
 	const char **my_names;
@@ -405,7 +405,7 @@ static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!winbind_lookup_rids(tmp_ctx, domain_sid, num_rids, rids,
-				domain_name, &my_names, &my_types)) {
+				 domain_name, &my_names, &my_types)) {
 		for (i=0; i<num_rids; i++) {
 			types[i] = SID_NAME_UNKNOWN;
 		}
@@ -538,7 +538,7 @@ static BOOL lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 	}
 
 	return wb_lookup_rids(mem_ctx, domain_sid, num_rids, rids,
-				   domain_name, *names, *types);
+			      domain_name, *names, *types);
 }
 
 /*
@@ -837,7 +837,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 			result = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
-
+			
 		for (j=0; j<dom->num_idxs; j++) {
 			int idx = dom->idxs[j];
 			name_infos[idx].type = types[j];

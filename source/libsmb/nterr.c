@@ -22,13 +22,13 @@
 
 #include "includes.h"
 
-typedef const struct
+typedef struct
 {
 	const char *nt_errstr;
 	NTSTATUS nt_errcode;
 } nt_err_code_struct;
 
-static nt_err_code_struct nt_errs[] =
+static const nt_err_code_struct nt_errs[] =
 {
 	{ "NT_STATUS_OK", NT_STATUS_OK },
 	{ "NT_STATUS_UNSUCCESSFUL", NT_STATUS_UNSUCCESSFUL },
@@ -569,10 +569,8 @@ nt_err_code_struct nt_err_desc[] =
 	{ "Invalid workstation", 		NT_STATUS_INVALID_WORKSTATION },
 	{ "Password expired", 			NT_STATUS_PASSWORD_EXPIRED },
 	{ "Account disabled", 			NT_STATUS_ACCOUNT_DISABLED },
-	{ "Unexpected information received", 	NT_STATUS_INVALID_PARAMETER },
 	{ "Memory allocation error", 		NT_STATUS_NO_MEMORY },
 	{ "No domain controllers located", 	NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND },
-	{ "Account locked out", 		NT_STATUS_ACCOUNT_LOCKED_OUT },
 	{ "Named pipe not available", 		NT_STATUS_PIPE_NOT_AVAILABLE },
 	{ "Not implemented", 			NT_STATUS_NOT_IMPLEMENTED },
 	{ "Invalid information class", 		NT_STATUS_INVALID_INFO_CLASS },
@@ -583,7 +581,6 @@ nt_err_code_struct nt_err_desc[] =
 	{ "No memory", 				NT_STATUS_NO_MEMORY },
 	{ "Buffer too small", 			NT_STATUS_BUFFER_TOO_SMALL },
 	{ "Revision mismatch", 			NT_STATUS_REVISION_MISMATCH },
-	{ "No logon servers", 			NT_STATUS_NO_LOGON_SERVERS },
 	{ "No such logon session", 		NT_STATUS_NO_SUCH_LOGON_SESSION },
 	{ "No such privilege", 			NT_STATUS_NO_SUCH_PRIVILEGE },
 	{ "Procedure not found", 		NT_STATUS_PROCEDURE_NOT_FOUND },
@@ -653,11 +650,16 @@ const char *nt_errstr(NTSTATUS nt_code)
         static pstring msg;
         int idx = 0;
 
+#ifdef HAVE_LDAP
+        if (NT_STATUS_TYPE(nt_code) == NT_STATUS_TYPE_LDAP) {
+                return ldap_err2string(NT_STATUS_LDAP_CODE(nt_code));
+	}
+#endif
+
 	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
 
 	while (nt_errs[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == 
-                    NT_STATUS_V(nt_code)) {
+		if (NT_STATUS_EQUAL(nt_errs[idx].nt_errcode, nt_code)) {
                         return nt_errs[idx].nt_errstr;
 		}
 		idx++;

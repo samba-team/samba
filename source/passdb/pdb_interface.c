@@ -955,7 +955,7 @@ NTSTATUS pdb_lookup_rids(const DOM_SID *domain_sid,
 			 int num_rids,
 			 uint32 *rids,
 			 const char **names,
-			 uint32 *attrs)
+			 enum lsa_SidType *attrs)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->lookup_rids(pdb, domain_sid, num_rids, rids, names, attrs);
@@ -965,7 +965,7 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 			  int num_names,
 			  const char **names,
 			  uint32 *rids,
-			  uint32 *attrs)
+			  enum lsa_SidType *attrs)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->lookup_names(pdb, domain_sid, num_names, names, rids, attrs);
@@ -1526,7 +1526,7 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 				 int num_rids,
 				 uint32 *rids,
 				 const char **names,
-				 uint32 *attrs)
+				 enum lsa_SidType *attrs)
 {
 	int i;
 	NTSTATUS result;
@@ -1589,7 +1589,7 @@ NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
 				  int num_names,
 				  const char **names,
 				  uint32 *rids,
-				  uint32 *attrs)
+				  enum lsa_SidType *attrs)
 {
 	int i;
 	NTSTATUS result;

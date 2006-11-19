@@ -241,7 +241,7 @@ static int berDecodeLoginData(
 	if(retData)
 	{
 		retOctStrLen = *retDataLen + 1;
-		retOctStr = SMB_MALLOC(retOctStrLen);
+		retOctStr = SMB_MALLOC_ARRAY(char, retOctStrLen);
 		if(!retOctStr)
 		{
 			err = LDAP_OPERATIONS_ERROR;
@@ -404,7 +404,7 @@ static int nmasldap_get_simple_pwd(
 	size_t  pwdBufLen, bufferLen;
 
 	bufferLen = pwdBufLen = pwdLen+2;
-	pwdBuf = SMB_MALLOC(pwdBufLen); /* digest and null */
+	pwdBuf = SMB_MALLOC_ARRAY(char, pwdBufLen); /* digest and null */
 	if(pwdBuf == NULL)
 	{
 		return LDAP_NO_MEMORY;
@@ -568,7 +568,7 @@ static int nmasldap_get_password(
 	}
 
 	bufferLen = pwdBufLen = *pwdSize;
-	pwdBuf = SMB_MALLOC(pwdBufLen+2);
+	pwdBuf = SMB_MALLOC_ARRAY(char, pwdBufLen+2);
 	if(pwdBuf == NULL)
 	{
 		return LDAP_NO_MEMORY;
@@ -769,7 +769,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 		DEBUG(5,("pdb_nds_update_login_attempts: %s login for %s\n",
 				success ? "Successful" : "Failed", username));
 
-		result = pdb_get_backend_private_data(sam_acct, methods);
+		result = (LDAPMessage *)pdb_get_backend_private_data(sam_acct, methods);
 		if (!result) {
 			attr_list = get_userattr_list(NULL,
 						      ldap_state->schema_ver);
@@ -854,7 +854,8 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 
 static NTSTATUS pdb_init_NDS_ldapsam_common(struct pdb_methods **pdb_method, const char *location)
 {
-	struct ldapsam_privates *ldap_state = (*pdb_method)->private_data;
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)((*pdb_method)->private_data);
 
 	/* Mark this as eDirectory ldap */
 	ldap_state->is_nds_ldap = True;

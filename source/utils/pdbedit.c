@@ -176,11 +176,6 @@ static int reinit_account_policies (void)
 		}
 	}
 
-	if (!remove_account_policy_migrated()) {
-		fprintf(stderr, "Can't remove marker from tdb\n");
-		return -1;
-	}
-
 	return 0;
 }
 
@@ -193,11 +188,6 @@ static int export_account_policies (struct pdb_methods *in, struct pdb_methods *
 {
 	int i;
 
-	if (!account_policy_migrated(True)) {
-		fprintf(stderr, "Unable to set account policy marker in tdb\n");
-		return -1;
-	}
-
 	for ( i=1; decode_account_policy_name(i) != NULL; i++ ) {
 		uint32 policy_value;
 		NTSTATUS status;
@@ -206,7 +196,6 @@ static int export_account_policies (struct pdb_methods *in, struct pdb_methods *
 
 		if ( NT_STATUS_IS_ERR(status) ) {
 			fprintf(stderr, "Unable to get account policy from %s\n", in->name);
-			remove_account_policy_migrated();
 			return -1;
 		}
 
@@ -214,7 +203,6 @@ static int export_account_policies (struct pdb_methods *in, struct pdb_methods *
 
 		if ( NT_STATUS_IS_ERR(status) ) {
 			fprintf(stderr, "Unable to migrate account policy to %s\n", out->name);
-			remove_account_policy_migrated();
 			return -1;
 		}
 	}
@@ -419,8 +407,7 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 			  const char *drive, const char *script, 
 			  const char *profile, const char *account_control,
 			  const char *user_sid, const char *user_domain,
-			  const BOOL badpw, const BOOL hours,
-			  time_t pwd_can_change, time_t pwd_must_change)
+			  const BOOL badpw, const BOOL hours)
 {
 	BOOL updated_autolock = False, updated_badpw = False;
 	struct samu *sam_pwent=NULL;
@@ -445,14 +432,6 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 		memset(hours_array, 0xff, hours_len);
 		
 		pdb_set_hours(sam_pwent, hours_array, PDB_CHANGED);
-	}
-
-	if (pwd_can_change != -1) {
-		pdb_set_pass_can_change_time(sam_pwent, pwd_can_change, PDB_CHANGED);
-	}
-
-	if (pwd_must_change != -1) {
-		pdb_set_pass_must_change_time(sam_pwent, pwd_must_change, PDB_CHANGED);
 	}
 
 	if (!pdb_update_autolock_flag(sam_pwent, &updated_autolock)) {
@@ -778,8 +757,6 @@ int main (int argc, char **argv)
 	BOOL account_policy_value_set = False;
 	static BOOL badpw_reset = False;
 	static BOOL hours_reset = False;
-	static char *pwd_can_change_time = NULL;
-	static char *pwd_must_change_time = NULL;
 	static char *pwd_time_format = NULL;
 	static BOOL pw_from_stdin = False;
 	struct pdb_methods *bin, *bout, *bdef;
@@ -814,13 +791,17 @@ int main (int argc, char **argv)
 		{"force-initialized-passwords", 0, POPT_ARG_NONE, &force_initialised_password, 0, "Force initialization of corrupt password strings in a passdb backend", NULL},
 		{"bad-password-count-reset", 'z', POPT_ARG_NONE, &badpw_reset, 0, "reset bad password count", NULL},
 		{"logon-hours-reset", 'Z', POPT_ARG_NONE, &hours_reset, 0, "reset logon hours", NULL},
-		{"pwd-can-change-time", 0, POPT_ARG_STRING, &pwd_can_change_time, 0, "Set password can change time (unix time in seconds since 1970 if time format not provided)", NULL },
-		{"pwd-must-change-time", 0, POPT_ARG_STRING, &pwd_must_change_time, 0, "Set password must change time (unix time in seconds since 1970 if time format not provided)", NULL },
 		{"time-format", 0, POPT_ARG_STRING, &pwd_time_format, 0, "The time format for time parameters", NULL },
 		{"password-from-stdin", 't', POPT_ARG_NONE, &pw_from_stdin, 0, "get password from standard in", NULL},
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
+	
+	/* we shouldn't have silly checks like this */
+	if (getuid() != 0) {
+		d_fprintf(stderr, "You must be root to use pdbedit\n");
+		return -1;
+	}
 	
 	bin = bout = bdef = NULL;
 
@@ -878,9 +859,7 @@ int main (int argc, char **argv)
 			(backend_in ? BIT_IMPORT : 0) +
 			(backend_out ? BIT_EXPORT : 0) +
 			(badpw_reset ? BIT_BADPWRESET : 0) +
-			(hours_reset ? BIT_LOGONHOURS : 0) +
-			(pwd_can_change_time ? BIT_CAN_CHANGE: 0) +
-			(pwd_must_change_time ? BIT_MUST_CHANGE: 0);
+			(hours_reset ? BIT_LOGONHOURS : 0);
 
 	if (setparms & BIT_BACKEND) {
 		if (!NT_STATUS_IS_OK(make_pdb_method_name( &bdef, backend ))) {
@@ -1052,67 +1031,9 @@ int main (int argc, char **argv)
 
 		/* account modification operations */
 		if (!(checkparms & ~(BIT_MODIFY + BIT_USER))) {
-			time_t pwd_can_change = -1;
-			time_t pwd_must_change = -1;
-			const char *errstr;
-
-			if (pwd_can_change_time) {
-				errstr = "can";
-				if (pwd_time_format) {
-					struct tm tm;
-					char *ret;
-
-					memset(&tm, 0, sizeof(struct tm));
-					ret = strptime(pwd_can_change_time, pwd_time_format, &tm);
-					if (ret == NULL || *ret != '\0') {
-						goto error;
-					}
-
-					pwd_can_change = mktime(&tm);
-
-					if (pwd_can_change == -1) {
-						goto error;
-					}
-				} else { /* assume it is unix time */
-					errno = 0;
-					pwd_can_change = strtol(pwd_can_change_time, NULL, 10);
-					if (errno) {
-						goto error;
-					}
-				}	
-			}
-			if (pwd_must_change_time) {
-				errstr = "must";
-				if (pwd_time_format) {
-					struct tm tm;
-					char *ret;
-
-					memset(&tm, 0, sizeof(struct tm));
-					ret = strptime(pwd_must_change_time, pwd_time_format, &tm);
-					if (ret == NULL || *ret != '\0') {
-						goto error;
-					}
-
-					pwd_must_change = mktime(&tm);
-
-					if (pwd_must_change == -1) {
-						goto error;
-					}
-				} else { /* assume it is unix time */
-					errno = 0;
-					pwd_must_change = strtol(pwd_must_change_time, NULL, 10);
-					if (errno) {
-						goto error;
-					}
-				}	
-			}
 			return set_user_info (bdef, user_name, full_name, home_dir,
 				acct_desc, home_drive, logon_script, profile_path, account_control,
-				user_sid, user_domain, badpw_reset, hours_reset, pwd_can_change, 
-				pwd_must_change);
-error:
-			fprintf (stderr, "Error parsing the time in pwd-%s-change-time!\n", errstr);
-			return -1;
+				user_sid, user_domain, badpw_reset, hours_reset);
 		}
 	}
 
