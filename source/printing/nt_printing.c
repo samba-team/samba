@@ -3000,7 +3000,7 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 }
 
 static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2, 
-			       struct uuid guid)
+			       struct GUID guid)
 {
 	int i;
 	REGVAL_CTR *ctr=NULL;
@@ -3012,7 +3012,7 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 
 	regval_ctr_delvalue(ctr, "objectGUID");
 	regval_ctr_addvalue(ctr, "objectGUID", REG_BINARY, 
-			    (char *) &guid, sizeof(struct uuid));	
+			    (char *) &guid, sizeof(struct GUID));	
 }
 
 static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
@@ -3025,7 +3025,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
 	const char *attrs[] = {"objectGUID", NULL};
-	struct uuid guid;
+	struct GUID guid;
 	WERROR win_rc = WERR_OK;
 
 	DEBUG(5, ("publishing printer %s\n", printer->info_2->printername));
@@ -3262,7 +3262,7 @@ WERROR check_published_printers(void)
 }
 
 BOOL is_printer_published(Printer_entry *print_hnd, int snum, 
-			  struct uuid *guid)
+			  struct GUID *guid)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	REGVAL_CTR *ctr;
@@ -3283,8 +3283,8 @@ BOOL is_printer_published(Printer_entry *print_hnd, int snum,
 	}
 
 	/* fetching printer guids really ought to be a separate function.. */
-	if (guid && regval_size(guid_val) == sizeof(struct uuid))
-		memcpy(guid, regval_data_p(guid_val), sizeof(struct uuid));
+	if (guid && regval_size(guid_val) == sizeof(struct GUID))
+		memcpy(guid, regval_data_p(guid_val), sizeof(struct GUID));
 
 	free_a_printer(&printer, 2);
 	return True;
@@ -3301,7 +3301,7 @@ WERROR check_published_printers(void)
 }
 
 BOOL is_printer_published(Printer_entry *print_hnd, int snum, 
-			  struct uuid *guid)
+			  struct GUID *guid)
 {
 	return False;
 }

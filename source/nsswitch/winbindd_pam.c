@@ -713,7 +713,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	uint16 max_allowed_bad_attempts; 
 	fstring name_domain, name_user;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	uchar new_nt_pass[NT_HASH_LEN];
 	const uint8 *cached_nt_pass;
 	const uint8 *cached_salt;

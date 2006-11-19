@@ -103,6 +103,7 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 {
 	static uint32 pol_hnd_low  = 0;
 	static uint32 pol_hnd_high = 0;
+	time_t t = time(NULL);
 
 	struct policy *pol;
 
@@ -127,12 +128,17 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 	if (pol_hnd_low == 0)
 		(pol_hnd_high)++;
 
-	SIVAL(&pol->pol_hnd.data1, 0 , 0);  /* first bit must be null */
-	SIVAL(&pol->pol_hnd.data2, 0 , pol_hnd_low ); /* second bit is incrementing */
-	SSVAL(&pol->pol_hnd.data3, 0 , pol_hnd_high); /* second bit is incrementing */
-	SSVAL(&pol->pol_hnd.data4, 0 , (pol_hnd_high>>16)); /* second bit is incrementing */
-	SIVAL(pol->pol_hnd.data5, 0, time(NULL)); /* something random */
-	SIVAL(pol->pol_hnd.data5, 4, sys_getpid()); /* something more random */
+	SIVAL(&pol->pol_hnd.handle_type, 0 , 0);  /* first bit must be null */
+	SIVAL(&pol->pol_hnd.uuid.time_low, 0 , pol_hnd_low ); /* second bit is incrementing */
+	SSVAL(&pol->pol_hnd.uuid.time_mid, 0 , pol_hnd_high); /* second bit is incrementing */
+	SSVAL(&pol->pol_hnd.uuid.time_hi_and_version, 0 , (pol_hnd_high>>16)); /* second bit is incrementing */
+
+	/* split the current time into two 16 bit values */
+
+	SSVAL(pol->pol_hnd.uuid.clock_seq, 0, (t>>16)); /* something random */
+	SSVAL(pol->pol_hnd.uuid.node, 0, t); /* something random */
+
+	SIVAL(pol->pol_hnd.uuid.node, 2, sys_getpid()); /* something more random */
 
 	DLIST_ADD(p->pipe_handles->Policy, pol);
 	p->pipe_handles->count++;

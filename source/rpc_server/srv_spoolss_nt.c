@@ -66,10 +66,6 @@ static uint32 smb_connections=0;
 
 extern STANDARD_MAPPING printer_std_mapping, printserver_std_mapping;
 
-#define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
-((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
-
-
 /* API table for Xcv Monitor functions */
 
 struct xcv_api_table {
@@ -4275,7 +4271,7 @@ static BOOL construct_printer_info_5(Printer_entry *print_hnd, PRINTER_INFO_5 *p
 static BOOL construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *printer, int snum)
 {
 	char *guid_str = NULL;
-	struct uuid guid; 
+	struct GUID guid; 
 	
 	if (is_printer_published(print_hnd, snum, &guid)) {
 		asprintf(&guid_str, "{%s}", smb_uuid_string_static(guid));

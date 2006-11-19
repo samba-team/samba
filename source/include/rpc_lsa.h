@@ -174,7 +174,7 @@ typedef struct lsa_dns_dom_info
 	UNIHDR  hdr_dns_dom_name;
 	UNIHDR  hdr_forest_name;
 
-	struct uuid dom_guid; /* domain GUID */
+	struct GUID dom_guid; /* domain GUID */
 
 	UNISTR2 uni_nb_dom_name;
 	UNISTR2 uni_dns_dom_name;

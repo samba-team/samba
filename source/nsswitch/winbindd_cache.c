@@ -769,7 +769,7 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 static void wcache_save_name_to_sid(struct winbindd_domain *domain, 
 				    NTSTATUS status, const char *domain_name,
 				    const char *name, const DOM_SID *sid, 
-				    enum SID_NAME_USE type)
+				    enum lsa_SidType type)
 {
 	struct cache_entry *centry;
 	fstring uname;
@@ -788,7 +788,7 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 }
 
 static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS status, 
-				    const DOM_SID *sid, const char *domain_name, const char *name, enum SID_NAME_USE type)
+				    const DOM_SID *sid, const char *domain_name, const char *name, enum lsa_SidType type)
 {
 	struct cache_entry *centry;
 	fstring sid_string;
@@ -1308,7 +1308,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    const char *domain_name,
 			    const char *name,
 			    DOM_SID *sid,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -1323,7 +1323,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain_name, uname);
 	if (!centry)
 		goto do_query;
-	*type = (enum SID_NAME_USE)centry_uint32(centry);
+	*type = (enum lsa_SidType)centry_uint32(centry);
 	status = centry->status;
 	if (NT_STATUS_IS_OK(status)) {
 		centry_sid(centry, mem_ctx, sid);
@@ -1377,7 +1377,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    const DOM_SID *sid,
 			    char **domain_name,
 			    char **name,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -1391,7 +1391,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	if (!centry)
 		goto do_query;
 	if (NT_STATUS_IS_OK(centry->status)) {
-		*type = (enum SID_NAME_USE)centry_uint32(centry);
+		*type = (enum lsa_SidType)centry_uint32(centry);
 		*domain_name = centry_string(centry, mem_ctx);
 		*name = centry_string(centry, mem_ctx);
 	}
@@ -1440,7 +1440,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 			      size_t num_rids,
 			      char **domain_name,
 			      char ***names,
-			      enum SID_NAME_USE **types)
+			      enum lsa_SidType **types)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	size_t i;
@@ -1461,7 +1461,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 	}
 
 	*names = TALLOC_ARRAY(mem_ctx, char *, num_rids);
-	*types = TALLOC_ARRAY(mem_ctx, enum SID_NAME_USE, num_rids);
+	*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
 
 	if ((*names == NULL) || (*types == NULL)) {
 		result = NT_STATUS_NO_MEMORY;
@@ -1491,7 +1491,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 		if (NT_STATUS_IS_OK(centry->status)) {
 			char *dom;
 			have_mapped = True;
-			(*types)[i] = (enum SID_NAME_USE)centry_uint32(centry);
+			(*types)[i] = (enum lsa_SidType)centry_uint32(centry);
 			dom = centry_string(centry, mem_ctx);
 			if (*domain_name == NULL) {
 				*domain_name = dom;
@@ -2252,7 +2252,7 @@ void cache_cleanup_response(pid_t pid)
 
 BOOL lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		       const char **domain_name, const char **name,
-		       enum SID_NAME_USE *type)
+		       enum lsa_SidType *type)
 {
 	struct winbindd_domain *domain;
 	struct winbind_cache *cache;
@@ -2276,7 +2276,7 @@ BOOL lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	}
 
 	if (NT_STATUS_IS_OK(centry->status)) {
-		*type = (enum SID_NAME_USE)centry_uint32(centry);
+		*type = (enum lsa_SidType)centry_uint32(centry);
 		*domain_name = centry_string(centry, mem_ctx);
 		*name = centry_string(centry, mem_ctx);
 	}
@@ -2290,7 +2290,7 @@ BOOL lookup_cached_name(TALLOC_CTX *mem_ctx,
 			const char *domain_name,
 			const char *name,
 			DOM_SID *sid,
-			enum SID_NAME_USE *type)
+			enum lsa_SidType *type)
 {
 	struct winbindd_domain *domain;
 	struct winbind_cache *cache;
@@ -2318,7 +2318,7 @@ BOOL lookup_cached_name(TALLOC_CTX *mem_ctx,
 	}
 
 	if (NT_STATUS_IS_OK(centry->status)) {
-		*type = (enum SID_NAME_USE)centry_uint32(centry);
+		*type = (enum lsa_SidType)centry_uint32(centry);
 		centry_sid(centry, mem_ctx, sid);
 	}
 
@@ -2330,7 +2330,7 @@ BOOL lookup_cached_name(TALLOC_CTX *mem_ctx,
 
 void cache_name2sid(struct winbindd_domain *domain, 
 		    const char *domain_name, const char *name,
-		    enum SID_NAME_USE type, const DOM_SID *sid)
+		    enum lsa_SidType type, const DOM_SID *sid)
 {
 	refresh_sequence_number(domain, False);
 	wcache_save_name_to_sid(domain, NT_STATUS_OK, domain_name, name,

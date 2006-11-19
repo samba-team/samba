@@ -32,7 +32,7 @@ static int net_sam_userset(int argc, const char **argv, const char *field,
 {
 	struct samu *sam_acct = NULL;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	const char *dom, *name;
 	NTSTATUS status;
 
@@ -127,7 +127,7 @@ static int net_sam_set_userflag(int argc, const char **argv, const char *field,
 {
 	struct samu *sam_acct = NULL;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	const char *dom, *name;
 	NTSTATUS status;
 	uint16 acct_flags;
@@ -215,7 +215,7 @@ static int net_sam_set_time(int argc, const char **argv, const char *field,
 {
 	struct samu *sam_acct = NULL;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	const char *dom, *name;
 	NTSTATUS status;
 	time_t new_time;
@@ -302,7 +302,7 @@ static int net_sam_set_comment(int argc, const char **argv)
 {
 	GROUP_MAP map;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	const char *dom, *name;
 	NTSTATUS status;
 
@@ -462,7 +462,7 @@ static int net_sam_createbuiltingroup(int argc, const char **argv)
 {
 	NTSTATUS status;
 	uint32 rid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	fstring groupname;
 	DOM_SID sid;
 
@@ -514,7 +514,7 @@ static int net_sam_addmem(int argc, const char **argv)
 {
 	const char *groupdomain, *groupname, *memberdomain, *membername;
 	DOM_SID group, member;
-	enum SID_NAME_USE grouptype, membertype;
+	enum lsa_SidType grouptype, membertype;
 	NTSTATUS status;
 
 	if (argc != 2) {
@@ -587,7 +587,7 @@ static int net_sam_delmem(int argc, const char **argv)
 	const char *memberdomain = NULL;
 	const char *membername = NULL;
 	DOM_SID group, member;
-	enum SID_NAME_USE grouptype;
+	enum lsa_SidType grouptype;
 	NTSTATUS status;
 
 	if (argc != 2) {
@@ -645,7 +645,7 @@ static int net_sam_listmem(int argc, const char **argv)
 {
 	const char *groupdomain, *groupname;
 	DOM_SID group;
-	enum SID_NAME_USE grouptype;
+	enum lsa_SidType grouptype;
 	NTSTATUS status;
 
 	if (argc != 1) {
@@ -793,7 +793,7 @@ static int net_sam_list(int argc, const char **argv)
 static int net_sam_show(int argc, const char **argv)
 {
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	const char *dom, *name;
 
 	if (argc != 1) {

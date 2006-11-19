@@ -436,7 +436,7 @@ static int smbacl4_fill_ace4(
 )
 {
 	const char *dom, *name;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	uid_t uid;
 	gid_t gid;
 

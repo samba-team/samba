@@ -426,7 +426,7 @@ static NTSTATUS find_forced_group(BOOL force_user,
 	NTSTATUS result = NT_STATUS_NO_SUCH_GROUP;
 	TALLOC_CTX *mem_ctx;
 	DOM_SID group_sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	char *groupname;
 	BOOL user_must_be_member = False;
 	gid_t gid;

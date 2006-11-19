@@ -4890,7 +4890,7 @@ inits a SAMR_R_LOOKUP_NAMES structure.
 
 NTSTATUS init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 			      uint32 num_rids,
-			      uint32 *rid, enum SID_NAME_USE *type,
+			      uint32 *rid, enum lsa_SidType *type,
 			      NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_lookup_names\n"));

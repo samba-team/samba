@@ -188,7 +188,7 @@ static int net_groupmap_add(int argc, const char **argv)
 	fstring string_sid = "";
 	fstring type = "";
 	fstring ntcomment = "";
-	enum SID_NAME_USE sid_type = SID_NAME_DOM_GRP;
+	enum lsa_SidType sid_type = SID_NAME_DOM_GRP;
 	uint32 rid = 0;	
 	gid_t gid;
 	int i;
@@ -338,7 +338,7 @@ static int net_groupmap_modify(int argc, const char **argv)
 	fstring ntgroup = "";
 	fstring unixgrp = "";
 	fstring sid_string = "";
-	enum SID_NAME_USE sid_type = SID_NAME_UNKNOWN;
+	enum lsa_SidType sid_type = SID_NAME_UNKNOWN;
 	int i;
 	gid_t gid;
 

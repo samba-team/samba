@@ -59,7 +59,7 @@ static BOOL fill_grent(struct winbindd_gr *gr, const char *dom_name,
 static BOOL fill_grent_mem(struct winbindd_domain *domain,
 			   struct winbindd_cli_state *state,
 			   DOM_SID *group_sid, 
-			   enum SID_NAME_USE group_name_type, 
+			   enum lsa_SidType group_name_type, 
 			   size_t *num_gr_mem, char **gr_mem, size_t *gr_mem_len)
 {
 	DOM_SID *sid_mem = NULL;
@@ -172,7 +172,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 			char *domainname = NULL;
 			char *username = NULL;
 			fstring name;
-			enum SID_NAME_USE type;
+			enum lsa_SidType type;
 
 			DEBUG(10,("fill_grent_mem: sid %s in 'Domain Users' in domain %s\n",
 				sid_to_string(sid_string, pquerying_user_sid), domain->name ));
@@ -315,7 +315,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	DOM_SID group_sid, tmp_sid;
 	uint32 grp_rid;
 	struct winbindd_domain *domain;
-	enum SID_NAME_USE name_type;
+	enum lsa_SidType name_type;
 	fstring name_domain, name_group;
 	char *tmp, *gr_mem;
 	size_t gr_mem_len;
@@ -443,7 +443,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 static void getgrgid_got_sid(struct winbindd_cli_state *state, DOM_SID group_sid)
 {
 	struct winbindd_domain *domain;
-	enum SID_NAME_USE name_type;
+	enum lsa_SidType name_type;
 	fstring dom_name;
 	fstring group_name;
 	size_t gr_mem_len;
@@ -503,7 +503,7 @@ static void getgrgid_got_sid(struct winbindd_cli_state *state, DOM_SID group_sid
 static void getgrgid_recv(void *private_data, BOOL success, const char *sid)
 {
 	struct winbindd_cli_state *state = talloc_get_type_abort(private_data, struct winbindd_cli_state);
-	enum SID_NAME_USE name_type;
+	enum lsa_SidType name_type;
 	DOM_SID group_sid;
 
 	if (success) {
@@ -858,7 +858,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid,
                                                     &group_gid, 0))) {
 			union unid_t id;
-			enum SID_NAME_USE type;
+			enum lsa_SidType type;
 
 			DEBUG(10, ("SID %s not in idmap\n",
 				   sid_string_static(&group_sid)));
@@ -1114,7 +1114,7 @@ struct getgroups_state {
 };
 
 static void getgroups_usersid_recv(void *private_data, BOOL success,
-				   const DOM_SID *sid, enum SID_NAME_USE type);
+				   const DOM_SID *sid, enum lsa_SidType type);
 static void getgroups_tokensids_recv(void *private_data, BOOL success,
 				     DOM_SID *token_sids, size_t num_token_sids);
 static void getgroups_sid2gid_recv(void *private_data, BOOL success, gid_t gid);
@@ -1184,7 +1184,7 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 }
 
 static void getgroups_usersid_recv(void *private_data, BOOL success,
-				   const DOM_SID *sid, enum SID_NAME_USE type)
+				   const DOM_SID *sid, enum lsa_SidType type)
 {
 	struct getgroups_state *s =
 		(struct getgroups_state *)private_data;

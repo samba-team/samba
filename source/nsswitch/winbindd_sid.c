@@ -30,7 +30,7 @@
 
 static void lookupsid_recv(void *private_data, BOOL success,
 			   const char *dom_name, const char *name,
-			   enum SID_NAME_USE type);
+			   enum lsa_SidType type);
 
 void winbindd_lookupsid(struct winbindd_cli_state *state)
 {
@@ -53,7 +53,7 @@ void winbindd_lookupsid(struct winbindd_cli_state *state)
 
 static void lookupsid_recv(void *private_data, BOOL success,
 			   const char *dom_name, const char *name,
-			   enum SID_NAME_USE type)
+			   enum lsa_SidType type)
 {
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
@@ -75,7 +75,7 @@ static void lookupsid_recv(void *private_data, BOOL success,
  **/
 
 static void lookupname_recv(void *private_data, BOOL success,
-			    const DOM_SID *sid, enum SID_NAME_USE type);
+			    const DOM_SID *sid, enum lsa_SidType type);
 
 void winbindd_lookupname(struct winbindd_cli_state *state)
 {
@@ -107,7 +107,7 @@ void winbindd_lookupname(struct winbindd_cli_state *state)
 }
 
 static void lookupname_recv(void *private_data, BOOL success,
-			    const DOM_SID *sid, enum SID_NAME_USE type)
+			    const DOM_SID *sid, enum lsa_SidType type)
 {
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
@@ -287,14 +287,14 @@ struct uid2sid_state {
 	uid_t uid;
 	fstring name;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 };
 
 static void uid2sid_uid2name_recv(void *private_data, BOOL success,
 				  const char *username);
 static void uid2sid_lookupname_recv(void *private_data, BOOL success,
 				    const DOM_SID *sid,
-				    enum SID_NAME_USE type);
+				    enum lsa_SidType type);
 static void uid2sid_idmap_set_mapping_recv(void *private_data, BOOL success);
 
 static void uid2sid_recv(void *private_data, BOOL success, const char *sid);
@@ -394,7 +394,7 @@ static void uid2sid_uid2name_recv(void *private_data, BOOL success,
 }
 
 static void uid2sid_lookupname_recv(void *private_data, BOOL success,
-				    const DOM_SID *sid, enum SID_NAME_USE type)
+				    const DOM_SID *sid, enum lsa_SidType type)
 {
 	struct uid2sid_state *state =
 		talloc_get_type_abort(private_data, struct uid2sid_state);
@@ -432,14 +432,14 @@ struct gid2sid_state {
 	gid_t gid;
 	fstring name;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 };
 
 static void gid2sid_gid2name_recv(void *private_data, BOOL success,
 				  const char *groupname);
 static void gid2sid_lookupname_recv(void *private_data, BOOL success,
 				    const DOM_SID *sid,
-				    enum SID_NAME_USE type);
+				    enum lsa_SidType type);
 static void gid2sid_idmap_set_mapping_recv(void *private_data, BOOL success);
 
 static void gid2sid_recv(void *private_data, BOOL success, const char *sid);
@@ -542,7 +542,7 @@ static void gid2sid_gid2name_recv(void *private_data, BOOL success,
 }
 
 static void gid2sid_lookupname_recv(void *private_data, BOOL success,
-				    const DOM_SID *sid, enum SID_NAME_USE type)
+				    const DOM_SID *sid, enum lsa_SidType type)
 {
 	struct gid2sid_state *state =
 		talloc_get_type_abort(private_data, struct gid2sid_state);

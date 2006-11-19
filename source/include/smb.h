@@ -254,7 +254,7 @@ typedef struct nttime_info {
 #define SID_MAX_SIZE ((size_t)(8+(MAXSUBAUTHS*4)))
 
 /* SID Types */
-enum SID_NAME_USE {
+enum lsa_SidType {
 	SID_NAME_USE_NONE = 0,
 	SID_NAME_USER    = 1, /* user */
 	SID_NAME_DOM_GRP,     /* domain group */
@@ -302,7 +302,7 @@ struct lsa_dom_info {
 
 struct lsa_name_info {
 	uint32 rid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	const char *name;
 	int dom_idx;
 };
@@ -1844,14 +1844,19 @@ struct ea_list {
 /* EA to use for DOS attributes */
 #define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
 
-struct uuid {
-	uint32 time_low;
-	uint16 time_mid;
-	uint16 time_hi_and_version;
-	uint8  clock_seq[2];
-	uint8  node[6];
-};
 #define UUID_SIZE 16
+struct GUID {
+	uint32_t time_low;
+	uint16_t time_mid;
+	uint16_t time_hi_and_version;
+	uint8_t clock_seq[2];
+	uint8_t node[6];
+}/* [noprint,gensize,public,noejs] */;
+
+struct policy_handle {
+	uint32_t handle_type;
+	struct GUID uuid;
+}/* [public] */;
 
 #define UUID_FLAT_SIZE 16
 typedef struct uuid_flat {

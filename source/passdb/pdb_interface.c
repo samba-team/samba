@@ -46,7 +46,7 @@ static void lazy_initialize_passdb(void)
 
 static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 				  const char **name,
-				  enum SID_NAME_USE *psid_name_use,
+				  enum lsa_SidType *psid_name_use,
 				  union unid_t *unix_id);
 
 NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function init) 
@@ -663,7 +663,7 @@ NTSTATUS pdb_delete_group_mapping_entry(DOM_SID sid)
 	return pdb->delete_group_mapping_entry(pdb, sid);
 }
 
-BOOL pdb_enum_group_mapping(const DOM_SID *sid, enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
+BOOL pdb_enum_group_mapping(const DOM_SID *sid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
 			    size_t *p_num_entries, BOOL unix_only)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
@@ -1002,7 +1002,7 @@ BOOL pdb_gid_to_sid(gid_t gid, DOM_SID *sid)
 }
 
 BOOL pdb_sid_to_id(const DOM_SID *sid, union unid_t *id,
-		   enum SID_NAME_USE *type)
+		   enum lsa_SidType *type)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->sid_to_id(pdb, sid, id, type);
@@ -1025,7 +1025,7 @@ BOOL pdb_new_rid(uint32 *rid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	const char *name = NULL;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	uint32 allocated_rid = 0;
 	int i;
 	TALLOC_CTX *ctx;
@@ -1220,7 +1220,7 @@ static BOOL pdb_default_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 
 static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 				  const DOM_SID *sid,
-				  union unid_t *id, enum SID_NAME_USE *type)
+				  union unid_t *id, enum lsa_SidType *type)
 {
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = False;
@@ -1434,7 +1434,7 @@ NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 
 static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 				  const char **name,
-				  enum SID_NAME_USE *psid_name_use,
+				  enum lsa_SidType *psid_name_use,
 				  union unid_t *unix_id)
 {
 	struct samu *sam_account = NULL;
@@ -1805,7 +1805,7 @@ static void search_end_groups(struct pdb_search *search)
 }
 
 static BOOL pdb_search_grouptype(struct pdb_search *search,
-				 const DOM_SID *sid, enum SID_NAME_USE type)
+				 const DOM_SID *sid, enum lsa_SidType type)
 {
 	struct group_search *state;
 

@@ -193,7 +193,7 @@ static BOOL msg_to_group_map(struct ldb_message *msg, GROUP_MAP *map)
 
 	if (!string_to_sid(&map->sid, sidstr) ||
 	    map->gid == (gid_t)-1 ||
-	    map->sid_name_use == (enum SID_NAME_USE)-1) {
+	    map->sid_name_use == (enum lsa_SidType)-1) {
 		DEBUG(0,("Unable to unpack group mapping\n"));
 		return False;
 	}
@@ -320,7 +320,7 @@ failed:
 /*
   Enumerate the group mappings for a domain
 */
- BOOL enum_group_mapping(const DOM_SID *domsid, enum SID_NAME_USE sid_name_use, 
+ BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, 
 			 GROUP_MAP **pp_rmap,
 			 size_t *p_num_entries, BOOL unix_only)
 {

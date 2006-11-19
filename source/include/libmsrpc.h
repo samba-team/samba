@@ -704,7 +704,7 @@ struct LsaQueryInfoPolicy {
       char *forest_name;
 
       /**remote server's domain guid*/
-      struct uuid *domain_guid;
+      struct GUID *domain_guid;
 
       /**remote server's domain SID*/
       DOM_SID *domain_sid;

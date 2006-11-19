@@ -135,7 +135,7 @@ uint32 ads_gtype2atype(uint32 gtype)
 }
 
 /* turn a sAMAccountType into a SID_NAME_USE */
-enum SID_NAME_USE ads_atype_map(uint32 atype)
+enum lsa_SidType ads_atype_map(uint32 atype)
 {
 	switch (atype & 0xF0000000) {
 	case ATYPE_GLOBAL_GROUP:

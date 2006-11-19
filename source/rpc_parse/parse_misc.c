@@ -288,10 +288,10 @@ BOOL smb_io_dom_sid2(const char *desc, DOM_SID2 *sid, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Reads or writes a struct uuid
+ Reads or writes a struct GUID
 ********************************************************************/
 
-BOOL smb_io_uuid(const char *desc, struct uuid *uuid, 
+BOOL smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth)
 {
 	if (uuid == NULL)
@@ -518,7 +518,7 @@ BOOL smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
 
 size_t create_rpc_blob(RPC_DATA_BLOB *str, size_t len)
 {
-	str->buffer = TALLOC_ZERO(get_talloc_ctx(), len);
+	str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(), len);
 	if (str->buffer == NULL)
 		smb_panic("create_rpc_blob: talloc fail\n");
 	return len;
@@ -617,7 +617,8 @@ void init_regval_buffer(REGVAL_BUFFER *str, const uint8 *buf, size_t len)
 
 	if (buf != NULL) {
 		SMB_ASSERT(str->buf_max_len >= str->buf_len);
-		str->buffer = TALLOC_ZERO(get_talloc_ctx(), str->buf_max_len);
+		str->buffer = (uint16 *)TALLOC_ZERO(get_talloc_ctx(),
+						    str->buf_max_len);
 		if (str->buffer == NULL)
 			smb_panic("init_regval_buffer: talloc fail\n");
 		memcpy(str->buffer, buf, str->buf_len);
@@ -723,7 +724,8 @@ void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len)
 
 	/* store the string */
 	if(str_len != 0) {
-		str->buffer = TALLOC_ZERO(get_talloc_ctx(), str->str_max_len);
+		str->buffer = (uint8 *)TALLOC_ZERO(get_talloc_ctx(),
+						   str->str_max_len);
 		if (str->buffer == NULL)
 			smb_panic("init_string2: malloc fail\n");
 		memcpy(str->buffer, buf, str_len);
@@ -1690,15 +1692,9 @@ BOOL smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth
 	if(UNMARSHALLING(ps))
 		ZERO_STRUCTP(pol);
 	
-	if (!prs_uint32("data1", ps, depth, &pol->data1))
+	if (!prs_uint32("handle_type", ps, depth, &pol->handle_type))
 		return False;
-	if (!prs_uint32("data2", ps, depth, &pol->data2))
-		return False;
-	if (!prs_uint16("data3", ps, depth, &pol->data3))
-		return False;
-	if (!prs_uint16("data4", ps, depth, &pol->data4))
-		return False;
-	if(!prs_uint8s (False, "data5", ps, depth, pol->data5, sizeof(pol->data5)))
+	if (!smb_io_uuid("uuid", (struct GUID*)&pol->uuid, ps, depth))
 		return False;
 
 	return True;

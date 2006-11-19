@@ -52,7 +52,7 @@ static void add_expanded_sid(const DOM_SID *sid, char **pp_members, size_t *p_nu
 
 	char *domain_name = NULL;
 	char *name = NULL;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 
 	uint32 num_names;
 	DOM_SID *sid_mem;
@@ -241,7 +241,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    const char *domain_name,
 			    const char *name,
 			    DOM_SID *sid,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	DEBUG(10, ("Finding name %s\n", name));
 
@@ -262,7 +262,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    const DOM_SID *sid,
 			    char **domain_name,
 			    char **name,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	const char *dom, *nam;
 
@@ -293,7 +293,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 			      size_t num_rids,
 			      char **domain_name,
 			      char ***names,
-			      enum SID_NAME_USE **types)
+			      enum lsa_SidType **types)
 {
 	return NT_STATUS_UNSUCCESSFUL;
 }

@@ -382,7 +382,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				}
 #ifdef HAVE_ADS
 				else {
-					struct uuid domain_guid;
+					struct GUID domain_guid;
 					UUID_FLAT flat_guid;
 					pstring domain;
 					pstring hostname;

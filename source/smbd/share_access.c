@@ -71,7 +71,7 @@ static BOOL token_contains_name(TALLOC_CTX *mem_ctx,
 {
 	const char *prefix;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 
 	if (username != NULL) {
 		name = talloc_sub_basic(mem_ctx, username, name);

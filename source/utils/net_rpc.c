@@ -1330,7 +1330,7 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID sid;
 	uint32 rid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 
 	if (argc == 0) {
 		d_fprintf(stderr, "usage: %s <username>\n", ctx->whoami);
@@ -2008,7 +2008,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 				TALLOC_CTX *mem_ctx,
 				const char *name,
 				DOM_SID *sid,
-				enum SID_NAME_USE *type)
+				enum lsa_SidType *type)
 {
 	DOM_SID *sids = NULL;
 	uint32 *types = NULL;
@@ -2131,7 +2131,7 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	POLICY_HND alias_pol;
 
 	DOM_SID member_sid;
-	enum SID_NAME_USE member_type;
+	enum lsa_SidType member_type;
 
 	DOM_SID sid;
 
@@ -2192,7 +2192,7 @@ static NTSTATUS rpc_group_addmem_internals(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	DOM_SID group_sid;
-	enum SID_NAME_USE group_type;
+	enum lsa_SidType group_type;
 
 	if (argc != 2) {
 		d_printf("Usage: 'net rpc group addmem <group> <member>\n");
@@ -2308,7 +2308,7 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	POLICY_HND alias_pol;
 
 	DOM_SID member_sid;
-	enum SID_NAME_USE member_type;
+	enum lsa_SidType member_type;
 
 	DOM_SID sid;
 
@@ -2366,7 +2366,7 @@ static NTSTATUS rpc_group_delmem_internals(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	DOM_SID group_sid;
-	enum SID_NAME_USE group_type;
+	enum lsa_SidType group_type;
 
 	if (argc != 2) {
 		d_printf("Usage: 'net rpc group delmem <group> <member>\n");

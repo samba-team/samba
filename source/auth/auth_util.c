@@ -776,7 +776,7 @@ static NTSTATUS create_builtin_administrators( void )
 	NTSTATUS status;
 	DOM_SID dom_admins, root_sid;
 	fstring root_name;
-	enum SID_NAME_USE type;		
+	enum lsa_SidType type;		
 	TALLOC_CTX *ctx;
 	BOOL ret;
 
@@ -1063,7 +1063,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	NTSTATUS result = NT_STATUS_NO_SUCH_USER;
 	TALLOC_CTX *tmp_ctx;
 	DOM_SID user_sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	gid_t *gids;
 	DOM_SID primary_group_sid;
 	DOM_SID *group_sids;

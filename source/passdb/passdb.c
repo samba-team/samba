@@ -551,7 +551,7 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
  ********************************************************************/
 
 BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	GROUP_MAP map;
 	BOOL ret;

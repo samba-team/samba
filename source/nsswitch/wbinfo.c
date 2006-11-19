@@ -647,7 +647,7 @@ static BOOL wbinfo_lookuprids(char *domain_sid, char *arg)
 	const char *p;
 	char ridstr[32];
 	const char **names;
-	enum SID_NAME_USE *types;
+	enum lsa_SidType *types;
 	const char *domain_name;
 	TALLOC_CTX *mem_ctx;
 

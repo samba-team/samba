@@ -1965,7 +1965,7 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	size_t i;
 	NTSTATUS result;
 	DOM_SID user_sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	TALLOC_CTX *mem_ctx;
 
 	*rparam_len = 8;

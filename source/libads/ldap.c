@@ -2134,7 +2134,7 @@ BOOL ads_pull_uint32(ADS_STRUCT *ads,
  * @return boolean indicating success
  **/
 BOOL ads_pull_guid(ADS_STRUCT *ads,
-		   void *msg, struct uuid *guid)
+		   void *msg, struct GUID *guid)
 {
 	char **values;
 	UUID_FLAT flat_guid;

@@ -241,11 +241,11 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 			    const char *domain_name,
 			    const char *name,
 			    DOM_SID *sid,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	NTSTATUS result;
 	DOM_SID *sids = NULL;
-	enum SID_NAME_USE *types = NULL;
+	enum lsa_SidType *types = NULL;
 	const char *full_name;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
@@ -290,11 +290,11 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 			    const DOM_SID *sid,
 			    char **domain_name,
 			    char **name,
-			    enum SID_NAME_USE *type)
+			    enum lsa_SidType *type)
 {
 	char **domains;
 	char **names;
-	enum SID_NAME_USE *types;
+	enum lsa_SidType *types;
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
@@ -311,7 +311,7 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	*type = (enum SID_NAME_USE)types[0];
+	*type = (enum lsa_SidType)types[0];
 	*domain_name = domains[0];
 	*name = names[0];
 	DEBUG(5,("Mapped sid to [%s]\\[%s]\n", domains[0], *name));
@@ -325,7 +325,7 @@ NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 			     size_t num_rids,
 			     char **domain_name,
 			     char ***names,
-			     enum SID_NAME_USE **types)
+			     enum lsa_SidType **types)
 {
 	char **domains;
 	NTSTATUS result;

@@ -3233,8 +3233,8 @@ BOOL net_io_r_sam_deltas(const char *desc,
 
 void init_net_q_dsr_getdcname(NET_Q_DSR_GETDCNAME *r_t, const char *server_unc,
 			      const char *domain_name,
-			      struct uuid *domain_guid,
-			      struct uuid *site_guid,
+			      struct GUID *domain_guid,
+			      struct GUID *site_guid,
 			      uint32_t flags)
 {
 	DEBUG(5, ("init_net_q_dsr_getdcname\n"));
@@ -3291,7 +3291,7 @@ BOOL net_io_q_dsr_getdcname(const char *desc, NET_Q_DSR_GETDCNAME *r_t,
 		return False;
 
 	if (UNMARSHALLING(ps) && (r_t->ptr_domain_guid)) {
-		r_t->domain_guid = PRS_ALLOC_MEM(ps, struct uuid, 1);
+		r_t->domain_guid = PRS_ALLOC_MEM(ps, struct GUID, 1);
 		if (r_t->domain_guid == NULL)
 			return False;
 	}
@@ -3307,7 +3307,7 @@ BOOL net_io_q_dsr_getdcname(const char *desc, NET_Q_DSR_GETDCNAME *r_t,
 		return False;
 
 	if (UNMARSHALLING(ps) && (r_t->ptr_site_guid)) {
-		r_t->site_guid = PRS_ALLOC_MEM(ps, struct uuid, 1);
+		r_t->site_guid = PRS_ALLOC_MEM(ps, struct GUID, 1);
 		if (r_t->site_guid == NULL)
 			return False;
 	}
@@ -3330,7 +3330,7 @@ BOOL net_io_q_dsr_getdcname(const char *desc, NET_Q_DSR_GETDCNAME *r_t,
 ********************************************************************/
 void init_net_r_dsr_getdcname(NET_R_DSR_GETDCNAME *r_t, const char *dc_unc,
 			      const char *dc_address, int32 dc_address_type,
-			      struct uuid domain_guid, const char *domain_name,
+			      struct GUID domain_guid, const char *domain_name,
 			      const char *forest_name, uint32 dc_flags,
 			      const char *dc_site_name,
 			      const char *client_site_name)

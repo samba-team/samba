@@ -76,7 +76,7 @@ typedef struct netdfs_dfs_Info4 {
 	UNISTR2 comment;
 	uint32 state;
 	uint32 timeout;
-	struct uuid guid;
+	struct GUID guid;
 	uint32 num_stores;
 	uint32 ptr0_stores;
 	uint32 size_stores;

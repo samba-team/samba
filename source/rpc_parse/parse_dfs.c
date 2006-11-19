@@ -340,7 +340,7 @@ BOOL netdfs_io_dfs_Info3_d(const char *desc, NETDFS_DFS_INFO3 *v, prs_struct *ps
 	return True;
 }
 
-BOOL init_netdfs_dfs_Info4(NETDFS_DFS_INFO4 *v, const char *path, const char *comment, uint32 state, uint32 timeout, struct uuid guid, uint32 num_stores, NETDFS_DFS_STORAGEINFO **stores)
+BOOL init_netdfs_dfs_Info4(NETDFS_DFS_INFO4 *v, const char *path, const char *comment, uint32 state, uint32 timeout, struct GUID guid, uint32 num_stores, NETDFS_DFS_STORAGEINFO **stores)
 {
 	DEBUG(5,("init_netdfs_dfs_Info4\n"));
 	

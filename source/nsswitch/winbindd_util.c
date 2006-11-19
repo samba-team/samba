@@ -690,7 +690,7 @@ BOOL winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
 				 struct winbindd_domain *domain, 
 				 const char *domain_name,
 				 const char *name, DOM_SID *sid, 
-				 enum SID_NAME_USE *type)
+				 enum lsa_SidType *type)
 {
 	NTSTATUS result;
 
@@ -720,7 +720,7 @@ BOOL winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
 				 DOM_SID *sid,
 				 fstring dom_name,
 				 fstring name,
-				 enum SID_NAME_USE *type)
+				 enum lsa_SidType *type)
 {
 	char *names;
 	char *dom_names;

@@ -213,7 +213,7 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 	}
 	
 	if ( pdb_gid_to_sid(pwd->pw_gid, gsid) ) {
-		enum SID_NAME_USE type = SID_NAME_UNKNOWN;
+		enum lsa_SidType type = SID_NAME_UNKNOWN;
 		TALLOC_CTX *mem_ctx = talloc_init("pdb_get_group_sid");
 		BOOL lookup_ret;
 		

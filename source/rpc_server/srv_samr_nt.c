@@ -1471,7 +1471,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOKUP_NAMES *r_u)
 {
 	uint32 rid[MAX_SAM_ENTRIES];
-	enum SID_NAME_USE type[MAX_SAM_ENTRIES];
+	enum lsa_SidType type[MAX_SAM_ENTRIES];
 	int i;
 	int num_rids = q_u->num_names2;
 	DOM_SID pol_sid;
@@ -1712,7 +1712,7 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
 NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
 {
 	const char **names;
-	enum SID_NAME_USE *attrs = NULL;
+	enum lsa_SidType *attrs = NULL;
 	uint32 *wire_attrs = NULL;
 	UNIHDR *hdr_name = NULL;
 	UNISTR2 *uni_name = NULL;
@@ -1736,7 +1736,7 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	}
 
 	names = TALLOC_ZERO_ARRAY(p->mem_ctx, const char *, num_rids);
-	attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, enum SID_NAME_USE, num_rids);
+	attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, enum lsa_SidType, num_rids);
 	wire_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids);
 
 	if ((num_rids != 0) && ((names == NULL) || (attrs == NULL) || (wire_attrs==NULL)))
@@ -1755,7 +1755,7 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 				  &hdr_name, &uni_name))
 		return NT_STATUS_NO_MEMORY;
 
-	/* Convert from enum SID_NAME_USE to uint32 for wire format. */
+	/* Convert from enum lsa_SidType to uint32 for wire format. */
 	for (i = 0; i < num_rids; i++) {
 		wire_attrs[i] = (uint32)attrs[i];
 	}
@@ -2485,7 +2485,7 @@ NTSTATUS _samr_query_domain_info(pipes_struct *p,
 
 static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
 {
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	BOOL result;
 
 	DEBUG(10, ("Checking whether [%s] can be created\n", new_name));
@@ -3027,7 +3027,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 
 	{
 		/* Check we actually have the requested alias */
-		enum SID_NAME_USE type;
+		enum lsa_SidType type;
 		BOOL result;
 		gid_t gid;
 

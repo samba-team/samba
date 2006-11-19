@@ -33,7 +33,7 @@
 BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		 const char *full_name, int flags,
 		 const char **ret_domain, const char **ret_name,
-		 DOM_SID *ret_sid, enum SID_NAME_USE *ret_type)
+		 DOM_SID *ret_sid, enum lsa_SidType *ret_type)
 {
 	char *p;
 	const char *tmp;
@@ -41,7 +41,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	const char *name = NULL;
 	uint32 rid;
 	DOM_SID sid;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	if (tmp_ctx == NULL) {
@@ -232,7 +232,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	if (IS_DC && winbind_lookup_name("", name, &sid, &type)) {
 		DOM_SID dom_sid;
 		uint32 tmp_rid;
-		enum SID_NAME_USE domain_type;
+		enum lsa_SidType domain_type;
 		
 		if (type == SID_NAME_DOMAIN) {
 			/* Swap name and type */
@@ -332,7 +332,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 BOOL lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 		 const char *full_name, int flags,
 		 const char **ret_domain, const char **ret_name,
-		 DOM_SID *ret_sid, enum SID_NAME_USE *ret_type)
+		 DOM_SID *ret_sid, enum lsa_SidType *ret_type)
 {
 	char *qualified_name;
 	const char *p;
@@ -397,7 +397,7 @@ static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
 {
 	int i;
 	const char **my_names;
-	enum SID_NAME_USE *my_types;
+	enum lsa_SidType *my_types;
 	TALLOC_CTX *tmp_ctx;
 
 	if (!(tmp_ctx = talloc_init("wb_lookup_rids"))) {
@@ -435,12 +435,12 @@ static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
 static BOOL lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 			int num_rids, uint32_t *rids,
 			const char **domain_name,
-			const char ***names, enum SID_NAME_USE **types)
+			const char ***names, enum lsa_SidType **types)
 {
 	int i;
 
 	*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
-	*types = TALLOC_ARRAY(mem_ctx, enum SID_NAME_USE, num_rids);
+	*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
 
 	if ((*names == NULL) || (*types == NULL)) {
 		return False;
@@ -549,7 +549,7 @@ static BOOL lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
 			     const char **name)
 {
 	const char *tmp;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 
 	if (sid_check_is_domain(sid)) {
 		*name = talloc_strdup(mem_ctx, get_global_sam_name());
@@ -809,7 +809,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 		uint32_t *rids;
 		const char *domain_name = NULL;
 		const char **names;
-		enum SID_NAME_USE *types;
+		enum lsa_SidType *types;
 		struct lsa_dom_info *dom = &dom_infos[i];
 
 		if (!dom->valid) {
@@ -871,7 +871,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 
 BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		const char **ret_domain, const char **ret_name,
-		enum SID_NAME_USE *ret_type)
+		enum lsa_SidType *ret_type)
 {
 	struct lsa_dom_info *domain;
 	struct lsa_name_info *name;
@@ -941,14 +941,14 @@ static struct uid_sid_cache {
 	struct uid_sid_cache *next, *prev;
 	uid_t uid;
 	DOM_SID sid;
-	enum SID_NAME_USE sidtype;
+	enum lsa_SidType sidtype;
 } *uid_sid_cache_head;
 
 static struct gid_sid_cache {
 	struct gid_sid_cache *next, *prev;
 	gid_t gid;
 	DOM_SID sid;
-	enum SID_NAME_USE sidtype;
+	enum lsa_SidType sidtype;
 } *gid_sid_cache_head;
 
 /*****************************************************************
@@ -1206,7 +1206,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 
 BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	uint32 rid;
 	gid_t gid;
 
@@ -1288,7 +1288,7 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	uint32 rid;
 	GROUP_MAP map;
 	union unid_t id;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 	uid_t uid;
 
 	if (fetch_gid_from_cache(pgid, psid))

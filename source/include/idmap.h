@@ -29,9 +29,10 @@
 
 #define IDMAP_VERSION 2
 
-#define SMB_IDMAP_INTERFACE_VERSION	2
+/* The interface version specifier. 
+   Updated to 3 for enum types by JRA. */
 
-
+#define SMB_IDMAP_INTERFACE_VERSION	3
 
 enum idmap_type { ID_USERID, ID_GROUPID };
 

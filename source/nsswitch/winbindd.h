@@ -60,7 +60,7 @@ struct sid_ctr {
 	BOOL finished;
 	const char *domain;
 	const char *name;
-	enum SID_NAME_USE type;
+	enum lsa_SidType type;
 };
 
 struct winbindd_cli_state {
@@ -241,7 +241,7 @@ struct winbindd_methods {
 				const char *domain_name,
 				const char *name,
 				DOM_SID *sid,
-				enum SID_NAME_USE *type);
+				enum lsa_SidType *type);
 
 	/* convert a sid to a user or group name */
 	NTSTATUS (*sid_to_name)(struct winbindd_domain *domain,
@@ -249,7 +249,7 @@ struct winbindd_methods {
 				const DOM_SID *sid,
 				char **domain_name,
 				char **name,
-				enum SID_NAME_USE *type);
+				enum lsa_SidType *type);
 
 	NTSTATUS (*rids_to_names)(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
@@ -258,7 +258,7 @@ struct winbindd_methods {
 				  size_t num_rids,
 				  char **domain_name,
 				  char ***names,
-				  enum SID_NAME_USE **types);
+				  enum lsa_SidType **types);
 
 	/* lookup user info for a given SID */
 	NTSTATUS (*query_user)(struct winbindd_domain *domain, 
