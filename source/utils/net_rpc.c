@@ -3020,8 +3020,8 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 	uint32 type = STYPE_DISKTREE; /* only allow disk shares to be added */
 	uint32 num_users=0, perms=0;
 	char *password=NULL; /* don't allow a share password */
-	uint32 level = 2; 
-	uint32 parm_error;
+	uint32 level = 2;
+	uint32 *pparm_error = NULL;
 	union srvsvc_NetShareInfo info;
 	struct srvsvc_NetShareInfo2 info2;
 
@@ -3046,7 +3046,7 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 	info2.name = sharename;
 
 	result = rpccli_srvsvc_NetShareAdd(pipe_hnd, mem_ctx, NULL, level, 
-									   info, &parm_error);
+					   info, &pparm_error);
 	return result;
 }
 
@@ -3158,9 +3158,11 @@ static NTSTATUS get_share_info(struct rpc_pipe_client *pipe_hnd,
 	/* no specific share requested, enumerate all */
 	if (argc == 0) {
 		uint32 hnd = 0;
+		uint32 *phnd = &hnd;
 
-		return rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, NULL, &level, ctr, 
-						 0xffffffff, numentries, &hnd);
+		return rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, NULL,
+						  &level, ctr, 0xffffffff,
+						  numentries, &phnd);
 	}
 
 	/* request just one share */
@@ -3328,7 +3330,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
 
 
 	for (i = 0; i < numentries; i++) {
-		uint32 parm_error;
+		uint32 *pparm_error = NULL;
 		union srvsvc_NetShareInfo info;
 
 		/* reset error-code */
@@ -3349,7 +3351,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
 		info.info502 = &ctr_src.ctr502->array[i];
 
 		result = rpccli_srvsvc_NetShareAdd(srvsvc_pipe, mem_ctx, NULL, 
-										   502, info, &parm_error);
+						   502, info, &pparm_error);
 	
                 if (NT_STATUS_EQUAL(result, NT_STATUS_OBJECT_NAME_COLLISION)) {
 			printf("           [%s] does already exist\n", ctr_src.ctr502->array[i].name);
@@ -3724,7 +3726,7 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
 	struct cli_state *cli_dst = NULL;
 	uint32 level = 502; /* includes secdesc */
 	uint32 numentries;
-	uint32 parm_error;
+	uint32 *parm_error = NULL;
 
 	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src,
 							&numentries);
@@ -3757,9 +3759,9 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
 		ZERO_STRUCT(info);
 
 		/* finally modify the share on the dst server */
-		result = rpccli_srvsvc_NetShareSetInfo(srvsvc_pipe, mem_ctx, NULL,
-											   argv[0], level, info,
-											   &parm_error);
+		result = rpccli_srvsvc_NetShareSetInfo(
+			srvsvc_pipe, mem_ctx, NULL, argv[0], level, info,
+			&parm_error);
 	
 		if (!NT_STATUS_IS_OK(result)) {
 			printf("cannot set share-acl: %s\n", nt_errstr(result));
@@ -4691,7 +4693,7 @@ static NTSTATUS rpc_sh_share_add(TALLOC_CTX *mem_ctx,
 	union srvsvc_NetShareInfo info;
 	struct srvsvc_NetShareInfo2 info2;
 	NTSTATUS result;
-	uint32 parm_error;
+	uint32 *parm_error = NULL;
 
 	if ((argc < 2) || (argc > 3)) {
 		d_fprintf(stderr, "usage: %s <share> <path> [comment]\n",
@@ -4873,6 +4875,7 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 	union srvsvc_NetFileCtr ctr;
 	NTSTATUS result;
 	uint32 hnd;
+	uint32 *phnd = &hnd;
 	uint32 preferred_len = 0xffffffff, i;
 	const char *username=NULL;
 	uint32 level = 3;
@@ -4884,8 +4887,9 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 	if (argc > 0)
 		username = smb_xstrdup(argv[0]);
 		
-	result = rpccli_srvsvc_NetFileEnum(pipe_hnd,
-					mem_ctx, NULL, NULL, username, &level, &ctr, preferred_len, &numentries, &hnd);
+	result = rpccli_srvsvc_NetFileEnum(pipe_hnd, mem_ctx, NULL, NULL,
+					   username, &level, &ctr,
+					   preferred_len, &numentries, &phnd);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
