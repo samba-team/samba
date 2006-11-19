@@ -143,7 +143,7 @@ static int open_cred_file(char * file_name)
 	fs = fopen(file_name,"r");
 	if(fs == NULL)
 		return errno;
-	line_buf = malloc(4096);
+	line_buf = (char *)malloc(4096);
 	if(line_buf == NULL) {
 		fclose(fs);
 		return -ENOMEM;
@@ -176,7 +176,7 @@ static int open_cred_file(char * file_name)
 					exit(1);
 				} else {
 					got_user = 1;
-					user_name = calloc(1 + length,1);
+					user_name = (char *)calloc(1 + length,1);
 					/* BB adding free of user_name string before exit,
 						not really necessary but would be cleaner */
 					strncpy(user_name,temp_val, length);
@@ -200,7 +200,7 @@ static int open_cred_file(char * file_name)
 					exit(1);
 				} else {
 					if(mountpassword == NULL) {
-						mountpassword = calloc(65,1);
+						mountpassword = (char *)calloc(65,1);
 					} else
 						memset(mountpassword,0,64);
 					if(mountpassword) {
@@ -228,7 +228,7 @@ static int open_cred_file(char * file_name)
                                         exit(1);
                                 } else {
                                         if(domain_name == NULL) {
-                                                domain_name = calloc(65,1);
+                                                domain_name = (char *)calloc(65,1);
                                         } else
                                                 memset(domain_name,0,64);
                                         if(domain_name) {
@@ -255,7 +255,7 @@ static int get_password_from_file(int file_descript, char * filename)
 	char c;
 
 	if(mountpassword == NULL)
-		mountpassword = calloc(65,1);
+		mountpassword = (char *)calloc(65,1);
 	else 
 		memset(mountpassword, 0, 64);
 
@@ -374,7 +374,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 					if(percent_char) {
 						*percent_char = ',';
 						if(mountpassword == NULL)
-							mountpassword = calloc(65,1);
+							mountpassword = (char *)calloc(65,1);
 						if(mountpassword) {
 							if(got_password)
 								printf("\nmount.cifs warning - password specified twice\n");
@@ -596,7 +596,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 		if (value)
 			word_len += 1 + strlen(value);
 
-		out = realloc(out, out_len + word_len + 2);
+		out = (char *)realloc(out, out_len + word_len + 2);
 		if (out == NULL) {
 			perror("malloc");
 			exit(1);
@@ -646,7 +646,7 @@ static void check_for_comma(char ** ppasswrd)
 		return;
 	}
 
-	new_pass_buf = malloc(len+number_of_commas+1);
+	new_pass_buf = (char *)malloc(len+number_of_commas+1);
 	if(new_pass_buf == NULL)
 		return;
 
@@ -710,7 +710,7 @@ static char * check_for_domain(char **ppuser)
 	len = strlen(domainnm);
 	/* reset domainm to new buffer, and copy
 	domain name into it */
-	domainnm = malloc(len+1);
+	domainnm = (char *)malloc(len+1);
 	if(domainnm == NULL)
 		return NULL;
 
@@ -769,7 +769,7 @@ static char * parse_server(char ** punc_name)
 			share = strchr(unc_name,':');
 			if(share) {
 				free_share_name = 1;
-				*punc_name = malloc(length+3);
+				*punc_name = (char *)malloc(length+3);
 				if(*punc_name == NULL) {
 					/* put the original string back  if 
 					   no memory left */
@@ -935,10 +935,20 @@ int main(int argc, char ** argv)
 		    ++nomtab;
 		    break;
 		case 'b':
+#ifdef MS_BIND
 			flags |= MS_BIND;
+#else
+			fprintf(stderr,
+				"option 'b' (MS_BIND) not supported\n");
+#endif
 			break;
 		case 'm':
+#ifdef MS_MOVE		      
 			flags |= MS_MOVE;
+#else
+			fprintf(stderr,
+				"option 'm' (MS_MOVE) not supported\n");
+#endif
 			break;
 		case 'o':
 			orgoptions = strdup(optarg);
@@ -1020,7 +1030,7 @@ int main(int argc, char ** argv)
 			break;
 		case 'p':
 			if(mountpassword == NULL)
-				mountpassword = calloc(65,1);
+				mountpassword = (char *)calloc(65,1);
 			if(mountpassword) {
 				got_password = 1;
 				strncpy(mountpassword,optarg,64);
@@ -1045,7 +1055,7 @@ int main(int argc, char ** argv)
 
 	if (getenv("PASSWD")) {
 		if(mountpassword == NULL)
-			mountpassword = calloc(65,1);
+			mountpassword = (char *)calloc(65,1);
 		if(mountpassword) {
 			strncpy(mountpassword,getenv("PASSWD"),64);
 			got_password = 1;
@@ -1065,7 +1075,7 @@ int main(int argc, char ** argv)
 	}
 	
 	/* BB save off path and pop after mount returns? */
-	resolved_path = malloc(PATH_MAX+1);
+	resolved_path = (char *)malloc(PATH_MAX+1);
 	if(resolved_path) {
 		/* Note that if we can not canonicalize the name, we get
 		another chance to see if it is valid when we chdir to it */
@@ -1131,7 +1141,7 @@ mount_retry:
 		optlen += strlen(ipaddr) + 4;
 	if(mountpassword)
 		optlen += strlen(mountpassword) + 6;
-	options = malloc(optlen + 10 + 64 /* space for commas in password */ + 8 /* space for domain=  , domain name itself was counted as part of the length username string above */);
+	options = (char *)malloc(optlen + 10 + 64 /* space for commas in password */ + 8 /* space for domain=  , domain name itself was counted as part of the length username string above */);
 
 	if(options == NULL) {
 		printf("Could not allocate memory for mount options\n");
@@ -1223,7 +1233,7 @@ mount_retry:
 			mountent.mnt_fsname = share_name;
 			mountent.mnt_dir = mountpoint; 
 			mountent.mnt_type = CONST_DISCARD(char *,"cifs"); 
-			mountent.mnt_opts = malloc(220);
+			mountent.mnt_opts = (char *)malloc(220);
 			if(mountent.mnt_opts) {
 				char * mount_user = getusername();
 				memset(mountent.mnt_opts,0,200);

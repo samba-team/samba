@@ -52,7 +52,7 @@ static char *nttrans_realloc(char **ptr, size_t size)
 		smb_panic("nttrans_realloc() called with NULL ptr\n");
 	}
 		
-	*ptr = SMB_REALLOC(*ptr, size);
+	*ptr = (char *)SMB_REALLOC(*ptr, size);
 	if(*ptr == NULL) {
 		return NULL;
 	}
@@ -1060,14 +1060,13 @@ static struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, 
 
 	while (offset + 4 <= data_size) {
 		size_t next_offset = IVAL(pdata,offset);
-		struct ea_list *tmp;
 		struct ea_list *eal = read_ea_list_entry(ctx, pdata + offset + 4, data_size - offset - 4, NULL);
 
 		if (!eal) {
 			return NULL;
 		}
 
-		DLIST_ADD_END(ea_list_head, eal, tmp);
+		DLIST_ADD_END(ea_list_head, eal, struct ea_list *);
 		if (next_offset == 0) {
 			break;
 		}

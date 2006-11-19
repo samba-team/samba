@@ -574,7 +574,6 @@ static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
 {
 	struct smbldap_state *tmp_ldap_state;
 	struct smbldap_state_lookup *t;
-	struct smbldap_state_lookup *tmp;
 	
 	if ((tmp_ldap_state = smbldap_find_state(ld))) {
 		SMB_ASSERT(tmp_ldap_state == smbldap_state);
@@ -584,7 +583,7 @@ static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
 	t = SMB_XMALLOC_P(struct smbldap_state_lookup);
 	ZERO_STRUCTP(t);
 	
-	DLIST_ADD_END(smbldap_state_lookup_list, t, tmp);
+	DLIST_ADD_END(smbldap_state_lookup_list, t, struct smbldap_state_lookup *);
 	t->ld = ld;
 	t->smbldap_state = smbldap_state;
 }
@@ -1289,7 +1288,7 @@ int smbldap_search_paged(struct smbldap_state *ldap_state,
 	/* construct cookie */
 	if (*cookie != NULL) {
 		ber_printf(cookie_be, "{iO}", (ber_int_t) pagesize, *cookie);
-		ber_bvfree(*cookie); /* don't need it from last time */
+		ber_bvfree((struct berval *)*cookie); /* don't need it from last time */
 		*cookie = NULL;
 	} else {
 		ber_printf(cookie_be, "{io}", (ber_int_t) pagesize, "", 0);

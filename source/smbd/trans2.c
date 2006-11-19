@@ -170,7 +170,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 		return NULL;
 	}
 
-	for (i = 0, ea_namelist = TALLOC(mem_ctx, ea_namelist_size); i < 6;
+	for (i = 0, ea_namelist = TALLOC_ARRAY(mem_ctx, char, ea_namelist_size); i < 6;
 			ea_namelist = TALLOC_REALLOC_ARRAY(mem_ctx, ea_namelist, char, ea_namelist_size), i++) {
 
 		if (!ea_namelist) {
@@ -197,7 +197,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 
 	if (sizeret) {
 		for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p) + 1) {
-			struct ea_list *listp, *tmp;
+			struct ea_list *listp;
 
 			if (strnequal(p, "system.", 7) || samba_private_attr_name(p))
 				continue;
@@ -218,7 +218,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 					(unsigned int)*pea_total_len, dos_ea_name,
 					(unsigned int)listp->ea.value.length ));
 			}
-			DLIST_ADD_END(ea_list_head, listp, tmp);
+			DLIST_ADD_END(ea_list_head, listp, struct ea_list *);
 		}
 		/* Add on 4 for total length. */
 		if (*pea_total_len) {
@@ -396,7 +396,6 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 	size_t offset = 0;
 
 	while (offset + 2 < data_size) {
-		struct ea_list *tmp;
 		struct ea_list *eal = TALLOC_ZERO_P(ctx, struct ea_list);
 		unsigned int namelen = CVAL(pdata,offset);
 
@@ -418,7 +417,7 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 		}
 
 		offset += (namelen + 1); /* Go past the name + terminating zero. */
-		DLIST_ADD_END(ea_list_head, eal, tmp);
+		DLIST_ADD_END(ea_list_head, eal, struct ea_list *);
 		DEBUG(10,("read_ea_name_list: read ea name %s\n", eal->ea.name));
 	}
 
@@ -493,14 +492,13 @@ static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t d
 	size_t bytes_used = 0;
 
 	while (offset < data_size) {
-		struct ea_list *tmp;
 		struct ea_list *eal = read_ea_list_entry(ctx, pdata + offset, data_size - offset, &bytes_used);
 
 		if (!eal) {
 			return NULL;
 		}
 
-		DLIST_ADD_END(ea_list_head, eal, tmp);
+		DLIST_ADD_END(ea_list_head, eal, struct ea_list *);
 		offset += bytes_used;
 	}
 
@@ -899,7 +897,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	/* Realloc the size of parameters and data we will return */
-	*pparams = SMB_REALLOC(*pparams, 30);
+	*pparams = (char *)SMB_REALLOC(*pparams, 30);
 	if(*pparams == NULL ) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -1070,7 +1068,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	BOOL was_8_3;
 	uint32 nt_extmode; /* Used for NT connections instead of mode */
 	BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
-	BOOL check_mangled_names = lp_manglednames(SNUM(conn));
+	BOOL check_mangled_names = lp_manglednames(conn->params);
 
 	*fname = 0;
 	*out_of_space = False;
@@ -3854,7 +3852,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		tran_call,fname, fsp ? fsp->fnum : -1, info_level,total_data));
 
 	/* Realloc the parameter size */
-	*pparams = SMB_REALLOC(*pparams,2);
+	*pparams = (char *)SMB_REALLOC(*pparams,2);
 	if (*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -4830,7 +4828,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	}
 
 	/* Realloc the parameter and data sizes */
-	*pparams = SMB_REALLOC(*pparams,2);
+	*pparams = (char *)SMB_REALLOC(*pparams,2);
 	if(*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -4872,7 +4870,7 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
 	}
 
 	/* Realloc the parameter and data sizes */
-	*pparams = SMB_REALLOC(*pparams,6);
+	*pparams = (char *)SMB_REALLOC(*pparams,6);
 	if (*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -4906,7 +4904,7 @@ static int call_trans2findnotifynext(connection_struct *conn, char *inbuf, char 
 	DEBUG(3,("call_trans2findnotifynext\n"));
 
 	/* Realloc the parameter and data sizes */
-	*pparams = SMB_REALLOC(*pparams,4);
+	*pparams = (char *)SMB_REALLOC(*pparams,4);
 	if (*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -4975,7 +4973,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 
 	if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
 			(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
-		*ppdata = SMB_REALLOC(*ppdata, 32);
+		*ppdata = (char *)SMB_REALLOC(*ppdata, 32);
 		if (*ppdata == NULL) {
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}

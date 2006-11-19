@@ -208,7 +208,6 @@ static struct chat_struct *make_pw_chat(const char *p)
 	fstring reply;
 	struct chat_struct *list = NULL;
 	struct chat_struct *t;
-	struct chat_struct *tmp;
 
 	while (1) {
 		t = SMB_MALLOC_P(struct chat_struct);
@@ -219,7 +218,7 @@ static struct chat_struct *make_pw_chat(const char *p)
 
 		ZERO_STRUCTP(t);
 
-		DLIST_ADD_END(list, t, tmp);
+		DLIST_ADD_END(list, t, struct chat_struct*);
 
 		if (!next_token(&p, prompt, NULL, sizeof(fstring)))
 			break;
@@ -511,7 +510,7 @@ static NTSTATUS smb_pam_auth(pam_handle_t *pamh, const char *user)
 	pam_error = pam_authenticate(pamh, PAM_SILENT | lp_null_passwords() ? 0 : PAM_DISALLOW_NULL_AUTHTOK);
 	switch( pam_error ){
 		case PAM_AUTH_ERR:
-			DEBUG(2, ("smb_pam_auth: PAM: Athentication Error for user %s\n", user));
+			DEBUG(2, ("smb_pam_auth: PAM: Authentication Error for user %s\n", user));
 			break;
 		case PAM_CRED_INSUFFICIENT:
 			DEBUG(2, ("smb_pam_auth: PAM: Insufficient Credentials for user %s\n", user));
