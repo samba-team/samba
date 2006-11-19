@@ -268,7 +268,7 @@ NTSTATUS ndr_push_winreg_StringBuf(struct ndr_push *ndr, int ndr_flags, const st
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, strlen_m_term(r->name)*2));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, strlen_m_term_null(r->name)*2));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->size));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->name));
 	}
@@ -276,8 +276,8 @@ NTSTATUS ndr_push_winreg_StringBuf(struct ndr_push *ndr, int ndr_flags, const st
 		if (r->name) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size/2));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, strlen_m_term(r->name)*2/2));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->name, strlen_m_term(r->name)*2/2, sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, strlen_m_term_null(r->name)*2/2));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->name, strlen_m_term_null(r->name)*2/2, sizeof(uint16_t), CH_UTF16));
 		}
 	}
 	return NT_STATUS_OK;
@@ -324,7 +324,7 @@ _PUBLIC_ void ndr_print_winreg_StringBuf(struct ndr_print *ndr, const char *name
 {
 	ndr_print_struct(ndr, name, "winreg_StringBuf");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term(r->name)*2:r->length);
+	ndr_print_uint16(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?strlen_m_term_null(r->name)*2:r->length);
 	ndr_print_uint16(ndr, "size", r->size);
 	ndr_print_ptr(ndr, "name", r->name);
 	ndr->depth++;

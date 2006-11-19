@@ -37,7 +37,7 @@ NTSTATUS rpccli_unixinfo_SidToUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return r.out.result;
 }
 
-NTSTATUS rpccli_unixinfo_UidToSid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint64_t uid, struct dom_sid *sid)
+NTSTATUS rpccli_unixinfo_UidToSid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint64_t uid, struct dom_sid **sid)
 {
 	struct unixinfo_UidToSid r;
 	NTSTATUS status;
@@ -62,9 +62,7 @@ NTSTATUS rpccli_unixinfo_UidToSid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	}
 	
 	/* Return variables */
-	if ( sid ) {
-		*sid = *r.out.sid;
-	}
+	*sid = r.out.sid;
 	
 	/* Return result */
 	return r.out.result;
@@ -101,7 +99,7 @@ NTSTATUS rpccli_unixinfo_SidToGid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return r.out.result;
 }
 
-NTSTATUS rpccli_unixinfo_GidToSid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint64_t gid, struct dom_sid *sid)
+NTSTATUS rpccli_unixinfo_GidToSid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint64_t gid, struct dom_sid **sid)
 {
 	struct unixinfo_GidToSid r;
 	NTSTATUS status;
@@ -126,15 +124,13 @@ NTSTATUS rpccli_unixinfo_GidToSid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	}
 	
 	/* Return variables */
-	if ( sid ) {
-		*sid = *r.out.sid;
-	}
+	*sid = r.out.sid;
 	
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_unixinfo_GetPWUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t *count, uint64_t *uids, struct unixinfo_GetPWUidInfo *infos)
+NTSTATUS rpccli_unixinfo_GetPWUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t *count, uint64_t *uids, struct unixinfo_GetPWUidInfo **infos)
 {
 	struct unixinfo_GetPWUid r;
 	NTSTATUS status;
@@ -161,7 +157,7 @@ NTSTATUS rpccli_unixinfo_GetPWUid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	/* Return variables */
 	*count = *r.out.count;
-	*infos = *r.out.infos;
+	*infos = r.out.infos;
 	
 	/* Return result */
 	return r.out.result;
