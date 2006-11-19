@@ -66,7 +66,7 @@ void winbindd_check_cache_size(time_t t)
 		return;
 	}
 
-	if (fstat(wcache->tdb->fd, &st) == -1) {
+	if (fstat(tdb_fd(wcache->tdb), &st) == -1) {
 		DEBUG(0, ("Unable to check size of tdb cache %s!\n", strerror(errno) ));
 		return;
 	}

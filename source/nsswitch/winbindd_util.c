@@ -1130,7 +1130,7 @@ static BOOL idmap_convert(const char *idmap_name)
 		return False;
 	}
 
-	bigendianheader = (idmap_tdb->flags & TDB_BIGENDIAN) ? True : False;
+	bigendianheader = (tdb_get_flags(idmap_tdb) & TDB_BIGENDIAN) ? True : False;
 
 	vers = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
 

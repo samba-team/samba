@@ -299,7 +299,7 @@ BOOL group_map_remove(const DOM_SID *sid)
  Enumerate the group mapping.
 ****************************************************************************/
 
-BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
+BOOL enum_group_mapping(const DOM_SID *domsid, enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
 			size_t *p_num_entries, BOOL unix_only)
 {
 	TDB_DATA kbuf, dbuf, newkey;

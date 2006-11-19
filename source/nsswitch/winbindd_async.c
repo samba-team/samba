@@ -171,7 +171,7 @@ enum winbindd_result winbindd_dual_idmapset(struct winbindd_domain *domain,
 
 	result = idmap_set_mapping(
 		&sid, id,
-		state->request.data.dual_idmapset.type);
+		(enum idmap_type)state->request.data.dual_idmapset.type);
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
@@ -212,7 +212,7 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
 
 	result = idmap_sid_to_uid(&sid, &(state->response.data.uid),
 				  state->request.data.dual_sid2id.alloc ?
-				  0 : ID_QUERY_ONLY);
+				  0 : IDMAP_FLAG_QUERY_ONLY);
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -398,7 +398,7 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 
 	result = idmap_sid_to_gid(&sid, &state->response.data.gid,
 				  state->request.data.dual_sid2id.alloc ?
-				  0 : ID_QUERY_ONLY);
+				  0 : IDMAP_FLAG_QUERY_ONLY);
 
 	/* If the lookup failed, the perhaps we need to look 
 	   at the passdb for local groups */
@@ -1194,7 +1194,7 @@ void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
 	/* Query only the local tdb, everything else might possibly block */
 
-	result = idmap_sid_to_uid(sid, &uid, ID_QUERY_ONLY|ID_CACHE_ONLY);
+	result = idmap_sid_to_uid(sid, &uid, IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(result)) {
 		cont(private_data, True, uid);
@@ -1356,7 +1356,7 @@ void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
 	/* Query only the local tdb, everything else might possibly block */
 
-	result = idmap_sid_to_gid(sid, &gid, ID_QUERY_ONLY|ID_CACHE_ONLY);
+	result = idmap_sid_to_gid(sid, &gid, IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(result)) {
 		cont(private_data, True, gid);
@@ -1575,7 +1575,7 @@ enum winbindd_result winbindd_dual_uid2sid(struct winbindd_domain *domain,
 		 (unsigned long) state->request.data.uid));
 
 	/* Find sid for this uid and return it, possibly ask the slow remote idmap */
-	result = idmap_uid_to_sid(&sid, state->request.data.uid, 0);
+	result = idmap_uid_to_sid(&sid, state->request.data.uid, IDMAP_FLAG_NONE);
 
 	if (NT_STATUS_IS_OK(result)) {
 		sid_to_string(state->response.data.sid.sid, &sid);
@@ -1632,7 +1632,7 @@ enum winbindd_result winbindd_dual_gid2sid(struct winbindd_domain *domain,
 		(unsigned long) state->request.data.gid));
 
 	/* Find sid for this gid and return it, possibly ask the slow remote idmap */
-	result = idmap_gid_to_sid(&sid, state->request.data.gid, 0);
+	result = idmap_gid_to_sid(&sid, state->request.data.gid, IDMAP_FLAG_NONE);
 
 	if (NT_STATUS_IS_OK(result)) {
 		sid_to_string(state->response.data.sid.sid, &sid);

@@ -196,9 +196,9 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	}
 
 	/* open a connection to the dc */
-	username = secrets_fetch(SECRETS_AUTH_USER, NULL);
-	password = secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
-	domain =   secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
+	username = (char *)secrets_fetch(SECRETS_AUTH_USER, NULL);
+	password = (char *)secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
+	domain =   (char *)secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
 
 	if (username) {
 
@@ -226,7 +226,7 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 			username,
 			lp_workgroup(),
 			password,
-			CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, True, NULL);
+			CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK, True, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("rid_idmap_get_domains: could not setup connection to dc\n"));
@@ -326,7 +326,7 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	status = NT_STATUS_OK;
 
 out:
-	rpccli_lsa_close(pipe_hnd, mem_ctx, &pol);
+	rpccli_lsa_Close(pipe_hnd, mem_ctx, &pol);
 	cli_rpc_pipe_close(pipe_hnd);
 	talloc_destroy(mem_ctx);
 	cli_shutdown(cli);
@@ -334,7 +334,7 @@ out:
 	return status;
 }
 
-static NTSTATUS rid_idmap_init(char *init_param)
+static NTSTATUS rid_idmap_init(const char *init_param)
 {
 	int i, j;
 	uid_t u_low, u_high;
@@ -432,7 +432,8 @@ out:
 	return nt_status;
 }
 
-static NTSTATUS rid_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, int id_type)
+static NTSTATUS rid_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, enum idmap_type id_type, int flags)
+
 {
 	fstring sid_string;
 	int i;
@@ -469,7 +470,7 @@ static NTSTATUS rid_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, int id_type
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rid_idmap_get_id_from_sid(unid_t *unid, int *id_type, const DOM_SID *sid)
+static NTSTATUS rid_idmap_get_id_from_sid(unid_t *unid, enum idmap_type *id_type, const DOM_SID *sid, int flags)
 {
 	fstring sid_string;
 	int i;
@@ -521,7 +522,7 @@ static NTSTATUS rid_idmap_get_id_from_sid(unid_t *unid, int *id_type, const DOM_
 
 }
 
-static NTSTATUS rid_idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
+static NTSTATUS rid_idmap_set_mapping(const DOM_SID *sid, unid_t id, enum idmap_type id_type)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -533,7 +534,7 @@ static NTSTATUS rid_idmap_close(void)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rid_idmap_allocate_id(unid_t *id, int id_type)
+static NTSTATUS rid_idmap_allocate_id(unid_t *id, enum idmap_type id_type)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -553,7 +554,7 @@ static struct idmap_methods rid_methods = {
 	rid_idmap_status
 };
 
-NTSTATUS init_module(void)
+NTSTATUS idmap_rid_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "rid", &rid_methods);
 }

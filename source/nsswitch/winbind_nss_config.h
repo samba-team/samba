@@ -29,58 +29,17 @@
 #undef SIZEOF_LONG
 #endif
 
+
 /* Include header files from data in config.h file */
 
 #ifndef NO_CONFIG_H
-#include <config.h>
+#include "lib/replace/replace.h"
 #endif
 
-#include <stdio.h>
+#include "system/passwd.h"
+#include "system/filesys.h"
+#include "system/network.h"
 
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
-#ifdef HAVE_UNIXSOCKET
-#include <sys/un.h>
-#endif
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-#ifdef HAVE_GRP_H
-#include <grp.h>
-#endif
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#else
-#ifdef HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
-#endif
-#endif
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <pwd.h>
 #include "nsswitch/winbind_nss.h"
 
 /* I'm trying really hard not to include anything from smb.h with the
@@ -94,8 +53,8 @@ typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
 #endif
 
-#ifndef _BOOL
-#define _BOOL
+#ifndef _UPPER_BOOL
+#define _UPPER_BOOL
 #define False (0)
 #define True (1)
 #define Auto (2)

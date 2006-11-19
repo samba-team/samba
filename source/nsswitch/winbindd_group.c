@@ -126,7 +126,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 				   it's one we've mapped before. */
 				status = idmap_uid_to_sid(&querying_user_sid,
 							ret_uid,
-							ID_QUERY_ONLY|ID_CACHE_ONLY);
+							IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
 				if (NT_STATUS_IS_OK(status)) {
 					pquerying_user_sid = &querying_user_sid;
 					DEBUG(10,("fill_grent_mem: querying uid %u -> %s\n",
@@ -550,7 +550,7 @@ void winbindd_getgrgid(struct winbindd_cli_state *state)
 
 	/* Get sid from gid */
 
-	status = idmap_gid_to_sid(&group_sid, state->request.data.gid, 0);
+	status = idmap_gid_to_sid(&group_sid, state->request.data.gid, IDMAP_FLAG_NONE);
 	if (NT_STATUS_IS_OK(status)) {
 		/* This is a remote one */
 		getgrgid_got_sid(state, group_sid);

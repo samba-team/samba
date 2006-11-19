@@ -24,32 +24,31 @@
    Boston, MA  02111-1307, USA.   
 */
 
-/* idmap version determines auto-conversion */
+/* idmap version determines auto-conversion - this is the database
+   structure version specifier. */
+
 #define IDMAP_VERSION 2
 
 #define SMB_IDMAP_INTERFACE_VERSION	2
 
 
-#define ID_EMPTY	0x00
-#define ID_USERID	0x01
-#define ID_GROUPID	0x02
-#define ID_OTHER	0x04
 
-#define ID_TYPEMASK	0x0f
+enum idmap_type { ID_USERID, ID_GROUPID };
 
-#define ID_QUERY_ONLY	0x10
-#define ID_CACHE_ONLY   0x20
+#define IDMAP_FLAG_NONE		0x0
+#define IDMAP_FLAG_QUERY_ONLY	0x1	/* Don't ever allocate, just query. */
+#define IDMAP_FLAG_CACHE_ONLY   0x2	/* Only look in our local cache, not remote. */
 
 /* Filled out by IDMAP backends */
 struct idmap_methods {
 
 	/* Called when backend is first loaded */
-	NTSTATUS (*init)( char *params );
+	NTSTATUS (*init)( const char *params );
 
-	NTSTATUS (*allocate_id)(unid_t *id, int id_type);
-	NTSTATUS (*get_sid_from_id)(DOM_SID *sid, unid_t id, int id_type);
-	NTSTATUS (*get_id_from_sid)(unid_t *id, int *id_type, const DOM_SID *sid);
-	NTSTATUS (*set_mapping)(const DOM_SID *sid, unid_t id, int id_type);
+	NTSTATUS (*allocate_id)(unid_t *id, enum idmap_type id_type);
+	NTSTATUS (*get_sid_from_id)(DOM_SID *sid, unid_t id, enum idmap_type id_type, int flags);
+	NTSTATUS (*get_id_from_sid)(unid_t *id, enum idmap_type *id_type, const DOM_SID *sid, int flags);
+	NTSTATUS (*set_mapping)(const DOM_SID *sid, unid_t id, enum idmap_type id_type);
 
 	/* Called when backend is unloaded */
 	NTSTATUS (*close_fn)(void);

@@ -49,7 +49,7 @@ static struct ldap_idmap_state ldap_state;
  This function cannot be called to modify a mapping, only set a new one
 ***********************************************************************/
 
-static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
+static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, enum idmap_type id_type)
 {
 	pstring dn;
 	pstring id_str;
@@ -66,12 +66,13 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	pstr_sprintf(dn, "%s=%s,%s", get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID),
 		 sid_string, lp_ldap_idmap_suffix());
 
-	if ( id_type & ID_USERID )
+	if ( id_type == ID_USERID ) {
 		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_UIDNUMBER ) );
-	else
+	} else {
 		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER ) );
+	}
 
-	pstr_sprintf(id_str, "%lu", ((id_type & ID_USERID) ? (unsigned long)id.uid :
+	pstr_sprintf(id_str, "%lu", ((id_type == ID_USERID) ? (unsigned long)id.uid :
 						 (unsigned long)id.gid));	
 	
 	smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDMAP_ENTRY );
@@ -117,7 +118,7 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
  Allocate a new uid or gid
 *****************************************************************************/
 
-static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
+static NTSTATUS ldap_allocate_id(unid_t *id, enum idmap_type id_type)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	int rc = LDAP_SERVER_DOWN;
@@ -133,8 +134,11 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	uid_t	luid, huid;
 	gid_t	lgid, hgid;
 
+	if (id_type != ID_USERID && id_type != ID_GROUPID) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-	type = (id_type & ID_USERID) ?
+	type = (id_type == ID_USERID) ?
 		get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER ) : 
 		get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
 
@@ -177,15 +181,14 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	
 	/* make sure we still have room to grow */
 	
-	if (id_type & ID_USERID) {
+	if (id_type == ID_USERID) {
 		id->uid = strtoul(id_str, NULL, 10);
 		if (id->uid > huid ) {
 			DEBUG(0,("ldap_allocate_id: Cannot allocate uid above %lu!\n", 
 				 (unsigned long)huid));
 			goto out;
 		}
-	}
-	else { 
+	} else { 
 		id->gid = strtoul(id_str, NULL, 10);
 		if (id->gid > hgid ) {
 			DEBUG(0,("ldap_allocate_id: Cannot allocate gid above %lu!\n", 
@@ -195,7 +198,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	}
 	
 	pstr_sprintf(new_id_str, "%lu", 
-		 ((id_type & ID_USERID) ? (unsigned long)id->uid : 
+		 ((id_type == ID_USERID) ? (unsigned long)id->uid : 
 		  (unsigned long)id->gid) + 1);
 		 
 	smbldap_set_mod( &mods, LDAP_MOD_DELETE, type, id_str );		 
@@ -228,7 +231,7 @@ out:
  get a sid from an id
 *****************************************************************************/
 
-static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
+static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, enum idmap_type id_type, int flags)
 {
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
@@ -241,7 +244,7 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	const char **attr_list;
 
-	if ( id_type & ID_USERID ) 
+	if ( id_type == ID_USERID ) 
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
 	else 
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
@@ -289,10 +292,12 @@ out:
 }
 
 /***********************************************************************
- Get an id from a sid 
+ Get an id from a sid - urg. This is assuming the *output* parameter id_type
+ has been initialized with the correct needed type - ID_USERID or ID_GROUPID.
+ This *sucks* and is bad design and needs fixing. JRA.
 ***********************************************************************/
 
-static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
+static NTSTATUS ldap_get_id_from_sid(unid_t *id, enum idmap_type *id_type, const DOM_SID *sid, int flags)
 {
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
@@ -316,7 +321,7 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))", 
 		LDAP_OBJ_IDMAP_ENTRY, LDAP_ATTRIBUTE_SID, sid_str);
 			
-	if ( *id_type & ID_GROUPID ) 
+	if ( *id_type == ID_GROUPID ) 
 		type = get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER );
 	else 
 		type = get_attr_key2string( sidmap_attr_list, LDAP_ATTR_UIDNUMBER );
@@ -348,7 +353,7 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 	if ( !count ) {
 		int i;
 
-		if (*id_type & ID_QUERY_ONLY) {
+		if (flags & IDMAP_FLAG_QUERY_ONLY) {
 			DEBUG(5,("ldap_get_id_from_sid: No matching entry found and QUERY_ONLY flag set\n"));
 			goto out;
 		}
@@ -387,7 +392,7 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 	DEBUG(10, ("Found mapping entry at dn=%s, looking for %s\n", dn, type));
 		
 	if ( smbldap_get_single_pstring(ldap_state.smbldap_state->ldap_struct, entry, type, id_str) ) {
-		if ( (*id_type & ID_USERID) )
+		if ( (*id_type == ID_USERID) )
 			id->uid = strtoul(id_str, NULL, 10);
 		else
 			id->gid = strtoul(id_str, NULL, 10);
@@ -470,7 +475,7 @@ static NTSTATUS verify_idpool( void )
  Initialise idmap database. 
 *****************************************************************************/
 
-static NTSTATUS ldap_idmap_init( char *params )
+static NTSTATUS ldap_idmap_init( const char *params )
 {
 	NTSTATUS nt_status;
 
