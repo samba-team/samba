@@ -132,7 +132,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	);
 
 	typedef struct {
-		[value(strlen_m_term(name)*2)] uint16 length; 
+		[value(strlen_m_term_null(name)*2)] uint16 length; 
 		/* size cannot be auto-set by value() as it is the
 		   amount of space the server is allowed to use for this
 		   string in the reply, not its current size */
