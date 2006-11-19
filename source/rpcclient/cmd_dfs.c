@@ -174,6 +174,7 @@ static NTSTATUS cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                              int argc, const char **argv)
 {
 	struct dfs_EnumStruct str;
+	struct dfs_EnumStruct *pstr = &str;
 	struct dfs_EnumArray1 info1;
 	struct dfs_EnumArray2 info2;
 	struct dfs_EnumArray3 info3;
@@ -183,6 +184,7 @@ static NTSTATUS cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	NTSTATUS result;
 	uint32 total = 0;
+	uint32 *ptotal = &total;
 	uint32 unknown = 0;
 
 	if (argc > 2) {
@@ -206,8 +208,8 @@ static NTSTATUS cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			  break;
 	}
 
-	result = rpccli_dfs_Enum(cli, mem_ctx, str.level, 0xFFFFFFFF, &str, &unknown, 
-							 &total);
+	result = rpccli_dfs_Enum(cli, mem_ctx, str.level, 0xFFFFFFFF, &pstr,
+				 &unknown, &ptotal);
 
 	if (NT_STATUS_IS_OK(result))
 		display_dfs_enumstruct(&str);
@@ -221,6 +223,7 @@ static NTSTATUS cmd_dfs_enumex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			       int argc, const char **argv)
 {
 	struct dfs_EnumStruct str;
+	struct dfs_EnumStruct *pstr = &str;
 	struct dfs_EnumArray1 info1;
 	struct dfs_EnumArray2 info2;
 	struct dfs_EnumArray3 info3;
@@ -230,6 +233,7 @@ static NTSTATUS cmd_dfs_enumex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	NTSTATUS result;
 	uint32 total = 0;
+	uint32 *ptotal = &total;
 
 	if (argc < 2 || argc > 3) {
 		printf("Usage: %s dfs_name [info_level]\n", argv[0]);
@@ -251,9 +255,8 @@ static NTSTATUS cmd_dfs_enumex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		  break;
 	}
 
-	result = rpccli_dfs_EnumEx(cli, mem_ctx, argv[1], 
-							   str.level, 0xFFFFFFFF, &str, 
-							   &total);
+	result = rpccli_dfs_EnumEx(cli, mem_ctx, argv[1], str.level,
+				   0xFFFFFFFF, &pstr, &ptotal);
 
 	if (NT_STATUS_IS_OK(result))
 		display_dfs_enumstruct(&str);

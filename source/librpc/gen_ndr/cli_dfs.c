@@ -165,7 +165,7 @@ NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, co
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *unknown, uint32_t *total)
+NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct **info, uint32_t *unknown, uint32_t **total)
 {
 	struct dfs_Enum r;
 	NTSTATUS status;
@@ -173,9 +173,9 @@ NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint3
 	/* In parameters */
 	r.in.level = level;
 	r.in.bufsize = bufsize;
-	r.in.info = info;
+	r.in.info = *info;
 	r.in.unknown = unknown;
-	r.in.total = total;
+	r.in.total = *total;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_Enum, &r);
@@ -194,12 +194,8 @@ NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint3
 	}
 	
 	/* Return variables */
-	if ( info ) {
-		*info = *r.out.info;
-	}
-	if ( total ) {
-		*total = *r.out.total;
-	}
+	*info = r.out.info;
+	*total = r.out.total;
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
@@ -640,7 +636,7 @@ NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *name, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *total)
+NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *name, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct **info, uint32_t **total)
 {
 	struct dfs_EnumEx r;
 	NTSTATUS status;
@@ -649,8 +645,8 @@ NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 	r.in.name = name;
 	r.in.level = level;
 	r.in.bufsize = bufsize;
-	r.in.info = info;
-	r.in.total = total;
+	r.in.info = *info;
+	r.in.total = *total;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(dfs_EnumEx, &r);
@@ -669,12 +665,8 @@ NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 	}
 	
 	/* Return variables */
-	if ( info ) {
-		*info = *r.out.info;
-	}
-	if ( total ) {
-		*total = *r.out.total;
-	}
+	*info = r.out.info;
+	*total = r.out.total;
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
