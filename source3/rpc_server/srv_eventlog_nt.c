@@ -411,8 +411,9 @@ static BOOL sync_eventlog_params( EVENTLOG_INFO *info )
 
 	pstr_sprintf( path, "%s/%s", KEY_EVENTLOG, elogname );
 
-	wresult = regkey_open_internal(
-		NULL, &keyinfo, path, get_root_nt_token(),  REG_KEY_READ );
+	wresult =
+		regkey_open_internal( &keyinfo, path, get_root_nt_token(  ),
+				      REG_KEY_READ );
 
 	if ( !W_ERROR_IS_OK( wresult ) ) {
 		DEBUG( 4,
