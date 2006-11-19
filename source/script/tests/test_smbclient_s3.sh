@@ -11,7 +11,7 @@ fi
 
 SERVER="$1"
 SERVER_IP="$2"
-SMBCLIENT="$VALGRIND ${SMBCLIENT:-$SRCDIR/bin/smbclient} $CONFIGURATION"
+SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient} $CONFIGURATION"
 
 incdir=`dirname $0`
 . $incdir/test_functions.sh
@@ -24,7 +24,7 @@ test_noninteractive_no_prompt()
     prompt="smb"
 
     echo du | \
-	$SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp 2>&1 | \
+	$SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp 2>&1 | \
     grep $prompt
 
     if [ $? = 0 ] ; then
@@ -48,7 +48,7 @@ quit
 EOF
 
     CLI_FORCE_INTERACTIVE=yes \
-    $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp \
+    $SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp \
 	< $tmpfile 2>/dev/null | \
     grep $prompt
 
@@ -63,8 +63,8 @@ EOF
     fi
 }
 
-testit "smbclient -L $SERVER_IP" $SMBCLIENT -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
-testit "smbclient -L $SERVER" $SMBCLIENT -L $SERVER -N -p 139 || failed=`expr $failed + 1`
+testit "smbclient -L $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
+testit "smbclient -L $SERVER" $SMBCLIENT $CONFIGURATION -L $SERVER -N -p 139 || failed=`expr $failed + 1`
 
 testit "noninteractive smbclient does not prompt" \
     test_noninteractive_no_prompt || \
