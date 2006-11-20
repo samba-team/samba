@@ -130,7 +130,8 @@ _krb5_get_init_creds_opt_set_krb5_error(krb5_context context,
 
 
 void KRB5_LIB_FUNCTION
-krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
+krb5_get_init_creds_opt_free(krb5_context context,
+			     krb5_get_init_creds_opt *opt)
 {
     if (opt->opt_private == NULL)
 	return;

@@ -115,7 +115,7 @@ get_creds(krb5_context context, const char *keytab_str,
     ret = krb5_get_init_creds_keytab(context, &creds, client, keytab,
 				     0, server, init_opts);
     free (server);
-    krb5_get_init_creds_opt_free(init_opts);
+    krb5_get_init_creds_opt_free(context, init_opts);
     if(ret) krb5_err(context, 1, ret, "krb5_get_init_creds");
     
     ret = krb5_kt_close(context, keytab);

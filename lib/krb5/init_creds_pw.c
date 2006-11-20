@@ -729,8 +729,8 @@ pa_etype_info2(krb5_context context,
 		if (e.val[i].salt == NULL)
 		    krb5_free_salt(context, salt);
 		if (ret == 0) {
-			free_ETYPE_INFO2(&e);
-			return paid;
+		    free_ETYPE_INFO2(&e);
+		    return paid;
 		}
 	    }
 	}
@@ -1515,7 +1515,7 @@ krb5_get_init_creds_password(krb5_context context,
 	ret = krb5_get_init_creds_opt_set_pa_password(context, options,
 						      password, NULL);
 	if (ret) {
-	    krb5_get_init_creds_opt_free(options);
+	    krb5_get_init_creds_opt_free(context, options);
 	    memset(buf, 0, sizeof(buf));
 	    return ret;
 	}
@@ -1523,7 +1523,7 @@ krb5_get_init_creds_password(krb5_context context,
 
     ret = krb5_get_init_creds(context, creds, client, prompter,
 			      data, start_time, in_tkt_service, options);
-    krb5_get_init_creds_opt_free(options);
+    krb5_get_init_creds_opt_free(context, options);
     memset(buf, 0, sizeof(buf));
     return ret;
 }

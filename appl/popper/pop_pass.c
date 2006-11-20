@@ -76,7 +76,7 @@ krb5_verify_password (POP *p)
 					0,
 					NULL,
 					get_options);
-    krb5_get_init_creds_opt_free(get_options);
+    krb5_get_init_creds_opt_free(p->context, get_options);
     if (ret) {
 	pop_log(p, POP_PRIORITY,
 		"krb5_get_init_creds_password: %s",

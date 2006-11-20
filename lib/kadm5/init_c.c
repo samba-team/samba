@@ -177,7 +177,7 @@ get_new_cache(krb5_context context,
 	else
 	    ret = krb5_kt_resolve(context, keytab, &kt);
 	if(ret) {
-	    krb5_get_init_creds_opt_free(opt);
+	    krb5_get_init_creds_opt_free(context, opt);
 	    return ret;
 	}
 	ret = krb5_get_init_creds_keytab (context,
@@ -199,7 +199,7 @@ get_new_cache(krb5_context context,
 					    server_name,
 					    opt);
     }
-    krb5_get_init_creds_opt_free(opt);
+    krb5_get_init_creds_opt_free(context, opt);
     switch(ret){
     case 0:
 	break;

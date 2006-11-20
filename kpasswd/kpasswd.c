@@ -199,7 +199,7 @@ main (int argc, char **argv)
 	    krb5_err(context, 1, ret, "krb5_get_init_creds");
 	}
 	
-	krb5_get_init_creds_opt_free(opt);
+	krb5_get_init_creds_opt_free(context, opt);
 	
 	ret = krb5_cc_initialize(context, id, admin_principal);
 	krb5_free_principal(context, admin_principal);

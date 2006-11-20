@@ -599,7 +599,7 @@ get_new_tickets(krb5_context context,
 					    opt);
     } else if (!interactive) {
 	krb5_warnx(context, "Not interactive, failed to get initial ticket");
-	krb5_get_init_creds_opt_free(opt);
+	krb5_get_init_creds_opt_free(context, opt);
 	return 0;
     } else {
 
@@ -628,7 +628,7 @@ get_new_tickets(krb5_context context,
 					    server_str,
 					    opt);
     }
-    krb5_get_init_creds_opt_free(opt);
+    krb5_get_init_creds_opt_free(context, opt);
 #ifdef KRB4
     if (ret == KRB5KRB_AP_ERR_V4_REPLY || ret == KRB5_KDC_UNREACH) {
 	int exit_val;

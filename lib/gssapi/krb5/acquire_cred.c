@@ -179,7 +179,7 @@ static OM_uint32 acquire_initiator_cred
 	    goto end;
 	kret = krb5_get_init_creds_keytab(context, &cred,
 	    handle->principal, keytab, 0, NULL, opt);
-	krb5_get_init_creds_opt_free(opt);
+	krb5_get_init_creds_opt_free(context, opt);
 	if (kret)
 	    goto end;
 	kret = krb5_cc_gen_new(context, &krb5_mcc_ops,

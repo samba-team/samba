@@ -172,7 +172,7 @@ verify_user_opt_int(krb5_context context,
 					0,
 					NULL,
 					opt);
-    krb5_get_init_creds_opt_free(opt);
+    krb5_get_init_creds_opt_free(context, opt);
     if(ret)
 	return ret;
 #define OPT(V, D) ((vopt && (vopt->V)) ? (vopt->V) : (D))

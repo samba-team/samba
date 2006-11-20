@@ -151,7 +151,7 @@ generate_requests (const char *filename, unsigned nreq)
 	free (old_pwd);
 	free (new_pwd);
 	krb5_free_cred_contents (context, &cred);
-	krb5_get_init_creds_opt_free(opt);
+	krb5_get_init_creds_opt_free(context, opt);
     }
 }
 

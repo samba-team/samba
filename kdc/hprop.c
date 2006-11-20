@@ -499,7 +499,7 @@ get_creds(krb5_context context, krb5_ccache *cache)
     ret = krb5_get_init_creds_keytab(context, &creds, client, keytab, 0, NULL, init_opts);
     if(ret) krb5_err(context, 1, ret, "krb5_get_init_creds");
 
-    krb5_get_init_creds_opt_free(init_opts);
+    krb5_get_init_creds_opt_free(context, init_opts);
     
     ret = krb5_kt_close(context, keytab);
     if(ret) krb5_err(context, 1, ret, "krb5_kt_close");
