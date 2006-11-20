@@ -340,8 +340,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	return result;
 }
 
- static int ldapmsg_destructor(void *p) {
-	LDAPMessage **result = talloc_get_type_abort(p, LDAPMessage *);
+ static int ldapmsg_destructor(LDAPMessage **result) {
 	ldap_msgfree(*result);
 	return 0;
 }
@@ -361,9 +360,8 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	talloc_set_destructor(handle, ldapmsg_destructor);
 }
 
- static int ldapmod_destructor(void *p) {
-	LDAPMod ***result = talloc_get_type_abort(p, LDAPMod **);
-	ldap_mods_free(*result, True);
+ static int ldapmod_destructor(LDAPMod ***mod) {
+	ldap_mods_free(*mod, True);
 	return 0;
 }
 
@@ -840,7 +838,8 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 					  ber_tag_t request,
 					  ber_int_t msgid, void *arg)
 {
-	struct smbldap_state *ldap_state = arg;
+	struct smbldap_state *ldap_state =
+		(struct smbldap_state *)arg;
 	int rc;
 	int version;
 

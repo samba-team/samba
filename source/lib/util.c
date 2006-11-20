@@ -1603,9 +1603,6 @@ void smb_panic(const char *const why)
 		    (unsigned long long)sys_getpid(), why));
 	log_stack_trace();
 
-	/* only smbd needs to decrement the smbd counter in connections.tdb */
-	decrement_smbd_process_count();
-
 	cmd = lp_panic_action();
 	if (cmd && *cmd) {
 		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmd));

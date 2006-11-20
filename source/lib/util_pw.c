@@ -74,7 +74,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 		if ((pwnam_cache[i] != NULL) && 
 		    (strcmp(name, pwnam_cache[i]->pw_name) == 0)) {
 			DEBUG(10, ("Got %s from pwnam_cache\n", name));
-			return talloc_reference(mem_ctx, pwnam_cache[i]);
+			return (struct passwd *)talloc_reference(mem_ctx, pwnam_cache[i]);
 		}
 	}
 
@@ -103,7 +103,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 
 	pwnam_cache[i] = tcopy_passwd(pwnam_cache, temp);
 	if (pwnam_cache[i]!= NULL && mem_ctx != NULL) {
-		return talloc_reference(mem_ctx, pwnam_cache[i]);
+		return (struct passwd *)talloc_reference(mem_ctx, pwnam_cache[i]);
 	}
 
 	return tcopy_passwd(NULL, pwnam_cache[i]);

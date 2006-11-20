@@ -458,11 +458,20 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		}
 	}
 	
+	{
+		int sav;
+		START_PROFILE(smbd_idle);
+
 	maxfd = select_on_fd(smbd_server_fd(), maxfd, &fds);
 	maxfd = select_on_fd(change_notify_fd(), maxfd, &fds);
 	maxfd = select_on_fd(oplock_notify_fd(), maxfd, &fds);
 
 	selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&to);
+		sav = errno;
+
+		END_PROFILE(smbd_idle);
+		errno = sav;
+	}
 
 	/* if we get EINTR then maybe we have received an oplock
 	   signal - treat this as select returning 1. This is ugly, but

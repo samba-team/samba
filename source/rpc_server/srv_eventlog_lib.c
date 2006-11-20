@@ -486,7 +486,7 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	}
 
 	/* alloc mem for the packed version */
-	packed_ee = TALLOC( mem_ctx, ee->record.length + MARGIN );
+	packed_ee = (uint8 *)TALLOC( mem_ctx, ee->record.length + MARGIN );
 	if ( !packed_ee ) {
 		talloc_destroy( mem_ctx );
 		return 0;

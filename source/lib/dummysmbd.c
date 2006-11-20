@@ -24,11 +24,6 @@
 
 #include "includes.h"
 
-void decrement_smbd_process_count( void )
-{
-	return;
-}
-
 int find_service(fstring service)
 {
 	return -1;
@@ -37,4 +32,8 @@ int find_service(fstring service)
 BOOL conn_snum_used(int snum)
 {
 	return False;
+}
+
+void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lock *br_lck)
+{
 }

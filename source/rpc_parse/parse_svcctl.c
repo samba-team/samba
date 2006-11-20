@@ -257,12 +257,12 @@ BOOL svcctl_io_q_open_scmanager(const char *desc, SVCCTL_Q_OPEN_SCMANAGER *q_u, 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("servername", ps, depth, (void**)&q_u->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
+	if(!prs_pointer("servername", ps, depth, (void*)&q_u->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("database", ps, depth, (void**)&q_u->database, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
+	if(!prs_pointer("database", ps, depth, (void*)&q_u->database, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
 	if(!prs_align(ps))
 		return False;
@@ -486,7 +486,7 @@ BOOL svcctl_io_q_enum_services_status(const char *desc, SVCCTL_Q_ENUM_SERVICES_S
 	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
 		return False;
 
-	if(!prs_pointer("resume", ps, depth, (void**)&q_u->resume, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("resume", ps, depth, (void*)&q_u->resume, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 	
 	return True;
@@ -517,7 +517,7 @@ BOOL svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_S
 	if(!prs_uint32("returned", ps, depth, &r_u->returned))
 		return False;
 
-	if(!prs_pointer("resume", ps, depth, (void**)&r_u->resume, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("resume", ps, depth, (void*)&r_u->resume, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))
@@ -546,7 +546,7 @@ BOOL svcctl_io_q_start_service(const char *desc, SVCCTL_Q_START_SERVICE *q_u, pr
 	if(!prs_uint32("parmcount", ps, depth, &q_u->parmcount))
 		return False;
 
-	if ( !prs_pointer("rights", ps, depth, (void**)&q_u->parameters, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
+	if ( !prs_pointer("rights", ps, depth, (void*)&q_u->parameters, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
 		return False;
 
 	return True;
@@ -821,9 +821,9 @@ BOOL svcctl_io_service_fa( const char *desc, SERVICE_FAILURE_ACTIONS *fa, RPC_BU
 	if ( !prs_uint32("reset_period", ps, depth, &fa->reset_period) )
 		return False;
 
-	if ( !prs_pointer( desc, ps, depth, (void**)&fa->rebootmsg, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
+	if ( !prs_pointer( desc, ps, depth, (void*)&fa->rebootmsg, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
 		return False;
-	if ( !prs_pointer( desc, ps, depth, (void**)&fa->command, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
+	if ( !prs_pointer( desc, ps, depth, (void*)&fa->command, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
 		return False;
 
 	if ( !prs_uint32("num_actions", ps, depth, &fa->num_actions) )

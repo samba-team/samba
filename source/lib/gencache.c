@@ -130,9 +130,9 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 	if (!valstr)
 		return False;
 
-	keybuf.dptr = SMB_STRDUP(keystr);
+	keybuf.dptr = CONST_DISCARD(char *, keystr);
 	keybuf.dsize = strlen(keystr)+1;
-	databuf.dptr = SMB_STRDUP(valstr);
+	databuf.dptr = valstr;
 	databuf.dsize = strlen(valstr)+1;
 	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
 	           " %s (%d seconds %s)\n", keybuf.dptr, value,ctime(&timeout),
@@ -141,71 +141,9 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 
 	ret = tdb_store(cache, keybuf, databuf, 0);
 	SAFE_FREE(valstr);
-	SAFE_FREE(keybuf.dptr);
-	SAFE_FREE(databuf.dptr);
 	
 	return ret == 0;
 }
-
-
-/**
- * Set existing entry to the cache file.
- *
- * @param keystr string that represents a key of this entry
- * @param valstr text representation value being cached
- * @param timeout time when the value is expired
- *
- * @retval true when entry is successfuly set
- * @retval false on failure
- **/
-
-BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
-{
-	int ret = -1;
-	TDB_DATA keybuf, databuf;
-	char *old_valstr, *datastr;
-	time_t old_timeout;
-	
-	/* fail completely if get null pointers passed */
-	SMB_ASSERT(keystr && valstr);
-
-	if (!gencache_init()) return False;
-			
-	if (cache_readonly) {
-		return False;
-	}
-
-	/* 
-	 * Check whether entry exists in the cache
-	 * Don't verify gencache_get exit code, since the entry may be expired
-	 */	
-	gencache_get(keystr, &old_valstr, &old_timeout);
-	
-	if (!(old_valstr && old_timeout)) return False;
-		
-	DEBUG(10, ("Setting cache entry with key = %s; old value = %s and old timeout \
-	           = %s\n", keystr, old_valstr, ctime(&old_timeout)));
-
-	asprintf(&datastr, CACHE_DATA_FMT, (int)timeout, valstr);
-	keybuf.dptr = SMB_STRDUP(keystr);
-	keybuf.dsize = strlen(keystr)+1;
-	databuf.dptr = SMB_STRDUP(datastr);
-	databuf.dsize = strlen(datastr)+1;
-	DEBUGADD(10, ("New value = %s, new timeout = %s (%d seconds %s)", valstr,
-	              ctime(&timeout), (int)(timeout - time(NULL)),
-	              timeout > time(NULL) ? "ahead" : "in the past"));
-
-		
-	ret = tdb_store(cache, keybuf, databuf, TDB_REPLACE);
-
-	SAFE_FREE(datastr);
-	SAFE_FREE(old_valstr);
-	SAFE_FREE(keybuf.dptr);
-	SAFE_FREE(databuf.dptr);
-	
-	return ret == 0;
-}
- 
 
 /**
  * Delete one entry from the cache file.
@@ -230,12 +168,11 @@ BOOL gencache_del(const char *keystr)
 		return False;
 	}
 
-	keybuf.dptr = SMB_STRDUP(keystr);
+	keybuf.dptr = CONST_DISCARD(char *, keystr);
 	keybuf.dsize = strlen(keystr)+1;
 	DEBUG(10, ("Deleting cache entry (key = %s)\n", keystr));
 	ret = tdb_delete(cache, keybuf);
 	
-	SAFE_FREE(keybuf.dptr);
 	return ret == 0;
 }
 
@@ -256,6 +193,8 @@ BOOL gencache_del(const char *keystr)
 BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 {
 	TDB_DATA keybuf, databuf;
+	time_t t;
+	char *endptr;
 
 	/* fail completely if get null pointers passed */
 	SMB_ASSERT(keystr);
@@ -264,71 +203,55 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		return False;
 	}
 	
-	keybuf.dptr = SMB_STRDUP(keystr);
+	keybuf.dptr = CONST_DISCARD(char *, keystr);
 	keybuf.dsize = strlen(keystr)+1;
 	databuf = tdb_fetch(cache, keybuf);
-	SAFE_FREE(keybuf.dptr);
-	
-	if (databuf.dptr && databuf.dsize > TIMEOUT_LEN) {
-		char* entry_buf = SMB_STRNDUP(databuf.dptr, databuf.dsize);
-		char *v;
-		time_t t;
-		unsigned u;
-		int status;
-		char *fmt;
 
-		v = SMB_MALLOC(databuf.dsize + 1 - TIMEOUT_LEN);
-		if (!v) {
-			return False;
-		}
+	if (databuf.dptr == NULL) {
+		DEBUG(10, ("Cache entry with key = %s couldn't be found\n",
+			   keystr));
+		return False;
+	}
+
+	t = strtol(databuf.dptr, &endptr, 10);
+
+	if ((endptr == NULL) || (*endptr != '/')) {
+		DEBUG(2, ("Invalid gencache data format: %s\n", databuf.dptr));
+		SAFE_FREE(databuf.dptr);
+		return False;
+	}
+
+	DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
+		   "timeout = %s", t > time(NULL) ? "valid" :
+		   "expired", keystr, endptr+1, ctime(&t)));
+
+	if (t <= time(NULL)) {
+
+		/* We're expired, delete the entry */
+		tdb_delete(cache, keybuf);
 
 		SAFE_FREE(databuf.dptr);
-
-		asprintf(&fmt, READ_CACHE_DATA_FMT_TEMPLATE, (unsigned int)databuf.dsize - TIMEOUT_LEN);
-		if (!fmt) {
-			SAFE_FREE(v);
-			return False;
-		}
-
-		status = sscanf(entry_buf, fmt, &u, v);
-		SAFE_FREE(fmt);
-
-		if ( status != 2 ) {
-			DEBUG(0, ("gencache_get: Invalid return %d from sscanf\n", status ));
-		}
-		t = u;
-		SAFE_FREE(entry_buf);
-
-		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
-			   "timeout = %s", t > time(NULL) ? "valid" :
-			   "expired", keystr, v, ctime(&t)));
-
-		if (valstr) {
-			*valstr = v;
-		} else {
-			SAFE_FREE(v);
-		}
-
-		if (timeout) {
-			*timeout = t;
-		}
-
-		return t > time(NULL);
-
-	} 
-
-	SAFE_FREE(databuf.dptr);
+		return False;
+	}
 
 	if (valstr) {
-		*valstr = NULL;
+		*valstr = SMB_STRDUP(endptr+1);
+		if (*valstr == NULL) {
+			SAFE_FREE(databuf.dptr);
+			DEBUG(0, ("strdup failed\n"));
+			return False;
+		}
 	}
+	
+	SAFE_FREE(databuf.dptr);
+
 	if (timeout) {
-		timeout = NULL;
+		*timeout = t;
 	}
 
-	DEBUG(10, ("Cache entry with key = %s couldn't be found\n", keystr));
-	return False;
-}
+	return True;
+} 
+
 
 /**
  * Iterate through all entries which key matches to specified pattern
@@ -389,7 +312,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 
 		SAFE_FREE(databuf.dptr);
 
-		valstr = SMB_MALLOC(databuf.dsize + 1 - TIMEOUT_LEN);
+		valstr = (char *)SMB_MALLOC(databuf.dsize + 1 - TIMEOUT_LEN);
 		if (!valstr) {
 			SAFE_FREE(entry);
 			SAFE_FREE(keystr);

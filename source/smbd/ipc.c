@@ -478,7 +478,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 	if (state->total_data)  {
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
-		state->data = SMB_MALLOC(state->total_data);
+		state->data = (char *)SMB_MALLOC(state->total_data);
 		if (state->data == NULL) {
 			DEBUG(0,("reply_trans: data malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_data));
@@ -498,7 +498,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 	if (state->total_param) {
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
-		state->param = SMB_MALLOC(state->total_param);
+		state->param = (char *)SMB_MALLOC(state->total_param);
 		if (state->param == NULL) {
 			DEBUG(0,("reply_trans: param malloc fail for %u "
 				 "bytes !\n", (unsigned int)state->total_param));

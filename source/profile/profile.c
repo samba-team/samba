@@ -2,7 +2,8 @@
    Unix SMB/CIFS implementation.
    store smbd profiling information in shared memory
    Copyright (C) Andrew Tridgell 1999
-   
+   Copyright (C) James Peach 2006
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -249,4 +250,183 @@ BOOL profile_setup(BOOL rdonly)
 	message_register(MSG_REQ_PROFILELEVEL, reqprofile_message);
 	return True;
 }
+
+ const char * profile_value_name(enum profile_stats_values val)
+{
+	static const char * valnames[PR_VALUE_MAX + 1] =
+	{
+	    "smbd_idle",		/* PR_VALUE_SMBD_IDLE */
+	    "syscall_opendir",		/* PR_VALUE_SYSCALL_OPENDIR */
+	    "syscall_readdir",		/* PR_VALUE_SYSCALL_READDIR */
+	    "syscall_seekdir",		/* PR_VALUE_SYSCALL_SEEKDIR */
+	    "syscall_telldir",		/* PR_VALUE_SYSCALL_TELLDIR */
+	    "syscall_rewinddir",	/* PR_VALUE_SYSCALL_REWINDDIR */
+	    "syscall_mkdir",		/* PR_VALUE_SYSCALL_MKDIR */
+	    "syscall_rmdir",		/* PR_VALUE_SYSCALL_RMDIR */
+	    "syscall_closedir",		/* PR_VALUE_SYSCALL_CLOSEDIR */
+	    "syscall_open",		/* PR_VALUE_SYSCALL_OPEN */
+	    "syscall_close",		/* PR_VALUE_SYSCALL_CLOSE */
+	    "syscall_read",		/* PR_VALUE_SYSCALL_READ */
+	    "syscall_pread",		/* PR_VALUE_SYSCALL_PREAD */
+	    "syscall_write",		/* PR_VALUE_SYSCALL_WRITE */
+	    "syscall_pwrite",		/* PR_VALUE_SYSCALL_PWRITE */
+	    "syscall_lseek",		/* PR_VALUE_SYSCALL_LSEEK */
+	    "syscall_sendfile",		/* PR_VALUE_SYSCALL_SENDFILE */
+	    "syscall_rename",		/* PR_VALUE_SYSCALL_RENAME */
+	    "syscall_fsync",		/* PR_VALUE_SYSCALL_FSYNC */
+	    "syscall_stat",		/* PR_VALUE_SYSCALL_STAT */
+	    "syscall_fstat",		/* PR_VALUE_SYSCALL_FSTAT */
+	    "syscall_lstat",		/* PR_VALUE_SYSCALL_LSTAT */
+	    "syscall_unlink",		/* PR_VALUE_SYSCALL_UNLINK */
+	    "syscall_chmod",		/* PR_VALUE_SYSCALL_CHMOD */
+	    "syscall_fchmod",		/* PR_VALUE_SYSCALL_FCHMOD */
+	    "syscall_chown",		/* PR_VALUE_SYSCALL_CHOWN */
+	    "syscall_fchown",		/* PR_VALUE_SYSCALL_FCHOWN */
+	    "syscall_chdir",		/* PR_VALUE_SYSCALL_CHDIR */
+	    "syscall_getwd",		/* PR_VALUE_SYSCALL_GETWD */
+	    "syscall_utime",		/* PR_VALUE_SYSCALL_UTIME */
+	    "syscall_ftruncate",	/* PR_VALUE_SYSCALL_FTRUNCATE */
+	    "syscall_fcntl_lock",	/* PR_VALUE_SYSCALL_FCNTL_LOCK */
+	    "syscall_kernel_flock",     /* PR_VALUE_SYSCALL_KERNEL_FLOCK */
+	    "syscall_fcntl_getlock",	/* PR_VALUE_SYSCALL_FCNTL_GETLOCK */
+	    "syscall_readlink",		/* PR_VALUE_SYSCALL_READLINK */
+	    "syscall_symlink",		/* PR_VALUE_SYSCALL_SYMLINK */
+	    "syscall_link",		/* PR_VALUE_SYSCALL_LINK */
+	    "syscall_mknod",		/* PR_VALUE_SYSCALL_MKNOD */
+	    "syscall_realpath",		/* PR_VALUE_SYSCALL_REALPATH */
+	    "syscall_get_quota",	/* PR_VALUE_SYSCALL_GET_QUOTA */
+	    "syscall_set_quota",	/* PR_VALUE_SYSCALL_SET_QUOTA */
+	    "SMBmkdir",		/* PR_VALUE_SMBMKDIR */
+	    "SMBrmdir",		/* PR_VALUE_SMBRMDIR */
+	    "SMBopen",		/* PR_VALUE_SMBOPEN */
+	    "SMBcreate",	/* PR_VALUE_SMBCREATE */
+	    "SMBclose",		/* PR_VALUE_SMBCLOSE */
+	    "SMBflush",		/* PR_VALUE_SMBFLUSH */
+	    "SMBunlink",	/* PR_VALUE_SMBUNLINK */
+	    "SMBmv",		/* PR_VALUE_SMBMV */
+	    "SMBgetatr",	/* PR_VALUE_SMBGETATR */
+	    "SMBsetatr",	/* PR_VALUE_SMBSETATR */
+	    "SMBread",		/* PR_VALUE_SMBREAD */
+	    "SMBwrite",		/* PR_VALUE_SMBWRITE */
+	    "SMBlock",		/* PR_VALUE_SMBLOCK */
+	    "SMBunlock",	/* PR_VALUE_SMBUNLOCK */
+	    "SMBctemp",		/* PR_VALUE_SMBCTEMP */
+	    "SMBmknew",		/* PR_VALUE_SMBMKNEW */
+	    "SMBchkpth",	/* PR_VALUE_SMBCHKPTH */
+	    "SMBexit",		/* PR_VALUE_SMBEXIT */
+	    "SMBlseek",		/* PR_VALUE_SMBLSEEK */
+	    "SMBlockread",		/* PR_VALUE_SMBLOCKREAD */
+	    "SMBwriteunlock",		/* PR_VALUE_SMBWRITEUNLOCK */
+	    "SMBreadbraw",		/* PR_VALUE_SMBREADBRAW */
+	    "SMBreadBmpx",		/* PR_VALUE_SMBREADBMPX */
+	    "SMBreadBs",		/* PR_VALUE_SMBREADBS */
+	    "SMBwritebraw",		/* PR_VALUE_SMBWRITEBRAW */
+	    "SMBwriteBmpx",		/* PR_VALUE_SMBWRITEBMPX */
+	    "SMBwriteBs",		/* PR_VALUE_SMBWRITEBS */
+	    "SMBwritec",		/* PR_VALUE_SMBWRITEC */
+	    "SMBsetattrE",		/* PR_VALUE_SMBSETATTRE */
+	    "SMBgetattrE",		/* PR_VALUE_SMBGETATTRE */
+	    "SMBlockingX",		/* PR_VALUE_SMBLOCKINGX */
+	    "SMBtrans",		/* PR_VALUE_SMBTRANS */
+	    "SMBtranss",	/* PR_VALUE_SMBTRANSS */
+	    "SMBioctl",		/* PR_VALUE_SMBIOCTL */
+	    "SMBioctls",	/* PR_VALUE_SMBIOCTLS */
+	    "SMBcopy",		/* PR_VALUE_SMBCOPY */
+	    "SMBmove",		/* PR_VALUE_SMBMOVE */
+	    "SMBecho",		/* PR_VALUE_SMBECHO */
+	    "SMBwriteclose",	/* PR_VALUE_SMBWRITECLOSE */
+	    "SMBopenX",		/* PR_VALUE_SMBOPENX */
+	    "SMBreadX",		/* PR_VALUE_SMBREADX */
+	    "SMBwriteX",	/* PR_VALUE_SMBWRITEX */
+	    "SMBtrans2",	/* PR_VALUE_SMBTRANS2 */
+	    "SMBtranss2",	/* PR_VALUE_SMBTRANSS2 */
+	    "SMBfindclose",	/* PR_VALUE_SMBFINDCLOSE */
+	    "SMBfindnclose",	/* PR_VALUE_SMBFINDNCLOSE */
+	    "SMBtcon",		/* PR_VALUE_SMBTCON */
+	    "SMBtdis",		/* PR_VALUE_SMBTDIS */
+	    "SMBnegprot",	/* PR_VALUE_SMBNEGPROT */
+	    "SMBsesssetupX",	/* PR_VALUE_SMBSESSSETUPX */
+	    "SMBulogoffX",	/* PR_VALUE_SMBULOGOFFX */
+	    "SMBtconX",		/* PR_VALUE_SMBTCONX */
+	    "SMBdskattr",		/* PR_VALUE_SMBDSKATTR */
+	    "SMBsearch",		/* PR_VALUE_SMBSEARCH */
+	    "SMBffirst",		/* PR_VALUE_SMBFFIRST */
+	    "SMBfunique",		/* PR_VALUE_SMBFUNIQUE */
+	    "SMBfclose",		/* PR_VALUE_SMBFCLOSE */
+	    "SMBnttrans",		/* PR_VALUE_SMBNTTRANS */
+	    "SMBnttranss",		/* PR_VALUE_SMBNTTRANSS */
+	    "SMBntcreateX",		/* PR_VALUE_SMBNTCREATEX */
+	    "SMBntcancel",		/* PR_VALUE_SMBNTCANCEL */
+	    "SMBntrename",		/* PR_VALUE_SMBNTRENAME */
+	    "SMBsplopen",		/* PR_VALUE_SMBSPLOPEN */
+	    "SMBsplwr",			/* PR_VALUE_SMBSPLWR */
+	    "SMBsplclose",		/* PR_VALUE_SMBSPLCLOSE */
+	    "SMBsplretq",		/* PR_VALUE_SMBSPLRETQ */
+	    "SMBsends",			/* PR_VALUE_SMBSENDS */
+	    "SMBsendb",			/* PR_VALUE_SMBSENDB */
+	    "SMBfwdname",		/* PR_VALUE_SMBFWDNAME */
+	    "SMBcancelf",		/* PR_VALUE_SMBCANCELF */
+	    "SMBgetmac",		/* PR_VALUE_SMBGETMAC */
+	    "SMBsendstrt",		/* PR_VALUE_SMBSENDSTRT */
+	    "SMBsendend",		/* PR_VALUE_SMBSENDEND */
+	    "SMBsendtxt",		/* PR_VALUE_SMBSENDTXT */
+	    "SMBinvalid",		/* PR_VALUE_SMBINVALID */
+	    "pathworks_setdir",		/* PR_VALUE_PATHWORKS_SETDIR */
+	    "Trans2_open",		/* PR_VALUE_TRANS2_OPEN */
+	    "Trans2_findfirst",		/* PR_VALUE_TRANS2_FINDFIRST */
+	    "Trans2_findnext",		/* PR_VALUE_TRANS2_FINDNEXT */
+	    "Trans2_qfsinfo",		/* PR_VALUE_TRANS2_QFSINFO */
+	    "Trans2_setfsinfo",		/* PR_VALUE_TRANS2_SETFSINFO */
+	    "Trans2_qpathinfo",		/* PR_VALUE_TRANS2_QPATHINFO */
+	    "Trans2_setpathinfo",	/* PR_VALUE_TRANS2_SETPATHINFO */
+	    "Trans2_qfileinfo",		/* PR_VALUE_TRANS2_QFILEINFO */
+	    "Trans2_setfileinfo",	/* PR_VALUE_TRANS2_SETFILEINFO */
+	    "Trans2_fsctl",		/* PR_VALUE_TRANS2_FSCTL */
+	    "Trans2_ioctl",		/* PR_VALUE_TRANS2_IOCTL */
+	    "Trans2_findnotifyfirst",	/* PR_VALUE_TRANS2_FINDNOTIFYFIRST */
+	    "Trans2_findnotifynext",	/* PR_VALUE_TRANS2_FINDNOTIFYNEXT */
+	    "Trans2_mkdir",		/* PR_VALUE_TRANS2_MKDIR */
+	    "Trans2_session_setup",	/* PR_VALUE_TRANS2_SESSION_SETUP */
+	    "Trans2_get_dfs_referral",	/* PR_VALUE_TRANS2_GET_DFS_REFERRAL */
+	    "Trans2_report_dfs_inconsistancy",	/* PR_VALUE_TRANS2_REPORT_DFS_INCONSISTANCY */
+	    "NT_transact_create",	/* PR_VALUE_NT_TRANSACT_CREATE */
+	    "NT_transact_ioctl",	/* PR_VALUE_NT_TRANSACT_IOCTL */
+	    "NT_transact_set_security_desc",	/* PR_VALUE_NT_TRANSACT_SET_SECURITY_DESC */
+	    "NT_transact_notify_change",/* PR_VALUE_NT_TRANSACT_NOTIFY_CHANGE */
+	    "NT_transact_rename",	/* PR_VALUE_NT_TRANSACT_RENAME */
+	    "NT_transact_query_security_desc",	/* PR_VALUE_NT_TRANSACT_QUERY_SECURITY_DESC */
+	    "NT_transact_get_user_quota",/* PR_VALUE_NT_TRANSACT_GET_USER_QUOTA */
+	    "NT_transact_set_user_quota",/* PR_VALUE_NT_TRANSACT_SET_USER_QUOTA */
+	    "get_nt_acl",		/* PR_VALUE_GET_NT_ACL */
+	    "fget_nt_acl",		/* PR_VALUE_FGET_NT_ACL */
+	    "set_nt_acl",		/* PR_VALUE_SET_NT_ACL */
+	    "fset_nt_acl",		/* PR_VALUE_FSET_NT_ACL */
+	    "chmod_acl",		/* PR_VALUE_CHMOD_ACL */
+	    "fchmod_acl",		/* PR_VALUE_FCHMOD_ACL */
+	    "name_release",		/* PR_VALUE_NAME_RELEASE */
+	    "name_refresh",		/* PR_VALUE_NAME_REFRESH */
+	    "name_registration",	/* PR_VALUE_NAME_REGISTRATION */
+	    "node_status",		/* PR_VALUE_NODE_STATUS */
+	    "name_query",		/* PR_VALUE_NAME_QUERY */
+	    "host_announce",		/* PR_VALUE_HOST_ANNOUNCE */
+	    "workgroup_announce",	/* PR_VALUE_WORKGROUP_ANNOUNCE */
+	    "local_master_announce",	/* PR_VALUE_LOCAL_MASTER_ANNOUNCE */
+	    "master_browser_announce",	/* PR_VALUE_MASTER_BROWSER_ANNOUNCE */
+	    "lm_host_announce",		/* PR_VALUE_LM_HOST_ANNOUNCE */
+	    "get_backup_list",		/* PR_VALUE_GET_BACKUP_LIST */
+	    "reset_browser",		/* PR_VALUE_RESET_BROWSER */
+	    "announce_request",		/* PR_VALUE_ANNOUNCE_REQUEST */
+	    "lm_announce_request",	/* PR_VALUE_LM_ANNOUNCE_REQUEST */
+	    "domain_logon",		/* PR_VALUE_DOMAIN_LOGON */
+	    "sync_browse_lists",	/* PR_VALUE_SYNC_BROWSE_LISTS */
+	    "run_elections",		/* PR_VALUE_RUN_ELECTIONS */
+	    "election",			/* PR_VALUE_ELECTION */
+	    "" /* PR_VALUE_MAX */
+	};
+
+	SMB_ASSERT(val >= 0);
+	SMB_ASSERT(val < PR_VALUE_MAX);
+	return valnames[val];
+}
+
 #endif /* WITH_PROFILE */

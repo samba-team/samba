@@ -47,9 +47,9 @@ DATA_BLOB data_blob(const void *p, size_t length)
 	}
 
 	if (p) {
-		ret.data = smb_xmemdup(p, length);
+		ret.data = (uint8 *)smb_xmemdup(p, length);
 	} else {
-		ret.data = SMB_XMALLOC_ARRAY(unsigned char, length);
+		ret.data = SMB_XMALLOC_ARRAY(uint8, length);
 	}
 	ret.length = length;
 	ret.free = free_data_blob;
@@ -70,11 +70,11 @@ DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 	}
 
 	if (p) {
-		ret.data = TALLOC_MEMDUP(mem_ctx, p, length);
+		ret.data = (uint8 *)TALLOC_MEMDUP(mem_ctx, p, length);
 		if (ret.data == NULL)
 			smb_panic("data_blob_talloc: talloc_memdup failed.\n");
 	} else {
-		ret.data = TALLOC(mem_ctx, length);
+		ret.data = (uint8 *)TALLOC(mem_ctx, length);
 		if (ret.data == NULL)
 			smb_panic("data_blob_talloc: talloc failed.\n");
 	}
@@ -117,4 +117,29 @@ void data_blob_clear_free(DATA_BLOB *d)
 {
 	data_blob_clear(d);
 	data_blob_free(d);
+}
+
+/**
+  useful for constructing data blobs in test suites, while
+  avoiding const warnings
+**/
+DATA_BLOB data_blob_string_const(const char *str)
+{
+	DATA_BLOB blob;
+	blob.data = CONST_DISCARD(uint8 *, str);
+	blob.length = strlen(str);
+	blob.free = NULL;
+	return blob;
+}
+
+/**
+ * Create a new data blob from const data 
+ */
+DATA_BLOB data_blob_const(const void *p, size_t length)
+{
+	DATA_BLOB blob;
+	blob.data = CONST_DISCARD(uint8 *, p);
+	blob.length = length;
+	blob.free = NULL;
+	return blob;
 }

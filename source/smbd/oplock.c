@@ -346,8 +346,14 @@ static void oplock_timeout_handler(struct timed_event *te,
 				   const struct timeval *now,
 				   void *private_data)
 {
-	files_struct *fsp = private_data;
+	files_struct *fsp = (files_struct *)private_data;
 
+	/* Ensure we always remove this event. */
+	if (fsp->oplock_timeout != NULL) {
+		/* Remove the timed event handler. */
+		TALLOC_FREE(fsp->oplock_timeout);
+		fsp->oplock_timeout = NULL;
+	}
 	DEBUG(0, ("Oplock break failed for file %s -- replying anyway\n", fsp->fsp_name));
 	global_client_failed_oplock_break = True;
 	remove_oplock(fsp);
@@ -403,7 +409,7 @@ static void process_oplock_async_level2_break_message(int msg_type, struct proce
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got oplock async level 2 break message from pid %d: 0x%x/%.0f/%lu\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
@@ -490,7 +496,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got oplock break message from pid %d: 0x%x/%.0f/%lu\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
@@ -504,13 +510,10 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 		 * get to process this message, we have closed the file. Reply
 		 * with 'ok, oplock broken' */
 		DEBUG(3, ("Did not find fsp\n"));
-		become_root();
 
 		/* We just send the same message back. */
 		message_send_pid(src, MSG_SMB_BREAK_RESPONSE,
 				 buf, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
-
-		unbecome_root();
 		return;
 	}
 
@@ -529,13 +532,9 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 		DEBUG(3, ("Already downgraded oplock on 0x%x/%.0f: %s\n",
 			  (unsigned int)fsp->dev, (double)fsp->inode,
 			  fsp->fsp_name));
-		become_root();
-
 		/* We just send the same message back. */
 		message_send_pid(src, MSG_SMB_BREAK_RESPONSE,
 				 buf, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
-
-		unbecome_root();
 		return;
 	}
 
@@ -656,7 +655,6 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 {
 	int i;
 
-	become_root();
 	for (i=0; i<fsp->num_pending_break_messages; i++) {
 		struct share_mode_entry *e = &fsp->pending_break_messages[i];
 		char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
@@ -666,7 +664,6 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 		message_send_pid(e->pid, MSG_SMB_BREAK_RESPONSE,
 				 msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
 	}
-	unbecome_root();
 
 	SAFE_FREE(fsp->pending_break_messages);
 	fsp->num_pending_break_messages = 0;
@@ -694,7 +691,7 @@ static void process_oplock_break_response(int msg_type, struct process_id src,
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got oplock break response from pid %d: 0x%x/%.0f/%lu mid %u\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
@@ -721,7 +718,7 @@ static void process_open_retry_message(int msg_type, struct process_id src,
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, buf);
+	message_to_share_mode_entry(&msg, (char *)buf);
 
 	DEBUG(10, ("Got open retry msg from pid %d: 0x%x/%.0f/%lu mid %u\n",
 		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
@@ -801,10 +798,8 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 
 		share_mode_entry_to_message(msg, share_entry);
 
-		become_root();
 		message_send_pid(share_entry->pid, MSG_SMB_ASYNC_LEVEL2_BREAK,
 				 msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
-		unbecome_root();
 	}
 
 	/* We let the message receivers handle removing the oplock state
@@ -859,7 +854,7 @@ void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
 
 BOOL init_oplocks(void)
 {
-	DEBUG(3,("open_oplock_ipc: initializing messages.\n"));
+	DEBUG(3,("init_oplocks: initializing messages.\n"));
 
 	message_register(MSG_SMB_BREAK_REQUEST,
 			 process_oplock_break_message);
