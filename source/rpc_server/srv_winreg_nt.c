@@ -190,7 +190,7 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
 	}
 
 	*maxnum   = num_values;
-	*maxlen   = lenmax;
+	*maxlen   = lenmax*2;
 	*maxsize  = sizemax;
 	
 	TALLOC_FREE( values );
