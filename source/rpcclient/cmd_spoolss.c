@@ -2012,7 +2012,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
         if (!W_ERROR_IS_OK(result))
                 goto done;
 		
-	printf("%s\n", timestring(True));
+	printf("%s\n", current_timestring(True));
 	printf("\tchange_id (before set)\t:[0x%x]\n", info.change_id);
 
 	/* Set the printer data */
@@ -2024,13 +2024,15 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		UNISTR2 data;
 		init_unistr2(&data, argv[4], UNI_STR_TERMINATE);
 		value.size = data.uni_str_len * 2;
-		value.data_p = TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
+		value.data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, data.buffer,
+						      value.size);
 		break;
 	}
 	case REG_DWORD: {
 		uint32 data = strtoul(argv[4], NULL, 10);
 		value.size = sizeof(data);
-		value.data_p = TALLOC_MEMDUP(mem_ctx, &data, sizeof(data));
+		value.data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, &data,
+						      sizeof(data));
 		break;
 	}
 	case REG_BINARY: {
@@ -2088,7 +2090,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
         if (!W_ERROR_IS_OK(result))
                 goto done;
 		
-	printf("%s\n", timestring(True));
+	printf("%s\n", current_timestring(True));
 	printf("\tchange_id (after set)\t:[0x%x]\n", info.change_id);
 
 done:

@@ -215,9 +215,9 @@ static NTTIME centry_nttime(struct cache_entry *centry)
 			 centry->len - centry->ofs));
 		smb_panic("centry_nttime");
 	}
-	ret.low = IVAL(centry->data, centry->ofs);
+	ret = IVAL(centry->data, centry->ofs);
 	centry->ofs += 4;
-	ret.high = IVAL(centry->data, centry->ofs);
+	ret += (uint64_t)IVAL(centry->data, centry->ofs) << 32;
 	centry->ofs += 4;
 	return ret;
 }
@@ -706,9 +706,9 @@ static void centry_put_sid(struct cache_entry *centry, const DOM_SID *sid)
 static void centry_put_nttime(struct cache_entry *centry, NTTIME nt)
 {
 	centry_expand(centry, 8);
-	SIVAL(centry->data, centry->ofs, nt.low);
+	SIVAL(centry->data, centry->ofs, nt & 0xFFFFFFFF);
 	centry->ofs += 4;
-	SIVAL(centry->data, centry->ofs, nt.high);
+	SIVAL(centry->data, centry->ofs, nt >> 32);
 	centry->ofs += 4;
 }
 

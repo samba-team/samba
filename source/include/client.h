@@ -41,9 +41,9 @@ typedef struct file_info
 	uid_t uid;
 	gid_t gid;
 	/* these times are normally kept in GMT */
-	time_t mtime;
-	time_t atime;
-	time_t ctime;
+	struct timespec mtime_ts;
+	struct timespec atime_ts;
+	struct timespec ctime_ts;
 	pstring name;
 	pstring dir;
 	char short_name[13*3]; /* the *3 is to cope with multi-byte */

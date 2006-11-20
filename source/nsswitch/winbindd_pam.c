@@ -35,17 +35,17 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	fstring str_sid;
 
 	state->response.data.auth.info3.logon_time = 
-		nt_time_to_unix(&info3->logon_time);
+		nt_time_to_unix(info3->logon_time);
 	state->response.data.auth.info3.logoff_time = 
-		nt_time_to_unix(&info3->logoff_time);
+		nt_time_to_unix(info3->logoff_time);
 	state->response.data.auth.info3.kickoff_time = 
-		nt_time_to_unix(&info3->kickoff_time);
+		nt_time_to_unix(info3->kickoff_time);
 	state->response.data.auth.info3.pass_last_set_time = 
-		nt_time_to_unix(&info3->pass_last_set_time);
+		nt_time_to_unix(info3->pass_last_set_time);
 	state->response.data.auth.info3.pass_can_change_time = 
-		nt_time_to_unix(&info3->pass_can_change_time);
+		nt_time_to_unix(info3->pass_can_change_time);
 	state->response.data.auth.info3.pass_must_change_time = 
-		nt_time_to_unix(&info3->pass_must_change_time);
+		nt_time_to_unix(info3->pass_must_change_time);
 
 	state->response.data.auth.info3.logon_count = info3->logon_count;
 	state->response.data.auth.info3.bad_pw_count = info3->bad_pw_count;
@@ -819,12 +819,12 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			return NT_STATUS_LOGON_FAILURE;
 		}
 #endif
-		kickoff_time = nt_time_to_unix(&my_info3->kickoff_time);
+		kickoff_time = nt_time_to_unix(my_info3->kickoff_time);
 		if (kickoff_time != 0 && time(NULL) > kickoff_time) {
 			return NT_STATUS_ACCOUNT_EXPIRED;
 		}
 
-		must_change_time = nt_time_to_unix(&my_info3->pass_must_change_time);
+		must_change_time = nt_time_to_unix(my_info3->pass_must_change_time);
 		if (must_change_time != 0 && must_change_time < time(NULL)) {
 			return NT_STATUS_PASSWORD_EXPIRED;
 		}

@@ -99,7 +99,7 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("%s : trust_pw_change_and_store_it: Changed password.\n", 
-			 timestring(False)));
+			 current_timestring(False)));
 		/*
 		 * Return the result of trying to write the new password
 		 * back into the trust account file.

@@ -843,7 +843,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	result = rpccli_samr_query_dom_info(cli, mem_ctx, &dom_pol, 8, &ctr);
 
 	if (NT_STATUS_IS_OK(result)) {
-		*seq = ctr.info.inf8.seq_num.low;
+		*seq = ctr.info.inf8.seq_num;
 		got_seq_num = True;
 		goto seq_num;
 	}
@@ -854,7 +854,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	result = rpccli_samr_query_dom_info(cli, mem_ctx, &dom_pol, 2, &ctr);
 	
 	if (NT_STATUS_IS_OK(result)) {
-		*seq = ctr.info.inf2.seq_num.low;
+		*seq = ctr.info.inf2.seq_num;
 		got_seq_num = True;
 	}
 

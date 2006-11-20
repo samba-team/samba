@@ -79,17 +79,19 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 		DEBUG(0,("modify_trust_password: unable to open the domain client session to machine %s. Error was : %s.\n", 
 			dc_name, nt_errstr(nt_status)));
 		cli_shutdown(cli);
+		cli = NULL;
 		goto failed;
 	}
 
 	nt_status = trust_pw_find_change_and_store_it(netlogon_pipe, cli->mem_ctx, domain);
   
 	cli_shutdown(cli);
+	cli = NULL;
 	
 failed:
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("%s : change_trust_account_password: Failed to change password for domain %s.\n", 
-			timestring(False), domain));
+			current_timestring(False), domain));
 	}
 	else
 		DEBUG(5,("change_trust_account_password: sucess!\n"));

@@ -79,6 +79,59 @@ cleanup:
 	return ret;	
 }
 
+/****************************************************************************
+ Set UNIX extensions capabilities.
+****************************************************************************/
+                                                                                                                   
+BOOL cli_set_unix_extensions_capabilities(struct cli_state *cli, uint16 major, uint16 minor,
+                                        uint32 caplow, uint32 caphigh)
+{
+	BOOL ret = False;
+	uint16 setup;
+	char param[4];
+	char data[12];
+	char *rparam=NULL, *rdata=NULL;
+	unsigned int rparam_count=0, rdata_count=0;
+
+	setup = TRANSACT2_SETFSINFO;
+	
+	SSVAL(param,0,0);
+	SSVAL(param,2,SMB_SET_CIFS_UNIX_INFO);
+
+	SSVAL(data,0,major);
+	SSVAL(data,2,minor);
+	SIVAL(data,4,caplow);
+	SIVAL(data,8,caphigh);
+
+	if (!cli_send_trans(cli, SMBtrans2, 
+		    NULL, 
+		    0, 0,
+		    &setup, 1, 0,
+		    param, 4, 0,
+		    data, 12, 560)) {
+		goto cleanup;
+	}
+	
+	if (!cli_receive_trans(cli, SMBtrans2,
+                              &rparam, &rparam_count,
+                              &rdata, &rdata_count)) {
+		goto cleanup;
+	}
+
+	if (cli_is_error(cli)) {
+		ret = False;
+		goto cleanup;
+	} else {
+		ret = True;
+	}
+
+cleanup:
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
+
+	return ret;	
+}
+
 BOOL cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr)
 {
 	BOOL ret = False;
@@ -229,7 +282,9 @@ BOOL cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *
 	}
 
 	if (pdate) {
-		*pdate = interpret_long_date(rdata);
+		struct timespec ts;
+		ts = interpret_long_date(rdata);
+		*pdate = ts.tv_sec;
 	}
 	if (pserial_number) {
 		*pserial_number = IVAL(rdata,8);

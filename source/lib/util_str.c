@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) Simo Sorce      2001-2002
    Copyright (C) Martin Pool     2003
+   Copyright (C) James Peach	 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,13 +30,18 @@
  **/
 
 /**
- * Get the next token from a string, return False if none found.
- * Handles double-quotes.
+ * Internal function to get the next token from a string, return False if none
+ * found.  Handles double-quotes.  This is the work horse function called by
+ * next_token() and next_token_no_ltrim().
  * 
  * Based on a routine by GJC@VILLAGE.COM. 
  * Extensively modified by Andrew.Tridgell@anu.edu.au
- **/
-BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
+ */
+static BOOL next_token_internal(const char **ptr,
+                                char *buff,
+                                const char *sep,
+                                size_t bufsize,
+                                BOOL ltrim)
 {
 	char *s;
 	char *pbuf;
@@ -51,9 +57,11 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	if (!sep)
 		sep = " \t\n\r";
 
-	/* find the first non sep char */
+	/* find the first non sep char, if left-trimming is requested */
+	if (ltrim) {
 	while (*s && strchr_m(sep,*s))
 		s++;
+	}
 	
 	/* nothing left? */
 	if (! *s)
@@ -74,6 +82,29 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	*pbuf = 0;
 	
 	return(True);
+}
+
+/*
+ * Get the next token from a string, return False if none found.  Handles
+ * double-quotes.  This version trims leading separator characters before
+ * looking for a token.
+ */
+BOOL next_token(const char **ptr, char *buff, const char *sep, size_t bufsize)
+{
+    return next_token_internal(ptr, buff, sep, bufsize, True);
+}
+
+/*
+ * Get the next token from a string, return False if none found.  Handles
+ * double-quotes.  This version does not trim leading separator characters
+ * before looking for a token.
+ */
+BOOL next_token_no_ltrim(const char **ptr,
+                         char *buff,
+                         const char *sep,
+                         size_t bufsize)
+{
+    return next_token_internal(ptr, buff, sep, bufsize, False);
 }
 
 /**
@@ -1043,7 +1074,7 @@ char *realloc_string_sub(char *string, const char *pattern,
 	while ((p = strstr_m(s,pattern))) {
 		if (ld > 0) {
 			int offset = PTR_DIFF(s,string);
-			string = SMB_REALLOC(string, ls + ld + 1);
+			string = (char *)SMB_REALLOC(string, ls + ld + 1);
 			if (!string) {
 				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
 				SAFE_FREE(in);
@@ -1112,7 +1143,8 @@ char *talloc_string_sub(TALLOC_CTX *mem_ctx, const char *src,
 	while ((p = strstr_m(s,pattern))) {
 		if (ld > 0) {
 			int offset = PTR_DIFF(s,string);
-			string = TALLOC_REALLOC(mem_ctx, string, ls + ld + 1);
+			string = (char *)TALLOC_REALLOC(mem_ctx, string,
+							ls + ld + 1);
 			if (!string) {
 				DEBUG(0, ("talloc_string_sub: out of "
 					  "memory!\n"));
@@ -1561,6 +1593,76 @@ void strupper_m(char *s)
 }
 
 /**
+ Count the number of UCS2 characters in a string. Normally this will
+ be the same as the number of bytes in a string for single byte strings,
+ but will be different for multibyte.
+**/
+
+size_t strlen_m(const char *s)
+{
+	size_t count = 0;
+
+	if (!s) {
+		return 0;
+	}
+
+	while (*s && !(((uint8_t)*s) & 0x80)) {
+		s++;
+		count++;
+	}
+
+	if (!*s) {
+		return count;
+	}
+
+	while (*s) {
+		size_t c_size;
+		codepoint_t c = next_codepoint(s, &c_size);
+		if (c < 0x10000) {
+			/* Unicode char fits into 16 bits. */
+			count += 1;
+		} else {
+			/* Double-width unicode char - 32 bits. */
+			count += 2;
+		}
+		s += c_size;
+	}
+
+	return count;
+}
+
+/**
+ Count the number of UCS2 characters in a string including the null
+ terminator.
+**/
+
+size_t strlen_m_term(const char *s)
+{
+	if (!s) {
+		return 0;
+	}
+	return strlen_m(s) + 1;
+}
+
+/*
+ * Weird helper routine for the winreg pipe: If nothing is around, return 0,
+ * if a string is there, include the terminator.
+ */
+
+size_t strlen_m_term_null(const char *s)
+{
+	size_t len;
+	if (!s) {
+		return 0;
+	}
+	len = strlen_m(s);
+	if (len == 0) {
+		return 0;
+	}
+
+	return len+1;
+}
+/**
  Return a RFC2254 binary string representation of a buffer.
  Used in LDAP filters.
  Caller must free.
@@ -1571,7 +1673,7 @@ char *binary_string_rfc2254(char *buf, int len)
 	char *s;
 	int i, j;
 	const char *hex = "0123456789ABCDEF";
-	s = SMB_MALLOC(len * 3 + 1);
+	s = (char *)SMB_MALLOC(len * 3 + 1);
 	if (!s)
 		return NULL;
 	for (j=i=0;i<len;i++) {
@@ -1589,7 +1691,7 @@ char *binary_string(char *buf, int len)
 	char *s;
 	int i, j;
 	const char *hex = "0123456789ABCDEF";
-	s = SMB_MALLOC(len * 2 + 1);
+	s = (char *)SMB_MALLOC(len * 2 + 1);
 	if (!s)
 		return NULL;
 	for (j=i=0;i<len;i++) {
@@ -1630,49 +1732,6 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 	va_end(ap);
 	return ret;
 }
-
-
-#if !defined(HAVE_STRNDUP) || defined(BROKEN_STRNDUP)
-/**
- Some platforms don't have strndup.
-**/
-#if defined(PARANOID_MALLOC_CHECKER)
-#undef strndup
-#endif
-
- char *strndup(const char *s, size_t n)
-{
-	char *ret;
-	
-	n = strnlen(s, n);
-	ret = SMB_MALLOC(n+1);
-	if (!ret)
-		return NULL;
-	memcpy(ret, s, n);
-	ret[n] = 0;
-
-	return ret;
-}
-
-#if defined(PARANOID_MALLOC_CHECKER)
-#define strndup(s,n) __ERROR_DONT_USE_STRNDUP_DIRECTLY
-#endif
-
-#endif
-
-#if !defined(HAVE_STRNLEN) || defined(BROKEN_STRNLEN)
-/**
- Some platforms don't have strnlen
-**/
-
- size_t strnlen(const char *s, size_t n)
-{
-	size_t i;
-	for (i=0; i<n && s[i] != '\0'; i++)
-		/* noop */ ;
-	return i;
-}
-#endif
 
 /**
  List of Strings manipulation functions
@@ -2210,7 +2269,7 @@ char * base64_encode_data_blob(DATA_BLOB data)
 	out_cnt = 0;
 	len = data.length;
 	output_len = data.length * 2;
-	result = SMB_MALLOC(output_len); /* get us plenty of space */
+	result = (char *)SMB_MALLOC(output_len); /* get us plenty of space */
 
 	while (len-- && out_cnt < (data.length * 2) - 5) {
 		int c = (unsigned char) *(data.data++);
@@ -2274,16 +2333,83 @@ SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 	return val;
 }
 
+/* Convert a size specification to a count of bytes. We accept the following
+ * suffixes:
+ *	    bytes if there is no suffix
+ *	kK  kibibytes
+ *	mM  mebibytes
+ *	gG  gibibytes
+ *	tT  tibibytes
+ *	pP  whatever the ISO name for petabytes is
+ *
+ *  Returns 0 if the string can't be converted.
+ */
+SMB_OFF_T conv_str_size(const char * str)
+{
+        SMB_OFF_T lval;
+	char * end;
+
+        if (str == NULL || *str == '\0') {
+                return 0;
+        }
+
+#ifdef HAVE_STRTOULL
+	if (sizeof(SMB_OFF_T) == 8) {
+	    lval = strtoull(str, &end, 10 /* base */);
+	} else {
+	    lval = strtoul(str, &end, 10 /* base */);
+	}
+#else
+	lval = strtoul(str, &end, 10 /* base */);
+#endif
+
+        if (end == NULL || end == str) {
+                return 0;
+        }
+
+        if (*end) {
+		SMB_OFF_T lval_orig = lval;
+
+                if (strwicmp(end, "K") == 0) {
+                        lval *= (SMB_OFF_T)1024;
+                } else if (strwicmp(end, "M") == 0) {
+                        lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024);
+                } else if (strwicmp(end, "G") == 0) {
+                        lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
+				(SMB_OFF_T)1024);
+                } else if (strwicmp(end, "T") == 0) {
+                        lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
+				(SMB_OFF_T)1024 * (SMB_OFF_T)1024);
+                } else if (strwicmp(end, "P") == 0) {
+                        lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
+				(SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
+				(SMB_OFF_T)1024);
+                } else {
+                        return 0;
+                }
+
+		/* Primitive attempt to detect wrapping on platforms with
+		 * 4-byte SMB_OFF_T. It's better to let the caller handle
+		 * a failure than some random number.
+		 */
+		if (lval_orig <= lval) {
+			return 0;
+		}
+        }
+
+	return lval;
+}
+
 void string_append(char **left, const char *right)
 {
 	int new_len = strlen(right) + 1;
 
 	if (*left == NULL) {
-		*left = SMB_MALLOC(new_len);
+		*left = (char *)SMB_MALLOC(new_len);
 		*left[0] = '\0';
 	} else {
 		new_len += strlen(*left);
-		*left = SMB_REALLOC(*left, new_len);
+		*left = (char *)SMB_REALLOC(*left, new_len);
 	}
 
 	if (*left == NULL) {
@@ -2424,5 +2550,54 @@ BOOL validate_net_name( const char *name, const char *invalid_chars, int max_len
 	}
 
 	return True;
+}
+
+
+/**
+return the number of bytes occupied by a buffer in ASCII format
+the result includes the null termination
+limited by 'n' bytes
+**/
+size_t ascii_len_n(const char *src, size_t n)
+{
+	size_t len;
+
+	len = strnlen(src, n);
+	if (len+1 <= n) {
+		len += 1;
+	}
+
+	return len;
+}
+
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
+the result includes the null termination
+**/
+size_t utf16_len(const void *buf)
+{
+	size_t len;
+
+	for (len = 0; SVAL(buf,len); len += 2) ;
+
+	return len + 2;
+}
+
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
+the result includes the null termination
+limited by 'n' bytes
+**/
+size_t utf16_len_n(const void *src, size_t n)
+{
+	size_t len;
+
+	for (len = 0; (len+2 < n) && SVAL(src, len); len += 2) ;
+
+	if (len+2 <= n) {
+		len += 2;
+	}
+
+	return len;
 }
 

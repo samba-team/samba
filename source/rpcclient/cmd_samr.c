@@ -84,17 +84,17 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	printf("\tRemote Dial :\t%s\n", temp);
 	
 	printf("\tLogon Time               :\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->logon_time)));
+	       http_timestring(nt_time_to_unix(usr->logon_time)));
 	printf("\tLogoff Time              :\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->logoff_time)));
+	       http_timestring(nt_time_to_unix(usr->logoff_time)));
 	printf("\tKickoff Time             :\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->kickoff_time)));
+	       http_timestring(nt_time_to_unix(usr->kickoff_time)));
 	printf("\tPassword last set Time   :\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->pass_last_set_time)));
+	       http_timestring(nt_time_to_unix(usr->pass_last_set_time)));
 	printf("\tPassword can change Time :\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->pass_can_change_time)));
+	       http_timestring(nt_time_to_unix(usr->pass_can_change_time)));
 	printf("\tPassword must change Time:\t%s\n", 
-	       http_timestring(nt_time_to_unix(&usr->pass_must_change_time)));
+	       http_timestring(nt_time_to_unix(usr->pass_must_change_time)));
 	
 	printf("\tunknown_2[0..31]...\n"); /* user passwords? */
 	
@@ -114,39 +114,6 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	}
 }
 
-static const char *display_time(NTTIME nttime)
-{
-	static fstring string;
-
-	float high;
-	float low;
-	int sec;
-	int days, hours, mins, secs;
-
-	if (nttime.high==0 && nttime.low==0)
-		return "Now";
-
-	if (nttime.high==0x80000000 && nttime.low==0)
-		return "Never";
-	high = 65536;	
-	high = high/10000;
-	high = high*65536;
-	high = high/1000;
-	high = high * (~nttime.high);
-
-	low = ~nttime.low;	
-	low = low/(1000*1000*10);
-
-	sec=high+low;
-
-	days=sec/(60*60*24);
-	hours=(sec - (days*60*60*24)) / (60*60);
-	mins=(sec - (days*60*60*24) - (hours*60*60) ) / 60;
-	secs=sec - (days*60*60*24) - (hours*60*60) - (mins*60);
-
-	fstr_sprintf(string, "%u days, %u hours, %u minutes, %u seconds", days, hours, mins, secs);
-	return (string);
-}
 
 static void display_password_properties(uint32 password_properties) 
 {
@@ -198,7 +165,7 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	printf("Total Groups:\t%d\n", info2->num_domain_grps);
 	printf("Total Aliases:\t%d\n", info2->num_local_grps);
 	
-	printf("Sequence No:\t%d\n", info2->seq_num.low);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info2->seq_num);
 
 	printf("Force Logoff:\t%d\n", (int)nt_time_to_unix_abs(&info2->logout));
 
@@ -243,9 +210,9 @@ static void display_sam_unk_info_7(SAM_UNK_INFO_7 *info7)
 
 static void display_sam_unk_info_8(SAM_UNK_INFO_8 *info8)
 {
-	printf("Sequence No:\t%d\n", info8->seq_num.low);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info8->seq_num);
 	printf("Domain Create Time:\t%s\n", 
-		http_timestring(nt_time_to_unix(&info8->domain_create_time)));
+		http_timestring(nt_time_to_unix(info8->domain_create_time)));
 }
 
 static void display_sam_unk_info_9(SAM_UNK_INFO_9 *info9)
@@ -262,9 +229,9 @@ static void display_sam_unk_info_12(SAM_UNK_INFO_12 *info12)
 
 static void display_sam_unk_info_13(SAM_UNK_INFO_13 *info13)
 {
-	printf("Sequence No:\t%d\n", info13->seq_num.low);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info13->seq_num);
 	printf("Domain Create Time:\t%s\n", 
-		http_timestring(nt_time_to_unix(&info13->domain_create_time)));
+		http_timestring(nt_time_to_unix(info13->domain_create_time)));
 	printf("Unknown1:\t%d\n", info13->unknown1);
 	printf("Unknown2:\t%d\n", info13->unknown2);
 
@@ -375,14 +342,14 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	SAM_USERINFO_CTR *user_ctr;
 	fstring server;
-	uint32 user_rid;
+	uint32 user_rid = 0;
 	
 	if ((argc < 2) || (argc > 4)) {
 		printf("Usage: %s rid [info level] [access mask] \n", argv[0]);
 		return NT_STATUS_OK;
 	}
 	
-	user_rid = strtoul(argv[1], NULL, 10);
+	sscanf(argv[1], "%i", &user_rid);
 	
 	if (argc > 2)
 		sscanf(argv[2], "%i", &info_level);
@@ -820,7 +787,7 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 		goto done;
 
 	/* Make sure to wait for our DC's reply */
-	old_timeout = cli_set_timeout(cli->cli, 30000); /* 30 seconds. */
+	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
 	result = rpccli_samr_query_groupmem(cli, mem_ctx, &group_pol,
 					 &num_members, &group_rids,

@@ -462,7 +462,7 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 		TALLOC_CTX *ctx = talloc_init("rpc_info_internals");
 		d_printf("Domain Name: %s\n", unistr2_tdup(ctx, &ctr.info.inf2.uni_domain));
 		d_printf("Domain SID: %s\n", sid_str);
-		d_printf("Sequence number: %u\n", ctr.info.inf2.seq_num.low);
+		d_printf("Sequence number: %llu\n", (unsigned long long)ctr.info.inf2.seq_num);
 		d_printf("Num users: %u\n", ctr.info.inf2.num_domain_usrs);
 		d_printf("Num domain groups: %u\n", ctr.info.inf2.num_domain_grps);
 		d_printf("Num local groups: %u\n", ctr.info.inf2.num_local_grps);

@@ -33,6 +33,7 @@ static const struct {
 	{PROTOCOL_LANMAN1,"LANMAN1.0"},
 	{PROTOCOL_LANMAN2,"LM1.2X002"},
 	{PROTOCOL_LANMAN2,"DOS LANMAN2.1"},
+	{PROTOCOL_LANMAN2,"LANMAN2.1"},
 	{PROTOCOL_LANMAN2,"Samba"},
 	{PROTOCOL_NT1,"NT LANMAN 1.0"},
 	{PROTOCOL_NT1,"NT LM 0.12"},
@@ -1143,6 +1144,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	}
 
 	if (cli->protocol >= PROTOCOL_NT1) {    
+		struct timespec ts;
 		/* NT protocol */
 		cli->sec_mode = CVAL(cli->inbuf,smb_vwv1);
 		cli->max_mux = SVAL(cli->inbuf, smb_vwv1+1);
@@ -1151,7 +1153,8 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->serverzone = SVALS(cli->inbuf,smb_vwv15+1);
 		cli->serverzone *= 60;
 		/* this time arrives in real GMT */
-		cli->servertime = interpret_long_date(cli->inbuf+smb_vwv11+1);
+		ts = interpret_long_date(cli->inbuf+smb_vwv11+1);
+		cli->servertime = ts.tv_sec;
 		cli->secblob = data_blob(smb_buf(cli->inbuf),smb_buflen(cli->inbuf));
 		cli->capabilities = IVAL(cli->inbuf,smb_vwv9+1);
 		if (cli->capabilities & CAP_RAW_MODE) {
@@ -1562,10 +1565,11 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, const char *srchost,
 	 * then use *SMBSERVER immediately.
 	 */
 
-	if(is_ipaddress(desthost))
+	if(is_ipaddress(desthost)) {
 		make_nmb_name(&called, "*SMBSERVER", 0x20);
-	else
+	} else {
 		make_nmb_name(&called, desthost, 0x20);
+	}
 
 	if (!cli_session_request(cli, &calling, &called)) {
 		struct nmb_name smbservername;

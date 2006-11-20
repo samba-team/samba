@@ -445,15 +445,15 @@ CacUserInfo *cac_MakeUserInfo( TALLOC_CTX * mem_ctx, SAM_USERINFO_CTR * ctr )
 
 	ZERO_STRUCTP( info );
 
-	info->logon_time = nt_time_to_unix( &id21->logon_time );
-	info->logoff_time = nt_time_to_unix( &id21->logoff_time );
-	info->kickoff_time = nt_time_to_unix( &id21->kickoff_time );
+	info->logon_time = nt_time_to_unix( id21->logon_time );
+	info->logoff_time = nt_time_to_unix( id21->logoff_time );
+	info->kickoff_time = nt_time_to_unix( id21->kickoff_time );
 	info->pass_last_set_time =
-		nt_time_to_unix( &id21->pass_last_set_time );
+		nt_time_to_unix( id21->pass_last_set_time );
 	info->pass_can_change_time =
-		nt_time_to_unix( &id21->pass_can_change_time );
+		nt_time_to_unix( id21->pass_can_change_time );
 	info->pass_must_change_time =
-		nt_time_to_unix( &id21->pass_must_change_time );
+		nt_time_to_unix( id21->pass_must_change_time );
 
 	info->username =
 		talloc_unistr2_to_ascii( mem_ctx, id21->uni_user_name );

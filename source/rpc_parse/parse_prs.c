@@ -158,7 +158,8 @@ char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count)
 
 	if (size) {
 		/* We can't call the type-safe version here. */
-		ret = _talloc_zero_array(ps->mem_ctx, size, count, "parse_prs");
+		ret = (char *)_talloc_zero_array(ps->mem_ctx, size, count,
+						 "parse_prs");
 	}
 	return ret;
 }
@@ -213,7 +214,7 @@ BOOL prs_set_buffer_size(prs_struct *ps, uint32 newsize)
 		if (newsize == 0) {
 			SAFE_FREE(ps->data_p);
 		} else {
-			ps->data_p = SMB_REALLOC(ps->data_p, newsize);
+			ps->data_p = (char *)SMB_REALLOC(ps->data_p, newsize);
 
 			if (ps->data_p == NULL) {
 				DEBUG(0,("prs_set_buffer_size: Realloc failure for size %u.\n",
@@ -265,7 +266,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 
 		new_size = MAX(RPC_MAX_PDU_FRAG_LEN,extra_space);
 
-		if((ps->data_p = SMB_MALLOC(new_size)) == NULL) {
+		if((ps->data_p = (char *)SMB_MALLOC(new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
 			return False;
 		}
@@ -277,7 +278,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 		 */
 		new_size = MAX(ps->buffer_size*2, ps->buffer_size + extra_space);		
 
-		if ((ps->data_p = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
+		if ((ps->data_p = (char *)SMB_REALLOC(ps->data_p, new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Realloc failure for size %u.\n",
 				(unsigned int)new_size));
 			return False;
@@ -306,7 +307,7 @@ BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 		return False;
 	}
 
-	if((ps->data_p = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
+	if((ps->data_p = (char *)SMB_REALLOC(ps->data_p, new_size)) == NULL) {
 		DEBUG(0,("prs_force_grow: Realloc failure for size %u.\n",
 			(unsigned int)new_size));
 		return False;
@@ -624,9 +625,10 @@ BOOL prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8)
  ********************************************************************/
 
 BOOL prs_pointer( const char *name, prs_struct *ps, int depth, 
-                 void **data, size_t data_size,
+                 void *dta, size_t data_size,
                  BOOL(*prs_fn)(const char*, prs_struct*, int, void*) )
 {
+	void ** data = (void **)dta;
 	uint32 data_p;
 
 	/* output f000baaa to stream if the pointer is non-zero. */
@@ -1459,7 +1461,7 @@ int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
     kbuf.dsize = strlen(keystr)+1;
     dbuf.dptr = ps->data_p;
     dbuf.dsize = prs_offset(ps);
-    return tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+    return tdb_trans_store(tdb, kbuf, dbuf, TDB_REPLACE);
 }
 
 /* useful function to fetch a structure into rpc wire format */
@@ -1624,7 +1626,7 @@ void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 	uchar digest_final[16];
 	uchar confounder[8];
 	uchar seq_num[8];
-	static const uchar nullbytes[8];
+	static const uchar nullbytes[8] = { 0, };
 
 	static const uchar schannel_seal_sig[8] = SCHANNEL_SEAL_SIGNATURE;
 	static const uchar schannel_sign_sig[8] = SCHANNEL_SIGN_SIGNATURE;
@@ -1792,4 +1794,36 @@ BOOL schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 	   it must know the session key */
 	return (memcmp(digest_final, verf->packet_digest, 
 		       sizeof(verf->packet_digest)) == 0);
+}
+
+/*******************************************************************
+creates a new prs_struct containing a DATA_BLOB
+********************************************************************/
+BOOL prs_init_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
+{
+	if (!prs_init( prs, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL ))
+		return False;
+
+
+	if (!prs_copy_data_in(prs, (char *)blob->data, blob->length))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+return the contents of a prs_struct in a DATA_BLOB
+********************************************************************/
+BOOL prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
+{
+	blob->length = prs_data_size(prs);
+	blob->data = (uint8 *)talloc_zero_size(mem_ctx, blob->length);
+	
+	/* set the pointer at the end of the buffer */
+	prs_set_offset( prs, prs_data_size(prs) );
+
+	if (!prs_copy_all_data_out((char *)blob->data, prs))
+		return False;
+	
+	return True;
 }

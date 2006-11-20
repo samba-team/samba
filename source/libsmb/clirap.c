@@ -379,7 +379,9 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
 send a qpathinfo call
 ****************************************************************************/
 BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
-		   time_t *c_time, time_t *a_time, time_t *m_time, 
+		   time_t *change_time,
+                   time_t *access_time,
+                   time_t *write_time, 
 		   SMB_OFF_T *size, uint16 *mode)
 {
 	unsigned int data_len = 0;
@@ -434,14 +436,14 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 		date_fn = cli_make_unix_date2;
 	}
 
-	if (c_time) {
-		*c_time = date_fn(cli, rdata+0);
+	if (change_time) {
+		*change_time = date_fn(cli, rdata+0);
 	}
-	if (a_time) {
-		*a_time = date_fn(cli, rdata+4);
+	if (access_time) {
+		*access_time = date_fn(cli, rdata+4);
 	}
-	if (m_time) {
-		*m_time = date_fn(cli, rdata+8);
+	if (write_time) {
+		*write_time = date_fn(cli, rdata+8);
 	}
 	if (size) {
 		*size = IVAL(rdata, 12);
@@ -460,7 +462,11 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 send a setpathinfo call
 ****************************************************************************/
 BOOL cli_setpathinfo(struct cli_state *cli, const char *fname, 
-                     time_t c_time, time_t a_time, time_t m_time, uint16 mode)
+                     time_t create_time,
+                     time_t access_time,
+                     time_t write_time,
+                     time_t change_time,
+                     uint16 mode)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -495,16 +501,16 @@ BOOL cli_setpathinfo(struct cli_state *cli, const char *fname,
          * Add the create, last access, modification, and status change times
          */
         
-        /* Don't set create time, at offset 0 */
+        put_long_date(p, create_time);
         p += 8;
 
-        put_long_date(p, a_time);
+        put_long_date(p, access_time);
         p += 8;
         
-        put_long_date(p, m_time);
+        put_long_date(p, write_time);
         p += 8;
         
-        put_long_date(p, c_time);
+        put_long_date(p, change_time);
         p += 8;
 
         /* Add attributes */
@@ -555,8 +561,11 @@ send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
 ****************************************************************************/
 
 BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
-		    time_t *create_time, time_t *access_time, time_t *write_time, 
-		    time_t *change_time, SMB_OFF_T *size, uint16 *mode,
+		    struct timespec *create_time,
+                    struct timespec *access_time,
+                    struct timespec *write_time, 
+		    struct timespec *change_time,
+                    SMB_OFF_T *size, uint16 *mode,
 		    SMB_INO_T *ino)
 {
 	unsigned int data_len = 0;
@@ -670,8 +679,11 @@ send a qfileinfo call
 ****************************************************************************/
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
 		   uint16 *mode, SMB_OFF_T *size,
-		   time_t *create_time, time_t *access_time, time_t *write_time, 
-		   time_t *change_time, SMB_INO_T *ino)
+		   struct timespec *create_time,
+                   struct timespec *access_time,
+                   struct timespec *write_time, 
+		   struct timespec *change_time,
+                   SMB_INO_T *ino)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -794,9 +806,9 @@ BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name,
 		return False;
 	}
 
-	sbuf->st_atime = interpret_long_date( rdata+8 ); /* Access time. */
-	sbuf->st_mtime = interpret_long_date( rdata+16 ); /* Write time. */
-	sbuf->st_ctime = interpret_long_date( rdata+24 ); /* Change time. */
+	set_atimespec(sbuf, interpret_long_date( rdata+8 )); /* Access time. */
+	set_mtimespec(sbuf, interpret_long_date( rdata+16 )); /* Write time. */
+	set_ctimespec(sbuf, interpret_long_date( rdata+24 )); /* Change time. */
 	
 	*attributes = IVAL( rdata, 32 );
 	
@@ -848,7 +860,13 @@ BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char **poutd
 		return False;
 	}
 
-	*poutdata = memdup(rdata, data_len);
+	*poutdata = (char *)memdup(rdata, data_len);
+	if (!*poutdata) {
+		SAFE_FREE(rdata);
+		SAFE_FREE(rparam);
+		return False;
+	}
+
 	*poutlen = data_len;
 
 	SAFE_FREE(rdata);

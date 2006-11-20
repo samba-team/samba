@@ -226,7 +226,7 @@ void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 }
 
 /* Return a UNIX errno from a NT status code */
-static struct {
+static const struct {
 	NTSTATUS status;
 	int error;
 } nt_errno_map[] = {

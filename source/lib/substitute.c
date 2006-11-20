@@ -522,7 +522,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 			a_string = realloc_string_sub(a_string, "%R", remote_proto);
 			break;
 		case 'T' :
-			a_string = realloc_string_sub(a_string, "%T", timestring(False));
+			a_string = realloc_string_sub(a_string, "%T", current_timestring(False));
 			break;
 		case 'a' :
 			a_string = realloc_string_sub(a_string, "%a", remote_arch);

@@ -6,7 +6,7 @@
  *  Copyright (C) Paul Ashton                  1997-2000,
  *  Copyright (C) Elrond                            2000,
  *  Copyright (C) Jeremy Allison                    2001,
- *  Copyright (C) Jean François Micouleau      1998-2001,
+ *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002.
  *  
  *  This program is free software; you can redistribute it and/or modify
@@ -549,15 +549,14 @@ static BOOL sam_io_unk_info1(const char *desc, SAM_UNK_INFO_1 * u_1,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info2(SAM_UNK_INFO_2 * u_2, const char *comment, 
-		    const char *domain, const char *server,
-		    uint32 seq_num, uint32 num_users, uint32 num_groups, 
-		    uint32 num_alias, NTTIME nt_logout, uint32 server_role)
+void init_unk_info2(SAM_UNK_INFO_2 * u_2,
+			const char *comment, const char *domain, const char *server,
+			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias, NTTIME nt_logout, uint32 server_role)
 {
 	u_2->logout = nt_logout;
 
-	u_2->seq_num.low = seq_num;
-        u_2->seq_num.high = 0x00000000;
+	u_2->seq_num = seq_num;
+
 	
 	u_2->unknown_4 = 0x00000001;
 	u_2->server_role = server_role;
@@ -785,8 +784,7 @@ inits a structure.
 void init_unk_info8(SAM_UNK_INFO_8 * u_8, uint32 seq_num)
 {
 	unix_to_nt_time(&u_8->domain_create_time, 0);
-	u_8->seq_num.low = seq_num;
-	u_8->seq_num.high = 0x00000000;
+	u_8->seq_num = seq_num;
 }
 
 /*******************************************************************
@@ -881,8 +879,7 @@ inits a structure.
 void init_unk_info13(SAM_UNK_INFO_13 * u_13, uint32 seq_num)
 {
 	unix_to_nt_time(&u_13->domain_create_time, 0);
-	u_13->seq_num.low = seq_num;
-	u_13->seq_num.high = 0x00000000;
+	u_13->seq_num = seq_num;
 	u_13->unknown1 = 0;
 	u_13->unknown2 = 0;
 }

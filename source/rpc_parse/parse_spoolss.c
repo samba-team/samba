@@ -2661,9 +2661,7 @@ BOOL smb_io_printer_driver_info_6(const char *desc, RPC_BUFFER *buffer, DRIVER_I
 	if (!smb_io_relarraystr("previousdrivernames", buffer, depth, &info->previousdrivernames))
 		return False;
 
-	if (!prs_uint32("date.low", ps, depth, &info->driver_date.low))
-		return False;
-	if (!prs_uint32("date.high", ps, depth, &info->driver_date.high))
+	if (!prs_uint64("date", ps, depth, &info->driver_date))
 		return False;
 
 	if (!prs_uint32("padding", ps, depth, &info->padding))

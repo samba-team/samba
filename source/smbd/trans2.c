@@ -3977,10 +3977,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			/* Ignore create time at offset pdata. */
 
 			/* access time */
-			tvs.actime = interpret_long_date(pdata+8);
+			tvs.actime = convert_timespec_to_time_t(interpret_long_date(pdata+8));
 
-			write_time = interpret_long_date(pdata+16);
-			changed_time = interpret_long_date(pdata+24);
+			write_time = convert_timespec_to_time_t(interpret_long_date(pdata+16));
+			changed_time = convert_timespec_to_time_t(interpret_long_date(pdata+24));
 
 			tvs.modtime = MIN(write_time, changed_time);
 
@@ -4206,8 +4206,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #endif /* LARGE_SMB_OFF_T */
 			}
 			pdata+=24;          /* ctime & st_blocks are not changed */
-			tvs.actime = interpret_long_date(pdata); /* access_time */
-			tvs.modtime = interpret_long_date(pdata+8); /* modification_time */
+			tvs.actime = convert_timespec_to_time_t(interpret_long_date(pdata)); /* access_time */
+			tvs.modtime = convert_timespec_to_time_t(interpret_long_date(pdata+8)); /* modification_time */
 			pdata+=16;
 			set_owner = (uid_t)IVAL(pdata,0);
 			pdata += 8;
@@ -4406,7 +4406,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		case SMB_FILE_RENAME_INFORMATION:
 		{
 			BOOL overwrite;
-			uint32 root_fid;
+			/* uint32 root_fid; */  /* Not used */
 			uint32 len;
 			pstring newname;
 			pstring base_name;
@@ -4417,7 +4417,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			}
 
 			overwrite = (CVAL(pdata,0) ? True : False);
-			root_fid = IVAL(pdata,4);
+			/* root_fid = IVAL(pdata,4); */
 			len = IVAL(pdata,8);
 			srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status);
 			if (!NT_STATUS_IS_OK(status)) {

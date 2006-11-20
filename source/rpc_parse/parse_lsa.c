@@ -664,7 +664,7 @@ BOOL lsa_io_r_enum_trust_dom(const char *desc, LSA_R_ENUM_TRUST_DOM *out,
 	if(!prs_uint32("count", ps, depth, &out->count))
 		return False;
 
-	if ( !prs_pointer("trusted_domains", ps, depth, (void**)&out->domlist, sizeof(DOMAIN_LIST), (PRS_POINTER_CAST)lsa_io_domain_list))
+	if ( !prs_pointer("trusted_domains", ps, depth, (void*)&out->domlist, sizeof(DOMAIN_LIST), (PRS_POINTER_CAST)lsa_io_domain_list))
 		return False;
 		
 	if(!prs_ntstatus("status", ps, depth, &out->status))
@@ -2922,7 +2922,7 @@ BOOL lsa_io_r_setsystemaccount(const char *desc, LSA_R_SETSYSTEMACCOUNT  *out, p
 }
 
 
-static void init_lsa_string( LSA_STRING *uni, const char *string )
+void init_lsa_string( LSA_STRING *uni, const char *string )
 {
 	init_unistr2(&uni->unistring, string, UNI_FLAGS_NONE);
 	init_uni_hdr(&uni->hdr, &uni->unistring);
@@ -3253,7 +3253,7 @@ BOOL lsa_io_r_enum_acct_rights(const char *desc, LSA_R_ENUM_ACCT_RIGHTS *out, pr
 	if(!prs_uint32("count   ", ps, depth, &out->count))
 		return False;
 
-	if ( !prs_pointer("rights", ps, depth, (void**)&out->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
+	if ( !prs_pointer("rights", ps, depth, (void*)&out->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
 		return False;
 
 	if(!prs_align(ps))
@@ -3305,7 +3305,7 @@ BOOL lsa_io_q_add_acct_rights(const char *desc, LSA_Q_ADD_ACCT_RIGHTS *in, prs_s
 	if(!prs_uint32("count", ps, depth, &in->count))
 		return False;
 
-	if ( !prs_pointer("rights", ps, depth, (void**)&in->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
+	if ( !prs_pointer("rights", ps, depth, (void*)&in->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
 		return False;
 
 	return True;
@@ -3374,7 +3374,7 @@ BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *in,
 	if(!prs_uint32("count", ps, depth, &in->count))
 		return False;
 
-	if ( !prs_pointer("rights", ps, depth, (void**)&in->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
+	if ( !prs_pointer("rights", ps, depth, (void*)&in->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
 		return False;
 
 	return True;
@@ -4059,7 +4059,7 @@ BOOL lsa_io_r_query_trusted_domain_info(const char *desc,
 	prs_debug(ps, depth, desc, "lsa_io_r_query_trusted_domain_info");
 	depth++;
 
-	if (!prs_pointer("trustdom", ps, depth, (void**)&r_q->info, 
+	if (!prs_pointer("trustdom", ps, depth, (void*)&r_q->info, 
 			 sizeof(LSA_TRUSTED_DOMAIN_INFO), 
 			 (PRS_POINTER_CAST)lsa_io_trustdom_query) )
 		return False;
@@ -4188,7 +4188,7 @@ BOOL lsa_io_r_query_dom_info(const char *desc, LSA_R_QUERY_DOM_INFO_POLICY *out,
 	prs_debug(ps, depth, desc, "lsa_io_r_query_dom_info");
 	depth++;
 
-	if (!prs_pointer("dominfo", ps, depth, (void**)&out->info, 
+	if (!prs_pointer("dominfo", ps, depth, (void*)&out->info, 
 			 sizeof(LSA_DOM_INFO_UNION), 
 			 (PRS_POINTER_CAST)lsa_io_dom_info_query) )
 		return False;

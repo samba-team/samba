@@ -255,19 +255,19 @@ void cac_InitCacTime( CacTime * cactime, NTTIME nttime )
 	ZERO_STRUCTP( cactime );
 
 	/*this code is taken from display_time() found in rpcclient/cmd_samr.c */
-	if ( nttime.high == 0 && nttime.low == 0 )
+	if ( nttime == 0 )
 		return;
 
-	if ( nttime.high == 0x80000000 && nttime.low == 0 )
+	if ( nttime == 0x80000000000000LL )
 		return;
 
 	high = 65536;
 	high = high / 10000;
 	high = high * 65536;
 	high = high / 1000;
-	high = high * ( ~nttime.high );
+	high = high * ( ~( nttime >> 32 ) );
 
-	low = ~nttime.low;
+	low = ~( nttime & 0xFFFFFFFF );
 	low = low / ( 1000 * 1000 * 10 );
 
 	sec = high + low;

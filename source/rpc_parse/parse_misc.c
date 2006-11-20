@@ -115,6 +115,7 @@ static BOOL smb_io_utime(const char *desc, UTIME *t, prs_struct *ps, int depth)
 
 BOOL smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 {
+	uint32 low, high;
 	if (nttime == NULL)
 		return False;
 
@@ -124,10 +125,19 @@ BOOL smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("low ", ps, depth, &nttime->low)) /* low part */
+	if (MARSHALLING(ps)) {
+		low = *nttime & 0xFFFFFFFF;
+		high = *nttime >> 32;
+	}
+	
+	if(!prs_uint32("low ", ps, depth, &low)) /* low part */
 		return False;
-	if(!prs_uint32("high", ps, depth, &nttime->high)) /* high part */
+	if(!prs_uint32("high", ps, depth, &high)) /* high part */
 		return False;
+
+	if (UNMARSHALLING(ps)) {
+		*nttime = (((uint64_t)high << 32) + low);
+	}
 
 	return True;
 }
@@ -1756,10 +1766,25 @@ BOOL smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
 /*******************************************************************
  Stream a uint64_struct
  ********************************************************************/
-BOOL prs_uint64(const char *name, prs_struct *ps, int depth, UINT64_S *data64)
+BOOL prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
 {
-	return prs_uint32(name, ps, depth+1, &data64->low) &&
-		prs_uint32(name, ps, depth+1, &data64->high);
+	if (UNMARSHALLING(ps)) {
+		uint32 high, low;
+
+		if (!prs_uint32(name, ps, depth+1, &low))
+			return False;
+
+		if (!prs_uint32(name, ps, depth+1, &high))
+			return False;
+
+		*data64 = ((uint64_t)high << 32) + low;
+
+		return True;
+	} else {
+		uint32 high = (*data64) >> 32, low = (*data64) & 0xFFFFFFFF;
+		return prs_uint32(name, ps, depth+1, &low) && 
+			   prs_uint32(name, ps, depth+1, &high);
+	}
 }
 
 /*******************************************************************

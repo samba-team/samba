@@ -141,6 +141,20 @@ struct smbc_dirent
 #define SMBC_DOS_MODE_DIRECTORY      0x10
 #define SMBC_DOS_MODE_ARCHIVE        0x20
 
+/*
+ * Valid values for the option "open_share_mode", when calling
+ * smbc_option_set()
+ */
+typedef enum smbc_share_mode
+{
+    SMBC_SHAREMODE_DENY_DOS     = 0,
+    SMBC_SHAREMODE_DENY_ALL     = 1,
+    SMBC_SHAREMODE_DENY_WRITE   = 2,
+    SMBC_SHAREMODE_DENY_READ    = 3,
+    SMBC_SHAREMODE_DENY_NONE    = 4,
+    SMBC_SHAREMODE_DENY_FCB     = 7
+} smbc_share_mode;
+
 
 #ifndef ENOATTR
 # define ENOATTR ENOENT        /* No such attribute */
@@ -635,7 +649,7 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx);
 void
 smbc_option_set(SMBCCTX *context,
                 char *option_name,
-                void *option_value);
+                ... /* option_value */);
 /*
  * Retrieve the current value of an option
  *

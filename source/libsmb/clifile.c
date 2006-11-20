@@ -266,9 +266,10 @@ BOOL cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 	/* assume 512 byte blocks */
 	sbuf->st_blocks /= 512;
 #endif
-	sbuf->st_ctime = interpret_long_date(rdata + 16);    /* time of last change */
-	sbuf->st_atime = interpret_long_date(rdata + 24);    /* time of last access */
-	sbuf->st_mtime = interpret_long_date(rdata + 32);    /* time of last modification */
+	set_ctimespec(sbuf, interpret_long_date(rdata + 16));    /* time of last change */
+	set_atimespec(sbuf, interpret_long_date(rdata + 24));    /* time of last access */
+	set_mtimespec(sbuf, interpret_long_date(rdata + 32));    /* time of last modification */
+
 	sbuf->st_uid = (uid_t) IVAL(rdata,40);      /* user ID of owner */
 	sbuf->st_gid = (gid_t) IVAL(rdata,48);      /* group ID of owner */
 	sbuf->st_mode |= unix_filetype_from_wire(IVAL(rdata, 56));
@@ -1178,7 +1179,9 @@ BOOL cli_posix_getlock(struct cli_state *cli, int fnum, SMB_BIG_UINT *poffset, S
 
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
 		  uint16 *attr, SMB_OFF_T *size, 
-		  time_t *c_time, time_t *a_time, time_t *m_time)
+		  time_t *change_time,
+                  time_t *access_time,
+                  time_t *write_time)
 {
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
@@ -1208,16 +1211,16 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 		*attr = SVAL(cli->inbuf,smb_vwv10);
 	}
 
-	if (c_time) {
-		*c_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv0);
+	if (change_time) {
+		*change_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv0);
 	}
 
-	if (a_time) {
-		*a_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv2);
+	if (access_time) {
+		*access_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv2);
 	}
 
-	if (m_time) {
-		*m_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv4);
+	if (write_time) {
+		*write_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv4);
 	}
 
 	return True;
@@ -1228,7 +1231,7 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 ****************************************************************************/
 
 BOOL cli_getatr(struct cli_state *cli, const char *fname, 
-		uint16 *attr, SMB_OFF_T *size, time_t *t)
+		uint16 *attr, SMB_OFF_T *size, time_t *write_time)
 {
 	char *p;
 
@@ -1260,8 +1263,8 @@ BOOL cli_getatr(struct cli_state *cli, const char *fname,
 		*size = IVAL(cli->inbuf, smb_vwv3);
 	}
 
-	if (t) {
-		*t = cli_make_unix_date3(cli, cli->inbuf+smb_vwv1);
+	if (write_time) {
+		*write_time = cli_make_unix_date3(cli, cli->inbuf+smb_vwv1);
 	}
 
 	if (attr) {
@@ -1277,7 +1280,9 @@ BOOL cli_getatr(struct cli_state *cli, const char *fname,
 ****************************************************************************/
 
 BOOL cli_setattrE(struct cli_state *cli, int fd,
-		  time_t c_time, time_t a_time, time_t m_time)
+		  time_t change_time,
+                  time_t access_time,
+                  time_t write_time)
 
 {
 	char *p;
@@ -1292,9 +1297,9 @@ BOOL cli_setattrE(struct cli_state *cli, int fd,
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0, fd);
-	cli_put_dos_date2(cli, cli->outbuf,smb_vwv1, c_time);
-	cli_put_dos_date2(cli, cli->outbuf,smb_vwv3, a_time);
-	cli_put_dos_date2(cli, cli->outbuf,smb_vwv5, m_time);
+	cli_put_dos_date2(cli, cli->outbuf,smb_vwv1, change_time);
+	cli_put_dos_date2(cli, cli->outbuf,smb_vwv3, access_time);
+	cli_put_dos_date2(cli, cli->outbuf,smb_vwv5, write_time);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
@@ -1509,7 +1514,7 @@ static BOOL cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigne
 
 	if (ea_namelen == 0 && ea_len == 0) {
 		data_len = 4;
-		data = SMB_MALLOC(data_len);
+		data = (char *)SMB_MALLOC(data_len);
 		if (!data) {
 			return False;
 		}
@@ -1517,7 +1522,7 @@ static BOOL cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigne
 		SIVAL(p,0,data_len);
 	} else {
 		data_len = 4 + 4 + ea_namelen + 1 + ea_len;
-		data = SMB_MALLOC(data_len);
+		data = (char *)SMB_MALLOC(data_len);
 		if (!data) {
 			return False;
 		}

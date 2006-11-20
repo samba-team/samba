@@ -553,7 +553,7 @@ typedef struct sam_unknown_info_2_inf
 	   pointer is referring to
 	 */
 
-	UINT64_S seq_num;
+	uint64 seq_num;
 	
 	uint32 unknown_4; /* 0x0000 0001 */
 	uint32 server_role;
@@ -605,7 +605,7 @@ typedef struct sam_unknown_info_7_info
 
 typedef struct sam_unknown_info_8_info
 {
-	UINT64_S seq_num;
+	uint64 seq_num;
 	NTTIME domain_create_time;
 
 } SAM_UNK_INFO_8;
@@ -626,7 +626,7 @@ typedef struct sam_unknown_info_12_inf
 
 typedef struct sam_unknown_info_13_info
 {
-	UINT64_S seq_num;
+	uint64 seq_num;
 	NTTIME domain_create_time;
 	uint32 unknown1;
 	uint32 unknown2;

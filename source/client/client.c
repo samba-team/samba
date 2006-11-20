@@ -359,7 +359,7 @@ static BOOL do_this_one(file_info *finfo)
 		return False;
 	}
 
-	if (newer_than && finfo->mtime < newer_than) {
+	if (newer_than && finfo->mtime_ts.tv_sec < newer_than) {
 		DEBUG(3,("newer_than %s failed\n", finfo->name));
 		return(False);
 	}
@@ -379,7 +379,7 @@ static BOOL do_this_one(file_info *finfo)
 static void display_finfo(file_info *finfo)
 {
 	if (do_this_one(finfo)) {
-		time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
+		time_t t = finfo->mtime_ts.tv_sec; /* the time is assumed to be passed as GMT */
 		if (!showacls) {
 			d_printf("  %-30s%7.7s %8.0f  %s",
 				 finfo->name,
