@@ -820,6 +820,10 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_KEY_EXCH;		
 	}
 
+	if (lp_parm_bool(-1, "ntlmssp_server", "alwayssign", True)) {
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;		
+	}
+
 	if (lp_parm_bool(-1, "ntlmssp_server", "ntlm2", True)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;		
 	}

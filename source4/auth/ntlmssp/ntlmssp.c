@@ -261,8 +261,8 @@ void ntlmssp_handle_neg_flags(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
-	if (neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN) {
-		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
