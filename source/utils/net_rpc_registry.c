@@ -156,8 +156,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		struct winreg_StringBuf class_namebuf;
 		struct winreg_StringBuf *p_class_namebuf = &class_namebuf;
 		fstring kname;
-		NTTIME modtime;
-		NTTIME *p_modtime = &modtime;
+		NTTIME *modtime = NULL;
 
 		class_namebuf.name = NULL;
 		class_namebuf.size = 0;
@@ -172,7 +171,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 
 		status = rpccli_winreg_EnumKey(pipe_hnd, mem_ctx, &pol_key,
 					       idx, &subkey_namebuf,
-					       &p_class_namebuf, &p_modtime);
+					       &p_class_namebuf, &modtime);
 			
 		if ( W_ERROR_EQUAL(ntstatus_to_werror(status), WERR_NO_MORE_ITEMS) ) {
 			status = NT_STATUS_OK;
@@ -185,8 +184,8 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		StrnCpy( kname, subkey_namebuf.name, MIN(subkey_namebuf.length,sizeof(kname))-1 );
 		kname[MIN(subkey_namebuf.length,sizeof(kname))-1] = '\0';
 		d_printf("Keyname   = %s\n", kname);
-		d_printf("Modtime   = %s\n", 
-			http_timestring(nt_time_to_unix(modtime)) );
+		d_printf("Modtime   = %s\n", modtime
+			 ? http_timestring(nt_time_to_unix(*modtime)):"None");
 		d_printf("\n" );
 
 		idx++;
