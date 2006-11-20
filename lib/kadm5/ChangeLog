@@ -1,5 +1,13 @@
-2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ipropd_slave.c: Make krb5_get_init_creds_opt_free take a context
+	argument.
+
+	* init_c.c: Make krb5_get_init_creds_opt_free take a context
+	argument.
+	
+2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ent_setup.c: Try to not leak memory.
 	
 2006-10-07  Love Hörnquist Åstrand  <lha@it.su.se>

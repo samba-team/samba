@@ -1,4 +1,16 @@
-2006-11-15  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/acquire_cred.c: Make krb5_get_init_creds_opt_free take a
+	context argument.
+	
+2006-11-16  Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* test_context.c: Test that token keys are the same, return
+	actual_mech.
+	
+2006-11-15  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* spnego/spnego_locl.h: Make bitfields unsigned, add maybe_open.
 
 	* spnego/accept_sec_context.c: Use ASN.1 encoder functions to
 	encode CHOICE structure now that we can handle it.
