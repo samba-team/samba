@@ -26,6 +26,7 @@
 /********************************************************************
 ********************************************************************/
 
+#if 0
 void dump_regval_buffer( uint32 type, REGVAL_BUFFER *buffer )
 {
 	pstring string;
@@ -69,6 +70,311 @@ void dump_regval_buffer( uint32 type, REGVAL_BUFFER *buffer )
 		d_printf( "\tUnknown type [%d]\n", type );
 	}
 }
+#endif
+
+static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
+				  struct rpc_pipe_client *pipe_hnd,
+				  struct policy_handle *key_hnd,
+				  uint32 *pnum_keys, char ***pnames,
+				  char ***pclasses, NTTIME ***pmodtimes)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	uint32 num_subkeys, max_subkeylen, max_classlen;
+	uint32 num_values, max_valnamelen, max_valbufsize;
+	uint32 i;
+	NTTIME last_changed_time;
+	uint32 secdescsize;
+	struct winreg_String classname;
+	char **names, **classes;
+	NTTIME **modtimes;
+
+	if (!(mem_ctx = talloc_new(ctx))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCT(classname);
+	status = rpccli_winreg_QueryInfoKey(
+		pipe_hnd, mem_ctx, key_hnd, &classname, &num_subkeys,
+		&max_subkeylen, &max_classlen, &num_values, &max_valnamelen,
+		&max_valbufsize, &secdescsize, &last_changed_time );
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	if (num_subkeys == 0) {
+		*pnum_keys = 0;
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_OK;
+	}
+
+	if ((!(names = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_subkeys))) ||
+	    (!(classes = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_subkeys))) ||
+	    (!(modtimes = TALLOC_ZERO_ARRAY(mem_ctx, NTTIME *,
+					    num_subkeys)))) {
+		status = NT_STATUS_NO_MEMORY;
+		goto error;
+	}
+
+	for (i=0; i<num_subkeys; i++) {
+		char c, n;
+		struct winreg_StringBuf class_buf;
+		struct winreg_StringBuf *pclass_buf = &class_buf;
+		struct winreg_StringBuf name_buf;
+		NTTIME modtime;
+		NTTIME *pmodtime = &modtime;
+
+		c = '\0';
+		class_buf.name = &c;
+		class_buf.size = max_classlen+2;
+
+		n = '\0';
+		name_buf.name = &n;
+		name_buf.size = max_subkeylen+2;
+
+		ZERO_STRUCT(modtime);
+
+		status = rpccli_winreg_EnumKey(pipe_hnd, mem_ctx, key_hnd,
+					       i, &name_buf, &pclass_buf,
+					       &pmodtime);
+		
+		if (W_ERROR_EQUAL(ntstatus_to_werror(status),
+				  WERR_NO_MORE_ITEMS) ) {
+			status = NT_STATUS_OK;
+			break;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			goto error;
+		}
+
+		classes[i] = NULL;
+
+		if ((pclass_buf) &&
+		    (!(classes[i] = talloc_strdup(classes,
+						  pclass_buf->name)))) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+
+		if (!(names[i] = talloc_strdup(names, name_buf.name))) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+
+		if ((pmodtime) &&
+		    (!(modtimes[i] = (NTTIME *)talloc_memdup(
+			       modtimes, pmodtime, sizeof(*pmodtime))))) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+	}
+
+	*pnum_keys = num_subkeys;
+
+	if (pnames) {
+		*pnames = talloc_move(ctx, &names);
+	}
+	if (pclasses) {
+		*pclasses = talloc_move(ctx, &classes);
+	}
+	if (pmodtimes) {
+		*pmodtimes = talloc_move(ctx, &modtimes);
+	}
+
+	status = NT_STATUS_OK;
+
+ error:
+	TALLOC_FREE(mem_ctx);
+	return status;
+}
+
+static NTSTATUS registry_pull_value(TALLOC_CTX *mem_ctx,
+				    struct registry_value **pvalue,
+				    enum winreg_Type type, uint8 *data,
+				    uint32 size, uint32 length)
+{
+	struct registry_value *value;
+	NTSTATUS status;
+
+	if (!(value = TALLOC_P(mem_ctx, struct registry_value))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	value->type = type;
+
+	switch (type) {
+	case REG_DWORD:
+		if ((size != 4) || (length != 4)) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto error;
+		}
+		value->v.dword = IVAL(data, 0);
+		break;
+	case REG_SZ:
+	case REG_EXPAND_SZ:
+	{
+		/*
+		 * Make sure we get a NULL terminated string for
+		 * convert_string_talloc().
+		 */
+
+		smb_ucs2_t *tmp;
+		uint32 num_ucs2 = length / 2;
+
+		if ((length % 2) != 0) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto error;
+		}
+
+		if (!(tmp = SMB_MALLOC_ARRAY(smb_ucs2_t, num_ucs2+1))) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+
+		memcpy((void *)tmp, (const void *)data, length);
+		tmp[num_ucs2] = 0;
+
+		value->v.sz.len = convert_string_talloc(
+			value, CH_UTF16LE, CH_UNIX, tmp, length+2,
+			&value->v.sz.str, False);
+
+		SAFE_FREE(tmp);
+
+		if (value->v.sz.len == (size_t)-1) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto error;
+		}
+		break;
+	}
+	default:
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+
+	*pvalue = value;
+	return NT_STATUS_OK;
+
+ error:
+	TALLOC_FREE(value);
+	return status;
+}
+
+static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
+				    struct rpc_pipe_client *pipe_hnd,
+				    struct policy_handle *key_hnd,
+				    uint32 *pnum_values, char ***pvalnames,
+				    struct registry_value ***pvalues)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	uint32 num_subkeys, max_subkeylen, max_classlen;
+	uint32 num_values, max_valnamelen, max_valbufsize;
+	uint32 i;
+	NTTIME last_changed_time;
+	uint32 secdescsize;
+	struct winreg_String classname;
+	struct registry_value **values;
+	char **names;
+
+	if (!(mem_ctx = talloc_new(ctx))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCT(classname);
+	status = rpccli_winreg_QueryInfoKey(
+		pipe_hnd, mem_ctx, key_hnd, &classname, &num_subkeys,
+		&max_subkeylen, &max_classlen, &num_values, &max_valnamelen,
+		&max_valbufsize, &secdescsize, &last_changed_time );
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	if (num_values == 0) {
+		*pnum_values = 0;
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_OK;
+	}
+
+	if ((!(names = TALLOC_ARRAY(mem_ctx, char *, num_values))) ||
+	    (!(values = TALLOC_ARRAY(mem_ctx, struct registry_value *,
+				     num_values)))) {
+		status = NT_STATUS_NO_MEMORY;
+		goto error;
+	}
+
+	for (i=0; i<num_values; i++) {
+		enum winreg_Type type = REG_NONE;
+		enum winreg_Type *ptype = &type;
+		uint8 d = 0;
+		uint8 *data = &d;
+
+		uint32 data_size;
+		uint32 *pdata_size = &data_size;
+
+		uint32 value_length;
+		uint32 *pvalue_length = &value_length;
+
+		char n;
+		struct winreg_StringBuf name_buf;
+
+		n = '\0';
+		name_buf.name = &n;
+		name_buf.size = max_valnamelen + 2;
+
+		data_size = max_valbufsize;
+		value_length = 0;
+
+		status = rpccli_winreg_EnumValue(pipe_hnd, mem_ctx, key_hnd,
+						 i, &name_buf, &ptype,
+						 &data, &pdata_size,
+						 &pvalue_length );
+
+		if ( W_ERROR_EQUAL(ntstatus_to_werror(status),
+				   WERR_NO_MORE_ITEMS) ) {
+			status = NT_STATUS_OK;
+			break;
+		}
+
+		if (!(NT_STATUS_IS_OK(status))) {
+			goto error;
+		}
+
+		if ((name_buf.name == NULL) || (ptype == NULL) ||
+		    (data == NULL) || (pdata_size == 0) ||
+		    (pvalue_length == NULL)) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto error;
+		}
+
+		if (!(names[i] = talloc_strdup(names, name_buf.name))) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+
+		status = registry_pull_value(values, &values[i], *ptype, data,
+					     *pdata_size, *pvalue_length);
+		if (!(NT_STATUS_IS_OK(status))) {
+			goto error;
+		}
+	}
+
+	*pnum_values = num_values;
+
+	if (pvalnames) {
+		*pvalnames = talloc_move(ctx, &names);
+	}
+	if (pvalues) {
+		*pvalues = talloc_move(ctx, &values);
+	}
+
+	status = NT_STATUS_OK;
+
+ error:
+	TALLOC_FREE(mem_ctx);
+	return status;
+}
 
 /********************************************************************
 ********************************************************************/
@@ -85,17 +391,14 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	uint32 hive;
 	pstring subpath;
 	POLICY_HND pol_hive, pol_key; 
-	uint32 idx;
 	NTSTATUS status;
 	struct winreg_String subkeyname;
-	struct winreg_String classname;
-	uint32 num_subkeys, max_subkeylen, max_classlen;
-	uint32 num_values, max_valnamelen, max_valbufsize;
-	uint32 secdescsize;
-	NTTIME last_changed_time;
-	struct winreg_StringBuf subkey_namebuf;
-	char *name_buffer; 
-	uint8 *value_buffer;
+	uint32 num_subkeys;
+	uint32 num_values;
+	char **names, **classes;
+	NTTIME **modtimes;
+	uint32 i;
+	struct registry_value **values;
 	
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc enumerate <path> [recurse]\n");
@@ -126,144 +429,51 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		return werror_to_ntstatus(result);
 	}
 
-	classname.name = NULL;
-	status = rpccli_winreg_QueryInfoKey( pipe_hnd, mem_ctx, &pol_key, 
-			&classname, &num_subkeys, &max_subkeylen,
-			&max_classlen, &num_values, &max_valnamelen,
-			&max_valbufsize, &secdescsize, &last_changed_time );
-
-	if ( !NT_STATUS_IS_OK(status) ) {
-		d_fprintf(stderr, "Unable to determine subkeys (%s)\n", 
-			nt_errstr(status));
+	status = registry_enumkeys(mem_ctx, pipe_hnd, &pol_key, &num_subkeys,
+				   &names, &classes, &modtimes);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "enumerating keys failed: %s\n",
+			  nt_errstr(status));
 		return status;
 	}
 
-	/* values do not include the terminating NULL */
-
-	max_subkeylen += 2;
-	max_valnamelen += 2;
-
-	if ( (name_buffer = TALLOC_ARRAY( mem_ctx, char, max_subkeylen )) == NULL ) {
-		d_fprintf(stderr, "Memory allocation error.\n");
-		return NT_STATUS_NO_MEMORY;
+	for (i=0; i<num_subkeys; i++) {
+		d_printf("Keyname   = %s\n", names[i]);
+		d_printf("Modtime   = %s\n", modtimes[i]
+			 ? http_timestring(nt_time_to_unix(*modtimes[i]))
+			 : "None");
+		d_printf("\n" );
 	}
 
-	/* get the subkeys */
-	
-	status = NT_STATUS_OK;
-	idx = 0;
-	while ( NT_STATUS_IS_OK(status) ) {
-		struct winreg_StringBuf class_namebuf;
-		struct winreg_StringBuf *p_class_namebuf = &class_namebuf;
-		fstring kname;
-		NTTIME *modtime = NULL;
+	status = registry_enumvalues(mem_ctx, pipe_hnd, &pol_key, &num_values,
+				     &names, &values);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "enumerating values failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
 
-		class_namebuf.name = NULL;
-		class_namebuf.size = 0;
-		class_namebuf.length = 0;
-
-		/* zero out each time */
-
-		subkey_namebuf.length = 0;
-		subkey_namebuf.size = max_subkeylen;
-		memset( name_buffer, 0x0, max_subkeylen );
-		subkey_namebuf.name = name_buffer;
-
-		status = rpccli_winreg_EnumKey(pipe_hnd, mem_ctx, &pol_key,
-					       idx, &subkey_namebuf,
-					       &p_class_namebuf, &modtime);
-			
-		if ( W_ERROR_EQUAL(ntstatus_to_werror(status), WERR_NO_MORE_ITEMS) ) {
-			status = NT_STATUS_OK;
+	for (i=0; i<num_values; i++) {
+		struct registry_value *v = values[i];
+		d_printf("Valuename  = %s\n", names[i]);
+		d_printf("Type       = %s\n",
+			 reg_type_lookup(v->type));
+		switch(v->type) {
+		case REG_DWORD:
+			d_printf("Value      = %d\n", v->v.dword);
+			break;
+		case REG_SZ:
+		case REG_EXPAND_SZ:
+			d_printf("Value      = \"%s\"\n", v->v.sz.str);
+			break;
+		default:
+			d_printf("Value      = <unprintable>\n");
 			break;
 		}
-
-		if ( !NT_STATUS_IS_OK(status) )
-			goto out;
-		
-		StrnCpy( kname, subkey_namebuf.name, MIN(subkey_namebuf.length,sizeof(kname))-1 );
-		kname[MIN(subkey_namebuf.length,sizeof(kname))-1] = '\0';
-		d_printf("Keyname   = %s\n", kname);
-		d_printf("Modtime   = %s\n", modtime
-			 ? http_timestring(nt_time_to_unix(*modtime)):"None");
-		d_printf("\n" );
-
-		idx++;
-	}
-
-	if ( !NT_STATUS_IS_OK(status) )
-		goto out;
-
-	/* TALLOC_FREE( name_buffer ); */
-
-	if ( (name_buffer = TALLOC_ARRAY( mem_ctx, char, max_valnamelen )) == NULL ) {
-		d_fprintf(stderr, "Memory allocation error.\n");
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if ( (value_buffer = TALLOC_ARRAY( mem_ctx, uint8, max_valbufsize )) == NULL ) {
-		d_fprintf(stderr, "Memory allocation error.\n");
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* get the values */
-	
-	status = NT_STATUS_OK;
-	idx = 0;
-	while ( NT_STATUS_IS_OK(status) ) {
-		enum winreg_Type type = REG_NONE;
-		enum winreg_Type *ptype = &type;
-		fstring name;
-		uint8 *data;
-		uint32 data_size, value_length;
-		uint32 *pdata_size = &data_size;
-		uint32 *pvalue_length = &value_length;
-		struct winreg_StringBuf value_namebuf;
-		REGVAL_BUFFER value;
-		
-		fstrcpy( name, "" );
-		ZERO_STRUCT( value );
-
-		memset( name_buffer, 0x0, max_valnamelen );
-		value_namebuf.name = name_buffer;
-		value_namebuf.length = 0;
-		value_namebuf.size = max_valnamelen;
-
-		memset( value_buffer, 0x0, max_valbufsize );
-		data = value_buffer;
-		data_size = max_valbufsize;
-		value_length = 0;
-
-		status = rpccli_winreg_EnumValue(pipe_hnd, mem_ctx, &pol_key,
-						 idx, &value_namebuf, &ptype,
-						 &data, &pdata_size,
-						 &pvalue_length );
 			
-		if ( W_ERROR_EQUAL(ntstatus_to_werror(status), WERR_NO_MORE_ITEMS) ) {
-			status = NT_STATUS_OK;
-			break;
-		}
-
-		if ( !NT_STATUS_IS_OK(status) )
-			goto out;
-
-		init_regval_buffer( &value, data, value_length );
-			
-		StrnCpy( name, value_namebuf.name, MIN(max_valnamelen, sizeof(name)-1) );
-		name[MIN(max_valnamelen, sizeof(name)-1)] = '\0';
-
-		d_printf("Valuename  = %s\n", name );
-		d_printf("Type       = %s\n", reg_type_lookup(type));
-		d_printf("Data       = " );
-		dump_regval_buffer( type, &value );
-		d_printf("\n" );
-
-		idx++;
+		d_printf("\n");
 	}
-	
-out:
-	/* cleanup */
-	
+
 	if ( strlen( subpath ) != 0 )
 		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key );
 	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive );
