@@ -1503,7 +1503,7 @@ krb5_get_init_creds_password(krb5_context context,
 	free (q);
 	if (ret) {
 	    memset (buf, 0, sizeof(buf));
-	    krb5_get_init_creds_opt_free(options);
+	    krb5_get_init_creds_opt_free(context, options);
 	    ret = KRB5_LIBOS_PWDINTR;
 	    krb5_clear_error_string (context);
 	    return ret;
