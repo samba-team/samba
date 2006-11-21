@@ -33,7 +33,7 @@
  * Internal function to get the next token from a string, return False if none
  * found.  Handles double-quotes.  This is the work horse function called by
  * next_token() and next_token_no_ltrim().
- * 
+ *
  * Based on a routine by GJC@VILLAGE.COM. 
  * Extensively modified by Andrew.Tridgell@anu.edu.au
  */
@@ -59,8 +59,8 @@ static BOOL next_token_internal(const char **ptr,
 
 	/* find the first non sep char, if left-trimming is requested */
 	if (ltrim) {
-	while (*s && strchr_m(sep,*s))
-		s++;
+		while (*s && strchr_m(sep,*s))
+			s++;
 	}
 	
 	/* nothing left? */
@@ -1943,13 +1943,14 @@ int str_list_count( const char **list )
  for the work
  *****************************************************************************/
  
-BOOL str_list_sub_basic( char **list, const char *smb_name )
+BOOL str_list_sub_basic( char **list, const char *smb_name,
+			 const char *domain_name )
 {
 	char *s, *tmpstr;
 	
 	while ( *list ) {
 		s = *list;
-		tmpstr = alloc_sub_basic(smb_name, s);
+		tmpstr = alloc_sub_basic(smb_name, domain_name, s);
 		if ( !tmpstr ) {
 			DEBUG(0,("str_list_sub_basic: alloc_sub_basic() return NULL!\n"));
 			return False;

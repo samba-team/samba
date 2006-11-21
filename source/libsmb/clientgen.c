@@ -107,8 +107,8 @@ BOOL cli_receive_smb(struct cli_state *cli)
 	}
 
 	/* If the server is not responding, note that now */
-
 	if (!ret) {
+                DEBUG(0, ("Receiving SMB: Server stopped responding\n"));
 		cli->smb_rw_error = smb_read_error;
 		close(cli->fd);
 		cli->fd = -1;
@@ -255,12 +255,12 @@ void cli_setup_signing_state(struct cli_state *cli, int signing_state)
 }
 
 /****************************************************************************
- Initialise a client structure.
+ Initialise a client structure. Always returns a malloc'ed struct.
 ****************************************************************************/
 
-struct cli_state *cli_initialise(struct cli_state *cli)
+struct cli_state *cli_initialise(void)
 {
-        BOOL alloced_cli = False;
+	struct cli_state *cli = NULL;
 
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {
@@ -268,16 +268,10 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 		return NULL;
 	}
 
+	cli = SMB_MALLOC_P(struct cli_state);
 	if (!cli) {
-		cli = SMB_MALLOC_P(struct cli_state);
-		if (!cli)
-			return NULL;
-		ZERO_STRUCTP(cli);
-                alloced_cli = True;
+		return NULL;
 	}
-
-	if (cli->initialised)
-		cli_close_connection(cli);
 
 	ZERO_STRUCTP(cli);
 
@@ -333,7 +327,6 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli_null_set_signing(cli);
 
 	cli->initialised = 1;
-	cli->allocated = alloced_cli;
 
 	return cli;
 
@@ -343,10 +336,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 
         SAFE_FREE(cli->inbuf);
         SAFE_FREE(cli->outbuf);
-
-        if (alloced_cli)
-                SAFE_FREE(cli);
-
+	SAFE_FREE(cli);
         return NULL;
 }
 
@@ -403,10 +393,10 @@ void cli_nt_pipes_close(struct cli_state *cli)
 }
 
 /****************************************************************************
- Close a client connection and free the memory without destroying cli itself.
+ Shutdown a client structure.
 ****************************************************************************/
 
-void cli_close_connection(struct cli_state *cli)
+void cli_shutdown(struct cli_state *cli)
 {
 	cli_nt_pipes_close(cli);
 
@@ -443,20 +433,8 @@ void cli_close_connection(struct cli_state *cli)
 	}
 	cli->fd = -1;
 	cli->smb_rw_error = 0;
-}
 
-/****************************************************************************
- Shutdown a client structure.
-****************************************************************************/
-
-void cli_shutdown(struct cli_state *cli)
-{
-	BOOL allocated = cli->allocated;
-	cli_close_connection(cli);
-	ZERO_STRUCTP(cli);
-	if (allocated) {
-		free(cli);
-	}
+	SAFE_FREE(cli);
 }
 
 /****************************************************************************

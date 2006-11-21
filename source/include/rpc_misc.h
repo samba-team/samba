@@ -339,10 +339,5 @@ typedef struct owf_info {
 	uint8 data[16];
 } OWF_INFO;
 
-typedef struct uint64_s
-{
-	uint32 low;
-	uint32 high;
-} UINT64_S;
 
 #endif /* _RPC_MISC_H */

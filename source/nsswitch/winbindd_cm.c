@@ -426,7 +426,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		goto done;
 	}
 
-	if ((*cli = cli_initialise(NULL)) == NULL) {
+	if ((*cli = cli_initialise()) == NULL) {
 		DEBUG(1, ("Could not cli_initialize\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -538,10 +538,11 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 			  "[%s]\\[%s]\n",  controller, global_myname(),
 			  ipc_domain, ipc_username));
 
-		if (cli_session_setup(*cli, ipc_username,
+		if (NT_STATUS_IS_OK(cli_session_setup(
+					    *cli, ipc_username,
 					    ipc_password, strlen(ipc_password)+1,
 					    ipc_password, strlen(ipc_password)+1,
-					    ipc_domain)) {
+					    ipc_domain))) {
 			/* Successful logon with given username. */
 			cli_init_creds(*cli, ipc_username, ipc_domain, ipc_password);
 			goto session_setup_done;
@@ -553,7 +554,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	/* Fall back to anonymous connection, this might fail later */
 
-	if (cli_session_setup(*cli, "", NULL, 0, NULL, 0, "")) {
+	if (NT_STATUS_IS_OK(cli_session_setup(*cli, "", NULL, 0,
+					      NULL, 0, ""))) {
 		DEBUG(5, ("Connected anonymously\n"));
 		cli_init_creds(*cli, "", "", "");
 		goto session_setup_done;

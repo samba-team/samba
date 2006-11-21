@@ -101,7 +101,8 @@ static void msg_deliver(void)
 		pstrcpy(s,lp_msg_command());
 		pstring_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,NULL,sizeof(alpha_msgfrom)));
 		pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,NULL,sizeof(alpha_msgto)));
-		standard_sub_basic(current_user_info.smb_name, s, sizeof(s));
+		standard_sub_basic(current_user_info.smb_name,
+				current_user_info.domain, s, sizeof(s));
 		pstring_sub(s,"%s",name);
 		smbrun(s,NULL);
 	}

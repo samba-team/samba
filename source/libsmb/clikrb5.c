@@ -852,6 +852,27 @@ failed:
 #endif
 }
 
+static int get_kvno_from_ap_req(krb5_ap_req *ap_req)
+{
+#ifdef HAVE_TICKET_POINTER_IN_KRB5_AP_REQ /* MIT */
+	if (ap_req->ticket->enc_part.kvno)
+		return ap_req->ticket->enc_part.kvno;
+#else /* Heimdal */
+	if (ap_req->ticket.enc_part.kvno) 
+		return *ap_req->ticket.enc_part.kvno;
+#endif
+	return 0;
+}
+
+static krb5_enctype get_enctype_from_ap_req(krb5_ap_req *ap_req)
+{
+#ifdef HAVE_ETYPE_IN_ENCRYPTEDDATA /* Heimdal */
+	return ap_req->ticket.enc_part.etype;
+#else /* MIT */
+	return ap_req->ticket->enc_part.enctype;
+#endif
+}
+
 static krb5_error_code
 get_key_from_keytab(krb5_context context,
 		    krb5_const_principal server,

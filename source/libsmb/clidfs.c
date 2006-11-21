@@ -51,7 +51,7 @@ static struct client_connection *connections;
 static struct cli_state *do_connect( const char *server, const char *share,
                                      BOOL show_sessetup )
 {
-	struct cli_state *c;
+	struct cli_state *c = NULL;
 	struct nmb_name called, calling;
 	const char *server_n;
 	struct in_addr ip;
@@ -83,7 +83,7 @@ static struct cli_state *do_connect( const char *server, const char *share,
 		ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) != port) ||
+	if (!(c=cli_initialise()) || (cli_set_port(c, port) != port) ||
 	    !cli_connect(c, server_n, &ip)) {
 		d_printf("Connection to %s failed\n", server_n);
 		return NULL;
@@ -99,6 +99,7 @@ static struct cli_state *do_connect( const char *server, const char *share,
 		d_printf("session request to %s failed (%s)\n", 
 			 called.name, cli_errstr(c));
 		cli_shutdown(c);
+		c = NULL;
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
 			goto again;
@@ -126,13 +127,14 @@ static struct cli_state *do_connect( const char *server, const char *share,
 		}
 	}
 
-	if (!cli_session_setup(c, username, 
-			       password, strlen(password),
-			       password, strlen(password),
-			       lp_workgroup())) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(c, username, 
+					       password, strlen(password),
+					       password, strlen(password),
+					       lp_workgroup()))) {
 		/* if a password was not supplied then try again with a null username */
 		if (password[0] || !username[0] || use_kerberos ||
-		    !cli_session_setup(c, "", "", 0, "", 0, lp_workgroup())) { 
+		    !NT_STATUS_IS_OK(cli_session_setup(c, "", "", 0, "", 0,
+						       lp_workgroup()))) { 
 			d_printf("session setup failed: %s\n", cli_errstr(c));
 			if (NT_STATUS_V(cli_nt_error(c)) == 
 			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))

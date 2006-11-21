@@ -44,7 +44,7 @@ struct rpc_pipe_client *cac_GetPipe( CacServerHandle * hnd, int pi_idx )
 		return NULL;
 	}
 
-	pipe_hnd = srv->cli.pipe_list;
+	pipe_hnd = srv->cli->pipe_list;
 
 	while ( pipe_hnd != NULL && pipe_hnd->pipe_idx != pi_idx ) {
 		pipe_hnd = pipe_hnd->next;
@@ -129,7 +129,7 @@ RPC_DATA_BLOB *cac_MakeRpcDataBlob( TALLOC_CTX * mem_ctx, uint32 data_type,
 		init_rpc_blob_uint32( blob, data.reg_dword );
 		break;
 
-	case REG_DWORD_BE:
+	case REG_DWORD_BIG_ENDIAN:
 		init_rpc_blob_uint32( blob, data.reg_dword_be );
 		break;
 
@@ -274,7 +274,7 @@ REG_VALUE_DATA *cac_MakeRegValueData( TALLOC_CTX * mem_ctx, uint32 data_type,
 		data->reg_dword = *( ( uint32 * ) buf.buffer );
 		break;
 
-	case REG_DWORD_BE:
+	case REG_DWORD_BIG_ENDIAN:
 		data->reg_dword_be = *( ( uint32 * ) buf.buffer );
 		break;
 
@@ -511,7 +511,7 @@ CacUserInfo *cac_MakeUserInfo( TALLOC_CTX * mem_ctx, SAM_USERINFO_CTR * ctr )
 
 	info->logon_hours =
 		( LOGON_HRS * ) talloc_memdup( mem_ctx, &( id21->logon_hrs ),
-			       sizeof( LOGON_HRS ) );
+					       sizeof( LOGON_HRS ) );
 	if ( !info->logon_hours )
 		return NULL;
 

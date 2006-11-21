@@ -101,24 +101,26 @@ enum FAKE_FILE_TYPE is_fake_file(const char *fname)
  Open a fake quota file with a share mode.
 ****************************************************************************/
 
-files_struct *open_fake_file(connection_struct *conn,
+NTSTATUS open_fake_file(connection_struct *conn,
 				enum FAKE_FILE_TYPE fake_file_type,
 				const char *fname,
-				uint32 access_mask)
+				uint32 access_mask,
+				files_struct **result)
 {
 	files_struct *fsp = NULL;
+	NTSTATUS status;
 
 	/* access check */
 	if (current_user.ut.uid != 0) {
 		DEBUG(1,("open_fake_file_shared: access_denied to service[%s] file[%s] user[%s]\n",
 			lp_servicename(SNUM(conn)),fname,conn->user));
-		errno = EACCES;
-		return NULL;
+		return NT_STATUS_ACCESS_DENIED;
+
 	}
 
-	fsp = file_new(conn);
-	if(!fsp) {
-		return NULL;
+	status = file_new(conn, &fsp);
+	if(!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	DEBUG(5,("open_fake_file_shared: fname = %s, FID = %d, access_mask = 0x%x\n",
@@ -128,7 +130,7 @@ files_struct *open_fake_file(connection_struct *conn,
 	fsp->fh->fd = -1;
 	fsp->vuid = current_user.vuid;
 	fsp->fh->pos = -1;
-	fsp->can_lock = True; /* Should this be true ? */
+	fsp->can_lock = False; /* Should this be true ? - No, JRA */
 	fsp->access_mask = access_mask;
 	string_set(&fsp->fsp_name,fname);
 	
@@ -136,11 +138,12 @@ files_struct *open_fake_file(connection_struct *conn,
 	
 	if (fsp->fake_file_handle==NULL) {
 		file_free(fsp);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	conn->num_files_open++;
-	return fsp;
+	*result = fsp;
+	return NT_STATUS_OK;
 }
 
 void destroy_fake_file_handle(FAKE_FILE_HANDLE **fh)

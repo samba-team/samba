@@ -134,10 +134,8 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
 
 			share_mode_entry_to_message(msg, e);
 
-			become_root();
  			message_send_pid(e->pid, MSG_SMB_OPEN_RETRY,
  					 msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
-			unbecome_root();
  		}
  	}
 }
@@ -267,8 +265,6 @@ static int close_normal_file(files_struct *fsp, enum file_close_type close_type)
 	int saved_errno = 0;
 	int err = 0;
 	int err1 = 0;
-
-	remove_pending_lock_requests_by_fid(fsp);
 
 	if (fsp->aio_write_behind) {
 		/*

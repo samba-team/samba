@@ -30,7 +30,9 @@ for local substitution strings
 static int print_run_command(int snum, const char* printername, BOOL do_sub,
 			     const char *command, int *outfd, ...)
 {
-
+	extern struct current_user current_user;
+	extern userdom_struct current_user_info;
+	
 	pstring syscmd;
 	char *arg;
 	int ret;
@@ -56,7 +58,12 @@ static int print_run_command(int snum, const char* printername, BOOL do_sub,
 	pstring_sub( syscmd, "%p", printername );
 
 	if ( do_sub && snum != -1 )
-		standard_sub_snum(snum,syscmd,sizeof(syscmd));
+		standard_sub_advanced(lp_servicename(snum),
+				      current_user_info.unix_name, "",
+				      current_user.ut.gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      syscmd, sizeof(syscmd));
 		
 	ret = smbrun(syscmd,outfd);
 

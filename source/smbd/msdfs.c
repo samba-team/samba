@@ -30,7 +30,7 @@ extern uint32 global_client_caps;
   into the dfs_path structure 
  **********************************************************************/
 
-static BOOL parse_dfs_path(char *pathname, struct dfs_path *pdp)
+static BOOL parse_dfs_path(const char *pathname, struct dfs_path *pdp)
 {
 	pstring pathname_local;
 	char *p, *temp;
@@ -73,26 +73,32 @@ static BOOL parse_dfs_path(char *pathname, struct dfs_path *pdp)
 }
 
 /**********************************************************************
-  Parse the pathname  of the form /hostname/service/reqpath
-  into the dfs_path structure 
+ Parse the pathname  of the form /hostname/service/reqpath
+ into the dfs_path structure 
+ This code is dependent on the fact that check_path_syntax() will
+ convert '\\' characters to '/'.
+ When POSIX pathnames have been selected this doesn't happen, so we
+ must look for the unaltered separator of '\\' instead of the modified '/'.
+ JRA.
  **********************************************************************/
 
 static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path *pdp, BOOL allow_wcards)
 {
 	pstring pathname_local;
 	char *p,*temp;
+	const char sepchar = lp_posix_pathnames() ? '\\' : '/';
 
 	pstrcpy(pathname_local,pathname);
 	p = temp = pathname_local;
 
 	ZERO_STRUCTP(pdp);
 
-	trim_char(temp,'/','/');
+	trim_char(temp,sepchar,sepchar);
 	DEBUG(10,("temp in parse_processed_dfs_path: .%s. after trimming \\'s\n",temp));
 
 	/* now tokenize */
 	/* parse out hostname */
-	p = strchr_m(temp,'/');
+	p = strchr_m(temp,sepchar);
 	if(p == NULL) {
 		return False;
 	}
@@ -102,7 +108,7 @@ static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path *pdp, BOOL 
 
 	/* parse out servicename */
 	temp = p+1;
-	p = strchr_m(temp,'/');
+	p = strchr_m(temp,sepchar);
 	if(p == NULL) {
 		pstrcpy(pdp->servicename,temp);
 		pdp->reqpath[0] = '\0';
@@ -144,7 +150,7 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, char *path)
                 DEBUG(0,("talloc_init(connection_struct) failed!\n"));
                 return False;
         }
-	
+
 	if (!(conn->params = TALLOC_P(conn->mem_ctx, struct share_params))) {
 		DEBUG(0, ("TALLOC failed\n"));
 		return False;
@@ -311,7 +317,8 @@ TALLOC_CTX can be NULL here if struct referral **reflistpp, int *refcntp
 are also NULL.
 *****************************************************************/
 
-static BOOL resolve_dfs_path(TALLOC_CTX *ctx, pstring dfspath, struct dfs_path *dp, 
+static BOOL resolve_dfs_path(TALLOC_CTX *ctx, const char *dfspath, 
+							 struct dfs_path *dp, 
 		      connection_struct *conn, BOOL search_flag, 
 		      struct referral **reflistpp, int *refcntp,
 		      BOOL *self_referralp, int *consumedcntp)
@@ -453,7 +460,7 @@ BOOL dfs_redirect( pstring pathname, connection_struct *conn, BOOL search_wcard_
  Return a self referral.
 **********************************************************************/
 
-static BOOL self_ref(TALLOC_CTX *ctx, char *pathname, struct junction_map *jucn,
+static BOOL self_ref(TALLOC_CTX *ctx, const char *pathname, struct junction_map *jucn,
 			int *consumedcntp, BOOL *self_referralp)
 {
 	struct referral *ref;
@@ -484,7 +491,7 @@ static BOOL self_ref(TALLOC_CTX *ctx, char *pathname, struct junction_map *jucn,
  junction_map structure.
 **********************************************************************/
 
-BOOL get_referred_path(TALLOC_CTX *ctx, char *pathname, struct junction_map *jucn,
+BOOL get_referred_path(TALLOC_CTX *ctx, const char *pathname, struct junction_map *jucn,
 		       int *consumedcntp, BOOL *self_referralp)
 {
 	struct dfs_path dp;
@@ -646,7 +653,7 @@ static int setup_ver2_dfs_referral(char *pathname, char **ppdata,
 	/* add the unexplained 0x16 bytes */
 	reply_size += 0x16;
 
-	pdata = SMB_REALLOC(pdata,reply_size);
+	pdata = (char *)SMB_REALLOC(pdata,reply_size);
 	if(pdata == NULL) {
 		DEBUG(0,("malloc failed for Realloc!\n"));
 		return -1;
@@ -731,7 +738,7 @@ static int setup_ver3_dfs_referral(char *pathname, char **ppdata,
 		reply_size += (strlen(junction->referral_list[i].alternate_path)+1)*2;
 	}
 
-	pdata = SMB_REALLOC(pdata,reply_size);
+	pdata = (char *)SMB_REALLOC(pdata,reply_size);
 	if(pdata == NULL) {
 		DEBUG(0,("version3 referral setup: malloc failed for Realloc!\n"));
 		return -1;
@@ -874,7 +881,7 @@ int setup_dfs_referral(connection_struct *orig_conn, char *pathname, int max_ref
  Creates a junction structure from a Dfs pathname
 **********************************************************************/
 
-BOOL create_junction(char *pathname, struct junction_map *jucn)
+BOOL create_junction(const char *pathname, struct junction_map *jucn)
 {
         struct dfs_path dp;
  
@@ -1059,6 +1066,7 @@ static int form_junctions(TALLOC_CTX *ctx, int snum, struct junction_map *jucn, 
 	ref->ttl = REFERRAL_TTL;
 	if (*lp_msdfs_proxy(snum) != '\0') {
 		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
+		cnt++;
 		goto out;
 	}
 		

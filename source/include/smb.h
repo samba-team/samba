@@ -406,6 +406,15 @@ struct fd_handle {
 struct timed_event;
 struct idle_event;
 struct share_mode_entry;
+struct uuid;
+
+struct vfs_fsp_data {
+    struct vfs_fsp_data *next;
+    struct vfs_handle_struct *owner;
+    /* NOTE: This structure contains two pointers so that we can guarantee
+     * that the end of the structure is always both 4-byte and 8-byte aligned.
+     */
+};
 
 typedef struct files_struct {
 	struct files_struct *next, *prev;
@@ -431,6 +440,7 @@ typedef struct files_struct {
 	int oplock_type;
 	int sent_oplock_break;
 	struct timed_event *oplock_timeout;
+	struct lock_struct last_lock_failure;
 
 	struct share_mode_entry *pending_break_messages;
 	int num_pending_break_messages;
@@ -445,6 +455,8 @@ typedef struct files_struct {
 	BOOL aio_write_behind;
 	BOOL lockdb_clean;
 	char *fsp_name;
+
+	struct vfs_fsp_data *vfs_extension;
  	FAKE_FILE_HANDLE *fake_file_handle;
 } files_struct;
 
@@ -515,6 +527,8 @@ struct trans_state {
 };
 
 /* Include VFS stuff */
+
+struct security_descriptor_info;
 
 #include "smb_acls.h"
 #include "vfs.h"
@@ -850,53 +864,10 @@ struct parm_struct {
 #define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
 #define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
 
-/* passed to br lock code - the UNLOCK_LOCK should never be stored into the tdb
-   and is used in calculating POSIX unlock ranges only. */
-
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK, UNLOCK_LOCK};
-enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
-
-/* The key used in the brlock database. */
-
-struct lock_key {
-	SMB_DEV_T device;
-	SMB_INO_T inode;
-};
-
-struct byte_range_lock {
-	files_struct *fsp;
-	unsigned int num_locks;
-	BOOL modified;
-	struct lock_key key;
-	void *lock_data;
-};
-
-#define BRLOCK_FN_CAST() \
-	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
-				 enum brl_type lock_type, \
-				 enum brl_flavour lock_flav, \
-				 br_off start, br_off size)
-
-#define BRLOCK_FN(fn) \
-	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
-				 enum brl_type lock_type, \
-				 enum brl_flavour lock_flav, \
-				 br_off start, br_off size)
-
-#define LOCKING_FN_CAST() \
-	void (*)(struct share_mode_entry *, const char *, const char *)
-
-#define LOCKING_FN(fn) \
-	void (*fn)(struct share_mode_entry *, const char *, const char *)
-
 struct bitmap {
 	uint32 *b;
 	unsigned int n;
 };
-
-#ifndef LOCKING_VERSION
-#define LOCKING_VERSION 4
-#endif /* LOCKING_VERSION */
 
 /* the basic packet size, assuming no words or bytes */
 #define smb_size 39
@@ -1497,7 +1468,7 @@ enum server_types {
 enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 		     PRINT_QNX,PRINT_PLP,PRINT_LPRNG,PRINT_SOFTQ,
 		     PRINT_CUPS,PRINT_LPRNT,PRINT_LPROS2,PRINT_IPRINT
-#ifdef DEVELOPER
+#if defined(DEVELOPER) || defined(ENABLE_BUILD_FARM_HACKS)
 ,PRINT_TEST,PRINT_VLP
 #endif /* DEVELOPER */
 };

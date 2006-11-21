@@ -37,6 +37,7 @@ static const char *known_nt_pipes[] = {
 	"\\lsass",
 	"\\lsarpc",
 	"\\winreg",
+	"\\initshutdown",
 	"\\spoolss",
 	"\\netdfs",
 	"\\rpcecho",
@@ -321,7 +322,7 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	smb_np_struct *p = NULL;
 	uint16 vuid = SVAL(inbuf, smb_uid);
 	int i;
-
+ 
 	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
     
 	/* See if it is one we want to handle. */
@@ -418,10 +419,14 @@ int reply_ntcreate_and_X_quota(connection_struct *conn,
 	int result;
 	char *p;
 	uint32 desired_access = IVAL(inbuf,smb_ntcreate_DesiredAccess);
-	files_struct *fsp = open_fake_file(conn, fake_file_type, fname, desired_access);
+	files_struct *fsp;
+	NTSTATUS status;
 
-	if (!fsp) {
-		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	status = open_fake_file(conn, fake_file_type, fname, desired_access,
+				&fsp);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
 	}
 
 	set_message(outbuf,34,0,True);
@@ -431,31 +436,6 @@ int reply_ntcreate_and_X_quota(connection_struct *conn,
 	/* SCVAL(p,0,NO_OPLOCK_RETURN); */
 	p++;
 	SSVAL(p,0,fsp->fnum);
-#if 0
-	p += 2;
-	SIVAL(p,0,smb_action);
-	p += 4;
-	
-	/* Create time. */  
-	put_long_date(p,c_time);
-	p += 8;
-	put_long_date(p,sbuf.st_atime); /* access time */
-	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* write time */
-	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* change time */
-	p += 8;
-	SIVAL(p,0,fattr); /* File Attributes. */
-	p += 4;
-	SOFF_T(p, 0, get_allocation_size(conn,fsp,&sbuf));
-	p += 8;
-	SOFF_T(p,0,file_len);
-	p += 8;
-	if (flags & EXTENDED_RESPONSE_REQUIRED)
-		SSVAL(p,2,0x7);
-	p += 4;
-	SCVAL(p,0,fsp->is_directory ? 1 : 0);
-#endif
 
 	DEBUG(5,("reply_ntcreate_and_X_quota: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
 
@@ -489,13 +469,15 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	BOOL bad_path = False;
 	files_struct *fsp=NULL;
 	char *p = NULL;
-	time_t c_time;
+	struct timespec c_timespec;
+	struct timespec a_timespec;
+	struct timespec m_timespec;
 	BOOL extended_oplock_granted = False;
 	NTSTATUS status;
 
 	START_PROFILE(SMBntcreateX);
 
-	DEBUG(10,("reply_ntcreateX: flags = 0x%x, access_mask = 0x%x \
+	DEBUG(10,("reply_ntcreate_and_X: flags = 0x%x, access_mask = 0x%x \
 file_attributes = 0x%x, share_access = 0x%x, create_disposition = 0x%x \
 create_options = 0x%x root_dir_fid = 0x%x\n",
 			(unsigned int)flags,
@@ -694,18 +676,18 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		fsp = open_directory(conn, fname, &sbuf,
+		status = open_directory(conn, fname, &sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
 					create_options,
-					&info);
+					&info, &fsp);
 
 		restore_case_semantics(conn, file_attributes);
 
-		if(!fsp) {
+		if(!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+			return ERROR_NT(status);
 		}
 	} else {
 		/*
@@ -725,15 +707,15 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		fsp = open_file_ntcreate(conn,fname,&sbuf,
+		status = open_file_ntcreate(conn,fname,&sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
 					create_options,
 					file_attributes,
 					oplock_request,
-					&info);
-		if (!fsp) { 
+					&info, &fsp);
+		if (!NT_STATUS_IS_OK(status)) { 
 			/* We cheat here. There are two cases we
 			 * care about. One is a directory rename,
 			 * where the NT client will attempt to
@@ -753,7 +735,8 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 			 * we handle in the open_file_stat case. JRA.
 			 */
 
-			if(errno == EISDIR) {
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_FILE_IS_A_DIRECTORY)) {
 
 				/*
 				 * Fail the open if it was explicitly a non-directory file.
@@ -766,17 +749,17 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf,
+				status = open_directory(conn, fname, &sbuf,
 							access_mask,
 							share_access,
 							create_disposition,
 							create_options,
-							&info);
+							&info, &fsp);
 
-				if(!fsp) {
+				if(!NT_STATUS_IS_OK(status)) {
 					restore_case_semantics(conn, file_attributes);
 					END_PROFILE(SMBntcreateX);
-					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+					return ERROR_NT(status);
 				}
 			} else {
 
@@ -786,7 +769,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 					/* We have re-scheduled this call. */
 					return -1;
 				}
-				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+				return ERROR_NT(status);
 			}
 		} 
 	}
@@ -879,22 +862,23 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 	p += 4;
 	
 	/* Create time. */  
-	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	c_timespec = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	a_timespec = get_atimespec(&sbuf);
+	m_timespec = get_mtimespec(&sbuf);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
-		c_time &= ~1;
-		sbuf.st_atime &= ~1;
-		sbuf.st_mtime &= ~1;
-		sbuf.st_mtime &= ~1;
+		dos_filetime_timespec(&c_timespec);
+		dos_filetime_timespec(&a_timespec);
+		dos_filetime_timespec(&m_timespec);
 	}
 
-	put_long_date(p,c_time);
+	put_long_date_timespec(p, c_timespec);
 	p += 8;
-	put_long_date(p,sbuf.st_atime); /* access time */
+	put_long_date_timespec(p, a_timespec); /* access time */
 	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* write time */
+	put_long_date_timespec(p, m_timespec); /* write time */
 	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* change time */
+	put_long_date_timespec(p, m_timespec); /* change time */
 	p += 8;
 	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;
@@ -1026,16 +1010,16 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	if (psd->off_owner_sid==0) {
+	if (psd->owner_sid==0) {
 		security_info_sent &= ~OWNER_SECURITY_INFORMATION;
 	}
-	if (psd->off_grp_sid==0) {
+	if (psd->grp_sid==0) {
 		security_info_sent &= ~GROUP_SECURITY_INFORMATION;
 	}
-	if (psd->off_sacl==0) {
+	if (psd->sacl==0) {
 		security_info_sent &= ~SACL_SECURITY_INFORMATION;
 	}
-	if (psd->off_dacl==0) {
+	if (psd->dacl==0) {
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	}
 	
@@ -1113,7 +1097,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	uint32 sd_len;
 	uint32 ea_len;
 	uint16 root_dir_fid;
-	time_t c_time;
+	struct timespec c_timespec;
+	struct timespec a_timespec;
+	struct timespec m_timespec;
 	struct ea_list *ea_list = NULL;
 	TALLOC_CTX *ctx = NULL;
 	char *pdata = NULL;
@@ -1336,16 +1322,16 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 * CreateDirectory() call.
 		 */
 
-		fsp = open_directory(conn, fname, &sbuf,
+		status = open_directory(conn, fname, &sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
 					create_options,
-					&info);
-		if(!fsp) {
+					&info, &fsp);
+		if(!NT_STATUS_IS_OK(status)) {
 			talloc_destroy(ctx);
 			restore_case_semantics(conn, file_attributes);
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+			return ERROR_NT(status);
 		}
 
 	} else {
@@ -1354,17 +1340,18 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 * Ordinary file case.
 		 */
 
-		fsp = open_file_ntcreate(conn,fname,&sbuf,
+		status = open_file_ntcreate(conn,fname,&sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
 					create_options,
 					file_attributes,
 					oplock_request,
-					&info);
+					&info, &fsp);
 
-		if (!fsp) { 
-			if(errno == EISDIR) {
+		if (!NT_STATUS_IS_OK(status)) { 
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_FILE_IS_A_DIRECTORY)) {
 
 				/*
 				 * Fail the open if it was explicitly a non-directory file.
@@ -1376,16 +1363,16 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf,
+				status = open_directory(conn, fname, &sbuf,
 							access_mask,
 							share_access,
 							create_disposition,
 							create_options,
-							&info);
-				if(!fsp) {
+							&info, &fsp);
+				if(!NT_STATUS_IS_OK(status)) {
 					talloc_destroy(ctx);
 					restore_case_semantics(conn, file_attributes);
-					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+					return ERROR_NT(status);
 				}
 			} else {
 				talloc_destroy(ctx);
@@ -1394,7 +1381,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					/* We have re-scheduled this call. */
 					return -1;
 				}
-				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+				return ERROR_NT(status);
 			}
 		} 
 	}
@@ -1511,22 +1498,23 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	p += 8;
 
 	/* Create time. */
-	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	c_timespec = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	a_timespec = get_atimespec(&sbuf);
+	m_timespec = get_mtimespec(&sbuf);
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
-		c_time &= ~1;
-		sbuf.st_atime &= ~1;
-		sbuf.st_mtime &= ~1;
-		sbuf.st_mtime &= ~1;
+		dos_filetime_timespec(&c_timespec);
+		dos_filetime_timespec(&a_timespec);
+		dos_filetime_timespec(&m_timespec);
 	}
 
-	put_long_date(p,c_time);
+	put_long_date_timespec(p, c_timespec); /* create time. */
 	p += 8;
-	put_long_date(p,sbuf.st_atime); /* access time */
+	put_long_date_timespec(p, a_timespec); /* access time */
 	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* write time */
+	put_long_date_timespec(p, m_timespec); /* write time */
 	p += 8;
-	put_long_date(p,sbuf.st_mtime); /* change time */
+	put_long_date_timespec(p, m_timespec); /* change time */
 	p += 8;
 	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;
@@ -1660,39 +1648,29 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 
 	DEBUG(10,("copy_internals: doing file copy %s to %s\n", oldname, newname));
 
-        fsp1 = open_file_ntcreate(conn,oldname,&sbuf1,
+        status = open_file_ntcreate(conn,oldname,&sbuf1,
 			FILE_READ_DATA, /* Read-only. */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 			FILE_OPEN,
 			0, /* No create options. */
 			FILE_ATTRIBUTE_NORMAL,
 			NO_OPLOCK,
-			&info);
+			&info, &fsp1);
 
-	if (!fsp1) {
-		status = get_saved_ntstatus();
-		if (NT_STATUS_IS_OK(status)) {
-			status = NT_STATUS_ACCESS_DENIED;
-		}
-		set_saved_ntstatus(NT_STATUS_OK);
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-        fsp2 = open_file_ntcreate(conn,newname,&sbuf2,
-			FILE_WRITE_DATA, /* Write-only. */
+        status = open_file_ntcreate(conn,newname,&sbuf2,
+			FILE_WRITE_DATA, /* Read-only. */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 			FILE_CREATE,
 			0, /* No create options. */
 			fattr,
 			NO_OPLOCK,
-			&info);
+			&info, &fsp2);
 
-	if (!fsp2) {
-		status = get_saved_ntstatus();
-		if (NT_STATUS_IS_OK(status)) {
-			status = NT_STATUS_ACCESS_DENIED;
-		}
-		set_saved_ntstatus(NT_STATUS_OK);
+	if (!NT_STATUS_IS_OK(status)) {
 		close_file(fsp1,ERROR_CLOSE);
 		return status;
 	}

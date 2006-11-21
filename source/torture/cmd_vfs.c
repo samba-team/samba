@@ -200,9 +200,10 @@ static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 
 static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	int flags, fd;
+	int flags;
 	mode_t mode;
 	const char *flagstr;
+	files_struct *fsp;
 
 	mode = 00400;
 
@@ -278,18 +279,21 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		}
 	}
 
-	fd = SMB_VFS_OPEN(vfs->conn, argv[1], flags, mode);
-	if (fd == -1) {
+	fsp = SMB_MALLOC_P(struct files_struct);
+	fsp->fsp_name = SMB_STRDUP(argv[1]);
+	fsp->fh = SMB_MALLOC_P(struct fd_handle);
+	fsp->conn = vfs->conn;
+
+	fsp->fh->fd = SMB_VFS_OPEN(vfs->conn, argv[1], fsp, flags, mode);
+	if (fsp->fh->fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
+		SAFE_FREE(fsp->fh);
+		SAFE_FREE(fsp);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	vfs->files[fd] = SMB_MALLOC_P(struct files_struct);
-	vfs->files[fd]->fsp_name = SMB_STRDUP(argv[1]);
-	vfs->files[fd]->fh = SMB_MALLOC_P(struct fd_handle);
-	vfs->files[fd]->fh->fd = fd;
-	vfs->files[fd]->conn = vfs->conn;
-	printf("open: fd=%d\n", fd);
+	vfs->files[fsp->fh->fd] = fsp;
+	printf("open: fd=%d\n", fsp->fh->fd);
 	return NT_STATUS_OK;
 }
 

@@ -43,7 +43,7 @@ static PyObject *py_smb_connect(PyObject *self, PyObject *args, PyObject *kw)
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &server))
 		return NULL;
 
-	if (!(cli = cli_initialise(NULL)))
+	if (!(cli = cli_initialise()))
 		return NULL;
 
 	ZERO_STRUCT(ip);
@@ -99,7 +99,7 @@ static PyObject *py_smb_session_setup(PyObject *self, PyObject *args,
 	static char *kwlist[] = { "creds", NULL };
 	PyObject *creds;
 	char *username, *domain, *password, *errstr;
-	BOOL result;
+	NTSTATUS result;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "|O", kwlist, &creds))
 		return NULL;
@@ -118,7 +118,7 @@ static PyObject *py_smb_session_setup(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
-	return Py_BuildValue("i", result);
+	return Py_BuildValue("i", NT_STATUS_IS_OK(result));
 }
 
 static PyObject *py_smb_tconx(PyObject *self, PyObject *args, PyObject *kw)

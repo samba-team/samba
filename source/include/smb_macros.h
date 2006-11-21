@@ -83,8 +83,6 @@
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
 
 /* these are useful macros for checking validity of handles */
-#define OPEN_FSP(fsp)    ((fsp) && !(fsp)->is_directory)
-#define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
 /* you must add the following extern declaration to files using this macro
@@ -93,20 +91,24 @@
 #define FSP_BELONGS_CONN(fsp,conn) do {\
 			extern struct current_user current_user;\
 			if (!((fsp) && (conn) && ((conn)==(fsp)->conn) && (current_user.vuid==(fsp)->vuid))) \
-				return(ERROR_DOS(ERRDOS,ERRbadfid));\
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
 			} while(0)
 
-#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
+#define FNUM_OK(fsp,c) ((fsp) && !(fsp)->is_directory && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
 
 /* you must add the following extern declaration to files using this macro
  * extern struct current_user current_user;
  */
 #define CHECK_FSP(fsp,conn) do {\
 			extern struct current_user current_user;\
-			if (!FNUM_OK(fsp,conn)) \
-				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
-			else if((fsp)->fh->fd == -1) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess));\
+			if (!(fsp) || !(conn)) \
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
+			else if (((conn) != (fsp)->conn) || current_user.vuid != (fsp)->vuid) \
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
+			else if ((fsp)->is_directory) \
+				return ERROR_NT(NT_STATUS_INVALID_DEVICE_REQUEST); \
+			else if ((fsp)->fh->fd == -1) \
+				return ERROR_NT(NT_STATUS_ACCESS_DENIED); \
 			(fsp)->num_smb_operations++;\
 			} while(0)
 
@@ -182,7 +184,6 @@
 #define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
 
 #define ERROR_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
-#define ERROR_FORCE_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_INVALID,__LINE__,__FILE__)
 #define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
 #define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
 #define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
@@ -284,7 +285,7 @@ copy an IP address from one buffer to another
 #define SMB_XMALLOC_ARRAY(type,count) (type *)smb_xmalloc_array(sizeof(type),(count))
 
 /* limiting size of ipc replies */
-#define SMB_REALLOC_LIMIT(ptr,size) SMB_REALLOC(ptr,MAX((size),4*1024))
+#define SMB_REALLOC_LIMIT(ptr,size) (char *)SMB_REALLOC(ptr,MAX((size),4*1024))
 
 /* The new talloc is paranoid malloc checker safe. */
 
@@ -377,6 +378,6 @@ do { \
 } while (0)
 
 #define ADD_TO_LARGE_ARRAY(mem_ctx, type, elem, array, num, size) \
-	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void **)(array), (num), (size));
+	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void *)(array), (num), (size));
 
 #endif /* _SMB_MACROS_H */

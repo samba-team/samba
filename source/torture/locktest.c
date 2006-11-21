@@ -113,9 +113,13 @@ static struct record preset[] = {
 
 static struct record *recorded;
 
-static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, 
-		      enum brl_type lock_type,
-		      br_off start, br_off size)
+static void print_brl(SMB_DEV_T dev,
+			SMB_INO_T ino,
+			struct process_id pid, 
+			enum brl_type lock_type,
+			enum brl_flavour lock_flav,
+			br_off start,
+			br_off size)
 {
 #if NASTY_POSIX_LOCK_HACK
 	{
@@ -178,7 +182,7 @@ static struct cli_state *connect_one(char *share, int snum)
         zero_ip(&ip);
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server_n, &ip)) {
+	if (!(c=cli_initialise()) || !cli_connect(c, server_n, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", server_n));
 		return NULL;
 	}
@@ -216,10 +220,12 @@ static struct cli_state *connect_one(char *share, int snum)
 		fstrcpy(username[1], username[0]);
 	}
 
-	if (!cli_session_setup(c, username[snum], 
-			       password[snum], strlen(password[snum]),
-			       password[snum], strlen(password[snum]),
-			       lp_workgroup())) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(c, username[snum], 
+					       password[snum],
+					       strlen(password[snum]),
+					       password[snum],
+					       strlen(password[snum]),
+					       lp_workgroup()))) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 		return NULL;
 	}

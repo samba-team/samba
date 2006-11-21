@@ -1035,7 +1035,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	char    *buf = NULL;
 	ssize_t byte_count;
 
-	if ((buf=SMB_MALLOC(PE_HEADER_SIZE)) == NULL) {
+	if ((buf=(char *)SMB_MALLOC(PE_HEADER_SIZE)) == NULL) {
 		DEBUG(0,("get_file_version: PE file [%s] PE Header malloc failed bytes = %d\n",
 				fname, PE_HEADER_SIZE));
 		goto error_exit;
@@ -1091,7 +1091,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 			goto error_exit;
 
 		SAFE_FREE(buf);
-		if ((buf=SMB_MALLOC(section_table_bytes)) == NULL) {
+		if ((buf=(char *)SMB_MALLOC(section_table_bytes)) == NULL) {
 			DEBUG(0,("get_file_version: PE file [%s] section table malloc failed bytes = %d\n",
 					fname, section_table_bytes));
 			goto error_exit;
@@ -1281,6 +1281,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	SMB_STRUCT_STAT stat_buf;
 	BOOL bad_path;
 
+	NTSTATUS status;
+
 	SET_STAT_INVALID(st);
 	SET_STAT_INVALID(stat_buf);
 	new_create_time = (time_t)0;
@@ -1291,16 +1293,16 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	driver_unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
-	fsp = open_file_ntcreate(conn, filepath, &stat_buf,
+	status = open_file_ntcreate(conn, filepath, &stat_buf,
 				FILE_GENERIC_READ,
 				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
 				0,
 				FILE_ATTRIBUTE_NORMAL,
 				INTERNAL_OPEN_ONLY,
-				NULL);
+				NULL, &fsp);
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		/* Old file not found, so by definition new file is in fact newer */
 		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
 				filepath, errno));
@@ -1327,16 +1329,16 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	pstrcpy(filepath, new_file);
 	driver_unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
-	fsp = open_file_ntcreate(conn, filepath, &stat_buf,
+	status = open_file_ntcreate(conn, filepath, &stat_buf,
 				FILE_GENERIC_READ,
 				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
 				0,
 				FILE_ATTRIBUTE_NORMAL,
 				INTERNAL_OPEN_ONLY,
-				NULL);
+				NULL, &fsp);
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		/* New file not found, this shouldn't occur if the caller did its job */
 		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
 				filepath, errno));
@@ -1405,6 +1407,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	BOOL              bad_path;
 	SMB_STRUCT_STAT   st;
 	connection_struct *conn;
+	NTSTATUS status;
 
 	SET_STAT_INVALID(st);
 
@@ -1460,16 +1463,16 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 		goto error_exit;
 	}
 
-	fsp = open_file_ntcreate(conn, driverpath, &st,
+	status = open_file_ntcreate(conn, driverpath, &st,
 				FILE_GENERIC_READ,
 				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
 				0,
 				FILE_ATTRIBUTE_NORMAL,
 				INTERNAL_OPEN_ONLY,
-				NULL);
+				NULL, &fsp);
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));
 		*perr = WERR_ACCESS_DENIED;
@@ -4368,7 +4371,8 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 				fstrcpy( servername, print_hnd->servername );
 			else {
 				fstrcpy( servername, "%L" );
-				standard_sub_basic( "", servername, sizeof(servername)-1 );
+				standard_sub_basic( "", "", servername,
+						    sizeof(servername)-1 );
 			}
 
 			result = get_a_printer_2( (*pp_printer)->info_2, servername, sharename );
@@ -5441,7 +5445,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
  Check the time parameters allow a print operation.
 *****************************************************************************/
 
-BOOL print_time_access_check(int snum)
+BOOL print_time_access_check(const char *servicename)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	BOOL ok = False;
@@ -5449,7 +5453,7 @@ BOOL print_time_access_check(int snum)
 	struct tm *t;
 	uint32 mins;
 
-	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_servicename(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, servicename)))
 		return False;
 
 	if (printer->info_2->starttime == 0 && printer->info_2->untiltime == 0)

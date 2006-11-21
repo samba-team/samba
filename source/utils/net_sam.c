@@ -206,23 +206,20 @@ static int net_sam_set_pwnoexp(int argc, const char **argv)
 }
 
 /*
- * Set a user's time field
+ * Set pass last change time, based on force pass change now
  */
 
-static int net_sam_set_time(int argc, const char **argv, const char *field,
-			    BOOL (*fn)(struct samu *, time_t,
-				       enum pdb_value_state))
+static int net_sam_set_pwdmustchangenow(int argc, const char **argv)
 {
 	struct samu *sam_acct = NULL;
 	DOM_SID sid;
 	enum lsa_SidType type;
 	const char *dom, *name;
 	NTSTATUS status;
-	time_t new_time;
 
-	if (argc != 2) {
-		d_fprintf(stderr, "usage: net sam set %s <user> "
-			  "[now|YYYY-MM-DD HH:MM]\n", field);
+	if ((argc != 2) || (!strequal(argv[1], "yes") &&
+			    !strequal(argv[1], "no"))) {
+		d_fprintf(stderr, "usage: net sam set pwdmustchangenow <user> [yes|no]\n");
 		return -1;
 	}
 
@@ -238,22 +235,6 @@ static int net_sam_set_time(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	if (strequal(argv[1], "now")) {
-		new_time = time(NULL);
-	} else {
-		struct tm tm;
-		char *end;
-		ZERO_STRUCT(tm);
-		end = strptime(argv[1], "%Y-%m-%d %H:%M", &tm);
-		new_time = mktime(&tm);
-		if ((end == NULL) || (*end != '\0') || (new_time == -1)) {
-			d_fprintf(stderr, "Could not parse time string %s\n",
-				  argv[1]);
-			return -1;
-		}
-	}
-
-
 	if ( !(sam_acct = samu_new( NULL )) ) {
 		d_fprintf(stderr, "Internal error\n");
 		return -1;
@@ -264,9 +245,10 @@ static int net_sam_set_time(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	if (!fn(sam_acct, new_time, PDB_CHANGED)) {
-		d_fprintf(stderr, "Internal error\n");
-		return -1;
+	if (strequal(argv[1], "yes")) {
+		pdb_set_pass_last_set_time(sam_acct, 0, PDB_CHANGED);
+	} else {
+		pdb_set_pass_last_set_time(sam_acct, time(NULL), PDB_CHANGED);
 	}
 
 	status = pdb_update_sam_account(sam_acct);
@@ -278,21 +260,11 @@ static int net_sam_set_time(int argc, const char **argv, const char *field,
 
 	TALLOC_FREE(sam_acct);
 
-	d_printf("Updated %s for %s\\%s to %s\n", field, dom, name, argv[1]);
+	d_fprintf(stderr, "Updated 'user must change password at next logon' for %s\\%s to %s\n", dom,
+		  name, argv[1]);
 	return 0;
 }
 
-static int net_sam_set_pwdmustchange(int argc, const char **argv)
-{
-	return net_sam_set_time(argc, argv, "pwdmustchange",
-				pdb_set_pass_must_change_time);
-}
-
-static int net_sam_set_pwdcanchange(int argc, const char **argv)
-{
-	return net_sam_set_time(argc, argv, "pwdcanchange",
-				pdb_set_pass_can_change_time);
-}
 
 /*
  * Set a user's or a group's comment
@@ -376,15 +348,87 @@ static int net_sam_set(int argc, const char **argv)
 		  "Disable/Enable a user's lockout flag" },
 		{ "pwnoexp", net_sam_set_pwnoexp,
 		  "Disable/Enable whether a user's pw does not expire" },
-		{ "pwdmustchange", net_sam_set_pwdmustchange,
-		  "Set a users password must change time" },
-		{ "pwdcanchange", net_sam_set_pwdcanchange,
-		  "Set a users password can change time" },
+		{ "pwdmustchangenow", net_sam_set_pwdmustchangenow,
+		  "Force users password must change at next logon" },
 		{NULL, NULL}
 	};
 
 	return net_run_function2(argc, argv, "net sam set", func);
 }
+
+/*
+ * Change account policies
+ */
+
+static int net_sam_policy(int argc, const char **argv)
+{
+	
+	const char *account_policy = NULL;
+	uint32 value, old_value;
+	int field;
+
+	if ((argc < 1) || (argc > 2)) {
+		d_fprintf(stderr, "usage: net sam policy \"<account policy>\" "
+			  "-> show current value\n");
+		d_fprintf(stderr, "usage: net sam policy \"<account policy>\" "
+			  "<value> -> set a new value\n");
+		return -1;
+	}
+
+	account_policy = argv[0];
+	field = account_policy_name_to_fieldnum(account_policy);
+
+	if (field == 0) {
+		char *apn = account_policy_names_list();
+		d_fprintf(stderr, "No account policy by that name!\n");
+		if (apn) {
+			d_fprintf(stderr, "Valid account policies "
+				  "are:\n%s\n", apn);
+		}
+		SAFE_FREE(apn);
+		return -1;
+	}
+
+	if (!pdb_get_account_policy(field, &old_value)) {
+		fprintf(stderr, "Valid account policy, but unable to "
+			"fetch value!\n");
+		return -1;
+	}
+
+	if (argc == 1) {
+		/*
+		 * Just read the value
+		 */
+
+		printf("Account policy \"%s\" description: %s\n",
+		       account_policy, account_policy_get_desc(field));
+		printf("Account policy \"%s\" value is: %d\n", account_policy,
+		       old_value);
+		return 0;
+	}
+
+	/*
+	 * Here we know we have 2 args, so set it
+	 */
+	
+	value = strtoul(argv[1], NULL, 10);
+
+	printf("Account policy \"%s\" description: %s\n", account_policy,
+	       account_policy_get_desc(field));
+	printf("Account policy \"%s\" value was: %d\n", account_policy,
+	       old_value);
+
+	if (!pdb_set_account_policy(field, value)) {
+		d_fprintf(stderr, "Setting account policy %s to %u failed \n",
+			  account_policy, value);
+	}
+
+	printf("Account policy \"%s\" value is now: %d\n", account_policy,
+	       value);
+
+	return 0;
+}
+
 
 /*
  * Map a unix group to a domain group
@@ -1232,6 +1276,8 @@ int net_sam(int argc, const char **argv)
 		  "Show details of a SAM entry" },
 		{ "set", net_sam_set,
 		  "Set details of a SAM account" },
+		{ "policy", net_sam_policy,
+		  "Set account policies" },
 #ifdef HAVE_LDAP
 		{ "provision", net_sam_provision,
 		  "Provision a clean User Database" },

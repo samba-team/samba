@@ -33,7 +33,8 @@ static void get_challenge(char buff[8])
 	NTSTATUS nt_status;
 	const uint8 *cryptkey;
 
-	/* We might be called more than once, muliple negprots are premitted */
+	/* We might be called more than once, multiple negprots are
+	 * permitted */
 	if (negprot_global_auth_context) {
 		DEBUG(3, ("get challenge: is this a secondary negprot?  negprot_global_auth_context is non-NULL!\n"));
 		(negprot_global_auth_context->free)(&negprot_global_auth_context);
@@ -168,7 +169,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
  Generate the spnego negprot reply blob. Return the number of bytes used.
 ****************************************************************************/
 
-static int negprot_spnego(char *p, uint8 *pkeylen)
+static DATA_BLOB negprot_spnego(void)
 {
 	DATA_BLOB blob;
 	nstring dos_name;
@@ -179,7 +180,6 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 				   OID_NTLMSSP,
 				   NULL};
 	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
-	int len;
 
 	global_spnego_negotiated = True;
 
@@ -189,15 +189,6 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 	strlower_m(unix_name);
 	push_ascii_nstring(dos_name, unix_name);
 	safe_strcpy(guid, dos_name, sizeof(guid)-1);
-
-#ifdef DEVELOPER
-	/* valgrind fixer... */
-	{
-		size_t sl = strlen(guid);
-		if (sizeof(guid)-sl)
-			memset(&guid[sl], '\0', sizeof(guid)-sl);
-	}
-#endif
 
 	/* strangely enough, NT does not sent the single OID NTLMSSP when
 	   not a ADS member, it sends no OIDs at all
@@ -230,20 +221,7 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 		SAFE_FREE(host_princ_s);
 	}
 
-	memcpy(p, blob.data, blob.length);
-	len = blob.length;
-	if (len > 256) {
-		DEBUG(0,("negprot_spnego: blob length too long (%d)\n", len));
-		len = 255;
-	}
-	data_blob_free(&blob);
-
-	if (lp_security() != SEC_ADS && !lp_use_kerberos_keytab()) {
-		*pkeylen = 0;
-	} else {
-		*pkeylen = len;
-	}
-	return len;
+	return blob;
 }
 
 /****************************************************************************
@@ -349,11 +327,17 @@ static int reply_nt1(char *inbuf, char *outbuf)
 				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-		uint8 keylen;
-		int len = negprot_spnego(p, &keylen);
-		
-		SCVAL(outbuf,smb_vwv16+1,keylen);
-		p += len;
+		DATA_BLOB spnego_blob = negprot_spnego();
+
+		if (spnego_blob.data == NULL) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+
+		memcpy(p, spnego_blob.data, spnego_blob.length);
+		p += spnego_blob.length;
+		data_blob_free(&spnego_blob);
+
+		SCVAL(outbuf,smb_vwv16+1, 0);
 		DEBUG(3,("using SPNEGO\n"));
 	}
 	

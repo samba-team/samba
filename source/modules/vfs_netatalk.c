@@ -172,11 +172,11 @@ static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 
 /* Directory operations */
 
-SMB_STRUCT_DIR *atalk_opendir(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, const char *mask, uint32 attr)
+SMB_STRUCT_DIR *atalk_opendir(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
 {
 	SMB_STRUCT_DIR *ret = 0;
 
-	ret = SMB_VFS_NEXT_OPENDIR(handle, conn, fname, mask, attr);
+	ret = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 
 	/*
 	 * when we try to perform delete operation upon file which has fork
@@ -187,19 +187,19 @@ SMB_STRUCT_DIR *atalk_opendir(struct vfs_handle_struct *handle, struct connectio
 	 * list then it would be nice to add one.
 	 */
 
-	atalk_add_to_list(&conn->hide_list);
-	atalk_add_to_list(&conn->veto_list);
+	atalk_add_to_list(&handle->conn->hide_list);
+	atalk_add_to_list(&handle->conn->veto_list);
 
 	return ret;
 }
 
-static int atalk_rmdir(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path)
+static int atalk_rmdir(struct vfs_handle_struct *handle, const char *path)
 {
 	BOOL add = False;
 	TALLOC_CTX *ctx = 0;
 	char *dpath;
 
-	if (!conn || !conn->origpath || !path) goto exit_rmdir;
+	if (!handle->conn->origpath || !path) goto exit_rmdir;
 
 	/* due to there is no way to change bDeleteVetoFiles variable
 	 * from this module, gotta use talloc stuff..
@@ -211,19 +211,19 @@ static int atalk_rmdir(struct vfs_handle_struct *handle, struct connection_struc
 		goto exit_rmdir;
 
 	if (!(dpath = talloc_asprintf(ctx, "%s/%s%s", 
-	  conn->origpath, path, add ? "/"APPLEDOUBLE : "")))
+	  handle->conn->origpath, path, add ? "/"APPLEDOUBLE : "")))
 		goto exit_rmdir;
 
 	atalk_rrmdir(ctx, dpath);
 
 exit_rmdir:
 	talloc_destroy(ctx);
-	return SMB_VFS_NEXT_RMDIR(handle, conn, path);
+	return SMB_VFS_NEXT_RMDIR(handle, path);
 }
 
 /* File operations */
 
-static int atalk_rename(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *oldname, const char *newname)
+static int atalk_rename(struct vfs_handle_struct *handle, const char *oldname, const char *newname)
 {
 	int ret = 0;
 	char *adbl_path = 0;
@@ -232,14 +232,14 @@ static int atalk_rename(struct vfs_handle_struct *handle, struct connection_stru
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = SMB_VFS_NEXT_RENAME(handle, conn, oldname, newname);
+	ret = SMB_VFS_NEXT_RENAME(handle, oldname, newname);
 
-	if (!conn || !oldname) return ret;
+	if (!oldname) return ret;
 
 	if (!(ctx = talloc_init("rename_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, conn->origpath, oldname, &adbl_path, &orig_path, 
+	if (atalk_build_paths(ctx, handle->conn->origpath, oldname, &adbl_path, &orig_path,
 	  &adbl_info, &orig_info) != 0)
 		return ret;
 
@@ -255,7 +255,7 @@ exit_rename:
 	return ret;
 }
 
-static int atalk_unlink(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path)
+static int atalk_unlink(struct vfs_handle_struct *handle, const char *path)
 {
 	int ret = 0, i;
 	char *adbl_path = 0;
@@ -264,25 +264,25 @@ static int atalk_unlink(struct vfs_handle_struct *handle, struct connection_stru
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = SMB_VFS_NEXT_UNLINK(handle, conn, path);
+	ret = SMB_VFS_NEXT_UNLINK(handle, path);
 
-	if (!conn || !path) return ret;
+	if (!path) return ret;
 
 	/* no .AppleDouble sync if veto or hide list is empty,
 	 * otherwise "Cannot find the specified file" error will be caused
 	 */
 
-	if (!conn->veto_list) return ret;
-	if (!conn->hide_list) return ret;
+	if (!handle->conn->veto_list) return ret;
+	if (!handle->conn->hide_list) return ret;
 
-	for (i = 0; conn->veto_list[i].name; i ++) {
-		if (strstr(conn->veto_list[i].name, APPLEDOUBLE))
+	for (i = 0; handle->conn->veto_list[i].name; i ++) {
+		if (strstr(handle->conn->veto_list[i].name, APPLEDOUBLE))
 			break;
 	}
 
-	if (!conn->veto_list[i].name) {
-		for (i = 0; conn->hide_list[i].name; i ++) {
-			if (strstr(conn->hide_list[i].name, APPLEDOUBLE))
+	if (!handle->conn->veto_list[i].name) {
+		for (i = 0; handle->conn->hide_list[i].name; i ++) {
+			if (strstr(handle->conn->hide_list[i].name, APPLEDOUBLE))
 				break;
 			else {
 				DEBUG(3, ("ATALK: %s is not hidden, skipped..\n",
@@ -295,7 +295,7 @@ static int atalk_unlink(struct vfs_handle_struct *handle, struct connection_stru
 	if (!(ctx = talloc_init("unlink_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, conn->origpath, path, &adbl_path, &orig_path, 
+	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path, &orig_path,
 	  &adbl_info, &orig_info) != 0)
 		return ret;
 
@@ -311,7 +311,7 @@ exit_unlink:
 	return ret;
 }
 
-static int atalk_chmod(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, mode_t mode)
+static int atalk_chmod(struct vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	int ret = 0;
 	char *adbl_path = 0;
@@ -320,14 +320,14 @@ static int atalk_chmod(struct vfs_handle_struct *handle, struct connection_struc
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = SMB_VFS_NEXT_CHMOD(handle, conn, path, mode);
+	ret = SMB_VFS_NEXT_CHMOD(handle, path, mode);
 
-	if (!conn || !path) return ret;
+	if (!path) return ret;
 
 	if (!(ctx = talloc_init("chmod_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, conn->origpath, path, &adbl_path, &orig_path,
+	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path, &orig_path,
 	  &adbl_info, &orig_info) != 0)
 		return ret;
 
@@ -343,7 +343,7 @@ exit_chmod:
 	return ret;
 }
 
-static int atalk_chown(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, uid_t uid, gid_t gid)
+static int atalk_chown(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid)
 {
 	int ret = 0;
 	char *adbl_path = 0;
@@ -352,14 +352,14 @@ static int atalk_chown(struct vfs_handle_struct *handle, struct connection_struc
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = SMB_VFS_NEXT_CHOWN(handle, conn, path, uid, gid);
+	ret = SMB_VFS_NEXT_CHOWN(handle, path, uid, gid);
 
-	if (!conn || !path) return ret;
+	if (!path) return ret;
 
 	if (!(ctx = talloc_init("chown_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, conn->origpath, path, &adbl_path, &orig_path,
+	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path, &orig_path,
 	  &adbl_info, &orig_info) != 0)
 		return ret;
 

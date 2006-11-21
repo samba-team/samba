@@ -56,16 +56,19 @@ static void cli_set_session_key (struct cli_state *cli, const DATA_BLOB session_
  Do an old lanman2 style session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user, 
-				      const char *pass, size_t passlen, const char *workgroup)
+static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
+					  const char *user, 
+					  const char *pass, size_t passlen,
+					  const char *workgroup)
 {
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB lm_response = data_blob(NULL, 0);
 	fstring pword;
 	char *p;
 
-	if (passlen > sizeof(pword)-1)
-		return False;
+	if (passlen > sizeof(pword)-1) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* LANMAN servers predate NT status codes and Unicode and ignore those 
 	   smb flags so we must disable the corresponding default capabilities  
@@ -83,7 +86,7 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user,
 		lm_response = data_blob(NULL, 24);
 		if (!SMBencrypt(pass, cli->secblob.data,(uchar *)lm_response.data)) {
 			DEBUG(1, ("Password is > 14 chars in length, and is therefore incompatible with Lanman authentication\n"));
-			return False;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && passlen == 24) {
 		/* Encrypted mode needed, and encrypted password supplied. */
@@ -116,14 +119,15 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user,
 	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
 
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
-		return False;
+	if (!cli_send_smb(cli) || !cli_receive_smb(cli)) {
+		return cli_nt_error(cli);
+	}
 
 	show_msg(cli->inbuf);
 
-	if (cli_is_error(cli))
-		return False;
+	if (cli_is_error(cli)) {
+		return cli_nt_error(cli);
+	}
 	
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);	
@@ -134,7 +138,7 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user,
 		cli_set_session_key(cli, session_key);
 	}
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -159,7 +163,7 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
  Do a NT1 guest session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_guest(struct cli_state *cli)
+static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
 {
 	char *p;
 	uint32 capabilities = cli_session_setup_capabilities(cli);
@@ -184,14 +188,15 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
 	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
 
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
-	      return False;
+	if (!cli_send_smb(cli) || !cli_receive_smb(cli)) {
+		return cli_nt_error(cli);
+	}
 	
 	show_msg(cli->inbuf);
 	
-	if (cli_is_error(cli))
-		return False;
+	if (cli_is_error(cli)) {
+		return cli_nt_error(cli);
+	}
 
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
 
@@ -206,15 +211,16 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
 
 	fstrcpy(cli->user_name, "");
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Do a NT1 plaintext session setup.
 ****************************************************************************/
 
-static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user, 
-					const char *pass, const char *workgroup)
+static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
+					    const char *user, const char *pass,
+					    const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	char *p;
@@ -253,14 +259,15 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	p += clistr_push(cli, p, lanman, -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
 
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
-	      return False;
+	if (!cli_send_smb(cli) || !cli_receive_smb(cli)) {
+		return cli_nt_error(cli);
+	}
 	
 	show_msg(cli->inbuf);
 	
-	if (cli_is_error(cli))
-		return False;
+	if (cli_is_error(cli)) {
+		return cli_nt_error(cli);
+	}
 
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
 	p = smb_buf(cli->inbuf);
@@ -273,7 +280,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 		cli->is_samba = True;
 	}
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -286,16 +293,16 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
    @param workgroup The user's domain.
 ****************************************************************************/
 
-static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user, 
-				  const char *pass, size_t passlen,
-				  const char *ntpass, size_t ntpasslen,
-				  const char *workgroup)
+static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user, 
+				      const char *pass, size_t passlen,
+				      const char *ntpass, size_t ntpasslen,
+				      const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	DATA_BLOB lm_response = data_blob(NULL, 0);
 	DATA_BLOB nt_response = data_blob(NULL, 0);
 	DATA_BLOB session_key = data_blob(NULL, 0);
-	BOOL ret = False;
+	NTSTATUS result;
 	char *p;
 
 	if (passlen == 0) {
@@ -317,7 +324,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 					      &lm_response, &nt_response, &session_key)) {
 				data_blob_free(&names_blob);
 				data_blob_free(&server_chal);
-				return False;
+				return NT_STATUS_ACCESS_DENIED;
 			}
 			data_blob_free(&names_blob);
 			data_blob_free(&server_chal);
@@ -399,14 +406,14 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	cli_setup_bcc(cli, p);
 
 	if (!cli_send_smb(cli) || !cli_receive_smb(cli)) {
-		ret = False;
+		result = cli_nt_error(cli);
 		goto end;
 	}
 
 	/* show_msg(cli->inbuf); */
 
 	if (cli_is_error(cli)) {
-		ret = False;
+		result = cli_nt_error(cli);
 		goto end;
 	}
 
@@ -429,12 +436,12 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 		cli_set_session_key(cli, session_key);
 	}
 
-	ret = True;
+	result = NT_STATUS_OK;
 end:	
 	data_blob_free(&lm_response);
 	data_blob_free(&nt_response);
 	data_blob_free(&session_key);
-	return ret;
+	return result;
 }
 
 /****************************************************************************
@@ -600,6 +607,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_client_start(&ntlmssp_state))) {
 		return nt_status;
 	}
+	ntlmssp_want_feature(ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
 
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, user))) {
 		return nt_status;
@@ -762,7 +770,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 		 * sent. -- VL
 		 */
 		DEBUG(1, ("Kerberos mech was offered, but no principal was "
-			"sent, disabling Kerberos\n"));
+			  "sent, disabling Kerberos\n"));
 		cli->use_kerberos = False;
 	}
 
@@ -811,11 +819,11 @@ ntlmssp:
  password is in plaintext, the same should be done.
 ****************************************************************************/
 
-BOOL cli_session_setup(struct cli_state *cli, 
-		       const char *user, 
-		       const char *pass, int passlen,
-		       const char *ntpass, int ntpasslen,
-		       const char *workgroup)
+NTSTATUS cli_session_setup(struct cli_state *cli, 
+			   const char *user, 
+			   const char *pass, int passlen,
+			   const char *ntpass, int ntpasslen,
+			   const char *workgroup)
 {
 	char *p;
 	fstring user2;
@@ -829,8 +837,9 @@ BOOL cli_session_setup(struct cli_state *cli,
 		workgroup = user2;
 	}
 
-	if (cli->protocol < PROTOCOL_LANMAN1)
-		return True;
+	if (cli->protocol < PROTOCOL_LANMAN1) {
+		return NT_STATUS_OK;
+	}
 
 	/* now work out what sort of session setup we are going to
            do. I have split this into separate functions to make the
@@ -842,17 +851,18 @@ BOOL cli_session_setup(struct cli_state *cli,
 		if (!lp_client_lanman_auth() && passlen != 24 && (*pass)) {
 			DEBUG(1, ("Server requested LM password but 'client lanman auth'"
 				  " is disabled\n"));
-			return False;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
 		    !lp_client_plaintext_auth() && (*pass)) {
 			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
 				  " is disabled\n"));
-			return False;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		return cli_session_setup_lanman2(cli, user, pass, passlen, workgroup);
+		return cli_session_setup_lanman2(cli, user, pass, passlen,
+						 workgroup);
 	}
 
 	/* if no user is supplied then we have to do an anonymous connection.
@@ -875,7 +885,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		if (!lp_client_plaintext_auth() && (*pass)) {
 			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
 				  " is disabled\n"));
-			return False;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 		return cli_session_setup_plaintext(cli, user, pass, workgroup);
 	}
@@ -886,13 +896,18 @@ BOOL cli_session_setup(struct cli_state *cli,
 		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass, workgroup);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(3, ("SPNEGO login failed: %s\n", ads_errstr(status)));
-			return False;
+			return ads_ntstatus(status);
 		}
 	} else {
+		NTSTATUS status;
+
 		/* otherwise do a NT1 style session setup */
-		if ( !cli_session_setup_nt1(cli, user, pass, passlen, ntpass, ntpasslen, workgroup) ) {
-			DEBUG(3,("cli_session_setup: NT1 session setup failed!\n"));
-			return False;
+		status = cli_session_setup_nt1(cli, user, pass, passlen,
+					       ntpass, ntpasslen, workgroup);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3,("cli_session_setup: NT1 session setup "
+				 "failed: %s\n", nt_errstr(status)));
+			return status;
 		}
 	}
 
@@ -900,7 +915,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		cli->is_samba = True;
 	}
 
-	return True;
+	return NT_STATUS_OK;
 
 }
 
@@ -1406,8 +1421,9 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	if (!my_name) 
 		my_name = global_myname();
 	
-	if (!(cli = cli_initialise(NULL)))
+	if (!(cli = cli_initialise())) {
 		return NT_STATUS_NO_MEMORY;
+	}
 	
 	make_nmb_name(&calling, my_name, 0x0);
 	make_nmb_name(&called , dest_host, 0x20);
@@ -1507,6 +1523,8 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	struct cli_state *cli = NULL;
 	int pw_len = password ? strlen(password)+1 : 0;
 
+	*output_cli = NULL;
+
 	if (password == NULL) {
 		password = "";
 	}
@@ -1518,19 +1536,26 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 		return nt_status;
 	}
 
-	if (!cli_session_setup(cli, user, password, pw_len, password, pw_len, domain)) {
-		if ((flags & CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK)
-		    && cli_session_setup(cli, "", "", 0, "", 0, domain)) {
-		} else {
-			nt_status = cli_nt_error(cli);
-			DEBUG(1,("failed session setup with %s\n", nt_errstr(nt_status)));
+	nt_status = cli_session_setup(cli, user, password, pw_len, password,
+				      pw_len, domain);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+
+		if (!(flags & CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK)) {
+			DEBUG(1,("failed session setup with %s\n",
+				 nt_errstr(nt_status)));
 			cli_shutdown(cli);
-			if (NT_STATUS_IS_OK(nt_status)) 
-				nt_status = NT_STATUS_UNSUCCESSFUL;
 			return nt_status;
 		}
-	} 
 
+		nt_status = cli_session_setup(cli, "", "", 0, "", 0, domain);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(1,("anonymous failed session setup with %s\n",
+				 nt_errstr(nt_status)));
+			cli_shutdown(cli);
+			return nt_status;
+		}
+	}
+	
 	if (service) {
 		if (!cli_send_tconX(cli, service, service_type, password, pw_len)) {
 			nt_status = cli_nt_error(cli);
@@ -1553,7 +1578,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
  Attempt a NetBIOS session request, falling back to *SMBSERVER if needed.
 ****************************************************************************/
 
-BOOL attempt_netbios_session_request(struct cli_state *cli, const char *srchost, const char *desthost,
+BOOL attempt_netbios_session_request(struct cli_state **ppcli, const char *srchost, const char *desthost,
                                      struct in_addr *pdest_ip)
 {
 	struct nmb_name calling, called;
@@ -1571,7 +1596,7 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, const char *srchost,
 		make_nmb_name(&called, desthost, 0x20);
 	}
 
-	if (!cli_session_request(cli, &calling, &called)) {
+	if (!cli_session_request(*ppcli, &calling, &called)) {
 		struct nmb_name smbservername;
 
 		make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
@@ -1588,23 +1613,23 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, const char *srchost,
 			 */
 
 			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER \
-with error %s.\n", desthost, cli_errstr(cli) ));
+with error %s.\n", desthost, cli_errstr(*ppcli) ));
 			return False;
 		}
 
-		/*
-		 * We need to close the connection here but can't call cli_shutdown as
-		 * will free an allocated cli struct. cli_close_connection was invented
-		 * for this purpose. JRA. Based on work by "Kim R. Pedersen" <krp@filanet.dk>.
-		 */
+		/* Try again... */
+		cli_shutdown(*ppcli);
 
-		cli_close_connection(cli);
+		*ppcli = cli_initialise();
+		if (!*ppcli) {
+			/* Out of memory... */
+			return False;
+		}
 
-		if (!cli_initialise(cli) ||
-				!cli_connect(cli, desthost, pdest_ip) ||
-				!cli_session_request(cli, &calling, &smbservername)) {
+		if (!cli_connect(*ppcli, desthost, pdest_ip) ||
+				!cli_session_request(*ppcli, &calling, &smbservername)) {
 			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for \
-name *SMBSERVER with error %s\n", desthost, cli_errstr(cli) ));
+name *SMBSERVER with error %s\n", desthost, cli_errstr(*ppcli) ));
 			return False;
 		}
 	}

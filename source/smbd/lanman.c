@@ -72,7 +72,11 @@ static int CopyExpanded(connection_struct *conn,
 
 	StrnCpy(buf,src,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf,sizeof(buf));
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      buf, sizeof(buf));
 	l = push_ascii(*dst,buf,*n, STR_TERMINATE);
 	(*dst) += l;
 	(*n) -= l;
@@ -99,7 +103,11 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 	}
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf,sizeof(buf));
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      buf, sizeof(buf));
 	return strlen(buf) + 1;
 }
 
@@ -111,7 +119,11 @@ static char *Expand(connection_struct *conn, int snum, char *s)
 	}
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf,sizeof(buf));
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      buf, sizeof(buf));
 	return &buf[0];
 }
 
@@ -593,7 +605,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum,
 	PACKS(desc, "z", driver.info_3->monitorname); /* language monitor */
 	
 	fstrcpy(location, "\\\\%L\\print$\\WIN40\\0");
-	standard_sub_basic( "", location, sizeof(location)-1 );
+	standard_sub_basic( "", "", location, sizeof(location)-1 );
 	PACKS(desc,"z", location);                          /* share to retrieve files */
 	
 	PACKS(desc,"z", driver.info_3->defaultdatatype);    /* default data type */
@@ -2530,7 +2542,6 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
 	uint32 jobid;
-	int snum;
 	fstring sharename;
 	int uLevel = SVAL(p,2);
 	int function = SVAL(p,4);
@@ -2544,9 +2555,9 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 		return False;
 	}
 
-	if ( (snum = lp_servicenumber(sharename)) == -1 ) {
-		DEBUG(0,("api_PrintJobInfo: unable to get service number from sharename [%s]\n",
-			sharename));
+	if (!share_defined(sharename)) {
+		DEBUG(0,("api_PrintJobInfo: sharen [%s] not defined\n",
+			 sharename));
 		return False;
 	}
   
@@ -2569,14 +2580,14 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 		/* change job place in the queue, 
 		   data gives the new place */
 		place = SVAL(data,0);
-		if (print_job_set_place(snum, jobid, place)) {
+		if (print_job_set_place(sharename, jobid, place)) {
 			errcode=NERR_Success;
 		}
 		break;
 
 	case 0xb:   
 		/* change print job name, data gives the name */
-		if (print_job_set_name(snum, jobid, data)) {
+		if (print_job_set_name(sharename, jobid, data)) {
 			errcode=NERR_Success;
 		}
 		break;
@@ -2666,7 +2677,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 	p = *rdata;
 	p2 = p + struct_len;
 	if (uLevel != 20) {
-		srvstr_push(NULL, p,get_local_machine_name(),16, 
+		srvstr_push(NULL, p,global_myname(),16, 
 			STR_ASCII|STR_UPPER|STR_TERMINATE);
   	}
 	p += 16;
@@ -2680,7 +2691,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 
 		if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
 			for (i=0;i<count;i++) {
-				if (strequal(servers[i].name,get_local_machine_name())) {
+				if (strequal(servers[i].name,global_myname())) {
 					servertype = servers[i].type;
 					push_ascii(comment,servers[i].comment,sizeof(pstring),STR_TERMINATE);
 				}
@@ -2697,7 +2708,11 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 			SIVAL(p,6,0);
 		} else {
 			SIVAL(p,6,PTR_DIFF(p2,*rdata));
-			standard_sub_conn(conn,comment,sizeof(comment));
+			standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+					      conn->connectpath, conn->gid,
+					      get_current_username(),
+					      current_user_info.domain,
+					      comment, sizeof(comment));
 			StrnCpy(p2,comment,MAX(mdrcnt - struct_len,0));
 			p2 = skip_string(p2,1);
 		}
@@ -3122,8 +3137,12 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 			SSVALS(p,102,-1);	/* bad_pw_count */
 			SSVALS(p,104,-1);	/* num_logons */
 			SIVAL(p,106,PTR_DIFF(p2,*rdata)); /* logon_server */
-			pstrcpy(p2,"\\\\%L");
-			standard_sub_conn(conn, p2,0);
+			{
+				pstring tmp;
+				pstrcpy(tmp, "\\\\%L");
+				standard_sub_basic("", "", tmp, sizeof(tmp));
+				pstrcpy(p2, tmp);
+			}
 			p2 = skip_string(p2,1);
 			SSVAL(p,110,49);	/* country_code */
 			SSVAL(p,112,860);	/* code page */

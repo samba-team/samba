@@ -29,7 +29,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 			    char *err_str, size_t err_str_len)
 {
 	struct nmb_name calling, called;
-	struct cli_state cli;
+	struct cli_state *cli;
 	struct rpc_pipe_client *pipe_hnd;
 	struct in_addr ip;
 
@@ -44,59 +44,63 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		return NT_STATUS_UNSUCCESSFUL;
 	}
  
-	ZERO_STRUCT(cli);
- 
-	if (!cli_initialise(&cli) || !cli_connect(&cli, remote_machine, &ip)) {
+	cli = cli_initialise();
+	if (!cli) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!cli_connect(cli, remote_machine, &ip)) {
 		slprintf(err_str, err_str_len-1, "unable to connect to SMB server on machine %s. Error was : %s.\n",
-			remote_machine, cli_errstr(&cli) );
-		return NT_STATUS_UNSUCCESSFUL;
+			remote_machine, cli_errstr(cli) );
+		result = cli_nt_error(cli);
+		cli_shutdown(cli);
+		return result;
 	}
   
 	make_nmb_name(&calling, global_myname() , 0x0);
 	make_nmb_name(&called , remote_machine, 0x20);
 	
-	if (!cli_session_request(&cli, &calling, &called)) {
+	if (!cli_session_request(cli, &calling, &called)) {
 		slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",
-			remote_machine, cli_errstr(&cli) );
-		cli_shutdown(&cli);
-		return NT_STATUS_UNSUCCESSFUL;
+			remote_machine, cli_errstr(cli) );
+		result = cli_nt_error(cli);
+		cli_shutdown(cli);
+		return result;
 	}
   
-	cli.protocol = PROTOCOL_NT1;
+	cli->protocol = PROTOCOL_NT1;
 
-	if (!cli_negprot(&cli)) {
+	if (!cli_negprot(cli)) {
 		slprintf(err_str, err_str_len-1, "machine %s rejected the negotiate protocol. Error was : %s.\n",        
-			remote_machine, cli_errstr(&cli) );
-		result = cli_nt_error(&cli);
-		cli_shutdown(&cli);
+			remote_machine, cli_errstr(cli) );
+		result = cli_nt_error(cli);
+		cli_shutdown(cli);
 		return result;
 	}
   
 	/* Given things like SMB signing, restrict anonymous and the like, 
 	   try an authenticated connection first */
-	if (!cli_session_setup(&cli, user_name, old_passwd, strlen(old_passwd)+1, old_passwd, strlen(old_passwd)+1, "")) {
+	result = cli_session_setup(cli, user_name,
+				   old_passwd, strlen(old_passwd)+1,
+				   old_passwd, strlen(old_passwd)+1, "");
 
-		result = cli_nt_error(&cli);
+	if (!NT_STATUS_IS_OK(result)) {
 
-		if (!NT_STATUS_IS_OK(result)) {
+		/* Password must change or Password expired are the only valid
+		 * error conditions here from where we can proceed, the rest like
+		 * account locked out or logon failure will lead to errors later
+		 * anyway */
 
-			/* Password must change or Password expired are the only valid
-			 * error conditions here from where we can proceed, the rest like
-			 * account locked out or logon failure will lead to errors later
-			 * anyway */
-
-			if (!NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_MUST_CHANGE) &&
-			    !NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_EXPIRED)) {
-
-				slprintf(err_str, err_str_len-1, "Could not "
-					 "connect to machine %s: %s\n",
-					 remote_machine, cli_errstr(&cli));
-				cli_shutdown(&cli);
-				return result;
-			}
-
-			pass_must_change = True;
+		if (!NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_MUST_CHANGE) &&
+		    !NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_EXPIRED)) {
+			slprintf(err_str, err_str_len-1, "Could not "
+				 "connect to machine %s: %s\n",
+				 remote_machine, cli_errstr(cli));
+			cli_shutdown(cli);
+			return result;
 		}
+
+		pass_must_change = True;
 
 		/*
 		 * We should connect as the anonymous user here, in case
@@ -104,31 +108,32 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		 * Thanks to <Nicholas.S.Jenkins@cdc.com> for this fix.
 		 */
 
-		if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
+		result = cli_session_setup(cli, "", "", 0, "", 0, "");
+
+		if (!NT_STATUS_IS_OK(result)) {
 			slprintf(err_str, err_str_len-1, "machine %s rejected the session setup. Error was : %s.\n",        
-				 remote_machine, cli_errstr(&cli) );
-			result = cli_nt_error(&cli);
-			cli_shutdown(&cli);
+				 remote_machine, cli_errstr(cli) );
+			cli_shutdown(cli);
 			return result;
 		}
 
-		cli_init_creds(&cli, "", "", NULL);
+		cli_init_creds(cli, "", "", NULL);
 	} else {
-		cli_init_creds(&cli, user_name, "", old_passwd);
+		cli_init_creds(cli, user_name, "", old_passwd);
 	}
 
-	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
+	if (!cli_send_tconX(cli, "IPC$", "IPC", "", 1)) {
 		slprintf(err_str, err_str_len-1, "machine %s rejected the tconX on the IPC$ share. Error was : %s.\n",
-			remote_machine, cli_errstr(&cli) );
-		result = cli_nt_error(&cli);
-		cli_shutdown(&cli);
+			remote_machine, cli_errstr(cli) );
+		result = cli_nt_error(cli);
+		cli_shutdown(cli);
 		return result;
 	}
 
 	/* Try not to give the password away too easily */
 
 	if (!pass_must_change) {
-		pipe_hnd = cli_rpc_pipe_open_ntlmssp(&cli,
+		pipe_hnd = cli_rpc_pipe_open_ntlmssp(cli,
 						PI_SAMR,
 						PIPE_AUTH_LEVEL_PRIVACY,
 						"", /* what domain... ? */
@@ -144,17 +149,17 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		 * will just fail. So we do it anonymously, there's no other
 		 * way.
 		 */
-		pipe_hnd = cli_rpc_pipe_open_noauth(&cli, PI_SAMR, &result);
+		pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &result);
 	}
 
 	if (!pipe_hnd) {
 		if (lp_client_lanman_auth()) {
 			/* Use the old RAP method. */
-			if (!cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
+			if (!cli_oem_change_password(cli, user_name, new_passwd, old_passwd)) {
 				slprintf(err_str, err_str_len-1, "machine %s rejected the password change: Error was : %s.\n",
-					 remote_machine, cli_errstr(&cli) );
-				result = cli_nt_error(&cli);
-				cli_shutdown(&cli);
+					 remote_machine, cli_errstr(cli) );
+				result = cli_nt_error(cli);
+				cli_shutdown(cli);
 				return result;
 			}
 		} else {
@@ -162,16 +167,16 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 				"SAMR connection to machine %s failed. Error was %s, "
 				"but LANMAN password changed are disabled\n",
 				nt_errstr(result), remote_machine);
-			result = cli_nt_error(&cli);
-			cli_shutdown(&cli);
+			result = cli_nt_error(cli);
+			cli_shutdown(cli);
 			return result;
 		}
 	}
 
-	if (NT_STATUS_IS_OK(result = rpccli_samr_chgpasswd_user(pipe_hnd, cli.mem_ctx, user_name, 
+	if (NT_STATUS_IS_OK(result = rpccli_samr_chgpasswd_user(pipe_hnd, cli->mem_ctx, user_name, 
 							     new_passwd, old_passwd))) {
 		/* Great - it all worked! */
-		cli_shutdown(&cli);
+		cli_shutdown(cli);
 		return NT_STATUS_OK;
 
 	} else if (!(NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) 
@@ -180,7 +185,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		
 		slprintf(err_str, err_str_len-1, "machine %s rejected the password change: Error was : %s.\n",
 			 remote_machine, get_friendly_nt_error_msg(result));
-		cli_shutdown(&cli);
+		cli_shutdown(cli);
 		return result;
 	}
 
@@ -188,21 +193,21 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	cli_rpc_pipe_close(pipe_hnd);
 	
 	/* Try anonymous NTLMSSP... */
-	cli_init_creds(&cli, "", "", NULL);
+	cli_init_creds(cli, "", "", NULL);
 	
 	result = NT_STATUS_UNSUCCESSFUL;
 	
 	/* OK, this is ugly, but... try an anonymous pipe. */
-	pipe_hnd = cli_rpc_pipe_open_noauth(&cli, PI_SAMR, &result);
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &result);
 
 	if ( pipe_hnd &&
 		(NT_STATUS_IS_OK(result = rpccli_samr_chgpasswd_user(pipe_hnd,
-						cli.mem_ctx,
+						cli->mem_ctx,
 						user_name, 
 						new_passwd,
 						old_passwd)))) {
 		/* Great - it all worked! */
-		cli_shutdown(&cli);
+		cli_shutdown(cli);
 		return NT_STATUS_OK;
 	} else {
 		if (!(NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) 
@@ -212,7 +217,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 			slprintf(err_str, err_str_len-1, 
 				 "machine %s rejected the (anonymous) password change: Error was : %s.\n",
 				 remote_machine, get_friendly_nt_error_msg(result));
-			cli_shutdown(&cli);
+			cli_shutdown(cli);
 			return result;
 		}
 		
@@ -221,24 +226,24 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		
 		if (lp_client_lanman_auth()) {
 			/* Use the old RAP method. */
-			if (cli_oem_change_password(&cli, user_name, new_passwd, old_passwd)) {
+			if (cli_oem_change_password(cli, user_name, new_passwd, old_passwd)) {
 				/* SAMR failed, but the old LanMan protocol worked! */
 
-				cli_shutdown(&cli);
+				cli_shutdown(cli);
 				return NT_STATUS_OK;
 			}
 			slprintf(err_str, err_str_len-1, 
 				 "machine %s rejected the password change: Error was : %s.\n",
-				 remote_machine, cli_errstr(&cli) );
-			result = cli_nt_error(&cli);
-			cli_shutdown(&cli);
+				 remote_machine, cli_errstr(cli) );
+			result = cli_nt_error(cli);
+			cli_shutdown(cli);
 			return result;
 		} else {
 			slprintf(err_str, err_str_len-1,
 				"SAMR connection to machine %s failed. Error was %s, "
 				"but LANMAN password changed are disabled\n",
 				nt_errstr(result), remote_machine);
-			cli_shutdown(&cli);
+			cli_shutdown(cli);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}

@@ -73,6 +73,10 @@ extern struct printif	cups_printif;
 extern struct printif	iprint_printif;
 #endif /* HAVE_IPRINT */
 
+#if defined(DEVELOPER) || defined(ENABLE_BUILD_FARM_HACKS)
+extern struct printif test_printif;
+#endif /* DEVELOPER||ENABLE_BUILD_FARM_HACKS */
+
 /* PRINT_MAX_JOBID is now defined in local.h */
 #define UNIX_JOB_START PRINT_MAX_JOBID
 #define NEXT_JOBID(j) ((j+1) % PRINT_MAX_JOBID > 0 ? (j+1) % PRINT_MAX_JOBID : 1)

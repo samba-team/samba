@@ -1059,9 +1059,11 @@ void *realloc_array(void *p, size_t el_size, unsigned int count, BOOL free_old_o
 ****************************************************************************/
 
 void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
-			void *element, void **array, uint32 *num_elements,
+			void *element, void *_array, uint32 *num_elements,
 			ssize_t *array_size)
 {
+	void **array = (void **)_array;
+
 	if (*array_size < 0) {
 		return;
 	}

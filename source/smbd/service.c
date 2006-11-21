@@ -380,35 +380,38 @@ static NTSTATUS find_forced_user(int snum, BOOL vuser_is_guest,
 {
 	TALLOC_CTX *mem_ctx;
 	char *fuser, *found_username;
+	struct nt_user_token *tmp_token;
 	NTSTATUS result;
 
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
+	if (!(mem_ctx = talloc_new(NULL))) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fuser = talloc_string_sub(mem_ctx, lp_force_user(snum), "%S",
-				  lp_servicename(snum));
-	if (fuser == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
+	if (!(fuser = talloc_string_sub(mem_ctx, lp_force_user(snum), "%S",
+					lp_servicename(snum)))) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+		
 	}
 
 	result = create_token_from_username(mem_ctx, fuser, vuser_is_guest,
 					    uid, gid, &found_username,
-					    token);
+					    &tmp_token);
 	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
+		TALLOC_FREE(mem_ctx);
+		return result;
 	}
 
-	talloc_steal(NULL, *token);
+	if (!(*token = dup_nt_token(NULL, tmp_token))) {
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	fstrcpy(username, found_username);
 
-	result = NT_STATUS_OK;
- done:
 	TALLOC_FREE(mem_ctx);
-	return result;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -764,7 +767,11 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	{
 		pstring s;
 		pstrcpy(s,lp_pathname(snum));
-		standard_sub_conn(conn,s,sizeof(s));
+		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+				      conn->connectpath, conn->gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      s, sizeof(s));
 		set_conn_connectpath(conn,s);
 		DEBUG(3,("Connect path is '%s' for service [%s]\n",s,
 			 lp_servicename(snum)));
@@ -778,11 +785,16 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 */
 
 	{
-		BOOL can_write = share_access_check(conn, snum, vuser,
+		NT_USER_TOKEN *token = conn->nt_user_token ?
+			conn->nt_user_token : vuser->nt_user_token;
+
+		BOOL can_write = share_access_check(token,
+						    lp_servicename(snum),
 						    FILE_WRITE_DATA);
 
 		if (!can_write) {
-			if (!share_access_check(conn, snum, vuser,
+			if (!share_access_check(token,
+						lp_servicename(snum),
 						FILE_READ_DATA)) {
 				/* No access, read or write. */
 				DEBUG(0,("make_connection: connection to %s "
@@ -839,7 +851,11 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_rootpreexec(snum)) {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpreexec(snum));
-		standard_sub_conn(conn,cmd,sizeof(cmd));
+		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+				      conn->connectpath, conn->gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      cmd, sizeof(cmd));
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_rootpreexec_close(snum)) {
@@ -872,7 +888,11 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_preexec(snum)) {
 		pstring cmd;
 		pstrcpy(cmd,lp_preexec(snum));
-		standard_sub_conn(conn,cmd,sizeof(cmd));
+		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+				      conn->connectpath, conn->gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      cmd, sizeof(cmd));
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_preexec_close(snum)) {
 			DEBUG(1,("preexec gave %d - failing connection\n",
@@ -1171,7 +1191,11 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    change_to_user(conn, vuid))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd,sizeof(cmd));
+		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+				      conn->connectpath, conn->gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      cmd, sizeof(cmd));
 		smbrun(cmd,NULL);
 		change_to_root_user();
 	}
@@ -1181,7 +1205,11 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd,sizeof(cmd));
+		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+				      conn->connectpath, conn->gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      cmd, sizeof(cmd));
 		smbrun(cmd,NULL);
 	}
 

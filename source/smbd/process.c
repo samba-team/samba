@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-extern uint16 global_smbpid;
+uint16 global_smbpid;
 extern int keepalive;
 extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
@@ -171,7 +171,6 @@ BOOL open_was_deferred(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (SVAL(pml->buf.data,smb_mid) == mid) {
-			set_saved_ntstatus(NT_STATUS_OK);
 			return True;
 		}
 	}
@@ -462,11 +461,11 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		int sav;
 		START_PROFILE(smbd_idle);
 
-	maxfd = select_on_fd(smbd_server_fd(), maxfd, &fds);
-	maxfd = select_on_fd(change_notify_fd(), maxfd, &fds);
-	maxfd = select_on_fd(oplock_notify_fd(), maxfd, &fds);
+		maxfd = select_on_fd(smbd_server_fd(), maxfd, &fds);
+		maxfd = select_on_fd(change_notify_fd(), maxfd, &fds);
+		maxfd = select_on_fd(oplock_notify_fd(), maxfd, &fds);
 
-	selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&to);
+		selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&to);
 		sav = errno;
 
 		END_PROFILE(smbd_idle);
@@ -893,7 +892,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 		pid = sys_getpid();
 
 	errno = 0;
-	set_saved_ntstatus(NT_STATUS_OK);
 
 	last_message = type;
 
@@ -962,7 +960,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			}
 
 			if (!change_to_user(conn,session_tag)) {
-				return(ERROR_FORCE_DOS(ERRSRV,ERRbaduid));
+				return(ERROR_NT(NT_STATUS_DOS(ERRSRV,ERRbaduid)));
 			}
 
 			/* All NEED_WRITE and CAN_IPC flags must also have AS_USER. */
@@ -1033,60 +1031,6 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 /****************************************************************************
- Keep track of the number of running smbd's. This functionality is used to
- 'hard' limit Samba overhead on resource constrained systems. 
-****************************************************************************/
-
-static BOOL process_count_update_successful = False;
-
-static int32 increment_smbd_process_count(void)
-{
-	int32 total_smbds;
-
-	if (lp_max_smbd_processes()) {
-		total_smbds = 0;
-		if (tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
-			return 1;
-		process_count_update_successful = True;
-		return total_smbds + 1;
-	}
-	return 1;
-}
-
-void decrement_smbd_process_count(void)
-{
-	int32 total_smbds;
-
-	if (lp_max_smbd_processes() && process_count_update_successful) {
-		total_smbds = 1;
-		tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
-	}
-}
-
-static BOOL smbd_process_limit(void)
-{
-	int32  total_smbds;
-	
-	if (lp_max_smbd_processes()) {
-
-		/* Always add one to the smbd process count, as exit_server() always
-		 * subtracts one.
-		 */
-
-		if (!conn_tdb_ctx()) {
-			DEBUG(0,("smbd_process_limit: max smbd processes parameter set with status parameter not \
-set. Ignoring max smbd restriction.\n"));
-			return False;
-		}
-
-		total_smbds = increment_smbd_process_count();
-		return total_smbds > lp_max_smbd_processes();
-	}
-	else
-		return False;
-}
-
-/****************************************************************************
  Process an smb from the client
 ****************************************************************************/
 
@@ -1104,8 +1048,8 @@ static void process_smb(char *inbuf, char *outbuf)
 		deny parameters before doing any parsing of the packet
 		passed to us by the client.  This prevents attacks on our
 		parsing code from hosts not in the hosts allow list */
-		if (smbd_process_limit() ||
-				!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))) {
+		if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
+				  lp_hostsdeny(-1))) {
 			/* send a negative session response "not listening on calling name" */
 			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 			DEBUG( 1, ( "Connection denied from %s\n", client_addr() ) );
@@ -1277,7 +1221,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 /****************************************************************************
- Setup the needed select timeout.
+ Setup the needed select timeout in milliseconds.
 ****************************************************************************/
 
 static int setup_select_timeout(void)
@@ -1285,16 +1229,17 @@ static int setup_select_timeout(void)
 	int select_timeout;
 	int t;
 
-	select_timeout = blocking_locks_timeout(SMBD_SELECT_TIMEOUT);
-	select_timeout *= 1000;
+	select_timeout = blocking_locks_timeout_ms(SMBD_SELECT_TIMEOUT*1000);
 
 	t = change_notify_timeout();
 	DEBUG(10, ("change_notify_timeout: %d\n", t));
-	if (t != -1)
+	if (t != -1) {
 		select_timeout = MIN(select_timeout, t*1000);
+	}
 
-	if (print_notify_messages_pending())
+	if (print_notify_messages_pending()) {
 		select_timeout = MIN(select_timeout, 1000);
+	}
 
 	return select_timeout;
 }
@@ -1483,7 +1428,7 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 	 * Check to see if we have any blocking locks
 	 * outstanding on the queue.
 	 */
-	process_blocking_lock_queue(t);
+	process_blocking_lock_queue();
 
 	/* update printer queue caches if necessary */
   

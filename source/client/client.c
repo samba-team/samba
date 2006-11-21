@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "client/client_proto.h"
+#include "include/rpc_client.h"
 #ifndef REGISTER
 #define REGISTER 0
 #endif
@@ -102,7 +103,8 @@ static double dir_total;
 
 struct cli_state *cli;
 
-
+static char CLI_DIRSEP_CHAR = '\\';
+static char CLI_DIRSEP_STR[] = { '\\', '\0' };
 
 /****************************************************************************
  Write to a local file with CR/LF->LF translation if appropriate. Return the 
@@ -269,18 +271,18 @@ static int do_cd(char *newdir)
 
 	pstrcpy(saved_dir, cur_dir);
 
-	if (*p == '\\')
+	if (*p == CLI_DIRSEP_CHAR)
 		pstrcpy(cur_dir,p);
 	else
 		pstrcat(cur_dir,p);
 
-	if ((cur_dir[0] != '\0') && (*(cur_dir+strlen(cur_dir)-1) != '\\')) {
-		pstrcat(cur_dir, "\\");
+	if ((cur_dir[0] != '\0') && (*(cur_dir+strlen(cur_dir)-1) != CLI_DIRSEP_CHAR)) {
+		pstrcat(cur_dir, CLI_DIRSEP_STR);
 	}
 	
 	dos_clean_name(cur_dir);
 	pstrcpy( dname, cur_dir );
-	pstrcat(cur_dir,"\\");
+	pstrcat(cur_dir,CLI_DIRSEP_STR);
 	dos_clean_name(cur_dir);
 	
 	if ( !cli_resolve_path( "", cli, dname, &targetcli, targetpath ) ) {
@@ -290,7 +292,7 @@ static int do_cd(char *newdir)
 	}
 
 	
-	if ( strequal(targetpath,"\\" ) )
+	if ( strequal(targetpath,CLI_DIRSEP_STR ) )
 		return 0;   
 		
 	/* Use a trans2_qpathinfo to test directories for modern servers.
@@ -309,7 +311,7 @@ static int do_cd(char *newdir)
 			goto out;
 		}		
 	} else {
-		pstrcat( targetpath, "\\" );
+		pstrcat( targetpath, CLI_DIRSEP_STR );
 		dos_clean_name( targetpath );
 		
 		if ( !cli_chkpath(targetcli, targetpath) ) {
@@ -384,11 +386,11 @@ static void display_finfo(file_info *finfo)
 			d_printf("  %-30s%7.7s %8.0f  %s",
 				 finfo->name,
 				 attrib_string(finfo->mode),
-				 (double)finfo->size,
-				 time_to_asc(&t));
+			 	(double)finfo->size,
+				time_to_asc(&t));
 			dir_total += finfo->size;
-		} else { /* showacls */
-			static pstring afname;
+		} else {
+			pstring afname;
 			int fnum;
 
 			/* skip if this is . or .. */
@@ -406,8 +408,8 @@ static void display_finfo(file_info *finfo)
 			fnum = cli_nt_create(cli, afname, CREATE_ACCESS_READ);
 			if (fnum == -1) {
 				DEBUG( 0, ("display_finfo() Failed to open %s: %s\n",
-							afname,
-							cli_errstr( cli)));
+					afname,
+					cli_errstr( cli)));
 			} else {
 				SEC_DESC *sd = NULL;
 				sd = cli_query_secdesc(cli, fnum, ctx);
@@ -470,7 +472,7 @@ static void init_do_list_queue(void)
 {
 	reset_do_list_queue();
 	do_list_queue_size = 1024;
-	do_list_queue = SMB_MALLOC(do_list_queue_size);
+	do_list_queue = (char *)SMB_MALLOC(do_list_queue_size);
 	if (do_list_queue == 0) { 
 		d_printf("malloc fail for size %d\n",
 			 (int)do_list_queue_size);
@@ -514,7 +516,7 @@ static void add_to_do_list_queue(const char* entry)
 		do_list_queue_size *= 2;
 		DEBUG(4,("enlarging do_list_queue to %d\n",
 			 (int)do_list_queue_size));
-		do_list_queue = SMB_REALLOC(do_list_queue, do_list_queue_size);
+		do_list_queue = (char *)SMB_REALLOC(do_list_queue, do_list_queue_size);
 		if (! do_list_queue) {
 			d_printf("failure enlarging do_list_queue to %d bytes\n",
 				 (int)do_list_queue_size);
@@ -563,7 +565,7 @@ static void do_list_helper(const char *mntpoint, file_info *f, const char *mask,
 
 	/* save the directory */
 	pstrcpy( f->dir, mask );
-	if ( (dir_end = strrchr( f->dir, '\\' )) != NULL ) {
+	if ( (dir_end = strrchr( f->dir, CLI_DIRSEP_CHAR )) != NULL ) {
 		*dir_end = '\0';
 	}
 
@@ -584,7 +586,7 @@ static void do_list_helper(const char *mntpoint, file_info *f, const char *mask,
 
 			pstrcpy(mask2, mntpoint);
 			pstrcat(mask2, mask);
-			p = strrchr_m(mask2,'\\');
+			p = strrchr_m(mask2,CLI_DIRSEP_CHAR);
 			if (!p)
 				return;
 			p[1] = 0;
@@ -651,7 +653,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 				char* save_ch = 0;
 				if ((strlen(next_file) >= 2) &&
 				    (next_file[strlen(next_file) - 1] == '*') &&
-				    (next_file[strlen(next_file) - 2] == '\\')) {
+				    (next_file[strlen(next_file) - 2] == CLI_DIRSEP_CHAR)) {
 					save_ch = next_file +
 						strlen(next_file) - 2;
 					*save_ch = '\0';
@@ -661,7 +663,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 				if (!showacls) /* don't disturbe the showacls output */
 					d_printf("\n%s\n",next_file);
 				if (save_ch) {
-					*save_ch = '\\';
+					*save_ch = CLI_DIRSEP_CHAR;
 				}
 			}
 		}
@@ -694,17 +696,17 @@ static int cmd_dir(void)
 	int rc;
 	
 	dir_total = 0;
-	if (strcmp(cur_dir, "\\") != 0) {
+	if (strcmp(cur_dir, CLI_DIRSEP_STR) != 0) {
 		pstrcpy(mask,cur_dir);
-		if ((mask[0] != '\0') && (mask[strlen(mask)-1]!='\\'))
-			pstrcat(mask,"\\");
+		if ((mask[0] != '\0') && (mask[strlen(mask)-1]!=CLI_DIRSEP_CHAR))
+			pstrcat(mask,CLI_DIRSEP_STR);
 	} else {
-		pstrcpy(mask, "\\");
+		pstrcpy(mask, CLI_DIRSEP_STR);
 	}
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
-		if (*p == '\\')
+		if (*p == CLI_DIRSEP_CHAR)
 			pstrcpy(mask,p + 1);
 		else
 			pstrcat(mask,p);
@@ -735,12 +737,12 @@ static int cmd_du(void)
 	
 	dir_total = 0;
 	pstrcpy(mask,cur_dir);
-	if ((mask[0] != '\0') && (mask[strlen(mask)-1]!='\\'))
-		pstrcat(mask,"\\");
+	if ((mask[0] != '\0') && (mask[strlen(mask)-1]!=CLI_DIRSEP_CHAR))
+		pstrcat(mask,CLI_DIRSEP_STR);
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
-		if (*p == '\\')
+		if (*p == CLI_DIRSEP_CHAR)
 			pstrcpy(mask,p);
 		else
 			pstrcat(mask,p);
@@ -913,7 +915,7 @@ static int cmd_get(void)
 	char *p;
 
 	pstrcpy(rname,cur_dir);
-	pstrcat(rname,"\\");
+	pstrcat(rname,CLI_DIRSEP_STR);
 	
 	p = rname + strlen(rname);
 	
@@ -969,7 +971,7 @@ static void do_mget(file_info *finfo)
 	pstrcpy(saved_curdir,cur_dir);
 
 	pstrcat(cur_dir,finfo->name);
-	pstrcat(cur_dir,"\\");
+	pstrcat(cur_dir,CLI_DIRSEP_STR);
 
 	unix_format(finfo->name);
 	if (lowercase)
@@ -1008,7 +1010,7 @@ static int cmd_more(void)
 	int rc = 0;
 
 	pstrcpy(rname,cur_dir);
-	pstrcat(rname,"\\");
+	pstrcat(rname,CLI_DIRSEP_STR);
 	
 	slprintf(lname,sizeof(lname)-1, "%s/smbmore.XXXXXX",tmpdir());
 	fd = smb_mkstemp(lname);
@@ -1057,10 +1059,10 @@ static int cmd_mget(void)
 
 	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		pstrcpy(mget_mask,cur_dir);
-		if ((mget_mask[0] != '\0') && (mget_mask[strlen(mget_mask)-1]!='\\'))
-			pstrcat(mget_mask,"\\");
+		if ((mget_mask[0] != '\0') && (mget_mask[strlen(mget_mask)-1]!=CLI_DIRSEP_CHAR))
+			pstrcat(mget_mask,CLI_DIRSEP_STR);
 		
-		if (*p == '\\')
+		if (*p == CLI_DIRSEP_CHAR)
 			pstrcpy(mget_mask,p);
 		else
 			pstrcat(mget_mask,p);
@@ -1069,8 +1071,8 @@ static int cmd_mget(void)
 
 	if (!*mget_mask) {
 		pstrcpy(mget_mask,cur_dir);
-		if(mget_mask[strlen(mget_mask)-1]!='\\')
-			pstrcat(mget_mask,"\\");
+		if(mget_mask[strlen(mget_mask)-1]!=CLI_DIRSEP_CHAR)
+			pstrcat(mget_mask,CLI_DIRSEP_STR);
 		pstrcat(mget_mask,"*");
 		do_list(mget_mask, attribute,do_mget,False,True);
 	}
@@ -1163,7 +1165,7 @@ static int cmd_mkdir(void)
 			if (!cli_chkpath(cli, ddir2)) { 
 				do_mkdir(ddir2);
 			}
-			pstrcat(ddir2,"\\");
+			pstrcat(ddir2,CLI_DIRSEP_STR);
 			p = strtok(NULL,"/\\");
 		}	 
 	} else {
@@ -1343,7 +1345,7 @@ static int cmd_put(void)
 	char *p=buf;
 	
 	pstrcpy(rname,cur_dir);
-	pstrcat(rname,"\\");
+	pstrcat(rname,CLI_DIRSEP_STR);
   
 	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		d_printf("put <filename>\n");
@@ -1715,7 +1717,8 @@ static int cmd_open(void)
 	pstring buf;
 	struct cli_state *targetcli;
 	pstring targetname;
-	
+	int fnum;
+
 	pstrcpy(mask,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
@@ -1729,7 +1732,169 @@ static int cmd_open(void)
 		return 1;
 	}
 	
-	cli_nt_create(targetcli, targetname, FILE_READ_DATA);
+	fnum = cli_nt_create(targetcli, targetname, FILE_READ_DATA|FILE_WRITE_DATA);
+	if (fnum == -1) {
+		fnum = cli_nt_create(targetcli, targetname, FILE_READ_DATA);
+		if (fnum != -1) {
+			d_printf("open file %s: for read/write fnum %d\n", targetname, fnum);
+		} else {
+			d_printf("Failed to open file %s. %s\n", targetname, cli_errstr(cli));
+		}
+	} else {
+		d_printf("open file %s: for read/write fnum %d\n", targetname, fnum);
+	}
+
+	return 0;
+}
+
+static int cmd_close(void)
+{
+	fstring buf;
+	int fnum;
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("close <fnum>\n");
+		return 1;
+	}
+
+	fnum = atoi(buf);
+	/* We really should use the targetcli here.... */
+	if (!cli_close(cli, fnum)) {
+		d_printf("close %d: %s\n", fnum, cli_errstr(cli));
+		return 1;
+	}
+	return 0;
+}
+
+static int cmd_posix(void)
+{
+	uint16 major, minor;
+	uint32 caplow, caphigh;
+	pstring caps;
+
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		d_printf("Server doesn't support UNIX CIFS extensions.\n");
+		return 1;
+	}
+
+	if (!cli_unix_extensions_version(cli, &major, &minor, &caplow, &caphigh)) {
+		d_printf("Can't get UNIX CIFS extensions version from server.\n");
+		return 1;
+	}
+
+	d_printf("Server supports CIFS extensions %u.%u\n", (unsigned int)major, (unsigned int)minor);
+
+	*caps = '\0';
+        if (caplow & CIFS_UNIX_FCNTL_LOCKS_CAP) {
+		pstrcat(caps, "locks ");
+	}
+        if (caplow & CIFS_UNIX_POSIX_ACLS_CAP) {
+		pstrcat(caps, "acls ");
+	}
+        if (caplow & CIFS_UNIX_XATTTR_CAP) {
+		pstrcat(caps, "eas ");
+	}
+        if (caplow & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+		pstrcat(caps, "pathnames ");
+	}
+
+	if (strlen(caps) > 0 && caps[strlen(caps)-1] == ' ') {
+		caps[strlen(caps)-1] = '\0';
+	}
+
+	if (!cli_set_unix_extensions_capabilities(cli, major, minor, caplow, caphigh)) {
+		d_printf("Can't set UNIX CIFS extensions capabilities. %s.\n", cli_errstr(cli));
+		return 1;
+	}
+
+	d_printf("Selecting server supported CIFS capabilities %s\n", caps);
+
+	if (caplow & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+		CLI_DIRSEP_CHAR = '/';
+		*CLI_DIRSEP_STR = '/';
+		pstrcpy(cur_dir, CLI_DIRSEP_STR);
+	}
+
+	return 0;
+}
+
+static int cmd_lock(void)
+{
+	fstring buf;
+	SMB_BIG_UINT start, len;
+	enum brl_type lock_type;
+	int fnum;
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
+		return 1;
+	}
+	fnum = atoi(buf);
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	if (*buf == 'r' || *buf == 'R') {
+		lock_type = READ_LOCK;
+	} else if (*buf == 'w' || *buf == 'W') {
+		lock_type = WRITE_LOCK;
+	} else {
+		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	len = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+
+	if (!cli_posix_lock(cli, fnum, start, len, True, lock_type)) {
+		d_printf("lock failed %d: %s\n", fnum, cli_errstr(cli));
+	}
+
+	return 0;
+}
+
+static int cmd_unlock(void)
+{
+	fstring buf;
+	SMB_BIG_UINT start, len;
+	int fnum;
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
+		return 1;
+	}
+	fnum = atoi(buf);
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	len = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+
+	if (!cli_posix_unlock(cli, fnum, start, len)) {
+		d_printf("unlock failed %d: %s\n", fnum, cli_errstr(cli));
+	}
 
 	return 0;
 }
@@ -2532,7 +2697,7 @@ static int cmd_reget(void)
 	char *p;
 
 	pstrcpy(remote_name, cur_dir);
-	pstrcat(remote_name, "\\");
+	pstrcat(remote_name, CLI_DIRSEP_STR);
 	
 	p = remote_name + strlen(remote_name);
 	
@@ -2561,7 +2726,7 @@ static int cmd_reput(void)
 	SMB_STRUCT_STAT st;
 	
 	pstrcpy(remote_name, cur_dir);
-	pstrcat(remote_name, "\\");
+	pstrcat(remote_name, CLI_DIRSEP_STR);
   
 	if (!next_token_nr(NULL, p, NULL, sizeof(buf))) {
 		d_printf("reput <filename>\n");
@@ -2622,18 +2787,19 @@ static BOOL browse_host_rpc(BOOL sort)
 	NTSTATUS status;
 	struct rpc_pipe_client *pipe_hnd;
 	TALLOC_CTX *mem_ctx;
-	ENUM_HND enum_hnd;
-	WERROR werr;
-	SRV_SHARE_INFO_CTR ctr;
+	uint32 enum_hnd = 0;
+	uint32 *penum_hnd = &enum_hnd;
+	struct srvsvc_NetShareCtr1 ctr1;
+	union srvsvc_NetShareCtr ctr;
 	int i;
+	uint32 level;
+	uint32 numentries;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return False;
 	}
-
-	init_enum_hnd(&enum_hnd, 0);
 
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &status);
 
@@ -2644,23 +2810,23 @@ static BOOL browse_host_rpc(BOOL sort)
 		return False;
 	}
 
-	werr = rpccli_srvsvc_net_share_enum(pipe_hnd, mem_ctx, 1, &ctr,
-					    0xffffffff, &enum_hnd);
+	ZERO_STRUCT(ctr1);
+	level = 1;
+	ctr.ctr1 = &ctr1;
 
-	if (!W_ERROR_IS_OK(werr)) {
+	status = rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, "", &level,
+					    &ctr, 0xffffffff, &numentries,
+					    &penum_hnd);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(mem_ctx);
 		cli_rpc_pipe_close(pipe_hnd);
 		return False;
 	}
 
-	for (i=0; i<ctr.num_entries; i++) {
-		SRV_SHARE_INFO_1 *info = &ctr.share.info1[i];
-		char *name, *comment;
-		name = rpcstr_pull_unistr2_talloc(
-			mem_ctx, &info->info_1_str.uni_netname);
-		comment = rpcstr_pull_unistr2_talloc(
-			mem_ctx, &info->info_1_str.uni_remark);
-		browse_fn(name, info->info_1.type, comment, NULL);
+	for (i=0; i<numentries; i++) {
+		struct srvsvc_NetShareInfo1 *info = &ctr.ctr1->array[i];
+		browse_fn(info->name, info->type, info->comment, NULL);
 	}
 
 	TALLOC_FREE(mem_ctx);
@@ -2777,10 +2943,10 @@ static int cmd_logon(void)
 	else
 		pstrcpy(l_password, buf2);
 
-	if (!cli_session_setup(cli, l_username, 
-			       l_password, strlen(l_password),
-			       l_password, strlen(l_password),
-			       lp_workgroup())) {
+	if (!NT_STATUS_IS_OK(cli_session_setup(cli, l_username, 
+					       l_password, strlen(l_password),
+					       l_password, strlen(l_password),
+					       lp_workgroup()))) {
 		d_printf("session setup failed: %s\n", cli_errstr(cli));
 		return -1;
 	}
@@ -2846,6 +3012,7 @@ static struct
   {"cd",cmd_cd,"[directory] change/report the remote directory",{COMPL_REMOTE,COMPL_NONE}},
   {"chmod",cmd_chmod,"<src> <mode> chmod a file using UNIX permission",{COMPL_REMOTE,COMPL_REMOTE}},
   {"chown",cmd_chown,"<src> <uid> <gid> chown a file using UNIX uids and gids",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"close",cmd_close,"<fid> close a file given a fid",{COMPL_REMOTE,COMPL_REMOTE}},
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
@@ -2857,6 +3024,7 @@ static struct
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
   {"link",cmd_link,"<oldname> <newname> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"lock",cmd_lock,"lock <fnum> [r|w] <hex-start> <hex-len> : set a POSIX lock",{COMPL_REMOTE,COMPL_REMOTE}},
   {"lowercase",cmd_lowercase,"toggle lowercasing of filenames for get",{COMPL_NONE,COMPL_NONE}},  
   {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
@@ -2867,6 +3035,7 @@ static struct
   {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
+  {"posix", cmd_posix, "turn on all POSIX capabilities", {COMPL_REMOTE,COMPL_NONE}},
   {"print",cmd_print,"<file name> print a file",{COMPL_NONE,COMPL_NONE}},
   {"prompt",cmd_prompt,"toggle prompting for filenames for mget and mput",{COMPL_NONE,COMPL_NONE}},  
   {"put",cmd_put,"<local name> [remote name] put a file",{COMPL_LOCAL,COMPL_REMOTE}},
@@ -2888,6 +3057,7 @@ static struct
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
+  {"unlock",cmd_unlock,"unlock <fnum> <hex-start> <hex-len> : remove a POSIX lock",{COMPL_REMOTE,COMPL_REMOTE}},
   {"volume",cmd_volume,"print the volume name",{COMPL_NONE,COMPL_NONE}},
   {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
   {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
@@ -3068,10 +3238,17 @@ static char **remote_completion(const char *text, int len)
 	if (!info.matches) {
 		return NULL;
 	}
+
+	/*
+	 * We're leaving matches[0] free to fill it later with the text to
+	 * display: Either the one single match or the longest common subset
+	 * of the matches.
+	 */
 	info.matches[0] = NULL;
+	info.count = 1;
 
 	for (i = len-1; i >= 0; i--) {
-		if ((text[i] == '/') || (text[i] == '\\')) {
+		if ((text[i] == '/') || (text[i] == CLI_DIRSEP_CHAR)) {
 			break;
 		}
 	}
@@ -3090,15 +3267,36 @@ static char **remote_completion(const char *text, int len)
 	if (cli_list(cli, dirmask, aDIR | aSYSTEM | aHIDDEN, completion_remote_filter, &info) < 0)
 		goto cleanup;
 
-	if (info.count == 2)
-		info.matches[0] = SMB_STRDUP(info.matches[1]);
-	else {
-		info.matches[0] = SMB_MALLOC(info.samelen+1);
-		if (!info.matches[0])
-			goto cleanup;
-		strncpy(info.matches[0], info.matches[1], info.samelen);
-		info.matches[0][info.samelen] = 0;
+	if (info.count == 1) {
+
+		/*
+		 * No matches at all, NULL indicates there is nothing
+		 */
+
+		SAFE_FREE(info.matches[0]);
+		SAFE_FREE(info.matches);
+		return NULL;
 	}
+
+	if (info.count == 2) {
+
+		/*
+		 * Exactly one match in matches[1], indicate this is the one
+		 * in matches[0].
+		 */
+
+		info.matches[0] = info.matches[1];
+		info.matches[1] = NULL;
+		info.count -= 1;
+		return info.matches;
+	}
+
+	/*
+	 * We got more than one possible match, set the result to the maximum
+	 * common subset
+	 */
+
+	info.matches[0] = SMB_STRNDUP(info.matches[1], info.samelen);
 	info.matches[info.count] = NULL;
 	return info.matches;
 
@@ -3125,10 +3323,13 @@ static char **completion_fn(const char *text, int start, int end)
 		sp = strchr(buf, ' ');
 		if (sp == NULL)
 			return NULL;
-		
-		for (i = 0; commands[i].name; i++)
-			if ((strncmp(commands[i].name, text, sp - buf) == 0) && (commands[i].name[sp - buf] == 0))
+
+		for (i = 0; commands[i].name; i++) {
+			if ((strncmp(commands[i].name, buf, sp - buf) == 0) &&
+			    (commands[i].name[sp - buf] == 0)) {
 				break;
+			}
+		}
 		if (commands[i].name == NULL)
 			return NULL;
 
@@ -3177,7 +3378,7 @@ static char **completion_fn(const char *text, int start, int end)
 			matches[0] = SMB_STRDUP(matches[1]);
 			break;
 		default:
-			matches[0] = SMB_MALLOC(samelen+1);
+			matches[0] = (char *)SMB_MALLOC(samelen+1);
 			if (!matches[0])
 				goto cleanup;
 			strncpy(matches[0], matches[1], samelen);
@@ -3415,7 +3616,7 @@ static int do_message_op(void)
 
 	msg_port = port ? port : 139;
 
-	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, msg_port) != msg_port) ||
+	if (!(cli=cli_initialise()) || (cli_set_port(cli, msg_port) != msg_port) ||
 	    !cli_connect(cli, server_name, &ip)) {
 		d_printf("Connection to %s failed\n", desthost);
 		return 1;

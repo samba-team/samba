@@ -58,6 +58,7 @@ BOOL bLoaded = False;
 
 extern pstring user_socket_options;
 extern enum protocol_types Protocol;
+extern userdom_struct current_user_info;
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -1545,8 +1546,8 @@ static void init_globals(BOOL first_time_only)
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
 	Globals.enhanced_browsing = True; 
-	Globals.iLockSpinCount = 3; /* Try 3 times. */
-	Globals.iLockSpinTime = 10; /* usec. */
+	Globals.iLockSpinCount = 0; /* Unused. */
+	Globals.iLockSpinTime = WINDOWS_MINIMUM_LOCK_TIMEOUT_MS; /* msec. */
 #ifdef MMAP_BLACKLIST
 	Globals.bUseMmap = False;
 #else
@@ -1702,11 +1703,13 @@ static char *lp_string(const char *s)
 	if (!lp_talloc)
 		lp_talloc = talloc_init("lp_talloc");
 
-	tmpstr = alloc_sub_basic(get_current_username(), s);
+	tmpstr = alloc_sub_basic(get_current_username(),
+				 current_user_info.domain, s);
 	if (trim_char(tmpstr, '\"', '\"')) {
 		if (strchr(tmpstr,'\"') != NULL) {
 			SAFE_FREE(tmpstr);
-			tmpstr = alloc_sub_basic(get_current_username(),s);
+			tmpstr = alloc_sub_basic(get_current_username(),
+						 current_user_info.domain, s);
 		}
 	}
 	ret = talloc_strdup(lp_talloc, tmpstr);
@@ -1947,7 +1950,7 @@ FN_GLOBAL_INTEGER(lp_machine_password_timeout, &Globals.machine_password_timeout
 FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_count, &Globals.iLockSpinCount)
-FN_GLOBAL_INTEGER(lp_lock_sleep_time, &Globals.iLockSpinTime)
+FN_GLOBAL_INTEGER(lp_lock_spin_time, &Globals.iLockSpinTime)
 FN_GLOBAL_INTEGER(lp_usershare_max_shares, &Globals.iUsershareMaxShares)
 
 FN_LOCAL_STRING(lp_preexec, szPreExec)
@@ -2015,9 +2018,9 @@ FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_store_dos_attributes, bStoreDosAttributes)
 FN_LOCAL_BOOL(lp_dmapi_support, bDmapiSupport)
-FN_LOCAL_BOOL(lp_locking, bLocking)
-FN_LOCAL_INTEGER(lp_strict_locking, iStrictLocking)
-FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
+FN_LOCAL_PARM_BOOL(lp_locking, bLocking)
+FN_LOCAL_PARM_INTEGER(lp_strict_locking, iStrictLocking)
+FN_LOCAL_PARM_BOOL(lp_posix_locking, bPosixLocking)
 FN_LOCAL_BOOL(lp_share_modes, bShareModes)
 FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks, bLevel2OpLocks)
@@ -3009,7 +3012,9 @@ BOOL lp_file_list_changed(void)
 		time_t mod_time;
 
 		pstrcpy(n2, f->name);
-		standard_sub_basic( get_current_username(), n2, sizeof(n2) );
+		standard_sub_basic( get_current_username(),
+				    current_user_info.domain,
+				    n2, sizeof(n2) );
 
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			     f->name, n2, ctime(&f->modtime)));
@@ -3043,7 +3048,8 @@ static BOOL handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
 
 	pstrcpy(netbios_name, pszParmValue);
 
-	standard_sub_basic(get_current_username(), netbios_name,sizeof(netbios_name));
+	standard_sub_basic(get_current_username(), current_user_info.domain,
+			   netbios_name, sizeof(netbios_name));
 
 	ret = set_global_myname(netbios_name);
 	string_set(&Globals.szNetbiosName,global_myname());
@@ -3101,7 +3107,8 @@ static BOOL handle_include(int snum, const char *pszParmValue, char **ptr)
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
 
-	standard_sub_basic(get_current_username(), fname,sizeof(fname));
+	standard_sub_basic(get_current_username(), current_user_info.domain,
+			   fname,sizeof(fname));
 
 	add_to_file_list(pszParmValue, fname);
 
@@ -3859,7 +3866,6 @@ static void dump_a_service(service * pService, FILE * f)
 
 BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 {
-	service * pService = ServicePtrs[snum];
 	int i;
 	BOOL result = False;
 	parm_class p_class;
@@ -3902,11 +3908,13 @@ BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 		{
 			void *ptr;
 
-			if (isGlobal)
+			if (isGlobal) {
 				ptr = parm_table[i].ptr;
-			else
+			} else {
+				service * pService = ServicePtrs[snum];
 				ptr = ((char *)pService) +
 					PTR_DIFF(parm_table[i].ptr, &sDefault);
+			}
 
 			print_parameter(&parm_table[i],
 					ptr, f);
@@ -4194,7 +4202,8 @@ static void set_server_role(void)
 		case SEC_SERVER:
 			if (lp_domain_logons())
 				DEBUG(0, ("Server's Role (logon server) conflicts with server-level security\n"));
-			server_role = ROLE_DOMAIN_MEMBER;
+			/* this used to be considered ROLE_DOMAIN_MEMBER but that's just wrong */
+			server_role = ROLE_STANDALONE;
 			break;
 		case SEC_DOMAIN:
 			if (lp_domain_logons()) {
@@ -4562,7 +4571,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	/* Should we allow printers to be shared... ? */
 	ctx = talloc_init("usershare_sd_xctx");
 	if (!ctx) {
-		SAFE_FREE(lines);
+		file_lines_free(lines);
 		return 1;
 	}
 
@@ -4570,11 +4579,11 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 			iService, lines, numlines, sharepath,
 			comment, &psd, &guest_ok) != USERSHARE_OK) {
 		talloc_destroy(ctx);
-		SAFE_FREE(lines);
+		file_lines_free(lines);
 		return -1;
 	}
 
-	SAFE_FREE(lines);
+	file_lines_free(lines);
 
 	/* Everything ok - add the service possibly using a template. */
 	if (iService < 0) {
@@ -4595,7 +4604,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	/* Write the ACL of the new/modified share. */
-	if (!set_share_security(ctx, service_name, psd)) {
+	if (!set_share_security(service_name, psd)) {
 		 DEBUG(0, ("process_usershare_file: Failed to set share "
 			"security for user share %s\n",
 			service_name ));
@@ -4868,7 +4877,7 @@ int load_usershare_shares(void)
 			/* Remove from the share ACL db. */
 			DEBUG(10,("load_usershare_shares: Removing deleted usershare %s\n",
 				lp_servicename(iService) ));
-			delete_share_security(iService);
+			delete_share_security(snum2params_static(iService));
 			free_service_byindex(iService);
 		}
 	}
@@ -4943,7 +4952,8 @@ BOOL lp_load(const char *pszFname,
 
 	pstrcpy(n2, pszFname);
 	
-	standard_sub_basic( get_current_username(), n2,sizeof(n2) );
+	standard_sub_basic( get_current_username(), current_user_info.domain,
+			    n2,sizeof(n2) );
 
 	add_to_file_list(pszFname, n2);
 
@@ -5087,7 +5097,9 @@ int lp_servicenumber(const char *pszServiceName)
 			 * service names
 			 */
 			fstrcpy(serviceName, ServicePtrs[iService]->szService);
-			standard_sub_basic(get_current_username(), serviceName,sizeof(serviceName));
+			standard_sub_basic(get_current_username(),
+					   current_user_info.domain,
+					   serviceName,sizeof(serviceName));
 			if (strequal(serviceName, pszServiceName)) {
 				break;
 			}
@@ -5099,7 +5111,7 @@ int lp_servicenumber(const char *pszServiceName)
 
 		if (!usershare_exists(iService, &last_mod)) {
 			/* Remove the share security tdb entry for it. */
-			delete_share_security(iService);
+			delete_share_security(snum2params_static(iService));
 			/* Remove it from the array. */
 			free_service_byindex(iService);
 			/* Doesn't exist anymore. */
@@ -5121,6 +5133,98 @@ int lp_servicenumber(const char *pszServiceName)
 	}
 
 	return (iService);
+}
+
+BOOL share_defined(const char *service_name)
+{
+	return (lp_servicenumber(service_name) != -1);
+}
+
+struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
+				      const char *sharename)
+{
+	struct share_params *result;
+	char *sname;
+	int snum;
+
+	if (!(sname = SMB_STRDUP(sharename))) {
+		return NULL;
+	}
+
+	snum = find_service(sname);
+	SAFE_FREE(sname);
+
+	if (snum < 0) {
+		return NULL;
+	}
+
+	if (!(result = TALLOC_P(mem_ctx, struct share_params))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	result->service = snum;
+	return result;
+}
+
+struct share_iterator *share_list_all(TALLOC_CTX *mem_ctx)
+{
+	struct share_iterator *result;
+
+	if (!(result = TALLOC_P(mem_ctx, struct share_iterator))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	result->next_id = 0;
+	return result;
+}
+
+struct share_params *next_share(struct share_iterator *list)
+{
+	struct share_params *result;
+
+	while (!lp_snum_ok(list->next_id) &&
+	       (list->next_id < lp_numservices())) {
+		list->next_id += 1;
+	}
+
+	if (list->next_id >= lp_numservices()) {
+		return NULL;
+	}
+
+	if (!(result = TALLOC_P(list, struct share_params))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	result->service = list->next_id;
+	list->next_id += 1;
+	return result;
+}
+
+struct share_params *next_printer(struct share_iterator *list)
+{
+	struct share_params *result;
+
+	while ((result = next_share(list)) != NULL) {
+		if (lp_print_ok(result->service)) {
+			break;
+		}
+	}
+	return result;
+}
+
+/*
+ * This is a hack for a transition period until we transformed all code from
+ * service numbers to struct share_params.
+ */
+
+struct share_params *snum2params_static(int snum)
+{
+	static struct share_params result;
+	result.service = snum;
+	return &result;
 }
 
 /*******************************************************************

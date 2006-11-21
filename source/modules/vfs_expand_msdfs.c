@@ -110,6 +110,7 @@ static BOOL expand_msdfs_target(connection_struct* conn, pstring target)
 	int filename_len;
 	pstring targethost;
 	pstring new_target;
+	extern userdom_struct current_user_info;
 
 	if (filename_start == NULL) {
 		DEBUG(10, ("No filename start in %s\n", target));
@@ -135,7 +136,11 @@ static BOOL expand_msdfs_target(connection_struct* conn, pstring target)
 		return False;
 	}
 
-	standard_sub_conn(conn, mapfilename, sizeof(mapfilename));
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      mapfilename, sizeof(mapfilename));
 
 	DEBUG(10, ("Expanded targethost to %s\n", targethost));
 
@@ -150,13 +155,12 @@ static BOOL expand_msdfs_target(connection_struct* conn, pstring target)
 }
 
 static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
-				 struct connection_struct *conn,
 				 const char *path, char *buf, size_t bufsiz)
 {
 	pstring target;
 	int result;
 
-	result = SMB_VFS_NEXT_READLINK(handle, conn, path, target,
+	result = SMB_VFS_NEXT_READLINK(handle, path, target,
 				       sizeof(target));
 
 	if (result < 0)
@@ -166,7 +170,7 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 
 	if ((strncmp(target, "msdfs:", strlen("msdfs:")) == 0) &&
 	    (strchr_m(target, '@') != NULL)) {
-		if (!expand_msdfs_target(conn, target)) {
+		if (!expand_msdfs_target(handle->conn, target)) {
 			errno = ENOENT;
 			return -1;
 		}

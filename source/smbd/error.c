@@ -24,40 +24,6 @@
 extern struct unix_error_map unix_dos_nt_errmap[];
 
 extern uint32 global_client_caps;
-/* these can be set by some functions to override the error codes */
-static int override_ERR_class;
-static uint32 override_ERR_code;
-static NTSTATUS override_ERR_ntstatus;
-
-/****************************************************************************
- Setting eclass and ecode only and status to NT_STATUS_INVALID forces DOS errors.
- Setting status only and eclass and ecode to -1 forces NT errors.
-****************************************************************************/
- 
-void set_saved_error_triple(int eclass, int ecode, NTSTATUS status)
-{
-	override_ERR_class = eclass;
-	override_ERR_code = ecode;
-	override_ERR_ntstatus = status;
-}
-
-void set_saved_ntstatus(NTSTATUS status)
-{
-	uint8 tmp_eclass;	/* Hmmm. override_ERR_class is not uint8... */
-	override_ERR_ntstatus = status;
-	ntstatus_to_dos(status, &tmp_eclass, &override_ERR_code);
-	override_ERR_class = tmp_eclass;
-	
-}
-
-/****************************************************************************
- Return the current settings of the error triple. Return True if any are set.
-****************************************************************************/
-
-NTSTATUS get_saved_ntstatus(void)
-{
-	return override_ERR_ntstatus;
-}
 
 /****************************************************************************
  Create an error packet from a cached error.
@@ -103,6 +69,10 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code, NTSTATUS def_s
 	return error_packet(outbuf,eclass,ecode,ntstatus,line,file);
 }
 
+BOOL use_nt_status(void)
+{
+	return lp_nt_status_support() && (global_client_caps & CAP_STATUS32);
+}
 
 /****************************************************************************
  Create an error packet. Normally called using the ERROR() macro.
@@ -111,24 +81,14 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code, NTSTATUS def_s
  If the override errors are set they take precedence over any passed in values.
 ****************************************************************************/
 
-int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
+void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
 {
-	int outsize = set_message(outbuf,0,0,True);
 	BOOL force_nt_status = False;
 	BOOL force_dos_status = False;
 
-	if (override_ERR_class != SMB_SUCCESS || !NT_STATUS_IS_OK(override_ERR_ntstatus)) {
-		eclass = override_ERR_class;
-		ecode = override_ERR_code;
-		ntstatus = override_ERR_ntstatus;
-		override_ERR_class = SMB_SUCCESS;
-		override_ERR_code = 0;
-		override_ERR_ntstatus = NT_STATUS_OK;
-	}
-
 	if (eclass == (uint8)-1) {
 		force_nt_status = True;
-	} else if (NT_STATUS_IS_INVALID(ntstatus)) {
+	} else if (NT_STATUS_IS_DOS(ntstatus)) {
 		force_dos_status = True;
 	}
 
@@ -146,7 +106,10 @@ int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, in
 			 nt_errstr(ntstatus)));
 	} else {
 		/* We're returning a DOS error only. */
-		if (eclass == 0 && NT_STATUS_V(ntstatus)) {
+		if (NT_STATUS_IS_DOS(ntstatus)) {
+			eclass = NT_STATUS_DOS_CLASS(ntstatus);
+			ecode = NT_STATUS_DOS_CODE(ntstatus);
+		} else 	if (eclass == 0 && NT_STATUS_V(ntstatus)) {
 			ntstatus_to_dos(ntstatus, &eclass, &ecode);
 		}
 
@@ -161,6 +124,11 @@ int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, in
 			  eclass,
 			  ecode));
 	}
+}
 
+int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
+{
+	int outsize = set_message(outbuf,0,0,True);
+	error_packet_set(outbuf, eclass, ecode, ntstatus, line, file);
 	return outsize;
 }

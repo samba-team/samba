@@ -244,7 +244,7 @@ void destroy_quota_handle(void **pqt_handle)
 	if (!pqt_handle||!(*pqt_handle))
 		return;
 	
-	qt_handle = (*pqt_handle);
+	qt_handle = (SMB_NTQUOTA_HANDLE *)(*pqt_handle);
 	
 	
 	if (qt_handle->quota_list)
