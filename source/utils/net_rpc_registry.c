@@ -474,12 +474,6 @@ static NTSTATUS rpc_registry_setvalue_internal(const DOM_SID *domain_sid,
 	NTSTATUS status;
 	struct registry_value value;
 
-	if (argc < 4) {
-		d_fprintf(stderr, "usage: net rpc registry setvalue <key> "
-			  "<valuename> <type> [<val>]+\n");
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_WRITE,
 				  &hive_hnd, &key_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -525,6 +519,12 @@ static NTSTATUS rpc_registry_setvalue_internal(const DOM_SID *domain_sid,
 
 static int rpc_registry_setvalue( int argc, const char **argv )
 {
+	if (argc < 4) {
+		d_fprintf(stderr, "usage: net rpc registry setvalue <key> "
+			  "<valuename> <type> [<val>]+\n");
+		return -1;
+	}
+
 	return run_rpc_command( NULL, PI_WINREG, 0, 
 		rpc_registry_setvalue_internal, argc, argv );
 }
@@ -540,12 +540,8 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 						int argc,
 						const char **argv )
 {
-	WERROR result = WERR_GENERAL_FAILURE;
-	uint32 hive;
-	pstring subpath;
 	POLICY_HND pol_hive, pol_key; 
 	NTSTATUS status;
-	struct winreg_String subkeyname;
 	uint32 num_subkeys;
 	uint32 num_values;
 	char **names, **classes;
@@ -558,28 +554,13 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		d_printf("Example:  net rpc enumerate 'HKLM\\Software\\Samba'\n");
 		return NT_STATUS_OK;
 	}
-	
-	if ( !reg_split_hive( argv[0], &hive, subpath ) ) {
-		d_fprintf(stderr, "invalid registry path\n");
-		return NT_STATUS_OK;
-	}
-	
-	/* open the top level hive and then the registry key */
-	
-	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
-	if ( !NT_STATUS_IS_OK(status) ) {
-		d_fprintf(stderr, "Unable to connect to remote registry: "
-			  "%s\n", nt_errstr(status));
-		return status;
-	}
-	
-	subkeyname.name = subpath;
-	status = rpccli_winreg_OpenKey(pipe_hnd, mem_ctx, &pol_hive, subkeyname,
-				       0, MAXIMUM_ALLOWED_ACCESS, &pol_key );
-	if ( !NT_STATUS_IS_OK(status) ) {
-		d_fprintf(stderr, "Unable to open [%s]: %s\n", argv[0],
+
+	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_READ,
+				  &pol_hive, &pol_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "registry_openkey failed: %s\n",
 			  nt_errstr(status));
-		return werror_to_ntstatus(result);
+		return status;
 	}
 
 	status = registry_enumkeys(mem_ctx, pipe_hnd, &pol_key, &num_subkeys,
@@ -639,8 +620,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		d_printf("\n");
 	}
 
-	if ( strlen( subpath ) != 0 )
-		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key );
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key );
 	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive );
 
 	return status;
@@ -667,11 +647,8 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 					const char **argv )
 {
 	WERROR result = WERR_GENERAL_FAILURE;
-	uint32 hive;
-	pstring subpath;
 	POLICY_HND pol_hive, pol_key; 
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	struct winreg_String subkeyname;
 	struct winreg_String filename;
 	
 	if (argc != 2 ) {
@@ -679,27 +656,14 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 		return NT_STATUS_OK;
 	}
 	
-	if ( !reg_split_hive( argv[0], &hive, subpath ) ) {
-		d_fprintf(stderr, "invalid registry path\n");
-		return NT_STATUS_OK;
-	}
-	
-	/* open the top level hive and then the registry key */
-	
-	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
-	if ( !NT_STATUS_IS_OK(status) ) {
-		d_fprintf(stderr, "Unable to connect to remote registry\n");
+	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_ALL,
+				  &pol_hive, &pol_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "registry_openkey failed: %s\n",
+			  nt_errstr(status));
 		return status;
 	}
-	
-	subkeyname.name = subpath;
-	status = rpccli_winreg_OpenKey(pipe_hnd, mem_ctx, &pol_hive, subkeyname,
-			0, MAXIMUM_ALLOWED_ACCESS, &pol_key );
-	if ( !NT_STATUS_IS_OK(status) ) {
-		d_fprintf(stderr, "Unable to open [%s]\n", argv[0]);
-		return werror_to_ntstatus(result);
-	}
-	
+
 	filename.name = argv[1];
 	status = rpccli_winreg_SaveKey( pipe_hnd, mem_ctx, &pol_key, &filename, NULL  );
 	if ( !W_ERROR_IS_OK(result) ) {
