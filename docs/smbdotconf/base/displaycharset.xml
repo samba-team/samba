@@ -10,6 +10,6 @@
 </para>
 </description>
 
-<value type="default">ASCII</value>
+<value type="default">"LOCALE" or "ASCII" (depending on the system)</value>
 <value type="example">UTF8</value>
 </samba:parameter>
