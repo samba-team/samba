@@ -19,7 +19,7 @@
  */
 
 #include "includes.h"
-#include "nfs4_acls.c"
+#include "nfs4_acls.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
