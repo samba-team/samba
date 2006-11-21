@@ -40,7 +40,7 @@ static tdb_off_t tdb_dump_record(struct tdb_context *tdb, int hash,
 		return 0;
 	}
 
-	printf(" rec: hash=%d, offset=0x%08x next=0x%08x rec_len=%d "
+	printf(" rec: hash=%d offset=0x%08x next=0x%08x rec_len=%d "
 	       "key_len=%d data_len=%d full_hash=0x%x magic=0x%x\n",
 	       hash, offset, rec.next, rec.rec_len, rec.key_len, rec.data_len,
 	       rec.full_hash, rec.magic);
