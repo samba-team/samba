@@ -23,6 +23,74 @@
 #include "regfio.h"
 #include "reg_objects.h"
 
+static BOOL reg_hive_key(const char *fullname, uint32 *reg_type,
+			 const char **key_name)
+{
+	const char *sep;
+	ptrdiff_t len;
+
+	sep = strchr_m(fullname, '\\');
+
+	if (sep != NULL) {
+		len = sep - fullname;
+		*key_name = sep+1;
+	}
+	else {
+		len = strlen(fullname);
+		*key_name = "";
+	}
+
+	if (strnequal(fullname, "HKLM", len) ||
+	    strnequal(fullname, "HKEY_LOCAL_MACHINE", len))
+		(*reg_type) = HKEY_LOCAL_MACHINE;
+	else if (strnequal(fullname, "HKCR", len) ||
+		 strnequal(fullname, "HKEY_CLASSES_ROOT", len))
+		(*reg_type) = HKEY_CLASSES_ROOT;
+	else if (strnequal(fullname, "HKU", len) ||
+		 strnequal(fullname, "HKEY_USERS", len))
+		(*reg_type) = HKEY_USERS;
+	else if (strnequal(fullname, "HKPD", len) ||
+		 strnequal(fullname, "HKEY_PERFORMANCE_DATA", len))
+		(*reg_type) = HKEY_PERFORMANCE_DATA;
+	else {
+		DEBUG(10,("reg_hive_key: unrecognised hive key %s\n",
+			  fullname));
+		return False;
+	}
+
+	return True;
+}
+
+static NTSTATUS registry_openkey(TALLOC_CTX *mem_ctx,
+				 struct rpc_pipe_client *pipe_hnd,
+				 const char *name, uint32 access_mask,
+				 struct policy_handle *hive_hnd,
+				 struct policy_handle *key_hnd)
+{
+	uint32 hive;
+	NTSTATUS status;
+	struct winreg_String key;
+
+	if (!reg_hive_key(name, &hive, &key.name)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive, access_mask,
+				       hive_hnd);
+	if (!(NT_STATUS_IS_OK(status))) {
+		return status;
+	}
+
+	status = rpccli_winreg_OpenKey(pipe_hnd, mem_ctx, hive_hnd, key, 0,
+				       access_mask, key_hnd);
+	if (!(NT_STATUS_IS_OK(status))) {
+		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, hive_hnd);
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 				  struct rpc_pipe_client *pipe_hnd,
 				  struct policy_handle *key_hnd,
@@ -223,6 +291,38 @@ static NTSTATUS registry_pull_value(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+static NTSTATUS registry_push_value(TALLOC_CTX *mem_ctx,
+				    const struct registry_value *value,
+				    DATA_BLOB *presult)
+{
+	switch (value->type) {
+	case REG_DWORD: {
+		char buf[4];
+		SIVAL(buf, 0, value->v.dword);
+		*presult = data_blob_talloc(mem_ctx, (void *)buf, 4);
+		if (presult->data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		break;
+	}
+	case REG_SZ:
+	case REG_EXPAND_SZ: {
+		presult->length = convert_string_talloc(
+			mem_ctx, CH_UNIX, CH_UTF16LE, value->v.sz.str,
+			MIN(value->v.sz.len, strlen(value->v.sz.str)+1),
+			(void *)&(presult->data), False);
+		if (presult->length == (size_t)-1) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		break;
+	}
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 				    struct rpc_pipe_client *pipe_hnd,
 				    struct policy_handle *key_hnd,
@@ -337,6 +437,96 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
  error:
 	TALLOC_FREE(mem_ctx);
 	return status;
+}
+
+static NTSTATUS registry_setvalue(TALLOC_CTX *mem_ctx,
+				  struct rpc_pipe_client *pipe_hnd,
+				  struct policy_handle *key_hnd,
+				  const char *name,
+				  const struct registry_value *value)
+{
+	struct winreg_String name_string;
+	DATA_BLOB blob;
+	NTSTATUS result;
+
+	result = registry_push_value(mem_ctx, value, &blob);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	name_string.name = name;
+	result = rpccli_winreg_SetValue(pipe_hnd, blob.data, key_hnd,
+					name_string, value->type,
+					blob.data, blob.length);
+	TALLOC_FREE(blob.data);
+	return result;
+}
+
+static NTSTATUS rpc_registry_setvalue_internal(const DOM_SID *domain_sid,
+					       const char *domain_name, 
+					       struct cli_state *cli,
+					       struct rpc_pipe_client *pipe_hnd,
+					       TALLOC_CTX *mem_ctx, 
+					       int argc,
+					       const char **argv )
+{
+	struct policy_handle hive_hnd, key_hnd;
+	NTSTATUS status;
+	struct registry_value value;
+
+	if (argc < 4) {
+		d_fprintf(stderr, "usage: net rpc registry setvalue <key> "
+			  "<valuename> <type> [<val>]+\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_WRITE,
+				  &hive_hnd, &key_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "registry_openkey failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+
+	if (!strequal(argv[2], "multi_sz") && (argc != 4)) {
+		d_fprintf(stderr, "Too many args for type %s\n", argv[2]);
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (strequal(argv[2], "dword")) {
+		value.type = REG_DWORD;
+		value.v.dword = strtoul(argv[3], NULL, 10);
+	}
+	else if (strequal(argv[2], "sz")) {
+		value.type = REG_SZ;
+		value.v.sz.len = strlen(argv[3])+1;
+		value.v.sz.str = CONST_DISCARD(char *, argv[3]);
+	}
+	else {
+		d_fprintf(stderr, "type \"%s\" not implemented\n", argv[3]);
+		status = NT_STATUS_NOT_IMPLEMENTED;
+		goto error;
+	}
+
+	status = registry_setvalue(mem_ctx, pipe_hnd, &key_hnd,
+				   argv[1], &value);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "registry_setvalue failed: %s\n",
+			  nt_errstr(status));
+	}
+
+ error:
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd);
+
+	return NT_STATUS_OK;
+}
+
+static int rpc_registry_setvalue( int argc, const char **argv )
+{
+	return run_rpc_command( NULL, PI_WINREG, 0, 
+		rpc_registry_setvalue_internal, argc, argv );
 }
 
 /********************************************************************
@@ -774,6 +964,7 @@ int net_rpc_registry(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"enumerate", rpc_registry_enumerate},
+		{"setvalue",  rpc_registry_setvalue},
 		{"save",      rpc_registry_save},
 		{"dump",      rpc_registry_dump},
 		{"copy",      rpc_registry_copy},
