@@ -49,7 +49,7 @@ int cac_RegConnect(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegConnect 
 
    /*initialize for winreg pipe if we have to*/
    if(!hnd->_internal.pipes[PI_WINREG]) {
-      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(&srv->cli, PI_WINREG, &(hnd->status)))) {
+      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(srv->cli, PI_WINREG, &(hnd->status)))) {
          return CAC_FAILURE;
       }
 
@@ -966,7 +966,7 @@ int cac_Shutdown(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Shutdown *op)
 
    /*initialize for winreg pipe if we have to*/
    if(!hnd->_internal.pipes[PI_SHUTDOWN]) {
-      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(&srv->cli, PI_SHUTDOWN, &(hnd->status)))) {
+      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(srv->cli, PI_SHUTDOWN, &(hnd->status)))) {
          return CAC_FAILURE;
       }
 

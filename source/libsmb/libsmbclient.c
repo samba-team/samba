@@ -2472,16 +2472,16 @@ net_share_enum_rpc(struct cli_state *cli,
                    void *state)
 {
         int i;
-	NTSTATUS result;
-	uint32 enum_hnd;
-	uint32 *penum_hnd = &enum_hnd;
+	WERROR result;
+	ENUM_HND enum_hnd;
         uint32 info_level = 1;
 	uint32 preferred_len = 0xffffffff;
-	struct srvsvc_NetShareCtr1 ctr1;
-	union srvsvc_NetShareCtr ctr;
+        uint32 type;
+	SRV_SHARE_INFO_CTR ctr;
+	fstring name = "";
+        fstring comment = "";
         void *mem_ctx;
 	struct rpc_pipe_client *pipe_hnd;
-	uint32 numentries;
         NTSTATUS nt_status;
 
         /* Open the server service pipe */
@@ -2499,28 +2499,37 @@ net_share_enum_rpc(struct cli_state *cli,
                 return -1; 
         }
 
-	ZERO_STRUCT(ctr1);
-	ctr.ctr1 = &ctr1;
-
         /* Issue the NetShareEnum RPC call and retrieve the response */
-	enum_hnd = 0;
-	result = rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, NULL,
-					    &info_level, &ctr, preferred_len,
-					    &numentries, &penum_hnd);
+	init_enum_hnd(&enum_hnd, 0);
+	result = rpccli_srvsvc_net_share_enum(pipe_hnd,
+                                              mem_ctx,
+                                              info_level,
+                                              &ctr,
+                                              preferred_len,
+                                              &enum_hnd);
 
         /* Was it successful? */
-	if (!NT_STATUS_IS_OK(result) || numentries == 0) {
+	if (!W_ERROR_IS_OK(result) || ctr.num_entries == 0) {
                 /*  Nope.  Go clean up. */
 		goto done;
         }
 
         /* For each returned entry... */
-        for (i = 0; i < numentries; i++) {
+        for (i = 0; i < ctr.num_entries; i++) {
+
+                /* pull out the share name */
+                rpcstr_pull_unistr2_fstring(
+                        name, &ctr.share.info1[i].info_1_str.uni_netname);
+
+                /* pull out the share's comment */
+                rpcstr_pull_unistr2_fstring(
+                        comment, &ctr.share.info1[i].info_1_str.uni_remark);
+
+                /* Get the type value */
+                type = ctr.share.info1[i].info_1.type;
 
                 /* Add this share to the list */
-                (*fn)(ctr.ctr1->array[i].name, 
-					  ctr.ctr1->array[i].type, 
-					  ctr.ctr1->array[i].comment, state);
+                (*fn)(name, type, comment, state);
         }
 
 done:
@@ -2531,7 +2540,7 @@ done:
         TALLOC_FREE(mem_ctx);
 
         /* Tell 'em if it worked */
-        return NT_STATUS_IS_OK(result) ? 0 : -1;
+        return W_ERROR_IS_OK(result) ? 0 : -1;
 }
 
 
@@ -3733,8 +3742,8 @@ ace_compare(SEC_ACE *ace1,
 	if (ace1->flags != ace2->flags) 
 		return ace1->flags - ace2->flags;
 
-	if (ace1->access_mask != ace2->access_mask) 
-		return ace1->access_mask - ace2->access_mask;
+	if (ace1->info.mask != ace2->info.mask) 
+		return ace1->info.mask - ace2->info.mask;
 
 	if (ace1->size != ace2->size) 
 		return ace1->size - ace2->size;
@@ -3749,14 +3758,14 @@ sort_acl(SEC_ACL *the_acl)
 	uint32 i;
 	if (!the_acl) return;
 
-	qsort(the_acl->aces, the_acl->num_aces, sizeof(the_acl->aces[0]),
+	qsort(the_acl->ace, the_acl->num_aces, sizeof(the_acl->ace[0]),
               QSORT_CAST ace_compare);
 
 	for (i=1;i<the_acl->num_aces;) {
-		if (sec_ace_equal(&the_acl->aces[i-1], &the_acl->aces[i])) {
+		if (sec_ace_equal(&the_acl->ace[i-1], &the_acl->ace[i])) {
 			int j;
 			for (j=i; j<the_acl->num_aces-1; j++) {
-				the_acl->aces[j] = the_acl->aces[j+1];
+				the_acl->ace[j] = the_acl->ace[j+1];
 			}
 			the_acl->num_aces--;
 		} else {
@@ -3961,7 +3970,7 @@ parse_ace(struct cli_state *ipc_cli,
 	}
 
  done:
-	mask = amask;
+	mask.mask = amask;
 	init_sec_ace(ace, &sid, atype, mask, aflags);
 	return True;
 }
@@ -3983,7 +3992,7 @@ add_ace(SEC_ACL **the_acl,
 	if ((aces = SMB_CALLOC_ARRAY(SEC_ACE, 1+(*the_acl)->num_aces)) == NULL) {
 		return False;
 	}
-	memcpy(aces, (*the_acl)->aces, (*the_acl)->num_aces * sizeof(SEC_ACE));
+	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
 	newacl = make_sec_acl(ctx, (*the_acl)->revision,
                               1+(*the_acl)->num_aces, aces);
@@ -4555,10 +4564,10 @@ cacl_get(SMBCCTX *context,
                 }
 
                 if (! exclude_nt_group) {
-                        if (sd->group_sid) {
+                        if (sd->grp_sid) {
                                 convert_sid_to_string(ipc_cli, pol,
                                                       sidstr, numeric,
-                                                      sd->group_sid);
+                                                      sd->grp_sid);
                         } else {
                                 fstrcpy(sidstr, "");
                         }
@@ -4603,7 +4612,7 @@ cacl_get(SMBCCTX *context,
                         /* Add aces to value buffer  */
                         for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
 
-                                SEC_ACE *ace = &sd->dacl->aces[i];
+                                SEC_ACE *ace = &sd->dacl->ace[i];
                                 convert_sid_to_string(ipc_cli, pol,
                                                       sidstr, numeric,
                                                       &ace->trustee);
@@ -4617,7 +4626,7 @@ cacl_get(SMBCCTX *context,
                                                         sidstr,
                                                         ace->type,
                                                         ace->flags,
-                                                        ace->access_mask);
+                                                        ace->info.mask);
                                                 if (!p) {
                                                         errno = ENOMEM;
                                                         return -1;
@@ -4630,7 +4639,7 @@ cacl_get(SMBCCTX *context,
                                                         sidstr,
                                                         ace->type,
                                                         ace->flags,
-                                                        ace->access_mask);
+                                                        ace->info.mask);
                                         }
                                 } else if ((StrnCaseCmp(name, "acl", 3) == 0 &&
                                             StrCaseCmp(name+3, sidstr) == 0) ||
@@ -4642,7 +4651,7 @@ cacl_get(SMBCCTX *context,
                                                         "%d/%d/0x%08x", 
                                                         ace->type,
                                                         ace->flags,
-                                                        ace->access_mask);
+                                                        ace->info.mask);
                                                 if (!p) {
                                                         errno = ENOMEM;
                                                         return -1;
@@ -4653,7 +4662,7 @@ cacl_get(SMBCCTX *context,
                                                              "%d/%d/0x%08x", 
                                                              ace->type,
                                                              ace->flags,
-                                                             ace->access_mask);
+                                                             ace->info.mask);
                                         }
                                 } else if (all_nt_acls) {
                                         if (determine_size) {
@@ -4664,7 +4673,7 @@ cacl_get(SMBCCTX *context,
                                                         sidstr,
                                                         ace->type,
                                                         ace->flags,
-                                                        ace->access_mask);
+                                                        ace->info.mask);
                                                 if (!p) {
                                                         errno = ENOMEM;
                                                         return -1;
@@ -4677,7 +4686,7 @@ cacl_get(SMBCCTX *context,
                                                              sidstr,
                                                              ace->type,
                                                              ace->flags,
-                                                             ace->access_mask);
+                                                             ace->info.mask);
                                         }
                                 }
                                 if (n > bufsize) {
@@ -5108,7 +5117,7 @@ cacl_set(TALLOC_CTX *ctx,
 	switch (mode) {
 	case SMBC_XATTR_MODE_REMOVE_ALL:
                 old->dacl->num_aces = 0;
-                SAFE_FREE(old->dacl->aces);
+                SAFE_FREE(old->dacl->ace);
                 SAFE_FREE(old->dacl);
                 old->dacl = NULL;
                 dacl = old->dacl;
@@ -5119,16 +5128,16 @@ cacl_set(TALLOC_CTX *ctx,
 			BOOL found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
-                                if (sec_ace_equal(&sd->dacl->aces[i],
-                                                  &old->dacl->aces[j])) {
+                                if (sec_ace_equal(&sd->dacl->ace[i],
+                                                  &old->dacl->ace[j])) {
 					uint32 k;
 					for (k=j; k<old->dacl->num_aces-1;k++) {
-						old->dacl->aces[k] =
-                                                        old->dacl->aces[k+1];
+						old->dacl->ace[k] =
+                                                        old->dacl->ace[k+1];
 					}
 					old->dacl->num_aces--;
 					if (old->dacl->num_aces == 0) {
-						SAFE_FREE(old->dacl->aces);
+						SAFE_FREE(old->dacl->ace);
 						SAFE_FREE(old->dacl);
 						old->dacl = NULL;
 					}
@@ -5151,14 +5160,14 @@ cacl_set(TALLOC_CTX *ctx,
 			BOOL found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
-				if (sid_equal(&sd->dacl->aces[i].trustee,
-					      &old->dacl->aces[j].trustee)) {
+				if (sid_equal(&sd->dacl->ace[i].trustee,
+					      &old->dacl->ace[j].trustee)) {
                                         if (!(flags & SMBC_XATTR_FLAG_CREATE)) {
                                                 err = EEXIST;
                                                 ret = -1;
                                                 goto failed;
                                         }
-                                        old->dacl->aces[j] = sd->dacl->aces[i];
+                                        old->dacl->ace[j] = sd->dacl->ace[i];
                                         ret = -1;
 					found = True;
 				}
@@ -5171,7 +5180,7 @@ cacl_set(TALLOC_CTX *ctx,
 			}
                         
                         for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
-                                add_ace(&old->dacl, &sd->dacl->aces[i], ctx);
+                                add_ace(&old->dacl, &sd->dacl->ace[i], ctx);
                         }
 		}
                 dacl = old->dacl;
@@ -5180,7 +5189,7 @@ cacl_set(TALLOC_CTX *ctx,
 	case SMBC_XATTR_MODE_SET:
  		old = sd;
                 owner_sid = old->owner_sid;
-                grp_sid = old->group_sid;
+                grp_sid = old->grp_sid;
                 dacl = old->dacl;
 		break;
 
@@ -5189,7 +5198,7 @@ cacl_set(TALLOC_CTX *ctx,
                 break;
 
         case SMBC_XATTR_MODE_CHGRP:
-                grp_sid = sd->group_sid;
+                grp_sid = sd->grp_sid;
                 break;
 	}
 

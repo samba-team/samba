@@ -6269,7 +6269,7 @@ static int rpc_trustdom(int argc, const char **argv)
  */
 BOOL net_rpc_check(unsigned flags)
 {
-	struct cli_state cli;
+	struct cli_state *cli;
 	BOOL ret = False;
 	struct in_addr server_ip;
 	char *server_name = NULL;
@@ -6278,23 +6278,23 @@ BOOL net_rpc_check(unsigned flags)
 	if (!net_find_server(NULL, flags, &server_ip, &server_name))
 		return False;
 
-	ZERO_STRUCT(cli);
-	if (cli_initialise(&cli) == False)
+	if ((cli = cli_initialise()) == NULL) {
 		return False;
+	}
 
-	if (!cli_connect(&cli, server_name, &server_ip))
+	if (!cli_connect(cli, server_name, &server_ip))
 		goto done;
 	if (!attempt_netbios_session_request(&cli, global_myname(), 
 					     server_name, &server_ip))
 		goto done;
-	if (!cli_negprot(&cli))
+	if (!cli_negprot(cli))
 		goto done;
-	if (cli.protocol < PROTOCOL_NT1)
+	if (cli->protocol < PROTOCOL_NT1)
 		goto done;
 
 	ret = True;
  done:
-	cli_shutdown(&cli);
+	cli_shutdown(cli);
 	return ret;
 }
 

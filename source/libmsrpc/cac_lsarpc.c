@@ -139,7 +139,7 @@ int cac_LsaClosePolicy( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	hnd->status = rpccli_lsa_Close( pipe_hnd, mem_ctx, pol );
+	hnd->status = rpccli_lsa_close( pipe_hnd, mem_ctx, pol );
 
 	TALLOC_FREE( pol );
 
