@@ -545,7 +545,7 @@ configure(krb5_context context, int argc, char **argv)
 	ocsp_file = 
 	    krb5_config_get_string(context, NULL,
 				   "kdc",
-				   "pki-kdc-ocsp",
+				   "pkinit_kdc_ocsp",
 				   NULL);
 	if (ocsp_file) {
 	    config->pkinit_kdc_ocsp_file = strdup(ocsp_file);
