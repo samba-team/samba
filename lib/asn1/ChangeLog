@@ -1,3 +1,11 @@
+2006-11-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* k5.asn1: Make KRB5-PADATA-S4U2SELF pa type 129.
+	
+2006-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* asn1_err.et: add EXTRA_DATA
+	
 2006-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-gen.c: avoid leaking memory
