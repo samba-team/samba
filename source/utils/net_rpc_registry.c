@@ -596,7 +596,8 @@ static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive, REG_KEY_WRITE,
+	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive,
+				       REG_KEY_READ|REG_KEY_WRITE,
 				       &hive_hnd);
 	if (!(NT_STATUS_IS_OK(status))) {
 		return status;
