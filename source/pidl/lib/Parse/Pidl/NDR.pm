@@ -70,8 +70,6 @@ my $scalar_alignment = {
 	'ipv4address' => 4
 };
 
-
-
 sub nonfatal($$)
 {
 	my ($e,$s) = @_;
@@ -135,8 +133,7 @@ sub GetElementLevelTable($)
 				$is_string = 1;
 				delete($e->{PROPERTIES}->{string});
 			} else {
-				print "$e->{FILE}:$e->{LINE}: Must specify size_is() for conformant array!\n";
-				exit 1;
+				fatal($e, "Must specify size_is() for conformant array!")
 			}
 
 			if (($length = shift @length_is) or $is_string) {
@@ -183,6 +180,10 @@ sub GetElementLevelTable($)
 			IS_DEFERRED => "$is_deferred",
 			LEVEL => $level
 		});
+
+		nonfatal($e, "top-level pointer `$e->{NAME}' is not a \[ref\] pointer") 
+			if ($i == 1 and pointer_type($e) ne "ref" and 
+				$e->{PARENT}->{TYPE} eq "FUNCTION");
 
 		$pointer_idx++;
 		
