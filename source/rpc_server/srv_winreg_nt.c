@@ -163,7 +163,6 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
                                     uint32 *maxlen, uint32 *maxsize )
 {
 	REGVAL_CTR 	*values;
-	REGISTRY_VALUE	*val;
 	uint32 		sizemax, lenmax;
 	int 		i, num_values;
 	
@@ -178,15 +177,17 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
 	
 	lenmax = sizemax = 0;
 	num_values = regval_ctr_numvals( values );
-	
-	val = regval_ctr_specific_value( values, 0 );
-	
-	for ( i=0; i<num_values && val; i++ ) 
-	{
-		lenmax  = MAX(lenmax,  val->valuename ? strlen(val->valuename)+1 : 0 );
+
+	for ( i=0; i<num_values; i++ ) {
+		REGISTRY_VALUE *val;
+
+		if (!(val = regval_ctr_specific_value( values, i ))) {
+			break;
+		}
+
+		lenmax  = MAX(lenmax, val->valuename ?
+			      strlen(val->valuename)+1 : 0 );
 		sizemax = MAX(sizemax, val->size );
-		
-		val = regval_ctr_specific_value( values, i );
 	}
 
 	*maxnum   = num_values;
