@@ -1130,30 +1130,6 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: getgroups %s\n", (unsigned long)state->pid,
 		  state->request.data.username));
 
-	/* when using "winbind use default domain" we need to avoid that
-	 * initgroups() requests from NSS hit our DC too badly for accounts
-	 * that will never be on the remote DC */
-
-	if (lp_winbind_use_default_domain()) {
-		
-		const char **list = lp_winbind_initgroups_blacklist();
-		int i;
-
-		if (!list || !list[0]) {
-			goto parse;
-		}
-
-		for (i=0; list[i] != NULL; i++) {
-	
-			if (strequal(state->request.data.username, list[i])) {
-				DEBUG(3,("ignoring blacklisted user [%s] for getgroups\n", 
-					state->request.data.username));
-				request_ok(state);
-				return;
-			}
-		}
-	}
- parse:
 	/* Parse domain and username */
 
 	s = TALLOC_P(state->mem_ctx, struct getgroups_state);
