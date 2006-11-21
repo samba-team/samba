@@ -33,9 +33,9 @@ typedef struct {
 } REGISTRY_VALUE;
 
 /*
- * A registry string is not necessarily NULL terminated. When retrieving it
- * from the net, we guarantee this however. A server might want to push it
- * without the terminator though.
+ * A REG_SZ string is not necessarily NULL terminated. When retrieving it from
+ * the net, we guarantee this however. A server might want to push it without
+ * the terminator though.
  */
 
 struct registry_string {
@@ -51,7 +51,7 @@ struct registry_value {
 		struct registry_string sz;
 		struct {
 			uint32 num_strings;
-			struct registry_string *strings;
+			char **strings;
 		} multi_sz;
 		DATA_BLOB binary;
 	} v;

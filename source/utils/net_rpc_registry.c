@@ -197,7 +197,7 @@ static NTSTATUS registry_pull_value(TALLOC_CTX *mem_ctx,
 	struct registry_value *value;
 	NTSTATUS status;
 
-	if (!(value = TALLOC_P(mem_ctx, struct registry_value))) {
+	if (!(value = TALLOC_ZERO_P(mem_ctx, struct registry_value))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -247,6 +247,18 @@ static NTSTATUS registry_pull_value(TALLOC_CTX *mem_ctx,
 		}
 		break;
 	}
+	case REG_MULTI_SZ:
+		status = reg_pull_multi_sz(value, (void *)data, length,
+					   &value->v.multi_sz.num_strings,
+					   &value->v.multi_sz.strings);
+		if (!(NT_STATUS_IS_OK(status))) {
+			goto error;
+		}
+		break;
+	case REG_BINARY:
+		value->v.binary.data = talloc_move(value, &data);
+		value->v.binary.length = length;
+		break;
 	default:
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto error;
@@ -465,6 +477,18 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		case REG_SZ:
 		case REG_EXPAND_SZ:
 			d_printf("Value      = \"%s\"\n", v->v.sz.str);
+			break;
+		case REG_MULTI_SZ: {
+			uint32 j;
+			for (j = 0; j < v->v.multi_sz.num_strings; j++) {
+				d_printf("Value[%3.3d] = \"%s\"\n", j,
+					 v->v.multi_sz.strings[j]);
+			}
+			break;
+		}
+		case REG_BINARY:
+			d_printf("Value      = %d bytes\n",
+				 v->v.binary.length);
 			break;
 		default:
 			d_printf("Value      = <unprintable>\n");
