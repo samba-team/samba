@@ -372,9 +372,9 @@ int tdb_close(struct tdb_context *tdb)
 
 /* register a loging function */
 void tdb_set_logging_function(struct tdb_context *tdb,
-                              const struct tdb_logging_context *log)
+                              const struct tdb_logging_context *log_ctx)
 {
-        tdb->log = *log;
+        tdb->log = *log_ctx;
 }
 
 void *tdb_get_logging_private(struct tdb_context *tdb)
