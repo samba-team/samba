@@ -572,7 +572,7 @@ WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t e
 	if ( last_changed_time ) {
 		*last_changed_time = 0;
 	}
-	keyclass->name = NULL;
+	keyclass->name = "";
 	if ( (name->name = talloc_strdup( p->mem_ctx, subkey )) == NULL ) {
 		status = WERR_NOMEM;
 	}
