@@ -529,6 +529,168 @@ static int rpc_registry_setvalue( int argc, const char **argv )
 		rpc_registry_setvalue_internal, argc, argv );
 }
 
+static NTSTATUS rpc_registry_deletevalue_internal(const DOM_SID *domain_sid,
+						  const char *domain_name, 
+						  struct cli_state *cli,
+						  struct rpc_pipe_client *pipe_hnd,
+						  TALLOC_CTX *mem_ctx, 
+						  int argc,
+						  const char **argv )
+{
+	struct policy_handle hive_hnd, key_hnd;
+	NTSTATUS status;
+	struct winreg_String valuename;
+
+	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_WRITE,
+				  &hive_hnd, &key_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "registry_openkey failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+
+	valuename.name = argv[1];
+
+	status = rpccli_winreg_DeleteValue(pipe_hnd, mem_ctx, &key_hnd,
+					   valuename);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "registry_deletevalue failed: %s\n",
+			  nt_errstr(status));
+	}
+
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd);
+
+	return NT_STATUS_OK;
+}
+
+static int rpc_registry_deletevalue( int argc, const char **argv )
+{
+	if (argc != 2) {
+		d_fprintf(stderr, "usage: net rpc registry deletevalue <key> "
+			  "<valuename>\n");
+		return -1;
+	}
+
+	return run_rpc_command( NULL, PI_WINREG, 0, 
+		rpc_registry_deletevalue_internal, argc, argv );
+}
+
+static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv )
+{
+	uint32 hive;
+	struct policy_handle hive_hnd, key_hnd;
+	struct winreg_String key, keyclass;
+	enum winreg_CreateAction action;
+	enum winreg_CreateAction *paction = &action;
+	NTSTATUS status;
+
+	if (!reg_hive_key(argv[0], &hive, &key.name)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive, REG_KEY_WRITE,
+				       &hive_hnd);
+	if (!(NT_STATUS_IS_OK(status))) {
+		return status;
+	}
+
+	action = REG_ACTION_NONE;
+	keyclass.name = "";
+
+	status = rpccli_winreg_CreateKey(pipe_hnd, mem_ctx, &hive_hnd, key,
+					 keyclass, 0, REG_KEY_READ, NULL,
+					 &key_hnd, &paction);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "createkey returned %s\n",
+			  nt_errstr(status));
+		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd);
+		return status;
+	}
+
+	if (paction) {
+		switch (*paction) {
+		case REG_ACTION_NONE:
+			d_printf("createkey did nothing -- huh?\n");
+			break;
+		case REG_CREATED_NEW_KEY:
+			d_printf("createkey created %s\n", argv[0]);
+			break;
+		case REG_OPENED_EXISTING_KEY:
+			d_printf("createkey opened existing %s\n", argv[0]);
+			break;
+		}
+	}
+
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd);
+
+	return status;
+}
+
+static int rpc_registry_createkey( int argc, const char **argv )
+{
+	if (argc != 1) {
+		d_fprintf(stderr, "usage: net rpc registry createkey <key>\n");
+		return -1;
+	}
+
+	return run_rpc_command( NULL, PI_WINREG, 0, 
+		rpc_registry_createkey_internal, argc, argv );
+}
+
+static NTSTATUS rpc_registry_deletekey_internal(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv )
+{
+	uint32 hive;
+	struct policy_handle hive_hnd;
+	struct winreg_String key;
+	NTSTATUS status;
+
+	if (!reg_hive_key(argv[0], &hive, &key.name)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive, REG_KEY_WRITE,
+				       &hive_hnd);
+	if (!(NT_STATUS_IS_OK(status))) {
+		return status;
+	}
+
+	status = rpccli_winreg_DeleteKey(pipe_hnd, mem_ctx, &hive_hnd, key);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "deletekey returned %s\n",
+			  nt_errstr(status));
+	}
+
+	return status;
+}
+
+static int rpc_registry_deletekey( int argc, const char **argv )
+{
+	if (argc != 1) {
+		d_fprintf(stderr, "usage: net rpc registry deletekey <key>\n");
+		return -1;
+	}
+
+	return run_rpc_command( NULL, PI_WINREG, 0, 
+		rpc_registry_deletekey_internal, argc, argv );
+}
+
 /********************************************************************
 ********************************************************************/
 
@@ -917,8 +1079,14 @@ int net_rpc_registry(int argc, const char **argv)
 	struct functable2 func[] = {
 		{ "enumerate", rpc_registry_enumerate,
 		  "Enumerate registry keys and values" },
+		{ "createkey",  rpc_registry_createkey,
+		  "Create a new registry key" },
+		{ "deletekey",  rpc_registry_deletekey,
+		  "Delete a registry key" },
 		{ "setvalue",  rpc_registry_setvalue,
 		  "Set a new registry value" },
+		{ "deletevalue",  rpc_registry_deletevalue,
+		  "Delete a registry value" },
 		{ "save", rpc_registry_save,
 		  "Save a registry file" },
 		{ "dump", rpc_registry_dump,
