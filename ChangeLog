@@ -1,5 +1,7 @@
 2006-11-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/config.c: Make all pkinit options prefixed with pkinit_
+
 	* lib/krb5/log.c (krb5_get_warn_dest): return warn_dest from
 	krb5_context
 
