@@ -6029,7 +6029,9 @@ BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 	BOOL is_print_op = False;
 
-	standard_sub_basic(current_user_info.smb_name, remote_machine,sizeof(remote_machine));
+	standard_sub_basic(current_user_info.smb_name,
+			   current_user_info.domain,
+			   remote_machine,sizeof(remote_machine));
 	
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,

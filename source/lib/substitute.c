@@ -769,3 +769,21 @@ void standard_sub_advanced(const char *servicename, const char *user,
 		SAFE_FREE( s );
 	}
 }
+
+/****************************************************************************
+ *  Do some standard substitutions in a string.
+ *  ****************************************************************************/
+
+void standard_sub_conn(connection_struct *conn, char *str, size_t len)
+{
+	char *s;
+
+	s = alloc_sub_advanced(lp_servicename(SNUM(conn)), conn->user, conn->connectpath,
+			       conn->gid, smb_user_name, "", str);
+
+	if ( s ) {
+		strncpy( str, s, len );
+		SAFE_FREE( s );
+	}
+}
+
