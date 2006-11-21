@@ -1436,7 +1436,7 @@ server_lookup:
 
 	    ret = krb5_verify_checksum(context,
 				       crypto,
-				       KRB5_KU_TGS_IMPERSONATE,
+				       KRB5_KU_OTHER_CKSUM,
 				       datack.data, 
 				       datack.length, 
 				       &self.cksum);

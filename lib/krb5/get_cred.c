@@ -458,7 +458,7 @@ get_cred_kdc_usage(krb5_context context,
 
 	ret = krb5_create_checksum(context,
 				   crypto,
-				   KRB5_KU_TGS_IMPERSONATE,
+				   KRB5_KU_OTHER_CKSUM,
 				   0,
 				   data.data,
 				   data.length, 
