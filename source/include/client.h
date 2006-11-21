@@ -171,10 +171,6 @@ struct cli_state {
 
 	BOOL force_dos_errors;
 	BOOL case_sensitive; /* False by default. */
-
-	/* was this structure allocated by cli_initialise? If so, then
-           free in cli_shutdown() */
-	BOOL allocated;
 };
 
 #define CLI_FULL_CONNECTION_DONT_SPNEGO 0x0001

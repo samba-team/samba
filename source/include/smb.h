@@ -133,13 +133,6 @@
 #define OPENX_FILE_CREATE_IF_NOT_EXIST 0x10
 #define OPENX_FILE_FAIL_IF_NOT_EXIST 0
 
-/* share types */
-#define STYPE_DISKTREE  0	/* Disk drive */
-#define STYPE_PRINTQ    1	/* Spooler queue */
-#define STYPE_DEVICE    2	/* Serial device */
-#define STYPE_IPC       3	/* Interprocess communication (IPC) */
-#define STYPE_HIDDEN    0x80000000 /* share is a hidden one (ends with $) */
-
 #include "doserr.h"
 
 typedef union unid_t {
@@ -276,7 +269,7 @@ enum lsa_SidType {
  *
  * @sa http://msdn.microsoft.com/library/default.asp?url=/library/en-us/security/accctrl_38yn.asp
  **/
-typedef struct sid_info {
+typedef struct dom_sid {
 	uint8  sid_rev_num;             /**< SID revision number */
 	uint8  num_auths;               /**< Number of sub-authorities */
 	uint8  id_auth[6];              /**< Identifier Authority */
@@ -288,6 +281,14 @@ typedef struct sid_info {
 	 */
 	uint32 sub_auths[MAXSUBAUTHS];  
 } DOM_SID;
+
+#define dom_sid2 dom_sid
+#define dom_sid28 dom_sid
+
+#include "librpc/ndr/misc.h"
+#include "librpc/ndr/security.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/wkssvc.h"
 
 struct lsa_dom_info {
 	BOOL valid;
@@ -1360,36 +1361,6 @@ char *strdup(char *s);
 #define SELECT_CAST
 #endif
 
-/* these are used in NetServerEnum to choose what to receive */
-#define SV_TYPE_WORKSTATION         0x00000001
-#define SV_TYPE_SERVER              0x00000002
-#define SV_TYPE_SQLSERVER           0x00000004
-#define SV_TYPE_DOMAIN_CTRL         0x00000008
-#define SV_TYPE_DOMAIN_BAKCTRL      0x00000010
-#define SV_TYPE_TIME_SOURCE         0x00000020
-#define SV_TYPE_AFP                 0x00000040
-#define SV_TYPE_NOVELL              0x00000080
-#define SV_TYPE_DOMAIN_MEMBER       0x00000100
-#define SV_TYPE_PRINTQ_SERVER       0x00000200
-#define SV_TYPE_DIALIN_SERVER       0x00000400
-#define SV_TYPE_SERVER_UNIX         0x00000800
-#define SV_TYPE_NT                  0x00001000
-#define SV_TYPE_WFW                 0x00002000
-#define SV_TYPE_SERVER_MFPN         0x00004000
-#define SV_TYPE_SERVER_NT           0x00008000
-#define SV_TYPE_POTENTIAL_BROWSER   0x00010000
-#define SV_TYPE_BACKUP_BROWSER      0x00020000
-#define SV_TYPE_MASTER_BROWSER      0x00040000
-#define SV_TYPE_DOMAIN_MASTER       0x00080000
-#define SV_TYPE_SERVER_OSF          0x00100000
-#define SV_TYPE_SERVER_VMS          0x00200000
-#define SV_TYPE_WIN95_PLUS          0x00400000
-#define SV_TYPE_DFS_SERVER	    0x00800000
-#define SV_TYPE_ALTERNATE_XPORT     0x20000000  
-#define SV_TYPE_LOCAL_LIST_ONLY     0x40000000  
-#define SV_TYPE_DOMAIN_ENUM         0x80000000
-#define SV_TYPE_ALL                 0xFFFFFFFF  
-
 /* This was set by JHT in liaison with Jeremy Allison early 1997
  * History:
  * Version 4.0 - never made public
@@ -1823,19 +1794,6 @@ struct ea_list {
 #define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
 
 #define UUID_SIZE 16
-struct GUID {
-	uint32_t time_low;
-	uint16_t time_mid;
-	uint16_t time_hi_and_version;
-	uint8_t clock_seq[2];
-	uint8_t node[6];
-}/* [noprint,gensize,public,noejs] */;
-
-struct policy_handle {
-	uint32_t handle_type;
-	struct GUID uuid;
-}/* [public] */;
-
 #define UUID_FLAT_SIZE 16
 typedef struct uuid_flat {
 	uint8 info[UUID_FLAT_SIZE];

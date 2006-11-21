@@ -668,7 +668,6 @@ typedef int BOOL;
 #include "rpc_reg.h"
 #include "rpc_samr.h"
 #include "rpc_srvsvc.h"
-#include "rpc_wkssvc.h"
 #include "rpc_spoolss.h"
 #include "rpc_eventlog.h"
 #include "rpc_dfs.h"
@@ -680,10 +679,6 @@ typedef int BOOL;
 #include "nt_printing.h"
 #include "idmap.h"
 #include "client.h"
-
-#ifdef WITH_SMBWRAPPER
-#include "smbw.h"
-#endif
 
 #include "session.h"
 #include "asn_1.h"

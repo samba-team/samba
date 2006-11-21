@@ -590,7 +590,7 @@ AC_SUBST(DYNEXP)
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_shutdown rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srvsvc rpc_spoolss rpc_eventlog rpc_echo auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_shutdown rpc_lsa_ds rpc_wkssvc rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srvsvc rpc_spoolss rpc_eventlog rpc_echo auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
@@ -5867,7 +5867,7 @@ SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
 SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), "bin/librpc_lsarpc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), "bin/librpc_reg.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_lsa_ds, \$(RPC_LSA_DS_OBJ), "bin/librpc_lsa_ds.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_wkssvc, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_svcctl, \$(RPC_SVCCTL_OBJ), "bin/librpc_svcctl.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_ntsvcs, \$(RPC_NTSVCS_OBJ), "bin/librpc_ntsvcs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)

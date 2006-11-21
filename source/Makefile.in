@@ -209,6 +209,12 @@ ERRORMAP_OBJ = libsmb/errormap.o
 
 PASSCHANGE_OBJ = libsmb/passchange.o
 
+LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
+	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o \
+	     rpc_client/ndr.o
+
+LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o
+
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
 LIBREPLACE_OBJ = @LIBREPLACE_OBJS@
@@ -296,9 +302,11 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_netlogon.o rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
-	       rpc_client/cli_ds.o rpc_client/cli_svcctl.o \
-	       rpc_client/cli_srvsvc.o rpc_client/cli_shutdown.o \
-	       rpc_client/cli_dfs.o rpc_client/cli_echo.o
+	       rpc_client/cli_ds.o rpc_client/cli_svcctl.o rpc_client/cli_srvsvc.o \
+	       rpc_client/cli_shutdown.o rpc_client/cli_dfs.o rpc_client/cli_echo.o
+
+LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_wkssvc.o \
+		   $(LIBNDR_GEN_OBJ) $(LIBNDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
 
@@ -321,7 +329,7 @@ RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
 RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
 
-RPC_WKS_OBJ =  rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
+RPC_WKS_OBJ =  librpc/gen_ndr/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 
 RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl.o rpc_server/srv_svcctl_nt.o \
                   services/svc_spoolss.o services/svc_rcinit.o services/services_db.o \
@@ -354,7 +362,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
                 rpc_parse/parse_ntsvcs.o rpc_parse/parse_svcctl.o $(REGOBJS_OBJ) \
 		rpc_parse/parse_srv.o rpc_parse/parse_dfs.o \
 		rpc_parse/parse_reg.o rpc_parse/parse_echo.o \
-		rpc_parse/parse_wks.o rpc_parse/parse_shutdown.o
+		rpc_parse/parse_shutdown.o
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
@@ -598,7 +606,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_rpc_service.o utils/net_rpc_registry.o utils/net_usershare.o \
 	   utils/netlookup.o utils/net_sam.o utils/net_rpc_shell.o \
 	   utils/net_util.o utils/net_rpc_sh_acct.o utils/net_rpc_audit.o \
-	   utils/passwd_util.o utils/net_dns.o utils/net_ads_gpo.o
+	   utils/passwd_util.o utils/net_dns.o utils/net_ads_gpo.o 
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
@@ -686,8 +694,8 @@ REPLACETORT_OBJ = lib/replace/test/testsuite.o lib/replace/test/os2_delete.o \
 RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/display.o \
              rpcclient/cmd_lsarpc.o \
-             rpcclient/cmd_wkssvc.o \
              rpcclient/cmd_samr.o \
+	     rpcclient/cmd_wkssvc.o \
              rpcclient/cmd_srvsvc.o \
              rpcclient/cmd_netlogon.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
