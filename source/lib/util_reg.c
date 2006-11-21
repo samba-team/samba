@@ -69,7 +69,7 @@ const char *reg_type_lookup(uint32 type)
 }
 
 NTSTATUS reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
-			   int *num_values, char ***values)
+			   uint32 *num_values, char ***values)
 {
 	const smb_ucs2_t *p = (const smb_ucs2_t *)buf;
 	*num_values = 0;
