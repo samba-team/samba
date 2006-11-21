@@ -8,10 +8,11 @@
 	 <parameter moreinfo="none">stat cache</parameter> being used
 	to speed up case insensitive name mappings. This parameter is
 	the number of kilobyte (1024) units the stat cache can use.
-	The default is zero, which means unlimited. You should not need
-	to change this parameter.</para>
+	A value of zero means unlimited which is not advised aѕ it can
+	use a lot of memory.
+	You should not need to change this parameter.</para>
 </description>
 <related>stat cache</related>
-<value type="default">0</value>
-<value type="example">1024</value>
+<value type="default">1024</value>
+<value type="example">100</value>
 </samba:parameter>
