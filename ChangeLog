@@ -1,3 +1,18 @@
+2006-11-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/log.c (krb5_get_warn_dest): return warn_dest from
+	krb5_context
+
+	* lib/krb5/krb5_warn.3: document krb5_[gs]et_warn_dest
+
+	* lib/krb5/krb5.h: Drop KRB5_KU_TGS_IMPERSONATE.
+
+	* kdc/krb5tgs.c: Use KRB5_KU_OTHER_CKSUM for the impersonate
+	checksum.
+
+	* lib/krb5/get_cred.c: Use KRB5_KU_OTHER_CKSUM for the impersonate
+	checksum.
+	
 2006-11-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/verify_user.c: Make krb5_get_init_creds_opt_free take a
