@@ -169,7 +169,7 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 
 		classes[i] = NULL;
 
-		if ((pclass_buf) &&
+		if (pclass_buf && pclass_buf->name &&
 		    (!(classes[i] = talloc_strdup(classes,
 						  pclass_buf->name)))) {
 			status = NT_STATUS_NO_MEMORY;
@@ -912,31 +912,21 @@ out:
 /********************************************************************
 ********************************************************************/
 
-static int net_help_registry( int argc, const char **argv )
-{
-	d_printf("net rpc registry enumerate <path> [recurse]  Enumerate the subkeya and values for a given registry path\n");
-	d_printf("net rpc registry save <path> <file>          Backup a registry tree to a file on the server\n");
-	d_printf("net rpc registry dump <file>                 Dump the contents of a registry file to stdout\n");
-	
-	return -1;
-}
-
-/********************************************************************
-********************************************************************/
-
 int net_rpc_registry(int argc, const char **argv) 
 {
-	struct functable func[] = {
-		{"enumerate", rpc_registry_enumerate},
-		{"setvalue",  rpc_registry_setvalue},
-		{"save",      rpc_registry_save},
-		{"dump",      rpc_registry_dump},
-		{"copy",      rpc_registry_copy},
-		{NULL, NULL}
+	struct functable2 func[] = {
+		{ "enumerate", rpc_registry_enumerate,
+		  "Enumerate registry keys and values" },
+		{ "setvalue",  rpc_registry_setvalue,
+		  "Set a new registry value" },
+		{ "save", rpc_registry_save,
+		  "Save a registry file" },
+		{ "dump", rpc_registry_dump,
+		  "Dump a registry file" },
+		{ "copy", rpc_registry_copy,
+		  "Copy a registry file" },
+		{NULL, NULL, NULL}
 	};
 	
-	if ( argc )
-		return net_run_function( argc, argv, func, net_help_registry );
-		
-	return net_help_registry( argc, argv );
+	return net_run_function2(argc, argv, "net rpc registry", func);
 }
