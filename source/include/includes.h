@@ -677,10 +677,6 @@ typedef int BOOL;
 #include "idmap.h"
 #include "client.h"
 
-#ifdef WITH_SMBWRAPPER
-#include "smbw.h"
-#endif
-
 #include "session.h"
 #include "asn_1.h"
 #include "popt.h"
