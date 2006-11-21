@@ -23,55 +23,6 @@
 #include "regfio.h"
 #include "reg_objects.h"
 
-/********************************************************************
-********************************************************************/
-
-#if 0
-void dump_regval_buffer( uint32 type, REGVAL_BUFFER *buffer )
-{
-	pstring string;
-	uint32 value;
-	
-	switch (type) {
-	case REG_SZ:
-		rpcstr_pull( string, buffer->buffer, sizeof(string), -1, STR_TERMINATE );
-		d_printf("%s\n", string);
-		break;
-	case REG_MULTI_SZ: {
-		int i, num_values;
-		char **values;
-
-		d_printf("\n");
-
-		if (!NT_STATUS_IS_OK(reg_pull_multi_sz(NULL, buffer->buffer,
-						       buffer->buf_len,
-						       &num_values,
-						       &values))) {
-			d_printf("reg_pull_multi_sz failed\n");
-			break;
-		}
-
-		for (i=0; i<num_values; i++) {
-			d_printf("%s\n", values[i]);
-		}
-		TALLOC_FREE(values);
-		break;
-	}
-	case REG_DWORD:
-		value = IVAL( buffer->buffer, 0 );
-		d_printf( "0x%x\n", value );
-		break;
-	case REG_BINARY:
-		d_printf("\n");
-		break;
-	
-	
-	default:
-		d_printf( "\tUnknown type [%d]\n", type );
-	}
-}
-#endif
-
 static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 				  struct rpc_pipe_client *pipe_hnd,
 				  struct policy_handle *key_hnd,
