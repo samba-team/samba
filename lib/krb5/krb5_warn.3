@@ -47,6 +47,7 @@
 .Nm krb5_have_error_string ,
 .Nm krb5_set_error_string ,
 .Nm krb5_set_warn_dest ,
+.Nm krb5_get_warn_dest ,
 .Nm krb5_vabort ,
 .Nm krb5_vabortx ,
 .Nm krb5_verr ,
@@ -92,6 +93,10 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Ft krb5_error_code
 .Fn krb5_set_warn_dest "krb5_context context" "krb5_log_facility *facility"
 .Ft "char *"
+.Ft krb5_log_facility *
+.Fo krb5_get_warn_dest
+.Fa "krb5_context context"
+.Fc
 .Fn krb5_get_err_text "krb5_context context" "krb5_error_code code"
 .Ft char*
 .Fn krb5_get_error_string "krb5_context context"
@@ -190,6 +195,16 @@ In either case, the error message in the context is consumed and must
 be freed using
 .Fn krb5_free_error_string
 by the caller.
+.Pp
+.Fn krb5_set_warn_dest
+and
+.Fn krb5_get_warn_dest
+sets and get the log context that is used by
+.Fn krb5_warn
+and friends.  By using this the application can control where the
+output should go.  For example, this is imperative to inetd servers
+where logging status and error message will end up on the output
+stream to the client.
 .Sh EXAMPLES
 Below is a simple example how to report error messages from the
 Kerberos library in an application.
