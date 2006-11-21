@@ -203,3 +203,9 @@ krb5_set_warn_dest(krb5_context context, krb5_log_facility *fac)
     context->warn_dest = fac;
     return 0;
 }
+
+krb5_log_facility * KRB5_LIB_FUNCTION
+krb5_get_warn_dest(krb5_context context)
+{
+    return context->warn_dest;
+}
