@@ -216,8 +216,6 @@ typedef enum krb5_key_usage {
     /* Keyusage for the server referral in a TGS req */
     KRB5_KU_SAM_ENC_NONCE_SAD = 27,
     /* Encryption of the SAM-NONCE-OR-SAD field */
-    KRB5_KU_TGS_IMPERSONATE = -17,
-    /* Checksum type used in the impersonate field */
     KRB5_KU_DIGEST_ENCRYPT = -18,
     /* Encryption key usage used in the digest encryption field */
     KRB5_KU_DIGEST_OPAQUE = -19,
