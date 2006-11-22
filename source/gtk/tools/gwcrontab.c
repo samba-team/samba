@@ -134,7 +134,7 @@ void on_new_activate (GtkMenuItem *menuitem, gpointer user_data)
 	talloc_free(mem_ctx);
 	gtk_widget_destroy(d);
 	
-	d = gtk_message_dialog_new (GTK_WINDOW(mainwin), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Job Id: %d", r.out.job_id);
+	d = gtk_message_dialog_new (GTK_WINDOW(mainwin), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Job Id: %d", *r.out.job_id);
 	gtk_dialog_run(GTK_DIALOG(d));
 	gtk_widget_destroy(d);
 	update_joblist();
