@@ -1901,7 +1901,6 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	{
 		char simple_pass[9];
 		char *v = generate_random_str(mem_ctx, 1);
-		int i;
 
 		ZERO_STRUCT(simple_pass);
 		memset(simple_pass, *v, sizeof(simple_pass) - 1);
