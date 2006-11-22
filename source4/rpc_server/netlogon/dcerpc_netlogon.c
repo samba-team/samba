@@ -905,7 +905,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, 
 			   &ref_res, ref_attrs, 
 			   "(&(objectClass=crossRef)(ncName=%s))", 
-			   ldb_dn_linearize(mem_ctx, res1[0]->dn));
+			   ldb_dn_get_linearized(res1[0]->dn));
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1151,7 +1151,7 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 
 	ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &ref_res, ref_attrs,
 			   "(&(objectClass=crossRef)(ncName=%s))",
-			   ldb_dn_linearize(mem_ctx, dom_res[0]->dn));
+			   ldb_dn_get_linearized(dom_res[0]->dn));
 	if (ret == -1) {
 		return WERR_GENERAL_FAILURE;
 	}

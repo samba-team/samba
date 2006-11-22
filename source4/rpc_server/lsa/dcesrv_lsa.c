@@ -338,7 +338,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	talloc_free(dom_res);
 
 	ref_filter = talloc_asprintf(state, "(&(objectclass=crossRef)(ncName=%s))", 
-				     ldb_dn_linearize(mem_ctx, state->domain_dn)); 
+				     ldb_dn_get_linearized(state->domain_dn)); 
 	if (!ref_filter) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -829,7 +829,7 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 	
 	if (ret < 0 || ret > 1) {
 		DEBUG(0,("Found %d records matching DN %s\n", ret,
-			 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
+			 ldb_dn_get_linearized(policy_state->system_dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
@@ -858,7 +858,7 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 	ret = ldb_add(trusted_domain_state->policy->sam_ldb, msg);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to create trusted_domain record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn), ldb_errstring(trusted_domain_state->policy->sam_ldb)));
+			 ldb_dn_get_linearized(msg->dn), ldb_errstring(trusted_domain_state->policy->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -922,7 +922,7 @@ static NTSTATUS lsa_OpenTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC
 	
 	if (ret != 1) {
 		DEBUG(0,("Found %d records matching DN %s\n", ret,
-			 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
+			 ldb_dn_get_linearized(policy_state->system_dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -988,7 +988,7 @@ static NTSTATUS lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce_call,
 	
 	if (ret != 1) {
 		DEBUG(0,("Found %d records matching DN %s\n", ret,
-			 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
+			 ldb_dn_get_linearized(policy_state->system_dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -2004,7 +2004,7 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 		}
 		DEBUG(3, ("Could not %s attributes from %s: %s", 
 			  ldb_flag == LDB_FLAG_MOD_DELETE ? "delete" : "add",
-			  ldb_dn_linearize(mem_ctx, msg->dn), ldb_errstring(state->sam_ldb)));
+			  ldb_dn_get_linearized(msg->dn), ldb_errstring(state->sam_ldb)));
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
@@ -2269,7 +2269,7 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	ret = samdb_add(secret_state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
 		DEBUG(0,("Failed to create secret record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn), 
+			 ldb_dn_get_linearized(msg->dn), 
 			 ldb_errstring(secret_state->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -2344,7 +2344,7 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		
 		if (ret != 1) {
 			DEBUG(0,("Found %d records matching DN %s\n", ret,
-				 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
+				 ldb_dn_get_linearized(policy_state->system_dn)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	
@@ -2369,7 +2369,7 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		
 		if (ret != 1) {
 			DEBUG(0,("Found %d records matching DN %s\n", ret,
-				 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
+				 ldb_dn_get_linearized(policy_state->system_dn)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	} 
@@ -2521,7 +2521,7 @@ static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 			
 			if (ret != 1) {
 				DEBUG(0,("Found %d records matching dn=%s\n", ret,
-					 ldb_dn_linearize(mem_ctx, secret_state->secret_dn)));
+					 ldb_dn_get_linearized(secret_state->secret_dn)));
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			}
 

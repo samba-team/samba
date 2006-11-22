@@ -89,7 +89,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 
 	if (ret == 0) {
 		DEBUG(3,("sam_search_user: Couldn't find user [%s\\%s] in samdb, under %s\n", 
-			 domain_name, account_name, ldb_dn_linearize(mem_ctx, domain_dn)));
+			 domain_name, account_name, ldb_dn_get_linearized(domain_dn)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -127,7 +127,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 		}
 
 		ret_domain = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &msgs_domain_ref, domain_ref_attrs,
-					  "(nCName=%s)", ldb_dn_linearize(msgs_tmp, msgs_tmp[0]->dn));
+					  "(nCName=%s)", ldb_dn_alloc_linearized(msgs_tmp, msgs_tmp[0]->dn));
 
 		if (ret_domain == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -135,13 +135,13 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 		
 		if (ret_domain == 0) {
 			DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n",
-				 ldb_dn_linearize(msgs_tmp, msgs_tmp[0]->dn)));
+				 ldb_dn_get_linearized(msgs_tmp[0]->dn)));
 			return NT_STATUS_NO_SUCH_USER;
 		}
 		
 		if (ret_domain > 1) {
 			DEBUG(0,("Found %d records matching domain [%s]\n", 
-				 ret_domain, ldb_dn_linearize(msgs_tmp, msgs_tmp[0]->dn)));
+				 ret_domain, ldb_dn_get_linearized(msgs_tmp[0]->dn)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 

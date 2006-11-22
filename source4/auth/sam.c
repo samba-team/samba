@@ -209,7 +209,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	group_ret = gendb_search(sam_ctx,
 				 tmp_ctx, NULL, &group_msgs, group_attrs,
 				 "(&(member=%s)(sAMAccountType=*))", 
-				 ldb_dn_linearize(tmp_ctx, msg->dn));
+				 ldb_dn_get_linearized(msg->dn));
 	if (group_ret == -1) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -336,7 +336,7 @@ _PUBLIC_ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	
 	/* grab domain info from the reference */
 	ret = gendb_search(sam_ctx, tmp_ctx, partitions_basedn, msgs_domain_ref, domain_ref_attrs,
-			   "(ncName=%s)", ldb_dn_linearize(tmp_ctx, domain_dn));
+			   "(ncName=%s)", ldb_dn_get_linearized(domain_dn));
 
 	if (ret != 1) {
 		talloc_free(tmp_ctx);

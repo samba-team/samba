@@ -119,7 +119,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		if (i == attribute->num_values) {
 			ldb_debug_set(module->ldb, LDB_DEBUG_FATAL, 
 				      "RDN mismatch on %s: %s (%s)", 
-				      ldb_dn_linearize(msg, msg->dn), rdn_name, rdn_val.data);
+				      ldb_dn_get_linearized(msg->dn), rdn_name, rdn_val.data);
 			talloc_free(down_req);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}

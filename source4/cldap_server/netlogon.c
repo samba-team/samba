@@ -87,12 +87,12 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 					 LDB_SCOPE_BASE, "objectClass=domain", 
 					 dom_attrs, &dom_ldb_result);
 			if (ret != LDB_SUCCESS) {
-				DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n", domain, ldb_dn_linearize(mem_ctx, dom_dn), ldb_errstring(cldapd->samctx)));
+				DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n", domain, ldb_dn_get_linearized(dom_dn), ldb_errstring(cldapd->samctx)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
 			talloc_steal(mem_ctx, dom_ldb_result);
 			if (dom_ldb_result->count != 1) {
-				DEBUG(2,("Error finding domain '%s'/'%s' in sam\n", domain, ldb_dn_linearize(mem_ctx, dom_dn)));
+				DEBUG(2,("Error finding domain '%s'/'%s' in sam\n", domain, ldb_dn_get_linearized(dom_dn)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
 			dom_res = dom_ldb_result->msgs;
@@ -108,10 +108,10 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 			/* try and find the domain */
 			ret = gendb_search(cldapd->samctx, mem_ctx, partitions_basedn, &ref_res, ref_attrs, 
 					   "(&(objectClass=crossRef)(ncName=%s))", 
-					   ldb_dn_linearize(mem_ctx, dom_res[0]->dn));
+					   ldb_dn_get_linearized(dom_res[0]->dn));
 			if (ret != 1) {
 				DEBUG(2,("Unable to find referece to '%s' in sam\n",
-					 ldb_dn_linearize(mem_ctx, dom_res[0]->dn)));
+					 ldb_dn_get_linearized(dom_res[0]->dn)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
 		}

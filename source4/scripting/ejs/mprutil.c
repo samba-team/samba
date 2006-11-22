@@ -166,7 +166,7 @@ static struct MprVar mprLdbMessage(struct ldb_context *ldb, struct ldb_message *
 	const char *multivalued[] = { "objectClass", "memberOf", "privilege", 
 					    "member", NULL };
 
-	var = mprObject(ldb_dn_linearize(msg, msg->dn));
+	var = mprObject(ldb_dn_alloc_linearized(msg, msg->dn));
 
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
@@ -213,7 +213,7 @@ static struct MprVar mprLdbMessage(struct ldb_context *ldb, struct ldb_message *
 
 	/* add the dn if it is not already specified */
 	if (mprGetProperty(&var, "dn", 0) == 0) {
-		mprSetVar(&var, "dn", mprString(ldb_dn_linearize(msg, msg->dn)));
+		mprSetVar(&var, "dn", mprString(ldb_dn_alloc_linearized(msg, msg->dn)));
 	}
 	
 	return var;		

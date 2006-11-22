@@ -73,7 +73,7 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 	if ( ! ldb_dn_add_base(service_dn, samdb_base_dn(ldb_ctx))) {
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	}
-	service_dn_str = ldb_dn_linearize(tmp_ctx, service_dn);
+	service_dn_str = ldb_dn_alloc_linearized(tmp_ctx, service_dn);
 	if ( ! service_dn_str) {
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	}
@@ -637,7 +637,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				       "%s", domain_filter);
 	} else {
 		ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res, domain_attrs,
-				       "(ncName=%s)", ldb_dn_linearize(mem_ctx, samdb_base_dn(sam_ctx)));
+				       "(ncName=%s)", ldb_dn_get_linearized(samdb_base_dn(sam_ctx)));
 	} 
 
 	switch (ldb_ret) {
@@ -701,7 +701,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	/* here we can use result_res[0] and domain_res[0] */
 	switch (format_desired) {
 	case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
-		info1->result_name	= ldb_dn_linearize(mem_ctx, result_res[0]->dn);
+		info1->result_name	= ldb_dn_alloc_linearized(mem_ctx, result_res[0]->dn);
 		W_ERROR_HAVE_NO_MEMORY(info1->result_name);
 
 		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
@@ -730,7 +730,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 
 		if (sid->num_auths == 4) {
 			ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res, domain_attrs,
-					       "(ncName=%s)", ldb_dn_linearize(mem_ctx, result_res[0]->dn));
+					       "(ncName=%s)", ldb_dn_get_linearized(result_res[0]->dn));
 			if (ldb_ret != 1) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 				return WERR_OK;
@@ -753,7 +753,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				return WERR_OK;
 			}
 			ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res2, domain_attrs,
-					       "(ncName=%s)", ldb_dn_linearize(mem_ctx, domain_res[0]->dn));
+					       "(ncName=%s)", ldb_dn_get_linearized(domain_res[0]->dn));
 			if (ldb_ret != 1) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 				return WERR_OK;

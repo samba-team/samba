@@ -239,7 +239,7 @@ static int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 		return -1;
 	}
 
-	out->data = (uint8_t *)ldb_dn_linearize(mem_ctx, dn);
+	out->data = (uint8_t *)ldb_dn_alloc_linearized(mem_ctx, dn);
 	if (out->data == NULL) {
 		goto done;
 	}

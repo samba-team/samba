@@ -434,7 +434,7 @@ NTSTATUS cli_credentials_update_all_keytabs(TALLOC_CTX *parent_ctx)
 			return NT_STATUS_NO_MEMORY;
 		}
 		cli_credentials_set_conf(creds);
-		filter = talloc_asprintf(mem_ctx, "dn=%s", ldb_dn_linearize(mem_ctx, msgs[i]->dn));
+		filter = talloc_asprintf(mem_ctx, "dn=%s", ldb_dn_get_linearized(msgs[i]->dn));
 		status = cli_credentials_set_secrets(creds, NULL, filter);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to read secrets for keytab update for %s\n", 

@@ -452,7 +452,7 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 	if (req->op.search.base == NULL) {
 		msg->r.SearchRequest.basedn = talloc_strdup(msg, "");
 	} else {
-		msg->r.SearchRequest.basedn  = ldb_dn_linearize(msg, req->op.search.base);
+		msg->r.SearchRequest.basedn  = ldb_dn_alloc_linearized(msg, req->op.search.base);
 	}
 	if (msg->r.SearchRequest.basedn == NULL) {
 		ldb_set_errstring(module->ldb, "Unable to determine baseDN");
@@ -504,7 +504,7 @@ static int ildb_add(struct ldb_module *module, struct ldb_request *req)
 
 	msg->type = LDAP_TAG_AddRequest;
 
-	msg->r.AddRequest.dn = ldb_dn_linearize(msg, req->op.add.message->dn);
+	msg->r.AddRequest.dn = ldb_dn_alloc_linearized(msg, req->op.add.message->dn);
 	if (msg->r.AddRequest.dn == NULL) {
 		talloc_free(msg);
 		return LDB_ERR_INVALID_DN_SYNTAX;
@@ -554,7 +554,7 @@ static int ildb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	msg->type = LDAP_TAG_ModifyRequest;
 
-	msg->r.ModifyRequest.dn = ldb_dn_linearize(msg, req->op.mod.message->dn);
+	msg->r.ModifyRequest.dn = ldb_dn_alloc_linearized(msg, req->op.mod.message->dn);
 	if (msg->r.ModifyRequest.dn == NULL) {
 		talloc_free(msg);
 		return LDB_ERR_INVALID_DN_SYNTAX;
@@ -602,7 +602,7 @@ static int ildb_delete(struct ldb_module *module, struct ldb_request *req)
 
 	msg->type = LDAP_TAG_DelRequest;
 	
-	msg->r.DelRequest.dn = ldb_dn_linearize(msg, req->op.del.dn);
+	msg->r.DelRequest.dn = ldb_dn_alloc_linearized(msg, req->op.del.dn);
 	if (msg->r.DelRequest.dn == NULL) {
 		talloc_free(msg);
 		return LDB_ERR_INVALID_DN_SYNTAX;
@@ -632,7 +632,7 @@ static int ildb_rename(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	msg->type = LDAP_TAG_ModifyDNRequest;
-	msg->r.ModifyDNRequest.dn = ldb_dn_linearize(msg, req->op.rename.olddn);
+	msg->r.ModifyDNRequest.dn = ldb_dn_alloc_linearized(msg, req->op.rename.olddn);
 	if (msg->r.ModifyDNRequest.dn == NULL) {
 		talloc_free(msg);
 		return LDB_ERR_INVALID_DN_SYNTAX;
@@ -648,8 +648,7 @@ static int ildb_rename(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	msg->r.ModifyDNRequest.newsuperior =
-		ldb_dn_linearize(msg,
-				 ldb_dn_get_parent(msg, req->op.rename.newdn));
+		ldb_dn_alloc_linearized(msg, ldb_dn_get_parent(msg, req->op.rename.newdn));
 	if (msg->r.ModifyDNRequest.newsuperior == NULL) {
 		talloc_free(msg);
 		return LDB_ERR_INVALID_DN_SYNTAX;

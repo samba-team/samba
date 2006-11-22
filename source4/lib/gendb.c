@@ -58,7 +58,7 @@ int gendb_search_v(struct ldb_context *ldb,
 		talloc_steal(mem_ctx, res->msgs);
 
 		DEBUG(6,("gendb_search_v: %s %s -> %d\n", 
-			 basedn?ldb_dn_linearize(mem_ctx,basedn):"NULL",
+			 basedn?ldb_dn_get_linearized(basedn):"NULL",
 			 expr?expr:"NULL", res->count));
 
 		ret = res->count;

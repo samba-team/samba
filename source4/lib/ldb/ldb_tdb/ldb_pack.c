@@ -85,11 +85,11 @@ int ltdb_pack_data(struct ldb_module *module,
 	struct ldb_context *ldb = module->ldb;
 	unsigned int i, j, real_elements=0;
 	size_t size;
-	char *dn;
+	const char *dn;
 	uint8_t *p;
 	size_t len;
 
-	dn = ldb_dn_linearize(ldb, message->dn);
+	dn = ldb_dn_get_linearized(message->dn);
 	if (dn == NULL) {
 		errno = ENOMEM;
 		return -1;
@@ -116,7 +116,6 @@ int ltdb_pack_data(struct ldb_module *module,
 	/* allocate it */
 	data->dptr = talloc_array(ldb, uint8_t, size);
 	if (!data->dptr) {
-		talloc_free(dn);
 		errno = ENOMEM;
 		return -1;
 	}
@@ -151,7 +150,6 @@ int ltdb_pack_data(struct ldb_module *module,
 		}
 	}
 
-	talloc_free(dn);
 	return 0;
 }
 

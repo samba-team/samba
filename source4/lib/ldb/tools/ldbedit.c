@@ -78,7 +78,7 @@ static int modify_record(struct ldb_context *ldb,
 
 	if (ldb_modify(ldb, mod) != 0) {
 		fprintf(stderr, "failed to modify %s - %s\n", 
-			ldb_dn_linearize(ldb, msg1->dn), ldb_errstring(ldb));
+			ldb_dn_get_linearized(msg1->dn), ldb_errstring(ldb));
 		return -1;
 	}
 
@@ -123,7 +123,7 @@ static int merge_edits(struct ldb_context *ldb,
 			}
 			if (ldb_add(ldb, msgs2[i]) != 0) {
 				fprintf(stderr, "failed to add %s - %s\n",
-					ldb_dn_linearize(ldb, msgs2[i]->dn),
+					ldb_dn_get_linearized(msgs2[i]->dn),
 					ldb_errstring(ldb));
 				return -1;
 			}
@@ -144,7 +144,7 @@ static int merge_edits(struct ldb_context *ldb,
 			}
 			if (ldb_delete(ldb, msgs1[i]->dn) != 0) {
 				fprintf(stderr, "failed to delete %s - %s\n",
-					ldb_dn_linearize(ldb, msgs1[i]->dn),
+					ldb_dn_get_linearized(msgs1[i]->dn),
 					ldb_errstring(ldb));
 				return -1;
 			}

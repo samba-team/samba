@@ -286,7 +286,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 
 	msg = ldif->msg;
 
-	ret = fprintf_fn(private_data, "dn: %s\n", ldb_dn_linearize(msg->dn, msg->dn));
+	ret = fprintf_fn(private_data, "dn: %s\n", ldb_dn_get_linearized(msg->dn));
 	CHECK_RET;
 
 	if (ldif->changetype != LDB_CHANGETYPE_NONE) {

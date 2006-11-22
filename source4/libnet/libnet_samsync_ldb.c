@@ -79,7 +79,7 @@ static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 		*error_string = talloc_asprintf(mem_ctx, 
 						"Failed to find DN for "
 						"ForeignSecurityPrincipal container under %s",
-						ldb_dn_linearize(mem_ctx, state->base_dn[SAM_DATABASE_DOMAIN]));
+						ldb_dn_get_linearized(state->base_dn[SAM_DATABASE_DOMAIN]));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
@@ -104,7 +104,7 @@ static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 	if (ret != 0) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to create foreignSecurityPrincipal "
 						"record %s: %s",
-						ldb_dn_linearize(mem_ctx, msg->dn),
+						ldb_dn_get_linearized(msg->dn),
 						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -298,7 +298,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		} else if (ret == 0) {
 			*error_string = talloc_asprintf(mem_ctx, "User exists in samsync but not in remote LDAP domain! (base: %s, SID: %s)", 
-							ldb_dn_linearize(mem_ctx, state->base_dn[database]),
+							ldb_dn_get_linearized(state->base_dn[database]),
 							dom_sid_string(mem_ctx, user_sid));
 			return NT_STATUS_NO_SUCH_USER;
 		} else if (ret > 1) {
@@ -436,8 +436,8 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 			ret = samdb_add(state->sam_ldb, mem_ctx, msg);
 			if (ret != 0) {
 				*error_string = talloc_asprintf(mem_ctx, "Failed to create user record.  Tried both %s and %s: %s",
-								ldb_dn_linearize(mem_ctx, first_try_dn),
-								ldb_dn_linearize(mem_ctx, msg->dn),
+								ldb_dn_get_linearized(first_try_dn),
+								ldb_dn_get_linearized(msg->dn),
 								ldb_errstring(state->sam_ldb));
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			}
@@ -446,7 +446,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 		ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to modify user record %s: %s",
-							ldb_dn_linearize(mem_ctx, msg->dn),
+							ldb_dn_get_linearized(msg->dn),
 							ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -488,7 +488,7 @@ static NTSTATUS samsync_ldb_delete_user(TALLOC_CTX *mem_ctx,
 	ret = samdb_delete(state->sam_ldb, mem_ctx, msgs[0]->dn);
 	if (ret != 0) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to delete user record %s: %s",
-						ldb_dn_linearize(mem_ctx, msgs[0]->dn),
+						ldb_dn_get_linearized(msgs[0]->dn),
 						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -577,7 +577,7 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 		ret = samdb_add(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to create group record %s: %s",
-							ldb_dn_linearize(mem_ctx, msg->dn),
+							ldb_dn_get_linearized(msg->dn),
 							ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -585,7 +585,7 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 		ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to modify group record %s: %s",
-							ldb_dn_linearize(mem_ctx, msg->dn),
+							ldb_dn_get_linearized(msg->dn),
 							ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -627,7 +627,7 @@ static NTSTATUS samsync_ldb_delete_group(TALLOC_CTX *mem_ctx,
 	ret = samdb_delete(state->sam_ldb, mem_ctx, msgs[0]->dn);
 	if (ret != 0) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to delete group record %s: %s",
-						ldb_dn_linearize(mem_ctx, msgs[0]->dn),
+						ldb_dn_get_linearized(msgs[0]->dn),
 						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -691,7 +691,7 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 		} else if (ret > 1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		} else {
-			samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "member", ldb_dn_linearize(mem_ctx, msgs[0]->dn));
+			samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "member", ldb_dn_alloc_linearized(mem_ctx, msgs[0]->dn));
 		}
 		
 		talloc_free(msgs);
@@ -700,7 +700,7 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to modify group record %s: %s",
-						ldb_dn_linearize(mem_ctx, msg->dn),
+						ldb_dn_get_linearized(msg->dn),
 						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -791,7 +791,7 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 		ret = samdb_add(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to create alias record %s: %s",
-							ldb_dn_linearize(mem_ctx, msg->dn),
+							ldb_dn_get_linearized(msg->dn),
 							ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -799,7 +799,7 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 		ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to modify alias record %s: %s",
-							ldb_dn_linearize(mem_ctx, msg->dn),
+							ldb_dn_get_linearized(msg->dn),
 							ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -836,7 +836,7 @@ static NTSTATUS samsync_ldb_delete_alias(TALLOC_CTX *mem_ctx,
 	ret = samdb_delete(state->sam_ldb, mem_ctx, msgs[0]->dn);
 	if (ret != 0) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to delete alias record %s: %s",
-						ldb_dn_linearize(mem_ctx, msgs[0]->dn),
+						ldb_dn_get_linearized(msgs[0]->dn),
 						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -910,7 +910,7 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 		} else {
 			alias_member_dn = msgs[0]->dn;
 		}
-		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "member", ldb_dn_linearize(mem_ctx, alias_member_dn));
+		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "member", ldb_dn_alloc_linearized(mem_ctx, alias_member_dn));
 	
 		talloc_free(msgs);
 	}
@@ -918,7 +918,7 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to modify group record %s: %s",
-						ldb_dn_linearize(mem_ctx, msg->dn),
+						ldb_dn_get_linearized(msg->dn),
 						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -982,7 +982,7 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to modify privilege record %s",
-						ldb_dn_linearize(mem_ctx, msg->dn));
+						ldb_dn_get_linearized(msg->dn));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1031,7 +1031,7 @@ static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
 	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to modify privilege record %s",
-						ldb_dn_linearize(mem_ctx, msg->dn));
+						ldb_dn_get_linearized(msg->dn));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
