@@ -46,7 +46,6 @@ static const char *builtin_registry_paths[] = {
 	KEY_PRINTING,
 	KEY_SHARES,
 	KEY_EVENTLOG,
-	KEY_SMBCONF,
 	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib",
 	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib\\009",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Monitors",
