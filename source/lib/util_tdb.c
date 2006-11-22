@@ -302,6 +302,14 @@ int tdb_store_bystring(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int 
 	return tdb_store(tdb, key, data, flags);
 }
 
+int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
+			     TDB_DATA data, int flags)
+{
+	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
+	
+	return tdb_trans_store(tdb, key, data, flags);
+}
+
 /****************************************************************************
  Fetch a buffer using a null terminated string key.  Don't forget to call
  free() on the result dptr.

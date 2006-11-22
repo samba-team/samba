@@ -366,15 +366,20 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 {
 	int num_subkeys, i;
 	pstring path;
-	REGSUBKEY_CTR *subkeys, *old_subkeys;
+	REGSUBKEY_CTR *subkeys = NULL, *old_subkeys = NULL;
 	char *oldkeyname;
 	
+	if ( tdb_transaction_start( tdb_reg ) == -1 ) {
+		DEBUG(0, ("regdb_store_keys: tdb_transaction_start failed\n"));
+		return False;
+	}
+
 	/* fetch a list of the old subkeys so we can determine if any were
 	 * deleted */
 	
 	if ( !(old_subkeys = TALLOC_ZERO_P( ctr, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
-		return False;
+		goto fail;
 	}
 
 	regdb_fetch_keys( key, old_subkeys );
@@ -383,8 +388,8 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 	
 	if ( !regdb_store_keys_internal( key, ctr ) ) {
 		DEBUG(0,("regdb_store_keys: Failed to store new subkey list "
-			 "for parent [%s}\n", key ));
-		return False;
+			 "for parent [%s]\n", key ));
+		goto fail;
 	}
 	
 	/* now delete removed keys */
@@ -392,15 +397,30 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 	num_subkeys = regsubkey_ctr_numkeys( old_subkeys );
 	for ( i=0; i<num_subkeys; i++ ) {
 		oldkeyname = regsubkey_ctr_specific_key( old_subkeys, i );
-		if ( !regsubkey_ctr_key_exists( ctr, oldkeyname ) ) {
-			pstr_sprintf( path, "%s%c%s", key, '/', oldkeyname );
-			normalize_reg_path( path );
-			tdb_delete_bystring( tdb_reg, path );
-			pstr_sprintf( path, "%s/%s/%s", VALUE_PREFIX, key,
-				      oldkeyname );
-			normalize_reg_path( path );
-			tdb_delete_bystring( tdb_reg, path );
+
+		if ( regsubkey_ctr_key_exists( ctr, oldkeyname ) ) {
+			/*
+			 * It's still around, don't delete
+			 */
+
+			continue;
 		}
+
+		pstr_sprintf( path, "%s/%s", key, oldkeyname );
+		normalize_reg_path( path );
+		if (tdb_delete_bystring( tdb_reg, path ) == -1) {
+			DEBUG(1, ("Deleting %s failed\n", path));
+			goto fail;
+		}
+		
+		pstr_sprintf( path, "%s/%s/%s", VALUE_PREFIX, key,
+			      oldkeyname );
+		normalize_reg_path( path );
+
+		/*
+		 * Ignore errors here, we might have no values around
+		 */
+		tdb_delete_bystring( tdb_reg, path );
 	}
 
 	TALLOC_FREE( old_subkeys );
@@ -409,12 +429,12 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 	
 	num_subkeys = regsubkey_ctr_numkeys( ctr );
 	for ( i=0; i<num_subkeys; i++ ) {
-		pstr_sprintf( path, "%s%c%s", key, '/',
+		pstr_sprintf( path, "%s/%s", key,
 			      regsubkey_ctr_specific_key( ctr, i ) );
 
 		if ( !(subkeys = TALLOC_ZERO_P( ctr, REGSUBKEY_CTR )) ) {
 			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
-			return False;
+			goto fail;
 		}
 
 		if ( regdb_fetch_keys( path, subkeys ) == -1 ) {
@@ -422,15 +442,29 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 			if ( !regdb_store_keys_internal( path, subkeys ) ) {
 				DEBUG(0,("regdb_store_keys: Failed to store "
 					 "new record for key [%s}\n", path ));
-				TALLOC_FREE( subkeys );
-				return False;
+				goto fail;
 			}
 		}
 
 		TALLOC_FREE( subkeys );
 	}
-	
+
+	if (tdb_transaction_commit( tdb_reg ) == -1) {
+		DEBUG(0, ("regdb_store_keys: Could not commit transaction\n"));
+		return False;
+	}
+
 	return True;
+
+ fail:
+	TALLOC_FREE( old_subkeys );
+	TALLOC_FREE( subkeys );
+
+	if (tdb_transaction_cancel( tdb_reg ) == -1) {
+		smb_panic("regdb_store_keys: tdb_transaction_cancel failed\n");
+	}
+
+	return False;
 }
 
 
@@ -620,7 +654,7 @@ BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
 	pstr_sprintf( keystr, "%s/%s", VALUE_PREFIX, key );
 	normalize_reg_path( keystr );
 	
-	ret = tdb_store_bystring(tdb_reg, keystr, data, TDB_REPLACE);
+	ret = tdb_trans_store_bystring(tdb_reg, keystr, data, TDB_REPLACE);
 	
 	SAFE_FREE( data.dptr );
 	
