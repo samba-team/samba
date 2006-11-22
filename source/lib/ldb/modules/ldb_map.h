@@ -135,8 +135,8 @@ struct ldb_map_context {
 	const char * const *wildcard_attributes;
 
 	/* struct ldb_context *mapped_ldb; */
-	const struct ldb_dn *local_base_dn;
-	const struct ldb_dn *remote_base_dn;
+	struct ldb_dn *local_base_dn;
+	struct ldb_dn *remote_base_dn;
 };
 
 /* Global private data */

@@ -49,6 +49,6 @@ else
     ret=$?
 fi
 
-$LDBDIR/tests/kill_slapd.sh
+#$LDBDIR/tests/kill_slapd.sh
 
 exit $ret

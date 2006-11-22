@@ -51,7 +51,7 @@ static void cldapd_rootdse_fill(struct cldapd_server *cldapd,
 	int ret = 0;
 	int ldb_ret = -1;
 
-	basedn = ldb_dn_explode(mem_ctx, "");
+	basedn = ldb_dn_new(mem_ctx, cldapd->samctx, NULL);
 	if (basedn == NULL) goto nomem;
 	scope = LDB_SCOPE_BASE;
 

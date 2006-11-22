@@ -126,6 +126,7 @@ int ldb_msg_add_empty(	struct ldb_message *msg,
 {
 	struct ldb_message_element *els;
 
+	/* FIXME: we should probably leave this to the schema module to check */
 	if (! ldb_valid_attr_name(attr_name)) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -411,17 +412,24 @@ const char *ldb_msg_find_attr_as_string(const struct ldb_message *msg,
 	return (const char *)v->data;
 }
 
-struct ldb_dn *ldb_msg_find_attr_as_dn(void *mem_ctx,
+struct ldb_dn *ldb_msg_find_attr_as_dn(struct ldb_context *ldb,
+				       void *mem_ctx,
 				       const struct ldb_message *msg,
 				       const char *attr_name)
 {
+	struct ldb_dn *res_dn;
 	const struct ldb_val *v;
 
 	v = ldb_msg_find_ldb_val(msg, attr_name);
 	if (!v || !v->data) {
 		return NULL;
 	}
-	return ldb_dn_explode(mem_ctx, (const char *)v->data);
+	res_dn = ldb_dn_new(mem_ctx, ldb, (const char *)v->data);
+	if ( ! ldb_dn_validate(res_dn)) {
+		talloc_free(res_dn);
+		return NULL;
+	}
+	return res_dn;
 }
 
 /*

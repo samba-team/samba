@@ -280,8 +280,8 @@ static WERROR drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 				return WERR_NOMEM;
 			}
 
-			msg->dn = ldb_dn_explode(msg, req->object_dn);
-			if (msg->dn == NULL) {
+			msg->dn = ldb_dn_new(msg, b_state->sam_ctx, req->object_dn);
+			if ( ! ldb_dn_validate(msg->dn)) {
 				r->out.res.res1.status = WERR_OK;
 				return WERR_OK;
 			}

@@ -211,6 +211,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const char *dns_domain;
 	const char *nt4_domain;
 	const char *FQDN_1779_name;
+	struct ldb_context *ldb;
 	struct ldb_dn *FQDN_1779_dn;
 	struct ldb_dn *realm_dn;
 	const char *realm_dn_str;
@@ -318,9 +319,11 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!ret) {
 		return ret;
 	}
+
+	ldb = ldb_init(mem_ctx);
 	
 	realm_dn_str = r.out.ctr.ctr1->array[0].result_name;
-	realm_dn =  ldb_dn_explode(mem_ctx, realm_dn_str);
+	realm_dn =  ldb_dn_new(mem_ctx, ldb, realm_dn_str);
 	realm_canonical = ldb_dn_canonical_string(mem_ctx, realm_dn);
 
 	if (strcmp(realm_canonical, 
@@ -399,7 +402,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	FQDN_1779_name = r.out.ctr.ctr1->array[0].result_name;
 
-	FQDN_1779_dn = ldb_dn_explode(mem_ctx, FQDN_1779_name);
+	FQDN_1779_dn = ldb_dn_new(mem_ctx, ldb, FQDN_1779_name);
 
 	canonical_name = ldb_dn_canonical_string(mem_ctx, FQDN_1779_dn);
 	canonical_ex_name = ldb_dn_canonical_ex_string(mem_ctx, FQDN_1779_dn);

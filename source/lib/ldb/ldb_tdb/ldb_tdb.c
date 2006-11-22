@@ -118,7 +118,7 @@ struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module
   note that the key for a record can depend on whether the 
   dn refers to a case sensitive index record or not
 */
-struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn)
+struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
 {
 	struct ldb_context *ldb = module->ldb;
 	TDB_DATA key;
@@ -137,14 +137,12 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn)
 	     the rest
 	*/
 
-	dn_folded = ldb_dn_linearize_casefold(ldb, ldb, dn);
+	dn_folded = ldb_dn_get_casefold(dn);
 	if (!dn_folded) {
 		goto failed;
 	}
 
 	key_str = talloc_asprintf(ldb, "DN=%s", dn_folded);
-
-	talloc_free(dn_folded);
 
 	if (!key_str) {
 		goto failed;
@@ -194,7 +192,7 @@ int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *m
   we've made a modification to a dn - possibly reindex and 
   update sequence number
 */
-static int ltdb_modified(struct ldb_module *module, const struct ldb_dn *dn)
+static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 {
 	int ret = 0;
 
@@ -330,7 +328,7 @@ done:
   delete a record from the database, not updating indexes (used for deleting
   index records)
 */
-int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn)
+int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
 {
 	struct ltdb_private *ltdb =
 		talloc_get_type(module->private_data, struct ltdb_private);
@@ -352,7 +350,7 @@ int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn)
 	return ret;
 }
 
-static int ltdb_delete_internal(struct ldb_module *module, const struct ldb_dn *dn)
+static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 {
 	struct ldb_message *msg;
 	int ret;
@@ -936,7 +934,7 @@ static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *r
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct ldb_message *msg = NULL;
-	struct ldb_dn *dn = ldb_dn_explode(tmp_ctx, LTDB_BASEINFO);
+	struct ldb_dn *dn = ldb_dn_new(tmp_ctx, module->ldb, LTDB_BASEINFO);
 	int tret;
 
 	if (tmp_ctx == NULL) {

@@ -153,7 +153,7 @@ int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *op
   pet hates about ldapsearch, which is that you have to get a long,
   complex basedn right to make any use of it.
 */
-static const struct ldb_dn *ldb_set_default_basedn(struct ldb_context *ldb)
+static struct ldb_dn *ldb_set_default_basedn(struct ldb_context *ldb)
 {
 	TALLOC_CTX *tmp_ctx;
 	int ret;
@@ -167,11 +167,11 @@ static const struct ldb_dn *ldb_set_default_basedn(struct ldb_context *ldb)
 	}
 
 	tmp_ctx = talloc_new(ldb);
-	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx), LDB_SCOPE_BASE, 
+	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, NULL), LDB_SCOPE_BASE, 
 			 "(objectClass=*)", attrs, &res);
 	if (ret == LDB_SUCCESS) {
 		if (res->count == 1) {
-			basedn = ldb_msg_find_attr_as_dn(ldb, res->msgs[0], "defaultNamingContext");
+			basedn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0], "defaultNamingContext");
 			ldb_set_opaque(ldb, "default_baseDN", basedn);
 		}
 		talloc_free(res);
@@ -181,9 +181,9 @@ static const struct ldb_dn *ldb_set_default_basedn(struct ldb_context *ldb)
 	return basedn;
 }
 
-const struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb)
+struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb)
 {
-	return (const struct ldb_dn *)ldb_get_opaque(ldb, "default_baseDN");
+	return (struct ldb_dn *)ldb_get_opaque(ldb, "default_baseDN");
 }
 
 /* 
@@ -582,7 +582,7 @@ error:
 int ldb_build_search_req(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
 			void *mem_ctx,
-			const struct ldb_dn *base,
+			struct ldb_dn *base,
 	       		enum ldb_scope scope,
 			const char *expression,
 			const char * const *attrs,
@@ -602,7 +602,7 @@ int ldb_build_search_req(struct ldb_request **ret_req,
 
 	req->operation = LDB_SEARCH;
 	if (base == NULL) {
-		req->op.search.base = ldb_dn_new(req);
+		req->op.search.base = ldb_dn_new(req, ldb, NULL);
 	} else {
 		req->op.search.base = base;
 	}
@@ -685,7 +685,7 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 int ldb_build_del_req(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
 			void *mem_ctx,
-			const struct ldb_dn *dn,
+			struct ldb_dn *dn,
 			struct ldb_control **controls,
 			void *context,
 			ldb_request_callback_t callback)
@@ -714,8 +714,8 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 int ldb_build_rename_req(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
 			void *mem_ctx,
-			const struct ldb_dn *olddn,
-			const struct ldb_dn *newdn,
+			struct ldb_dn *olddn,
+			struct ldb_dn *newdn,
 			struct ldb_control **controls,
 			void *context,
 			ldb_request_callback_t callback)
@@ -747,7 +747,7 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
   defaultNamingContext from the rootDSE if available.
 */
 int ldb_search(struct ldb_context *ldb, 
-	       const struct ldb_dn *base,
+	       struct ldb_dn *base,
 	       enum ldb_scope scope,
 	       const char *expression,
 	       const char * const *attrs, 
@@ -861,7 +861,7 @@ int ldb_modify(struct ldb_context *ldb,
 /*
   delete a record from the database
 */
-int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
+int ldb_delete(struct ldb_context *ldb, struct ldb_dn *dn)
 {
 	struct ldb_request *req;
 	int ret;
@@ -886,7 +886,7 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 /*
   rename a record in the database
 */
-int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
+int ldb_rename(struct ldb_context *ldb, struct ldb_dn *olddn, struct ldb_dn *newdn)
 {
 	struct ldb_request *req;
 	int ret;

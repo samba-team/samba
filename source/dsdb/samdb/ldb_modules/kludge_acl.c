@@ -231,7 +231,7 @@ static int kludge_acl_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(module->ldb, ldb_dn_explode(mem_ctx, "@KLUDGEACL"),
+	ret = ldb_search(module->ldb, ldb_dn_new(mem_ctx, module->ldb, "@KLUDGEACL"),
 			 LDB_SCOPE_BASE,
 			 NULL, attrs,
 			 &res);

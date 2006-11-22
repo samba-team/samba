@@ -698,7 +698,7 @@ struct ldb_handle {
 };
 
 struct ldb_search {
-	const struct ldb_dn *base;
+	struct ldb_dn *base;
 	enum ldb_scope scope;
 	const struct ldb_parse_tree *tree;
 	const char * const *attrs;
@@ -714,12 +714,12 @@ struct  ldb_modify {
 };
 
 struct ldb_delete {
-	const struct ldb_dn *dn;
+	struct ldb_dn *dn;
 };
 
 struct ldb_rename {
-	const struct ldb_dn *olddn;
-	const struct ldb_dn *newdn;
+	struct ldb_dn *olddn;
+	struct ldb_dn *newdn;
 };
 
 struct ldb_register_control {
@@ -727,7 +727,7 @@ struct ldb_register_control {
 };
 
 struct ldb_register_partition {
-	const struct ldb_dn *dn;
+	struct ldb_dn *dn;
 };
 
 struct ldb_sequence_number {
@@ -825,7 +825,7 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
   return an automatic baseDN from the defaultNamingContext of the rootDSE
   This value have been set in an opaque pointer at connection time
 */
-const struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb);
+struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb);
 
 
 /**
@@ -868,7 +868,7 @@ int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct l
 int ldb_build_search_req(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
 			void *mem_ctx,
-			const struct ldb_dn *base,
+			struct ldb_dn *base,
 	       		enum ldb_scope scope,
 			const char *expression,
 			const char * const *attrs,
@@ -937,7 +937,7 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 int ldb_build_del_req(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
 			void *mem_ctx,
-			const struct ldb_dn *dn,
+			struct ldb_dn *dn,
 			struct ldb_control **controls,
 			void *context,
 			ldb_request_callback_t callback);
@@ -960,8 +960,8 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 int ldb_build_rename_req(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
 			void *mem_ctx,
-			const struct ldb_dn *olddn,
-			const struct ldb_dn *newdn,
+			struct ldb_dn *olddn,
+			struct ldb_dn *newdn,
 			struct ldb_control **controls,
 			void *context,
 			ldb_request_callback_t callback);
@@ -984,7 +984,7 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
   \note use talloc_free() to free the ldb_result returned
 */
 int ldb_search(struct ldb_context *ldb, 
-	       const struct ldb_dn *base,
+	       struct ldb_dn *base,
 	       enum ldb_scope scope,
 	       const char *expression,
 	       const char * const *attrs, struct ldb_result **res);
@@ -993,7 +993,7 @@ int ldb_search(struct ldb_context *ldb,
   like ldb_search() but takes a parse tree
 */
 int ldb_search_bytree(struct ldb_context *ldb, 
-		      const struct ldb_dn *base,
+		      struct ldb_dn *base,
 		      enum ldb_scope scope,
 		      struct ldb_parse_tree *tree,
 		      const char * const *attrs, struct ldb_result **res);
@@ -1043,7 +1043,7 @@ int ldb_modify(struct ldb_context *ldb,
   \return result code (LDB_SUCCESS if the record was renamed as
   requested, otherwise a failure code)
 */
-int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
+int ldb_rename(struct ldb_context *ldb, struct ldb_dn *olddn, struct ldb_dn *newdn);
 
 /**
   Delete a record from the database
@@ -1057,7 +1057,7 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
   \return result code (LDB_SUCCESS if the record was deleted,
   otherwise a failure code)
 */
-int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn);
+int ldb_delete(struct ldb_context *ldb, struct ldb_dn *dn);
 
 /**
   start a transaction
@@ -1269,38 +1269,41 @@ int ldb_attrib_add_handlers(struct ldb_context *ldb,
 
 /* The following definitions come from lib/ldb/common/ldb_dn.c  */
 
-int ldb_dn_is_special(const struct ldb_dn *dn);
-int ldb_dn_check_special(const struct ldb_dn *dn, const char *check);
+struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *dn);
+struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx, struct ldb_context *ldb, const char *new_fmt, ...);
+bool ldb_dn_validate(struct ldb_dn *dn);
+
 char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
-struct ldb_dn *ldb_dn_new(void *mem_ctx);
-struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
-struct ldb_dn *ldb_dn_explode_or_special(void *mem_ctx, const char *dn);
-char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *edn);
-char *ldb_dn_linearize_casefold(struct ldb_context *ldb, void *mem_ctx, const struct ldb_dn *edn);
-int ldb_dn_compare_base(struct ldb_context *ldb, const struct ldb_dn *base, const struct ldb_dn *dn);
-int ldb_dn_compare(struct ldb_context *ldb, const struct ldb_dn *edn0, const struct ldb_dn *edn1);
-struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, void *mem_ctx, const struct ldb_dn *edn);
-struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, void *mem_ctx, const char *dn);
-struct ldb_dn *ldb_dn_copy_partial(void *mem_ctx, const struct ldb_dn *dn, int num_el);
-struct ldb_dn *ldb_dn_copy(void *mem_ctx, const struct ldb_dn *dn);
-struct ldb_dn *ldb_dn_copy_rebase(void *mem_ctx, const struct ldb_dn *old, const struct ldb_dn *old_base, const struct ldb_dn *new_base);
-struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, const struct ldb_dn *dn);
-struct ldb_dn_component *ldb_dn_build_component(void *mem_ctx, const char *attr,
-							       const char *val);
-struct ldb_dn *ldb_dn_build_child(void *mem_ctx, const char *attr,
-						 const char * value,
-						 const struct ldb_dn *base);
-struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const struct ldb_dn *dn2);
-struct ldb_dn *ldb_dn_string_compose(void *mem_ctx, const struct ldb_dn *base, const char *child_fmt, ...) PRINTF_ATTRIBUTE(3,4);
-char *ldb_dn_canonical_string(void *mem_ctx, const struct ldb_dn *dn);
-char *ldb_dn_canonical_ex_string(void *mem_ctx, const struct ldb_dn *dn);
-int ldb_dn_get_comp_num(const struct ldb_dn *dn);
-const char *ldb_dn_get_component_name(const struct ldb_dn *dn, unsigned int num);
-const struct ldb_val *ldb_dn_get_component_val(const struct ldb_dn *dn, unsigned int num);
-const char *ldb_dn_get_rdn_name(const struct ldb_dn *dn);
-const struct ldb_val *ldb_dn_get_rdn_val(const struct ldb_dn *dn);
+char *ldb_dn_linearize(void *mem_ctx, struct ldb_dn *dn);
+char *ldb_dn_casefold(void *mem_ctx, struct ldb_dn *dn);
+const char *ldb_dn_get_linearized(struct ldb_dn *dn);
+const char *ldb_dn_get_casefold(struct ldb_dn *dn);
+
+int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn);
+int ldb_dn_compare(struct ldb_dn *edn0, struct ldb_dn *edn1);
+
+bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base);
+bool ldb_dn_add_base_fmt(struct ldb_dn *dn, const char *base_fmt, ...);
+bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child);
+bool ldb_dn_add_child_fmt(struct ldb_dn *dn, const char *child_fmt, ...);
+bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num);
+bool ldb_dn_remove_child_components(struct ldb_dn *dn, unsigned int num);
+
+struct ldb_dn *ldb_dn_copy(void *mem_ctx, struct ldb_dn *dn);
+struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, struct ldb_dn *dn);
+char *ldb_dn_canonical_string(void *mem_ctx, struct ldb_dn *dn);
+char *ldb_dn_canonical_ex_string(void *mem_ctx, struct ldb_dn *dn);
+int ldb_dn_get_comp_num(struct ldb_dn *dn);
+const char *ldb_dn_get_component_name(struct ldb_dn *dn, unsigned int num);
+const struct ldb_val *ldb_dn_get_component_val(struct ldb_dn *dn, unsigned int num);
+const char *ldb_dn_get_rdn_name(struct ldb_dn *dn);
+const struct ldb_val *ldb_dn_get_rdn_val(struct ldb_dn *dn);
 int ldb_dn_set_component(struct ldb_dn *dn, int num, const char *name, const struct ldb_val val);
 
+bool ldb_dn_is_valid(struct ldb_dn *dn);
+bool ldb_dn_is_special(struct ldb_dn *dn);
+bool ldb_dn_check_special(struct ldb_dn *dn, const char *check);
+bool ldb_dn_is_null(struct ldb_dn *dn);
 
 
 /* useful functions for ldb_message structure manipulation */
@@ -1422,9 +1425,10 @@ const char *ldb_msg_find_attr_as_string(const struct ldb_message *msg,
 					const char *attr_name,
 					const char *default_value);
 
-struct ldb_dn *ldb_msg_find_attr_as_dn(void *mem_ctx,
+struct ldb_dn *ldb_msg_find_attr_as_dn(struct ldb_context *ldb,
+				       void *mem_ctx,
 				       const struct ldb_message *msg,
-				        const char *attr_name);
+				       const char *attr_name);
 
 void ldb_msg_sort_elements(struct ldb_message *msg);
 

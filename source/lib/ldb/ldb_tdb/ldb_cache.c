@@ -112,7 +112,7 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	struct ldb_dn *dn;
 	int i;
 
-	dn = ldb_dn_explode(module->ldb, LTDB_ATTRIBUTES);
+	dn = ldb_dn_new(module, module->ldb, LTDB_ATTRIBUTES);
 	if (dn == NULL) goto failed;
 
 	if (ltdb_search_dn1(module, dn, msg) == -1) {
@@ -180,7 +180,7 @@ static int ltdb_subclasses_load(struct ldb_module *module)
 	struct ldb_dn *dn;
 	int i, j;
 
-	dn = ldb_dn_explode(module->ldb, LTDB_SUBCLASSES);
+	dn = ldb_dn_new(module, module->ldb, LTDB_SUBCLASSES);
 	if (dn == NULL) goto failed;
 
 	if (ltdb_search_dn1(module, dn, msg) == -1) {
@@ -253,7 +253,7 @@ static int ltdb_baseinfo_init(struct ldb_module *module)
 
 	msg->num_elements = 1;
 	msg->elements = &el;
-	msg->dn = ldb_dn_explode(msg, LTDB_BASEINFO);
+	msg->dn = ldb_dn_new(msg, module->ldb, LTDB_BASEINFO);
 	if (!msg->dn) {
 		goto failed;
 	}
@@ -338,7 +338,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	baseinfo = talloc(ltdb->cache, struct ldb_message);
 	if (baseinfo == NULL) goto failed;
 
-	baseinfo_dn = ldb_dn_explode(module->ldb, LTDB_BASEINFO);
+	baseinfo_dn = ldb_dn_new(module, module->ldb, LTDB_BASEINFO);
 	if (baseinfo_dn == NULL) goto failed;
 
 	if (ltdb_search_dn1(module, baseinfo_dn, baseinfo) == -1) {
@@ -383,7 +383,7 @@ int ltdb_cache_load(struct ldb_module *module)
 		goto failed;
 	}
 	    
-	indexlist_dn = ldb_dn_explode(module->ldb, LTDB_INDEXLIST);
+	indexlist_dn = ldb_dn_new(module, module->ldb, LTDB_INDEXLIST);
 	if (indexlist_dn == NULL) goto failed;
 
 	if (ltdb_search_dn1(module, indexlist_dn, ltdb->cache->indexlist) == -1) {
@@ -439,7 +439,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 
 	msg->num_elements = ARRAY_SIZE(el);
 	msg->elements = el;
-	msg->dn = ldb_dn_explode(msg, LTDB_BASEINFO);
+	msg->dn = ldb_dn_new(msg, module->ldb, LTDB_BASEINFO);
 	if (msg->dn == NULL) {
 		talloc_free(msg);
 		errno = ENOMEM;

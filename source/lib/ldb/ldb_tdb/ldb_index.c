@@ -147,7 +147,7 @@ static struct ldb_dn *ldb_dn_key(struct ldb_context *ldb,
 	talloc_free(attr_folded);
 
 done:
-	ret = ldb_dn_explode(ldb, dn);
+	ret = ldb_dn_new(ldb, ldb, dn);
 	talloc_free(dn);
 	return ret;
 }
@@ -662,7 +662,7 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 		}
 
 
-		dn = ldb_dn_explode(ares->message, dn_list->dn[i]);
+		dn = ldb_dn_new(ares->message, ac->module->ldb, dn_list->dn[i]);
 		if (dn == NULL) {
 			talloc_free(ares);
 			return LDB_ERR_OPERATIONS_ERROR;

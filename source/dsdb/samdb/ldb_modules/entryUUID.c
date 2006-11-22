@@ -112,7 +112,7 @@ static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC
 	struct entryUUID_private *entryUUID_private;
 	struct ldb_result *list;
 
-	if (ldb_dn_explode(ctx, (const char *)val->data)) {
+	if (ldb_dn_validate(ldb_dn_new(ctx, module->ldb, (const char *)val->data))) {
 		return *val;
 	}
 	map_private = talloc_get_type(module->private_data, struct map_private);
@@ -415,7 +415,7 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 {
 	const char *rootdse_attrs[] = {"schemaNamingContext", NULL};
 	struct ldb_dn *schema_dn;
-	struct ldb_dn *basedn = ldb_dn_explode(mem_ctx, "");
+	struct ldb_dn *basedn = ldb_dn_new(mem_ctx, ldb, NULL);
 	struct ldb_result *rootdse_res;
 	int ldb_ret;
 	if (!basedn) {
@@ -436,7 +436,7 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 	}
 	
 	/* Locate schema */
-	schema_dn = ldb_msg_find_attr_as_dn(mem_ctx, rootdse_res->msgs[0], "schemaNamingContext");
+	schema_dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, rootdse_res->msgs[0], "schemaNamingContext");
 	if (!schema_dn) {
 		return NULL;
 	}
@@ -490,8 +490,8 @@ static int get_remote_rootdse(struct ldb_context *ldb, void *context,
 			if (!entryUUID_private->base_dns) {
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
-			entryUUID_private->base_dns[i] = ldb_dn_explode(entryUUID_private->base_dns, (const char *)el->values[i].data);
-			if (!entryUUID_private->base_dns[i]) {
+			entryUUID_private->base_dns[i] = ldb_dn_new(entryUUID_private->base_dns, ldb, (const char *)el->values[i].data);
+			if ( ! ldb_dn_validate(entryUUID_private->base_dns[i])) {
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 		}
@@ -517,7 +517,7 @@ static int find_base_dns(struct ldb_module *module,
 	}
 
 	req->operation = LDB_SEARCH;
-	req->op.search.base = ldb_dn_new(req);
+	req->op.search.base = ldb_dn_new(req, module->ldb, NULL);
 	req->op.search.scope = LDB_SCOPE_BASE;
 
 	req->op.search.tree = ldb_parse_tree(req, "objectClass=*");

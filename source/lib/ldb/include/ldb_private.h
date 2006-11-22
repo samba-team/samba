@@ -180,7 +180,7 @@ int ldb_sqlite3_init(void);
 int ldb_match_msg(struct ldb_context *ldb,
 		  const struct ldb_message *msg,
 		  const struct ldb_parse_tree *tree,
-		  const struct ldb_dn *base,
+		  struct ldb_dn *base,
 		  enum ldb_scope scope);
 
 void ldb_remove_attrib_handler(struct ldb_context *ldb, const char *attrib);

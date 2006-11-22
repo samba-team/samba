@@ -62,7 +62,7 @@ static BOOL samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *ms
   return 0 on failure, the id on success
 */
 static int samldb_set_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-			       const struct ldb_dn *dn, uint32_t old_id, uint32_t new_id)
+			       struct ldb_dn *dn, uint32_t old_id, uint32_t new_id)
 {
 	struct ldb_message msg;
 	int ret;
@@ -119,7 +119,7 @@ static int samldb_set_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
   return 0 on failure, the id on success
 */
 static int samldb_find_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
-				const struct ldb_dn *dn, uint32_t *old_rid)
+				struct ldb_dn *dn, uint32_t *old_rid)
 {
 	const char * const attrs[2] = { "nextRid", NULL };
 	struct ldb_result *res = NULL;
@@ -150,7 +150,7 @@ static int samldb_find_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 }
 
 static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
-				    const struct ldb_dn *dn, const struct dom_sid *dom_sid, 
+				    struct ldb_dn *dn, const struct dom_sid *dom_sid, 
 				    struct dom_sid **new_sid)
 {
 	struct dom_sid *obj_sid;
@@ -185,7 +185,7 @@ static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_c
 }
 
 /* Find a domain object in the parents of a particular DN.  */
-static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX *mem_ctx, const struct ldb_dn *dn)
+static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 {
 	TALLOC_CTX *local_ctx;
 	struct ldb_dn *sdn;
@@ -224,12 +224,12 @@ static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX
    return the new sid string
 */
 static int samldb_get_new_sid(struct ldb_module *module, 
-			      TALLOC_CTX *mem_ctx, const struct ldb_dn *obj_dn,
+			      TALLOC_CTX *mem_ctx, struct ldb_dn *obj_dn,
 			      struct dom_sid **sid)
 {
 	const char * const attrs[2] = { "objectSid", NULL };
 	struct ldb_result *res = NULL;
-	const struct ldb_dn *dom_dn;
+	struct ldb_dn *dom_dn;
 	int ret;
 	struct dom_sid *dom_sid;
 

@@ -83,8 +83,8 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 		/* a null basedn is valid */
 	}
 	if (base != NULL) {
-		basedn = ldb_dn_explode(tmp_ctx, base);
-		if (basedn == NULL) {
+		basedn = ldb_dn_new(tmp_ctx, ldb, base);
+		if ( ! ldb_dn_validate(basedn)) {
 			ejsSetErrorMsg(eid, "ldb.search malformed base dn");
 			goto failed;
 		}
@@ -187,8 +187,8 @@ static int ejs_ldbDelete(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
-	dn = ldb_dn_explode(ldb, mprToString(argv[0]));
-	if (dn == NULL) {
+	dn = ldb_dn_new(ldb, ldb, mprToString(argv[0]));
+	if ( ! ldb_dn_validate(dn)) {
 		ejsSetErrorMsg(eid, "ldb.delete malformed dn");
 		return -1;
 	}
@@ -222,9 +222,9 @@ static int ejs_ldbRename(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
-	dn1 = ldb_dn_explode(ldb, mprToString(argv[0]));
-	dn2 = ldb_dn_explode(ldb, mprToString(argv[1]));
-	if (dn1 == NULL || dn2 == NULL) {
+	dn1 = ldb_dn_new(ldb, ldb, mprToString(argv[0]));
+	dn2 = ldb_dn_new(ldb, ldb, mprToString(argv[1]));
+	if ( ! ldb_dn_validate(dn1) ||  ! ldb_dn_validate(dn2)) {
 		ejsSetErrorMsg(eid, "ldb.rename invalid or malformed arguments");
 		return -1;
 	}

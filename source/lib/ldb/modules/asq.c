@@ -313,8 +313,8 @@ static int asq_requests(struct ldb_handle *handle) {
 		if (ac->reqs[i] == NULL)
 			return LDB_ERR_OPERATIONS_ERROR;
 		ac->reqs[i]->operation = LDB_SEARCH;
-		ac->reqs[i]->op.search.base = ldb_dn_explode(ac->reqs[i], (const char *)el->values[i].data);
-		if (ac->reqs[i]->op.search.base == NULL) {
+		ac->reqs[i]->op.search.base = ldb_dn_new(ac->reqs[i], ac->module->ldb, (const char *)el->values[i].data);
+		if ( ! ldb_dn_validate(ac->reqs[i]->op.search.base)) {
 			ac->asq_ret = ASQ_CTRL_INVALID_ATTRIBUTE_SYNTAX;
 			return asq_terminate(handle);
 		}

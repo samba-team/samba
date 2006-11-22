@@ -46,7 +46,7 @@ struct _ldb_nss_context {
 	pid_t pid;
 
 	struct ldb_context *ldb;
-	const struct ldb_dn *base;
+	struct ldb_dn *base;
 
 	int pw_cur;
 	struct ldb_result *pw_res;
