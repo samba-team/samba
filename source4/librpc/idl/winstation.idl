@@ -6,8 +6,6 @@
 
 [ uuid("5ca4a760-ebb1-11cf-8611-00a0245420ed"),
   version(1.0),
-  pointer_default(unique),
-  pointer_default_top(unique),
   helpstring("Terminal Services remote management")
 ] interface winstation
 {

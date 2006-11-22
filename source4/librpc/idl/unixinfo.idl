@@ -16,28 +16,28 @@ import "security.idl";
 	/* Function: 0x00 */
 	NTSTATUS unixinfo_SidToUid (
 	    [in]	dom_sid sid,
-	    [out,ref]	hyper *uid
+	    [out]	hyper *uid
 	    );
 
 	/******************/
 	/* Function: 0x01 */
 	NTSTATUS unixinfo_UidToSid (
 	    [in]	hyper uid,
-	    [out,unique]	dom_sid *sid
+	    [out]	dom_sid *sid
 	    );
 
 	/******************/
 	/* Function: 0x02 */
 	NTSTATUS unixinfo_SidToGid (
 	    [in]	dom_sid sid,
-	    [out,ref]	hyper *gid
+	    [out]	hyper *gid
 	    );
 
 	/******************/
 	/* Function: 0x03 */
 	NTSTATUS unixinfo_GidToSid (
 	    [in]	hyper gid,
-	    [out,unique]	dom_sid *sid
+	    [out]	dom_sid *sid
 	    );
 
 	typedef struct {
