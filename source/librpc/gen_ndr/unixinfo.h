@@ -30,7 +30,7 @@ struct unixinfo_UidToSid {
 	} in;
 
 	struct {
-		struct dom_sid *sid;/* [unique] */
+		struct dom_sid *sid;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -56,7 +56,7 @@ struct unixinfo_GidToSid {
 	} in;
 
 	struct {
-		struct dom_sid *sid;/* [unique] */
+		struct dom_sid *sid;/* [ref] */
 		NTSTATUS result;
 	} out;
 

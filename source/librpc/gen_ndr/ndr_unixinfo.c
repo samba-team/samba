@@ -128,10 +128,8 @@ NTSTATUS ndr_push_unixinfo_UidToSid(struct ndr_push *ndr, int flags, const struc
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.uid));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.sid));
-		if (r->out.sid) {
-			NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
-		}
+		if (r->out.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -139,26 +137,22 @@ NTSTATUS ndr_push_unixinfo_UidToSid(struct ndr_push *ndr, int flags, const struc
 
 NTSTATUS ndr_pull_unixinfo_UidToSid(struct ndr_pull *ndr, int flags, struct unixinfo_UidToSid *r)
 {
-	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->in.uid));
+		NDR_PULL_ALLOC(ndr, r->out.sid);
+		ZERO_STRUCTP(r->out.sid);
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sid));
-		if (_ptr_sid) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.sid);
-		} else {
-			r->out.sid = NULL;
 		}
-		if (r->out.sid) {
-			_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.sid, 0);
-			NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, 0);
-		}
+		_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.sid, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -182,9 +176,7 @@ _PUBLIC_ void ndr_print_unixinfo_UidToSid(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_ptr(ndr, "sid", r->out.sid);
 		ndr->depth++;
-		if (r->out.sid) {
-			ndr_print_dom_sid(ndr, "sid", r->out.sid);
-		}
+		ndr_print_dom_sid(ndr, "sid", r->out.sid);
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -260,10 +252,8 @@ NTSTATUS ndr_push_unixinfo_GidToSid(struct ndr_push *ndr, int flags, const struc
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.gid));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.sid));
-		if (r->out.sid) {
-			NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
-		}
+		if (r->out.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -271,26 +261,22 @@ NTSTATUS ndr_push_unixinfo_GidToSid(struct ndr_push *ndr, int flags, const struc
 
 NTSTATUS ndr_pull_unixinfo_GidToSid(struct ndr_pull *ndr, int flags, struct unixinfo_GidToSid *r)
 {
-	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->in.gid));
+		NDR_PULL_ALLOC(ndr, r->out.sid);
+		ZERO_STRUCTP(r->out.sid);
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sid));
-		if (_ptr_sid) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.sid);
-		} else {
-			r->out.sid = NULL;
 		}
-		if (r->out.sid) {
-			_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.sid, 0);
-			NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, 0);
-		}
+		_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.sid, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -314,9 +300,7 @@ _PUBLIC_ void ndr_print_unixinfo_GidToSid(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_ptr(ndr, "sid", r->out.sid);
 		ndr->depth++;
-		if (r->out.sid) {
-			ndr_print_dom_sid(ndr, "sid", r->out.sid);
-		}
+		ndr_print_dom_sid(ndr, "sid", r->out.sid);
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
