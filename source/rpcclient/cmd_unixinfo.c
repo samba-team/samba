@@ -27,7 +27,7 @@ static NTSTATUS cmd_unixinfo_uid2sid(struct rpc_pipe_client *cli,
 				     int argc, const char **argv)
 {
 	uid_t uid;
-	DOM_SID *sid;
+	DOM_SID sid;
 	NTSTATUS result;
 
 	if (argc != 2) {
@@ -41,7 +41,7 @@ static NTSTATUS cmd_unixinfo_uid2sid(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	printf("%s\n", sid_string_static(sid));
+	printf("%s\n", sid_string_static(&sid));
 
 done:
 	return result;
@@ -81,7 +81,7 @@ static NTSTATUS cmd_unixinfo_gid2sid(struct rpc_pipe_client *cli,
 				     int argc, const char **argv)
 {
 	gid_t gid;
-	DOM_SID *sid;
+	DOM_SID sid;
 	NTSTATUS result;
 
 	if (argc != 2) {
@@ -96,7 +96,7 @@ static NTSTATUS cmd_unixinfo_gid2sid(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	printf("%s\n", sid_string_static(sid));
+	printf("%s\n", sid_string_static(&sid));
 
 done:
 	return result;
