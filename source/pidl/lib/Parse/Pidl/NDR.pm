@@ -181,9 +181,10 @@ sub GetElementLevelTable($)
 			LEVEL => $level
 		});
 
-		nonfatal($e, "top-level pointer `$e->{NAME}' is not a \[ref\] pointer") 
+		nonfatal($e, "top-level \[out\] pointer `$e->{NAME}' is not a \[ref\] pointer") 
 			if ($i == 1 and pointer_type($e) ne "ref" and 
-				$e->{PARENT}->{TYPE} eq "FUNCTION");
+				$e->{PARENT}->{TYPE} eq "FUNCTION" and 
+				not has_property($e, "in"));
 
 		$pointer_idx++;
 		
