@@ -310,7 +310,6 @@ sub pointer_type($)
 	
 	return "ref" if (has_property($e, "ref"));
 	return "ptr" if (has_property($e, "ptr"));
-	return "sptr" if (has_property($e, "sptr"));
 	return "unique" if (has_property($e, "unique"));
 	return "relative" if (has_property($e, "relative"));
 	return "ignore" if (has_property($e, "ignore"));
@@ -607,6 +606,8 @@ sub ParseInterface($)
 
 	if (not has_property($idl, "pointer_default_top")) {
 		$idl->{PROPERTIES}->{pointer_default_top} = "ref";
+	} else {
+		nonfatal($idl, "pointer_default_top() is a pidl extension and should not be used");
 	}
 
 	foreach my $d (@{$idl->{DATA}}) {
