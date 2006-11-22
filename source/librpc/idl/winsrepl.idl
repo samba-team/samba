@@ -11,10 +11,6 @@
 
 import "nbt.idl";
 
-[
-  pointer_default(unique),
-  pointer_default_top(unique)
-]
 interface wrepl
 {
 	const int WINS_REPLICATION_PORT = 42;
