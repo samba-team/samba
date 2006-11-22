@@ -47,7 +47,7 @@ interface IUnknown
 {
 	[local] WERROR CreateInstance([in,unique] MInterfacePointer *pUnknown, 
 			       [in,unique] GUID *iid,
-			       [out, iid_is(riid),unique] MInterfacePointer *ppv);
+			       [out, iid_is(riid)] MInterfacePointer **ppv);
 
 	[call_as(CreateInstance)] WERROR RemoteCreateInstance();
 
@@ -85,7 +85,7 @@ interface IRemUnknown : IUnknown
 		[in] uint32 cRefs, /* count of AddRefs requested */
 		[in] uint16 cIids, /* count of IIDs that follow */
 		[in, unique, size_is(cIids)] GUID *iids, /* IIDs to QI for */
-		[out, size_is(cIids), unique] MInterfacePointer *ip
+		[out, size_is(cIids)] MInterfacePointer **ip
 		);
 
 	typedef struct 
@@ -98,7 +98,7 @@ interface IRemUnknown : IUnknown
 	[call_as(AddRef)] WERROR RemAddRef (
 		 [in] uint16 cInterfaceRefs,
 		 [in, size_is(cInterfaceRefs)] REMINTERFACEREF InterfaceRefs[],
-		 [out, size_is(cInterfaceRefs), unique] WERROR *pResults
+		 [out, size_is(cInterfaceRefs)] WERROR **pResults
 		);
 
 	[call_as(Release)] WERROR RemRelease (
@@ -177,9 +177,9 @@ interface IRemUnknown2 : IRemUnknown
 	[call_as(QueryInterface2)] WERROR RemQueryInterface2 (
 		 [in, unique] GUID *ripid,
 		 [in] uint16 cIids,
-		 [in, size_is(cIids), unique] GUID *iids,
-		 [out, size_is(cIids), unique] WERROR *phr,
-		 [out, size_is(cIids), unique] MInterfacePointer *ppMIF
+		 [in, size_is(cIids)] GUID **iids,
+		 [out, size_is(cIids)] WERROR **phr,
+		 [out, size_is(cIids)] MInterfacePointer **ppMIF
 		);
 }
 
@@ -191,8 +191,7 @@ interface IRemUnknown2 : IRemUnknown
 {
 	/*****************/
 	/* Function 0x03 */
-	WERROR GetTypeInfoCount(
-			[out, unique] uint16 *pctinfo);
+	WERROR GetTypeInfoCount([out] uint16 *pctinfo);
 
 	typedef struct {
 	} REF_ITypeInfo;
@@ -202,7 +201,7 @@ interface IRemUnknown2 : IRemUnknown
 	WERROR GetTypeInfo (
 			[in] uint16 iTInfo,
 			[in] uint32 lcid,
-			[out, unique] REF_ITypeInfo *ppTInfo);
+			[out] REF_ITypeInfo **ppTInfo);
 
 	/*****************/
 	/* Function 0x05 */
@@ -211,7 +210,7 @@ interface IRemUnknown2 : IRemUnknown
 			/*FIXME[in,size_is(cNames)] OLESTR *rgszNames[], */
 			[in] uint16 cNames,
 			[in] uint32 lcid,
-			[out,size_is(cNames), unique] uint32 *rgDispId);
+			[out,size_is(cNames)] uint32 **rgDispId);
 
 	typedef struct {
 		uint16 vartype;
@@ -235,9 +234,9 @@ interface IRemUnknown2 : IRemUnknown
 			[in] uint32 lcid,
 			[in] uint16 wFlags,
 			[out,in, unique] DISPPARAMS *pDispParams,
-			[out, unique] VARIANT *pVarResult,
-			[out, unique] EXCEPINFO *pExcepInfo,
-			[out, unique] uint16 *puArgErr);
+			[out] VARIANT **pVarResult,
+			[out] EXCEPINFO **pExcepInfo,
+			[out] uint16 **puArgErr);
 }
 
 [

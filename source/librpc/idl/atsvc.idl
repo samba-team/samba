@@ -74,7 +74,7 @@
 	NTSTATUS atsvc_JobAdd(
 		[in,unique,string,charset(UTF16)] uint16 *servername,
 		[in] atsvc_JobInfo *job_info,
-		[out]	 uint32 job_id
+		[out,ref]	 uint32 *job_id
 	);
 
 	/******************/
@@ -105,7 +105,7 @@
 		[in,unique,string,charset(UTF16)] uint16 *servername,
 		[in,out] 	 atsvc_enum_ctr *ctr,
 		[in]	     uint32 preferred_max_len,
-		[out]	     uint32 total_entries,
+		[out,ref]	     uint32 *total_entries,
 		[in,out,unique]     uint32 *resume_handle
 	);
 
@@ -114,6 +114,6 @@
 	[public] NTSTATUS atsvc_JobGetInfo(
 		[in,unique,string,charset(UTF16)]	uint16 *servername,
 		[in]	uint32 job_id,
-		[out,unique]	atsvc_JobInfo *job_info
+		[out]	atsvc_JobInfo **job_info
 	);
 }

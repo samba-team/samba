@@ -108,11 +108,11 @@ static bool test_JobAdd(struct torture_context *tctx, struct dcerpc_pipe *p)
 		return false;
 	}
 
-	if (!test_JobGetInfo(p, tctx, r.out.job_id)) {
+	if (!test_JobGetInfo(p, tctx, *r.out.job_id)) {
 		return false;
 	}
 
-	if (!test_JobDel(p, tctx, r.out.job_id, r.out.job_id)) {
+	if (!test_JobDel(p, tctx, *r.out.job_id, *r.out.job_id)) {
 		return false;
 	}
 
