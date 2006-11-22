@@ -146,7 +146,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 			      &dom_res, dom_attrs);
 	if (ret != 1) {
 		DEBUG(2,("Unable to find domain from reference '%s' in sam\n",
-			 ldb_dn_linearize(samctx, ref_res[0]->dn)));
+			 ldb_dn_get_linearized(ref_res[0]->dn)));
 		return;
 	}
 

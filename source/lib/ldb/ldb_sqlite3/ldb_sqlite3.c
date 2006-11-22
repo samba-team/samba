@@ -369,8 +369,8 @@ static char *parsetree_to_sql(struct ldb_module *module,
 
 		} else if (strcasecmp(t->u.equality.attr, "dn") == 0) {
 			/* DN query is a special ldb case */
-		 	char *cdn = ldb_dn_casefold(mem_ctx,
-							ldb_dn_new(mem_ctx, module->ldb,
+		 	const char *cdn = ldb_dn_get_casefold(
+						ldb_dn_new(mem_ctx, module->ldb,
 							      (const char *)value.data));
 
 			return lsqlite3_tprintf(mem_ctx,
@@ -828,7 +828,7 @@ static long long lsqlite3_get_eid(struct ldb_module *module, struct ldb_dn *dn)
 		return -1;
 	}
 
-	cdn = ldb_dn_linearize(local_ctx, ldb_dn_casefold(module->ldb, local_ctx, dn));
+	cdn = ldb_dn_alloc_casefold(local_ctx, dn);
 	if (!cdn) goto done;
 
 	eid = lsqlite3_get_eid_ndn(lsqlite3->sqlite, local_ctx, cdn);
@@ -865,7 +865,7 @@ int lsql_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 
 	if (req->op.search.base) {
-		norm_basedn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, lsql_ac, req->op.search.base));
+		norm_basedn = ldb_dn_alloc_casefold(lsql_ac, req->op.search.base);
 		if (norm_basedn == NULL) {
 			ret = LDB_ERR_INVALID_DN_SYNTAX;
 			goto failed;
@@ -1064,8 +1064,8 @@ static int lsql_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* create linearized and normalized dns */
-	dn = ldb_dn_linearize(lsql_ac, msg->dn);
-	ndn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, lsql_ac, msg->dn));
+	dn = ldb_dn_alloc_linearized(lsql_ac, msg->dn);
+	ndn = ldb_dn_alloc_casefold(lsql_ac, msg->dn);
 	if (dn == NULL || ndn == NULL) {
 		ret = LDB_ERR_OTHER;
 		goto done;
@@ -1426,9 +1426,9 @@ static int lsql_rename(struct ldb_module *module, struct ldb_request *req)
 	req->handle->status = LDB_SUCCESS;
 
 	/* create linearized and normalized dns */
-	old_cdn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, lsql_ac, req->op.rename.olddn));
-	new_cdn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, lsql_ac, req->op.rename.newdn));
-	new_dn = ldb_dn_linearize(lsql_ac, req->op.rename.newdn);
+	old_cdn = ldb_dn_alloc_casefold(lsql_ac, req->op.rename.olddn);
+	new_cdn = ldb_dn_alloc_casefold(lsql_ac, req->op.rename.newdn);
+	new_dn = ldb_dn_alloc_linearized(lsql_ac, req->op.rename.newdn);
 	if (old_cdn == NULL || new_cdn == NULL || new_dn == NULL) {
 		goto done;
 	}

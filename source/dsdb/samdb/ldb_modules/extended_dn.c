@@ -107,11 +107,7 @@ static BOOL inject_extended_dn(struct ldb_message *msg,
 	struct dom_sid *sid;
 	char *object_guid;
 	char *object_sid;
-	char *new_dn, *dn;
-
-	dn = ldb_dn_linearize(msg, msg->dn);
-	if (!dn)
-		return False;
+	char *new_dn;
 
 	/* retrieve object_guid */
 	guid = samdb_result_guid(msg, "objectGUID");
@@ -140,10 +136,12 @@ static BOOL inject_extended_dn(struct ldb_message *msg,
 		case 1:
 			if (object_sid) {
 				new_dn = talloc_asprintf(msg, "<GUID=%s>;<SID=%s>;%s",
-							 object_guid, object_sid, dn);
+							 object_guid, object_sid,
+							 ldb_dn_get_linearized(msg->dn));
 			} else {
 				new_dn = talloc_asprintf(msg, "<GUID=%s>;%s",
-							 object_guid, dn);
+							 object_guid,
+							 ldb_dn_get_linearized(msg->dn));
 			}
 			break;
 		default:

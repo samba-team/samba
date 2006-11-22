@@ -626,7 +626,7 @@ int ldb_msg_sanity_check(struct ldb_context *ldb,
 				/* TODO: return also an error string */
 				ldb_asprintf_errstring(ldb, "Element %s has empty attribute in ldb message (%s)!",
 							    msg->elements[i].name, 
-							    ldb_dn_linearize(mem_ctx, msg->dn));
+							    ldb_dn_get_linearized(msg->dn));
 				talloc_free(mem_ctx);
 				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 			}

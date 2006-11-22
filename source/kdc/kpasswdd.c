@@ -372,7 +372,7 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 			ret = samdb_replace(samdb, mem_ctx, msg);
 			if (ret != 0) {
 				DEBUG(2,("Failed to modify record to set password on %s: %s\n",
-					 ldb_dn_linearize(mem_ctx, msg->dn),
+					 ldb_dn_get_linearized(msg->dn),
 					 ldb_errstring(samdb)));
 				status = NT_STATUS_ACCESS_DENIED;
 			}
@@ -381,7 +381,7 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 			ret = ldb_transaction_commit(samdb);
 			if (ret != 0) {
 				DEBUG(1,("Failed to commit transaction to set password on %s: %s\n",
-					 ldb_dn_linearize(mem_ctx, msg->dn),
+					 ldb_dn_get_linearized(msg->dn),
 					 ldb_errstring(samdb)));
 				status = NT_STATUS_TRANSACTION_ABORTED;
 			}

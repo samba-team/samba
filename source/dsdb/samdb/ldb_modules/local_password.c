@@ -160,7 +160,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 	if (!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "person")) {
 		ldb_asprintf_errstring(module->ldb,
 					"Cannot relocate a password on entry: %s, does not have objectClass 'person'",
-					ldb_dn_linearize(req, req->op.add.message->dn));
+					ldb_dn_get_linearized(req->op.add.message->dn));
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
@@ -428,7 +428,7 @@ static int local_password_mod_local(struct ldb_handle *h) {
 	if (!ac->search_res) {
 		ldb_asprintf_errstring(ac->module->ldb, 
 					"entry just modified (%s) not found!",
-					ldb_dn_linearize(ac, ac->remote_req->op.mod.message->dn));
+					ldb_dn_get_linearized(ac->remote_req->op.mod.message->dn));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	if (!ldb_msg_check_string_attribute(ac->search_res->message, "objectClass", "person")) {

@@ -322,7 +322,7 @@ static void start_test_index(struct ldb_context **ldb)
 	ldb_msg_add_string(msg, "@IDXATTR", strdup("uid"));
 
 	if (ldb_add(*ldb, msg) != 0) {
-		printf("Add of %s failed - %s\n", ldb_dn_linearize(*ldb, msg->dn), ldb_errstring(*ldb));
+		printf("Add of %s failed - %s\n", ldb_dn_get_linearized(msg->dn), ldb_errstring(*ldb));
 		exit(1);
 	}
 
@@ -337,7 +337,7 @@ static void start_test_index(struct ldb_context **ldb)
 	ldb_msg_add_string(msg, "objectClass", strdup("OpenLDAPperson"));
 
 	if (ldb_add(*ldb, msg) != 0) {
-		printf("Add of %s failed - %s\n", ldb_dn_linearize(*ldb, msg->dn), ldb_errstring(*ldb));
+		printf("Add of %s failed - %s\n", ldb_dn_get_linearized(msg->dn), ldb_errstring(*ldb));
 		exit(1);
 	}
 
