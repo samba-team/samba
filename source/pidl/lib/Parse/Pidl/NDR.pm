@@ -1052,9 +1052,14 @@ sub ValidInterface($)
 
 	ValidProperties($interface,"INTERFACE");
 
-	if (has_property($interface, "pointer_default") && 
-		$interface->{PROPERTIES}->{pointer_default} eq "ptr") {
-		fatal $interface, "Full pointers are not supported yet\n";
+	if (has_property($interface, "pointer_default")) {
+		if ($interface->{PROPERTIES}->{pointer_default} eq "ptr") {
+			nonfatal $interface, "Full pointers are not supported yet, falling back to unique";
+			$interface->{PROPERTIES}->{pointer_default} = "unique";
+		} elsif (not grep (/$interface->{PROPERTIES}->{pointer_default}/, 
+					("ref", "unique", "ptr"))) {
+			fatal $interface, "Unknown default pointer type `$interface->{PROPERTIES}->{pointer_default}'";
+		}
 	}
 
 	if (has_property($interface, "object")) {
