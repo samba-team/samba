@@ -1274,10 +1274,10 @@ struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx, struct ldb_context *ldb, const char
 bool ldb_dn_validate(struct ldb_dn *dn);
 
 char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
-char *ldb_dn_linearize(void *mem_ctx, struct ldb_dn *dn);
-char *ldb_dn_casefold(void *mem_ctx, struct ldb_dn *dn);
 const char *ldb_dn_get_linearized(struct ldb_dn *dn);
 const char *ldb_dn_get_casefold(struct ldb_dn *dn);
+char *ldb_dn_alloc_linearized(void *mem_ctx, struct ldb_dn *dn);
+char *ldb_dn_alloc_casefold(void *mem_ctx, struct ldb_dn *dn);
 
 int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn);
 int ldb_dn_compare(struct ldb_dn *edn0, struct ldb_dn *edn1);

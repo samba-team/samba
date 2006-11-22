@@ -122,7 +122,7 @@ static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC
 
 	for (i=0; list && (i < list->count); i++) {
 		if (ldb_attr_cmp((const char *)val->data, ldb_msg_find_attr_as_string(list->msgs[i], "lDAPDisplayName", NULL)) == 0) {
-			char *dn = ldb_dn_linearize(ctx, list->msgs[i]->dn);
+			char *dn = ldb_dn_alloc_linearized(ctx, list->msgs[i]->dn);
 			return data_blob_string_const(dn);
 		}
 	}

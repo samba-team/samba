@@ -107,7 +107,7 @@ static void cldapd_rootdse_fill(struct cldapd_server *cldapd,
 		ent = talloc(mem_ctx, struct ldap_SearchResEntry);
 		if (ent == NULL) goto nomem;
 
-		ent->dn = ldb_dn_linearize(ent, res->msgs[0]->dn);
+		ent->dn = ldb_dn_alloc_linearized(ent, res->msgs[0]->dn);
 		if (ent->dn == NULL) goto nomem;
 		ent->num_attributes = 0;
 		ent->attributes = NULL;

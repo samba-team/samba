@@ -561,7 +561,7 @@ const char *ldb_dn_get_linearized(struct ldb_dn *dn)
 	return dn->linearized;
 }
 
-char *ldb_dn_linearize(void *mem_ctx, struct ldb_dn *dn)
+char *ldb_dn_alloc_linearized(void *mem_ctx, struct ldb_dn *dn)
 {
 	return talloc_strdup(mem_ctx, ldb_dn_get_linearized(dn));
 }
@@ -664,7 +664,7 @@ const char *ldb_dn_get_casefold(struct ldb_dn *dn)
 	return dn->casefold;
 }
 
-char *ldb_dn_casefold(void *mem_ctx, struct ldb_dn *dn)
+char *ldb_dn_alloc_casefold(void *mem_ctx, struct ldb_dn *dn)
 {
 	return talloc_strdup(mem_ctx, ldb_dn_get_casefold(dn));
 }

@@ -249,7 +249,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 			NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
 			ent = &ent_r->msg->r.SearchResultEntry;
-			ent->dn = ldb_dn_linearize(ent_r, res->msgs[i]->dn);
+			ent->dn = ldb_dn_alloc_linearized(ent_r, res->msgs[i]->dn);
 			ent->num_attributes = 0;
 			ent->attributes = NULL;
 			if (res->msgs[i]->num_elements == 0) {

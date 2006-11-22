@@ -297,7 +297,7 @@ int map_add(struct ldb_module *module, struct ldb_request *req)
 
 	/* Store remote DN in 'IS_MAPPED' */
 	/* TODO: use GUIDs here instead */
-	dn = ldb_dn_linearize(local, remote->dn);
+	dn = ldb_dn_alloc_linearized(local, remote->dn);
 	if (ldb_msg_add_string(local, IS_MAPPED, dn) != 0) {
 		goto failed;
 	}
@@ -344,10 +344,10 @@ int map_modify_do_local(struct ldb_handle *handle)
 
 		/* Add local 'IS_MAPPED' */
 		/* TODO: use GUIDs here instead */
-		dn = ldb_dn_linearize(msg, ac->remote_req->op.mod.message->dn);
 		if (ldb_msg_add_empty(msg, IS_MAPPED, LDB_FLAG_MOD_ADD, NULL) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+		dn = ldb_dn_alloc_linearized(msg, ac->remote_req->op.mod.message->dn);
 		if (ldb_msg_add_string(msg, IS_MAPPED, dn) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}

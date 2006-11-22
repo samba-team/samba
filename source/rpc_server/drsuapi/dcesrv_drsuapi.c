@@ -311,7 +311,7 @@ static WERROR drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 			ret = samdb_modify(b_state->sam_ctx, mem_ctx, msg);
 			if (ret != 0) {
 				DEBUG(0,("Failed to modify SPNs on %s: %s\n",
-					 ldb_dn_linearize(mem_ctx, msg->dn), 
+					 ldb_dn_get_linearized(msg->dn), 
 					 ldb_errstring(b_state->sam_ctx)));
 				r->out.res.res1.status = WERR_ACCESS_DENIED;
 			} else {

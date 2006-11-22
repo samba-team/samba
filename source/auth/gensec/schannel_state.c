@@ -127,7 +127,7 @@ NTSTATUS schannel_store_session_key_ldb(TALLOC_CTX *mem_ctx,
 
 	if (ret != 0) {
 		DEBUG(0,("Unable to add %s to session key db - %s\n", 
-			 ldb_dn_linearize(msg, msg->dn), ldb_errstring(ldb)));
+			 ldb_dn_get_linearized(msg->dn), ldb_errstring(ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 

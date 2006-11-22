@@ -1028,7 +1028,7 @@ int map_up_callback(struct ldb_context *ldb, const struct ldb_request *req, stru
 		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_map: "
 			  "Skipping record '%s': "
 			  "doesn't match original search\n",
-			  ldb_dn_linearize(ldb, ares->message->dn));
+			  ldb_dn_get_linearized(ares->message->dn));
 		return LDB_SUCCESS;
 	}
 

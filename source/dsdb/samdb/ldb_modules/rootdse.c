@@ -86,7 +86,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		for (i = 0; i < priv->num_partitions; i++) {
 			struct ldb_dn *dn = priv->partitions[i];
 			if (ldb_msg_add_steal_string(msg, "namingContexts",
-						     ldb_dn_linearize(msg, dn)) != 0) {
+						     ldb_dn_alloc_linearized(msg, dn)) != 0) {
 				goto failed;
  			}
  		}

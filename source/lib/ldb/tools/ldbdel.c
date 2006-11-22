@@ -108,7 +108,7 @@ int main(int argc, const char **argv)
 		}
 		if (ret != 0) {
 			printf("delete of '%s' failed - %s\n",
-				ldb_dn_linearize(ldb, dn),
+				ldb_dn_get_linearized(dn),
 				ldb_errstring(ldb));
 		}
 	}

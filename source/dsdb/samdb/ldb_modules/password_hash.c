@@ -160,7 +160,7 @@ static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_mes
 			ldb_asprintf_errstring(module->ldb,
 						"password_hash_handle: "
 						"generation of new kerberos keys failed: %s is a computer without a samAccountName",
-						ldb_dn_linearize(msg, msg->dn));
+						ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		if (name[strlen(name)-1] == '$') {
@@ -191,7 +191,7 @@ static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_mes
 			ldb_asprintf_errstring(module->ldb,
 						"password_hash_handle: "
 						"generation of new kerberos keys failed: %s has no samAccountName",
-						ldb_dn_linearize(msg, msg->dn));
+						ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		krb5_ret = krb5_make_principal(smb_krb5_context->krb5_context,

@@ -324,7 +324,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 			r->out.error_string
 				= talloc_asprintf(r, 
 						  "Failed to replace entries on %s", 
-						  ldb_dn_linearize(tmp_ctx, msg->dn));
+						  ldb_dn_get_linearized(msg->dn));
 			talloc_free(tmp_ctx);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -1148,7 +1148,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	ret = samdb_add(ldb, tmp_mem, msg);
 	if (ret != 0) {
 		r->out.error_string = talloc_asprintf(mem_ctx, "Failed to create secret record %s", 
-						      ldb_dn_linearize(ldb, msg->dn));
+						      ldb_dn_get_linearized(msg->dn));
 		talloc_free(tmp_mem);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1163,7 +1163,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		cli_credentials_set_conf(creds);
-		filter = talloc_asprintf(mem_ctx, "dn=%s", ldb_dn_linearize(mem_ctx, msg->dn));
+		filter = talloc_asprintf(mem_ctx, "dn=%s", ldb_dn_get_linearized(msg->dn));
 		status = cli_credentials_set_secrets(creds, NULL, filter);
 		if (!NT_STATUS_IS_OK(status)) {
 			r->out.error_string = talloc_asprintf(mem_ctx, "Failed to read secrets for keytab update for %s", 

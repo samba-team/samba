@@ -719,7 +719,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 		
 		ldb_ret = gendb_search((struct ldb_context *)db->hdb_db,
 				       mem_ctx, partitions_basedn, &realm_ref_msg, realm_ref_attrs, 
-				       "ncName=%s", ldb_dn_linearize(mem_ctx, domain_dn));
+				       "ncName=%s", ldb_dn_get_linearized(domain_dn));
 		
 		if (ldb_ret != 1) {
 			return HDB_ERR_NOENTRY;

@@ -158,7 +158,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	ret = samdb_replace(sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		DEBUG(2,("Failed to modify record to change password on %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, a_state->account_dn),
+			 ldb_dn_get_linearized(a_state->account_dn),
 			 ldb_errstring(sam_ctx)));
 		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -168,7 +168,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	ret = ldb_transaction_commit(sam_ctx);
 	if (ret != 0) {
 		DEBUG(1,("Failed to commit transaction to change password on %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, a_state->account_dn),
+			 ldb_dn_get_linearized(a_state->account_dn),
 			 ldb_errstring(sam_ctx)));
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
@@ -290,7 +290,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	ret = samdb_replace(sam_ctx, mem_ctx, mod);
 	if (ret != 0) {
 		DEBUG(2,("Failed to modify record to change password on %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, user_dn),
+			 ldb_dn_get_linearized(user_dn),
 			 ldb_errstring(sam_ctx)));
 		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -300,7 +300,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	ret = ldb_transaction_commit(sam_ctx);
 	if (ret != 0) {
 		DEBUG(1,("Failed to commit transaction to change password on %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, user_dn),
+			 ldb_dn_get_linearized(user_dn),
 			 ldb_errstring(sam_ctx)));
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
@@ -443,7 +443,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	ret = samdb_replace(sam_ctx, mem_ctx, mod);
 	if (ret != 0) {
 		DEBUG(2,("samdb_replace failed to change password for %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, user_dn),
+			 ldb_dn_get_linearized(user_dn),
 			 ldb_errstring(sam_ctx)));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto failed;
@@ -453,7 +453,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	ret = ldb_transaction_commit(sam_ctx);
 	if (ret != 0) {
 		DEBUG(1,("Failed to commit transaction to change password on %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, user_dn),
+			 ldb_dn_get_linearized(user_dn),
 			 ldb_errstring(sam_ctx)));
 		status = NT_STATUS_TRANSACTION_ABORTED;
 		goto failed;

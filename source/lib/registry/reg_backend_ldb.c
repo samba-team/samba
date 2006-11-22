@@ -176,7 +176,7 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, const struct registry_ke
 		ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(key=*)", NULL, &res);
 
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("Error getting subkeys for '%s': %s\n", ldb_dn_linearize(mem_ctx, kd->dn), ldb_errstring(c)));
+			DEBUG(0, ("Error getting subkeys for '%s': %s\n", ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
 			return WERR_FOOBAR;
 		}
 
@@ -213,7 +213,7 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, const struct registry_key
 		ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(value=*)", NULL, &res);
 
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("Error getting values for '%s': %s\n", ldb_dn_linearize(mem_ctx, kd->dn), ldb_errstring(c)));
+			DEBUG(0, ("Error getting values for '%s': %s\n", ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
 			return WERR_FOOBAR;
 		}
 		kd->value_count = res->count;
@@ -243,7 +243,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct registry_key *h, co
 	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL, &res);
 
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("Error opening key '%s': %s\n", ldb_dn_linearize(ldap_path, ldap_path), ldb_errstring(c)));
+		DEBUG(0, ("Error opening key '%s': %s\n", ldb_dn_get_linearized(ldap_path), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	} else if (res->count == 0) {
 		talloc_free(res);

@@ -340,7 +340,7 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		ret = gendb_search(c_state->sam_ctx, mem_ctx, partitions_basedn,
 				   &ref_msgs, ref_attrs, 
 				   "(&(objectClass=crossRef)(ncName=%s))", 
-				   ldb_dn_linearize(mem_ctx, dom_msgs[i]->dn));
+				   ldb_dn_get_linearized(dom_msgs[i]->dn));
 		if (ret == 1) {
 			array->entries[i].name.string = samdb_result_string(ref_msgs[0], "nETBIOSName", NULL);
 		} else {
@@ -399,7 +399,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		ret = gendb_search(c_state->sam_ctx,
 				   mem_ctx, partitions_basedn, &ref_msgs, ref_attrs,
 				   "(&(&(nETBIOSName=*)(objectclass=crossRef))(ncName=%s))", 
-				   ldb_dn_linearize(mem_ctx, dom_msgs[0]->dn));
+				   ldb_dn_get_linearized(dom_msgs[0]->dn));
 		if (ret == 0) {
 			domain_name = ldb_msg_find_attr_as_string(dom_msgs[0], "cn", NULL);
 			if (domain_name == NULL) {
@@ -880,7 +880,7 @@ static NTSTATUS samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	ret = samdb_replace(sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		DEBUG(1,("Failed to modify record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, d_state->domain_dn),
+			 ldb_dn_get_linearized(d_state->domain_dn),
 			 ldb_errstring(sam_ctx)));
 
 		/* we really need samdb.c to return NTSTATUS */
@@ -946,7 +946,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		DEBUG(0,("Failed to create group record %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn)));
+			 ldb_dn_get_linearized(msg->dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1244,7 +1244,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	if (ret != 1) {
 		ldb_transaction_cancel(d_state->sam_ctx);
 		DEBUG(0,("Apparently we failed to create an account record, as %s now doesn't exist\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn)));
+			 ldb_dn_get_linearized(msg->dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	sid = samdb_result_dom_sid(mem_ctx, msgs[0], "objectSid");
@@ -1283,7 +1283,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	ret = samdb_replace(a_state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		DEBUG(0,("Failed to modify account record %s to set userAccountControl: %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn),
+			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(d_state->sam_ctx)));
 		ldb_transaction_cancel(d_state->sam_ctx);
 
@@ -1294,7 +1294,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	ret = ldb_transaction_commit(d_state->sam_ctx);
 	if (ret != 0) {
 		DEBUG(0,("Failed to commit transaction to add and modify account record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn),
+			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(d_state->sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1484,7 +1484,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_ALIAS_EXISTS;
 	default:
 		DEBUG(0,("Failed to create alias record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn),
+			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(d_state->sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -2102,7 +2102,7 @@ static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	memberdn = ldb_dn_linearize(mem_ctx, res->msgs[0]->dn);
+	memberdn = ldb_dn_alloc_linearized(mem_ctx, res->msgs[0]->dn);
 
 	if (memberdn == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -2205,7 +2205,7 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	memberdn = ldb_dn_linearize(mem_ctx, res->msgs[0]->dn);
+	memberdn = ldb_dn_alloc_linearized(mem_ctx, res->msgs[0]->dn);
 
 	if (memberdn == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -2587,7 +2587,7 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	mod->dn = talloc_reference(mem_ctx, a_state->account_dn);
 
 	if (samdb_msg_add_addval(d_state->sam_ctx, mem_ctx, mod, "member",
-				 ldb_dn_linearize(mem_ctx, memberdn)) != 0)
+				 ldb_dn_alloc_linearized(mem_ctx, memberdn)) != 0)
 		return NT_STATUS_UNSUCCESSFUL;
 
 	if (samdb_modify(a_state->sam_ctx, mem_ctx, mod) != 0)
@@ -3406,7 +3406,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	ret = samdb_replace(a_state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		DEBUG(1,("Failed to modify record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, a_state->account_dn),
+			 ldb_dn_get_linearized(a_state->account_dn),
 			 ldb_errstring(a_state->sam_ctx)));
 
 		/* we really need samdb.c to return NTSTATUS */
@@ -3439,7 +3439,7 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 	count = samdb_search_domain(a_state->sam_ctx, mem_ctx, d_state->domain_dn, &res,
 				    attrs, d_state->domain_sid,
 				    "(&(member=%s)(grouptype=%d)(objectclass=group))",
-				    ldb_dn_linearize(mem_ctx, a_state->account_dn),
+				    ldb_dn_get_linearized(a_state->account_dn),
 				    GTYPE_SECURITY_GLOBAL_GROUP);
 	if (count < 0)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

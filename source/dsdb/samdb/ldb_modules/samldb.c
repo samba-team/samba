@@ -139,7 +139,7 @@ static int samldb_find_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	if (str == NULL) {
 		ldb_asprintf_errstring(module->ldb,
 					"attribute nextRid not found in %s\n",
-					ldb_dn_linearize(res, dn));
+					ldb_dn_get_linearized(dn));
 		talloc_free(res);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -239,7 +239,7 @@ static int samldb_get_new_sid(struct ldb_module *module,
 	if (dom_dn == NULL) {
 		ldb_asprintf_errstring(module->ldb,
 					"Invalid dn (%s) not child of a domain object!\n",
-					ldb_dn_linearize(mem_ctx, obj_dn));
+					ldb_dn_get_linearized(obj_dn));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -249,7 +249,7 @@ static int samldb_get_new_sid(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(module->ldb,
 					"samldb_get_new_sid: error retrieving domain sid from %s: %s!\n",
-					ldb_dn_linearize(mem_ctx, dom_dn),
+					ldb_dn_get_linearized(dom_dn),
 					ldb_errstring(module->ldb));
 		talloc_free(res);
 		return ret;
@@ -258,7 +258,7 @@ static int samldb_get_new_sid(struct ldb_module *module,
 	if (res->count != 1) {
 		ldb_asprintf_errstring(module->ldb,
 					"samldb_get_new_sid: error retrieving domain sid from %s: not found!\n",
-					ldb_dn_linearize(mem_ctx, dom_dn));
+					ldb_dn_get_linearized(dom_dn));
 		talloc_free(res);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -273,7 +273,7 @@ static int samldb_get_new_sid(struct ldb_module *module,
 	/* allocate a new Rid for the domain */
 	ret = samldb_allocate_next_rid(module, mem_ctx, dom_dn, dom_sid, sid);
 	if (ret != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to increment nextRid of %s: %s\n", ldb_dn_linearize(mem_ctx, dom_dn), ldb_errstring(module->ldb));
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to increment nextRid of %s: %s\n", ldb_dn_get_linearized(dom_dn), ldb_errstring(module->ldb));
 		talloc_free(res);
 		return ret;
 	}

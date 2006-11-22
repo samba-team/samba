@@ -679,7 +679,7 @@ static struct ldb_val ldb_dn_convert_local(struct ldb_module *module, void *mem_
 	talloc_free(dn);
 
 	newval.length = 0;
-	newval.data = (uint8_t *)ldb_dn_linearize(mem_ctx, newdn);
+	newval.data = (uint8_t *)ldb_dn_alloc_linearized(mem_ctx, newdn);
 	if (newval.data) {
 		newval.length = strlen((char *)newval.data);
 	}
@@ -705,7 +705,7 @@ static struct ldb_val ldb_dn_convert_remote(struct ldb_module *module, void *mem
 	talloc_free(dn);
 
 	newval.length = 0;
-	newval.data = (uint8_t *)ldb_dn_linearize(mem_ctx, newdn);
+	newval.data = (uint8_t *)ldb_dn_alloc_linearized(mem_ctx, newdn);
 	if (newval.data) {
 		newval.length = strlen((char *)newval.data);
 	}
@@ -992,9 +992,9 @@ struct ldb_request *map_build_fixup_req(struct map_context *ac, struct ldb_dn *o
 	}
 
 	/* Update local 'IS_MAPPED' to the new remote DN */
-	msg->dn = discard_const_p(struct ldb_dn, olddn);
-	dn = ldb_dn_linearize(msg, newdn);
-	if (dn == NULL) {
+	msg->dn = ldb_dn_copy(msg, olddn);
+	dn = ldb_dn_alloc_linearized(msg, newdn);
+	if ( ! dn || ! ldb_dn_validate(msg->dn)) {
 		goto failed;
 	}
 	if (ldb_msg_add_empty(msg, IS_MAPPED, LDB_FLAG_MOD_REPLACE, NULL) != 0) {

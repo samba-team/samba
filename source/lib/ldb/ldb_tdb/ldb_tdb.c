@@ -123,7 +123,7 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
 	struct ldb_context *ldb = module->ldb;
 	TDB_DATA key;
 	char *key_str = NULL;
-	char *dn_folded = NULL;
+	const char *dn_folded = NULL;
 
 	/*
 	  most DNs are case insensitive. The exception is index DNs for
@@ -267,14 +267,7 @@ static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message
 	ret = ltdb_store(module, msg, TDB_INSERT);
 
 	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
-		char *dn;
-
-		dn = ldb_dn_linearize(module, msg->dn);
-		if (!dn) {
-			return ret;
-		}
-		ldb_asprintf_errstring(module->ldb, "Entry %s already exists", dn);
-		talloc_free(dn);
+		ldb_asprintf_errstring(module->ldb, "Entry %s already exists", ldb_dn_get_linearized(msg->dn));
 		return ret;
 	}
 	
@@ -504,10 +497,10 @@ static int msg_delete_attribute(struct ldb_module *module,
 				struct ldb_context *ldb,
 				struct ldb_message *msg, const char *name)
 {
-	char *dn;
+	const char *dn;
 	unsigned int i, j;
 
-	dn = ldb_dn_linearize(ldb, msg->dn);
+	dn = ldb_dn_get_linearized(msg->dn);
 	if (dn == NULL) {
 		return -1;
 	}
@@ -532,7 +525,6 @@ static int msg_delete_attribute(struct ldb_module *module,
 		}
 	}
 
-	talloc_free(dn);
 	return 0;
 }
 
@@ -627,7 +619,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		struct ldb_message_element *el = &msg->elements[i];
 		struct ldb_message_element *el2;
 		struct ldb_val *vals;
-		char *dn;
+		const char *dn;
 
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 
@@ -690,7 +682,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 
 		case LDB_FLAG_MOD_DELETE:
 
-			dn = ldb_dn_linearize(msg2, msg->dn);
+			dn = ldb_dn_get_linearized(msg->dn);
 			if (dn == NULL) {
 				ret = LDB_ERR_OTHER;
 				goto failed;

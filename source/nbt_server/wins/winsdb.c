@@ -751,7 +751,7 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 	return NT_STATUS_OK;
 failed:
 	if (NT_STATUS_EQUAL(NT_STATUS_INTERNAL_DB_CORRUPTION, status)) {
-		DEBUG(1,("winsdb_record: corrupted record: %s\n", ldb_dn_linearize(rec, msg->dn)));
+		DEBUG(1,("winsdb_record: corrupted record: %s\n", ldb_dn_get_linearized(msg->dn)));
 	}
 	talloc_free(rec);
 	return status;

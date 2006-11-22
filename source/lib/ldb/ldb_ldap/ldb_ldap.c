@@ -262,7 +262,7 @@ static int lldb_search(struct ldb_module *module, struct ldb_request *req)
 
 	lldb_ac = talloc_get_type(req->handle->private_data, struct lldb_context);
 
-	search_base = ldb_dn_linearize(lldb_ac, req->op.search.base);
+	search_base = ldb_dn_alloc_linearized(lldb_ac, req->op.search.base);
 	if (req->op.search.base == NULL) {
 		search_base = talloc_strdup(lldb_ac, "");
 	}
@@ -335,7 +335,7 @@ static int lldb_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	dn = ldb_dn_linearize(lldb_ac, req->op.add.message->dn);
+	dn = ldb_dn_alloc_linearized(lldb_ac, req->op.add.message->dn);
 	if (dn == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -380,7 +380,7 @@ static int lldb_modify(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	dn = ldb_dn_linearize(lldb_ac, req->op.mod.message->dn);
+	dn = ldb_dn_alloc_linearized(lldb_ac, req->op.mod.message->dn);
 	if (dn == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -419,7 +419,7 @@ static int lldb_delete(struct ldb_module *module, struct ldb_request *req)
 
 	lldb_ac = talloc_get_type(req->handle->private_data, struct lldb_context);
 
-	dnstr = ldb_dn_linearize(lldb_ac, req->op.del.dn);
+	dnstr = ldb_dn_alloc_linearized(lldb_ac, req->op.del.dn);
 
 	ret = ldap_delete_ext(lldb->ldap, dnstr,
 			      NULL,
@@ -457,7 +457,7 @@ static int lldb_rename(struct ldb_module *module, struct ldb_request *req)
 
 	lldb_ac = talloc_get_type(req->handle->private_data, struct lldb_context);
 
-	old_dn = ldb_dn_linearize(lldb_ac, req->op.rename.olddn);
+	old_dn = ldb_dn_alloc_linearized(lldb_ac, req->op.rename.olddn);
 	if (old_dn == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -469,7 +469,7 @@ static int lldb_rename(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	parentdn = ldb_dn_linearize(lldb_ac, ldb_dn_get_parent(lldb_ac, req->op.rename.newdn));
+	parentdn = ldb_dn_alloc_linearized(lldb_ac, ldb_dn_get_parent(lldb_ac, req->op.rename.newdn));
 	if (!parentdn) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

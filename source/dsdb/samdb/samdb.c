@@ -1194,8 +1194,8 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 		count = gendb_search_dn(ctx, mem_ctx, domain_dn, &res, domain_attrs);
 		if (count != 1) {
 			DEBUG(2, ("samdb_set_password: Domain DN %s is invalid, for user %s\n", 
-				  ldb_dn_linearize(mem_ctx, domain_dn),
-				  ldb_dn_linearize(mem_ctx, user_dn)));
+				  ldb_dn_get_linearized(domain_dn),
+				  ldb_dn_get_linearized(user_dn)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 	} else {
@@ -1211,7 +1211,7 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 		if (count != 1) {
 			DEBUG(2, ("samdb_set_password: Could not find domain to match SID: %s, for user %s\n", 
 				  dom_sid_string(mem_ctx, domain_sid),
-				  ldb_dn_linearize(mem_ctx, user_dn)));
+				  ldb_dn_get_linearized(user_dn)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 	}
@@ -1435,7 +1435,7 @@ _PUBLIC_ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *me
 	ret = ldb_transaction_commit(ctx);
 	if (ret != 0) {
 		DEBUG(0,("Failed to commit transaction to change password on %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn),
+			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(ctx)));
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
@@ -1565,7 +1565,7 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 	if (ret != 0) {
 		DEBUG(0,("Failed to create foreignSecurityPrincipal "
 			 "record %s: %s\n", 
-			 ldb_dn_linearize(mem_ctx, msg->dn),
+			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
