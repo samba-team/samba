@@ -131,7 +131,8 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	*r->out.entry_handle = h->wire_handle;
-	r->out.num_ents = num_ents;
+	r->out.num_ents = talloc(mem_ctx, uint32_t);
+	*r->out.num_ents = num_ents;
 
 	if (num_ents == 0) {
 		r->out.entries = NULL;
@@ -179,7 +180,8 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	count = build_ep_list(mem_ctx, dce_call->conn->dce_ctx->endpoint_list, &eps);
 
 	ZERO_STRUCT(*r->out.entry_handle);
-	r->out.num_towers = 1;
+	r->out.num_towers = talloc(mem_ctx, uint32_t);
+	*r->out.num_towers = 1;
 	r->out.towers = talloc(mem_ctx, struct epm_twr_p_t);
 	if (!r->out.towers) {
 		return EPMAPPER_STATUS_NO_MEMORY;
@@ -230,7 +232,7 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 
 failed:
-	r->out.num_towers = 0;
+	*r->out.num_towers = 0;
 	r->out.towers->twr = NULL;
 
 	return EPMAPPER_STATUS_NO_MORE_ENTRIES;
