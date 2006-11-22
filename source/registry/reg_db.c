@@ -397,6 +397,10 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 			pstr_sprintf( path, "%s%c%s", key, '/', oldkeyname );
 			normalize_reg_path( path );
 			tdb_delete_bystring( tdb_reg, path );
+			pstr_sprintf( path, "%s/%s/%s", VALUE_PREFIX, key,
+				      oldkeyname );
+			normalize_reg_path( path );
+			tdb_delete_bystring( tdb_reg, path );
 		}
 	}
 
