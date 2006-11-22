@@ -78,7 +78,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
-		for (i=0;i<r.out.num_towers;i++) {
+		for (i=0;i<*r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
 				display_tower(mem_ctx, &r.out.towers[i].twr->tower);
 			}
@@ -91,7 +91,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
-		for (i=0;i<r.out.num_towers;i++) {
+		for (i=0;i<*r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
 				display_tower(mem_ctx, &r.out.towers[i].twr->tower);
 			}
@@ -104,7 +104,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
-		for (i=0;i<r.out.num_towers;i++) {
+		for (i=0;i<*r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
 				display_tower(mem_ctx, &r.out.towers[i].twr->tower);
 			}
@@ -121,7 +121,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
-		for (i=0;i<r.out.num_towers;i++) {
+		for (i=0;i<*r.out.num_towers;i++) {
 			if (r.out.towers[i].twr) {
 				display_tower(mem_ctx, &r.out.towers[i].twr->tower);
 			}
@@ -163,9 +163,9 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		}
 
 		printf("epm_Lookup returned %d events GUID %s\n", 
-		       r.out.num_ents, GUID_string(mem_ctx, &handle.uuid));
+		       *r.out.num_ents, GUID_string(mem_ctx, &handle.uuid));
 
-		for (i=0;i<r.out.num_ents;i++) {
+		for (i=0;i<*r.out.num_ents;i++) {
 			printf("\nFound '%s'\n", r.out.entries[i].annotation);
 			display_tower(mem_ctx, &r.out.entries[i].tower->tower);
 			if (r.out.entries[i].tower->tower.num_floors == 5) {
@@ -174,7 +174,7 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		}
 	} while (NT_STATUS_IS_OK(status) && 
 		 r.out.result == 0 && 
-		 r.out.num_ents == r.in.max_ents &&
+		 *r.out.num_ents == r.in.max_ents &&
 		 !policy_handle_empty(&handle));
 
 	if (!NT_STATUS_IS_OK(status)) {

@@ -146,13 +146,13 @@ static void refresh_eps(void)
 		if (!NT_STATUS_IS_OK(status) || r.out.result != 0) {
 			break;
 		}
-		for (i=0;i<r.out.num_ents;i++) {
+		for (i=0;i<*r.out.num_ents;i++) {
 			add_epm_entry(mem_ctx, r.out.entries[i].annotation, &r.out.entries[i].tower->tower);
 		}
 
 	} while (NT_STATUS_IS_OK(status) && 
 		 r.out.result == 0 && 
-		 r.out.num_ents == r.in.max_ents);
+		 *r.out.num_ents == r.in.max_ents);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, "Error adding endpoint mapper entry", status);

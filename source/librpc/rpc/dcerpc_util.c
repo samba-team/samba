@@ -797,6 +797,8 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->pipe);
 	if (!composite_is_ok(c)) return;
 
+	s->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
+
 	/* prepare requested binding parameters */
 	s->binding->object         = s->table->syntax_id;
 
@@ -833,7 +835,7 @@ static void continue_epm_map(struct rpc_request *req)
 	if (!composite_is_ok(c)) return;
 
 	/* check the details */
-	if (s->r.out.result != 0 || s->r.out.num_towers != 1) {
+	if (s->r.out.result != 0 || *s->r.out.num_towers != 1) {
 		composite_error(c, NT_STATUS_PORT_UNREACHABLE);
 		return;
 	}

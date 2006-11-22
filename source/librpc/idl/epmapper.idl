@@ -14,8 +14,7 @@ http://www.opengroup.org/onlinepubs/9629399/chap6.htm#tagcjh_11_02_03_01: bindin
  endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", 
 		  "ncalrpc:[EPMAPPER]"),
  helpstring("EndPoint Mapper"),
- pointer_default_top(sptr),
- pointer_default(sptr)
+ pointer_default(ptr)
 ]
 interface epmapper
 {
@@ -254,8 +253,8 @@ interface epmapper
 		[in]            uint32          vers_option,
 		[in,out,ref]    policy_handle   *entry_handle,
 		[in]            uint32          max_ents,
-		[out]           uint32          num_ents,
-		[out, length_is(num_ents), size_is(max_ents)]  epm_entry_t entries[]
+		[out]           uint32          *num_ents,
+		[out, length_is(*num_ents), size_is(max_ents)]  epm_entry_t entries[]
 		);
 
 
@@ -271,8 +270,8 @@ interface epmapper
 		[in]            epm_twr_t       *map_tower,
 		[in,out,ref]    policy_handle   *entry_handle,
 		[in]            uint32          max_towers,
-		[out]           uint32          num_towers,
-		[out, length_is(num_towers), size_is(max_towers)]  epm_twr_p_t towers[]
+		[out]           uint32          *num_towers,
+		[out, length_is(*num_towers), size_is(max_towers)]  epm_twr_p_t towers[]
 		);
     
 
