@@ -25,8 +25,7 @@
 #include "librpc/gen_ndr/ndr_unixinfo_c.h"
 #include "libcli/security/security.h"
 
-
-/*
+/**
   test the SidToUid interface
 */
 static BOOL test_sidtouid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
@@ -41,7 +40,7 @@ static BOOL test_sidtouid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	status = dcerpc_unixinfo_SidToUid(p, mem_ctx, &r);
 	if (NT_STATUS_EQUAL(NT_STATUS_NONE_MAPPED, status)) {
 	} else if (!NT_STATUS_IS_OK(status)) {
-		printf("UidToSid failed == %s\n", nt_errstr(status));
+		printf("SidToUid failed == %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -55,8 +54,10 @@ static bool test_uidtosid(struct torture_context *tctx,
 						  struct dcerpc_pipe *p)
 {
 	struct unixinfo_UidToSid r;
+	struct dom_sid sid;
 
 	r.in.uid = 1000;
+	r.out.sid = &sid;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_unixinfo_UidToSid(p, tctx, &r), 
 							   "UidToSid failed");
@@ -118,8 +119,10 @@ static BOOL test_gidtosid(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct unixinfo_GidToSid r;
+	struct dom_sid sid;
 
 	r.in.gid = 1000;
+	r.out.sid = &sid;
 
 	status = dcerpc_unixinfo_GidToSid(p, tctx, &r);
 	if (NT_STATUS_EQUAL(NT_STATUS_NO_SUCH_GROUP, status)) {

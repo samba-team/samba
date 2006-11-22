@@ -16,8 +16,7 @@ import "dcom.idl", "orpc.idl";
 	uuid("99fcfec4-5260-101b-bbcb-00aa0021347a"),
 	helpstring("Object Exporter ID Resolver"),
 	endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", "ncalrpc:"),
-	pointer_default(unique),
-  	pointer_default_top(unique)
+	pointer_default(unique)
 ]
 interface IOXIDResolver
 {
@@ -33,7 +32,7 @@ interface IOXIDResolver
 		 [in] OXID pOxid,
 		 [in] uint16 cRequestedProtseqs,
 		 [in, size_is(cRequestedProtseqs)] uint16 arRequestedProtseqs[],
-		 [out] DUALSTRINGARRAY *ppdsaOxidBindings,
+		 [out] DUALSTRINGARRAY **ppdsaOxidBindings,
 		 [out,ref] IPID *pipidRemUnknown,
 		 [out,ref] uint32 *pAuthnHint
 			 );
@@ -78,7 +77,7 @@ interface IOXIDResolver
 											  [in] OXID pOxid,
 											  [in] uint16 cRequestedProtseqs,
 											  [in, size_is(cRequestedProtseqs)] uint16 arRequestedProtseqs[],
-											  [out] DUALSTRINGARRAY *pdsaOxidBindings,
+											  [out] DUALSTRINGARRAY **pdsaOxidBindings,
 											  [out,ref] IPID *ipidRemUnknown,
 											  [out,ref] uint32 *AuthnHint,
 											  [out,ref] COMVERSION *ComVersion
