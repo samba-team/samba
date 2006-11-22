@@ -327,10 +327,10 @@ static WERROR drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 
 
 /* 
-  DRSUAPI_REMOVE_DS_SERVER 
+  drsuapi_DsRemoveDSServer
 */
-static WERROR DRSUAPI_REMOVE_DS_SERVER(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_REMOVE_DS_SERVER *r)
+static WERROR drsuapi_DsRemoveDSServer(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct drsuapi_DsRemoveDSServer *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
