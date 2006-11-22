@@ -45,7 +45,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	const char *ref_attrs[] = {"nETBIOSName", NULL};
 	struct ldb_message **ref_res;
 	struct ldb_context *samctx;
-	const struct ldb_dn *partitions_basedn;
+	struct ldb_dn *partitions_basedn;
 	int ret;
 
 	/* only answer getdc requests on the PDC or LOGON names */
@@ -112,7 +112,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	int ret;
 	const char **services = lp_server_services();
 	const char *my_ip = reply_iface->ip_address; 
-	const struct ldb_dn *partitions_basedn;
+	struct ldb_dn *partitions_basedn;
 	if (!my_ip) {
 		DEBUG(0, ("Could not obtain own IP address for datagram socket\n"));
 		return;
@@ -142,7 +142,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 
 	/* try and find the domain */
 	ret = gendb_search_dn(samctx, samctx, 
-			      samdb_result_dn(samctx, ref_res[0], "ncName", NULL), 
+			      samdb_result_dn(samctx, samctx, ref_res[0], "ncName", NULL), 
 			      &dom_res, dom_attrs);
 	if (ret != 1) {
 		DEBUG(2,("Unable to find domain from reference '%s' in sam\n",

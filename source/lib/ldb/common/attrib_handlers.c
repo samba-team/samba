@@ -234,8 +234,8 @@ static int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 	out->length = 0;
 	out->data = NULL;
 
-	dn = ldb_dn_explode_casefold(ldb, mem_ctx, (char *)in->data);
-	if (dn == NULL) {
+	dn = ldb_dn_new(ldb, mem_ctx, (char *)in->data);
+	if ( ! ldb_dn_validate(dn)) {
 		return -1;
 	}
 
@@ -262,16 +262,16 @@ static int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
 	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
 	int ret;
 
-	dn1 = ldb_dn_explode_casefold(ldb, mem_ctx, (char *)v1->data);
-	if (dn1 == NULL) return -1;
+	dn1 = ldb_dn_new(ldb, mem_ctx, (char *)v1->data);
+	if ( ! ldb_dn_validate(dn1)) return -1;
 
-	dn2 = ldb_dn_explode_casefold(ldb, mem_ctx, (char *)v2->data);
-	if (dn2 == NULL) {
+	dn2 = ldb_dn_new(ldb, mem_ctx, (char *)v2->data);
+	if ( ! ldb_dn_validate(dn2)) {
 		talloc_free(dn1);
 		return -1;
 	} 
 
-	ret = ldb_dn_compare(ldb, dn1, dn2);
+	ret = ldb_dn_compare(dn1, dn2);
 
 	talloc_free(dn1);
 	talloc_free(dn2);

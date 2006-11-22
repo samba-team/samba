@@ -300,8 +300,8 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 	struct ldb_dn *dn1 = NULL;
 	char *oc1, *oc2;
 
-	dn1 = ldb_dn_explode(mem_ctx, (char *)in->data);
-	if (dn1 == NULL) {
+	dn1 = ldb_dn_new(mem_ctx, ldb, (char *)in->data);
+	if ( ! ldb_dn_validate(dn1)) {
 		oc1 = talloc_strndup(mem_ctx, (char *)in->data, in->length);
 	} else if (ldb_dn_get_comp_num(dn1) >= 1 && strcasecmp(ldb_dn_get_rdn_name(dn1), "cn") == 0) {
 		const struct ldb_val *val = ldb_dn_get_rdn_val(dn1);
@@ -325,8 +325,8 @@ static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx
 	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
 	const char *oc1, *oc2;
 
-	dn1 = ldb_dn_explode(mem_ctx, (char *)v1->data);
-	if (dn1 == NULL) {
+	dn1 = ldb_dn_new(mem_ctx, ldb, (char *)v1->data);
+	if ( ! ldb_dn_validate(dn1)) {
 		oc1 = talloc_strndup(mem_ctx, (char *)v1->data, v1->length);
 	} else if (ldb_dn_get_comp_num(dn1) >= 1 && strcasecmp(ldb_dn_get_rdn_name(dn1), "cn") == 0) {
 		const struct ldb_val *val = ldb_dn_get_rdn_val(dn1);
@@ -335,8 +335,8 @@ static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx
 		oc1 = NULL;
 	}
 
-	dn2 = ldb_dn_explode(mem_ctx, (char *)v2->data);
-	if (dn2 == NULL) {
+	dn2 = ldb_dn_new(mem_ctx, ldb, (char *)v2->data);
+	if ( ! ldb_dn_validate(dn2)) {
 		oc2 = talloc_strndup(mem_ctx, (char *)v2->data, v2->length);
 	} else if (ldb_dn_get_comp_num(dn2) >= 2 && strcasecmp(ldb_dn_get_rdn_name(dn2), "cn") == 0) {
 		const struct ldb_val *val = ldb_dn_get_rdn_val(dn2);

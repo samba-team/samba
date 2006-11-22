@@ -200,7 +200,7 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 {
 	const char *rootdse_attrs[] = {"schemaNamingContext", NULL};
 	struct ldb_dn *schemadn;
-	struct ldb_dn *basedn = ldb_dn_explode(mem_ctx, "");
+	struct ldb_dn *basedn = ldb_dn_new(mem_ctx, ldb, NULL);
 	struct ldb_result *rootdse_res;
 	int ldb_ret;
 	if (!basedn) {
@@ -222,7 +222,7 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 	}
 	
 	/* Locate schema */
-	schemadn = ldb_msg_find_attr_as_dn(mem_ctx, rootdse_res->msgs[0], "schemaNamingContext");
+	schemadn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, rootdse_res->msgs[0], "schemaNamingContext");
 	if (!schemadn) {
 		return NULL;
 	}

@@ -62,7 +62,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	struct GUID drsuapi_bind_guid;
 
 	struct ldb_context *remote_ldb;
-	const struct ldb_dn *account_dn;
+	struct ldb_dn *account_dn;
 	const char *account_dn_str;
 	const char *remote_ldb_url;
 	struct ldb_result *res;
@@ -219,8 +219,8 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	/* Store the DN of our machine account. */
 	account_dn_str = r_crack_names.out.ctr.ctr1->array[0].result_name;
 
-	account_dn = ldb_dn_explode(tmp_ctx, account_dn_str);
-	if (!account_dn) {
+	account_dn = ldb_dn_new(tmp_ctx, remote_ldb, account_dn_str);
+	if (! ldb_dn_validate(account_dn)) {
 		r->out.error_string = talloc_asprintf(r, "Invalid account dn: %s",
 						      account_dn_str);
 		talloc_free(tmp_ctx);
@@ -855,7 +855,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	struct libnet_JoinDomain *r2;
 	int ret, rtn;
 	struct ldb_context *ldb;
-	const struct ldb_dn *base_dn;
+	struct ldb_dn *base_dn;
 	struct ldb_message **msgs, *msg;
 	const char *sct;
 	const char * const attrs[] = {
@@ -961,15 +961,15 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	base_dn = ldb_dn_explode(tmp_mem, "cn=Primary Domains");
+	base_dn = ldb_dn_new(tmp_mem, ldb, "cn=Primary Domains");
 	if (!base_dn) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_mem);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg->dn = ldb_dn_build_child(tmp_mem, "flatname", r2->out.domain_name, base_dn);
-	if (!msg->dn) {
+	msg->dn = ldb_dn_copy(tmp_mem, base_dn);
+	if ( ! ldb_dn_add_child_fmt(msg->dn, "flatname=%s", r2->out.domain_name)) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_mem);
 		return NT_STATUS_NO_MEMORY;

@@ -566,9 +566,9 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	msg->dn = ldb_dn_explode(msg, (char *)value.data);
+	msg->dn = ldb_dn_new(msg, ldb, (char *)value.data);
 
-	if (msg->dn == NULL) {
+	if ( ! ldb_dn_validate(msg->dn)) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: Unable to parse dn '%s'\n", 
 				  value.data);
 		goto failed;

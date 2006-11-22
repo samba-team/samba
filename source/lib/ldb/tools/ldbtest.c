@@ -52,7 +52,7 @@ static double _end_timer(void)
 }
 
 static void add_records(struct ldb_context *ldb,
-			const struct ldb_dn *basedn,
+			struct ldb_dn *basedn,
 			int count)
 {
 	struct ldb_message msg;
@@ -72,7 +72,8 @@ static void add_records(struct ldb_context *ldb,
 
 		name = talloc_asprintf(tmp_ctx, "Test%d", i);
 
-		msg.dn = ldb_dn_build_child(tmp_ctx, "cn", name, basedn);
+		msg.dn = ldb_dn_copy(tmp_ctx, basedn);
+		ldb_dn_add_child_fmt(msg.dn, "cn=%s", name);
 		msg.num_elements = 6;
 		msg.elements = el;
 
@@ -140,7 +141,7 @@ static void add_records(struct ldb_context *ldb,
 }
 
 static void modify_records(struct ldb_context *ldb,
-			   const struct ldb_dn *basedn,
+			   struct ldb_dn *basedn,
 			   int count)
 {
 	struct ldb_message msg;
@@ -153,7 +154,8 @@ static void modify_records(struct ldb_context *ldb,
 		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 		
 		name = talloc_asprintf(tmp_ctx, "Test%d", i);
-		msg.dn = ldb_dn_build_child(tmp_ctx, "cn", name, basedn);
+		msg.dn = ldb_dn_copy(tmp_ctx, basedn);
+		ldb_dn_add_child_fmt(msg.dn, "cn=%s", name);
 
 		msg.num_elements = 3;
 		msg.elements = el;
@@ -192,7 +194,7 @@ static void modify_records(struct ldb_context *ldb,
 
 
 static void delete_records(struct ldb_context *ldb,
-			   const struct ldb_dn *basedn,
+			   struct ldb_dn *basedn,
 			   int count)
 {
 	int i;
@@ -200,13 +202,14 @@ static void delete_records(struct ldb_context *ldb,
 	for (i=0;i<count;i++) {
 		struct ldb_dn *dn;
 		char *name = talloc_asprintf(ldb, "Test%d", i);
-		dn = ldb_dn_build_child(name, "cn", name, basedn);
+		dn = ldb_dn_copy(name, basedn);
+		ldb_dn_add_child_fmt(dn, "cn=%s", name);
 
 		printf("Deleting uid Test%d\r", i);
 		fflush(stdout);
 
 		if (ldb_delete(ldb, dn) != 0) {
-			printf("Delete of %s failed - %s\n", ldb_dn_linearize(ldb, dn), ldb_errstring(ldb));
+			printf("Delete of %s failed - %s\n", ldb_dn_get_linearized(dn), ldb_errstring(ldb));
 			exit(1);
 		}
 		talloc_free(name);
@@ -252,7 +255,11 @@ static void start_test(struct ldb_context *ldb, int nrecords, int nsearches)
 {
 	struct ldb_dn *basedn;
 
-	basedn = ldb_dn_explode(ldb, options->basedn);
+	basedn = ldb_dn_new(ldb, ldb, options->basedn);
+	if ( ! ldb_dn_validate(basedn)) {
+		printf("Invalid base DN\n");
+		exit(1);
+	}
 
 	printf("Adding %d records\n", nrecords);
 	add_records(ldb, basedn, nrecords);
@@ -305,7 +312,7 @@ static void start_test_index(struct ldb_context **ldb)
 
 	printf("Starting index test\n");
 
-	indexlist = ldb_dn_explode(NULL, "@INDEXLIST");
+	indexlist = ldb_dn_new(*ldb, *ldb, "@INDEXLIST");
 
 	ldb_delete(*ldb, indexlist);
 
@@ -319,10 +326,11 @@ static void start_test_index(struct ldb_context **ldb)
 		exit(1);
 	}
 
-	basedn = ldb_dn_explode(NULL, options->basedn);
+	basedn = ldb_dn_new(*ldb, *ldb, options->basedn);
 
 	memset(msg, 0, sizeof(*msg));
-	msg->dn = ldb_dn_build_child(msg, "cn", "test", basedn);
+	msg->dn = ldb_dn_copy(msg, basedn);
+	ldb_dn_add_child_fmt(msg->dn, "cn=test");
 	ldb_msg_add_string(msg, "cn", strdup("test"));
 	ldb_msg_add_string(msg, "sn", strdup("test"));
 	ldb_msg_add_string(msg, "uid", strdup("test"));
@@ -339,12 +347,14 @@ static void start_test_index(struct ldb_context **ldb)
 	}
 
 	(*ldb) = ldb_init(options);
-	
+
 	ret = ldb_connect(*ldb, options->url, flags, NULL);
 	if (ret != 0) {
 		printf("failed to connect to %s\n", options->url);
 		exit(1);
 	}
+
+	basedn = ldb_dn_new(*ldb, *ldb, options->basedn);
 
 	ret = ldb_search(*ldb, basedn, LDB_SCOPE_SUBTREE, "uid=test", NULL, &res);
 	if (ret != LDB_SUCCESS) { 
@@ -355,6 +365,8 @@ static void start_test_index(struct ldb_context **ldb)
 		printf("Should have found 1 record - found %d\n", res->count);
 		exit(1);
 	}
+
+	indexlist = ldb_dn_new(*ldb, *ldb, "@INDEXLIST");
 
 	if (ldb_delete(*ldb, msg->dn) != 0 ||
 	    ldb_delete(*ldb, indexlist) != 0) {

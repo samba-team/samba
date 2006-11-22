@@ -91,11 +91,11 @@ static int modify_record(struct ldb_context *ldb,
 static struct ldb_message *msg_find(struct ldb_context *ldb,
 				    struct ldb_message **msgs,
 				    int count,
-				    const struct ldb_dn *dn)
+				    struct ldb_dn *dn)
 {
 	int i;
 	for (i=0;i<count;i++) {
-		if (ldb_dn_compare(ldb, dn, msgs[i]->dn) == 0) {
+		if (ldb_dn_compare(dn, msgs[i]->dn) == 0) {
 			return msgs[i];
 		}
 	}
@@ -300,8 +300,8 @@ int main(int argc, const char **argv)
 	}
 
 	if (options->basedn != NULL) {
-		basedn = ldb_dn_explode(ldb, options->basedn);
-		if (basedn == NULL) {
+		basedn = ldb_dn_new(ldb, ldb, options->basedn);
+		if ( ! ldb_dn_validate(basedn)) {
 			printf("Invalid Base DN format\n");
 			exit(1);
 		}

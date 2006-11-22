@@ -424,7 +424,7 @@ static int ps_init(struct ldb_module *module)
 	}
 
 	req->operation = LDB_SEARCH;
-	req->op.search.base = ldb_dn_new(req);
+	req->op.search.base = ldb_dn_new(req, module->ldb, NULL);
 	req->op.search.scope = LDB_SCOPE_BASE;
 
 	req->op.search.tree = ldb_parse_tree(req, "objectClass=*");

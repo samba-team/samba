@@ -97,6 +97,7 @@ static BOOL add_attrs(void *mem_ctx, char ***attrs, const char *attr)
 }
 
 static BOOL inject_extended_dn(struct ldb_message *msg,
+				struct ldb_context *ldb,
 				int type,
 				BOOL remove_guid,
 				BOOL remove_sid)
@@ -152,8 +153,8 @@ static BOOL inject_extended_dn(struct ldb_message *msg,
 	if (!new_dn)
 		return False;
 
-	msg->dn = ldb_dn_explode_or_special(msg, new_dn);
-	if (!msg->dn)
+	msg->dn = ldb_dn_new(msg, ldb, new_dn);
+	if (! ldb_dn_validate(msg->dn))
 		return False;
 
 	val = ldb_msg_find_ldb_val(msg, "distinguishedName");
@@ -193,7 +194,7 @@ static int extended_callback(struct ldb_context *ldb, void *context, struct ldb_
 	if (ares->type == LDB_REPLY_ENTRY) {
 		/* for each record returned post-process to add any derived
 		   attributes that have been asked for */
-		if (!inject_extended_dn(ares->message, ac->extended_type, ac->remove_guid, ac->remove_sid)) {
+		if (!inject_extended_dn(ares->message, ldb, ac->extended_type, ac->remove_guid, ac->remove_sid)) {
 			goto error;
 		}
 	}

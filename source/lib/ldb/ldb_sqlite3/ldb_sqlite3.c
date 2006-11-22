@@ -369,9 +369,8 @@ static char *parsetree_to_sql(struct ldb_module *module,
 
 		} else if (strcasecmp(t->u.equality.attr, "dn") == 0) {
 			/* DN query is a special ldb case */
-		 	char *cdn = ldb_dn_linearize_casefold(module->ldb,
-							      mem_ctx,
-							      ldb_dn_explode(module->ldb,
+		 	char *cdn = ldb_dn_casefold(mem_ctx,
+							ldb_dn_new(mem_ctx, module->ldb,
 							      (const char *)value.data));
 
 			return lsqlite3_tprintf(mem_ctx,
@@ -754,7 +753,7 @@ static int lsqlite3_search_callback(void *result, int col_num, char **cols, char
 	msg = ac->ares->message;
 
 	if (msg->dn == NULL) {
-		msg->dn = ldb_dn_explode(msg, cols[1]);
+		msg->dn = ldb_dn_new(msg, ac->module->ldb, cols[1]);
 		if (msg->dn == NULL)
 			return SQLITE_ABORT;
 	}
@@ -811,7 +810,7 @@ static long long lsqlite3_get_eid_ndn(sqlite3 *sqlite, void *mem_ctx, const char
 	return eid;
 }
 
-static long long lsqlite3_get_eid(struct ldb_module *module, const struct ldb_dn *dn)
+static long long lsqlite3_get_eid(struct ldb_module *module, struct ldb_dn *dn)
 {
 	TALLOC_CTX *local_ctx;
 	struct lsqlite3_private *lsqlite3 = module->private_data;
@@ -1044,7 +1043,7 @@ static int lsql_add(struct ldb_module *module, struct ldb_request *req)
 	if (ldb_dn_is_special(msg->dn)) {
 		struct ldb_dn *c;
 
-		c = ldb_dn_explode(lsql_ac, "@SUBCLASSES");
+		c = ldb_dn_new(lsql_ac, module->ldb, "@SUBCLASSES");
 		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
 #warning "insert subclasses into object class tree"
 			ret = LDB_ERR_UNWILLING_TO_PERFORM;
@@ -1052,7 +1051,7 @@ static int lsql_add(struct ldb_module *module, struct ldb_request *req)
 		}
 
 /*
-		c = ldb_dn_explode(local_ctx, "@INDEXLIST");
+		c = ldb_dn_new(local_ctx, module->ldb, "@INDEXLIST");
 		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
 #warning "should we handle indexes somehow ?"
 			ret = LDB_ERR_UNWILLING_TO_PERFORM;
@@ -1182,7 +1181,7 @@ static int lsql_modify(struct ldb_module *module, struct ldb_request *req)
 	if (ldb_dn_is_special(msg->dn)) {
 		struct ldb_dn *c;
 
-		c = ldb_dn_explode(lsql_ac, "@SUBCLASSES");
+		c = ldb_dn_new(lsql_ac, module->ldb, "@SUBCLASSES");
 		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
 #warning "modify subclasses into object class tree"
 			ret = LDB_ERR_UNWILLING_TO_PERFORM;

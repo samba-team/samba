@@ -62,8 +62,8 @@ NSS_STATUS _ldb_nss_init(void)
 		goto failed;
 	}
 
-	_ldb_nss_ctx->base = ldb_dn_explode(_ldb_nss_ctx, _LDB_NSS_BASEDN);
-	if (_ldb_nss_ctx->base == NULL) {
+	_ldb_nss_ctx->base = ldb_dn_new(_ldb_nss_ctx, _ldb_nss_ctx->ldb, _LDB_NSS_BASEDN);
+	if ( ! ldb_dn_validate(_ldb_nss_ctx->base)) {
 		goto failed;
 	}
 

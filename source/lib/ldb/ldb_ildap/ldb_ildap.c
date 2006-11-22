@@ -273,8 +273,8 @@ static void ildb_callback(struct ldap_request *req)
 
 				search = &(msg->r.SearchResultEntry);
 		
-				ares->message->dn = ldb_dn_explode_or_special(ares->message, search->dn);
-				if (ares->message->dn == NULL) {
+				ares->message->dn = ldb_dn_new(ares->message, ac->module->ldb, search->dn);
+				if ( ! ldb_dn_validate(ares->message->dn)) {
 					handle->status = LDB_ERR_OPERATIONS_ERROR;
 					return;
 				}

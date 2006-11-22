@@ -56,7 +56,7 @@ int main(int argc, const char **argv)
 	struct ldb_context *ldb;
 	int ret;
 	struct ldb_cmdline *options;
-	const struct ldb_dn *dn1, *dn2;
+	struct ldb_dn *dn1, *dn2;
 
 	ldb_global_init();
 
@@ -68,8 +68,17 @@ int main(int argc, const char **argv)
 		usage();
 	}
 
-	dn1 = ldb_dn_explode(ldb, options->argv[0]);
-	dn2 = ldb_dn_explode(ldb, options->argv[1]);
+	dn1 = ldb_dn_new(ldb, ldb, options->argv[0]);
+	dn2 = ldb_dn_new(ldb, ldb, options->argv[1]);
+
+	if ( ! ldb_dn_validate(dn1)) {
+		printf("Invalid DN1: %s\n", options->argv[0]);
+		return -1;
+	}
+	if ( ! ldb_dn_validate(dn2)) {
+		printf("Invalid DN2: %s\n", options->argv[1]);
+		return -1;
+	}
 
 	ret = ldb_rename(ldb, dn1, dn2);
 	if (ret == 0) {

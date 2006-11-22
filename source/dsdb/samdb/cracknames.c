@@ -38,12 +38,12 @@
 static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				   struct smb_krb5_context *smb_krb5_context,
 				   uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
-				   const struct ldb_dn *name_dn, const char *name, 
+				   struct ldb_dn *name_dn, const char *name, 
 				   const char *domain_filter, const char *result_filter, 
 				   struct drsuapi_DsNameInfo1 *info1);
 static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
 					uint32_t format_offered, uint32_t format_desired,
-					const struct ldb_dn *name_dn, const char *name, 
+					struct ldb_dn *name_dn, const char *name, 
 					struct drsuapi_DsNameInfo1 *info1);
 
 static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, struct ldb_context *ldb_ctx, 
@@ -69,10 +69,14 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	}
 
-	service_dn = ldb_dn_string_compose(tmp_ctx, samdb_base_dn(ldb_ctx),
-					   "CN=Directory Service,CN=Windows NT"
-					   ",CN=Services,CN=Configuration");
+	service_dn = ldb_dn_new(tmp_ctx, ldb_ctx, "CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration");
+	if ( ! ldb_dn_add_base(service_dn, samdb_base_dn(ldb_ctx))) {
+		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+	}
 	service_dn_str = ldb_dn_linearize(tmp_ctx, service_dn);
+	if ( ! service_dn_str) {
+		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+	}
 
 	ret = ldb_search(ldb_ctx, service_dn, LDB_SCOPE_BASE, "(objectClass=nTDSService)",
 			 directory_attrs, &res);
@@ -358,9 +362,9 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 		/* A LDAP DN as a string */
 	case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
-		name_dn = ldb_dn_explode(mem_ctx, name);
 		domain_filter = NULL;
-		if (!name_dn) {
+		name_dn = ldb_dn_new(mem_ctx, sam_ctx, name);
+		if (! ldb_dn_validate(name_dn)) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 			return WERR_OK;
 		}
@@ -534,7 +538,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
 					uint32_t format_offered, uint32_t format_desired,
-					const struct ldb_dn *name_dn, const char *name, 
+					struct ldb_dn *name_dn, const char *name, 
 					struct drsuapi_DsNameInfo1 *info1)
 {
 	char *cracked;
@@ -573,7 +577,7 @@ static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
 static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				   struct smb_krb5_context *smb_krb5_context,
 				   uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
-				   const struct ldb_dn *name_dn, const char *name, 
+				   struct ldb_dn *name_dn, const char *name, 
 				   const char *domain_filter, const char *result_filter, 
 				   struct drsuapi_DsNameInfo1 *info1)
 {
@@ -582,8 +586,8 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	const char * const *domain_attrs;
 	const char * const *result_attrs;
 	struct ldb_message **result_res = NULL;
-	const struct ldb_dn *result_basedn;
-	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
+	struct ldb_dn *result_basedn;
+	struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	const char * const _domain_attrs_1779[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_null[] = { NULL };
@@ -655,7 +659,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
 
 	if (result_filter) {
-		result_basedn = samdb_result_dn(mem_ctx, domain_res[0], "ncName", NULL);
+		result_basedn = samdb_result_dn(sam_ctx, mem_ctx, domain_res[0], "ncName", NULL);
 		
 		ldb_ret = gendb_search(sam_ctx, mem_ctx, result_basedn, &result_res,
 				       result_attrs, "%s", result_filter);
@@ -663,7 +667,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		ldb_ret = gendb_search_dn(sam_ctx, mem_ctx, name_dn, &result_res,
 					  result_attrs);
 	} else {
-		name_dn = samdb_result_dn(mem_ctx, domain_res[0], "ncName", NULL);
+		name_dn = samdb_result_dn(sam_ctx, mem_ctx, domain_res[0], "ncName", NULL);
 		ldb_ret = gendb_search_dn(sam_ctx, mem_ctx, name_dn, &result_res,
 					  result_attrs);
 	}
@@ -830,7 +834,7 @@ NTSTATUS crack_user_principal_name(struct ldb_context *sam_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	*user_dn = ldb_dn_explode(mem_ctx, info1.result_name);
+	*user_dn = ldb_dn_new(mem_ctx, sam_ctx, info1.result_name);
 	
 	if (domain_dn) {
 		werr = DsCrackNameOneName(sam_ctx, mem_ctx, 0,
@@ -854,7 +858,7 @@ NTSTATUS crack_user_principal_name(struct ldb_context *sam_ctx,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
-		*domain_dn = ldb_dn_explode(mem_ctx, info1.result_name);
+		*domain_dn = ldb_dn_new(mem_ctx, sam_ctx, info1.result_name);
 	}
 
 	return NT_STATUS_OK;
@@ -893,7 +897,7 @@ NTSTATUS crack_service_principal_name(struct ldb_context *sam_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	*user_dn = ldb_dn_explode(mem_ctx, info1.result_name);
+	*user_dn = ldb_dn_new(mem_ctx, sam_ctx, info1.result_name);
 	
 	if (domain_dn) {
 		werr = DsCrackNameOneName(sam_ctx, mem_ctx, 0,
@@ -917,7 +921,7 @@ NTSTATUS crack_service_principal_name(struct ldb_context *sam_ctx,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
-		*domain_dn = ldb_dn_explode(mem_ctx, info1.result_name);
+		*domain_dn = ldb_dn_new(mem_ctx, sam_ctx, info1.result_name);
 	}
 
 	return NT_STATUS_OK;

@@ -59,7 +59,7 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 */
 int samdb_search_domain(struct ldb_context *sam_ldb,
 			TALLOC_CTX *mem_ctx, 
-			const struct ldb_dn *basedn,
+			struct ldb_dn *basedn,
 			struct ldb_message ***res,
 			const char * const *attrs,
 			const struct dom_sid *domain_sid,
@@ -100,7 +100,7 @@ int samdb_search_domain(struct ldb_context *sam_ldb,
 */
 const char *samdb_search_string_v(struct ldb_context *sam_ldb,
 				  TALLOC_CTX *mem_ctx,
-				  const struct ldb_dn *basedn,
+				  struct ldb_dn *basedn,
 				  const char *attr_name,
 				  const char *format, va_list ap) _PRINTF_ATTRIBUTE(5,0)
 {
@@ -129,7 +129,7 @@ const char *samdb_search_string_v(struct ldb_context *sam_ldb,
 */
 const char *samdb_search_string(struct ldb_context *sam_ldb,
 				TALLOC_CTX *mem_ctx,
-				const struct ldb_dn *basedn,
+				struct ldb_dn *basedn,
 				const char *attr_name,
 				const char *format, ...) _PRINTF_ATTRIBUTE(5,6)
 {
@@ -145,7 +145,7 @@ const char *samdb_search_string(struct ldb_context *sam_ldb,
 
 struct ldb_dn *samdb_search_dn(struct ldb_context *sam_ldb,
 			       TALLOC_CTX *mem_ctx,
-			       const struct ldb_dn *basedn,
+			       struct ldb_dn *basedn,
 			       const char *format, ...) _PRINTF_ATTRIBUTE(4,5)
 {
 	va_list ap;
@@ -170,7 +170,7 @@ struct ldb_dn *samdb_search_dn(struct ldb_context *sam_ldb,
 */
 struct dom_sid *samdb_search_dom_sid(struct ldb_context *sam_ldb,
 				     TALLOC_CTX *mem_ctx,
-				     const struct ldb_dn *basedn,
+				     struct ldb_dn *basedn,
 				     const char *attr_name,
 				     const char *format, ...) _PRINTF_ATTRIBUTE(5,6)
 {
@@ -203,7 +203,7 @@ struct dom_sid *samdb_search_dom_sid(struct ldb_context *sam_ldb,
 */
 int samdb_search_count(struct ldb_context *sam_ldb,
 		       TALLOC_CTX *mem_ctx,
-		       const struct ldb_dn *basedn,
+		       struct ldb_dn *basedn,
 		       const char *format, ...) _PRINTF_ATTRIBUTE(4,5)
 {
 	va_list ap;
@@ -225,7 +225,7 @@ int samdb_search_count(struct ldb_context *sam_ldb,
 uint_t samdb_search_uint(struct ldb_context *sam_ldb,
 			 TALLOC_CTX *mem_ctx,
 			 uint_t default_value,
-			 const struct ldb_dn *basedn,
+			 struct ldb_dn *basedn,
 			 const char *attr_name,
 			 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
@@ -253,7 +253,7 @@ uint_t samdb_search_uint(struct ldb_context *sam_ldb,
 int64_t samdb_search_int64(struct ldb_context *sam_ldb,
 			   TALLOC_CTX *mem_ctx,
 			   int64_t default_value,
-			   const struct ldb_dn *basedn,
+			   struct ldb_dn *basedn,
 			   const char *attr_name,
 			   const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
@@ -281,7 +281,7 @@ int64_t samdb_search_int64(struct ldb_context *sam_ldb,
 */
 int samdb_search_string_multiple(struct ldb_context *sam_ldb,
 				 TALLOC_CTX *mem_ctx,
-				 const struct ldb_dn *basedn,
+				 struct ldb_dn *basedn,
 				 const char ***strs,
 				 const char *attr_name,
 				 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
@@ -350,12 +350,18 @@ const char *samdb_result_string(const struct ldb_message *msg, const char *attr,
 	return ldb_msg_find_attr_as_string(msg, attr, default_value);
 }
 
-struct ldb_dn *samdb_result_dn(TALLOC_CTX *mem_ctx, const struct ldb_message *msg,
+struct ldb_dn *samdb_result_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const struct ldb_message *msg,
 			       const char *attr, struct ldb_dn *default_value)
 {
+	struct ldb_dn *res_dn;
 	const char *string = samdb_result_string(msg, attr, NULL);
 	if (string == NULL) return default_value;
-	return ldb_dn_explode(mem_ctx, string);
+	res_dn = ldb_dn_new(mem_ctx, ldb, string);
+	if ( ! ldb_dn_validate(res_dn)) {
+		talloc_free(res_dn);
+		return NULL;
+	}
+	return res_dn;
 }
 
 /*
@@ -467,7 +473,7 @@ uint64_t samdb_result_uint64(struct ldb_message *msg, const char *attr, uint64_t
 */
 NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb, 
 					  TALLOC_CTX *mem_ctx, 
-					  const struct ldb_dn *domain_dn, 
+					  struct ldb_dn *domain_dn, 
 					  struct ldb_message *msg, 
 					  const char *attr)
 {
@@ -493,7 +499,7 @@ NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb,
 */
 NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb, 
 					  TALLOC_CTX *mem_ctx, 
-					  const struct ldb_dn *domain_dn, 
+					  struct ldb_dn *domain_dn, 
 					  struct ldb_message *msg)
 {
 	uint64_t attr_time = samdb_result_uint64(msg, "pwdLastSet", 0);
@@ -679,7 +685,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 	struct ldb_result *res;
 	struct ldb_message *t;
 	int ret, i, j;
-	struct ldb_dn *basedn = ldb_dn_explode(ldb, "cn=Templates");
+	struct ldb_dn *basedn = ldb_dn_new(ldb, ldb, "cn=Templates");
 
 	*errstring = NULL;	
 
@@ -982,7 +988,7 @@ int samdb_add(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_messa
 /*
   delete a record
 */
-int samdb_delete(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, const struct ldb_dn *dn)
+int samdb_delete(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 {
 	return ldb_delete(sam_ldb, dn);
 }
@@ -1023,19 +1029,23 @@ struct security_descriptor *samdb_default_security_descriptor(TALLOC_CTX *mem_ct
 	return sd;
 }
 
-const struct ldb_dn *samdb_base_dn(struct ldb_context *sam_ctx) 
+struct ldb_dn *samdb_base_dn(struct ldb_context *sam_ctx) 
 {
 	return ldb_get_default_basedn(sam_ctx);
 }
 
 
-const struct ldb_dn *samdb_partitions_dn(struct ldb_context *sam_ctx,
-				   TALLOC_CTX *mem_ctx)
+struct ldb_dn *samdb_partitions_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
 {
-	return ldb_dn_string_compose(mem_ctx, samdb_base_dn(sam_ctx), 
-				     "CN=Partitions,CN=Configuration");
-}
+	struct ldb_dn *new_dn;
 
+	new_dn = ldb_dn_copy(mem_ctx, samdb_base_dn(sam_ctx));
+	if ( ! ldb_dn_add_child_fmt(new_dn, "CN=Partitions,CN=Configuration")) {
+		talloc_free(new_dn);
+		return NULL;
+	}
+	return new_dn;
+}
 
 /*
   work out the domain sid for the current open ldb
@@ -1061,7 +1071,7 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	basedn = ldb_dn_explode(tmp_ctx, "");
+	basedn = ldb_dn_new(tmp_ctx, ldb, NULL);
 	if (basedn == NULL) {
 		goto failed;
 	}
@@ -1078,8 +1088,8 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	basedn = ldb_dn_explode(tmp_ctx, basedn_s);
-	if (basedn == NULL) {
+	basedn = ldb_dn_new(tmp_ctx, ldb, basedn_s);
+	if ( ! ldb_dn_validate(basedn)) {
 		goto failed;
 	}
 
@@ -1129,8 +1139,8 @@ static BOOL samdb_password_complexity_ok(const char *pass)
   The caller should probably have a transaction wrapping this
 */
 _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
-			    const struct ldb_dn *user_dn,
-			    const struct ldb_dn *domain_dn,
+			    struct ldb_dn *user_dn,
+			    struct ldb_dn *domain_dn,
 			    struct ldb_message *mod,
 			    const char *new_pass,
 			    struct samr_Password *lmNewHash, 
@@ -1542,8 +1552,8 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 	}
 	
 	/* add core elements to the ldb_message for the alias */
-	msg->dn = ldb_dn_build_child(mem_ctx, "CN", sidstr, basedn);
-	if (msg->dn == NULL)
+	msg->dn = ldb_dn_copy(mem_ctx, basedn);
+	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s", sidstr))
 		return NT_STATUS_NO_MEMORY;
 	
 	samdb_msg_add_string(sam_ctx, mem_ctx, msg,

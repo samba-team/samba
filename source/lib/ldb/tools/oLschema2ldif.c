@@ -388,9 +388,8 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 			MSG_ADD_STRING("cn", token->value);
 			MSG_ADD_STRING("name", token->value);
 			MSG_ADD_STRING("lDAPDisplayName", token->value);
-			msg->dn = ldb_dn_string_compose(msg, basedn,
-							"CN=%s,CN=Schema,CN=Configuration",
-							token->value);
+			msg->dn = ldb_dn_copy(msg, basedn);
+			ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=Schema,CN=Configuration", token->value);
 			break;
 
 		case SCHEMA_SUP:
@@ -575,8 +574,8 @@ static void usage(void)
 		perror("Base DN not specified");
 		exit(1);
 	} else {
-		basedn = ldb_dn_explode(ctx, options->basedn);
-		if (basedn == NULL) {
+		basedn = ldb_dn_new(ctx, ldb_ctx, options->basedn);
+		if ( ! ldb_dn_validate(basedn)) {
 			perror("Malformed Base DN");
 			exit(1);
 		}

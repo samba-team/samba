@@ -40,8 +40,8 @@
   check if the scope matches in a search result
 */
 static int ldb_match_scope(struct ldb_context *ldb,
-			   const struct ldb_dn *base,
-			   const struct ldb_dn *dn,
+			   struct ldb_dn *base,
+			   struct ldb_dn *dn,
 			   enum ldb_scope scope)
 {
 	int ret = 0;
@@ -52,14 +52,14 @@ static int ldb_match_scope(struct ldb_context *ldb,
 
 	switch (scope) {
 	case LDB_SCOPE_BASE:
-		if (ldb_dn_compare(ldb, base, dn) == 0) {
+		if (ldb_dn_compare(base, dn) == 0) {
 			ret = 1;
 		}
 		break;
 
 	case LDB_SCOPE_ONELEVEL:
 		if (ldb_dn_get_comp_num(dn) == (ldb_dn_get_comp_num(base) + 1)) {
-			if (ldb_dn_compare_base(ldb, base, dn) == 0) {
+			if (ldb_dn_compare_base(base, dn) == 0) {
 				ret = 1;
 			}
 		}
@@ -67,7 +67,7 @@ static int ldb_match_scope(struct ldb_context *ldb,
 		
 	case LDB_SCOPE_SUBTREE:
 	default:
-		if (ldb_dn_compare_base(ldb, base, dn) == 0) {
+		if (ldb_dn_compare_base(base, dn) == 0) {
 			ret = 1;
 		}
 		break;
@@ -149,13 +149,12 @@ static int ldb_match_equality(struct ldb_context *ldb,
 	int ret;
 
 	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
-		valuedn = ldb_dn_explode_casefold(ldb, ldb,
-						  (char *)tree->u.equality.value.data);
+		valuedn = ldb_dn_new(ldb, ldb, (char *)tree->u.equality.value.data);
 		if (valuedn == NULL) {
 			return 0;
 		}
 
-		ret = ldb_dn_compare(ldb, msg->dn, valuedn);
+		ret = ldb_dn_compare(msg->dn, valuedn);
 
 		talloc_free(valuedn);
 
@@ -420,7 +419,7 @@ static int ldb_match_message(struct ldb_context *ldb,
 int ldb_match_msg(struct ldb_context *ldb,
 		  const struct ldb_message *msg,
 		  const struct ldb_parse_tree *tree,
-		  const struct ldb_dn *base,
+		  struct ldb_dn *base,
 		  enum ldb_scope scope)
 {
 	if ( ! ldb_match_scope(ldb, base, msg->dn, scope) ) {

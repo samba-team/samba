@@ -89,7 +89,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	NTTIME must_change_time;
 	NTTIME last_set_time;
 
-	struct ldb_dn *domain_dn = samdb_result_dn(mem_ctx, msg_domain_ref, "nCName", ldb_dn_new(mem_ctx));
+	struct ldb_dn *domain_dn = samdb_result_dn(sam_ctx, mem_ctx, msg_domain_ref, "nCName", ldb_dn_new(mem_ctx, sam_ctx, NULL));
 
 	NTTIME now;
 	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", name_for_logs));
@@ -287,7 +287,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	server_info->acct_expiry = samdb_result_nttime(msg, "accountExpires", 0);
 	server_info->last_password_change = samdb_result_nttime(msg, "pwdLastSet", 0);
 
-	ncname = samdb_result_dn(mem_ctx, msg_domain_ref, "nCName", NULL);
+	ncname = samdb_result_dn(sam_ctx, mem_ctx, msg_domain_ref, "nCName", NULL);
 	if (!ncname) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -322,7 +322,7 @@ _PUBLIC_ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	NTSTATUS nt_status;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int ret;
-	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
+	struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;

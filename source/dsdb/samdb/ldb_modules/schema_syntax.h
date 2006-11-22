@@ -67,7 +67,8 @@ int map_schema_syntax(uint32_t om_syntax,
 		      const struct ldb_val *om_class,
 		      enum schema_internal_syntax *syntax);
 
-int schema_validate(struct ldb_message_element *el,
+int schema_validate(struct ldb_context *ldb,
+		    struct ldb_message_element *el,
 		    enum schema_internal_syntax type,
 		    bool single, int min, int max);
 

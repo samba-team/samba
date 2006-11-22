@@ -187,7 +187,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	uint32_t new_pass_len;
 	struct samr_CryptPassword *pwbuf = r->in.password;
 	struct ldb_context *sam_ctx;
-	const struct ldb_dn *user_dn;
+	struct ldb_dn *user_dn;
 	int ret;
 	struct ldb_message **res, *mod;
 	const char * const attrs[] = { "objectSid", "lmPwdHash", NULL };
@@ -320,7 +320,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	char new_pass[512];
 	uint32_t new_pass_len;
 	struct ldb_context *sam_ctx = NULL;
-	const struct ldb_dn *user_dn;
+	struct ldb_dn *user_dn;
 	int ret;
 	struct ldb_message **res, *mod;
 	const char * const attrs[] = { "ntPwdHash", "lmPwdHash", NULL };
@@ -510,7 +510,7 @@ NTSTATUS samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX
 */
 NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 			   void *sam_ctx,
-			   const struct ldb_dn *account_dn, const struct ldb_dn *domain_dn,
+			   struct ldb_dn *account_dn, struct ldb_dn *domain_dn,
 			   TALLOC_CTX *mem_ctx,
 			   struct ldb_message *msg, 
 			   struct samr_CryptPassword *pwbuf)
@@ -552,7 +552,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 */
 NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 			      struct ldb_context *sam_ctx,
-			      const struct ldb_dn *account_dn, const struct ldb_dn *domain_dn,
+			      struct ldb_dn *account_dn, struct ldb_dn *domain_dn,
 			      TALLOC_CTX *mem_ctx,
 			      struct ldb_message *msg, 
 			      struct samr_CryptPasswordEx *pwbuf)

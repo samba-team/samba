@@ -62,7 +62,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	const char *server_site;
 	const char *client_site;
 	const char *pdc_ip;
-	const struct ldb_dn *partitions_basedn;
+	struct ldb_dn *partitions_basedn;
 
 	partitions_basedn = samdb_partitions_dn(cldapd->samctx, mem_ctx);
 
@@ -79,7 +79,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 				   "(&(&(objectClass=crossRef)(dnsRoot=%s))(nETBIOSName=*))", 
 				   domain);
 		if (count == 1) {
-			dom_dn = samdb_result_dn(mem_ctx, ref_res[0], "ncName", NULL);
+			dom_dn = samdb_result_dn(cldapd->samctx, mem_ctx, ref_res[0], "ncName", NULL);
 			if (!dom_dn) {
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}

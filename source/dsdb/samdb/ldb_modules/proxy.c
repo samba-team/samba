@@ -70,7 +70,7 @@ static int load_proxy_info(struct ldb_module *module)
 		return 0;
 	}
 
-	dn = ldb_dn_explode(proxy, "@PROXYINFO");
+	dn = ldb_dn_new(proxy, module->ldb, "@PROXYINFO");
 	if (dn == NULL) {
 		goto failed;
 	}
@@ -94,13 +94,13 @@ static int load_proxy_info(struct ldb_module *module)
 		goto failed;
 	}
 
-	proxy->olddn = ldb_dn_explode(proxy, olddn);
+	proxy->olddn = ldb_dn_new(proxy, module->ldb, olddn);
 	if (proxy->olddn == NULL) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to explode olddn '%s'\n", olddn);
 		goto failed;
 	}
 	
-	proxy->newdn = ldb_dn_explode(proxy, newdn);
+	proxy->newdn = ldb_dn_new(proxy, module->ldb, newdn);
 	if (proxy->newdn == NULL) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to explode newdn '%s'\n", newdn);
 		goto failed;
@@ -226,9 +226,8 @@ static void proxy_convert_record(struct ldb_module *module, struct ldb_message *
 	
 	/* fix the message DN */
 	if (ldb_dn_compare_base(module->ldb, proxy->olddn, msg->dn) == 0) {
-		struct ldb_dn *newdn = ldb_dn_copy(msg, msg->dn);
-		newdn->comp_num -= proxy->olddn->comp_num;
-		msg->dn = ldb_dn_compose(msg, newdn, proxy->newdn);
+		ldb_dn_remove_base_components(msg->dn, ldb_dn_get_comp_num(proxy->olddn));
+		ldb_dn_add_base(msg->dn, proxy->newdn);
 	}
 
 	/* fix any attributes */
@@ -282,8 +281,8 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 		talloc_free(newreq);
 		goto failed;
 	}
-	base->comp_num -= proxy->newdn->comp_num;
-	base = ldb_dn_compose(proxy, newreq->op.search.base, proxy->olddn);
+	ldb_dn_remove_base_components(base, ldb_dn_get_comp_num(proxy->newdn));
+	ldb_dn_add_base(base, proxy->olddn);
 
 	ldb_debug(module->ldb, LDB_DEBUG_FATAL, "proxying: '%s' with dn '%s' \n", 
 		  ldb_filter_from_tree(proxy, newreq->op.search.tree), ldb_dn_linearize(proxy, newreq->op.search.base));

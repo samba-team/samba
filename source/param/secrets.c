@@ -141,7 +141,7 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 	}
 
 	ldb_ret = gendb_search(ldb, ldb,
-			       ldb_dn_explode(mem_ctx, SECRETS_PRIMARY_DOMAIN_DN), 
+			       ldb_dn_new(mem_ctx, ldb, SECRETS_PRIMARY_DOMAIN_DN), 
 			       &msgs, attrs,
 			       SECRETS_PRIMARY_DOMAIN_FILTER, domain);
 

@@ -874,7 +874,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	struct netr_DomainInfo1 *info1;
 	int ret, ret1, ret2, i;
 	NTSTATUS status;
-	const struct ldb_dn *partitions_basedn;
+	struct ldb_dn *partitions_basedn;
 
 	const char *local_domain;
 
@@ -1130,7 +1130,7 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 	struct ldb_message **dom_res, **ref_res;
 	const char * const dom_attrs[] = { "objectSid", "objectGUID", NULL };
 	const char * const ref_attrs[] = { "nETBIOSName", "dnsRoot", NULL };
-	const struct ldb_dn *partitions_basedn;
+	struct ldb_dn *partitions_basedn;
 
 	ZERO_STRUCT(r->out);
 

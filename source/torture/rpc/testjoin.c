@@ -424,8 +424,8 @@ NTSTATUS torture_leave_ads_domain(TALLOC_CTX *mem_ctx, struct libnet_JoinDomain 
 	}
 
 	/* Remove CN=Servers,... entry from the AD. */ 
-	server_dn = ldb_dn_explode(tmp_ctx, libnet_r->out.server_dn_str);
-	if (!server_dn) {
+	server_dn = ldb_dn_new(tmp_ctx, ldb_ctx, libnet_r->out.server_dn_str);
+	if (! ldb_dn_validate(server_dn)) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;

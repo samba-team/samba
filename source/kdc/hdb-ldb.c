@@ -212,7 +212,11 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	krb5_boolean is_computer = FALSE;
 	const char *dnsdomain = ldb_msg_find_attr_as_string(realm_ref_msg, "dnsRoot", NULL);
 	char *realm = strupper_talloc(mem_ctx, dnsdomain);
-	struct ldb_dn *domain_dn = samdb_result_dn(mem_ctx, realm_ref_msg, "nCName", ldb_dn_new(mem_ctx));
+	struct ldb_dn *domain_dn = samdb_result_dn((struct ldb_context *)db->hdb_db,
+							mem_ctx,
+							realm_ref_msg,
+							"nCName",
+							ldb_dn_new(mem_ctx, (struct ldb_context *)db->hdb_db, NULL));
 
 	struct hdb_ldb_private *private;
 	NTTIME acct_expiry;
@@ -449,7 +453,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 					    TALLOC_CTX *mem_ctx,
 					    krb5_const_principal principal,
 					    enum hdb_ldb_ent_type ent_type,
-					    const struct ldb_dn *realm_dn,
+					    struct ldb_dn *realm_dn,
 					    struct ldb_message ***pmsg)
 {
 	krb5_error_code ret;
@@ -523,7 +527,7 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
  	int ret;
 	char *cross_ref_filter;
 	struct ldb_result *cross_ref_res;
-	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(ldb_ctx, mem_ctx);
+	struct ldb_dn *partitions_basedn = samdb_partitions_dn(ldb_ctx, mem_ctx);
 
 	cross_ref_filter = talloc_asprintf(mem_ctx, 
 					   "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
@@ -630,7 +634,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 	krb5_error_code ret;
 	struct ldb_message **msg = NULL;
 	struct ldb_message **realm_ref_msg = NULL;
-	const struct ldb_dn *realm_dn;
+	struct ldb_dn *realm_dn;
 
 	if (principal->name.name_string.len != 2
 	    || (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) != 0)) {
@@ -642,13 +646,13 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 	if ((LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
 			      mem_ctx, principal->name.name_string.val[1], &realm_ref_msg) == 0)) {
 		/* us */		
-		realm_dn = samdb_result_dn(mem_ctx, realm_ref_msg[0], "nCName", NULL);
+		realm_dn = samdb_result_dn((struct ldb_context *)db->hdb_db, mem_ctx, realm_ref_msg[0], "nCName", NULL);
 	} else {
 		/* we should lookup trusted domains */
 		return HDB_ERR_NOENTRY;
 	}
 
-	realm_dn = samdb_result_dn(mem_ctx, realm_ref_msg[0], "nCName", NULL);
+	realm_dn = samdb_result_dn((struct ldb_context *)db->hdb_db, mem_ctx, realm_ref_msg[0], "nCName", NULL);
 	
 	ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
 				   mem_ctx, 
@@ -679,7 +683,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 	const char *realm;
 	struct ldb_message **msg = NULL;
 	struct ldb_message **realm_ref_msg = NULL;
-	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(db->hdb_db, mem_ctx);
+	struct ldb_dn *partitions_basedn = samdb_partitions_dn(db->hdb_db, mem_ctx);
 	if (principal->name.name_string.len >= 2) {
 		/* 'normal server' case */
 		int ldb_ret;
@@ -722,7 +726,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 		}
 		
 	} else {
-		const struct ldb_dn *realm_dn;
+		struct ldb_dn *realm_dn;
 		/* server as client principal case, but we must not lookup userPrincipalNames */
 
 		realm = krb5_principal_get_realm(context, principal);
@@ -733,7 +737,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 			return HDB_ERR_NOENTRY;
 		}
 		
-		realm_dn = samdb_result_dn(mem_ctx, realm_ref_msg[0], "nCName", NULL);
+		realm_dn = samdb_result_dn((struct ldb_context *)db->hdb_db, mem_ctx, realm_ref_msg[0], "nCName", NULL);
 		
 		ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
 					   mem_ctx, 
@@ -898,7 +902,7 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 		return HDB_ERR_NOENTRY;
 	}
 
-	realm_dn = samdb_result_dn(mem_ctx, realm_ref_msgs[0], "nCName", NULL);
+	realm_dn = samdb_result_dn((struct ldb_context *)db->hdb_db, mem_ctx, realm_ref_msgs[0], "nCName", NULL);
 
 	priv->realm_ref_msgs = talloc_steal(priv, realm_ref_msgs);
 

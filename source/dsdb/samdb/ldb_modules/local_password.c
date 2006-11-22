@@ -140,8 +140,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 	}
 
 	/* If the caller is manipulating the local passwords directly, let them pass */
-	if (ldb_dn_compare_base(module->ldb, 
-				ldb_dn_explode(req, LOCAL_BASE),
+	if (ldb_dn_compare_base(ldb_dn_new(req, module->ldb, LOCAL_BASE),
 				req->op.add.message->dn) == 0) {
 		return ldb_next_request(module, req);
 	}
@@ -225,9 +224,8 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 	/* Find the objectGUID to use as the key */
 	objectGUID = samdb_result_guid(ac->orig_req->op.add.message, "objectGUID");
 	
-	local_message->dn = ldb_dn_string_compose(local_message,
-						  ldb_dn_explode(local_message, LOCAL_BASE),
-						  PASSWORD_GUID_ATTR "=%s", GUID_string(local_message, &objectGUID));
+	local_message->dn = ldb_dn_new(local_message, module->ldb, LOCAL_BASE);
+	ldb_dn_add_child_fmt(local_message->dn, PASSWORD_GUID_ATTR "=%s", GUID_string(local_message, &objectGUID));
 
 	ac->local_req->op.add.message = local_message;
 
@@ -276,8 +274,7 @@ static int local_password_modify(struct ldb_module *module, struct ldb_request *
 	}
 
 	/* If the caller is manipulating the local passwords directly, let them pass */
-	if (ldb_dn_compare_base(module->ldb, 
-				ldb_dn_explode(req, LOCAL_BASE),
+	if (ldb_dn_compare_base(ldb_dn_new(req, module->ldb, LOCAL_BASE),
 				req->op.mod.message->dn) == 0) {
 		return ldb_next_request(module, req);
 	}
@@ -447,9 +444,8 @@ static int local_password_mod_local(struct ldb_handle *h) {
 	
 	objectGUID = samdb_result_guid(ac->search_res->message, "objectGUID");
 
-	ac->local_message->dn = ldb_dn_string_compose(ac,
-						      ldb_dn_explode(ac, LOCAL_BASE),
-						      PASSWORD_GUID_ATTR "=%s", GUID_string(ac, &objectGUID));
+	ac->local_message->dn = ldb_dn_new(ac, ac->module->ldb, LOCAL_BASE);
+	ldb_dn_add_child_fmt(ac->local_message->dn, PASSWORD_GUID_ATTR "=%s", GUID_string(ac, &objectGUID));
 
 	h->state = LDB_ASYNC_INIT;
 	h->status = LDB_SUCCESS;
@@ -591,10 +587,8 @@ static int lpdb_remote_search_callback(struct ldb_context *ldb, void *context, s
 		local_context->remote_res = ares;
 		local_context->local_res = NULL;
 
-		req->op.search.base = ldb_dn_string_compose(ac,
-							    ldb_dn_explode(ac, LOCAL_BASE),
-							    PASSWORD_GUID_ATTR "=%s", GUID_string(ac, &objectGUID));
-		if (!req->op.search.base) {
+		req->op.search.base = ldb_dn_new(ac, ac->module->ldb, LOCAL_BASE);
+		if ( ! ldb_dn_add_child_fmt(req->op.search.base, PASSWORD_GUID_ATTR "=%s", GUID_string(ac, &objectGUID))) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		req->operation = LDB_SEARCH;
@@ -642,8 +636,7 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 	}
 
 	/* If the caller is searching for the local passwords directly, let them pass */
-	if (ldb_dn_compare_base(module->ldb, 
-				ldb_dn_explode(req, LOCAL_BASE),
+	if (ldb_dn_compare_base(ldb_dn_new(req, module->ldb, LOCAL_BASE),
 				req->op.search.base) == 0) {
 		return ldb_next_request(module, req);
 	}

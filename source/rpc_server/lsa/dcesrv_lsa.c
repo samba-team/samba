@@ -52,9 +52,9 @@ struct lsa_policy_state {
 	struct ldb_context *sam_ldb;
 	struct sidmap_context *sidmap;
 	uint32_t access_mask;
-	const struct ldb_dn *domain_dn;
-	const struct ldb_dn *builtin_dn;
-	const struct ldb_dn *system_dn;
+	struct ldb_dn *domain_dn;
+	struct ldb_dn *builtin_dn;
+	struct ldb_dn *system_dn;
 	const char *domain_name;
 	const char *domain_dns;
 	struct dom_sid *domain_sid;
@@ -91,7 +91,7 @@ struct lsa_secret_state {
 struct lsa_trusted_domain_state {
 	struct lsa_policy_state *policy;
 	uint32_t access_mask;
-	const struct ldb_dn *trusted_domain_dn;
+	struct ldb_dn *trusted_domain_dn;
 };
 
 static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call, 
@@ -271,7 +271,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 				     struct lsa_policy_state **_state)
 {
 	struct lsa_policy_state *state;
-	const struct ldb_dn *partitions_basedn;
+	struct ldb_dn *partitions_basedn;
 	struct ldb_result *dom_res;
 	const char *dom_attrs[] = {
 		"objectSid", 
@@ -833,10 +833,8 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
-	msg->dn = ldb_dn_build_child(mem_ctx, "cn",
-				     r->in.info->name.string, 
-				     policy_state->system_dn);
-	if (!msg->dn) {
+	msg->dn = ldb_dn_copy(mem_ctx, policy_state->system_dn);
+	if ( ! ldb_dn_add_child_fmt(msg->dn, "sn=%s", r->in.info->name.string)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
@@ -2218,8 +2216,8 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		msg->dn = ldb_dn_build_child(mem_ctx, "cn", name2, policy_state->system_dn);
-		if (!name2 || !msg->dn) {
+		msg->dn = ldb_dn_copy(mem_ctx, policy_state->system_dn);
+		if (!name2 || ! ldb_dn_add_child_fmt(msg->dn, "cn=%s", name2)) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		
@@ -2236,7 +2234,7 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		secret_state->sam_ldb = talloc_reference(secret_state, secrets_db_connect(mem_ctx));
 		/* search for the secret record */
 		ret = gendb_search(secret_state->sam_ldb, mem_ctx,
-				   ldb_dn_explode(mem_ctx, "cn=LSA Secrets"),
+				   ldb_dn_new(mem_ctx, secret_state->sam_ldb, "cn=LSA Secrets"),
 				   &msgs, attrs,
 				   "(&(cn=%s)(objectclass=secret))", 
 				   ldb_binary_encode_string(mem_ctx, name));
@@ -2250,7 +2248,7 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		msg->dn = ldb_dn_string_compose(mem_ctx, NULL, "cn=%s,cn=LSA Secrets", name);
+		msg->dn = ldb_dn_new_fmt(mem_ctx, secret_state->sam_ldb, "cn=%s,cn=LSA Secrets", name);
 		samdb_msg_add_string(secret_state->sam_ldb, mem_ctx, msg, "cn", name);
 	} 
 
@@ -2361,7 +2359,7 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 		/* search for the secret record */
 		ret = gendb_search(secret_state->sam_ldb, mem_ctx,
-				   ldb_dn_explode(mem_ctx, "cn=LSA Secrets"),
+				   ldb_dn_new(mem_ctx, secret_state->sam_ldb, "cn=LSA Secrets"),
 				   &msgs, attrs,
 				   "(&(cn=%s)(objectclass=secret))", 
 				   ldb_binary_encode_string(mem_ctx, name));

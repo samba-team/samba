@@ -53,7 +53,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	struct private_data *priv = talloc_get_type(module->private_data, struct private_data);
 	char **server_sasl;
 
-	msg->dn = ldb_dn_explode(msg, "");
+	msg->dn = ldb_dn_new(msg, module->ldb, NULL);
 
 	/* don't return the distinduishedName, cn and name attributes */
 	ldb_msg_remove_attr(msg, "distinguishedName");
@@ -182,7 +182,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 
 	/* see if its for the rootDSE */
 	if (req->op.search.scope != LDB_SCOPE_BASE ||
-	    (req->op.search.base && ldb_dn_get_comp_num(req->op.search.base) != 0)) {
+	    ( ! ldb_dn_is_null(req->op.search.base))) {
 		return ldb_next_request(module, req);
 	}
 
@@ -203,7 +203,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 
 	down_req->operation = req->operation;
 	/* in our db we store the rootDSE with a DN of cn=rootDSE */
-	down_req->op.search.base = ldb_dn_explode(down_req, "cn=rootDSE");
+	down_req->op.search.base = ldb_dn_new(down_req, module->ldb, "cn=rootDSE");
 	down_req->op.search.scope = LDB_SCOPE_BASE;
 	down_req->op.search.tree = ldb_parse_tree(down_req, NULL);
 	if (down_req->op.search.base == NULL || down_req->op.search.tree == NULL) {

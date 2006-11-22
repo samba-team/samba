@@ -54,8 +54,7 @@ static int do_compare_msg(struct ldb_message **el1,
 			  struct ldb_message **el2,
 			  void *opaque)
 {
-	struct ldb_context *ldb = talloc_get_type(opaque, struct ldb_context);
-	return ldb_dn_compare(ldb, (*el1)->dn, (*el2)->dn);
+	return ldb_dn_compare((*el1)->dn, (*el2)->dn);
 }
 
 struct search_context {
@@ -185,7 +184,7 @@ static int search_callback(struct ldb_context *ldb, void *context, struct ldb_re
 }
 
 static int do_search(struct ldb_context *ldb,
-		     const struct ldb_dn *basedn,
+		     struct ldb_dn *basedn,
 		     struct ldb_cmdline *options,
 		     const char *expression,
 		     const char * const *attrs)
@@ -298,8 +297,8 @@ int main(int argc, const char **argv)
 	}
 
 	if (options->basedn != NULL) {
-		basedn = ldb_dn_explode(ldb, options->basedn);
-		if (basedn == NULL) {
+		basedn = ldb_dn_new(ldb, ldb, options->basedn);
+		if ( ! ldb_dn_validate(basedn)) {
 			fprintf(stderr, "Invalid Base DN format\n");
 			exit(1);
 		}

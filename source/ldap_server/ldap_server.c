@@ -239,8 +239,8 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		return -1;
 	}
 
-	basedn = ldb_dn_new(tmp_ctx);
-	if (basedn == NULL) {
+	basedn = ldb_dn_new(tmp_ctx, conn->ldb, NULL);
+	if ( ! ldb_dn_validate(basedn)) {
 		goto failed;
 	}
 
@@ -250,12 +250,13 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		goto failed;
 	}
 
-	conf_dn = ldb_msg_find_attr_as_dn(tmp_ctx, res->msgs[0], "configurationNamingContext");
+	conf_dn = ldb_msg_find_attr_as_dn(conn->ldb, tmp_ctx, res->msgs[0], "configurationNamingContext");
 	if (conf_dn == NULL) {
 		goto failed;
 	}
 
-	policy_dn = ldb_dn_string_compose(tmp_ctx, conf_dn, "CN=Default Query Policy,CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services");
+	policy_dn = ldb_dn_copy(tmp_ctx, conf_dn);
+	ldb_dn_add_child_fmt(policy_dn, "CN=Default Query Policy,CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services");
 	if (policy_dn == NULL) {
 		goto failed;
 	}

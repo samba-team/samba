@@ -588,8 +588,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* If the caller is manipulating the local passwords directly, let them pass */
-	if (ldb_dn_compare_base(module->ldb, 
-				ldb_dn_explode(req, LOCAL_BASE),
+	if (ldb_dn_compare_base(ldb_dn_new(req, module->ldb, LOCAL_BASE),
 				req->op.add.message->dn) == 0) {
 		return ldb_next_request(module, req);
 	}
@@ -783,8 +782,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	}
 	
 	/* If the caller is manipulating the local passwords directly, let them pass */
-	if (ldb_dn_compare_base(module->ldb, 
-				ldb_dn_explode(req, LOCAL_BASE),
+	if (ldb_dn_compare_base(ldb_dn_new(req, module->ldb, LOCAL_BASE),
 				req->op.mod.message->dn) == 0) {
 		return ldb_next_request(module, req);
 	}

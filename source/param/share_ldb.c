@@ -171,7 +171,7 @@ static NTSTATUS sldb_list_all(TALLOC_CTX *mem_ctx,
 
 	ldb = talloc_get_type(ctx->priv_data, struct ldb_context);
 
-	ret = ldb_search(ldb, ldb_dn_explode(tmp_ctx, "CN=SHARES"), LDB_SCOPE_SUBTREE, "(name=*)", NULL, &res);
+	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, "CN=SHARES"), LDB_SCOPE_SUBTREE, "(name=*)", NULL, &res);
 	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -227,7 +227,7 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = ldb_search(ldb, ldb_dn_explode(tmp_ctx, "CN=SHARES"), LDB_SCOPE_SUBTREE, filter, NULL, &res);
+	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, "CN=SHARES"), LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		talloc_free(tmp_ctx);
@@ -324,7 +324,7 @@ NTSTATUS sldb_create(struct share_context *ctx, const char *name, struct share_i
 	}
 
 	/* TODO: escape info->name */
-	msg->dn = ldb_dn_string_compose(tmp_ctx, ldb_dn_new(tmp_ctx), "CN=%s,CN=SHARES", name);
+	msg->dn = ldb_dn_new_fmt(tmp_ctx, ldb, "CN=%s,CN=SHARES", name);
 	if (!msg->dn) {
 		DEBUG(0,("ERROR: Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
@@ -454,7 +454,7 @@ NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info
 	}
 
 	/* TODO: escape name */
-	msg->dn = ldb_dn_string_compose(tmp_ctx, ldb_dn_new(tmp_ctx), "CN=%s,CN=SHARES", name);
+	msg->dn = ldb_dn_new_fmt(tmp_ctx, ldb, "CN=%s,CN=SHARES", name);
 	if (!msg->dn) {
 		DEBUG(0,("ERROR: Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
@@ -493,7 +493,7 @@ NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info
 		olddn = msg->dn;
 
 		/* TODO: escape newname */
-		newdn = ldb_dn_string_compose(tmp_ctx, ldb_dn_new(tmp_ctx), "CN=%s,CN=SHARES", newname);
+		newdn = ldb_dn_new_fmt(tmp_ctx, ldb, "CN=%s,CN=SHARES", newname);
 		if (!newdn) {
 			DEBUG(0,("ERROR: Out of memory!\n"));
 			ret = NT_STATUS_NO_MEMORY;
@@ -549,7 +549,7 @@ NTSTATUS sldb_remove(struct share_context *ctx, const char *name)
 
 	ldb = talloc_get_type(ctx->priv_data, struct ldb_context);
 
-	dn = ldb_dn_string_compose(tmp_ctx, ldb_dn_new(tmp_ctx), "CN=%s,CN=SHARES", name);
+	dn = ldb_dn_new_fmt(tmp_ctx, ldb, "CN=%s,CN=SHARES", name);
 	if (!dn) {
 		DEBUG(0,("ERROR: Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;

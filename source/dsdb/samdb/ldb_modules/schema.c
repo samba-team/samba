@@ -946,7 +946,7 @@ static int schema_check_attributes_syntax(struct schema_context *sctx)
 		if (attr == NULL) {
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
-		ret = schema_validate(&msg->elements[i], attr->syntax, attr->single, attr->min, attr->max);
+		ret = schema_validate(sctx->module->ldb, &msg->elements[i], attr->syntax, attr->single, attr->min, attr->max);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1187,7 +1187,7 @@ static int schema_init(struct ldb_module *module)
 
 	/* find the schema partition */
 	ret = ldb_search(module->ldb,
-			 ldb_dn_new(module),
+			 ldb_dn_new(module, module->ldb, NULL),
 			 LDB_SCOPE_BASE,
 			 "(objectClass=*)",
 			 schema_attrs,
@@ -1200,7 +1200,7 @@ static int schema_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	data->schema_dn = ldb_msg_find_attr_as_dn(data, res->msgs[0], "schemaNamingContext");
+	data->schema_dn = ldb_msg_find_attr_as_dn(module->ldb, data, res->msgs[0], "schemaNamingContext");
 	if (data->schema_dn == NULL) {
 		/* FIXME: return a clear error string */
 		talloc_free(data);
