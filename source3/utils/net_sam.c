@@ -378,6 +378,13 @@ static int net_sam_policy_set(int argc, const char **argv)
 
 	printf("Account policy \"%s\" description: %s\n", account_policy,
                account_policy_get_desc(field));
+
+	if (!pdb_get_account_policy(field, &old_value)) {
+                fprintf(stderr, "Valid account policy, but unable to "
+                        "fetch value!\n");
+                return -1;
+        }
+	
         printf("Account policy \"%s\" value was: %d\n", account_policy,
                old_value);
 
