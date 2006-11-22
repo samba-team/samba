@@ -100,7 +100,7 @@ struct ldb_module *make_module_for_next_request(TALLOC_CTX *mem_ctx,
 	return current;
 }
 
-struct ldb_module *find_backend(struct ldb_module *module, struct ldb_request *req, const struct ldb_dn *dn)
+struct ldb_module *find_backend(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn)
 {
 	int i;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
@@ -109,8 +109,7 @@ struct ldb_module *find_backend(struct ldb_module *module, struct ldb_request *r
 	/* Figure out which partition it is under */
 	/* Skip the lot if 'data' isn't here yet (initialistion) */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if (ldb_dn_compare_base(module->ldb, 
-					data->partitions[i]->dn, 
+		if (ldb_dn_compare_base(data->partitions[i]->dn, 
 					dn) == 0) {
 			return make_module_for_next_request(req, module->ldb, data->partitions[i]->module);
 		}
@@ -210,8 +209,7 @@ static int partition_send_request(struct partition_context *ac, struct ldb_modul
 		/* If the search is for 'more' than this partition,
 		 * then change the basedn, so a remote LDAP server
 		 * doesn't object */
-		if (ldb_dn_compare_base(ac->module->ldb, 
-					partition_base_dn, req->op.search.base) != 0) {
+		if (ldb_dn_compare_base(partition_base_dn, req->op.search.base) != 0) {
 			req->op.search.base = partition_base_dn;
 		}
 		req->callback = partition_search_callback;
@@ -253,7 +251,7 @@ static int partition_send_all(struct ldb_module *module,
 
 /* Figure out which backend a request needs to be aimed at.  Some
  * requests must be replicated to all backends */
-static int partition_replicate(struct ldb_module *module, struct ldb_request *req, const struct ldb_dn *dn) 
+static int partition_replicate(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn) 
 {
 	int i;
 	struct ldb_module *backend;
@@ -262,8 +260,7 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 	
 	/* Is this a special DN, we need to replicate to every backend? */
 	for (i=0; data->replicate && data->replicate[i]; i++) {
-		if (ldb_dn_compare(module->ldb, 
-				   data->replicate[i], 
+		if (ldb_dn_compare(data->replicate[i], 
 				   dn) == 0) {
 			struct ldb_handle *h;
 			struct partition_context *ac;
@@ -316,13 +313,12 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		ac = talloc_get_type(h->private_data, struct partition_context);
 		
 		/* Search from the base DN */
-		if (!req->op.search.base || (ldb_dn_get_comp_num(req->op.search.base) == 0)) {
+		if (!req->op.search.base || ldb_dn_is_null(req->op.search.base)) {
 			return partition_send_all(module, ac, req);
 		}
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {
 			/* Find all partitions under the search base */
-			if (ldb_dn_compare_base(module->ldb, 
-						req->op.search.base,
+			if (ldb_dn_compare_base(req->op.search.base,
 						data->partitions[i]->dn) == 0) {
 				ret = partition_send_request(ac, data->partitions[i]->module, data->partitions[i]->dn);
 				if (ret != LDB_SUCCESS) {
@@ -577,13 +573,12 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 static int sort_compare(void *void1,
 			void *void2, void *opaque)
 {
-	struct ldb_context *ldb = talloc_get_type(opaque, struct ldb_context);
 	struct partition **pp1 = void1;
 	struct partition **pp2 = void2;
 	struct partition *partition1 = talloc_get_type(*pp1, struct partition);
 	struct partition *partition2 = talloc_get_type(*pp2, struct partition);
 
-	return ldb_dn_compare(ldb, partition1->dn, partition2->dn);
+	return ldb_dn_compare(partition1->dn, partition2->dn);
 }
 
 static int partition_init(struct ldb_module *module)
@@ -608,7 +603,7 @@ static int partition_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(module->ldb, ldb_dn_explode(mem_ctx, "@PARTITION"),
+	ret = ldb_search(module->ldb, ldb_dn_new(mem_ctx, module->ldb, "@PARTITION"),
 			 LDB_SCOPE_BASE,
 			 NULL, attrs,
 			 &res);
@@ -665,7 +660,7 @@ static int partition_init(struct ldb_module *module)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		data->partitions[i]->dn = ldb_dn_explode(data->partitions[i], base);
+		data->partitions[i]->dn = ldb_dn_new(data->partitions[i], module->ldb, base);
 		if (!data->partitions[i]->dn) {
 			ldb_asprintf_errstring(module->ldb, 
 						"partition_init: invalid DN in partition record: %s", base);
@@ -718,8 +713,8 @@ static int partition_init(struct ldb_module *module)
 		}
 		
 		for (i=0; i < replicate_attributes->num_values; i++) {
-			data->replicate[i] = ldb_dn_explode(data->replicate, (const char *)replicate_attributes->values[i].data);
-			if (!data->replicate[i]) {
+			data->replicate[i] = ldb_dn_new(data->replicate, module->ldb, (const char *)replicate_attributes->values[i].data);
+			if (!ldb_dn_validate(data->replicate[i])) {
 				ldb_asprintf_errstring(module->ldb, 
 							"partition_init: "
 							"invalid DN in partition replicate record: %s", 
@@ -765,14 +760,14 @@ static int partition_init(struct ldb_module *module)
 			modules = ldb_modules_list_from_string(module->ldb, mem_ctx,
 							       p);
 			
-			base_dn = ldb_dn_explode(mem_ctx, base);
-			if (!base_dn) {
+			base_dn = ldb_dn_new(mem_ctx, module->ldb, base);
+			if (!ldb_dn_validate(base_dn)) {
 				talloc_free(mem_ctx);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			
 			for (partition_idx = 0; data->partitions[partition_idx]; partition_idx++) {
-				if (ldb_dn_compare(module->ldb, data->partitions[partition_idx]->dn, 
+				if (ldb_dn_compare(data->partitions[partition_idx]->dn, 
 						   base_dn) == 0) {
 					partition = data->partitions[partition_idx];
 					break;

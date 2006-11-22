@@ -33,7 +33,7 @@ struct map_context {
 
 	struct ldb_module *module;
 
-	const struct ldb_dn *local_dn;
+	struct ldb_dn *local_dn;
 	const struct ldb_parse_tree *local_tree;
 	const char * const *local_attrs;
 	const char * const *remote_attrs;
@@ -70,7 +70,7 @@ int ldb_next_remote_request(struct ldb_module *module, struct ldb_request *reque
 
 BOOL map_check_local_db(struct ldb_module *module);
 BOOL map_attr_check_remote(const struct ldb_map_context *data, const char *attr);
-BOOL ldb_dn_check_local(struct ldb_module *module, const struct ldb_dn *dn);
+BOOL ldb_dn_check_local(struct ldb_module *module, struct ldb_dn *dn);
 
 const struct ldb_map_attribute *map_attr_find_local(const struct ldb_map_context *data, const char *name);
 const struct ldb_map_attribute *map_attr_find_remote(const struct ldb_map_context *data, const char *name);
@@ -82,13 +82,13 @@ int map_attrs_merge(struct ldb_module *module, void *mem_ctx, const char ***attr
 struct ldb_val ldb_val_map_local(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, const struct ldb_val *val);
 struct ldb_val ldb_val_map_remote(struct ldb_module *module, void *mem_ctx, const struct ldb_map_attribute *map, const struct ldb_val *val);
 
-struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, const struct ldb_dn *dn);
-struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, const struct ldb_dn *dn);
-struct ldb_dn *ldb_dn_map_rebase_remote(struct ldb_module *module, void *mem_ctx, const struct ldb_dn *dn);
+struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct ldb_dn *dn);
+struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struct ldb_dn *dn);
+struct ldb_dn *ldb_dn_map_rebase_remote(struct ldb_module *module, void *mem_ctx, struct ldb_dn *dn);
 
-struct ldb_request *map_search_base_req(struct map_context *ac, const struct ldb_dn *dn, const char * const *attrs, const struct ldb_parse_tree *tree, void *context, ldb_search_callback callback);
-struct ldb_request *map_search_self_req(struct map_context *ac, const struct ldb_dn *dn);
-struct ldb_request *map_build_fixup_req(struct map_context *ac, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
+struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *dn, const char * const *attrs, const struct ldb_parse_tree *tree, void *context, ldb_search_callback callback);
+struct ldb_request *map_search_self_req(struct map_context *ac, struct ldb_dn *dn);
+struct ldb_request *map_build_fixup_req(struct map_context *ac, struct ldb_dn *olddn, struct ldb_dn *newdn);
 
 int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, struct ldb_parse_tree **new, const struct ldb_parse_tree *tree, const struct ldb_map_attribute *map);
 

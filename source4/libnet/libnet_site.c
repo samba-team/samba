@@ -186,8 +186,8 @@ NTSTATUS libnet_JoinSite(struct ldb_context *remote_ldb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	server_dn = ldb_dn_explode(tmp_ctx, server_dn_str);
-	if (server_dn == NULL) {
+	server_dn = ldb_dn_new(tmp_ctx, remote_ldb, server_dn_str);
+	if ( ! ldb_dn_validate(server_dn)) {
 		libnet_r->out.error_string = talloc_asprintf(libnet_r,
 					"Invalid server dn: %s",
 					server_dn_str);

@@ -327,7 +327,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		struct ldb_result *res = NULL;
 		struct ldb_dn *mods_dn;
 
-		mods_dn = ldb_dn_explode(mem_ctx, "@MODULES");
+		mods_dn = ldb_dn_new(mem_ctx, ldb, "@MODULES");
 		if (mods_dn == NULL) {
 			talloc_free(mem_ctx);
 			return -1;

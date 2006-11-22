@@ -93,8 +93,8 @@ NTSTATUS schannel_store_session_key_ldb(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg->dn = ldb_dn_build_child(msg, "computerName", creds->computer_name, NULL);
-	if (msg->dn == NULL) {
+	msg->dn = ldb_dn_new_fmt(msg, ldb, "computerName=%s", creds->computer_name);
+	if ( ! msg->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

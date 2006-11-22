@@ -196,7 +196,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 			errno = EIO;
 			goto failed;
 		}
-		message->dn = ldb_dn_explode(message, (char *)p);
+		message->dn = ldb_dn_new(message, ldb, (char *)p);
 		if (message->dn == NULL) {
 			errno = ENOMEM;
 			goto failed;

@@ -220,7 +220,7 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 
 	/* search for the secret record */
 	ldb_ret = gendb_search(ldb,
-			       mem_ctx, ldb_dn_explode(mem_ctx, base), 
+			       mem_ctx, ldb_dn_new(mem_ctx, ldb, base), 
 			       &msgs, attrs,
 			       "%s", filter);
 	if (ldb_ret == 0) {

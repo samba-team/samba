@@ -47,12 +47,12 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	struct ldb_message **msgs_tmp;
 	struct ldb_message **msgs;
 	struct ldb_message **msgs_domain_ref;
-	const struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
+	struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	int ret;
 	int ret_domain;
 
-	const struct ldb_dn *domain_dn = NULL;
+	struct ldb_dn *domain_dn = NULL;
 
 	if (domain_name) {
 		char *escaped_domain = ldb_binary_encode_string(mem_ctx, domain_name);
@@ -76,7 +76,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		domain_dn = samdb_result_dn(mem_ctx, msgs_domain_ref[0], "nCName", NULL);
+		domain_dn = samdb_result_dn(sam_ctx, mem_ctx, msgs_domain_ref[0], "nCName", NULL);
 	}
 
 	/* pull the user attributes */

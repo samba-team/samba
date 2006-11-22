@@ -209,7 +209,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 
   return 1 on success, 0 on record-not-found and -1 on error
 */
-int ltdb_search_dn1(struct ldb_module *module, const struct ldb_dn *dn, struct ldb_message *msg)
+int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
@@ -394,7 +394,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	if (!ares->message->dn) {
-		ares->message->dn = ldb_dn_explode(ares->message, (char *)key.dptr + 3);
+		ares->message->dn = ldb_dn_new(ares->message, ac->module->ldb, (char *)key.dptr + 3);
 		if (ares->message->dn == NULL) {
 			handle->status = LDB_ERR_OPERATIONS_ERROR;
 			handle->state = LDB_ASYNC_DONE;
@@ -464,7 +464,7 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_reply *ares;
 	int ret;
 
-	if ((req->op.search.base == NULL || ldb_dn_get_comp_num(req->op.search.base) == 0) &&
+	if ((( ! ldb_dn_is_valid(req->op.search.base)) || ldb_dn_is_null(req->op.search.base)) &&
 	    (req->op.search.scope == LDB_SCOPE_BASE || req->op.search.scope == LDB_SCOPE_ONELEVEL))
 		return LDB_ERR_OPERATIONS_ERROR;
 

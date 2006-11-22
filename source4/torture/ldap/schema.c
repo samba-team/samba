@@ -119,7 +119,7 @@ static BOOL test_search_rootDSE(struct ldb_context *ldb, struct test_rootDSE *ro
 
 	d_printf("Testing RootDSE Search\n");
 
-	ret = ldb_search(ldb, ldb_dn_new(ldb), LDB_SCOPE_BASE, 
+	ret = ldb_search(ldb, ldb_dn_new(ldb, ldb, NULL), LDB_SCOPE_BASE, 
 			 NULL, NULL, &r);
 	if (ret != LDB_SUCCESS) {
 		return False;
@@ -226,7 +226,7 @@ static BOOL test_create_schema_type(struct ldb_context *ldb, struct test_rootDSE
 	ctrl[1] = NULL;
 
 	req->operation = LDB_SEARCH;
-	req->op.search.base = ldb_dn_explode(req, root->schemadn);
+	req->op.search.base = ldb_dn_new(req, ldb, root->schemadn);
 	req->op.search.scope = LDB_SCOPE_SUBTREE;
 	req->op.search.tree = ldb_parse_tree(req, filter);
 	if (req->op.search.tree == NULL) return -1;

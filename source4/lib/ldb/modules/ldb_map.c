@@ -182,15 +182,61 @@ BOOL map_check_local_db(struct ldb_module *module)
 }
 
 /* Copy a DN with the base DN of the local partition. */
-static struct ldb_dn *ldb_dn_rebase_local(void *mem_ctx, const struct ldb_map_context *data, const struct ldb_dn *dn)
+static struct ldb_dn *ldb_dn_rebase_local(void *mem_ctx, const struct ldb_map_context *data, struct ldb_dn *dn)
 {
-	return ldb_dn_copy_rebase(mem_ctx, dn, data->remote_base_dn, data->local_base_dn);
+	struct ldb_dn *new_dn;
+
+	new_dn = ldb_dn_copy(mem_ctx, dn);
+	if ( ! ldb_dn_validate(new_dn)) {
+		talloc_free(new_dn);
+		return NULL;
+	}
+
+	/* may be we don't need to rebase at all */
+	if ( ! data->remote_base_dn || ! data->local_base_dn) {
+		return new_dn;
+	}
+
+	if ( ! ldb_dn_remove_base_components(new_dn, ldb_dn_get_comp_num(data->remote_base_dn))) {
+		talloc_free(new_dn);
+		return NULL;
+	}
+
+	if ( ! ldb_dn_add_base(new_dn, data->local_base_dn)) {
+		talloc_free(new_dn);
+		return NULL;
+	}
+
+	return new_dn;
 }
 
 /* Copy a DN with the base DN of the remote partition. */
-static struct ldb_dn *ldb_dn_rebase_remote(void *mem_ctx, const struct ldb_map_context *data, const struct ldb_dn *dn)
+static struct ldb_dn *ldb_dn_rebase_remote(void *mem_ctx, const struct ldb_map_context *data, struct ldb_dn *dn)
 {
-	return ldb_dn_copy_rebase(mem_ctx, dn, data->local_base_dn, data->remote_base_dn);
+	struct ldb_dn *new_dn;
+
+	new_dn = ldb_dn_copy(mem_ctx, dn);
+	if ( ! ldb_dn_validate(new_dn)) {
+		talloc_free(new_dn);
+		return NULL;
+	}
+
+	/* may be we don't need to rebase at all */
+	if ( ! data->remote_base_dn || ! data->local_base_dn) {
+		return new_dn;
+	}
+
+	if ( ! ldb_dn_remove_base_components(new_dn, ldb_dn_get_comp_num(data->local_base_dn))) {
+		talloc_free(new_dn);
+		return NULL;
+	}
+
+	if ( ! ldb_dn_add_base(new_dn, data->remote_base_dn)) {
+		talloc_free(new_dn);
+		return NULL;
+	}
+
+	return new_dn;
 }
 
 /* Run a request and make sure it targets the remote partition. */
@@ -443,7 +489,7 @@ struct ldb_val ldb_val_map_remote(struct ldb_module *module, void *mem_ctx,
  * =========== */
 
 /* Check whether a DN is below the local baseDN. */
-BOOL ldb_dn_check_local(struct ldb_module *module, const struct ldb_dn *dn)
+BOOL ldb_dn_check_local(struct ldb_module *module, struct ldb_dn *dn)
 {
 	const struct ldb_map_context *data = map_get_context(module);
 
@@ -451,11 +497,11 @@ BOOL ldb_dn_check_local(struct ldb_module *module, const struct ldb_dn *dn)
 		return True;
 	}
 
-	return ldb_dn_compare_base(module->ldb, data->local_base_dn, dn) == 0;
+	return ldb_dn_compare_base(data->local_base_dn, dn) == 0;
 }
 
 /* Map a DN into the remote partition. */
-struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, const struct ldb_dn *dn)
+struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct ldb_dn *dn)
 {
 	const struct ldb_map_context *data = map_get_context(module);
 	struct ldb_dn *newdn;
@@ -527,7 +573,7 @@ failed:
 }
 
 /* Map a DN into the local partition. */
-struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, const struct ldb_dn *dn)
+struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struct ldb_dn *dn)
 {
 	const struct ldb_map_context *data = map_get_context(module);
 	struct ldb_dn *newdn;
@@ -600,7 +646,7 @@ failed:
 
 /* Map a DN and its base into the local partition. */
 /* TODO: This should not be required with GUIDs. */
-struct ldb_dn *ldb_dn_map_rebase_remote(struct ldb_module *module, void *mem_ctx, const struct ldb_dn *dn)
+struct ldb_dn *ldb_dn_map_rebase_remote(struct ldb_module *module, void *mem_ctx, struct ldb_dn *dn)
 {
 	const struct ldb_map_context *data = map_get_context(module);
 	struct ldb_dn *dn1, *dn2;
@@ -622,7 +668,13 @@ static struct ldb_val ldb_dn_convert_local(struct ldb_module *module, void *mem_
 	struct ldb_dn *dn, *newdn;
 	struct ldb_val newval;
 
-	dn = ldb_dn_explode(mem_ctx, (char *)val->data);
+	dn = ldb_dn_new(mem_ctx, module->ldb, (char *)val->data);
+	if (! ldb_dn_validate(dn)) {
+		newval.length = 0;
+		newval.data = NULL;
+		talloc_free(dn);
+		return newval;
+	}
 	newdn = ldb_dn_map_local(module, mem_ctx, dn);
 	talloc_free(dn);
 
@@ -642,7 +694,13 @@ static struct ldb_val ldb_dn_convert_remote(struct ldb_module *module, void *mem
 	struct ldb_dn *dn, *newdn;
 	struct ldb_val newval;
 
-	dn = ldb_dn_explode(mem_ctx, (char *)val->data);
+	dn = ldb_dn_new(mem_ctx, module->ldb, (char *)val->data);
+	if (! ldb_dn_validate(dn)) {
+		newval.length = 0;
+		newval.data = NULL;
+		talloc_free(dn);
+		return newval;
+	}
 	newdn = ldb_dn_map_remote(module, mem_ctx, dn);
 	talloc_free(dn);
 
@@ -856,7 +914,7 @@ static int map_search_self_callback(struct ldb_context *ldb, void *context, stru
 }
 
 /* Build a request to search a record by its DN. */
-struct ldb_request *map_search_base_req(struct map_context *ac, const struct ldb_dn *dn, const char * const *attrs, const struct ldb_parse_tree *tree, void *context, ldb_search_callback callback)
+struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *dn, const char * const *attrs, const struct ldb_parse_tree *tree, void *context, ldb_search_callback callback)
 {
 	struct ldb_request *req;
 
@@ -890,7 +948,7 @@ struct ldb_request *map_search_base_req(struct map_context *ac, const struct ldb
 }
 
 /* Build a request to search the local record by its DN. */
-struct ldb_request *map_search_self_req(struct map_context *ac, const struct ldb_dn *dn)
+struct ldb_request *map_search_self_req(struct map_context *ac, struct ldb_dn *dn)
 {
 	/* attrs[] is returned from this function in
 	 * ac->search_req->op.search.attrs, so it must be static, as
@@ -913,7 +971,7 @@ struct ldb_request *map_search_self_req(struct map_context *ac, const struct ldb
 }
 
 /* Build a request to update the 'IS_MAPPED' attribute */
-struct ldb_request *map_build_fixup_req(struct map_context *ac, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
+struct ldb_request *map_build_fixup_req(struct map_context *ac, struct ldb_dn *olddn, struct ldb_dn *newdn)
 {
 	struct ldb_request *req;
 	struct ldb_message *msg;
@@ -1193,8 +1251,8 @@ static int map_init_dns(struct ldb_module *module, struct ldb_map_context *data,
 		return LDB_SUCCESS;
 	}
 
-	dn = ldb_dn_string_compose(data, NULL, "%s=%s", MAP_DN_NAME, name);
-	if (dn == NULL) {
+	dn = ldb_dn_new_fmt(data, module->ldb, "%s=%s", MAP_DN_NAME, name);
+	if ( ! ldb_dn_validate(dn)) {
 		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
 			  "Failed to construct '%s' DN!\n", MAP_DN_NAME);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1219,8 +1277,8 @@ static int map_init_dns(struct ldb_module *module, struct ldb_map_context *data,
 	}
 
 	msg = res->msgs[0];
-	data->local_base_dn = ldb_msg_find_attr_as_dn(data, msg, MAP_DN_FROM);
-	data->remote_base_dn = ldb_msg_find_attr_as_dn(data, msg, MAP_DN_TO);
+	data->local_base_dn = ldb_msg_find_attr_as_dn(module->ldb, data, msg, MAP_DN_FROM);
+	data->remote_base_dn = ldb_msg_find_attr_as_dn(module->ldb, data, msg, MAP_DN_TO);
 	talloc_free(res);
 
 	return LDB_SUCCESS;

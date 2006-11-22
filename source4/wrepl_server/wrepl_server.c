@@ -47,7 +47,7 @@ static uint64_t wins_config_db_get_seqnumber(struct ldb_context *ldb)
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 	uint64_t seqnumber = 0;
 
-	dn = ldb_dn_explode(tmp_ctx, "@BASEINFO");
+	dn = ldb_dn_new(tmp_ctx, ldb, "@BASEINFO");
 	if (!dn) goto failed;
 
 	/* find the record in the WINS database */
@@ -141,7 +141,7 @@ NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 	service->config.seqnumber = new_seqnumber;
 
 	/* find the record in the WINS database */
-	ret = ldb_search(service->config.ldb, ldb_dn_explode(tmp_ctx, "CN=PARTNERS"), LDB_SCOPE_SUBTREE,
+	ret = ldb_search(service->config.ldb, ldb_dn_new(tmp_ctx, service->config.ldb, "CN=PARTNERS"), LDB_SCOPE_SUBTREE,
 			 "(objectClass=wreplPartner)", NULL, &res);
 	if (ret != LDB_SUCCESS) goto failed;
 	talloc_steal(tmp_ctx, res);

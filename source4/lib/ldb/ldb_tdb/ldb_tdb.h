@@ -46,7 +46,7 @@ struct ltdb_context {
 
 	/* search stuff */
 	const struct ldb_parse_tree *tree;
-	const struct ldb_dn *base;
+	struct ldb_dn *base;
 	enum ldb_scope scope;
 	const char * const *attrs;
 
@@ -101,7 +101,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name, 
 		      const struct ldb_val *val);
 void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg);
-int ltdb_search_dn1(struct ldb_module *module, const struct ldb_dn *dn, struct ldb_message *msg);
+int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg);
 int ltdb_add_attr_results(struct ldb_module *module,
  			  TALLOC_CTX *mem_ctx, 
 			  struct ldb_message *msg,
@@ -114,9 +114,9 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req);
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
 struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
 				    struct ldb_request *req);
-struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn);
+struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
-int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn);
+int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn);
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg);
 
 int ltdb_index_del_value(struct ldb_module *module, const char *dn, 

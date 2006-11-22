@@ -41,7 +41,7 @@ uint64_t winsdb_get_maxVersion(struct winsdb_handle *h)
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 	uint64_t maxVersion = 0;
 
-	dn = ldb_dn_explode(tmp_ctx, "CN=VERSION");
+	dn = ldb_dn_new(tmp_ctx, ldb, "CN=VERSION");
 	if (!dn) goto failed;
 
 	/* find the record in the WINS database */
@@ -78,7 +78,7 @@ uint64_t winsdb_set_maxVersion(struct winsdb_handle *h, uint64_t newMaxVersion)
 	trans = ldb_transaction_start(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
 
-	dn = ldb_dn_explode(tmp_ctx, "CN=VERSION");
+	dn = ldb_dn_new(tmp_ctx, wins_db, "CN=VERSION");
 	if (!dn) goto failed;
 
 	/* find the record in the WINS database */
@@ -139,7 +139,7 @@ uint64_t winsdb_get_seqnumber(struct winsdb_handle *h)
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 	uint64_t seqnumber = 0;
 
-	dn = ldb_dn_explode(tmp_ctx, "@BASEINFO");
+	dn = ldb_dn_new(tmp_ctx, ldb, "@BASEINFO");
 	if (!dn) goto failed;
 
 	/* find the record in the WINS database */
@@ -161,16 +161,16 @@ failed:
 /*
   return a DN for a nbt_name
 */
-static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct nbt_name *name)
+static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct nbt_name *name)
 {
 	struct ldb_dn *dn;
 
-	dn = ldb_dn_string_compose(mem_ctx, NULL, "type=0x%02X", name->type);
-	if (dn && name->name && *name->name) {
-		dn = ldb_dn_string_compose(mem_ctx, dn, "name=%s", name->name);
+	dn = ldb_dn_new_fmt(mem_ctx, ldb, "type=0x%02X", name->type);
+	if (ldb_dn_is_valid(dn) && name->name && *name->name) {
+		ldb_dn_add_child_fmt(dn, "name=%s", name->name);
 	}
-	if (dn && name->scope && *name->scope) {
-		dn = ldb_dn_string_compose(mem_ctx, dn, "scope=%s", name->scope);
+	if (ldb_dn_is_valid(dn) && name->scope && *name->scope) {
+		ldb_dn_add_child_fmt(dn, "scope=%s", name->scope);
 	}
 	return dn;
 }
@@ -589,7 +589,7 @@ NTSTATUS winsdb_lookup(struct winsdb_handle *h,
 	time_t now = time(NULL);
 
 	/* find the record in the WINS database */
-	ret = ldb_search(wins_db, winsdb_dn(tmp_ctx, name), LDB_SCOPE_BASE, 
+	ret = ldb_search(wins_db, winsdb_dn(tmp_ctx, wins_db, name), LDB_SCOPE_BASE, 
 			 NULL, NULL, &res);
 
 	talloc_steal(tmp_ctx, res);
@@ -783,7 +783,7 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	msg->dn = winsdb_dn(msg, rec->name);
+	msg->dn = winsdb_dn(msg, ldb, rec->name);
 	if (msg->dn == NULL) goto failed;
 	ret |= ldb_msg_add_fmt(msg, "type", "0x%02X", rec->name->type);
 	if (rec->name->name && *rec->name->name) {
@@ -918,14 +918,14 @@ uint8_t winsdb_delete(struct winsdb_handle *h, struct winsdb_record *rec)
 {
 	struct ldb_context *wins_db = h->ldb;
 	TALLOC_CTX *tmp_ctx = talloc_new(wins_db);
-	const struct ldb_dn *dn;
+	struct ldb_dn *dn;
 	int trans;
 	int ret;
 
 	trans = ldb_transaction_start(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
 
-	dn = winsdb_dn(tmp_ctx, rec->name);
+	dn = winsdb_dn(tmp_ctx, wins_db, rec->name);
 	if (dn == NULL) goto failed;
 
 	ret = ldb_delete(wins_db, dn);
@@ -959,7 +959,7 @@ static BOOL winsdb_check_or_add_module_list(struct winsdb_handle *h)
 	if (trans != LDB_SUCCESS) goto failed;
 
 	/* check if we have a special @MODULES record already */
-	dn = ldb_dn_explode(tmp_ctx, "@MODULES");
+	dn = ldb_dn_new(tmp_ctx, h->ldb, "@MODULES");
 	if (!dn) goto failed;
 
 	/* find the record in the WINS database */

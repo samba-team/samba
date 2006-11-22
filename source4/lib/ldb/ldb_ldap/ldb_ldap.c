@@ -527,8 +527,8 @@ static int lldb_parse_result(struct ldb_handle *handle, LDAPMessage *result)
 				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto error;
 			}
-			ares->message->dn = ldb_dn_explode_or_special(ares->message, dn);
-			if (ares->message->dn == NULL) {
+			ares->message->dn = ldb_dn_new(ares->message, ac->module->ldb, dn);
+			if ( ! ldb_dn_validate(ares->message->dn)) {
 				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto error;
 			}

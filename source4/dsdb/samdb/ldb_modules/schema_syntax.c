@@ -137,7 +137,7 @@ int map_schema_syntax(uint32_t om_syntax, const char *attr_syntax, const struct 
 	return ret;
 }
 
-static int schema_validate_boolean(struct ldb_val *val, int min, int max)
+static int schema_validate_boolean(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 
 	if ((strncmp("TRUE", (const char *)val->data, val->length) != 0) &&
@@ -148,7 +148,7 @@ static int schema_validate_boolean(struct ldb_val *val, int min, int max)
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_integer(struct ldb_val *val, int min, int max)
+static int schema_validate_integer(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	int value;
 	char *endptr;
@@ -163,19 +163,19 @@ static int schema_validate_integer(struct ldb_val *val, int min, int max)
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_binary_blob(struct ldb_val *val, int min, int max)
+static int schema_validate_binary_blob(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* is there anythign we should check in a binary blob ? */
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_sid(struct ldb_val *val, int min, int max)
+static int schema_validate_sid(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: validate binary form of objectSid */
 	return LDB_SUCCESS;	
 }
 
-static int schema_validate_oid(struct ldb_val *val, int min, int max)
+static int schema_validate_oid(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	if (strspn((const char *)val->data, "0123456789.") != val->length)
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
@@ -183,7 +183,7 @@ static int schema_validate_oid(struct ldb_val *val, int min, int max)
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_numeric_string(struct ldb_val *val, int min, int max)
+static int schema_validate_numeric_string(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	if (strspn((const char *)val->data, "0123456789") != val->length)
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
@@ -191,80 +191,76 @@ static int schema_validate_numeric_string(struct ldb_val *val, int min, int max)
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_printable_string(struct ldb_val *val, int min, int max)
+static int schema_validate_printable_string(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: find out what constitutes the printable character set */
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_teletext_string(struct ldb_val *val, int min, int max)
+static int schema_validate_teletext_string(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: find out what constitutes the teletext character set */
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_ia5_string(struct ldb_val *val, int min, int max)
+static int schema_validate_ia5_string(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: find out what constitutes the IA5 character set */
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_utc_time(struct ldb_val *val, int min, int max)
+static int schema_validate_utc_time(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: validate syntax of UTC Time string */
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_generalized_time(struct ldb_val *val, int min, int max)
+static int schema_validate_generalized_time(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: validate syntax of Generalized Time string */
 	return LDB_SUCCESS;
 }
 
 /* NOTE: not a single attribute has this syntax in the basic w2k3 schema */
-static int schema_validate_sensitive_string(struct ldb_val *val, int min, int max)
+static int schema_validate_sensitive_string(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: find out what constitutes a "case sensitive string" */
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_unicode_string(struct ldb_val *val, int min, int max)
+static int schema_validate_unicode_string(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: validate utf8 string */
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_large_integer(struct ldb_val *val, int min, int max)
+static int schema_validate_large_integer(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: validate large integer/interval */
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_object_sd(struct ldb_val *val, int min, int max)
+static int schema_validate_object_sd(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: validate object Security Descriptor */
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_dn(struct ldb_val *val, int min, int max)
+static int schema_validate_dn(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
-	TALLOC_CTX *memctx;
 	struct ldb_dn *dn;
 	int ret = LDB_SUCCESS;
 
-	memctx = talloc_new(NULL);
-	if (!memctx) return LDB_ERR_OPERATIONS_ERROR;
-
-	dn = ldb_dn_explode(memctx, (const char *)val->data);
-	if (!dn) {
+	dn = ldb_dn_new(ldb, ldb, (const char *)val->data);
+	if ( ! ldb_dn_validate(dn)) {
 		ret = LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	}
 
-	talloc_free(memctx);
+	talloc_free(dn);
 	return ret;
 }
 
-static int schema_validate_binary_plus_dn(struct ldb_val *val, int min, int max)
+static int schema_validate_binary_plus_dn(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	int ret = LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	TALLOC_CTX *memctx;
@@ -319,8 +315,8 @@ static int schema_validate_binary_plus_dn(struct ldb_val *val, int min, int max)
 
 	str = p + 1;
 
-	dn = ldb_dn_explode(memctx, str);
-	if (dn) {
+	dn = ldb_dn_new(memctx, ldb, str);
+	if (ldb_dn_validate(dn)) {
 		ret = LDB_SUCCESS;
 	}
 
@@ -329,26 +325,26 @@ done:
 	return ret;
 }
 
-static int schema_validate_x400_or_name(struct ldb_val *val, int min, int max)
+static int schema_validate_x400_or_name(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: find out what is the syntax of an X400 OR NAME */
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_presentation_address(struct ldb_val *val, int min, int max)
+static int schema_validate_presentation_address(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: find out what is the syntax of a presentation address */
 	return LDB_SUCCESS;
 }
 
-static int schema_validate_x400_access_point(struct ldb_val *val, int min, int max)
+static int schema_validate_x400_access_point(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	/* TODO: find out what is the syntax of an X400 Access Point */
 	return LDB_SUCCESS;
 }
 
 /* NOTE: seem there isn't a single attribute defined like this in the base w2k3 schema */
-static int schema_validate_string_plus_dn(struct ldb_val *val, int min, int max)
+static int schema_validate_string_plus_dn(struct ldb_context *ldb, struct ldb_val *val, int min, int max)
 {
 	int ret = LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	TALLOC_CTX *memctx;
@@ -403,8 +399,8 @@ static int schema_validate_string_plus_dn(struct ldb_val *val, int min, int max)
 
 	str = p + 1;
 
-	dn = ldb_dn_explode(memctx, str);
-	if (dn) {
+	dn = ldb_dn_new(memctx, ldb, str);
+	if (ldb_dn_validate(dn)) {
 		ret = LDB_SUCCESS;
 	}
 
@@ -415,7 +411,7 @@ done:
 
 struct schema_syntax_validator {
 	enum schema_internal_syntax type;
-	int (*validate)(struct ldb_val *, int, int);
+	int (*validate)(struct ldb_context *ldb, struct ldb_val *, int, int);
 };
 
 struct schema_syntax_validator schema_syntax_validators[] = {
@@ -445,7 +441,8 @@ struct schema_syntax_validator schema_syntax_validators[] = {
 	{ -1, NULL }
 };
 
-int schema_validate(struct ldb_message_element *el,
+int schema_validate(struct ldb_context *ldb,
+		    struct ldb_message_element *el,
 		    enum schema_internal_syntax type,
 		    bool single, int min, int max)
 {
@@ -466,7 +463,7 @@ int schema_validate(struct ldb_message_element *el,
 	v = &schema_syntax_validators[i];
 	
 	for (i = 0; i < el->num_values; i++) {
-		ret = v->validate(&el->values[i], min, max);
+		ret = v->validate(ldb, &el->values[i], min, max);
 	}
 
 	return LDB_SUCCESS;

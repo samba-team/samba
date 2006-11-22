@@ -89,9 +89,9 @@ static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 	}
 
 	/* add core elements to the ldb_message for the alias */
-	msg->dn = ldb_dn_build_child(mem_ctx, "CN", sidstr, basedn);
-	if (msg->dn == NULL)
-		return NT_STATUS_NO_MEMORY;
+	msg->dn = basedn;
+	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s", sidstr))
+		return NT_STATUS_UNSUCCESSFUL;
 	
 	samdb_msg_add_string(state->sam_ldb, mem_ctx, msg,
 			     "objectClass",
@@ -128,7 +128,7 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 	}
 
 	if (database == SAM_DATABASE_DOMAIN) {
-		const struct ldb_dn *partitions_basedn;
+		struct ldb_dn *partitions_basedn;
 		const char *domain_attrs[] =  {"nETBIOSName", "nCName", NULL};
 		struct ldb_message **msgs_domain;
 		int ret_domain;
@@ -149,7 +149,7 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_SUCH_DOMAIN;		
 		}
 
-		state->base_dn[database] = samdb_result_dn(state, msgs_domain[0], "nCName", NULL);
+		state->base_dn[database] = samdb_result_dn(state->sam_ldb, state, msgs_domain[0], "nCName", NULL);
 
 		if (state->dom_sid[database]) {
 			/* Update the domain sid with the incoming
@@ -181,7 +181,10 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 		   fetching here */
 		const char *dnstring = samdb_search_string(state->sam_ldb, mem_ctx, NULL,
 							   "distinguishedName", "objectClass=builtinDomain");
-		state->base_dn[database] = ldb_dn_explode(state, dnstring);
+		state->base_dn[database] = ldb_dn_new(state, state->sam_ldb, dnstring);
+		if ( ! ldb_dn_validate(state->base_dn[database])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 	} else {
 		/* PRIVs DB */
 		return NT_STATUS_INVALID_PARAMETER;
@@ -418,8 +421,8 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
 				     "objectClass", obj_class);
 		if (!msg->dn) {
-			msg->dn = ldb_dn_string_compose(mem_ctx, state->base_dn[database],
-							"CN=%s, CN=%s", cn_name, container);
+			msg->dn = ldb_dn_copy(mem_ctx, state->base_dn[database]);
+			ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=%s", cn_name, container);
 			if (!msg->dn) {
 				return NT_STATUS_NO_MEMORY;		
 			}
@@ -565,8 +568,8 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 	if (add) {
 		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
 				     "objectClass", obj_class);
-		msg->dn = ldb_dn_string_compose(mem_ctx, state->base_dn[database],
-						"CN=%s, CN=%s", cn_name, container);
+		msg->dn = ldb_dn_copy(mem_ctx, state->base_dn[database]);
+		ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=%s", cn_name, container);
 		if (!msg->dn) {
 			return NT_STATUS_NO_MEMORY;		
 		}
@@ -779,8 +782,8 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 	if (add) {
 		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
 				     "objectClass", obj_class);
-		msg->dn = ldb_dn_string_compose(mem_ctx, state->base_dn[database],
-						"CN=%s, CN=%s", cn_name, container);
+		msg->dn = ldb_dn_copy(mem_ctx, state->base_dn[database]);
+		ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=%s", cn_name, container);
 		if (!msg->dn) {
 			return NT_STATUS_NO_MEMORY;		
 		}

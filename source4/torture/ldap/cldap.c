@@ -167,12 +167,12 @@ done:
   use the convenient ldif dump routines in ldb to print out cldap
   search results
 */
-static struct ldb_message *ldap_msg_to_ldb(TALLOC_CTX *mem_ctx, struct ldap_SearchResEntry *res)
+static struct ldb_message *ldap_msg_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct ldap_SearchResEntry *res)
 {
 	struct ldb_message *msg;
 
 	msg = ldb_msg_new(mem_ctx);
-	msg->dn = ldb_dn_explode_or_special(msg, res->dn);
+	msg->dn = ldb_dn_new(msg, ldb, res->dn);
 	msg->num_elements = res->num_attributes;
 	msg->elements = talloc_steal(msg, res->attributes);
 	return msg;
@@ -194,7 +194,7 @@ static void cldap_dump_results(struct cldap_search *search)
 	ldb = ldb_init(NULL);
 
 	ZERO_STRUCT(ldif);
-	ldif.msg = ldap_msg_to_ldb(ldb, search->out.response);
+	ldif.msg = ldap_msg_to_ldb(ldb, ldb, search->out.response);
 
 	ldb_ldif_write_file(ldb, stdout, &ldif);
 
