@@ -741,11 +741,17 @@ renew_func(void *ptr)
     struct renew_ctx *ctx = ptr;
     krb5_error_code ret;
     time_t expire;
+    int new_tickets = 0;
 
-
-    ret = renew_validate(ctx->context, renewable_flag, validate_flag,
+    if (renewable_flag) {
+	ret = renew_validate(ctx->context, renewable_flag, validate_flag,
 			     ctx->ccache, server_str, ctx->ticket_life);
-    if (ret)
+	if (ret)
+	    new_tickets = 1;
+    } else
+	new_tickets = 1;
+
+    if (new_tickets)
 	get_new_tickets(ctx->context, ctx->principal, 
 			ctx->ccache, ctx->ticket_life, 0);
 
