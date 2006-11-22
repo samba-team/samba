@@ -945,7 +945,30 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x0e */
-	WERROR DRSUAPI_REMOVE_DS_SERVER();
+	typedef struct {
+		[charset(UTF16),string] uint16 *server_dn;
+		[charset(UTF16),string] uint16 *domain_dn;
+		uint32 unknown; /* 0x000000001 */
+	} drsuapi_DsRemoveDSServerRequest1;
+
+	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_DsRemoveDSServerRequest1 req1;
+	} drsuapi_DsRemoveDSServerRequest;
+
+	typedef struct {
+		WERROR status;
+	} drsuapi_DsRemoveDSServerResult1;
+
+	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_DsRemoveDSServerResult1 res1;
+	} drsuapi_DsRemoveDSServerResult;
+
+	WERROR drsuapi_DsRemoveDSServer(
+		[in] policy_handle *bind_handle,
+		[in,out] int32 level,
+		[in,switch_is(level)] drsuapi_DsRemoveDSServerRequest req,
+		[out,switch_is(level)] drsuapi_DsRemoveDSServerResult res
+		);
 
 	/*****************/
         /* Function 0x0f */
