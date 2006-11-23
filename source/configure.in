@@ -1841,6 +1841,11 @@ case "$host_os" in
 			BLDSHARED="true"
 			LDSHFLAGS="-bundle -flat_namespace -undefined suppress"
 			SHLIBEXT="dylib"
+			# Since gcc doesn't fail on unrecognised options, the
+			# PIE test incorrectly succeeds. Darwin gcc does not
+			# actually support the PIE stuff.
+			PIE_LDFLAGS=
+			PIE_CFLAGS=
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 
