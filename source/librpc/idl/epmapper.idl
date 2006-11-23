@@ -232,15 +232,15 @@ interface epmapper
 	/**********************/
 	/* Function 0x0       */
 	error_status_t epm_Insert(
-		[in]    uint32          num_ents,
+		[in]            uint32          num_ents,
 		[in,size_is(num_ents)]  epm_entry_t         entries[],
-		[in]    uint32    replace
+		[in]            uint32          replace
 		);
     
 	/**********************/
 	/* Function 0x1       */
 	error_status_t epm_Delete(
-		[in]     uint32          num_ents,
+		[in]            uint32          num_ents,
 		[in, size_is(num_ents)]  epm_entry_t entries[]
 		);
     
@@ -248,10 +248,10 @@ interface epmapper
 	/* Function 0x02      */
 	error_status_t epm_Lookup(
 		[in]            uint32          inquiry_type,
-		[in]            GUID            *object,
-		[in]            rpc_if_id_t     *interface_id,
+		[in,sptr]       GUID            *object,
+		[in,sptr]       rpc_if_id_t     *interface_id,
 		[in]            uint32          vers_option,
-		[in,out,ref]    policy_handle   *entry_handle,
+		[in,out]        policy_handle   *entry_handle,
 		[in]            uint32          max_ents,
 		[out]           uint32          *num_ents,
 		[out, length_is(*num_ents), size_is(max_ents)]  epm_entry_t entries[]
@@ -266,9 +266,9 @@ interface epmapper
 	} epm_twr_p_t;
 
 	error_status_t epm_Map(
-		[in]            GUID            *object,
-		[in]            epm_twr_t       *map_tower,
-		[in,out,ref]    policy_handle   *entry_handle,
+		[in,sptr]       GUID            *object,
+		[in,sptr]       epm_twr_t       *map_tower,
+		[in,out]        policy_handle   *entry_handle,
 		[in]            uint32          max_towers,
 		[out]           uint32          *num_towers,
 		[out, length_is(*num_towers), size_is(max_towers)]  epm_twr_p_t towers[]
@@ -278,22 +278,22 @@ interface epmapper
 	/**********************/
 	/* Function 0x04      */
 	error_status_t epm_LookupHandleFree(
-		[in,out,ref]    policy_handle *entry_handle
+		[in,out]        policy_handle   *entry_handle
 		);
     
 	/**********************/
 	/* Function 0x05      */
 	error_status_t epm_InqObject(
-		[in,ref]    GUID        *epm_object
+		[in]            GUID            *epm_object
 		);
     
 
 	/**********************/
 	/* Function 0x06      */
 	error_status_t epm_MgmtDelete(
-		[in]            uint32   object_speced,
-		[in]            GUID     *object,
-		[in]            epm_twr_t    *tower
+		[in]            uint32          object_speced,
+		[in,sptr]       GUID            *object,
+		[in,sptr]       epm_twr_t       *tower
 		);
 
 	/**********************/
