@@ -115,6 +115,9 @@ ${kadmin} add -p foo --use-defaults remove2@${R2} || exit 1
 ${kadmin} add -p cross1 --use-defaults krbtgt/${R2}@${R} || exit 1
 ${kadmin} add -p cross2 --use-defaults krbtgt/${R}@${R2} || exit 1
 
+${kadmin} add -p foo --use-defaults -- -p || exit 1
+${kadmin} delete -- -p || exit 1
+
 echo "Doing database check"
 ${kadmin} check ${R} || exit 1
 ${kadmin} check ${R2} || exit 1
