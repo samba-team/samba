@@ -62,7 +62,6 @@ struct ldb_dn {
 	bool special;
 	bool invalid;
 
-	bool valid_lin;
 	bool valid_comp;
 	bool valid_case;
 
@@ -102,8 +101,6 @@ struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *st
 	}
 	LDB_DN_NULL_FAILED(dn->linearized);
 
-	dn->valid_lin = true;
-
 	return dn;
 
 failed:
@@ -139,8 +136,6 @@ struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx, struct ldb_context *ldb, const char
 		/* FIXME: add a GUID string to ldb_dn structure */
 	}
 	dn->linearized = strdn;
-
-	dn->valid_lin = true;
 
 	return dn;
 
@@ -230,7 +225,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 		return true;
 	}
 
-	if ( ! dn->valid_lin) {
+	if ( ! dn->linearized) {
 		return false;
 	}
 
@@ -534,7 +529,7 @@ const char *ldb_dn_get_linearized(struct ldb_dn *dn)
 
 	if ( ! dn || ( dn->invalid)) return NULL;
 
-	if (dn->valid_lin) return dn->linearized;
+	if (dn->linearized) return dn->linearized;
 
 	if ( ! dn->valid_comp) {
 		dn->invalid = true;
@@ -544,7 +539,6 @@ const char *ldb_dn_get_linearized(struct ldb_dn *dn)
 	if (dn->comp_num == 0) {
 		dn->linearized = talloc_strdup(dn, "");
 		if ( ! dn->linearized) return NULL;
-		dn->valid_lin = true;
 		return dn->linearized;
 	}
 
@@ -575,8 +569,6 @@ const char *ldb_dn_get_linearized(struct ldb_dn *dn)
 	}
 
 	*(--d) = '\0';
-
-	dn->valid_lin = true;
 
 	/* don't waste more memory than necessary */
 	dn->linearized = talloc_realloc(dn, dn->linearized, char, (d - dn->linearized + 1));
@@ -714,7 +706,7 @@ int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
 	if ( ! dn || dn->invalid) return -1;
 
 	if (( ! base->valid_case) || ( ! dn->valid_case)) {
-		if (base->valid_lin && dn->valid_lin) {
+		if (base->linearized && dn->linearized) {
 			/* try with a normal compare first, if we are lucky
 			 * we will avoid exploding and casfolding */
 			int dif;
@@ -785,7 +777,7 @@ int ldb_dn_compare(struct ldb_dn *dn0, struct ldb_dn *dn1)
 	if (( ! dn0) || dn0->invalid || ! dn1 || dn1->invalid) return -1;
 
 	if (( ! dn0->valid_case) || ( ! dn1->valid_case)) {
-		if (dn0->valid_lin && dn1->valid_lin) {
+		if (dn0->linearized && dn1->linearized) {
 			/* try with a normal compare first, if we are lucky
 			 * we will avoid exploding and casfolding */
 			if (strcmp(dn0->linearized, dn1->linearized) == 0) return 0;
@@ -918,7 +910,7 @@ struct ldb_dn *ldb_dn_copy(void *mem_ctx, struct ldb_dn *dn)
 		}
 	}
 
-	if (dn->valid_lin) {
+	if (dn->linearized) {
 		new_dn->linearized = talloc_strdup(new_dn, dn->linearized);
 		if ( ! new_dn->linearized) {
 			talloc_free(new_dn);
@@ -981,7 +973,7 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 		}
 	}
 
-	if (dn->valid_lin) {
+	if (dn->linearized) {
 
 		s = ldb_dn_get_linearized(base);
 		if ( ! s) {
@@ -1093,7 +1085,7 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 		}
 	}
 
-	if (dn->valid_lin) {
+	if (dn->linearized) {
 
 		s = ldb_dn_get_linearized(child);
 		if ( ! s) {
@@ -1173,13 +1165,10 @@ bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num)
 			LDB_FREE(dn->components[i].cf_value.data);
 		}
 		dn->valid_case = false;
-		LDB_FREE(dn->casefold);
 	}
 
-	if (dn->valid_lin) {	
-		dn->valid_lin = false;
-		LDB_FREE(dn->linearized);
-	}
+	LDB_FREE(dn->casefold);
+	LDB_FREE(dn->linearized);
 
 	return true;
 }
@@ -1215,12 +1204,9 @@ bool ldb_dn_remove_child_components(struct ldb_dn *dn, unsigned int num)
 		}
 		dn->valid_case = false;
 	}
-	LDB_FREE(dn->casefold);
 
-	if (dn->valid_lin) {	
-		dn->valid_lin = false;
-		LDB_FREE(dn->linearized);
-	}
+	LDB_FREE(dn->casefold);
+	LDB_FREE(dn->linearized);
 
 	return true;
 }
