@@ -32,6 +32,7 @@ static struct generic_mapping reg_generic_map =
 
 struct regkey_info {
 	REGISTRY_KEY *key;
+	REGVAL_CTR *value_cache;
 };
 
 /******************************************************************
@@ -73,6 +74,23 @@ static REGISTRY_KEY *find_regkey_by_hnd(pipes_struct *p, POLICY_HND *hnd)
 	return regkey->key;
 }
 
+static WERROR fill_value_cache(struct regkey_info *info)
+{
+	if (info->value_cache != NULL) {
+		return WERR_OK;
+	}
+
+	if (!(info->value_cache = TALLOC_ZERO_P(info, REGVAL_CTR))) {
+		return WERR_NOMEM;
+	}
+
+	if (fetch_reg_values(info->key, info->value_cache) == -1) {
+		TALLOC_FREE(info->value_cache);
+		return WERR_BADFILE;
+	}
+
+	return WERR_OK;
+}
 
 /*******************************************************************
  Function for open a new registry handle and creating a handle 
@@ -382,7 +400,8 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle,
 			  uint32_t *data_size, uint32_t *value_length)
 {
 	WERROR        status = WERR_BADFILE;
-	REGISTRY_KEY *regkey = find_regkey_by_hnd( p, handle );
+	struct regkey_info *info = find_regkey_info_by_hnd( p, handle );
+	REGISTRY_KEY *regkey;
 	prs_struct    prs_hkpd;
 
 	uint8_t *outbuf;
@@ -391,8 +410,10 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle,
 	BOOL free_buf = False;
 	BOOL free_prs = False;
 
-	if ( !regkey )
+	if ( !info )
 		return WERR_BADFID;
+
+	regkey = info->key;
 
 	*value_length = *type = 0;
 	
@@ -440,41 +461,36 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle,
 		*type = REG_BINARY;
 	}
 	else {
-		/* HKPT calls can be handled out of reg_dynamic.c with the
-		 * hkpt_params handler */
-
-		REGVAL_CTR *regvals;
+		REGISTRY_VALUE *val = NULL;
 		uint32 i;
 
-		if (!(regvals = TALLOC_ZERO_P(p->mem_ctx, REGVAL_CTR))) {
-			return WERR_NOMEM;
+		status = fill_value_cache(info);
+
+		if (!(W_ERROR_IS_OK(status))) {
+			return status;
 		}
-
-		/*
-		 * Don't use fetch_reg_values_specific here, there is too much
-		 * memory copying around. I'll re-add the cache later. VL
-		 */
-
-		if (fetch_reg_values(regkey, regvals) == -1) {
-			TALLOC_FREE(regvals);
-			return WERR_BADFILE;
-		}
-
-		for (i=0; i<regvals->num_values; i++) {
-			if (strequal(regvals->values[i]->valuename,
+		
+		for (i=0; i<info->value_cache->num_values; i++) {
+			if (strequal(info->value_cache->values[i]->valuename,
 				     value_name.name)) {
+				val = info->value_cache->values[i];
 				break;
 			}
 		}
 
-		if (i == regvals->num_values) {
-			TALLOC_FREE(regvals);
+		if (val == NULL) {
+			if (data_size) {
+				*data_size = 0;
+			}
+			if (value_length) {
+				*value_length = 0;
+			}
 			return WERR_BADFILE;
 		}
 
-		outbuf = regvals->values[i]->data_p;
-		outbuf_size = regvals->values[i]->size;
-		*type = regvals->values[i]->type;
+		outbuf = val->data_p;
+		outbuf_size = val->size;
+		*type = val->type;
 	}
 
 	*value_length = outbuf_size;
@@ -596,31 +612,40 @@ done:
  Implementation of REG_ENUM_VALUE
  ****************************************************************************/
 
-WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, enum winreg_Type *type, uint8_t *data, uint32_t *data_size, uint32_t *value_length)
+WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle,
+			 uint32_t enum_index, struct winreg_StringBuf *name,
+			 enum winreg_Type *type, uint8_t *data,
+			 uint32_t *data_size, uint32_t *value_length)
 {
 	WERROR 	status = WERR_OK;
-	REGISTRY_KEY	*regkey = find_regkey_by_hnd( p, handle );
-	REGISTRY_VALUE	*val;
+	struct regkey_info *info = find_regkey_info_by_hnd( p, handle );
+	REGISTRY_KEY	*regkey;
+	REGISTRY_VALUE	*val = NULL;
 	
-	if ( !regkey )
-		return WERR_BADFID; 
+	if ( !info )
+		return WERR_BADFID;
 
 	if ( !name )
 		return WERR_INVALID_PARAM;
-		
-	DEBUG(8,("_winreg_EnumValue: enumerating values for key [%s]\n", regkey->name));
 
-	if ( !fetch_reg_values_specific( regkey, &val, enum_index ) ) {
-		status = WERR_NO_MORE_ITEMS;
-		goto done;
+	regkey = info->key;
+		
+	DEBUG(8,("_winreg_EnumValue: enumerating values for key [%s]\n",
+		 regkey->name));
+
+	status = fill_value_cache(info);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
 	}
 
-	DEBUG(10,("_winreg_EnumValue: retrieved value named  [%s]\n", val->valuename));
-	
-	/* subkey has the string name now */
-	
-	if ( (name->name = talloc_strdup( p->mem_ctx, val->valuename )) == NULL ) {
-		status = WERR_NOMEM;
+	if (enum_index >= info->value_cache->num_values) {
+		return WERR_BADFILE;
+	}
+
+	val = info->value_cache->values[enum_index];
+
+	if (!(name->name = talloc_strdup(p->mem_ctx, val->valuename))) {
+		return WERR_NOMEM;
 	}
 
 	if (type != NULL) {
@@ -629,32 +654,25 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle, uint32_t
 
 	if (data != NULL) {
 		if ((data_size == NULL) || (value_length == NULL)) {
-			status = WERR_INVALID_PARAM;
-			goto done;
+			return WERR_INVALID_PARAM;
 		}
 
-		if (regval_size(val) > *data_size) {
-			status = WERR_MORE_DATA;
-			goto done;
+		if (val->size > *data_size) {
+			return WERR_MORE_DATA;
 		}
 
-		memcpy( data, regval_data_p(val), regval_size(val) );
-		status = WERR_OK;
+		memcpy( data, val->data_p, val->size );
 	}
 
 	if (value_length != NULL) {
-		*value_length = regval_size( val );
+		*value_length = val->size;
 	}
 	if (data_size != NULL) {
-		*data_size = regval_size( val );
+		*data_size = val->size;
 	}
 
-done:	
-	free_registry_value( val );
-	
-	return status;
+	return WERR_OK;
 }
-
 
 /*******************************************************************
  reg_shutdwon
@@ -1275,26 +1293,31 @@ done:
 
 WERROR _winreg_SetValue(pipes_struct *p, struct policy_handle *handle, struct winreg_String name, enum winreg_Type type, uint8_t *data, uint32_t size)
 {
-	REGISTRY_KEY *key = find_regkey_by_hnd(p, handle);
+	struct regkey_info *info = find_regkey_info_by_hnd(p, handle);
+	REGISTRY_KEY *key;
 	REGVAL_CTR *values;
 	BOOL write_result;
-	char *valuename;
 
-	if ( !key )
+	if ( !info )
 		return WERR_BADFID;
+
+	key = info->key;
+
+	if (!name.name || (strlen(name.name) == 0)) {
+		/*
+		 * This is the "Standard Value" for a key, we don't support
+		 * that (yet...)
+		 */
+		return WERR_ACCESS_DENIED;
+	}
 		
 	/* access checks first */
 	
 	if ( !(key->access_granted & SEC_RIGHTS_SET_VALUE) )
 		return WERR_ACCESS_DENIED;
 		
-	/* verify the name */
-	
-	if ( (valuename = talloc_strdup(p->mem_ctx, name.name)) == NULL ) {
-		return WERR_INVALID_PARAM;
-	}
-
-	DEBUG(8,("_reg_set_value: Setting value for [%s:%s]\n", key->name, valuename));
+	DEBUG(8,("_reg_set_value: Setting value for [%s:%s]\n", key->name,
+		 name.name));
 		
 	if ( !(values = TALLOC_ZERO_P( p->mem_ctx, REGVAL_CTR )) )
 		return WERR_NOMEM; 
@@ -1303,7 +1326,8 @@ WERROR _winreg_SetValue(pipes_struct *p, struct policy_handle *handle, struct wi
 	
 	fetch_reg_values( key, values );
 	
-	regval_ctr_addvalue( values, valuename, type, (const char *)data, size );
+	regval_ctr_addvalue( values, name.name, type,
+			     (const char *)data, size );
 	
 	/* now write to the registry backend */
 	
@@ -1313,7 +1337,9 @@ WERROR _winreg_SetValue(pipes_struct *p, struct policy_handle *handle, struct wi
 	
 	if ( !write_result )
 		return WERR_REG_IO_FAILURE;
-		
+
+	TALLOC_FREE(info->value_cache);
+
 	return WERR_OK;
 }
 
@@ -1411,13 +1437,16 @@ done:
 
 WERROR _winreg_DeleteValue(pipes_struct *p, struct policy_handle *handle, struct winreg_String value)
 {
-	REGISTRY_KEY *key = find_regkey_by_hnd(p, handle);
+	struct regkey_info *info = find_regkey_info_by_hnd(p, handle);
+	REGISTRY_KEY *key;
 	REGVAL_CTR *values;
 	BOOL write_result;
 	char *valuename;
 	
-	if ( !key )
+	if ( !info )
 		return WERR_BADFID;
+
+	key = info->key;
 		
 	/* access checks first */
 	
@@ -1447,7 +1476,9 @@ WERROR _winreg_DeleteValue(pipes_struct *p, struct policy_handle *handle, struct
 	
 	if ( !write_result )
 		return WERR_REG_IO_FAILURE;
-		
+
+	TALLOC_FREE(info->value_cache);
+
 	return WERR_OK;
 }
 

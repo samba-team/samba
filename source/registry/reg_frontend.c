@@ -321,60 +321,6 @@ NTSTATUS registry_fetch_values(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
 }
 
 /***********************************************************************
- retreive a specific subkey specified by index.  Caller is 
- responsible for freeing memory
- ***********************************************************************/
-
-BOOL fetch_reg_values_specific( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 val_index )
-{
-	static REGVAL_CTR 	*ctr = NULL;
-	static pstring		save_path;
-	REGISTRY_VALUE		*v;
-	
-	*val = NULL;
-	
-	/* simple caching for performance; very basic heuristic */
-	
-	if ( !ctr ) {
-		DEBUG(8,("fetch_reg_values_specific: Initializing cache of values for [%s]\n", key->name));
-
-		if ( !(ctr = TALLOC_ZERO_P( NULL, REGVAL_CTR )) ) {
-			DEBUG(0,("fetch_reg_values_specific: talloc() failed!\n"));
-			return False;
-		}
-
-		pstrcpy( save_path, key->name );
-		
-		if ( fetch_reg_values( key, ctr) == -1 )
-			return False;
-	}
-	/* clear the cache when val_index == 0 or the path has changed */
-	else if ( !val_index || !strequal(save_path, key->name) ) {
-
-		DEBUG(8,("fetch_reg_values_specific: Updating cache of values for [%s]\n", key->name));		
-		
-		TALLOC_FREE( ctr );
-
-		if ( !(ctr = TALLOC_ZERO_P( NULL, REGVAL_CTR )) ) {
-			DEBUG(0,("fetch_reg_values_specific: talloc() failed!\n"));
-			return False;
-		}
-
-		pstrcpy( save_path, key->name );
-		
-		if ( fetch_reg_values( key, ctr) == -1 )
-			return False;
-	}
-	
-	if ( !(v = regval_ctr_specific_value( ctr, val_index )) )
-		return False;
-
-	*val = dup_registry_value( v );
-
-	return True;
-}
-
-/***********************************************************************
  High level access check for passing the required access mask to the 
  underlying registry backend
  ***********************************************************************/
