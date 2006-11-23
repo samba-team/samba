@@ -133,7 +133,7 @@ void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_free(krb5_context context,
 			     krb5_get_init_creds_opt *opt)
 {
-    if (opt->opt_private == NULL)
+    if (opt == NULL || opt->opt_private == NULL)
 	return;
     if (opt->opt_private->refcount < 1) /* abort ? */
 	return;
