@@ -62,7 +62,6 @@ struct ldb_dn {
 	bool special;
 	bool invalid;
 
-	bool valid_comp;
 	bool valid_case;
 
 	char *linearized;
@@ -221,7 +220,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 	if ( ! dn || dn->invalid) return false;
 
-	if (dn->valid_comp) {
+	if (dn->components) {
 		return true;
 	}
 
@@ -231,7 +230,6 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 	/* Empty DNs */
 	if (dn->linearized[0] == '\0') {
-		dn->valid_comp = true;
 		return true;
 	}
 
@@ -506,8 +504,6 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 	dn->comp_num++;
 
-	dn->valid_comp = true;
-
 	talloc_free(data);
 	return true;
 
@@ -531,7 +527,7 @@ const char *ldb_dn_get_linearized(struct ldb_dn *dn)
 
 	if (dn->linearized) return dn->linearized;
 
-	if ( ! dn->valid_comp) {
+	if ( ! dn->components) {
 		dn->invalid = true;
 		return NULL;
 	}
@@ -594,7 +590,7 @@ static bool ldb_dn_casefold_internal(struct ldb_dn *dn)
 
 	if (dn->valid_case) return true;
 
-	if (( ! dn->valid_comp) && ( ! ldb_dn_explode(dn))) {
+	if (( ! dn->components) && ( ! ldb_dn_explode(dn))) {
 		return false;
 	}
 
@@ -884,7 +880,7 @@ struct ldb_dn *ldb_dn_copy(void *mem_ctx, struct ldb_dn *dn)
 
 	*new_dn = *dn;
 
-	if (dn->valid_comp) {
+	if (dn->components) {
 		int i;
 
 		new_dn->components = talloc_zero_array(new_dn, struct ldb_dn_component, dn->comp_num);
@@ -935,7 +931,7 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 		return false;
 	}
 
-	if (dn->valid_comp) {
+	if (dn->components) {
 		int i;
 
 		if ( ! ldb_dn_validate(base)) {
@@ -1039,7 +1035,7 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 		return false;
 	}
 
-	if (dn->valid_comp) {
+	if (dn->components) {
 		int n, i, j;
 
 		if ( ! ldb_dn_validate(child)) {
@@ -1417,12 +1413,6 @@ bool ldb_dn_check_special(struct ldb_dn *dn, const char *check)
 bool ldb_dn_is_null(struct ldb_dn *dn)
 {
 	if ( ! dn || dn->invalid) return false;
-	if (dn->special) return false;
-	if (dn->valid_comp) {
-		if (dn->comp_num == 0) return true;
-		return false;
-	} else {
-		if (dn->linearized[0] == '\0') return true;
-	}
+	if (dn->linearized && (dn->linearized[0] == '\0')) return true;
 	return false;
 }
