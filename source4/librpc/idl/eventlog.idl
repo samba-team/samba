@@ -81,7 +81,7 @@ import "lsa.idl", "security.idl";
 	/* Function: 0x04 */
 	NTSTATUS eventlog_GetNumRecords(
 		[in] policy_handle *handle,
-		[out] uint32 number
+		[out] uint32 *number
 	);
 
 	/******************/
@@ -119,8 +119,8 @@ import "lsa.idl", "security.idl";
 		[in] uint32 offset,
 		[in] uint32 number_of_bytes,
 		[out,size_is(number_of_bytes)] uint8 *data,
-		[out] uint32 sent_size,
-		[out] uint32 real_size
+		[out] uint32 *sent_size,
+		[out] uint32 *real_size
 	);
 
 	/*****************/
