@@ -765,20 +765,13 @@ find_parent(hx509_context context,
 	}
     }
 
-#if 0
-    /* 
-     * Assume trust anchors isn't proxy certificates, require
-     * KeyUsage.KeyCertSign
-     */
-    q.match |= HX509_QUERY_KU_KEYCERTSIGN;
-#endif
-
-    ret = hx509_certs_find(context, trust_anchors, &q, parent);
-    if (ret == 0) {
-	free_AuthorityKeyIdentifier(&ai);
-	return ret;
+    if (trust_anchors) {
+	ret = hx509_certs_find(context, trust_anchors, &q, parent);
+	if (ret == 0) {
+	    free_AuthorityKeyIdentifier(&ai);
+	    return ret;
+	}
     }
-
     free_AuthorityKeyIdentifier(&ai);
 
     {
@@ -881,8 +874,13 @@ _hx509_path_free(hx509_path *path)
 
 /*
  * Find path by looking up issuer for the top certificate and continue
- * until an anchor certificate is found. A certificate never included
- * twice in the path.
+ * until an anchor certificate is found or max limit is found. A
+ * certificate never included twice in the path.
+ *
+ * If the trust anchors are not given, calculate optimistic path, just
+ * follow the chain upward until we no longer find a parent or we hit
+ * the max path limit. In this case, a failure will always be returned
+ * depending on what error condition is hit first.
  *
  * The path includes a path from the top certificate to the anchor
  * certificate.
@@ -893,7 +891,7 @@ _hx509_path_free(hx509_path *path)
 
 int
 _hx509_calculate_path(hx509_context context,
-		      hx509_certs trust_anchors,
+		      hx509_certs anchors,
 		      unsigned int max_depth,
 		      hx509_cert cert,
 		      hx509_certs pool,
@@ -911,9 +909,9 @@ _hx509_calculate_path(hx509_context context,
 
     current = hx509_cert_ref(cert);
 
-    while (!certificate_is_anchor(context, trust_anchors, current)) {
+    while (anchors == NULL || !certificate_is_anchor(context, anchors, current)) {
 
-	ret = find_parent(context, trust_anchors, path, pool, current, &parent);
+	ret = find_parent(context, anchors, path, pool, current, &parent);
 	hx509_cert_free(current);
 	if (ret)
 	    return ret;
@@ -1690,6 +1688,7 @@ hx509_verify_signature(hx509_context context,
 		       const heim_octet_string *data,
 		       const heim_octet_string *sig)
 {
+    hx509_clear_error_string(context);
     return _hx509_verify_signature(signer->data, alg, data, sig);
 }
 
