@@ -5,14 +5,14 @@ dnl We must use autotools 2.53 or above
 AC_PREREQ(2.53)
 AC_INIT(Makefile.in)
 
-#dnl Uncomment this if you want to use your own define's too
-#AC_CONFIG_HEADER(module_config.h)
+AC_CONFIG_HEADER(module_config.h)
 #dnl To make sure that didn't get #define PACKAGE_* in modules_config.h
 #echo "" > confdefs.h
 
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
+AC_CANONICAL_HOST
 
 #################################################
 # Directory handling stuff to support both the
@@ -309,6 +309,11 @@ if test "$enable_shared" = "yes"; then
 			BLDSHARED="false"
 			LDSHFLAGS=""
 			;;
+		*darwin*)
+			BLDSHARED="true"
+			LDSHFLAGS="-bundle -flat_namespace -undefined suppress"
+			SHLIBEXT="dylib"
+			;;
 		*)
 			;;
   esac
@@ -328,7 +333,7 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
    ac_cv_shlib_works=no
    # try building a trivial shared library
    if test "$PICSUFFIX" = "po"; then
-     $CC $CPPFLAGS $CFLAGS $PICFLAGS -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
+     $CC $CPPFLAGS $CFLAGS $PICFLAGS -c -o shlib.po ${srcdir-.}/../../source/tests/shlib.c &&
        $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" shlib.po &&
        ac_cv_shlib_works=yes
    else
