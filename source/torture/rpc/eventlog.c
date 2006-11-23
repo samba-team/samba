@@ -77,7 +77,7 @@ static bool test_GetNumRecords(struct torture_context *tctx, struct dcerpc_pipe 
 			dcerpc_eventlog_GetNumRecords(p, tctx, &r), 
 			"GetNumRecords failed");
 
-	torture_comment(tctx, talloc_asprintf(tctx, "%d records\n", r.out.number));
+	torture_comment(tctx, talloc_asprintf(tctx, "%d records\n", *r.out.number));
 
 	cr.in.handle = cr.out.handle = &handle;
 
@@ -125,7 +125,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		
 		/* Now read the actual record */
 
-		r.in.number_of_bytes = r.out.real_size;
+		r.in.number_of_bytes = *r.out.real_size;
 		r.out.data = talloc_size(tctx, r.in.number_of_bytes);
 
 		status = dcerpc_eventlog_ReadEventLogW(p, tctx, &r);
@@ -134,7 +134,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		
 		/* Decode a user-marshalled record */
 
-		blob.length = r.out.sent_size;
+		blob.length = *r.out.sent_size;
 		blob.data = talloc_steal(tctx, r.out.data);
 
 		ndr = ndr_pull_init_blob(&blob, tctx);
