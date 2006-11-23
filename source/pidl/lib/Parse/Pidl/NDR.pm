@@ -309,7 +309,7 @@ sub pointer_type($)
 	return undef unless $e->{POINTERS};
 	
 	return "ref" if (has_property($e, "ref"));
-	return "ptr" if (has_property($e, "ptr"));
+	return "full" if (has_property($e, "ptr"));
 	return "sptr" if (has_property($e, "sptr"));
 	return "unique" if (has_property($e, "unique"));
 	return "relative" if (has_property($e, "relative"));
@@ -789,7 +789,6 @@ my %property_list = (
 	# pointer
 	"ref"			=> ["ELEMENT"],
 	"ptr"			=> ["ELEMENT"],
-	"sptr"			=> ["ELEMENT"],
 	"unique"		=> ["ELEMENT"],
 	"ignore"		=> ["ELEMENT"],
 	"relative"		=> ["ELEMENT"],
@@ -885,10 +884,6 @@ sub ValidElement($)
 
 	ValidProperties($e,"ELEMENT");
 
-	if (has_property($e, "ptr")) {
-		fatal($e, el_name($e) . " : pidl does not support full NDR pointers yet\n");
-	}
-
 	# Check whether switches are used correctly.
 	if (my $switch = has_property($e, "switch_is")) {
 		my $e2 = find_sibling($e, $switch);
@@ -946,7 +941,6 @@ sub ValidElement($)
 
 	if (!$e->{POINTERS} && (
 		has_property($e, "ptr") or
-		has_property($e, "sptr") or
 		has_property($e, "unique") or
 		has_property($e, "relative") or
 		has_property($e, "ref"))) {
@@ -1055,11 +1049,8 @@ sub ValidInterface($)
 	ValidProperties($interface,"INTERFACE");
 
 	if (has_property($interface, "pointer_default")) {
-		if ($interface->{PROPERTIES}->{pointer_default} eq "ptr") {
-			nonfatal $interface, "Full pointers are not supported yet, falling back to sptr";
-			$interface->{PROPERTIES}->{pointer_default} = "sptr";
-		} elsif (not grep (/$interface->{PROPERTIES}->{pointer_default}/, 
-					("ref", "unique", "ptr", "sptr"))) {
+		if (not grep (/$interface->{PROPERTIES}->{pointer_default}/, 
+					("ref", "unique", "ptr"))) {
 			fatal $interface, "Unknown default pointer type `$interface->{PROPERTIES}->{pointer_default}'";
 		}
 	}

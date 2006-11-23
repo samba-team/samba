@@ -248,8 +248,8 @@ interface epmapper
 	/* Function 0x02      */
 	error_status_t epm_Lookup(
 		[in]            uint32          inquiry_type,
-		[in,sptr]       GUID            *object,
-		[in,sptr]       rpc_if_id_t     *interface_id,
+		[in,ptr]       GUID            *object,
+		[in,ptr]       rpc_if_id_t     *interface_id,
 		[in]            uint32          vers_option,
 		[in,out]        policy_handle   *entry_handle,
 		[in]            uint32          max_ents,
@@ -266,8 +266,8 @@ interface epmapper
 	} epm_twr_p_t;
 
 	error_status_t epm_Map(
-		[in,sptr]       GUID            *object,
-		[in,sptr]       epm_twr_t       *map_tower,
+		[in,ptr]       GUID            *object,
+		[in,ptr]       epm_twr_t       *map_tower,
 		[in,out]        policy_handle   *entry_handle,
 		[in]            uint32          max_towers,
 		[out]           uint32          *num_towers,
@@ -292,8 +292,8 @@ interface epmapper
 	/* Function 0x06      */
 	error_status_t epm_MgmtDelete(
 		[in]            uint32          object_speced,
-		[in,sptr]       GUID            *object,
-		[in,sptr]       epm_twr_t       *tower
+		[in,ptr]       GUID            *object,
+		[in,ptr]       epm_twr_t       *tower
 		);
 
 	/**********************/
