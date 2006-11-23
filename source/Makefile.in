@@ -323,7 +323,7 @@ RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
 
 REGFIO_OBJ = registry/regfio.o
 
-RPC_REG_OBJ =  rpc_server/srv_reg.c rpc_server/srv_reg_nt.o $(REGFIO_OBJ)
+RPC_REG_OBJ =  rpc_server/srv_reg.o rpc_server/srv_reg_nt.o $(REGFIO_OBJ)
 
 RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
