@@ -310,6 +310,7 @@ sub pointer_type($)
 	
 	return "ref" if (has_property($e, "ref"));
 	return "ptr" if (has_property($e, "ptr"));
+	return "sptr" if (has_property($e, "sptr"));
 	return "unique" if (has_property($e, "unique"));
 	return "relative" if (has_property($e, "relative"));
 	return "ignore" if (has_property($e, "ignore"));
@@ -1055,10 +1056,10 @@ sub ValidInterface($)
 
 	if (has_property($interface, "pointer_default")) {
 		if ($interface->{PROPERTIES}->{pointer_default} eq "ptr") {
-			nonfatal $interface, "Full pointers are not supported yet, falling back to unique";
-			$interface->{PROPERTIES}->{pointer_default} = "unique";
+			nonfatal $interface, "Full pointers are not supported yet, falling back to sptr";
+			$interface->{PROPERTIES}->{pointer_default} = "sptr";
 		} elsif (not grep (/$interface->{PROPERTIES}->{pointer_default}/, 
-					("ref", "unique", "ptr"))) {
+					("ref", "unique", "ptr", "sptr"))) {
 			fatal $interface, "Unknown default pointer type `$interface->{PROPERTIES}->{pointer_default}'";
 		}
 	}
