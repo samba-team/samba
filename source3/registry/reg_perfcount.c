@@ -1327,6 +1327,10 @@ WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbu
 	/*
 	 * For a detailed description of the layout of this structure,
 	 * see http://msdn.microsoft.com/library/default.asp?url=/library/en-us/perfmon/base/performance_data_format.asp
+	 *
+	 * By 2006-11-23 this link did not work anymore, I found something
+	 * promising under
+	 * http://msdn2.microsoft.com/en-us/library/aa373105.aspx -- vl
 	 */
 	PERF_DATA_BLOCK block;
 	uint32 buffer_size, base_index; 
