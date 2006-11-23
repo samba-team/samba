@@ -47,6 +47,9 @@ export LD_SAMBA_MODULE_PATH
 LD_LIBRARY_PATH=$OLD_PWD/bin/shared:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH
 
+PKG_CONFIG_PATH=$OLD_PWD/bin/pkgconfig:$PKG_CONFIG_PATH
+export PKG_CONFIG_PATH
+
 incdir=`dirname $ARG0`
 echo -n "PROVISIONING..."
 . $incdir/mktestsetup.sh $PREFIX || exit 1
