@@ -936,7 +936,7 @@ hx509_cms_create_signed_1(hx509_context context,
 			  const void *data, size_t length,
 			  const AlgorithmIdentifier *digest_alg,
 			  hx509_cert cert,
-			  hx509_certs trust_anchors,
+			  hx509_certs anchors,
 			  hx509_certs pool,
 			  heim_octet_string *signed_data)
 {
@@ -1125,21 +1125,18 @@ hx509_cms_create_signed_1(hx509_context context,
 	goto out;
     }
 
-    if (trust_anchors) {
-	ret = _hx509_calculate_path(context,
-				    trust_anchors,
-				    0,
-				    cert,
-				    pool,
-				    &path);
-	if (ret) {
-	    _hx509_path_free(&path);
-	    ret = _hx509_path_append(context, &path, cert);
-	}
+    /*
+     * Provide best effort path
+     */
+    if (pool) {
+	_hx509_calculate_path(context,
+			      anchors,
+			      0,
+			      cert,
+			      pool,
+			      &path);
     } else
-	ret = _hx509_path_append(context, &path, cert);
-    if (ret)
-	goto out;
+	_hx509_path_append(context, &path, cert);
 
 
     if (path.len) {
