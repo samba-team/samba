@@ -109,8 +109,7 @@ struct ldb_module *find_backend(struct ldb_module *module, struct ldb_request *r
 	/* Figure out which partition it is under */
 	/* Skip the lot if 'data' isn't here yet (initialistion) */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if (ldb_dn_compare_base(data->partitions[i]->dn, 
-					dn) == 0) {
+		if (ldb_dn_compare_base(data->partitions[i]->dn, dn) == 0) {
 			return make_module_for_next_request(req, module->ldb, data->partitions[i]->module);
 		}
 	}
@@ -318,8 +317,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		}
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {
 			/* Find all partitions under the search base */
-			if (ldb_dn_compare_base(req->op.search.base,
-						data->partitions[i]->dn) == 0) {
+			if (ldb_dn_compare_base(req->op.search.base, data->partitions[i]->dn) == 0) {
 				ret = partition_send_request(ac, data->partitions[i]->module, data->partitions[i]->dn);
 				if (ret != LDB_SUCCESS) {
 					return ret;
@@ -767,8 +765,7 @@ static int partition_init(struct ldb_module *module)
 			}
 			
 			for (partition_idx = 0; data->partitions[partition_idx]; partition_idx++) {
-				if (ldb_dn_compare(data->partitions[partition_idx]->dn, 
-						   base_dn) == 0) {
+				if (ldb_dn_compare(data->partitions[partition_idx]->dn, base_dn) == 0) {
 					partition = data->partitions[partition_idx];
 					break;
 				}
