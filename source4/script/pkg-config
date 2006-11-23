@@ -92,27 +92,27 @@ sub Cflags($)
 {
 	my $name = shift;
 	my $fields = Parse($name);
-	my $cflags = $fields->{Cflags};
+	my @cflags = split(/ /, $fields->{Cflags});
 	foreach (split(/[, ]/, $fields->{Requires})) {
-		$cflags .= " ".Cflags($_);	
+		push (@cflags, Cflags($_));
 	}
-	return split(/ /, $cflags);
+	return @cflags;
 }
 
 sub Libs($)
 {
 	my $name = shift;
 	my $fields = Parse($name);
-	my $libs = $fields->{Libs};
+	my @libs = split(/ /, $fields->{Libs});
 	foreach (split(/[, ]/, $fields->{Requires})) {
-		$libs .= " ".Libs($_);	
+		push (@libs, Libs($_));
 	}
 	if ($opt_static) {
 		foreach (split(/[ ,]/, $fields->{"Requires.private"})) {
-			$libs .= " ".Libs($_);	
+			push (@libs, Libs($_));
 		}
 	}
-	return split(/ /, $libs);
+	return @libs;
 }
 
 my @out = ();
