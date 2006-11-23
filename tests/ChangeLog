@@ -1,5 +1,8 @@
 2006-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-kdc.in: check that the getarg -- option works for
+	delete and add.
+
 	* kdc/check-kdc.in: Test proxy cert.
 	
 2006-11-19  Love Hörnquist Åstrand  <lha@it.su.se>
