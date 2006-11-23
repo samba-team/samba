@@ -485,8 +485,13 @@ _PUBLIC_ NTSTATUS ndr_push_full_ptr(struct ndr_push *ndr, const void *p)
 {
 	uint32_t ptr = 0;
 	if (p) {
-		ndr->ptr_count++;
-		ptr = ndr->ptr_count;
+		/* Check if the pointer already exists and has an id */
+		ptr = ndr_token_peek(&ndr->full_ptr_list, p);
+		if (ptr == 0) {
+			ndr->ptr_count++;
+			ptr = ndr->ptr_count;
+			ndr_token_store(ndr, &ndr->full_ptr_list, p, ptr);
+		}
 	}
 	return ndr_push_uint32(ndr, NDR_SCALARS, ptr);
 }
