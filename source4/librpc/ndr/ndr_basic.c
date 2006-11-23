@@ -481,7 +481,7 @@ _PUBLIC_ NTSTATUS ndr_push_unique_ptr(struct ndr_push *ndr, const void *p)
 /*
   push a 'simple' full non-zero value if a pointer is non-NULL, otherwise 0
 */
-_PUBLIC_ NTSTATUS ndr_push_sptr_ptr(struct ndr_push *ndr, const void *p)
+_PUBLIC_ NTSTATUS ndr_push_full_ptr(struct ndr_push *ndr, const void *p)
 {
 	uint32_t ptr = 0;
 	if (p) {
