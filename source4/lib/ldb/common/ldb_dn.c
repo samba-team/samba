@@ -203,6 +203,8 @@ char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value)
 
 	ldb_dn_escape_internal(dst, (const char *)value.data, value.length);
 
+	dst = talloc_realloc(mem_ctx, dst, char, strlen(dst) + 1);
+
 	return dst;
 }
 
@@ -242,6 +244,9 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	if (dn->special) {
 		return true;
 	}
+
+	/* make sure we free this if alloced previously before replacing */
+	talloc_free(dn->components);
 
 	/* in the common case we have 3 or more components */
 	/* make sure all components are zeroed, other functions depend on this */
@@ -306,7 +311,12 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				l = 0;
 
 				*d++ = '\0';
-				dn->components[dn->comp_num].name = dt;
+				dn->components[dn->comp_num].name = talloc_strdup(dn->components, dt);
+				if ( ! dn->components[dn->comp_num].name) {
+					/* ouch */
+					goto failed;
+				}
+
 				dt = d;
 
 				p++;
@@ -385,8 +395,13 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 				p++;
 				*d++ = '\0';
-				dn->components[dn->comp_num].value.data = (uint8_t *)dt;
+				dn->components[dn->comp_num].value.data = (uint8_t *)talloc_strdup(dn->components, dt);
 				dn->components[dn->comp_num].value.length = l;
+				if ( ! dn->components[dn->comp_num].value.data) {
+					/* ouch ! */
+					goto failed;
+				}
+
 				dt = d;
 
 				dn->comp_num++;
@@ -486,15 +501,23 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	}
 
 	*d++ = '\0';
-	dn->components[dn->comp_num].value.data = (uint8_t *)dt;
+	dn->components[dn->comp_num].value.data = (uint8_t *)talloc_strdup(dn->components, dt);
 	dn->components[dn->comp_num].value.length = l;
+
+	if ( ! dn->components[dn->comp_num].value.data) {
+		/* ouch */
+		goto failed;
+	}
 
 	dn->comp_num++;
 
 	dn->valid_comp = true;
+
+	talloc_free(data);
 	return true;
 
 failed:
+	dn->comp_num = 0;
 	talloc_free(dn->components);
 	return false;
 }
@@ -584,13 +607,11 @@ static bool ldb_dn_casefold_internal(struct ldb_dn *dn)
 	}
 
 	for (i = 0; i < dn->comp_num; i++) {
-		struct ldb_dn_component dc;
 		const struct ldb_attrib_handler *h;
 
-		memset(&dc, 0, sizeof(dc));
 		dn->components[i].cf_name = ldb_attr_casefold(dn->components, dn->components[i].name);
 		if (!dn->components[i].cf_name) {
-			return false;
+			goto failed;
 		}
 
 		h = ldb_attrib_handler(dn->ldb, dn->components[i].cf_name);
@@ -598,11 +619,20 @@ static bool ldb_dn_casefold_internal(struct ldb_dn *dn)
 					 &(dn->components[i].value),
 					 &(dn->components[i].cf_value));
 		if (ret != 0) {
-			return false;
+			goto failed;
 		}
 	}
 
+	dn->valid_case = true;
+
 	return true;
+
+failed:
+	for (i = 0; i < dn->comp_num; i++) {
+		LDB_FREE(dn->components[i].cf_name);
+		LDB_FREE(dn->components[i].cf_value.data);
+	}
+	return false;
 }
 
 const char *ldb_dn_get_casefold(struct ldb_dn *dn)
@@ -659,7 +689,8 @@ const char *ldb_dn_get_casefold(struct ldb_dn *dn)
 	}
 	*(--d) = '\0';
 
-	dn->valid_case = true;
+	/* don't waste more memory than necessary */
+	dn->casefold = talloc_realloc(dn, dn->casefold, char, strlen(dn->casefold) + 1);
 
 	return dn->casefold;
 }
@@ -711,6 +742,10 @@ int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
 	if (dn->comp_num == 0) {
 		if (dn->special && base->special) {
 			return strcmp(base->linearized, dn->linearized);
+		} else if (dn->special) {
+			return -1;
+		} else if (base->special) {
+			return 1;
 		} else {
 			return 0;
 		}
@@ -773,6 +808,10 @@ int ldb_dn_compare(struct ldb_dn *dn0, struct ldb_dn *dn1)
 	if (dn0->comp_num == 0) {
 		if (dn0->special && dn1->special) {
 			return strcmp(dn0->linearized, dn1->linearized);
+		} else if (dn0->special) {
+			return 1;
+		} else if (dn1->special) {
+			return -1;
 		} else {
 			return 0;
 		}
@@ -812,6 +851,7 @@ static struct ldb_dn_component ldb_dn_copy_component(void *mem_ctx, struct ldb_d
 	dst.name = talloc_strdup(mem_ctx, src->name);
 	if (dst.name == NULL) {
 		LDB_FREE(dst.value.data);
+		return dst;
 	}
 
 	if (src->cf_value.data) {
@@ -868,13 +908,13 @@ struct ldb_dn *ldb_dn_copy(void *mem_ctx, struct ldb_dn *dn)
 				return NULL;
 			}
 		}
+	}
 
-		if (dn->casefold) {
-			new_dn->casefold = talloc_strdup(new_dn, dn->casefold);
-			if ( ! new_dn->casefold) {
-				talloc_free(new_dn);
-				return NULL;
-			}
+	if (dn->casefold) {
+		new_dn->casefold = talloc_strdup(new_dn, dn->casefold);
+		if ( ! new_dn->casefold) {
+			talloc_free(new_dn);
+			return NULL;
 		}
 	}
 
@@ -934,7 +974,7 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 			}
 		}
 
-		if (s) {
+		if (dn->casefold && s) {
 			t = talloc_asprintf(dn, "%s,%s", dn->casefold, s);
 			LDB_FREE(dn->casefold);
 			dn->casefold = t;
@@ -1046,7 +1086,7 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 
 		dn->comp_num = n;
 
-		if (s) {
+		if (dn->casefold && s) {
 			t = talloc_asprintf(dn, "%s,%s", s, dn->casefold);
 			LDB_FREE(dn->casefold);
 			dn->casefold = t;
@@ -1107,6 +1147,8 @@ bool ldb_dn_add_child_fmt(struct ldb_dn *dn, const char *child_fmt, ...)
 
 bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num)
 {
+	int i;
+
 	if ( ! ldb_dn_validate(dn)) {
 		return false;
 	}
@@ -1115,9 +1157,24 @@ bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num)
 		return false;
 	}
 
+	/* free components */
+	for (i = num; i > 0; i--) {
+		LDB_FREE(dn->components[dn->comp_num - i].name);
+		LDB_FREE(dn->components[dn->comp_num - i].value.data);
+		LDB_FREE(dn->components[dn->comp_num - i].cf_name);
+		LDB_FREE(dn->components[dn->comp_num - i].cf_value.data);
+	}
+	
 	dn->comp_num -= num;
 
-	dn->valid_case = false;
+	if (dn->valid_case) {
+		for (i = 0; i < dn->comp_num; i++) {
+			LDB_FREE(dn->components[i].cf_name);
+			LDB_FREE(dn->components[i].cf_value.data);
+		}
+		dn->valid_case = false;
+		LDB_FREE(dn->casefold);
+	}
 
 	if (dn->valid_lin) {	
 		dn->valid_lin = false;
@@ -1140,12 +1197,25 @@ bool ldb_dn_remove_child_components(struct ldb_dn *dn, unsigned int num)
 	}
 
 	for (i = 0, j = num; j < dn->comp_num; i++, j++) {
+		if (i < num) {
+			LDB_FREE(dn->components[i].name);
+			LDB_FREE(dn->components[i].value.data);
+			LDB_FREE(dn->components[i].cf_name);
+			LDB_FREE(dn->components[i].cf_value.data);
+		}
 		dn->components[i] = dn->components[j];
 	}
 
 	dn->comp_num -= num;
 
-	dn->valid_case = false;
+	if (dn->valid_case) {
+		for (i = 0; i < dn->comp_num; i++) {
+			LDB_FREE(dn->components[i].cf_name);
+			LDB_FREE(dn->components[i].cf_value.data);
+		}
+		dn->valid_case = false;
+	}
+	LDB_FREE(dn->casefold);
 
 	if (dn->valid_lin) {	
 		dn->valid_lin = false;
@@ -1182,55 +1252,64 @@ struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, struct ldb_dn *dn)
 */
 static char *ldb_dn_canonical(void *mem_ctx, struct ldb_dn *dn, int ex_format) {
 	int i;
+	TALLOC_CTX *tmpctx;
 	char *cracked = NULL;
  
 	if ( ! ldb_dn_validate(dn)) {
 		return NULL;
 	}
+
+	tmpctx = talloc_new(mem_ctx);
+
 	/* Walk backwards down the DN, grabbing 'dc' components at first */
 	for (i = dn->comp_num - 1 ; i >= 0; i--) {
 		if (ldb_attr_cmp(dn->components[i].name, "dc") != 0) {
 			break;
 		}
 		if (cracked) {
-			cracked = talloc_asprintf(mem_ctx, "%s.%s",
-						  ldb_dn_escape_value(mem_ctx, dn->components[i].value),
+			cracked = talloc_asprintf(tmpctx, "%s.%s",
+						  ldb_dn_escape_value(tmpctx, dn->components[i].value),
 						  cracked);
 		} else {
-			cracked = ldb_dn_escape_value(mem_ctx, dn->components[i].value);
+			cracked = ldb_dn_escape_value(tmpctx, dn->components[i].value);
 		}
 		if (!cracked) {
-			return NULL;
+			goto done;
 		}
 	}
 
 	/* Only domain components?  Finish here */
 	if (i < 0) {
 		if (ex_format) {
-			cracked = talloc_asprintf(mem_ctx, "%s\n", cracked);
+			cracked = talloc_asprintf(tmpctx, "%s\n", cracked);
 		} else {
-			cracked = talloc_asprintf(mem_ctx, "%s/", cracked);
+			cracked = talloc_asprintf(tmpctx, "%s/", cracked);
 		}
-		return cracked;
+		talloc_steal(mem_ctx, cracked);
+		goto done;
 	}
 
 	/* Now walk backwards appending remaining components */
 	for (; i > 0; i--) {
-		cracked = talloc_asprintf(mem_ctx, "%s/%s", cracked, 
-					  ldb_dn_escape_value(mem_ctx, dn->components[i].value));
+		cracked = talloc_asprintf(tmpctx, "%s/%s", cracked, 
+					  ldb_dn_escape_value(tmpctx, dn->components[i].value));
 		if (!cracked) {
-			return NULL;
+			goto done;
 		}
 	}
 
 	/* Last one, possibly a newline for the 'ex' format */
 	if (ex_format) {
-		cracked = talloc_asprintf(mem_ctx, "%s\n%s", cracked, 
-					  ldb_dn_escape_value(mem_ctx, dn->components[i].value));
+		cracked = talloc_asprintf(tmpctx, "%s\n%s", cracked, 
+					  ldb_dn_escape_value(tmpctx, dn->components[i].value));
 	} else {
-		cracked = talloc_asprintf(mem_ctx, "%s/%s", cracked, 
-					  ldb_dn_escape_value(mem_ctx, dn->components[i].value));
+		cracked = talloc_asprintf(tmpctx, "%s/%s", cracked, 
+					  ldb_dn_escape_value(tmpctx, dn->components[i].value));
 	}
+
+	talloc_steal(mem_ctx, cracked);
+done:
+	talloc_free(tmpctx);
 	return cracked;
 }
 
@@ -1309,6 +1388,7 @@ int ldb_dn_set_component(struct ldb_dn *dn, int num, const char *name, const str
 	v.length = val.length;
 	v.data = (uint8_t *)talloc_memdup(dn, val.data, v.length+1);
 	if ( ! v.data) {
+		talloc_free(n);
 		return LDB_ERR_OTHER;
 	}
 
@@ -1317,8 +1397,15 @@ int ldb_dn_set_component(struct ldb_dn *dn, int num, const char *name, const str
 	dn->components[num].name = n;
 	dn->components[num].value = v;
 
-	if (dn->valid_case) dn->valid_case = false;
-	if (dn->casefold) LDB_FREE(dn->casefold);
+	if (dn->valid_case) {
+		int i;
+		for (i = 0; i < dn->comp_num; i++) {
+			LDB_FREE(dn->components[i].cf_name);
+			LDB_FREE(dn->components[i].cf_value.data);
+		}
+		dn->valid_case = false;
+	}
+	LDB_FREE(dn->casefold);
 
 	return LDB_SUCCESS;
 }
