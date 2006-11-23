@@ -76,6 +76,7 @@ gen_cert "/CN=Revoke cert/C=SE" "ca" "revoke" "usr"
 gen_cert "/CN=Test cert KeyEncipherment/C=SE" "ca" "test-ke-only" "usr_ke"
 gen_cert "/CN=Test cert DigitalSignature/C=SE" "ca" "test-ds-only" "usr_ds"
 gen_cert "/CN=pkinit/C=SE" "ca" "pkinit" "pkinit_client"
+gen_cert "/C=SE/CN=pkinit/CN=pkinit-proxy" "pkinit" "proxy" "proxy_cert" pkinit-proxy
 gen_cert "/CN=kdc/C=SE" "ca" "kdc" "pkinit_kdc"
 gen_cert "/CN=Sub CA/C=SE" "ca" "sub-ca" "subca"
 gen_cert "/CN=Test sub cert/C=SE" "sub-ca" "sub-cert" "usr"
@@ -89,6 +90,7 @@ gen_cert "/C=SE/CN=Test cert/CN=proxy10-child" "proxy10-test" "proxy" "proxy_cer
 # combine
 cat sub-ca.crt ca.crt > sub-ca-combined.crt
 cat test.crt test.key > test.combined.crt
+cat pkinit-proxy.crt pkinit.crt > pkinit-proxy-chain.crt
 
 # password protected key
 openssl rsa -in test.key -aes256 -passout pass:foobar -out test-pw.key
