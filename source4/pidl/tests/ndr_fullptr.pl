@@ -17,11 +17,11 @@ test_samba4_ndr("fullptr-push-dup",
 '
 	struct ndr_push *ndr = ndr_push_init();
 	uint32_t v = 13;
-	struct echo_TestRef r;
+	struct echo_TestFull r;
 	r.in.x = &v; 
 	r.in.y = &v; 
 
-	if (NT_STATUS_IS_ERR(ndr_push_echo_TestRef(ndr, NDR_IN, &r))) {
+	if (NT_STATUS_IS_ERR(ndr_push_echo_TestFull(ndr, NDR_IN, &r))) {
 		fprintf(stderr, "push failed\n");
 		return 1;
 	}
