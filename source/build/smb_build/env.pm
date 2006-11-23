@@ -53,9 +53,9 @@ sub _set_config($$)
 	$self->{automatic_deps} = ($self->{config}->{automatic_dependencies} eq "yes");
 }
 
-sub PkgConfig($$$$$$$$$$)
+sub PkgConfig($$$$$$$$$$$)
 {
-	my ($self,$path,$name,$libs,$cflags,$version,$desc,$hasmodules,$pubdep,$privdep) = @_;
+	my ($self,$path,$name,$libs,$cflags,$version,$desc,$hasmodules,$pubdep,$privdep,$dirs) = @_;
 
 	print __FILE__.": creating $path\n";
 
@@ -66,13 +66,9 @@ sub PkgConfig($$$$$$$$$$)
 	mkpath(dirname($path),0,0755);
 	open(OUT, ">$path") or die("Can't open $path: $!");
 
-	print OUT <<"__EOF__";
-prefix=$self->{config}->{prefix}
-exec_prefix=$self->{config}->{exec_prefix}
-libdir=$self->{config}->{libdir}
-includedir=$self->{config}->{includedir}
-__EOF__
-
+	foreach (keys %$dirs) {
+		print OUT "$_=" . $dirs->{$_} . "\n";
+	}
 	if ($hasmodules) {
 		print OUT "modulesdir=$self->{config}->{modulesdir}/$name\n" ;
 	}
@@ -86,7 +82,7 @@ __EOF__
 	print OUT "Requires: $pubdep\n" if defined($pubdep);
 	print OUT "Requires.private: $privdep\n" if defined($privdep);
 	print OUT "Version: $version\n";
-	print OUT "Libs: -L\${libdir} $libs\n";
+	print OUT "Libs: $libs\n";
 	print OUT "Cflags: -I\${includedir} $cflags\n";
 
 	close(OUT);
