@@ -265,8 +265,7 @@ __EOD__
 
 	my $soarg = "";
 	my $soargdebug = "";
-	if ($self->{config}->{SONAMEFLAG} ne "" and 
-		defined($ctx->{LIBRARY_SONAME})) {
+	if ($self->{config}->{SONAMEFLAG} ne "" and defined($ctx->{LIBRARY_SONAME})) {
 		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME} ";
 		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
 			$soargdebug = "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
@@ -291,7 +290,7 @@ $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_
 		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $extraflags \\
 		 $soarg \\
-		$init_obj $singlesoarg 
+		$init_obj $singlesoarg$soargdebug
 __EOD__
 );
 
@@ -395,9 +394,9 @@ sub Manpage($$)
 	push (@{$self->{manpages}}, "$dir/$ctx->{MANPAGE}");
 }
 
-sub PkgConfig($$)
+sub PkgConfig($$$)
 {
-	my ($self,$ctx) = @_;
+	my ($self,$ctx,$other) = @_;
 	
 	my $link_name = $ctx->{NAME};
 
@@ -415,30 +414,57 @@ sub PkgConfig($$)
 
 	if (defined($ctx->{PUBLIC_DEPENDENCIES})) {
 		foreach (@{$ctx->{PUBLIC_DEPENDENCIES}}) {
-#			next unless ($self-> ) {
+			next unless ($other->{$_}->{TYPE} eq "LIBRARY");
 
-#FIXME			$pubs .= "$_ ";
+			s/^LIB//g;
+			$_ = lc($_);
+
+			$pubs .= "$_ ";
 		}
 	}
 
 	if (defined($ctx->{PRIVATE_DEPENDENCIES})) {
 		foreach (@{$ctx->{PRIVATE_DEPENDENCIES}}) {
-#			next unless ($self-> ) {
+			next unless ($other->{$_}->{TYPE} eq "LIBRARY");
 
-#FIXME			$privs .= "$_ ";
+			s/^LIB//g;
+			$_ = lc($_);
+
+			$privs .= "$_ ";
 		}
 	}
 
 	smb_build::env::PkgConfig($self,
 		$path,
 		$link_name,
-		"-l$link_name",
+		"-L\${libdir} -l$link_name",
 		"",
 		"$ctx->{VERSION}",
 		$ctx->{DESCRIPTION},
 		defined($ctx->{INIT_FUNCTIONS}),
 		$pubs,
-		$privs
+		$privs,
+		{
+			"prefix" => $self->{config}->{prefix},
+			"exec_prefix" => $self->{config}->{exec_prefix},
+			"libdir" => $self->{config}->{libdir},
+			"includedir" => $self->{config}->{includedir}
+		}
+	); 
+	smb_build::env::PkgConfig($self,
+		"bin/pkgconfig/$link_name-uninstalled.pc",
+		$link_name,
+		"-Lbin/shared -Lbin/static -l$link_name",
+		"-I. -Iinclude -Ilib -Ilib/replace",
+		"$ctx->{VERSION}",
+		$ctx->{DESCRIPTION},
+		defined($ctx->{INIT_FUNCTIONS}),
+		$pubs,
+		$privs,
+		{
+			"prefix" => "bin/",
+			"includedir" => "$ctx->{BASEDIR}"
+		}
 	); 
 }
 

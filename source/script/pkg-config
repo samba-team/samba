@@ -27,6 +27,7 @@ if ($opt_help) {
 	print "pkg-config replacement in perl\n";
 	print "Copyright (C) 2006 Jelmer Vernooij <jelmer\@samba.org>\n";
 	print "\n";
+	print "Usage: pkg-config [OPTIONS] PACKAGE...\n";
 	print " --help			Print this help message\n";
 	print " --static		Print flags for static libraries\n";
 	print " --libs			Print linker flags\n";

@@ -53,7 +53,7 @@ foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
 	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
-	$mkenv->PkgConfig($key) if $key->{TYPE} eq "LIBRARY" 
+	$mkenv->PkgConfig($key, $OUTPUT) if $key->{TYPE} eq "LIBRARY" 
 		                    and defined($key->{VERSION});
 	$mkenv->SharedLibrary($key) if grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->Binary($key) if grep(/BINARY/, @{$key->{OUTPUT_TYPE}});
