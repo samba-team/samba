@@ -1,5 +1,9 @@
-2006-11-19  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-kdc.in: Test proxy cert.
+	
+2006-11-19  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/krb5.conf.in: revert the enable-pkinit change, and make it
 	consistant with all other other enable- options
 

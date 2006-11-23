@@ -1,5 +1,19 @@
-2006-11-16  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cert.c (_hx509_calculate_path): allow to calculate optimistic
+	path when we don't know the trust anchors, just follow the chain
+	upward until we no longer find a parent or we hit the max limit.
+
+	* cms.c (hx509_cms_create_signed_1): provide a best effort path to
+	the trust anchors to be stored in the SignedData packet, if find
+	parents until trust anchor or max length.
+
+	* data: regen
+
+	* data/gen-req.sh: Build pk-init proxy cert.
+	
+2006-11-16  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* error.c (hx509_get_error_string): Put ", " between strings in
 	error message.
 	

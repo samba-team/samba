@@ -1,5 +1,11 @@
-2006-11-21  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pkinit.c (_krb5_pk_create_sign): stuff down the users
+	certs in the pool to make sure a path is returned, without this
+	proxy certificates wont work.
+	
+2006-11-21  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/config.c: Make all pkinit options prefixed with pkinit_
 
 	* lib/krb5/log.c (krb5_get_warn_dest): return warn_dest from
