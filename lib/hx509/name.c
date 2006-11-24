@@ -115,34 +115,38 @@ append_string(char **str, size_t *total_len, char *ss, size_t len, int quote)
 static char *
 oidtostring(const heim_oid *type)
 {
-    char *s = NULL, *ss;
-    size_t i, total_len = 0;
+    char *s;
+    size_t i;
     
     for (i = 0; i < sizeof(no)/sizeof(no[0]); i++) {
 	if (der_heim_oid_cmp((*no[i].o)(), type) == 0)
 	    return strdup(no[i].n);
     }
-
-    for (i = 0; i < type->length; i++) {
-	asprintf(&ss, "%u", type->components[i]);
-	append_string(&s, &total_len, ss, strlen(ss), 0);
-	free(ss);
-	if (i + 1 < type->length)
-	    append_string(&s, &total_len, ".", 1, 0);
-    }
+    if (der_print_heim_oid(type, '.', &s) != 0)
+	return NULL;
     return s;
 }
 
-static const heim_oid *
-stringtooid(const char *name, size_t len)
+static int
+stringtooid(const char *name, size_t len, heim_oid *oid)
 {
-    int i;
+    int i, ret;
+    char *s;
     
+    memset(oid, 0, sizeof(*oid));
+
     for (i = 0; i < sizeof(no)/sizeof(no[0]); i++) {
 	if (strncasecmp(no[i].n, name, len) == 0)
-	    return (*no[i].o)();
+	    return der_copy_oid((*no[i].o)(), oid);
     }
-    return NULL;
+    s = malloc(len + 1);
+    if (s == NULL)
+	return ENOMEM;
+    memcpy(s, name, len);
+    s[len] = '\0';
+    ret = der_parse_heim_oid(s, ".", oid);
+    free(s);
+    return ret;
 }
 
 int
@@ -328,6 +332,7 @@ hx509_parse_name(const char *str, hx509_name *name)
     size_t len;
     hx509_name n;
     void *ptr;
+    int ret;
 
     *name = NULL;
 
@@ -341,7 +346,7 @@ hx509_parse_name(const char *str, hx509_name *name)
 
     while (p != NULL && *p != '\0') {
 	RelativeDistinguishedName *rdn;
-	const heim_oid *oid;
+	heim_oid oid;
 	int last;
 
 	q = strchr(p, ',');
@@ -368,8 +373,8 @@ hx509_parse_name(const char *str, hx509_name *name)
 	    goto out;
 	}
 
-	oid = stringtooid(p, q - p);
-	if (oid == NULL) {
+	ret = stringtooid(p, q - p, &oid);
+	if (ret) {
 	    /* _hx509_abort("unknown type: %.*s", (int)(q - p), p); */
 	    goto out;
 	}
@@ -379,6 +384,7 @@ hx509_parse_name(const char *str, hx509_name *name)
 		      (n->der_name.u.rdnSequence.len + 1));
 	if (ptr == NULL) {
 	    /* _hx509_abort("realloc"); */
+	    der_free_oid(&oid);
 	    goto out;
 	}
 	n->der_name.u.rdnSequence.val = ptr;
@@ -393,15 +399,12 @@ hx509_parse_name(const char *str, hx509_name *name)
 	rdn->val = malloc(sizeof(rdn->val[0]));
 	if (rdn->val == NULL) {
 	    /* _hx509_abort("malloc"); */
+	    der_free_oid(&oid);
 	    goto out;
 	}
 	rdn->len = 1;
 
-
-	if (der_copy_oid(oid, &rdn->val[0].type) != 0) {
-	    /* _hx509_abort("der_copy_oid"); */
-	    goto out;
-	}
+	rdn->val[0].type = oid;
 
 	{
 	    size_t pstr_len = len - (q - p) - 1;
