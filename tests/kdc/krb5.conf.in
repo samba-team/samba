@@ -24,6 +24,7 @@
 	pkinit_pool = FILE:@srcdir@/../../lib/hx509/data/sub-ca.crt
 #	pkinit_revoke = CRL:@srcdir@/../../lib/hx509/data/crl1.crl
 	pkinit_mappings_file = @srcdir@/pki-mapping
+	pkinit_allow_proxy_certificate = true
 
 	database = {
 		dbname = @objdir@/current-db
