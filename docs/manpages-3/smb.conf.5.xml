@@ -595,7 +595,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 	</para>
 
 	<para>
-	All of these options can be set separately for each service (or globally, of course).
+	These options can be set separately for each service.
 	</para>
 
 	<para>
