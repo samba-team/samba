@@ -124,7 +124,21 @@ foreach my $pkg (@ARGV)
 	push (@out, Cflags($pkg)) if ($opt_cflags);
 }
 
+sub nub
+{
+	my @list = @_;
+	my @ret = ();
+	my %seen = ();
+	foreach (@list) {
+		next if (defined($seen{$_}));
+		push (@ret, $_);
+		$seen{$_} = 1;
+	}
+	return @ret;
+}
+
 if ($#out >= 0) {
+	@out = nub(@out);
 	print join(' ', @out) . "\n";
 }
 
