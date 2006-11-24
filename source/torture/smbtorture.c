@@ -250,18 +250,6 @@ static void usage(poptContext pc)
 	exit(1);
 }
 
-static bool is_binding_string(const char *binding_string)
-{
-	TALLOC_CTX *mem_ctx = talloc_named_const(NULL, 0, "is_binding_string");
-	struct dcerpc_binding *binding_struct;
-	NTSTATUS status;
-	
-	status = dcerpc_parse_binding(mem_ctx, binding_string, &binding_struct);
-
-	talloc_free(mem_ctx);
-	return NT_STATUS_IS_OK(status);
-}
-
 static void max_runtime_handler(int sig)
 {
 	DEBUG(0,("maximum runtime exceeded for smbtorture - terminating\n"));
@@ -516,6 +504,8 @@ int main(int argc,char *argv[])
 	poptContext pc;
 	static const char *target = "other";
 	const char **subunit_dir;
+	struct dcerpc_binding *binding_struct;
+	NTSTATUS status;
 	int shell = False;
 	static const char *ui_ops_name = "simple";
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
@@ -645,7 +635,10 @@ int main(int argc,char *argv[])
 	}
 
 	/* see if its a RPC transport specifier */
-	if (is_binding_string(argv_new[1])) {
+	status = dcerpc_parse_binding(talloc_autofree_context(), argv_new[1], &binding_struct);
+	if (NT_STATUS_IS_OK(status)) {
+		lp_set_cmdline("torture:host", binding_struct->host);
+		lp_set_cmdline("torture:share", "IPC$");
 		lp_set_cmdline("torture:binding", argv_new[1]);
 	} else {
 		char *binding = NULL;
