@@ -1,0 +1,65 @@
+#!/usr/bin/perl
+# Simple subunit parser
+# (C) 2006 Jelmer Vernooij <jelmer@samba.org>
+
+use strict;
+use Getopt::Long;
+
+my $numtests = 0;
+my $numfails = 0;
+my $numskips = 0;
+my $numsuccess = 0;
+
+my $opt_help = 0;
+my $opt_progress = 0;
+
+my $result = GetOptions (
+	    'help|h|?' => \$opt_help, 
+		'progress' => \$opt_progress
+	    );
+
+if (not $result) {
+	exit(1);
+}
+
+if ($opt_help) {
+	print "subunit output summarizer\n";
+	print "Copyright (C) 2006 Jelmer Vernooij <jelmer\@samba.org>\n";
+	print "\n";
+	print "Usage: subunit-summary [OPTION]\n";
+	print " --help			Print this help message\n";
+	print "\n";
+	exit(0);
+}
+
+while(<STDIN>) {
+	next unless (/^(.+): (.+?)( \[)?$/);
+	if ($1 eq "test") {
+		$numtests++;
+	} elsif ($1 eq "error") {
+		print "E" if ($opt_progress);
+	} elsif ($1 eq "failure") {
+		$numfails++;
+		print "F" if ($opt_progress);
+	} elsif ($1 eq "success") {
+		$numsuccess++;
+		print "." if ($opt_progress);
+	} elsif ($1 eq "skip") {
+		$numskips++;
+		print "I" if ($opt_progress);
+	} elsif ($1 eq "testsuite") {
+		if ($opt_progress) {
+			if ($numtests) { print "\n"; }
+			print "$2: ";
+		}
+	}
+}
+
+print "\n" if ($opt_progress);
+
+printf("%d%%: %d tests, %d succeeded, %d failed, %d skipped\n", 
+       ($numsuccess / $numtests * 100),
+	   $numtests,
+	   $numsuccess,
+	   $numfails,
+	   $numskips);
