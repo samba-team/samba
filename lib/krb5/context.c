@@ -180,7 +180,7 @@ init_context_from_config_file(krb5_context context)
     /* prefer dns_lookup_kdc over srv_lookup. */
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, bool, srv_lookup, context->srv_lookup, "dns_lookup_kdc");
-    INIT_FIELD(context, int, large_msg_size, 6000, "large_message_size");
+    INIT_FIELD(context, int, large_msg_size, 1400, "large_message_size");
     INIT_FIELD(context, bool, dns_canonicalize_hostname, TRUE, "dns_canonicalize_hostname");
     context->default_cc_name = NULL;
     return 0;
