@@ -240,6 +240,13 @@ uint32 dmapi_file_flags(const char * const path)
 		}
 	}
 
+	/* AIX has DMAPI but no POSIX capablities support. In this case,
+	 * we need to be root to do DMAPI manipulations.
+	 */
+#ifndef HAVE_POSIX_CAPABILITIES
+	become_root();
+#endif
+
 	err = dm_path_to_handle(CONST_DISCARD(char *, path),
 		&dm_handle, &dm_handle_len);
 	if (err < 0) {
@@ -247,7 +254,7 @@ uint32 dmapi_file_flags(const char * const path)
 			    path, strerror(errno)));
 
 		if (errno != EPERM) {
-			return 0;
+			goto done;
 		}
 
 		/* Linux capabilities are broken in that changing our
@@ -265,7 +272,7 @@ uint32 dmapi_file_flags(const char * const path)
 			DEBUG(DMAPI_TRACE,
 			    ("retrying dm_path_to_handle(%s): %s\n",
 			    path, strerror(errno)));
-			return 0;
+			goto done;
 		}
 	}
 
@@ -275,7 +282,7 @@ uint32 dmapi_file_flags(const char * const path)
 		DEBUG(DMAPI_TRACE, ("dm_get_eventlist(%s): %s\n",
 			    path, strerror(errno)));
 		dm_handle_free(dm_handle, dm_handle_len);
-		return 0;
+		goto done;
 	}
 
 	/* We figure that the only reason a DMAPI application would be
@@ -293,6 +300,12 @@ uint32 dmapi_file_flags(const char * const path)
 	if (flags & FILE_ATTRIBUTE_OFFLINE) {
 		DEBUG(DMAPI_TRACE, ("%s is OFFLINE\n", path));
 	}
+
+done:
+
+#ifndef HAVE_POSIX_CAPABILITIES
+	unbecome_root();
+#endif
 
 	return flags;
 }
