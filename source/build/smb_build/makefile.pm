@@ -415,17 +415,24 @@ sub PkgConfig($$$)
 
 	if (defined($ctx->{PUBLIC_DEPENDENCIES})) {
 		foreach (@{$ctx->{PUBLIC_DEPENDENCIES}}) {
-			next unless ($other->{$_}->{TYPE} eq "LIBRARY");
+			next if ($other->{$_}->{ENABLE} eq "NO");
+			if ($other->{$_}->{TYPE} eq "LIBRARY") {
+				s/^LIB//g;
+				$_ = lc($_);
 
-			s/^LIB//g;
-			$_ = lc($_);
+				$pubs .= "$_ ";
+			} else {
+				s/^LIB//g;
+				$_ = lc($_);
 
-			$pubs .= "$_ ";
+				$privlibs .= "-l$_ ";
+			}
 		}
 	}
 
 	if (defined($ctx->{PRIVATE_DEPENDENCIES})) {
 		foreach (@{$ctx->{PRIVATE_DEPENDENCIES}}) {
+			next if ($other->{$_}->{ENABLE} eq "NO");
 			if ($other->{$_}->{TYPE} eq "LIBRARY") {
 				s/^LIB//g;
 				$_ = lc($_);
