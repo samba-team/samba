@@ -53,9 +53,9 @@ sub _set_config($$)
 	$self->{automatic_deps} = ($self->{config}->{automatic_dependencies} eq "yes");
 }
 
-sub PkgConfig($$$$$$$$$$$)
+sub PkgConfig($$$$$$$$$$$$)
 {
-	my ($self,$path,$name,$libs,$cflags,$version,$desc,$hasmodules,$pubdep,$privdep,$dirs) = @_;
+	my ($self,$path,$name,$libs,$privlibs,$cflags,$version,$desc,$hasmodules,$pubdep,$privdep,$dirs) = @_;
 
 	print __FILE__.": creating $path\n";
 
@@ -83,6 +83,7 @@ sub PkgConfig($$$$$$$$$$$)
 	print OUT "Requires.private: $privdep\n" if defined($privdep);
 	print OUT "Version: $version\n";
 	print OUT "Libs: $libs\n";
+	print OUT "Libs.private: $privlibs\n" if (defined($privlibs));
 	print OUT "Cflags: -I\${includedir} $cflags\n";
 
 	close(OUT);
