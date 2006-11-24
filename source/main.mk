@@ -285,16 +285,16 @@ realdistclean: distclean removebackup
 
 test: $(DEFAULT_TEST_TARGET)
 
-test-swrap: all
+test-swrap: all libraries
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
 
-test-noswrap: all
+test-noswrap: all libraries
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all
 
 quicktest: all
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
 
-testenv: all
+testenv: all libraries
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} xterm SOCKET_WRAPPER
 
 valgrindtest: valgrindtest-quick
@@ -304,12 +304,12 @@ valgrindtest-quick: all
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
 
-valgrindtest-all: all
+valgrindtest-all: all libraries
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
 
-valgrindtest-env: all
+valgrindtest-env: all libraries
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} xterm SOCKET_WRAPPER
@@ -320,7 +320,7 @@ gdbtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
 
-gdbtest-all: all
+gdbtest-all: all libraries
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
 	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
 
