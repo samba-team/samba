@@ -411,6 +411,7 @@ sub PkgConfig($$$)
 
 	my $pubs;
 	my $privs;
+	my $privlibs;
 
 	if (defined($ctx->{PUBLIC_DEPENDENCIES})) {
 		foreach (@{$ctx->{PUBLIC_DEPENDENCIES}}) {
@@ -425,12 +426,17 @@ sub PkgConfig($$$)
 
 	if (defined($ctx->{PRIVATE_DEPENDENCIES})) {
 		foreach (@{$ctx->{PRIVATE_DEPENDENCIES}}) {
-			next unless ($other->{$_}->{TYPE} eq "LIBRARY");
+			if ($other->{$_}->{TYPE} eq "LIBRARY") {
+				s/^LIB//g;
+				$_ = lc($_);
 
-			s/^LIB//g;
-			$_ = lc($_);
+				$privs .= "$_ ";
+			} else {
+				s/^LIB//g;
+				$_ = lc($_);
 
-			$privs .= "$_ ";
+				$privlibs .= "-l$_ ";
+			}
 		}
 	}
 
@@ -438,6 +444,7 @@ sub PkgConfig($$$)
 		$path,
 		$link_name,
 		"-L\${libdir} -l$link_name",
+		$privlibs,
 		"",
 		"$ctx->{VERSION}",
 		$ctx->{DESCRIPTION},
@@ -455,6 +462,7 @@ sub PkgConfig($$$)
 		"bin/pkgconfig/$link_name-uninstalled.pc",
 		$link_name,
 		"-Lbin/shared -Lbin/static -l$link_name",
+		$privlibs,
 		"-I. -Iinclude -Ilib -Ilib/replace",
 		"$ctx->{VERSION}",
 		$ctx->{DESCRIPTION},
