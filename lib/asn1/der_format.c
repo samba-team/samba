@@ -111,9 +111,9 @@ der_print_heim_oid (const heim_oid *oid, char delim, char **str)
     int i;
 
     for (i = 0; i < oid->length ; i++) {
-	p = rk_strpoolprintf(p, "%d%s", 
-			     oid->components[i],
-			     i < oid->length - 1 ? " " : "");
+	p = rk_strpoolprintf(p, "%d", oid->components[i]);
+	if (p && i < oid->length - 1)
+	    p = rk_strpoolprintf(p, "%c", delim);
 	if (p == NULL) {
 	    *str = NULL;
 	    return ENOMEM;
