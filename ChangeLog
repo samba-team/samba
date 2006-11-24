@@ -1,3 +1,9 @@
+2006-11-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/send_to_kdc.c: Set the large_msg_size to 1400, lets not
+	fragment packets and avoid stupid linklayers that doesn't allow
+	fragmented packets (unix dgram sockets on Mac OS X)
+	
 2006-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c (_krb5_pk_create_sign): stuff down the users
