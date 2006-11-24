@@ -306,6 +306,11 @@ const static struct torture_ui_ops std_ui_ops = {
 	.test_result = simple_test_result
 };
 
+static void subunit_suite_start(struct torture_context *ctx,
+							   struct torture_suite *suite)
+{
+	printf("testsuite: %s\n", suite->path);
+}
 
 static void subunit_test_start (struct torture_context *ctx, 
 							    struct torture_tcase *tcase,
@@ -345,7 +350,8 @@ static void subunit_comment (struct torture_context *test,
 const static struct torture_ui_ops subunit_ui_ops = {
 	.comment = subunit_comment,
 	.test_start = subunit_test_start,
-	.test_result = subunit_test_result
+	.test_result = subunit_test_result,
+	.suite_start = subunit_suite_start
 };
 
 static void harness_test_start (struct torture_context *ctx, 
