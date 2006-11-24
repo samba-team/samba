@@ -1,5 +1,9 @@
-2006-11-21  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* der_format.c (der_print_heim_oid): use delim when printing.
+	
+2006-11-21  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* k5.asn1: Make KRB5-PADATA-S4U2SELF pa type 129.
 	
 2006-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
