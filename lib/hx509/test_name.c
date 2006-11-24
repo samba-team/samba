@@ -76,6 +76,7 @@ main(int argc, char **argv)
 
     ret += test_name("CN=foo,C=SE");
     ret += test_name("CN=foo,CN=kaka,CN=FOO,DC=ad1,C=SE");
+    ret += test_name("1.2.3.4=foo,C=SE");
     ret += test_name_fail("=");
     ret += test_name_fail("CN=foo,=foo");
     ret += test_name_fail("CN=foo,really-unknown-type=foo");
