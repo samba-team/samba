@@ -187,7 +187,9 @@ static int asq_reqs_callback(struct ldb_context *ldb, void *context, struct ldb_
 		goto error;
 	}
 
-	ac = talloc_get_type(context, struct asq_context);
+	if (!(ac = talloc_get_type(context, struct asq_context))) {
+		goto error;
+	}
 
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
