@@ -1,3 +1,17 @@
+2006-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cert.c: Handle that _hx509_verify_signature takes a context.
+	
+2006-11-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cms.c: Sprinkle error strings.
+
+	* crypto.c: Sprinkle context and error strings.
+	
+2006-11-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* name.c: Handle printing and parsing raw oids in name.
+
 2006-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cert.c (_hx509_calculate_path): allow to calculate optimistic
