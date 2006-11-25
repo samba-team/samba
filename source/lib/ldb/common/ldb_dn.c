@@ -441,7 +441,9 @@ struct ldb_dn *ldb_dn_explode_or_special(void *mem_ctx, const char *dn)
 		 */
 
 		/* Allocate a structure to hold the exploded DN */
-		edn = ldb_dn_new(mem_ctx);
+		if (!(edn = ldb_dn_new(mem_ctx))) {
+			return NULL;
+		}
 
 		edn->comp_num = 1;
 		edn->components = talloc(edn, struct ldb_dn_component);
@@ -713,7 +715,10 @@ struct ldb_dn *ldb_dn_copy_rebase(void *mem_ctx, const struct ldb_dn *old, const
 	}
 
 	offset = old->comp_num - old_base->comp_num;
-	new_dn = ldb_dn_copy_partial(mem_ctx, new_base, offset + new_base->comp_num);
+	if (!(new_dn = ldb_dn_copy_partial(mem_ctx, new_base,
+					   offset + new_base->comp_num))) {
+		return NULL;
+	}
 	for (i = 0; i < offset; i++) {
 		new_dn->components[i] = ldb_dn_copy_component(new_dn->components, &(old->components[i]));
 	}
@@ -815,6 +820,7 @@ struct ldb_dn *ldb_dn_build_child(void *mem_ctx, const char *attr,
 
 		newdn->comp_num = 1;
 		newdn->components = talloc_array(newdn, struct ldb_dn_component, newdn->comp_num);
+		LDB_DN_NULL_FAILED(newdn->components);
 	}
 
 	newdn->components[0].name = talloc_strdup(newdn->components, attr);
@@ -847,6 +853,7 @@ struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const str
 
 		newdn->comp_num = dn1->comp_num;
 		newdn->components = talloc_array(newdn, struct ldb_dn_component, newdn->comp_num);
+		LDB_DN_NULL_FAILED(newdn->components);
 	} else {
 		int comp_num = dn2->comp_num;
 		if (dn1 != NULL) comp_num += dn1->comp_num;
