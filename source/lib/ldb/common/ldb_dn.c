@@ -628,24 +628,22 @@ const char *ldb_dn_get_casefold(struct ldb_dn *dn)
 	int i, len;
 	char *d, *n;
 
+	if (dn->casefold) return dn->casefold;
+
+	if (dn->special) {
+		dn->casefold = talloc_strdup(dn, dn->linearized);
+		if (!dn->casefold) return NULL;
+		dn->valid_case = true;
+		return dn->casefold;
+	}
+
 	if ( ! ldb_dn_casefold_internal(dn)) {
 		return NULL;
 	}
 
-	if (dn->casefold) return dn->casefold;
-
 	if (dn->comp_num == 0) {
-		if (dn->special) {
-			len = strlen(dn->linearized);
-			dn->casefold = talloc_array(dn, char, len * 3 + 1);
-			if ( ! dn->casefold) return NULL;
-			ldb_dn_escape_internal(dn->casefold, dn->linearized, len);
-			/* don't waste more memory than necessary */
-			dn->casefold = talloc_realloc(dn, dn->casefold, char, strlen(dn->casefold) + 1);
-		} else {
-			dn->casefold = talloc_strdup(dn, "");
-			if ( ! dn->casefold) return NULL;
-		}
+		dn->casefold = talloc_strdup(dn, "");
+		if (!dn->casefold) return NULL;
 		dn->valid_case = true;
 		return dn->casefold;
 	}
