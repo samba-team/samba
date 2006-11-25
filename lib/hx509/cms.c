@@ -723,13 +723,14 @@ hx509_cms_verify_signed(hx509_context context,
 		goto next_sigature;
 	    }
 
-	    ret = _hx509_verify_signature(NULL,
+	    ret = _hx509_verify_signature(context,
+					  NULL,
 					  &signer_info->digestAlgorithm,
 					  sd.encapContentInfo.eContent,
 					  &os);
 	    der_free_octet_string(&os);
 	    if (ret) {
-		hx509_set_error_string(context, 0, ret,
+		hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 				       "Failed to verify messageDigest");
 		goto next_sigature;
 	    }
@@ -799,13 +800,16 @@ hx509_cms_verify_signed(hx509_context context,
 	if (match_oid == &decode_oid)
 	    der_free_oid(&decode_oid);
 
-	if (ret == 0)
+	if (ret == 0) {
 	    ret = hx509_verify_signature(context,
 					 cert,
 					 &signer_info->signatureAlgorithm,
 					 signed_data,
 					 &signer_info->signature);
-
+	    if (ret)
+		hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
+				       "Failed to verify sigature");
+	}
 	if (signed_data != sd.encapContentInfo.eContent) {
 	    der_free_octet_string(signed_data);
 	    free(signed_data);
