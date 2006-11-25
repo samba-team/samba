@@ -948,7 +948,6 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	case  LDB_SUCCESS:
 		break;
 	case  LDB_ERR_ENTRY_ALREADY_EXISTS:
-		ldb_transaction_cancel(d_state->sam_ctx);
 		DEBUG(0,("Failed to create group record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(d_state->sam_ctx)));
