@@ -241,7 +241,10 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct asq_context);
+	if (!(ac = talloc_get_type(h->private_data, struct asq_context))) {
+
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	req->handle = h;
 
