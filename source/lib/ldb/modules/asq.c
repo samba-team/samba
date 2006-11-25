@@ -361,8 +361,10 @@ static int asq_wait_none(struct ldb_handle *handle)
 	handle->state = LDB_ASYNC_PENDING;
 	handle->status = LDB_SUCCESS;
 
-	ac = talloc_get_type(handle->private_data, struct asq_context);
-
+	if (!(ac = talloc_get_type(handle->private_data,
+				   struct asq_context))) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	switch (ac->step) {
 	case ASQ_SEARCH_BASE:
