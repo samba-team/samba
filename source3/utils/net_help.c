@@ -220,7 +220,6 @@ int net_help_status(int argc, const char **argv)
 static int net_usage(int argc, const char **argv)
 {
 	d_printf("  net time\t\tto view or set time information\n"\
-		 "  net lookup\t\tto lookup host name or ip address\n"\
 		 "  net user\t\tto manage users\n"\
 		 "  net group\t\tto manage groups\n"\
 		 "  net sam\t\tto edit the local user database directly\n"\
