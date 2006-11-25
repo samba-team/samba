@@ -630,7 +630,7 @@ const char *ldb_dn_get_casefold(struct ldb_dn *dn)
 
 	if (dn->casefold) return dn->casefold;
 
-	if (dn->special) {
+	if (dn->special) { 
 		dn->casefold = talloc_strdup(dn, dn->linearized);
 		if (!dn->casefold) return NULL;
 		dn->valid_case = true;
@@ -642,10 +642,14 @@ const char *ldb_dn_get_casefold(struct ldb_dn *dn)
 	}
 
 	if (dn->comp_num == 0) {
-		dn->casefold = talloc_strdup(dn, "");
-		if (!dn->casefold) return NULL;
-		dn->valid_case = true;
-		return dn->casefold;
+		if (dn->linearized && dn->linearized[0] == '\0') {
+			/* hmm a NULL dn, should we faild casefolding ? */
+			dn->casefold = talloc_strdup(dn, "");
+			return dn->casefold;
+		}
+		/* A DN must be NULL, special, or have components */
+		dn->invalid = true;
+		return NULL;
 	}
 
 	/* calculate maximum possible length of DN */
