@@ -14,7 +14,7 @@ do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
 	-e 's,[@]objdir[@],$(top_builddir)/tests/kdc,g' \
 	-e 's,[@]EGREP[@],$(EGREP),g' 
 
-LDADD = ../../lib/krb5/libkrb5.la
+LDADD = ../../lib/krb5/libkrb5.la $(LIB_roken)
 
 check-kdc: check-kdc.in Makefile
 	$(do_subst) < $(srcdir)/check-kdc.in > check-kdc.tmp
