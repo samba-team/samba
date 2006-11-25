@@ -1,3 +1,8 @@
+2006-11-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/Makefile.am: Add LIB_roken and (implictly by that libvers
+	for print_version) to LDADD
+	
 2006-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kdc.in: check that the getarg -- option works for
