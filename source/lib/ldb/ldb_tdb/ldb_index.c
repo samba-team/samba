@@ -642,6 +642,10 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 	struct ldb_reply *ares = NULL;
 	unsigned int i;
 
+	if (!ac) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	for (i = 0; i < dn_list->count; i++) {
 		struct ldb_dn *dn;
 		int ret;
@@ -721,6 +725,10 @@ int ltdb_search_indexed(struct ldb_handle *handle)
 	struct ltdb_private *ltdb = talloc_get_type(ac->module->private_data, struct ltdb_private);
 	struct dn_list *dn_list;
 	int ret;
+
+	if ((ac == NULL) || (ltdb == NULL)) {
+		return -1;
+	}
 
 	if (ltdb->cache->indexlist->num_elements == 0 && 
 	    ac->scope != LDB_SCOPE_BASE) {
