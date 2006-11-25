@@ -103,8 +103,8 @@ struct dn_list {
   return the dn key to be used for an index
   caller frees
 */
-static struct ldb_dn *ldb_dn_key(struct ldb_context *ldb,
-			const char *attr, const struct ldb_val *value)
+static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
+				     const char *attr, const struct ldb_val *value)
 {
 	struct ldb_dn *ret;
 	char *dn;
@@ -207,7 +207,7 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 
 	/* the attribute is indexed. Pull the list of DNs that match the 
 	   search criterion */
-	dn = ldb_dn_key(ldb, tree->u.equality.attr, &tree->u.equality.value);
+	dn = ltdb_index_key(ldb, tree->u.equality.attr, &tree->u.equality.value);
 	if (!dn) return -1;
 
 	msg = talloc(list, struct ldb_message);
@@ -853,7 +853,7 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 		return -1;
 	}
 
-	dn_key = ldb_dn_key(ldb, el->name, &el->values[v_idx]);
+	dn_key = ltdb_index_key(ldb, el->name, &el->values[v_idx]);
 	if (!dn_key) {
 		talloc_free(msg);
 		errno = ENOMEM;
@@ -963,7 +963,7 @@ int ltdb_index_del_value(struct ldb_module *module, const char *dn,
 		return 0;
 	}
 
-	dn_key = ldb_dn_key(ldb, el->name, &el->values[v_idx]);
+	dn_key = ltdb_index_key(ldb, el->name, &el->values[v_idx]);
 	if (!dn_key) {
 		return -1;
 	}
