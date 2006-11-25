@@ -944,9 +944,24 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 			     
 	/* create the group */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
-	if (ret != 0) {
-		DEBUG(0,("Failed to create group record %s\n",
-			 ldb_dn_get_linearized(msg->dn)));
+	switch (ret) {
+	case  LDB_SUCCESS:
+		break;
+	case  LDB_ERR_ENTRY_ALREADY_EXISTS:
+		ldb_transaction_cancel(d_state->sam_ctx);
+		DEBUG(0,("Failed to create group record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(d_state->sam_ctx)));
+		return NT_STATUS_GROUP_EXISTS;
+	case  LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		DEBUG(0,("Failed to create group record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(d_state->sam_ctx)));
+		return NT_STATUS_ACCESS_DENIED;
+	default:
+		DEBUG(0,("Failed to create group record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(d_state->sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1219,6 +1234,12 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(d_state->sam_ctx)));
 		return NT_STATUS_USER_EXISTS;
+	case  LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		ldb_transaction_cancel(d_state->sam_ctx);
+		DEBUG(0,("Failed to create user record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(d_state->sam_ctx)));
+		return NT_STATUS_ACCESS_DENIED;
 	default:
 		ldb_transaction_cancel(d_state->sam_ctx);
 		DEBUG(0,("Failed to create user record %s: %s\n",
@@ -1250,6 +1271,8 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	sid = samdb_result_dom_sid(mem_ctx, msgs[0], "objectSid");
 	if (sid == NULL) {
 		ldb_transaction_cancel(d_state->sam_ctx);
+		DEBUG(0,("Apparently we failed to get the objectSid of the just created account record %s\n",
+			 ldb_dn_get_linearized(msg->dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1482,6 +1505,8 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 		break;
 	case LDB_ERR_ENTRY_ALREADY_EXISTS:
 		return NT_STATUS_ALIAS_EXISTS;
+	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		return NT_STATUS_ACCESS_DENIED;
 	default:
 		DEBUG(0,("Failed to create alias record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn),
@@ -2124,6 +2149,8 @@ static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_OK;
 	case LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS:
 		return NT_STATUS_MEMBER_IN_GROUP;
+	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		return NT_STATUS_ACCESS_DENIED;
 	default:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -2228,6 +2255,8 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_OK;
 	case LDB_ERR_NO_SUCH_ATTRIBUTE:
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;
+	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		return NT_STATUS_ACCESS_DENIED;
 	default:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
