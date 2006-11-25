@@ -296,7 +296,10 @@ static int asq_requests(struct ldb_handle *handle) {
 	struct ldb_message_element *el;
 	int i;
 
-	ac = talloc_get_type(handle->private_data, struct asq_context);
+	if (!(ac = talloc_get_type(handle->private_data,
+				   struct asq_context))) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	/* look up the DNs */
 	if (ac->base_res == NULL) {
