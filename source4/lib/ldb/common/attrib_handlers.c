@@ -29,6 +29,7 @@
 #include "includes.h"
 #include "ldb/include/includes.h"
 #include "system/locale.h"
+#include "ldb/include/ldb_handlers.h"
 
 /*
   default handler that just copies a ldb_val.
@@ -51,7 +52,7 @@ int ldb_handler_copy(struct ldb_context *ldb, void *mem_ctx,
   We exploit the fact that utf8 never uses the space octet except for
   the space itself
 */
-static int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
+int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 			    const struct ldb_val *in, struct ldb_val *out)
 {
 	char *s, *t;
@@ -105,7 +106,7 @@ static int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
   canonicalise a ldap Integer
   rfc2252 specifies it should be in decimal form
 */
-static int ldb_canonicalise_Integer(struct ldb_context *ldb, void *mem_ctx,
+int ldb_canonicalise_Integer(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *in, struct ldb_val *out)
 {
 	char *end;
@@ -124,7 +125,7 @@ static int ldb_canonicalise_Integer(struct ldb_context *ldb, void *mem_ctx,
 /*
   compare two Integers
 */
-static int ldb_comparison_Integer(struct ldb_context *ldb, void *mem_ctx,
+int ldb_comparison_Integer(struct ldb_context *ldb, void *mem_ctx,
 				  const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	return strtoll((char *)v1->data, NULL, 0) - strtoll((char *)v2->data, NULL, 0);
@@ -150,7 +151,7 @@ int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
   try to optimize for the ascii case,
   but if we find out an utf8 codepoint revert to slower but correct function
 */
-static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
+int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	const char *s1=(const char *)v1->data, *s2=(const char *)v2->data;
@@ -225,7 +226,7 @@ utf8str:
 /*
   canonicalise a attribute in DN format
 */
-static int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
+int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *in, struct ldb_val *out)
 {
 	struct ldb_dn *dn;
@@ -239,7 +240,7 @@ static int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 		return -1;
 	}
 
-	out->data = (uint8_t *)ldb_dn_alloc_linearized(mem_ctx, dn);
+	out->data = (uint8_t *)ldb_dn_alloc_casefold(mem_ctx, dn);
 	if (out->data == NULL) {
 		goto done;
 	}
@@ -256,7 +257,7 @@ done:
 /*
   compare two dns
 */
-static int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
+int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
 			     const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
@@ -281,7 +282,7 @@ static int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
 /*
   compare two objectclasses, looking at subclasses
 */
-static int ldb_comparison_objectclass(struct ldb_context *ldb, void *mem_ctx,
+int ldb_comparison_objectclass(struct ldb_context *ldb, void *mem_ctx,
 				      const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	int ret, i;
@@ -308,7 +309,7 @@ static int ldb_comparison_objectclass(struct ldb_context *ldb, void *mem_ctx,
 /*
   compare two utc time values. 1 second resolution
 */
-static int ldb_comparison_utctime(struct ldb_context *ldb, void *mem_ctx,
+int ldb_comparison_utctime(struct ldb_context *ldb, void *mem_ctx,
 				  const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	time_t t1, t2;
@@ -320,7 +321,7 @@ static int ldb_comparison_utctime(struct ldb_context *ldb, void *mem_ctx,
 /*
   canonicalise a utc time
 */
-static int ldb_canonicalise_utctime(struct ldb_context *ldb, void *mem_ctx,
+int ldb_canonicalise_utctime(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *in, struct ldb_val *out)
 {
 	time_t t = ldb_string_to_time((char *)in->data);
