@@ -1662,12 +1662,13 @@ hx509_verify_path(hx509_context context,
 	}
 
 	/* verify signatureValue */
-	ret = _hx509_verify_signature_bitstring(signer,
+	ret = _hx509_verify_signature_bitstring(context,
+						signer,
 						&c->signatureAlgorithm,
 						&c->tbsCertificate._save,
 						&c->signatureValue);
 	if (ret) {
-	    hx509_set_error_string(context, 0, ret,
+	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 				   "Failed to verify signature of certificate");
 	    goto out;
 	}
@@ -1688,8 +1689,7 @@ hx509_verify_signature(hx509_context context,
 		       const heim_octet_string *data,
 		       const heim_octet_string *sig)
 {
-    hx509_clear_error_string(context);
-    return _hx509_verify_signature(signer->data, alg, data, sig);
+    return _hx509_verify_signature(context, signer->data, alg, data, sig);
 }
 
 int
@@ -1980,7 +1980,8 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	os.length = 
 	    c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
 
-	ret = _hx509_verify_signature(NULL,
+	ret = _hx509_verify_signature(context,
+				      NULL,
 				      hx509_signature_sha1(),
 				      &os,
 				      q->keyhash_sha1);

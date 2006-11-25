@@ -165,12 +165,13 @@ verify_ocsp(hx509_context context,
 	    goto out;
 	}
 
-	ret = _hx509_verify_signature_bitstring(p,
+	ret = _hx509_verify_signature_bitstring(context,
+						p,
 						&s->signatureAlgorithm,
 						&s->tbsCertificate._save,
 						&s->signatureValue);
 	if (ret) {
-	    hx509_set_error_string(context, 0, ret,
+	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 				   "OSCP signer signature invalid");
 	    goto out;
 	}
@@ -181,12 +182,14 @@ verify_ocsp(hx509_context context,
 	    goto out;
     }
 
-    ret = _hx509_verify_signature_bitstring(_hx509_get_cert(signer), 
+    ret = _hx509_verify_signature_bitstring(context,
+					    _hx509_get_cert(signer), 
 					    &ocsp->ocsp.signatureAlgorithm,
 					    &ocsp->ocsp.tbsResponseData._save,
 					    &ocsp->ocsp.signature);
     if (ret) {
-	hx509_set_error_string(context, 0, ret, "OSCP signature invalid");
+	hx509_set_error_string(context, HX509_ERROR_APPEND, ret, 
+			       "OSCP signature invalid");
 	goto out;
     }
 
@@ -417,12 +420,13 @@ verify_crl(hx509_context context,
 	    goto out;
 	}
 
-	ret = _hx509_verify_signature_bitstring(p,
+	ret = _hx509_verify_signature_bitstring(context,
+						p,
 						&s->signatureAlgorithm,
 						&s->tbsCertificate._save,
 						&s->signatureValue);
 	if (ret) {
-	    hx509_set_error_string(context, 0, ret,
+	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 				   "CRL signer signature invalid");
 	    goto out;
 	}
@@ -432,12 +436,13 @@ verify_crl(hx509_context context,
 	    goto out;
     }
 
-    ret = _hx509_verify_signature_bitstring(_hx509_get_cert(signer), 
+    ret = _hx509_verify_signature_bitstring(context,
+					    _hx509_get_cert(signer), 
 					    &crl->signatureAlgorithm,
 					    &crl->tbsCertList._save,
 					    &crl->signatureValue);
     if (ret) {
-	hx509_set_error_string(context, 0, ret, "CRL signature invalid");
+	hx509_set_error_string(context, HX509_ERROR_APPEND, ret, "CRL signature invalid");
 	goto out;
     }
 
@@ -572,7 +577,8 @@ hx509_revoke_verify(hx509_context context,
 		continue;
 	    
 	    /* verify issuer hashes hash */
-	    ret = _hx509_verify_signature(NULL,
+	    ret = _hx509_verify_signature(context,
+					  NULL,
 					  &ocsp->ocsp.tbsResponseData.responses.val[i].certID.hashAlgorithm,
 					  &c->tbsCertificate.issuer._save,
 					  &ocsp->ocsp.tbsResponseData.responses.val[i].certID.issuerNameHash);
@@ -582,7 +588,8 @@ hx509_revoke_verify(hx509_context context,
 	    os.data = p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
 	    os.length = p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
 
-	    ret = _hx509_verify_signature(NULL,
+	    ret = _hx509_verify_signature(context,
+					  NULL,
 					  &ocsp->ocsp.tbsResponseData.responses.val[i].certID.hashAlgorithm,
 					  &os,
 					  &ocsp->ocsp.tbsResponseData.responses.val[i].certID.issuerKeyHash);
@@ -975,7 +982,8 @@ hx509_ocsp_verify(hx509_context context,
 	    continue;
 	    
 	/* verify issuer hashes hash */
-	ret = _hx509_verify_signature(NULL,
+	ret = _hx509_verify_signature(context,
+				      NULL,
 				      &basic.tbsResponseData.responses.val[i].certID.hashAlgorithm,
 				      &c->tbsCertificate.issuer._save,
 				      &basic.tbsResponseData.responses.val[i].certID.issuerNameHash);
