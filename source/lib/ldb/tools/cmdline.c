@@ -275,7 +275,11 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			}
 			ctrl[i]->oid = LDB_CONTROL_VLV_REQ_OID;
 			ctrl[i]->critical = crit;
-			control = talloc(ctrl[i], struct ldb_vlv_req_control);
+			if (!(control = talloc(ctrl[i],
+					       struct ldb_vlv_req_control))) {
+				fprintf(stderr, "talloc failed\n");
+				return NULL;
+			}
 			control->beforeCount = bc;
 			control->afterCount = ac;
 			if (attr[0]) {
