@@ -86,7 +86,8 @@ struct signature_alg {
     int flags;
 #define PROVIDE_CONF 1
 #define REQUIRE_SIGNER 2
-    int (*verify_signature)(const struct signature_alg *,
+    int (*verify_signature)(hx509_context context,
+			    const struct signature_alg *,
 			    const Certificate *,
 			    const AlgorithmIdentifier *,
 			    const heim_octet_string *,
@@ -122,7 +123,8 @@ heim_int2BN(const heim_integer *i)
 }
 
 static int
-rsa_verify_signature(const struct signature_alg *sig_alg,
+rsa_verify_signature(hx509_context context,
+		     const struct signature_alg *sig_alg,
 		     const Certificate *signer,
 		     const AlgorithmIdentifier *alg,
 		     const heim_octet_string *data,
@@ -142,14 +144,17 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
     spi = &signer->tbsCertificate.subjectPublicKeyInfo;
 
     rsa = RSA_new();
-    if (rsa == NULL)
+    if (rsa == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
-
+    }
     ret = decode_RSAPublicKey(spi->subjectPublicKey.data,
 			      spi->subjectPublicKey.length / 8,
 			      &pk, &size);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Failed to decode RSAPublicKey");
 	goto out;
+    }
 
     rsa->n = heim_int2BN(&pk.modulus);
     rsa->e = heim_int2BN(&pk.publicExponent);
@@ -158,6 +163,7 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 
     if (rsa->n == NULL || rsa->e == NULL) {
 	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	goto out;
     }
 
@@ -165,6 +171,7 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
     to = malloc(tosize);
     if (to == NULL) {
 	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	goto out;
     }
 
@@ -172,6 +179,7 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 				 to, rsa, RSA_PKCS1_PADDING);
     if (retsize == -1) {
 	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
+	hx509_set_error_string(context, 0, ret, "RSA public decrypt failed");
 	free(to);
 	goto out;
     }
@@ -186,6 +194,7 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
     /* Check for extra data inside the sigature */
     if (size != retsize) {
 	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
+	hx509_set_error_string(context, 0, ret, "size from decryption mismatch");
 	goto out;
     }
 
@@ -194,6 +203,7 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 		     (*sig_alg->digest_oid)()) != 0) 
     {
 	ret = HX509_CRYPTO_OID_MISMATCH;
+	hx509_set_error_string(context, 0, ret, "object identifier in RSA sig mismatch");
 	goto out;
     }
 
@@ -203,10 +213,12 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 	 memcmp(di.digestAlgorithm.parameters->data, "\x05\x00", 2) != 0))
     {
 	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
+	hx509_set_error_string(context, 0, ret, "Extra parameters inside RSA signature");
 	goto out;
     }
 
-    ret = _hx509_verify_signature(NULL,
+    ret = _hx509_verify_signature(context,
+				  NULL,
 				  &di.digestAlgorithm,
 				  data,
 				  &di.digest);
@@ -409,7 +421,8 @@ rsa_private_key2SPKI(hx509_private_key private_key,
  */
 
 static int
-dsa_verify_signature(const struct signature_alg *sig_alg,
+dsa_verify_signature(hx509_context context,
+		     const struct signature_alg *sig_alg,
 		     const Certificate *signer,
 		     const AlgorithmIdentifier *alg,
 		     const heim_octet_string *data,
@@ -425,8 +438,10 @@ dsa_verify_signature(const struct signature_alg *sig_alg,
     spi = &signer->tbsCertificate.subjectPublicKeyInfo;
 
     dsa = DSA_new();
-    if (dsa == NULL)
+    if (dsa == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
+    }
 
     ret = decode_DSAPublicKey(spi->subjectPublicKey.data,
 			      spi->subjectPublicKey.length / 8,
@@ -440,11 +455,13 @@ dsa_verify_signature(const struct signature_alg *sig_alg,
 
     if (dsa->pub_key == NULL) {
 	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	goto out;
     }
 
     if (spi->algorithm.parameters == NULL) {
-	ret = EINVAL;
+	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
+	hx509_set_error_string(context, 0, ret, "DSA parameters missing");
 	goto out;
     }
 
@@ -452,8 +469,10 @@ dsa_verify_signature(const struct signature_alg *sig_alg,
 			   spi->algorithm.parameters->length,
 			   &param,
 			   &size);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "DSA parameters failed to decode");
 	goto out;
+    }
 
     dsa->p = heim_int2BN(&param.p);
     dsa->q = heim_int2BN(&param.q);
@@ -463,6 +482,7 @@ dsa_verify_signature(const struct signature_alg *sig_alg,
 
     if (dsa->p == NULL || dsa->q == NULL || dsa->g == NULL) {
 	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	goto out;
     }
 
@@ -471,10 +491,13 @@ dsa_verify_signature(const struct signature_alg *sig_alg,
 		     dsa);
     if (ret == 1)
 	ret = 0;
-    else if (ret == 0 || ret == -1)
+    else if (ret == 0 || ret == -1) {
 	ret = HX509_CRYPTO_BAD_SIGNATURE;
-    else
+	hx509_set_error_string(context, 0, ret, "BAD DSA sigature");
+    } else {
 	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
+	hx509_set_error_string(context, 0, ret, "Invalid format of DSA sigature");
+    }
 
  out:
     DSA_free(dsa);
@@ -508,7 +531,8 @@ dsa_parse_private_key(hx509_context context,
 
 
 static int
-sha1_verify_signature(const struct signature_alg *sig_alg,
+sha1_verify_signature(hx509_context context,
+		      const struct signature_alg *sig_alg,
 		      const Certificate *signer,
 		      const AlgorithmIdentifier *alg,
 		      const heim_octet_string *data,
@@ -517,15 +541,21 @@ sha1_verify_signature(const struct signature_alg *sig_alg,
     unsigned char digest[SHA_DIGEST_LENGTH];
     SHA_CTX m;
     
-    if (sig->length != SHA_DIGEST_LENGTH)
+    if (sig->length != SHA_DIGEST_LENGTH) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_SIG_INVALID_FORMAT,
+			       "SHA1 sigature have wrong length");
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+    }
 
     SHA1_Init(&m);
     SHA1_Update(&m, data->data, data->length);
     SHA1_Final (digest, &m);
 	
-    if (memcmp(digest, sig->data, SHA_DIGEST_LENGTH) != 0)
+    if (memcmp(digest, sig->data, SHA_DIGEST_LENGTH) != 0) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_BAD_SIGNATURE,
+			       "Bad SHA1 sigature");
 	return HX509_CRYPTO_BAD_SIGNATURE;
+    }
 
     return 0;
 }
@@ -567,7 +597,8 @@ sha256_create_signature(hx509_context context,
 }
 
 static int
-sha256_verify_signature(const struct signature_alg *sig_alg,
+sha256_verify_signature(hx509_context context,
+			const struct signature_alg *sig_alg,
 			const Certificate *signer,
 			const AlgorithmIdentifier *alg,
 			const heim_octet_string *data,
@@ -576,15 +607,21 @@ sha256_verify_signature(const struct signature_alg *sig_alg,
     unsigned char digest[SHA256_DIGEST_LENGTH];
     SHA256_CTX m;
     
-    if (sig->length != SHA256_DIGEST_LENGTH)
+    if (sig->length != SHA256_DIGEST_LENGTH) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_SIG_INVALID_FORMAT,
+			       "SHA256 sigature have wrong length");
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+    }
 
     SHA256_Init(&m);
     SHA256_Update(&m, data->data, data->length);
     SHA256_Final (digest, &m);
 	
-    if (memcmp(digest, sig->data, SHA256_DIGEST_LENGTH) != 0)
+    if (memcmp(digest, sig->data, SHA256_DIGEST_LENGTH) != 0) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_BAD_SIGNATURE,
+			       "Bad SHA256 sigature");
 	return HX509_CRYPTO_BAD_SIGNATURE;
+    }
 
     return 0;
 }
@@ -626,7 +663,8 @@ sha1_create_signature(hx509_context context,
 }
 
 static int
-md5_verify_signature(const struct signature_alg *sig_alg,
+md5_verify_signature(hx509_context context,
+		     const struct signature_alg *sig_alg,
 		     const Certificate *signer,
 		     const AlgorithmIdentifier *alg,
 		     const heim_octet_string *data,
@@ -635,21 +673,28 @@ md5_verify_signature(const struct signature_alg *sig_alg,
     unsigned char digest[MD5_DIGEST_LENGTH];
     MD5_CTX m;
     
-    if (sig->length != MD5_DIGEST_LENGTH)
+    if (sig->length != MD5_DIGEST_LENGTH) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_SIG_INVALID_FORMAT,
+			       "MD5 sigature have wrong length");
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+    }
 
     MD5_Init(&m);
     MD5_Update(&m, data->data, data->length);
     MD5_Final (digest, &m);
 	
-    if (memcmp(digest, sig->data, MD5_DIGEST_LENGTH) != 0)
+    if (memcmp(digest, sig->data, MD5_DIGEST_LENGTH) != 0) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_BAD_SIGNATURE,
+			       "Bad MD5 sigature");
 	return HX509_CRYPTO_BAD_SIGNATURE;
+    }
 
     return 0;
 }
 
 static int
-md2_verify_signature(const struct signature_alg *sig_alg,
+md2_verify_signature(hx509_context context,
+		     const struct signature_alg *sig_alg,
 		     const Certificate *signer,
 		     const AlgorithmIdentifier *alg,
 		     const heim_octet_string *data,
@@ -658,15 +703,21 @@ md2_verify_signature(const struct signature_alg *sig_alg,
     unsigned char digest[MD2_DIGEST_LENGTH];
     MD2_CTX m;
     
-    if (sig->length != MD2_DIGEST_LENGTH)
+    if (sig->length != MD2_DIGEST_LENGTH) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_SIG_INVALID_FORMAT,
+			       "MD2 sigature have wrong length");
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+    }
 
     MD2_Init(&m);
     MD2_Update(&m, data->data, data->length);
     MD2_Final (digest, &m);
 	
-    if (memcmp(digest, sig->data, MD2_DIGEST_LENGTH) != 0)
+    if (memcmp(digest, sig->data, MD2_DIGEST_LENGTH) != 0) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_BAD_SIGNATURE,
+			       "Bad MD2 sigature");
 	return HX509_CRYPTO_BAD_SIGNATURE;
+    }
 
     return 0;
 }
@@ -818,7 +869,8 @@ find_key_alg(const heim_oid *oid)
 }
 
 int
-_hx509_verify_signature(const Certificate *signer,
+_hx509_verify_signature(hx509_context context,
+			const Certificate *signer,
 			const AlgorithmIdentifier *alg,
 			const heim_octet_string *data,
 			const heim_octet_string *sig)
@@ -827,37 +879,48 @@ _hx509_verify_signature(const Certificate *signer,
 
     md = find_sig_alg(&alg->algorithm);
     if (md == NULL) {
+	hx509_clear_error_string(context);
 	return HX509_SIG_ALG_NO_SUPPORTED;
     }
-    if (signer && (md->flags & PROVIDE_CONF) == 0)
+    if (signer && (md->flags & PROVIDE_CONF) == 0) {
+	hx509_clear_error_string(context);
 	return HX509_CRYPTO_SIG_NO_CONF;
-    if (signer == NULL && (md->flags & REQUIRE_SIGNER))
+    }
+    if (signer == NULL && (md->flags & REQUIRE_SIGNER)) {
+	    hx509_clear_error_string(context);
 	return HX509_CRYPTO_SIGNATURE_WITHOUT_SIGNER;
+    }
     if (md->key_oid && signer) {
 	const SubjectPublicKeyInfo *spi;
 	spi = &signer->tbsCertificate.subjectPublicKeyInfo;
 
-	if (der_heim_oid_cmp(&spi->algorithm.algorithm, (*md->key_oid)()) != 0)
+	if (der_heim_oid_cmp(&spi->algorithm.algorithm, (*md->key_oid)()) != 0) {
+	    hx509_clear_error_string(context);
 	    return HX509_SIG_ALG_DONT_MATCH_KEY_ALG;
+	}
     }
-    return (*md->verify_signature)(md, signer, alg, data, sig);
+    return (*md->verify_signature)(context, md, signer, alg, data, sig);
 }
 
 int
-_hx509_verify_signature_bitstring(const Certificate *signer,
+_hx509_verify_signature_bitstring(hx509_context context,
+				  const Certificate *signer,
 				  const AlgorithmIdentifier *alg,
 				  const heim_octet_string *data,
 				  const heim_bit_string *sig)
 {
     heim_octet_string os;
 
-    if (sig->length & 7)
+    if (sig->length & 7) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_SIG_INVALID_FORMAT,
+			       "signature not multiple of 8 bits");
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+    }
 
     os.data = sig->data;
     os.length = sig->length / 8;
     
-    return _hx509_verify_signature(signer, alg, data, &os);
+    return _hx509_verify_signature(context, signer, alg, data, &os);
 }
 
 int
