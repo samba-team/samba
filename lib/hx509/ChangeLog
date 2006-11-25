@@ -1,5 +1,7 @@
 2006-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* revoke.c: Handle that _hx509_verify_signature takes a context.
+	
 	* cert.c: Handle that _hx509_verify_signature takes a context.
 	
 2006-11-25  Love Hörnquist Åstrand  <lha@it.su.se>
