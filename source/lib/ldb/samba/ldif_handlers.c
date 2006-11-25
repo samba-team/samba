@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "ldb/include/includes.h"
+#include "ldb/include/ldb_handlers.h"
 
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
@@ -377,7 +378,7 @@ static const struct ldb_attrib_handler samba_handlers[] = {
 		.canonicalise_fn = ldb_canonicalise_objectSid,
 		.comparison_fn   = ldb_comparison_objectSid
 	},
-	{ 
+	{
 		.attr            = "ntSecurityDescriptor",
 		.flags           = 0,
 		.ldif_read_fn    = ldif_read_ntSecurityDescriptor,
@@ -472,6 +473,118 @@ static const struct ldb_attrib_handler samba_handlers[] = {
 		.ldif_write_fn   = ldb_handler_copy,
 		.canonicalise_fn = ldif_canonicalise_objectCategory,
 		.comparison_fn   = ldif_comparison_objectCategory,
+	},
+	{
+		.attr            = "member",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "memberOf",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "nCName",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "schemaNamingContext",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "configurationNamingContext",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "rootDomainNamingContext",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "defaultNamingContext",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "subRefs",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "dMDLocation",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "serverReference",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "masteredBy",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "msDs-masteredBy",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "subRefs",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
+	},
+	{
+		.attr            = "fSMORoleOwner",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_dn,
+		.comparison_fn   = ldb_comparison_dn,
 	}
 };
 
