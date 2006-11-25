@@ -105,6 +105,9 @@ static int asq_terminate(struct ldb_handle *handle)
 	int i;
 
 	ac = talloc_get_type(handle->private_data, struct asq_context);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	handle->status = LDB_SUCCESS;
 	handle->state = LDB_ASYNC_DONE;
@@ -159,6 +162,9 @@ static int asq_base_callback(struct ldb_context *ldb, void *context, struct ldb_
 	}
 
 	ac = talloc_get_type(context, struct asq_context);
+	if (ac == NULL) {
+		goto error;
+	}
 
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
@@ -183,6 +189,9 @@ static int asq_reqs_callback(struct ldb_context *ldb, void *context, struct ldb_
 	}
 
 	ac = talloc_get_type(context, struct asq_context);
+	if (ac == NULL) {
+		goto error;
+	}
 
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
@@ -287,6 +296,9 @@ static int asq_requests(struct ldb_handle *handle) {
 	int i;
 
 	ac = talloc_get_type(handle->private_data, struct asq_context);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	/* look up the DNs */
 	if (ac->base_res == NULL) {
@@ -349,7 +361,9 @@ static int asq_wait_none(struct ldb_handle *handle)
 	handle->status = LDB_SUCCESS;
 
 	ac = talloc_get_type(handle->private_data, struct asq_context);
-
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	switch (ac->step) {
 	case ASQ_SEARCH_BASE:
