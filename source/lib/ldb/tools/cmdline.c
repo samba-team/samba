@@ -269,7 +269,10 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 				fprintf(stderr, "   note: b = boolean, n = number, s = string, o = b64 binary blob\n");
 				return NULL;
 			}
-			ctrl[i] = talloc(ctrl, struct ldb_control);
+			if (!(ctrl[i] = talloc(ctrl, struct ldb_control))) {
+				fprintf(stderr, "talloc failed\n");
+				return NULL;
+			}
 			ctrl[i]->oid = LDB_CONTROL_VLV_REQ_OID;
 			ctrl[i]->critical = crit;
 			control = talloc(ctrl[i], struct ldb_vlv_req_control);
