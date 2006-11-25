@@ -47,7 +47,7 @@ static int ldb_list_find(const void *needle,
 			 const void *base, size_t nmemb, size_t size, 
 			 comparison_fn_t comp_fn)
 {
-	const char *base_p = base;
+	const char *base_p = (const char *)base;
 	size_t min_i, max_i, test_i;
 
 	if (nmemb == 0) {
@@ -897,7 +897,8 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 static int ltdb_index_add0(struct ldb_module *module, const char *dn,
 			   struct ldb_message_element *elements, int num_el)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		(struct ltdb_private *)module->private_data;
 	int ret;
 	unsigned int i, j;
 
@@ -933,7 +934,8 @@ static int ltdb_index_add0(struct ldb_module *module, const char *dn,
 */
 int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		(struct ltdb_private *)module->private_data;
 	char *dn;
 	int ret;
 
@@ -1025,7 +1027,8 @@ int ltdb_index_del_value(struct ldb_module *module, const char *dn,
 */
 int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		(struct ltdb_private *)module->private_data;
 	int ret;
 	char *dn;
 	unsigned int i, j;
@@ -1082,7 +1085,7 @@ static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, vo
 */
 static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
-	struct ldb_module *module = state;
+	struct ldb_module *module = (struct ldb_module *)state;
 	struct ldb_message *msg;
 	char *dn = NULL;
 	int ret;
@@ -1123,7 +1126,10 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	if (msg->dn == NULL) {
 		dn = (char *)key.dptr + 3;
 	} else {
-		dn = ldb_dn_linearize(msg->dn, msg->dn);
+		if (!(dn = ldb_dn_linearize(msg->dn, msg->dn))) {
+			talloc_free(msg);
+			return -1;
+		}
 	}
 
 	ret = ltdb_index_add0(module, dn, msg->elements, msg->num_elements);
@@ -1138,7 +1144,8 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 */
 int ltdb_reindex(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		(struct ltdb_private *)module->private_data;
 	int ret;
 
 	if (ltdb_cache_reload(module) != 0) {
