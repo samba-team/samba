@@ -105,6 +105,9 @@ static int asq_terminate(struct ldb_handle *handle)
 	int i;
 
 	ac = talloc_get_type(handle->private_data, struct asq_context);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	handle->status = LDB_SUCCESS;
 	handle->state = LDB_ASYNC_DONE;
