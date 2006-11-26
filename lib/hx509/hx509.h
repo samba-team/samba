@@ -48,7 +48,7 @@ typedef struct hx509_query_data hx509_query;
 typedef void * hx509_cursor;
 typedef struct hx509_request_data *hx509_request;
 typedef struct hx509_error_data *hx509_error;
-
+typedef struct hx509_peer_info *hx509_peer_info;
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
 
@@ -96,5 +96,10 @@ typedef enum {
 
 /* flags to hx509_cms_unenvelope */
 #define HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT	0x01
+
+/* selectors passed to hx509_select */
+#define HX509_SELECT_DIGEST 1
+#define HX509_SELECT_PUBLIC_SIG 2
+#define HX509_SELECT_PUBLIC_ENC 3
 
 #include <hx509-protos.h>
