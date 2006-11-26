@@ -264,7 +264,7 @@ hx509_cms_unenvelope(hx509_context context,
     heim_octet_string *params, params_data;
     heim_octet_string ivec;
     size_t size;
-    int ret, i, findflags = 0;
+    int ret, i, matched = 0, findflags = 0;
 
 
     memset(&key, 0, sizeof(key));
@@ -319,7 +319,10 @@ hx509_cms_unenvelope(hx509_context context,
 	if (ret)
 	    continue;
 
-	ret = _hx509_cert_private_decrypt(&ri->encryptedKey, 
+	matched = 1; /* found a matching certificate, let decrypt */
+
+	ret = _hx509_cert_private_decrypt(context,
+					  &ri->encryptedKey, 
 					  &ri->keyEncryptionAlgorithm.algorithm,
 					  cert, &key);
 
@@ -329,11 +332,17 @@ hx509_cms_unenvelope(hx509_context context,
 	cert = NULL;
 	ret2 = unparse_CMSIdentifier(context, &ri->rid, &str);
 	if (ret2 == 0) {
-	    hx509_set_error_string(context, 0, ret,
+	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 				   "Failed to decrypt with %s", str);
 	    free(str);
-	} else
-	    hx509_clear_error_string(context);
+	}
+    }
+    
+    if (!matched) {
+	ret = HX509_CMS_NO_RECIPIENT_CERTIFICATE;
+	hx509_set_error_string(context, 0, ret,
+			       "No private key matched any certificate");
+	goto out;
     }
     
     if (cert == NULL) {
