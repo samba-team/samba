@@ -1016,7 +1016,8 @@ _hx509_cert_private_key(hx509_cert p)
 }
 
 int
-_hx509_cert_private_decrypt(const heim_octet_string *ciphertext,
+_hx509_cert_private_decrypt(hx509_context context,
+			    const heim_octet_string *ciphertext,
 			    const heim_oid *encryption_oid,
 			    hx509_cert p,
 			    heim_octet_string *cleartext)
@@ -1024,10 +1025,14 @@ _hx509_cert_private_decrypt(const heim_octet_string *ciphertext,
     cleartext->data = NULL;
     cleartext->length = 0;
 
-    if (p->private_key == NULL)
+    if (p->private_key == NULL) {
+	hx509_set_error_string(context, 0, HX509_PRIVATE_KEY_MISSING,
+			       "Private key missing");
 	return HX509_PRIVATE_KEY_MISSING;
+    }
 
-    return _hx509_private_key_private_decrypt(ciphertext,
+    return _hx509_private_key_private_decrypt(context,
+					      ciphertext,
 					      encryption_oid,
 					      p->private_key, 
 					      cleartext);
