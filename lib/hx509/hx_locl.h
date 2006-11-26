@@ -79,6 +79,12 @@ typedef void (*_hx509_cert_release_func)(struct hx509_cert_data *, void *);
 #include <hx509-private.h>
 #include <hx509_err.h>
 
+struct hx509_peer_info {
+    hx509_cert cert;
+    AlgorithmIdentifier *val;
+    size_t len;
+};
+
 #define HX509_CERTS_FIND_SERIALNUMBER		1
 #define HX509_CERTS_FIND_ISSUER			2
 #define HX509_CERTS_FIND_SUBJECT		4
