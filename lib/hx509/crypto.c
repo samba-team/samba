@@ -2082,7 +2082,7 @@ hx509_select(const hx509_context context,
 	def = hx509_signature_sha1();
     } else if (type == HX509_SELECT_PUBLIC_SIG) {
 	bits = SIG_PUBLIC_SIG;
-	def = hx509_signature_rsa_with_sha1(); /* XXX depend on `source´ */
+	def = hx509_signature_rsa_with_sha1(); /* XXX depend on `source´ and `peer´ */
     } else {
 	hx509_set_error_string(context, 0, EINVAL, "unknown type %d of selection", type);
 	return EINVAL;
@@ -2095,6 +2095,10 @@ hx509_select(const hx509_context context,
 		    continue;
 		if (der_heim_oid_cmp((*sig_algs[j]->sig_oid)(), &peer->val[i].algorithm) != 0)
 		    continue;
+		/* if (!source.supports(sig_algs[j]))
+		    continue; */
+
+		/* found one, use that */
 		ret = copy_AlgorithmIdentifier(&peer->val[i], selected);
 		if (ret)
 		    hx509_clear_error_string(context);
@@ -2103,6 +2107,7 @@ hx509_select(const hx509_context context,
 	}
     }
 
+    /* use default */
     ret = copy_AlgorithmIdentifier(def, selected);
     if (ret)
 	hx509_clear_error_string(context);
