@@ -7,7 +7,7 @@
 	This controls whether the DOS archive attribute 
 	should be mapped to the UNIX owner execute bit.  The DOS archive bit 
 	is set when a file has been modified since its last backup.  One 
-	motivation for this option it to keep Samba/your PC from making 
+	motivation for this option is to keep Samba/your PC from making 
 	any file it touches from becoming executable under UNIX.  This can 
 	be quite annoying for shared source code, documents, etc...
 	</para>
