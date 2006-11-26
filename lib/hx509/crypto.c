@@ -1034,7 +1034,8 @@ _hx509_public_encrypt(const heim_octet_string *cleartext,
 }
 
 int
-_hx509_private_key_private_decrypt(const heim_octet_string *ciphertext,
+_hx509_private_key_private_decrypt(hx509_context context,
+				   const heim_octet_string *ciphertext,
 				   const heim_oid *encryption_oid,
 				   hx509_private_key p,
 				   heim_octet_string *cleartext)
@@ -1044,21 +1045,27 @@ _hx509_private_key_private_decrypt(const heim_octet_string *ciphertext,
     cleartext->data = NULL;
     cleartext->length = 0;
 
-    if (p->private_key.rsa == NULL)
+    if (p->private_key.rsa == NULL) {
+	hx509_set_error_string(context, 0, HX509_PRIVATE_KEY_MISSING,
+			       "Private RSA key missing");
 	return HX509_PRIVATE_KEY_MISSING;
+    }
 
     cleartext->length = RSA_size(p->private_key.rsa);
     cleartext->data = malloc(cleartext->length);
-    if (cleartext->data == NULL) 
+    if (cleartext->data == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
-
+    }
     ret = RSA_private_decrypt(ciphertext->length, ciphertext->data,
 			      cleartext->data,
 			      p->private_key.rsa,
 			      RSA_PKCS1_PADDING);
     if (ret <= 0) {
 	der_free_octet_string(cleartext);
-	return ENOMEM;
+	hx509_set_error_string(context, 0, HX509_CRYPTO_RSA_PRIVATE_DECRYPT,
+			       "Failed to decrypt using private key");
+	return HX509_CRYPTO_RSA_PRIVATE_DECRYPT;
     }
     if (cleartext->length < ret)
 	_hx509_abort("internal rsa decryption failure: ret > tosize");
