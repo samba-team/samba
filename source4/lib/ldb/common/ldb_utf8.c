@@ -111,17 +111,6 @@ int ldb_valid_attr_name(const char *s)
 	return 1;
 }
 
-/*
-  compare two attribute names
-  attribute names are restricted by rfc2251 so using
-  strcasecmp and toupper here is ok.
-  return 0 for match
-*/
-int ldb_attr_cmp(const char *attr1, const char *attr2)
-{
-	return strcasecmp(attr1, attr2);
-}
-
 char *ldb_attr_casefold(void *mem_ctx, const char *s)
 {
 	int i;
