@@ -1320,8 +1320,12 @@ int ldb_dn_cmp(struct ldb_context *ldb, const char *dn1, const char *dn2);
 
    \return 0 if the attribute names are the same, or only differ in
    case; non-zero if there are any differences
+
+  attribute names are restricted by rfc2251 so using
+  strcasecmp and toupper here is ok.
+  return 0 for match
 */
-int ldb_attr_cmp(const char *attr1, const char *attr2);
+#define ldb_attr_cmp(a, b) strcasecmp(a, b)
 char *ldb_attr_casefold(void *mem_ctx, const char *s);
 int ldb_attr_dn(const char *attr);
 
