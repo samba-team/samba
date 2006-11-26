@@ -1268,9 +1268,9 @@ static char *ldb_dn_canonical(void *mem_ctx, struct ldb_dn *dn, int ex_format) {
 	/* Only domain components?  Finish here */
 	if (i < 0) {
 		if (ex_format) {
-			cracked = talloc_asprintf(tmpctx, "%s\n", cracked);
+			cracked = talloc_append_string(tmpctx, cracked, "\n");
 		} else {
-			cracked = talloc_asprintf(tmpctx, "%s/", cracked);
+			cracked = talloc_append_string(tmpctx, cracked, "/");
 		}
 		talloc_steal(mem_ctx, cracked);
 		goto done;
@@ -1278,7 +1278,7 @@ static char *ldb_dn_canonical(void *mem_ctx, struct ldb_dn *dn, int ex_format) {
 
 	/* Now walk backwards appending remaining components */
 	for (; i > 0; i--) {
-		cracked = talloc_asprintf(tmpctx, "%s/%s", cracked, 
+		cracked = talloc_asprintf_append(cracked, "/%s", 
 					  ldb_dn_escape_value(tmpctx, dn->components[i].value));
 		if (!cracked) {
 			goto done;
@@ -1287,10 +1287,10 @@ static char *ldb_dn_canonical(void *mem_ctx, struct ldb_dn *dn, int ex_format) {
 
 	/* Last one, possibly a newline for the 'ex' format */
 	if (ex_format) {
-		cracked = talloc_asprintf(tmpctx, "%s\n%s", cracked, 
+		cracked = talloc_asprintf_append(cracked, "\n%s",
 					  ldb_dn_escape_value(tmpctx, dn->components[i].value));
 	} else {
-		cracked = talloc_asprintf(tmpctx, "%s/%s", cracked, 
+		cracked = talloc_asprintf_append(cracked, "/%s", 
 					  ldb_dn_escape_value(tmpctx, dn->components[i].value));
 	}
 
