@@ -71,6 +71,7 @@ dist_libhx509_la_SOURCES = \
 	ks_p12.c \
 	lock.c \
 	name.c \
+	peer.c \
 	print.c \
 	ref/pkcs11.h \
 	ref/pkcs11f.h \
