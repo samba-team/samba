@@ -66,8 +66,8 @@ sub PkgConfig($$$$$$$$$$$$)
 	mkpath(dirname($path),0,0755);
 	open(OUT, ">$path") or die("Can't open $path: $!");
 
-	foreach (keys %$dirs) {
-		print OUT "$_=" . $dirs->{$_} . "\n";
+	foreach (@$dirs) {
+		print OUT "$_\n";
 	}
 	if ($hasmodules) {
 		print OUT "modulesdir=$self->{config}->{modulesdir}/$name\n" ;

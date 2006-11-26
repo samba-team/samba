@@ -458,12 +458,12 @@ sub PkgConfig($$$)
 		defined($ctx->{INIT_FUNCTIONS}),
 		$pubs,
 		$privs,
-		{
-			"prefix" => $self->{config}->{prefix},
-			"exec_prefix" => $self->{config}->{exec_prefix},
-			"libdir" => $self->{config}->{libdir},
-			"includedir" => $self->{config}->{includedir}
-		}
+		[
+			"prefix=$self->{config}->{prefix}",
+			"exec_prefix=$self->{config}->{exec_prefix}",
+			"libdir=$self->{config}->{libdir}",
+			"includedir=$self->{config}->{includedir}"
+		]
 	); 
 	smb_build::env::PkgConfig($self,
 		"bin/pkgconfig/$link_name-uninstalled.pc",
@@ -476,10 +476,10 @@ sub PkgConfig($$$)
 		defined($ctx->{INIT_FUNCTIONS}),
 		$pubs,
 		$privs,
-		{
-			"prefix" => "bin/",
-			"includedir" => "$ctx->{BASEDIR}"
-		}
+		[
+			"prefix=bin/",
+			"includedir=$ctx->{BASEDIR}"
+		]
 	); 
 }
 
