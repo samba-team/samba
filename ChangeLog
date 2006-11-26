@@ -1,5 +1,15 @@
-2006-11-24  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pkinit.c: Pass down hx509_peer_info.
+
+	* kdc/pkinit.c (_kdc_pk_rd_padata): Pick up supportedCMSTypes and
+	pass in into hx509_cms_create_signed_1 via hx509_peer_info blob.
+
+	* kdc/pkinit.c (_kdc_pk_rd_padata): Pick up supportedCMSTypes and
+	pass in into hx509_cms_create_signed_1 via hx509_peer_info blob.
+	
+2006-11-24  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/krb5/send_to_kdc.c: Set the large_msg_size to 1400, lets not
 	fragment packets and avoid stupid linklayers that doesn't allow
 	fragmented packets (unix dgram sockets on Mac OS X)
