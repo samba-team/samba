@@ -1,5 +1,17 @@
 2006-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* crypto.c (hx509_select): new function.
+	
+	* Makefile.am: add peer.c
+
+	* hxtool.c: Update hx509_cms_create_signed_1.
+
+	* hx_locl.h: add struct hx509_peer_info
+
+	* peer.c: Allow selection of digest/sig-alg
+
+	* cms.c: Allow selection of a better digest using hx509_peer_info.
+
 	* revoke.c: Handle that _hx509_verify_signature takes a context.
 	
 	* cert.c: Handle that _hx509_verify_signature takes a context.
