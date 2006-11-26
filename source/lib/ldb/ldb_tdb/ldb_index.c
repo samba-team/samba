@@ -107,7 +107,6 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 				     const char *attr, const struct ldb_val *value)
 {
 	struct ldb_dn *ret;
-	char *dn;
 	struct ldb_val v;
 	const struct ldb_attrib_handler *h;
 	char *attr_folded;
@@ -128,27 +127,17 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 	if (ldb_should_b64_encode(&v)) {
 		char *vstr = ldb_base64_encode(ldb, (char *)v.data, v.length);
 		if (!vstr) return NULL;
-		dn = talloc_asprintf(ldb, "%s:%s::%s", LTDB_INDEX, attr_folded, vstr);
+		ret = ldb_dn_new_fmt(ldb, ldb, "%s:%s::%s", LTDB_INDEX, attr_folded, vstr);
 		talloc_free(vstr);
-		if (v.data != value->data) {
-			talloc_free(v.data);
-		}
-		talloc_free(attr_folded);
-		if (dn == NULL) return NULL;
-		goto done;
+	} else {
+		ret = ldb_dn_new_fmt(ldb, ldb, "%s:%s:%.*s", LTDB_INDEX, attr_folded, (int)v.length, (char *)v.data);
 	}
-
-	dn = talloc_asprintf(ldb, "%s:%s:%.*s", 
-			      LTDB_INDEX, attr_folded, (int)v.length, (char *)v.data);
 
 	if (v.data != value->data) {
 		talloc_free(v.data);
 	}
 	talloc_free(attr_folded);
 
-done:
-	ret = ldb_dn_new(ldb, ldb, dn);
-	talloc_free(dn);
 	return ret;
 }
 
