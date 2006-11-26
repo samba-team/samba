@@ -68,6 +68,7 @@ struct pk_client_params {
     DH *dh;
     EncryptionKey reply_key;
     char *dh_group_name;
+    hx509_peer_info peer;
 };
 
 struct pk_principal_mapping {
@@ -180,6 +181,8 @@ _kdc_pk_free_client_param(krb5_context context,
     krb5_free_keyblock_contents(context, &client_params->reply_key);
     if (client_params->dh_group_name)
 	free(client_params->dh_group_name);
+    if (client_params->peer)
+	hx509_peer_info_free(client_params->peer);
     memset(client_params, 0, sizeof(*client_params));
     free(client_params);
 }
@@ -611,6 +614,23 @@ _kdc_pk_rd_padata(krb5_context context,
 		goto out;
 	    }
 	}
+
+	if (ap.supportedCMSTypes) {
+	    ret = hx509_peer_info_alloc(kdc_identity->hx509ctx,
+					&client_params->peer);
+	    if (ret) {
+		free_AuthPack(&ap);
+		goto out;
+	    }
+	    ret = hx509_peer_info_set_cms_algs(kdc_identity->hx509ctx,
+					       client_params->peer,
+					       ap.supportedCMSTypes->val,
+					       ap.supportedCMSTypes->len);
+	    if (ret) {
+		free_AuthPack(&ap);
+		goto out;
+	    }
+	}
 	free_AuthPack(&ap);
     } else
 	krb5_abortx(context, "internal pkinit error");
@@ -752,7 +772,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 					buf.length,
 					NULL,
 					cert,
-					NULL,
+					client_params->peer,
 					kdc_identity->anchors,
 					kdc_identity->certpool,
 					&signed_data);
@@ -865,7 +885,7 @@ pk_mk_pa_reply_dh(krb5_context context,
 					buf.length,
 					NULL,
 					cert,
-					NULL,
+					client_params->peer,
 					kdc_identity->anchors,
 					kdc_identity->certpool,
 					&signed_data);
