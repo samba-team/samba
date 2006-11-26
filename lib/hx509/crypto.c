@@ -86,6 +86,12 @@ struct signature_alg {
     int flags;
 #define PROVIDE_CONF 1
 #define REQUIRE_SIGNER 2
+
+#define SIG_DIGEST	0x100
+#define SIG_PUBLIC_SIG	0x200
+#define SIG_PUBLIC_ENC	0x400
+#define SIG_SECRET	0x800
+
     int (*verify_signature)(hx509_context context,
 			    const struct signature_alg *,
 			    const Certificate *,
@@ -727,7 +733,7 @@ static struct signature_alg pkcs1_rsa_sha1_alg = {
     oid_id_pkcs1_rsaEncryption,
     oid_id_pkcs1_rsaEncryption,
     NULL,
-    PROVIDE_CONF|REQUIRE_SIGNER,
+    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature,
     rsa_parse_private_key,
@@ -739,7 +745,7 @@ static struct signature_alg rsa_with_sha256_alg = {
     oid_id_pkcs1_sha256WithRSAEncryption,
     oid_id_pkcs1_rsaEncryption,
     oid_id_sha256,
-    PROVIDE_CONF|REQUIRE_SIGNER,
+    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature,
     rsa_parse_private_key,
@@ -751,7 +757,7 @@ static struct signature_alg rsa_with_sha1_alg = {
     oid_id_pkcs1_sha1WithRSAEncryption,
     oid_id_pkcs1_rsaEncryption,
     oid_id_secsig_sha_1,
-    PROVIDE_CONF|REQUIRE_SIGNER,
+    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature,
     rsa_parse_private_key,
@@ -763,7 +769,7 @@ static struct signature_alg rsa_with_md5_alg = {
     oid_id_pkcs1_md5WithRSAEncryption,
     oid_id_pkcs1_rsaEncryption,
     oid_id_rsa_digest_md5,
-    PROVIDE_CONF|REQUIRE_SIGNER,
+    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature,
     rsa_parse_private_key,
@@ -775,7 +781,7 @@ static struct signature_alg rsa_with_md2_alg = {
     oid_id_pkcs1_md2WithRSAEncryption,
     oid_id_pkcs1_rsaEncryption,
     oid_id_rsa_digest_md2,
-    PROVIDE_CONF|REQUIRE_SIGNER,
+    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature,
     rsa_parse_private_key,
@@ -787,7 +793,7 @@ static struct signature_alg dsa_sha1_alg = {
     oid_id_dsa_with_sha1,
     oid_id_dsa, 
     oid_id_secsig_sha_1,
-    PROVIDE_CONF|REQUIRE_SIGNER,
+    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
     dsa_verify_signature,
     /* create_signature */ NULL,
     dsa_parse_private_key
@@ -798,7 +804,7 @@ static struct signature_alg sha256_alg = {
     oid_id_sha256,
     NULL,
     NULL,
-    0,
+    SIG_DIGEST,
     sha256_verify_signature,
     sha256_create_signature
 };
@@ -808,7 +814,7 @@ static struct signature_alg sha1_alg = {
     oid_id_secsig_sha_1,
     NULL,
     NULL,
-    0,
+    SIG_DIGEST,
     sha1_verify_signature,
     sha1_create_signature
 };
@@ -818,7 +824,7 @@ static struct signature_alg md5_alg = {
     oid_id_rsa_digest_md5,
     NULL,
     NULL,
-    0,
+    SIG_DIGEST,
     md5_verify_signature
 };
 
@@ -827,7 +833,7 @@ static struct signature_alg md2_alg = {
     oid_id_rsa_digest_md2,
     NULL,
     NULL,
-    0,
+    SIG_DIGEST,
     md2_verify_signature
 };
 
@@ -2057,3 +2063,50 @@ _hx509_match_keys(hx509_cert c, hx509_private_key private_key)
 
     return ret == 1;
 }
+
+int
+hx509_select(const hx509_context context,
+	     int type,
+	     const hx509_private_key source,
+	     hx509_peer_info peer,
+	     AlgorithmIdentifier *selected)
+{
+    const AlgorithmIdentifier *def;
+    size_t i, j;
+    int ret, bits;
+
+    memset(selected, 0, sizeof(*selected));
+
+    if (type == HX509_SELECT_DIGEST) {
+	bits = SIG_DIGEST;
+	def = hx509_signature_sha1();
+    } else if (type == HX509_SELECT_PUBLIC_SIG) {
+	bits = SIG_PUBLIC_SIG;
+	def = hx509_signature_rsa_with_sha1(); /* XXX depend on `source´ */
+    } else {
+	hx509_set_error_string(context, 0, EINVAL, "unknown type %d of selection", type);
+	return EINVAL;
+    }
+
+    if (peer) {
+	for (i = 0; i < peer->len; i++) {
+	    for (j = 0; sig_algs[j]; j++) {
+		if ((sig_algs[j]->flags & bits) != bits)
+		    continue;
+		if (der_heim_oid_cmp((*sig_algs[j]->sig_oid)(), &peer->val[i].algorithm) != 0)
+		    continue;
+		ret = copy_AlgorithmIdentifier(&peer->val[i], selected);
+		if (ret)
+		    hx509_clear_error_string(context);
+		return ret;
+	    }
+	}
+    }
+
+    ret = copy_AlgorithmIdentifier(def, selected);
+    if (ret)
+	hx509_clear_error_string(context);
+    return ret;
+}
+
+
