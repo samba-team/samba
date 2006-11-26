@@ -155,6 +155,7 @@ _krb5_pk_create_sign(krb5_context context,
 				    NULL,
 				    cert,
 				    NULL,
+				    NULL,
 				    id->certs,
 				    sd_data);
     hx509_cert_free(cert);

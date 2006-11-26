@@ -228,6 +228,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 				    sz, 
 				    NULL,
 				    cert,
+				    NULL,
 				    anchors,
 				    pool,
 				    &o);
