@@ -39,29 +39,34 @@ int ldb_set_attrib_handlers(struct ldb_context *ldb,
 			    const struct ldb_attrib_handler *handlers, 
 			    unsigned num_handlers)
 {
-	int i;
+	int i, j, n;
 	struct ldb_attrib_handler *h;
+	n = ldb->schema.num_attrib_handlers + num_handlers;
 	h = talloc_realloc(ldb, ldb->schema.attrib_handlers,
-			   struct ldb_attrib_handler,
-			   ldb->schema.num_attrib_handlers + num_handlers);
+			   struct ldb_attrib_handler, n);
 	if (h == NULL) {
 		ldb_oom(ldb);
 		return -1;
 	}
 	ldb->schema.attrib_handlers = h;
-	memcpy(h + ldb->schema.num_attrib_handlers, 
-	       handlers, sizeof(*h) * num_handlers);
-	for (i=0;i<num_handlers;i++) {
-		if (h[ldb->schema.num_attrib_handlers+i].flags & LDB_ATTR_FLAG_ALLOCATED) {
-			h[ldb->schema.num_attrib_handlers+i].attr = talloc_strdup(ldb->schema.attrib_handlers,
-										  h[ldb->schema.num_attrib_handlers+i].attr);
-			if (h[ldb->schema.num_attrib_handlers+i].attr == NULL) {
+
+	for (i = 0; i < num_handlers; i++) {
+		for (j = 0; j < ldb->schema.num_attrib_handlers; j++) {
+			if (ldb_attr_cmp(handlers[i].attr, h[j].attr) < 0) {
+				memmove(h+j+1, h+j, sizeof(*h) * (ldb->schema.num_attrib_handlers-j));
+				break;
+			}
+		}
+		h[j] = handlers[i];
+		if (h[j].flags & LDB_ATTR_FLAG_ALLOCATED) {
+			h[j].attr = talloc_strdup(h, h[j].attr);
+			if (h[j].attr == NULL) {
 				ldb_oom(ldb);
 				return -1;
 			}
 		}
+		ldb->schema.num_attrib_handlers++;
 	}
-	ldb->schema.num_attrib_handlers += num_handlers;
 	return 0;
 }
 			  
@@ -114,17 +119,34 @@ static const struct ldb_attrib_handler ldb_default_attrib_handler = {
 const struct ldb_attrib_handler *ldb_attrib_handler(struct ldb_context *ldb,
 						    const char *attrib)
 {
-	int i;
+	int i, e, b = 0, r;
 	const struct ldb_attrib_handler *def = &ldb_default_attrib_handler;
-	/* TODO: should be replaced with a binary search, with a sort on add */
-	for (i=0;i<ldb->schema.num_attrib_handlers;i++) {
-		if (strcmp(ldb->schema.attrib_handlers[i].attr, "*") == 0) {
-			def = &ldb->schema.attrib_handlers[i];
-		}
-		if (ldb_attr_cmp(attrib, ldb->schema.attrib_handlers[i].attr) == 0) {
+
+	/* as handlers are sorted, '*' must be the first if present */
+	if (strcmp(ldb->schema.attrib_handlers[0].attr, "*") == 0) {
+		def = &ldb->schema.attrib_handlers[0];
+		b = 1;
+	}
+
+	/* do a binary search on the array */
+	e = ldb->schema.num_attrib_handlers - 1;
+
+	while (b <= e) {
+
+		i = (b + e) / 2;
+
+		r = ldb_attr_cmp(attrib, ldb->schema.attrib_handlers[i].attr);
+		if (r == 0) {
 			return &ldb->schema.attrib_handlers[i];
 		}
+		if (r < 0) {
+			e = i - 1;
+		} else {
+			b = i + 1;
+		}
+
 	}
+
 	return def;
 }
 
