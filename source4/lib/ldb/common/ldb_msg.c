@@ -763,17 +763,29 @@ void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element 
 char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t)
 {
 	struct tm *tm = gmtime(&t);
+	char *ts;
+	int r;
 
 	if (!tm) {
 		return NULL;
 	}
 
+	/* we now excatly how long this string will be */
+	ts = talloc_array(mem_ctx, char, 18);
+
 	/* formatted like: 20040408072012.0Z */
-	return talloc_asprintf(mem_ctx, 
-			       "%04u%02u%02u%02u%02u%02u.0Z",
-			       tm->tm_year+1900, tm->tm_mon+1,
-			       tm->tm_mday, tm->tm_hour, tm->tm_min,
-			       tm->tm_sec);
+	r = snprintf(ts, 18,
+			"%04u%02u%02u%02u%02u%02u.0Z",
+			tm->tm_year+1900, tm->tm_mon+1,
+			tm->tm_mday, tm->tm_hour, tm->tm_min,
+			tm->tm_sec);
+
+	if (r != 17) {
+		talloc_free(ts);
+		return NULL;
+	}
+
+	return ts;
 }
 
 
