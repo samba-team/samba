@@ -9,8 +9,6 @@ DSA2 support
 
 Rewrite the pkcs11 code to support the following:
 
-	* Keep as many sessions open to the card as long as possible.
-	* Avoid trying to login to the card over and over.
 	* Reset the pin on card change.
 	* Ref count the lock structure to make sure we have a
           prompter when we need it.
@@ -22,6 +20,14 @@ CRL delta support
 
 crypto
 	make signing alg depend on signer if not given
+
+Qualified statement
+	https://bugzilla.mozilla.org/show_bug.cgi?id=277797#c2
+
+
+Signed Receipts
+	http://www.faqs.org/rfcs/rfc2634.html
+	chapter 2
 
 tests
 	nist tests
