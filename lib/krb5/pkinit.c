@@ -81,6 +81,7 @@ struct krb5_pk_init_ctx_data {
     DH *dh;
     krb5_data *clientDHNonce;
     struct krb5_dh_moduli **m;
+    hx509_peer_info peer;
     int require_binding;
     int require_eku;
     int require_krbtgt_otherName;
@@ -130,6 +131,7 @@ _krb5_pk_create_sign(krb5_context context,
 		     const heim_oid *eContentType,
 		     krb5_data *eContent,
 		     struct krb5_pk_identity *id,
+		     hx509_peer_info peer,
 		     krb5_data *sd_data)
 {
     hx509_cert cert;
@@ -154,7 +156,7 @@ _krb5_pk_create_sign(krb5_context context,
 				    eContent->length,
 				    NULL,
 				    cert,
-				    NULL,
+				    peer,
 				    NULL,
 				    id->certs,
 				    sd_data);
@@ -511,7 +513,8 @@ pk_mk_padata(krb5_context context,
     ret = _krb5_pk_create_sign(context,
 			       oid,
 			       &buf,
-			       ctx->id, 
+			       ctx->id,
+			       ctx->peer,
 			       &sd_buf);
     krb5_data_free(&buf);
     if (ret)
@@ -1823,7 +1826,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     opt->opt_private->pk_init_ctx->require_binding = 0;
     opt->opt_private->pk_init_ctx->require_eku = 1;
     opt->opt_private->pk_init_ctx->require_krbtgt_otherName = 1;
-
+    opt->opt_private->pk_init_ctx->peer = NULL;
 
     /* XXX implement krb5_appdefault_strings  */
     if (pool == NULL)
