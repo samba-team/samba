@@ -940,10 +940,12 @@ hx509_cms_create_signed_1(hx509_context context,
 			  const void *data, size_t length,
 			  const AlgorithmIdentifier *digest_alg,
 			  hx509_cert cert,
+			  hx509_peer_info peer,
 			  hx509_certs anchors,
 			  hx509_certs pool,
 			  heim_octet_string *signed_data)
 {
+    AlgorithmIdentifier digest;
     hx509_name name;
     SignerInfo *signer_info;
     heim_octet_string buf;
@@ -955,6 +957,7 @@ hx509_cms_create_signed_1(hx509_context context,
     memset(&sd, 0, sizeof(sd));
     memset(&name, 0, sizeof(name));
     memset(&path, 0, sizeof(path));
+    memset(&digest, 0, sizeof(digest));
 
     if (_hx509_cert_private_key(cert) == NULL) {
 	hx509_set_error_string(context, 0, HX509_PRIVATE_KEY_MISSING,
@@ -962,9 +965,16 @@ hx509_cms_create_signed_1(hx509_context context,
 	return HX509_PRIVATE_KEY_MISSING;
     }
 
-    /* XXX */
-    if (digest_alg == NULL)
-	digest_alg = hx509_signature_sha1();
+    if (digest_alg == NULL) {
+	ret = hx509_select(context, HX509_SELECT_DIGEST, 
+			   _hx509_cert_private_key(cert), peer, &digest);
+    } else {
+	ret = copy_AlgorithmIdentifier(digest_alg, &digest);
+	if (ret)
+	    hx509_clear_error_string(context);
+    }
+    if (ret) 
+	goto out;
 
     sd.version = CMSVersion_v3;
 
@@ -1012,10 +1022,9 @@ hx509_cms_create_signed_1(hx509_context context,
     }
 
     {
-	heim_octet_string digest;
+	heim_octet_string data;
 
-	ret = copy_AlgorithmIdentifier(digest_alg,
-				       &signer_info->digestAlgorithm);
+	ret = copy_AlgorithmIdentifier(&digest, &signer_info->digestAlgorithm);
 	if (ret) {
 	    hx509_clear_error_string(context);
 	    goto out;
@@ -1023,10 +1032,10 @@ hx509_cms_create_signed_1(hx509_context context,
 
 	ret = _hx509_create_signature(context,
 				      NULL,
-				      digest_alg,
+				      &digest,
 				      sd.encapContentInfo.eContent,
 				      NULL,
-				      &digest);
+				      &data);
 	if (ret) {
 	    hx509_clear_error_string(context);
 	    goto out;
@@ -1035,10 +1044,10 @@ hx509_cms_create_signed_1(hx509_context context,
 	ASN1_MALLOC_ENCODE(MessageDigest,
 			   buf.data,
 			   buf.length,
-			   &digest,
+			   &data,
 			   &size,
 			   ret);
-	der_free_octet_string(&digest);
+	der_free_octet_string(&data);
 	if (ret) {
 	    hx509_clear_error_string(context);
 	    goto out;
@@ -1122,8 +1131,7 @@ hx509_cms_create_signed_1(hx509_context context,
 	goto out;
     }
 
-    ret = copy_AlgorithmIdentifier(digest_alg,
-				   &sd.digestAlgorithms.val[0]);
+    ret = copy_AlgorithmIdentifier(&digest, &sd.digestAlgorithms.val[0]);
     if (ret) {
 	hx509_clear_error_string(context);
 	goto out;
@@ -1183,6 +1191,7 @@ hx509_cms_create_signed_1(hx509_context context,
 	_hx509_abort("internal ASN.1 encoder error");
 
 out:
+    free_AlgorithmIdentifier(&digest);
     _hx509_path_free(&path);
     free_SignedData(&sd);
 
