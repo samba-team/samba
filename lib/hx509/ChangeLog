@@ -1,5 +1,7 @@
 2006-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* crypto.c: Add some more comments about how this works.
+
 	* crypto.c (hx509_select): new function.
 	
 	* Makefile.am: add peer.c
