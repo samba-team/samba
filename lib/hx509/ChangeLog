@@ -1,5 +1,11 @@
 2006-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cert.c: Sprinkle more error string and hx509_contexts.
+
+	* cms.c: Sprinkle more error strings.
+
+	* crypto.c: Sprinkle error string and hx509_contexts.
+
 	* crypto.c: Add some more comments about how this works.
 
 	* crypto.c (hx509_select): new function.
