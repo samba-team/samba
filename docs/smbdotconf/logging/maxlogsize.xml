@@ -14,5 +14,5 @@
 	</para>
 </description>
 <value type="default">5000</value>
-<value type="default">1000</value>
+<value type="example">1000</value>
 </samba:parameter>

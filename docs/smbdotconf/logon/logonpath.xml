@@ -13,7 +13,7 @@
 
 	<para>
 	This option takes the standard substitutions, allowing you to have separate logon scripts for each user or
-	machine.  It also specifies the directory from which the &quot;Application Data&quot;, (<filename
+	machine.  It also specifies the directory from which the &quot;Application Data&quot;, <filename
 	moreinfo="none">desktop</filename>, <filename moreinfo="none">start menu</filename>, <filename
 	moreinfo="none">network neighborhood</filename>, <filename moreinfo="none">programs</filename> and other
 	folders, and their contents, are loaded and displayed on your Windows NT client.
@@ -46,7 +46,7 @@
 	over-ride the parameter value present in the smb.conf file. Any error
 	present in the passdb backend account record must be editted using the
 	appropriate tool (pdbedit on the command-line, or any other locally
-	provided system tool.
+	provided system tool).
 	</para></warning>
 
 	<para>Note that this option is only useful if Samba is set up as a domain controller.</para>
