@@ -1064,7 +1064,7 @@ _hx509_private_key_private_decrypt(hx509_context context,
     if (ret <= 0) {
 	der_free_octet_string(cleartext);
 	hx509_set_error_string(context, 0, HX509_CRYPTO_RSA_PRIVATE_DECRYPT,
-			       "Failed to decrypt using private key");
+			       "Failed to decrypt using private key: %d", ret);
 	return HX509_CRYPTO_RSA_PRIVATE_DECRYPT;
     }
     if (cleartext->length < ret)
