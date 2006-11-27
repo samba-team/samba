@@ -70,7 +70,7 @@ krb5_kdc_process_request(krb5_context context,
 	free_AS_REQ(&req);
 	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
-	ret = _kdc_tgs_rep(context, config, &req, reply, from, addr);
+	ret = _kdc_tgs_rep(context, config, &req, reply, from, addr, datagram_reply);
 	free_TGS_REQ(&req);
 	return ret;
     }else if(decode_Ticket(buf, len, &ticket, &i) == 0){
@@ -128,7 +128,7 @@ krb5_kdc_process_krb5_request(krb5_context context,
 	free_AS_REQ(&req);
 	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
-	ret = _kdc_tgs_rep(context, config, &req, reply, from, addr);
+	ret = _kdc_tgs_rep(context, config, &req, reply, from, addr, datagram_reply);
 	free_TGS_REQ(&req);
 	return ret;
     }
