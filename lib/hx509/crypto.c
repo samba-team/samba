@@ -2174,7 +2174,7 @@ hx509_crypto_select(const hx509_context context,
 }
 
 int
-hx509_crypto_available(const hx509_context context,
+hx509_crypto_available(hx509_context context,
 		       int type,
 		       hx509_cert source,
 		       AlgorithmIdentifier **val,
@@ -2216,7 +2216,7 @@ hx509_crypto_available(const hx509_context context,
 	*val = ptr;
 
 	/* found one, use that */
-	ret = copy_AlgorithmIdentifier((*sig_algs[i]->sig_alg)(), &(*val)[i]);
+	ret = copy_AlgorithmIdentifier((*sig_algs[i]->sig_alg)(), &(*val)[len]);
 	if (ret)
 	    goto out;
 	len++;
@@ -2233,3 +2233,13 @@ out:
     hx509_set_error_string(context, 0, ENOMEM, "out of memory");
     return ENOMEM;
 }
+
+void
+hx509_crypto_free_algs(AlgorithmIdentifier *val,
+		       size_t len)
+{
+    size_t i;
+    for (i = 0; i < len; i++)
+	free_AlgorithmIdentifier(&val[i]);
+    free(val);
+}    
