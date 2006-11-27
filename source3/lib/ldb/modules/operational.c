@@ -244,7 +244,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	   searchable, but are stored using a different name in the
 	   backend */
 	for (i=0;i<ARRAY_SIZE(parse_tree_sub);i++) {
-		ldb_parse_tree_attr_replace(req->op.search.tree, 
+		ldb_parse_tree_attr_replace(CONST_DISCARD(struct ldb_parse_tree *,req->op.search.tree), 
 					    parse_tree_sub[i].attr, 
 					    parse_tree_sub[i].replace);
 	}

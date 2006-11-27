@@ -211,7 +211,8 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 */
 int ltdb_search_dn1(struct ldb_module *module, const struct ldb_dn *dn, struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		(struct ltdb_private *)module->private_data;
 	int ret;
 	TDB_DATA tdb_key, tdb_data;
 
@@ -253,7 +254,8 @@ int ltdb_search_dn1(struct ldb_module *module, const struct ldb_dn *dn, struct l
 */
 static int ltdb_lock_read(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		(struct ltdb_private *)module->private_data;
 	return tdb_lockall_read(ltdb->tdb);
 }
 
@@ -262,7 +264,8 @@ static int ltdb_lock_read(struct ldb_module *module)
 */
 static int ltdb_unlock_read(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = module->private_data;
+	struct ltdb_private *ltdb =
+		(struct ltdb_private *)module->private_data;
 	return tdb_unlockall_read(ltdb->tdb);
 }
 

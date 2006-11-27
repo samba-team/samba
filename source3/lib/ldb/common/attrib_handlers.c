@@ -296,7 +296,7 @@ static int ldb_comparison_objectclass(struct ldb_context *ldb, void *mem_ctx,
 	}
 	for (i=0;subclasses[i];i++) {
 		struct ldb_val vs;
-		vs.data = discard_const(subclasses[i]);
+		vs.data = (uint8 *)discard_const(subclasses[i]);
 		vs.length = strlen(subclasses[i]);
 		if (ldb_comparison_objectclass(ldb, mem_ctx, &vs, v2) == 0) {
 			return 0;
