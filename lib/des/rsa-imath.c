@@ -271,7 +271,7 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
 
     size = RSA_size(rsa);
     if (flen != size)
-	return -1;
+	return -2;
 
     mp_int_init(&enc);
     mp_int_init(&dec);
@@ -303,13 +303,13 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
 
     /* head zero was skipped by mp_int_to_unsigned */
     if (*p != 2)
-	return -1;
+	return -3;
     size--; p++;
     while (size && *p != 0) {
 	size--; p++;
     }
     if (size == 0)
-	return -1;
+	return -4;
     size--; p++;
 
     memmove(to, p, size);
