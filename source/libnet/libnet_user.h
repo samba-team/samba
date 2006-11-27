@@ -118,11 +118,11 @@ struct libnet_UserList {
 	struct {
 		const char *domain_name;
 		int page_size;
-		uint restore_index;
+		uint resume_index;
 	} in;
 	struct {
 		int count;
-		uint restore_index;
+		uint resume_index;
 
 		struct userlist {
 			const char *sid;
