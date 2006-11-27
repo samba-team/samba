@@ -114,7 +114,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 		[in] winreg_AccessMask access_mask,
 		[in,unique] winreg_SecBuf *secdesc,
 		[out,ref] policy_handle *new_handle,
-		[in,out,unique] winreg_CreateAction *action_taken
+		[in,out,ref] winreg_CreateAction **action_taken
 	);
 
 	/******************/

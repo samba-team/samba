@@ -164,12 +164,12 @@ struct winreg_CreateKey {
 		uint32_t options;
 		uint32_t access_mask;
 		struct winreg_SecBuf *secdesc;/* [unique] */
-		enum winreg_CreateAction *action_taken;/* [unique] */
+		enum winreg_CreateAction **action_taken;/* [ref] */
 	} in;
 
 	struct {
 		struct policy_handle *new_handle;/* [ref] */
-		enum winreg_CreateAction *action_taken;/* [unique] */
+		enum winreg_CreateAction **action_taken;/* [ref] */
 		WERROR result;
 	} out;
 
