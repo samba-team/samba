@@ -185,63 +185,6 @@ int fetch_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkey_ctr )
 }
 
 /***********************************************************************
- retreive a specific subkey specified by index.  Caller is 
- responsible for freeing memory
- ***********************************************************************/
-
-BOOL fetch_reg_keys_specific( REGISTRY_KEY *key, char** subkey, uint32 key_index )
-{
-	static REGSUBKEY_CTR *ctr = NULL;
-	static pstring save_path;
-	char *s;
-	
-	*subkey = NULL;
-	
-	/* simple caching for performance; very basic heuristic */
-
-	DEBUG(8,("fetch_reg_keys_specific: Looking for key [%d] of  [%s]\n", key_index, key->name));
-	
-	if ( !ctr ) {
-		DEBUG(8,("fetch_reg_keys_specific: Initializing cache of subkeys for [%s]\n", key->name));
-
-		if ( !(ctr = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR )) ) {
-			DEBUG(0,("fetch_reg_keys_specific: talloc() failed!\n"));
-			return False;
-		}
-		
-		pstrcpy( save_path, key->name );
-		
-		if ( fetch_reg_keys( key, ctr) == -1 )
-			return False;
-			
-	}
-	/* clear the cache when key_index == 0 or the path has changed */
-	else if ( !key_index || StrCaseCmp( save_path, key->name) ) {
-
-		DEBUG(8,("fetch_reg_keys_specific: Updating cache of subkeys for [%s]\n", key->name));
-		
-		TALLOC_FREE( ctr );
-
-		if ( !(ctr = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR )) ) {
-			DEBUG(0,("fetch_reg_keys_specific: talloc() failed!\n"));
-			return False;
-		}
-		
-		pstrcpy( save_path, key->name );
-		
-		if ( fetch_reg_keys( key, ctr) == -1 )
-			return False;
-	}
-	
-	if ( !(s = regsubkey_ctr_specific_key( ctr, key_index )) )
-		return False;
-
-	*subkey = SMB_STRDUP( s );
-
-	return True;
-}
-
-/***********************************************************************
  High level wrapper function for enumerating registry values
  ***********************************************************************/
 

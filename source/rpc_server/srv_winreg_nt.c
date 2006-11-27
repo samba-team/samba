@@ -33,6 +33,7 @@ static struct generic_mapping reg_generic_map =
 struct regkey_info {
 	REGISTRY_KEY *key;
 	REGVAL_CTR *value_cache;
+	REGSUBKEY_CTR *subkey_cache;
 };
 
 /******************************************************************
@@ -576,35 +577,47 @@ WERROR _winreg_GetVersion(pipes_struct *p, struct policy_handle *handle, uint32_
 WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, struct winreg_StringBuf *keyclass, NTTIME *last_changed_time)
 {
 	WERROR 	status = WERR_OK;
-	REGISTRY_KEY	*regkey = find_regkey_by_hnd( p, handle );
-	char		*subkey = NULL;
+	struct regkey_info *info = find_regkey_info_by_hnd( p, handle );
+	REGISTRY_KEY	*regkey;
 	
-	
-	if ( !regkey )
+	if ( !info )
 		return WERR_BADFID; 
+
+	regkey = info->key;
 
 	if ( !name || !keyclass )
 		return WERR_INVALID_PARAM;
 
 	DEBUG(8,("_reg_enum_key: enumerating key [%s]\n", regkey->name));
 	
-	if ( !fetch_reg_keys_specific( regkey, &subkey, enum_index ) ) {
-		status = WERR_NO_MORE_ITEMS;
-		goto done;
+	if (!info->subkey_cache) {
+		if (!(info->subkey_cache = TALLOC_ZERO_P(
+			      info, REGSUBKEY_CTR))) {
+			return WERR_NOMEM;
 	}
 	
-	DEBUG(10,("_reg_enum_key: retrieved subkey named [%s]\n", subkey));
+		if (fetch_reg_keys(regkey, info->subkey_cache) == -1) {
+			TALLOC_FREE(info->subkey_cache);
+			return WERR_NO_MORE_ITEMS;
+		}
+	}
+
+	if (enum_index >= info->subkey_cache->num_subkeys) {
+		return WERR_NO_MORE_ITEMS;
+	}
+
+	DEBUG(10,("_reg_enum_key: retrieved subkey named [%s]\n",
+		  info->subkey_cache->subkeys[enum_index]));
 	
+	if (!(name->name = talloc_strdup(
+		      p->mem_ctx, info->subkey_cache->subkeys[enum_index]))) {
+		status = WERR_NOMEM;
+	}
 	if ( last_changed_time ) {
 		*last_changed_time = 0;
 	}
 	keyclass->name = "";
-	if ( (name->name = talloc_strdup( p->mem_ctx, subkey )) == NULL ) {
-		status = WERR_NOMEM;
-	}
 
-done:	
-	SAFE_FREE( subkey );
 	return status;
 }
 
@@ -1261,6 +1274,7 @@ WERROR _winreg_CreateKey( pipes_struct *p, struct policy_handle *handle,
 	write_result = store_reg_keys( newparentinfo->key, subkeys );
 	
 	TALLOC_FREE( subkeys );
+	TALLOC_FREE( newparentinfo->subkey_cache );
 
 	if ( !write_result )
 		return WERR_REG_IO_FAILURE;
@@ -1419,6 +1433,7 @@ WERROR _winreg_DeleteKey(pipes_struct *p, struct policy_handle *handle, struct w
 	write_result = store_reg_keys( newparentinfo->key, subkeys );
 	
 	TALLOC_FREE( subkeys );
+	TALLOC_FREE( newparentinfo->subkey_cache );
 
 	result = write_result ? WERR_OK : WERR_REG_IO_FAILURE;
 	
