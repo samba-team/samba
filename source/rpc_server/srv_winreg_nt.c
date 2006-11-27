@@ -434,13 +434,13 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct policy_handle *handle,
 		else if(strequal(value_name.name, "Counter 009")) {
 			outbuf_size = reg_perfcount_get_counter_names(
 				reg_perfcount_get_base_index(),
-				(char **)&outbuf);
+				(char **)(void *)&outbuf);
 			free_buf = True;
 		}
 		else if(strequal(value_name.name, "Explain 009")) {
 			outbuf_size = reg_perfcount_get_counter_help(
 				reg_perfcount_get_base_index(),
-				(char **)&outbuf);
+				(char **)(void *)&outbuf);
 			free_buf = True;
 		}
 		else if(isdigit(value_name.name[0])) {
