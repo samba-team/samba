@@ -389,9 +389,24 @@ command = {
 	help = "Print available CMS crypto types"
 }
 command = {
+	option = {
+		long = "type"
+		type = "string"
+		help = "type of CMS algorithm"
+	}
+	option = {
+		long = "certificate"
+		type = "string"
+		help = "source certificate limiting the choices"
+	}
+	option = {
+		long = "peer-cmstype"
+		type = "strings"
+		help = "peer limiting cmstypes"
+	}
 	name = "crypto-select"
 	min_args="0"
-	help = "Print available CMS crypto types"
+	help = "Print selected CMS type"
 }
 command = {
 	name = "help"

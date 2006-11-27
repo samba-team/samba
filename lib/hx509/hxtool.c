@@ -1015,21 +1015,58 @@ crypto_available(void *opt, int argc, char **argv)
 }
 
 int
-crypto_select(void *opt, int argc, char **argv)
+crypto_select(struct crypto_select_options *opt, int argc, char **argv)
 {
+    hx509_peer_info peer = NULL;
+    AlgorithmIdentifier selected;
     int ret;
     char *s;
-    AlgorithmIdentifier val;
+    int type = HX509_SELECT_DIGEST;
 
-    ret = hx509_crypto_select(context, HX509_SELECT_DIGEST,
-			      NULL, NULL, &val);
+    if (opt->type_string) {
+	if (strcmp(opt->type_string, "digest") == 0)
+	    type = HX509_SELECT_DIGEST;
+	else if (strcmp(opt->type_string, "public-sig") == 0)
+	    type = HX509_SELECT_PUBLIC_SIG;
+	else
+	    errx(1, "unknown type: %s", opt->type_string);
+    }
+
+    if (opt->peer_cmstype_strings.num_strings) {
+	AlgorithmIdentifier *val;
+	size_t i;
+
+	ret = hx509_peer_info_alloc(context, &peer);
+	if (ret)
+	    errx(1, "hx509_peer_info_alloc");
+
+	val = calloc(opt->peer_cmstype_strings.num_strings, sizeof(*val));
+	if (val == NULL)
+	    err(1, "malloc");
+
+	for (i = 0; i < opt->peer_cmstype_strings.num_strings; i++) {
+	    ret = der_parse_heim_oid (opt->peer_cmstype_strings.strings[i],
+				      " .", &val[i].algorithm);
+	    if  (ret)
+		errx(1, "der_parse_heim_oid failed on: %s", 
+		     opt->peer_cmstype_strings.strings[i]);
+	}
+	    
+	ret = hx509_peer_info_set_cms_algs(context, peer, val, 
+					   opt->peer_cmstype_strings.num_strings);
+	if (ret)
+	    errx(1, "hx509_peer_info_set_cms_algs");
+
+    }
+
+    ret = hx509_crypto_select(context, type, NULL, peer, &selected);
     if (ret)
 	errx(1, "hx509_crypto_available");
 
-    der_print_heim_oid (&val.algorithm, '.', &s);
+    der_print_heim_oid (&selected.algorithm, '.', &s);
     printf("%s\n", s);
     free(s);
-    free_AlgorithmIdentifier(&val);
+    free_AlgorithmIdentifier(&selected);
 
     return 0;
 }
