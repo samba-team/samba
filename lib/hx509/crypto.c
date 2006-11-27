@@ -2207,7 +2207,8 @@ hx509_crypto_available(hx509_context context,
 	    continue;
 	if (sig_algs[i]->sig_alg == NULL)
 	    continue;
-	if (keytype && der_heim_oid_cmp((*sig_algs[i]->key_oid)(), keytype))
+	if (keytype && sig_algs[i]->key_oid && 
+	    der_heim_oid_cmp((*sig_algs[i]->key_oid)(), keytype))
 	    continue;
 
 	ptr = realloc(*val, sizeof(**val) * (len + 1));
