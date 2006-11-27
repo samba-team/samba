@@ -209,7 +209,7 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	r.in.options = options;
 	r.in.access_mask = access_mask;
 	r.in.secdesc = secdesc;
-	r.in.action_taken = *action_taken;
+	r.in.action_taken = action_taken;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_CreateKey, &r);
@@ -229,7 +229,7 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	/* Return variables */
 	*new_handle = *r.out.new_handle;
-	*action_taken = r.out.action_taken;
+	*action_taken = *r.out.action_taken;
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
