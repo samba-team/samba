@@ -81,6 +81,7 @@ struct hx509_private_key {
 struct signature_alg {
     char *name;
     const heim_oid *(*sig_oid)(void);
+    const AlgorithmIdentifier *(*sig_alg)(void);
     const heim_oid *(*key_oid)(void);
     const heim_oid *(*digest_oid)(void);
     int flags;
@@ -731,6 +732,7 @@ md2_verify_signature(hx509_context context,
 static struct signature_alg pkcs1_rsa_sha1_alg = {
     "rsa",
     oid_id_pkcs1_rsaEncryption,
+    hx509_signature_rsa_with_sha1,
     oid_id_pkcs1_rsaEncryption,
     NULL,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
@@ -743,6 +745,7 @@ static struct signature_alg pkcs1_rsa_sha1_alg = {
 static struct signature_alg rsa_with_sha256_alg = {
     "rsa-with-sha256",
     oid_id_pkcs1_sha256WithRSAEncryption,
+    hx509_signature_rsa_with_sha256,
     oid_id_pkcs1_rsaEncryption,
     oid_id_sha256,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
@@ -755,6 +758,7 @@ static struct signature_alg rsa_with_sha256_alg = {
 static struct signature_alg rsa_with_sha1_alg = {
     "rsa-with-sha1",
     oid_id_pkcs1_sha1WithRSAEncryption,
+    hx509_signature_rsa_with_sha1,
     oid_id_pkcs1_rsaEncryption,
     oid_id_secsig_sha_1,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
@@ -767,6 +771,7 @@ static struct signature_alg rsa_with_sha1_alg = {
 static struct signature_alg rsa_with_md5_alg = {
     "rsa-with-md5",
     oid_id_pkcs1_md5WithRSAEncryption,
+    hx509_signature_rsa_with_md5,
     oid_id_pkcs1_rsaEncryption,
     oid_id_rsa_digest_md5,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
@@ -779,6 +784,7 @@ static struct signature_alg rsa_with_md5_alg = {
 static struct signature_alg rsa_with_md2_alg = {
     "rsa-with-md2",
     oid_id_pkcs1_md2WithRSAEncryption,
+    hx509_signature_rsa_with_md2,
     oid_id_pkcs1_rsaEncryption,
     oid_id_rsa_digest_md2,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
@@ -791,6 +797,7 @@ static struct signature_alg rsa_with_md2_alg = {
 static struct signature_alg dsa_sha1_alg = {
     "dsa-with-sha1",
     oid_id_dsa_with_sha1,
+    NULL,
     oid_id_dsa, 
     oid_id_secsig_sha_1,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
@@ -802,6 +809,7 @@ static struct signature_alg dsa_sha1_alg = {
 static struct signature_alg sha256_alg = {
     "sha-256",
     oid_id_sha256,
+    hx509_signature_sha256,
     NULL,
     NULL,
     SIG_DIGEST,
@@ -812,6 +820,7 @@ static struct signature_alg sha256_alg = {
 static struct signature_alg sha1_alg = {
     "sha1",
     oid_id_secsig_sha_1,
+    hx509_signature_sha1,
     NULL,
     NULL,
     SIG_DIGEST,
@@ -822,6 +831,7 @@ static struct signature_alg sha1_alg = {
 static struct signature_alg md5_alg = {
     "rsa-md5",
     oid_id_rsa_digest_md5,
+    hx509_signature_md5,
     NULL,
     NULL,
     SIG_DIGEST,
@@ -831,16 +841,22 @@ static struct signature_alg md5_alg = {
 static struct signature_alg md2_alg = {
     "rsa-md2",
     oid_id_rsa_digest_md2,
+    hx509_signature_md2,
     NULL,
     NULL,
     SIG_DIGEST,
     md2_verify_signature
 };
 
+/* 
+ * Order matter in this structure, "best" first for each "key
+ * compatible" type (type is RSA, DSA, none, etc)
+ */
+
 static struct signature_alg *sig_algs[] = {
-    &pkcs1_rsa_sha1_alg,
     &rsa_with_sha256_alg,
     &rsa_with_sha1_alg,
+    &pkcs1_rsa_sha1_alg,
     &rsa_with_md5_alg,
     &rsa_with_md2_alg,
     &dsa_sha1_alg,
@@ -1184,6 +1200,16 @@ const AlgorithmIdentifier _hx509_signature_rsa_with_sha1_data = {
     { 7, rk_UNCONST(rsa_with_sha1_oid) }, NULL
 };
 
+static const unsigned rsa_with_md5_oid[] ={ 1, 2, 840, 113549, 1, 1, 4 };
+const AlgorithmIdentifier _hx509_signature_rsa_with_md5_data = { 
+    { 7, rk_UNCONST(rsa_with_md5_oid) }, NULL
+};
+
+static const unsigned rsa_with_md2_oid[] ={ 1, 2, 840, 113549, 1, 1, 2 };
+const AlgorithmIdentifier _hx509_signature_rsa_with_md2_data = { 
+    { 7, rk_UNCONST(rsa_with_md2_oid) }, NULL
+};
+
 static const unsigned rsa_oid[] ={ 1, 2, 840, 113549, 1, 1, 1 };
 const AlgorithmIdentifier _hx509_signature_rsa_data = { 
     { 7, rk_UNCONST(rsa_oid) }, NULL
@@ -1229,6 +1255,14 @@ hx509_signature_rsa_with_sha256(void)
 const AlgorithmIdentifier *
 hx509_signature_rsa_with_sha1(void)
 { return &_hx509_signature_rsa_with_sha1_data; }
+
+const AlgorithmIdentifier *
+hx509_signature_rsa_with_md5(void)
+{ return &_hx509_signature_rsa_with_md5_data; }
+
+const AlgorithmIdentifier *
+hx509_signature_rsa_with_md2(void)
+{ return &_hx509_signature_rsa_with_md2_data; }
 
 const AlgorithmIdentifier *
 hx509_signature_rsa(void)
@@ -2071,13 +2105,29 @@ _hx509_match_keys(hx509_cert c, hx509_private_key private_key)
     return ret == 1;
 }
 
-int
-hx509_select(const hx509_context context,
-	     int type,
-	     const hx509_private_key source,
-	     hx509_peer_info peer,
-	     AlgorithmIdentifier *selected)
+static const heim_oid *
+find_keytype(const hx509_private_key key)
 {
+    const struct signature_alg *md;
+
+    if (key == NULL)
+	return NULL;
+
+    md = find_sig_alg(key->signature_alg);
+    if (md == NULL)
+	return NULL;
+    return (*md->key_oid)();
+}
+
+
+int
+hx509_crypto_select(const hx509_context context,
+		    int type,
+		    const hx509_private_key source,
+		    hx509_peer_info peer,
+		    AlgorithmIdentifier *selected)
+{
+    const heim_oid *keytype = NULL;
     const AlgorithmIdentifier *def;
     size_t i, j;
     int ret, bits;
@@ -2095,6 +2145,8 @@ hx509_select(const hx509_context context,
 	return EINVAL;
     }
 
+    keytype = find_keytype(source);
+
     if (peer) {
 	for (i = 0; i < peer->len; i++) {
 	    for (j = 0; sig_algs[j]; j++) {
@@ -2102,8 +2154,8 @@ hx509_select(const hx509_context context,
 		    continue;
 		if (der_heim_oid_cmp((*sig_algs[j]->sig_oid)(), &peer->val[i].algorithm) != 0)
 		    continue;
-		/* if (!source.supports(sig_algs[j]))
-		    continue; */
+		if (keytype && der_heim_oid_cmp(keytype, (*sig_algs[j]->key_oid)()))
+		    continue;
 
 		/* found one, use that */
 		ret = copy_AlgorithmIdentifier(&peer->val[i], selected);
@@ -2121,4 +2173,63 @@ hx509_select(const hx509_context context,
     return ret;
 }
 
+int
+hx509_crypto_available(const hx509_context context,
+		       int type,
+		       hx509_cert source,
+		       AlgorithmIdentifier **val,
+		       size_t *plen)
+{
+    const heim_oid *keytype = NULL;
+    size_t len, i;
+    void *ptr;
+    int bits, ret;
 
+    *val = NULL;
+
+    if (type == HX509_SELECT_ALL) {
+	bits = SIG_DIGEST | SIG_PUBLIC_SIG;
+    } else if (type == HX509_SELECT_DIGEST) {
+	bits = SIG_DIGEST;
+    } else if (type == HX509_SELECT_PUBLIC_SIG) {
+	bits = SIG_PUBLIC_SIG;
+    } else {
+	hx509_set_error_string(context, 0, EINVAL, "unknown type %d of available", type);
+	return EINVAL;
+    }
+
+    if (source)
+	keytype = find_keytype(_hx509_cert_private_key(source));
+
+    len = 0;
+    for (i = 0; sig_algs[i]; i++) {
+	if ((sig_algs[i]->flags & bits) == 0)
+	    continue;
+	if (sig_algs[i]->sig_alg == NULL)
+	    continue;
+	if (keytype && der_heim_oid_cmp((*sig_algs[i]->key_oid)(), keytype))
+	    continue;
+
+	ptr = realloc(*val, sizeof(**val) * (len + 1));
+	if (ptr == NULL)
+	    goto out;
+	*val = ptr;
+
+	/* found one, use that */
+	ret = copy_AlgorithmIdentifier((*sig_algs[i]->sig_alg)(), &(*val)[i]);
+	if (ret)
+	    goto out;
+	len++;
+    }
+
+    *plen = len;
+    return 0;
+
+out:
+    for (i = 0; i < len; i++)
+	free_AlgorithmIdentifier(&(*val)[i]);
+    free(*val);
+    *val = NULL;
+    hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+    return ENOMEM;
+}
