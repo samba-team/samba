@@ -384,6 +384,16 @@ command = {
 	help = "Generates random bytes and prints them to standard output"
 }
 command = {
+	name = "crypto-available"
+	min_args="0"
+	help = "Print available CMS crypto types"
+}
+command = {
+	name = "crypto-select"
+	min_args="0"
+	help = "Print available CMS crypto types"
+}
+command = {
 	name = "help"
 	name = "?"
 	argument = "[command]"

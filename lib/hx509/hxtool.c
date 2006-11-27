@@ -991,6 +991,50 @@ random_data(void *opt, int argc, char **argv)
 }
 
 int
+crypto_available(void *opt, int argc, char **argv)
+{
+    int ret;
+    size_t len, i;
+    AlgorithmIdentifier *val;
+
+    ret = hx509_crypto_available(context, HX509_SELECT_ALL,
+				 NULL, &val, &len);
+    if (ret)
+	errx(1, "hx509_crypto_available");
+
+    for (i = 0; i < len; i++) {
+	char *s;
+	der_print_heim_oid (&val[i].algorithm, '.', &s);
+	printf("%s\n", s);
+	free(s);
+    }
+
+    hx509_crypto_free_algs(val, len);
+
+    return 0;
+}
+
+int
+crypto_select(void *opt, int argc, char **argv)
+{
+    int ret;
+    char *s;
+    AlgorithmIdentifier val;
+
+    ret = hx509_crypto_select(context, HX509_SELECT_DIGEST,
+			      NULL, NULL, &val);
+    if (ret)
+	errx(1, "hx509_crypto_available");
+
+    der_print_heim_oid (&val.algorithm, '.', &s);
+    printf("%s\n", s);
+    free(s);
+    free_AlgorithmIdentifier(&val);
+
+    return 0;
+}
+
+int
 help(void *opt, int argc, char **argv)
 {
     sl_slc_help(commands, argc, argv);
