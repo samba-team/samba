@@ -11,7 +11,7 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 NTSTATUS rpccli_winreg_DeleteKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String key);
 NTSTATUS rpccli_winreg_DeleteValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String value);
 NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, struct winreg_StringBuf **keyclass, NTTIME **last_changed_time);
-NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, enum winreg_Type **type, uint8_t **data, uint32_t **data_size, uint32_t **value_length);
+NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t enum_index, struct winreg_ValNameBuf *name, enum winreg_Type **type, uint8_t **data, uint32_t **data_size, uint32_t **value_length);
 NTSTATUS rpccli_winreg_FlushKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle);
 NTSTATUS rpccli_winreg_GetKeySecurity(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t sec_info, struct KeySecurityData *sd);
 NTSTATUS rpccli_winreg_LoadKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct winreg_String *keyname, struct winreg_String *filename);
