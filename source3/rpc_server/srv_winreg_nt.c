@@ -1196,7 +1196,7 @@ WERROR _winreg_CreateKey( pipes_struct *p, struct policy_handle *handle,
 			  uint32_t options, uint32_t access_mask, 
 			  struct winreg_SecBuf *secdesc,
 			  struct policy_handle *new_handle, 
-			  enum winreg_CreateAction *action_taken )
+			  enum winreg_CreateAction **action_taken )
 {
 	struct regkey_info *parent = find_regkey_info_by_hnd(p, handle);
 	struct regkey_info *newparentinfo, *keyinfo;
@@ -1288,8 +1288,8 @@ WERROR _winreg_CreateKey( pipes_struct *p, struct policy_handle *handle,
 	
 	/* FIXME: report the truth here */
 	
-	if ( action_taken ) {
-		*action_taken = REG_CREATED_NEW_KEY;
+	if ( *action_taken ) {
+		**action_taken = REG_CREATED_NEW_KEY;
 	}
 
 done:
