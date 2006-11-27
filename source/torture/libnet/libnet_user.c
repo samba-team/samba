@@ -696,20 +696,31 @@ BOOL torture_userlist(struct torture_context *torture)
 
 	ZERO_STRUCT(req);
 	
-	req.in.domain_name = domain_name.string;
-	req.in.page_size   = 30;
-	req.in.resume_index = 0;
+	do {
 
-	status = libnet_UserList(ctx, mem_ctx, &req);
-	if (!NT_STATUS_IS_OK(status)) {
+		req.in.domain_name = domain_name.string;
+		req.in.page_size   = 128;
+		req.in.resume_index = req.out.resume_index;
+
+		status = libnet_UserList(ctx, mem_ctx, &req);
+
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+	if (!(NT_STATUS_IS_OK(status) ||
+	      NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES))) {
 		printf("libnet_UserList call failed: %s\n", nt_errstr(status));
 		ret = False;
-		talloc_free(mem_ctx);
 		goto done;
 	}
 
 	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
-		printf("domain close failed\n");
+		printf("samr domain close failed\n");
+		ret = False;
+		goto done;
+	}
+
+	if (!test_lsa_close(ctx->lsa.pipe, mem_ctx, &ctx->lsa.handle)) {
+		printf("lsa domain close failed\n");
 		ret = False;
 	}
 
