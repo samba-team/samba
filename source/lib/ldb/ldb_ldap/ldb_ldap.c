@@ -154,7 +154,8 @@ static LDAPMod **lldb_msg_to_mods(void *mem_ctx, const struct ldb_message *msg, 
 			if (!mods[num_mods]->mod_vals.modv_bvals[j]) {
 				goto failed;
 			}
-			mods[num_mods]->mod_vals.modv_bvals[j]->bv_val = el->values[j].data;
+			mods[num_mods]->mod_vals.modv_bvals[j]->bv_val =
+				(char *)el->values[j].data;
 			mods[num_mods]->mod_vals.modv_bvals[j]->bv_len = el->values[j].length;
 		}
 		mods[num_mods]->mod_vals.modv_bvals[j] = NULL;
@@ -212,7 +213,8 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 	for (i=0;i<count;i++) {
 		/* we have to ensure this is null terminated so that
 		   ldb_msg_find_attr_as_string() can work */
-		el->values[i].data = talloc_size(el->values, bval[i]->bv_len+1);
+		el->values[i].data =
+			(uint8_t *)talloc_size(el->values, bval[i]->bv_len+1);
 		if (!el->values[i].data) {
 			errno = ENOMEM;
 			return -1;
@@ -270,7 +272,9 @@ static int lldb_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	expression = ldb_filter_from_tree(lldb_ac, req->op.search.tree);
+	expression = ldb_filter_from_tree(
+		lldb_ac,
+		CONST_DISCARD(struct ldb_parse_tree *, req->op.search.tree));
 	if (expression == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

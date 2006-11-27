@@ -114,7 +114,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	}
 
 	/* allocate it */
-	data->dptr = talloc_array(ldb, uint8_t, size);
+	data->dptr = talloc_array(ldb, char, size);
 	if (!data->dptr) {
 		talloc_free(dn);
 		errno = ENOMEM;
@@ -122,7 +122,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	}
 	data->dsize = size;
 
-	p = data->dptr;
+	p = (uint8_t *)data->dptr;
 	put_uint32(p, 0, LTDB_PACKING_FORMAT); 
 	put_uint32(p, 4, real_elements); 
 	p += 8;
@@ -173,7 +173,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 
 	message->elements = NULL;
 
-	p = data->dptr;
+	p = (uint8_t *)data->dptr;
 	if (data->dsize < 8) {
 		errno = EIO;
 		goto failed;
@@ -268,7 +268,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 			}
 
 			message->elements[i].values[j].length = len;
-			message->elements[i].values[j].data = talloc_size(message->elements[i].values, len+1);
+			message->elements[i].values[j].data = (uint8_t *)talloc_size(message->elements[i].values, len+1);
 			if (message->elements[i].values[j].data == NULL) {
 				errno = ENOMEM;
 				goto failed;
