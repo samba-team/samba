@@ -698,7 +698,7 @@ BOOL torture_userlist(struct torture_context *torture)
 	
 	req.in.domain_name = domain_name.string;
 	req.in.page_size   = 30;
-	req.in.restore_index = 0;
+	req.in.resume_index = 0;
 
 	status = libnet_UserList(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -708,7 +708,7 @@ BOOL torture_userlist(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_lsa_close(ctx->lsa.pipe, mem_ctx, &ctx->lsa.handle)) {
+	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
 		printf("domain close failed\n");
 		ret = False;
 	}
