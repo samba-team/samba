@@ -264,7 +264,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const char *homedir, *homedrive, *logonscript;
 	const uint32_t flags[] = { (ACB_DISABLED | ACB_NORMAL),
 				   (ACB_NORMAL | ACB_PWNOEXP),
-				   (ACB_NORMAL | ACB_PW_EXPIRED) };
+				   (ACB_NORMAL) };
 
 	NTSTATUS status;
 	struct timeval now;
