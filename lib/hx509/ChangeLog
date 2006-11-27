@@ -1,5 +1,11 @@
 2006-11-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cms.c: Remove trailing white space.
+
+	* crypto.c: rewrite comment to make more sense
+
+	* crypto.c (hx509_crypto_select): check sig_algs[j]->key_oid
+
 	* hxtool-commands.in (crypto-available): add --type
 
 	* crypto.c (hx509_crypto_available): let alg pass if its keyless
