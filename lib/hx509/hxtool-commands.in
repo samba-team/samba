@@ -384,6 +384,11 @@ command = {
 	help = "Generates random bytes and prints them to standard output"
 }
 command = {
+	option = {
+		long = "type"
+		type = "string"
+		help = "type of CMS algorithm"
+	}
 	name = "crypto-available"
 	min_args="0"
 	help = "Print available CMS crypto types"

@@ -991,14 +991,25 @@ random_data(void *opt, int argc, char **argv)
 }
 
 int
-crypto_available(void *opt, int argc, char **argv)
+crypto_available(struct crypto_available_options *opt, int argc, char **argv)
 {
     int ret;
     size_t len, i;
     AlgorithmIdentifier *val;
+    int type = HX509_SELECT_ALL;
 
-    ret = hx509_crypto_available(context, HX509_SELECT_ALL,
-				 NULL, &val, &len);
+    if (opt->type_string) {
+	if (strcmp(opt->type_string, "all") == 0)
+	    type = HX509_SELECT_ALL;
+	else if (strcmp(opt->type_string, "digest") == 0)
+	    type = HX509_SELECT_DIGEST;
+	else if (strcmp(opt->type_string, "public-sig") == 0)
+	    type = HX509_SELECT_PUBLIC_SIG;
+	else
+	    errx(1, "unknown type: %s", opt->type_string);
+    }
+
+    ret = hx509_crypto_available(context, type, NULL, &val, &len);
     if (ret)
 	errx(1, "hx509_crypto_available");
 
