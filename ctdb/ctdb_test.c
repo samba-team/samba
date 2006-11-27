@@ -73,12 +73,14 @@ int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
 	const char *nlist = NULL;
+	const char *transport = "tcp";
 	const char *myaddress = NULL;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		{ "nlist", 0, POPT_ARG_STRING, &nlist, 0, "node list file", "filename" },
 		{ "listen", 0, POPT_ARG_STRING, &myaddress, 0, "address to listen on", "address" },
+		{ "transport", 0, POPT_ARG_STRING, &transport, 0, "protocol transport", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -118,6 +120,12 @@ int main(int argc, const char *argv[])
 	ctdb = ctdb_init(ev);
 	if (ctdb == NULL) {
 		printf("Failed to init ctdb\n");
+		exit(1);
+	}
+
+	ret = ctdb_set_transport(ctdb, transport);
+	if (ret == -1) {
+		printf("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
 	}
 

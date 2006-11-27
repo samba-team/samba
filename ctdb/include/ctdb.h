@@ -41,6 +41,11 @@ struct event_context;
 struct ctdb_context *ctdb_init(struct event_context *ev);
 
 /*
+  choose the transport
+*/
+int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
+
+/*
   tell ctdb what address to listen on, in transport specific format
 */
 int ctdb_set_address(struct ctdb_context *ctdb, const char *address);
@@ -82,3 +87,4 @@ int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags,
 */
 int ctdb_call(struct ctdb_context *ctdb, TDB_DATA key, int call_id, 
 	      TDB_DATA *call_data, TDB_DATA *reply_data);
+

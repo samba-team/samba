@@ -20,7 +20,11 @@ LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ -lpopt
 
 EVENTS_OBJ = lib/events/events.o lib/events/events_standard.o 
 
-CTDB_OBJ = ctdb_tcp_child.o ctdb_tcp.o util.o
+CTDB_COMMON_OBJ = common/ctdb.o common/util.o
+
+CTDB_TCP_OBJ = tcp/ctdb_tcp.o
+
+CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TCP_OBJ)
 
 OBJS = @TDBOBJ@ @TALLOCOBJ@ @LIBREPLACEOBJ@ $(EXTRA_OBJ) $(EVENTS_OBJ) $(CTDB_OBJ)
 
