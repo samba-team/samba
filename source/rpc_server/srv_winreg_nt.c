@@ -574,7 +574,10 @@ WERROR _winreg_GetVersion(pipes_struct *p, struct policy_handle *handle, uint32_
  Implementation of REG_ENUM_KEY
  ****************************************************************************/
  
-WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, struct winreg_StringBuf *keyclass, NTTIME *last_changed_time)
+WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle,
+		       uint32_t enum_index, struct winreg_StringBuf *name,
+		       struct winreg_StringBuf **keyclass,
+		       NTTIME **last_changed_time)
 {
 	WERROR 	status = WERR_OK;
 	struct regkey_info *info = find_regkey_info_by_hnd( p, handle );
@@ -613,10 +616,12 @@ WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t e
 		      p->mem_ctx, info->subkey_cache->subkeys[enum_index]))) {
 		status = WERR_NOMEM;
 	}
-	if ( last_changed_time ) {
-		*last_changed_time = 0;
+	if ( *last_changed_time ) {
+		**last_changed_time = 0;
 	}
-	keyclass->name = "";
+	if ( *keyclass ) {
+		(*keyclass)->name = "";
+	}
 
 	return status;
 }

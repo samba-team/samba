@@ -146,8 +146,8 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 		[in,ref]        policy_handle    *handle,
 		[in]            uint32           enum_index,
 		[in,out,ref]    winreg_StringBuf *name,
-		[in,out,unique] winreg_StringBuf *keyclass,
-		[in,out,unique] NTTIME           *last_changed_time
+		[in,out,ref] winreg_StringBuf **keyclass,
+		[in,out,ref] NTTIME           **last_changed_time
 	);
 
 	typedef struct {
