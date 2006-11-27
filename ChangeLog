@@ -1,3 +1,12 @@
+2006-11-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/krb5tgs.c: Reply KRB5KRB_ERR_RESPONSE_TOO_BIG for too large
+	packets when using datagram based transports.
+
+	* kdc/process.c: Pass down datagram_reply to _kdc_tgs_rep.
+
+	* lib/krb5/pkinit.c (build_auth_pack): set supportedCMSTypes.
+	
 2006-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: Pass down hx509_peer_info.
