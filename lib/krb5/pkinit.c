@@ -405,6 +405,19 @@ build_auth_pack(krb5_context context,
 	a->clientPublicValue->subjectPublicKey.data = dhbuf.data;
     }
 
+    {
+	a->supportedCMSTypes = calloc(1, sizeof(*a->supportedCMSTypes));
+	if (a->supportedCMSTypes == NULL)
+	    return ENOMEM;
+
+	ret = hx509_crypto_available(ctx->id->hx509ctx, HX509_SELECT_ALL, NULL,
+				     &a->supportedCMSTypes->val,
+				     &a->supportedCMSTypes->len);
+	if (ret)
+	    return ret;
+    }
+
+
     return ret;
 }
 
