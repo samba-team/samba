@@ -1,5 +1,7 @@
 2006-11-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cms.c: Rename hx509_select to hx509_crypto_select.
+
 	* hxtool-commands.in: Add crypto-select and crypto-available.
 
 	* hxtool.c: Add crypto-select and crypto-available.
