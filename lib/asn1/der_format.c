@@ -110,6 +110,9 @@ der_print_heim_oid (const heim_oid *oid, char delim, char **str)
     struct rk_strpool *p = NULL;
     int i;
 
+    if (oid->length == 0)
+	return EINVAL;
+
     for (i = 0; i < oid->length ; i++) {
 	p = rk_strpoolprintf(p, "%d", oid->components[i]);
 	if (p && i < oid->length - 1)
