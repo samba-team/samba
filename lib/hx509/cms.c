@@ -975,8 +975,8 @@ hx509_cms_create_signed_1(hx509_context context,
     }
 
     if (digest_alg == NULL) {
-	ret = hx509_select(context, HX509_SELECT_DIGEST, 
-			   _hx509_cert_private_key(cert), peer, &digest);
+	ret = hx509_crypto_select(context, HX509_SELECT_DIGEST, 
+				  _hx509_cert_private_key(cert), peer, &digest);
     } else {
 	ret = copy_AlgorithmIdentifier(digest_alg, &digest);
 	if (ret)
