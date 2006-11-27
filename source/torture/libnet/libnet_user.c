@@ -685,6 +685,7 @@ BOOL torture_userlist(struct torture_context *torture)
 	struct libnet_context *ctx;
 	struct lsa_String domain_name;
 	struct libnet_UserList req;
+	int i;
 
 	binding = torture_setting_string(torture, "binding", NULL);
 
@@ -695,6 +696,8 @@ BOOL torture_userlist(struct torture_context *torture)
 	mem_ctx = talloc_init("torture user list");
 
 	ZERO_STRUCT(req);
+
+	printf("listing user accounts:\n");
 	
 	do {
 
@@ -703,6 +706,11 @@ BOOL torture_userlist(struct torture_context *torture)
 		req.in.resume_index = req.out.resume_index;
 
 		status = libnet_UserList(ctx, mem_ctx, &req);
+
+		for (i = 0; i < req.out.count; i++) {
+			printf("\tuser: %s, sid=%s\n",
+			       req.out.users[i].username, req.out.users[i].sid);
+		}
 
 	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 
