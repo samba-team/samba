@@ -97,7 +97,7 @@ typedef enum {
 /* flags to hx509_cms_unenvelope */
 #define HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT	0x01
 
-/* selectors passed to hx509_select and hx509_avalible */
+/* selectors passed to hx509_crypto_select and hx509_crypto_available */
 #define HX509_SELECT_ALL 0
 #define HX509_SELECT_DIGEST 1
 #define HX509_SELECT_PUBLIC_SIG 2
