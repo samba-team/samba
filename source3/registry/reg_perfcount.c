@@ -1030,7 +1030,7 @@ static uint32 _reg_perfcount_perf_data_block_fixup(PERF_DATA_BLOCK *block, prs_s
 uint32 reg_perfcount_get_perf_data_block(uint32 base_index, 
 					 prs_struct *ps, 
 					 PERF_DATA_BLOCK *block,
-					 char *object_ids)
+					 const char *object_ids)
 {
 	uint32 buffer_size = 0;
 	const char *fname = counters_directory( NAMES_DB );
