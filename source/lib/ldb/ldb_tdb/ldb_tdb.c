@@ -150,7 +150,7 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn)
 		goto failed;
 	}
 
-	key.dptr = (uint8_t *)key_str;
+	key.dptr = (char *)key_str;
 	key.dsize = strlen(key_str) + 1;
 
 	return key;

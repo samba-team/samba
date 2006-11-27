@@ -59,8 +59,8 @@ static int ltdb_wrap_destructor(struct ltdb_wrap *w)
 }				 
 
 #if defined(_SAMBA_BUILD_) && (_SAMBA_BUILD_ <= 3)
-static void ltdb_log_fn(struct tdb_context *tdb, int level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
-static void ltdb_log_fn(struct tdb_context *tdb, int level, const char *fmt, ...)
+static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
+static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...)
 {
 	/* until we merge the tdb debug changes into samba3, we don't know 
 	   how serious the error is, and we can't go via the ldb loggin code */
@@ -147,7 +147,9 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	w->tdb = tdb_open_ex(path, hash_size, tdb_flags, open_flags, mode, log_ctx_p, NULL);
+	w->tdb = tdb_open_ex(path, hash_size, tdb_flags, open_flags, mode,
+			     (const struct tdb_logging_context *)log_ctx_p,
+			     NULL);
 	if (w->tdb == NULL) {
 		talloc_free(w);
 		return NULL;
