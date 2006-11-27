@@ -53,6 +53,12 @@ struct winreg_StringBuf {
 	const char *name;/* [unique,length_is(length/2),charset(UTF16),size_is(size/2)] */
 };
 
+struct winreg_ValNameBuf {
+	uint16_t length;/* [value(strlen_m_term(name)*2)] */
+	uint16_t size;
+	const char *name;/* [unique,length_is(length/2),charset(UTF16),size_is(size/2)] */
+};
+
 struct KeySecurityAttribute {
 	uint32_t data_size;
 	struct KeySecurityData sec_data;
@@ -219,7 +225,7 @@ struct winreg_EnumValue {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t enum_index;
-		struct winreg_StringBuf *name;/* [ref] */
+		struct winreg_ValNameBuf *name;/* [ref] */
 		enum winreg_Type *type;/* [unique] */
 		uint8_t *data;/* [unique,length_is(*value_length),size_is(*data_size)] */
 		uint32_t *data_size;/* [unique] */
@@ -227,7 +233,7 @@ struct winreg_EnumValue {
 	} in;
 
 	struct {
-		struct winreg_StringBuf *name;/* [ref] */
+		struct winreg_ValNameBuf *name;/* [ref] */
 		enum winreg_Type *type;/* [unique] */
 		uint8_t *data;/* [unique,length_is(*value_length),size_is(*data_size)] */
 		uint32_t *data_size;/* [unique] */

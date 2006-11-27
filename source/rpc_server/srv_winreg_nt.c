@@ -626,7 +626,7 @@ WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t e
  ****************************************************************************/
 
 WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle,
-			 uint32_t enum_index, struct winreg_StringBuf *name,
+			 uint32_t enum_index, struct winreg_ValNameBuf *name,
 			 enum winreg_Type *type, uint8_t *data,
 			 uint32_t *data_size, uint32_t *value_length)
 {
@@ -1317,14 +1317,6 @@ WERROR _winreg_SetValue(pipes_struct *p, struct policy_handle *handle, struct wi
 
 	key = info->key;
 
-	if (!name.name || (strlen(name.name) == 0)) {
-		/*
-		 * This is the "Standard Value" for a key, we don't support
-		 * that (yet...)
-		 */
-		return WERR_ACCESS_DENIED;
-	}
-		
 	/* access checks first */
 	
 	if ( !(key->access_granted & SEC_RIGHTS_SET_VALUE) )

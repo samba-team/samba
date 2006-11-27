@@ -841,7 +841,7 @@ int cac_RegEnumValues( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		uint32 *pdata_size = &data_size;
 		uint32 data_length = 0;
 		uint32 *pdata_length = &data_length;
-		struct winreg_StringBuf name_buf;
+		struct winreg_ValNameBuf name_buf;
 		enum winreg_Type *ptype = &types_out[num_values_out];
 
 		memset( name_buffer, 0x0, max_valnamelen );

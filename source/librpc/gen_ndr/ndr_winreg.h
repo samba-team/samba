@@ -92,6 +92,7 @@ void ndr_print_KeySecurityData(struct ndr_print *ndr, const char *name, const st
 void ndr_print_winreg_SecBuf(struct ndr_print *ndr, const char *name, const struct winreg_SecBuf *r);
 void ndr_print_winreg_CreateAction(struct ndr_print *ndr, const char *name, enum winreg_CreateAction r);
 void ndr_print_winreg_StringBuf(struct ndr_print *ndr, const char *name, const struct winreg_StringBuf *r);
+void ndr_print_winreg_ValNameBuf(struct ndr_print *ndr, const char *name, const struct winreg_ValNameBuf *r);
 void ndr_print_KeySecurityAttribute(struct ndr_print *ndr, const char *name, const struct KeySecurityAttribute *r);
 void ndr_print_QueryMultipleValue(struct ndr_print *ndr, const char *name, const struct QueryMultipleValue *r);
 void ndr_print_winreg_OpenHKCR(struct ndr_print *ndr, const char *name, int flags, const struct winreg_OpenHKCR *r);
