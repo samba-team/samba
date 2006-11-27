@@ -79,6 +79,7 @@ int main(int argc, const char *argv[])
 		POPT_AUTOHELP
 		{ "nlist", 0, POPT_ARG_STRING, &nlist, 0, "node list file", "filename" },
 		{ "listen", 0, POPT_ARG_STRING, &myaddress, 0, "address to listen on", "address" },
+		POPT_TABLEEND
 	};
 	int opt;
 	const char **extra_argv;
