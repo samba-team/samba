@@ -1,5 +1,13 @@
-2006-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* crypto.c (hx509_crypto_available): use right index.
+	(hx509_crypto_free_algs): new function
+
+	* crypto.c (hx509_crypto_select): improve
+	(hx509_crypto_available): new function
+	
+2006-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* cert.c: Sprinkle more error string and hx509_contexts.
 
 	* cms.c: Sprinkle more error strings.
