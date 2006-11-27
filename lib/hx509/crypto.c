@@ -2212,12 +2212,12 @@ hx509_crypto_available(hx509_context context,
 	    der_heim_oid_cmp((*sig_algs[i]->key_oid)(), keytype))
 	    continue;
 
+	/* found one, add that to the list */
 	ptr = realloc(*val, sizeof(**val) * (len + 1));
 	if (ptr == NULL)
 	    goto out;
 	*val = ptr;
 
-	/* found one, use that */
 	ret = copy_AlgorithmIdentifier((*sig_algs[i]->sig_alg)(), &(*val)[len]);
 	if (ret)
 	    goto out;
