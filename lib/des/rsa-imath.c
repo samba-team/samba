@@ -145,7 +145,7 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
     if (padding != RSA_PKCS1_PADDING)
 	return -1;
 
-    if (flen != RSA_size(rsa))
+    if (flen > RSA_size(rsa))
 	return -1;
 
     BN2mpz(&n, rsa->n);
@@ -270,7 +270,7 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
 	return -1;
 
     size = RSA_size(rsa);
-    if (flen != size)
+    if (flen > size)
 	return -2;
 
     mp_int_init(&enc);
