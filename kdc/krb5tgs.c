@@ -1202,7 +1202,8 @@ tgs_build_reply(krb5_context context,
 		const char *from,
 		const char **e_text,
 		AuthorizationData *auth_data,
-		const struct sockaddr *from_addr)
+		const struct sockaddr *from_addr,
+		int datagram_reply)
 {
     krb5_error_code ret;
     krb5_principal cp = NULL, sp = NULL;
@@ -1683,7 +1684,8 @@ _kdc_tgs_rep(krb5_context context,
 	     KDC_REQ *req, 
 	     krb5_data *data,
 	     const char *from,
-	     struct sockaddr *from_addr)
+	     struct sockaddr *from_addr,
+	     int datagram_reply)
 {
     AuthorizationData *auth_data = NULL;
     krb5_error_code ret;
@@ -1740,11 +1742,19 @@ _kdc_tgs_rep(krb5_context context,
 			  from,
 			  &e_text,
 			  auth_data,
-			  from_addr);
+			  from_addr,
+			  datagram_reply);
     if (ret) {
 	kdc_log(context, config, 0, 
 		"Failed building TGS-REP to %s", from);
 	goto out;
+    }
+
+    /* */
+    if (datagram_reply && data->length > config->max_datagram_reply_length) {
+	krb5_data_free(data);
+	ret = KRB5KRB_ERR_RESPONSE_TOO_BIG;
+	e_text = "Reply packet too large";
     }
 
 out:
