@@ -306,8 +306,8 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	r.in.handle = handle;
 	r.in.enum_index = enum_index;
 	r.in.name = name;
-	r.in.keyclass = *keyclass;
-	r.in.last_changed_time = *last_changed_time;
+	r.in.keyclass = keyclass;
+	r.in.last_changed_time = last_changed_time;
 	
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_EnumKey, &r);
@@ -327,8 +327,8 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	
 	/* Return variables */
 	*name = *r.out.name;
-	*keyclass = r.out.keyclass;
-	*last_changed_time = r.out.last_changed_time;
+	*keyclass = *r.out.keyclass;
+	*last_changed_time = *r.out.last_changed_time;
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);

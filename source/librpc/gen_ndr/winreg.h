@@ -207,14 +207,14 @@ struct winreg_EnumKey {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t enum_index;
 		struct winreg_StringBuf *name;/* [ref] */
-		struct winreg_StringBuf *keyclass;/* [unique] */
-		NTTIME *last_changed_time;/* [unique] */
+		struct winreg_StringBuf **keyclass;/* [ref] */
+		NTTIME **last_changed_time;/* [ref] */
 	} in;
 
 	struct {
 		struct winreg_StringBuf *name;/* [ref] */
-		struct winreg_StringBuf *keyclass;/* [unique] */
-		NTTIME *last_changed_time;/* [unique] */
+		struct winreg_StringBuf **keyclass;/* [ref] */
+		NTTIME **last_changed_time;/* [ref] */
 		WERROR result;
 	} out;
 
