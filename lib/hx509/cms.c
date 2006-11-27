@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include "hx_locl.h"
@@ -39,7 +39,7 @@ RCSID("$Id$");
 
 int
 hx509_cms_wrap_ContentInfo(const heim_oid *oid,
-			   const heim_octet_string *buf, 
+			   const heim_octet_string *buf,
 			   heim_octet_string *res)
 {
     ContentInfo ci;
@@ -240,7 +240,7 @@ find_CMSIdentifier(hx509_context context,
 			       "Failed to find CMS id in cert store");
 	return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
     }
-    
+
     *signer_cert = cert;
 
     return 0;
@@ -314,7 +314,7 @@ hx509_cms_unenvelope(hx509_context context,
 	 * 	ki->keyEncryptionAlgorithm.algorithm);
 	 */
 
-	ret = find_CMSIdentifier(context, &ri->rid, certs, &cert, 
+	ret = find_CMSIdentifier(context, &ri->rid, certs, &cert,
 				 HX509_QUERY_PRIVATE_KEY|findflags);
 	if (ret)
 	    continue;
@@ -322,7 +322,7 @@ hx509_cms_unenvelope(hx509_context context,
 	matched = 1; /* found a matching certificate, let decrypt */
 
 	ret = _hx509_cert_private_decrypt(context,
-					  &ri->encryptedKey, 
+					  &ri->encryptedKey,
 					  &ri->keyEncryptionAlgorithm.algorithm,
 					  cert, &key);
 
@@ -337,14 +337,14 @@ hx509_cms_unenvelope(hx509_context context,
 	    free(str);
 	}
     }
-    
+
     if (!matched) {
 	ret = HX509_CMS_NO_RECIPIENT_CERTIFICATE;
 	hx509_set_error_string(context, 0, ret,
 			       "No private key matched any certificate");
 	goto out;
     }
-    
+
     if (cert == NULL) {
 	ret = HX509_CMS_NO_RECIPIENT_CERTIFICATE;
 	hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
@@ -391,7 +391,7 @@ hx509_cms_unenvelope(hx509_context context,
 	    goto out;
 	}
 	
-	ret = hx509_crypto_decrypt(crypto, 
+	ret = hx509_crypto_decrypt(crypto,
 				   enccontent->data,
 				   enccontent->length,
 				   ivec.length ? &ivec : NULL,
@@ -458,7 +458,7 @@ hx509_cms_envelope_1(hx509_context context,
 	goto out;
     }
 
-    ret = hx509_crypto_encrypt(crypto, 
+    ret = hx509_crypto_encrypt(crypto,
 			       data,
 			       length,
 			       &ivec,
@@ -570,7 +570,7 @@ static int
 any_to_certs(hx509_context context, const SignedData *sd, hx509_certs certs)
 {
     int ret, i;
-    
+
     if (sd->certificates == NULL)
 	return 0;
 
@@ -628,7 +628,7 @@ hx509_cms_verify_signed(hx509_context context,
     SignedData sd;
     size_t size;
     int ret, i, found_valid_sig;
-    
+
     *signer_certs = NULL;
     content->data = NULL;
     content->length = 0;
@@ -656,7 +656,7 @@ hx509_cms_verify_signed(hx509_context context,
     if (ret)
 	goto out;
 
-    ret = hx509_certs_init(context, "MEMORY:cms-signer-certs", 
+    ret = hx509_certs_init(context, "MEMORY:cms-signer-certs",
 			   0, NULL, signer_certs);
     if (ret)
 	goto out;
@@ -696,7 +696,7 @@ hx509_cms_verify_signed(hx509_context context,
 
 	if (signer_info->signedAttrs) {
 	    const Attribute *attr;
-	    
+	
 	    CMSAttributes sa;
 	    heim_octet_string os;
 
@@ -720,8 +720,8 @@ hx509_cms_verify_signed(hx509_context context,
 				       "messageDigest (signature)");
 		goto next_sigature;
 	    }
-	    
-	    ret = decode_MessageDigest(attr->value.val[0].data, 
+	
+	    ret = decode_MessageDigest(attr->value.val[0].data,
 				       attr->value.val[0].length,
 				       &os,
 				       &size);
@@ -744,7 +744,7 @@ hx509_cms_verify_signed(hx509_context context,
 		goto next_sigature;
 	    }
 
-	    /* 
+	    /*
 	     * Fetch content oid inside signedAttrs or set it to
 	     * id-pkcs7-data.
 	     */
@@ -759,9 +759,9 @@ hx509_cms_verify_signed(hx509_context context,
 		    goto next_sigature;
 
 		}
-		ret = decode_ContentType(attr->value.val[0].data, 
+		ret = decode_ContentType(attr->value.val[0].data,
 					 attr->value.val[0].length,
-					 &decode_oid, 
+					 &decode_oid,
 					 &size);
 		if (ret) {
 		    hx509_set_error_string(context, 0, ret,
@@ -780,11 +780,11 @@ hx509_cms_verify_signed(hx509_context context,
 		hx509_clear_error_string(context);
 		goto next_sigature;
 	    }
-	    
+	
 	    ASN1_MALLOC_ENCODE(CMSAttributes,
 			       signed_data->data,
 			       signed_data->length,
-			       &sa, 
+			       &sa,
 			       &size, ret);
 	    if (ret) {
 		if (match_oid == &decode_oid)
@@ -942,7 +942,7 @@ add_one_attribute(Attribute **attr,
 
     return 0;
 }
-	      
+	
 int
 hx509_cms_create_signed_1(hx509_context context,
 			  const heim_oid *eContentType,
@@ -962,7 +962,7 @@ hx509_cms_create_signed_1(hx509_context context,
     int ret;
     size_t size;
     hx509_path path;
-    
+
     memset(&sd, 0, sizeof(sd));
     memset(&name, 0, sizeof(name));
     memset(&path, 0, sizeof(path));
@@ -975,14 +975,14 @@ hx509_cms_create_signed_1(hx509_context context,
     }
 
     if (digest_alg == NULL) {
-	ret = hx509_crypto_select(context, HX509_SELECT_DIGEST, 
+	ret = hx509_crypto_select(context, HX509_SELECT_DIGEST,
 				  _hx509_cert_private_key(cert), peer, &digest);
     } else {
 	ret = copy_AlgorithmIdentifier(digest_alg, &digest);
 	if (ret)
 	    hx509_clear_error_string(context);
     }
-    if (ret) 
+    if (ret)
 	goto out;
 
     sd.version = CMSVersion_v3;
@@ -1019,7 +1019,7 @@ hx509_cms_create_signed_1(hx509_context context,
     if (ret) {
 	hx509_clear_error_string(context);
 	goto out;
-    }			    
+    }			
 
     signer_info->signedAttrs = NULL;
     signer_info->unsignedAttrs = NULL;
@@ -1118,14 +1118,14 @@ hx509_cms_create_signed_1(hx509_context context,
 	}
 	if (size != os.length)
 	    _hx509_abort("internal ASN.1 encoder error");
-			   
+			
 	ret = _hx509_create_signature(context,
 				      _hx509_cert_private_key(cert),
 				      hx509_signature_rsa_with_sha1(),
 				      &os,
 				      &signer_info->signatureAlgorithm,
 				      &signer_info->signature);
-				      
+				
 	der_free_octet_string(&os);
 	if (ret) {
 	    hx509_clear_error_string(context);
@@ -1177,7 +1177,7 @@ hx509_cms_create_signed_1(hx509_context context,
 	}
 
 	for (i = 0; i < path.len; i++) {
-	    ASN1_MALLOC_ENCODE(Certificate, 
+	    ASN1_MALLOC_ENCODE(Certificate,
 			       sd.certificates->val[i].data,
 			       sd.certificates->val[i].length,
 			       _hx509_get_cert(path.val[i]),
