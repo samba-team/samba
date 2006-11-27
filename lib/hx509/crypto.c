@@ -2154,7 +2154,8 @@ hx509_crypto_select(const hx509_context context,
 		    continue;
 		if (der_heim_oid_cmp((*sig_algs[j]->sig_oid)(), &peer->val[i].algorithm) != 0)
 		    continue;
-		if (keytype && der_heim_oid_cmp(keytype, (*sig_algs[j]->key_oid)()))
+		if (keytype && sig_algs[j]->key_oid && 
+		    der_heim_oid_cmp(keytype, (*sig_algs[j]->key_oid)()))
 		    continue;
 
 		/* found one, use that */
