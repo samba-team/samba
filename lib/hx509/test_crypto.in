@@ -77,4 +77,76 @@ ${hxtool} verify --missing-revoke \
 echo Read 50 kilobyte random data
 ${hxtool} random-data 50kilobyte > random-data || exit 1
 
+echo "crypto select1"
+${hxtool} crypto-select > test || { echo "select1"; exit 1; }
+cmp test ${srcdir}/tst-crypto-select1 > /dev/null || \
+	{ echo "select1 failure"; exit 1; }
+
+echo "crypto select1"
+${hxtool} crypto-select --type=digest > test || { echo "select1"; exit 1; }
+cmp test ${srcdir}/tst-crypto-select1 > /dev/null || \
+	{ echo "select1 failure"; exit 1; }
+
+echo "crypto select2"
+${hxtool} crypto-select --type=public-sig > test || { echo "select2"; exit 1; }
+cmp test ${srcdir}/tst-crypto-select2 > /dev/null || \
+	{ echo "select2 failure"; exit 1; }
+
+echo "crypto select3"
+${hxtool} crypto-select \
+	--type=public-sig \
+	--peer-cmstype=1.2.840.113549.1.1.4 \
+	 > test || { echo "select3"; exit 1; }
+cmp test ${srcdir}/tst-crypto-select3 > /dev/null || \
+	{ echo "select3 failure"; exit 1; }
+
+echo "crypto select4"
+${hxtool} crypto-select \
+	--type=public-sig \
+	--peer-cmstype=1.2.840.113549.1.1.5 \
+	--peer-cmstype=1.2.840.113549.1.1.4 \
+	 > test || { echo "select4"; exit 1; }
+cmp test ${srcdir}/tst-crypto-select4 > /dev/null || \
+	{ echo "select4 failure"; exit 1; }
+
+echo "crypto select5"
+${hxtool} crypto-select \
+	--type=public-sig \
+	--peer-cmstype=1.2.840.113549.1.1.11 \
+	--peer-cmstype=1.2.840.113549.1.1.5 \
+	 > test || { echo "select5"; exit 1; }
+cmp test ${srcdir}/tst-crypto-select5 > /dev/null || \
+	{ echo "select5 failure"; exit 1; }
+
+echo "crypto select6"
+${hxtool} crypto-select \
+	--type=public-sig \
+	--peer-cmstype=1.2.840.113549.2.5 \
+	--peer-cmstype=1.2.840.113549.1.1.5 \
+	 > test || { echo "select6"; exit 1; }
+cmp test ${srcdir}/tst-crypto-select6 > /dev/null || \
+	{ echo "select6 failure"; exit 1; }
+
+echo "crypto available1"
+${hxtool} crypto-available \
+	--type=all \
+	> test || { echo "available1"; exit 1; }
+cmp test ${srcdir}/tst-crypto-available1 > /dev/null || \
+	{ echo "available1 failure"; exit 1; }
+
+echo "crypto available2"
+${hxtool} crypto-available \
+	--type=digest \
+	> test || { echo "available2"; exit 1; }
+cmp test ${srcdir}/tst-crypto-available2 > /dev/null || \
+	{ echo "available2 failure"; exit 1; }
+
+echo "crypto available3"
+${hxtool} crypto-available \
+	--type=public-sig \
+	> test || { echo "available3"; exit 1; }
+cmp test ${srcdir}/tst-crypto-available3 > /dev/null || \
+	{ echo "available3 failure"; exit 1; }
+
+
 exit 0
