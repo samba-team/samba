@@ -79,7 +79,7 @@ imath_rsa_public_encrypt(int flen, const unsigned char* from,
     size = RSA_size(rsa);
 
     if (size < RSA_PKCS1_PADDING_SIZE || size - RSA_PKCS1_PADDING_SIZE < flen)
-	return -1;
+	return -2;
 
     BN2mpz(&n, rsa->n);
     BN2mpz(&e, rsa->e);
@@ -88,7 +88,7 @@ imath_rsa_public_encrypt(int flen, const unsigned char* from,
     if (p0 == NULL) {
 	mp_int_clear(&e);
 	mp_int_clear(&n);
-	return -1;
+	return -3;
     }
 
     padlen = size - flen - 3;
@@ -99,7 +99,7 @@ imath_rsa_public_encrypt(int flen, const unsigned char* from,
 	mp_int_clear(&e);
 	mp_int_clear(&n);
 	free(p0);
-	return -1;
+	return -4;
     }
     while(padlen) {
 	if (*p == 0)
@@ -146,7 +146,7 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
 	return -1;
 
     if (flen > RSA_size(rsa))
-	return -1;
+	return -2;
 
     BN2mpz(&n, rsa->n);
     BN2mpz(&e, rsa->e);
@@ -156,7 +156,7 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
     if (mp_int_compare_value(&e, 3) <= 0) {
 	mp_int_clear(&n);
 	mp_int_clear(&e);
-	return -1;
+	return -3;
     }
 #endif
 
@@ -167,7 +167,7 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
     if (mp_int_compare(&s, &n) >= 0) {
 	mp_int_clear(&n);
 	mp_int_clear(&e);
-	return -1;
+	return -4;
     }
 
     res = rsa_rsavp(&s, &e, &n, &us);
@@ -176,7 +176,7 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
     mp_int_clear(&e);
 
     if (res != MP_OK)
-	return -1;
+	return -5;
     p = to;
 
 
@@ -188,13 +188,13 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
 
     /* head zero was skipped by mp_int_to_unsigned */
     if (*p != 1)
-	return -1;
+	return -6;
     size--; p++;
     while (size && *p == 0xff) {
 	size--; p++;
     }
     if (size == 0 || *p != 0)
-	return -1;
+	return -7;
     size--; p++;
 
     memmove(to, p, size);
@@ -217,7 +217,7 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
     size = RSA_size(rsa);
 
     if (size < RSA_PKCS1_PADDING_SIZE || size - RSA_PKCS1_PADDING_SIZE < flen)
-	return -1;
+	return -2;
 
     BN2mpz(&n, rsa->n);
     BN2mpz(&d, rsa->d);
@@ -271,7 +271,7 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
 
     size = RSA_size(rsa);
     if (flen > size)
-	return -1;
+	return -2;
 
     mp_int_init(&enc);
     mp_int_init(&dec);
@@ -303,13 +303,13 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
 
     /* head zero was skipped by mp_int_to_unsigned */
     if (*p != 2)
-	return -1;
+	return -3;
     size--; p++;
     while (size && *p != 0) {
 	size--; p++;
     }
     if (size == 0)
-	return -1;
+	return -4;
     size--; p++;
 
     memmove(to, p, size);
