@@ -1,5 +1,17 @@
-2006-11-27  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cms.c: sprinkle more error strings
+
+	* crypto.c: sprinkle more error strings
+
+	* hxtool.c: use unsigned int as counter to fit better with the
+	asn1 compiler
+
+	* crypto.c: use unsigned int as counter to fit better with the
+	asn1 compiler
+	
+2006-11-27  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* cms.c: Remove trailing white space.
 
 	* crypto.c: rewrite comment to make more sense
