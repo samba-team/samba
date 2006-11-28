@@ -83,7 +83,9 @@ hx509_certs_init(hx509_context context,
 
     residue = strchr(name, ':');
     if (residue) {
-	type = strndup(name, residue - name);
+	type = malloc(residue - name + 1);
+	if (type)
+	    strlcpy(type, name, residue - name + 1);
 	residue++;
 	if (residue[0] == '\0')
 	    residue = NULL;
