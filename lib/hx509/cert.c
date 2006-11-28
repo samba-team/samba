@@ -41,6 +41,7 @@ struct hx509_verify_ctx_data {
 #define HX509_VERIFY_CTX_F_TIME_SET			1
 #define HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE	2
 #define HX509_VERIFY_CTX_F_REQUIRE_RFC3280		4
+#define HX509_VERIFY_CTX_F_CHECK_TRUST_ANCHORS		8
     time_t time_now;
     unsigned int max_depth;
 #define HX509_VERIFY_MAX_DEPTH 30
@@ -48,6 +49,7 @@ struct hx509_verify_ctx_data {
 };
 
 #define REQUIRE_RFC3280(ctx) ((ctx)->flags & HX509_VERIFY_CTX_F_REQUIRE_RFC3280)
+#define CHECK_TA(ctx) ((ctx)->flags & HX509_VERIFY_CTX_F_CHECK_TRUST_ANCHORS)
 
 struct _hx509_cert_attrs {
     size_t len;
@@ -1542,18 +1544,25 @@ hx509_verify_path(hx509_context context,
 	ret = check_basic_constraints(context, c, type, i - proxy_cert_depth);
 	if (ret)
 	    goto out;
+	    
+	/*
+	 * Don't check the trust anchors expiration time since they
+	 * are transported out of band, from RFC3820.
+	 */
+	if (i + 1 != path.len || CHECK_TA(ctx)) {
 
-	t = _hx509_Time2time_t(&c->tbsCertificate.validity.notBefore);
-	if (t > ctx->time_now) {
-	    ret = HX509_CERT_USED_BEFORE_TIME;
-	    hx509_clear_error_string(context);
-	    goto out;
-	}
-	t = _hx509_Time2time_t(&c->tbsCertificate.validity.notAfter);
-	if (t < ctx->time_now) {
-	    ret = HX509_CERT_USED_AFTER_TIME;
-	    hx509_clear_error_string(context);
-	    goto out;
+	    t = _hx509_Time2time_t(&c->tbsCertificate.validity.notBefore);
+	    if (t > ctx->time_now) {
+		ret = HX509_CERT_USED_BEFORE_TIME;
+		hx509_clear_error_string(context);
+		goto out;
+	    }
+	    t = _hx509_Time2time_t(&c->tbsCertificate.validity.notAfter);
+	    if (t < ctx->time_now) {
+		ret = HX509_CERT_USED_AFTER_TIME;
+		hx509_clear_error_string(context);
+		goto out;
+	    }
 	}
 
 	if (type == EE_CERT)
