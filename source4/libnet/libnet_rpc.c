@@ -333,7 +333,7 @@ static void continue_rpc_connect(struct composite_context *ctx)
 	msg.type       = net_pipe_connected;
 	msg.data       = NULL;
 	msg.data_size  = 0;
-
+/* TODO: something is really wrong here!!! */
 	data.host      = s->r.out.dcerpc_pipe->binding->host;
 	data.endpoint  = s->r.out.dcerpc_pipe->binding->endpoint;
 	data.transport = s->r.out.dcerpc_pipe->binding->transport;
