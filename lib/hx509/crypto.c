@@ -184,9 +184,10 @@ rsa_verify_signature(hx509_context context,
 
     retsize = RSA_public_decrypt(sig->length, (unsigned char *)sig->data, 
 				 to, rsa, RSA_PKCS1_PADDING);
-    if (retsize == -1) {
+    if (retsize <= 0) {
 	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
-	hx509_set_error_string(context, 0, ret, "RSA public decrypt failed");
+	hx509_set_error_string(context, 0, ret, 
+			       "RSA public decrypt failed: %d", retsize);
 	free(to);
 	goto out;
     }
@@ -272,8 +273,10 @@ rsa_create_signature(hx509_context context,
     if (signatureAlgorithm) {
 	ret = _hx509_set_digest_alg(signatureAlgorithm,
 				    sig_oid, "\x05\x00", 2);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    return ret;
+	}
     }
 
     memset(&di, 0, sizeof(di));
@@ -284,6 +287,8 @@ rsa_create_signature(hx509_context context,
 				  data,
 				  &di.digestAlgorithm,
 				  &di.digest);
+    if (ret)
+	return ret;
     ASN1_MALLOC_ENCODE(DigestInfo,
 		       indata.data,
 		       indata.length,
@@ -291,23 +296,31 @@ rsa_create_signature(hx509_context context,
 		       &size,
 		       ret);
     free_DigestInfo(&di);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "out of memory");
 	return ret;
+    }
     if (indata.length != size)
 	_hx509_abort("internal ASN.1 encoder error");
 
     sig->length = RSA_size(signer->private_key.rsa);
     sig->data = malloc(sig->length);
-    if (sig->data == NULL)
+    if (sig->data == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
+    }
 
     ret = RSA_private_encrypt(indata.length, indata.data, 
 			      sig->data, 
 			      signer->private_key.rsa,
 			      RSA_PKCS1_PADDING);
     der_free_octet_string(&indata);
-    if (ret <= 0)
-	return HX509_CMS_FAILED_CREATE_SIGATURE;
+    if (ret <= 0) {
+	ret = HX509_CMS_FAILED_CREATE_SIGATURE;
+	hx509_set_error_string(context, 0, ret,
+			       "RSA private decrypt failed: %d", ret);
+	return ret;
+    }
     if (ret < sig->length)
 	_hx509_abort("RSA signature prelen shorter the output len");
 
@@ -315,58 +328,6 @@ rsa_create_signature(hx509_context context,
     
     return 0;
 }
-
-
-#if 0
-static int
-create_signature(const struct signature_alg *sig_alg,
-		 const hx509_private_key signer,
-		 const AlgorithmIdentifier *alg,
-		 const heim_octet_string *data,
-		 AlgorithmIdentifier *signatureAlgorithm,
-		 heim_octet_string *sig)
-{
-    const heim_oid *digest_oid, *sig_oid;
-    const EVP_MD *mdtype;
-    EVP_MD_CTX md;
-    unsigned len;
-    int ret;
-    
-    if (alg)
-	sig_oid = &alg->algorithm;
-    else
-	sig_oid = signer->signature_alg;
-
-    if (der_heim_oid_cmp(sig_oid, oid_id_dsa_with_sha1()) == 0) {
-	mdtype = EVP_sha1();
-	digest_oid = oid_id_secsig_sha_1();
-    } else
-	return HX509_ALG_NOT_SUPP;
-
-    if (signatureAlgorithm) {
-	ret = _hx509_set_digest_alg(signatureAlgorithm,
-				    sig_oid, "\x05\x00", 2);
-	if (ret)
-	    return ret;
-    }
-
-    sig->data = malloc(EVP_PKEY_size(signer->private_key));
-    if (sig->data == NULL)
-	return ENOMEM;
-	
-    EVP_SignInit(&md, mdtype);
-    EVP_SignUpdate(&md, data->data, data->length);
-    ret = EVP_SignFinal(&md, sig->data, &len, signer->private_key);
-    if (ret != 1) {
-	free(sig->data);
-	sig->data = NULL;
-	return HX509_CMS_FAILED_CREATE_SIGATURE;
-    }
-    sig->length = len;
-
-    return 0;
-}
-#endif
 
 static int
 rsa_parse_private_key(hx509_context context,
@@ -980,7 +941,8 @@ _hx509_create_signature(hx509_context context,
 }
 
 int
-_hx509_public_encrypt(const heim_octet_string *cleartext,
+_hx509_public_encrypt(hx509_context context,
+		      const heim_octet_string *cleartext,
 		      const Certificate *cert,
 		      heim_oid *encryption_oid,
 		      heim_octet_string *ciphertext)
@@ -999,15 +961,18 @@ _hx509_public_encrypt(const heim_octet_string *cleartext,
     spi = &cert->tbsCertificate.subjectPublicKeyInfo;
 
     rsa = RSA_new();
-    if (rsa == NULL)
+    if (rsa == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
+    }
 
     ret = decode_RSAPublicKey(spi->subjectPublicKey.data,
 			      spi->subjectPublicKey.length / 8,
 			      &pk, &size);
     if (ret) {
 	RSA_free(rsa);
-	return ENOMEM;
+	hx509_set_error_string(context, 0, ret, "RSAPublicKey decode failure");
+	return ret;
     }
     rsa->n = heim_int2BN(&pk.modulus);
     rsa->e = heim_int2BN(&pk.publicExponent);
@@ -1016,6 +981,7 @@ _hx509_public_encrypt(const heim_octet_string *cleartext,
 
     if (rsa->n == NULL || rsa->e == NULL) {
 	RSA_free(rsa);
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
     }
 
@@ -1023,6 +989,7 @@ _hx509_public_encrypt(const heim_octet_string *cleartext,
     to = malloc(tosize);
     if (to == NULL) {
 	RSA_free(rsa);
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
     }
 
@@ -1030,8 +997,10 @@ _hx509_public_encrypt(const heim_octet_string *cleartext,
 			     (unsigned char *)cleartext->data, 
 			     to, rsa, RSA_PKCS1_PADDING);
     RSA_free(rsa);
-    if (ret < 0) {
+    if (ret <= 0) {
 	free(to);
+	hx509_set_error_string(context, 0, HX509_CRYPTO_RSA_PUBLIC_ENCRYPT,
+			       "RSA public encrypt failed with %d", ret);
 	return HX509_CRYPTO_RSA_PUBLIC_ENCRYPT;
     }
     if (ret > tosize)
@@ -1043,6 +1012,7 @@ _hx509_public_encrypt(const heim_octet_string *cleartext,
     ret = der_copy_oid(oid_id_pkcs1_rsaEncryption(), encryption_oid);
     if (ret) {
 	der_free_octet_string(ciphertext);
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
     }
 

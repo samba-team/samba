@@ -517,11 +517,12 @@ hx509_cms_envelope_1(hx509_context context,
 	goto out;
     }
 
-    ret = _hx509_cert_public_encrypt(&key, cert,
+    ret = _hx509_cert_public_encrypt(context,
+				     &key, cert,
 				     &ri->keyEncryptionAlgorithm.algorithm,
 				     &ri->encryptedKey);
     if (ret) {
-	hx509_set_error_string(context, 0, ret,
+	hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 			       "Failed to encrypt transport key for "
 			       "EnvelopedData");
 	goto out;

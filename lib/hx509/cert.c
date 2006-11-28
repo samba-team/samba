@@ -1039,12 +1039,14 @@ _hx509_cert_private_decrypt(hx509_context context,
 }
 
 int
-_hx509_cert_public_encrypt(const heim_octet_string *cleartext,
+_hx509_cert_public_encrypt(hx509_context context,
+			   const heim_octet_string *cleartext,
 			   const hx509_cert p,
 			   heim_oid *encryption_oid,
 			   heim_octet_string *ciphertext)
 {
-    return _hx509_public_encrypt(cleartext, p->data,
+    return _hx509_public_encrypt(context,
+				 cleartext, p->data,
 				 encryption_oid, ciphertext);
 }
 
