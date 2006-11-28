@@ -26,8 +26,6 @@ struct libnet_context {
 	 */
 	struct cli_credentials *cred;
 
-	struct dcerpc_pipe *pipe;
-
 	/* samr connection parameters - opened handles and related properties */
 	struct {
 		struct dcerpc_pipe *pipe;
@@ -35,8 +33,6 @@ struct libnet_context {
 		uint32_t access_mask;
 		struct policy_handle handle;
 	} samr;
-
-	struct policy_handle user_handle;
 
 	/* lsa connection parameters - opened handles and related properties */
 	struct {
