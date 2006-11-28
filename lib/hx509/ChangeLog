@@ -1,5 +1,8 @@
 2006-11-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cert.c: Don't check the trust anchors expiration time since they
+	are transported out of band, from RFC3820.
+
 	* cms.c: sprinkle more error strings
 
 	* crypto.c: sprinkle more error strings
