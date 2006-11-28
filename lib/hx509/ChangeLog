@@ -1,5 +1,8 @@
 2006-11-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cms.c (hx509_cms_verify_signed): specify what signature we
+	failed to verify
+	
 	* Makefile.am: Depend on LIB_com_err for AIX.
 
 	* keyset.c: Remove anther strndup that causes AIX to fall over.
