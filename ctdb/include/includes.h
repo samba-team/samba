@@ -3,6 +3,7 @@
 #include "replace.h"
 #include "talloc.h"
 #include "tdb.h"
+#include "idtree.h"
 #include "ctdb.h"
 #include "lib/util/dlinklist.h"
 

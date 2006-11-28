@@ -187,6 +187,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb = talloc_zero(ev, struct ctdb_context);
 	ctdb->ev = ev;
 	ctdb->upcalls = &ctdb_upcalls;
+	ctdb->idr = idr_init(ctdb);
 
 	return ctdb;
 }

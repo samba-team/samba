@@ -190,6 +190,7 @@ int main(int argc, const char *argv[])
 	for (i=0;i<data.dsize/sizeof(int);i++) {
 		printf("%3d\n", ((int *)data.dptr)[i]);
 	}
+	talloc_free(data.dptr);
 	
 	/* shut it down */
 	talloc_free(ctdb);
