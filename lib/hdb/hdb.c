@@ -114,7 +114,7 @@ hdb_lock(int fd, int operation)
 
     for(i = 0; i < 3; i++){
 	code = flock(fd, (operation == HDB_RLOCK ? LOCK_SH : LOCK_EX) | LOCK_NB);
-	if(code == 0 || errno != EWOULDBLOCK)
+	if(code == 0 || errno != EWOULDBLOCK || errno != EAGAIN)
 	    break;
 	sleep(1);
     }
