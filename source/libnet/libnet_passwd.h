@@ -104,6 +104,10 @@ union libnet_SetPassword {
 			struct policy_handle *user_handle;
 			struct dcerpc_pipe   *dcerpc_pipe;
 			const char           *newpassword;
+			struct samr_UserInfo21 *info21; /* can be NULL,
+			                                 * for level 26,24 it must be NULL
+			                                 * for level 25,23 it must be non-NULL
+							 */
 		} in;
 		struct _libnet_SetPassword_out out;
 	} samr_handle;
