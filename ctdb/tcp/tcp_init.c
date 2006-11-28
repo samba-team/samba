@@ -30,14 +30,15 @@
 */
 int ctdb_tcp_start(struct ctdb_context *ctdb)
 {
-	struct ctdb_node *node;
+	int i;
 
 	/* listen on our own address */
 	if (ctdb_tcp_listen(ctdb) != 0) return -1;
 
 	/* startup connections to the other servers - will happen on
 	   next event loop */
-	for (node=ctdb->nodes;node;node=node->next) {
+	for (i=0;i<ctdb->num_nodes;i++) {
+		struct ctdb_node *node = *(ctdb->nodes + i);
 		if (ctdb_same_address(&ctdb->address, &node->address)) continue;
 		event_add_timed(ctdb->ev, node, timeval_zero(), 
 				ctdb_tcp_node_connect, node);

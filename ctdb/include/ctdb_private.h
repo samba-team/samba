@@ -42,10 +42,10 @@ struct ctdb_address {
 */
 struct ctdb_node {
 	struct ctdb_context *ctdb;
-	struct ctdb_node *next, *prev;
 	struct ctdb_address address;
 	const char *name; /* for debug messages */
 	void *private; /* private to transport */
+	uint32_t vnn;
 };
 
 /*
@@ -61,15 +61,24 @@ struct ctdb_methods {
   transport calls up to the ctdb layer
 */
 struct ctdb_upcalls {
+	/* recv_pkt is called when a packet comes in */
 	void (*recv_pkt)(struct ctdb_context *, uint8_t *data, uint32_t length);
+
+	/* node_dead is called when an attempt to send to a node fails */
 	void (*node_dead)(struct ctdb_node *);
+
+	/* node_connected is called when a connection to a node is established */
+	void (*node_connected)(struct ctdb_node *);
 };
 
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
 	struct ctdb_address address;
-	struct ctdb_node *nodes; /* list of nodes in the cluster */
+	const char *name;
+	uint32_t vnn; /* our own vnn */
+	uint32_t num_nodes;
+	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	char *err_msg;
 	struct tdb_context *ltdb;
@@ -82,9 +91,52 @@ struct ctdb_context {
           ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
 	  return -1; }} while (0)
 
+/*
+  operation IDs
+*/
+enum ctdb_operation {
+	CTDB_OP_CALL = 0
+};
+
+/*
+  packet structures
+*/
+struct ctdb_req_header {
+	uint32_t _length; /* ignored by datagram transports */
+	uint32_t operation;
+	uint32_t destnode;
+	uint32_t srcnode;
+	uint32_t reqid;
+	uint32_t reqtimeout;
+};
+
+struct ctdb_reply_header {
+	uint32_t _length; /* ignored by datagram transports */
+	uint32_t operation;
+	uint32_t destnode;
+	uint32_t srcnode;
+	uint32_t reqid;
+};
+
+struct ctdb_req_call {
+	struct ctdb_req_header hdr;
+	uint32_t callid;
+	uint32_t keylen;
+	uint32_t calldatalen;
+	uint8_t data[0]; /* key[] followed by calldata[] */
+};
+
+struct ctdb_reply_call {
+	struct ctdb_reply_header hdr;
+	uint32_t datalen;
+	uint8_t  data[0];
+};
 
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...);
 bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2);
-
+int ctdb_parse_address(struct ctdb_context *ctdb,
+		       TALLOC_CTX *mem_ctx, const char *str,
+		       struct ctdb_address *address);
+uint32_t ctdb_hash(TDB_DATA *key);
 

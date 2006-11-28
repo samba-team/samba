@@ -43,16 +43,12 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
 						      struct ctdb_tcp_node);
 	struct ctdb_context *ctdb = node->ctdb;
-	int error;
+	int error = 0;
 	socklen_t len;
 
 	if (getsockopt(tnode->fd, SOL_SOCKET, SO_ERROR, &error, &len) != 0 ||
 	    error != 0) {
-		if (error == EINPROGRESS) {
-			printf("connect in progress\n");
-			return;
-		}
-		printf("getsockopt errno=%s\n", strerror(errno));
+		printf("getsockopt error=%s\n", strerror(error));
 		talloc_free(fde);
 		close(tnode->fd);
 		tnode->fd = -1;
@@ -61,10 +57,12 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 		return;
 	}
 
-	printf("Established connection to %s\n", node->name);
 	talloc_free(fde);
 	tnode->fde = event_add_fd(node->ctdb->ev, node, tnode->fd, EVENT_FD_READ, 
 				  ctdb_tcp_node_write, node);
+
+	/* tell the ctdb layer we are connected */
+	node->ctdb->upcalls->node_connected(node);
 }
 
 /*
@@ -97,7 +95,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	}
 
 	/* non-blocking connect - wait for write event */
-	event_add_fd(node->ctdb->ev, node, tnode->fd, EVENT_FD_WRITE, 
+	event_add_fd(node->ctdb->ev, node, tnode->fd, EVENT_FD_WRITE|EVENT_FD_READ, 
 		     ctdb_node_connect_write, node);
 }
 
@@ -143,8 +141,6 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 		     ctdb_tcp_incoming_read, in);	
 
 	talloc_set_destructor(in, ctdb_incoming_destructor);
-
-	printf("New incoming socket %d\n", in->fd);
 }
 
 

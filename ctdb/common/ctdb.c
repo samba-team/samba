@@ -1,5 +1,5 @@
 /* 
-   ctdb over TCP
+   ctdb main protocol code
 
    Copyright (C) Andrew Tridgell  2006
 
@@ -24,24 +24,6 @@
 #include "system/filesys.h"
 #include "ctdb_private.h"
 
-const char *ctdb_errstr(struct ctdb_context *ctdb)
-{
-	return ctdb->err_msg;
-}
-
-
-/*
-  remember an error message
-*/
-void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
-{
-	va_list ap;
-	talloc_free(ctdb->err_msg);
-	va_start(ap, fmt);
-	ctdb->err_msg = talloc_vasprintf(ctdb, fmt, ap);
-	va_end(ap);
-}
-
 /*
   choose the transport we will use
 */
@@ -58,33 +40,21 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 
 
 /*
-  parse a IP:port pair
-*/
-static int ctdb_parse_address(struct ctdb_context *ctdb,
-                             TALLOC_CTX *mem_ctx, const char *str,
-                             struct ctdb_address *address)
-{
-	char *p;
-	p = strchr(str, ':');
-	if (p == NULL) {
-		ctdb_set_error(ctdb, "Badly formed node '%s'\n", str);
-		return -1;
-	}
-	
-	address->address = talloc_strndup(mem_ctx, str, p-str);
-	address->port = strtoul(p+1, NULL, 0);
-	return 0;
-}
-
-
-/*
   add a node to the list of active nodes
 */
 static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 {
-	struct ctdb_node *node;
+	struct ctdb_node *node, **nodep;
 
-	node = talloc(ctdb, struct ctdb_node);
+	nodep = talloc_realloc(ctdb, ctdb->nodes, struct ctdb_node *, ctdb->num_nodes+1);
+	CTDB_NO_MEMORY(ctdb, nodep);
+
+	ctdb->nodes = nodep;
+	nodep = &ctdb->nodes[ctdb->num_nodes];
+	(*nodep) = talloc_zero(ctdb->nodes, struct ctdb_node);
+	CTDB_NO_MEMORY(ctdb, *nodep);
+	node = *nodep;
+
 	if (ctdb_parse_address(ctdb, node, nstr, &node->address) != 0) {
 		return -1;
 	}
@@ -92,13 +62,21 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	node->name = talloc_asprintf(node, "%s:%u", 
 				     node->address.address, 
 				     node->address.port);
+	/* for now we just set the vnn to the line in the file - this
+	   will change! */
+	node->vnn = ctdb->num_nodes;
 
 	if (ctdb->methods->add_node(node) != 0) {
 		talloc_free(node);
 		return -1;
 	}
 
-	DLIST_ADD(ctdb->nodes, node);	
+	if (ctdb_same_address(&ctdb->address, &node->address)) {
+		ctdb->vnn = node->vnn;
+	}
+
+	ctdb->num_nodes++;
+
 	return 0;
 }
 
@@ -133,7 +111,14 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 */
 int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 {
-	return ctdb_parse_address(ctdb, ctdb, address, &ctdb->address);
+	if (ctdb_parse_address(ctdb, ctdb, address, &ctdb->address) != 0) {
+		return -1;
+	}
+	
+	ctdb->name = talloc_asprintf(ctdb, "%s:%u", 
+				     ctdb->address.address, 
+				     ctdb->address.port);
+	return 0;
 }
 
 /*
@@ -152,46 +137,11 @@ int ctdb_set_call(struct ctdb_context *ctdb, ctdb_fn_t fn, int id)
 }
 
 /*
-  attach to a specific database
-*/
-int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags, 
-		int open_flags, mode_t mode)
-{
-	/* when we have a separate daemon this will need to be a real
-	   file, not a TDB_INTERNAL, so the parent can access it to
-	   for ltdb bypass */
-	ctdb->ltdb = tdb_open(name, 0, TDB_INTERNAL, 0, 0);
-	if (ctdb->ltdb == NULL) {
-		ctdb_set_error(ctdb, "Failed to open tdb %s\n", name);
-		return -1;
-	}
-	return 0;
-}
-
-/*
   start the protocol going
 */
 int ctdb_start(struct ctdb_context *ctdb)
 {
 	return ctdb->methods->start(ctdb);
-}
-
-/*
-  make a remote ctdb call
-*/
-int ctdb_call(struct ctdb_context *ctdb, TDB_DATA key, int call_id, 
-	      TDB_DATA *call_data, TDB_DATA *reply_data)
-{
-	printf("ctdb_call not implemented\n");
-	return -1;
-}
-
-/*
-  check if two addresses are the same
-*/
-bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2)
-{
-	return strcmp(a1->address, a2->address) == 0 && a1->port == a2->port;
 }
 
 /*
@@ -207,12 +157,21 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 */
 static void ctdb_node_dead(struct ctdb_node *node)
 {
-	printf("node %s is dead\n", node->name);
+	printf("%s: node %s is dead\n", node->ctdb->name, node->name);
+}
+
+/*
+  called by the transport layer when a node is dead
+*/
+static void ctdb_node_connected(struct ctdb_node *node)
+{
+	printf("%s: connected to %s\n", node->ctdb->name, node->name);
 }
 
 static const struct ctdb_upcalls ctdb_upcalls = {
-	.recv_pkt  = ctdb_recv_pkt,
-	.node_dead = ctdb_node_dead
+	.recv_pkt       = ctdb_recv_pkt,
+	.node_dead      = ctdb_node_dead,
+	.node_connected = ctdb_node_connected
 };
 
 /*
