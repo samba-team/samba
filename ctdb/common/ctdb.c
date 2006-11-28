@@ -89,6 +89,9 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 		return -1;
 	}
 	node->ctdb = ctdb;
+	node->name = talloc_asprintf(node, "%s:%u", 
+				     node->address.address, 
+				     node->address.port);
 
 	if (ctdb->methods->add_node(node) != 0) {
 		talloc_free(node);
@@ -194,13 +197,22 @@ bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2)
 /*
   called by the transport layer when a packet comes in
 */
-static void ctdb_recv_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
+static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 {
 	printf("received pkt of length %d\n", length);
 }
 
+/*
+  called by the transport layer when a node is dead
+*/
+static void ctdb_node_dead(struct ctdb_node *node)
+{
+	printf("node %s is dead\n", node->name);
+}
+
 static const struct ctdb_upcalls ctdb_upcalls = {
-	.recv_pkt = ctdb_recv_pkt
+	.recv_pkt  = ctdb_recv_pkt,
+	.node_dead = ctdb_node_dead
 };
 
 /*

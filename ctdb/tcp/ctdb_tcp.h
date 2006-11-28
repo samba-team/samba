@@ -32,21 +32,28 @@ struct ctdb_incoming {
 	int fd;
 };
 
+struct ctdb_tcp_packet {
+	struct ctdb_tcp_packet *next, *prev;
+	uint8_t *data;
+	uint32_t length;
+};
+
 /*
   state associated with one tcp node
 */
 struct ctdb_tcp_node {
 	int fd;
+	struct fd_event *fde;
+	struct ctdb_tcp_packet *queue;
 };
 
 
 /* prototypes internal to tcp transport */
-void ctdb_tcp_node_read(struct event_context *ev, struct fd_event *fde, 
-			uint16_t flags, void *private);
+void ctdb_tcp_node_write(struct event_context *ev, struct fd_event *fde, 
+			 uint16_t flags, void *private);
 void ctdb_tcp_incoming_read(struct event_context *ev, struct fd_event *fde, 
 			    uint16_t flags, void *private);
+int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length);
 int ctdb_tcp_listen(struct ctdb_context *ctdb);
 void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te, 
 			   struct timeval t, void *private);
-
-

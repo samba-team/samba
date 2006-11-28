@@ -44,6 +44,7 @@ struct ctdb_node {
 	struct ctdb_context *ctdb;
 	struct ctdb_node *next, *prev;
 	struct ctdb_address address;
+	const char *name; /* for debug messages */
 	void *private; /* private to transport */
 };
 
@@ -60,7 +61,8 @@ struct ctdb_methods {
   transport calls up to the ctdb layer
 */
 struct ctdb_upcalls {
-	void (*recv_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
+	void (*recv_pkt)(struct ctdb_context *, uint8_t *data, uint32_t length);
+	void (*node_dead)(struct ctdb_node *);
 };
 
 /* main state of the ctdb daemon */

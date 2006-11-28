@@ -25,6 +25,14 @@
 #include "ctdb_private.h"
 #include "ctdb_tcp.h"
 
+static void set_nonblocking(int fd)
+{
+	unsigned v;
+	v = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, v | O_NONBLOCK);
+}
+
+
 /*
   called when socket becomes writeable on connect
 */
@@ -53,11 +61,10 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 		return;
 	}
 
-	printf("Established connection to %s:%u\n", 
-	       node->address.address, node->address.port);
+	printf("Established connection to %s\n", node->name);
 	talloc_free(fde);
-	event_add_fd(node->ctdb->ev, node, tnode->fd, EVENT_FD_READ, 
-		     ctdb_tcp_node_read, node);
+	tnode->fde = event_add_fd(node->ctdb->ev, node, tnode->fd, EVENT_FD_READ, 
+				  ctdb_tcp_node_write, node);
 }
 
 /*
@@ -70,13 +77,11 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
 						      struct ctdb_tcp_node);
 	struct ctdb_context *ctdb = node->ctdb;
-        unsigned v;
         struct sockaddr_in sock_out;
 
 	tnode->fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-	v = fcntl(tnode->fd, F_GETFL, 0);
-        fcntl(tnode->fd, F_SETFL, v | O_NONBLOCK);
+	set_nonblocking(tnode->fd);
 
 	inet_pton(AF_INET, node->address.address, &sock_out.sin_addr);
 	sock_out.sin_port = htons(node->address.port);
@@ -94,6 +99,16 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	/* non-blocking connect - wait for write event */
 	event_add_fd(node->ctdb->ev, node, tnode->fd, EVENT_FD_WRITE, 
 		     ctdb_node_connect_write, node);
+}
+
+/*
+  destroy a ctdb_incoming structure 
+*/
+static int ctdb_incoming_destructor(struct ctdb_incoming *in)
+{
+	close(in->fd);
+	in->fd = -1;
+	return 0;
 }
 
 /*
@@ -122,8 +137,12 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	in->fd = fd;
 	in->ctdb = ctdb;
 
+	set_nonblocking(in->fd);
+
 	event_add_fd(ctdb->ev, in, in->fd, EVENT_FD_READ, 
 		     ctdb_tcp_incoming_read, in);	
+
+	talloc_set_destructor(in, ctdb_incoming_destructor);
 
 	printf("New incoming socket %d\n", in->fd);
 }

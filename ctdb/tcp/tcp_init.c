@@ -63,8 +63,9 @@ int ctdb_tcp_add_node(struct ctdb_node *node)
 
 
 static const struct ctdb_methods ctdb_tcp_methods = {
-	.start    = ctdb_tcp_start,
-	.add_node = ctdb_tcp_add_node
+	.start     = ctdb_tcp_start,
+	.add_node  = ctdb_tcp_add_node,
+	.queue_pkt = ctdb_tcp_queue_pkt
 };
 
 /*
