@@ -980,8 +980,8 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	ldap_value_free(values);
     }
 
-    for (i = 0; i < ent->etypes->len; i++) {
-	if (ent->etypes->val[i] == ETYPE_ARCFOUR_HMAC_MD5) {
+   for (i = 0; i < ent->entry.etypes->len; i++) {
+       if (ent->entry.etypes->val[i] == ETYPE_ARCFOUR_HMAC_MD5) {
 	    have_arcfour = 1;
 	    break;
 	}
@@ -1750,7 +1750,7 @@ hdb_ldap_common(krb5_context context,
     (*db)->hdb_nextkey = LDAP_nextkey;
     (*db)->hdb_lock = LDAP_lock;
     (*db)->hdb_unlock = LDAP_unlock;
-    (*db)->hdb_rename = LDAP_rename;
+    (*db)->hdb_rename = NULL;
     (*db)->hdb__get = NULL;
     (*db)->hdb__put = NULL;
     (*db)->hdb__del = NULL;
