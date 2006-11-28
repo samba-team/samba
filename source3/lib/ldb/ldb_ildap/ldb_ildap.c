@@ -470,11 +470,12 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 	msg->r.SearchRequest.timelimit = 0;
 	msg->r.SearchRequest.sizelimit = 0;
 	msg->r.SearchRequest.attributesonly = 0;
-	msg->r.SearchRequest.tree = discard_const(req->op.search.tree);
+	msg->r.SearchRequest.tree = discard_const_p(struct ldb_parse_tree, req->op.search.tree);
 	
 	for (n = 0; req->op.search.attrs && req->op.search.attrs[n]; n++) /* noop */ ;
 	msg->r.SearchRequest.num_attributes = n;
-	msg->r.SearchRequest.attributes = discard_const(req->op.search.attrs);
+	msg->r.SearchRequest.attributes = discard_const_p(char *, req->op.search.attrs), 
+
 	msg->controls = req->controls;
 
 	return ildb_request_send(module, msg, req->context, req->callback, req->timeout, &(req->handle));

@@ -18,8 +18,7 @@
 
 
 
-#define discard_const(ptr) ((void *)((intptr_t)(ptr)))
-#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
+#define discard_const_p(type, ptr) ((type *)((intptr_t)(ptr)))
 
 #include "replace.h"
 #include "system/filesys.h"
