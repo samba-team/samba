@@ -259,7 +259,9 @@ char * iniparser_getstring(dictionary * d, const char * key, char * def)
     if (d==NULL || key==NULL)
         return def ;
 
-    lc_key = strdup(strlwc(key));
+    if (!(lc_key = strdup(strlwc(key)))) {
+	    return NULL;
+    }
     sval = dictionary_get(d, lc_key, def);
     free(lc_key);
     return sval ;
@@ -462,7 +464,10 @@ dictionary * iniparser_load(const char * ininame)
     /*
      * Initialize a new dictionary entry
      */
-    d = dictionary_new(0);
+    if (!(d = dictionary_new(0))) {
+	    fclose(ini);
+	    return NULL;
+    }
     lineno = 0 ;
     while (fgets(lin, ASCIILINESZ, ini)!=NULL) {
         lineno++ ;

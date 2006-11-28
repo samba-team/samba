@@ -114,7 +114,9 @@ dictionary * dictionary_new(int size)
 	/* If no size was specified, allocate space for DICTMINSZ */
 	if (size<DICTMINSZ) size=DICTMINSZ ;
 
-	d = (dictionary *)calloc(1, sizeof(dictionary));
+	if (!(d = (dictionary *)calloc(1, sizeof(dictionary)))) {
+		return NULL;
+	}
 	d->size = size ;
 	d->val  = (char **)calloc(size, sizeof(char*));
 	d->key  = (char **)calloc(size, sizeof(char*));
@@ -354,6 +356,10 @@ void dictionary_unset(dictionary * d, char * key)
 {
 	unsigned	hash ;
 	int			i ;
+
+	if (key == NULL) {
+		return;
+	}
 
 	hash = dictionary_hash(key);
 	for (i=0 ; i<d->size ; i++) {
