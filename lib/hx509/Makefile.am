@@ -81,6 +81,7 @@ dist_libhx509_la_SOURCES = \
 	revoke.c
 
 libhx509_la_LIBADD = \
+	$(LIB_com_err) \
 	$(LIB_des) \
 	../asn1/libasn1.la \
 	$(LIB_roken) $(LIB_dlopen)
