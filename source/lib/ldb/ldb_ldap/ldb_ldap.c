@@ -274,7 +274,7 @@ static int lldb_search(struct ldb_module *module, struct ldb_request *req)
 
 	expression = ldb_filter_from_tree(
 		lldb_ac,
-		CONST_DISCARD(struct ldb_parse_tree *, req->op.search.tree));
+		discard_const_p(struct ldb_parse_tree, req->op.search.tree));
 	if (expression == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
