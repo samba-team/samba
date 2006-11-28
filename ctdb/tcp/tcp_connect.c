@@ -26,21 +26,6 @@
 #include "ctdb_tcp.h"
 
 /*
-  called when socket becomes readable
-*/
-static void ctdb_node_read(struct event_context *ev, struct fd_event *fde, 
-			   uint16_t flags, void *private)
-{
-	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
-	printf("connection to node %s:%u is readable\n", 
-	       node->address.address, node->address.port);
-	event_set_fd_flags(fde, 0);
-}
-
-static void ctdb_node_connect(struct event_context *ev, struct timed_event *te, 
-			      struct timeval t, void *private);
-
-/*
   called when socket becomes writeable on connect
 */
 static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *fde, 
@@ -64,7 +49,7 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 		close(tnode->fd);
 		tnode->fd = -1;
 		event_add_timed(ctdb->ev, node, timeval_current_ofs(1, 0), 
-				ctdb_node_connect, node);
+				ctdb_tcp_node_connect, node);
 		return;
 	}
 
@@ -72,14 +57,14 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	       node->address.address, node->address.port);
 	talloc_free(fde);
 	event_add_fd(node->ctdb->ev, node, tnode->fd, EVENT_FD_READ, 
-		     ctdb_node_read, node);
+		     ctdb_tcp_node_read, node);
 }
 
 /*
   called when we should try and establish a tcp connection to a node
 */
-static void ctdb_node_connect(struct event_context *ev, struct timed_event *te, 
-			      struct timeval t, void *private)
+void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te, 
+			   struct timeval t, void *private)
 {
 	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
@@ -102,7 +87,7 @@ static void ctdb_node_connect(struct event_context *ev, struct timed_event *te,
 		/* try again once a second */
 		close(tnode->fd);
 		event_add_timed(ctdb->ev, node, timeval_current_ofs(1, 0), 
-				ctdb_node_connect, node);
+				ctdb_tcp_node_connect, node);
 		return;
 	}
 
@@ -110,23 +95,6 @@ static void ctdb_node_connect(struct event_context *ev, struct timed_event *te,
 	event_add_fd(node->ctdb->ev, node, tnode->fd, EVENT_FD_WRITE, 
 		     ctdb_node_connect_write, node);
 }
-
-/*
-  called when an incoming connection is readable
-*/
-static void ctdb_incoming_read(struct event_context *ev, struct fd_event *fde, 
-			       uint16_t flags, void *private)
-{
-	struct ctdb_incoming *in = talloc_get_type(private, struct ctdb_incoming);
-	char c;
-	printf("Incoming data\n");
-	if (read(in->fd, &c, 1) <= 0) {
-		/* socket is dead */
-		close(in->fd);
-		talloc_free(in);
-	}
-}
-
 
 /*
   called when we get contacted by another node
@@ -155,7 +123,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	in->ctdb = ctdb;
 
 	event_add_fd(ctdb->ev, in, in->fd, EVENT_FD_READ, 
-		     ctdb_incoming_read, in);	
+		     ctdb_tcp_incoming_read, in);	
 
 	printf("New incoming socket %d\n", in->fd);
 }
@@ -164,7 +132,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 /*
   listen on our own address
 */
-static int ctdb_listen(struct ctdb_context *ctdb)
+int ctdb_tcp_listen(struct ctdb_context *ctdb)
 {
 	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private, struct ctdb_tcp);
         struct sockaddr_in sock;
@@ -199,63 +167,6 @@ static int ctdb_listen(struct ctdb_context *ctdb)
 	event_add_fd(ctdb->ev, ctdb, ctcp->listen_fd, EVENT_FD_READ, 
 		     ctdb_listen_event, ctdb);	
 
-	return 0;
-}
-
-/*
-  start the protocol going
-*/
-int ctdb_tcp_start(struct ctdb_context *ctdb)
-{
-	struct ctdb_node *node;
-
-	/* listen on our own address */
-	if (ctdb_listen(ctdb) != 0) return -1;
-
-	/* startup connections to the other servers - will happen on
-	   next event loop */
-	for (node=ctdb->nodes;node;node=node->next) {
-		if (ctdb_same_address(&ctdb->address, &node->address)) continue;
-		event_add_timed(ctdb->ev, node, timeval_zero(), 
-				ctdb_node_connect, node);
-	}
-
-	return 0;
-}
-
-
-/*
-  initialise tcp portion of a ctdb node 
-*/
-int ctdb_tcp_add_node(struct ctdb_node *node)
-{
-	struct ctdb_tcp_node *tnode;
-	tnode = talloc_zero(node, struct ctdb_tcp_node);
-	CTDB_NO_MEMORY(node->ctdb, tnode);
-
-	tnode->fd = -1;
-	node->private = tnode;
-	return 0;
-}
-
-
-static const struct ctdb_methods ctdb_tcp_methods = {
-	.start    = ctdb_tcp_start,
-	.add_node = ctdb_tcp_add_node
-};
-
-/*
-  initialise tcp portion of ctdb 
-*/
-int ctdb_tcp_init(struct ctdb_context *ctdb)
-{
-	struct ctdb_tcp *ctcp;
-	ctcp = talloc_zero(ctdb, struct ctdb_tcp);
-	CTDB_NO_MEMORY(ctdb, ctcp);
-
-	ctcp->listen_fd = -1;
-	ctdb->private = ctcp;
-	ctdb->methods = &ctdb_tcp_methods;
 	return 0;
 }
 

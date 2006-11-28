@@ -22,7 +22,7 @@ EVENTS_OBJ = lib/events/events.o lib/events/events_standard.o
 
 CTDB_COMMON_OBJ = common/ctdb.o common/util.o
 
-CTDB_TCP_OBJ = tcp/ctdb_tcp.o
+CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
 CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TCP_OBJ)
 

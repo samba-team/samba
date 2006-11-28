@@ -24,27 +24,6 @@
 #include "system/filesys.h"
 #include "ctdb_private.h"
 
-/*
-  initialise the ctdb daemon. 
-
-  if the ctdb dispatcher daemon has already been started then this
-  does nothing. Otherwise it forks the ctdb dispatcher daemon and
-  starts the daemons connecting to each other
-  
-  NOTE: In current code the daemon does not fork. This is for testing purposes only
-  and to simplify the code.
-*/
-
-struct ctdb_context *ctdb_init(struct event_context *ev)
-{
-	struct ctdb_context *ctdb;
-
-	ctdb = talloc_zero(ev, struct ctdb_context);
-	ctdb->ev = ev;
-
-	return ctdb;
-}
-
 const char *ctdb_errstr(struct ctdb_context *ctdb)
 {
 	return ctdb->err_msg;
@@ -210,5 +189,34 @@ int ctdb_call(struct ctdb_context *ctdb, TDB_DATA key, int call_id,
 bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2)
 {
 	return strcmp(a1->address, a2->address) == 0 && a1->port == a2->port;
+}
+
+/*
+  called by the transport layer when a packet comes in
+*/
+static void ctdb_recv_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
+{
+	printf("received pkt of length %d\n", length);
+}
+
+static const struct ctdb_upcalls ctdb_upcalls = {
+	.recv_pkt = ctdb_recv_pkt
+};
+
+/*
+  initialise the ctdb daemon. 
+
+  NOTE: In current code the daemon does not fork. This is for testing purposes only
+  and to simplify the code.
+*/
+struct ctdb_context *ctdb_init(struct event_context *ev)
+{
+	struct ctdb_context *ctdb;
+
+	ctdb = talloc_zero(ev, struct ctdb_context);
+	ctdb->ev = ev;
+	ctdb->upcalls = &ctdb_upcalls;
+
+	return ctdb;
 }
 

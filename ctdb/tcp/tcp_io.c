@@ -1,5 +1,5 @@
 /* 
-   ctdb database library
+   ctdb over TCP
 
    Copyright (C) Andrew Tridgell  2006
 
@@ -18,35 +18,39 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-
-/* ctdb_tcp main state */
-struct ctdb_tcp {
-	int listen_fd;
-};
-
-/*
-  state associated with an incoming connection
-*/
-struct ctdb_incoming {
-	struct ctdb_context *ctdb;
-	int fd;
-};
+#include "includes.h"
+#include "lib/events/events.h"
+#include "system/network.h"
+#include "system/filesys.h"
+#include "ctdb_private.h"
+#include "ctdb_tcp.h"
 
 /*
-  state associated with one tcp node
+  called when socket becomes readable
 */
-struct ctdb_tcp_node {
-	int fd;
-};
-
-
-/* prototypes internal to tcp transport */
 void ctdb_tcp_node_read(struct event_context *ev, struct fd_event *fde, 
-			uint16_t flags, void *private);
-void ctdb_tcp_incoming_read(struct event_context *ev, struct fd_event *fde, 
-			    uint16_t flags, void *private);
-int ctdb_tcp_listen(struct ctdb_context *ctdb);
-void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te, 
-			   struct timeval t, void *private);
+			uint16_t flags, void *private)
+{
+	struct ctdb_node *node = talloc_get_type(private, struct ctdb_node);
+	printf("connection to node %s:%u is readable\n", 
+	       node->address.address, node->address.port);
+	event_set_fd_flags(fde, 0);
+}
 
+
+/*
+  called when an incoming connection is readable
+*/
+void ctdb_tcp_incoming_read(struct event_context *ev, struct fd_event *fde, 
+			    uint16_t flags, void *private)
+{
+	struct ctdb_incoming *in = talloc_get_type(private, struct ctdb_incoming);
+	char c;
+	printf("Incoming data\n");
+	if (read(in->fd, &c, 1) <= 0) {
+		/* socket is dead */
+		close(in->fd);
+		talloc_free(in);
+	}
+}
 

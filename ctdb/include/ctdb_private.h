@@ -53,6 +53,14 @@ struct ctdb_node {
 struct ctdb_methods {
 	int (*start)(struct ctdb_context *); /* start protocol processing */	
 	int (*add_node)(struct ctdb_node *); /* setup a new node */	
+	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
+};
+
+/*
+  transport calls up to the ctdb layer
+*/
+struct ctdb_upcalls {
+	void (*recv_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
 };
 
 /* main state of the ctdb daemon */
@@ -64,6 +72,7 @@ struct ctdb_context {
 	char *err_msg;
 	struct tdb_context *ltdb;
 	const struct ctdb_methods *methods; /* transport methods */
+	const struct ctdb_upcalls *upcalls; /* transport upcalls */
 	void *private; /* private to transport */
 };
 
