@@ -667,7 +667,10 @@ static BOOL mapping_upgrade(const char *tdb_path)
 	ret = tdb_traverse(tdb, upgrade_alias_record, &status);
 	if (ret == -1 || status == -1) goto failed;
 
-	if (tdb) tdb_close(tdb);
+	if (tdb) {
+		tdb_close(tdb);
+		tdb = NULL;
+	}
 
 	pstrcpy(old_path, tdb_path);
 	pstrcpy(new_path, lock_path("group_mapping.tdb.upgraded"));
