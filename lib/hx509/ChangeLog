@@ -1,5 +1,9 @@
 2006-11-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Depend on LIB_com_err for AIX.
+
+	* keyset.c: Remove anther strndup that causes AIX to fall over.
+
 	* cert.c: Don't check the trust anchors expiration time since they
 	are transported out of band, from RFC3820.
 
