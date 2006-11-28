@@ -330,14 +330,14 @@ static void continue_rpc_connect(struct composite_context *ctx)
 	s->r.out.dcerpc_pipe = s->r2.out.dcerpc_pipe;
 
 	/* prepare a monitor message and post it */
-	msg.type       = net_pipe_connected;
-	msg.data       = NULL;
-	msg.data_size  = 0;
-/* TODO: something is really wrong here!!! */
 	data.host      = s->r.out.dcerpc_pipe->binding->host;
 	data.endpoint  = s->r.out.dcerpc_pipe->binding->endpoint;
 	data.transport = s->r.out.dcerpc_pipe->binding->transport;
 
+	msg.type       = net_pipe_connected;
+	msg.data       = (void*)&data;
+	msg.data_size  = sizeof(data);
+	
 	if (s->monitor_fn) s->monitor_fn(&msg);
 
 	composite_done(c);
