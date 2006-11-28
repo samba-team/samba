@@ -1070,6 +1070,10 @@ static void continue_users_enumerated(struct rpc_request *req)
 
 	/* receive result of lsa_EnumAccounts request */
 	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	/* get the actual status of the rpc call result */
+	c->status = s->user_list.out.result;
 
 	if (NT_STATUS_IS_OK(c->status) ||
 	    NT_STATUS_EQUAL(c->status, STATUS_MORE_ENTRIES) ||
