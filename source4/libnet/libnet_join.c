@@ -408,9 +408,9 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
  * - potentially delete and recreate the user
  * - assert the account is of the right type with samrQueryUserInfo
  * 
- * - call libnet_SetPassword_samr_handle to set the password
+ * - call libnet_SetPassword_samr_handle to set the password,
+ *   and pass a samr_UserInfo21 struct to set full_name and the account flags
  *
- * - do a samrSetUserInfo to set the account flags
  * - do some ADS specific things when we join as Domain Controller,
  *    look at libnet_joinADSDomain() for the details
  */
@@ -432,8 +432,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct samr_CreateUser2 cu;
 	struct policy_handle *u_handle = NULL;
 	struct samr_QueryUserInfo qui;
-	struct samr_SetUserInfo sui;
-	union samr_UserInfo u_info;
+	struct samr_UserInfo21 u_info21;
 	union libnet_SetPassword r2;
 	struct samr_GetUserPwInfo pwp;
 	struct lsa_String samr_account_name;
@@ -756,7 +755,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		acct_flags = qui.out.info->info16.acct_flags;
 	}
 	
-	acct_flags = (acct_flags & ~ACB_DISABLED);
+	acct_flags = (acct_flags & ~(ACB_DISABLED|ACB_PWNOTREQ));
 
 	/* Find out what password policy this user has */
 	pwp.in.user_handle = u_handle;
@@ -770,37 +769,24 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	
 	password_str = generate_random_str(tmp_ctx, MAX(8, policy_min_pw_len));	
 
+	/* set full_name and reset flags */
+	ZERO_STRUCT(u_info21);
+	u_info21.full_name.string	= r->in.account_name;
+	u_info21.acct_flags		= acct_flags;
+	u_info21.fields_present		= SAMR_FIELD_FULL_NAME | SAMR_FIELD_ACCT_FLAGS;
+
 	r2.samr_handle.level		= LIBNET_SET_PASSWORD_SAMR_HANDLE;
 	r2.samr_handle.in.account_name	= r->in.account_name;
 	r2.samr_handle.in.newpassword	= password_str;
 	r2.samr_handle.in.user_handle   = u_handle;
 	r2.samr_handle.in.dcerpc_pipe   = samr_pipe;
+	r2.samr_handle.in.info21	= &u_info21;
 
 	status = libnet_SetPassword(ctx, tmp_ctx, &r2);	
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_steal(mem_ctx, r2.samr_handle.out.error_string);
 		talloc_free(tmp_ctx);
 		return status;
-	}
-
-	/* reset flags (if required) */
-	if (acct_flags != qui.out.info->info16.acct_flags) {
-		ZERO_STRUCT(u_info);
-		u_info.info16.acct_flags = acct_flags;
-
-		sui.in.user_handle = u_handle;
-		sui.in.info = &u_info;
-		sui.in.level = 16;
-		
-		dcerpc_samr_SetUserInfo(samr_pipe, tmp_ctx, &sui);
-		if (!NT_STATUS_IS_OK(status)) {
-			r->out.error_string = talloc_asprintf(mem_ctx,
-							"samr_SetUserInfo for [%s] failed to remove ACB_DISABLED flag: %s",
-							r->in.account_name,
-							nt_errstr(status));
-			talloc_free(tmp_ctx);
-			return status;
-		}
 	}
 
 	account_sid = dom_sid_add_rid(mem_ctx, connect_with_info->out.domain_sid, rid);
