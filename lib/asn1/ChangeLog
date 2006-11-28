@@ -1,5 +1,15 @@
-2006-11-24  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-11-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add explicit depenency to LIB_roken for libasn1.la,
+	make AIX happy.
+	
+2006-11-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* der_format.c (der_print_heim_oid): oid with zero length is
+	invalid, fail to print.
+	
+2006-11-24  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* der_format.c (der_print_heim_oid): use delim when printing.
 	
 2006-11-21  Love Hörnquist Åstrand  <lha@it.su.se>
