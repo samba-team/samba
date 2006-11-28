@@ -597,7 +597,7 @@ WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle,
 		if (!(info->subkey_cache = TALLOC_ZERO_P(
 			      info, REGSUBKEY_CTR))) {
 			return WERR_NOMEM;
-	}
+		}
 	
 		if (fetch_reg_keys(regkey, info->subkey_cache) == -1) {
 			TALLOC_FREE(info->subkey_cache);
