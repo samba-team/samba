@@ -818,7 +818,8 @@ hx509_cms_verify_signed(hx509_context context,
 					 &signer_info->signature);
 	    if (ret)
 		hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
-				       "Failed to verify sigature");
+				       "Failed to verify sigature in "
+				       "CMS SignedData");
 	}
 	if (signed_data != sd.encapContentInfo.eContent) {
 	    der_free_octet_string(signed_data);
