@@ -1521,9 +1521,25 @@ select_dh_group(krb5_context context, DH *dh, unsigned long bits,
 {
     const struct krb5_dh_moduli *m;
 
-    m = moduli[1]; /* XXX */
-    if (m == NULL)
-	m = moduli[0]; /* XXX */
+    if (bits == 0) {
+	m = moduli[1]; /* XXX */
+	if (m == NULL)
+	    m = moduli[0]; /* XXX */
+    } else {
+	int i;
+	for (i = 0; moduli[i] != NULL; i++) {
+	    if (bits < moduli[i]->bits)
+		break;
+	}
+	if (moduli[i] == NULL) {
+	    krb5_set_error_string(context, 
+				  "Did not find a DH group parameter "
+				  "matching requirement of %lu bits",
+				  bits);
+	    return EINVAL;
+	}
+	m = moduli[i];
+    }
 
     dh->p = integer_to_BN(context, "p", &m->p);
     if (dh->p == NULL)
@@ -1878,11 +1894,18 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 
     if ((flags & 2) == 0) {
 	const char *moduli_file;
+	unsigned long dh_min_bits;
 
 	moduli_file = krb5_config_get_string(context, NULL,
 					     "libdefaults",
 					     "moduli",
 					     NULL);
+
+	dh_min_bits =
+	    krb5_config_get_int_default(context, NULL, 0,
+					"libdefaults",
+					"pkinit_dh_min_bits",
+					NULL);
 
 	ret = _krb5_parse_moduli(context, moduli_file, 
 				 &opt->opt_private->pk_init_ctx->m);
@@ -1898,7 +1921,8 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	    return ENOMEM;
 	}
 
-	ret = select_dh_group(context, opt->opt_private->pk_init_ctx->dh, 0, 
+	ret = select_dh_group(context, opt->opt_private->pk_init_ctx->dh,
+			      dh_min_bits, 
 			      opt->opt_private->pk_init_ctx->m);
 	if (ret) {
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
