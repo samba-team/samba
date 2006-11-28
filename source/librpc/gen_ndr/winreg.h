@@ -164,12 +164,12 @@ struct winreg_CreateKey {
 		uint32_t options;
 		uint32_t access_mask;
 		struct winreg_SecBuf *secdesc;/* [unique] */
-		enum winreg_CreateAction **action_taken;/* [ref] */
+		enum winreg_CreateAction *action_taken;/* [unique] */
 	} in;
 
 	struct {
 		struct policy_handle *new_handle;/* [ref] */
-		enum winreg_CreateAction **action_taken;/* [ref] */
+		enum winreg_CreateAction *action_taken;/* [unique] */
 		WERROR result;
 	} out;
 
@@ -207,14 +207,14 @@ struct winreg_EnumKey {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t enum_index;
 		struct winreg_StringBuf *name;/* [ref] */
-		struct winreg_StringBuf **keyclass;/* [ref] */
-		NTTIME **last_changed_time;/* [ref] */
+		struct winreg_StringBuf *keyclass;/* [unique] */
+		NTTIME *last_changed_time;/* [unique] */
 	} in;
 
 	struct {
 		struct winreg_StringBuf *name;/* [ref] */
-		struct winreg_StringBuf **keyclass;/* [ref] */
-		NTTIME **last_changed_time;/* [ref] */
+		struct winreg_StringBuf *keyclass;/* [unique] */
+		NTTIME *last_changed_time;/* [unique] */
 		WERROR result;
 	} out;
 

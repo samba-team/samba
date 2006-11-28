@@ -574,10 +574,7 @@ WERROR _winreg_GetVersion(pipes_struct *p, struct policy_handle *handle, uint32_
  Implementation of REG_ENUM_KEY
  ****************************************************************************/
  
-WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle,
-		       uint32_t enum_index, struct winreg_StringBuf *name,
-		       struct winreg_StringBuf **keyclass,
-		       NTTIME **last_changed_time)
+WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, struct winreg_StringBuf *keyclass, NTTIME *last_changed_time)
 {
 	WERROR 	status = WERR_OK;
 	struct regkey_info *info = find_regkey_info_by_hnd( p, handle );
@@ -616,12 +613,10 @@ WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle,
 		      p->mem_ctx, info->subkey_cache->subkeys[enum_index]))) {
 		status = WERR_NOMEM;
 	}
-	if ( *last_changed_time ) {
-		**last_changed_time = 0;
+	if ( last_changed_time ) {
+		*last_changed_time = 0;
 	}
-	if ( *keyclass ) {
-		(*keyclass)->name = "";
-	}
+	keyclass->name = "";
 
 	return status;
 }
@@ -1201,7 +1196,7 @@ WERROR _winreg_CreateKey( pipes_struct *p, struct policy_handle *handle,
 			  uint32_t options, uint32_t access_mask, 
 			  struct winreg_SecBuf *secdesc,
 			  struct policy_handle *new_handle, 
-			  enum winreg_CreateAction **action_taken )
+			  enum winreg_CreateAction *action_taken )
 {
 	struct regkey_info *parent = find_regkey_info_by_hnd(p, handle);
 	struct regkey_info *newparentinfo, *keyinfo;
@@ -1293,8 +1288,8 @@ WERROR _winreg_CreateKey( pipes_struct *p, struct policy_handle *handle,
 	
 	/* FIXME: report the truth here */
 	
-	if ( *action_taken ) {
-		**action_taken = REG_CREATED_NEW_KEY;
+	if ( action_taken ) {
+		*action_taken = REG_CREATED_NEW_KEY;
 	}
 
 done:

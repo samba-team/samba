@@ -7,10 +7,10 @@ WERROR _winreg_OpenHKLM(pipes_struct *p, uint16_t *system_name, uint32_t access_
 WERROR _winreg_OpenHKPD(pipes_struct *p, uint16_t *system_name, uint32_t access_mask, struct policy_handle *handle);
 WERROR _winreg_OpenHKU(pipes_struct *p, uint16_t *system_name, uint32_t access_mask, struct policy_handle *handle);
 WERROR _winreg_CloseKey(pipes_struct *p, struct policy_handle *handle);
-WERROR _winreg_CreateKey(pipes_struct *p, struct policy_handle *handle, struct winreg_String name, struct winreg_String keyclass, uint32_t options, uint32_t access_mask, struct winreg_SecBuf *secdesc, struct policy_handle *new_handle, enum winreg_CreateAction **action_taken);
+WERROR _winreg_CreateKey(pipes_struct *p, struct policy_handle *handle, struct winreg_String name, struct winreg_String keyclass, uint32_t options, uint32_t access_mask, struct winreg_SecBuf *secdesc, struct policy_handle *new_handle, enum winreg_CreateAction *action_taken);
 WERROR _winreg_DeleteKey(pipes_struct *p, struct policy_handle *handle, struct winreg_String key);
 WERROR _winreg_DeleteValue(pipes_struct *p, struct policy_handle *handle, struct winreg_String value);
-WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, struct winreg_StringBuf **keyclass, NTTIME **last_changed_time);
+WERROR _winreg_EnumKey(pipes_struct *p, struct policy_handle *handle, uint32_t enum_index, struct winreg_StringBuf *name, struct winreg_StringBuf *keyclass, NTTIME *last_changed_time);
 WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle, uint32_t enum_index, struct winreg_ValNameBuf *name, enum winreg_Type *type, uint8_t *data, uint32_t *data_size, uint32_t *value_length);
 WERROR _winreg_FlushKey(pipes_struct *p, struct policy_handle *handle);
 WERROR _winreg_GetKeySecurity(pipes_struct *p, struct policy_handle *handle, uint32_t sec_info, struct KeySecurityData *sd);

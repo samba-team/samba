@@ -1019,18 +1019,18 @@ NTSTATUS ndr_push_winreg_CreateKey(struct ndr_push *ndr, int flags, const struct
 		if (r->in.secdesc) {
 			NDR_CHECK(ndr_push_winreg_SecBuf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.secdesc));
 		}
-		if (r->in.action_taken == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->in.action_taken == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_ref_ptr(ndr));
-		NDR_CHECK(ndr_push_winreg_CreateAction(ndr, NDR_SCALARS, **r->in.action_taken));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.action_taken));
+		if (r->in.action_taken) {
+			NDR_CHECK(ndr_push_winreg_CreateAction(ndr, NDR_SCALARS, *r->in.action_taken));
+		}
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.new_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.new_handle));
-		if (r->out.action_taken == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->out.action_taken == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_ref_ptr(ndr));
-		NDR_CHECK(ndr_push_winreg_CreateAction(ndr, NDR_SCALARS, **r->out.action_taken));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.action_taken));
+		if (r->out.action_taken) {
+			NDR_CHECK(ndr_push_winreg_CreateAction(ndr, NDR_SCALARS, *r->out.action_taken));
+		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -1044,7 +1044,6 @@ NTSTATUS ndr_pull_winreg_CreateKey(struct ndr_pull *ndr, int flags, struct winre
 	TALLOC_CTX *_mem_save_secdesc_0;
 	TALLOC_CTX *_mem_save_new_handle_0;
 	TALLOC_CTX *_mem_save_action_taken_0;
-	TALLOC_CTX *_mem_save_action_taken_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -1071,24 +1070,20 @@ NTSTATUS ndr_pull_winreg_CreateKey(struct ndr_pull *ndr, int flags, struct winre
 			NDR_CHECK(ndr_pull_winreg_SecBuf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.secdesc));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
 		}
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_action_taken));
+		if (_ptr_action_taken) {
 			NDR_PULL_ALLOC(ndr, r->in.action_taken);
+		} else {
+			r->in.action_taken = NULL;
 		}
-		_mem_save_action_taken_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->in.action_taken, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_action_taken));
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, *r->in.action_taken);
+		if (r->in.action_taken) {
+			_mem_save_action_taken_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.action_taken, 0);
+			NDR_CHECK(ndr_pull_winreg_CreateAction(ndr, NDR_SCALARS, r->in.action_taken));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_action_taken_0, 0);
 		}
-		_mem_save_action_taken_1 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, *r->in.action_taken, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_winreg_CreateAction(ndr, NDR_SCALARS, *r->in.action_taken));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_action_taken_1, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_action_taken_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.new_handle);
 		ZERO_STRUCTP(r->out.new_handle);
-		NDR_PULL_ALLOC(ndr, r->out.action_taken);
-		*r->out.action_taken = *r->in.action_taken;
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -1098,20 +1093,18 @@ NTSTATUS ndr_pull_winreg_CreateKey(struct ndr_pull *ndr, int flags, struct winre
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.new_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.new_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_new_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_action_taken));
+		if (_ptr_action_taken) {
 			NDR_PULL_ALLOC(ndr, r->out.action_taken);
+		} else {
+			r->out.action_taken = NULL;
 		}
-		_mem_save_action_taken_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.action_taken, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_action_taken));
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, *r->out.action_taken);
+		if (r->out.action_taken) {
+			_mem_save_action_taken_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.action_taken, 0);
+			NDR_CHECK(ndr_pull_winreg_CreateAction(ndr, NDR_SCALARS, r->out.action_taken));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_action_taken_0, 0);
 		}
-		_mem_save_action_taken_1 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, *r->out.action_taken, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_winreg_CreateAction(ndr, NDR_SCALARS, *r->out.action_taken));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_action_taken_1, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_action_taken_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -1143,10 +1136,9 @@ _PUBLIC_ void ndr_print_winreg_CreateKey(struct ndr_print *ndr, const char *name
 		ndr->depth--;
 		ndr_print_ptr(ndr, "action_taken", r->in.action_taken);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "action_taken", *r->in.action_taken);
-		ndr->depth++;
-		ndr_print_winreg_CreateAction(ndr, "action_taken", **r->in.action_taken);
-		ndr->depth--;
+		if (r->in.action_taken) {
+			ndr_print_winreg_CreateAction(ndr, "action_taken", *r->in.action_taken);
+		}
 		ndr->depth--;
 		ndr->depth--;
 	}
@@ -1159,10 +1151,9 @@ _PUBLIC_ void ndr_print_winreg_CreateKey(struct ndr_print *ndr, const char *name
 		ndr->depth--;
 		ndr_print_ptr(ndr, "action_taken", r->out.action_taken);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "action_taken", *r->out.action_taken);
-		ndr->depth++;
-		ndr_print_winreg_CreateAction(ndr, "action_taken", **r->out.action_taken);
-		ndr->depth--;
+		if (r->out.action_taken) {
+			ndr_print_winreg_CreateAction(ndr, "action_taken", *r->out.action_taken);
+		}
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -1294,26 +1285,26 @@ NTSTATUS ndr_push_winreg_EnumKey(struct ndr_push *ndr, int flags, const struct w
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.enum_index));
 		if (r->in.name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.name));
-		if (r->in.keyclass == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->in.keyclass == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_ref_ptr(ndr));
-		NDR_CHECK(ndr_push_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.keyclass));
-		if (r->in.last_changed_time == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->in.last_changed_time == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_ref_ptr(ndr));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, **r->in.last_changed_time));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.keyclass));
+		if (r->in.keyclass) {
+			NDR_CHECK(ndr_push_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.keyclass));
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.last_changed_time));
+		if (r->in.last_changed_time) {
+			NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, *r->in.last_changed_time));
+		}
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
 		NDR_CHECK(ndr_push_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.name));
-		if (r->out.keyclass == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->out.keyclass == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_ref_ptr(ndr));
-		NDR_CHECK(ndr_push_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.keyclass));
-		if (r->out.last_changed_time == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->out.last_changed_time == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_ref_ptr(ndr));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, **r->out.last_changed_time));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.keyclass));
+		if (r->out.keyclass) {
+			NDR_CHECK(ndr_push_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.keyclass));
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.last_changed_time));
+		if (r->out.last_changed_time) {
+			NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, *r->out.last_changed_time));
+		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -1326,9 +1317,7 @@ NTSTATUS ndr_pull_winreg_EnumKey(struct ndr_pull *ndr, int flags, struct winreg_
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_name_0;
 	TALLOC_CTX *_mem_save_keyclass_0;
-	TALLOC_CTX *_mem_save_keyclass_1;
 	TALLOC_CTX *_mem_save_last_changed_time_0;
-	TALLOC_CTX *_mem_save_last_changed_time_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -1347,40 +1336,32 @@ NTSTATUS ndr_pull_winreg_EnumKey(struct ndr_pull *ndr, int flags, struct winreg_
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.name, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.name));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, LIBNDR_FLAG_REF_ALLOC);
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_keyclass));
+		if (_ptr_keyclass) {
 			NDR_PULL_ALLOC(ndr, r->in.keyclass);
+		} else {
+			r->in.keyclass = NULL;
 		}
-		_mem_save_keyclass_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->in.keyclass, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_keyclass));
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, *r->in.keyclass);
+		if (r->in.keyclass) {
+			_mem_save_keyclass_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.keyclass, 0);
+			NDR_CHECK(ndr_pull_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.keyclass));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_keyclass_0, 0);
 		}
-		_mem_save_keyclass_1 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, *r->in.keyclass, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.keyclass));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_keyclass_1, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_keyclass_0, LIBNDR_FLAG_REF_ALLOC);
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_last_changed_time));
+		if (_ptr_last_changed_time) {
 			NDR_PULL_ALLOC(ndr, r->in.last_changed_time);
+		} else {
+			r->in.last_changed_time = NULL;
 		}
-		_mem_save_last_changed_time_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->in.last_changed_time, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_last_changed_time));
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, *r->in.last_changed_time);
+		if (r->in.last_changed_time) {
+			_mem_save_last_changed_time_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.last_changed_time, 0);
+			NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, r->in.last_changed_time));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_last_changed_time_0, 0);
 		}
-		_mem_save_last_changed_time_1 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, *r->in.last_changed_time, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, *r->in.last_changed_time));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_last_changed_time_1, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_last_changed_time_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.name);
 		*r->out.name = *r->in.name;
-		NDR_PULL_ALLOC(ndr, r->out.keyclass);
-		*r->out.keyclass = *r->in.keyclass;
-		NDR_PULL_ALLOC(ndr, r->out.last_changed_time);
-		*r->out.last_changed_time = *r->in.last_changed_time;
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -1390,34 +1371,30 @@ NTSTATUS ndr_pull_winreg_EnumKey(struct ndr_pull *ndr, int flags, struct winreg_
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.name, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.name));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, LIBNDR_FLAG_REF_ALLOC);
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_keyclass));
+		if (_ptr_keyclass) {
 			NDR_PULL_ALLOC(ndr, r->out.keyclass);
+		} else {
+			r->out.keyclass = NULL;
 		}
-		_mem_save_keyclass_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.keyclass, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_keyclass));
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, *r->out.keyclass);
+		if (r->out.keyclass) {
+			_mem_save_keyclass_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.keyclass, 0);
+			NDR_CHECK(ndr_pull_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.keyclass));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_keyclass_0, 0);
 		}
-		_mem_save_keyclass_1 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, *r->out.keyclass, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_winreg_StringBuf(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.keyclass));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_keyclass_1, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_keyclass_0, LIBNDR_FLAG_REF_ALLOC);
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_last_changed_time));
+		if (_ptr_last_changed_time) {
 			NDR_PULL_ALLOC(ndr, r->out.last_changed_time);
+		} else {
+			r->out.last_changed_time = NULL;
 		}
-		_mem_save_last_changed_time_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.last_changed_time, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_last_changed_time));
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, *r->out.last_changed_time);
+		if (r->out.last_changed_time) {
+			_mem_save_last_changed_time_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.last_changed_time, 0);
+			NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, r->out.last_changed_time));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_last_changed_time_0, 0);
 		}
-		_mem_save_last_changed_time_1 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, *r->out.last_changed_time, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, *r->out.last_changed_time));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_last_changed_time_1, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_last_changed_time_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -1444,17 +1421,15 @@ _PUBLIC_ void ndr_print_winreg_EnumKey(struct ndr_print *ndr, const char *name, 
 		ndr->depth--;
 		ndr_print_ptr(ndr, "keyclass", r->in.keyclass);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "keyclass", *r->in.keyclass);
-		ndr->depth++;
-		ndr_print_winreg_StringBuf(ndr, "keyclass", *r->in.keyclass);
-		ndr->depth--;
+		if (r->in.keyclass) {
+			ndr_print_winreg_StringBuf(ndr, "keyclass", r->in.keyclass);
+		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "last_changed_time", r->in.last_changed_time);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "last_changed_time", *r->in.last_changed_time);
-		ndr->depth++;
-		ndr_print_NTTIME(ndr, "last_changed_time", **r->in.last_changed_time);
-		ndr->depth--;
+		if (r->in.last_changed_time) {
+			ndr_print_NTTIME(ndr, "last_changed_time", *r->in.last_changed_time);
+		}
 		ndr->depth--;
 		ndr->depth--;
 	}
@@ -1467,17 +1442,15 @@ _PUBLIC_ void ndr_print_winreg_EnumKey(struct ndr_print *ndr, const char *name, 
 		ndr->depth--;
 		ndr_print_ptr(ndr, "keyclass", r->out.keyclass);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "keyclass", *r->out.keyclass);
-		ndr->depth++;
-		ndr_print_winreg_StringBuf(ndr, "keyclass", *r->out.keyclass);
-		ndr->depth--;
+		if (r->out.keyclass) {
+			ndr_print_winreg_StringBuf(ndr, "keyclass", r->out.keyclass);
+		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "last_changed_time", r->out.last_changed_time);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "last_changed_time", *r->out.last_changed_time);
-		ndr->depth++;
-		ndr_print_NTTIME(ndr, "last_changed_time", **r->out.last_changed_time);
-		ndr->depth--;
+		if (r->out.last_changed_time) {
+			ndr_print_NTTIME(ndr, "last_changed_time", *r->out.last_changed_time);
+		}
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
