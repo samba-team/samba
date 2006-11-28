@@ -420,8 +420,8 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
-	if (neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
@@ -928,6 +928,7 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_56 |
 		NTLMSSP_UNKNOWN_02000000 |
+		NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_NEGOTIATE_NTLM2 |
 		NTLMSSP_NEGOTIATE_KEY_EXCH |
@@ -1229,6 +1230,7 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
 
 	(*ntlmssp_state)->neg_flags = 
 		NTLMSSP_NEGOTIATE_128 |
+		NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_NEGOTIATE_NTLM2 |
 		NTLMSSP_NEGOTIATE_KEY_EXCH |
