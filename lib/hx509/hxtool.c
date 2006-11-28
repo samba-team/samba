@@ -993,10 +993,9 @@ random_data(void *opt, int argc, char **argv)
 int
 crypto_available(struct crypto_available_options *opt, int argc, char **argv)
 {
-    int ret;
-    size_t len, i;
     AlgorithmIdentifier *val;
-    int type = HX509_SELECT_ALL;
+    unsigned int len, i;
+    int ret, type;
 
     if (opt->type_string) {
 	if (strcmp(opt->type_string, "all") == 0)
@@ -1007,7 +1006,8 @@ crypto_available(struct crypto_available_options *opt, int argc, char **argv)
 	    type = HX509_SELECT_PUBLIC_SIG;
 	else
 	    errx(1, "unknown type: %s", opt->type_string);
-    }
+    } else
+	type = HX509_SELECT_ALL;
 
     ret = hx509_crypto_available(context, type, NULL, &val, &len);
     if (ret)
@@ -1030,9 +1030,8 @@ crypto_select(struct crypto_select_options *opt, int argc, char **argv)
 {
     hx509_peer_info peer = NULL;
     AlgorithmIdentifier selected;
-    int ret;
+    int ret, type;
     char *s;
-    int type = HX509_SELECT_DIGEST;
 
     if (opt->type_string) {
 	if (strcmp(opt->type_string, "digest") == 0)
@@ -1041,7 +1040,8 @@ crypto_select(struct crypto_select_options *opt, int argc, char **argv)
 	    type = HX509_SELECT_PUBLIC_SIG;
 	else
 	    errx(1, "unknown type: %s", opt->type_string);
-    }
+    } else
+	type = HX509_SELECT_DIGEST;
 
     if (opt->peer_cmstype_strings.num_strings) {
 	AlgorithmIdentifier *val;

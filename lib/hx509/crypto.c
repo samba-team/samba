@@ -2139,9 +2139,11 @@ hx509_crypto_select(const hx509_context context,
 	def = hx509_signature_sha1();
     } else if (type == HX509_SELECT_PUBLIC_SIG) {
 	bits = SIG_PUBLIC_SIG;
-	def = hx509_signature_rsa_with_sha1(); /* XXX depend on `source´ and `peer´ */
+	/* XXX depend on `source´ and `peer´ */
+	def = hx509_signature_rsa_with_sha1();
     } else {
-	hx509_set_error_string(context, 0, EINVAL, "unknown type %d of selection", type);
+	hx509_set_error_string(context, 0, EINVAL, 
+			       "Unknown type %d of selection", type);
 	return EINVAL;
     }
 
@@ -2152,7 +2154,8 @@ hx509_crypto_select(const hx509_context context,
 	    for (j = 0; sig_algs[j]; j++) {
 		if ((sig_algs[j]->flags & bits) != bits)
 		    continue;
-		if (der_heim_oid_cmp((*sig_algs[j]->sig_oid)(), &peer->val[i].algorithm) != 0)
+		if (der_heim_oid_cmp((*sig_algs[j]->sig_oid)(), 
+				     &peer->val[i].algorithm) != 0)
 		    continue;
 		if (keytype && sig_algs[j]->key_oid && 
 		    der_heim_oid_cmp(keytype, (*sig_algs[j]->key_oid)()))
@@ -2179,10 +2182,10 @@ hx509_crypto_available(hx509_context context,
 		       int type,
 		       hx509_cert source,
 		       AlgorithmIdentifier **val,
-		       size_t *plen)
+		       unsigned int *plen)
 {
     const heim_oid *keytype = NULL;
-    size_t len, i;
+    unsigned int len, i;
     void *ptr;
     int bits, ret;
 
@@ -2195,7 +2198,8 @@ hx509_crypto_available(hx509_context context,
     } else if (type == HX509_SELECT_PUBLIC_SIG) {
 	bits = SIG_PUBLIC_SIG;
     } else {
-	hx509_set_error_string(context, 0, EINVAL, "unknown type %d of available", type);
+	hx509_set_error_string(context, 0, EINVAL, 
+			       "Unknown type %d of available", type);
 	return EINVAL;
     }
 
@@ -2238,9 +2242,9 @@ out:
 
 void
 hx509_crypto_free_algs(AlgorithmIdentifier *val,
-		       size_t len)
+		       unsigned int len)
 {
-    size_t i;
+    unsigned int i;
     for (i = 0; i < len; i++)
 	free_AlgorithmIdentifier(&val[i]);
     free(val);
