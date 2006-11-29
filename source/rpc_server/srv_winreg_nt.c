@@ -43,7 +43,6 @@ struct regkey_info {
 static void free_regkey_info(void *ptr)
 {
 	struct regkey_info *info = (struct regkey_info *)ptr;
-	regkey_close_internal( info->key );
 	TALLOC_FREE(info);
 }
 
@@ -107,36 +106,21 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
 				 const char *subkeyname,
 				 uint32 access_desired  )
 {
-	char           *keypath;
-	int		path_len;
 	WERROR     	result = WERR_OK;
 	struct regkey_info *info;
 
 	/* create a full registry path and strip any trailing '\' 
 	   characters */
 
-	if (asprintf(&keypath, "%s%s%s", 
-		     parent ? parent->name : "",
-		     parent ? "\\" : "", 
-		     subkeyname) == -1) {
-		return WERR_NOMEM;
-	}
-
-	path_len = strlen( keypath );
-	if ( path_len && keypath[path_len-1] == '\\' )
-		keypath[path_len-1] = '\0';
-
 	if (!(info = TALLOC_ZERO_P(NULL, struct regkey_info))) {
-		SAFE_FREE(keypath);
 		return WERR_NOMEM;
 	}
 	
 	/* now do the internal open */
 		
-	result = regkey_open_internal( &info->key, keypath,
+	result = regkey_open_internal( info, parent, &info->key, subkeyname,
 				       p->pipe_user.nt_user_token,
 				       access_desired );
-	SAFE_FREE(keypath);
 
 	if ( !W_ERROR_IS_OK(result) ) {
 		TALLOC_FREE(info);
@@ -144,7 +128,6 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
 	}
 	
 	if ( !create_policy_hnd( p, hnd, free_regkey_info, info ) ) {
-		regkey_close_internal( info->key );
 		TALLOC_FREE(info);
 		return WERR_BADFILE; 
 	}
