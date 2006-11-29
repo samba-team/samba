@@ -23,7 +23,7 @@
 #include "system/filesys.h"
 #include "popt.h"
 
-enum my_functions {FUNC_SORT=1, FUNC_FETCH=2};
+enum my_functions {FUNC_SORT=1, FUNC_FETCH=2, FUNC_SORT_ARRAY=3};
 
 static int int_compare(int *i1, int *i2)
 {
@@ -51,6 +51,32 @@ static int sort_func(struct ctdb_call *call)
 	}
 	call->new_data->dsize = call->record_data.dsize + call->call_data->dsize;
 	memcpy(call->new_data->dptr+call->record_data.dsize,
+	       call->call_data->dptr, call->call_data->dsize);
+	qsort(call->new_data->dptr, call->new_data->dsize / sizeof(int),
+	      sizeof(int), (comparison_fn_t)int_compare);
+	return 0;
+}
+
+/*
+  add an integer into a record in sorted order
+*/
+static int sort_func_array(struct ctdb_call *call)
+{
+	if (call->call_data == NULL ||
+	    call->call_data->dsize % sizeof(int) != 0) {
+		return CTDB_ERR_INVALID;
+	}
+	call->new_data = talloc(call, TDB_DATA);
+	if (call->new_data == NULL) {
+		return CTDB_ERR_NOMEM;
+	}
+	call->new_data->dptr = talloc_size(call, 
+					   call->call_data->dsize);
+	if (call->new_data->dptr == NULL) {
+		return CTDB_ERR_NOMEM;
+	}
+	call->new_data->dsize = call->call_data->dsize;
+	memcpy(call->new_data->dptr,
 	       call->call_data->dptr, call->call_data->dsize);
 	qsort(call->new_data->dptr, call->new_data->dsize / sizeof(int),
 	      sizeof(int), (comparison_fn_t)int_compare);
@@ -146,9 +172,10 @@ int main(int argc, const char *argv[])
 	/* setup a ctdb call function */
 	ret = ctdb_set_call(ctdb, sort_func,  FUNC_SORT);
 	ret = ctdb_set_call(ctdb, fetch_func, FUNC_FETCH);
+	ret = ctdb_set_call(ctdb, sort_func_array,  FUNC_SORT_ARRAY);
 
 	/* attach to a specific database */
-	ret = ctdb_attach(ctdb, "test.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
+	ret = ctdb_attach(ctdb, "./testx.tdb", TDB_DEFAULT, O_RDWR|O_CREAT|O_TRUNC, 0666);
 	if (ret == -1) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
@@ -162,35 +189,41 @@ int main(int argc, const char *argv[])
 
 
 #if 1
+#define TEST_ARRAY_SIZE 100
 	/* loop for testing */
 	while (1) {
-		event_loop_once(ev);
-	}
-#endif
-
-	/* add some random data */
-	for (i=0;i<100;i++) {
-		int v = random();
-		data.dptr = (uint8_t *)&v;
-		data.dsize = sizeof(v);
-		ret = ctdb_call(ctdb, key, FUNC_SORT, &data, NULL);
+		/* add some random data */
+		data.dptr = (void*)talloc_array(ev, int, TEST_ARRAY_SIZE);
+		for (i=0;i<TEST_ARRAY_SIZE;i++) {
+			data.dptr[i] = random();
+		}
+		data.dsize = sizeof(int)*TEST_ARRAY_SIZE;
+		ret = ctdb_call(ctdb, key, FUNC_SORT_ARRAY, &data, NULL);
 		if (ret == -1) {
-			printf("ctdb_call FUNC_SORT failed - %s\n", ctdb_errstr(ctdb));
+			printf("ctdb_call FUNC_SORT_ARRAY failed - %s\n", ctdb_errstr(ctdb));
 			exit(1);
 		}
-	}
+		
+		talloc_free(data.dptr);
+		data.dptr = NULL;
+		data.dsize = 0;
 
-	/* fetch the record */
-	ret = ctdb_call(ctdb, key, FUNC_FETCH, NULL, &data);
-	if (ret == -1) {
-		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
-	}
+		/* fetch the record */
+		ret = ctdb_call(ctdb, key, FUNC_FETCH, NULL, &data);
+		if (ret == -1) {
+			printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
+			exit(1);
+		}
+		
+		printf("ctdb_call result. Data size is %u, sizeof(int)-based is %u\n", data.dsize, data.dsize/sizeof(int));
+		for (i=0;i<data.dsize/sizeof(int);i++) {
+			printf("%d, \n", data.dptr[i]);
+		}
+		talloc_free(data.dptr);
+		event_loop_once(ev);
 
-	for (i=0;i<data.dsize/sizeof(int);i++) {
-		printf("%3d\n", ((int *)data.dptr)[i]);
 	}
-	talloc_free(data.dptr);
+#endif
 	
 	/* shut it down */
 	talloc_free(ctdb);
