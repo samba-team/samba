@@ -82,6 +82,7 @@ struct krb5_pk_init_ctx_data {
     krb5_data *clientDHNonce;
     struct krb5_dh_moduli **m;
     hx509_peer_info peer;
+    int type;
     int require_binding;
     int require_eku;
     int require_krbtgt_otherName;
@@ -445,7 +446,6 @@ _krb5_pk_mk_ContentInfo(krb5_context context,
 
 static krb5_error_code
 pk_mk_padata(krb5_context context,
-	     int compat,
 	     krb5_pk_init_ctx ctx,
 	     const KDC_REQ_BODY *req_body,
 	     unsigned nonce,
@@ -462,7 +462,7 @@ pk_mk_padata(krb5_context context,
     krb5_data_zero(&sd_buf);
     memset(&content_info, 0, sizeof(content_info));
 
-    if (compat == COMPAT_WIN2K) {
+    if (ctx->type == COMPAT_WIN2K) {
 	AuthPack_Win2k ap;
 	krb5_timestamp sec;
 	int32_t usec;
@@ -499,7 +499,7 @@ pk_mk_padata(krb5_context context,
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
 	oid = oid_id_pkcs7_data();
-    } else if (compat == COMPAT_IETF) {
+    } else if (ctx->type == COMPAT_IETF) {
 	AuthPack ap;
 	
 	memset(&ap, 0, sizeof(ap));
@@ -546,7 +546,7 @@ pk_mk_padata(krb5_context context,
     if (buf.length != size)
 	krb5_abortx(context, "Internal ASN1 encoder error");
 
-    if (compat == COMPAT_WIN2K) {
+    if (ctx->type == COMPAT_WIN2K) {
 	PA_PK_AS_REQ_Win2k winreq;
 
 	pa_type = KRB5_PADATA_PK_AS_REQ_WIN;
@@ -559,7 +559,7 @@ pk_mk_padata(krb5_context context,
 			   &winreq, &size, ret);
 	free_PA_PK_AS_REQ_Win2k(&winreq);
 
-    } else if (compat == COMPAT_IETF) {
+    } else if (ctx->type == COMPAT_IETF) {
 	PA_PK_AS_REQ req;
 
 	pa_type = KRB5_PADATA_PK_AS_REQ;
@@ -600,7 +600,7 @@ pk_mk_padata(krb5_context context,
     if (ret)
 	free(buf.data);
 
-    if (ret == 0 && compat == COMPAT_WIN2K)
+    if (ret == 0 && ctx->type == COMPAT_WIN2K)
 	krb5_padata_add(context, md, KRB5_PADATA_PK_AS_09_BINDING, NULL, 0);
 
 out:
@@ -618,7 +618,7 @@ _krb5_pk_mk_padata(krb5_context context,
 		   METHOD_DATA *md)
 {
     krb5_pk_init_ctx ctx = c;
-    int win2k_compat, type;
+    int win2k_compat;
 
     win2k_compat = krb5_config_get_bool_default(context, NULL,
 						FALSE,
@@ -637,9 +637,9 @@ _krb5_pk_mk_padata(krb5_context context,
 					 req_body->realm,
 					 "pkinit_win2k_require_binding",
 					 NULL);
-	type = COMPAT_WIN2K;
+	ctx->type = COMPAT_WIN2K;
     } else
-	type = COMPAT_IETF;
+	ctx->type = COMPAT_IETF;
 
     ctx->require_eku = 
 	krb5_config_get_bool_default(context, NULL,
@@ -664,7 +664,7 @@ _krb5_pk_mk_padata(krb5_context context,
 				     "pkinit_require_hostname_match",
 				     NULL);
 
-    return pk_mk_padata(context, type, ctx, req_body, nonce, md);
+    return pk_mk_padata(context, ctx, req_body, nonce, md);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -1229,8 +1229,13 @@ _krb5_pk_rd_pa_reply(krb5_context context,
     size_t size;
 
     /* Check for IETF PK-INIT first */
-    if (pa->padata_type == KRB5_PADATA_PK_AS_REP) {
+    if (ctx->type == COMPAT_IETF) {
 	PA_PK_AS_REP rep;
+	
+	if (pa->padata_type != KRB5_PADATA_PK_AS_REP) {
+	    krb5_set_error_string(context, "PKINIT: wrong padata recv");
+	    return EINVAL;
+	}
 
 	memset(&rep, 0, sizeof(rep));
 
@@ -1286,13 +1291,18 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	    ret = EINVAL;
 	    break;
 	}
-	if (ret == 0)
-	    return ret;
-    }
 
-    /* Check for Windows encoding of the AS-REP pa data */ 
-    {
+    } else if (ctx->type == COMPAT_WIN2K) {
 	PA_PK_AS_REP_Win2k w2krep;
+
+	/* Check for Windows encoding of the AS-REP pa data */ 
+
+#if 0 /* should this be ? */
+	if (pa->padata_type != KRB5_PADATA_PK_AS_REP) {
+	    krb5_set_error_string(context, "PKINIT: wrong padata recv");
+	    return EINVAL;
+	}
+#endif
 
 	memset(&w2krep, 0, sizeof(w2krep));
 	
@@ -1334,6 +1344,9 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	    break;
 	}
     
+    } else {
+	krb5_set_error_string(context, "PKINIT: unknown reply type");
+	ret = EINVAL;
     }
 
     return ret;
