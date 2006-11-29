@@ -198,9 +198,8 @@ interface drsuapi
 	} drsuapi_DsReplicaCoursorCtrEx;
 
 	typedef [public] bitmap {
-		/* the _WRITEABLE flag seems to indicate a replication with all attributes,
-		 * and I'm currently always on error when it's set, but w2k and w2k3 uses it
-		 * in the dc join
+		/* the _WRITEABLE flag indicates a replication with all attributes
+		 *
 		 * --metze
 		 */
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE				= 0x00000010,
