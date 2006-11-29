@@ -122,6 +122,7 @@ struct RSA {
 #define RSA_FLAG_SIGN_VER		0x40
 
 #define RSA_PKCS1_PADDING		1
+#define RSA_PKCS1_OAEP_PADDING		4
 #define RSA_PKCS1_PADDING_SIZE		11
 
 /*
