@@ -406,7 +406,9 @@ static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
 
 	if (!winbind_lookup_rids(tmp_ctx, domain_sid, num_rids, rids,
 				 domain_name, &my_names, &my_types)) {
+		*domain_name = "";
 		for (i=0; i<num_rids; i++) {
+			names[i] = "";
 			types[i] = SID_NAME_UNKNOWN;
 		}
 		return True;
