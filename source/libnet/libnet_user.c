@@ -31,64 +31,6 @@
 #include "libcli/security/security.h"
 
 
-/**
- * Verify, before actually doing anything with user accounts, whether
- * required domain is already opened and thus ready for operation.
- * If it is not, or if the opened domain is not the one requested, open
- * the requested domain.
- */
-static struct composite_context* domain_opened(struct libnet_context *ctx,
-					       const char *domain_name,
-					       struct composite_context *parent_ctx,
-					       struct libnet_DomainOpen *domain_open,
-					       void (*continue_fn)(struct composite_context*),
-					       void (*monitor)(struct monitor_msg*))
-{
-	struct composite_context *domopen_req;
-
-	if (domain_name == NULL) {
-		/*
-		 * Try to guess the domain name from credentials,
-		 * if it's not been explicitly specified.
-		 */
-
-		if (policy_handle_empty(&ctx->samr.handle)) {
-			domain_open->in.domain_name = cli_credentials_get_domain(ctx->cred);
-			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-
-		} else {
-			composite_error(parent_ctx, NT_STATUS_INVALID_PARAMETER);
-			return parent_ctx;
-		}
-
-	} else {
-		/*
-		 * The domain name has been specified, so check whether the same
-		 * domain is already opened. If it is - just return NULL. Start
-		 * opening a new domain otherwise.
-		 */
-
-		if (policy_handle_empty(&ctx->samr.handle) ||
-		    !strequal(domain_name, ctx->samr.name)) {
-			domain_open->in.domain_name = domain_name;
-			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;			
-
-		} else {
-			/* domain has already been opened and it's the same domain
-			   as requested */
-			return NULL;
-		}
-	}
-
-	/* send request to open the domain */
-	domopen_req = libnet_DomainOpen_send(ctx, domain_open, monitor);
-	if (composite_nomem(domopen_req, parent_ctx)) return parent_ctx;
-	
-	composite_continue(parent_ctx, domopen_req, continue_fn, parent_ctx);
-	return parent_ctx;
-}
-
-
 struct create_user_state {
 	struct libnet_CreateUser r;
 	struct libnet_DomainOpen domain_open;
