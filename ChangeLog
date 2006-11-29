@@ -1,5 +1,7 @@
 2006-11-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/verify_krb5_conf.c: add more pkinit options.
+
 	* lib/krb5/pkinit.c: Store what PK-INIT type we used to know reply
 	to expect, this avoids overwriting the real PK-INIT error from
 	just a failed requeat with a Windows PK-INIT error (that always
