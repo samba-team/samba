@@ -1,10 +1,11 @@
+2006-11-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/Makefile.am: Add LIB_com_err to pacify AIX
+	
 2006-11-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb-ldap.c: Make build again from the hdb_entry
 	wrapping. Patch from Andreas Hasenack.
-
-	* lib/hdb/hdb.c (hdb_lock): also ignore EAGAIN as a locking retry
-	error.
 
 	* lib/hdb/hdb.c (hdb_lock): also ignore EAGAIN as a locking retry
 	error.
