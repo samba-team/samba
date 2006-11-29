@@ -721,12 +721,15 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 */
 int ltdb_search_indexed(struct ldb_handle *handle)
 {
-	struct ltdb_context *ac = talloc_get_type(handle->private_data, struct ltdb_context);
-	struct ltdb_private *ltdb = talloc_get_type(ac->module->private_data, struct ltdb_private);
+	struct ltdb_context *ac;
+	struct ltdb_private *ltdb;
 	struct dn_list *dn_list;
 	int ret;
 
-	if ((ac == NULL) || (ltdb == NULL)) {
+	if (!(ac = talloc_get_type(handle->private_data,
+				   struct ltdb_context)) ||
+	    !(ltdb = talloc_get_type(ac->module->private_data,
+				     struct ltdb_private))) {
 		return -1;
 	}
 
