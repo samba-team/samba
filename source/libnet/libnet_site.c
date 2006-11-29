@@ -78,6 +78,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_JoinSite *r)
 	}
 
 	/* Generate the CN=Configuration,... DN. */
+/* TODO: look it up! */
 	config_dn_str = talloc_asprintf(tmp_ctx, "CN=Configuration,%s", r->in.domain_dn_str);
 	if (!config_dn_str) {
 		r->out.error_string = NULL;
