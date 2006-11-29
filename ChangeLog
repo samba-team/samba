@@ -1,5 +1,7 @@
 2006-11-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/Makefile.am: Add LIB_pkinit to pacify AIX
+
 	* lib/hdb/Makefile.am: Add LIB_com_err to pacify AIX
 	
 2006-11-28  Love Hörnquist Åstrand  <lha@it.su.se>

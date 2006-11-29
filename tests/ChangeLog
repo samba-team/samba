@@ -1,3 +1,7 @@
+2006-11-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kdc.in: Don't (afs) unlog using kdestroy
+	
 2006-11-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/Makefile.am: Add LIB_roken and (implictly by that libvers
