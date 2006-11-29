@@ -739,7 +739,6 @@ NTSTATUS rpccli_winreg_SetKeySecurity(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	}
 	
 	/* Return variables */
-	*sd = *r.out.sd;
 	
 	/* Return result */
 	return werror_to_ntstatus(r.out.result);
