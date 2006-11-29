@@ -411,9 +411,8 @@ static BOOL sync_eventlog_params( EVENTLOG_INFO *info )
 
 	pstr_sprintf( path, "%s/%s", KEY_EVENTLOG, elogname );
 
-	wresult =
-		regkey_open_internal( &keyinfo, path, get_root_nt_token(  ),
-				      REG_KEY_READ );
+	wresult = regkey_open_internal( NULL, NULL, &keyinfo, path,
+					get_root_nt_token(  ), REG_KEY_READ );
 
 	if ( !W_ERROR_IS_OK( wresult ) ) {
 		DEBUG( 4,
@@ -436,7 +435,7 @@ static BOOL sync_eventlog_params( EVENTLOG_INFO *info )
 	if ( ( val = regval_ctr_getvalue( values, "MaxSize" ) ) != NULL )
 		uiMaxSize = IVAL( regval_data_p( val ), 0 );
 
-	regkey_close_internal( keyinfo );
+	TALLOC_FREE( keyinfo );
 
 	tdb_store_int32( ELOG_TDB_CTX(info->etdb), EVT_MAXSIZE, uiMaxSize );
 	tdb_store_int32( ELOG_TDB_CTX(info->etdb), EVT_RETENTION, uiRetention );
