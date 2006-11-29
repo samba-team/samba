@@ -310,8 +310,10 @@ WERROR regkey_open_internal( TALLOC_CTX *mem_ctx, REGISTRY_KEY *parent,
 		return WERR_NOMEM;
 	}
 
-	if ( !(W_ERROR_IS_OK(result = regdb_open()) ) )
+	if ( !(W_ERROR_IS_OK(result = regdb_open()) ) ) {
+		TALLOC_FREE(key);
 		return result;
+	}
 
 	talloc_set_destructor(key, regkey_destructor);
 		
