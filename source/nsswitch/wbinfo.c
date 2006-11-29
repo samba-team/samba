@@ -1182,7 +1182,7 @@ enum {
 	OPT_GROUP_INFO,
 };
 
-int main(int argc, char **argv)
+int main(int argc, char **argv, char **envp)
 {
 	int opt;
 
