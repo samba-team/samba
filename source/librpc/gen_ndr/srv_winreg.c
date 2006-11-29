@@ -1499,8 +1499,6 @@ static BOOL api_winreg_SetKeySecurity(pipes_struct *p)
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(winreg_SetKeySecurity, &r);
 	
-	ZERO_STRUCT(r.out);
-	r.out.sd = r.in.sd;
 	r.out.result = _winreg_SetKeySecurity(p, r.in.handle, r.in.access_mask, r.in.sd);
 	
 	if (p->rng_fault_state) {

@@ -275,7 +275,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	WERROR winreg_SetKeySecurity(
 		[in,ref] policy_handle *handle,
 		[in] winreg_AccessMask access_mask,
-		[in,out,ref] KeySecurityData *sd
+		[in,ref] KeySecurityData *sd
 	);
 
 	/******************/

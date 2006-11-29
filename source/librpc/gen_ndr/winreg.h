@@ -406,7 +406,6 @@ struct winreg_SetKeySecurity {
 	} in;
 
 	struct {
-		struct KeySecurityData *sd;/* [ref] */
 		WERROR result;
 	} out;
 
