@@ -1536,13 +1536,8 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	}
 	unix_time = nt_time_to_unix(delta->account_info.pwd_last_set_time);
 
-	/* The nobody user is entered by populate_ldap_for_ldif */
-	if (strcmp(username, "nobody") == 0) {
-		return NT_STATUS_OK;
-	} else {
-		/* Increment the uid for the new user */
-		ldif_uid++;
-	}
+	/* Increment the uid for the new user */
+	ldif_uid++;
 
 	/* Set up group id and sambaSID for the user */
 	group_rid = delta->account_info.group_rid;
