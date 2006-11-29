@@ -2875,8 +2875,6 @@ NTSTATUS ndr_push_winreg_SetKeySecurity(struct ndr_push *ndr, int flags, const s
 		NDR_CHECK(ndr_push_KeySecurityData(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sd));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.sd == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		NDR_CHECK(ndr_push_KeySecurityData(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sd));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -2887,8 +2885,6 @@ NTSTATUS ndr_pull_winreg_SetKeySecurity(struct ndr_pull *ndr, int flags, struct 
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sd_0;
 	if (flags & NDR_IN) {
-		ZERO_STRUCT(r->out);
-
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.handle);
 		}
@@ -2904,17 +2900,8 @@ NTSTATUS ndr_pull_winreg_SetKeySecurity(struct ndr_pull *ndr, int flags, struct 
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.sd, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_KeySecurityData(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sd));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_ALLOC(ndr, r->out.sd);
-		*r->out.sd = *r->in.sd;
 	}
 	if (flags & NDR_OUT) {
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.sd);
-		}
-		_mem_save_sd_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.sd, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_KeySecurityData(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sd));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NT_STATUS_OK;
@@ -2944,10 +2931,6 @@ _PUBLIC_ void ndr_print_winreg_SetKeySecurity(struct ndr_print *ndr, const char 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "winreg_SetKeySecurity");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "sd", r->out.sd);
-		ndr->depth++;
-		ndr_print_KeySecurityData(ndr, "sd", r->out.sd);
-		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
