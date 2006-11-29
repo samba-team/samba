@@ -93,6 +93,16 @@ struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *st
 			 * exploded_dn control is used */
 			dn->special = true;
 			/* FIXME: add a GUID string to ldb_dn structure */
+		} else if (strncasecmp(strdn, "<SID=", 8) == 0) {
+			/* this is special DN returned when the
+			 * exploded_dn control is used */
+			dn->special = true;
+			/* FIXME: add a SID string to ldb_dn structure */
+		} else if (strncasecmp(strdn, "<WKGUID=", 8) == 0) {
+			/* this is special DN returned when the
+			 * exploded_dn control is used */
+			dn->special = true;
+			/* FIXME: add a WKGUID string to ldb_dn structure */
 		}
 		dn->linearized = talloc_strdup(dn, strdn);
 	} else {
