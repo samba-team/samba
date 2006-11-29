@@ -6,3 +6,4 @@ config.log
 push.sh
 ctdb_test
 config.cache
+configure
