@@ -179,8 +179,7 @@ BOOL set_share_security(const char *share_name, SEC_DESC *psd)
 out:
  
 	prs_mem_free(&ps);
-	if (mem_ctx)
-		talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
