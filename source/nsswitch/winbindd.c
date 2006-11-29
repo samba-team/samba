@@ -879,7 +879,7 @@ static void process_loop(void)
 
 struct winbindd_state server_state;   /* Server state information */
 
-int main(int argc, char **argv)
+int main(int argc, char **argv, char **envp)
 {
 	pstring logfile;
 	static BOOL Fork = True;
@@ -1022,6 +1022,17 @@ int main(int argc, char **argv)
 
 	pidfile_create("winbindd");
 
+	if (winbindd_validate_cache()) {
+		/* We have a bad cache, but luckily we
+		   just deleted it. Restart ourselves */
+		int i;
+		/* Ensure we have no open low fd's. */
+		for (i = 3; i < 100; i++) {
+			close(i);
+		}
+		return execve(argv[0], argv, envp);
+	}
+
 #if HAVE_SETPGID
 	/*
 	 * If we're interactive we want to set our own process group for
@@ -1040,6 +1051,9 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	
+	/* Ensure all cache and idmap caches are consistent
+	   before we startup. */
+
 	/* React on 'smbcontrol winbindd reload-config' in the same way
 	   as to SIGHUP signal */
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);

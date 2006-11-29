@@ -36,4 +36,6 @@
 #define SIGNAL_CAST (RETSIGTYPE (*)(int))
 #endif
 
+#include <setjmp.h>
+
 #endif
