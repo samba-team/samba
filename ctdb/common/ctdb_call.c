@@ -43,6 +43,7 @@ static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key, int call_id,
 	c->key = key;
 	c->call_data = call_data;
 	c->record_data.dptr = talloc_memdup(c, data.dptr, data.dsize);
+	c->record_data.dsize = data.dsize;
 	CTDB_NO_MEMORY(ctdb, c->record_data.dptr);
 	if (data.dptr) free(data.dptr);
 	c->new_data = NULL;
@@ -81,7 +82,7 @@ static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key, int call_id,
 
 	talloc_free(c);
 
-	return -1;
+	return 0;
 }
 
 /*
