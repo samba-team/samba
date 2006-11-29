@@ -290,44 +290,67 @@ BOOL regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted, 
 /***********************************************************************
 ***********************************************************************/
 
-WERROR regkey_open_internal( REGISTRY_KEY **regkey, const char *path, 
+static int regkey_destructor(REGISTRY_KEY *key)
+{
+	return regdb_close();
+}
+
+WERROR regkey_open_internal( TALLOC_CTX *mem_ctx, REGISTRY_KEY *parent,
+			     REGISTRY_KEY **regkey, const char *name,
                              NT_USER_TOKEN *token, uint32 access_desired )
 {
 	WERROR     	result = WERR_OK;
-	REGISTRY_KEY    *keyinfo;
+	REGISTRY_KEY    *key;
 	REGSUBKEY_CTR	*subkeys = NULL;
-	uint32 access_granted;
-	
+	size_t path_len;
+
+	DEBUG(7,("regkey_open_internal: name = [%s]\n", name));
+
+	if ( !(key = TALLOC_ZERO_P(mem_ctx, REGISTRY_KEY)) ) {
+		return WERR_NOMEM;
+	}
+
 	if ( !(W_ERROR_IS_OK(result = regdb_open()) ) )
 		return result;
 
-	DEBUG(7,("regkey_open_internal: name = [%s]\n", path));
-
-	if ( !(*regkey = TALLOC_ZERO_P(NULL, REGISTRY_KEY)) ) {
-		regdb_close();
-		return WERR_NOMEM;
-	}
-		
-	keyinfo = *regkey;
+	talloc_set_destructor(key, regkey_destructor);
 		
 	/* initialization */
 	
-	keyinfo->type = REG_KEY_GENERIC;
-	if (!(keyinfo->name = talloc_strdup(keyinfo, path))) {
+	key->type = REG_KEY_GENERIC;
+	if (!(key->name = talloc_strdup(key, name))) {
 		result = WERR_NOMEM;
 		goto done;
 	}
 
+	if (parent != NULL) {
+		char *tmp;
+		if (!(tmp = talloc_asprintf(key, "%s%s%s", 
+					    parent ? parent->name : "",
+					    parent ? "\\" : "", 
+					    key->name))) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+		TALLOC_FREE(key->name);
+		key->name = tmp;
+	}
+
+	path_len = strlen( key->name );
+	if ( (path_len != 0) && (key->name[path_len-1] == '\\') ) {
+		key->name[path_len-1] = '\0';
+	}
+
 	/* Tag this as a Performance Counter Key */
 
-	if( StrnCaseCmp(path, KEY_HKPD, strlen(KEY_HKPD)) == 0 )
-		keyinfo->type = REG_KEY_HKPD;
+	if( StrnCaseCmp(key->name, KEY_HKPD, strlen(KEY_HKPD)) == 0 )
+		key->type = REG_KEY_HKPD;
 	
 	/* Look up the table of registry I/O operations */
 
-	if ( !(keyinfo->hook = reghook_cache_find( keyinfo->name )) ) {
-		DEBUG(0,("open_registry_key: Failed to assigned a REGISTRY_HOOK to [%s]\n",
-			keyinfo->name ));
+	if ( !(key->hook = reghook_cache_find( key->name )) ) {
+		DEBUG(0,("open_registry_key: Failed to assigned a "
+			 "REGISTRY_HOOK to [%s]\n", key->name ));
 		result = WERR_BADFILE;
 		goto done;
 	}
@@ -335,40 +358,31 @@ WERROR regkey_open_internal( REGISTRY_KEY **regkey, const char *path,
 	/* check if the path really exists; failed is indicated by -1 */
 	/* if the subkey count failed, bail out */
 
-	if ( !(subkeys = TALLOC_ZERO_P( keyinfo, REGSUBKEY_CTR )) ) {
+	if ( !(subkeys = TALLOC_ZERO_P( key, REGSUBKEY_CTR )) ) {
 		result = WERR_NOMEM;
 		goto done;
 	}
 
-	if ( fetch_reg_keys( keyinfo, subkeys ) == -1 )  {
+	if ( fetch_reg_keys( key, subkeys ) == -1 )  {
 		result = WERR_BADFILE;
 		goto done;
 	}
 	
 	TALLOC_FREE( subkeys );
 
-	if ( !regkey_access_check( keyinfo, access_desired, &access_granted, token ) ) {
+	if ( !regkey_access_check( key, access_desired, &key->access_granted,
+				   token ) ) {
 		result = WERR_ACCESS_DENIED;
 		goto done;
 	}
-	
-	keyinfo->access_granted = access_granted;
 
+	*regkey = key;
+	result = WERR_OK;
+	
 done:
 	if ( !W_ERROR_IS_OK(result) ) {
-		regkey_close_internal( *regkey );
+		TALLOC_FREE(key);
 	}
 
 	return result;
-}
-
-/*******************************************************************
-*******************************************************************/
-
-WERROR regkey_close_internal( REGISTRY_KEY *key )
-{
-	TALLOC_FREE( key );
-	regdb_close();
-
-	return WERR_OK;
 }

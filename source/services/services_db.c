@@ -322,8 +322,8 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 	/* open the new service key */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( &key_service, path, get_root_nt_token(), 
-		REG_KEY_ALL );
+	wresult = regkey_open_internal( NULL, NULL, &key_service, path,
+					get_root_nt_token(), REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("add_new_svc_name: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
@@ -334,7 +334,7 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 
 	if ( !(svc_subkeys = TALLOC_ZERO_P( key_service, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
-		regkey_close_internal( key_service );
+		TALLOC_FREE( key_service );
 		return;
 	}
 	
@@ -346,7 +346,7 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 	
 	if ( !(values = TALLOC_ZERO_P( key_service, REGVAL_CTR )) ) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
-		regkey_close_internal( key_service );
+		TALLOC_FREE( key_service );
 		return;
 	}
 
@@ -355,29 +355,29 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 
 	/* cleanup the service key*/
 
-	regkey_close_internal( key_service );
+	TALLOC_FREE( key_service );
 
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s\\%s", KEY_SERVICES, name, "Security" );
-	wresult = regkey_open_internal( &key_secdesc, path, get_root_nt_token(), 
-		REG_KEY_ALL );
+	wresult = regkey_open_internal( NULL, NULL, &key_secdesc, path,
+					get_root_nt_token(), REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("add_new_svc_name: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
-		regkey_close_internal( key_secdesc );
+		TALLOC_FREE( key_secdesc );
 		return;
 	}
 
 	if ( !(values = TALLOC_ZERO_P( key_secdesc, REGVAL_CTR )) ) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
-		regkey_close_internal( key_secdesc );
+		TALLOC_FREE( key_secdesc );
 		return;
 	}
 
 	if ( !(sd = construct_service_sd(key_secdesc)) ) {
 		DEBUG(0,("add_new_svc_name: Failed to create default sec_desc!\n"));
-		regkey_close_internal( key_secdesc );
+		TALLOC_FREE( key_secdesc );
 		return;
 	}
 	
@@ -394,7 +394,7 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 	/* finally cleanup the Security key */
 	
 	prs_mem_free( &ps );
-	regkey_close_internal( key_secdesc );
+	TALLOC_FREE( key_secdesc );
 
 	return;
 }
@@ -412,8 +412,8 @@ void svcctl_init_keys( void )
 	
 	/* bad mojo here if the lookup failed.  Should not happen */
 	
-	wresult = regkey_open_internal( &key, KEY_SERVICES, get_root_nt_token(), 
-		REG_KEY_ALL );
+	wresult = regkey_open_internal( NULL, NULL, &key, KEY_SERVICES,
+					get_root_nt_token(), REG_KEY_ALL );
 
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("init_services_keys: key lookup failed! (%s)\n", 
@@ -425,7 +425,7 @@ void svcctl_init_keys( void )
 	
 	if ( !(subkeys = TALLOC_ZERO_P( key, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("init_services_keys: talloc() failed!\n"));
-		regkey_close_internal( key );
+		TALLOC_FREE( key );
 		return;
 	}
 	
@@ -447,7 +447,7 @@ void svcctl_init_keys( void )
 		add_new_svc_name( key, subkeys, service_list[i] );
 	}
 
-	regkey_close_internal( key );
+	TALLOC_FREE( key );
 
 	/* initialize the control hooks */
 
@@ -476,7 +476,8 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s\\%s", KEY_SERVICES, name, "Security" );
-	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	wresult = regkey_open_internal( NULL, NULL, &key, path, token,
+					REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
@@ -485,7 +486,7 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
-		regkey_close_internal( key );
+		TALLOC_FREE( key );
 		return NULL;
 	}
 
@@ -494,7 +495,7 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	if ( !(val = regval_ctr_getvalue( values, "Security" )) ) {
 		DEBUG(6,("svcctl_get_secdesc: constructing default secdesc for service [%s]\n", 
 			name));
-		regkey_close_internal( key );
+		TALLOC_FREE( key );
 		return construct_service_sd( ctx );
 	}
 	
@@ -505,7 +506,7 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	prs_give_memory( &ps, (char *)regval_data_p(val), regval_size(val), False );
 	
 	if ( !sec_io_desc("sec_desc", &sd, &ps, 0 ) ) {
-		regkey_close_internal( key );
+		TALLOC_FREE( key );
 		return construct_service_sd( ctx );
 	}
 	
@@ -514,7 +515,7 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	/* finally cleanup the Security key */
 	
 	prs_mem_free( &ps );
-	regkey_close_internal( key );
+	TALLOC_FREE( key );
 
 	return ret_sd;
 }
@@ -535,7 +536,8 @@ BOOL svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s\\%s", KEY_SERVICES, name, "Security" );
-	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	wresult = regkey_open_internal( NULL, NULL, &key, path, token,
+					REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
@@ -544,7 +546,7 @@ BOOL svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
-		regkey_close_internal( key );
+		TALLOC_FREE( key );
 		return False;
 	}
 	
@@ -561,7 +563,7 @@ BOOL svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 	/* cleanup */
 	
 	prs_mem_free( &ps );
-	regkey_close_internal( key);
+	TALLOC_FREE( key);
 
 	return ret;
 }
@@ -581,7 +583,8 @@ char* svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( &key, path, token, REG_KEY_READ );
+	wresult = regkey_open_internal( NULL, NULL, &key, path, token,
+					REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
@@ -590,7 +593,7 @@ char* svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
 		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
-		regkey_close_internal( key );
+		TALLOC_FREE( key );
 		goto fail;
 	}
 
@@ -601,13 +604,13 @@ char* svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
 
 	rpcstr_pull( display_name, regval_data_p(val), sizeof(display_name), regval_size(val), 0 );
 
-	regkey_close_internal( key );
+	TALLOC_FREE( key );
 	
 	return display_name;
 
 fail:
 	/* default to returning the service name */
-	regkey_close_internal( key );
+	TALLOC_FREE( key );
 	fstrcpy( display_name, name );
 	return display_name;
 }
@@ -627,7 +630,8 @@ char* svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( &key, path, token, REG_KEY_READ );
+	wresult = regkey_open_internal( NULL, NULL, &key, path, token,
+					REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
@@ -636,7 +640,7 @@ char* svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
 		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
-		regkey_close_internal( key );
+		TALLOC_FREE( key );
 		return NULL;
 	}
 
@@ -647,7 +651,7 @@ char* svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
 	else
 		rpcstr_pull( description, regval_data_p(val), sizeof(description), regval_size(val), 0 );
 
-	regkey_close_internal( key );
+	TALLOC_FREE( key );
 	
 	return description;
 }
@@ -666,7 +670,8 @@ REGVAL_CTR* svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( &key, path, token, REG_KEY_READ );
+	wresult = regkey_open_internal( NULL, NULL, &key, path, token,
+					REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_fetch_regvalues: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
@@ -675,13 +680,13 @@ REGVAL_CTR* svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token )
 
 	if ( !(values = TALLOC_ZERO_P( NULL, REGVAL_CTR )) ) {
 		DEBUG(0,("svcctl_fetch_regvalues: talloc() failed!\n"));
-		regkey_close_internal( key );
+		TALLOC_FREE( key );
 		return NULL;
 	}
 	
 	fetch_reg_values( key, values );
 
-	regkey_close_internal( key );
+	TALLOC_FREE( key );
 	
 	return values;
 }
