@@ -19,35 +19,9 @@
 */
 
 
-/*
-  a pending ctdb request
-*/
-struct ctdb_request {
-	
-};
-
-/*
-  an installed ctdb remote call
-*/
-struct ctdb_registered_call {
-	struct ctdb_registered_call *next, *prev;
-	uint32_t id;
-	ctdb_fn_t fn;
-};
-
-struct ctdb_address {
-	const char *address;
-	int port;
-};
-
-/*
-  state associated with one node
-*/
-struct ctdb_node {
-	struct ctdb_context *ctdb;
-	struct ctdb_node *next, *prev;
-	struct ctdb_address address;
-	int fd;
+/* ctdb_tcp main state */
+struct ctdb_tcp {
+	int listen_fd;
 };
 
 /*
@@ -58,16 +32,28 @@ struct ctdb_incoming {
 	int fd;
 };
 
-/* main state of the ctdb daemon */
-struct ctdb_context {
-	struct event_context *ev;
-	struct ctdb_address address;
-	int listen_fd;
-	struct ctdb_node *nodes; /* list of nodes in the cluster */
-	struct ctdb_registered_call *calls; /* list of registered calls */
-	char *err_msg;
-	struct tdb_context *ltdb;
+struct ctdb_tcp_packet {
+	struct ctdb_tcp_packet *next, *prev;
+	uint8_t *data;
+	uint32_t length;
+};
+
+/*
+  state associated with one tcp node
+*/
+struct ctdb_tcp_node {
+	int fd;
+	struct fd_event *fde;
+	struct ctdb_tcp_packet *queue;
 };
 
 
-#define CTDB_SOCKET "/tmp/ctdb.sock"
+/* prototypes internal to tcp transport */
+void ctdb_tcp_node_write(struct event_context *ev, struct fd_event *fde, 
+			 uint16_t flags, void *private);
+void ctdb_tcp_incoming_read(struct event_context *ev, struct fd_event *fde, 
+			    uint16_t flags, void *private);
+int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length);
+int ctdb_tcp_listen(struct ctdb_context *ctdb);
+void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te, 
+			   struct timeval t, void *private);

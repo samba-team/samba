@@ -1,5 +1,5 @@
 /* 
-   ctdb over TCP
+   ctdb ltdb code
 
    Copyright (C) Andrew Tridgell  2006
 
@@ -19,52 +19,24 @@
 */
 
 #include "includes.h"
+#include "lib/events/events.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "ctdb_private.h"
 
-struct ctdb_child_state {
-	int sock;
-	struct event_context *ev;
-};
-
-
 /*
-  create a unix domain socket and bind it
-  return a file descriptor open on the socket 
+  attach to a specific database
 */
-static int ux_socket_bind(const char *name)
+int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags, 
+		int open_flags, mode_t mode)
 {
-	int fd;
-        struct sockaddr_un addr;
-
-	/* get rid of any old socket */
-	unlink(name);
-
-	fd = socket(AF_UNIX, SOCK_DGRAM, 0);
-	if (fd == -1) return -1;
-
-        memset(&addr, 0, sizeof(addr));
-        addr.sun_family = AF_UNIX;
-        strncpy(addr.sun_path, name, sizeof(addr.sun_path));
-
-        if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-		close(fd);
+	/* when we have a separate daemon this will need to be a real
+	   file, not a TDB_INTERNAL, so the parent can access it to
+	   for ltdb bypass */
+	ctdb->ltdb = tdb_open(name, 0, TDB_INTERNAL, 0, 0);
+	if (ctdb->ltdb == NULL) {
+		ctdb_set_error(ctdb, "Failed to open tdb %s\n", name);
 		return -1;
-	}	
-
-	return fd;
-}
-
-/*
-  start the ctdb tcp child daemon
-*/
-int ctdb_tcp_child(void)
-{
-	struct ctdb_child_state *state;
-
-	state = talloc(NULL, struct ctdb_child_state);
-	state->sock = ux_socket_bind(CTDB_SOCKET);
-
+	}
 	return 0;
 }
