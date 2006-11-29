@@ -1593,12 +1593,14 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		}
 
 		if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
+			SAFE_FREE(utf8_password);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		if ((ber = ber_alloc_t(LBER_USE_DER))==NULL) {
 			DEBUG(0,("ber_alloc_t returns NULL\n"));
 			SAFE_FREE(utf8_password);
+			SAFE_FREE(utf8_dn);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
