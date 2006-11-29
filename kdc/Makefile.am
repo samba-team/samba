@@ -76,7 +76,12 @@ hpropd_LDADD = \
 	$(LIB_roken) \
 	$(DBLIB) 
 
+if PKINIT
+LIB_pkinit = $(top_builddir)/lib/hx509/libhx509.la
+endif
+
 libkdc_la_LIBADD = \
+	$(LIB_pkinit) \
 	$(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
