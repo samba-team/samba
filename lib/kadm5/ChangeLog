@@ -1,3 +1,8 @@
+2006-11-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_c.c (kadm_connect): clear error string before trying to
+	print a errno, this way we don't pick up a random failure code
+	
 2006-11-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ipropd_slave.c: Make krb5_get_init_creds_opt_free take a context
