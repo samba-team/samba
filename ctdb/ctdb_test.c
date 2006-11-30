@@ -169,7 +169,7 @@ int main(int argc, const char *argv[])
 	key.dsize = strlen("test")+1;
 
 	/* add some random data */
-	for (i=0;i<100;i++) {
+	for (i=0;i<10;i++) {
 		int v = random() % 1000;
 		data.dptr = (uint8_t *)&v;
 		data.dsize = sizeof(v);
@@ -191,7 +191,7 @@ int main(int argc, const char *argv[])
 		printf("%3d\n", ((int *)data.dptr)[i]);
 	}
 	talloc_free(data.dptr);
-	
+
 	/* shut it down */
 	talloc_free(ctdb);
 	return 0;
