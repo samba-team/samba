@@ -1239,7 +1239,7 @@ REGISTRY_OPS printing_ops = {
 	regprint_fetch_reg_values,
 	regprint_store_reg_keys,
 	regprint_store_reg_values,
-	NULL
+	NULL, NULL, NULL
 };
 
 

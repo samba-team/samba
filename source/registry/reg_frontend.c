@@ -28,6 +28,7 @@
 extern REGISTRY_OPS printing_ops;
 extern REGISTRY_OPS eventlog_ops;
 extern REGISTRY_OPS shares_reg_ops;
+extern REGISTRY_OPS smbconf_reg_ops;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
 /* array of REGISTRY_HOOK's which are read into a tree for easy access */
@@ -39,6 +40,7 @@ REGISTRY_HOOK reg_hooks[] = {
   { KEY_PRINTING_2K, 		&printing_ops },
   { KEY_PRINTING_PORTS, 	&printing_ops },
   { KEY_SHARES,      		&shares_reg_ops },
+  { KEY_SMBCONF,      		&smbconf_reg_ops },
 #endif
   { NULL, NULL }
 };
@@ -46,25 +48,6 @@ REGISTRY_HOOK reg_hooks[] = {
 
 static struct generic_mapping reg_generic_map = 
 	{ REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
-
-/********************************************************************
-********************************************************************/
-
-static NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token, 
-                                     uint32 access_desired, uint32 *access_granted )
-{
-	NTSTATUS result;
-
-	if ( geteuid() == sec_initial_uid() ) {
-		DEBUG(5,("registry_access_check: using root's token\n"));
-		token = get_root_nt_token();
-	}
-
-	se_map_generic( &access_desired, &reg_generic_map );
-	se_access_check( sec_desc, token, access_desired, access_granted, &result );
-
-	return result;
-}
 
 /********************************************************************
 ********************************************************************/
@@ -268,23 +251,46 @@ NTSTATUS registry_fetch_values(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
  underlying registry backend
  ***********************************************************************/
 
-BOOL regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted, NT_USER_TOKEN *token )
+BOOL regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
+			  const struct nt_user_token *token )
 {
-	/* use the default security check if the backend has not defined its own */
-	
-	if ( !(key->hook && key->hook->ops && key->hook->ops->reg_access_check) ) {
-		SEC_DESC *sec_desc;
-		NTSTATUS status;
-		
-		if ( !(sec_desc = construct_registry_sd( get_talloc_ctx() )) )
-			return False;
-		
-		status = registry_access_check( sec_desc, token, requested, granted );		
-		
-		return NT_STATUS_IS_OK(status);
+	SEC_DESC *sec_desc;
+	NTSTATUS status;
+	WERROR err;
+	TALLOC_CTX *mem_ctx;
+
+	/* use the default security check if the backend has not defined its
+	 * own */
+
+	if (key->hook && key->hook->ops && key->hook->ops->reg_access_check) {
+		return key->hook->ops->reg_access_check( key->name, requested,
+							 granted, token );
 	}
-	
-	return key->hook->ops->reg_access_check( key->name, requested, granted, token );
+
+	/*
+	 * The secdesc routines can't yet cope with a NULL talloc ctx sanely.
+	 */
+
+	if (!(mem_ctx = talloc_init("regkey_access_check"))) {
+		return False;
+	}
+
+	err = regkey_get_secdesc(mem_ctx, key, &sec_desc);
+
+	if (!W_ERROR_IS_OK(err)) {
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
+	se_map_generic( &requested, &reg_generic_map );
+
+	if (!se_access_check(sec_desc, token, requested, granted, &status)) {
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
+	TALLOC_FREE(mem_ctx);
+	return NT_STATUS_IS_OK(status);
 }
 
 /***********************************************************************
@@ -295,16 +301,21 @@ static int regkey_destructor(REGISTRY_KEY *key)
 	return regdb_close();
 }
 
-WERROR regkey_open_internal( TALLOC_CTX *mem_ctx, REGISTRY_KEY *parent,
+WERROR regkey_open_onelevel( TALLOC_CTX *mem_ctx, REGISTRY_KEY *parent,
 			     REGISTRY_KEY **regkey, const char *name,
-                             NT_USER_TOKEN *token, uint32 access_desired )
+                             const struct nt_user_token *token,
+			     uint32 access_desired )
 {
 	WERROR     	result = WERR_OK;
 	REGISTRY_KEY    *key;
 	REGSUBKEY_CTR	*subkeys = NULL;
-	size_t path_len;
 
 	DEBUG(7,("regkey_open_internal: name = [%s]\n", name));
+
+	if ((parent != NULL) &&
+	    ((parent->access_granted & SEC_RIGHTS_ENUM_SUBKEYS) == 0)) {
+		return WERR_ACCESS_DENIED;
+	}
 
 	if ( !(key = TALLOC_ZERO_P(mem_ctx, REGISTRY_KEY)) ) {
 		return WERR_NOMEM;
@@ -320,27 +331,30 @@ WERROR regkey_open_internal( TALLOC_CTX *mem_ctx, REGISTRY_KEY *parent,
 	/* initialization */
 	
 	key->type = REG_KEY_GENERIC;
-	if (!(key->name = talloc_strdup(key, name))) {
-		result = WERR_NOMEM;
-		goto done;
-	}
 
-	if (parent != NULL) {
-		char *tmp;
-		if (!(tmp = talloc_asprintf(key, "%s%s%s", 
-					    parent ? parent->name : "",
-					    parent ? "\\" : "", 
-					    key->name))) {
-			result = WERR_NOMEM;
+	if (name[0] == '\0') {
+		/*
+		 * Open a copy of the parent key
+		 */
+		if (!parent) {
+			result = WERR_BADFILE;
 			goto done;
 		}
-		TALLOC_FREE(key->name);
-		key->name = tmp;
+		key->name = talloc_strdup(key, parent->name);
+	}
+	else {
+		/*
+		 * Normal open, concat parent and new keynames
+		 */
+		key->name = talloc_asprintf(key, "%s%s%s",
+					    parent ? parent->name : "",
+					    parent ? "\\": "",
+					    name);
 	}
 
-	path_len = strlen( key->name );
-	if ( (path_len != 0) && (key->name[path_len-1] == '\\') ) {
-		key->name[path_len-1] = '\0';
+	if (key->name == NULL) {
+		result = WERR_NOMEM;
+		goto done;
 	}
 
 	/* Tag this as a Performance Counter Key */
@@ -388,3 +402,94 @@ done:
 
 	return result;
 }
+
+WERROR regkey_open_internal( TALLOC_CTX *ctx, REGISTRY_KEY *parent,
+			     REGISTRY_KEY **regkey, const char *name,
+                             NT_USER_TOKEN *token, uint32 access_desired )
+{
+	TALLOC_CTX *mem_ctx;
+	const char *p;
+	BOOL free_parent = False;
+	WERROR err;
+	size_t len;
+
+	if (!(mem_ctx = talloc_new(ctx))) {
+		return WERR_NOMEM;
+	}
+
+	len = strlen(name);
+	if ((len > 0) && (name[len-1] == '\\')) {
+		if (!(name = talloc_strndup(mem_ctx, name, len-1))) {
+			TALLOC_FREE(mem_ctx);
+			return WERR_NOMEM;
+		}
+	}
+
+	while ((p = strchr(name, '\\')) != NULL) {
+		char *name_component;
+		REGISTRY_KEY *intermediate;
+		
+
+		if (!(name_component = talloc_strndup(
+			      mem_ctx, name, (p - name)))) {
+			TALLOC_FREE(mem_ctx);
+			return WERR_NOMEM;
+		}
+
+		err = regkey_open_onelevel(mem_ctx, parent, &intermediate,
+					   name_component, token,
+					   SEC_RIGHTS_ENUM_SUBKEYS);
+		TALLOC_FREE(name_component);
+
+		if (!W_ERROR_IS_OK(err)) {
+			TALLOC_FREE(mem_ctx);
+			return WERR_NOMEM;
+		}
+
+		if (free_parent) {
+			TALLOC_FREE(parent);
+		}
+		parent = intermediate;
+		free_parent = True;
+		name = p+1;
+	}
+
+	err = regkey_open_onelevel(ctx, parent, regkey, name, token,
+				   access_desired);
+	TALLOC_FREE(mem_ctx);
+	return err;
+}
+
+WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
+			  struct security_descriptor **psecdesc)
+{
+	struct security_descriptor *secdesc;
+
+	if (key->hook && key->hook->ops && key->hook->ops->get_secdesc) {
+		WERROR err;
+
+		err = key->hook->ops->get_secdesc(mem_ctx, key->name,
+						  psecdesc);
+		if (W_ERROR_IS_OK(err)) {
+			return WERR_OK;
+		}
+	}
+
+	if (!(secdesc = construct_registry_sd(mem_ctx))) {
+		return WERR_NOMEM;
+	}
+
+	*psecdesc = secdesc;
+	return WERR_OK;
+}
+
+WERROR regkey_set_secdesc(REGISTRY_KEY *key,
+			  struct security_descriptor *psecdesc)
+{
+	if (key->hook && key->hook->ops && key->hook->ops->set_secdesc) {
+		return key->hook->ops->set_secdesc(key->name, psecdesc);
+	}
+
+	return WERR_ACCESS_DENIED;
+}
+
