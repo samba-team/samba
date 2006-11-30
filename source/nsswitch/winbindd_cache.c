@@ -2663,6 +2663,11 @@ static int validate_trustdoms(TDB_DATA kbuf, TDB_DATA dbuf)
 	return 0;
 }
 
+static int validate_offline(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
 /***********************************************************************
  A list of all possible cache tdb keys with associated validation
  functions.
@@ -2685,6 +2690,7 @@ struct key_val_struct {
 	{"UA", validate_ua},
 	{"GM/", validate_gm},
 	{"TRUSTDOMS/", validate_trustdoms},
+	{"WINBINDD_OFFLINE", validate_offline},
 	{NULL, NULL}
 };
 
