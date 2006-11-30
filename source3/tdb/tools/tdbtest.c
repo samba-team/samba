@@ -219,6 +219,7 @@ static void merge_test(void)
 {
 	int i, seed=0;
 	int loops = 10000;
+	int num_entries;
 	char test_gdbm[] = "test.gdbm";
 
 	unlink("test.gdbm");
@@ -232,8 +233,6 @@ static void merge_test(void)
 		fatal("db open failed");
 	}
 
-	tdb_logging_function(db, tdb_log);
-	
 #if 1
 	srand(seed);
 	_start_timer();
@@ -247,6 +246,12 @@ static void merge_test(void)
 	_start_timer();
 	for (i=0;i<loops;i++) addrec_db();
 	printf("tdb got %.2f ops/sec\n", i/_end_timer());
+
+	if (tdb_validate_freelist(db, &num_entries) == -1) {
+		printf("tdb freelist is corrupt\n");
+	} else {
+		printf("tdb freelist is good (%d entries)\n", num_entries);
+	}
 
 	compare_db();
 
