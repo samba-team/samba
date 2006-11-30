@@ -372,7 +372,7 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 
 static NTSTATUS store_cache_seqnum( struct winbindd_domain *domain )
 {
-	TDB_DATA data, key;
+	TDB_DATA data;
 	fstring key_str;
 	char buf[8];
 	
@@ -382,15 +382,13 @@ static NTSTATUS store_cache_seqnum( struct winbindd_domain *domain )
 	}
 		
 	fstr_sprintf( key_str, "SEQNUM/%s", domain->name );
-	key.dptr = key_str;
-	key.dsize = strlen(key_str)+1;
 	
 	SIVAL(buf, 0, domain->sequence_number);
 	SIVAL(buf, 4, domain->last_seq_check);
 	data.dptr = buf;
 	data.dsize = 8;
 	
-	if ( tdb_store( wcache->tdb, key, data, TDB_REPLACE) == -1 ) {
+	if ( tdb_store_bystring( wcache->tdb, key_str, data, TDB_REPLACE) == -1 ) {
 		DEBUG(10,("store_cache_seqnum: tdb_store fail key [%s]\n", key_str ));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
