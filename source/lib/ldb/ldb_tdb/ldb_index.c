@@ -120,11 +120,12 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 	h = ldb_attrib_handler(ldb, attr);
 	r = h->canonicalise_fn(ldb, ldb, value, &v);
 	if (r != LDB_SUCCESS) {
+		const char *errstr = ldb_errstring(ldb);
 		/* canonicalisation can be refused. For example, 
 		   a attribute that takes wildcards will refuse to canonicalise
 		   if the value contains a wildcard */
-		ldb_asprintf_errstring(ldb, "Failed to create index key for attribute '%s':%s:%s",
-				       attr, ldb_strerror(r), ldb_errstring(ldb));
+		ldb_asprintf_errstring(ldb, "Failed to create index key for attribute '%s':%s%s%s",
+				       attr, ldb_strerror(r), (errstr?":":""), (errstr?errstr:""));
 		talloc_free(attr_folded);
 		return NULL;
 	}
