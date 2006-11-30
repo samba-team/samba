@@ -216,16 +216,16 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision, uint16 type,
 	dst->sacl      = NULL;
 	dst->dacl      = NULL;
 
-	if(owner_sid && ((dst->owner_sid = sid_dup_talloc(ctx,owner_sid)) == NULL))
+	if(owner_sid && ((dst->owner_sid = sid_dup_talloc(dst,owner_sid)) == NULL))
 		goto error_exit;
 
-	if(grp_sid && ((dst->group_sid = sid_dup_talloc(ctx,grp_sid)) == NULL))
+	if(grp_sid && ((dst->group_sid = sid_dup_talloc(dst,grp_sid)) == NULL))
 		goto error_exit;
 
-	if(sacl && ((dst->sacl = dup_sec_acl(ctx, sacl)) == NULL))
+	if(sacl && ((dst->sacl = dup_sec_acl(dst, sacl)) == NULL))
 		goto error_exit;
 
-	if(dacl && ((dst->dacl = dup_sec_acl(ctx, dacl)) == NULL))
+	if(dacl && ((dst->dacl = dup_sec_acl(dst, dacl)) == NULL))
 		goto error_exit;
 
 	offset = SEC_DESC_HEADER_SIZE;
@@ -272,6 +272,63 @@ SEC_DESC *dup_sec_desc(TALLOC_CTX *ctx, const SEC_DESC *src)
 	return make_sec_desc( ctx, src->revision, src->type,
 				src->owner_sid, src->group_sid, src->sacl,
 				src->dacl, &dummy);
+}
+
+/*******************************************************************
+ Convert a secdesc into a byte stream
+********************************************************************/
+NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
+			   struct security_descriptor *secdesc,
+			   uint8 **data, size_t *len)
+{
+	prs_struct ps;
+	
+	if (!prs_init(&ps, sec_desc_size(secdesc), mem_ctx, MARSHALL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!sec_io_desc("security_descriptor", &secdesc, &ps, 1)) {
+		prs_mem_free(&ps);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!(*data = (uint8 *)talloc_memdup(mem_ctx, ps.data_p,
+					     prs_offset(&ps)))) {
+		prs_mem_free(&ps);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*len = prs_offset(&ps);
+	prs_mem_free(&ps);
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ Parse a byte stream into a secdesc
+********************************************************************/
+NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
+			     struct security_descriptor **psecdesc)
+{
+	prs_struct ps;
+	struct security_descriptor *secdesc = NULL;
+
+	if (!(secdesc = TALLOC_ZERO_P(mem_ctx, struct security_descriptor))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!prs_init(&ps, 0, secdesc, UNMARSHALL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	prs_give_memory(&ps, (char *)data, len, False);
+
+	if (!sec_io_desc("security_descriptor", &secdesc, &ps, 1)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	prs_mem_free(&ps);
+	*psecdesc = secdesc;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************

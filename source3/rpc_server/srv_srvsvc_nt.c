@@ -516,6 +516,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 	/* Ensure all the usershares are loaded. */
 	become_root();
 	load_usershare_shares();
+	load_registry_shares();
 	unbecome_root();
 
 	*total_entries = 0;
