@@ -1478,6 +1478,10 @@ WERROR _winreg_DeleteValue(pipes_struct *p, struct policy_handle *handle, struct
 WERROR _winreg_GetKeySecurity(pipes_struct *p, struct policy_handle *handle, uint32_t sec_info, struct KeySecurityData *sd)
 {
 	REGISTRY_KEY *key = find_regkey_by_hnd(p, handle);
+	WERROR err;
+	struct security_descriptor *secdesc;
+	uint8 *data;
+	size_t len;
 
 	if ( !key )
 		return WERR_BADFID;
@@ -1486,8 +1490,28 @@ WERROR _winreg_GetKeySecurity(pipes_struct *p, struct policy_handle *handle, uin
 	
 	if ( !(key->access_granted & STD_RIGHT_READ_CONTROL_ACCESS) )
 		return WERR_ACCESS_DENIED;
+
+	err = regkey_get_secdesc(p->mem_ctx, key, &secdesc);
+	if (!W_ERROR_IS_OK(err)) {
+		return err;
+	}
+
+	err = ntstatus_to_werror(marshall_sec_desc(p->mem_ctx, secdesc,
+						   &data, &len));
+	if (!W_ERROR_IS_OK(err)) {
+		return err;
+	}
+
+	if (len > sd->size) {
+		sd->size = len;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	sd->size = len;
+	sd->len = len;
+	sd->data = data;
 		
-	return WERR_ACCESS_DENIED;
+	return WERR_OK;
 }
 
 /*******************************************************************
@@ -1496,6 +1520,8 @@ WERROR _winreg_GetKeySecurity(pipes_struct *p, struct policy_handle *handle, uin
 WERROR _winreg_SetKeySecurity(pipes_struct *p, struct policy_handle *handle, uint32_t access_mask, struct KeySecurityData *sd)
 {
 	REGISTRY_KEY *key = find_regkey_by_hnd(p, handle);
+	struct security_descriptor *secdesc;
+	WERROR err;
 
 	if ( !key )
 		return WERR_BADFID;
@@ -1504,8 +1530,14 @@ WERROR _winreg_SetKeySecurity(pipes_struct *p, struct policy_handle *handle, uin
 	
 	if ( !(key->access_granted & STD_RIGHT_WRITE_DAC_ACCESS) )
 		return WERR_ACCESS_DENIED;
-		
-	return WERR_ACCESS_DENIED;
+
+	err = ntstatus_to_werror(unmarshall_sec_desc(p->mem_ctx, sd->data,
+						     sd->len, &secdesc));
+	if (!W_ERROR_IS_OK(err)) {
+		return err;
+	}
+
+	return regkey_set_secdesc(key, secdesc);
 }
 
 /*******************************************************************

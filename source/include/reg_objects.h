@@ -98,6 +98,7 @@ typedef struct {
 #define KEY_PRINTING_PORTS	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports"
 #define KEY_EVENTLOG 		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog"
 #define KEY_SHARES		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares"
+#define KEY_SMBCONF		"HKLM\\SOFTWARE\\Samba\\smbconf"
 #define KEY_TREE_ROOT		""
 
 /*
@@ -121,7 +122,13 @@ typedef struct {
 	int 	(*fetch_values) ( const char *key, REGVAL_CTR *val );
 	BOOL 	(*store_subkeys)( const char *key, REGSUBKEY_CTR *subkeys );
 	BOOL 	(*store_values)( const char *key, REGVAL_CTR *val );
-	BOOL	(*reg_access_check)( const char *keyname, uint32 requested, uint32 *granted, NT_USER_TOKEN *token );
+	BOOL	(*reg_access_check)( const char *keyname, uint32 requested,
+				     uint32 *granted,
+				     const NT_USER_TOKEN *token );
+	WERROR (*get_secdesc)(TALLOC_CTX *mem_ctx, const char *key,
+			      struct security_descriptor **psecdesc);
+	WERROR (*set_secdesc)(const char *key,
+			      struct security_descriptor *sec_desc);
 } REGISTRY_OPS;
 
 typedef struct {

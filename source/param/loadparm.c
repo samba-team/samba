@@ -304,6 +304,7 @@ typedef struct {
 	BOOL bASUSupport;
 	BOOL bUsershareOwnerOnly;
 	BOOL bUsershareAllowGuests;
+	BOOL bRegistryShares;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -1225,6 +1226,7 @@ static struct parm_struct parm_table[] = {
 	{"root preexec close", P_BOOL, P_LOCAL, &sDefault.bRootpreexecClose, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"root postexec", P_STRING, P_LOCAL, &sDefault.szRootPostExec, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"available", P_BOOL, P_LOCAL, &sDefault.bAvailable, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
+	{"registry shares", P_BOOL, P_GLOBAL, &Globals.bRegistryShares, NULL, NULL, FLAG_ADVANCED},
 	{"usershare allow guests", P_BOOL, P_GLOBAL, &Globals.bUsershareAllowGuests, NULL, NULL, FLAG_ADVANCED},
 	{"usershare max shares", P_INTEGER, P_GLOBAL, &Globals.iUsershareMaxShares, NULL, NULL, FLAG_ADVANCED},
 	{"usershare owner only", P_BOOL, P_GLOBAL, &Globals.bUsershareOwnerOnly, NULL, NULL, FLAG_ADVANCED}, 
@@ -1652,6 +1654,9 @@ static void init_globals(BOOL first_time_only)
 	Globals.bUsershareOwnerOnly = True;
 	/* By default disallow guest access to usershares. */
 	Globals.bUsershareAllowGuests = False;
+
+	/* By default no shares out of the registry */
+	Globals.bRegistryShares = False;
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1860,6 +1865,7 @@ FN_GLOBAL_LIST(lp_usershare_prefix_deny_list, &Globals.szUsersharePrefixDenyList
 
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
+FN_GLOBAL_BOOL(lp_registry_shares, &Globals.bRegistryShares)
 FN_GLOBAL_BOOL(lp_usershare_allow_guests, &Globals.bUsershareAllowGuests)
 FN_GLOBAL_BOOL(lp_usershare_owner_only, &Globals.bUsershareOwnerOnly)
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
@@ -2606,6 +2612,10 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 
 int lp_add_service(const char *pszService, int iDefaultService)
 {
+	if (iDefaultService < 0) {
+		return add_a_service(&sDefault, pszService);
+	}
+
 	return (add_a_service(ServicePtrs[iDefaultService], pszService));
 }
 

@@ -29,6 +29,7 @@ static TDB_CONTEXT *tdb_reg;
 static int tdb_refcount;
 
 #define VALUE_PREFIX	"SAMBA_REGVAL"
+#define SECDESC_PREFIX  "SAMBA_SECDESC"
 
 /* List the deepest path into the registry.  All part components will be created.*/
 
@@ -46,6 +47,7 @@ static const char *builtin_registry_paths[] = {
 	KEY_PRINTING,
 	KEY_SHARES,
 	KEY_EVENTLOG,
+	KEY_SMBCONF,
 	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib",
 	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib\\009",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Monitors",
@@ -661,6 +663,90 @@ BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
 	return ret != -1 ;
 }
 
+void normalize_dbkey(char *key)
+{
+	size_t len = strlen(key);
+	string_sub(key, "\\", "/", len+1);
+	strupper_m(key);
+}
+
+static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
+				struct security_descriptor **psecdesc)
+{
+	char *tdbkey;
+	TDB_DATA data;
+	NTSTATUS status;
+
+	DEBUG(10, ("regdb_get_secdesc: Getting secdesc of key [%s]\n", key));
+
+	if (asprintf(&tdbkey, "%s/%s", SECDESC_PREFIX, key) == -1) {
+		return WERR_NOMEM;
+	}
+	normalize_dbkey(tdbkey);
+
+        data = tdb_fetch_bystring(tdb_reg, tdbkey);
+	SAFE_FREE(tdbkey);
+
+	if (data.dptr == NULL) {
+		return WERR_BADFILE;
+	}
+
+	status = unmarshall_sec_desc(mem_ctx, (uint8 *)data.dptr, data.dsize,
+				     psecdesc);
+
+	SAFE_FREE(data.dptr);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
+		return WERR_NOMEM;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return WERR_REG_CORRUPT;
+	}
+
+	return WERR_OK;
+}
+
+static WERROR regdb_set_secdesc(const char *key,
+				struct security_descriptor *secdesc)
+{
+	prs_struct ps;
+	TALLOC_CTX *mem_ctx;
+	char *tdbkey;
+	WERROR err = WERR_NOMEM;
+	uint8 *data;
+	TDB_DATA tdbdata;
+
+	if (!(mem_ctx = talloc_init("regdb_set_secdesc"))) {
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(ps);
+
+	if (!(tdbkey = talloc_asprintf(mem_ctx, "%s/%s", SECDESC_PREFIX,
+				       key))) {
+		goto done;
+	}
+	normalize_dbkey(tdbkey);
+
+	err = ntstatus_to_werror(marshall_sec_desc(mem_ctx, secdesc, &data,
+						   &tdbdata.dsize));
+	if (!W_ERROR_IS_OK(err)) {
+		goto done;
+	}
+
+	tdbdata.dptr = (char *)data;
+
+	if (tdb_trans_store_bystring(tdb_reg, tdbkey, tdbdata, 0) == -1) {
+		err = ntstatus_to_werror(map_nt_error_from_unix(errno));
+		goto done;
+	}
+
+ done:
+	prs_mem_free(&ps);
+	TALLOC_FREE(mem_ctx);
+	return err;
+}
 
 /* 
  * Table of function pointers for default access
@@ -671,7 +757,7 @@ REGISTRY_OPS regdb_ops = {
 	regdb_fetch_values,
 	regdb_store_keys,
 	regdb_store_values,
-	NULL
+	NULL,
+	regdb_get_secdesc,
+	regdb_set_secdesc
 };
-
-

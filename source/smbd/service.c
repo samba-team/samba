@@ -229,6 +229,115 @@ int add_home_service(const char *service, const char *username, const char *home
 
 }
 
+static int load_registry_service(const char *servicename)
+{
+	REGISTRY_KEY *key;
+	char *path;
+	WERROR err;
+	NTSTATUS status;
+
+	uint32 i, num_values;
+	char **value_names;
+	struct registry_value **values = NULL;
+
+	int res;
+
+	if (!lp_registry_shares()) {
+		return -1;
+	}
+
+	if (asprintf(&path, "%s\\%s", KEY_SMBCONF, servicename) == -1) {
+		return -1;
+	}
+
+	err = regkey_open_internal(NULL, NULL, &key, path, get_root_nt_token(),
+				   REG_KEY_READ);
+	SAFE_FREE(path);
+
+	if (!W_ERROR_IS_OK(err)) {
+		return -1;
+	}
+
+	status = registry_fetch_values(NULL, key, &num_values, &value_names,
+				       &values);
+
+	TALLOC_FREE(key);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	res = lp_add_service(servicename, -1);
+	if (res == -1) {
+		goto error;
+	}
+
+	for (i=0; i<num_values; i++) {
+		switch (values[i]->type) {
+		case REG_DWORD: { 
+			char *val;
+			if (asprintf(&val, "%d", values[i]->v.dword) == -1) {
+				continue;
+			}
+			lp_do_parameter(res, value_names[i], val);
+			SAFE_FREE(val);
+			break;
+		}
+		case REG_SZ: {
+			lp_do_parameter(res, value_names[i],
+					values[i]->v.sz.str);
+			break;
+		}
+		default:
+			/* Ignore all the rest */
+			break;
+		}
+	}
+
+	TALLOC_FREE(value_names);
+	TALLOC_FREE(values);
+	return res;
+
+ error:
+
+	TALLOC_FREE(value_names);
+	TALLOC_FREE(values);
+	return -1;
+}
+
+void load_registry_shares(void)
+{
+	REGISTRY_KEY *key;
+	REGSUBKEY_CTR *keys;
+	WERROR err;
+	int i;
+
+	if (!lp_registry_shares()) {
+		return;
+	}
+
+	if (!(keys = TALLOC_ZERO_P(NULL, REGSUBKEY_CTR))) {
+		goto done;
+	}
+
+	err = regkey_open_internal(keys, NULL, &key, KEY_SMBCONF,
+				   get_root_nt_token(), REG_KEY_READ);
+	if (!(W_ERROR_IS_OK(err))) {
+		goto done;
+	}
+
+	if (fetch_reg_keys(key, keys) == -1) {
+		goto done;
+	}
+
+	for (i=0; i<keys->num_subkeys; i++) {
+		load_registry_service(keys->subkeys[i]);
+	}
+
+ done:
+	TALLOC_FREE(keys);
+	return;
+}
 
 /**
  * Find a service entry.
@@ -305,6 +414,10 @@ int find_service(fstring service)
 				iService = lp_add_service(service, iService);
 			}
 		}
+	}
+
+	if (iService < 0) {
+		iService = load_registry_service(service);
 	}
 
 	/* Is it a usershare service ? */

@@ -1114,6 +1114,7 @@ int enum_msdfs_links(TALLOC_CTX *ctx, struct junction_map *jucn, int jn_max)
 
 	/* Ensure all the usershares are loaded. */
 	become_root();
+	load_registry_shares();
 	sharecount = load_usershare_shares();
 	unbecome_root();
 
