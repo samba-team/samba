@@ -28,14 +28,16 @@
 #include "events/events.h"
 #include "auth/credentials/credentials.h"
 
-static int ejs_net_userman(MprVarHandle, int, struct MprVar**);
-static int ejs_net_createuser(MprVarHandle, int, char**);
+static int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar** argv);
+static int ejs_net_createuser(MprVarHandle eid, int argc, char **argv);
 static int ejs_net_deleteuser(MprVarHandle eid, int argc, char **argv);
+static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv);
 static int ejs_net_join_domain(MprVarHandle eid, int argc, struct MprVar **argv);
 static int ejs_net_samsync_ldb(MprVarHandle eid, int argc, struct MprVar **argv);
 
-/* Usage:
-   net = NetContext(credentials);
+/*
+  Usage:
+  net = NetContext(credentials);
 */
 
 static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
@@ -91,6 +93,7 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	return 0;
 }
+
 
 static int ejs_net_join_domain(MprVarHandle eid, int argc, struct MprVar **argv)
 {
@@ -150,6 +153,7 @@ static int ejs_net_join_domain(MprVarHandle eid, int argc, struct MprVar **argv)
 	return 0;
 }
 
+
 static int ejs_net_samsync_ldb(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -197,6 +201,11 @@ static int ejs_net_samsync_ldb(MprVarHandle eid, int argc, struct MprVar **argv)
 	return 0;
 }
 
+
+/*
+  Usage:
+  usrCtx = net.UserMgr(domain);
+*/
 static int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -229,6 +238,7 @@ static int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	mprSetStringCFunction(obj, "Create", ejs_net_createuser);
 	mprSetStringCFunction(obj, "Delete", ejs_net_deleteuser);
+	mprSetStringCFunction(obj, "Info", ejs_net_userinfo);
 
 	return 0;
 done:
@@ -269,13 +279,14 @@ static int ejs_net_createuser(MprVarHandle eid, int argc, char **argv)
 
 	status = libnet_CreateUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
-		ejsSetErrorMsg(eid, "error when creating user: %s", nt_errstr(status));
+		ejsSetErrorMsg(eid, "%s", req.out.error_string);
 	}
 
 	talloc_free(mem_ctx);
 	mpr_Return(eid, mprNTSTATUS(status));
 	return 0;
 }
+
 
 static int ejs_net_deleteuser(MprVarHandle eid, int argc, char **argv)
 {
@@ -309,11 +320,53 @@ static int ejs_net_deleteuser(MprVarHandle eid, int argc, char **argv)
 
 	status = libnet_DeleteUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
-		ejsSetErrorMsg(eid, "error when creating user: %s", nt_errstr(status));
+		ejsSetErrorMsg(eid, "%s", req.out.error_string);
 	}
 
 	talloc_free(mem_ctx);
 	mpr_Return(eid, mprNTSTATUS(status));
+	return 0;
+}
+
+
+static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *mem_ctx;
+	struct libnet_context *ctx;
+	const char *userman_domain = NULL;
+	struct libnet_UserInfo req;
+
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "argument 1 must be a string");
+		return -1;
+	}
+
+	ctx = mprGetThisPtr(eid, "ctx");
+	if (!ctx) {
+		ejsSetErrorMsg(eid, "ctx property returns null pointer");
+		return -1;
+	}
+
+	userman_domain = mprGetThisPtr(eid, "domain");
+	if (!userman_domain) {
+		ejsSetErrorMsg(eid, "domain property returns null pointer");
+		return -1;
+	}
+
+	mem_ctx = talloc_new(mprMemCtx());
+	
+	req.in.domain_name = userman_domain;
+	req.in.user_name   = argv[0];
+	
+	status = libnet_UserInfo(ctx, mem_ctx, &req);
+	if (!NT_STATUS_IS_OK(status)) {
+		ejsSetErrorMsg(eid, "%s", req.out.error_string);
+	}
+
+	/* TODO: create user info object and pass received properties */
+
+	talloc_free(mem_ctx);
 	return 0;
 }
 
