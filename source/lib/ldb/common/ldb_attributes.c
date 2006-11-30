@@ -71,46 +71,16 @@ int ldb_set_attrib_handlers(struct ldb_context *ldb,
 }
 			  
 
-/*
-  default function for read/write/canonicalise
-*/
-static int ldb_default_copy(struct ldb_context *ldb, 
-			    void *mem_ctx,
-			    const struct ldb_val *in, 
-			    struct ldb_val *out)
-{
-	*out = ldb_val_dup(mem_ctx, in);
-
-	if (out->data == NULL && in->data != NULL) {
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
-  default function for comparison
-*/
-static int ldb_default_cmp(struct ldb_context *ldb, 
-			    void *mem_ctx,
-			   const struct ldb_val *v1, 
-			   const struct ldb_val *v2)
-{
-	if (v1->length != v2->length) {
-		return v1->length - v2->length;
-	}
-	return memcmp(v1->data, v2->data, v1->length);
-}
 
 /*
   default handler function pointers
 */
 static const struct ldb_attrib_handler ldb_default_attrib_handler = {
 	.attr = NULL,
-	.ldif_read_fn    = ldb_default_copy,
-	.ldif_write_fn   = ldb_default_copy,
-	.canonicalise_fn = ldb_default_copy,
-	.comparison_fn   = ldb_default_cmp,
+	.ldif_read_fn    = ldb_handler_copy,
+	.ldif_write_fn   = ldb_handler_copy,
+	.canonicalise_fn = ldb_handler_copy,
+	.comparison_fn   = ldb_comparison_binary,
 };
 
 /*
