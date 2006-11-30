@@ -110,6 +110,7 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 	struct ldb_val v;
 	const struct ldb_attrib_handler *h;
 	char *attr_folded;
+	int r;
 
 	attr_folded = ldb_attr_casefold(ldb, attr);
 	if (!attr_folded) {
@@ -117,10 +118,13 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 	}
 
 	h = ldb_attrib_handler(ldb, attr);
-	if (h->canonicalise_fn(ldb, ldb, value, &v) != 0) {
+	r = h->canonicalise_fn(ldb, ldb, value, &v);
+	if (r != LDB_SUCCESS) {
 		/* canonicalisation can be refused. For example, 
 		   a attribute that takes wildcards will refuse to canonicalise
 		   if the value contains a wildcard */
+		ldb_asprintf_errstring(ldb, "Failed to create index key for attribute '%s':%s:%s",
+				       attr, ldb_strerror(r), ldb_errstring(ldb));
 		talloc_free(attr_folded);
 		return NULL;
 	}
@@ -845,7 +849,6 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 	dn_key = ltdb_index_key(ldb, el->name, &el->values[v_idx]);
 	if (!dn_key) {
 		talloc_free(msg);
-		errno = ENOMEM;
 		return -1;
 	}
 	talloc_steal(msg, dn_key);
