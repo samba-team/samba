@@ -563,8 +563,8 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			if (lp_parm_bool(-1, "drsuapi","compression", False)) {
 				r.in.req.req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
-			r.in.req.req5.unknown2				= 0;
-			r.in.req.req5.unknown3				= 0;
+			r.in.req.req5.max_object_count			= 0;
+			r.in.req.req5.max_ndr_size			= 0;
 			r.in.req.req5.unknown4				= 0;
 			r.in.req.req5.h1				= 0;
 
@@ -593,8 +593,8 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
 									;
-			r.in.req.req8.unknown2				= 402;
-			r.in.req.req8.unknown3				= 402116;
+			r.in.req.req8.max_object_count			= 402;
+			r.in.req.req8.max_ndr_size			= 402116;
 			r.in.req.req8.unknown4				= 0;
 			r.in.req.req8.h1				= 0;
 			r.in.req.req8.unique_ptr1			= 0;
