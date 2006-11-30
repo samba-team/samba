@@ -79,6 +79,7 @@ CHARSETLIBDIR = $(LIBDIR)/charset
 AUTHLIBDIR = $(LIBDIR)/auth
 CONFIGLIBDIR = $(LIBDIR)/config
 CONFIGDIR = @configdir@
+VARDIR = @localstatedir@
 MANDIR = @mandir@
 DATADIR = @datadir@
 
@@ -1598,7 +1599,7 @@ install-everything: install installmodules
 # is not used
 
 installdirs:
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR)
 
 installservers: all installdirs
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(SBINDIR) $(SBIN_PROGS)
@@ -1714,6 +1715,7 @@ showlayout:
 	@echo "  bindir:      $(BINDIR)"
 	@echo "  sbindir:     $(SBINDIR)"
 	@echo "  libdir:      $(LIBDIR)"
+	@echo "  vardir:      $(VARDIR)"
 	@echo "  mandir:      $(MANDIR)"
 	@echo "  privatedir:  $(PRIVATE_DIR)"
 	@echo "  configdir:   $(CONFIGDIR)"
