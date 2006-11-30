@@ -237,7 +237,7 @@ int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 
 	dn = ldb_dn_new(ldb, mem_ctx, (char *)in->data);
 	if ( ! ldb_dn_validate(dn)) {
-		return -1;
+		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
 	out->data = (uint8_t *)ldb_dn_alloc_casefold(mem_ctx, dn);
