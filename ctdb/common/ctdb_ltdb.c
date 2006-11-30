@@ -33,7 +33,7 @@ int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags,
 	/* when we have a separate daemon this will need to be a real
 	   file, not a TDB_INTERNAL, so the parent can access it to
 	   for ltdb bypass */
-	ctdb->ltdb = tdb_open(name, 0, TDB_INTERNAL, 0, 0);
+	ctdb->ltdb = tdb_open(name, 0, /* tdb_flags */ TDB_INTERNAL, open_flags, mode);
 	if (ctdb->ltdb == NULL) {
 		ctdb_set_error(ctdb, "Failed to open tdb %s\n", name);
 		return -1;
