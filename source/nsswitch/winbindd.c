@@ -1022,6 +1022,9 @@ int main(int argc, char **argv, char **envp)
 
 	pidfile_create("winbindd");
 
+	/* Ensure all cache and idmap caches are consistent
+	   before we startup. */
+
 	if (winbindd_validate_cache()) {
 		/* We have a bad cache, but luckily we
 		   just deleted it. Restart ourselves */
@@ -1051,9 +1054,6 @@ int main(int argc, char **argv, char **envp)
 		exit(1);
 	}
 	
-	/* Ensure all cache and idmap caches are consistent
-	   before we startup. */
-
 	/* React on 'smbcontrol winbindd reload-config' in the same way
 	   as to SIGHUP signal */
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
