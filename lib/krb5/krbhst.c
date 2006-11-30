@@ -521,7 +521,7 @@ plugin_get_hosts(krb5_context context,
 		 struct krb5_krbhst_data *kd,
 		 enum locate_service_type type)
 {
-    struct krb5_plugin *list, *e;
+    struct krb5_plugin *list = NULL, *e;
     krb5_error_code ret;
 
     ret = _krb5_plugin_find(context, PLUGIN_TYPE_DATA, "resolve", &list);
