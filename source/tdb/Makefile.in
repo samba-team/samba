@@ -12,12 +12,12 @@ libdir = @libdir@
 VPATH = @srcdir@:@libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
-CFLAGS = -I$(srcdir)/include -Iinclude -I@libreplacedir@ @CFLAGS@
+CFLAGS = -I$(srcdir)/include -Iinclude -I../include -I@libreplacedir@ @CFLAGS@
 
 .PHONY: test
 
 PROGS = bin/tdbtool bin/tdbtorture
-TDB_OBJ = @TDBOBJ@ @LIBREPLACEOBJ@
+TDB_OBJ = @TDBOBJ@
 
 DIRS = bin common tools
 
