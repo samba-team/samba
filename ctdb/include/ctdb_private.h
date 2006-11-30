@@ -78,6 +78,7 @@ struct ctdb_context {
 	const char *name;
 	uint32_t vnn; /* our own vnn */
 	uint32_t num_nodes;
+	uint32_t num_connected;
 	struct idr_context *idr;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	struct ctdb_registered_call *calls; /* list of registered calls */

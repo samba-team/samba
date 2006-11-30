@@ -88,3 +88,8 @@ int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags,
 int ctdb_call(struct ctdb_context *ctdb, TDB_DATA key, int call_id, 
 	      TDB_DATA *call_data, TDB_DATA *reply_data);
 
+/*
+  wait for all nodes to be connected - useful for test code
+*/
+void ctdb_connect_wait(struct ctdb_context *ctdb);
+
