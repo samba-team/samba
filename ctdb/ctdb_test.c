@@ -50,10 +50,14 @@ static int sort_func(struct ctdb_call *call)
 		return CTDB_ERR_NOMEM;
 	}
 	call->new_data->dsize = call->record_data.dsize + call->call_data->dsize;
+	memcpy(call->new_data->dptr,
+	       call->record_data.dptr, call->record_data.dsize);
 	memcpy(call->new_data->dptr+call->record_data.dsize,
 	       call->call_data->dptr, call->call_data->dsize);
+
 	qsort(call->new_data->dptr, call->new_data->dsize / sizeof(int),
 	      sizeof(int), (comparison_fn_t)int_compare);
+
 	return 0;
 }
 
@@ -156,21 +160,17 @@ int main(int argc, const char *argv[])
 
 	/* start the protocol running */
 	ret = ctdb_start(ctdb);
+
+	/* wait until all nodes are connected (should not be needed
+	   outide of test code) */
+	ctdb_connect_wait(ctdb);
        
 	key.dptr = "test";
 	key.dsize = strlen("test")+1;
 
-
-#if 1
-	/* loop for testing */
-	while (1) {
-		event_loop_once(ev);
-	}
-#endif
-
 	/* add some random data */
 	for (i=0;i<100;i++) {
-		int v = random();
+		int v = random() % 1000;
 		data.dptr = (uint8_t *)&v;
 		data.dsize = sizeof(v);
 		ret = ctdb_call(ctdb, key, FUNC_SORT, &data, NULL);
