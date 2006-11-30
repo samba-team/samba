@@ -29,7 +29,7 @@
 #include "tdb_private.h"
 
 /* read a freelist record and check for simple errors */
-static int rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_struct *rec)
+int rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_struct *rec)
 {
 	if (tdb->methods->tdb_read(tdb, off, rec, sizeof(*rec),DOCONV()) == -1)
 		return -1;
