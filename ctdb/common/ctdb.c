@@ -157,7 +157,9 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 */
 static void ctdb_node_dead(struct ctdb_node *node)
 {
-	printf("%s: node %s is dead\n", node->ctdb->name, node->name);
+	node->ctdb->num_connected--;
+	printf("%s: node %s is dead: %d connected\n", 
+	       node->ctdb->name, node->name, node->ctdb->num_connected);
 }
 
 /*
@@ -165,7 +167,19 @@ static void ctdb_node_dead(struct ctdb_node *node)
 */
 static void ctdb_node_connected(struct ctdb_node *node)
 {
-	printf("%s: connected to %s\n", node->ctdb->name, node->name);
+	node->ctdb->num_connected++;
+	printf("%s: connected to %s - %d connected\n", 
+	       node->ctdb->name, node->name, node->ctdb->num_connected);
+}
+
+/*
+  wait for all nodes to be connected
+*/
+void ctdb_connect_wait(struct ctdb_context *ctdb)
+{
+	while (ctdb->num_connected != ctdb->num_nodes - 1) {
+		event_loop_once(ctdb->ev);
+	}
 }
 
 static const struct ctdb_upcalls ctdb_upcalls = {
