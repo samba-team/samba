@@ -527,11 +527,9 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 		return NULL;
 	}
 
-	/* do netlogon DrsEnumerateDomainTrusts */
-
-	/* modify userAccountControl from 4096 to 532480 */
+	/* W2K: modify userAccountControl from 4096 to 532480 */
 	
-	/* modify RDN to OU=Domain Controllers and skip the $ from server name */
+	/* W2K: modify RDN to OU=Domain Controllers and skip the $ from server name */
 
 	/* ask objectVersion of Schema Partition */
 
@@ -579,8 +577,50 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 * serverReferenz = CN=<machine_name>,OU=Domain Controllers,...
 	 */
 
-	/* DsReplicaAdd to create the CN=NTDS Settings,CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name, ...
-	 * needs to be tested
+	/* DsAddEntry to create the CN=NTDS Settings,CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name, ...
+	 *
+	 */
+
+	/* replicate CN=Schema,CN=Configuration,...
+	 * using DRSUAPI_DS_BIND_GUID_W2K3 ("6afab99c-6e26-464a-975f-f58f105218bc")
+	 *
+	 */
+
+	/* replicate CN=Configuration,...
+	 * using DRSUAPI_DS_BIND_GUID_W2K3 ("6afab99c-6e26-464a-975f-f58f105218bc")
+	 *
+	 */
+
+	/* W2K3: modify userAccountControl from 4096 to 532480 */
+	
+	/* W2K3: modify RDN to OU=Domain Controllers and skip the $ from server name */
+
+	/* replicate Domain Partition
+	 * using DRSUAPI_DS_BIND_GUID_W2K3 ("6afab99c-6e26-464a-975f-f58f105218bc")
+	 *
+	 */
+
+	/* call DsReplicaUpdateRefs() for all partitions like this:
+	 *     req1: struct drsuapi_DsReplicaUpdateRefsRequest1
+	 *           naming_context           : *
+	 *                 naming_context: struct drsuapi_DsReplicaObjectIdentifier
+	 *                     __ndr_size               : 0x000000ae (174)
+	 *                     __ndr_size_sid           : 0x00000000 (0)
+	 *                     guid                     : 00000000-0000-0000-0000-000000000000
+	 *                     sid                      : S-0-0
+	 *                     dn                       : 'CN=Schema,CN=Configuration,DC=w2k3,DC=vmnet1,DC=vm,DC=base'
+	 *           dest_dsa_dns_name        : *
+	 *                 dest_dsa_dns_name        : '4a0df188-a0b8-47ea-bbe5-e614723f16dd._msdcs.w2k3.vmnet1.vm.base'
+	 *           dest_dsa_guid            : 4a0df188-a0b8-47ea-bbe5-e614723f16dd
+	 *           options                  : 0x0000001c (28)
+	 *                 0: DRSUAPI_DS_REPLICA_UPDATE_ASYNCHRONOUS_OPERATION
+	 *                 0: DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE
+	 *                 1: DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE
+	 *                 1: DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE
+	 *                 1: DRSUAPI_DS_REPLICA_UPDATE_0x00000010      
+	 *
+	 * 4a0df188-a0b8-47ea-bbe5-e614723f16dd is the objectGUID the DsAddEntry() returned for the
+	 * CN=NTDS Settings,CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name, ...
 	 */
 
 	return join;
