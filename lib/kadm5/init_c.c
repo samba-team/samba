@@ -385,6 +385,7 @@ kadm_connect(kadm5_client_context *ctx)
 	if (s < 0)
 	    continue;
 	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
+	    krb5_clear_error_string(context);
 	    krb5_warn (context, errno, "connect(%s)", hostname);
 	    close (s);
 	    continue;
