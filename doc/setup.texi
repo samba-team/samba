@@ -1101,16 +1101,16 @@ name of the TGS of the target realm.
 Both of these two requirements are not required by the standard to be
 checked by the client if it have external information what the
 certificate the KDC is supposed to be used. So its in the interst of
-minium amount of configuration on the clients they should be included.
+minimum amount of configuration on the clients they should be included.
 
 Remember that if client would accept any certificate as the KDC's
 certificate, the client could be fooled into trusting something that
 isn't a KDC and thus expose the user to giving away information (like
 password or other private information) that it is supposed to secret.
 
-Also, if the extension certificate have a nameConstraints extention
-with a Generalname with dNSName or iPAdress it must match the hostname
-or adress of the KDC.
+Also, if the certificate have a nameConstraints extention with a
+Generalname with dNSName or iPAdress it must match the hostname or
+adress of the KDC.
 
 @subsection Client certificate
 
