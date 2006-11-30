@@ -160,6 +160,8 @@ static struct DsSyncTest *test_create_context(TALLOC_CTX *mem_ctx)
 	ctx->new_dc.drsuapi.req.in.bind_info		= our_bind_info_ctr;
 	ctx->new_dc.drsuapi.req.out.bind_handle		= &ctx->new_dc.drsuapi.bind_handle;
 
+	ctx->new_dc.invocation_id			= ctx->new_dc.drsuapi.bind_guid;
+
 	/* ctx->old_dc ...*/
 
 	return ctx;
@@ -288,9 +290,6 @@ static BOOL test_GetInfo(struct DsSyncTest *ctx)
 		printf("cldap_netlogon() returned Client Site-Name: %s.\n",ctx->site_name);
 		printf("cldap_netlogon() returned Server Site-Name: %s.\n",search.out.netlogon.logon5.server_site);
 	}
-
-
-	ctx->new_dc.invocation_id = GUID_random();
 
 	return ret;
 }
@@ -440,8 +439,8 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
 									;
-			r.in.req.req5.unknown2				= 133;
-			r.in.req.req5.unknown3				= 1336770;
+			r.in.req.req5.max_object_count			= 133;
+			r.in.req.req5.max_ndr_size			= 1336770;
 			r.in.req.req5.unknown4				= 0;
 			r.in.req.req5.h1				= 0;
 
@@ -471,8 +470,8 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
 									;
-			r.in.req.req8.unknown2				= 402;
-			r.in.req.req8.unknown3				= 402116;
+			r.in.req.req8.max_object_count			= 402;
+			r.in.req.req8.max_ndr_size			= 402116;
 
 			r.in.req.req8.unknown4				= 0;
 			r.in.req.req8.h1				= 0;
