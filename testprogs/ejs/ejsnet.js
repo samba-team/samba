@@ -20,7 +20,7 @@ var creds = options.get_credentials();
 var ctx = NetContext(creds);
 var usr_ctx = ctx.UserMgr(options.ARGV[0]);
 if (usr_ctx == undefined) {
-	println("Couln't get user management context.");
+	println("Couldn't get user management context.");
 	return -1;
 }
 
