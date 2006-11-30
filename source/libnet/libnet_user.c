@@ -893,9 +893,11 @@ struct composite_context* libnet_UserList_send(struct libnet_context *ctx,
 				       continue_lsa_domain_opened, monitor);
 	if (prereq_ctx) return prereq_ctx;
 
+	/* prepare arguments of QueryDomainInfo call */
 	s->query_domain.in.handle = &ctx->lsa.handle;
 	s->query_domain.in.level  = LSA_POLICY_INFO_DOMAIN;
 	
+	/* send the request */
 	query_req = dcerpc_lsa_QueryInfoPolicy_send(ctx->lsa.pipe, c, &s->query_domain);
 	if (composite_nomem(query_req, c)) return c;
 
@@ -905,7 +907,8 @@ struct composite_context* libnet_UserList_send(struct libnet_context *ctx,
 
 
 /*
- * receive samr domain handle and request to enumerate accounts
+ * Stage 0.5 (optional): receive lsa domain handle and send
+ * request to query domain info
  */
 static void continue_lsa_domain_opened(struct composite_context *ctx)
 {
@@ -915,14 +918,16 @@ static void continue_lsa_domain_opened(struct composite_context *ctx)
 	
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);
-
+	
 	/* receive lsa domain handle */
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
 	if (!composite_is_ok(c)) return;
 
+	/* prepare arguments of QueryDomainInfo call */
 	s->query_domain.in.handle = &s->ctx->lsa.handle;
 	s->query_domain.in.level  = LSA_POLICY_INFO_DOMAIN;
-	
+
+	/* send the request */
 	query_req = dcerpc_lsa_QueryInfoPolicy_send(s->ctx->lsa.pipe, c, &s->query_domain);
 	if (composite_nomem(query_req, c)) return;
 
@@ -931,7 +936,8 @@ static void continue_lsa_domain_opened(struct composite_context *ctx)
 
 
 /*
- * receive domain info and request to enum users, provided a valid samr handle is opened
+ * Stage 1: receive domain info and request to enum users,
+ * provided a valid samr handle is opened
  */
 static void continue_domain_queried(struct rpc_request *req)
 {
@@ -943,23 +949,26 @@ static void continue_domain_queried(struct rpc_request *req)
 	c = talloc_get_type(req->async.private, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);
 
+	/* receive result of rpc request */
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
+	/* get the returned domain info */
 	s->dominfo = s->query_domain.out.info->domain;
 
+	/* make sure we have samr domain handle before continuing */
 	prereq_ctx = samr_domain_opened(s->ctx, s->domain_name, c, &s->domain_open,
 					continue_samr_domain_opened, s->monitor_fn);
 	if (prereq_ctx) return;
 
-	/* prepare arguments */
+	/* prepare arguments od EnumDomainUsers call */
 	s->user_list.in.domain_handle = &s->ctx->samr.handle;
 	s->user_list.in.max_size = s->page_size;
 	s->user_list.in.resume_handle = &s->resume_index;
 	s->user_list.in.acct_flags = ACB_NORMAL;
 	s->user_list.out.resume_handle = &s->resume_index;
 
-	/* send request */
+	/* send the request */
 	enum_req = dcerpc_samr_EnumDomainUsers_send(s->ctx->samr.pipe, c, &s->user_list);
 	if (composite_nomem(enum_req, c)) return;
 
@@ -968,7 +977,8 @@ static void continue_domain_queried(struct rpc_request *req)
 
 
 /*
- * receive samr domain handle and request to enumerate accounts
+ * Stage 1.5 (optional): receive samr domain handle
+ * and request to enumerate accounts
  */
 static void continue_samr_domain_opened(struct composite_context *ctx)
 {
@@ -979,18 +989,18 @@ static void continue_samr_domain_opened(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);
 
-	/* receive lsa domain handle */
+	/* receive samr domain handle */
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
 	if (!composite_is_ok(c)) return;
 
-	/* prepare arguments */
+	/* prepare arguments od EnumDomainUsers call */
 	s->user_list.in.domain_handle = &s->ctx->samr.handle;
 	s->user_list.in.max_size = s->page_size;
 	s->user_list.in.resume_handle = &s->resume_index;
 	s->user_list.in.acct_flags = ACB_NORMAL;
 	s->user_list.out.resume_handle = &s->resume_index;
 	
-	/* send request */
+	/* send the request */
 	enum_req = dcerpc_samr_EnumDomainUsers_send(s->ctx->samr.pipe, c, &s->user_list);
 	if (composite_nomem(enum_req, c)) return;
 
@@ -999,7 +1009,7 @@ static void continue_samr_domain_opened(struct composite_context *ctx)
 
 
 /*
- * receive enumerated users and their rids
+ * Stage 2: receive enumerated users and their rids
  */
 static void continue_users_enumerated(struct rpc_request *req)
 {
@@ -1010,40 +1020,50 @@ static void continue_users_enumerated(struct rpc_request *req)
 	c = talloc_get_type(req->async.private, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);
 
-	/* receive result of lsa_EnumAccounts request */
+	/* receive result of rpc request */
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
-	/* get the actual status of the rpc call result */
+	/* get the actual status of the rpc call result (instead of rpc layer status) */
 	c->status = s->user_list.out.result;
 
+	/* we're interested in status "ok" as well as two enum-specific statuses */
 	if (NT_STATUS_IS_OK(c->status) ||
 	    NT_STATUS_EQUAL(c->status, STATUS_MORE_ENTRIES) ||
 	    NT_STATUS_EQUAL(c->status, NT_STATUS_NO_MORE_ENTRIES)) {
 
+		/* get enumerated accounts counter and resume handle (the latter allows
+		   making subsequent call to continue enumeration) */
 		s->resume_index = *s->user_list.out.resume_handle;
 		s->count        = s->user_list.out.num_entries;
+		
+		/* prepare returned user accounts array */
 		s->users        = talloc_array(c, struct userlist, s->user_list.out.sam->count);
 		if (composite_nomem(s->users, c)) return;
-		
+
 		for (i = 0; i < s->user_list.out.sam->count; i++) {
 			struct dom_sid *user_sid;
 			struct samr_SamEntry *entry = &s->user_list.out.sam->entries[i];
 			struct dom_sid *domain_sid = s->query_domain.out.info->domain.sid;
-
+			
+			/* construct user sid from returned rid and queried domain sid */
 			user_sid = dom_sid_add_rid(c, domain_sid, entry->idx);
 			if (composite_nomem(user_sid, c)) return;
-
+			
+			/* username */
 			s->users[i].username = talloc_strdup(c, entry->name.string);
 			if (composite_nomem(s->users[i].username, c)) return;
 
+			/* sid string */
 			s->users[i].sid = dom_sid_string(c, user_sid);
 			if (composite_nomem(s->users[i].sid, c)) return;
 		}
 		
+		/* that's it */
 		composite_done(c);
 
 	} else {
+		/* something went wrong */
 		composite_error(c, c->status);
 	}
 }
@@ -1082,6 +1102,7 @@ NTSTATUS libnet_UserList_recv(struct composite_context* c, TALLOC_CTX *mem_ctx,
 		if (NT_STATUS_IS_OK(status)) {
 			r->out.error_string = talloc_strdup(mem_ctx, "Success");
 		} else {
+			/* success, but we're not done yet */
 			r->out.error_string = talloc_asprintf(mem_ctx, "Success (status: %s)",
 							      nt_errstr(status));
 		}
