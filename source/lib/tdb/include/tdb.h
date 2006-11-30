@@ -136,6 +136,7 @@ int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key);
 /* Debug functions. Not used in production. */
 void tdb_dump_all(struct tdb_context *tdb);
 int tdb_printfreelist(struct tdb_context *tdb);
+int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries);
 
 extern TDB_DATA tdb_null;
 

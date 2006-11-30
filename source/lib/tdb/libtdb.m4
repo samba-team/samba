@@ -13,8 +13,9 @@ if test x"$tdbdir" = "x"; then
    AC_MSG_ERROR([cannot find tdb source in $tdbpaths])
 fi
 TDBOBJ="common/tdb.o common/dump.o common/transaction.o common/error.o common/traverse.o"
-TDBOBJ="$TDBOBJ common/freelist.o common/io.o common/lock.o common/open.o"
+TDBOBJ="$TDBOBJ common/freelist.o common/freelistcheck.o common/io.o common/lock.o common/open.o"
 AC_SUBST(TDBOBJ)
+AC_SUBST(LIBREPLACEOBJ)
 
 AC_CHECK_FUNCS(mmap pread pwrite getpagesize utime)
 AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h)
