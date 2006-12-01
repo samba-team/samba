@@ -243,10 +243,9 @@ DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
 	major = gss_import_name( &minor, &input_name,
 				 &nt_host_oid_desc, &targ_name );
 
-	krb5_free_principal( krb_ctx, host_principal );
-	krb5_free_context( krb_ctx );
-
 	if (major) {
+		krb5_free_principal( krb_ctx, host_principal );
+		krb5_free_context( krb_ctx );
 		err = ERROR_DNS_GSS_ERROR;
 		goto error;
 	}
@@ -254,6 +253,8 @@ DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
 	err = dns_negotiate_gss_ctx_int(mem_ctx, conn, keyname, targ_name,
 					gss_ctx);
 
+	krb5_free_principal( krb_ctx, host_principal );
+	krb5_free_context( krb_ctx );
 	gss_release_name( &minor, &targ_name );
 
  error:
