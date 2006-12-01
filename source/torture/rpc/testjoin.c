@@ -631,6 +631,100 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 * Open 1st LDAP connection to the DC using admin credentials
 	 */
 
+	/*
+	 * LDAP search 1st LDAP connection:
+	 *
+	 * Request:
+	 *	basedn:	CN=Configuration,<domain_partition>
+	 *	scope:	one
+	 *	filter:	(cn=Partitions)
+	 *	attrs:	msDS-Behavior-Version
+	 * Result:
+	 *      CN=Partitions,CN=Configuration,<domain_partition>
+	 *		msDS-Behavior-Version:	0
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 *
+	 * NOTE: this seems to be a bug! as the messageID of the LDAP message is corrupted!
+	 * 
+	 * Request:
+	 *	basedn:	CN=Schema,CN=Configuration,<domain_partition>
+	 *	scope:	one
+	 *	filter:	(cn=Partitions)
+	 *	attrs:	msDS-Behavior-Version
+	 * Result:
+	 *	<none>
+	 *
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	<domain_partition>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	msDS-Behavior-Version
+	 * Result:
+	 *	<domain_partition>
+	 *		msDS-Behavior-Version:	0
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	CN=Schema,CN=Configuration,<domain_partition>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	objectVersion
+	 * Result:
+	 *	CN=Schema,CN=Configuration,<domain_partition>
+	 *		objectVersion:	30
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	""
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	defaultNamingContext
+	 *		dnsHostName
+	 * Result:
+	 *	""
+	 *		defaultNamingContext:	<domain_partition>
+	 *		dnsHostName:		<dns_host_name>
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	<WKGUID=2fbac1870ade11d297c400c04fd8d5cd,domain_partition>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	1.1
+	 * Result:
+	 *	CN=Infrastructure,<domain_partition>
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	CN=Windows2003Update,CN=DomainUpdates,CN=System,<domain_partition>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	revision
+	 * Result:
+	 *      CN=Windows2003Update,CN=DomainUpdates,CN=System,<domain_partition>
+	 *		revision:	8
+	 */
+
 /* ... */
 
 	/*
