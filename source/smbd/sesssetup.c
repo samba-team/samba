@@ -335,7 +335,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
+			TALLOC_FREE(pw);
 			return ERROR_NT(nt_status_squash(ret));
 		}
 
@@ -348,7 +349,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
+			TALLOC_FREE(pw);
 			return ERROR_NT(nt_status_squash(ret));
 		}
 
@@ -372,6 +374,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
+			TALLOC_FREE(pw);
 			TALLOC_FREE( mem_ctx );
 			TALLOC_FREE( server_info );
 			return ERROR_NT(nt_status_squash(ret));
@@ -415,7 +418,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	data_blob_free(&ap_rep);
 	data_blob_free(&ap_rep_wrapped);
 	data_blob_free(&response);
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
+	TALLOC_FREE(pw);
 
 	return -1; /* already replied */
 }
