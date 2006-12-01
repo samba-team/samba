@@ -292,6 +292,22 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	username_was_mapped = map_username( user );
 
 	pw = smb_getpwnam( mem_ctx, user, real_username, True );
+
+	if (pw) {
+		/* if a real user check pam account restrictions */
+		/* only really perfomed if "obey pam restriction" is true */
+		/* do this before an eventual mappign to guest occurs */
+		ret = smb_pam_accountcheck(pw->pw_name);
+		if (  !NT_STATUS_IS_OK(ret)) {
+			DEBUG(1, ("PAM account restriction prevents user login\n"));
+			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
+			talloc_destroy(mem_ctx);
+			TALLOC_FREE(pw);
+			return ERROR_NT(nt_status_squash(ret));
+		}
+	}
+
 	if (!pw) {
 
 		/* this was originally the behavior of Samba 2.2, if a user
@@ -335,7 +351,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
+			TALLOC_FREE(pw);
 			return ERROR_NT(nt_status_squash(ret));
 		}
 
@@ -348,7 +365,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
+			TALLOC_FREE(pw);
 			return ERROR_NT(nt_status_squash(ret));
 		}
 
@@ -372,6 +390,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
+			TALLOC_FREE(pw);
 			TALLOC_FREE( mem_ctx );
 			TALLOC_FREE( server_info );
 			return ERROR_NT(nt_status_squash(ret));
@@ -415,7 +434,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	data_blob_free(&ap_rep);
 	data_blob_free(&ap_rep_wrapped);
 	data_blob_free(&response);
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
+	TALLOC_FREE(pw);
 
 	return -1; /* already replied */
 }
