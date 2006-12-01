@@ -302,8 +302,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			DEBUG(1, ("PAM account restriction prevents user login\n"));
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			talloc_destroy(mem_ctx);
-			TALLOC_FREE(pw);
+			TALLOC_FREE(mem_ctx);
 			return ERROR_NT(nt_status_squash(ret));
 		}
 	}
@@ -327,7 +326,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 		}
 	}
@@ -352,7 +351,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			TALLOC_FREE(mem_ctx);
-			TALLOC_FREE(pw);
 			return ERROR_NT(nt_status_squash(ret));
 		}
 
@@ -366,7 +364,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			TALLOC_FREE(mem_ctx);
-			TALLOC_FREE(pw);
 			return ERROR_NT(nt_status_squash(ret));
 		}
 
@@ -390,7 +387,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			TALLOC_FREE(pw);
 			TALLOC_FREE( mem_ctx );
 			TALLOC_FREE( server_info );
 			return ERROR_NT(nt_status_squash(ret));
@@ -435,7 +431,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	data_blob_free(&ap_rep_wrapped);
 	data_blob_free(&response);
 	TALLOC_FREE(mem_ctx);
-	TALLOC_FREE(pw);
 
 	return -1; /* already replied */
 }
