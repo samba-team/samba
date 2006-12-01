@@ -234,7 +234,6 @@ static int load_registry_service(const char *servicename)
 	REGISTRY_KEY *key;
 	char *path;
 	WERROR err;
-	NTSTATUS status;
 
 	uint32 i, num_values;
 	char **value_names;
@@ -250,7 +249,7 @@ static int load_registry_service(const char *servicename)
 		return -1;
 	}
 
-	err = regkey_open_internal(NULL, NULL, &key, path, get_root_nt_token(),
+	err = regkey_open_internal(NULL, &key, path, get_root_nt_token(),
 				   REG_KEY_READ);
 	SAFE_FREE(path);
 
@@ -258,12 +257,12 @@ static int load_registry_service(const char *servicename)
 		return -1;
 	}
 
-	status = registry_fetch_values(NULL, key, &num_values, &value_names,
-				       &values);
+	err = registry_fetch_values(NULL, key, &num_values, &value_names,
+				    &values);
 
 	TALLOC_FREE(key);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!W_ERROR_IS_OK(err)) {
 		goto error;
 	}
 
@@ -320,7 +319,7 @@ void load_registry_shares(void)
 		goto done;
 	}
 
-	err = regkey_open_internal(keys, NULL, &key, KEY_SMBCONF,
+	err = regkey_open_internal(keys, &key, KEY_SMBCONF,
 				   get_root_nt_token(), REG_KEY_READ);
 	if (!(W_ERROR_IS_OK(err))) {
 		goto done;

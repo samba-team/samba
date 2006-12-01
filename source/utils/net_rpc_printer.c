@@ -132,10 +132,9 @@ static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
 		uint32 i, num_values;
 		char **values;
 
-		if (!NT_STATUS_IS_OK(reg_pull_multi_sz(NULL, value.data_p,
-						       value.size,
-						       &num_values,
-						       &values))) {
+		if (!W_ERROR_IS_OK(reg_pull_multi_sz(NULL, value.data_p,
+						     value.size, &num_values,
+						     &values))) {
 			d_printf("reg_pull_multi_sz failed\n");
 			break;
 		}

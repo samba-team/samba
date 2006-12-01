@@ -189,9 +189,9 @@ int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 	return result;
 }
 
-NTSTATUS registry_fetch_values(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
-			       uint32 *pnum_values, char ***pnames,
-			       struct registry_value ***pvalues)
+WERROR registry_fetch_values(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
+			     uint32 *pnum_values, char ***pnames,
+			     struct registry_value ***pvalues)
 {
 	REGVAL_CTR *ctr;
 	char **names;
@@ -199,42 +199,42 @@ NTSTATUS registry_fetch_values(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
 	uint32 i;
 
 	if (!(ctr = TALLOC_ZERO_P(mem_ctx, REGVAL_CTR))) {
-		return NT_STATUS_NO_MEMORY;
+		return WERR_NOMEM;
 	}
 
 	if (fetch_reg_values(key, ctr) == -1) {
 		TALLOC_FREE(ctr);
-		return NT_STATUS_INVALID_PARAMETER;
+		return WERR_INVALID_PARAM;
 	}
 
 	if (ctr->num_values == 0) {
 		*pnum_values = 0;
 		TALLOC_FREE(ctr);
-		return NT_STATUS_OK;
+		return WERR_OK;
 	}
 
 	if ((!(names = TALLOC_ARRAY(ctr, char *, ctr->num_values))) ||
 	    (!(values = TALLOC_ARRAY(ctr, struct registry_value *,
 				     ctr->num_values)))) {
 		TALLOC_FREE(ctr);
-		return NT_STATUS_NO_MEMORY;
+		return WERR_NOMEM;
 	}
 
 	for (i=0; i<ctr->num_values; i++) {
 		REGISTRY_VALUE *val = ctr->values[i];
-		NTSTATUS status;
+		WERROR err;
 
 		if (!(names[i] = talloc_strdup(names, val->valuename))) {
 			TALLOC_FREE(ctr);
-			return NT_STATUS_NO_MEMORY;
+			return WERR_NOMEM;
 		}
 
-		status = registry_pull_value(values, &values[i],
-					     val->type, val->data_p,
-					     val->size, val->size);
-		if (!NT_STATUS_IS_OK(status)) {
+		err = registry_pull_value(values, &values[i],
+					  val->type, val->data_p,
+					  val->size, val->size);
+		if (!W_ERROR_IS_OK(err)) {
 			TALLOC_FREE(ctr);
-			return status;
+			return err;
 		}
 	}
 
@@ -243,7 +243,7 @@ NTSTATUS registry_fetch_values(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
 	*pvalues = talloc_move(mem_ctx, &values);
 
 	TALLOC_FREE(ctr);
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
 /***********************************************************************
@@ -310,7 +310,7 @@ WERROR regkey_open_onelevel( TALLOC_CTX *mem_ctx, REGISTRY_KEY *parent,
 	REGISTRY_KEY    *key;
 	REGSUBKEY_CTR	*subkeys = NULL;
 
-	DEBUG(7,("regkey_open_internal: name = [%s]\n", name));
+	DEBUG(7,("regkey_open_onelevel: name = [%s]\n", name));
 
 	if ((parent != NULL) &&
 	    ((parent->access_granted & SEC_RIGHTS_ENUM_SUBKEYS) == 0)) {
@@ -365,7 +365,7 @@ WERROR regkey_open_onelevel( TALLOC_CTX *mem_ctx, REGISTRY_KEY *parent,
 	/* Look up the table of registry I/O operations */
 
 	if ( !(key->hook = reghook_cache_find( key->name )) ) {
-		DEBUG(0,("open_registry_key: Failed to assigned a "
+		DEBUG(0,("reg_open_onelevel: Failed to assigned a "
 			 "REGISTRY_HOOK to [%s]\n", key->name ));
 		result = WERR_BADFILE;
 		goto done;
@@ -403,13 +403,14 @@ done:
 	return result;
 }
 
-WERROR regkey_open_internal( TALLOC_CTX *ctx, REGISTRY_KEY *parent,
-			     REGISTRY_KEY **regkey, const char *name,
-                             NT_USER_TOKEN *token, uint32 access_desired )
+WERROR regkey_open_internal( TALLOC_CTX *ctx, REGISTRY_KEY **regkey,
+			     const char *path,
+                             const struct nt_user_token *token,
+			     uint32 access_desired )
 {
 	TALLOC_CTX *mem_ctx;
 	const char *p;
-	BOOL free_parent = False;
+	REGISTRY_KEY *parent = NULL;
 	WERROR err;
 	size_t len;
 
@@ -417,21 +418,20 @@ WERROR regkey_open_internal( TALLOC_CTX *ctx, REGISTRY_KEY *parent,
 		return WERR_NOMEM;
 	}
 
-	len = strlen(name);
-	if ((len > 0) && (name[len-1] == '\\')) {
-		if (!(name = talloc_strndup(mem_ctx, name, len-1))) {
+	len = strlen(path);
+	if ((len > 0) && (path[len-1] == '\\')) {
+		if (!(path = talloc_strndup(mem_ctx, path, len-1))) {
 			TALLOC_FREE(mem_ctx);
 			return WERR_NOMEM;
 		}
 	}
 
-	while ((p = strchr(name, '\\')) != NULL) {
+	while ((p = strchr(path, '\\')) != NULL) {
 		char *name_component;
 		REGISTRY_KEY *intermediate;
-		
 
 		if (!(name_component = talloc_strndup(
-			      mem_ctx, name, (p - name)))) {
+			      mem_ctx, path, (p - path)))) {
 			TALLOC_FREE(mem_ctx);
 			return WERR_NOMEM;
 		}
@@ -446,15 +446,12 @@ WERROR regkey_open_internal( TALLOC_CTX *ctx, REGISTRY_KEY *parent,
 			return WERR_NOMEM;
 		}
 
-		if (free_parent) {
-			TALLOC_FREE(parent);
-		}
+		TALLOC_FREE(parent);
 		parent = intermediate;
-		free_parent = True;
-		name = p+1;
+		path = p+1;
 	}
 
-	err = regkey_open_onelevel(ctx, parent, regkey, name, token,
+	err = regkey_open_onelevel(ctx, parent, regkey, path, token,
 				   access_desired);
 	TALLOC_FREE(mem_ctx);
 	return err;
