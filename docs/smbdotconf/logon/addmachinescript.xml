@@ -4,11 +4,12 @@
                  advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This is the full pathname to a script that will  be run by
-	<citerefentry><refentrytitle>smbd</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry> when a machine is added
-	to Samba's domain and a Unix account matching the machine's name
-	appended with a &quot;$&quot; does not already exist. </para>
+	<para>
+	This is the full pathname to a script that will  be run by
+	<citerefentry><refentrytitle>smbd</refentrytitle> <manvolnum>8</manvolnum></citerefentry> when a machine is
+	added to Samba's domain and a Unix account matching the machine's name appended with a &quot;$&quot; does not
+	already exist.
+	</para>
 </description>
 
 <value type="default"/>
