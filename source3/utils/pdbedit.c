@@ -885,12 +885,18 @@ int main (int argc, char **argv)
 		uint32 value;
 		int field = account_policy_name_to_fieldnum(account_policy);
 		if (field == 0) {
-			char *apn = account_policy_names_list();
-			fprintf(stderr, "No account policy by that name\n");
-			if (apn) {
-				fprintf(stderr, "Account policy names are :\n%s\n", apn);
+			const char **names;
+			int count;
+			int i;
+			account_policy_names_list(&names, &count);
+			fprintf(stderr, "No account policy by that name!\n");
+			if (count !=0) {
+				fprintf(stderr, "Account policy names are:\n");
+				for (i = 0; i < count ; i++) {
+                        		d_fprintf(stderr, "%s\n", names[i]);
+				}
 			}
-			SAFE_FREE(apn);
+			SAFE_FREE(names);
 			exit(1);
 		}
 		if (!pdb_get_account_policy(field, &value)) {
