@@ -334,8 +334,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	/* setup the string used by %U */
 	
 	sub_set_smb_name( real_username );
-C_FR
-C_FREE
 	reload_services(True);
 
 	if ( map_domainuser_to_guest ) {
