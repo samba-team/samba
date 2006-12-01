@@ -365,38 +365,57 @@ static int net_sam_policy_set(int argc, const char **argv)
 	const char *account_policy = NULL;
 	uint32 value, old_value;
 	int field;
+	char *endptr;
 
         if (argc != 2) {
-                d_fprintf(stderr, "usage: net sam policy set" 
+                d_fprintf(stderr, "usage: net sam policy set " 
 			  "\"<account policy>\" <value> \n");
                 return -1;
         }
 
-	value = strtoul(argv[1], NULL, 10);
 	account_policy = argv[0];
 	field = account_policy_name_to_fieldnum(account_policy);
+	value = strtoul(argv[1], &endptr, 10);
 
-	printf("Account policy \"%s\" description: %s\n", account_policy,
-               account_policy_get_desc(field));
+	if (field == 0) {
+		const char **names;
+                int i, count;
+
+                account_policy_names_list(&names, &count);
+		d_fprintf(stderr, "No account policy \"%s\"!\n\n", argv[0]);
+		d_fprintf(stderr, "Valid account policies are:\n");
+
+		for (i=0; i<count; i++) {
+			d_fprintf(stderr, "%s\n", names[i]);
+		}
+
+		SAFE_FREE(names);
+		return -1;
+	}
 
 	if (!pdb_get_account_policy(field, &old_value)) {
-                fprintf(stderr, "Valid account policy, but unable to "
-                        "fetch value!\n");
-                return -1;
-        }
-	
-        printf("Account policy \"%s\" value was: %d\n", account_policy,
-               old_value);
+		d_fprintf(stderr, "Valid account policy, but unable to fetch "
+			  "value!\n");
+	}
 
-        if (!pdb_set_account_policy(field, value)) {
-                d_fprintf(stderr, "Setting account policy %s to %u failed \n",
-                          account_policy, value);
-        }
+	if ((endptr == argv[1]) || (endptr[0] != '\0')) {
+		d_printf("Unable to set policy \"%s\"! Invalid value %s.\n", 
+			  account_policy, argv[1]); 
+		return -1;
+	}
+		
+	if (!pdb_set_account_policy(field, value)) {
+		d_fprintf(stderr, "Valid account policy, but unable to "
+			  "set value!\n");
+		return -1;
+	}
 
-        printf("Account policy \"%s\" value is now: %d\n", account_policy,
-               value);
+	d_printf("Account policy \"%s\" value was: %d\n", account_policy,
+		 old_value);
 
-        return 0;
+	d_printf("Account policy \"%s\" value is now: %d\n", account_policy,
+		 value);
+	return 0;
 }
 
 static int net_sam_policy_show(int argc, const char **argv)
@@ -415,13 +434,19 @@ static int net_sam_policy_show(int argc, const char **argv)
         field = account_policy_name_to_fieldnum(account_policy);
 
         if (field == 0) {
-                char *apn = account_policy_names_list();
+		const char **names;
+		int count;
+		int i;
+                account_policy_names_list(&names, &count);
                 d_fprintf(stderr, "No account policy by that name!\n");
-                if (apn) {
+                if (count != 0) {
                         d_fprintf(stderr, "Valid account policies "
-                                  "are:\n%s\n", apn);
+                                  "are:\n");
+			for (i=0; i<count; i++) {
+				d_fprintf(stderr, "%s\n", names[i]);
+			}
                 }
-                SAFE_FREE(apn);
+                SAFE_FREE(names);
                 return -1;
         }
 
@@ -440,12 +465,18 @@ static int net_sam_policy_show(int argc, const char **argv)
 
 static int net_sam_policy_list(int argc, const char **argv)
 {
-	char *apn = account_policy_names_list();
-        if (apn) {
+	const char **names;
+	int count;
+	int i;
+	account_policy_names_list(&names, &count);
+        if (count != 0) {
         	d_fprintf(stderr, "Valid account policies "
-			  "are:\n\n%s\n", apn);
+			  "are:\n");
+		for (i = 0; i < count ; i++) {
+			d_fprintf(stderr, "%s\n", names[i]);
+		}
 	}
-        SAFE_FREE(apn);
+        SAFE_FREE(names);
         return -1;
 }
 

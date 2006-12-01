@@ -83,28 +83,24 @@ static const struct ap_table account_policy_names[] = {
 	{0, NULL, 0, "", NULL}
 };
 
-char *account_policy_names_list(void)
-{
-	char *nl, *p;
-	int i;
-	size_t len = 0;
+void account_policy_names_list(const char ***names, int *num_names)
+{	
+	const char **nl;
+	int i, count;
 
-	for (i=0; account_policy_names[i].string; i++) {
-		len += strlen(account_policy_names[i].string) + 1;
+	for (count=0; account_policy_names[count].string; count++) {
 	}
-	len++;
-	nl = (char *)SMB_MALLOC(len);
+	nl = SMB_MALLOC_ARRAY(const char *, count);
 	if (!nl) {
-		return NULL;
+		*num_names = 0;
+		return;
 	}
-	p = nl;
 	for (i=0; account_policy_names[i].string; i++) {
-		memcpy(p, account_policy_names[i].string, strlen(account_policy_names[i].string) + 1);
-		p[strlen(account_policy_names[i].string)] = '\n';
-		p += strlen(account_policy_names[i].string) + 1;
+		nl[i] = account_policy_names[i].string;
 	}
-	*p = '\0';
-	return nl;
+	*num_names = count;
+	*names = nl;
+	return;
 }
 
 /****************************************************************************
