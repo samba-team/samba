@@ -621,28 +621,59 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 */
 
 /* W2K3: */
-
-	/* DsAddEntry to create the CN=NTDS Settings,CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name, ...
-	 *
+	/*
+	 * lookup DC:
+	 * - using nbt name<1C> request and a samlogon mailslot request
+	 * or
+	 * - using a DNS SRV _ldap._tcp.dc._msdcs. request and a CLDAP netlogon request
+	 */
+	/*
+	 * Open 1st LDAP connection to the DC using admin credentials
 	 */
 
-	/* replicate CN=Schema,CN=Configuration,...
-	 * using DRSUAPI_DS_BIND_GUID_W2K3 ("6afab99c-6e26-464a-975f-f58f105218bc")
-	 *
+/* ... */
+
+	/*
+	 * Open 1st DRSUAPI connection to the DC using admin credentials
+	 * DsBind with DRSUAPI_DS_BIND_GUID_W2K3 ("6afab99c-6e26-464a-975f-f58f105218bc")
+	 * (w2k3 does 2 DsBind() calls here..., where is first is unused and contains garbage at the end)
 	 */
 
-	/* replicate CN=Configuration,...
-	 * using DRSUAPI_DS_BIND_GUID_W2K3 ("6afab99c-6e26-464a-975f-f58f105218bc")
-	 *
+	/*
+	 * DsAddEntry to create the CN=NTDS Settings,CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name, ...
+	 * on the 1st DRSUAPI connection
 	 */
 
-	/* W2K3: modify userAccountControl from 4096 to 532480 */
+	/*
+	 * Open 2nd and 3rd DRSUAPI connection to the DC using admin credentials
+	 * - a DsBind with DRSUAPI_DS_BIND_GUID_W2K3 ("6afab99c-6e26-464a-975f-f58f105218bc")
+	 *   on the 2nd connection
+	 */
+
+	/*
+	 * replicate CN=Schema,CN=Configuration,...
+	 * on the 3rd DRSUAPI connection and the bind_handle from the 2nd connection
+	 */
+
+	/*
+	 * replicate CN=Configuration,...
+	 * on the 3rd DRSUAPI connection and the bind_handle from the 2nd connection
+	 */
+
+	/*
+	 * LDAP unbind in the 1st LDAP connection
+	 */
+
+	/*
+	 * Open 2nd LDAP connection to the DC using admin credentials
+	 */
+	/* ldap modify userAccountControl from 4096 to 532480 */
 	
-	/* W2K3: modify RDN to OU=Domain Controllers and skip the $ from server name */
+	/* ldap modify RDN to OU=Domain Controllers and skip the $ from server name */
 
-	/* replicate Domain Partition
-	 * using DRSUAPI_DS_BIND_GUID_W2K3 ("6afab99c-6e26-464a-975f-f58f105218bc")
-	 *
+	/*
+	 * replicate Domain Partition
+	 * on the 3rd DRSUAPI connection and the bind_handle from the 2nd connection
 	 */
 
 	/* call DsReplicaUpdateRefs() for all partitions like this:
@@ -662,12 +693,21 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 *                 0: DRSUAPI_DS_REPLICA_UPDATE_WRITEABLE
 	 *                 1: DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE
 	 *                 1: DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE
-	 *                 1: DRSUAPI_DS_REPLICA_UPDATE_0x00000010      
+	 *                 1: DRSUAPI_DS_REPLICA_UPDATE_0x00000010
 	 *
 	 * 4a0df188-a0b8-47ea-bbe5-e614723f16dd is the objectGUID the DsAddEntry() returned for the
 	 * CN=NTDS Settings,CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name, ...
+	 * on the 2nd!!! DRSUAPI connection
 	 */
 
+	/*
+	 * Windows does opens the 4th and 5th DRSUAPI connection...
+	 * and does a DsBind() with the objectGUID from DsAddEntry() as bind_guid
+	 * on the 4th connection
+	 *
+	 * and then 2 full replications of the domain partition on the 5th connection
+	 * with the bind_handle from the 4th connection
+	 */
 	return join;
 }
 		
