@@ -186,7 +186,7 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_context *ctdb,
 	int ret;
 
 	state = talloc_zero(ctdb, struct ctdb_call_state);
-	CTDB_NO_MEMORY(ctdb, state);
+	CTDB_NO_MEMORY_NULL(ctdb, state);
 
 	state->state = CTDB_CALL_DONE;
 	state->node = ctdb->nodes[ctdb->vnn];
@@ -213,11 +213,11 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 	}
 
 	state = talloc_zero(ctdb, struct ctdb_call_state);
-	CTDB_NO_MEMORY(ctdb, state);
+	CTDB_NO_MEMORY_NULL(ctdb, state);
 
 	len = sizeof(*state->c) + key.dsize + (call_data?call_data->dsize:0);
 	state->c = talloc_size(ctdb, len);
-	CTDB_NO_MEMORY(ctdb, state->c);
+	CTDB_NO_MEMORY_NULL(ctdb, state->c);
 
 	state->c->hdr.length    = len;
 	state->c->hdr.operation = CTDB_REQ_CALL;

@@ -94,6 +94,10 @@ struct ctdb_context {
           ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
 	  return -1; }} while (0)
 
+#define CTDB_NO_MEMORY_NULL(ctdb, p) do { if (!(p)) { \
+          ctdb_set_error(ctdb, "Out of memory at %s:%d", __FILE__, __LINE__); \
+	  return NULL; }} while (0)
+
 /* arbitrary maximum timeout for ctdb operations */
 #define CTDB_REQ_TIMEOUT 10
 
