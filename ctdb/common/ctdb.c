@@ -38,6 +38,14 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 	return -1;
 }
 
+/*
+  set some ctdb flags
+*/
+void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
+{
+	ctdb->flags |= flags;
+}
+
 
 /*
   add a node to the list of active nodes
@@ -149,7 +157,31 @@ int ctdb_start(struct ctdb_context *ctdb)
 */
 static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t length)
 {
-	printf("received pkt of length %d\n", length);
+	struct ctdb_req_header *hdr;
+	if (length < sizeof(*hdr)) {
+		ctdb_set_error(ctdb, "Bad packet length %d\n", length);
+		return;
+	}
+	hdr = (struct ctdb_req_header *)data;
+	if (length != hdr->length) {
+		ctdb_set_error(ctdb, "Bad header length %d expected %d\n", 
+			       hdr->length, length);
+		return;
+	}
+	switch (hdr->operation) {
+	case CTDB_REQ_CALL:
+		ctdb_request_call(ctdb, hdr);
+		break;
+
+	case CTDB_REPLY_CALL:
+		ctdb_reply_call(ctdb, hdr);
+		break;
+
+	default:
+		printf("Packet with unknown operation %d\n", hdr->operation);
+		talloc_free(hdr);
+		break;
+	}
 }
 
 /*
@@ -157,7 +189,9 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 */
 static void ctdb_node_dead(struct ctdb_node *node)
 {
-	printf("%s: node %s is dead\n", node->ctdb->name, node->name);
+	node->ctdb->num_connected--;
+	printf("%s: node %s is dead: %d connected\n", 
+	       node->ctdb->name, node->name, node->ctdb->num_connected);
 }
 
 /*
@@ -165,7 +199,37 @@ static void ctdb_node_dead(struct ctdb_node *node)
 */
 static void ctdb_node_connected(struct ctdb_node *node)
 {
-	printf("%s: connected to %s\n", node->ctdb->name, node->name);
+	node->ctdb->num_connected++;
+	printf("%s: connected to %s - %d connected\n", 
+	       node->ctdb->name, node->name, node->ctdb->num_connected);
+}
+
+/*
+  wait for all nodes to be connected
+*/
+void ctdb_connect_wait(struct ctdb_context *ctdb)
+{
+	int expected = ctdb->num_nodes - 1;
+	if (ctdb->flags & CTDB_FLAG_SELF_CONNECT) {
+		expected++;
+	}
+	while (ctdb->num_connected != expected) {
+		event_loop_once(ctdb->ev);
+	}
+}
+
+/*
+  wait until we're the only node left
+*/
+void ctdb_wait_loop(struct ctdb_context *ctdb)
+{
+	int expected = 0;
+	if (ctdb->flags & CTDB_FLAG_SELF_CONNECT) {
+		expected++;
+	}
+	while (ctdb->num_connected > expected) {
+		event_loop_once(ctdb->ev);
+	}
 }
 
 static const struct ctdb_upcalls ctdb_upcalls = {

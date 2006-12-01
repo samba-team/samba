@@ -33,6 +33,12 @@ struct ctdb_call {
 #define CTDB_ERR_INVALID 1
 #define CTDB_ERR_NOMEM 2
 
+/*
+  ctdb flags
+*/
+#define CTDB_FLAG_SELF_CONNECT (1<<0)
+
+
 struct event_context;
 
 /*
@@ -44,6 +50,11 @@ struct ctdb_context *ctdb_init(struct event_context *ev);
   choose the transport
 */
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
+
+/*
+  set some flags
+*/
+void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags);
 
 /*
   tell ctdb what address to listen on, in transport specific format
@@ -87,4 +98,14 @@ int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags,
 */
 int ctdb_call(struct ctdb_context *ctdb, TDB_DATA key, int call_id, 
 	      TDB_DATA *call_data, TDB_DATA *reply_data);
+
+/*
+  wait for all nodes to be connected - useful for test code
+*/
+void ctdb_connect_wait(struct ctdb_context *ctdb);
+
+/*
+  wait until we're the only node left
+*/
+void ctdb_wait_loop(struct ctdb_context *ctdb);
 

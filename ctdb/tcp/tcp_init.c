@@ -39,7 +39,8 @@ int ctdb_tcp_start(struct ctdb_context *ctdb)
 	   next event loop */
 	for (i=0;i<ctdb->num_nodes;i++) {
 		struct ctdb_node *node = *(ctdb->nodes + i);
-		if (ctdb_same_address(&ctdb->address, &node->address)) continue;
+		if (!(ctdb->flags & CTDB_FLAG_SELF_CONNECT) &&
+		    ctdb_same_address(&ctdb->address, &node->address)) continue;
 		event_add_timed(ctdb->ev, node, timeval_zero(), 
 				ctdb_tcp_node_connect, node);
 	}
