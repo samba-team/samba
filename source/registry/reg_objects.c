@@ -75,7 +75,7 @@ WERROR regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
 }
  
  /***********************************************************************
- Add a new key to the array
+ Delete a key from the array
  **********************************************************************/
 
 int regsubkey_ctr_delkey( REGSUBKEY_CTR *ctr, const char *keyname )
