@@ -79,6 +79,7 @@ struct ctdb_context {
 	uint32_t vnn; /* our own vnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;
+	unsigned flags;
 	struct idr_context *idr;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	struct ctdb_registered_call *calls; /* list of registered calls */
@@ -101,23 +102,15 @@ struct ctdb_context {
   operation IDs
 */
 enum ctdb_operation {
-	CTDB_OP_CALL = 0
+	CTDB_REQ_CALL   = 0,
+	CTDB_REPLY_CALL = 1
 };
 
 /*
   packet structures
 */
 struct ctdb_req_header {
-	uint32_t _length; /* ignored by datagram transports */
-	uint32_t operation;
-	uint32_t destnode;
-	uint32_t srcnode;
-	uint32_t reqid;
-	uint32_t reqtimeout;
-};
-
-struct ctdb_reply_header {
-	uint32_t _length; /* ignored by datagram transports */
+	uint32_t length;
 	uint32_t operation;
 	uint32_t destnode;
 	uint32_t srcnode;
@@ -133,7 +126,7 @@ struct ctdb_req_call {
 };
 
 struct ctdb_reply_call {
-	struct ctdb_reply_header hdr;
+	struct ctdb_req_header hdr;
 	uint32_t datalen;
 	uint8_t  data[0];
 };
@@ -145,4 +138,6 @@ int ctdb_parse_address(struct ctdb_context *ctdb,
 		       TALLOC_CTX *mem_ctx, const char *str,
 		       struct ctdb_address *address);
 uint32_t ctdb_hash(TDB_DATA *key);
+void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 

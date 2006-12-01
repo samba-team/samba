@@ -140,8 +140,6 @@ void ctdb_tcp_incoming_read(struct event_context *ev, struct fd_event *fde,
 
 	/* tell the ctdb layer above that we have a packet */
 	in->ctdb->upcalls->recv_pkt(in->ctdb, data, num_ready);
-
-	talloc_free(data);
 }
 
 /*

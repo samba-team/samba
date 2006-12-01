@@ -79,12 +79,14 @@ int main(int argc, const char *argv[])
 	const char *nlist = NULL;
 	const char *transport = "tcp";
 	const char *myaddress = NULL;
+	int self_connect=0;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		{ "nlist", 0, POPT_ARG_STRING, &nlist, 0, "node list file", "filename" },
 		{ "listen", 0, POPT_ARG_STRING, &myaddress, 0, "address to listen on", "address" },
 		{ "transport", 0, POPT_ARG_STRING, &transport, 0, "protocol transport", NULL },
+		{ "self-connect", 0, POPT_ARG_NONE, &self_connect, 0, "enable self connect", "boolean" },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -125,6 +127,10 @@ int main(int argc, const char *argv[])
 	if (ctdb == NULL) {
 		printf("Failed to init ctdb\n");
 		exit(1);
+	}
+
+	if (self_connect) {
+		ctdb_set_flags(ctdb, CTDB_FLAG_SELF_CONNECT);
 	}
 
 	ret = ctdb_set_transport(ctdb, transport);
@@ -191,6 +197,9 @@ int main(int argc, const char *argv[])
 		printf("%3d\n", ((int *)data.dptr)[i]);
 	}
 	talloc_free(data.dptr);
+
+	/* go into a wait loop to allow other nodes to complete */
+	ctdb_wait_loop(ctdb);
 
 	/* shut it down */
 	talloc_free(ctdb);
