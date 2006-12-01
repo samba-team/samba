@@ -110,7 +110,14 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		if (pass) {
-			make_server_info_pw(server_info, pass->pw_name, pass);
+			/* if a real user check pam account restrictions */
+			/* only really perfomed if "obey pam restriction" is true */
+			nt_status = smb_pam_accountcheck(pass->pw_name);
+			if (  !NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(1, ("PAM account restriction prevents user login\n"));
+			} else {
+				make_server_info_pw(server_info, pass->pw_name, pass);
+			}
 		} else {
 			/* we need to do somthing more useful here */
 			nt_status = NT_STATUS_NO_SUCH_USER;
