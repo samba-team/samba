@@ -2596,6 +2596,8 @@ BOOL get_global_winbindd_state_offline(void)
  Validate functions for all possible cache tdb keys.
 ***********************************************************************/
 
+static int bad_cache_entry;
+
 static int validate_seqnum(TDB_DATA kbuf, TDB_DATA dbuf)
 {
 	return 0;
@@ -2656,6 +2658,16 @@ static int validate_gm(TDB_DATA kbuf, TDB_DATA dbuf)
 	return 0;
 }
 
+static int validate_dr(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
+static int validate_de(TDB_DATA kbuf, TDB_DATA dbuf)
+{
+	return 0;
+}
+
 static int validate_trustdoms(TDB_DATA kbuf, TDB_DATA dbuf)
 {
 	return 0;
@@ -2687,6 +2699,8 @@ struct key_val_struct {
 	{"UG/", validate_ug},
 	{"UA", validate_ua},
 	{"GM/", validate_gm},
+	{"DR/", validate_dr},
+	{"DE/", validate_de},
 	{"TRUSTDOMS/", validate_trustdoms},
 	{"WINBINDD_OFFLINE", validate_offline},
 	{NULL, NULL}
@@ -2708,6 +2722,11 @@ static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 			return key_val[i].validate_data_fn(kbuf, dbuf);
 		}
 	}
+
+	DEBUG(0,("cache_traverse_validate_fn: unknown cache entry\nkey :\n"));
+	dump_data(0, kbuf.dptr, kbuf.dsize);
+	DEBUG(0,("data :\n"));
+	dump_data(0, dbuf.dptr, dbuf.dsize);
 	return 1; /* terminate. */
 }
 
@@ -2789,15 +2808,19 @@ int winbindd_validate_cache(void)
 		goto out;
 	}
 
+	DEBUG(10,("winbindd_validate_cache: cache %s freelist has %d entries\n",
+		cache_path, num_entries));
+
 	/* Now traverse the cache to validate it. */
-	if (tdb_traverse(tdb, cache_traverse_validate_fn, NULL)) {
+	num_entries = tdb_traverse(tdb, cache_traverse_validate_fn, NULL);
+	if (num_entries == -1 || bad_cache_entry) {
 		DEBUG(0,("winbindd_validate_cache: cache %s traverse failed\n",
 			cache_path));
 		goto out;
 	}
 
 	DEBUG(10,("winbindd_validate_cache: cache %s is good "
-		"freelist has %d entries\n", cache_path, num_entries));
+		"with %d entries\n", cache_path, num_entries));
 	ret = 0; /* Cache is good. */
 
   out:
