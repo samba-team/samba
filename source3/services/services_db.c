@@ -322,7 +322,7 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 	/* open the new service key */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( NULL, NULL, &key_service, path,
+	wresult = regkey_open_internal( NULL, &key_service, path,
 					get_root_nt_token(), REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("add_new_svc_name: key lookup failed! [%s] (%s)\n", 
@@ -360,7 +360,7 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s\\%s", KEY_SERVICES, name, "Security" );
-	wresult = regkey_open_internal( NULL, NULL, &key_secdesc, path,
+	wresult = regkey_open_internal( NULL, &key_secdesc, path,
 					get_root_nt_token(), REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("add_new_svc_name: key lookup failed! [%s] (%s)\n", 
@@ -412,7 +412,7 @@ void svcctl_init_keys( void )
 	
 	/* bad mojo here if the lookup failed.  Should not happen */
 	
-	wresult = regkey_open_internal( NULL, NULL, &key, KEY_SERVICES,
+	wresult = regkey_open_internal( NULL, &key, KEY_SERVICES,
 					get_root_nt_token(), REG_KEY_ALL );
 
 	if ( !W_ERROR_IS_OK(wresult) ) {
@@ -476,7 +476,7 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s\\%s", KEY_SERVICES, name, "Security" );
-	wresult = regkey_open_internal( NULL, NULL, &key, path, token,
+	wresult = regkey_open_internal( NULL, &key, path, token,
 					REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n", 
@@ -536,7 +536,7 @@ BOOL svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s\\%s", KEY_SERVICES, name, "Security" );
-	wresult = regkey_open_internal( NULL, NULL, &key, path, token,
+	wresult = regkey_open_internal( NULL, &key, path, token,
 					REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n", 
@@ -583,7 +583,7 @@ char* svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( NULL, NULL, &key, path, token,
+	wresult = regkey_open_internal( NULL, &key, path, token,
 					REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
@@ -630,7 +630,7 @@ char* svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( NULL, NULL, &key, path, token,
+	wresult = regkey_open_internal( NULL, &key, path, token,
 					REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
@@ -670,7 +670,7 @@ REGVAL_CTR* svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( NULL, NULL, &key, path, token,
+	wresult = regkey_open_internal( NULL, &key, path, token,
 					REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_fetch_regvalues: key lookup failed! [%s] (%s)\n", 
