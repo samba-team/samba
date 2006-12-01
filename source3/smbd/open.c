@@ -1105,7 +1105,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	uint32 open_access_mask = access_mask;
 	NTSTATUS status;
 	int ret_flock;
-	
 
 	if (conn->printer) {
 		/* 
@@ -1300,7 +1299,15 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
 	if (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) {
-		flags = O_RDWR;
+		/* DENY_DOS opens are always underlying read-write on the
+		   file handle, no matter what the requested access mask
+		    says. */
+		if ((create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) ||
+			access_mask & (FILE_READ_ATTRIBUTES|FILE_READ_DATA|FILE_READ_EA|FILE_EXECUTE)) {
+			flags = O_RDWR;
+		} else {
+			flags = O_WRONLY;
+		}
 	} else {
 		flags = O_RDONLY;
 	}
@@ -1448,11 +1455,13 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			if (flags & O_RDWR) {
 				can_access_mask = FILE_READ_DATA|FILE_WRITE_DATA;
+			} else if (flags & O_WRONLY) {
+				can_access_mask = FILE_WRITE_DATA;
 			} else {
 				can_access_mask = FILE_READ_DATA;
 			}
 
-			if (((flags & O_RDWR) && !CAN_WRITE(conn)) ||
+			if (((can_access_mask & FILE_WRITE_DATA) && !CAN_WRITE(conn)) ||
 			    !can_access_file(conn,fname,psbuf,can_access_mask)) {
 				can_access = False;
 			}
