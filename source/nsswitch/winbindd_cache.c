@@ -372,7 +372,7 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 
 static NTSTATUS store_cache_seqnum( struct winbindd_domain *domain )
 {
-	TDB_DATA data, key;
+	TDB_DATA data;
 	fstring key_str;
 	char buf[8];
 	
@@ -382,15 +382,13 @@ static NTSTATUS store_cache_seqnum( struct winbindd_domain *domain )
 	}
 		
 	fstr_sprintf( key_str, "SEQNUM/%s", domain->name );
-	key.dptr = key_str;
-	key.dsize = strlen(key_str)+1;
 	
 	SIVAL(buf, 0, domain->sequence_number);
 	SIVAL(buf, 4, domain->last_seq_check);
 	data.dptr = buf;
 	data.dsize = 8;
 	
-	if ( tdb_store( wcache->tdb, key, data, TDB_REPLACE) == -1 ) {
+	if ( tdb_store_bystring( wcache->tdb, key_str, data, TDB_REPLACE) == -1 ) {
 		DEBUG(10,("store_cache_seqnum: tdb_store fail key [%s]\n", key_str ));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -2703,23 +2701,14 @@ static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 {
 	int i;
 
-	/* Ensure key is valid. */
-	if (kbuf.dsize < 3) {
-		return 1; /* terminate. */
-	}
-	/* Ensure key is a string. */
-	if (kbuf.dptr[kbuf.dsize] != '\0') {
-		return 1; /* terminate. */
-	}
-
 	for (i = 0; key_val[i].keyname; i++) {
-		if (strncmp(key_val[i].keyname, kbuf.dptr, strlen(key_val[i].keyname)) == 0) {
-			if (key_val[i].validate_data_fn(kbuf, dbuf)) {
-				return 1; /* terminate. */
-			}
+		size_t namelen = strlen(key_val[i].keyname);
+		if (kbuf.dsize >= namelen && (
+				strncmp(key_val[i].keyname, kbuf.dptr, namelen)) == 0) {
+			return key_val[i].validate_data_fn(kbuf, dbuf);
 		}
 	}
-	return 0;
+	return 1; /* terminate. */
 }
 
 /* Handle any signals generated when validating a possibly
@@ -2758,6 +2747,7 @@ int winbindd_validate_cache(void)
 {
 	BOOL ret = -1;
 	int fd = -1;
+	int num_entries = 0;
 	TDB_CONTEXT *tdb = NULL;
 	const char *cache_path = lock_path("winbindd_cache.tdb");
 
@@ -2792,12 +2782,22 @@ int winbindd_validate_cache(void)
 
 	fd = tdb_fd(tdb);
 
-	/* Now traverse the cache to validate it. */
-	if (tdb_traverse(tdb, cache_traverse_validate_fn, NULL)) {
+	/* Check the cache freelist is good. */
+	if (tdb_validate_freelist(tdb, &num_entries) == -1) {
+		DEBUG(0,("winbindd_validate_cache: bad freelist in cache %s\n",
+			cache_path));
 		goto out;
 	}
 
-	DEBUG(10,("winbindd_validate_cache: cache %s is good\n", cache_path));
+	/* Now traverse the cache to validate it. */
+	if (tdb_traverse(tdb, cache_traverse_validate_fn, NULL)) {
+		DEBUG(0,("winbindd_validate_cache: cache %s traverse failed\n",
+			cache_path));
+		goto out;
+	}
+
+	DEBUG(10,("winbindd_validate_cache: cache %s is good "
+		"freelist has %d entries\n", cache_path, num_entries));
 	ret = 0; /* Cache is good. */
 
   out:
