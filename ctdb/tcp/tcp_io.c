@@ -151,14 +151,9 @@ int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 						      struct ctdb_tcp_node);
 	struct ctdb_tcp_packet *pkt;
 	
-	if (tnode->fd == -1) {
-		ctdb_set_error(node->ctdb, "Sending to dead node %s\n", node->name);
-		return -1;
-	}
-
 	/* if the queue is empty then try an immediate write, avoiding
 	   queue overhead. This relies on non-blocking sockets */
-	if (tnode->queue == NULL) {
+	if (tnode->queue == NULL && tnode->fd != -1) {
 		ssize_t n = write(tnode->fd, data, length);
 		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
 			event_add_timed(node->ctdb->ev, node, timeval_zero(), 
@@ -182,7 +177,7 @@ int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 
 	pkt->length = length;
 
-	if (tnode->queue == NULL) {
+	if (tnode->queue == NULL && tnode->fd != -1) {
 		EVENT_FD_WRITEABLE(tnode->fde);
 	}
 

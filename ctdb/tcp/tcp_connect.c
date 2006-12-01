@@ -63,6 +63,10 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 
 	/* tell the ctdb layer we are connected */
 	node->ctdb->upcalls->node_connected(node);
+
+	if (tnode->queue) {
+		EVENT_FD_WRITEABLE(tnode->fde);		
+	}
 }
 
 /*
