@@ -526,9 +526,9 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 		case SMB_USER_FS_QUOTA_TYPE:
 			id.uid = getuid();
 
-			if ((ret=sys_get_linux_gen_quota(path, bdev, qtype, id, dp))) {
-				if ((ret=sys_get_linux_v2_quota(path, bdev, qtype, id, dp))) {
-					ret=sys_get_linux_v1_quota(path, bdev, qtype, id, dp);
+			if ((ret=sys_set_linux_gen_quota(path, bdev, qtype, id, dp))) {
+				if ((ret=sys_set_linux_v2_quota(path, bdev, qtype, id, dp))) {
+					ret=sys_set_linux_v1_quota(path, bdev, qtype, id, dp);
 				}
 			}
 
@@ -541,9 +541,9 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 		case SMB_GROUP_FS_QUOTA_TYPE:
 			id.gid = getgid();
 
-			if ((ret=sys_get_linux_gen_quota(path, bdev, qtype, id, dp))) {
-				if ((ret=sys_get_linux_v2_quota(path, bdev, qtype, id, dp))) {
-					ret=sys_get_linux_v1_quota(path, bdev, qtype, id, dp);
+			if ((ret=sys_set_linux_gen_quota(path, bdev, qtype, id, dp))) {
+				if ((ret=sys_set_linux_v2_quota(path, bdev, qtype, id, dp))) {
+					ret=sys_set_linux_v1_quota(path, bdev, qtype, id, dp);
 				}
 			}
 
