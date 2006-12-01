@@ -266,6 +266,7 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 
 		char n;
 		struct winreg_ValNameBuf name_buf;
+		WERROR err;
 
 		n = '\0';
 		name_buf.name = &n;
@@ -301,9 +302,10 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 			goto error;
 		}
 
-		status = registry_pull_value(values, &values[i], *ptype, data,
-					     *pdata_size, *pvalue_length);
-		if (!(NT_STATUS_IS_OK(status))) {
+		err = registry_pull_value(values, &values[i], *ptype, data,
+					  *pdata_size, *pvalue_length);
+		if (!W_ERROR_IS_OK(err)) {
+			status = werror_to_ntstatus(err);
 			goto error;
 		}
 	}
@@ -333,10 +335,11 @@ static NTSTATUS registry_setvalue(TALLOC_CTX *mem_ctx,
 	struct winreg_String name_string;
 	DATA_BLOB blob;
 	NTSTATUS result;
+	WERROR err;
 
-	result = registry_push_value(mem_ctx, value, &blob);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
+	err = registry_push_value(mem_ctx, value, &blob);
+	if (!W_ERROR_IS_OK(err)) {
+		return werror_to_ntstatus(err);
 	}
 
 	name_string.name = name;
@@ -590,12 +593,12 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 {
 	POLICY_HND pol_hive, pol_key; 
 	NTSTATUS status;
-	uint32 num_subkeys;
-	uint32 num_values;
-	char **names, **classes;
-	NTTIME **modtimes;
+	uint32 num_subkeys = 0;
+	uint32 num_values = 0;
+	char **names = NULL, **classes = NULL;
+	NTTIME **modtimes = NULL;
 	uint32 i;
-	struct registry_value **values;
+	struct registry_value **values = NULL;
 	
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc enumerate <path> [recurse]\n");

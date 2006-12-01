@@ -1970,7 +1970,7 @@ BOOL make_auth_methods(struct auth_context *auth_context, auth_methods **auth_me
  Duplicate a SID token.
 ****************************************************************************/
 
-NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, NT_USER_TOKEN *ptoken)
+NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken)
 {
 	NT_USER_TOKEN *token;
 
