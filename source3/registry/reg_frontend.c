@@ -490,3 +490,61 @@ WERROR regkey_set_secdesc(REGISTRY_KEY *key,
 	return WERR_ACCESS_DENIED;
 }
 
+
+/*
+ * Utility function to open a complete registry path including the hive
+ * prefix. This should become the replacement function for
+ * regkey_open_internal.
+ */
+
+WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
+		     uint32 desired_access, const struct nt_user_token *token,
+		     struct registry_key **pkey)
+{
+	struct registry_key *hive, *key;
+	char *path, *p;
+	WERROR err;
+
+	if (!(path = SMB_STRDUP(orig_path))) {
+		return WERR_NOMEM;
+	}
+
+	p = strchr(path, '\\');
+
+	if ((p == NULL) || (p[1] == '\0')) {
+		/*
+		 * No key behind the hive, just return the hive
+		 */
+
+		err = reg_openhive(mem_ctx, path, desired_access, token,
+				   &hive);
+		if (!W_ERROR_IS_OK(err)) {
+			SAFE_FREE(path);
+			return err;
+		}
+		*pkey = hive;
+		SAFE_FREE(path);
+		return WERR_OK;
+	}
+
+	*p = '\0';
+
+	err = reg_openhive(mem_ctx, path, SEC_RIGHTS_ENUM_SUBKEYS, token,
+			   &hive);
+	if (!W_ERROR_IS_OK(err)) {
+		SAFE_FREE(path);
+		return err;
+	}
+
+	err = reg_openkey(mem_ctx, hive, p+1, desired_access, &key);
+
+	TALLOC_FREE(hive);
+	SAFE_FREE(path);
+
+	if (!W_ERROR_IS_OK(err)) {
+		return err;
+	}
+
+	*pkey = key;
+	return WERR_OK;
+}
