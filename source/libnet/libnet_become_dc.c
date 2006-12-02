@@ -20,15 +20,27 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
+#include "libcli/composite/composite.h"
 
 struct composite_context *libnet_BecomeDC_send(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_BecomeDC *r)
 {
-	return NULL;
+	struct composite_context *c;
+
+	c = composite_create(mem_ctx, ctx->event_ctx);
+	if (c == NULL) return NULL;
+
+	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
+	return c;
 }
 
 NTSTATUS libnet_BecomeDC_recv(struct composite_context *c, TALLOC_CTX *mem_ctx, struct libnet_BecomeDC *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS status;
+
+	status = composite_wait(c);
+
+	talloc_free(c);
+	return status;
 }
 
 NTSTATUS libnet_BecomeDC(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_BecomeDC *r)
