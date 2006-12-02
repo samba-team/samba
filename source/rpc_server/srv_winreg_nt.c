@@ -433,7 +433,7 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct policy_handle *handle,
 {
 	WERROR err;
 	struct registry_key *key = find_regkey_by_hnd( p, handle );
-	const char *valname;
+	char *valname;
 	struct registry_value *val;
 	DATA_BLOB value_blob;
 	
