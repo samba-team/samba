@@ -212,7 +212,7 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type)
 		result = rpccli_netlogon_sam_sync(pipe_hnd, mem_ctx, db_type,
 					       sync_context,
 					       &num_deltas, &hdr_deltas, &deltas);
-		if (NT_STATUS_IS_ERR(result))
+		if (!NT_STATUS_IS_OK(result))
 			break;
 
                 for (i = 0; i < num_deltas; i++) {
