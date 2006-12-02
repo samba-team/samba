@@ -898,6 +898,7 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 *      <success>
 	 */
 
+	/* 20000 */
 /* ... */
 
 	/*
