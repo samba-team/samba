@@ -845,6 +845,21 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 *		objectCategory:	CN=Site,C=Schema,CN=Configuration,<domain_partition>
 	 */
 
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	<domain_partition>
+	 *	scope:	sub
+	 *	filter:	(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=<new_dc_account_name>))
+	 *	attrs:	distinguishedName
+	 *		userAccountControl
+	 * Result:
+	 *      CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+	 *		distinguishedName:	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+	 *		userAccoountControl:	4096 <0x1000>
+	 */
+
 /* ... */
 
 	/*
