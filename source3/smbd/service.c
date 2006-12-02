@@ -231,15 +231,15 @@ int add_home_service(const char *service, const char *username, const char *home
 
 static int load_registry_service(const char *servicename)
 {
-	REGISTRY_KEY *key;
+	struct registry_key *key;
 	char *path;
 	WERROR err;
 
-	uint32 i, num_values;
-	char **value_names;
-	struct registry_value **values = NULL;
+	uint32 i;
+	char *value_name;
+	struct registry_value *value;
 
-	int res;
+	int res = -1;
 
 	if (!lp_registry_shares()) {
 		return -1;
@@ -249,21 +249,12 @@ static int load_registry_service(const char *servicename)
 		return -1;
 	}
 
-	err = regkey_open_internal(NULL, &key, path, get_root_nt_token(),
-				   REG_KEY_READ);
+	err = reg_open_path(NULL, path, REG_KEY_READ, get_root_nt_token(),
+			    &key);
 	SAFE_FREE(path);
 
 	if (!W_ERROR_IS_OK(err)) {
 		return -1;
-	}
-
-	err = registry_fetch_values(NULL, key, &num_values, &value_names,
-				    &values);
-
-	TALLOC_FREE(key);
-
-	if (!W_ERROR_IS_OK(err)) {
-		goto error;
 	}
 
 	res = lp_add_service(servicename, -1);
@@ -271,43 +262,43 @@ static int load_registry_service(const char *servicename)
 		goto error;
 	}
 
-	for (i=0; i<num_values; i++) {
-		switch (values[i]->type) {
+	for (i=0;
+	     W_ERROR_IS_OK(reg_enumvalue(key, key, i, &value_name, &value));
+	     i++) {
+		switch (value->type) {
 		case REG_DWORD: { 
-			char *val;
-			if (asprintf(&val, "%d", values[i]->v.dword) == -1) {
+			char *tmp;
+			if (asprintf(&tmp, "%d", value->v.dword) == -1) {
 				continue;
 			}
-			lp_do_parameter(res, value_names[i], val);
-			SAFE_FREE(val);
+			lp_do_parameter(res, value_name, tmp);
+			SAFE_FREE(tmp);
 			break;
 		}
 		case REG_SZ: {
-			lp_do_parameter(res, value_names[i],
-					values[i]->v.sz.str);
+			lp_do_parameter(res, value_name, value->v.sz.str);
 			break;
 		}
 		default:
 			/* Ignore all the rest */
 			break;
 		}
+
+		TALLOC_FREE(value_name);
+		TALLOC_FREE(value);
 	}
 
-	TALLOC_FREE(value_names);
-	TALLOC_FREE(values);
-	return res;
-
+	res = 0;
  error:
 
-	TALLOC_FREE(value_names);
-	TALLOC_FREE(values);
-	return -1;
+	TALLOC_FREE(key);
+	return res;
 }
 
 void load_registry_shares(void)
 {
-	REGISTRY_KEY *key;
-	REGSUBKEY_CTR *keys;
+	struct registry_key *key;
+	char *name;
 	WERROR err;
 	int i;
 
@@ -315,26 +306,18 @@ void load_registry_shares(void)
 		return;
 	}
 
-	if (!(keys = TALLOC_ZERO_P(NULL, REGSUBKEY_CTR))) {
-		goto done;
-	}
-
-	err = regkey_open_internal(keys, &key, KEY_SMBCONF,
-				   get_root_nt_token(), REG_KEY_READ);
+	err = reg_open_path(NULL, KEY_SMBCONF, REG_KEY_READ,
+			    get_root_nt_token(), &key);
 	if (!(W_ERROR_IS_OK(err))) {
-		goto done;
+		return;
 	}
 
-	if (fetch_reg_keys(key, keys) == -1) {
-		goto done;
+	for (i=0; W_ERROR_IS_OK(reg_enumkey(key, key, i, &name, NULL)); i++) {
+		load_registry_service(name);
+		TALLOC_FREE(name);
 	}
 
-	for (i=0; i<keys->num_subkeys; i++) {
-		load_registry_service(keys->subkeys[i]);
-	}
-
- done:
-	TALLOC_FREE(keys);
+	TALLOC_FREE(key);
 	return;
 }
 
