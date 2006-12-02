@@ -886,6 +886,18 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 *      CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
 	 */
 
+	/*
+	 * LDAP add 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+	 *	objectClass:	server
+	 *	systemFlags:	50000000 <0x2FAF080>
+	 *	serverReference:CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+	 * Result:
+	 *      <success>
+	 */
+
 /* ... */
 
 	/*
