@@ -860,6 +860,32 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 *		userAccoountControl:	4096 <0x1000>
 	 */
 
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	CN=<new_dc_netbios_name>,CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:
+	 * Result:
+	 *      <noSuchObject>
+	 *	<matchedDN:CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>>
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	serverReferenceBL
+	 *	typesOnly: TRUE!!!
+	 * Result:
+	 *      CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+	 */
+
 /* ... */
 
 	/*
