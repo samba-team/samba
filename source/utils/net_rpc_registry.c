@@ -385,7 +385,7 @@ static NTSTATUS rpc_registry_setvalue_internal(const DOM_SID *domain_sid,
 		value.v.sz.str = CONST_DISCARD(char *, argv[3]);
 	}
 	else {
-		d_fprintf(stderr, "type \"%s\" not implemented\n", argv[3]);
+		d_fprintf(stderr, "type \"%s\" not implemented\n", argv[2]);
 		status = NT_STATUS_NOT_IMPLEMENTED;
 		goto error;
 	}
