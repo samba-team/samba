@@ -700,6 +700,7 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 *		dnsHostName:		<dns_host_name>
 	 */
 
+	/* START: Infrastructure FSMO */
 	/*
 	 * LDAP search 1st LDAP connection:
 	 * 
@@ -724,6 +725,46 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 *      CN=Windows2003Update,CN=DomainUpdates,CN=System,<domain_partition>
 	 *		revision:	8
 	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	CN=Infrastructure,<domain_partition>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	fSMORoleOwner
+	 * Result:
+	 *      CN=Infrastructure,<domain_partition>
+	 *		fSMORoleOwner:	CN=NTDS Settings,<infrastructure_fsmo_server_object>
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	<infrastructure_fsmo_server_object>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	dnsHostName
+	 * Result:
+	 *      <infrastructure_fsmo_server_object>
+	 *		dnsHostName:	<dns_host_name>
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	CN=NTDS Settings,<infrastructure_fsmo_server_object>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	objectGUID
+	 * Result:
+	 *      CN=NTDS Settings,<infrastructure_fsmo_server_object>
+	 *		objectGUID:	<object_guid>
+	 */
+	/* END: Infrastructure FSMO */
 
 /* ... */
 
