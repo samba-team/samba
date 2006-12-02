@@ -187,6 +187,8 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
     mp_int_clear(&us);
 
     /* head zero was skipped by mp_int_to_unsigned */
+    if (*p == 0)
+	return -7;
     if (*p != 1)
 	return -6;
     size--; p++;
