@@ -1,5 +1,7 @@
 2006-12-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rsa-imath.c: Use mp_int_to_binary to encode bignums
+
 	* rsa-imath.c: Check if header is there
 	
 2006-11-27  Love Hörnquist Åstrand  <lha@it.su.se>
