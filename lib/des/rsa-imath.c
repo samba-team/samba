@@ -123,9 +123,9 @@ imath_rsa_public_encrypt(int flen, const unsigned char* from,
     mp_int_clear(&n);
     {
 	size_t ssize;
-	ssize = mp_int_unsigned_len(&enc);
+	ssize = mp_int_binary_len(&enc);
 	assert(size >= ssize);
-	mp_int_to_unsigned(&enc, to, ssize);
+	mp_int_to_binary(&enc, to, ssize);
 	size = ssize;
     }
     mp_int_clear(&enc);
@@ -180,23 +180,23 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
     p = to;
 
 
-    size = mp_int_unsigned_len(&us);
+    size = mp_int_binary_len(&us);
     assert(size <= RSA_size(rsa));
-    mp_int_to_unsigned(&us, p, size);
+    mp_int_to_binary(&us, p, size);
 
     mp_int_clear(&us);
 
-    /* head zero was skipped by mp_int_to_unsigned */
-    if (*p == 0)
-	return -7;
-    if (*p != 1)
+    if (size == 0 || *p != 0)
 	return -6;
+    size--; p++;
+    if (size == 0 || *p != 1)
+	return -7;
     size--; p++;
     while (size && *p == 0xff) {
 	size--; p++;
     }
     if (size == 0 || *p != 0)
-	return -7;
+	return -8;
     size--; p++;
 
     memmove(to, p, size);
@@ -250,9 +250,10 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
     mp_int_clear(&us);
     {
 	size_t ssize;
-	ssize = mp_int_unsigned_len(&s);
+	ssize = mp_int_binary_len(&s);
 	assert(size >= ssize);
-	mp_int_to_unsigned(&s, to, size);
+	mp_int_to_binary(&s, to, size);
+	size = ssize;
     }
     mp_int_clear(&s);
 
@@ -296,22 +297,23 @@ imath_rsa_private_decrypt(int flen, const unsigned char* from,
     p = to;
     {
 	size_t ssize;
-	ssize = mp_int_unsigned_len(&dec);
+	ssize = mp_int_binary_len(&dec);
 	assert(size >= ssize);
-	mp_int_to_unsigned(&dec, p, ssize);
+	mp_int_to_binary(&dec, p, ssize);
 	size = ssize;
     }
     mp_int_clear(&dec);
 
-    /* head zero was skipped by mp_int_to_unsigned */
-    if (*p != 2)
+    if (size == 0 || *p != 0)
 	return -3;
+    if (size == 0 || *p != 2)
+	return -4;
     size--; p++;
     while (size && *p != 0) {
 	size--; p++;
     }
     if (size == 0)
-	return -4;
+	return -5;
     size--; p++;
 
     memmove(to, p, size);
