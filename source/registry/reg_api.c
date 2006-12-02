@@ -168,8 +168,7 @@ WERROR reg_enumkey(TALLOC_CTX *mem_ctx, struct registry_key *key,
 }
 
 WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
-		     uint32 idx, const char **pname,
-		     struct registry_value **pval)
+		     uint32 idx, char **pname, struct registry_value **pval)
 {
 	struct registry_value *val;
 	WERROR err;
