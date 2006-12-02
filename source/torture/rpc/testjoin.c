@@ -766,6 +766,59 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 */
 	/* END: Infrastructure FSMO */
 
+	/* START: RID Manager FSMO */
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	<domain_partition>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	rIDManagerReference
+	 * Result:
+	 *	<domain_partition>
+	 *		rIDManagerReference:	CN=RID Manager$,CN=System,<domain_partition>
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	CN=RID Manager$,CN=System,<domain_partition>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	fSMORoleOwner
+	 * Result:
+	 *      CN=Infrastructure,<domain_partition>
+	 *		fSMORoleOwner:	CN=NTDS Settings,<rid_manager_fsmo_server_object>
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	<rid_manager_fsmo_server_object>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	dnsHostName
+	 * Result:
+	 *      <rid_manager_fsmo_server_object>
+	 *		dnsHostName:	<dns_host_name>
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	CN=NTDS Settings,<rid_manager_fsmo_server_object>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	msDs-ReplicationEpoch
+	 * Result:
+	 *      CN=NTDS Settings,<rid_manager_fsmo_server_object>
+	 */
+	/* END: RID Manager FSMO */
+
 /* ... */
 
 	/*
