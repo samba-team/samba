@@ -898,8 +898,54 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 *      <success>
 	 */
 
-	/* 20000 */
-/* ... */
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	CN=NTDS Settings,CN=<new_dc_netbios_name>,CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:
+	 * Result:
+	 *      <noSuchObject>
+	 *	<matchedDN:CN=<new_dc_netbios_name>,CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>>
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	CN=Partitions,CN=Configuration,<domain_partition>
+	 *	scope:	sub
+	 *	filter:	(nCName=<domain_partition>)
+	 *	attrs:	nCName
+	 *		dnsRoot
+	 *	controls: LDAP_SERVER_EXTENDED_DN_OID:critical=false
+	 * Result:
+	 *      <GUID=<hex_guid>>;CN=<domain_netbios_name>,CN=Partitions,<domain_partition>>
+	 *		nCName:		<GUID=<hex_guid>>;<SID=<hex_sid>>;<domain_partition>>
+	 *		dnsRoot:	<domain_dns_name>
+	 */
+
+	/*
+	 * LDAP modify 1st LDAP connection:
+	 * 
+	 * Request (add):
+	 *	CN=<new_dc_netbios_name>,CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>>
+	 *	serverReference:CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+	 * Result:
+	 *	<attributeOrValueExist>
+	 */
+
+	/*
+	 * LDAP modify 1st LDAP connection:
+	 * 
+	 * Request (replace):
+	 *	CN=<new_dc_netbios_name>,CN=Servers,CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>>
+	 *	serverReference:CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
+	 * Result:
+	 *	<success>
+	 */
 
 	/*
 	 * Open 1st DRSUAPI connection to the DC using admin credentials
