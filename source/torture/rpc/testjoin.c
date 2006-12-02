@@ -819,6 +819,32 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 */
 	/* END: RID Manager FSMO */
 
+	/*
+	 * LDAP search 1st LDAP connection:
+	 * 
+	 * Request:
+	 *	basedn:	CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:
+	 * Result:
+	 *      CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>
+	 *		objectClass:	top
+	 *				site
+	 *		cn:		<new_dc_site_name>
+	 *		distinguishedName:CN=<new_dc_site_name>,CN=Sites,CN=Configuration,<domain_partition>
+	 *		instanceType:	4
+	 *		whenCreated:	...
+	 *		whenChanged:	...
+	 *		uSNCreated:	...
+	 *		uSNChanged:	...
+	 *		showInAdvancedViewOnly:	TRUE
+	 *		name:		<new_dc_site_name>
+	 *		objectGUID:	<object_guid>
+	 *		systemFlags:	1107296256 <0x42000000>
+	 *		objectCategory:	CN=Site,C=Schema,CN=Configuration,<domain_partition>
+	 */
+
 /* ... */
 
 	/*
