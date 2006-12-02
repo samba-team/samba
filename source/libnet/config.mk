@@ -14,6 +14,7 @@ OBJ_FILES = \
 		libnet_rpc.o \
 		libnet_join.o \
 		libnet_site.o \
+		libnet_become_dc.o \
 		libnet_vampire.o \
 		libnet_samdump.o \
 		libnet_samdump_keytab.o \

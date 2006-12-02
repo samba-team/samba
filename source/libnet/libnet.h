@@ -58,6 +58,7 @@ struct libnet_context {
 #include "libnet/libnet_rpc.h"
 #include "libnet/libnet_join.h"
 #include "libnet/libnet_site.h"
+#include "libnet/libnet_become_dc.h"
 #include "libnet/libnet_vampire.h"
 #include "libnet/libnet_user.h"
 #include "libnet/libnet_share.h"
