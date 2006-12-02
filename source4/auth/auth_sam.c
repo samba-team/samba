@@ -108,7 +108,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 
 		/* find the domain's DN */
 		ret = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_tmp, NULL,
-				   "(&(objectSid=%s)(objectclass=domain))", 
+				   "(&(objectSid=%s)(objectClass=domain))", 
 				   ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 		if (ret == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
