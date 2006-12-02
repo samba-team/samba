@@ -1559,7 +1559,9 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc, const ch
  "comment" "max connections = "
 ********************************************************************/
 
-WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc, uint32_t level, union srvsvc_NetShareInfo info, uint32_t *parm_error)
+WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc,
+			   uint32_t level, union srvsvc_NetShareInfo info,
+			   uint32_t *parm_error)
 {
 	pstring command;
 	pstring share_name;
@@ -1578,7 +1580,8 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc, uint32_t lev
 
 	*parm_error = 0;
 
-	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
+	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token,
+					  &se_diskop );
 
 	if (p->pipe_user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
@@ -1599,7 +1602,8 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc, uint32_t lev
 		pstrcpy(share_name, info.info2->name);
 		pstrcpy(comment, info.info2->comment);
 		pstrcpy(pathname, info.info2->path);
-		max_connections = (info.info2->max_users == 0xffffffff) ? 0 : info.info2->max_users;
+		max_connections = (info.info2->max_users == 0xffffffff) ?
+			0 : info.info2->max_users;
 		type = info.info2->type;
 		break;
 	case 501:
@@ -1614,7 +1618,8 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc, uint32_t lev
 		map_generic_share_sd_bits(psd);
 		break;
 
-		/* none of the following contain share names.  NetShareAdd does not have a separate parameter for the share name */ 
+		/* none of the following contain share names.  NetShareAdd
+		 * does not have a separate parameter for the share name */ 
 
 	case 1004:
 	case 1005:
@@ -1625,19 +1630,22 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc, uint32_t lev
 		/* DFS only level. */
 		return WERR_ACCESS_DENIED;
 	default:
-		DEBUG(5,("_srv_net_share_add: unsupported switch value %d\n", level));
+		DEBUG(5,("_srv_net_share_add: unsupported switch value %d\n",
+			 level));
 		return WERR_UNKNOWN_LEVEL;
 	}
 
 	/* check for invalid share names */
 
-	if ( !validate_net_name( share_name, INVALID_SHARENAME_CHARS, sizeof(share_name) ) ) {
-		DEBUG(5,("_srv_net_name_validate: Bad sharename \"%s\"\n", share_name));
+	if ( !validate_net_name( share_name, INVALID_SHARENAME_CHARS,
+				 sizeof(share_name) ) ) {
+		DEBUG(5,("_srv_net_name_validate: Bad sharename \"%s\"\n",
+			 share_name));
 		return WERR_INVALID_NAME;
 	}
 
 	if ( strequal(share_name,"IPC$") || strequal(share_name,"global")
-		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") ) )
+	     || ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") ) )
 	{
 		return WERR_ACCESS_DENIED;
 	}
@@ -1656,18 +1664,16 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc, uint32_t lev
 	if (!(path = valid_share_pathname( pathname )))
 		return WERR_OBJECT_PATH_INVALID;
 
-	/* Ensure share name, pathname and comment don't contain '"' characters. */
+	/* Ensure share name, pathname and comment don't contain '"'
+	 * characters. */
+
 	string_replace(share_name, '"', ' ');
 	string_replace(path, '"', ' ');
 	string_replace(comment, '"', ' ');
 
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
-			lp_add_share_cmd(), 
-			dyn_CONFIGFILE, 
-			share_name, 
-			path, 
-			comment, 
-			max_connections);
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" "
+		 "%d", lp_add_share_cmd(), dyn_CONFIGFILE, share_name, 
+		 path, comment, max_connections);
 			
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
 	
@@ -1678,7 +1684,8 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc, uint32_t lev
 
 	if ( (ret = smbrun(command, NULL)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0,
+				 False, NULL);
 	}
 
 	if ( is_disk_op )
@@ -1686,14 +1693,16 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc, uint32_t lev
 		
 	/********* END SeDiskOperatorPrivilege BLOCK *********/
 
-	DEBUG(3,("_srv_net_share_add: Running [%s] returned (%d)\n", command, ret ));
+	DEBUG(3,("_srv_net_share_add: Running [%s] returned (%d)\n", command,
+		 ret ));
 
 	if ( ret != 0 )
 		return WERR_ACCESS_DENIED;
 
 	if (psd) {
 		if (!set_share_security(share_name, psd)) {
-			DEBUG(0,("_srv_net_share_add: Failed to add security info to share %s.\n", share_name ));
+			DEBUG(0,("_srv_net_share_add: Failed to add security "
+				 "info to share %s.\n", share_name ));
 		}
 	}
 
@@ -1713,7 +1722,8 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc, uint32_t lev
  a parameter.
 ********************************************************************/
 
-WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc, const char *share_name, uint32_t reserved)
+WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc,
+			   const char *share_name, uint32_t reserved)
 {
 	char *command;
 	int ret;
@@ -1724,8 +1734,8 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc, const char *
 	DEBUG(5,("_srv_net_share_del: %d\n", __LINE__));
 
 	if ( strequal(share_name,"IPC$") 
-		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
-		|| strequal(share_name,"global") )
+	     || ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
+	     || strequal(share_name,"global") )
 	{
 		return WERR_ACCESS_DENIED;
 	}
@@ -1738,7 +1748,8 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc, const char *
 	if (lp_print_ok(params->service))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
+	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token,
+					  &se_diskop );
 
 	if (p->pipe_user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
@@ -1763,7 +1774,8 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc, const char *
 
 	if ( (ret = smbrun(command, NULL)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0,
+				 False, NULL);
 	}
 
 	if ( is_disk_op )
@@ -1773,7 +1785,8 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc, const char *
 		
 	/********* END SeDiskOperatorPrivilege BLOCK *********/
 
-	DEBUG(3,("_srv_net_share_del: Running [%s] returned (%d)\n", command, ret ));
+	DEBUG(3,("_srv_net_share_del: Running [%s] returned (%d)\n", command,
+		 ret ));
 
 	if ( ret != 0 )
 		return WERR_ACCESS_DENIED;
@@ -1786,7 +1799,8 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc, const char *
 	return WERR_OK;
 }
 
-WERROR _srvsvc_NetShareDelSticky(pipes_struct *p, const char *server_unc, const char *share_name, uint32_t reserved)
+WERROR _srvsvc_NetShareDelSticky(pipes_struct *p, const char *server_unc,
+				 const char *share_name, uint32_t reserved)
 {
 	DEBUG(5,("_srv_net_share_del_stick: %d\n", __LINE__));
 
