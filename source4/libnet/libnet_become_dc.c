@@ -172,6 +172,7 @@ static NTSTATUS becomeDC_ldap1_rootdse(struct libnet_BecomeDC_state *s)
 	};
 
 	basedn = ldb_dn_new(s, s->ldap1.ldb, NULL);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
 	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
 			 "(objectClass=*)", attrs, &r);
@@ -215,6 +216,7 @@ static NTSTATUS becomeDC_ldap1_config_behavior_version(struct libnet_BecomeDC_st
 	};
 
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->forest.config_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
 	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_ONELEVEL,
 			 "(cn=Partitions)", attrs, &r);
@@ -243,6 +245,7 @@ static NTSTATUS becomeDC_ldap1_domain_behavior_version(struct libnet_BecomeDC_st
 	};
 
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->domain.dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
 	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
 			 "(objectClass=*)", attrs, &r);
@@ -271,6 +274,7 @@ static NTSTATUS becomeDC_ldap1_schema_object_version(struct libnet_BecomeDC_stat
 	};
 
 	basedn = ldb_dn_new(s, s->ldap1.ldb, s->forest.schema_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
 
 	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
 			 "(objectClass=*)", attrs, &r);
@@ -286,6 +290,51 @@ static NTSTATUS becomeDC_ldap1_schema_object_version(struct libnet_BecomeDC_stat
 
 	talloc_free(r);
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	static const char *_1_1_attrs[] = {
+		"1.1",
+		NULL
+	};
+	static const char *fsmo_attrs[] = {
+		"fSMORoleOwner",
+		NULL
+	};
+
+	basedn = ldb_dn_new_fmt(s, s->ldap1.ldb, "<WKGUID=2fbac1870ade11d297c400c04fd8d5cd,%s>",
+				s->domain.dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
+
+	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
+			 "(objectClass=*)", _1_1_attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	basedn = talloc_steal(s, r->msgs[0]->dn);
+	talloc_free(r);
+
+	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
+			 "(objectClass=*)", fsmo_attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	talloc_free(r);
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
@@ -306,6 +355,9 @@ static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_schema_object_version(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap1_infrastructure_fsmo(s);
 	if (!composite_is_ok(c)) return;
 
 	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
