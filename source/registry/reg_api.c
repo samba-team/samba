@@ -334,8 +334,10 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 
 	err = reg_openkey(ctx, key, path, desired_access, pkey);
 	if (W_ERROR_IS_OK(err)) {
-		*paction = REG_OPENED_EXISTING_KEY;
-		return WERR_OK;
+		if (paction != NULL) {
+			*paction = REG_OPENED_EXISTING_KEY;
+		}
+		goto done;
 	}
 
 	if (!W_ERROR_EQUAL(err, WERR_BADFILE)) {
