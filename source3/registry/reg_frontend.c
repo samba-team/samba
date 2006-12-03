@@ -93,16 +93,15 @@ BOOL init_registry( void )
 	int i;
 	
 	
+	if ( !regdb_init() ) {
+		DEBUG(0,("init_registry: failed to initialize the registry tdb!\n"));
+		return False;
+	}
+
 	/* build the cache tree of registry hooks */
 	
 	reghook_cache_init();
 	
-	if ( !regdb_init() ) {
-		DEBUG(0,("init_registry: failed to initialize the registry "
-			 "tdb!\n"));
-		return False;
-	}
-
 	for ( i=0; reg_hooks[i].keyname; i++ ) {
 		if ( !reghook_cache_add(&reg_hooks[i]) )
 			return False;
@@ -642,25 +641,4 @@ WERROR reg_delete_path(const struct nt_user_token *token,
 	SAFE_FREE(path);
 	TALLOC_FREE(hive);
 	return err;
-}
-
-WERROR reg_set_dword(struct registry_key *key, const char *valuename,
-		     uint32 value)
-{
-	struct registry_value val;
-	ZERO_STRUCT(val);
-	val.type = REG_DWORD;
-	val.v.dword = value;
-	return reg_setvalue(key, valuename, &val);
-}
-
-WERROR reg_set_sz(struct registry_key *key, const char *valuename,
-		  const char *value)
-{
-	struct registry_value val;
-	ZERO_STRUCT(val);
-	val.type = REG_SZ;
-	val.v.sz.str = CONST_DISCARD(char *, value);
-	val.v.sz.len = strlen(value)+1;
-	return reg_setvalue(key, valuename, &val);
 }
