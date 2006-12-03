@@ -41,10 +41,6 @@ static int tdb_refcount;
    the reg_printing backend onto the last component of the path (see 
    KEY_PRINTING_2K in include/rpc_reg.h)   --jerry */
 
-static const char *builtin_registry_hives[] = {
-	"HKLM", "HKU", "HKCR", "HKPD", "HKPT", NULL
-};
-
 static const char *builtin_registry_paths[] = {
 	KEY_PRINTING_2K,
 	KEY_PRINTING_PORTS,
@@ -59,6 +55,10 @@ static const char *builtin_registry_paths[] = {
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\DefaultUserConfiguration",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\TcpIp\\Parameters",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters",
+	"HKU",
+	"HKCR",
+	"HKPD",
+	"HKPT",
 	 NULL };
 
 struct builtin_regkey_value {
@@ -91,98 +91,105 @@ static struct builtin_regkey_value builtin_registry_values[] = {
  
 static BOOL init_registry_data( void )
 {
+	pstring path, base, remaining;
+	fstring keyname, subkeyname;
+	REGSUBKEY_CTR *subkeys;
+	REGVAL_CTR *values;
 	int i;
-
-	for (i=0; builtin_registry_hives[i] != NULL; i++) {
-		REGSUBKEY_CTR *subkeys;
-
-		if (!(subkeys = TALLOC_ZERO_P(NULL, REGSUBKEY_CTR))) {
-			DEBUG(0, ("talloc failed\n"));
-			return False;
-		}
-		regdb_fetch_keys(builtin_registry_hives[i], subkeys);
-		if (!regdb_store_keys(builtin_registry_hives[i], subkeys)) {
-			TALLOC_FREE(subkeys);
-			return False;
-		}
-		TALLOC_FREE(subkeys);
-	}
+	const char *p, *p2;
+	UNISTR2 data;
 	
 	/* loop over all of the predefined paths and add each component */
 	
 	for ( i=0; builtin_registry_paths[i] != NULL; i++ ) {
-		WERROR err;
-		struct registry_key *key;
 
-		DEBUG(10,("init_registry_data: Adding [%s]\n",
-			  builtin_registry_paths[i]));
+		DEBUG(6,("init_registry_data: Adding [%s]\n", builtin_registry_paths[i]));
 
-		err = reg_create_path(NULL, builtin_registry_paths[i],
-				      REG_KEY_READ, get_root_nt_token(),
-				      NULL, &key);
-		if (!W_ERROR_IS_OK(err)) {
-			DEBUG(6, ("reg_create_path failed for %s: %s\n",
-				  builtin_registry_paths[i],
-				  dos_errstr(err)));
-			return False;
+		pstrcpy( path, builtin_registry_paths[i] );
+		pstrcpy( base, "" );
+		p = path;
+		
+		while ( next_token(&p, keyname, "\\", sizeof(keyname)) ) {
+		
+			/* build up the registry path from the components */
+			
+			if ( *base )
+				pstrcat( base, "\\" );
+			pstrcat( base, keyname );
+			
+			/* get the immediate subkeyname (if we have one ) */
+			
+			*subkeyname = '\0';
+			if ( *p ) {
+				pstrcpy( remaining, p );
+				p2 = remaining;
+				
+				if ( !next_token(&p2, subkeyname, "\\", sizeof(subkeyname)) )
+					fstrcpy( subkeyname, p2 );
+			}
+
+			DEBUG(10,("init_registry_data: Storing key [%s] with subkey [%s]\n",
+				base, *subkeyname ? subkeyname : "NULL"));
+			
+			/* we don't really care if the lookup succeeds or not since
+			   we are about to update the record.  We just want any 
+			   subkeys already present */
+			
+			if ( !(subkeys = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR )) ) {
+				DEBUG(0,("talloc() failure!\n"));
+				return False;
+			}
+
+			regdb_fetch_keys( base, subkeys );
+			if ( *subkeyname ) 
+				regsubkey_ctr_addkey( subkeys, subkeyname );
+			if ( !regdb_store_keys( base, subkeys ))
+				return False;
+			
+			TALLOC_FREE( subkeys );
 		}
-		TALLOC_FREE(key);
 	}
 
 	/* loop over all of the predefined values and add each component */
 	
 	for ( i=0; builtin_registry_values[i].path != NULL; i++ ) {
-		WERROR err;
-		struct registry_key *key;
-		struct registry_value *pval;
-
-		err = reg_open_path(NULL, builtin_registry_values[i].path,
-				    REG_KEY_WRITE, get_root_nt_token(), &key);
-		if (!W_ERROR_IS_OK(err)) {
-			DEBUG(10, ("Could not open key %s: %s\n",
-				   builtin_registry_values[i].path,
-				   dos_errstr(err)));
+		if ( !(values = TALLOC_ZERO_P( NULL, REGVAL_CTR )) ) {
+			DEBUG(0,("talloc() failure!\n"));
 			return False;
 		}
 
-		if (W_ERROR_IS_OK(reg_queryvalue(
-					  key, key,
-					  builtin_registry_values[i].valuename,
-					  &pval))) {
-			/* preserve existing values across restarts.  Only add
-			 * new ones */
-			TALLOC_FREE(key);
-			continue;
+		regdb_fetch_values( builtin_registry_values[i].path, values );
+
+		/* preserve existing values across restarts.  Only add new ones */
+
+		if ( !regval_ctr_key_exists( values, builtin_registry_values[i].valuename ) ) 
+		{
+			switch( builtin_registry_values[i].type ) {
+			case REG_DWORD:
+				regval_ctr_addvalue( values, 
+				                     builtin_registry_values[i].valuename,
+						     REG_DWORD,
+						     (char*)&builtin_registry_values[i].data.dw_value,
+						     sizeof(uint32) );
+				break;
+				
+			case REG_SZ:
+				init_unistr2( &data, builtin_registry_values[i].data.string, UNI_STR_TERMINATE);
+				regval_ctr_addvalue( values, 
+				                     builtin_registry_values[i].valuename,
+						     REG_SZ,
+						     (char*)data.buffer,
+						     data.uni_str_len*sizeof(uint16) );
+				break;
+			
+			default:
+				DEBUG(0,("init_registry_data: invalid value type in builtin_registry_values [%d]\n",
+					builtin_registry_values[i].type));
+			}
+			regdb_store_values( builtin_registry_values[i].path, values );
 		}
-
-		err = WERR_OK;
-
-		switch( builtin_registry_values[i].type ) {
-		case REG_DWORD:
-			err = reg_set_dword(
-				key, builtin_registry_values[i].valuename,
-				builtin_registry_values[i].data.dw_value);
-			break;
-		case REG_SZ:
-			err = reg_set_sz(
-				key, builtin_registry_values[i].valuename,
-				builtin_registry_values[i].data.string);
-			break;
-		default:
-			DEBUG(0,("init_registry_data: invalid value type in "
-				 "builtin_registry_values [%d]\n",
-				 builtin_registry_values[i].type));
-		}
-
-		if (!W_ERROR_IS_OK(err)) {
-			DEBUG(0, ("setting regvalue %s[%s] failed: %s\n",
-				  builtin_registry_values[i].path,
-				  builtin_registry_values[i].valuename,
-				  dos_errstr(err)));
-			return False;
-		}
-
-		TALLOC_FREE(key);
+		
+		TALLOC_FREE( values );
 	}
 	
 	return True;
