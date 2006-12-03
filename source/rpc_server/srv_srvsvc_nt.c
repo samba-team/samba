@@ -1146,7 +1146,9 @@ net server set info
 WERROR _srvsvc_NetSrvSetInfo(pipes_struct *p, const char *server_unc, uint32_t level, union srvsvc_NetSrvInfo info, uint32_t *parm_error)
 {
 	/* Set up the net server set info structure. */
-	*parm_error = 0;
+	if (parm_error) {
+		*parm_error = 0;
+	}
 	return WERR_OK;
 }
 
@@ -1391,7 +1393,9 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc, const ch
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
-	*parm_error = 0;
+	if (parm_error) {
+		*parm_error = 0;
+	}
 
 	if ( strequal(share_name,"IPC$") 
 		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
@@ -1578,7 +1582,9 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc,
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
-	*parm_error = 0;
+	if (parm_error) {
+		*parm_error = 0;
+	}
 
 	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token,
 					  &se_diskop );
