@@ -126,6 +126,8 @@ WERROR _winreg_CloseKey(pipes_struct *p, struct policy_handle *handle)
 	if (!close_registry_key(p, handle))
 		return WERR_BADFID; 
 
+	ZERO_STRUCTP(handle);
+
 	return WERR_OK;
 }
 
