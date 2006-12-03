@@ -1372,18 +1372,273 @@ char *valid_share_pathname(char *dos_pathname)
 	return ptr;
 }
 
+static void setval_helper(struct registry_key *key, const char *name,
+			  const char *value, WERROR *err)
+{
+	struct registry_value val;
+
+	if (!W_ERROR_IS_OK(*err)) {
+		return;
+	}
+
+	ZERO_STRUCT(val);
+	val.type = REG_SZ;
+	val.v.sz.str = CONST_DISCARD(char *, value);
+	val.v.sz.len = strlen(value)+1;
+
+	*err = reg_setvalue(key, name, &val);
+}
+
+static WERROR add_share(const char *share_name, const char *path,
+			const char *comment, uint32 max_connections,
+			const struct nt_user_token *token,
+			BOOL is_disk_op)
+{
+	if (lp_add_share_cmd() && *lp_add_share_cmd()) {
+		char *command;
+		int ret;
+
+		if (asprintf(&command, "%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
+			     lp_add_share_cmd(), dyn_CONFIGFILE, share_name,
+			     path, comment, max_connections) == -1) {
+			return WERR_NOMEM;
+		}
+
+		DEBUG(10,("add_share: Running [%s]\n", command ));
+
+		/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
+	
+		if ( is_disk_op )
+			become_root();
+
+		if ( (ret = smbrun(command, NULL)) == 0 ) {
+			/* Tell everyone we updated smb.conf. */
+			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED,
+					 NULL, 0, False, NULL);
+		}
+
+		if ( is_disk_op )
+			unbecome_root();
+		
+		/********* END SeDiskOperatorPrivilege BLOCK *********/
+
+		DEBUG(3,("_srv_net_share_add: Running [%s] returned (%d)\n",
+			 command, ret ));
+
+		/*
+		 * No fallback to registry shares, the user did define a add
+		 * share command, so fail here.
+		 */
+
+		SAFE_FREE(command);
+		return (ret == 0) ? WERR_OK : WERR_ACCESS_DENIED;
+	}
+
+	if (lp_registry_shares()) {
+		char *keyname;
+		struct registry_key *key;
+		enum winreg_CreateAction action;
+		WERROR err;
+		TALLOC_CTX *mem_ctx;
+
+		if (!(keyname = talloc_asprintf(NULL, "%s\\%s", KEY_SMBCONF,
+						share_name))) {
+			return WERR_NOMEM;
+		}
+
+		mem_ctx = (TALLOC_CTX *)keyname;
+
+		err = reg_create_path(mem_ctx, keyname, REG_KEY_WRITE,
+				      is_disk_op ? get_root_nt_token():token,
+				      &action, &key);
+
+		if (action != REG_CREATED_NEW_KEY) {
+			err = WERR_ALREADY_EXISTS;
+		}
+
+		if (!W_ERROR_IS_OK(err)) {
+			TALLOC_FREE(mem_ctx);
+			return err;
+		}
+
+		setval_helper(key, "path", path, &err);
+		if ((comment != NULL) && (comment[0] != '\0')) {
+			setval_helper(key, "comment", comment, &err);
+		}
+		if (max_connections != 0) {
+			char tmp[16];
+			snprintf(tmp, sizeof(tmp), "%d", max_connections);
+			setval_helper(key, "max connections", tmp, &err);
+		}
+
+		if (!W_ERROR_IS_OK(err)) {
+			/*
+			 * Hmmmm. We'd need transactions on the registry to
+			 * get this right....
+			 */
+			reg_delete_path(is_disk_op ? get_root_nt_token():token,
+					keyname);
+		}
+		TALLOC_FREE(mem_ctx);
+		return err;
+	}
+
+	return WERR_ACCESS_DENIED;
+}
+
+static WERROR delete_share(const char *sharename, 
+			   const struct nt_user_token *token,
+			   BOOL is_disk_op)
+{
+	if (lp_delete_share_cmd() && *lp_delete_share_cmd()) {
+		char *command;
+		int ret;
+
+		if (asprintf(&command, "%s \"%s\" \"%s\"",
+			     lp_delete_share_cmd(), dyn_CONFIGFILE,
+			     sharename)) {
+			return WERR_NOMEM;
+		}
+
+		DEBUG(10,("delete_share: Running [%s]\n", command ));
+
+		/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
+	
+		if ( is_disk_op )
+			become_root();
+
+		if ( (ret = smbrun(command, NULL)) == 0 ) {
+			/* Tell everyone we updated smb.conf. */
+			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED,
+					 NULL, 0, False, NULL);
+		}
+
+		if ( is_disk_op )
+			unbecome_root();
+
+		/********* END SeDiskOperatorPrivilege BLOCK *********/
+
+		SAFE_FREE(command);
+
+		DEBUG(3,("_srv_net_share_del: Running [%s] returned (%d)\n",
+			 command, ret ));
+		return (ret == 0) ? WERR_OK : WERR_ACCESS_DENIED;
+	}
+
+	if (lp_registry_shares()) {
+		char *keyname;
+		WERROR err;
+
+		if (asprintf(&keyname, "%s\\%s", KEY_SMBCONF,
+			     sharename) == -1) {
+			return WERR_NOMEM;
+		}
+
+		err = reg_delete_path(is_disk_op ? get_root_nt_token():token,
+				      keyname);
+		SAFE_FREE(keyname);
+		return err;
+	}
+
+	return WERR_ACCESS_DENIED;
+}
+
+static WERROR change_share(const char *share_name, const char *path,
+			   const char *comment, uint32 max_connections,
+			   const struct nt_user_token *token,
+			   BOOL is_disk_op)
+{
+	if (lp_change_share_cmd() && *lp_change_share_cmd()) {
+		char *command;
+		int ret;
+
+		if (asprintf(&command, "%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
+			     lp_change_share_cmd(), dyn_CONFIGFILE, share_name,
+			     path, comment, max_connections) == -1) {
+			return WERR_NOMEM;
+		}
+
+		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command));
+				
+		/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
+	
+		if ( is_disk_op )
+			become_root();
+			
+		if ( (ret = smbrun(command, NULL)) == 0 ) {
+			/* Tell everyone we updated smb.conf. */
+			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED,
+					 NULL, 0, False, NULL);
+		}
+		
+		if ( is_disk_op )
+			unbecome_root();
+			
+		/********* END SeDiskOperatorPrivilege BLOCK *********/
+
+		DEBUG(3,("_srv_net_share_set_info: Running [%s] returned "
+			 "(%d)\n", command, ret ));
+
+		SAFE_FREE(command);
+
+		return (ret == 0) ? WERR_OK : WERR_ACCESS_DENIED;
+	}
+
+	if (lp_registry_shares()) {
+		char *keyname;
+		struct registry_key *key;
+		WERROR err;
+		TALLOC_CTX *mem_ctx;
+
+		if (!(keyname = talloc_asprintf(NULL, "%s\\%s", KEY_SMBCONF,
+						share_name))) {
+			return WERR_NOMEM;
+		}
+
+		mem_ctx = (TALLOC_CTX *)keyname;
+
+		err = reg_open_path(mem_ctx, keyname, REG_KEY_WRITE,
+				    is_disk_op ? get_root_nt_token():token,
+				    &key);
+		if (!W_ERROR_IS_OK(err)) {
+			TALLOC_FREE(mem_ctx);
+			return err;
+		}
+
+		setval_helper(key, "path", path, &err);
+
+		reg_deletevalue(key, "comment");
+		if ((comment != NULL) && (comment[0] != '\0')) {
+			setval_helper(key, "comment", comment, &err);
+		}
+
+		reg_deletevalue(key, "max connections");
+		if (max_connections != 0) {
+			char tmp[16];
+			snprintf(tmp, sizeof(tmp), "%d", max_connections);
+			setval_helper(key, "max connections", tmp, &err);
+		}
+
+		TALLOC_FREE(mem_ctx);
+		return err;
+	}		
+
+	return WERR_ACCESS_DENIED;
+}
+
 /*******************************************************************
  Net share set info. Modify share details.
 ********************************************************************/
 
-WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc, const char *share_name, uint32_t level, union srvsvc_NetShareInfo info, uint32_t *parm_error)
+WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc,
+			       const char *share_name, uint32_t level,
+			       union srvsvc_NetShareInfo info,
+			       uint32_t *parm_error)
 {
-	pstring command;
 	pstring comment;
 	pstring pathname;
 	int type;
 	int snum;
-	int ret;
 	char *path;
 	SEC_DESC *psd = NULL;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
@@ -1415,7 +1670,8 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc, const ch
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
+	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token,
+					  &se_diskop );
 	
 	/* fail out now if you are not root and not a disk op */
 	
@@ -1433,17 +1689,10 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc, const ch
 		pstrcpy(comment, info.info2->comment);
 		pstrcpy(pathname, info.info2->path);
 		type = info.info2->type;
-		max_connections = (info.info2->max_users == 0xffffffff) ? 0 : info.info2->max_users;
+		max_connections = (info.info2->max_users == 0xffffffff) ?
+			0 : info.info2->max_users;
 		psd = NULL;
 		break;
-#if 0
-		/* not supported on set but here for completeness */
-	case 501:
-		unistr2_to_ascii(comment, &q_u->info.share.info501.info_501_str.uni_remark, sizeof(comment));
-		type = q_u->info.share.info501.info_501.type;
-		psd = NULL;
-		break;
-#endif
 	case 502:
 		pstrcpy(comment, info.info502->comment);
 		pstrcpy(pathname, info.info502->path);
@@ -1466,7 +1715,9 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc, const ch
 		     SHARE_1005_CSC_POLICY_SHIFT) == lp_csc_policy(snum))
 			return WERR_OK;
 		else {
-			DEBUG(3, ("_srv_net_share_set_info: client is trying to change csc policy from the network; must be done with smb.conf\n"));
+			DEBUG(3, ("_srv_net_share_set_info: client is trying "
+				  "to change csc policy from the network; "
+				  "must be done with smb.conf\n"));
 			return WERR_ACCESS_DENIED;
 		}
 	case 1006:
@@ -1480,7 +1731,8 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc, const ch
 		type = STYPE_DISKTREE;
 		break;
 	default:
-		DEBUG(5,("_srv_net_share_set_info: unsupported switch value %d\n", level));
+		DEBUG(5,("_srv_net_share_set_info: unsupported switch value "
+			 "%d\n", level));
 		return WERR_UNKNOWN_LEVEL;
 	}
 
@@ -1492,50 +1744,29 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc, const ch
 	if (!(path = valid_share_pathname( pathname )))
 		return WERR_OBJECT_PATH_INVALID;
 
-	/* Ensure share name, pathname and comment don't contain '"' characters. */
+	/* Ensure share name, pathname and comment don't contain '"'
+	 * characters. */
 	string_replace(tmp_share_name, '"', ' ');
 	string_replace(path, '"', ' ');
 	string_replace(comment, '"', ' ');
 
 	DEBUG(10,("_srv_net_share_set_info: change share command = %s\n",
-		lp_change_share_cmd() ? lp_change_share_cmd() : "NULL" ));
+		  lp_change_share_cmd() ? lp_change_share_cmd() : "NULL" ));
 
 	/* Only call modify function if something changed. */
 	
-	if (strcmp(path, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) 
-		|| (lp_max_connections(snum) != max_connections) ) 
-	{
-		if (!lp_change_share_cmd() || !*lp_change_share_cmd()) {
-			DEBUG(10,("_srv_net_share_set_info: No change share command\n"));
-			return WERR_ACCESS_DENIED;
+	if (strcmp(path, lp_pathname(snum))
+	    || strcmp(comment, lp_comment(snum)) 
+	    || (lp_max_connections(snum) != max_connections) ) {
+		WERROR err;
+
+		err = change_share(tmp_share_name, path, comment,
+				   max_connections, p->pipe_user.nt_user_token,
+				   is_disk_op);
+
+		if (!W_ERROR_IS_OK(err)) {
+			return err;
 		}
-
-		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
-				lp_change_share_cmd(), dyn_CONFIGFILE, share_name, path, comment, max_connections ); 
-
-		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
-				
-		/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
-	
-		if ( is_disk_op )
-			become_root();
-			
-		if ( (ret = smbrun(command, NULL)) == 0 ) {
-			/* Tell everyone we updated smb.conf. */
-			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
-		}
-		
-		if ( is_disk_op )
-			unbecome_root();
-			
-		/********* END SeDiskOperatorPrivilege BLOCK *********/
-
-		DEBUG(3,("_srv_net_share_set_info: Running [%s] returned (%d)\n", command, ret ));		
-	
-		if ( ret != 0 )
-			return WERR_ACCESS_DENIED;
-	} else {
-		DEBUG(10,("_srv_net_share_set_info: No change to share name (%s)\n", share_name ));
 	}
 
 	/* Replace SD if changed. */
@@ -1547,9 +1778,11 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc, const ch
 					    &sd_size);
 
 		if (old_sd && !sec_desc_equal(old_sd, psd)) {
-			if (!set_share_security(share_name, psd))
-				DEBUG(0,("_srv_net_share_set_info: Failed to change security info in share %s.\n",
-					share_name ));
+			if (!set_share_security(share_name, psd)) {
+				DEBUG(0,("_srv_net_share_set_info: Failed to "
+					 "change security info in share %s.\n",
+					 share_name ));
+			}
 		}
 	}
 			
@@ -1557,6 +1790,7 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, const char *server_unc, const ch
 
 	return WERR_OK;
 }
+
 
 /*******************************************************************
  Net share add. Call 'add_share_command "sharename" "pathname" 
@@ -1567,18 +1801,16 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc,
 			   uint32_t level, union srvsvc_NetShareInfo info,
 			   uint32_t *parm_error)
 {
-	pstring command;
 	pstring share_name;
 	pstring comment;
 	pstring pathname;
 	char *path;
 	int type;
-	int snum;
-	int ret;
 	SEC_DESC *psd = NULL;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
 	BOOL is_disk_op;
-	int max_connections = 0;
+	uint32 max_connections = 0;
+	WERROR err;
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
@@ -1592,11 +1824,6 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc,
 	if (p->pipe_user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
 
-	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
-		DEBUG(10,("_srv_net_share_add: No add share command\n"));
-		return WERR_ACCESS_DENIED;
-	}
-	
 	switch (level) {
 	case 0:
 		/* No path. Not enough info in a level 0 to do anything. */
@@ -1656,11 +1883,10 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc,
 		return WERR_ACCESS_DENIED;
 	}
 
-	snum = find_service(share_name);
-
-	/* Share already exists. */
-	if (snum >= 0)
+	if (get_share_params(p->mem_ctx, share_name) != NULL) {
+		/* Share already exists. */
 		return WERR_ALREADY_EXISTS;
+	}
 
 	/* We can only add disk shares. */
 	if (type != STYPE_DISKTREE)
@@ -1677,33 +1903,12 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc,
 	string_replace(path, '"', ' ');
 	string_replace(comment, '"', ' ');
 
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" "
-		 "%d", lp_add_share_cmd(), dyn_CONFIGFILE, share_name, 
-		 path, comment, max_connections);
-			
-	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
-	
-	/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
-	
-	if ( is_disk_op )
-		become_root();
+	err = add_share(share_name, path, comment, max_connections,
+			p->pipe_user.nt_user_token, is_disk_op);
 
-	if ( (ret = smbrun(command, NULL)) == 0 ) {
-		/* Tell everyone we updated smb.conf. */
-		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0,
-				 False, NULL);
+	if (!W_ERROR_IS_OK(err)) {
+		return err;
 	}
-
-	if ( is_disk_op )
-		unbecome_root();
-		
-	/********* END SeDiskOperatorPrivilege BLOCK *********/
-
-	DEBUG(3,("_srv_net_share_add: Running [%s] returned (%d)\n", command,
-		 ret ));
-
-	if ( ret != 0 )
-		return WERR_ACCESS_DENIED;
 
 	if (psd) {
 		if (!set_share_security(share_name, psd)) {
@@ -1731,11 +1936,10 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p, const char *server_unc,
 WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc,
 			   const char *share_name, uint32_t reserved)
 {
-	char *command;
-	int ret;
 	struct share_params *params;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
 	BOOL is_disk_op;
+	WERROR err;
 
 	DEBUG(5,("_srv_net_share_del: %d\n", __LINE__));
 
@@ -1760,42 +1964,12 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p, const char *server_unc,
 	if (p->pipe_user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
 
-	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd()) {
-		DEBUG(10,("_srv_net_share_del: No delete share command\n"));
-		return WERR_ACCESS_DENIED;
+	err = delete_share(lp_servicename(params->service),
+			   p->pipe_user.nt_user_token, is_disk_op);
+
+	if (!W_ERROR_IS_OK(err)) {
+		return err;
 	}
-
-	if (asprintf(&command, "%s \"%s\" \"%s\"",
-		     lp_delete_share_cmd(), dyn_CONFIGFILE,
-		     lp_servicename(params->service)) == -1) {
-		return WERR_NOMEM;
-	}
-
-	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
-
-	/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
-	
-	if ( is_disk_op )
-		become_root();
-
-	if ( (ret = smbrun(command, NULL)) == 0 ) {
-		/* Tell everyone we updated smb.conf. */
-		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0,
-				 False, NULL);
-	}
-
-	if ( is_disk_op )
-		unbecome_root();
-
-	SAFE_FREE(command);
-		
-	/********* END SeDiskOperatorPrivilege BLOCK *********/
-
-	DEBUG(3,("_srv_net_share_del: Running [%s] returned (%d)\n", command,
-		 ret ));
-
-	if ( ret != 0 )
-		return WERR_ACCESS_DENIED;
 
 	/* Delete the SD in the database. */
 	delete_share_security(params);
