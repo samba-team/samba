@@ -22,6 +22,9 @@
 #include "libnet/libnet.h"
 #include "libcli/composite/composite.h"
 #include "libcli/cldap/cldap.h"
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
+#include "lib/db_wrap.h"
 
 struct libnet_BecomeDC_state {
 	struct composite_context *creq;
@@ -36,7 +39,7 @@ struct libnet_BecomeDC_state {
 
 	struct becomeDC_ldap {
 		struct ldb_context *ldb;
-		struct ldb_message *rootdse;
+		const struct ldb_message *rootdse;
 	} ldap1;
 
 	struct {
@@ -46,12 +49,13 @@ struct libnet_BecomeDC_state {
 
 		/* constructed */
 		struct GUID guid;
-		const char *domain_dn_str;
+		const char *dn_str;
 	} domain;
 
 	struct {
 		/* constructed */
 		const char *dns_name;
+		const char *root_dn_str;
 		const char *config_dn_str;
 		const char *schema_dn_str;
 	} forest;
@@ -79,7 +83,15 @@ struct libnet_BecomeDC_state {
 		const char *server_dn_str;
 		const char *ntds_dn_str;
 	} dest_dsa;
+
+	struct {
+		uint32_t domain_behavior_version;
+		uint32_t config_behavior_version;
+		uint32_t schema_object_version;
+	} ads_options;
 };
+
+static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s);
 
 static void becomeDC_recv_cldap(struct cldap_request *req)
 {
@@ -104,7 +116,7 @@ static void becomeDC_recv_cldap(struct cldap_request *req)
 
 	s->dest_dsa.site_name		= s->cldap.netlogon5.client_site;
 
-	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
+	becomeDC_connect_ldap1(s);
 }
 
 static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
@@ -132,12 +144,171 @@ static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
 
 static NTSTATUS becomeDC_ldap_connect(struct libnet_BecomeDC_state *s, struct becomeDC_ldap *ldap)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	char *url;
+
+	url = talloc_asprintf(s, "ldap://%s/", s->source_dsa.dns_name);
+	NT_STATUS_HAVE_NO_MEMORY(url);
+
+	ldap->ldb = ldb_wrap_connect(s, url,
+				     NULL,
+				     s->libnet->cred,
+				     0, NULL);
+	talloc_free(url);
+	if (ldap->ldb == NULL) {
+		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
+
+	return NT_STATUS_OK;
 }
 
-static NTSTATUS becomeDC_ldap1_requests(struct libnet_BecomeDC_state *s)
+static NTSTATUS becomeDC_ldap1_rootdse(struct libnet_BecomeDC_state *s)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	static const char *attrs[] = {
+		"*",
+		NULL
+	};
+
+	basedn = ldb_dn_new(s, s->ldap1.ldb, NULL);
+
+	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
+			 "(objectClass=*)", attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	talloc_steal(s, r);
+
+	s->ldap1.rootdse = r->msgs[0];
+
+	s->domain.dn_str	= ldb_msg_find_attr_as_string(s->ldap1.rootdse, "defaultNamingContext", NULL);
+	if (!s->domain.dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+
+	s->forest.root_dn_str	= ldb_msg_find_attr_as_string(s->ldap1.rootdse, "rootDomainNamingContext", NULL);
+	if (!s->forest.root_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	s->forest.config_dn_str	= ldb_msg_find_attr_as_string(s->ldap1.rootdse, "configurationNamingContext", NULL);
+	if (!s->forest.config_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	s->forest.schema_dn_str	= ldb_msg_find_attr_as_string(s->ldap1.rootdse, "schemaNamingContext", NULL);
+	if (!s->forest.schema_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+
+	s->source_dsa.server_dn_str	= ldb_msg_find_attr_as_string(s->ldap1.rootdse, "serverName", NULL);
+	if (!s->source_dsa.server_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	s->source_dsa.ntds_dn_str	= ldb_msg_find_attr_as_string(s->ldap1.rootdse, "dsServiceName", NULL);
+	if (!s->source_dsa.ntds_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS becomeDC_ldap1_config_behavior_version(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	static const char *attrs[] = {
+		"msDs-Behavior-Version",
+		NULL
+	};
+
+	basedn = ldb_dn_new(s, s->ldap1.ldb, s->forest.config_dn_str);
+
+	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_ONELEVEL,
+			 "(cn=Partitions)", attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	s->ads_options.config_behavior_version = ldb_msg_find_attr_as_uint(r->msgs[0], "msDs-Behavior-Version", 0);
+
+	talloc_free(r);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS becomeDC_ldap1_domain_behavior_version(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	static const char *attrs[] = {
+		"msDs-Behavior-Version",
+		NULL
+	};
+
+	basedn = ldb_dn_new(s, s->ldap1.ldb, s->domain.dn_str);
+
+	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
+			 "(objectClass=*)", attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	s->ads_options.domain_behavior_version = ldb_msg_find_attr_as_uint(r->msgs[0], "msDs-Behavior-Version", 0);
+
+	talloc_free(r);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS becomeDC_ldap1_schema_object_version(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	static const char *attrs[] = {
+		"objectVersion",
+		NULL
+	};
+
+	basedn = ldb_dn_new(s, s->ldap1.ldb, s->forest.schema_dn_str);
+
+	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
+			 "(objectClass=*)", attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	s->ads_options.schema_object_version = ldb_msg_find_attr_as_uint(r->msgs[0], "objectVersion", 0);
+
+	talloc_free(r);
+	return NT_STATUS_OK;
+}
+
+
+static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
+{
+	struct composite_context *c = s->creq;
+
+	c->status = becomeDC_ldap_connect(s, &s->ldap1);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap1_rootdse(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap1_config_behavior_version(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap1_domain_behavior_version(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap1_schema_object_version(s);
+	if (!composite_is_ok(c)) return;
+
+	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
 }
 
 struct composite_context *libnet_BecomeDC_send(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_BecomeDC *r)
@@ -177,12 +348,6 @@ struct composite_context *libnet_BecomeDC_send(struct libnet_context *ctx, TALLO
 	if (composite_nomem(s->dest_dsa.dns_name, c)) return c;
 
 	becomeDC_send_cldap(s);
-/*	c->status = becomeDC_ldap_connect(s, &s->ldap1);
-	if (!composite_is_ok(c)) return c;
-
-	c->status = becomeDC_ldap1_requests(s);
-	if (!composite_is_ok(c)) return c;
-*/
 	return c;
 }
 
