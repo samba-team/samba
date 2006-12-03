@@ -1375,18 +1375,10 @@ char *valid_share_pathname(char *dos_pathname)
 static void setval_helper(struct registry_key *key, const char *name,
 			  const char *value, WERROR *err)
 {
-	struct registry_value val;
-
 	if (!W_ERROR_IS_OK(*err)) {
 		return;
 	}
-
-	ZERO_STRUCT(val);
-	val.type = REG_SZ;
-	val.v.sz.str = CONST_DISCARD(char *, value);
-	val.v.sz.len = strlen(value)+1;
-
-	*err = reg_setvalue(key, name, &val);
+	*err = reg_set_sz(key, name, value);
 }
 
 static WERROR add_share(const char *share_name, const char *path,
