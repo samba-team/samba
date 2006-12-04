@@ -1,3 +1,17 @@
+2006-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c: Clear errno before calling the strtol
+	functions. From Paul Stoeber to OpenBSD by Ray Lai and Björn
+	Sandell.
+
+	* lib/krb5/config_file.c: Use strcspn to remove \n from fgets
+	result. Prompted by change by Ray Lai of OpenBSD via Björn
+	Sandell.
+
+	* kdc/string2key.c: Use strcspn to remove \n from fgets
+	result. Prompted by change by Ray Lai of OpenBSD via Björn
+	Sandell.
+	
 2006-11-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krbhst.c (plugin_get_hosts): be more paranoid and pass

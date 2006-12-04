@@ -1,5 +1,9 @@
 2006-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* limits_conf.c: Clear errno before calling the strtol
+	functions. From Paul Stoeber to OpenBSD by Ray Lai and Björn
+	Sandell.
+
 	* limits_conf.c: Report to syslog strings that start with NUL;
 	prevents negative index array access. Ray Lai of OpenBSD via Björn
 	Sandell.

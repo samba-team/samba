@@ -1,5 +1,11 @@
-2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* add-random-users.c: Use strcspn to remove \n from fgets
+	result. Prompted by change by Ray Lai of OpenBSD via Björn
+	Sandell.
+	
+2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* mod.c: Try to not leak memory.
 
 	* check.c: Try to not leak memory.
