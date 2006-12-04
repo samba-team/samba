@@ -25,6 +25,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/db_wrap.h"
+#include "dsdb/samdb/samdb.h"
 
 struct libnet_BecomeDC_state {
 	struct composite_context *creq;
@@ -88,7 +89,15 @@ struct libnet_BecomeDC_state {
 		uint32_t domain_behavior_version;
 		uint32_t config_behavior_version;
 		uint32_t schema_object_version;
+		uint32_t w2k3_update_revision;
 	} ads_options;
+
+	struct becomeDC_fsmo {
+		const char *dns_name;
+		const char *server_dn_str;
+		const char *ntds_dn_str;
+		struct GUID ntds_guid;
+	} infrastructure_fsmo;
 };
 
 static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s);
@@ -292,17 +301,57 @@ static NTSTATUS becomeDC_ldap1_schema_object_version(struct libnet_BecomeDC_stat
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS becomeDC_ldap1_w2k3_update_revision(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	static const char *attrs[] = {
+		"revision",
+		NULL
+	};
+
+	basedn = ldb_dn_new_fmt(s, s->ldap1.ldb, "CN=Windows2003Update,CN=DomainUpdates,CN=System,%s",
+				s->domain.dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
+
+	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
+			 "(objectClass=*)", attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	s->ads_options.w2k3_update_revision = ldb_msg_find_attr_as_uint(r->msgs[0], "revision", 0);
+
+	talloc_free(r);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state *s)
 {
 	int ret;
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
+	struct ldb_dn *ntds_dn;
+	struct ldb_dn *server_dn;
 	static const char *_1_1_attrs[] = {
 		"1.1",
 		NULL
 	};
 	static const char *fsmo_attrs[] = {
 		"fSMORoleOwner",
+		NULL
+	};
+	static const char *dns_attrs[] = {
+		"dnsHostName",
+		NULL
+	};
+	static const char *guid_attrs[] = {
+		"objectGUID",
 		NULL
 	};
 
@@ -333,7 +382,46 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
+	s->infrastructure_fsmo.ntds_dn_str	= samdb_result_string(r->msgs[0], "fSMORoleOwner", NULL);
+	if (!s->infrastructure_fsmo.ntds_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	talloc_steal(s, s->infrastructure_fsmo.ntds_dn_str);
+
 	talloc_free(r);
+
+	ntds_dn = ldb_dn_new(s, s->ldap1.ldb, s->infrastructure_fsmo.ntds_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(ntds_dn);
+
+	server_dn = ldb_dn_get_parent(s, ntds_dn);
+	NT_STATUS_HAVE_NO_MEMORY(server_dn);
+
+	ret = ldb_search(s->ldap1.ldb, server_dn, LDB_SCOPE_BASE,
+			 "(objectClass=*)", dns_attrs, &r);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	s->infrastructure_fsmo.dns_name	= samdb_result_string(r->msgs[0], "dnsHostName", NULL);
+	if (!s->infrastructure_fsmo.dns_name) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	talloc_steal(s, s->infrastructure_fsmo.dns_name);
+
+	talloc_free(r);
+
+	ret = ldb_search(s->ldap1.ldb, ntds_dn, LDB_SCOPE_BASE,
+			 "(objectClass=*)", guid_attrs, &r);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	s->infrastructure_fsmo.ntds_guid = samdb_result_guid(r->msgs[0], "objectGUID");
+
+	talloc_free(r);
+
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -355,6 +443,9 @@ static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_schema_object_version(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap1_w2k3_update_revision(s);
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_infrastructure_fsmo(s);
