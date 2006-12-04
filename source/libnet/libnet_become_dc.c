@@ -600,6 +600,154 @@ static NTSTATUS becomeDC_ldap1_computer_object(struct libnet_BecomeDC_state *s)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS becomeDC_ldap1_server_object_1(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	const char *server_reference_dn_str;
+	struct ldb_dn *server_reference_dn;
+	struct ldb_dn *computer_dn;
+
+	basedn = ldb_dn_new_fmt(s, s->ldap1.ldb, "CN=%s,CN=Servers,CN=%s,CN=Sites,%s",
+				s->dest_dsa.netbios_name,
+				s->dest_dsa.site_name,
+				s->forest.config_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
+
+	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
+			 "(objectClass=*)", NULL, &r);
+	talloc_free(basedn);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		/* if the object doesn't exist, we'll create it later */
+		return NT_STATUS_OK;
+	} else if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	server_reference_dn_str		= samdb_result_string(r->msgs[0], "serverReference", NULL);
+	if (!server_reference_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	server_reference_dn		= ldb_dn_new(r, s->ldap1.ldb, server_reference_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(server_reference_dn);
+
+	computer_dn			= ldb_dn_new(r, s->ldap1.ldb, s->dest_dsa.computer_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(computer_dn);
+
+	/*
+	 * if the server object belongs to another DC in another domain in the forest,
+	 * we should not touch this object!
+	 */
+	if (ldb_dn_compare(computer_dn, server_reference_dn) != 0) {
+		talloc_free(r);
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	/* if the server object is already for the dest_dsa, then we don't need to create it */
+	s->dest_dsa.server_dn_str	= samdb_result_string(r->msgs[0], "distinguishedName", NULL);
+	if (!s->dest_dsa.server_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	talloc_steal(s, s->dest_dsa.server_dn_str);
+
+	talloc_free(r);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS becomeDC_ldap1_server_object_2(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	const char *server_reference_bl_dn_str;
+	static const char *attrs[] = {
+		"serverReferenceBL",
+		NULL
+	};
+
+	/* if the server_dn_str has a valid value, we skip this lookup */
+	if (s->dest_dsa.server_dn_str) return NT_STATUS_OK;
+
+	basedn = ldb_dn_new(s, s->ldap1.ldb, s->dest_dsa.computer_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
+
+	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
+			 "(objectClass=*)", attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	server_reference_bl_dn_str = samdb_result_string(r->msgs[0], "serverReferenceBL", NULL);
+	if (!server_reference_bl_dn_str) {
+		/* if no back link is present, we're done for this function */
+		talloc_free(r);
+		return NT_STATUS_OK;
+	}
+
+	/* if the server object is already for the dest_dsa, then we don't need to create it */
+	s->dest_dsa.server_dn_str	= samdb_result_string(r->msgs[0], "serverReferenceBL", NULL);
+	if (s->dest_dsa.server_dn_str) {
+		/* if a back link is present, we know that the server object is present */
+		talloc_steal(s, s->dest_dsa.server_dn_str);
+	}
+
+	talloc_free(r);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS becomeDC_ldap1_server_object_add(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_message *msg;
+	char *server_dn_str;
+
+	/* if the server_dn_str has a valid value, we skip this lookup */
+	if (s->dest_dsa.server_dn_str) return NT_STATUS_OK;
+
+	msg = ldb_msg_new(s);
+	NT_STATUS_HAVE_NO_MEMORY(msg);
+
+	msg->dn = ldb_dn_new_fmt(msg, s->ldap1.ldb, "CN=not,CN=add,CN=%s,CN=Servers,CN=%s,CN=Sites,%s",
+				 s->dest_dsa.netbios_name,
+				 s->dest_dsa.site_name,
+				 s->forest.config_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(msg->dn);
+
+	ret = ldb_msg_add_string(msg, "objectClass", "server");
+	if (ret != 0) {
+		talloc_free(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ret = ldb_msg_add_string(msg, "systemFlags", "50000000");
+	if (ret != 0) {
+		talloc_free(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ret = ldb_msg_add_string(msg, "serverReference", s->dest_dsa.computer_dn_str);
+	if (ret != 0) {
+		talloc_free(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	server_dn_str = ldb_dn_alloc_linearized(s, msg->dn);
+	NT_STATUS_HAVE_NO_MEMORY(server_dn_str);
+
+	ret = ldb_add(s->ldap1.ldb, msg);
+	talloc_free(msg);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(server_dn_str);
+		return NT_STATUS_LDAP(ret);
+	}
+
+	s->dest_dsa.server_dn_str = server_dn_str;
+
+	return NT_STATUS_OK;
+}
+
 static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 {
 	struct composite_context *c = s->creq;
@@ -632,6 +780,15 @@ static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_computer_object(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap1_server_object_1(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap1_server_object_2(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap1_server_object_add(s);
 	if (!composite_is_ok(c)) return;
 
 	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
