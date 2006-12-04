@@ -37,6 +37,8 @@ typedef struct _ibw_ctx {
 
 	ibw_state_ctx state;
 	void *internal;
+
+	ibw_conn *first_conn, *last_conn;
 } ibw_ctx;
 
 typedef enum {
@@ -52,6 +54,8 @@ typedef struct _ibw_conn {
 
 	void *conn_userdata; /* see ibw_connect and ibw_accept */
 	void *internal;
+
+	ibw_conn *prev, next;
 } ibw_conn;
 
 /*

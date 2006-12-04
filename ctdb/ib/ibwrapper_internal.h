@@ -33,6 +33,13 @@ typedef struct _ibw_opts {
 	int	ib_port;
 } ibw_opts;
 
+typedef enum {
+	IWINT_INIT = 0,
+	IWINT_ADDR_RESOLVED,
+	IWINT_ROUTE_RESOLVED,
+	IWINT_ERROR
+} ibw_state_ctx;
+
 typedef struct _ibw_ctx_priv {
 	ibw_mr *avail_first;
 	ibw_mr *avail_last;
@@ -45,10 +52,10 @@ typedef struct _ibw_ctx_priv {
 
 	struct ibv_context     *context;
 	struct ibv_pd	       *pd;
+	struct rdma_cm_id	*cm_id; /* server cm id */
 
 	struct rdma_event_channel *cm_channel;
 	struct fd_event *cm_channel_event;
-	struct rdma_cm_id *cm_id;	/* connection on client side,*/
 
 	ibw_connstate_fn_t connstate_func;
 	ibw_receive_fn_t receive_func;
@@ -57,18 +64,9 @@ typedef struct _ibw_ctx_priv {
 typedef struct _ibw_conn_priv {
 	struct ibv_cq	*cq;
 	struct ibv_qp	*qp;
-	struct ib_cm_id	*cm_id;
+
+	struct rdma_cm_id *cm_id; /* client's cm id */
 } ibw_conn_priv;
-
-typedef enum {
-	IBWET_CM,
-	IBWET_VERBS
-} ibw_event_type;
-
-typedef struct _ibw_event_ud {
-	ibw_ctx	*ctx;
-	ibw_event_type	id;
-} ibw_event_ud;
 
 /* 
  * Must be called in all cases after selecting/polling
