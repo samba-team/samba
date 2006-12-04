@@ -46,19 +46,19 @@ install-build-headers:: $(hcryptoinclude_HEADERS)
 	done
 
 TESTS = \
-	test_engine_dso \
 	destest \
 	mdtest \
 	rc2test  \
 	rctest \
 	test_bn \
+	test_crypto \
 	test_cipher \
+	test_engine_dso \
+	test_hmac \
 	test_pkcs5 \
-	test_pkcs12 \
-	test_hmac
+	test_pkcs12
 
-check_PROGRAMS = $(TESTS)
-
+check_PROGRAMS = $(TESTS) test_rsa
 
 LDADD = $(lib_LTLIBRARIES) $(LIB_roken)
 
@@ -126,4 +126,12 @@ hcrypto-link:
 	$(LN_S) $(srcdir)/../des hcrypto
 	touch hcrypto-link
 
-CLEANFILES = hcrypto hcrypto-link
+do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g'
+
+test_crypto: test_crypto.in Makefile
+	$(do_subst) < $(srcdir)/test_crypto.in > test_crypto.tmp
+	chmod +x test_crypto.tmp
+	mv test_crypto.tmp test_crypto
+
+
+CLEANFILES = hcrypto hcrypto-link test_crypto.tmp
