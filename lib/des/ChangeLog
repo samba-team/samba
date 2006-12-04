@@ -1,3 +1,16 @@
+2006-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: rsa and crypto engine test cases
+
+	* test_rsa.c: Make faster and less verbose
+
+	* rsakey.der: test rsa key
+
+	* test_rsa.c: Test rsa operations
+
+	* rsa-imath.c: Fix the rsa-decrypt failed case that been hauting
+	me for a while.
+	
 2006-12-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rsa-imath.c: Use mp_int_to_binary to encode bignums
