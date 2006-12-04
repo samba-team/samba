@@ -211,22 +211,19 @@ main(int argc, char **argv)
 	check_rsa(sha1, sizeof(sha1), rsa, RSA_PKCS1_PADDING);
     }
 
-    printf("sha1\n");
-    for (i = 0; i < 512; i++) {
+    for (i = 0; i < 128; i++) {
 	unsigned char sha1[20];
 
 	RAND_bytes(sha1, sizeof(sha1));
 	check_rsa(sha1, sizeof(sha1), rsa, RSA_PKCS1_PADDING);
     }
-    printf("des3\n");
-    for (i = 0; i < 512; i++) {
+    for (i = 0; i < 128; i++) {
 	unsigned char des3[21];
 
 	RAND_bytes(des3, sizeof(des3));
 	check_rsa(des3, sizeof(des3), rsa, RSA_PKCS1_PADDING);
     }
-    printf("aes\n");
-    for (i = 0; i < 512; i++) {
+    for (i = 0; i < 128; i++) {
 	unsigned char aes[32];
 
 	RAND_bytes(aes, sizeof(aes));
