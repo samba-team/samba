@@ -69,7 +69,6 @@ struct libnet_BecomeDC_state {
 		const char *dns_name;
 		const char *netbios_name;
 		const char *site_name;
-		struct GUID site_guid;
 		const char *server_dn_str;
 		const char *ntds_dn_str;
 	} source_dsa;
@@ -81,9 +80,11 @@ struct libnet_BecomeDC_state {
 		/* constructed */
 		const char *dns_name;
 		const char *site_name;
+		struct GUID site_guid;
 		const char *computer_dn_str;
 		const char *server_dn_str;
 		const char *ntds_dn_str;
+		uint32_t user_account_control;
 	} dest_dsa;
 
 	struct {
@@ -554,12 +555,50 @@ static NTSTATUS becomeDC_ldap1_site_object(struct libnet_BecomeDC_state *s)
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	s->source_dsa.site_guid = samdb_result_guid(r->msgs[0], "objectGUID");
+	s->dest_dsa.site_guid = samdb_result_guid(r->msgs[0], "objectGUID");
 
 	talloc_free(r);
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS becomeDC_ldap1_computer_object(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	char *filter;
+	static const char *attrs[] = {
+		"distinguishedName",
+		"userAccountControl",
+		NULL
+	};
+
+	basedn = ldb_dn_new(s, s->ldap1.ldb, s->domain.dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
+
+	filter = talloc_asprintf(basedn, "(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=%s$))",
+				 s->dest_dsa.netbios_name);
+	NT_STATUS_HAVE_NO_MEMORY(filter);
+
+	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_SUBTREE, 
+			 filter, attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	s->dest_dsa.computer_dn_str	= samdb_result_string(r->msgs[0], "distinguishedName", NULL);
+	if (!s->dest_dsa.computer_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	talloc_steal(s, s->dest_dsa.computer_dn_str);
+
+	s->dest_dsa.user_account_control = samdb_result_uint(r->msgs[0], "userAccountControl", 0);
+
+	talloc_free(r);
+	return NT_STATUS_OK;
+}
 
 static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 {
@@ -590,6 +629,9 @@ static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_site_object(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap1_computer_object(s);
 	if (!composite_is_ok(c)) return;
 
 	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
