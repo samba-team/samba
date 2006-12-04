@@ -57,8 +57,7 @@ read_words (const char *filename, char ***ret_w)
     while (fgets (buf, sizeof(buf), f) != NULL) {
 	size_t len;
 
-	if (buf[strlen (buf) - 1] == '\n')
-	    buf[strlen (buf) - 1] = '\0';
+	buf[strcspn(buf, "\r\n")] = '\0';
 	if (n >= alloc) {
 	    alloc = max(alloc + 16, alloc * 2);
 	    w = erealloc (w, alloc * sizeof(char **));
