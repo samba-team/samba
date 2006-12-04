@@ -202,6 +202,12 @@ main(int argc, char **argv)
     }
 
 
+    /*
+     * Assuming that you use the RSA key in the distribution, this
+     * test will generate a signature have a starting zero and thus
+     * will generate a checksum that is 127 byte instead of the
+     * checksum that is 128 byte (like the key).
+     */
     {
 	const unsigned char sha1[20] = {
 	    0x6d, 0x33, 0xf9, 0x40, 0x75, 0x5b, 0x4e, 0xc5, 0x90, 0x35, 
