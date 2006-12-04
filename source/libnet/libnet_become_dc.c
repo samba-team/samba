@@ -69,6 +69,7 @@ struct libnet_BecomeDC_state {
 		const char *dns_name;
 		const char *netbios_name;
 		const char *site_name;
+		struct GUID site_guid;
 		const char *server_dn_str;
 		const char *ntds_dn_str;
 	} source_dsa;
@@ -532,6 +533,33 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS becomeDC_ldap1_site_object(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+
+	basedn = ldb_dn_new_fmt(s, s->ldap1.ldb, "CN=%s,CN=Sites,%s",
+				s->dest_dsa.site_name,
+				s->forest.config_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
+
+	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE, 
+			 "(objectClass=*)", NULL, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	s->source_dsa.site_guid = samdb_result_guid(r->msgs[0], "objectGUID");
+
+	talloc_free(r);
+	return NT_STATUS_OK;
+}
+
 
 static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 {
@@ -559,6 +587,9 @@ static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_rid_manager_fsmo(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap1_site_object(s);
 	if (!composite_is_ok(c)) return;
 
 	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
