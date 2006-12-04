@@ -188,15 +188,15 @@ imath_rsa_public_decrypt(int flen, const unsigned char* from,
 
     /* head zero was skipped by mp_int_to_unsigned */
     if (*p == 0)
-	return -7;
-    if (*p != 1)
 	return -6;
+    if (*p != 1)
+	return -7;
     size--; p++;
     while (size && *p == 0xff) {
 	size--; p++;
     }
     if (size == 0 || *p != 0)
-	return -7;
+	return -8;
     size--; p++;
 
     memmove(to, p, size);
@@ -253,7 +253,9 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
 	ssize = mp_int_unsigned_len(&s);
 	assert(size >= ssize);
 	mp_int_to_unsigned(&s, to, size);
+	size = ssize;
     }
+    
     mp_int_clear(&s);
 
     return size;
