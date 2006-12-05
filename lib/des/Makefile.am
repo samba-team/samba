@@ -45,20 +45,25 @@ install-build-headers:: $(hcryptoinclude_HEADERS)
 		fi ; \
 	done
 
-TESTS = \
+PROGRAM_TESTS = \
 	destest \
 	mdtest \
 	rc2test  \
 	rctest \
 	test_bn \
-	test_crypto \
 	test_cipher \
 	test_engine_dso \
 	test_hmac \
 	test_pkcs5 \
 	test_pkcs12
 
-check_PROGRAMS = $(TESTS) test_rsa
+SCRIPT_TESTS = \
+	test_crypto
+
+check_PROGRAMS = $(PROGRAM_TESTS) test_rsa
+check_SCRIPTS = $(SCRIPT_TESTS)
+
+TESTS = $(PROGRAM_TESTS) $(SCRIPT_TESTS)
 
 LDADD = $(lib_LTLIBRARIES) $(LIB_roken)
 
