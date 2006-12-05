@@ -26,6 +26,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/db_wrap.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/flags.h"
 
 struct libnet_BecomeDC_state {
 	struct composite_context *creq;
@@ -41,7 +42,7 @@ struct libnet_BecomeDC_state {
 	struct becomeDC_ldap {
 		struct ldb_context *ldb;
 		const struct ldb_message *rootdse;
-	} ldap1;
+	} ldap1, ldap2;
 
 	struct {
 		/* input */
@@ -748,6 +749,8 @@ static NTSTATUS becomeDC_ldap1_server_object_add(struct libnet_BecomeDC_state *s
 	return NT_STATUS_OK;
 }
 
+static void becomeDC_connect_ldap2(struct libnet_BecomeDC_state *s);
+
 static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 {
 	struct composite_context *c = s->creq;
@@ -789,6 +792,115 @@ static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_server_object_add(s);
+/* ignore for now...	if (!composite_is_ok(c)) return;*/
+
+	becomeDC_connect_ldap2(s);
+}
+
+static NTSTATUS becomeDC_ldap2_modify_computer(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_message *msg;
+	uint32_t i;
+	uint32_t user_account_control = UF_SERVER_TRUST_ACCOUNT |
+					UF_TRUSTED_FOR_DELEGATION;
+
+	/* as the value is already as we want it to be, we're done */
+	if (s->dest_dsa.user_account_control == user_account_control) {
+		return NT_STATUS_OK;
+	}
+
+	/* make a 'modify' msg, and only for serverReference */
+	msg = ldb_msg_new(s);
+	NT_STATUS_HAVE_NO_MEMORY(msg);
+	msg->dn = ldb_dn_new(msg, s->ldap2.ldb, s->dest_dsa.computer_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(msg->dn);
+
+	ret = ldb_msg_add_fmt(msg, "userAccountControl", "%u", user_account_control);
+	if (ret != 0) {
+		talloc_free(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* mark all the message elements (should be just one)
+	   as LDB_FLAG_MOD_REPLACE */
+	for (i=0;i<msg->num_elements;i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	ret = ldb_modify(s->ldap2.ldb, msg);
+	talloc_free(msg);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	}
+
+	s->dest_dsa.user_account_control = user_account_control;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS becomeDC_ldap2_move_computer(struct libnet_BecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	struct ldb_dn *old_dn;
+	struct ldb_dn *new_dn;
+	static const char *_1_1_attrs[] = {
+		"1.1",
+		NULL
+	};
+
+	basedn = ldb_dn_new_fmt(s, s->ldap2.ldb, "<WKGUID=a361b2ffffd211d1aa4b00c04fd7d83a,%s>",
+				s->domain.dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
+
+	ret = ldb_search(s->ldap2.ldb, basedn, LDB_SCOPE_BASE,
+			 "(objectClass=*)", _1_1_attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	old_dn = ldb_dn_new(r, s->ldap2.ldb, s->dest_dsa.computer_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(old_dn);
+
+	new_dn = r->msgs[0]->dn;
+
+	if (!ldb_dn_add_child_fmt(new_dn, "CN=%s", s->dest_dsa.netbios_name)) {
+		talloc_free(r);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (ldb_dn_compare(old_dn, new_dn) == 0) {
+		/* we don't need to rename if the old and new dn match */
+		talloc_free(r);
+		return NT_STATUS_OK;
+	}
+
+	ret = ldb_rename(s->ldap2.ldb, old_dn, new_dn);
+	talloc_free(r);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static void becomeDC_connect_ldap2(struct libnet_BecomeDC_state *s)
+{
+	struct composite_context *c = s->creq;
+
+	c->status = becomeDC_ldap_connect(s, &s->ldap2);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap2_modify_computer(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_ldap2_move_computer(s);
 	if (!composite_is_ok(c)) return;
 
 	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
