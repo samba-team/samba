@@ -266,6 +266,57 @@ static NTSTATUS unbecomeDC_ldap_modify_computer(struct libnet_UnbecomeDC_state *
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS unbecomeDC_ldap_move_computer(struct libnet_UnbecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	struct ldb_dn *old_dn;
+	struct ldb_dn *new_dn;
+	static const char *_1_1_attrs[] = {
+		"1.1",
+		NULL
+	};
+
+	basedn = ldb_dn_new_fmt(s, s->ldap.ldb, "<WKGUID=aa312825768811d1aded00c04fd8d5cd,%s>",
+				s->domain.dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
+
+	ret = ldb_search(s->ldap.ldb, basedn, LDB_SCOPE_BASE,
+			 "(objectClass=*)", _1_1_attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	old_dn = ldb_dn_new(r, s->ldap.ldb, s->dest_dsa.computer_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(old_dn);
+
+	new_dn = r->msgs[0]->dn;
+
+	if (!ldb_dn_add_child_fmt(new_dn, "CN=%s", s->dest_dsa.netbios_name)) {
+		talloc_free(r);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (ldb_dn_compare(old_dn, new_dn) == 0) {
+		/* we don't need to rename if the old and new dn match */
+		talloc_free(r);
+		return NT_STATUS_OK;
+	}
+
+	ret = ldb_rename(s->ldap.ldb, old_dn, new_dn);
+	talloc_free(r);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	}
+
+	return NT_STATUS_OK;
+}
+
 static void unbecomeDC_connect_ldap(struct libnet_UnbecomeDC_state *s)
 {
 	struct composite_context *c = s->creq;
@@ -280,6 +331,9 @@ static void unbecomeDC_connect_ldap(struct libnet_UnbecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	c->status = unbecomeDC_ldap_modify_computer(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = unbecomeDC_ldap_move_computer(s);
 	if (!composite_is_ok(c)) return;
 
 	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
