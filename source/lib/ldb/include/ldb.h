@@ -990,6 +990,16 @@ int ldb_search(struct ldb_context *ldb,
 	       const char * const *attrs, struct ldb_result **res);
 
 /*
+ * a useful search function where you can easily define the expression and
+ * that takes a memory context where results are allocated
+*/
+
+int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+		       struct ldb_result **result, struct ldb_dn *base,
+		       enum ldb_scope scope, const char * const *attrs,
+		       const char *exp_fmt, ...);
+
+/*
   like ldb_search() but takes a parse tree
 */
 int ldb_search_bytree(struct ldb_context *ldb, 
