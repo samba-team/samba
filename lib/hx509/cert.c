@@ -718,6 +718,7 @@ subject_null_p(const Certificate *c)
 
 static int
 find_parent(hx509_context context,
+	    time_t time_now,
 	    hx509_certs trust_anchors,
 	    hx509_path *path,
 	    hx509_certs pool, 
@@ -760,11 +761,15 @@ find_parent(hx509_context context,
     q.match |= HX509_QUERY_NO_MATCH_PATH;
 
     if (pool) {
+	q.timenow = time_now;
+	q.match |= HX509_QUERY_MATCH_TIME;
+
 	ret = hx509_certs_find(context, pool, &q, parent);
 	if (ret == 0) {
 	    free_AuthorityKeyIdentifier(&ai);
 	    return 0;
 	}
+	q.match &= ~HX509_QUERY_MATCH_TIME;
     }
 
     if (trust_anchors) {
@@ -893,6 +898,7 @@ _hx509_path_free(hx509_path *path)
 
 int
 _hx509_calculate_path(hx509_context context,
+		      time_t time_now,
 		      hx509_certs anchors,
 		      unsigned int max_depth,
 		      hx509_cert cert,
@@ -913,7 +919,8 @@ _hx509_calculate_path(hx509_context context,
 
     while (anchors == NULL || !certificate_is_anchor(context, anchors, current)) {
 
-	ret = find_parent(context, anchors, path, pool, current, &parent);
+	ret = find_parent(context, time_now, anchors, path, 
+			  pool, current, &parent);
 	hx509_cert_free(current);
 	if (ret)
 	    return ret;
@@ -1390,7 +1397,8 @@ hx509_verify_path(hx509_context context,
      * Calculate the path from the certificate user presented to the
      * to an anchor.
      */
-    ret = _hx509_calculate_path(context, ctx->trust_anchors, ctx->max_depth,
+    ret = _hx509_calculate_path(context, ctx->time_now,
+				ctx->trust_anchors, ctx->max_depth,
 				cert, pool, &path);
     if (ret)
 	goto out;
@@ -2005,6 +2013,15 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	    return 0;
     }
 
+    if (q->match & HX509_QUERY_MATCH_TIME) {
+	time_t t;
+	t = _hx509_Time2time_t(&c->tbsCertificate.validity.notBefore);
+	if (t > q->timenow)
+	    return 0;
+	t = _hx509_Time2time_t(&c->tbsCertificate.validity.notAfter);
+	if (t < q->timenow)
+	    return 0;
+    }
 
     if (q->match & ~HX509_QUERY_MASK)
 	return 0;
