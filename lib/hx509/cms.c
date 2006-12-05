@@ -1153,6 +1153,7 @@ hx509_cms_create_signed_1(hx509_context context,
      */
     if (pool) {
 	_hx509_calculate_path(context,
+			      time(NULL),
 			      anchors,
 			      0,
 			      cert,
