@@ -181,6 +181,32 @@ ${hxtool} cms-verify-sd \
 	sd.data sd.data.out > /dev/null || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
+echo "create signed data (subcert, certs, no-root)"
+${hxtool} cms-create-sd \
+	--certificate=FILE:$srcdir/data/sub-cert.crt,$srcdir/data/sub-cert.key \
+	--pool=FILE:$srcdir/data/sub-ca.crt \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "verify success signed data"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out > /dev/null || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
+echo "create signed data (subcert, no-subca, no-root)"
+${hxtool} cms-create-sd \
+	--certificate=FILE:$srcdir/data/sub-cert.crt,$srcdir/data/sub-cert.key \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "verify failure signed data"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out > /dev/null 2>/dev/null && exit 1
+
 echo "create signed data (sd cert)"
 ${hxtool} cms-create-sd \
 	--certificate=FILE:$srcdir/data/test-ds-only.crt,$srcdir/data/test-ds-only.key \
