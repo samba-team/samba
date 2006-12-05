@@ -301,31 +301,33 @@ static int regkey_destructor(REGISTRY_KEY *key)
 	return regdb_close();
 }
 
-WERROR regkey_open_onelevel( TALLOC_CTX *mem_ctx, REGISTRY_KEY *parent,
-			     REGISTRY_KEY **regkey, const char *name,
-                             const struct nt_user_token *token,
-			     uint32 access_desired )
+WERROR regkey_open_onelevel( TALLOC_CTX *mem_ctx, struct registry_key *parent,
+			     const char *name,
+			     const struct nt_user_token *token,
+			     uint32 access_desired,
+			     struct registry_key **pregkey)
 {
 	WERROR     	result = WERR_OK;
-	REGISTRY_KEY    *key;
+	struct registry_key *regkey;
+	REGISTRY_KEY *key;
 	REGSUBKEY_CTR	*subkeys = NULL;
 
 	DEBUG(7,("regkey_open_onelevel: name = [%s]\n", name));
 
-	if ((parent != NULL) &&
-	    ((parent->access_granted & SEC_RIGHTS_ENUM_SUBKEYS) == 0)) {
-		return WERR_ACCESS_DENIED;
+	SMB_ASSERT(strchr(name, '\\') == NULL);
+
+	if (!(regkey = TALLOC_ZERO_P(mem_ctx, struct registry_key)) ||
+	    !(regkey->token = dup_nt_token(regkey, token)) ||
+	    !(regkey->key = TALLOC_ZERO_P(regkey, REGISTRY_KEY))) {
+		result = WERR_NOMEM;
+		goto done;
 	}
 
-	if ( !(key = TALLOC_ZERO_P(mem_ctx, REGISTRY_KEY)) ) {
-		return WERR_NOMEM;
+	if ( !(W_ERROR_IS_OK(result = regdb_open())) ) {
+		goto done;
 	}
 
-	if ( !(W_ERROR_IS_OK(result = regdb_open()) ) ) {
-		TALLOC_FREE(key);
-		return result;
-	}
-
+	key = regkey->key;
 	talloc_set_destructor(key, regkey_destructor);
 		
 	/* initialization */
@@ -340,14 +342,14 @@ WERROR regkey_open_onelevel( TALLOC_CTX *mem_ctx, REGISTRY_KEY *parent,
 			result = WERR_BADFILE;
 			goto done;
 		}
-		key->name = talloc_strdup(key, parent->name);
+		key->name = talloc_strdup(key, parent->key->name);
 	}
 	else {
 		/*
-		 * Normal open, concat parent and new keynames
+		 * Normal subkey open
 		 */
 		key->name = talloc_asprintf(key, "%s%s%s",
-					    parent ? parent->name : "",
+					    parent ? parent->key->name : "",
 					    parent ? "\\": "",
 					    name);
 	}
@@ -392,12 +394,12 @@ WERROR regkey_open_onelevel( TALLOC_CTX *mem_ctx, REGISTRY_KEY *parent,
 		goto done;
 	}
 
-	*regkey = key;
+	*pregkey = regkey;
 	result = WERR_OK;
 	
 done:
 	if ( !W_ERROR_IS_OK(result) ) {
-		TALLOC_FREE(key);
+		TALLOC_FREE(regkey);
 	}
 
 	return result;
@@ -408,53 +410,17 @@ WERROR regkey_open_internal( TALLOC_CTX *ctx, REGISTRY_KEY **regkey,
                              const struct nt_user_token *token,
 			     uint32 access_desired )
 {
-	TALLOC_CTX *mem_ctx;
-	const char *p;
-	REGISTRY_KEY *parent = NULL;
+	struct registry_key *key;
 	WERROR err;
-	size_t len;
 
-	if (!(mem_ctx = talloc_new(ctx))) {
-		return WERR_NOMEM;
+	err = reg_open_path(NULL, path, access_desired, token, &key);
+	if (!W_ERROR_IS_OK(err)) {
+		return err;
 	}
 
-	len = strlen(path);
-	if ((len > 0) && (path[len-1] == '\\')) {
-		if (!(path = talloc_strndup(mem_ctx, path, len-1))) {
-			TALLOC_FREE(mem_ctx);
-			return WERR_NOMEM;
-		}
-	}
-
-	while ((p = strchr(path, '\\')) != NULL) {
-		char *name_component;
-		REGISTRY_KEY *intermediate;
-
-		if (!(name_component = talloc_strndup(
-			      mem_ctx, path, (p - path)))) {
-			TALLOC_FREE(mem_ctx);
-			return WERR_NOMEM;
-		}
-
-		err = regkey_open_onelevel(mem_ctx, parent, &intermediate,
-					   name_component, token,
-					   SEC_RIGHTS_ENUM_SUBKEYS);
-		TALLOC_FREE(name_component);
-
-		if (!W_ERROR_IS_OK(err)) {
-			TALLOC_FREE(mem_ctx);
-			return WERR_NOMEM;
-		}
-
-		TALLOC_FREE(parent);
-		parent = intermediate;
-		path = p+1;
-	}
-
-	err = regkey_open_onelevel(ctx, parent, regkey, path, token,
-				   access_desired);
-	TALLOC_FREE(mem_ctx);
-	return err;
+	*regkey = talloc_move(ctx, &key->key);
+	TALLOC_FREE(key);
+	return WERR_OK;
 }
 
 WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
