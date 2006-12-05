@@ -109,7 +109,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
-		extern struct winbindd_methods msrpc_methods, cache_methods;
 		DEBUG(1,("ads_connect for domain %s failed: %s\n", 
 			 domain->name, ads_errstr(status)));
 		ads_destroy(&ads);
@@ -118,12 +117,10 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
                    server, fall back to MSRPC */
 		if (status.error_type == ENUM_ADS_ERROR_SYSTEM &&
 		    status.err.rc == ECONNREFUSED) {
+			extern struct winbindd_methods reconnect_methods;
+			/* 'reconnect_methods' is the MS-RPC backend. */
 			DEBUG(1,("Trying MSRPC methods\n"));
-			if (domain->methods == &cache_methods) {
-				domain->backend = &msrpc_methods;
-			} else {
-				domain->methods = &msrpc_methods;
-			}
+			domain->backend = &reconnect_methods;
 		}
 		return NULL;
 	}
