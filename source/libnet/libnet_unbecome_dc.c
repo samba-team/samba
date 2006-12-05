@@ -26,6 +26,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/db_wrap.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/flags.h"
 
 struct libnet_UnbecomeDC_state {
 	struct composite_context *creq;
@@ -185,6 +186,86 @@ static NTSTATUS unbecomeDC_ldap_rootdse(struct libnet_UnbecomeDC_state *s)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS unbecomeDC_ldap_computer_object(struct libnet_UnbecomeDC_state *s)
+{
+	int ret;
+	struct ldb_result *r;
+	struct ldb_dn *basedn;
+	char *filter;
+	static const char *attrs[] = {
+		"distinguishedName",
+		"userAccountControl",
+		NULL
+	};
+
+	basedn = ldb_dn_new(s, s->ldap.ldb, s->domain.dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(basedn);
+
+	filter = talloc_asprintf(basedn, "(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=%s$))",
+				 s->dest_dsa.netbios_name);
+	NT_STATUS_HAVE_NO_MEMORY(filter);
+
+	ret = ldb_search(s->ldap.ldb, basedn, LDB_SCOPE_SUBTREE, 
+			 filter, attrs, &r);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	} else if (r->count != 1) {
+		talloc_free(r);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	s->dest_dsa.computer_dn_str	= samdb_result_string(r->msgs[0], "distinguishedName", NULL);
+	if (!s->dest_dsa.computer_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	talloc_steal(s, s->dest_dsa.computer_dn_str);
+
+	s->dest_dsa.user_account_control = samdb_result_uint(r->msgs[0], "userAccountControl", 0);
+
+	talloc_free(r);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS unbecomeDC_ldap_modify_computer(struct libnet_UnbecomeDC_state *s)
+{
+	int ret;
+	struct ldb_message *msg;
+	uint32_t user_account_control = UF_WORKSTATION_TRUST_ACCOUNT;
+	uint32_t i;
+
+	/* as the value is already as we want it to be, we're done */
+	if (s->dest_dsa.user_account_control == user_account_control) {
+		return NT_STATUS_OK;
+	}
+
+	/* make a 'modify' msg, and only for serverReference */
+	msg = ldb_msg_new(s);
+	NT_STATUS_HAVE_NO_MEMORY(msg);
+	msg->dn = ldb_dn_new(msg, s->ldap.ldb, s->dest_dsa.computer_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(msg->dn);
+
+	ret = ldb_msg_add_fmt(msg, "userAccountControl", "%u", user_account_control);
+	if (ret != 0) {
+		talloc_free(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* mark all the message elements (should be just one)
+	   as LDB_FLAG_MOD_REPLACE */
+	for (i=0;i<msg->num_elements;i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	ret = ldb_modify(s->ldap.ldb, msg);
+	talloc_free(msg);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_LDAP(ret);
+	}
+
+	s->dest_dsa.user_account_control = user_account_control;
+
+	return NT_STATUS_OK;
+}
+
 static void unbecomeDC_connect_ldap(struct libnet_UnbecomeDC_state *s)
 {
 	struct composite_context *c = s->creq;
@@ -193,6 +274,12 @@ static void unbecomeDC_connect_ldap(struct libnet_UnbecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	c->status = unbecomeDC_ldap_rootdse(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = unbecomeDC_ldap_computer_object(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = unbecomeDC_ldap_modify_computer(s);
 	if (!composite_is_ok(c)) return;
 
 	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
