@@ -795,6 +795,42 @@ done:
 }
 
 /*
+ a useful search function where you can easily define the expression and that
+ takes a memory context where results are allocated
+*/
+
+int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_result **result,
+                        struct ldb_dn *base, enum ldb_scope scope, const char * const *attrs,
+                        const char *exp_fmt, ...)
+{
+	struct ldb_result **res;
+	char *expression;
+	va_list ap;
+	int ret;
+
+	*result = NULL;
+
+	va_start(ap, exp_fmt);
+	expression = talloc_vasprintf(mem_ctx, exp_fmt, ap);
+	va_end(ap);
+
+	if ( ! expression) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_search(ldb, base, scope, expression, attrs, res);
+
+	if (ret == LDB_SUCCESS) {
+		talloc_steal(mem_ctx, res);
+		result = res;
+	}
+
+	talloc_free(expression);
+
+	return ret;
+}
+
+/*
   add a record to the database. Will fail if a record with the given class and key
   already exists
 */
