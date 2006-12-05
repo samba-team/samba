@@ -62,81 +62,67 @@ WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
 		    const struct nt_user_token *token,
 		    struct registry_key **pkey)
 {
-	struct registry_key *key;
-	WERROR err;
-
+	SMB_ASSERT(hive != NULL);
 	SMB_ASSERT(hive[0] != '\0');
 	SMB_ASSERT(strchr(hive, '\\') == NULL);
 
-	if (!(key = TALLOC_ZERO_P(mem_ctx, struct registry_key))) {
-		return WERR_NOMEM;
-	}
-
-	if (!(key->token = dup_nt_token(key, token))) {
-		TALLOC_FREE(key);
-		return WERR_NOMEM;
-	}
-
-	err = regkey_open_internal(key, &key->key, hive, token,
-				   desired_access);
-
-	if (!W_ERROR_IS_OK(err)) {
-		TALLOC_FREE(key);
-		return err;
-	}
-
-	*pkey = key;
-	return WERR_OK;
-
+	return regkey_open_onelevel(mem_ctx, NULL, hive, token, desired_access,
+				    pkey);
 }
 
 WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 		   const char *name, uint32 desired_access,
 		   struct registry_key **pkey)
 {
-	struct registry_key *key;
+	struct registry_key *direct_parent = parent;
 	WERROR err;
-	char *path;
+	char *p, *path, *to_free;
+	size_t len;
 
-	if (!(key = TALLOC_ZERO_P(mem_ctx, struct registry_key))) {
+	if (!(path = SMB_STRDUP(name))) {
 		return WERR_NOMEM;
 	}
+	to_free = path;
 
-	if (!(key->token = dup_nt_token(key, parent->token))) {
-		TALLOC_FREE(key);
-		return WERR_NOMEM;
+	len = strlen(path);
+
+	if ((len > 0) && (path[len-1] == '\\')) {
+		path[len-1] = '\0';
 	}
 
-	if (name[0] == '\0') {
-		/*
-		 * Make a copy of the parent
-		 */ 
-		path = talloc_strdup(key, parent->key->name);
-	}
-	else {
-		/*
-		 * Normal subpath open
-		 */
-		path = talloc_asprintf(key, "%s\\%s", parent->key->name,
-				       name);
-	}
+	while ((p = strchr(path, '\\')) != NULL) {
+		char *name_component;
+		struct registry_key *tmp;
 
-	if (!path) {
-		TALLOC_FREE(key);
-		return WERR_NOMEM;
-	}
+		if (!(name_component = SMB_STRNDUP(path, (p - path)))) {
+			err = WERR_NOMEM;
+			goto error;
+		}
 
-	err = regkey_open_internal(key, &key->key, path, parent->token,
-				   desired_access);
-	TALLOC_FREE(path);
+		err = regkey_open_onelevel(mem_ctx, direct_parent,
+					   name_component, parent->token,
+					   SEC_RIGHTS_ENUM_SUBKEYS, &tmp);
+		SAFE_FREE(name_component);
 
-	if (!W_ERROR_IS_OK(err)) {
-		TALLOC_FREE(key);
-		return err;
+		if (!W_ERROR_IS_OK(err)) {
+			goto error;
+		}
+		if (direct_parent != parent) {
+			TALLOC_FREE(direct_parent);
+		}
+
+		direct_parent = tmp;
+		path = p+1;
 	}
 
-	*pkey = key;
-	return WERR_OK;
+	err = regkey_open_onelevel(mem_ctx, direct_parent, path, parent->token,
+				   desired_access, pkey);
+ error:
+	if (direct_parent != parent) {
+		TALLOC_FREE(direct_parent);
+	}
+	SAFE_FREE(to_free);
+	return err;
 }
 
 WERROR reg_enumkey(TALLOC_CTX *mem_ctx, struct registry_key *key,
