@@ -103,7 +103,8 @@ typedef int (*ibw_receive_fn_t)(ibw_conn *conn, void *buf, int n);
 ibw_ctx *ibw_init(ibw_initattr *attr, int nattr,
 	void *ctx_userdata,
 	ibw_connstate_fn_t ibw_connstate,
-	ibw_receive_fn_t ibw_receive);
+	ibw_receive_fn_t ibw_receive,
+	event_content *ectx);
 
 /*
  * Must be called in states of (IBWS_ERROR, IBWS_READY, IBWS_CONNECT_REQUEST)

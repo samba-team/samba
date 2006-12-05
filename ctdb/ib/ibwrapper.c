@@ -122,9 +122,11 @@ static void ibw_process_cm_event(struct event_context *ev,
 {
 	int	rc;
 	ibw_ctx	*ctx = talloc_get_type(private_data, ibw_ctx);
-	ibw_ctx	*pctx = talloc_get_type(ctx->internal, ibw_ctx_priv);
-	struct rdma_cm_id *id;
-	struct rdma_cm_event event;
+	ibw_ctx_priv *pctx = talloc_get_type(ctx->internal, ibw_ctx_priv);
+	ibw_conn *conn = NULL;
+	ibw_conn_priv *pconn = NULL;
+	struct rdma_cm_id *id = NULL;
+	struct rdma_cm_event *event = NULL;
 
 	assert(ctx!=NULL);
 
@@ -135,18 +137,18 @@ static void ibw_process_cm_event(struct event_context *ev,
 		DEBUG(0, ibw_lasterr);
 		return;
 	}
-	id = &event.id;
+	id = event->id;
 
-	/* find whose cma_id we have */
+	/* find whose cm_id do we have */
 
-//	DEBUG(10, "cma_event type %d cma_id %p (%s)\n", event->event, cma_id,
-//		  (cma_id == cb->cm_id) ? "parent" : "child");
+//	DEBUG(10, "cma_event type %d cma_id %p (%s)\n", event->event, event->id,
+//		  (event->id == ctx->cm_id) ? "parent" : "child");
 
 	switch (event->event) {
 	case RDMA_CM_EVENT_ADDR_RESOLVED:
 		assert(pctx->state==IWINT_INIT);
 		pctx->state = IWINT_ADDR_RESOLVED;
-		rc = rdma_resolve_route(cma_id, 2000);
+		rc = rdma_resolve_route(event->id, 2000);
 		if (rc) {
 			cb->state = ERROR;
 			sprintf(ibw_lasterr, "rdma_resolve_route error %d\n", rc);
@@ -158,15 +160,19 @@ static void ibw_process_cm_event(struct event_context *ev,
 		assert(pctx->state==IWINT_ADDR_RESOLVED);
 		pctx->state = IWINT_ROUTE_RESOLVED;
 		break;
-/* TODO here... */
+
 	case RDMA_CM_EVENT_CONNECT_REQUEST:
-		ctx->state = CONNECT_REQUEST;
-		conn->cm_id = event.cm_id;
-		DEBUG("child cma %p\n", cb->child_cm_id);
+		ctx->state = IBWS_CONNECT_REQUEST;
+		conn = ibw_new_conn(ctx);
+		pconn = talloc_get_type(conn, ibw_conn_priv);
+		pconn->cm_id = event->id; /* !!! event will be freed but not id */
+		DEBUG(10, "conn->cm_id %p\n", pconn->cm_id);
 		break;
 
 	case RDMA_CM_EVENT_ESTABLISHED:
-		DEBUG("ESTABLISHED\n");
+		DEBUG(0, "ESTABLISHED\n");
+		ctx->state = IBWS_READY;
+		/* TODO */
 		break;
 
 	case RDMA_CM_EVENT_ADDR_ERROR:
@@ -176,10 +182,12 @@ static void ibw_process_cm_event(struct event_context *ev,
 	case RDMA_CM_EVENT_REJECTED:
 		DEBUG(0, "cma event %d, error %d\n", event->event,
 		       event->status);
+		ctx->state = IBWS_ERROR;
 		break;
 
 	case RDMA_CM_EVENT_DISCONNECTED:
 		DEBUG(0, "%s DISCONNECT EVENT...\n", cb->server ? "server" : "client");
+		/* TODO */
 		break;
 
 	case RDMA_CM_EVENT_DEVICE_REMOVAL:
@@ -190,8 +198,10 @@ static void ibw_process_cm_event(struct event_context *ev,
 		DEBUG(0, "oof bad type!\n");
 		break;
 	}
-	
-	rdma_ack_cm_event(event);
+
+	if ((rc=rdma_ack_cm_event(event))) {
+		DEBUG(0, "rdma_ack_cm_event failed with %d\n", rc);
+	}
 }
 
 static int ibw_process_init_attrs(ibw_initattr *attr, int nattr, ibw_opts *opts)
@@ -221,7 +231,8 @@ static int ibw_process_init_attrs(ibw_initattr *attr, int nattr, ibw_opts *opts)
 ibw_ctx *ibw_init(ibw_initattr *attr, int nattr,
 	void *ctx_userdata,
 	ibw_connstate_fn_t ibw_connstate,
-	ibw_receive_fn_t ibw_receive)
+	ibw_receive_fn_t ibw_receive,
+	event_content *ectx)
 {
 	ibw_ctx *ctx = talloc_zero(NULL, ibw_ctx);
 	ibw_ctx_priv *pctx;
@@ -243,7 +254,7 @@ ibw_ctx *ibw_init(ibw_initattr *attr, int nattr,
 	pctx->connstate_func = ibw_connstate;
 	pctx->receive_func = ibw_receive;
 
-	assert((pctx->ectx = event_context_init(ctx))!=NULL);
+	pctx->ectx = ectx;
 
 	/* process attributes */
 	if (ibw_process_init_attrs(attr, nattr, pctx->opts))
