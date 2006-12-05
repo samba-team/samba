@@ -211,7 +211,6 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 	struct ldb_context *ldb;
 	struct ldb_result *res;
 	TALLOC_CTX *tmp_ctx;
-	char *filter;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
@@ -221,14 +220,9 @@ static NTSTATUS sldb_get_config(TALLOC_CTX *mem_ctx,
 
 	ldb = talloc_get_type(ctx->priv_data, struct ldb_context);
 
-	filter = talloc_asprintf(tmp_ctx,"(name=%s)", name);
-	if (!filter) {
-		DEBUG(0,("ERROR: Out of memory!\n"));
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, "CN=SHARES"), LDB_SCOPE_SUBTREE, filter, NULL, &res);
-	talloc_steal(tmp_ctx, res);
+	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res,
+				 ldb_dn_new(tmp_ctx, ldb, "CN=SHARES"), LDB_SCOPE_SUBTREE, NULL,
+				 "(name=%s)", name);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_BAD_NETWORK_NAME;

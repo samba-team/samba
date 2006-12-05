@@ -2093,7 +2093,6 @@ static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	const char *memberdn;
 	struct ldb_result *res;
 	const char * const attrs[] = { NULL };
-	const char *filter;
 	int ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
@@ -2105,18 +2104,16 @@ static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	if (membersid == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	filter = talloc_asprintf(mem_ctx, "(&(objectSid=%s)(objectclass=user))",
-				 ldap_encode_ndr_dom_sid(mem_ctx, membersid));
-
 	/* In native mode, AD can also nest domain groups. Not sure yet
 	 * whether this is also available via RPC. */
-	ret = ldb_search(d_state->sam_ctx, d_state->domain_dn, LDB_SCOPE_SUBTREE,
-			 filter, attrs, &res);
+	ret = ldb_search_exp_fmt(d_state->sam_ctx, mem_ctx, &res,
+				 d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs,
+				 "(&(objectSid=%s)(objectclass=user))",
+				 ldap_encode_ndr_dom_sid(mem_ctx, membersid));
 
 	if (ret != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	talloc_steal(mem_ctx, res);
 
 	if (res->count == 0) {
 		return NT_STATUS_NO_SUCH_USER;
@@ -2198,7 +2195,6 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
 	const char *memberdn;
 	struct ldb_result *res;
 	const char * const attrs[] = { NULL };
-	const char *filter;
 	int ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
@@ -2210,18 +2206,16 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
 	if (membersid == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	filter = talloc_asprintf(mem_ctx, "(&(objectSid=%s)(objectclass=user))",
-				 ldap_encode_ndr_dom_sid(mem_ctx, membersid));
-
 	/* In native mode, AD can also nest domain groups. Not sure yet
 	 * whether this is also available via RPC. */
-	ret = ldb_search(d_state->sam_ctx, d_state->domain_dn, LDB_SCOPE_SUBTREE,
-			 filter, attrs, &res);
+	ret = ldb_search_exp_fmt(d_state->sam_ctx, mem_ctx, &res,
+				 d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs,
+				 "(&(objectSid=%s)(objectclass=user))",
+				 ldap_encode_ndr_dom_sid(mem_ctx, membersid));
 
 	if (ret != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	talloc_steal(mem_ctx, res);
 
 	if (res->count == 0) {
 		return NT_STATUS_NO_SUCH_USER;

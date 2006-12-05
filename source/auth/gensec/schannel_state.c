@@ -183,27 +183,19 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 	struct ldb_result *res;
 	int ret;
 	const struct ldb_val *val;
-	char *expr=NULL;
 
 	*creds = talloc_zero(mem_ctx, struct creds_CredentialState);
 	if (!*creds) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	expr = talloc_asprintf(mem_ctx, "(&(computerName=%s)(flatname=%s))", 
-			       computer_name, domain);
-	if (expr == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
-	talloc_free(expr);
+	ret = ldb_search_exp_fmt(ldb, mem_ctx, &res,
+				 NULL, LDB_SCOPE_SUBTREE, NULL,
+				"(&(computerName=%s)(flatname=%s))", computer_name, domain);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(3,("schannel: Failed to find a record for client %s: %s\n", computer_name, ldb_errstring(ldb)));
-		talloc_free(res);
 		return NT_STATUS_INVALID_HANDLE;
 	}
-	talloc_steal(mem_ctx, res);
 	if (res->count != 1) {
 		DEBUG(3,("schannel: Failed to find a record for client: %s (found %d records)\n", computer_name, res->count));
 		talloc_free(res);

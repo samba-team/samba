@@ -285,7 +285,6 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		"dnsRoot",
 		NULL
 	};
-	char *ref_filter;
 	int ret;
 
 	state = talloc(mem_ctx, struct lsa_policy_state);
@@ -337,31 +336,30 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 
 	talloc_free(dom_res);
 
-	ref_filter = talloc_asprintf(state, "(&(objectclass=crossRef)(ncName=%s))", 
-				     ldb_dn_get_linearized(state->domain_dn)); 
-	if (!ref_filter) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = ldb_search(state->sam_ldb, partitions_basedn, LDB_SCOPE_SUBTREE, ref_filter, ref_attrs, &ref_res);
-	talloc_steal(state, ref_res);
-	talloc_free(ref_filter);
+	ret = ldb_search_exp_fmt(state->sam_ldb, state, &ref_res,
+				 partitions_basedn, LDB_SCOPE_SUBTREE, ref_attrs,
+				 "(&(objectclass=crossRef)(ncName=%s))",
+				 ldb_dn_get_linearized(state->domain_dn));
 	
 	if (ret != LDB_SUCCESS) {
+		talloc_free(ref_res);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 	if (ref_res->count != 1) {
+		talloc_free(ref_res);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
 	state->domain_name = ldb_msg_find_attr_as_string(ref_res->msgs[0], "nETBIOSName", NULL);
 	if (!state->domain_name) {
+		talloc_free(ref_res);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 	talloc_steal(state, state->domain_name);
 
 	state->domain_dns = ldb_msg_find_attr_as_string(ref_res->msgs[0], "dnsRoot", NULL);
 	if (!state->domain_dns) {
+		talloc_free(ref_res);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 	talloc_steal(state, state->domain_dns);

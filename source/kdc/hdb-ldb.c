@@ -525,26 +525,20 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 					struct ldb_message ***pmsg)
 {
  	int ret;
-	char *cross_ref_filter;
 	struct ldb_result *cross_ref_res;
 	struct ldb_dn *partitions_basedn = samdb_partitions_dn(ldb_ctx, mem_ctx);
 
-	cross_ref_filter = talloc_asprintf(mem_ctx, 
-					   "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
-					   realm, realm);
-	if (!cross_ref_filter) {
-		krb5_set_error_string(context, "asprintf: out of memory");
-		return ENOMEM;
-	}
-
-	ret = ldb_search(ldb_ctx, partitions_basedn, LDB_SCOPE_SUBTREE, cross_ref_filter, realm_ref_attrs, &cross_ref_res);
+	ret = ldb_search_exp_fmt(ldb_ctx, mem_ctx, &cross_ref_res,
+			partitions_basedn, LDB_SCOPE_SUBTREE, realm_ref_attrs,
+			"(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
+			realm, realm);
 
 	if (ret != LDB_SUCCESS) {
-		DEBUG(3, ("Failed to search for %s: %s\n", cross_ref_filter, ldb_errstring(ldb_ctx)));
+		DEBUG(3, ("Failed to search to lookup realm(%s): %s\n", realm, ldb_errstring(ldb_ctx)));
 		talloc_free(cross_ref_res);
 		return HDB_ERR_NOENTRY;
 	} else if (cross_ref_res->count == 0 || cross_ref_res->count > 1) {
-		DEBUG(3, ("Failed find a single entry for %s: got %d\n", cross_ref_filter, cross_ref_res->count));
+		DEBUG(3, ("Failed find a single entry for realm %s: got %d\n", realm, cross_ref_res->count));
 		talloc_free(cross_ref_res);
 		return HDB_ERR_NOENTRY;
 	}

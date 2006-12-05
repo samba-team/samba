@@ -297,14 +297,11 @@ int samldb_notice_sid(struct ldb_module *module,
 	struct ldb_result *dom_res;
 	struct ldb_result *res;
 	uint32_t old_rid;
-	char *filter;
 
 	/* find if this SID already exists */
-
-	filter = talloc_asprintf(mem_ctx, "(objectSid=%s)",
-				 ldap_encode_ndr_dom_sid(mem_ctx, sid));
-
-	ret = ldb_search(module->ldb, NULL, LDB_SCOPE_SUBTREE, filter, attrs, &res);
+	ret = ldb_search_exp_fmt(module->ldb, mem_ctx, &res,
+				 NULL, LDB_SCOPE_SUBTREE, attrs,
+				 "(objectSid=%s)", ldap_encode_ndr_dom_sid(mem_ctx, sid));
 	if (ret == LDB_SUCCESS) {
 		if (res->count > 0) {
 			talloc_free(res);
@@ -332,13 +329,11 @@ int samldb_notice_sid(struct ldb_module *module,
 	dom_sid->num_auths--;
 
 	/* find the domain DN */
-	
-	filter = talloc_asprintf(mem_ctx, "(&(objectSid=%s)(objectclass=domain))",
+	ret = ldb_search_exp_fmt(module->ldb, mem_ctx, &dom_res,
+				 NULL, LDB_SCOPE_SUBTREE, attrs,
+				 "(&(objectSid=%s)(objectclass=domain))",
 				 ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
-
-	ret = ldb_search(module->ldb, NULL, LDB_SCOPE_SUBTREE, filter, attrs, &dom_res);
 	if (ret == LDB_SUCCESS) {
-		talloc_steal(mem_ctx, dom_res);
 		if (dom_res->count == 0) {
 			talloc_free(dom_res);
 			/* This isn't an operation on a domain we know about, so nothing to update */
