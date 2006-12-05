@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -123,7 +123,8 @@ struct hx509_query_data {
 #define HX509_QUERY_MATCH_FRIENDLY_NAME		0x040000
 #define HX509_QUERY_MATCH_FUNCTION		0x080000
 #define HX509_QUERY_MATCH_KEY_HASH_SHA1		0x100000
-#define HX509_QUERY_MASK			0x1fffff
+#define HX509_QUERY_MATCH_TIME			0x200000
+#define HX509_QUERY_MASK			0x3fffff
     Certificate *subject;
     Certificate *certificate;
     heim_integer *serial;
@@ -136,6 +137,7 @@ struct hx509_query_data {
     int (*cmp_func)(void *, hx509_cert);
     void *cmp_func_ctx;
     heim_octet_string *keyhash_sha1;
+    time_t timenow;
 };
 
 struct hx509_keyset_ops {
