@@ -27,6 +27,7 @@
 #include "lib/db_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/flags.h"
+#include "librpc/gen_ndr/ndr_drsuapi_c.h"
 
 struct libnet_UnbecomeDC_state {
 	struct composite_context *creq;
@@ -42,6 +43,14 @@ struct libnet_UnbecomeDC_state {
 	struct {
 		struct ldb_context *ldb;
 	} ldap;
+
+	struct {
+		struct dcerpc_binding *binding;
+		struct dcerpc_pipe *pipe;
+		struct drsuapi_DsBind bind_r;
+		struct GUID bind_guid;
+		struct policy_handle bind_handle;
+	} drsuapi;
 
 	struct {
 		/* input */
@@ -317,6 +326,8 @@ static NTSTATUS unbecomeDC_ldap_move_computer(struct libnet_UnbecomeDC_state *s)
 	return NT_STATUS_OK;
 }
 
+static void unbecomeDC_drsuapi_connect_send(struct libnet_UnbecomeDC_state *s);
+
 static void unbecomeDC_connect_ldap(struct libnet_UnbecomeDC_state *s)
 {
 	struct composite_context *c = s->creq;
@@ -335,6 +346,83 @@ static void unbecomeDC_connect_ldap(struct libnet_UnbecomeDC_state *s)
 
 	c->status = unbecomeDC_ldap_move_computer(s);
 	if (!composite_is_ok(c)) return;
+
+	unbecomeDC_drsuapi_connect_send(s);
+}
+
+static void unbecomeDC_drsuapi_connect_recv(struct composite_context *creq);
+
+static void unbecomeDC_drsuapi_connect_send(struct libnet_UnbecomeDC_state *s)
+{
+	struct composite_context *c = s->creq;
+	struct composite_context *creq;
+	char *binding_str;
+
+	binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[seal]", s->source_dsa.dns_name);
+	if (composite_nomem(binding_str, c)) return;
+
+	c->status = dcerpc_parse_binding(s, binding_str, &s->drsuapi.binding);
+	talloc_free(binding_str);
+	if (!composite_is_ok(c)) return;
+
+	creq = dcerpc_pipe_connect_b_send(s, s->drsuapi.binding, &dcerpc_table_drsuapi,
+					  s->libnet->cred, s->libnet->event_ctx);
+	composite_continue(c, creq, unbecomeDC_drsuapi_connect_recv, s);
+}
+
+static void unbecomeDC_drsuapi_bind_send(struct libnet_UnbecomeDC_state *s);
+
+static void unbecomeDC_drsuapi_connect_recv(struct composite_context *req)
+{
+	struct libnet_UnbecomeDC_state *s = talloc_get_type(req->async.private_data,
+					    struct libnet_UnbecomeDC_state);
+	struct composite_context *c = s->creq;
+
+	c->status = dcerpc_pipe_connect_b_recv(req, s, &s->drsuapi.pipe);
+	if (!composite_is_ok(c)) return;
+
+	unbecomeDC_drsuapi_bind_send(s);
+}
+
+static void unbecomeDC_drsuapi_bind_recv(struct rpc_request *req);
+
+static void unbecomeDC_drsuapi_bind_send(struct libnet_UnbecomeDC_state *s)
+{
+	struct composite_context *c = s->creq;
+	struct rpc_request *req;
+
+	GUID_from_string(DRSUAPI_DS_BIND_GUID, &s->drsuapi.bind_guid);
+
+	s->drsuapi.bind_r.in.bind_guid = &s->drsuapi.bind_guid;
+	s->drsuapi.bind_r.in.bind_info = NULL;
+	s->drsuapi.bind_r.out.bind_handle = &s->drsuapi.bind_handle;
+
+	req = dcerpc_drsuapi_DsBind_send(s->drsuapi.pipe, s, &s->drsuapi.bind_r);
+	composite_continue_rpc(c, req, unbecomeDC_drsuapi_bind_recv, s);
+}
+
+static void unbecomeDC_drsuapi_remove_ds_server_send(struct libnet_UnbecomeDC_state *s);
+
+static void unbecomeDC_drsuapi_bind_recv(struct rpc_request *req)
+{
+	struct libnet_UnbecomeDC_state *s = talloc_get_type(req->async.private,
+					    struct libnet_UnbecomeDC_state);
+	struct composite_context *c = s->creq;
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (!W_ERROR_IS_OK(s->drsuapi.bind_r.out.result)) {
+		composite_error(c, werror_to_ntstatus(s->drsuapi.bind_r.out.result));
+		return;
+	}
+
+	unbecomeDC_drsuapi_remove_ds_server_send(s);
+}
+
+static void unbecomeDC_drsuapi_remove_ds_server_send(struct libnet_UnbecomeDC_state *s)
+{
+	struct composite_context *c = s->creq;
 
 	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
 }
