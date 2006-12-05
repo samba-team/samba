@@ -635,6 +635,41 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 * LDAP search 1st LDAP connection:
 	 *
 	 * Request:
+	 *	basedn:	""
+	 *	scope:	base
+	 *	filter:	(objectClass=*)
+	 *	attrs:	*
+	 * Result:
+	 *      ""
+	 *		currentTime:		...
+	 *		subschemaSubEntry:	...
+	 *		dsServiceName:		CN=<netbios_name>,CN=Servers,CN=<site_name>,CN=Sites,CN=Configuration,<domain_partition>
+	 *		namingContexts:		<domain_partition>
+	 *					CN=Configuration,<domain_partition>
+	 *					CN=Schema,CN=Configuration,<domain_partition>
+	 *		defaultNamingContext:	<domain_partition>
+	 *		schemaNamingContext:	CN=Schema,CN=Configuration,<domain_partition>
+	 *		configurationNamingContext:CN=Configuration,<domain_partition>
+	 *		rootDomainNamingContext:<domain_partition>
+	 *		supportedControl:	...
+	 *		supportedLDAPVersion:	3
+	 *					2
+	 *		supportedSASLmechanisms:...
+	 *		dnsHostName:		<dns_host_name>
+	 *		ldapServiceName:	<domain_dns_name>:<netbios_name>$@<REALM>
+	 *		serverName:		CN=Servers,CN=<site_name>,CN=Sites,CN=Configuration,<domain_partition>
+	 *		supportedCapabilities:	...
+	 *		isSyncronized:		TRUE
+	 *		isGlobalCatalogReady:	TRUE
+	 *		domainFunctionality:	0
+	 *		forestFunctionality:	0
+	 *		domainControllerFunctionality: 2
+	 */
+
+	/*
+	 * LDAP search 1st LDAP connection:
+	 *
+	 * Request:
 	 *	basedn:	CN=Configuration,<domain_partition>
 	 *	scope:	one
 	 *	filter:	(cn=Partitions)
