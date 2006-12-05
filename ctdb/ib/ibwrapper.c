@@ -190,7 +190,7 @@ static void ibw_process_cm_event(struct event_context *ev,
 		DEBUG(0, "oof bad type!\n");
 		break;
 	}
-
+	
 	rdma_ack_cm_event(event);
 }
 
