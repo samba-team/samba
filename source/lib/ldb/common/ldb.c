@@ -803,11 +803,12 @@ int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
                         struct ldb_dn *base, enum ldb_scope scope, const char * const *attrs,
                         const char *exp_fmt, ...)
 {
-	struct ldb_result **res;
+	struct ldb_result *res;
 	char *expression;
 	va_list ap;
 	int ret;
 
+	res = NULL;
 	*result = NULL;
 
 	va_start(ap, exp_fmt);
@@ -818,11 +819,13 @@ int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(ldb, base, scope, expression, attrs, res);
+	ret = ldb_search(ldb, base, scope, expression, attrs, &res);
 
 	if (ret == LDB_SUCCESS) {
 		talloc_steal(mem_ctx, res);
-		result = res;
+		*result = res;
+	} else {
+		talloc_free(res);
 	}
 
 	talloc_free(expression);
