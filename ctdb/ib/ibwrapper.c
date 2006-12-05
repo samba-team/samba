@@ -146,37 +146,27 @@ static void ibw_process_cm_event(struct event_context *ev,
 	case RDMA_CM_EVENT_ADDR_RESOLVED:
 		assert(pctx->state==IWINT_INIT);
 		pctx->state = IWINT_ADDR_RESOLVED;
-		ret = rdma_resolve_route(cma_id, 2000);
-		if (ret) {
+		rc = rdma_resolve_route(cma_id, 2000);
+		if (rc) {
 			cb->state = ERROR;
-			fprintf(stderr, "rdma_resolve_route error %d\n", ret);
-			sem_post(&cb->sem);
+			sprintf(ibw_lasterr, "rdma_resolve_route error %d\n", rc);
+			DEBUG(0, ibw_lasterr);
 		}
 		break;
 
 	case RDMA_CM_EVENT_ROUTE_RESOLVED:
 		assert(pctx->state==IWINT_ADDR_RESOLVED);
 		pctx->state = IWINT_ROUTE_RESOLVED;
-		sem_post(&cb->sem);
 		break;
-
+/* TODO here... */
 	case RDMA_CM_EVENT_CONNECT_REQUEST:
-		cb->state = CONNECT_REQUEST;
-		cb->child_cm_id = cma_id;
-		DEBUG_LOG("child cma %p\n", cb->child_cm_id);
-		sem_post(&cb->sem);
+		ctx->state = CONNECT_REQUEST;
+		conn->cm_id = event.cm_id;
+		DEBUG("child cma %p\n", cb->child_cm_id);
 		break;
 
 	case RDMA_CM_EVENT_ESTABLISHED:
-		DEBUG_LOG("ESTABLISHED\n");
-
-		/*
-		 * Server will wake up when first RECV completes.
-		 */
-		if (!cb->server) {
-			cb->state = CONNECTED;
-		}
-		sem_post(&cb->sem);
+		DEBUG("ESTABLISHED\n");
 		break;
 
 	case RDMA_CM_EVENT_ADDR_ERROR:
@@ -184,26 +174,20 @@ static void ibw_process_cm_event(struct event_context *ev,
 	case RDMA_CM_EVENT_CONNECT_ERROR:
 	case RDMA_CM_EVENT_UNREACHABLE:
 	case RDMA_CM_EVENT_REJECTED:
-		fprintf(stderr, "cma event %d, error %d\n", event->event,
+		DEBUG(0, "cma event %d, error %d\n", event->event,
 		       event->status);
-		sem_post(&cb->sem);
-		ret = -1;
 		break;
 
 	case RDMA_CM_EVENT_DISCONNECTED:
-		fprintf(stderr, "%s DISCONNECT EVENT...\n", cb->server ? "server" : "client");
-		sem_post(&cb->sem);
+		DEBUG(0, "%s DISCONNECT EVENT...\n", cb->server ? "server" : "client");
 		break;
 
 	case RDMA_CM_EVENT_DEVICE_REMOVAL:
-		fprintf(stderr, "cma detected device removal!!!!\n");
-		ret = -1;
+		DEBUG(0, "cma detected device removal!\n");
 		break;
 
 	default:
-		fprintf(stderr, "oof bad type!\n");
-		sem_post(&cb->sem);
-		ret = -1;
+		DEBUG(0, "oof bad type!\n");
 		break;
 	}
 
