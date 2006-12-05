@@ -50,6 +50,7 @@ struct libnet_UnbecomeDC_state {
 		struct drsuapi_DsBind bind_r;
 		struct GUID bind_guid;
 		struct policy_handle bind_handle;
+		struct drsuapi_DsRemoveDSServer rm_ds_srv_r;
 	} drsuapi;
 
 	struct {
@@ -190,6 +191,12 @@ static NTSTATUS unbecomeDC_ldap_rootdse(struct libnet_UnbecomeDC_state *s)
 	s->forest.config_dn_str	= ldb_msg_find_attr_as_string(r->msgs[0], "configurationNamingContext", NULL);
 	if (!s->forest.config_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	talloc_steal(s, s->forest.config_dn_str);
+
+	s->dest_dsa.server_dn_str = talloc_asprintf(s, "CN=%s,CN=Servers,CN=%s,CN=Sites,%s",
+						    s->dest_dsa.netbios_name,
+						    s->dest_dsa.site_name,
+				                    s->forest.config_dn_str);
+	NT_STATUS_HAVE_NO_MEMORY(s->dest_dsa.server_dn_str);
 
 	talloc_free(r);
 	return NT_STATUS_OK;
@@ -420,11 +427,50 @@ static void unbecomeDC_drsuapi_bind_recv(struct rpc_request *req)
 	unbecomeDC_drsuapi_remove_ds_server_send(s);
 }
 
+static void unbecomeDC_drsuapi_remove_ds_server_recv(struct rpc_request *req);
+
 static void unbecomeDC_drsuapi_remove_ds_server_send(struct libnet_UnbecomeDC_state *s)
 {
 	struct composite_context *c = s->creq;
+	struct rpc_request *req;
+	struct drsuapi_DsRemoveDSServer *r = &s->drsuapi.rm_ds_srv_r;
 
-	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
+	r->in.bind_handle	= &s->drsuapi.bind_handle;
+	r->in.level		= 1;
+	r->in.req.req1.server_dn= s->dest_dsa.server_dn_str;
+	r->in.req.req1.domain_dn= s->domain.dn_str;
+	r->in.req.req1.unknown	= 0x00000001;
+
+	req = dcerpc_drsuapi_DsRemoveDSServer_send(s->drsuapi.pipe, s, r);
+	composite_continue_rpc(c, req, unbecomeDC_drsuapi_remove_ds_server_recv, s);
+}
+
+static void unbecomeDC_drsuapi_remove_ds_server_recv(struct rpc_request *req)
+{
+	struct libnet_UnbecomeDC_state *s = talloc_get_type(req->async.private,
+					    struct libnet_UnbecomeDC_state);
+	struct composite_context *c = s->creq;
+	struct drsuapi_DsRemoveDSServer *r = &s->drsuapi.rm_ds_srv_r;
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (!W_ERROR_IS_OK(r->out.result)) {
+		composite_error(c, werror_to_ntstatus(r->out.result));
+		return;
+	}
+
+	if (r->out.level != 1) {
+		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+		
+	if (!W_ERROR_IS_OK(r->out.res.res1.status)) {
+		composite_error(c, werror_to_ntstatus(r->out.res.res1.status));
+		return;
+	}
+
+	composite_done(c);
 }
 
 struct composite_context *libnet_UnbecomeDC_send(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_UnbecomeDC *r)

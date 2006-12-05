@@ -712,7 +712,7 @@ static NTSTATUS becomeDC_ldap1_server_object_add(struct libnet_BecomeDC_state *s
 	msg = ldb_msg_new(s);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
-	msg->dn = ldb_dn_new_fmt(msg, s->ldap1.ldb, "CN=not,CN=add,CN=%s,CN=Servers,CN=%s,CN=Sites,%s",
+	msg->dn = ldb_dn_new_fmt(msg, s->ldap1.ldb, "CN=%s,CN=Servers,CN=%s,CN=Sites,%s",
 				 s->dest_dsa.netbios_name,
 				 s->dest_dsa.site_name,
 				 s->forest.config_dn_str);
@@ -792,7 +792,7 @@ static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_server_object_add(s);
-/* ignore for now...	if (!composite_is_ok(c)) return;*/
+	if (!composite_is_ok(c)) return;
 
 	becomeDC_connect_ldap2(s);
 }
