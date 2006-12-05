@@ -40,9 +40,9 @@ rsa="${TESTS_ENVIRONMENT} ./test_rsa"
 engine="${TESTS_ENVIRONMENT} ./test_engine_dso"
 
 ${rsa} --key=${srcdir}/rsakey.der || \
-	{echo "rsa test failed "; exit 1; }
+	{ echo "rsa test failed" ; exit 1; }
 
 ${engine} --rsa=${srcdir}/rsakey.der || \
-	{echo "engine test failed "; exit 1; }
+	{ echo "engine test failed" ; exit 1; }
 
 exit 0
