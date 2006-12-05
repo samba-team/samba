@@ -38,7 +38,7 @@ typedef struct _ibw_ctx {
 	ibw_state_ctx state;
 	void *internal;
 
-	ibw_conn *first_conn, *last_conn;
+	ibw_conn *conn_list; /* 1st elem of double linked list */
 } ibw_ctx;
 
 typedef enum {

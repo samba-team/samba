@@ -37,7 +37,7 @@
 #include "lib/events/events.h"
 
 #include "ibwrapper_internal.h"
-
+#include "lib/util/dlinklist.h"
 
 #define IBW_LASTERR_BUFSIZE 512
 static char ibw_lasterr[IBW_LASTERR_BUFSIZE];
@@ -93,23 +93,7 @@ static int ibw_conn_destruct(void *ptr)
 	ctx = ibw_conn->ctx;
 	assert(ctx!=NULL);
 
-	/* unhook conn from ctx's linked list */
-	assert(ctx->first_conn!=NULL);
-	assert(ctx->last_conn!=NULL);
-
-	if (conn->prev==NULL) {
-		assert(ctx->first_conn==conn);
-		ctx->first_conn = conn->next;
-	} else {
-		conn->prev->next = conn->next;
-	}
-
-	if (conn->next==NULL) {
-		assert(ctx->last_conn==conn);
-		ctx->last_conn = conn->prev;
-	} else {
-		conn->next->prev = conn->prev;
-	}
+	DLIST_REMOVE(ctx->conn_list, conn);
 	return 0;
 }
 
@@ -128,15 +112,7 @@ static ibw_conn *ibw_new_conn(ibw_ctx *ctx)
 
 	conn->ctx = ctx;
 
-	/* append conn to the end of ctx's linked list */
-	conn->prev = ctx->last_conn;
-	conn->next = NULL;
-	if (ctx->first_conn) {
-		assert(ctx->last_conn!=NULL);
-		conn->prev->next = conn;
-	} else {
-		ctx->first_conn = ctx->last_conn = conn;
-	}
+	DLIST_ADD(ctx->conn_list, conn);
 
 	return conn;
 }
