@@ -69,6 +69,7 @@ struct pk_client_params {
     EncryptionKey reply_key;
     char *dh_group_name;
     hx509_peer_info peer;
+    hx509_certs client_anchors;
 };
 
 struct pk_principal_mapping {
@@ -183,6 +184,8 @@ _kdc_pk_free_client_param(krb5_context context,
 	free(client_params->dh_group_name);
     if (client_params->peer)
 	hx509_peer_info_free(client_params->peer);
+    if (client_params->client_anchors)
+	hx509_certs_free(&client_params->client_anchors);
     memset(client_params, 0, sizeof(*client_params));
     free(client_params);
 }
@@ -488,7 +491,59 @@ _kdc_pk_rd_padata(krb5_context context,
 	    goto out;
 	}
 	
-	/* XXX look at r.trustedCertifiers and r.kdcPkId */
+	/* XXX look at r.kdcPkId */
+	if (r.trustedCertifiers) {
+	    ExternalPrincipalIdentifiers *edi = r.trustedCertifiers;
+	    unsigned int i;
+
+	    ret = hx509_certs_init(kdc_identity->hx509ctx,
+				   "MEMORY:client-anchors",
+				   0, NULL,
+				   &client_params->client_anchors);
+	    if (ret) {
+		krb5_set_error_string(context, "Can't allocate client anchors: %d", ret);
+		goto out;
+
+	    }
+	    for (i = 0; i < edi->len; i++) {
+		IssuerAndSerialNumber iasn;
+		hx509_query *q;
+		hx509_cert cert;
+		size_t size;
+
+		if (edi->val[i].issuerAndSerialNumber == NULL)
+		    continue;
+
+		ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
+		if (ret) {
+		    krb5_set_error_string(context, 
+					  "Failed to allocate hx509_query");
+		    goto out;
+		}
+		
+		ret = decode_IssuerAndSerialNumber(edi->val[i].issuerAndSerialNumber->data,
+						   edi->val[i].issuerAndSerialNumber->length,
+						   &iasn,
+						   &size);
+		if (ret || size != 0) {
+		    hx509_query_free(kdc_identity->hx509ctx, q);
+		    continue;
+		}
+		hx509_query_match_issuer_serial(q, &iasn.issuer, &iasn.serialNumber);
+
+		ret = hx509_certs_find(kdc_identity->hx509ctx,
+				       kdc_identity->certs,
+				       q,
+				       &cert);
+		hx509_query_free(kdc_identity->hx509ctx, q);
+		free_IssuerAndSerialNumber(&iasn);
+
+		if (ret == 0)
+		    hx509_certs_add(kdc_identity->hx509ctx,
+				    client_params->client_anchors,
+				    cert);
+	    }
+	}
 
 	ret = hx509_cms_unwrap_ContentInfo(&r.signedAuthPack,
 					   &contentInfoOid,
@@ -775,8 +830,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 					NULL,
 					cert,
 					client_params->peer,
-					/* XXX should be the clients anchors */
-					kdc_identity->anchors,
+					client_params->client_anchors,
 					kdc_identity->certpool,
 					&signed_data);
 	hx509_cert_free(cert);
@@ -889,8 +943,7 @@ pk_mk_pa_reply_dh(krb5_context context,
 					NULL,
 					cert,
 					client_params->peer,
-					/* XXX should be the clients anchors */
-					kdc_identity->anchors,
+					client_params->client_anchors,
 					kdc_identity->certpool,
 					&signed_data);
 	*kdc_cert = cert;
