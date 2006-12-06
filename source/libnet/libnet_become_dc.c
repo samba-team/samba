@@ -51,6 +51,9 @@ struct libnet_BecomeDC_state {
 		struct dcerpc_pipe *pipe;
 		struct drsuapi_DsBind bind_r;
 		struct GUID bind_guid;
+		struct drsuapi_DsBindInfoCtr bind_info_ctr;
+		struct drsuapi_DsBindInfo28 local_info28;
+		struct drsuapi_DsBindInfo28 remote_info28;
 		struct policy_handle bind_handle;
 	} drsuapi1;
 
@@ -910,11 +913,60 @@ static void becomeDC_drsuapi_bind_send(struct libnet_BecomeDC_state *s,
 {
 	struct composite_context *c = s->creq;
 	struct rpc_request *req;
+	struct drsuapi_DsBindInfo28 *bind_info28;
 
 	GUID_from_string(DRSUAPI_DS_BIND_GUID_W2K3, &drsuapi->bind_guid);
 
+	bind_info28				= &drsuapi->local_info28;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_BASE;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
+	if (s->ads_options.domain_behavior_version == 2) {
+		/* TODO: find out how this is really triggered! */
+		bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
+	}
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_00100000;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
+#if 0 /* we don't support XPRESS compression yet */
+	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
+#endif
+	bind_info28->site_guid			= s->dest_dsa.site_guid;
+	if (s->ads_options.domain_behavior_version == 2) {
+		/* TODO: find out how this is really triggered! */
+		bind_info28->u1				= 528;
+	} else {
+		bind_info28->u1				= 516;
+	}
+	bind_info28->repl_epoch			= 0;
+
+	drsuapi->bind_info_ctr.length		= 28;
+	drsuapi->bind_info_ctr.info.info28	= *bind_info28;
+
 	drsuapi->bind_r.in.bind_guid = &drsuapi->bind_guid;
-	drsuapi->bind_r.in.bind_info = NULL;
+	drsuapi->bind_r.in.bind_info = &drsuapi->bind_info_ctr;
 	drsuapi->bind_r.out.bind_handle = &drsuapi->bind_handle;
 
 	req = dcerpc_drsuapi_DsBind_send(drsuapi->pipe, s, &drsuapi->bind_r);
@@ -935,6 +987,24 @@ static void becomeDC_drsuapi1_bind_recv(struct rpc_request *req)
 	if (!W_ERROR_IS_OK(s->drsuapi1.bind_r.out.result)) {
 		composite_error(c, werror_to_ntstatus(s->drsuapi1.bind_r.out.result));
 		return;
+	}
+
+	ZERO_STRUCT(s->drsuapi1.remote_info28);
+	if (s->drsuapi1.bind_r.out.bind_info) {
+		switch (s->drsuapi1.bind_r.out.bind_info->length) {
+		case 24: {
+			struct drsuapi_DsBindInfo24 *info24;
+			info24 = &s->drsuapi1.bind_r.out.bind_info->info.info24;
+			s->drsuapi1.remote_info28.supported_extensions	= info24->supported_extensions;
+			s->drsuapi1.remote_info28.site_guid		= info24->site_guid;
+			s->drsuapi1.remote_info28.u1			= info24->u1;
+			s->drsuapi1.remote_info28.repl_epoch		= 0;
+			break;
+		}
+		case 28:
+			s->drsuapi1.remote_info28 = s->drsuapi1.bind_r.out.bind_info->info.info28;
+			break;
+		}
 	}
 
 	becomeDC_drsuapi1_add_entry_send(s);
