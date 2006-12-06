@@ -222,6 +222,9 @@ find_CMSIdentifier(hx509_context context,
 
     q.match |= match;
 
+    q.match |= HX509_QUERY_MATCH_TIME;
+    q.timenow = time(NULL);
+
     ret = hx509_certs_find(context, certs, &q, &cert);
     if (ret == HX509_CERT_NOT_FOUND) {
 	char *str;
