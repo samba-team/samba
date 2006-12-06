@@ -208,20 +208,30 @@ test_query: test_query.in Makefile
 	mv test_query.tmp test_query
 
 EXTRA_DIST = \
-	hx509_err.et \
-	pkcs10.asn1 \
-	ocsp.asn1 \
 	crmf.asn1 \
+	data/bleichenbacher-bad.pem \
+	hx509_err.et \
 	hxtool-commands.in \
+	ocsp.asn1 \
+	pkcs10.asn1 \
 	test_chain.in \
 	test_cms.in \
 	test_crypto.in \
 	test_nist.in \
 	test_nist_cert.in \
 	test_nist_pkcs12.in \
-	test_req.in \
 	test_query.in \
-	data/bleichenbacher-bad.pem \
+	test_req.in \
+	tst-crypto-available1 \
+	tst-crypto-available2 \
+	tst-crypto-available3 \
+	tst-crypto-select \
+	tst-crypto-select1 \
+	tst-crypto-select2 \
+	tst-crypto-select3 \
+	tst-crypto-select4 \
+	tst-crypto-select5 \
+	tst-crypto-select6 \
 	data/bleichenbacher-good.pem \
 	data/bleichenbacher-sf-pad-correct.pem \
 	data/ca.crt \
