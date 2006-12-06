@@ -174,3 +174,5 @@ struct hx509_context_data {
     struct et_list *et_list;
 };
 
+/* _hx509_calculate_path flag field */
+#define HX509_CALCULATE_PATH_NO_ANCHOR 1
