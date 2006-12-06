@@ -1877,12 +1877,37 @@ hx509_query_match_option(hx509_query *q, hx509_query_option option)
 
 int
 hx509_query_match_issuer_serial(hx509_query *q,
-				Name *issuer, 
-				heim_integer *serialNumber)
+				const Name *issuer, 
+				const heim_integer *serialNumber)
 {
+    int ret;
+    if (q->serial) {
+	der_free_heim_integer(q->serial);
+	free(q->serial);
+    }
+    q->serial = malloc(sizeof(*q->serial));
+    if (q->serial == NULL)
+	return ENOMEM;
+    ret = der_copy_heim_integer(serialNumber, q->serial);
+    if (ret) {
+	free(q->serial);
+	q->serial = NULL;
+	return ret;
+    }
+    if (q->issuer_name) {
+	free_Name(q->issuer_name);
+	free(q->issuer_name);
+    }
+    q->issuer_name = malloc(sizeof(*q->issuer_name));
+    if (q->issuer_name == NULL)
+	return ENOMEM;
+    ret = copy_Name(issuer, q->issuer_name);
+    if (ret) {
+	free(q->issuer_name);
+	q->issuer_name = NULL;
+	return ret;
+    }
     q->match |= HX509_QUERY_MATCH_SERIALNUMBER|HX509_QUERY_MATCH_ISSUER_NAME;
-    q->serial = serialNumber;
-    q->issuer_name = issuer;
     return 0;
 }
 
@@ -1917,6 +1942,16 @@ hx509_query_match_cmp_func(hx509_query *q,
 void
 hx509_query_free(hx509_context context, hx509_query *q)
 {
+    if (q->serial) {
+	der_free_heim_integer(q->serial);
+	free(q->serial);
+	q->serial = NULL;
+    }
+    if (q->issuer_name) {
+	free_Name(q->issuer_name);
+	free(q->issuer_name);
+	q->issuer_name = NULL;
+    }
     if (q) {
 	free(q->friendlyname);
 	memset(q, 0, sizeof(*q));
