@@ -50,12 +50,17 @@ typedef struct _ibw_ctx_priv {
 
 	ibw_opts opts;
 
-	struct ibv_context     *context;
-	struct ibv_pd	       *pd;
 	struct rdma_cm_id	*cm_id; /* server cm id */
 
 	struct rdma_event_channel *cm_channel;
 	struct fd_event *cm_channel_event;
+
+	struct rdma_event_channel *cm_channel;
+	struct fd_event *cm_channel_event;
+	struct ibv_comp_channel *verbs_channel;
+	struct fd_event *verbs_channel_event;
+
+	struct ibv_pd	       *pd;
 
 	ibw_connstate_fn_t connstate_func;
 	ibw_receive_fn_t receive_func;
@@ -66,6 +71,7 @@ typedef struct _ibw_conn_priv {
 	struct ibv_qp	*qp;
 
 	struct rdma_cm_id *cm_id; /* client's cm id */
+	int	is_accepted;
 } ibw_conn_priv;
 
 /* 

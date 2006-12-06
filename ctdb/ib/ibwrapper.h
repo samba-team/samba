@@ -148,7 +148,7 @@ int ibw_listen(ibw_ctx *ctx, int backlog);
  *
  * Important: you won't get remote IP address (only internal conn info)
  */
-int ibw_accept(ibw_ctx *ctx, void *conn_userdata);
+int ibw_accept(ibw_ctx *ctx, ibw_conn *conn, void *conn_userdata);
 
 /*
  * Needs a normal internet address here
