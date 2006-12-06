@@ -27,6 +27,7 @@
 #include "lib/db_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/flags.h"
+#include "librpc/gen_ndr/ndr_drsuapi_c.h"
 
 struct libnet_BecomeDC_state {
 	struct composite_context *creq;
@@ -43,6 +44,15 @@ struct libnet_BecomeDC_state {
 		struct ldb_context *ldb;
 		const struct ldb_message *rootdse;
 	} ldap1, ldap2;
+
+	struct becomeDC_drsuapi {
+		struct libnet_BecomeDC_state *s;
+		struct dcerpc_binding *binding;
+		struct dcerpc_pipe *pipe;
+		struct drsuapi_DsBind bind_r;
+		struct GUID bind_guid;
+		struct policy_handle bind_handle;
+	} drsuapi1;
 
 	struct {
 		/* input */
@@ -800,6 +810,10 @@ static NTSTATUS becomeDC_ldap1_server_object_modify(struct libnet_BecomeDC_state
 	return NT_STATUS_OK;
 }
 
+static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
+					  struct becomeDC_drsuapi *drsuapi,
+					  void (*recv_fn)(struct composite_context *req));
+static void becomeDC_drsuapi1_connect_recv(struct composite_context *req);
 static void becomeDC_connect_ldap2(struct libnet_BecomeDC_state *s);
 
 static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
@@ -846,6 +860,40 @@ static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_server_object_modify(s);
+	if (!composite_is_ok(c)) return;
+
+	becomeDC_drsuapi_connect_send(s, &s->drsuapi1, becomeDC_drsuapi1_connect_recv);
+}
+
+static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
+					  struct becomeDC_drsuapi *drsuapi,
+					  void (*recv_fn)(struct composite_context *req))
+{
+	struct composite_context *c = s->creq;
+	struct composite_context *creq;
+	char *binding_str;
+
+	drsuapi->s = s;
+
+	binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,seal]", s->source_dsa.dns_name);
+	if (composite_nomem(binding_str, c)) return;
+
+	c->status = dcerpc_parse_binding(s, binding_str, &drsuapi->binding);
+	talloc_free(binding_str);
+	if (!composite_is_ok(c)) return;
+
+	creq = dcerpc_pipe_connect_b_send(s, drsuapi->binding, &dcerpc_table_drsuapi,
+					  s->libnet->cred, s->libnet->event_ctx);
+	composite_continue(c, creq, recv_fn, s);
+}
+
+static void becomeDC_drsuapi1_connect_recv(struct composite_context *req)
+{
+	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
+					  struct libnet_BecomeDC_state);
+	struct composite_context *c = s->creq;
+
+	c->status = dcerpc_pipe_connect_b_recv(req, s, &s->drsuapi1.pipe);
 	if (!composite_is_ok(c)) return;
 
 	becomeDC_connect_ldap2(s);
