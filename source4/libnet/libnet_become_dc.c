@@ -887,6 +887,11 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 	composite_continue(c, creq, recv_fn, s);
 }
 
+static void becomeDC_drsuapi_bind_send(struct libnet_BecomeDC_state *s,
+				       struct becomeDC_drsuapi *drsuapi,
+				       void (*recv_fn)(struct rpc_request *req));
+static void becomeDC_drsuapi1_bind_recv(struct rpc_request *req);
+
 static void becomeDC_drsuapi1_connect_recv(struct composite_context *req)
 {
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
@@ -895,6 +900,40 @@ static void becomeDC_drsuapi1_connect_recv(struct composite_context *req)
 
 	c->status = dcerpc_pipe_connect_b_recv(req, s, &s->drsuapi1.pipe);
 	if (!composite_is_ok(c)) return;
+
+	becomeDC_drsuapi_bind_send(s, &s->drsuapi1, becomeDC_drsuapi1_bind_recv);
+}
+
+static void becomeDC_drsuapi_bind_send(struct libnet_BecomeDC_state *s,
+				       struct becomeDC_drsuapi *drsuapi,
+				       void (*recv_fn)(struct rpc_request *req))
+{
+	struct composite_context *c = s->creq;
+	struct rpc_request *req;
+
+	GUID_from_string(DRSUAPI_DS_BIND_GUID_W2K3, &drsuapi->bind_guid);
+
+	drsuapi->bind_r.in.bind_guid = &drsuapi->bind_guid;
+	drsuapi->bind_r.in.bind_info = NULL;
+	drsuapi->bind_r.out.bind_handle = &drsuapi->bind_handle;
+
+	req = dcerpc_drsuapi_DsBind_send(drsuapi->pipe, s, &drsuapi->bind_r);
+	composite_continue_rpc(c, req, recv_fn, s);
+}
+
+static void becomeDC_drsuapi1_bind_recv(struct rpc_request *req)
+{
+	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
+					  struct libnet_BecomeDC_state);
+	struct composite_context *c = s->creq;
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (!W_ERROR_IS_OK(s->drsuapi1.bind_r.out.result)) {
+		composite_error(c, werror_to_ntstatus(s->drsuapi1.bind_r.out.result));
+		return;
+	}
 
 	becomeDC_connect_ldap2(s);
 }
