@@ -1875,6 +1875,17 @@ hx509_query_match_option(hx509_query *q, hx509_query_option option)
     }
 }
 
+int
+hx509_query_match_issuer_serial(hx509_query *q,
+				Name *issuer, 
+				heim_integer *serialNumber)
+{
+    q->match |= HX509_QUERY_MATCH_SERIALNUMBER|HX509_QUERY_MATCH_ISSUER_NAME;
+    q->serial = serialNumber;
+    q->issuer_name = issuer;
+    return 0;
+}
+
 
 int
 hx509_query_match_friendly_name(hx509_query *q, const char *name)
