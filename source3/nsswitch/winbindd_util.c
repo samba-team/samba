@@ -163,6 +163,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	domain->last_seq_check = 0;
 	domain->initialized = False;
 	domain->online = is_internal_domain(sid);
+	domain->check_online_timeout = 0;
 	if (sid) {
 		sid_copy(&domain->sid, sid);
 	}
@@ -462,7 +463,6 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 
 	init_dc_connection(domain);
 
-#if 1
 	if (!domain->initialized) {
 		/* If we return error here we can't do any cached authentication,
 		   but we may be in disconnected mode and can't initialize correctly.
@@ -472,13 +472,6 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 		DEBUG(5, ("winbindd_dual_init_connection: %s returning without initialization "
 			"online = %d\n", domain->name, (int)domain->online ));
 	}
-#else
-	if (!domain->initialized) {
-		DEBUG(1, ("Could not initialize domain %s\n",
-			  state->request.domain_name));
-		return WINBINDD_ERROR;
-	}
-#endif
 
 	fstrcpy(state->response.data.domain_info.name, domain->name);
 	fstrcpy(state->response.data.domain_info.alt_name, domain->alt_name);

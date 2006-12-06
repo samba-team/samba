@@ -7,6 +7,7 @@
    Copyright (C) Andrew Bartlett           2002
    Copyright (C) Gerald (Jerry) Carter     2003-2005.
    Copyright (C) Volker Lendecke           2004-2005
+   Copyright (C) Jeremy Allison		   2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -64,7 +65,27 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain);
 static void set_dc_type_and_flags( struct winbindd_domain *domain );
+
+/****************************************************************
+ If we're still offline, exponentially increase the timeout check.
+****************************************************************/
+
+static void calc_new_online_timeout(struct winbindd_domain *domain)
+{
+	if (domain->startup) {
+		domain->check_online_timeout = 10;
+	} else if (domain->check_online_timeout == 0) {
+		domain->check_online_timeout = lp_winbind_cache_time();
+	} else {
+		uint32 new_to = (domain->check_online_timeout * domain->check_online_timeout);
+		if (new_to < domain->check_online_timeout) {
+			new_to = 0x7FFFFFFF;
+		}
+		domain->check_online_timeout = new_to;
+	}
+}
 
 /****************************************************************
  Handler triggered if we're offline to try and detect a DC.
@@ -104,8 +125,10 @@ static void check_domain_online_handler(struct timed_event *te,
 
 	/* This call takes care of setting the online
 	   flag to true if we connected, or re-adding
-	   the offline handler if false. */
-	init_dc_connection(domain);
+	   the offline handler if false. Bypasses online
+	   check so always does network calls. */
+
+        init_dc_connection_network(domain);
 }
 
 /****************************************************************
@@ -130,6 +153,11 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 	domain->online = False;
 
+	/* Offline domains are always initialized. They're
+	   re-initialized when they go back online. */
+
+	domain->initialized = True;
+
 	/* We only add the timeout handler that checks and
 	   allows us to go back online when we've not
 	   been told to remain offline. */
@@ -143,10 +171,12 @@ void set_domain_offline(struct winbindd_domain *domain)
 	/* If we're in statup mode, check again in 10 seconds, not in
 	   lp_winbind_cache_time() seconds (which is 5 mins by default). */
 
+	if (domain->check_online_timeout == 0) {
+		calc_new_online_timeout(domain);
+	}
+
 	domain->check_online_event = add_timed_event( NULL,
-						domain->startup ?
-							timeval_current_ofs(10,0) : 
-							timeval_current_ofs(lp_winbind_cache_time(), 0),
+						timeval_current_ofs(domain->check_online_timeout,0),
 						"check_domain_online_handler",
 						check_domain_online_handler,
 						domain);
@@ -205,6 +235,12 @@ static void set_domain_online(struct winbindd_domain *domain)
 		if (domain->backend == &reconnect_methods) {
 			domain->backend = NULL;
 		}
+	}
+
+	/* Ensure we have no online timeout checks. */
+	domain->check_online_timeout = 0;
+	if (domain->check_online_event) {
+		TALLOC_FREE(domain->check_online_event);
 	}
 
 	domain->online = True;
@@ -1203,9 +1239,10 @@ static BOOL connection_ok(struct winbindd_domain *domain)
 	return True;
 }
 
-/* Initialize a new connection up to the RPC BIND. */
+/* Initialize a new connection up to the RPC BIND.
+   Bypass online status check so always does network calls. */
 
-NTSTATUS init_dc_connection(struct winbindd_domain *domain)
+static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain)
 {
 	NTSTATUS result;
 
@@ -1231,6 +1268,16 @@ NTSTATUS init_dc_connection(struct winbindd_domain *domain)
 	}
 
 	return result;
+}
+
+NTSTATUS init_dc_connection(struct winbindd_domain *domain)
+{
+	if (domain->initialized && !domain->online) {
+		/* We check for online status elsewhere. */
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	}
+
+	return init_dc_connection_network(domain);
 }
 
 /******************************************************************************
