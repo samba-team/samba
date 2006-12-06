@@ -1,3 +1,7 @@
+2006-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add rsakey.der to EXTRA_DIST.
+	
 2006-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add test_crypto.in to EXTRA_DIST.
