@@ -155,6 +155,9 @@ static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp
 			   int fd, SMB_OFF_T len);
 static BOOL smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, int fd,
 		       int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp, int fd,
+				       uint32 share_mode);
 static BOOL smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd,
 		       SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 static int smb_full_audit_symlink(vfs_handle_struct *handle,
@@ -374,6 +377,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_lock),	SMB_VFS_OP_LOCK,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_kernel_flock),	SMB_VFS_OP_KERNEL_FLOCK,
+	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_getlock),	SMB_VFS_OP_GETLOCK,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_symlink),	SMB_VFS_OP_SYMLINK,
@@ -541,6 +546,7 @@ static struct {
 	{ SMB_VFS_OP_UTIME,	"utime" },
 	{ SMB_VFS_OP_FTRUNCATE,	"ftruncate" },
 	{ SMB_VFS_OP_LOCK,	"lock" },
+	{ SMB_VFS_OP_KERNEL_FLOCK,	"kernel_flock" },
 	{ SMB_VFS_OP_GETLOCK,	"getlock" },
 	{ SMB_VFS_OP_SYMLINK,	"symlink" },
 	{ SMB_VFS_OP_READLINK,	"readlink" },
@@ -1288,6 +1294,20 @@ static BOOL smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, in
 	result = SMB_VFS_NEXT_LOCK(handle, fsp, fd, op, offset, count, type);
 
 	do_log(SMB_VFS_OP_LOCK, (result >= 0), handle, "%s", fsp->fsp_name);
+
+	return result;
+}
+
+static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp, int fd,
+				       uint32 share_mode)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, fd, share_mode);
+
+	do_log(SMB_VFS_OP_KERNEL_FLOCK, (result >= 0), handle, "%s",
+	       fsp->fsp_name);
 
 	return result;
 }

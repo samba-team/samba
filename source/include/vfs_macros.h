@@ -297,7 +297,7 @@
 #define SMB_VFS_NEXT_UTIME(handle, path, times) ((handle)->vfs_next.ops.utime((handle)->vfs_next.handles.utime, (path), (times)))
 #define SMB_VFS_NEXT_FTRUNCATE(handle, fsp, fd, offset) ((handle)->vfs_next.ops.ftruncate((handle)->vfs_next.handles.ftruncate, (fsp), (fd), (offset)))
 #define SMB_VFS_NEXT_LOCK(handle, fsp, fd, op, offset, count, type) ((handle)->vfs_next.ops.lock((handle)->vfs_next.handles.lock, (fsp), (fd) ,(op), (offset), (count), (type)))
-#define SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, fd, share_mode)((handle)->vfs_next.ops.lock((handle)->vfs_next.handles.kernel_flock, (fsp), (fd), (share_mode)))
+#define SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, fd, share_mode)((handle)->vfs_next.ops.kernel_flock((handle)->vfs_next.handles.kernel_flock, (fsp), (fd), (share_mode)))
 #define SMB_VFS_NEXT_GETLOCK(handle, fsp, fd, poffset, pcount, ptype, ppid) ((handle)->vfs_next.ops.getlock((handle)->vfs_next.handles.getlock, (fsp), (fd), (poffset), (pcount), (ptype), (ppid)))
 #define SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath) ((handle)->vfs_next.ops.symlink((handle)->vfs_next.handles.symlink, (oldpath), (newpath)))
 #define SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz) ((handle)->vfs_next.ops.readlink((handle)->vfs_next.handles.readlink, (path), (buf), (bufsiz)))
