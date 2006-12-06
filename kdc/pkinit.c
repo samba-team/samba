@@ -775,6 +775,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 					NULL,
 					cert,
 					client_params->peer,
+					/* XXX should be the clients anchors */
 					kdc_identity->anchors,
 					kdc_identity->certpool,
 					&signed_data);
@@ -888,6 +889,7 @@ pk_mk_pa_reply_dh(krb5_context context,
 					NULL,
 					cert,
 					client_params->peer,
+					/* XXX should be the clients anchors */
 					kdc_identity->anchors,
 					kdc_identity->certpool,
 					&signed_data);
