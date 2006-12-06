@@ -1360,6 +1360,35 @@ add_principal_mapping(krb5_context context,
    return 0;
 }
 
+krb5_error_code
+_kdc_add_inital_verified_cas(krb5_context context,
+			     krb5_kdc_configuration *config,
+			     pk_client_params *params,
+			     EncTicketPart *tkt)
+{
+    AD_INITIAL_VERIFIED_CAS cas;
+    krb5_error_code ret;
+    krb5_data data;
+    size_t size;
+
+    memset(&cas, 0, sizeof(cas));
+    
+    /* XXX add CAs to cas here */
+
+    ASN1_MALLOC_ENCODE(AD_INITIAL_VERIFIED_CAS, data.data, data.length,
+		       &cas, &size, ret);
+    if (ret)
+	return ret;
+    if (data.length != size)
+	krb5_abortx(context, "internal asn.1 encoder error");
+
+    ret = _kdc_tkt_add_if_relevant_ad(context, tkt, 
+				      ad_initial_verified_cas, &data);
+    krb5_data_free(&data);
+    return ret;
+}
+
+
 
 krb5_error_code
 _kdc_pk_initialize(krb5_context context,
