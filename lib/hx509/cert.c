@@ -688,6 +688,9 @@ certificate_is_anchor(hx509_context context,
     hx509_cert c;
     int ret;
 
+    if (trust_anchors == NULL)
+	return 0;
+
     _hx509_query_clear(&q);
 
     q.match = HX509_QUERY_MATCH_CERTIFICATE;
@@ -898,6 +901,7 @@ _hx509_path_free(hx509_path *path)
 
 int
 _hx509_calculate_path(hx509_context context,
+		      int flags,
 		      time_t time_now,
 		      hx509_certs anchors,
 		      unsigned int max_depth,
@@ -917,7 +921,7 @@ _hx509_calculate_path(hx509_context context,
 
     current = hx509_cert_ref(cert);
 
-    while (anchors == NULL || !certificate_is_anchor(context, anchors, current)) {
+    while (!certificate_is_anchor(context, anchors, current)) {
 
 	ret = find_parent(context, time_now, anchors, path, 
 			  pool, current, &parent);
@@ -936,6 +940,15 @@ _hx509_calculate_path(hx509_context context,
 	    return HX509_PATH_TOO_LONG;
 	}
     }
+
+    if ((flags & HX509_CALCULATE_PATH_NO_ANCHOR) && 
+	path->len > 0 && 
+	certificate_is_anchor(context, anchors, path->val[path->len - 1]))
+    {
+	hx509_cert_free(path->val[path->len - 1]);
+	path->len--;
+    }
+
     hx509_cert_free(current);
     return 0;
 }
@@ -1397,7 +1410,7 @@ hx509_verify_path(hx509_context context,
      * Calculate the path from the certificate user presented to the
      * to an anchor.
      */
-    ret = _hx509_calculate_path(context, ctx->time_now,
+    ret = _hx509_calculate_path(context, 0, ctx->time_now,
 				ctx->trust_anchors, ctx->max_depth,
 				cert, pool, &path);
     if (ret)
