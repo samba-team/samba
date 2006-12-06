@@ -1,5 +1,7 @@
 2006-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am (EXTRA_DIST): add data/pkinit-proxy* files
+
 	* Makefile.am (EXTRA_DIST): add tst-crypto* files
 
 	* cert.c (hx509_query_match_issuer_serial): make a copy of the
