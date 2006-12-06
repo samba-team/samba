@@ -260,6 +260,9 @@ EXTRA_DIST = \
 	data/ocsp-responder.crt \
 	data/ocsp-responder.key \
 	data/openssl.cnf \
+	data/pkinit-proxy-chain.crt \
+	data/pkinit-proxy.crt \
+	data/pkinit-proxy.key \
 	data/pkinit-pw.key \
 	data/pkinit.crt \
 	data/pkinit.key \
