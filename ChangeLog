@@ -1,5 +1,14 @@
 2006-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c (_kdc_as_rep): add AD-INITAL-VERIFIED-CAS to the
+	encrypted ticket
+
+	* kdc/pkinit.c (_kdc_add_inital_verified_cas): new function, adds
+	an empty (for now) AD_INITIAL_VERIFIED_CAS to tell the clients
+	that we vouches for the CA.
+
+	* kdc/kerberos5.c (_kdc_tkt_add_if_relevant_ad): new function.
+
 	* lib/Makefile.am: Make the directories test automake conditional
 	so automake can include directories in make dist step.
 
