@@ -140,4 +140,6 @@ test_crypto: test_crypto.in Makefile
 
 CLEANFILES = hcrypto hcrypto-link test_crypto.tmp
 
-EXTRA_DIST = test_crypto.in
+EXTRA_DIST = \
+	rsakey.der \
+	test_crypto.in
