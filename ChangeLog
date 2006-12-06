@@ -1,5 +1,10 @@
 2006-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c (_kdc_pk_rd_padata): leak less memory for
+	ExternalPrincipalIdentifiers
+
+	* kdc/pkinit.c: Parse and use PA-PK-AS-REQ.trustedCertifiers
+
 	* kdc/pkinit.c: Add comment that the anchors in the signed data
 	really should be the trust anchors of the client.
 
