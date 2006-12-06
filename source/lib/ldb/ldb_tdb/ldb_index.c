@@ -296,9 +296,6 @@ static int ltdb_index_dn_objectclass(struct ldb_module *module,
 		struct dn_list *list2;
 		tree2.operation = LDB_OP_EQUALITY;
 		tree2.u.equality.attr = LTDB_OBJECTCLASS;
-		if (!tree2.u.equality.attr) {
-			return -1;
-		}
 		tree2.u.equality.value.data = 
 			(uint8_t *)talloc_strdup(list, subclasses[i]);
 		if (tree2.u.equality.value.data == NULL) {
