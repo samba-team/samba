@@ -1467,6 +1467,12 @@ _kdc_as_rep(krb5_context context,
 				  &reply_key, rep.padata);
 	if (ret)
 	    goto out;
+	ret = _kdc_add_inital_verified_cas(context,
+					   config,
+					   pkp,
+					   &et);
+	if (ret)
+	    goto out;
     }
 #endif
 
