@@ -1,5 +1,8 @@
 2006-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* crypto.c (rsa_create_signature): Abort when signature is longer,
+	not shorter.
+
 	* cms.c: Provide time to _hx509_calculate_path so we don't send no
 	longer valid certs to our peer.
 
