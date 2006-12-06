@@ -1,5 +1,10 @@
-2006-11-16  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-compile-et.m4: set automake symbol COM_ERR when we build
+	local com_err
+	
+2006-11-16  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* valgrind-suppressions: We shouldn't be running /bin/ls under
 	valgrind, but for now, at least make it easier to see any other
 	warnings. From Andrew Bartlett.
