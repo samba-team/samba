@@ -119,7 +119,7 @@ _kdc_add_KRB5SignedPath(krb5_context context,
     if (server && principals) {
 	ret = add_KRB5SignedPathPrincipals(principals, server);
 	if (ret)
-	    goto out;
+	    return ret;
     }
 
     {
@@ -131,7 +131,7 @@ _kdc_add_KRB5SignedPath(krb5_context context,
 	ASN1_MALLOC_ENCODE(KRB5SignedPathData, data.data, data.length,
 			   &spd, &size, ret);
 	if (ret)
-	    goto out;
+	    return ret;
 	if (data.length != size)
 	    krb5_abortx(context, "internal asn.1 encoder error");
     }
@@ -159,12 +159,12 @@ _kdc_add_KRB5SignedPath(krb5_context context,
     krb5_crypto_destroy(context, crypto);
     free(data.data);
     if (ret)
-	goto out;
+	return ret;
 
     ASN1_MALLOC_ENCODE(KRB5SignedPath, data.data, data.length, &sp, &size, ret);
     free_Checksum(&sp.cksum);
     if (ret)
-	goto out;
+	return ret;
     if (data.length != size)
 	krb5_abortx(context, "internal asn.1 encoder error");
 
@@ -174,46 +174,11 @@ _kdc_add_KRB5SignedPath(krb5_context context,
      * authorization data field.
      */
 
-    if (tkt->authorization_data == NULL) {
-	tkt->authorization_data = calloc(1, sizeof(*tkt->authorization_data));
-	if (tkt->authorization_data == NULL) {
-	    ret = ENOMEM;
-	    goto out;
-	}
-    }
+    ret = _kdc_tkt_add_if_relevant_ad(context, tkt,
+				      KRB5_AUTHDATA_SIGNTICKET, &data);
+    krb5_data_free(&data);
 
-    /* add the entry to the last element */
-    {
-	AuthorizationData ad = { 0, NULL };
-	AuthorizationDataElement ade;
-
-	ade.ad_type = KRB5_AUTHDATA_SIGNTICKET;
-	ade.ad_data = data;
-
-	ret = add_AuthorizationData(&ad, &ade);
-	krb5_data_free(&data);
-	if (ret)
-	    return ret;
-
-	ASN1_MALLOC_ENCODE(AuthorizationData, data.data, data.length, 
-			   &ad, &size, ret);
-	free_AuthorizationData(&ad);
-	if (ret)
-	    return ret;
-	if (data.length != size)
-	    krb5_abortx(context, "internal asn.1 encoder error");
-	
-	ade.ad_type = KRB5_AUTHDATA_IF_RELEVANT;
-	ade.ad_data = data;
-
-	ret = add_AuthorizationData(tkt->authorization_data, &ade);
-	krb5_data_free(&data);
-	if (ret)
-	    return ret;
-    }
-
-out:
-    return 0;
+    return ret;
 }
 
 static krb5_error_code
