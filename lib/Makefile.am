@@ -11,7 +11,7 @@ endif
 if DCE
 dir_dce = kdfs
 endif
-if !COM_ERR
+if COM_ERR
 dir_com_err = com_err
 endif
 if !HAVE_OPENSSL
