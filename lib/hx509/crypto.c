@@ -321,8 +321,8 @@ rsa_create_signature(hx509_context context,
 			       "RSA private decrypt failed: %d", ret);
 	return ret;
     }
-    if (ret < sig->length)
-	_hx509_abort("RSA signature prelen shorter the output len");
+    if (ret > sig->length)
+	_hx509_abort("RSA signature prelen longer the output len");
 
     sig->length = ret;
     
