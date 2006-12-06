@@ -362,64 +362,6 @@ get_dh_param(krb5_context context,
     return ret;
 }
 
-#if 0
-/* 
- * XXX We only need this function if there are several certs for the
- * KDC to choose from, and right now, we can't handle that so punt for
- * now.
- *
- * If client has sent a list of CA's trusted by him, make sure our
- * CA is in the list.
- *
- */
-
-static void
-verify_trusted_ca(PA_PK_AS_REQ_19 *r)
-{
-
-    if (r.trustedCertifiers != NULL) {
-	X509_NAME *kdc_issuer;
-	X509 *kdc_cert;
-
-	kdc_cert = sk_X509_value(kdc_identity->cert, 0);
-	kdc_issuer = X509_get_issuer_name(kdc_cert);
-     
-	/* XXX will work for heirarchical CA's ? */
-	/* XXX also serial_number should be compared */
-
-	ret = KRB5_KDC_ERR_KDC_NOT_TRUSTED;
-	for (i = 0; i < r.trustedCertifiers->len; i++) {
-	    TrustedCA_19 *ca = &r.trustedCertifiers->val[i];
-
-	    switch (ca->element) {
-	    case choice_TrustedCA_19_caName: {
-		X509_NAME *name;
-		unsigned char *p;
-
-		p = ca->u.caName.data;
-		name = d2i_X509_NAME(NULL, &p, ca->u.caName.length);
-		if (name == NULL) /* XXX should this be a failure instead ? */
-		    break;
-		if (X509_NAME_cmp(name, kdc_issuer) == 0)
-		    ret = 0;
-		X509_NAME_free(name);
-		break;
-	    }
-	    case choice_TrustedCA_19_issuerAndSerial:
-		/* IssuerAndSerialNumber issuerAndSerial */
-		break;
-	    default:
-		break;
-	    }
-	    if (ret == 0)
-		break;
-	}
-	if (ret)
-	    goto out;
-    }
-}
-#endif /* 0 */
-
 krb5_error_code
 _kdc_pk_rd_padata(krb5_context context,
 		  krb5_kdc_configuration *config,
