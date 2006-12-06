@@ -203,6 +203,7 @@ struct winbindd_domain {
 
 	/* Callback we use to try put us back online. */
 
+	uint32 check_online_timeout;
 	struct timed_event *check_online_event;
 
 	/* Linked list info */
