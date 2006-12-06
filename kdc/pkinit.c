@@ -471,19 +471,21 @@ _kdc_pk_rd_padata(krb5_context context,
 		    hx509_query_free(kdc_identity->hx509ctx, q);
 		    continue;
 		}
-		hx509_query_match_issuer_serial(q, &iasn.issuer, &iasn.serialNumber);
+		ret = hx509_query_match_issuer_serial(q, &iasn.issuer, &iasn.serialNumber);
+		free_IssuerAndSerialNumber(&iasn);
+		if (ret)
+		    continue;
 
 		ret = hx509_certs_find(kdc_identity->hx509ctx,
 				       kdc_identity->certs,
 				       q,
 				       &cert);
 		hx509_query_free(kdc_identity->hx509ctx, q);
-		free_IssuerAndSerialNumber(&iasn);
-
-		if (ret == 0)
-		    hx509_certs_add(kdc_identity->hx509ctx,
-				    client_params->client_anchors,
-				    cert);
+		if (ret)
+		    continue;
+		hx509_certs_add(kdc_identity->hx509ctx, 
+				client_params->client_anchors, cert);
+		hx509_cert_free(cert);
 	    }
 	}
 
