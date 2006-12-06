@@ -83,12 +83,14 @@ if test "${krb_cv_com_err}" = "yes"; then
     LIB_com_err_a=""
     LIB_com_err_so=""
     AC_MSG_NOTICE(Using the already-installed com_err)
+    localcomerr=no
 elif test "${krb_cv_com_err}" = "cross"; then
     DIR_com_err="com_err"
     LIB_com_err="\$(top_builddir)/lib/com_err/libcom_err.la"
     LIB_com_err_a="\$(top_builddir)/lib/com_err/.libs/libcom_err.a"
     LIB_com_err_so="\$(top_builddir)/lib/com_err/.libs/libcom_err.so"
     AC_MSG_NOTICE(Using our own com_err with toolchain compile_et)
+    localcomerr=yes
 else
     COMPILE_ET="\$(top_builddir)/lib/com_err/compile_et"
     DIR_com_err="com_err"
@@ -96,7 +98,9 @@ else
     LIB_com_err_a="\$(top_builddir)/lib/com_err/.libs/libcom_err.a"
     LIB_com_err_so="\$(top_builddir)/lib/com_err/.libs/libcom_err.so"
     AC_MSG_NOTICE(Using our own com_err)
+    localcomerr=yes
 fi
+AM_CONDITIONAL(COM_ERR, test "$localcomerr" = yes)dnl
 AC_SUBST(DIR_com_err)
 AC_SUBST(LIB_com_err)
 AC_SUBST(LIB_com_err_a)
