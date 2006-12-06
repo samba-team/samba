@@ -30,6 +30,11 @@ struct dcesrv_remote_private {
 	struct dcerpc_pipe *c_pipe;
 };
 
+static NTSTATUS remote_op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
+{
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {
         NTSTATUS status;
@@ -256,6 +261,7 @@ static BOOL remote_fill_interface(struct dcesrv_interface *iface, const struct d
 
 	iface->ndr_pull = remote_op_ndr_pull;
 	iface->dispatch = remote_op_dispatch;
+	iface->reply = remote_op_reply;
 	iface->ndr_push = remote_op_ndr_push;
 
 	iface->private = if_tabl;
