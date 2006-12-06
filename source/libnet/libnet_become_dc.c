@@ -921,6 +921,8 @@ static void becomeDC_drsuapi_bind_send(struct libnet_BecomeDC_state *s,
 	composite_continue_rpc(c, req, recv_fn, s);
 }
 
+static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s);
+
 static void becomeDC_drsuapi1_bind_recv(struct rpc_request *req)
 {
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
@@ -932,6 +934,71 @@ static void becomeDC_drsuapi1_bind_recv(struct rpc_request *req)
 
 	if (!W_ERROR_IS_OK(s->drsuapi1.bind_r.out.result)) {
 		composite_error(c, werror_to_ntstatus(s->drsuapi1.bind_r.out.result));
+		return;
+	}
+
+	becomeDC_drsuapi1_add_entry_send(s);
+}
+
+static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req);
+
+static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
+{
+	struct composite_context *c = s->creq;
+	struct rpc_request *req;
+	struct drsuapi_DsAddEntry *r;
+	struct drsuapi_DsReplicaObjectIdentifier *identifier;
+	uint32_t num_attributes;
+	struct drsuapi_DsReplicaAttribute *attributes;
+	struct dom_sid zero_sid;
+
+	ZERO_STRUCT(zero_sid);
+
+	r = talloc_zero(s, struct drsuapi_DsAddEntry);
+	if (composite_nomem(r, c)) return;
+
+	/* setup identifier */
+	identifier		= talloc(r, struct drsuapi_DsReplicaObjectIdentifier);
+	if (composite_nomem(identifier, c)) return;
+	identifier->guid	= GUID_zero();
+	identifier->sid		= zero_sid;
+	identifier->dn		= talloc_asprintf(identifier, "CN=NTDS Settings,%s",
+						  s->dest_dsa.server_dn_str);
+	if (composite_nomem(identifier->dn, c)) return;
+
+	/* allocate attribute array */
+	num_attributes	= 0;
+	attributes	= talloc_array(r, struct drsuapi_DsReplicaAttribute, num_attributes);
+	if (composite_nomem(attributes, c)) return;
+
+	/* TODO: set real attributes! */
+
+	/* setup request structure */
+	r->in.bind_handle						= &s->drsuapi1.bind_handle;
+	r->in.level							= 2;
+	r->in.req.req2.first_object.next_object				= NULL;
+	r->in.req.req2.first_object.object.identifier			= identifier;
+	r->in.req.req2.first_object.object.unknown1			= 0x00000000;	
+	r->in.req.req2.first_object.object.attribute_ctr.num_attributes	= num_attributes;
+	r->in.req.req2.first_object.object.attribute_ctr.attributes	= attributes;
+
+	req = dcerpc_drsuapi_DsAddEntry_send(s->drsuapi1.pipe, r, r);
+	composite_continue_rpc(c, req, becomeDC_drsuapi1_add_entry_recv, s);
+}
+
+static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
+{
+	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
+					  struct libnet_BecomeDC_state);
+	struct composite_context *c = s->creq;
+	struct drsuapi_DsAddEntry *r = talloc_get_type(req->ndr.struct_ptr,
+				       struct drsuapi_DsAddEntry);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (!W_ERROR_IS_OK(r->out.result)) {
+		composite_error(c, werror_to_ntstatus(r->out.result));
 		return;
 	}
 
