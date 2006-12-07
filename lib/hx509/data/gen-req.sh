@@ -81,10 +81,11 @@ gen_cert "/CN=kdc/C=SE" "ca" "kdc" "pkinit_kdc"
 gen_cert "/CN=Sub CA/C=SE" "ca" "sub-ca" "subca"
 gen_cert "/CN=Test sub cert/C=SE" "sub-ca" "sub-cert" "usr"
 gen_cert "/C=SE/CN=Test cert/CN=proxy" "test" "proxy" "proxy_cert" proxy-test
-gen_cert "/C=SE/CN=Test cert/CN=proxy2" "proxy-test" "proxy" "proxy_cert" proxy-level-test
+gen_cert "/C=SE/CN=Test cert/CN=proxy/CN=child" "proxy-test" "proxy" "proxy_cert" proxy-level-test
 gen_cert "/C=SE/CN=Test cert/CN=no-proxy" "test" "proxy" "usr_cert" no-proxy-test
 gen_cert "/C=SE/CN=Test cert/CN=proxy10" "test" "proxy" "proxy10_cert" proxy10-test
-gen_cert "/C=SE/CN=Test cert/CN=proxy10-child" "proxy10-test" "proxy" "proxy_cert" proxy10-child-test
+gen_cert "/C=SE/CN=Test cert/CN=proxy10/CN=child" "proxy10-test" "proxy" "proxy10_cert" proxy10-child-test
+gen_cert "/C=SE/CN=Test cert/CN=proxy10/CN=child/CN=child" "proxy10-child-test" "proxy" "proxy10_cert" proxy10-child-child-test
 
 
 # combine
