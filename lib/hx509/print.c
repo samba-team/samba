@@ -58,7 +58,7 @@ Time2string(const Time *T, char **str)
     s = malloc(30);
     if (s == NULL)
 	return ENOMEM;
-    strftime(s, 30, "%Y-%m-%d %M:%M:%S", tm);
+    strftime(s, 30, "%Y-%m-%d %H:%M:%S", tm);
     *str = s;
     return 0;
 }
