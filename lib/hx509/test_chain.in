@@ -195,4 +195,13 @@ ${hxtool} verify --missing-revoke \
     chain:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
+echo "proxy cert (third level)"
+${hxtool} verify --missing-revoke \
+    --allow-proxy-certificate \
+    cert:FILE:$srcdir/data/proxy10-child-child-test.crt \
+    chain:FILE:$srcdir/data/proxy10-child-test.crt \
+    chain:FILE:$srcdir/data/proxy10-test.crt \
+    chain:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
+
 exit 0
