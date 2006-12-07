@@ -35,6 +35,8 @@ struct libnet_BecomeDC_state {
 
 	struct libnet_context *libnet;
 
+	struct dom_sid zero_sid;
+
 	struct {
 		struct cldap_socket *sock;
 		struct cldap_netlogon io;
@@ -1023,9 +1025,6 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	struct drsuapi_DsReplicaObjectIdentifier *identifier;
 	uint32_t num_attrs, i = 0;
 	struct drsuapi_DsReplicaAttribute *attrs;
-	struct dom_sid zero_sid;
-
-	ZERO_STRUCT(zero_sid);
 
 	/* choose a random invocationId */
 	s->dest_dsa.invocation_id = GUID_random();
@@ -1037,7 +1036,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	identifier		= talloc(r, struct drsuapi_DsReplicaObjectIdentifier);
 	if (composite_nomem(identifier, c)) return;
 	identifier->guid	= GUID_zero();
-	identifier->sid		= zero_sid;
+	identifier->sid		= s->zero_sid;
 	identifier->dn		= talloc_asprintf(identifier, "CN=NTDS Settings,%s",
 						  s->dest_dsa.server_dn_str);
 	if (composite_nomem(identifier->dn, c)) return;
@@ -1152,7 +1151,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		/* value for nTDSDSA */
 		v[0].guid		= GUID_zero();
-		v[0].sid		= zero_sid;
+		v[0].sid		= s->zero_sid;
 		v[0].dn			= talloc_asprintf(v, "CN=NTDS-DSA,%s",
 							  s->forest.schema_dn_str);
 		if (composite_nomem(v->dn, c)) return;
@@ -1201,15 +1200,15 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		if (composite_nomem(v, c)) return;
 
 		v[0].guid		= GUID_zero();
-		v[0].sid		= zero_sid;
+		v[0].sid		= s->zero_sid;
 		v[0].dn			= s->forest.config_dn_str;
 
 		v[1].guid		= GUID_zero();
-		v[1].sid		= zero_sid;
+		v[1].sid		= s->zero_sid;
 		v[1].dn			= s->domain.dn_str;
 
 		v[2].guid		= GUID_zero();
-		v[2].sid		= zero_sid;
+		v[2].sid		= s->zero_sid;
 		v[2].dn			= s->forest.schema_dn_str;
 
 		vs[0].object		= &v[0];
@@ -1235,15 +1234,15 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		if (composite_nomem(v, c)) return;
 
 		v[0].guid		= GUID_zero();
-		v[0].sid		= zero_sid;
+		v[0].sid		= s->zero_sid;
 		v[0].dn			= s->forest.config_dn_str;
 
 		v[1].guid		= GUID_zero();
-		v[1].sid		= zero_sid;
+		v[1].sid		= s->zero_sid;
 		v[1].dn			= s->domain.dn_str;
 
 		v[2].guid		= GUID_zero();
-		v[2].sid		= zero_sid;
+		v[2].sid		= s->zero_sid;
 		v[2].dn			= s->forest.schema_dn_str;
 
 		vs[0].object		= &v[0];
@@ -1269,7 +1268,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		if (composite_nomem(v, c)) return;
 
 		v[0].guid		= GUID_zero();
-		v[0].sid		= zero_sid;
+		v[0].sid		= s->zero_sid;
 		v[0].dn			= s->forest.schema_dn_str;
 
 		vs[0].object		= &v[0];
@@ -1293,7 +1292,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		if (composite_nomem(v, c)) return;
 
 		v[0].guid		= GUID_zero();
-		v[0].sid		= zero_sid;
+		v[0].sid		= s->zero_sid;
 		v[0].dn			= s->domain.dn_str;
 
 		vs[0].object		= &v[0];
@@ -1361,7 +1360,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		if (composite_nomem(v, c)) return;
 
 		v[0].guid		= GUID_zero();
-		v[0].sid		= zero_sid;
+		v[0].sid		= s->zero_sid;
 		v[0].dn			= s->dest_dsa.computer_dn_str;
 
 		vs[0].object		= &v[0];
