@@ -42,6 +42,7 @@ CLEANFILES =		\
 	rtbl.h		\
 	test-mem.h	\
 	vers.h		\
+	vis.h		\
 	asn1.h		\
 	asn1_err.h	\
 	base64.h	\
