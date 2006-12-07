@@ -72,16 +72,18 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain );
  If we're still offline, exponentially increase the timeout check.
 ****************************************************************/
 
-static void calc_new_online_timeout(struct winbindd_domain *domain)
+static void calc_new_online_timeout_check(struct winbindd_domain *domain)
 {
+	int wbc = lp_winbind_cache_time();
+
 	if (domain->startup) {
 		domain->check_online_timeout = 10;
-	} else if (domain->check_online_timeout == 0) {
-		domain->check_online_timeout = lp_winbind_cache_time();
+	} else if (domain->check_online_timeout < wbc) {
+		domain->check_online_timeout = wbc;
 	} else {
-		uint32 new_to = (domain->check_online_timeout * domain->check_online_timeout);
-		if (new_to < domain->check_online_timeout) {
-			new_to = 0x7FFFFFFF;
+		uint32 new_to = domain->check_online_timeout * 3;
+		if (new_to > (3*60*60)) {
+			new_to = 3*60*60; /* 3 hours. */
 		}
 		domain->check_online_timeout = new_to;
 	}
@@ -171,7 +173,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 	/* If we're in statup mode, check again in 10 seconds, not in
 	   lp_winbind_cache_time() seconds (which is 5 mins by default). */
 
-	calc_new_online_timeout(domain);
+	calc_new_online_timeout_check(domain);
 
 	domain->check_online_event = add_timed_event( NULL,
 						timeval_current_ofs(domain->check_online_timeout,0),
