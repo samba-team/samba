@@ -228,9 +228,7 @@ check_altName(hx509_validate_ctx ctx,
     for (i = 0; i < gn.len; i++) {
 	switch (gn.val[i].element) {
 	case choice_GeneralName_otherName:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "other name oid: ");
-	    hx509_oid_print(&gn.val[i].u.otherName.type_id,
-			    validate_vprint, ctx);
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%sAltName otherName ", name);
 	    if (der_heim_oid_cmp(&gn.val[i].u.otherName.type_id,
 				 oid_id_pkinit_san()) == 0)
 	    {
@@ -238,7 +236,7 @@ check_altName(hx509_validate_ctx ctx,
 		unsigned j;
 		size_t size;
 
-		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, " pk-init: ");
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "pk-init: ");
 
 		ret = decode_KRB5PrincipalName(gn.val[i].u.otherName.value.data, 
 					       gn.val[i].u.otherName.value.length,
@@ -263,7 +261,12 @@ check_altName(hx509_validate_ctx ctx,
 		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", kn.realm);
 
 		free_KRB5PrincipalName(&kn);
+	    } else {
+		hx509_oid_print(&gn.val[i].u.otherName.type_id,
+				validate_vprint, ctx);
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, " unknown\n");
 	    }
+
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
 	    break;
 	case choice_GeneralName_rfc822Name:
