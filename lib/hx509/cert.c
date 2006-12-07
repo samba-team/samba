@@ -556,7 +556,7 @@ check_key_usage(hx509_context context, const Certificate *cert,
 	char buf[256], *name;
 
 	unparse_flags(missing, asn1_KeyUsage_units(), buf, sizeof(buf));
-	_hx509_unparse_Name(&cert->tbsCertificate.issuer, &name);
+	_hx509_unparse_Name(&cert->tbsCertificate.subject, &name);
 	hx509_set_error_string(context, 0, HX509_KU_CERT_MISSING,
 			       "Key usage %s required but missing "
 			       "from certifiate %s", buf, name);
