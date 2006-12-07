@@ -418,12 +418,6 @@ id-pkix-pe OBJECT IDENTIFIER ::= { id-pkix(7) 1 }
 
 id-pe-proxyCertInfo OBJECT IDENTIFIER ::= { id-pkix-pe 14 }
 
-
-   id-on   OBJECT IDENTIFIER ::= { id-pkix 8 }
-
-   id-on-dnsSRV OBJECT IDENTIFIER ::= { id-on 7 }
-
-
 ProxyPolicy ::= SEQUENCE {
 	policyLanguage		OBJECT IDENTIFIER,
 	policy			OCTET STRING OPTIONAL
