@@ -102,6 +102,7 @@ struct libnet_BecomeDC_state {
 		const char *computer_dn_str;
 		const char *server_dn_str;
 		const char *ntds_dn_str;
+		struct GUID ntds_guid;
 		struct GUID invocation_id;
 		uint32_t user_account_control;
 	} dest_dsa;
@@ -1401,6 +1402,57 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
 		composite_error(c, werror_to_ntstatus(r->out.result));
+		return;
+	}
+
+	if (r->out.level == 3) {
+		if (r->out.ctr.ctr3.count != 1) {
+			WERROR status;
+
+			if (r->out.ctr.ctr3.level != 1) {
+				composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+				return;
+			}
+
+			if (!r->out.ctr.ctr3.error) {
+				composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+				return;
+			}
+
+			status = r->out.ctr.ctr3.error->info1.status;
+
+			if (!r->out.ctr.ctr3.error->info1.info) {
+				composite_error(c, werror_to_ntstatus(status));
+				return;
+			}
+
+			/* see if we can get a more detailed error */
+			switch (r->out.ctr.ctr3.error->info1.level) {
+			case 1:
+				status = r->out.ctr.ctr3.error->info1.info->error1.status;
+				break;
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+				status = r->out.ctr.ctr3.error->info1.info->errorX.status;
+				break;
+			}
+
+			composite_error(c, werror_to_ntstatus(status));
+			return;
+		}
+
+		s->dest_dsa.ntds_guid	= r->out.ctr.ctr3.objects[0].guid;
+	} else if (r->out.level == 2) {
+		if (r->out.ctr.ctr2.count != 1) {
+			composite_error(c, werror_to_ntstatus(r->out.ctr.ctr2.error.status));
+			return;
+		}
+
+		s->dest_dsa.ntds_guid	= r->out.ctr.ctr2.objects[0].guid;
+	} else {
+		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
