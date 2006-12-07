@@ -1458,38 +1458,45 @@ hx509_verify_path(hx509_context context,
 	    /* XXX make constants for keyusage */
 	    ret = check_key_usage(context, c, 1 << 5,
 				  REQUIRE_RFC3280(ctx) ? TRUE : FALSE);
-	    if (ret)
+	    if (ret) {
+		hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
+				       "Key usage missing from CA certificate");
 		goto out;
+	    }
 	    break;
 	case PROXY_CERT: {
 	    ProxyCertInfo info;	    
 
 	    if (is_proxy_cert(context, c, &info) == 0) {
-		Name name;
 		int j;
 
 		if (info.pCPathLenConstraint != NULL &&
 		    *info.pCPathLenConstraint < i + 1)
 		{
 		    free_ProxyCertInfo(&info);
-		    hx509_clear_error_string(context);
 		    ret = HX509_PATH_TOO_LONG;
+		    hx509_set_error_string(context, 0, ret,
+					   "Proxy certificate chain "
+					   "longer then allowed");
 		    goto out;
 		}
+		free_ProxyCertInfo(&info);
 		
 		j = 0;
 		if (find_extension(c, oid_id_x509_ce_subjectAltName(), &j)) {
-		    free_ProxyCertInfo(&info);
-		    hx509_clear_error_string(context);
 		    ret = HX509_PROXY_CERT_INVALID;
+		    hx509_set_error_string(context, 0, ret, 
+					   "Proxy certificate have explicity "
+					   "forbidden subjectAltName");
 		    goto out;
 		}
 
 		j = 0;
 		if (find_extension(c, oid_id_x509_ce_issuerAltName(), &j)) {
-		    free_ProxyCertInfo(&info);
-		    hx509_clear_error_string(context);
 		    ret = HX509_PROXY_CERT_INVALID;
+		    hx509_set_error_string(context, 0, ret, 
+					   "Proxy certificate have explicity "
+					   "forbidden issuerAltName");
 		    goto out;
 		}
 			
@@ -1500,72 +1507,85 @@ hx509_verify_path(hx509_context context,
 		 * then check with the EE cert when we get to it.
 		 */
 
-		ret = copy_Name(&c->tbsCertificate.subject, &name);
-		if (ret) {
-		    hx509_clear_error_string(context);
-		    free_ProxyCertInfo(&info);
-		    goto out;
-		}
-
-		j = name.u.rdnSequence.len;
-		if (name.u.rdnSequence.len < 2 
-		    || name.u.rdnSequence.val[j - 1].len > 1
-		    || der_heim_oid_cmp(&name.u.rdnSequence.val[j - 1].val[0].type,
-					oid_id_at_commonName()))
-		{
-		    free_ProxyCertInfo(&info);
-		    hx509_clear_error_string(context);
-		    ret = HX509_PROXY_CERT_NAME_WRONG;
-		    goto out;
-		}
-
-		free_RelativeDistinguishedName(&name.u.rdnSequence.val[j - 1]);
-		name.u.rdnSequence.len -= 1;
-
 		if (proxy_cert_depth) {
-		    ret = _hx509_name_cmp(&proxy_issuer, &name);
-		    free_Name(&name);
+		    ret = _hx509_name_cmp(&proxy_issuer, &c->tbsCertificate.subject);
 		    if (ret) {
-			free_ProxyCertInfo(&info);
-			hx509_clear_error_string(context);
 			ret = HX509_PROXY_CERT_NAME_WRONG;
+			hx509_set_error_string(context, 0, ret,
+					       "Base proxy name not right");
 			goto out;
 		    }
-		} else {
-		    proxy_issuer = name;
 		}
 
-		free_ProxyCertInfo(&info);
+		free_Name(&proxy_issuer);
+
+		ret = copy_Name(&c->tbsCertificate.subject, &proxy_issuer);
+		if (ret) {
+		    hx509_clear_error_string(context);
+		    goto out;
+		}
+
+		j = proxy_issuer.u.rdnSequence.len;
+		if (proxy_issuer.u.rdnSequence.len < 2 
+		    || proxy_issuer.u.rdnSequence.val[j - 1].len > 1
+		    || der_heim_oid_cmp(&proxy_issuer.u.rdnSequence.val[j - 1].val[0].type,
+					oid_id_at_commonName()))
+		{
+		    ret = HX509_PROXY_CERT_NAME_WRONG;
+		    hx509_set_error_string(context, 0, ret,
+					   "Proxy name too short or "
+					   "does not have Common name "
+					   "at the top");
+		    goto out;
+		}
+
+		free_RelativeDistinguishedName(&proxy_issuer.u.rdnSequence.val[j - 1]);
+		proxy_issuer.u.rdnSequence.len -= 1;
+
+		ret = _hx509_name_cmp(&proxy_issuer, &c->tbsCertificate.issuer);
+		if (ret != 0) {
+		    ret = HX509_PROXY_CERT_NAME_WRONG;
+		    hx509_set_error_string(context, 0, ret,
+					   "Proxy issuer name not as expected");
+		    goto out;
+		}
+
 		break;
 	    } else {
 		/* 
-		 * Now we are done with the proxy certificates, if
-		 * there where any proxy certificates
-		 * (proxy_cert_depth > 0), check that the proxy issuer
-		 * matched proxy certificates subject.
+		 * Now we are done with the proxy certificates, this
+		 * cert was an EE cert and we we will fall though to
+		 * EE checking below.
 		 */
-		if (proxy_cert_depth) {
-		    ret = _hx509_name_cmp(&proxy_issuer,
-					  &c->tbsCertificate.subject);
-		    if (ret) {
-			ret = HX509_PROXY_CERT_NAME_WRONG;
-			hx509_clear_error_string(context);
-			goto out;
-		    }
-		    if (cert->basename)
-			hx509_name_free(&cert->basename);
-
-		    ret = _hx509_name_from_Name(&proxy_issuer, &cert->basename);
-		    if (ret) {
-			hx509_clear_error_string(context);
-			goto out;
-		    }
-		}
+		type = EE_CERT;
+		/* FALLTHOUGH */
 	    }
-	    type = EE_CERT;
-	    /* FALLTHOUGH */
 	}
 	case EE_CERT:
+	    /*
+	     * If there where any proxy certificates in the chain
+	     * (proxy_cert_depth > 0), check that the proxy issuer
+	     * matched proxy certificates "base" subject.
+	     */
+	    if (proxy_cert_depth) {
+
+		ret = _hx509_name_cmp(&proxy_issuer,
+				      &c->tbsCertificate.subject);
+		if (ret) {
+		    ret = HX509_PROXY_CERT_NAME_WRONG;
+		    hx509_clear_error_string(context);
+		    goto out;
+		}
+		if (cert->basename)
+		    hx509_name_free(&cert->basename);
+		
+		ret = _hx509_name_from_Name(&proxy_issuer, &cert->basename);
+		if (ret) {
+		    hx509_clear_error_string(context);
+		    goto out;
+		}
+	    }
+
 	    break;
 	}
 
