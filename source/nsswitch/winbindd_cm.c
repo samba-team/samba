@@ -171,9 +171,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 	/* If we're in statup mode, check again in 10 seconds, not in
 	   lp_winbind_cache_time() seconds (which is 5 mins by default). */
 
-	if (domain->check_online_timeout == 0) {
-		calc_new_online_timeout(domain);
-	}
+	calc_new_online_timeout(domain);
 
 	domain->check_online_event = add_timed_event( NULL,
 						timeval_current_ofs(domain->check_online_timeout,0),
