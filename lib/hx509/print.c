@@ -270,22 +270,39 @@ check_altName(hx509_validate_ctx ctx,
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
 	    break;
 	case choice_GeneralName_rfc822Name:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "rfc822Name\n");
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "rfc822Name: %s\n",
+			   gn.val[i].u.rfc822Name);
 	    break;
 	case choice_GeneralName_dNSName:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "dnsName\n");
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "dNSName: %s\n",
+			   gn.val[i].u.dNSName);
 	    break;
-	case choice_GeneralName_directoryName:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "directoryName\n");
+	case choice_GeneralName_directoryName: {
+	    Name dir;
+	    char *s;
+	    dir.element = gn.val[i].u.directoryName.element;
+	    dir.u.rdnSequence = gn.val[i].u.directoryName.u.rdnSequence;
+	    ret = _hx509_unparse_Name(&dir, &s);
+	    if (ret) {
+		printf("unable to parse %sAltName directoryName\n", name);
+		return 1;
+	    }
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "directoryName: %s\n", s);
+	    free(s);
 	    break;
+	}
 	case choice_GeneralName_uniformResourceIdentifier:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "uri\n");
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "uri: %s\n",
+			   gn.val[i].u.uniformResourceIdentifier);
 	    break;
 	case choice_GeneralName_iPAddress:
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "ip address\n");
 	    break;
 	case choice_GeneralName_registeredID:
-	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "registered id\n");
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "registered id: ");
+		hx509_oid_print(&gn.val[i].u.registeredID,
+				validate_vprint, ctx);
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
 	    break;
 	}
     }
