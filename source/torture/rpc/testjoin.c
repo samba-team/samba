@@ -43,6 +43,8 @@ struct test_join {
 	struct policy_handle user_handle;
 	struct libnet_JoinDomain *libnet_r;
 	struct dom_sid *dom_sid;
+	const char *dom_netbios_name;
+	const char *dom_dns_name;
 	struct dom_sid *user_sid;
 };
 
@@ -166,6 +168,8 @@ struct test_join *torture_create_testuser(const char *username,
 
 	talloc_steal(join, l.out.sid);
 	join->dom_sid = l.out.sid;
+	join->dom_netbios_name = talloc_strdup(join, domain);
+	if (!join->dom_netbios_name) goto failed;
 
 	o.in.connect_handle = &handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -338,6 +342,10 @@ _PUBLIC_ struct test_join *torture_join_domain(const char *machine_name,
 	tj->user_handle = *libnet_r->out.user_handle;
 	tj->dom_sid = libnet_r->out.domain_sid;
 	talloc_steal(tj, libnet_r->out.domain_sid);
+	tj->dom_netbios_name	= libnet_r->out.domain_name;
+	talloc_steal(tj, libnet_r->out.domain_name);
+	tj->dom_dns_name	= libnet_r->out.realm;
+	talloc_steal(tj, libnet_r->out.realm);
 
 	ZERO_STRUCT(u);
 	s.in.user_handle = &tj->user_handle;
@@ -501,6 +509,16 @@ _PUBLIC_ const struct dom_sid *torture_join_sid(struct test_join *join)
 const struct dom_sid *torture_join_user_sid(struct test_join *join)
 {
 	return join->user_sid;
+}
+
+const char *torture_join_dom_netbios_name(struct test_join *join)
+{
+	return join->dom_netbios_name;
+}
+
+const char *torture_join_dom_dns_name(struct test_join *join)
+{
+	return join->dom_dns_name;
 }
 
 
