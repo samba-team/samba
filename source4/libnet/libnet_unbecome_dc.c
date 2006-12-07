@@ -49,6 +49,9 @@ struct libnet_UnbecomeDC_state {
 		struct dcerpc_pipe *pipe;
 		struct drsuapi_DsBind bind_r;
 		struct GUID bind_guid;
+		struct drsuapi_DsBindInfoCtr bind_info_ctr;
+		struct drsuapi_DsBindInfo28 local_info28;
+		struct drsuapi_DsBindInfo28 remote_info28;
 		struct policy_handle bind_handle;
 		struct drsuapi_DsRemoveDSServer rm_ds_srv_r;
 	} drsuapi;
@@ -397,11 +400,21 @@ static void unbecomeDC_drsuapi_bind_send(struct libnet_UnbecomeDC_state *s)
 {
 	struct composite_context *c = s->creq;
 	struct rpc_request *req;
+	struct drsuapi_DsBindInfo28 *bind_info28;
 
 	GUID_from_string(DRSUAPI_DS_BIND_GUID, &s->drsuapi.bind_guid);
 
+	bind_info28				= &s->drsuapi.local_info28;
+	bind_info28->supported_extensions	= 0;
+	bind_info28->site_guid			= GUID_zero();
+	bind_info28->u1				= 508;
+	bind_info28->repl_epoch			= 0;
+
+	s->drsuapi.bind_info_ctr.length		= 28;
+	s->drsuapi.bind_info_ctr.info.info28	= *bind_info28;
+
 	s->drsuapi.bind_r.in.bind_guid = &s->drsuapi.bind_guid;
-	s->drsuapi.bind_r.in.bind_info = NULL;
+	s->drsuapi.bind_r.in.bind_info = &s->drsuapi.bind_info_ctr;
 	s->drsuapi.bind_r.out.bind_handle = &s->drsuapi.bind_handle;
 
 	req = dcerpc_drsuapi_DsBind_send(s->drsuapi.pipe, s, &s->drsuapi.bind_r);
@@ -422,6 +435,24 @@ static void unbecomeDC_drsuapi_bind_recv(struct rpc_request *req)
 	if (!W_ERROR_IS_OK(s->drsuapi.bind_r.out.result)) {
 		composite_error(c, werror_to_ntstatus(s->drsuapi.bind_r.out.result));
 		return;
+	}
+
+	ZERO_STRUCT(s->drsuapi.remote_info28);
+	if (s->drsuapi.bind_r.out.bind_info) {
+		switch (s->drsuapi.bind_r.out.bind_info->length) {
+		case 24: {
+			struct drsuapi_DsBindInfo24 *info24;
+			info24 = &s->drsuapi.bind_r.out.bind_info->info.info24;
+			s->drsuapi.remote_info28.supported_extensions	= info24->supported_extensions;
+			s->drsuapi.remote_info28.site_guid		= info24->site_guid;
+			s->drsuapi.remote_info28.u1			= info24->u1;
+			s->drsuapi.remote_info28.repl_epoch		= 0;
+			break;
+		}
+		case 28:
+			s->drsuapi.remote_info28 = s->drsuapi.bind_r.out.bind_info->info.info28;
+			break;
+		}
 	}
 
 	unbecomeDC_drsuapi_remove_ds_server_send(s);
