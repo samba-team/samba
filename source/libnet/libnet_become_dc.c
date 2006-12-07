@@ -58,7 +58,7 @@ struct libnet_BecomeDC_state {
 		struct drsuapi_DsBindInfo28 local_info28;
 		struct drsuapi_DsBindInfo28 remote_info28;
 		struct policy_handle bind_handle;
-	} drsuapi1;
+	} drsuapi1, drsuapi2, drsuapi3;
 
 	struct {
 		/* input */
@@ -884,12 +884,14 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 
 	drsuapi->s = s;
 
-	binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,seal]", s->source_dsa.dns_name);
-	if (composite_nomem(binding_str, c)) return;
+	if (!drsuapi->binding) {
+		binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,seal]", s->source_dsa.dns_name);
+		if (composite_nomem(binding_str, c)) return;
 
-	c->status = dcerpc_parse_binding(s, binding_str, &drsuapi->binding);
-	talloc_free(binding_str);
-	if (!composite_is_ok(c)) return;
+		c->status = dcerpc_parse_binding(s, binding_str, &drsuapi->binding);
+		talloc_free(binding_str);
+		if (!composite_is_ok(c)) return;
+	}
 
 	creq = dcerpc_pipe_connect_b_send(s, drsuapi->binding, &dcerpc_table_drsuapi,
 					  s->libnet->cred, s->libnet->event_ctx);
@@ -1389,6 +1391,8 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	composite_continue_rpc(c, req, becomeDC_drsuapi1_add_entry_recv, s);
 }
 
+static void becomeDC_drsuapi2_connect_recv(struct composite_context *req);
+
 static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 {
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
@@ -1455,6 +1459,73 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
+
+	becomeDC_drsuapi_connect_send(s, &s->drsuapi2, becomeDC_drsuapi2_connect_recv);
+}
+
+static void becomeDC_drsuapi2_bind_recv(struct rpc_request *req);
+
+static void becomeDC_drsuapi2_connect_recv(struct composite_context *req)
+{
+	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
+					  struct libnet_BecomeDC_state);
+	struct composite_context *c = s->creq;
+
+	c->status = dcerpc_pipe_connect_b_recv(req, s, &s->drsuapi2.pipe);
+	if (!composite_is_ok(c)) return;
+
+	becomeDC_drsuapi_bind_send(s, &s->drsuapi2, becomeDC_drsuapi2_bind_recv);
+}
+
+static void becomeDC_drsuapi3_connect_recv(struct composite_context *req);
+
+static void becomeDC_drsuapi2_bind_recv(struct rpc_request *req)
+{
+	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
+					  struct libnet_BecomeDC_state);
+	struct composite_context *c = s->creq;
+	struct composite_context *creq;
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (!W_ERROR_IS_OK(s->drsuapi2.bind_r.out.result)) {
+		composite_error(c, werror_to_ntstatus(s->drsuapi2.bind_r.out.result));
+		return;
+	}
+
+	ZERO_STRUCT(s->drsuapi2.remote_info28);
+	if (s->drsuapi2.bind_r.out.bind_info) {
+		switch (s->drsuapi2.bind_r.out.bind_info->length) {
+		case 24: {
+			struct drsuapi_DsBindInfo24 *info24;
+			info24 = &s->drsuapi2.bind_r.out.bind_info->info.info24;
+			s->drsuapi2.remote_info28.supported_extensions	= info24->supported_extensions;
+			s->drsuapi2.remote_info28.site_guid		= info24->site_guid;
+			s->drsuapi2.remote_info28.u1			= info24->u1;
+			s->drsuapi2.remote_info28.repl_epoch		= 0;
+			break;
+		}
+		case 28:
+			s->drsuapi2.remote_info28 = s->drsuapi2.bind_r.out.bind_info->info.info28;
+			break;
+		}
+	}
+
+	/* this avoids the epmapper lookup on the 2nd connection */
+	s->drsuapi3.binding = s->drsuapi2.binding;
+
+	becomeDC_drsuapi_connect_send(s, &s->drsuapi3, becomeDC_drsuapi3_connect_recv);
+}
+
+static void becomeDC_drsuapi3_connect_recv(struct composite_context *req)
+{
+	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
+					  struct libnet_BecomeDC_state);
+	struct composite_context *c = s->creq;
+
+	c->status = dcerpc_pipe_connect_b_recv(req, s, &s->drsuapi3.pipe);
+	if (!composite_is_ok(c)) return;
 
 	becomeDC_connect_ldap2(s);
 }
