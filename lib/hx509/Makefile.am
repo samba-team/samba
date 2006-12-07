@@ -138,7 +138,8 @@ CLEANFILES = $(BUILT_SOURCES) \
 	request.out \
 	sd.data sd.data.out \
 	ev.data ev.data.out \
-	random-data
+	random-data \
+	test
 
 
 #
