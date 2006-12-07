@@ -1,4 +1,24 @@
+2006-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hx509_err.et: fix errorstring for PROXY_CERT_NAME_WRONG
+
+	* data: regen
+
+	* Makefile.am: EXTRA_DIST: add
+	data/proxy10-child-child-test.{key,crt}
+
+	* data/gen-req.sh: Fix names and restrictions on the proxy
+	certificates
+
+	* cert.c: Clairfy and make proxy cert handling work for multiple
+	levels, before it was too restrictive. More helpful error message.
+	
 2006-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* cert.c (check_key_usage): tell what keyusages are missing
+
+	* print.c: Split OtherName printing code to a oid lookup and print
+	function.
 
 	* print.c (Time2string): print hour as hour not min
 
