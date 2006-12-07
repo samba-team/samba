@@ -617,6 +617,11 @@ static const struct {
 	NTSTATUS ntstatus;
 	WERROR werror;
 } ntstatus_to_werror_map[] = {
+	/*
+	 * we add this manualy here, so that W_ERROR(0x5)
+	 * gets mapped to NTSTATUS_ACCESS_DENIED
+	 */
+	{NT_STATUS_ACCESS_DENIED, WERR_ACCESS_DENIED},
 	{NT_STATUS(0x103), W_ERROR(0x3e5)},
 	{NT_STATUS(0x105), W_ERROR(0xea)},
 	{NT_STATUS(0x106), W_ERROR(0x514)},
