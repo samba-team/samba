@@ -62,6 +62,7 @@ struct libnet_BecomeDC_state {
 		/* input */
 		const char *dns_name;
 		const char *netbios_name;
+		const struct dom_sid *sid;
 
 		/* constructed */
 		struct GUID guid;
@@ -1050,17 +1051,24 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	{
 		struct drsuapi_DsAttributeValueSecurityDescriptor *vs;
 		struct security_descriptor *v;
-		const char *sid = SID_BUILTIN_ADMINISTRATORS;
+		struct dom_sid *domain_admins_sid;
+		const char *domain_admins_sid_str;
 
 		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueSecurityDescriptor, 1);
 		if (composite_nomem(vs, c)) return;
 
+		domain_admins_sid = dom_sid_add_rid(vs, s->domain.sid, DOMAIN_RID_ADMINS);
+		if (composite_nomem(domain_admins_sid, c)) return;
+
+		domain_admins_sid_str = dom_sid_string(domain_admins_sid, domain_admins_sid);
+		if (composite_nomem(domain_admins_sid_str, c)) return;
+
 		v = security_descriptor_create(vs,
-					       /* owner */
-					       sid,
-					       /* owner group */
-					       sid,
-					       /* */
+					       /* owner: domain admins */
+					       domain_admins_sid_str,
+					       /* owner group: domain admins */
+					       domain_admins_sid_str,
+					       /* authenticated users */
 					       SID_NT_AUTHENTICATED_USERS,
 					       SEC_ACE_TYPE_ACCESS_ALLOWED,
 					       SEC_STD_READ_CONTROL |
@@ -1068,8 +1076,8 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 					       SEC_ADS_READ_PROP |
 					       SEC_ADS_LIST_OBJECT,
 					       0,
-					       /* */
-					       sid,
+					       /* domain admins */
+					       domain_admins_sid_str,
 					       SEC_ACE_TYPE_ACCESS_ALLOWED,
 					       SEC_STD_REQUIRED |
 					       SEC_ADS_CREATE_CHILD |
@@ -1081,7 +1089,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 					       SEC_ADS_LIST_OBJECT |
 					       SEC_ADS_CONTROL_ACCESS,
 					       0,
-					       /* */
+					       /* system */
 					       SID_NT_SYSTEM,
 					       SEC_ACE_TYPE_ACCESS_ALLOWED,
 					       SEC_STD_REQUIRED |
@@ -1095,7 +1103,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 					       SEC_ADS_LIST_OBJECT |
 					       SEC_ADS_CONTROL_ACCESS,
 					       0,
-					       /* */
+					       /* end */
 					       NULL);
 		if (composite_nomem(v, c)) return;
 
@@ -1529,6 +1537,8 @@ struct composite_context *libnet_BecomeDC_send(struct libnet_context *ctx, TALLO
 	if (composite_nomem(s->domain.dns_name, c)) return c;
 	s->domain.netbios_name	= talloc_strdup(s, r->in.domain_netbios_name);
 	if (composite_nomem(s->domain.netbios_name, c)) return c;
+	s->domain.sid		= dom_sid_dup(s, r->in.domain_sid);
+	if (composite_nomem(s->domain.sid, c)) return c;
 
 	/* Source DSA input */
 	s->source_dsa.address	= talloc_strdup(s, r->in.source_dsa_address);
