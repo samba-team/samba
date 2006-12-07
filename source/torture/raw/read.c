@@ -513,6 +513,26 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.readx.out.nread, io.readx.in.maxcnt);
 	CHECK_BUFFER(buf, seed, io.readx.out.nread);
 
+	if (cli->transport->negotiate.capabilities & CAP_LARGE_READX) {
+		printf("Trying large readx\n");
+		io.readx.in.offset = 0;
+		io.readx.in.mincnt = 0;
+		io.readx.in.maxcnt = 0x10000 - 1;
+		status = smb_raw_read(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_VALUE(io.readx.out.nread, 0xFFFF);
+
+		io.readx.in.maxcnt = 0x10000;
+		status = smb_raw_read(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_VALUE(io.readx.out.nread, 0);
+
+		io.readx.in.maxcnt = 0x10001;
+		status = smb_raw_read(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_VALUE(io.readx.out.nread, 0);
+	}
+
 	printf("Trying locked region\n");
 	cli->session->pid++;
 	if (NT_STATUS_IS_ERR(smbcli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK))) {
