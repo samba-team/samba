@@ -199,6 +199,55 @@ check_subjectKeyIdentifier(hx509_validate_ctx ctx,
 }
 
 static int
+check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
+{
+    KRB5PrincipalName kn;
+    unsigned i;
+    size_t size;
+    int ret;
+
+    ret = decode_KRB5PrincipalName(a->data, a->length,
+				   &kn, &size);
+    if (ret) {
+	printf("Decoding kerberos name in SAN failed: %d", ret);
+	return 1;
+    }
+
+    if (size != a->length) {
+	printf("Decoding kerberos name have extra bits on the end");
+	return 1;
+    }
+
+    /* print kerberos principal, add code to quote / within components */
+    for (i = 0; i < kn.principalName.name_string.len; i++) {
+	validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", 
+		       kn.principalName.name_string.val[i]);
+	if (i + 1 < kn.principalName.name_string.len)
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "/");
+    }
+    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "@");
+    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", kn.realm);
+
+    free_KRB5PrincipalName(&kn);
+    return 0;
+}
+
+static int
+check_dnssrv_san(hx509_validate_ctx ctx, heim_any *a)
+{
+    return 0;
+}
+
+struct {
+    const char *name;
+    const heim_oid *(*oid)(void);
+    int (*func)(hx509_validate_ctx, heim_any *);
+} check_altname[] = {
+    { "pk-init", oid_id_pkinit_san, check_pkinit_san },
+    { "dns-srv", oid_id_pkix_on_dnsSRV, check_dnssrv_san }
+};
+
+static int
 check_altName(hx509_validate_ctx ctx,
 	      const char *name,
 	      enum critical_flag cf,
@@ -227,48 +276,28 @@ check_altName(hx509_validate_ctx ctx,
 
     for (i = 0; i < gn.len; i++) {
 	switch (gn.val[i].element) {
-	case choice_GeneralName_otherName:
+	case choice_GeneralName_otherName: {
+	    unsigned j;
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%sAltName otherName ", name);
-	    if (der_heim_oid_cmp(&gn.val[i].u.otherName.type_id,
-				 oid_id_pkinit_san()) == 0)
-	    {
-		KRB5PrincipalName kn;
-		unsigned j;
-		size_t size;
 
-		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "pk-init: ");
-
-		ret = decode_KRB5PrincipalName(gn.val[i].u.otherName.value.data, 
-					       gn.val[i].u.otherName.value.length,
-					       &kn, &size);
-		if (ret) {
-		    printf("Decoding kerberos name in SAN failed: %d", ret);
-		    return 1;
-		}
-
-		if (size != gn.val[i].u.otherName.value.length) {
-		    printf("Decoding kerberos name have extra bits on the end");
-		    return 1;
-		}
-
-		for (j = 0; j < kn.principalName.name_string.len; j++) {
-		    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", 
-				   kn.principalName.name_string.val[j]);
-		    if (j + 1 < kn.principalName.name_string.len)
-			validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "/");
-		}
-		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "@");
-		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", kn.realm);
-
-		free_KRB5PrincipalName(&kn);
-	    } else {
+	    for (j = 0; j < sizeof(check_altname)/sizeof(check_altname[0]); j++) {
+		if (der_heim_oid_cmp((*check_altname[j].oid)(), 
+				     &gn.val[i].u.otherName.type_id) != 0)
+		    continue;
+		
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s: ", 
+			       check_altname[j].name);
+		(*check_altname[j].func)(ctx, &gn.val[i].u.otherName.value);
+		break;
+	    }
+	    if (j == sizeof(check_altname)/sizeof(check_altname[0])) {
 		hx509_oid_print(&gn.val[i].u.otherName.type_id,
 				validate_vprint, ctx);
-		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, " unknown\n");
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, " unknown");
 	    }
-
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
 	    break;
+	}
 	case choice_GeneralName_rfc822Name:
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "rfc822Name: %s\n",
 			   gn.val[i].u.rfc822Name);
