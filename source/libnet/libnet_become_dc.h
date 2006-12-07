@@ -22,6 +22,7 @@ struct libnet_BecomeDC {
 	struct {
 		const char *domain_dns_name;
 		const char *domain_netbios_name;
+		const struct dom_sid *domain_sid;
 		const char *source_dsa_address;
 		const char *dest_dsa_netbios_name;
 	} in;
