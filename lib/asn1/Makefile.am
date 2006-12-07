@@ -269,6 +269,9 @@ gen_files_rfc2459 =					\
 	asn1_id_at_pseudonym.x				\
 	asn1_id_domainComponent.x			\
 	asn1_id_Userid.x				\
+	asn1_id_pkix.x					\
+	asn1_id_pkix_on.x				\
+	asn1_id_pkix_on_dnsSRV.x			\
 	asn1_id_pkix_pe.x				\
 	asn1_id_pe_proxyCertInfo.x			\
 	asn1_ProxyCertInfo.x				\
