@@ -57,7 +57,7 @@ static WERROR netlogon_stop( const char *service, SERVICE_STATUS *service_status
 
 static WERROR netlogon_start( const char *service )
 {
-	if ( share_defined("NETLOGON") )
+	if ( !share_defined("NETLOGON") )
 		return WERR_SERVICE_DISABLED;
 
 	return WERR_ACCESS_DENIED;
