@@ -299,5 +299,6 @@ void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, const struct do
 NTSTATUS ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
 NTSTATUS ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
 void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
+size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags);
 
 #endif /* __LIBNDR_H__ */

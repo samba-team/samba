@@ -126,7 +126,7 @@ interface drsuapi
 	/* Function 0x02 */
 	typedef [public,gensize] struct {
 		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier(r, ndr->flags)-4)] uint32 __ndr_size;
-		[value(ndr_size_dom_sid(&r->sid, ndr->flags))]  uint32 __ndr_size_sid;
+		[value(ndr_size_dom_sid28(&r->sid, ndr->flags))]  uint32 __ndr_size_sid;
 		GUID guid;
 		dom_sid28 sid;
 		[flag(STR_SIZE4|STR_CHARLEN|STR_CONFORMANT)] string dn;
@@ -454,7 +454,7 @@ interface drsuapi
 	/* DN String values */
 	typedef [public,gensize] struct {
 		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier3(r, ndr->flags))] uint32 __ndr_size;
-		[value(ndr_size_dom_sid(&r->sid,ndr->flags))]  uint32 __ndr_size_sid;
+		[value(ndr_size_dom_sid28(&r->sid,ndr->flags))]  uint32 __ndr_size_sid;
 		GUID guid;
 		dom_sid28 sid;
 		[flag(STR_SIZE4|STR_CHARLEN)] string dn;
@@ -1113,10 +1113,10 @@ interface drsuapi
 		[case(1)] drsuapi_DsAddEntryErrorInfo1 error1;
 /*		[case(2)] drsuapi_DsAddEntryErrorInfo2 error2;
 		[case(3)] drsuapi_DsAddEntryErrorInfo3 error3;
-*/		[case(4)] drsuapi_DsAddEntryErrorInfoX error4;
-		[case(5)] drsuapi_DsAddEntryErrorInfoX error5;
-		[case(6)] drsuapi_DsAddEntryErrorInfoX error6;
-		[case(7)] drsuapi_DsAddEntryErrorInfoX error7;
+*/		[case(4)] drsuapi_DsAddEntryErrorInfoX errorX;
+		[case(5)] drsuapi_DsAddEntryErrorInfoX errorX;
+		[case(6)] drsuapi_DsAddEntryErrorInfoX errorX;
+		[case(7)] drsuapi_DsAddEntryErrorInfoX errorX;
 	} drsuapi_DsAddEntryErrorInfo;
 
 	typedef struct {
