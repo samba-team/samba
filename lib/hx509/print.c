@@ -226,11 +226,64 @@ check_altName(hx509_validate_ctx ctx,
     }
 
     for (i = 0; i < gn.len; i++) {
-	if (gn.val[i].element == choice_GeneralName_otherName) {
+	switch (gn.val[i].element) {
+	case choice_GeneralName_otherName:
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "other name oid: ");
 	    hx509_oid_print(&gn.val[i].u.otherName.type_id,
 			    validate_vprint, ctx);
+	    if (der_heim_oid_cmp(&gn.val[i].u.otherName.type_id,
+				 oid_id_pkinit_san()) == 0)
+	    {
+		KRB5PrincipalName kn;
+		unsigned j;
+		size_t size;
+
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, " pk-init: ");
+
+		ret = decode_KRB5PrincipalName(gn.val[i].u.otherName.value.data, 
+					       gn.val[i].u.otherName.value.length,
+					       &kn, &size);
+		if (ret) {
+		    printf("Decoding kerberos name in SAN failed: %d", ret);
+		    return 1;
+		}
+
+		if (size != gn.val[i].u.otherName.value.length) {
+		    printf("Decoding kerberos name have extra bits on the end");
+		    return 1;
+		}
+
+		for (j = 0; j < kn.principalName.name_string.len; j++) {
+		    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", 
+				   kn.principalName.name_string.val[j]);
+		    if (j + 1 < kn.principalName.name_string.len)
+			validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "/");
+		}
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "@");
+		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s", kn.realm);
+
+		free_KRB5PrincipalName(&kn);
+	    }
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
+	    break;
+	case choice_GeneralName_rfc822Name:
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "rfc822Name\n");
+	    break;
+	case choice_GeneralName_dNSName:
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "dnsName\n");
+	    break;
+	case choice_GeneralName_directoryName:
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "directoryName\n");
+	    break;
+	case choice_GeneralName_uniformResourceIdentifier:
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "uri\n");
+	    break;
+	case choice_GeneralName_iPAddress:
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "ip address\n");
+	    break;
+	case choice_GeneralName_registeredID:
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "registered id\n");
+	    break;
 	}
     }
 
