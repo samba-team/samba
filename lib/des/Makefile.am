@@ -138,7 +138,7 @@ test_crypto: test_crypto.in Makefile
 	chmod +x test_crypto.tmp
 	mv test_crypto.tmp test_crypto
 
-CLEANFILES = hcrypto hcrypto-link test_crypto.tmp
+CLEANFILES = hcrypto hcrypto-link test_crypto.tmp test_crypto
 
 EXTRA_DIST = \
 	rsakey.der \
