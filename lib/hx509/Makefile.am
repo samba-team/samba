@@ -273,6 +273,8 @@ EXTRA_DIST = \
 	data/proxy-test.key \
 	data/proxy10-child-test.crt \
 	data/proxy10-child-test.key \
+	data/proxy10-child-child-test.crt \
+	data/proxy10-child-child-test.key \
 	data/proxy10-test.crt \
 	data/proxy10-test.key \
 	data/revoke.crt \
