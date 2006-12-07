@@ -63,6 +63,7 @@
 #include <ocsp_asn1.h>
 #include <pkcs10_asn1.h>
 #include <asn1_err.h>
+#include <pkinit_asn1.h>
 
 #include <der.h>
 
