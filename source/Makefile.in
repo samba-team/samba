@@ -418,7 +418,7 @@ VFS_CATIA_OBJ = modules/vfs_catia.o
 VFS_CACHEPRIME_OBJ = modules/vfs_cacheprime.o
 VFS_PREALLOC_OBJ = modules/vfs_prealloc.o
 VFS_COMMIT_OBJ = modules/vfs_commit.o
-VFS_GPFS_OBJ = modules/vfs_gpfs.o modules/gpfs.o
+VFS_GPFS_OBJ = modules/vfs_gpfs.o modules/gpfs.o modules/nfs4_acls.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
