@@ -1601,27 +1601,6 @@ DEBUG(0,("start NC[%s] tmp_highest_usn[%llu] highest_usn[%llu]\n",
 	composite_continue_rpc(c, req, recv_fn, s);
 }
 
-static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req);
-
-static void becomeDC_drsuapi3_pull_schema_send(struct libnet_BecomeDC_state *s)
-{
-	s->schema.nc.guid	= GUID_zero();
-	s->schema.nc.sid	= s->zero_sid;
-	s->schema.nc.dn		= s->forest.schema_dn_str;
-
-	s->schema.destination_dsa_guid	= s->drsuapi2.bind_guid;
-
-	s->schema.replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
-
-	becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->schema,
-					     becomeDC_drsuapi3_pull_schema_recv);
-}
-
 static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state *s,
 						   struct becomeDC_partition *partition,
 						   struct drsuapi_DsGetNCChanges *r)
@@ -1691,6 +1670,27 @@ DEBUG(0,("end NC[%s] tmp_highest_usn[%llu] highest_usn[%llu]\n",
 	partition->highwatermark.highest_usn));
 
 	return WERR_OK;
+}
+
+static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req);
+
+static void becomeDC_drsuapi3_pull_schema_send(struct libnet_BecomeDC_state *s)
+{
+	s->schema.nc.guid	= GUID_zero();
+	s->schema.nc.sid	= s->zero_sid;
+	s->schema.nc.dn		= s->forest.schema_dn_str;
+
+	s->schema.destination_dsa_guid	= s->drsuapi2.bind_guid;
+
+	s->schema.replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
+				| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+				| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
+				| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
+				| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
+				| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+
+	becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->schema,
+					     becomeDC_drsuapi3_pull_schema_recv);
 }
 
 static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req)
