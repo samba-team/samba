@@ -1480,6 +1480,7 @@ hx509_verify_path(hx509_context context,
 					   "longer then allowed");
 		    goto out;
 		}
+		/* XXX MUST check info.proxyPolicy */
 		free_ProxyCertInfo(&info);
 		
 		j = 0;
