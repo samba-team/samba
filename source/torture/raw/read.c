@@ -482,8 +482,8 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 	if (lp_parm_bool(-1, "torture", "samba3", False)) {
-		printf("SAMBA3: ignore wrong nread[%d] should be [%d]\n",
-			io.readx.out.nread, 0);
+		printf("SAMBA3: large read extension\n");
+		CHECK_VALUE(io.readx.out.nread, 80000);
 	} else {
 		CHECK_VALUE(io.readx.out.nread, 0);
 	}
@@ -525,12 +525,22 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		io.readx.in.maxcnt = 0x10000;
 		status = smb_raw_read(cli->tree, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		CHECK_VALUE(io.readx.out.nread, 0);
+		if (lp_parm_bool(-1, "torture", "samba3", False)) {
+			printf("SAMBA3: large read extension\n");
+			CHECK_VALUE(io.readx.out.nread, 0x10000);
+		} else {
+			CHECK_VALUE(io.readx.out.nread, 0);
+		}
 
 		io.readx.in.maxcnt = 0x10001;
 		status = smb_raw_read(cli->tree, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		CHECK_VALUE(io.readx.out.nread, 0);
+		if (lp_parm_bool(-1, "torture", "samba3", False)) {
+			printf("SAMBA3: large read extension\n");
+			CHECK_VALUE(io.readx.out.nread, 0x10001);
+		} else {
+			CHECK_VALUE(io.readx.out.nread, 0);
+		}
 	}
 
 	printf("Trying locked region\n");
