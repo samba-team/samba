@@ -595,8 +595,8 @@ interface drsuapi
 	} drsuapi_DsReplicaObjectListItemEx;
 
 	typedef [public,gensize] struct {
-		GUID guid1;
-		GUID guid2;
+		GUID source_dsa_guid; /* the 'objectGUID' field of the CN=NTDS Settings object */
+		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
 		drsuapi_DsReplicaHighWaterMark old_highwatermark;
 		drsuapi_DsReplicaHighWaterMark new_highwatermark;
@@ -623,8 +623,8 @@ interface drsuapi
 	} drsuapi_DsReplicaLinkedAttribute;
 
 	typedef [public,gensize] struct {
-		GUID guid1;
-		GUID guid2;
+		GUID source_dsa_guid; /* the 'objectGUID' field of the CN=NTDS Settings object */
+		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
 		drsuapi_DsReplicaHighWaterMark old_highwatermark;
 		drsuapi_DsReplicaHighWaterMark new_highwatermark;
