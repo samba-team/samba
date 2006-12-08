@@ -98,7 +98,8 @@ find_header(const struct header *headers, const char *header)
  */
 
 static int
-parse_certificate(hx509_context context, struct hx509_collector *c, 
+parse_certificate(hx509_context context, const char *fn, 
+		  struct hx509_collector *c, 
 		  const struct header *headers,
 		  const void *data, size_t len)
 {
@@ -109,7 +110,9 @@ parse_certificate(hx509_context context, struct hx509_collector *c,
 
     ret = decode_Certificate(data, len, &t, &size);
     if (ret) {
-	hx509_clear_error_string(context);
+	hx509_set_error_string(context, 0, ret, 
+			       "Failed to parse certificate in %s",
+			       fn);
 	return ret;
     }
 
@@ -188,7 +191,8 @@ out:
 }
 
 static int
-parse_rsa_private_key(hx509_context context, struct hx509_collector *c, 
+parse_rsa_private_key(hx509_context context, const char *fn,
+		      struct hx509_collector *c, 
 		      const struct header *headers,
 		      const void *data, size_t len)
 {
@@ -210,14 +214,15 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	if (lock == NULL) {
 	    hx509_set_error_string(context, 0, HX509_ALG_NOT_SUPP,
 				   "Failed to get password for "
-				   "password protected file");
+				   "password protected file %s", fn);
 	    return HX509_ALG_NOT_SUPP;
 	}
 
 	if (strcmp(enc, "4,ENCRYPTED") != 0) {
 	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
-				   "RSA key encrypted in unknown method %s",
-				   enc);
+				   "RSA key encrypted in unknown method %s "
+				   "in file",
+				   enc, fn);
 	    hx509_clear_error_string(context);
 	    return HX509_PARSING_KEY_FAILED;
 	}
@@ -331,7 +336,7 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 
 struct pem_formats {
     const char *name;
-    int (*func)(hx509_context, struct hx509_collector *, 
+    int (*func)(hx509_context, const char *, struct hx509_collector *, 
 		const struct header *, const void *, size_t);
 } formats[] = {
     { "CERTIFICATE", parse_certificate },
@@ -442,7 +447,8 @@ parse_pem_file(hx509_context context,
 	    for (j = 0; j < sizeof(formats)/sizeof(formats[0]); j++) {
 		const char *q = formats[j].name;
 		if (strcasecmp(type, q) == 0) {
-		    ret = (*formats[j].func)(context, c, headers, data, len);
+		    ret = (*formats[j].func)(context, fn, c, 
+					     headers, data, len);
 		    break;
 		}
 	    }
@@ -540,7 +546,7 @@ file_init(hx509_context context,
 		goto out;
 	    }
 
-	    ret = parse_certificate(context, c, NULL, ptr, length);
+	    ret = parse_certificate(context, p, c, NULL, ptr, length);
 	    _hx509_unmap_file(ptr, length);
 	    if (ret)
 		goto out;
