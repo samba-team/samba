@@ -125,7 +125,7 @@ struct libnet_BecomeDC_state {
 
 		struct drsuapi_DsReplicaObjectListItemEx *first_object;
 		struct drsuapi_DsReplicaObjectListItemEx *last_object;
-	} schema_part, config_part;
+	} schema_part, config_part, domain_part;
 
 	struct becomeDC_fsmo {
 		const char *dns_name;
@@ -1774,6 +1774,56 @@ static void becomeDC_drsuapi3_pull_config_recv(struct rpc_request *req)
 	becomeDC_connect_ldap2(s);
 }
 
+static void becomeDC_drsuapi3_pull_domain_recv(struct rpc_request *req);
+
+static void becomeDC_drsuapi3_pull_domain_send(struct libnet_BecomeDC_state *s)
+{
+	s->domain_part.nc.guid	= GUID_zero();
+	s->domain_part.nc.sid	= s->zero_sid;
+	s->domain_part.nc.dn	= s->domain.dn_str;
+
+	s->domain_part.destination_dsa_guid	= s->drsuapi2.bind_guid;
+
+	s->domain_part.replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+
+	becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->domain_part,
+					     becomeDC_drsuapi3_pull_domain_recv);
+}
+
+static void becomeDC_drsuapi3_pull_domain_recv(struct rpc_request *req)
+{
+	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
+					  struct libnet_BecomeDC_state);
+	struct composite_context *c = s->creq;
+	struct drsuapi_DsGetNCChanges *r = talloc_get_type(req->ndr.struct_ptr,
+					   struct drsuapi_DsGetNCChanges);
+	WERROR status;
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	status = becomeDC_drsuapi_pull_partition_recv(s, &s->domain_part, r);
+	if (!W_ERROR_IS_OK(status)) {
+		composite_error(c, werror_to_ntstatus(status));
+		return;
+	}
+
+	talloc_free(r);
+
+	if (s->domain_part.highwatermark.tmp_highest_usn > s->domain_part.highwatermark.highest_usn) {
+		becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->domain_part,
+						     becomeDC_drsuapi3_pull_domain_recv);
+		return;
+	}
+
+	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
+}
+
 static NTSTATUS becomeDC_ldap2_modify_computer(struct libnet_BecomeDC_state *s)
 {
 	int ret;
@@ -1885,7 +1935,7 @@ static void becomeDC_connect_ldap2(struct libnet_BecomeDC_state *s)
 	c->status = becomeDC_ldap2_move_computer(s);
 	if (!composite_is_ok(c)) return;
 
-	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
+	becomeDC_drsuapi3_pull_domain_send(s);
 }
 
 struct composite_context *libnet_BecomeDC_send(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_BecomeDC *r)
