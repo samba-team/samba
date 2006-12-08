@@ -152,16 +152,22 @@ _krb5_pk_create_sign(krb5_context context,
     int ret;
 
     ret = hx509_query_alloc(id->hx509ctx, &q);
-    if (ret)
+    if (ret) {
+	_krb5_pk_copy_error(context, id->hx509ctx, ret, 
+			    "Allocate query to find signing certificate");
 	return ret;
+    }
 
     hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
     hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
 
     ret = hx509_certs_find(id->hx509ctx, id->certs, q, &cert);
     hx509_query_free(id->hx509ctx, q);
-    if (ret)
+    if (ret) {
+	_krb5_pk_copy_error(context, id->hx509ctx, ret, 
+			    "Find certificate to signed CMS data");
 	return ret;
+    }
 
     ret = hx509_cms_create_signed_1(id->hx509ctx,
 				    eContentType,
@@ -173,6 +179,8 @@ _krb5_pk_create_sign(krb5_context context,
 				    NULL,
 				    id->certs,
 				    sd_data);
+    if (ret)
+	_krb5_pk_copy_error(context, id->hx509ctx, ret, "create CMS signedData");
     hx509_cert_free(cert);
 
     return ret;
@@ -716,7 +724,8 @@ _krb5_pk_verify_sign(krb5_context context,
 	
     ret = hx509_get_one_cert(id->hx509ctx, signer_certs, &(*signer)->cert);
     if (ret) {
-	krb5_clear_error_string(context);
+	_krb5_pk_copy_error(context, id->hx509ctx, ret,
+			    "Failed to get on of the signer certs");
 	goto out;
     }
 
@@ -956,8 +965,11 @@ pk_rd_pa_reply_enckey(krb5_context context,
 			       NULL,
 			       &contentType,
 			       &content);
-    if (ret)
+    if (ret) {
+	_krb5_pk_copy_error(context, ctx->id->hx509ctx, ret,
+			    "Failed to unenvelope CMS data in PK-INIT reply");
 	return ret;
+    }
 
     p = content.data;
     length = content.length;
