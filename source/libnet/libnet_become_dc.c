@@ -125,7 +125,7 @@ struct libnet_BecomeDC_state {
 
 		struct drsuapi_DsReplicaObjectListItemEx *first_object;
 		struct drsuapi_DsReplicaObjectListItemEx *last_object;
-	} schema, config;
+	} schema_part, config_part;
 
 	struct becomeDC_fsmo {
 		const char *dns_name;
@@ -1676,20 +1676,20 @@ static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req);
 
 static void becomeDC_drsuapi3_pull_schema_send(struct libnet_BecomeDC_state *s)
 {
-	s->schema.nc.guid	= GUID_zero();
-	s->schema.nc.sid	= s->zero_sid;
-	s->schema.nc.dn		= s->forest.schema_dn_str;
+	s->schema_part.nc.guid	= GUID_zero();
+	s->schema_part.nc.sid	= s->zero_sid;
+	s->schema_part.nc.dn	= s->forest.schema_dn_str;
 
-	s->schema.destination_dsa_guid	= s->drsuapi2.bind_guid;
+	s->schema_part.destination_dsa_guid	= s->drsuapi2.bind_guid;
 
-	s->schema.replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+	s->schema_part.replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 
-	becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->schema,
+	becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->schema_part,
 					     becomeDC_drsuapi3_pull_schema_recv);
 }
 
@@ -1707,7 +1707,7 @@ static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req)
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
-	status = becomeDC_drsuapi_pull_partition_recv(s, &s->schema, r);
+	status = becomeDC_drsuapi_pull_partition_recv(s, &s->schema_part, r);
 	if (!W_ERROR_IS_OK(status)) {
 		composite_error(c, werror_to_ntstatus(status));
 		return;
@@ -1715,8 +1715,8 @@ static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req)
 
 	talloc_free(r);
 
-	if (s->schema.highwatermark.tmp_highest_usn > s->schema.highwatermark.highest_usn) {
-		becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->schema,
+	if (s->schema_part.highwatermark.tmp_highest_usn > s->schema_part.highwatermark.highest_usn) {
+		becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->schema_part,
 						     becomeDC_drsuapi3_pull_schema_recv);
 		return;
 	}
@@ -1728,20 +1728,20 @@ static void becomeDC_drsuapi3_pull_config_recv(struct rpc_request *req);
 
 static void becomeDC_drsuapi3_pull_config_send(struct libnet_BecomeDC_state *s)
 {
-	s->config.nc.guid	= GUID_zero();
-	s->config.nc.sid	= s->zero_sid;
-	s->config.nc.dn		= s->forest.config_dn_str;
+	s->config_part.nc.guid	= GUID_zero();
+	s->config_part.nc.sid	= s->zero_sid;
+	s->config_part.nc.dn	= s->forest.config_dn_str;
 
-	s->config.destination_dsa_guid	= s->drsuapi2.bind_guid;
+	s->config_part.destination_dsa_guid	= s->drsuapi2.bind_guid;
 
-	s->config.replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
-				| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+	s->config_part.replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 
-	becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->config,
+	becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->config_part,
 					     becomeDC_drsuapi3_pull_config_recv);
 }
 
@@ -1757,7 +1757,7 @@ static void becomeDC_drsuapi3_pull_config_recv(struct rpc_request *req)
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
-	status = becomeDC_drsuapi_pull_partition_recv(s, &s->config, r);
+	status = becomeDC_drsuapi_pull_partition_recv(s, &s->config_part, r);
 	if (!W_ERROR_IS_OK(status)) {
 		composite_error(c, werror_to_ntstatus(status));
 		return;
@@ -1765,8 +1765,8 @@ static void becomeDC_drsuapi3_pull_config_recv(struct rpc_request *req)
 
 	talloc_free(r);
 
-	if (s->config.highwatermark.tmp_highest_usn > s->config.highwatermark.highest_usn) {
-		becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->config,
+	if (s->config_part.highwatermark.tmp_highest_usn > s->config_part.highwatermark.highest_usn) {
+		becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->config_part,
 						     becomeDC_drsuapi3_pull_config_recv);
 		return;
 	}
