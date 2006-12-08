@@ -419,6 +419,12 @@ id-pkix-pe OBJECT IDENTIFIER ::= { id-pkix 1 }
 
 id-pe-proxyCertInfo OBJECT IDENTIFIER ::= { id-pkix-pe 14 }
 
+id-pkix-ppl  OBJECT IDENTIFIER ::= { id-pkix 21 }
+
+id-pkix-ppl-anyLanguage     OBJECT IDENTIFIER ::= { id-pkix-ppl 0 }
+id-pkix-ppl-inheritAll      OBJECT IDENTIFIER ::= { id-pkix-ppl 1 }
+id-pkix-ppl-independent     OBJECT IDENTIFIER ::= { id-pkix-ppl 2 }
+
 ProxyPolicy ::= SEQUENCE {
 	policyLanguage		OBJECT IDENTIFIER,
 	policy			OCTET STRING OPTIONAL

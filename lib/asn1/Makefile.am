@@ -274,6 +274,10 @@ gen_files_rfc2459 =					\
 	asn1_id_pkix_on_dnsSRV.x			\
 	asn1_id_pkix_pe.x				\
 	asn1_id_pe_proxyCertInfo.x			\
+	asn1_id_pkix_ppl.x				\
+	asn1_id_pkix_ppl_anyLanguage.x			\
+	asn1_id_pkix_ppl_inheritAll.x			\
+	asn1_id_pkix_ppl_independent.x			\
 	asn1_ProxyCertInfo.x				\
 	asn1_ProxyPolicy.x
 
