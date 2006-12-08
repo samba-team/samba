@@ -755,6 +755,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
 	struct winbindd_cli_state state;
+	struct winbindd_domain *domain;
 	extern BOOL override_logfile;
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) != 0) {
@@ -842,6 +843,16 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	if ( child->domain ) {
 		child->domain->startup = True;
 		child->domain->startup_time = time(NULL);
+	}
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		if (domain != child->domain) {
+			/* Ensure we have no "check_online" events pending
+			   that are not on this domain. */
+			if (domain->check_online_event) {
+				TALLOC_FREE(domain->check_online_event);
+			}
+		}
 	}
 
 	while (1) {
