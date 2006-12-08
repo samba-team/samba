@@ -230,7 +230,7 @@ interface drsuapi
 
 	typedef struct {
 		GUID destination_dsa_guid;
-		GUID source_dsa_guid;
+		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
 		drsuapi_DsReplicaHighWaterMark highwatermark;
 		drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
@@ -258,7 +258,7 @@ interface drsuapi
 
 	typedef struct {
 		GUID destination_dsa_guid;
-		GUID source_dsa_guid;
+		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
 		drsuapi_DsReplicaHighWaterMark highwatermark;
 		drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
