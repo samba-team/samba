@@ -1795,6 +1795,12 @@ static void becomeDC_drsuapi3_pull_domain_send(struct libnet_BecomeDC_state *s)
 					     becomeDC_drsuapi3_pull_domain_recv);
 }
 
+static void becomeDC_drsuapi_update_refs_send(struct libnet_BecomeDC_state *s,
+					      struct becomeDC_drsuapi *drsuapi,
+					      struct becomeDC_partition *partition,
+					      void (*recv_fn)(struct rpc_request *req));
+static void becomeDC_drsuapi2_update_refs_schema_recv(struct rpc_request *req);
+
 static void becomeDC_drsuapi3_pull_domain_recv(struct rpc_request *req)
 {
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
@@ -1820,6 +1826,111 @@ static void becomeDC_drsuapi3_pull_domain_recv(struct rpc_request *req)
 						     becomeDC_drsuapi3_pull_domain_recv);
 		return;
 	}
+
+	becomeDC_drsuapi_update_refs_send(s, &s->drsuapi2, &s->schema_part,
+					  becomeDC_drsuapi2_update_refs_schema_recv);
+}
+
+static void becomeDC_drsuapi_update_refs_send(struct libnet_BecomeDC_state *s,
+					      struct becomeDC_drsuapi *drsuapi,
+					      struct becomeDC_partition *partition,
+					      void (*recv_fn)(struct rpc_request *req))
+{
+	struct composite_context *c = s->creq;
+	struct rpc_request *req;
+	struct drsuapi_DsReplicaUpdateRefs *r;
+	const char *ntds_guid_str;
+	const char *ntds_dns_name;
+
+	r = talloc(s, struct drsuapi_DsReplicaUpdateRefs);
+	if (composite_nomem(r, c)) return;
+
+	ntds_guid_str = GUID_string(r, &s->dest_dsa.ntds_guid);
+	if (composite_nomem(ntds_guid_str, c)) return;
+
+	ntds_dns_name = talloc_asprintf(r, "%s._msdcs.%s",
+					ntds_guid_str,
+					s->domain.dns_name);
+	if (composite_nomem(ntds_dns_name, c)) return;
+
+	r->in.bind_handle		= &drsuapi->bind_handle;
+	r->in.level			= 1;
+	r->in.req.req1.naming_context	= &partition->nc;
+	r->in.req.req1.dest_dsa_dns_name= ntds_dns_name;
+	r->in.req.req1.dest_dsa_guid	= s->dest_dsa.ntds_guid;
+	r->in.req.req1.options		= DRSUAPI_DS_REPLICA_UPDATE_ADD_REFERENCE
+					| DRSUAPI_DS_REPLICA_UPDATE_DELETE_REFERENCE
+					| DRSUAPI_DS_REPLICA_UPDATE_0x00000010;
+
+	req = dcerpc_drsuapi_DsReplicaUpdateRefs_send(drsuapi->pipe, r, r);
+	composite_continue_rpc(c, req, recv_fn, s);
+}
+
+static void becomeDC_drsuapi2_update_refs_config_recv(struct rpc_request *req);
+
+static void becomeDC_drsuapi2_update_refs_schema_recv(struct rpc_request *req)
+{
+	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
+					  struct libnet_BecomeDC_state);
+	struct composite_context *c = s->creq;
+	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(req->ndr.struct_ptr,
+					   struct drsuapi_DsReplicaUpdateRefs);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (!W_ERROR_IS_OK(r->out.result)) {
+		composite_error(c, werror_to_ntstatus(r->out.result));
+		return;
+	}
+
+	talloc_free(r);
+
+	becomeDC_drsuapi_update_refs_send(s, &s->drsuapi2, &s->config_part,
+					  becomeDC_drsuapi2_update_refs_config_recv);
+}
+
+static void becomeDC_drsuapi2_update_refs_domain_recv(struct rpc_request *req);
+
+static void becomeDC_drsuapi2_update_refs_config_recv(struct rpc_request *req)
+{
+	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
+					  struct libnet_BecomeDC_state);
+	struct composite_context *c = s->creq;
+	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(req->ndr.struct_ptr,
+					   struct drsuapi_DsReplicaUpdateRefs);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (!W_ERROR_IS_OK(r->out.result)) {
+		composite_error(c, werror_to_ntstatus(r->out.result));
+		return;
+	}
+
+	talloc_free(r);
+
+	becomeDC_drsuapi_update_refs_send(s, &s->drsuapi2, &s->domain_part,
+					  becomeDC_drsuapi2_update_refs_domain_recv);
+}
+
+static void becomeDC_drsuapi2_update_refs_domain_recv(struct rpc_request *req)
+{
+	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
+					  struct libnet_BecomeDC_state);
+	struct composite_context *c = s->creq;
+	struct drsuapi_DsReplicaUpdateRefs *r = talloc_get_type(req->ndr.struct_ptr,
+					   struct drsuapi_DsReplicaUpdateRefs);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (!W_ERROR_IS_OK(r->out.result)) {
+		composite_error(c, werror_to_ntstatus(r->out.result));
+		return;
+	}
+
+	talloc_free(r);
 
 	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
 }
