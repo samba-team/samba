@@ -130,3 +130,18 @@ int set_event_dispatch_time(const char *event_name, struct timeval when)
 	}
 	return num_events;
 }
+
+/* Returns 1 if event was found and cancelled, 0 otherwise. */
+
+int cancel_named_event(const char *event_name)
+{
+	struct timed_event *te;
+
+	for (te = timed_events; te; te = te->next) {
+		if (strcmp(event_name, te->event_name) == 0) {
+			TALLOC_FREE(te);
+			return 1;
+		}
+	}
+	return 0;
+}

@@ -845,15 +845,21 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		child->domain->startup_time = time(NULL);
 	}
 
+	/* Ensure we have no pending check_online events other
+	   than one for this domain. */
+
 	for (domain = domain_list(); domain; domain = domain->next) {
 		if (domain != child->domain) {
-			/* Ensure we have no "check_online" events pending
-			   that are not on this domain. */
 			if (domain->check_online_event) {
 				TALLOC_FREE(domain->check_online_event);
 			}
 		}
 	}
+
+	/* Ensure we're not handling an event inherited from
+	   our parent. */
+
+	cancel_named_event("krb5_ticket_refresh_handler");
 
 	while (1) {
 
