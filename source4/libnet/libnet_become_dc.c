@@ -114,6 +114,15 @@ struct libnet_BecomeDC_state {
 		uint32_t w2k3_update_revision;
 	} ads_options;
 
+	struct becomeDC_partition {
+		struct drsuapi_DsReplicaObjectIdentifier nc;
+		struct GUID destination_dsa_guid;
+		struct GUID source_dsa_guid;
+		struct drsuapi_DsReplicaHighWaterMark highwatermark;
+		struct drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
+		uint32_t replica_flags;
+	} schema;
+
 	struct becomeDC_fsmo {
 		const char *dns_name;
 		const char *server_dn_str;
@@ -1472,6 +1481,8 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 		return;
 	}
 
+	talloc_free(r);
+
 	becomeDC_drsuapi_connect_send(s, &s->drsuapi2, becomeDC_drsuapi2_connect_recv);
 }
 
@@ -1513,6 +1524,8 @@ static void becomeDC_drsuapi2_bind_recv(struct rpc_request *req)
 	becomeDC_drsuapi_connect_send(s, &s->drsuapi3, becomeDC_drsuapi3_connect_recv);
 }
 
+static void becomeDC_drsuapi3_pull_schema_send(struct libnet_BecomeDC_state *s);
+
 static void becomeDC_drsuapi3_connect_recv(struct composite_context *req)
 {
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
@@ -1521,6 +1534,102 @@ static void becomeDC_drsuapi3_connect_recv(struct composite_context *req)
 
 	c->status = dcerpc_pipe_connect_b_recv(req, s, &s->drsuapi3.pipe);
 	if (!composite_is_ok(c)) return;
+
+	becomeDC_drsuapi3_pull_schema_send(s);
+}
+
+static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s,
+						 struct becomeDC_drsuapi *drsuapi_h,
+						 struct becomeDC_drsuapi *drsuapi_p,
+						 struct becomeDC_partition *partition,
+						 void (*recv_fn)(struct rpc_request *req))
+{
+	struct composite_context *c = s->creq;
+	struct rpc_request *req;
+	struct drsuapi_DsGetNCChanges *r;
+
+	r = talloc(s, struct drsuapi_DsGetNCChanges);
+	if (composite_nomem(r, c)) return;
+
+	r->in.bind_handle	= &drsuapi_h->bind_handle;
+	if (drsuapi_h->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
+		r->in.level				= 8;
+		r->in.req.req8.destination_dsa_guid	= partition->destination_dsa_guid;
+		r->in.req.req8.source_dsa_guid		= partition->source_dsa_guid;
+		r->in.req.req8.naming_context		= &partition->nc;
+		r->in.req.req8.highwatermark		= partition->highwatermark;
+		r->in.req.req8.uptodateness_vector	= partition->uptodateness_vector;
+		r->in.req.req8.replica_flags		= partition->replica_flags;
+		r->in.req.req8.max_object_count		= 133;
+		r->in.req.req8.max_ndr_size		= 1336811;
+		r->in.req.req8.unknown4			= 0;
+		r->in.req.req8.h1			= 0;
+		r->in.req.req8.unique_ptr1		= 0;
+		r->in.req.req8.unique_ptr2		= 0;
+		r->in.req.req8.ctr12.count		= 0;
+		r->in.req.req8.ctr12.array		= NULL;
+	} else {
+		r->in.level				= 5;
+		r->in.req.req5.destination_dsa_guid	= partition->destination_dsa_guid;
+		r->in.req.req5.source_dsa_guid		= partition->source_dsa_guid;
+		r->in.req.req5.naming_context		= &partition->nc;
+		r->in.req.req5.highwatermark		= partition->highwatermark;
+		r->in.req.req5.uptodateness_vector	= partition->uptodateness_vector;
+		r->in.req.req5.replica_flags		= partition->replica_flags;
+		r->in.req.req5.max_object_count		= 133;
+		r->in.req.req5.max_ndr_size		= 1336770;
+		r->in.req.req5.unknown4			= 0;
+		r->in.req.req5.h1			= 0;
+	}
+
+	/* 
+	 * we should try to use the drsuapi_p->pipe here, as w2k3 does
+	 * but it seems that some extra flags in the DCERPC Bind call
+	 * are needed for it. Or the same KRB5 TGS is needed on both
+	 * connections.
+	 */
+	req = dcerpc_drsuapi_DsGetNCChanges_send(drsuapi_h->pipe, r, r);
+	composite_continue_rpc(c, req, recv_fn, s);
+}
+
+static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req);
+
+static void becomeDC_drsuapi3_pull_schema_send(struct libnet_BecomeDC_state *s)
+{
+	s->schema.nc.guid	= GUID_zero();
+	s->schema.nc.sid	= s->zero_sid;
+	s->schema.nc.dn		= s->forest.schema_dn_str;
+
+	s->schema.destination_dsa_guid	= s->drsuapi2.bind_guid;
+
+	s->schema.replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
+				| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+				| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
+				| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
+				| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
+				| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+
+	becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->schema,
+					     becomeDC_drsuapi3_pull_schema_recv);
+}
+
+static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req)
+{
+	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
+					  struct libnet_BecomeDC_state);
+	struct composite_context *c = s->creq;
+	struct drsuapi_DsGetNCChanges *r = talloc_get_type(req->ndr.struct_ptr,
+					   struct drsuapi_DsGetNCChanges);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (!W_ERROR_IS_OK(r->out.result)) {
+		composite_error(c, werror_to_ntstatus(r->out.result));
+		return;
+	}
+
+	talloc_free(r);
 
 	becomeDC_connect_ldap2(s);
 }
