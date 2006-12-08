@@ -161,6 +161,20 @@ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms)
 		parms->readx.out.remaining       = SVAL(req->in.vwv, VWV(2));
 		parms->readx.out.compaction_mode = SVAL(req->in.vwv, VWV(3));
 		parms->readx.out.nread = SVAL(req->in.vwv, VWV(5));
+
+		/* handle oversize replies for non-chained readx replies with
+		   CAP_LARGE_READX. The snia spec has must to answer for. */
+		if ((req->tree->session->transport->negotiate.capabilities & CAP_LARGE_READX)
+		    && CVAL(req->in.vwv, VWV(0)) == SMB_CHAIN_NONE &&
+		    req->in.size >= 0x10000) {
+			parms->readx.out.nread += (SVAL(req->in.vwv, VWV(7)) << 16);
+			if (req->in.hdr + SVAL(req->in.vwv, VWV(6)) +
+			    parms->readx.out.nread <= 
+			    req->in.buffer + req->in.size) {
+				req->in.data_size += (SVAL(req->in.vwv, VWV(7)) << 16);
+			}
+		}
+
 		if (parms->readx.out.nread > MAX(parms->readx.in.mincnt, parms->readx.in.maxcnt) ||
 		    !smbcli_raw_pull_data(req, req->in.hdr + SVAL(req->in.vwv, VWV(6)), 
 				       parms->readx.out.nread, 
