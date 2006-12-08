@@ -1610,10 +1610,15 @@ static NTSTATUS becomeDC_ldap2_move_computer(struct libnet_BecomeDC_state *s)
 	}
 
 	ret = ldb_rename(s->ldap2.ldb, old_dn, new_dn);
-	talloc_free(r);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(r);
 		return NT_STATUS_LDAP(ret);
 	}
+
+	s->dest_dsa.computer_dn_str = ldb_dn_alloc_linearized(s, new_dn);
+	NT_STATUS_HAVE_NO_MEMORY(s->dest_dsa.computer_dn_str);
+
+	talloc_free(r);
 
 	return NT_STATUS_OK;
 }
