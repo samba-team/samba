@@ -421,7 +421,7 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 			nc.dn	= partition; 
 
 			r.in.req.req5.destination_dsa_guid		= ctx->new_dc.invocation_id;
-			r.in.req.req5.source_dsa_guid			= null_guid;
+			r.in.req.req5.source_dsa_invocation_id		= null_guid;
 			r.in.req.req5.naming_context			= &nc;
 			r.in.req.req5.highwatermark.tmp_highest_usn	= highest_usn;
 			r.in.req.req5.highwatermark.reserved_usn	= 0;
@@ -452,7 +452,7 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 			/* nc.dn can be set to any other ad partition */
 			
 			r.in.req.req8.destination_dsa_guid		= ctx->new_dc.invocation_id;
-			r.in.req.req8.source_dsa_guid			= null_guid;
+			r.in.req.req8.source_dsa_invocation_id		= null_guid;
 			r.in.req.req8.naming_context			= &nc;
 			r.in.req.req8.highwatermark.tmp_highest_usn	= highest_usn;
 			r.in.req.req8.highwatermark.reserved_usn	= 0;

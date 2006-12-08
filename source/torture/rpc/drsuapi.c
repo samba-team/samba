@@ -553,7 +553,7 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			nc.dn	= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
 			r.in.req.req5.destination_dsa_guid		= GUID_random();
-			r.in.req.req5.source_dsa_guid			= null_guid;
+			r.in.req.req5.source_dsa_invocation_id		= null_guid;
 			r.in.req.req5.naming_context			= &nc;
 			r.in.req.req5.highwatermark.tmp_highest_usn	= 0;
 			r.in.req.req5.highwatermark.reserved_usn	= 0;
@@ -575,7 +575,7 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			nc.dn	= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
 			r.in.req.req8.destination_dsa_guid		= GUID_random();
-			r.in.req.req8.source_dsa_guid			= null_guid;
+			r.in.req.req8.source_dsa_invocation_id		= null_guid;
 			r.in.req.req8.naming_context			= &nc;
 			r.in.req.req8.highwatermark.tmp_highest_usn	= 0;
 			r.in.req.req8.highwatermark.reserved_usn	= 0;

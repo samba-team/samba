@@ -118,6 +118,7 @@ struct libnet_BecomeDC_state {
 		struct drsuapi_DsReplicaObjectIdentifier nc;
 		struct GUID destination_dsa_guid;
 		struct GUID source_dsa_guid;
+		struct GUID source_dsa_invocation_id;
 		struct drsuapi_DsReplicaHighWaterMark highwatermark;
 		struct drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
 		uint32_t replica_flags;
@@ -1555,7 +1556,7 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 	if (drsuapi_h->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
 		r->in.level				= 8;
 		r->in.req.req8.destination_dsa_guid	= partition->destination_dsa_guid;
-		r->in.req.req8.source_dsa_guid		= partition->source_dsa_guid;
+		r->in.req.req8.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
 		r->in.req.req8.naming_context		= &partition->nc;
 		r->in.req.req8.highwatermark		= partition->highwatermark;
 		r->in.req.req8.uptodateness_vector	= partition->uptodateness_vector;
@@ -1571,7 +1572,7 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 	} else {
 		r->in.level				= 5;
 		r->in.req.req5.destination_dsa_guid	= partition->destination_dsa_guid;
-		r->in.req.req5.source_dsa_guid		= partition->source_dsa_guid;
+		r->in.req.req5.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
 		r->in.req.req5.naming_context		= &partition->nc;
 		r->in.req.req5.highwatermark		= partition->highwatermark;
 		r->in.req.req5.uptodateness_vector	= partition->uptodateness_vector;
