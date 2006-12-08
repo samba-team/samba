@@ -122,6 +122,9 @@ struct libnet_BecomeDC_state {
 		struct drsuapi_DsReplicaHighWaterMark highwatermark;
 		struct drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
 		uint32_t replica_flags;
+
+		struct drsuapi_DsReplicaObjectListItemEx *first_object;
+		struct drsuapi_DsReplicaObjectListItemEx *last_object;
 	} schema;
 
 	struct becomeDC_fsmo {
@@ -1583,6 +1586,11 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 		r->in.req.req5.h1			= 0;
 	}
 
+DEBUG(0,("start NC[%s] tmp_highest_usn[%llu] highest_usn[%llu]\n",
+	partition->nc.dn,
+	partition->highwatermark.tmp_highest_usn,
+	partition->highwatermark.highest_usn));
+
 	/* 
 	 * we should try to use the drsuapi_p->pipe here, as w2k3 does
 	 * but it seems that some extra flags in the DCERPC Bind call
@@ -1614,6 +1622,77 @@ static void becomeDC_drsuapi3_pull_schema_send(struct libnet_BecomeDC_state *s)
 					     becomeDC_drsuapi3_pull_schema_recv);
 }
 
+static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state *s,
+						   struct becomeDC_partition *partition,
+						   struct drsuapi_DsGetNCChanges *r)
+{
+	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
+	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
+	uint32_t out_level = 0;
+	struct GUID *source_dsa_guid;
+	struct GUID *source_dsa_invocation_id;
+	struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
+	struct drsuapi_DsReplicaObjectListItemEx *first_object;
+	struct drsuapi_DsReplicaObjectListItemEx *cur;
+
+	if (!W_ERROR_IS_OK(r->out.result)) {
+		return r->out.result;
+	}
+
+	if (r->out.level == 1) {
+		out_level = 1;
+		ctr1 = &r->out.ctr.ctr1;
+	} else if (r->out.level == 2) {
+		out_level = 1;
+		ctr1 = r->out.ctr.ctr2.ctr.mszip1.ctr1;
+	} else if (r->out.level == 6) {
+		out_level = 6;
+		ctr6 = &r->out.ctr.ctr6;
+	} else if (r->out.level == 7 &&
+		   r->out.ctr.ctr7.level == 6 &&
+		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
+		out_level = 6;
+		ctr6 = r->out.ctr.ctr7.ctr.mszip6.ctr6;
+	} else {
+		return WERR_BAD_NET_RESP;
+	}
+
+	switch (out_level) {
+	case 1:
+		source_dsa_guid			= &ctr1->source_dsa_guid;
+		source_dsa_invocation_id	= &ctr1->source_dsa_invocation_id;
+		new_highwatermark		= &ctr1->new_highwatermark;
+		first_object			= ctr1->first_object;
+		break;
+	case 6:
+		source_dsa_guid			= &ctr6->source_dsa_guid;
+		source_dsa_invocation_id	= &ctr6->source_dsa_invocation_id;
+		new_highwatermark		= &ctr6->new_highwatermark;
+		first_object			= ctr6->first_object;
+		break;
+	}
+
+	partition->highwatermark		= *new_highwatermark;
+	partition->source_dsa_guid		= *source_dsa_guid;
+	partition->source_dsa_invocation_id	= *source_dsa_invocation_id;
+
+	if (!partition->first_object) {
+		partition->first_object = talloc_steal(s, first_object);
+	} else {
+		partition->last_object->next_object = talloc_steal(partition->last_object,
+								   first_object);
+	}
+	for (cur = first_object; cur->next_object; cur = cur->next_object) {}
+	partition->last_object = cur;
+
+DEBUG(0,("end NC[%s] tmp_highest_usn[%llu] highest_usn[%llu]\n",
+	partition->nc.dn,
+	partition->highwatermark.tmp_highest_usn,
+	partition->highwatermark.highest_usn));
+
+	return WERR_OK;
+}
+
 static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req)
 {
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
@@ -1621,16 +1700,24 @@ static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req)
 	struct composite_context *c = s->creq;
 	struct drsuapi_DsGetNCChanges *r = talloc_get_type(req->ndr.struct_ptr,
 					   struct drsuapi_DsGetNCChanges);
+	WERROR status;
 
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
-	if (!W_ERROR_IS_OK(r->out.result)) {
-		composite_error(c, werror_to_ntstatus(r->out.result));
+	status = becomeDC_drsuapi_pull_partition_recv(s, &s->schema, r);
+	if (!W_ERROR_IS_OK(status)) {
+		composite_error(c, werror_to_ntstatus(status));
 		return;
 	}
 
 	talloc_free(r);
+
+	if (s->schema.highwatermark.tmp_highest_usn > s->schema.highwatermark.highest_usn) {
+		becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->schema,
+						     becomeDC_drsuapi3_pull_schema_recv);
+		return;
+	}
 
 	becomeDC_connect_ldap2(s);
 }
