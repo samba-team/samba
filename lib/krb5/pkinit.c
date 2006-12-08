@@ -89,6 +89,18 @@ struct krb5_pk_init_ctx_data {
     int require_hostname_match;
 };
 
+static void
+_krb5_pk_copy_error(krb5_context context,
+		    hx509_context hx509ctx,
+		    int hxret,
+		    const char *fmt,
+		    ...)
+    __attribute__ ((format (printf, 4, 5)));
+
+/*
+ *
+ */
+
 void KRB5_LIB_FUNCTION
 _krb5_pk_cert_free(struct krb5_pk_cert *cert)
 {
@@ -690,13 +702,8 @@ _krb5_pk_verify_sign(krb5_context context,
 				  content,
 				  &signer_certs);
     if (ret) {
-	char *s = hx509_get_error_string(id->hx509ctx, ret);
-	if (s) {
-	    krb5_set_error_string(context,
-				  "CMS verify signed failed with %s", s);
-	    free(s);
-	} else
-	    krb5_clear_error_string(context);
+	_krb5_pk_copy_error(context, id->hx509ctx, ret,
+			    "CMS verify signed failed");
 	return ret;
     }
 
@@ -1458,25 +1465,34 @@ _krb5_pk_load_id(krb5_context context,
     }
 
     ret = hx509_certs_init(id->hx509ctx, user_id, 0, lock, &id->certs);
-    if (ret)
+    if (ret) {
+	_krb5_pk_copy_error(context, id->hx509ctx, ret,
+			    "Failed to init cert certs");
 	goto out;
+    }
 
     ret = hx509_certs_init(id->hx509ctx, anchor_id, 0, NULL, &id->anchors);
-    if (ret)
+    if (ret) {
+	_krb5_pk_copy_error(context, id->hx509ctx, ret,
+			    "Failed to init anchors");
 	goto out;
+    }
 
     ret = hx509_certs_init(id->hx509ctx, "MEMORY:pkinit-cert-chain", 
 			   0, NULL, &id->certpool);
-    if (ret)
+    if (ret) {
+	_krb5_pk_copy_error(context, id->hx509ctx, ret,
+			    "Failed to init chain");
 	goto out;
+    }
 
     while (chain_list && *chain_list) {
 	ret = hx509_certs_append(id->hx509ctx, id->certpool,
 				 NULL, *chain_list);
 	if (ret) {
-	    krb5_set_error_string(context,
-				  "pkinit failed to load chain %s",
-				  *chain_list);
+	    _krb5_pk_copy_error(context, id->hx509ctx, ret,
+				"Failed to laod chain %s",
+				*chain_list);
 	    goto out;
 	}
 	chain_list++;
@@ -1485,7 +1501,8 @@ _krb5_pk_load_id(krb5_context context,
     if (revoke_list) {
 	ret = hx509_revoke_init(id->hx509ctx, &id->revokectx);
 	if (ret) {
-	    krb5_set_error_string(context, "revoke failed to init");
+	    _krb5_pk_copy_error(context, id->hx509ctx, ret,
+				"Failed init revoke list");
 	    goto out;
 	}
 
@@ -1494,9 +1511,8 @@ _krb5_pk_load_id(krb5_context context,
 				       id->revokectx,
 				       *revoke_list);
 	    if (ret) {
-		krb5_set_error_string(context,
-				      "pkinit failed to load revoke %s",
-				      *revoke_list);
+		_krb5_pk_copy_error(context, id->hx509ctx, ret, 
+				    "Failed load revoke list");
 		goto out;
 	    }
 	    revoke_list++;
@@ -1505,8 +1521,11 @@ _krb5_pk_load_id(krb5_context context,
 	hx509_context_set_missing_revoke(id->hx509ctx, 1);
 
     ret = hx509_verify_init_ctx(id->hx509ctx, &id->verify_ctx);
-    if (ret)
+    if (ret) {
+	_krb5_pk_copy_error(context, id->hx509ctx, ret, 
+			    "Failed init verify context");
 	goto out;
+    }
 
     hx509_verify_attach_anchors(id->verify_ctx, id->anchors);
     hx509_verify_attach_revoke(id->verify_ctx, id->revokectx);
@@ -1954,4 +1973,37 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     krb5_set_error_string(context, "no support for PKINIT compiled in");
     return EINVAL;
 #endif
+}
+
+/*
+ *
+ */
+
+static void
+_krb5_pk_copy_error(krb5_context context,
+		    hx509_context hx509ctx,
+		    int hxret,
+		    const char *fmt,
+		    ...)
+{
+    va_list va;
+    char *s, *f;
+
+    va_start(va, fmt);
+    vasprintf(&f, fmt, va);
+    va_end(va);
+    if (f == NULL) {
+	krb5_clear_error_string(context);
+	return;
+    }
+
+    s = hx509_get_error_string(hx509ctx, hxret);
+    if (s == NULL) {
+	krb5_clear_error_string(context);
+	free(f);
+	return;
+    }
+    krb5_set_error_string(context, "%s: %s", f, s);
+    free(s);
+    free(f);
 }
