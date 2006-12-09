@@ -1511,6 +1511,7 @@ static void becomeDC_drsuapi2_bind_recv(struct rpc_request *req)
 	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private,
 					  struct libnet_BecomeDC_state);
 	struct composite_context *c = s->creq;
+	char *binding_str;
 	WERROR status;
 
 	c->status = dcerpc_ndr_request_recv(req);
@@ -1523,7 +1524,12 @@ static void becomeDC_drsuapi2_bind_recv(struct rpc_request *req)
 	}
 
 	/* this avoids the epmapper lookup on the 2nd connection */
-	s->drsuapi3.binding = s->drsuapi2.binding;
+	binding_str = dcerpc_binding_string(s, s->drsuapi2.binding);
+	if (composite_nomem(binding_str, c)) return;
+
+	c->status = dcerpc_parse_binding(s, binding_str, &s->drsuapi3.binding);
+	talloc_free(binding_str);
+	if (!composite_is_ok(c)) return;
 
 	becomeDC_drsuapi_connect_send(s, &s->drsuapi3, becomeDC_drsuapi3_connect_recv);
 }
