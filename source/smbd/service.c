@@ -549,7 +549,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (lp_guest_only(snum)) {
 		const char *guestname = lp_guestaccount();
 		NTSTATUS status2;
-		char *found_username;
+		char *found_username = NULL;
+
 		guest = True;
 		pass = getpwnam_alloc(NULL, guestname);
 		if (!pass) {
@@ -564,6 +565,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 						     &found_username,
 						     &conn->nt_user_token);
 		if (!NT_STATUS_IS_OK(status2)) {
+			TALLOC_FREE(found_username);
 			conn_free(conn);
 			*status = status2;
 			return NULL;
@@ -571,6 +573,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		fstrcpy(user, found_username);
 		string_set(&conn->user,user);
 		conn->force_user = True;
+		TALLOC_FREE(found_username);
 		TALLOC_FREE(pass);
 		DEBUG(3,("Guest only user %s\n",user));
 	} else if (vuser) {
@@ -603,7 +606,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		guest = vuser->guest; 
 	} else if (lp_security() == SEC_SHARE) {
 		NTSTATUS status2;
-		char *found_username;
+		char *found_username = NULL;
 		/* add it as a possible user name if we 
 		   are in share mode security */
 		add_session_user(lp_servicename(snum));
@@ -621,12 +624,14 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 						     &found_username,
 						     &conn->nt_user_token);
 		if (!NT_STATUS_IS_OK(status2)) {
+			TALLOC_FREE(found_username);
 			conn_free(conn);
 			*status = status2;
 			return NULL;
 		}
 		fstrcpy(user, found_username);
 		string_set(&conn->user,user);
+		TALLOC_FREE(found_username);
 		conn->force_user = True;
 	} else {
 		DEBUG(0, ("invalid VUID (vuser) but not in security=share\n"));
