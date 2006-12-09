@@ -1271,23 +1271,24 @@ static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 	return ret;
 }
 
-static void add_uid_to_array_unique(TALLOC_CTX *mem_ctx,
+static BOOL add_uid_to_array_unique(TALLOC_CTX *mem_ctx,
 				    uid_t uid, uid_t **pp_uids, size_t *p_num)
 {
 	size_t i;
 
 	for (i=0; i<*p_num; i++) {
 		if ((*pp_uids)[i] == uid)
-			return;
+			return True;
 	}
 	
 	*pp_uids = TALLOC_REALLOC_ARRAY(mem_ctx, *pp_uids, uid_t, *p_num+1);
 
 	if (*pp_uids == NULL)
-		return;
+		return False;
 
 	(*pp_uids)[*p_num] = uid;
 	*p_num += 1;
+	return True;
 }
 
 static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size_t *p_num)
@@ -1296,6 +1297,7 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 	char **gr;
 	struct passwd *pwd;
 	BOOL winbind_env;
+	BOOL ret = False;
  
 	*pp_uids = NULL;
 	*p_num = 0;
@@ -1306,19 +1308,17 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 
 	if ((grp = getgrgid(gid)) == NULL) {
 		/* allow winbindd lookups, but only if they weren't already disabled */
-		if (!winbind_env) {
-			winbind_on();
-		}
-		
-		return False;
+		goto done;
 	}
 
 	/* Primary group members */
 	setpwent();
 	while ((pwd = getpwent()) != NULL) {
 		if (pwd->pw_gid == gid) {
-			add_uid_to_array_unique(mem_ctx, pwd->pw_uid,
-						pp_uids, p_num);
+			if (!add_uid_to_array_unique(mem_ctx, pwd->pw_uid,
+						pp_uids, p_num)) {
+				goto done;
+			}
 		}
 	}
 	endpwent();
@@ -1329,15 +1329,21 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 
 		if (pw == NULL)
 			continue;
-		add_uid_to_array_unique(mem_ctx, pw->pw_uid, pp_uids, p_num);
+		if (!add_uid_to_array_unique(mem_ctx, pw->pw_uid, pp_uids, p_num)) {
+			goto done;
+		}
 	}
+
+	ret = True;
+
+  done:
 
 	/* allow winbindd lookups, but only if they weren't already disabled */
 	if (!winbind_env) {
 		winbind_on();
 	}
 	
-	return True;
+	return ret;
 }
 
 NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,

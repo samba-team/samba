@@ -1230,10 +1230,13 @@ static void getgroups_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	struct getgroups_state *s =
 		(struct getgroups_state *)private_data;
 
-	if (success)
-		add_gid_to_array_unique(NULL, gid,
+	if (success) {
+		if (!add_gid_to_array_unique(NULL, gid,
 					&s->token_gids,
-					&s->num_token_gids);
+					&s->num_token_gids)) {
+			return;
+		}
+	}
 
 	if (s->i < s->num_token_sids) {
 		const DOM_SID *sid = &s->token_sids[s->i];

@@ -692,8 +692,10 @@ static BOOL add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 {
 	*addrs = TALLOC_REALLOC_ARRAY(mem_ctx, *addrs, struct sockaddr_in, (*num)+1);
 
-	if (*addrs == NULL)
+	if (*addrs == NULL) {
+		*num = 0;
 		return False;
+	}
 
 	(*addrs)[*num].sin_family = PF_INET;
 	putip((char *)&((*addrs)[*num].sin_addr), (char *)&ip);
@@ -987,15 +989,23 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<num_dcs; i++) {
 
-		add_string_to_array(mem_ctx, dcs[i].name,
-				    &dcnames, &num_dcnames);
-		add_sockaddr_to_array(mem_ctx, dcs[i].ip, 445,
-				      &addrs, &num_addrs);
+		if (!add_string_to_array(mem_ctx, dcs[i].name,
+				    &dcnames, &num_dcnames)) {
+			return False;
+		}
+		if (!add_sockaddr_to_array(mem_ctx, dcs[i].ip, 445,
+				      &addrs, &num_addrs)) {
+			return False;
+		}
 
-		add_string_to_array(mem_ctx, dcs[i].name,
-				    &dcnames, &num_dcnames);
-		add_sockaddr_to_array(mem_ctx, dcs[i].ip, 139,
-				      &addrs, &num_addrs);
+		if (!add_string_to_array(mem_ctx, dcs[i].name,
+				    &dcnames, &num_dcnames)) {
+			return False;
+		}
+		if (!add_sockaddr_to_array(mem_ctx, dcs[i].ip, 139,
+				      &addrs, &num_addrs)) {
+			return False;
+		}
 	}
 
 	if ((num_dcnames == 0) || (num_dcnames != num_addrs))
@@ -1102,8 +1112,14 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			int num_addrs = 0;
 			int dummy = 0;
 
-			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 445, &addrs, &num_addrs);
-			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 139, &addrs, &num_addrs);
+			if (!add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 445, &addrs, &num_addrs)) {
+				set_domain_offline(domain);
+				return NT_STATUS_NO_MEMORY;
+			}
+			if (!add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 139, &addrs, &num_addrs)) {
+				set_domain_offline(domain);
+				return NT_STATUS_NO_MEMORY;
+			}
 
 			/* 5 second timeout. */
 			if (!open_any_socket_out(addrs, num_addrs, 5000, &dummy, &fd)) {

@@ -774,7 +774,9 @@ static BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
 			DEBUG(0, ("Could not parse sid %s\n", p));
 			return False;
 		}
-		add_sid_to_array(mem_ctx, &sid, sids, num_sids);
+		if (!add_sid_to_array(mem_ctx, &sid, sids, num_sids)) {
+			return False;
+		}
 		p = q;
 	}
 	return True;
@@ -985,7 +987,9 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 		DEBUGADD(10, (" rid %d\n", alias_rids[i]));
 		sid_copy(&sid, &domain->sid);
 		sid_append_rid(&sid, alias_rids[i]);
-		add_sid_to_array(state->mem_ctx, &sid, &sids, &num_sids);
+		if (!add_sid_to_array(state->mem_ctx, &sid, &sids, &num_sids)) {
+			return WINBINDD_ERROR;
+		}
 	}
 
 
@@ -1096,8 +1100,12 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 	state->sids = NULL;
 	state->num_sids = 0;
 
-	add_sid_to_array(mem_ctx, &state->user_sid, &state->sids,
-			 &state->num_sids);
+	if (!add_sid_to_array(mem_ctx, &state->user_sid, &state->sids,
+			 &state->num_sids)) {
+		DEBUG(0, ("Out of memory\n"));
+		state->cont(state->private_data, False, NULL, 0);
+		return;
+	}
 
 	if (sids_str && !parse_sidlist(mem_ctx, sids_str, &state->sids,
 			   &state->num_sids)) {
@@ -1133,9 +1141,14 @@ static void gettoken_recvaliases(void *private_data, BOOL success,
 		return;
 	}
 
-	for (i=0; i<num_aliases; i++)
-		add_sid_to_array(state->mem_ctx, &aliases[i],
-				 &state->sids, &state->num_sids);
+	for (i=0; i<num_aliases; i++) {
+		if (!add_sid_to_array(state->mem_ctx, &aliases[i],
+				 &state->sids, &state->num_sids)) {
+			DEBUG(0, ("Out of memory\n"));
+			state->cont(state->private_data, False, NULL, 0);
+			return;
+		}
+	}
 
 	if (state->local_alias_domain != NULL) {
 		struct winbindd_domain *local_domain = state->local_alias_domain;
