@@ -591,7 +591,7 @@ NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 		*p_num_alias_rids += 1;
 	}
 
-	SAFE_FREE(alias_sids);
+	TALLOC_FREE(alias_sids);
 
 	return NT_STATUS_OK;
 }

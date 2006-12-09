@@ -605,8 +605,12 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 				"for gid %d!\n", gids[i]));
 			continue;
 		}
-		add_sid_to_array_unique( result, &unix_group_sid,
-			&result->sids, &result->num_sids );
+		if (!add_sid_to_array_unique( result, &unix_group_sid,
+				&result->sids, &result->num_sids )) {
+			result->sam_account = NULL; /* Don't free on error exit. */
+			TALLOC_FREE(result);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	/* For now we throw away the gids and convert via sid_to_gid
@@ -657,10 +661,9 @@ static NTSTATUS add_aliases(const DOM_SID *domain_sid,
 	for (i=0; i<num_aliases; i++) {
 		DOM_SID alias_sid;
 		sid_compose(&alias_sid, domain_sid, aliases[i]);
-		add_sid_to_array_unique(token, &alias_sid,
+		if (!add_sid_to_array_unique(token, &alias_sid,
 					&token->user_sids,
-					&token->num_sids);
-		if (token->user_sids == NULL) {
+					&token->num_sids)) {
 			DEBUG(0, ("add_sid_to_array failed\n"));
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
@@ -733,8 +736,10 @@ static NTSTATUS add_builtin_administrators( struct nt_user_token *token )
 	/* Add Administrators if the user beloongs to Domain Admins */
 	
 	if ( nt_token_check_sid( &domadm, token ) ) {
-		add_sid_to_array(token, &global_sid_Builtin_Administrators,
-				 &token->user_sids, &token->num_sids);
+		if (!add_sid_to_array(token, &global_sid_Builtin_Administrators,
+					 &token->user_sids, &token->num_sids)) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	
 	return NT_STATUS_OK;
@@ -843,28 +848,40 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 
 	/* Add the user and primary group sid */
 
-	add_sid_to_array(result, user_sid,
-			 &result->user_sids, &result->num_sids);
+	if (!add_sid_to_array(result, user_sid,
+			 &result->user_sids, &result->num_sids)) {
+		return NULL;
+	}
 
 	/* For guest, num_groupsids may be zero. */
 	if (num_groupsids) {
-		add_sid_to_array(result, &groupsids[0],
-				 &result->user_sids, &result->num_sids);
+		if (!add_sid_to_array(result, &groupsids[0],
+				 &result->user_sids, &result->num_sids)) {
+			return NULL;
+		}
 	}
 			 
 	/* Add in BUILTIN sids */
 	
-	add_sid_to_array(result, &global_sid_World,
-			 &result->user_sids, &result->num_sids);
-	add_sid_to_array(result, &global_sid_Network,
-			 &result->user_sids, &result->num_sids);
+	if (!add_sid_to_array(result, &global_sid_World,
+			 &result->user_sids, &result->num_sids)) {
+		return NULL;
+	}
+	if (!add_sid_to_array(result, &global_sid_Network,
+			 &result->user_sids, &result->num_sids)) {
+		return NULL;
+	}
 
 	if (is_guest) {
-		add_sid_to_array(result, &global_sid_Builtin_Guests,
-				 &result->user_sids, &result->num_sids);
+		if (!add_sid_to_array(result, &global_sid_Builtin_Guests,
+				 &result->user_sids, &result->num_sids)) {
+			return NULL;
+		}
 	} else {
-		add_sid_to_array(result, &global_sid_Authenticated_Users,
-				 &result->user_sids, &result->num_sids);
+		if (!add_sid_to_array(result, &global_sid_Authenticated_Users,
+				 &result->user_sids, &result->num_sids)) {
+			return NULL;
+		}
 	}
 	
 	/* Now the SIDs we got from authentication. These are the ones from
@@ -874,8 +891,10 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	 * first group sid as primary above. */
 
 	for (i=1; i<num_groupsids; i++) {
-		add_sid_to_array_unique(result, &groupsids[i],
-					&result->user_sids, &result->num_sids);
+		if (!add_sid_to_array_unique(result, &groupsids[i],
+					&result->user_sids, &result->num_sids)) {
+			return NULL;
+		}
 	}
 	
 	/* Deal with the BUILTIN\Administrators group.  If the SID can
@@ -1018,8 +1037,11 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 				   "ignoring it\n", sid_string_static(sid)));
 			continue;
 		}
-		add_gid_to_array_unique(server_info, gid, &server_info->groups,
-					&server_info->n_groups);
+		if (!add_gid_to_array_unique(server_info, gid, &server_info->groups,
+					&server_info->n_groups)) {
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	
 	debug_nt_user_token(DBGC_AUTH, 10, server_info->ptok);
@@ -1060,7 +1082,6 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	DOM_SID user_sid;
 	enum lsa_SidType type;
 	gid_t *gids;
-	DOM_SID primary_group_sid;
 	DOM_SID *group_sids;
 	DOM_SID unix_group_sid;
 	size_t num_group_sids;
@@ -1109,7 +1130,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			goto unix_user;
 		}
 
-		result = pdb_enum_group_memberships(tmp_ctx, sam_acct,
+		result = pdb_enum_group_memberships(mem_ctx, sam_acct,
 						    &group_sids, &gids,
 						    &num_group_sids);
 		if (!NT_STATUS_IS_OK(result)) {
@@ -1157,7 +1178,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			goto done;
 		}
 
-		group_sids = talloc_array(tmp_ctx, DOM_SID, num_group_sids);
+		/* group_sids can be realloced - must be done on mem_ctx not tmp_ctx. */
+		group_sids = talloc_array(mem_ctx, DOM_SID, num_group_sids);
 		if (group_sids == NULL) {
 			DEBUG(1, ("talloc_array failed\n"));
 			result = NT_STATUS_NO_MEMORY;
@@ -1185,18 +1207,24 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		uint32 dummy;
 
-		sid_copy(&primary_group_sid, &user_sid);
-		sid_split_rid(&primary_group_sid, &dummy);
-		sid_append_rid(&primary_group_sid, DOMAIN_GROUP_RID_USERS);
-
-		if (!sid_to_gid(&primary_group_sid, gid)) {
-			DEBUG(1, ("sid_to_gid(%s) failed\n",
-				  sid_string_static(&primary_group_sid)));
+		num_group_sids = 1;
+		group_sids = talloc_array(mem_ctx, DOM_SID, num_group_sids);
+		if (group_sids == NULL) {
+			DEBUG(1, ("talloc_array failed\n"));
+			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
-		num_group_sids = 1;
-		group_sids = &primary_group_sid;
+		sid_copy(&group_sids[0], &user_sid);
+		sid_split_rid(&group_sids[0], &dummy);
+		sid_append_rid(&group_sids[0], DOMAIN_GROUP_RID_USERS);
+
+		if (!sid_to_gid(&group_sids[0], gid)) {
+			DEBUG(1, ("sid_to_gid(%s) failed\n",
+				  sid_string_static(&group_sids[0])));
+			goto done;
+		}
+
 		gids = gid;
 
 		*found_username = talloc_strdup(mem_ctx, username);
@@ -1223,8 +1251,11 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				"for gid %d!\n", gids[i]));
 			continue;
 		}
-		add_sid_to_array_unique( mem_ctx, &unix_group_sid,
-			&group_sids, &num_group_sids );
+		if (!add_sid_to_array_unique( mem_ctx, &unix_group_sid,
+				&group_sids, &num_group_sids )) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 	}
 
 	*token = create_local_nt_token(mem_ctx, &user_sid,
@@ -1869,8 +1900,11 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(result);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		add_sid_to_array(result, &sid, &result->sids,
-				 &result->num_sids);
+		if (!add_sid_to_array(result, &sid, &result->sids,
+				 &result->num_sids)) {
+			TALLOC_FREE(result);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	/* Copy 'other' sids.  We need to do sid filtering here to
@@ -1880,9 +1914,12 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
          */
 
 	for (i = 0; i < info3->num_other_sids; i++) {
-		add_sid_to_array(result, &info3->other_sids[i].sid,
-				 &result->sids,
-				 &result->num_sids);
+		if (!add_sid_to_array(result, &info3->other_sids[i].sid,
+					 &result->sids,
+					 &result->num_sids)) {
+			TALLOC_FREE(result);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	result->login_server = unistr2_tdup(result, 

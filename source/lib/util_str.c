@@ -2428,8 +2428,10 @@ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 
 	*strings = TALLOC_REALLOC_ARRAY(mem_ctx, *strings, const char *, (*num)+1);
 
-	if ((*strings == NULL) || (dup_str == NULL))
+	if ((*strings == NULL) || (dup_str == NULL)) {
+		*num = 0;
 		return False;
+	}
 
 	(*strings)[*num] = dup_str;
 	*num += 1;

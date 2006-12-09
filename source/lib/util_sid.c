@@ -580,24 +580,20 @@ DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
  Add SID to an array SIDs
 ********************************************************************/
 
-void add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
+BOOL add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
 		      DOM_SID **sids, size_t *num)
 {
-	if (mem_ctx != NULL) {
-		*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID,
+	*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID,
 					     (*num)+1);
-	} else {
-		*sids = SMB_REALLOC_ARRAY(*sids, DOM_SID, (*num)+1);
-	}
-
 	if (*sids == NULL) {
-		return;
+		*num = 0;
+		return False;
 	}
 
 	sid_copy(&((*sids)[*num]), sid);
 	*num += 1;
 
-	return;
+	return True;
 }
 
 
@@ -605,17 +601,17 @@ void add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
  Add SID to an array SIDs ensuring that it is not already there
 ********************************************************************/
 
-void add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+BOOL add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 			     DOM_SID **sids, size_t *num_sids)
 {
 	size_t i;
 
 	for (i=0; i<(*num_sids); i++) {
 		if (sid_compare(sid, &(*sids)[i]) == 0)
-			return;
+			return True;
 	}
 
-	add_sid_to_array(mem_ctx, sid, sids, num_sids);
+	return add_sid_to_array(mem_ctx, sid, sids, num_sids);
 }
 
 /********************************************************************
@@ -647,23 +643,26 @@ void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, size_t *num)
 	return;
 }
 
-void add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
+BOOL add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 				    uint32 rid, uint32 **pp_rids, size_t *p_num)
 {
 	size_t i;
 
 	for (i=0; i<*p_num; i++) {
 		if ((*pp_rids)[i] == rid)
-			return;
+			return True;
 	}
 	
 	*pp_rids = TALLOC_REALLOC_ARRAY(mem_ctx, *pp_rids, uint32, *p_num+1);
 
-	if (*pp_rids == NULL)
-		return;
+	if (*pp_rids == NULL) {
+		*p_num = 0;
+		return False;
+	}
 
 	(*pp_rids)[*p_num] = rid;
 	*p_num += 1;
+	return True;
 }
 
 BOOL is_null_sid(const DOM_SID *sid)

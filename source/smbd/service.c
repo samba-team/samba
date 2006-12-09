@@ -759,8 +759,13 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					   sid_string_static(sid)));
 				continue;
 			}
-			add_gid_to_array_unique(NULL, gid, &conn->groups,
-						&conn->ngroups);
+			if (!add_gid_to_array_unique(NULL, gid, &conn->groups,
+						&conn->ngroups)) {
+				DEBUG(0, ("add_gid_to_array_unique failed\n"));
+				conn_free(conn);
+				*status = NT_STATUS_NO_MEMORY;
+				return NULL;
+			}
 		}
 	}
 

@@ -592,7 +592,10 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 	num_groups = 0;
 
 	/* always add the primary group to the sid array */
-	add_sid_to_array(mem_ctx, primary_group, user_sids, &num_groups);
+	if (!add_sid_to_array(mem_ctx, primary_group, user_sids, &num_groups)) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	if (count > 0) {
 		for (msg = ads_first_entry(ads, res); msg;
@@ -609,8 +612,11 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 				continue;
 			}
 			       
-			add_sid_to_array(mem_ctx, &group_sid, user_sids,
-					 &num_groups);
+			if (!add_sid_to_array(mem_ctx, &group_sid, user_sids,
+					 &num_groups)) {
+				status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
 		}
 
 	}
@@ -673,7 +679,10 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 	num_groups = 0;
 
 	/* always add the primary group to the sid array */
-	add_sid_to_array(mem_ctx, primary_group, user_sids, &num_groups);
+	if (!add_sid_to_array(mem_ctx, primary_group, user_sids, &num_groups)) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	count = ads_pull_sids_from_extendeddn(ads, mem_ctx, res, "memberOf", 
 					      ADS_EXTENDED_DN_HEX_STRING, 
@@ -691,8 +700,11 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 			continue;
 		}
 		       
-		add_sid_to_array(mem_ctx, &group_sids[i], user_sids,
-				 &num_groups);
+		if (!add_sid_to_array(mem_ctx, &group_sids[i], user_sids,
+				 &num_groups)) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 	
 	}
 
@@ -822,7 +834,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	*user_sids = NULL;
 	num_groups = 0;
 
-	add_sid_to_array(mem_ctx, &primary_group, user_sids, &num_groups);
+	if (!add_sid_to_array(mem_ctx, &primary_group, user_sids, &num_groups)) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 	
 	for (i=0;i<count;i++) {
 
@@ -831,8 +846,11 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 			continue;
 		}
 			       
-		add_sid_to_array_unique(mem_ctx, &sids[i],
-					user_sids, &num_groups);
+		if (!add_sid_to_array_unique(mem_ctx, &sids[i],
+					user_sids, &num_groups)) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 	}
 
 	*p_num_groups = (uint32)num_groups;
