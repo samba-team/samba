@@ -129,6 +129,7 @@ parse_certificate(hx509_context context, const char *fn,
 static int
 try_decrypt(hx509_context context,
 	    struct hx509_collector *collector,
+	    const AlgorithmIdentifier *alg,
 	    const EVP_CIPHER *c,
 	    const void *ivdata,
 	    const void *password,
@@ -177,7 +178,7 @@ try_decrypt(hx509_context context,
 
     ret = _hx509_collector_private_key_add(context,
 					   collector,
-					   hx509_signature_rsa(),
+					   alg,
 					   NULL,
 					   &clear,
 					   NULL);
@@ -286,8 +287,8 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 		password = pw->val[i];
 		passwordlen = strlen(password);
 		
-		ret = try_decrypt(context, c, cipher,
-				  ivdata, password, passwordlen,
+		ret = try_decrypt(context, c, hx509_signature_rsa(),
+				  cipher, ivdata, password, passwordlen,
 				  data, len);
 		if (ret == 0) {
 		    decrypted = 1;
@@ -308,8 +309,8 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 
 	    ret = hx509_lock_prompt(lock, &prompt);
 	    if (ret == 0)
-		ret = try_decrypt(context, c, cipher,
-				  ivdata, password, strlen(password),
+		ret = try_decrypt(context, c, hx509_signature_rsa(),
+				  cipher, ivdata, password, strlen(password),
 				  data, len);
 	    /* XXX add password to lock password collection ? */
 	    memset(password, 0, sizeof(password));
