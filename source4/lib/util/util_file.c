@@ -263,7 +263,6 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *
 	talloc_steal(ret, p);
 	
 	memset(ret, 0, sizeof(ret[0])*(i+2));
-	if (numlines) *numlines = i;
 
 	ret[0] = p;
 	for (s = p, i=0; s < p+size; s++) {
@@ -274,6 +273,13 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *
 		}
 		if (s[0] == '\r') s[0] = 0;
 	}
+
+	/* remove any blank lines at the end */
+	while (i > 0 && ret[i-1][0] == 0) {
+		i--;
+	}
+
+	if (numlines) *numlines = i;
 
 	return ret;
 }
