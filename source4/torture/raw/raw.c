@@ -26,10 +26,11 @@
 NTSTATUS torture_raw_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(
-												talloc_autofree_context(),
-												"RAW");
+		talloc_autofree_context(),
+		"RAW");
 	/* RAW smb tests */
 	torture_suite_add_simple_test(suite, "BENCH-OPLOCK", torture_bench_oplock);
+	torture_suite_add_simple_test(suite, "BENCH-LOCK", torture_bench_lock);
 	torture_suite_add_simple_test(suite, "QFSINFO", torture_raw_qfsinfo);
 	torture_suite_add_simple_test(suite, "QFILEINFO", torture_raw_qfileinfo);
 	torture_suite_add_simple_test(suite, "SFILEINFO", torture_raw_sfileinfo);
