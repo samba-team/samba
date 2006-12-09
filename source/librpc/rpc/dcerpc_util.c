@@ -232,7 +232,7 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 /*
   form a binding string from a binding structure
 */
-const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
+char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
 {
 	char *s = talloc_strdup(mem_ctx, "");
 	int i;
