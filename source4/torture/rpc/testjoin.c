@@ -659,8 +659,8 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 *	attrs:	*
 	 * Result:
 	 *      ""
-	 *		currentTime:		...
-	 *		subschemaSubEntry:	...
+	 *		currentTime:		20061202155100.0Z
+	 *		subschemaSubentry:	CN=Aggregate,CN=Schema,CN=Configuration,<domain_partition>
 	 *		dsServiceName:		CN=<netbios_name>,CN=Servers,CN=<site_name>,CN=Sites,CN=Configuration,<domain_partition>
 	 *		namingContexts:		<domain_partition>
 	 *					CN=Configuration,<domain_partition>
@@ -672,7 +672,12 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 	 *		supportedControl:	...
 	 *		supportedLDAPVersion:	3
 	 *					2
-	 *		supportedSASLmechanisms:...
+	 *		supportedLDAPPolicies:	...
+	 *		highestCommitedUSN:	...
+	 *		supportedSASLMechanisms:GSSAPI
+	 *					GSS-SPNEGO
+	 *					EXTERNAL
+	 *					DIGEST-MD5
 	 *		dnsHostName:		<dns_host_name>
 	 *		ldapServiceName:	<domain_dns_name>:<netbios_name>$@<REALM>
 	 *		serverName:		CN=Servers,CN=<site_name>,CN=Sites,CN=Configuration,<domain_partition>
