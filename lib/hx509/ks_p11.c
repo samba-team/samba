@@ -610,14 +610,11 @@ collect_private_key(hx509_context context,
 		    void *ptr, CK_ATTRIBUTE *query, int num_query)
 {
     struct hx509_collector *collector = ptr;
-    AlgorithmIdentifier alg;
     hx509_private_key key;
     heim_octet_string localKeyId;
     int ret;
     RSA *rsa;
     struct p11_rsa *p11rsa;
-
-    memset(&alg, 0, sizeof(alg));
 
     localKeyId.data = query[0].pValue;
     localKeyId.length = query[0].ulValueLen;
@@ -661,7 +658,7 @@ collect_private_key(hx509_context context,
 
     ret = _hx509_collector_private_key_add(context,
 					   collector,
-					   &alg,
+					   hx509_signature_rsa(),
 					   key,
 					   NULL,
 					   &localKeyId);
