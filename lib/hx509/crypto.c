@@ -1264,6 +1264,7 @@ _hx509_private_key_assign_rsa(hx509_private_key key, void *ptr)
     if (key->private_key.rsa)
 	RSA_free(key->private_key.rsa);
     key->private_key.rsa = ptr;
+    key->signature_alg = oid_id_pkcs1_sha1WithRSAEncryption();
     key->md = &pkcs1_rsa_sha1_alg;
 }
 
