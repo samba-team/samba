@@ -2470,8 +2470,11 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 
 			sid_peek_rid(&sid, &rid);
 
-			add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
-						p_num_members);
+			if (!add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
+						p_num_members)) {
+				ret = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
 		}
 	}
 
@@ -2506,8 +2509,11 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 			goto done;
 		}
 
-		add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
-					p_num_members);
+		if (!add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
+					p_num_members)) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 	}
 
 	ret = NT_STATUS_OK;
@@ -2618,11 +2624,17 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 
 	/* We need to add the primary group as the first gid/sid */
 
-	add_gid_to_array_unique(mem_ctx, primary_gid, pp_gids, &num_gids);
+	if (!add_gid_to_array_unique(mem_ctx, primary_gid, pp_gids, &num_gids)) {
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	/* This sid will be replaced later */
 
-	add_sid_to_array_unique(mem_ctx, &global_sid_NULL, pp_sids, &num_sids);
+	if (!add_sid_to_array_unique(mem_ctx, &global_sid_NULL, pp_sids, &num_sids)) {
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	for (entry = ldap_first_entry(conn->ldap_struct, result);
 	     entry != NULL;
@@ -2654,10 +2666,16 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		if (gid == primary_gid) {
 			sid_copy(&(*pp_sids)[0], &sid);
 		} else {
-			add_gid_to_array_unique(mem_ctx, gid, pp_gids,
-						&num_gids);
-			add_sid_to_array_unique(mem_ctx, &sid, pp_sids,
-						&num_sids);
+			if (!add_gid_to_array_unique(mem_ctx, gid, pp_gids,
+						&num_gids)) {
+				ret = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+			if (!add_sid_to_array_unique(mem_ctx, &sid, pp_sids,
+						&num_sids)) {
+				ret = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
 		}
 	}
 
@@ -3354,7 +3372,11 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 		if (!string_to_sid(&member, values[i]))
 			continue;
 
-		add_sid_to_array(NULL, &member, pp_members, &num_members);
+		if (!add_sid_to_array(NULL, &member, pp_members, &num_members)) {
+			ldap_value_free(values);
+			ldap_msgfree(result);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	*p_num_members = num_members;
@@ -3442,8 +3464,11 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		if (!sid_peek_check_rid(domain_sid, &sid, &rid))
 			continue;
 
-		add_rid_to_array_unique(mem_ctx, rid, pp_alias_rids,
-					p_num_alias_rids);
+		if (!add_rid_to_array_unique(mem_ctx, rid, pp_alias_rids,
+					p_num_alias_rids)) {
+			ldap_msgfree(result);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	ldap_msgfree(result);

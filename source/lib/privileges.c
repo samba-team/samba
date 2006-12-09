@@ -517,7 +517,9 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 		return 0;
 	}
 
-	add_sid_to_array( NULL, &sid, &priv->sids.list, &priv->sids.count );
+	if (!add_sid_to_array( NULL, &sid, &priv->sids.list, &priv->sids.count )) {
+		return 0;
+	}
 	
 	return 0;
 }
