@@ -429,10 +429,9 @@ BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GR
 		if (!string_to_sid(&alias, string_sid))
 			continue;
 
-		add_sid_to_array_unique(NULL, &alias, sids, num);
-
-		if (sids == NULL)
+		if (!add_sid_to_array_unique(NULL, &alias, sids, num)) {
 			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	SAFE_FREE(dbuf.dptr);
@@ -577,7 +576,10 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 		if (!string_to_sid(&member, member_string))
 			continue;
 		
-		add_sid_to_array(NULL, &member, closure->sids, closure->num);
+		if (!add_sid_to_array(NULL, &member, closure->sids, closure->num)) {
+			/* talloc fail. */
+			break;
+		}
 	}
 
 	return 0;

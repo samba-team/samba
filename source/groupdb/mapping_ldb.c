@@ -423,8 +423,7 @@ failed:
 			goto failed;
 		}
 		string_to_sid(&alias, (char *)el->values[0].data);
-		add_sid_to_array_unique(NULL, &alias, sids, num);
-		if (sids == NULL) {
+		if (!add_sid_to_array_unique(NULL, &alias, sids, num)) {
 			status = NT_STATUS_NO_MEMORY;
 			goto failed;
 		}
@@ -558,8 +557,7 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 	for (i=0;i<el->num_values;i++) {
 		DOM_SID sid;
 		string_to_sid(&sid, (const char *)el->values[i].data);
-		add_sid_to_array_unique(NULL, &sid, sids, num);
-		if (sids == NULL) {
+		if (!add_sid_to_array_unique(NULL, &sid, sids, num)) {
 			talloc_free(dn);
 			return NT_STATUS_NO_MEMORY;
 		}

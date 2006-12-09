@@ -307,7 +307,7 @@ const char *tmpdir(void)
  Add a gid to an array of gids if it's not already there.
 ****************************************************************************/
 
-void add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
+BOOL add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids)
 {
 	int i;
@@ -316,26 +316,24 @@ void add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 		/*
 		 * A former call to this routine has failed to allocate memory
 		 */
-		return;
+		return False;
 	}
 
 	for (i=0; i<*num_gids; i++) {
-		if ((*gids)[i] == gid)
-			return;
+		if ((*gids)[i] == gid) {
+			return True;
+		}
 	}
 
-	if (mem_ctx != NULL) {
-		*gids = TALLOC_REALLOC_ARRAY(mem_ctx, *gids, gid_t, *num_gids+1);
-	} else {
-		*gids = SMB_REALLOC_ARRAY(*gids, gid_t, *num_gids+1);
-	}
-
+	*gids = TALLOC_REALLOC_ARRAY(mem_ctx, *gids, gid_t, *num_gids+1);
 	if (*gids == NULL) {
-		return;
+		*num_gids = 0;
+		return False;
 	}
 
 	(*gids)[*num_gids] = gid;
 	*num_gids += 1;
+	return True;
 }
 
 /****************************************************************************
@@ -1077,12 +1075,7 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			goto error;
 		}
 
-		if (mem_ctx != NULL) {
-			*array = TALLOC(mem_ctx, element_size * (*array_size));
-		} else {
-			*array = SMB_MALLOC(element_size * (*array_size));
-		}
-
+		*array = TALLOC(mem_ctx, element_size * (*array_size));
 		if (*array == NULL) {
 			goto error;
 		}
@@ -1095,13 +1088,8 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			goto error;
 		}
 
-		if (mem_ctx != NULL) {
-			*array = TALLOC_REALLOC(mem_ctx, *array,
-						element_size * (*array_size));
-		} else {
-			*array = SMB_REALLOC(*array,
-					     element_size * (*array_size));
-		}
+		*array = TALLOC_REALLOC(mem_ctx, *array,
+					element_size * (*array_size));
 
 		if (*array == NULL) {
 			goto error;

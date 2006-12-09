@@ -684,7 +684,9 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 			printf("%s is not a legal SID\n", argv[i]);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		add_sid_to_array(mem_ctx, &tmp_sid, &sids, &num_sids);
+		if (!add_sid_to_array(mem_ctx, &tmp_sid, &sids, &num_sids)) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	sid2 = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_sids);

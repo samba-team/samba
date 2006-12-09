@@ -269,7 +269,7 @@ void conn_free_internal(connection_struct *conn)
 	}
 
 	if (conn->ngroups && conn->groups) {
-		SAFE_FREE(conn->groups);
+		TALLOC_FREE(conn->groups);
 		conn->ngroups = 0;
 	}
 
