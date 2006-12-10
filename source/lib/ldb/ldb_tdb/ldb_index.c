@@ -765,16 +765,16 @@ static int ltdb_index_add1_new(struct ldb_context *ldb,
 			       struct ldb_message *msg,
 			       const char *dn)
 {
-	struct ldb_message_element *el2;
+	struct ldb_message_element *el;
 
 	/* add another entry */
-	el2 = talloc_realloc(msg, msg->elements, 
+	el = talloc_realloc(msg, msg->elements, 
 			       struct ldb_message_element, msg->num_elements+1);
-	if (!el2) {
+	if (!el) {
 		return -1;
 	}
 
-	msg->elements = el2;
+	msg->elements = el;
 	msg->elements[msg->num_elements].name = talloc_strdup(msg->elements, LTDB_IDX);
 	if (!msg->elements[msg->num_elements].name) {
 		return -1;
