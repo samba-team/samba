@@ -547,7 +547,7 @@ struct share_iterator {
 
 typedef struct connection_struct {
 	struct connection_struct *next, *prev;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx; /* long-lived memory context for things hanging off this struct. */
 	unsigned cnum; /* an index passed over the wire */
 	struct share_params *params;
 	BOOL force_user;
