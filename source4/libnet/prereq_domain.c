@@ -30,14 +30,15 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 
 
-struct composite_context* samr_domain_opened(struct libnet_context *ctx,
-					     const char *domain_name,
-					     struct composite_context *parent_ctx,
-					     struct libnet_DomainOpen *domain_open,
-					     void (*continue_fn)(struct composite_context*),
-					     void (*monitor)(struct monitor_msg*))
+BOOL samr_domain_opened(struct libnet_context *ctx, const char *domain_name,
+			struct composite_context **parent_ctx,
+			struct libnet_DomainOpen *domain_open,
+			void (*continue_fn)(struct composite_context*),
+			void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *domopen_req;
+
+	if (parent_ctx == NULL || *parent_ctx == NULL) return False;
 
 	if (domain_name == NULL) {
 		/*
@@ -51,8 +52,8 @@ struct composite_context* samr_domain_opened(struct libnet_context *ctx,
 			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 
 		} else {
-			composite_error(parent_ctx, NT_STATUS_INVALID_PARAMETER);
-			return parent_ctx;
+			composite_error(*parent_ctx, NT_STATUS_INVALID_PARAMETER);
+			return True;
 		}
 
 	} else {
@@ -71,27 +72,28 @@ struct composite_context* samr_domain_opened(struct libnet_context *ctx,
 		} else {
 			/* domain has already been opened and it's the same domain
 			   as requested */
-			return NULL;
+			return True;
 		}
 	}
 
 	/* send request to open the domain */
 	domopen_req = libnet_DomainOpen_send(ctx, domain_open, monitor);
-	if (composite_nomem(domopen_req, parent_ctx)) return parent_ctx;
+	if (composite_nomem(domopen_req, *parent_ctx)) return False;
 	
-	composite_continue(parent_ctx, domopen_req, continue_fn, parent_ctx);
-	return parent_ctx;
+	composite_continue(*parent_ctx, domopen_req, continue_fn, *parent_ctx);
+	return False;
 }
 
 
-struct composite_context* lsa_domain_opened(struct libnet_context *ctx,
-					    const char *domain_name,
-					    struct composite_context *parent_ctx,
-					    struct libnet_DomainOpen *domain_open,
-					    void (*continue_fn)(struct composite_context*),
-					    void (*monitor)(struct monitor_msg*))
+BOOL lsa_domain_opened(struct libnet_context *ctx, const char *domain_name,
+		       struct composite_context **parent_ctx,
+		       struct libnet_DomainOpen *domain_open,
+		       void (*continue_fn)(struct composite_context*),
+		       void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *domopen_req;
+	
+	if (parent_ctx == NULL || *parent_ctx == NULL) return False;
 
 	if (domain_name == NULL) {
 		/*
@@ -105,8 +107,10 @@ struct composite_context* lsa_domain_opened(struct libnet_context *ctx,
 			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 
 		} else {
-			composite_error(parent_ctx, NT_STATUS_INVALID_PARAMETER);
-			return parent_ctx;
+			composite_error(*parent_ctx, NT_STATUS_INVALID_PARAMETER);
+			/* this ensures the calling function exits and composite function error
+			   gets noticed quickly */
+			return True;
 		}
 
 	} else {
@@ -125,14 +129,15 @@ struct composite_context* lsa_domain_opened(struct libnet_context *ctx,
 		} else {
 			/* domain has already been opened and it's the same domain
 			   as requested */
-			return NULL;
+			return True;
 		}
 	}
 
 	/* send request to open the domain */
 	domopen_req = libnet_DomainOpen_send(ctx, domain_open, monitor);
-	if (composite_nomem(domopen_req, parent_ctx)) return parent_ctx;
+	/* see the comment above to find out why true is returned here */
+	if (composite_nomem(domopen_req, *parent_ctx)) return True;
 	
-	composite_continue(parent_ctx, domopen_req, continue_fn, parent_ctx);
-	return parent_ctx;
+	composite_continue(*parent_ctx, domopen_req, continue_fn, *parent_ctx);
+	return False;
 }
