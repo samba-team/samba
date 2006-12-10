@@ -467,7 +467,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* prepare connect to the LSA pipe of PDC */
+	/* prepare connect to the SAMR pipe of PDC */
 	if (r->in.level == LIBNET_JOINDOMAIN_AUTOMATIC) {
 		connect_with_info->in.binding = NULL;
 		connect_with_info->in.name    = r->in.domain_name;
@@ -476,11 +476,13 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		connect_with_info->in.name    = NULL;
 	}
 
+	/* This level makes a connection to the LSA pipe on the way,
+	 * to get some useful bits of information about the domain */
 	connect_with_info->level              = LIBNET_RPC_CONNECT_DC_INFO;
 	connect_with_info->in.dcerpc_iface    = &dcerpc_table_samr;
 
 	/*
-	  establish a SAMR connection, on the same CIFS transport
+	  establish the SAMR connection
 	*/
 	status = libnet_RpcConnect(ctx, tmp_ctx, connect_with_info);
 	if (!NT_STATUS_IS_OK(status)) {
