@@ -63,7 +63,7 @@ struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct create_user_state *s;
 	struct composite_context *create_req;
-	struct composite_context *prereq_ctx;
+	BOOL prereq_met = False;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ctx->event_ctx);
@@ -80,9 +80,9 @@ struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 	ZERO_STRUCT(s->r.out);
 
 	/* prerequisite: make sure the domain is opened */
-	prereq_ctx = samr_domain_opened(ctx, s->r.in.domain_name, c, &s->domain_open,
+	prereq_met = samr_domain_opened(ctx, s->r.in.domain_name, &c, &s->domain_open,
 					continue_domain_open_create, monitor);
-	if (prereq_ctx) return prereq_ctx;
+	if (!prereq_met) return c;
 
 	/* prepare arguments for useradd call */
 	s->user_add.in.username       = r->in.user_name;
@@ -232,7 +232,7 @@ struct composite_context *libnet_DeleteUser_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct delete_user_state *s;
 	struct composite_context *delete_req;
-	struct composite_context *prereq_ctx;
+	BOOL prereq_met = False;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ctx->event_ctx);
@@ -249,9 +249,9 @@ struct composite_context *libnet_DeleteUser_send(struct libnet_context *ctx,
 	ZERO_STRUCT(s->r.out);
 	
 	/* prerequisite: make sure the domain is opened before proceeding */
-	prereq_ctx = samr_domain_opened(ctx, s->r.in.domain_name, c, &s->domain_open,
+	prereq_met = samr_domain_opened(ctx, s->r.in.domain_name, &c, &s->domain_open,
 					continue_domain_open_delete, monitor);
-	if (prereq_ctx) return prereq_ctx;
+	if (!prereq_met) return c;
 
 	/* prepare arguments for userdel call */
 	s->user_del.in.username       = r->in.user_name;
@@ -402,8 +402,8 @@ struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
 	const uint16_t level = 21;
 	struct composite_context *c;
 	struct modify_user_state *s;
-	struct composite_context *prereq_ctx;
 	struct composite_context *userinfo_req;
+	BOOL prereq_met = False;
 
 	c = composite_create(mem_ctx, ctx->event_ctx);
 	if (c == NULL) return NULL;
@@ -416,9 +416,9 @@ struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
 	s->ctx = ctx;
 	s->r = *r;
 
-	prereq_ctx = samr_domain_opened(ctx, s->r.in.domain_name, c, &s->domain_open,
+	prereq_met = samr_domain_opened(ctx, s->r.in.domain_name, &c, &s->domain_open,
 					continue_domain_open_modify, monitor);
-	if (prereq_ctx) return prereq_ctx;
+	if (!prereq_met) return c;
 
 	s->user_info.in.username      = r->in.user_name;
 	s->user_info.in.domain_handle = ctx->samr.handle;
@@ -626,8 +626,8 @@ struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 {
 	struct composite_context *c;
 	struct user_info_state *s;
-	struct composite_context *prereq_ctx;
 	struct composite_context *lookup_req;
+	BOOL prereq_met = False;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ctx->event_ctx);
@@ -645,9 +645,9 @@ struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 	s->user_name = talloc_strdup(c, r->in.user_name);
 
 	/* prerequisite: make sure the domain is opened */
-	prereq_ctx = samr_domain_opened(ctx, s->domain_name, c, &s->domopen,
+	prereq_met = samr_domain_opened(ctx, s->domain_name, &c, &s->domopen,
 					continue_domain_open_info, monitor);
-	if (prereq_ctx) return prereq_ctx;
+	if (!prereq_met) return c;
 
 	/* prepare arguments for LookupName call */
 	s->lookup.in.domain_name = s->domain_name;
@@ -869,8 +869,8 @@ struct composite_context* libnet_UserList_send(struct libnet_context *ctx,
 {
 	struct composite_context *c;
 	struct userlist_state *s;
-	struct composite_context *prereq_ctx;
 	struct rpc_request *query_req;
+	BOOL prereq_met = False;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ctx->event_ctx);
@@ -889,9 +889,9 @@ struct composite_context* libnet_UserList_send(struct libnet_context *ctx,
 	s->monitor_fn   = monitor;
 
 	/* make sure we have lsa domain handle before doing anything */
-	prereq_ctx = lsa_domain_opened(ctx, s->domain_name, c, &s->domain_open,
+	prereq_met = lsa_domain_opened(ctx, s->domain_name, &c, &s->domain_open,
 				       continue_lsa_domain_opened, monitor);
-	if (prereq_ctx) return prereq_ctx;
+	if (!prereq_met) return c;
 
 	/* prepare arguments of QueryDomainInfo call */
 	s->query_domain.in.handle = &ctx->lsa.handle;
@@ -943,8 +943,8 @@ static void continue_domain_queried(struct rpc_request *req)
 {
 	struct composite_context *c;
 	struct userlist_state *s;
-	struct composite_context *prereq_ctx;
 	struct rpc_request *enum_req;
+	BOOL prereq_met = False;
 	
 	c = talloc_get_type(req->async.private, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);
@@ -957,9 +957,9 @@ static void continue_domain_queried(struct rpc_request *req)
 	s->dominfo = s->query_domain.out.info->domain;
 
 	/* make sure we have samr domain handle before continuing */
-	prereq_ctx = samr_domain_opened(s->ctx, s->domain_name, c, &s->domain_open,
+	prereq_met = samr_domain_opened(s->ctx, s->domain_name, &c, &s->domain_open,
 					continue_samr_domain_opened, s->monitor_fn);
-	if (prereq_ctx) return;
+	if (!prereq_met) return;
 
 	/* prepare arguments od EnumDomainUsers call */
 	s->user_list.in.domain_handle = &s->ctx->samr.handle;
@@ -1027,7 +1027,7 @@ static void continue_users_enumerated(struct rpc_request *req)
 	/* get the actual status of the rpc call result (instead of rpc layer status) */
 	c->status = s->user_list.out.result;
 
-	/* we're interested in status "ok" as well as two enum-specific statuses */
+	/* we're interested in status "ok" as well as two enum-specific status codes */
 	if (NT_STATUS_IS_OK(c->status) ||
 	    NT_STATUS_EQUAL(c->status, STATUS_MORE_ENTRIES) ||
 	    NT_STATUS_EQUAL(c->status, NT_STATUS_NO_MORE_ENTRIES)) {
