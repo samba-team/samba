@@ -219,14 +219,6 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	/* Store the DN of our machine account. */
 	account_dn_str = r_crack_names.out.ctr.ctr1->array[0].result_name;
 
-	account_dn = ldb_dn_new(tmp_ctx, remote_ldb, account_dn_str);
-	if (! ldb_dn_validate(account_dn)) {
-		r->out.error_string = talloc_asprintf(r, "Invalid account dn: %s",
-						      account_dn_str);
-		talloc_free(tmp_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	/* Now we know the user's DN, open with LDAP, read and modify a few things */
 
 	remote_ldb_url = talloc_asprintf(tmp_ctx, "ldap://%s", 
@@ -241,6 +233,14 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 				      NULL, ctx->cred, 0, NULL);
 	if (!remote_ldb) {
 		r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	account_dn = ldb_dn_new(tmp_ctx, remote_ldb, account_dn_str);
+	if (! ldb_dn_validate(account_dn)) {
+		r->out.error_string = talloc_asprintf(r, "Invalid account dn: %s",
+						      account_dn_str);
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
