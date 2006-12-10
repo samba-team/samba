@@ -552,7 +552,7 @@ parse_source_type(const char *s)
     return 0;
 }
 
-static void
+static int
 iterate (krb5_context context,
 	 const char *database_name,
 	 HDB *db,
@@ -564,32 +564,38 @@ iterate (krb5_context context,
     switch(type) {
     case HPROP_KRB4_DUMP:
 	ret = v4_prop_dump(pd, database_name);
+	if(ret)
+	    krb5_warnx(context, "v4_prop_dump: %s", 
+		       krb5_get_err_text(context, ret));
 	break;
 #ifdef KRB4
     case HPROP_KRB4_DB:
 	ret = kerb_db_iterate ((k_iter_proc_t)kdb_prop, pd);
 	if(ret)
-	    krb5_errx(context, 1, "kerb_db_iterate: %s", 
+	    krb5_warnx(context, "kerb_db_iterate: %s", 
 		      krb_get_err_text(ret));
 	break;
 #endif /* KRB4 */
     case HPROP_KASERVER:
 	ret = ka_dump(pd, database_name);
 	if(ret)
-	    krb5_err(context, 1, ret, "ka_dump");
+	    krb5_warn(context, ret, "ka_dump");
 	break;
     case HPROP_MIT_DUMP:
 	ret = mit_prop_dump(pd, database_name);
 	if (ret)
-	    krb5_errx(context, 1, "mit_prop_dump: %s",
+	    krb5_warnx(context, "mit_prop_dump: %s",
 		      krb5_get_err_text(context, ret));
 	break;
     case HPROP_HEIMDAL:
 	ret = hdb_foreach(context, db, HDB_F_DECRYPT, v5_prop, pd);
 	if(ret)
-	    krb5_err(context, 1, ret, "hdb_foreach");
+	    krb5_warn(context, ret, "hdb_foreach");
 	break;
+    default:
+	krb5_errx(context, 1, "unknown prop type: %d", type);
     }
+    return ret;
 }
 
 static int
@@ -604,7 +610,9 @@ dump_database (krb5_context context, int type,
     pd.auth_context = NULL;
     pd.sock         = STDOUT_FILENO;
 	
-    iterate (context, database_name, db, type, &pd);
+    ret = iterate (context, database_name, db, type, &pd);
+    if (ret)
+	krb5_errx(context, 1, "iterate failure");
     krb5_data_zero (&data);
     ret = krb5_write_message (context, &pd.sock, &data);
     if (ret)
@@ -621,7 +629,7 @@ propagate_database (krb5_context context, int type,
 {
     krb5_principal server;
     krb5_error_code ret;
-    int i;
+    int i, failed = 0;
 
     for(i = optidx; i < argc; i++){
 	krb5_auth_context auth_context;
@@ -630,8 +638,9 @@ propagate_database (krb5_context context, int type,
 	krb5_data data;
 
 	char *port, portstr[NI_MAXSERV];
-	
-	port = strchr(argv[i], ':');
+	char *host = argv[i];
+
+	port = strchr(host, ':');
 	if(port == NULL) {
 	    snprintf(portstr, sizeof(portstr), "%u", 
 		     ntohs(krb5_getportbyname (context, "hprop", "tcp", 
@@ -640,16 +649,18 @@ propagate_database (krb5_context context, int type,
 	} else
 	    *port++ = '\0';
 
-	fd = open_socket(context, argv[i], port);
+	fd = open_socket(context, host, port);
 	if(fd < 0) {
-	    krb5_warn (context, errno, "connect %s", argv[i]);
+	    failed++;
+	    krb5_warn (context, errno, "connect %s", host);
 	    continue;
 	}
 
 	ret = krb5_sname_to_principal(context, argv[i],
 				      HPROP_NAME, KRB5_NT_SRV_HST, &server);
 	if(ret) {
-	    krb5_warn(context, ret, "krb5_sname_to_principal(%s)", argv[i]);
+	    failed++;
+	    krb5_warn(context, ret, "krb5_sname_to_principal(%s)", host);
 	    close(fd);
 	    continue;
 	}
@@ -680,7 +691,8 @@ propagate_database (krb5_context context, int type,
 	krb5_free_principal(context, server);
 
 	if(ret) {
-	    krb5_warn(context, ret, "krb5_sendauth");
+	    failed++;
+	    krb5_warn(context, ret, "krb5_sendauth (%s)", host);
 	    close(fd);
 	    continue;
 	}
@@ -689,22 +701,31 @@ propagate_database (krb5_context context, int type,
 	pd.auth_context = auth_context;
 	pd.sock         = fd;
 
-	iterate (context, database_name, db, type, &pd);
+	ret = iterate (context, database_name, db, type, &pd);
+	if (ret) {
+	    krb5_warnx(context, "iterate to host %s failed", host);
+	    failed++;
+	}
 
 	krb5_data_zero (&data);
 	ret = krb5_write_priv_message(context, auth_context, &fd, &data);
-	if(ret)
+	if(ret) {
 	    krb5_warn(context, ret, "krb5_write_priv_message");
+	    failed++;
+	}
 
 	ret = krb5_read_priv_message(context, auth_context, &fd, &data);
-	if(ret)
-	    krb5_warn(context, ret, "krb5_read_priv_message");
-	else
+	if(ret) {
+	    krb5_warn(context, ret, "krb5_read_priv_message: %s", host);
+	    failed++;
+	} else
 	    krb5_data_free (&data);
 	
 	krb5_auth_con_free(context, auth_context);
 	close(fd);
     }
+    if (failed)
+	return 1;
     return 0;
 }
 
@@ -717,7 +738,7 @@ main(int argc, char **argv)
     HDB *db = NULL;
     int optidx = 0;
 
-    int type;
+    int type, exit_code;
 
     setprogname(argv[0]);
 
@@ -828,10 +849,10 @@ main(int argc, char **argv)
     }
 
     if (to_stdout)
-	dump_database (context, type, database, db);
+	exit_code = dump_database (context, type, database, db);
     else
-	propagate_database (context, type, database, 
-			    db, ccache, optidx, argc, argv);
+	exit_code = propagate_database (context, type, database, 
+					db, ccache, optidx, argc, argv);
 
     if(ccache != NULL)
 	krb5_cc_destroy(context, ccache);
@@ -840,5 +861,5 @@ main(int argc, char **argv)
 	(*db->hdb_destroy)(context, db);
 
     krb5_free_context(context);
-    return 0;
+    return exit_code;
 }
