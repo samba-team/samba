@@ -268,15 +268,6 @@ void conn_free_internal(connection_struct *conn)
 		handle = thandle;
 	}
 
-	if (conn->ngroups && conn->groups) {
-		TALLOC_FREE(conn->groups);
-		conn->ngroups = 0;
-	}
-
-	if (conn->nt_user_token) {
-		TALLOC_FREE(conn->nt_user_token);
-	}
-
 	free_namearray(conn->veto_list);
 	free_namearray(conn->hide_list);
 	free_namearray(conn->veto_oplock_list);

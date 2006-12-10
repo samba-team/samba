@@ -374,43 +374,28 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS find_forced_user(int snum, BOOL vuser_is_guest,
-				 uid_t *uid, gid_t *gid, fstring username,
-				 struct nt_user_token **token)
+static NTSTATUS find_forced_user(connection_struct *conn, BOOL vuser_is_guest, fstring username)
 {
-	TALLOC_CTX *mem_ctx;
+	int snum = conn->params->service;
 	char *fuser, *found_username;
-	struct nt_user_token *tmp_token;
 	NTSTATUS result;
 
-	if (!(mem_ctx = talloc_new(NULL))) {
-		DEBUG(0, ("talloc_new failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!(fuser = talloc_string_sub(mem_ctx, lp_force_user(snum), "%S",
+	if (!(fuser = talloc_string_sub(conn->mem_ctx, lp_force_user(snum), "%S",
 					lp_servicename(snum)))) {
-		TALLOC_FREE(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
-		
 	}
 
-	result = create_token_from_username(mem_ctx, fuser, vuser_is_guest,
-					    uid, gid, &found_username,
-					    &tmp_token);
+	result = create_token_from_username(conn->mem_ctx, fuser, vuser_is_guest,
+					    &conn->uid, &conn->gid, &found_username,
+					    &conn->nt_user_token);
 	if (!NT_STATUS_IS_OK(result)) {
-		TALLOC_FREE(mem_ctx);
 		return result;
-	}
-
-	if (!(*token = dup_nt_token(NULL, tmp_token))) {
-		TALLOC_FREE(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	fstrcpy(username, found_username);
 
-	TALLOC_FREE(mem_ctx);
+	TALLOC_FREE(fuser);
+	TALLOC_FREE(found_username);
 	return NT_STATUS_OK;
 }
 
@@ -544,6 +529,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		return NULL;
 	}
 
+	conn->params->service = snum;
 	conn->nt_user_token = NULL;
 
 	if (lp_guest_only(snum)) {
@@ -560,12 +546,12 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			*status = NT_STATUS_NO_SUCH_USER;
 			return NULL;
 		}
-		status2 = create_token_from_username(NULL, pass->pw_name, True,
+		status2 = create_token_from_username(conn->mem_ctx, pass->pw_name, True,
 						     &conn->uid, &conn->gid,
 						     &found_username,
 						     &conn->nt_user_token);
 		if (!NT_STATUS_IS_OK(status2)) {
-			TALLOC_FREE(found_username);
+			TALLOC_FREE(pass);
 			conn_free(conn);
 			*status = status2;
 			return NULL;
@@ -607,6 +593,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	} else if (lp_security() == SEC_SHARE) {
 		NTSTATUS status2;
 		char *found_username = NULL;
+
 		/* add it as a possible user name if we 
 		   are in share mode security */
 		add_session_user(lp_servicename(snum));
@@ -619,12 +606,11 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			return NULL;
 		}
 		pass = Get_Pwnam(user);
-		status2 = create_token_from_username(NULL, pass->pw_name, True,
+		status2 = create_token_from_username(conn->mem_ctx, pass->pw_name, True,
 						     &conn->uid, &conn->gid,
 						     &found_username,
 						     &conn->nt_user_token);
 		if (!NT_STATUS_IS_OK(status2)) {
-			TALLOC_FREE(found_username);
 			conn_free(conn);
 			*status = status2;
 			return NULL;
@@ -646,7 +632,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		    sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
 	conn->lastused = conn->lastused_count = time(NULL);
-	conn->params->service = snum;
 	conn->used = True;
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
 	conn->ipc = ( (strncmp(dev,"IPC",3) == 0) ||
@@ -684,10 +669,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_force_user(snum)) {
 		NTSTATUS status2;
 
-		status2 = find_forced_user(snum,
-					   (vuser != NULL) && vuser->guest,
-					   &conn->uid, &conn->gid, user,
-					   &conn->nt_user_token);
+		status2 = find_forced_user(conn,
+				(vuser != NULL) && vuser->guest,
+				user);
 		if (!NT_STATUS_IS_OK(status2)) {
 			conn_free(conn);
 			*status = status2;
@@ -764,7 +748,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					   sid_string_static(sid)));
 				continue;
 			}
-			if (!add_gid_to_array_unique(NULL, gid, &conn->groups,
+			if (!add_gid_to_array_unique(conn->mem_ctx, gid, &conn->groups,
 						&conn->ngroups)) {
 				DEBUG(0, ("add_gid_to_array_unique failed\n"));
 				conn_free(conn);

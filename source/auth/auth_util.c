@@ -1130,7 +1130,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			goto unix_user;
 		}
 
-		result = pdb_enum_group_memberships(mem_ctx, sam_acct,
+		result = pdb_enum_group_memberships(tmp_ctx, sam_acct,
 						    &group_sids, &gids,
 						    &num_group_sids);
 		if (!NT_STATUS_IS_OK(result)) {
@@ -1144,6 +1144,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		SMB_ASSERT(num_group_sids > 0); 
 
 		*gid = gids[0];
+
+		/* Ensure we're returning the found_username on the right context. */
 		*found_username = talloc_strdup(mem_ctx,
 						pdb_get_username(sam_acct));
 
@@ -1178,8 +1180,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			goto done;
 		}
 
-		/* group_sids can be realloced - must be done on mem_ctx not tmp_ctx. */
-		group_sids = talloc_array(mem_ctx, DOM_SID, num_group_sids);
+		group_sids = talloc_array(tmp_ctx, DOM_SID, num_group_sids);
 		if (group_sids == NULL) {
 			DEBUG(1, ("talloc_array failed\n"));
 			result = NT_STATUS_NO_MEMORY;
@@ -1194,8 +1195,9 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		SMB_ASSERT(num_group_sids > 0); 
 
 		*gid = gids[0];
-		*found_username = talloc_strdup(mem_ctx, pass->pw_name);
 
+		/* Ensure we're returning the found_username on the right context. */
+		*found_username = talloc_strdup(mem_ctx, pass->pw_name);
 	} else {
 
 		/* This user is from winbind, force the primary gid to the
@@ -1208,7 +1210,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		uint32 dummy;
 
 		num_group_sids = 1;
-		group_sids = talloc_array(mem_ctx, DOM_SID, num_group_sids);
+		group_sids = talloc_array(tmp_ctx, DOM_SID, num_group_sids);
 		if (group_sids == NULL) {
 			DEBUG(1, ("talloc_array failed\n"));
 			result = NT_STATUS_NO_MEMORY;
@@ -1227,6 +1229,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		gids = gid;
 
+		/* Ensure we're returning the found_username on the right context. */
 		*found_username = talloc_strdup(mem_ctx, username);
 	}
 
@@ -1251,13 +1254,14 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				"for gid %d!\n", gids[i]));
 			continue;
 		}
-		if (!add_sid_to_array_unique( mem_ctx, &unix_group_sid,
+		if (!add_sid_to_array_unique(tmp_ctx, &unix_group_sid,
 				&group_sids, &num_group_sids )) {
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 	}
 
+	/* Ensure we're creating the nt_token on the right context. */
 	*token = create_local_nt_token(mem_ctx, &user_sid,
 				       is_guest, num_group_sids, group_sids);
 
@@ -1278,6 +1282,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
  Expensive helper function to figure out whether a user given its name is
  member of a particular group.
 ***************************************************************************/
+
 BOOL user_in_group_sid(const char *username, const DOM_SID *group_sid)
 {
 	NTSTATUS status;
