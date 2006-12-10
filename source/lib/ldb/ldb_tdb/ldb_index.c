@@ -763,7 +763,6 @@ int ltdb_search_indexed(struct ldb_handle *handle)
 */
 static int ltdb_index_add1_new(struct ldb_context *ldb, 
 			       struct ldb_message *msg,
-			       struct ldb_message_element *el,
 			       const char *dn)
 {
 	struct ldb_message_element *el2;
@@ -800,7 +799,6 @@ static int ltdb_index_add1_new(struct ldb_context *ldb,
 */
 static int ltdb_index_add1_add(struct ldb_context *ldb, 
 			       struct ldb_message *msg,
-			       struct ldb_message_element *el,
 			       int idx,
 			       const char *dn)
 {
@@ -873,9 +871,9 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 	}
 
 	if (i == msg->num_elements) {
-		ret = ltdb_index_add1_new(ldb, msg, el, dn);
+		ret = ltdb_index_add1_new(ldb, msg, dn);
 	} else {
-		ret = ltdb_index_add1_add(ldb, msg, el, i, dn);
+		ret = ltdb_index_add1_add(ldb, msg, i, dn);
 	}
 
 	if (ret == 0) {
