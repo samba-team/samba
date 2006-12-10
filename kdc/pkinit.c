@@ -1424,7 +1424,7 @@ _kdc_pk_initialize(krb5_context context,
 			   NULL,
 			   NULL);
     if (ret) {
-	krb5_warn(context, ret, "PKINIT: failed to load");
+	krb5_warn(context, ret, "PKINIT: ");
 	config->enable_pkinit = 0;
 	return ret;
     }
