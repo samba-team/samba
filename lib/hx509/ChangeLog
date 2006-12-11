@@ -1,5 +1,7 @@
 2006-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c (print_certificate): print serial number.
+
 	* name.c (no): add S=stateOrProvinceName
 	
 2006-12-09  Love Hörnquist Åstrand  <lha@it.su.se>
