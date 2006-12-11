@@ -904,6 +904,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 		/* Server didn't like our choice of mech, and chose something else */
 		if ((spnego.negTokenTarg.negResult == SPNEGO_ACCEPT_INCOMPLETE) &&
+		    spnego.negTokenTarg.supportedMech &&
 		    strcmp(spnego.negTokenTarg.supportedMech, spnego_state->neg_oid) != 0) {
 			DEBUG(3,("GENSEC SPNEGO: client preferred mech (%s) not accepted, server wants: %s\n",
 				 gensec_get_name_by_oid(spnego.negTokenTarg.supportedMech), 
