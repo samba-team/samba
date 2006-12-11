@@ -214,12 +214,14 @@ test_cfx_SOURCES = krb5/test_cfx.c
 check_PROGRAMS = test_acquire_cred $(TESTS)
 
 bin_PROGRAMS = gss
-noinst_PROGRAMS = test_cred test_kcred test_context
-LDADD = libgssapi.la $(LIB_roken)
+noinst_PROGRAMS = test_cred test_kcred test_context test_ntlm
 
-test_kcred_LDADD = libgssapi.la ../krb5/libkrb5.la $(LIB_roken)
-test_cfx_LDADD = $(test_kcred_LDADD)
-test_context_LDADD = $(test_kcred_LDADD)
+test_ntlm_CPPFLAGS = -I/Users/lha/src/libntlm/prefix/0.3.12/include
+test_ntlm_LDADD = $(LDADD) -L/Users/lha/src/libntlm/prefix/0.3.12/lib -lntlm
+
+LDADD = libgssapi.la \
+	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(LIB_roken)
 
 # gss
 
@@ -248,7 +250,9 @@ EXTRA_DIST = \
 
 # to help stupid solaris make
 
-$(libgssapi_la_OBJECTS): gkrb5_err.h
+$(libgssapi_la_OBJECTS): gkrb5_err.h gssapi_asn1.h spnego_asn1.h
 
 gkrb5_err.h gkrb5_err.c: $(srcdir)/krb5/gkrb5_err.et
 	$(COMPILE_ET) $(srcdir)/krb5/gkrb5_err.et
+
+include Makefile.other.am
