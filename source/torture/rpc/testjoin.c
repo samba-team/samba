@@ -46,6 +46,8 @@ struct test_join {
 	const char *dom_netbios_name;
 	const char *dom_dns_name;
 	struct dom_sid *user_sid;
+	struct GUID user_guid;
+	const char *netbios_name;
 };
 
 
@@ -346,6 +348,12 @@ _PUBLIC_ struct test_join *torture_join_domain(const char *machine_name,
 	talloc_steal(tj, libnet_r->out.domain_name);
 	tj->dom_dns_name	= libnet_r->out.realm;
 	talloc_steal(tj, libnet_r->out.realm);
+	tj->user_guid = libnet_r->out.account_guid;
+	tj->netbios_name = talloc_strdup(tj, machine_name);
+	if (!tj->netbios_name) {
+		talloc_free(tj);
+		return NULL;
+	}
 
 	ZERO_STRUCT(u);
 	s.in.user_handle = &tj->user_handle;
@@ -509,6 +517,16 @@ _PUBLIC_ const struct dom_sid *torture_join_sid(struct test_join *join)
 const struct dom_sid *torture_join_user_sid(struct test_join *join)
 {
 	return join->user_sid;
+}
+
+const char *torture_join_netbios_name(struct test_join *join)
+{
+	return join->netbios_name;
+}
+
+const struct GUID *torture_join_user_guid(struct test_join *join)
+{
+	return &join->user_guid;
 }
 
 const char *torture_join_dom_netbios_name(struct test_join *join)
