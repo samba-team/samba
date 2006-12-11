@@ -2434,8 +2434,16 @@ char *smb_xstrdup(const char *s)
 #undef strdup
 #endif
 #endif
+
+#ifndef HAVE_STRDUP
+#define strdup rep_strdup
+#endif
+
 	char *s1 = strdup(s);
 #if defined(PARANOID_MALLOC_CHECKER)
+#ifdef strdup
+#undef strdup
+#endif
 #define strdup(s) __ERROR_DONT_USE_STRDUP_DIRECTLY
 #endif
 	if (!s1)
@@ -2455,8 +2463,17 @@ char *smb_xstrndup(const char *s, size_t n)
 #undef strndup
 #endif
 #endif
+
+#if (defined(BROKEN_STRNDUP) || !defined(HAVE_STRNDUP))
+#undef HAVE_STRNDUP
+#define strndup rep_strndup
+#endif
+
 	char *s1 = strndup(s, n);
 #if defined(PARANOID_MALLOC_CHECKER)
+#ifdef strndup
+#undef strndup
+#endif
 #define strndup(s,n) __ERROR_DONT_USE_STRNDUP_DIRECTLY
 #endif
 	if (!s1)
