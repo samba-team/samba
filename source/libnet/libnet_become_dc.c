@@ -355,7 +355,11 @@ static NTSTATUS becomeDC_ldap1_w2k3_update_revision(struct libnet_BecomeDC_state
 	ret = ldb_search(s->ldap1.ldb, basedn, LDB_SCOPE_BASE,
 			 "(objectClass=*)", attrs, &r);
 	talloc_free(basedn);
-	if (ret != LDB_SUCCESS) {
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		/* w2k doesn't have this object */
+		s->ads_options.w2k3_update_revision = 0;
+		return NT_STATUS_OK;
+	} else if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
 	} else if (r->count != 1) {
 		talloc_free(r);
@@ -1053,9 +1057,20 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	struct drsuapi_DsReplicaObjectIdentifier *identifier;
 	uint32_t num_attrs, i = 0;
 	struct drsuapi_DsReplicaAttribute *attrs;
+	bool w2k3;
 
 	/* choose a random invocationId */
 	s->dest_dsa.invocation_id = GUID_random();
+
+	/*
+	 * if the schema version indicates w2k3, then
+	 * also send some w2k3 specific attributes
+	 */
+	if (s->ads_options.schema_object_version >= 30) {
+		w2k3 = true;
+	} else {
+		w2k3 = false;
+	}
 
 	r = talloc_zero(s, struct drsuapi_DsAddEntry);
 	if (composite_nomem(r, c)) return;
@@ -1249,7 +1264,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	}
 
 	/* msDS-hasMasterNCs: ... */
-	{
+	if (w2k3) {
 		struct drsuapi_DsAttributeValueDNString *vs;
 		struct drsuapi_DsReplicaObjectIdentifier3 *v;
 
@@ -1307,7 +1322,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	}
 
 	/* msDS-HasDomainNCs: <domain_partition> */
-	{
+	if (w2k3) {
 		struct drsuapi_DsAttributeValueDNString *vs;
 		struct drsuapi_DsReplicaObjectIdentifier3 *v;
 
@@ -1331,7 +1346,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	}
 
 	/* msDS-Behavior-Version */
-	{
+	if (w2k3) {
 		struct drsuapi_DsAttributeValueUINT32 *vs;
 		uint32_t *v;
 
