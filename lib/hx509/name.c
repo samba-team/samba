@@ -50,6 +50,7 @@ static const struct {
     { "L", oid_id_at_localityName },
     { "O", oid_id_at_organizationName },
     { "OU", oid_id_at_organizationalUnitName },
+    { "S", oid_id_at_stateOrProvinceName },
     { "UID", oid_id_Userid },
     { "emailAddress", oid_id_pkcs9_emailAddress },
     { "serialNumber", oid_id_at_serialNumber }
