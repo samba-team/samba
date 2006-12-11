@@ -254,5 +254,3 @@ $(libgssapi_la_OBJECTS): gkrb5_err.h gssapi_asn1.h spnego_asn1.h
 
 gkrb5_err.h gkrb5_err.c: $(srcdir)/krb5/gkrb5_err.et
 	$(COMPILE_ET) $(srcdir)/krb5/gkrb5_err.et
-
-include Makefile.other.am
