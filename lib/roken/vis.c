@@ -210,7 +210,7 @@ do {									   \
  */
 #ifndef HAVE_SVIS
 char * ROKEN_LIB_FUNCTION
-svis(char *dst, int c, int flag, int nextc, const char *extra)
+rk_svis(char *dst, int c, int flag, int nextc, const char *extra)
 {
 	_DIAGASSERT(dst != NULL);
 	_DIAGASSERT(extra != NULL);
@@ -239,7 +239,7 @@ svis(char *dst, int c, int flag, int nextc, const char *extra)
  */
 #ifndef HAVE_STRSVIS
 int ROKEN_LIB_FUNCTION
-strsvis(char *dst, const char *src, int flag, const char *extra)
+rk_strsvis(char *dst, const char *src, int flag, const char *extra)
 {
 	char c;
 	char *start;
@@ -258,7 +258,7 @@ strsvis(char *dst, const char *src, int flag, const char *extra)
 
 #ifndef HAVE_STRVISX
 int ROKEN_LIB_FUNCTION
-strsvisx(char *dst, const char *src, size_t len, int flag, const char *extra)
+rk_strsvisx(char *dst, const char *src, size_t len, int flag, const char *extra)
 {
 	char c;
 	char *start;
@@ -282,7 +282,7 @@ strsvisx(char *dst, const char *src, size_t len, int flag, const char *extra)
  */
 #ifndef HAVE_VIS
 char * ROKEN_LIB_FUNCTION
-vis(char *dst, int c, int flag, int nextc)
+rk_vis(char *dst, int c, int flag, int nextc)
 {
 	char extra[MAXEXTRAS];
 
@@ -308,7 +308,7 @@ vis(char *dst, int c, int flag, int nextc)
  */
 #ifndef HAVE_STRVIS
 int ROKEN_LIB_FUNCTION
-strvis(char *dst, const char *src, int flag)
+rk_strvis(char *dst, const char *src, int flag)
 {
 	char extra[MAXEXTRAS];
 
@@ -320,7 +320,7 @@ strvis(char *dst, const char *src, int flag)
 
 #ifndef HAVE_STRVISX
 int ROKEN_LIB_FUNCTION
-strvisx(char *dst, const char *src, size_t len, int flag)
+rk_strvisx(char *dst, const char *src, size_t len, int flag)
 {
 	char extra[MAXEXTRAS];
 
