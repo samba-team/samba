@@ -1361,8 +1361,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 }
 
 static const char *gensec_gssapi_krb5_oids[] = { 
-	GENSEC_OID_KERBEROS5,
 	GENSEC_OID_KERBEROS5_OLD,
+	GENSEC_OID_KERBEROS5,
 	NULL 
 };
 
