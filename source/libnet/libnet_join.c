@@ -76,6 +76,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		"msDS-KeyVersionNumber",
 		"servicePrincipalName",
 		"dNSHostName",
+		"objectGUID",
 		NULL,
 	};
 
@@ -264,9 +265,6 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* If we have a kvno recorded in AD, we need it locally as well */
-	kvno = ldb_msg_find_attr_as_uint(res->msgs[0], "msDS-KeyVersionNumber", 0);
-
 	/* Prepare a new message, for the modify */
 	msg = ldb_msg_new(tmp_ctx);
 	if (!msg) {
@@ -383,7 +381,12 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	r->out.domain_dn_str = r_crack_names.out.ctr.ctr1->array[0].result_name;
 	talloc_steal(r, r_crack_names.out.ctr.ctr1->array[0].result_name);
 
-	r->out.kvno = kvno;
+	/* Store the KVNO of the account, critical for some kerberos
+	 * operations */
+	r->out.kvno = ldb_msg_find_attr_as_uint(res->msgs[0], "msDS-KeyVersionNumber", 0);
+
+	/* Store the account GUID. */
+	r->out.account_guid = samdb_result_guid(res->msgs[0], "objectGUID");
 
 	if (r->in.acct_type == ACB_SVRTRUST) {
 		status = libnet_JoinSite(remote_ldb, r);

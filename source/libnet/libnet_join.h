@@ -60,6 +60,7 @@ struct libnet_JoinDomain {
 		struct dcerpc_binding *samr_binding;
 		struct policy_handle *user_handle;
 		struct dom_sid *account_sid;
+		struct GUID account_guid;
 	} out;
 };
 
