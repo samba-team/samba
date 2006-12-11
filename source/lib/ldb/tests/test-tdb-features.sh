@@ -117,3 +117,54 @@ checkcount 1 '(test=foo)'
 checkcount 0 '(test=FOO)'
 checkcount 1 '(test=f*o*)'
 
+checkone() {
+    count=$1
+    base="$2"
+    expression="$3"
+    n=`bin/ldbsearch -s one -b "$base" "$expression" | grep '^dn' | wc -l`
+    if [ $n != $count ]; then
+	echo "Got $n but expected $count for $expression"
+	$VALGRIND bin/ldbsearch -s one -b "$base" "$expression"
+	exit 1
+    fi
+    echo "OK: $count $expression"
+}
+
+echo "Removing wildcard attribute"
+cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
+dn: @ATTRIBUTES
+changetype: modify
+delete: *
+*: INTEGER
+EOF
+
+echo "Adding one level indexes"
+cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
+dn: @INDEXLIST
+changetype: modify
+add: @IDXONE
+@IDXONE: 1
+EOF
+
+echo "Testing one level indexed search"
+cat <<EOF | $VALGRIND bin/ldbadd || exit 1
+dn: cn=one,cn=t1,cn=TEST
+objectClass: oneclass
+cn: one
+test: one
+EOF
+checkone 1 "cn=t1,cn=TEST" '(test=one)'
+cat <<EOF | $VALGRIND bin/ldbadd || exit 1
+dn: cn=two,cn=t1,cn=TEST
+objectClass: oneclass
+cn: two
+test: one
+
+dn: cn=three,cn=t1,cn=TEST
+objectClass: oneclass
+cn: three
+test: one
+EOF
+checkone 3 "cn=t1,cn=TEST" '(test=one)'
+checkone 1 "cn=t1,cn=TEST" '(cn=two)'
+
