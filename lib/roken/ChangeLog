@@ -1,3 +1,8 @@
+2006-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Install extra posix headers in <roken/...> to avoid
+	dup headers.
+	
 2006-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* socket_wrapper.c (swrap_sendto): fail on to unknown si->type
