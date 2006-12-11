@@ -502,7 +502,7 @@ nl_open(void)
 
 /* ====================================================================== */
 int ROKEN_LIB_FUNCTION
-getifaddrs(struct ifaddrs **ifap)
+rk_getifaddrs(struct ifaddrs **ifap)
 {
   int sd;
   struct nlmsg_list *nlmsg_list, *nlmsg_end, *nlm;
@@ -858,7 +858,7 @@ getifaddrs(struct ifaddrs **ifap)
 
 /* ---------------------------------------------------------------------- */
 void ROKEN_LIB_FUNCTION
-freeifaddrs(struct ifaddrs *ifa)
+rk_freeifaddrs(struct ifaddrs *ifa)
 {
   free(ifa);
 }
@@ -988,7 +988,7 @@ getifaddrs2(struct ifaddrs **ifap,
     free(buf);
     return 0;
   error_out:
-    freeifaddrs(start);
+    rk_freeifaddrs(start);
     close(fd);
     free(buf);
     errno = ret;
@@ -1114,7 +1114,7 @@ getlifaddrs2(struct ifaddrs **ifap,
     free(buf);
     return 0;
   error_out:
-    freeifaddrs(start);
+    rk_freeifaddrs(start);
     close(fd);
     free(buf);
     errno = ret;
@@ -1123,7 +1123,7 @@ getlifaddrs2(struct ifaddrs **ifap,
 #endif /* defined(HAVE_IPV6) && defined(SIOCGLIFCONF) && defined(SIOCGLIFFLAGS) */
 
 int ROKEN_LIB_FUNCTION
-getifaddrs(struct ifaddrs **ifap) 
+rk_getifaddrs(struct ifaddrs **ifap) 
 {
     int ret = -1;
     errno = ENXIO;
@@ -1151,7 +1151,7 @@ getifaddrs(struct ifaddrs **ifap)
 }
 
 void ROKEN_LIB_FUNCTION
-freeifaddrs(struct ifaddrs *ifp)
+rk_freeifaddrs(struct ifaddrs *ifp)
 {
     struct ifaddrs *p, *q;
     
