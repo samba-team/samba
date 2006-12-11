@@ -66,9 +66,12 @@ struct ifaddrs {
 #endif
 
 int ROKEN_LIB_FUNCTION
-getifaddrs(struct ifaddrs**);
+rk_getifaddrs(struct ifaddrs**);
 
 void ROKEN_LIB_FUNCTION
-freeifaddrs(struct ifaddrs*);
+rk_freeifaddrs(struct ifaddrs*);
+
+#define getifaddrs(a) rk_getifaddrs(a)
+#define freeifaddrs(a) rk_freeifaddrs(a)
 
 #endif /* __ifaddrs_h__ */

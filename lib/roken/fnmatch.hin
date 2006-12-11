@@ -46,8 +46,6 @@
 extern "C" {
 #endif
 
-#define fnmatch rk_fnmatch
-
 #define	FNM_NOMATCH	1	/* Match failed. */
 
 #define	FNM_NOESCAPE	0x01	/* Disable backslash escaping. */
@@ -55,7 +53,9 @@ extern "C" {
 #define	FNM_PERIOD	0x04	/* Period must be matched by period. */
 
 int ROKEN_LIB_FUNCTION
-fnmatch (const char *, const char *, int);
+rk_fnmatch (const char *, const char *, int);
+
+#define fnmatch(a,b,c) rk_fnmatch(a,b,c)
 
 #ifdef __cplusplus
 }

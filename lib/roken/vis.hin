@@ -79,20 +79,35 @@
 #define	UNVIS_END	1	/* no more characters */
 
 char ROKEN_LIB_FUNCTION
-	*vis (char *, int, int, int);
+	*rk_vis (char *, int, int, int);
 char ROKEN_LIB_FUNCTION
-	*svis (char *, int, int, int, const char *);
+	*rk_svis (char *, int, int, int, const char *);
 int ROKEN_LIB_FUNCTION
-	strvis (char *, const char *, int);
+	rk_strvis (char *, const char *, int);
 int ROKEN_LIB_FUNCTION
-	strsvis (char *, const char *, int, const char *);
+	rk_strsvis (char *, const char *, int, const char *);
 int ROKEN_LIB_FUNCTION
-	strvisx (char *, const char *, size_t, int);
+	rk_strvisx (char *, const char *, size_t, int);
 int ROKEN_LIB_FUNCTION
-	strsvisx (char *, const char *, size_t, int, const char *);
+	rk_strsvisx (char *, const char *, size_t, int, const char *);
 int ROKEN_LIB_FUNCTION
-	strunvis (char *, const char *);
+	rk_strunvis (char *, const char *);
 int ROKEN_LIB_FUNCTION
-	unvis (char *, int, int *, int);
+	rk_unvis (char *, int, int *, int);
+
+#undef vis
+#define vis(a,b,c,d) rk_vis(a,b,c,d)
+#undef svis
+#define svis(a,b,c,d,e) rk_svis(a,b,c,d,e)
+#undef strvis
+#define strvis(a,b,c) rk_strvis(a,b,c)
+#undef strvisx
+#define strvisx(a,b,c,d) rk_strvisx(a,b,c,d)
+#undef strsvisx
+#define strsvisx(a,b,c,d,e) rk_strsvisx(a,b,c,d,e)
+#undef strunvis
+#define strunvis(a,b,c,d,e) rk_strunvis(a,b,c,d,e)
+#undef unvis
+#define unvis(a,b,c,d,e) rk_unvis(a,b,c,d,e)
 
 #endif /* !_VIS_H_ */
