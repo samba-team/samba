@@ -214,10 +214,7 @@ test_cfx_SOURCES = krb5/test_cfx.c
 check_PROGRAMS = test_acquire_cred $(TESTS)
 
 bin_PROGRAMS = gss
-noinst_PROGRAMS = test_cred test_kcred test_context test_ntlm
-
-test_ntlm_CPPFLAGS = -I/Users/lha/src/libntlm/prefix/0.3.12/include
-test_ntlm_LDADD = $(LDADD) -L/Users/lha/src/libntlm/prefix/0.3.12/lib -lntlm
+noinst_PROGRAMS = test_cred test_kcred test_context
 
 LDADD = libgssapi.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
