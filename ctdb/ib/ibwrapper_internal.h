@@ -21,17 +21,18 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-typedef struct _ibw_mr {
-	struct ibv_mr *mr;
-	struct _ibw_mr *next, *prev;
-} ibw_mr;
-
 typedef struct _ibw_opts {
-	char	*dev_name;
-	int	rx_depth;
-	int	mtu;
-	int	ib_port;
+	int	max_send_wr;
+	int	max_recv_wr;
+	int	max_msg_size;
 } ibw_opts;
+
+typedef struct _ibw_wr {
+	char	*msg; /* initialized in ibw_init_memory once */
+	ibw_conn *conn; /*valid only when in wr_list_used */
+	int	wr_id; /* position in wr_index list; also used as wr id */
+	struct _ibw_wr *next, *prev; /* in wr_list_avail or wr_list_used */
+} ibw_wr;
 
 typedef enum {
 	IWINT_INIT = 0,
@@ -41,11 +42,6 @@ typedef enum {
 } ibw_state_ctx;
 
 typedef struct _ibw_ctx_priv {
-	ibw_mr *avail_first;
-	ibw_mr *avail_last;
-	ibw_mr *used_first;
-	ibw_mr *used_last;
-
 	struct event_context *ectx;
 
 	ibw_opts opts;
@@ -64,22 +60,19 @@ typedef struct _ibw_ctx_priv {
 
 	ibw_connstate_fn_t connstate_func;
 	ibw_receive_fn_t receive_func;
+
+	long	pagesize; /* sysconf result for memalign */
 } ibw_ctx_priv;
 
 typedef struct _ibw_conn_priv {
-	struct ibv_cq	*cq;
-	struct ibv_qp	*qp;
-
 	struct rdma_cm_id *cm_id; /* client's cm id */
 	int	is_accepted;
-} ibw_conn_priv;
 
-/* 
- * Must be called in all cases after selecting/polling
- * for FDs set via ibw_add_event_fn_t.
- *
- * fd_index: fd identifier passed in ibw_add_event_fn_t
- * with the same fd was set there.
- */
-//int ibw_process_event(ibw_ctx *ctx, int fd_index);
+	struct ibv_cq	*cq; /* qp is in cm_id */
+	struct ibv_mr *mr;
+	char *buf; /* fixed size (opts.bufsize) buffer for send/recv */
+	ibw_wr *wr_list_avail;
+	ibw_wr *wr_list_used;
+	ibw_wr **wr_index; /* array[0..(max_send_wr + max_recv_wr)-1] of (ibw_wr *) */
+} ibw_conn_priv;
 

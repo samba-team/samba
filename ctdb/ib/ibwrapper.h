@@ -178,10 +178,11 @@ void ibw_disconnect(ibw_conn *conn);
  * You have to use this buf to fill in before send.
  * It's just to avoid memcpy.in ibw_send.
  * Use the same (buf, key) pair with ibw_send.
+ * Don't use more space than maxsize.
  *
  * Returns 0 on success.
  */
-int ibw_alloc_send_buf(ibw_conn *conn, void **buf, void **key, int n);
+int ibw_alloc_send_buf(ibw_conn *conn, void **buf, void **key, int *maxsize);
 
 /*
  * Send the message in one
