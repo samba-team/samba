@@ -155,8 +155,14 @@ static int ldb_msg_find_idx(const struct ldb_message *msg, const char *attr,
 	unsigned int i, j;
 	for (i=0;i<msg->num_elements;i++) {
 		if (ldb_attr_cmp(msg->elements[i].name, key) == 0) {
-			const struct ldb_message_element *el = 
-				&msg->elements[i];
+			const struct ldb_message_element *el = &msg->elements[i];
+
+			if (attr == NULL) {
+				/* in this case we are just looking to see if key is present,
+ 				   we are not spearching for a specific index */
+				return 0;
+			}
+
 			for (j=0;j<el->num_values;j++) {
 				if (ldb_attr_cmp((char *)el->values[j].data, attr) == 0) {
 					if (v_idx) {
@@ -584,6 +590,103 @@ static int ltdb_index_dn_and(struct ldb_module *module,
 }
 
 /*
+  AND index results and ONE level special index
+ */
+static int ltdb_index_dn_one(struct ldb_module *module, 
+			     struct ldb_dn *parent_dn,
+			     struct dn_list *list)
+{
+	struct ldb_context *ldb = module->ldb;
+	struct dn_list *list2;
+	struct ldb_message *msg;
+	struct ldb_dn *key;
+	struct ldb_val val;
+	unsigned int i, j;
+	int ret;
+	
+	list2 = talloc_zero(module, struct dn_list);
+	if (list2 == NULL) {
+		return -1;
+	}
+
+	/* the attribute is indexed. Pull the list of DNs that match the 
+	   search criterion */
+	val.data = (uint8_t *)((intptr_t)ldb_dn_get_casefold(parent_dn));
+	val.length = strlen((char *)val.data);
+	key = ltdb_index_key(ldb, LTDB_IDXONE, &val);
+	if (!key) {
+		talloc_free(list2);
+		return -1;
+	}
+
+	msg = talloc(list2, struct ldb_message);
+	if (msg == NULL) {
+		talloc_free(list2);
+		return -1;
+	}
+
+	ret = ltdb_search_dn1(module, key, msg);
+	talloc_free(key);
+	if (ret == 0 || ret == -1) {
+		return ret;
+	}
+
+	for (i = 0; i < msg->num_elements; i++) {
+		struct ldb_message_element *el;
+
+		if (strcmp(msg->elements[i].name, LTDB_IDX) != 0) {
+			continue;
+		}
+
+		el = &msg->elements[i];
+
+		list2->dn = talloc_array(list2, char *, el->num_values);
+		if (!list2->dn) {
+			talloc_free(list2);
+			return -1;
+		}
+
+		for (j = 0; j < el->num_values; j++) {
+			list2->dn[list2->count] = talloc_strdup(list2->dn, (char *)el->values[j].data);
+			if (!list2->dn[list2->count]) {
+				talloc_free(list2);
+				return -1;
+			}
+			list2->count++;
+		}
+	}
+
+	if (list2->count == 0) {
+		talloc_free(list2);
+		return 0;
+	}
+
+	if (list2->count > 1) {
+		qsort(list2->dn, list2->count, sizeof(char *), (comparison_fn_t) list_cmp);
+	}
+
+	if (list->count > 0) {
+		if (list_intersect(ldb, list, list2) == -1) {
+			talloc_free(list2);
+			return -1;
+		}
+
+		if (list->count == 0) {
+			talloc_free(list->dn);
+			talloc_free(list2);
+			return 0;
+		}
+	} else {
+		list->dn = talloc_move(list, &list2->dn);
+		list->count = list2->count;
+	}
+
+	talloc_free(list2);
+
+	return 1;
+}
+
+/*
   return a list of dn's that might match a indexed search or
   -1 if an error. return 0 for no matches, or 1 for matches
  */
@@ -714,15 +817,29 @@ int ltdb_search_indexed(struct ldb_handle *handle)
 	struct ltdb_context *ac = talloc_get_type(handle->private_data, struct ltdb_context);
 	struct ltdb_private *ltdb = talloc_get_type(ac->module->private_data, struct ltdb_private);
 	struct dn_list *dn_list;
-	int ret;
+	int ret, idxattr, idxone;
 
-	if (ltdb->cache->indexlist->num_elements == 0 && 
-	    ac->scope != LDB_SCOPE_BASE) {
-		/* no index list? must do full search */
+	idxattr = idxone = 0;
+	ret = ldb_msg_find_idx(ltdb->cache->indexlist, NULL, NULL, LTDB_IDXATTR);
+	if (ret == 0 ) {
+		idxattr = 1;
+	}
+
+	/* We do one level indexing only if requested */
+	ret = ldb_msg_find_idx(ltdb->cache->indexlist, NULL, NULL, LTDB_IDXONE);
+	if (ret == 0 ) {
+		idxone = 1;
+	}
+
+	if ((ac->scope == LDB_SCOPE_ONELEVEL && (idxattr+idxone == 0)) ||
+	    (ac->scope == LDB_SCOPE_SUBTREE && idxattr == 0)) {
+		/* no indexs? must do full search */
 		return -1;
 	}
 
-	dn_list = talloc(handle, struct dn_list);
+	ret = -1;
+
+	dn_list = talloc_zero(handle, struct dn_list);
 	if (dn_list == NULL) {
 		return -1;
 	}
@@ -741,8 +858,19 @@ int ltdb_search_indexed(struct ldb_handle *handle)
 		}
 		dn_list->count = 1;
 		ret = 1;
-	} else {
+	}
+
+	if (ac->scope != LDB_SCOPE_BASE && idxattr == 1) {
 		ret = ltdb_index_dn(ac->module, ac->tree, ltdb->cache->indexlist, dn_list);
+
+		if (ret < 0) {
+			talloc_free(dn_list);
+			return ret;
+		}
+	}
+
+	if (ac->scope == LDB_SCOPE_ONELEVEL && idxone == 1) {
+		ret = ltdb_index_dn_one(ac->module, ac->base, dn_list);
 	}
 
 	if (ret == 1) {
@@ -1050,6 +1178,57 @@ int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg)
 	return 0;
 }
 
+/* 
+  handle special index for one level searches
+*/
+int ltdb_index_one(struct ldb_module *module, const struct ldb_message *msg, int add)
+{
+	struct ltdb_private *ltdb = module->private_data;
+	struct ldb_message_element el;
+	struct ldb_val val;
+	struct ldb_dn *pdn;
+	const char *dn;
+	int ret;
+
+	/* We index for ONE Level only if requested */
+	ret = ldb_msg_find_idx(ltdb->cache->indexlist, NULL, NULL, LTDB_IDXONE);
+	if (ret != 0) {
+		return 0;
+	}
+
+	pdn = ldb_dn_get_parent(module, msg->dn);
+	if (pdn == NULL) {
+		return -1;
+	}
+
+	dn = ldb_dn_get_linearized(msg->dn);
+	if (dn == NULL) {
+		talloc_free(pdn);
+		return -1;
+	}
+
+	val.data = (uint8_t *)((intptr_t)ldb_dn_get_casefold(pdn));
+	if (val.data == NULL) {
+		talloc_free(pdn);
+		return -1;
+	}
+
+	val.length = strlen((char *)val.data);
+	el.name = LTDB_IDXONE;
+	el.values = &val;
+	el.num_values = 1;
+
+	if (add) {
+		ret = ltdb_index_add1(module, dn, &el, 0);
+	} else { /* delete */
+		ret = ltdb_index_del_value(module, dn, &el, 0);
+	}
+
+	talloc_free(pdn);
+
+	return ret;
+}
+
 
 /*
   traversal function that deletes all @INDEX records
@@ -1112,7 +1291,14 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		dn = ldb_dn_get_linearized(msg->dn);
 	}
 
-	ret = ltdb_index_add0(module, dn, msg->elements, msg->num_elements);
+	ret = ltdb_index_one(module, msg, 1);
+	if (ret == 0) {
+		ret = ltdb_index_add0(module, dn, msg->elements, msg->num_elements);
+	} else {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+			"Adding special ONE LEVEL index failed (%s)!\n",
+			ldb_dn_get_linearized(msg->dn));
+	}
 
 	talloc_free(msg);
 

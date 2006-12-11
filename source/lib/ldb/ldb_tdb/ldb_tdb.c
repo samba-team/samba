@@ -276,6 +276,11 @@ static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message
 	}
 	
 	if (ret == LDB_SUCCESS) {
+		ret = ltdb_index_one(module, msg, 1);
+		if (ret != LDB_SUCCESS) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
 		ret = ltdb_modified(module, msg->dn);
 		if (ret != LDB_SUCCESS) {
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -370,6 +375,13 @@ static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
 		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	/* remove one level attribute */
+	ret = ltdb_index_one(module, msg, 0);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* remove any indexed attributes */
