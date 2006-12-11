@@ -424,6 +424,16 @@ print_certificate(hx509_context hxcontext, hx509_cert cert, int verbose)
     printf("    subject: \"%s\"\n", str);
     free(str);
 
+    {
+	heim_integer serialNumber;
+
+	hx509_cert_get_serialnumber(cert, &serialNumber);
+	der_print_hex_heim_integer(&serialNumber, &str);
+	der_free_heim_integer(&serialNumber);
+	printf("    serial: %s\n", str);
+	free(str);
+    }
+
     printf("    keyusage: ");
     ret = hx509_cert_keyusage_print(hxcontext, cert, &str);
     if (ret == 0) {
