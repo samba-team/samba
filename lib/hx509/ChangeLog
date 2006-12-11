@@ -1,4 +1,19 @@
+2006-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* name.c (no): add S=stateOrProvinceName
+	
+2006-12-09  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* crypto.c (_hx509_private_key_assign_rsa): set a default sig alg
+
+	* ks_file.c (try_decrypt): pass down AlgorithmIdentifier that key
+	uses to do sigatures so there is no need to hardcode RSA into this
+	function.
+	
 2006-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ks_file.c: Pass filename to the parse functions and use it in
+	the error messages
 
 	* test_chain.in: test proxy cert (third level)
 	
