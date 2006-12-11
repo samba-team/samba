@@ -155,10 +155,9 @@ p11_rsa_private_encrypt(int flen,
 
     ret = P11FUNC(p11rsa->p, Sign, 
 		  (session, (CK_BYTE *)from, flen, to, &ck_sigsize));
+    p11_put_session(p11rsa->p, p11rsa->slot, session);
     if (ret != CKR_OK)
 	return -1;
-
-    p11_put_session(p11rsa->p, p11rsa->slot, session);
 
     return ck_sigsize;
 }
@@ -194,10 +193,9 @@ p11_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
 
     ret = P11FUNC(p11rsa->p, Decrypt, 
 		  (session, (CK_BYTE *)from, flen, to, &ck_sigsize));
+    p11_put_session(p11rsa->p, p11rsa->slot, session);
     if (ret != CKR_OK)
 	return -1;
-
-    p11_put_session(p11rsa->p, p11rsa->slot, session);
 
     return ck_sigsize;
 }
