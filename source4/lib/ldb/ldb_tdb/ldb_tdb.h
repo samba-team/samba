@@ -60,6 +60,7 @@ struct ltdb_context {
 #define LTDB_INDEXLIST  "@INDEXLIST"
 #define LTDB_IDX        "@IDX"
 #define LTDB_IDXATTR    "@IDXATTR"
+#define LTDB_IDXONE     "@IDXONE"
 #define LTDB_BASEINFO   "@BASEINFO"
 #define LTDB_ATTRIBUTES "@ATTRIBUTES"
 #define LTDB_SUBCLASSES "@SUBCLASSES"
@@ -83,6 +84,7 @@ struct ldb_parse_tree;
 int ltdb_search_indexed(struct ldb_handle *handle);
 int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg);
+int ltdb_index_one(struct ldb_module *module, const struct ldb_message *msg, int add);
 int ltdb_reindex(struct ldb_module *module);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_pack.c  */
