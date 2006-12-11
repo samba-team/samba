@@ -60,7 +60,7 @@ BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static BOOL test_DsGetDCInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		      struct DsPrivate *priv)
 {
 	NTSTATUS status;
@@ -324,7 +324,7 @@ static BOOL test_DsReplicaGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	};
 
 	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping DsGetDCInfo test against Samba4\n");
+		printf("skipping DsReplicaGetInfo test against Samba4\n");
 		return True;
 	}
 
@@ -684,9 +684,9 @@ BOOL torture_rpc_drsuapi(struct torture_context *torture)
 
 	ret &= test_DsBind(p, mem_ctx, &priv);
 
-	ret &= test_DsGetDCInfo(p, mem_ctx, &priv);
+	ret &= test_DsGetDomainControllerInfo(p, mem_ctx, &priv);
 
-	ret &= test_DsCrackNames(p, mem_ctx, &priv, TEST_MACHINE_NAME);
+	ret &= test_DsCrackNames(p, mem_ctx, &priv);
 
 	ret &= test_DsWriteAccountSpn(p, mem_ctx, &priv);
 
@@ -700,6 +700,55 @@ BOOL torture_rpc_drsuapi(struct torture_context *torture)
 
 	ret &= test_DsUnbind(p, mem_ctx, &priv);
 
+	talloc_free(mem_ctx);
+
+	torture_leave_domain(priv.join);
+
+	return ret;
+}
+
+
+BOOL torture_rpc_drsuapi_cracknames(struct torture_context *torture)
+{
+        NTSTATUS status;
+        struct dcerpc_pipe *p;
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+	struct DsPrivate priv;
+	struct cli_credentials *machine_credentials;
+
+	mem_ctx = talloc_init("torture_rpc_drsuapi");
+
+	printf("Connected to DRAUAPI pipe\n");
+
+	ZERO_STRUCT(priv);
+
+	priv.join = torture_join_domain(TEST_MACHINE_NAME, ACB_SVRTRUST, 
+				       &machine_credentials);
+	if (!priv.join) {
+		talloc_free(mem_ctx);
+		printf("Failed to join as BDC\n");
+		return False;
+	}
+
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
+					&dcerpc_table_drsuapi);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_leave_domain(priv.join);
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	ret &= test_DsBind(p, mem_ctx, &priv);
+
+	if (ret) {
+		ret &= test_DsGetDomainControllerInfo(p, mem_ctx, &priv);
+		
+		ret &= test_DsCrackNames(p, mem_ctx, &priv);
+		
+		ret &= test_DsUnbind(p, mem_ctx, &priv);
+	}
 	talloc_free(mem_ctx);
 
 	torture_leave_domain(priv.join);

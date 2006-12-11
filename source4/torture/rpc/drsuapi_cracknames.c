@@ -202,7 +202,7 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			      struct DsPrivate *priv, const char *test_dc)
+			      struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	struct drsuapi_DsCrackNames r;
@@ -222,7 +222,8 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const char *service_principal_name;
 	const char *canonical_name;
 	const char *canonical_ex_name;
-	const char *dc_sid;
+	const char *dom_sid;
+	const char *test_dc = torture_join_netbios_name(priv->join);
 
 	ZERO_STRUCT(r);
 	r.in.bind_handle		= &priv->bind_handle;
@@ -236,9 +237,9 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 
-	dc_sid = dom_sid_string(mem_ctx, torture_join_sid(priv->join));
+	dom_sid = dom_sid_string(mem_ctx, torture_join_sid(priv->join));
 	
-	names[0].str = dc_sid;
+	names[0].str = dom_sid;
 
 	printf("testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
@@ -378,7 +379,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	names[0].str = talloc_asprintf(mem_ctx, "%s%s$", nt4_domain, test_dc);
 
 	printf("testing DsCrackNames with name '%s' desired format:%d\n",
-			names[0].str, r.in.req.req1.format_desired);
+	       names[0].str, r.in.req.req1.format_desired);
 
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -530,17 +531,43 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.comment = "display name for Microsoft Support Account",
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = GUID_string2(mem_ctx, torture_join_user_guid(priv->join)),
+				.comment = "Account GUID -> DN",
+				.expected_str = FQDN_1779_name,
+				.status = DRSUAPI_DS_NAME_STATUS_OK
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
+				.str = GUID_string2(mem_ctx, torture_join_user_guid(priv->join)),
+				.comment = "Account GUID -> NT4 Account",
+				.expected_str = talloc_asprintf(mem_ctx, "%s%s$", nt4_domain, test_dc),
+				.status = DRSUAPI_DS_NAME_STATUS_OK
+			},
 			{		
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = GUID_string2(mem_ctx, &priv->dcinfo.site_guid),
 				.comment = "Site GUID",
+				.expected_str = priv->dcinfo.site_dn,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
-				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = GUID_string2(mem_ctx, &priv->dcinfo.computer_guid),
 				.comment = "Computer GUID",
+				.expected_str = priv->dcinfo.computer_dn,
+				.status = DRSUAPI_DS_NAME_STATUS_OK
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
+				.str = GUID_string2(mem_ctx, &priv->dcinfo.computer_guid),
+				.comment = "Computer GUID -> NT4 Account",
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
@@ -548,6 +575,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = GUID_string2(mem_ctx, &priv->dcinfo.server_guid),
 				.comment = "Server GUID",
+				.expected_str = priv->dcinfo.server_dn,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
@@ -555,13 +583,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = GUID_string2(mem_ctx, &priv->dcinfo.ntds_guid),
 				.comment = "NTDS GUID",
-				.status = DRSUAPI_DS_NAME_STATUS_OK
-			},
-			{
-				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
-				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.str = SID_BUILTIN,
-				.comment = "BUILTIN domain SID",
+				.expected_str = priv->dcinfo.ntds_dn,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
@@ -705,6 +727,13 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			}, 
 			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.comment = "BUILTIN\\ -> DN",
+				.str = "BUILTIN\\",
+				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
+			}, 
+			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
 				.comment = "BUITIN SID -> NT4 account",
@@ -714,28 +743,39 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = SID_BUILTIN,
+				.comment = "Builtin Domain SID -> DN",
+				.status = DRSUAPI_DS_NAME_STATUS_OK,
+				.expected_str = talloc_asprintf(mem_ctx, "CN=Builtin,%s", realm_dn_str)
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = SID_BUILTIN_ADMINISTRATORS,
+				.comment = "Builtin Administrors SID -> DN",
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
 				.str = SID_BUILTIN_ADMINISTRATORS,
+				.comment = "Builtin Administrors SID -> NT4 Account",
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
-				.comment = "DC SID -> DN",
-				.str = dc_sid,
-				.expected_str = FQDN_1779_name,
+				.comment = "Domain SID -> DN",
+				.str = dom_sid,
+				.expected_str = realm_dn_str,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
-				.comment = "DC SID -> NT4 account",
-				.str = dc_sid,
+				.comment = "Domain SID -> NT4 account",
+				.str = dom_sid,
+				.expected_str = nt4_domain,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
@@ -792,40 +832,6 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				     user_principal_name, service_principal_name)) {
 		ret = False;
 	}
-
-	return ret;
-}
-
-BOOL torture_rpc_drsuapi_cracknames(struct torture_context *torture)
-{
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
-	struct DsPrivate priv;
-
-	mem_ctx = talloc_init("torture_rpc_drsuapi");
-
-	status = torture_rpc_connection(mem_ctx, 
-					&p, 
-					&dcerpc_table_drsuapi);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-
-	printf("Connected to DRSUAPI pipe\n");
-
-	ZERO_STRUCT(priv);
-
-	ret &= test_DsBind(p, mem_ctx, &priv);
-
-	ret &= test_DsCrackNames(p, mem_ctx, &priv, 
-							 torture_setting_string(torture, "host", NULL));
-
-	ret &= test_DsUnbind(p, mem_ctx, &priv);
-
-	talloc_free(mem_ctx);
 
 	return ret;
 }
