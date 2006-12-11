@@ -1177,7 +1177,6 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v = talloc_array(vs, struct drsuapi_DsReplicaObjectIdentifier3, 1);
 		if (composite_nomem(v, c)) return;
 
-		/* value for nTDSDSA */
 		v[0].guid		= GUID_zero();
 		v[0].sid		= s->zero_sid;
 		v[0].dn			= talloc_asprintf(v, "CN=NTDS-DSA,%s",
@@ -1204,7 +1203,6 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v = talloc_array(vs, struct GUID, 1);
 		if (composite_nomem(v, c)) return;
 
-		/* value for nTDSDSA */
 		v[0]			= s->dest_dsa.invocation_id;
 
 		vs[0].guid		= &v[0];
