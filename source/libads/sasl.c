@@ -136,6 +136,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	return ADS_ERROR(rc);
 }
 
+#ifdef HAVE_KRB5
 /* 
    perform a LDAP/SASL/SPNEGO/KRB5 bind
 */
@@ -165,6 +166,7 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 
 	return ADS_ERROR(rc);
 }
+#endif
 
 /* 
    this performs a SASL/SPNEGO bind
