@@ -356,14 +356,9 @@ static struct ldb_handle *init_ildb_handle(struct ldb_module *module,
 	return h;
 }
 
-static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg,
-			     void *context,
-			     int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
-			     int timeout,
-			     struct ldb_handle **handle)
+static int ildb_request_send(struct ildb_private *ildb, struct ldap_message *msg, struct ldb_request *r)
 {
-	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
-	struct ldb_handle *h = init_ildb_handle(module, context, callback);
+	struct ldb_handle *h = init_ildb_handle(ildb->module, r->context, r->callback);
 	struct ildb_context *ildb_ac;
 	struct ldap_request *req;
 
@@ -375,28 +370,28 @@ static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg
 
 	req = ldap_request_send(ildb->ldap, msg);
 	if (req == NULL) {
-		ldb_set_errstring(module->ldb, "async send request failed");
+		ldb_set_errstring(ildb->module->ldb, "async send request failed");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (!req->conn) {
-		ldb_set_errstring(module->ldb, "connection to remote LDAP server dropped?");
+		ldb_set_errstring(ildb->module->ldb, "connection to remote LDAP server dropped?");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	talloc_free(req->time_event);
 	req->time_event = NULL;
-	if (timeout) {
+	if (r->timeout) {
 		req->time_event = event_add_timed(req->conn->event.event_ctx, h, 
-						  timeval_current_ofs(timeout, 0),
+						  timeval_current_ofs(r->timeout, 0),
 						  ildb_request_timeout, h);
 	}
 
 	req->async.fn = ildb_callback;
-	req->async.private_data = (void *)h;
+	req->async.private_data = h;
 	ildb_ac->req = talloc_move(ildb_ac, &req);
 
-	*handle = h;
+	r->handle = h;
 	return LDB_SUCCESS;
 }
 
@@ -478,7 +473,7 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 	msg->r.SearchRequest.attributes = discard_const(req->op.search.attrs);
 	msg->controls = req->controls;
 
-	return ildb_request_send(module, msg, req->context, req->callback, req->timeout, &(req->handle));
+	return ildb_request_send(ildb, msg, req);
 }
 
 /*
@@ -528,7 +523,7 @@ static int ildb_add(struct ldb_module *module, struct ldb_request *req)
 		msg->r.AddRequest.attributes[i] = mods[i]->attrib;
 	}
 
-	return ildb_request_send(module, msg, req->context, req->callback, req->timeout, &(req->handle));
+	return ildb_request_send(ildb, msg, req);
 }
 
 /*
@@ -578,7 +573,7 @@ static int ildb_modify(struct ldb_module *module, struct ldb_request *req)
 		msg->r.ModifyRequest.mods[i] = *mods[i];
 	}
 
-	return ildb_request_send(module, msg, req->context, req->callback, req->timeout, &(req->handle));
+	return ildb_request_send(ildb, msg, req);
 }
 
 /*
@@ -609,7 +604,7 @@ static int ildb_delete(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	return ildb_request_send(module, msg, req->context, req->callback, req->timeout, &(req->handle));
+	return ildb_request_send(ildb, msg, req);
 }
 
 /*
@@ -657,7 +652,7 @@ static int ildb_rename(struct ldb_module *module, struct ldb_request *req)
 
 	msg->r.ModifyDNRequest.deleteolddn = True;
 
-	return ildb_request_send(module, msg, req->context, req->callback, req->timeout, &(req->handle));
+	return ildb_request_send(ildb, msg, req);
 }
 
 static int ildb_start_trans(struct ldb_module *module)
