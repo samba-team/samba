@@ -1322,6 +1322,8 @@ static int net_ads_join_usage(int argc, const char **argv)
 	d_printf("   createcomputer=OU  Precreate the computer account in a specific OU.\n");
 	d_printf("                      The OU string read from top to bottom without RDNs and delimited by a '/'.\n");
 	d_printf("                      E.g. \"createcomputer=Computers/Servers/Unix\"\n");
+	d_printf("                      NB: A backslash '\\' is used as escape at multiple levels and may\n");
+	d_printf("                          need to be doubled or even quadrupled.  It is not used as a separator");
 
 	return -1;
 }
