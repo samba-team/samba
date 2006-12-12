@@ -756,7 +756,7 @@ enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 
 	/* Lookup the sid */
 
-	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &sid, dom_name, name,
+	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &sid, &dom_name, &name,
 					 &type)) {
 		TALLOC_FREE(dom_name);
 		TALLOC_FREE(name);
