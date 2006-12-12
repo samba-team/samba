@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+BOOL status_profile_dump(BOOL be_verbose);
+BOOL status_profile_rates(BOOL be_verbose);
+
 #ifdef WITH_PROFILE
 static void profile_separator(const char * title)
 {

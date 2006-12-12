@@ -1201,5 +1201,6 @@ struct printif	cups_printif =
 
 #else
  /* this keeps fussy compilers happy */
+ void print_cups_dummy(void);
  void print_cups_dummy(void) {}
 #endif /* HAVE_CUPS */

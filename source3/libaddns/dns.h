@@ -405,6 +405,9 @@ DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
 					const char *name,
 					const in_addr_t *ip,
 					struct dns_rrec **prec);
+DNS_ERROR dns_create_name_not_in_use_record(TALLOC_CTX *mem_ctx,
+					const char *name, uint32 type,
+					struct dns_rrec **prec);
 DNS_ERROR dns_create_delete_record(TALLOC_CTX *mem_ctx, const char *name,
 				   uint16 type, uint16 r_class,
 				   struct dns_rrec **prec);
