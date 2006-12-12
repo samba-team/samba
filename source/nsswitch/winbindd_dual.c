@@ -765,7 +765,10 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	}
 
 	ZERO_STRUCT(state);
-	state.pid = getpid();
+	state.pid = sys_getpid();
+
+	/* Stop zombies */
+	CatchChild();
 
 	/* Ensure we don't process messages whilst we're
 	   changing the disposition for the child. */

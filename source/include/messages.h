@@ -78,6 +78,8 @@
 #define MSG_WINBIND_ONLINE       4003
 #define MSG_WINBIND_OFFLINE      4004
 #define MSG_WINBIND_ONLINESTATUS 4005
+#define MSG_WINBIND_TRY_TO_GO_ONLINE 4006
+#define MSG_WINBIND_FAILED_TO_GO_ONLINE 4007
 
 /* Flags to classify messages - used in message_send_all() */
 /* Sender will filter by flag. */
