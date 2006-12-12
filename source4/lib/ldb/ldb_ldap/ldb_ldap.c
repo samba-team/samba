@@ -476,9 +476,9 @@ static int lldb_rename(struct ldb_module *module, struct ldb_request *req)
 	return lldb_ldap_to_ldb(ret);
 }
 
-static int lldb_parse_result(struct ldb_handle *handle, LDAPMessage *result)
+static int lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 {
-	struct lldb_context *ac = talloc_get_type(handle->private_data, struct lldb_context);
+	struct ldb_handle *handle = ac->handle;
 	struct lldb_private *lldb = ac->lldb;
 	struct ldb_reply *ares = NULL;
 	LDAPMessage *msg;
@@ -683,7 +683,7 @@ static int lldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 			goto done;
 		}
 
-		return lldb_parse_result(handle, result);
+		return lldb_parse_result(ac, result);
 
 	case LDB_WAIT_ALL:
 		timeout.tv_usec = 0;
@@ -706,7 +706,7 @@ static int lldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 				return LDB_ERR_TIME_LIMIT_EXCEEDED;
 			}
 
-			ret = lldb_parse_result(handle, result);
+			ret = lldb_parse_result(ac, result);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
