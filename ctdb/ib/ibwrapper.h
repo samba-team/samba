@@ -87,12 +87,14 @@ typedef int (*ibw_receive_fn_t)(ibw_conn *conn, void *buf, int n);
 /*
  * settings: array of (name, value) pairs
  * where name is one of:
- *      dev_name [default is the first one]
- *      rx_depth [default is 500]
- *      mtu     [default is 1024]
- *      ib_port [default is 1]
+ *      max_send_wr [default is 256]
+ *      max_recv_wr [default is 1024]
+ * <...>
  *
  * Must be called _ONCE_ for each node.
+ *
+ * max_msg_size is the maximum size of a message
+ * (max_send_wr + max_recv_wr) * max_msg_size bytes allocated per connection
  *
  * returns non-NULL on success
  *
@@ -104,7 +106,8 @@ ibw_ctx *ibw_init(ibw_initattr *attr, int nattr,
 	void *ctx_userdata,
 	ibw_connstate_fn_t ibw_connstate,
 	ibw_receive_fn_t ibw_receive,
-	event_content *ectx);
+	event_content *ectx,
+	int max_msg_size);
 
 /*
  * Must be called in states of (IBWS_ERROR, IBWS_READY, IBWS_CONNECT_REQUEST)
@@ -178,16 +181,17 @@ void ibw_disconnect(ibw_conn *conn);
  * You have to use this buf to fill in before send.
  * It's just to avoid memcpy.in ibw_send.
  * Use the same (buf, key) pair with ibw_send.
- * Don't use more space than maxsize.
+ * Don't use more space than maxsize (see ibw_init).
  *
  * Returns 0 on success.
  */
-int ibw_alloc_send_buf(ibw_conn *conn, void **buf, void **key, int *maxsize);
+int ibw_alloc_send_buf(ibw_conn *conn, void **buf, void **key);
 
 /*
  * Send the message in one
  * Can be invoked any times (should fit into buffers) and at any time
  * (in conn->state=IBWC_CONNECTED)
+ * n must be less or equal than max_msg_size (see ibw_init)
  *
  * You mustn't use (buf, key) any more for sending.
  */
