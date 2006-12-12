@@ -63,6 +63,7 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->callback_running = False;
 
 	cli_credentials_set_kerberos_state(cred, CRED_AUTO_USE_KERBEROS);
+	cli_credentials_set_gensec_features(cred, 0);
 
 	return cred;
 }
@@ -76,6 +77,16 @@ void cli_credentials_set_kerberos_state(struct cli_credentials *creds,
 enum credentials_use_kerberos cli_credentials_get_kerberos_state(struct cli_credentials *creds)
 {
 	return creds->use_kerberos;
+}
+
+void cli_credentials_set_gensec_features(struct cli_credentials *creds, uint32_t gensec_features)
+{
+	creds->gensec_features = gensec_features;
+}
+
+uint32_t cli_credentials_get_gensec_features(struct cli_credentials *creds)
+{
+	return creds->gensec_features;
 }
 
 
