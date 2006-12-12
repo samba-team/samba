@@ -810,6 +810,20 @@ main (int argc, char **argv)
     if(fcache_version)
 	krb5_set_fcache_version(context, fcache_version);
 
+    if(renewable_flag == -1)
+	/* this seems somewhat pointless, but whatever */
+	krb5_appdefault_boolean(context, "kinit",
+				krb5_principal_get_realm(context, principal),
+				"renewable", FALSE, &renewable_flag);
+    if(get_v4_tgt == -1)
+	krb5_appdefault_boolean(context, "kinit", 
+				krb5_principal_get_realm(context, principal), 
+				"krb4_get_tickets", FALSE, &get_v4_tgt);
+    if(do_afslog == -1)
+	krb5_appdefault_boolean(context, "kinit", 
+				krb5_principal_get_realm(context, principal), 
+				"afslog", TRUE, &do_afslog);
+
     if(cred_cache) 
 	ret = krb5_cc_resolve(context, cred_cache, &ccache);
     else {
@@ -850,19 +864,6 @@ main (int argc, char **argv)
 
 	ticket_life = tmp;
     }
-    if(renewable_flag == -1)
-	/* this seems somewhat pointless, but whatever */
-	krb5_appdefault_boolean(context, "kinit",
-				krb5_principal_get_realm(context, principal),
-				"renewable", FALSE, &renewable_flag);
-    if(get_v4_tgt == -1)
-	krb5_appdefault_boolean(context, "kinit", 
-				krb5_principal_get_realm(context, principal), 
-				"krb4_get_tickets", FALSE, &get_v4_tgt);
-    if(do_afslog == -1)
-	krb5_appdefault_boolean(context, "kinit", 
-				krb5_principal_get_realm(context, principal), 
-				"afslog", TRUE, &do_afslog);
 
     if(addrs_flag == 0 && extra_addresses.num_strings > 0)
 	krb5_errx(context, 1, "specifying both extra addresses and "
