@@ -167,6 +167,8 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 		ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);		
 	}
 
+	private->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
+
 	/* we didn't use the return code of this function as we only check the last_fault_code */
 	dcerpc_ndr_request(private->c_pipe, NULL, table, opnum, mem_ctx,r);
 
