@@ -1112,28 +1112,15 @@ void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 }
 
 /*****************************************************************
- *THE CANONICAL* convert uid_t to SID function.
+ *THE LEGACY* convert uid_t to SID function.
 *****************************************************************/  
 
-void uid_to_sid(DOM_SID *psid, uid_t uid)
+void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
-	uid_t low, high;
 	uint32 rid;
 	BOOL ret;
 
 	ZERO_STRUCTP(psid);
-
-	if (fetch_sid_from_uid_cache(psid, uid))
-		return;
-
-	if ((lp_winbind_trusted_domains_only() ||
-	     (lp_idmap_uid(&low, &high) && (uid >= low) && (uid <= high))) &&
-	    winbind_uid_to_sid(psid, uid)) {
-
-		DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
-			  (unsigned int)uid, sid_string_static(psid)));
-		goto done;
-	}
 
 	become_root_uid_only();
 	ret = pdb_uid_to_rid(uid, &rid);
@@ -1151,35 +1138,21 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 	uid_to_unix_users_sid(uid, psid);
 
  done:
-	DEBUG(10,("uid_to_sid: local %u -> %s\n", (unsigned int)uid,
+	DEBUG(10,("LEGACY: uid %u -> sid %s\n", (unsigned int)uid,
 		  sid_string_static(psid)));
 
-	store_uid_sid_cache(psid, uid);
 	return;
 }
 
 /*****************************************************************
- *THE CANONICAL* convert gid_t to SID function.
+ *THE LEGACY* convert gid_t to SID function.
 *****************************************************************/  
 
-void gid_to_sid(DOM_SID *psid, gid_t gid)
+void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
 {
 	BOOL ret;
-	gid_t low, high;
 
 	ZERO_STRUCTP(psid);
-
-	if (fetch_sid_from_gid_cache(psid, gid))
-		return;
-
-	if ((lp_winbind_trusted_domains_only() ||
-	     (lp_idmap_gid(&low, &high) && (gid >= low) && (gid <= high))) &&
-	    winbind_gid_to_sid(psid, gid)) {
-
-		DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
-			  (unsigned int)gid, sid_string_static(psid)));
-		goto done;
-	}
 
 	become_root_uid_only();
 	ret = pdb_gid_to_sid(gid, psid);
@@ -1195,29 +1168,20 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 	gid_to_unix_groups_sid(gid, psid);
 
  done:
-	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid,
+	DEBUG(10,("LEGACY: gid %u -> sid %s\n", (unsigned int)gid,
 		  sid_string_static(psid)));
 
-	store_gid_sid_cache(psid, gid);
 	return;
 }
 
 /*****************************************************************
- *THE CANONICAL* convert SID to uid function.
+ *THE LEGACY* convert SID to uid function.
 *****************************************************************/  
 
-BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
+BOOL legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
 	enum lsa_SidType type;
 	uint32 rid;
-	gid_t gid;
-
-	if (fetch_uid_from_cache(puid, psid))
-		return True;
-
-	if (fetch_gid_from_cache(&gid, psid)) {
-		return False;
-	}
 
 	if (sid_peek_check_rid(&global_sid_Unix_Users, psid, &rid)) {
 		uid_t uid = rid;
@@ -1249,55 +1213,26 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		return False;
 	}
 
-	if (winbind_lookup_sid(NULL, psid, NULL, NULL, &type)) {
-
-		if (type != SID_NAME_USER) {
-			DEBUG(10, ("sid_to_uid: sid %s is a %s\n",
-				   sid_string_static(psid),
-				   sid_type_lookup(type)));
-			return False;
-		}
-
-		if (!winbind_sid_to_uid(puid, psid)) {
-			DEBUG(5, ("sid_to_uid: winbind failed to allocate a "
-				  "new uid for sid %s\n",
-				  sid_string_static(psid)));
-			return False;
-		}
-		goto done;
-	}
-
-	/* TODO: Here would be the place to allocate both a gid and a uid for
-	 * the SID in question */
-
 	return False;
 
  done:
-	DEBUG(10,("sid_to_uid: %s -> %u\n", sid_string_static(psid),
+	DEBUG(10,("LEGACY: sid %s -> uid %u\n", sid_string_static(psid),
 		(unsigned int)*puid ));
 
-	store_uid_sid_cache(psid, *puid);
 	return True;
 }
 
 /*****************************************************************
- *THE CANONICAL* convert SID to gid function.
+ *THE LEGACY* convert SID to gid function.
  Group mapping is used for gids that maps to Wellknown SIDs
 *****************************************************************/  
 
-BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
+BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
 	uint32 rid;
 	GROUP_MAP map;
 	union unid_t id;
 	enum lsa_SidType type;
-	uid_t uid;
-
-	if (fetch_gid_from_cache(pgid, psid))
-		return True;
-
-	if (fetch_uid_from_cache(&uid, psid))
-		return False;
 
 	if (sid_peek_check_rid(&global_sid_Unix_Groups, psid, &rid)) {
 		gid_t gid = rid;
@@ -1344,33 +1279,137 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		return False;
 	}
 	
-	if (!winbind_lookup_sid(NULL, psid, NULL, NULL, &type)) {
-		DEBUG(11,("sid_to_gid: no one knows the SID %s (tried local, "
-			  "then winbind)\n", sid_string_static(psid)));
-		
-		return False;
+ done:
+	DEBUG(10,("LEGACY: sid %s -> gid %u\n", sid_string_static(psid),
+		  (unsigned int)*pgid ));
+
+	return True;
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert uid_t to SID function.
+*****************************************************************/  
+
+void uid_to_sid(DOM_SID *psid, uid_t uid)
+{
+	ZERO_STRUCTP(psid);
+
+	if (fetch_sid_from_uid_cache(psid, uid))
+		return;
+
+	if (!winbind_uid_to_sid(psid, uid)) {
+		if (!winbind_ping()) {
+			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code"));
+			return legacy_uid_to_sid(psid, uid);
+		}
+
+		DEBUG(5, ("uid_to_sid: winbind failed to find a sid for uid %u\n",
+			uid));
+		return;
 	}
 
-	/* winbindd knows it; Ensure this is a group sid */
+	DEBUG(10,("uid %u -> sid %s\n",
+		  (unsigned int)uid, sid_string_static(psid)));
 
-	if ((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
-	    (type != SID_NAME_WKN_GRP)) {
-		DEBUG(10,("sid_to_gid: winbind lookup succeeded but SID is "
-			  "a %s\n", sid_type_lookup(type)));
-		return False;
+	store_uid_sid_cache(psid, uid);
+	return;
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert gid_t to SID function.
+*****************************************************************/  
+
+void gid_to_sid(DOM_SID *psid, gid_t gid)
+{
+	ZERO_STRUCTP(psid);
+
+	if (fetch_sid_from_gid_cache(psid, gid))
+		return;
+
+	if (!winbind_gid_to_sid(psid, gid)) {
+		if (!winbind_ping()) {
+			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code"));
+			return legacy_gid_to_sid(psid, gid);
+		}
+
+		DEBUG(5, ("gid_to_sid: winbind failed to find a sid for gid %u\n",
+			gid));
+		return;
 	}
+
+	DEBUG(10,("gid %u -> sid %s\n",
+		  (unsigned int)gid, sid_string_static(psid)));
 	
-	/* winbindd knows it and it is a type of group; sid_to_gid must succeed
-	   or we are dead in the water */
+	store_gid_sid_cache(psid, gid);
+	return;
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert SID to uid function.
+*****************************************************************/  
+
+BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
+{
+	gid_t gid;
+
+	if (fetch_uid_from_cache(puid, psid))
+		return True;
+
+	if (fetch_gid_from_cache(&gid, psid)) {
+		return False;
+	}
+
+	if (!winbind_sid_to_uid(puid, psid)) {
+		if (!winbind_ping()) {
+			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code"));
+			return legacy_sid_to_uid(psid, puid);
+		}
+
+		DEBUG(5, ("winbind failed to find a uid for sid %s\n",
+			  sid_string_static(psid)));
+		return False;
+	}
+
+	/* TODO: Here would be the place to allocate both a gid and a uid for
+	 * the SID in question */
+
+	DEBUG(10,("sid %s -> uid %u\n", sid_string_static(psid),
+		(unsigned int)*puid ));
+
+	store_uid_sid_cache(psid, *puid);
+	return True;
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert SID to gid function.
+ Group mapping is used for gids that maps to Wellknown SIDs
+*****************************************************************/  
+
+BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
+{
+	uid_t uid;
+
+	if (fetch_gid_from_cache(pgid, psid))
+		return True;
+
+	if (fetch_uid_from_cache(&uid, psid))
+		return False;
+
+	/* Ask winbindd if it can map this sid to a gid.
+	 * (Idmap will check it is a valid SID and of the right type) */
 
 	if ( !winbind_sid_to_gid(pgid, psid) ) {
-		DEBUG(10,("sid_to_gid: winbind failed to allocate a new gid "
-			  "for sid %s\n", sid_string_static(psid)));
+		if (!winbind_ping()) {
+			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code"));
+			return legacy_sid_to_uid(psid, pgid);
+		}
+
+		DEBUG(10,("winbind failed to find a gid for sid %s\n",
+					sid_string_static(psid)));
 		return False;
 	}
 
- done:
-	DEBUG(10,("sid_to_gid: %s -> %u\n", sid_string_static(psid),
+	DEBUG(10,("sid %s -> gid %u\n", sid_string_static(psid),
 		  (unsigned int)*pgid ));
 
 	store_gid_sid_cache(psid, *pgid);

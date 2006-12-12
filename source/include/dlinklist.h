@@ -59,7 +59,7 @@ do { \
           DLIST_ADD(list, p); \
 } while (0)
 
-/* hook into the end of the list - needs a tmp pointer */
+/* hook into the end of the list - needs the entry type */
 #define DLIST_ADD_END(list, p, type) \
 do { \
 		if (!(list)) { \

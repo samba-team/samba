@@ -995,6 +995,12 @@ BOOL pdb_uid_to_rid(uid_t uid, uint32 *rid)
 	return pdb->uid_to_rid(pdb, uid, rid);
 }
 
+BOOL pdb_uid_to_sid(uid_t uid, DOM_SID *sid)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->uid_to_sid(pdb, uid, sid);
+}
+
 BOOL pdb_gid_to_sid(gid_t gid, DOM_SID *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
@@ -1161,8 +1167,8 @@ static NTSTATUS pdb_default_get_seq_num(struct pdb_methods *methods, time_t *seq
 	return NT_STATUS_OK;
 }
 
-static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
-				   uint32 *rid)
+static BOOL pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
+				   DOM_SID *sid)
 {
 	struct samu *sampw = NULL;
 	struct passwd *unix_pw;
@@ -1193,15 +1199,31 @@ static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
 		return False;
 	}
 
-	ret = sid_peek_check_rid(get_global_sam_sid(),
-				 pdb_get_user_sid(sampw), rid);
+	sid_copy(sid, pdb_get_user_sid(sampw));
+
+	TALLOC_FREE(sampw);
+
+	return True;
+}
+
+static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
+				   uint32 *rid)
+{
+	DOM_SID sid;
+	BOOL ret;
+
+	ret = pdb_default_uid_to_sid(methods, uid, &sid);
+	if (!ret) {
+		return ret;
+	}
+	
+	ret = sid_peek_check_rid(get_global_sam_sid(), &sid, rid);
 
 	if (!ret) {
 		DEBUG(1, ("Could not peek rid out of sid %s\n",
-			  sid_string_static(pdb_get_user_sid(sampw))));
+			  sid_string_static(&sid)));
 	}
 
-	TALLOC_FREE(sampw);
 	return ret;
 }
 
@@ -2015,6 +2037,7 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->set_account_policy = pdb_default_set_account_policy;
 	(*methods)->get_seq_num = pdb_default_get_seq_num;
 	(*methods)->uid_to_rid = pdb_default_uid_to_rid;
+	(*methods)->uid_to_sid = pdb_default_uid_to_sid;
 	(*methods)->gid_to_sid = pdb_default_gid_to_sid;
 	(*methods)->sid_to_id = pdb_default_sid_to_id;
 

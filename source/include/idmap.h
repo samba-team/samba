@@ -32,29 +32,49 @@
 /* The interface version specifier. 
    Updated to 3 for enum types by JRA. */
 
-#define SMB_IDMAP_INTERFACE_VERSION	3
+/* Updated to 4, completely new interface, SSS */
 
-enum idmap_type { ID_USERID, ID_GROUPID };
+#define SMB_IDMAP_INTERFACE_VERSION 4
 
-#define IDMAP_FLAG_NONE		0x0
-#define IDMAP_FLAG_QUERY_ONLY	0x1	/* Don't ever allocate, just query. */
-#define IDMAP_FLAG_CACHE_ONLY   0x2	/* Only look in our local cache, not remote. */
+struct idmap_domain {
+	DOM_SID *sid;
+	const char *name;
+	BOOL default_domain;
+	BOOL readonly;
+	void *private_data;
+	struct idmap_methods *methods;
+};
 
 /* Filled out by IDMAP backends */
 struct idmap_methods {
 
 	/* Called when backend is first loaded */
-	NTSTATUS (*init)( const char *params );
+	NTSTATUS (*init)(struct idmap_domain *dom, const char *compat_params);
 
-	NTSTATUS (*allocate_id)(unid_t *id, enum idmap_type id_type);
-	NTSTATUS (*get_sid_from_id)(DOM_SID *sid, unid_t id, enum idmap_type id_type, int flags);
-	NTSTATUS (*get_id_from_sid)(unid_t *id, enum idmap_type *id_type, const DOM_SID *sid, int flags);
-	NTSTATUS (*set_mapping)(const DOM_SID *sid, unid_t id, enum idmap_type id_type);
+	NTSTATUS (*unixids_to_sids)(struct idmap_domain *dom, struct id_map **ids);
+	NTSTATUS (*sids_to_unixids)(struct idmap_domain *dom, struct id_map **ids);
+	NTSTATUS (*set_mapping)(struct idmap_domain *dom, const struct id_map *map);
+	NTSTATUS (*remove_mapping)(struct idmap_domain *dom, const struct id_map *map);
+
+	/* Called to dump backends data */
+	/* NOTE: caller must use talloc_free to free maps when done */
+	NTSTATUS (*dump_data)(struct idmap_domain *dom, struct id_map **maps, int *num_maps);
+
+	/* Called when backend is unloaded */
+	NTSTATUS (*close_fn)(struct idmap_domain *dom);
+};
+
+struct idmap_alloc_methods {
+
+	/* Called when backend is first loaded */
+	NTSTATUS (*init)(const char *compat_params);
+
+	NTSTATUS (*allocate_id)(struct unixid *id);
+	NTSTATUS (*get_id_hwm)(struct unixid *id);
+	NTSTATUS (*set_id_hwm)(struct unixid *id);
 
 	/* Called when backend is unloaded */
 	NTSTATUS (*close_fn)(void);
-
-	/* Called to dump backend status */
-	void (*status)(void);
 };
+
 #endif /* _IDMAP_H_ */

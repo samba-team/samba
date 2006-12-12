@@ -867,7 +867,7 @@ static struct functable net_func[] = {
 	{"SETDOMAINSID", net_setdomainsid},
 	{"GETDOMAINSID", net_getdomainsid},
 	{"MAXRID", net_maxrid},
-	{"IDMAP", net_idmap},
+	{"IDMAP", net_idmap}, 
 	{"STATUS", net_status},
 	{"USERSHARE", net_usershare},
 	{"USERSIDLIST", net_usersidlist},
