@@ -125,6 +125,7 @@ struct test_join *torture_create_testuser(const char *username,
 	int policy_min_pw_len = 0;
 	struct test_join *join;
 	char *random_pw;
+	const char *dc_binding = lp_parm_string(-1, "torture", "dc_binding");
 
 	join = talloc(NULL, struct test_join);
 	if (join == NULL) {
@@ -134,10 +135,19 @@ struct test_join *torture_create_testuser(const char *username,
 	ZERO_STRUCTP(join);
 
 	printf("Connecting to SAMR\n");
-
-	status = torture_rpc_connection(join, 
-					&join->p, 
-					&dcerpc_table_samr);
+	
+	if (dc_binding) {
+		status = dcerpc_pipe_connect(join,
+					     &join->p,
+					     dc_binding,
+					     &dcerpc_table_samr,
+					     cmdline_credentials, NULL);
+					     
+	} else {
+		status = torture_rpc_connection(join, 
+						&join->p, 
+						&dcerpc_table_samr);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
