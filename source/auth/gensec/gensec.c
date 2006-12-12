@@ -1047,6 +1047,8 @@ _PUBLIC_ BOOL gensec_have_feature(struct gensec_security *gensec_security,
 _PUBLIC_ NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security, struct cli_credentials *credentials) 
 {
 	gensec_security->credentials = talloc_reference(gensec_security, credentials);
+	NT_STATUS_HAVE_NO_MEMORY(gensec_security->credentials);
+	gensec_want_feature(gensec_security, cli_credentials_get_gensec_features(gensec_security->credentials));
 	return NT_STATUS_OK;
 }
 

@@ -106,6 +106,9 @@ struct cli_credentials {
 	/* Should we be trying to use kerberos? */
 	enum credentials_use_kerberos use_kerberos;
 
+	/* gensec features which should be used for connections */
+	uint32_t gensec_features;
+
 	/* Number of retries left before bailing out */
 	int tries;
 
