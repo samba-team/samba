@@ -138,8 +138,8 @@ static int ildb_map_error(struct ildb_private *ildb, NTSTATUS status)
 static void ildb_request_timeout(struct event_context *ev, struct timed_event *te,
 				 struct timeval t, void *private_data)
 {
-	struct ldb_handle *handle = talloc_get_type(private_data, struct ldb_handle);
-	struct ildb_context *ac = talloc_get_type(handle->private_data, struct ildb_context);
+	struct ildb_context *ac = talloc_get_type(private_data, struct ildb_context);
+	struct ldb_handle *handle = ac->handle;
 
 	if (ac->req->state == LDAP_REQUEST_PENDING) {
 		DLIST_REMOVE(ac->req->conn->pending, ac->req);
@@ -152,9 +152,9 @@ static void ildb_request_timeout(struct event_context *ev, struct timed_event *t
 
 static void ildb_callback(struct ldap_request *req)
 {
-	struct ldb_handle *handle = talloc_get_type(req->async.private_data, struct ldb_handle);
-	struct ildb_context *ac = talloc_get_type(handle->private_data, struct ildb_context);
-	struct ildb_private *ildb = talloc_get_type(ac->module->private_data, struct ildb_private);
+	struct ildb_context *ac = talloc_get_type(req->async.private_data, struct ildb_context);
+	struct ldb_handle *handle = ac->handle;
+	struct ildb_private *ildb = ac->ildb;
 	NTSTATUS status;
 	int i;
 
@@ -383,13 +383,13 @@ static int ildb_request_send(struct ildb_private *ildb, struct ldap_message *msg
 	talloc_free(req->time_event);
 	req->time_event = NULL;
 	if (r->timeout) {
-		req->time_event = event_add_timed(req->conn->event.event_ctx, ildb_ac->handle, 
+		req->time_event = event_add_timed(req->conn->event.event_ctx, ildb_ac, 
 						  timeval_current_ofs(r->timeout, 0),
-						  ildb_request_timeout, ildb_ac->handle);
+						  ildb_request_timeout, ildb_ac);
 	}
 
 	req->async.fn = ildb_callback;
-	req->async.private_data = ildb_ac->handle;
+	req->async.private_data = ildb_ac;
 
 	return LDB_SUCCESS;
 }
