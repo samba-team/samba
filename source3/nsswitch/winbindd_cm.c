@@ -67,28 +67,164 @@
 
 extern struct winbindd_methods reconnect_methods;
 
+struct dc_name_ip {
+	fstring name;
+	struct in_addr ip;
+};
+
 static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain);
 static void set_dc_type_and_flags( struct winbindd_domain *domain );
+static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
+		    struct dc_name_ip **dcs, int *num_dcs);
 
 /****************************************************************
- If we're still offline, exponentially increase the timeout check.
+ Child failed to find DC's. Reschedule check.
 ****************************************************************/
 
-static void calc_new_online_timeout_check(struct winbindd_domain *domain)
+static void msg_failed_to_go_online(int msg_type, struct process_id src, void *buf, size_t len)
 {
-	int wbc = lp_winbind_cache_time();
+	struct winbindd_domain *domain;
+	const char *domainname = (const char *)buf;
 
-	if (domain->startup) {
-		domain->check_online_timeout = 10;
-	} else if (domain->check_online_timeout < wbc) {
-		domain->check_online_timeout = wbc;
-	} else {
-		uint32 new_to = domain->check_online_timeout * 3;
-		if (new_to > (3*60*60)) {
-			new_to = 3*60*60; /* 3 hours. */
-		}
-		domain->check_online_timeout = new_to;
+	if (buf == NULL || len == 0) {
+		return;
 	}
+
+	DEBUG(5,("msg_fail_to_go_online: received for domain %s.\n", domainname));
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		if (domain->internal) {
+			continue;
+		}
+
+		if (strequal(domain->name, domainname)) {
+			if (domain->online) {
+				/* We're already online, ignore. */
+				DEBUG(5,("msg_fail_to_go_online: domain %s "
+					"already online.\n", domainname));
+				continue;
+			}
+
+			/* Reschedule the online check. */
+			set_domain_offline(domain);
+			break;
+		}
+	}
+}
+
+/****************************************************************
+ Actually cause a reconnect from a message.
+****************************************************************/
+
+static void msg_try_to_go_online(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	struct winbindd_domain *domain;
+	const char *domainname = (const char *)buf;
+
+	if (buf == NULL || len == 0) {
+		return;
+	}
+
+	DEBUG(5,("msg_try_to_go_online: received for domain %s.\n", domainname));
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		if (domain->internal) {
+			continue;
+		}
+
+		if (strequal(domain->name, domainname)) {
+
+			if (domain->online) {
+				/* We're already online, ignore. */
+				DEBUG(5,("msg_try_to_go_online: domain %s "
+					"already online.\n", domainname));
+				continue;
+			}
+
+			/* This call takes care of setting the online
+			   flag to true if we connected, or re-adding
+			   the offline handler if false. Bypasses online
+			   check so always does network calls. */
+
+			init_dc_connection_network(domain);
+			break;
+		}
+	}
+}
+
+/****************************************************************
+ Fork a child to try and contact a DC. Do this as contacting a
+ DC requires blocking lookups and we don't want to block our
+ parent.
+****************************************************************/
+
+static BOOL fork_child_dc_connect(struct winbindd_domain *domain)
+{
+	extern BOOL override_logfile;
+	struct dc_name_ip *dcs = NULL;
+	int num_dcs = 0;
+	TALLOC_CTX *mem_ctx = NULL;
+	pid_t child_pid;
+	pid_t parent_pid = sys_getpid();
+
+	/* Stop zombies */
+	CatchChild();
+
+	message_block();
+
+	child_pid = sys_fork();
+
+	if (child_pid == -1) {
+		DEBUG(0, ("fork_child_dc_connect: Could not fork: %s\n", strerror(errno)));
+		message_unblock();
+		return False;
+	}
+
+	if (child_pid != 0) {
+		/* Parent */
+		message_register(MSG_WINBIND_TRY_TO_GO_ONLINE,msg_try_to_go_online);
+		message_register(MSG_WINBIND_FAILED_TO_GO_ONLINE,msg_failed_to_go_online);
+		message_unblock();
+		return True;
+	}
+
+	/* Child. */
+
+	/* Leave messages blocked - we will never process one. */
+
+	/* tdb needs special fork handling */
+	if (tdb_reopen_all(1) == -1) {
+		DEBUG(0,("tdb_reopen_all failed.\n"));
+		_exit(0);
+	}
+
+	close_conns_after_fork();
+
+	if (!override_logfile) {
+		reopen_logs();
+	}
+
+	mem_ctx = talloc_init("fork_child_dc_connect");
+	if (!mem_ctx) {
+		DEBUG(0,("talloc_init failed.\n"));
+		_exit(0);
+	}
+
+	if ((!get_dcs(mem_ctx, domain, &dcs, &num_dcs)) || (num_dcs == 0)) {
+		/* Still offline ? Can't find DC's. */
+		message_send_pid(pid_to_procid(parent_pid), MSG_WINBIND_FAILED_TO_GO_ONLINE,
+				domain->name,
+				strlen(domain->name)+1, False);
+		_exit(0);
+	}
+
+	/* We got a DC. Send a message to our parent to get it to
+	   try and do the same. */
+
+	message_send_pid(pid_to_procid(parent_pid), MSG_WINBIND_TRY_TO_GO_ONLINE,
+				domain->name,
+				strlen(domain->name)+1, False);
+	_exit(0);
 }
 
 /****************************************************************
@@ -127,12 +263,32 @@ static void check_domain_online_handler(struct timed_event *te,
 		return;
 	}
 
-	/* This call takes care of setting the online
-	   flag to true if we connected, or re-adding
-	   the offline handler if false. Bypasses online
-	   check so always does network calls. */
+	/* Fork a child to test if it can contact a DC. 
+	   If it can then send ourselves a message to
+	   cause a reconnect. */
 
-        init_dc_connection_network(domain);
+	fork_child_dc_connect(domain);
+}
+
+/****************************************************************
+ If we're still offline, exponentially increase the timeout check.
+****************************************************************/
+
+static void calc_new_online_timeout_check(struct winbindd_domain *domain)
+{
+	int wbc = lp_winbind_cache_time();
+
+	if (domain->startup) {
+		domain->check_online_timeout = 10;
+	} else if (domain->check_online_timeout < wbc) {
+		domain->check_online_timeout = wbc;
+	} else {
+		uint32 new_to = domain->check_online_timeout * 3;
+		if (new_to > (3*60*60)) {
+			new_to = 3*60*60; /* 3 hours. */
+		}
+		domain->check_online_timeout = new_to;
+	}
 }
 
 /****************************************************************
@@ -243,6 +399,10 @@ static void set_domain_online(struct winbindd_domain *domain)
 	if (domain->check_online_event) {
 		TALLOC_FREE(domain->check_online_event);
 	}
+
+	/* Ensure we ignore any pending child messages. */
+	message_deregister(MSG_WINBIND_TRY_TO_GO_ONLINE);
+	message_deregister(MSG_WINBIND_FAILED_TO_GO_ONLINE);
 
 	domain->online = True;
 }
@@ -661,11 +821,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	return result;
 }
-
-struct dc_name_ip {
-	fstring name;
-	struct in_addr ip;
-};
 
 static BOOL add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 			      const char *dcname, struct in_addr ip,
