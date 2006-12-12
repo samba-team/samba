@@ -28,6 +28,7 @@
 #include "lib/tls/tls.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/socket.h"
+#include "auth/credentials/credentials.h"
 #include "lib/stream/packet.h"
 
 struct ldap_simple_creds {
@@ -211,7 +212,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	int count, i;
 
 	const char **sasl_names;
-	
+	uint32_t old_gensec_features;
 	static const char *supported_sasl_mech_attrs[] = {
 		"supportedSASLMechanisms", 
 		NULL 
@@ -225,16 +226,21 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 
 	/* require Kerberos SIGN/SEAL only if we don't use SSL
 	 * Windows seem not to like double encryption */
-	if (!tls_enabled(conn->sock)) {
-		gensec_want_feature(conn->gensec, 0 | GENSEC_FEATURE_SIGN | GENSEC_FEATURE_SEAL);
+	old_gensec_features = cli_credentials_get_gensec_features(creds);
+	if (tls_enabled(conn->sock)) {
+		cli_credentials_set_gensec_features(creds, 0);
 	}
 
+	/* this call also sets the gensec_want_features */
 	status = gensec_set_credentials(conn->gensec, creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to set GENSEC creds: %s\n", 
 			  nt_errstr(status)));
 		goto failed;
 	}
+
+	/* reset the original gensec_features */
+	cli_credentials_set_gensec_features(creds, old_gensec_features);
 
 	if (conn->host) {
 		status = gensec_set_target_hostname(conn->gensec, conn->host);
