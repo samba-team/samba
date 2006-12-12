@@ -145,11 +145,9 @@ struct idmap_ad_context {
 /* Initialize and check conf is appropriate */
 static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom, const char *params)
 {
-	NTSTATUS ret;
 	struct idmap_ad_context *ctx;
 	char *config_option;
 	const char *range;
-	const char *tmp;
 	ADS_STRUCT *ads;
 
 	/* verify AD is reachable (not critical, we may just be offline at start) */
@@ -375,13 +373,12 @@ again:
 	}
 
 	for (i = 0; i < count; i++) {
-		LDAPMessage *entry;
+		LDAPMessage *entry = NULL;
 		DOM_SID sid;
 		enum id_type type;
 		struct id_map *map;
 		uint32_t id;
 		uint32_t atype;
-		int n;
 
 		if (i == 0) { /* first entry */
 			entry = ads_first_entry(ads, res);
@@ -587,13 +584,12 @@ again:
 	}
 
 	for (i = 0; i < count; i++) {
-		LDAPMessage *entry;
+		LDAPMessage *entry = NULL;
 		DOM_SID sid;
 		enum id_type type;
 		struct id_map *map;
 		uint32_t id;
 		uint32_t atype;
-		int n;
 
 		if (i == 0) { /* first entry */
 			entry = ads_first_entry(ads, res);

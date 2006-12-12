@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "winbindd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -240,8 +241,6 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 
 static NTSTATUS idmap_rid_close(struct idmap_domain *dom)
 {
-	struct idmap_tdb_context *ctx;
-
 	if (dom->private_data) {
 		TALLOC_FREE(dom->private_data);
 	}
