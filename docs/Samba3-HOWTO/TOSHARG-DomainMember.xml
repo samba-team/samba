@@ -1112,7 +1112,7 @@ may want to create the machine trust account within a particular organizational 
 this to be done using the following syntax:
 <screen>
 &rootprompt; <userinput>kinit Administrator@your.kerberos.REALM</userinput>
-&rootprompt; <userinput>net ads join "organizational_unit"</userinput>
+&rootprompt; <userinput>net ads join createcomputer="organizational_unit"</userinput>
 </screen>
 Your ADS manager will be able to advise what should be specified for the "organizational_unit" parameter.
 </para>
@@ -1123,13 +1123,15 @@ Your ADS manager will be able to advise what should be specified for the "organi
 <indexterm><primary>container</primary></indexterm>
 <indexterm><primary>ADS</primary></indexterm>
 For example, you may want to create the machine trust account in a container called <quote>Servers</quote>
-under the organizational directory <quote>Computers\BusinessUnit\Department,</quote> like this:
+under the organizational directory <quote>Computers/BusinessUnit/Department,</quote> like this:
 <screen>
-&rootprompt; <userinput>net ads join "Computers\BusinessUnit\Department\Servers"</userinput>
+&rootprompt; <userinput>net ads join "Computers/BusinessUnit/Department/Servers"</userinput>
 </screen>
 This command will place the Samba server machine trust account in the container
-<literal>Computers\BusinessUnit\Department\Servers</literal>. The container should exist in the ADS directory
-before executing this command.
+<literal>Computers/BusinessUnit/Department/Servers</literal>. The container should exist in the ADS directory
+before executing this command.  Please note that forward slashes must be used, because backslashes are both
+valid characters in an OU name and used as escapes for other characters.  If you need a backslash in an OU 
+name, it may need to be quadrupled to pass through the shell escape and ldap escape.
 </para>
 
 <sect3>
