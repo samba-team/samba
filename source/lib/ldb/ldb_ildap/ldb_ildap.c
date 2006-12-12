@@ -53,12 +53,10 @@
 
 struct ildb_private {
 	struct ldap_connection *ldap;
-	struct ldb_context *ldb;
 	struct ldb_module *module;
 };
 
 struct ildb_context {
-	struct ldb_module *module;
 	struct ildb_private *ildb;
 	struct ldb_handle *handle;
 	struct ldap_request *req;
@@ -128,7 +126,7 @@ static int ildb_map_error(struct ildb_private *ildb, NTSTATUS status)
 	if (NT_STATUS_IS_OK(status)) {
 		return LDB_SUCCESS;
 	}
-	ldb_set_errstring(ildb->ldb, ldap_errstr(ildb->ldap, status));
+	ldb_set_errstring(ildb->module->ldb, ldap_errstr(ildb->ldap, status));
 	if (NT_STATUS_IS_LDAP(status)) {
 		return NT_STATUS_LDAP_CODE(status);
 	}
@@ -181,7 +179,7 @@ static void ildb_callback(struct ldap_request *req)
 		handle->status = ildb_map_error(ildb, status);
 		if (ac->callback && handle->status == LDB_SUCCESS) {
 			/* FIXME: build a corresponding ares to pass on */
-			handle->status = ac->callback(ac->module->ldb, ac->context, NULL);
+			handle->status = ac->callback(ac->ildb->module->ldb, ac->context, NULL);
 		}
 		handle->state = LDB_ASYNC_DONE;
 		break;
@@ -195,7 +193,7 @@ static void ildb_callback(struct ldap_request *req)
 		handle->status = ildb_map_error(ildb, status);
 		if (ac->callback && handle->status == LDB_SUCCESS) {
 			/* FIXME: build a corresponding ares to pass on */
-			handle->status = ac->callback(ac->module->ldb, ac->context, NULL);
+			handle->status = ac->callback(ac->ildb->module->ldb, ac->context, NULL);
 		}
 		handle->state = LDB_ASYNC_DONE;
 		break;
@@ -209,7 +207,7 @@ static void ildb_callback(struct ldap_request *req)
 		handle->status = ildb_map_error(ildb, status);
 		if (ac->callback && handle->status == LDB_SUCCESS) {
 			/* FIXME: build a corresponding ares to pass on */
-			handle->status = ac->callback(ac->module->ldb, ac->context, NULL);
+			handle->status = ac->callback(ac->ildb->module->ldb, ac->context, NULL);
 		}
 		handle->state = LDB_ASYNC_DONE;
 		break;
@@ -223,7 +221,7 @@ static void ildb_callback(struct ldap_request *req)
 		handle->status = ildb_map_error(ildb, status);
 		if (ac->callback && handle->status == LDB_SUCCESS) {
 			/* FIXME: build a corresponding ares to pass on */
-			handle->status = ac->callback(ac->module->ldb, ac->context, NULL);
+			handle->status = ac->callback(ac->ildb->module->ldb, ac->context, NULL);
 		}
 		handle->state = LDB_ASYNC_DONE;
 		break;
@@ -256,7 +254,7 @@ static void ildb_callback(struct ldap_request *req)
 				ares->controls = talloc_move(ares, &msg->controls);
 				if (msg->r.SearchResultDone.resultcode) {
 					if (msg->r.SearchResultDone.errormessage) {
-						ldb_set_errstring(ac->module->ldb, msg->r.SearchResultDone.errormessage);
+						ldb_set_errstring(ac->ildb->module->ldb, msg->r.SearchResultDone.errormessage);
 					}
 				}
 
@@ -276,7 +274,7 @@ static void ildb_callback(struct ldap_request *req)
 
 				search = &(msg->r.SearchResultEntry);
 		
-				ares->message->dn = ldb_dn_new(ares->message, ac->module->ldb, search->dn);
+				ares->message->dn = ldb_dn_new(ares->message, ac->ildb->module->ldb, search->dn);
 				if ( ! ldb_dn_validate(ares->message->dn)) {
 					handle->status = LDB_ERR_OPERATIONS_ERROR;
 					return;
@@ -305,7 +303,7 @@ static void ildb_callback(struct ldap_request *req)
 				return;
 			}
 
-			ret = ac->callback(ac->module->ldb, ac->context, ares);
+			ret = ac->callback(ac->ildb->module->ldb, ac->context, ares);
 			if (ret) {
 				handle->status = ret;
 			}
@@ -349,7 +347,6 @@ static struct ildb_context *init_ildb_handle(struct ildb_private *ildb,
 	h->state = LDB_ASYNC_INIT;
 	h->status = LDB_SUCCESS;
 
-	ildb_ac->module = ildb->module;
 	ildb_ac->ildb = ildb;
 	ildb_ac->handle = h;
 	ildb_ac->context = req->context;
@@ -752,7 +749,6 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 		goto failed;
 	}
 	module->private_data	= ildb;
-	ildb->ldb		= ldb;
 	ildb->module		= module;
 	ildb->ldap = ldap4_new_connection(ildb, ldb_get_opaque(ldb, "EventContext"));
 	if (!ildb->ldap) {
