@@ -803,20 +803,27 @@ static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp,
 	
 	if (freeit) {
 		SAFE_FREE(*whop);
-		memset(*credp, '\0', strlen(*credp));
+		if (*credp) {
+			memset(*credp, '\0', strlen(*credp));
+		}
 		SAFE_FREE(*credp);
 	} else {
 		DEBUG(5,("rebind_proc_with_state: Rebinding as \"%s\"\n", 
-			  ldap_state->bind_dn));
+			  ldap_state->bind_dn?ldap_state->bind_dn:"[Anonymous bind]"));
 
-		*whop = SMB_STRDUP(ldap_state->bind_dn);
-		if (!*whop) {
-			return LDAP_NO_MEMORY;
-		}
-		*credp = SMB_STRDUP(ldap_state->bind_secret);
-		if (!*credp) {
-			SAFE_FREE(*whop);
-			return LDAP_NO_MEMORY;
+		if (ldap_state->anonymous) {
+			*whop = NULL;
+			*credp = NULL;
+		} else {
+			*whop = SMB_STRDUP(ldap_state->bind_dn);
+			if (!*whop) {
+				return LDAP_NO_MEMORY;
+			}
+			*credp = SMB_STRDUP(ldap_state->bind_secret);
+			if (!*credp) {
+				SAFE_FREE(*whop);
+				return LDAP_NO_MEMORY;
+			}
 		}
 		*methodp = LDAP_AUTH_SIMPLE;
 	}
@@ -844,7 +851,7 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 	int version;
 
 	DEBUG(5,("rebindproc_connect_with_state: Rebinding to %s as \"%s\"\n", 
-		 url, ldap_state->bind_dn));
+		 url, ldap_state->bind_dn?ldap_state->bind_dn:"[Anonymous bind]"));
 
 	/* call START_TLS again (ldaps:// is handled by the OpenLDAP library
 	 * itself) before rebinding to another LDAP server to avoid to expose
@@ -925,24 +932,22 @@ static int rebindproc_connect (LDAP * ld, LDAP_CONST char *url, int request,
 static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_struct)
 {
 	int rc;
-	char *ldap_dn;
-	char *ldap_secret;
 	int version;
 
-	/* get the password */
-	if (!fetch_ldap_pw(&ldap_dn, &ldap_secret)) {
-		DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
-		return LDAP_INVALID_CREDENTIALS;
-	}
+	if (!ldap_state->anonimous && !ldap_state->bind_dn) {
 
-	ldap_state->bind_dn = ldap_dn;
-	ldap_state->bind_secret = ldap_secret;
+		/* get the default dn and password only if they are not set already */
+		if (!fetch_ldap_pw(&ldap_state->bind_dn, &ldap_state->bind_secret)) {
+			DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
+			return LDAP_INVALID_CREDENTIALS;
+		}
+	}
 
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
 	   (OpenLDAP) doesnt' seem to support it */
 	   
 	DEBUG(10,("ldap_connect_system: Binding to ldap server %s as \"%s\"\n",
-		  ldap_state->uri, ldap_dn));
+		  ldap_state->uri, ldap_state->bind_dn));
 
 #ifdef HAVE_LDAP_SET_REBIND_PROC
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
@@ -962,7 +967,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 #endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
 #endif
 
-	rc = ldap_simple_bind_s(ldap_struct, ldap_dn, ldap_secret);
+	rc = ldap_simple_bind_s(ldap_struct, ldap_state->bind_dn, ldap_state->bind_secret);
 
 	if (rc != LDAP_SUCCESS) {
 		char *ld_error = NULL;
@@ -971,7 +976,8 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 		DEBUG(ldap_state->num_failures ? 2 : 0,
 		      ("failed to bind to server %s with dn=\"%s\" Error: %s\n\t%s\n",
 			       ldap_state->uri,
-			       ldap_dn ? ldap_dn : "(unknown)", ldap_err2string(rc),
+			       ldap_state->bind_dn ? ldap_state->bind_dn : "[Anonymous bind]",
+			       ldap_err2string(rc),
 			       ld_error ? ld_error : "(unknown)"));
 		SAFE_FREE(ld_error);
 		ldap_state->num_failures++;
@@ -1078,8 +1084,6 @@ static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 	DEBUG(5,("The connection to the LDAP server was closed\n"));
 	/* maybe free the results here --metze */
 	
-	
-
 	return NT_STATUS_OK;
 }
 
@@ -1700,4 +1704,25 @@ BOOL smbldap_has_naming_context(LDAP *ld, const char *naming_context)
 {
 	const char *attrs[] = { "namingContexts", NULL };
 	return smbldap_check_root_dse(ld, attrs, naming_context);
+}
+
+BOOL smbldap_set_creds(struct smbldap_state *ldap_state, BOOL anon, const char *dn, const char *secret)
+{
+	ldap_state->anonimous = anon;
+
+	/* free any previously set credential */
+
+	SAFE_FREE(ldap_state->bind_dn);
+	if (ldap_state->bind_secret) {
+		/* make sure secrets are zeroed out of memory */
+		memset(ldap_state->bind_secret, '\0', strlen(ldap_state->bind_secret));
+		SAFE_FREE(ldap_state->bind_secret);
+	}
+
+	if ( ! anon) {
+		ldap_state->bind_dn = SMB_STRDUP(dn);
+		ldap_state->bind_secret = SMB_STRDUP(secret);
+	}
+
+	return True;
 }

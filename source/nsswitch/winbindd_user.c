@@ -80,14 +80,14 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	
 	/* Resolve the uid number */
 
-	if (!NT_STATUS_IS_OK(idmap_sid_to_uid(user_sid, &pw->pw_uid, 0))) {
+	if (!NT_STATUS_IS_OK(idmap_sid_to_uid(user_sid, &pw->pw_uid))) {
 		DEBUG(1, ("error getting user id for sid %s\n", sid_to_string(sid_string, user_sid)));
 		return False;
 	}
 	
 	/* Resolve the gid number */   
 
-	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(group_sid, &pw->pw_gid, 0))) {
+	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(group_sid, &pw->pw_gid))) {
 		DEBUG(1, ("error getting group id for sid %s\n", sid_to_string(sid_string, group_sid)));
 		return False;
 	}
@@ -404,30 +404,11 @@ static void getpwuid_recv(void *private_data, BOOL success, const char *sid)
 /* Return a password structure given a uid number */
 void winbindd_getpwuid(struct winbindd_cli_state *state)
 {
-	DOM_SID user_sid;
-	NTSTATUS status;
-	
-	/* Bug out if the uid isn't in the winbind range */
-	if ((state->request.data.uid < server_state.uid_low ) ||
-	    (state->request.data.uid > server_state.uid_high)) {
-		request_error(state);
-		return;
-	}
-
 	DEBUG(3, ("[%5lu]: getpwuid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.uid));
 
-	status = idmap_uid_to_sid(&user_sid, state->request.data.uid,
-				  IDMAP_FLAG_QUERY_ONLY | IDMAP_FLAG_CACHE_ONLY);
-
-	if (NT_STATUS_IS_OK(status)) {
-		winbindd_getpwsid(state, &user_sid);
-		return;
-	}
-
-	DEBUG(10,("Could not find SID for uid %lu in the cache. Querying idmap backend\n",
-		  (unsigned long)state->request.data.uid));
-
+	/* always query idmap via the async interface */
+	/* if this turns to be too slow we will add here a direct query to the cache */
 	winbindd_uid2sid_async(state->mem_ctx, state->request.data.uid, getpwuid_recv, state);
 }
 

@@ -1252,3 +1252,45 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 
 	return True;
 }
+
+BOOL secrets_store_generic(const char *owner, const char *key, const char *secret)
+{
+	char *tdbkey = NULL;
+	BOOL ret;
+	
+	if (asprintf(&tdbkey, "SECRETS/GENERIC/%s/%s", owner, key) < 0) {
+		DEBUG(0, ("asprintf failed!\n"));
+		return False;
+	}
+		
+	ret = secrets_store(tdbkey, secret, strlen(secret)+1);
+	
+	SAFE_FREE(tdbkey);
+	return ret;
+}
+
+/*******************************************************************
+ Find the ldap password.
+******************************************************************/
+
+char *secrets_fetch_generic(const char *owner, const char *key)
+{
+	char *secret = NULL;
+	char *tdbkey = NULL;
+
+	if (( ! owner) || ( ! key)) {
+		DEBUG(1, ("Invalid Paramters"));
+		return NULL;
+	}
+
+	if (asprintf(&tdbkey, "SECRETS/GENERIC/%s/%s", owner, key) < 0) {
+		DEBUG(0, ("Out of memory!\n"));
+		return NULL;
+	}
+	
+	secret = (char *)secrets_fetch(tdbkey, NULL);
+	SAFE_FREE(tdbkey);
+
+	return secret;
+}
+

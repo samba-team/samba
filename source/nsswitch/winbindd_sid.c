@@ -167,45 +167,6 @@ struct winbindd_child *idmap_child(void)
 /* Convert a sid to a uid.  We assume we only have one rid attached to the
    sid. */
 
-static void sid2uid_recv(void *private_data, BOOL success, uid_t uid);
-
-void winbindd_sid_to_uid(struct winbindd_cli_state *state)
-{
-	DOM_SID sid;
-	NTSTATUS result;
-
-	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
-
-	DEBUG(3, ("[%5lu]: sid to uid %s\n", (unsigned long)state->pid,
-		  state->request.data.sid));
-
-	if (idmap_proxyonly()) {
-		DEBUG(8, ("IDMAP proxy only\n"));
-		request_error(state);
-		return;
-	}
-
-	if (!string_to_sid(&sid, state->request.data.sid)) {
-		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.sid));
-		request_error(state);
-		return;
-	}
-
-	/* Query only the local tdb, everything else might possibly block */
-
-	result = idmap_sid_to_uid(&sid, &state->response.data.uid,
-				  IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
-
-	if (NT_STATUS_IS_OK(result)) {
-		request_ok(state);
-		return;
-	}
-
-	winbindd_sid2uid_async(state->mem_ctx, &sid, sid2uid_recv, state);
-}
-
 static void sid2uid_recv(void *private_data, BOOL success, uid_t uid)
 {
 	struct winbindd_cli_state *state =
@@ -222,27 +183,15 @@ static void sid2uid_recv(void *private_data, BOOL success, uid_t uid)
 	request_ok(state);
 }
 
-/* Convert a sid to a gid.  We assume we only have one rid attached to the
-   sid.*/
-
-static void sid2gid_recv(void *private_data, BOOL success, gid_t gid);
-
-void winbindd_sid_to_gid(struct winbindd_cli_state *state)
+void winbindd_sid_to_uid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
-	NTSTATUS result;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
 
-	DEBUG(3, ("[%5lu]: sid to gid %s\n", (unsigned long)state->pid,
+	DEBUG(3, ("[%5lu]: sid to uid %s\n", (unsigned long)state->pid,
 		  state->request.data.sid));
-
-	if (idmap_proxyonly()) {
-		DEBUG(8, ("IDMAP proxy only\n"));
-		request_error(state);
-		return;
-	}
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
@@ -251,18 +200,12 @@ void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 		return;
 	}
 
-	/* Query only the local tdb, everything else might possibly block */
-
-	result = idmap_sid_to_gid(&sid, &state->response.data.gid,
-				  IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
-
-	if (NT_STATUS_IS_OK(result)) {
-		request_ok(state);
-		return;
-	}
-
-	winbindd_sid2gid_async(state->mem_ctx, &sid, sid2gid_recv, state);
+	/* always use the async interface (may block) */
+	winbindd_sid2uid_async(state->mem_ctx, &sid, sid2uid_recv, state);
 }
+
+/* Convert a sid to a gid.  We assume we only have one rid attached to the
+   sid.*/
 
 static void sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 {
@@ -280,57 +223,133 @@ static void sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	request_ok(state);
 }
 
-/* Convert a uid to a sid */
-
-struct uid2sid_state {
-	struct winbindd_cli_state *cli_state;
-	uid_t uid;
-	fstring name;
-	DOM_SID sid;
-	enum lsa_SidType type;
-};
-
-static void uid2sid_uid2name_recv(void *private_data, BOOL success,
-				  const char *username);
-static void uid2sid_lookupname_recv(void *private_data, BOOL success,
-				    const DOM_SID *sid,
-				    enum lsa_SidType type);
-static void uid2sid_idmap_set_mapping_recv(void *private_data, BOOL success);
-
-static void uid2sid_recv(void *private_data, BOOL success, const char *sid);
-
-void winbindd_uid_to_sid(struct winbindd_cli_state *state)
+void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
-	NTSTATUS status;
 
-	DEBUG(3, ("[%5lu]: uid to sid %lu\n", (unsigned long)state->pid, 
-		  (unsigned long)state->request.data.uid));
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
 
-	if (idmap_proxyonly()) {
-		DEBUG(8, ("IDMAP proxy only\n"));
+	DEBUG(3, ("[%5lu]: sid to gid %s\n", (unsigned long)state->pid,
+		  state->request.data.sid));
+
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(1, ("Could not get convert sid %s from string\n",
+			  state->request.data.sid));
 		request_error(state);
 		return;
 	}
 
-	status = idmap_uid_to_sid(&sid, state->request.data.uid,
-				  IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
+	/* always use the async interface (may block) */
+	winbindd_sid2gid_async(state->mem_ctx, &sid, sid2gid_recv, state);
+}
 
-	if (NT_STATUS_IS_OK(status)) {
-		sid_to_string(state->response.data.sid.sid, &sid);
-		state->response.data.sid.type = SID_NAME_USER;
-		request_ok(state);
+static void sids2xids_recv(void *private_data, BOOL success, void *data, int len)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
+
+	if (!success) {
+		DEBUG(5, ("Could not convert sids to xids\n"));
+		request_error(state);
 		return;
 	}
 
-	winbindd_uid2sid_async(state->mem_ctx, state->request.data.uid, uid2sid_recv, state);
+	state->response.extra_data.data = data;
+	state->response.length = sizeof(state->response) + len;
+	request_ok(state);
 }
+
+void winbindd_sids_to_unixids(struct winbindd_cli_state *state)
+{
+	DEBUG(3, ("[%5lu]: sids to xids\n", (unsigned long)state->pid));
+
+	winbindd_sids2xids_async(state->mem_ctx,
+			state->request.extra_data.data,
+			state->request.extra_len,
+			sids2xids_recv, state);
+}
+
+static void set_mapping_recv(void *private_data, BOOL success)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
+
+	if (!success) {
+		DEBUG(5, ("Could not set sid mapping\n"));
+		request_error(state);
+		return;
+	}
+
+	request_ok(state);
+}
+
+void winbindd_set_mapping(struct winbindd_cli_state *state)
+{
+	struct id_map map;
+	DOM_SID sid;
+
+	DEBUG(3, ("[%5lu]: set id map\n", (unsigned long)state->pid));
+
+	if ( ! state->privileged) {
+		DEBUG(0, ("Only root is allowed to set mappings!\n"));
+		request_error(state);
+		return;
+	}
+
+	if (!string_to_sid(&sid, state->request.data.dual_idmapset.sid)) {
+		DEBUG(1, ("Could not get convert sid %s from string\n",
+			  state->request.data.sid));
+		request_error(state);
+		return;
+	}
+
+	map.sid = &sid;
+	map.xid.id = state->request.data.dual_idmapset.id;
+	map.xid.type = state->request.data.dual_idmapset.type;
+
+	winbindd_set_mapping_async(state->mem_ctx, &map,
+			set_mapping_recv, state);
+}
+
+static void set_hwm_recv(void *private_data, BOOL success)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
+
+	if (!success) {
+		DEBUG(5, ("Could not set sid mapping\n"));
+		request_error(state);
+		return;
+	}
+
+	request_ok(state);
+}
+
+void winbindd_set_hwm(struct winbindd_cli_state *state)
+{
+	struct unixid xid;
+
+	DEBUG(3, ("[%5lu]: set hwm\n", (unsigned long)state->pid));
+
+	if ( ! state->privileged) {
+		DEBUG(0, ("Only root is allowed to set mappings!\n"));
+		request_error(state);
+		return;
+	}
+
+	xid.id = state->request.data.dual_idmapset.id;
+	xid.type = state->request.data.dual_idmapset.type;
+
+	winbindd_set_hwm_async(state->mem_ctx, &xid, set_hwm_recv, state);
+}
+
+/* Convert a uid to a sid */
 
 static void uid2sid_recv(void *private_data, BOOL success, const char *sid)
 {
 	struct winbindd_cli_state *state =
 		(struct winbindd_cli_state *)private_data;
-	struct uid2sid_state *uid2sid_state;
 
 	if (success) {
 		DEBUG(10,("uid2sid: uid %lu has sid %s\n",
@@ -341,141 +360,25 @@ static void uid2sid_recv(void *private_data, BOOL success, const char *sid)
 		return;
 	}
 
-	/* preexisitng mapping not found go on */
-
-	if (is_in_uid_range(state->request.data.uid)) {
-		/* This is winbind's, so we should better have succeeded
-		 * above. */
-		request_error(state);
-		return;
-	}
-
-	/* The only chance that this is correct is that winbind trusted
-	 * domains only = yes, and the user exists in nss and the domain. */
-
-	if (!lp_winbind_trusted_domains_only()) {
-		request_error(state);
-		return;
-	}
-
-	uid2sid_state = TALLOC_ZERO_P(state->mem_ctx, struct uid2sid_state);
-	if (uid2sid_state == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		request_error(state);
-		return;
-	}
-
-	uid2sid_state->cli_state = state;
-	uid2sid_state->uid = state->request.data.uid;
-
-	winbindd_uid2name_async(state->mem_ctx, state->request.data.uid,
-				uid2sid_uid2name_recv, uid2sid_state);
+	request_error(state);
+	return;
 }
 
-static void uid2sid_uid2name_recv(void *private_data, BOOL success,
-				  const char *username)
+void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 {
-	struct uid2sid_state *state =
-		talloc_get_type_abort(private_data, struct uid2sid_state);
+	DEBUG(3, ("[%5lu]: uid to sid %lu\n", (unsigned long)state->pid, 
+		  (unsigned long)state->request.data.uid));
 
-	DEBUG(10, ("uid2sid: uid %lu has name %s\n",
-		   (unsigned long)state->uid, username));
-
-	fstrcpy(state->name, username);
-
-	if (!success) {
-		request_error(state->cli_state);
-		return;
-	}
-
-	winbindd_lookupname_async(state->cli_state->mem_ctx,
-				  find_our_domain()->name, username,
-				  uid2sid_lookupname_recv, state);
-}
-
-static void uid2sid_lookupname_recv(void *private_data, BOOL success,
-				    const DOM_SID *sid, enum lsa_SidType type)
-{
-	struct uid2sid_state *state =
-		talloc_get_type_abort(private_data, struct uid2sid_state);
-	unid_t id;
-
-	if ((!success) || (type != SID_NAME_USER)) {
-		request_error(state->cli_state);
-		return;
-	}
-
-	state->sid = *sid;
-	state->type = type;
-
-	id.uid = state->uid;
-	idmap_set_mapping_async(state->cli_state->mem_ctx, sid, id, ID_USERID,
-				uid2sid_idmap_set_mapping_recv, state );
-}
-
-static void uid2sid_idmap_set_mapping_recv(void *private_data, BOOL success)
-{
-	struct uid2sid_state *state =
-		talloc_get_type_abort(private_data, struct uid2sid_state);
-
-	/* don't fail if we can't store it */
-
-	sid_to_string(state->cli_state->response.data.sid.sid, &state->sid);
-	state->cli_state->response.data.sid.type = state->type;
-	request_ok(state->cli_state);
+	/* always go via the async interface (may block) */
+	winbindd_uid2sid_async(state->mem_ctx, state->request.data.uid, uid2sid_recv, state);
 }
 
 /* Convert a gid to a sid */
-
-struct gid2sid_state {
-	struct winbindd_cli_state *cli_state;
-	gid_t gid;
-	fstring name;
-	DOM_SID sid;
-	enum lsa_SidType type;
-};
-
-static void gid2sid_gid2name_recv(void *private_data, BOOL success,
-				  const char *groupname);
-static void gid2sid_lookupname_recv(void *private_data, BOOL success,
-				    const DOM_SID *sid,
-				    enum lsa_SidType type);
-static void gid2sid_idmap_set_mapping_recv(void *private_data, BOOL success);
-
-static void gid2sid_recv(void *private_data, BOOL success, const char *sid);
-
-void winbindd_gid_to_sid(struct winbindd_cli_state *state)
-{
-	DOM_SID sid;
-	NTSTATUS status;
-
-	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid, 
-		  (unsigned long)state->request.data.gid));
-
-	if (idmap_proxyonly()) {
-		DEBUG(8, ("IDMAP proxy only\n"));
-		request_error(state);
-		return;
-	}
-
-	status = idmap_gid_to_sid(&sid, state->request.data.gid,
-				  IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
-
-	if (NT_STATUS_IS_OK(status)) {
-		sid_to_string(state->response.data.sid.sid, &sid);
-		state->response.data.sid.type = SID_NAME_DOM_GRP;
-		request_ok(state);
-		return;
-	}
-
-	winbindd_gid2sid_async(state->mem_ctx, state->request.data.gid, gid2sid_recv, state);
-}
 
 static void gid2sid_recv(void *private_data, BOOL success, const char *sid)
 {
 	struct winbindd_cli_state *state =
 		(struct winbindd_cli_state *)private_data;
-	struct gid2sid_state *gid2sid_state;
 
 	if (success) {
 		DEBUG(10,("gid2sid: gid %lu has sid %s\n",
@@ -486,92 +389,18 @@ static void gid2sid_recv(void *private_data, BOOL success, const char *sid)
 		return;
 	}
 
-	/* preexisitng mapping not found go on */
-
-	if (is_in_gid_range(state->request.data.gid)) {
-		/* This is winbind's, so we should better have succeeded
-		 * above. */
-		request_error(state);
-		return;
-	}
-
-	/* The only chance that this is correct is that winbind trusted
-	 * domains only = yes, and the user exists in nss and the domain. */
-
-	if (!lp_winbind_trusted_domains_only()) {
-		request_error(state);
-		return;
-	}
-
-	/* The only chance that this is correct is that winbind trusted
-	 * domains only = yes, and the user exists in nss and the domain. */
-
-	gid2sid_state = TALLOC_ZERO_P(state->mem_ctx, struct gid2sid_state);
-	if (gid2sid_state == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		request_error(state);
-		return;
-	}
-
-	gid2sid_state->cli_state = state;
-	gid2sid_state->gid = state->request.data.gid;
-
-	winbindd_gid2name_async(state->mem_ctx, state->request.data.gid,
-				gid2sid_gid2name_recv, gid2sid_state);
+	request_error(state);
+	return;
 }
 
-static void gid2sid_gid2name_recv(void *private_data, BOOL success,
-				  const char *username)
+
+void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 {
-	struct gid2sid_state *state =
-		talloc_get_type_abort(private_data, struct gid2sid_state);
+	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid, 
+		  (unsigned long)state->request.data.gid));
 
-	DEBUG(10, ("gid2sid: gid %lu has name %s\n",
-		   (unsigned long)state->gid, username));
-
-	fstrcpy(state->name, username);
-
-	if (!success) {
-		request_error(state->cli_state);
-		return;
-	}
-
-	winbindd_lookupname_async(state->cli_state->mem_ctx,
-				  find_our_domain()->name, username,
-				  gid2sid_lookupname_recv, state);
-}
-
-static void gid2sid_lookupname_recv(void *private_data, BOOL success,
-				    const DOM_SID *sid, enum lsa_SidType type)
-{
-	struct gid2sid_state *state =
-		talloc_get_type_abort(private_data, struct gid2sid_state);
-	unid_t id;
-
-	if ((!success) ||
-	    ((type != SID_NAME_DOM_GRP) && (type!=SID_NAME_ALIAS))) {
-		request_error(state->cli_state);
-		return;
-	}
-
-	state->sid = *sid;
-	state->type = type;
-
-	id.gid = state->gid;
-	idmap_set_mapping_async(state->cli_state->mem_ctx, sid, id, ID_GROUPID,
-				gid2sid_idmap_set_mapping_recv, state );
-}
-
-static void gid2sid_idmap_set_mapping_recv(void *private_data, BOOL success)
-{
-	struct gid2sid_state *state =
-		(struct gid2sid_state *)private_data;
-
-	/* don't fail if we can't store it */
-
-	sid_to_string(state->cli_state->response.data.sid.sid, &state->sid);
-	state->cli_state->response.data.sid.type = state->type;
-	request_ok(state->cli_state);
+	/* always use async calls (may block) */
+	winbindd_gid2sid_async(state->mem_ctx, state->request.data.gid, gid2sid_recv, state);
 }
 
 void winbindd_allocate_uid(struct winbindd_cli_state *state)
@@ -589,12 +418,12 @@ void winbindd_allocate_uid(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_dual_allocate_uid(struct winbindd_domain *domain,
 						struct winbindd_cli_state *state)
 {
-	union unid_t id;
+	struct unixid xid;
 
-	if (!NT_STATUS_IS_OK(idmap_allocate_id(&id, ID_USERID))) {
+	if (!NT_STATUS_IS_OK(idmap_allocate_uid(&xid))) {
 		return WINBINDD_ERROR;
 	}
-	state->response.data.uid = id.uid;
+	state->response.data.uid = xid.id;
 	return WINBINDD_OK;
 }
 
@@ -613,12 +442,42 @@ void winbindd_allocate_gid(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_dual_allocate_gid(struct winbindd_domain *domain,
 						struct winbindd_cli_state *state)
 {
-	union unid_t id;
+	struct unixid xid;
 
-	if (!NT_STATUS_IS_OK(idmap_allocate_id(&id, ID_GROUPID))) {
+	if (!NT_STATUS_IS_OK(idmap_allocate_gid(&xid))) {
 		return WINBINDD_ERROR;
 	}
-	state->response.data.gid = id.gid;
+	state->response.data.gid = xid.id;
 	return WINBINDD_OK;
+}
+
+static void dump_maps_recv(void *private_data, BOOL success)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
+
+	if (!success) {
+		DEBUG(5, ("Could not dump maps\n"));
+		request_error(state);
+		return;
+	}
+
+	request_ok(state);
+}
+
+void winbindd_dump_maps(struct winbindd_cli_state *state)
+{
+	if ( ! state->privileged) {
+		DEBUG(0, ("Only root is allowed to ask for an idmap dump!\n"));
+		request_error(state);
+		return;
+	}
+
+	DEBUG(3, ("[%5lu]: dump maps\n", (unsigned long)state->pid));
+
+	winbindd_dump_maps_async(state->mem_ctx,
+			state->request.extra_data.data,
+			state->request.extra_len,
+			dump_maps_recv, state);
 }
 
