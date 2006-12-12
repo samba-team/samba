@@ -156,9 +156,8 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test(
 
 NTSTATUS torture_rpc_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(
-										talloc_autofree_context(),
-										"RPC");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "RPC");
+
 	dcerpc_init();
 
 	dcerpc_table_init();
@@ -216,8 +215,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "BENCH-RPC", torture_bench_rpc);
 	torture_suite_add_simple_test(suite, "ASYNCBIND", torture_async_bind);
 
-	suite->description = talloc_strdup(suite, 
-						"DCE/RPC protocol and interface tests");
+	suite->description = talloc_strdup(suite, "DCE/RPC protocol and interface tests");
 
 	torture_register_suite(suite);
 
