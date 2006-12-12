@@ -23,6 +23,12 @@
 
 #include "includes.h"
 
+extern struct auth_context *negprot_global_auth_context;
+extern BOOL global_encrypted_passwords_negotiated;
+extern BOOL global_spnego_negotiated;
+extern enum protocol_types Protocol;
+extern int max_send;
+
 uint32 global_client_caps = 0;
 
 /*
@@ -840,13 +846,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	fstring native_lanman;
 	fstring primary_domain;
 	static BOOL done_sesssetup = False;
-	extern BOOL global_encrypted_passwords_negotiated;
-	extern BOOL global_spnego_negotiated;
-	extern enum protocol_types Protocol;
-	extern int max_send;
-
 	auth_usersupplied_info *user_info = NULL;
-	extern struct auth_context *negprot_global_auth_context;
 	auth_serversupplied_info *server_info = NULL;
 
 	NTSTATUS nt_status;

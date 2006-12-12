@@ -60,6 +60,8 @@
 
 #include "includes.h"
 
+extern userdom_struct current_user_info;
+
 static int vfs_full_audit_debug_level = DBGC_VFS;
 
 struct vfs_full_audit_private_data {
@@ -647,7 +649,6 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 static char *audit_prefix(connection_struct *conn)
 {
 	static pstring prefix;
-	extern userdom_struct current_user_info;
 
 	pstrcpy(prefix, lp_parm_const_string(SNUM(conn), "full_audit",
 					     "prefix", "%u|%I"));

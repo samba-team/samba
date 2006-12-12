@@ -25,6 +25,8 @@
 
 extern SIG_ATOMIC_T got_sig_term;
 extern SIG_ATOMIC_T reload_after_sighup;
+extern struct current_user current_user;
+extern userdom_struct current_user_info;
 
 /* Current printer interface */
 static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid);
@@ -1438,8 +1440,6 @@ update the internal database from the system print queue for a queue
 
 static void print_queue_update(int snum, BOOL force)
 {
-	extern struct current_user current_user;
-	extern userdom_struct current_user_info;
 	fstring key;
 	fstring sharename;
 	pstring lpqcommand, lprmcommand;
