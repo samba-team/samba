@@ -181,7 +181,7 @@ the remote server using <command>/bin/date</command>. </para>
 </refsect2>
 
 <refsect2>
-<title>[RPC|ADS] JOIN [TYPE] [-U username[%password]] [options]</title>
+<title>[RPC|ADS] JOIN [TYPE] [-U username[%password]] [createupn=UPN] [createcomputer=OU] [options]</title>
 
 <para>
 Join a domain.  If the account already exists on the server, and 
@@ -193,6 +193,19 @@ be created.</para>
 <para>
 [TYPE] may be PDC, BDC or MEMBER to specify the type of server
 joining the domain.
+</para>
+
+<para>
+[UPN] (ADS only) set the principalname attribute during the join.  The default
+format is host/netbiosname@REALM.
+</para>
+
+<para>
+[OU] (ADS only) Precreate the computer account in a specific OU.  The
+OU string reads from top to bottom without RDNs, and is delimited by
+a '/'.  Please note that '\' is used for escape by both the shell
+and ldap, so it may need to be doubled or quadrupled to pass through, 
+and it is not used as a delimiter.
 </para>
 </refsect2>
 
