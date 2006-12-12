@@ -59,9 +59,12 @@ static NTSTATUS useradd_create(struct composite_context *c,
 {
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
+
+	/* return the actual function call status */
+	c->status = s->createuser.out.result;
 	
 	c->state = COMPOSITE_STATE_DONE;
-	return NT_STATUS_OK;
+	return c->status;
 }
 
 
