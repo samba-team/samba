@@ -59,7 +59,8 @@ usage (int ret)
 static krb5_context context;
 
 int
-server_init(struct server_init_options *opt, int argc, char ** argv)
+digest_server_init(struct digest_server_init_options *opt,
+		   int argc, char ** argv)
 {
     krb5_error_code ret;
     krb5_digest digest;
@@ -104,7 +105,8 @@ server_init(struct server_init_options *opt, int argc, char ** argv)
 }
 
 int
-server_request(struct server_request_options *opt, int argc, char **argv)
+digest_server_request(struct digest_server_request_options *opt, 
+		      int argc, char **argv)
 {
     krb5_error_code ret;
     krb5_digest digest;
@@ -162,7 +164,8 @@ server_request(struct server_request_options *opt, int argc, char **argv)
 }
 
 int
-client_request(struct client_request_options *opt, int argc, char **argv)
+digest_client_request(struct digest_client_request_options *opt, 
+		      int argc, char **argv)
 {
     char *server_nonce, server_identifier;
     ssize_t size;
