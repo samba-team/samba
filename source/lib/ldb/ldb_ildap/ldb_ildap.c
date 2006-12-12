@@ -59,6 +59,8 @@ struct ildb_private {
 
 struct ildb_context {
 	struct ldb_module *module;
+	struct ildb_private *ildb;
+	struct ldb_handle *handle;
 	struct ldap_request *req;
 	void *context;
 	int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
@@ -321,52 +323,50 @@ static void ildb_callback(struct ldap_request *req)
 	}
 }
 
-static struct ldb_handle *init_ildb_handle(struct ldb_module *module, 
-					   void *context,
-					   int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
+static struct ildb_context *init_ildb_handle(struct ildb_private *ildb,
+					     struct ldb_request *req)
 {
-	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ildb_context *ildb_ac;
 	struct ldb_handle *h;
 
 	h = talloc_zero(ildb->ldap, struct ldb_handle);
 	if (h == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+		ldb_set_errstring(ildb->module->ldb, "Out of Memory");
 		return NULL;
 	}
 
-	h->module = module;
+	h->module = ildb->module;
 
 	ildb_ac = talloc(h, struct ildb_context);
 	if (ildb_ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+		ldb_set_errstring(ildb->module->ldb, "Out of Memory");
 		talloc_free(h);
 		return NULL;
 	}
 
-	h->private_data = (void *)ildb_ac;
+	h->private_data = ildb_ac;
 
 	h->state = LDB_ASYNC_INIT;
 	h->status = LDB_SUCCESS;
 
-	ildb_ac->module = module;
-	ildb_ac->context = context;
-	ildb_ac->callback = callback;
+	ildb_ac->module = ildb->module;
+	ildb_ac->ildb = ildb;
+	ildb_ac->handle = h;
+	ildb_ac->context = req->context;
+	ildb_ac->callback = req->callback;
 
-	return h;
+	req->handle = h;
+	return ildb_ac;
 }
 
 static int ildb_request_send(struct ildb_private *ildb, struct ldap_message *msg, struct ldb_request *r)
 {
-	struct ldb_handle *h = init_ildb_handle(ildb->module, r->context, r->callback);
-	struct ildb_context *ildb_ac;
+	struct ildb_context *ildb_ac = init_ildb_handle(ildb, r);
 	struct ldap_request *req;
 
-	if (!h) {
+	if (!ildb_ac) {
 		return LDB_ERR_OPERATIONS_ERROR;		
 	}
-
-	ildb_ac = talloc_get_type(h->private_data, struct ildb_context);
 
 	req = ldap_request_send(ildb->ldap, msg);
 	if (req == NULL) {
@@ -382,37 +382,31 @@ static int ildb_request_send(struct ildb_private *ildb, struct ldap_message *msg
 	talloc_free(req->time_event);
 	req->time_event = NULL;
 	if (r->timeout) {
-		req->time_event = event_add_timed(req->conn->event.event_ctx, h, 
+		req->time_event = event_add_timed(req->conn->event.event_ctx, ildb_ac->handle, 
 						  timeval_current_ofs(r->timeout, 0),
-						  ildb_request_timeout, h);
+						  ildb_request_timeout, ildb_ac->handle);
 	}
 
 	req->async.fn = ildb_callback;
-	req->async.private_data = h;
+	req->async.private_data = ildb_ac->handle;
 	ildb_ac->req = talloc_move(ildb_ac, &req);
 
-	r->handle = h;
 	return LDB_SUCCESS;
 }
 
 static int ildb_request_noop(struct ildb_private *ildb, struct ldb_request *req) 
 {
-	struct ldb_handle *h = init_ildb_handle(ildb->module, req->context, req->callback);
-	struct ildb_context *ildb_ac;
+	struct ildb_context *ildb_ac = init_ildb_handle(ildb, req);
 	int ret = LDB_SUCCESS;
 
-	if (!h) {
+	if (!ildb_ac) {
 		return LDB_ERR_OPERATIONS_ERROR;		
 	}
-
-	ildb_ac = talloc_get_type(h->private_data, struct ildb_context);
-
-	req->handle = h;
 
 	if (ildb_ac->callback) {
 		ret = ildb_ac->callback(ildb->module->ldb, ildb_ac->context, NULL);
 	}
-	req->handle->state = LDB_ASYNC_DONE;
+	ildb_ac->handle->state = LDB_ASYNC_DONE;
 	return ret;
 }
 
