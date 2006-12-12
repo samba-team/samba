@@ -102,18 +102,18 @@ exitcode=0
 
 echo "Getting digest server tickets"
 ${kinit} --password-file=${objdir}/foopassword ${server}@$R || exitcode=1
-${kdigest} server-init \
+${kdigest} digest-server-init \
     --kerberos-realm=${R} \
     --type=CHAP > /dev/null || exitcode=1
 
 echo "Trying CHAP"
 
-${kdigest} server-init \
+${kdigest} digest-server-init \
     --kerberos-realm=${R} \
     --type=CHAP \
     > /dev/null || exitcode=1
 
-${kdigest} server-init \
+${kdigest} digest-server-init \
     --kerberos-realm=${R} \
     --type=CHAP \
     > sdigest-reply || exitcode=1
@@ -122,7 +122,7 @@ snonce=`grep server-nonce= sdigest-reply | cut -f2- -d=`
 identifier=`grep identifier= sdigest-reply | cut -f2- -d=`
 opaque=`grep opaque= sdigest-reply | cut -f2- -d=`
 
-${kdigest} client-request \
+${kdigest} digest-client-request \
     --type=CHAP \
     --username="$username"  \
     --password="$userpassword"  \
@@ -138,7 +138,7 @@ cresponseData=`grep responseData= cdigest-reply | cut -f2- -d=`
 #echo opaqeue: $opaque
 #echo identifier: $identifier
 
-${kdigest} server-request \
+${kdigest} digest-server-request \
     --kerberos-realm=${R} \
     --type=CHAP \
     --username="$username"  \
