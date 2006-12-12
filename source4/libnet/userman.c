@@ -309,10 +309,13 @@ static NTSTATUS userdel_delete(struct composite_context *c,
 	/* receive samr_DeleteUser result */
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
+	
+	/* return the actual function call status */
+	c->status = s->deleteuser.out.result;
 
 	c->state = COMPOSITE_STATE_DONE;
 
-	return NT_STATUS_OK;
+	return c->status;
 }
 
 
@@ -778,7 +781,8 @@ static NTSTATUS usermod_modify(struct composite_context *c,
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 
-	NT_STATUS_NOT_OK_RETURN(s->setuser.out.result);
+	/* return the actual function call status */
+	c->status = s->setuser.out.result;
 
 	if (s->change.fields == 0) {
 		/* all fields have been set - we're done */
@@ -788,7 +792,7 @@ static NTSTATUS usermod_modify(struct composite_context *c,
 		return usermod_change(c, s);
 	}
 
-	return NT_STATUS_OK;
+	return c->status;
 }
 
 
