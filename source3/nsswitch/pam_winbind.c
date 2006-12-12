@@ -536,7 +536,8 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	    (response.data.auth.policy.expire) && 
 	    (response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire > time(NULL) ) ) {
 
-		int days = response.data.auth.policy.expire / SECONDS_PER_DAY;
+		int days = (response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire -
+			    time(NULL))/ SECONDS_PER_DAY;
 		if (days <= DAYS_TO_WARN_BEFORE_PWD_EXPIRES) {
 			_make_remark_format(pamh, PAM_TEXT_INFO, "Your password will expire in %d days", days);
 		}
