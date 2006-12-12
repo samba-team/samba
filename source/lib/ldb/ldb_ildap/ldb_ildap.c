@@ -395,9 +395,9 @@ static int ildb_request_send(struct ildb_private *ildb, struct ldap_message *msg
 	return LDB_SUCCESS;
 }
 
-static int ildb_request_noop(struct ldb_module *module, struct ldb_request *req) 
+static int ildb_request_noop(struct ildb_private *ildb, struct ldb_request *req) 
 {
-	struct ldb_handle *h = init_ildb_handle(module, req->context, req->callback);
+	struct ldb_handle *h = init_ildb_handle(ildb->module, req->context, req->callback);
 	struct ildb_context *ildb_ac;
 	int ret = LDB_SUCCESS;
 
@@ -406,11 +406,11 @@ static int ildb_request_noop(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ildb_ac = talloc_get_type(h->private_data, struct ildb_context);
-	
+
 	req->handle = h;
 
 	if (ildb_ac->callback) {
-		ret = ildb_ac->callback(module->ldb, ildb_ac->context, NULL);
+		ret = ildb_ac->callback(ildb->module->ldb, ildb_ac->context, NULL);
 	}
 	req->handle->state = LDB_ASYNC_DONE;
 	return ret;
@@ -490,7 +490,7 @@ static int ildb_add(struct ldb_module *module, struct ldb_request *req)
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
-		return ildb_request_noop(module, req);
+		return ildb_request_noop(ildb, req);
 	}
 
 	msg = new_ldap_message(ildb->ldap);
@@ -540,7 +540,7 @@ static int ildb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
-		return ildb_request_noop(module, req);
+		return ildb_request_noop(ildb, req);
 	}
 
 	msg = new_ldap_message(ildb->ldap);
@@ -588,7 +588,7 @@ static int ildb_delete(struct ldb_module *module, struct ldb_request *req)
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(req->op.del.dn)) {
-		return ildb_request_noop(module, req);
+		return ildb_request_noop(ildb, req);
 	}
 
 	msg = new_ldap_message(ildb->ldap);
@@ -619,7 +619,7 @@ static int ildb_rename(struct ldb_module *module, struct ldb_request *req)
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(req->op.rename.olddn) || ldb_dn_is_special(req->op.rename.newdn)) {
-		return ildb_request_noop(module, req);
+		return ildb_request_noop(ildb, req);
 	}
 
 	msg = new_ldap_message(ildb->ldap);
