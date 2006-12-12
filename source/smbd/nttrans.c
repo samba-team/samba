@@ -2345,7 +2345,6 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 	SMB_NTQUOTA_STRUCT qt;
 	SMB_NTQUOTA_LIST *tmp_list;
 	SMB_NTQUOTA_HANDLE *qt_handle = NULL;
-	extern struct current_user current_user;
 
 	ZERO_STRUCT(qt);
 

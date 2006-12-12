@@ -23,6 +23,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+extern userdom_struct current_user_info;
+
 /**********************************************************
   Under mapfile we expect a table of the following format:
 
@@ -110,7 +112,6 @@ static BOOL expand_msdfs_target(connection_struct* conn, pstring target)
 	int filename_len;
 	pstring targethost;
 	pstring new_target;
-	extern userdom_struct current_user_info;
 
 	if (filename_start == NULL) {
 		DEBUG(10, ("No filename start in %s\n", target));

@@ -34,6 +34,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+extern BOOL override_logfile;
+
 /* Read some data from a client connection */
 
 static void child_read_request(struct winbindd_cli_state *state)
@@ -759,7 +761,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	int fdpair[2];
 	struct winbindd_cli_state state;
 	struct winbindd_domain *domain;
-	extern BOOL override_logfile;
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) != 0) {
 		DEBUG(0, ("Could not open child pipe: %s\n",

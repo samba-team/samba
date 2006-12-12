@@ -29,6 +29,12 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+extern struct winbindd_methods reconnect_methods;
+extern BOOL opt_nocache;
+#ifdef HAVE_ADS
+extern struct winbindd_methods ads_methods;
+#endif
+
 /* Global online/offline state - False when online. winbindd starts up online
    and sets this to true if the first query fails and there's an entry in
    the cache tdb telling us to stay offline. */
@@ -112,10 +118,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	 */
 
 	if (!domain->backend) {
-		extern struct winbindd_methods reconnect_methods;
 #ifdef HAVE_ADS
-		extern struct winbindd_methods ads_methods;
-
 		/* find our domain first so we can figure out if we 
 		   are joined to a kerberized domain */
 
@@ -557,8 +560,6 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	va_list ap;
 	char *kstr;
 	struct cache_entry *centry;
-
-	extern BOOL opt_nocache;
 
 	if (opt_nocache) {
 		return NULL;
@@ -2359,8 +2360,6 @@ static int traverse_fn_cleanup(TDB_CONTEXT *the_tdb, TDB_DATA kbuf,
 /* flush the cache */
 void wcache_flush_cache(void)
 {
-	extern BOOL opt_nocache;
-
 	if (!wcache)
 		return;
 	if (wcache->tdb) {
