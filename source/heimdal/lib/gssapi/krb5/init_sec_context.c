@@ -470,8 +470,11 @@ init_auth
     if (req_flags & GSS_C_EXTENDED_ERROR_FLAG)
 	flags |= GSS_C_EXTENDED_ERROR_FLAG;
 
-    flags |= GSS_C_CONF_FLAG;
-    flags |= GSS_C_INTEG_FLAG;
+    if (req_flags & GSS_C_CONF_FLAG)
+        flags |= GSS_C_CONF_FLAG;
+    if (req_flags & GSS_C_INTEG_FLAG)
+        flags |= GSS_C_INTEG_FLAG;
+
     flags |= GSS_C_TRANS_FLAG;
     
     if (ret_flags)
