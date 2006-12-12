@@ -54,6 +54,7 @@
 struct ildb_private {
 	struct ldap_connection *ldap;
 	struct ldb_context *ldb;
+	struct ldb_module *module;
 };
 
 struct ildb_context {
@@ -738,20 +739,32 @@ static const struct ldb_module_ops ildb_ops = {
 */
 static int ildb_connect(struct ldb_context *ldb, const char *url, 
 			unsigned int flags, const char *options[],
-			struct ldb_module **module)
+			struct ldb_module **_module)
 {
-	struct ildb_private *ildb = NULL;
+	struct ldb_module *module;
+	struct ildb_private *ildb;
 	NTSTATUS status;
 	struct cli_credentials *creds;
 
-	ildb = talloc(ldb, struct ildb_private);
+	module = talloc(ldb, struct ldb_module);
+	if (!module) {
+		ldb_oom(ldb);
+		return -1;
+	}
+	talloc_set_name_const(module, "ldb_ildap backend");
+	module->ldb		= ldb;
+	module->prev		= module->next = NULL;
+	module->private_data	= NULL;
+	module->ops		= &ildb_ops;
+
+	ildb = talloc(module, struct ildb_private);
 	if (!ildb) {
 		ldb_oom(ldb);
 		goto failed;
 	}
-
-	ildb->ldb     = ldb;
-
+	module->private_data	= ildb;
+	ildb->ldb		= ldb;
+	ildb->module		= module;
 	ildb->ldap = ldap4_new_connection(ildb, ldb_get_opaque(ldb, "EventContext"));
 	if (!ildb->ldap) {
 		ldb_oom(ldb);
@@ -768,19 +781,6 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 			  url, ldap_errstr(ildb->ldap, status));
 		goto failed;
 	}
-
-
-	*module = talloc(ldb, struct ldb_module);
-	if (!module) {
-		ldb_oom(ldb);
-		talloc_free(ildb);
-		return -1;
-	}
-	talloc_set_name_const(*module, "ldb_ildap backend");
-	(*module)->ldb = ldb;
-	(*module)->prev = (*module)->next = NULL;
-	(*module)->private_data = ildb;
-	(*module)->ops = &ildb_ops;
 
 	/* caller can optionally setup credentials using the opaque token 'credentials' */
 	creds = talloc_get_type(ldb_get_opaque(ldb, "credentials"), struct cli_credentials);
@@ -811,10 +811,11 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 		}
 	}
 
+	*_module = module;
 	return 0;
 
 failed:
-	talloc_free(ildb);
+	talloc_free(module);
 	return -1;
 }
 
