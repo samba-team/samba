@@ -169,7 +169,6 @@ uint16_t smbpasswd_decode_acb_info(const char *p)
 			break;
 		case ':':
 		case '\n':
-		case '\0': 
 		case ']':
 		default:  
 			finished = True;
