@@ -1,5 +1,11 @@
-2006-12-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kdigest.c: prefix digest commands with digest_
+
+	* kuser/kdigest-commands.in: prefix digest commands with digest-
+	
+2006-12-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/hprop.c: Return error codes on failure, improve error
 	reporting.
 	
