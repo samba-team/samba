@@ -20,6 +20,8 @@
 
 #include "includes.h"
 
+extern int smb_read_error;
+
 /****************************************************************************
  Change the timeout (in milliseconds).
 ****************************************************************************/
@@ -79,7 +81,6 @@ static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 
 BOOL cli_receive_smb(struct cli_state *cli)
 {
-	extern int smb_read_error;
 	BOOL ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */

@@ -30,6 +30,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+extern struct winbindd_methods reconnect_methods;
+
 /*
   return our ads connections structure for a domain. We keep the connection
   open to make things faster
@@ -117,7 +119,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
                    server, fall back to MSRPC */
 		if (status.error_type == ENUM_ADS_ERROR_SYSTEM &&
 		    status.err.rc == ECONNREFUSED) {
-			extern struct winbindd_methods reconnect_methods;
 			/* 'reconnect_methods' is the MS-RPC backend. */
 			DEBUG(1,("Trying MSRPC methods\n"));
 			domain->backend = &reconnect_methods;

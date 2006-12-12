@@ -65,6 +65,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+extern struct winbindd_methods reconnect_methods;
+
 static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain);
 static void set_dc_type_and_flags( struct winbindd_domain *domain );
 
@@ -196,7 +198,6 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 static void set_domain_online(struct winbindd_domain *domain)
 {
-	extern struct winbindd_methods reconnect_methods;
 	struct timeval now;
 
 	DEBUG(10,("set_domain_online: called for domain %s\n",

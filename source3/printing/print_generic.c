@@ -21,6 +21,8 @@
 #include "includes.h"
 #include "printing.h"
 
+extern struct current_user current_user;
+extern userdom_struct current_user_info;
 
 /****************************************************************************
 run a given print command 
@@ -30,9 +32,6 @@ for local substitution strings
 static int print_run_command(int snum, const char* printername, BOOL do_sub,
 			     const char *command, int *outfd, ...)
 {
-	extern struct current_user current_user;
-	extern userdom_struct current_user_info;
-	
 	pstring syscmd;
 	char *arg;
 	int ret;

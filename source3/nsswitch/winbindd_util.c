@@ -27,6 +27,9 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+extern struct winbindd_methods cache_methods;
+extern struct winbindd_methods passdb_methods;
+
 /**
  * @file winbindd_util.c
  *
@@ -225,7 +228,6 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 
 static void trustdom_recv(void *private_data, BOOL success)
 {
-	extern struct winbindd_methods cache_methods;
 	struct trustdom_state *state =
 		talloc_get_type_abort(private_data, struct trustdom_state);
 	struct winbindd_response *response = state->response;
@@ -493,8 +495,6 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 /* Look up global info for the winbind daemon */
 BOOL init_domain_list(void)
 {
-	extern struct winbindd_methods cache_methods;
-	extern struct winbindd_methods passdb_methods;
 	struct winbindd_domain *domain;
 	int role = lp_server_role();
 
