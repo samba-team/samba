@@ -266,5 +266,6 @@ struct kernel_oplocks *irix_init_kernel_oplocks(void)
 	return &koplocks;
 }
 #else
+ void oplock_irix_dummy(void);
  void oplock_irix_dummy(void) {}
 #endif /* HAVE_KERNEL_OPLOCKS_IRIX */
