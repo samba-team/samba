@@ -30,6 +30,12 @@ if (status.is_ok != true) {
 	return -1;
 }
 
+var info = usr_ctx.Info(options.ARGV[1]);
+println("UserInfo.AccountName = " + info.AccountName);
+println("UserInfo.Description = " + info.Description);
+println("UserInfo.FullName = " + info.FullName);
+println("UserInfo.AcctExpiry = " + info.AcctExpiry);
+
 var status = usr_ctx.Delete(options.ARGV[1]);
 if (status.is_ok != true) {
 	println("Failed to delete user account " + options.ARGV[1] + ": " + status.errstr);

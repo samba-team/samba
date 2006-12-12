@@ -336,6 +336,11 @@ static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv)
 	struct libnet_context *ctx;
 	const char *userman_domain = NULL;
 	struct libnet_UserInfo req;
+	struct MprVar mprUserInfo;
+	struct MprVar mprAccountName, mprFullName, mprDescription;
+	struct MprVar mprHomeDir, mprHomeDrive, mprComment;
+	struct MprVar mprLogonScript;
+	struct MprVar mprAcctExpiry, mprAllowPassChange, mprForcePassChange;
 
 	if (argc != 1) {
 		ejsSetErrorMsg(eid, "argument 1 must be a string");
@@ -364,9 +369,44 @@ static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv)
 		ejsSetErrorMsg(eid, "%s", req.out.error_string);
 	}
 
-	/* TODO: create user info object and pass received properties */
+	/* create UserInfo object */
+	mprUserInfo = mprObject("UserInfo");
 
+	mprAccountName = mprString(req.out.account_name);
+	mprFullName = mprString(req.out.full_name);
+	mprDescription = mprString(req.out.description);
+	mprHomeDir = mprString(req.out.home_directory);
+	mprHomeDrive = mprString(req.out.home_drive);
+	mprComment = mprString(req.out.comment);
+	mprLogonScript = mprString(req.out.logon_script);
+	mprAcctExpiry = mprString(timestring(mem_ctx, req.out.acct_expiry->tv_sec));
+	mprAllowPassChange = mprString(timestring(mem_ctx, req.out.allow_password_change->tv_sec));
+	mprForcePassChange = mprString(timestring(mem_ctx, req.out.force_password_change->tv_sec));
+
+	status = mprSetVar(&mprUserInfo, "AccountName", mprAccountName);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+	status = mprSetVar(&mprUserInfo, "FullName", mprFullName);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+	status = mprSetVar(&mprUserInfo, "Description", mprDescription);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+	status = mprSetVar(&mprUserInfo, "HomeDirectory", mprHomeDir);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+	status = mprSetVar(&mprUserInfo, "HomeDrive", mprHomeDrive);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+	status = mprSetVar(&mprUserInfo, "Comment", mprComment);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+	status = mprSetVar(&mprUserInfo, "LogonScript", mprLogonScript);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+	status = mprSetVar(&mprUserInfo, "AcctExpiry", mprAcctExpiry);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+	status = mprSetVar(&mprUserInfo, "AllowPasswordChange", mprAllowPassChange);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+	status = mprSetVar(&mprUserInfo, "ForcePasswordChange", mprForcePassChange);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+done:
 	talloc_free(mem_ctx);
+	mpr_Return(eid, mprUserInfo);
 	return 0;
 }
 
