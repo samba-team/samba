@@ -256,7 +256,8 @@ OBJ_FILES = \
 		libnet/libnet_user.o \
 		libnet/libnet_share.o \
 		libnet/libnet_rpc.o \
-		libnet/libnet_domain.o
+		libnet/libnet_domain.o \
+		libnet/libnet_BecomeDC.o
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-NET \
 		POPT_CREDENTIALS

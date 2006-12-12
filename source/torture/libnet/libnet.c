@@ -24,9 +24,7 @@
 
 NTSTATUS torture_net_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(
-										talloc_autofree_context(),
-										"NET");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "NET");
 
 	torture_suite_add_simple_test(suite, "USERINFO", torture_userinfo);
 	torture_suite_add_simple_test(suite, "USERADD", torture_useradd);
@@ -53,9 +51,9 @@ NTSTATUS torture_net_init(void)
 	torture_suite_add_simple_test(suite, "API-DOMCLOSELSA", torture_domain_close_lsa);
 	torture_suite_add_simple_test(suite, "API-DOMOPENSAMR", torture_domain_open_samr);
 	torture_suite_add_simple_test(suite, "API-DOMCLOSESAMR", torture_domain_close_samr);
+	torture_suite_add_simple_test(suite, "API-BECOME-DC", torture_net_become_dc);
 
-	suite->description = talloc_strdup(suite, 
-						"libnet convenience interface tests");
+	suite->description = talloc_strdup(suite, "libnet convenience interface tests");
 
 	torture_register_suite(suite);
 
