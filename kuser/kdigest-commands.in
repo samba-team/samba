@@ -33,7 +33,7 @@
 /* $Id$ */
 
 command = {
-	name = "server-init"
+	name = "digest-server-init"
 	option = {
 		long = "type"
 		type = "string"
@@ -78,7 +78,7 @@ command = {
 	help = "Sets up a digest context and return initial parameters"
 }
 command = {
-	name = "server-request"
+	name = "digest-server-request"
 	option = {
 		long = "type"
 		type = "string"
@@ -166,7 +166,7 @@ command = {
 	help = "Completes digest negotiation and return final parameters"
 }
 command = {
-	name = "client-request"
+	name = "digest-client-request"
 	option = {
 		long = "type"
 		type = "string"
