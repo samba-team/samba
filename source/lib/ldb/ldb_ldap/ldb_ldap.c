@@ -47,6 +47,7 @@
 
 struct lldb_private {
 	LDAP *ldap;
+	struct ldb_module *module;
 };
 
 struct lldb_context {
@@ -786,19 +787,33 @@ static int lldb_connect(struct ldb_context *ldb,
 			const char *url, 
 			unsigned int flags, 
 			const char *options[],
-			struct ldb_module **module)
+			struct ldb_module **_module)
 {
-	struct lldb_private *lldb = NULL;
+	struct ldb_module *module;
+	struct lldb_private *lldb;
 	int version = 3;
 	int ret;
 
-	lldb = talloc(ldb, struct lldb_private);
+	module = talloc(ldb, struct ldb_module);
+	if (module == NULL) {
+		ldb_oom(ldb);
+		talloc_free(lldb);
+		return -1;
+	}
+	talloc_set_name_const(module, "ldb_ldap backend");
+	module->ldb		= ldb;
+	module->prev		= module->next = NULL;
+	module->private_data	= NULL;
+	module->ops		= &lldb_ops;
+
+	lldb = talloc(module, struct lldb_private);
 	if (!lldb) {
 		ldb_oom(ldb);
 		goto failed;
 	}
-
-	lldb->ldap = NULL;
+	module->private_data	= lldb;
+	lldb->module		= module;
+	lldb->ldap		= NULL;
 
 	ret = ldap_initialize(&lldb->ldap, url);
 	if (ret != LDAP_SUCCESS) {
@@ -816,22 +831,11 @@ static int lldb_connect(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	*module = talloc(ldb, struct ldb_module);
-	if (*module == NULL) {
-		ldb_oom(ldb);
-		talloc_free(lldb);
-		return -1;
-	}
-	talloc_set_name_const(*module, "ldb_ldap backend");
-	(*module)->ldb = ldb;
-	(*module)->prev = (*module)->next = NULL;
-	(*module)->private_data = lldb;
-	(*module)->ops = &lldb_ops;
-
+	*_module = module;
 	return 0;
 
 failed:
-	talloc_free(lldb);
+	talloc_free(module);
 	return -1;
 }
 
