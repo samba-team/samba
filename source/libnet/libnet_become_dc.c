@@ -1951,7 +1951,8 @@ static void becomeDC_drsuapi2_update_refs_domain_recv(struct rpc_request *req)
 
 	talloc_free(r);
 
-	composite_error(c, NT_STATUS_NOT_IMPLEMENTED);
+	/* TODO: use DDNS updates and register dns names */
+	composite_done(c);
 }
 
 static NTSTATUS becomeDC_ldap2_modify_computer(struct libnet_BecomeDC_state *s)
