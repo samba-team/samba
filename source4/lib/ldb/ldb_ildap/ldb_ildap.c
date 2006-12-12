@@ -329,7 +329,7 @@ static struct ildb_context *init_ildb_handle(struct ildb_private *ildb,
 	struct ildb_context *ildb_ac;
 	struct ldb_handle *h;
 
-	h = talloc_zero(ildb->ldap, struct ldb_handle);
+	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(ildb->module->ldb, "Out of Memory");
 		return NULL;
@@ -373,6 +373,7 @@ static int ildb_request_send(struct ildb_private *ildb, struct ldap_message *msg
 		ldb_set_errstring(ildb->module->ldb, "async send request failed");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+	ildb_ac->req = talloc_steal(ildb_ac, req);
 
 	if (!req->conn) {
 		ldb_set_errstring(ildb->module->ldb, "connection to remote LDAP server dropped?");
@@ -389,7 +390,6 @@ static int ildb_request_send(struct ildb_private *ildb, struct ldap_message *msg
 
 	req->async.fn = ildb_callback;
 	req->async.private_data = ildb_ac->handle;
-	ildb_ac->req = talloc_move(ildb_ac, &req);
 
 	return LDB_SUCCESS;
 }
@@ -431,7 +431,7 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	msg = new_ldap_message(ildb);
+	msg = new_ldap_message(req);
 	if (msg == NULL) {
 		ldb_set_errstring(module->ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -487,7 +487,7 @@ static int ildb_add(struct ldb_module *module, struct ldb_request *req)
 		return ildb_request_noop(ildb, req);
 	}
 
-	msg = new_ldap_message(ildb->ldap);
+	msg = new_ldap_message(req);
 	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -537,7 +537,7 @@ static int ildb_modify(struct ldb_module *module, struct ldb_request *req)
 		return ildb_request_noop(ildb, req);
 	}
 
-	msg = new_ldap_message(ildb->ldap);
+	msg = new_ldap_message(req);
 	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -585,7 +585,7 @@ static int ildb_delete(struct ldb_module *module, struct ldb_request *req)
 		return ildb_request_noop(ildb, req);
 	}
 
-	msg = new_ldap_message(ildb->ldap);
+	msg = new_ldap_message(req);
 	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -616,7 +616,7 @@ static int ildb_rename(struct ldb_module *module, struct ldb_request *req)
 		return ildb_request_noop(ildb, req);
 	}
 
-	msg = new_ldap_message(ildb->ldap);
+	msg = new_ldap_message(req);
 	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
