@@ -81,12 +81,12 @@ failed:
 	return ret;
 }
 
-static NTSTATUS idmap_rid_id_to_sid(struct idmap_rid_context *ctx, struct id_map *map)
+static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context *ctx, struct id_map *map)
 {
 	char *domname, *name;
 	enum lsa_SidType sid_type;
 
-	if (!ctx || !map) {
+	if (!memctx || !ctx || !map) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -99,7 +99,7 @@ static NTSTATUS idmap_rid_id_to_sid(struct idmap_rid_context *ctx, struct id_map
 
 	sid_compose(map->sid, &ctx->dom_sid, map->xid.id - ctx->low_id + ctx->base_rid);
 
-	if (winbindd_lookup_name_by_sid(ctx, map->sid, &domname, &name, &sid_type)) {
+	if (winbindd_lookup_name_by_sid(memctx, map->sid, &domname, &name, &sid_type)) {
 		switch (sid_type) {
 		case SID_NAME_USER:
 			if (map->xid.type != ID_TYPE_UID) {
@@ -136,13 +136,13 @@ static NTSTATUS idmap_rid_id_to_sid(struct idmap_rid_context *ctx, struct id_map
  Single sid to id lookup function. 
 **********************************/
 
-static NTSTATUS idmap_rid_sid_to_id(struct idmap_rid_context *ctx, struct id_map *map)
+static NTSTATUS idmap_rid_sid_to_id(TALLOC_CTX *memctx, struct idmap_rid_context *ctx, struct id_map *map)
 {
 	char *domname, *name;
 	enum lsa_SidType sid_type;
 	uint32_t rid;
 
-	if (!ctx || !map) {
+	if (!memctx || !ctx || !map) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -150,7 +150,7 @@ static NTSTATUS idmap_rid_sid_to_id(struct idmap_rid_context *ctx, struct id_map
 	map->xid.id = rid - ctx->base_rid + ctx->low_id;
 
 	/* check if this is a valid SID and set the type */
-	if (winbindd_lookup_name_by_sid(ctx, map->sid, &domname, &name, &sid_type)) {
+	if (winbindd_lookup_name_by_sid(memctx, map->sid, &domname, &name, &sid_type)) {
 		switch (sid_type) {
 		case SID_NAME_USER:
 			map->xid.type = ID_TYPE_UID;
@@ -188,17 +188,24 @@ static NTSTATUS idmap_rid_sid_to_id(struct idmap_rid_context *ctx, struct id_map
 
 static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_map **ids)
 {
-	struct idmap_rid_context *ctx;
+	struct idmap_rid_context *ridctx;
+	TALLOC_CTX *ctx;
 	NTSTATUS ret;
 	int i;
 
-	ctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
+	ridctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
+
+	ctx = talloc_new(dom);
+	if ( ! ctx) {
+		DEBUG(0, ("Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i = 0; ids[i]; i++) {
 		/* make sure it is marked as unmapped before resolveing */
 		ids[i]->mapped = False;
 
-		ret = idmap_rid_id_to_sid(ctx, ids[i]);
+		ret = idmap_rid_id_to_sid(ctx, ridctx, ids[i]);
 
 		if (( ! NT_STATUS_IS_OK(ret)) &&
 		    ( ! NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
@@ -207,6 +214,7 @@ static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		}
 	}
 
+	talloc_free(ctx);
 	return NT_STATUS_OK;
 }
 
@@ -216,17 +224,24 @@ static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 
 static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_map **ids)
 {
-	struct idmap_rid_context *ctx;
+	struct idmap_rid_context *ridctx;
+	TALLOC_CTX *ctx;
 	NTSTATUS ret;
 	int i;
 
-	ctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
+	ridctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
+
+	ctx = talloc_new(dom);
+	if ( ! ctx) {
+		DEBUG(0, ("Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i = 0; ids[i]; i++) {
 		/* make sure it is marked as unmapped before resolveing */
 		ids[i]->mapped = False;
 
-		ret = idmap_rid_sid_to_id(ctx, ids[i]);
+		ret = idmap_rid_sid_to_id(ctx, ridctx, ids[i]);
 
 		if (( ! NT_STATUS_IS_OK(ret)) &&
 		    ( ! NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
@@ -236,6 +251,7 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 		}
 	}
 
+	talloc_free(ctx);
 	return NT_STATUS_OK;
 }
 

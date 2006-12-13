@@ -95,8 +95,6 @@ cat >$COMMONCONFFILE<<EOF
 	log file = $LOGDIR/log.%m
 	log level = 0
 
-	passdb backend = tdbsam
-
 	name resolve order = bcast
 EOF
 
@@ -108,6 +106,8 @@ cat >$CONFFILE<<EOF
 	interfaces = $TORTURE_INTERFACES
 	panic action = $SCRIPTDIR/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	include = $COMMONCONFFILE
+
+	passdb backend = tdbsam
 EOF
 
 cat >$SAMBA4CONFFILE<<EOF
@@ -125,6 +125,8 @@ cat >$SERVERCONFFILE<<EOF
 	bind interfaces only = yes
 	panic action = $SCRIPTDIR/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	include = $COMMONCONFFILE
+
+	passdb backend = tdbsam
 
 	; Necessary to add the build farm hacks
 	add user script = /bin/false

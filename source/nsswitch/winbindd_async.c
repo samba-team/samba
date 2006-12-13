@@ -738,8 +738,8 @@ enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 {
 	enum lsa_SidType type;
 	DOM_SID sid;
-	char *name = NULL;
-	char *dom_name = NULL;
+	char *name;
+	char *dom_name;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';

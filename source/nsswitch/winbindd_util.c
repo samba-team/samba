@@ -718,6 +718,9 @@ BOOL winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 	struct winbindd_domain *domain;
 
+	*dom_name = NULL;
+	*name = NULL;
+
 	domain = find_lookup_domain_from_sid(sid);
 
 	if (!domain) {
@@ -736,7 +739,6 @@ BOOL winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
 	}
 
 	*type = SID_NAME_UNKNOWN;
-	*name = talloc_strdup(mem_ctx, name_deadbeef);
         
 	return False;
 }
