@@ -543,8 +543,7 @@ static void kdc_task_init(struct task_server *task)
 	case ROLE_DOMAIN_MEMBER:
 		task_server_terminate(task, "kdc: no KDC required in member server configuration");
 		return;
-	case ROLE_DOMAIN_PDC:
-	case ROLE_DOMAIN_BDC:
+	case ROLE_DOMAIN_CONTROLLER:
 		/* Yes, we want a KDC */
 		break;
 	}

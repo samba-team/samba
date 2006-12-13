@@ -221,6 +221,7 @@ objectClass: top
 objectClass: applicationSettings
 objectClass: nTDSDSA
 cn: NTDS Settings
+options: 1
 instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 33554432
