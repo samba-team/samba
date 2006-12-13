@@ -69,6 +69,9 @@ modifiedCount: 1
 replace: objectCategory
 objectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,${BASEDN}
 -
+replace: fSMORoleOwner
+fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+-
 replace: isCriticalSystemObject
 isCriticalSystemObject: TRUE
 -
