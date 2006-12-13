@@ -86,10 +86,6 @@ static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context
 	char *domname, *name;
 	enum lsa_SidType sid_type;
 
-	if (!memctx || !ctx || !map) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	/* apply filters before checking */
 	if ((map->xid.id < ctx->low_id) || (map->xid.id > ctx->high_id)) {
 		DEBUG(5, ("Requested id (%u) out of range (%u - %u). Filtered!\n",
@@ -141,10 +137,6 @@ static NTSTATUS idmap_rid_sid_to_id(TALLOC_CTX *memctx, struct idmap_rid_context
 	char *domname, *name;
 	enum lsa_SidType sid_type;
 	uint32_t rid;
-
-	if (!memctx || !ctx || !map) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	sid_peek_rid(map->sid, &rid);
 	map->xid.id = rid - ctx->base_rid + ctx->low_id;
