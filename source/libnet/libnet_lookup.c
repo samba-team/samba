@@ -418,14 +418,18 @@ NTSTATUS libnet_LookupName_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 
 			/* TODO: verify if returned pointers are non-null */
 
-			io->out.domain_sid = *domains->domains[0].sid;
-			io->out.rid        = sids->sids[0].rid;
-			io->out.sid_type   = sids->sids[0].sid_type;
+			if (sids->count > 0) {
+				io->out.rid        = sids->sids[0].rid;
+				io->out.sid_type   = sids->sids[0].sid_type;
+			}
 
-			num_auths = io->out.domain_sid.num_auths++;
-			io->out.domain_sid.sub_auths[num_auths] = io->out.rid;
+			if (domains->count > 0) {
+				io->out.domain_sid = *domains->domains[0].sid;
+				num_auths = io->out.domain_sid.num_auths++;
+				io->out.domain_sid.sub_auths[num_auths] = io->out.rid;
 
-			io->out.sidstr     = dom_sid_string(mem_ctx, &io->out.domain_sid);
+				io->out.sidstr     = dom_sid_string(mem_ctx, &io->out.domain_sid);
+			}
 		}
 
 		io->out.error_string = talloc_strdup(mem_ctx, "Success");
