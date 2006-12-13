@@ -2987,11 +2987,28 @@ static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				       levels[i], r.out.info->info2.comment.string, domain_comment);
 				ret = False;
 			}
+			if (!r.out.info->info2.primary.string) {
+				printf("QueryDomainInfo level %u returned no PDC name\n",
+				       levels[i]);
+				ret = False;
+			} else if (r.out.info->info2.role == SAMR_ROLE_DOMAIN_PDC) {
+				if (dcerpc_server_name(p) && strcasecmp_m(dcerpc_server_name(p), r.out.info->info2.primary.string) != 0) {
+					printf("QueryDomainInfo level %u returned different PDC name (%s) compared to server name (%s), despite claiming to be the PDC\n",
+					       levels[i], r.out.info->info2.primary.string, dcerpc_server_name(p));
+				}
+			}
 			break;
 		case 4:
 			if (strcmp(r.out.info->info4.comment.string, domain_comment) != 0) {
 				printf("QueryDomainInfo level %u returned different comment (%s, expected %s)\n",
 				       levels[i], r.out.info->info4.comment.string, domain_comment);
+				ret = False;
+			}
+			break;
+		case 6:
+			if (!r.out.info->info6.primary.string) {
+				printf("QueryDomainInfo level %u returned no PDC name\n",
+				       levels[i]);
 				ret = False;
 			}
 			break;

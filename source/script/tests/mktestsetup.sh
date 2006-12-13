@@ -104,7 +104,7 @@ cat >$CONFFILE<<EOF
         tls dh params file = $DHFILE
 	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
 	wins support = yes
-	server role = pdc
+	server role = domain controller
 	max xmit = 32K
 	server max protocol = SMB2
 	notify:inotify = false

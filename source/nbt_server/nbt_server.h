@@ -75,6 +75,8 @@ struct nbtd_server {
 	struct wins_server *winssrv;
 
 	struct nbtd_statistics stats;
+
+	struct ldb_context *sam_ctx;
 };
 
 
