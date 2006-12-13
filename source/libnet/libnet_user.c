@@ -804,6 +804,9 @@ NTSTATUS libnet_UserInfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 		r->out.acct_flags = info->acct_flags;
 
 		r->out.error_string = talloc_strdup(mem_ctx, "Success");
+
+	} else {
+		r->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
 	}
 
 	talloc_free(c);
