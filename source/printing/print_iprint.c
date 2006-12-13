@@ -1235,5 +1235,6 @@ struct printif	iprint_printif =
 
 #else
  /* this keeps fussy compilers happy */
+ void print_iprint_dummy(void);
  void print_iprint_dummy(void) {}
 #endif /* HAVE_IPRINT */
