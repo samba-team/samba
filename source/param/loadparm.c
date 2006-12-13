@@ -59,8 +59,6 @@
 #include "system/time.h"
 #include "system/locale.h"
 #include "system/network.h" /* needed for TCP_NODELAY */
-#include "librpc/gen_ndr/svcctl.h"
-#include "librpc/gen_ndr/samr.h"
 #include "smb_server/smb_server.h"
 #include "libcli/raw/signing.h"
 #include "lib/util/dlinklist.h"
@@ -274,15 +272,12 @@ static service **ServicePtrs = NULL;
 static int iNumServices = 0;
 static int iServiceIndex = 0;
 static BOOL bInGlobalSection = True;
-static int default_server_announce;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
 static BOOL handle_include(const char *pszParmValue, char **ptr);
 static BOOL handle_copy(const char *pszParmValue, char **ptr);
-
-static void set_default_server_announce_type(void);
 
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_SMB2, "SMB2"},
@@ -300,12 +295,6 @@ static const struct enum_list enum_security[] = {
 	{SEC_USER, "USER"},
 	{-1, NULL}
 };
-
-/* Types of machine we can announce as. */
-#define ANNOUNCE_AS_NT_SERVER 1
-#define ANNOUNCE_AS_WIN95 2
-#define ANNOUNCE_AS_WFW 3
-#define ANNOUNCE_AS_NT_WORKSTATION 4
 
 static const struct enum_list enum_announce_as[] = {
 	{ANNOUNCE_AS_NT_SERVER, "NT"},
@@ -365,8 +354,7 @@ static const struct enum_list enum_smb_signing_vals[] = {
 static const struct enum_list enum_server_role[] = {
 	{ROLE_STANDALONE, "standalone"},
 	{ROLE_DOMAIN_MEMBER, "member server"},
-	{ROLE_DOMAIN_BDC, "bdc"},
-	{ROLE_DOMAIN_PDC, "pdc"},
+	{ROLE_DOMAIN_CONTROLLER, "domain controller"},
 	{-1, NULL}
 };
 
@@ -886,7 +874,7 @@ _PUBLIC_ FN_GLOBAL_BOOL(lp_writeraw, &Globals.bWriteRaw)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_null_passwords, &Globals.bNullPasswords)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_obey_pam_restrictions, &Globals.bObeyPamRestrictions)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_encrypted_passwords, &Globals.bEncryptPasswords)
-static FN_GLOBAL_BOOL(lp_time_server, &Globals.bTimeServer)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_time_server, &Globals.bTimeServer)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_bind_interfaces_only, &Globals.bBindInterfacesOnly)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_unicode, &Globals.bUnicode)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
@@ -912,7 +900,7 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_minprotocol, &Globals.cli_minprotocol)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_security, &Globals.security)
 _PUBLIC_ FN_GLOBAL_LIST(lp_auth_methods, &Globals.AuthMethods)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, &Globals.paranoid_server_security)
-static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 _PUBLIC_ FN_GLOBAL_LIST(lp_js_include, &Globals.jsInclude)
 _PUBLIC_ FN_GLOBAL_STRING(lp_jsonrpc_services_dir, &Globals.jsonrpcServicesDir)
 _PUBLIC_ 
@@ -1373,8 +1361,6 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
-	update_server_announce_as_printserver();
-
 	return (True);
 }
 
@@ -1554,7 +1540,6 @@ static BOOL service_ok(int iService)
 			DEBUG(0, ("WARNING: [%s] service MUST be printable!\n",
 			       ServicePtrs[iService]->szService));
 			ServicePtrs[iService]->bPrint_ok = True;
-			update_server_announce_as_printserver();
 		}
 		/* [printers] service must also be non-browsable. */
 		if (ServicePtrs[iService]->bBrowseable)
@@ -2381,15 +2366,6 @@ static void lp_add_auto_services(const char *str)
 }
 
 /***************************************************************************
- Announce ourselves as a print server.
-***************************************************************************/
-
-void update_server_announce_as_printserver(void)
-{
-	default_server_announce |= SV_TYPE_PRINTQ_SERVER;	
-}
-
-/***************************************************************************
  Have we loaded a services file yet?
 ***************************************************************************/
 
@@ -2477,8 +2453,6 @@ BOOL lp_load(void)
 
 	lp_add_hidden("IPC$", "IPC");
 	lp_add_hidden("ADMIN$", "DISK");
-
-	set_default_server_announce_type();
 
 	bLoaded = True;
 
@@ -2603,83 +2577,13 @@ const char *volume_label(int snum)
 }
 
 
-/*******************************************************************
- Set the server type we will announce as via nmbd.
-********************************************************************/
-
-static void set_default_server_announce_type(void)
-{
-	default_server_announce = 0;
-	default_server_announce |= SV_TYPE_WORKSTATION;
-	default_server_announce |= SV_TYPE_SERVER;
-	default_server_announce |= SV_TYPE_SERVER_UNIX;
-
-	switch (lp_announce_as()) {
-		case ANNOUNCE_AS_NT_SERVER:
-			default_server_announce |= SV_TYPE_SERVER_NT;
-			/* fall through... */
-		case ANNOUNCE_AS_NT_WORKSTATION:
-			default_server_announce |= SV_TYPE_NT;
-			break;
-		case ANNOUNCE_AS_WIN95:
-			default_server_announce |= SV_TYPE_WIN95_PLUS;
-			break;
-		case ANNOUNCE_AS_WFW:
-			default_server_announce |= SV_TYPE_WFW;
-			break;
-		default:
-			break;
-	}
-
-	switch (lp_server_role()) {
-		case ROLE_DOMAIN_MEMBER:
-			default_server_announce |= SV_TYPE_DOMAIN_MEMBER;
-			break;
-		case ROLE_DOMAIN_PDC:
-			default_server_announce |= SV_TYPE_DOMAIN_CTRL;
-			break;
-		case ROLE_DOMAIN_BDC:
-			default_server_announce |= SV_TYPE_DOMAIN_BAKCTRL;
-			break;
-		case ROLE_STANDALONE:
-		default:
-			break;
-	}
-	if (lp_time_server())
-		default_server_announce |= SV_TYPE_TIME_SOURCE;
-
-	if (lp_host_msdfs())
-		default_server_announce |= SV_TYPE_DFS_SERVER;
-
-	/* TODO: only announce us as print server when we are a print server */
-	default_server_announce |= SV_TYPE_PRINTQ_SERVER;
-}
-
-/***********************************************************
- If we are PDC then prefer us as DMB
-************************************************************/
-
-BOOL lp_domain_master(void)
-{
-	return (lp_server_role() == ROLE_DOMAIN_PDC);
-}
-
 /***********************************************************
  If we are PDC then prefer us as DMB
 ************************************************************/
 
 BOOL lp_domain_logons(void)
 {
-	return (lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC);
-}
-
-/***********************************************************
- If we are DMB then prefer us as LMB
-************************************************************/
-
-BOOL lp_preferred_master(void)
-{
-	return (lp_local_master() && lp_domain_master());
+	return (lp_server_role() == ROLE_DOMAIN_CONTROLLER);
 }
 
 /*******************************************************************
@@ -2704,15 +2608,6 @@ void lp_copy_service(int snum, const char *new_name)
 		if (snum >= 0)
 			lp_do_parameter(snum, "copy", oldname);
 	}
-}
-
-
-/*******************************************************************
- Get the default server type we will announce as via nmbd.
-********************************************************************/
-int lp_default_server_announce(void)
-{
-	return default_server_announce;
 }
 
 const char *lp_printername(int snum)

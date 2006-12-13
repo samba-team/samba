@@ -22,7 +22,10 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
+#include "librpc/gen_ndr/svcctl.h"
 #include "rpc_server/dcerpc_server.h"
+#include "dsdb/samdb/samdb.h"
+#include "auth/auth.h"
 
 /* 
     Here are common server info functions used by some dcerpc server interfaces
@@ -81,7 +84,77 @@ _PUBLIC_ uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct dc
 /* This hardcoded value should go into a ldb database! */
 _PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return lp_default_server_announce();
+	int default_server_announce = 0;
+	default_server_announce |= SV_TYPE_WORKSTATION;
+	default_server_announce |= SV_TYPE_SERVER;
+	default_server_announce |= SV_TYPE_SERVER_UNIX;
+
+	switch (lp_announce_as()) {
+		case ANNOUNCE_AS_NT_SERVER:
+			default_server_announce |= SV_TYPE_SERVER_NT;
+			/* fall through... */
+		case ANNOUNCE_AS_NT_WORKSTATION:
+			default_server_announce |= SV_TYPE_NT;
+			break;
+		case ANNOUNCE_AS_WIN95:
+			default_server_announce |= SV_TYPE_WIN95_PLUS;
+			break;
+		case ANNOUNCE_AS_WFW:
+			default_server_announce |= SV_TYPE_WFW;
+			break;
+		default:
+			break;
+	}
+
+	switch (lp_server_role()) {
+		case ROLE_DOMAIN_MEMBER:
+			default_server_announce |= SV_TYPE_DOMAIN_MEMBER;
+			break;
+		case ROLE_DOMAIN_CONTROLLER:
+		{
+			struct ldb_context *samctx;
+			TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+			if (!tmp_ctx) {
+				break;
+			}
+			/* open main ldb */
+			samctx = samdb_connect(tmp_ctx, anonymous_session(tmp_ctx));
+			if (samctx == NULL) {
+				DEBUG(2,("Unable to open samdb in determining server announce flags\n"));
+			} else {
+				/* Determine if we are the pdc */
+				BOOL is_pdc = samdb_is_pdc(samctx);
+				if (is_pdc) {
+					default_server_announce |= SV_TYPE_DOMAIN_CTRL;
+				} else {
+					default_server_announce |= SV_TYPE_DOMAIN_BAKCTRL;
+				}
+			}
+			/* Close it */
+			talloc_free(tmp_ctx);
+			break;
+		}
+		case ROLE_STANDALONE:
+		default:
+			break;
+	}
+	if (lp_time_server())
+		default_server_announce |= SV_TYPE_TIME_SOURCE;
+
+	if (lp_host_msdfs())
+		default_server_announce |= SV_TYPE_DFS_SERVER;
+
+
+#if 0
+	{ 
+		/* TODO: announce us as print server when we are a print server */
+		BOOL is_print_server = False;
+		if (is_print_server) {
+			default_server_announce |= SV_TYPE_PRINTQ_SERVER;
+		}
+	}
+#endif
+	return default_server_announce;
 }
 
 /* This hardcoded value should go into a ldb database! */

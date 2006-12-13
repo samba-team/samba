@@ -95,6 +95,18 @@ enum brl_type {
 	PENDING_WRITE_LOCK
 };
 
+enum server_role {
+	ROLE_STANDALONE=0,
+	ROLE_DOMAIN_MEMBER=1,
+	ROLE_DOMAIN_CONTROLLER=2,
+};
+
+enum announce_as {/* Types of machine we can announce as. */
+	ANNOUNCE_AS_NT_SERVER=1,
+	ANNOUNCE_AS_WIN95=2,
+	ANNOUNCE_AS_WFW=3,
+	ANNOUNCE_AS_NT_WORKSTATION=4
+};
 
 
 #endif /* _SAMBA_CORE_H */

@@ -382,8 +382,7 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 			}
 			return NT_STATUS_OK;
 
-		case ROLE_DOMAIN_PDC:
-		case ROLE_DOMAIN_BDC:
+		case ROLE_DOMAIN_CONTROLLER:
 			if (!is_local_name && !is_my_domain) {
 				DEBUG(6,("authsam_check_password: %s is not one of my local names or domain name (DC)\n",
 					user_info->mapped.domain_name));
@@ -413,8 +412,7 @@ static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
 			domain = lp_netbios_name();
 			break;
 
-		case ROLE_DOMAIN_PDC:
-		case ROLE_DOMAIN_BDC:
+		case ROLE_DOMAIN_CONTROLLER:
 			domain = lp_workgroup();
 			break;
 

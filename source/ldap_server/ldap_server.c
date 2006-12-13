@@ -40,7 +40,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
-
+#include "dsdb/samdb/samdb.h"
 /*
   close the socket and shutdown a server_context
 */
@@ -245,8 +245,13 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 	}
 
 	ret = ldb_search(conn->ldb, basedn, LDB_SCOPE_BASE, NULL, attrs, &res);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+
 	talloc_steal(tmp_ctx, res);
-	if (ret != LDB_SUCCESS || res->count != 1) {
+
+	if (res->count != 1) {
 		goto failed;
 	}
 
@@ -262,8 +267,13 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 	}
 
 	ret = ldb_search(conn->ldb, policy_dn, LDB_SCOPE_BASE, NULL, attrs2, &res);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+
 	talloc_steal(tmp_ctx, res);
-	if (ret != LDB_SUCCESS || res->count != 1) {
+
+	if (res->count != 1) {
 		goto failed;
 	}
 
@@ -431,6 +441,11 @@ static NTSTATUS add_socket(struct event_context *event_context,
 {
 	uint16_t port = 389;
 	NTSTATUS status;
+	const char *attrs[] = { "options", NULL };
+	int ret;
+	struct ldb_result *res;
+	struct ldb_context *ldb;
+	int options;
 
 	status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
 				     "ipv4", address, &port, ldap_service);
@@ -450,8 +465,28 @@ static NTSTATUS add_socket(struct event_context *event_context,
 		}
 	}
 
-	/* if we are a PDC, then also enable the global catalog server port, 3268 */
-	if (lp_server_role() == ROLE_DOMAIN_PDC) {
+	/* Load LDAP database */
+	ldb = samdb_connect(ldap_service, system_session(ldap_service));
+	if (!ldb) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	
+	/* Query cn=ntds settings,.... */
+	ret = ldb_search(ldb, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, NULL, attrs, &res);
+	if (ret) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (res->count != 1) {
+		talloc_free(res);
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	options = ldb_msg_find_attr_as_int(res->msgs[0], "options", 0);
+	talloc_free(res);
+	talloc_free(ldb);
+
+	/* if options attribute is 1, then enable the global catlog */
+	if (options == 1) {
 		port = 3268;
 		status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
 					     "ipv4", address, &port, ldap_service);

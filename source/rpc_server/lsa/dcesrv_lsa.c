@@ -277,6 +277,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		"objectSid", 
 		"objectGUID", 
 		"nTMixedDomain",
+		"fSMORoleOwner",
 		NULL
 	};
 	struct ldb_result *ref_res;
@@ -317,7 +318,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
-	talloc_steal(state, dom_res);
+	talloc_steal(mem_ctx, dom_res);
 	if (dom_res->count != 1) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
@@ -333,7 +334,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	state->mixed_domain = ldb_msg_find_attr_as_uint(dom_res->msgs[0], "nTMixedDomain", 0);
-
+	
 	talloc_free(dom_res);
 
 	ret = ldb_search_exp_fmt(state->sam_ldb, state, &ref_res,
@@ -431,11 +432,12 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 		case ROLE_DOMAIN_MEMBER:
 			role		= DS_ROLE_MEMBER_SERVER;
 			break;
-		case ROLE_DOMAIN_BDC:
-			role		= DS_ROLE_BACKUP_DC;
-			break;
-		case ROLE_DOMAIN_PDC:
-			role		= DS_ROLE_PRIMARY_DC;
+		case ROLE_DOMAIN_CONTROLLER:
+			if (samdb_is_pdc(state->sam_ldb)) {
+				role	= DS_ROLE_PRIMARY_DC;
+			} else {
+				role    = DS_ROLE_BACKUP_DC;
+			}
 			break;
 		}
 
@@ -449,8 +451,7 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 			W_ERROR_HAVE_NO_MEMORY(domain);
 			/* TODO: what is with dns_domain and forest and guid? */
 			break;
-		case ROLE_DOMAIN_BDC:
-		case ROLE_DOMAIN_PDC:
+		case ROLE_DOMAIN_CONTROLLER:
 			flags		= DS_ROLE_PRIMARY_DS_RUNNING;
 
 			if (state->mixed_domain == 1) {
