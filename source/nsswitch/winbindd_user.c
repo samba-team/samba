@@ -261,7 +261,7 @@ static void getpwsid_sid2uid_recv(void *private_data, BOOL success, uid_t uid)
 	}
 
 	s->uid = uid;
-	winbindd_sid2gid_async(s->state->mem_ctx, &s->group_sid,
+	winbindd_sid2uid_async(s->state->mem_ctx, &s->group_sid,
 			       getpwsid_sid2gid_recv, s);
 }
 
