@@ -1,5 +1,11 @@
-2006-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/init_sec_context.c (init_auth): only turn on
+	GSS_C_CONF_FLAG and GSS_C_INT_FLAG if the caller requseted it.
+	From Stefan Metzmacher.
+	
+2006-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am (libgssapi_la_OBJECTS): depends on gssapi_asn1.h
 	spnego_asn1.h.
 
