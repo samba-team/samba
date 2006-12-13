@@ -395,6 +395,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == -1) {
 		DEBUG(1, ("Failed to open domain %s: %s\n", dom_sid_string(mem_ctx, r->in.sid), ldb_errstring(c_state->sam_ctx)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		ret = gendb_search(c_state->sam_ctx,
 				   mem_ctx, partitions_basedn, &ref_msgs, ref_attrs,
@@ -474,18 +475,39 @@ static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo2 *info)
 {
+	enum server_role role = lp_server_role();
+
+	/* This pulls the NetBIOS name from the 
+	   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
+	   string */
+	info->primary.string = samdb_result_fsmo_name(state->sam_ctx, mem_ctx, dom_msgs[0], "fSMORoleOwner");
+
 	info->force_logoff_time = ldb_msg_find_attr_as_uint64(dom_msgs[0], "forceLogoff", 
 							    0x8000000000000000LL);
 
 	info->comment.string = samdb_result_string(dom_msgs[0], "comment", NULL);
 	info->domain_name.string  = state->domain_name;
 
-	/* FIXME:  We should find the name of the real PDC emulator */
-	info->primary.string = lp_netbios_name();
 	info->sequence_num = ldb_msg_find_attr_as_uint64(dom_msgs[0], "modifiedCount", 
 						 0);
-
-	info->role = lp_server_role();
+	switch (role) {
+	case ROLE_DOMAIN_CONTROLLER:
+		/* This pulls the NetBIOS name from the 
+		   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
+		   string */
+		if (samdb_is_pdc(state->sam_ctx)) {
+			info->role = SAMR_ROLE_DOMAIN_PDC;
+		} else {
+			info->role = SAMR_ROLE_DOMAIN_BDC;
+		}
+		break;
+	case ROLE_DOMAIN_MEMBER:
+		info->role = SAMR_ROLE_DOMAIN_MEMBER;
+		break;
+	case ROLE_STANDALONE:
+		info->role = SAMR_ROLE_STANDALONE;
+		break;
+	}
 
 	/* TODO: Should these filter on SID, to avoid counting BUILTIN? */
 	info->num_users = samdb_search_count(state->sam_ctx, mem_ctx, state->domain_dn, 
@@ -545,12 +567,14 @@ static NTSTATUS samr_info_DomInfo5(struct samr_domain_state *state,
 */
 static NTSTATUS samr_info_DomInfo6(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
-				    struct ldb_message **dom_msgs,
+				   struct ldb_message **dom_msgs,
 				   struct samr_DomInfo6 *info)
 {
-
-	/* FIXME:  We should find the name of the real PDC emulator */
-	info->primary.string = lp_netbios_name();
+	/* This pulls the NetBIOS name from the 
+	   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
+	   string */
+	info->primary.string = samdb_result_fsmo_name(state->sam_ctx, mem_ctx, 
+						      dom_msgs[0], "fSMORoleOwner");
 
 	return NT_STATUS_OK;
 }
@@ -563,7 +587,27 @@ static NTSTATUS samr_info_DomInfo7(struct samr_domain_state *state,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo7 *info)
 {
-	info->role = lp_server_role();
+
+	enum server_role role = lp_server_role();
+
+	switch (role) {
+	case ROLE_DOMAIN_CONTROLLER:
+		/* This pulls the NetBIOS name from the 
+		   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
+		   string */
+		if (samdb_is_pdc(state->sam_ctx)) {
+			info->role = SAMR_ROLE_DOMAIN_PDC;
+		} else {
+			info->role = SAMR_ROLE_DOMAIN_BDC;
+		}
+		break;
+	case ROLE_DOMAIN_MEMBER:
+		info->role = SAMR_ROLE_DOMAIN_MEMBER;
+		break;
+	case ROLE_STANDALONE:
+		info->role = SAMR_ROLE_STANDALONE;
+		break;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -695,6 +739,7 @@ static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_
 		static const char * const attrs2[] = {"forceLogoff",
 						      "comment", 
 						      "modifiedCount", 
+						      "fSMORoleOwner",
 						      NULL};
 		attrs = attrs2;
 		break;
@@ -714,7 +759,17 @@ static NTSTATUS samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_
 		break;
 	}
 	case 5:
+	{
+		attrs = NULL;
+		break;
+	}
 	case 6:
+	{
+		static const char * const attrs2[] = {"fSMORoleOwner", 
+						      NULL};
+		attrs = attrs2;
+		break;
+	}
 	case 7:
 	{
 		attrs = NULL;
@@ -3517,6 +3572,7 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 	const char * const attrs[4] = { "objectSid", "sAMAccountName",
 					"description", NULL };
 	struct samr_DispEntryFull *entriesFull = NULL;
+	struct samr_DispEntryFullGroup *entriesFullGroup = NULL;
 	struct samr_DispEntryAscii *entriesAscii = NULL;
 	struct samr_DispEntryGeneral * entriesGeneral = NULL;
 	const char *filter;
@@ -3566,9 +3622,13 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 						ldb_cnt);
 		break;
 	case 2:
-	case 3:
 		entriesFull = talloc_array(mem_ctx,
 					     struct samr_DispEntryFull,
+					     ldb_cnt);
+		break;
+	case 3:
+		entriesFullGroup = talloc_array(mem_ctx,
+					     struct samr_DispEntryFullGroup,
 					     ldb_cnt);
 		break;
 	case 4:
@@ -3580,7 +3640,7 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	if ((entriesGeneral == NULL) && (entriesFull == NULL) &&
-	    (entriesAscii == NULL))
+	    (entriesAscii == NULL) && (entriesFullGroup == NULL))
 		return NT_STATUS_NO_MEMORY;
 
 	count = 0;
@@ -3610,21 +3670,32 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 				samdb_result_string(res[i], "description", "");
 			break;
 		case 2:
-		case 3:
 			entriesFull[count].idx = count + 1;
 			entriesFull[count].rid =
 				objectsid->sub_auths[objectsid->num_auths-1];
 			entriesFull[count].acct_flags =
 				samdb_result_acct_flags(res[i], 
 							"userAccountControl");
-			if (r->in.level == 3) {
-				/* We get a "7" here for groups */
-				entriesFull[count].acct_flags = 7;
-			}
 			entriesFull[count].account_name.string =
 				samdb_result_string(res[i], "sAMAccountName",
 						    "");
 			entriesFull[count].description.string =
+				samdb_result_string(res[i], "description", "");
+			break;
+		case 3:
+			entriesFullGroup[count].idx = count + 1;
+			entriesFullGroup[count].rid =
+				objectsid->sub_auths[objectsid->num_auths-1];
+			entriesFullGroup[count].acct_flags =
+				samdb_result_acct_flags(res[i], 
+							"userAccountControl");
+			/* We get a "7" here for groups */
+			entriesFullGroup[count].acct_flags
+				= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+			entriesFullGroup[count].account_name.string =
+				samdb_result_string(res[i], "sAMAccountName",
+						    "");
+			entriesFullGroup[count].description.string =
 				samdb_result_string(res[i], "description", "");
 			break;
 		case 4:
@@ -3682,7 +3753,7 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 		case 3:
 			r->out.info.info3.count = r->out.returned_size;
 			r->out.info.info3.entries =
-				&(entriesFull[r->in.start_idx]);
+				&(entriesFullGroup[r->in.start_idx]);
 			break;
 		case 4:
 			r->out.info.info4.count = r->out.returned_size;

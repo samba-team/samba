@@ -1047,18 +1047,25 @@ struct ldb_dn *samdb_partitions_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	return new_dn;
 }
 
+struct ldb_dn *samdb_sites_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
+{
+	struct ldb_dn *new_dn;
+
+	new_dn = ldb_dn_copy(mem_ctx, samdb_base_dn(sam_ctx));
+	if ( ! ldb_dn_add_child_fmt(new_dn, "CN=Sites,CN=Configuration")) {
+		talloc_free(new_dn);
+		return NULL;
+	}
+	return new_dn;
+}
+
 /*
   work out the domain sid for the current open ldb
 */
 const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 {
-	const char *attrs[] = { "rootDomainNamingContext", NULL };
-	int ret;
-	struct ldb_result *res = NULL;
 	TALLOC_CTX *tmp_ctx;
 	struct dom_sid *domain_sid;
-	const char *basedn_s;
-	struct ldb_dn *basedn;
 
 	/* see if we have a cached copy */
 	domain_sid = ldb_get_opaque(ldb, "cache.domain_sid");
@@ -1071,30 +1078,8 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	basedn = ldb_dn_new(tmp_ctx, ldb, NULL);
-	if (basedn == NULL) {
-		goto failed;
-	}
-	
-	/* find the basedn of the domain from the rootdse */
-	ret = ldb_search(ldb, basedn, LDB_SCOPE_BASE, NULL, attrs, &res);
-	talloc_steal(tmp_ctx, res);
-	if (ret != LDB_SUCCESS || res->count != 1) {
-		goto failed;
-	}
-
-	basedn_s = ldb_msg_find_attr_as_string(res->msgs[0], "rootDomainNamingContext", NULL);
-	if (basedn_s == NULL) {
-		goto failed;
-	}
-
-	basedn = ldb_dn_new(tmp_ctx, ldb, basedn_s);
-	if ( ! ldb_dn_validate(basedn)) {
-		goto failed;
-	}
-
 	/* find the domain_sid */
-	domain_sid = samdb_search_dom_sid(ldb, tmp_ctx, basedn, 
+	domain_sid = samdb_search_dom_sid(ldb, tmp_ctx, ldb_get_default_basedn(ldb),
 					  "objectSid", "objectClass=domainDNS");
 	if (domain_sid == NULL) {
 		goto failed;
@@ -1114,6 +1099,130 @@ failed:
 	DEBUG(1,("Failed to find domain_sid for open ldb\n"));
 	talloc_free(tmp_ctx);
 	return NULL;
+}
+
+/* Obtain the short name of the flexible single master operator
+ * (FSMO), such as the PDC Emulator */
+const char *samdb_result_fsmo_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 
+			     const char *attr)
+{
+	/* Format is cn=NTDS Settings,cn=<NETBIOS name of FSMO>,.... */
+	struct ldb_dn *fsmo_dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, msg, attr);
+	const struct ldb_val *val = ldb_dn_get_component_val(fsmo_dn, 1);
+	const char *name = ldb_dn_get_component_name(fsmo_dn, 1);
+
+	if (!name || (ldb_attr_cmp(name, "cn") != 0)) {
+		/* Ensure this matches the format.  This gives us a
+		 * bit more confidence that a 'cn' value will be a
+		 * ascii string */
+		return NULL;
+	}
+	if (val) {
+		return (char *)val->data;
+	}
+	return NULL;
+}
+
+/*
+  work out the ntds settings dn for the current open ldb
+*/
+const struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
+{
+	TALLOC_CTX *tmp_ctx;
+	const char *root_attrs[] = { "dsServiceName", NULL };
+	int ret;
+	struct ldb_result *root_res;
+	struct ldb_dn *settings_dn;
+	
+	/* see if we have a cached copy */
+	settings_dn = ldb_get_opaque(ldb, "cache.settings_dn");
+	if (settings_dn) {
+		return settings_dn;
+	}
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+	
+
+	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, ""), LDB_SCOPE_BASE, NULL, root_attrs, &root_res);
+	if (ret) {
+		goto failed;
+	}
+
+	if (root_res->count != 1) {
+		goto failed;
+	}
+
+	settings_dn = ldb_msg_find_attr_as_dn(ldb, tmp_ctx, root_res->msgs[0], "dsServiceName");
+
+	/* cache the domain_sid in the ldb */
+	if (ldb_set_opaque(ldb, "cache.settings_dn", settings_dn) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	talloc_steal(ldb, settings_dn);
+	talloc_free(tmp_ctx);
+
+	return settings_dn;
+
+failed:
+	DEBUG(1,("Failed to find our own NTDS Settings DN in the ldb!\n"));
+	talloc_free(tmp_ctx);
+	return NULL;
+}
+
+/*
+  work out the server dn for the current open ldb
+*/
+struct ldb_dn *samdb_server_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
+{
+	return ldb_dn_get_parent(mem_ctx, samdb_ntds_settings_dn(ldb));
+}
+
+/*
+  work out the domain sid for the current open ldb
+*/
+BOOL samdb_is_pdc(struct ldb_context *ldb)
+{
+	const char *dom_attrs[] = { "fSMORoleOwner", NULL };
+	int ret;
+	struct ldb_result *dom_res;
+	TALLOC_CTX *tmp_ctx;
+	BOOL is_pdc;
+	struct ldb_dn *pdc;
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
+	ret = ldb_search(ldb, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, NULL, dom_attrs, &dom_res);
+	if (ret) {
+		goto failed;
+	}
+	talloc_steal(tmp_ctx, dom_res);
+	if (dom_res->count != 1) {
+		goto failed;
+	}
+
+	pdc = ldb_msg_find_attr_as_dn(ldb, tmp_ctx, dom_res->msgs[0], "fSMORoleOwner");
+
+	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), pdc) == 0) {
+		is_pdc = True;
+	} else {
+		is_pdc = False;
+	}
+
+	talloc_free(tmp_ctx);
+
+	return is_pdc;
+
+failed:
+	DEBUG(1,("Failed to find if we are the PDC for this ldb\n"));
+	talloc_free(tmp_ctx);
+	return False;
 }
 
 /*

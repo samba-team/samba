@@ -129,10 +129,10 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/* Function    0x08     */
 	/* server roles */
 	typedef [v1_enum] enum {
-		ROLE_STANDALONE    = 0,
-		ROLE_DOMAIN_MEMBER = 1,
-		ROLE_DOMAIN_BDC    = 2,
-		ROLE_DOMAIN_PDC    = 3
+		SAMR_ROLE_STANDALONE    = 0,
+		SAMR_ROLE_DOMAIN_MEMBER = 1,
+		SAMR_ROLE_DOMAIN_BDC    = 2,
+		SAMR_ROLE_DOMAIN_PDC    = 3
 	} samr_Role;
 
 	/* password properties flags */

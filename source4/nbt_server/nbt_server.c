@@ -27,6 +27,8 @@
 #include "nbt_server/wins/winsserver.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
+#include "auth/auth.h"
+#include "dsdb/samdb/samdb.h"
 
 /*
   startup the nbtd task
@@ -61,6 +63,12 @@ static void nbtd_task_init(struct task_server *task)
 		return;
 	}
 
+	nbtsrv->sam_ctx = samdb_connect(nbtsrv, anonymous_session(nbtsrv));
+	if (nbtsrv->sam_ctx == NULL) {
+		task_server_terminate(task, "nbtd failed to open samdb");
+		return;
+	}
+
 	/* start the WINS server, if appropriate */
 	status = nbtd_winsserver_init(nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -74,6 +82,8 @@ static void nbtd_task_init(struct task_server *task)
 	nbtd_register_names(nbtsrv);
 
 	irpc_add_name(task->msg_ctx, "nbt_server");
+
+
 }
 
 

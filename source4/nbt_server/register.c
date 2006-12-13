@@ -29,6 +29,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "nbt_server/wins/winsserver.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "dsdb/samdb/samdb.h"
 
 
 static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname);
@@ -271,15 +272,14 @@ void nbtd_register_names(struct nbtd_server *nbtsrv)
 		aliases++;
 	}
 
-	switch (lp_server_role()) {
-	case ROLE_DOMAIN_PDC:
-		nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_PDC, nb_flags);
-		nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_LOGON, nb_flags | NBT_NM_GROUP);
-		break;
-	case ROLE_DOMAIN_BDC:
-		nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_LOGON, nb_flags | NBT_NM_GROUP);
-	default:
-		break;
+	if (lp_server_role() == ROLE_DOMAIN_CONTROLLER)	{
+		BOOL is_pdc = samdb_is_pdc(nbtsrv->sam_ctx);
+		if (is_pdc) {
+			nbtd_register_name(nbtsrv, lp_workgroup(),
+					   NBT_NAME_PDC, nb_flags);
+		}
+		nbtd_register_name(nbtsrv, lp_workgroup(),
+				   NBT_NAME_LOGON, nb_flags | NBT_NM_GROUP);
 	}
 
 	nb_flags |= NBT_NM_GROUP;
