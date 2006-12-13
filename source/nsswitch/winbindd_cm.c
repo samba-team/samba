@@ -271,7 +271,7 @@ static void check_domain_online_handler(struct timed_event *te,
 }
 
 /****************************************************************
- If we're still offline, exponentially increase the timeout check.
+ If we're still offline setup the timeout check.
 ****************************************************************/
 
 static void calc_new_online_timeout_check(struct winbindd_domain *domain)
@@ -282,12 +282,6 @@ static void calc_new_online_timeout_check(struct winbindd_domain *domain)
 		domain->check_online_timeout = 10;
 	} else if (domain->check_online_timeout < wbc) {
 		domain->check_online_timeout = wbc;
-	} else {
-		uint32 new_to = domain->check_online_timeout * 3;
-		if (new_to > (3*60*60)) {
-			new_to = 3*60*60; /* 3 hours. */
-		}
-		domain->check_online_timeout = new_to;
 	}
 }
 
