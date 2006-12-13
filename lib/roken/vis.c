@@ -108,6 +108,24 @@ __weak_alias(vis,_vis)
 #define BELL '\007'
 #endif
 
+char ROKEN_LIB_FUNCTION
+	*rk_vis (char *, int, int, int);
+char ROKEN_LIB_FUNCTION
+	*rk_svis (char *, int, int, int, const char *);
+int ROKEN_LIB_FUNCTION
+	rk_strvis (char *, const char *, int);
+int ROKEN_LIB_FUNCTION
+	rk_strsvis (char *, const char *, int, const char *);
+int ROKEN_LIB_FUNCTION
+	rk_strvisx (char *, const char *, size_t, int);
+int ROKEN_LIB_FUNCTION
+	rk_strsvisx (char *, const char *, size_t, int, const char *);
+int ROKEN_LIB_FUNCTION
+	rk_strunvis (char *, const char *);
+int ROKEN_LIB_FUNCTION
+	rk_unvis (char *, int, int *, int);
+
+
 #define isoctal(c)	(((u_char)(c)) >= '0' && ((u_char)(c)) <= '7')
 #define iswhite(c)	(c == ' ' || c == '\t' || c == '\n')
 #define issafe(c)	(c == '\b' || c == BELL || c == '\r')
