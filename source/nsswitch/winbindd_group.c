@@ -442,8 +442,8 @@ static void getgrgid_got_sid(struct winbindd_cli_state *state, DOM_SID group_sid
 {
 	struct winbindd_domain *domain;
 	enum lsa_SidType name_type;
-	char *dom_name = NULL;
-	char *group_name = NULL;
+	char *dom_name;
+	char *group_name;
 	size_t gr_mem_len;
 	size_t num_gr_mem;
 	char *gr_mem;
