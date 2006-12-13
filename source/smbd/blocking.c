@@ -22,6 +22,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
+extern int max_send;
+
 /****************************************************************************
  This is the structure to queue to implement blocking locks.
  notify. It consists of the requesting SMB and the expiry time.
@@ -425,7 +427,6 @@ Waiting....\n",
 
 static BOOL process_trans2(blocking_lock_record *blr)
 {
-	extern int max_send;
 	char *inbuf = blr->inbuf;
 	char *outbuf;
 	char params[2];

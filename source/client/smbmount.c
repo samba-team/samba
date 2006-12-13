@@ -26,6 +26,8 @@
 
 extern BOOL in_client;
 extern pstring user_socket_options;
+extern char *optarg;
+extern int optind;
 
 static pstring credentials;
 static pstring my_netbios_name;
@@ -712,7 +714,6 @@ static void parse_mount_smb(int argc, char **argv)
 	int opt;
 	char *opts;
 	char *opteq;
-	extern char *optarg;
 	int val;
 	char *p;
 
@@ -862,8 +863,6 @@ static void parse_mount_smb(int argc, char **argv)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	extern char *optarg;
-	extern int optind;
 	char *p;
 
 	DEBUGLEVEL = 1;
