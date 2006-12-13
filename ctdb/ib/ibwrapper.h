@@ -22,54 +22,54 @@
  */
 
 /* Server communication state */
-typedef enum {
+enum ibw_state_ctx {
 	IBWS_INIT = 0, /* ctx start - after ibw_init */
 	IBWS_READY, /* after ibw_bind & ibw_listen */
 	IBWS_CONNECT_REQUEST, /* after [IBWS_READY + incoming request] */
 		/* => [(ibw_accept)IBWS_READY | (ibw_disconnect)STOPPED | ERROR] */
 	IBWS_STOPPED, /* normal stop <= ibw_disconnect+(IBWS_READY | IBWS_CONNECT_REQUEST) */
 	IBWS_ERROR /* abnormal state; ibw_stop must be called after this */
-} ibw_state_ctx;
+};
 
 /* Connection state */
-typedef struct _ibw_ctx {
+typedef struct ibw_ctx {
 	void *ctx_userdata; /* see ibw_init */
 
-	ibw_state_ctx state;
+	struct ibw_state_ctx state;
 	void *internal;
 
-	ibw_conn *conn_list; /* 1st elem of double linked list */
-} ibw_ctx;
+	struct ibw_conn *conn_list; /* 1st elem of double linked list */
+};
 
-typedef enum {
+enum ibw_state_conn {
 	IBWC_INIT = 0, /* conn start - internal state */
 	IBWC_CONNECTED, /* after ibw_accept or ibw_connect */
 	IBWC_DISCONNECTED, /* after ibw_disconnect */
 	IBWC_ERROR
-} ibw_state_conn;
+};
 
-typedef struct _ibw_conn {
-	ibw_ctx *ctx;
-	ibw_state_conn state;
+struct ibw_conn {
+	struct ibw_ctx *ctx;
+	struct ibw_state_conn state;
 
 	void *conn_userdata; /* see ibw_connect and ibw_accept */
 	void *internal;
 
-	ibw_conn *prev, next;
-} ibw_conn;
+	struct ibw_conn *prev, next;
+};
 
 /*
  * (name, value) pair for array param of ibw_init
  */
-typedef struct _ibw_initattr {
+struct ibw_initattr {
 	const char *name;
 	const char *value;
-} ibw_initattr;
+};
 
 /*
  * Callback function definition which should inform you about
  * connection state change
- * This callback is invoked from within ibw_process_event.
+ * This callback is invoked whenever server or client connection changes.
  * Both <conn> and <ctx> can be NULL if their state didn't change.
  * Return nonzero on error.
  */
@@ -77,12 +77,13 @@ typedef int (*ibw_connstate_fn_t)(ibw_ctx *ctx, ibw_conn *conn);
 
 /*
  * Callback function definition which should process incoming packets
- * This callback is invoked from within ibw_process_event.
+ * This callback is invoked whenever any message arrives.
  * Return nonzero on error.
  *
- * Important: you mustn't store buf pointer for later use. Process its contents before returning.
+ * Important: you mustn't store buf pointer for later use.
+ * Process its contents before returning.
  */
-typedef int (*ibw_receive_fn_t)(ibw_conn *conn, void *buf, int n);
+typedef int (*ibw_receive_fn_t)(struct ibw_conn *conn, void *buf, int n);
 
 /*
  * settings: array of (name, value) pairs
@@ -102,11 +103,11 @@ typedef int (*ibw_receive_fn_t)(ibw_conn *conn, void *buf, int n);
  *    it will close resources by destructor
  *    connections(ibw_conn *) must have been closed prior talloc_free
  */
-ibw_ctx *ibw_init(ibw_initattr *attr, int nattr,
+struct ibw_ctx *ibw_init(struct ibw_initattr *attr, int nattr,
 	void *ctx_userdata,
 	ibw_connstate_fn_t ibw_connstate,
 	ibw_receive_fn_t ibw_receive,
-	event_content *ectx,
+	struct event_context *ectx,
 	int max_msg_size);
 
 /*
@@ -117,7 +118,7 @@ ibw_ctx *ibw_init(ibw_initattr *attr, int nattr,
  * During that time, you mustn't send/recv/disconnect any more.
  * Only after ctx->state=IBWS_STOPPED you can talloc_free the ctx.
  */
-int ibw_stop(ibw_ctx *ctx);
+int ibw_stop(struct ibw_ctx *ctx);
 
 /*************** connection initiation - like stream sockets *****/
 
@@ -127,7 +128,7 @@ int ibw_stop(ibw_ctx *ctx);
  *
  * return 0 on success
  */
-int ibw_bind(ibw_ctx *ctx, struct sockaddr_in *my_addr);
+int ibw_bind(struct ibw_ctx *ctx, struct sockaddr_in *my_addr);
 
 /*
  * works like socket listen
@@ -137,7 +138,7 @@ int ibw_bind(ibw_ctx *ctx, struct sockaddr_in *my_addr);
  *
  * returns 0 on success
  */
-int ibw_listen(ibw_ctx *ctx, int backlog);
+int ibw_listen(struct ibw_ctx *ctx, int backlog);
 
 /*
  * works like socket accept
@@ -151,7 +152,7 @@ int ibw_listen(ibw_ctx *ctx, int backlog);
  *
  * Important: you won't get remote IP address (only internal conn info)
  */
-int ibw_accept(ibw_ctx *ctx, ibw_conn *conn, void *conn_userdata);
+int ibw_accept(struct ibw_ctx *ctx, struct ibw_conn *conn, void *conn_userdata);
 
 /*
  * Needs a normal internet address here
@@ -162,7 +163,7 @@ int ibw_accept(ibw_ctx *ctx, ibw_conn *conn, void *conn_userdata);
  * You have +1 waiting here: you will get ibw_conn (having the
  * same <conn_userdata> member) structure in ibw_connstate_fn_t.
  */
-int ibw_connect(ibw_ctx *ctx, struct sockaddr_in *serv_addr, void *conn_userdata);
+int ibw_connect(struct ibw_ctx *ctx, struct sockaddr_in *serv_addr, void *conn_userdata);
 
 /*
  * Sends out a disconnect request.
@@ -173,7 +174,7 @@ int ibw_connect(ibw_ctx *ctx, struct sockaddr_in *serv_addr, void *conn_userdata
  * You mustn't talloc_free <conn> yet right after this,
  * first wait for IBWC_DISCONNECTED.
  */
-void ibw_disconnect(ibw_conn *conn);
+void ibw_disconnect(struct ibw_conn *conn);
 
 /************ Infiniband specific event loop wrapping ******************/
 
@@ -185,7 +186,7 @@ void ibw_disconnect(ibw_conn *conn);
  *
  * Returns 0 on success.
  */
-int ibw_alloc_send_buf(ibw_conn *conn, void **buf, void **key);
+int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key);
 
 /*
  * Send the message in one
@@ -195,7 +196,7 @@ int ibw_alloc_send_buf(ibw_conn *conn, void **buf, void **key);
  *
  * You mustn't use (buf, key) any more for sending.
  */
-int ibw_send(ibw_conn *conn, void *buf, void *key, int n);
+int ibw_send(struct ibw_conn *conn, void *buf, void *key, int n);
 
 /*
  * Retrieves the last error
