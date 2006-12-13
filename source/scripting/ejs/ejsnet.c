@@ -367,11 +367,15 @@ static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv)
 	status = libnet_UserInfo(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		ejsSetErrorMsg(eid, "%s", req.out.error_string);
+		
+		/* create null object to return */
+		mprUserInfo = mprCreateNullVar();
+		goto done;
 	}
 
 	/* create UserInfo object */
 	mprUserInfo = mprObject("UserInfo");
-
+	
 	mprAccountName = mprString(req.out.account_name);
 	mprFullName = mprString(req.out.full_name);
 	mprDescription = mprString(req.out.description);
