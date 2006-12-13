@@ -32,10 +32,10 @@ enum ibw_state_ctx {
 };
 
 /* Connection state */
-typedef struct ibw_ctx {
+struct ibw_ctx {
 	void *ctx_userdata; /* see ibw_init */
 
-	struct ibw_state_ctx state;
+	enum ibw_state_ctx state;
 	void *internal;
 
 	struct ibw_conn *conn_list; /* 1st elem of double linked list */
@@ -50,12 +50,12 @@ enum ibw_state_conn {
 
 struct ibw_conn {
 	struct ibw_ctx *ctx;
-	struct ibw_state_conn state;
+	enum ibw_state_conn state;
 
 	void *conn_userdata; /* see ibw_connect and ibw_accept */
 	void *internal;
 
-	struct ibw_conn *prev, next;
+	struct ibw_conn *prev, *next;
 };
 
 /*
@@ -73,7 +73,7 @@ struct ibw_initattr {
  * Both <conn> and <ctx> can be NULL if their state didn't change.
  * Return nonzero on error.
  */
-typedef int (*ibw_connstate_fn_t)(ibw_ctx *ctx, ibw_conn *conn);
+typedef int (*ibw_connstate_fn_t)(struct ibw_ctx *ctx, struct ibw_conn *conn);
 
 /*
  * Callback function definition which should process incoming packets
@@ -174,7 +174,7 @@ int ibw_connect(struct ibw_ctx *ctx, struct sockaddr_in *serv_addr, void *conn_u
  * You mustn't talloc_free <conn> yet right after this,
  * first wait for IBWC_DISCONNECTED.
  */
-void ibw_disconnect(struct ibw_conn *conn);
+int ibw_disconnect(struct ibw_conn *conn);
 
 /************ Infiniband specific event loop wrapping ******************/
 
@@ -202,4 +202,4 @@ int ibw_send(struct ibw_conn *conn, void *buf, void *key, int n);
  * Retrieves the last error
  * result: always non-zero, mustn't be freed (static)
  */
-const char *ibw_getLastError();
+const char *ibw_getLastError(void);

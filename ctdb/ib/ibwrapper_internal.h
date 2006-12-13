@@ -29,7 +29,7 @@ struct ibw_opts {
 struct ibw_wr {
 	char	*msg; /* initialized in ibw_init_memory once per connection */
 	int	wr_id; /* position in wr_index list; also used as wr id */
-	struct _ibw_wr *next, *prev; /* in wr_list_avail or wr_list_used */
+	struct ibw_wr *next, *prev; /* in wr_list_avail or wr_list_used */
 };
 
 struct ibw_ctx_priv {
@@ -43,7 +43,6 @@ struct ibw_ctx_priv {
 	struct fd_event *cm_channel_event;
 
 	struct ibv_pd	       *pd;
-	enum iwint_state_ctx	state2;
 
 	ibw_connstate_fn_t connstate_func; /* see ibw_init */
 	ibw_receive_fn_t receive_func; /* see ibw_init */
