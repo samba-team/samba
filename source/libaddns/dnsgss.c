@@ -45,6 +45,7 @@ static int strupr( char *szDomainName )
 	return ( 0 );
 }
 
+#if 0
 /*********************************************************************
 *********************************************************************/
 
@@ -76,12 +77,14 @@ void display_status( const char *msg, OM_uint32 maj_stat, OM_uint32 min_stat )
 	display_status_1( msg, maj_stat, GSS_C_GSS_CODE );
 	display_status_1( msg, min_stat, GSS_C_MECH_CODE );
 }
+#endif
 
 static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 					    struct dns_connection *conn,
 					    const char *keyname,
 					    const gss_name_t target_name,
-					    gss_ctx_id_t *ctx )
+					    gss_ctx_id_t *ctx, 
+					    enum dns_ServerType srv_type )
 {
 	struct gss_buffer_desc_struct input_desc, *input_ptr, output_desc;
 	OM_uint32 major, minor;
@@ -123,11 +126,21 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 				req, keyname, "gss.microsoft.com", t,
 				t + 86400, DNS_TKEY_MODE_GSSAPI, 0,
 				output_desc.length, (uint8 *)output_desc.value,
-				&rec);
+				&rec );
 			if (!ERR_DNS_IS_OK(err)) goto error;
 
-			err = dns_add_rrec(req, rec, &req->num_additionals,
-					   &req->additionals);
+			/* Windows 2000 DNS is broken and requires the
+			   TKEY payload in the Answer section instead
+			   of the Additional seciton like Windows 2003 */
+
+			if ( srv_type == DNS_SRV_WIN2000 ) {
+				err = dns_add_rrec(req, rec, &req->num_answers,
+						   &req->answers);
+			} else {
+				err = dns_add_rrec(req, rec, &req->num_additionals,
+						   &req->additionals);
+			}
+			
 			if (!ERR_DNS_IS_OK(err)) goto error;
 
 			err = dns_marshall_request(req, req, &buf);
@@ -163,6 +176,7 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 			 */
 			
 			if ((resp->num_additionals != 1) ||
+			    (resp->num_answers == 0) ||
 			    (resp->answers[0]->type != QTYPE_TKEY)) {
 				err = ERROR_DNS_INVALID_MESSAGE;
 				goto error;
@@ -194,7 +208,8 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
 				 const char *servername,
 				 const char *keyname,
-				 gss_ctx_id_t *gss_ctx )
+				 gss_ctx_id_t *gss_ctx,
+				 enum dns_ServerType srv_type )
 {
 	OM_uint32 major, minor;
 
@@ -250,12 +265,12 @@ DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
 		goto error;
 	}
 
-	err = dns_negotiate_gss_ctx_int(mem_ctx, conn, keyname, targ_name,
-					gss_ctx);
+	err = dns_negotiate_gss_ctx_int(mem_ctx, conn, keyname, 
+					targ_name, gss_ctx, srv_type );
 
+	gss_release_name( &minor, &targ_name );
 	krb5_free_principal( krb_ctx, host_principal );
 	krb5_free_context( krb_ctx );
-	gss_release_name( &minor, &targ_name );
 
  error:
 	TALLOC_FREE(mem_ctx);

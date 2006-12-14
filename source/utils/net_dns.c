@@ -118,8 +118,18 @@ DNS_ERROR DoDNSUpdate(ADS_STRUCT *ads, char *pszServerName,
 		}
 
 		err = dns_negotiate_sec_ctx( pszDomainName, pszServerName,
-					     keyname, &gss_context );
-		if (!ERR_DNS_IS_OK(err)) goto error;
+					     keyname, &gss_context, DNS_SRV_ANY );
+
+		/* retry using the Windows 2000 DNS hack */
+		if (!ERR_DNS_IS_OK(err)) {
+			err = dns_negotiate_sec_ctx( pszDomainName, pszServerName,
+						     keyname, &gss_context, 
+						     DNS_SRV_WIN2000 );
+		}
+		
+		if (!ERR_DNS_IS_OK(err))
+			goto error;
+		
 
 		err = dns_sign_update(req, gss_context, keyname,
 				      "gss.microsoft.com", time(NULL), 3600);
