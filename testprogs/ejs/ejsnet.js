@@ -30,11 +30,17 @@ if (status.is_ok != true) {
 	return -1;
 }
 
+
 var info = usr_ctx.Info(options.ARGV[1]);
-println("UserInfo.AccountName = " + info.AccountName);
-println("UserInfo.Description = " + info.Description);
-println("UserInfo.FullName = " + info.FullName);
-println("UserInfo.AcctExpiry = " + info.AcctExpiry);
+if (info != null) {
+	println("UserInfo.AccountName = " + info.AccountName);
+	println("UserInfo.Description = " + info.Description);
+	println("UserInfo.FullName = " + info.FullName);
+	println("UserInfo.AcctExpiry = " + info.AcctExpiry);
+} else {
+	println("Null UserInfo returned - account unknown");
+}
+
 
 var status = usr_ctx.Delete(options.ARGV[1]);
 if (status.is_ok != true) {
