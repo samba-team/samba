@@ -356,12 +356,14 @@ DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
 DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 				    const char *domainname,
 				    const char *hostname,
-				    in_addr_t ip_addr,
+				    const in_addr_t *ip_addr,
+				    size_t num_addrs,
 				    struct dns_update_request **preq)
 {
 	struct dns_update_request *req;
 	struct dns_rrec *rec;
 	DNS_ERROR err;
+	size_t i;	
 
 	err = dns_create_update(mem_ctx, domainname, &req);
 	if (!ERR_DNS_IS_OK(err)) return err;
@@ -389,14 +391,18 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
 	/*
-	 * .. and add our IP
+	 * .. and add our IPs
 	 */
 
-	err = dns_create_a_record(req, hostname, 3600, ip_addr, &rec);
-	if (!ERR_DNS_IS_OK(err)) goto error;
+	for ( i=0; i<num_addrs; i++ ) {		
+		err = dns_create_a_record(req, hostname, 3600, ip_addr[i], &rec);
+		if (!ERR_DNS_IS_OK(err)) 
+			goto error;
 
-	err = dns_add_rrec(req, rec, &req->num_updates, &req->updates);
-	if (!ERR_DNS_IS_OK(err)) goto error;
+		err = dns_add_rrec(req, rec, &req->num_updates, &req->updates);
+		if (!ERR_DNS_IS_OK(err)) 
+			goto error;
+	}	
 
 	*preq = req;
 	return ERROR_DNS_SUCCESS;
