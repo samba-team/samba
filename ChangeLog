@@ -1,4 +1,12 @@
+2006-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c (free_paid): free the krb5_data
+	structure too.  Bug report from Stefan Metzmacher.
+	
 2006-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kuser/kinit.c: Read the appdefault configration before we try to
+	use the flags.  Bug reported by Ingemar Nilsson.
 
 	* kuser/kdigest.c: prefix digest commands with digest_
 
