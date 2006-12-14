@@ -129,7 +129,7 @@ _gsskrb5_set_sec_context_option
 	    return GSS_S_CALL_INACCESSIBLE_READ;
 	}
 	str = malloc(value->length + 1);
-	if (str) {
+	if (str == NULL) {
 	    *minor_status = 0;
 	    return GSS_S_UNAVAILABLE;
 	}
