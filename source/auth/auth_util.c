@@ -984,6 +984,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 	TALLOC_CTX *mem_ctx;
 	struct id_map *ids;
 	NTSTATUS status;
+	BOOL wb = True;
 	size_t i;
 	
 
@@ -1037,20 +1038,33 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 
 	if (!winbind_sids_to_unixids(ids, server_info->ptok->num_sids-1)) {
 		DEBUG(2, ("Query to map secondary SIDs failed!\n"));
+		if (!winbind_ping()) {
+			DEBUG(2, ("Winbindd is not running, will try to map SIDs one by one with legacy code\n"));
+			wb = False;
+		}
 	}
 
 	for (i = 0; i < server_info->ptok->num_sids-1; i++) {
-		if ( ! ids[i].mapped) {
-			DEBUG(10, ("Could not convert SID %s to gid, "
-				   "ignoring it\n", sid_string_static(ids[i].sid)));
-			continue;
+		gid_t agid;
+
+		if (wb) {
+			if ( ! ids[i].mapped) {
+				DEBUG(10, ("Could not convert SID %s to gid, "
+					   "ignoring it\n", sid_string_static(ids[i].sid)));
+				continue;
+			}
+			if (ids[i].xid.type == ID_TYPE_UID) {
+				DEBUG(10, ("SID %s is a User ID (%u) not a Group ID, "
+					   "ignoring it\n", sid_string_static(ids[i].sid), ids[i].xid.id));
+				continue;
+			}
+			agid = (gid_t)ids[i].xid.id;
+		} else {
+			if (! sid_to_gid(ids[i].sid, &agid)) {
+				continue;
+			}
 		}
-		if ( ! ids[i].xid.type == ID_TYPE_UID) {
-			DEBUG(10, ("SID %s is a User ID (%u) not a Group ID, "
-				   "ignoring it\n", sid_string_static(ids[i].sid), ids[i].xid.id));
-			continue;
-		}
-		if (!add_gid_to_array_unique(server_info, (gid_t)ids[i].xid.id, &server_info->groups,
+		if (!add_gid_to_array_unique(server_info, agid, &server_info->groups,
 					&server_info->n_groups)) {
 			TALLOC_FREE(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
