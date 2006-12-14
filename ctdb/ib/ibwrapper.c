@@ -743,8 +743,6 @@ int ibw_connect(struct ibw_ctx *ctx, struct sockaddr_in *serv_addr, void *conn_u
 		return rc;
 	}
 
-	assert(ctx->state==IBWS_READY);
-
 	rc = rdma_resolve_addr(pconn->cm_id, NULL, (struct sockaddr *) &serv_addr, 2000);
 	if (rc) {
 		sprintf(ibw_lasterr, "rdma_resolve_addr error %d\n", rc);
