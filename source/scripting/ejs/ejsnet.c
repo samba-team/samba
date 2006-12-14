@@ -375,7 +375,7 @@ static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv)
 
 	/* create UserInfo object */
 	mprUserInfo = mprObject("UserInfo");
-	
+
 	mprAccountName = mprString(req.out.account_name);
 	mprFullName = mprString(req.out.full_name);
 	mprDescription = mprString(req.out.description);
@@ -384,8 +384,8 @@ static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv)
 	mprComment = mprString(req.out.comment);
 	mprLogonScript = mprString(req.out.logon_script);
 	mprAcctExpiry = mprString(timestring(mem_ctx, req.out.acct_expiry->tv_sec));
-	mprAllowPassChange = mprString(timestring(mem_ctx, req.out.allow_password_change->tv_sec));
-	mprForcePassChange = mprString(timestring(mem_ctx, req.out.force_password_change->tv_sec));
+	mprAllowPassChange = mprString(timestring(ctx, req.out.allow_password_change->tv_sec));
+	mprForcePassChange = mprString(timestring(ctx, req.out.force_password_change->tv_sec));
 
 	status = mprSetVar(&mprUserInfo, "AccountName", mprAccountName);
 	if (!NT_STATUS_IS_OK(status)) goto done;
@@ -407,7 +407,6 @@ static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv)
 	if (!NT_STATUS_IS_OK(status)) goto done;
 	status = mprSetVar(&mprUserInfo, "ForcePasswordChange", mprForcePassChange);
 	if (!NT_STATUS_IS_OK(status)) goto done;
-
 done:
 	talloc_free(mem_ctx);
 	mpr_Return(eid, mprUserInfo);
