@@ -382,9 +382,17 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 	return NT_STATUS_NO_MEMORY;
 }
 
+/*******************************************************************
+ Remove a WINBINDD_CCACHE_ENTRY entry and the krb5 ccache if no longer referenced.
+*******************************************************************/
+
 NTSTATUS remove_ccache(const char *username)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry = get_ccache_by_username(username);
+	NTSTATUS status;
+#ifdef HAVE_KRB5
+	krb5_error_code ret;
+#endif
 
 	if (!entry) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -397,17 +405,34 @@ NTSTATUS remove_ccache(const char *username)
 	}
 
 	entry->ref_count--;
-	if (entry->ref_count <= 0) {
-		DLIST_REMOVE(ccache_list, entry);
-		TALLOC_FREE(entry->event); /* unregisters events */
-		TALLOC_FREE(entry);
-	 	DEBUG(10,("remove_ccache: removed ccache for user %s\n", username));
-	} else {
+
+	if (entry->ref_count > 0) {
 		DEBUG(10,("remove_ccache: entry %s ref count now %d\n",
 			username, entry->ref_count ));
+		return NT_STATUS_OK;
 	}
 
-	return NT_STATUS_OK;
+	/* no references any more */
+
+	DLIST_REMOVE(ccache_list, entry);
+	TALLOC_FREE(entry->event); /* unregisters events */
+
+#ifdef HAVE_KRB5
+	ret = ads_kdestroy(entry->ccname);
+	if (ret) {
+		DEBUG(0,("remove_ccache: failed to destroy user krb5 ccache %s with: %s\n",
+			entry->ccname, error_message(ret)));
+	} else {
+		DEBUG(10,("remove_ccache: successfully destroyed krb5 ccache %s for user %s\n",
+			entry->ccname, username));
+	}
+	status = krb5_to_nt_status(ret);
+#endif
+
+	TALLOC_FREE(entry);
+ 	DEBUG(10,("remove_ccache: removed ccache for user %s\n", username));
+
+	return status;
 }
 
 /*******************************************************************
