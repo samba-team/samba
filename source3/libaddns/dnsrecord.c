@@ -356,7 +356,7 @@ DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
 DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 				    const char *domainname,
 				    const char *hostname,
-				    const in_addr_t *ip_addr,
+				    const struct in_addr *ip_addrs,
 				    size_t num_addrs,
 				    struct dns_update_request **preq)
 {
@@ -395,7 +395,7 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 	 */
 
 	for ( i=0; i<num_addrs; i++ ) {		
-		err = dns_create_a_record(req, hostname, 3600, ip_addr[i], &rec);
+		err = dns_create_a_record(req, hostname, 3600, ip_addrs[i].s_addr, &rec);
 		if (!ERR_DNS_IS_OK(err)) 
 			goto error;
 
