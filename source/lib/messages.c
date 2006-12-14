@@ -483,23 +483,23 @@ void message_dispatch(void)
 		return;
 
 	for (buf = msgs_buf; message_recv(msgs_buf, total_len, &msg_type, &src, &buf, &len); buf += len) {
-		struct dispatch_fns *dfn, *next;
+		struct dispatch_fns *dfn;
 
 		DEBUG(10,("message_dispatch: received msg_type=%d "
 			  "src_pid=%u\n", msg_type,
 			  (unsigned int) procid_to_pid(&src)));
 
 		n_handled = 0;
-		for (dfn = dispatch_fns; dfn; dfn = next) {
-			next = dfn->next;			
+		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
 				DEBUG(10,("message_dispatch: processing message of type %d.\n", msg_type));
 				dfn->fn(msg_type, src, len ? (void *)buf : NULL, len);
 				n_handled++;
+				break;
 			}
 		}
 		if (!n_handled) {
-			DEBUG(5,("message_dispatch: warning: no handlers registed for "
+			DEBUG(5,("message_dispatch: warning: no handler registed for "
 				 "msg_type %d in pid %u\n",
 				 msg_type, (unsigned int)sys_getpid()));
 		}
