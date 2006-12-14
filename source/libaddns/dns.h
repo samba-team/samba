@@ -493,7 +493,7 @@ DNS_ERROR dns_sign_update(struct dns_update_request *req,
 DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 				    const char *domainname,
 				    const char *hostname,
-				    const in_addr_t *ip_addr,
+				    const struct in_addr *ip_addr,
 				    size_t num_adds,
 				    struct dns_update_request **preq);
 

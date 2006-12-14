@@ -1221,7 +1221,7 @@ static BOOL net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 
 #if defined(WITH_DNS_UPDATES)
 #include "dns.h"
-DNS_ERROR DoDNSUpdate(ADS_STRUCT *ads, char *pszServerName,
+DNS_ERROR DoDNSUpdate(char *pszServerName,
 		      const char *pszDomainName,
 		      const char *pszHostName,
 		      const struct in_addr *iplist, int num_addrs );
@@ -1237,7 +1237,8 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	DNS_ERROR dns_err;
 	fstring dns_server;
-	const char *dnsdomain;
+	const char *dnsdomain = NULL;	
+	char *root_domain = NULL;	
 
 	if ( (dnsdomain = strchr_m( machine_name, '.')) == NULL ) {
 		d_printf("No DNS domain configured for %s. "
@@ -1249,9 +1250,52 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 
 	status = ads_dns_lookup_ns( ctx, dnsdomain, &nameservers, &ns_count );
 	if ( !NT_STATUS_IS_OK(status) || (ns_count == 0)) {
-		DEBUG(3,("net_ads_join: Failed to find name server for the %s "
+		/* Child domains often do not have NS records.  Look
+		   for the NS record for the forest root domain 
+		   (rootDomainNamingContext in therootDSE) */
+
+		const char *rootname_attrs[] = 	{ "rootDomainNamingContext", NULL };
+		LDAPMessage *msg = NULL;
+		char *root_dn;
+		ADS_STATUS ads_status;
+		
+		if ( !ads->ld ) {
+			ads_status = ads_connect( ads );
+			if ( !ADS_ERR_OK(ads_status) ) {
+				DEBUG(0,("net_update_dns_internal: Failed to connect to our DC!\n"));
+				goto done;				
+			}			
+		}
+		
+		ads_status = ads_do_search(ads, "", LDAP_SCOPE_BASE, 
+				       "(objectclass=*)", rootname_attrs, &msg);
+		if (!ADS_ERR_OK(ads_status)) {
+			goto done;
+		}
+
+		root_dn = ads_pull_string(ads, ctx, msg,  "rootDomainNamingContext");
+		if ( !root_dn ) {
+			ads_msgfree( ads, msg );			
+			goto done;
+		}
+
+		root_domain = ads_build_domain( root_dn );
+
+		/* cleanup */
+		ads_msgfree( ads, msg );
+
+		/* try again for NS servers */
+
+		status = ads_dns_lookup_ns( ctx, root_domain, &nameservers, &ns_count );
+		
+		if ( !NT_STATUS_IS_OK(status) || (ns_count == 0)) {			
+			DEBUG(3,("net_ads_join: Failed to find name server for the %s "
 			 "realm\n", ads->config.realm));
-		goto done;
+			goto done;
+		}
+
+		dnsdomain = root_domain;		
+		
 	}
 
 	/* Now perform the dns update - we'll try non-secure and if we fail,
@@ -1259,14 +1303,17 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 
 	fstrcpy( dns_server, nameservers[0].hostname );
 
-	dns_err = DoDNSUpdate(ads, dns_server, dnsdomain, machine_name, addrs, num_addrs);
+	dns_err = DoDNSUpdate(dns_server, dnsdomain, machine_name, addrs, num_addrs);
 	if (!ERR_DNS_IS_OK(dns_err)) {
 		status = NT_STATUS_UNSUCCESSFUL;
 	}
 
 done:
+
+	SAFE_FREE( root_domain );
+	
 	return status;
-	}
+}
 
 static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads)
 {
@@ -1345,12 +1392,18 @@ int net_ads_join(int argc, const char **argv)
 	const char *machineupn = NULL;
 	const char *create_in_ou = NULL;
 	int i;
+	fstring dc_name;
+	struct in_addr dcip;
 	
 	nt_status = check_ads_config();
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, "Invalid configuration.  Exiting....\n");
 		goto fail;
 	}
+
+	/* find a DC to initialize the server affinity cache */
+
+	get_dc_name( lp_workgroup(), lp_realm(), dc_name, &dcip );
 
 	status = ads_startup(True, &ads);
 	if (!ADS_ERR_OK(status)) {
@@ -1575,15 +1628,12 @@ static int net_ads_dns_register(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	TALLOC_CTX *ctx;
-	fstring name;
-	int num_addrs;
-	struct in_addr *iplist = NULL;
 	
 #ifdef DEVELOPER
 	talloc_enable_leak_report();
 #endif
 	
-	if (argc > 2) {
+	if (argc > 0) {
 		d_fprintf(stderr, "net ads dns register <name> <ip>\n");
 		return -1;
 	}
@@ -1593,48 +1643,17 @@ static int net_ads_dns_register(int argc, const char **argv)
 		return -1;
 	}
 
-	if (argc > 0) {
-		fstrcpy(name, argv[0]);
-	} else {
-		name_to_fqdn(name, global_myname());
-	}
-	strlower_m(name);
-	
-	if (argc > 1) {
-		if (!(iplist = SMB_MALLOC_ARRAY(struct in_addr, 1))) {
-			d_fprintf(stderr, "net_ads_dns_register: malloc "
-				  "failed\n");
-			return -1;
-		}
-		if (inet_aton(argv[1], iplist) == 0) {
-			d_fprintf(stderr, "net_ads_dns_register: %s is not "
-				  "a valid IP address\n", argv[1]);
-			SAFE_FREE(iplist);
-			return -1;
-		}
-		num_addrs = 1;
-	} else {
-		num_addrs = get_my_ip_address( &iplist );
-		if ( num_addrs <= 0 ) {
-			d_fprintf(stderr, "net_ads_dns_regiser: Failed to "
-				  "find my non-loopback IP addresses!\n");
-			return -1;
-		}
-	}
-	
-	status = ads_startup_nobind(True, &ads);
+	status = ads_startup(True, &ads);
 	if ( !ADS_ERR_OK(status) ) {
 		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
 		TALLOC_FREE(ctx);
 		return -1;
 	}
 
-	if ( !NT_STATUS_IS_OK(net_update_dns_internal(ctx, ads, name,
-						      iplist, num_addrs)) ) {
+	if ( !NT_STATUS_IS_OK(net_update_dns(ctx, ads)) ) {		
 		d_fprintf( stderr, "DNS update failed!\n" );
 		ads_destroy( &ads );
 		TALLOC_FREE( ctx );
-		SAFE_FREE(iplist);
 		return -1;
 	}
 	
@@ -1642,7 +1661,6 @@ static int net_ads_dns_register(int argc, const char **argv)
 
 	ads_destroy(&ads);
 	TALLOC_FREE( ctx );
-	SAFE_FREE(iplist);
 	
 	return 0;
 #else
