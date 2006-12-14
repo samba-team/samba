@@ -49,7 +49,7 @@ struct libnet_LookupName {
 		const char *domain_name;
 	} in;
 	struct {
-		struct dom_sid domain_sid;
+		struct dom_sid *sid;
 		int rid;
 		enum lsa_SidType sid_type;
 		const char *sidstr;

@@ -406,13 +406,12 @@ NTSTATUS libnet_LookupName_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 
 	if (NT_STATUS_IS_OK(status)) {
 		s = talloc_get_type(c->private_data, struct lookup_name_state);
-		
-		ZERO_STRUCT(io->out.domain_sid);
+
 		io->out.rid = 0;
+		io->out.sid = NULL;
 		io->out.sidstr = NULL;
 
 		if (*s->lookup.out.count > 0) {
-			int num_auths;
 			struct lsa_RefDomainList *domains = s->lookup.out.domains;
 			struct lsa_TransSidArray *sids = s->lookup.out.sids;
 
@@ -421,14 +420,12 @@ NTSTATUS libnet_LookupName_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 			if (sids->count > 0) {
 				io->out.rid        = sids->sids[0].rid;
 				io->out.sid_type   = sids->sids[0].sid_type;
-			}
-
-			if (domains->count > 0) {
-				io->out.domain_sid = *domains->domains[0].sid;
-				num_auths = io->out.domain_sid.num_auths++;
-				io->out.domain_sid.sub_auths[num_auths] = io->out.rid;
-
-				io->out.sidstr     = dom_sid_string(mem_ctx, &io->out.domain_sid);
+				if (domains->count > 0) {
+					io->out.sid = dom_sid_add_rid(mem_ctx, domains->domains[0].sid, io->out.rid);
+					NT_STATUS_HAVE_NO_MEMORY(io->out.sid);
+					io->out.sidstr = dom_sid_string(mem_ctx, io->out.sid);
+					NT_STATUS_HAVE_NO_MEMORY(io->out.sidstr);
+				}
 			}
 		}
 
@@ -438,6 +435,7 @@ NTSTATUS libnet_LookupName_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 		io->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
 	}
 
+	talloc_free(c);
 	return status;
 }
 
