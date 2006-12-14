@@ -1976,9 +1976,6 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state) 
 {
 	NTSTATUS result = NT_STATUS_NOT_SUPPORTED;
-#ifdef HAVE_KRB5
-	int ret;
-#endif
 
 	DEBUG(3, ("[%5lu]: pam dual logoff %s\n", (unsigned long)state->pid,
 		state->request.data.logoff.user));
@@ -2010,19 +2007,13 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 		goto process_result;
 	}
 
-	ret = ads_kdestroy(state->request.data.logoff.krb5ccname);
-
-	if (ret) {
-		DEBUG(0,("winbindd_pam_logoff: failed to destroy user ccache %s with: %s\n", 
-			state->request.data.logoff.krb5ccname, error_message(ret)));
-	} else {
-		DEBUG(10,("winbindd_pam_logoff: successfully destroyed ccache %s for user %s\n", 
-			state->request.data.logoff.krb5ccname, state->request.data.logoff.user));
+	result = remove_ccache(state->request.data.logoff.user);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0,("winbindd_pam_logoff: failed to remove ccache: %s\n",
+			nt_errstr(result)));
+		goto process_result;
 	}
 
-	remove_ccache(state->request.data.logoff.user);
-
-	result = krb5_to_nt_status(ret);
 #else
 	result = NT_STATUS_NOT_SUPPORTED;
 #endif
