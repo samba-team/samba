@@ -458,8 +458,7 @@ static BOOL message_recv(char *msgs_buf, size_t total_len, int *msg_type,
 
 /****************************************************************************
  Receive and dispatch any messages pending for this process.
- Notice that all dispatch handlers for a particular msg_type get called,
- so you can register multiple handlers for a message.
+ JRA changed Dec 13 2006. Only one message handler now permitted per type.
  *NOTE*: Dispatch functions must be able to cope with incoming
  messages on an *odd* byte boundary.
 ****************************************************************************/
@@ -509,7 +508,8 @@ void message_dispatch(void)
 }
 
 /****************************************************************************
- Register a dispatch function for a particular message type.
+ Register/replace a dispatch function for a particular message type.
+ JRA changed Dec 13 2006. Only one message handler now permitted per type.
  *NOTE*: Dispatch functions must be able to cope with incoming
  messages on an *odd* byte boundary.
 ****************************************************************************/
@@ -519,6 +519,13 @@ void message_register(int msg_type,
 				 void *buf, size_t len))
 {
 	struct dispatch_fns *dfn;
+
+	for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
+		if (dfn->msg_type == msg_type) {
+			dfn->fn = fn;
+			return;
+		}
+	}
 
 	dfn = SMB_MALLOC_P(struct dispatch_fns);
 
@@ -550,6 +557,7 @@ void message_deregister(int msg_type)
 		if (dfn->msg_type == msg_type) {
 			DLIST_REMOVE(dispatch_fns, dfn);
 			SAFE_FREE(dfn);
+			return;
 		}
 	}	
 }
