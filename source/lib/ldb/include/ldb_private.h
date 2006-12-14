@@ -184,8 +184,8 @@ int ldb_match_msg(struct ldb_context *ldb,
 		  enum ldb_scope scope);
 
 void ldb_remove_attrib_handler(struct ldb_context *ldb, const char *attrib);
-const struct ldb_attrib_handler *ldb_attrib_handler_syntax(struct ldb_context *ldb,
-							   const char *syntax);
+const struct ldb_schema_syntax *ldb_standard_syntax_by_name(struct ldb_context *ldb,
+							    const char *syntax);
 int ldb_set_attrib_handlers(struct ldb_context *ldb, 
 			    const struct ldb_attrib_handler *handlers, 
 			    unsigned num_handlers);

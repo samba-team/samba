@@ -336,50 +336,44 @@ int ldb_canonicalise_utctime(struct ldb_context *ldb, void *mem_ctx,
 /*
   table of standard attribute handlers
 */
-static const struct ldb_attrib_handler ldb_standard_attribs[] = {
+static const struct ldb_schema_syntax ldb_standard_syntaxes[] = {
 	{ 
-		.attr            = LDB_SYNTAX_INTEGER,
-		.flags           = 0,
+		.name            = LDB_SYNTAX_INTEGER,
 		.ldif_read_fn    = ldb_handler_copy,
 		.ldif_write_fn   = ldb_handler_copy,
 		.canonicalise_fn = ldb_canonicalise_Integer,
 		.comparison_fn   = ldb_comparison_Integer
 	},
 	{ 
-		.attr            = LDB_SYNTAX_OCTET_STRING,
-		.flags           = 0,
+		.name            = LDB_SYNTAX_OCTET_STRING,
 		.ldif_read_fn    = ldb_handler_copy,
 		.ldif_write_fn   = ldb_handler_copy,
 		.canonicalise_fn = ldb_handler_copy,
 		.comparison_fn   = ldb_comparison_binary
 	},
 	{ 
-		.attr            = LDB_SYNTAX_DIRECTORY_STRING,
-		.flags           = 0,
+		.name            = LDB_SYNTAX_DIRECTORY_STRING,
 		.ldif_read_fn    = ldb_handler_copy,
 		.ldif_write_fn   = ldb_handler_copy,
 		.canonicalise_fn = ldb_handler_fold,
 		.comparison_fn   = ldb_comparison_fold
 	},
 	{ 
-		.attr            = LDB_SYNTAX_DN,
-		.flags           = 0,
+		.name            = LDB_SYNTAX_DN,
 		.ldif_read_fn    = ldb_handler_copy,
 		.ldif_write_fn   = ldb_handler_copy,
 		.canonicalise_fn = ldb_canonicalise_dn,
 		.comparison_fn   = ldb_comparison_dn
 	},
 	{ 
-		.attr            = LDB_SYNTAX_OBJECTCLASS,
-		.flags           = 0,
+		.name            = LDB_SYNTAX_OBJECTCLASS,
 		.ldif_read_fn    = ldb_handler_copy,
 		.ldif_write_fn   = ldb_handler_copy,
 		.canonicalise_fn = ldb_handler_fold,
 		.comparison_fn   = ldb_comparison_objectclass
 	},
 	{ 
-		.attr            = LDB_SYNTAX_UTC_TIME,
-		.flags           = 0,
+		.name            = LDB_SYNTAX_UTC_TIME,
 		.ldif_read_fn    = ldb_handler_copy,
 		.ldif_write_fn   = ldb_handler_copy,
 		.canonicalise_fn = ldb_canonicalise_utctime,
@@ -391,17 +385,16 @@ static const struct ldb_attrib_handler ldb_standard_attribs[] = {
 /*
   return the attribute handlers for a given syntax name
 */
-const struct ldb_attrib_handler *ldb_attrib_handler_syntax(struct ldb_context *ldb,
-							   const char *syntax)
+const struct ldb_schema_syntax *ldb_standard_syntax_by_name(struct ldb_context *ldb,
+							    const char *syntax)
 {
 	int i;
-	unsigned num_handlers = sizeof(ldb_standard_attribs)/sizeof(ldb_standard_attribs[0]);
+	unsigned num_handlers = sizeof(ldb_standard_syntaxes)/sizeof(ldb_standard_syntaxes[0]);
 	/* TODO: should be replaced with a binary search */
 	for (i=0;i<num_handlers;i++) {
-		if (strcmp(ldb_standard_attribs[i].attr, syntax) == 0) {
-			return &ldb_standard_attribs[i];
+		if (strcmp(ldb_standard_syntaxes[i].name, syntax) == 0) {
+			return &ldb_standard_syntaxes[i];
 		}
 	}
 	return NULL;
 }
-
