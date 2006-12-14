@@ -1141,6 +1141,7 @@ void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
 	DEBUG(10,("LEGACY: uid %u -> sid %s\n", (unsigned int)uid,
 		  sid_string_static(psid)));
 
+	store_uid_sid_cache(psid, uid);
 	return;
 }
 
@@ -1171,6 +1172,7 @@ void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
 	DEBUG(10,("LEGACY: gid %u -> sid %s\n", (unsigned int)gid,
 		  sid_string_static(psid)));
 
+	store_gid_sid_cache(psid, gid);
 	return;
 }
 
@@ -1209,16 +1211,16 @@ BOOL legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		}
 
 		/* This was ours, but it was not mapped.  Fail */
-
-		return False;
 	}
 
+	DEBUG(10,("LEGACY: mapping failed for sid %s\n", sid_string_static(psid)));
 	return False;
 
- done:
+done:
 	DEBUG(10,("LEGACY: sid %s -> uid %u\n", sid_string_static(psid),
 		(unsigned int)*puid ));
 
+	store_uid_sid_cache(psid, *puid);
 	return True;
 }
 
@@ -1252,6 +1254,7 @@ BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 			*pgid = map.gid;
 			goto done;
 		}
+		DEBUG(10,("LEGACY: mapping failed for sid %s\n", sid_string_static(psid)));
 		return False;
 	}
 
@@ -1265,7 +1268,7 @@ BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		if (ret) {
 			if ((type != SID_NAME_DOM_GRP) &&
 			    (type != SID_NAME_ALIAS)) {
-				DEBUG(5, ("sid %s is a %s, expected a group\n",
+				DEBUG(5, ("LEGACY: sid %s is a %s, expected a group\n",
 					  sid_string_static(psid),
 					  sid_type_lookup(type)));
 				return False;
@@ -1273,15 +1276,18 @@ BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 			*pgid = id.gid;
 			goto done;
 		}
-
+	
 		/* This was ours, but it was not mapped.  Fail */
-
-		return False;
 	}
+
+	DEBUG(10,("LEGACY: mapping failed for sid %s\n", sid_string_static(psid)));
+	return False;
 	
  done:
 	DEBUG(10,("LEGACY: sid %s -> gid %u\n", sid_string_static(psid),
 		  (unsigned int)*pgid ));
+
+	store_gid_sid_cache(psid, *pgid);
 
 	return True;
 }
@@ -1299,7 +1305,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 
 	if (!winbind_uid_to_sid(psid, uid)) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code"));
+			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
 			return legacy_uid_to_sid(psid, uid);
 		}
 
@@ -1328,7 +1334,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 
 	if (!winbind_gid_to_sid(psid, gid)) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code"));
+			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
 			return legacy_gid_to_sid(psid, gid);
 		}
 
@@ -1361,7 +1367,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 
 	if (!winbind_sid_to_uid(puid, psid)) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code"));
+			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
 			return legacy_sid_to_uid(psid, puid);
 		}
 
@@ -1400,8 +1406,8 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 
 	if ( !winbind_sid_to_gid(pgid, psid) ) {
 		if (!winbind_ping()) {
-			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code"));
-			return legacy_sid_to_uid(psid, pgid);
+			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
+			return legacy_sid_to_gid(psid, pgid);
 		}
 
 		DEBUG(10,("winbind failed to find a gid for sid %s\n",
