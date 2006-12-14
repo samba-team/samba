@@ -27,7 +27,7 @@ for f in samr.js echo.js; do
     testit "$f" $SCRIPTDIR/$f $CONFIGURATION ncalrpc: -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
 done
 
-#testit "ejsnet.js" $SCRIPTDIR/ejsnet.js $CONFIGURATION -U$USERNAME%$PASSWORD $DOMAIN ejstestuser || failed=`expr $failed + 1`
+testit "ejsnet.js" $SCRIPTDIR/ejsnet.js $CONFIGURATION -U$USERNAME%$PASSWORD $DOMAIN ejstestuser || failed=`expr $failed + 1`
 
 testit "ldb.js" $SCRIPTDIR/ldb.js `pwd` $CONFIGURATION || failed=`expr $failed + 1`
 
