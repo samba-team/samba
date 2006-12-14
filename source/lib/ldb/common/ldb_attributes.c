@@ -149,15 +149,20 @@ void ldb_remove_attrib_handler(struct ldb_context *ldb, const char *attrib)
 int ldb_set_attrib_handler_syntax(struct ldb_context *ldb, 
 				  const char *attr, const char *syntax)
 {
-	const struct ldb_attrib_handler *h = ldb_attrib_handler_syntax(ldb, syntax);
-	struct ldb_attrib_handler h2;
-	if (h == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unknown syntax '%s'\n", syntax);
+	const struct ldb_schema_syntax *s = ldb_standard_syntax_by_name(ldb, syntax);
+	struct ldb_attrib_handler h;
+	if (s == NULL) {
+       		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unknown syntax '%s'\n", syntax);
 		return -1;
 	}
-	h2 = *h;
-	h2.attr = attr;
-	return ldb_set_attrib_handlers(ldb, &h2, 1);
+	h.attr = attr;
+	h.flags = 0;
+	h.ldif_read_fn = s->ldif_read_fn;
+	h.ldif_write_fn = s->ldif_write_fn;
+	h.canonicalise_fn = s->canonicalise_fn;
+	h.comparison_fn = s->comparison_fn;
+
+	return ldb_set_attrib_handlers(ldb, &h, 1);
 }
 
 /*

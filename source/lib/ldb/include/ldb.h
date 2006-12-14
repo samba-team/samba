@@ -340,6 +340,14 @@ struct ldb_attrib_handler {
 	ldb_attr_comparison_t comparison_fn;
 };
 
+struct ldb_schema_syntax {
+	const char *name;
+	ldb_attr_handler_t ldif_read_fn;
+	ldb_attr_handler_t ldif_write_fn;
+	ldb_attr_handler_t canonicalise_fn;
+	ldb_attr_comparison_t comparison_fn;
+};
+
 /**
    The attribute is not returned by default
 */

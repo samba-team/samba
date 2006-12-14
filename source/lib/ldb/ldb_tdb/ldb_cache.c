@@ -125,8 +125,8 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	for (i=0;i<msg->num_elements;i++) {
 		unsigned flags;
 		const char *syntax;
-		const struct ldb_attrib_handler *h;
-		struct ldb_attrib_handler h2;
+		const struct ldb_schema_syntax *s;
+		struct ldb_attrib_handler h;
 
 		if (ltdb_attributes_flags(&msg->elements[i], &flags) != 0) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Invalid @ATTRIBUTES element for '%s'\n", msg->elements[i].name);
@@ -149,17 +149,21 @@ static int ltdb_attributes_load(struct ldb_module *module)
 			goto failed;
 		}
 
-		h = ldb_attrib_handler_syntax(module->ldb, syntax);
-		if (h == NULL) {
+		s = ldb_standard_syntax_by_name(module->ldb, syntax);
+		if (s == NULL) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, 
 				  "Invalid attribute syntax '%s' for '%s' in @ATTRIBUTES\n",
 				  syntax, msg->elements[i].name);
 			goto failed;
 		}
-		h2 = *h;
-		h2.attr = msg->elements[i].name;
-		h2.flags |= LDB_ATTR_FLAG_ALLOCATED;
-		if (ldb_set_attrib_handlers(module->ldb, &h2, 1) != 0) {
+		h.attr = msg->elements[i].name;
+		h.flags |= LDB_ATTR_FLAG_ALLOCATED;
+		h.ldif_read_fn = s->ldif_read_fn;
+		h.ldif_write_fn = s->ldif_write_fn;
+		h.canonicalise_fn = s->canonicalise_fn;
+		h.comparison_fn = s->comparison_fn;
+
+		if (ldb_set_attrib_handlers(module->ldb, &h, 1) != 0) {
 			goto failed;
 		}
 	}
