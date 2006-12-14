@@ -30,9 +30,9 @@
 /*********************************************************************
 *********************************************************************/
 
-DNS_ERROR DoDNSUpdate(ADS_STRUCT *ads, char *pszServerName,
+DNS_ERROR DoDNSUpdate(char *pszServerName,
 		      const char *pszDomainName, const char *pszHostName,
-		      const struct in_addr *iplist, int num_addrs )
+		      const struct in_addr *iplist, size_t num_addrs )
 {
 	DNS_ERROR err;
 	struct dns_connection *conn;
@@ -74,7 +74,7 @@ DNS_ERROR DoDNSUpdate(ADS_STRUCT *ads, char *pszServerName,
 	 */
 
 	err = dns_create_update_request(mem_ctx, pszDomainName, pszHostName,
-					iplist[0].s_addr, &req);
+					iplist, num_addrs, &req);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
 	err = dns_update_transaction(mem_ctx, conn, req, &resp);
@@ -89,31 +89,11 @@ DNS_ERROR DoDNSUpdate(ADS_STRUCT *ads, char *pszServerName,
 	 * Okay, we have to try with signing
 	 */
 	{
-		ADS_STRUCT *ads_s;
 		gss_ctx_id_t gss_context;
-		int res;
 		char *keyname;
 
 		if (!(keyname = dns_generate_keyname( mem_ctx ))) {
 			err = ERROR_DNS_NO_MEMORY;
-			goto error;
-		}
-
-		if (!(ads_s = ads_init(ads->server.realm, ads->server.workgroup,
-				       ads->server.ldap_server))) {
-			return ERROR_DNS_NO_MEMORY;
-		}
-		
-		/* kinit with the machine password */
-		setenv(KRB5_ENV_CCNAME, "MEMORY:net_ads", 1);
-		asprintf( &ads_s->auth.user_name, "%s$", global_myname() );
-		ads_s->auth.password = secrets_fetch_machine_password(
-			lp_workgroup(), NULL, NULL );
-		ads_s->auth.realm = SMB_STRDUP( lp_realm() );
-		res = ads_kinit_password( ads_s );
-		ads_destroy(&ads_s);
-		if (res) {
-			err = ERROR_DNS_GSS_ERROR;
 			goto error;
 		}
 
