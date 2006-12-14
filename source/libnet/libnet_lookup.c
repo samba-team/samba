@@ -392,6 +392,8 @@ static void continue_name_found(struct rpc_request *req)
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
+	c->status = s->lookup.out.result;
+
 	composite_done(c);
 }
 
