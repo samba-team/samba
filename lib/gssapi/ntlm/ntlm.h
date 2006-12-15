@@ -73,6 +73,10 @@ typedef struct {
     int foo;
 } *ntlm_cred;
 
+typedef struct {
+    char domain[1];
+} *ntlm_name;
+
 #include <ntlm/ntlm-private.h>
 
 #endif /* NTLM_NTLM_H */
