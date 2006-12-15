@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -224,6 +224,75 @@ get_new_cache(krb5_context context,
     return 0;
 }
 
+/*
+ * Check the credential cache `id´ to figure out what principal to use
+ * when talking to the kadmind. If there is a initial kadmin/admin@
+ * credential in the cache, use that client principal. Otherwise, use
+ * the client principals first component and add /admin to the
+ * principal.
+ */
+
+static krb5_error_code
+get_cache_principal(krb5_context context,
+		    krb5_ccache id,
+		    krb5_principal *client)
+{
+    krb5_error_code ret;
+    const char *name, *inst;
+    krb5_principal p1, p2;
+    
+    ret = krb5_cc_get_principal(context, id, &p1);
+    if(ret)
+	return ret;
+
+    ret = krb5_make_principal(context, &p2, NULL, 
+			      "kadmin", "admin", NULL);
+    if (ret) {
+	krb5_free_principal(context, p1);
+	return ret;
+    }
+
+    {
+	krb5_creds in, *out;
+	krb5_kdc_flags flags;
+
+	flags.i = 0;
+	memset(&in, 0, sizeof(in));
+
+	in.client = p1;
+	in.server = p2;
+
+	/* check for initial ticket kadmin/admin */
+	ret = krb5_get_credentials_with_flags(context, KRB5_GC_CACHED, flags,
+					      id, &in, &out);
+	krb5_free_principal(context, p2);
+	if (ret == 0) {
+	    if (out->flags.b.initial) {
+		*client = p1;
+		krb5_free_creds(context, out);
+		return 0;
+	    }
+	    krb5_free_creds(context, out);
+	}
+    }
+
+    name = krb5_principal_get_comp_string(context, p1, 0);
+    inst = krb5_principal_get_comp_string(context, p1, 1);
+    if(inst == NULL || strcmp(inst, "admin") != 0) {
+	ret = krb5_make_principal(context, &p2, NULL, name, "admin", NULL);
+	krb5_free_principal(context, p1);
+	if(ret != 0)
+	    return ret;
+
+	*client = p2;
+	return 0;
+    }
+
+    *client = p1;
+
+    return 0;
+}
+
 krb5_error_code
 _kadm5_c_get_cred_cache(krb5_context context,
 			const char *client_name,
@@ -254,32 +323,10 @@ _kadm5_c_get_cred_cache(krb5_context context,
 	/* get principal from default cache, ok if this doesn't work */
 	ret = krb5_cc_default(context, &id);
 	if(ret == 0) {
-	    ret = krb5_cc_get_principal(context, id, &default_client);
-	    if(ret) {
+	    ret = get_cache_principal(context, id, &default_client);
+	    if (ret) {
 		krb5_cc_close(context, id);
 		id = NULL;
-	    } else {
-		const char *name, *inst;
-		krb5_principal tmp;
-		name = krb5_principal_get_comp_string(context, 
-						      default_client, 0);
-		inst = krb5_principal_get_comp_string(context, 
-						      default_client, 1);
-		if(inst == NULL || strcmp(inst, "admin") != 0) {
-		    ret = krb5_make_principal(context, &tmp, NULL, 
-					      name, "admin", NULL);
-		    if(ret != 0) {
-			krb5_free_principal(context, default_client);
-			if (client)
-			    krb5_free_principal(context, client);
-			krb5_cc_close(context, id);
-			return ret;
-		    }
-		    krb5_free_principal(context, default_client);
-		    default_client = tmp;
-		    krb5_cc_close(context, id);
-		    id = NULL;
-		}
 	    }
 	}
 
