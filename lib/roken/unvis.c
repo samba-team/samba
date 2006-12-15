@@ -82,12 +82,17 @@ __warn_references(unvis,
 
 #define	isoctal(c)	(((u_char)(c)) >= '0' && ((u_char)(c)) <= '7')
 
+int ROKEN_LIB_FUNCTION
+	rk_strunvis (char *, const char *);
+int ROKEN_LIB_FUNCTION
+	rk_unvis (char *, int, int *, int);
+
 /*
  * unvis - decode characters previously encoded by vis
  */
 #ifndef HAVE_UNVIS
 int ROKEN_LIB_FUNCTION
-unvis(char *cp, int c, int *astate, int flag)
+rk_unvis(char *cp, int c, int *astate, int flag)
 {
 
 	_DIAGASSERT(cp != NULL);
@@ -251,7 +256,7 @@ unvis(char *cp, int c, int *astate, int flag)
 
 #ifndef HAVE_STRUNVIS
 int ROKEN_LIB_FUNCTION
-strunvis(char *dst, const char *src)
+rk_strunvis(char *dst, const char *src)
 {
 	char c;
 	char *start = dst;
