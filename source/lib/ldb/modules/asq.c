@@ -387,7 +387,8 @@ static int asq_wait_none(struct ldb_handle *handle)
 		/* no break nor return,
 		 * the set of requests is performed in ASQ_SEARCH_MULTI
 		 */
-		
+		/* fall through */
+
 	case ASQ_SEARCH_MULTI:
 
 		if (ac->reqs[ac->cur_req]->handle == NULL) {
