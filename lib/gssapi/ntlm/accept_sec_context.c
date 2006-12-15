@@ -159,6 +159,72 @@ out:
     return GSS_S_FAILURE;
 }
 
+/*
+ * Get credential cache that the ntlm code can use to talk to the KDC
+ * using the digest API.
+ */
+
+static krb5_error_code
+get_ccache(krb5_context context, krb5_ccache *id)
+{
+    krb5_principal principal = NULL;
+    krb5_error_code ret;
+    krb5_keytab kt;
+
+    *id = NULL;
+    
+    if (!issuid()) {
+	const char *cache;
+
+	cache = getenv("NTLM_ACCEPTOR_CCACHE");
+	if (cache) {
+	    ret = krb5_cc_resolve(context, cache, id);
+	    if (ret)
+		goto out;
+	    return 0;
+	}
+    }
+
+    ret = krb5_sname_to_principal(context, NULL, "host", 
+				  KRB5_NT_SRV_HST, &principal);
+    if (ret)
+	goto out;
+    
+    ret = krb5_cc_cache_match(context, principal, NULL, id);
+    if (ret == 0)
+	goto out;
+    
+    /* did not find in default credcache, lets try default keytab */
+    ret = krb5_kt_default(context, &kt);
+    if (ret)
+	goto out;
+
+    /* XXX check in keytab */
+#if 0
+    {
+	krb5_creds cred = NULL;
+
+	ret = krb5_get_init_creds_keytab (context,
+					  &cred,
+					  principal,
+					  kt,
+					  NULL,
+					  NULL,
+					  NULL);
+	if (ret) {
+	    ret = krb5_cc_initialize (context, ccache, cred.client);
+	    ret = krb5_cc_store_cred (context, ccache, &cred);
+	    krb5_free_cred_contents (context, &cred);
+	}
+    }
+#endif
+    krb5_kt_close(context, kt);
+    
+out:
+    if (principal)
+	krb5_free_principal(context, principal);
+    return ret;
+}
 
 
 /*
@@ -215,6 +281,13 @@ _gss_ntlm_accept_sec_context
 	*context_handle = (gss_ctx_id_t)ctx;
 
 	ret = krb5_init_context(&ctx->context);
+	if (ret) {
+	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
+	    *minor_status = ret;
+	    return GSS_S_FAILURE;
+	}
+
+	ret = get_ccache(ctx->context, &ctx->id);
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
