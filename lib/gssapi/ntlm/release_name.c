@@ -42,7 +42,9 @@ OM_uint32 _gss_ntlm_release_name
 {
     if (minor_status)
 	*minor_status = 0;
-    if (input_name)
+    if (input_name) {
+	free(*input_name);
 	*input_name = GSS_C_NO_NAME;
+    }
     return GSS_S_COMPLETE;
 }
