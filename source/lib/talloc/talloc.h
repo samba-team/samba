@@ -123,6 +123,7 @@ void *talloc_named_const(const void *context, size_t size, const char *name);
 const char *talloc_get_name(const void *ptr);
 void *talloc_check_name(const void *ptr, const char *name);
 void *talloc_parent(const void *ptr);
+const char *talloc_parent_name(const void *ptr);
 void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
 int talloc_free(void *ptr);
 void talloc_free_children(void *ptr);

@@ -164,8 +164,15 @@ do { \
 */
 static struct talloc_chunk *talloc_parent_chunk(const void *ptr)
 {
-	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
+	struct talloc_chunk *tc;
+
+	if (unlikely(ptr == NULL)) {
+		return NULL;
+	}
+
+	tc = talloc_chunk_from_ptr(ptr);
 	while (tc->prev) tc=tc->prev;
+
 	return tc->parent;
 }
 
@@ -178,22 +185,11 @@ void *talloc_parent(const void *ptr)
 /*
   find parents name
 */
-const char *talloc_parent_name(const void *context)
+const char *talloc_parent_name(const void *ptr)
 {
-	struct talloc_chunk *tc;
-
-	if (unlikely(context == NULL)) {
-		return NULL;
-	}
-
-	tc = talloc_chunk_from_ptr(context);
-	while (tc && tc->prev) tc = tc->prev;
-	if (tc) {
-		tc = tc->parent;
-	}
-	return tc->name;
+	struct talloc_chunk *tc = talloc_parent_chunk(ptr);
+	return tc? tc->name : NULL;
 }
-
 
 /* 
    Allocate a bit of memory as a child of an existing pointer
