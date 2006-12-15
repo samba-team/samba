@@ -312,7 +312,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	struct ldb_dn *baseinfo_dn = NULL;
 	struct ldb_dn *indexlist_dn = NULL;
 	uint64_t seq;
-	struct ldb_message *baseinfo;
+	struct ldb_message *baseinfo = NULL;
 
 	/* a very fast check to avoid extra database reads */
 	if (ltdb->cache != NULL && 
