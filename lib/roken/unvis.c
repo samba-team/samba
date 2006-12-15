@@ -265,7 +265,7 @@ rk_strunvis(char *dst, const char *src)
 
 	while ((c = *src++) != '\0') {
 	again:
-		switch (unvis(dst, (unsigned char)c, &state, 0)) {
+		switch (rk_unvis(dst, (unsigned char)c, &state, 0)) {
 		case UNVIS_VALID:
 			dst++;
 			break;
