@@ -37,6 +37,31 @@
 
 RCSID("$Id$");
 
+static krb5_error_code
+get_digest_key(krb5_context context,
+	       krb5_kdc_configuration *config,
+	       hdb_entry_ex *server,
+	       krb5_crypto *crypto)
+{
+    krb5_error_code ret;
+    krb5_enctype enctype;
+    Key *key;
+    
+    ret = _kdc_get_preferred_key(context,
+				 config,
+				 server,
+				 "digest-service",
+				 &enctype,
+				 &key);
+    if (ret)
+	return ret;
+    return krb5_crypto_init(context, &key->key, 0, crypto);
+}
+
+/*
+ *
+ */
+
 krb5_error_code
 _kdc_do_digest(krb5_context context, 
 	       krb5_kdc_configuration *config,
@@ -57,7 +82,8 @@ _kdc_do_digest(krb5_context context,
     krb5_storage *sp = NULL;
     Checksum res;
     hdb_entry_ex *server = NULL, *user = NULL;
-    char *password = NULL;
+    hdb_entry_ex *client = NULL;
+    char *client_name = NULL, *password = NULL;
     krb5_data serverNonce;
 
     if(!config->enable_digest) {
@@ -125,6 +151,7 @@ _kdc_do_digest(krb5_context context,
 	    krb5_free_principal(context, principal);
 	    goto out;
 	}
+	krb5_clear_error_string(context);
 
 	ret = _kdc_db_fetch(context, config, principal,
 			    HDB_F_GET_SERVER, NULL, &server);
@@ -137,11 +164,16 @@ _kdc_do_digest(krb5_context context,
     /* check the client is allowed to do digest auth */
     {
 	krb5_principal principal = NULL;
-	hdb_entry_ex *client;
 
 	ret = krb5_ticket_get_client(context, ticket, &principal);
 	if (ret)
 	    goto out;
+
+	ret = krb5_unparse_name(context, principal, &client_name);
+	if (ret) {
+	    krb5_free_principal(context, principal);
+	    goto out;
+	}
 
 	ret = _kdc_db_fetch(context, config, principal,
 			    HDB_F_GET_CLIENT, NULL, &client);
@@ -150,13 +182,15 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 
 	if (client->entry.flags.allow_digest == 0) {
+	    kdc_log(context, config, 0, 
+		    "Client %s tried to use digest "
+		    "but is not allowed to", 
+		    client_name);
 	    krb5_set_error_string(context, 
 				  "Client is not permitted to use digest");
 	    ret = KRB5KDC_ERR_POLICY;
-	    _kdc_free_ent (context, client);
 	    goto out;
 	}
-	_kdc_free_ent (context, client);
     }
 
     /* unpack request */
@@ -191,6 +225,8 @@ _kdc_do_digest(krb5_context context,
 	krb5_set_error_string(context, "Failed to decode digest inner request");
 	goto out;
     }
+
+    kdc_log(context, config, 0, "Valid digest request from %s", client_name);
 
     /*
      * Process the inner request
@@ -289,22 +325,9 @@ _kdc_do_digest(krb5_context context,
 	    goto out;
 	}
 
-	{
-	    Key *key;
-	    krb5_enctype enctype;
-
-	    ret = _kdc_get_preferred_key(context,
-					 config,
-					 server,
-					 "digest-service",
-					 &enctype,
-					 &key);
-	    if (ret)
-		goto out;
-	    ret = krb5_crypto_init(context, &key->key, 0, &crypto);
-	    if (ret)
-		goto out;
-	}
+	ret = get_digest_key(context, config, server, &crypto);
+	if (ret)
+	    goto out;
 
 	ret = krb5_create_checksum(context,
 				   crypto,
@@ -421,22 +444,9 @@ _kdc_do_digest(krb5_context context,
 	    serverNonce.length = ssize;
 	}
 
-	{
-	    Key *key;
-	    krb5_enctype enctype;
-
-	    ret = _kdc_get_preferred_key(context,
-					 config,
-					 server,
-					 "digest-service",
-					 &enctype,
-					 &key);
-	    if (ret)
-		goto out;
-	    ret = krb5_crypto_init(context, &key->key, 0, &crypto);
-	    if (ret)
-		goto out;
-	}
+	ret = get_digest_key(context, config, server, &crypto);
+	if (ret)
+	    goto out;
 
 	ret = krb5_verify_checksum(context, crypto, 
 				   KRB5_KU_DIGEST_OPAQUE,
@@ -629,6 +639,199 @@ _kdc_do_digest(krb5_context context,
 
 	break;
     }
+    case choice_DigestReqInner_ntlmInit: {
+	char *targetname = NULL;
+
+	r.element = choice_DigestRepInner_ntlmInitReply;
+
+	r.u.ntlmInitReply.flags = NTLM_NEG_UNICODE;
+
+	if ((ireq.u.ntlmInit.flags & NTLM_NEG_UNICODE) == 0) {
+	    kdc_log(context, config, 0, "NTLM client have no unicode");
+	    goto out;
+	}
+
+	if (ireq.u.ntlmInit.flags & NTLM_NEG_NTLM)
+	    r.u.ntlmInitReply.flags |= NTLM_NEG_NTLM;
+	else {
+	    kdc_log(context, config, 0, "NTLM client doesn't support NTLM");
+	    goto out;
+	}
+
+	r.u.ntlmInitReply.flags |= 
+	    (ireq.u.ntlmInit.flags & (NTLM_NEG_SIGN|NTLM_NEG_SEAL)) |
+	    NTLM_NEG_TARGET_DOMAIN |
+	    NTLM_ENC_128;
+
+
+	targetname = strdup(krb5_principal_get_realm(context,
+						     client->entry.principal));
+	{
+	    char *p = strchr(targetname, '.');
+	    if (p)
+		*p = '\0';
+	}
+	strupr(targetname);
+
+	r.u.ntlmInitReply.targetname = targetname;
+	r.u.ntlmInitReply.challange.data = malloc(8);
+	if (r.u.ntlmInitReply.challange.data == NULL) {
+	    krb5_set_error_string(context, "out of memory");
+	    ret = ENOMEM;
+	    goto out;
+	}
+	r.u.ntlmInitReply.challange.length = 8;
+	if (RAND_bytes(r.u.ntlmInitReply.challange.data,
+		       r.u.ntlmInitReply.challange.length) != 1) 
+	{
+	    krb5_set_error_string(context, "out of random error");
+	    ret = ENOMEM;
+	    goto out;
+	}
+	r.u.ntlmInitReply.targetinfo = NULL; /* XXX fix targetinfo */
+	
+	/* 
+	 * Save data encryted in opaque for the second part of the
+	 * ntlm authentication
+	 */
+	sp = krb5_storage_emem();
+	if (sp == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_string(context, "out of memory");
+	    goto out;
+	}
+	
+	ret = krb5_storage_write(sp, r.u.ntlmInitReply.challange.data, 8);
+	if (ret != 8) {
+	    ret = ENOMEM;
+	    krb5_set_error_string(context, "storage write challange");
+	    goto out;
+	}
+	ret = krb5_store_uint32(sp, r.u.ntlmInitReply.flags);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+
+	ret = krb5_storage_to_data(sp, &buf);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+
+	ret = get_digest_key(context, config, server, &crypto);
+	if (ret)
+	    goto out;
+
+	ret = krb5_encrypt(context, crypto, KRB5_KU_DIGEST_OPAQUE,
+			   buf.data, buf.length, &r.u.ntlmInitReply.opaque);
+	krb5_data_free(&buf);
+	krb5_crypto_destroy(context, crypto);
+	crypto = NULL;
+	if (ret)
+	    goto out;
+
+	break;
+    }
+    case choice_DigestReqInner_ntlmRequest: {
+	krb5_principal clientprincipal;
+	unsigned char challange[8];
+	uint32_t flags;
+
+	r.element = choice_DigestRepInner_ntlmResponse;
+	r.u.ntlmResponse.success = 0;
+	r.u.ntlmResponse.flags = 0;
+	r.u.ntlmResponse.sessionkey = NULL;
+	r.u.ntlmResponse.tickets = NULL;
+
+	/* get username */
+	ret = krb5_parse_name(context,
+			      ireq.u.ntlmRequest.username,
+			      &clientprincipal);
+	if (ret)
+	    goto out;
+
+	ret = _kdc_db_fetch(context, config, clientprincipal,
+			    HDB_F_GET_CLIENT, NULL, &user);
+	krb5_free_principal(context, clientprincipal);
+	if (ret) {
+	    krb5_set_error_string(context, "NTLM user %s not in database",
+				  ireq.u.ntlmRequest.username);
+	    goto out;
+	}
+
+	ret = get_digest_key(context, config, server, &crypto);
+	if (ret)
+	    goto out;
+
+	ret = krb5_decrypt(context, crypto, KRB5_KU_DIGEST_OPAQUE,
+			   ireq.u.ntlmRequest.opaque.data,
+			   ireq.u.ntlmRequest.opaque.length, &buf);
+	krb5_crypto_destroy(context, crypto);
+	crypto = NULL;
+	if (ret)
+	    goto out;
+
+	sp = krb5_storage_from_data(&buf);
+	if (sp == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_string(context, "out of memory");
+	    goto out;
+	}
+	
+	ret = krb5_storage_read(sp, challange, sizeof(challange));
+	if (ret != sizeof(challange)) {
+	    krb5_set_error_string(context, "NTLM storage read challange");
+	    ret = ENOMEM;
+	    goto out;
+	}
+	ret = krb5_ret_uint32(sp, &flags);
+	if (ret) {
+	    krb5_set_error_string(context, "NTLM storage read flags");
+	    goto out;
+	}
+	krb5_data_free(&buf);
+
+	if (flags & NTLM_NEG_NTLM) {
+	    struct ntlm_buf answer;
+	    Key *key;
+
+	    ret = hdb_enctype2key(context, &user->entry, 
+				  ETYPE_ARCFOUR_HMAC_MD5, &key);
+	    if (ret) {
+		krb5_set_error_string(context, "NTLM missing arcfour key");
+		goto out;
+	    }
+
+	    ret = heim_ntlm_calculate_ntlm1(key->key.keyvalue.data,
+					    key->key.keyvalue.length,
+					    challange, &answer);
+	    if (ret) {
+		krb5_set_error_string(context, "NTLM missing arcfour key");
+		goto out;
+	    }
+
+	    if (ireq.u.ntlmRequest.ntlm.length != answer.length ||
+		memcmp(ireq.u.ntlmRequest.ntlm.data, answer.data, answer.length) != 0)
+	    {
+		free(answer.data);
+		ret = EINVAL;
+		krb5_set_error_string(context, "NTLM hash mismatch");
+		goto out;
+	    }
+	    free(answer.data);
+	} else {
+	    ret = EINVAL;
+	    krb5_set_error_string(context, "NTLM not negotiated");
+	    goto out;
+	}
+
+	r.u.ntlmResponse.success = 1;
+	kdc_log(context, config, 0, "NTLM successful for %s",
+		ireq.u.ntlmRequest.username);
+
+	break;
+    }
     default:
 	r.element = choice_DigestRepInner_error;
 	r.u.error.reason = strdup("unknown operation");
@@ -698,10 +901,14 @@ out:
 	_kdc_free_ent (context, user);
     if (server)
 	_kdc_free_ent (context, server);
+    if (client)
+	_kdc_free_ent (context, client);
     if (password) {
 	memset(password, 0, strlen(password));
 	free (password);
     }
+    if (client_name)
+	free (client_name);
     krb5_data_free(&buf);
     krb5_data_free(&serverNonce);
     free_DigestREP(&rep);
