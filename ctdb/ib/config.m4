@@ -10,6 +10,19 @@ if eval "test x$enable_infiniband = xyes"; then
 	INFINIBAND_WRAPPER_OBJ="ib/ibwrapper.o"
 	INFINIBAND_LIBS="-lrdmacm -libverbs"
 	INFINIBAND_BINS="bin/ibwrapper_test"
+
+	AC_CHECK_HEADERS(infiniband/verbs.h, [], [
+		echo "ERROR: you need infiniband/verbs.h when ib enabled!"
+		exit -1])
+	AC_CHECK_HEADERS(rdma/rdma_cma.h, [], [
+		echo "ERROR: you need rdma/rdma_cma.h when ib enabled!"
+		exit -1])
+	AC_CHECK_LIB(ibverbs, ibv_create_qp, [], [
+		echo "ERROR: you need libibverbs when ib enabled!"
+		exit -1])
+	AC_CHECK_LIB(rdmacm, rdma_connect, [], [
+		echo "ERROR: you need librdmacm when ib enabled!"
+		exit -1])
 fi
 
 AC_SUBST(HAVE_INFINIBAND)
