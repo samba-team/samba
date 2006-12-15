@@ -565,6 +565,7 @@ int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct l
 
 		res->refs[n] = talloc_move(res->refs, &ares->referral);
 		res->refs[n + 1] = NULL;
+		break;
 	case LDB_REPLY_EXTENDED:
 	case LDB_REPLY_DONE:
 		/* TODO: we should really support controls on entries and referrals too! */
