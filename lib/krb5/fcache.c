@@ -723,7 +723,8 @@ fcc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
 {
     struct fcache_iter *iter = cursor;
     krb5_error_code ret;
-    char *fn, *deffn;
+    const char *fn;
+    char *expandedfn = NULL;
 
     if (!iter->first) {
 	krb5_clear_error_string(context);
@@ -731,18 +732,17 @@ fcc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
     }
     iter->first = 0;
 
-    deffn = krb5_cc_default_name(context);
-    if (strncasecmp(deffn, "FILE:", 5) == 0) {
-	fn = deffn;
-    } else {
+    fn = krb5_cc_default_name(context);
+    if (strncasecmp(fn, "FILE:", 5) != 0) {
 	ret = _krb5_expand_default_cc_name(context, 
-					   KRB5_DEFAULT_CCNAME_FILE, &fn);
+					   KRB5_DEFAULT_CCNAME_FILE,
+					   &expandedfn);
 	if (ret)
 	    return ret;
     }
     ret = krb5_cc_resolve(context, fn, id);
-    if (fn != deffn)
-	free(fn);
+    if (expandedfn)
+	free(expandedfn);
     
     return ret;
 }
