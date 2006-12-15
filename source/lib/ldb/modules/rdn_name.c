@@ -107,10 +107,10 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	} else {
-		const struct ldb_attrib_handler *handler = ldb_attrib_handler(module->ldb, rdn_name);
+		const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(module->ldb, rdn_name);
 
 		for (i = 0; i < attribute->num_values; i++) {
-			if (handler->comparison_fn(module->ldb, msg, &rdn_val, &attribute->values[i]) == 0) {
+			if (a->syntax->comparison_fn(module->ldb, msg, &rdn_val, &attribute->values[i]) == 0) {
 				/* overwrite so it matches in case */
 				attribute->values[i] = rdn_val;
 				break;

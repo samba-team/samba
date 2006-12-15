@@ -618,17 +618,17 @@ static bool ldb_dn_casefold_internal(struct ldb_dn *dn)
 	}
 
 	for (i = 0; i < dn->comp_num; i++) {
-		const struct ldb_attrib_handler *h;
+		const struct ldb_schema_attribute *a;
 
 		dn->components[i].cf_name = ldb_attr_casefold(dn->components, dn->components[i].name);
 		if (!dn->components[i].cf_name) {
 			goto failed;
 		}
 
-		h = ldb_attrib_handler(dn->ldb, dn->components[i].cf_name);
-		ret = h->canonicalise_fn(dn->ldb, dn->components,
-					 &(dn->components[i].value),
-					 &(dn->components[i].cf_value));
+		a = ldb_schema_attribute_by_name(dn->ldb, dn->components[i].cf_name);
+		ret = a->syntax->canonicalise_fn(dn->ldb, dn->components,
+						 &(dn->components[i].value),
+						 &(dn->components[i].cf_value));
 		if (ret != 0) {
 			goto failed;
 		}

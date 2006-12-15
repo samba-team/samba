@@ -171,17 +171,17 @@ static struct MprVar mprLdbMessage(struct ldb_context *ldb, struct ldb_message *
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
 		struct MprVar val;
-		const struct ldb_attrib_handler *attr;
+		const struct ldb_schema_attribute *a;
 		struct ldb_val v;
 
-		attr = ldb_attrib_handler(ldb, el->name);
-		if (attr == NULL) {
+		a = ldb_schema_attribute_by_name(ldb, el->name);
+		if (a == NULL) {
 			goto failed;
 		}
 
 		if (el->num_values == 1 &&
 		    !str_list_check_ci(multivalued, el->name)) {
-			if (attr->ldif_write_fn(ldb, msg, &el->values[0], &v) != 0) {
+			if (a->syntax->ldif_write_fn(ldb, msg, &el->values[0], &v) != 0) {
 				goto failed;
 			}
 			/* FIXME: nasty hack, remove me when ejs will support
@@ -195,8 +195,8 @@ static struct MprVar mprLdbMessage(struct ldb_context *ldb, struct ldb_message *
 			int j;
 			val = mprArray(el->name);
 			for (j=0;j<el->num_values;j++) {
-				if (attr->ldif_write_fn(ldb, msg, 
-							&el->values[j], &v) != 0) {
+				if (a->syntax->ldif_write_fn(ldb, msg, 
+							     &el->values[j], &v) != 0) {
 					goto failed;
 				}
 				/* FIXME: nasty hack, remove me when ejs will support

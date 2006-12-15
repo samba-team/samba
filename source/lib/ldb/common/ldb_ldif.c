@@ -306,9 +306,9 @@ int ldb_ldif_write(struct ldb_context *ldb,
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
-		const struct ldb_attrib_handler *h;
+		const struct ldb_schema_attribute *a;
 
-		h = ldb_attrib_handler(ldb, msg->elements[i].name);
+		a = ldb_schema_attribute_by_name(ldb, msg->elements[i].name);
 
 		if (ldif->changetype == LDB_CHANGETYPE_MODIFY) {
 			switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
@@ -329,7 +329,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 
 		for (j=0;j<msg->elements[i].num_values;j++) {
 			struct ldb_val v;
-			ret = h->ldif_write_fn(ldb, mem_ctx, &msg->elements[i].values[j], &v);
+			ret = a->syntax->ldif_write_fn(ldb, mem_ctx, &msg->elements[i].values[j], &v);
 			CHECK_RET;
 			if (ldb_should_b64_encode(&v)) {
 				ret = fprintf_fn(private_data, "%s:: ", 
@@ -575,7 +575,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	}
 
 	while (next_attr(ldif, &s, &attr, &value) == 0) {
-		const struct ldb_attrib_handler *h;		
+		const struct ldb_schema_attribute *a;
 		struct ldb_message_element *el;
 		int ret, empty = 0;
 
@@ -621,7 +621,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 		
 		el = &msg->elements[msg->num_elements-1];
 
-		h = ldb_attrib_handler(ldb, attr);
+		a = ldb_schema_attribute_by_name(ldb, attr);
 
 		if (msg->num_elements > 0 && ldb_attr_cmp(attr, el->name) == 0 &&
 		    flags == el->flags) {
@@ -632,7 +632,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 			if (!el->values) {
 				goto failed;
 			}
-			ret = h->ldif_read_fn(ldb, ldif, &value, &el->values[el->num_values]);
+			ret = a->syntax->ldif_read_fn(ldb, ldif, &value, &el->values[el->num_values]);
 			if (ret != 0) {
 				goto failed;
 			}
@@ -661,7 +661,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 				goto failed;
 			}
 			el->num_values = 1;
-			ret = h->ldif_read_fn(ldb, ldif, &value, &el->values[0]);
+			ret = a->syntax->ldif_read_fn(ldb, ldif, &value, &el->values[0]);
 			if (ret != 0) {
 				goto failed;
 			}

@@ -123,9 +123,9 @@ static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *r
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
-		const struct ldb_attrib_handler *h;
-		h = ldb_attrib_handler(ldb, msg->elements[i].name);
-		if (h->flags & LDB_ATTR_FLAG_HIDDEN) {
+		const struct ldb_schema_attribute *a;
+		a = ldb_schema_attribute_by_name(ldb, msg->elements[i].name);
+		if (a->flags & LDB_ATTR_FLAG_HIDDEN) {
 			continue;
 		}
 		if (msg_add_element(ret, &msg->elements[i],

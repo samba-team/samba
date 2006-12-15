@@ -59,7 +59,7 @@ struct sort_context {
 	int num_msgs;
 	int num_refs;
 
-	const struct ldb_attrib_handler *h;
+	const struct ldb_schema_attribute *a;
 	int sort_result;
 };
 
@@ -161,9 +161,9 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 	}
 
 	if (ac->reverse)
-		return ac->h->comparison_fn(ac->module->ldb, ac, &el2->values[0], &el1->values[0]);
+		return ac->a->syntax->comparison_fn(ac->module->ldb, ac, &el2->values[0], &el1->values[0]);
 
-	return ac->h->comparison_fn(ac->module->ldb, ac, &el1->values[0], &el2->values[0]);
+	return ac->a->syntax->comparison_fn(ac->module->ldb, ac, &el1->values[0], &el2->values[0]);
 }
 
 static int server_sort_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
@@ -315,7 +315,7 @@ static int server_sort_results(struct ldb_handle *handle)
 
 	ac = talloc_get_type(handle->private_data, struct sort_context);
 
-	ac->h = ldb_attrib_handler(ac->module->ldb, ac->attributeName);
+	ac->a = ldb_schema_attribute_by_name(ac->module->ldb, ac->attributeName);
 	ac->sort_result = 0;
 
 	ldb_qsort(ac->msgs, ac->num_msgs,

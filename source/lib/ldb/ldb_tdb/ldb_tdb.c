@@ -558,7 +558,7 @@ static int msg_delete_element(struct ldb_module *module,
 	unsigned int i;
 	int found;
 	struct ldb_message_element *el;
-	const struct ldb_attrib_handler *h;
+	const struct ldb_schema_attribute *a;
 
 	found = find_element(msg, name);
 	if (found == -1) {
@@ -567,10 +567,10 @@ static int msg_delete_element(struct ldb_module *module,
 
 	el = &msg->elements[found];
 
-	h = ldb_attrib_handler(ldb, el->name);
+	a = ldb_schema_attribute_by_name(ldb, el->name);
 
 	for (i=0;i<el->num_values;i++) {
-		if (h->comparison_fn(ldb, ldb, &el->values[i], val) == 0) {
+		if (a->syntax->comparison_fn(ldb, ldb, &el->values[i], val) == 0) {
 			if (i<el->num_values-1) {
 				memmove(&el->values[i], &el->values[i+1],
 					sizeof(el->values[i])*(el->num_values-(i+1)));

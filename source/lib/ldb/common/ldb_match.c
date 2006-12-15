@@ -104,7 +104,7 @@ static int ldb_match_comparison(struct ldb_context *ldb,
 {
 	unsigned int i;
 	struct ldb_message_element *el;
-	const struct ldb_attrib_handler *h;
+	const struct ldb_schema_attribute *a;
 	int ret;
 
 	/* FIXME: APPROX comparison not handled yet */
@@ -115,10 +115,10 @@ static int ldb_match_comparison(struct ldb_context *ldb,
 		return 0;
 	}
 
-	h = ldb_attrib_handler(ldb, el->name);
+	a = ldb_schema_attribute_by_name(ldb, el->name);
 
 	for (i = 0; i < el->num_values; i++) {
-		ret = h->comparison_fn(ldb, ldb, &el->values[i], &tree->u.comparison.value);
+		ret = a->syntax->comparison_fn(ldb, ldb, &el->values[i], &tree->u.comparison.value);
 
 		if (ret == 0) {
 			return 1;
@@ -144,7 +144,7 @@ static int ldb_match_equality(struct ldb_context *ldb,
 {
 	unsigned int i;
 	struct ldb_message_element *el;
-	const struct ldb_attrib_handler *h;
+	const struct ldb_schema_attribute *a;
 	struct ldb_dn *valuedn;
 	int ret;
 
@@ -169,11 +169,11 @@ static int ldb_match_equality(struct ldb_context *ldb,
 		return 0;
 	}
 
-	h = ldb_attrib_handler(ldb, el->name);
+	a = ldb_schema_attribute_by_name(ldb, el->name);
 
 	for (i=0;i<el->num_values;i++) {
-		if (h->comparison_fn(ldb, ldb, &tree->u.equality.value, 
-				     &el->values[i]) == 0) {
+		if (a->syntax->comparison_fn(ldb, ldb, &tree->u.equality.value, 
+					     &el->values[i]) == 0) {
 			return 1;
 		}
 	}
@@ -185,7 +185,7 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 				const struct ldb_parse_tree *tree,
 				const struct ldb_val value)
 {
-	const struct ldb_attrib_handler *h;
+	const struct ldb_schema_attribute *a;
 	struct ldb_val val;
 	struct ldb_val cnk;
 	struct ldb_val *chunk;
@@ -193,9 +193,9 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 	uint8_t *save_p = NULL;
 	int c = 0;
 
-	h = ldb_attrib_handler(ldb, tree->u.substring.attr);
+	a = ldb_schema_attribute_by_name(ldb, tree->u.substring.attr);
 
-	if(h->canonicalise_fn(ldb, ldb, &value, &val) != 0)
+	if(a->syntax->canonicalise_fn(ldb, ldb, &value, &val) != 0)
 		return -1;
 
 	save_p = val.data;
@@ -204,7 +204,7 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 	if ( ! tree->u.substring.start_with_wildcard ) {
 
 		chunk = tree->u.substring.chunks[c];
-		if(h->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto failed;
+		if(a->syntax->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto failed;
 
 		/* This deals with wildcard prefix searches on binary attributes (eg objectGUID) */
 		if (cnk.length > val.length) {
@@ -221,7 +221,7 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 	while (tree->u.substring.chunks[c]) {
 
 		chunk = tree->u.substring.chunks[c];
-		if(h->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto failed;
+		if(a->syntax->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto failed;
 
 		/* FIXME: case of embedded nulls */
 		p = strstr((char *)val.data, (char *)cnk.data);
