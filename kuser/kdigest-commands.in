@@ -241,6 +241,21 @@ command = {
 	help = "Client part of a digest exchange"
 }
 command = {
+	name = "ntlm-server-init"
+	option = {
+		long = "version"
+		type = "integer"
+		help = "ntlm version"
+		default = "1"
+	}
+	option = {
+		long = "kerberos-realm"
+		type = "string"
+		help = "Kerberos realm to communicate with"
+	}
+	help = "Sets up a digest context and return initial parameters"
+}
+command = {
 	name = "help"
 	name = "?"
 	argument = "[command]"

@@ -35,6 +35,7 @@
 RCSID("$Id$");
 #include <kdigest-commands.h>
 #include <hex.h>
+#include <base64.h>
 #include "crypto-headers.h"
 
 static int version_flag = 0;
@@ -207,6 +208,94 @@ digest_client_request(struct digest_client_request_options *opt,
 
     return 0;
 }
+
+#include <heimntlm.h>
+
+int
+ntlm_server_init(struct ntlm_server_init_options *opt,
+		 int argc, char ** argv)
+{
+    krb5_error_code ret;
+    krb5_ntlm ntlm;
+    struct ntlm_type2 type2;
+    krb5_data challange, opaque;
+    struct ntlm_buf data;
+    char *s;
+
+    memset(&type2, 0, sizeof(type2));
+
+    ret = krb5_ntlm_alloc(context, &ntlm);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_ntlm_alloc");
+
+    ret = krb5_ntlm_init_request(context, 
+				 ntlm,
+				 opt->kerberos_realm_string,
+				 id,
+				 NTLM_NEG_UNICODE|NTLM_NEG_NTLM,
+				 "NUTCRACKER",
+				 "L");
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_ntlm_init_request");
+
+    /*
+     *
+     */
+
+    ret = krb5_ntlm_init_get_challange(context, ntlm, &challange);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_ntlm_init_get_challange");
+
+    if (challange.length != sizeof(type2.challange))
+	krb5_errx(context, 1, "ntlm challange have wrong length");
+    memcpy(type2.challange, challange.data, sizeof(type2.challange));
+    krb5_data_free(&challange);
+
+    ret = krb5_ntlm_init_get_flags(context, ntlm, &type2.flags);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_ntlm_init_get_flags");
+
+    krb5_ntlm_init_get_targetname(context, ntlm, &type2.targetname);
+    type2.targetinfo.data = "\x00\x00";
+    type2.targetinfo.length = 2;
+	
+    ret = heim_ntlm_encode_type2(&type2, &data);
+    if (ret)
+	krb5_errx(context, 1, "heim_ntlm_encode_type2");
+
+    free(type2.targetname);
+	
+    /*
+     *
+     */
+
+    base64_encode(data.data, data.length, &s);
+    free(data.data);
+    printf("type2=%s\n", s);
+    free(s);
+
+    /*
+     *
+     */
+
+    ret = krb5_ntlm_init_get_opaque(context, ntlm, &opaque);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_ntlm_init_get_opaque");
+
+    base64_encode(opaque.data, opaque.length, &s);
+    krb5_data_free(&opaque);
+    printf("opaque=%s\n", s);
+    free(s);
+
+    /*
+     *
+     */
+
+    krb5_ntlm_free(context, ntlm);
+
+    return 0;
+}
+
 
 /*
  *
