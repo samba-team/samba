@@ -126,11 +126,6 @@ ${test_ntlm} || { echo "test_ntlm failed"; exit 1; }
 NTLM_USER_FILE="${srcdir}/ntlm-user-file.txt"
 export NTLM_USER_FILE
 
-echo ${context} --mech-type=ntlm \
-	    --name-type=hostbased-service datan@DOMAIN || \
-		{ echo "test_context 1 failed"; exit 1; }
-bash
-
 echo "test_context --mech-type=ntlm"
 ${context} --mech-type=ntlm \
 	    --name-type=hostbased-service datan@DOMAIN || \
