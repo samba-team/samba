@@ -135,7 +135,7 @@ _gss_ntlm_init_sec_context
 	memset(&type1, 0, sizeof(type1));
 	
 	type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM;
-	type1.domain = NULL;
+	type1.domain = name->domain;
 	type1.hostname = NULL;
 	type1.os[0] = 0;
 	type1.os[1] = 0;
