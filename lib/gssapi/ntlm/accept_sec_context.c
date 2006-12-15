@@ -84,6 +84,10 @@ handle_type2(OM_uint32 *minor_status,
      */
 
     ret = krb5_ntlm_init_get_flags(ctx->context, ctx->ntlm, &type2.flags);
+    if (ret) {
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
 
     ret = krb5_ntlm_init_get_challange(ctx->context, ctx->ntlm, &challange);
     if (ret) {
@@ -98,7 +102,12 @@ handle_type2(OM_uint32 *minor_status,
     memcpy(type2.challange, challange.data, sizeof(type2.challange));
     krb5_data_free(&challange);
 
-    krb5_ntlm_init_get_targetname(ctx->context, ctx->ntlm, &type2.targetname);
+    ret = krb5_ntlm_init_get_targetname(ctx->context, ctx->ntlm,
+					&type2.targetname);
+    if (ret) {
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
     type2.targetinfo.data = "\x00\x00";
     type2.targetinfo.length = 2;
 	
@@ -152,6 +161,8 @@ handle_type3(OM_uint32 *minor_status,
 			    ctx->ntlm,
 			    NULL,
 			    ctx->id);
+    if (ret)
+	goto out;
 
     return GSS_S_COMPLETE;
 out:
@@ -211,11 +222,11 @@ get_ccache(krb5_context context, krb5_ccache *id)
 					  NULL,
 					  NULL,
 					  NULL);
-	if (ret) {
-	    ret = krb5_cc_initialize (context, ccache, cred.client);
-	    ret = krb5_cc_store_cred (context, ccache, &cred);
-	    krb5_free_cred_contents (context, &cred);
-	}
+	if (ret)
+	    goto out;
+	ret = krb5_cc_initialize (context, ccache, cred.client);
+	ret = krb5_cc_store_cred (context, ccache, &cred);
+	krb5_free_cred_contents (context, &cred);
     }
 #endif
     krb5_kt_close(context, kt);
