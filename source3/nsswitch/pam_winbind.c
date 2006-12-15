@@ -194,6 +194,8 @@ static const struct ntstatus_errors {
 } ntstatus_errors[] = {
 	{"NT_STATUS_OK", "Success"},
 	{"NT_STATUS_BACKUP_CONTROLLER", "No primary Domain Controler available"},
+	{"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND", "No domain controllers found"},
+	{"NT_STATUS_NO_LOGON_SERVERS", "No logon servers"},
 	{"NT_STATUS_PWD_TOO_SHORT", "Password too short"},
 	{"NT_STATUS_PWD_TOO_RECENT", "The password of this user is too recent to change"},
 	{"NT_STATUS_PWD_HISTORY_CONFLICT", "Password is already in password history"},
@@ -383,7 +385,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 				const char *pass, 
 				const char *member, 
 				const char *cctype,
-				int process_result,
+				struct winbindd_response *p_response,
 				time_t *pwd_last_set,
 				char **user_ret)
 {
@@ -496,7 +498,9 @@ static int winbind_auth_request(pam_handle_t * pamh,
 		}
 	}
 
-	if (!process_result) {
+	if (p_response) {
+		/* We want to process the response in the caller. */
+		*p_response = response;
 		return ret;
 	}
 
@@ -511,6 +515,8 @@ static int winbind_auth_request(pam_handle_t * pamh,
 		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT");
 		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT");
 		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NO_LOGON_SERVERS");
 	}
 
 	/* handle the case where the auth was ok, but the password must expire right now */
@@ -639,6 +645,8 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 	}
 
 	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_BACKUP_CONTROLLER");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NO_LOGON_SERVERS");
 	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_ACCESS_DENIED");
 
 	/* TODO: tell the min pwd length ? */
@@ -1011,7 +1019,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 	/* Now use the username to look up password */
 	retval = winbind_auth_request(pamh, ctrl, username, password, member,
-				      cctype, True, NULL, &username_ret);
+				      cctype, NULL, NULL, &username_ret);
 
 	if (retval == PAM_NEW_AUTHTOK_REQD ||
 	    retval == PAM_AUTHTOK_EXPIRED) {
@@ -1238,7 +1246,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		     int argc, const char **argv)
 {
 	unsigned int lctrl;
-	int retval;
+	int ret;
 	unsigned int ctrl;
 
 	/* <DO NOT free() THESE> */
@@ -1253,7 +1261,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 	ctrl = _pam_parse(pamh, flags, argc, argv, &d);
 	if (ctrl == -1) {
-		retval = PAM_SYSTEM_ERR;
+		ret = PAM_SYSTEM_ERR;
 		goto out;
 	}
 
@@ -1265,14 +1273,14 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	/*
 	 * First get the name of a user
 	 */
-	retval = pam_get_user(pamh, &user, "Username: ");
-	if (retval == PAM_SUCCESS) {
+	ret = pam_get_user(pamh, &user, "Username: ");
+	if (ret == PAM_SUCCESS) {
 		if (user == NULL) {
 			_pam_log(pamh, ctrl, LOG_ERR, "username was NULL!");
-			retval = PAM_USER_UNKNOWN;
+			ret = PAM_USER_UNKNOWN;
 			goto out;
 		}
-		if (retval == PAM_SUCCESS) {
+		if (ret == PAM_SUCCESS) {
 			_pam_log_debug(pamh, ctrl, LOG_DEBUG, "username [%s] obtained",
 				 user);
 		}
@@ -1283,13 +1291,13 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	}
 
 	/* check if this is really a user in winbindd, not only in NSS */
-	retval = valid_user(pamh, ctrl, user);
-	switch (retval) {
+	ret = valid_user(pamh, ctrl, user);
+	switch (ret) {
 		case 1:
-			retval = PAM_USER_UNKNOWN;
+			ret = PAM_USER_UNKNOWN;
 			goto out;
 		case -1:
-			retval = PAM_SYSTEM_ERR;
+			ret = PAM_SYSTEM_ERR;
 			goto out;
 		default:
 			break;
@@ -1301,7 +1309,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	 */
 
 	if (flags & PAM_PRELIM_CHECK) {
-		
+		struct winbindd_response response;
 		time_t pwdlastset_prelim = 0;
 		
 		/* instruct user what is happening */
@@ -1309,7 +1317,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		Announce = (char *) malloc(sizeof(greeting) + strlen(user));
 		if (Announce == NULL) {
 			_pam_log(pamh, ctrl, LOG_CRIT, "password - out of memory");
-			retval = PAM_BUF_ERR;
+			ret = PAM_BUF_ERR;
 			goto out;
 		}
 		(void) strcpy(Announce, greeting);
@@ -1317,33 +1325,50 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 #undef greeting
 		
 		lctrl = ctrl | WINBIND__OLD_PASSWORD;
-		retval = _winbind_read_password(pamh, lctrl,
+		ret = _winbind_read_password(pamh, lctrl,
 						Announce,
 						"(current) NT password: ",
 						NULL,
 						(const char **) &pass_old);
-		if (retval != PAM_SUCCESS) {
+		if (ret != PAM_SUCCESS) {
 			_pam_log(pamh, ctrl, LOG_NOTICE, "password - (old) token not obtained");
 			goto out;
 		}
+
+		/* We don't need krb5 env set for password change test. */
+		ctrl &= ~WINBIND_KRB5_AUTH;
+
 		/* verify that this is the password for this user */
 		
-		retval = winbind_auth_request(pamh, ctrl, user, pass_old,
-					NULL, NULL, False, &pwdlastset_prelim, NULL);
+		ret = winbind_auth_request(pamh, ctrl, user, pass_old,
+					NULL, NULL, &response, &pwdlastset_prelim, NULL);
 
-		if (retval != PAM_ACCT_EXPIRED && 
-		    retval != PAM_AUTHTOK_EXPIRED &&
-		    retval != PAM_NEW_AUTHTOK_REQD &&
-		    retval != PAM_SUCCESS) {
+		if (ret != PAM_ACCT_EXPIRED && 
+		    ret != PAM_AUTHTOK_EXPIRED &&
+		    ret != PAM_NEW_AUTHTOK_REQD &&
+		    ret != PAM_SUCCESS) {
 			pass_old = NULL;
-			goto out;
+			if (d) {
+				iniparser_freedict(d);
+			}
+			/* Deal with offline errors. */
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+						response,
+						"NT_STATUS_NO_LOGON_SERVERS");
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+						response,
+						"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+						response,
+						"NT_STATUS_ACCESS_DENIED");
+			return ret;
 		}
 		
 		pam_set_data(pamh, PAM_WINBIND_PWD_LAST_SET, (void *)pwdlastset_prelim, NULL);
 
-		retval = pam_set_item(pamh, PAM_OLDAUTHTOK, (const void *) pass_old);
+		ret = pam_set_item(pamh, PAM_OLDAUTHTOK, (const void *) pass_old);
 		pass_old = NULL;
-		if (retval != PAM_SUCCESS) {
+		if (ret != PAM_SUCCESS) {
 			_pam_log(pamh, ctrl, LOG_CRIT, "failed to set PAM_OLDAUTHTOK");
 		}
 	} else if (flags & PAM_UPDATE_AUTHTOK) {
@@ -1358,9 +1383,9 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		 * get the old token back. 
 		 */
 		
-		retval = _pam_get_item(pamh, PAM_OLDAUTHTOK, &pass_old);
+		ret = _pam_get_item(pamh, PAM_OLDAUTHTOK, &pass_old);
 		
-		if (retval != PAM_SUCCESS) {
+		if (ret != PAM_SUCCESS) {
 			_pam_log(pamh, ctrl, LOG_NOTICE, "user not authenticated");
 			goto out;
 		}
@@ -1371,20 +1396,20 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 			lctrl |= WINBIND_USE_FIRST_PASS_ARG;
 		}
 		retry = 0;
-		retval = PAM_AUTHTOK_ERR;
-		while ((retval != PAM_SUCCESS) && (retry++ < MAX_PASSWD_TRIES)) {
+		ret = PAM_AUTHTOK_ERR;
+		while ((ret != PAM_SUCCESS) && (retry++ < MAX_PASSWD_TRIES)) {
 			/*
 			 * use_authtok is to force the use of a previously entered
 			 * password -- needed for pluggable password strength checking
 			 */
 			
-			retval = _winbind_read_password(pamh, lctrl,
+			ret = _winbind_read_password(pamh, lctrl,
 							NULL,
 							"Enter new NT password: ",
 							"Retype new NT password: ",
 							(const char **) &pass_new);
 			
-			if (retval != PAM_SUCCESS) {
+			if (ret != PAM_SUCCESS) {
 				_pam_log_debug(pamh, ctrl, LOG_ALERT
 					 ,"password - new password not obtained");
 				pass_old = NULL;/* tidy up */
@@ -1409,8 +1434,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		_pam_get_data( pamh, PAM_WINBIND_PWD_LAST_SET,
 			       &pwdlastset_update);
 
-		retval = winbind_chauthtok_request(pamh, ctrl, user, pass_old, pass_new, pwdlastset_update);
-		if (retval) {
+		ret = winbind_chauthtok_request(pamh, ctrl, user, pass_old, pass_new, pwdlastset_update);
+		if (ret) {
 			_pam_overwrite(pass_new);
 			_pam_overwrite(pass_old);
 			pass_old = pass_new = NULL;
@@ -1420,25 +1445,40 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		/* just in case we need krb5 creds after a password change over msrpc */
 
 		if (ctrl & WINBIND_KRB5_AUTH) {
+			struct winbindd_response response;
 
 			const char *member = get_member_from_config(pamh, argc, argv, ctrl, d);
 			const char *cctype = get_krb5_cc_type_from_config(pamh, argc, argv, ctrl, d);
 
-			retval = winbind_auth_request(pamh, ctrl, user, pass_new,
-							member, cctype, False, NULL, NULL);
+			ret = winbind_auth_request(pamh, ctrl, user, pass_new,
+							member, cctype, &response, NULL, NULL);
 			_pam_overwrite(pass_new);
 			_pam_overwrite(pass_old);
 			pass_old = pass_new = NULL;
+			if (d) {
+				iniparser_freedict(d);
+			}
+			/* Deal with offline errors. */
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+						response,
+						"NT_STATUS_NO_LOGON_SERVERS");
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+						response,
+						"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
+			PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh,
+						response,
+						"NT_STATUS_ACCESS_DENIED");
+			return ret;
 		}
 	} else {
-		retval = PAM_SERVICE_ERR;
+		ret = PAM_SERVICE_ERR;
 	}
 
 out:
 	if (d) {
 		iniparser_freedict(d);
 	}
-	return retval;
+	return ret;
 }
 
 #ifdef PAM_STATIC
