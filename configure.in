@@ -533,6 +533,7 @@ AC_CONFIG_FILES(Makefile 		\
 	lib/editline/Makefile		\
 	lib/hx509/Makefile		\
 	lib/gssapi/Makefile		\
+	lib/ntlm/Makefile		\
 	lib/hdb/Makefile		\
 	lib/kadm5/Makefile		\
 	lib/kafs/Makefile		\
