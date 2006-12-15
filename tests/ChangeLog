@@ -1,4 +1,10 @@
+2006-12-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-digest.in: test more combinations of names
+	
 2006-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kdc/ntlm-user-file.txt: ntlm username and password file
 
 	* kdc/check-digest.in: Check that ntlm works.
 	
