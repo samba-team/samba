@@ -56,6 +56,8 @@ keytab="FILE:${keytabfile}"
 kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
 klist="${TESTS_ENVIRONMENT} ../../kuser/klist -c $cache"
 kdigest="${TESTS_ENVIRONMENT} ../../kuser/kdigest --ccache=$cache"
+test_ntlm="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_ntlm"
+context="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_context"
 
 username=foo
 userpassword=digestpassword
@@ -98,6 +100,8 @@ if [ "$?" != 0 ] ; then
     exit 1
 fi
 
+trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+
 exitcode=0
 
 echo "Getting digest server tickets"
@@ -105,6 +109,27 @@ ${kinit} --password-file=${objdir}/foopassword ${server}@$R || exitcode=1
 ${kdigest} digest-server-init \
     --kerberos-realm=${R} \
     --type=CHAP > /dev/null || exitcode=1
+
+echo "Trying NTLM"
+
+NTLM_ACCEPTOR_CCACHE="$cache"
+export NTLM_ACCEPTOR_CCACHE
+
+#echo "Trying server-init"
+#echo ${kdigest} ntlm-server-init \
+#    --kerberos-realm=${R} \
+#    > sdigest-init || exitcode=1
+#
+echo "test_ntlm"
+${test_ntlm} || { echo "test_ntlm failed"; exit 1; }
+
+NTLM_USER_FILE="${srcdir}/ntlm-user-file.txt"
+export NTLM_USER_FILE
+
+echo "test_context --mech-type=ntlm"
+${context} --mech-type=ntlm \
+	    --name-type=hostbased-service datan@DOMAIN || \
+		{ echo "test_context failed"; exit 1; }
 
 echo "Trying CHAP"
 
@@ -155,6 +180,8 @@ else
     echo "CHAP response doesnt match"
     exitcode=1
 fi
+
+trap "" EXIT
 
 echo "killing kdc (${kdcpid})"
 kill $kdcpid || exit 1
