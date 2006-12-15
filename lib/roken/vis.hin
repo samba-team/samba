@@ -104,7 +104,7 @@ int ROKEN_LIB_FUNCTION
 #undef strvisx
 #define strvisx(a,b,c,d) rk_strvisx(a,b,c,d)
 #undef strsvisx
-#define strsvisx(a,b,c,d) rk_strsvisx(a,b,c,d)
+#define strsvisx(a,b,c,d,e) rk_strsvisx(a,b,c,d,e)
 #undef strunvis
 #define strunvis(a,b) rk_strunvis(a,b)
 #undef unvis
