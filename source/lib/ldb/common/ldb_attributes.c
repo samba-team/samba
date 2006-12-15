@@ -86,6 +86,20 @@ int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
 	return 0;
 }
 
+static const struct ldb_schema_syntax ldb_syntax_default = {
+	.name            = LDB_SYNTAX_OCTET_STRING,
+	.ldif_read_fn    = ldb_handler_copy,
+	.ldif_write_fn   = ldb_handler_copy,
+	.canonicalise_fn = ldb_handler_copy,
+	.comparison_fn   = ldb_comparison_binary
+};
+
+static const struct ldb_schema_attribute ldb_attribute_default = {
+	.name	= NULL,
+	.flags	= 0,
+	.syntax	= &ldb_syntax_default
+};
+
 /*
   return the attribute handlers for a given attribute
 */
@@ -93,7 +107,7 @@ const struct ldb_schema_attribute *ldb_schema_attribute_by_name(struct ldb_conte
 								const char *name)
 {
 	int i, e, b = 0, r;
-	const struct ldb_schema_attribute *def = NULL;
+	const struct ldb_schema_attribute *def = &ldb_attribute_default;
 
 	/* as handlers are sorted, '*' must be the first if present */
 	if (strcmp(ldb->schema.attributes[0].name, "*") == 0) {
@@ -171,7 +185,6 @@ int ldb_setup_wellknown_attributes(struct ldb_context *ldb)
 		const char *attr;
 		const char *syntax;
 	} wellknown[] = {
-		{ "*", LDB_SYNTAX_OCTET_STRING },
 		{ "dn", LDB_SYNTAX_DN },
 		{ "distinguishedName", LDB_SYNTAX_DN },
 		{ "cn", LDB_SYNTAX_DIRECTORY_STRING },
