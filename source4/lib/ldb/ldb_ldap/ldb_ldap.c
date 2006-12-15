@@ -527,7 +527,6 @@ static int lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 
 			ares->message->num_elements = 0;
 			ares->message->elements = NULL;
-			ares->message->private_data = NULL;
 
 			/* loop over all attributes */
 			for (attr=ldap_first_attribute(lldb->ldap, msg, &berptr);
