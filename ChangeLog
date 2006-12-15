@@ -1,5 +1,28 @@
 2006-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/fcache.c (fcc_get_cache_next): avoid const warning.
+
+	* kdc/digest.c: Support NTLM verification, note that the KDC does
+	no NTLM packet parsing, its all done by the client side, the KDC
+	just calculate and verify the digest and return the result to the
+	service.
+
+	* kuser/kdigest.c: add ntlm-server-init
+
+	* kuser/Makefile.am: kdigest depends on libheimntlm.la
+
+	* kdc/headers.h: Include <heimntlm.h>.
+
+	* kdc/Makefile.am: libkdc needs libheimntlm.la
+
+	* autogen.sh: just run autoreconf -i -f
+
+	* lib/Makefile.am: hook in ntlm
+
+	* configure.in (AC_CONFIG_FILES): add lib/ntlm/Makefile
+
+	* lib/krb5/digest.c: API to authenticate ntlm requests.
+
 	* lib/krb5/fcache.c: Support "iteration" of file credential caches
 	by giving the user back the default file credential cache and only
 	that.
