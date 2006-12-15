@@ -162,10 +162,17 @@ do { \
 /*
   return the parent chunk of a pointer
 */
-static struct talloc_chunk *talloc_parent_chunk(const void *ptr)
+static inline struct talloc_chunk *talloc_parent_chunk(const void *ptr)
 {
-	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
+	struct talloc_chunk *tc;
+
+	if (unlikely(ptr == NULL)) {
+		return NULL;
+	}
+
+	tc = talloc_chunk_from_ptr(ptr);
 	while (tc->prev) tc=tc->prev;
+
 	return tc->parent;
 }
 
@@ -178,22 +185,11 @@ void *talloc_parent(const void *ptr)
 /*
   find parents name
 */
-const char *talloc_parent_name(const void *context)
+const char *talloc_parent_name(const void *ptr)
 {
-	struct talloc_chunk *tc;
-
-	if (unlikely(context == NULL)) {
-		return NULL;
-	}
-
-	tc = talloc_chunk_from_ptr(context);
-	while (tc && tc->prev) tc = tc->prev;
-	if (tc) {
-		tc = tc->parent;
-	}
-	return tc->name;
+	struct talloc_chunk *tc = talloc_parent_chunk(ptr);
+	return tc? tc->name : NULL;
 }
-
 
 /* 
    Allocate a bit of memory as a child of an existing pointer
@@ -265,6 +261,8 @@ int talloc_increase_ref_count(const void *ptr)
 
 /*
   helper for talloc_reference()
+
+  this is referenced by a function pointer and should not be inline
 */
 static int talloc_reference_destructor(struct talloc_reference_handle *handle)
 {
@@ -481,7 +479,7 @@ void *_talloc_steal(const void *new_ctx, const void *ptr)
   talloc_reference() has done. The context and pointer arguments
   must match those given to a talloc_reference()
 */
-static int talloc_unreference(const void *context, const void *ptr)
+static inline int talloc_unreference(const void *context, const void *ptr)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	struct talloc_reference_handle *h;
@@ -561,9 +559,9 @@ int talloc_unlink(const void *context, void *ptr)
 /*
   add a name to an existing pointer - va_list version
 */
-static const char *talloc_set_name_v(const void *ptr, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+static inline const char *talloc_set_name_v(const void *ptr, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
 
-static const char *talloc_set_name_v(const void *ptr, const char *fmt, va_list ap)
+static inline const char *talloc_set_name_v(const void *ptr, const char *fmt, va_list ap)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	tc->name = talloc_vasprintf(ptr, fmt, ap);
