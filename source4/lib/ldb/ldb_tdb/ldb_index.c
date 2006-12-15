@@ -108,7 +108,7 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 {
 	struct ldb_dn *ret;
 	struct ldb_val v;
-	const struct ldb_attrib_handler *h;
+	const struct ldb_schema_attribute *a;
 	char *attr_folded;
 	int r;
 
@@ -117,8 +117,8 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 		return NULL;
 	}
 
-	h = ldb_attrib_handler(ldb, attr);
-	r = h->canonicalise_fn(ldb, ldb, value, &v);
+	a = ldb_schema_attribute_by_name(ldb, attr);
+	r = a->syntax->canonicalise_fn(ldb, ldb, value, &v);
 	if (r != LDB_SUCCESS) {
 		const char *errstr = ldb_errstring(ldb);
 		/* canonicalisation can be refused. For example, 

@@ -71,7 +71,7 @@ static void ltdb_attributes_unload(struct ldb_module *module)
 
 	msg = ltdb->cache->attributes;
 	for (i=0;i<msg->num_elements;i++) {
-		ldb_remove_attrib_handler(module->ldb, msg->elements[i].name);
+		ldb_schema_attribute_remove(module->ldb, msg->elements[i].name);
 	}
 
 	talloc_free(ltdb->cache->attributes);
@@ -126,7 +126,6 @@ static int ltdb_attributes_load(struct ldb_module *module)
 		unsigned flags;
 		const char *syntax;
 		const struct ldb_schema_syntax *s;
-		struct ldb_attrib_handler h;
 
 		if (ltdb_attributes_flags(&msg->elements[i], &flags) != 0) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Invalid @ATTRIBUTES element for '%s'\n", msg->elements[i].name);
@@ -156,14 +155,9 @@ static int ltdb_attributes_load(struct ldb_module *module)
 				  syntax, msg->elements[i].name);
 			goto failed;
 		}
-		h.attr = msg->elements[i].name;
-		h.flags |= LDB_ATTR_FLAG_ALLOCATED;
-		h.ldif_read_fn = s->ldif_read_fn;
-		h.ldif_write_fn = s->ldif_write_fn;
-		h.canonicalise_fn = s->canonicalise_fn;
-		h.comparison_fn = s->comparison_fn;
 
-		if (ldb_set_attrib_handlers(module->ldb, &h, 1) != 0) {
+		flags |= LDB_ATTR_FLAG_ALLOCATED;
+		if (ldb_schema_attribute_add_with_syntax(module->ldb, msg->elements[i].name, flags, s) != 0) {
 			goto failed;
 		}
 	}

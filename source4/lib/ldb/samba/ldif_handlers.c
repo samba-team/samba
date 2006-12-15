@@ -361,231 +361,70 @@ static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx
 	return strcmp(oc1, oc2);
 }
 
-static const struct ldb_attrib_handler samba_handlers[] = {
-	{ 
-		.attr            = "objectSid",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectSid,
-		.ldif_write_fn   = ldif_write_objectSid,
-		.canonicalise_fn = ldb_canonicalise_objectSid,
-		.comparison_fn   = ldb_comparison_objectSid
-	},
-	{ 
-		.attr            = "securityIdentifier",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectSid,
-		.ldif_write_fn   = ldif_write_objectSid,
-		.canonicalise_fn = ldb_canonicalise_objectSid,
-		.comparison_fn   = ldb_comparison_objectSid
-	},
+#define LDB_SYNTAX_SAMBA_SID			"LDB_SYNTAX_SAMBA_SID"
+#define LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR	"LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR"
+#define LDB_SYNTAX_SAMBA_GUID			"LDB_SYNTAX_SAMBA_GUID"
+#define LDB_SYNTAX_SAMBA_OBJECT_CATEGORY	"LDB_SYNTAX_SAMBA_OBJECT_CATEGORY"
+
+static const struct ldb_schema_syntax samba_syntaxes[] = {
 	{
-		.attr            = "ntSecurityDescriptor",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_ntSecurityDescriptor,
-		.ldif_write_fn   = ldif_write_ntSecurityDescriptor,
-		.canonicalise_fn = ldb_handler_copy,
-		.comparison_fn   = ldb_comparison_binary
-	},
-	{ 
-		.attr            = "objectGUID",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectGUID,
-		.ldif_write_fn   = ldif_write_objectGUID,
-		.canonicalise_fn = ldb_canonicalise_objectGUID,
-		.comparison_fn   = ldb_comparison_objectGUID
-	},
-	{ 
-		.attr            = "invocationId",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectGUID,
-		.ldif_write_fn   = ldif_write_objectGUID,
-		.canonicalise_fn = ldb_canonicalise_objectGUID,
-		.comparison_fn   = ldb_comparison_objectGUID
-	},
-	{ 
-		.attr            = "schemaIDGUID",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectGUID,
-		.ldif_write_fn   = ldif_write_objectGUID,
-		.canonicalise_fn = ldb_canonicalise_objectGUID,
-		.comparison_fn   = ldb_comparison_objectGUID
-	},
-	{ 
-		.attr            = "attributeSecurityGUID",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectGUID,
-		.ldif_write_fn   = ldif_write_objectGUID,
-		.canonicalise_fn = ldb_canonicalise_objectGUID,
-		.comparison_fn   = ldb_comparison_objectGUID
-	},
-	{ 
-		.attr            = "parentGUID",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectGUID,
-		.ldif_write_fn   = ldif_write_objectGUID,
-		.canonicalise_fn = ldb_canonicalise_objectGUID,
-		.comparison_fn   = ldb_comparison_objectGUID
-	},
-	{ 
-		.attr            = "siteGUID",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectGUID,
-		.ldif_write_fn   = ldif_write_objectGUID,
-		.canonicalise_fn = ldb_canonicalise_objectGUID,
-		.comparison_fn   = ldb_comparison_objectGUID
-	},
-	{ 
-		.attr            = "pKTGUID",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectGUID,
-		.ldif_write_fn   = ldif_write_objectGUID,
-		.canonicalise_fn = ldb_canonicalise_objectGUID,
-		.comparison_fn   = ldb_comparison_objectGUID
-	},
-	{ 
-		.attr            = "fRSVersionGUID",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectGUID,
-		.ldif_write_fn   = ldif_write_objectGUID,
-		.canonicalise_fn = ldb_canonicalise_objectGUID,
-		.comparison_fn   = ldb_comparison_objectGUID
-	},
-	{ 
-		.attr            = "fRSReplicaSetGUID",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectGUID,
-		.ldif_write_fn   = ldif_write_objectGUID,
-		.canonicalise_fn = ldb_canonicalise_objectGUID,
-		.comparison_fn   = ldb_comparison_objectGUID
-	},
-	{ 
-		.attr            = "netbootGUID",
-		.flags           = 0,
-		.ldif_read_fn    = ldif_read_objectGUID,
-		.ldif_write_fn   = ldif_write_objectGUID,
-		.canonicalise_fn = ldb_canonicalise_objectGUID,
-		.comparison_fn   = ldb_comparison_objectGUID
-	},
-	{ 
-		.attr            = "objectCategory",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldif_canonicalise_objectCategory,
-		.comparison_fn   = ldif_comparison_objectCategory,
-	},
-	{
-		.attr            = "member",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "memberOf",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "nCName",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "schemaNamingContext",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "configurationNamingContext",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "rootDomainNamingContext",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "defaultNamingContext",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "subRefs",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "dMDLocation",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "serverReference",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "masteredBy",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "msDs-masteredBy",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "subRefs",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
-	},
-	{
-		.attr            = "fSMORoleOwner",
-		.flags           = 0,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_canonicalise_dn,
-		.comparison_fn   = ldb_comparison_dn,
+		.name		= LDB_SYNTAX_SAMBA_SID,
+		.ldif_read_fn	= ldif_read_objectSid,
+		.ldif_write_fn	= ldif_write_objectSid,
+		.canonicalise_fn= ldb_canonicalise_objectSid,
+		.comparison_fn	= ldb_comparison_objectSid
+	},{
+		.name		= LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR,
+		.ldif_read_fn	= ldif_read_ntSecurityDescriptor,
+		.ldif_write_fn	= ldif_write_ntSecurityDescriptor,
+		.canonicalise_fn= ldb_handler_copy,
+		.comparison_fn	= ldb_comparison_binary
+	},{
+		.name		= LDB_SYNTAX_SAMBA_GUID,
+		.ldif_read_fn	= ldif_read_objectGUID,
+		.ldif_write_fn	= ldif_write_objectGUID,
+		.canonicalise_fn= ldb_canonicalise_objectGUID,
+		.comparison_fn	= ldb_comparison_objectGUID
+	},{
+		.name		= LDB_SYNTAX_SAMBA_OBJECT_CATEGORY,
+		.ldif_read_fn	= ldb_handler_copy,
+		.ldif_write_fn	= ldb_handler_copy,
+		.canonicalise_fn= ldif_canonicalise_objectCategory,
+		.comparison_fn	= ldif_comparison_objectCategory
 	}
+};
+
+static const struct {
+	const char *name;
+	const char *syntax;
+} samba_attributes[] = {
+	{ "objectSid",			LDB_SYNTAX_SAMBA_SID },
+	{ "securityIdentifier", 	LDB_SYNTAX_SAMBA_SID },
+	{ "ntSecurityDescriptor",	LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR },
+	{ "objectGUID",			LDB_SYNTAX_SAMBA_GUID },
+	{ "invocationId",		LDB_SYNTAX_SAMBA_GUID },
+	{ "schemaIDGUID",		LDB_SYNTAX_SAMBA_GUID },
+	{ "attributeSecurityGUID",	LDB_SYNTAX_SAMBA_GUID },
+	{ "parentGUID",			LDB_SYNTAX_SAMBA_GUID },
+	{ "siteGUID",			LDB_SYNTAX_SAMBA_GUID },
+	{ "pKTGUID",			LDB_SYNTAX_SAMBA_GUID },
+	{ "fRSVersionGUID",		LDB_SYNTAX_SAMBA_GUID },
+	{ "fRSReplicaSetGUID",		LDB_SYNTAX_SAMBA_GUID },
+	{ "netbootGUID",		LDB_SYNTAX_SAMBA_GUID },
+	{ "objectCategory",		LDB_SYNTAX_SAMBA_OBJECT_CATEGORY },
+	{ "member",			LDB_SYNTAX_DN },
+	{ "memberOf",			LDB_SYNTAX_DN },
+	{ "nCName",			LDB_SYNTAX_DN },
+	{ "schemaNamingContext",	LDB_SYNTAX_DN },
+	{ "configurationNamingContext",	LDB_SYNTAX_DN },
+	{ "rootDomainNamingContext",	LDB_SYNTAX_DN },
+	{ "defaultNamingContext",	LDB_SYNTAX_DN },
+	{ "subRefs",			LDB_SYNTAX_DN },
+	{ "dMDLocation",		LDB_SYNTAX_DN },
+	{ "serverReference",		LDB_SYNTAX_DN },
+	{ "masteredBy",			LDB_SYNTAX_DN },
+	{ "msDs-masteredBy",		LDB_SYNTAX_DN },
+	{ "fSMORoleOwner",		LDB_SYNTAX_DN },
 };
 
 /*
@@ -593,5 +432,33 @@ static const struct ldb_attrib_handler samba_handlers[] = {
 */
 int ldb_register_samba_handlers(struct ldb_context *ldb)
 {
-	return ldb_set_attrib_handlers(ldb, samba_handlers, ARRAY_SIZE(samba_handlers));
+	uint32_t i;
+
+	for (i=0; i < ARRAY_SIZE(samba_attributes); i++) {
+		int ret;
+		uint32_t j;
+		struct ldb_schema_syntax *s = NULL;
+
+		for (j=0; j < ARRAY_SIZE(samba_syntaxes); j++) {
+			if (strcmp(samba_attributes[i].syntax, samba_syntaxes[j].name) == 0) {
+				s = &samba_syntaxes[j];
+				break;
+			}
+		}
+
+		if (!s) {
+			s = ldb_standard_syntax_by_name(ldb, samba_attributes[i].syntax);
+		}
+
+		if (!s) {
+			return -1;
+		}
+
+		ret = ldb_schema_attribute_add_with_syntax(ldb, samba_attributes[i].name, 0, s);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return LDB_SUCCESS;
 }
