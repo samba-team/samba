@@ -1,3 +1,9 @@
+2006-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* vis.hin: Fix argument for unvis and strsvisx.
+	
+	* unvis.c: prefix unvis functions with rk_, and prototypes.
+	
 2006-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* vis.c: Provide some prototypes for the rk_vis functions.
