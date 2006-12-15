@@ -32,6 +32,7 @@ dist_kdigest_SOURCES = kdigest.c
 nodist_kdigest_SOURCES = kdigest-commands.c
 
 kdigest_LDADD = \
+	$(top_builddir)/lib/ntlm/libheimntlm.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
