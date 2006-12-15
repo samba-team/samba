@@ -36,20 +36,24 @@
 RCSID("$Id$");
 
 static int
-from_file(const char *fn, const char *target,
+from_file(const char *fn, const char *domain,
 	  char **username, char **password)
 {	  
     char *str, buf[1024];
     FILE *f;
+
     f = fopen(fn, "r");
     if (f == NULL)
 	return ENOENT;
+
     while (fgets(buf, sizeof(buf), f) != NULL) {
-	char *t, *u, *p;
+	char *d, *u, *p;
 	buf[strcspn(buf, "\r\n")] = '\0';
+	if (buf[0] == '#')
+	    continue;
 	str = NULL;
-	t = strtok_r(buf, ":", &str);
-	if (t && strcasecmp(target, t) != 0)
+	d = strtok_r(buf, ":", &str);
+	if (d && strcasecmp(domain, d) != 0)
 	    continue;
 	u = strtok_r(NULL, ":", &str);
 	p = strtok_r(NULL, ":", &str);
@@ -57,22 +61,23 @@ from_file(const char *fn, const char *target,
 	    continue;
 	*username = strdup(u);
 	*password = strdup(p);
+	memset(buf, 0, sizeof(buf));
 	fclose(f);
 	return 0;
     }
+    memset(buf, 0, sizeof(buf));
     fclose(f);
     return ENOENT;
 }
 
 static int
-get_userinfo(const gss_name_t target_name,
-	     char **username, char **password)
+get_userinfo(const char *domain, char **username, char **password)
 {
     const char *fn = NULL;
 
     if (!issuid()) {
 	fn = getenv("NTLM_USER_FILE");
-	if (fn != NULL && from_file(fn, "XXX", username, password) == 0)
+	if (fn != NULL && from_file(fn, domain, username, password) == 0)
 	    return 0;
     }
     return ENOENT;
@@ -97,6 +102,7 @@ _gss_ntlm_init_sec_context
 	   )
 {
     ntlm_ctx ctx;
+    ntlm_name name = (ntlm_name)target_name;
 
     *minor_status = 0;
 
@@ -112,8 +118,6 @@ _gss_ntlm_init_sec_context
 	struct ntlm_type1 type1;
 	struct ntlm_buf data;
 	
-	memset(&type1, 0, sizeof(type1));
-	
 	ctx = calloc(1, sizeof(*ctx));
 	if (ctx == NULL) {
 	    *minor_status = EINVAL;
@@ -121,6 +125,15 @@ _gss_ntlm_init_sec_context
 	}
 	*context_handle = (gss_ctx_id_t)ctx;
 
+	ret = get_userinfo(name->domain, &ctx->username, &ctx->password);
+	if (ret) {
+	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
+	    *minor_status = ret;
+	    return GSS_S_FAILURE;
+	}
+
+	memset(&type1, 0, sizeof(type1));
+	
 	type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM;
 	type1.domain = NULL;
 	type1.hostname = NULL;
@@ -142,7 +155,6 @@ _gss_ntlm_init_sec_context
 	krb5_error_code ret;
 	struct ntlm_type2 type2;
 	struct ntlm_type3 type3;
-	char *password = NULL;
 	struct ntlm_buf data;
 
 	ctx = (ntlm_ctx)*context_handle;
@@ -161,22 +173,15 @@ _gss_ntlm_init_sec_context
 
 	memset(&type3, 0, sizeof(type3));
 
+	type3.username = ctx->username;
 	type3.flags = type2.flags;
 	type3.targetname = type2.targetname;
 	type3.ws = rk_UNCONST("workstation");
 
-	ret = get_userinfo(target_name, &type3.username, &password);
-	if (ret) {
-	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
-	    *minor_status = ret;
-	    return GSS_S_FAILURE;
-	}
-
 	{
 	    struct ntlm_buf key;
-	    heim_ntlm_nt_key(password, &key);
-	    memset(password, 0, strlen(password));
-	    free(password);
+	    heim_ntlm_nt_key(ctx->password, &key);
+	    memset(ctx->password, 0, strlen(ctx->password));
 
 	    heim_ntlm_calculate_ntlm1(key.data, key.length,
 				      type2.challange,
@@ -185,7 +190,6 @@ _gss_ntlm_init_sec_context
 	}
 
 	ret = heim_ntlm_encode_type3(&type3, &data);
-	free(type3.username);
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
