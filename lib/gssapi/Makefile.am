@@ -140,10 +140,47 @@ spnegosrc = \
 	spnego/spnego_locl.h \
 	spnego/spnego-private.h
 
+ntlmsrc = \
+	ntlm/accept_sec_context.c \
+	ntlm/acquire_cred.c \
+	ntlm/add_cred.c \
+	ntlm/canonicalize_name.c \
+	ntlm/compare_name.c \
+	ntlm/context_time.c \
+	ntlm/delete_sec_context.c \
+	ntlm/display_name.c \
+	ntlm/display_status.c \
+	ntlm/duplicate_name.c \
+	ntlm/export_name.c \
+	ntlm/export_sec_context.c \
+	ntlm/external.c \
+	ntlm/get_mic.c \
+	ntlm/ntlm.h \
+	ntlm/import_name.c \
+	ntlm/import_sec_context.c \
+	ntlm/indicate_mechs.c \
+	ntlm/init_sec_context.c \
+	ntlm/inquire_context.c \
+	ntlm/inquire_cred.c \
+	ntlm/inquire_cred_by_mech.c \
+	ntlm/inquire_mechs_for_name.c \
+	ntlm/inquire_names_for_mech.c \
+	ntlm/process_context_token.c \
+	ntlm/release_cred.c \
+	ntlm/release_name.c \
+	ntlm/unwrap.c \
+	ntlm/verify_mic.c \
+	ntlm/wrap.c 
+
+$(srcdir)/ntlm/ntlm-private.h:
+	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p ntlm/ntlm-private.h $(ntlmsrc) || rm -f ntlm/ntlm-private.h
+
+$(libgssapi_la_OBJECTS): $(srcdir)/ntlm/ntlm-private.h
 
 dist_libgssapi_la_SOURCES  = \
 	$(krb5src) \
 	$(mechsrc) \
+	$(ntlmsrc) \
 	$(spnegosrc)
 
 nodist_libgssapi_la_SOURCES  = \
@@ -152,8 +189,11 @@ nodist_libgssapi_la_SOURCES  = \
 	$(BUILT_SOURCES)
 
 libgssapi_la_LIBADD = \
-	../krb5/libkrb5.la \
-	../asn1/libasn1.la \
+	$(top_builddir)/lib/ntlm/libheimntlm.la \
+	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(LIB_com_err) \
+	$(LIB_des) \
 	$(LIB_roken)
 
 man_MANS = gssapi.3 gss_acquire_cred.3
@@ -214,7 +254,11 @@ test_cfx_SOURCES = krb5/test_cfx.c
 check_PROGRAMS = test_acquire_cred $(TESTS)
 
 bin_PROGRAMS = gss
-noinst_PROGRAMS = test_cred test_kcred test_context
+noinst_PROGRAMS = test_cred test_kcred test_context test_ntlm
+
+test_ntlm_LDADD = \
+	$(top_builddir)/lib/ntlm/libheimntlm.la \
+	$(LDADD)
 
 LDADD = libgssapi.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
