@@ -1,5 +1,14 @@
-2006-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/accept_sec_context.c: Check after a credential to use.
+	
+2006-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* krb5/set_sec_context_option.c (GSS_KRB5_SET_DEFAULT_REALM_X):
+	don't fail on success.  Bug report from Stefan Metzmacher.
+	
+2006-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* krb5/init_sec_context.c (init_auth): only turn on
 	GSS_C_CONF_FLAG and GSS_C_INT_FLAG if the caller requseted it.
 	From Stefan Metzmacher.
