@@ -120,10 +120,6 @@ int ROKEN_LIB_FUNCTION
 	rk_strvisx (char *, const char *, size_t, int);
 int ROKEN_LIB_FUNCTION
 	rk_strsvisx (char *, const char *, size_t, int, const char *);
-int ROKEN_LIB_FUNCTION
-	rk_strunvis (char *, const char *);
-int ROKEN_LIB_FUNCTION
-	rk_unvis (char *, int, int *, int);
 
 
 #define isoctal(c)	(((u_char)(c)) >= '0' && ((u_char)(c)) <= '7')
@@ -343,6 +339,6 @@ rk_strvisx(char *dst, const char *src, size_t len, int flag)
 	char extra[MAXEXTRAS];
 
 	MAKEEXTRALIST(flag, extra);
-	return (strsvisx(dst, src, len, flag, extra));
+	return (rk_strsvisx(dst, src, len, flag, extra));
 }
 #endif
