@@ -2845,7 +2845,7 @@ int reply_nttrans(connection_struct *conn,
 		return ERROR_NT(result);
 	}
 
-	if ((state = TALLOC_P(NULL, struct trans_state)) == NULL) {
+	if ((state = TALLOC_P(conn->mem_ctx, struct trans_state)) == NULL) {
 		END_PROFILE(SMBnttrans);
 		return ERROR_DOS(ERRSRV,ERRaccess);
 	}
@@ -2862,6 +2862,7 @@ int reply_nttrans(connection_struct *conn,
 
 	/* setup count is in *words* */
 	state->setup_count = 2*CVAL(inbuf,smb_nt_SetupCount); 
+	state->setup = NULL;
 	state->call = function_code;
 
 	/* 

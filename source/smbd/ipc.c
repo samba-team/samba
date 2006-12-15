@@ -447,7 +447,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 		return ERROR_NT(result);
 	}
 
-	if ((state = TALLOC_P(NULL, struct trans_state)) == NULL) {
+	if ((state = TALLOC_P(conn->mem_ctx, struct trans_state)) == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		END_PROFILE(SMBtrans);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -458,6 +458,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 	state->mid = SVAL(inbuf, smb_mid);
 	state->vuid = SVAL(inbuf, smb_uid);
 	state->setup_count = CVAL(inbuf, smb_suwcnt);
+	state->setup = NULL;
 	state->total_param = SVAL(inbuf, smb_tpscnt);
 	state->param = NULL;
 	state->total_data = SVAL(inbuf, smb_tdscnt);
