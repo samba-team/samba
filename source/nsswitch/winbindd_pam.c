@@ -1208,16 +1208,19 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	
 	parse_domain_user(state->request.data.auth.user, name_domain, name_user);
 
-	if (domain->online == False && domain->startup) {
-		/* Logons are very important to users. If we're offline and
-		   we get a request within the first 30 seconds of startup,
-		   try very hard to find a DC and go online. */
+	if (domain->online == False) {
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		if (domain->startup) {
+			/* Logons are very important to users. If we're offline and
+			   we get a request within the first 30 seconds of startup,
+			   try very hard to find a DC and go online. */
 
-		DEBUG(10,("winbindd_dual_pam_auth: domain: %s offline and auth "
-			"request in startup mode.\n", domain->name ));
+			DEBUG(10,("winbindd_dual_pam_auth: domain: %s offline and auth "
+				"request in startup mode.\n", domain->name ));
 
-		winbindd_flush_negative_conn_cache(domain);
-		init_dc_connection(domain);
+			winbindd_flush_negative_conn_cache(domain);
+			result = init_dc_connection(domain);
+		}
 	}
 
 	DEBUG(10,("winbindd_dual_pam_auth: domain: %s last was %s\n", domain->name, domain->online ? "online":"offline"));
