@@ -93,6 +93,8 @@
 #include <hdb_err.h>
 #include <der.h>
 
+#include <heimntlm.h>
+
 #undef ALLOC
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
 #undef ALLOC_SEQ
