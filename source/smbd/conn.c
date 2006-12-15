@@ -257,6 +257,7 @@ void conn_free_internal(connection_struct *conn)
 {
  	vfs_handle_struct *handle = NULL, *thandle = NULL;
  	TALLOC_CTX *mem_ctx = NULL;
+	struct trans_state *state = NULL;
 
 	/* Free vfs_connection_struct */
 	handle = conn->vfs_handles;
@@ -266,6 +267,13 @@ void conn_free_internal(connection_struct *conn)
 		if (handle->free_data)
 			handle->free_data(&handle->data);
 		handle = thandle;
+	}
+
+	/* Free any pending transactions stored on this conn. */
+	for (state = conn->pending_trans; state; state = state->next) {
+		/* state->setup is a talloc child of state. */
+		SAFE_FREE(state->param);
+		SAFE_FREE(state->data);
 	}
 
 	free_namearray(conn->veto_list);
