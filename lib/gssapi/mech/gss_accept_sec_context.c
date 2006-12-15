@@ -92,7 +92,7 @@ parse_header(const gss_buffer_t input_token, gss_OID mech_oid)
 static gss_OID_desc krb5_mechanism =
     {9, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02")};
 static gss_OID_desc ntlm_mechanism =
-    {10, rk_UNCONST("\x2b\x06\x01\x04\x01\x82\x37\x02\x02\x0a")},
+    {10, rk_UNCONST("\x2b\x06\x01\x04\x01\x82\x37\x02\x02\x0a")};
 static gss_OID_desc spnego_mechanism =
     {6, rk_UNCONST("\x2b\x06\x01\x05\x05\x02")};
 
