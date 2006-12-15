@@ -1,5 +1,14 @@
-2006-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/fcache.c: Support "iteration" of file credential caches
+	by giving the user back the default file credential cache and only
+	that.
+
+	* lib/krb5/krb5_locl.h: Expand the default root for some of the cc
+	type names.
+	
+2006-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/krb5/init_creds_pw.c (free_paid): free the krb5_data
 	structure too.  Bug report from Stefan Metzmacher.
 	
