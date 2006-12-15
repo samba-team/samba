@@ -283,7 +283,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 			      void *mem_ctx,
 			      const struct ldb_parse_tree *t)
 {
-	const struct ldb_attrib_handler *h;
+	const struct ldb_schema_attribute *a;
 	struct ldb_val value, subval;
 	char *wild_card_string;
 	char *child, *tmp;
@@ -343,10 +343,10 @@ static char *parsetree_to_sql(struct ldb_module *module,
 		*/
 		attr = ldb_attr_casefold(mem_ctx, t->u.equality.attr);
 		if (attr == NULL) return NULL;
-		h = ldb_attrib_handler(module->ldb, attr);
+		a = ldb_schema_attribute_by_name(module->ldb, attr);
 
 		/* Get a canonicalised copy of the data */
-		h->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
+		a->syntax->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
 		if (value.data == NULL) {
 			return NULL;
 		}
@@ -407,13 +407,13 @@ static char *parsetree_to_sql(struct ldb_module *module,
 
 		attr = ldb_attr_casefold(mem_ctx, t->u.substring.attr);
 		if (attr == NULL) return NULL;
-		h = ldb_attrib_handler(module->ldb, attr);
+		a = ldb_schema_attribute_by_name(module->ldb, attr);
 
 		subval.data = (void *)wild_card_string;
 		subval.length = strlen(wild_card_string) + 1;
 
 		/* Get a canonicalised copy of the data */
-		h->canonicalise_fn(module->ldb, mem_ctx, &(subval), &value);
+		a->syntax->canonicalise_fn(module->ldb, mem_ctx, &(subval), &value);
 		if (value.data == NULL) {
 			return NULL;
 		}
@@ -428,10 +428,10 @@ static char *parsetree_to_sql(struct ldb_module *module,
 	case LDB_OP_GREATER:
 		attr = ldb_attr_casefold(mem_ctx, t->u.equality.attr);
 		if (attr == NULL) return NULL;
-		h = ldb_attrib_handler(module->ldb, attr);
+		a = ldb_schema_attribute_by_name(module->ldb, attr);
 
 		/* Get a canonicalised copy of the data */
-		h->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
+		a->syntax->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
 		if (value.data == NULL) {
 			return NULL;
 		}
@@ -447,10 +447,10 @@ static char *parsetree_to_sql(struct ldb_module *module,
 	case LDB_OP_LESS:
 		attr = ldb_attr_casefold(mem_ctx, t->u.equality.attr);
 		if (attr == NULL) return NULL;
-		h = ldb_attrib_handler(module->ldb, attr);
+		a = ldb_schema_attribute_by_name(module->ldb, attr);
 
 		/* Get a canonicalised copy of the data */
-		h->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
+		a->syntax->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
 		if (value.data == NULL) {
 			return NULL;
 		}
@@ -479,10 +479,10 @@ static char *parsetree_to_sql(struct ldb_module *module,
 	case LDB_OP_APPROX:
 		attr = ldb_attr_casefold(mem_ctx, t->u.equality.attr);
 		if (attr == NULL) return NULL;
-		h = ldb_attrib_handler(module->ldb, attr);
+		a = ldb_schema_attribute_by_name(module->ldb, attr);
 
 		/* Get a canonicalised copy of the data */
-		h->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
+		a->syntax->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
 		if (value.data == NULL) {
 			return NULL;
 		}
@@ -620,7 +620,7 @@ static void lsqlite3_compare(sqlite3_context *ctx, int argc,
 	const char *func = (const char *)sqlite3_value_text(argv[1]);
 	const char *cmp = (const char *)sqlite3_value_text(argv[2]);
 	const char *attr = (const char *)sqlite3_value_text(argv[3]);
-	const struct ldb_attrib_handler *h;
+	const struct ldb_schema_attribute *a;
 	struct ldb_val valX;
 	struct ldb_val valY;
 	int ret;
@@ -628,12 +628,12 @@ static void lsqlite3_compare(sqlite3_context *ctx, int argc,
 	switch (func[0]) {
 	/* greater */
 	case '>': /* >= */
-		h = ldb_attrib_handler(ldb, attr);
+		a = ldb_schema_attribute_by_name(ldb, attr);
 		valX.data = (void *)cmp;
 		valX.length = strlen(cmp);
 		valY.data = (void *)val;
 		valY.length = strlen(val);
-		ret = h->comparison_fn(ldb, ldb, &valY, &valX);
+		ret = a->syntax->comparison_fn(ldb, ldb, &valY, &valX);
 		if (ret >= 0)
 			sqlite3_result_int(ctx, 1);
 		else
@@ -642,12 +642,12 @@ static void lsqlite3_compare(sqlite3_context *ctx, int argc,
 
 	/* lesser */
 	case '<': /* <= */
-		h = ldb_attrib_handler(ldb, attr);
+		a = ldb_schema_attribute_by_name(ldb, attr);
 		valX.data = (void *)cmp;
 		valX.length = strlen(cmp);
 		valY.data = (void *)val;
 		valY.length = strlen(val);
-		ret = h->comparison_fn(ldb, ldb, &valY, &valX);
+		ret = a->syntax->comparison_fn(ldb, ldb, &valY, &valX);
 		if (ret <= 0)
 			sqlite3_result_int(ctx, 1);
 		else
@@ -860,7 +860,7 @@ int lsql_search(struct ldb_module *module, struct ldb_request *req)
 
 	lsql_ac = talloc_get_type(req->handle->private_data, struct lsql_context);
 
-	if ((req->op.search.base == NULL || req->op.search.base->comp_num == 0) &&
+	if ((( ! ldb_dn_is_valid(req->op.search.base)) || ldb_dn_is_null(req->op.search.base)) &&
 	    (req->op.search.scope == LDB_SCOPE_BASE || req->op.search.scope == LDB_SCOPE_ONELEVEL))
 		return LDB_ERR_OPERATIONS_ERROR;
 
@@ -1044,7 +1044,7 @@ static int lsql_add(struct ldb_module *module, struct ldb_request *req)
 		struct ldb_dn *c;
 
 		c = ldb_dn_new(lsql_ac, module->ldb, "@SUBCLASSES");
-		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
+		if (ldb_dn_compare(msg->dn, c) == 0) {
 #warning "insert subclasses into object class tree"
 			ret = LDB_ERR_UNWILLING_TO_PERFORM;
 			goto done;
@@ -1100,7 +1100,7 @@ static int lsql_add(struct ldb_module *module, struct ldb_request *req)
 
 	for (i = 0; i < msg->num_elements; i++) {
 		const struct ldb_message_element *el = &msg->elements[i];
-		const struct ldb_attrib_handler *h;
+		const struct ldb_schema_attribute *a;
 		char *attr;
 		int j;
 
@@ -1111,7 +1111,7 @@ static int lsql_add(struct ldb_module *module, struct ldb_request *req)
 			goto done;
 		}
 
-		h = ldb_attrib_handler(module->ldb, el->name);
+		a = ldb_schema_attribute_by_name(module->ldb, el->name);
 
 		/* For each value of the specified attribute name... */
 		for (j = 0; j < el->num_values; j++) {
@@ -1119,7 +1119,7 @@ static int lsql_add(struct ldb_module *module, struct ldb_request *req)
 			char *insert;
 
 			/* Get a canonicalised copy of the data */
-			h->canonicalise_fn(module->ldb, lsql_ac, &(el->values[j]), &value);
+			a->syntax->canonicalise_fn(module->ldb, lsql_ac, &(el->values[j]), &value);
 			if (value.data == NULL) {
 				ret = LDB_ERR_OTHER;
 				goto done;
@@ -1182,7 +1182,7 @@ static int lsql_modify(struct ldb_module *module, struct ldb_request *req)
 		struct ldb_dn *c;
 
 		c = ldb_dn_new(lsql_ac, module->ldb, "@SUBCLASSES");
-		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
+		if (ldb_dn_compare(msg->dn, c) == 0) {
 #warning "modify subclasses into object class tree"
 			ret = LDB_ERR_UNWILLING_TO_PERFORM;
 			goto done;
@@ -1201,7 +1201,7 @@ static int lsql_modify(struct ldb_module *module, struct ldb_request *req)
 
 	for (i = 0; i < msg->num_elements; i++) {
 		const struct ldb_message_element *el = &msg->elements[i];
-		const struct ldb_attrib_handler *h;
+		const struct ldb_schema_attribute *a;
 		int flags = el->flags & LDB_FLAG_MOD_MASK;
 		char *attr;
 		char *mod;
@@ -1214,7 +1214,7 @@ static int lsql_modify(struct ldb_module *module, struct ldb_request *req)
 			goto done;
 		}
 
-		h = ldb_attrib_handler(module->ldb, el->name);
+		a = ldb_schema_attribute_by_name(module->ldb, el->name);
 
 		switch (flags) {
 
@@ -1250,7 +1250,7 @@ static int lsql_modify(struct ldb_module *module, struct ldb_request *req)
 				struct ldb_val value;
 
 				/* Get a canonicalised copy of the data */
-				h->canonicalise_fn(module->ldb, lsql_ac, &(el->values[j]), &value);
+				a->syntax->canonicalise_fn(module->ldb, lsql_ac, &(el->values[j]), &value);
 				if (value.data == NULL) {
 					ret = LDB_ERR_OTHER;
 					goto done;
@@ -1311,7 +1311,7 @@ static int lsql_modify(struct ldb_module *module, struct ldb_request *req)
 				struct ldb_val value;
 
 				/* Get a canonicalised copy of the data */
-				h->canonicalise_fn(module->ldb, lsql_ac, &(el->values[j]), &value);
+				a->syntax->canonicalise_fn(module->ldb, lsql_ac, &(el->values[j]), &value);
 				if (value.data == NULL) {
 					ret = LDB_ERR_OTHER;
 					goto done;

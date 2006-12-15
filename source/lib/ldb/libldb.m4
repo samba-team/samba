@@ -1,4 +1,6 @@
-SMB_ENABLE(ldb_sqlite3,$with_sqlite3_support)
+if test x"$with_sqlite3_support" = x"yes"; then
+	SMB_ENABLE(ldb_sqlite3, YES)
+fi
 
 AC_MSG_CHECKING([for Python])
 
