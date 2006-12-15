@@ -1,3 +1,11 @@
+2006-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-digest.in: Check that ntlm works.
+	
+2006-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kdc/check-digest.in: prefix digest commands with digest-
+	
 2006-11-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kdc.in: Don't (afs) unlog using kdestroy
