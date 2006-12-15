@@ -455,7 +455,6 @@ struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx,
 	if (msg2 == NULL) return NULL;
 
 	*msg2 = *msg;
-	msg2->private_data = NULL;
 
 	msg2->elements = talloc_array(msg2, struct ldb_message_element, 
 				      msg2->num_elements);
