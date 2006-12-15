@@ -232,7 +232,6 @@ krb5_digest_set_identifier(krb5_context context,
 
 static krb5_error_code
 digest_request(krb5_context context,
-	       krb5_digest digest,
 	       krb5_realm realm,
 	       krb5_ccache ccache,
 	       krb5_key_usage usage,
@@ -333,8 +332,6 @@ digest_request(krb5_context context,
     if (ret)
 	goto out;
 
-    free_DigestResponse(&digest->response);
-
     ret = decode_DigestREP(data2.data, data2.length, &rep, NULL);
     if (ret) {
 	krb5_set_error_string(context, "Failed to parse digest response");
@@ -424,7 +421,7 @@ krb5_digest_init_request(krb5_context context,
     ireq.element = choice_DigestReqInner_init;
     ireq.u.init = digest->init;
 
-    ret = digest_request(context, digest, realm, ccache,
+    ret = digest_request(context, realm, ccache,
 			 KRB5_KU_DIGEST_ENCRYPT, &ireq, &irep);
     if (ret)
 	goto out;
@@ -707,7 +704,7 @@ krb5_digest_request(krb5_context context,
     if (ireq.u.digestRequest.digest == NULL)
 	ireq.u.digestRequest.digest = "md5";
 
-    ret = digest_request(context, digest, realm, ccache,
+    ret = digest_request(context, realm, ccache,
 			 KRB5_KU_DIGEST_ENCRYPT, &ireq, &irep);
     if (ret)
 	return ret;
@@ -800,4 +797,278 @@ krb5_digest_get_a1_hash(krb5_context context,
 	krb5_clear_error_string(context);
 
     return ret;
+}
+
+struct krb5_ntlm {
+    NTLMInit init;
+    NTLMInitReply initReply;
+    NTLMRequest request;
+    NTLMResponse response;
+};
+
+krb5_error_code
+krb5_ntlm_alloc(krb5_context context, 
+		krb5_ntlm *ntlm)
+{
+    *ntlm = calloc(1, sizeof(**ntlm));
+    if (*ntlm == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_ntlm_free(krb5_context context, krb5_ntlm ntlm)
+{
+    free_NTLMInit(&ntlm->init);
+    free_NTLMInitReply(&ntlm->initReply);
+    free_NTLMRequest(&ntlm->request);
+    free_NTLMResponse(&ntlm->response);
+    memset(ntlm, 0, sizeof(*ntlm));
+    free(ntlm);
+    return 0;
+}
+
+
+krb5_error_code
+krb5_ntlm_init_request(krb5_context context, 
+		       krb5_ntlm ntlm,
+		       krb5_realm realm,
+		       krb5_ccache ccache,
+		       uint32_t flags,
+		       const char *hostname,
+		       const char *domainname)
+{
+    DigestReqInner ireq;
+    DigestRepInner irep;
+    krb5_error_code ret;
+
+    memset(&ireq, 0, sizeof(ireq));
+    memset(&irep, 0, sizeof(irep));
+
+    ntlm->init.flags = flags;
+    if (hostname) {
+	ALLOC(ntlm->init.hostname, 1);
+	*ntlm->init.hostname = strdup(hostname);
+    }
+    if (domainname) {
+	ALLOC(ntlm->init.domain, 1);
+	*ntlm->init.domain = strdup(domainname);
+    }
+
+    ireq.element = choice_DigestReqInner_ntlmInit;
+    ireq.u.ntlmInit = ntlm->init;
+
+    ret = digest_request(context, realm, ccache,
+			 KRB5_KU_DIGEST_ENCRYPT, &ireq, &irep);
+    if (ret)
+	goto out;
+
+    if (irep.element == choice_DigestRepInner_error) {
+	krb5_set_error_string(context, "Digest init error: %s",
+			      irep.u.error.reason);
+	ret = irep.u.error.code;
+	goto out;
+    }
+
+    if (irep.element != choice_DigestRepInner_ntlmInitReply) {
+	krb5_set_error_string(context, "ntlm reply not an initReply");
+	ret = EINVAL;
+	goto out;
+    }
+
+    ret = copy_NTLMInitReply(&irep.u.ntlmInitReply, &ntlm->initReply);
+    if (ret) {
+	krb5_set_error_string(context, "Failed to copy initReply");
+	goto out;
+    }
+
+out:
+    free_DigestRepInner(&irep);
+
+    return ret;
+}
+
+krb5_error_code
+krb5_ntlm_init_get_flags(krb5_context context,
+			 krb5_ntlm ntlm,
+			 uint32_t *flags)
+{
+    *flags = ntlm->initReply.flags;
+    return 0;
+}
+
+krb5_error_code
+krb5_ntlm_init_get_challange(krb5_context context,
+			     krb5_ntlm ntlm,
+			     krb5_data *challange)
+{
+    krb5_error_code ret;
+
+    ret = der_copy_octet_string(&ntlm->initReply.challange, challange);
+    if (ret)
+	krb5_clear_error_string(context);
+
+    return ret;
+}
+
+krb5_error_code
+krb5_ntlm_init_get_opaque(krb5_context context,
+			  krb5_ntlm ntlm,
+			  krb5_data *opaque)
+{
+    krb5_error_code ret;
+
+    ret = der_copy_octet_string(&ntlm->initReply.opaque, opaque);
+    if (ret)
+	krb5_clear_error_string(context);
+
+    return ret;
+}
+
+krb5_error_code
+krb5_ntlm_init_get_targetname(krb5_context context,
+			      krb5_ntlm ntlm,
+			      char **name)
+{
+    *name = strdup(ntlm->initReply.targetname);
+    if (*name == NULL) {
+	krb5_clear_error_string(context);
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_ntlm_request(krb5_context context,
+		  krb5_ntlm ntlm,
+		  krb5_realm realm,
+		  krb5_ccache ccache)
+{
+    DigestReqInner ireq;
+    DigestRepInner irep;
+    krb5_error_code ret;
+
+    memset(&ireq, 0, sizeof(ireq));
+    memset(&irep, 0, sizeof(irep));
+
+    ireq.element = choice_DigestReqInner_ntlmRequest;
+    ireq.u.ntlmRequest = ntlm->request;
+
+    ret = digest_request(context, realm, ccache,
+			 KRB5_KU_DIGEST_ENCRYPT, &ireq, &irep);
+    if (ret)
+	return ret;
+
+    if (irep.element == choice_DigestRepInner_error) {
+	krb5_set_error_string(context, "NTLM response error: %s",
+			      irep.u.error.reason);
+	ret = irep.u.error.code;
+	goto out;
+    }
+
+    if (irep.element != choice_DigestRepInner_ntlmResponse) {
+	krb5_set_error_string(context, "NTLM reply not an NTLMResponse");
+	ret = EINVAL;
+	goto out;
+    }
+
+    ret = copy_NTLMResponse(&irep.u.ntlmResponse, &ntlm->response);
+    if (ret) {
+	krb5_set_error_string(context, "Failed to copy NTLMResponse");
+	goto out;
+    }
+
+out:
+    free_DigestRepInner(&irep);
+
+    return ret;
+}
+
+krb5_error_code
+krb5_ntlm_req_set_flags(krb5_context context, 
+			krb5_ntlm ntlm,
+			uint32_t flags)
+{
+    ntlm->request.flags = flags;
+    return 0;
+}
+
+krb5_error_code
+krb5_ntlm_req_set_username(krb5_context context, 
+			   krb5_ntlm ntlm,
+			   const char *username)
+{
+    ntlm->request.username = strdup(username);
+    if (ntlm->request.username == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_ntlm_req_set_targetname(krb5_context context, 
+			     krb5_ntlm ntlm,
+			     const char *targetname)
+{
+    ntlm->request.targetname = strdup(targetname);
+    if (ntlm->request.targetname == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+krb5_error_code
+krb5_ntlm_req_set_lm(krb5_context context, 
+		     krb5_ntlm ntlm,
+		     void *hash, size_t len)
+{
+    ntlm->request.lm.data = malloc(len);
+    if (ntlm->request.lm.data == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    ntlm->request.lm.length = len;
+    memcpy(ntlm->request.lm.data, hash, len);
+    return 0;
+}
+
+krb5_error_code
+krb5_ntlm_req_set_ntlm(krb5_context context, 
+		       krb5_ntlm ntlm,
+		       void *hash, size_t len)
+{
+    ntlm->request.ntlm.data = malloc(len);
+    if (ntlm->request.ntlm.data == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    ntlm->request.ntlm.length = len;
+    memcpy(ntlm->request.ntlm.data, hash, len);
+    return 0;
+}
+
+krb5_error_code
+krb5_ntlm_req_set_opaque(krb5_context context, 
+			 krb5_ntlm ntlm,
+			 krb5_data *opaque)
+{
+    ntlm->request.opaque.data = malloc(opaque->length);
+    if (ntlm->request.opaque.data == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    ntlm->request.opaque.length = opaque->length;
+    memcpy(ntlm->request.opaque.data, opaque->data, opaque->length);
+    return 0;
+}
+
+krb5_boolean
+krb5_ntlm_rep_get_status(krb5_context context, 
+			 krb5_ntlm ntlm)
+{
+    return ntlm->response.success ? TRUE : FALSE;
 }
