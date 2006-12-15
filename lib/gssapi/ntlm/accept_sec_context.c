@@ -164,6 +164,11 @@ handle_type3(OM_uint32 *minor_status,
     if (ret)
 	goto out;
 
+    if (krb5_ntlm_rep_get_status(ctx->context, ctx->ntlm) != TRUE) {
+	ret = EINVAL;
+	goto out;
+    }
+
     return GSS_S_COMPLETE;
 out:
     *minor_status = ret;
