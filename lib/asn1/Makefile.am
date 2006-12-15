@@ -385,15 +385,19 @@ gen_files_test =					\
 	asn1_TESTSeqOf.x
 
 gen_files_digest =					\
+	asn1_DigestError.x				\
 	asn1_DigestInit.x				\
 	asn1_DigestInitReply.x				\
-	asn1_DigestRequest.x				\
-	asn1_DigestError.x				\
-	asn1_DigestResponse.x				\
-	asn1_DigestReqInner.x				\
+	asn1_DigestREP.x				\
 	asn1_DigestREQ.x				\
 	asn1_DigestRepInner.x				\
-	asn1_DigestREP.x
+	asn1_DigestReqInner.x				\
+	asn1_DigestRequest.x				\
+	asn1_DigestResponse.x				\
+	asn1_NTLMInit.x					\
+	asn1_NTLMInitReply.x				\
+	asn1_NTLMRequest.x				\
+	asn1_NTLMResponse.x
 
 
 noinst_PROGRAMS = asn1_compile asn1_print asn1_gen
