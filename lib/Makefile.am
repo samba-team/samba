@@ -19,4 +19,4 @@ dir_des = des
 endif
 
 SUBDIRS = roken vers editline $(dir_com_err) sl asn1 $(dir_des) hx509 \
-	krb5 kafs gssapi hdb kadm5 auth $(dir_45) $(dir_otp) $(dir_dce)
+	ntlm krb5 kafs gssapi hdb kadm5 auth $(dir_45) $(dir_otp) $(dir_dce)
