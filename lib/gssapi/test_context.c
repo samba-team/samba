@@ -275,6 +275,8 @@ main(int argc, char **argv)
 	mechoid = GSS_KRB5_MECHANISM;
     else if (strcmp(mech_string, "spnego") == 0)
 	mechoid = GSS_SPNEGO_MECHANISM;
+    else if (strcmp(mech_string, "ntlm") == 0)
+	mechoid = GSS_NTLM_MECHANISM;
     else if (strcmp(mech_string, "sasl-digest-md5") == 0)
 	mechoid = GSS_SASL_DIGEST_MD5_MECHANISM;
     else
@@ -283,7 +285,8 @@ main(int argc, char **argv)
     loop(mechoid, nameoid, argv[0], GSS_C_NO_CREDENTIAL,
 	 &sctx, &cctx, &actual_mech, &deleg_cred);
     
-    if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) { /* XXX should be actual_mech */
+    /* XXX should be actual_mech */
+    if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) { 
 	krb5_context context;
 	time_t time, skew;
 	gss_buffer_desc authz_data;
