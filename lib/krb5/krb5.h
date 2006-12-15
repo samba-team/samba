@@ -77,6 +77,8 @@ typedef struct krb5_get_creds_opt_data *krb5_get_creds_opt;
 
 struct krb5_digest;
 typedef struct krb5_digest *krb5_digest;
+struct krb5_ntlm;
+typedef struct krb5_ntlm *krb5_ntlm;
 
 struct krb5_pac;
 
