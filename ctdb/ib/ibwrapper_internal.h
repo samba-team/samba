@@ -21,59 +21,49 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-typedef struct _ibw_mr {
-	struct ibv_mr *mr;
-	struct _ibw_mr *next, *prev;
-} ibw_mr;
+struct ibw_opts {
+	int	max_send_wr;
+	int	max_recv_wr;
+};
 
-typedef struct _ibw_opts {
-	char	*dev_name;
-	int	rx_depth;
-	int	mtu;
-	int	ib_port;
-} ibw_opts;
+struct ibw_wr {
+	char	*msg; /* initialized in ibw_init_memory once per connection */
+	int	wr_id; /* position in wr_index list; also used as wr id */
+	struct ibw_wr *next, *prev; /* in wr_list_avail or wr_list_used */
+};
 
-typedef enum {
-	IWINT_INIT = 0,
-	IWINT_ADDR_RESOLVED,
-	IWINT_ROUTE_RESOLVED,
-	IWINT_ERROR
-} ibw_state_ctx;
-
-typedef struct _ibw_ctx_priv {
-	ibw_mr *avail_first;
-	ibw_mr *avail_last;
-	ibw_mr *used_first;
-	ibw_mr *used_last;
-
+struct ibw_ctx_priv {
 	struct event_context *ectx;
 
-	ibw_opts opts;
+	struct ibw_opts opts;
 
-	struct ibv_context     *context;
-	struct ibv_pd	       *pd;
 	struct rdma_cm_id	*cm_id; /* server cm id */
 
 	struct rdma_event_channel *cm_channel;
 	struct fd_event *cm_channel_event;
 
-	ibw_connstate_fn_t connstate_func;
-	ibw_receive_fn_t receive_func;
-} ibw_ctx_priv;
+	struct ibv_pd	       *pd;
 
-typedef struct _ibw_conn_priv {
-	struct ibv_cq	*cq;
-	struct ibv_qp	*qp;
+	ibw_connstate_fn_t connstate_func; /* see ibw_init */
+	ibw_receive_fn_t receive_func; /* see ibw_init */
+
+	long	pagesize; /* sysconf result for memalign */
+	int	qsize; /* opts.max_send_wr + opts.max_recv_wr */
+	int	max_msg_size; /* see ibw_init */
+};
+
+struct ibw_conn_priv {
+	struct ibv_comp_channel *verbs_channel;
+	struct fd_event *verbs_channel_event;
 
 	struct rdma_cm_id *cm_id; /* client's cm id */
-} ibw_conn_priv;
+	int	is_accepted;
 
-/* 
- * Must be called in all cases after selecting/polling
- * for FDs set via ibw_add_event_fn_t.
- *
- * fd_index: fd identifier passed in ibw_add_event_fn_t
- * with the same fd was set there.
- */
-//int ibw_process_event(ibw_ctx *ctx, int fd_index);
+	struct ibv_cq	*cq; /* qp is in cm_id */
+	struct ibv_mr *mr;
+	char *buf; /* fixed size (qsize * opts.max_msg_size) buffer for send/recv */
+	struct ibw_wr *wr_list_avail;
+	struct ibw_wr *wr_list_used;
+	struct ibw_wr **wr_index; /* array[0..(qsize-1)] of (ibw_wr *) */
+};
 
