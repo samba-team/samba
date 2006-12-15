@@ -1231,7 +1231,7 @@ static void getgroups_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 		(struct getgroups_state *)private_data;
 
 	if (success) {
-		if (!add_gid_to_array_unique(NULL, gid,
+		if (!add_gid_to_array_unique(s->state->mem_ctx, gid,
 					&s->token_gids,
 					&s->num_token_gids)) {
 			return;
@@ -1253,7 +1253,8 @@ static void getgroups_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	}
 
 	s->state->response.data.num_entries = s->num_token_gids;
-	s->state->response.extra_data.data = s->token_gids;
+	/* s->token_gids are talloced */
+	s->state->response.extra_data.data = smb_xmemdup(s->token_gids, s->num_token_gids * sizeof(gid_t));
 	s->state->response.length += s->num_token_gids * sizeof(gid_t);
 	request_ok(s->state);
 }
