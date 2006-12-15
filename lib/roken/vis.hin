@@ -101,6 +101,8 @@ int ROKEN_LIB_FUNCTION
 #define svis(a,b,c,d,e) rk_svis(a,b,c,d,e)
 #undef strvis
 #define strvis(a,b,c) rk_strvis(a,b,c)
+#undef strsvis
+#define strsvis(a,b,c,d) rk_strsvis(a,b,c,d)
 #undef strvisx
 #define strvisx(a,b,c,d) rk_strvisx(a,b,c,d)
 #undef strsvisx
