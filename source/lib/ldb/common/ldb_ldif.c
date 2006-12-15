@@ -544,7 +544,6 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	msg->dn = NULL;
 	msg->elements = NULL;
 	msg->num_elements = 0;
-	msg->private_data = NULL;
 
 	chunk = next_chunk(ldb, fgetc_fn, private_data);
 	if (!chunk) {
@@ -552,7 +551,6 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	}
 	talloc_steal(ldif, chunk);
 
-	msg->private_data = chunk;
 	s = chunk;
 
 	if (next_attr(ldif, &s, &attr, &value) != 0) {

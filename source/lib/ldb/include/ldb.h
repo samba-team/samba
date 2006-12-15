@@ -156,7 +156,6 @@ struct ldb_message {
 	struct ldb_dn *dn;
 	unsigned int num_elements;
 	struct ldb_message_element *elements;
-	void *private_data; /* private to the backend */
 };
 
 enum ldb_changetype {

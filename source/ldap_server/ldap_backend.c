@@ -340,7 +340,6 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
 	msg->dn = dn;
-	msg->private_data = NULL;
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
@@ -444,7 +443,6 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
 	msg->dn = dn;
-	msg->private_data = NULL;
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
