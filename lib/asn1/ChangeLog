@@ -1,5 +1,17 @@
-2006-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add ntlm files.
+
+	* digest.asn1: Add bits for handling NTLM.
+	
+2006-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: add pkix proxy cert policy lang oids
+
+	* rfc2459.asn1: add pkix proxy cert policy lang oids
+	
+2006-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* rfc2459.asn1: unbreak id-pe-proxyCertInfo
 
 	* rfc2459.asn1: Add id-pkix-on-dnsSRV and related oids

@@ -1,5 +1,10 @@
-2006-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* init_c.c: if the user have a kadmin/admin initial ticket, don't
+	ask for password, just use the credential instead.
+	
+2006-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ipropd_master.c: Use strcspn to remove \n from string returned
 	by fgets.  From Björn Sandell
 	
