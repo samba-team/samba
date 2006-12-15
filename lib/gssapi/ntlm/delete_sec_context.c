@@ -49,6 +49,12 @@ OM_uint32 _gss_ntlm_delete_sec_context
 	    krb5_ntlm_free(ctx->context, ctx->ntlm);
 	    krb5_free_context(ctx->context);
 	}
+	if (ctx->password) {
+	    memset(ctx->password, 0, strlen(ctx->password));
+	    free(ctx->password);
+	}
+	if (ctx->username)
+	    free(ctx->username);
 	krb5_data_free(&ctx->opaque);
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
