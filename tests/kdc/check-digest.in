@@ -126,10 +126,27 @@ ${test_ntlm} || { echo "test_ntlm failed"; exit 1; }
 NTLM_USER_FILE="${srcdir}/ntlm-user-file.txt"
 export NTLM_USER_FILE
 
+echo ${context} --mech-type=ntlm \
+	    --name-type=hostbased-service datan@DOMAIN || \
+		{ echo "test_context 1 failed"; exit 1; }
+bash
+
 echo "test_context --mech-type=ntlm"
 ${context} --mech-type=ntlm \
 	    --name-type=hostbased-service datan@DOMAIN || \
-		{ echo "test_context failed"; exit 1; }
+		{ echo "test_context 1 failed"; exit 1; }
+
+${context} --mech-type=ntlm \
+	    --name-type=hostbased-service datan@host.DOMAIN || \
+		{ echo "test_context 2 failed"; exit 1; }
+
+${context} --mech-type=ntlm \
+	    --name-type=hostbased-service datan@host.domain.domain2 || \
+		{ echo "test_context 3 failed"; exit 1; }
+
+${context} --mech-type=ntlm \
+	    --name-type=hostbased-service datan@host.foo 2>/dev/null && \
+		{ echo "test_context 4 failed"; exit 1; }
 
 echo "Trying CHAP"
 
