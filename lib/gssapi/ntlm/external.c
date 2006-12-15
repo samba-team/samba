@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -38,7 +38,7 @@ RCSID("$Id$");
 static gssapi_mech_interface_desc ntlm_mech = {
     GMI_VERSION,
     "ntlm",
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0e\x02") },
+    {10, rk_UNCONST("\x2b\x06\x01\x04\x01\x82\x37\x02\x02\x0a") },
     _gss_ntlm_acquire_cred,
     _gss_ntlm_release_cred,
     _gss_ntlm_init_sec_context,
@@ -77,6 +77,6 @@ __gss_ntlm_initialize(void)
 }
 
 static gss_OID_desc _gss_ntlm_mechanism_desc = 
-{6, rk_UNCONST("\x2a\x85\x70\x2b\x0e\x02") };
+{10, rk_UNCONST("\x2b\x06\x01\x04\x01\x82\x37\x02\x02\x0a") };
 
 gss_OID GSS_NTLM_MECHANISM = &_gss_ntlm_mechanism_desc;
