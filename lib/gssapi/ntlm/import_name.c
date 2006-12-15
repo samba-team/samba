@@ -42,9 +42,49 @@ OM_uint32 _gss_ntlm_import_name
             gss_name_t * output_name
            )
 {
-    if (minor_status)
-	*minor_status = 0;
+    char *name, *p, *p2;
+    ntlm_name n;
+
+    *minor_status = 0;
+
     if (output_name)
 	*output_name = GSS_C_NO_NAME;
+
+    if (!gss_oid_equal(input_name_type, GSS_C_NT_HOSTBASED_SERVICE))
+	return GSS_S_BAD_NAMETYPE;
+
+    name = malloc(input_name_type->length + 1);
+    if (name == NULL) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+    memcpy(name, input_name_buffer->value, input_name_buffer->length);
+    name[input_name_buffer->length] = '\0';
+
+    /* find "domain" part of the name and uppercase it */
+    p = strchr(name, '@');
+    if (p == NULL)
+	return GSS_S_BAD_NAME;
+    p++;
+    p2 = strchr(p, '.');
+    if (p2 && p2[1] != '\0') {
+	p = p2 + 1;
+	p2 = strchr(p, '.');
+	if (p2)
+	    *p2 = '\0';
+    }
+    strupr(p);
+    
+    n = malloc(sizeof(n) + strlen(p));
+    if (n == NULL) {
+	free(name);
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+    strcpy(n->domain, p);
+    free(name);
+
+    *output_name = (gss_name_t)n;
+
     return GSS_S_COMPLETE;
 }
