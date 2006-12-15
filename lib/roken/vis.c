@@ -222,7 +222,7 @@ do {									   \
  * svis - visually encode characters, also encoding the characters
  * 	  pointed to by `extra'
  */
-#ifndef HAVE_SVIS
+
 char * ROKEN_LIB_FUNCTION
 rk_svis(char *dst, int c, int flag, int nextc, const char *extra)
 {
@@ -233,7 +233,6 @@ rk_svis(char *dst, int c, int flag, int nextc, const char *extra)
 	*dst = '\0';
 	return(dst);
 }
-#endif
 
 
 /*
@@ -251,7 +250,7 @@ rk_svis(char *dst, int c, int flag, int nextc, const char *extra)
  *	Strsvisx encodes exactly len bytes from src into dst.
  *	This is useful for encoding a block of data.
  */
-#ifndef HAVE_STRSVIS
+
 int ROKEN_LIB_FUNCTION
 rk_strsvis(char *dst, const char *src, int flag, const char *extra)
 {
@@ -267,10 +266,8 @@ rk_strsvis(char *dst, const char *src, int flag, const char *extra)
 	*dst = '\0';
 	return (dst - start);
 }
-#endif
 
 
-#ifndef HAVE_STRVISX
 int ROKEN_LIB_FUNCTION
 rk_strsvisx(char *dst, const char *src, size_t len, int flag, const char *extra)
 {
@@ -288,13 +285,11 @@ rk_strsvisx(char *dst, const char *src, size_t len, int flag, const char *extra)
 	*dst = '\0';
 	return (dst - start);
 }
-#endif
 
 
 /*
  * vis - visually encode characters
  */
-#ifndef HAVE_VIS
 char * ROKEN_LIB_FUNCTION
 rk_vis(char *dst, int c, int flag, int nextc)
 {
@@ -307,7 +302,6 @@ rk_vis(char *dst, int c, int flag, int nextc)
 	*dst = '\0';
 	return (dst);
 }
-#endif
 
 
 /*
@@ -320,19 +314,17 @@ rk_vis(char *dst, int c, int flag, int nextc)
  *	Strvisx encodes exactly len bytes from src into dst.
  *	This is useful for encoding a block of data.
  */
-#ifndef HAVE_STRVIS
+
 int ROKEN_LIB_FUNCTION
 rk_strvis(char *dst, const char *src, int flag)
 {
 	char extra[MAXEXTRAS];
 
 	MAKEEXTRALIST(flag, extra);
-	return (strsvis(dst, src, flag, extra));
+	return (rk_strsvis(dst, src, flag, extra));
 }
-#endif
 
 
-#ifndef HAVE_STRVISX
 int ROKEN_LIB_FUNCTION
 rk_strvisx(char *dst, const char *src, size_t len, int flag)
 {
@@ -341,4 +333,3 @@ rk_strvisx(char *dst, const char *src, size_t len, int flag)
 	MAKEEXTRALIST(flag, extra);
 	return (rk_strsvisx(dst, src, len, flag, extra));
 }
-#endif
