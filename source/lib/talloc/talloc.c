@@ -771,7 +771,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 		return NULL;
 	}
 
-	/* realloc(NULL) is equavalent to malloc() */
+	/* realloc(NULL) is equivalent to malloc() */
 	if (ptr == NULL) {
 		return _talloc_named_const(context, size, name);
 	}
