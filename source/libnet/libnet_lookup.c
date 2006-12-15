@@ -393,6 +393,7 @@ static void continue_name_found(struct rpc_request *req)
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->lookup.out.result;
+	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
 }
