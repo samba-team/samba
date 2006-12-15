@@ -1,5 +1,11 @@
 2006-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* unvis.c: Use internal version of rk_unvis
+
+	* unvis.c: Always include rk_versions.
+
+	* vis.c: Always include rk_versions.
+
 	* vis.hin: Fix argument for unvis and strsvisx.
 	
 	* unvis.c: prefix unvis functions with rk_, and prototypes.
