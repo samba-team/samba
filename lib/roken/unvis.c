@@ -90,7 +90,7 @@ int ROKEN_LIB_FUNCTION
 /*
  * unvis - decode characters previously encoded by vis
  */
-#ifndef HAVE_UNVIS
+
 int ROKEN_LIB_FUNCTION
 rk_unvis(char *cp, int c, int *astate, int flag)
 {
@@ -245,7 +245,6 @@ rk_unvis(char *cp, int c, int *astate, int flag)
 		return (UNVIS_SYNBAD);
 	}
 }
-#endif
 
 /*
  * strunvis - decode src into dst 
@@ -254,7 +253,6 @@ rk_unvis(char *cp, int c, int *astate, int flag)
  *	Dst is null terminated.
  */
 
-#ifndef HAVE_STRUNVIS
 int ROKEN_LIB_FUNCTION
 rk_strunvis(char *dst, const char *src)
 {
@@ -286,4 +284,3 @@ rk_strunvis(char *dst, const char *src)
 	*dst = '\0';
 	return (dst - start);
 }
-#endif
