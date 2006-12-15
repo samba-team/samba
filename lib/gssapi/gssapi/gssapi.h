@@ -300,6 +300,12 @@ extern gss_OID GSS_C_NT_EXPORT_NAME;
 
 extern gss_OID GSS_SASL_DIGEST_MD5_MECHANISM;
 
+/*
+ * NTLM mechanism
+ */
+
+extern gss_OID GSS_NTLM_MECHANISM;
+
 /* Major status codes */
 
 #define GSS_S_COMPLETE 0
