@@ -67,6 +67,8 @@ typedef struct {
     OM_uint32 status;
 #define STATUS_OPEN 1
 #define STATUS_CLIENT 2
+    char *username;
+    char *password;
 } *ntlm_ctx;
 
 typedef struct {
