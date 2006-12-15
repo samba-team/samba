@@ -329,17 +329,6 @@ typedef int (*ldb_attr_comparison_t)(struct ldb_context *, void *mem_ctx, const 
   comparison_fn		-> compare two values
 */
 
-struct ldb_attrib_handler {
-
-	const char *attr;
-	unsigned flags;
-
-	ldb_attr_handler_t ldif_read_fn;
-	ldb_attr_handler_t ldif_write_fn;
-	ldb_attr_handler_t canonicalise_fn;
-	ldb_attr_comparison_t comparison_fn;
-};
-
 struct ldb_schema_syntax {
 	const char *name;
 	ldb_attr_handler_t ldif_read_fn;
@@ -347,6 +336,15 @@ struct ldb_schema_syntax {
 	ldb_attr_handler_t canonicalise_fn;
 	ldb_attr_comparison_t comparison_fn;
 };
+
+struct ldb_schema_attribute {
+	const char *name;
+	unsigned flags;
+	const struct ldb_schema_syntax *syntax;
+};
+
+const struct ldb_schema_attribute *ldb_schema_attribute_by_name(struct ldb_context *ldb,
+								const char *name);
 
 /**
    The attribute is not returned by default
@@ -1281,10 +1279,6 @@ char *ldb_base64_encode(void *mem_ctx, const char *buf, int len);
 */
 int ldb_base64_decode(char *s);
 
-int ldb_attrib_add_handlers(struct ldb_context *ldb, 
-			    const struct ldb_attrib_handler *handlers, 
-			    unsigned num_handlers);
-
 /* The following definitions come from lib/ldb/common/ldb_dn.c  */
 
 struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *dn);
@@ -1523,10 +1517,6 @@ int ldb_set_debug_stderr(struct ldb_context *ldb);
 /* control backend specific opaque values */
 int ldb_set_opaque(struct ldb_context *ldb, const char *name, void *value);
 void *ldb_get_opaque(struct ldb_context *ldb, const char *name);
-
-const struct ldb_attrib_handler *ldb_attrib_handler(struct ldb_context *ldb,
-						    const char *attrib);
-
 
 const char **ldb_attr_list_copy(void *mem_ctx, const char * const *attrs);
 const char **ldb_attr_list_copy_add(void *mem_ctx, const char * const *attrs, const char *new_attr);

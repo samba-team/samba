@@ -33,81 +33,84 @@
 #include "ldb/include/includes.h"
 
 /*
-  add to the list of ldif handlers for this ldb context
+  add a attribute to the ldb_schema
+
+  if flags contains LDB_ATTR_FLAG_ALLOCATED
+  the attribute name string will be copied using
+  talloc_strdup(), otherwise it needs to be a static const
+  string at least with a lifetime longer than the ldb struct!
+  
+  the ldb_schema_syntax structure should be a pointer
+  to a static const struct or at least it needs to be
+  a struct with a longer lifetime than the ldb context!
+
 */
-int ldb_set_attrib_handlers(struct ldb_context *ldb, 
-			    const struct ldb_attrib_handler *handlers, 
-			    unsigned num_handlers)
+int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb, 
+					 const char *attribute,
+					 unsigned flags,
+					 const struct ldb_schema_syntax *syntax)
 {
-	int i, j, n;
-	struct ldb_attrib_handler *h;
-	n = ldb->schema.num_attrib_handlers + num_handlers;
-	h = talloc_realloc(ldb, ldb->schema.attrib_handlers,
-			   struct ldb_attrib_handler, n);
-	if (h == NULL) {
+	int i, n;
+	struct ldb_schema_attribute *a;
+
+	n = ldb->schema.num_attributes + 1;
+
+	a = talloc_realloc(ldb, ldb->schema.attributes,
+			   struct ldb_schema_attribute, n);
+	if (a == NULL) {
 		ldb_oom(ldb);
 		return -1;
 	}
-	ldb->schema.attrib_handlers = h;
+	ldb->schema.attributes = a;
 
-	for (i = 0; i < num_handlers; i++) {
-		for (j = 0; j < ldb->schema.num_attrib_handlers; j++) {
-			if (ldb_attr_cmp(handlers[i].attr, h[j].attr) < 0) {
-				memmove(h+j+1, h+j, sizeof(*h) * (ldb->schema.num_attrib_handlers-j));
-				break;
-			}
+	for (i = 0; i < ldb->schema.num_attributes; i++) {
+		if (ldb_attr_cmp(attribute, a[i].name) < 0) {
+			memmove(a+i+1, a+i, sizeof(*a) * (ldb->schema.num_attributes-i));
+			break;
 		}
-		h[j] = handlers[i];
-		if (h[j].flags & LDB_ATTR_FLAG_ALLOCATED) {
-			h[j].attr = talloc_strdup(h, h[j].attr);
-			if (h[j].attr == NULL) {
-				ldb_oom(ldb);
-				return -1;
-			}
-		}
-		ldb->schema.num_attrib_handlers++;
 	}
+
+	a[i].name	= attribute;
+	a[i].flags	= flags;
+	a[i].syntax	= syntax;
+
+	if (a[i].flags & LDB_ATTR_FLAG_ALLOCATED) {
+		a[i].name = talloc_strdup(a, a[i].name);
+		if (a[i].name == NULL) {
+			ldb_oom(ldb);
+			return -1;
+		}
+	}
+
+	ldb->schema.num_attributes++;
 	return 0;
 }
-			  
-
-
-/*
-  default handler function pointers
-*/
-static const struct ldb_attrib_handler ldb_default_attrib_handler = {
-	.attr = NULL,
-	.ldif_read_fn    = ldb_handler_copy,
-	.ldif_write_fn   = ldb_handler_copy,
-	.canonicalise_fn = ldb_handler_copy,
-	.comparison_fn   = ldb_comparison_binary,
-};
 
 /*
   return the attribute handlers for a given attribute
 */
-const struct ldb_attrib_handler *ldb_attrib_handler(struct ldb_context *ldb,
-						    const char *attrib)
+const struct ldb_schema_attribute *ldb_schema_attribute_by_name(struct ldb_context *ldb,
+								const char *name)
 {
 	int i, e, b = 0, r;
-	const struct ldb_attrib_handler *def = &ldb_default_attrib_handler;
+	const struct ldb_schema_attribute *def = NULL;
 
 	/* as handlers are sorted, '*' must be the first if present */
-	if (strcmp(ldb->schema.attrib_handlers[0].attr, "*") == 0) {
-		def = &ldb->schema.attrib_handlers[0];
+	if (strcmp(ldb->schema.attributes[0].name, "*") == 0) {
+		def = &ldb->schema.attributes[0];
 		b = 1;
 	}
 
 	/* do a binary search on the array */
-	e = ldb->schema.num_attrib_handlers - 1;
+	e = ldb->schema.num_attributes - 1;
 
 	while (b <= e) {
 
 		i = (b + e) / 2;
 
-		r = ldb_attr_cmp(attrib, ldb->schema.attrib_handlers[i].attr);
+		r = ldb_attr_cmp(name, ldb->schema.attributes[i].name);
 		if (r == 0) {
-			return &ldb->schema.attrib_handlers[i];
+			return &ldb->schema.attributes[i];
 		}
 		if (r < 0) {
 			e = i - 1;
@@ -124,45 +127,39 @@ const struct ldb_attrib_handler *ldb_attrib_handler(struct ldb_context *ldb,
 /*
   add to the list of ldif handlers for this ldb context
 */
-void ldb_remove_attrib_handler(struct ldb_context *ldb, const char *attrib)
+void ldb_schema_attribute_remove(struct ldb_context *ldb, const char *name)
 {
-	const struct ldb_attrib_handler *h;
+	const struct ldb_schema_attribute *a;
 	int i;
-	h = ldb_attrib_handler(ldb, attrib);
-	if (h == &ldb_default_attrib_handler) {
+
+	a = ldb_schema_attribute_by_name(ldb, name);
+	if (a == NULL) {
 		return;
 	}
-	if (h->flags & LDB_ATTR_FLAG_ALLOCATED) {
-		talloc_free(discard_const_p(char, h->attr));
+
+	if (a->flags & LDB_ATTR_FLAG_ALLOCATED) {
+		talloc_free(discard_const_p(char, a->name));
 	}
-	i = h - ldb->schema.attrib_handlers;
-	if (i < ldb->schema.num_attrib_handlers - 1) {
-		memmove(&ldb->schema.attrib_handlers[i], 
-			h+1, sizeof(*h) * (ldb->schema.num_attrib_handlers-(i+1)));
+
+	i = a - ldb->schema.attributes;
+	if (i < ldb->schema.num_attributes - 1) {
+		memmove(&ldb->schema.attributes[i], 
+			a+1, sizeof(*a) * (ldb->schema.num_attributes-(i+1)));
 	}
-	ldb->schema.num_attrib_handlers--;
+
+	ldb->schema.num_attributes--;
 }
 
 /*
   setup a attribute handler using a standard syntax
 */
-int ldb_set_attrib_handler_syntax(struct ldb_context *ldb, 
-				  const char *attr, const char *syntax)
+int ldb_schema_attribute_add(struct ldb_context *ldb,
+			     const char *attribute,
+			     unsigned flags,
+			     const char *syntax)
 {
 	const struct ldb_schema_syntax *s = ldb_standard_syntax_by_name(ldb, syntax);
-	struct ldb_attrib_handler h;
-	if (s == NULL) {
-       		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unknown syntax '%s'\n", syntax);
-		return -1;
-	}
-	h.attr = attr;
-	h.flags = 0;
-	h.ldif_read_fn = s->ldif_read_fn;
-	h.ldif_write_fn = s->ldif_write_fn;
-	h.canonicalise_fn = s->canonicalise_fn;
-	h.comparison_fn = s->comparison_fn;
-
-	return ldb_set_attrib_handlers(ldb, &h, 1);
+	return ldb_schema_attribute_add_with_syntax(ldb, attribute, flags, s);
 }
 
 /*
@@ -174,6 +171,7 @@ int ldb_setup_wellknown_attributes(struct ldb_context *ldb)
 		const char *attr;
 		const char *syntax;
 	} wellknown[] = {
+		{ "*", LDB_SYNTAX_OCTET_STRING },
 		{ "dn", LDB_SYNTAX_DN },
 		{ "distinguishedName", LDB_SYNTAX_DN },
 		{ "cn", LDB_SYNTAX_DIRECTORY_STRING },
@@ -182,15 +180,18 @@ int ldb_setup_wellknown_attributes(struct ldb_context *ldb)
 		{ "objectClass", LDB_SYNTAX_OBJECTCLASS }
 	};
 	int i;
+	int ret;
+
 	for (i=0;i<ARRAY_SIZE(wellknown);i++) {
-		if (ldb_set_attrib_handler_syntax(ldb, wellknown[i].attr, 
-						  wellknown[i].syntax) != 0) {
-			return -1;
+		ret = ldb_schema_attribute_add(ldb, wellknown[i].attr, 0,
+					       wellknown[i].syntax);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 	}
-	return 0;
-}
 
+	return LDB_SUCCESS;
+}
 
 /*
   return the list of subclasses for a class

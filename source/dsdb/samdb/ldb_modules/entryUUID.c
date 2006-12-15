@@ -96,9 +96,9 @@ static struct ldb_val val_copy(struct ldb_module *module, TALLOC_CTX *ctx, const
 static struct ldb_val sid_always_binary(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct ldb_val out = data_blob(NULL, 0);
-	const struct ldb_attrib_handler *handler = ldb_attrib_handler(module->ldb, "objectSid");
-	
-	if (handler->canonicalise_fn(module->ldb, ctx, val, &out) != LDB_SUCCESS) {
+	const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(module->ldb, "objectSid");
+
+	if (a->syntax->canonicalise_fn(module->ldb, ctx, val, &out) != LDB_SUCCESS) {
 		return data_blob(NULL, 0);
 	}
 

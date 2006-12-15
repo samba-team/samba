@@ -79,8 +79,8 @@ typedef int (*ldb_connect_fn) (struct ldb_context *ldb, const char *url, unsigne
 */
 struct ldb_schema {
 	/* attribute handling table */
-	unsigned num_attrib_handlers;
-	struct ldb_attrib_handler *attrib_handlers;
+	unsigned num_attributes;
+	struct ldb_schema_attribute *attributes;
 
 	/* objectclass information */
 	unsigned num_classes;
@@ -183,17 +183,22 @@ int ldb_match_msg(struct ldb_context *ldb,
 		  struct ldb_dn *base,
 		  enum ldb_scope scope);
 
-void ldb_remove_attrib_handler(struct ldb_context *ldb, const char *attrib);
 const struct ldb_schema_syntax *ldb_standard_syntax_by_name(struct ldb_context *ldb,
 							    const char *syntax);
-int ldb_set_attrib_handlers(struct ldb_context *ldb, 
-			    const struct ldb_attrib_handler *handlers, 
-			    unsigned num_handlers);
-int ldb_setup_wellknown_attributes(struct ldb_context *ldb);
-int ldb_set_attrib_handler_syntax(struct ldb_context *ldb, 
-				  const char *attr, const char *syntax);
 
 /* The following definitions come from lib/ldb/common/ldb_attributes.c  */
+
+int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
+					 const char *name,
+					 unsigned flags,
+					 const struct ldb_schema_syntax *syntax);
+int ldb_schema_attribute_add(struct ldb_context *ldb, 
+			     const char *name,
+			     unsigned flags,
+			     const char *syntax);
+void ldb_schema_attribute_remove(struct ldb_context *ldb, const char *name);
+int ldb_setup_wellknown_attributes(struct ldb_context *ldb);
+
 const char **ldb_subclass_list(struct ldb_context *ldb, const char *classname);
 void ldb_subclass_remove(struct ldb_context *ldb, const char *classname);
 int ldb_subclass_add(struct ldb_context *ldb, const char *classname, const char *subclass);
