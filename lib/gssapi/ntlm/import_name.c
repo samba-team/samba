@@ -46,5 +46,5 @@ OM_uint32 _gss_ntlm_import_name
 	*minor_status = 0;
     if (output_name)
 	*output_name = GSS_C_NO_NAME;
-    return GSS_S_FAILURE;
+    return GSS_S_COMPLETE;
 }
