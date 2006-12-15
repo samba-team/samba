@@ -86,6 +86,7 @@ libkdc_la_LIBADD = \
 	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_kdb) $(LIB_krb4) \
+	$(top_builddir)/lib/ntlm/libheimntlm.la \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken) \
