@@ -38,6 +38,7 @@ swat_menus.esptest = simple_menu(
 swat_menus.json = simple_menu(
 	"JSON Tests",
 	"ldb browser",          session_uri("/apps/samba/utils/ldbbrowse.html"),
+	"admin console",	session_uri("/apps/samba/utils/admin_console.html"),
 	"qooxdoo examples",	session_uri("/apps/qooxdoo-examples/index.html"));
 
 

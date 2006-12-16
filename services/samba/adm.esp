@@ -1,0 +1,22 @@
+<%
+
+jsonrpc_include("resources.esp");
+
+libinclude("base.js");
+libinclude("management.js");
+
+function _echo(params, error) {
+	var echo_string = params[0];
+	return echo_string;
+}
+jsonrpc.method.echo = _echo;
+
+function _nbt_packet_stats(params, error) {
+	var stats = nbtd_statistics();
+	stats.server_status = new Object();
+	stats.server_status = server_status("nbt");
+	return stats;
+}
+jsonrpc.method.NBTPacketStats = _nbt_packet_stats;
+
+%>
