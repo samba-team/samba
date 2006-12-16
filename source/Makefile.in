@@ -1798,7 +1798,7 @@ clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*/*.o */*/*/*.o \
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
-		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) \
+		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBADDNS) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBMSRPC) \
 		.headers.stamp */src/*.o
 	-rm -rf t_dir
