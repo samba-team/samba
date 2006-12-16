@@ -520,6 +520,7 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 
 	result = cm_connect_netlogon(our_domain, &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
+		talloc_destroy(mem_ctx);
 		return False;
 	}
 
@@ -1264,10 +1265,12 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 			if (!add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 445, &addrs, &num_addrs)) {
 				set_domain_offline(domain);
+				talloc_destroy(mem_ctx);
 				return NT_STATUS_NO_MEMORY;
 			}
 			if (!add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 139, &addrs, &num_addrs)) {
 				set_domain_offline(domain);
+				talloc_destroy(mem_ctx);
 				return NT_STATUS_NO_MEMORY;
 			}
 
