@@ -182,7 +182,7 @@ typedef struct {
 	BOOL bWinbindOfflineLogon;
 	char **szIdmapDomains;
 	char **szIdmapBackend; /* deprecated */
-	char **szIdmapAllocBackend;
+	char *szIdmapAllocBackend;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
