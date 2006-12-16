@@ -312,6 +312,7 @@ interface drsuapi
 	 * 2.5.6.*			=> 0x00010000 (standard object classes RFC2256 core.schema)
 	 * 1.2.840.113556.1.2.*   	=> 0x00020000
 	 * 1.2.840.113556.1.3.*		=> 0x00030000
+	 * 2.5.5.*			=> 0x00080000 (attributeSyntax OID's)
 	 * 1.2.840.113556.1.4.*		=> 0x00090000
 	 * 1.2.840.113556.1.5.*		=> 0x000A0000
 	 * 2.16.840.1.113730.3.*	=> 0x00140000
@@ -374,33 +375,57 @@ interface drsuapi
 	 */
 
 	typedef [flag(NDR_PAHEX),v1_enum] enum {
-		DRSUAPI_OBJECTCLASS_top			= 0x00010000
+		DRSUAPI_OBJECTCLASS_top			= 0x00010000,
+		DRSUAPI_OBJECTCLASS_classSchema		= 0x0003000d,
+		DRSUAPI_OBJECTCLASS_attributeSchema	= 0x0003000e
 	} drsuapi_DsObjectClassId;
 
 	typedef [flag(NDR_PAHEX),v1_enum,public] enum {
 		DRSUAPI_ATTRIBUTE_objectClass			= 0x00000000,
 		DRSUAPI_ATTRIBUTE_description			= 0x0000000d,
 		DRSUAPI_ATTRIBUTE_member			= 0x0000001f,
+		DRSUAPI_ATTRIBUTE_instanceType			= 0x00020001,
+		DRSUAPI_ATTRIBUTE_whenCreated			= 0x00020002,
 		DRSUAPI_ATTRIBUTE_hasMasterNCs			= 0x0002000e,
-		DRSUAPI_ATTRIBUTE_invocationId			= 0x00020073,
+		DRSUAPI_ATTRIBUTE_governsID			= 0x00020016,
+		DRSUAPI_ATTRIBUTE_attributeID			= 0x0002001e,
+		DRSUAPI_ATTRIBUTE_attributeSyntax		= 0x00020020,
+		DRSUAPI_ATTRIBUTE_isSingleValued		= 0x00020021,
+		DRSUAPI_ATTRIBUTE_rangeLower			= 0x00020022,
+		DRSUAPI_ATTRIBUTE_rangeUpper			= 0x00020023,
 		DRSUAPI_ATTRIBUTE_dMDLocation			= 0x00020024,
+		DRSUAPI_ATTRIBUTE_objectVersion			= 0x0002004c,
+		DRSUAPI_ATTRIBUTE_invocationId			= 0x00020073,
+		DRSUAPI_ATTRIBUTE_showInAdvancedViewOnly	= 0x000200a9,
+		DRSUAPI_ATTRIBUTE_adminDisplayName		= 0x000200c2,
+		DRSUAPI_ATTRIBUTE_adminDescription		= 0x000200e2,
+		DRSUAPI_ATTRIBUTE_oMSyntax			= 0x000200e7,
 		DRSUAPI_ATTRIBUTE_ntSecurityDescriptor		= 0x00020119,
+		DRSUAPI_ATTRIBUTE_searchFlags			= 0x0002014e,
+		DRSUAPI_ATTRIBUTE_lDAPDisplayName		= 0x000201cc,
+		DRSUAPI_ATTRIBUTE_name				= 0x00090001,
 		DRSUAPI_ATTRIBUTE_currentValue			= 0x0009001b,
 		DRSUAPI_ATTRIBUTE_objectSid			= 0x00090092,
+		DRSUAPI_ATTRIBUTE_schemaIDGUID			= 0x00090094,
 		DRSUAPI_ATTRIBUTE_dBCSPwd			= 0x00090037,/* lmPwdHash */
 		DRSUAPI_ATTRIBUTE_unicodePwd			= 0x0009005a,/* ntPwdHash */
 		DRSUAPI_ATTRIBUTE_ntPwdHistory			= 0x0009005e,
 		DRSUAPI_ATTRIBUTE_priorValue			= 0x00090064,
-		DRSUAPI_ATTRIBUTE_lmPwdHistory			= 0x000900a0,
 		DRSUAPI_ATTRIBUTE_supplementalCredentials	= 0x0009007d,
 		DRSUAPI_ATTRIBUTE_trustAuthIncoming		= 0x00090081,
 		DRSUAPI_ATTRIBUTE_trustAuthOutgoing		= 0x00090087,
+		DRSUAPI_ATTRIBUTE_lmPwdHistory			= 0x000900a0,
+		DRSUAPI_ATTRIBUTE_sAMAccountName		= 0x000900dd,
+		DRSUAPI_ATTRIBUTE_fSMORoleOwner			= 0x00090171,
 		DRSUAPI_ATTRIBUTE_systemFlags			= 0x00090177,
 		DRSUAPI_ATTRIBUTE_serverReference		= 0x00090203,
 		DRSUAPI_ATTRIBUTE_serverReferenceBL		= 0x00090204,
 		DRSUAPI_ATTRIBUTE_initialAuthIncoming		= 0x0009021b,
 		DRSUAPI_ATTRIBUTE_initialAuthOutgoing		= 0x0009021c,
+		DRSUAPI_ATTRIBUTE_wellKnownObjects		= 0x0009026a,
+		DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet	= 0x0009027f,
 		DRSUAPI_ATTRIBUTE_objectCategory		= 0x0009030e,
+		DRSUAPI_ATTRIBUTE_gPLink			= 0x0009037b,
 		DRSUAPI_ATTRIBUTE_msDS_Behavior_Version		= 0x000905b3,
 		DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber		= 0x000906f6,		
 		DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs		= 0x0009071c,
@@ -516,16 +541,28 @@ interface drsuapi
 
 	typedef [nodiscriminant] union {
 		[case(DRSUAPI_ATTRIBUTE_objectClass)] drsuapi_DsAttributeValueCtrObjectClassId object_class_id;
+		[case(DRSUAPI_ATTRIBUTE_governsID)]		drsuapi_DsAttributeValueCtrUINT32 oid;
+		[case(DRSUAPI_ATTRIBUTE_attributeID)]		drsuapi_DsAttributeValueCtrUINT32 oid;
+		[case(DRSUAPI_ATTRIBUTE_attributeSyntax)]	drsuapi_DsAttributeValueCtrUINT32 oid;
+
+		/* BOOL */
+		[case(DRSUAPI_ATTRIBUTE_isSingleValued)]	drsuapi_DsAttributeValueCtrUINT32 boolean;
+		[case(DRSUAPI_ATTRIBUTE_showInAdvancedViewOnly)] drsuapi_DsAttributeValueCtrUINT32 boolean;
+		[case(DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet)] drsuapi_DsAttributeValueCtrUINT32 boolean;
 
 		/* UINT32 */
-		[case(0x00020001)] drsuapi_DsAttributeValueCtrUINT32 uint32;
-		[case(0x0002004c)] drsuapi_DsAttributeValueCtrUINT32 uint32;
-		[case(0x000200a9)] drsuapi_DsAttributeValueCtrUINT32 uint32;
-		[case(0x00090177)] drsuapi_DsAttributeValueCtrUINT32 uint32;
-		[case(0x000905b3)] drsuapi_DsAttributeValueCtrUINT32 uint32;
+		[case(DRSUAPI_ATTRIBUTE_instanceType)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
+		[case(DRSUAPI_ATTRIBUTE_rangeLower)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
+		[case(DRSUAPI_ATTRIBUTE_rangeUpper)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
+		[case(DRSUAPI_ATTRIBUTE_objectVersion)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
+		[case(DRSUAPI_ATTRIBUTE_oMSyntax)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
+		[case(DRSUAPI_ATTRIBUTE_searchFlags)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
+		[case(DRSUAPI_ATTRIBUTE_systemFlags)]		drsuapi_DsAttributeValueCtrUINT32 uint32;
+		[case(DRSUAPI_ATTRIBUTE_msDS_Behavior_Version)]	drsuapi_DsAttributeValueCtrUINT32 uint32;
 
 		/* GUID */
 		[case(DRSUAPI_ATTRIBUTE_invocationId)] drsuapi_DsAttributeValueCtrGUID guid;
+		[case(DRSUAPI_ATTRIBUTE_schemaIDGUID)] drsuapi_DsAttributeValueCtrGUID guid;
 
 		/* SID */
 		[case(DRSUAPI_ATTRIBUTE_objectSid)] drsuapi_DsAttributeValueCtrSID sid;
@@ -535,24 +572,27 @@ interface drsuapi
 
 		/* UnicodeString */
 		[case(DRSUAPI_ATTRIBUTE_description)]		drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
-		[case(0x00090001)]				drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
-		[case(0x000900dd)]				drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
-		[case(0x0009037b)]				drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
+		[case(DRSUAPI_ATTRIBUTE_adminDisplayName)]	drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
+		[case(DRSUAPI_ATTRIBUTE_adminDescription)]	drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
+		[case(DRSUAPI_ATTRIBUTE_lDAPDisplayName)]	drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
+		[case(DRSUAPI_ATTRIBUTE_name)]			drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
+		[case(DRSUAPI_ATTRIBUTE_sAMAccountName)]	drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
+		[case(DRSUAPI_ATTRIBUTE_gPLink)]		drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
 
 		/* DN String */
 		[case(DRSUAPI_ATTRIBUTE_member)]		drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(DRSUAPI_ATTRIBUTE_objectCategory)]	drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(0x0002000e)]				drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(0x00020024)]				drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(0x00090171)]				drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(0x0009071c)]				drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(0x0009072c)]				drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(0x0009026a)]				drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(0x00090203)]				drsuapi_DsAttributeValueCtrDNString dn_string;
-		[case(0x00090204)]				drsuapi_DsAttributeValueCtrDNString dn_string;
+		[case(DRSUAPI_ATTRIBUTE_hasMasterNCs)]		drsuapi_DsAttributeValueCtrDNString dn_string;
+		[case(DRSUAPI_ATTRIBUTE_dMDLocation)]		drsuapi_DsAttributeValueCtrDNString dn_string;
+		[case(DRSUAPI_ATTRIBUTE_fSMORoleOwner)]		drsuapi_DsAttributeValueCtrDNString dn_string;
+		[case(DRSUAPI_ATTRIBUTE_wellKnownObjects)]	drsuapi_DsAttributeValueCtrDNString dn_string;
+		[case(DRSUAPI_ATTRIBUTE_serverReference)]	drsuapi_DsAttributeValueCtrDNString dn_string;
+		[case(DRSUAPI_ATTRIBUTE_serverReferenceBL)]	drsuapi_DsAttributeValueCtrDNString dn_string;
+		[case(DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs)]	drsuapi_DsAttributeValueCtrDNString dn_string;
+		[case(DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs)]	drsuapi_DsAttributeValueCtrDNString dn_string;
 
 		/* NTTIME_1sec */
-		[case(0x00020002)] drsuapi_DsAttributeValueCtrNTTIME_1sec nttime_1sec;
+		[case(DRSUAPI_ATTRIBUTE_whenCreated)] drsuapi_DsAttributeValueCtrNTTIME_1sec nttime_1sec;
 
 		/* the default is the DATA_BLOB */
 		[default] drsuapi_DsAttributeValueCtrDataBlob data_blob;
