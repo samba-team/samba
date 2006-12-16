@@ -996,13 +996,13 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 	}
 
 
-	if (!print_sidlist(NULL, sids, num_sids, &sidstr, &len)) {
+	if (!print_sidlist(state->mem_ctx, sids, num_sids, &sidstr, &len)) {
 		DEBUG(0, ("Could not print_sidlist\n"));
 		state->response.extra_data.data = NULL;
 		return WINBINDD_ERROR;
 	}
 
-	state->response.extra_data.data = sidstr;
+	state->response.extra_data.data = SMB_STRDUP(sidstr);
 
 	if (state->response.extra_data.data != NULL) {
 		DEBUG(10, ("aliases_list: %s\n",
