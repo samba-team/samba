@@ -145,8 +145,10 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 	const char *secret;
 	const char *range;
 	const char *tmp;
-	uint32_t low_id = 0;
-	uint32_t high_id = 0;
+	uid_t low_uid = 0;
+	uid_t high_uid = 0;
+	gid_t low_gid = 0;
+	gid_t high_gid = 0;
 
 	idmap_alloc_ldap = talloc_zero(NULL, struct idmap_ldap_alloc_context);
 	if (!idmap_alloc_ldap) {
@@ -162,6 +164,8 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 
 	range = lp_parm_const_string(-1, "idmap alloc config", "range", NULL);
 	if (range && range[0]) {
+		unsigned low_id, high_id;
+
 		if (sscanf(range, "%u - %u", &low_id, &high_id) == 2) {
 			if (low_id < high_id) {
 				idmap_alloc_ldap->low_gid = idmap_alloc_ldap->low_uid = low_id;
@@ -174,14 +178,14 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 		}
 	}
 
-	if (lp_idmap_uid(&low_id, &high_id)) {
-		idmap_alloc_ldap->low_uid = low_id;
-		idmap_alloc_ldap->high_uid = high_id;
+	if (lp_idmap_uid(&low_uid, &high_uid)) {
+		idmap_alloc_ldap->low_uid = low_uid;
+		idmap_alloc_ldap->high_uid = high_uid;
 	}
 
-	if (lp_idmap_gid(&low_id, &high_id)) {
-		idmap_alloc_ldap->low_gid = low_id;
-		idmap_alloc_ldap->high_gid= high_id;
+	if (lp_idmap_gid(&low_gid, &high_gid)) {
+		idmap_alloc_ldap->low_gid = low_gid;
+		idmap_alloc_ldap->high_gid= high_gid;
 	}
 
 	if (idmap_alloc_ldap->high_uid <= idmap_alloc_ldap->low_uid) {
