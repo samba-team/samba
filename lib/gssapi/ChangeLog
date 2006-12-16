@@ -1,4 +1,20 @@
+2006-12-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ntlm/import_name.c: Allocate the buffer from the right length.
+	
 2006-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ntlm/init_sec_context.c (init_sec_context): Tell the other side
+	what domain we think we are talking to.
+
+	* ntlm/delete_sec_context.c: free username and password
+
+	* ntlm/release_name.c (_gss_ntlm_release_name): free name.
+
+	* ntlm/import_name.c (_gss_ntlm_import_name): add support for
+	GSS_C_NT_HOSTBASED_SERVICE names
+
+	* ntlm/ntlm.h: Add ntlm_name.
 
 	* test_context.c: allow testing of ntlm.
 
