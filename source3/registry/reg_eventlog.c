@@ -48,8 +48,10 @@ BOOL eventlog_init_keys( void )
 		}
 		regdb_fetch_keys( KEY_EVENTLOG, subkeys );
 		regsubkey_ctr_addkey( subkeys, *elogs );
-		if ( !regdb_store_keys( KEY_EVENTLOG, subkeys ) )
+		if ( !regdb_store_keys( KEY_EVENTLOG, subkeys ) ) {
+			TALLOC_FREE(subkeys);
 			return False;
+		}
 		TALLOC_FREE( subkeys );
 
 		/* add in the key of form KEY_EVENTLOG/Application */
@@ -70,8 +72,10 @@ BOOL eventlog_init_keys( void )
 		regdb_fetch_keys( evtlogpath, subkeys );
 		regsubkey_ctr_addkey( subkeys, *elogs );
 
-		if ( !regdb_store_keys( evtlogpath, subkeys ) )
+		if ( !regdb_store_keys( evtlogpath, subkeys ) ) {
+			TALLOC_FREE(subkeys);
 			return False;
+		}
 		TALLOC_FREE( subkeys );
 
 		/* now add the values to the KEY_EVENTLOG/Application form key */
@@ -287,8 +291,7 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 			 sourcename ) );
 	}
 	TALLOC_FREE( values );
-	if ( wrklist )
-		TALLOC_FREE( wrklist );	/*  */
+	TALLOC_FREE( wrklist );	/*  */
 
 	if ( !( subkeys = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR ) ) ) {
 		DEBUG( 0, ( "talloc() failure!\n" ) );
