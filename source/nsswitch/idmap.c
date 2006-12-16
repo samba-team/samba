@@ -791,6 +791,7 @@ static NTSTATUS idmap_backends_set_mapping(const struct id_map *map)
 static NTSTATUS idmap_backends_unixids_to_sids(struct id_map **ids)
 {
 	struct idmap_domain *dom;
+	struct id_map **unmapped;
 	struct id_map **_ids;
 	TALLOC_CTX *ctx;
 	NTSTATUS ret;
@@ -819,8 +820,8 @@ static NTSTATUS idmap_backends_unixids_to_sids(struct id_map **ids)
 		_ids[i]->mapped = False;
 	}
 
+	unmapped = NULL;
 	for (n = num_domains-1; n >= 0; n--) { /* cycle backwards */
-		struct id_map **unmapped = NULL;
 
 		dom = idmap_domains[n];
 
@@ -829,7 +830,7 @@ static NTSTATUS idmap_backends_unixids_to_sids(struct id_map **ids)
 		ret = dom->methods->unixids_to_sids(dom, _ids);
 		IDMAP_CHECK_RET(ret);
 
-		TALLOC_FREE(unmapped);
+		unmapped = NULL;
 
 		for (i = 0, u = 0; _ids[i]; i++) {
 			if (_ids[i]->mapped == False) {
@@ -842,27 +843,28 @@ static NTSTATUS idmap_backends_unixids_to_sids(struct id_map **ids)
 		if (unmapped) {
 			/* terminate the unmapped list */
 			unmapped[u] = NULL;
-		} else { /* no more unmapped entries, get out */
+		} else { /* no more entries, get out */
 			break;
 		}
 
 		_ids = unmapped;
+		
 	}
 
-	if (!_ids) {
+	if (unmapped) {
 		/* there are still unmapped ids, map them to the unix users/groups domains */
-		for (i = 0; _ids[i]; i++) {
-			switch (_ids[i]->xid.type) {
+		for (i = 0; unmapped[i]; i++) {
+			switch (unmapped[i]->xid.type) {
 			case ID_TYPE_UID:
-				uid_to_unix_users_sid((uid_t)_ids[i]->xid.id, _ids[i]->sid);
-				_ids[i]->mapped = True;
+				uid_to_unix_users_sid((uid_t)unmapped[i]->xid.id, unmapped[i]->sid);
+				unmapped[i]->mapped = True;
 				break;
 			case ID_TYPE_GID:
-				gid_to_unix_groups_sid((gid_t)_ids[i]->xid.id, _ids[i]->sid);
-				_ids[i]->mapped = True;
+				gid_to_unix_groups_sid((gid_t)unmapped[i]->xid.id, unmapped[i]->sid);
+				unmapped[i]->mapped = True;
 				break;
 			default: /* what?! */
-				_ids[i]->mapped = False;
+				unmapped[i]->mapped = False;
 				break;
 			}
 		}
