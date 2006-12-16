@@ -857,6 +857,9 @@ enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 
 	if (result != NULL) {
 		state->response.extra_data.data = SMB_STRDUP(result);
+		if (!state->response.extra_data.data) {
+			return WINBINDD_ERROR;
+		}
 		state->response.length += len+1;
 	}
 
