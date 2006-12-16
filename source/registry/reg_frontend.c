@@ -189,63 +189,6 @@ int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 	return result;
 }
 
-WERROR registry_fetch_values(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
-			     uint32 *pnum_values, char ***pnames,
-			     struct registry_value ***pvalues)
-{
-	REGVAL_CTR *ctr;
-	char **names;
-	struct registry_value **values;
-	uint32 i;
-
-	if (!(ctr = TALLOC_ZERO_P(mem_ctx, REGVAL_CTR))) {
-		return WERR_NOMEM;
-	}
-
-	if (fetch_reg_values(key, ctr) == -1) {
-		TALLOC_FREE(ctr);
-		return WERR_INVALID_PARAM;
-	}
-
-	if (ctr->num_values == 0) {
-		*pnum_values = 0;
-		TALLOC_FREE(ctr);
-		return WERR_OK;
-	}
-
-	if ((!(names = TALLOC_ARRAY(ctr, char *, ctr->num_values))) ||
-	    (!(values = TALLOC_ARRAY(ctr, struct registry_value *,
-				     ctr->num_values)))) {
-		TALLOC_FREE(ctr);
-		return WERR_NOMEM;
-	}
-
-	for (i=0; i<ctr->num_values; i++) {
-		REGISTRY_VALUE *val = ctr->values[i];
-		WERROR err;
-
-		if (!(names[i] = talloc_strdup(names, val->valuename))) {
-			TALLOC_FREE(ctr);
-			return WERR_NOMEM;
-		}
-
-		err = registry_pull_value(values, &values[i],
-					  val->type, val->data_p,
-					  val->size, val->size);
-		if (!W_ERROR_IS_OK(err)) {
-			TALLOC_FREE(ctr);
-			return err;
-		}
-	}
-
-	*pnum_values = ctr->num_values;
-	*pnames = talloc_move(mem_ctx, &names);
-	*pvalues = talloc_move(mem_ctx, &values);
-
-	TALLOC_FREE(ctr);
-	return WERR_OK;
-}
-
 /***********************************************************************
  High level access check for passing the required access mask to the 
  underlying registry backend

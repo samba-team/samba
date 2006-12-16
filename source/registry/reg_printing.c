@@ -478,7 +478,7 @@ static int key_printers_fetch_values( const char *key, REGVAL_CTR *values )
 	/* top level key values stored in the registry has no values */
 	
 	if ( !printers_key ) {
-		/* normalize to the 'HKLM\SOFTWARE\...\Print\Printers' ket */
+		/* normalize to the 'HKLM\SOFTWARE\...\Print\Printers' key */
 		return regdb_fetch_values( KEY_WINNT_PRINTERS, values );
 	}
 	
