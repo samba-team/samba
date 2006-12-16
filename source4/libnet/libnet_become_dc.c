@@ -1356,7 +1356,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v = talloc_array(vs, uint32_t, 1);
 		if (composite_nomem(v, c)) return;
 
-		v[0]			= 0x00000002;
+		v[0]			= DS_BEHAVIOR_WIN2003;
 
 		vs[0].value		= &v[0];
 
