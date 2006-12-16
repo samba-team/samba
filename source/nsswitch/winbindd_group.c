@@ -1384,12 +1384,15 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 		return WINBINDD_OK;
 	}
 
-	if (!print_sidlist(NULL, groups, num_groups, &sidstring, &len)) {
-		DEBUG(0, ("malloc failed\n"));
+	if (!print_sidlist(state->mem_ctx, groups, num_groups, &sidstring, &len)) {
+		DEBUG(0, ("talloc failed\n"));
 		return WINBINDD_ERROR;
 	}
 
-	state->response.extra_data.data = sidstring;
+	state->response.extra_data.data = SMB_STRDUP(sidstring);
+	if (!state->response.extra_data.data) {
+		return WINBINDD_ERROR;
+	}
 	state->response.length += len+1;
 	state->response.data.num_entries = num_groups;
 
