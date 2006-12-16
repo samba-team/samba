@@ -1306,7 +1306,8 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 	if (!winbind_uid_to_sid(psid, uid)) {
 		if (!winbind_ping()) {
 			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
-			return legacy_uid_to_sid(psid, uid);
+			legacy_uid_to_sid(psid, uid);
+			return;
 		}
 
 		DEBUG(5, ("uid_to_sid: winbind failed to find a sid for uid %u\n",
@@ -1335,7 +1336,8 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 	if (!winbind_gid_to_sid(psid, gid)) {
 		if (!winbind_ping()) {
 			DEBUG(2, ("WARNING: Winbindd not running, mapping ids with legacy code\n"));
-			return legacy_gid_to_sid(psid, gid);
+			legacy_gid_to_sid(psid, gid);
+			return;
 		}
 
 		DEBUG(5, ("gid_to_sid: winbind failed to find a sid for gid %u\n",
