@@ -68,8 +68,9 @@ static char *nttrans_realloc(char **ptr, size_t size)
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_error, char *params,
-                           int paramsize, char *pdata, int datasize)
+static int send_nt_replies(char *outbuf, int bufsize, NTSTATUS nt_error,
+			   char *params, int paramsize, char *pdata,
+			   int datasize)
 {
 	int data_to_send = datasize;
 	int params_to_send = paramsize;
@@ -477,9 +478,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 	START_PROFILE(SMBntcreateX);
 
-	DEBUG(10,("reply_ntcreate_and_X: flags = 0x%x, access_mask = 0x%x \
-file_attributes = 0x%x, share_access = 0x%x, create_disposition = 0x%x \
-create_options = 0x%x root_dir_fid = 0x%x\n",
+	DEBUG(10,("reply_ntcreate_and_X: flags = 0x%x, access_mask = 0x%x "
+		  "file_attributes = 0x%x, share_access = 0x%x, "
+		  "create_disposition = 0x%x create_options = 0x%x "
+		  "root_dir_fid = 0x%x\n",
 			(unsigned int)flags,
 			(unsigned int)access_mask,
 			(unsigned int)file_attributes,
@@ -959,7 +961,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 	DEBUG(5,("do_nt_transact_create_pipe: open name = %s\n", fname));
 	
 	/* Send the required number of replies */
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, 69, *ppdata, 0);
+	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, 69, *ppdata, 0);
 	
 	return -1;
 }
@@ -1531,7 +1533,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
 	/* Send the required number of replies */
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, 69, *ppdata, 0);
+	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, 69, *ppdata, 0);
 
 	return -1;
 }
@@ -1805,10 +1807,15 @@ int reply_ntrename(connection_struct *conn,
  don't allow a directory to be opened.
 ****************************************************************************/
 
-static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
-                                  uint16 **ppsetup, uint32 setup_count,
-				  char **ppparams, uint32 parameter_count,
-				  char **ppdata, uint32 data_count, uint32 max_data_count)
+static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
+					  char *outbuf, int length,
+					  int bufsize, 
+					  uint16 **ppsetup, uint32 setup_count,
+					  char **ppparams,
+					  uint32 parameter_count,
+					  char **ppdata, uint32 data_count,
+					  uint32 max_data_count,
+					  uint32 max_param_count)
 {
 	uint16 *setup = *ppsetup;
 	files_struct *fsp;
@@ -1827,6 +1834,9 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf, 
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 
+	DEBUG(3,("call_nt_transact_notify_change: notify change called on "
+		 "directory name = %s\n", fsp->fsp_name ));
+
 	if((!fsp->is_directory) || (conn != fsp->conn)) {
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
@@ -1834,9 +1844,6 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf, 
 	if (!change_notify_set(inbuf, fsp, conn, flags)) {
 		return(UNIXERROR(ERRDOS,ERRbadfid));
 	}
-
-	DEBUG(3,("call_nt_transact_notify_change: notify change called on directory \
-name = %s\n", fsp->fsp_name ));
 
 	return -1;
 }
@@ -1877,7 +1884,7 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	/*
 	 * Rename was successful.
 	 */
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
 	
 	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
 		 fsp->fsp_name, new_name));
@@ -1972,8 +1979,8 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 
 	if(max_data_count < sd_size) {
 
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL,
-			params, 4, *ppdata, 0);
+		send_nt_replies(outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL,
+				params, 4, *ppdata, 0);
 		talloc_destroy(mem_ctx);
 		return -1;
 	}
@@ -2021,7 +2028,8 @@ security descriptor.\n"));
 
 	talloc_destroy(mem_ctx);
 
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, 4, data, (int)sd_size);
+	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, 4, data,
+			(int)sd_size);
 	return -1;
 }
 
@@ -2067,7 +2075,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn, char *inb
 
   done:
 
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
 	return -1;
 }
    
@@ -2113,7 +2121,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		   so we can know if we need to pre-allocate or not */
 
 		DEBUG(10,("FSCTL_SET_SPARSE: called on FID[0x%04X](but not implemented)\n", fidnum));
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+		send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL,
+				0);
 		return -1;
 	
 	case FSCTL_0x000900C0:
@@ -2122,7 +2131,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 
 		DEBUG(10,("FSCTL_0x000900C0: called on FID[0x%04X](but not implemented)\n",fidnum));
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+		send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL,
+				0);
 		return -1;
 
 	case FSCTL_GET_REPARSE_POINT:
@@ -2131,7 +2141,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 
 		DEBUG(10,("FSCTL_GET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT, NULL, 0, NULL, 0);
+		send_nt_replies(outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT,
+				NULL, 0, NULL, 0);
 		return -1;
 
 	case FSCTL_SET_REPARSE_POINT:
@@ -2140,7 +2151,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 
 		DEBUG(10,("FSCTL_SET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT, NULL, 0, NULL, 0);
+		send_nt_replies(outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT,
+				NULL, 0, NULL, 0);
 		return -1;
 			
 	case FSCTL_GET_SHADOW_COPY_DATA: /* don't know if this name is right...*/
@@ -2253,7 +2265,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 
 		talloc_destroy(shadow_data->mem_ctx);
 
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, pdata, data_count);
+		send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0,
+				pdata, data_count);
 
 		return -1;
         }
@@ -2305,7 +2318,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		 */
 		
 		/* this works for now... */
-		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+		send_nt_replies(outbuf, bufsize, NT_STATUS_OK, NULL, 0,
+				NULL, 0);
 		return -1;	
 	}	
 	default:
@@ -2571,7 +2585,8 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 			break;
 	}
 
-	send_nt_replies(inbuf, outbuf, bufsize, nt_status, params, param_len, pdata, data_len);
+	send_nt_replies(outbuf, bufsize, nt_status, params, param_len,
+			pdata, data_len);
 
 	return -1;
 }
@@ -2688,7 +2703,8 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 		return ERROR_DOS(ERRSRV,ERRerror);	
 	}
 
-	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, param_len, pdata, data_len);
+	send_nt_replies(outbuf, bufsize, NT_STATUS_OK, params, param_len,
+			pdata, data_len);
 
 	return -1;
 }
@@ -2746,11 +2762,13 @@ static int handle_nttrans(connection_struct *conn,
 		case NT_TRANSACT_NOTIFY_CHANGE:
 		{
 			START_PROFILE_NESTED(NT_transact_notify_change);
-			outsize = call_nt_transact_notify_change(conn, inbuf, outbuf, 
-							 size, bufsize, 
-							 &state->setup, state->setup_count,
-							 &state->param, state->total_param, 
-							 &state->data, state->total_data, state->max_data_return);
+			outsize = call_nt_transact_notify_change(
+				conn, inbuf, outbuf, size, bufsize, 
+				&state->setup, state->setup_count,
+				&state->param, state->total_param, 
+				&state->data, state->total_data,
+				state->max_data_return,
+				state->max_param_return);
 			END_PROFILE_NESTED(NT_transact_notify_change);
 			break;
 		}
@@ -2859,6 +2877,7 @@ int reply_nttrans(connection_struct *conn,
 	state->total_param = IVAL(inbuf, smb_nt_TotalParameterCount);
 	state->param = NULL;
 	state->max_data_return = IVAL(inbuf,smb_nt_MaxDataCount);	
+	state->max_param_return = IVAL(inbuf,smb_nt_MaxParameterCount);
 
 	/* setup count is in *words* */
 	state->setup_count = 2*CVAL(inbuf,smb_nt_SetupCount); 
