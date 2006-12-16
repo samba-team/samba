@@ -2458,11 +2458,7 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 		if (*bufsize == 0)
 			*bufsize = 128;
 
-		if (mem_ctx != NULL)
-			*string = TALLOC_ARRAY(mem_ctx, char, *bufsize);
-		else
-			*string = SMB_MALLOC_ARRAY(char, *bufsize);
-
+		*string = TALLOC_ARRAY(mem_ctx, char, *bufsize);
 		if (*string == NULL)
 			goto error;
 	}
@@ -2484,13 +2480,8 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 	}
 
 	if (increased) {
-		if (mem_ctx != NULL) {
-			*string = TALLOC_REALLOC_ARRAY(mem_ctx, *string, char,
-						       *bufsize);
-		} else {
-			*string = SMB_REALLOC_ARRAY(*string, char, *bufsize);
-		}
-
+		*string = TALLOC_REALLOC_ARRAY(mem_ctx, *string, char,
+					       *bufsize);
 		if (*string == NULL) {
 			goto error;
 		}
@@ -2503,9 +2494,6 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 
  error:
 	*len = -1;
-	if (mem_ctx == NULL) {
-		SAFE_FREE(*string);
-	}
 	*string = NULL;
 }
 

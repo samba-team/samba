@@ -26,6 +26,7 @@
  **/
 
 struct msg_pool_usage_state {
+	TALLOC_CTX *mem_ctx;
 	ssize_t len;
 	size_t buflen;
 	char *s;
@@ -37,13 +38,13 @@ static void msg_pool_usage_helper(const void *ptr, int depth, int max_depth, int
 	struct msg_pool_usage_state *state = (struct msg_pool_usage_state *)_s;
 
 	if (is_ref) {
-		sprintf_append(NULL, &state->s, &state->len, &state->buflen,
+		sprintf_append(state->mem_ctx, &state->s, &state->len, &state->buflen,
 			       "%*sreference to: %s\n", depth*4, "", name);
 		return;
 	}
 
 	if (depth == 0) {
-		sprintf_append(NULL, &state->s, &state->len, &state->buflen,
+		sprintf_append(state->mem_ctx, &state->s, &state->len, &state->buflen,
 			       "%stalloc report on '%s' (total %6lu bytes in %3lu blocks)\n", 
 			       (max_depth < 0 ? "full " :""), name,
 			       (unsigned long)talloc_total_size(ptr),
@@ -51,7 +52,7 @@ static void msg_pool_usage_helper(const void *ptr, int depth, int max_depth, int
 		return;
 	}
 
-	sprintf_append(NULL, &state->s, &state->len, &state->buflen,
+	sprintf_append(state->mem_ctx, &state->s, &state->len, &state->buflen,
 		       "%*s%-30s contains %6lu bytes in %3lu blocks (ref %d)\n", 
 		       depth*4, "",
 		       name,
@@ -73,6 +74,10 @@ void msg_pool_usage(int msg_type, struct process_id src_pid,
 	
 	DEBUG(2,("Got POOL_USAGE\n"));
 
+	state.mem_ctx = talloc_init("msg_pool_usage");
+	if (!state.mem_ctx) {
+		return;
+	}
 	state.len	= 0;
 	state.buflen	= 512;
 	state.s		= NULL;
@@ -80,13 +85,14 @@ void msg_pool_usage(int msg_type, struct process_id src_pid,
 	talloc_report_depth_cb(NULL, 0, -1, msg_pool_usage_helper, &state);
 
 	if (!state.s) {
+		talloc_destroy(state.mem_ctx);
 		return;
 	}
 	
 	message_send_pid(src_pid, MSG_POOL_USAGE,
 			 state.s, strlen(state.s)+1, True);
 
-	SAFE_FREE(state.s);
+	talloc_destroy(state.mem_ctx);
 }
 
 /**
