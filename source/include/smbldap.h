@@ -160,7 +160,7 @@ struct smbldap_state {
 	const char *uri;
 
 	/* credentials */
-	BOOL anonimous;
+	BOOL anonymous;
 	char *bind_dn;
 	char *bind_secret;
 
