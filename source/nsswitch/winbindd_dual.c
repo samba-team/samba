@@ -238,7 +238,6 @@ static void schedule_async_request(struct winbindd_child *child)
 			  sizeof(*request->request),
 			  async_main_request_sent, request);
 
-	talloc_destroy(child->mem_ctx);
 	return;
 }
 
@@ -599,7 +598,7 @@ static void account_lockout_policy_handler(struct timed_event *te,
 {
 	struct winbindd_child *child =
 		(struct winbindd_child *)private_data;
-
+	TALLOC_CTX *mem_ctx = NULL;
 	struct winbindd_methods *methods;
 	SAM_UNK_INFO_12 lockout_policy;
 	NTSTATUS result;
@@ -612,13 +611,21 @@ static void account_lockout_policy_handler(struct timed_event *te,
 
 	methods = child->domain->methods;
 
-	result = methods->lockout_policy(child->domain, child->mem_ctx, &lockout_policy);
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10,("account_lockout_policy_handler: failed to call lockout_policy\n"));
-		return;
+	mem_ctx = talloc_init("account_lockout_policy_handler ctx");
+	if (!mem_ctx) {
+		result = NT_STATUS_NO_MEMORY;
+	} else {
+		result = methods->lockout_policy(child->domain, mem_ctx, &lockout_policy);
 	}
 
-	child->lockout_policy_event = add_timed_event(child->mem_ctx, 
+	talloc_destroy(mem_ctx);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10,("account_lockout_policy_handler: lockout_policy failed error %s\n",
+			 nt_errstr(result)));
+	}
+
+	child->lockout_policy_event = add_timed_event(NULL,
 						      timeval_current_ofs(3600, 0),
 						      "account_lockout_policy_handler",
 						      account_lockout_policy_handler,
@@ -828,15 +835,10 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	/* The child is ok with online/offline messages now. */
 	message_unblock();
 
-	child->mem_ctx = talloc_init("child_mem_ctx");
-	if (child->mem_ctx == NULL) {
-		return False;
-	}
-
 	if (child->domain != NULL && lp_winbind_offline_logon()) {
 		/* We might be in the idmap child...*/
 		child->lockout_policy_event = add_timed_event(
-			child->mem_ctx, timeval_zero(),
+			NULL, timeval_zero(),
 			"account_lockout_policy_handler",
 			account_lockout_policy_handler,
 			child);
