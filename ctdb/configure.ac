@@ -26,6 +26,7 @@ EXTRA_OBJ=""
 
 m4_include(libtalloc.m4)
 m4_include(libtdb.m4)
+m4_include(ib/config.m4)
 
 AC_SUBST(EXTRA_OBJ)
 

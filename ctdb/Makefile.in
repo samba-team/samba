@@ -16,7 +16,7 @@ CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
 
-LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ -lpopt
+LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ -lpopt @INFINIBAND_LIBS@
 
 EVENTS_OBJ = lib/events/events.o lib/events/events_standard.o
 
@@ -27,9 +27,9 @@ CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
 CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TCP_OBJ)
 
-OBJS = @TDBOBJ@ @TALLOCOBJ@ @LIBREPLACEOBJ@ $(EXTRA_OBJ) $(EVENTS_OBJ) $(CTDB_OBJ)
+OBJS = @TDBOBJ@ @TALLOCOBJ@ @LIBREPLACEOBJ@ @INFINIBAND_WRAPPER_OBJ@ $(EXTRA_OBJ) $(EVENTS_OBJ) $(CTDB_OBJ)
 
-BINS = bin/ctdb_test
+BINS = bin/ctdb_test @INFINIBAND_BINS@
 
 DIRS = lib bin
 
@@ -52,13 +52,17 @@ bin/ctdb_test: $(OBJS) ctdb_test.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ ctdb_test.o $(OBJS) $(LIB_FLAGS)
 
+bin/ibwrapper_test: $(OBJS) tests/ibwrapper_test.o
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ tests/ibwrapper_test.o $(OBJS) $(LIB_FLAGS)
+
 clean:
-	rm -f *.o */*.o
+	rm -f *.o */*.o */*/*.o
 	rm -f $(BINS)
 
 distclean: clean
 	rm -f *~ */*~
-	rm -rf bin lib
+	rm -rf bin
 	rm -f config.log config.status config.cache include/config.h
 	rm -f Makefile
 
