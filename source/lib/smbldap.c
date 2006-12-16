@@ -934,7 +934,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	int rc;
 	int version;
 
-	if (!ldap_state->anonimous && !ldap_state->bind_dn) {
+	if (!ldap_state->anonymous && !ldap_state->bind_dn) {
 
 		/* get the default dn and password only if they are not set already */
 		if (!fetch_ldap_pw(&ldap_state->bind_dn, &ldap_state->bind_secret)) {
@@ -1708,7 +1708,7 @@ BOOL smbldap_has_naming_context(LDAP *ld, const char *naming_context)
 
 BOOL smbldap_set_creds(struct smbldap_state *ldap_state, BOOL anon, const char *dn, const char *secret)
 {
-	ldap_state->anonimous = anon;
+	ldap_state->anonymous = anon;
 
 	/* free any previously set credential */
 
