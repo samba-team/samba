@@ -53,7 +53,7 @@ OM_uint32 _gss_ntlm_import_name
     if (!gss_oid_equal(input_name_type, GSS_C_NT_HOSTBASED_SERVICE))
 	return GSS_S_BAD_NAMETYPE;
 
-    name = malloc(input_name_type->length + 1);
+    name = malloc(input_name_buffer->length + 1);
     if (name == NULL) {
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
