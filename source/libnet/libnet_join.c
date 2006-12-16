@@ -70,8 +70,6 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 
 	int ret, rtn;
 
-	unsigned int kvno;
-	
 	const char * const attrs[] = {
 		"msDS-KeyVersionNumber",
 		"servicePrincipalName",
