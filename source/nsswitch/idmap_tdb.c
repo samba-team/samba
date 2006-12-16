@@ -340,8 +340,10 @@ static NTSTATUS idmap_tdb_alloc_init( const char *params )
 	NTSTATUS ret;
 	TALLOC_CTX *ctx;
 	const char *range;
-	uint32_t low_id = 0;
-	uint32_t high_id = 0;
+	uid_t low_uid = 0;
+	uid_t high_uid = 0;
+	gid_t low_gid = 0;
+	gid_t high_gid = 0;
 
 	/* use our own context here */
 	ctx = talloc_new(NULL);
@@ -366,6 +368,8 @@ static NTSTATUS idmap_tdb_alloc_init( const char *params )
 
 	range = lp_parm_const_string(-1, "idmap alloc config", "range", NULL);
 	if (range && range[0]) {
+		unsigned low_id, high_id;
+
 		if (sscanf(range, "%u - %u", &low_id, &high_id) == 2) {
 			if (low_id < high_id) {
 				idmap_tdb_state.low_gid = idmap_tdb_state.low_uid = low_id;
@@ -379,14 +383,14 @@ static NTSTATUS idmap_tdb_alloc_init( const char *params )
 	}
 
 	/* Create high water marks for group and user id */
-	if (lp_idmap_uid(&low_id, &high_id)) {
-		idmap_tdb_state.low_uid = low_id;
-		idmap_tdb_state.high_uid = high_id;
+	if (lp_idmap_uid(&low_uid, &high_uid)) {
+		idmap_tdb_state.low_uid = low_uid;
+		idmap_tdb_state.high_uid = high_uid;
 	}
 
-	if (lp_idmap_gid(&low_id, &high_id)) {
-		idmap_tdb_state.low_gid = low_id;
-		idmap_tdb_state.high_gid = high_id;
+	if (lp_idmap_gid(&low_gid, &high_gid)) {
+		idmap_tdb_state.low_gid = low_gid;
+		idmap_tdb_state.high_gid = high_gid;
 	}
 
 	if (idmap_tdb_state.high_uid <= idmap_tdb_state.low_uid) {
@@ -394,6 +398,8 @@ static NTSTATUS idmap_tdb_alloc_init( const char *params )
 		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	} else {
+		uint32 low_id;
+
 		if (((low_id = tdb_fetch_int32(idmap_alloc_tdb, HWM_USER)) == -1) ||
 		    (low_id < idmap_tdb_state.low_uid)) {
 			if (tdb_store_int32(idmap_alloc_tdb, HWM_USER, idmap_tdb_state.low_uid) == -1) {
@@ -408,6 +414,8 @@ static NTSTATUS idmap_tdb_alloc_init( const char *params )
 		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	} else {
+		uint32 low_id;
+
 		if (((low_id = tdb_fetch_int32(idmap_alloc_tdb, HWM_GROUP)) == -1) ||
 		    (low_id < idmap_tdb_state.low_gid)) {
 			if (tdb_store_int32(idmap_alloc_tdb, HWM_GROUP, idmap_tdb_state.low_gid) == -1) {
