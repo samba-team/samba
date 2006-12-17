@@ -315,20 +315,24 @@ int vfs_MkDir(connection_struct *conn, const char *name, mode_t mode)
 	int ret;
 	SMB_STRUCT_STAT sbuf;
 
-	if(!(ret=SMB_VFS_MKDIR(conn, name, mode))) {
-
-		inherit_access_acl(conn, name, mode);
-
-		/*
-		 * Check if high bits should have been set,
-		 * then (if bits are missing): add them.
-		 * Consider bits automagically set by UNIX, i.e. SGID bit from parent dir.
-		 */
-		if(mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) &&
-				!SMB_VFS_STAT(conn,name,&sbuf) && (mode & ~sbuf.st_mode))
-			SMB_VFS_CHMOD(conn,name,sbuf.st_mode | (mode & ~sbuf.st_mode));
+	if ((ret=SMB_VFS_MKDIR(conn, name, mode)) != 0) {
+		return ret;
 	}
-	return ret;
+
+	inherit_access_acl(conn, name, mode);
+
+	/*
+	 * Check if high bits should have been set,
+	 * then (if bits are missing): add them.
+	 * Consider bits automagically set by UNIX, i.e. SGID bit from parent
+	 * dir.
+	 */
+	if (mode & ~(S_IRWXU|S_IRWXG|S_IRWXO)
+	    && (SMB_VFS_STAT(conn,name,&sbuf) == 0)
+	    && (mode & ~sbuf.st_mode)) {
+		SMB_VFS_CHMOD(conn,name,sbuf.st_mode | (mode & ~sbuf.st_mode));
+	}
+	return 0;
 }
 
 /*******************************************************************
