@@ -32,69 +32,6 @@
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
 
-struct dsdb_attribute {
-	struct dsdb_attribute *prev, *next;
-
-	const char *lDAPDisplayName;
-	const char *attributeID;
-	uint32_t attID;
-	struct GUID schemaIDGUID;
-
-	uint32_t searchFlags;
-	BOOL systemOnly;
-	uint32_t systemFlags;
-	BOOL isMemberOfPartialAttributeSet;
-
-	const char *attributeSyntax;
-	uint32_t oMSyntax;
-
-	BOOL isSingleValued;
-	uint32_t rangeLower;
-	uint32_t rangeUpper;
-
-	BOOL showInAdvancedViewOnly;
-	const char *adminDisplayName;
-	const char *adminDescription;
-};
-
-struct dsdb_objectClass {
-	struct dsdb_objectClass *prev, *next;
-
-	const char *subClassOf;
-
-	const char *governsID;
-	const char *rDNAttID;
-
-	BOOL showInAdvancedViewOnly;
-	const char *adminDisplayName;
-	const char *adminDescription;
-
-	uint32_t objectClassCategory;
-	const char *lDAPDisplayName;
-
-	struct GUID schemaIDGUID;
-
-	BOOL systemOnly;
-
-	const char **systemPossSuperiors;
-	const char **systemMayContain;
-
-	const char **possSuperiors;
-	const char **mayContain;
-
-	const char *defaultSecurityDescriptor;
-
-	uint32_t systemFlags;
-	BOOL defaultHidingValue;
-
-	const char *defaultObjectCategory;
-};
-
-struct dsdb_schema {
-	struct dsdb_attribute *attributes;
-	struct dsdb_objectClass *objectClasses;
-};
-
 struct test_rootDSE {
 	const char *defaultdn;
 	const char *rootdn;
@@ -262,114 +199,46 @@ again:
 	return True;
 }
 
-#define GET_STRING(p, elem, strict) do { \
-	(p)->elem = samdb_result_string(msg, #elem, NULL);\
-	if (strict && (p)->elem == NULL) { \
-		d_printf("%s: %s == NULL\n", __location__, #elem); \
-		goto failed; \
-	} \
-	(void)talloc_steal(p, (p)->elem); \
-} while (0)
-
-#define GET_BOOL(p, elem, strict) do { \
-	const char *str; \
-	str = samdb_result_string(msg, #elem, NULL);\
-	if (str == NULL) { \
-		if (strict) { \
-			d_printf("%s: %s == NULL\n", __location__, #elem); \
-			goto failed; \
-		} else { \
-			(p)->elem = False; \
-		} \
-	} else if (strcasecmp("TRUE", str) == 0) { \
-		(p)->elem = True; \
-	} else if (strcasecmp("FALSE", str) == 0) { \
-		(p)->elem = False; \
-	} else { \
-		d_printf("%s: %s == %s\n", __location__, #elem, str); \
-		goto failed; \
-	} \
-} while (0)
-
-#define GET_UINT32(p, elem) do { \
-	(p)->elem = samdb_result_uint(msg, #elem, 0);\
-} while (0)
-
-#define GET_GUID(p, elem) do { \
-	(p)->elem = samdb_result_guid(msg, #elem);\
-} while (0)
-
 static int test_add_attribute(void *ptr, struct ldb_context *ldb, struct ldb_message *msg)
 {
 	struct dsdb_schema *schema = talloc_get_type(ptr, struct dsdb_schema);
-	struct dsdb_attribute *attr;
+	struct dsdb_attribute *attr = NULL;
+	WERROR status;
 
 	attr = talloc_zero(schema, struct dsdb_attribute);
+	if (!attr) {
+		goto failed;
+	}
 
-	GET_STRING(attr, lDAPDisplayName, True);
-	GET_STRING(attr, attributeID, True);
-	attr->attID = UINT32_MAX;
-	GET_GUID(attr, schemaIDGUID);
-
-	GET_UINT32(attr, searchFlags);
-	GET_BOOL(attr, systemOnly, False);
-	GET_UINT32(attr, systemFlags);
-	GET_BOOL(attr, isMemberOfPartialAttributeSet, False);
-
-	GET_STRING(attr, attributeSyntax, True);
-	GET_UINT32(attr, oMSyntax);
-
-	GET_BOOL(attr, isSingleValued, True);
-	GET_UINT32(attr, rangeLower);
-	GET_UINT32(attr, rangeUpper);
-
-	GET_BOOL(attr, showInAdvancedViewOnly, False);
-	GET_STRING(attr, adminDisplayName, True);
-	GET_STRING(attr, adminDescription, True);
+	status = dsdb_attribute_from_ldb(msg, attr, attr);
+	if (!W_ERROR_IS_OK(status)) {
+		goto failed;
+	}
 
 	DLIST_ADD_END(schema->attributes, attr, struct dsdb_attribute *);
 	return LDB_SUCCESS;
 failed:
+	talloc_free(attr);
 	return LDB_ERR_OTHER;
 }
 
 static int test_add_class(void *ptr, struct ldb_context *ldb, struct ldb_message *msg)
 {
 	struct dsdb_schema *schema = talloc_get_type(ptr, struct dsdb_schema);
-	struct dsdb_objectClass *obj;
+	struct dsdb_class *obj;
+	WERROR status;
 
-	obj = talloc_zero(schema, struct dsdb_objectClass);
+	obj = talloc_zero(schema, struct dsdb_class);
+	if (!obj) {
+		goto failed;
+	}
 
-	GET_STRING(obj, subClassOf, True);
+	status = dsdb_class_from_ldb(msg, obj, obj);
+	if (!W_ERROR_IS_OK(status)) {
+		goto failed;
+	}
 
-	GET_STRING(obj, governsID, True);
-	GET_STRING(obj, rDNAttID, True);
-
-	GET_BOOL(obj, showInAdvancedViewOnly, False);
-	GET_STRING(obj, adminDisplayName, True);
-	GET_STRING(obj, adminDescription, True);
-
-	GET_UINT32(obj, objectClassCategory);
-	GET_STRING(obj, lDAPDisplayName, True);
-
-	GET_GUID(obj, schemaIDGUID);
-
-	GET_BOOL(obj, systemOnly, False);
-
-	obj->systemPossSuperiors= NULL;
-	obj->systemMayContain	= NULL;
-
-	obj->possSuperiors	= NULL;
-	obj->mayContain		= NULL;
-
-	GET_STRING(obj, defaultSecurityDescriptor, False);
-
-	GET_UINT32(obj, systemFlags);
-	GET_BOOL(obj, defaultHidingValue, True);
-
-	GET_STRING(obj, defaultObjectCategory, True);
-
-	DLIST_ADD_END(schema->objectClasses, obj, struct dsdb_objectClass *);
+	DLIST_ADD_END(schema->classes, obj, struct dsdb_class *);
 	return LDB_SUCCESS;
 failed:
 	return LDB_ERR_OTHER;
@@ -472,9 +341,9 @@ static BOOL test_dump_sorted_syntax(struct ldb_context *ldb, struct test_rootDSE
 
 	for (i=0; i < ARRAY_SIZE(syntaxes); i++) {
 		for (a=schema->attributes; a; a = a->next) {
-			if (strcmp(syntaxes[i], a->attributeSyntax) != 0) continue;
+			if (strcmp(syntaxes[i], a->attributeSyntax_oid) != 0) continue;
 			d_printf("attr[%4u]: %s %u '%s'\n", a_i++,
-				 a->attributeSyntax, a->oMSyntax,
+				 a->attributeSyntax_oid, a->oMSyntax,
 				 a->lDAPDisplayName);
 		}
 	}
@@ -482,22 +351,101 @@ static BOOL test_dump_sorted_syntax(struct ldb_context *ldb, struct test_rootDSE
 	return True;
 }
 
+
+static BOOL test_dsdb_map(struct torture_context *torture)
+{
+	BOOL ret = true;
+	WERROR status;
+	const char *oid;
+	uint32_t id;
+
+	oid = "1.2.840.113556.1.4.1716";
+	status = dsdb_map_oid2int(oid, &id);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("%s => 0x%08X\n", oid, id));
+	}
+
+	status = dsdb_map_int2oid(id, torture, &oid);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("0x%08X => %s\n", id, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("0x%08X => %s\n", id, oid));
+	}
+
+	oid = "1.2.840.113556.1.4.65535";
+	status = dsdb_map_oid2int(oid, &id);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("%s => 0x%08X\n", oid, id));
+	}
+
+	status = dsdb_map_int2oid(id, torture, &oid);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("0x%08X => %s\n", id, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("0x%08X => %s\n", id, oid));
+	}
+
+	oid = "1.2.840.113556.1.4.1716.";
+	status = dsdb_map_oid2int(oid, &id);
+	if (!W_ERROR_EQUAL(status, WERR_INVALID_PARAM)) {
+		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("%s => %s (ok!)\n", oid, win_errstr(status)));
+	}
+
+	oid = "1.2.840.113556.1.4.1716.65536";
+	status = dsdb_map_oid2int(oid, &id);
+	if (!W_ERROR_EQUAL(status, WERR_INVALID_PARAM)) {
+		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("%s => %s (ok!)\n", oid, win_errstr(status)));
+	}
+
+	oid = "5435.1.2.840.113556.1.4.1716.";
+	status = dsdb_map_oid2int(oid, &id);
+	if (!W_ERROR_EQUAL(status, WERR_DS_NO_MSDS_INTID)) {
+		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("%s => %s (ok!)\n", oid, win_errstr(status)));
+	}
+
+	id = 0xEF001234;
+	status = dsdb_map_int2oid(id, torture, &oid);
+	if (!W_ERROR_EQUAL(status, WERR_DS_NO_MSDS_INTID)) {
+		DEBUG(0,("0x%08X => %s\n", id, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("0x%08X => %s (ok!)\n", id, win_errstr(status)));
+	}
+
+	return ret;
+}
+
 BOOL torture_ldap_schema(struct torture_context *torture)
 {
 	struct ldb_context *ldb;
-	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	const char *host = torture_setting_string(torture, "host", NULL);
 	char *url;
 	struct test_rootDSE rootDSE;
 	struct dsdb_schema *schema = NULL;
 
-	mem_ctx = talloc_init("torture_ldap_basic");
 	ZERO_STRUCT(rootDSE);
 
-	url = talloc_asprintf(mem_ctx, "ldap://%s/", host);
+	url = talloc_asprintf(torture, "ldap://%s/", host);
 
-	ldb = ldb_wrap_connect(mem_ctx, url,
+	ldb = ldb_wrap_connect(torture, url,
 			       NULL,
 			       cmdline_credentials,
 			       0, NULL);
@@ -513,7 +461,8 @@ BOOL torture_ldap_schema(struct torture_context *torture)
 	ret &= test_dump_contructed(ldb, &rootDSE, schema);
 	ret &= test_dump_sorted_syntax(ldb, &rootDSE, schema);
 
+	ret &= test_dsdb_map(torture);
+
 failed:
-	talloc_free(mem_ctx);
 	return ret;
 }

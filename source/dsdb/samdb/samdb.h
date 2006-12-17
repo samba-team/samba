@@ -29,6 +29,7 @@ struct drsuapi_DsNameInfo1;
 #include "librpc/gen_ndr/security.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/samr.h"
+#include "dsdb/schema/schema.h"
 #include "dsdb/samdb/samdb_proto.h"
 
 #endif /* __SAMDB_H__ */

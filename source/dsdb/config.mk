@@ -13,7 +13,8 @@ OBJ_FILES = \
 		samdb/samdb_privilege.o \
 		samdb/cracknames.o \
 		common/sidmap.o \
-		common/flag_mapping.o
+		common/flag_mapping.o \
+		schema/schema_init.o
 #
 # End SUBSYSTEM SAMDB
 ################################################
