@@ -481,6 +481,10 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 		ltdb->sequence_number += 1;
 	}
 
+	/* updating the tdb_seqnum here avoids us reloading the cache
+	   records due to our own modification */
+	ltdb->tdb_seqnum = tdb_get_seqnum(ltdb->tdb);
+
 	return ret;
 }
 
