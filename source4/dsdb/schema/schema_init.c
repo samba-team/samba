@@ -104,60 +104,6 @@ WERROR dsdb_map_int2oid(uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
 	return WERR_DS_NO_MSDS_INTID;
 }
 
-bool dsdb_map_test(void)
-{
-	bool ret = true;
-	WERROR status;
-	const char *oid;
-	uint32_t id;
-
-	oid = "1.2.840.113556.1.4.1716";
-	status = dsdb_map_oid2int(oid, &id);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
-		ret = false;
-	} else {
-		DEBUG(0,("%s => 0x%08X\n", oid, id));
-	}
-
-	status = dsdb_map_int2oid(id, NULL, &oid);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("0x%08X => %s\n", id, win_errstr(status)));
-		ret = false;
-	} else {
-		DEBUG(0,("0x%08X => %s\n", id, oid));
-	}
-
-	oid = "1.2.840.113556.1.4.1716.";
-	status = dsdb_map_oid2int(oid, &id);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
-		ret = false;
-	} else {
-		DEBUG(0,("%s => 0x%08X\n", oid, id));
-	}
-
-	oid = "5435.1.2.840.113556.1.4.1716.";
-	status = dsdb_map_oid2int(oid, &id);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
-		ret = false;
-	} else {
-		DEBUG(0,("%s => 0x%08X\n", oid, id));
-	}
-
-	id = 0xEF001234;
-	status = dsdb_map_int2oid(id, NULL, &oid);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("0x%08X => %s\n", id, win_errstr(status)));
-		ret = false;
-	} else {
-		DEBUG(0,("0x%08X => %s\n", id, oid));
-	}
-
-	return ret;
-}
-
 #define GET_STRING(p, elem, strict) do { \
 	(p)->elem = samdb_result_string(msg, #elem, NULL);\
 	if (strict && (p)->elem == NULL) { \
