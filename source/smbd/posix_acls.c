@@ -3457,8 +3457,8 @@ int chmod_acl(connection_struct *conn, const char *name, mode_t mode)
 }
 
 /****************************************************************************
- If "inherit permissions" is set and the parent directory has no default
- ACL but it does have an Access ACL, inherit this Access ACL to file name.
+ If the parent directory has no default ACL but it does have an Access ACL,
+ inherit this Access ACL to file name.
 ****************************************************************************/
 
 int inherit_access_acl(connection_struct *conn, const char *name, mode_t mode)
@@ -3466,7 +3466,7 @@ int inherit_access_acl(connection_struct *conn, const char *name, mode_t mode)
 	pstring dirname;
 	pstrcpy(dirname, parent_dirname(name));
 
-	if (!lp_inherit_perms(SNUM(conn)) || directory_has_default_acl(conn, dirname))
+	if (directory_has_default_acl(conn, dirname))
 		return 0;
 
 	return copy_access_acl(conn, dirname, name, mode);
