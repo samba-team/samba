@@ -41,9 +41,13 @@ static const struct {
 	_PREFIX(0x00150000, "0.9.2342.19200300.100.1."),
 	_PREFIX(0x00160000, "2.16.840.1.113730.3.1."),
 	_PREFIX(0x00170000, "1.2.840.113556.1.5.7000."),
+	_PREFIX(0x00180000, "2.5.21."),
+	_PREFIX(0x00190000, "2.5.18."),
 	_PREFIX(0x001A0000, "2.5.20."),
+	_PREFIX(0x001B0000, "1.3.6.1.4.1.1466.101.119."),
 	_PREFIX(0x001C0000, "2.16.840.1.113730.3.2."),
 	_PREFIX(0x001D0000, "1.3.6.1.4.1.250.1."),
+	_PREFIX(0x001E0000, "1.2.840.113549.1.9."),
 	_PREFIX(0x001F0000, "0.9.2342.19200300.100.4."),
 };
 
@@ -68,8 +72,19 @@ WERROR dsdb_map_oid2int(const char *in, uint32_t *out)
 			return WERR_INVALID_PARAM;
 		}
 
+		/* two '.' chars are invalid */
+		if (val_str[0] == '.') {
+			return WERR_INVALID_PARAM;
+		}
+
 		val = strtoul(val_str, &end_str, 10);
-		if (end_str[0] != '\0') {
+		if (end_str[0] == '.' && end_str[1] != '\0') {
+			/*
+			 * if it's a '.' and not the last char
+			 * then maybe an other mapping apply
+			 */
+			continue;
+		} else if (end_str[0] != '\0') {
 			return WERR_INVALID_PARAM;
 		} else if (val > 0xFFFF) {
 			return WERR_INVALID_PARAM;
