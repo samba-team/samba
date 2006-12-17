@@ -418,7 +418,9 @@ NTSTATUS libnet_LookupName_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 			struct lsa_RefDomainList *domains = s->lookup.out.domains;
 			struct lsa_TransSidArray *sids = s->lookup.out.sids;
 
-			/* TODO: verify if returned pointers are non-null */
+			if (domains == NULL || sids == NULL) {
+				composite_error(c, NT_STATUS_UNSUCCESSFUL);
+			}
 
 			if (sids->count > 0) {
 				io->out.rid        = sids->sids[0].rid;
