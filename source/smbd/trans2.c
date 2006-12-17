@@ -4307,7 +4307,10 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				if (SMB_VFS_MKNOD(conn,fname, unixmode, dev) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-				inherit_access_acl(conn, fname, unixmode);
+				if (lp_inherit_perms(SNUM(conn))) {
+					inherit_access_acl(conn, fname,
+							   unixmode);
+				}
 
 				SSVAL(params,0,0);
 				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
