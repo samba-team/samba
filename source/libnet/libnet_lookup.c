@@ -419,7 +419,9 @@ NTSTATUS libnet_LookupName_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 			struct lsa_TransSidArray *sids = s->lookup.out.sids;
 
 			if (domains == NULL || sids == NULL) {
-				composite_error(c, NT_STATUS_UNSUCCESSFUL);
+				status = NT_STATUS_UNSUCCESSFUL;
+				io->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
+				goto done;
 			}
 
 			if (sids->count > 0) {
@@ -440,6 +442,7 @@ NTSTATUS libnet_LookupName_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 		io->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
 	}
 
+done:
 	talloc_free(c);
 	return status;
 }
