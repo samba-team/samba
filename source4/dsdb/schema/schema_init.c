@@ -141,9 +141,9 @@ WERROR dsdb_map_int2oid(uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
 	(p)->elem = samdb_result_guid(msg, #elem);\
 } while (0)
 
-#define GET_BLOB(p, elem) do { \
+#define GET_BLOB(p, elem, attr) do { \
 	const struct ldb_val *_val;\
-	_val = ldb_msg_find_ldb_val(msg, #elem);\
+	_val = ldb_msg_find_ldb_val(msg, attr);\
 	if (_val) {\
 		(p)->elem = *_val;\
 		(void)talloc_steal(p, (p)->elem.data);\
@@ -175,7 +175,7 @@ WERROR dsdb_attribute_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, str
 	status = dsdb_map_oid2int(attr->attributeSyntax_oid, &attr->attributeSyntax_id);
 	W_ERROR_NOT_OK_RETURN(status);
 	GET_UINT32(attr, oMSyntax);
-	GET_BLOB(attr, oMObjectClass);
+	GET_BLOB(attr, oMObjectClass, "oMObjectClass");
 
 	GET_BOOL(attr, isSingleValued, True);
 	GET_UINT32(attr, rangeLower);
@@ -183,7 +183,7 @@ WERROR dsdb_attribute_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, str
 	GET_BOOL(attr, extendedCharsAllowed, False);
 
 	GET_UINT32(attr, schemaFlagsEx);
-	GET_BLOB(attr, msDs_Schema_Extensions);
+	GET_BLOB(attr, msDs_Schema_Extensions, "msDs-Schema-Extensions");
 
 	GET_BOOL(attr, showInAdvancedViewOnly, False);
 	GET_STRING(attr, adminDisplayName, True);
@@ -226,7 +226,7 @@ WERROR dsdb_class_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct 
 	GET_STRING(obj, defaultSecurityDescriptor, False);
 
 	GET_UINT32(obj, schemaFlagsEx);
-	GET_BLOB(obj, msDs_Schema_Extensions);
+	GET_BLOB(obj, msDs_Schema_Extensions, "msDs-Schema-Extensions");
 
 	GET_BOOL(obj, showInAdvancedViewOnly, False);
 	GET_STRING(obj, adminDisplayName, True);
