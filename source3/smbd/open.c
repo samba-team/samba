@@ -283,7 +283,9 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		/* Inherit the ACL if the file was created. */
-		if ((local_flags & O_CREAT) && !file_existed) {
+		if ((local_flags & O_CREAT)
+		    && !file_existed
+		    && lp_inherit_perms(SNUM(conn))) {
 			inherit_access_acl(conn, fname, unx_mode);
 		}
 

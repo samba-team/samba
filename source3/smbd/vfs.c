@@ -319,7 +319,9 @@ int vfs_MkDir(connection_struct *conn, const char *name, mode_t mode)
 		return ret;
 	}
 
-	inherit_access_acl(conn, name, mode);
+	if (lp_inherit_perms(SNUM(conn))) {
+		inherit_access_acl(conn, name, mode);
+	}
 
 	/*
 	 * Check if high bits should have been set,
