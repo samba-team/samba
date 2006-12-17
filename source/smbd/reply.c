@@ -3755,8 +3755,7 @@ NTSTATUS mkdir_internal(connection_struct *conn, const pstring directory, BOOL b
 	
 	if(!CAN_WRITE(conn)) {
 		DEBUG(5,("mkdir_internal: failing create on read-only share %s\n", lp_servicename(SNUM(conn))));
-		errno = EACCES;
-		return map_nt_error_from_unix(errno);
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (bad_path) {
