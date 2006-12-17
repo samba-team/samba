@@ -393,6 +393,24 @@ static BOOL test_dsdb_map(struct torture_context *torture)
 		DEBUG(0,("0x%08X => %s\n", id, oid));
 	}
 
+	oid = "1.2.840.113556.1.5.7000";
+	status = dsdb_map_oid2int(oid, &id);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("%s => 0x%08X\n", oid, id));
+	}
+
+	oid = "1.2.840.113556.1.5.7000.5";
+	status = dsdb_map_oid2int(oid, &id);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("%s => 0x%08X\n", oid, id));
+	}
+
 	oid = "1.2.840.113556.1.4.1716.";
 	status = dsdb_map_oid2int(oid, &id);
 	if (!W_ERROR_EQUAL(status, WERR_INVALID_PARAM)) {
@@ -402,7 +420,16 @@ static BOOL test_dsdb_map(struct torture_context *torture)
 		DEBUG(0,("%s => %s (ok!)\n", oid, win_errstr(status)));
 	}
 
-	oid = "1.2.840.113556.1.4.1716.65536";
+	oid = "1.2.840.113556.1.4.65535.34";
+	status = dsdb_map_oid2int(oid, &id);
+	if (!W_ERROR_EQUAL(status, WERR_DS_NO_MSDS_INTID)) {
+		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("%s => %s (ok!)\n", oid, win_errstr(status)));
+	}
+
+	oid = "1.2.840.113556.1.4..";
 	status = dsdb_map_oid2int(oid, &id);
 	if (!W_ERROR_EQUAL(status, WERR_INVALID_PARAM)) {
 		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
@@ -411,7 +438,16 @@ static BOOL test_dsdb_map(struct torture_context *torture)
 		DEBUG(0,("%s => %s (ok!)\n", oid, win_errstr(status)));
 	}
 
-	oid = "5435.1.2.840.113556.1.4.1716.";
+	oid = "1.2.840.113556.1.4.65536";
+	status = dsdb_map_oid2int(oid, &id);
+	if (!W_ERROR_EQUAL(status, WERR_INVALID_PARAM)) {
+		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
+		ret = False;
+	} else {
+		DEBUG(0,("%s => %s (ok!)\n", oid, win_errstr(status)));
+	}
+
+	oid = "5435.1.2.840.113556.1.4.";
 	status = dsdb_map_oid2int(oid, &id);
 	if (!W_ERROR_EQUAL(status, WERR_DS_NO_MSDS_INTID)) {
 		DEBUG(0,("%s => %s\n", oid, win_errstr(status)));
