@@ -104,7 +104,7 @@ WERROR dsdb_map_int2oid(uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
 	return WERR_DS_NO_MSDS_INTID;
 }
 
-#define GET_STRING(p, elem, strict) do { \
+#define GET_STRING_LDB(msg, p, elem, strict) do { \
 	(p)->elem = samdb_result_string(msg, #elem, NULL);\
 	if (strict && (p)->elem == NULL) { \
 		d_printf("%s: %s == NULL\n", __location__, #elem); \
@@ -113,7 +113,7 @@ WERROR dsdb_map_int2oid(uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
 	(void)talloc_steal(p, (p)->elem); \
 } while (0)
 
-#define GET_BOOL(p, elem, strict) do { \
+#define GET_BOOL_LDB(msg, p, elem, strict) do { \
 	const char *str; \
 	str = samdb_result_string(msg, #elem, NULL);\
 	if (str == NULL) { \
@@ -133,15 +133,15 @@ WERROR dsdb_map_int2oid(uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
 	} \
 } while (0)
 
-#define GET_UINT32(p, elem) do { \
+#define GET_UINT32_LDB(msg, p, elem) do { \
 	(p)->elem = samdb_result_uint(msg, #elem, 0);\
 } while (0)
 
-#define GET_GUID(p, elem) do { \
+#define GET_GUID_LDB(msg, p, elem) do { \
 	(p)->elem = samdb_result_guid(msg, #elem);\
 } while (0)
 
-#define GET_BLOB(p, elem, attr) do { \
+#define GET_BLOB_LDB(msg, p, elem, attr) do { \
 	const struct ldb_val *_val;\
 	_val = ldb_msg_find_ldb_val(msg, attr);\
 	if (_val) {\
@@ -156,42 +156,42 @@ WERROR dsdb_attribute_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, str
 {
 	WERROR status;
 
-	GET_STRING(attr, cn, True);
-	GET_STRING(attr, lDAPDisplayName, True);
-	GET_STRING(attr, attributeID_oid, True);
+	GET_STRING_LDB(msg, attr, cn, True);
+	GET_STRING_LDB(msg, attr, lDAPDisplayName, True);
+	GET_STRING_LDB(msg, attr, attributeID_oid, True);
 	status = dsdb_map_oid2int(attr->attributeID_oid, &attr->attributeID_id);
 	W_ERROR_NOT_OK_RETURN(status);
-	GET_GUID(attr, schemaIDGUID);
-	GET_UINT32(attr, mAPIID);
+	GET_GUID_LDB(msg, attr, schemaIDGUID);
+	GET_UINT32_LDB(msg, attr, mAPIID);
 
-	GET_GUID(attr, attributeSecurityGUID);
+	GET_GUID_LDB(msg, attr, attributeSecurityGUID);
 
-	GET_UINT32(attr, searchFlags);
-	GET_UINT32(attr, systemFlags);
-	GET_BOOL(attr, isMemberOfPartialAttributeSet, False);
-	GET_UINT32(attr, linkID);
+	GET_UINT32_LDB(msg, attr, searchFlags);
+	GET_UINT32_LDB(msg, attr, systemFlags);
+	GET_BOOL_LDB(msg, attr, isMemberOfPartialAttributeSet, False);
+	GET_UINT32_LDB(msg, attr, linkID);
 
-	GET_STRING(attr, attributeSyntax_oid, True);
+	GET_STRING_LDB(msg, attr, attributeSyntax_oid, True);
 	status = dsdb_map_oid2int(attr->attributeSyntax_oid, &attr->attributeSyntax_id);
 	W_ERROR_NOT_OK_RETURN(status);
-	GET_UINT32(attr, oMSyntax);
-	GET_BLOB(attr, oMObjectClass, "oMObjectClass");
+	GET_UINT32_LDB(msg, attr, oMSyntax);
+	GET_BLOB_LDB(msg, attr, oMObjectClass, "oMObjectClass");
 
-	GET_BOOL(attr, isSingleValued, True);
-	GET_UINT32(attr, rangeLower);
-	GET_UINT32(attr, rangeUpper);
-	GET_BOOL(attr, extendedCharsAllowed, False);
+	GET_BOOL_LDB(msg, attr, isSingleValued, True);
+	GET_UINT32_LDB(msg, attr, rangeLower);
+	GET_UINT32_LDB(msg, attr, rangeUpper);
+	GET_BOOL_LDB(msg, attr, extendedCharsAllowed, False);
 
-	GET_UINT32(attr, schemaFlagsEx);
-	GET_BLOB(attr, msDs_Schema_Extensions, "msDs-Schema-Extensions");
+	GET_UINT32_LDB(msg, attr, schemaFlagsEx);
+	GET_BLOB_LDB(msg, attr, msDs_Schema_Extensions, "msDs-Schema-Extensions");
 
-	GET_BOOL(attr, showInAdvancedViewOnly, False);
-	GET_STRING(attr, adminDisplayName, True);
-	GET_STRING(attr, adminDescription, True);
-	GET_STRING(attr, classDisplayName, True);
-	GET_BOOL(attr, isEphemeral, False);
-	GET_BOOL(attr, isDefunct, False);
-	GET_BOOL(attr, systemOnly, False);
+	GET_BOOL_LDB(msg, attr, showInAdvancedViewOnly, False);
+	GET_STRING_LDB(msg, attr, adminDisplayName, True);
+	GET_STRING_LDB(msg, attr, adminDescription, True);
+	GET_STRING_LDB(msg, attr, classDisplayName, True);
+	GET_BOOL_LDB(msg, attr, isEphemeral, False);
+	GET_BOOL_LDB(msg, attr, isDefunct, False);
+	GET_BOOL_LDB(msg, attr, systemOnly, False);
 
 	return WERR_OK;
 }
@@ -200,41 +200,41 @@ WERROR dsdb_class_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct 
 {
 	WERROR status;
 
-	GET_STRING(obj, cn, True);
-	GET_STRING(obj, lDAPDisplayName, True);
-	GET_STRING(obj, governsID_oid, True);
+	GET_STRING_LDB(msg, obj, cn, True);
+	GET_STRING_LDB(msg, obj, lDAPDisplayName, True);
+	GET_STRING_LDB(msg, obj, governsID_oid, True);
 	status = dsdb_map_oid2int(obj->governsID_oid, &obj->governsID_id);
 	W_ERROR_NOT_OK_RETURN(status);
-	GET_GUID(obj, schemaIDGUID);
+	GET_GUID_LDB(msg, obj, schemaIDGUID);
 
-	GET_UINT32(obj, objectClassCategory);
-	GET_STRING(obj, rDNAttID, True);
-	GET_STRING(obj, defaultObjectCategory, True);
+	GET_UINT32_LDB(msg, obj, objectClassCategory);
+	GET_STRING_LDB(msg, obj, rDNAttID, True);
+	GET_STRING_LDB(msg, obj, defaultObjectCategory, True);
+ 
+	GET_STRING_LDB(msg, obj, subClassOf, True);
 
-	GET_STRING(obj, subClassOf, True);
-
-	GET_STRING(obj, systemAuxiliaryClass, False);
+	GET_STRING_LDB(msg, obj, systemAuxiliaryClass, False);
 	obj->systemPossSuperiors= NULL;
 	obj->systemMustContain	= NULL;
 	obj->systemMayContain	= NULL;
 
-	GET_STRING(obj, auxiliaryClass, False);
+	GET_STRING_LDB(msg, obj, auxiliaryClass, False);
 	obj->possSuperiors	= NULL;
 	obj->mustContain	= NULL;
 	obj->mayContain		= NULL;
 
-	GET_STRING(obj, defaultSecurityDescriptor, False);
+	GET_STRING_LDB(msg, obj, defaultSecurityDescriptor, False);
 
-	GET_UINT32(obj, schemaFlagsEx);
-	GET_BLOB(obj, msDs_Schema_Extensions, "msDs-Schema-Extensions");
+	GET_UINT32_LDB(msg, obj, schemaFlagsEx);
+	GET_BLOB_LDB(msg, obj, msDs_Schema_Extensions, "msDs-Schema-Extensions");
 
-	GET_BOOL(obj, showInAdvancedViewOnly, False);
-	GET_STRING(obj, adminDisplayName, True);
-	GET_STRING(obj, adminDescription, True);
-	GET_STRING(obj, classDisplayName, True);
-	GET_BOOL(obj, defaultHidingValue, True);
-	GET_BOOL(obj, isDefunct, False);
-	GET_BOOL(obj, systemOnly, False);
+	GET_BOOL_LDB(msg, obj, showInAdvancedViewOnly, False);
+	GET_STRING_LDB(msg, obj, adminDisplayName, True);
+	GET_STRING_LDB(msg, obj, adminDescription, True);
+	GET_STRING_LDB(msg, obj, classDisplayName, True);
+	GET_BOOL_LDB(msg, obj, defaultHidingValue, True);
+	GET_BOOL_LDB(msg, obj, isDefunct, False);
+	GET_BOOL_LDB(msg, obj, systemOnly, False);
 
 	return WERR_OK;
 }
