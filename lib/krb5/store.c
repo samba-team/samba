@@ -577,6 +577,7 @@ krb5_ret_principal(krb5_storage *sp,
     p->name.name_string.val = calloc(ncomp, sizeof(*p->name.name_string.val));
     if(p->name.name_string.val == NULL && ncomp != 0){
 	free(p->realm);
+	free(p);
 	return ENOMEM;
     }
     for(i = 0; i < ncomp; i++){
