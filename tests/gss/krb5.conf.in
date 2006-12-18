@@ -3,6 +3,7 @@
 [libdefaults]
 	default_realm = TEST.H5L.SE
 	no-addresses = TRUE
+	default_keytab_name = @objdir@/server.keytab
 	dns_canonicalize_hostname = false
 	dns_lookup_realm = false
 
