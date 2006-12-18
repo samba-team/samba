@@ -63,8 +63,8 @@ clean:
 distclean: clean
 	rm -f *~ */*~
 	rm -rf bin
-	rm -f config.log config.status config.cache include/config.h
+	rm -f config.log config.status config.cache config.h
 	rm -f Makefile
 
 realdistclean: distclean
-	rm -f configure.in include/config.h.in
+	rm -f configure config.h.in
