@@ -4,7 +4,7 @@ include $(top_srcdir)/Makefile.am.common
 
 noinst_DATA = krb5.conf
 
-SCRIPT_TESTS = check-gss check-gssmask check-context
+SCRIPT_TESTS = check-gss check-gssmask check-context check-spnego
 
 TESTS = $(SCRIPT_TESTS)
 
@@ -28,6 +28,12 @@ check-context: check-context.in Makefile
 	chmod +x check-context.tmp
 	mv check-context.tmp check-context
 
+check-spnego: check-spnego.in Makefile
+	$(do_subst) < $(srcdir)/check-spnego.in > check-spnego.tmp
+	chmod +x check-spnego.tmp
+	mv check-spnego.tmp check-spnego
+
+
 krb5.conf: krb5.conf.in Makefile
 	$(do_subst) < $(srcdir)/krb5.conf.in > krb5.conf.tmp
 	mv krb5.conf.tmp krb5.conf
@@ -35,6 +41,7 @@ krb5.conf: krb5.conf.in Makefile
 CLEANFILES= \
 	$(TESTS) \
 	foopassword \
+	barpassword \
 	krb5ccfile \
 	server.keytab \
 	krb5.conf \
@@ -42,10 +49,12 @@ CLEANFILES= \
 	*.log \
 	check-gss.tmp \
 	check-gssmask.tmp \
+	check-spnego.tmp \
 	check-context.tmp
 
 EXTRA_DIST = \
 	check-gss.in \
 	check-gssmask.in \
+	check-spnego.in \
 	check-context.in \
 	krb5.conf.in
