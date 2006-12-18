@@ -29,6 +29,19 @@
 
 
 /*
+  queue a packet or die
+*/
+static void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	struct ctdb_node *node;
+	node = ctdb->nodes[hdr->destnode];
+	if (ctdb->methods->queue_pkt(node, (uint8_t *)hdr, hdr->length) != 0) {
+		ctdb_fatal(ctdb, "Unable to queue packet\n");
+	}
+}
+
+
+/*
   local version of ctdb_call
 */
 static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key, 
@@ -108,19 +121,17 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	struct ctdb_reply_error *r;
 	char *msg;
 	int len;
-	struct ctdb_node *node;
 
 	va_start(ap, fmt);
 	msg = talloc_vasprintf(ctdb, fmt, ap);
 	if (msg == NULL) {
-		/* can't send an error message, need to rely on call
-		   timeouts instead */
-		return;
+		ctdb_fatal(ctdb, "Unable to allocate error in ctdb_send_error\n");
 	}
 	va_end(ap);
 
 	len = strlen(msg)+1;
 	r = talloc_size(ctdb, sizeof(*r) + len);
+	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length = sizeof(*r) + len;
 	r->hdr.operation = CTDB_REPLY_ERROR;
 	r->hdr.destnode  = hdr->srcnode;
@@ -132,9 +143,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 
 	talloc_free(msg);
 
-	node = ctdb->nodes[hdr->srcnode];
-
-	ctdb->methods->queue_pkt(node, (uint8_t *)r, r->hdr.length);
+	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(r);
 }
@@ -148,9 +157,9 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 				    struct ctdb_ltdb_header *header)
 {
 	struct ctdb_reply_redirect *r;
-	struct ctdb_node *node;
 
 	r = talloc_size(ctdb, sizeof(*r));
+	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length = sizeof(*r);
 	r->hdr.operation = CTDB_REPLY_REDIRECT;
 	r->hdr.destnode  = c->hdr.srcnode;
@@ -158,9 +167,7 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 	r->hdr.reqid     = c->hdr.reqid;
 	r->dmaster       = header->dmaster;
 
-	node = ctdb->nodes[r->hdr.destnode];
-
-	ctdb->methods->queue_pkt(node, (uint8_t *)r, r->hdr.length);
+	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(r);
 }
@@ -178,11 +185,11 @@ static void ctdb_call_send_dmaster(struct ctdb_context *ctdb,
 				   TDB_DATA *key, TDB_DATA *data)
 {
 	struct ctdb_req_dmaster *r;
-	struct ctdb_node *node;
 	int len;
 	
 	len = sizeof(*r) + key->dsize + data->dsize;
 	r = talloc_size(ctdb, len);
+	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length    = len;
 	r->hdr.operation = CTDB_REQ_DMASTER;
 	r->hdr.destnode  = ctdb_lmaster(ctdb, key);
@@ -194,13 +201,11 @@ static void ctdb_call_send_dmaster(struct ctdb_context *ctdb,
 	memcpy(&r->data[0], key->dptr, key->dsize);
 	memcpy(&r->data[key->dsize], data->dptr, data->dsize);
 
-	node = ctdb->nodes[r->hdr.destnode];
-
 	if (r->hdr.destnode == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
 		/* we are the lmaster - don't send to ourselves */
 		ctdb_request_dmaster(ctdb, &r->hdr);
 	} else {
-		ctdb->methods->queue_pkt(node, (uint8_t *)r, r->hdr.length);
+		ctdb_queue_packet(ctdb, &r->hdr);
 
 		/* update the ltdb to record the new dmaster */
 		header->dmaster = r->hdr.destnode;
@@ -224,7 +229,6 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	TDB_DATA key, data;
 	struct ctdb_ltdb_header header;
 	int ret;
-	struct ctdb_node *node;
 
 	key.dptr = c->data;
 	key.dsize = c->keylen;
@@ -252,6 +256,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 
 	/* send the CTDB_REPLY_DMASTER */
 	r = talloc_size(ctdb, sizeof(*r) + data.dsize);
+	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length = sizeof(*r) + data.dsize;
 	r->hdr.operation = CTDB_REPLY_DMASTER;
 	r->hdr.destnode  = c->dmaster;
@@ -260,9 +265,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	r->datalen       = data.dsize;
 	memcpy(&r->data[0], data.dptr, data.dsize);
 
-	node = ctdb->nodes[r->hdr.destnode];
-
-	ctdb->methods->queue_pkt(node, (uint8_t *)r, r->hdr.length);
+	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(r);
 }
@@ -276,7 +279,6 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_req_call *c = (struct ctdb_req_call *)hdr;
 	TDB_DATA key, data, call_data, reply_data;
 	struct ctdb_reply_call *r;
-	struct ctdb_node *node;
 	int ret;
 	struct ctdb_ltdb_header header;
 
@@ -316,6 +318,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 			&reply_data, c->hdr.srcnode);
 
 	r = talloc_size(ctdb, sizeof(*r) + reply_data.dsize);
+	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length = sizeof(*r) + reply_data.dsize;
 	r->hdr.operation = CTDB_REPLY_CALL;
 	r->hdr.destnode  = hdr->srcnode;
@@ -324,9 +327,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	r->datalen       = reply_data.dsize;
 	memcpy(&r->data[0], reply_data.dptr, reply_data.dsize);
 
-	node = ctdb->nodes[hdr->srcnode];
-
-	ctdb->methods->queue_pkt(node, (uint8_t *)r, r->hdr.length);
+	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(reply_data.dptr);
 	talloc_free(r);
@@ -452,11 +453,7 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	/* send it off again */
 	state->node = ctdb->nodes[c->dmaster];
 
-	if (ctdb->methods->queue_pkt(state->node, (uint8_t *)state->c, 
-				     state->c->hdr.length) != 0) {
-		state->state = CTDB_CALL_ERROR;
-		state->errmsg = "unable to queue in ctdb_reply_redirect";
-	}
+	ctdb_queue_packet(ctdb, &state->c->hdr);
 }
 
 /*
@@ -569,10 +566,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 
 	talloc_set_destructor(state, ctdb_call_destructor);
 
-	if (ctdb->methods->queue_pkt(state->node, (uint8_t *)state->c, len) != 0) {
-		talloc_free(state);
-		return NULL;
-	}
+	ctdb_queue_packet(ctdb, &state->c->hdr);
 
 	event_add_timed(ctdb->ev, state, timeval_current_ofs(CTDB_REQ_TIMEOUT, 0), 
 			ctdb_call_timeout, state);
