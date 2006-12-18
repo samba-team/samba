@@ -35,14 +35,14 @@ static int _pam_get_data(const pam_handle_t *pamh,
 
 /* some syslogging */
 
+#ifdef HAVE_PAM_VSYSLOG
 static void _pam_log_int(const pam_handle_t *pamh, int err, const char *format, va_list args)
 {
-
-#ifdef HAVE_PAM_VSYSLOG
 	pam_vsyslog(pamh, err, format, args);
+}
 #else
-	{
-
+static void _pam_log_int(const pam_handle_t *pamh, int err, const char *format, va_list args)
+{
 	char *format2 = NULL;
 	const char *service;
 
@@ -58,9 +58,8 @@ static void _pam_log_int(const pam_handle_t *pamh, int err, const char *format, 
 	sprintf(format2, "%s(%s): %s", MODULE_NAME, service, format);
 	vsyslog(err, format2, args);
 	SAFE_FREE(format2);
-	}
-#endif
 }
+#endif /* HAVE_PAM_VSYSLOG */
 
 static void _pam_log(const pam_handle_t *pamh, int ctrl, int err, const char *format, ...)
 {
