@@ -33,6 +33,10 @@ static int die_on_error;
 static int NumLoops = 0;
 static int ignore_dot_errors = 0;
 
+extern char *optarg;
+extern int optind;
+extern BOOL AllowDebugChange;
+
 /* a test fn for LANMAN mask support */
 int ms_fnmatch_lanman_core(const char *pattern, const char *string)
 {
@@ -426,9 +430,6 @@ static void usage(void)
 {
 	char *share;
 	struct cli_state *cli;	
-	extern char *optarg;
-	extern int optind;
-	extern BOOL AllowDebugChange;
 	int opt;
 	char *p;
 	int seed;

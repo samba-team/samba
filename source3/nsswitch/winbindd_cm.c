@@ -65,12 +65,13 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-extern struct winbindd_methods reconnect_methods;
-
 struct dc_name_ip {
 	fstring name;
 	struct in_addr ip;
 };
+
+extern struct winbindd_methods reconnect_methods;
+extern BOOL override_logfile;
 
 static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain);
 static void set_dc_type_and_flags( struct winbindd_domain *domain );
@@ -160,7 +161,6 @@ static void msg_try_to_go_online(int msg_type, struct process_id src, void *buf,
 
 static BOOL fork_child_dc_connect(struct winbindd_domain *domain)
 {
-	extern BOOL override_logfile;
 	struct dc_name_ip *dcs = NULL;
 	int num_dcs = 0;
 	TALLOC_CTX *mem_ctx = NULL;

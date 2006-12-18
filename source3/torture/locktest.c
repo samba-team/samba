@@ -36,6 +36,9 @@ static unsigned min_length = 0;
 static BOOL exact_error_codes;
 static BOOL zero_zero;
 
+extern char *optarg;
+extern int optind;
+
 #define FILENAME "\\locktest.dat"
 
 #define READ_PCT 50
@@ -581,8 +584,6 @@ static void usage(void)
  int main(int argc,char *argv[])
 {
 	char *share[NSERVERS];
-	extern char *optarg;
-	extern int optind;
 	int opt;
 	char *p;
 	int seed, server;
