@@ -242,6 +242,38 @@ out:
     return ret;
 }
 
+OM_uint32
+_gss_ntlm_allocate_ctx(OM_uint32 *minor_status, ntlm_ctx *ctx)
+{
+    krb5_error_code ret;
+
+    *ctx = calloc(1, sizeof(**ctx));
+
+    ret = krb5_init_context(&(*ctx)->context);
+    if (ret) {
+	gss_ctx_id_t context = (gss_ctx_id_t)*ctx;
+	_gss_ntlm_delete_sec_context(minor_status, &context, NULL);
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
+
+    ret = get_ccache((*ctx)->context, &(*ctx)->id);
+    if (ret) {
+	gss_ctx_id_t context = (gss_ctx_id_t)*ctx;
+	_gss_ntlm_delete_sec_context(minor_status, &context, NULL);
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
+
+    ret = krb5_ntlm_alloc((*ctx)->context, &(*ctx)->ntlm);
+    if (ret) {
+	gss_ctx_id_t context = (gss_ctx_id_t)*ctx;
+	_gss_ntlm_delete_sec_context(minor_status, &context, NULL);
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
+    return GSS_S_COMPLETE;
+}
 
 /*
  *
@@ -292,30 +324,10 @@ _gss_ntlm_accept_sec_context
 	struct ntlm_type1 type1;
 	OM_uint32 major_status;
 
-	ctx = calloc(1, sizeof(*ctx));
-
+	major_status = _gss_ntlm_allocate_ctx(minor_status, &ctx);
+	if (major_status)
+	    return major_status;
 	*context_handle = (gss_ctx_id_t)ctx;
-
-	ret = krb5_init_context(&ctx->context);
-	if (ret) {
-	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
-	    *minor_status = ret;
-	    return GSS_S_FAILURE;
-	}
-
-	ret = get_ccache(ctx->context, &ctx->id);
-	if (ret) {
-	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
-	    *minor_status = ret;
-	    return GSS_S_FAILURE;
-	}
-
-	ret = krb5_ntlm_alloc(ctx->context, &ctx->ntlm);
-	if (ret) {
-	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
-	    *minor_status = ret;
-	    return GSS_S_FAILURE;
-	}
 	
 	data.data = input_token_buffer->value;
 	data.length = input_token_buffer->length;
