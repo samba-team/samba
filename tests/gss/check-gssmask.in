@@ -92,6 +92,8 @@ if [ "$?" != 0 ] ; then
     exit 1
 fi
 
+trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+
 exitcode=0
 
 echo "Starting client 1"
@@ -109,6 +111,8 @@ echo "Starting client 3"
 ${gssmaskn3} --moniker=n3 &
 n3pid=$!
 
+trap "kill ${kdcpid} ${n1pid} ${n2pid} ${n3pid} 2> /dev/null; echo signal killing kdc and maskar; exit 1;" EXIT
+
 sleep 10
 
 ${gssmaestro} \
@@ -116,6 +120,8 @@ ${gssmaestro} \
     --slaves=localhost:8890 \
     --slaves=localhost:8891 \
     --principals=user1@${R}:u1 || exitcode=1
+
+trap "" EXIT
 
 echo "killing kdc and clients (${kdcpid}, ${n1pid}, ${n2pid}, ${n3pid})"
 kill ${kdcpid} ${n1pid} ${n2pid} ${n3pid} 2> /dev/null
