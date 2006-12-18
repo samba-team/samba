@@ -222,6 +222,9 @@ struct ctdb_call_state {
 
 /*
   called when a CTDB_REPLY_CALL packet comes in
+
+  This packet comes in response to a CTDB_REQ_CALL request packet. It
+  contains any reply data freom the call
 */
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
@@ -261,6 +264,10 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 /*
   called when a CTDB_REPLY_REDIRECT packet comes in
+
+  This packet arrives when we have sent a CTDB_REQ_CALL request and
+  the node that received it is not the dmaster for the given key. We
+  are given a hint as to what node to try next.
 */
 void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
@@ -295,8 +302,9 @@ static int ctdb_call_destructor(struct ctdb_call_state *state)
 	return 0;
 }
 
+
 /*
-  called when a call times out
+  called when a ctdb_call times out
 */
 void ctdb_call_timeout(struct event_context *ev, struct timed_event *te, 
 		       struct timeval t, void *private)
@@ -307,7 +315,10 @@ void ctdb_call_timeout(struct event_context *ev, struct timed_event *te,
 }
 
 /*
-  fake an event driven local ctdb_call
+  construct an event driven local ctdb_call
+
+  this is used so that locally processed ctdb_call requests are processed
+  in an event driven manner
 */
 struct ctdb_call_state *ctdb_call_local_send(struct ctdb_context *ctdb, 
 					     TDB_DATA key, int call_id, 
@@ -332,6 +343,9 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_context *ctdb,
 
 /*
   make a remote ctdb call - async send
+
+  This constructs a ctdb_call request and queues it for processing. 
+  This call never blocks.
 */
 struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb, 
 				       TDB_DATA key, int call_id, 
@@ -397,7 +411,10 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 
 
 /*
-  make a remote ctdb call - async recv
+  make a remote ctdb call - async recv. 
+
+  This is called when the program wants to wait for a ctdb_call to complete and get the 
+  results. This call will block unless the call has already completed.
 */
 int ctdb_call_recv(struct ctdb_call_state *state, TDB_DATA *reply_data)
 {
@@ -420,7 +437,7 @@ int ctdb_call_recv(struct ctdb_call_state *state, TDB_DATA *reply_data)
 }
 
 /*
-  full ctdb_call
+  full ctdb_call. Equivalent to a ctdb_call_send() followed by a ctdb_call_recv()
 */
 int ctdb_call(struct ctdb_context *ctdb, 
 	      TDB_DATA key, int call_id, 
