@@ -22,15 +22,19 @@ NegHints ::= SEQUENCE {
     hintAddress    [1]  OCTET STRING                           OPTIONAL
 } 
 
+NegTokenInitWin ::= SEQUENCE {
+                            mechTypes       [0] MechTypeList,
+                            reqFlags        [1] ContextFlags   OPTIONAL,
+                            mechToken       [2] OCTET STRING   OPTIONAL,
+			    negHints        [3] NegHints       OPTIONAL
+			     }
+
 NegTokenInit ::= SEQUENCE {
                             mechTypes       [0] MechTypeList,
                             reqFlags        [1] ContextFlags   OPTIONAL,
                             mechToken       [2] OCTET STRING   OPTIONAL,
 			    mechListMIC	    [3] OCTET STRING   OPTIONAL
-
                          }
-
---                          negHints        [3] NegHints       OPTIONAL,
 
 
 -- NB: negResult is not OPTIONAL in the new SPNEGO spec but
@@ -49,6 +53,10 @@ NegTokenResp ::= SEQUENCE {
 NegotiationToken ::= CHOICE {
 	negTokenInit[0]		NegTokenInit,
 	negTokenResp[1]		NegTokenResp
+}
+
+NegotiationTokenWin ::= CHOICE {
+	negTokenInit[0]		NegTokenInitWin
 }
 
 END

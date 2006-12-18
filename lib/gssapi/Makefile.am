@@ -215,8 +215,10 @@ spnego_files =					\
 	asn1_MechType.x				\
 	asn1_MechTypeList.x			\
 	asn1_NegotiationToken.x			\
+	asn1_NegotiationTokenWin.x		\
 	asn1_NegHints.x				\
 	asn1_NegTokenInit.x			\
+	asn1_NegTokenInitWin.x			\
 	asn1_NegTokenResp.x
 
 $(libgssapi_la_OBJECTS): $(srcdir)/krb5/gsskrb5-private.h
