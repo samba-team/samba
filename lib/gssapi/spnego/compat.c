@@ -200,10 +200,12 @@ _gss_spnego_require_mechlist_mic(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
-int _gss_spnego_add_mech_type(gss_OID mech_type,
-			      int includeMSCompatOID,
-			      MechTypeList *mechtypelist)
+static int
+add_mech_type(gss_OID mech_type,
+	      int includeMSCompatOID,
+	      MechTypeList *mechtypelist)
 {
+    MechType mech;
     int ret;
 
     if (gss_oid_equal(mech_type, GSS_SPNEGO_MECHANISM))
@@ -213,19 +215,107 @@ int _gss_spnego_add_mech_type(gss_OID mech_type,
 	gss_oid_equal(mech_type, &_gss_spnego_krb5_mechanism_oid_desc)) {
 	ret = der_get_oid(_gss_spnego_mskrb_mechanism_oid_desc.elements,
 			  _gss_spnego_mskrb_mechanism_oid_desc.length,
-			  &mechtypelist->val[mechtypelist->len],
+			  &mech,
 			  NULL);
 	if (ret)
 	    return ret;
-	mechtypelist->len++;
+	ret = add_MechTypeList(mechtypelist, &mech);
+	free_MechType(&mech);
+	if (ret)
+	    return ret;
     }
-    ret = der_get_oid(mech_type->elements,
-		      mech_type->length,
-		      &mechtypelist->val[mechtypelist->len],
-		      NULL);
+    ret = der_get_oid(mech_type->elements, mech_type->length, &mech, NULL);
     if (ret)
 	return ret;
-    mechtypelist->len++;
+    ret = add_MechTypeList(mechtypelist, &mech);
+    free_MechType(&mech);
+    return ret;
+}
 
-    return 0;
+
+OM_uint32
+_gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
+				   gss_name_t target_name,
+				   OM_uint32 (*func)(gss_name_t, gss_OID),
+				   int includeMSCompatOID,
+				   const gssspnego_cred cred_handle,
+				   MechTypeList *mechtypelist,
+				   gss_OID *preferred_mech)
+{
+    gss_OID_set supported_mechs = GSS_C_NO_OID_SET;
+    gss_OID first_mech = GSS_C_NO_OID;
+    OM_uint32 ret;
+    int i;
+
+    mechtypelist->len = 0;
+    mechtypelist->val = NULL;
+
+    if (cred_handle != NULL) {
+	ret = gss_inquire_cred(minor_status,
+			       cred_handle->negotiated_cred_id,
+			       NULL,
+			       NULL,
+			       NULL,
+			       &supported_mechs);
+    } else {
+	ret = gss_indicate_mechs(minor_status, &supported_mechs);
+    }
+
+    if (ret != GSS_S_COMPLETE) {
+	return ret;
+    }
+
+    if (supported_mechs->count == 0) {
+	*minor_status = ENOENT;
+	gss_release_oid_set(minor_status, &supported_mechs);
+	return GSS_S_FAILURE;
+    }
+
+    ret = (*func)(target_name, GSS_KRB5_MECHANISM);
+    if (ret == GSS_S_COMPLETE) {
+	ret = add_mech_type(GSS_KRB5_MECHANISM,
+			    includeMSCompatOID,
+			    mechtypelist);
+	if (!GSS_ERROR(ret))
+	    first_mech = GSS_KRB5_MECHANISM;
+    }
+    ret = GSS_S_COMPLETE;
+
+    for (i = 0; i < supported_mechs->count; i++) {
+	OM_uint32 subret;
+	if (gss_oid_equal(&supported_mechs->elements[i], GSS_SPNEGO_MECHANISM))
+	    continue;
+	if (gss_oid_equal(&supported_mechs->elements[i], GSS_KRB5_MECHANISM))
+	    continue;
+
+	subret = (*func)(target_name, &supported_mechs->elements[i]);
+	if (subret != GSS_S_COMPLETE)
+	    continue;
+
+	ret = add_mech_type(&supported_mechs->elements[i],
+			    includeMSCompatOID,
+			    mechtypelist);
+	if (ret != 0) {
+	    *minor_status = ret;
+	    ret = GSS_S_FAILURE;
+	    break;
+	}
+	if (first_mech == GSS_C_NO_OID)
+	    first_mech = &supported_mechs->elements[i];
+    }
+
+    if (mechtypelist->len == 0) {
+	gss_release_oid_set(minor_status, &supported_mechs);
+	*minor_status = 0;
+	return GSS_S_BAD_MECH;
+    }
+
+    if (preferred_mech != NULL) {
+	ret = gss_duplicate_oid(minor_status, first_mech, preferred_mech);
+	if (ret != GSS_S_COMPLETE)
+	    free_MechTypeList(mechtypelist);
+    }
+    gss_release_oid_set(minor_status, &supported_mechs);
+
+    return ret;
 }
