@@ -599,8 +599,10 @@ heim_ntlm_encode_type3(struct ntlm_type3 *type3, struct ntlm_buf *data)
     memset(&sessionkey, 0, sizeof(sessionkey));
 
     base = 52;
-    if (type3->sessionkey.length)
-	base += 8;
+    if (type3->sessionkey.length) {
+	base += 8; /* sessionkey sec buf */
+	base += 4; /* flags */
+    }
     if (type3->os[0]) {
 	base += 8;
     }
@@ -629,6 +631,10 @@ heim_ntlm_encode_type3(struct ntlm_type3 *type3, struct ntlm_buf *data)
     ws.length = len_string(ucs2, type3->ws);
     ws.allocated = ws.length;
 
+    sessionkey.offset = ws.offset + ws.allocated;
+    sessionkey.length = type3->sessionkey.length;
+    sessionkey.allocated = type3->sessionkey.length;
+
     out = krb5_storage_emem();
     if (out == NULL)
 	return ENOMEM;
@@ -643,10 +649,12 @@ heim_ntlm_encode_type3(struct ntlm_type3 *type3, struct ntlm_buf *data)
     CHECK(store_sec_buffer(out, &target), 0);
     CHECK(store_sec_buffer(out, &username), 0);
     CHECK(store_sec_buffer(out, &ws), 0);
-#if 0
     /* optional */
-    CHECK(store_sec_buffer(out, &sessionkey), 0);
-    CHECK(krb5_store_uint32(out, type3->flags), 0);
+    if (type3->sessionkey.length) {
+	CHECK(store_sec_buffer(out, &sessionkey), 0);
+	CHECK(krb5_store_uint32(out, type3->flags), 0);
+    }
+#if 0
     CHECK(krb5_store_uint32(out, 0), 0); /* os0 */
     CHECK(krb5_store_uint32(out, 0), 0); /* os1 */
 #endif
@@ -658,6 +666,7 @@ heim_ntlm_encode_type3(struct ntlm_type3 *type3, struct ntlm_buf *data)
     CHECK(put_string(out, ucs2, type3->targetname), 0);
     CHECK(put_string(out, ucs2, type3->username), 0);
     CHECK(put_string(out, ucs2, type3->ws), 0);
+    CHECK(put_buf(out, &type3->sessionkey), 0);
     
     {
 	krb5_data d;
@@ -756,3 +765,41 @@ heim_ntlm_calculate_ntlm1(void *key, size_t len,
 
     return 0;
 }
+
+int
+heim_ntlm_build_ntlm1_master(void *key, size_t len,
+			     struct ntlm_buf *master)
+{
+    unsigned char sessionkey[MD4_DIGEST_LENGTH];
+    unsigned char masterkey[MD4_DIGEST_LENGTH];
+    MD4_CTX ctx;
+    RC4_KEY rc4;
+
+    if (len != MD4_DIGEST_LENGTH)
+	return EINVAL;
+    
+    master->length = MD4_DIGEST_LENGTH;
+    master->data = malloc(master->length);
+    if (master->data == NULL)
+	return ENOMEM;
+    
+    MD4_Init(&ctx);
+    MD4_Update(&ctx, key, len);
+    MD4_Final(sessionkey, &ctx);
+    
+    RC4_set_key(&rc4, sizeof(sessionkey), sessionkey);
+    
+    if (RAND_bytes(masterkey, sizeof(masterkey)) != 1) {
+	free(master->data);
+	master->data = NULL;
+	master->length = 0;
+	return EINVAL;
+    }
+
+    RC4(&rc4, master->length, masterkey, master->data);
+    memset(&rc4, 0, sizeof(rc4));
+    
+    return 0;
+}
+
+				 
