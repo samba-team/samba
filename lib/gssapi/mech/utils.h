@@ -27,6 +27,7 @@
  *	$Id$
  */
 
+OM_uint32 _gss_free_oid(OM_uint32 *, gss_OID);
 OM_uint32 _gss_copy_oid(OM_uint32 *, const gss_OID, gss_OID);
 OM_uint32 _gss_copy_buffer(OM_uint32 *minor_status,
     const gss_buffer_t from_buf, gss_buffer_t to_buf);
