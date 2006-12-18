@@ -128,13 +128,12 @@ for mech in ntlm krb5 ; do
 done
 
 echo "spnego"
-echo ${context} \
+${context} \
     --mech-type=spnego \
     --ret-mech-type=krb5 \
     --name-type=hostbased-service \
     host@host.test.h5l.se || \
     { exitcode=1 ; echo test failed; }
-bash
 echo "test failure cases"
 
 ${context} --mech-type=ntlm --ret-mech-type=krb5 \
