@@ -460,7 +460,7 @@ static void process_oplock_async_level2_break_message(int msg_type, struct proce
 
 	show_msg(break_msg);
 	if (!send_smb(smbd_server_fd(), break_msg)) {
-		exit_server("oplock_break: send_smb failed.");
+		exit_server_cleanly("oplock_break: send_smb failed.");
 	}
 
 	/* Restore the sign state to what it was. */
@@ -562,7 +562,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 
 	show_msg(break_msg);
 	if (!send_smb(smbd_server_fd(), break_msg)) {
-		exit_server("oplock_break: send_smb failed.");
+		exit_server_cleanly("oplock_break: send_smb failed.");
 	}
 
 	/* Restore the sign state to what it was. */
@@ -638,7 +638,7 @@ static void process_kernel_oplock_break(int msg_type, struct process_id src,
 
 	show_msg(break_msg);
 	if (!send_smb(smbd_server_fd(), break_msg)) {
-		exit_server("oplock_break: send_smb failed.");
+		exit_server_cleanly("oplock_break: send_smb failed.");
 	}
 
 	/* Restore the sign state to what it was. */

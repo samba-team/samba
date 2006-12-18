@@ -95,7 +95,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	}
 	
 	if (strequal(desthost,myhostname())) {
-		exit_server("Password server loop!");
+		exit_server_cleanly("Password server loop!");
 	}
 	
 	DEBUG(3,("got session\n"));
