@@ -36,6 +36,38 @@
 RCSID("$Id$");
 
 /*
+ * Is target_name an sane target for `mech´.
+ */
+
+static int
+initiator_approved(gss_name_t target_name, gss_OID mech)
+{
+    OM_uint32 min_stat, maj_stat;
+    gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
+    gss_buffer_desc out;
+    
+    maj_stat = gss_init_sec_context(&min_stat,
+				    GSS_C_NO_CREDENTIAL,
+				    &ctx,
+				    target_name,
+				    mech,
+				    0,
+				    GSS_C_INDEFINITE,
+				    GSS_C_NO_CHANNEL_BINDINGS,
+				    GSS_C_NO_BUFFER,
+				    NULL,
+				    &out,
+				    NULL,
+				    NULL);
+    if (GSS_ERROR(maj_stat))
+	return 0;
+    gss_release_buffer(&min_stat, &out);
+    gss_delete_sec_context(&min_stat, &ctx, NULL);
+
+    return 1;
+}
+
+/*
  * Send a reply. Note that we only need to send a reply if we
  * need to send a MIC or a mechanism token. Otherwise, we can
  * return an empty buffer.
@@ -200,6 +232,7 @@ spnego_initial
 
     sub = _gss_spnego_indicate_mechtypelist(&minor, 
 					    ctx->target_name,
+					    initiator_approved,
 					    0,
 					    cred,
 					    &ni.mechTypes,
