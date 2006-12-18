@@ -158,7 +158,7 @@ uint32_t ctdb_hash(TDB_DATA *key);
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
-int ctdb_ltdb_fetch(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+int ctdb_ltdb_fetch(struct ctdb_context *ctdb, 
 		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data);
 int ctdb_ltdb_store(struct ctdb_context *ctdb, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);

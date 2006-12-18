@@ -50,6 +50,7 @@ static void ltdb_initial_header(struct ctdb_context *ctdb,
 				struct ctdb_ltdb_header *header)
 {
 	header->rsn = 0;
+	/* initial dmaster is the lmaster */
 	header->dmaster = ctdb_hash(&key) % ctdb->num_nodes;
 	header->laccessor = header->dmaster;
 	header->lacount = 0;
@@ -61,7 +62,7 @@ static void ltdb_initial_header(struct ctdb_context *ctdb,
   and returning the body of the record. A valid (initial) header is
   returned if the record is not present
 */
-int ctdb_ltdb_fetch(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+int ctdb_ltdb_fetch(struct ctdb_context *ctdb, 
 		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data)
 {
 	TDB_DATA rec;
@@ -78,7 +79,7 @@ int ctdb_ltdb_fetch(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 	*header = *(struct ctdb_ltdb_header *)rec.dptr;
 
 	data->dsize = rec.dsize - sizeof(struct ctdb_ltdb_header);
-	data->dptr = talloc_memdup(mem_ctx, sizeof(struct ctdb_ltdb_header)+rec.dptr,
+	data->dptr = talloc_memdup(ctdb, sizeof(struct ctdb_ltdb_header)+rec.dptr,
 				   data->dsize);
 	CTDB_NO_MEMORY(ctdb, data->dptr);
 

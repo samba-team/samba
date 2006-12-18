@@ -28,25 +28,20 @@
 /*
   local version of ctdb_call
 */
-static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key, int call_id, 
-			   TDB_DATA *call_data, TDB_DATA *reply_data)
+static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key, 
+			   struct ctdb_ltdb_header *header, TDB_DATA *data,
+			   int call_id, TDB_DATA *call_data, TDB_DATA *reply_data)
 {
 	struct ctdb_call *c;
 	struct ctdb_registered_call *fn;
-	TDB_DATA data;
-	struct ctdb_ltdb_header header;
-	int ret;
 
 	c = talloc(ctdb, struct ctdb_call);
 	CTDB_NO_MEMORY(ctdb, c);
 
-	ret = ctdb_ltdb_fetch(ctdb, c, key, &header, &data);
-	if (ret != 0) return -1;
-	
 	c->key = key;
 	c->call_data = call_data;
-	c->record_data.dptr = talloc_memdup(c, data.dptr, data.dsize);
-	c->record_data.dsize = data.dsize;
+	c->record_data.dptr = talloc_memdup(c, data->dptr, data->dsize);
+	c->record_data.dsize = data->dsize;
 	CTDB_NO_MEMORY(ctdb, c->record_data.dptr);
 	c->new_data = NULL;
 	c->reply_data = NULL;
@@ -65,7 +60,7 @@ static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key, int call_id,
 	}
 
 	if (c->new_data) {
-		if (ctdb_ltdb_store(ctdb, key, &header, *c->new_data) != 0) {
+		if (ctdb_ltdb_store(ctdb, key, header, *c->new_data) != 0) {
 			ctdb_set_error(ctdb, "ctdb_call tdb_store failed\n");
 			return -1;
 		}
@@ -87,21 +82,59 @@ static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key, int call_id,
 }
 
 /*
+  send an error reply
+*/
+static void ctdb_send_error(struct ctdb_context *ctdb, 
+			    struct ctdb_req_header *hdr, int ecode)
+{
+	printf("ctdb_send_error not implemented\n");
+}
+
+/*
+  send a redirect reply
+*/
+static void ctdb_call_send_redirect(struct ctdb_context *ctdb, 
+				    struct ctdb_req_call *c, 
+				    struct ctdb_ltdb_header *header)
+{
+	printf("ctdb_call_send_redirect not implemented\n");
+}
+
+/*
   called when a CTDB_REQ_CALL packet comes in
 */
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_call *c = (struct ctdb_req_call *)hdr;
-	TDB_DATA key, call_data, reply_data;
+	TDB_DATA key, data, call_data, reply_data;
 	struct ctdb_reply_call *r;
 	struct ctdb_node *node;
+	int ret;
+	struct ctdb_ltdb_header header;
 
 	key.dptr = c->data;
 	key.dsize = c->keylen;
 	call_data.dptr = c->data + c->keylen;
 	call_data.dsize = c->calldatalen;
 
-	ctdb_call_local(ctdb, key, c->callid, 
+	/* determine if we are the dmaster for this key. This also
+	   fetches the record data (if any), thus avoiding a 2nd fetch of the data 
+	   if the call will be answered locally */
+	ret = ctdb_ltdb_fetch(ctdb, key, &header, &data);
+	if (ret != 0) {
+		ctdb_send_error(ctdb, hdr, ret);
+		return;
+	}
+
+	/* if we are not the dmaster, then send a redirect to the
+	   requesting node */
+	if (header.dmaster != ctdb->vnn) {
+		ctdb_call_send_redirect(ctdb, c, &header);
+		talloc_free(data.dptr);
+		return;
+	}
+
+	ctdb_call_local(ctdb, key, &header, &data, c->callid, 
 			call_data.dsize?&call_data:NULL,
 			&reply_data);
 
@@ -181,7 +214,9 @@ void ctdb_call_timeout(struct event_context *ev, struct timed_event *te,
 */
 struct ctdb_call_state *ctdb_call_local_send(struct ctdb_context *ctdb, 
 					     TDB_DATA key, int call_id, 
-					     TDB_DATA *call_data, TDB_DATA *reply_data)
+					     TDB_DATA *call_data, TDB_DATA *reply_data,
+					     struct ctdb_ltdb_header *header,
+					     TDB_DATA *data)
 {
 	struct ctdb_call_state *state;
 	int ret;
@@ -192,7 +227,8 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_context *ctdb,
 	state->state = CTDB_CALL_DONE;
 	state->node = ctdb->nodes[ctdb->vnn];
 
-	ret = ctdb_call_local(ctdb, key, call_id, call_data, &state->reply_data);
+	ret = ctdb_call_local(ctdb, key, header, data, 
+			      call_id, call_data, &state->reply_data);
 	return state;
 }
 
@@ -204,13 +240,24 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 				       TDB_DATA key, int call_id, 
 				       TDB_DATA *call_data, TDB_DATA *reply_data)
 {
-	uint32_t dest;
 	uint32_t len;
 	struct ctdb_call_state *state;
+	int ret;
+	struct ctdb_ltdb_header header;
+	TDB_DATA data;
 
-	dest = ctdb_hash(&key) % ctdb->num_nodes;
-	if (dest == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
-		return ctdb_call_local_send(ctdb, key, call_id, call_data, reply_data);
+	/*
+	  if we are the dmaster for this key then we don't need to
+	  send it off at all, we can bypass the network and handle it
+	  locally. To find out if we are the dmaster we need to look
+	  in our ltdb
+	*/
+	ret = ctdb_ltdb_fetch(ctdb, key, &header, &data);
+	if (ret != 0) return NULL;
+
+	if (header.dmaster == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+		return ctdb_call_local_send(ctdb, key, call_id, call_data, reply_data,
+					    &header, &data);
 	}
 
 	state = talloc_zero(ctdb, struct ctdb_call_state);
@@ -222,7 +269,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 
 	state->c->hdr.length    = len;
 	state->c->hdr.operation = CTDB_REQ_CALL;
-	state->c->hdr.destnode  = dest;
+	state->c->hdr.destnode  = header.dmaster;
 	state->c->hdr.srcnode   = ctdb->vnn;
 	/* this limits us to 16k outstanding messages - not unreasonable */
 	state->c->hdr.reqid     = idr_get_new(ctdb->idr, state, 0xFFFF);
@@ -234,7 +281,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 		memcpy(&state->c->data[key.dsize], call_data->dptr, call_data->dsize);
 	}
 
-	state->node = ctdb->nodes[dest];
+	state->node = ctdb->nodes[header.dmaster];
 	state->state = CTDB_CALL_WAIT;
 
 	talloc_set_destructor(state, ctdb_call_destructor);
