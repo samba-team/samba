@@ -174,7 +174,8 @@ config_from_pam:
 		else if (!strcasecmp(*v, "cached_login"))
 			ctrl |= WINBIND_CACHED_LOGIN;
 		else {
-			_pam_log(pamh, ctrl, LOG_ERR, "pam_parse: unknown option; %s", *v);
+			_pam_log(pamh, ctrl, LOG_ERR, "pam_parse: unknown option: %s", *v);
+			return -1;
 		}
 
 	}
