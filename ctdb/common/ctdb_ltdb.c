@@ -41,6 +41,14 @@ int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags,
 	return 0;
 }
 
+/*
+  return the lmaster given a key
+*/
+uint32_t ctdb_lmaster(struct ctdb_context *ctdb, TDB_DATA key)
+{
+	return ctdb_hash(&key) % ctdb->num_nodes;
+}
+
 
 /*
   construct an initial header for a record with no ltdb header yet
@@ -51,7 +59,7 @@ static void ltdb_initial_header(struct ctdb_context *ctdb,
 {
 	header->rsn = 0;
 	/* initial dmaster is the lmaster */
-	header->dmaster = ctdb_hash(&key) % ctdb->num_nodes;
+	header->dmaster = ctdb_lmaster(ctdb, key);
 	header->laccessor = header->dmaster;
 	header->lacount = 0;
 }

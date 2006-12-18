@@ -101,6 +101,9 @@ struct ctdb_context {
 /* arbitrary maximum timeout for ctdb operations */
 #define CTDB_REQ_TIMEOUT 10
 
+/* max number of redirects before we ask the lmaster */
+#define CTDB_MAX_REDIRECT 2
+
 /*
   the extended header for records in the ltdb
 */
@@ -156,6 +159,11 @@ struct ctdb_reply_error {
 	uint8_t  msg[0];
 };
 
+struct ctdb_reply_redirect {
+	struct ctdb_req_header hdr;
+	uint32_t dmaster;
+};
+
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...);
 bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2);
@@ -167,6 +175,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
+uint32_t ctdb_lmaster(struct ctdb_context *ctdb, TDB_DATA key);
 int ctdb_ltdb_fetch(struct ctdb_context *ctdb, 
 		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data);
 int ctdb_ltdb_store(struct ctdb_context *ctdb, TDB_DATA key, 

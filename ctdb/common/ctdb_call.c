@@ -123,6 +123,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	talloc_free(r);
 }
 
+
 /*
   send a redirect reply
 */
@@ -130,7 +131,22 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 				    struct ctdb_req_call *c, 
 				    struct ctdb_ltdb_header *header)
 {
-	printf("ctdb_call_send_redirect not implemented\n");
+	struct ctdb_reply_redirect *r;
+	struct ctdb_node *node;
+
+	r = talloc_size(ctdb, sizeof(*r));
+	r->hdr.length = sizeof(*r);
+	r->hdr.operation = CTDB_REPLY_REDIRECT;
+	r->hdr.destnode  = c->hdr.srcnode;
+	r->hdr.srcnode   = ctdb->vnn;
+	r->hdr.reqid     = c->hdr.reqid;
+	r->dmaster       = header->dmaster;
+
+	node = ctdb->nodes[r->hdr.destnode];
+
+	ctdb->methods->queue_pkt(node, (uint8_t *)r, r->hdr.length);
+
+	talloc_free(r);
 }
 
 /*
@@ -199,6 +215,8 @@ struct ctdb_call_state {
 	struct ctdb_node *node;
 	const char *errmsg;
 	TDB_DATA reply_data;
+	TDB_DATA key;
+	int redirect_count;
 };
 
 
@@ -238,6 +256,34 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state->state  = CTDB_CALL_ERROR;
 	state->errmsg = (char *)c->msg;
+}
+
+
+/*
+  called when a CTDB_REPLY_REDIRECT packet comes in
+*/
+void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	struct ctdb_reply_redirect *c = (struct ctdb_reply_redirect *)hdr;
+	struct ctdb_call_state *state;
+
+	state = idr_find(ctdb->idr, hdr->reqid);
+
+	talloc_steal(state, c);
+	
+	/* don't allow for too many redirects */
+	if (state->redirect_count++ == CTDB_MAX_REDIRECT) {
+		c->dmaster = ctdb_lmaster(ctdb, state->key);
+	}
+
+	/* send it off again */
+	state->node = ctdb->nodes[c->dmaster];
+
+	if (ctdb->methods->queue_pkt(state->node, (uint8_t *)state->c, 
+				     state->c->hdr.length) != 0) {
+		state->state = CTDB_CALL_ERROR;
+		state->errmsg = "unable to queue in ctdb_reply_redirect";
+	}
 }
 
 /*
@@ -331,6 +377,8 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 	if (call_data) {
 		memcpy(&state->c->data[key.dsize], call_data->dptr, call_data->dsize);
 	}
+	state->key.dptr         = &state->c->data[0];
+	state->key.dsize        = key.dsize;
 
 	state->node = ctdb->nodes[header.dmaster];
 	state->state = CTDB_CALL_WAIT;
