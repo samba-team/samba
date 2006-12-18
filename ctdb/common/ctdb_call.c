@@ -85,9 +85,42 @@ static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key,
   send an error reply
 */
 static void ctdb_send_error(struct ctdb_context *ctdb, 
-			    struct ctdb_req_header *hdr, int ecode)
+			    struct ctdb_req_header *hdr, uint32_t status,
+			    const char *fmt, ...)
 {
-	printf("ctdb_send_error not implemented\n");
+	va_list ap;
+	struct ctdb_reply_error *r;
+	char *msg;
+	int len;
+	struct ctdb_node *node;
+
+	va_start(ap, fmt);
+	msg = talloc_vasprintf(ctdb, fmt, ap);
+	if (msg == NULL) {
+		/* can't send an error message, need to rely on call
+		   timeouts instead */
+		return;
+	}
+	va_end(ap);
+
+	len = strlen(msg)+1;
+	r = talloc_size(ctdb, sizeof(*r) + len);
+	r->hdr.length = sizeof(*r) + len;
+	r->hdr.operation = CTDB_REPLY_ERROR;
+	r->hdr.destnode  = hdr->srcnode;
+	r->hdr.srcnode   = ctdb->vnn;
+	r->hdr.reqid     = hdr->reqid;
+	r->status        = status;
+	r->msglen        = len;
+	memcpy(&r->msg[0], msg, len);
+
+	talloc_free(msg);
+
+	node = ctdb->nodes[hdr->srcnode];
+
+	ctdb->methods->queue_pkt(node, (uint8_t *)r, r->hdr.length);
+
+	talloc_free(r);
 }
 
 /*
@@ -122,7 +155,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   if the call will be answered locally */
 	ret = ctdb_ltdb_fetch(ctdb, key, &header, &data);
 	if (ret != 0) {
-		ctdb_send_error(ctdb, hdr, ret);
+		ctdb_send_error(ctdb, hdr, ret, "ltdb fetch failed in ctdb_request_call");
 		return;
 	}
 
@@ -164,6 +197,7 @@ struct ctdb_call_state {
 	enum call_state state;
 	struct ctdb_req_call *c;
 	struct ctdb_node *node;
+	const char *errmsg;
 	TDB_DATA reply_data;
 };
 
@@ -187,6 +221,23 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	talloc_steal(state, c);
 
 	state->state = CTDB_CALL_DONE;
+}
+
+
+/*
+  called when a CTDB_REPLY_ERROR packet comes in
+*/
+void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	struct ctdb_reply_error *c = (struct ctdb_reply_error *)hdr;
+	struct ctdb_call_state *state;
+
+	state = idr_find(ctdb->idr, hdr->reqid);
+
+	talloc_steal(state, c);
+
+	state->state  = CTDB_CALL_ERROR;
+	state->errmsg = (char *)c->msg;
 }
 
 /*
@@ -306,6 +357,7 @@ int ctdb_call_recv(struct ctdb_call_state *state, TDB_DATA *reply_data)
 		event_loop_once(state->node->ctdb->ev);
 	}
 	if (state->state != CTDB_CALL_DONE) {
+		ctdb_set_error(state->node->ctdb, "%s", state->errmsg);
 		talloc_free(state);
 		return -1;
 	}

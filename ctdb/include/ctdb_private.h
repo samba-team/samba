@@ -116,11 +116,12 @@ struct ctdb_ltdb_header {
   operation IDs
 */
 enum ctdb_operation {
-	CTDB_REQ_CALL   = 0,
-	CTDB_REPLY_CALL = 1,
+	CTDB_REQ_CALL       = 0,
+	CTDB_REPLY_CALL     = 1,
 	CTDB_REPLY_REDIRECT = 2,
-	CTDB_REQ_DMASTER = 3,
-	CTDB_REPLY_DMASTER = 4,
+	CTDB_REQ_DMASTER    = 3,
+	CTDB_REPLY_DMASTER  = 4,
+	CTDB_REPLY_ERROR    = 5
 };
 
 /*
@@ -148,6 +149,13 @@ struct ctdb_reply_call {
 	uint8_t  data[0];
 };
 
+struct ctdb_reply_error {
+	struct ctdb_req_header hdr;
+	uint32_t status;
+	uint32_t msglen;
+	uint8_t  msg[0];
+};
+
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...);
 bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2);
@@ -157,6 +165,7 @@ int ctdb_parse_address(struct ctdb_context *ctdb,
 uint32_t ctdb_hash(TDB_DATA *key);
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 int ctdb_ltdb_fetch(struct ctdb_context *ctdb, 
 		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data);
