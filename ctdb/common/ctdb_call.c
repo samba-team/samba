@@ -17,7 +17,10 @@
    License along with this library; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-
+/*
+  see http://wiki.samba.org/index.php/Samba_%26_Clustering for
+  protocol design and packet details
+*/
 #include "includes.h"
 #include "lib/events/events.h"
 #include "system/network.h"
@@ -163,6 +166,109 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 }
 
 /*
+  send a dmaster request (give another node the dmaster for a record)
+
+  This is always sent to the lmaster, which ensures that the lmaster
+  always knows who the dmaster is. The lmaster will then send a
+  CTDB_REPLY_DMASTER to the new dmaster
+*/
+static void ctdb_call_send_dmaster(struct ctdb_context *ctdb, 
+				   struct ctdb_req_call *c, 
+				   struct ctdb_ltdb_header *header,
+				   TDB_DATA *key, TDB_DATA *data)
+{
+	struct ctdb_req_dmaster *r;
+	struct ctdb_node *node;
+	int len;
+	
+	len = sizeof(*r) + key->dsize + data->dsize;
+	r = talloc_size(ctdb, len);
+	r->hdr.length    = len;
+	r->hdr.operation = CTDB_REQ_DMASTER;
+	r->hdr.destnode  = ctdb_lmaster(ctdb, key);
+	r->hdr.srcnode   = ctdb->vnn;
+	r->hdr.reqid     = c->hdr.reqid;
+	r->dmaster       = header->laccessor;
+	r->keylen        = key->dsize;
+	r->datalen       = data->dsize;
+	memcpy(&r->data[0], key->dptr, key->dsize);
+	memcpy(&r->data[key->dsize], data->dptr, data->dsize);
+
+	node = ctdb->nodes[r->hdr.destnode];
+
+	if (r->hdr.destnode == ctdb->vnn && !(ctdb->flags & CTDB_FLAG_SELF_CONNECT)) {
+		/* we are the lmaster - don't send to ourselves */
+		ctdb_request_dmaster(ctdb, &r->hdr);
+	} else {
+		ctdb->methods->queue_pkt(node, (uint8_t *)r, r->hdr.length);
+
+		/* update the ltdb to record the new dmaster */
+		header->dmaster = r->hdr.destnode;
+		ctdb_ltdb_store(ctdb, *key, header, *data);
+	}
+
+	talloc_free(r);
+}
+
+
+/*
+  called when a CTDB_REQ_DMASTER packet comes in
+
+  this comes into the lmaster for a record when the current dmaster
+  wants to give up the dmaster role and give it to someone else
+*/
+void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	struct ctdb_req_dmaster *c = (struct ctdb_req_dmaster *)hdr;
+	struct ctdb_reply_dmaster *r;
+	TDB_DATA key, data;
+	struct ctdb_ltdb_header header;
+	int ret;
+	struct ctdb_node *node;
+
+	key.dptr = c->data;
+	key.dsize = c->keylen;
+	data.dptr = c->data + c->keylen;
+	data.dsize = c->datalen;
+
+	/* fetch the current record */
+	ret = ctdb_ltdb_fetch(ctdb, key, &header, &data);
+	if (ret != 0) {
+		ctdb_fatal(ctdb, "ctdb_req_dmaster failed to fetch record");
+		return;
+	}
+
+	/* its a protocol error if the sending node is not the current dmaster */
+	if (header.dmaster != hdr->srcnode) {
+		ctdb_fatal(ctdb, "dmaster request from non-master");
+		return;
+	}
+
+	header.dmaster = c->dmaster;
+	if (ctdb_ltdb_store(ctdb, key, &header, data) != 0) {
+		ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
+		return;
+	}
+
+	/* send the CTDB_REPLY_DMASTER */
+	r = talloc_size(ctdb, sizeof(*r) + data.dsize);
+	r->hdr.length = sizeof(*r) + data.dsize;
+	r->hdr.operation = CTDB_REPLY_DMASTER;
+	r->hdr.destnode  = c->dmaster;
+	r->hdr.srcnode   = ctdb->vnn;
+	r->hdr.reqid     = hdr->reqid;
+	r->datalen       = data.dsize;
+	memcpy(&r->data[0], data.dptr, data.dsize);
+
+	node = ctdb->nodes[r->hdr.destnode];
+
+	ctdb->methods->queue_pkt(node, (uint8_t *)r, r->hdr.length);
+
+	talloc_free(r);
+}
+
+
+/*
   called when a CTDB_REQ_CALL packet comes in
 */
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
@@ -192,6 +298,15 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   requesting node */
 	if (header.dmaster != ctdb->vnn) {
 		ctdb_call_send_redirect(ctdb, c, &header);
+		talloc_free(data.dptr);
+		return;
+	}
+
+	/* if this nodes has done enough consecutive calls on the same record
+	   then give them the record */
+	if (header.laccessor == c->hdr.srcnode &&
+	    header.lacount >= CTDB_MAX_LACOUNT) {
+		ctdb_call_send_dmaster(ctdb, c, &header, &key, &data);
 		talloc_free(data.dptr);
 		return;
 	}
@@ -227,9 +342,11 @@ struct ctdb_call_state {
 	struct ctdb_req_call *c;
 	struct ctdb_node *node;
 	const char *errmsg;
+	TDB_DATA call_data;
 	TDB_DATA reply_data;
 	TDB_DATA key;
 	int redirect_count;
+	struct ctdb_ltdb_header header;
 };
 
 
@@ -253,6 +370,42 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	state->reply_data = reply_data;
 
 	talloc_steal(state, c);
+
+	state->state = CTDB_CALL_DONE;
+}
+
+/*
+  called when a CTDB_REPLY_DMASTER packet comes in
+
+  This packet comes in from the lmaster response to a CTDB_REQ_CALL
+  request packet. It means that the current dmaster wants to give us
+  the dmaster role
+*/
+void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
+{
+	struct ctdb_reply_dmaster *c = (struct ctdb_reply_dmaster *)hdr;
+	struct ctdb_call_state *state;
+	TDB_DATA data;
+
+	state = idr_find(ctdb->idr, hdr->reqid);
+
+	data.dptr = c->data;
+	data.dsize = c->datalen;
+
+	talloc_steal(state, c);
+
+	/* we're now the dmaster - update our local ltdb with new header
+	   and data */
+	state->header.dmaster = ctdb->vnn;
+
+	if (ctdb_ltdb_store(ctdb, state->key, &state->header, data) != 0) {
+		ctdb_fatal(ctdb, "ctdb_reply_dmaster store failed\n");
+		return;
+	}
+
+	ctdb_call_local(ctdb, state->key, &state->header, &data, state->c->callid,
+			state->call_data.dsize?&state->call_data:NULL,
+			&state->reply_data, ctdb->vnn);
 
 	state->state = CTDB_CALL_DONE;
 }
@@ -293,7 +446,7 @@ void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	
 	/* don't allow for too many redirects */
 	if (state->redirect_count++ == CTDB_MAX_REDIRECT) {
-		c->dmaster = ctdb_lmaster(ctdb, state->key);
+		c->dmaster = ctdb_lmaster(ctdb, &state->key);
 	}
 
 	/* send it off again */
@@ -404,12 +557,15 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 	memcpy(&state->c->data[0], key.dptr, key.dsize);
 	if (call_data) {
 		memcpy(&state->c->data[key.dsize], call_data->dptr, call_data->dsize);
+		state->call_data.dptr = &state->c->data[key.dsize];
+		state->call_data.dsize = call_data->dsize;
 	}
 	state->key.dptr         = &state->c->data[0];
 	state->key.dsize        = key.dsize;
 
-	state->node = ctdb->nodes[header.dmaster];
-	state->state = CTDB_CALL_WAIT;
+	state->node   = ctdb->nodes[header.dmaster];
+	state->state  = CTDB_CALL_WAIT;
+	state->header = header;
 
 	talloc_set_destructor(state, ctdb_call_destructor);
 

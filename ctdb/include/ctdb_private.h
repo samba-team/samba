@@ -104,6 +104,10 @@ struct ctdb_context {
 /* max number of redirects before we ask the lmaster */
 #define CTDB_MAX_REDIRECT 2
 
+/* number of consecutive calls from the same node before we give them
+   the record */
+#define CTDB_MAX_LACOUNT 7
+
 /*
   the extended header for records in the ltdb
 */
@@ -164,18 +168,36 @@ struct ctdb_reply_redirect {
 	uint32_t dmaster;
 };
 
+struct ctdb_req_dmaster {
+	struct ctdb_req_header hdr;
+	uint32_t dmaster;
+	uint32_t keylen;
+	uint32_t datalen;
+	uint8_t  data[0];
+};
+
+struct ctdb_reply_dmaster {
+	struct ctdb_req_header hdr;
+	uint32_t datalen;
+	uint8_t  data[0];
+};
+
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...);
+void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);
 bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2);
 int ctdb_parse_address(struct ctdb_context *ctdb,
 		       TALLOC_CTX *mem_ctx, const char *str,
 		       struct ctdb_address *address);
-uint32_t ctdb_hash(TDB_DATA *key);
+uint32_t ctdb_hash(const TDB_DATA *key);
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_reply_redirect(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
-uint32_t ctdb_lmaster(struct ctdb_context *ctdb, TDB_DATA key);
+uint32_t ctdb_lmaster(struct ctdb_context *ctdb, const TDB_DATA *key);
 int ctdb_ltdb_fetch(struct ctdb_context *ctdb, 
 		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data);
 int ctdb_ltdb_store(struct ctdb_context *ctdb, TDB_DATA key, 

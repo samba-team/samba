@@ -47,6 +47,15 @@ void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
 
 
 /*
+  a fatal internal error occurred - no hope for recovery
+*/
+void ctdb_fatal(struct ctdb_context *ctdb, const char *msg)
+{
+	fprintf(stderr, "ctdb fatal error: '%s'\n", msg);
+	abort();
+}
+
+/*
   parse a IP:port pair
 */
 int ctdb_parse_address(struct ctdb_context *ctdb,
@@ -78,7 +87,7 @@ bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2)
 /*
   hash function for mapping data to a VNN - taken from tdb
 */
-uint32_t ctdb_hash(TDB_DATA *key)
+uint32_t ctdb_hash(const TDB_DATA *key)
 {
 	uint32_t value;	/* Used to compute the hash value.  */
 	uint32_t i;	/* Used to cycle through random values. */

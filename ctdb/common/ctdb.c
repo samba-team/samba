@@ -185,6 +185,14 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 		ctdb_reply_redirect(ctdb, hdr);
 		break;
 
+	case CTDB_REQ_DMASTER:
+		ctdb_request_dmaster(ctdb, hdr);
+		break;
+
+	case CTDB_REPLY_DMASTER:
+		ctdb_reply_dmaster(ctdb, hdr);
+		break;
+
 	default:
 		printf("Packet with unknown operation %d\n", hdr->operation);
 		talloc_free(hdr);
