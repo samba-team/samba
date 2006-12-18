@@ -3,14 +3,20 @@
 [libdefaults]
 	default_realm = TEST.H5L.SE
 	no-addresses = TRUE
-	default_keytab_name = @objdir@/server.keytab
+	dns_canonicalize_hostname = false
+	dns_lookup_realm = false
 
 [realms]
 	TEST.H5L.SE = {
 		kdc = localhost:8888
 	}
 
+[domain_realms]
+	.test.h5l.se = TEST.H5L.SE
+
 [kdc]
+	enable-digest = true
+
 	database = {
 		dbname = @objdir@/current-db
 		realm = TEST.H5L.SE
@@ -22,5 +28,4 @@
 	default = 0-/FILE:@objdir@/messages.log
 
 [kadmin]
-	default_keys = des3-cbc-sha1:pw-salt
 	save-password = true
