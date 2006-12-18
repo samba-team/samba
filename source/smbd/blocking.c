@@ -180,7 +180,7 @@ static void send_blocking_reply(char *outbuf, int outsize)
 		smb_setlen(outbuf,outsize - 4);
 
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("send_blocking_reply: send_smb failed.");
+		exit_server_cleanly("send_blocking_reply: send_smb failed.");
 }
 
 /****************************************************************************
@@ -244,7 +244,7 @@ static void generic_blocking_lock_error(blocking_lock_record *blr, NTSTATUS stat
 
 	ERROR_NT(status);
 	if (!send_smb(smbd_server_fd(),outbuf)) {
-		exit_server("generic_blocking_lock_error: send_smb failed.");
+		exit_server_cleanly("generic_blocking_lock_error: send_smb failed.");
 	}
 }
 
@@ -322,7 +322,7 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, NTSTATUS status
 			SCVAL(outbuf,smb_com,SMBtrans2);
 			ERROR_NT(status);
 			if (!send_smb(smbd_server_fd(),outbuf)) {
-				exit_server("blocking_lock_reply_error: send_smb failed.");
+				exit_server_cleanly("blocking_lock_reply_error: send_smb failed.");
 			}
 			break;
 		}

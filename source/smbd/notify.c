@@ -62,7 +62,7 @@ static void change_notify_reply_packet(char *inbuf, NTSTATUS error_code)
 
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("change_notify_reply_packet: send_smb failed.");
+		exit_server_cleanly("change_notify_reply_packet: send_smb failed.");
 }
 
 /****************************************************************************

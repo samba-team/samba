@@ -293,7 +293,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		} else {
 			DEBUG(0,("reply_nt1: smb signing is incompatible with share level security !\n"));
 			if (lp_server_signing() == Required) {
-				exit_server("reply_nt1: smb signing required and share level security selected.");
+				exit_server_cleanly("reply_nt1: smb signing required and share level security selected.");
 			}
 		}
 	}
@@ -461,7 +461,7 @@ int reply_negprot(connection_struct *conn,
 
 	if (done_negprot) {
 		END_PROFILE(SMBnegprot);
-		exit_server("multiple negprot's are not permitted");
+		exit_server_cleanly("multiple negprot's are not permitted");
 	}
 	done_negprot = True;
 
@@ -570,7 +570,8 @@ int reply_negprot(connection_struct *conn,
 	DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
 	if ((lp_server_signing() == Required) && (Protocol < PROTOCOL_NT1)) {
-		exit_server("SMB signing is required and client negotiated a downlevel protocol");
+		exit_server_cleanly("SMB signing is required and "
+			"client negotiated a downlevel protocol");
 	}
 
 	END_PROFILE(SMBnegprot);
