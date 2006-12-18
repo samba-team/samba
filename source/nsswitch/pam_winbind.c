@@ -1054,13 +1054,19 @@ PAM_EXTERN
 int pam_sm_setcred(pam_handle_t *pamh, int flags,
 		   int argc, const char **argv)
 {
+	dictionary *d = NULL;
+
 	/* parse arguments */
-	int ctrl = _pam_parse(pamh, flags, argc, argv, NULL);
+	int ctrl = _pam_parse(pamh, flags, argc, argv, &d);
 	if (ctrl == -1) {
 		return PAM_SYSTEM_ERR;
 	}
 
 	_pam_log_debug(pamh, ctrl, LOG_DEBUG, "pam_winbind: pam_sm_setcred (flags: 0x%04x)", flags);
+
+	if (d) {
+		iniparser_freedict(d);
+	}
 
 	if (flags & PAM_DELETE_CRED) {
 		return pam_sm_close_session(pamh, flags, argc, argv);
