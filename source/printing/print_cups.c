@@ -25,6 +25,7 @@
 #include <cups/cups.h>
 #include <cups/language.h>
 
+extern userdom_struct current_user_info;
 
 /*
  * 'cups_passwd_cb()' - The CUPS password callback...
@@ -1006,7 +1007,6 @@ static int cups_queue_get(const char *sharename,
 
 static int cups_queue_pause(int snum)
 {
-	extern userdom_struct current_user_info;
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
@@ -1098,7 +1098,6 @@ static int cups_queue_pause(int snum)
 
 static int cups_queue_resume(int snum)
 {
-	extern userdom_struct current_user_info;
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
