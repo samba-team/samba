@@ -49,5 +49,5 @@ OM_uint32 _gss_ntlm_get_mic
 	message_token->length = 0;
 	message_token->value = NULL;
     }
-    return GSS_S_FAILURE;
+    return GSS_S_UNAVAILABLE;
 }
