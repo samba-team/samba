@@ -29,6 +29,9 @@ static BOOL analyze;
 static BOOL hide_unlock_fails;
 static BOOL use_oplocks;
 
+extern char *optarg;
+extern int optind;
+
 #define FILENAME "\\locktest.dat"
 #define LOCKRANGE 100
 #define LOCKBASE 0
@@ -471,8 +474,6 @@ static void usage(void)
  int main(int argc,char *argv[])
 {
 	char *share1, *share2, *nfspath1, *nfspath2;
-	extern char *optarg;
-	extern int optind;
 	int opt;
 	char *p;
 	int seed;
