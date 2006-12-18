@@ -30,7 +30,8 @@
 */
 static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key, 
 			   struct ctdb_ltdb_header *header, TDB_DATA *data,
-			   int call_id, TDB_DATA *call_data, TDB_DATA *reply_data)
+			   int call_id, TDB_DATA *call_data, TDB_DATA *reply_data,
+			   uint32_t caller)
 {
 	struct ctdb_call *c;
 	struct ctdb_registered_call *fn;
@@ -57,6 +58,18 @@ static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key,
 	if (fn->fn(c) != 0) {
 		ctdb_set_error(ctdb, "ctdb_call %u failed\n", call_id);
 		return -1;
+	}
+
+	if (header->laccessor != caller) {
+		header->lacount = 0;
+	}
+	header->laccessor = caller;
+	header->lacount++;
+
+	/* we need to force the record to be written out if this was a remote access,
+	   so that the lacount is updated */
+	if (c->new_data == NULL && header->laccessor != ctdb->vnn) {
+		c->new_data = &c->record_data;
 	}
 
 	if (c->new_data) {
@@ -185,7 +198,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	ctdb_call_local(ctdb, key, &header, &data, c->callid, 
 			call_data.dsize?&call_data:NULL,
-			&reply_data);
+			&reply_data, c->hdr.srcnode);
 
 	r = talloc_size(ctdb, sizeof(*r) + reply_data.dsize);
 	r->hdr.length = sizeof(*r) + reply_data.dsize;
@@ -336,7 +349,8 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_context *ctdb,
 	state->node = ctdb->nodes[ctdb->vnn];
 
 	ret = ctdb_call_local(ctdb, key, header, data, 
-			      call_id, call_data, &state->reply_data);
+			      call_id, call_data, &state->reply_data, 
+			      ctdb->vnn);
 	return state;
 }
 
