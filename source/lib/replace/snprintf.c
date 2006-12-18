@@ -540,7 +540,7 @@ static int dopr(char *buffer, size_t maxlen, const char *format, va_list args_in
 			printf("parameter at position %d not used\n", pnum+1);
 #endif
 			/* eat the parameter */
-			va_arg (args, int);
+			(void)va_arg (args, int);
 			continue;
 		}
 		for (i = 1; i < clist[pnum].num; i++) {
