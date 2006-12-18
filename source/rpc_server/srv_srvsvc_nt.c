@@ -1671,6 +1671,8 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
                 return WERR_NO_SUCH_SHARE;
         }
 	
+	snum = find_service(share_name);
+
 	/* No change to printer shares. */
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
