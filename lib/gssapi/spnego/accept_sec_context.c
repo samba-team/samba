@@ -64,37 +64,10 @@ send_reject (OM_uint32 *minor_status,
     return GSS_S_BAD_MECH;
 }
 
-static int
-initiator_approved(gss_name_t target_name, gss_OID mech)
-{
-    OM_uint32 min_stat, maj_stat;
-    gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
-    gss_buffer_desc out;
-    
-    maj_stat = gss_init_sec_context(&min_stat,
-				    GSS_C_NO_CREDENTIAL,
-				    &ctx,
-				    target_name,
-				    mech,
-				    0,
-				    GSS_C_INDEFINITE,
-				    GSS_C_NO_CHANNEL_BINDINGS,
-				    GSS_C_NO_BUFFER,
-				    NULL,
-				    &out,
-				    NULL,
-				    NULL);
-    if (GSS_ERROR(maj_stat))
-	return 0;
-    gss_release_buffer(&min_stat, &out);
-    gss_delete_sec_context(&min_stat, &ctx, NULL);
-
-    return 1;
-}
-
 OM_uint32
 _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
 				   gss_name_t target_name,
+				   int (*func)(gss_name_t, gss_OID),
 				   int includeMSCompatOID,
 				   const gssspnego_cred cred_handle,
 				   MechTypeList *mechtypelist,
@@ -138,7 +111,7 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    if (target_name && initiator_approved(target_name, GSS_KRB5_MECHANISM)) {
+    if (func && (*func)(target_name, GSS_KRB5_MECHANISM)) {
 	ret = _gss_spnego_add_mech_type(GSS_KRB5_MECHANISM,
 					includeMSCompatOID,
 					mechtypelist);
@@ -153,8 +126,7 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
 	if (gss_oid_equal(&supported_mechs->elements[i], GSS_KRB5_MECHANISM))
 	    continue;
 
-	if (target_name && !initiator_approved(target_name, 
-					       &supported_mechs->elements[i]))
+	if (func && !(*func)(target_name, &supported_mechs->elements[i]))
 	    continue;
 
 	ret = _gss_spnego_add_mech_type(&supported_mechs->elements[i],
@@ -194,14 +166,6 @@ send_supported_mechs (OM_uint32 *minor_status,
 		      gss_buffer_t output_token)
 {
     NegotiationToken nt;
-#if 0
-    char hostname[MAXHOSTNAMELEN], *p;
-    gss_buffer_desc name_buf;
-    gss_OID name_type;
-    gss_name_t target_princ;
-    gss_name_t canon_princ;
-    OM_uint32 minor;
-#endif
     size_t buf_len;
     gss_buffer_desc data;
     OM_uint32 ret;
@@ -211,92 +175,17 @@ send_supported_mechs (OM_uint32 *minor_status,
     nt.element = choice_NegotiationToken_negTokenInit;
     nt.u.negTokenInit.reqFlags = NULL;
     nt.u.negTokenInit.mechToken = NULL;
-#if 0
-    nt.u.negTokenInit.negHints = NULL;
-#endif
     nt.u.negTokenInit.mechListMIC = NULL;
 
-    ret = _gss_spnego_indicate_mechtypelist(minor_status, GSS_C_NO_NAME, 1,
-					    NULL,
+    ret = _gss_spnego_indicate_mechtypelist(minor_status, GSS_C_NO_NAME, 
+					    NULL, 1, NULL,
 					    &nt.u.negTokenInit.mechTypes, NULL);
     if (ret != GSS_S_COMPLETE) {
 	return ret;
     }
 
-#if 0
-    memset(&target_princ, 0, sizeof(target_princ));
-    if (gethostname(hostname, sizeof(hostname) - 1) != 0) {
-	*minor_status = errno;
-	free_NegotiationToken(&nt);
-	return GSS_S_FAILURE;
-    }
-
-    /* Send the constructed SAM name for this host */
-    for (p = hostname; *p != '\0' && *p != '.'; p++) {
-	*p = toupper((unsigned char)*p);
-    }
-    *p++ = '$';
-    *p = '\0';
-
-    name_buf.length = strlen(hostname);
-    name_buf.value = hostname;
-
-    ret = gss_import_name(minor_status, &name_buf,
-			  GSS_C_NO_OID,
-			  &target_princ);
-    if (ret != GSS_S_COMPLETE) {
-	free_NegotiationToken(&nt);
-	return ret;
-    }
-
-    name_buf.length = 0;
-    name_buf.value = NULL;
-
-    /* Canonicalize the name using the preferred mechanism */
-    ret = gss_canonicalize_name(minor_status,
-				target_princ,
-				GSS_C_NO_OID,
-				&canon_princ);
-    if (ret != GSS_S_COMPLETE) {
-	free_NegotiationToken(&nt);
-	gss_release_name(&minor, &target_princ);
-	return ret;
-    }
-
-    ret = gss_display_name(minor_status, canon_princ,
-			   &name_buf, &name_type);
-    if (ret != GSS_S_COMPLETE) {
-	free_NegotiationToken(&nt);
-	gss_release_name(&minor, &canon_princ);
-	gss_release_name(&minor, &target_princ);
-	return ret;
-    }
-
-    gss_release_name(&minor, &canon_princ);
-    gss_release_name(&minor, &target_princ);
-
-    ALLOC(nt.u.negTokenInit.negHints, 1);
-    if (nt.u.negTokenInit.negHints == NULL) {
-	*minor_status = ENOMEM;
-	gss_release_buffer(&minor, &name_buf);
-	free_NegotiationToken(&nt);
-	return GSS_S_FAILURE;
-    }
-
-    ALLOC(nt.u.negTokenInit.negHints->hintName, 1);
-    if (nt.u.negTokenInit.negHints->hintName == NULL) {
-	*minor_status = ENOMEM;
-	gss_release_buffer(&minor, &name_buf);
-	free_NegotiationToken(&nt);
-	return GSS_S_FAILURE;
-    }
-
-    *(nt.u.negTokenInit.negHints->hintName) = name_buf.value;
-    name_buf.value = NULL;
-    nt.u.negTokenInit.negHints->hintAddress = NULL;
-#endif
-
-    ASN1_MALLOC_ENCODE(NegotiationToken, data.value, data.length, &nt, &buf_len, ret);
+    ASN1_MALLOC_ENCODE(NegotiationToken, data.value, data.length,
+		       &nt, &buf_len, ret);
     if (ret) {
 	free_NegotiationToken(&nt);
 	return ret;
