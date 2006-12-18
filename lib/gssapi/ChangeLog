@@ -1,5 +1,14 @@
 2006-12-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* spnego/compat.c: move _gss_spnego_indicate_mechtypelist() to
+	compat.c, use the sequence types of MechTypeList, make
+	add_mech_type() static.
+
+	* spnego/accept_sec_context.c: move
+	_gss_spnego_indicate_mechtypelist() to compat.c
+
+	* Makefile.am: Generate sequence code for MechTypeList
+
 	* spnego: check that the generated acceptor mechlist is acceptable too
 
 	* spnego/init_sec_context.c: Abstract out the initiator filter
