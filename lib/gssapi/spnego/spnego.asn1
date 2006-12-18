@@ -26,9 +26,12 @@ NegTokenInit ::= SEQUENCE {
                             mechTypes       [0] MechTypeList,
                             reqFlags        [1] ContextFlags   OPTIONAL,
                             mechToken       [2] OCTET STRING   OPTIONAL,
-                            negHints        [3] NegHints       OPTIONAL,
-			    mechListMIC	    [4] OCTET STRING   OPTIONAL
+			    mechListMIC	    [3] OCTET STRING   OPTIONAL
+
                          }
+
+--                          negHints        [3] NegHints       OPTIONAL,
+
 
 -- NB: negResult is not OPTIONAL in the new SPNEGO spec but
 -- Windows clients do not always send it
