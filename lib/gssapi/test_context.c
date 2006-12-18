@@ -43,6 +43,7 @@ static char *ret_mech_string;
 static int dns_canon_flag = -1;
 static int mutual_auth_flag = 0;
 static int dce_style_flag = 0;
+static int wrapunwrap_flag = 0;
 static int deleg_flag = 0;
 static int version_flag = 0;
 static int verbose_flag = 0;
@@ -245,6 +246,7 @@ static struct getargs args[] = {
      "use dns to canonicalize", NULL },
     {"mutual-auth",0,	arg_flag,	&mutual_auth_flag,"mutual auth", NULL },
     {"dce-style",0,	arg_flag,	&dce_style_flag, "dce-style", NULL },
+    {"wrapunwrap",0,	arg_flag,	&wrapunwrap_flag, "wrap/unwrap", NULL },
     {"delegate",0,	arg_flag,	&deleg_flag, "delegate credential", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
     {"verbose",	'v',	arg_flag,	&verbose_flag, "verbose", NULL },
@@ -452,10 +454,14 @@ main(int argc, char **argv)
 	if (maj_stat == GSS_S_COMPLETE)
 	    gss_release_buffer(&min_stat, &authz_data);
 
-	wrapunwrap(cctx, sctx, actual_mech);
-	wrapunwrap(sctx, cctx, actual_mech);
+	wrapunwrap_flag = 1;
 
 	krb5_free_context(context);
+    }
+
+    if (wrapunwrap_flag) {
+	wrapunwrap(cctx, sctx, actual_mech);
+	wrapunwrap(sctx, cctx, actual_mech);
     }
 
     gss_delete_sec_context(&min_stat, &cctx, NULL);
