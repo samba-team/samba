@@ -186,6 +186,11 @@ struct ctdb_reply_dmaster {
 	uint8_t  data[0];
 };
 
+/* free memory if the pointer is valid and zero the pointer */
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
+#endif
+
 /* internal prototypes */
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...);
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);

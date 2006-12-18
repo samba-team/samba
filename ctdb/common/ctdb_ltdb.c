@@ -79,6 +79,7 @@ int ctdb_ltdb_fetch(struct ctdb_context *ctdb,
 	if (rec.dsize < sizeof(*header)) {
 		/* return an initial header */
 		ltdb_initial_header(ctdb, key, header);
+		SAFE_FREE(rec.dptr);
 		data->dptr = NULL;
 		data->dsize = 0;
 		return 0;
@@ -89,6 +90,7 @@ int ctdb_ltdb_fetch(struct ctdb_context *ctdb,
 	data->dsize = rec.dsize - sizeof(struct ctdb_ltdb_header);
 	data->dptr = talloc_memdup(ctdb, sizeof(struct ctdb_ltdb_header)+rec.dptr,
 				   data->dsize);
+	SAFE_FREE(rec.dptr);
 	CTDB_NO_MEMORY(ctdb, data->dptr);
 
 	return 0;
@@ -106,7 +108,7 @@ int ctdb_ltdb_store(struct ctdb_context *ctdb, TDB_DATA key,
 	TDB_DATA rec;
 	int ret;
 
-	rec.dsize = sizeof(struct ctdb_ltdb_header) + data.dsize;
+	rec.dsize = sizeof(*header) + data.dsize;
 	rec.dptr = talloc_size(ctdb, rec.dsize);
 	CTDB_NO_MEMORY(ctdb, rec.dptr);
 
