@@ -610,7 +610,7 @@ int send_trans2_replies(char *outbuf,
 	if(params_to_send == 0 && data_to_send == 0) {
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("send_trans2_replies: send_smb failed.");
+			exit_server_cleanly("send_trans2_replies: send_smb failed.");
 		return 0;
 	}
 
@@ -705,7 +705,7 @@ int send_trans2_replies(char *outbuf,
 		/* Send the packet */
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("send_trans2_replies: send_smb failed.");
+			exit_server_cleanly("send_trans2_replies: send_smb failed.");
 
 		pp += params_sent_thistime;
 		pd += data_sent_thistime;
