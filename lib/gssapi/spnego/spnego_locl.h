@@ -107,6 +107,9 @@ typedef struct {
 	gss_name_t		mech;
 } *spnego_name;
 
+extern gss_OID_desc _gss_spnego_mskrb_mechanism_oid_desc;
+extern gss_OID_desc _gss_spnego_krb5_mechanism_oid_desc;
+
 #include <spnego/spnego-private.h>
 
 #endif /* SPNEGO_LOCL_H */

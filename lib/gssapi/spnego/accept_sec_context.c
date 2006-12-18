@@ -67,7 +67,7 @@ send_reject (OM_uint32 *minor_status,
 OM_uint32
 _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
 				   gss_name_t target_name,
-				   int (*func)(gss_name_t, gss_OID),
+				   OM_uint32 (*func)(gss_name_t, gss_OID),
 				   int includeMSCompatOID,
 				   const gssspnego_cred cred_handle,
 				   MechTypeList *mechtypelist,
@@ -111,7 +111,8 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    if (func && (*func)(target_name, GSS_KRB5_MECHANISM)) {
+    ret = (*func)(target_name, GSS_KRB5_MECHANISM);
+    if (ret == GSS_S_COMPLETE) {
 	ret = _gss_spnego_add_mech_type(GSS_KRB5_MECHANISM,
 					includeMSCompatOID,
 					mechtypelist);
@@ -121,12 +122,14 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
 
 
     for (i = 0; i < supported_mechs->count; i++) {
+	OM_uint32 subret;
 	if (gss_oid_equal(&supported_mechs->elements[i], GSS_SPNEGO_MECHANISM))
 	    continue;
 	if (gss_oid_equal(&supported_mechs->elements[i], GSS_KRB5_MECHANISM))
 	    continue;
 
-	if (func && !(*func)(target_name, &supported_mechs->elements[i]))
+	subret = (*func)(target_name, &supported_mechs->elements[i]);
+	if (subret != GSS_S_COMPLETE)
 	    continue;
 
 	ret = _gss_spnego_add_mech_type(&supported_mechs->elements[i],
@@ -147,18 +150,37 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
 	return GSS_S_BAD_MECH;
     }
 
-    if (ret == GSS_S_COMPLETE && preferred_mech != NULL) {
+    if (preferred_mech != NULL) {
 	ret = gss_duplicate_oid(minor_status, first_mech, preferred_mech);
-    }
-
-    if (ret != GSS_S_COMPLETE) {
-	free_MechTypeList(mechtypelist);
-	mechtypelist->len = 0;
-	mechtypelist->val = NULL;
+	if (ret != GSS_S_COMPLETE)
+	    free_MechTypeList(mechtypelist);
     }
     gss_release_oid_set(minor_status, &supported_mechs);
 
     return ret;
+}
+
+static OM_uint32
+acceptor_approved(gss_name_t target_name, gss_OID mech)
+{
+    gss_cred_id_t cred = GSS_C_NO_CREDENTIAL;
+    gss_OID_set oidset;
+    OM_uint32 junk, ret;
+
+    if (target_name == GSS_C_NO_NAME)
+	return GSS_S_COMPLETE;
+
+    gss_create_empty_oid_set(&junk, &oidset);
+    gss_add_oid_set_member(&junk, mech, &oidset);
+    
+    ret = gss_acquire_cred(&junk, target_name, GSS_C_INDEFINITE, oidset,
+			   GSS_C_ACCEPT, &cred, NULL, NULL);
+    gss_release_oid_set(&junk, &oidset);
+    if (ret != GSS_S_COMPLETE)
+	return ret;
+    gss_release_cred(&junk, &cred);
+    
+    return GSS_S_COMPLETE;
 }
 
 static OM_uint32
@@ -177,8 +199,8 @@ send_supported_mechs (OM_uint32 *minor_status,
     nt.u.negTokenInit.mechToken = NULL;
     nt.u.negTokenInit.mechListMIC = NULL;
 
-    ret = _gss_spnego_indicate_mechtypelist(minor_status, GSS_C_NO_NAME, 
-					    NULL, 1, NULL,
+    ret = _gss_spnego_indicate_mechtypelist(minor_status, GSS_C_NO_NAME,
+					    acceptor_approved, 1, NULL,
 					    &nt.u.negTokenInit.mechTypes, NULL);
     if (ret != GSS_S_COMPLETE) {
 	return ret;
@@ -367,6 +389,87 @@ verify_mechlist_mic
 }
 
 static OM_uint32
+select_mech(OM_uint32 *minor_status, MechType *mechType, gss_OID *mech_p)
+{
+    char mechbuf[64];
+    size_t mech_len;
+    gss_OID_desc oid;
+    OM_uint32 ret, junk;
+
+    ret = der_put_oid ((unsigned char *)mechbuf + sizeof(mechbuf) - 1,
+		       sizeof(mechbuf),
+		       mechType,
+		       &mech_len);
+    if (ret) {
+	return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    oid.length   = mech_len;
+    oid.elements = mechbuf + sizeof(mechbuf) - mech_len;
+
+    if (gss_oid_equal(&oid, GSS_SPNEGO_MECHANISM)) {
+	return GSS_S_BAD_MECH;
+    }
+
+    *minor_status = 0;
+
+    /* Translate broken MS Kebreros OID */
+    if (gss_oid_equal(&oid, &_gss_spnego_mskrb_mechanism_oid_desc)) {
+	gssapi_mech_interface mech;
+
+	mech = __gss_get_mechanism(&_gss_spnego_krb5_mechanism_oid_desc);
+	if (mech == NULL)
+	    return GSS_S_BAD_MECH;
+
+	ret = gss_duplicate_oid(minor_status,
+				&_gss_spnego_mskrb_mechanism_oid_desc,
+				mech_p);
+    } else {
+	gssapi_mech_interface mech;
+
+	mech = __gss_get_mechanism(&oid);
+	if (mech == NULL)
+	    return GSS_S_BAD_MECH;
+
+	ret = gss_duplicate_oid(minor_status,
+				&mech->gm_mech_oid,
+				mech_p);
+    }
+
+    {
+	gss_name_t name = GSS_C_NO_NAME;
+	gss_buffer_desc namebuf;
+	char *str = NULL, *host, hostname[MAXHOSTNAMELEN];
+
+	host = getenv("GSSAPI_SPNEGO_NAME");
+	if (host == NULL || issuid()) {
+	    if (gethostname(hostname, sizeof(hostname)) != 0) {
+		*minor_status = errno;
+		return GSS_S_FAILURE;
+	    }
+	    asprintf(&str, "host@%s", hostname);
+	    host = str;
+	}
+
+	namebuf.length = strlen(host);
+	namebuf.value = host;
+
+	ret = gss_import_name(minor_status, &namebuf,
+			      GSS_C_NT_HOSTBASED_SERVICE, &name);
+	if (str)
+	    free(str);
+	if (ret != GSS_S_COMPLETE)
+	    return ret;
+
+	ret = acceptor_approved(name, *mech_p);
+	gss_release_name(&junk, &name);
+    }
+
+    return ret;
+}
+
+
+static OM_uint32
 acceptor_complete(OM_uint32 * minor_status,
 		  gssspnego_ctx ctx,
 		  int *get_mic,
@@ -521,8 +624,9 @@ acceptor_start
 
     /* Call glue layer to find first mech we support */
     for (i = 0; i < ni.mechTypes.len; ++i) {
-	ret = _gss_spnego_select_mech(minor_status, &ni.mechTypes.val[i],
-				      &preferred_mech_type);
+	ret = select_mech(minor_status,
+			  &ni.mechTypes.val[i],
+			  &preferred_mech_type);
 	if (ret == 0)
 	    break;
     }

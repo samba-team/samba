@@ -42,10 +42,10 @@ RCSID("$Id$");
  * prefer to deal with this here rather than inside the
  * Kerberos mechanism.
  */
-static gss_OID_desc gss_mskrb_mechanism_oid_desc =
+gss_OID_desc _gss_spnego_mskrb_mechanism_oid_desc =
 	{9, (void *)"\x2a\x86\x48\x82\xf7\x12\x01\x02\x02"};
 
-static gss_OID_desc gss_krb5_mechanism_oid_desc =
+gss_OID_desc _gss_spnego_krb5_mechanism_oid_desc =
 	{9, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x02"};
 
 /*
@@ -191,8 +191,8 @@ _gss_spnego_require_mechlist_mic(OM_uint32 *minor_status,
     if (*require_mic) {
 	if (gss_oid_equal(ctx->negotiated_mech_type, ctx->preferred_mech_type)) {
 	    *require_mic = 0;
-	} else if (gss_oid_equal(ctx->negotiated_mech_type, &gss_krb5_mechanism_oid_desc) &&
-		   gss_oid_equal(ctx->preferred_mech_type, &gss_mskrb_mechanism_oid_desc)) {
+	} else if (gss_oid_equal(ctx->negotiated_mech_type, &_gss_spnego_krb5_mechanism_oid_desc) &&
+		   gss_oid_equal(ctx->preferred_mech_type, &_gss_spnego_mskrb_mechanism_oid_desc)) {
 	    *require_mic = 0;
 	}
     }
@@ -210,9 +210,9 @@ int _gss_spnego_add_mech_type(gss_OID mech_type,
 	return 0;
 
     if (includeMSCompatOID &&
-	gss_oid_equal(mech_type, &gss_krb5_mechanism_oid_desc)) {
-	ret = der_get_oid(gss_mskrb_mechanism_oid_desc.elements,
-			  gss_mskrb_mechanism_oid_desc.length,
+	gss_oid_equal(mech_type, &_gss_spnego_krb5_mechanism_oid_desc)) {
+	ret = der_get_oid(_gss_spnego_mskrb_mechanism_oid_desc.elements,
+			  _gss_spnego_mskrb_mechanism_oid_desc.length,
 			  &mechtypelist->val[mechtypelist->len],
 			  NULL);
 	if (ret)
@@ -229,102 +229,3 @@ int _gss_spnego_add_mech_type(gss_OID mech_type,
 
     return 0;
 }
-
-OM_uint32
-_gss_spnego_select_mech(OM_uint32 *minor_status,
-			MechType *mechType,
-			gss_OID *mech_p)
-{
-    char mechbuf[64];
-    size_t mech_len;
-    gss_OID_desc oid;
-    OM_uint32 ret;
-
-    ret = der_put_oid ((unsigned char *)mechbuf + sizeof(mechbuf) - 1,
-		       sizeof(mechbuf),
-		       mechType,
-		       &mech_len);
-    if (ret) {
-	return GSS_S_DEFECTIVE_TOKEN;
-    }
-
-    oid.length   = mech_len;
-    oid.elements = mechbuf + sizeof(mechbuf) - mech_len;
-
-    if (gss_oid_equal(&oid, GSS_SPNEGO_MECHANISM)) {
-	return GSS_S_BAD_MECH;
-    }
-
-    *minor_status = 0;
-
-    /* Translate broken MS Kebreros OID */
-    if (gss_oid_equal(&oid, &gss_mskrb_mechanism_oid_desc)) {
-	gssapi_mech_interface mech;
-
-	mech = __gss_get_mechanism(&gss_krb5_mechanism_oid_desc);
-	if (mech == NULL)
-	    return GSS_S_BAD_MECH;
-
-	ret = gss_duplicate_oid(minor_status,
-				&gss_mskrb_mechanism_oid_desc,
-				mech_p);
-    } else {
-	gssapi_mech_interface mech;
-
-	mech = __gss_get_mechanism(&oid);
-	if (mech == NULL)
-	    return GSS_S_BAD_MECH;
-
-	ret = gss_duplicate_oid(minor_status,
-				&mech->gm_mech_oid,
-				mech_p);
-    }
-
-    {
-	gss_name_t name = GSS_C_NO_NAME;
-	gss_cred_id_t cred = GSS_C_NO_CREDENTIAL;
-	gss_buffer_desc namebuf;
-	gss_OID_set oidset;
-	char *str = NULL, *host, hostname[MAXHOSTNAMELEN];
-	OM_uint32 junk;
-
-	gss_create_empty_oid_set(minor_status, &oidset);
-	gss_add_oid_set_member(minor_status, *mech_p, &oidset);
-
-	host = getenv("GSSAPI_SPNEGO_NAME");
-	if (host == NULL || issuid()) {
-	    if (gethostname(hostname, sizeof(hostname)) != 0) {
-		*minor_status = errno;
-		return GSS_S_FAILURE;
-	    }
-	    asprintf(&str, "host@%s", hostname);
-	    host = str;
-	}
-
-	namebuf.length = strlen(host);
-	namebuf.value = host;
-
-	ret = gss_import_name(minor_status, &namebuf,
-			      GSS_C_NT_HOSTBASED_SERVICE, &name);
-	if (str)
-	    free(str);
-	if (ret != GSS_S_COMPLETE)
-	    return ret;
-
-	ret = gss_acquire_cred(minor_status,
-			       name,
-			       GSS_C_INDEFINITE,
-			       oidset,
-			       GSS_C_ACCEPT,
-			       &cred,
-			       NULL,
-			       NULL);
-	gss_release_oid_set(&junk, &oidset);
-	gss_release_name(&junk, &name);
-	if (ret == GSS_S_COMPLETE)
-	    gss_release_cred(&junk, &cred);
-    }
-
-    return ret;
-}
-

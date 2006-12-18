@@ -39,7 +39,7 @@ RCSID("$Id$");
  * Is target_name an sane target for `mech´.
  */
 
-static int
+static OM_uint32
 initiator_approved(gss_name_t target_name, gss_OID mech)
 {
     OM_uint32 min_stat, maj_stat;
@@ -60,11 +60,11 @@ initiator_approved(gss_name_t target_name, gss_OID mech)
 				    NULL,
 				    NULL);
     if (GSS_ERROR(maj_stat))
-	return 0;
+	return GSS_S_BAD_MECH;
     gss_release_buffer(&min_stat, &out);
     gss_delete_sec_context(&min_stat, &ctx, NULL);
 
-    return 1;
+    return GSS_S_COMPLETE;
 }
 
 /*
