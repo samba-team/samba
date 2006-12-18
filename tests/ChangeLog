@@ -1,5 +1,7 @@
 2006-12-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-spnego.in: test more combination of spnego contexts
+
 	* gss/Makefile.am: add check-spnego
 
 	* gss/check-spnego.in: check spnego combinations.
