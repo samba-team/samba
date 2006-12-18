@@ -50,7 +50,6 @@ struct ibwtest_ctx {
 	struct sockaddr_in *addrs; /* dynamic array of dest addrs */
 	int	naddrs;
 
-	int	max_msg_size;
 	unsigned int	nsec; /* nanosleep between messages */
 
 	int	cnt;
@@ -91,15 +90,15 @@ int ibwtest_send_id(struct ibw_conn *conn)
 	struct ibwtest_ctx *tcx = talloc_get_type(conn->ctx->ctx_userdata, struct ibwtest_ctx);
 
 	DEBUG(10, ("test IBWC_CONNECTED\n"));
-	if (ibw_alloc_send_buf(conn, (void **)&buf, &key)) {
+	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, strlen(tcx->id)+2)) {
 		DEBUG(0, ("send_id: ibw_alloc_send_buf failed\n"));
 		return -1;
 	}
-	
+
 	buf[0] = (char)TESTOP_SEND_ID;
 	strcpy(buf+1, tcx->id);
 
-	if (ibw_send(conn, buf, key, strlen(buf+1))) {
+	if (ibw_send(conn, buf, key, strlen(buf+1)+2)) {
 		DEBUG(0, ("send_id: ibw_send error\n"));
 		return -1;
 	}
@@ -111,16 +110,15 @@ int ibwtest_send_test_msg(struct ibwtest_ctx *tcx, struct ibw_conn *conn, const 
 	char *buf;
 	void *key;
 
-	if (ibw_alloc_send_buf(conn, (void **)&buf, &key)) {
+	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, strlen(msg)+2)) {
 		fprintf(stderr, "send_test_msg: ibw_alloc_send_buf failed\n");
 		return -1;
 	}
 
 	buf[0] = (char)TESTOP_SEND_DATA;
-	assert(strlen(msg)<tcx->max_msg_size-1);
 	strcpy(buf+1, msg);
 	
-	if (ibw_send(conn, buf, key, strlen(buf+1))) {
+	if (ibw_send(conn, buf, key, strlen(buf+1)+2)) {
 		DEBUG(0, ("send_test_msg: ibw_send error\n"));
 		return -1;
 	}
@@ -205,7 +203,7 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 		char *buf2;
 		void *key2;
 		/* bounce message */
-		if (ibw_alloc_send_buf(conn, (void **)&buf2, &key2)) {
+		if (ibw_alloc_send_buf(conn, (void **)&buf2, &key2, n)) {
 			fprintf(stderr, "ibw_alloc_send_buf error #2\n");
 			return -1;
 		}
@@ -331,11 +329,10 @@ int ibwtest_init_server(struct ibwtest_ctx *tcx)
 void ibwtest_usage(struct ibwtest_ctx *tcx, char *name)
 {
 	printf("Usage:\n");
-	printf("\t%s -i <id> -o {name:value} -d {addr:port} -m max_msg_size -t nsec -s\n", name);
+	printf("\t%s -i <id> -o {name:value} -d {addr:port} -t nsec -s\n", name);
 	printf("\t-i <id> is a free text, acting as a server id, max 23 chars [mandatory]\n");
 	printf("\t-o name1:value1,name2:value2,... is a list of (name, value) pairs\n");
 	printf("\t-d addr1:port1,addr2:port2,... is a list of destination ip addresses\n");
-	printf("\t-m max_msg_size maximum message size [default %d]\n", tcx->max_msg_size);
 	printf("\t-t nsec delta time between sends in nanosec [default %d]\n", tcx->nsec);
 	printf("\t-s server mode (you have to give exactly one -d address:port in this case)\n");
 	printf("Press ctrl+C to stop the program.\n");
@@ -350,7 +347,6 @@ int main(int argc, char *argv[])
 
 	tcx = talloc_zero(NULL, struct ibwtest_ctx);
 	memset(tcx, 0, sizeof(struct ibwtest_ctx));
-	tcx->max_msg_size = 256;
 	tcx->nsec = 1000;
 
 	/* here is the only case we can't avoid using global... */
@@ -371,9 +367,6 @@ int main(int argc, char *argv[])
 		case 'd':
 			if (ibwtest_getdests(tcx, op))
 				goto cleanup;
-			break;
-		case 'm':
-			tcx->max_msg_size = atoi(optarg);
 			break;
 		case 's':
 			tcx->is_server = 1;
@@ -396,8 +389,7 @@ int main(int argc, char *argv[])
 		tcx,
 		ibwtest_connstate_handler,
 		ibwtest_receive_handler,
-		ev,
-		tcx->max_msg_size
+		ev
 	);
 	if (!tcx->ibwctx)
 		goto cleanup;

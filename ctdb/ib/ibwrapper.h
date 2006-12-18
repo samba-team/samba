@@ -107,8 +107,7 @@ struct ibw_ctx *ibw_init(struct ibw_initattr *attr, int nattr,
 	void *ctx_userdata,
 	ibw_connstate_fn_t ibw_connstate,
 	ibw_receive_fn_t ibw_receive,
-	struct event_context *ectx,
-	int max_msg_size);
+	struct event_context *ectx);
 
 /*
  * Must be called in states of (IBWS_ERROR, IBWS_READY, IBWS_CONNECT_REQUEST)
@@ -186,7 +185,7 @@ int ibw_disconnect(struct ibw_conn *conn);
  *
  * Returns 0 on success.
  */
-int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key);
+int ibw_alloc_send_buf(struct ibw_conn *conn, void **buf, void **key, int n);
 
 /*
  * Send the message in one
