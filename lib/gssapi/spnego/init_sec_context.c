@@ -96,26 +96,30 @@ spnego_reply_internal(OM_uint32 *minor_status,
     }
 
     if (mech_buf != GSS_C_NO_BUFFER) {
-	ALLOC(nt.u.negTokenResp.mechListMIC, 1);
-	if (nt.u.negTokenResp.mechListMIC == NULL) {
-	    free_NegotiationToken(&nt);
-	    *minor_status = ENOMEM;
-	    return GSS_S_FAILURE;
-	}
 
 	ret = gss_get_mic(minor_status,
 			  context_handle->negotiated_ctx_id,
 			  0,
 			  mech_buf,
 			  &mic_buf);
-	if (ret) {
+	if (ret == GSS_S_COMPLETE) {
+	    ALLOC(nt.u.negTokenResp.mechListMIC, 1);
+	    if (nt.u.negTokenResp.mechListMIC == NULL) {
+		gss_release_buffer(minor_status, &mic_buf);
+		free_NegotiationToken(&nt);
+		*minor_status = ENOMEM;
+		return GSS_S_FAILURE;
+	    }
+
+	    nt.u.negTokenResp.mechListMIC->length = mic_buf.length;
+	    nt.u.negTokenResp.mechListMIC->data   = mic_buf.value;
+	} else if (ret == GSS_S_UNAVAILABLE) {
+	    nt.u.negTokenResp.mechListMIC = NULL;
+	} if (ret) {
 	    free_NegotiationToken(&nt);
 	    *minor_status = ENOMEM;
 	    return GSS_S_FAILURE;
 	}
-
-	nt.u.negTokenResp.mechListMIC->length = mic_buf.length;
-	nt.u.negTokenResp.mechListMIC->data   = mic_buf.value;
     } else {
 	nt.u.negTokenResp.mechListMIC = NULL;
     }
@@ -165,12 +169,16 @@ spnego_initial
     size_t ni_len;
     gss_ctx_id_t context;
     gssspnego_ctx ctx;
+    spnego_name name = (spnego_name)target_name;
+
+    *minor_status = 0;
 
     memset (&ni, 0, sizeof(ni));
 
     *context_handle = GSS_C_NO_CONTEXT;
 
-    *minor_status = 0;
+    if (target_name == GSS_C_NO_NAME)
+	return GSS_S_BAD_NAME;
 
     sub = _gss_spnego_alloc_sec_context(&minor, &context);
     if (GSS_ERROR(sub)) {
@@ -183,7 +191,16 @@ spnego_initial
 
     ctx->local = 1;
 
-    sub = _gss_spnego_indicate_mechtypelist(&minor, 0,
+    sub = gss_import_name(&minor, &name->value, &name->type, &ctx->target_name);
+    if (GSS_ERROR(sub)) {
+	*minor_status = minor;
+	_gss_spnego_internal_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
+	return sub;
+    }
+
+    sub = _gss_spnego_indicate_mechtypelist(&minor, 
+					    ctx->target_name,
+					    0,
 					    cred,
 					    &ni.mechTypes,
 					    &ctx->preferred_mech_type);
@@ -205,8 +222,8 @@ spnego_initial
 			       (cred != NULL) ? cred->negotiated_cred_id :
 			          GSS_C_NO_CREDENTIAL,
 			       &ctx->negotiated_ctx_id,
-			       target_name,
-			       GSS_C_NO_OID,
+			       ctx->target_name,
+			       ctx->preferred_mech_type,
 			       req_flags,
 			       time_req,
 			       input_chan_bindings,
@@ -340,8 +357,6 @@ spnego_reply
 {
     OM_uint32 ret, minor;
     NegTokenResp resp;
-    u_char oidbuf[17];
-    size_t oidlen;
     size_t len, taglen;
     gss_OID_desc mech;
     int require_mic;
@@ -380,34 +395,73 @@ spnego_reply
 
     if (resp.negResult == NULL
 	|| *(resp.negResult) == reject
-	|| resp.supportedMech == NULL) {
+	/* || resp.supportedMech == NULL */
+	)
+    {
 	free_NegTokenResp(&resp);
 	return GSS_S_BAD_MECH;
     }
 
-    ret = der_put_oid(oidbuf + sizeof(oidbuf) - 1,
-		      sizeof(oidbuf),
-		      resp.supportedMech,
-		      &oidlen);
-    if (ret || (oidlen == GSS_SPNEGO_MECHANISM->length &&
-		memcmp(oidbuf + sizeof(oidbuf) - oidlen,
-		       GSS_SPNEGO_MECHANISM->elements,
-		       oidlen) == 0)) {
-	/* Avoid recursively embedded SPNEGO */
-	free_NegTokenResp(&resp);
-	return GSS_S_BAD_MECH;
-    }
+    /*
+     * Pick up the mechanism that the acceptor selected, only allow it
+     * to be sent in packet.
+     */
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
-    if (resp.responseToken != NULL) {
+    if (resp.supportedMech) {
+
+	if (ctx->oidlen) {
+	    free_NegTokenResp(&resp);
+	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	    return GSS_S_BAD_MECH;
+	}
+	ret = der_put_oid(ctx->oidbuf + sizeof(ctx->oidbuf) - 1,
+			  sizeof(ctx->oidbuf),
+			  resp.supportedMech,
+			  &ctx->oidlen);
+	/* Avoid recursively embedded SPNEGO */
+	if (ret || (ctx->oidlen == GSS_SPNEGO_MECHANISM->length &&
+		    memcmp(ctx->oidbuf + sizeof(ctx->oidbuf) - ctx->oidlen,
+			   GSS_SPNEGO_MECHANISM->elements,
+			   ctx->oidlen) == 0))
+	{
+	    free_NegTokenResp(&resp);
+	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	    return GSS_S_BAD_MECH;
+	}
+
+	/* check if the acceptor took our optimistic token */
+	if (ctx->oidlen != ctx->preferred_mech_type->length ||
+	    memcmp(ctx->oidbuf + sizeof(ctx->oidbuf) - ctx->oidlen,
+		   ctx->preferred_mech_type->elements,
+		   ctx->oidlen) != 0)
+	{
+	    gss_delete_sec_context(&minor, &ctx->negotiated_ctx_id, 
+				   GSS_C_NO_BUFFER);
+	    ctx->negotiated_ctx_id = GSS_C_NO_CONTEXT;
+	}
+    } else if (ctx->oidlen == 0) {
+	free_NegTokenResp(&resp);
+	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	return GSS_S_BAD_MECH;
+    }
+
+    if (resp.responseToken != NULL || 
+	ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT) {
 	gss_buffer_desc mech_input_token;
 
-	mech_input_token.length = resp.responseToken->length;
-	mech_input_token.value  = resp.responseToken->data;
+	if (resp.responseToken) {
+	    mech_input_token.length = resp.responseToken->length;
+	    mech_input_token.value  = resp.responseToken->data;
+	} else {
+	    mech_input_token.length = 0;
+	    mech_input_token.value = NULL;
+	}
 
-	mech.length = oidlen;
-	mech.elements = oidbuf + sizeof(oidbuf) - oidlen;
+
+	mech.length = ctx->oidlen;
+	mech.elements = ctx->oidbuf + sizeof(ctx->oidbuf) - ctx->oidlen;
 
 	/* Fall through as if the negotiated mechanism
 	   was requested explicitly */
@@ -415,7 +469,7 @@ spnego_reply
 				   (cred != NULL) ? cred->negotiated_cred_id :
 				       GSS_C_NO_CREDENTIAL,
 				   &ctx->negotiated_ctx_id,
-				   target_name,
+				   ctx->target_name,
 				   &mech,
 				   req_flags,
 				   time_req,

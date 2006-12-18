@@ -67,6 +67,7 @@
 #include <gssapi_mech.h>
 
 #include "spnego_asn1.h"
+#include "mech/utils.h"
 #include <der.h>
 
 #include <roken.h>
@@ -92,7 +93,19 @@ typedef struct {
 	unsigned int		verified_mic : 1;
 	unsigned int		maybe_open : 1;
 	HEIMDAL_MUTEX		ctx_id_mutex;
+
+	gss_name_t		target_name;
+
+	u_char			oidbuf[17];
+ 	size_t			oidlen;
+
 } *gssspnego_ctx;
+
+typedef struct {
+	gss_OID_desc		type;
+	gss_buffer_desc		value;
+	gss_name_t		mech;
+} *spnego_name;
 
 #include <spnego/spnego-private.h>
 

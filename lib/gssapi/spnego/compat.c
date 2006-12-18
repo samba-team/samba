@@ -280,6 +280,51 @@ _gss_spnego_select_mech(OM_uint32 *minor_status,
 				mech_p);
     }
 
+    {
+	gss_name_t name = GSS_C_NO_NAME;
+	gss_cred_id_t cred = GSS_C_NO_CREDENTIAL;
+	gss_buffer_desc namebuf;
+	gss_OID_set oidset;
+	char *str = NULL, *host, hostname[MAXHOSTNAMELEN];
+	OM_uint32 junk;
+
+	gss_create_empty_oid_set(minor_status, &oidset);
+	gss_add_oid_set_member(minor_status, *mech_p, &oidset);
+
+	host = getenv("GSSAPI_SPNEGO_NAME");
+	if (host == NULL || issuid()) {
+	    if (gethostname(hostname, sizeof(hostname)) != 0) {
+		*minor_status = errno;
+		return GSS_S_FAILURE;
+	    }
+	    asprintf(&str, "host@%s", hostname);
+	    host = str;
+	}
+
+	namebuf.length = strlen(host);
+	namebuf.value = host;
+
+	ret = gss_import_name(minor_status, &namebuf,
+			      GSS_C_NT_HOSTBASED_SERVICE, &name);
+	if (str)
+	    free(str);
+	if (ret != GSS_S_COMPLETE)
+	    return ret;
+
+	ret = gss_acquire_cred(minor_status,
+			       name,
+			       GSS_C_INDEFINITE,
+			       oidset,
+			       GSS_C_ACCEPT,
+			       &cred,
+			       NULL,
+			       NULL);
+	gss_release_oid_set(&junk, &oidset);
+	gss_release_name(&junk, &name);
+	if (ret == GSS_S_COMPLETE)
+	    gss_release_cred(&junk, &cred);
+    }
+
     return ret;
 }
 
