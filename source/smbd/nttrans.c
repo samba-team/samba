@@ -99,7 +99,7 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_e
 	if(params_to_send == 0 && data_to_send == 0) {
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf)) {
-			exit_server("send_nt_replies: send_smb failed.");
+			exit_server_cleanly("send_nt_replies: send_smb failed.");
 		}
 		return 0;
 	}
@@ -234,7 +234,7 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_e
 		/* Send the packet */
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf)) {
-			exit_server("send_nt_replies: send_smb failed.");
+			exit_server_cleanly("send_nt_replies: send_smb failed.");
 		}
     
 		pp += params_sent_thistime;

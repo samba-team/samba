@@ -345,7 +345,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
                 SSVAL(aio_ex->outbuf,smb_vwv4,(numtowrite>>16)&1);
 		show_msg(aio_ex->outbuf);
 		if (!send_smb(smbd_server_fd(),aio_ex->outbuf)) {
-			exit_server("handle_aio_write: send_smb failed.");
+			exit_server_cleanly("handle_aio_write: send_smb failed.");
 		}
 		DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write behind for file %s\n",
 			fsp->fsp_name ));
@@ -408,7 +408,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 	smb_setlen(outbuf,outsize - 4);
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf)) {
-		exit_server("handle_aio_read_complete: send_smb failed.");
+		exit_server_cleanly("handle_aio_read_complete: send_smb failed.");
 	}
 
 	DEBUG(10,("handle_aio_read_complete: scheduled aio_read completed for file %s, offset %.0f, len = %u\n",
@@ -480,7 +480,7 @@ Wanted %u bytes but only wrote %d\n", fsp->fsp_name, (unsigned int)numtowrite, (
 
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf)) {
-		exit_server("handle_aio_write: send_smb failed.");
+		exit_server_cleanly("handle_aio_write: send_smb failed.");
 	}
 
 	DEBUG(10,("handle_aio_write_complete: scheduled aio_write completed for file %s, offset %.0f, requested %u, written = %u\n",

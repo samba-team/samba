@@ -503,7 +503,7 @@ int reply_special(char *inbuf,char *outbuf)
 	case 0x81: /* session request */
 		
 		if (already_got_session) {
-			exit_server("multiple session request not permitted");
+			exit_server_cleanly("multiple session request not permitted");
 		}
 		
 		SCVAL(outbuf,0,0x82);
@@ -2149,7 +2149,7 @@ static void fail_readraw(void)
 	pstring errstr;
 	slprintf(errstr, sizeof(errstr)-1, "FAIL ! reply_readbraw: socket write fail (%s)",
 		strerror(errno) );
-	exit_server(errstr);
+	exit_server_cleanly(errstr);
 }
 
 #if defined(WITH_SENDFILE)
@@ -2231,14 +2231,14 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 				if (fake_sendfile(fsp, startpos, nread, outbuf + 4, out_buffsize - 4) == -1) {
 					DEBUG(0,("send_file_readbraw: fake_sendfile failed for file %s (%s).\n",
 						fsp->fsp_name, strerror(errno) ));
-					exit_server("send_file_readbraw fake_sendfile failed");
+					exit_server_cleanly("send_file_readbraw fake_sendfile failed");
 				}
 				return;
 			}
 
 			DEBUG(0,("send_file_readbraw: sendfile failed for file %s (%s). Terminating\n",
 				fsp->fsp_name, strerror(errno) ));
-			exit_server("send_file_readbraw sendfile failed");
+			exit_server_cleanly("send_file_readbraw sendfile failed");
 		}
 
 	}
@@ -2277,7 +2277,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	START_PROFILE(SMBreadbraw);
 
 	if (srv_is_signing_active()) {
-		exit_server("reply_readbraw: SMB signing is active - raw reads/writes are disallowed.");
+		exit_server_cleanly("reply_readbraw: SMB signing is active - raw reads/writes are disallowed.");
 	}
 
 	/*
@@ -2599,7 +2599,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 							len_outbuf - (data-outbuf))) == -1) {
 					DEBUG(0,("send_file_readX: fake_sendfile failed for file %s (%s).\n",
 						fsp->fsp_name, strerror(errno) ));
-					exit_server("send_file_readX: fake_sendfile failed");
+					exit_server_cleanly("send_file_readX: fake_sendfile failed");
 				}
 				DEBUG( 3, ( "send_file_readX: fake_sendfile fnum=%d max=%d nread=%d\n",
 					fsp->fnum, (int)smb_maxcnt, (int)nread ) );
@@ -2609,7 +2609,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
 				fsp->fsp_name, strerror(errno) ));
-			exit_server("send_file_readX sendfile failed");
+			exit_server_cleanly("send_file_readX sendfile failed");
 		}
 
 		DEBUG( 3, ( "send_file_readX: sendfile fnum=%d max=%d nread=%d\n",
@@ -2743,7 +2743,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	START_PROFILE(SMBwritebraw);
 
 	if (srv_is_signing_active()) {
-		exit_server("reply_writebraw: SMB signing is active - raw reads/writes are disallowed.");
+		exit_server_cleanly("reply_writebraw: SMB signing is active - raw reads/writes are disallowed.");
 	}
 
 	CHECK_FSP(fsp,conn);
@@ -2794,11 +2794,11 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	outsize = set_message(outbuf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("reply_writebraw: send_smb failed.");
+		exit_server_cleanly("reply_writebraw: send_smb failed.");
   
 	/* Now read the raw data into the buffer and write it */
 	if (read_smb_length(smbd_server_fd(),inbuf,SMB_SECONDARY_WAIT) == -1) {
-		exit_server("secondary writebraw failed");
+		exit_server_cleanly("secondary writebraw failed");
 	}
   
 	/* Even though this is not an smb message, smb_len returns the generic length of an smb message */
@@ -2813,7 +2813,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		if (numtowrite > BUFFER_SIZE) {
 			DEBUG(0,("reply_writebraw: Oversize secondary write raw requested (%u). Terminating\n",
 				(unsigned int)numtowrite ));
-			exit_server("secondary writebraw failed");
+			exit_server_cleanly("secondary writebraw failed");
 		}
 
 		if (tcount > nwritten+numtowrite) {
@@ -2824,7 +2824,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		if (read_data( smbd_server_fd(), inbuf+4, numtowrite) != numtowrite ) {
 			DEBUG(0,("reply_writebraw: Oversize secondary write raw read failed (%s). Terminating\n",
 				strerror(errno) ));
-			exit_server("secondary writebraw failed");
+			exit_server_cleanly("secondary writebraw failed");
 		}
 
 		nwritten = write_file(fsp,inbuf+4,startpos+nwritten,numtowrite);
@@ -2859,7 +2859,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		 * sending a SMBkeepalive. Thanks to DaveCB at Sun for this. JRA.
 		 */
 		if (!send_keepalive(smbd_server_fd()))
-			exit_server("reply_writebraw: send of keepalive failed");
+			exit_server_cleanly("reply_writebraw: send of keepalive failed");
 #endif
 		return(-1);
 	}
@@ -3555,7 +3555,7 @@ int reply_echo(connection_struct *conn,
 
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("reply_echo: send_smb failed.");
+			exit_server_cleanly("reply_echo: send_smb failed.");
 	}
 
 	DEBUG(3,("echo %d times\n", smb_reverb));
@@ -5572,7 +5572,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("reply_readbmpx: send_smb failed.");
+			exit_server_cleanly("reply_readbmpx: send_smb failed.");
 
 		total_read += nread;
 		startpos += nread;
@@ -5734,7 +5734,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		smb_setlen(outbuf,outsize - 4);
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("reply_writebmpx: send_smb failed.");
+			exit_server_cleanly("reply_writebmpx: send_smb failed.");
 
 		/* Now the secondary */
 		outsize = set_message(outbuf,1,0,True);

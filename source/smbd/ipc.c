@@ -115,7 +115,7 @@ void send_trans_reply(char *outbuf,
 
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("send_trans_reply: send_smb failed.");
+		exit_server_cleanly("send_trans_reply: send_smb failed.");
 
 	tot_data_sent = this_ldata;
 	tot_param_sent = this_lparam;
@@ -149,7 +149,7 @@ void send_trans_reply(char *outbuf,
 
 		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("send_trans_reply: send_smb failed.");
+			exit_server_cleanly("send_trans_reply: send_smb failed.");
 
 		tot_data_sent  += this_ldata;
 		tot_param_sent += this_lparam;
