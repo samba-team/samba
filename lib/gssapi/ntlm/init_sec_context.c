@@ -186,10 +186,21 @@ _gss_ntlm_init_sec_context
 	    heim_ntlm_calculate_ntlm1(key.data, key.length,
 				      type2.challange,
 				      &type3.ntlm);
+
+	    ret = heim_ntlm_build_ntlm1_master(key.data, key.length,
+					       &type3.sessionkey);
+	    if (ret) {
+		_gss_ntlm_delete_sec_context(minor_status,context_handle,NULL);
+		*minor_status = ret;
+		return GSS_S_FAILURE;
+	    }
+
+	    memset(key.data, 0, key.length);
 	    free(key.data);
 	}
 
 	ret = heim_ntlm_encode_type3(&type3, &data);
+	free(type3.sessionkey.data);
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
