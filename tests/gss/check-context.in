@@ -80,7 +80,6 @@ ${kadmin} ext -k ${keytab} host/lucid@${R} || exit 1
 ${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
 
 ${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
-${kadmin} modify --attributes=+allow-digest user1@${R} || exit 1
 
 echo "Doing database check"
 ${kadmin} check ${R} || exit 1
@@ -97,12 +96,14 @@ if [ "$?" != 0 ] ; then
     exit 1
 fi
 
+trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+
 exitcode=0
 
 echo "Getting client initial tickets"
 ${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
 
-echo test naming combinations
+echo ======test naming combinations
 echo plain
 ${context} --name-type=hostbased-service host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo test failed; }
@@ -128,7 +129,7 @@ echo "dns canon off (short name, krb5)"
 ${context}  --no-dns-canon --name-type=krb5-principal-name host/lucid || \
 	{ exitcode=1 ; echo test failed; }
 
-echo "test context building"
+echo "======test context building"
 for mech in krb5 spnego ; do
 	echo "${mech} no-mutual"
 	${context} --mech-type=${mech} \
@@ -155,7 +156,7 @@ for mech in krb5 spnego ; do
 done
 
 #add spnego !
-echo dce-style 
+echo "======dce-style"
 for mech in krb5 ; do
 
 	echo "${mech}: dce-style"
@@ -174,6 +175,8 @@ done
 #    host@lucid.test.h5l.se || \
 #	{ exitcode=1 ; echo test failed; }
 
+
+trap "" EXIT
 
 echo "killing kdc (${kdcpid})"
 kill ${kdcpid} 2> /dev/null
