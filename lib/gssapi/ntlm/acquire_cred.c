@@ -46,6 +46,11 @@ OM_uint32 _gss_ntlm_acquire_cred
             OM_uint32 * time_rec
            )
 {
+    OM_uint32 major_status;
+    krb5_error_code ret;
+    ntlm_ctx ctx;
+    ntlm_name name = (ntlm_name)desired_name;
+
     *minor_status = 0;
     if (output_cred_handle)
 	*output_cred_handle = GSS_C_NO_CREDENTIAL;
@@ -53,5 +58,28 @@ OM_uint32 _gss_ntlm_acquire_cred
 	*actual_mechs = GSS_C_NO_OID_SET;
     if (time_rec)
 	*time_rec = GSS_C_INDEFINITE;
+
+    major_status = _gss_ntlm_allocate_ctx(minor_status, &ctx);
+    if (major_status != GSS_S_COMPLETE)
+	return GSS_S_FAILURE;
+
+    ret = krb5_ntlm_init_request(ctx->context, 
+				 ctx->ntlm,
+				 NULL,
+				 ctx->id,
+				 NTLM_NEG_UNICODE|NTLM_NEG_NTLM,
+				 name->domain,
+				 NULL);
+    if (ret) {
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
+
+    {
+	gss_ctx_id_t context = (gss_ctx_id_t)ctx;
+	_gss_ntlm_delete_sec_context(minor_status, &context, NULL);
+	*minor_status = 0;
+    }
+
     return (GSS_S_COMPLETE);
 }
