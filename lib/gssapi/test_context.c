@@ -39,6 +39,7 @@ RCSID("$Id$");
 
 static char *type_string;
 static char *mech_string;
+static char *ret_mech_string;
 static int dns_canon_flag = -1;
 static int mutual_auth_flag = 0;
 static int dce_style_flag = 0;
@@ -72,6 +73,35 @@ static char *gssapi_err(OM_uint32 maj_stat, OM_uint32 min_stat,
 	return ret;
 }
 
+static struct {
+    const char *name;
+    gss_OID *oid;
+} o2n[] = {
+    { "krb5", &GSS_KRB5_MECHANISM },
+    { "spnego", &GSS_SPNEGO_MECHANISM },
+    { "ntlm", &GSS_NTLM_MECHANISM },
+    { "sasl-digest-md5", &GSS_SASL_DIGEST_MD5_MECHANISM }
+};
+
+static gss_OID
+string_to_oid(const char *name)
+{
+    int i;
+    for (i = 0; i < sizeof(o2n)/sizeof(o2n[0]); i++)
+	if (strcasecmp(name, o2n[i].name) == 0)
+	    return *o2n[i].oid;
+    errx(1, "name %s not unknown", name);
+}
+
+static const char *
+oid_to_string(const gss_OID oid)
+{
+    int i;
+    for (i = 0; i < sizeof(o2n)/sizeof(o2n[0]); i++)
+	if (gss_oid_equal(oid, *o2n[i].oid))
+	    return o2n[i].name;
+    return "unknown oid";
+}
 
 static void
 loop(gss_OID mechoid,
@@ -202,11 +232,15 @@ wrapunwrap(gss_ctx_id_t cctx, gss_ctx_id_t sctx, gss_OID mechoid)
 	     gssapi_err(maj_stat, min_stat, mechoid));
 }
 
-
+/*
+ *
+ */
 
 static struct getargs args[] = {
     {"name-type",0,	arg_string, &type_string,  "type of name", NULL },
     {"mech-type",0,	arg_string, &mech_string,  "type of mech", NULL },
+    {"ret-mech-type",0,	arg_string, &ret_mech_string,
+     "type of return mech", NULL },
     {"dns-canonicalize",0,arg_negative_flag, &dns_canon_flag, 
      "use dns to canonicalize", NULL },
     {"mutual-auth",0,	arg_flag,	&mutual_auth_flag,"mutual auth", NULL },
@@ -234,7 +268,6 @@ main(int argc, char **argv)
     void *ctx;
     gss_OID nameoid, mechoid, actual_mech;
     gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
-
 
     setprogname(argv[0]);
 
@@ -271,20 +304,25 @@ main(int argc, char **argv)
 
     if (mech_string == NULL)
 	mechoid = GSS_KRB5_MECHANISM;
-    else if (strcmp(mech_string, "krb5") == 0)
-	mechoid = GSS_KRB5_MECHANISM;
-    else if (strcmp(mech_string, "spnego") == 0)
-	mechoid = GSS_SPNEGO_MECHANISM;
-    else if (strcmp(mech_string, "ntlm") == 0)
-	mechoid = GSS_NTLM_MECHANISM;
-    else if (strcmp(mech_string, "sasl-digest-md5") == 0)
-	mechoid = GSS_SASL_DIGEST_MD5_MECHANISM;
-    else
-	errx(1, "%s not suppported", mech_string);
+    else 
+	mechoid = string_to_oid(mech_string);
 
     loop(mechoid, nameoid, argv[0], GSS_C_NO_CREDENTIAL,
 	 &sctx, &cctx, &actual_mech, &deleg_cred);
     
+    if (verbose_flag)
+	printf("resulting mech: %s\n", oid_to_string(actual_mech));
+
+    if (ret_mech_string) {
+	gss_OID retoid;
+
+	retoid = string_to_oid(ret_mech_string);
+
+	if (gss_oid_equal(retoid, actual_mech) == 0)
+	    errx(1, "actual_mech mech is not the expected type %s", 
+		 ret_mech_string);
+    }
+
     /* XXX should be actual_mech */
     if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) { 
 	krb5_context context;
