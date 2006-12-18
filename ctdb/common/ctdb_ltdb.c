@@ -40,3 +40,72 @@ int ctdb_attach(struct ctdb_context *ctdb, const char *name, int tdb_flags,
 	}
 	return 0;
 }
+
+
+/*
+  construct an initial header for a record with no ltdb header yet
+*/
+static void ltdb_initial_header(struct ctdb_context *ctdb, 
+				TDB_DATA key,
+				struct ctdb_ltdb_header *header)
+{
+	header->rsn = 0;
+	header->dmaster = ctdb_hash(&key) % ctdb->num_nodes;
+	header->laccessor = header->dmaster;
+	header->lacount = 0;
+}
+
+
+/*
+  fetch a record from the ltdb, separating out the header information
+  and returning the body of the record. A valid (initial) header is
+  returned if the record is not present
+*/
+int ctdb_ltdb_fetch(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data)
+{
+	TDB_DATA rec;
+
+	rec = tdb_fetch(ctdb->ltdb, key);
+	if (rec.dsize < sizeof(*header)) {
+		/* return an initial header */
+		ltdb_initial_header(ctdb, key, header);
+		data->dptr = NULL;
+		data->dsize = 0;
+		return 0;
+	}
+
+	*header = *(struct ctdb_ltdb_header *)rec.dptr;
+
+	data->dsize = rec.dsize - sizeof(struct ctdb_ltdb_header);
+	data->dptr = talloc_memdup(mem_ctx, sizeof(struct ctdb_ltdb_header)+rec.dptr,
+				   data->dsize);
+	CTDB_NO_MEMORY(ctdb, data->dptr);
+
+	return 0;
+}
+
+
+/*
+  fetch a record from the ltdb, separating out the header information
+  and returning the body of the record. A valid (initial) header is
+  returned if the record is not present
+*/
+int ctdb_ltdb_store(struct ctdb_context *ctdb, TDB_DATA key, 
+		    struct ctdb_ltdb_header *header, TDB_DATA data)
+{
+	TDB_DATA rec;
+	int ret;
+
+	rec.dsize = sizeof(struct ctdb_ltdb_header) + data.dsize;
+	rec.dptr = talloc_size(ctdb, rec.dsize);
+	CTDB_NO_MEMORY(ctdb, rec.dptr);
+
+	memcpy(rec.dptr, header, sizeof(*header));
+	memcpy(rec.dptr + sizeof(*header), data.dptr, data.dsize);
+	
+	ret = tdb_store(ctdb->ltdb, key, rec, TDB_REPLACE);
+	talloc_free(rec.dptr);
+
+	return ret;
+}

@@ -101,13 +101,26 @@ struct ctdb_context {
 /* arbitrary maximum timeout for ctdb operations */
 #define CTDB_REQ_TIMEOUT 10
 
+/*
+  the extended header for records in the ltdb
+*/
+struct ctdb_ltdb_header {
+	uint64_t rsn;
+	uint32_t dmaster;
+	uint32_t laccessor;
+	uint32_t lacount;
+};
+
 
 /*
   operation IDs
 */
 enum ctdb_operation {
 	CTDB_REQ_CALL   = 0,
-	CTDB_REPLY_CALL = 1
+	CTDB_REPLY_CALL = 1,
+	CTDB_REPLY_REDIRECT = 2,
+	CTDB_REQ_DMASTER = 3,
+	CTDB_REPLY_DMASTER = 4,
 };
 
 /*
@@ -144,4 +157,10 @@ int ctdb_parse_address(struct ctdb_context *ctdb,
 uint32_t ctdb_hash(TDB_DATA *key);
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+
+int ctdb_ltdb_fetch(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+		    TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA *data);
+int ctdb_ltdb_store(struct ctdb_context *ctdb, TDB_DATA key, 
+		    struct ctdb_ltdb_header *header, TDB_DATA data);
+
 

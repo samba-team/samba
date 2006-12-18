@@ -34,18 +34,20 @@ static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key, int call_id,
 	struct ctdb_call *c;
 	struct ctdb_registered_call *fn;
 	TDB_DATA data;
+	struct ctdb_ltdb_header header;
+	int ret;
 
 	c = talloc(ctdb, struct ctdb_call);
 	CTDB_NO_MEMORY(ctdb, c);
 
-	data = tdb_fetch(ctdb->ltdb, key);
+	ret = ctdb_ltdb_fetch(ctdb, c, key, &header, &data);
+	if (ret != 0) return -1;
 	
 	c->key = key;
 	c->call_data = call_data;
 	c->record_data.dptr = talloc_memdup(c, data.dptr, data.dsize);
 	c->record_data.dsize = data.dsize;
 	CTDB_NO_MEMORY(ctdb, c->record_data.dptr);
-	if (data.dptr) free(data.dptr);
 	c->new_data = NULL;
 	c->reply_data = NULL;
 
@@ -58,13 +60,12 @@ static int ctdb_call_local(struct ctdb_context *ctdb, TDB_DATA key, int call_id,
 	}
 
 	if (fn->fn(c) != 0) {
-		free(c->record_data.dptr);
 		ctdb_set_error(ctdb, "ctdb_call %u failed\n", call_id);
 		return -1;
 	}
 
 	if (c->new_data) {
-		if (tdb_store(ctdb->ltdb, key, *c->new_data, TDB_REPLACE) != 0) {
+		if (ctdb_ltdb_store(ctdb, key, &header, *c->new_data) != 0) {
 			ctdb_set_error(ctdb, "ctdb_call tdb_store failed\n");
 			return -1;
 		}
