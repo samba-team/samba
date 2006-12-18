@@ -87,7 +87,8 @@ _kdc_do_digest(krb5_context context,
     krb5_data serverNonce;
 
     if(!config->enable_digest) {
-	kdc_log(context, config, 0, "Rejected digest request from %s", from);
+	kdc_log(context, config, 0, 
+		"Rejected digest request (disabled) from %s", from);
 	return KRB5KDC_ERR_POLICY;
     }
 
@@ -820,6 +821,47 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 	    free(answer.data);
+
+	    if (ireq.u.ntlmRequest.sessionkey) {
+		unsigned char sessionkey[MD4_DIGEST_LENGTH];
+		unsigned char masterkey[MD4_DIGEST_LENGTH];
+		MD4_CTX ctx;
+		RC4_KEY rc4;
+
+		if (ireq.u.ntlmRequest.sessionkey->length != sizeof(masterkey)){
+		    krb5_set_error_string(context,
+					  "NTLM master key wrong length: %d",
+					  ireq.u.ntlmRequest.sessionkey->length);
+		    goto out;
+		}
+
+		MD4_Init(&ctx);
+		MD4_Update(&ctx, 
+			   key->key.keyvalue.data, key->key.keyvalue.length);
+		MD4_Final(sessionkey, &ctx);
+
+		RC4_set_key(&rc4, sizeof(sessionkey), sessionkey);
+
+		RC4(&rc4, sizeof(masterkey),
+		    ireq.u.ntlmRequest.sessionkey->data, 
+		    masterkey);
+		memset(&rc4, 0, sizeof(rc4));
+
+		r.u.ntlmResponse.sessionkey = 
+		    malloc(sizeof(*r.u.ntlmResponse.sessionkey));
+		if (r.u.ntlmResponse.sessionkey == NULL) {
+		    krb5_set_error_string(context, "out of memory");
+		    goto out;
+		}
+
+		ret = krb5_data_copy(r.u.ntlmResponse.sessionkey,
+				     masterkey, sizeof(masterkey));
+		if (ret) {
+		    krb5_set_error_string(context, "out of memory");
+		    goto out;
+		}
+	    }
+
 	} else {
 	    ret = EINVAL;
 	    krb5_set_error_string(context, "NTLM not negotiated");
