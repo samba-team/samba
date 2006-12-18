@@ -1068,8 +1068,22 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 		iniparser_freedict(d);
 	}
 
-	if (flags & PAM_DELETE_CRED) {
-		return pam_sm_close_session(pamh, flags, argc, argv);
+	switch (flags & ~PAM_SILENT) {
+
+		case PAM_DELETE_CRED:
+			return pam_sm_close_session(pamh, flags, argc, argv);
+	
+		case PAM_REFRESH_CRED:
+			_pam_log_debug(pamh, ctrl, LOG_WARNING, "PAM_REFRESH_CRED not implemented");
+			break;
+		case PAM_REINITIALIZE_CRED:
+			_pam_log_debug(pamh, ctrl, LOG_WARNING, "PAM_REINITIALIZE_CRED not implemented");
+			break;
+		case PAM_ESTABLISH_CRED:
+			_pam_log_debug(pamh, ctrl, LOG_WARNING, "PAM_ESTABLISH_CRED not implemented");
+			break;
+		default:
+			break;
 	}
 
 	return PAM_SUCCESS;
