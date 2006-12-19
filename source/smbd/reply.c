@@ -3796,6 +3796,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	NTSTATUS status;
 	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
+	files_struct *fsp;
 
 	START_PROFILE(SMBmkdir);
  
@@ -3809,17 +3810,17 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
 
-	if( is_ntfs_stream_name(directory)) {
-		DEBUG(5,("reply_mkdir: failing create on filename %s with colon in name\n", directory));
-		END_PROFILE(SMBmkdir);
-		return ERROR_NT(NT_STATUS_NOT_A_DIRECTORY);
-	}
+	status = open_directory(conn, directory, &sbuf,
+				FILE_READ_ATTRIBUTES, /* Just a stat open */
+				FILE_SHARE_NONE, /* Ignored for stat opens */
+				FILE_CREATE, 0, NULL, &fsp);
 
-	status = mkdir_internal(conn, directory,bad_path);
+	DEBUG(1, ("open_directory returned %s\n", nt_errstr(status)));
+
 	if (!NT_STATUS_IS_OK(status)) {
 
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION) &&
-		    !use_nt_status()) {
+		if (NT_STATUS_EQUAL(
+			    status, NT_STATUS_DOS(ERRDOS, ERRfilexists))) {
 			/*
 			 * Yes, in the DOS error code case we get a
 			 * ERRDOS:ERRnoaccess here. See BASE-SAMBA3ERROR
@@ -3832,23 +3833,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(status);
 	}
 
-	if (lp_inherit_owner(SNUM(conn))) {
-		/* Ensure we're checking for a symlink here.... */
-		/* We don't want to get caught by a symlink racer. */
-
-		if(SMB_VFS_LSTAT(conn,directory, &sbuf) != 0) {
-			END_PROFILE(SMBmkdir);
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
-		}
-                                                                                                                                                   
-		if(!S_ISDIR(sbuf.st_mode)) {
-			DEBUG(0,("reply_mkdir: %s is not a directory !\n", directory ));
-			END_PROFILE(SMBmkdir);
-			return(UNIXERROR(ERRDOS,ERRnoaccess));
-		}
-
-		change_owner_to_parent(conn, NULL, directory, &sbuf);
-	}
+	close_file(fsp, NORMAL_CLOSE);
 
 	outsize = set_message(outbuf,0,0,False);
 
