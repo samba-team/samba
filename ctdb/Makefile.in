@@ -29,7 +29,7 @@ CTDB_OBJ = $(CTDB_COMMON_OBJ) $(CTDB_TCP_OBJ)
 
 OBJS = @TDBOBJ@ @TALLOCOBJ@ @LIBREPLACEOBJ@ @INFINIBAND_WRAPPER_OBJ@ $(EXTRA_OBJ) $(EVENTS_OBJ) $(CTDB_OBJ)
 
-BINS = bin/ctdb_test @INFINIBAND_BINS@
+BINS = bin/ctdb_test bin/ctdb_bench @INFINIBAND_BINS@
 
 DIRS = lib bin
 
@@ -51,6 +51,10 @@ dirs:
 bin/ctdb_test: $(OBJS) ctdb_test.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ ctdb_test.o $(OBJS) $(LIB_FLAGS)
+
+bin/ctdb_bench: $(OBJS) ctdb_bench.o
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ ctdb_bench.o $(OBJS) $(LIB_FLAGS)
 
 bin/ibwrapper_test: $(OBJS) tests/ibwrapper_test.o
 	@echo Linking $@

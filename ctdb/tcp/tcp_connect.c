@@ -48,7 +48,6 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 
 	if (getsockopt(tnode->fd, SOL_SOCKET, SO_ERROR, &error, &len) != 0 ||
 	    error != 0) {
-		printf("getsockopt error=%s\n", strerror(error));
 		talloc_free(fde);
 		close(tnode->fd);
 		tnode->fd = -1;
