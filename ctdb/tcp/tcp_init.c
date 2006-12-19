@@ -72,7 +72,7 @@ void *ctdb_tcp_allocate_pkt(struct ctdb_context *ctdb, size_t size)
 	/* tcp transport needs to round to 8 byte alignment to ensure
 	   that we can use a length header and 64 bit elements in
 	   structures */
-	size = (size+7) & ~7;
+	size = (size+(CTDB_TCP_ALIGNMENT-1)) & ~(CTDB_TCP_ALIGNMENT-1);
 	return talloc_size(ctdb, size);
 }
 

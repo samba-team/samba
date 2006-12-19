@@ -72,3 +72,5 @@ int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length);
 int ctdb_tcp_listen(struct ctdb_context *ctdb);
 void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te, 
 			   struct timeval t, void *private);
+
+#define CTDB_TCP_ALIGNMENT 8

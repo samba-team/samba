@@ -199,6 +199,10 @@ int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private, 
 						      struct ctdb_tcp_node);
 	struct ctdb_tcp_packet *pkt;
+
+	/* enforce the length and alignment rules from the tcp packet allocator */
+	length = (length+(CTDB_TCP_ALIGNMENT-1)) & ~(CTDB_TCP_ALIGNMENT-1);
+	*(uint32_t *)data = length;
 	
 	/* if the queue is empty then try an immediate write, avoiding
 	   queue overhead. This relies on non-blocking sockets */
