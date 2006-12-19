@@ -53,7 +53,7 @@ void init_request(struct winbindd_request *request, int request_type)
 
 /* Initialise a response structure */
 
-void init_response(struct winbindd_response *response)
+static void init_response(struct winbindd_response *response)
 {
 	/* Initialise return value */
 

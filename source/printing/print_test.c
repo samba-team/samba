@@ -77,5 +77,6 @@ struct printif test_printif =
 
 #else
  /* this keeps fussy compilers happy */
+ void print_test_dummy(void);
  void print_test_dummy(void) {}
 #endif /* DEVELOPER||ENABLE_BUILD_FARM_HACKS */
