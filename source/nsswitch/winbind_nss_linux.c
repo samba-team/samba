@@ -62,7 +62,7 @@ static char *get_static(char **buffer, size_t *buflen, size_t len)
    lib/util_str.c as I really don't want to have to link in any other
    objects if I can possibly avoid it. */
 
-BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
+static BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
 {
 	char *s;
 	BOOL quoted;
