@@ -130,7 +130,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	va_end(ap);
 
 	len = strlen(msg)+1;
-	r = talloc_size(ctdb, sizeof(*r) + len);
+	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) + len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length = sizeof(*r) + len;
 	r->hdr.operation = CTDB_REPLY_ERROR;
@@ -158,7 +158,7 @@ static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 {
 	struct ctdb_reply_redirect *r;
 
-	r = talloc_size(ctdb, sizeof(*r));
+	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r));
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length = sizeof(*r);
 	r->hdr.operation = CTDB_REPLY_REDIRECT;
@@ -188,7 +188,7 @@ static void ctdb_call_send_dmaster(struct ctdb_context *ctdb,
 	int len;
 	
 	len = sizeof(*r) + key->dsize + data->dsize;
-	r = talloc_size(ctdb, len);
+	r = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length    = len;
 	r->hdr.operation = CTDB_REQ_DMASTER;
@@ -255,7 +255,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 
 	/* send the CTDB_REPLY_DMASTER */
-	r = talloc_size(ctdb, sizeof(*r) + data.dsize);
+	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) + data.dsize);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length = sizeof(*r) + data.dsize;
 	r->hdr.operation = CTDB_REPLY_DMASTER;
@@ -317,7 +317,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 			call_data.dsize?&call_data:NULL,
 			&reply_data, c->hdr.srcnode);
 
-	r = talloc_size(ctdb, sizeof(*r) + reply_data.dsize);
+	r = ctdb->methods->allocate_pkt(ctdb, sizeof(*r) + reply_data.dsize);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.length = sizeof(*r) + reply_data.dsize;
 	r->hdr.operation = CTDB_REPLY_CALL;
@@ -539,7 +539,7 @@ struct ctdb_call_state *ctdb_call_send(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
 	len = sizeof(*state->c) + key.dsize + (call_data?call_data->dsize:0);
-	state->c = talloc_size(ctdb, len);
+	state->c = ctdb->methods->allocate_pkt(ctdb, len);
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
 
 	state->c->hdr.length    = len;

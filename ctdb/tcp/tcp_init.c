@@ -64,10 +64,24 @@ int ctdb_tcp_add_node(struct ctdb_node *node)
 }
 
 
+/*
+  transport packet allocator - allows transport to control memory for packets
+*/
+void *ctdb_tcp_allocate_pkt(struct ctdb_context *ctdb, size_t size)
+{
+	/* tcp transport needs to round to 8 byte alignment to ensure
+	   that we can use a length header and 64 bit elements in
+	   structures */
+	size = (size+7) & ~7;
+	return talloc_size(ctdb, size);
+}
+
+
 static const struct ctdb_methods ctdb_tcp_methods = {
 	.start     = ctdb_tcp_start,
 	.add_node  = ctdb_tcp_add_node,
-	.queue_pkt = ctdb_tcp_queue_pkt
+	.queue_pkt = ctdb_tcp_queue_pkt,
+	.allocate_pkt = ctdb_tcp_allocate_pkt
 };
 
 /*

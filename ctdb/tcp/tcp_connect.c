@@ -135,7 +135,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	fd = accept(ctcp->listen_fd, (struct sockaddr *)&addr, &len);
 	if (fd == -1) return;
 
-	in = talloc(ctdb, struct ctdb_incoming);
+	in = talloc_zero(ctdb, struct ctdb_incoming);
 	in->fd = fd;
 	in->ctdb = ctdb;
 

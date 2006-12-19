@@ -55,6 +55,7 @@ struct ctdb_methods {
 	int (*start)(struct ctdb_context *); /* start protocol processing */	
 	int (*add_node)(struct ctdb_node *); /* setup a new node */	
 	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
+	void *(*allocate_pkt)(struct ctdb_context *, size_t );
 };
 
 /*

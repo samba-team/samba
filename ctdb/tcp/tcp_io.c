@@ -25,6 +25,7 @@
 #include "ctdb_private.h"
 #include "ctdb_tcp.h"
 
+
 /*
   called when we fail to send a message to a node
 */
@@ -109,11 +110,8 @@ void ctdb_tcp_incoming_read(struct event_context *ev, struct fd_event *fde,
 {
 	struct ctdb_incoming *in = talloc_get_type(private, struct ctdb_incoming);
 	int num_ready = 0;
-	uint8_t *data;
-
-	/* NOTE: we don't yet handle combined packets or partial
-	   packets. Obviously that needed fixing, using a similar
-	   scheme to the Samba4 packet layer */
+	ssize_t nread;
+	uint8_t *data, *data_base;
 
 	if (ioctl(in->fd, FIONREAD, &num_ready) != 0 ||
 	    num_ready == 0) {
@@ -126,20 +124,71 @@ void ctdb_tcp_incoming_read(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
-	data = talloc_size(in, num_ready);
-	if (data == NULL) {
+	in->partial.data = talloc_realloc_size(in, in->partial.data, 
+					       num_ready + in->partial.length);
+	if (in->partial.data == NULL) {
 		/* not much we can do except drop the socket */
 		talloc_free(in);
 		return;
 	}
 
-	if (read(in->fd, data, num_ready) != num_ready) {
+	nread = read(in->fd, in->partial.data+in->partial.length, num_ready);
+	if (nread <= 0) {
+		/* the connection must be dead */
 		talloc_free(in);
 		return;
 	}
 
-	/* tell the ctdb layer above that we have a packet */
-	in->ctdb->upcalls->recv_pkt(in->ctdb, data, num_ready);
+	data = in->partial.data;
+	nread += in->partial.length;
+
+	in->partial.data = NULL;
+	in->partial.length = 0;
+
+	if (nread >= 4 && *(uint32_t *)data == nread) {
+		/* most common case - we got a whole packet in one go
+		   tell the ctdb layer above that we have a packet */
+		in->ctdb->upcalls->recv_pkt(in->ctdb, data, nread);
+		return;
+	}
+
+	data_base = data;
+
+	while (nread >= 4 && *(uint32_t *)data <= nread) {
+		/* we have at least one packet */
+		uint8_t *d2;
+		uint32_t len;
+		len = *(uint32_t *)data;
+		d2 = talloc_memdup(in, data, len);
+		if (d2 == NULL) {
+			/* sigh */
+			talloc_free(in);
+			return;
+		}
+		in->ctdb->upcalls->recv_pkt(in->ctdb, d2, len);
+		data += len;
+		nread -= len;		
+		return;
+	}
+
+	if (nread < 4 || *(uint32_t *)data > nread) {
+		/* we have only part of a packet */
+		if (data_base == data) {
+			in->partial.data = data;
+			in->partial.length = nread;
+		} else {
+			in->partial.data = talloc_memdup(in, data, nread);
+			if (in->partial.data == NULL) {
+				talloc_free(in);
+				return;
+			}
+			in->partial.length = nread;
+			talloc_free(data_base);
+		}
+		return;
+	}
+
+	talloc_free(data_base);
 }
 
 /*
