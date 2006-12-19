@@ -241,61 +241,9 @@ interface drsuapi
 		hyper h1;
 	} drsuapi_DsGetNCChangesRequest5;
 
-	typedef [flag(NDR_PAHEX)] struct {
-		[range(0,10000)] uint32 length;
-		[size_is(length)] uint8 *byte_array;
-	} drsuapi_DsGetNCChangesRequest_Ctr14;
-
-	typedef struct {
-		uint32 unknown1;
-		drsuapi_DsGetNCChangesRequest_Ctr14 data;
-	} drsuapi_DsGetNCChangesRequest_Ctr13;
-
-	typedef struct {
-		[range(0,0x100000)] uint32 count;
-		[size_is(count)] drsuapi_DsGetNCChangesRequest_Ctr13 *array;
-	} drsuapi_DsGetNCChangesRequest_Ctr12;
-
-	typedef struct {
-		GUID destination_dsa_guid;
-		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
-		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
-		drsuapi_DsReplicaHighWaterMark highwatermark;
-		drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
-		drsuapi_DsReplicaNeighbourFlags replica_flags;
-		uint32 max_object_count; /* w2k3 uses min(133,max(100,max_object_count)) */
-		uint32 max_ndr_size; /* w2k3 seems to ignore this */
-		uint32 unknown4;
-		hyper h1;
-		uint32 unique_ptr1;
-		uint32 unique_ptr2;
-		drsuapi_DsGetNCChangesRequest_Ctr12 ctr12;
-	} drsuapi_DsGetNCChangesRequest8;
-
-	typedef [switch_type(int32)] union {
-		[case(5)] drsuapi_DsGetNCChangesRequest5 req5;
-		[case(8)] drsuapi_DsGetNCChangesRequest8 req8;
-	} drsuapi_DsGetNCChangesRequest;
-
-	typedef [public] struct {
-		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
-		hyper highest_usn;  /* updated after a full replication cycle */
-		NTTIME last_sync_success;
-	} drsuapi_DsReplicaCoursor2;
-
-	typedef struct {
-		uint32 u1;
-		uint32 u2;
-		[range(0,0x100000)] uint32 count;
-		uint32 u3;
-		[size_is(count)] drsuapi_DsReplicaCoursor2 coursors[];
-	} drsuapi_DsReplicaCoursor2CtrEx;
-
 	/*
-	 * In DRSUAPI the objectClasses and attributes
-	 * are identified by uint32 values, but in the schema
-	 * they are identified by the governsID (objectClasses)
-	 * and attributeID (attributes)
+	 * In DRSUAPI all attributes with syntax 2.5.5.2
+	 * are identified by uint32 values
 	 *
 	 * the following table shows the mapping used between the two representations
 	 * e.g. - objectClass 'nTDSDSA' has governsID: 1.2.840.113556.1.5.7000.47
@@ -305,6 +253,9 @@ interface drsuapi
 	 *	  and a value: 47 => 0x2F
 	 *      - the mapping table gives a UINT32-prefix: 0x00170000
 	 *      - and the UINT32-ID is 0x0017002F = 0x00170000 | 0x2F
+	 *
+	 * This prefix mapping table is replied in the drsuapi_DsReplicaOIDMapping_Ctr
+	 * array. The following are the default mappings of w2k3
 	 *
 	 * OID-prefix			=> UINT32-Id prefix
 	 *
@@ -334,7 +285,10 @@ interface drsuapi
 	 *		   struct drsuapi_DsObjectIdentifier3
 	 *
 	 * 2.5.5.2	=> OID-string
-	 *		=> mayContain, mustContain... also have this syntax but have string values
+	 *		=> all values are represented as uint32 values in drsuapi
+	 *		=> governsID, attributeID and attributeSyntax returned as OID-Strings in LDAP
+	 *		=> mayContain, mustContain and all other attributes with 2.5.5.2 syntax
+	 *		   are returned as attribute names
 	 *
 	 * 2.5.5.4	=> String(Teletex) case-insensitive string with teletex charset
 	 *
@@ -371,6 +325,20 @@ interface drsuapi
 	 *
 	 * 2.5.5.17	=> dom_sid
 	 */
+	typedef [flag(NDR_PAHEX)] struct {
+		[range(0,10000)] uint32 length;
+		[size_is(length)] uint8 *data;
+	} drsuapi_DsReplicaOID;
+
+	typedef struct {
+		uint32 id_prefix;
+		drsuapi_DsReplicaOID oid;
+	} drsuapi_DsReplicaOIDMapping;
+
+	typedef struct {
+		[range(0,0x100000)] uint32 num_mappings;
+		[size_is(num_mappings)] drsuapi_DsReplicaOIDMapping *mappings;
+	} drsuapi_DsReplicaOIDMapping_Ctr;
 
 	typedef [flag(NDR_PAHEX),v1_enum] enum {
 		DRSUAPI_OBJECTCLASS_top			= 0x00010000,
@@ -429,6 +397,41 @@ interface drsuapi
 		DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs		= 0x0009071c,
 		DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs		= 0x0009072c
 	} drsuapi_DsAttributeId;
+
+	typedef struct {
+		GUID destination_dsa_guid;
+		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
+		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
+		drsuapi_DsReplicaHighWaterMark highwatermark;
+		drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
+		drsuapi_DsReplicaNeighbourFlags replica_flags;
+		uint32 max_object_count; /* w2k3 uses min(133,max(100,max_object_count)) */
+		uint32 max_ndr_size; /* w2k3 seems to ignore this */
+		uint32 unknown4;
+		hyper h1;
+		uint32 unique_ptr1;
+		uint32 unique_ptr2;
+		drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
+	} drsuapi_DsGetNCChangesRequest8;
+
+	typedef [switch_type(int32)] union {
+		[case(5)] drsuapi_DsGetNCChangesRequest5 req5;
+		[case(8)] drsuapi_DsGetNCChangesRequest8 req8;
+	} drsuapi_DsGetNCChangesRequest;
+
+	typedef [public] struct {
+		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
+		hyper highest_usn;  /* updated after a full replication cycle */
+		NTTIME last_sync_success;
+	} drsuapi_DsReplicaCoursor2;
+
+	typedef struct {
+		uint32 u1;
+		uint32 u2;
+		[range(0,0x100000)] uint32 count;
+		uint32 u3;
+		[size_is(count)] drsuapi_DsReplicaCoursor2 coursors[];
+	} drsuapi_DsReplicaCoursor2CtrEx;
 
 	/* Generic DATA_BLOB values */
 	typedef struct {
@@ -639,7 +642,7 @@ interface drsuapi
 		drsuapi_DsReplicaHighWaterMark old_highwatermark;
 		drsuapi_DsReplicaHighWaterMark new_highwatermark;
 		drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
-		drsuapi_DsGetNCChangesRequest_Ctr12 ctr12;
+		drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
 		uint32 total_object_count;
 		uint32 object_count;
 		/* this +55 is sometimes +56, so I don't know where this comes from... --metze */
@@ -667,7 +670,7 @@ interface drsuapi
 		drsuapi_DsReplicaHighWaterMark old_highwatermark;
 		drsuapi_DsReplicaHighWaterMark new_highwatermark;
 		drsuapi_DsReplicaCoursor2CtrEx *uptodateness_vector;
-		drsuapi_DsGetNCChangesRequest_Ctr12 ctr12;
+		drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
 		uint32 total_object_count;
 		uint32 object_count;
 		/* this +55 is sometimes +56, so I don't know where this comes from... --metze */
