@@ -59,6 +59,10 @@ void
 _krb5_crc_init_table(void);
 
 
+/*
+ *
+ */
+
 OM_uint32 _gss_ntlm_get_mic
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
@@ -123,6 +127,9 @@ OM_uint32 _gss_ntlm_get_mic
     return GSS_S_UNAVAILABLE;
 }
 
+/*
+ *
+ */
 
 OM_uint32
 _gss_ntlm_verify_mic
@@ -189,5 +196,75 @@ _gss_ntlm_verify_mic
         return GSS_S_COMPLETE;
     }
 
+    return GSS_S_UNAVAILABLE;
+}
+
+/*
+ *
+ */
+
+OM_uint32
+_gss_ntlm_wrap_size_limit (
+            OM_uint32 * minor_status,
+            const gss_ctx_id_t context_handle,
+            int conf_req_flag,
+            gss_qop_t qop_req,
+            OM_uint32 req_output_size,
+            OM_uint32 * max_input_size
+           )
+{
+    *minor_status = 0;
+    *max_input_size = 0;
+    return GSS_S_UNAVAILABLE;
+}
+
+/*
+ *
+ */
+
+OM_uint32 _gss_ntlm_wrap
+           (OM_uint32 * minor_status,
+            const gss_ctx_id_t context_handle,
+            int conf_req_flag,
+            gss_qop_t qop_req,
+            const gss_buffer_t input_message_buffer,
+            int * conf_state,
+            gss_buffer_t output_message_buffer
+           )
+{
+    if (minor_status)
+	*minor_status = 0;
+    if (conf_state)
+	*conf_state = 0;
+    if (output_message_buffer) {
+	output_message_buffer->length = 0;
+	output_message_buffer->value = NULL;
+    }
+    return GSS_S_UNAVAILABLE;
+}
+
+/*
+ *
+ */
+
+OM_uint32 _gss_ntlm_unwrap
+           (OM_uint32 * minor_status,
+            const gss_ctx_id_t context_handle,
+            const gss_buffer_t input_message_buffer,
+            gss_buffer_t output_message_buffer,
+            int * conf_state,
+            gss_qop_t * qop_state
+           )
+{
+    if (minor_status)
+	*minor_status = 0;
+    if (output_message_buffer) {
+	output_message_buffer->value = NULL;
+	output_message_buffer->length = 0;
+    }
+    if (conf_state)
+	*conf_state = 0;
+    if (qop_state)
+	*qop_state = 0;
     return GSS_S_UNAVAILABLE;
 }
