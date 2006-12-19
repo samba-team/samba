@@ -24,11 +24,17 @@
 struct ibw_opts {
 	int	max_send_wr;
 	int	max_recv_wr;
+	int	avg_send_size;
+	int	recv_bufsize;
 };
 
 struct ibw_wr {
 	char	*msg; /* initialized in ibw_init_memory once per connection */
 	int	wr_id; /* position in wr_index list; also used as wr id */
+
+	char	*msg_large; /* allocated specially for "large" message */
+	struct ibv_mr *mr_large;
+
 	struct ibw_wr *next, *prev; /* in wr_list_avail or wr_list_used */
 };
 
@@ -48,8 +54,6 @@ struct ibw_ctx_priv {
 	ibw_receive_fn_t receive_func; /* see ibw_init */
 
 	long	pagesize; /* sysconf result for memalign */
-	int	qsize; /* opts.max_send_wr + opts.max_recv_wr */
-	int	max_msg_size; /* see ibw_init */
 };
 
 struct ibw_conn_priv {
@@ -60,10 +64,16 @@ struct ibw_conn_priv {
 	int	is_accepted;
 
 	struct ibv_cq	*cq; /* qp is in cm_id */
-	struct ibv_mr *mr;
-	char *buf; /* fixed size (qsize * opts.max_msg_size) buffer for send/recv */
+
+	char *buf_send; /* max_send_wr * avg_send_size */
+	struct ibv_mr *mr_send;
 	struct ibw_wr *wr_list_avail;
 	struct ibw_wr *wr_list_used;
 	struct ibw_wr **wr_index; /* array[0..(qsize-1)] of (ibw_wr *) */
+
+	/* buf_recv is a ring buffer */
+	char *buf_recv; /* max_recv_wr * avg_recv_size */
+	struct ibv_mr *mr_recv;
+	int recv_index; /* index of the next recv buffer */
 };
 
