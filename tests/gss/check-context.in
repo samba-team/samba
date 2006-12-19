@@ -81,9 +81,6 @@ ${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
 
 ${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
 
-GSSAPI_SPNEGO_NAME=host@lucid.test.h5l.se
-export GSSAPI_SPNEGO_NAME
-
 echo "Doing database check"
 ${kadmin} check ${R} || exit 1
 
