@@ -477,8 +477,8 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 			r.in.req.req8.h1				= 0;
 			r.in.req.req8.unique_ptr1			= 0;
 			r.in.req.req8.unique_ptr2			= 0;
-			r.in.req.req8.ctr12.count			= 0;
-			r.in.req.req8.ctr12.array			= NULL;
+			r.in.req.req8.mapping_ctr.num_mappings		= 0;
+			r.in.req.req8.mapping_ctr.mappings		= NULL;
 
 			break;
 		}
