@@ -407,6 +407,8 @@ static void set_domain_online(struct winbindd_domain *domain)
 
 void set_domain_online_request(struct winbindd_domain *domain)
 {
+	struct timeval tev;
+
 	DEBUG(10,("set_domain_online_request: called for domain %s\n",
 		domain->name ));
 
@@ -422,20 +424,34 @@ void set_domain_online_request(struct winbindd_domain *domain)
 	   Wait at least 5 seconds. Heuristics suck... */
 
 	if (!domain->check_online_event) {
-		DEBUG(5,("set_domain_online_request: no check_domain_online_handler "
-			"registered. Were we online (%d) ?\n", (int)domain->online ));
-	} else {
-		struct timeval tev;
+		/* If we've come from being globally offline we
+		   don't have a check online event handler set.
+		   We need to add one now we're trying to go
+		   back online. */
 
-		GetTimeOfDay(&tev);
+		DEBUG(10,("set_domain_online_request: domain %s was globally offline.\n",
+			domain->name ));
 
-		/* Go into "startup" mode again. */
-		domain->startup_time = tev.tv_sec;
-		domain->startup = True;
+		domain->check_online_event = add_timed_event( NULL,
+						timeval_current_ofs(5, 0),
+						"check_domain_online_handler",
+						check_domain_online_handler,
+						domain);
 
-		tev.tv_sec += 5;
-		set_event_dispatch_time("check_domain_online_handler", tev);
+		/* The above *has* to succeed for winbindd to work. */
+		if (!domain->check_online_event) {
+			smb_panic("set_domain_online_request: failed to add online handler.\n");
+		}
 	}
+
+	GetTimeOfDay(&tev);
+
+	/* Go into "startup" mode again. */
+	domain->startup_time = tev.tv_sec;
+	domain->startup = True;
+
+	tev.tv_sec += 5;
+	set_event_dispatch_time("check_domain_online_handler", tev);
 }
 
 /****************************************************************
