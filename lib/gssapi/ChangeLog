@@ -1,5 +1,14 @@
 2006-12-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/crypto.c: move gss_wrap/gss_unwrap here
+
+	* test_context.c: request INT and CONF from the gss layer, test
+	get and verify MIC.
+
+	* ntlm/ntlm.h: add crypto bits.
+
+	* ntlm/accept_sec_context.c: Save session master key.
+
 	* Makefile.am: Move get and verify mic to the same file (crypto.c)
 	since they share code.
 
