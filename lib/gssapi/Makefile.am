@@ -167,9 +167,7 @@ ntlmsrc = \
 	ntlm/inquire_names_for_mech.c \
 	ntlm/process_context_token.c \
 	ntlm/release_cred.c \
-	ntlm/release_name.c \
-	ntlm/unwrap.c \
-	ntlm/wrap.c 
+	ntlm/release_name.c
 
 $(srcdir)/ntlm/ntlm-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p ntlm/ntlm-private.h $(ntlmsrc) || rm -f ntlm/ntlm-private.h
