@@ -146,13 +146,13 @@ ${context} --mech-type=krb5 --ret-mech-type=ntlm \
 
 echo "======spnego variants context building"
 
-# Add "--wrapunwrap" 
 for arg in \
      "" \
      "--mutual" \
      "--delegate" \
      "--mutual --delegate" \
-     "--getverifymic" \
+     "--getverifymic --wrapunwrap" \
+     "--mutual --getverifymic --wrapunwrap" \
     ; do
 
     echo "no NTLM acceptor cred ${arg}"
