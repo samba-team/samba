@@ -117,6 +117,7 @@ _gss_ntlm_init_sec_context
 	krb5_error_code ret;
 	struct ntlm_type1 type1;
 	struct ntlm_buf data;
+	uint32_t flags = 0;
 	
 	ctx = calloc(1, sizeof(*ctx));
 	if (ctx == NULL) {
@@ -132,9 +133,16 @@ _gss_ntlm_init_sec_context
 	    return GSS_S_FAILURE;
 	}
 
+	if (req_flags & GSS_C_CONF_FLAG)
+	    flags |= NTLM_NEG_SEAL;
+	if (req_flags & GSS_C_INTEG_FLAG)
+	    flags |= NTLM_NEG_SIGN;
+	else
+	    flags |= NTLM_NEG_ALWAYS_SIGN;
+
 	memset(&type1, 0, sizeof(type1));
 	
-	type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM;
+	type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM | flags;
 	type1.domain = name->domain;
 	type1.hostname = NULL;
 	type1.os[0] = 0;
@@ -169,6 +177,8 @@ _gss_ntlm_init_sec_context
 	    return GSS_S_FAILURE;
 	}
 
+	ctx->flags = type2.flags;
+
 	/* XXX check that type2.targetinfo matches `target_name´ */
 
 	memset(&type3, 0, sizeof(type3));
@@ -180,6 +190,7 @@ _gss_ntlm_init_sec_context
 
 	{
 	    struct ntlm_buf key;
+	    struct ntlm_buf sessionkey;
 	    heim_ntlm_nt_key(ctx->password, &key);
 	    memset(ctx->password, 0, strlen(ctx->password));
 
@@ -188,12 +199,27 @@ _gss_ntlm_init_sec_context
 				      &type3.ntlm);
 
 	    ret = heim_ntlm_build_ntlm1_master(key.data, key.length,
+					       &sessionkey,
 					       &type3.sessionkey);
 	    if (ret) {
 		_gss_ntlm_delete_sec_context(minor_status,context_handle,NULL);
 		*minor_status = ret;
 		return GSS_S_FAILURE;
 	    }
+
+	    ret = krb5_data_copy(&ctx->sessionkey, 
+				 sessionkey.data, sessionkey.length);
+	    free(sessionkey.data);
+	    if (ret) {
+		_gss_ntlm_delete_sec_context(minor_status,context_handle,NULL);
+		*minor_status = ret;
+		return GSS_S_FAILURE;
+	    }
+	    ctx->status |= STATUS_SESSIONKEY; 
+
+	    RC4_set_key(&ctx->crypto.key, 
+			ctx->sessionkey.length,
+			ctx->sessionkey.data);
 
 	    memset(key.data, 0, key.length);
 	    free(key.data);
