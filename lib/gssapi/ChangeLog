@@ -1,5 +1,13 @@
 2006-12-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/accept_sec_context.c: split RC4 send and recv keystreams
+
+	* ntlm/init_sec_context.c: split RC4 send and recv keystreams
+
+	* ntlm/ntlm.h: split RC4 send and recv keystreams
+
+	* ntlm/crypto.c: Implement SEAL.
+
 	* ntlm/crypto.c: move gss_wrap/gss_unwrap here
 
 	* test_context.c: request INT and CONF from the gss layer, test
