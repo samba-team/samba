@@ -1066,9 +1066,44 @@ krb5_ntlm_req_set_opaque(krb5_context context,
     return 0;
 }
 
+krb5_error_code
+krb5_ntlm_req_set_session(krb5_context context, 
+			  krb5_ntlm ntlm,
+			  void *sessionkey, size_t length)
+{
+    ntlm->request.sessionkey = calloc(1, sizeof(*ntlm->request.sessionkey));
+    if (ntlm->request.sessionkey == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    ntlm->request.sessionkey->data = malloc(length);
+    if (ntlm->request.sessionkey->data == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    memcpy(ntlm->request.sessionkey->data, sessionkey, length);
+    ntlm->request.sessionkey->length = length;
+    return 0;
+}
+
 krb5_boolean
 krb5_ntlm_rep_get_status(krb5_context context, 
 			 krb5_ntlm ntlm)
 {
     return ntlm->response.success ? TRUE : FALSE;
+}
+
+krb5_boolean
+krb5_ntlm_rep_get_sessionkey(krb5_context context, 
+			     krb5_ntlm ntlm,
+			     krb5_data *data)
+{
+    if (ntlm->response.sessionkey == NULL) {
+	krb5_set_error_string(context, "no ntlm session key");
+	return EINVAL;
+    }
+    krb5_clear_error_string(context);
+    return krb5_data_copy(data,
+			  ntlm->response.sessionkey->data,
+			  ntlm->response.sessionkey->length);
 }
