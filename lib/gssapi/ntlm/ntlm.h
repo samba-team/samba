@@ -67,8 +67,16 @@ typedef struct {
     OM_uint32 status;
 #define STATUS_OPEN 1
 #define STATUS_CLIENT 2
+#define STATUS_SESSIONKEY 4
     char *username;
     char *password;
+    krb5_data sessionkey;
+
+    struct {
+	uint32_t send_seq;
+	uint32_t recv_seq;
+	RC4_KEY key;
+    } crypto;
 } *ntlm_ctx;
 
 typedef struct {
