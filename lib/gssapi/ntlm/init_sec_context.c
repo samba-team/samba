@@ -217,7 +217,10 @@ _gss_ntlm_init_sec_context
 	    }
 	    ctx->status |= STATUS_SESSIONKEY; 
 
-	    RC4_set_key(&ctx->crypto.key, 
+	    RC4_set_key(&ctx->crypto_recv.key, 
+			ctx->sessionkey.length,
+			ctx->sessionkey.data);
+	    RC4_set_key(&ctx->crypto_send.key, 
 			ctx->sessionkey.length,
 			ctx->sessionkey.data);
 

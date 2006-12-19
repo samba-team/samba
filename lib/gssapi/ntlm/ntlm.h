@@ -73,10 +73,9 @@ typedef struct {
     krb5_data sessionkey;
 
     struct {
-	uint32_t send_seq;
-	uint32_t recv_seq;
+	uint32_t seq;
 	RC4_KEY key;
-    } crypto;
+    } crypto_send, crypto_recv;
 } *ntlm_ctx;
 
 typedef struct {
