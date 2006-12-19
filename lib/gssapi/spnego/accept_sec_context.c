@@ -369,7 +369,8 @@ verify_mechlist_mic
 }
 
 static OM_uint32
-select_mech(OM_uint32 *minor_status, MechType *mechType, gss_OID *mech_p)
+select_mech(OM_uint32 *minor_status, MechType *mechType, int verify_p,
+	    gss_OID *mech_p)
 {
     char mechbuf[64];
     size_t mech_len;
@@ -416,7 +417,7 @@ select_mech(OM_uint32 *minor_status, MechType *mechType, gss_OID *mech_p)
 				mech_p);
     }
 
-    {
+    if (verify_p) {
 	gss_name_t name = GSS_C_NO_NAME;
 	gss_buffer_desc namebuf;
 	char *str = NULL, *host, hostname[MAXHOSTNAMELEN];
@@ -544,14 +545,14 @@ acceptor_start
     int i;
     gss_buffer_desc data;
     size_t len, taglen;
-    unsigned int negResult = accept_incomplete;
     gss_buffer_t mech_input_token = GSS_C_NO_BUFFER;
     gss_buffer_desc mech_output_token;
     gss_buffer_desc mech_buf;
     gss_OID preferred_mech_type = GSS_C_NO_OID;
     gssspnego_ctx ctx;
     gssspnego_cred acceptor_cred = (gssspnego_cred)acceptor_cred_handle;
-    int first_mech = 0;
+    int get_mic = 0;
+    int first_ok = 0;
 
     mech_output_token.value = NULL;
     mech_output_token.length = 0;
@@ -564,8 +565,7 @@ acceptor_start
 	    return ret;
 
 	if (input_token_buffer->length == 0) {
-	    return send_supported_mechs (minor_status,
-					 output_token);
+	    return send_supported_mechs (minor_status, output_token);
 	}
     }
 
@@ -602,148 +602,158 @@ acceptor_start
 	return GSS_S_DEFECTIVE_TOKEN;
     }
 
-    /* Call glue layer to find first mech we support */
-    for (i = 0; i < ni.mechTypes.len; ++i) {
-	ret = select_mech(minor_status,
-			  &ni.mechTypes.val[i],
-			  &preferred_mech_type);
-	if (ret == 0)
-	    break;
-    }
-    if (i == 0)
-	first_mech = 1;
-    if (preferred_mech_type == GSS_C_NO_OID) {
+    if (ni.mechTypes.len < 1) {
 	free_NegTokenInit(&ni);
-	return GSS_S_BAD_MECH;
+	*minor_status = 0;
+	return GSS_S_DEFECTIVE_TOKEN;
     }
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
-    ctx->preferred_mech_type = preferred_mech_type;
-    ctx->negotiated_mech_type = preferred_mech_type;
-    ctx->initiator_mech_types.len = ni.mechTypes.len;
-    ctx->initiator_mech_types.val = ni.mechTypes.val;
-    ni.mechTypes.len = 0;
-    ni.mechTypes.val = NULL;
-
-    {
-	gss_buffer_desc ibuf;
-	int get_mic = 0;
-	int require_response;
-
-	if (ni.mechToken != NULL && first_mech) {
-	    ibuf.length = ni.mechToken->length;
-	    ibuf.value = ni.mechToken->data;
-	    mech_input_token = &ibuf;
-	} else {
-	    ibuf.value = NULL;
-	    ibuf.length = 0;
-	}
-
-	if (mech_input_token != GSS_C_NO_BUFFER) {
-	    gss_cred_id_t mech_delegated_cred = GSS_C_NO_CREDENTIAL;
-	    gss_cred_id_t mech_cred;
-
-	    if (acceptor_cred != NULL)
-		mech_cred = acceptor_cred->negotiated_cred_id;
-	    else
-		mech_cred = GSS_C_NO_CREDENTIAL;
-
-	    if (ctx->mech_src_name != GSS_C_NO_NAME)
-		gss_release_name(&minor, &ctx->mech_src_name);
-
-	    if (ctx->delegated_cred_id != GSS_C_NO_CREDENTIAL)
-		_gss_spnego_release_cred(&minor, &ctx->delegated_cred_id);
-
-	    ret = gss_accept_sec_context(&minor,
-					 &ctx->negotiated_ctx_id,
-					 mech_cred,
-					 mech_input_token,
-					 input_chan_bindings,
-					 &ctx->mech_src_name,
-					 &ctx->negotiated_mech_type,
-					 &mech_output_token,
-					 &ctx->mech_flags,
-					 &ctx->mech_time_rec,
-					 &mech_delegated_cred);
-	    if (ret == GSS_S_COMPLETE || ret == GSS_S_CONTINUE_NEEDED) {
-		if (delegated_cred_handle) {
-		    ret = _gss_spnego_alloc_cred(minor_status,
-						 mech_delegated_cred,
-						 delegated_cred_handle);
-
-		} else {
-		    gss_release_cred(&ret2, &mech_delegated_cred);
-		}
-	    }
-	    if (ret != GSS_S_COMPLETE && ret != GSS_S_CONTINUE_NEEDED) {
-		free_NegTokenInit(&ni);
-		send_reject (minor_status, output_token);
-		HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
-		return ret;
-	    }
-	    if (ret == GSS_S_COMPLETE) {
-		ctx->open = 1;
-		ret = acceptor_complete(minor_status,
-					ctx,
-					&get_mic,
-					&mech_buf,
-					mech_input_token,
-					&mech_output_token,
-					ni.mechListMIC,
-					output_token);
-	    }
-	} else
-	    ret = GSS_S_COMPLETE;
-
-	if (ctx->mech_flags & GSS_C_DCE_STYLE)
-	    require_response = (negResult != accept_completed);
-	else
-	    require_response = 0;
-
-	/*
-	 * Check whether we need to send a result: there should be only
-	 * one accept_completed response sent in the entire negotiation
-	 */
-	if ((mech_output_token.length != 0)
-	    || (ctx->open && negResult == accept_incomplete)
-	    || require_response
-	    || get_mic
-	    || !first_mech) {
-	    ret2 = send_accept (minor_status,
-				ctx,
-				&mech_output_token,
-				1,
-				get_mic ? &mech_buf : NULL,
-				output_token);
-	    if (ret2) {
-		ret = ret2;
-		goto out;
-	    }
-	}
-
-     out:
-	if (mech_output_token.value != NULL)
-	    gss_release_buffer(&minor, &mech_output_token);
-	if (mech_buf.value != NULL)
-	    free(mech_buf.value);
+    ret = copy_MechTypeList(&ni.mechTypes, &ctx->initiator_mech_types);
+    if (ret) {
+	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	free_NegTokenInit(&ni);
+	*minor_status = ret;
+	return GSS_S_FAILURE;
     }
+
+    /*
+     * First we try the opportunistic token if we have support for it,
+     * don't try to verify we have credential for the token,
+     * gss_accept_sec_context will (hopefully) tell us that.
+     * If that failes, 
+     */
+
+    ret = select_mech(minor_status,
+		      &ni.mechTypes.val[0], 
+		      0,
+		      &preferred_mech_type);
+
+    if (ret == 0 && ni.mechToken != NULL) {
+	gss_cred_id_t mech_delegated_cred = GSS_C_NO_CREDENTIAL;
+	gss_cred_id_t mech_cred;
+	gss_buffer_desc ibuf;
+
+	ibuf.length = ni.mechToken->length;
+	ibuf.value = ni.mechToken->data;
+	mech_input_token = &ibuf;
+
+	if (acceptor_cred != NULL)
+	    mech_cred = acceptor_cred->negotiated_cred_id;
+	else
+	    mech_cred = GSS_C_NO_CREDENTIAL;
+	
+	if (ctx->mech_src_name != GSS_C_NO_NAME)
+	    gss_release_name(&minor, &ctx->mech_src_name);
+	
+	if (ctx->delegated_cred_id != GSS_C_NO_CREDENTIAL)
+	    _gss_spnego_release_cred(&minor, &ctx->delegated_cred_id);
+	
+	ret = gss_accept_sec_context(&minor,
+				     &ctx->negotiated_ctx_id,
+				     mech_cred,
+				     mech_input_token,
+				     input_chan_bindings,
+				     &ctx->mech_src_name,
+				     &ctx->negotiated_mech_type,
+				     &mech_output_token,
+				     &ctx->mech_flags,
+				     &ctx->mech_time_rec,
+				     &mech_delegated_cred);
+	if (ret == GSS_S_COMPLETE || ret == GSS_S_CONTINUE_NEEDED) {
+	    if (delegated_cred_handle)
+		ret = _gss_spnego_alloc_cred(minor_status,
+					     mech_delegated_cred,
+					     delegated_cred_handle);
+	    else
+		gss_release_cred(&ret2, &mech_delegated_cred);
+
+	    ctx->preferred_mech_type = preferred_mech_type;
+	    ctx->negotiated_mech_type = preferred_mech_type;
+	    if (ret == GSS_S_COMPLETE)
+		ctx->open = 1;
+
+	    ret = acceptor_complete(minor_status,
+				    ctx,
+				    &get_mic,
+				    &mech_buf,
+				    mech_input_token,
+				    &mech_output_token,
+				    ni.mechListMIC,
+				    output_token);
+	    if (ret != GSS_S_COMPLETE)
+		goto out;
+
+	    first_ok = 1;
+	}
+    }
+
+    /*
+     * If opportunistic token failed, lets try the other mechs.
+     */
+
+    if (!first_ok) {
+
+	/* Call glue layer to find first mech we support */
+	for (i = 1; i < ni.mechTypes.len; ++i) {
+	    ret = select_mech(minor_status,
+			      &ni.mechTypes.val[i],
+			      1,
+			      &preferred_mech_type);
+	    if (ret == 0)
+		break;
+	}
+	if (preferred_mech_type == GSS_C_NO_OID) {
+	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	    free_NegTokenInit(&ni);
+	    return GSS_S_BAD_MECH;
+	}
+
+	ctx->preferred_mech_type = preferred_mech_type;
+	ctx->negotiated_mech_type = preferred_mech_type;
+    }
+
+    /*
+     * The initial token always have a response
+     */
+
+    ret = send_accept (minor_status,
+		       ctx,
+		       &mech_output_token,
+		       1,
+		       get_mic ? &mech_buf : NULL,
+		       output_token);
+    if (ret)
+	goto out;
+    
+out:
+    if (mech_output_token.value != NULL)
+	gss_release_buffer(&minor, &mech_output_token);
+    if (mech_buf.value != NULL) {
+	free(mech_buf.value);
+	mech_buf.value = NULL;
+    }
+    free_NegTokenInit(&ni);
 
     if (ret == GSS_S_COMPLETE) {
 	if (src_name != NULL && ctx->mech_src_name != NULL) {
-	    ret2 = gss_duplicate_name(minor_status,
-				      ctx->mech_src_name,
-				      src_name);
-	    if (ret2 != GSS_S_COMPLETE)
-		ret = ret2;
+	    spnego_name name;
+
+	    name = calloc(1, sizeof(*name));
+	    if (name) {
+		name->mech = ctx->mech_src_name;
+		ctx->mech_src_name = NULL;
+		*src_name = (gss_name_t)name;
+	    } else
+		*src_name = GSS_C_NO_NAME;
 	}
         if (delegated_cred_handle != NULL) {
 	    *delegated_cred_handle = ctx->delegated_cred_id;
 	    ctx->delegated_cred_id = GSS_C_NO_CREDENTIAL;
 	}
     }
-
+    
     if (mech_type != NULL)
 	*mech_type = ctx->negotiated_mech_type;
     if (ret_flags != NULL)
@@ -757,8 +767,8 @@ acceptor_start
     }
 
     _gss_spnego_internal_delete_sec_context(&minor, context_handle,
-				   GSS_C_NO_BUFFER);
-
+					    GSS_C_NO_BUFFER);
+    
     return ret;
 }
 
