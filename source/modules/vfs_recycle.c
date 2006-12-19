@@ -538,6 +538,7 @@ done:
 	return rc;
 }
 
+NTSTATUS vfs_recycle_init(void);
 NTSTATUS vfs_recycle_init(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "recycle", recycle_ops);

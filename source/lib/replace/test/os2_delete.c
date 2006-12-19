@@ -20,6 +20,7 @@
 #define TESTDIR "test.dir"
 
 static int test_readdir_os2_delete_ret;
+int test_readdir_os2_delete(void);
 
 #define FAILED(d) (fprintf(stderr, "Failed for %s - %d = %s\n", d, errno, strerror(errno)), test_readdir_os2_delete_ret = 1, 1)
 

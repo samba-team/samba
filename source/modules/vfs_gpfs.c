@@ -635,6 +635,7 @@ static vfs_op_tuple gpfs_op_tuples[] = {
 };
 
 
+NTSTATUS vfs_gpfs_init(void);
 NTSTATUS vfs_gpfs_init(void)
 {
 	init_gpfs();

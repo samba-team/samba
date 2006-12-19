@@ -192,6 +192,7 @@ static vfs_op_tuple cprime_ops [] =
  * -------------------------------------------------------------------------
  */
 
+NTSTATUS vfs_cacheprime_init(void);
 NTSTATUS vfs_cacheprime_init(void)
 {
     return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE, cprime_ops);

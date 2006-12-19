@@ -172,7 +172,7 @@ static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 
 /* Directory operations */
 
-SMB_STRUCT_DIR *atalk_opendir(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
+static SMB_STRUCT_DIR *atalk_opendir(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
 {
 	SMB_STRUCT_DIR *ret = 0;
 
@@ -394,6 +394,7 @@ static vfs_op_tuple atalk_ops[] = {
 	{SMB_VFS_OP(NULL), 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_netatalk_init(void);
 NTSTATUS vfs_netatalk_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "netatalk", atalk_ops);

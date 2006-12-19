@@ -138,7 +138,7 @@ static int umount_check_perm(char * dir)
 	return rc;
 }
 
-int lock_mtab(void)
+static int lock_mtab(void)
 {
 	int rc;
 	
@@ -151,12 +151,12 @@ int lock_mtab(void)
 	
 }
 
-void unlock_mtab(void)
+static void unlock_mtab(void)
 {
 	unlink(MOUNTED_LOCK);	
 }
 
-int remove_from_mtab(char * mountpoint)
+static int remove_from_mtab(char * mountpoint)
 {
 	int rc;
 	int num_matches;

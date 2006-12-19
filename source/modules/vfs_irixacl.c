@@ -95,6 +95,7 @@ static vfs_op_tuple irixacl_op_tuples[] = {
    SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_irixacl_init(void);
 NTSTATUS vfs_irixacl_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "irixacl",

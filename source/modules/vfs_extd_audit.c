@@ -347,6 +347,7 @@ static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd
 	return result;
 }
 
+NTSTATUS vfs_extd_audit_init(void);
 NTSTATUS vfs_extd_audit_init(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "extd_audit", audit_op_tuples);

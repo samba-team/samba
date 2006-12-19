@@ -362,6 +362,7 @@ static vfs_op_tuple cap_op_tuples[] = {
 	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_cap_init(void);
 NTSTATUS vfs_cap_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "cap", cap_op_tuples);

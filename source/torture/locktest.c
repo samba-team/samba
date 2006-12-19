@@ -54,14 +54,14 @@ extern int optind;
 
 enum lock_op {OP_LOCK, OP_UNLOCK, OP_REOPEN};
 
-const char *lock_op_type(int op)
+static const char *lock_op_type(int op)
 {
 	if (op == WRITE_LOCK) return "write";
 	else if (op == READ_LOCK) return "read";
 	else return "other";
 }
 
-const char *lock_op_name(enum lock_op op)
+static const char *lock_op_name(enum lock_op op)
 {
 	if (op == OP_LOCK) return "lock";
 	else if (op == OP_UNLOCK) return "unlock";

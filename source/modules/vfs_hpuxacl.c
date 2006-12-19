@@ -95,6 +95,7 @@ static vfs_op_tuple hpuxacl_op_tuples[] = {
    SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_hpuxacl_init(void);
 NTSTATUS vfs_hpuxacl_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "hpuxacl",
