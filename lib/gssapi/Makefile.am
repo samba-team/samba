@@ -29,6 +29,7 @@ krb5src = \
 	krb5/context_time.c \
 	krb5/copy_ccache.c \
 	krb5/create_emtpy_oid_set.c \
+	krb5/crypto.c \
 	krb5/decapsulate.c \
 	krb5/delete_sec_context.c \
 	krb5/display_name.c \
@@ -38,7 +39,6 @@ krb5src = \
 	krb5/export_name.c \
 	krb5/export_sec_context.c \
 	krb5/external.c \
-	krb5/get_mic.c \
 	krb5/gsskrb5_locl.h \
 	krb5/gsskrb5-private.h \
 	krb5/import_name.c \
@@ -169,7 +169,6 @@ ntlmsrc = \
 	ntlm/release_cred.c \
 	ntlm/release_name.c \
 	ntlm/unwrap.c \
-	ntlm/verify_mic.c \
 	ntlm/wrap.c 
 
 $(srcdir)/ntlm/ntlm-private.h:
