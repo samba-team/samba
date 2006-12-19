@@ -110,6 +110,11 @@ OM_uint32 _gss_ntlm_get_mic
 	RC4(&ctx->crypto.key, sizeof(sigature),
 	    sigature, ((unsigned char *)message_token->value) + 4);
 
+	if (RAND_bytes(((unsigned char *)message_token->value) + 4, 4) != 1){
+	    gss_release_buffer(&junk, message_token);
+	    return GSS_S_UNAVAILABLE;
+	}
+
         return GSS_S_COMPLETE;
     } else if (ctx->flags & NTLM_NEG_ALWAYS_SIGN) {
 	unsigned char *sigature;
@@ -166,9 +171,7 @@ _gss_ntlm_verify_mic
 	_krb5_crc_init_table();
 	crc = _krb5_crc_update(message_buffer->value, 
 			       message_buffer->length, 0);
-	decode_le_uint32(&sigature[0], &num);
-	if (num != 0)
-	    return GSS_S_BAD_MIC;
+	/* skip first 4 bytes in the encrypted checksum */
 	decode_le_uint32(&sigature[4], &num);
 	if (num != crc)
 	    return GSS_S_BAD_MIC;
