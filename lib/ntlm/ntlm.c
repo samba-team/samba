@@ -768,38 +768,53 @@ heim_ntlm_calculate_ntlm1(void *key, size_t len,
 
 int
 heim_ntlm_build_ntlm1_master(void *key, size_t len,
+			     struct ntlm_buf *session,
 			     struct ntlm_buf *master)
 {
-    unsigned char sessionkey[MD4_DIGEST_LENGTH];
-    unsigned char masterkey[MD4_DIGEST_LENGTH];
-    MD4_CTX ctx;
     RC4_KEY rc4;
 
     if (len != MD4_DIGEST_LENGTH)
 	return EINVAL;
     
+    session->length = MD4_DIGEST_LENGTH;
+    session->data = malloc(session->length);
+    if (session->data == NULL)
+	goto out;
+    
     master->length = MD4_DIGEST_LENGTH;
     master->data = malloc(master->length);
-    if (master->data == NULL)
-	return ENOMEM;
-    
-    MD4_Init(&ctx);
-    MD4_Update(&ctx, key, len);
-    MD4_Final(sessionkey, &ctx);
-    
-    RC4_set_key(&rc4, sizeof(sessionkey), sessionkey);
-    
-    if (RAND_bytes(masterkey, sizeof(masterkey)) != 1) {
-	free(master->data);
-	master->data = NULL;
-	master->length = 0;
-	return EINVAL;
+    if (master->data == NULL) {
+	free(session->data);
+	goto out;
     }
-
-    RC4(&rc4, master->length, masterkey, master->data);
+    
+    {
+	unsigned char sessionkey[MD4_DIGEST_LENGTH];
+	MD4_CTX ctx;
+    
+	MD4_Init(&ctx);
+	MD4_Update(&ctx, key, len);
+	MD4_Final(sessionkey, &ctx);
+	
+	RC4_set_key(&rc4, sizeof(sessionkey), sessionkey);
+    }
+    
+    if (RAND_bytes(session->data, session->length) != 1) {
+	free(master->data);
+	free(session->data);
+	goto out;
+    }
+    
+    RC4(&rc4, master->length, session->data, master->data);
     memset(&rc4, 0, sizeof(rc4));
     
     return 0;
+out:
+    master->data = NULL;
+    master->length = 0;
+    session->data = NULL;
+    session->length = 0;
+    return EINVAL;
 }
 
 				 
