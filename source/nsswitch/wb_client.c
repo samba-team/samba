@@ -65,7 +65,7 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 /* Call winbindd to convert sid to name */
 
 BOOL winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
-			char **domain, char **name,
+			const char **domain, const char **name,
                         enum lsa_SidType *name_type)
 {
 	struct winbindd_request request;
