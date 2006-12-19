@@ -1,5 +1,10 @@
-2006-12-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm.c (heim_ntlm_build_ntlm1_master): return session master
+	key.
+	
+2006-12-18  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ntlm.c (heim_ntlm_build_ntlm1_master): calculate the ntlm
 	version 1 "master" key.
 	
