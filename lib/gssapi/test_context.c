@@ -44,6 +44,7 @@ static int dns_canon_flag = -1;
 static int mutual_auth_flag = 0;
 static int dce_style_flag = 0;
 static int wrapunwrap_flag = 0;
+static int getverifymic_flag = 0;
 static int deleg_flag = 0;
 static int version_flag = 0;
 static int verbose_flag = 0;
@@ -121,6 +122,9 @@ loop(gss_OID mechoid,
     gss_OID actual_mech_server; 
 
     *actual_mech = GSS_C_NO_OID;
+
+    flags |= GSS_C_INTEG_FLAG;
+    flags |= GSS_C_CONF_FLAG;
 
     if (mutual_auth_flag)
 	flags |= GSS_C_MUTUAL_FLAG;
@@ -233,6 +237,30 @@ wrapunwrap(gss_ctx_id_t cctx, gss_ctx_id_t sctx, gss_OID mechoid)
 	     gssapi_err(maj_stat, min_stat, mechoid));
 }
 
+static void
+getverifymic(gss_ctx_id_t cctx, gss_ctx_id_t sctx, gss_OID mechoid)
+{
+    gss_buffer_desc input_token, output_token;
+    OM_uint32 min_stat, maj_stat;
+    gss_qop_t qop_state;
+
+    input_token.value = "bar";
+    input_token.length = 3;
+
+    maj_stat = gss_get_mic(&min_stat, cctx, 0, &input_token,
+			   &output_token);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_get_mic failed: %s",
+	     gssapi_err(maj_stat, min_stat, mechoid));
+
+    maj_stat = gss_verify_mic(&min_stat, sctx, &input_token,
+			      &output_token, &qop_state);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_verify_mic failed: %s",
+	     gssapi_err(maj_stat, min_stat, mechoid));
+}
+
+
 /*
  *
  */
@@ -247,6 +275,8 @@ static struct getargs args[] = {
     {"mutual-auth",0,	arg_flag,	&mutual_auth_flag,"mutual auth", NULL },
     {"dce-style",0,	arg_flag,	&dce_style_flag, "dce-style", NULL },
     {"wrapunwrap",0,	arg_flag,	&wrapunwrap_flag, "wrap/unwrap", NULL },
+    {"getverifymic",0,	arg_flag,	&getverifymic_flag, 
+     "get and verify mic", NULL },
     {"delegate",0,	arg_flag,	&deleg_flag, "delegate credential", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
     {"verbose",	'v',	arg_flag,	&verbose_flag, "verbose", NULL },
@@ -454,14 +484,23 @@ main(int argc, char **argv)
 	if (maj_stat == GSS_S_COMPLETE)
 	    gss_release_buffer(&min_stat, &authz_data);
 
-	wrapunwrap_flag = 1;
-
 	krb5_free_context(context);
+
+	wrapunwrap_flag = 1;
+	getverifymic_flag = 1;
     }
 
     if (wrapunwrap_flag) {
 	wrapunwrap(cctx, sctx, actual_mech);
+	wrapunwrap(cctx, sctx, actual_mech);
 	wrapunwrap(sctx, cctx, actual_mech);
+	wrapunwrap(sctx, cctx, actual_mech);
+    }
+    if (getverifymic_flag) {
+	getverifymic(cctx, sctx, actual_mech);
+	getverifymic(cctx, sctx, actual_mech);
+	getverifymic(sctx, cctx, actual_mech);
+	getverifymic(sctx, cctx, actual_mech);
     }
 
     gss_delete_sec_context(&min_stat, &cctx, NULL);
