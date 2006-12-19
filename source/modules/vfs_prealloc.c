@@ -206,6 +206,7 @@ static vfs_op_tuple prealloc_op_tuples[] = {
 	{NULL,	SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_prealloc_init(void);
 NTSTATUS vfs_prealloc_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

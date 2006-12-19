@@ -73,6 +73,7 @@ static vfs_op_tuple fake_perms_ops[] = {
 	{SMB_VFS_OP(NULL),		SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_fake_perms_init(void);
 NTSTATUS vfs_fake_perms_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "fake_perms", fake_perms_ops);

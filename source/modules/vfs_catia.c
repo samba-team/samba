@@ -308,6 +308,7 @@ SMB_VFS_LAYER_TRANSPARENT},
 SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_catia_init(void);
 NTSTATUS vfs_catia_init(void)
 {
         return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "catia", 

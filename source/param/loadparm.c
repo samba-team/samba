@@ -2255,6 +2255,7 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
  * lp_parm_string is only used to let old modules find this symbol
  */
 #undef lp_parm_string
+ char *lp_parm_string(const char *servicename, const char *type, const char *option);
  char *lp_parm_string(const char *servicename, const char *type, const char *option)
 {
 	return lp_parm_talloc_string(lp_servicenumber(servicename), type, option, NULL);

@@ -530,6 +530,7 @@ static vfs_op_tuple aixjfs2_ops[] =
 	SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_aixacl2_init(void);
 NTSTATUS vfs_aixacl2_init(void)
 {
         return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, AIXACL2_MODULE_NAME,

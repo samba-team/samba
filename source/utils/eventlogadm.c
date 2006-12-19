@@ -60,7 +60,7 @@ static void display_eventlog_names( void )
 		printf( "\t<None specified>\n");
 }
 
-int DoAddSourceCommand( int argc, char **argv, BOOL debugflag, char *exename )
+static int DoAddSourceCommand( int argc, char **argv, BOOL debugflag, char *exename )
 {
 
 	if ( argc < 3 ) {
@@ -79,7 +79,7 @@ int DoAddSourceCommand( int argc, char **argv, BOOL debugflag, char *exename )
 	return 0;
 }
 
-int DoWriteCommand( int argc, char **argv, BOOL debugflag, char *exename )
+static int DoWriteCommand( int argc, char **argv, BOOL debugflag, char *exename )
 {
 	FILE *f1;
 	char *argfname;

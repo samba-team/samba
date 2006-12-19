@@ -2039,6 +2039,7 @@ static int smb_full_audit_aio_suspend(struct vfs_handle_struct *handle, struct f
 }
 
 
+NTSTATUS vfs_full_audit_init(void);
 NTSTATUS vfs_full_audit_init(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

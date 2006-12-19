@@ -224,6 +224,7 @@ static vfs_op_tuple default_quota_ops[] = {
 	{SMB_VFS_OP(NULL),			SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_default_quota_init(void);
 NTSTATUS vfs_default_quota_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, DEFAULT_QUOTA_NAME, default_quota_ops);
