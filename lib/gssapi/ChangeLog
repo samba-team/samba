@@ -1,5 +1,11 @@
-2006-12-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* spnego/accept_sec_context.c: try using gss_accept_sec_context()
+	on the opportunistic token instead of guessing the acceptor name
+	and do gss_acquire_cred, this make SPNEGO work like before.
+	
+2006-12-18  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ntlm/init_sec_context.c: Calculate the NTLM version 1 "master"
 	key.
 
