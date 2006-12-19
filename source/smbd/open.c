@@ -84,10 +84,10 @@ int fd_close(struct connection_struct *conn,
  Do this by fd if possible.
 ****************************************************************************/
 
-void change_owner_to_parent(connection_struct *conn,
-			    files_struct *fsp,
-			    const char *fname,
-			    SMB_STRUCT_STAT *psbuf)
+static void change_owner_to_parent(connection_struct *conn,
+				   files_struct *fsp,
+				   const char *fname,
+				   SMB_STRUCT_STAT *psbuf)
 {
 	const char *parent_path = parent_dirname(fname);
 	SMB_STRUCT_STAT parent_st;
