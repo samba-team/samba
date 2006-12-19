@@ -1793,16 +1793,8 @@ done:
 
 void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	char *oldpass;
-	char *newpass = NULL;
 	fstring domain, user;
-	POLICY_HND dom_pol;
 	struct winbindd_domain *contact_domain;
-	struct rpc_pipe_client *cli;
-	BOOL got_info = False;
-	SAM_UNK_INFO_1 info;
-	SAMR_CHANGE_REJECT reject;
 
 	DEBUG(3, ("[%5lu]: pam chauthtok %s\n", (unsigned long)state->pid,
 		state->request.data.chauthtok.user));
@@ -1822,9 +1814,33 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
 	contact_domain = find_domain_from_name(domain);
 	if (!contact_domain) {
+		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
 		DEBUG(3, ("Cannot change password for [%s] -> [%s]\\[%s] as %s is not a trusted domain\n", 
 			  state->request.data.chauthtok.user, domain, user, domain)); 
-		result = NT_STATUS_NO_SUCH_USER;
+		request_error(state);
+		return;
+	}
+
+	sendto_domain(state, contact_domain);
+}
+
+enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact_domain,
+						 struct winbindd_cli_state *state)
+{
+	char *oldpass;
+	char *newpass = NULL;
+	POLICY_HND dom_pol;
+	struct rpc_pipe_client *cli;
+	BOOL got_info = False;
+	SAM_UNK_INFO_1 info;
+	SAMR_CHANGE_REJECT reject;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	fstring domain, user;
+
+	DEBUG(3, ("[%5lu]: dual pam chauthtok %s\n", (unsigned long)state->pid,
+		  state->request.data.auth.user));
+
+	if (!parse_domain_user(state->request.data.chauthtok.user, domain, user)) {
 		goto done;
 	}
 
@@ -1931,11 +1947,7 @@ process_result:
 	       state->response.data.auth.nt_status_string,
 	       state->response.data.auth.pam_error));	      
 
-	if (NT_STATUS_IS_OK(result)) {
-		request_ok(state);
-	} else {
-		request_error(state);
-	}
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
 void winbindd_pam_logoff(struct winbindd_cli_state *state)
