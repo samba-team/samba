@@ -153,6 +153,12 @@ handle_type3(OM_uint32 *minor_status,
     if (ret) goto out;
     ret = krb5_ntlm_req_set_opaque(ctx->context, ctx->ntlm, &ctx->opaque);
     if (ret) goto out;
+    if (type3->sessionkey.length) {
+	ret = krb5_ntlm_req_set_session(ctx->context, ctx->ntlm,
+					type3->sessionkey.data,
+					type3->sessionkey.length);
+	if (ret) goto out;
+    }
 
     /*
      * Verify with the KDC the type3 packet is ok
@@ -167,6 +173,16 @@ handle_type3(OM_uint32 *minor_status,
     if (krb5_ntlm_rep_get_status(ctx->context, ctx->ntlm) != TRUE) {
 	ret = EINVAL;
 	goto out;
+    }
+
+    ret = krb5_ntlm_rep_get_sessionkey(ctx->context, 
+				       ctx->ntlm,
+				       &ctx->sessionkey);
+    if (ret == 0 && ctx->sessionkey.length == 16) {
+	ctx->status |= STATUS_SESSIONKEY; 
+	RC4_set_key(&ctx->crypto.key, 
+		    ctx->sessionkey.length,
+		    ctx->sessionkey.data);
     }
 
     return GSS_S_COMPLETE;
