@@ -1,5 +1,9 @@
 2006-12-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss/check-spnego.in: test wrapunwrap
+
+	* gss/check-spnego.in: Test get and verify MIC.
+	
 	* gss/check-context.in: don't need to set GSSAPI_SPNEGO_NAME any
 	longer
 	
