@@ -423,6 +423,25 @@ BOOL asn1_start_tag(struct asn1_data *data, uint8_t tag)
 	return !data->has_error;
 }
 
+BOOL asn1_start_fake_tag(struct asn1_data *data)
+{
+	struct nesting *nesting;
+
+	nesting = talloc(NULL, struct nesting);
+	if (!nesting) {
+		data->has_error = True;
+		return False;
+	}
+
+	nesting->start = data->ofs;
+	nesting->taglen = data->length - data->ofs;
+	nesting->next = data->nesting;
+	data->nesting = nesting;
+	if (asn1_tag_remaining(data) == -1) {
+		return False;
+	}
+	return !data->has_error;
+}
 
 /* stop reading a tag */
 BOOL asn1_end_tag(struct asn1_data *data)
