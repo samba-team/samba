@@ -182,6 +182,7 @@ static vfs_op_tuple commit_ops [] =
         {SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_commit_init(void);
 NTSTATUS vfs_commit_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE, commit_ops);

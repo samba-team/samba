@@ -373,7 +373,7 @@ static int test_MAX(void)
 
 struct torture_context;
 
-bool torture_local_replace(struct torture_context *torture)
+static bool torture_local_replace(struct torture_context *torture)
 {
 	bool ret = true;
 	ret &= test_ftruncate();

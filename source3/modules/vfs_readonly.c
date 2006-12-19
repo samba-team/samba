@@ -91,6 +91,7 @@ static vfs_op_tuple readonly_op_tuples[] = {
   {SMB_VFS_OP(NULL),   		SMB_VFS_OP_NOOP,    SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_readonly_init(void);
 NTSTATUS vfs_readonly_init(void)
 {
   return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE_NAME, readonly_op_tuples);

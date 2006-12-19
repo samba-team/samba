@@ -245,6 +245,7 @@ dbg_Token dbg_char2token( dbg_Token *state, int c )
   return( *state );
   } /* dbg_char2token */
 
+void dbg_test( void );
 void dbg_test( void )
   /* ------------------------------------------------------------------------ **
    * Simple test function.

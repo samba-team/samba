@@ -29,7 +29,7 @@ static int pong_count;
 /****************************************************************************
 a useful function for testing the message system
 ****************************************************************************/
-void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
+static void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	pong_count++;
 }

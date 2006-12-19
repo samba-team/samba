@@ -1323,6 +1323,7 @@ static vfs_op_tuple vfs_default_ops[] = {
 	 SMB_VFS_LAYER_NOOP}
 };
 
+NTSTATUS vfs_default_init(void);
 NTSTATUS vfs_default_init(void)
 {
 	unsigned int needed = SMB_VFS_OP_LAST + 1; /* convert from index to count */
