@@ -3289,7 +3289,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		/*
 		 * Special case - close NT SMB directory handle.
 		 */
-		DEBUG(3,("close %s fnum=%d\n", fsp->is_directory ? "directory" : "stat file open", fsp->fnum));
+		DEBUG(3,("close directory fnum=%d\n", fsp->fnum));
 		close_file(fsp,NORMAL_CLOSE);
 	} else {
 		/*
