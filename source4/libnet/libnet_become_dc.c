@@ -107,12 +107,7 @@ struct libnet_BecomeDC_state {
 		uint32_t user_account_control;
 	} dest_dsa;
 
-	struct {
-		uint32_t domain_behavior_version;
-		uint32_t config_behavior_version;
-		uint32_t schema_object_version;
-		uint32_t w2k3_update_revision;
-	} ads_options;
+	struct libnet_BecomeDC_Options ads_options;
 
 	struct becomeDC_partition {
 		struct drsuapi_DsReplicaObjectIdentifier nc;
@@ -138,14 +133,7 @@ struct libnet_BecomeDC_state {
 
 	struct becomeDC_fsmo rid_manager_fsmo;
 
-	struct {
-		void *private_data;
-		NTSTATUS (*check_options)(void *private_data, void *todo);
-		NTSTATUS (*prepare_db)(void *private_data, void *todo);
-		NTSTATUS (*schema_chunk)(void *private_data, void *todo);
-		NTSTATUS (*config_chunk)(void *private_data, void *todo);
-		NTSTATUS (*domain_chunk)(void *private_data, void *todo);
-	} callbacks;
+	struct libnet_BecomeDC_Callbacks callbacks;
 };
 
 static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s);
@@ -613,7 +601,7 @@ static NTSTATUS becomeDC_check_options(struct libnet_BecomeDC_state *s)
 {
 	if (!s->callbacks.check_options) return NT_STATUS_OK;
 
-	return s->callbacks.check_options(s->callbacks.private_data, NULL);
+	return s->callbacks.check_options(s->callbacks.private_data, &s->ads_options);
 }
 
 static NTSTATUS becomeDC_ldap1_computer_object(struct libnet_BecomeDC_state *s)
@@ -2152,6 +2140,9 @@ struct composite_context *libnet_BecomeDC_send(struct libnet_context *ctx, TALLO
 	s->dest_dsa.dns_name	= talloc_asprintf_append(tmp_name, ".%s",
 				  			 s->domain.dns_name);
 	if (composite_nomem(s->dest_dsa.dns_name, c)) return c;
+
+	/* Callback function pointers */
+	s->callbacks = r->in.callbacks;
 
 	becomeDC_send_cldap(s);
 	return c;

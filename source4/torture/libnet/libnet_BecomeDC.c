@@ -29,6 +29,18 @@
 
 #define TORTURE_NETBIOS_NAME "smbtorturedc"
 
+static NTSTATUS test_become_dc_chec_options(void *private_data,
+					    const struct libnet_BecomeDC_Options *options)
+{
+	DEBUG(0,("Options: domain[%u] config[%u] schema[%u] w2k3_update[%u]\n", 
+		options->domain_behavior_version,
+		options->config_behavior_version,
+		options->schema_object_version,
+		options->w2k3_update_revision));
+
+	return NT_STATUS_OK;
+}
+
 BOOL torture_net_become_dc(struct torture_context *torture)
 {
 	BOOL ret = True;
@@ -52,11 +64,14 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	ctx = libnet_context_init(event_context_init(torture));
 	ctx->cred = cmdline_credentials;
 
+	ZERO_STRUCT(b);
 	b.in.domain_dns_name		= torture_join_dom_dns_name(tj);
 	b.in.domain_netbios_name	= torture_join_dom_netbios_name(tj);
 	b.in.domain_sid			= torture_join_sid(tj);
 	b.in.source_dsa_address		= lp_parm_string(-1, "torture", "host");
 	b.in.dest_dsa_netbios_name	= TORTURE_NETBIOS_NAME;
+
+	b.in.callbacks.check_options	= test_become_dc_chec_options;
 
 	status = libnet_BecomeDC(ctx, ctx, &b);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -64,6 +79,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 		ret = False;
 	}
 
+	ZERO_STRUCT(u);
 	u.in.domain_dns_name		= torture_join_dom_dns_name(tj);
 	u.in.domain_netbios_name	= torture_join_dom_netbios_name(tj);
 	u.in.source_dsa_address		= lp_parm_string(-1, "torture", "host");
