@@ -268,8 +268,13 @@ static void trustdom_recv(void *private_data, BOOL success)
 			*q = '\0';
 
 		if (!string_to_sid(&sid, sidstr)) {
-			DEBUG(0, ("Got invalid trustdom response\n"));
-			break;
+			/* Allow NULL sid for sibling domains */
+			if ( strcmp(sidstr,"S-0-0") == 0) {
+				sid_copy( &sid, &global_sid_NULL);				
+			} else {				
+				DEBUG(0, ("Got invalid trustdom response\n"));
+				break;
+			}			
 		}
 
 		if (find_domain_from_name_noinit(p) == NULL) {
