@@ -81,6 +81,7 @@ main(int argc, char **argv)
     fputs("#include <openssl/engine.h>\n", f);
     fputs("#include <openssl/pkcs12.h>\n", f);
     fputs("#include <openssl/pem.h>\n", f);
+    fputs("#include <openssl/hmac.h>\n", f);
     fputs("#ifndef BN_is_negative\n", f);
     fputs("#define BN_set_negative(bn, flag) ((bn)->neg=(flag)?1:0)\n", f);
     fputs("#define BN_is_negative(bn) ((bn)->neg != 0)\n", f);
@@ -102,6 +103,7 @@ main(int argc, char **argv)
     fputs("#include <hcrypto/rand.h>\n", f);
     fputs("#include <hcrypto/engine.h>\n", f);
     fputs("#include <hcrypto/pkcs12.h>\n", f);
+    fputs("#include <hcrypto/hmac.h>\n", f);
 #endif
     fprintf(f, "#endif /* __%s__ */\n", argv[1]);
     fclose(f);
