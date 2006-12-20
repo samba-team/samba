@@ -285,6 +285,15 @@ static void trustdom_recv(void *private_data, BOOL success)
 						    &cache_methods,
 						    &sid);
 			setup_domain_child(domain, &domain->child, NULL);
+			if (!domain->internal) {
+				/* Even in the parent winbindd we'll need to
+				   talk to the DC, so try and see if we can
+				   contact it. Theoretically this isn't neccessary
+				   as the init_dc_connection() in init_child_recv()
+				   will do this, but we can start detecting the DC
+				   early here. */
+				set_domain_online_request(domain);
+			}
 		}
 		p=q;
 		if (p != NULL)
@@ -443,7 +452,7 @@ static void init_child_recv(void *private_data, BOOL success)
 	state->domain->sequence_number =
 		state->response->data.domain_info.sequence_number;
 
-	state->domain->initialized = 1;
+	init_dc_connection(state->domain);
 
 	if (state->continuation != NULL)
 		state->continuation(state->private_data, True);
@@ -515,6 +524,13 @@ BOOL init_domain_list(void)
 					     &cache_methods, &our_sid);
 		domain->primary = True;
 		setup_domain_child(domain, &domain->child, NULL);
+		/* Even in the parent winbindd we'll need to
+		   talk to the DC, so try and see if we can
+		   contact it. Theoretically this isn't neccessary
+		   as the init_dc_connection() in init_child_recv()
+		   will do this, but we can start detecting the DC
+		   early here. */
+		set_domain_online_request(domain);
 	}
 
 	/* Local SAM */

@@ -703,7 +703,7 @@ static void process_loop(void)
 	struct fd_event *ev;
 	fd_set r_fds, w_fds;
 	int maxfd, listen_sock, listen_priv_sock, selret;
-	struct timeval timeout;
+	struct timeval timeout, ev_timeout;
 
 	/* We'll be doing this a lot */
 
@@ -711,8 +711,10 @@ static void process_loop(void)
 
 	message_dispatch();
 
+	run_events();
+
 	/* refresh the trusted domain cache */
-		   
+
 	rescan_trusted_domains();
 
 	/* Free up temporary memory */
@@ -739,6 +741,11 @@ static void process_loop(void)
 
 	timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 	timeout.tv_usec = 0;
+
+	/* Check for any event timeouts. */
+	if (get_timed_events_timeout(&ev_timeout)) {
+		timeout = timeval_min(&timeout, &ev_timeout);
+	}
 
 	/* Set up client readers and writers */
 
