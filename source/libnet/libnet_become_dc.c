@@ -1472,6 +1472,10 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 
 	talloc_free(r);
 
+	s->dest_dsa.ntds_dn_str = talloc_asprintf(s, "CN=NTDS Settings,%s",
+						  s->dest_dsa.server_dn_str);
+	if (composite_nomem(s->dest_dsa.ntds_dn_str, c)) return;
+
 	c->status = becomeDC_prepare_db(s);
 	if (!composite_is_ok(c)) return;
 
