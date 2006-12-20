@@ -8,8 +8,9 @@ import "security.idl", "misc.idl", "samr.idl";
   endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]", "ncacn_ip_tcp:", "ncalrpc:"),
   authservice("ldap"),
   helpstring("Active Directory Replication"),
+  helper("librpc/ndr/ndr_drsuapi.h"),
   pointer_default(unique)
-] 
+]
 interface drsuapi
 {
 	declare bitmap samr_GroupAttrs;
@@ -325,9 +326,9 @@ interface drsuapi
 	 *
 	 * 2.5.5.17	=> dom_sid
 	 */
-	typedef [flag(NDR_PAHEX)] struct {
-		[range(0,10000)] uint32 length;
-		[size_is(length)] uint8 *data;
+	typedef [nopush,nopull] struct {
+		[range(0,10000),value(ndr_size_drsuapi_DsReplicaOID_oid(r->oid, 0))] uint32 __ndr_size;
+		[size_is(__ndr_size),charset(DOS)] uint8 *oid; /* it's encoded with asn1_write_OID_String() */
 	} drsuapi_DsReplicaOID;
 
 	typedef struct {
