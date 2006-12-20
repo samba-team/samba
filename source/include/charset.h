@@ -119,6 +119,7 @@ static size_t CHARSETNAME ## _pull(void *cd, const char **inbuf, size_t *inbytes
 struct charset_functions CHARSETNAME ## _functions = 						\
 		{#CHARSETNAME, CHARSETNAME ## _pull, CHARSETNAME ## _push};			\
 												\
+NTSTATUS charset_ ## CHARSETNAME ## _init(void);							\
 NTSTATUS charset_ ## CHARSETNAME ## _init(void)							\
 {												\
 	return smb_register_charset(& CHARSETNAME ## _functions);				\
