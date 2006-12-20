@@ -65,20 +65,7 @@ struct libnet_BecomeDC_state {
 	struct libnet_BecomeDC_SourceDSA source_dsa;
 	struct libnet_BecomeDC_DestDSA dest_dsa;
 
-	struct becomeDC_partition {
-		struct drsuapi_DsReplicaObjectIdentifier nc;
-		struct GUID destination_dsa_guid;
-		struct GUID source_dsa_guid;
-		struct GUID source_dsa_invocation_id;
-		struct drsuapi_DsReplicaHighWaterMark highwatermark;
-		struct drsuapi_DsReplicaCoursorCtrEx *uptodateness_vector;
-		uint32_t replica_flags;
-
-		struct drsuapi_DsReplicaObjectListItemEx *first_object;
-		struct drsuapi_DsReplicaObjectListItemEx *last_object;
-
-		NTSTATUS (*store_chunk)(void *private_data, void *todo);
-	} schema_part, config_part, domain_part;
+	struct libnet_BecomeDC_Partition schema_part, config_part, domain_part;
 
 	struct becomeDC_fsmo {
 		const char *dns_name;
@@ -91,6 +78,7 @@ struct libnet_BecomeDC_state {
 
 	struct libnet_BecomeDC_CheckOptions _co;
 	struct libnet_BecomeDC_PrepareDB _pp;
+	struct libnet_BecomeDC_StoreChunk _sc;
 	struct libnet_BecomeDC_Callbacks callbacks;
 };
 
@@ -1555,7 +1543,7 @@ static void becomeDC_drsuapi3_connect_recv(struct composite_context *req)
 static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s,
 						 struct becomeDC_drsuapi *drsuapi_h,
 						 struct becomeDC_drsuapi *drsuapi_p,
-						 struct becomeDC_partition *partition,
+						 struct libnet_BecomeDC_Partition *partition,
 						 void (*recv_fn)(struct rpc_request *req))
 {
 	struct composite_context *c = s->creq;
@@ -1572,7 +1560,7 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 		r->in.req.req8.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
 		r->in.req.req8.naming_context		= &partition->nc;
 		r->in.req.req8.highwatermark		= partition->highwatermark;
-		r->in.req.req8.uptodateness_vector	= partition->uptodateness_vector;
+		r->in.req.req8.uptodateness_vector	= NULL;
 		r->in.req.req8.replica_flags		= partition->replica_flags;
 		r->in.req.req8.max_object_count		= 133;
 		r->in.req.req8.max_ndr_size		= 1336811;
@@ -1588,18 +1576,13 @@ static void becomeDC_drsuapi_pull_partition_send(struct libnet_BecomeDC_state *s
 		r->in.req.req5.source_dsa_invocation_id	= partition->source_dsa_invocation_id;
 		r->in.req.req5.naming_context		= &partition->nc;
 		r->in.req.req5.highwatermark		= partition->highwatermark;
-		r->in.req.req5.uptodateness_vector	= partition->uptodateness_vector;
+		r->in.req.req5.uptodateness_vector	= NULL;
 		r->in.req.req5.replica_flags		= partition->replica_flags;
 		r->in.req.req5.max_object_count		= 133;
 		r->in.req.req5.max_ndr_size		= 1336770;
 		r->in.req.req5.unknown4			= 0;
 		r->in.req.req5.h1			= 0;
 	}
-
-DEBUG(0,("start NC[%s] tmp_highest_usn[%llu] highest_usn[%llu]\n",
-	partition->nc.dn,
-	partition->highwatermark.tmp_highest_usn,
-	partition->highwatermark.highest_usn));
 
 	/* 
 	 * we should try to use the drsuapi_p->pipe here, as w2k3 does
@@ -1612,52 +1595,49 @@ DEBUG(0,("start NC[%s] tmp_highest_usn[%llu] highest_usn[%llu]\n",
 }
 
 static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state *s,
-						   struct becomeDC_partition *partition,
+						   struct libnet_BecomeDC_Partition *partition,
 						   struct drsuapi_DsGetNCChanges *r)
 {
+	uint32_t ctr_level = 0;
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
-	uint32_t out_level = 0;
 	struct GUID *source_dsa_guid;
 	struct GUID *source_dsa_invocation_id;
 	struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
-	struct drsuapi_DsReplicaObjectListItemEx *first_object;
-	struct drsuapi_DsReplicaObjectListItemEx *cur;
+	NTSTATUS nt_status;
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
 		return r->out.result;
 	}
 
 	if (r->out.level == 1) {
-		out_level = 1;
+		ctr_level = 1;
 		ctr1 = &r->out.ctr.ctr1;
 	} else if (r->out.level == 2) {
-		out_level = 1;
+		ctr_level = 1;
 		ctr1 = r->out.ctr.ctr2.ctr.mszip1.ctr1;
 	} else if (r->out.level == 6) {
-		out_level = 6;
+		ctr_level = 6;
 		ctr6 = &r->out.ctr.ctr6;
 	} else if (r->out.level == 7 &&
 		   r->out.ctr.ctr7.level == 6 &&
 		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
-		out_level = 6;
+		ctr_level = 6;
 		ctr6 = r->out.ctr.ctr7.ctr.mszip6.ctr6;
 	} else {
 		return WERR_BAD_NET_RESP;
 	}
 
-	switch (out_level) {
+	switch (ctr_level) {
 	case 1:
 		source_dsa_guid			= &ctr1->source_dsa_guid;
 		source_dsa_invocation_id	= &ctr1->source_dsa_invocation_id;
 		new_highwatermark		= &ctr1->new_highwatermark;
-		first_object			= ctr1->first_object;
 		break;
 	case 6:
 		source_dsa_guid			= &ctr6->source_dsa_guid;
 		source_dsa_invocation_id	= &ctr6->source_dsa_invocation_id;
 		new_highwatermark		= &ctr6->new_highwatermark;
-		first_object			= ctr6->first_object;
 		break;
 	}
 
@@ -1665,26 +1645,20 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 	partition->source_dsa_guid		= *source_dsa_guid;
 	partition->source_dsa_invocation_id	= *source_dsa_invocation_id;
 
-	if (!partition->first_object) {
-		partition->first_object = talloc_steal(s, first_object);
-	} else {
-		partition->last_object->next_object = talloc_steal(partition->last_object,
-								   first_object);
-	}
-	for (cur = first_object; cur->next_object; cur = cur->next_object) {}
-	partition->last_object = cur;
+	if (!partition->store_chunk) return WERR_OK;
 
-DEBUG(0,("end NC[%s] tmp_highest_usn[%llu] highest_usn[%llu]\n",
-	partition->nc.dn,
-	partition->highwatermark.tmp_highest_usn,
-	partition->highwatermark.highest_usn));
+	s->_sc.domain		= &s->domain;
+	s->_sc.forest		= &s->forest;
+	s->_sc.source_dsa	= &s->source_dsa;
+	s->_sc.dest_dsa		= &s->dest_dsa;
+	s->_sc.partition	= partition;
+	s->_sc.ctr_level	= ctr_level;
+	s->_sc.ctr1		= ctr1;
+	s->_sc.ctr6		= ctr6;
 
-	if (partition->store_chunk) {
-		NTSTATUS nt_status;
-		nt_status = partition->store_chunk(s->callbacks.private_data, NULL);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return ntstatus_to_werror(nt_status);
-		}
+	nt_status = partition->store_chunk(s->callbacks.private_data, &s->_sc);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return ntstatus_to_werror(nt_status);
 	}
 
 	return WERR_OK;
@@ -1821,7 +1795,7 @@ static void becomeDC_drsuapi3_pull_domain_send(struct libnet_BecomeDC_state *s)
 
 static void becomeDC_drsuapi_update_refs_send(struct libnet_BecomeDC_state *s,
 					      struct becomeDC_drsuapi *drsuapi,
-					      struct becomeDC_partition *partition,
+					      struct libnet_BecomeDC_Partition *partition,
 					      void (*recv_fn)(struct rpc_request *req));
 static void becomeDC_drsuapi2_update_refs_schema_recv(struct rpc_request *req);
 
@@ -1857,7 +1831,7 @@ static void becomeDC_drsuapi3_pull_domain_recv(struct rpc_request *req)
 
 static void becomeDC_drsuapi_update_refs_send(struct libnet_BecomeDC_state *s,
 					      struct becomeDC_drsuapi *drsuapi,
-					      struct becomeDC_partition *partition,
+					      struct libnet_BecomeDC_Partition *partition,
 					      void (*recv_fn)(struct rpc_request *req))
 {
 	struct composite_context *c = s->creq;

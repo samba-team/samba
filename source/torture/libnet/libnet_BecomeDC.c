@@ -77,6 +77,15 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS test_become_dc_store_chunk(void *private_data,
+					   const struct libnet_BecomeDC_StoreChunk *c)
+{
+	DEBUG(0,("Partition[%s]\n",
+		c->partition->nc.dn));
+
+	return NT_STATUS_OK;
+}
+
 BOOL torture_net_become_dc(struct torture_context *torture)
 {
 	BOOL ret = True;
@@ -110,6 +119,9 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	b.in.callbacks.private_data	= tj;
 	b.in.callbacks.check_options	= test_become_dc_check_options;
 	b.in.callbacks.prepare_db	= test_become_dc_prepare_db;
+	b.in.callbacks.schema_chunk	= test_become_dc_store_chunk;
+	b.in.callbacks.config_chunk	= test_become_dc_store_chunk;
+	b.in.callbacks.domain_chunk	= test_become_dc_store_chunk;
 
 	status = libnet_BecomeDC(ctx, ctx, &b);
 	if (!NT_STATUS_IS_OK(status)) {
