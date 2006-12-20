@@ -18,6 +18,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef _LIBNET_BECOME_DC_H
+#define _LIBNET_BECOME_DC_H
+
+#include "librpc/gen_ndr/drsuapi.h"
+
 struct libnet_BecomeDC_Domain {
 	/* input */
 	const char *dns_name;
@@ -82,15 +87,43 @@ struct libnet_BecomeDC_PrepareDB {
 	const struct libnet_BecomeDC_DestDSA *dest_dsa;
 };
 
+struct libnet_BecomeDC_StoreChunk;
+
+struct libnet_BecomeDC_Partition {
+	struct drsuapi_DsReplicaObjectIdentifier nc;
+	struct GUID destination_dsa_guid;
+	struct GUID source_dsa_guid;
+	struct GUID source_dsa_invocation_id;
+	struct drsuapi_DsReplicaHighWaterMark highwatermark;
+	uint32_t replica_flags;
+
+	NTSTATUS (*store_chunk)(void *private_data,
+				const struct libnet_BecomeDC_StoreChunk *info);
+};
+
+struct libnet_BecomeDC_StoreChunk {
+	const struct libnet_BecomeDC_Domain *domain;
+	const struct libnet_BecomeDC_Forest *forest;
+	const struct libnet_BecomeDC_SourceDSA *source_dsa;
+	const struct libnet_BecomeDC_DestDSA *dest_dsa;
+	const struct libnet_BecomeDC_Partition *partition;
+	uint32_t ctr_level;
+	const struct drsuapi_DsGetNCChangesCtr1 *ctr1;
+	const struct drsuapi_DsGetNCChangesCtr6 *ctr6;
+};
+
 struct libnet_BecomeDC_Callbacks {
 	void *private_data;
 	NTSTATUS (*check_options)(void *private_data,
 				  const struct libnet_BecomeDC_CheckOptions *info);
 	NTSTATUS (*prepare_db)(void *private_data,
 			       const struct libnet_BecomeDC_PrepareDB *info);
-	NTSTATUS (*schema_chunk)(void *private_data, void *todo);
-	NTSTATUS (*config_chunk)(void *private_data, void *todo);
-	NTSTATUS (*domain_chunk)(void *private_data, void *todo);
+	NTSTATUS (*schema_chunk)(void *private_data,
+				 const struct libnet_BecomeDC_StoreChunk *info);
+	NTSTATUS (*config_chunk)(void *private_data,
+				 const struct libnet_BecomeDC_StoreChunk *info);
+	NTSTATUS (*domain_chunk)(void *private_data,
+				 const struct libnet_BecomeDC_StoreChunk *info);
 };
 
 struct libnet_BecomeDC {
@@ -108,3 +141,5 @@ struct libnet_BecomeDC {
 		const char *error_string;
 	} out;
 };
+
+#endif /* _LIBNET_BECOME_DC_H */
