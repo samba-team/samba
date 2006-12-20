@@ -152,7 +152,6 @@ NTSTATUS ndr_pull_drsuapi_DsReplicaOID(struct ndr_pull *ndr, int ndr_flags, stru
 				_ASN1_PULL_CHECK(asn1_end_tag(&_asn1));
 				asn1_free(&_asn1);
 			}
-			DEBUG(0,("oid: %s\n", r->oid));
 		}
 		if (r->oid) {
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->oid, r->__ndr_size));
