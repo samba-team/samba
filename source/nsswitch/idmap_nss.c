@@ -42,15 +42,7 @@ static NTSTATUS idmap_nss_int_init(struct idmap_domain *dom, const char *compat_
 static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_map **ids)
 {
 	TALLOC_CTX *ctx;
-	struct winbindd_domain *wdom;
 	int i;
-
-	wdom = find_lookup_domain_from_name(dom->name);
-	if (!wdom) {
-		DEBUG(2, ("Can't lookup domain %s\n", dom->name));
-		return NT_STATUS_NO_SUCH_DOMAIN;
-	}
-	wdom->initialized = False;
 
 	ctx = talloc_new(dom);
 	if ( ! ctx) {
@@ -155,7 +147,7 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 		/* by default calls to winbindd are disabled
 		   the following call will not recurse so this is safe */
 		winbind_on();
-		ret =winbind_lookup_sid(ctx, ids[i]->sid, &dom_name, &name, &type);
+		ret = winbind_lookup_sid(ctx, ids[i]->sid, &dom_name, &name, &type);
 		winbind_off();
 
 		if (!ret) {
