@@ -207,11 +207,22 @@ _gss_ntlm_init_sec_context
 		unsigned char sessionhash[MD5_DIGEST_LENGTH];
 		MD5_CTX md5ctx;
 
-		type3.lm.data = calloc(1, 24);
 		type3.lm.length = 24;
+		type3.lm.data = calloc(1, 24);
+		if (type3.lm.data == NULL) {
+		    _gss_ntlm_delete_sec_context(minor_status, 
+						 context_handle, NULL);
+		    *minor_status = ENOMEM;
+		    return GSS_S_FAILURE;
+		}
 		
-		if (RAND_bytes(type3.lm.data, 8) != 1)
-		    abort();
+		if (RAND_bytes(type3.lm.data, 8) != 1) {
+		    free(type3.lm.data);
+		    _gss_ntlm_delete_sec_context(minor_status, 
+						 context_handle, NULL);
+		    *minor_status = EINVAL;
+		    return GSS_S_FAILURE;
+		}
 
 		MD5_Init(&md5ctx);
 		MD5_Update(&md5ctx, type2.challange, sizeof(type2.challange));
@@ -232,6 +243,8 @@ _gss_ntlm_init_sec_context
 					       &sessionkey,
 					       &type3.sessionkey);
 	    if (ret) {
+		if (type3.lm.data)
+		    free(type3.lm.data);
 		_gss_ntlm_delete_sec_context(minor_status,context_handle,NULL);
 		*minor_status = ret;
 		return GSS_S_FAILURE;
@@ -241,6 +254,8 @@ _gss_ntlm_init_sec_context
 				 sessionkey.data, sessionkey.length);
 	    free(sessionkey.data);
 	    if (ret) {
+		if (type3.lm.data)
+		    free(type3.lm.data);
 		_gss_ntlm_delete_sec_context(minor_status,context_handle,NULL);
 		*minor_status = ret;
 		return GSS_S_FAILURE;
@@ -260,6 +275,8 @@ _gss_ntlm_init_sec_context
 
 	ret = heim_ntlm_encode_type3(&type3, &data);
 	free(type3.sessionkey.data);
+	if (type3.lm.data)
+	    free(type3.lm.data);
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
