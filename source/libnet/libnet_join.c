@@ -536,6 +536,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		} else {
 			/* Bugger, we just lost our way to automaticly find the domain name */
 			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, lp_workgroup());
+			connect_with_info->out.realm = talloc_strdup(tmp_ctx, lp_realm());
 		}
 	}
 
