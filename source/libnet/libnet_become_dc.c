@@ -125,6 +125,8 @@ struct libnet_BecomeDC_state {
 
 		struct drsuapi_DsReplicaObjectListItemEx *first_object;
 		struct drsuapi_DsReplicaObjectListItemEx *last_object;
+
+		NTSTATUS (*store_chunk)(void *private_data, void *todo);
 	} schema_part, config_part, domain_part;
 
 	struct becomeDC_fsmo {
@@ -135,6 +137,15 @@ struct libnet_BecomeDC_state {
 	} infrastructure_fsmo;
 
 	struct becomeDC_fsmo rid_manager_fsmo;
+
+	struct {
+		void *private_data;
+		NTSTATUS (*check_options)(void *private_data, void *todo);
+		NTSTATUS (*prepare_db)(void *private_data, void *todo);
+		NTSTATUS (*schema_chunk)(void *private_data, void *todo);
+		NTSTATUS (*config_chunk)(void *private_data, void *todo);
+		NTSTATUS (*domain_chunk)(void *private_data, void *todo);
+	} callbacks;
 };
 
 static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s);
@@ -598,6 +609,13 @@ static NTSTATUS becomeDC_ldap1_site_object(struct libnet_BecomeDC_state *s)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS becomeDC_check_options(struct libnet_BecomeDC_state *s)
+{
+	if (!s->callbacks.check_options) return NT_STATUS_OK;
+
+	return s->callbacks.check_options(s->callbacks.private_data, NULL);
+}
+
 static NTSTATUS becomeDC_ldap1_computer_object(struct libnet_BecomeDC_state *s)
 {
 	int ret;
@@ -871,6 +889,9 @@ static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_site_object(s);
+	if (!composite_is_ok(c)) return;
+
+	c->status = becomeDC_check_options(s);
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_computer_object(s);
@@ -1430,6 +1451,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 }
 
 static void becomeDC_drsuapi2_connect_recv(struct composite_context *req);
+static NTSTATUS becomeDC_prepare_db(struct libnet_BecomeDC_state *s);
 
 static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 {
@@ -1500,7 +1522,17 @@ static void becomeDC_drsuapi1_add_entry_recv(struct rpc_request *req)
 
 	talloc_free(r);
 
+	c->status = becomeDC_prepare_db(s);
+	if (!composite_is_ok(c)) return;
+
 	becomeDC_drsuapi_connect_send(s, &s->drsuapi2, becomeDC_drsuapi2_connect_recv);
+}
+
+static NTSTATUS becomeDC_prepare_db(struct libnet_BecomeDC_state *s)
+{
+	if (!s->callbacks.prepare_db) return NT_STATUS_OK;
+
+	return s->callbacks.prepare_db(s->callbacks.private_data, NULL);
 }
 
 static void becomeDC_drsuapi2_bind_recv(struct rpc_request *req);
@@ -1688,6 +1720,14 @@ DEBUG(0,("end NC[%s] tmp_highest_usn[%llu] highest_usn[%llu]\n",
 	partition->highwatermark.tmp_highest_usn,
 	partition->highwatermark.highest_usn));
 
+	if (partition->store_chunk) {
+		NTSTATUS nt_status;
+		nt_status = partition->store_chunk(s->callbacks.private_data, NULL);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return ntstatus_to_werror(nt_status);
+		}
+	}
+
 	return WERR_OK;
 }
 
@@ -1707,6 +1747,8 @@ static void becomeDC_drsuapi3_pull_schema_send(struct libnet_BecomeDC_state *s)
 					| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
 					| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
 					| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+
+	s->schema_part.store_chunk	= s->callbacks.schema_chunk;
 
 	becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->schema_part,
 					     becomeDC_drsuapi3_pull_schema_recv);
@@ -1760,6 +1802,8 @@ static void becomeDC_drsuapi3_pull_config_send(struct libnet_BecomeDC_state *s)
 					| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
 					| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 
+	s->config_part.store_chunk	= s->callbacks.config_chunk;
+
 	becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->config_part,
 					     becomeDC_drsuapi3_pull_config_recv);
 }
@@ -1809,6 +1853,8 @@ static void becomeDC_drsuapi3_pull_domain_send(struct libnet_BecomeDC_state *s)
 					| DRSUAPI_DS_REPLICA_NEIGHBOUR_FULL_IN_PROGRESS
 					| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
 					| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+
+	s->domain_part.store_chunk	= s->callbacks.domain_chunk;
 
 	becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->domain_part,
 					     becomeDC_drsuapi3_pull_domain_recv);
