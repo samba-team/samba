@@ -39,6 +39,7 @@ RCSID("$Id$");
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 
 #include <krb5.h>
@@ -64,6 +65,48 @@ static const unsigned char ntlmsigature[8] = "NTLMSSP\x00";
 
 #define CHECK(f, e)							\
     do { ret = f ; if (ret != (e)) { ret = EINVAL; goto out; } } while(0)
+
+static void
+_ntlm_free_buf(struct ntlm_buf *p)
+{
+    if (p->data)
+	free(p->data);
+    p->data = NULL;
+    p->length = 0;
+}
+    
+
+static int
+ascii2ucs2le(const char *string, int up, struct ntlm_buf *buf)
+{
+    unsigned char *p;
+    size_t len, i;
+
+    len = strlen(string);
+    if (len / 2 > UINT_MAX)
+	return ERANGE;
+
+    buf->length = len * 2;
+    buf->data = malloc(buf->length);
+    if (buf->data == NULL && len != 0) {
+	_ntlm_free_buf(buf);
+	return ENOMEM;
+    }
+
+    p = buf->data;
+    for (i = 0; i < len; i++) {
+	unsigned char t = (unsigned char)string[i];
+	if (t & 0x80) {
+	    _ntlm_free_buf(buf);
+	    return EINVAL;
+	}
+	if (up)
+	    t = toupper(t);
+	p[(i * 2) + 0] = t;
+	p[(i * 2) + 1] = 0;
+    }
+    return 0;
+}
 
 /*
  *
@@ -138,24 +181,20 @@ static krb5_error_code
 put_string(krb5_storage *sp, int ucs2, const char *s)
 {
     krb5_error_code ret;
-    size_t len = strlen(s);
-    char *p;
+    struct ntlm_buf buf;
 
-    /* ascii -> ucs2-le */
     if (ucs2) {
-	size_t i;
-	p = malloc(len * 2);
-	for (i = 0; i < len; i++) {
-	    p[(i * 2) + 0] = s[i];
-	    p[(i * 2) + 1] = 0;
-	}
-	len *= 2;
-    } else
-	p = rk_UNCONST(s);
+	ret = ascii2ucs2le(s, 0, &buf);
+	if (ret)
+	    return ret;
+    } else {
+	buf.data = rk_UNCONST(s);
+	buf.length = strlen(s);
+    }
 
-    CHECK(krb5_storage_write(sp, p, len), len);
-    if (p != s)
-	free(p);
+    CHECK(krb5_storage_write(sp, buf.data, buf.length), buf.length);
+    if (ucs2)
+	_ntlm_free_buf(&buf);
     ret = 0;
 out:
     return ret;
@@ -710,31 +749,24 @@ splitandenc(unsigned char *hash,
 int
 heim_ntlm_nt_key(const char *password, struct ntlm_buf *key)
 {
-    size_t i, len = strlen(password);
-    unsigned char *p;
+    struct ntlm_buf buf;
     MD4_CTX ctx;
+    int ret;
 
     key->data = malloc(MD5_DIGEST_LENGTH);
     if (key->data == NULL)
 	return ENOMEM;
     key->length = MD5_DIGEST_LENGTH;
 
-    p = malloc(len * 2);
-    if (p == NULL) {
-	free(key->data);
-	key->data = NULL;
-	return ENOMEM;
-    }
-
-    /* ascii -> ucs2-le */
-    for (i = 0; i < len; i++) {
-	p[(i * 2) + 0] = password[i];
-	p[(i * 2) + 1] = 0;
+    ret = ascii2ucs2le(password, 0, &buf);
+    if (ret) {
+	_ntlm_free_buf(key);
+	return ret;
     }
     MD4_Init(&ctx);
-    MD4_Update(&ctx, p, len * 2);
-    free(p);
+    MD4_Update(&ctx, buf.data, buf.length);
     MD4_Final(key->data, &ctx);
+    _ntlm_free_buf(&buf);
     return 0;
 }
 
@@ -770,19 +802,24 @@ heim_ntlm_build_ntlm1_master(void *key, size_t len,
 {
     RC4_KEY rc4;
 
+    memset(master, 0, sizeof(*master));
+    memset(session, 0, sizeof(*session));
+
     if (len != MD4_DIGEST_LENGTH)
 	return EINVAL;
     
     session->length = MD4_DIGEST_LENGTH;
     session->data = malloc(session->length);
-    if (session->data == NULL)
-	goto out;
-    
+    if (session->data == NULL) {
+	session->length = 0;
+	return EINVAL;
+    }    
     master->length = MD4_DIGEST_LENGTH;
     master->data = malloc(master->length);
     if (master->data == NULL) {
-	free(session->data);
-	goto out;
+	_ntlm_free_buf(master);
+	_ntlm_free_buf(session);
+	return EINVAL;
     }
     
     {
@@ -797,21 +834,137 @@ heim_ntlm_build_ntlm1_master(void *key, size_t len,
     }
     
     if (RAND_bytes(session->data, session->length) != 1) {
-	free(master->data);
-	free(session->data);
-	goto out;
+	_ntlm_free_buf(master);
+	_ntlm_free_buf(session);
+	return EINVAL;
     }
     
     RC4(&rc4, master->length, session->data, master->data);
     memset(&rc4, 0, sizeof(rc4));
     
     return 0;
-out:
-    master->data = NULL;
-    master->length = 0;
-    session->data = NULL;
-    session->length = 0;
-    return EINVAL;
 }
 
+/*
+ *
+ */
 
+void
+heim_ntlm_ntlmv2_key(const void *key, size_t len,
+		     const char *username,
+		     const char *target,
+		     unsigned char ntlmv2[16])
+{
+    unsigned int hmaclen;
+    HMAC_CTX c;
+
+    HMAC_CTX_init(&c);
+    HMAC_Init_ex(&c, key, len, EVP_md5(), NULL);
+    {
+	struct ntlm_buf buf;
+	/* uppercase username and turn it inte ucs2-le */
+	ascii2ucs2le(username, 1, &buf);
+	HMAC_Update(&c, buf.data, buf.length);
+	free(buf.data);
+	/* turn target into ucs2-le */
+	ascii2ucs2le(target, 0, &buf);
+	HMAC_Update(&c, buf.data, buf.length);
+	free(buf.data);
+    }
+    HMAC_Final(&c, ntlmv2, &hmaclen);
+    HMAC_CTX_cleanup(&c);
+
+}
+
+/*
+ *
+ */
+
+#define NTTIME_EPOCH 0x019DB1DED53E8000LL
+
+static uint64_t
+unix2nttime(time_t unix_time)
+{
+    long long wt;
+    wt = unix_time * (uint64_t)10000000 + (uint64_t)NTTIME_EPOCH;
+    return wt;
+}
+
+int
+heim_ntlm_calculate_ntlm2(const void *key, size_t len,
+			  const char *username,
+			  const char *target,
+			  const unsigned char serverchallange[8],
+			  const struct ntlm_buf *infotarget,
+			  unsigned char ntlmv2[16],
+			  struct ntlm_buf *answer)
+{
+    krb5_error_code ret;
+    krb5_data data;
+    unsigned int hmaclen;
+    unsigned char ntlmv2answer[16];
+    krb5_storage *sp;
+    unsigned char clientchallange[8];
+    HMAC_CTX c;
+    uint64_t t;
+    
+    t = unix2nttime(time(NULL));
+    
+    if (RAND_bytes(clientchallange, sizeof(clientchallange)) != 1)
+	return EINVAL;
+    
+    /* calculate ntlmv2 key */
+
+    heim_ntlm_ntlmv2_key(key, len, username, target, ntlmv2);
+
+    /* calculate and build ntlmv2 answer */
+
+    sp = krb5_storage_emem();
+    if (sp == NULL)
+	return ENOMEM;
+    krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
+
+    CHECK(krb5_store_uint32(sp, 0x01010000), 0);
+    CHECK(krb5_store_uint32(sp, 0), 0);
+    /* timestamp le 64 bit ts */
+    CHECK(krb5_store_uint32(sp, t & 0xffffffff), 0);
+    CHECK(krb5_store_uint32(sp, t >> 32), 0);
+    CHECK(krb5_storage_write(sp, clientchallange, 8), 8);
+    CHECK(krb5_storage_write(sp, infotarget->data, infotarget->length), 0);
+    /* unknown */
+    CHECK(krb5_store_uint32(sp, 0), 0); 
+    
+    CHECK(krb5_storage_to_data(sp, &data), 0);
+    krb5_storage_free(sp);
+    sp = NULL;
+
+    HMAC_CTX_init(&c);
+    HMAC_Init_ex(&c, ntlmv2, sizeof(ntlmv2), EVP_md5(), NULL);
+    HMAC_Update(&c, data.data, data.length);
+    HMAC_Update(&c, serverchallange, 8);
+    HMAC_Final(&c, ntlmv2answer, &hmaclen);
+    HMAC_CTX_cleanup(&c);
+
+    sp = krb5_storage_emem();
+    if (sp == NULL) {
+	krb5_data_free(&data);
+	return ENOMEM;
+    }
+
+    CHECK(krb5_storage_write(sp, ntlmv2answer, 16), 16);
+    CHECK(krb5_storage_write(sp, data.data, data.length), data.length);
+    krb5_data_free(&data);
+    
+    CHECK(krb5_storage_to_data(sp, &data), 0);
+    krb5_storage_free(sp);
+    sp = NULL;
+
+    answer->data = data.data;
+    answer->length = data.length;
+
+    return 0;
+out:
+    if (sp)
+	krb5_storage_free(sp);
+    return ret;
+}
