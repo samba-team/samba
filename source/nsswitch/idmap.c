@@ -707,16 +707,23 @@ static NTSTATUS idmap_new_mapping(TALLOC_CTX *ctx, struct id_map *map)
 {
 	NTSTATUS ret;
 	struct idmap_domain *dom;
-	char *domname, *name;
+	const char *domname, *name;
 	enum lsa_SidType sid_type;
+	BOOL wbret;
 
 	ret = idmap_can_map(map, &dom);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		return NT_STATUS_NONE_MAPPED;
 	}
 	
+	/* by default calls to winbindd are disabled
+	   the following call will not recurse so this is safe */
+	winbind_on();
+	wbret =winbind_lookup_sid(ctx, map->sid, &domname, &name, &sid_type);
+	winbind_off();
+
 	/* check if this is a valid SID and then map it */
-	if (winbindd_lookup_name_by_sid(ctx, map->sid, &domname, &name, &sid_type)) {
+	if (wbret) {
 		switch (sid_type) {
 		case SID_NAME_USER:
 			ret = idmap_allocate_uid(&map->xid);
