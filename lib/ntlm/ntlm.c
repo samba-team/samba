@@ -610,10 +610,9 @@ heim_ntlm_encode_type3(struct ntlm_type3 *type3, struct ntlm_buf *data)
     if (type3->flags & NTLM_NEG_UNICODE)
 	ucs2 = 1;
 
-    /* refuse to send lm ???, matching code below */
     lm.offset = base;
-    lm.length = 0;
-    lm.allocated = 0;
+    lm.length = type3->lm.length;
+    lm.allocated = type3->lm.length;
 
     ntlm.offset = lm.offset + lm.allocated;
     ntlm.length = type3->ntlm.length;
@@ -659,9 +658,7 @@ heim_ntlm_encode_type3(struct ntlm_type3 *type3, struct ntlm_buf *data)
     CHECK(krb5_store_uint32(out, 0), 0); /* os1 */
 #endif
 
-    /* refuse to send lm ???, matching code above
     CHECK(put_buf(out, &type3->lm), 0);
-    */
     CHECK(put_buf(out, &type3->ntlm), 0);
     CHECK(put_string(out, ucs2, type3->targetname), 0);
     CHECK(put_string(out, ucs2, type3->username), 0);
@@ -817,4 +814,4 @@ out:
     return EINVAL;
 }
 
-				 
+
