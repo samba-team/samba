@@ -18,6 +18,22 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+struct libnet_BecomeDC_Options {
+	uint32_t domain_behavior_version;
+	uint32_t config_behavior_version;
+	uint32_t schema_object_version;
+	uint32_t w2k3_update_revision;
+};
+
+struct libnet_BecomeDC_Callbacks {
+	void *private_data;
+	NTSTATUS (*check_options)(void *private_data, const struct libnet_BecomeDC_Options *options);
+	NTSTATUS (*prepare_db)(void *private_data, void *todo);
+	NTSTATUS (*schema_chunk)(void *private_data, void *todo);
+	NTSTATUS (*config_chunk)(void *private_data, void *todo);
+	NTSTATUS (*domain_chunk)(void *private_data, void *todo);
+};
+
 struct libnet_BecomeDC {
 	struct {
 		const char *domain_dns_name;
@@ -25,6 +41,8 @@ struct libnet_BecomeDC {
 		const struct dom_sid *domain_sid;
 		const char *source_dsa_address;
 		const char *dest_dsa_netbios_name;
+
+		struct libnet_BecomeDC_Callbacks callbacks;
 	} in;
 
 	struct {
