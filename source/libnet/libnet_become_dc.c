@@ -90,6 +90,7 @@ struct libnet_BecomeDC_state {
 	struct becomeDC_fsmo rid_manager_fsmo;
 
 	struct libnet_BecomeDC_CheckOptions _co;
+	struct libnet_BecomeDC_PrepareDB _pp;
 	struct libnet_BecomeDC_Callbacks callbacks;
 };
 
@@ -1481,7 +1482,12 @@ static NTSTATUS becomeDC_prepare_db(struct libnet_BecomeDC_state *s)
 {
 	if (!s->callbacks.prepare_db) return NT_STATUS_OK;
 
-	return s->callbacks.prepare_db(s->callbacks.private_data, NULL);
+	s->_pp.domain		= &s->domain;
+	s->_pp.forest		= &s->forest;
+	s->_pp.source_dsa	= &s->source_dsa;
+	s->_pp.dest_dsa		= &s->dest_dsa;
+
+	return s->callbacks.prepare_db(s->callbacks.private_data, &s->_pp);
 }
 
 static void becomeDC_drsuapi2_bind_recv(struct rpc_request *req);

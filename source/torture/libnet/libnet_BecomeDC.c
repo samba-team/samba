@@ -30,7 +30,7 @@
 #define TORTURE_NETBIOS_NAME "smbtorturedc"
 
 static NTSTATUS test_become_dc_check_options(void *private_data,
-					    const struct libnet_BecomeDC_CheckOptions *o)
+					     const struct libnet_BecomeDC_CheckOptions *o)
 {
 	DEBUG(0,("Become DC of Domain[%s]/[%s]\n",
 		o->domain->netbios_name, o->domain->dns_name));
@@ -46,6 +46,33 @@ static NTSTATUS test_become_dc_check_options(void *private_data,
 		o->forest->schema_object_version,
 		o->domain->behavior_version,
 		o->domain->w2k3_update_revision));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS test_become_dc_prepare_db(void *private_data,
+					  const struct libnet_BecomeDC_PrepareDB *p)
+{
+	struct test_join *tj = talloc_get_type(private_data, struct test_join);
+
+	DEBUG(0,("New Server[%s] in Site[%s]\n",
+		p->dest_dsa->dns_name, p->dest_dsa->site_name));
+
+	DEBUG(0,("DSA Instance [%s]\n"
+		"\tobjectGUID[%s]\n"
+		"\tinvocationId[%s]\n",
+		p->dest_dsa->ntds_dn_str,
+		GUID_string(tj, &p->dest_dsa->ntds_guid),
+		GUID_string(tj, &p->dest_dsa->invocation_id)));
+
+	DEBUG(0,("Schema Partition[%s]\n",
+		p->forest->schema_dn_str));
+
+	DEBUG(0,("Config Partition[%s]\n",
+		p->forest->config_dn_str));
+
+	DEBUG(0,("Domain Partition[%s]\n",
+		p->domain->dn_str));
 
 	return NT_STATUS_OK;
 }
@@ -80,7 +107,9 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	b.in.source_dsa_address		= lp_parm_string(-1, "torture", "host");
 	b.in.dest_dsa_netbios_name	= TORTURE_NETBIOS_NAME;
 
+	b.in.callbacks.private_data	= tj;
 	b.in.callbacks.check_options	= test_become_dc_check_options;
+	b.in.callbacks.prepare_db	= test_become_dc_prepare_db;
 
 	status = libnet_BecomeDC(ctx, ctx, &b);
 	if (!NT_STATUS_IS_OK(status)) {
