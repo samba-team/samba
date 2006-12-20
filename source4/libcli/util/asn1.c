@@ -25,6 +25,8 @@
 void asn1_free(struct asn1_data *data)
 {
 	talloc_free(data->data);
+	ZERO_STRUCTP(data);
+	data->has_error = True;
 }
 
 /* write to the ASN1 buffer, advancing the buffer pointer */
