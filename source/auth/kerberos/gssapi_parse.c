@@ -32,10 +32,10 @@
 DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *ticket, const uint8_t tok_id[2])
 {
 	struct asn1_data data;
-	DATA_BLOB ret = data_blob(NULL,0);
+	DATA_BLOB ret;
 
 	if (!ticket->data) {
-		return ret;
+		return data_blob(NULL,0);
 	}
 
 	ZERO_STRUCT(data);
@@ -50,6 +50,7 @@ DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *tick
 	if (data.has_error) {
 		DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data.ofs));
 		asn1_free(&data);
+		return data_blob(NULL,0);
 	}
 
 	ret = data_blob_talloc(mem_ctx, data.data, data.length);
