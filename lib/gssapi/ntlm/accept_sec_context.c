@@ -108,8 +108,8 @@ handle_type2(OM_uint32 *minor_status,
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
-    type2.targetinfo.data = "\x00\x00";
-    type2.targetinfo.length = 2;
+    type2.targetinfo.data = NULL;
+    type2.targetinfo.length = 0;
 	
     ret = heim_ntlm_encode_type2(&type2, &data);
     free(type2.targetname);
