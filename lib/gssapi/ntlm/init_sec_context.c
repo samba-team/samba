@@ -187,6 +187,7 @@ _gss_ntlm_init_sec_context
 	ctx->flags = type2.flags;
 
 	/* XXX check that type2.targetinfo matches `target_name´ */
+	/* XXX check verify targetinfo buffer */
 
 	memset(&type3, 0, sizeof(type3));
 
@@ -195,7 +196,11 @@ _gss_ntlm_init_sec_context
 	type3.targetname = type2.targetname;
 	type3.ws = rk_UNCONST("workstation");
 
-	{
+	/*
+	 * NTLM Version 1 if no targetinfo buffer.
+	 */
+
+	if (type2.targetinfo.length == 0) {
 	    struct ntlm_buf key;
 	    struct ntlm_buf sessionkey;
 	    unsigned char challange[8];
@@ -242,6 +247,8 @@ _gss_ntlm_init_sec_context
 	    ret = heim_ntlm_build_ntlm1_master(key.data, key.length,
 					       &sessionkey,
 					       &type3.sessionkey);
+	    memset(key.data, 0, key.length);
+	    free(key.data);
 	    if (ret) {
 		if (type3.lm.data)
 		    free(type3.lm.data);
@@ -269,8 +276,46 @@ _gss_ntlm_init_sec_context
 			ctx->sessionkey.length,
 			ctx->sessionkey.data);
 
+	} else {
+	    struct ntlm_buf key;
+	    struct ntlm_buf sessionkey;
+	    unsigned char ntlmv2[16];
+
+	    /* verify infotarget */
+
+	    heim_ntlm_nt_key(ctx->password, &key);
+	    memset(ctx->password, 0, strlen(ctx->password));
+
+	    ret = heim_ntlm_calculate_ntlm2(key.data, key.length,
+					    ctx->username,
+					    name->domain,
+					    type2.challange,
+					    &type2.targetinfo,
+					    ntlmv2,
+					    &type3.ntlm);
 	    memset(key.data, 0, key.length);
 	    free(key.data);
+	    if (ret) {
+		_gss_ntlm_delete_sec_context(minor_status, 
+					     context_handle, NULL);
+		*minor_status = ret;
+		return GSS_S_FAILURE;
+	    }
+
+	    ret = heim_ntlm_build_ntlm1_master(ntlmv2, sizeof(ntlmv2),
+					       &sessionkey,
+					       &type3.sessionkey);
+	    memset(ntlmv2, 0, sizeof(ntlmv2));
+	    if (ret) {
+		_gss_ntlm_delete_sec_context(minor_status, 
+					     context_handle, NULL);
+		*minor_status = ret;
+		return GSS_S_FAILURE;
+	    }
+	    
+	    /* set session key in ctx */
+
+	    free(sessionkey.data);
 	}
 
 	ret = heim_ntlm_encode_type3(&type3, &data);
@@ -289,7 +334,7 @@ _gss_ntlm_init_sec_context
 	if (actual_mech_type)
 	    *actual_mech_type = GSS_NTLM_MECHANISM;
 	if (ret_flags)
-	    *ret_flags = ctx->flags;
+	    *ret_flags = 0;
 	if (time_rec)
 	    *time_rec = GSS_C_INDEFINITE;
 
