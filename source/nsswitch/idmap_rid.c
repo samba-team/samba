@@ -83,8 +83,9 @@ failed:
 
 static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context *ctx, struct id_map *map)
 {
-	char *domname, *name;
+	const char *domname, *name;
 	enum lsa_SidType sid_type;
+	BOOL ret;
 
 	/* apply filters before checking */
 	if ((map->xid.id < ctx->low_id) || (map->xid.id > ctx->high_id)) {
@@ -95,7 +96,13 @@ static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context
 
 	sid_compose(map->sid, &ctx->dom_sid, map->xid.id - ctx->low_id + ctx->base_rid);
 
-	if (winbindd_lookup_name_by_sid(memctx, map->sid, &domname, &name, &sid_type)) {
+	/* by default calls to winbindd are disabled
+	   the following call will not recurse so this is safe */
+	winbind_on();
+	ret = winbind_lookup_sid(memctx, map->sid, &domname, &name, &sid_type);
+	winbind_off();
+
+	if (ret) {
 		switch (sid_type) {
 		case SID_NAME_USER:
 			if (map->xid.type != ID_TYPE_UID) {
@@ -134,15 +141,22 @@ static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context
 
 static NTSTATUS idmap_rid_sid_to_id(TALLOC_CTX *memctx, struct idmap_rid_context *ctx, struct id_map *map)
 {
-	char *domname, *name;
+	const char *domname, *name;
 	enum lsa_SidType sid_type;
 	uint32_t rid;
+	BOOL ret;
 
 	sid_peek_rid(map->sid, &rid);
 	map->xid.id = rid - ctx->base_rid + ctx->low_id;
 
+	/* by default calls to winbindd are disabled
+	   the following call will not recurse so this is safe */
+	winbind_on();
 	/* check if this is a valid SID and set the type */
-	if (winbindd_lookup_name_by_sid(memctx, map->sid, &domname, &name, &sid_type)) {
+	ret = winbind_lookup_sid(memctx, map->sid, &domname, &name, &sid_type);
+	winbind_off();
+
+	if (ret) {
 		switch (sid_type) {
 		case SID_NAME_USER:
 			map->xid.type = ID_TYPE_UID;
