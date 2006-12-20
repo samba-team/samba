@@ -103,7 +103,7 @@ BOOL gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
 
 	asn1_load(&data, *blob);
 	asn1_start_tag(&data, ASN1_APPLICATION(0));
-	asn1_check_OID(&data, GENSEC_OID_KERBEROS5);
+	asn1_check_OID(&data, oid);
 
 	ret = !data.has_error;
 
