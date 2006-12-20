@@ -820,6 +820,7 @@ _kdc_do_digest(krb5_context context,
 		if (ireq.u.ntlmRequest.lm.length != 24) {
 		    krb5_set_error_string(context, "LM hash have wrong length "
 					  "for NTLM session key");
+		    ret = EINVAL;
 		    goto out;
 		}
 
