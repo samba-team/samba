@@ -660,9 +660,18 @@ _kdc_do_digest(krb5_context context,
 	}
 
 	r.u.ntlmInitReply.flags |= 
-	    (ireq.u.ntlmInit.flags & (NTLM_NEG_SIGN|NTLM_NEG_SEAL)) |
 	    NTLM_NEG_TARGET_DOMAIN |
 	    NTLM_ENC_128;
+
+#define ALL \
+	NTLM_NEG_SIGN| \
+	NTLM_NEG_SEAL| \
+	NTLM_NEG_ALWAYS_SIGN| \
+	NTLM_NEG_NTLM2_SESSION
+
+	r.u.ntlmInitReply.flags |= (ireq.u.ntlmInit.flags & (ALL));
+
+#undef ALL
 
 
 	targetname = strdup(krb5_principal_get_realm(context,
@@ -804,6 +813,23 @@ _kdc_do_digest(krb5_context context,
 		goto out;
 	    }
 
+	    if (flags & NTLM_NEG_NTLM2_SESSION) {
+		char sessionhash[MD5_DIGEST_LENGTH];
+		MD5_CTX md5ctx;
+
+		if (ireq.u.ntlmRequest.lm.length != 24) {
+		    krb5_set_error_string(context, "LM hash have wrong length "
+					  "for NTLM session key");
+		    goto out;
+		}
+
+		MD5_Init(&md5ctx);
+		MD5_Update(&md5ctx, challange, sizeof(challange));
+		MD5_Update(&md5ctx, ireq.u.ntlmRequest.lm.data, 8);
+		MD5_Final(sessionhash, &md5ctx);
+		memcpy(challange, sessionhash, sizeof(challange));
+	    }
+
 	    ret = heim_ntlm_calculate_ntlm1(key->key.keyvalue.data,
 					    key->key.keyvalue.length,
 					    challange, &answer);
@@ -830,8 +856,8 @@ _kdc_do_digest(krb5_context context,
 
 		if (ireq.u.ntlmRequest.sessionkey->length != sizeof(masterkey)){
 		    krb5_set_error_string(context,
-					  "NTLM master key wrong length: %d",
-					  ireq.u.ntlmRequest.sessionkey->length);
+					  "NTLM master key wrong length: %lu",
+					  (unsigned long)ireq.u.ntlmRequest.sessionkey->length);
 		    goto out;
 		}
 
