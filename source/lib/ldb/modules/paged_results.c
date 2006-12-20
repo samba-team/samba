@@ -75,6 +75,8 @@ struct private_data {
 	
 };
 
+int store_destructor(struct results_store *store);
+
 int store_destructor(struct results_store *store)
 {
 	if (store->prev) {

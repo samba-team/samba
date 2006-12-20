@@ -47,6 +47,7 @@
 
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
+int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *msg);
 
 /*
   map a tdb error code to a ldb error code
