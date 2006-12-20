@@ -187,27 +187,28 @@ BOOL asn1_write_Integer(struct asn1_data *data, int i)
 	return asn1_pop_tag(data);
 }
 
-BOOL asn1_write_OID_String(struct asn1_data *data, const char *OID)
+BOOL ber_write_OID_String(DATA_BLOB *blob, const char *OID)
 {
 	uint_t v, v2;
 	const char *p = (const char *)OID;
 	char *newp;
+	int i;
 
 	v = strtoul(p, &newp, 10);
-	if (newp[0] != '.') {
-		data->has_error = True;
-		return False;
-	}
+	if (newp[0] != '.') return False;
 	p = newp + 1;
-	v2 = strtoul(p, &newp, 10);
-	if (newp[0] != '.') {
-		data->has_error = True;
-		return False;
-	}
-	p = newp + 1;
-	if (!asn1_write_uint8(data, 40*v + v2))
-		return False;
 
+	v2 = strtoul(p, &newp, 10);
+	if (newp[0] != '.') return False;
+	p = newp + 1;
+
+	/*the ber representation can't use more space then the string one */
+	*blob = data_blob(NULL, strlen(OID));
+	if (!blob->data) return False;
+
+	blob->data[0] = 40*v + v2;
+
+	i = 1;
 	while (*p) {
 		v = strtoul(p, &newp, 10);
 		if (newp[0] == '.') {
@@ -215,25 +216,38 @@ BOOL asn1_write_OID_String(struct asn1_data *data, const char *OID)
 		} else if (newp[0] == '\0') {
 			p = newp;
 		} else {
-			data->has_error = True;
+			data_blob_free(blob);
 			return False;
 		}
-		if (v >= (1<<28)) asn1_write_uint8(data, 0x80 | ((v>>28)&0xff));
-		if (v >= (1<<21)) asn1_write_uint8(data, 0x80 | ((v>>21)&0xff));
-		if (v >= (1<<14)) asn1_write_uint8(data, 0x80 | ((v>>14)&0xff));
-		if (v >= (1<<7)) asn1_write_uint8(data, 0x80 | ((v>>7)&0xff));
-		if (!asn1_write_uint8(data, v&0x7f))
-			return False;
+		if (v >= (1<<28)) blob->data[i++] = (0x80 | ((v>>28)&0x7f));
+		if (v >= (1<<21)) blob->data[i++] = (0x80 | ((v>>21)&0x7f));
+		if (v >= (1<<14)) blob->data[i++] = (0x80 | ((v>>14)&0x7f));
+		if (v >= (1<<7)) blob->data[i++] = (0x80 | ((v>>7)&0x7f));
+		blob->data[i++] = (v&0x7f);
 	}
 
-	return !data->has_error;
+	blob->length = i;
+
+	return True;
 }
 
 /* write an object ID to a ASN1 buffer */
 BOOL asn1_write_OID(struct asn1_data *data, const char *OID)
 {
+	DATA_BLOB blob;
+
 	if (!asn1_push_tag(data, ASN1_OID)) return False;
-	if (!asn1_write_OID_String(data, OID)) return False;
+
+	if (!ber_write_OID_String(&blob, OID)) {
+		data->has_error = True;
+		return False;
+	}
+
+	if (!asn1_write(data, blob.data, blob.length)) {
+		data->has_error = True;
+		return False;
+	}
+	data_blob_free(&blob);
 	return asn1_pop_tag(data);
 }
 
@@ -425,26 +439,6 @@ BOOL asn1_start_tag(struct asn1_data *data, uint8_t tag)
 	return !data->has_error;
 }
 
-BOOL asn1_start_fake_tag(struct asn1_data *data)
-{
-	struct nesting *nesting;
-
-	nesting = talloc(NULL, struct nesting);
-	if (!nesting) {
-		data->has_error = True;
-		return False;
-	}
-
-	nesting->start = data->ofs;
-	nesting->taglen = data->length - data->ofs;
-	nesting->next = data->nesting;
-	data->nesting = nesting;
-	if (asn1_tag_remaining(data) == -1) {
-		return False;
-	}
-	return !data->has_error;
-}
-
 /* stop reading a tag */
 BOOL asn1_end_tag(struct asn1_data *data)
 {
@@ -488,52 +482,78 @@ int asn1_tag_remaining(struct asn1_data *data)
 	return remaining;
 }
 
-/* read an object ID from a ASN1 buffer */
-BOOL asn1_read_OID_String(struct asn1_data *data, const char **OID)
+/* read an object ID from a data blob */
+BOOL ber_read_OID_String(DATA_BLOB blob, const char **OID)
 {
-	uint8_t b;
+	int i;
+	uint8_t *b;
+	uint_t v;
 	char *tmp_oid = NULL;
 
-	if (!asn1_read_uint8(data, &b)) return False;
+	if (blob.length < 2) return False;
 
-	tmp_oid = talloc_asprintf(NULL, "%u",  b/40);
+	b = blob.data;
+
+	tmp_oid = talloc_asprintf(NULL, "%u",  b[0]/40);
 	if (!tmp_oid) goto nomem;
-	tmp_oid = talloc_asprintf_append(tmp_oid, ".%u",  b%40);
+	tmp_oid = talloc_asprintf_append(tmp_oid, ".%u",  b[0]%40);
 	if (!tmp_oid) goto nomem;
 
-	while (!data->has_error && asn1_tag_remaining(data) > 0) {
-		uint_t v = 0;
-		do {
-			asn1_read_uint8(data, &b);
-			v = (v<<7) | (b&0x7f);
-		} while (!data->has_error && (b & 0x80));
-		tmp_oid = talloc_asprintf_append(tmp_oid, ".%u",  v);
+	for(i = 1, v = 0; i < blob.length; i++) {
+		v = (v<<7) | (b[i]&0x7f);
+		if ( ! (b[i] & 0x80)) {
+			tmp_oid = talloc_asprintf_append(tmp_oid, ".%u",  v);
+			v = 0;
+		}
 		if (!tmp_oid) goto nomem;
 	}
 
-	if (!data->has_error) {
-		*OID = tmp_oid;
-	} else {
+	if (v != 0) {
 		talloc_free(tmp_oid);
+		return False;
 	}
 
-	return !data->has_error;
+	*OID = tmp_oid;
+	return True;
+
 nomem:	
-	talloc_free(tmp_oid);
-	data->has_error = True;
 	return False;
 }
 
 /* read an object ID from a ASN1 buffer */
 BOOL asn1_read_OID(struct asn1_data *data, const char **OID)
 {
+	DATA_BLOB blob;
+	int len;
+
 	if (!asn1_start_tag(data, ASN1_OID)) return False;
-	if (!asn1_read_OID_String(data, OID)) return False;
-	if (!asn1_end_tag(data)) {
-		talloc_free(discard_const(*OID));
-		*OID = NULL;
+
+	len = asn1_tag_remaining(data);
+	if (len < 0) {
+		data->has_error = True;
 		return False;
 	}
+
+	blob = data_blob(NULL, len);
+	if (!blob.data) {
+		data->has_error = True;
+		return False;
+	}
+
+	asn1_read(data, blob.data, len);
+	asn1_end_tag(data);
+	if (data->has_error) {
+		data_blob_free(&blob);
+		return False;
+	}
+
+	if (!ber_read_OID_String(blob, OID)) {
+		data->has_error = True;
+		data_blob_free(&blob);
+		return False;
+	}
+
+	data_blob_free(&blob);
 	return True;
 }
 
