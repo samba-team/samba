@@ -42,6 +42,8 @@
 #define LTDB_FLAG_HIDDEN           (1<<2)
 #define LTDB_FLAG_OBJECTCLASS      (1<<3)
 
+int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name);
+
 /* valid attribute flags */
 static const struct {
 	const char *name;

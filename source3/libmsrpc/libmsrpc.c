@@ -24,6 +24,8 @@
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 
+int cac_InitHandleData( CacServerHandle * hnd );
+
 /*this function is based on code found in smbc_init_context() (libsmb/libsmbclient.c)*/
 void cac_Init( int debug )
 {

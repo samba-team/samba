@@ -25,6 +25,7 @@ BEGIN {
 	print "#include \"dynconfig.h\"";
 	print "";
 	print "static void output(BOOL screen, const char *format, ...) PRINTF_ATTRIBUTE(2,3);";
+	print "void build_options(BOOL screen);";
 	print "";
 	print "";
 	print "/****************************************************************************";
