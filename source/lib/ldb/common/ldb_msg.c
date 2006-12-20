@@ -35,6 +35,10 @@
 #include "includes.h"
 #include "ldb/include/includes.h"
 
+void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *f);
+int ldb_msg_element_compare_name(struct ldb_message_element *el1, 
+				 struct ldb_message_element *el2);
+
 /*
   create a new ldb_message in a given memory context (NULL for top level)
 */

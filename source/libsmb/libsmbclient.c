@@ -26,6 +26,9 @@
 
 #include "include/libsmb_internal.h"
 
+struct smbc_dirent *smbc_readdir_ctx(SMBCCTX *context, SMBCFILE *dir);
+struct smbc_dir_list *smbc_check_dir_ent(struct smbc_dir_list *list, 
+					 struct smbc_dirent *dirent);
 
 /*
  * DOS Attribute values (used internally)

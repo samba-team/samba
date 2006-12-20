@@ -26,6 +26,10 @@
 
 #include "winbind_client.h"
 
+BOOL winbind_env_set( void );
+BOOL winbind_off( void );
+BOOL winbind_on( void );
+
 /* Global variables.  These are effectively the client state information */
 
 int winbindd_fd = -1;           /* fd for winbindd socket */

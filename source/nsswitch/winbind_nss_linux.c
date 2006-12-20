@@ -30,6 +30,41 @@
 #define MAX_GETPWENT_USERS 250
 #define MAX_GETGRENT_USERS 250
 
+NSS_STATUS _nss_winbind_setpwent(void);
+NSS_STATUS _nss_winbind_endpwent(void);
+NSS_STATUS _nss_winbind_getpwent_r(struct passwd *result, char *buffer, 
+				   size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, 
+				   char *buffer, size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_getpwnam_r(const char *name, struct passwd *result, 
+				   char *buffer, size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_setgrent(void);
+NSS_STATUS _nss_winbind_endgrent(void);
+NSS_STATUS _nss_winbind_getgrent_r(struct group *result, char *buffer, 
+				   size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_getgrlst_r(struct group *result, char *buffer, 
+				   size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_getgrnam_r(const char *name, struct group *result, 
+				   char *buffer, size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_getgrgid_r(gid_t gid, struct group *result, char *buffer, 
+				   size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start, 
+				       long int *size, gid_t **groups, 
+				       long int limit, int *errnop);
+NSS_STATUS _nss_winbind_getusersids(const char *user_sid, char **group_sids, 
+				    int *num_groups, char *buffer, size_t buf_size, 
+				    int *errnop);
+NSS_STATUS _nss_winbind_nametosid(const char *name, char **sid, char *buffer,
+				  size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_sidtoname(const char *sid, char **name, char *buffer, 
+				  size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_sidtouid(const char *sid, uid_t *uid, int *errnop);
+NSS_STATUS _nss_winbind_sidtogid(const char *sid, gid_t *gid, int *errnop);
+NSS_STATUS _nss_winbind_uidtosid(uid_t uid, char **sid, char *buffer, 
+				 size_t buflen, int *errnop);
+NSS_STATUS _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer, 
+				 size_t buflen, int *errnop);
+
 /* Prototypes from wb_common.c */
 
 extern int winbindd_fd;

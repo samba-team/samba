@@ -42,6 +42,8 @@
 #define LTDB_FLAG_HIDDEN           (1<<2)
 #define LTDB_FLAG_OBJECTCLASS      (1<<3)
 
+int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name);
+
 /* valid attribute flags */
 static const struct {
 	const char *name;
@@ -314,7 +316,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	struct ldb_dn *baseinfo_dn = NULL;
 	struct ldb_dn *indexlist_dn = NULL;
 	uint64_t seq;
-	struct ldb_message *baseinfo;
+	struct ldb_message *baseinfo = NULL;
 
 	/* a very fast check to avoid extra database reads */
 	if (ltdb->cache != NULL && 

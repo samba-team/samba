@@ -26,6 +26,9 @@
 
 #include "include/libsmbclient.h"
 #include "../include/libsmb_internal.h"
+
+int smbc_default_cache_functions(SMBCCTX * context);
+
 /*
  * Structure we use if internal caching mechanism is used 
  * nothing fancy here.

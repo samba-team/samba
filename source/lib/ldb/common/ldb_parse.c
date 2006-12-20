@@ -45,6 +45,8 @@
 #include "ldb/include/includes.h"
 #include "system/locale.h"
 
+struct ldb_val ldb_binary_decode(void *mem_ctx, const char *str);
+
 /*
 a filter is defined by:
                <filter> ::= '(' <filtercomp> ')'
