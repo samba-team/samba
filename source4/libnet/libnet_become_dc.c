@@ -60,54 +60,10 @@ struct libnet_BecomeDC_state {
 		struct policy_handle bind_handle;
 	} drsuapi1, drsuapi2, drsuapi3;
 
-	struct {
-		/* input */
-		const char *dns_name;
-		const char *netbios_name;
-		const struct dom_sid *sid;
-
-		/* constructed */
-		struct GUID guid;
-		const char *dn_str;
-	} domain;
-
-	struct {
-		/* constructed */
-		const char *dns_name;
-		const char *root_dn_str;
-		const char *config_dn_str;
-		const char *schema_dn_str;
-	} forest;
-
-	struct {
-		/* input */
-		const char *address;
-
-		/* constructed */
-		const char *dns_name;
-		const char *netbios_name;
-		const char *site_name;
-		const char *server_dn_str;
-		const char *ntds_dn_str;
-	} source_dsa;
-
-	struct {
-		/* input */
-		const char *netbios_name;
-
-		/* constructed */
-		const char *dns_name;
-		const char *site_name;
-		struct GUID site_guid;
-		const char *computer_dn_str;
-		const char *server_dn_str;
-		const char *ntds_dn_str;
-		struct GUID ntds_guid;
-		struct GUID invocation_id;
-		uint32_t user_account_control;
-	} dest_dsa;
-
-	struct libnet_BecomeDC_Options ads_options;
+	struct libnet_BecomeDC_Domain domain;
+	struct libnet_BecomeDC_Forest forest;
+	struct libnet_BecomeDC_SourceDSA source_dsa;
+	struct libnet_BecomeDC_DestDSA dest_dsa;
 
 	struct becomeDC_partition {
 		struct drsuapi_DsReplicaObjectIdentifier nc;
@@ -133,6 +89,7 @@ struct libnet_BecomeDC_state {
 
 	struct becomeDC_fsmo rid_manager_fsmo;
 
+	struct libnet_BecomeDC_CheckOptions _co;
 	struct libnet_BecomeDC_Callbacks callbacks;
 };
 
@@ -250,7 +207,7 @@ static NTSTATUS becomeDC_ldap1_rootdse(struct libnet_BecomeDC_state *s)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS becomeDC_ldap1_config_behavior_version(struct libnet_BecomeDC_state *s)
+static NTSTATUS becomeDC_ldap1_crossref_behavior_version(struct libnet_BecomeDC_state *s)
 {
 	int ret;
 	struct ldb_result *r;
@@ -273,7 +230,7 @@ static NTSTATUS becomeDC_ldap1_config_behavior_version(struct libnet_BecomeDC_st
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	s->ads_options.config_behavior_version = ldb_msg_find_attr_as_uint(r->msgs[0], "msDs-Behavior-Version", 0);
+	s->forest.crossref_behavior_version = ldb_msg_find_attr_as_uint(r->msgs[0], "msDs-Behavior-Version", 0);
 
 	talloc_free(r);
 	return NT_STATUS_OK;
@@ -302,7 +259,7 @@ static NTSTATUS becomeDC_ldap1_domain_behavior_version(struct libnet_BecomeDC_st
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	s->ads_options.domain_behavior_version = ldb_msg_find_attr_as_uint(r->msgs[0], "msDs-Behavior-Version", 0);
+	s->domain.behavior_version = ldb_msg_find_attr_as_uint(r->msgs[0], "msDs-Behavior-Version", 0);
 
 	talloc_free(r);
 	return NT_STATUS_OK;
@@ -331,7 +288,7 @@ static NTSTATUS becomeDC_ldap1_schema_object_version(struct libnet_BecomeDC_stat
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	s->ads_options.schema_object_version = ldb_msg_find_attr_as_uint(r->msgs[0], "objectVersion", 0);
+	s->forest.schema_object_version = ldb_msg_find_attr_as_uint(r->msgs[0], "objectVersion", 0);
 
 	talloc_free(r);
 	return NT_STATUS_OK;
@@ -356,7 +313,7 @@ static NTSTATUS becomeDC_ldap1_w2k3_update_revision(struct libnet_BecomeDC_state
 	talloc_free(basedn);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* w2k doesn't have this object */
-		s->ads_options.w2k3_update_revision = 0;
+		s->domain.w2k3_update_revision = 0;
 		return NT_STATUS_OK;
 	} else if (ret != LDB_SUCCESS) {
 		return NT_STATUS_LDAP(ret);
@@ -365,7 +322,7 @@ static NTSTATUS becomeDC_ldap1_w2k3_update_revision(struct libnet_BecomeDC_state
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	s->ads_options.w2k3_update_revision = ldb_msg_find_attr_as_uint(r->msgs[0], "revision", 0);
+	s->domain.w2k3_update_revision = ldb_msg_find_attr_as_uint(r->msgs[0], "revision", 0);
 
 	talloc_free(r);
 	return NT_STATUS_OK;
@@ -601,7 +558,11 @@ static NTSTATUS becomeDC_check_options(struct libnet_BecomeDC_state *s)
 {
 	if (!s->callbacks.check_options) return NT_STATUS_OK;
 
-	return s->callbacks.check_options(s->callbacks.private_data, &s->ads_options);
+	s->_co.domain		= &s->domain;
+	s->_co.forest		= &s->forest;
+	s->_co.source_dsa	= &s->source_dsa;
+
+	return s->callbacks.check_options(s->callbacks.private_data, &s->_co);
 }
 
 static NTSTATUS becomeDC_ldap1_computer_object(struct libnet_BecomeDC_state *s)
@@ -858,7 +819,7 @@ static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s)
 	c->status = becomeDC_ldap1_rootdse(s);
 	if (!composite_is_ok(c)) return;
 
-	c->status = becomeDC_ldap1_config_behavior_version(s);
+	c->status = becomeDC_ldap1_crossref_behavior_version(s);
 	if (!composite_is_ok(c)) return;
 
 	c->status = becomeDC_ldap1_domain_behavior_version(s);
@@ -961,7 +922,7 @@ static void becomeDC_drsuapi_bind_send(struct libnet_BecomeDC_state *s,
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
-	if (s->ads_options.domain_behavior_version == 2) {
+	if (s->domain.behavior_version == 2) {
 		/* TODO: find out how this is really triggered! */
 		bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
 	}
@@ -988,7 +949,7 @@ static void becomeDC_drsuapi_bind_send(struct libnet_BecomeDC_state *s,
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 #endif
 	bind_info28->site_guid			= s->dest_dsa.site_guid;
-	if (s->ads_options.domain_behavior_version == 2) {
+	if (s->domain.behavior_version == 2) {
 		/* TODO: find out how this is really triggered! */
 		bind_info28->u1				= 528;
 	} else {
@@ -1075,7 +1036,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	 * if the schema version indicates w2k3, then
 	 * also send some w2k3 specific attributes
 	 */
-	if (s->ads_options.schema_object_version >= 30) {
+	if (s->forest.schema_object_version >= 30) {
 		w2k3 = true;
 	} else {
 		w2k3 = false;

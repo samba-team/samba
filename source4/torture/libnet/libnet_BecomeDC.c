@@ -29,14 +29,23 @@
 
 #define TORTURE_NETBIOS_NAME "smbtorturedc"
 
-static NTSTATUS test_become_dc_chec_options(void *private_data,
-					    const struct libnet_BecomeDC_Options *options)
+static NTSTATUS test_become_dc_check_options(void *private_data,
+					    const struct libnet_BecomeDC_CheckOptions *o)
 {
-	DEBUG(0,("Options: domain[%u] config[%u] schema[%u] w2k3_update[%u]\n", 
-		options->domain_behavior_version,
-		options->config_behavior_version,
-		options->schema_object_version,
-		options->w2k3_update_revision));
+	DEBUG(0,("Become DC of Domain[%s]/[%s]\n",
+		o->domain->netbios_name, o->domain->dns_name));
+
+	DEBUG(0,("Promotion Partner is Server[%s] from Site[%s]\n",
+		o->source_dsa->dns_name, o->source_dsa->site_name));
+
+	DEBUG(0,("Options:crossRef behavior_version[%u]\n"
+		       "\tschema object_version[%u]\n"
+		       "\tdomain behavior_version[%u]\n"
+		       "\tdomain w2k3_update_revision[%u]\n", 
+		o->forest->crossref_behavior_version,
+		o->forest->schema_object_version,
+		o->domain->behavior_version,
+		o->domain->w2k3_update_revision));
 
 	return NT_STATUS_OK;
 }
@@ -71,7 +80,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	b.in.source_dsa_address		= lp_parm_string(-1, "torture", "host");
 	b.in.dest_dsa_netbios_name	= TORTURE_NETBIOS_NAME;
 
-	b.in.callbacks.check_options	= test_become_dc_chec_options;
+	b.in.callbacks.check_options	= test_become_dc_check_options;
 
 	status = libnet_BecomeDC(ctx, ctx, &b);
 	if (!NT_STATUS_IS_OK(status)) {
