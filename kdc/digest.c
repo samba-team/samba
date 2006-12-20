@@ -667,7 +667,8 @@ _kdc_do_digest(krb5_context context,
 	NTLM_NEG_SIGN| \
 	NTLM_NEG_SEAL| \
 	NTLM_NEG_ALWAYS_SIGN| \
-	NTLM_NEG_NTLM2_SESSION
+	NTLM_NEG_NTLM2_SESSION| \
+	NTLM_NEG_KEYEX
 
 	r.u.ntlmInitReply.flags |= (ireq.u.ntlmInit.flags & (ALL));
 
@@ -854,6 +855,13 @@ _kdc_do_digest(krb5_context context,
 		unsigned char masterkey[MD4_DIGEST_LENGTH];
 		MD4_CTX ctx;
 		RC4_KEY rc4;
+
+		if ((flags & NTLM_NEG_KEYEX) == 0) {
+		    krb5_set_error_string(context,
+					  "NTLM client failed to neg key "
+					  "exchange but still sent key");
+		    goto out;
+		}
 
 		if (ireq.u.ntlmRequest.sessionkey->length != sizeof(masterkey)){
 		    krb5_set_error_string(context,
