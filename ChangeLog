@@ -1,5 +1,11 @@
 2006-12-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/digest.c: reorder to show slot here ntlmv2 code will be
+	placed.
+
+	* kdc/digest.c: Announce that we support key exchange and add bits
+	to detect when it wasn't used.
+
 	* kdc/digest.c: Add support for generating NTLM2 session security
 	answer.
 	
