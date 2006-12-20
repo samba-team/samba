@@ -1,5 +1,10 @@
-2006-12-19  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/digest.c: Add support for generating NTLM2 session security
+	answer.
+	
+2006-12-19  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/krb5/digest.c: Add sessionkey accessor functions.
 	
 2006-12-18  Love Hörnquist Åstrand  <lha@it.su.se>
