@@ -510,11 +510,11 @@ BOOL asn1_read_OID_String(struct asn1_data *data, const char **OID)
 	}
 
 	if (!data->has_error) {
-		*OID = talloc_strdup(NULL, tmp_oid);
-		if (!*OID) goto nomem;
+		*OID = tmp_oid;
+	} else {
+		talloc_free(tmp_oid);
 	}
 
-	talloc_free(tmp_oid);
 	return !data->has_error;
 nomem:	
 	talloc_free(tmp_oid);
