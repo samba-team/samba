@@ -748,7 +748,8 @@ _kdc_do_digest(krb5_context context,
 	krb5_principal clientprincipal;
 	unsigned char challange[8];
 	uint32_t flags;
-
+	Key *key = NULL;
+	    
 	r.element = choice_DigestRepInner_ntlmResponse;
 	r.u.ntlmResponse.success = 0;
 	r.u.ntlmResponse.flags = 0;
@@ -803,35 +804,44 @@ _kdc_do_digest(krb5_context context,
 	}
 	krb5_data_free(&buf);
 
-	if (flags & NTLM_NEG_NTLM) {
-	    struct ntlm_buf answer;
-	    Key *key;
+	if ((flags & NTLM_NEG_NTLM) == 0) {
+	    ret = EINVAL;
+	    krb5_set_error_string(context, "NTLM not negotiated");
+	    goto out;
+	}
 
-	    ret = hdb_enctype2key(context, &user->entry, 
-				  ETYPE_ARCFOUR_HMAC_MD5, &key);
-	    if (ret) {
-		krb5_set_error_string(context, "NTLM missing arcfour key");
-		goto out;
-	    }
+	ret = hdb_enctype2key(context, &user->entry, 
+			      ETYPE_ARCFOUR_HMAC_MD5, &key);
+	if (ret) {
+	    krb5_set_error_string(context, "NTLM missing arcfour key");
+	    goto out;
+	}
+
+	/* check if this is NTLMv2 */
+	if (ireq.u.ntlmRequest.ntlm.length != 24) {
+	    krb5_set_error_string(context, "NTLM v2 not supported yet");
+	    goto out;
+	} else {
+	    struct ntlm_buf answer;
 
 	    if (flags & NTLM_NEG_NTLM2_SESSION) {
 		char sessionhash[MD5_DIGEST_LENGTH];
 		MD5_CTX md5ctx;
-
+		
 		if (ireq.u.ntlmRequest.lm.length != 24) {
 		    krb5_set_error_string(context, "LM hash have wrong length "
 					  "for NTLM session key");
 		    ret = EINVAL;
 		    goto out;
 		}
-
+		
 		MD5_Init(&md5ctx);
 		MD5_Update(&md5ctx, challange, sizeof(challange));
 		MD5_Update(&md5ctx, ireq.u.ntlmRequest.lm.data, 8);
 		MD5_Final(sessionhash, &md5ctx);
 		memcpy(challange, sessionhash, sizeof(challange));
 	    }
-
+	    
 	    ret = heim_ntlm_calculate_ntlm1(key->key.keyvalue.data,
 					    key->key.keyvalue.length,
 					    challange, &answer);
@@ -839,7 +849,7 @@ _kdc_do_digest(krb5_context context,
 		krb5_set_error_string(context, "NTLM missing arcfour key");
 		goto out;
 	    }
-
+	    
 	    if (ireq.u.ntlmRequest.ntlm.length != answer.length ||
 		memcmp(ireq.u.ntlmRequest.ntlm.data, answer.data, answer.length) != 0)
 	    {
@@ -855,18 +865,20 @@ _kdc_do_digest(krb5_context context,
 		unsigned char masterkey[MD4_DIGEST_LENGTH];
 		MD4_CTX ctx;
 		RC4_KEY rc4;
-
+		size_t len;
+		
 		if ((flags & NTLM_NEG_KEYEX) == 0) {
 		    krb5_set_error_string(context,
 					  "NTLM client failed to neg key "
 					  "exchange but still sent key");
 		    goto out;
 		}
-
-		if (ireq.u.ntlmRequest.sessionkey->length != sizeof(masterkey)){
+		
+		len = ireq.u.ntlmRequest.sessionkey->length;
+		if (len != sizeof(masterkey)){
 		    krb5_set_error_string(context,
 					  "NTLM master key wrong length: %lu",
-					  (unsigned long)ireq.u.ntlmRequest.sessionkey->length);
+					  (unsigned long)len);
 		    goto out;
 		}
 
@@ -896,11 +908,6 @@ _kdc_do_digest(krb5_context context,
 		    goto out;
 		}
 	    }
-
-	} else {
-	    ret = EINVAL;
-	    krb5_set_error_string(context, "NTLM not negotiated");
-	    goto out;
 	}
 
 	r.u.ntlmResponse.success = 1;
