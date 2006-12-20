@@ -43,7 +43,6 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 {
 	TALLOC_CTX *ctx;
 	struct winbindd_domain *wdom;
-	BOOL winbind_env;
 	int i;
 
 	wdom = find_lookup_domain_from_name(dom->name);
@@ -51,6 +50,7 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		DEBUG(2, ("Can't lookup domain %s\n", dom->name));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
+	wdom->initialized = False;
 
 	ctx = talloc_new(dom);
 	if ( ! ctx) {
@@ -58,21 +58,17 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* avoid any possible recursion in winbindd,
-	 * these calls are aimed at getting info
-	 * out of alternative nss dbs anyway */
-	winbind_env = winbind_env_set();
-	winbind_off();
-
 	for (i = 0; ids[i]; i++) {
 		struct passwd *pw;
 		struct group *gr;
 		const char *name;
 		enum lsa_SidType type;
+		BOOL ret;
 		
 		switch (ids[i]->xid.type) {
 		case ID_TYPE_UID:
 			pw = getpwuid((uid_t)ids[i]->xid.id);
+
 			if (!pw) {
 				ids[i]->mapped = False;
 				continue;
@@ -81,6 +77,7 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 			break;
 		case ID_TYPE_GID:
 			gr = getgrgid((gid_t)ids[i]->xid.id);
+
 			if (!gr) {
 				ids[i]->mapped = False;
 				continue;
@@ -92,8 +89,14 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 			continue;
 		}
 
+		/* by default calls to winbindd are disabled
+		   the following call will not recurse so this is safe */
+		winbind_on();
 		/* Lookup name from PDC using lsa_lookup_names() */
-		if (!winbindd_lookup_sid_by_name(ctx, wdom, dom->name, name, ids[i]->sid, &type)) {
+		ret = winbind_lookup_name(dom->name, name, ids[i]->sid, &type);
+		winbind_off();
+
+		if (!ret) {
 			ids[i]->mapped = False;
 			continue;
 		}
@@ -121,10 +124,6 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		}
 	}
 
-	/* allow winbindd calls again, if they were enabled */
-	if (!winbind_env) {
-		winbind_on();
-	}
 
 	talloc_free(ctx);
 	return NT_STATUS_OK;
@@ -137,7 +136,6 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_map **ids)
 {
 	TALLOC_CTX *ctx;
-	BOOL winbind_env;
 	int i;
 
 	ctx = talloc_new(dom);
@@ -146,20 +144,21 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* avoid any possible recursion in winbindd,
-	 * these calls are aimed at getting info
-	 * out of alternative nss dbs anyway */
-	winbind_env = winbind_env_set();
-	winbind_off();
-
 	for (i = 0; ids[i]; i++) {
 		struct passwd *pw;
 		struct group *gr;
 		enum lsa_SidType type;
-		char *dom_name = NULL;
-		char *name = NULL;
+		const char *dom_name = NULL;
+		const char *name = NULL;
+		BOOL ret;
 
-		if (!winbindd_lookup_name_by_sid(ctx, ids[i]->sid, &dom_name, &name, &type)) {
+		/* by default calls to winbindd are disabled
+		   the following call will not recurse so this is safe */
+		winbind_on();
+		ret =winbind_lookup_sid(ctx, ids[i]->sid, &dom_name, &name, &type);
+		winbind_off();
+
+		if (!ret) {
 			ids[i]->mapped = False;
 			continue;
 		}
@@ -171,6 +170,7 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 		case SID_NAME_USER:
 
 			/* this will find also all lower case name and use username level */
+			
 			pw = Get_Pwnam(name);
 			if (pw) {
 				ids[i]->xid.id = pw->pw_uid;
@@ -192,16 +192,9 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 			break;
 
 		default:
+			ids[i]->mapped = False;
 			break;
 		}
-
-		TALLOC_FREE(dom_name);
-		TALLOC_FREE(name);
-	}
-
-	/* allow winbindd calls again, if they were enabled */
-	if (!winbind_env) {
-		winbind_on();
 	}
 
 	talloc_free(ctx);
