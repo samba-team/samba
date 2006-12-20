@@ -145,6 +145,7 @@ _gss_ntlm_init_sec_context
 #if 0
 	flags |= NTLM_NEG_NTLM2_SESSION;
 #endif
+	flags |= NTLM_NEG_KEYEX;
 
 	memset(&type1, 0, sizeof(type1));
 	
