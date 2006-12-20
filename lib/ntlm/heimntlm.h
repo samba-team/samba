@@ -54,6 +54,7 @@ struct ntlm_buf {
 
 #define NTLM_NEG_TARGET_DOMAIN		0x00010000
 #define NTLM_ENC_128			0x20000000
+#define NTLM_NEG_KEYEX			0x40000000
 
 struct ntlm_targetinfo {
     char *servername;
