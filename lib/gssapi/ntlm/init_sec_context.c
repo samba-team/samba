@@ -140,9 +140,15 @@ _gss_ntlm_init_sec_context
 	else
 	    flags |= NTLM_NEG_ALWAYS_SIGN;
 
+	flags |= NTLM_NEG_UNICODE;
+	flags |= NTLM_NEG_NTLM;
+#if 0
+	flags |= NTLM_NEG_NTLM2_SESSION;
+#endif
+
 	memset(&type1, 0, sizeof(type1));
 	
-	type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM | flags;
+	type1.flags = flags;
 	type1.domain = name->domain;
 	type1.hostname = NULL;
 	type1.os[0] = 0;
@@ -191,11 +197,34 @@ _gss_ntlm_init_sec_context
 	{
 	    struct ntlm_buf key;
 	    struct ntlm_buf sessionkey;
+	    unsigned char challange[8];
+
 	    heim_ntlm_nt_key(ctx->password, &key);
 	    memset(ctx->password, 0, strlen(ctx->password));
 
+	    if (type2.flags & NTLM_NEG_NTLM2_SESSION) {
+		unsigned char sessionhash[MD5_DIGEST_LENGTH];
+		MD5_CTX md5ctx;
+
+		type3.lm.data = calloc(1, 24);
+		type3.lm.length = 24;
+		
+		if (RAND_bytes(type3.lm.data, 8) != 1)
+		    abort();
+
+		MD5_Init(&md5ctx);
+		MD5_Update(&md5ctx, type2.challange, sizeof(type2.challange));
+		MD5_Update(&md5ctx, type3.lm.data, 8);
+		MD5_Final(sessionhash, &md5ctx);
+
+		memcpy(challange, sessionhash, 8);
+	    } else {
+		memcpy(challange, type2.challange, 8);
+	    }
+
+
 	    heim_ntlm_calculate_ntlm1(key.data, key.length,
-				      type2.challange,
+				      challange,
 				      &type3.ntlm);
 
 	    ret = heim_ntlm_build_ntlm1_master(key.data, key.length,
