@@ -45,7 +45,7 @@ RCSID("$Id$");
 #include <heimntlm.h>
 
 static int
-test_libntlm(void)
+test_parse(void)
 {
     const char *user = "foo", 
 	*domain = "mydomain",
@@ -85,8 +85,8 @@ test_libntlm(void)
 
     memset(type2.challange, 0x7f, sizeof(type2.challange));
     type2.targetname = strdup("DOMAIN");
-    type2.targetinfo.data = "\x00\x00";
-    type2.targetinfo.length = 2;
+    type2.targetinfo.data = NULL;
+    type2.targetinfo.length = 0;
 
     ret = heim_ntlm_encode_type2(&type2, &data);
     if (ret)
@@ -131,8 +131,75 @@ test_libntlm(void)
     if (ret)
 	errx(1, "heim_ntlm_encode_type3");
 
+    /*
+     * NTLMv2
+     */
+
+    memset(&type2, 0, sizeof(type2));
+
+    type2.flags = NTLM_NEG_UNICODE | NTLM_NEG_NTLM | NTLM_NEG_TARGET_DOMAIN;
+
+    memset(type2.challange, 0x7f, sizeof(type2.challange));
+    type2.targetname = strdup("DOMAIN");
+    type2.targetinfo.data = "\x00\x00";
+    type2.targetinfo.length = 2;
+
+    ret = heim_ntlm_encode_type2(&type2, &data);
+    if (ret)
+	errx(1, "heim_ntlm_encode_type2");
+
+    memset(&type2, 0, sizeof(type2));
+
+    ret = heim_ntlm_decode_type2(&data, &type2);
+    free(data.data);
+    if (ret)
+	errx(1, "heim_ntlm_decode_type2");
+
     return 0;
 }
+
+static int
+test_keys(void)
+{
+    const char
+	*username = "test",
+	*password = "test1234",
+	*target = "TESTNT";
+    const unsigned char 
+	serverchallange[8] = "\x67\x7f\x1c\x55\x7a\x5e\xe9\x6c";
+    struct ntlm_buf infotarget, answer, key;
+    unsigned char ntlmv2[16];
+    int ret;
+    
+    infotarget.length = 70;
+    infotarget.data =
+	"\x02\x00\x0c\x00\x54\x00\x45\x00\x53\x00\x54\x00\x4e\x00\x54\x00"
+	"\x01\x00\x0c\x00\x4d\x00\x45\x00\x4d\x00\x42\x00\x45\x00\x52\x00"
+	"\x03\x00\x1e\x00\x6d\x00\x65\x00\x6d\x00\x62\x00\x65\x00\x72\x00"
+	    "\x2e\x00\x74\x00\x65\x00\x73\x00\x74\x00\x2e\x00\x63\x00\x6f"
+	    "\x00\x6d\x00"
+	"\x00\x00\x00\x00";
+
+    answer.length = 0;
+    answer.data = NULL;
+
+    heim_ntlm_nt_key(password, &key);
+
+
+    ret = heim_ntlm_calculate_ntlm2(key.data,
+				    key.length,
+				    username,
+				    target,
+				    serverchallange,
+				    &infotarget,
+				    ntlmv2,
+				    &answer);
+
+    
+
+    return 0;
+}
+
 
 static int version_flag = 0;
 static int help_flag	= 0;
@@ -171,7 +238,8 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
-    ret += test_libntlm();
+    ret += test_parse();
+    ret += test_keys();
 
     return 0;
 }
