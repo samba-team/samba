@@ -63,7 +63,6 @@ struct benchrw_state{
 		int writecnt;
 		int readcnt;
 		int completed;
-		TALLOC_CTX *mem_ctx;
 		void *req_params;
 		enum benchrw_stage mode;
 		struct params{
@@ -547,7 +546,7 @@ static NTSTATUS benchrw_open(struct torture_context *tctx,struct smbcli_request 
 	union smb_write	wr;
 	if(state->mode == OPEN_FILE){
 		NTSTATUS status;
-		status = smb_raw_open_recv(req,state->mem_ctx,(
+		status = smb_raw_open_recv(req,tctx,(
 					union smb_open*)state->req_params);
 		NT_STATUS_NOT_OK_RETURN(status);
 	
@@ -598,7 +597,7 @@ static NTSTATUS benchrw_mkdir(struct torture_context *tctx,struct smbcli_request
 	/* open/create the files */
 	torture_comment(tctx, "Open File %d/%d\n",state->nr+1,
 					lp_parm_int(-1, "torture", "nprocs", 4));
-	open_parms=talloc_zero(state->mem_ctx, union smb_open);
+	open_parms=talloc_zero(tctx, union smb_open);
 	NT_STATUS_HAVE_NO_MEMORY(open_parms);
 	open_parms->openx.level = RAW_OPEN_OPENX;
 	open_parms->openx.in.flags = 0;
@@ -612,7 +611,7 @@ static NTSTATUS benchrw_mkdir(struct torture_context *tctx,struct smbcli_request
 	open_parms->openx.in.timeout = 0;
 	open_parms->openx.in.fname = state->fname;
 		
-	writedata = talloc_size(state->mem_ctx,state->lp_params->blocksize);
+	writedata = talloc_size(tctx,state->lp_params->blocksize);
 	NT_STATUS_HAVE_NO_MEMORY(writedata);
 	generate_random_buffer(writedata,state->lp_params->blocksize);
 	state->buffer=writedata;
