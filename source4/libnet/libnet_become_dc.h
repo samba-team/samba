@@ -75,11 +75,19 @@ struct libnet_BecomeDC_DestDSA {
 	uint32_t user_account_control;
 };
 
+struct libnet_BecomeDC_PrepareDB {
+	const struct libnet_BecomeDC_Domain *domain;
+	const struct libnet_BecomeDC_Forest *forest;
+	const struct libnet_BecomeDC_SourceDSA *source_dsa;
+	const struct libnet_BecomeDC_DestDSA *dest_dsa;
+};
+
 struct libnet_BecomeDC_Callbacks {
 	void *private_data;
 	NTSTATUS (*check_options)(void *private_data,
-				  const struct libnet_BecomeDC_CheckOptions *options);
-	NTSTATUS (*prepare_db)(void *private_data, void *todo);
+				  const struct libnet_BecomeDC_CheckOptions *info);
+	NTSTATUS (*prepare_db)(void *private_data,
+			       const struct libnet_BecomeDC_PrepareDB *info);
 	NTSTATUS (*schema_chunk)(void *private_data, void *todo);
 	NTSTATUS (*config_chunk)(void *private_data, void *todo);
 	NTSTATUS (*domain_chunk)(void *private_data, void *todo);
