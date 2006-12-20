@@ -100,8 +100,8 @@ NTSTATUS ndr_push_drsuapi_DsReplicaOID(struct ndr_push *ndr, int ndr_flags, cons
 				}
 			} else {
 				_OID_PUSH_CHECK(ber_write_OID_String(&blob, r->oid));
-				talloc_steal(ndr, blob.data);
 			}
+			talloc_steal(ndr, blob.data);
 
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.length));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, blob.data, blob.length));
@@ -145,8 +145,6 @@ NTSTATUS ndr_pull_drsuapi_DsReplicaOID(struct ndr_pull *ndr, int ndr_flags, stru
 				NT_STATUS_HAVE_NO_MEMORY(_oid);
 			} else {
 				_OID_PULL_CHECK(ber_read_OID_String(_oid_array, &_oid));
-				talloc_steal(r->oid, _oid);
-				r->oid = _oid;
 			}
 			data_blob_free(&_oid_array);
 			talloc_steal(r->oid, _oid);
