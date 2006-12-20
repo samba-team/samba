@@ -1084,7 +1084,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 {
 	DOM_SID *sids = NULL;
 	size_t num_sids = 0;
-	char *sidstr;
+	char *sidstr = NULL;
 	ssize_t len;
 	size_t i;
 	uint32 num_aliases;
@@ -1094,8 +1094,13 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 	DEBUG(3, ("[%5lu]: getsidaliases\n", (unsigned long)state->pid));
 
 	sidstr = state->request.extra_data.data;
-	if (sidstr == NULL)
+	if (sidstr == NULL) {
 		sidstr = talloc_strdup(state->mem_ctx, "\n"); /* No SID */
+		if (!sidstr) {
+			DEBUG(0, ("Out of memory\n"));
+			return WINBINDD_ERROR;
+		}
+	}
 
 	DEBUG(10, ("Sidlist: %s\n", sidstr));
 
@@ -1121,6 +1126,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 
 	num_sids = 0;
 	sids = NULL;
+	sidstr = NULL;
 
 	DEBUG(10, ("Got %d aliases\n", num_aliases));
 
@@ -1141,9 +1147,14 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 		return WINBINDD_ERROR;
 	}
 
-	state->response.extra_data.data = SMB_STRDUP(sidstr);
+	state->response.extra_data.data = NULL;
 
-	if (state->response.extra_data.data != NULL) {
+	if (sidstr) {
+		state->response.extra_data.data = SMB_STRDUP(sidstr);
+		if (!state->response.extra_data.data) {
+			DEBUG(0, ("Out of memory\n"));
+			return WINBINDD_ERROR;
+		}
 		DEBUG(10, ("aliases_list: %s\n",
 			   (char *)state->response.extra_data.data));
 		state->response.length += len+1;
