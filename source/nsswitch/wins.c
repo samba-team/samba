@@ -34,6 +34,11 @@ static int initialised;
 
 extern BOOL AllowDebugChange;
 
+NSS_STATUS _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
+			  char *buffer, size_t buflen, int *h_errnop);
+NSS_STATUS _nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *he,
+			   char *buffer, size_t buflen, int *h_errnop);
+
 /* Use our own create socket code so we don't recurse.... */
 
 static int wins_lookup_open_socket_in(void)

@@ -1606,7 +1606,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	/* "other" sids are set up above */
 }
 
- void dump_acct_flags(uint32 acct_flags) {
+static void dump_acct_flags(uint32 acct_flags) {
 
 	int lvl = 10;
 	DEBUG(lvl,("dump_acct_flags\n"));
@@ -1633,7 +1633,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	}
 }
 
- void dump_user_flgs(uint32 user_flags) {
+static void dump_user_flgs(uint32 user_flags) {
 
 	int lvl = 10;
 	DEBUG(lvl,("dump_user_flgs\n"));

@@ -24,6 +24,10 @@
 
 #define WAIT_SLEEP_TIME 300000
 
+int cac_WaitForService( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
+			POLICY_HND * svc_hnd, uint32 state, uint32 timeout,
+			SERVICE_STATUS * status );
+
 int cac_SvcOpenScm( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		    struct SvcOpenScm *op )
 {

@@ -26,6 +26,10 @@
 
 #include "winbind_client.h"
 
+BOOL winbind_env_set( void );
+BOOL winbind_off( void );
+BOOL winbind_on( void );
+
 /* Global variables.  These are effectively the client state information */
 
 int winbindd_fd = -1;           /* fd for winbindd socket */
@@ -53,7 +57,7 @@ void init_request(struct winbindd_request *request, int request_type)
 
 /* Initialise a response structure */
 
-void init_response(struct winbindd_response *response)
+static void init_response(struct winbindd_response *response)
 {
 	/* Initialise return value */
 

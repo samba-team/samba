@@ -23,6 +23,10 @@
 #include "libmsrpc.h"
 #include "libmsrpc_internal.h"
 
+char *cac_unistr_to_str( TALLOC_CTX * mem_ctx, uint16 * src, int num_bytes );
+char *talloc_unistr2_to_ascii( TALLOC_CTX * mem_ctx, UNISTR2 str );
+char *cac_unistr_ascii( TALLOC_CTX * mem_ctx, UNISTR src );
+
 /*used to get a struct rpc_pipe_client* to be passed into rpccli* calls*/
 struct rpc_pipe_client *cac_GetPipe( CacServerHandle * hnd, int pi_idx )
 {

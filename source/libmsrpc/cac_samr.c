@@ -30,6 +30,9 @@
 /*not sure what this is.. taken from rpcclient/cmd_samr.c*/
 #define SAMR_LOOKUP_FLAGS 0x000003e8
 
+DOM_SID *cac_get_domain_sid( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
+			     uint32 des_access );
+
 int cac_SamConnect( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		    struct SamConnect *op )
 {

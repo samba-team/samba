@@ -31,6 +31,8 @@
 #define NAMES_DB	"names.tdb"
 #define DATA_DB		"data.tdb"
 
+PERF_OBJECT_TYPE *_reg_perfcount_find_obj(PERF_DATA_BLOCK *block, int objind);
+
 /*********************************************************************
 *********************************************************************/
 
