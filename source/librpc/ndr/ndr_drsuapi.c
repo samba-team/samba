@@ -124,9 +124,6 @@ NTSTATUS ndr_pull_drsuapi_DsReplicaOID(struct ndr_pull *ndr, int ndr_flags, stru
 		if (r->oid) {
 			DATA_BLOB _oid_array;
 			const char *_oid;
-			struct asn1_data _asn1;
-
-			ZERO_STRUCT(_asn1);
 
 			_mem_save_oid_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, ndr, 0);
@@ -136,15 +133,26 @@ NTSTATUS ndr_pull_drsuapi_DsReplicaOID(struct ndr_pull *ndr, int ndr_flags, stru
 			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, _oid_array.data, _oid_array.length));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_oid_0, 0);
 
-			_ASN1_PULL_CHECK(asn1_load(&_asn1, _oid_array));
-			talloc_steal(ndr, _asn1.data);
-			data_blob_free(&_oid_array);
-			_ASN1_PULL_CHECK(asn1_start_fake_tag(&_asn1));
-			_ASN1_PULL_CHECK(asn1_read_OID_String(&_asn1, &_oid));
-			talloc_steal(r->oid, _oid);
-			r->oid = _oid;
-			_ASN1_PULL_CHECK(asn1_end_tag(&_asn1));
-			asn1_free(&_asn1);
+			if (_oid_array.length && _oid_array.data[0] == 0xFF) {
+				_oid = data_blob_hex_string(ndr, &_oid_array);
+				NT_STATUS_HAVE_NO_MEMORY(_oid);
+				data_blob_free(&_oid_array);
+				talloc_steal(r->oid, _oid);
+				r->oid = _oid;
+			} else {
+				struct asn1_data _asn1;
+				ZERO_STRUCT(_asn1);
+				_ASN1_PULL_CHECK(asn1_load(&_asn1, _oid_array));
+				talloc_steal(ndr, _asn1.data);
+				data_blob_free(&_oid_array);
+				_ASN1_PULL_CHECK(asn1_start_fake_tag(&_asn1));
+				_ASN1_PULL_CHECK(asn1_read_OID_String(&_asn1, &_oid));
+				talloc_steal(r->oid, _oid);
+				r->oid = _oid;
+				_ASN1_PULL_CHECK(asn1_end_tag(&_asn1));
+				asn1_free(&_asn1);
+			}
+			DEBUG(0,("oid: %s\n", r->oid));
 		}
 		if (r->oid) {
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->oid, r->__ndr_size));
