@@ -91,8 +91,17 @@ NTSTATUS ndr_push_drsuapi_DsReplicaOID(struct ndr_push *ndr, int ndr_flags, cons
 		if (r->oid) {
 			DATA_BLOB blob;
 
-			_OID_PUSH_CHECK(ber_write_OID_String(&blob, r->oid));
-			talloc_steal(ndr, blob.data);
+			if (strncasecmp("ff", r->oid, 2) == 0) {
+				blob = strhex_to_data_blob(r->oid);
+				if (!blob.data) {
+					return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT,
+							      "HEX String Conversion Error: %s\n",
+							      __location__);
+				}
+			} else {
+				_OID_PUSH_CHECK(ber_write_OID_String(&blob, r->oid));
+				talloc_steal(ndr, blob.data);
+			}
 
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.length));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, blob.data, blob.length));
@@ -157,10 +166,16 @@ size_t ndr_size_drsuapi_DsReplicaOID_oid(const char *oid, int flags)
 
 	if (!oid) return 0;
 
-	if (ber_write_OID_String(&_blob, oid)) {
-		ret = _blob.length;
+	if (strncasecmp("ff", oid, 2) == 0) {
+		_blob = strhex_to_data_blob(oid);
+		if (_blob.data) {
+			ret = _blob.length;
+		}
+	} else {
+		if (ber_write_OID_String(&_blob, oid)) {
+			ret = _blob.length;
+		}
 	}
-
 	data_blob_free(&_blob);
 	return ret;
 }
