@@ -22,8 +22,8 @@
 #include "libmsrpc.h"
 #include "libmsrpc_internal.h"
 
-WERROR cac_delete_subkeys_recursive( struct rpc_pipe_client * pipe_hnd,
-				     TALLOC_CTX * mem_ctx, POLICY_HND * key );
+NTSTATUS cac_delete_subkeys_recursive(struct rpc_pipe_client * pipe_hnd,
+				      TALLOC_CTX * mem_ctx, POLICY_HND * key);
 
 int cac_RegConnect( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		    struct RegConnect *op )
