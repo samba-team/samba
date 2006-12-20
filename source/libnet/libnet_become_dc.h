@@ -18,16 +18,67 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct libnet_BecomeDC_Options {
-	uint32_t domain_behavior_version;
-	uint32_t config_behavior_version;
-	uint32_t schema_object_version;
+struct libnet_BecomeDC_Domain {
+	/* input */
+	const char *dns_name;
+	const char *netbios_name;
+	const struct dom_sid *sid;
+
+	/* constructed */
+	struct GUID guid;
+	const char *dn_str;
+	uint32_t behavior_version;
 	uint32_t w2k3_update_revision;
+};
+
+struct libnet_BecomeDC_Forest {
+	/* constructed */
+	const char *dns_name;
+	const char *root_dn_str;
+	const char *config_dn_str;
+	uint32_t crossref_behavior_version;
+	const char *schema_dn_str;
+	uint32_t schema_object_version;
+};
+
+struct libnet_BecomeDC_SourceDSA {
+	/* input */
+	const char *address;
+
+	/* constructed */
+	const char *dns_name;
+	const char *netbios_name;
+	const char *site_name;
+	const char *server_dn_str;
+	const char *ntds_dn_str;
+};
+
+struct libnet_BecomeDC_CheckOptions {
+	const struct libnet_BecomeDC_Domain *domain;
+	const struct libnet_BecomeDC_Forest *forest;
+	const struct libnet_BecomeDC_SourceDSA *source_dsa;
+};
+
+struct libnet_BecomeDC_DestDSA {
+	/* input */
+	const char *netbios_name;
+
+	/* constructed */
+	const char *dns_name;
+	const char *site_name;
+	struct GUID site_guid;
+	const char *computer_dn_str;
+	const char *server_dn_str;
+	const char *ntds_dn_str;
+	struct GUID ntds_guid;
+	struct GUID invocation_id;
+	uint32_t user_account_control;
 };
 
 struct libnet_BecomeDC_Callbacks {
 	void *private_data;
-	NTSTATUS (*check_options)(void *private_data, const struct libnet_BecomeDC_Options *options);
+	NTSTATUS (*check_options)(void *private_data,
+				  const struct libnet_BecomeDC_CheckOptions *options);
 	NTSTATUS (*prepare_db)(void *private_data, void *todo);
 	NTSTATUS (*schema_chunk)(void *private_data, void *todo);
 	NTSTATUS (*config_chunk)(void *private_data, void *todo);
