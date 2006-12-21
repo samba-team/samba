@@ -65,6 +65,8 @@ sub generate_shared_library($)
 		}
 	}
 
+	$lib->{LIBRARY_DEBUGNAME} = $lib->{LIBRARY_REALNAME};
+
 	if (defined($lib->{VERSION})) {
 		$lib->{LIBRARY_SONAME} = "$lib->{LIBRARY_REALNAME}.$lib->{SO_VERSION}";
 		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}.$lib->{VERSION}";

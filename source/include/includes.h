@@ -77,7 +77,9 @@ _PUBLIC_ void smb_panic(const char *why) NORETURN_ATTRIBUTE;
 #include "system/time.h"
 #include "system/wait.h"
 
+#ifndef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
+#endif
 
 /* Lists, trees, caching, database... */
 #include "talloc/talloc.h"
