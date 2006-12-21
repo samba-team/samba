@@ -459,7 +459,7 @@ struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t da
 		return NULL;
 	}
 
-	eal->ea.value = data_blob(NULL, (size_t)val_len + 1);
+	eal->ea.value = data_blob_talloc(eal, NULL, (size_t)val_len + 1);
 	if (!eal->ea.value.data) {
 		return NULL;
 	}
