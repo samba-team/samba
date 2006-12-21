@@ -1002,8 +1002,7 @@ static BOOL receive_getdc_response(struct in_addr dc_ip,
  convert an ip to a name
 *******************************************************************/
 
-static BOOL dcip_to_name( const char *domainname, const char *realm, 
-                          const DOM_SID *sid, struct in_addr ip, fstring name )
+static BOOL dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip, fstring name )
 {
 	struct ip_service ip_list;
 
@@ -1017,7 +1016,7 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 	if (lp_security() == SEC_ADS) {
 		ADS_STRUCT *ads;
 
-		ads = ads_init(realm, domainname, NULL);
+		ads = ads_init(domain->alt_name, domain->name, NULL);
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 
 		if (ads_try_connect( ads, inet_ntoa(ip) ) )  {
@@ -1027,18 +1026,18 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 
 			DEBUG(10,("dcip_to_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
 
-			if ((ads->config.flags & ADS_KDC) && ads_closest_dc(ads)) {
+			if (domain->primary && (ads->config.flags & ADS_KDC) && ads_closest_dc(ads)) {
 				/* We're going to use this KDC for this realm/domain.
 				   If we are using sites, then force the krb5 libs
 				   to use this KDC. */
 
-				create_local_private_krb5_conf_for_domain(realm,
-								domainname,
+				create_local_private_krb5_conf_for_domain(domain->alt_name,
+								domain->name,
 								ip);
 
 				/* Ensure we contact this DC also. */
-				saf_store( domainname, name);
-				saf_store( realm, name);
+				saf_store( domain->name, name);
+				saf_store( domain->alt_name, name);
 			}
 
 			ads_destroy( &ads );
@@ -1051,11 +1050,11 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 
 	/* try GETDC requests next */
 	
-	if (send_getdc_request(ip, domainname, sid)) {
+	if (send_getdc_request(ip, domain->name, &domain->sid)) {
 		int i;
 		smb_msleep(100);
 		for (i=0; i<5; i++) {
-			if (receive_getdc_response(ip, domainname, name)) {
+			if (receive_getdc_response(ip, domain->name, name)) {
 				namecache_store(name, 0x20, 1, &ip_list);
 				return True;
 			}
@@ -1065,7 +1064,7 @@ static BOOL dcip_to_name( const char *domainname, const char *realm,
 
 	/* try node status request */
 
-	if ( name_status_find(domainname, 0x1c, 0x20, ip, name) ) {
+	if ( name_status_find(domain->name, 0x1c, 0x20, ip, name) ) {
 		namecache_store(name, 0x20, 1, &ip_list);
 		return True;
 	}
@@ -1203,8 +1202,7 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Try to figure out the name */
-	if (dcip_to_name( domain->name, domain->alt_name, &domain->sid,
-			  addr->sin_addr, dcname )) {
+	if (dcip_to_name( domain, addr->sin_addr, dcname )) {
 		return True;
 	}
 
@@ -1246,8 +1244,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			struct in_addr ip;
 
 			ip = *interpret_addr2( saf_servername );
-			if (dcip_to_name( domain->name, domain->alt_name,
-					  &domain->sid, ip, saf_name )) {
+			if (dcip_to_name( domain, ip, saf_name )) {
 				fstrcpy( domain->dcname, saf_name );
 			} else {
 				winbind_add_failed_connection_entry(
