@@ -4773,12 +4773,12 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	pstring directory;
-	int ret = -1;
 	SMB_STRUCT_STAT sbuf;
 	BOOL bad_path = False;
 	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *ctx = NULL;
 	struct ea_list *ea_list = NULL;
+	files_struct *fsp;
 
 	if (!CAN_WRITE(conn))
 		return ERROR_DOS(ERRSRV,ERRaccess);
@@ -4827,27 +4827,35 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		}
 		ea_list = read_ea_list(ctx, pdata + 4, total_data - 4);
 		if (!ea_list) {
-			talloc_destroy(ctx);
+			TALLOC_FREE(ctx);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 	} else if (IVAL(pdata,0) != 4) {
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (check_name(directory,conn)) {
-		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory,True));
-	}
-  
-	if(ret < 0) {
-		talloc_destroy(ctx);
+	if (!check_name(directory,conn)) {
+		TALLOC_FREE(ctx);
 		DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,
+					  ERRnoaccess);
 	}
 
+	status = open_directory(conn, directory, &sbuf, 
+				FILE_READ_ATTRIBUTES, /* A stat open */
+				FILE_SHARE_NONE, /* Ignored  */
+				FILE_CREATE, 0, NULL, &fsp);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(ctx);
+		return ERROR_NT(status);
+	}
+	close_file(fsp, NORMAL_CLOSE);
+  
 	/* Try and set any given EA. */
 	if (ea_list) {
 		status = set_ea(conn, NULL, directory, ea_list);
-		talloc_destroy(ctx);
+		TALLOC_FREE(ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
