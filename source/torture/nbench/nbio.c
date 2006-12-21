@@ -1,3 +1,8 @@
+/*
+  TODO: add splitting of writes for servers with signing
+*/
+
+
 /* 
    Unix SMB/CIFS implementation.
    SMB torture tester
@@ -290,7 +295,7 @@ void nb_createx(const char *fname,
 	DLIST_ADD_END(ftable, f, struct ftable *);
 }
 
-void nb_writex(int handle, int offset, int size, int ret_size, NTSTATUS status)
+void nb_writex(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 {
 	union smb_write io;
 	int i;
@@ -327,7 +332,7 @@ void nb_writex(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	children[nbio_id].bytes += ret_size;
 }
 
-void nb_write(int handle, int offset, int size, int ret_size, NTSTATUS status)
+void nb_write(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 {
 	union smb_write io;
 	int i;
@@ -365,7 +370,7 @@ void nb_write(int handle, int offset, int size, int ret_size, NTSTATUS status)
 }
 
 
-void nb_lockx(int handle, uint_t offset, int size, NTSTATUS status)
+void nb_lockx(int handle, off_t offset, int size, NTSTATUS status)
 {
 	union smb_lock io;
 	int i;
@@ -417,7 +422,7 @@ void nb_unlockx(int handle, uint_t offset, int size, NTSTATUS status)
 	check_status("UnlockX", status, ret);
 }
 
-void nb_readx(int handle, int offset, int size, int ret_size, NTSTATUS status)
+void nb_readx(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 {
 	union smb_read io;
 	int i;
