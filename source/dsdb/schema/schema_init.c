@@ -186,8 +186,6 @@ WERROR dsdb_map_int2oid(struct dsdb_schema *schema, uint32_t in, TALLOC_CTX *mem
 
 WERROR dsdb_attribute_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct dsdb_attribute *attr)
 {
-	WERROR status;
-
 	GET_STRING_LDB(msg, "cn", mem_ctx, attr, cn, True);
 	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, True);
 	GET_STRING_LDB(msg, "attributeID", mem_ctx, attr, attributeID_oid, True);
@@ -230,8 +228,6 @@ WERROR dsdb_attribute_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, str
 
 WERROR dsdb_class_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct dsdb_class *obj)
 {
-	WERROR status;
-
 	GET_STRING_LDB(msg, "cn", mem_ctx, obj, cn, True);
 	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, True);
 	GET_STRING_LDB(msg, "governsID", mem_ctx, obj, governsID_oid, True);
