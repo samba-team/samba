@@ -230,6 +230,7 @@ sub SharedLibrary($$)
 		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
 		if (defined($ctx->{ALIASES})) {
 			foreach (@{$ctx->{ALIASES}}) {
+				$self->{install_plugins} .= "\t\@rm -f \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
 				$self->{install_plugins} .= "\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
 				$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
 			}
@@ -268,6 +269,7 @@ __EOD__
 	if ($self->{config}->{SONAMEFLAG} ne "" and defined($ctx->{LIBRARY_SONAME})) {
 		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME} ";
 		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
+			$lns .= "\n\t\@rm -f $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
 			$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
 		}
 	}
@@ -275,10 +277,12 @@ __EOD__
 	if ($self->{config}->{SONAMEFLAG} ne "" and 
 		defined($ctx->{LIBRARY_SONAME}) and 
 		$ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
+		$lns .= "\n\t\@rm -f $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
 		$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
 	}
 
 	if (defined($ctx->{LIBRARY_SONAME})) {
+		$lns .= "\n\t\@rm -f $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}";
 		$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}";
 	}
 
@@ -298,6 +302,7 @@ __EOD__
 
 	if (defined($ctx->{ALIASES})) {
 		foreach (@{$ctx->{ALIASES}}) {
+			$self->output("\t\@rm -f $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
 			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
 		}
 	}
