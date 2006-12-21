@@ -101,7 +101,23 @@ struct dsdb_class {
 	BOOL systemOnly;
 };
 
+struct dsdb_schema_oid_prefix {
+	uint32_t id;
+	const char *oid;
+	size_t oid_len;
+};
+
 struct dsdb_schema {
+	uint32_t num_prefixes;
+	struct dsdb_schema_oid_prefix *prefixes;
+
+	/* 
+	 * the last element of the prefix mapping table isn't a oid,
+	 * it starts with 0xFF and has 21 bytes and is maybe a schema
+	 * version number
+	 */
+	const char *unknown_magic;
+
 	struct dsdb_attribute *attributes;
 	struct dsdb_class *classes;
 };

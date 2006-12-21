@@ -25,47 +25,63 @@
 #include "lib/util/dlinklist.h"
 #include "librpc/gen_ndr/drsuapi.h"
 
-#define _PREFIX(uint32, oid) {uint32,oid,sizeof(oid)}
-static const struct {
-	uint32_t uint32;
-	const char *oid;
-	size_t oid_len;
-} prefix_mappings[] = {
-	_PREFIX(0x00000000, "2.5.4."),
-	_PREFIX(0x00010000, "2.5.6."),
-	_PREFIX(0x00020000, "1.2.840.113556.1.2."),
-	_PREFIX(0x00030000, "1.2.840.113556.1.3."),
-	_PREFIX(0x00080000, "2.5.5."),
-	_PREFIX(0x00090000, "1.2.840.113556.1.4."),
-	_PREFIX(0x000A0000, "1.2.840.113556.1.5."),
-	_PREFIX(0x00140000, "2.16.840.1.113730.3."),
-	_PREFIX(0x00150000, "0.9.2342.19200300.100.1."),
-	_PREFIX(0x00160000, "2.16.840.1.113730.3.1."),
-	_PREFIX(0x00170000, "1.2.840.113556.1.5.7000."),
-	_PREFIX(0x00180000, "2.5.21."),
-	_PREFIX(0x00190000, "2.5.18."),
-	_PREFIX(0x001A0000, "2.5.20."),
-	_PREFIX(0x001B0000, "1.3.6.1.4.1.1466.101.119."),
-	_PREFIX(0x001C0000, "2.16.840.1.113730.3.2."),
-	_PREFIX(0x001D0000, "1.3.6.1.4.1.250.1."),
-	_PREFIX(0x001E0000, "1.2.840.113549.1.9."),
-	_PREFIX(0x001F0000, "0.9.2342.19200300.100.4."),
-};
+WERROR dsdb_load_oid_mappings(struct dsdb_schema *schema, const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
+{
+	uint32_t i,j;
 
-WERROR dsdb_map_oid2int(const char *in, uint32_t *out)
+	schema->prefixes = talloc_array(schema, struct dsdb_schema_oid_prefix, ctr->num_mappings);
+	W_ERROR_HAVE_NO_MEMORY(schema->prefixes);
+
+	for (i=0, j=0; i < ctr->num_mappings; i++) {
+		if (ctr->mappings[i].oid.oid == NULL) {
+			return WERR_INVALID_PARAM;
+		}
+
+		if (strncasecmp(ctr->mappings[i].oid.oid, "ff", 2) == 0) {
+			if (ctr->mappings[i].id_prefix != 0) {
+				return WERR_INVALID_PARAM;
+			}
+
+			/* the magic value should be in the last array member */
+			if (i != (ctr->num_mappings - 1)) {
+				return WERR_INVALID_PARAM;
+			}
+				
+			schema->unknown_magic = talloc_strdup(schema, ctr->mappings[i].oid.oid);
+			W_ERROR_HAVE_NO_MEMORY(schema->unknown_magic);
+		} else {
+			/* the last array member should contain the magic value not a oid */
+			if (i == (ctr->num_mappings - 1)) {
+				return WERR_INVALID_PARAM;
+			}
+
+			schema->prefixes[j].id	= ctr->mappings[i].id_prefix<<16;
+			schema->prefixes[j].oid	= talloc_asprintf(schema->prefixes, "%s.",
+								  ctr->mappings[i].oid.oid);
+			W_ERROR_HAVE_NO_MEMORY(schema->prefixes[j].oid);
+			schema->prefixes[j].oid_len = strlen(schema->prefixes[j].oid);
+			j++;
+		}
+	}
+
+	schema->num_prefixes = j;
+	return WERR_OK;
+}
+
+WERROR dsdb_map_oid2int(struct dsdb_schema *schema, const char *in, uint32_t *out)
 {
 	uint32_t i;
 
-	for (i=0; i < ARRAY_SIZE(prefix_mappings); i++) {
+	for (i=0; i < schema->num_prefixes; i++) {
 		const char *val_str;
 		char *end_str;
 		unsigned val;
 
-		if (strncmp(prefix_mappings[i].oid, in, prefix_mappings[i].oid_len - 1) != 0) {
+		if (strncmp(schema->prefixes[i].oid, in, schema->prefixes[i].oid_len) != 0) {
 			continue;
 		}
 
-		val_str = in + prefix_mappings[i].oid_len - 1;
+		val_str = in + schema->prefixes[i].oid_len;
 		end_str = NULL;
 		errno = 0;
 
@@ -91,25 +107,25 @@ WERROR dsdb_map_oid2int(const char *in, uint32_t *out)
 			return WERR_INVALID_PARAM;
 		}
 
-		*out = prefix_mappings[i].uint32 | val;
+		*out = schema->prefixes[i].id | val;
 		return WERR_OK;
 	}
 
 	return WERR_DS_NO_MSDS_INTID;
 }
 
-WERROR dsdb_map_int2oid(uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
+WERROR dsdb_map_int2oid(struct dsdb_schema *schema, uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
 {
 	uint32_t i;
 
-	for (i=0; i < ARRAY_SIZE(prefix_mappings); i++) {
+	for (i=0; i < schema->num_prefixes; i++) {
 		const char *val;
-		if (prefix_mappings[i].uint32 != (in & 0xFFFF0000)) {
+		if (schema->prefixes[i].id != (in & 0xFFFF0000)) {
 			continue;
 		}
 
 		val = talloc_asprintf(mem_ctx, "%s%u",
-				      prefix_mappings[i].oid,
+				      schema->prefixes[i].oid,
 				      in & 0xFFFF);
 		W_ERROR_HAVE_NO_MEMORY(val);
 
@@ -175,13 +191,8 @@ WERROR dsdb_attribute_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, str
 	GET_STRING_LDB(msg, "cn", mem_ctx, attr, cn, True);
 	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, True);
 	GET_STRING_LDB(msg, "attributeID", mem_ctx, attr, attributeID_oid, True);
-	status = dsdb_map_oid2int(attr->attributeID_oid, &attr->attributeID_id);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("%s: '%s': unable to map attributeID '%s': %s\n",
-			__location__, attr->lDAPDisplayName, attr->attributeID_oid,
-			win_errstr(status)));
-		return status;
-	}
+	/* set an invalid value */
+	attr->attributeID_id = 0xFFFFFFFF;
 	GET_GUID_LDB(msg, "schemaIDGUID", attr, schemaIDGUID);
 	GET_UINT32_LDB(msg, "mAPIID", attr, mAPIID);
 
@@ -193,13 +204,8 @@ WERROR dsdb_attribute_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, str
 	GET_UINT32_LDB(msg, "linkID", attr, linkID);
 
 	GET_STRING_LDB(msg, "attributeSyntax", mem_ctx, attr, attributeSyntax_oid, True);
-	status = dsdb_map_oid2int(attr->attributeSyntax_oid, &attr->attributeSyntax_id);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("%s: '%s': unable to map attributeSyntax '%s': %s\n",
-			__location__, attr->lDAPDisplayName, attr->attributeSyntax_oid,
-			win_errstr(status)));
-		return status;
-	}
+	/* set an invalid value */
+	attr->attributeSyntax_id = 0xFFFFFFFF;
 	GET_UINT32_LDB(msg, "oMSyntax", attr, oMSyntax);
 	GET_BLOB_LDB(msg, "oMObjectClass", mem_ctx, attr, oMObjectClass);
 
@@ -229,13 +235,8 @@ WERROR dsdb_class_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct 
 	GET_STRING_LDB(msg, "cn", mem_ctx, obj, cn, True);
 	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, True);
 	GET_STRING_LDB(msg, "governsID", mem_ctx, obj, governsID_oid, True);
-	status = dsdb_map_oid2int(obj->governsID_oid, &obj->governsID_id);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("%s: '%s': unable to map governsID '%s': %s\n",
-			__location__, obj->lDAPDisplayName, obj->governsID_oid,
-			win_errstr(status)));
-		return status;
-	}
+	/* set an invalid value */
+	obj->governsID_id = 0xFFFFFFFF;
 	GET_GUID_LDB(msg, "schemaIDGUID", obj, schemaIDGUID);
 
 	GET_UINT32_LDB(msg, "objectClassCategory", obj, objectClassCategory);
@@ -318,7 +319,8 @@ static const struct {
 	{ "defaultHidingValue",			"1.2.840.113556.1.4.518" },
 };
 
-static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct drsuapi_DsReplicaObject *obj,
+static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb_schema *schema,
+								     struct drsuapi_DsReplicaObject *obj,
 								     const char *name,
 								     uint32_t *idx)
 {
@@ -337,7 +339,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct drsu
 		return NULL;
 	}
 
-	status = dsdb_map_oid2int(oid, &id);
+	status = dsdb_map_oid2int(schema, oid, &id);
 	if (!W_ERROR_IS_OK(status)) {
 		return NULL;
 	}
@@ -352,9 +354,9 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct drsu
 	return NULL;
 }
 
-#define GET_STRING_DS(r, attr, mem_ctx, p, elem, strict) do { \
+#define GET_STRING_DS(s, r, attr, mem_ctx, p, elem, strict) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
-	_a = dsdb_find_object_attr_name(r, attr, NULL); \
+	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
 	if (strict && !_a) { \
 		d_printf("%s: %s == NULL\n", __location__, attr); \
 		return WERR_INVALID_PARAM; \
@@ -371,9 +373,9 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct drsu
 	} \
 } while (0)
 
-#define GET_BOOL_DS(r, attr, p, elem, strict) do { \
+#define GET_BOOL_DS(s, r, attr, p, elem, strict) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
-	_a = dsdb_find_object_attr_name(r, attr, NULL); \
+	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
 	if (strict && !_a) { \
 		d_printf("%s: %s == NULL\n", __location__, attr); \
 		return WERR_INVALID_PARAM; \
@@ -395,9 +397,9 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct drsu
 	} \
 } while (0)
 
-#define GET_UINT32_DS(r, attr, p, elem) do { \
+#define GET_UINT32_DS(s, r, attr, p, elem) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
-	_a = dsdb_find_object_attr_name(r, attr, NULL); \
+	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
 	if (_a && _a->value_ctr.uint32.num_values >= 1 \
 	    && _a->value_ctr.uint32.values[0].value) { \
 		(p)->elem = *_a->value_ctr.uint32.values[0].value;\
@@ -406,9 +408,9 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct drsu
 	} \
 } while (0)
 
-#define GET_GUID_DS(r, attr, p, elem) do { \
+#define GET_GUID_DS(s, r, attr, p, elem) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
-	_a = dsdb_find_object_attr_name(r, attr, NULL); \
+	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
 	if (_a && _a->value_ctr.guid.num_values >= 1 \
 	    && _a->value_ctr.guid.values[0].guid) { \
 		(p)->elem = *_a->value_ctr.guid.values[0].guid;\
@@ -417,9 +419,9 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct drsu
 	} \
 } while (0)
 
-#define GET_BLOB_DS(r, attr, mem_ctx, p, elem) do { \
+#define GET_BLOB_DS(s, r, attr, mem_ctx, p, elem) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
-	_a = dsdb_find_object_attr_name(r, attr, NULL); \
+	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
 	if (_a && _a->value_ctr.data_blob.num_values >= 1 \
 	    && _a->value_ctr.data_blob.values[0].data) { \
 		(p)->elem = *_a->value_ctr.data_blob.values[0].data;\
@@ -429,104 +431,110 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct drsu
 	}\
 } while (0)
 
-WERROR dsdb_attribute_from_drsuapi(struct drsuapi_DsReplicaObject *r, TALLOC_CTX *mem_ctx, struct dsdb_attribute *attr)
+WERROR dsdb_attribute_from_drsuapi(struct dsdb_schema *schema,
+				   struct drsuapi_DsReplicaObject *r,
+				   TALLOC_CTX *mem_ctx,
+				   struct dsdb_attribute *attr)
 {
 	WERROR status;
 
-	GET_STRING_DS(r, "name", mem_ctx, attr, cn, True);
-	GET_STRING_DS(r, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, True);
-	GET_UINT32_DS(r, "attributeID", attr, attributeID_id);
-	status = dsdb_map_int2oid(attr->attributeID_id, mem_ctx, &attr->attributeID_oid);
+	GET_STRING_DS(schema, r, "name", mem_ctx, attr, cn, True);
+	GET_STRING_DS(schema, r, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, True);
+	GET_UINT32_DS(schema, r, "attributeID", attr, attributeID_id);
+	status = dsdb_map_int2oid(schema, attr->attributeID_id, mem_ctx, &attr->attributeID_oid);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("%s: '%s': unable to map attributeID 0x%08X: %s\n",
 			__location__, attr->lDAPDisplayName, attr->attributeID_id,
 			win_errstr(status)));
 		return status;
 	}
-	GET_GUID_DS(r, "schemaIDGUID", attr, schemaIDGUID);
-	GET_UINT32_DS(r, "mAPIID", attr, mAPIID);
+	GET_GUID_DS(schema, r, "schemaIDGUID", attr, schemaIDGUID);
+	GET_UINT32_DS(schema, r, "mAPIID", attr, mAPIID);
 
-	GET_GUID_DS(r, "attributeSecurityGUID", attr, attributeSecurityGUID);
+	GET_GUID_DS(schema, r, "attributeSecurityGUID", attr, attributeSecurityGUID);
 
-	GET_UINT32_DS(r, "searchFlags", attr, searchFlags);
-	GET_UINT32_DS(r, "systemFlags", attr, systemFlags);
-	GET_BOOL_DS(r, "isMemberOfPartialAttributeSet", attr, isMemberOfPartialAttributeSet, False);
-	GET_UINT32_DS(r, "linkID", attr, linkID);
+	GET_UINT32_DS(schema, r, "searchFlags", attr, searchFlags);
+	GET_UINT32_DS(schema, r, "systemFlags", attr, systemFlags);
+	GET_BOOL_DS(schema, r, "isMemberOfPartialAttributeSet", attr, isMemberOfPartialAttributeSet, False);
+	GET_UINT32_DS(schema, r, "linkID", attr, linkID);
 
-	GET_UINT32_DS(r, "attributeSyntax", attr, attributeSyntax_id);
-	status = dsdb_map_int2oid(attr->attributeSyntax_id, mem_ctx, &attr->attributeSyntax_oid);
+	GET_UINT32_DS(schema, r, "attributeSyntax", attr, attributeSyntax_id);
+	status = dsdb_map_int2oid(schema, attr->attributeSyntax_id, mem_ctx, &attr->attributeSyntax_oid);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("%s: '%s': unable to map attributeSyntax 0x%08X: %s\n",
 			__location__, attr->lDAPDisplayName, attr->attributeSyntax_id,
 			win_errstr(status)));
 		return status;
 	}
-	GET_UINT32_DS(r, "oMSyntax", attr, oMSyntax);
-	GET_BLOB_DS(r, "oMObjectClass", mem_ctx, attr, oMObjectClass);
+	GET_UINT32_DS(schema, r, "oMSyntax", attr, oMSyntax);
+	GET_BLOB_DS(schema, r, "oMObjectClass", mem_ctx, attr, oMObjectClass);
 
-	GET_BOOL_DS(r, "isSingleValued", attr, isSingleValued, True);
-	GET_UINT32_DS(r, "rangeLower", attr, rangeLower);
-	GET_UINT32_DS(r, "rangeUpper", attr, rangeUpper);
-	GET_BOOL_DS(r, "extendedCharsAllowed", attr, extendedCharsAllowed, False);
+	GET_BOOL_DS(schema, r, "isSingleValued", attr, isSingleValued, True);
+	GET_UINT32_DS(schema, r, "rangeLower", attr, rangeLower);
+	GET_UINT32_DS(schema, r, "rangeUpper", attr, rangeUpper);
+	GET_BOOL_DS(schema, r, "extendedCharsAllowed", attr, extendedCharsAllowed, False);
 
-	GET_UINT32_DS(r, "schemaFlagsEx", attr, schemaFlagsEx);
-	GET_BLOB_DS(r, "msDs-Schema-Extensions", mem_ctx, attr, msDs_Schema_Extensions);
+	GET_UINT32_DS(schema, r, "schemaFlagsEx", attr, schemaFlagsEx);
+	GET_BLOB_DS(schema, r, "msDs-Schema-Extensions", mem_ctx, attr, msDs_Schema_Extensions);
 
-	GET_BOOL_DS(r, "showInAdvancedViewOnly", attr, showInAdvancedViewOnly, False);
-	GET_STRING_DS(r, "adminDisplayName", mem_ctx, attr, adminDisplayName, False);
-	GET_STRING_DS(r, "adminDescription", mem_ctx, attr, adminDescription, False);
-	GET_STRING_DS(r, "classDisplayName", mem_ctx, attr, classDisplayName, False);
-	GET_BOOL_DS(r, "isEphemeral", attr, isEphemeral, False);
-	GET_BOOL_DS(r, "isDefunct", attr, isDefunct, False);
-	GET_BOOL_DS(r, "systemOnly", attr, systemOnly, False);
+	GET_BOOL_DS(schema, r, "showInAdvancedViewOnly", attr, showInAdvancedViewOnly, False);
+	GET_STRING_DS(schema, r, "adminDisplayName", mem_ctx, attr, adminDisplayName, False);
+	GET_STRING_DS(schema, r, "adminDescription", mem_ctx, attr, adminDescription, False);
+	GET_STRING_DS(schema, r, "classDisplayName", mem_ctx, attr, classDisplayName, False);
+	GET_BOOL_DS(schema, r, "isEphemeral", attr, isEphemeral, False);
+	GET_BOOL_DS(schema, r, "isDefunct", attr, isDefunct, False);
+	GET_BOOL_DS(schema, r, "systemOnly", attr, systemOnly, False);
 
 	return WERR_OK;
 }
 
-WERROR dsdb_class_from_drsuapi(struct drsuapi_DsReplicaObject *r, TALLOC_CTX *mem_ctx, struct dsdb_class *obj)
+WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
+			       struct drsuapi_DsReplicaObject *r,
+			       TALLOC_CTX *mem_ctx,
+			       struct dsdb_class *obj)
 {
 	WERROR status;
 
-	GET_STRING_DS(r, "name", mem_ctx, obj, cn, True);
-	GET_STRING_DS(r, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, True);
-	GET_UINT32_DS(r, "governsID", obj, governsID_id);
-	status = dsdb_map_int2oid(obj->governsID_id, mem_ctx, &obj->governsID_oid);
+	GET_STRING_DS(schema, r, "name", mem_ctx, obj, cn, True);
+	GET_STRING_DS(schema, r, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, True);
+	GET_UINT32_DS(schema, r, "governsID", obj, governsID_id);
+	status = dsdb_map_int2oid(schema, obj->governsID_id, mem_ctx, &obj->governsID_oid);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("%s: '%s': unable to map governsID 0x%08X: %s\n",
 			__location__, obj->lDAPDisplayName, obj->governsID_id,
 			win_errstr(status)));
 		return status;
 	}
-	GET_GUID_DS(r, "schemaIDGUID", obj, schemaIDGUID);
+	GET_GUID_DS(schema, r, "schemaIDGUID", obj, schemaIDGUID);
 
-	GET_UINT32_DS(r, "objectClassCategory", obj, objectClassCategory);
-	GET_STRING_DS(r, "rDNAttID", mem_ctx, obj, rDNAttID, False);
-	GET_STRING_DS(r, "defaultObjectCategory", mem_ctx, obj, defaultObjectCategory, True);
+	GET_UINT32_DS(schema, r, "objectClassCategory", obj, objectClassCategory);
+	GET_STRING_DS(schema, r, "rDNAttID", mem_ctx, obj, rDNAttID, False);
+	GET_STRING_DS(schema, r, "defaultObjectCategory", mem_ctx, obj, defaultObjectCategory, True);
  
-	GET_STRING_DS(r, "subClassOf", mem_ctx, obj, subClassOf, True);
+	GET_STRING_DS(schema, r, "subClassOf", mem_ctx, obj, subClassOf, True);
 
-	GET_STRING_DS(r, "systemAuxiliaryClass", mem_ctx, obj, systemAuxiliaryClass, False);
+	GET_STRING_DS(schema, r, "systemAuxiliaryClass", mem_ctx, obj, systemAuxiliaryClass, False);
 	obj->systemPossSuperiors= NULL;
 	obj->systemMustContain	= NULL;
 	obj->systemMayContain	= NULL;
 
-	GET_STRING_DS(r, "auxiliaryClass", mem_ctx, obj, auxiliaryClass, False);
+	GET_STRING_DS(schema, r, "auxiliaryClass", mem_ctx, obj, auxiliaryClass, False);
 	obj->possSuperiors	= NULL;
 	obj->mustContain	= NULL;
 	obj->mayContain		= NULL;
 
-	GET_STRING_DS(r, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, False);
+	GET_STRING_DS(schema, r, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, False);
 
-	GET_UINT32_DS(r, "schemaFlagsEx", obj, schemaFlagsEx);
-	GET_BLOB_DS(r, "msDs-Schema-Extensions", mem_ctx, obj, msDs_Schema_Extensions);
+	GET_UINT32_DS(schema, r, "schemaFlagsEx", obj, schemaFlagsEx);
+	GET_BLOB_DS(schema, r, "msDs-Schema-Extensions", mem_ctx, obj, msDs_Schema_Extensions);
 
-	GET_BOOL_DS(r, "showInAdvancedViewOnly", obj, showInAdvancedViewOnly, False);
-	GET_STRING_DS(r, "adminDisplayName", mem_ctx, obj, adminDisplayName, False);
-	GET_STRING_DS(r, "adminDescription", mem_ctx, obj, adminDescription, False);
-	GET_STRING_DS(r, "classDisplayName", mem_ctx, obj, classDisplayName, False);
-	GET_BOOL_DS(r, "defaultHidingValue", obj, defaultHidingValue, False);
-	GET_BOOL_DS(r, "isDefunct", obj, isDefunct, False);
-	GET_BOOL_DS(r, "systemOnly", obj, systemOnly, False);
+	GET_BOOL_DS(schema, r, "showInAdvancedViewOnly", obj, showInAdvancedViewOnly, False);
+	GET_STRING_DS(schema, r, "adminDisplayName", mem_ctx, obj, adminDisplayName, False);
+	GET_STRING_DS(schema, r, "adminDescription", mem_ctx, obj, adminDescription, False);
+	GET_STRING_DS(schema, r, "classDisplayName", mem_ctx, obj, classDisplayName, False);
+	GET_BOOL_DS(schema, r, "defaultHidingValue", obj, defaultHidingValue, False);
+	GET_BOOL_DS(schema, r, "isDefunct", obj, isDefunct, False);
+	GET_BOOL_DS(schema, r, "systemOnly", obj, systemOnly, False);
 
 	return WERR_OK;
 }
