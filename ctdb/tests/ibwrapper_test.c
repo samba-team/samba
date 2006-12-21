@@ -107,18 +107,22 @@ int ibwtest_send_id(struct ibw_conn *conn)
 
 int ibwtest_send_test_msg(struct ibwtest_ctx *tcx, struct ibw_conn *conn, const char *msg)
 {
-	char *buf;
+	char *buf, *p;
 	void *key;
+	uint32_t len;
 
-	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, strlen(msg)+2)) {
+	len = strlen(msg)+2 + sizeof(uint32_t);
+	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, len)) {
 		fprintf(stderr, "send_test_msg: ibw_alloc_send_buf failed\n");
 		return -1;
 	}
 
-	buf[0] = (char)TESTOP_SEND_DATA;
-	strcpy(buf+1, msg);
-	
-	if (ibw_send(conn, buf, key, strlen(buf+1)+2)) {
+	p += sizeof(uint32_t);
+	p[0] = (char)TESTOP_SEND_DATA;
+	p++;
+	strcpy(p, msg);
+
+	if (ibw_send(conn, buf, key, len)) {
 		DEBUG(0, ("send_test_msg: ibw_send error\n"));
 		return -1;
 	}

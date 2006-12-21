@@ -78,11 +78,12 @@ struct ibw_conn_priv {
 	struct ibw_wr *wr_list_avail;
 	struct ibw_wr *wr_list_used;
 	struct ibw_wr **wr_index; /* array[0..(qsize-1)] of (ibw_wr *) */
+	int	wr_sent; /* # of send wrs in the CQ */
 
 	struct ibw_wr *queue;
-	struct ibw_wr *queue_sent;
-	struct ibw_wr *queue_avail;
-	int	queue_max; /* max wr_id in the queue */
+	struct ibw_wr *extra_sent;
+	struct ibw_wr *extra_avail;
+	int	extra_max; /* max wr_id in the queue */
 
 	/* buf_recv is a ring buffer */
 	char *buf_recv; /* max_recv_wr * avg_recv_size */
