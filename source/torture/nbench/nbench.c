@@ -32,6 +32,7 @@ int nbench_line_count = 0;
 static int timelimit = 600;
 static int warmup;
 static const char *loadfile;
+static int read_only;
 
 #define ival(s) strtol(s, NULL, 0)
 
@@ -47,7 +48,7 @@ static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 	BOOL correct = True;
 
 	if (torture_nprocs == 1) {
-		if (!torture_setup_dir(cli, "\\clients")) {
+		if (!read_only && !torture_setup_dir(cli, "\\clients")) {
 			return False;
 		}
 	}
@@ -98,15 +99,15 @@ again:
 				   ival(params[4]), status);
 		} else if (!strcmp(params[0],"Close")) {
 			nb_close(ival(params[1]), status);
-		} else if (!strcmp(params[0],"Rename")) {
+		} else if (!read_only && !strcmp(params[0],"Rename")) {
 			nb_rename(params[1], params[2], status);
-		} else if (!strcmp(params[0],"Unlink")) {
+		} else if (!read_only && !strcmp(params[0],"Unlink")) {
 			nb_unlink(params[1], ival(params[2]), status);
-		} else if (!strcmp(params[0],"Deltree")) {
+		} else if (!read_only && !strcmp(params[0],"Deltree")) {
 			nb_deltree(params[1]);
-		} else if (!strcmp(params[0],"Rmdir")) {
+		} else if (!read_only && !strcmp(params[0],"Rmdir")) {
 			nb_rmdir(params[1], status);
-		} else if (!strcmp(params[0],"Mkdir")) {
+		} else if (!read_only && !strcmp(params[0],"Mkdir")) {
 			nb_mkdir(params[1], status);
 		} else if (!strcmp(params[0],"QUERY_PATH_INFORMATION")) {
 			nb_qpathinfo(params[1], ival(params[2]), status);
@@ -114,16 +115,16 @@ again:
 			nb_qfileinfo(ival(params[1]), ival(params[2]), status);
 		} else if (!strcmp(params[0],"QUERY_FS_INFORMATION")) {
 			nb_qfsinfo(ival(params[1]), status);
-		} else if (!strcmp(params[0],"SET_FILE_INFORMATION")) {
+		} else if (!read_only && !strcmp(params[0],"SET_FILE_INFORMATION")) {
 			nb_sfileinfo(ival(params[1]), ival(params[2]), status);
 		} else if (!strcmp(params[0],"FIND_FIRST")) {
 			nb_findfirst(params[1], ival(params[2]), 
 				     ival(params[3]), ival(params[4]), status);
-		} else if (!strcmp(params[0],"WriteX")) {
+		} else if (!read_only && !strcmp(params[0],"WriteX")) {
 			nb_writex(ival(params[1]), 
 				  ival(params[2]), ival(params[3]), ival(params[4]),
 				  status);
-		} else if (!strcmp(params[0],"Write")) {
+		} else if (!read_only && !strcmp(params[0],"Write")) {
 			nb_write(ival(params[1]), 
 				 ival(params[2]), ival(params[3]), ival(params[4]),
 				 status);
@@ -156,7 +157,7 @@ again:
 done:
 	fclose(f);
 
-	if (torture_nprocs == 1) {
+	if (!read_only && torture_nprocs == 1) {
 		smbcli_deltree(cli->tree, "\\clients");
 	}
 	if (!torture_close_connection(cli)) {
@@ -175,6 +176,8 @@ BOOL torture_nbench(struct torture_context *torture)
 	struct smbcli_state *cli;
 	const char *p;
 
+	read_only = lp_parm_bool(-1, "torture", "readonly", False);
+
 	p = torture_setting_string(torture, "timelimit", NULL);
 	if (p && *p) {
 		timelimit = atoi(p);
@@ -192,7 +195,7 @@ BOOL torture_nbench(struct torture_context *torture)
 			return False;
 		}
 
-		if (!torture_setup_dir(cli, "\\clients")) {
+		if (!read_only && !torture_setup_dir(cli, "\\clients")) {
 			return False;
 		}
 	}
@@ -215,7 +218,7 @@ BOOL torture_nbench(struct torture_context *torture)
 	torture_create_procs(torture, run_netbench, &correct);
 	alarm(0);
 
-	if (torture_nprocs > 1) {
+	if (!read_only && torture_nprocs > 1) {
 		smbcli_deltree(cli->tree, "\\clients");
 	}
 
