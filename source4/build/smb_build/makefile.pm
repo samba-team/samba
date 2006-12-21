@@ -264,20 +264,22 @@ __EOD__
 	}
 
 	my $soarg = "";
-	my $soargdebug = "";
+	my $lns = "";
 	if ($self->{config}->{SONAMEFLAG} ne "" and defined($ctx->{LIBRARY_SONAME})) {
 		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME} ";
 		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-			$soargdebug = "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
+			$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
 		}
 	}
-
-	my $singlesoarg = "";
 
 	if ($self->{config}->{SONAMEFLAG} ne "" and 
 		defined($ctx->{LIBRARY_SONAME}) and 
 		$ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-		$singlesoarg = "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
+		$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
+	}
+
+	if (defined($ctx->{LIBRARY_SONAME})) {
+		$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}";
 	}
 
 	$self->output(<< "__EOD__"
@@ -290,7 +292,7 @@ $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_
 		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $extraflags \\
 		 $soarg \\
-		$init_obj $singlesoarg$soargdebug
+		$init_obj $lns
 __EOD__
 );
 

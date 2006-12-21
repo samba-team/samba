@@ -46,9 +46,9 @@ SKIP: {
 		$outfile = "test-$name";
 	}
 
-	my $cflags = `pkg-config --libs --cflags ndr`;
+	my $flags = `pkg-config --libs --cflags ndr samba-config`;
 
-	open CC, "|cc -x c - -o $outfile $cflags";
+	open CC, "|cc -x c - -o $outfile $flags";
 	print CC "#define uint_t unsigned int\n";
 	print CC "#define _GNU_SOURCE\n";
 	print CC "#include <stdint.h>\n";
