@@ -425,6 +425,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			const char *str;
 			const char *expected_str;
 			enum drsuapi_DsNameStatus status;
+			enum drsuapi_DsNameStatus alternate_status;
 			enum drsuapi_DsNameFlags flags;
 		} crack[] = {
 			{
@@ -543,7 +544,8 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = "CN=Microsoft Corporation,L=Redmond,S=Washington,C=US",
 				.comment = "display name for Microsoft Support Account",
-				.status = DRSUAPI_DS_NAME_STATUS_OK
+				.status = DRSUAPI_DS_NAME_STATUS_OK,
+				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
@@ -626,7 +628,8 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.comment = "Looking for the kadmin/changepw service as a serivce principal",
 				.str = talloc_asprintf(mem_ctx, "kadmin/changepw"),
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
-				.expected_str = talloc_asprintf(mem_ctx, "CN=krbtgt,CN=Users,%s", realm_dn_str)
+				.expected_str = talloc_asprintf(mem_ctx, "CN=krbtgt,CN=Users,%s", realm_dn_str),
+				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
@@ -752,7 +755,8 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
 				.comment = "BUITIN SID -> NT4 account",
 				.str = SID_BUILTIN,
-				.status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING
+				.status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING,
+				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE
 			}, 
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
@@ -760,21 +764,24 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.str = SID_BUILTIN,
 				.comment = "Builtin Domain SID -> DN",
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
-				.expected_str = talloc_asprintf(mem_ctx, "CN=Builtin,%s", realm_dn_str)
+				.expected_str = talloc_asprintf(mem_ctx, "CN=Builtin,%s", realm_dn_str),
+				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = SID_BUILTIN_ADMINISTRATORS,
 				.comment = "Builtin Administrors SID -> DN",
-				.status = DRSUAPI_DS_NAME_STATUS_OK
+				.status = DRSUAPI_DS_NAME_STATUS_OK,
+				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
 				.str = SID_BUILTIN_ADMINISTRATORS,
 				.comment = "Builtin Administrors SID -> NT4 Account",
-				.status = DRSUAPI_DS_NAME_STATUS_OK
+				.status = DRSUAPI_DS_NAME_STATUS_OK,
+				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
@@ -826,11 +833,22 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
 				ret = False;
 			} else if (r.out.ctr.ctr1->array[0].status != crack[i].status) {
-				printf("DsCrackNames unexpected status %d, wanted %d on name: %s\n", 
-				       r.out.ctr.ctr1->array[0].status,
-				       crack[i].status,
-				       crack[i].str);
-				ret = False;
+				if (crack[i].alternate_status) {
+					if (r.out.ctr.ctr1->array[0].status != crack[i].alternate_status) {
+						printf("DsCrackNames unexpected status %d, wanted %d or %d on name: %s\n", 
+						       r.out.ctr.ctr1->array[0].status,
+						       crack[i].status,
+						       crack[i].alternate_status,
+						       crack[i].str);
+						ret = False;
+					}
+				} else {
+					printf("DsCrackNames unexpected status %d, wanted %d on name: %s\n", 
+					       r.out.ctr.ctr1->array[0].status,
+					       crack[i].status,
+					       crack[i].str);
+					ret = False;
+				}
 			} else if (crack[i].expected_str
 				   && (strcmp(r.out.ctr.ctr1->array[0].result_name, 
 					      crack[i].expected_str) != 0)) {
