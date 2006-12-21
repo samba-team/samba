@@ -641,7 +641,7 @@ BOOL asn1_read_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blo
 		return False;
 	}
 	*blob = data_blob(NULL, len);
-	if (!blob->data) {
+	if ((len != 0) && (!blob->data)) {
 		data->has_error = True;
 		return False;
 	}
