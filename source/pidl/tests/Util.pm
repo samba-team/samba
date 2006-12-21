@@ -43,7 +43,7 @@ SKIP: {
 	if (defined($test_data_prefix)) {
 		$outfile = "$test_data_prefix/test-$name";	
 	} else {
-		$outfile = "test-$name";
+		$outfile = "./test-$name";
 	}
 
 	my $flags = `pkg-config --libs --cflags ndr samba-config`;
@@ -74,7 +74,7 @@ SKIP: {
 
 	ok(-f $outfile, "($name) compile");
 
-	my $ret = system("./$outfile", ()) >> 8;
+	my $ret = system($outfile, ()) >> 8;
 	print "# return code: $ret\n" if ($ret != 0);
 
 	ok($ret == 0, "($name) run");
