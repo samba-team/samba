@@ -123,17 +123,27 @@ static BOOL test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	md.t2mkdir.in.eas[2].name.s = "EATHREE";
 	md.t2mkdir.in.eas[2].value = data_blob_talloc(mem_ctx, "xx1", 3);
 	status = smb_raw_mkdir(cli->tree, &md);
-	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = torture_check_ea(cli, path, "EAONE", "blah");
-	CHECK_STATUS(status, NT_STATUS_OK);
-	status = torture_check_ea(cli, path, "EA TWO", "foo bar");
-	CHECK_STATUS(status, NT_STATUS_OK);
-	status = torture_check_ea(cli, path, "EATHREE", "xx1");
-	CHECK_STATUS(status, NT_STATUS_OK);
+	if (lp_parm_bool(-1, "torture", "samba3", False)
+	    && NT_STATUS_EQUAL(status, NT_STATUS_EAS_NOT_SUPPORTED)) {
+		d_printf("EAS not supported -- not treating as fatal\n");
+	}
+	else {
+		/*
+		 * In Samba3, don't see this error as fatal
+		 */
+		CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = smb_raw_rmdir(cli->tree, &rd);
-	CHECK_STATUS(status, NT_STATUS_OK);
+		status = torture_check_ea(cli, path, "EAONE", "blah");
+		CHECK_STATUS(status, NT_STATUS_OK);
+		status = torture_check_ea(cli, path, "EA TWO", "foo bar");
+		CHECK_STATUS(status, NT_STATUS_OK);
+		status = torture_check_ea(cli, path, "EATHREE", "xx1");
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		status = smb_raw_rmdir(cli->tree, &rd);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
 
 done:
 	smb_raw_exit(cli->session);
