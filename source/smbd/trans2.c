@@ -4845,7 +4845,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	}
 
 	/* Try and set any given EA. */
-	if (total_data) {
+	if (ea_list) {
 		status = set_ea(conn, NULL, directory, ea_list);
 		talloc_destroy(ctx);
 		if (!NT_STATUS_IS_OK(status)) {
