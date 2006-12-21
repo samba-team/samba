@@ -106,6 +106,12 @@ static BOOL test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_rmdir(cli->tree, &rd);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	printf("testing t2mkdir bad path\n");
+	md.t2mkdir.in.path = talloc_asprintf(mem_ctx, "%s\\bad_path\\bad_path",
+					     BASEDIR);
+	status = smb_raw_mkdir(cli->tree, &md);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
 	printf("testing t2mkdir with EAs\n");
 
 	/* with EAs */
