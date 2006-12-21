@@ -25,6 +25,24 @@
 
 #include "includes.h"
 
+/**********************************************************************
+ Is this our primary domain ?
+**********************************************************************/
+
+#ifdef HAVE_KRB5
+static BOOL is_our_primary_domain(const char *domain)
+{
+	int role = lp_server_role();
+
+	if ((role == ROLE_DOMAIN_MEMBER) && strequal(lp_workgroup(), domain)) {
+		return True;
+	} else if (strequal(get_global_sam_name(), domain)) {
+		return True;
+	}
+	return False;
+}
+#endif
+
 /**************************************************************************
  Find the name and IP address for a server in the realm/domain
  *************************************************************************/
@@ -79,7 +97,7 @@ static BOOL ads_dc_name(const char *domain,
 		}
 
 #ifdef HAVE_KRB5
-		if ((ads->config.flags & ADS_KDC) && ads_closest_dc(ads)) {
+		if (is_our_primary_domain(domain) && (ads->config.flags & ADS_KDC) && ads_closest_dc(ads)) {
 			/* We're going to use this KDC for this realm/domain.
 			   If we are using sites, then force the krb5 libs
 			   to use this KDC. */
