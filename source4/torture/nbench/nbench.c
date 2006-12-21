@@ -34,7 +34,7 @@ static int warmup;
 static const char *loadfile;
 static int read_only;
 
-#define ival(s) strtol(s, NULL, 0)
+#define ival(s) strtoll(s, NULL, 0)
 
 /* run a test that simulates an approximate netbench client load */
 static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli, int client)
