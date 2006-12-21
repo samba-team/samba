@@ -1054,39 +1054,46 @@ PAM_EXTERN
 int pam_sm_setcred(pam_handle_t *pamh, int flags,
 		   int argc, const char **argv)
 {
+	int ret = PAM_SYSTEM_ERR;
 	dictionary *d = NULL;
 
 	/* parse arguments */
 	int ctrl = _pam_parse(pamh, flags, argc, argv, &d);
 	if (ctrl == -1) {
-		return PAM_SYSTEM_ERR;
+		ret = PAM_SYSTEM_ERR;
+		goto out;
 	}
 
 	_pam_log_debug(pamh, ctrl, LOG_DEBUG, "pam_winbind: pam_sm_setcred (flags: 0x%04x)", flags);
 
+	switch (flags & ~PAM_SILENT) {
+
+		case PAM_DELETE_CRED:
+			ret = pam_sm_close_session(pamh, flags, argc, argv);
+			break;
+		case PAM_REFRESH_CRED:
+			_pam_log_debug(pamh, ctrl, LOG_WARNING, "PAM_REFRESH_CRED not implemented");
+			ret = PAM_SUCCESS;
+			break;
+		case PAM_REINITIALIZE_CRED:
+			_pam_log_debug(pamh, ctrl, LOG_WARNING, "PAM_REINITIALIZE_CRED not implemented");
+			ret = PAM_SUCCESS;
+			break;
+		case PAM_ESTABLISH_CRED:
+			_pam_log_debug(pamh, ctrl, LOG_WARNING, "PAM_ESTABLISH_CRED not implemented");
+			ret = PAM_SUCCESS;
+			break;
+		default:
+			ret = PAM_SYSTEM_ERR;
+			break;
+	}
+
+ out:
 	if (d) {
 		iniparser_freedict(d);
 	}
 
-	switch (flags & ~PAM_SILENT) {
-
-		case PAM_DELETE_CRED:
-			return pam_sm_close_session(pamh, flags, argc, argv);
-	
-		case PAM_REFRESH_CRED:
-			_pam_log_debug(pamh, ctrl, LOG_WARNING, "PAM_REFRESH_CRED not implemented");
-			break;
-		case PAM_REINITIALIZE_CRED:
-			_pam_log_debug(pamh, ctrl, LOG_WARNING, "PAM_REINITIALIZE_CRED not implemented");
-			break;
-		case PAM_ESTABLISH_CRED:
-			_pam_log_debug(pamh, ctrl, LOG_WARNING, "PAM_ESTABLISH_CRED not implemented");
-			break;
-		default:
-			break;
-	}
-
-	return PAM_SUCCESS;
+	return ret;
 }
 
 /*
@@ -1098,11 +1105,12 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 		   int argc, const char **argv)
 {
 	const char *username;
-	int retval = PAM_USER_UNKNOWN;
+	int ret = PAM_USER_UNKNOWN;
 	void *tmp = NULL;
+	dictionary *d = NULL;
 
 	/* parse arguments */
-	int ctrl = _pam_parse(pamh, flags, argc, argv, NULL);
+	int ctrl = _pam_parse(pamh, flags, argc, argv, &d);
 	if (ctrl == -1) {
 		return PAM_SYSTEM_ERR;
 	}
@@ -1111,30 +1119,34 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 
 
 	/* Get the username */
-	retval = pam_get_user(pamh, &username, NULL);
-	if ((retval != PAM_SUCCESS) || (!username)) {
+	ret = pam_get_user(pamh, &username, NULL);
+	if ((ret != PAM_SUCCESS) || (!username)) {
 		_pam_log_debug(pamh, ctrl, LOG_DEBUG,"can not get the username");
-		return PAM_SERVICE_ERR;
+		ret = PAM_SERVICE_ERR;
+		goto out;
 	}
 
 	/* Verify the username */
-	retval = valid_user(pamh, ctrl, username);
-	switch (retval) {
+	ret = valid_user(pamh, ctrl, username);
+	switch (ret) {
 	case -1:
 		/* some sort of system error. The log was already printed */
-		return PAM_SERVICE_ERR;
+		ret = PAM_SERVICE_ERR;
+		goto out;
 	case 1:
 		/* the user does not exist */
 		_pam_log_debug(pamh, ctrl, LOG_NOTICE, "user '%s' not found", username);
 		if (ctrl & WINBIND_UNKNOWN_OK_ARG) {
-			return PAM_IGNORE;
+			ret = PAM_IGNORE;
+			goto out;
 		}
-		return PAM_USER_UNKNOWN;
+		ret = PAM_USER_UNKNOWN;
+		goto out;
 	case 0:
 		pam_get_data( pamh, PAM_WINBIND_NEW_AUTHTOK_REQD, (const void **)&tmp);
 		if (tmp != NULL) {
-			retval = atoi((const char *)tmp);
-			switch (retval) {
+			ret = atoi((const char *)tmp);
+			switch (ret) {
 			case PAM_AUTHTOK_EXPIRED:
 				/* fall through, since new token is required in this case */
 			case PAM_NEW_AUTHTOK_REQD:
@@ -1142,41 +1154,64 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 					 PAM_WINBIND_NEW_AUTHTOK_REQD);
 				_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' needs new password", username);
 				/* PAM_AUTHTOKEN_REQD does not exist, but is documented in the manpage */
-				return PAM_NEW_AUTHTOK_REQD; 
+				ret = PAM_NEW_AUTHTOK_REQD;
+				goto out;
 			default:
 				_pam_log(pamh, ctrl, LOG_WARNING, "pam_sm_acct_mgmt success");
 				_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' granted access", username);
-				return PAM_SUCCESS;
+				ret = PAM_SUCCESS;
+				goto out;
 			}
 		}
 
 		/* Otherwise, the authentication looked good */
 		_pam_log(pamh, ctrl, LOG_NOTICE, "user '%s' granted access", username);
-		return PAM_SUCCESS;
+		ret = PAM_SUCCESS;
+		goto out;
 	default:
 		/* we don't know anything about this return value */
-		_pam_log(pamh, ctrl, LOG_ERR, "internal module error (retval = %d, user = '%s')", 
-			 retval, username);
-		return PAM_SERVICE_ERR;
+		_pam_log(pamh, ctrl, LOG_ERR, "internal module error (ret = %d, user = '%s')", 
+			 ret, username);
+		ret = PAM_SERVICE_ERR;
+		goto out;
 	}
 
 	/* should not be reached */
-	return PAM_IGNORE;
+	ret = PAM_IGNORE;
+
+ out:
+
+ 	if (d) {
+		iniparser_freedict(d);
+	}
+
+	return ret;
 }
 
 PAM_EXTERN
 int pam_sm_open_session(pam_handle_t *pamh, int flags,
 			int argc, const char **argv)
 {
+	int ret = PAM_SYSTEM_ERR;
+	dictionary *d = NULL;
+
 	/* parse arguments */
-	int ctrl = _pam_parse(pamh, flags, argc, argv, NULL);
+	int ctrl = _pam_parse(pamh, flags, argc, argv, &d);
 	if (ctrl == -1) {
-		return PAM_SYSTEM_ERR;
+		ret = PAM_SYSTEM_ERR;
+		goto out;
 	}
 
 	_pam_log_debug(pamh, ctrl, LOG_DEBUG, "pam_winbind: pam_sm_open_session handler (flags: 0x%04x)", flags);
 
-	return PAM_SUCCESS;
+	ret = PAM_SUCCESS;
+
+ out:
+	if (d) {
+		iniparser_freedict(d);
+	}
+
+	return ret;
 }
 
 PAM_EXTERN
