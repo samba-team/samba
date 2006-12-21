@@ -464,10 +464,24 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_CANONICAL, 
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = canonical_name,
+				.expected_str = FQDN_1779_name,
+				.status = DRSUAPI_DS_NAME_STATUS_OK
+			},
+			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX,
 				.str = FQDN_1779_name,
 				.expected_str = canonical_ex_name,
+				.status = DRSUAPI_DS_NAME_STATUS_OK
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX, 
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = canonical_ex_name,
+				.expected_str = FQDN_1779_name,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
