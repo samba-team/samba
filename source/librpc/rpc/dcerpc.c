@@ -939,7 +939,7 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->opnum = opnum;
 	req->request_data.length = stub_data->length;
 	req->request_data.data = talloc_reference(req, stub_data->data);
-	if (req->request_data.data == NULL) {
+	if (req->request_data.length && req->request_data.data == NULL) {
 		return NULL;
 	}
 
