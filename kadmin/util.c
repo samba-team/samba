@@ -182,6 +182,7 @@ str2time_t (const char *str, time_t *t)
     struct tm tm, tm2;
 
     memset (&tm, 0, sizeof (tm));
+    memset (&tm2, 0, sizeof (tm2));
 
     if(strcasecmp(str, "never") == 0) {
 	*t = 0;
@@ -198,10 +199,12 @@ str2time_t (const char *str, time_t *t)
     if (p == NULL)
 	return -1;
 
+    while(isspace((unsigned char)*p))
+	p++;
 
     /* XXX this is really a bit optimistic, we should really complain
        if there was a problem parsing the time */
-    if(strptime (p, "%t%H:%M:%S", &tm2) != NULL) {
+    if(p[0] != '\0' && strptime (p, "%H:%M:%S", &tm2) != NULL) {
 	tm.tm_hour = tm2.tm_hour;
 	tm.tm_min  = tm2.tm_min;
 	tm.tm_sec  = tm2.tm_sec;
