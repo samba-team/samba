@@ -485,8 +485,8 @@ static NTSTATUS add_socket(struct event_context *event_context,
 	talloc_free(res);
 	talloc_free(ldb);
 
-	/* if options attribute is 1, then enable the global catlog */
-	if (options == 1) {
+	/* if options attribute has the 0x00000001 flag set, then enable the global catlog */
+	if (options & 0x000000001) {
 		port = 3268;
 		status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
 					     "ipv4", address, &port, ldap_service);
