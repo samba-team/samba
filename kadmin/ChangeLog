@@ -1,5 +1,11 @@
-2006-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add test_util test program.
+
+	* test_util.c: Test str2time_t parser.
+	
+2006-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* add-random-users.c: Use strcspn to remove \n from fgets
 	result. Prompted by change by Ray Lai of OpenBSD via Björn
 	Sandell.
