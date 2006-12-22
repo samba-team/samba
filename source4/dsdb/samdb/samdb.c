@@ -353,15 +353,11 @@ const char *samdb_result_string(const struct ldb_message *msg, const char *attr,
 struct ldb_dn *samdb_result_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const struct ldb_message *msg,
 			       const char *attr, struct ldb_dn *default_value)
 {
-	struct ldb_dn *res_dn;
-	const char *string = samdb_result_string(msg, attr, NULL);
-	if (string == NULL) return default_value;
-	res_dn = ldb_dn_new(mem_ctx, ldb, string);
-	if ( ! ldb_dn_validate(res_dn)) {
-		talloc_free(res_dn);
-		return NULL;
+	struct ldb_dn *ret_dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, msg, attr);
+	if (!ret_dn) {
+		return default_value;
 	}
-	return res_dn;
+	return ret_dn;
 }
 
 /*
@@ -1182,7 +1178,7 @@ struct ldb_dn *samdb_server_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 }
 
 /*
-  work out the domain sid for the current open ldb
+  work out if we are the PDC for the domain of the current open ldb
 */
 BOOL samdb_is_pdc(struct ldb_context *ldb)
 {
@@ -1223,6 +1219,41 @@ failed:
 	DEBUG(1,("Failed to find if we are the PDC for this ldb\n"));
 	talloc_free(tmp_ctx);
 	return False;
+}
+
+
+/* Find a domain object in the parents of a particular DN.  */
+struct ldb_dn *samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
+{
+	TALLOC_CTX *local_ctx;
+	struct ldb_dn *sdn = dn;
+	struct ldb_result *res = NULL;
+	int ret = 0;
+	const char *attrs[] = { NULL };
+
+	local_ctx = talloc_new(mem_ctx);
+	if (local_ctx == NULL) return NULL;
+	
+	while ((sdn = ldb_dn_get_parent(local_ctx, sdn))) {
+		ret = ldb_search(ldb, sdn, LDB_SCOPE_BASE, 
+				 "(|(objectClass=domain)(objectClass=builtinDomain))", attrs, &res);
+		if (ret == LDB_SUCCESS) {
+			talloc_steal(local_ctx, res);
+			if (res->count == 1) {
+				break;
+			}
+		}
+	}
+
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		talloc_free(local_ctx);
+		return NULL;
+	}
+
+	talloc_steal(mem_ctx, sdn);
+	talloc_free(local_ctx);
+
+	return sdn;
 }
 
 /*
@@ -1680,4 +1711,44 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 	}
 	*ret_dn = msg->dn;
 	return NT_STATUS_OK;
+}
+
+/*
+  Find the DN of a domain, be it the netbios or DNS name 
+*/
+
+struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
+				  const char *domain_name) 
+{
+	const char * const domain_ref_attrs[] = {
+		"ncName", NULL
+	};
+	struct ldb_result *res_domain_ref;
+	char *escaped_domain = ldb_binary_encode_string(mem_ctx, domain_name);
+	/* find the domain's DN */
+	int ret_domain = ldb_search_exp_fmt(ldb, mem_ctx, 
+					    &res_domain_ref, 
+					    samdb_partitions_dn(ldb, mem_ctx), 
+					    LDB_SCOPE_ONELEVEL, 
+					    domain_ref_attrs,
+					    "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))", 
+					    escaped_domain, escaped_domain);
+	if (ret_domain != 0) {
+		return NULL;
+	}
+	
+	if (res_domain_ref->count == 0) {
+		DEBUG(3,("sam_search_user: Couldn't find domain [%s] in samdb.\n", 
+			 domain_name));
+		return NULL;
+	}
+	
+	if (res_domain_ref->count > 1) {
+		DEBUG(0,("Found %d records matching domain [%s]\n", 
+			 ret_domain, domain_name));
+		return NULL;
+	}
+	
+	return samdb_result_dn(ldb, mem_ctx, res_domain_ref->msgs[0], "nCName", NULL);
+
 }

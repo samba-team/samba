@@ -184,41 +184,6 @@ static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_c
 	return ret;
 }
 
-/* Find a domain object in the parents of a particular DN.  */
-static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
-{
-	TALLOC_CTX *local_ctx;
-	struct ldb_dn *sdn;
-	struct ldb_result *res = NULL;
-	int ret = 0;
-	const char *attrs[] = { NULL };
-
-	local_ctx = talloc_new(mem_ctx);
-	if (local_ctx == NULL) return NULL;
-
-	sdn = ldb_dn_copy(local_ctx, dn);
-	do {
-		ret = ldb_search(module->ldb, sdn, LDB_SCOPE_BASE, 
-				 "(|(objectClass=domain)(objectClass=builtinDomain))", attrs, &res);
-		if (ret == LDB_SUCCESS) {
-			talloc_steal(local_ctx, res);
-			if (res->count == 1) {
-				break;
-			}
-		}
-	} while ((sdn = ldb_dn_get_parent(local_ctx, sdn)));
-
-	if (ret != LDB_SUCCESS || res->count != 1) {
-		talloc_free(local_ctx);
-		return NULL;
-	}
-
-	talloc_steal(mem_ctx, sdn);
-	talloc_free(local_ctx);
-
-	return sdn;
-}
-
 /* search the domain related to the provided dn
    allocate a new RID for the domain
    return the new sid string
@@ -235,7 +200,7 @@ static int samldb_get_new_sid(struct ldb_module *module,
 
 	/* get the domain component part of the provided dn */
 
-	dom_dn = samldb_search_domain(module, mem_ctx, obj_dn);
+	dom_dn = samdb_search_for_parent_domain(module->ldb, mem_ctx, obj_dn);
 	if (dom_dn == NULL) {
 		ldb_asprintf_errstring(module->ldb,
 					"Invalid dn (%s) not child of a domain object!\n",
