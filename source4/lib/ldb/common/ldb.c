@@ -153,37 +153,69 @@ int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *op
   pet hates about ldapsearch, which is that you have to get a long,
   complex basedn right to make any use of it.
 */
-static struct ldb_dn *ldb_set_default_basedn(struct ldb_context *ldb)
+static void ldb_set_default_dns(struct ldb_context *ldb)
 {
 	TALLOC_CTX *tmp_ctx;
 	int ret;
-	static const char *attrs[] = { "defaultNamingContext", NULL };
 	struct ldb_result *res;
-	struct ldb_dn *basedn=NULL;
-
-	basedn = (struct ldb_dn *)ldb_get_opaque(ldb, "default_baseDN");
-	if (basedn) {
-		return basedn;
-	}
+	struct ldb_dn *tmp_dn=NULL;
+	static const char *attrs[] = {
+		"rootDomainNamingContext",
+		"configurationNamingContext",
+		"schemaNamingContext",
+		"defaultNamingContext",
+		NULL
+	};
 
 	tmp_ctx = talloc_new(ldb);
 	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, NULL), LDB_SCOPE_BASE, 
 			 "(objectClass=*)", attrs, &res);
 	if (ret == LDB_SUCCESS) {
 		if (res->count == 1) {
-			basedn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0], "defaultNamingContext");
-			ldb_set_opaque(ldb, "default_baseDN", basedn);
+			if (!ldb_get_opaque(ldb, "rootDomainNamingContext")) {
+				tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0], "rootDomainNamingContext");
+				ldb_set_opaque(ldb, "rootDomainNamingContext", tmp_dn);
+			}
+
+			if (!ldb_get_opaque(ldb, "configurationNamingContext")) {
+				tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0], "configurationNamingContext");
+				ldb_set_opaque(ldb, "configurationNamingContext", tmp_dn);
+			}
+
+			if (!ldb_get_opaque(ldb, "schemaNamingContext")) {
+				tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0], "schemaNamingContext");
+				ldb_set_opaque(ldb, "schemaNamingContext", tmp_dn);
+			}
+
+			if (!ldb_get_opaque(ldb, "defaultNamingContext")) {
+				tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0], "defaultNamingContext");
+				ldb_set_opaque(ldb, "defaultNamingContext", tmp_dn);
+			}
 		}
 		talloc_free(res);
 	}
 
 	talloc_free(tmp_ctx);
-	return basedn;
+}
+
+struct ldb_dn *ldb_get_root_basedn(struct ldb_context *ldb)
+{
+	return talloc_get_type(ldb_get_opaque(ldb, "rootDomainNamingContext"), struct ldb_dn);
+}
+
+struct ldb_dn *ldb_get_config_basedn(struct ldb_context *ldb)
+{
+	return talloc_get_type(ldb_get_opaque(ldb, "configurationNamingContext"), struct ldb_dn);
+}
+
+struct ldb_dn *ldb_get_schema_basedn(struct ldb_context *ldb)
+{
+	return talloc_get_type(ldb_get_opaque(ldb, "schemaNamingContext"), struct ldb_dn);
 }
 
 struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb)
 {
-	return (struct ldb_dn *)ldb_get_opaque(ldb, "default_baseDN");
+	return talloc_get_type(ldb_get_opaque(ldb, "defaultNamingContext"), struct ldb_dn);
 }
 
 /* 
@@ -217,7 +249,7 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 	ldb->default_timeout = 300; /* set default to 5 minutes */
 
 	/* set the default base dn */
-	ldb_set_default_basedn(ldb);
+	ldb_set_default_dns(ldb);
 
 	return LDB_SUCCESS;
 }
