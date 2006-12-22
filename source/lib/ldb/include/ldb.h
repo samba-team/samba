@@ -827,11 +827,28 @@ struct ldb_context *ldb_init(void *mem_ctx);
 int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
 
 /*
+  return an automatic basedn from the rootDomainNamingContext of the rootDSE
+  This value have been set in an opaque pointer at connection time
+*/
+struct ldb_dn *ldb_get_root_basedn(struct ldb_context *ldb);
+
+/*
+  return an automatic basedn from the configurationNamingContext of the rootDSE
+  This value have been set in an opaque pointer at connection time
+*/
+struct ldb_dn *ldb_get_config_basedn(struct ldb_context *ldb);
+
+/*
+  return an automatic basedn from the schemaNamingContext of the rootDSE
+  This value have been set in an opaque pointer at connection time
+*/
+struct ldb_dn *ldb_get_schema_basedn(struct ldb_context *ldb);
+
+/*
   return an automatic baseDN from the defaultNamingContext of the rootDSE
   This value have been set in an opaque pointer at connection time
 */
 struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb);
-
 
 /**
   The Default iasync search callback function 
