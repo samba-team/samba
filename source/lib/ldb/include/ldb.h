@@ -1281,7 +1281,7 @@ int ldb_base64_decode(char *s);
 /* The following definitions come from lib/ldb/common/ldb_dn.c  */
 
 struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *dn);
-struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx, struct ldb_context *ldb, const char *new_fmt, ...);
+struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx, struct ldb_context *ldb, const char *new_fmt, ...) PRINTF_ATTRIBUTE(3,4);
 bool ldb_dn_validate(struct ldb_dn *dn);
 
 char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
@@ -1294,9 +1294,9 @@ int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn);
 int ldb_dn_compare(struct ldb_dn *edn0, struct ldb_dn *edn1);
 
 bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base);
-bool ldb_dn_add_base_fmt(struct ldb_dn *dn, const char *base_fmt, ...);
+bool ldb_dn_add_base_fmt(struct ldb_dn *dn, const char *base_fmt, ...) PRINTF_ATTRIBUTE(2,3);
 bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child);
-bool ldb_dn_add_child_fmt(struct ldb_dn *dn, const char *child_fmt, ...);
+bool ldb_dn_add_child_fmt(struct ldb_dn *dn, const char *child_fmt, ...) PRINTF_ATTRIBUTE(2,3);
 bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num);
 bool ldb_dn_remove_child_components(struct ldb_dn *dn, unsigned int num);
 
