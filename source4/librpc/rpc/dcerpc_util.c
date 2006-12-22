@@ -648,6 +648,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 	ZERO_STRUCT(binding->object);
 	binding->options = NULL;
 	binding->host = NULL;
+	binding->target_hostname = NULL;
 	binding->flags = 0;
 
 	binding->transport = dcerpc_transport_by_tower(tower);
@@ -682,6 +683,8 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 	/* Set network address */
 	if (tower->num_floors >= 5) {
 		binding->host = dcerpc_floor_get_rhs_data(mem_ctx, &tower->floors[4]);
+		NT_STATUS_HAVE_NO_MEMORY(binding->host);
+		binding->target_hostname = binding->host;
 	}
 	*b_out = binding;
 	return NT_STATUS_OK;
@@ -942,11 +945,12 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	if (composite_nomem(epmapper_binding, c)) return c;
 
 	/* basic endpoint mapping data */
-	epmapper_binding->transport  = binding->transport;
-	epmapper_binding->host       = talloc_reference(epmapper_binding, binding->host);
-	epmapper_binding->options    = NULL;
-	epmapper_binding->flags      = 0;
-	epmapper_binding->endpoint   = NULL;
+	epmapper_binding->transport		= binding->transport;
+	epmapper_binding->host			= talloc_reference(epmapper_binding, binding->host);
+	epmapper_binding->target_hostname       = epmapper_binding->host;
+	epmapper_binding->options		= NULL;
+	epmapper_binding->flags			= 0;
+	epmapper_binding->endpoint		= NULL;
 
 	/* initiate rpc pipe connection */
 	pipe_connect_req = dcerpc_pipe_connect_b_send(c, epmapper_binding, &dcerpc_table_epmapper,
