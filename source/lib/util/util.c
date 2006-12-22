@@ -292,7 +292,9 @@ _PUBLIC_ BOOL is_ipaddress(const char *str)
 {
 	BOOL pure_address = True;
 	int i;
-  
+
+	if (str == NULL) return False;
+
 	for (i=0; pure_address && str[i]; i++)
 		if (!(isdigit((int)str[i]) || str[i] == '.'))
 			pure_address = False;
