@@ -345,6 +345,268 @@ static WERROR DRSUAPI_REMOVE_DS_DOMAIN(struct dcesrv_call_state *dce_call, TALLO
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
+/* Obtain the site name from a server DN */
+const char *result_site_name(struct ldb_dn *site_dn)
+{
+	/* Format is cn=<NETBIOS name>,cn=Servers,cn=<site>,cn=sites.... */
+	const struct ldb_val *val = ldb_dn_get_component_val(site_dn, 2);
+	const char *name = ldb_dn_get_component_name(site_dn, 2);
+
+	if (!name || (ldb_attr_cmp(name, "cn") != 0)) {
+		/* Ensure this matches the format.  This gives us a
+		 * bit more confidence that a 'cn' value will be a
+		 * ascii string */
+		return NULL;
+	}
+	if (val) {
+		return (char *)val->data;
+	}
+	return NULL;
+}
+
+/* 
+  drsuapi_DsGetDomainControllerInfo 
+*/
+static WERROR drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_state *b_state, 
+						TALLOC_CTX *mem_ctx,
+						struct drsuapi_DsGetDomainControllerInfo *r)
+{
+	struct ldb_dn *sites_dn;
+	struct ldb_result *res;
+
+	const char *attrs_account_01[] = { "samAccountName", NULL };
+	const char *attrs_account_1[] = { "cn", "dnsHostName", NULL };
+	const char *attrs_account_2[] = { "cn", "dnsHostName", "objectGUID", NULL };
+
+	const char *attrs_none[] = { NULL };
+
+	const char *attrs_site[] = { "objectGUID", NULL };
+
+	const char *attrs_ntds[] = { "options", "objectGUID", NULL };
+
+	const char *attrs_01[] = { "serverReference", NULL };
+	const char *attrs_1[] = { "serverReference", "cn", "dnsHostName", NULL };
+	const char *attrs_2[] = { "serverReference", "cn", "dnsHostName", "objectGUID", NULL };
+	const char **attrs;
+
+	struct drsuapi_DsGetDCInfoCtr01 *ctr01;
+	struct drsuapi_DsGetDCInfoCtr1 *ctr1;
+	struct drsuapi_DsGetDCInfoCtr2 *ctr2;
+
+	int ret, i;
+
+	r->out.level_out = r->in.req.req1.level;
+
+	sites_dn = samdb_domain_to_dn(b_state->sam_ctx, mem_ctx, r->in.req.req1.domain_name);
+	if (!sites_dn) {
+		return WERR_DS_OBJ_NOT_FOUND;
+	}
+
+	if (!ldb_dn_add_child_fmt(sites_dn, "CN=Sites,CN=Configuration")) {
+		return WERR_NOMEM;
+	}
+
+	switch (r->out.level_out) {
+	case -1:
+		attrs = attrs_01;
+		break;
+	case 1:
+		attrs = attrs_1;
+		break;
+	case 2:
+		attrs = attrs_2;
+		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res, sites_dn, LDB_SCOPE_SUBTREE, attrs, 
+				 "objectClass=server");
+	
+	if (ret) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	switch (r->out.level_out) {
+	case -1:
+		ctr01 = &r->out.ctr.ctr01;
+		ctr01->count = res->count;
+		ctr01->array = talloc_zero_array(mem_ctx, 
+						 struct drsuapi_DsGetDCInfo01, 
+						 res->count);
+		for (i=0; i < res->count; i++) {
+			struct ldb_result *res_account;
+			struct ldb_dn *ref_dn
+				= ldb_msg_find_attr_as_dn(b_state->sam_ctx, 
+							  mem_ctx, res->msgs[i], 
+							  "serverReference");
+			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_account, ref_dn, 
+						 LDB_SCOPE_BASE, attrs_account_01, "objectClass=computer");
+			if (ret) {
+				return WERR_GENERAL_FAILURE;
+			}
+			if (res_account->count == 1) {
+				ctr01->array[i].server_nt4_account
+					= ldb_msg_find_attr_as_string(res_account->msgs[0], "samAccountName", NULL);
+			}
+		}
+		break;
+	case 1:
+		ctr1 = &r->out.ctr.ctr1;
+		ctr1->count = res->count;
+		ctr1->array = talloc_zero_array(mem_ctx, 
+						struct drsuapi_DsGetDCInfo1, 
+						res->count);
+		for (i=0; i < res->count; i++) {
+			struct ldb_dn *domain_dn;
+			struct ldb_result *res_domain;
+			struct ldb_result *res_account;
+			struct ldb_dn *ntds_dn = ldb_dn_copy(b_state->sam_ctx, res->msgs[i]->dn);
+			
+			struct ldb_dn *ref_dn
+				= ldb_msg_find_attr_as_dn(b_state->sam_ctx, 
+							  mem_ctx, res->msgs[i], 
+							  "serverReference");
+
+			if (!ntds_dn || !ldb_dn_add_child_fmt(ntds_dn, "CN=NTDS Settings")) {
+				return WERR_NOMEM;
+			}
+
+			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_account, ref_dn, 
+						 LDB_SCOPE_BASE, attrs_account_1, "objectClass=computer");
+			if (ret) {
+				return WERR_GENERAL_FAILURE;
+			}
+			if (res_account->count == 1) {
+				ctr1->array[i].dns_name
+					= ldb_msg_find_attr_as_string(res_account->msgs[0], "dNSHostName", NULL);
+				ctr1->array[i].netbios_name
+					= ldb_msg_find_attr_as_string(res_account->msgs[0], "cn", NULL);
+				ctr1->array[i].computer_dn
+					= ldb_dn_get_linearized(res_account->msgs[0]->dn);
+
+				/* Determine if this is the PDC */
+				domain_dn = samdb_search_for_parent_domain(b_state->sam_ctx, 
+									   mem_ctx, res_account->msgs[0]->dn);
+				
+				if (domain_dn) {
+					ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_domain, domain_dn, 
+								 LDB_SCOPE_BASE, attrs_none, "fSMORoleOwner=%s",
+								 ldb_dn_get_linearized(ntds_dn));
+					if (ret) {
+						return WERR_GENERAL_FAILURE;
+					}
+					if (res_domain->count == 1) {
+						ctr1->array[i].is_pdc = True;
+					}
+				}
+			}
+
+			/* Look at server DN and extract site component */
+			ctr1->array[i].site_name = result_site_name(res->msgs[i]->dn);
+			ctr1->array[i].server_dn = ldb_dn_get_linearized(res->msgs[i]->dn);
+
+
+			ctr1->array[i].is_enabled = True;
+
+		}
+		break;
+	case 2:
+		ctr2 = &r->out.ctr.ctr2;
+		ctr2->count = res->count;
+		ctr2->array = talloc_zero_array(mem_ctx, 
+						 struct drsuapi_DsGetDCInfo2, 
+						 res->count);
+		for (i=0; i < res->count; i++) {
+			struct ldb_dn *domain_dn;
+			struct ldb_result *res_domain;
+			struct ldb_result *res_account;
+			struct ldb_dn *ntds_dn = ldb_dn_copy(b_state->sam_ctx, res->msgs[i]->dn);
+			struct ldb_result *res_ntds;
+			struct ldb_dn *site_dn = ldb_dn_copy(b_state->sam_ctx, res->msgs[i]->dn);
+			struct ldb_result *res_site;
+			struct ldb_dn *ref_dn
+				= ldb_msg_find_attr_as_dn(b_state->sam_ctx, 
+							  mem_ctx, res->msgs[i], 
+							  "serverReference");
+
+			if (!ntds_dn || !ldb_dn_add_child_fmt(ntds_dn, "CN=NTDS Settings")) {
+				return WERR_NOMEM;
+			}
+
+			/* Format is cn=<NETBIOS name>,cn=Servers,cn=<site>,cn=sites.... */
+			if (!site_dn || !ldb_dn_remove_child_components(site_dn, 2)) {
+				return WERR_NOMEM;
+			}
+
+			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_ntds, ntds_dn, 
+						 LDB_SCOPE_BASE, attrs_ntds, "objectClass=nTDSDSA");
+			if (ret) {
+				return WERR_GENERAL_FAILURE;
+			}
+			if (res_ntds->count == 1) {
+				ctr2->array[i].is_gc
+					= (ldb_msg_find_attr_as_int(res_ntds->msgs[0], "options", 0) == 1);
+				ctr2->array[i].ntds_guid 
+					= samdb_result_guid(res_ntds->msgs[0], "objectGUID");
+				ctr2->array[i].ntds_dn = ldb_dn_get_linearized(res_ntds->msgs[0]->dn);
+			}
+
+			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_site, site_dn, 
+						 LDB_SCOPE_BASE, attrs_site, "objectClass=site");
+			if (ret) {
+				return WERR_GENERAL_FAILURE;
+			}
+			if (res_site->count == 1) {
+				ctr2->array[i].site_guid 
+					= samdb_result_guid(res_site->msgs[0], "objectGUID");
+				ctr2->array[i].site_dn = ldb_dn_get_linearized(res_site->msgs[0]->dn);
+			}
+
+			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_account, ref_dn, 
+						 LDB_SCOPE_BASE, attrs_account_2, "objectClass=computer");
+			if (ret) {
+				return WERR_GENERAL_FAILURE;
+			}
+			if (res_account->count == 1) {
+				ctr2->array[i].dns_name
+					= ldb_msg_find_attr_as_string(res_account->msgs[0], "dNSHostName", NULL);
+				ctr2->array[i].netbios_name
+					= ldb_msg_find_attr_as_string(res_account->msgs[0], "cn", NULL);
+				ctr2->array[i].computer_dn = ldb_dn_get_linearized(res_account->msgs[0]->dn);
+				ctr2->array[i].computer_guid 
+					= samdb_result_guid(res_account->msgs[0], "objectGUID");
+
+				/* Determine if this is the PDC */
+				domain_dn = samdb_search_for_parent_domain(b_state->sam_ctx, 
+									   mem_ctx, res_account->msgs[0]->dn);
+				
+				if (domain_dn) {
+					ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_domain, domain_dn, 
+								 LDB_SCOPE_BASE, attrs_none, "fSMORoleOwner=%s",
+								 ldb_dn_get_linearized(ntds_dn));
+					if (ret) {
+						return WERR_GENERAL_FAILURE;
+					}
+					if (res_domain->count == 1) {
+						ctr2->array[i].is_pdc = True;
+					}
+				}
+			}
+
+			/* Look at server DN and extract site component */
+			ctr2->array[i].site_name = result_site_name(res->msgs[i]->dn);
+			ctr2->array[i].server_dn = ldb_dn_get_linearized(res->msgs[i]->dn);
+			ctr2->array[i].server_guid 
+				= samdb_result_guid(res->msgs[i], "objectGUID");
+
+			ctr2->array[i].is_enabled = True;
+
+		}
+		break;
+	}
+	return WERR_OK;
+}
 
 /* 
   drsuapi_DsGetDomainControllerInfo 
@@ -352,7 +614,17 @@ static WERROR DRSUAPI_REMOVE_DS_DOMAIN(struct dcesrv_call_state *dce_call, TALLO
 static WERROR drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 						struct drsuapi_DsGetDomainControllerInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct drsuapi_bind_state *b_state;	
+	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
+	b_state = h->data;
+
+	switch (r->in.level) {
+	case 1:
+		return drsuapi_DsGetDomainControllerInfo_1(b_state, mem_ctx, r);
+	}
+
+	return WERR_UNKNOWN_LEVEL;
 }
 
 

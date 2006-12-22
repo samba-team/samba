@@ -1093,9 +1093,10 @@ interface drsuapi
 
 	WERROR drsuapi_DsGetDomainControllerInfo(
 		[in] policy_handle *bind_handle,
-		[in, out] int32 level,
+		[in] int32 level,
 		[in,switch_is(level)] drsuapi_DsGetDCInfoRequest req,
-		[out,switch_is(level)] drsuapi_DsGetDCInfoCtr ctr
+		[out] int32 level_out,
+		[out,switch_is(level_out)] drsuapi_DsGetDCInfoCtr ctr
 		);
 
 	/*****************/
