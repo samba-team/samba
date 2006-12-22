@@ -1030,13 +1030,27 @@ struct ldb_dn *samdb_base_dn(struct ldb_context *sam_ctx)
 	return ldb_get_default_basedn(sam_ctx);
 }
 
+struct ldb_dn *samdb_config_dn(struct ldb_context *sam_ctx) 
+{
+	return ldb_get_config_basedn(sam_ctx);
+}
+
+struct ldb_dn *samdb_schema_dn(struct ldb_context *sam_ctx) 
+{
+	return ldb_get_schema_basedn(sam_ctx);
+}
+
+struct ldb_dn *samdb_root_dn(struct ldb_context *sam_ctx) 
+{
+	return ldb_get_root_basedn(sam_ctx);
+}
 
 struct ldb_dn *samdb_partitions_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
 {
 	struct ldb_dn *new_dn;
 
-	new_dn = ldb_dn_copy(mem_ctx, samdb_base_dn(sam_ctx));
-	if ( ! ldb_dn_add_child_fmt(new_dn, "CN=Partitions,CN=Configuration")) {
+	new_dn = ldb_dn_copy(mem_ctx, samdb_config_dn(sam_ctx));
+	if ( ! ldb_dn_add_child_fmt(new_dn, "CN=Partitions")) {
 		talloc_free(new_dn);
 		return NULL;
 	}
@@ -1047,8 +1061,8 @@ struct ldb_dn *samdb_sites_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
 {
 	struct ldb_dn *new_dn;
 
-	new_dn = ldb_dn_copy(mem_ctx, samdb_base_dn(sam_ctx));
-	if ( ! ldb_dn_add_child_fmt(new_dn, "CN=Sites,CN=Configuration")) {
+	new_dn = ldb_dn_copy(mem_ctx, samdb_config_dn(sam_ctx));
+	if ( ! ldb_dn_add_child_fmt(new_dn, "CN=Sites")) {
 		talloc_free(new_dn);
 		return NULL;
 	}
