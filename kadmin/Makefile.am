@@ -54,6 +54,12 @@ kadmind_SOURCES =				\
 
 add_random_users_SOURCES = add-random-users.c
 
+test_util_SOURCES = test_util.c util.c
+
+TESTS = test_util
+
+check_PROGRAMS = $(TESTS)
+
 LDADD_common = \
 	$(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_openldap) \
@@ -81,5 +87,7 @@ add_random_users_LDADD = \
 	$(top_builddir)/lib/kadm5/libkadm5srv.la \
 	$(LDADD_common) \
 	$(LIB_dlopen)
+
+test_util_LDADD = $(kadmin_LDADD)
 
 EXTRA_DIST = $(man_MANS) kadmin-commands.in
