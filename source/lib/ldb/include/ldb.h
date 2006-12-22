@@ -1002,7 +1002,7 @@ int ldb_search(struct ldb_context *ldb,
 int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		       struct ldb_result **result, struct ldb_dn *base,
 		       enum ldb_scope scope, const char * const *attrs,
-		       const char *exp_fmt, ...);
+		       const char *exp_fmt, ...) PRINTF_ATTRIBUTE(7,8);
 
 /*
   like ldb_search() but takes a parse tree
