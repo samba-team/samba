@@ -1,5 +1,9 @@
-2006-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-12-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: use top_builddir for libasn1.la
+	
+2006-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* hxtool.c (print_certificate): print serial number.
 
 	* name.c (no): add S=stateOrProvinceName
