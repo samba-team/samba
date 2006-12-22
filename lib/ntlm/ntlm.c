@@ -41,6 +41,7 @@ RCSID("$Id$");
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <krb5.h>
 #include <roken.h>
