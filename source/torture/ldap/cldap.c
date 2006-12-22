@@ -251,7 +251,7 @@ static BOOL test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
 
 	printf("Testing objectClass=* and netlogon\n");
 	search.in.filter = "(objectclass2=*)";
-	search.in.attributes = attrs2;
+	search.in.attributes = attrs3;
 
 	status = cldap_search(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
