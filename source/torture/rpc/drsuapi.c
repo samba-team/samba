@@ -67,11 +67,6 @@ static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *me
 	struct drsuapi_DsGetDomainControllerInfo r;
 	BOOL ret = True;
 
-	if (lp_parm_bool(-1, "torture", "samba4", False)) {
-		printf("skipping DsGetDCInfo test against Samba4\n");
-		return True;
-	}
-
 	r.in.bind_handle = &priv->bind_handle;
 	r.in.level = 1;
 
