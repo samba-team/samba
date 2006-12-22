@@ -227,45 +227,6 @@ NTSTATUS libnet_LookupDCs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 }
 
 
-static struct composite_context* lsa_policy_opened(struct libnet_context *ctx,
-						   const char *domain_name,
-						   struct composite_context *parent_ctx,
-						   struct libnet_DomainOpen *domain_open,
-						   void (*continue_fn)(struct composite_context*),
-						   void (*monitor)(struct monitor_msg*))
-{
-	struct composite_context *domopen_req;
-
-	if (domain_name == NULL) {
-		if (policy_handle_empty(&ctx->lsa.handle)) {
-			domain_open->in.type        = DOMAIN_LSA;
-			domain_open->in.domain_name = cli_credentials_get_domain(ctx->cred);
-			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-
-		} else {
-			composite_error(parent_ctx, NT_STATUS_INVALID_PARAMETER);
-			return parent_ctx;
-		}
-	} else {
-		if (policy_handle_empty(&ctx->lsa.handle) ||
-		    !strequal(domain_name, ctx->lsa.name)) {
-			domain_open->in.type        = DOMAIN_LSA;
-			domain_open->in.domain_name = domain_name;
-			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-
-		} else {
-			return NULL;
-		}
-	}
-
-	domopen_req = libnet_DomainOpen_send(ctx, domain_open, monitor);
-	if (composite_nomem(domopen_req, parent_ctx)) return parent_ctx;
-
-	composite_continue(parent_ctx, domopen_req, continue_fn, parent_ctx);
-	return parent_ctx;
-}
-
-
 /**
  * Synchronous version of LookupDCs
  */
@@ -305,8 +266,8 @@ struct composite_context* libnet_LookupName_send(struct libnet_context *ctx,
 {
 	struct composite_context *c;
 	struct lookup_name_state *s;
-	struct composite_context *prereq_ctx;
 	struct rpc_request *lookup_req;
+	BOOL prereq_met = False;
 
 	c = composite_create(mem_ctx, ctx->event_ctx);
 	if (c == NULL) return NULL;
@@ -320,9 +281,9 @@ struct composite_context* libnet_LookupName_send(struct libnet_context *ctx,
 	s->monitor_fn = monitor;
 	s->ctx = ctx;
 
-	prereq_ctx = lsa_policy_opened(ctx, io->in.domain_name, c, &s->domopen,
+	prereq_met = lsa_domain_opened(ctx, io->in.domain_name, &c, &s->domopen,
 				       continue_lookup_name, monitor);
-	if (prereq_ctx) return prereq_ctx;
+	if (!prereq_met) return c;
 
 	if (!prepare_lookup_params(ctx, c, s)) return c;
 
