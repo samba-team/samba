@@ -1482,8 +1482,12 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	p = params;
 	if (extended_oplock_granted) {
-		SCVAL(p,0, BATCH_OPLOCK_RETURN);
-	} else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
+		if (flags & REQUEST_BATCH_OPLOCK) {
+			SCVAL(p,0, BATCH_OPLOCK_RETURN);
+		} else {
+			SCVAL(p,0, EXCLUSIVE_OPLOCK_RETURN);
+		}
+	} else if (fsp->oplock_type == LEVEL_II_OPLOCK) {
 		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
 	} else {
 		SCVAL(p,0,NO_OPLOCK_RETURN);
