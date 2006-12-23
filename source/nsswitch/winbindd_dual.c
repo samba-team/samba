@@ -192,7 +192,12 @@ static void async_reply_recv(void *private_data, BOOL success)
 
 	if (!success) {
 		DEBUG(5, ("Could not receive async reply\n"));
+
+		cache_cleanup_response(child->pid);
+		DLIST_REMOVE(child->requests, state);
+
 		state->response->result = WINBINDD_ERROR;
+		state->continuation(state->private_data, False);
 		return;
 	}
 
