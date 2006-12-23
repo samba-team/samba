@@ -1623,7 +1623,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			struct rpc_pipe_client **cli, POLICY_HND *sam_handle)
 {
 	struct winbindd_cm_conn *conn;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring conn_pwd;
 	struct dcinfo *p_dcinfo;
 
@@ -1693,8 +1693,9 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	/* Fall back to schannel if it's a W2K pre-SP1 box. */
 
 	if (!cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
+		/* If this call fails - conn->cli can now be NULL ! */
 		DEBUG(10, ("cm_connect_sam: Could not get schannel auth info "
-			   "for domain %s, trying anon\n", conn->cli->domain));
+			   "for domain %s, trying anon\n", domain->name));
 		goto anonymous;
 	}
 	conn->samr_pipe = cli_rpc_pipe_open_schannel_with_key
@@ -1766,7 +1767,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			struct rpc_pipe_client **cli, POLICY_HND *lsa_policy)
 {
 	struct winbindd_cm_conn *conn;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring conn_pwd;
 	struct dcinfo *p_dcinfo;
 
@@ -1825,8 +1826,9 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	/* Fall back to schannel if it's a W2K pre-SP1 box. */
 
 	if (!cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
+		/* If this call fails - conn->cli can now be NULL ! */
 		DEBUG(10, ("cm_connect_lsa: Could not get schannel auth info "
-			   "for domain %s, trying anon\n", conn->cli->domain));
+			   "for domain %s, trying anon\n", domain->name));
 		goto anonymous;
 	}
 	conn->lsa_pipe = cli_rpc_pipe_open_schannel_with_key
@@ -1869,7 +1871,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
  done:
 	if (!NT_STATUS_IS_OK(result)) {
 		invalidate_cm_connection(conn);
-		return NT_STATUS_UNSUCCESSFUL;
+		return result;
 	}
 
 	*cli = conn->lsa_pipe;
