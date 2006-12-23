@@ -46,9 +46,9 @@ WERROR dsdb_load_oid_mappings(struct dsdb_schema *schema, const struct drsuapi_D
 			if (i != (ctr->num_mappings - 1)) {
 				return WERR_INVALID_PARAM;
 			}
-				
-			schema->unknown_magic = talloc_strdup(schema, ctr->mappings[i].oid.oid);
-			W_ERROR_HAVE_NO_MEMORY(schema->unknown_magic);
+
+			schema->schema_info = talloc_strdup(schema, ctr->mappings[i].oid.oid);
+			W_ERROR_HAVE_NO_MEMORY(schema->schema_info);
 		} else {
 			/* the last array member should contain the magic value not a oid */
 			if (i == (ctr->num_mappings - 1)) {
