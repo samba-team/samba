@@ -115,8 +115,11 @@ struct dsdb_schema {
 	 * the last element of the prefix mapping table isn't a oid,
 	 * it starts with 0xFF and has 21 bytes and is maybe a schema
 	 * version number
+	 *
+	 * this is the content of the schemaInfo attribute of the
+	 * Schema-Partition head object.
 	 */
-	const char *unknown_magic;
+	const char *schema_info;
 
 	struct dsdb_attribute *attributes;
 	struct dsdb_class *classes;
