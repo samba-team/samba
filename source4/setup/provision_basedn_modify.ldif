@@ -79,5 +79,10 @@ replace: subRefs
 subRefs: CN=Configuration,${BASEDN}
 subRefs: CN=Schema,CN=Configuration,${BASEDN}
 -
+replace: masteredBy
+masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+-
+replace: msDs-masteredBy
+msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+-
 ${DOMAINGUID_MOD}
-
