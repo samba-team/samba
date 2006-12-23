@@ -753,7 +753,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	int smb_action = 0;
 	BOOL bad_path = False;
 	files_struct *fsp;
-	TALLOC_CTX *ctx = NULL;
 	struct ea_list *ea_list = NULL;
 	uint16 flags = 0;
 	NTSTATUS status;
@@ -835,13 +834,9 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		ctx = talloc_init("TRANS2_OPEN_SET_EA");
-		if (!ctx) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
-		ea_list = read_ea_list(ctx, pdata + 4, total_data - 4);
+		ea_list = read_ea_list(tmp_talloc_ctx(), pdata + 4,
+				       total_data - 4);
 		if (!ea_list) {
-			talloc_destroy(ctx);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 	} else if (IVAL(pdata,0) != 4) {
@@ -858,7 +853,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		&smb_action, &fsp);
       
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(ctx);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
 			return -1;
@@ -871,7 +865,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	mtime = sbuf.st_mtime;
 	inode = sbuf.st_ino;
 	if (fattr & aDIR) {
-		talloc_destroy(ctx);
 		close_file(fsp,ERROR_CLOSE);
 		return(ERROR_DOS(ERRDOS,ERRnoaccess));
 	}
@@ -902,7 +895,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 
 	if (total_data && smb_action == FILE_WAS_CREATED) {
 		status = set_ea(conn, fsp, fname, ea_list);
-		talloc_destroy(ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			close_file(fsp,ERROR_CLOSE);
 			return ERROR_NT(status);
@@ -4774,7 +4766,6 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	SMB_STRUCT_STAT sbuf;
 	BOOL bad_path = False;
 	NTSTATUS status = NT_STATUS_OK;
-	TALLOC_CTX *ctx = NULL;
 	struct ea_list *ea_list = NULL;
 
 	if (!CAN_WRITE(conn))
@@ -4818,13 +4809,9 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		ctx = talloc_init("TRANS2_MKDIR_SET_EA");
-		if (!ctx) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
-		ea_list = read_ea_list(ctx, pdata + 4, total_data - 4);
+		ea_list = read_ea_list(tmp_talloc_ctx(), pdata + 4,
+				       total_data - 4);
 		if (!ea_list) {
-			talloc_destroy(ctx);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 	} else if (IVAL(pdata,0) != 4) {
@@ -4836,7 +4823,6 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	}
   
 	if(ret < 0) {
-		talloc_destroy(ctx);
 		DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 	}
@@ -4844,7 +4830,6 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	/* Try and set any given EA. */
 	if (ea_list) {
 		status = set_ea(conn, NULL, directory, ea_list);
-		talloc_destroy(ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
