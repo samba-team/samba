@@ -3818,8 +3818,9 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	if (!NT_STATUS_IS_OK(status)) {
 
-		if (NT_STATUS_EQUAL(
-			    status, NT_STATUS_DOS(ERRDOS, ERRfilexists))) {
+		if (!use_nt_status()
+		    && NT_STATUS_EQUAL(status,
+				       NT_STATUS_OBJECT_NAME_COLLISION)) {
 			/*
 			 * Yes, in the DOS error code case we get a
 			 * ERRDOS:ERRnoaccess here. See BASE-SAMBA3ERROR

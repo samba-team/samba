@@ -688,6 +688,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		restore_case_semantics(conn, file_attributes);
 
 		if(!NT_STATUS_IS_OK(status)) {
+			if (!use_nt_status() && NT_STATUS_EQUAL(
+				    status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+				status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
+			}
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
 		}
@@ -760,6 +764,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 				if(!NT_STATUS_IS_OK(status)) {
 					restore_case_semantics(conn, file_attributes);
+					if (!use_nt_status() && NT_STATUS_EQUAL(
+						    status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+						status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
+					}
 					END_PROFILE(SMBntcreateX);
 					return ERROR_NT(status);
 				}
