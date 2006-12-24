@@ -1293,19 +1293,12 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	}
 
 	if (ea_len) {
-		ctx = talloc_init("NTTRANS_CREATE_EA");
-		if (!ctx) {
-			talloc_destroy(ctx);
-			restore_case_semantics(conn, file_attributes);
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
-
 		pdata = data + sd_len;
 
 		/* We have already checked that ea_len <= data_count here. */
-		ea_list = read_nttrans_ea_list(ctx, pdata, ea_len);
+		ea_list = read_nttrans_ea_list(tmp_talloc_ctx(), pdata,
+					       ea_len);
 		if (!ea_list ) {
-			talloc_destroy(ctx);
 			restore_case_semantics(conn, file_attributes);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
@@ -1319,7 +1312,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
-			talloc_destroy(ctx);
 			restore_case_semantics(conn, file_attributes);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
@@ -1339,7 +1331,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					create_options,
 					&info, &fsp);
 		if(!NT_STATUS_IS_OK(status)) {
-			talloc_destroy(ctx);
 			restore_case_semantics(conn, file_attributes);
 			return ERROR_NT(status);
 		}
@@ -1380,12 +1371,10 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 							create_options,
 							&info, &fsp);
 				if(!NT_STATUS_IS_OK(status)) {
-					talloc_destroy(ctx);
 					restore_case_semantics(conn, file_attributes);
 					return ERROR_NT(status);
 				}
 			} else {
-				talloc_destroy(ctx);
 				restore_case_semantics(conn, file_attributes);
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 					/* We have re-scheduled this call. */
@@ -1426,7 +1415,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	
 	if (ea_len && (info == FILE_WAS_CREATED)) {
 		status = set_ea(conn, fsp, fname, ea_list);
-		talloc_destroy(ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			close_file(fsp,ERROR_CLOSE);
 			restore_case_semantics(conn, file_attributes);
