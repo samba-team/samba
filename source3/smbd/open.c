@@ -1851,27 +1851,45 @@ int close_file_fchmod(files_struct *fsp)
 	return ret;
 }
 
-static NTSTATUS mkdir_internal(connection_struct *conn,
-			       const pstring directory)
+static NTSTATUS mkdir_internal(connection_struct *conn, const char *name)
 {
+	SMB_STRUCT_STAT sbuf;
 	int ret= -1;
-	
+	mode_t mode;
+
 	if(!CAN_WRITE(conn)) {
 		DEBUG(5,("mkdir_internal: failing create on read-only share "
 			 "%s\n", lp_servicename(SNUM(conn))));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!check_name(directory, conn)) {
+	if (!check_name(name, conn)) {
 		return map_nt_error_from_unix(errno);
 	}
 
-	ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory,True));
+	mode = unix_mode(conn, aDIR, name, True);
 
-	if (ret == -1) {
+	if ((ret=SMB_VFS_MKDIR(conn, name, mode)) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
-	
+
+	if (lp_inherit_perms(SNUM(conn))) {
+		inherit_access_acl(conn, name, mode);
+	}
+
+	/*
+	 * Check if high bits should have been set,
+	 * then (if bits are missing): add them.
+	 * Consider bits automagically set by UNIX, i.e. SGID bit from parent
+	 * dir.
+	 */
+	if (mode & ~(S_IRWXU|S_IRWXG|S_IRWXO)
+	    && (SMB_VFS_STAT(conn, name, &sbuf) == 0)
+	    && (mode & ~sbuf.st_mode)) {
+		SMB_VFS_CHMOD(conn, name,
+			      sbuf.st_mode | (mode & ~sbuf.st_mode));
+	}
+
 	return NT_STATUS_OK;
 }
 
