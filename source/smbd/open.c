@@ -1851,6 +1851,30 @@ int close_file_fchmod(files_struct *fsp)
 	return ret;
 }
 
+static NTSTATUS mkdir_internal(connection_struct *conn,
+			       const pstring directory)
+{
+	int ret= -1;
+	
+	if(!CAN_WRITE(conn)) {
+		DEBUG(5,("mkdir_internal: failing create on read-only share "
+			 "%s\n", lp_servicename(SNUM(conn))));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!check_name(directory, conn)) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory,True));
+
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+	
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Open a directory from an NT SMB call.
 ****************************************************************************/
@@ -1899,7 +1923,7 @@ NTSTATUS open_directory(connection_struct *conn,
 			/* If directory exists error. If directory doesn't
 			 * exist create. */
 
-			status = mkdir_internal(conn, fname, False);
+			status = mkdir_internal(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(2, ("open_directory: unable to create "
 					  "%s. Error was %s\n", fname,
@@ -1916,7 +1940,7 @@ NTSTATUS open_directory(connection_struct *conn,
 			 * exist create.
 			 */
 
-			status = mkdir_internal(conn, fname, False);
+			status = mkdir_internal(conn, fname);
 
 			if (NT_STATUS_IS_OK(status)) {
 				info = FILE_WAS_CREATED;
@@ -1948,7 +1972,7 @@ NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	if(!S_ISDIR(psbuf->st_mode)) {
-		DEBUG(0,("open_directory: %s is not a directory !\n",
+		DEBUG(5,("open_directory: %s is not a directory !\n",
 			 fname ));
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
@@ -2035,6 +2059,26 @@ NTSTATUS open_directory(connection_struct *conn,
 
 	*result = fsp;
 	return NT_STATUS_OK;
+}
+
+NTSTATUS create_directory(connection_struct *conn, const char *directory)
+{
+	NTSTATUS status;
+	SMB_STRUCT_STAT sbuf;
+	files_struct *fsp;
+
+	SET_STAT_INVALID(sbuf);
+	
+	status = open_directory(conn, directory, &sbuf,
+				FILE_READ_ATTRIBUTES, /* Just a stat open */
+				FILE_SHARE_NONE, /* Ignored for stat opens */
+				FILE_CREATE, 0, NULL, &fsp);
+
+	if (NT_STATUS_IS_OK(status)) {
+		close_file(fsp, NORMAL_CLOSE);
+	}
+
+	return status;
 }
 
 /****************************************************************************
