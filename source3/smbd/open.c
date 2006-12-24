@@ -293,11 +293,17 @@ static NTSTATUS open_file(files_struct *fsp,
 			return map_nt_error_from_unix(errno);
 		}
 
-		/* Inherit the ACL if the file was created. */
-		if ((local_flags & O_CREAT)
-		    && !file_existed
-		    && lp_inherit_perms(SNUM(conn))) {
-			inherit_access_acl(conn, fname, unx_mode);
+		if ((local_flags & O_CREAT) && !file_existed) {
+
+			/* Inherit the ACL if required */
+			if (lp_inherit_perms(SNUM(conn))) {
+				inherit_access_acl(conn, fname, unx_mode);
+			}
+
+			/* Change the owner if required. */
+			if (lp_inherit_owner(SNUM(conn))) {
+				change_fd_owner_to_parent(conn, fsp);
+			}
 		}
 
 	} else {
@@ -1702,10 +1708,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	} else {
 		info = FILE_WAS_CREATED;
-		/* Change the owner if required. */
-		if (lp_inherit_owner(SNUM(conn))) {
-			change_fd_owner_to_parent(conn, fsp);
-		}
 	}
 
 	if (pinfo) {
@@ -1913,6 +1915,11 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 			      psbuf->st_mode | (mode & ~psbuf->st_mode));
 	}
 
+	/* Change the owner if required. */
+	if (lp_inherit_owner(SNUM(conn))) {
+		change_owner_to_parent(conn, name, psbuf);
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -2085,11 +2092,6 @@ NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	TALLOC_FREE(lck);
-
-	/* Change the owner if required. */
-	if ((info == FILE_WAS_CREATED) && lp_inherit_owner(SNUM(conn))) {
-		change_owner_to_parent(conn, fsp->fsp_name, psbuf);
-	}
 
 	if (pinfo) {
 		*pinfo = info;
