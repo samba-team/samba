@@ -84,11 +84,43 @@ int fd_close(struct connection_struct *conn,
  Do this by fd if possible.
 ****************************************************************************/
 
+static void change_fd_owner_to_parent(connection_struct *conn,
+				      files_struct *fsp)
+{
+	const char *parent_path = parent_dirname(fsp->fsp_name);
+	SMB_STRUCT_STAT parent_st;
+	int ret;
+
+	ret = SMB_VFS_STAT(conn, parent_path, &parent_st);
+	if (ret == -1) {
+		DEBUG(0,("change_fd_owner_to_parent: failed to stat parent "
+			 "directory %s. Error was %s\n",
+			 parent_path, strerror(errno) ));
+		return;
+	}
+
+	become_root();
+	ret = SMB_VFS_FCHOWN(fsp, fsp->fh->fd, parent_st.st_uid, (gid_t)-1);
+	unbecome_root();
+	if (ret == -1) {
+		DEBUG(0,("change_fd_owner_to_parent: failed to fchown "
+			 "file %s to parent directory uid %u. Error "
+			 "was %s\n", fsp->fsp_name,
+			 (unsigned int)parent_st.st_uid,
+			 strerror(errno) ));
+	}
+
+	DEBUG(10,("change_fd_owner_to_parent: changed new file %s to "
+		  "parent directory uid %u.\n",	fsp->fsp_name,
+		  (unsigned int)parent_st.st_uid ));
+}
+
 static void change_owner_to_parent(connection_struct *conn,
-				   files_struct *fsp,
 				   const char *fname,
 				   SMB_STRUCT_STAT *psbuf)
 {
+	pstring saved_dir;
+	SMB_STRUCT_STAT sbuf;
 	const char *parent_path = parent_dirname(fname);
 	SMB_STRUCT_STAT parent_st;
 	int ret;
@@ -101,83 +133,62 @@ static void change_owner_to_parent(connection_struct *conn,
 		return;
 	}
 
-	if (fsp && fsp->fh->fd != -1) {
-		become_root();
-		ret = SMB_VFS_FCHOWN(fsp, fsp->fh->fd, parent_st.st_uid, (gid_t)-1);
-		unbecome_root();
-		if (ret == -1) {
-			DEBUG(0,("change_owner_to_parent: failed to fchown "
-				 "file %s to parent directory uid %u. Error "
-				 "was %s\n", fname,
-				 (unsigned int)parent_st.st_uid,
-				 strerror(errno) ));
-		}
+	/* We've already done an lstat into psbuf, and we know it's a
+	   directory. If we can cd into the directory and the dev/ino
+	   are the same then we can safely chown without races as
+	   we're locking the directory in place by being in it.  This
+	   should work on any UNIX (thanks tridge :-). JRA.
+	*/
 
-		DEBUG(10,("change_owner_to_parent: changed new file %s to "
-			  "parent directory uid %u.\n",	fname,
-			  (unsigned int)parent_st.st_uid ));
-
-	} else {
-		/* We've already done an lstat into psbuf, and we know it's a
-		   directory. If we can cd into the directory and the dev/ino
-		   are the same then we can safely chown without races as
-		   we're locking the directory in place by being in it.  This
-		   should work on any UNIX (thanks tridge :-). JRA.
-		*/
-
-		pstring saved_dir;
-		SMB_STRUCT_STAT sbuf;
-
-		if (!vfs_GetWd(conn,saved_dir)) {
-			DEBUG(0,("change_owner_to_parent: failed to get "
-				 "current working directory\n"));
-			return;
-		}
-
-		/* Chdir into the new path. */
-		if (vfs_ChDir(conn, fname) == -1) {
-			DEBUG(0,("change_owner_to_parent: failed to change "
-				 "current working directory to %s. Error "
-				 "was %s\n", fname, strerror(errno) ));
-			goto out;
-		}
-
-		if (SMB_VFS_STAT(conn,".",&sbuf) == -1) {
-			DEBUG(0,("change_owner_to_parent: failed to stat "
-				 "directory '.' (%s) Error was %s\n",
-				 fname, strerror(errno)));
-			goto out;
-		}
-
-		/* Ensure we're pointing at the same place. */
-		if (sbuf.st_dev != psbuf->st_dev ||
-		    sbuf.st_ino != psbuf->st_ino ||
-		    sbuf.st_mode != psbuf->st_mode ) {
-			DEBUG(0,("change_owner_to_parent: "
-				 "device/inode/mode on directory %s changed. "
-				 "Refusing to chown !\n", fname ));
-			goto out;
-		}
-
-		become_root();
-		ret = SMB_VFS_CHOWN(conn, ".", parent_st.st_uid, (gid_t)-1);
-		unbecome_root();
-		if (ret == -1) {
-			DEBUG(10,("change_owner_to_parent: failed to chown "
-				  "directory %s to parent directory uid %u. "
-				  "Error was %s\n", fname,
-				  (unsigned int)parent_st.st_uid, strerror(errno) ));
-			goto out;
-		}
-
-		DEBUG(10,("change_owner_to_parent: changed ownership of new "
-			  "directory %s to parent directory uid %u.\n",
-			  fname, (unsigned int)parent_st.st_uid ));
-
-  out:
-
-		vfs_ChDir(conn,saved_dir);
+	if (!vfs_GetWd(conn,saved_dir)) {
+		DEBUG(0,("change_owner_to_parent: failed to get "
+			 "current working directory\n"));
+		return;
 	}
+
+	/* Chdir into the new path. */
+	if (vfs_ChDir(conn, fname) == -1) {
+		DEBUG(0,("change_owner_to_parent: failed to change "
+			 "current working directory to %s. Error "
+			 "was %s\n", fname, strerror(errno) ));
+		goto out;
+	}
+
+	if (SMB_VFS_STAT(conn,".",&sbuf) == -1) {
+		DEBUG(0,("change_owner_to_parent: failed to stat "
+			 "directory '.' (%s) Error was %s\n",
+			 fname, strerror(errno)));
+		goto out;
+	}
+
+	/* Ensure we're pointing at the same place. */
+	if (sbuf.st_dev != psbuf->st_dev ||
+	    sbuf.st_ino != psbuf->st_ino ||
+	    sbuf.st_mode != psbuf->st_mode ) {
+		DEBUG(0,("change_owner_to_parent: "
+			 "device/inode/mode on directory %s changed. "
+			 "Refusing to chown !\n", fname ));
+		goto out;
+	}
+
+	become_root();
+	ret = SMB_VFS_CHOWN(conn, ".", parent_st.st_uid, (gid_t)-1);
+	unbecome_root();
+	if (ret == -1) {
+		DEBUG(10,("change_owner_to_parent: failed to chown "
+			  "directory %s to parent directory uid %u. "
+			  "Error was %s\n", fname,
+			  (unsigned int)parent_st.st_uid, strerror(errno) ));
+		goto out;
+	}
+
+	DEBUG(10,("change_owner_to_parent: changed ownership of new "
+		  "directory %s to parent directory uid %u.\n",
+		  fname, (unsigned int)parent_st.st_uid ));
+
+ out:
+
+	vfs_ChDir(conn,saved_dir);
 }
 
 /****************************************************************************
@@ -1693,8 +1704,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		info = FILE_WAS_CREATED;
 		/* Change the owner if required. */
 		if (lp_inherit_owner(SNUM(conn))) {
-			change_owner_to_parent(conn, fsp, fsp->fsp_name,
-					       psbuf);
+			change_fd_owner_to_parent(conn, fsp);
 		}
 	}
 
@@ -2078,7 +2088,7 @@ NTSTATUS open_directory(connection_struct *conn,
 
 	/* Change the owner if required. */
 	if ((info == FILE_WAS_CREATED) && lp_inherit_owner(SNUM(conn))) {
-		change_owner_to_parent(conn, fsp, fsp->fsp_name, psbuf);
+		change_owner_to_parent(conn, fsp->fsp_name, psbuf);
 	}
 
 	if (pinfo) {
