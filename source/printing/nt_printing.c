@@ -1800,7 +1800,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 	DEBUG(5,("Creating first directory\n"));
 	slprintf(new_dir, sizeof(new_dir)-1, "%s/%d", architecture, driver->cversion);
 	driver_unix_convert(new_dir, conn, NULL, &bad_path, &st);
-	mkdir_internal(conn, new_dir, bad_path);
+	create_directory(conn, new_dir);
 
 	/* For each driver file, archi\filexxx.yyy, if there is a duplicate file
 	 * listed for this driver which has already been moved, skip it (note:
