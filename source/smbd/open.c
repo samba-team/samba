@@ -1851,9 +1851,9 @@ int close_file_fchmod(files_struct *fsp)
 	return ret;
 }
 
-static NTSTATUS mkdir_internal(connection_struct *conn, const char *name)
+static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
+			       SMB_STRUCT_STAT *psbuf)
 {
-	SMB_STRUCT_STAT sbuf;
 	int ret= -1;
 	mode_t mode;
 
@@ -1873,6 +1873,21 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name)
 		return map_nt_error_from_unix(errno);
 	}
 
+	/* Ensure we're checking for a symlink here.... */
+	/* We don't want to get caught by a symlink racer. */
+
+	if (SMB_VFS_LSTAT(conn, name, psbuf) == -1) {
+		DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
+			  name, strerror(errno)));
+		return map_nt_error_from_unix(errno);
+	}
+
+	if (!S_ISDIR(psbuf->st_mode)) {
+		DEBUG(0, ("Directory just '%s' created is not a directory\n",
+			  name));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (lp_inherit_perms(SNUM(conn))) {
 		inherit_access_acl(conn, name, mode);
 	}
@@ -1883,11 +1898,9 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name)
 	 * Consider bits automagically set by UNIX, i.e. SGID bit from parent
 	 * dir.
 	 */
-	if (mode & ~(S_IRWXU|S_IRWXG|S_IRWXO)
-	    && (SMB_VFS_STAT(conn, name, &sbuf) == 0)
-	    && (mode & ~sbuf.st_mode)) {
+	if (mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) && (mode & ~psbuf->st_mode)) {
 		SMB_VFS_CHMOD(conn, name,
-			      sbuf.st_mode | (mode & ~sbuf.st_mode));
+			      psbuf->st_mode | (mode & ~psbuf->st_mode));
 	}
 
 	return NT_STATUS_OK;
@@ -1929,11 +1942,17 @@ NTSTATUS open_directory(connection_struct *conn,
 
 	switch( create_disposition ) {
 		case FILE_OPEN:
-			/*
-			 * Don't do anything. The check for existence is done
-			 * futher down.
-			 */
+
 			info = FILE_WAS_OPENED;
+
+			/*
+			 * We want to follow symlinks here.
+			 */
+
+			if (SMB_VFS_STAT(conn, fname, psbuf) != 0) {
+				return map_nt_error_from_unix(errno);
+			}
+				
 			break;
 
 		case FILE_CREATE:
@@ -1941,7 +1960,7 @@ NTSTATUS open_directory(connection_struct *conn,
 			/* If directory exists error. If directory doesn't
 			 * exist create. */
 
-			status = mkdir_internal(conn, fname);
+			status = mkdir_internal(conn, fname, psbuf);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(2, ("open_directory: unable to create "
 					  "%s. Error was %s\n", fname,
@@ -1958,7 +1977,7 @@ NTSTATUS open_directory(connection_struct *conn,
 			 * exist create.
 			 */
 
-			status = mkdir_internal(conn, fname);
+			status = mkdir_internal(conn, fname, psbuf);
 
 			if (NT_STATUS_IS_OK(status)) {
 				info = FILE_WAS_CREATED;
@@ -1980,13 +1999,6 @@ NTSTATUS open_directory(connection_struct *conn,
 				 "0x%x for directory %s\n",
 				 (unsigned int)create_disposition, fname));
 			return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* Ensure we're checking for a symlink here.... */
-	/* We don't want to get caught by a symlink racer. */
-
-	if(SMB_VFS_LSTAT(conn,fname, psbuf) != 0) {
-		return map_nt_error_from_unix(errno);
 	}
 
 	if(!S_ISDIR(psbuf->st_mode)) {
