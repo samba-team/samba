@@ -1569,6 +1569,67 @@ static BOOL torture_samba3_errorpaths(struct torture_context *tctx)
 		}
 	}
 
+	{
+		/*
+		 * Samba 3.0.23 has a bug that an existing file can be opened
+		 * as a directory using ntcreate&x. Test this.
+		 */
+
+		const char *fname = "\\test_dir.txt";
+
+		fnum = smbcli_open(cli_nt->tree, fname, O_RDWR|O_CREAT,
+				   DENY_NONE);
+		if (fnum == -1) {
+			d_printf("(%s) smbcli_open failed: %s\n", __location__,
+				 smbcli_errstr(cli_nt->tree));
+		}
+		smbcli_close(cli_nt->tree, fnum);
+
+		io.generic.level = RAW_OPEN_NTCREATEX;
+		io.ntcreatex.in.root_fid = 0;
+		io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+		io.ntcreatex.in.alloc_size = 0;
+		io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
+		io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+			NTCREATEX_SHARE_ACCESS_WRITE|
+			NTCREATEX_SHARE_ACCESS_DELETE;
+		io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+		io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+		io.ntcreatex.in.impersonation =
+			NTCREATEX_IMPERSONATION_ANONYMOUS;
+		io.ntcreatex.in.security_flags = 0;
+		io.ntcreatex.in.fname = fname;
+		io.ntcreatex.in.flags = 0;
+
+		status = smb_raw_open(cli_nt->tree, mem_ctx, &io);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY)) {
+			torture_comment(tctx, "ntcreate as dir gave %s, "
+					"expected NT_STATUS_NOT_A_DIRECTORY\n",
+					nt_errstr(status));
+			result = False;
+		}
+
+		if (NT_STATUS_IS_OK(status)) {
+			smbcli_close(cli_nt->tree, io.ntcreatex.out.file.fnum);
+		}
+
+		status = smb_raw_open(cli_dos->tree, mem_ctx, &io);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS,
+							   ERRbaddirectory))) {
+			torture_comment(tctx, "ntcreate as dir gave %s, "
+					"expected NT_STATUS_NOT_A_DIRECTORY\n",
+					nt_errstr(status));
+			result = False;
+		}
+
+		if (NT_STATUS_IS_OK(status)) {
+			smbcli_close(cli_dos->tree,
+				     io.ntcreatex.out.file.fnum);
+		}
+
+		smbcli_unlink(cli_nt->tree, fname);
+	}
+
 	if (!torture_setting_bool(tctx, "samba3", False)) {
 		goto done;
 	}
