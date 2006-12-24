@@ -1867,7 +1867,6 @@ NTSTATUS open_directory(connection_struct *conn,
 {
 	files_struct *fsp = NULL;
 	BOOL dir_existed = VALID_STAT(*psbuf) ? True : False;
-	BOOL create_dir = False;
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
 	int info = 0;
@@ -1888,44 +1887,47 @@ NTSTATUS open_directory(connection_struct *conn,
 
 	switch( create_disposition ) {
 		case FILE_OPEN:
-			/* If directory exists open. If directory doesn't
-			 * exist error. */
-			if (!dir_existed) {
-				DEBUG(5,("open_directory: FILE_OPEN requested "
-					 "for directory %s and it doesn't "
-					 "exist.\n", fname ));
-				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			}
+			/*
+			 * Don't do anything. The check for existence is done
+			 * futher down.
+			 */
 			info = FILE_WAS_OPENED;
 			break;
 
 		case FILE_CREATE:
+
 			/* If directory exists error. If directory doesn't
 			 * exist create. */
-			if (dir_existed) {
-				DEBUG(5,("open_directory: FILE_CREATE "
-					 "requested for directory %s and it "
-					 "already exists.\n", fname ));
-				if (use_nt_status()) {
-					return NT_STATUS_OBJECT_NAME_COLLISION;
-				} else {
-					return NT_STATUS_DOS(ERRDOS,
-							     ERRfilexists);
-				}
+
+			status = mkdir_internal(conn, fname, False);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(2, ("open_directory: unable to create "
+					  "%s. Error was %s\n", fname,
+					  nt_errstr(status)));
+				return status;
 			}
-			create_dir = True;
+
 			info = FILE_WAS_CREATED;
 			break;
 
 		case FILE_OPEN_IF:
-			/* If directory exists open. If directory doesn't
-			 * exist create. */
-			if (!dir_existed) {
-				create_dir = True;
+			/*
+			 * If directory exists open. If directory doesn't
+			 * exist create.
+			 */
+
+			status = mkdir_internal(conn, fname, False);
+
+			if (NT_STATUS_IS_OK(status)) {
 				info = FILE_WAS_CREATED;
-			} else {
-				info = FILE_WAS_OPENED;
 			}
+
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_OBJECT_NAME_COLLISION)) {
+				info = FILE_WAS_OPENED;
+				status = NT_STATUS_OK;
+			}
+				
 			break;
 
 		case FILE_SUPERSEDE:
@@ -1938,35 +1940,17 @@ NTSTATUS open_directory(connection_struct *conn,
 			return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (create_dir) {
-		/*
-		 * Try and create the directory.
-		 */
+	/* Ensure we're checking for a symlink here.... */
+	/* We don't want to get caught by a symlink racer. */
 
-		/* We know bad_path is false as it's caught earlier. */
+	if(SMB_VFS_LSTAT(conn,fname, psbuf) != 0) {
+		return map_nt_error_from_unix(errno);
+	}
 
-		status = mkdir_internal(conn, fname, False);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2,("open_directory: unable to create %s. "
-				 "Error was %s\n", fname, strerror(errno) ));
-			/* Ensure we return the correct NT status to the
-			 * client. */
-			return status;
-		}
-
-		/* Ensure we're checking for a symlink here.... */
-		/* We don't want to get caught by a symlink racer. */
-
-		if(SMB_VFS_LSTAT(conn,fname, psbuf) != 0) {
-			return map_nt_error_from_unix(errno);
-		}
-
-		if(!S_ISDIR(psbuf->st_mode)) {
-			DEBUG(0,("open_directory: %s is not a directory !\n",
-				 fname ));
-			return NT_STATUS_NOT_A_DIRECTORY;
-		}
+	if(!S_ISDIR(psbuf->st_mode)) {
+		DEBUG(0,("open_directory: %s is not a directory !\n",
+			 fname ));
+		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
 	status = file_new(conn, &fsp);
