@@ -6,8 +6,8 @@ QOOXDOO = ../qooxdoo-0.6.3-sdk
 SCRIPTNAME = swat.js
 APPCLASS = swat.Application
 INCLUDEALL = true
-OPTIMIZESTRINGS = true
-OPTIMIZEVARIABLES = true
+OPTIMIZESTRINGS = false
+OPTIMIZEVARIABLES = false
 SOURCELOADER=
 NICE=10
 
@@ -117,7 +117,8 @@ generate-script-source:
 	  $(INCLUDE) \
 	  --source-script-file source/script/$(SCRIPTNAME) \
 	  --define-runtime-setting qx.manager.object.AliasManager.resourceUri:../$(FRAMEWORK)/source/resource \
-	  --cache-directory $(CACHE)
+	  --cache-directory $(CACHE) \
+	  --add-new-lines
 
 generate-script-build:
 	@chmod u+x $(GENERATOR) && nice -n $(NICE) $(GENERATOR) \
