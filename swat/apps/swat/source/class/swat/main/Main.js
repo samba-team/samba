@@ -1,5 +1,5 @@
 /*
-#module(swat)
+#module(swat_main)
 #require(swat.module.AbstractModule)
 #require(swat.module.stats.Statistics)
 */

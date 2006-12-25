@@ -1,8 +1,8 @@
 /**
  * Swat statistics class
  */
-qx.OO.defineClass("swat.module.stats.Statistics",
-                  swat.module.AbstractModule, function()
+qx.OO.defineClass("swat.module.stats.Statistics", swat.module.AbstractModule,
+function()
 {
   swat.module.AbstractModule.call(this);
 });

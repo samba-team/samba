@@ -8,10 +8,9 @@ qx.Class.buildGui = function(modules)
 {
   var o;
 
-  // TODO: these predefined yellow and blue colors are the wrong shade.  find
-  // the correct colors.
-  var topColor = new qx.renderer.color.Color("yellow");
-  var bottomColor = new qx.renderer.color.Color("blue");
+  // Header colors
+  var topColor = new qx.renderer.color.Color("#ffff64");
+  var bottomColor = new qx.renderer.color.Color("#3878cd");
 
   // Create the yellow bar at the top
   o = new qx.ui.basic.Terminator();
@@ -116,7 +115,7 @@ qx.Class.buildGui = function(modules)
     canvas.setDisplay(false); // initially not displayed
 
     var fsm = modules.list[moduleName].fsm;
-    fsm.addObject("canvas", canvas);
+    fsm.addObject("swat.module.canvas", canvas);
     canvas.addEventListener("appear", fsm.eventListener, fsm);
     canvas.addEventListener("disappear", fsm.eventListener, fsm);
 
