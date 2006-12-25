@@ -48,18 +48,19 @@ qx.Proto.buildInitialFsm = function(module)
    * State: Idle
    *
    * Transition on:
-   *  "execute" on button_send
+   *  "appear" on swat.module.canvas
    */
   var state = new qx.util.fsm.State(
     "State_Idle",
     {
       "events" :
         {
-          // If the send button is pressed, go to new state state where we
-          // will await the RPC result
+          // When we get an appear event the first time, run the transition
+          // that will load the module's finite state machine and graphical
+          // user interface.
           "appear"  :
           {
-            "canvas" :
+            "swat.module.canvas" :
               "Transition_Idle_to_Idle_Load_Gui"
           }
         }
@@ -76,7 +77,7 @@ qx.Proto.buildInitialFsm = function(module)
    */
   var thisModule = this;
   var trans = new qx.util.fsm.Transition(
-    "Transition_Idle_to_AwaitRpcResult_via_button_send",
+    "Transition_Idle_to_Idle_Load_Gui",
     {
       "nextState" :
         qx.util.fsm.FiniteStateMachine.StateChange.CURRENT_STATE,
@@ -84,6 +85,16 @@ qx.Proto.buildInitialFsm = function(module)
       "ontransition" :
         function(fsm, event)
         {
+          // Make the "Loading" message go away.  (We need to learn how to
+          // remove it entirely.  Just doing canvas.removeAll() leaves
+          // something in the widget queue and we get spurious error
+          // messages.)
+          var children = module.canvas.getVisibleChildren();
+          for (var child in children)
+          {
+            children[child].hide();
+          }
+
           // Call the module's initialAppear function to build FSM and GUI.
           // That function should *replace* this state, State_Idle, to which
           // we'll transition.
