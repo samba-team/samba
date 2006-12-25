@@ -891,6 +891,16 @@ unix2nttime(time_t unix_time)
     return wt;
 }
 
+static time_t
+nt2unixtime(uint64_t t)
+{
+    t = ((t - (uint64_t)NTTIME_EPOCH) / (uint64_t)10000000);
+    if (t > (((time_t)(~(uint64_t)0)) >> 1))
+	return 0;
+    return (time_t)t;
+}
+
+
 int
 heim_ntlm_calculate_ntlm2(const void *key, size_t len,
 			  const char *username,
@@ -910,7 +920,7 @@ heim_ntlm_calculate_ntlm2(const void *key, size_t len,
     uint64_t t;
     
     t = unix2nttime(time(NULL));
-    
+
     if (RAND_bytes(clientchallange, sizeof(clientchallange)) != 1)
 	return EINVAL;
     
@@ -931,7 +941,8 @@ heim_ntlm_calculate_ntlm2(const void *key, size_t len,
     CHECK(krb5_store_uint32(sp, t & 0xffffffff), 0);
     CHECK(krb5_store_uint32(sp, t >> 32), 0);
     CHECK(krb5_storage_write(sp, clientchallange, 8), 8);
-    CHECK(krb5_storage_write(sp, infotarget->data, infotarget->length), 0);
+    CHECK(krb5_storage_write(sp, infotarget->data, infotarget->length), 
+	  infotarget->length);
     /* unknown */
     CHECK(krb5_store_uint32(sp, 0), 0); 
     
@@ -962,6 +973,96 @@ heim_ntlm_calculate_ntlm2(const void *key, size_t len,
 
     answer->data = data.data;
     answer->length = data.length;
+
+    return 0;
+out:
+    if (sp)
+	krb5_storage_free(sp);
+    return ret;
+}
+
+static const int authtimediff = 3600 * 2; /* 2 hours */
+
+int
+heim_ntlm_verify_ntlm2(const void *key, size_t len,
+		       const char *username,
+		       const char *target,
+		       time_t now,
+		       const unsigned char serverchallange[8],
+		       const struct ntlm_buf *answer,
+		       struct ntlm_buf *infotarget,
+		       unsigned char ntlmv2[16])
+{
+    krb5_error_code ret;
+    unsigned int hmaclen;
+    unsigned char clientanswer[16];
+    unsigned char serveranswer[16];
+    krb5_storage *sp;
+    HMAC_CTX c;
+    uint64_t t;
+    time_t authtime;
+    uint32_t temp;
+
+    infotarget->length = 0;    
+    infotarget->data = NULL;    
+
+    if (answer->length < 16)
+	return EINVAL;
+
+    if (now == 0)
+	now = time(NULL);
+
+    /* calculate ntlmv2 key */
+
+    heim_ntlm_ntlmv2_key(key, len, username, target, ntlmv2);
+
+    /* calculate and build ntlmv2 answer */
+
+    sp = krb5_storage_from_readonly_mem(answer->data, answer->length);
+    if (sp == NULL)
+	return ENOMEM;
+    krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
+
+    CHECK(krb5_storage_read(sp, clientanswer, 16), 16);
+
+    CHECK(krb5_ret_uint32(sp, &temp), 0);
+    CHECK(temp, 0x01010000);
+    CHECK(krb5_ret_uint32(sp, &temp), 0);
+    CHECK(temp, 0);
+    /* timestamp le 64 bit ts */
+    CHECK(krb5_ret_uint32(sp, &temp), 0);
+    t = temp;
+    CHECK(krb5_ret_uint32(sp, &temp), 0);
+    t |= ((uint64_t)temp)<< 32;
+
+    authtime = nt2unixtime(t);
+
+    if (abs((int)(authtime - now)) > authtimediff) {
+	ret = EINVAL;
+	goto out;
+    }
+    infotarget->length = answer->length - 32;
+    infotarget->data = malloc(infotarget->length);
+    if (infotarget->data == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+    CHECK(krb5_storage_read(sp, infotarget->data, infotarget->length), 
+	  infotarget->length);
+    /* XXX remove the unknown uint32_t */
+    krb5_storage_free(sp);
+    sp = NULL;
+
+    HMAC_CTX_init(&c);
+    HMAC_Init_ex(&c, ntlmv2, sizeof(ntlmv2), EVP_md5(), NULL);
+    HMAC_Update(&c, ((char *)answer->data) + 16, answer->length - 16);
+    HMAC_Update(&c, serverchallange, 8);
+    HMAC_Final(&c, serveranswer, &hmaclen);
+    HMAC_CTX_cleanup(&c);
+
+    if (memcmp(serveranswer, clientanswer, 16) != 0) {
+	return EINVAL;
+    }
 
     return 0;
 out:
