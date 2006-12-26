@@ -35,6 +35,15 @@
 
 RCSID("$Id$");
 
+uint32_t
+_krb5_crc_update (const char *p, size_t len, uint32_t res);
+void
+_krb5_crc_init_table(void);
+
+/*
+ *
+ */
+
 static void
 encode_le_uint32(uint32_t n, unsigned char *p)
 {
@@ -53,11 +62,118 @@ decode_le_uint32(const void *ptr, uint32_t *n)
 }
 
 
-uint32_t
-_krb5_crc_update (const char *p, size_t len, uint32_t res);
-void
-_krb5_crc_init_table(void);
+#if 0
 
+static OM_uint32
+v2_sign_message(gss_buffer_t in,
+		char signkey[16],
+		RC4_KEY *sealkey,
+		uint32_t seq,
+		unsigned char out[16])
+{
+    unsigned char hmac[16]
+    unsigned int hmaclen;
+    HMAC_CTX c;
+
+    HMAC_CTX_init(&c);
+    HMAC_Init_ex(&c, signkey, 16, EVP_md5(), NULL);
+    
+    encode_le_uint32(hmac, seq);
+    HMAC_Update(&c, seq, 4);
+    HMAC_Update(&c, in->value, in->length);
+    HMAC_Final(&c, hmac, &hmaclen);
+    HMAC_CTX_cleanup(&c);
+
+    encode_le_uint32(&out[0], 1);
+    if (sealkey)
+	RC4(sealkey, &out[4], hmac, 8);
+    else
+	memcpy(&out[4], hmac, 8);
+
+    memset(&out[12], 0, 4);
+}
+
+static OM_uint32
+v2_verify_message(gss_buffer_t in,
+		  char signkey[16],
+		  RC4_KEY *sealkey,
+		  uint32_t seq,
+		  unsigned char checksum[16])
+{
+    OM_uint32 ret;
+    unsigned char out[16];
+
+    ret = v2_sign_message(in, signkey, sealkey, seq, out);
+    if (ret)
+	return ret;
+
+    if (memcmp(checksum, out, 16) == 0)
+	return EINVAL;
+
+    return 0;
+}    
+
+OM_uint32
+v2_seal_message(gss_buffer_t in,
+		char signkey[16],
+		uint32_t seq,
+		RC4_KEY *sealkey,
+		gss_buffer_t out)
+{
+    unsigned char *p;
+    OM_uint32 ret;
+
+    if (in->length + 16 < in->length)
+	return EINVAL;
+
+    p = malloc(in->length + 16);
+    if (p == NULL)
+	return ENOMEM;
+
+    RC4(sealkey, p, in->value, in->length);
+
+    ret = v2_sign_message(in, signkey, sealkey, seq, &p[in->length]);
+    if (ret) {
+	free(p);
+	return ret;
+    }
+
+    out->value = p;
+    out->length = in->length + 16;
+
+    return 0;
+}
+
+OM_uint32
+v2_unseal_message(gss_buffer_t in,
+		  char signkey[16],
+		  uint32_t seq,
+		  RC4_KEY *sealkey,
+		  gss_buffer_t out)
+{
+    unsigned char *p;
+    OM_uint32 ret;
+
+    if (in->length < 16)
+	return EINVAL;
+
+    out->value = malloc(in->length - 16);
+    if (out->value == NULL)
+	return ENOMEM;
+
+    RC4(sealkey, out->value, in->value, in->length - 16);
+
+    ret = v2_verify_message(out, signkey, sealkey, seq,
+			    ((unsigned char *)in->value) + in->length);
+    if (ret) {
+	free(p);
+	return ret;
+    }
+
+    return 0;
+}
+
+#endif
 
 /*
  *
