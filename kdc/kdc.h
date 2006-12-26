@@ -81,6 +81,8 @@ typedef struct krb5_kdc_configuration {
     int pkinit_dh_min_bits;
 
     int enable_digest;
+    int digests_allowed;
+
     size_t max_datagram_reply_length;
 
 } krb5_kdc_configuration;
