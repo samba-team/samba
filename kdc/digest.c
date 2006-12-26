@@ -37,6 +37,22 @@
 
 RCSID("$Id$");
 
+#define CHAP_MD5	0x10
+#define DIGEST_MD5	0x08
+#define NTLM_V2		0x04
+#define NTLM_V1_SESSION	0x02
+#define NTLM_V1		0x01
+
+const struct units digestunits[] = {
+	{"chap-md5",		1U << 4},
+	{"digest-md5",		1U << 3},
+	{"ntlm-v2",		1U << 2},
+	{"ntlm-v1-session",	1U << 1},
+	{"ntlm-v1",		1U << 0},
+	{NULL,	0}
+};
+
+
 static krb5_error_code
 get_digest_key(krb5_context context,
 	       krb5_kdc_configuration *config,
@@ -401,7 +417,11 @@ _kdc_do_digest(krb5_context context,
 	    krb5_set_error_string(context, "out of memory");
 	    goto out;
 	}
-	krb5_store_stringz(sp, ireq.u.digestRequest.type);
+	ret = krb5_store_stringz(sp, ireq.u.digestRequest.type);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
 
 	krb5_store_stringz(sp, ireq.u.digestRequest.serverNonce);
 	if (ireq.u.digestRequest.identifier) {
@@ -532,6 +552,11 @@ _kdc_do_digest(krb5_context context,
 	    unsigned char md[MD5_DIGEST_LENGTH];
 	    char id;
 
+	    if ((config->digests_allowed & CHAP_MD5) == 0) {
+		kdc_log(context, config, 0, "Digest CHAP MD5 not allowed");
+		goto out;
+	    }
+
 	    if (ireq.u.digestRequest.identifier == NULL) {
 		krb5_set_error_string(context, "Identifier missing "
 				      "from CHAP request");
@@ -562,6 +587,11 @@ _kdc_do_digest(krb5_context context,
 	    MD5_CTX ctx;
 	    unsigned char md[MD5_DIGEST_LENGTH];
 	    char *A1, *A2;
+
+	    if ((config->digests_allowed & DIGEST_MD5) == 0) {
+		kdc_log(context, config, 0, "Digest SASL MD5 not allowed");
+		goto out;
+	    }
 
 	    if (ireq.u.digestRequest.nonceCount == NULL) 
 		goto out;
@@ -672,6 +702,12 @@ _kdc_do_digest(krb5_context context,
 	break;
     }
     case choice_DigestReqInner_ntlmInit:
+
+	if ((config->digests_allowed & (NTLM_V1|NTLM_V1_SESSION|NTLM_V2)) == 0) {
+	    kdc_log(context, config, 0, "NTLM not allowed");
+	    goto out;
+	}
+
 
 	r.element = choice_DigestRepInner_ntlmInitReply;
 
@@ -852,6 +888,11 @@ _kdc_do_digest(krb5_context context,
 	    struct ntlm_buf infotarget, answer;
 	    char *targetname;
 
+	    if ((config->digests_allowed & NTLM_V2) == 0) {
+		kdc_log(context, config, 0, "NTLM v2 not allowed");
+		goto out;
+	    }
+
 	    version = 2;
 
 	    targetname = get_ntlm_targetname(context, client);
@@ -892,6 +933,11 @@ _kdc_do_digest(krb5_context context,
 		char sessionhash[MD5_DIGEST_LENGTH];
 		MD5_CTX md5ctx;
 		
+		if ((config->digests_allowed & NTLM_V1_SESSION) == 0) {
+		    kdc_log(context, config, 0, "NTLM v1-session not allowed");
+		    goto out;
+		}
+
 		if (ireq.u.ntlmRequest.lm.length != 24) {
 		    krb5_set_error_string(context, "LM hash have wrong length "
 					  "for NTLM session key");
@@ -904,6 +950,11 @@ _kdc_do_digest(krb5_context context,
 		MD5_Update(&md5ctx, ireq.u.ntlmRequest.lm.data, 8);
 		MD5_Final(sessionhash, &md5ctx);
 		memcpy(challange, sessionhash, sizeof(challange));
+	    } else {
+		if ((config->digests_allowed & NTLM_V1) == 0) {
+		    kdc_log(context, config, 0, "NTLM v1 not allowed");
+		    goto out;
+		}
 	    }
 	    
 	    ret = heim_ntlm_calculate_ntlm1(key->key.keyvalue.data,
