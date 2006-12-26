@@ -941,6 +941,29 @@ krb5_ntlm_init_get_targetname(krb5_context context,
 }
 
 krb5_error_code
+krb5_ntlm_init_get_targetinfo(krb5_context context,
+			      krb5_ntlm ntlm,
+			      krb5_data *data)
+{
+    krb5_error_code ret;
+
+    if (ntlm->initReply.targetinfo == NULL) {
+	krb5_data_zero(data);
+	return 0;
+    }
+
+    ret = krb5_data_copy(data,
+			 ntlm->initReply.targetinfo->data,
+			 ntlm->initReply.targetinfo->length);
+    if (ret) {
+	krb5_clear_error_string(context);
+	return ret;
+    }
+    return 0;
+}
+
+
+krb5_error_code
 krb5_ntlm_request(krb5_context context,
 		  krb5_ntlm ntlm,
 		  krb5_realm realm,
