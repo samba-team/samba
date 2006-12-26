@@ -97,6 +97,44 @@ get_ntlm_targetname(krb5_context context,
     return targetname;
 }
 
+static krb5_error_code
+fill_targetinfo(krb5_context context,
+		char *targetname,
+		hdb_entry_ex *client,
+		krb5_data *data)
+{
+    struct ntlm_targetinfo ti;
+    krb5_error_code ret;
+    struct ntlm_buf d;
+    krb5_principal p;
+    const char *str;
+
+    memset(&ti, 0, sizeof(ti));
+
+    ti.domainname = targetname;
+    p = client->entry.principal;
+    str = krb5_principal_get_comp_string(context, p, 0);
+    if (str != NULL && 
+	(strcmp("host", str) == 0 || 
+	 strcmp("ftp", str) == 0 ||
+	 strcmp("imap", str) == 0 ||
+	 strcmp("pop", str) == 0 ||
+	 strcmp("smtp", str)))
+    {
+	str = krb5_principal_get_comp_string(context, p, 1);
+	ti.dnsservername = rk_UNCONST(str);
+    }
+    
+    ret = heim_ntlm_encode_targetinfo(&ti, 1, &d);
+    if (ret)
+	return ret;
+
+    data->data = d.data;
+    data->length = d.length;
+
+    return 0;
+}
+
 
 /*
  *
@@ -761,8 +799,24 @@ _kdc_do_digest(krb5_context context,
 	    ret = ENOMEM;
 	    goto out;
 	}
-	r.u.ntlmInitReply.targetinfo = NULL; /* XXX fix targetinfo */
-	
+	/* XXX fix targetinfo */
+	ALLOC(r.u.ntlmInitReply.targetinfo);
+	if (r.u.ntlmInitReply.targetinfo == NULL) {
+	    krb5_set_error_string(context, "out of memory");
+	    ret = ENOMEM;
+	    goto out;
+	}
+
+	ret = fill_targetinfo(context,
+			      r.u.ntlmInitReply.targetname,
+			      client,
+			      r.u.ntlmInitReply.targetinfo);
+	if (ret) {
+	    krb5_set_error_string(context, "out of memory");
+	    ret = ENOMEM;
+	    goto out;
+	}
+
 	/* 
 	 * Save data encryted in opaque for the second part of the
 	 * ntlm authentication
