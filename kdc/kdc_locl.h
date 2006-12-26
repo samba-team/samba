@@ -55,6 +55,8 @@ extern int enable_http;
 
 extern int detach_from_console;
 
+extern const struct units digestunits[];
+
 #define _PATH_KDC_CONF		HDB_DB_DIR "/kdc.conf"
 #define DEFAULT_LOG_DEST	"0-1/FILE:" HDB_DB_DIR "/kdc.log"
 
