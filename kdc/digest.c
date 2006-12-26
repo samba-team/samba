@@ -62,6 +62,30 @@ get_digest_key(krb5_context context,
  *
  */
 
+static char *
+get_ntlm_targetname(krb5_context context,
+		    hdb_entry_ex *client)
+{
+    char *targetname, *p;
+
+    targetname = strdup(krb5_principal_get_realm(context,
+						 client->entry.principal));
+    if (targetname == NULL)
+	return NULL;
+
+    p = strchr(targetname, '.');
+    if (p)
+	*p = '\0';
+
+    strupr(targetname);
+    return targetname;
+}
+
+
+/*
+ *
+ */
+
 krb5_error_code
 _kdc_do_digest(krb5_context context, 
 	       krb5_kdc_configuration *config,
@@ -227,7 +251,8 @@ _kdc_do_digest(krb5_context context,
 	goto out;
     }
 
-    kdc_log(context, config, 0, "Valid digest request from %s", client_name);
+    kdc_log(context, config, 0, "Valid digest request from %s (%s)", 
+	    client_name, from);
 
     /*
      * Process the inner request
@@ -360,6 +385,9 @@ _kdc_do_digest(krb5_context context,
 	    ret = ENOMEM;
 	    goto out;
 	}
+
+	kdc_log(context, config, 0, "Digest %s init request successful from %s",
+		ireq.u.init.type, from);
 
 	break;
     }
@@ -638,10 +666,12 @@ _kdc_do_digest(krb5_context context,
 	    r.u.error.code = EINVAL;
 	}
 
+	kdc_log(context, config, 0, "Digest %s request successful %s",
+		ireq.u.digestRequest.type, from);
+
 	break;
     }
-    case choice_DigestReqInner_ntlmInit: {
-	char *targetname = NULL;
+    case choice_DigestReqInner_ntlmInit:
 
 	r.element = choice_DigestRepInner_ntlmInitReply;
 
@@ -674,17 +704,13 @@ _kdc_do_digest(krb5_context context,
 
 #undef ALL
 
-
-	targetname = strdup(krb5_principal_get_realm(context,
-						     client->entry.principal));
-	{
-	    char *p = strchr(targetname, '.');
-	    if (p)
-		*p = '\0';
+	r.u.ntlmInitReply.targetname = 
+	    get_ntlm_targetname(context, client);
+	if (r.u.ntlmInitReply.targetname == NULL) {
+	    krb5_set_error_string(context, "out of memory");
+	    ret = ENOMEM;
+	    goto out;
 	}
-	strupr(targetname);
-
-	r.u.ntlmInitReply.targetname = targetname;
 	r.u.ntlmInitReply.challange.data = malloc(8);
 	if (r.u.ntlmInitReply.challange.data == NULL) {
 	    krb5_set_error_string(context, "out of memory");
@@ -742,13 +768,16 @@ _kdc_do_digest(krb5_context context,
 	if (ret)
 	    goto out;
 
+	kdc_log(context, config, 0, "NTLM init from %s", from);
+
 	break;
-    }
+
     case choice_DigestReqInner_ntlmRequest: {
 	krb5_principal clientprincipal;
 	unsigned char challange[8];
 	uint32_t flags;
 	Key *key = NULL;
+	int version;
 	    
 	r.element = choice_DigestRepInner_ntlmResponse;
 	r.u.ntlmResponse.success = 0;
@@ -819,10 +848,45 @@ _kdc_do_digest(krb5_context context,
 
 	/* check if this is NTLMv2 */
 	if (ireq.u.ntlmRequest.ntlm.length != 24) {
-	    krb5_set_error_string(context, "NTLM v2 not supported yet");
-	    goto out;
+	    unsigned char masterkey[16];
+	    struct ntlm_buf infotarget, answer;
+	    char *targetname;
+
+	    version = 2;
+
+	    targetname = get_ntlm_targetname(context, client);
+	    if (targetname == NULL) {
+		krb5_set_error_string(context, "out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+
+	    answer.length = ireq.u.ntlmRequest.ntlm.length;
+	    answer.data = ireq.u.ntlmRequest.ntlm.data;
+
+	    ret = heim_ntlm_verify_ntlm2(key->key.keyvalue.data,
+					 key->key.keyvalue.length,
+					 ireq.u.ntlmRequest.username,
+					 targetname,
+					 0,
+					 challange,
+					 &answer,
+					 &infotarget,
+					 masterkey);
+	    free(targetname);
+	    if (ret) {
+		krb5_set_error_string(context, "NTLM v2 verify failed");
+		goto out;
+	    }
+
+	    /* XXX verify infotarget matches client (checksum ?) */
+
+	    free(infotarget.data);
+	    /* */
 	} else {
 	    struct ntlm_buf answer;
+
+	    version = 1;
 
 	    if (flags & NTLM_NEG_NTLM2_SESSION) {
 		char sessionhash[MD5_DIGEST_LENGTH];
@@ -911,8 +975,8 @@ _kdc_do_digest(krb5_context context,
 	}
 
 	r.u.ntlmResponse.success = 1;
-	kdc_log(context, config, 0, "NTLM successful for %s",
-		ireq.u.ntlmRequest.username);
+	kdc_log(context, config, 0, "NTLM version %d successful for %s",
+		version, ireq.u.ntlmRequest.username);
 
 	break;
     }
