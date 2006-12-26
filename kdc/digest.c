@@ -43,7 +43,7 @@ RCSID("$Id$");
 #define NTLM_V1_SESSION	0x02
 #define NTLM_V1		0x01
 
-const struct units digestunits[] = {
+const struct units _kdc_digestunits[] = {
 	{"chap-md5",		1U << 4},
 	{"digest-md5",		1U << 3},
 	{"ntlm-v2",		1U << 2},

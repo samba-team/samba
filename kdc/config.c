@@ -411,7 +411,7 @@ configure(krb5_context context, int argc, char **argv)
 	if (digests == NULL)
 	    digests = "ntlm-v2";
 	config->digests_allowed = parse_flags(digests,
-					      digestunits,
+					      _kdc_digestunits,
 					      0);
 	if (config->digests_allowed == -1) {
 	    kdc_log(context, config, 0,
