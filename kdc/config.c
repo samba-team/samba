@@ -402,6 +402,30 @@ configure(krb5_context context, int argc, char **argv)
 				     "kdc", 
 				     "enable-digest", NULL);
 
+    {
+	const char *digests;
+
+	digests = krb5_config_get_string(context, NULL, 
+					 "kdc", 
+					 "digests_allowed", NULL);
+	if (digests == NULL)
+	    digests = "ntlm-v2";
+	config->digests_allowed = parse_flags(digests,
+					      digestunits,
+					      0);
+	if (config->digests_allowed == -1) {
+	    kdc_log(context, config, 0,
+		    "unparsable digest units (%s), turning off digest",
+		    digests);
+	    config->enable_digest = 0;
+	} else if (config->digests_allowed == 0) {
+	    kdc_log(context, config, 0,
+		    "no digest enable, turning digest off",
+		    digests);
+	    config->enable_digest = 0;
+	}
+    }
+
     config->check_ticket_addresses = 
 	krb5_config_get_bool_default(context, NULL, 
 				     config->check_ticket_addresses, 
