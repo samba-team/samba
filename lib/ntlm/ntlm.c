@@ -944,7 +944,7 @@ heim_ntlm_calculate_ntlm2(const void *key, size_t len,
     CHECK(krb5_storage_write(sp, infotarget->data, infotarget->length), 
 	  infotarget->length);
     /* unknown */
-    CHECK(krb5_store_uint32(sp, 0), 0); 
+    /* CHECK(krb5_store_uint32(sp, 0), 0);  */
     
     CHECK(krb5_storage_to_data(sp, &data), 0);
     krb5_storage_free(sp);
@@ -1041,7 +1041,11 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
 	ret = EINVAL;
 	goto out;
     }
-    infotarget->length = answer->length - 32;
+
+    /* client challange */
+    CHECK(krb5_storage_read(sp, serveranswer, 8), 8);
+
+    infotarget->length = answer->length - 40;
     infotarget->data = malloc(infotarget->length);
     if (infotarget->data == NULL) {
 	ret = ENOMEM;
@@ -1061,11 +1065,13 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     HMAC_CTX_cleanup(&c);
 
     if (memcmp(serveranswer, clientanswer, 16) != 0) {
+	_ntlm_free_buf(infotarget);
 	return EINVAL;
     }
 
     return 0;
 out:
+    _ntlm_free_buf(infotarget);
     if (sp)
 	krb5_storage_free(sp);
     return ret;
