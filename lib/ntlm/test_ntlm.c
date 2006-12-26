@@ -167,8 +167,8 @@ test_keys(void)
 	*target = "TESTNT";
     const unsigned char 
 	serverchallange[8] = "\x67\x7f\x1c\x55\x7a\x5e\xe9\x6c";
-    struct ntlm_buf infotarget, answer, key;
-    unsigned char ntlmv2[16];
+    struct ntlm_buf infotarget, infotarget2, answer, key;
+    unsigned char ntlmv2[16], ntlmv2_1[16];
     int ret;
     
     infotarget.length = 70;
@@ -194,8 +194,29 @@ test_keys(void)
 				    &infotarget,
 				    ntlmv2,
 				    &answer);
+    if (ret)
+	errx(1, "heim_ntlm_calculate_ntlm2");
 
-    
+    ret = heim_ntlm_verify_ntlm2(key.data,
+				 key.length,
+				 username,
+				 target,
+				 0,
+				 serverchallange,
+				 &answer,
+				 &infotarget2,
+				 ntlmv2_1);
+    if (ret)
+	errx(1, "heim_ntlm_verify_ntlm2");
+
+    if (memcmp(ntlmv2, ntlmv2_1, sizeof(ntlmv2)) != 0)
+	errx(1, "ntlm master key not same");
+
+    if (infotarget.length != infotarget2.length)
+	errx(1, "infotarget length");
+
+    if (memcmp(infotarget.data, infotarget2.data, infotarget.length) != 0)
+	errx(1, "infotarget not the same");
 
     return 0;
 }
