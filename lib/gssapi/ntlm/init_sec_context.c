@@ -200,7 +200,8 @@ _gss_ntlm_init_sec_context
 	 * NTLM Version 1 if no targetinfo buffer.
 	 */
 
-	if (type2.targetinfo.length == 0) {
+	/* XXX disable ntlmv2 since we can't handle wrap/unwrap */
+	if (1 || type2.targetinfo.length == 0) {
 	    struct ntlm_buf key;
 	    struct ntlm_buf sessionkey;
 	    unsigned char challange[8];
