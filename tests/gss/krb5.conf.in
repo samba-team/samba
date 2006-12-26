@@ -17,6 +17,7 @@
 
 [kdc]
 	enable-digest = true
+	digests_allowed = ntlm-v2,ntlm-v1-session,ntlm-v1
 
 	database = {
 		dbname = @objdir@/current-db
