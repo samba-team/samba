@@ -164,7 +164,7 @@ libroken_la_SOURCES += socket_wrapper.c socket_wrapper.h
 dist_include_HEADERS += socket_wrapper.h
 endif
 
-build_HEADERZ = test-mem.h
+build_HEADERZ = test-mem.h $(XHEADERS)
 
 nodist_include_HEADERS = roken.h
 rokenincludedir = $(includedir)/roken
@@ -184,4 +184,4 @@ roken.h: make-roken$(EXEEXT)
 make-roken.c: roken.h.in roken.awk
 	$(AWK) -f $(srcdir)/roken.awk $(srcdir)/roken.h.in > make-roken.c
 
-EXTRA_DIST = roken.awk roken.h.in $(man_MANS) $(build_HEADERZ)
+EXTRA_DIST = roken.awk roken.h.in $(man_MANS) test-mem.h
