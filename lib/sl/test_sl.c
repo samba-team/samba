@@ -78,8 +78,9 @@ main(int argc, char **argv)
 	if (ret) {
 	    if (!lines[i].ok)
 		goto next;
-	    errx(1, "sl_make_argv: %d", i);
-	}
+	    errx(1, "sl_make_argv test %d failed", i);
+	} else if (!lines[i].ok)
+	    errx(1, "sl_make_argv passed test %d when it shouldn't", i);
 	if (rargc != lines[i].argc)
 	    errx(1, "result argc (%d) != should be argc (%d) for test %d", 
 		 rargc, lines[i].argc, i);
