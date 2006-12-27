@@ -220,10 +220,10 @@ struct sl_data {
 int
 sl_make_argv(char *line, int *ret_argc, char ***ret_argv)
 {
-    char *foo = NULL;
-    char *p;
+    char *p, *begining;
     int argc, nargv;
     char **argv;
+    int quote = 0;
     
     nargv = 10;
     argv = malloc(nargv * sizeof(*argv));
@@ -231,9 +231,32 @@ sl_make_argv(char *line, int *ret_argc, char ***ret_argv)
 	return ENOMEM;
     argc = 0;
 
-    for(p = strtok_r (line, " \t", &foo);
-	p;
-	p = strtok_r (NULL, " \t", &foo)) {
+    p = line;
+
+    while(isspace((unsigned char)*p))
+	p++;
+    begining = p;
+
+    while (1) {
+	if (*p == '\0') {
+	    ;
+	} else if (*p == '"') {
+	    quote = !quote;
+	    strcpy(&p[0], &p[1]);
+	    continue;
+	} else if (*p == '\\') {
+	    if (p[1] == '\0')
+		goto failed;
+	    strcpy(&p[0], &p[1]);
+	    p += 2;
+	    continue;
+	} else if (quote || !isspace((unsigned char)*p)) {
+	    p++;
+	    continue;
+	} else
+	    *p++ = '\0';
+	if (quote)
+	    goto failed;
 	if(argc == nargv - 1) {
 	    char **tmp;
 	    nargv *= 2;
@@ -244,12 +267,20 @@ sl_make_argv(char *line, int *ret_argc, char ***ret_argv)
 	    }
 	    argv = tmp;
 	}
-	argv[argc++] = p;
+	argv[argc++] = begining;
+	while(isspace((unsigned char)*p))
+	    p++;
+	if (*p == '\0')
+	    break;
+	begining = p;
     }
     argv[argc] = NULL;
     *ret_argc = argc;
     *ret_argv = argv;
     return 0;
+failed:
+    free(argv);
+    return ERANGE;
 }
 
 static jmp_buf sl_jmp;
