@@ -46,6 +46,9 @@ qx.Proto.initialAppear = function(module)
   var viewer = new api.Viewer();
   module.canvas.add(viewer);
   viewer.load("script/data.js");
+
+  // Replace the existing (temporary) finite state machine with a null one
+  swat.module.documentation.Fsm.getInstance().buildFsm(module);
 };
 
 
