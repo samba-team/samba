@@ -174,6 +174,9 @@ static DATA_BLOB negprot_spnego(void)
 	DATA_BLOB blob;
 	nstring dos_name;
 	fstring unix_name;
+#ifdef DEVELOPER
+	size_t slen;
+#endif
 	char guid[17];
 	const char *OIDs_krb5[] = {OID_KERBEROS5,
 				   OID_KERBEROS5_OLD,
@@ -183,12 +186,20 @@ static DATA_BLOB negprot_spnego(void)
 
 	global_spnego_negotiated = True;
 
-	ZERO_STRUCT(guid);
+	memset(guid, '\0', sizeof(guid));
 
 	safe_strcpy(unix_name, global_myname(), sizeof(unix_name)-1);
 	strlower_m(unix_name);
 	push_ascii_nstring(dos_name, unix_name);
 	safe_strcpy(guid, dos_name, sizeof(guid)-1);
+
+#ifdef DEVELOPER
+	/* Fix valgrind 'uninitialized bytes' issue. */
+	slen = strlen(dos_name);
+	if (slen < sizeof(guid)) {
+		memset(guid+slen, '\0', sizeof(guid) - slen);
+	}
+#endif
 
 	/* strangely enough, NT does not sent the single OID NTLMSSP when
 	   not a ADS member, it sends no OIDs at all
