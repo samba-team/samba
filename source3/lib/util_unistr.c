@@ -484,7 +484,7 @@ size_t strnlen_w(const smb_ucs2_t *src, size_t max)
 	size_t len;
 	smb_ucs2_t c;
 
-	for(len = 0; *(COPY_UCS2_CHAR(&c,src)) && (len < max); src++, len++) {
+	for(len = 0; (len < max) && *(COPY_UCS2_CHAR(&c,src)); src++, len++) {
 		;
 	}
 
