@@ -93,6 +93,10 @@ NTSTATUS ejs_pull_string(struct ejs_rpc *ejs,
 			 struct MprVar *v, const char *name, const char **s);
 NTSTATUS ejs_push_string(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, const char *s);
+NTSTATUS ejs_pull_ipv4address(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, const char **s);
+NTSTATUS ejs_push_ipv4address(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, char * const *s);
 void ejs_set_constant_int(int eid, const char *name, int value);
 void ejs_set_constant_string(int eid, const char *name, const char *value);
 

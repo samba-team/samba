@@ -253,6 +253,26 @@ NTSTATUS ejs_push_string(struct ejs_rpc *ejs,
 	return mprSetVar(v, name, mprString(s));
 }
 
+
+/*
+  pull a ipv4address (internally a string)
+*/
+NTSTATUS ejs_pull_ipv4address(struct ejs_rpc *ejs, 
+			      struct MprVar *v, const char *name, const char **s)
+{
+	return ejs_pull_string(ejs, v, name, s);
+}
+
+/*
+  push a ipv4address (internally a string)
+*/
+NTSTATUS ejs_push_ipv4address(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, char * const *s)
+{
+	return ejs_push_string(ejs, v, name, *s);
+}
+
+
 NTSTATUS ejs_pull_dom_sid(struct ejs_rpc *ejs, 
 			  struct MprVar *v, const char *name, struct dom_sid *r)
 {

@@ -374,7 +374,6 @@ static WERROR drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_state *b_s
 	struct ldb_dn *sites_dn;
 	struct ldb_result *res;
 
-	const char *attrs_account_01[] = { "samAccountName", NULL };
 	const char *attrs_account_1[] = { "cn", "dnsHostName", NULL };
 	const char *attrs_account_2[] = { "cn", "dnsHostName", "objectGUID", NULL };
 
@@ -384,12 +383,10 @@ static WERROR drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_state *b_s
 
 	const char *attrs_ntds[] = { "options", "objectGUID", NULL };
 
-	const char *attrs_01[] = { "serverReference", NULL };
 	const char *attrs_1[] = { "serverReference", "cn", "dnsHostName", NULL };
 	const char *attrs_2[] = { "serverReference", "cn", "dnsHostName", "objectGUID", NULL };
 	const char **attrs;
 
-	struct drsuapi_DsGetDCInfoCtr01 *ctr01;
 	struct drsuapi_DsGetDCInfoCtr1 *ctr1;
 	struct drsuapi_DsGetDCInfoCtr2 *ctr2;
 
@@ -408,8 +405,8 @@ static WERROR drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_state *b_s
 
 	switch (r->out.level_out) {
 	case -1:
-		attrs = attrs_01;
-		break;
+		/* this level is not like the others */
+		return WERR_UNKNOWN_LEVEL;
 	case 1:
 		attrs = attrs_1;
 		break;
@@ -428,29 +425,6 @@ static WERROR drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_state *b_s
 	}
 
 	switch (r->out.level_out) {
-	case -1:
-		ctr01 = &r->out.ctr.ctr01;
-		ctr01->count = res->count;
-		ctr01->array = talloc_zero_array(mem_ctx, 
-						 struct drsuapi_DsGetDCInfo01, 
-						 res->count);
-		for (i=0; i < res->count; i++) {
-			struct ldb_result *res_account;
-			struct ldb_dn *ref_dn
-				= ldb_msg_find_attr_as_dn(b_state->sam_ctx, 
-							  mem_ctx, res->msgs[i], 
-							  "serverReference");
-			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_account, ref_dn, 
-						 LDB_SCOPE_BASE, attrs_account_01, "objectClass=computer");
-			if (ret) {
-				return WERR_GENERAL_FAILURE;
-			}
-			if (res_account->count == 1) {
-				ctr01->array[i].server_nt4_account
-					= ldb_msg_find_attr_as_string(res_account->msgs[0], "samAccountName", NULL);
-			}
-		}
-		break;
 	case 1:
 		ctr1 = &r->out.ctr.ctr1;
 		ctr1->count = res->count;
