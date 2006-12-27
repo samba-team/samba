@@ -55,11 +55,10 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	struct ldb_dn *domain_dn = NULL;
 
 	if (domain_name) {
-		char *escaped_domain = ldb_binary_encode_string(mem_ctx, domain_name);
+		domain_dn = samdb_domain_to_dn(sam_ctx, mem_ctx, domain_name);
+
 		/* find the domain's DN */
-		ret_domain = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &msgs_domain_ref, domain_ref_attrs,
-					  "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))", 
-					  escaped_domain, escaped_domain);
+		ret_domain = gendb_search_dn(sam_ctx, mem_ctx, domain_dn, &msgs_domain_ref, domain_ref_attrs);
 		if (ret_domain == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -75,8 +74,6 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 				 ret_domain, domain_name));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
-
-		domain_dn = samdb_result_dn(sam_ctx, mem_ctx, msgs_domain_ref[0], "nCName", NULL);
 	}
 
 	/* pull the user attributes */
