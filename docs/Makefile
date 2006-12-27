@@ -17,14 +17,18 @@ MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR3)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGE
 
 DATETIME := $(shell date +%Y%m%d%H%M%S)
 
+ifeq ($(PROFILE), Y)
+XSLTPROC += --profile --load-trace --timing
+endif
+
 ifndef OUTPUTDIR
 Makefile.settings: configure
 	@echo Makefile.settings not present, trying to run configure...
-	@./configure
+	./configure
 
 configure: configure.in
-	@echo configure not present, trying to generate
-	@autoreconf
+	@echo configure not present, trying to regenerate it...
+	autoreconf
 endif
 
 help: 
@@ -76,7 +80,7 @@ validate: $(addsuffix -validate,$(MAIN_DOCS))
 $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
 	@echo "Converting Samba-specific tags for $*..."
 	@mkdir -p $(@D)
-	@$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages-3/%.xml: $(MANPAGEDIR3)/%.xml xslt/expand-sambadoc.xsl
 	@mkdir -p $(@D)
@@ -86,7 +90,7 @@ $(DOCBOOKDIR)/manpages-3/index.xml: $(MANPAGES3) xslt/manpage-summary.xsl
 	@mkdir -p $(@D)
 	echo "<article><variablelist>" > $@
 	$(XSLTPROC) xslt/manpage-summary.xsl $(MANPAGES3) >> $@
-	echo "</variablelist></article>" >> $@
+	@echo "</variablelist></article>" >> $@
 
 # HTML docs
 
@@ -111,7 +115,7 @@ $(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl
 # Attributions
 %-attributions.xml: 
 	@echo "Generating attributions file $@ from $*/"
-	@$(XSLTPROC) --xinclude -o $@ xslt/generate-attributions.xsl $*/index.xml 
+	$(XSLTPROC) --xinclude -o $@ xslt/generate-attributions.xsl $*/index.xml 
 
 # Text files
 $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
@@ -122,7 +126,7 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 %.tex: %/index.xml xslt/latex.xsl
 	@echo "Generating $@..."
 	@mkdir -p $(@D)
-	@$(XSLTPROC) $(DB2LATEX_ARGS) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
+	$(XSLTPROC) $(DB2LATEX_ARGS) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
 
 latexfigures: $(LATEX_FIGURES)
 
@@ -139,7 +143,7 @@ $(PDFDIR)/%.pdf: %.pdf
 # Dependency files
 %.d: $(DOCBOOKDIR)/%.xml xslt/generate-dependencies.xsl
 	@echo "Generating dependency file for $*" 
-	@$(XSLTPROC) \
+	$(XSLTPROC) \
 		--novalid \
 		--stringparam txtbasedir "$(TXTDIR)/$*/" \
 		--stringparam target "$*" \
@@ -168,7 +172,7 @@ $(PDFDIR)/%.pdf: %.pdf
 
 ifdef OUTPUTDIR 
 ifneq ($(MAKECMDGOALS),clobber)
-include $(addsuffix .d,$(MAIN_DOCS))
+-include $(addsuffix .d,$(MAIN_DOCS))
 endif
 endif
 
@@ -181,16 +185,16 @@ endif
 # DVI files
 $(DVIDIR)/%.dvi: %.dvi
 	@mkdir -p $(@D)
-	@cp $< $@
+	cp $< $@
 
 %.dvi: %.tex %.idx %-images-latex-eps
 	-$(LATEX) $< 
 
 %.eps: %.dia
-	@$(DIA) -t eps-builtin -e $@ $<
+	$(DIA) -t eps-builtin -e $@ $<
 
 %.png: %.dia
-	@$(DIA) -e $@ $<
+	$(DIA) -e $@ $<
 
 %.pdf: %.eps
 	$(EPSTOPDF) $<
@@ -240,11 +244,11 @@ $(SMBDOTCONFDOC)/parameters.all.xml: $(wildcard $(SMBDOTCONFDOC)/*/*.xml) $(SMBD
 
 $(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
 	@echo "Generating list of global smb.conf options" 
-	@$(XSLTPROC) --xinclude --param smb.context "'G'" --output $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
+	$(XSLTPROC) --xinclude --param smb.context "'G'" --output $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
 
 $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
 	@echo "Generating list of share-mode smb.conf options" 
-	@$(XSLTPROC) --xinclude --param smb.context "'S'" --output $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
+	$(XSLTPROC) --xinclude --param smb.context "'S'" --output $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
 
 $(OUTPUTDIR)/%: $(DOCBOOKDIR)/%.xml xslt/man.xsl
 	@mkdir -p $(@D)
@@ -272,8 +276,8 @@ $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 
 # Find undocumented parameters
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl scripts/find_missing_manpages.pl
-	@$(PERL) scripts/find_missing_doc.pl $(SRCDIR)
-	@$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)
+	$(PERL) scripts/find_missing_doc.pl $(SRCDIR)
+	$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)
 
 samples: $(DOCBOOKDIR)/Samba3-HOWTO.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
 	@mkdir -p $(EXAMPLESDIR)
@@ -295,22 +299,23 @@ xslt/generate-attributions.xsl:
 xslt/man.xsl:
 xslt/pearson.xsl:
 
-clobber: clean
-	@rm Makefile.settings config.status config.log configure
+distclean clobber: clean
+	rm Makefile.settings config.status config.log configure
 
 clean: 
 	@echo "Cleaning up..." 
-	@rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
-	@rm -f $(patsubst %.dia,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
+	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
+	rm -f $(patsubst %.dia,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
 			$(patsubst %.dia,%.pdf,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
 			$(patsubst %.dia,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia)))
-	@rm -f *.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
-	@rm -f *-images-html*
-	@rm -f *-images-latex-* latexfigures
-	@rm -f xslt/figures/*pdf
-	@rm -f $(SMBDOTCONFDOC)/parameters.*.xml
-	@rm -f $(addsuffix .*,$(MAIN_DOCS))
+	rm -f *.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
+	rm -f *-images-html*
+	rm -f *-images-latex-* latexfigures
+	rm -f xslt/figures/*pdf
+	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
+	rm -f $(addsuffix .*,$(MAIN_DOCS))
 
 # Always keep intermediate files if we can
 .SECONDARY:
 .PHONY: clean clobber archive release everything all $(TARGETS) latexfigures
+
