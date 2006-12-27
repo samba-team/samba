@@ -1878,7 +1878,10 @@ static mode_t create_default_mode(files_struct *fsp, BOOL interitable_mode)
 	int snum = SNUM(fsp->conn);
 	mode_t and_bits = (mode_t)0;
 	mode_t or_bits = (mode_t)0;
-	mode_t mode = interitable_mode ? unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name, False) : S_IRUSR;
+	mode_t mode = interitable_mode
+		? unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name,
+			     NULL )
+		: S_IRUSR;
 
 	if (fsp->is_directory)
 		mode |= (S_IWUSR|S_IXUSR);
@@ -3461,15 +3464,13 @@ int chmod_acl(connection_struct *conn, const char *name, mode_t mode)
  inherit this Access ACL to file name.
 ****************************************************************************/
 
-int inherit_access_acl(connection_struct *conn, const char *name, mode_t mode)
+int inherit_access_acl(connection_struct *conn, const char *inherit_from_dir,
+		       const char *name, mode_t mode)
 {
-	pstring dirname;
-	pstrcpy(dirname, parent_dirname(name));
-
-	if (directory_has_default_acl(conn, dirname))
+	if (directory_has_default_acl(conn, inherit_from_dir))
 		return 0;
 
-	return copy_access_acl(conn, dirname, name, mode);
+	return copy_access_acl(conn, inherit_from_dir, name, mode);
 }
 
 /****************************************************************************
