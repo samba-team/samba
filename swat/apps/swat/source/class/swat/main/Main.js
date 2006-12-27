@@ -37,7 +37,7 @@ qx.Class.modules =
       "gui"    : null,
       "class"  : swat.module.statistics.Statistics
     },
-    "Documentation" :
+    "API Documentation" :
     {
       "canvas" : null,
       "fsm"    : null,
