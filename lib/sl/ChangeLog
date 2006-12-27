@@ -1,3 +1,11 @@
+2006-12-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sl_locl.h: Include <ctype.h>.
+
+	* test_sl.c: test sl_make_argv
+
+	* sl.c (sl_make_argv): Add quoting support (both "" and \ style).
+	
 2006-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* sl.c: Use strcspn to remove \n from fgets result. Prompted by
