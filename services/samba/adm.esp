@@ -19,4 +19,10 @@ function _nbt_packet_stats(params, error) {
 }
 jsonrpc.method.NBTPacketStats = _nbt_packet_stats;
 
+
+/*
+ * Local Variables:
+ * mode: c
+ * End:
+ */
 %>

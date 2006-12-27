@@ -1,0 +1,184 @@
+<%
+/*
+ * Copyright:
+ *   (C) 2006 by Derrell Lipman
+ *       All rights reserved
+ *
+ * License:
+ *   LGPL 2.1: http://creativecommons.org/licenses/LGPL/2.1/
+ */
+
+/*
+ * JSON-RPC mappings to management functions
+ */
+
+libinclude("base.js");
+libinclude("management.js");
+
+/**
+ * Get statistics from each of the servers
+ *
+ * @param params[0]
+ *   Optional enum_smb_sessions flag, default false
+ *
+ * @param params[1]
+ *   Optional enum_smb_tcons flag, default false
+ *
+ * @param error
+ *   An object of class JsonRpcError.
+ *
+ * @return
+ *   Success: Object containing all of the statistics
+ *   Failure: error event
+ */
+function _get_statistics(params, error)
+{
+    var enum_smb_sessions = false;
+    var enum_smb_tcons = false;
+    
+    if (params.length >= 1)
+    {
+        enum_smb_sessions = params[0];
+    }
+    if (params.length >= 2)
+    {
+        enum_smb_tcons = params[1];
+    }
+
+    var info = new Object();
+
+    info["nbt"]   = new Object();
+    info["wins"]  = new Object();
+    info["cldap"] = new Object();
+    info["kdc"]   = new Object();
+    info["smb"]   = new Object();
+    info["ldap"]  = new Object();
+    info["rpc"]   = new Object();
+
+    for (var service in info)
+    {
+	var irpc = irpc_init();
+        var status;
+        var obj = info[service];
+        obj.status = null;
+
+	if (!service_enabled(service))
+        {
+            obj.status = "DISABLED";
+	}
+        else
+        {
+            status = irpc.connect(service + "_server");
+            if (status.is_ok != true)
+            {
+                obj.status = "INACTIVE";
+            }
+            else
+            {
+                var io = irpcObj();
+                status = irpc.irpc_uptime(io);
+                if (status.is_ok != true)
+                {
+                    obj.status = "NOT RESPONDING";
+                }
+                else
+                {
+                    obj.status = "RUNNING";
+
+                    if (service == "smb" ||
+                        service == "ldap" ||
+                        service == "rpc")
+                    {
+                        obj.connections = io.results.length;
+                    }
+
+                    if (service == "smb")
+                    {
+                        if (enum_smb_sessions)
+                        {
+                            var io = irpcObj();
+                            io.input.level = irpc.SMBSRV_INFO_SESSIONS;
+                            status = irpc.smbsrv_information(io);
+                            obj.sessions = new Array(0);
+                            if (status.is_ok == true)
+                            {
+                                /* gather the results into a single array */
+                                var count = 0;
+                                for (var i = 0; i < io.results.length; i++)
+                                {
+                                    var sessions =
+                                        io.results[i].info.sessions.sessions;
+                                    for (var j = 0; j < sessions.length; j++)
+                                    {
+                                        obj.sessions[count] = sessions[j];
+
+                                        // convert NT times to unix epoch
+                                        obj.sessions[count].auth_time =
+                                            nttime2unix(obj.sessions[count].auth_time);
+                                        obj.sessions[count].last_use_time =
+                                            nttime2unix(obj.sessions[count].last_use_time);
+                                        obj.sessions[count].connect_time =
+                                            nttime2unix(obj.sessions[count].connect_time);
+
+                                        count++;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (enum_smb_tcons)
+                        {
+                            var io = irpcObj();
+                            io.input.level = irpc.SMBSRV_INFO_TCONS;
+                            status = irpc.smbsrv_information(io);
+                            obj.tcons = new Array(0);
+
+                            if (status.is_ok == true)
+                            {
+                                /* gather the results into a single array */
+                                var count=0;
+                                for (var i = 0; i < io.results.length; i++)
+                                {
+                                    var tcons = io.results[i].info.tcons.tcons;
+                                    for (var j = 0; j < tcons.length; j++)
+                                    {
+                                        obj.tcons[count] = tcons[j];
+
+
+                                        // convert NT times to unix epoch
+                                        obj.tcons[count].last_use_time =
+                                            nttime2unix(obj.tcons[count].last_use_time);
+                                        obj.tcons[count].connect_time =
+                                            nttime2unix(obj.tcons[count].connect_time);
+
+                                        count++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else if (service == "nbt")
+                    {
+                        var io = irpcObj();
+                        io.input.level = irpc.NBTD_INFO_STATISTICS;
+                        status = irpc.nbtd_information(io);
+                        if (status.is_ok == true)
+                        {
+                            obj.statistics = io.results[0].info.stats;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return info;
+}
+jsonrpc.method.get_statistics = _get_statistics;
+
+/*
+ * Local Variables:
+ * mode: c
+ * End:
+ */
+%>

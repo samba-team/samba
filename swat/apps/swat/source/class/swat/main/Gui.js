@@ -1,3 +1,12 @@
+/*
+ * Copyright:
+ *   (C) 2006 by Derrell Lipman
+ *       All rights reserved
+ *
+ * License:
+ *   LGPL 2.1: http://creativecommons.org/licenses/LGPL/2.1/
+ */
+
 /**
  * The graphical user interface for the main menu
  */
@@ -18,7 +27,7 @@ qx.Class.buildGui = function(modules)
             top: 0,
             left: 0,
             right: 0,
-            height: 40,
+            height: 40
         });
   o.setBackgroundColor(topColor);
   o.addToDocument();
@@ -128,6 +137,8 @@ qx.Class.buildGui = function(modules)
     // When a Module menu item is selected:
     o.addEventListener("changeChecked", function(e)
                        {
+                         var canvas = modules.list[this.moduleName].canvas;
+
                          // If there's a current canvas, ...
                          if (modules.currentCanvas)
                          {
@@ -149,6 +160,10 @@ qx.Class.buildGui = function(modules)
                            // Track the current canvas (now ours)
                            modules.currentCanvas = canvas;
 
+                           // Dispatch an event on the canvas to notify new
+                           // module it's coming into use.
+                           canvas.createDispatchEvent("appear");
+
                            // Set the application title
                            title.setHtml("<span>" +
                                          "Samba Web Administration Tool" +
@@ -156,9 +171,10 @@ qx.Class.buildGui = function(modules)
                                          this.moduleName +
                                          "</span>");
                            
-                           // Dispatch an event on the canvas to notify new
-                           // module it's coming into use.
-                           canvas.createDispatchEvent("appear");
+                           // Set the browser title as well
+                           document.title =
+                             "Swat: " + this.moduleName;
+
                          }
                        });
 
