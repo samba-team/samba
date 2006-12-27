@@ -153,7 +153,8 @@ sub EjsPullScalar($$$$$)
         my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
         $var = get_pointer_to($var);
         # have to handle strings specially :(
-        if ($e->{TYPE} eq "string" && $pl && $pl->{TYPE} eq "POINTER") {
+	if (Parse::Pidl::Typelist::scalar_is_reference($e->{TYPE})
+	    and (defined($pl) and $pl->{TYPE} eq "POINTER")) {
                 $var = get_pointer_to($var);
         }
 	pidl "NDR_CHECK(ejs_pull_$e->{TYPE}(ejs, v, $name, $var));";
@@ -445,7 +446,9 @@ sub EjsPushScalar($$$$$)
 	my ($e, $l, $var, $name, $env) = @_;
         # have to handle strings specially :(
         my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
-        if ($e->{TYPE} ne "string" || ($pl && $pl->{TYPE} eq "POINTER")) {
+
+	if ((not Parse::Pidl::Typelist::scalar_is_reference($e->{TYPE}))
+	    or (defined($pl) and $pl->{TYPE} eq "POINTER")) {
                 $var = get_pointer_to($var);
         }
 	pidl "NDR_CHECK(ejs_push_$e->{TYPE}(ejs, v, $name, $var));";
