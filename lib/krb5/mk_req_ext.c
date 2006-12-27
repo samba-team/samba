@@ -91,7 +91,9 @@ _krb5_mk_req_internal(krb5_context context,
 				       in_data->length,
 				       &c);
 	} else if(ac->keyblock->keytype == ETYPE_ARCFOUR_HMAC_MD5 ||
-		  ac->keyblock->keytype == ETYPE_ARCFOUR_HMAC_MD5_56) {
+		  ac->keyblock->keytype == ETYPE_ARCFOUR_HMAC_MD5_56 ||
+		  ac->keyblock->keytype == ETYPE_DES_CBC_MD4 ||
+		  ac->keyblock->keytype == ETYPE_DES_CBC_MD5) {
 	    /* this is to make MS kdc happy */ 
 	    ret = krb5_create_checksum(context, 
 				       NULL,
