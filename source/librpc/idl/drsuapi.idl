@@ -1446,8 +1446,8 @@ interface drsuapi
 		uint32 u3;
 		GUID bind_guid;
 		NTTIME_1sec bind_time;
-		uint32 u4; /* flags? */
-		uint32 u5;
+		[flag(NDR_BIG_ENDIAN)] ipv4address client_ip_address;
+		uint32 u5; /* this is the same value the client used as u1 in the DsBindInfoX struct */
 	} drsuapi_DsReplicaConnection04;
 
 	typedef struct {
