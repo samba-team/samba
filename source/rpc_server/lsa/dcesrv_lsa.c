@@ -833,11 +833,10 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 	}
 	
 	msg->dn = ldb_dn_copy(mem_ctx, policy_state->system_dn);
-	if ( ! ldb_dn_add_child_fmt(msg->dn, "sn=%s", r->in.info->name.string)) {
+	if ( ! ldb_dn_add_child_fmt(msg->dn, "cn=%s", name)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	samdb_msg_add_string(trusted_domain_state->policy->sam_ldb, mem_ctx, msg, "cn", name);
 	samdb_msg_add_string(trusted_domain_state->policy->sam_ldb, mem_ctx, msg, "flatname", name);
 
 	if (r->in.info->sid) {
