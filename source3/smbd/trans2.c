@@ -4300,8 +4300,9 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 				if (lp_inherit_perms(SNUM(conn))) {
-					inherit_access_acl(conn, fname,
-							   unixmode);
+					inherit_access_acl(
+						conn, parent_dirname(fname),
+						fname, unixmode);
 				}
 
 				SSVAL(params,0,0);
