@@ -1,6 +1,13 @@
 [SUBSYSTEM::DYNCONFIG]
 OBJ_FILES = dynconfig.o
 
+# set these to where to find various files
+# These can be overridden by command line switches (see smbd(8))
+# or in smb.conf (see smb.conf(5))
+CONFIGFILE = $(CONFIGDIR)/smb.conf
+PKGCONFIGDIR = $(LIBDIR)/pkgconfig
+LMHOSTSFILE = $(CONFIGDIR)/lmhosts
+
 PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" \
 	 -DBINDIR=\"$(BINDIR)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
 	 -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\" -DDATADIR=\"$(DATADIR)\" \
