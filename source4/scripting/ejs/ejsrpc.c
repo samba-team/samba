@@ -267,9 +267,9 @@ NTSTATUS ejs_pull_ipv4address(struct ejs_rpc *ejs,
   push a ipv4address (internally a string)
 */
 NTSTATUS ejs_push_ipv4address(struct ejs_rpc *ejs, 
-			 struct MprVar *v, const char *name, char * const *s)
+			 struct MprVar *v, const char *name, const char *s)
 {
-	return ejs_push_string(ejs, v, name, *s);
+	return ejs_push_string(ejs, v, name, s);
 }
 
 
