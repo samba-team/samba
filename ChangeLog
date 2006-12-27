@@ -2,7 +2,7 @@
 
 	* lib/krb5/mk_req_ext.c (_krb5_mk_req_internal): use md5 for
 	des-cbc-md4 and des-cbc-md5.  This is for (older) windows that
-	will be unhappy anything older.  From Inna Bort-Shatsky
+	will be unhappy anything else.  From Inna Bort-Shatsky
 	
 2006-12-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
