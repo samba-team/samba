@@ -4,12 +4,13 @@
 
 QOOXDOO = ../qooxdoo-0.6.3-sdk
 SCRIPTNAME = swat.js
-APPCLASS = swat.Application
-INCLUDEALL = true
+APPCLASS = swat.main.Main
+INCLUDEALL = false
 OPTIMIZESTRINGS = false
 OPTIMIZEVARIABLES = false
 SOURCELOADER=
 NICE=10
+LOCALINSTALLDIR = /usr/local/samba/share/swat/apps/swat
 
 
 ###################################################################################
@@ -60,8 +61,15 @@ all: build
 # COMMON TARGETS
 ###################################################################################
 
-source: info-source generate-script-source
-build: info-build generate-script-build copy-build-files fix-build-rights
+source: info-source \
+	generate-script-source \
+	generate-api-data
+
+build:	info-build \
+	generate-script-build \
+	generate-api-data \
+	copy-build-files \
+	fix-build-rights
 
 api: generate-api-build generate-api-data
 	@echo
@@ -111,6 +119,8 @@ generate-script-source:
 	@chmod u+x $(GENERATOR) && nice -n $(NICE) $(GENERATOR) \
 	  --script-input $(FRAMEWORK)/source/class \
 	  --source-script-path ../$(FRAMEWORK)/source/class \
+	  --script-input $(API)/source/class \
+	  --source-script-path ../$(API)/source/class \
 	  --script-input source/class \
 	  --source-script-path class \
 	  --generate-source-script $(SOURCELDR) \
@@ -120,18 +130,29 @@ generate-script-source:
 	  --cache-directory $(CACHE) \
 	  --add-new-lines
 
+#
+# djl: --script-input begins a set for which --resource-input and
+#      --resource-output apply.  Since there is a --resource-input and a
+#      --resource-output defined for one set, it must be defined for each set
+#
 generate-script-build:
 	@chmod u+x $(GENERATOR) && nice -n $(NICE) $(GENERATOR) \
 	  --script-input $(FRAMEWORK)/source/class \
+	  --resource-input $(FRAMEWORK)/source/resource \
+	  --resource-output build/resource \
+	  --script-input $(API)/source/class \
+	  --resource-input $(API)/source/resource \
+	  --resource-output build/resource \
 	  --script-input source/class \
+	  --resource-input source/resource \
+	  --resource-output build/resource \
 	  --generate-compiled-script \
 	  $(INCLUDE) $(OPTIMIZESTR) $(OPTIMIZEVAR) \
 	  --compiled-script-file build/script/$(SCRIPTNAME) \
 	  --copy-resources \
-	  --resource-input $(FRAMEWORK)/source/resource \
-	  --resource-output build/resource \
 	  --define-runtime-setting qx.manager.object.AliasManager.resourceUri:./resource \
-	  --cache-directory $(CACHE)
+	  --cache-directory $(CACHE) \
+	  --add-new-lines
 
 generate-api-build:
 	@chmod u+x $(GENERATOR) && nice -n $(NICE) $(GENERATOR) \
@@ -146,16 +167,17 @@ generate-api-build:
 	  --generate-compiled-script \
 	  --compiled-script-file api/script/api.js \
 	  --define-runtime-setting qx.manager.object.AliasManager.resourceUri:resource/qooxdoo \
-	  --define-runtime-setting api.Viewer.title:Sample \
+	  --define-runtime-setting api.Viewer.title:Swat \
 	  --copy-resources \
 	  --cache-directory $(CACHE)
 
 generate-api-data:
 	@chmod u+x $(GENERATOR) && nice -n $(NICE) $(GENERATOR) \
 	  --script-input $(FRAMEWORK)/source/class \
+	  --script-input $(API)/source/class \
 	  --script-input source/class \
 	  --generate-api-documentation \
-	  --api-documentation-json-file api/script/data.js \
+	  --api-documentation-json-file build/script/data.js \
 	  --cache-directory $(CACHE)
 
 generate-pretty:
@@ -205,10 +227,21 @@ fix-build-rights:
 
 info-build:
 	@echo "****************************************************************************"
-	@echo "  GENERATING SAMPLE 1 BUILD"
+	@echo "  GENERATING SWAT BUILD"
 	@echo "****************************************************************************"
 
 info-source:
 	@echo "****************************************************************************"
-	@echo "  GENERATING SAMPLE 1 SOURCE"
+	@echo "  GENERATING SWAT SOURCE"
 	@echo "****************************************************************************"
+
+###################################################################################
+# INSTALL TARGETS
+###################################################################################
+
+install:	
+	@echo "****************************************************************************"
+	@echo "  INSTALLING SWAT"
+	@echo "****************************************************************************"
+	@echo "  * Installing swat files..."
+	@rsync -av --exclude=crystalsvg --delete build/ $(LOCALINSTALLDIR)

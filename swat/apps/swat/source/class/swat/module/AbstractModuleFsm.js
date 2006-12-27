@@ -1,6 +1,11 @@
 /*
-#module(swat_module)
-*/
+ * Copyright:
+ *   (C) 2006 by Derrell Lipman
+ *       All rights reserved
+ *
+ * License:
+ *   LGPL 2.1: http://creativecommons.org/licenses/LGPL/2.1/
+ */
 
 /**
  * Common facilities for modules' finite state machines.  Each module's FSM
@@ -99,6 +104,17 @@ qx.Proto.addAwaitRpcResultState = function(module)
         ]
       },
 
+      "onentry" :
+        function(fsm, state)
+        {
+          // If we're coming from some other start...
+          if (fsm.getPreviousState() != "State_AwaitRpcResult")
+          {
+            // ... then push the previous state onto the state stack
+            fsm.pushState(false);
+          }
+        },
+
       "events" :
       {
         "execute"  :
@@ -108,10 +124,10 @@ qx.Proto.addAwaitRpcResultState = function(module)
         },
 
         "completed" :
-          "Transition_AwaitRpcResult_to_Idle_via_complete",
+          "Transition_AwaitRpcResult_to_PopStack_via_complete",
 
         "failed" :
-          "Transition_AwaitRpcResult_to_Idle_via_failed"
+          "Transition_AwaitRpcResult_to_PopStack_via_failed"
       }
     });
   fsm.addState(state);
@@ -140,15 +156,15 @@ qx.Proto.addAwaitRpcResultState = function(module)
   state.addTransition(trans);
 
   /*
-   * Transition: AwaitRpcResult to Idle
+   * Transition: AwaitRpcResult to PopStack
    *
    * Cause: "complete" (on RPC)
    */
   var trans = new qx.util.fsm.Transition(
-    "Transition_AwaitRpcResult_to_Idle_via_complete",
+    "Transition_AwaitRpcResult_to_PopStack_via_complete",
     {
       "nextState" :
-        "State_Idle",
+        qx.util.fsm.FiniteStateMachine.StateChange.POP_STATE_STACK,
 
       "ontransition" :
         function(fsm, event)
@@ -167,15 +183,15 @@ qx.Proto.addAwaitRpcResultState = function(module)
   state.addTransition(trans);
 
   /*
-   * Transition: AwaitRpcResult to Idle
+   * Transition: AwaitRpcResult to PopStack
    *
    * Cause: "failed" (on RPC)
    */
   var trans = new qx.util.fsm.Transition(
-    "Transition_AwaitRpcResult_to_Idle_via_failed",
+    "Transition_AwaitRpcResult_to_PopStack_via_failed",
     {
       "nextState" :
-        "State_Idle",
+        qx.util.fsm.FiniteStateMachine.StateChange.POP_STATE_STACK,
 
       "ontransition" :
         function(fsm, event)
