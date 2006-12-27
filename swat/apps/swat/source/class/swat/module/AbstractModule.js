@@ -1,3 +1,12 @@
+/*
+ * Copyright:
+ *   (C) 2006 by Derrell Lipman
+ *       All rights reserved
+ *
+ * License:
+ *   LGPL 2.1: http://creativecommons.org/licenses/LGPL/2.1/
+ */
+
 /**
  * Abstract Module class.  All modules should extend this class.
  */
@@ -105,7 +114,8 @@ qx.Proto.buildInitialFsm = function(module)
 
   // Save the finite state machine for this module
   module.fsm = fsm;
-  fsm.addObject("swat.module.fsm", fsm);
+
+  // Start the finite state machine
   fsm.start();
 };
 

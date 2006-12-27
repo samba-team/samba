@@ -1,7 +1,17 @@
 /*
-#module(swat_main)
+ * Copyright:
+ *   (C) 2006 by Derrell Lipman
+ *       All rights reserved
+ *
+ * License:
+ *   LGPL 2.1: http://creativecommons.org/licenses/LGPL/2.1/
+ */
+
+/*
 #require(swat.module.AbstractModule)
-#require(swat.module.stats.Statistics)
+#require(swat.module.statistics.Statistics)
+#require(swat.module.documentation.Documentation)
+#require(api.Viewer)
 */
 
 /**
@@ -13,31 +23,27 @@ function()
   qx.component.AbstractApplication.call(this);
 });
 
-
 /**
  * The list of supported modules
  */
-var moduleSystemStatus =
-{
-  "canvas" : null,
-  "fsm"    : null,
-  "class"  : swat.module.stats.Statistics
-};
-
-/*
-var moduleLdbView =
-{
-  "canvas" : null,
-  "fsm"    : null,
-  "class"  : swat.module.ldbview.LdbView
-};
-*/
-
 qx.Class.modules =
 {
   list :
   {
-    "System Status" : moduleSystemStatus
+    "System Status" :
+    {
+      "canvas" : null,
+      "fsm"    : null,
+      "gui"    : null,
+      "class"  : swat.module.statistics.Statistics
+    },
+    "Documentation" :
+    {
+      "canvas" : null,
+      "fsm"    : null,
+      "gui"    : null,
+      "class"  : swat.module.documentation.Documentation
+    }
   }
 };
 
@@ -51,7 +57,12 @@ qx.Class.modules =
 qx.Proto.initialize = function()
 {
   var modules = swat.main.Main.modules;
-  var o = new qx.ui.basic.Label("hello world");
+
+  // Set the resource URI
+  qx.Settings.setCustom("resourceUri", "./resource");
+
+  // Turn on JSON debugging for the time being
+  qx.Settings.setCustomOfClass("qx.io.Json", "enableDebug", true);
 
   // For each module...
   for (moduleName in modules.list)
@@ -93,4 +104,5 @@ qx.Proto.finalize = function()
     var module = modules.list[moduleName]["class"].getInstance();
     module.finalize(modules.list[moduleName]);
   }
-}
+};
+

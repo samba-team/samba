@@ -166,6 +166,23 @@ static int ejs_sys_gmtime(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 /*
+  return the given NT time as a time_t value
+*/
+static int ejs_sys_nttime2unix(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	time_t t;
+	struct MprVar v;
+	if (argc != 1 || !mprVarIsNumber(argv[0]->type)) {
+		ejsSetErrorMsg(eid, "sys_ntgmtime invalid arguments");
+		return -1;
+	}
+	t = nt_time_to_unix(mprVarToNumber(argv[0]));
+	v = mprCreateNumberVar(t);
+	mpr_Return(eid, v);
+        return 0;
+}
+
+/*
   return the given NT time as a gmtime structure
 */
 static int ejs_sys_ntgmtime(MprVarHandle eid, int argc, struct MprVar **argv)
@@ -417,6 +434,7 @@ static int ejs_sys_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(obj, "unix2nttime", ejs_sys_unix2nttime);
 	mprSetCFunction(obj, "gmmktime", ejs_sys_gmmktime);
 	mprSetCFunction(obj, "gmtime", ejs_sys_gmtime);
+	mprSetCFunction(obj, "nttime2unix", ejs_sys_nttime2unix);
 	mprSetCFunction(obj, "ntgmtime", ejs_sys_ntgmtime);
 	mprSetCFunction(obj, "ldaptime", ejs_sys_ldaptime);
 	mprSetCFunction(obj, "httptime", ejs_sys_httptime);
