@@ -121,9 +121,13 @@
 </xsl:template>
 
 <xsl:template match="informalexample|screen|programlisting">
-  <xsl:text>.nf&#10;</xsl:text>
+  <xsl:text>
+.nf&#10;
+  </xsl:text>
   <xsl:apply-templates/>
-  <xsl:text>.fi&#10;</xsl:text>
+  <xsl:text>
+.fi&#10;
+  </xsl:text>
 </xsl:template>
 
 <xsl:template match="//emphasis">
