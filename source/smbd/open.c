@@ -84,18 +84,18 @@ int fd_close(struct connection_struct *conn,
  Do this by fd if possible.
 ****************************************************************************/
 
-static void change_fd_owner_to_parent(connection_struct *conn,
-				      files_struct *fsp)
+static void change_file_owner_to_parent(connection_struct *conn,
+					const char *inherit_from_dir,
+					files_struct *fsp)
 {
-	const char *parent_path = parent_dirname(fsp->fsp_name);
 	SMB_STRUCT_STAT parent_st;
 	int ret;
 
-	ret = SMB_VFS_STAT(conn, parent_path, &parent_st);
+	ret = SMB_VFS_STAT(conn, inherit_from_dir, &parent_st);
 	if (ret == -1) {
-		DEBUG(0,("change_fd_owner_to_parent: failed to stat parent "
+		DEBUG(0,("change_file_owner_to_parent: failed to stat parent "
 			 "directory %s. Error was %s\n",
-			 parent_path, strerror(errno) ));
+			 inherit_from_dir, strerror(errno) ));
 		return;
 	}
 
@@ -103,33 +103,33 @@ static void change_fd_owner_to_parent(connection_struct *conn,
 	ret = SMB_VFS_FCHOWN(fsp, fsp->fh->fd, parent_st.st_uid, (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
-		DEBUG(0,("change_fd_owner_to_parent: failed to fchown "
+		DEBUG(0,("change_file_owner_to_parent: failed to fchown "
 			 "file %s to parent directory uid %u. Error "
 			 "was %s\n", fsp->fsp_name,
 			 (unsigned int)parent_st.st_uid,
 			 strerror(errno) ));
 	}
 
-	DEBUG(10,("change_fd_owner_to_parent: changed new file %s to "
+	DEBUG(10,("change_file_owner_to_parent: changed new file %s to "
 		  "parent directory uid %u.\n",	fsp->fsp_name,
 		  (unsigned int)parent_st.st_uid ));
 }
 
-static void change_owner_to_parent(connection_struct *conn,
-				   const char *fname,
-				   SMB_STRUCT_STAT *psbuf)
+static void change_dir_owner_to_parent(connection_struct *conn,
+				       const char *inherit_from_dir,
+				       const char *fname,
+				       SMB_STRUCT_STAT *psbuf)
 {
 	pstring saved_dir;
 	SMB_STRUCT_STAT sbuf;
-	const char *parent_path = parent_dirname(fname);
 	SMB_STRUCT_STAT parent_st;
 	int ret;
 
-	ret = SMB_VFS_STAT(conn, parent_path, &parent_st);
+	ret = SMB_VFS_STAT(conn, inherit_from_dir, &parent_st);
 	if (ret == -1) {
-		DEBUG(0,("change_owner_to_parent: failed to stat parent "
+		DEBUG(0,("change_dir_owner_to_parent: failed to stat parent "
 			 "directory %s. Error was %s\n",
-			 parent_path, strerror(errno) ));
+			 inherit_from_dir, strerror(errno) ));
 		return;
 	}
 
@@ -141,21 +141,21 @@ static void change_owner_to_parent(connection_struct *conn,
 	*/
 
 	if (!vfs_GetWd(conn,saved_dir)) {
-		DEBUG(0,("change_owner_to_parent: failed to get "
+		DEBUG(0,("change_dir_owner_to_parent: failed to get "
 			 "current working directory\n"));
 		return;
 	}
 
 	/* Chdir into the new path. */
 	if (vfs_ChDir(conn, fname) == -1) {
-		DEBUG(0,("change_owner_to_parent: failed to change "
+		DEBUG(0,("change_dir_owner_to_parent: failed to change "
 			 "current working directory to %s. Error "
 			 "was %s\n", fname, strerror(errno) ));
 		goto out;
 	}
 
 	if (SMB_VFS_STAT(conn,".",&sbuf) == -1) {
-		DEBUG(0,("change_owner_to_parent: failed to stat "
+		DEBUG(0,("change_dir_owner_to_parent: failed to stat "
 			 "directory '.' (%s) Error was %s\n",
 			 fname, strerror(errno)));
 		goto out;
@@ -165,7 +165,7 @@ static void change_owner_to_parent(connection_struct *conn,
 	if (sbuf.st_dev != psbuf->st_dev ||
 	    sbuf.st_ino != psbuf->st_ino ||
 	    sbuf.st_mode != psbuf->st_mode ) {
-		DEBUG(0,("change_owner_to_parent: "
+		DEBUG(0,("change_dir_owner_to_parent: "
 			 "device/inode/mode on directory %s changed. "
 			 "Refusing to chown !\n", fname ));
 		goto out;
@@ -175,14 +175,14 @@ static void change_owner_to_parent(connection_struct *conn,
 	ret = SMB_VFS_CHOWN(conn, ".", parent_st.st_uid, (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
-		DEBUG(10,("change_owner_to_parent: failed to chown "
+		DEBUG(10,("change_dir_owner_to_parent: failed to chown "
 			  "directory %s to parent directory uid %u. "
 			  "Error was %s\n", fname,
 			  (unsigned int)parent_st.st_uid, strerror(errno) ));
 		goto out;
 	}
 
-	DEBUG(10,("change_owner_to_parent: changed ownership of new "
+	DEBUG(10,("change_dir_owner_to_parent: changed ownership of new "
 		  "directory %s to parent directory uid %u.\n",
 		  fname, (unsigned int)parent_st.st_uid ));
 
@@ -197,6 +197,7 @@ static void change_owner_to_parent(connection_struct *conn,
 
 static NTSTATUS open_file(files_struct *fsp,
 			  connection_struct *conn,
+			  const char *parent_dir,
 			  const char *fname,
 			  SMB_STRUCT_STAT *psbuf,
 			  int flags,
@@ -297,12 +298,14 @@ static NTSTATUS open_file(files_struct *fsp,
 
 			/* Inherit the ACL if required */
 			if (lp_inherit_perms(SNUM(conn))) {
-				inherit_access_acl(conn, fname, unx_mode);
+				inherit_access_acl(conn, parent_dir, fname,
+						   unx_mode);
 			}
 
 			/* Change the owner if required. */
 			if (lp_inherit_owner(SNUM(conn))) {
-				change_fd_owner_to_parent(conn, fsp);
+				change_file_owner_to_parent(conn, parent_dir,
+							    fsp);
 			}
 		}
 
@@ -1124,6 +1127,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	uint32 open_access_mask = access_mask;
 	NTSTATUS status;
 	int ret_flock;
+	const char *parent_dir;
 
 	if (conn->printer) {
 		/* 
@@ -1140,9 +1144,15 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return print_fsp_open(conn, fname, result);
 	}
 
+	if (!(parent_dir = talloc_strdup(tmp_talloc_ctx(),
+					 parent_dirname(fname)))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* We add aARCH to this as this mode is only used if the file is
 	 * created new. */
-	unx_mode = unix_mode(conn, new_dos_attributes | aARCH,fname, True);
+	unx_mode = unix_mode(conn, new_dos_attributes | aARCH, fname,
+			     parent_dir);
 
 	DEBUG(10, ("open_file_ntcreate: fname=%s, dos_attrs=0x%x "
 		   "access_mask=0x%x share_access=0x%x "
@@ -1194,7 +1204,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	/* this is for OS/2 long file names - say we don't support them */
 	if (!lp_posix_pathnames() && strstr(fname,".+,;=[].")) {
 		/* OS/2 Workplace shell fix may be main code stream in a later
-		 * release. */ 
+		 * release. */
 		DEBUG(5,("open_file_ntcreate: OS/2 long filenames are not "
 			 "supported.\n"));
 		if (use_nt_status()) {
@@ -1554,8 +1564,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
         if ((flags2 & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
-	    (def_acl = directory_has_default_acl(conn,
-						 parent_dirname(fname)))) {
+	    (def_acl = directory_has_default_acl(conn, parent_dir))) {
 		unx_mode = 0777;
 	}
 
@@ -1569,8 +1578,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * open_file strips any O_TRUNC flags itself.
 	 */
 
-	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,unx_mode,
-			     access_mask, open_access_mask);
+	fsp_open = open_file(fsp, conn, parent_dir, fname, psbuf, flags|flags2,
+			     unx_mode, access_mask, open_access_mask);
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
 		if (lck != NULL) {
@@ -1658,7 +1667,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, fsp->fh->fd, share_access);
 	if(ret_flock == -1 ){
 
-		talloc_free(lck);
+		TALLOC_FREE(lck);
 		fd_close(conn, fsp);
 		file_free(fsp);
 		
@@ -1755,7 +1764,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		    lp_store_dos_attributes(SNUM(conn))) {
 			file_set_dosmode(conn, fname,
 					 new_dos_attributes | aARCH, NULL,
-					 True);
+					 parent_dir);
 		}
 	}
 
@@ -1835,7 +1844,8 @@ NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
 
 	/* note! we must use a non-zero desired access or we don't get
            a real file descriptor. Oh what a twisted web we weave. */
-	status = open_file(fsp,conn,fname,psbuf,O_WRONLY,0,FILE_WRITE_DATA,FILE_WRITE_DATA);
+	status = open_file(fsp, conn, NULL, fname, psbuf, O_WRONLY, 0,
+			   FILE_WRITE_DATA, FILE_WRITE_DATA);
 
 	/* 
 	 * This is not a user visible file open.
@@ -1868,6 +1878,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 {
 	int ret= -1;
 	mode_t mode;
+	const char *parent_dir;
 
 	if(!CAN_WRITE(conn)) {
 		DEBUG(5,("mkdir_internal: failing create on read-only share "
@@ -1879,7 +1890,12 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 		return map_nt_error_from_unix(errno);
 	}
 
-	mode = unix_mode(conn, aDIR, name, True);
+	if (!(parent_dir = talloc_strdup(tmp_talloc_ctx(),
+					 parent_dirname(name)))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	mode = unix_mode(conn, aDIR, name, parent_dir);
 
 	if ((ret=SMB_VFS_MKDIR(conn, name, mode)) != 0) {
 		return map_nt_error_from_unix(errno);
@@ -1901,7 +1917,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 	}
 
 	if (lp_inherit_perms(SNUM(conn))) {
-		inherit_access_acl(conn, name, mode);
+		inherit_access_acl(conn, parent_dir, name, mode);
 	}
 
 	/*
@@ -1917,7 +1933,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 
 	/* Change the owner if required. */
 	if (lp_inherit_owner(SNUM(conn))) {
-		change_owner_to_parent(conn, name, psbuf);
+		change_dir_owner_to_parent(conn, parent_dir, name, psbuf);
 	}
 
 	return NT_STATUS_OK;

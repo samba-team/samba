@@ -59,7 +59,7 @@ static uint32 set_offline_flag(connection_struct *conn, const char *const path)
 /****************************************************************************
  Change a dos mode to a unix mode.
     Base permission for files:
-         if creating file and inheriting
+         if creating file and inheriting (i.e. parent_dir != NULL)
            apply read/write bits from parent directory.
          else   
            everybody gets read bit set
@@ -79,23 +79,26 @@ static uint32 set_offline_flag(connection_struct *conn, const char *const path)
          }
 ****************************************************************************/
 
-mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname, BOOL creating_file)
+mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
+		 const char *inherit_from_dir)
 {
 	mode_t result = (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
-	mode_t dir_mode = 0; /* Mode of the parent directory if inheriting. */
+	mode_t dir_mode = 0; /* Mode of the inherit_from directory if
+			      * inheriting. */
 
 	if (!lp_store_dos_attributes(SNUM(conn)) && IS_DOS_READONLY(dosmode)) {
 		result &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 	}
 
-	if (fname && creating_file && lp_inherit_perms(SNUM(conn))) {
-		char *dname;
+	if (fname && (inherit_from_dir != NULL)
+	    && lp_inherit_perms(SNUM(conn))) {
 		SMB_STRUCT_STAT sbuf;
 
-		dname = parent_dirname(fname);
-		DEBUG(2,("unix_mode(%s) inheriting from %s\n",fname,dname));
-		if (SMB_VFS_STAT(conn,dname,&sbuf) != 0) {
-			DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n",fname,dname,strerror(errno)));
+		DEBUG(2, ("unix_mode(%s) inheriting from %s\n", fname,
+			  inherit_from_dir));
+		if (SMB_VFS_STAT(conn, inherit_from_dir, &sbuf) != 0) {
+			DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n", fname,
+				 inherit_from_dir, strerror(errno)));
 			return(0);      /* *** shouldn't happen! *** */
 		}
 
@@ -429,7 +432,9 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
  chmod a file - but preserve some bits.
 ********************************************************************/
 
-int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode, SMB_STRUCT_STAT *st, BOOL creating_file)
+int file_set_dosmode(connection_struct *conn, const char *fname,
+		     uint32 dosmode, SMB_STRUCT_STAT *st,
+		     const char *parent_dir)
 {
 	SMB_STRUCT_STAT st1;
 	int mask=0;
@@ -462,7 +467,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
 		return 0;
 	}
 
-	unixmode = unix_mode(conn,dosmode,fname, creating_file);
+	unixmode = unix_mode(conn,dosmode,fname, parent_dir);
 
 	/* preserve the s bits */
 	mask |= (S_ISUID | S_ISGID);

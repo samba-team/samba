@@ -1697,7 +1697,8 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	/* Grrr. We have to do this as open_file_ntcreate adds aARCH when it
 	   creates the file. This isn't the correct thing to do in the copy
 	   case. JRA */
-	file_set_dosmode(conn, newname, fattr, &sbuf2, True);
+	file_set_dosmode(conn, newname, fattr, &sbuf2,
+			 parent_dirname(newname));
 
 	if (ret < (SMB_OFF_T)sbuf1.st_size) {
 		return NT_STATUS_DISK_FULL;
