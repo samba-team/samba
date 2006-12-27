@@ -1064,31 +1064,44 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsGetDCInfo2 *array;
 	} drsuapi_DsGetDCInfoCtr2;
 
+	/*
+	 * this represents an active connection to the
+	 * Directory System Agent (DSA)
+	 * this can be via LDAP or DRSUAPI
+	 */
 	typedef struct {
-		[flag(BIG_ENDIAN)] ipv4address last_logon_ipv4_ip;
+		[flag(NDR_BIG_ENDIAN)] ipv4address client_ip_address;
 		uint32 unknown2;
-		uint32 unknown3;
+		uint32 connection_time; /* in seconds */
 		uint32 unknown4;
 		uint32 unknown5;
 		uint32 unknown6;
-		[charset(UTF16),string] uint16 *nt4_account;
-	} drsuapi_DsGetDCInfo01;
+		/*
+		 * client_account can be the following:
+		 * "W2K3\Administrator"
+		 * "Administrator@W2K3"
+		 * "cn=Administrator,cn=Users,DC=w2k3,DC=vmnet1,DC=vm,DC=base"
+		 * ""
+		 * or NULL
+		 */
+		[charset(UTF16),string] uint16 *client_account;
+	} drsuapi_DsGetDCConnection01;
 
 	typedef struct {
 		[range(0,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsGetDCInfo01 *array;
-	} drsuapi_DsGetDCInfoCtr01;
+		[size_is(count)] drsuapi_DsGetDCConnection01 *array;
+	} drsuapi_DsGetDCConnectionCtr01;
 
 	typedef [v1_enum] enum {
 		DRSUAPI_DC_INFO_CTR_1  = 1,
 		DRSUAPI_DC_INFO_CTR_2  = 2,
-		DRSUAPI_DC_INFO_CTR_01 = -1
+		DRSUAPI_DC_CONNECTION_CTR_01 = -1
 	} drsuapi_DsGetDCInfoCtrLevels;
 
         typedef [switch_type(int32)] union {
 		[case(DRSUAPI_DC_INFO_CTR_1)]  drsuapi_DsGetDCInfoCtr1  ctr1;
 		[case(DRSUAPI_DC_INFO_CTR_2)]  drsuapi_DsGetDCInfoCtr2  ctr2;
-		[case(DRSUAPI_DC_INFO_CTR_01)] drsuapi_DsGetDCInfoCtr01 ctr01;
+		[case(DRSUAPI_DC_CONNECTION_CTR_01)] drsuapi_DsGetDCConnectionCtr01 ctr01;
 	} drsuapi_DsGetDCInfoCtr;
 
 	WERROR drsuapi_DsGetDomainControllerInfo(
