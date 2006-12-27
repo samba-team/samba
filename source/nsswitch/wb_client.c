@@ -374,7 +374,7 @@ BOOL winbind_sids_to_unixids(struct id_map *ids, int num_ids)
 
 	request.extra_len = num_ids * sizeof(DOM_SID);
 
-	sids = SMB_MALLOC(request.extra_len);
+	sids = (DOM_SID *)SMB_MALLOC(request.extra_len);
 	for (i = 0; i < num_ids; i++) {
 		sid_copy(&sids[i], ids[i].sid);
 	}
