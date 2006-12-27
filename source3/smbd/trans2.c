@@ -790,7 +790,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return(ERROR_DOS(ERRSRV,ERRaccess));
 	}
 
-	srvstr_get_path(inbuf, fname, pname, sizeof(fname), -1, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, fname, pname, sizeof(fname), total_params - 28, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -1665,7 +1665,7 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 
-	if (total_params < 12) {
+	if (total_params < 13) {
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
@@ -1709,7 +1709,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
-	srvstr_get_path_wcard(inbuf, directory, params+12, sizeof(directory), -1, STR_TERMINATE, &ntstatus, &mask_contains_wcard);
+	srvstr_get_path_wcard(inbuf, directory, params+12, sizeof(directory), total_params - 12, STR_TERMINATE, &ntstatus, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ERROR_NT(ntstatus);
 	}
@@ -1941,7 +1941,7 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 
-	if (total_params < 12) {
+	if (total_params < 13) {
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
@@ -1957,7 +1957,7 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 
 	*mask = *directory = *resume_name = 0;
 
-	srvstr_get_path_wcard(inbuf, resume_name, params+12, sizeof(resume_name), -1, STR_TERMINATE, &ntstatus, &mask_contains_wcard);
+	srvstr_get_path_wcard(inbuf, resume_name, params+12, sizeof(resume_name), total_params - 12, STR_TERMINATE, &ntstatus, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		/* Win9x or OS/2 can send a resume name of ".." or ".". This will cause the parser to
 		   complain (it thinks we're asking for the directory above the shared
@@ -2933,7 +2933,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		NTSTATUS status = NT_STATUS_OK;
 
 		/* qpathinfo */
-		if (total_params < 6) {
+		if (total_params < 7) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
@@ -2941,7 +2941,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QPATHINFO: level = %d\n", info_level));
 
-		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE, &status);
+		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), total_params - 6, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -3843,12 +3843,12 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		}
 	} else {
 		/* set path info */
-		if (total_params < 6) {
+		if (total_params < 7) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
 		info_level = SVAL(params,0);    
-		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE, &status);
+		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), total_params - 6, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -4377,10 +4377,14 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			/* Set a symbolic link. */
 			/* Don't allow this if follow links is false. */
 
+			if (total_data == 0) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+
 			if (!lp_symlinks(SNUM(conn)))
 				return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
-			srvstr_pull(inbuf, link_target, pdata, sizeof(link_target), -1, STR_TERMINATE);
+			srvstr_pull(inbuf, link_target, pdata, sizeof(link_target), total_data, STR_TERMINATE);
 
 			/* !widelinks forces the target path to be within the share. */
 			/* This means we can interpret the target as a pathname. */
@@ -4423,7 +4427,11 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			char *newname = fname;
 
 			/* Set a hard link. */
-			srvstr_get_path(inbuf, oldname, pdata, sizeof(oldname), -1, STR_TERMINATE, &status);
+			if (total_data == 0) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+
+			srvstr_get_path(inbuf, oldname, pdata, sizeof(oldname), total_data, STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
@@ -4450,13 +4458,18 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			pstring base_name;
 			char *p;
 
-			if (total_data < 12) {
+			if (total_data < 13) {
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
 			overwrite = (CVAL(pdata,0) ? True : False);
 			/* root_fid = IVAL(pdata,4); */
 			len = IVAL(pdata,8);
+
+			if (len > (total_data - 12) || (len == 0)) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+
 			srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
@@ -4799,11 +4812,11 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	if (!CAN_WRITE(conn))
 		return ERROR_DOS(ERRSRV,ERRaccess);
 
-	if (total_params < 4) {
+	if (total_params < 5) {
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	srvstr_get_path(inbuf, directory, &params[4], sizeof(directory), -1, STR_TERMINATE, &status);
+	srvstr_get_path(inbuf, directory, &params[4], sizeof(directory), total_params - 4, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -4976,7 +4989,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
 
 	DEBUG(10,("call_trans2getdfsreferral\n"));
 
-	if (total_params < 2) {
+	if (total_params < 3) {
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
@@ -4985,7 +4998,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char*
 	if(!lp_host_msdfs())
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 
-	srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), -1, STR_TERMINATE);
+	srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), total_params - 2, STR_TERMINATE);
 	if((reply_size = setup_dfs_referral(conn, pathname,max_referral_level,ppdata)) < 0)
 		return UNIXERROR(ERRDOS,ERRbadfile);
     
