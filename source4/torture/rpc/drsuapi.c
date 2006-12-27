@@ -5,7 +5,7 @@
 
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Stefan (metze) Metzmacher 2004
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -152,6 +152,7 @@ static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *me
 					if (strcasecmp_m(r.out.ctr.ctr2.array[k].netbios_name, 
 							 torture_join_netbios_name(priv->join))) {
 						found = True;
+						break;
 					}
 				}
 				break;
@@ -204,6 +205,7 @@ static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *me
 			if (strcasecmp_m(r.out.ctr.ctr01.array[k].client_account, 
 					 dc_account)) {
 				found = True;
+				break;
 			}
 		}
 		if (!found) {
