@@ -256,7 +256,7 @@ void winbindd_sids2xids_async(TALLOC_CTX *mem_ctx, void *sids, int size,
 	struct winbindd_request request;
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_SIDS2XIDS;
-	request.extra_data.data = sids;
+	request.extra_data.data = (char *)sids;
 	request.extra_len = size;
 	do_async(mem_ctx, idmap_child(), &request, winbindd_sids2xids_recv,
 		 (void *)cont, private_data);
@@ -1516,7 +1516,7 @@ void winbindd_dump_maps_async(TALLOC_CTX *mem_ctx, void *data, int size,
 	struct winbindd_request request;
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_DUMP_MAPS;
-	request.extra_data.data = data;
+	request.extra_data.data = (char *)data;
 	request.extra_len = size;
 	do_async(mem_ctx, idmap_child(), &request, winbindd_dump_id_maps_recv,
 		 (void *)cont, private_data);
