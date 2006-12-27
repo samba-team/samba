@@ -1865,14 +1865,14 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	BOOL path_contains_wcard = False;
 	NTSTATUS status;
 
-        if(parameter_count < 4) {
+        if(parameter_count < 5) {
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 	}
 
 	fsp = file_fsp(params, 0);
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	CHECK_FSP(fsp, conn);
-	srvstr_get_path_wcard(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE, &status, &path_contains_wcard);
+	srvstr_get_path_wcard(inbuf, new_name, params+4, sizeof(new_name), parameter_count - 4, STR_TERMINATE, &status, &path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
