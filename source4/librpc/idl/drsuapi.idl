@@ -1065,13 +1065,13 @@ interface drsuapi
 	} drsuapi_DsGetDCInfoCtr2;
 
 	typedef struct {
-		uint32 unknown1;
+		[flag(BIG_ENDIAN)] ipv4address last_logon_ipv4_ip;
 		uint32 unknown2;
 		uint32 unknown3;
 		uint32 unknown4;
 		uint32 unknown5;
 		uint32 unknown6;
-		[charset(UTF16),string] uint16 *server_nt4_account;
+		[charset(UTF16),string] uint16 *nt4_account;
 	} drsuapi_DsGetDCInfo01;
 
 	typedef struct {

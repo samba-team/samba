@@ -66,64 +66,119 @@ static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *me
 	NTSTATUS status;
 	struct drsuapi_DsGetDomainControllerInfo r;
 	BOOL ret = True;
+	BOOL found = False;
+	int i, j, k;
+	
+	struct {
+		const char *name;
+		WERROR expected;
+	} names[] = { 
+		{	
+			.name = torture_join_dom_netbios_name(priv->join),
+			.expected = WERR_OK
+		},
+		{
+			.name = torture_join_dom_dns_name(priv->join),
+			.expected = WERR_OK
+		},
+		{
+			.name = "__UNKNOWN_DOMAIN__",
+			.expected = WERR_DS_OBJ_NOT_FOUND
+		},
+		{
+			.name = "unknown.domain.samba.example.com",
+			.expected = WERR_DS_OBJ_NOT_FOUND
+		},
+	};
+	int levels[] = {1, 2};
+	int level;
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+		for (j=0; j < ARRAY_SIZE(names); j++) {
+			level = levels[i];
+			r.in.bind_handle = &priv->bind_handle;
+			r.in.level = 1;
+			
+			r.in.req.req1.domain_name = names[j].name;
+			r.in.req.req1.level = level;
+			
+			printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
+			       r.in.req.req1.level, r.in.req.req1.domain_name);
+		
+			status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
+			if (!NT_STATUS_IS_OK(status)) {
+				const char *errstr = nt_errstr(status);
+				if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+					errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+				}
+				printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
+				       "    with dns domain failed - %s\n",
+				       r.in.req.req1.level, errstr);
+				ret = False;
+			} else if (!W_ERROR_EQUAL(r.out.result, names[j].expected)) {
+				printf("DsGetDomainControllerInfo level %d\n"
+				       "    with dns domain failed - %s, expected %s\n",
+				       r.in.req.req1.level, win_errstr(r.out.result),
+				       win_errstr(names[j].expected));
+				ret = False;
+			}
+		
+			if (!W_ERROR_IS_OK(r.out.result)) {
+				/* If this was an error, we can't read the result structure */
+				continue;
+			}
+
+			if (r.in.req.req1.level != r.out.level_out) {
+				printf("dcerpc_drsuapi_DsGetDomainControllerInfo level in (%d) != out (%d)\n",
+				       r.in.req.req1.level, r.out.level_out);
+				ret = False;
+				/* We can't safely read the result structure */
+				continue;
+			}
+			switch (level) {
+			case 1:
+				for (k=0; k < r.out.ctr.ctr1.count; k++) {
+					if (strcasecmp_m(r.out.ctr.ctr1.array[k].netbios_name, 
+							 torture_join_netbios_name(priv->join))) {
+						found = True;
+					}
+				}
+				break;
+			case 2:
+				if (r.out.ctr.ctr2.count > 0) {
+					priv->dcinfo	= r.out.ctr.ctr2.array[0];
+				}
+				for (k=0; k < r.out.ctr.ctr2.count; k++) {
+					if (strcasecmp_m(r.out.ctr.ctr2.array[k].netbios_name, 
+							 torture_join_netbios_name(priv->join))) {
+						found = True;
+					}
+				}
+				break;
+			}
+ 			if (!found) {
+				printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d: Failed to find the domain controller (%s) we just created during the join\n",
+				       r.in.req.req1.level,
+				       torture_join_netbios_name(priv->join));
+				ret = False;
+			}
+		}
+	}
+
+	if (lp_parm_bool(-1, "torture", "samba4", False)) {
+		printf("skipping DsGetDomainControllerInfo level -1 test against Samba4\n");
+		return ret;
+	}
 
 	r.in.bind_handle = &priv->bind_handle;
 	r.in.level = 1;
-
-	r.in.req.req1.domain_name = talloc_strdup(mem_ctx, lp_realm());
-	r.in.req.req1.level = 1;
-
-	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
-			r.in.req.req1.level, r.in.req.req1.domain_name);
-
-	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
-			"    with dns domain failed - %s\n",
-			r.in.req.req1.level, errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsGetDomainControllerInfo level %d\n"
-			"    with dns domain failed - %s\n",
-			r.in.req.req1.level, win_errstr(r.out.result));
-		ret = False;
-	}
-
-	r.in.req.req1.level = 2;
-
-	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
-			r.in.req.req1.level, r.in.req.req1.domain_name);
-
-	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
-			"    with dns domain failed - %s\n",
-			r.in.req.req1.level, errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsGetDomainControllerInfo level %d\n"
-			"    with dns domain failed - %s\n",
-			r.in.req.req1.level, win_errstr(r.out.result));
-		ret = False;
-	} else {
-		if (r.out.ctr.ctr2.count > 0) {
-			priv->dcinfo	= r.out.ctr.ctr2.array[0];
-		}
-	}
-
+	
+	r.in.req.req1.domain_name = "__UNKNOWN_DOMAIN__"; /* This is clearly ignored for this level */
 	r.in.req.req1.level = -1;
-
+	
 	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
-			r.in.req.req1.level, r.in.req.req1.domain_name);
-
+	       r.in.req.req1.level, r.in.req.req1.domain_name);
+	
 	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
@@ -131,61 +186,34 @@ static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *me
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
-			"    with dns domain failed - %s\n",
-			r.in.req.req1.level, errstr);
+		       "    with dns domain failed - %s\n",
+				       r.in.req.req1.level, errstr);
 		ret = False;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("DsGetDomainControllerInfo level %d\n"
-			"    with dns domain failed - %s\n",
-			r.in.req.req1.level, win_errstr(r.out.result));
+		       "    with dns domain failed - %s\n",
+		       r.in.req.req1.level, win_errstr(r.out.result));
 		ret = False;
 	}
-
-	r.in.req.req1.domain_name = talloc_strdup(mem_ctx, lp_workgroup());
-	r.in.req.req1.level = 2;
-
-	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
-			r.in.req.req1.level, r.in.req.req1.domain_name);
-
-	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+	
+	{
+		const char *dc_account = talloc_asprintf(mem_ctx, "%s\\%s$",
+							 torture_join_dom_netbios_name(priv->join), 
+							 priv->dcinfo.netbios_name);
+		for (k=0; k < r.out.ctr.ctr1.count; k++) {
+			if (strcasecmp_m(r.out.ctr.ctr01.array[k].nt4_account, 
+					 dc_account)) {
+				found = True;
+			}
 		}
-		printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
-			"    with netbios domain failed - %s\n",
-			r.in.req.req1.level, errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsGetDomainControllerInfo level %d\n"
-			"    with netbios domain failed - %s\n",
-			r.in.req.req1.level, win_errstr(r.out.result));
-		ret = False;
-	}
-
-	r.in.req.req1.domain_name = "__UNKNOWN_DOMAIN__";
-	r.in.req.req1.level = 2;
-
-	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
-			r.in.req.req1.level, r.in.req.req1.domain_name);
-
-	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		if (!found) {
+			printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d: Failed to find the domain controller (%s) in last logon records\n",
+			       r.in.req.req1.level,
+			       dc_account);
+			ret = False;
 		}
-		printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
-			"    with invalid domain failed - %s\n",
-			r.in.req.req1.level, errstr);
-		ret = False;
-	} else if (!W_ERROR_EQUAL(r.out.result, WERR_DS_OBJ_NOT_FOUND)) {
-		printf("DsGetDomainControllerInfo level %d\n"
-			"    with invalid domain not expected error (WERR_DS_OBJ_NOT_FOUND) - %s\n",
-			r.in.req.req1.level, win_errstr(r.out.result));
-		ret = False;
 	}
+
 
 	return ret;
 }
