@@ -22,6 +22,9 @@ libss_la_LIBADD = @LIB_readline@ @LIB_com_err@
 libsl_la_SOURCES = sl_locl.h sl.c $(ES)
 libss_la_SOURCES = $(libsl_la_SOURCES) ss.c ss.h
 
+TESTS = test_sl
+check_PROGRAMS = $(TESTS)	
+
 # install these?
 
 bin_PROGRAMS = mk_cmds
