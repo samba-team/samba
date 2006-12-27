@@ -1640,13 +1640,13 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 		requested. */
 	char *params = *pparams;
 	char *pdata = *ppdata;
-	uint32 dirtype = SVAL(params,0);
-	int maxentries = SVAL(params,2);
-	uint16 findfirst_flags = SVAL(params,4);
-	BOOL close_after_first = (findfirst_flags & FLAG_TRANS2_FIND_CLOSE);
-	BOOL close_if_end = (findfirst_flags & FLAG_TRANS2_FIND_CLOSE_IF_END);
-	BOOL requires_resume_key = (findfirst_flags & FLAG_TRANS2_FIND_REQUIRE_RESUME);
-	int info_level = SVAL(params,6);
+	uint32 dirtype;
+	int maxentries;
+	uint16 findfirst_flags;
+	BOOL close_after_first;
+	BOOL close_if_end;
+	BOOL requires_resume_key;
+	int info_level;
 	pstring directory;
 	pstring mask;
 	char *p;
@@ -1668,6 +1668,14 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	if (total_params < 12) {
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
+
+	dirtype = SVAL(params,0);
+	maxentries = SVAL(params,2);
+	findfirst_flags = SVAL(params,4);
+	close_after_first = (findfirst_flags & FLAG_TRANS2_FIND_CLOSE);
+	close_if_end = (findfirst_flags & FLAG_TRANS2_FIND_CLOSE_IF_END);
+	requires_resume_key = (findfirst_flags & FLAG_TRANS2_FIND_REQUIRE_RESUME);
+	info_level = SVAL(params,6);
 
 	*directory = *mask = 0;
 
@@ -1908,15 +1916,15 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 		requested. */
 	char *params = *pparams;
 	char *pdata = *ppdata;
-	int dptr_num = SVAL(params,0);
-	int maxentries = SVAL(params,2);
-	uint16 info_level = SVAL(params,4);
-	uint32 resume_key = IVAL(params,6);
-	uint16 findnext_flags = SVAL(params,10);
-	BOOL close_after_request = (findnext_flags & FLAG_TRANS2_FIND_CLOSE);
-	BOOL close_if_end = (findnext_flags & FLAG_TRANS2_FIND_CLOSE_IF_END);
-	BOOL requires_resume_key = (findnext_flags & FLAG_TRANS2_FIND_REQUIRE_RESUME);
-	BOOL continue_bit = (findnext_flags & FLAG_TRANS2_FIND_CONTINUE);
+	int dptr_num;
+	int maxentries;
+	uint16 info_level;
+	uint32 resume_key;
+	uint16 findnext_flags;
+	BOOL close_after_request;
+	BOOL close_if_end;
+	BOOL requires_resume_key;
+	BOOL continue_bit;
 	BOOL mask_contains_wcard = False;
 	pstring resume_name;
 	pstring mask;
@@ -1936,6 +1944,16 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 	if (total_params < 12) {
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
+
+	dptr_num = SVAL(params,0);
+	maxentries = SVAL(params,2);
+	info_level = SVAL(params,4);
+	resume_key = IVAL(params,6);
+	findnext_flags = SVAL(params,10);
+	close_after_request = (findnext_flags & FLAG_TRANS2_FIND_CLOSE);
+	close_if_end = (findnext_flags & FLAG_TRANS2_FIND_CLOSE_IF_END);
+	requires_resume_key = (findnext_flags & FLAG_TRANS2_FIND_REQUIRE_RESUME);
+	continue_bit = (findnext_flags & FLAG_TRANS2_FIND_CONTINUE);
 
 	*mask = *directory = *resume_name = 0;
 
@@ -2174,13 +2192,19 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 {
 	char *pdata = *ppdata;
 	char *params = *pparams;
-	uint16 info_level = SVAL(params,0);
+	uint16 info_level;
 	int data_len, len;
 	SMB_STRUCT_STAT st;
 	char *vname = volume_label(SNUM(conn));
 	int snum = SNUM(conn);
 	char *fstype = lp_fstype(SNUM(conn));
 	int quota_flag = 0;
+
+	if (total_params < 2) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	info_level = SVAL(params,0);
 
 	DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
