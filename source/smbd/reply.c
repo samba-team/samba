@@ -3815,7 +3815,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 				FILE_SHARE_NONE, /* Ignored for stat opens */
 				FILE_CREATE, 0, NULL, &fsp);
 
-	DEBUG(1, ("open_directory returned %s\n", nt_errstr(status)));
+	DEBUG(5, ("open_directory returned %s\n", nt_errstr(status)));
 
 	if (!NT_STATUS_IS_OK(status)) {
 
