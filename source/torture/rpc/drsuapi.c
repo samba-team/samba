@@ -200,8 +200,8 @@ static BOOL test_DsGetDomainControllerInfo(struct dcerpc_pipe *p, TALLOC_CTX *me
 		const char *dc_account = talloc_asprintf(mem_ctx, "%s\\%s$",
 							 torture_join_dom_netbios_name(priv->join), 
 							 priv->dcinfo.netbios_name);
-		for (k=0; k < r.out.ctr.ctr1.count; k++) {
-			if (strcasecmp_m(r.out.ctr.ctr01.array[k].nt4_account, 
+		for (k=0; k < r.out.ctr.ctr01.count; k++) {
+			if (strcasecmp_m(r.out.ctr.ctr01.array[k].client_account, 
 					 dc_account)) {
 				found = True;
 			}
