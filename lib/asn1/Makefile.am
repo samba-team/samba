@@ -18,6 +18,7 @@ BUILT_SOURCES =				\
 	$(gen_files_pkcs9:.x=.c)	\
 	$(gen_files_pkcs12:.x=.c)	\
 	$(gen_files_digest:.x=.c)	\
+	$(gen_files_kx509:.x=.c)	\
 	asn1_err.h			\
 	asn1_err.c
 
@@ -399,6 +400,9 @@ gen_files_digest =					\
 	asn1_NTLMRequest.x				\
 	asn1_NTLMResponse.x
 
+gen_files_kx509 =					\
+	asn1_Kx509Response.x				\
+	asn1_Kx509Request.x
 
 noinst_PROGRAMS = asn1_compile asn1_print asn1_gen
 
@@ -474,6 +478,7 @@ CLEANFILES = lex.c parse.c parse.h \
 	$(gen_files_pkcs9) \
 	$(gen_files_pkcs12) \
 	$(gen_files_digest) \
+	$(gen_files_kx509) \
 	$(gen_files_test) $(nodist_check_gen_SOURCES) \
 	rfc2459_asn1_files rfc2459_asn1.h \
 	cms_asn1_files cms_asn1.h \
@@ -483,6 +488,7 @@ CLEANFILES = lex.c parse.c parse.h \
 	pkcs9_asn1_files pkcs9_asn1.h \
 	pkcs12_asn1_files pkcs12_asn1.h \
 	digest_asn1_files digest_asn1.h \
+	kx509_asn1_files kx509_asn1.h \
 	test_asn1_files test_asn1.h
 
 dist_include_HEADERS = der.h heim_asn1.h der-protos.h
@@ -496,6 +502,7 @@ nodist_include_HEADERS += pkcs8_asn1.h
 nodist_include_HEADERS += pkcs9_asn1.h
 nodist_include_HEADERS += pkcs12_asn1.h
 nodist_include_HEADERS += digest_asn1.h
+nodist_include_HEADERS += kx509_asn1.h
 
 $(asn1_compile_OBJECTS): parse.h parse.c $(srcdir)/der-protos.h
 $(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h $(srcdir)/der-protos.h
@@ -510,6 +517,7 @@ $(gen_files_pkcs8) pkcs8_asn1.h: pkcs8_asn1_files
 $(gen_files_pkcs9) pkcs9_asn1.h: pkcs9_asn1_files
 $(gen_files_pkcs12) pkcs12_asn1.h: pkcs12_asn1_files
 $(gen_files_digest) digest_asn1.h: digest_asn1_files
+$(gen_files_kx509) kx509_asn1.h: kx509_asn1_files
 $(gen_files_rfc2459) rfc2459_asn1.h: rfc2459_asn1_files
 $(gen_files_cms) cms_asn1.h: cms_asn1_files
 $(gen_files_test) test_asn1.h: test_asn1_files
@@ -538,6 +546,9 @@ pkcs12_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/pkcs12.asn1
 digest_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/digest.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/digest.asn1 digest_asn1 || (rm -f digest_asn1_files ; exit 1)
 
+kx509_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/kx509.asn1
+	./asn1_compile$(EXEEXT) $(srcdir)/kx509.asn1 kx509_asn1 || (rm -f kx509_asn1_files ; exit 1)
+
 test_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/test.asn1
 	./asn1_compile$(EXEEXT) --sequence=TESTSeqOf $(srcdir)/test.asn1 test_asn1 || (rm -f test_asn1_files ; exit 1)
 
@@ -546,6 +557,7 @@ EXTRA_DIST =		\
 	CMS.asn1	\
 	digest.asn1	\
 	k5.asn1		\
+	kx509.asn1	\
 	test.asn1	\
 	pkcs12.asn1	\
 	pkcs8.asn1	\
