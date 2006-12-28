@@ -40,7 +40,8 @@
 .Nm krb5_copy_ticket ,
 .Nm krb5_ticket_get_authorization_data_type ,
 .Nm krb5_ticket_get_client ,
-.Nm krb5_ticket_get_server
+.Nm krb5_ticket_get_server ,
+.Nm krb5_ticket_get_endtime
 .Nd Kerberos 5 ticket access and handling functions
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
@@ -78,6 +79,11 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_context context"
 .Fa "const krb5_ticket *ticket"
 .Fa "krb5_principal *server"
+.Fc
+.Ft time_t
+.Fo krb5_ticket_get_endtime
+.Fa "krb5_context context"
+.Fa "const krb5_ticket *ticket"
 .Fc
 .Sh DESCRIPTION
 .Li krb5_ticket
@@ -124,5 +130,8 @@ and
 returns a copy of the client/server principal from the ticket.
 The principal returned should be free using
 .Xr krb5_free_principal 3 .
+.Pp
+.Fn krb5_ticket_get_endtime
+return the end time of the ticket.
 .Sh SEE ALSO
 .Xr krb5 3
