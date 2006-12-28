@@ -76,7 +76,7 @@ const char i2a_sealmagic[] =
 
 
 void
-_gss_ntlm_set_key(struct ntlmv2_key *key, int acceptor,
+_gss_ntlm_set_key(struct ntlmv2_key *key, int acceptor, int sealsign,
 		  unsigned char *data, size_t len)
 {
     unsigned char out[16];
@@ -105,7 +105,8 @@ _gss_ntlm_set_key(struct ntlmv2_key *key, int acceptor,
     MD5_Final(out, &ctx);
 
     RC4_set_key(&key->sealkey, 16, out);
-    key->signsealkey = &key->sealkey;
+    if (sealsign)
+	key->signsealkey = &key->sealkey;
 }
 
 /*
