@@ -32,7 +32,6 @@
  */
 
 #include "kdc_locl.h"
-#include <digest_asn1.h>
 #include <hex.h>
 
 RCSID("$Id$");
