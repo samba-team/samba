@@ -57,6 +57,13 @@
 
 #include "crypto-headers.h"
 
+struct ntlmv2_key {
+    uint32_t seq;
+    RC4_KEY sealkey;
+    RC4_KEY *signsealkey;
+    unsigned char signkey[16];
+};
+
 typedef struct {
     krb5_context context;
     krb5_ntlm ntlm;
@@ -80,12 +87,7 @@ typedef struct {
 	    } crypto_send, crypto_recv;
 	} v1;
 	struct {
-	    struct {
-		uint32_t seq;
-		RC4_KEY sealkey;
-		RC4_KEY *signsealkey;
-		unsigned char signkey[16];
-	    } send, recv;
+	    struct ntlmv2_key send, recv;
 	} v2;
     } u;
 } *ntlm_ctx;
