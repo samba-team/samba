@@ -198,17 +198,12 @@ handle_type3(OM_uint32 *minor_status,
 	ctx->status |= STATUS_SESSIONKEY; 
 
 	if (ctx->flags & NTLM_NEG_NTLM2_SESSION) {
-	    ctx->u.v2.send.seq = 0;
-	    RC4_set_key(&ctx->u.v2.send.sealkey, 
-			ctx->sessionkey.length,
-			ctx->sessionkey.data);
-	    memcpy(ctx->u.v2.send.signkey, ctx->sessionkey.data, 16);
-
-	    ctx->u.v2.recv.seq = 0;
-	    RC4_set_key(&ctx->u.v2.recv.sealkey, 
-			ctx->sessionkey.length,
-			ctx->sessionkey.data);
-	    memcpy(ctx->u.v2.recv.signkey, ctx->sessionkey.data, 16);
+	    _gss_ntlm_set_key(&ctx->u.v2.send, 1, 
+			      ctx->sessionkey.data,
+			      ctx->sessionkey.length);
+	    _gss_ntlm_set_key(&ctx->u.v2.recv, 0, 
+			      ctx->sessionkey.data,
+			      ctx->sessionkey.length);
 	} else {
 	    RC4_set_key(&ctx->u.v1.crypto_send.key, 
 			ctx->sessionkey.length,

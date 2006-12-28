@@ -329,16 +329,12 @@ _gss_ntlm_init_sec_context
 
 	if (ctx->flags & NTLM_NEG_NTLM2_SESSION) {
 	    ctx->status |= STATUS_SESSIONKEY; 
-	    ctx->u.v2.send.seq = 0;
-	    RC4_set_key(&ctx->u.v2.send.sealkey, 
-			ctx->sessionkey.length,
-			ctx->sessionkey.data);
-	    memcpy(ctx->u.v2.send.signkey, ctx->sessionkey.data, 16);
-	    ctx->u.v2.recv.seq = 0;
-	    RC4_set_key(&ctx->u.v2.recv.sealkey, 
-			ctx->sessionkey.length,
-			ctx->sessionkey.data);
-	    memcpy(ctx->u.v2.recv.signkey, ctx->sessionkey.data, 16);
+	    _gss_ntlm_set_key(&ctx->u.v2.send, 0, 
+			      ctx->sessionkey.data,
+			      ctx->sessionkey.length);
+	    _gss_ntlm_set_key(&ctx->u.v2.recv, 1, 
+			      ctx->sessionkey.data,
+			      ctx->sessionkey.length);
 	} else {
 	    ctx->status |= STATUS_SESSIONKEY; 
 	    RC4_set_key(&ctx->u.v1.crypto_recv.key, 
