@@ -89,6 +89,7 @@
 #include <krb5.h>
 #include <krb5_locl.h>
 #include <digest_asn1.h>
+#include <kx509_asn1.h>
 #include <hdb.h>
 #include <hdb_err.h>
 #include <der.h>
