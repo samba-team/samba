@@ -988,7 +988,11 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 		}
 
 		if (dn->casefold && s) {
-			t = talloc_asprintf(dn, "%s,%s", dn->casefold, s);
+			if (*dn->casefold) {
+				t = talloc_asprintf(dn, "%s,%s", dn->casefold, s);
+			} else {
+				t = talloc_strdup(dn, s);
+			}
 			LDB_FREE(dn->casefold);
 			dn->casefold = t;
 		}
@@ -1001,7 +1005,11 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 			return false;
 		}
 		
-		t = talloc_asprintf(dn, "%s,%s", dn->linearized, s);
+		if (*dn->linearized) {
+			t = talloc_asprintf(dn, "%s,%s", dn->linearized, s);
+		} else {
+			t = talloc_strdup(dn, s);
+		}
 		if ( ! t) {
 			dn->invalid = true;
 			return false;
