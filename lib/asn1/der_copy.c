@@ -89,6 +89,13 @@ der_copy_universal_string (const heim_universal_string *from,
 }
 
 int
+der_copy_visible_string (const heim_visible_string *from, 
+			 heim_visible_string *to)
+{
+    return der_copy_general_string(from, to);
+}
+
+int
 der_copy_octet_string (const heim_octet_string *from, heim_octet_string *to)
 {
     to->length = from->length;

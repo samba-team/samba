@@ -80,6 +80,13 @@ der_free_universal_string (heim_universal_string *k)
 }
 
 void
+der_free_visible_string (heim_visible_string *str)
+{
+    free(*str);
+    *str = NULL;
+}
+
+void
 der_free_octet_string (heim_octet_string *k)
 {
     free(k->data);

@@ -160,6 +160,9 @@ free_type (const char *name, const Type *t, int preserve)
     case TUniversalString:
 	free_primitive ("universal_string", name);
 	break;
+    case TVisibleString:
+	free_primitive ("visible_string", name);
+	break;
     case TTag:
 	free_type (name, t->subtype, preserve);
 	break;

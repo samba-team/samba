@@ -215,6 +215,13 @@ der_get_universal_string (const unsigned char *p, size_t len,
 }
 
 int
+der_get_visible_string (const unsigned char *p, size_t len, 
+			heim_visible_string *str, size_t *size)
+{
+    return der_get_general_string(p, len, str, size);
+}
+
+int
 der_get_octet_string (const unsigned char *p, size_t len, 
 		      heim_octet_string *data, size_t *size)
 {

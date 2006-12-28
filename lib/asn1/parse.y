@@ -659,6 +659,11 @@ RestrictedCharactedStringType: kw_GeneralString
 			$$ = new_tag(ASN1_C_UNIV, UT_PrintableString, 
 				     TE_EXPLICIT, new_type(TPrintableString));
 		}
+		| kw_VisibleString
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_VisibleString, 
+				     TE_EXPLICIT, new_type(TVisibleString));
+		}
 		| kw_IA5String
 		{
 			$$ = new_tag(ASN1_C_UNIV, UT_IA5String, 

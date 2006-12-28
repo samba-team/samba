@@ -74,6 +74,7 @@ is_primitive_type(int type)
     case TIA5String:
     case TBMPString:
     case TUniversalString:
+    case TVisibleString:
     case TNull:
 	return 1;
     default:
@@ -190,6 +191,11 @@ find_tag (const Type *t,
 	*cl  = ASN1_C_UNIV;
 	*ty  = PRIM;
 	*tag = UT_UniversalString;
+	break;
+    case TVisibleString:
+	*cl  = ASN1_C_UNIV;
+	*ty  = PRIM;
+	*tag = UT_VisibleString;
 	break;
     default:
 	abort();
@@ -580,6 +586,9 @@ decode_type (const char *name, const Type *t, int optional,
     case TUniversalString:
 	decode_primitive ("universal_string", name, forwstr);
 	break;
+    case TVisibleString:
+	decode_primitive ("visible_string", name, forwstr);
+	break;
     case TNull:
 	fprintf (codefile, "/* NULL */\n");
 	break;
@@ -620,6 +629,7 @@ generate_type_decode (const Symbol *s)
     case TIA5String:
     case TBMPString:
     case TUniversalString:
+    case TVisibleString:
     case TUTCTime:
     case TNull:
     case TEnumerated:

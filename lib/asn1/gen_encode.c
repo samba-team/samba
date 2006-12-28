@@ -467,6 +467,10 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	encode_primitive ("universal_string", name);
 	constructed = 0;
 	break;
+    case TVisibleString:
+	encode_primitive ("visible_string", name);
+	constructed = 0;
+	break;
     case TNull:
 	fprintf (codefile, "/* NULL */\n");
 	constructed = 0;
@@ -503,6 +507,7 @@ generate_type_encode (const Symbol *s)
     case TIA5String:
     case TBMPString:
     case TUniversalString:
+    case TVisibleString:
     case TNull:
     case TBitString:
     case TEnumerated:

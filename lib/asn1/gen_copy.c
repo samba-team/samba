@@ -202,6 +202,9 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
     case TUniversalString:
 	copy_primitive ("universal_string", from, to);
 	break;
+    case TVisibleString:
+	copy_primitive ("visible_string", from, to);
+	break;
     case TTag:
 	copy_type (from, to, t->subtype, preserve);
 	break;

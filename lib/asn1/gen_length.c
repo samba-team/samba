@@ -238,6 +238,9 @@ length_type (const char *name, const Type *t,
     case TUniversalString:
 	length_primitive ("universal_string", name, variable);
 	break;
+    case TVisibleString:
+	length_primitive ("visible_string", name, variable);
+	break;
     case TNull:
 	fprintf (codefile, "/* NULL */\n");
 	break;

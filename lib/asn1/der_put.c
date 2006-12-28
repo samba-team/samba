@@ -231,6 +231,13 @@ der_put_universal_string (unsigned char *p, size_t len,
 }
 
 int
+der_put_visible_string (unsigned char *p, size_t len, 
+			 const heim_visible_string *str, size_t *size)
+{
+    return der_put_general_string(p, len, str, size);
+}
+
+int
 der_put_octet_string (unsigned char *p, size_t len, 
 		      const heim_octet_string *data, size_t *size)
 {

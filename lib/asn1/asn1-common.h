@@ -32,6 +32,7 @@ typedef struct heim_universal_string {
     uint32_t *data;
 } heim_universal_string;
 
+typedef char *heim_visible_string;
 
 typedef struct heim_oid {
     size_t length;

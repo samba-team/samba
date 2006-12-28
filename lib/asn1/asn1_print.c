@@ -180,7 +180,9 @@ loop (unsigned char *buf, size_t len, int indent)
 		break;
 	    }
 	    case UT_GeneralizedTime :
-	    case UT_GeneralString : {
+	    case UT_GeneralString :
+	    case UT_PrintableString :
+	    case UT_VisibleString : {
 		heim_general_string str;
 
 		ret = der_get_general_string (buf, length, &str, NULL);

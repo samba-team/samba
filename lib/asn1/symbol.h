@@ -60,7 +60,8 @@ enum typetype {
     TUTCTime, 
     TUTF8String,
     TBMPString,
-    TUniversalString
+    TUniversalString,
+    TVisibleString
 };
 
 typedef enum typetype Typetype;

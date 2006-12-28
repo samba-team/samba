@@ -167,6 +167,12 @@ der_length_universal_string (const heim_universal_string *data)
 }
 
 size_t
+der_length_visible_string (const heim_visible_string *data)
+{
+    return strlen(*data);
+}
+
+size_t
 der_length_octet_string (const heim_octet_string *k)
 {
     return k->length;
