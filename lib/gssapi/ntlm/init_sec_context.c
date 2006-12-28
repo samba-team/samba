@@ -142,9 +142,7 @@ _gss_ntlm_init_sec_context
 
 	flags |= NTLM_NEG_UNICODE;
 	flags |= NTLM_NEG_NTLM;
-#if 0
 	flags |= NTLM_NEG_NTLM2_SESSION;
-#endif
 	flags |= NTLM_NEG_KEYEX;
 
 	memset(&type1, 0, sizeof(type1));
@@ -200,7 +198,6 @@ _gss_ntlm_init_sec_context
 	 * NTLM Version 1 if no targetinfo buffer.
 	 */
 
-	/* XXX disable ntlmv2 since we can't handle wrap/unwrap */
 	if (1 || type2.targetinfo.length == 0) {
 	    struct ntlm_buf key;
 	    struct ntlm_buf sessionkey;
@@ -270,19 +267,28 @@ _gss_ntlm_init_sec_context
 	    }
 	    ctx->status |= STATUS_SESSIONKEY; 
 
-	    RC4_set_key(&ctx->crypto_recv.key, 
-			ctx->sessionkey.length,
-			ctx->sessionkey.data);
-	    RC4_set_key(&ctx->crypto_send.key, 
-			ctx->sessionkey.length,
-			ctx->sessionkey.data);
-
 	} else {
 	    struct ntlm_buf key;
 	    struct ntlm_buf sessionkey;
 	    unsigned char ntlmv2[16];
+	    struct ntlm_targetinfo ti;
 
 	    /* verify infotarget */
+	    
+	    ret = heim_ntlm_decode_targetinfo(&type2.targetinfo, 1, &ti);
+	    if(ret) {
+		_gss_ntlm_delete_sec_context(minor_status, 
+					     context_handle, NULL);
+		*minor_status = ret;
+		return GSS_S_FAILURE;
+	    }
+
+	    if (ti.domainname && strcmp(ti.domainname, name->domain) != 0) {
+		_gss_ntlm_delete_sec_context(minor_status, 
+					     context_handle, NULL);
+		*minor_status = EINVAL;
+		return GSS_S_FAILURE;
+	    }
 
 	    heim_ntlm_nt_key(ctx->password, &key);
 	    memset(ctx->password, 0, strlen(ctx->password));
@@ -314,10 +320,36 @@ _gss_ntlm_init_sec_context
 		return GSS_S_FAILURE;
 	    }
 	    
-	    /* set session key in ctx */
+	    ctx->flags |= NTLM_NEG_NTLM2_SESSION;
 
+	    ret = krb5_data_copy(&ctx->sessionkey, 
+				 sessionkey.data, sessionkey.length);
 	    free(sessionkey.data);
 	}
+
+	if (ctx->flags & NTLM_NEG_NTLM2_SESSION) {
+	    ctx->status |= STATUS_SESSIONKEY; 
+	    ctx->u.v2.send.seq = 0;
+	    RC4_set_key(&ctx->u.v2.send.sealkey, 
+			ctx->sessionkey.length,
+			ctx->sessionkey.data);
+	    memcpy(ctx->u.v2.send.signkey, ctx->sessionkey.data, 16);
+	    ctx->u.v2.recv.seq = 0;
+	    RC4_set_key(&ctx->u.v2.recv.sealkey, 
+			ctx->sessionkey.length,
+			ctx->sessionkey.data);
+	    memcpy(ctx->u.v2.recv.signkey, ctx->sessionkey.data, 16);
+	} else {
+	    ctx->status |= STATUS_SESSIONKEY; 
+	    RC4_set_key(&ctx->u.v1.crypto_recv.key, 
+			ctx->sessionkey.length,
+			ctx->sessionkey.data);
+	    RC4_set_key(&ctx->u.v1.crypto_send.key, 
+			ctx->sessionkey.length,
+			ctx->sessionkey.data);
+	}
+	
+
 
 	ret = heim_ntlm_encode_type3(&type3, &data);
 	free(type3.sessionkey.data);
