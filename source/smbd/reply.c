@@ -3860,7 +3860,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
  The internals of the rmdir code - called elsewhere.
 ****************************************************************************/
 
-BOOL rmdir_internals(connection_struct *conn, char *directory)
+BOOL rmdir_internals(connection_struct *conn, const char *directory)
 {
 	BOOL ok;
 	SMB_STRUCT_STAT st;
@@ -3933,10 +3933,25 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 		}
 	}
 
-	if (!ok)
-		DEBUG(3,("rmdir_internals: couldn't remove directory %s : %s\n", directory,strerror(errno)));
+	if (!ok) {
+		DEBUG(3,("rmdir_internals: couldn't remove directory %s : "
+			 "%s\n", directory,strerror(errno)));
+		return False;
+	}
 
-	return ok;
+	{
+		char *parent_dir;
+		const char *dirname;
+
+		if (parent_dirname_talloc(tmp_talloc_ctx(), directory,
+					  &parent_dir, &dirname)) {
+			notify_action(conn, parent_dir, dirname,
+				      NOTIFY_ACTION_REMOVED);
+			TALLOC_FREE(parent_dir); /* Not strictly necessary */
+		}
+	}
+
+	return True;
 }
 
 /****************************************************************************
