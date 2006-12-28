@@ -85,6 +85,8 @@ typedef struct krb5_kdc_configuration {
 
     size_t max_datagram_reply_length;
 
+    int enable_kx509;
+
 } krb5_kdc_configuration;
 
 #include <kdc-protos.h>
