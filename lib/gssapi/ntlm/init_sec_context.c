@@ -329,10 +329,10 @@ _gss_ntlm_init_sec_context
 
 	if (ctx->flags & NTLM_NEG_NTLM2_SESSION) {
 	    ctx->status |= STATUS_SESSIONKEY; 
-	    _gss_ntlm_set_key(&ctx->u.v2.send, 0, 
+	    _gss_ntlm_set_key(&ctx->u.v2.send, 0, (ctx->flags & NTLM_NEG_KEYEX),
 			      ctx->sessionkey.data,
 			      ctx->sessionkey.length);
-	    _gss_ntlm_set_key(&ctx->u.v2.recv, 1, 
+	    _gss_ntlm_set_key(&ctx->u.v2.recv, 1, (ctx->flags & NTLM_NEG_KEYEX),
 			      ctx->sessionkey.data,
 			      ctx->sessionkey.length);
 	} else {

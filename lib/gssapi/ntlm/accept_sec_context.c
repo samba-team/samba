@@ -198,10 +198,10 @@ handle_type3(OM_uint32 *minor_status,
 	ctx->status |= STATUS_SESSIONKEY; 
 
 	if (ctx->flags & NTLM_NEG_NTLM2_SESSION) {
-	    _gss_ntlm_set_key(&ctx->u.v2.send, 1, 
+	    _gss_ntlm_set_key(&ctx->u.v2.send, 1, (ctx->flags & NTLM_NEG_KEYEX),
 			      ctx->sessionkey.data,
 			      ctx->sessionkey.length);
-	    _gss_ntlm_set_key(&ctx->u.v2.recv, 0, 
+	    _gss_ntlm_set_key(&ctx->u.v2.recv, 0, (ctx->flags & NTLM_NEG_KEYEX),
 			      ctx->sessionkey.data,
 			      ctx->sessionkey.length);
 	} else {
