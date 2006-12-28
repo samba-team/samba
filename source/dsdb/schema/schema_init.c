@@ -47,6 +47,10 @@ WERROR dsdb_load_oid_mappings(struct dsdb_schema *schema, const struct drsuapi_D
 				return WERR_INVALID_PARAM;
 			}
 
+			if (ctr->mappings[i].oid.__ndr_size != 21) {
+				return WERR_INVALID_PARAM;
+			}
+
 			schema->schema_info = talloc_strdup(schema, ctr->mappings[i].oid.oid);
 			W_ERROR_HAVE_NO_MEMORY(schema->schema_info);
 		} else {
@@ -65,6 +69,66 @@ WERROR dsdb_load_oid_mappings(struct dsdb_schema *schema, const struct drsuapi_D
 	}
 
 	schema->num_prefixes = j;
+	return WERR_OK;
+}
+
+WERROR dsdb_verify_oid_mappings(const struct dsdb_schema *schema, const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
+{
+	uint32_t i,j;
+
+	for (i=0; i < ctr->num_mappings; i++) {
+		if (ctr->mappings[i].oid.oid == NULL) {
+			return WERR_INVALID_PARAM;
+		}
+
+		if (strncasecmp(ctr->mappings[i].oid.oid, "ff", 2) == 0) {
+			if (ctr->mappings[i].id_prefix != 0) {
+				return WERR_INVALID_PARAM;
+			}
+
+			/* the magic value should be in the last array member */
+			if (i != (ctr->num_mappings - 1)) {
+				return WERR_INVALID_PARAM;
+			}
+
+			if (ctr->mappings[i].oid.__ndr_size != 21) {
+				return WERR_INVALID_PARAM;
+			}
+
+			if (strcasecmp(schema->schema_info, ctr->mappings[i].oid.oid) != 0) {
+				return WERR_DS_DRA_SCHEMA_MISMATCH;
+			}
+		} else {
+			/* the last array member should contain the magic value not a oid */
+			if (i == (ctr->num_mappings - 1)) {
+				return WERR_INVALID_PARAM;
+			}
+
+			for (j=0; j < schema->num_prefixes; j++) {
+				size_t oid_len;
+				if (schema->prefixes[j].id != (ctr->mappings[i].id_prefix<<16)) {
+					continue;
+				}
+
+				oid_len = strlen(ctr->mappings[i].oid.oid);
+
+				if (oid_len != (schema->prefixes[j].oid_len - 1)) {
+					return WERR_DS_DRA_SCHEMA_MISMATCH;
+				}
+
+				if (strncmp(ctr->mappings[i].oid.oid, schema->prefixes[j].oid, oid_len) != 0) {
+					return WERR_DS_DRA_SCHEMA_MISMATCH;				
+				}
+
+				break;
+			}
+
+			if (j == schema->num_prefixes) {
+				return WERR_DS_DRA_SCHEMA_MISMATCH;				
+			}
+		}
+	}
+
 	return WERR_OK;
 }
 
