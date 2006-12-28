@@ -1,4 +1,6 @@
-[ 
+#include "idl_types.h"
+
+[
   uuid("f5cc59b4-4264-101a-8c59-08002b2f8426"),
   version(1.1),
   endpoint("ncacn_ip_tcp:", "ncalrpc:"),
@@ -9,7 +11,39 @@ interface frsrpc
 {
 	/*****************/
 	/* Function 0x00 */
-	void FRSRPC_SEND_COMM_PKT();
+	typedef struct {
+		uint32 unknown1;
+		uint32 unknown2;
+		uint32 unknown3;
+		uint32 unknown4;
+    		uint32 unknown5;
+		uint32 unknown6;
+		/*
+		 * the format of this blob is this:
+		 *
+		 * some of the folloeing chunks are concatenated:
+		 *
+		 * struct {
+		 * 	uint16 type;
+		 *	[subcontext(4),switch_is(type)] chunk_data data;
+		 * } chunk;
+		 * 
+		 * some of the chunk are like this:
+		 *
+		 * struct {
+		 *	uint32 unknown; // 0x00000010
+		 *	struct GUID guid;
+		 *	lstring string;
+		 * } ...;
+		 */
+		[subcontext(4),flag(NDR_REMAINING)/*,size_is(unknown5)*/] DATA_BLOB *unknown7;
+		uint32 unknown8;
+		uint32 unknown9;
+	} frsrpc_FrsSendCommPktReq;
+
+	WERROR frsrpc_FrsSendCommPkt(
+		[in]	frsrpc_FrsSendCommPktReq req
+	);
 
 	/*****************/
 	/* Function 0x01 */
