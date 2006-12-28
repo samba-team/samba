@@ -1116,7 +1116,7 @@ krb5_ntlm_rep_get_status(krb5_context context,
     return ntlm->response.success ? TRUE : FALSE;
 }
 
-krb5_boolean
+krb5_error_code
 krb5_ntlm_rep_get_sessionkey(krb5_context context, 
 			     krb5_ntlm ntlm,
 			     krb5_data *data)
