@@ -632,7 +632,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	const char * const _result_attrs_canonical[] = { "canonicalName", NULL };
 
 	const char * const _domain_attrs_nt4[] = { "ncName", "dnsRoot", "nETBIOSName", NULL};
-	const char * const _result_attrs_nt4[] = { "sAMAccountName", "objectSid", NULL};
+	const char * const _result_attrs_nt4[] = { "sAMAccountName", "objectSid", "objectClass", NULL};
 		
 	const char * const _domain_attrs_guid[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_guid[] = { "objectGUID", NULL};
@@ -786,15 +786,11 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 						 result->dn, name, info1);
 	}
 	case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
+
 		const struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, result, "objectSid");
 		const char *_acc = "", *_dom = "";
 		
-		if (!sid || (sid->num_auths < 4) || (sid->num_auths > 5)) {
-			info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
-			return WERR_OK;
-		}
-
-		if (sid->num_auths == 4) {
+		if (samdb_find_attribute(sam_ctx, result, "objectClass", "domain")) {
 			ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res, domain_attrs,
 					       "(ncName=%s)", ldb_dn_get_linearized(result->dn));
 			if (ldb_ret != 1) {
@@ -803,33 +799,38 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 			}
 			_dom = samdb_result_string(domain_res[0], "nETBIOSName", NULL);
 			W_ERROR_HAVE_NO_MEMORY(_dom);
-		
-		} else if (sid->num_auths == 5) {
-			const char *attrs[] = { NULL };
-			struct ldb_message **domain_res2;
-			struct dom_sid *dom_sid = dom_sid_dup(mem_ctx, sid);
-			if (!dom_sid) {
-				return WERR_OK;
-			}
-			dom_sid->num_auths--;
-			ldb_ret = gendb_search(sam_ctx, mem_ctx, NULL, &domain_res, attrs,
-					       "(&(objectSid=%s)(objectClass=domain))", ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
-			if (ldb_ret != 1) {
-				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
-				return WERR_OK;
-			}
-			ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res2, domain_attrs,
-					       "(ncName=%s)", ldb_dn_get_linearized(domain_res[0]->dn));
-			if (ldb_ret != 1) {
-				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
-				return WERR_OK;
-			}
-			
-			_dom = samdb_result_string(domain_res2[0], "nETBIOSName", NULL);
-			W_ERROR_HAVE_NO_MEMORY(_dom);
-
+		} else {
 			_acc = samdb_result_string(result, "sAMAccountName", NULL);
-			W_ERROR_HAVE_NO_MEMORY(_acc);
+			if (!_acc) {
+				info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
+				return WERR_OK;
+			}
+			if (dom_sid_in_domain(dom_sid_parse_talloc(mem_ctx, SID_BUILTIN), sid)) {
+				_dom = "BUILTIN";
+			} else {
+				const char *attrs[] = { NULL };
+				struct ldb_message **domain_res2;
+				struct dom_sid *dom_sid = dom_sid_dup(mem_ctx, sid);
+				if (!dom_sid) {
+					return WERR_OK;
+				}
+				dom_sid->num_auths--;
+				ldb_ret = gendb_search(sam_ctx, mem_ctx, NULL, &domain_res, attrs,
+						       "(&(objectSid=%s)(objectClass=domain))", ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
+				if (ldb_ret != 1) {
+					info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+					return WERR_OK;
+				}
+				ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res2, domain_attrs,
+						       "(ncName=%s)", ldb_dn_get_linearized(domain_res[0]->dn));
+				if (ldb_ret != 1) {
+					info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+					return WERR_OK;
+				}
+				
+				_dom = samdb_result_string(domain_res2[0], "nETBIOSName", NULL);
+				W_ERROR_HAVE_NO_MEMORY(_dom);
+			}
 		}
 
 		info1->result_name	= talloc_asprintf(mem_ctx, "%s\\%s", _dom, _acc);

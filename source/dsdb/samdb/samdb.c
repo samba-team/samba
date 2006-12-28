@@ -632,21 +632,32 @@ struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb,
 {
 	int i;
 	struct ldb_message_element *el = ldb_msg_find_element(msg, name);
+	const struct ldb_schema_attribute *a;
 	struct ldb_val v;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	if (!tmp_ctx) {
+		return NULL;
+	}
 
 	v.data = discard_const_p(uint8_t, value);
 	v.length = strlen(value);
 
 	if (!el) {
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
 
+	a = ldb_schema_attribute_by_name(ldb, name);
+
 	for (i=0;i<el->num_values;i++) {
-		if (strcasecmp(value, (char *)el->values[i].data) == 0) {
+		if (a->syntax->comparison_fn(ldb, tmp_ctx, &el->values[i], &v) == 0) {
+			talloc_free(tmp_ctx);
 			return el;
 		}
 	}
 
+	talloc_free(tmp_ctx);
 	return NULL;
 }
 
