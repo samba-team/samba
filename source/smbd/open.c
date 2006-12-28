@@ -1127,7 +1127,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	uint32 open_access_mask = access_mask;
 	NTSTATUS status;
 	int ret_flock;
-	const char *parent_dir;
+	char *parent_dir;
+	const char *newname;
 
 	if (conn->printer) {
 		/* 
@@ -1144,8 +1145,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return print_fsp_open(conn, fname, result);
 	}
 
-	if (!(parent_dir = talloc_strdup(tmp_talloc_ctx(),
-					 parent_dirname(fname)))) {
+	if (!parent_dirname_talloc(tmp_talloc_ctx(), fname, &parent_dir,
+				   &newname)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1878,7 +1879,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 {
 	int ret= -1;
 	mode_t mode;
-	const char *parent_dir;
+	char *parent_dir;
+	const char *dirname;
 
 	if(!CAN_WRITE(conn)) {
 		DEBUG(5,("mkdir_internal: failing create on read-only share "
@@ -1890,8 +1892,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (!(parent_dir = talloc_strdup(tmp_talloc_ctx(),
-					 parent_dirname(name)))) {
+	if (!parent_dirname_talloc(tmp_talloc_ctx(), name, &parent_dir,
+				   &dirname)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1935,6 +1937,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn, const char *name,
 	if (lp_inherit_owner(SNUM(conn))) {
 		change_dir_owner_to_parent(conn, parent_dir, name, psbuf);
 	}
+
+	notify_action(conn, parent_dir, dirname, NOTIFY_ACTION_ADDED);
 
 	return NT_STATUS_OK;
 }

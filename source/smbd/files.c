@@ -100,6 +100,12 @@ NTSTATUS file_new(connection_struct *conn, files_struct **result)
 
 	ZERO_STRUCTP(fsp->fh);
 
+	if (!(fsp->notify = TALLOC_ZERO_P(NULL, struct notify_changes))) {
+		SAFE_FREE(fsp->fh);
+		SAFE_FREE(fsp);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	fsp->fh->ref_count = 1;
 	fsp->fh->fd = -1;
 
@@ -362,6 +368,35 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 }
 
 /****************************************************************************
+ Find the directory fsp given a device and inode with the lowest
+ file_id. First use is for notify actions.
+****************************************************************************/
+
+files_struct *file_find_dir_lowest_id(SMB_DEV_T dev, SMB_INO_T inode)
+{
+	files_struct *fsp;
+	files_struct *min_fsp = NULL;
+
+	for (fsp = Files; fsp; fsp = fsp->next) {
+		if (!fsp->is_directory
+		    || fsp->dev != dev || fsp->inode != inode) {
+			continue;
+		}
+
+		if (min_fsp == NULL) {
+			min_fsp = fsp;
+			continue;
+		}
+
+		if (fsp->fh->file_id < min_fsp->fh->file_id) {
+			min_fsp = fsp;
+		}
+	}
+
+	return min_fsp;
+}
+
+/****************************************************************************
  Find a fsp that is open for printing.
 ****************************************************************************/
 
@@ -438,6 +473,8 @@ void file_free(files_struct *fsp)
 	} else {
 		fsp->fh->ref_count--;
 	}
+
+	TALLOC_FREE(fsp->notify);
 
 	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
 	files_used--;

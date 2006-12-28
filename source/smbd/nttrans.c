@@ -68,9 +68,8 @@ static char *nttrans_realloc(char **ptr, size_t size)
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-static int send_nt_replies(char *outbuf, int bufsize, NTSTATUS nt_error,
-			   char *params, int paramsize, char *pdata,
-			   int datasize)
+int send_nt_replies(char *outbuf, int bufsize, NTSTATUS nt_error,
+		    char *params, int paramsize, char *pdata, int datasize)
 {
 	int data_to_send = datasize;
 	int params_to_send = paramsize;
@@ -1848,7 +1847,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 
-	if (!change_notify_set(inbuf, fsp, conn, flags)) {
+	if (!change_notify_set(inbuf, fsp, conn, flags, max_param_count)) {
 		return(UNIXERROR(ERRDOS,ERRbadfid));
 	}
 

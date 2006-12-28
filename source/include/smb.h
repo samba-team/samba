@@ -428,6 +428,16 @@ struct vfs_fsp_data {
      */
 };
 
+struct notify_change {
+	uint32_t action;
+	char *name;
+};
+
+struct notify_changes {
+	uint32_t num_changes;
+	struct notify_change *changes;
+};
+
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	int fnum;
@@ -470,6 +480,8 @@ typedef struct files_struct {
 
 	struct vfs_fsp_data *vfs_extension;
  	FAKE_FILE_HANDLE *fake_file_handle;
+
+	struct notify_changes *notify;
 } files_struct;
 
 #include "ntquotas.h"
@@ -1342,6 +1354,20 @@ struct bitmap {
 #define FILE_NOTIFY_CHANGE_EA          0x080
 #define FILE_NOTIFY_CHANGE_SECURITY    0x100
 #define FILE_NOTIFY_CHANGE_FILE_NAME   0x200
+
+#define FILE_NOTIFY_CHANGE_NAME \
+	(FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_DIR_NAME)
+
+/* change notify action results */
+#define NOTIFY_ACTION_ADDED 1
+#define NOTIFY_ACTION_REMOVED 2
+#define NOTIFY_ACTION_MODIFIED 3
+#define NOTIFY_ACTION_OLD_NAME 4
+#define NOTIFY_ACTION_NEW_NAME 5
+#define NOTIFY_ACTION_ADDED_STREAM 6
+#define NOTIFY_ACTION_REMOVED_STREAM 7
+#define NOTIFY_ACTION_MODIFIED_STREAM 8
+
 
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((char *)(buf))+4)

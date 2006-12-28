@@ -35,22 +35,75 @@ struct change_notify {
 	files_struct *fsp;
 	connection_struct *conn;
 	uint32 flags;
+	uint32 max_param_count;
 	char request_buf[smb_size];
 	void *change_data;
 };
 
 static struct change_notify *change_notify_list;
 
+static BOOL notify_marshall_changes(struct notify_changes *changes,
+				    prs_struct *ps)
+{
+	int i;
+	UNISTR uni_name;
+
+	for (i=0; i<changes->num_changes; i++) {
+		struct notify_change *c = &changes->changes[i];
+		size_t namelen;
+		uint32 u32_tmp;	/* Temp arg to prs_uint32 to avoid
+				 * signed/unsigned issues */
+
+		namelen = convert_string_allocate(
+			NULL, CH_UNIX, CH_UTF16LE, c->name, strlen(c->name)+1,
+			&uni_name.buffer, True);
+		if ((namelen == -1) || (uni_name.buffer == NULL)) {
+			goto fail;
+		}
+
+		namelen -= 2;	/* Dump NULL termination */
+
+		/*
+		 * Offset to next entry, only if there is one
+		 */
+
+		u32_tmp = (i == changes->num_changes-1) ? 0 : namelen + 12;
+		if (!prs_uint32("offset", ps, 1, &u32_tmp)) goto fail;
+
+		u32_tmp = c->action;
+		if (!prs_uint32("action", ps, 1, &u32_tmp)) goto fail;
+
+		u32_tmp = namelen;
+		if (!prs_uint32("namelen", ps, 1, &u32_tmp)) goto fail;
+
+		if (!prs_unistr("name", ps, 1, &uni_name)) goto fail;
+
+		/*
+		 * Not NULL terminated, decrease by the 2 UCS2 \0 chars
+		 */
+		prs_set_offset(ps, prs_offset(ps)-2);
+
+		SAFE_FREE(uni_name.buffer);
+	}
+
+	return True;
+
+ fail:
+	SAFE_FREE(uni_name.buffer);
+	return False;
+}
+
 /****************************************************************************
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
 
-static void change_notify_reply_packet(char *inbuf, NTSTATUS error_code)
+static void change_notify_reply_packet(struct change_notify *notify,
+				       NTSTATUS error_code)
 {
 	char outbuf[smb_size+38];
 
 	memset(outbuf, '\0', sizeof(outbuf));
-	construct_reply_common(inbuf, outbuf);
+	construct_reply_common(notify->request_buf, outbuf);
 
 	ERROR_NT(error_code);
 
@@ -63,6 +116,47 @@ static void change_notify_reply_packet(char *inbuf, NTSTATUS error_code)
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
 		exit_server_cleanly("change_notify_reply_packet: send_smb failed.");
+}
+
+static void change_notify_reply(struct change_notify *notify)
+{
+	char *outbuf = NULL;
+	prs_struct ps;
+	size_t buflen = smb_size+38+notify->max_param_count;
+
+	if (!prs_init(&ps, 0, NULL, False)
+	    || !notify_marshall_changes(notify->fsp->notify, &ps)) {
+		change_notify_reply_packet(notify, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+
+	if (prs_offset(&ps) > notify->max_param_count) {
+		/*
+		 * We exceed what the client is willing to accept. Send
+		 * nothing.
+		 */
+		change_notify_reply_packet(notify, NT_STATUS_OK);
+		goto done;
+	}
+
+	if (!(outbuf = SMB_MALLOC_ARRAY(char, buflen))) {
+		change_notify_reply_packet(notify, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+
+	memset(outbuf, '\0', sizeof(outbuf));
+	construct_reply_common(notify->request_buf, outbuf);
+
+	if (send_nt_replies(outbuf, buflen, NT_STATUS_OK, prs_data_p(&ps),
+			    prs_offset(&ps), NULL, 0) == -1) {
+		exit_server("change_notify_reply_packet: send_smb failed.");
+	}
+
+ done:
+	SAFE_FREE(outbuf);
+	prs_mem_free(&ps);
+	notify->fsp->notify->num_changes = 0;
+	TALLOC_FREE(notify->fsp->notify->changes);
 }
 
 /****************************************************************************
@@ -89,7 +183,7 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp, NTSTATUS st
 	for (cnbp=change_notify_list; cnbp; cnbp=next) {
 		next=cnbp->next;
 		if (cnbp->fsp->fnum == fsp->fnum) {
-			change_notify_reply_packet(cnbp->request_buf,status);
+			change_notify_reply_packet(cnbp, status);
 			change_notify_remove(cnbp);
 		}
 	}
@@ -106,7 +200,7 @@ void remove_pending_change_notify_requests_by_mid(int mid)
 	for (cnbp=change_notify_list; cnbp; cnbp=next) {
 		next=cnbp->next;
 		if(SVAL(cnbp->request_buf,smb_mid) == mid) {
-			change_notify_reply_packet(cnbp->request_buf,NT_STATUS_CANCELLED);
+			change_notify_reply_packet(cnbp, NT_STATUS_CANCELLED);
 			change_notify_remove(cnbp);
 		}
 	}
@@ -128,7 +222,7 @@ void remove_pending_change_notify_requests_by_filename(files_struct *fsp, NTSTAT
 		 * the filename are identical.
 		 */
 		if((cnbp->fsp->conn == fsp->conn) && strequal(cnbp->fsp->fsp_name,fsp->fsp_name)) {
-			change_notify_reply_packet(cnbp->request_buf,status);
+			change_notify_reply_packet(cnbp, status);
 			change_notify_remove(cnbp);
 		}
 	}
@@ -171,9 +265,13 @@ BOOL process_pending_change_notify_queue(time_t t)
 
 		vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(cnbp->request_buf,smb_uid);
 
-		if (cnotify->check_notify(cnbp->conn, vuid, cnbp->fsp->fsp_name, cnbp->flags, cnbp->change_data, t)) {
-			DEBUG(10,("process_pending_change_notify_queue: dir %s changed !\n", cnbp->fsp->fsp_name ));
-			change_notify_reply_packet(cnbp->request_buf,STATUS_NOTIFY_ENUM_DIR);
+		if ((cnbp->fsp->notify->num_changes != 0)
+		    || cnotify->check_notify(cnbp->conn, vuid,
+					     cnbp->fsp->fsp_name, cnbp->flags,
+					     cnbp->change_data, t)) {
+			DEBUG(10,("process_pending_change_notify_queue: dir "
+				  "%s changed !\n", cnbp->fsp->fsp_name ));
+			change_notify_reply(cnbp);
 			change_notify_remove(cnbp);
 		}
 	}
@@ -188,13 +286,14 @@ BOOL process_pending_change_notify_queue(time_t t)
  error.
 ****************************************************************************/
 
-BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, uint32 flags)
+BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn,
+		       uint32 flags, uint32 max_param_count)
 {
 	struct change_notify *cnbp;
 
 	if((cnbp = SMB_MALLOC_P(struct change_notify)) == NULL) {
 		DEBUG(0,("change_notify_set: malloc fail !\n" ));
-		return -1;
+		return False;
 	}
 
 	ZERO_STRUCTP(cnbp);
@@ -203,7 +302,9 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 	cnbp->fsp = fsp;
 	cnbp->conn = conn;
 	cnbp->flags = flags;
-	cnbp->change_data = cnotify->register_notify(conn, fsp->fsp_name, flags);
+	cnbp->max_param_count = max_param_count;
+	cnbp->change_data = cnotify->register_notify(conn, fsp->fsp_name,
+						     flags);
 	
 	if (!cnbp->change_data) {
 		SAFE_FREE(cnbp);
@@ -225,6 +326,174 @@ int change_notify_fd(void)
 	}
 
 	return -1;
+}
+
+/* notify message definition
+
+Offset  Data			length.
+0	SMB_DEV_T dev		8
+8	SMB_INO_T inode		8
+16	uint32 action		4
+20..	name
+*/
+
+#define MSG_NOTIFY_MESSAGE_SIZE 21 /* Includes at least the '\0' terminator */
+
+struct notify_message {
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	uint32_t action;
+	char *name;
+};
+
+static DATA_BLOB notify_message_to_buf(const struct notify_message *msg)
+{
+	DATA_BLOB result;
+	size_t len;
+
+	len = strlen(msg->name);
+
+	result = data_blob(NULL, MSG_NOTIFY_MESSAGE_SIZE + len);
+	if (!result.data) {
+		return result;
+	}
+
+	SDEV_T_VAL(result.data, 0, msg->dev);
+	SINO_T_VAL(result.data, 8, msg->inode);
+	SIVAL(result.data, 16, msg->action);
+	memcpy(result.data+20, msg->name, len+1);
+
+	return result;
+}
+
+static BOOL buf_to_notify_message(void *buf, size_t len,
+				  struct notify_message *msg)
+{
+	if (len < MSG_NOTIFY_MESSAGE_SIZE) {
+		DEBUG(0, ("Got invalid notify message of len %d\n", len));
+		return False;
+	}
+
+	msg->dev     = DEV_T_VAL(buf, 0);
+	msg->inode   = INO_T_VAL(buf, 8);
+	msg->action  = IVAL(buf, 16);
+	msg->name    = ((char *)buf)+20;
+	return True;
+}
+
+void notify_action(connection_struct *conn, const char *parent,
+		   const char *name, uint32_t action)
+{
+	struct share_mode_lock *lck;
+	SMB_STRUCT_STAT sbuf;
+	int i;
+	struct notify_message msg;
+	DATA_BLOB blob;
+
+	struct process_id *pids;
+	int num_pids;
+
+	if (SMB_VFS_STAT(conn, parent, &sbuf) != 0) {
+		/*
+		 * Not 100% critical, ignore failure
+		 */
+		return;
+	}
+
+	if (!(lck = get_share_mode_lock(NULL, sbuf.st_dev, sbuf.st_ino,
+					NULL, NULL))) {
+		return;
+	}
+
+	msg.dev = sbuf.st_dev;
+	msg.inode = sbuf.st_ino;
+	msg.action = action;
+	msg.name = CONST_DISCARD(char *, name);
+
+	blob = notify_message_to_buf(&msg);
+	if (blob.data == NULL) {
+		DEBUG(0, ("notify_message_to_buf failed\n"));
+		return;
+	}
+
+	pids = NULL;
+	num_pids = 0;
+
+	become_root_uid_only();
+
+	for (i=0; i<lck->num_share_modes; i++) {
+		struct share_mode_entry *e = &lck->share_modes[i];
+		int j;
+		struct process_id *tmp;
+
+		for (j=0; j<num_pids; j++) {
+			if (procid_equal(&e->pid, &pids[j])) {
+				break;
+			}
+		}
+
+		if (j < num_pids) {
+			/*
+			 * Already sent to that process, skip it
+			 */
+			continue;
+		}
+
+		message_send_pid(lck->share_modes[i].pid, MSG_SMB_NOTIFY,
+				 blob.data, blob.length, True);
+
+		if (!(tmp = TALLOC_REALLOC_ARRAY(lck, pids, struct process_id,
+						 num_pids+1))) {
+			DEBUG(0, ("realloc failed\n"));
+			break;
+		}
+		pids = tmp;
+		pids[num_pids] = e->pid;
+		num_pids += 1;
+	}
+
+	unbecome_root_uid_only();
+
+	data_blob_free(&blob);
+	TALLOC_FREE(lck);
+}
+
+static void notify_message(int msgtype, struct process_id pid,
+			   void *buf, size_t len)
+{
+	struct notify_message msg;
+	files_struct *fsp;
+	struct notify_change *changes, *change;
+
+	if (!buf_to_notify_message(buf, len, &msg)) {
+		return;
+	}
+
+	DEBUG(10, ("Received notify_message for 0x%x/%.0f: %d\n",
+		   (unsigned)msg.dev, (double)msg.inode, msg.action));
+
+	if (!(fsp = file_find_dir_lowest_id(msg.dev, msg.inode))) {
+		DEBUG(10, ("notify_message: did not find fsp\n"));
+		return;
+	}
+
+	if (!(changes = TALLOC_REALLOC_ARRAY(
+		      fsp->notify, fsp->notify->changes,
+		      struct notify_change, fsp->notify->num_changes+1))) {
+		DEBUG(0, ("talloc_realloc failed\n"));
+		return;
+	}
+
+	fsp->notify->changes = changes;
+
+	change = &(fsp->notify->changes[fsp->notify->num_changes]);
+
+	if (!(change->name = talloc_strdup(changes, msg.name))) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+		return;
+	}
+	change->action = msg.action;
+	fsp->notify->num_changes += 1;
 }
 
 /****************************************************************************
@@ -249,6 +518,8 @@ BOOL init_change_notify(void)
 		DEBUG(0,("Failed to init change notify system\n"));
 		return False;
 	}
+
+	message_register(MSG_SMB_NOTIFY, notify_message);
 
 	return True;
 }
