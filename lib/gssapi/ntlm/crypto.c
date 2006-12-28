@@ -61,6 +61,57 @@ decode_le_uint32(const void *ptr, uint32_t *n)
     *n = (p[0] << 0) | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
 }
 
+/*
+ *
+ */
+
+const char a2i_signmagic[] =
+    "session key to server-to-client signing key magic constant";
+const char a2i_sealmagic[] =
+    "session key to server-to-client sealing key magic constant";
+const char i2a_signmagic[] =
+    "session key to client-to-server signing key magic constant";
+const char i2a_sealmagic[] =
+    "session key to client-to-server sealing key magic constant";
+
+
+void
+_gss_ntlm_set_key(struct ntlmv2_key *key, int acceptor,
+		  unsigned char *data, size_t len)
+{
+    unsigned char out[16];
+    MD5_CTX ctx;
+    const char *signmagic;
+    const char *sealmagic;
+
+    if (acceptor) {
+	signmagic = a2i_signmagic;
+	sealmagic = a2i_sealmagic;
+    } else {
+	signmagic = i2a_signmagic;
+	sealmagic = i2a_sealmagic;
+    }
+
+    key->seq = 0;
+
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, data, len);
+    MD5_Update(&ctx, signmagic, strlen(signmagic) + 1);
+    MD5_Final(key->signkey, &ctx);
+
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, data, len);
+    MD5_Update(&ctx, sealmagic, strlen(sealmagic) + 1);
+    MD5_Final(out, &ctx);
+
+    RC4_set_key(&key->sealkey, 16, out);
+    key->signsealkey = &key->sealkey;
+}
+
+/*
+ *
+ */
+
 static OM_uint32
 v1_sign_message(gss_buffer_t in,
 		RC4_KEY *signkey,
