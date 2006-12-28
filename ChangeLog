@@ -1,5 +1,26 @@
 2006-12-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/process.c: Handle kx509 requests.
+
+	* kdc/connect.c: Listen to 9878 if kca is turned on.
+
+	* kdc/headers.h: Include <kx509_asn1.h>.
+
+	* kdc/config.c: code to parse [kdc]enable-kx509
+
+	* kdc/kdc.h: add enable_kx509
+
+	* kdc/Makefile.am: add kx509.c
+
+	* kdc/kx509.c: Kx509server (external certificate genration).
+
+	* lib/krb5/ticket.c: add krb5_ticket_get_endtime
+
+	* lib/krb5/krb5_ticket.3: Document krb5_ticket_get_endtime
+
+	* kdc/digest.c: Remove <digest_asn.h>, its already included in
+	headers.h
+
 	* kdc/digest.c: Return session key for the NTLMv2 case too
 
 	* lib/krb5/digest.c (krb5_ntlm_rep_get_sessionkey): return value
