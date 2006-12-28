@@ -863,6 +863,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		return WERR_OK;
 	}
 	default:
+		info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
 		return WERR_OK;
 	}
 	

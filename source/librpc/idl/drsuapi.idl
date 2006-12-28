@@ -915,8 +915,8 @@ interface drsuapi
 	} drsuapi_DsNameString;
 
 	typedef struct {
-		uint32 unknown1; /* 0x000004e4 */
-		uint32 unknown2; /* 0x00000407 */
+		uint32 codepage; /* 0x000004e4 - 1252 is german codepage*/
+		uint32 language; /* 0x00000407 - german language ID*/
 		drsuapi_DsNameFlags format_flags;
 		drsuapi_DsNameFormat format_offered;
 		drsuapi_DsNameFormat format_desired;
