@@ -305,15 +305,15 @@ WERROR dsdb_class_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct 
  
 	GET_STRING_LDB(msg, "subClassOf", mem_ctx, obj, subClassOf, True);
 
-	GET_STRING_LDB(msg, "systemAuxiliaryClass", mem_ctx, obj, systemAuxiliaryClass, False);
-	obj->systemPossSuperiors= NULL;
-	obj->systemMustContain	= NULL;
-	obj->systemMayContain	= NULL;
+	obj->systemAuxiliaryClass	= NULL;
+	obj->systemPossSuperiors	= NULL;
+	obj->systemMustContain		= NULL;
+	obj->systemMayContain		= NULL;
 
-	GET_STRING_LDB(msg, "auxiliaryClass", mem_ctx, obj, auxiliaryClass, False);
-	obj->possSuperiors	= NULL;
-	obj->mustContain	= NULL;
-	obj->mayContain		= NULL;
+	obj->auxiliaryClass		= NULL;
+	obj->possSuperiors		= NULL;
+	obj->mustContain		= NULL;
+	obj->mayContain			= NULL;
 
 	GET_STRING_LDB(msg, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, False);
 
@@ -573,15 +573,15 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
  
 	GET_STRING_DS(schema, r, "subClassOf", mem_ctx, obj, subClassOf, True);
 
-	GET_STRING_DS(schema, r, "systemAuxiliaryClass", mem_ctx, obj, systemAuxiliaryClass, False);
-	obj->systemPossSuperiors= NULL;
-	obj->systemMustContain	= NULL;
-	obj->systemMayContain	= NULL;
+	obj->systemAuxiliaryClass	= NULL;
+	obj->systemPossSuperiors	= NULL;
+	obj->systemMustContain		= NULL;
+	obj->systemMayContain		= NULL;
 
-	GET_STRING_DS(schema, r, "auxiliaryClass", mem_ctx, obj, auxiliaryClass, False);
-	obj->possSuperiors	= NULL;
-	obj->mustContain	= NULL;
-	obj->mayContain		= NULL;
+	obj->auxiliaryClass		= NULL;
+	obj->possSuperiors		= NULL;
+	obj->mustContain		= NULL;
+	obj->mayContain			= NULL;
 
 	GET_STRING_DS(schema, r, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, False);
 
