@@ -252,8 +252,8 @@ static BOOL test_GetInfo(struct DsSyncTest *ctx)
 	
 	r.in.bind_handle		= &ctx->admin.drsuapi.bind_handle;
 	r.in.level			= 1;
-	r.in.req.req1.unknown1		= 0x000004e4;
-	r.in.req.req1.unknown2		= 0x00000407;
+	r.in.req.req1.codepage		= 1252; /* western european */
+	r.in.req.req1.language		= 0x00000407; /* german */
 	r.in.req.req1.count		= 1;
 	r.in.req.req1.names		= names;
 	r.in.req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;		
