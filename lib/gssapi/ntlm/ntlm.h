@@ -72,10 +72,22 @@ typedef struct {
     char *password;
     krb5_data sessionkey;
 
-    struct {
-	uint32_t seq;
-	RC4_KEY key;
-    } crypto_send, crypto_recv;
+    union {
+	struct {
+	    struct {
+		uint32_t seq;
+		RC4_KEY key;
+	    } crypto_send, crypto_recv;
+	} v1;
+	struct {
+	    struct {
+		uint32_t seq;
+		RC4_KEY sealkey;
+		RC4_KEY *signsealkey;
+		unsigned char signkey[16];
+	    } send, recv;
+	} v2;
+    } u;
 } *ntlm_ctx;
 
 typedef struct {
