@@ -894,12 +894,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #define DEFAULT_SOCKET_OPTIONS ""
 #endif
 
-/* Load header file for dynamic linking stuff */
-
-#ifdef HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
-
 /* dmalloc -- free heap debugger (dmalloc.org).  This should be near
  * the *bottom* of include files so as not to conflict. */
 #ifdef ENABLE_DMALLOC
