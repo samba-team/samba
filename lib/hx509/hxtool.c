@@ -1093,6 +1093,38 @@ crypto_select(struct crypto_select_options *opt, int argc, char **argv)
 }
 
 int
+hxtool_hex(struct hex_options *opt, int argc, char **argv)
+{
+
+    if (opt->decode_flag) {
+	char buf[1024], buf2[1024], *p;
+	ssize_t len;
+
+	while(fgets(buf, sizeof(buf), stdin) != NULL) {
+	    buf[strcspn(buf, "\r\n")] = '\0';
+	    p = buf;
+	    while(isspace(*(unsigned char *)p))
+		p++;
+	    len = hex_decode(p, buf2, strlen(p));
+	    if (len < 0)
+		errx(1, "hex_decode failed");
+	    if (fwrite(buf2, 1, len, stdout) != len)
+		errx(1, "fwrite failed");
+	}
+    } else {
+	char buf[28], *p;
+	size_t len;
+
+	while((len = fread(buf, 1, sizeof(buf), stdin)) != 0) {
+	    len = hex_encode(buf, len, &p);
+	    fprintf(stdout, "%s\n", p);
+	    free(p);
+	}
+    }
+    return 0;
+}
+
+int
 help(void *opt, int argc, char **argv)
 {
     sl_slc_help(commands, argc, argv);
