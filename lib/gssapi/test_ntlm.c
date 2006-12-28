@@ -45,7 +45,7 @@ RCSID("$Id$");
 #include <heimntlm.h>
 
 static int
-test_libntlm(void)
+test_libntlm_v1(void)
 {
     const char *user = "foo", 
 	*domain = "mydomain",
@@ -145,6 +145,115 @@ test_libntlm(void)
     return 0;
 }
 
+static int
+test_libntlm_v2(void)
+{
+    const char *user = "foo", 
+	*domain = "mydomain",
+	*password = "digestpassword";
+    OM_uint32 maj_stat, min_stat;
+    gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
+    gss_buffer_desc input, output;
+    struct ntlm_type1 type1;
+    struct ntlm_type2 type2;
+    struct ntlm_type3 type3;
+    struct ntlm_buf data;
+    krb5_error_code ret;
+    
+    memset(&type1, 0, sizeof(type1));
+    memset(&type2, 0, sizeof(type2));
+    memset(&type3, 0, sizeof(type3));
+
+    type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM;
+    type1.domain = strdup(domain);
+    type1.hostname = NULL;
+    type1.os[0] = 0;
+    type1.os[1] = 0;
+
+    ret = heim_ntlm_encode_type1(&type1, &data);
+    if (ret)
+	errx(1, "heim_ntlm_encode_type1");
+
+    input.value = data.data;
+    input.length = data.length;
+
+    output.length = 0;
+    output.value = NULL;
+
+    maj_stat = gss_accept_sec_context(&min_stat,
+				      &ctx,
+				      GSS_C_NO_CREDENTIAL,
+				      &input,
+				      GSS_C_NO_CHANNEL_BINDINGS,
+				      NULL,
+				      NULL,
+				      &output,
+				      NULL,
+				      NULL,
+				      NULL);
+    free(data.data);
+    if (GSS_ERROR(maj_stat))
+	errx(1, "accept_sec_context");
+
+    if (output.length == 0)
+	errx(1, "output.length == 0");
+
+    data.data = output.value;
+    data.length = output.length;
+
+    ret = heim_ntlm_decode_type2(&data, &type2);
+    if (ret)
+	errx(1, "heim_ntlm_decode_type2");
+
+    type3.flags = type2.flags;
+    type3.username = rk_UNCONST(user);
+    type3.targetname = type2.targetname;
+    type3.ws = rk_UNCONST("workstation");
+
+    {
+	struct ntlm_buf key;
+	unsigned char ntlmv2[16];
+
+	heim_ntlm_nt_key(password, &key);
+
+	heim_ntlm_calculate_ntlm2(key.data, key.length,
+				  user,
+				  type2.targetname,
+				  type2.challange,
+				  &type2.targetinfo,
+				  ntlmv2,
+				  &type3.ntlm);
+	free(key.data);
+    }
+
+    ret = heim_ntlm_encode_type3(&type3, &data);
+    if (ret)
+	errx(1, "heim_ntlm_encode_type3");
+
+    input.length = data.length;
+    input.value = data.data;
+
+    maj_stat = gss_accept_sec_context(&min_stat,
+				      &ctx,
+				      GSS_C_NO_CREDENTIAL,
+				      &input,
+				      GSS_C_NO_CHANNEL_BINDINGS,
+				      NULL,
+				      NULL,
+				      &output,
+				      NULL,
+				      NULL,
+				      NULL);
+    free(input.value);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "accept_sec_context 2");
+
+
+    return 0;
+}
+
+
+
 static int version_flag = 0;
 static int help_flag	= 0;
 
@@ -182,7 +291,8 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
-    ret += test_libntlm();
+    ret += test_libntlm_v1();
+    ret += test_libntlm_v2();
 
     return 0;
 }
