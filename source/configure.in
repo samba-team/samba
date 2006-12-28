@@ -330,6 +330,9 @@ CFLAGS="${CFLAGS} -D_SAMBA_BUILD_=3"
 
 AC_LIBREPLACE_CC_CHECKS
 
+# add -ldl to the global LIBS
+LIBS="${LIBS} ${LIBDL}"
+
 m4_include(lib/socket_wrapper/config.m4)
 
 #################################################
