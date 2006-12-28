@@ -1,2 +1,2 @@
 # $Id$
-DOMAIN:foo:digestpassword
+TEST:foo:digestpassword

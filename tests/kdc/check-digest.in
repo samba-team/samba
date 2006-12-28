@@ -128,15 +128,15 @@ export NTLM_USER_FILE
 
 echo "test_context --mech-type=ntlm"
 ${context} --mech-type=ntlm \
-	    --name-type=hostbased-service datan@DOMAIN || \
+	    --name-type=hostbased-service datan@TEST || \
 		{ echo "test_context 1 failed"; exit 1; }
 
 ${context} --mech-type=ntlm \
-	    --name-type=hostbased-service datan@host.DOMAIN || \
+	    --name-type=hostbased-service datan@host.TEST || \
 		{ echo "test_context 2 failed"; exit 1; }
 
 ${context} --mech-type=ntlm \
-	    --name-type=hostbased-service datan@host.domain.domain2 || \
+	    --name-type=hostbased-service datan@host.test.domain2 || \
 		{ echo "test_context 3 failed"; exit 1; }
 
 ${context} --mech-type=ntlm \
