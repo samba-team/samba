@@ -97,6 +97,13 @@ krb5_ticket_get_server(krb5_context context,
     return krb5_copy_principal(context, ticket->server, server);
 }
 
+time_t KRB5_LIB_FUNCTION
+krb5_ticket_get_endtime(krb5_context context,
+			const krb5_ticket *ticket)
+{
+    return ticket->ticket.endtime;
+}
+
 static int
 find_type_in_ad(krb5_context context,
 		int type, 
