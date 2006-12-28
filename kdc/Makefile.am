@@ -39,6 +39,7 @@ libkdc_la_SOURCES = 		\
 	524.c			\
 	kerberos4.c		\
 	kaserver.c		\
+	kx509.c			\
 	process.c		\
 	rx.h
 
