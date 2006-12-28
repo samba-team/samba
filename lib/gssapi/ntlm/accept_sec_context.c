@@ -51,6 +51,7 @@ handle_type2(OM_uint32 *minor_status,
     struct ntlm_type2 type2;
     krb5_data challange;
     struct ntlm_buf data;
+    krb5_data ti;
     
     memset(&type2, 0, sizeof(type2));
     
@@ -88,6 +89,7 @@ handle_type2(OM_uint32 *minor_status,
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
+    ctx->flags = type2.flags;
 
     ret = krb5_ntlm_init_get_challange(ctx->context, ctx->ntlm, &challange);
     if (ret) {
@@ -108,11 +110,20 @@ handle_type2(OM_uint32 *minor_status,
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
-    type2.targetinfo.data = NULL;
-    type2.targetinfo.length = 0;
+
+    ret = krb5_ntlm_init_get_targetinfo(ctx->context, ctx->ntlm, &ti);
+    if (ret) {
+	free(type2.targetname);
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
+
+    type2.targetinfo.data = ti.data;
+    type2.targetinfo.length = ti.length;
 	
     ret = heim_ntlm_encode_type2(&type2, &data);
     free(type2.targetname);
+    krb5_data_free(&ti);
     if (ret) {
 	*minor_status = ret;
 	return GSS_S_FAILURE;
@@ -178,14 +189,34 @@ handle_type3(OM_uint32 *minor_status,
     ret = krb5_ntlm_rep_get_sessionkey(ctx->context, 
 				       ctx->ntlm,
 				       &ctx->sessionkey);
-    if (ret == 0 && ctx->sessionkey.length == 16) {
+    if (ret == 0) {
+	if (ctx->sessionkey.length != 16) {
+	    ret = EINVAL;
+	    goto out;
+	}
+
 	ctx->status |= STATUS_SESSIONKEY; 
-	RC4_set_key(&ctx->crypto_send.key, 
-		    ctx->sessionkey.length,
-		    ctx->sessionkey.data);
-	RC4_set_key(&ctx->crypto_recv.key, 
-		    ctx->sessionkey.length,
-		    ctx->sessionkey.data);
+
+	if (ctx->flags & NTLM_NEG_NTLM2_SESSION) {
+	    ctx->u.v2.send.seq = 0;
+	    RC4_set_key(&ctx->u.v2.send.sealkey, 
+			ctx->sessionkey.length,
+			ctx->sessionkey.data);
+	    memcpy(ctx->u.v2.send.signkey, ctx->sessionkey.data, 16);
+
+	    ctx->u.v2.recv.seq = 0;
+	    RC4_set_key(&ctx->u.v2.recv.sealkey, 
+			ctx->sessionkey.length,
+			ctx->sessionkey.data);
+	    memcpy(ctx->u.v2.recv.signkey, ctx->sessionkey.data, 16);
+	} else {
+	    RC4_set_key(&ctx->u.v1.crypto_send.key, 
+			ctx->sessionkey.length,
+			ctx->sessionkey.data);
+	    RC4_set_key(&ctx->u.v1.crypto_recv.key, 
+			ctx->sessionkey.length,
+			ctx->sessionkey.data);
+	}
     }
 
     return GSS_S_COMPLETE;
