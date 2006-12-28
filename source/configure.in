@@ -848,6 +848,9 @@ for obj in ${LIBREPLACEOBJ}; do
 done
 AC_SUBST(LIBREPLACE_OBJS)
 
+# add -ldl to the global LIBS
+LIBS="${LIBS} ${LIBDL}"
+
 AC_CHECK_HEADERS(aio.h arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h memory.h alloca.h)
 AC_CHECK_HEADERS(limits.h float.h)
