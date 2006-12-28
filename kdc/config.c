@@ -426,6 +426,12 @@ configure(krb5_context context, int argc, char **argv)
 	}
     }
 
+    config->enable_kx509 = 
+	krb5_config_get_bool_default(context, NULL, 
+				     FALSE, 
+				     "kdc", 
+				     "enable-kx509", NULL);
+
     config->check_ticket_addresses = 
 	krb5_config_get_bool_default(context, NULL, 
 				     config->check_ticket_addresses, 
