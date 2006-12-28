@@ -306,24 +306,58 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 	/* here we need to set the domain_filter and/or the result_filter */
 	switch (format_offered) {
-	case DRSUAPI_DS_NAME_FORMAT_CANONICAL: {
-		char *str;
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL:
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
+	{
+		char *str, *s, *account;
 		
-		str = talloc_strdup(mem_ctx, name);
-		W_ERROR_HAVE_NO_MEMORY(str);
-		
-		if (strlen(str) == 0 || str[strlen(str)-1] != '/') {
+		if (strlen(name) == 0) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 			return WERR_OK;
 		}
 		
-		str[strlen(str)-1] = '\0';
+		str = talloc_strdup(mem_ctx, name);
+		W_ERROR_HAVE_NO_MEMORY(str);
 		
-		domain_filter = talloc_asprintf(mem_ctx, 
-						"(&(&(&(dnsRoot=%s)(objectclass=crossRef)))(nETBIOSName=*)(ncName=*))", 
-						ldb_binary_encode_string(mem_ctx, str));
+		if (format_offered == DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX) {
+			/* Look backwards for the \n, and replace it with / */
+			s = strrchr(str, '\n');
+			if (!s) {
+				info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+				return WERR_OK;
+			}
+			s[0] = '/';
+		}
+
+		s = strchr(str, '/');
+		if (!s) {
+			/* there must be at least one / */
+			info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+			return WERR_OK;
+		}
+		
+		s[0] = '\0';
+		s++;
+
+		domain_filter = talloc_asprintf(mem_ctx, "(&(objectClass=crossRef)(ncName=%s))", 
+						ldb_dn_get_linearized(samdb_dns_domain_to_dn(sam_ctx, mem_ctx, str)));
 		W_ERROR_HAVE_NO_MEMORY(domain_filter);
-		
+
+		/* There may not be anything after the domain component (search for the domain itself) */
+		if (s[0]) {
+			
+			account = strrchr(s, '/');
+			if (!account) {
+				account = s;
+			} else {
+				account++;
+			}
+			account = ldb_binary_encode_string(mem_ctx, account);
+			W_ERROR_HAVE_NO_MEMORY(account);
+			result_filter = talloc_asprintf(mem_ctx, "(name=%s)",
+							account);	       
+			W_ERROR_HAVE_NO_MEMORY(result_filter);
+		}
 		break;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
@@ -586,8 +620,10 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	const char * const *domain_attrs;
 	const char * const *result_attrs;
 	struct ldb_message **result_res = NULL;
+	struct ldb_message *result = NULL;
 	struct ldb_dn *result_basedn;
 	struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
+	int i;
 
 	const char * const _domain_attrs_1779[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_null[] = { NULL };
@@ -647,6 +683,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		return WERR_OK;
 	case -1:
+		DEBUG(2, ("DsCrackNameOneFilter domain ref search failed: %s", ldb_errstring(sam_ctx)));
 		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 		return WERR_OK;
 	default:
@@ -674,6 +711,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 
 	switch (ldb_ret) {
 	case 1:
+		result = result_res[0];
 		break;
 	case 0:
 		switch (format_offered) {
@@ -691,24 +729,52 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		return WERR_OK;
 	case -1:
+		DEBUG(2, ("DsCrackNameOneFilter result search failed: %s", ldb_errstring(sam_ctx)));
 		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 		return WERR_OK;
 	default:
-		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
-		return WERR_OK;
+		switch (format_offered) {
+		case DRSUAPI_DS_NAME_FORMAT_CANONICAL:
+		case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
+		{
+			const char *canonical_name;
+			/* We may need to manually filter further */
+			for (i = 0; i < ldb_ret; i++) {
+				switch (format_offered) {
+				case DRSUAPI_DS_NAME_FORMAT_CANONICAL:
+					canonical_name = ldb_dn_canonical_string(mem_ctx, result_res[i]->dn);
+					break;
+				case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
+					canonical_name = ldb_dn_canonical_ex_string(mem_ctx, result_res[i]->dn);
+					break;
+				}
+				if (strcasecmp_m(canonical_name, name) == 0) {
+					result = result_res[i];
+					break;
+				}
+			}
+			if (!result) {
+				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+				return WERR_OK;
+			}
+		}
+		default:
+			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
+			return WERR_OK;
+		}
 	}
 
-	/* here we can use result_res[0] and domain_res[0] */
+	/* here we can use result and domain_res[0] */
 	switch (format_desired) {
 	case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
-		info1->result_name	= ldb_dn_alloc_linearized(mem_ctx, result_res[0]->dn);
+		info1->result_name	= ldb_dn_alloc_linearized(mem_ctx, result->dn);
 		W_ERROR_HAVE_NO_MEMORY(info1->result_name);
 
 		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 		return WERR_OK;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_CANONICAL: {
-		info1->result_name	= samdb_result_string(result_res[0], "canonicalName", NULL);
+		info1->result_name	= samdb_result_string(result, "canonicalName", NULL);
 		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 		return WERR_OK;
 	}
@@ -717,10 +783,10 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		return DsCrackNameOneSyntactical(mem_ctx, 
 						 DRSUAPI_DS_NAME_FORMAT_FQDN_1779, 
 						 DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX,
-						 result_res[0]->dn, name, info1);
+						 result->dn, name, info1);
 	}
 	case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
-		const struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, result_res[0], "objectSid");
+		const struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, result, "objectSid");
 		const char *_acc = "", *_dom = "";
 		
 		if (!sid || (sid->num_auths < 4) || (sid->num_auths > 5)) {
@@ -730,7 +796,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 
 		if (sid->num_auths == 4) {
 			ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res, domain_attrs,
-					       "(ncName=%s)", ldb_dn_get_linearized(result_res[0]->dn));
+					       "(ncName=%s)", ldb_dn_get_linearized(result->dn));
 			if (ldb_ret != 1) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 				return WERR_OK;
@@ -762,7 +828,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 			_dom = samdb_result_string(domain_res2[0], "nETBIOSName", NULL);
 			W_ERROR_HAVE_NO_MEMORY(_dom);
 
-			_acc = samdb_result_string(result_res[0], "sAMAccountName", NULL);
+			_acc = samdb_result_string(result, "sAMAccountName", NULL);
 			W_ERROR_HAVE_NO_MEMORY(_acc);
 		}
 
@@ -775,7 +841,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	case DRSUAPI_DS_NAME_FORMAT_GUID: {
 		struct GUID guid;
 		
-		guid = samdb_result_guid(result_res[0], "objectGUID");
+		guid = samdb_result_guid(result, "objectGUID");
 		
 		info1->result_name	= GUID_string2(mem_ctx, &guid);
 		W_ERROR_HAVE_NO_MEMORY(info1->result_name);
@@ -784,9 +850,9 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		return WERR_OK;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_DISPLAY: {
-		info1->result_name	= samdb_result_string(result_res[0], "displayName", NULL);
+		info1->result_name	= samdb_result_string(result, "displayName", NULL);
 		if (!info1->result_name) {
-			info1->result_name	= samdb_result_string(result_res[0], "sAMAccountName", NULL);
+			info1->result_name	= samdb_result_string(result, "sAMAccountName", NULL);
 		} 
 		if (!info1->result_name) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
