@@ -210,15 +210,20 @@ static NTSTATUS test_become_dc_schema_chunk(void *private_data,
 static NTSTATUS test_become_dc_store_chunk(void *private_data,
 					   const struct libnet_BecomeDC_StoreChunk *c)
 {
+	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
+	WERROR status;
+	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t total_object_count;
 	uint32_t object_count;
 
 	switch (c->ctr_level) {
 	case 1:
+		mapping_ctr		= &c->ctr1->mapping_ctr;
 		total_object_count	= c->ctr1->total_object_count;
 		object_count		= c->ctr1->object_count;
 		break;
 	case 6:
+		mapping_ctr		= &c->ctr6->mapping_ctr;
 		total_object_count	= c->ctr6->total_object_count;
 		object_count		= c->ctr6->object_count;
 		break;
@@ -232,6 +237,11 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	} else {
 		DEBUG(0,("Partition[%s] objects[%u]\n",
 		c->partition->nc.dn, object_count));
+	}
+
+	status = dsdb_verify_oid_mappings(s->schema, mapping_ctr);
+	if (!W_ERROR_IS_OK(status)) {
+		return werror_to_ntstatus(status);
 	}
 
 	return NT_STATUS_OK;
