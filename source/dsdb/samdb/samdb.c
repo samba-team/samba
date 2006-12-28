@@ -1727,6 +1727,45 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 	return NT_STATUS_OK;
 }
 
+
+/*
+  Find the DN of a domain, assuming it to be a dotted.dns name
+*/
+
+struct ldb_dn *samdb_dns_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *dns_domain) 
+{
+	int i;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	const char *binary_encoded;
+	const char **split_realm;
+	struct ldb_dn *dn;
+	
+	if (!tmp_ctx) {
+		return NULL;
+	}
+	
+	split_realm = str_list_make(tmp_ctx, dns_domain, ".");
+	if (!split_realm) {
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+	dn = ldb_dn_new(mem_ctx, ldb, NULL);
+	for (i=0; split_realm[i]; i++) {
+		binary_encoded = ldb_binary_encode_string(tmp_ctx, split_realm[i]);
+		if (!ldb_dn_add_base_fmt(dn, "dc=%s", binary_encoded)) {
+			DEBUG(2, ("Failed to add dc=%s element to DN %s\n",
+				  binary_encoded, ldb_dn_get_linearized(dn)));
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+	}
+	if (!ldb_dn_validate(dn)) {
+		DEBUG(2, ("Failed to validated DN %s\n",
+			  ldb_dn_get_linearized(dn)));
+		return NULL;
+	}
+	return dn;
+}
 /*
   Find the DN of a domain, be it the netbios or DNS name 
 */
@@ -1737,6 +1776,9 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	const char * const domain_ref_attrs[] = {
 		"ncName", NULL
 	};
+	const char * const domain_ref2_attrs[] = {
+		NULL
+	};
 	struct ldb_result *res_domain_ref;
 	char *escaped_domain = ldb_binary_encode_string(mem_ctx, domain_name);
 	/* find the domain's DN */
@@ -1745,15 +1787,26 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 					    samdb_partitions_dn(ldb, mem_ctx), 
 					    LDB_SCOPE_ONELEVEL, 
 					    domain_ref_attrs,
-					    "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))", 
-					    escaped_domain, escaped_domain);
+					    "(&(nETBIOSName=%s)(objectclass=crossRef))", 
+					    escaped_domain);
 	if (ret_domain != 0) {
 		return NULL;
 	}
 	
 	if (res_domain_ref->count == 0) {
-		DEBUG(3,("sam_search_user: Couldn't find domain [%s] in samdb.\n", 
-			 domain_name));
+		ret_domain = ldb_search_exp_fmt(ldb, mem_ctx, 
+						&res_domain_ref, 
+						samdb_dns_domain_to_dn(ldb, mem_ctx, domain_name),
+						LDB_SCOPE_BASE,
+						domain_ref2_attrs,
+						"(objectclass=domain)");
+		if (ret_domain != 0) {
+			return NULL;
+		}
+	
+		if (res_domain_ref->count == 1) {
+			return res_domain_ref->msgs[0]->dn;
+		}
 		return NULL;
 	}
 	
