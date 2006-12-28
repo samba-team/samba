@@ -12,8 +12,9 @@
  */
 qx.OO.defineClass("swat.main.Gui");
 
+qx.Class.currentCanvas = null;
 
-qx.Class.buildGui = function(modules)
+qx.Class.buildGui = function(moduleList)
 {
   var o;
 
@@ -98,10 +99,10 @@ qx.Class.buildGui = function(modules)
   var menu = new qx.ui.menu.Menu();
 
   // We'll also track the current module's canvas in the modules object
-  modules.currentCanvas = null;
+  swat.main.Gui.currentCanvas = null;
 
   // For each menu item...
-  for (moduleName in modules.list)
+  for (moduleName in moduleList)
   {
     // create a radio button menu item
     o = new qx.ui.menu.RadioButton(moduleName, null, command);
@@ -123,13 +124,13 @@ qx.Class.buildGui = function(modules)
     canvas.setBackgroundColor("white");
     canvas.setDisplay(false); // initially not displayed
 
-    var fsm = modules.list[moduleName].fsm;
+    var fsm = moduleList[moduleName].fsm;
     fsm.addObject("swat.module.canvas", canvas);
     canvas.addEventListener("appear", fsm.eventListener, fsm);
     canvas.addEventListener("disappear", fsm.eventListener, fsm);
 
     // Save the canvas
-    modules.list[moduleName].canvas = canvas;
+    moduleList[moduleName].canvas = canvas;
 
     // Add the canvas to the document
     canvas.addToDocument();
@@ -137,13 +138,13 @@ qx.Class.buildGui = function(modules)
     // When a Module menu item is selected:
     o.addEventListener("changeChecked", function(e)
                        {
-                         var canvas = modules.list[this.moduleName].canvas;
+                         var canvas = moduleList[this.moduleName].canvas;
 
                          // If there's a current canvas, ...
-                         if (modules.currentCanvas)
+                         if (swat.main.Gui.currentCanvas)
                          {
                            // ... then remove display of it.
-                           modules.currentCanvas.setDisplay(false);
+                           swat.main.Gui.currentCanvas.setDisplay(false);
                            
                            // Dispatch an event on the canvas to notify old
                            // module it's coming into disuse.
@@ -154,11 +155,11 @@ qx.Class.buildGui = function(modules)
                          if (e.getData())
                          {
                            // then display our canvas
-                           var canvas = modules.list[this.moduleName].canvas;
+                           var canvas = moduleList[this.moduleName].canvas;
                            canvas.setDisplay(true);
 
                            // Track the current canvas (now ours)
-                           modules.currentCanvas = canvas;
+                           swat.main.Gui.currentCanvas = canvas;
 
                            // Dispatch an event on the canvas to notify new
                            // module it's coming into use.
