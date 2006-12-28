@@ -414,6 +414,18 @@ command = {
 	help = "Print selected CMS type"
 }
 command = {
+	option = {
+		long = "decode"
+		short = "d"
+		type = "flag"
+		help = "decode instead of encode"
+	}
+	name = "hex"
+	function = "hxtool_hex"
+	min_args="0"
+	help = "Encode input to hex"
+}
+command = {
 	name = "help"
 	name = "?"
 	argument = "[command]"
