@@ -1878,7 +1878,7 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 				NULL, &fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_ACCESS_DENIED;
+		return status;
 	}
 	close_file(fsp,NORMAL_CLOSE);
 	return NT_STATUS_OK;
