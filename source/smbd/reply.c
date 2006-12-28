@@ -3770,7 +3770,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	status = create_directory(conn, directory);
 
-	DEBUG(1, ("create_directory returned %s\n", nt_errstr(status)));
+	DEBUG(5, ("create_directory returned %s\n", nt_errstr(status)));
 
 	if (!NT_STATUS_IS_OK(status)) {
 
