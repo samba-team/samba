@@ -1,3 +1,25 @@
+2006-12-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ntlm/accept_sec_context.c: Pass signseal argument to
+	_gss_ntlm_set_key.
+
+	* ntlm/init_sec_context.c: Pass signseal argument to
+	_gss_ntlm_set_key.
+
+	* ntlm/crypto.c (_gss_ntlm_set_key): add signseal argument
+
+	* test_ntlm.c: add ntlmv2 test
+
+	* ntlm/ntlm.h: break out struct ntlmv2_key;
+
+	* ntlm/crypto.c (_gss_ntlm_set_key): set ntlm v2 keys.
+
+	* ntlm/accept_sec_context.c: Set dummy ntlmv2 keys and Check TI.
+
+	* ntlm/ntlm.h: NTLMv2 keys.
+
+	* ntlm/crypto.c: NTLMv2 sign and verify.
+	
 2006-12-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ntlm/accept_sec_context.c: Don't send targetinfo now.
