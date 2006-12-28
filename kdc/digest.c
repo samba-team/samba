@@ -864,6 +864,7 @@ _kdc_do_digest(krb5_context context,
 
     case choice_DigestReqInner_ntlmRequest: {
 	krb5_principal clientprincipal;
+	unsigned char sessionkey[16];
 	unsigned char challange[8];
 	uint32_t flags;
 	Key *key = NULL;
@@ -938,7 +939,6 @@ _kdc_do_digest(krb5_context context,
 
 	/* check if this is NTLMv2 */
 	if (ireq.u.ntlmRequest.ntlm.length != 24) {
-	    unsigned char masterkey[16];
 	    struct ntlm_buf infotarget, answer;
 	    char *targetname;
 
@@ -967,7 +967,7 @@ _kdc_do_digest(krb5_context context,
 					 challange,
 					 &answer,
 					 &infotarget,
-					 masterkey);
+					 sessionkey);
 	    free(targetname);
 	    if (ret) {
 		krb5_set_error_string(context, "NTLM v2 verify failed");
@@ -978,6 +978,7 @@ _kdc_do_digest(krb5_context context,
 
 	    free(infotarget.data);
 	    /* */
+
 	} else {
 	    struct ntlm_buf answer;
 
@@ -1029,53 +1030,55 @@ _kdc_do_digest(krb5_context context,
 	    }
 	    free(answer.data);
 
-	    if (ireq.u.ntlmRequest.sessionkey) {
-		unsigned char sessionkey[MD4_DIGEST_LENGTH];
-		unsigned char masterkey[MD4_DIGEST_LENGTH];
+	    {
 		MD4_CTX ctx;
-		RC4_KEY rc4;
-		size_t len;
-		
-		if ((flags & NTLM_NEG_KEYEX) == 0) {
-		    krb5_set_error_string(context,
-					  "NTLM client failed to neg key "
-					  "exchange but still sent key");
-		    goto out;
-		}
-		
-		len = ireq.u.ntlmRequest.sessionkey->length;
-		if (len != sizeof(masterkey)){
-		    krb5_set_error_string(context,
-					  "NTLM master key wrong length: %lu",
-					  (unsigned long)len);
-		    goto out;
-		}
 
 		MD4_Init(&ctx);
 		MD4_Update(&ctx, 
 			   key->key.keyvalue.data, key->key.keyvalue.length);
 		MD4_Final(sessionkey, &ctx);
+	    }
+	}
 
-		RC4_set_key(&rc4, sizeof(sessionkey), sessionkey);
-
-		RC4(&rc4, sizeof(masterkey),
-		    ireq.u.ntlmRequest.sessionkey->data, 
-		    masterkey);
-		memset(&rc4, 0, sizeof(rc4));
-
-		r.u.ntlmResponse.sessionkey = 
-		    malloc(sizeof(*r.u.ntlmResponse.sessionkey));
-		if (r.u.ntlmResponse.sessionkey == NULL) {
-		    krb5_set_error_string(context, "out of memory");
-		    goto out;
-		}
-
-		ret = krb5_data_copy(r.u.ntlmResponse.sessionkey,
-				     masterkey, sizeof(masterkey));
-		if (ret) {
-		    krb5_set_error_string(context, "out of memory");
-		    goto out;
-		}
+	if (ireq.u.ntlmRequest.sessionkey) {
+	    unsigned char masterkey[MD4_DIGEST_LENGTH];
+	    RC4_KEY rc4;
+	    size_t len;
+	    
+	    if ((flags & NTLM_NEG_KEYEX) == 0) {
+		krb5_set_error_string(context,
+				      "NTLM client failed to neg key "
+				      "exchange but still sent key");
+		goto out;
+	    }
+	    
+	    len = ireq.u.ntlmRequest.sessionkey->length;
+	    if (len != sizeof(masterkey)){
+		krb5_set_error_string(context,
+				      "NTLM master key wrong length: %lu",
+				      (unsigned long)len);
+		goto out;
+	    }
+	    
+	    RC4_set_key(&rc4, sizeof(sessionkey), sessionkey);
+	    
+	    RC4(&rc4, sizeof(masterkey),
+		ireq.u.ntlmRequest.sessionkey->data, 
+		masterkey);
+	    memset(&rc4, 0, sizeof(rc4));
+	    
+	    r.u.ntlmResponse.sessionkey = 
+		malloc(sizeof(*r.u.ntlmResponse.sessionkey));
+	    if (r.u.ntlmResponse.sessionkey == NULL) {
+		krb5_set_error_string(context, "out of memory");
+		goto out;
+	    }
+	    
+	    ret = krb5_data_copy(r.u.ntlmResponse.sessionkey,
+				 masterkey, sizeof(masterkey));
+	    if (ret) {
+		krb5_set_error_string(context, "out of memory");
+		goto out;
 	    }
 	}
 
