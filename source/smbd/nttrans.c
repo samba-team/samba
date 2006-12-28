@@ -1721,14 +1721,15 @@ int reply_ntrename(connection_struct *conn,
 	pstring newname;
 	char *p;
 	NTSTATUS status;
-	BOOL path_contains_wcard = False;
+	BOOL path1_contains_wcard = False;
+	BOOL path2_contains_wcard = False;
 	uint32 attrs = SVAL(inbuf,smb_vwv0);
 	uint16 rename_type = SVAL(inbuf,smb_vwv1);
 
 	START_PROFILE(SMBntrename);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path_wcard(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, &path_contains_wcard);
+	p += srvstr_get_path_wcard(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, &path1_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1746,7 +1747,7 @@ int reply_ntrename(connection_struct *conn,
 	}
 
 	p++;
-	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status);
+	p += srvstr_get_path_wcard(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, &path2_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1759,13 +1760,18 @@ int reply_ntrename(connection_struct *conn,
 	
 	switch(rename_type) {
 		case RENAME_FLAG_RENAME:
-			status = rename_internals(conn, oldname, newname, attrs, False, path_contains_wcard);
+			status = rename_internals(conn, oldname, newname, attrs, False, path1_contains_wcard);
 			break;
 		case RENAME_FLAG_HARD_LINK:
-			status = hardlink_internals(conn, oldname, newname);
+			if (path1_contains_wcard || path2_contains_wcard) {
+				/* No wildcards. */
+				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+			} else {
+				status = hardlink_internals(conn, oldname, newname);
+			}
 			break;
 		case RENAME_FLAG_COPY:
-			if (path_contains_wcard) {
+			if (path1_contains_wcard || path2_contains_wcard) {
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
