@@ -77,12 +77,12 @@ struct dsdb_class {
 
 	const char *subClassOf;
 
-	const char *systemAuxiliaryClass;
+	const char **systemAuxiliaryClass;
 	const char **systemPossSuperiors;
 	const char **systemMustContain;
 	const char **systemMayContain;
 
-	const char *auxiliaryClass;
+	const char **auxiliaryClass;
 	const char **possSuperiors;
 	const char **mustContain;
 	const char **mayContain;
