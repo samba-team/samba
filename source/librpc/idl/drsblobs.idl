@@ -120,6 +120,30 @@ interface drsblobs {
 		[in] repsFromToBlob blob
 		);
 
+	/*
+	 * partialAttributeSet
+	 * w2k  uses version 1
+	 * w2k3 uses version 1
+	 */
+	typedef struct {
+		uint32 count;
+		drsuapi_DsAttributeId array[count];
+	} partialAttributeSetCtr1;
+
+	typedef [nodiscriminant] union {
+		[case(1)] partialAttributeSetCtr1 ctr1;
+	} partialAttributeSetCtr;
+
+	typedef [public] struct {
+		uint32 version;
+		uint32 reserved;
+		[switch_is(version)] partialAttributeSetCtr ctr;
+	} partialAttributeSetBlob;
+
+	void decode_partialAttributeSet(
+		[in] partialAttributeSetBlob blob
+		);
+
 	typedef struct {
 		hyper h4;
 		replUpToDateVectorCtr1 uptodateness_vector;
