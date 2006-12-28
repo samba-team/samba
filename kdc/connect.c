@@ -156,6 +156,11 @@ add_standard_ports (krb5_context context,
     }
     if (config->enable_kaserver)
 	add_port_service(context, family, "afs3-kaserver", 7004, "udp");
+    if(config->enable_kx509) {
+	add_port_service(context, family, "kca_service", 9878, "udp");
+	add_port_service(context, family, "kca_service", 9878, "tcp");
+    }
+
 }
 
 /*
