@@ -4612,18 +4612,19 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	char *p;
 	uint32 attrs = SVAL(inbuf,smb_vwv0);
 	NTSTATUS status;
-	BOOL path_contains_wcard = False;
+	BOOL path1_contains_wcard = False;
+	BOOL path2_contains_wcard = False;
 
 	START_PROFILE(SMBmv);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path_wcard(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status, &path_contains_wcard);
+	p += srvstr_get_path_wcard(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status, &path1_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmv);
 		return ERROR_NT(status);
 	}
 	p++;
-	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status);
+	p += srvstr_get_path_wcard(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, &path2_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmv);
 		return ERROR_NT(status);
@@ -4634,7 +4635,7 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	
 	DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 	
-	status = rename_internals(conn, name, newname, attrs, False, path_contains_wcard);
+	status = rename_internals(conn, name, newname, attrs, False, path1_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmv);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
