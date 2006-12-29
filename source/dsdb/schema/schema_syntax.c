@@ -22,6 +22,8 @@
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
 
+#define OMOBJECTCLASS(val) { .length = sizeof(val) - 1, .data = discard_const_p(uint8_t, val) }
+
 static const struct dsdb_syntax dsdb_syntaxes[] = {
 	{
 		.name			= "Boolean",
@@ -107,50 +109,43 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.name			= "Object(DS-DN)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.12",
 		.oMSyntax		= 127,
-		.oMObjectClass.length	= 10,
-		.oMObjectClass.data	= discard_const_p(uint8_t, "\x2b\x0c\x02\x87\x73\x1c\x00\x85\x4a\x00"),
+		.oMObjectClass		= OMOBJECTCLASS("\x2b\x0c\x02\x87\x73\x1c\x00\x85\x4a"),
 		.attributeSyntax_oid	= "2.5.5.1",
 	},{
 		.name			= "Object(DN-Binary)",
 		.ldap_oid		= "1.2.840.113556.1.4.903",
 		.oMSyntax		= 127,
-		.oMObjectClass.length	= 10,
-		.oMObjectClass.data	= discard_const_p(uint8_t, "\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x0b)"),
+		.oMObjectClass		= OMOBJECTCLASS("\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x0b"),
 		.attributeSyntax_oid	= "2.5.5.7",
 	},{
 		.name			= "Object(OR-Name)",
 		.ldap_oid		= "1.2.840.113556.1.4.1221",
 		.oMSyntax		= 127,
-		.oMObjectClass.length	= 10,
-		.oMObjectClass.data	= discard_const_p(uint8_t, "\x56\x06\x01\x02\x05\x0b\x1D\x00\x00\x00"),
+		.oMObjectClass		= OMOBJECTCLASS("\x56\x06\x01\x02\x05\x0b\x1D"),
 		.attributeSyntax_oid	= "2.5.5.7",
 	},{
 		.name			= "Object(Replica-Link)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.40",
 		.oMSyntax		= 127,
-		.oMObjectClass.length	= 10,
-		.oMObjectClass.data	= discard_const_p(uint8_t, "\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x06"),
+		.oMObjectClass		= OMOBJECTCLASS("\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x06"),
 		.attributeSyntax_oid	= "2.5.5.10",
 	},{
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.43",
 		.oMSyntax		= 127,
-		.oMObjectClass.length	= 10,
-		.oMObjectClass.data	= discard_const_p(uint8_t, "\x2b\x0c\x02\x87\x73\x1c\x00\x85\x5c\x00"),
+		.oMObjectClass		= OMOBJECTCLASS("\x2b\x0c\x02\x87\x73\x1c\x00\x85\x5c"),
 		.attributeSyntax_oid	= "2.5.5.13",
 		.name			= "Object(Presentation-Address)",
 	},{
 		.name			= "Object(Access-Point)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.2",
 		.oMSyntax		= 127,
-		.oMObjectClass.length	= 10,
-		.oMObjectClass.data	= discard_const_p(uint8_t, "\x2b\x0c\x02\x87\x73\x1c\x00\x85\x3e\x00"),
+		.oMObjectClass		= OMOBJECTCLASS("\x2b\x0c\x02\x87\x73\x1c\x00\x85\x3e"),
 		.attributeSyntax_oid	= "2.5.5.14",
 	},{
 		.name			= "Object(DN-String)",
 		.ldap_oid		= "1.2.840.113556.1.4.904",
 		.oMSyntax		= 127,
-		.oMObjectClass.length	= 10,
-		.oMObjectClass.data	= discard_const_p(uint8_t, "\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x0c"),
+		.oMObjectClass		= OMOBJECTCLASS("\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x0c"),
 		.attributeSyntax_oid	= "2.5.5.14",
 	}
 };
