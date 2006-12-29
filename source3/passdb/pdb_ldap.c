@@ -2595,7 +2595,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		primary_gid = strtoul(gidstr, NULL, 10);
 		break;
 	default:
-		DEBUG(1, ("found more than one accoutn with the same user name ?!\n"));
+		DEBUG(1, ("found more than one account with the same user name ?!\n"));
 		ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
 	}
