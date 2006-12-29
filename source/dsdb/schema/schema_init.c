@@ -287,6 +287,11 @@ WERROR dsdb_attribute_from_ldb(struct ldb_message *msg, TALLOC_CTX *mem_ctx, str
 	GET_BOOL_LDB(msg, "isDefunct", attr, isDefunct, False);
 	GET_BOOL_LDB(msg, "systemOnly", attr, systemOnly, False);
 
+	attr->syntax = dsdb_syntax_for_attribute(attr);
+	if (!attr->syntax) {
+		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
+	}
+
 	return WERR_OK;
 }
 
@@ -544,6 +549,11 @@ WERROR dsdb_attribute_from_drsuapi(struct dsdb_schema *schema,
 	GET_BOOL_DS(schema, r, "isEphemeral", attr, isEphemeral, False);
 	GET_BOOL_DS(schema, r, "isDefunct", attr, isDefunct, False);
 	GET_BOOL_DS(schema, r, "systemOnly", attr, systemOnly, False);
+
+	attr->syntax = dsdb_syntax_for_attribute(attr);
+	if (!attr->syntax) {
+		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
+	}
 
 	return WERR_OK;
 }
