@@ -25,7 +25,8 @@ function()
  * appear.  Creation of the module's GUI has been deferred until it was
  * actually needed (now), so we need to create it.
  *
- * @param module {Object} @see AbstractModule
+ * @param module {swat.module.Module}
+ *   The module descriptor for the module.
  */
 qx.Proto.initialAppear = function(module)
 {

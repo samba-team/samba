@@ -35,8 +35,8 @@ qx.Proto.addAwaitRpcResultState = function(module)
    *  - disable any objects in group "swat.module.fsmUtils.disable_during_rpc"
    *
    * Actions upon exit:
-   *   - disable any objects in group "group_enable_during_rpc"
-   *   - enable any objects in group "group_disable_during_rpc"
+   *   - disable any objects in group "swat.module.fsmUtils.enable_during_rpc"
+   *   - enable any objects in group "swat.module.fsmUtils.disable_during_rpc"
    *
    * Transition on:
    *  "completed" (on RPC)
@@ -173,11 +173,11 @@ qx.Proto.addAwaitRpcResultState = function(module)
           var request = fsm.getObject("swat.module.fsmUtils.request");
           
           // Generate the result for a completed request
-          request.result =
-          {
-            type : "complete",
-            data : event.getData()
-          };
+          request.setUserData("result",
+                              {
+                                  type : "complete",
+                                  data : event.getData()
+                              });
         }
     });
   state.addTransition(trans);
@@ -200,18 +200,12 @@ qx.Proto.addAwaitRpcResultState = function(module)
           var request = fsm.getObject("swat.module.fsmUtils.request");
           
           // Generate the result for a completed request
-          request.result =
-          {
-            type : "failed",
-            data : event.getData()
-          };
+          request.setUserData("result",
+                              {
+                                  type : "failed",
+                                  data : event.getData()
+                              });
         }
     });
   state.addTransition(trans);
 };
-
-
-/**
- * Singleton Instance Getter
- */
-qx.Class.getInstance = qx.util.Return.returnInstance;

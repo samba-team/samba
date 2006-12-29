@@ -10,6 +10,33 @@
 /**
  * This class defines a module descriptor (the registration of a module) and
  * maintains the list of modules that have been registered.
+ *
+ * A Module object contains the following public properties which may be
+ * accessed directly by name:
+ *
+ *   fsm -
+ *     The finite state machine for this module.
+ *
+ *   canvas -
+ *     The canvas on which to create the gui for this module
+ *
+ *   name -
+ *     The name of this module
+ *
+ *   class -
+ *     The class for this module
+ *
+ * @param moduleName {string}
+ *   The name of the module being registered.  This is the name that will
+ *   appear in the Modules menu.
+ *
+ * @param class {class}
+ *   The class which contains the module implementation.  That class must
+ *   extend swat.module.AbstractModule and implement a singleton interface
+ *   that provides a public method called initialAppear() which takes this
+ *   Module object as a parameter, and creates the finite state machine for
+ *   the module (if applicable) and builds the graphical user interface for
+ *   the module.
  */
 qx.OO.defineClass("swat.module.Module", qx.core.Object,
 function(moduleName, class)
@@ -20,6 +47,9 @@ function(moduleName, class)
   this.canvas = null;
   this.fsm = null;
   this.gui = null;
+
+  // Save the module name
+  this.name = moduleName;
 
   // Save this class name
   this.class = class;

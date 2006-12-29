@@ -74,10 +74,10 @@ qx.Proto.buildFsm = function(module)
 
             // Display the result
             var gui = swat.module.statistics.Gui.getInstance();
-            gui.displayData(module, request.result);
+            gui.displayData(module, request.getUserData("result"));
 
-            // Dispose of the request (and result)
-            request.result = null;
+            // Dispose of the request
+            request.dispose();
             request = null;
 
             // Restart the timer.
@@ -143,13 +143,12 @@ qx.Proto.buildFsm = function(module)
         {
           var rpc = fsm.getObject("swat.module.rpc");
 
-          rpc.setUrl("/services/");
           rpc.setServiceName("samba.management");
-
-          var request =
-            rpc.callAsyncListeners(true, // coalesce failure events
-                                   "get_statistics",
-                                   true, true);
+          var request = rpc.callAsyncListeners(true, // coalesce failure events
+                                               "get_statistics",
+                                               true,
+                                               true);
+          // Make the request object available to the AwaitRpcResult state
           fsm.addObject("swat.module.fsmUtils.request", request);
         }
     });
@@ -201,15 +200,6 @@ qx.Proto.buildFsm = function(module)
 
   // Add the AwaitRpcResult state and all of its transitions
   this.addAwaitRpcResultState(module);
-
-  // Allocate an RPC object
-  o = new qx.io.remote.Rpc();
-  o.setTimeout(10000);
-  o.addEventListener("completed", fsm.eventListener, fsm);
-  o.addEventListener("failed", fsm.eventListener, fsm);
-  o.addEventListener("timeout", fsm.eventListener, fsm);
-  o.addEventListener("aborted", fsm.eventListener, fsm);
-  fsm.addObject("swat.module.rpc", o);
 };
 
 
