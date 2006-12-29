@@ -1,5 +1,7 @@
 2006-12-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ca.c: Add KeyUsage extension.
+
 	* Makefile.am: add ca.c, add sign-certificate tests.
 
 	* crypto.c: Add _hx509_create_signature_bitstring.
