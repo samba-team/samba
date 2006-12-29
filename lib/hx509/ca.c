@@ -127,6 +127,7 @@ ca_sign(hx509_context context,
     const AlgorithmIdentifier *sigalg;
     time_t notBefore;
     time_t notAfter;
+    unsigned key_usage;
 
     sigalg = hx509_signature_rsa_with_sha1();
 
@@ -142,6 +143,19 @@ ca_sign(hx509_context context,
     notAfter = tbs->notBefore;
     if (notAfter == 0)
 	notAfter = time(NULL) + 3600 * 24 * 365;
+
+    key_usage = tbs->key_usage;
+    if (key_usage == 0) {
+	KeyUsage ku;
+	memset(&ku, 0, sizeof(ku));
+	ku.digitalSignature = 1;
+	ku.keyEncipherment = 1;
+	key_usage = KeyUsage2int(ku);
+    }
+
+    /*
+     *
+     */
 
     tbsc = &c.tbsCertificate;
 
@@ -222,7 +236,29 @@ ca_sign(hx509_context context,
     /* issuerUniqueID  [1]  IMPLICIT BIT STRING OPTIONAL */
     /* subjectUniqueID [2]  IMPLICIT BIT STRING OPTIONAL */
     /* extensions      [3]  EXPLICIT Extensions OPTIONAL */
-    /* X509v3 Key Usage: Digital Signature, Non Repudiation, Key Encipherment*/
+    tbsc->extensions = calloc(1, sizeof(*tbsc->extensions));
+    if (tbsc->extensions == NULL) {
+	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "Out of memory");
+	goto out;
+    }
+    
+    /* add KeyUsage */
+    {
+	Extension ext;
+	KeyUsage ku;
+	memset(&ext, 0, sizeof(ext));
+
+	ku = int2KeyUsage(key_usage);
+	ret = der_copy_oid(oid_id_x509_ce_keyUsage(), &ext.extnID);
+	ASN1_MALLOC_ENCODE(KeyUsage, 
+			   ext.extnValue.data,
+			   ext.extnValue.length,
+			   &ku, &size, ret);
+	add_Extensions(tbsc->extensions, &ext);
+	free_Extension(&ext);
+    }
+
     /* X509v3 Extended Key Usage: */
     /* X509v3 Subject Key Identifier:  */
     /* X509v3 Authority Key Identifier:  */
