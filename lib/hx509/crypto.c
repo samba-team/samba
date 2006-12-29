@@ -941,6 +941,26 @@ _hx509_create_signature(hx509_context context,
 }
 
 int
+_hx509_create_signature_bitstring(hx509_context context,
+				  const hx509_private_key signer,
+				  const AlgorithmIdentifier *alg,
+				  const heim_octet_string *data,
+				  AlgorithmIdentifier *signatureAlgorithm,
+				  heim_bit_string *sig)
+{
+    heim_octet_string os;
+    int ret;
+
+    ret = _hx509_create_signature(context, signer, alg,
+				  data, signatureAlgorithm, &os);
+    if (ret)
+	return ret;
+    sig->data = os.data;
+    sig->length = os.length * 8;
+    return 0;
+}
+
+int
 _hx509_public_encrypt(hx509_context context,
 		      const heim_octet_string *cleartext,
 		      const Certificate *cert,
