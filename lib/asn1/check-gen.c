@@ -387,16 +387,40 @@ test_bit_string (void)
 	{ NULL, 4,
 	  "\x03\x02\x07\x80",
 	  "bitstring 1"
+	},
+	{ NULL, 4,
+	  "\x03\x02\x05\xa0",
+	  "bitstring 2"
+	},
+	{ NULL, 5,
+	  "\x03\x03\x07\x00\x80",
+	  "bitstring 3"
+	},
+	{ NULL, 3,
+	  "\x03\x01\x00",
+	  "bitstring 4"
 	}
     };
 
     int ntests = sizeof(tests) / sizeof(*tests);
-    KeyUsage ku1;
+    KeyUsage ku1, ku2, ku3, ku4;
 
     memset(&ku1, 0, sizeof(ku1));
     ku1.digitalSignature = 1;
-
     tests[0].val = &ku1;
+
+    memset(&ku2, 0, sizeof(ku2));
+    ku2.digitalSignature = 1;
+    ku2.keyEncipherment = 1;
+    tests[1].val = &ku2;
+
+    memset(&ku3, 0, sizeof(ku3));
+    ku3.decipherOnly = 1;
+    tests[2].val = &ku3;
+
+    memset(&ku4, 0, sizeof(ku4));
+    tests[3].val = &ku4;
+
 
     return generic_test (tests, ntests, sizeof(KeyUsage),
 			 (generic_encode)encode_KeyUsage,
