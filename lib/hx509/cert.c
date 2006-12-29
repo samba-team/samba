@@ -1897,6 +1897,9 @@ hx509_query_match_option(hx509_query *q, hx509_query_option option)
     case HX509_QUERY_OPTION_KU_DIGITALSIGNATURE:
 	q->match |= HX509_QUERY_KU_DIGITALSIGNATURE;
 	break;
+    case HX509_QUERY_OPTION_KU_KEYCERTSIGN:
+	q->match |= HX509_QUERY_KU_KEYCERTSIGN;
+	break;
     case HX509_QUERY_OPTION_END:
     default:
 	break;
