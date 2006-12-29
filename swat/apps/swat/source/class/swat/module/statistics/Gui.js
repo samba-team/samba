@@ -303,8 +303,8 @@ qx.Proto.buildGui = function(module)
 /**
  * Populate the graphical user interface with the specified data
  *
- * @param module {Object}
- *   The descriptor containing our module-specific information
+ * @param module {swat.module.Module}
+ *   The module descriptor for the module.
  *
  * @result {Object}
  *   The result returned by SAMBA to our request for statistics.  We display

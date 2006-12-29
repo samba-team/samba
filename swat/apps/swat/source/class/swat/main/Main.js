@@ -29,6 +29,10 @@ function()
 new swat.module.Module("Statistics",
                        swat.module.statistics.Statistics);
 
+//#require(swat.module.ldbbrowse.LdbBrowse)
+new swat.module.Module("LDB Browser",
+                       swat.module.ldbbrowse.LdbBrowse);
+
 //#require(swat.module.documentation.Documentation)
 //#require(api.Viewer)
 new swat.module.Module("API Documentation",
@@ -53,10 +57,7 @@ qx.Proto.initialize = function()
   var moduleList = swat.module.Module.getList();
   for (moduleName in moduleList)
   {
-    // ... add the module's name to the module object, ...
-    moduleList[moduleName].name = moduleName;
-
-    // ... and call the module's buildInitialFsm() function
+    // ... call the module's buildInitialFsm() function
     var module = moduleList[moduleName]["class"].getInstance();
     module.buildInitialFsm(moduleList[moduleName]);
   }

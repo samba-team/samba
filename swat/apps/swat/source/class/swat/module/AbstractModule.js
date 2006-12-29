@@ -22,22 +22,12 @@ function()
  * Build the initial finite state machine.
  *
  * In order to prevent long load times, as minimal as possible of an initial
- * FSM should be created.  The FSM will receive a "visible" event when the
+ * FSM should be created.  The FSM will receive an "appear" event when the
  * module is first selected (and each subsequent time), and the FSM can use
  * that event to build the complete FSM.
  *
- * @param module {Object}
- *   An object containing at least the following properties:
- *     fsm -
- *       The finite state machine for this module.  It should be filled in
- *       by this function.
- *     canvas -
- *       The canvas on which to create the gui for this module
- *     name -
- *       The name of this module
- *     class -
- *       The class for this module
- *
+ * @param module {swat.module.Module}
+ *    The module descriptor for the module.
  */
 qx.Proto.buildInitialFsm = function(module)
 {
@@ -114,6 +104,20 @@ qx.Proto.buildInitialFsm = function(module)
 
   // Save the finite state machine for this module
   module.fsm = fsm;
+
+  // Save the module descriptor in the finite state machine
+  fsm.addObject("swat.module.module", module);
+
+  // Create an RPC object for use by this module
+  module.rpc = new qx.io.remote.Rpc();
+  module.rpc.setUrl("/services/");
+  module.rpc.setTimeout(10000);
+  module.rpc.setCrossDomain(false);
+  module.rpc.addEventListener("completed", fsm.eventListener, fsm);
+  module.rpc.addEventListener("failed", fsm.eventListener, fsm);
+  module.rpc.addEventListener("timeout", fsm.eventListener, fsm);
+  module.rpc.addEventListener("aborted", fsm.eventListener, fsm);
+  fsm.addObject("swat.module.rpc", module.rpc);
 
   // Start the finite state machine
   fsm.start();
