@@ -23,6 +23,14 @@
 #ifndef _DSDB_SCHEMA_H
 #define _DSDB_SCHEMA_H
 
+struct dsdb_syntax {
+	const char *name;
+	const char *ldap_oid;
+	uint32_t oMSyntax;
+	struct ldb_val oMObjectClass;
+	const char *attributeSyntax_oid;
+};
+
 struct dsdb_attribute {
 	struct dsdb_attribute *prev, *next;
 
@@ -60,6 +68,9 @@ struct dsdb_attribute {
 	BOOL isEphemeral;
 	BOOL isDefunct;
 	BOOL systemOnly;
+
+	/* internal stuff */
+	const struct dsdb_syntax *syntax;
 };
 
 struct dsdb_class {
