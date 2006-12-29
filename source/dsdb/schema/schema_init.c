@@ -608,3 +608,113 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 
 	return WERR_OK;
 }
+
+const struct dsdb_attribute *dsdb_attribute_by_attributeID_id(const struct dsdb_schema *schema,
+							      uint32_t id)
+{
+	struct dsdb_attribute *cur;
+
+	/*
+	 * 0xFFFFFFFF is used as value when no mapping table is available,
+	 * so don't try to match with it
+	 */
+	if (id == 0xFFFFFFFF) return NULL;
+
+	/* TODO: add binary search */
+	for (cur = schema->attributes; cur; cur = cur->next) {
+		if (cur->attributeID_id != id) continue;
+
+		return cur;
+	}
+
+	return NULL;
+}
+
+const struct dsdb_attribute *dsdb_attribute_by_attributeID_oid(const struct dsdb_schema *schema,
+							       const char *oid)
+{
+	struct dsdb_attribute *cur;
+
+	if (!oid) return NULL;
+
+	/* TODO: add binary search */
+	for (cur = schema->attributes; cur; cur = cur->next) {
+		if (strcmp(cur->attributeID_oid, oid) != 0) continue;
+
+		return cur;
+	}
+
+	return NULL;
+}
+
+const struct dsdb_attribute *dsdb_attribute_by_lDAPDisplayName(const struct dsdb_schema *schema,
+							       const char *name)
+{
+	struct dsdb_attribute *cur;
+
+	if (!name) return NULL;
+
+	/* TODO: add binary search */
+	for (cur = schema->attributes; cur; cur = cur->next) {
+		if (strcmp(cur->lDAPDisplayName, name) != 0) continue;
+
+		return cur;
+	}
+
+	return NULL;
+}
+
+const struct dsdb_class *dsdb_class_by_governsID_id(const struct dsdb_schema *schema,
+						    uint32_t id)
+{
+	struct dsdb_class *cur;
+
+	/*
+	 * 0xFFFFFFFF is used as value when no mapping table is available,
+	 * so don't try to match with it
+	 */
+	if (id == 0xFFFFFFFF) return NULL;
+
+	/* TODO: add binary search */
+	for (cur = schema->classes; cur; cur = cur->next) {
+		if (cur->governsID_id != id) continue;
+
+		return cur;
+	}
+
+	return NULL;
+}
+
+const struct dsdb_class *dsdb_class_by_governsID_oid(const struct dsdb_schema *schema,
+						     const char *oid)
+{
+	struct dsdb_class *cur;
+
+	if (!oid) return NULL;
+
+	/* TODO: add binary search */
+	for (cur = schema->classes; cur; cur = cur->next) {
+		if (strcmp(cur->governsID_oid, oid) != 0) continue;
+
+		return cur;
+	}
+
+	return NULL;
+}
+
+const struct dsdb_class *dsdb_class_by_lDAPDisplayName(const struct dsdb_schema *schema,
+						       const char *name)
+{
+	struct dsdb_class *cur;
+
+	if (!name) return NULL;
+
+	/* TODO: add binary search */
+	for (cur = schema->classes; cur; cur = cur->next) {
+		if (strcmp(cur->lDAPDisplayName, name) != 0) continue;
+
+		return cur;
+	}
+
+	return NULL;
+}
