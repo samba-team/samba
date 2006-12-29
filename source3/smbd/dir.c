@@ -1011,6 +1011,18 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 		if (asprintf(&entry, "%s/%s", dir_path, name) == -1) {
 			return False;
 		}
+
+		/* If it's a dfs symlink, ignore _hide xxxx_ options */
+		if (lp_host_msdfs() &&
+				lp_msdfs_root(SNUM(conn)) &&
+					/* We get away with NULL talloc ctx here as
+					   we're not interested in the link contents
+					   so we have nothing to free. */
+				is_msdfs_link(NULL, conn, entry, NULL, NULL, NULL)) {
+			SAFE_FREE(entry);
+			return True;
+		}
+
 		/* Honour _hide unreadable_ option */
 		if (hide_unreadable && !user_can_read_file(conn, entry, pst)) {
 			DEBUG(10,("is_visible_file: file %s is unreadable.\n", entry ));
