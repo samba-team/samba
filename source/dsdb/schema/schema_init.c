@@ -346,7 +346,7 @@ static const struct {
 	{ "systemFlags", 			"1.2.840.113556.1.4.375" },
 	{ "isMemberOfPartialAttributeSet", 	"1.2.840.113556.1.4.639" },
 	{ "linkID", 				"1.2.840.113556.1.2.50" },
-	{ "attributeSyntax", 			"1.2.840.113556.1.2.30" },
+	{ "attributeSyntax", 			"1.2.840.113556.1.2.32" },
 	{ "oMSyntax", 				"1.2.840.113556.1.2.231" },
 	{ "oMObjectClass", 			"1.2.840.113556.1.2.218" },
 	{ "isSingleValued",			"1.2.840.113556.1.2.33" },
