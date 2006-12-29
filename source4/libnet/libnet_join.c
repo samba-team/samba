@@ -160,8 +160,8 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	ZERO_STRUCT(r_crack_names);
 	r_crack_names.in.bind_handle		= &drsuapi_bind_handle;
 	r_crack_names.in.level			= 1;
-	r_crack_names.in.req.req1.unknown1	= 0x000004e4;
-	r_crack_names.in.req.req1.unknown2	= 0x00000407;
+	r_crack_names.in.req.req1.codepage	= 1252; /* western european */
+	r_crack_names.in.req.req1.language	= 0x00000407; /* german */
 	r_crack_names.in.req.req1.count		= 1;
 	r_crack_names.in.req.req1.names		= names;
 	r_crack_names.in.req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
