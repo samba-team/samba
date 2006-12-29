@@ -8,9 +8,9 @@
  */
 
 /**
- * Swat statistics class
+ * Swat LDB Browser class
  */
-qx.OO.defineClass("swat.module.statistics.Statistics",
+qx.OO.defineClass("swat.module.ldbbrowse.LdbBrowse",
                   swat.module.AbstractModule,
 function()
 {
@@ -30,11 +30,19 @@ function()
  */
 qx.Proto.initialAppear = function(module)
 {
+  // Initial database to open
+  module.dbFile = "sam.ldb";
+
   // Replace the existing (temporary) finite state machine with the real one
-  swat.module.statistics.Fsm.getInstance().buildFsm(module);
+  swat.module.ldbbrowse.Fsm.getInstance().buildFsm(module);
 
   // Create the real gui
-  swat.module.statistics.Gui.getInstance().buildGui(module);
+  swat.module.ldbbrowse.Gui.getInstance().buildGui(module);
+
+  // Force the global database to be opened
+  var dbName = module.fsm.getObject("dbName");
+  dbName.setSelected(dbName.getList().getFirstChild());
+  dbName.dispatchEvent(new qx.event.type.Event("changeSelection"), true);
 };
 
 
