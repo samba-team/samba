@@ -130,35 +130,6 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 }
 #endif
 
-#if !defined(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES)
-
-#if defined(HAVE_KRB5_SET_DEFAULT_TGS_ENCTYPES)
-
-/* With MIT kerberos, we should use krb5_set_default_tgs_enctypes in preference
- * to krb5_set_default_tgs_ktypes. See
- *         http://lists.samba.org/archive/samba-technical/2006-July/048271.html
- *
- * If the MIT libraries are not exporting internal symbols, we will end up in
- * this branch, which is correct. Otherwise we will continue to use the
- * internal symbol
- */
- krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc)
-{
-    return krb5_set_default_tgs_enctypes(ctx, enc);
-}
-
-#elif defined(HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES)
-
-/* Heimdal */
- krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc)
-{
-	return krb5_set_default_in_tkt_etypes(ctx, enc);
-}
-
-#endif /* HAVE_KRB5_SET_DEFAULT_TGS_ENCTYPES */
-
-#endif /* HAVE_KRB5_SET_DEFAULT_TGS_KTYPES */
-
 #if defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS)
 /* HEIMDAL */
  void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr)
@@ -641,13 +612,6 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 	krb5_context context = NULL;
 	krb5_ccache ccdef = NULL;
 	krb5_auth_context auth_context = NULL;
-	krb5_enctype enc_types[] = {
-#ifdef ENCTYPE_ARCFOUR_HMAC
-		ENCTYPE_ARCFOUR_HMAC,
-#endif 
-		ENCTYPE_DES_CBC_MD5, 
-		ENCTYPE_DES_CBC_CRC, 
-		ENCTYPE_NULL};
 
 	initialize_krb5_error_table();
 	retval = krb5_init_context(&context);
@@ -664,12 +628,6 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 	if ((retval = krb5_cc_resolve(context, ccname ?
 			ccname : krb5_cc_default_name(context), &ccdef))) {
 		DEBUG(1,("cli_krb5_get_ticket: krb5_cc_default failed (%s)\n",
-			 error_message(retval)));
-		goto failed;
-	}
-
-	if ((retval = krb5_set_default_tgs_ktypes(context, enc_types))) {
-		DEBUG(1,("cli_krb5_get_ticket: krb5_set_default_tgs_ktypes failed (%s)\n",
 			 error_message(retval)));
 		goto failed;
 	}
