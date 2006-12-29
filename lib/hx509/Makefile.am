@@ -52,6 +52,7 @@ gen_files_crmf = 			\
 	asn1_SubsequentMessage.x	
 
 dist_libhx509_la_SOURCES = \
+	ca.c \
 	cert.c \
 	cms.c \
 	collector.c \
@@ -157,6 +158,7 @@ PROGRAM_TESTS = 		\
 	test_name
 
 SCRIPT_TESTS = 			\
+	test_ca			\
 	test_chain		\
 	test_cms		\
 	test_crypto		\
@@ -167,6 +169,11 @@ SCRIPT_TESTS = 			\
 	test_query
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g'
+
+test_ca: test_ca.in Makefile
+	$(do_subst) < $(srcdir)/test_ca.in > test_ca.tmp
+	chmod +x test_ca.tmp
+	mv test_ca.tmp test_ca
 
 test_chain: test_chain.in Makefile
 	$(do_subst) < $(srcdir)/test_chain.in > test_chain.tmp
@@ -215,6 +222,7 @@ EXTRA_DIST = \
 	hxtool-commands.in \
 	ocsp.asn1 \
 	pkcs10.asn1 \
+	test_ca.in \
 	test_chain.in \
 	test_cms.in \
 	test_crypto.in \
