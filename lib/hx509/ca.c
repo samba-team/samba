@@ -251,11 +251,24 @@ ca_sign(hx509_context context,
 
 	ku = int2KeyUsage(key_usage);
 	ret = der_copy_oid(oid_id_x509_ce_keyUsage(), &ext.extnID);
+	if (ret) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
 	ASN1_MALLOC_ENCODE(KeyUsage, 
 			   ext.extnValue.data,
 			   ext.extnValue.length,
 			   &ku, &size, ret);
-	add_Extensions(tbsc->extensions, &ext);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	ret = add_Extensions(tbsc->extensions, &ext);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
 	free_Extension(&ext);
     }
 
