@@ -151,7 +151,6 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
     case TBitString: {
 	Member *m;
 	int pos;
-	int rest;
 
 	if (ASN1_TAILQ_EMPTY(t->members)) {
 	    encode_primitive("bit_string", name);
@@ -163,6 +162,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 		 "unsigned char c = 0;\n");
 	if (!rfc1510_bitstring)
 	    fprintf (codefile,
+		     "int rest = 0;\n"
 		     "int bit_set = 0;\n");
 #if 0
 	pos = t->members->prev->val;
@@ -181,9 +181,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	if (rfc1510_bitstring) {
 	    if (pos < 31)
 		pos = 31;
-	    rest = 7 - (pos % 8);
-	} else
-	    rest = 0;
+	}
 
 	ASN1_TAILQ_FOREACH_REVERSE(m, t->members, memhead, members) {
 	    while (m->val / 8 < pos / 8) {
@@ -192,20 +190,27 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 			     "if (c != 0 || bit_set) {\n");
 		fprintf (codefile,
 			 "if (len < 1) return ASN1_OVERFLOW;\n"
-			 "*p-- = c; len--; ret++;\n"
-			 "c = 0;\n");
+			 "*p-- = c; len--; ret++;\n");
 		if (!rfc1510_bitstring)
 		    fprintf (codefile,
+			     "if (!bit_set) {\n"
+			     "rest = 0;\n"
+			     "while(c) { \n"
+			     "if (c & 1) break;\n"
+			     "c = c >> 1;\n"
+			     "rest++;\n"
+			     "}\n"
 			     "bit_set = 1;\n"
+			     "}\n"
 			     "}\n");
+		fprintf (codefile,
+			 "c = 0;\n");
 		pos -= 8;
 	    }
 	    fprintf (codefile,
 		     "if((%s)->%s) {\n"
 		     "c |= 1<<%d;\n", 
 		     name, m->gen_name, 7 - m->val % 8);
-	    if (!rfc1510_bitstring)
-		rest = 7 - m->val % 8;
 	    fprintf (codefile,
 		     "}\n");
 	}
@@ -218,15 +223,25 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 		 "*p-- = c; len--; ret++;\n");
 	if (!rfc1510_bitstring)
 	    fprintf (codefile,
+		     "if (!bit_set) {\n"
+		     "rest = 0;\n"
+		     "if(c) { \n"
+		     "while(c) { \n"
+		     "if (c & 1) break;\n"
+		     "c = c >> 1;\n"
+		     "rest++;\n"
+		     "}\n"
+		     "}\n"
+		     "}\n"
 		     "}\n");
-	
+
 	fprintf (codefile, 
 		 "if (len < 1) return ASN1_OVERFLOW;\n"
-		 "*p-- = %d;\n"
+		 "*p-- = %s;\n"
 		 "len -= 1;\n"
 		 "ret += 1;\n"
 		 "}\n\n",
-		 rest);
+		 rfc1510_bitstring ? "0" : "rest");
 	constructed = 0;
 	break;
     }
