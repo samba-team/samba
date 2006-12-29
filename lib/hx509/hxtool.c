@@ -1125,6 +1125,125 @@ hxtool_hex(struct hex_options *opt, int argc, char **argv)
 }
 
 int
+hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
+{
+    int ret;
+    hx509_ca_tbs tbs;
+    hx509_certs cacerts = NULL;
+    hx509_cert signer = NULL, cert = NULL;
+    hx509_name subject = NULL;
+    SubjectPublicKeyInfo spki;
+
+    memset(&spki, 0, sizeof(spki));
+
+    if (opt->proxy_flag) {
+	printf("no support for proxy cert yet\n");
+	return 0;
+    }
+    if (opt->ca_certificate_string == NULL)
+	errx(1, "--ca-certificate argument missing");
+    if (opt->certificate_string == NULL)
+	errx(1, "--certificate argument missing");
+    if (opt->req_string == NULL)
+	errx(1, "--req argument missing");
+
+    ret = hx509_certs_init(context, opt->ca_certificate_string, 0,
+			   NULL, &cacerts);
+    if (ret)
+	hx509_err(context, ret, 1,
+		  "hx509_certs_init: %s", opt->ca_certificate_string);
+
+    {
+	hx509_query *q;
+
+	ret = hx509_query_alloc(context, &q);
+	if (ret)
+	    errx(1, "hx509_query_alloc: %d", ret);
+
+	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_KEYCERTSIGN);
+
+	ret = hx509_certs_find(context, cacerts, q, &signer);
+	hx509_query_free(context, q);
+	if (ret)
+	    hx509_err(context, ret, 1, "no CA certificate found");
+    }
+
+    if (opt->req_string) {
+	CertificationRequest req;
+	CertificationRequestInfo *rinfo;
+	void *p;
+	size_t len, size;
+
+	ret = _hx509_map_file(opt->req_string, &p, &len, NULL);
+	if (ret)
+	    err(1, "map_file: %s: %d", opt->req_string, ret);
+
+	ret = decode_CertificationRequest(p, len, &req, &size);
+	_hx509_unmap_file(p, len);
+	if (ret)
+	    errx(1, "failed to parse req file %s: %d", opt->req_string, ret);
+
+	rinfo = &req.certificationRequestInfo;
+
+	ret = _hx509_name_from_Name(&rinfo->subject, &subject);
+	if (ret)
+	    errx(1, "_hx509_name_from_Name %d", ret);
+
+	ret = copy_SubjectPublicKeyInfo(&rinfo->subjectPKInfo, &spki);
+	if (ret)
+	    errx(1, "copy_SubjectPublicKeyInfo: %d", ret);
+
+	free_CertificationRequest(&req);
+    }
+
+    if (opt->subject_string) {
+	if (subject)
+	    hx509_name_free(&subject);
+	ret = hx509_parse_name(opt->subject_string, &subject);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_parse_name: %d\n", ret);
+    }
+
+    /*
+     *
+     */
+
+    ret = hx509_ca_tbs_init(context, &tbs);
+    if (ret)
+	hx509_err(context, ret, 1, "hx509_ca_tbs_init");
+	
+    ret = hx509_ca_tbs_set_spki(context, tbs, &spki);
+    if (ret)
+	hx509_err(context, ret, 1, "hx509_ca_tbs_set_spki");
+
+    ret = hx509_ca_tbs_set_subject(context, tbs, subject);
+    if (ret)
+	hx509_err(context, ret, 1, "hx509_ca_tbs_set_subject");
+
+    ret = hx509_ca_sign(context, tbs, signer, &cert);
+    if (ret)
+	hx509_err(context, ret, 1, "hx509_ca_sign");
+
+    {
+	Certificate *c = _hx509_get_cert(cert);
+	heim_octet_string data;
+	size_t size;
+
+	ASN1_MALLOC_ENCODE(Certificate, data.data, data.length, c, &size, ret);
+	if (ret)
+	    err(1, "malloc out of memory");
+	if (data.length != size)
+	    _hx509_abort("internal ASN.1 encoder error");
+
+	rk_dumpdata(opt->certificate_string, data.data, data.length);
+	free(data.data);
+    }
+
+    return 0;
+}
+
+
+int
 help(void *opt, int argc, char **argv)
 {
     sl_slc_help(commands, argc, argv);

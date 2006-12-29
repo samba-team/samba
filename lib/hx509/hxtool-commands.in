@@ -426,6 +426,39 @@ command = {
 	help = "Encode input to hex"
 }
 command = {
+	option = {
+		long = "proxy"
+		type = "flag"
+		help = "Issue proxy certificate"
+	}
+	option = {
+		long = "subject"
+		type = "string"
+		help = "Subject of issued certificate"
+	}
+	option = {
+		long = "ca-certificate"
+		type = "string"
+		help = "Issuing CA certificate"
+	}
+	option = {
+		long = "certificate"
+		type = "string"
+		help = "Issued certificate"
+	}
+	option = {
+		long = "req"
+		type = "string"
+		help = "pkcs10 request"
+	}
+	name = "certificate-sign"
+	name = "cert-sign"
+	name = "issue-certificate"
+	function = "hxtool_ca"
+	min_args="0"
+	help = "Issue a certificate"
+}
+command = {
 	name = "help"
 	name = "?"
 	argument = "[command]"
