@@ -16,12 +16,12 @@ Generalized Time		1.3.6.1.4.1.1466.115.121.1.24	  24					2.5.5.11		String(Genera
 Directory String		1.3.6.1.4.1.1466.115.121.1.15	  64					2.5.5.12		String(Unicode)
 Large-Integer                *	1.2.840.113556.1.4.906		  65					2.5.5.16		Interval/LargeInteger
 Object-Security-Descriptor   *	1.2.840.113556.1.4.907		  66					2.5.5.15		String(NT-Sec-Desc)
-DN				1.3.6.1.4.1.1466.115.121.1.12	 127	2b0c 0287 731c 0085 4a00	2.5.5.1			Object(DS-DN)
+DN				1.3.6.1.4.1.1466.115.121.1.12	 127	2b0c 0287 731c 0085 4a		2.5.5.1			Object(DS-DN)
 DNWithOctetString            *	1.2.840.113556.1.4.903		 127	2a86 4886 f714 0101 010b	2.5.5.7			Object(DN-Binary)
-OR-Name	                     *	1.2.840.113556.1.4.1221		 127	5606 0102 050b 1D00 0000	2.5.5.7			Object(OR-Name)
+OR-Name	                     *	1.2.840.113556.1.4.1221		 127	5606 0102 050b 1D		2.5.5.7			Object(OR-Name)
 Octet String			1.3.6.1.4.1.1466.115.121.1.40  	 127	2a86 4886 f714 0101 0106	2.5.5.10		Object(Replica-Link)
-Presentation Address		1.3.6.1.4.1.1466.115.121.1.43	 127	2b0c 0287 731c 0085 5c00	2.5.5.13		Object(Presentation-Address)
-Access Point			1.3.6.1.4.1.1466.115.121.1.2	 127	2b0c 0287 731c 0085 3e00	2.5.5.14		Object(Access-Point)
+Presentation Address		1.3.6.1.4.1.1466.115.121.1.43	 127	2b0c 0287 731c 0085 5c		2.5.5.13		Object(Presentation-Address)
+Access Point			1.3.6.1.4.1.1466.115.121.1.2	 127	2b0c 0287 731c 0085 3e		2.5.5.14		Object(Access-Point)
 DNWithString                 *	1.2.840.113556.1.4.904		 127	2a86 4886 f714 0101 010c	2.5.5.14		Object(DN-String)
 
 
