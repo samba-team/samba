@@ -776,7 +776,7 @@ can be found in the Samba-HOWTO-Collection.</para>
 </refsect2>
 
 <refsect2>
-<title>SHUTDOWN [-t timeout] [-r] [-f] [-C message]</title>
+<title>RPC SHUTDOWN [-t timeout] [-r] [-f] [-C message]</title>
 
 <para>Shut down the remote server.</para>
 
@@ -816,15 +816,14 @@ announce the shutdown.</para></listitem>
 <title>RPC SAMDUMP</title>
 
 <para>Print out sam database of remote server. You need
-to run this on either a BDC or a PDC. <!-- 
-Is that correct? - Jelmer --></para>
+to run this against the PDC, from a Samba machine joined as a BDC. </para>
 </refsect2>
 
 <refsect2>
 <title>RPC VAMPIRE</title>
 
 <para>Export users, aliases and groups from remote server to 
-local server. Can only be run an a BDC.
+local server.  You need to run this against the PDC, from a Samba machine joined as a BDC. 
 </para>
 
 </refsect2>
