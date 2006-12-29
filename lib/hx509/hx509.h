@@ -49,6 +49,7 @@ typedef void * hx509_cursor;
 typedef struct hx509_request_data *hx509_request;
 typedef struct hx509_error_data *hx509_error;
 typedef struct hx509_peer_info *hx509_peer_info;
+typedef struct hx509_ca_tbs *hx509_ca_tbs;
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
 
@@ -88,6 +89,7 @@ typedef enum {
     HX509_QUERY_OPTION_PRIVATE_KEY = 1,
     HX509_QUERY_OPTION_KU_ENCIPHERMENT = 2,
     HX509_QUERY_OPTION_KU_DIGITALSIGNATURE = 3,
+    HX509_QUERY_OPTION_KU_KEYCERTSIGN = 4,
     HX509_QUERY_OPTION_END = 0xffff
 } hx509_query_option;
 
