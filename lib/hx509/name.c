@@ -327,26 +327,72 @@ hx509_der_parse_name(const void *data, size_t length, hx509_name *name)
 }
 
 int
-hx509_parse_name(const char *str, hx509_name *name)
+_hx509_name_modify(hx509_context context,
+		   Name *name, 
+		   int append,
+		   const heim_oid *oid, 
+		   const char *str)
+{
+    RelativeDistinguishedName *rdn;
+    int ret;
+    void *ptr;
+
+    ptr = realloc(name->u.rdnSequence.val, 
+		  sizeof(name->u.rdnSequence.val[0]) * 
+		  (name->u.rdnSequence.len + 1));
+    if (ptr == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "Out of memory");
+	return ENOMEM;
+    }
+    name->u.rdnSequence.val = ptr;
+
+    if (append) {
+	rdn = &name->u.rdnSequence.val[name->u.rdnSequence.len];
+    } else {
+	memmove(&name->u.rdnSequence.val[1],
+		&name->u.rdnSequence.val[0],
+		name->u.rdnSequence.len * 
+		sizeof(name->u.rdnSequence.val[0]));
+	
+	rdn = &name->u.rdnSequence.val[0];
+    }
+    rdn->val = malloc(sizeof(rdn->val[0]));
+    if (rdn->val == NULL)
+	return ENOMEM;
+    rdn->len = 1;
+    ret = der_copy_oid(oid, &rdn->val[0].type);
+    if (ret)
+	return ret;
+    rdn->val[0].value.element = choice_DirectoryString_utf8String;
+    rdn->val[0].value.u.utf8String = strdup(str);
+    if (rdn->val[0].value.u.utf8String == NULL)
+	return ENOMEM;
+    name->u.rdnSequence.len += 1;
+
+    return 0;
+}
+
+int
+hx509_parse_name(hx509_context context, const char *str, hx509_name *name)
 {
     const char *p, *q;
     size_t len;
     hx509_name n;
-    void *ptr;
     int ret;
 
     *name = NULL;
 
     n = calloc(1, sizeof(*n));
-    if (n == NULL)
+    if (n == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
+    }
 
     n->der_name.element = choice_Name_rdnSequence;
 
     p = str;
 
     while (p != NULL && *p != '\0') {
-	RelativeDistinguishedName *rdn;
 	heim_oid oid;
 	int last;
 
@@ -361,52 +407,31 @@ hx509_parse_name(const char *str, hx509_name *name)
 
 	q = strchr(p, '=');
 	if (q == NULL) {
-	    /* _hx509_abort("missing = in %s", p); */
+	    ret = HX509_PARSING_NAME_FAILED;
+	    hx509_set_error_string(context, 0, ret, "missing = in %s", p);
 	    goto out;
 	}
 	if (q == p) {
-	    /* _hx509_abort("missing name before = in %s", p); */
+	    ret = HX509_PARSING_NAME_FAILED;
+	    hx509_set_error_string(context, 0, ret, 
+				   "missing name before = in %s", p);
 	    goto out;
 	}
 	
 	if ((q - p) > len) {
-	    /* _hx509_abort(" = after , in %s", p); */
+	    ret = HX509_PARSING_NAME_FAILED;
+	    hx509_set_error_string(context, 0, ret, " = after , in %s", p);
 	    goto out;
 	}
 
 	ret = stringtooid(p, q - p, &oid);
 	if (ret) {
-	    /* _hx509_abort("unknown type: %.*s", (int)(q - p), p); */
+	    ret = HX509_PARSING_NAME_FAILED;
+	    hx509_set_error_string(context, 0, ret, 
+				   "unknown type: %.*s", (int)(q - p), p);
 	    goto out;
 	}
 	
-	ptr = realloc(n->der_name.u.rdnSequence.val, 
-		      sizeof(n->der_name.u.rdnSequence.val[0]) *
-		      (n->der_name.u.rdnSequence.len + 1));
-	if (ptr == NULL) {
-	    /* _hx509_abort("realloc"); */
-	    der_free_oid(&oid);
-	    goto out;
-	}
-	n->der_name.u.rdnSequence.val = ptr;
-
-	memmove(&n->der_name.u.rdnSequence.val[1],
-		&n->der_name.u.rdnSequence.val[0],
-		n->der_name.u.rdnSequence.len * 
-		sizeof(n->der_name.u.rdnSequence.val[0]));
-	
-	rdn = &n->der_name.u.rdnSequence.val[0];
-
-	rdn->val = malloc(sizeof(rdn->val[0]));
-	if (rdn->val == NULL) {
-	    /* _hx509_abort("malloc"); */
-	    der_free_oid(&oid);
-	    goto out;
-	}
-	rdn->len = 1;
-
-	rdn->val[0].type = oid;
-
 	{
 	    size_t pstr_len = len - (q - p) - 1;
 	    const char *pstr = p + (q - p) + 1;
@@ -414,18 +439,21 @@ hx509_parse_name(const char *str, hx509_name *name)
 	    
 	    r = malloc(pstr_len + 1);
 	    if (r == NULL) {
-		/* _hx509_abort("malloc"); */
+		der_free_oid(&oid);
+		ret = ENOMEM;
+		hx509_set_error_string(context, 0, ret, "out of memory");
 		goto out;
 	    }
 	    memcpy(r, pstr, pstr_len);
 	    r[pstr_len] = '\0';
-	    
-	    rdn->val[0].value.element = choice_DirectoryString_printableString;
-	    rdn->val[0].value.u.printableString = r;
-	}
 
+	    ret = _hx509_name_modify(context, &n->der_name, 0, &oid, r);
+	    free(r);
+	    der_free_oid(&oid);
+	    if(ret)
+		goto out;
+	}
 	p += len + last;
-	n->der_name.u.rdnSequence.len += 1;
     }
 
     *name = n;
