@@ -95,11 +95,6 @@ OCSPBasicOCSPResponse       ::= SEQUENCE {
 
 -- Object Identifiers
 
-id-kp-OCSPSigning OBJECT IDENTIFIER  ::= { 
-	 iso(1) identified-organization(3) dod(6) internet(1)
-	 security(5) mechanisms(5) pkix(7) pkix-kp(3) 9
-}
-
 id-pkix-ocsp         OBJECT IDENTIFIER ::= {
  	 iso(1) identified-organization(3) dod(6) internet(1)
 	 security(5) mechanisms(5) pkix(7) pkix-ad(48) 1
