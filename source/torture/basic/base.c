@@ -1539,7 +1539,7 @@ static BOOL torture_samba3_errorpaths(struct torture_context *tctx)
 		if (!NT_STATUS_EQUAL(status,
 				     NT_STATUS_DOS(ERRDOS, ERRrename))) {
 			torture_comment(tctx, "(%s) incorrect status %s "
-					"should be ERRDOS:ERRnoaccess\n",
+					"should be ERRDOS:ERRrename\n",
 					__location__, nt_errstr(status));
 			goto fail;
 		}
