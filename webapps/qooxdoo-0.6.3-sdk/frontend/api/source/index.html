@@ -1,0 +1,27 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link type="text/css" rel="stylesheet" href="resource/css/apiviewer.css"/>
+    <script type="text/javascript" src="script/api.js"></script>
+
+    <script type="text/javascript">
+      qx.dev.log.Logger.ROOT_LOGGER.setMinLevel(qx.dev.log.Logger.LEVEL_WARN);
+
+      var viewer;
+
+      qx.core.Init.getInstance().defineInitialize(function() {
+        qx.manager.object.AliasManager.getInstance().add("api", "resource/image");
+      });
+
+      qx.core.Init.getInstance().defineMain(function()
+      {
+        viewer = new api.Viewer;
+        viewer.addToDocument();
+      });
+
+      qx.core.Init.getInstance().defineFinalize(function() {
+        viewer.load("script/data.js");
+      });
+    </script>
+  </head>
+</html>

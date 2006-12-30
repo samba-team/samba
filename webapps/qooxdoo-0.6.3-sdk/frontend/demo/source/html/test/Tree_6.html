@@ -1,0 +1,231 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Drag and Drop between trees and inside a tree.</p>
+    <p>Added support for positioned move/insert (not complete yet!)</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var vLastIndex = null;      
+      
+      function handleDragStart(e) 
+      {
+        e.addData("qx.ui.tree.AbstractTreeElement", e.getCurrentTarget());
+        e.addAction("move");
+        e.startDrag();
+      };
+
+      function handleDragDrop(e) 
+      {
+        var vType = e.getDropDataTypes()[0];
+        var vSource = e.getData(vType);
+        var vTarget = e.getCurrentTarget();
+        
+        vSource.getTree().getManager().deselectAll();
+        
+        // this.debug("Add At: " + vLastIndex);
+        
+        vLastIndex == null ? vTarget.addAtEnd(vSource) : vTarget.addBefore(vSource, vLastIndex);
+        vLastIndex = null;
+        
+        e.stopPropagation();
+        treeMarkerLine.setStyleProperty("display", "none");
+      }; 
+      
+      function supportsDrop(vDragCache) {
+        return !vDragCache.sourceWidget.contains(this);
+      };
+
+      function handleDragOver(e)
+      {
+        var l = e.getTarget().getLabelObject();
+        l.setStyleProperty("textDecoration", "underline");
+      };
+    
+      function handleDragOut(e) 
+      {
+        var l = e.getTarget().getLabelObject();
+        l.removeStyleProperty("textDecoration");
+      };
+      
+      function handleDragEnd(e)
+      {
+        vLastIndex = null;
+        treeMarkerLine.setStyleProperty("display", "none");
+      };
+      
+      function handleDragMove(e)
+      {
+        vLastIndex = null;
+        
+        var vTarget = e.getTarget();
+        
+        if (!vTarget || !(vTarget instanceof qx.ui.tree.TreeFolder)) 
+        {
+          treeMarkerLine.setStyleProperty("display", "none");
+          return;
+        };
+        
+        var vContainer = vTarget.getContainerObject();
+        
+        if (!vContainer) 
+        {
+          treeMarkerLine.setStyleProperty("display", "none");
+          return;
+        };
+        
+        var vChildren = vContainer.getVisibleChildren();
+        var vChildrenLength = vChildren.length;
+        var vEventTop = e.getPageY();
+        
+        for (var i=0, vChild, vTop; i<vChildrenLength; i++)
+        {
+          vChild = vChildren[i];
+          
+          vTop = qx.dom.Location.getPageBoxTop(vChild.getElement());
+          if ((vTop - vEventTop) > -4 && (vTop - vEventTop) < 4)
+          {
+            if (vEventTop > vTop && vChild.isFirstChild()) {
+              continue;
+            };
+            
+            treeMarkerLine._applyRuntimeTop(vTop+1);
+            treeMarkerLine._applyRuntimeLeft(QxDom.getComputedPageBoxLeft(vChild.getLabelObject().getElement()) - 20);
+            
+            treeMarkerLine.removeStyleProperty("display");
+            
+            // this.debug("Index: " + vLastIndex + " :: " + vEventTop + " <> " + vTop);
+            vLastIndex = vChild;
+            
+            return;
+          };          
+        };
+        
+        treeMarkerLine.setStyleProperty("display", "none");
+      };
+
+
+
+      var treeMarkerLine = new qx.ui.basic.Terminator;
+      
+      treeMarkerLine.setHeight(2);
+      treeMarkerLine.setBackgroundColor("#335EA8");
+      treeMarkerLine.setWidth(20);
+      treeMarkerLine.setZIndex(1e7);
+      treeMarkerLine.setAnonymous(true);
+      treeMarkerLine.setStyleProperty("display", "none");
+      
+      qx.ui.core.ClientDocument.getInstance().add(treeMarkerLine);
+      
+
+
+      var treeSource = new qx.ui.tree.Tree("Source");
+
+      with(treeSource)
+      {
+        setBackgroundColor(255);
+        setBorder(qx.renderer.border.BorderPresets.getInstance().thinInset);
+        setOverflow("scrollY");
+
+        setHeight(null);
+        setTop(48);
+        setLeft(20);
+        setWidth(200);
+        setBottom(48);
+        
+        addEventListener("dragdrop", handleDragDrop); 
+        addEventListener("dragover", handleDragOver);
+        addEventListener("dragout", handleDragOut);
+        addEventListener("dragmove", handleDragMove);
+
+        setDropDataTypes(["qx.ui.tree.AbstractTreeElement"]);
+      };
+
+      qx.ui.core.ClientDocument.getInstance().add(treeSource);
+      
+      for (var i=1, f; i<3; i++)
+      {
+        f = new qx.ui.tree.TreeFolder("Folder " + i);
+        
+        f.addEventListener("dragstart", handleDragStart);
+        f.addEventListener("dragdrop", handleDragDrop); 
+        f.addEventListener("dragover", handleDragOver);
+        f.addEventListener("dragout", handleDragOut);
+        f.addEventListener("dragend", handleDragEnd);
+        
+        f.setDropDataTypes(["qx.ui.tree.AbstractTreeElement"]);
+        f.supportsDrop = supportsDrop;
+        
+        treeSource.add(f);
+        
+        for (var j=1, g; j<6; j++)
+        {
+          g = new qx.ui.tree.TreeFolder("Subfolder " + j);
+          
+          g.addEventListener("dragstart", handleDragStart);
+          g.addEventListener("dragdrop", handleDragDrop); 
+          g.addEventListener("dragover", handleDragOver);
+          g.addEventListener("dragout", handleDragOut);
+          g.addEventListener("dragend", handleDragEnd);
+          
+          g.setDropDataTypes(["qx.ui.tree.AbstractTreeElement"]);
+          g.supportsDrop = supportsDrop;
+          
+          f.add(g);
+          
+          for (var k=1, h; k<9; k++)
+          {
+            h = new qx.ui.tree.TreeFile("File " + k);
+            
+            h.addEventListener("dragstart", handleDragStart);
+            
+            g.add(h);
+          };
+        };
+      };
+      
+      
+
+
+
+
+      var treeDest = new qx.ui.tree.Tree("Dest");
+
+      with(treeDest)
+      {
+        setBackgroundColor(255);
+        setBorder(qx.renderer.border.BorderPresets.getInstance().thinInset);
+        setOverflow("scrollY");
+
+        setHeight(null);
+        setTop(48);
+        setLeft(240);
+        setWidth(200);
+        setBottom(48);
+        
+        addEventListener("dragdrop", handleDragDrop); 
+        addEventListener("dragover", handleDragOver);
+        addEventListener("dragout", handleDragOut);
+        addEventListener("dragmove", handleDragMove);
+
+        setDropDataTypes(["qx.ui.tree.AbstractTreeElement"]);
+      };
+
+      qx.ui.core.ClientDocument.getInstance().add(treeDest);
+    });
+  </script>
+</body>
+</html>

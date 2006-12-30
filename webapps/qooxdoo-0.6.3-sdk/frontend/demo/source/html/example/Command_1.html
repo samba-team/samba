@@ -1,0 +1,141 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>An example showing global shortcut commands in action. The commands are linked with menu-items, but 
+    could also be executed with the corresponding shortcut.</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+    
+    /* comamnds */
+    var undo_cmd         = new qx.client.Command("Ctrl+Z");
+    undo_cmd.addEventListener("execute", function(){ this.debug("undo Command executed"); }, this);
+    
+    var redo_cmd         = new qx.client.Command("Ctrl+Y");
+    redo_cmd.addEventListener("execute", function(){ this.debug("redo Command executed"); }, this);
+
+    var cut_cmd          = new qx.client.Command("Ctrl+X");
+    cut_cmd.addEventListener("execute", function(){ this.debug("cut Command executed"); }, this);
+    
+    var copy_cmd         = new qx.client.Command("Ctrl+C");
+    copy_cmd.addEventListener("execute", function(){ this.debug("copy Command executed"); }, this);
+    
+    var paste_cmd        = new qx.client.Command("Ctrl+V");
+    paste_cmd.addEventListener("execute", function(){ this.debug("paste Command executed"); }, this);
+    
+    var delete_cmd       = new qx.client.Command("Del");
+    delete_cmd.addEventListener("execute", function(){ this.debug("delete Command executed"); }, this);
+    
+    var select_all_cmd   = new qx.client.Command("Ctrl+A");
+    select_all_cmd.addEventListener("execute", function(){ this.debug("select all Command executed"); }, this);
+    
+    var search_cmd       = new qx.client.Command("Ctrl+F");
+    search_cmd.addEventListener("execute", function(){ this.debug("search Command executed"); }, this);
+    
+    var search_again_cmd = new qx.client.Command("F3");
+    search_again_cmd.addEventListener("execute", function(){ this.debug("search again Command executed"); }, this);
+    
+    /* building the menu */
+    var m2 = new qx.ui.menu.Menu;
+
+    var mb2_01 = new qx.ui.menu.Button("New Window");
+    var mb2_02 = new qx.ui.menu.Button("Overlapping");
+    var mb2_03 = new qx.ui.menu.Button("Split Vertical");
+    var mb2_04 = new qx.ui.menu.Button("Split Horizontal");
+    var mb2_05 = new qx.ui.menu.Button("Next Window");
+    var mb2_06 = new qx.ui.menu.Button("Previous Window");
+
+    m2.add(mb2_01, mb2_02, mb2_03, mb2_04, mb2_05, mb2_06);
+
+
+    var m3 = new qx.ui.menu.Menu;
+
+    var mb3_01 = new qx.ui.menu.Button("Tahoma, 11pt");
+    var mb3_02 = new qx.ui.menu.Button("Tahoma, 12pt");
+    var mb3_03 = new qx.ui.menu.Button("Tahoma, 13pt");
+    var mb3_04 = new qx.ui.menu.Button("Tahoma, 14pt");
+    var mb3_05 = new qx.ui.menu.Button("Tahoma, 15pt");
+
+    m3.add(mb3_01, mb3_02, mb3_03, mb3_04, mb3_05);
+
+
+    var m1 = new qx.ui.menu.Menu;
+
+    var mb1_01 = new qx.ui.menu.Button("View/Lists");
+    var mb1_02 = new qx.ui.menu.Button("Syntax Highlighting");
+    var ms1    = new qx.ui.menu.Separator();
+    var mb1_03 = new qx.ui.menu.Button("Window Font");
+    var mb1_04 = new qx.ui.menu.Button("Printer Font", null, null, m3);
+    var ms2    = new qx.ui.menu.Separator();
+    var mb1_05 = new qx.ui.menu.Button("Undo", null, undo_cmd);
+    var mb1_06 = new qx.ui.menu.Button("Redo", null, redo_cmd);
+    var ms3    = new qx.ui.menu.Separator();
+    var mb1_07 = new qx.ui.menu.Button("Cut", "icon/16/edit-cut.png", cut_cmd);
+    var mb1_08 = new qx.ui.menu.Button("Copy", "icon/16/edit-copy.png", copy_cmd);
+    var mb1_09 = new qx.ui.menu.Button("Paste", "icon/16/edit-paste.png", paste_cmd);
+    var mb1_10 = new qx.ui.menu.Button("Delete", "icon/16/edit-delete.png", delete_cmd);
+    var mb1_11 = new qx.ui.menu.Button("Select All", null, select_all_cmd);
+    var ms4    = new qx.ui.menu.Separator();
+    var mb1_12 = new qx.ui.menu.Button("Search", null, search_cmd);
+    var mb1_13 = new qx.ui.menu.Button("Search Again", null, search_again_cmd);
+    var ms5    = new qx.ui.menu.Separator();
+    var mb1_14 = new qx.ui.menu.Button("View", null, null, m2);
+    var mb1_15 = new qx.ui.menu.Button("Editor Settings...");
+    var mb1_16 = new qx.ui.menu.Button("Editor Plugins");
+    var mb1_17 = new qx.ui.menu.Button("Framework Settings");
+
+    m1.add(mb1_01, mb1_02, ms1, mb1_03, mb1_04, ms2, mb1_05, mb1_06, ms3, mb1_07, mb1_08, mb1_09, mb1_10, mb1_11, ms4, mb1_12, mb1_13, ms5, mb1_14, mb1_15, mb1_16, mb1_17);
+
+
+    d.add(m1, m2, m3);
+
+
+    var w1 = new qx.ui.form.Button("Open");
+
+    w1.setTop(48);
+    w1.setLeft(20);
+
+    w1.addEventListener("click", function(e)
+    {
+      if (m1.isSeeable())
+      {
+        m1.hide();
+      }
+      else
+      {
+        var el = this.getElement();
+
+        m1.setLeft(qx.dom.Location.getPageBoxLeft(el));
+        m1.setTop(qx.dom.Location.getPageBoxBottom(el));
+
+        m1.show();
+      };
+
+      e.setPropagationStopped(true);
+    });
+
+    w1.addEventListener("mousedown", function(e)
+    {
+      e.setPropagationStopped(true);
+    });
+
+
+    d.add(w1);    
+  });
+  </script>
+</body>
+</html>
