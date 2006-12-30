@@ -105,4 +105,27 @@ ${hxtool} issue-certificate \
 	  --req="pkcs10-request.der" \
 	  --certificate="cert-ee.der" || exit 1
 
+echo "issue self-signed cert"
+${hxtool} issue-certificate \
+	  --self-signed \
+	  --ca-private-key=$srcdir/data/key.der \
+	  --subject="cn=test" \
+	  --certificate="cert-ee.der" || exit 1
+
+echo "issue ca cert"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
+	  --issue-ca \
+	  --subject="cn=ca-cert" \
+	  --req="pkcs10-request.der" \
+	  --certificate="cert-ca.der" || exit 1
+
+echo "issue self-signed ca cert"
+${hxtool} issue-certificate \
+	  --self-signed \
+	  --issue-ca \
+	  --ca-private-key=$srcdir/data/key.der \
+	  --subject="cn=ca-root" \
+	  --certificate="cert-ca.der" || exit 1
+
 exit 0
