@@ -1,0 +1,184 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Again a nice example which shows how to use qx.ui.toolbar.ToolBar as a menubar system.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+      
+      var c1 = new qx.client.Command();
+      c1.addEventListener("execute", function(e) {
+        this.debug("Execute: " + e.getData().getLabel());
+      });
+      
+      
+      
+
+      var m1 = new qx.ui.menu.Menu;
+      
+      var mb1_01 = new qx.ui.menu.Button("New", null, c1);
+      var mb1_02 = new qx.ui.menu.Button("Open", null, c1);
+      var mb1_03 = new qx.ui.menu.Button("Save", null, c1);
+      var mb1_04 = new qx.ui.menu.Button("Save as", null, c1);
+      var mb1_05 = new qx.ui.menu.Button("Close", null, c1);
+      var mb1_06 = new qx.ui.menu.Button("Restore last saved", null, c1);
+      
+      m1.add(mb1_01, mb1_02, mb1_03, mb1_04, mb1_05, mb1_06);
+
+
+      var m2 = new qx.ui.menu.Menu;
+
+      var mb2_01 = new qx.ui.menu.Button("Undo", null, c1);
+      var mb2_02 = new qx.ui.menu.Button("Redo", null, c1);
+      var mb2_b1 = new qx.ui.menu.Separator();
+      var mb2_03 = new qx.ui.menu.Button("Cut", "icon/16/edit-cut.png", c1);
+      var mb2_04 = new qx.ui.menu.Button("Copy", "icon/16/edit-copy.png", c1);
+      var mb2_05 = new qx.ui.menu.Button("Paste", "icon/16/edit-paste.png", c1);
+      var mb2_06 = new qx.ui.menu.Button("Delete", "icon/16/edit-delete.png", c1);
+      var mb2_b2 = new qx.ui.menu.Separator();
+      var mb2_07 = new qx.ui.menu.Button("Select All", null, c1);
+      var mb2_08 = new qx.ui.menu.Button("Find", null, c1);
+      var mb2_09 = new qx.ui.menu.Button("Find Again", null, c1);
+      
+      
+      
+
+      mb2_05.setEnabled(false);
+      mb2_06.setEnabled(false);
+      mb2_09.setEnabled(false);
+      
+      m2.add(mb2_01, mb2_02, mb2_b1, mb2_03, mb2_04, mb2_05, mb2_06, mb2_b2, mb2_07, mb2_08, mb2_09);
+
+
+      var m3 = new qx.ui.menu.Menu;
+      var m3_suba = new qx.ui.menu.Menu;
+      var m3_subb = new qx.ui.menu.Menu;
+      var m3_subc = new qx.ui.menu.Menu;
+      var m3_subd = new qx.ui.menu.Menu;
+
+      var mb3_01 = new qx.ui.menu.CheckBox("File List", c1, false);
+      var mb3_02 = new qx.ui.menu.CheckBox("Syntax Highlighting", c1, true);
+      var mb3_03 = new qx.ui.menu.CheckBox("Statusbar", c1, true);
+      var mb3_b1 = new qx.ui.menu.Separator();
+      var mb3_04 = new qx.ui.menu.Button("Printer Font", null, null, m3_suba);
+      var mb3_05 = new qx.ui.menu.Button("Editor Font", null, null, m3_subb);
+      var mb3_06 = new qx.ui.menu.Button("Export Font", null, null, m3_subc);
+      var mb3_b2 = new qx.ui.menu.Separator();
+      var mb3_07 = new qx.ui.menu.Button("Advanced", null, null, m3_subd);
+      
+      m3.add(mb3_01, mb3_02, mb3_03, mb3_b1, mb3_04, mb3_05, mb3_06, mb3_b2, mb3_07);
+      
+      var mb3_suba_01 = new qx.ui.menu.Button("Tahoma, 11pt", null, c1);
+      var mb3_suba_02 = new qx.ui.menu.Button("Tahoma, 12pt", null, c1);
+      var mb3_suba_03 = new qx.ui.menu.Button("Tahoma, 13pt", null, c1);
+      var mb3_suba_04 = new qx.ui.menu.Button("Tahoma, 14pt", null, c1);
+      var mb3_suba_05 = new qx.ui.menu.Button("Tahoma, 15pt", null, c1);
+
+      m3_suba.add(mb3_suba_01, mb3_suba_02, mb3_suba_03, mb3_suba_04, mb3_suba_05);      
+      
+      var mb3_subb_01 = new qx.ui.menu.Button("Verdana, 11pt", null, c1);
+      var mb3_subb_02 = new qx.ui.menu.Button("Verdana, 12pt", null, c1);
+      var mb3_subb_03 = new qx.ui.menu.Button("Verdana, 13pt", null, c1);
+      var mb3_subb_04 = new qx.ui.menu.Button("Verdana, 14pt", null, c1);
+      var mb3_subb_05 = new qx.ui.menu.Button("Verdana, 15pt", null, c1);
+
+      m3_subb.add(mb3_subb_01, mb3_subb_02, mb3_subb_03, mb3_subb_04, mb3_subb_05);      
+
+      var mb3_subc_01 = new qx.ui.menu.Button("Courier, 11pt", null, c1);
+      var mb3_subc_02 = new qx.ui.menu.Button("Courier, 12pt", null, c1);
+      var mb3_subc_03 = new qx.ui.menu.Button("Courier, 13pt", null, c1);
+      var mb3_subc_04 = new qx.ui.menu.Button("Courier, 14pt", null, c1);
+      var mb3_subc_05 = new qx.ui.menu.Button("Courier, 15pt", null, c1);
+
+      m3_subc.add(mb3_subc_01, mb3_subc_02, mb3_subc_03, mb3_subc_04, mb3_subc_05);      
+      
+      var mb3_subd_02_suba = new qx.ui.menu.Menu();
+      
+      var mb3_subd_02_suba_01 = new qx.ui.menu.Button("First", null, c1);
+      var mb3_subd_02_suba_02 = new qx.ui.menu.Button("Second", null, c1);
+      var mb3_subd_02_suba_03 = new qx.ui.menu.Button("Third", null, c1);
+      
+      mb3_subd_02_suba.add(mb3_subd_02_suba_01, mb3_subd_02_suba_02, mb3_subd_02_suba_03);
+      
+      var mb3_subd_01 = new qx.ui.menu.Button("First", null, c1);
+      var mb3_subd_02 = new qx.ui.menu.Button("Second", null, c1, mb3_subd_02_suba);
+      var mb3_subd_03 = new qx.ui.menu.Button("Third", null, c1);
+
+      m3_subd.add(mb3_subd_01, mb3_subd_02, mb3_subd_03);
+      
+      var m4 = new qx.ui.menu.Menu;
+      
+      var m4_suba = new qx.ui.menu.Menu;      
+
+      var mb4_01 = new qx.ui.menu.Button("View", null, c1, m4_suba);
+      var mb4_b1 = new qx.ui.menu.Separator();
+      var mb4_02 = new qx.ui.menu.Button("Editor Preferences...", null, c1);
+      var mb4_03 = new qx.ui.menu.Button("Editor Extensions", null, c1);
+      var mb4_04 = new qx.ui.menu.Button("Framework Preferences", null, c1);
+
+      m4.add(mb4_01, mb4_b1, mb4_02, mb4_03, mb4_04);
+      
+      var mb4_suba_01 = new qx.ui.menu.Button("New Window", null, c1);
+      var mb4_suba_b1 = new qx.ui.menu.Separator();
+      var mb4_suba_02 = new qx.ui.menu.RadioButton("Overlapping", c1, true);
+      var mb4_suba_03 = new qx.ui.menu.RadioButton("Split Horizontally", c1);
+      var mb4_suba_04 = new qx.ui.menu.RadioButton("Split Vertically", c1);
+      var mb4_suba_b2 = new qx.ui.menu.Separator();
+      var mb4_suba_05 = new qx.ui.menu.Button("Next Window", null, c1);
+      var mb4_suba_06 = new qx.ui.menu.Button("Previous Window", null, c1);
+
+      m4_suba.add(mb4_suba_01, mb4_suba_b1, mb4_suba_02, mb4_suba_03, mb4_suba_04, mb4_suba_b2, mb4_suba_05, mb4_suba_06);
+
+      var mb4_manager = new qx.manager.selection.RadioManager("windowMode", [ mb4_suba_02, mb4_suba_03, mb4_suba_04 ]);
+
+ 
+      var m5 = new qx.ui.menu.Menu;
+      
+      var mb5_01 = new qx.ui.menu.Button("Help", null, c1);
+      var mb5_02 = new qx.ui.menu.Button("About", null, c1);
+      
+      m5.add(mb5_01, mb5_02);
+      
+      d.add(m1, m2, m3, m3_suba, m3_subb, m3_subc, m3_subd, mb3_subd_02_suba, m4, m4_suba, m5);
+
+
+      var mb1 = new qx.ui.toolbar.ToolBar;
+      
+      mb1.setTop(48);
+      mb1.setRight(335);
+      mb1.setLeft(20);      
+      
+      var mbb1 = new qx.ui.toolbar.MenuButton("File", m1);
+      var mbb2 = new qx.ui.toolbar.MenuButton("Edit", m2);
+      var mbb3 = new qx.ui.toolbar.MenuButton("View", m3);
+      var mbb4 = new qx.ui.toolbar.MenuButton("Options", m4);
+      var mbb5 = new qx.ui.toolbar.MenuButton("Help", m5);
+            
+      mb1.add(mbb1, mbb2, mbb3, mbb4, mbb5);
+      
+      d.add(mb1);
+      
+      
+      
+
+      // Icon & Color Themes
+      qx.manager.object.ImageManager.getInstance().createThemeList(d, 20, 348);
+      qx.manager.object.ColorManager.getInstance().createThemeList(d, 220, 348);      
+    });
+  </script>
+</body>
+</html>

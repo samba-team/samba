@@ -1,0 +1,322 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Layout tests for qx.ui.basic.Atom reimplementation.</p>
+  </div>
+  
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+      
+      
+      var a1 = new qx.ui.basic.Atom;
+      a1.setLabel("hello world");
+      a1.setTop(48);
+      a1.setLeft(20);
+      a1.setPadding(2, 4);
+      a1.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(a1);
+
+      var a2 = new qx.ui.basic.Atom;
+      a2.setIcon("icon/32/run.png");
+      a2.setTop(48);
+      a2.setLeft(120);
+      a2.setPadding(2, 4);
+      a2.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(a2);
+
+
+      
+
+      var b1 = new qx.ui.basic.Atom;
+      b1.setLabel("hello world");
+      b1.setIcon("icon/32/run.png");
+      b1.setIconPosition("left");
+      b1.setTop(100);
+      b1.setLeft(20);
+      b1.setPadding(2, 4);
+      b1.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(b1);
+      
+      var b2 = new qx.ui.basic.Atom;
+      b2.setLabel("hello world");
+      b2.setIcon("icon/32/run.png");
+      b2.setIconPosition("top");
+      b2.setTop(100);
+      b2.setLeft(120);
+      b2.setPadding(2, 4);
+      b2.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(b2);
+      
+      var b3 = new qx.ui.basic.Atom;
+      b3.setLabel("hello world");
+      b3.setIcon("icon/32/run.png");
+      b3.setIconPosition("right");
+      b3.setTop(100);
+      b3.setLeft(220);
+      b3.setPadding(2, 4);
+      b3.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(b3);
+      
+      var b4 = new qx.ui.basic.Atom;
+      b4.setLabel("hello world");
+      b4.setIcon("icon/32/run.png");
+      b4.setIconPosition("bottom");
+      b4.setTop(100);
+      b4.setLeft(320);
+      b4.setPadding(2, 4);
+      b4.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(b4);   
+      
+      
+      
+      
+      var c1 = new qx.ui.basic.Atom;
+      c1.setLabel("hello world");
+      c1.setIcon("icon/32/run.png");
+      c1.setShow("icon");
+      c1.setTop(180);
+      c1.setLeft(20);
+      c1.setPadding(2, 4);
+      c1.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(c1);
+      
+      var c2 = new qx.ui.basic.Atom;
+      c2.setLabel("hello world");
+      c2.setIcon("icon/32/run.png");
+      c2.setShow("label");
+      c2.setTop(180);
+      c2.setLeft(120);
+      c2.setPadding(2, 4);
+      c2.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(c2);
+                  
+                  
+                 
+                  
+                  
+      var d1 = new qx.ui.basic.Atom;
+      d1.setLabel("hello world");
+      d1.setIcon("icon/32/run.png");
+      d1.setShow("icon");
+      d1.setTop(250);
+      d1.setLeft(20);
+      d1.setPadding(2, 4);
+      d1.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(d1);                           
+      d1.setShow("both");
+       
+      var d2 = new qx.ui.basic.Atom;
+      d2.setLabel("hello world");
+      d2.setIcon("icon/32/run.png");
+      d2.setShow("label");
+      d2.setTop(250);
+      d2.setLeft(120);
+      d2.setPadding(2, 4);
+      d2.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(d2);                           
+      d2.setShow("both");   
+      
+      var d3 = new qx.ui.basic.Atom;
+      d3.setLabel("hello world");
+      d3.setIcon("icon/32/run.png");
+      d3.setShow("none");
+      d3.setTop(250);
+      d3.setLeft(220);
+      d3.setPadding(2, 4);
+      d3.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(d3);                           
+      d3.setShow("both");
+      
+      
+      
+      
+      var e1 = new qx.ui.basic.Atom;
+      e1.setIcon("icon/32/run.png");
+      e1.setShow("none");
+      e1.setTop(300);
+      e1.setLeft(20);
+      e1.setPadding(2, 4);
+      e1.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(e1);
+      e1.setShow("both");      
+      e1.setLabel("hello world");      
+      
+      var e2 = new qx.ui.basic.Atom;
+      e2.setLabel("hello world");
+      e2.setShow("none");
+      e2.setTop(300);
+      e2.setLeft(120);
+      e2.setPadding(2, 4);
+      e2.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(e2);
+      e2.setShow("both");      
+      e2.setIcon("icon/32/run.png");       
+        
+      var e3 = new qx.ui.basic.Atom;
+      e3.setShow("none");
+      e3.setTop(300);
+      e3.setLeft(220);
+      e3.setPadding(2, 4);
+      e3.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(e3);
+      e3.setShow("both");      
+      e3.setIcon("icon/32/run.png");            
+      e3.setLabel("hello world");
+
+      var e4 = new qx.ui.basic.Atom;
+      e4.setShow("none");
+      e4.setTop(300);
+      e4.setLeft(320);
+      e4.setPadding(2, 4);
+      e4.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(e4);
+      e4.setShow("both");      
+      e4.setLabel("hello world");         
+      e4.setIcon("icon/32/run.png");            
+      
+      
+      
+      
+      var f1 = new qx.ui.basic.Atom;
+      f1.setLabel("hello world");
+      f1.setIcon("icon/32/run.png");
+      f1.setIconPosition("left");
+      f1.setTop(350);
+      f1.setLeft(20);
+      f1.setPadding(2, 4);
+      f1.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(f1);
+      f1.setIconPosition("top");
+      
+      var f2 = new qx.ui.basic.Atom;
+      f2.setLabel("hello world");
+      f2.setIcon("icon/32/run.png");
+      f2.setIconPosition("left");
+      f2.setTop(350);
+      f2.setLeft(120);
+      f2.setPadding(2, 4);
+      f2.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(f2);
+      f2.setIconPosition("right");      
+      
+      var f3 = new qx.ui.basic.Atom;
+      f3.setLabel("hello world");
+      f3.setIcon("icon/32/run.png");
+      f3.setIconPosition("left");
+      f3.setTop(350);
+      f3.setLeft(220);
+      f3.setPadding(2, 4);
+      f3.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(f3);
+      f3.setIconPosition("bottom");      
+      
+      
+      
+      
+      var g1 = new qx.ui.basic.Atom;
+      g1.setLabel("hello world");
+      g1.setIcon("icon/32/run.png");
+      g1.setIconPosition("top");
+      g1.setTop(450);
+      g1.setLeft(20);
+      g1.setPadding(2, 4);
+      g1.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(g1);
+      g1.setIconPosition("right");
+      
+      var g2 = new qx.ui.basic.Atom;
+      g2.setLabel("hello world");
+      g2.setIcon("icon/32/run.png");
+      g2.setIconPosition("top");
+      g2.setTop(450);
+      g2.setLeft(120);
+      g2.setPadding(2, 4);
+      g2.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(g2);
+      g2.setIconPosition("bottom");      
+      
+      var g3 = new qx.ui.basic.Atom;
+      g3.setLabel("hello world");
+      g3.setIcon("icon/32/run.png");
+      g3.setIconPosition("top");
+      g3.setTop(450);
+      g3.setLeft(220);
+      g3.setPadding(2, 4);
+      g3.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(g3);
+      g3.setIconPosition("left");       
+      
+      
+      
+      
+      
+      
+      var h1 = new qx.ui.basic.Atom;
+      h1.setLabel("hello world");
+      h1.setIcon("icon/32/run.png");
+      h1.setIconPosition("left");
+      h1.setTop(520);
+      h1.setLeft(20);
+      h1.setPadding(2, 4);
+      h1.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(h1);    
+      h1.setSpacing(20);
+      
+      
+      var h2 = new qx.ui.basic.Atom;
+      h2.setLabel("hello world");
+      h2.setIcon("icon/32/run.png");
+      h2.setIconPosition("top");
+      h2.setTop(520);
+      h2.setLeft(150);
+      h2.setPadding(2, 4);
+      h2.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      d.add(h2);
+      h2.setSpacing(20);
+            
+      
+      
+      
+
+      
+      var i1 = new qx.ui.basic.Atom;
+      i1.setLabel("hello world");
+      i1.setIcon("icon/32/run.png");
+      i1.setIconPosition("left");
+      i1.setTop(600);
+      i1.setLeft(20);
+      i1.setPadding(2, 4);
+      i1.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      i1.setHeight(150);
+      i1.setWidth(150);
+      d.add(i1);
+      
+      var i2 = new qx.ui.basic.Atom;
+      i2.setLabel("hello world");
+      i2.setIcon("icon/32/run.png");
+      i2.setIconPosition("top");
+      i2.setTop(600);
+      i2.setLeft(200);
+      i2.setPadding(2, 4);
+      i2.setBorder(qx.renderer.border.BorderPresets.getInstance().outset);     
+      i2.setWidth(150);
+      i2.setHeight(150);
+      d.add(i2);      
+
+    });
+  </script>
+</body>
+</html>

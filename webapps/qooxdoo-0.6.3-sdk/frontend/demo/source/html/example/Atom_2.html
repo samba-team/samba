@@ -1,0 +1,172 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Some more complex tests for qx.ui.basic.Atom.</p>
+    <p>You can change all the properties before "really creating" the object or any time after this was done.</p>
+  </div>
+
+  <div style="display:none" id="control">
+    <p>
+      Width:
+      <a href="javascript://" onclick="void(at1.setWidth(null))">null</a> |
+      <a href="javascript://" onclick="void(at1.setWidth('auto'))">auto</a> |
+      <a href="javascript://" onclick="void(at1.setWidth(25))">25</a> |
+      <a href="javascript://" onclick="void(at1.setWidth(50))">50</a> |
+      <a href="javascript://" onclick="void(at1.setWidth(100))">100</a> |
+      <a href="javascript://" onclick="void(at1.setWidth(200))">200</a>
+    </p>
+    <p>
+      Height:
+      <a href="javascript://" onclick="void(at1.setHeight(null))">null</a> |
+      <a href="javascript://" onclick="void(at1.setHeight('auto'))">auto</a> |
+      <a href="javascript://" onclick="void(at1.setHeight(25))">25</a> |
+      <a href="javascript://" onclick="void(at1.setHeight(50))">50</a> |
+      <a href="javascript://" onclick="void(at1.setHeight(100))">100</a> |
+      <a href="javascript://" onclick="void(at1.setHeight(200))">200</a>
+    </p>
+    <hr/>
+    <p>
+      Label Size:
+      <a href="javascript://" onclick="void(at1.setLabel(null))">null</a> |
+      <a href="javascript://" onclick="void(at1.setLabel('short'))">short</a> |
+      <a href="javascript://" onclick="void(at1.setLabel('some cool label'))">medium</a> |
+      <a href="javascript://" onclick="void(at1.setLabel('ultra long label description'))">long</a> |
+      <a href="javascript://" onclick="void(at1.setLabel('<b>hello <i>world</i></b>'))">html</a> |
+      <a href="javascript://" onclick="void(at1.setLabel('<p>Hello tester.</p><ul><li>cool</li><li><b>test</b></li><li>file</li></ul>'))">complex</a>
+    </p>
+    <p>
+      Icon Size:
+      <a href="javascript://" onclick="void(at1.setIcon(null))">null</a> |
+      <a href="javascript://" onclick="void(at1.setIcon('icon/16/date.png'))">16px</a> |
+      <a href="javascript://" onclick="void(at1.setIcon('icon/32/colors.png'))">32px</a> |
+      <a href="javascript://" onclick="void(at1.setIcon('icon/48/memory.png'))">48px</a>
+    </p>
+    <p>
+      Icon Position:
+      <a href="javascript://" onclick="void(at1.setIconPosition('top'))">top</a> |
+      <a href="javascript://" onclick="void(at1.setIconPosition('right'))">right</a> |
+      <a href="javascript://" onclick="void(at1.setIconPosition('bottom'))">bottom</a> |
+      <a href="javascript://" onclick="void(at1.setIconPosition('left'))">left</a>
+    </p>
+    <p>
+      Spacing:
+      <a href="javascript://" onclick="void(at1.setSpacing(0))">0</a> |
+      <a href="javascript://" onclick="void(at1.setSpacing(2))">2</a> |
+      <a href="javascript://" onclick="void(at1.setSpacing(4))">4</a> |
+      <a href="javascript://" onclick="void(at1.setSpacing(6))">6</a> |
+      <a href="javascript://" onclick="void(at1.setSpacing(8))">8</a> |
+      <a href="javascript://" onclick="void(at1.setSpacing(10))">10</a> |
+      <a href="javascript://" onclick="void(at1.setSpacing(25))">25</a> |
+      <a href="javascript://" onclick="void(at1.setSpacing(50))">50</a>
+    </p>
+    <hr/>
+    <p>
+      Show:
+      <a href="javascript://" onclick="void(at1.setShow('none'))">None</a> |
+      <a href="javascript://" onclick="void(at1.setShow('label'))">Label</a> |
+      <a href="javascript://" onclick="void(at1.setShow('icon'))">Icon</a> |
+      <a href="javascript://" onclick="void(at1.setShow('both'))">Both</a>
+    </p>
+    <hr/>
+    <p>
+      Horizontal Children Align:
+      <a href="javascript://" onclick="void(at1.setHorizontalChildrenAlign('left'))">left</a> |
+      <a href="javascript://" onclick="void(at1.setHorizontalChildrenAlign('center'))">center</a> |
+      <a href="javascript://" onclick="void(at1.setHorizontalChildrenAlign('right'))">right</a>
+    </p>
+    <p>
+      Vertical Children Align:
+      <a href="javascript://" onclick="void(at1.setVerticalChildrenAlign('top'))">top</a> |
+      <a href="javascript://" onclick="void(at1.setVerticalChildrenAlign('middle'))">middle</a> |
+      <a href="javascript://" onclick="void(at1.setVerticalChildrenAlign('bottom'))">bottom</a>
+    </p>
+    <hr/>
+    <p>
+      Padding:
+      <a href="javascript://" onclick="void(at1.setPadding(null))">None</a> |
+      <a href="javascript://" onclick="void(at1.setPadding(2, 4))">2, 4</a> |
+      <a href="javascript://" onclick="void(at1.setPadding(4, 8))">4, 8</a> |
+      <a href="javascript://" onclick="void(at1.setPadding(16))">16</a>
+    </p>
+    <p>
+      Border:
+      <a href="javascript://" onclick="void(at1.setBorder(null))">null</a> |
+      <a href="javascript://" onclick="void(at1.setBorder(new qx.renderer.border.Border(1, 'solid', 'black')))">1</a> |
+      <a href="javascript://" onclick="void(at1.setBorder(new qx.renderer.border.Border(5, 'solid', 'black')))">5</a> |
+      <a href="javascript://" onclick="void(at1.setBorder(new qx.renderer.border.Border(10, 'solid', 'black')))">10</a> |
+      <a href="javascript://" onclick="void(at1.setBorder(new qx.renderer.border.Border(25, 'solid', 'black')))">25</a> |
+      <a href="javascript://" onclick="void(at1.setBorder(qx.renderer.border.BorderPresets.getInstance().outset))">outset</a> |
+      <a href="javascript://" onclick="void(at1.setBorder(qx.renderer.border.BorderPresets.getInstance().inset))">inset</a>
+    </p>
+    <hr/>
+    <p>
+      Opacity:
+      <a href="javascript://" onclick="void(at1.setOpacity(null))">null</a> |
+      <a href="javascript://" onclick="void(at1.setOpacity(0))">0</a> |
+      <a href="javascript://" onclick="void(at1.setOpacity(0.25))">0.25</a> |
+      <a href="javascript://" onclick="void(at1.setOpacity(0.5))">0.5</a> |
+      <a href="javascript://" onclick="void(at1.setOpacity(0.75))">0.75</a> |
+      <a href="javascript://" onclick="void(at1.setOpacity(1))">1</a>
+    </p>
+    <p>
+      Enabled:
+      <a href="javascript://" onclick="void(at1.setEnabled(false))">false</a> |
+      <a href="javascript://" onclick="void(at1.setEnabled(true))">true</a>
+    </p>
+  </div>
+
+  <script type="text/javascript">
+  var at1;
+
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    at1 = new qx.ui.basic.Atom("My first qx.ui.basic.Atom", "icon/32/colors.png");
+
+    with(at1)
+    {
+      setTop(48);
+      setLeft(20);
+
+      setIconPosition("right");
+
+      setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+      setBackgroundColor(new qx.renderer.color.Color("white"));
+      setPadding(2, 4);
+    };
+
+    var ct1 = new qx.ui.basic.Label(document.getElementById("control").innerHTML);
+
+    with(ct1)
+    {
+      setWidth(300);
+      setRight(335);
+
+      setHeight(null);
+      setTop(48);
+      setBottom(48);
+
+      setOverflow("auto");
+
+      setBackgroundColor(new qx.renderer.color.Color("white"));
+      setBorder(qx.renderer.border.BorderPresets.getInstance().groove);
+      setPadding(10);
+    };
+
+    d.add(at1, ct1);
+  });
+  </script>
+</body>
+</html>

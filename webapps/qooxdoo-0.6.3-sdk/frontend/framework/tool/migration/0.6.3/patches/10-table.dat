@@ -1,0 +1,25 @@
+\bqx\.ui\.table\.DefaultDataCellRenderer\.INTERNAL_STYLE_ALIGN_RIGHT=";text-align:right"
+\bqx\.ui\.table\.DefaultDataCellRenderer\.INTERNAL_STYLE_BOLD=";font-weight:bold"
+\bqx\.ui\.table\.DefaultDataCellRenderer\.INTERNAL_STYLE_ITALIC=";font-style:italic"
+
+\bqx\.ui\.table\.TablePane\.ARRAY_JOIN_ROW_DIV_START\b='<div style\="position:absolute;font-family:\'Segoe UI\', Corbel, Calibri, Tahoma, \'Lucida Sans Unicode\', sans-serif;font-size:11px;left:0px;top:'
+\bqx\.ui\.table\.TablePane\.ARRAY_JOIN_ROW_DIV_WIDTH\b='px;width:'
+\bqx\.ui\.table\.TablePane\.ARRAY_JOIN_ROW_DIV_HEIGHT\b='px;height:'
+\bqx\.ui\.table\.TablePane\.ARRAY_JOIN_ROW_DIV_BG_COLOR\b='px;background-color:'
+\bqx\.ui\.table\.TablePane\.ARRAY_JOIN_ROW_DIV_COLOR\b=';color:'
+\bqx\.ui\.table\.TablePane\.ARRAY_JOIN_ROW_DIV_START_END\b='">'
+\bqx\.ui\.table\.TablePane\.ARRAY_JOIN_ROW_DIV_END\b='</div>'
+
+\bqx\.ui\.table\.TablePane\.CONTENT_CELL_STYLE_LEFT\b='position:absolute;left:'
+\bqx\.ui\.table\.TablePane\.CONTENT_CELL_STYLE_WIDTH\b='px;top:0px;width:'
+\bqx\.ui\.table\.TablePane\.CONTENT_CELL_STYLE_HEIGHT\b='px; height:'
+
+\bqx\.ui\.table\.TablePane\.TABLE_START\b='<table cellspacing\="0" cellpadding\="0" style\="table-layout:fixed;font-family:\'Segoe UI\', Corbel, Calibri, Tahoma, \'Lucida Sans Unicode\', sans-serif;font-size:11px;width:'
+\bqx\.ui\.table\.TablePane\.TABLE_COLGROUP\b='px"><colgroup>'
+\bqx\.ui\.table\.TablePane\.TABLE_COL\b='<col width\="'
+\bqx\.ui\.table\.TablePane\.TABLE_COLEND\b='"/>'
+\bqx\.ui\.table\.TablePane\.TABLE_TBODY\b='</colgroup><tbody>'
+\bqx\.ui\.table\.TablePane\.TABLE_TR\b='<tr style\="height:'
+\bqx\.ui\.table\.TablePane\.TABLE_BGCOLOR\b='px;background-color:'
+\bqx\.ui\.table\.TablePane\.TABLE_TR_END\b='</tr>'
+\bqx\.ui\.table\.TablePane\.TABLE_TBODY_END\b='</tbody></table>'

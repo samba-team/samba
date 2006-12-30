@@ -1,0 +1,111 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test for QxToolTips. Each qx.ui.popup.ToolTip could be assigned to any
+    instance of qx.ui.core.Widget. You could also use one qx.ui.popup.ToolTip instance
+    for multiple QxWidgets (to show the same tooltip any multiple items).</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var c1 = new qx.ui.basic.Atom("Hover me");
+    with(c1)
+    {
+      setTop(48);
+      setLeft(20);
+      setBackgroundColor(new qx.renderer.color.Color("#BDD2EF"));
+      setWidth(100);
+      setHeight(100);
+      setTabIndex(1);
+      setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    };
+    d.add(c1);
+
+
+
+    var c2 = new qx.ui.basic.Atom("Hover me");
+    with(c2)
+    {
+      setTop(48);
+      setLeft(140);
+      setBackgroundColor(new qx.renderer.color.Color("#D1DFAD"));
+      setWidth(100);
+      setHeight(100);
+      setTabIndex(1);
+      setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    };
+    d.add(c2);
+
+
+    var c3 = new qx.ui.basic.Atom("Hover me");
+    with(c3)
+    {
+      setTop(48);
+      setLeft(260);
+      setBackgroundColor(new qx.renderer.color.Color("#D1A4AD"));
+      setWidth(100);
+      setHeight(100);
+      setTabIndex(1);
+      setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    };
+    d.add(c3);
+
+
+    var c4 = new qx.ui.basic.Atom("Hover me");
+    with(c4)
+    {
+      setTop(48);
+      setLeft(380);
+      setBackgroundColor(new qx.renderer.color.Color("#F5E0BB"));
+      setWidth(100);
+      setHeight(100);
+      setTabIndex(1);
+      setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+    };
+    d.add(c4);
+
+
+    var c5 = new qx.ui.basic.Atom("Hover me", "icon/32/colors.png");
+    with(c5)
+    {
+      setTop(248);
+      setLeft(20);
+      setBackgroundColor(new qx.renderer.color.Color("#F5E0BB"));
+      setTabIndex(1);
+      setBorder(qx.renderer.border.BorderPresets.getInstance().outset);
+      setPadding(4);
+    };
+    d.add(c5);
+
+
+    var tt1 = new qx.ui.popup.ToolTip("Hello World #1");
+    c1.setToolTip(tt1);
+    c2.setToolTip(tt1);
+
+    var tt2 = new qx.ui.popup.ToolTip(null, "icon/16/help.png");
+    c3.setToolTip(tt2);
+
+    var tt3 = new qx.ui.popup.ToolTip("Hello World #3", "icon/16/help.png");
+    c4.setToolTip(tt3);
+
+    var tt4 = new qx.ui.popup.ToolTip("Such a great tooltip with a<br/>(show) timeout of 50ms.", "icon/32/bug.png");
+    c5.setToolTip(tt4);
+    tt4.setShowInterval(50);
+  });
+  </script>
+</body>
+</html>
