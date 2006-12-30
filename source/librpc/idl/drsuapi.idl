@@ -519,17 +519,6 @@ interface drsuapi
 		[size_is(num_values)] drsuapi_DsAttributeValueSID *values;
 	} drsuapi_DsAttributeValueCtrSID;
 
-	/* SecurityDescriptor values */
-	typedef struct {
-		[range(0,10485760),value(ndr_size_security_descriptor(sd,ndr->flags))] uint32 __ndr_size;
-		[subcontext(4)] security_descriptor *sd;
-	} drsuapi_DsAttributeValueSecurityDescriptor;
-
-	typedef struct {
-		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueSecurityDescriptor *values;
-	} drsuapi_DsAttributeValueCtrSecurityDescriptor;
-
 	/* NTTIME_1sec values */
 	typedef struct {
 		[range(0,10485760),value(8)] uint32 __ndr_size;
@@ -568,9 +557,6 @@ interface drsuapi
 
 		/* SID */
 		[case(DRSUAPI_ATTRIBUTE_objectSid)] drsuapi_DsAttributeValueCtrSID sid;
-
-		/* SecurityDescriptor */
-		[case(DRSUAPI_ATTRIBUTE_ntSecurityDescriptor)] drsuapi_DsAttributeValueCtrSecurityDescriptor security_descriptor;
 
 		/* UnicodeString */
 		[case(DRSUAPI_ATTRIBUTE_description)]		drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
