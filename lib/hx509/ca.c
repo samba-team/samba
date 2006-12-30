@@ -304,6 +304,7 @@ static int
 ca_sign(hx509_context context,
 	hx509_ca_tbs tbs,
 	hx509_private_key signer,
+	const AuthorityKeyIdentifier *ai,
 	const Name *issuername,
 	hx509_cert *certificate)
 {
@@ -467,7 +468,7 @@ ca_sign(hx509_context context,
 	    goto out;
     }
 
-    /* add SubjectAltName */
+    /* add Subject Alternative Name */
     if (tbs->san.len > 0) {
 	ASN1_MALLOC_ENCODE(GeneralNames, data.data, data.length, 
 			   &tbs->san, &size, ret);
@@ -485,8 +486,25 @@ ca_sign(hx509_context context,
 	    goto out;
     }
 
+    /* Add Authority Key Identifier */
+    if (ai) {
+	ASN1_MALLOC_ENCODE(AuthorityKeyIdentifier, data.data, data.length, 
+			   ai, &size, ret);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	if (size != data.length)
+	    _hx509_abort("internal ASN.1 encoder error");
+	ret = add_extension(context, tbsc, 0,
+			    oid_id_x509_ce_authorityKeyIdentifier(),
+			    &data);
+	free(data.data);
+	if (ret)
+	    goto out;
+    }
+
     /* X509v3 Subject Key Identifier:  */
-    /* X509v3 Authority Key Identifier:  */
 
     ASN1_MALLOC_ENCODE(TBSCertificate, data.data, data.length,tbsc, &size, ret);
     if (ret) {
@@ -519,15 +537,120 @@ out:
     return ret;
 }
 
+static int
+get_AuthorityKeyIdentifier(hx509_context context,
+			   const Certificate *certificate,
+			   AuthorityKeyIdentifier *ai)
+{
+    SubjectKeyIdentifier si;
+    int ret;
+
+    ret = _hx509_find_extension_subject_key_id(certificate, &si);
+    if (0 && ret == 0) {
+	ai->keyIdentifier = calloc(1, sizeof(*ai->keyIdentifier));
+	if (ai->keyIdentifier == NULL) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	ret = der_copy_octet_string(&si, ai->keyIdentifier);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+    } else {
+	GeneralNames gns;
+	GeneralName gn;
+	Name name;
+
+	memset(&gn, 0, sizeof(gn));
+	memset(&gns, 0, sizeof(gns));
+	memset(&name, 0, sizeof(name));
+
+	ai->authorityCertIssuer = 
+	    calloc(1, sizeof(*ai->authorityCertIssuer));
+	if (ai->authorityCertIssuer == NULL) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	ai->authorityCertSerialNumber = 
+	    calloc(1, sizeof(*ai->authorityCertSerialNumber));
+	if (ai->authorityCertSerialNumber == NULL) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+
+	/* 
+	 * XXX unbreak when asn1 compiler handle IMPLICIT
+	 *
+	 * This is so horrible.
+	 */
+
+	ret = copy_Name(&certificate->tbsCertificate.subject, &name);
+	if (ai->authorityCertSerialNumber == NULL) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+
+	gn.element = choice_GeneralName_directoryName;
+	gn.u.directoryName.element = 
+	    choice_GeneralName_directoryName_rdnSequence;
+	gn.u.directoryName.u.rdnSequence = name.u.rdnSequence;
+
+	ret = add_GeneralNames(&gns, &gn);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+
+	ai->authorityCertIssuer->val = gns.val;
+	ai->authorityCertIssuer->len = gns.len;
+
+	ret = der_copy_heim_integer(&certificate->tbsCertificate.serialNumber,
+				    ai->authorityCertSerialNumber);
+	if (ai->authorityCertSerialNumber == NULL) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+    }
+out:
+    if (ret)
+	free_AuthorityKeyIdentifier(ai);
+    return ret;
+}
+
+
 int
 hx509_ca_sign(hx509_context context,
 	      hx509_ca_tbs tbs,
 	      hx509_cert signer,
-	      hx509_cert *certifiate)
+	      hx509_cert *certificate)
 {
-    return ca_sign(context,
-		   tbs, 
-		   _hx509_cert_private_key(signer),
-		   &_hx509_get_cert(signer)->tbsCertificate.subject,
-		   certifiate);
+    const Certificate *signer_cert;
+    AuthorityKeyIdentifier ai;
+    int ret;
+
+    memset(&ai, 0, sizeof(ai));
+
+    signer_cert = _hx509_get_cert(signer);
+
+    ret = get_AuthorityKeyIdentifier(context, signer_cert, &ai);
+    if (ret)
+	goto out;
+
+    ret = ca_sign(context,
+		  tbs, 
+		  _hx509_cert_private_key(signer),
+		  &ai,
+		  &signer_cert->tbsCertificate.subject,
+		  certificate);
+
+out:
+    free_AuthorityKeyIdentifier(&ai);
+
+    return ret;
 }
