@@ -96,6 +96,23 @@ hx509_ca_tbs_set_ca(hx509_context context,
 }
 
 int
+hx509_ca_tbs_set_proxy(hx509_context context,
+		       hx509_ca_tbs tbs,
+		       int pathLenConstraint)
+{
+    if (pathLenConstraint < 0) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "PathLenConstraint must be larger then zero "
+			       "for proxy certificates");
+	return EINVAL;
+    }
+    tbs->flags.proxy = 1;
+    tbs->pathLenConstraint = pathLenConstraint;
+    return 0;
+}
+
+
+int
 hx509_ca_tbs_set_spki(hx509_context contex,
 		      hx509_ca_tbs tbs,
 		      const SubjectPublicKeyInfo *spki)
@@ -167,7 +184,7 @@ hx509_ca_tbs_add_san_pkinit(hx509_context context,
 	for(str = principal; *str != '\0' && *str != '@'; str++){
 	    if(*str=='\\'){
 		if(str[1] == '\0' || str[1] == '@') {
-		    ret = EINVAL;
+		    ret = HX509_PARSING_NAME_FAILED;
 		    hx509_set_error_string(context, 0, ret, 
 					   "trailing \\ in principal name");
 		    goto out;
@@ -194,7 +211,7 @@ hx509_ca_tbs_add_san_pkinit(hx509_context context,
 	}
 	p.realm = strrchr(q, '@');
 	if (p.realm == NULL) {
-	    ret = EINVAL;
+	    ret = HX509_PARSING_NAME_FAILED;
 	    hx509_set_error_string(context, 0, ret, "Missing @ in principal");
 	    goto out;
 	};
@@ -312,6 +329,35 @@ out:
 }
 
 static int
+build_proxy_prefix(hx509_context context, const Name *issuer, Name *subject)
+{
+    char *tstr;
+    time_t t;
+    int ret;
+
+    ret = copy_Name(issuer, subject);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to copy subject name");
+	return ret;
+    }
+
+    t = time(NULL);
+    asprintf(&tstr, "ts-%lu", (unsigned long)t);
+    if (tstr == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM,
+			       "Failed to copy subject name");
+	return ENOMEM;
+    }
+    /* prefix with CN=<ts>,...*/
+    ret = _hx509_name_modify(context, subject, 1, oid_id_at_commonName(), tstr);
+    free(tstr);
+    if (ret)
+	free_Name(subject);
+    return ret;
+}
+
+static int
 ca_sign(hx509_context context,
 	hx509_ca_tbs tbs,
 	hx509_private_key signer,
@@ -371,7 +417,7 @@ ca_sign(hx509_context context,
 	hx509_set_error_string(context, 0, ret, "No public key set");
 	return ret;
     }
-    if (tbs->subject == NULL) {
+    if (tbs->subject == NULL && !tbs->flags.proxy) {
 	ret = EINVAL;
 	hx509_set_error_string(context, 0, ret, "No subject name set");
 	return ret;
@@ -383,10 +429,12 @@ ca_sign(hx509_context context,
 	return ret;
     }
     if (tbs->flags.proxy) {
-	ret = EINVAL;
-	hx509_set_error_string(context, 0, ret, 
-			       "Can't handle proxy certs for now");
-	return ret;
+	if (tbs->san.len > 0) {
+	    hx509_set_error_string(context, 0, EINVAL, 
+				   "Proxy certificate is not allowed "
+				   "to have SubjectAltNames");
+	    return EINVAL;
+	}
     }
 
     /* version         [0]  Version OPTIONAL, -- EXPLICIT nnn DEFAULT 1, */
@@ -429,10 +477,17 @@ ca_sign(hx509_context context,
     tbsc->validity.notAfter.element = choice_Time_generalTime;
     tbsc->validity.notAfter.u.generalTime = notAfter;
     /* subject              Name, */
-    ret = hx509_name_to_Name(tbs->subject, &tbsc->subject);
-    if (ret) {
-	hx509_set_error_string(context, 0, ret, "Failed to copy subject name");
-	goto out;
+    if (tbs->flags.proxy) {
+	ret = build_proxy_prefix(context, &tbsc->issuer, &tbsc->subject);
+	if (ret)
+	    goto out;
+    } else {
+	ret = hx509_name_to_Name(tbs->subject, &tbsc->subject);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to copy subject name");
+	    goto out;
+	}
     }
     /* subjectPublicKeyInfo SubjectPublicKeyInfo, */
     ret = copy_SubjectPublicKeyInfo(&tbs->spki, &tbsc->subjectPublicKeyInfo);
@@ -556,17 +611,19 @@ ca_sign(hx509_context context,
     }
 
     /* Add BasicConstraints */ 
-    if (tbs->flags.ca) {
+    {
 	BasicConstraints bc;
 	int aCA = 1;
 	uint32_t path;
 
 	memset(&bc, 0, sizeof(bc));
 
-	bc.cA = &aCA;
-	if (tbs->pathLenConstraint >= 0) {
-	    path = tbs->pathLenConstraint;
-	    bc.pathLenConstraint = &path;
+	if (tbs->flags.ca) {
+	    bc.cA = &aCA;
+	    if (tbs->pathLenConstraint >= 0) {
+		path = tbs->pathLenConstraint;
+		bc.pathLenConstraint = &path;
+	    }
 	}
 
 	ASN1_MALLOC_ENCODE(BasicConstraints, data.data, data.length, 
@@ -584,6 +641,49 @@ ca_sign(hx509_context context,
 	if (ret)
 	    goto out;
     }
+
+    /* add Proxy */
+    if (tbs->flags.proxy) {
+	ProxyCertInfo info;
+
+	memset(&info, 0, sizeof(info));
+
+	if (tbs->pathLenConstraint >= 0) {
+	    info.pCPathLenConstraint = 
+		malloc(sizeof(*info.pCPathLenConstraint));
+	    if (info.pCPathLenConstraint == NULL) {
+		ret = ENOMEM;
+		hx509_set_error_string(context, 0, ret, "Out of memory");
+		goto out;
+	    }
+	    *info.pCPathLenConstraint = tbs->pathLenConstraint;
+	}
+
+	ret = der_copy_oid(oid_id_pkix_ppl_inheritAll(),
+			   &info.proxyPolicy.policyLanguage);
+	if (ret) {
+	    free_ProxyCertInfo(&info);
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+
+	ASN1_MALLOC_ENCODE(ProxyCertInfo, data.data, data.length, 
+			   &info, &size, ret);
+	free_ProxyCertInfo(&info);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	if (size != data.length)
+	    _hx509_abort("internal ASN.1 encoder error");
+	ret = add_extension(context, tbsc, 0,
+			    oid_id_pe_proxyCertInfo(),
+			    &data);
+	free(data.data);
+	if (ret)
+	    goto out;
+    }
+
 
     ASN1_MALLOC_ENCODE(TBSCertificate, data.data, data.length,tbsc, &size, ret);
     if (ret) {
