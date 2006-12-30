@@ -447,6 +447,16 @@ command = {
 		help = "Issued certificate"
 	}
 	option = {
+		long = "type"
+		type = "strings"
+		help = "Type of certificate to issue"
+	}
+	option = {
+		long = "pk-init-principal"
+		type = "string"
+		help = "PK-INIT principal (for SAN)"
+	}
+	option = {
 		long = "req"
 		type = "string"
 		help = "pkcs10 request"
