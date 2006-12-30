@@ -1519,6 +1519,32 @@ static BOOL torture_samba3_errorpaths(struct torture_context *tctx)
 		goto fail;
 	}
 
+	{
+		union smb_mkdir md;
+		md.t2mkdir.level = RAW_MKDIR_T2MKDIR;
+		md.t2mkdir.in.path = dname;
+		md.t2mkdir.in.num_eas = 0;
+		md.t2mkdir.in.eas = NULL;
+
+		status = smb_raw_mkdir(cli_nt->tree, &md);
+		if (!NT_STATUS_EQUAL(status,
+				     NT_STATUS_OBJECT_NAME_COLLISION)) {
+			torture_comment(
+				tctx, "(%s) incorrect status %s should be "
+				"NT_STATUS_OBJECT_NAME_COLLISION\n",
+				__location__, nt_errstr(status));
+			goto fail;
+		}
+		status = smb_raw_mkdir(cli_dos->tree, &md);
+		if (!NT_STATUS_EQUAL(status,
+				     NT_STATUS_DOS(ERRDOS, ERRrename))) {
+			torture_comment(tctx, "(%s) incorrect status %s "
+					"should be ERRDOS:ERRnoaccess\n",
+					__location__, nt_errstr(status));
+			goto fail;
+		}
+	}
+
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	status = smb_raw_open(cli_nt->tree, mem_ctx, &io);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
