@@ -1,3 +1,9 @@
+2006-12-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add id-pkix-kp oids.
+
+	* rfc2459.asn1: Add id-pkix-kp oids.
+	
 2006-12-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_encode.c: Named bit strings have this horrible, disgusting,
