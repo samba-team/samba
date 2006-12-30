@@ -35,13 +35,13 @@
 RCSID("$Id$");
 
 static int
-test_name(const char *name)
+test_name(hx509_context context, const char *name)
 {
     hx509_name n;
     char *s;
     int ret;
 
-    ret = hx509_parse_name(name, &n);
+    ret = hx509_parse_name(context, name, &n);
     if (ret)
 	return 1;
 
@@ -59,11 +59,11 @@ test_name(const char *name)
 }
 
 static int
-test_name_fail(const char *name)
+test_name_fail(hx509_context context, const char *name)
 {
     hx509_name n;
 
-    if (hx509_parse_name(name, &n) == HX509_NAME_MALFORMED)
+    if (hx509_parse_name(context, name, &n) == HX509_NAME_MALFORMED)
 	return 0;
     hx509_name_free(&n);
     return 1;
@@ -72,14 +72,21 @@ test_name_fail(const char *name)
 int
 main(int argc, char **argv)
 {
+    hx509_context context;
     int ret = 0;
 
-    ret += test_name("CN=foo,C=SE");
-    ret += test_name("CN=foo,CN=kaka,CN=FOO,DC=ad1,C=SE");
-    ret += test_name("1.2.3.4=foo,C=SE");
-    ret += test_name_fail("=");
-    ret += test_name_fail("CN=foo,=foo");
-    ret += test_name_fail("CN=foo,really-unknown-type=foo");
+    ret = hx509_context_init(&context);
+    if (ret)
+	errx(1, "hx509_context_init failed with %d", ret);
+
+    ret += test_name(context, "CN=foo,C=SE");
+    ret += test_name(context, "CN=foo,CN=kaka,CN=FOO,DC=ad1,C=SE");
+    ret += test_name(context, "1.2.3.4=foo,C=SE");
+    ret += test_name_fail(context, "=");
+    ret += test_name_fail(context, "CN=foo,=foo");
+    ret += test_name_fail(context, "CN=foo,really-unknown-type=foo");
+
+    hx509_context_free(&context);
 
     return ret;
 }
