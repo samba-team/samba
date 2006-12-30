@@ -29,6 +29,7 @@
 #include "dsdb/common/flags.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 struct libnet_BecomeDC_state {
 	struct composite_context *creq;
@@ -1050,13 +1051,17 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 	/* ntSecurityDescriptor */
 	{
-		struct drsuapi_DsAttributeValueSecurityDescriptor *vs;
+		struct drsuapi_DsAttributeValueDataBlob *vs;
+		DATA_BLOB *vd;
 		struct security_descriptor *v;
 		struct dom_sid *domain_admins_sid;
 		const char *domain_admins_sid_str;
 
-		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueSecurityDescriptor, 1);
+		vs = talloc_array(attrs, struct drsuapi_DsAttributeValueDataBlob, 1);
 		if (composite_nomem(vs, c)) return;
+
+		vd = talloc_array(vs, DATA_BLOB, 1);
+		if (composite_nomem(vd, c)) return;
 
 		domain_admins_sid = dom_sid_add_rid(vs, s->domain.sid, DOMAIN_RID_ADMINS);
 		if (composite_nomem(domain_admins_sid, c)) return;
@@ -1064,7 +1069,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		domain_admins_sid_str = dom_sid_string(domain_admins_sid, domain_admins_sid);
 		if (composite_nomem(domain_admins_sid_str, c)) return;
 
-		v = security_descriptor_create(vs,
+		v = security_descriptor_create(vd,
 					       /* owner: domain admins */
 					       domain_admins_sid_str,
 					       /* owner group: domain admins */
@@ -1108,11 +1113,14 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 					       NULL);
 		if (composite_nomem(v, c)) return;
 
-		vs[0].sd		= v;
+		c->status = ndr_push_struct_blob(&vd[0], r, v,(ndr_push_flags_fn_t)ndr_push_security_descriptor);
+		if (!composite_is_ok(c)) return;
 
-		attrs[i].attid						= DRSUAPI_ATTRIBUTE_ntSecurityDescriptor;
-		attrs[i].value_ctr.security_descriptor.num_values	= 1;
-		attrs[i].value_ctr.security_descriptor.values		= vs;
+		vs[0].data		= &vd[0];
+
+		attrs[i].attid					= DRSUAPI_ATTRIBUTE_ntSecurityDescriptor;
+		attrs[i].value_ctr.data_blob.num_values		= 1;
+		attrs[i].value_ctr.data_blob.values		= vs;
 
 		i++;
 	}
