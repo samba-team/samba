@@ -84,6 +84,7 @@ error_code LOCAL_ATTRIBUTE_MISSING, "No local key attribute"
 error_code PARSING_KEY_FAILED, "Failed to parse key"
 error_code UNSUPPORTED_OPERATION, "Unsupported operation"
 error_code UNIMPLEMENTED_OPERATION, "Unimplemented operation"
+error_code PARSING_NAME_FAILED, "Failed to parse name"
 
 # keystore related error
 index 128
