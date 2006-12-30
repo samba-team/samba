@@ -32,15 +32,13 @@
  */
 
 #include "hx_locl.h"
+#include <pkinit_asn1.h>
 RCSID("$Id$");
 
 struct hx509_ca_tbs {
     hx509_name subject;
     SubjectPublicKeyInfo spki;
-    struct {
-	ExtKeyUsage *val;
-	size_t len;
-    } eku;
+    ExtKeyUsage eku;
     GeneralNames san;
     unsigned key_usage;
     struct {
@@ -72,16 +70,12 @@ hx509_ca_tbs_init(hx509_context context, hx509_ca_tbs *tbs)
 void
 hx509_ca_tbs_free(hx509_ca_tbs *tbs)
 {
-    size_t i;
-
     if (tbs == NULL || *tbs == NULL)
 	return;
 
     free_SubjectPublicKeyInfo(&(*tbs)->spki);
     free_GeneralNames(&(*tbs)->san);
-    for (i = 0; i < (*tbs)->eku.len; i++)
-	free_ExtKeyUsage(&(*tbs)->eku.val[i]);
-    free((*tbs)->eku.val);
+    free_ExtKeyUsage(&(*tbs)->eku);
 
     hx509_name_free(&(*tbs)->subject);
 
@@ -103,6 +97,130 @@ hx509_ca_tbs_set_spki(hx509_context contex,
 }
 
 int
+hx509_ca_tbs_add_eku(hx509_context contex,
+		     hx509_ca_tbs tbs,
+		     const heim_oid *oid)
+{
+    void *ptr;
+    int ret;
+
+    ptr = realloc(tbs->eku.val, sizeof(tbs->eku.val[0]) * (tbs->eku.len + 1));
+    if (ptr == NULL)
+	return ENOMEM;
+    tbs->eku.val = ptr;
+    ret = der_copy_oid(oid, &tbs->eku.val[tbs->eku.len]);
+    if (ret)
+	return ret;
+    tbs->eku.len += 1;
+    return 0;
+}
+
+int
+hx509_ca_tbs_add_san_otherName(hx509_context context,
+			       hx509_ca_tbs tbs,
+			       const heim_oid *oid,
+			       const heim_octet_string *os)
+{
+    GeneralName gn;
+
+    memset(&gn, 0, sizeof(gn));
+    gn.element = choice_GeneralName_otherName;
+    gn.u.otherName.type_id = *oid;
+    gn.u.otherName.value = *os;
+    
+    return add_GeneralNames(&tbs->san, &gn);
+}
+
+
+int
+hx509_ca_tbs_add_san_pkinit(hx509_context context,
+			    hx509_ca_tbs tbs,
+			    const char *principal)
+{
+    heim_octet_string os;
+    KRB5PrincipalName p;
+    size_t size;
+    int ret;
+    char *s = NULL;
+
+    memset(&p, 0, sizeof(p));
+
+    /* parse principal */
+    {
+	const char *str;
+	char *q;
+	int n;
+	
+	/* count number of component */
+	n = 1;
+	for(str = principal; *str != '\0' && *str != '@'; str++){
+	    if(*str=='\\'){
+		if(str[1] == '\0' || str[1] == '@') {
+		    ret = EINVAL;
+		    hx509_set_error_string(context, 0, ret, 
+					   "trailing \\ in principal name");
+		    goto out;
+		}
+		str++;
+	    } else if(*str == '/')
+		n++;
+	}
+	p.principalName.name_string.val = 
+	    calloc(n, sizeof(*p.principalName.name_string.val));
+	if (p.principalName.name_string.val == NULL) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "malloc: out of memory");
+	    goto out;
+	}
+	p.principalName.name_string.len = n;
+	
+	p.principalName.name_type = KRB5_NT_PRINCIPAL;
+	q = s = strdup(principal);
+	if (q == NULL) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "malloc: out of memory");
+	    goto out;
+	}
+	p.realm = strrchr(q, '@');
+	if (p.realm == NULL) {
+	    ret = EINVAL;
+	    hx509_set_error_string(context, 0, ret, "Missing @ in principal");
+	    goto out;
+	};
+	*p.realm++ = '\0';
+
+	n = 0;
+	while (q) {
+	    p.principalName.name_string.val[n++] = q;
+	    q = strchr(q, '/');
+	    if (q)
+		*q++ = '\0';
+	}
+    }
+    
+    ASN1_MALLOC_ENCODE(KRB5PrincipalName, os.data, os.length, &p, &size, ret);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Out of memory");
+	goto out;
+    }
+    if (size != os.length)
+	_hx509_abort("internal ASN.1 encoder error");
+    
+    ret = hx509_ca_tbs_add_san_otherName(context,
+					 tbs,
+					 oid_id_pkinit_san(),
+					 &os);
+    free(os.data);
+out:
+    if (p.principalName.name_string.val)
+	free (p.principalName.name_string.val);
+    if (s)
+	free(s);
+    return ret;
+}
+    
+
+int
 hx509_ca_tbs_set_subject(hx509_context context,
 			 hx509_ca_tbs tbs,
 			 hx509_name subject)
@@ -110,6 +228,48 @@ hx509_ca_tbs_set_subject(hx509_context context,
     if (tbs->subject)
 	hx509_name_free(&tbs->subject);
     return hx509_name_copy(context, subject, &tbs->subject);
+}
+
+static int
+add_extension(hx509_context context,
+	      TBSCertificate *tbsc,
+	      int critical_flag,
+	      const heim_oid *oid,
+	      const heim_octet_string *data)
+{
+    Extension ext;
+    int ret;
+
+    memset(&ext, 0, sizeof(ext));
+
+    if (critical_flag) {
+	ext.critical = malloc(sizeof(*ext.critical));
+	if (ext.critical == NULL) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	*ext.critical = TRUE;
+    }
+
+    ret = der_copy_oid(oid, &ext.extnID);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Out of memory");
+	goto out;
+    }
+    ret = der_copy_octet_string(data, &ext.extnValue);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Out of memory");
+	goto out;
+    }
+    ret = add_Extensions(tbsc->extensions, &ext);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "Out of memory");
+	goto out;
+    }
+out:
+    free_Extension(&ext);
+    return ret;
 }
 
 static int
@@ -245,34 +405,58 @@ ca_sign(hx509_context context,
     
     /* add KeyUsage */
     {
-	Extension ext;
 	KeyUsage ku;
-	memset(&ext, 0, sizeof(ext));
 
 	ku = int2KeyUsage(key_usage);
-	ret = der_copy_oid(oid_id_x509_ce_keyUsage(), &ext.extnID);
-	if (ret) {
-	    ret = ENOMEM;
-	    hx509_set_error_string(context, 0, ret, "Out of memory");
-	    goto out;
-	}
-	ASN1_MALLOC_ENCODE(KeyUsage, 
-			   ext.extnValue.data,
-			   ext.extnValue.length,
-			   &ku, &size, ret);
+	ASN1_MALLOC_ENCODE(KeyUsage, data.data, data.length, &ku, &size, ret);
 	if (ret) {
 	    hx509_set_error_string(context, 0, ret, "Out of memory");
 	    goto out;
 	}
-	ret = add_Extensions(tbsc->extensions, &ext);
-	if (ret) {
-	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	if (size != data.length)
+	    _hx509_abort("internal ASN.1 encoder error");
+	ret = add_extension(context, tbsc, 1, 
+			    oid_id_x509_ce_keyUsage(), &data);
+	free(data.data);
+	if (ret)
 	    goto out;
-	}
-	free_Extension(&ext);
     }
 
-    /* X509v3 Extended Key Usage: */
+    /* add ExtendedKeyUsage */
+    if (tbs->eku.len > 0) {
+	ASN1_MALLOC_ENCODE(ExtKeyUsage, data.data, data.length, 
+			   &tbs->eku, &size, ret);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	if (size != data.length)
+	    _hx509_abort("internal ASN.1 encoder error");
+	ret = add_extension(context, tbsc, 0,
+			    oid_id_x509_ce_extKeyUsage(), &data);
+	free(data.data);
+	if (ret)
+	    goto out;
+    }
+
+    /* add SubjectAltName */
+    if (tbs->san.len > 0) {
+	ASN1_MALLOC_ENCODE(GeneralNames, data.data, data.length, 
+			   &tbs->san, &size, ret);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	if (size != data.length)
+	    _hx509_abort("internal ASN.1 encoder error");
+	ret = add_extension(context, tbsc, 0,
+			    oid_id_x509_ce_subjectAltName(),
+			    &data);
+	free(data.data);
+	if (ret)
+	    goto out;
+    }
+
     /* X509v3 Subject Key Identifier:  */
     /* X509v3 Authority Key Identifier:  */
 

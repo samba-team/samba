@@ -1124,6 +1124,60 @@ hxtool_hex(struct hex_options *opt, int argc, char **argv)
     return 0;
 }
 
+static int
+eval_types(hx509_context context, 
+	   hx509_ca_tbs tbs,
+	   const struct certificate_sign_options *opt)
+{
+    int pkinit = 0;
+    int i, ret;
+
+    for (i = 0; i < opt->type_strings.num_strings; i++) {
+	const char *type = opt->type_strings.strings[i];
+	
+	if (strcmp(type, "https-server") == 0) {
+	    ret = hx509_ca_tbs_add_eku(context, tbs, 
+				       oid_id_pkix_kp_serverAuth());
+	    if (ret)
+		hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
+	} else if (strcmp(type, "https-client") == 0) {
+	    ret = hx509_ca_tbs_add_eku(context, tbs, 
+				       oid_id_pkix_kp_clientAuth());
+	    if (ret)
+		hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
+	} else if (strcmp(type, "pkinit-kdc") == 0) {
+	    pkinit++;
+	    ret = hx509_ca_tbs_add_eku(context, tbs, 
+				       oid_id_pkkdcekuoid());
+	    if (ret)
+		hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
+	} else if (strcmp(type, "pkinit-client") == 0) {
+	    pkinit++;
+	    ret = hx509_ca_tbs_add_eku(context, tbs, 
+				       oid_id_pkekuoid());
+	    if (ret)
+		hx509_err(context, ret, 1, "hx509_ca_tbs_add_eku");
+
+	} else
+	    errx(1, "unknown type %s", type);
+    }
+
+    if (pkinit > 1)
+	errx(1, "More the one PK-INIT type given");
+
+    if (opt->pk_init_principal_string) {
+	if (!pkinit)
+	    errx(1, "pk-init principal given but no pk-init oid");
+
+	ret = hx509_ca_tbs_add_san_pkinit(context, tbs,
+					  opt->pk_init_principal_string);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_san_pkinit");
+    }
+    
+    return 0;
+}
+
 int
 hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 {
@@ -1219,6 +1273,8 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     ret = hx509_ca_tbs_set_subject(context, tbs, subject);
     if (ret)
 	hx509_err(context, ret, 1, "hx509_ca_tbs_set_subject");
+
+    eval_types(context, tbs, opt);
 
     ret = hx509_ca_sign(context, tbs, signer, &cert);
     if (ret)
