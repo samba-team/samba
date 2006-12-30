@@ -893,7 +893,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
                 }
 	}
 
-	if (total_data && smb_action == FILE_WAS_CREATED) {
+	if (ea_list && smb_action == FILE_WAS_CREATED) {
 		status = set_ea(conn, fsp, fname, ea_list);
 		if (!NT_STATUS_IS_OK(status)) {
 			close_file(fsp,ERROR_CLOSE);
@@ -4323,7 +4323,11 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				if (SMB_VFS_MKNOD(conn,fname, unixmode, dev) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-				inherit_access_acl(conn, fname, unixmode);
+				if (lp_inherit_perms(SNUM(conn))) {
+					inherit_access_acl(
+						conn, parent_dirname(fname),
+						fname, unixmode);
+				}
 
 				SSVAL(params,0,0);
 				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0, max_data_bytes);
@@ -4799,11 +4803,11 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	pstring directory;
-	int ret = -1;
 	SMB_STRUCT_STAT sbuf;
 	BOOL bad_path = False;
 	NTSTATUS status = NT_STATUS_OK;
 	struct ea_list *ea_list = NULL;
+	files_struct *fsp;
 
 	if (!CAN_WRITE(conn))
 		return ERROR_DOS(ERRSRV,ERRaccess);
@@ -4855,15 +4859,30 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (check_name(directory,conn)) {
-		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory,True));
-	}
-  
-	if(ret < 0) {
+	if (!check_name(directory,conn)) {
 		DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,
+					  ERRnoaccess);
 	}
 
+	status = open_directory(conn, directory, &sbuf, 
+				FILE_READ_ATTRIBUTES, /* A stat open */
+				FILE_SHARE_NONE, /* Ignored  */
+				FILE_CREATE, 0, NULL, &fsp);
+
+	if (!NT_STATUS_IS_OK(status)) {
+#if 0
+		/* Do we need to do this here ? Need smbtorture test. JRA. */
+		if (!use_nt_status() && NT_STATUS_EQUAL(
+					status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
+		}
+#endif
+		return ERROR_NT(status);
+	}
+
+	close_file(fsp, NORMAL_CLOSE);
+  
 	/* Try and set any given EA. */
 	if (ea_list) {
 		status = set_ea(conn, NULL, directory, ea_list);

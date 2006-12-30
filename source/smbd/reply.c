@@ -3745,47 +3745,6 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
 }
 
 /****************************************************************************
- The guts of the mkdir command, split out so it may be called by the NT SMB
- code. 
-****************************************************************************/
-
-NTSTATUS mkdir_internal(connection_struct *conn, const pstring directory, BOOL bad_path)
-{
-	int ret= -1;
-	
-	if(!CAN_WRITE(conn)) {
-		DEBUG(5,("mkdir_internal: failing create on read-only share %s\n", lp_servicename(SNUM(conn))));
-		errno = EACCES;
-		return map_nt_error_from_unix(errno);
-	}
-
-	if (bad_path) {
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-	}
-
-	if (!check_name(directory, conn)) {
-		if(errno == ENOENT) {
-			if (bad_path) {
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			} else {
-				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			}
-		}
-		return map_nt_error_from_unix(errno);
-	}
-
-	ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory,True));
-	if (ret == -1) {
-	        if(errno == ENOENT) {
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		}
-		return map_nt_error_from_unix(errno);
-	}
-	
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
  Reply to a mkdir.
 ****************************************************************************/
 
@@ -3796,7 +3755,6 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	NTSTATUS status;
 	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
-	files_struct *fsp;
 
 	START_PROFILE(SMBmkdir);
  
@@ -3810,17 +3768,15 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
 
-	status = open_directory(conn, directory, &sbuf,
-				FILE_READ_ATTRIBUTES, /* Just a stat open */
-				FILE_SHARE_NONE, /* Ignored for stat opens */
-				FILE_CREATE, 0, NULL, &fsp);
+	status = create_directory(conn, directory);
 
-	DEBUG(5, ("open_directory returned %s\n", nt_errstr(status)));
+	DEBUG(5, ("create_directory returned %s\n", nt_errstr(status)));
 
 	if (!NT_STATUS_IS_OK(status)) {
 
-		if (NT_STATUS_EQUAL(
-			    status, NT_STATUS_DOS(ERRDOS, ERRfilexists))) {
+		if (!use_nt_status()
+		    && NT_STATUS_EQUAL(status,
+				       NT_STATUS_OBJECT_NAME_COLLISION)) {
 			/*
 			 * Yes, in the DOS error code case we get a
 			 * ERRDOS:ERRnoaccess here. See BASE-SAMBA3ERROR
@@ -3832,8 +3788,6 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		END_PROFILE(SMBmkdir);
 		return ERROR_NT(status);
 	}
-
-	close_file(fsp, NORMAL_CLOSE);
 
 	outsize = set_message(outbuf,0,0,False);
 
@@ -3906,7 +3860,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
  The internals of the rmdir code - called elsewhere.
 ****************************************************************************/
 
-BOOL rmdir_internals(connection_struct *conn, char *directory)
+BOOL rmdir_internals(connection_struct *conn, const char *directory)
 {
 	BOOL ok;
 	SMB_STRUCT_STAT st;
@@ -3979,10 +3933,13 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 		}
 	}
 
-	if (!ok)
-		DEBUG(3,("rmdir_internals: couldn't remove directory %s : %s\n", directory,strerror(errno)));
+	if (!ok) {
+		DEBUG(3,("rmdir_internals: couldn't remove directory %s : "
+			 "%s\n", directory,strerror(errno)));
+		return False;
+	}
 
-	return ok;
+	return True;
 }
 
 /****************************************************************************

@@ -2620,6 +2620,37 @@ char *parent_dirname(const char *path)
 	return dirpath;
 }
 
+BOOL parent_dirname_talloc(TALLOC_CTX *mem_ctx, const char *dir,
+			   char **parent, const char **name)
+{
+	char *p;
+	ptrdiff_t len;
+ 
+	p = strrchr_m(dir, '/'); /* Find final '/', if any */
+
+	if (p == NULL) {
+		if (!(*parent = talloc_strdup(mem_ctx, "."))) {
+			return False;
+		}
+		if (name) {
+			*name = "";
+		}
+		return True;
+	}
+
+	len = p-dir;
+
+	if (!(*parent = TALLOC_ARRAY(mem_ctx, char, len+1))) {
+		return False;
+	}
+	memcpy(*parent, dir, len);
+	(*parent)[len] = '\0';
+
+	if (name) {
+		*name = p+1;
+	}
+	return True;
+}
 
 /*******************************************************************
  Determine if a pattern contains any Microsoft wildcard characters.
