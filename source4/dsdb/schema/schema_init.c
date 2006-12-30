@@ -718,3 +718,23 @@ const struct dsdb_class *dsdb_class_by_lDAPDisplayName(const struct dsdb_schema 
 
 	return NULL;
 }
+
+const char *dsdb_lDAPDisplayName_by_id(const struct dsdb_schema *schema,
+				       uint32_t id)
+{
+	struct dsdb_class *a;
+	struct dsdb_class *c;
+
+	/* TODO: add binary search */
+	a = dsdb_attribute_by_attributeID_id(schema, id);
+	if (a) {
+		return a->lDAPDisplayName;
+	}
+
+	c = dsdb_class_by_governsID_id(schema, id);
+	if (c) {
+		return c->lDAPDisplayName;
+	}
+
+	return NULL;
+}
