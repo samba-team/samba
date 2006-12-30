@@ -146,114 +146,45 @@ gen_files_cms =						\
 	asn1_UnprotectedAttributes.x
 
 gen_files_rfc2459 =					\
-	asn1_AlgorithmIdentifier.x			\
-	asn1_Attribute.x				\
-	asn1_AttributeType.x				\
-	asn1_AttributeTypeAndValue.x			\
-	asn1_AttributeValue.x				\
-	asn1_AuthorityKeyIdentifier.x			\
-	asn1_BaseDistance.x				\
-	asn1_BasicConstraints.x				\
-	asn1_CRLCertificateList.x			\
-	asn1_CRLReason.x				\
-	asn1_Certificate.x				\
-	asn1_CertificateSerialNumber.x			\
-	asn1_Certificates.x				\
-	asn1_DHPublicKey.x				\
-	asn1_DSAParams.x				\
-	asn1_DSAPublicKey.x				\
-	asn1_DSASigValue.x				\
-	asn1_DigestInfo.x				\
-	asn1_DirectoryString.x				\
-	asn1_DomainParameters.x				\
-	asn1_ExtKeyUsage.x				\
-	asn1_Extension.x				\
-	asn1_Extensions.x				\
-	asn1_GeneralName.x				\
-	asn1_GeneralNames.x				\
-	asn1_GeneralSubtree.x				\
-	asn1_GeneralSubtrees.x				\
-	asn1_KeyIdentifier.x				\
-	asn1_KeyUsage.x					\
-	asn1_Name.x					\
-	asn1_NameConstraints.x				\
-	asn1_OtherName.x				\
-	asn1_RDNSequence.x				\
-	asn1_RSAPrivateKey.x				\
-	asn1_RSAPublicKey.x				\
-	asn1_RelativeDistinguishedName.x		\
-	asn1_SubjectKeyIdentifier.x			\
-	asn1_SubjectPublicKeyInfo.x			\
-	asn1_TBSCRLCertList.x				\
-	asn1_TBSCertificate.x				\
-	asn1_TeletexStringx.x				\
-	asn1_Time.x					\
-	asn1_UniqueIdentifier.x				\
-	asn1_ValidationParms.x				\
-	asn1_Validity.x					\
 	asn1_Version.x					\
-	asn1_id_aes_128_cbc.x				\
-	asn1_id_aes_192_cbc.x				\
-	asn1_id_aes_256_cbc.x				\
-	asn1_id_dhpublicnumber.x			\
-	asn1_id_dsa.x					\
-	asn1_id_dsa_with_sha1.x				\
-	asn1_id_nistAlgorithm.x				\
-	asn1_id_nist_aes_algs.x				\
-	asn1_id_nist_sha_algs.x				\
-	asn1_id_sha224.x				\
-	asn1_id_sha256.x				\
-	asn1_id_sha384.x				\
-	asn1_id_sha512.x				\
+	asn1_id_pkcs_1.x				\
+	asn1_id_pkcs1_rsaEncryption.x			\
 	asn1_id_pkcs1_md2WithRSAEncryption.x		\
 	asn1_id_pkcs1_md5WithRSAEncryption.x		\
-	asn1_id_pkcs1_rsaEncryption.x			\
 	asn1_id_pkcs1_sha1WithRSAEncryption.x		\
 	asn1_id_pkcs1_sha256WithRSAEncryption.x		\
 	asn1_id_pkcs1_sha384WithRSAEncryption.x		\
 	asn1_id_pkcs1_sha512WithRSAEncryption.x		\
+	asn1_id_pkcs_2.x				\
 	asn1_id_pkcs2_md2.x				\
 	asn1_id_pkcs2_md4.x				\
 	asn1_id_pkcs2_md5.x				\
-	asn1_id_pkcs3_des_ede3_cbc.x			\
-	asn1_id_pkcs3_rc2_cbc.x				\
-	asn1_id_pkcs3_rc4.x				\
-	asn1_id_pkcs_1.x				\
-	asn1_id_pkcs_2.x				\
-	asn1_id_pkcs_3.x				\
 	asn1_id_rsa_digestAlgorithm.x			\
 	asn1_id_rsa_digest_md2.x			\
 	asn1_id_rsa_digest_md4.x			\
 	asn1_id_rsa_digest_md5.x			\
-	asn1_id_rsadsi_des_ede3_cbc.x			\
+	asn1_id_pkcs_3.x				\
+	asn1_id_pkcs3_rc2_cbc.x				\
+	asn1_id_pkcs3_rc4.x				\
+	asn1_id_pkcs3_des_ede3_cbc.x			\
 	asn1_id_rsadsi_encalg.x				\
 	asn1_id_rsadsi_rc2_cbc.x			\
+	asn1_id_rsadsi_des_ede3_cbc.x			\
 	asn1_id_secsig_sha_1.x				\
-	asn1_id_x509_ce.x				\
-	asn1_id_x509_ce_authorityKeyIdentifier.x	\
-	asn1_id_x509_ce_basicConstraints.x		\
-	asn1_id_x509_ce_cRLDistributionPoints.x		\
-	asn1_id_x509_ce_cRLNumber.x			\
-	asn1_id_x509_ce_cRLReason.x			\
-	asn1_id_x509_ce_certificateIssuer.x		\
-	asn1_id_x509_ce_certificatePolicies.x		\
-	asn1_id_x509_ce_deltaCRLIndicator.x		\
-	asn1_id_x509_ce_extKeyUsage.x			\
-	asn1_id_x509_ce_freshestCRL.x			\
-	asn1_id_x509_ce_holdInstructionCode.x		\
-	asn1_id_x509_ce_inhibitAnyPolicy.x		\
-	asn1_id_x509_ce_invalidityDate.x		\
-	asn1_id_x509_ce_issuerAltName.x			\
-	asn1_id_x509_ce_issuingDistributionPoint.x	\
-	asn1_id_x509_ce_keyUsage.x			\
-	asn1_id_x509_ce_nameConstraints.x		\
-	asn1_id_x509_ce_policyConstraints.x		\
-	asn1_id_x509_ce_policyMappings.x		\
-	asn1_id_x509_ce_privateKeyUsagePeriod.x		\
-	asn1_id_x509_ce_subjectAltName.x		\
-	asn1_id_x509_ce_subjectDirectoryAttributes.x	\
-	asn1_id_x509_ce_subjectKeyIdentifier.x		\
+	asn1_id_nistAlgorithm.x				\
+	asn1_id_nist_aes_algs.x				\
+	asn1_id_aes_128_cbc.x				\
+	asn1_id_aes_192_cbc.x				\
+	asn1_id_aes_256_cbc.x				\
+	asn1_id_nist_sha_algs.x				\
+	asn1_id_sha256.x				\
+	asn1_id_sha224.x				\
+	asn1_id_sha384.x				\
+	asn1_id_sha512.x				\
+	asn1_id_dhpublicnumber.x			\
 	asn1_id_x9_57.x					\
+	asn1_id_dsa.x					\
+	asn1_id_dsa_with_sha1.x				\
 	asn1_id_x520_at.x				\
 	asn1_id_at_commonName.x				\
 	asn1_id_at_surname.x				\
@@ -268,20 +199,94 @@ gen_files_rfc2459 =					\
 	asn1_id_at_initials.x				\
 	asn1_id_at_generationQualifier.x		\
 	asn1_id_at_pseudonym.x				\
-	asn1_id_domainComponent.x			\
 	asn1_id_Userid.x				\
+	asn1_id_domainComponent.x			\
+	asn1_id_x509_ce.x				\
+	asn1_AlgorithmIdentifier.x			\
+	asn1_AttributeType.x				\
+	asn1_AttributeValue.x				\
+	asn1_TeletexStringx.x				\
+	asn1_DirectoryString.x				\
+	asn1_Attribute.x				\
+	asn1_AttributeTypeAndValue.x			\
+	asn1_RelativeDistinguishedName.x		\
+	asn1_RDNSequence.x				\
+	asn1_Name.x					\
+	asn1_CertificateSerialNumber.x			\
+	asn1_Time.x					\
+	asn1_Validity.x					\
+	asn1_UniqueIdentifier.x				\
+	asn1_SubjectPublicKeyInfo.x			\
+	asn1_Extension.x				\
+	asn1_Extensions.x				\
+	asn1_TBSCertificate.x				\
+	asn1_Certificate.x				\
+	asn1_Certificates.x				\
+	asn1_ValidationParms.x				\
+	asn1_DomainParameters.x				\
+	asn1_DHPublicKey.x				\
+	asn1_OtherName.x				\
+	asn1_GeneralName.x				\
+	asn1_GeneralNames.x				\
+	asn1_id_x509_ce_keyUsage.x			\
+	asn1_KeyUsage.x					\
+	asn1_id_x509_ce_authorityKeyIdentifier.x	\
+	asn1_KeyIdentifier.x				\
+	asn1_AuthorityKeyIdentifier.x			\
+	asn1_id_x509_ce_subjectKeyIdentifier.x		\
+	asn1_SubjectKeyIdentifier.x			\
+	asn1_id_x509_ce_basicConstraints.x		\
+	asn1_BasicConstraints.x				\
+	asn1_id_x509_ce_nameConstraints.x		\
+	asn1_BaseDistance.x				\
+	asn1_GeneralSubtree.x				\
+	asn1_GeneralSubtrees.x				\
+	asn1_NameConstraints.x				\
+	asn1_id_x509_ce_privateKeyUsagePeriod.x		\
+	asn1_id_x509_ce_certificatePolicies.x		\
+	asn1_id_x509_ce_policyMappings.x		\
+	asn1_id_x509_ce_subjectAltName.x		\
+	asn1_id_x509_ce_issuerAltName.x			\
+	asn1_id_x509_ce_subjectDirectoryAttributes.x	\
+	asn1_id_x509_ce_policyConstraints.x		\
+	asn1_id_x509_ce_extKeyUsage.x			\
+	asn1_ExtKeyUsage.x				\
+	asn1_id_x509_ce_cRLDistributionPoints.x		\
+	asn1_id_x509_ce_deltaCRLIndicator.x		\
+	asn1_id_x509_ce_issuingDistributionPoint.x	\
+	asn1_id_x509_ce_holdInstructionCode.x		\
+	asn1_id_x509_ce_invalidityDate.x		\
+	asn1_id_x509_ce_certificateIssuer.x		\
+	asn1_id_x509_ce_inhibitAnyPolicy.x		\
+	asn1_DSASigValue.x				\
+	asn1_DSAPublicKey.x				\
+	asn1_DSAParams.x				\
+	asn1_RSAPublicKey.x				\
+	asn1_RSAPrivateKey.x				\
+	asn1_DigestInfo.x				\
+	asn1_TBSCRLCertList.x				\
+	asn1_CRLCertificateList.x			\
+	asn1_id_x509_ce_cRLNumber.x			\
+	asn1_id_x509_ce_freshestCRL.x			\
+	asn1_id_x509_ce_cRLReason.x			\
+	asn1_CRLReason.x				\
 	asn1_id_pkix.x					\
 	asn1_id_pkix_on.x				\
 	asn1_id_pkix_on_dnsSRV.x			\
+	asn1_id_pkix_kp.x				\
+	asn1_id_pkix_kp_serverAuth.x			\
+	asn1_id_pkix_kp_clientAuth.x			\
+	asn1_id_pkix_kp_emailProtection.x		\
+	asn1_id_pkix_kp_timeStamping.x			\
+	asn1_id_pkix_kp_OCSPSigning.x			\
 	asn1_id_pkix_pe.x				\
 	asn1_id_pe_proxyCertInfo.x			\
 	asn1_id_pkix_ppl.x				\
 	asn1_id_pkix_ppl_anyLanguage.x			\
 	asn1_id_pkix_ppl_inheritAll.x			\
 	asn1_id_pkix_ppl_independent.x			\
-	asn1_ProxyCertInfo.x				\
-	asn1_ProxyPolicy.x
-
+	asn1_ProxyPolicy.x				\
+	asn1_ProxyCertInfo.x 
 
 gen_files_pkinit =					\
 	asn1_id_pkinit.x				\
