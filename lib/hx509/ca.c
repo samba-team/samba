@@ -504,7 +504,38 @@ ca_sign(hx509_context context,
 	    goto out;
     }
 
-    /* X509v3 Subject Key Identifier:  */
+    /* Add Subject Key Identifier */
+    {
+	SubjectKeyIdentifier si;
+	unsigned char hash[SHA_DIGEST_LENGTH];
+
+	{
+	    SHA_CTX m;
+	    
+	    SHA1_Init(&m);
+	    SHA1_Update(&m, tbs->spki.subjectPublicKey.data,
+			tbs->spki.subjectPublicKey.length / 8);
+	    SHA1_Final (hash, &m);
+	}
+
+	si.data = hash;
+	si.length = sizeof(hash);
+
+	ASN1_MALLOC_ENCODE(SubjectKeyIdentifier, data.data, data.length, 
+			   &si, &size, ret);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	if (size != data.length)
+	    _hx509_abort("internal ASN.1 encoder error");
+	ret = add_extension(context, tbsc, 0,
+			    oid_id_x509_ce_subjectKeyIdentifier(),
+			    &data);
+	free(data.data);
+	if (ret)
+	    goto out;
+    }
 
     ASN1_MALLOC_ENCODE(TBSCertificate, data.data, data.length,tbsc, &size, ret);
     if (ret) {
@@ -546,7 +577,7 @@ get_AuthorityKeyIdentifier(hx509_context context,
     int ret;
 
     ret = _hx509_find_extension_subject_key_id(certificate, &si);
-    if (0 && ret == 0) {
+    if (ret == 0) {
 	ai->keyIdentifier = calloc(1, sizeof(*ai->keyIdentifier));
 	if (ai->keyIdentifier == NULL) {
 	    ret = ENOMEM;
