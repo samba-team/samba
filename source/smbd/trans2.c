@@ -4807,7 +4807,6 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	BOOL bad_path = False;
 	NTSTATUS status = NT_STATUS_OK;
 	struct ea_list *ea_list = NULL;
-	files_struct *fsp;
 
 	if (!CAN_WRITE(conn))
 		return ERROR_DOS(ERRSRV,ERRaccess);
@@ -4865,22 +4864,11 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 					  ERRnoaccess);
 	}
 
-	status = open_directory(conn, directory, &sbuf, 
-				FILE_READ_ATTRIBUTES, /* A stat open */
-				FILE_SHARE_NONE, /* Ignored  */
-				FILE_CREATE, 0, NULL, &fsp);
+	status = create_directory(conn, directory);
 
 	if (!NT_STATUS_IS_OK(status)) {
-#if 0
-		/* Do we need to do this here ? Need smbtorture test. JRA. */
-		if (!use_nt_status() && NT_STATUS_EQUAL(
-				status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-			status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
-		}
-#endif
 		return ERROR_NT(status);
 	}
-	close_file(fsp, NORMAL_CLOSE);
   
 	/* Try and set any given EA. */
 	if (ea_list) {
