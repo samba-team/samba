@@ -508,28 +508,6 @@ interface drsuapi
 		[size_is(num_values)] drsuapi_DsAttributeValueGUID *values;
 	} drsuapi_DsAttributeValueCtrGUID;
 
-	/* SID values */
-	typedef struct {
-		[range(0,10485760),value(ndr_size_dom_sid(sid,ndr->flags))] uint32 __ndr_size;
-		[subcontext(4)] dom_sid *sid;
-	} drsuapi_DsAttributeValueSID;
-
-	typedef struct {
-		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueSID *values;
-	} drsuapi_DsAttributeValueCtrSID;
-
-	/* NTTIME_1sec values */
-	typedef struct {
-		[range(0,10485760),value(8)] uint32 __ndr_size;
-		[subcontext(4)] NTTIME_1sec *time;
-	} drsuapi_DsAttributeValueNTTIME_1sec;
-
-	typedef struct {
-		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueNTTIME_1sec *values;
-	} drsuapi_DsAttributeValueCtrNTTIME_1sec;
-
 	typedef [nodiscriminant] union {
 		[case(DRSUAPI_ATTRIBUTE_objectClass)] drsuapi_DsAttributeValueCtrObjectClassId object_class_id;
 		[case(DRSUAPI_ATTRIBUTE_governsID)]		drsuapi_DsAttributeValueCtrUINT32 oid;
@@ -555,9 +533,6 @@ interface drsuapi
 		[case(DRSUAPI_ATTRIBUTE_invocationId)] drsuapi_DsAttributeValueCtrGUID guid;
 		[case(DRSUAPI_ATTRIBUTE_schemaIDGUID)] drsuapi_DsAttributeValueCtrGUID guid;
 
-		/* SID */
-		[case(DRSUAPI_ATTRIBUTE_objectSid)] drsuapi_DsAttributeValueCtrSID sid;
-
 		/* UnicodeString */
 		[case(DRSUAPI_ATTRIBUTE_description)]		drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
 		[case(DRSUAPI_ATTRIBUTE_adminDisplayName)]	drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
@@ -578,9 +553,6 @@ interface drsuapi
 		[case(DRSUAPI_ATTRIBUTE_serverReferenceBL)]	drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs)]	drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs)]	drsuapi_DsAttributeValueCtrDNString dn_string;
-
-		/* NTTIME_1sec */
-		[case(DRSUAPI_ATTRIBUTE_whenCreated)] drsuapi_DsAttributeValueCtrNTTIME_1sec nttime_1sec;
 
 		/* the default is the DATA_BLOB */
 		[default] drsuapi_DsAttributeValueCtrDataBlob data_blob;
