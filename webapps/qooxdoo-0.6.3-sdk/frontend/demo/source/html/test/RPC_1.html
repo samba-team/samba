@@ -1,0 +1,116 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+  <script type="text/javascript" src=".qxrpc"></script>
+  <!-- With the above script, the service URL for a J2EE application can be
+       automatically determined, no matter on what path it's deployed. -->
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p><strong>Only works together with a RPC backend!</strong></p>
+    <p>Test for RPC functionality.</p>
+    <p>
+      This test calls a simple echo-style service on the server. The server
+      method accepts a string and sends back a string that says
+      "Client said: [input string]".
+    </p>
+  </div>
+
+  <script type="text/javascript">
+//    qx.Settings.setCustomOfClass("qx.io.remote.Exchange", "enableDebug", true);
+    qx.Settings.setCustomOfClass("qx.io.Json", "enableDebug", true);
+
+    qx.core.Init.getInstance().defineMain(function() {
+      var layout1 = new qx.ui.layout.VerticalBoxLayout();
+      layout1.setTop(40);
+      layout1.setLeft(20);
+      layout1.setSpacing(4);
+
+      var async = new qx.ui.form.CheckBox("Asynchronous (must be checked if cross-domain is selected)");
+      layout1.add(async);
+
+      var crossDomain = new qx.ui.form.CheckBox("Cross Domain");
+      layout1.add(crossDomain);
+
+      layout1.add(new qx.ui.basic.Label("URL:"));
+      var defaultURL = qx.io.remote.Rpc.makeServerURL();
+      if (defaultURL == null) {
+        defaultURL = "/services/";
+      }
+      var url = new qx.ui.form.TextField(defaultURL);
+      layout1.add(url);
+
+      layout1.add(new qx.ui.basic.Label("Service:"));
+      var service = new qx.ui.form.TextField("qooxdoo.test");
+      layout1.add(service);
+
+      layout1.add(new qx.ui.basic.Label("Method:"));
+      var method = new qx.ui.form.TextField("echo");
+      layout1.add(method);
+
+      var layout2 = new qx.ui.layout.HorizontalBoxLayout();
+      layout2.setHeight("auto");
+      layout2.setVerticalChildrenAlign("middle");
+      layout2.setSpacing(4);
+      var message = new qx.ui.form.TextField("Hello");
+      message.setWidth(200);
+      layout2.add(message);
+      var send = new qx.ui.form.Button("Send to server");
+      layout2.add(send);
+      var abort = new qx.ui.form.Button("Abort");
+      abort.setEnabled(false);
+      layout2.add(abort);
+      layout1.add(layout2);
+
+      // We'll be setting url and service upon execute; no need to do it now.
+      var rpc = new qx.io.remote.Rpc();
+      rpc.setTimeout(10000);
+      var mycall = null;
+
+      send.addEventListener("execute", function() {
+        // Allow the user to reset the URL and Service on each call
+        rpc.setUrl(url.getValue());
+        rpc.setServiceName(service.getValue());
+        rpc.setCrossDomain(crossDomain.isChecked());
+
+        if (async.isChecked()) {
+          send.setEnabled(false);
+          abort.setEnabled(true);
+          mycall = rpc.callAsync(function(result, ex, id) {
+            mycall = null;
+            if (ex == null) {
+              alert("Async(" + id + ") result: " + result);
+            } else {
+              alert("Async(" + id + ") exception: " + ex);
+            }
+            send.setEnabled(true);
+            abort.setEnabled(false);
+          }, method.getValue(), message.getValue());
+        } else {
+          try {
+            var result = rpc.callSync(method.getValue(), message.getValue());
+            alert("Sync result: " + result);
+          } catch (ex) {
+            alert("Sync exception: " + ex);
+          }
+        }
+      });
+
+      abort.addEventListener("execute", function() {
+        rpc.abort(mycall);
+      });
+
+      var d = qx.ui.core.ClientDocument.getInstance();
+      d.add(layout1);
+    });
+  </script>
+</body>
+</html>

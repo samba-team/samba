@@ -1,0 +1,415 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+  </div>
+
+  <textarea id="resultjs" style="position:absolute;width:600px;height:400px;background:white;top:120px;left:20px;border:1px solid black;overflow:auto"></textarea>
+  <textarea id="resulthtml" style="position:absolute;width:600px;height:100px;background:white;top:530px;left:20px;border:1px solid black;overflow:auto"></textarea>
+
+  <script type="text/javascript">
+    jsout = document.getElementById("resultjs");
+    htmlout = document.getElementById("resulthtml");
+
+    var _emptyTags = {
+       "IMG":   true,
+       "BR":    true,
+       "INPUT": true,
+       "META":  true,
+       "LINK":  true,
+       "PARAM": true,
+       "HR":    true
+    };
+
+    HTMLElement.prototype.__defineGetter__("outerHTML", function () {
+       var attrs = this.attributes;
+       var str = "<" + this.tagName.toLowerCase();
+       for (var i = 0; i < attrs.length; i++)
+          str += " " + attrs[i].name + "=\"" + attrs[i].value + "\"";
+
+       if (_emptyTags[this.tagName])
+          return str + ">";
+
+       return str + ">" + this.innerHTML + "</" + this.tagName.toLowerCase() + ">";
+    });
+
+
+
+
+
+
+
+
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      a1 = new qx.ui.form.Button("Hello World", "icon/32/penguin.png");
+      a1.setLocation(20, 50);
+      qx.ui.core.ClientDocument.getInstance().add(a1);
+
+      a2 = new qx.ui.form.Button("Hello World", "icon/32/appearance.png");
+      a2.setLocation(220, 50);
+      qx.ui.core.ClientDocument.getInstance().add(a2);
+    });
+
+    qx.core.Init.getInstance().defineFinalize(function()
+    {
+        var str = "qx.core.Init.getInstance().defineMain(function()\n{\n";
+
+
+
+
+        qx.core.Init.getInstance().debug("Updating HTML");
+
+        htmlout.value = a1.getElement().outerHTML + a2.getElement().outerHTML;
+
+
+
+
+
+
+
+
+        qx.core.Init.getInstance().debug("Serialize...");
+        var vBase1 = serializeMain(a1);
+        var vBase2 = serializeMain(a2);
+
+        qx.core.Init.getInstance().debug("Base1: " + vBase1);
+        qx.core.Init.getInstance().debug("Base2: " + vBase2);
+        qx.core.Init.getInstance().debug("Tree Size: " + vObjectCache.length);
+        qx.core.Init.getInstance().debug("Generating Code...");
+
+        for (var i=0, n, v, c, cv, l=vObjectCache.length; i<l; i++)
+        {
+          v = vObjectCache[i].value;
+          c = vObjectCache[i].compiled;
+
+          switch(typeof v)
+          {
+            case "object":
+              if (v == null)
+              {
+                str += "$" + i + " = null;\n";
+              }
+              else if (v instanceof qx.core.Object)
+              {
+                // qx.core.Init.getInstance().debug("QXOBJECT: " + i + "=" + vObjectCache[i].value);
+
+                if (typeof c == "string" && c.indexOf("$OBJECTMAPPER-") == 0)
+                {
+                  cv = c.replace("$OBJECTMAPPER-", "");
+
+                  switch(cv)
+                  {
+                    case "qx.ui.core.ClientDocument":
+                      str += "$" + i + " = qx.core.Init.getComponent().getClientWindow()().getClientDocument();\n";
+                      break;
+
+                    case "qx.manager.object.ImageManager":
+                      str += "$" + i + " = new qx.manager.object.ImageManager;\n";
+                      break;
+                  };
+                }
+                else
+                {
+                  str += "var f = new Function();\n";
+                  str += "f.prototype = " + v.classname + ".prototype;\n";
+                  str += "$" + i + " = new f;\n";
+                  str += "QxObjectDataBase[" + v._hashCode + "] = $" + i + ";\n";
+
+                  // constructor call
+                  // str += v.classname + ".call($" + i + ");\n";
+
+                  if (v instanceof qx.ui.core.Widget && v.isCreated())
+                  {
+                    // map elements
+                    str += "$" + i + "._valueElement = cssQuery(\"[qxhashcode=" + v._hashCode + "]\")[0];\n";
+                    str += "$" + i + "._element = $" + i + "._valueElement;\n";
+                    str += "$" + i + "._style = $" + i + "._valueElement.style;\n";
+
+                    // map qx_Widget attribute of node to widget
+                    str += "$" + i + "._valueElement.qx_Widget = $" + i + ";\n";
+
+                    if (v instanceof qx.ui.basic.Image)
+                    {
+                      // assign _image
+                      str += "$" + i + "._image = $" + i + "._valueElement.getElementsByTagName(\"img\")[0];\n";
+                    };
+                  }
+                  else if (v instanceof qx.io.image.Preloader)
+                  {
+                    str += "$" + i + "._element = new Image;\n";
+                    str += "$" + i + "._element.src = \"" + v.getSource() + "\";\n";
+                  };
+                };
+              }
+              else if (v instanceof Array)
+              {
+                // qx.core.Init.getInstance().debug("JSARRAY: " + i + "=" + vObjectCache[i].value);
+
+                str += "$" + i + " = [];\n";
+              }
+              else
+              {
+                // qx.core.Init.getInstance().debug("JSHASHTABLE: " + i + "=" + vObjectCache[i].value);
+
+                str += "$" + i + " = {};\n";
+              };
+
+              break;
+
+            case "string":
+              str += "$" + i + " = \"" + vObjectCache[i].value + "\";\n";
+              break;
+
+            case "number":
+            case "boolean":
+              str += "$" + i + " = " + v + ";\n";
+              break;
+
+            case "undefined":
+              // qx.core.Init.getInstance().debug("Undefined value found: " + v);
+              str += "$" + i + " = null;\n";
+              break;
+
+            case "function":
+              if (typeof c == "string" && c.indexOf("$FUNCTIONMAPPER-") == 0)
+              {
+                cv = c.replace("$FUNCTIONMAPPER-", "").split("|");
+                str += "$" + i + "= QxObjectDataBase[" + cv[1] + "]." + cv[0] + ";\n";
+              };
+              break;
+
+            default:
+              qx.core.Init.getInstance().debug("Unsupported value: " + v);
+              str += "var $" + i + " = \"UNSUPPORTED VALUE\";\n";
+
+          };
+        };
+
+
+
+
+
+
+
+        for (var i=0, n, c, v, cv, l=vObjectCache.length; i<l; i++)
+        {
+          v = vObjectCache[i].value;
+          c = vObjectCache[i].compiled;
+
+          if (typeof v == "object" && v != null)
+          {
+            if (v instanceof qx.core.Object)
+            {
+              if (typeof c == "string" && c.indexOf("$OBJECTMAPPER-") == 0)
+              {
+                continue;
+              };
+
+              for (vKey in vObjectCache[i].compiled)
+              {
+                if (vObjectCache[i].compiled[vKey] != null)
+                {
+                  str += "$" + i + "." + vKey + " = $" + vObjectCache[i].compiled[vKey] + ";\n";
+                };
+              };
+            }
+            else if (v instanceof Array)
+            {
+              for (var ia=0, la=vObjectCache[i].compiled.length; ia<la; ia++)
+              {
+                str += "$" + i + "[" + ia + "] = $" + vObjectCache[i].compiled[ia] + ";\n";
+              };
+            }
+            else
+            {
+              for (vKey in vObjectCache[i].compiled)
+              {
+                if (vObjectCache[i].compiled[vKey] != null)
+                {
+                  str += "$" + i + "[\"" + vKey + "\"] = $" + vObjectCache[i].compiled[vKey] + ";\n";
+                };
+              };
+            };
+          };
+        };
+
+
+
+
+
+        str += "};";
+
+        jsout.value = str;
+
+        qx.core.Init.getInstance().debug("Done");
+      });
+
+
+
+
+      var vObjectCache = [];
+      var vLastListenerContext = null;
+
+      function serializeMain(vValue)
+      {
+        var vValue, vIter, vLength;
+
+        // Completly ignore the window and document built-in object
+        if (vValue == window || vValue == document) {
+          return null;
+        };
+
+        // Completly ignore DOM nodes
+        if (qx.util.Validation.isValid(vValue) && typeof vValue.nodeType != "undefined") {
+          return null;
+        };
+
+        for (vIter=0, vLength=vObjectCache.length; vIter<vLength; vIter++)
+        {
+          if (vObjectCache[vIter].value === vValue)
+          {
+            return vIter;
+          };
+        };
+
+        //QxDebug("Serializer", "Known: " + vObjectCache);
+        //QxDebug("Serializer", "Serialize: " + vValue + "(" + typeof vValue + ")");
+
+        var vPos = vObjectCache.length;
+
+        vObjectCache[vPos] = { value : vValue };
+        vObjectCache[vPos].compiled = serializeWrapper(vValue);
+
+        return vPos;
+      };
+
+      function serializeWrapper(vInput)
+      {
+        switch(typeof vInput)
+        {
+          case "string":
+          case "number":
+          case "boolean":
+            return serializeSimple(vInput);
+
+          case "object":
+            if (vInput == null)
+            {
+              return serializeSimple(vInput);
+            }
+            else if (vInput instanceof Array)
+            {
+              return serializeArray(vInput);
+            }
+            else
+            {
+              return serializeObject(vInput);
+            };
+
+          case "function":
+            //QxDebug("Serializer", "FUNCTION: " + vInput);
+            return null;
+        };
+
+        return null;
+      };
+
+      function serializeSimple(vSimple) {
+        return vSimple;
+      };
+
+      function serializeObject(vObject)
+      {
+        if (vObject instanceof qx.ui.core.ClientDocument) {
+          return "$OBJECTMAPPER-qx.ui.core.ClientDocument";
+        }
+        else if (vObject instanceof qx.manager.object.ImageManager) {
+          return "$OBJECTMAPPER-qx.manager.object.ImageManager";
+        };
+
+        var vKey;
+        var vOut = {};
+
+        for (vKey in vObject)
+        {
+          // ignore css reference
+          switch(vKey)
+          {
+            case "_style":
+              continue;
+
+            case "_listeners":
+              // QxDebug("Serializer", "Found Listeners: " + vKey + "::" + vObject);
+              vLastListenerContext = vObject;
+              break;
+          };
+
+          if (typeof vObject[vKey] == "function")
+          {
+            if (!(vObject instanceof qx.core.Object) && vLastListenerContext)
+            {
+              var to = new vLastListenerContext.constructor;
+              var tm = null;
+
+              for (vSubKey in to)
+              {
+                if (to[vSubKey] === vObject[vKey])
+                {
+                  tm = vSubKey;
+                  break;
+                };
+              };
+
+              if (tm)
+              {
+                qx.core.Init.getInstance().debug("Serializer", "Function Mapped: " + tm);
+                var ts = { value : vObject[vKey], compiled : "$FUNCTIONMAPPER-" + tm + "|" + vLastListenerContext._hashCode };
+                vObjectCache.push(ts);
+                vOut[vKey] = vObjectCache.length-1;
+                continue;
+              }
+              else
+              {
+                qx.core.Init.getInstance().debug("Serializer", "Could not map function: " + vKey + "[" + vLastListenerContext + "]");
+              };
+
+              continue;
+            }
+            else
+            {
+              continue;
+            };
+          };
+
+          vOut[vKey] = serializeMain(vObject[vKey]);
+        };
+
+        return vOut;
+      };
+
+      function serializeArray(vArray)
+      {
+        var vKey;
+        var vOut = [];
+
+        for (var vIter=0, vLength=vArray.length; vIter<vLength; vIter++) {
+          vOut.push(serializeMain(vArray[vIter]));
+        };
+
+        return vOut;
+      };
+
+  </script>
+</body>
+</html>

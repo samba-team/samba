@@ -1,0 +1,47 @@
+\bQxUtil\.returnTrue\b = qx.util.Return.returnTrue
+\bQxUtil\.returnFalse\b = qx.util.Return.returnFalse
+\bQxUtil\.returnNull\b = qx.util.Return.returnNull
+\bQxUtil\.returnThis\b = qx.util.Return.returnThis
+\bQxUtil\.returnZero\b = qx.util.Return.returnZero
+\bQxUtil\.returnNegativeIndex\b = qx.util.Return.returnNegativeIndex
+
+\bQxUtil\.isValid\b = qx.util.Validation.isValid
+\bQxUtil\.isInvalid\b = qx.util.Validation.isInvalid
+\bQxUtil\.isValidNumber\b = qx.util.Validation.isValidNumber
+\bQxUtil\.isInvalidNumber\b = qx.util.Validation.isInvalidNumber
+\bQxUtil\.isValidString\b = qx.util.Validation.isValidString
+\bQxUtil\.isInvalidString\b = qx.util.Validation.isInvalidString
+\bQxUtil\.isValidArray\b = qx.util.Validation.isValidArray
+\bQxUtil\.isInvalidArray\b = qx.util.Validation.isInvalidArray
+\bQxUtil\.isValidObject\b = qx.util.Validation.isValidObject
+\bQxUtil\.isInvalidObject\b = qx.util.Validation.isInvalidObject
+\bQxUtil\.isValidNode\b = qx.util.Validation.isValidNode
+\bQxUtil\.isInvalidNode\b = qx.util.Validation.isInvalidNode
+\bQxUtil\.isValidElement\b = qx.util.Validation.isValidElement
+\bQxUtil\.isInvalidElement\b = qx.util.Validation.isInvalidElement
+\bQxUtil\.isValidFunction\b = qx.util.Validation.isValidFunction
+\bQxUtil\.isInvalidFunction\b = qx.util.Validation.isInvalidFunction
+\bQxUtil\.isValidBoolean\b = qx.util.Validation.isValidBoolean
+\bQxUtil\.isInvalidBoolean\b = qx.util.Validation.isInvalidBoolean
+\bQxUtil\.isValidStringOrNumber\b = qx.util.Validation.isValidStringOrNumber
+\bQxUtil\.isInvalidStringOrNumber\b = qx.util.Validation.isInvalidStringOrNumber
+
+\bQxUtil\._normalizeUmlautsRegExp\b = qx.util.Normalization._umlautsRegExp
+\bQxUtil\._normalizeUmlautsShortData\b = qx.util.Normalization._umlautsShortData
+\bQxUtil\._normalizeUmlautsShort\b = qx.util.Normalization._umlautsShort
+\bQxUtil\.normalizeUmlautsShort\b = qx.util.Normalization.umlautsShort
+\bQxUtil\._normalizeUmlautsLongData\b = qx.util.Normalization._umlautsLongData
+\bQxUtil\._normalizeUmlautsLong\b = qx.util.Normalization._umlautsLong
+\bQxUtil\.normalizeUmlautsLong\b = qx.util.Normalization.umlautsLong
+
+\bQxUtil\.isObjectEmpty\b = qx.lang.Object.isEmpty
+\bQxUtil\.isObjectMinLength\b = qx.lang.Object.hasMinLength
+\bQxUtil\.getObjectLength\b = qx.lang.Object.getLength
+\bQxUtil\.convertObjectKeysToArray\b = qx.lang.Object.getKeys
+\bQxUtil\.convertObjectKeysToString\b = qx.lang.Object.getKeysAsString
+\bQxUtil\.convertObjectValuesToArray\b = qx.lang.Object.getValues
+\bQxUtil\.convertArgumentsToArray\b = qx.lang.Array.fromArguments
+\bQxUtil\.convertShortHandToArray\b = qx.lang.Array.fromShortHand
+\bQxUtil\.mergeObjectWith\b = qx.lang.Object.mergeWith
+\bQxUtil\.mergeObjects\b = qx.lang.Object.merge
+\bQxUtil\.copyObject\b = qx.lang.Object.copy

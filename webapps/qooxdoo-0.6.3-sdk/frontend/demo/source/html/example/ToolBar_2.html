@@ -1,0 +1,269 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Introducing qx.ui.toolbar.CheckBox and qx.ui.toolbar.RadioButton.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      function changeLayout(e) {
+        this.setShow(e.getData());
+      };
+
+      function changeSize(e) {
+        var v = e.getData();
+        var o = v == 22 ? 32 : 22;
+
+        this.setIcon(this.getIcon().replace(o, v));
+      };
+
+      var tb = new qx.ui.toolbar.ToolBar;
+      with(tb)
+      {
+        setTop(48);
+        setLeft(20);
+        setRight(335);
+        setParent(d);
+      };
+
+
+      var tbp1 = new qx.ui.toolbar.Part;
+      tb.add(tbp1);
+
+      var tbp2 = new qx.ui.toolbar.Part;
+      tb.add(tbp2);
+
+      var tbp3 = new qx.ui.toolbar.Part;
+      tb.add(tbp3);
+
+      var tbp4 = new qx.ui.toolbar.Part;
+      tb.add(tbp4);
+
+
+
+      // Default
+      var tbd1 = new qx.ui.toolbar.Button("Default", "icon/22/file-new.png");
+      tbp1.add(tbd1);
+      d.addEventListener("changeLayout", changeLayout, tbd1);
+      d.addEventListener("changeSize", changeSize, tbd1);
+
+      tbd1._marker = true;
+
+      tbp1.setDisplay(false);
+      tbd1.setDisplay(false);
+
+
+
+      // Checkbox
+      var tbc1 = new qx.ui.toolbar.CheckBox("Check", "icon/22/configure.png", true);
+      tbp2.add(tbc1);
+      d.addEventListener("changeLayout", changeLayout, tbc1);
+      d.addEventListener("changeSize", changeSize, tbc1);
+
+
+
+      // Radio
+      var tbr1 = new qx.ui.toolbar.RadioButton("Radio1", "icon/22/view-choose.png");
+      tbp3.add(tbr1);
+      d.addEventListener("changeLayout", changeLayout, tbr1);
+      d.addEventListener("changeSize", changeSize, tbr1);
+
+      var tbr2 = new qx.ui.toolbar.RadioButton("Radio2", "icon/22/view-detailed.png", true);
+      tbp3.add(tbr2);
+      d.addEventListener("changeLayout", changeLayout, tbr2);
+      d.addEventListener("changeSize", changeSize, tbr2);
+
+      var tbr3 = new qx.ui.toolbar.RadioButton("Radio3", "icon/22/view-icon.png");
+      tbp3.add(tbr3);
+      d.addEventListener("changeLayout", changeLayout, tbr3);
+      d.addEventListener("changeSize", changeSize, tbr3);
+
+      // Radio Mananger
+      var tbr_manager = new qx.manager.selection.RadioManager(null, [tbr1, tbr2, tbr3]);
+
+
+
+
+      // Radio
+      var tbs1 = new qx.ui.toolbar.RadioButton("Radio1", "icon/22/view-choose.png");
+      tbp4.add(tbs1);
+      tbs1.setDisableUncheck(true);
+      d.addEventListener("changeLayout", changeLayout, tbs1);
+      d.addEventListener("changeSize", changeSize, tbs1);
+
+      var tbs2 = new qx.ui.toolbar.RadioButton("Radio2", "icon/22/view-detailed.png", true);
+      tbp4.add(tbs2);
+      tbs2.setDisableUncheck(true);
+      d.addEventListener("changeLayout", changeLayout, tbs2);
+      d.addEventListener("changeSize", changeSize, tbs2);
+
+      var tbs3 = new qx.ui.toolbar.RadioButton("Radio3", "icon/22/view-icon.png");
+      tbp4.add(tbs3);
+      tbs3.setDisableUncheck(true);
+      d.addEventListener("changeLayout", changeLayout, tbs3);
+      d.addEventListener("changeSize", changeSize, tbs3);
+
+      // Radio Mananger
+      var tbs_manager = new qx.manager.selection.RadioManager(null, [tbs1, tbs2, tbs3]);
+
+
+
+
+      var rd1 = new qx.ui.form.RadioButton("Show Icons and Label", "both");
+      var rd2 = new qx.ui.form.RadioButton("Show Icons", "icon");
+      var rd3 = new qx.ui.form.RadioButton("Show Label", "label");
+
+      with(rd1)
+      {
+        setTop(140);
+        setLeft(20);
+      };
+
+      with(rd2)
+      {
+        setTop(160);
+        setLeft(20);
+      };
+
+      with(rd3)
+      {
+        setTop(180);
+        setLeft(20);
+      };
+
+
+      var rbm = new qx.manager.selection.RadioManager();
+
+      rbm.add(rd1);
+      rbm.add(rd2);
+      rbm.add(rd3);
+
+      // beautiful decoupling: radio boxes don't know about toolbar buttons
+      rbm.addEventListener("changeSelected", function(e)
+      {
+        d.dispatchEvent( new qx.event.type.DataEvent("changeLayout", e.getData().getValue() ) );
+      });
+
+      d.add(rd1, rd2, rd3);
+
+
+      // apply default layout
+      rd1.setChecked(true);
+
+
+
+
+
+      // Alignment
+      var ra1 = new qx.ui.form.RadioButton("Left Aligned", "left");
+      var ra2 = new qx.ui.form.RadioButton("Centered", "center");
+      var ra3 = new qx.ui.form.RadioButton("Right Aligned", "right");
+
+      with(ra1)
+      {
+        setTop(140);
+        setLeft(220);
+        setChecked(true);
+      };
+
+      with(ra2)
+      {
+        setTop(160);
+        setLeft(220);
+      };
+
+      with(ra3)
+      {
+        setTop(180);
+        setLeft(220);
+      };
+
+
+      var ram = new qx.manager.selection.RadioManager();
+
+      ram.add(ra1);
+      ram.add(ra2);
+      ram.add(ra3);
+
+      d.add(ra1, ra2, ra3);
+
+      ram.addEventListener("changeSelected", function(e) {
+        tb.setHorizontalChildrenAlign(e.getData().getValue());
+      });
+
+
+
+
+      // Icon Sizes
+      var b3 = new qx.ui.form.Button("Icons: 22 Pixel", "icon/16/colors.png");
+
+      with(b3)
+      {
+        setTop(140);
+        setLeft(420);
+        setHorizontalAlign("center");
+      };
+
+      b3.addEventListener("execute", function(e) {
+        d.dispatchEvent(new qx.event.type.DataEvent("changeSize", 22));
+      });
+
+      var b4 = new qx.ui.form.Button("Icons: 32 Pixel", "icon/16/colors.png");
+
+      with(b4)
+      {
+        setTop(170);
+        setLeft(420);
+        setHorizontalAlign("center");
+      };
+
+      b4.addEventListener("execute", function(e) {
+        d.dispatchEvent(new qx.event.type.DataEvent("changeSize", 32));
+      });
+
+      d.add(b3, b4);
+
+
+
+
+
+
+      var chkShowBtn1 = new qx.ui.form.CheckBox("Show First Button");
+
+      chkShowBtn1.setLocation(20, 500);
+      chkShowBtn1.addEventListener("changeChecked", function(e) {
+        tbd1.setDisplay(e.getData());
+      });
+
+      var chkShowPart1 = new qx.ui.form.CheckBox("Show First Part");
+
+      chkShowPart1.setLocation(220, 500);
+      chkShowPart1.addEventListener("changeChecked", function(e) {
+        tbp1.setDisplay(e.getData());
+      });
+
+      d.add(chkShowBtn1, chkShowPart1);
+
+
+
+      // Icon & Color Themes
+      qx.manager.object.ImageManager.getInstance().createThemeList(d, 20, 248);
+      qx.manager.object.ColorManager.getInstance().createThemeList(d, 220, 248);
+    });
+  </script>
+</body>
+</html>

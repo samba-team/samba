@@ -1,0 +1,110 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Tests for Number creation performance</p>
+    <ol>
+      <li>Using simple number</li>
+      <li>Using parseInt</li>
+      <li>Using parseFloat</li>
+      <li>Using new with string int</li>
+      <li>Using new with string float</li>
+      <li>Using new with simple number</li>
+      <li>Using new with parseInt</li>
+      <li>Using new with parseFloat</li>
+    </ol>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var n1 = "2392";
+    var n2 = "223.92";
+
+    function NumberCreate1(vLoops)
+    {
+      var foo;
+
+      for (var i=0; i<vLoops; i++) {
+        foo = 2392;
+      };
+    };
+
+    function NumberCreate2(vLoops)
+    {
+      var foo;
+
+      for (var i=0; i<vLoops; i++) {
+        foo = parseInt(n1);
+      };
+    };
+
+    function NumberCreate3(vLoops)
+    {
+      var foo;
+
+      for (var i=0; i<vLoops; i++) {
+        foo = parseFloat(n2);
+      };
+    };
+
+    function NumberCreate4(vLoops)
+    {
+      var foo;
+
+      for (var i=0; i<vLoops; i++) {
+        foo = new Number(n1);
+      };
+    };
+
+    function NumberCreate5(vLoops)
+    {
+      var foo;
+
+      for (var i=0; i<vLoops; i++) {
+        foo = new Number(n2);
+      };
+    };
+
+    function NumberCreate6(vLoops)
+    {
+      var foo;
+
+      for (var i=0; i<vLoops; i++) {
+        foo = new Number(2392);
+      };
+    };
+
+    function NumberCreate7(vLoops)
+    {
+      var foo;
+
+      for (var i=0; i<vLoops; i++) {
+        foo = new Number(parseInt(n1));
+      };
+    };
+
+    function NumberCreate8(vLoops)
+    {
+      var foo;
+
+      for (var i=0; i<vLoops; i++) {
+        foo = new Number(parseFloat(n2));
+      };
+    };
+
+    new qx.dev.TimeTracker(NumberCreate1, NumberCreate2, NumberCreate3, NumberCreate4, NumberCreate5, NumberCreate6, NumberCreate7, NumberCreate8);
+  });
+  </script>
+</body>
+</html>

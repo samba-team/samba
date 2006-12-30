@@ -1,0 +1,71 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Leak-Test</p>
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    // Does not leak
+    // *****
+
+    // var i1 = new qx.io.image.Preloader(qx.manager.object.ImageManager.buildUri("icon/48/hardwareinfo.png"));
+
+
+    // Leaks: +2MB
+    // *****
+
+    var w1 = new qx.ui.basic.Terminator;
+    qx.ui.core.ClientDocument.getInstance().add(w1);
+
+
+
+
+
+    // Does not leak
+    // *****
+    /*
+    var w1 = new qx.ui.basic.Terminator;
+    w1.setTop(48);
+    w1.setLeft(20);
+    qx.ui.core.ClientDocument.getInstance().add(w1);
+    */
+
+
+    // Leaks +2MB
+    // *****
+    /*
+    var i1 = new qx.ui.basic.Image("icon/48/hardwareinfo.png");
+    with(i1)
+    {
+      setTop(48);
+      setLeft(20);
+    };
+
+    qx.ui.core.ClientDocument.getInstance().add(i1);
+    */
+
+
+
+
+
+
+    //var t1 = new QxTarget;
+
+
+  });
+  </script>
+</body>
+</html>

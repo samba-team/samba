@@ -1,0 +1,119 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Testing qx.ui.listview.ListView with text cells.</p>
+    <p>And with drag and drop between the two qx.ui.listview.ListViews.</p>
+    <p>Reduced columns for second listview.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var ld = [];
+      var lt = [ "Image", "Text", "PDF", "Illustration", "Document" ];
+
+      for (var i=0, t; i<1000; i++)
+      {
+        t=Math.round(Math.random()*4);
+        ld.push({ name : { text : "File " + i }, size : { text : Math.round(Math.random()*100) + "kb" }, type : { text : lt[t] }, modified : { text : "Nov " + Math.round(Math.random() * 30 + 1) + " 2005" }, rights: { text : "-rw-r--r--" }});
+      };
+
+      var lc1 =
+      {
+        name : { label : "Name", width : 100, type : "text", sortable : true, sortProp : "text" },
+        size: { label : "Size", width : 50, type : "text", sortable : true, sortProp : "text", sortMethod : qx.util.Compare.byIntegerString },
+        type : { label : "Type", width : 80, type : "text", sortable : true, sortProp : "text" },
+        modified : { label : "Last Modified", width : 150, type : "text" },
+        rights : { label : "Rights", width: 80, type : "text" }
+      };
+
+      var lc2 =
+      {
+        name : { label : "Name", width : 200, type : "text", sortable : true, sortProp : "text" },
+        type : { label : "Type", width : 80, type : "text", sortable : true, sortProp : "text" }
+      };
+
+
+      function handleDrag(e)
+      {
+        e.addData("qx.ui.listview.ListViewEntries", qx.lang.Array.copy(e.getCurrentTarget().getManager().getSelectedItems()));
+        e.addAction("move");
+        e.startDrag();
+      };
+
+      function handleDrop(e)
+      {
+        var type = e.getDropDataTypes()[0];
+        var data = e.getData(type);
+
+        switch(e.getAction())
+        {
+          case "move":
+            sourceView.getPane().getManager().setSelectedItems([]);
+            sourceView.getPane().getManager().setAnchorItem(null);
+            sourceView.getPane().getManager().setLeadItem(null);
+
+            for (var i=0, l=data.length; i<l; i++)
+            {
+              qx.lang.Array.remove(sourceView.getData(), data[i]);
+              destView.getData().push(data[i]);
+            };
+
+            destView.getPane().getManager().setSelectedItems(data);
+
+            sourceView.updateSort();
+            destView.updateSort();
+
+            sourceView.update();
+            destView.update();
+        };
+      };
+
+
+
+
+
+      var sourceView = new qx.ui.listview.ListView(ld, lc1);
+
+      sourceView.setBorder(qx.renderer.border.BorderPresets.getInstance().shadow);
+      sourceView.setBackgroundColor("white");
+      sourceView.setWidth(600);
+      sourceView.setHeight(250);
+      sourceView.setLocation(20, 48);
+
+      sourceView.getPane().getManager().setDragSelection(false);
+      sourceView.getPane().addEventListener("dragstart", handleDrag);
+
+      qx.ui.core.ClientDocument.getInstance().add(sourceView);
+
+
+
+
+      var destView = new qx.ui.listview.ListView([], lc2);
+
+      destView.setBorder(qx.renderer.border.BorderPresets.getInstance().shadow);
+      destView.setBackgroundColor("white");
+      destView.setWidth(600);
+      destView.setHeight(250);
+      destView.setLocation(20, 318);
+
+      destView.getPane().getManager().setDragSelection(false);
+      destView.getPane().setDropDataTypes(["qx.ui.listview.ListViewEntries"]);
+      destView.getPane().addEventListener("dragdrop", handleDrop);
+
+      qx.ui.core.ClientDocument.getInstance().add(destView);
+    });
+  </script>
+</body>
+</html>

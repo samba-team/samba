@@ -1,0 +1,3 @@
+\bqx\.ui\.form\.Button\.STATE_CHECKED\b="checked"
+\bqx\.ui\.form\.Button\.STATE_PRESSED\b="pressed"
+\bqx\.ui\.form\.Button\.STATE_ABANDONED\b="abandoned"

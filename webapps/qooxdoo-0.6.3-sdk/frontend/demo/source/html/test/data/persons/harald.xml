@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<result>
+  <name>Schmidt</name>
+  <givenName>Harald</givenName>
+  <age>65</age>
+  <street>Karlsruher Allee</street>
+  <plz>78392</plz>
+  <city>Stuttgart</city>
+  <country>Germany</country>
+  <phone>0049.750930302</phone>
+</result>

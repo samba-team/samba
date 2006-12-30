@@ -1,0 +1,89 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>qx.ui.pageview.buttonview.ButtonView implementation</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      var bs = new qx.ui.pageview.buttonview.ButtonView;
+
+      bs.setLocation(20, 48);
+      bs.setRight(335);
+      bs.setBottom(48);
+
+      var bsb1 = new qx.ui.pageview.buttonview.Button("Display", "icon/32/display.png");
+      var bsb2 = new qx.ui.pageview.buttonview.Button("Penguin", "icon/32/penguin.png");
+      var bsb3 = new qx.ui.pageview.buttonview.Button("Colors", "icon/32/colors.png");
+      var bsb4 = new qx.ui.pageview.buttonview.Button("Icons", "icon/32/icons.png");
+      var bsb5 = new qx.ui.pageview.buttonview.Button("Paint", "icon/32/paint.png");
+      var bsb6 = new qx.ui.pageview.buttonview.Button("Applications", "icon/32/run.png");
+      var bsb7 = new qx.ui.pageview.buttonview.Button("System", "icon/32/control-center.png");
+
+      bsb1.setChecked(true);
+
+      bs.getBar().add(bsb1, bsb2, bsb3, bsb4, bsb5, bsb6, bsb7);
+
+      var p1 = new qx.ui.pageview.buttonview.Page(bsb1);
+      var p2 = new qx.ui.pageview.buttonview.Page(bsb2);
+      var p3 = new qx.ui.pageview.buttonview.Page(bsb3);
+      var p4 = new qx.ui.pageview.buttonview.Page(bsb4);
+      var p5 = new qx.ui.pageview.buttonview.Page(bsb5);
+      var p6 = new qx.ui.pageview.buttonview.Page(bsb6);
+      var p7 = new qx.ui.pageview.buttonview.Page(bsb7);
+
+      bs.getPane().add(p1, p2, p3, p4, p5, p6, p7);
+
+      var f1 = new qx.ui.form.TextField("Display Input");
+      var f2 = new qx.ui.form.TextField("Penguin Input");
+      var f3 = new qx.ui.form.TextField("Colorize Input");
+      var f4 = new qx.ui.form.TextField("Icons Input");
+      var f5 = new qx.ui.form.TextField("Paint Input");
+      var f6 = new qx.ui.form.TextField("Applications Input");
+      var f7 = new qx.ui.form.TextField("System Input");
+
+      p1.add(f1);
+      p2.add(f2);
+      p3.add(f3);
+      p4.add(f4);
+      p5.add(f5);
+      p6.add(f6);
+      p7.add(f7);
+
+      var r1 = new qx.ui.form.RadioButton("Top", "top", null, true);
+      var r2 = new qx.ui.form.RadioButton("Right", "right");
+      var r3 = new qx.ui.form.RadioButton("Bottom", "bottom");
+      var r4 = new qx.ui.form.RadioButton("Left", "left");
+
+      r1.setTop(50);
+      r2.setTop(70);
+      r3.setTop(90);
+      r4.setTop(110);
+
+      p1.add(r1, r2, r3, r4);
+
+      var rm = new qx.manager.selection.RadioManager(null, [r1, r2, r3, r4]);
+
+      rm.addEventListener("changeSelected", function(e) {
+        bs.setBarPosition(e.getData().getValue());
+      });
+
+      d.add(bs);
+    });
+  </script>
+</body>
+</html>

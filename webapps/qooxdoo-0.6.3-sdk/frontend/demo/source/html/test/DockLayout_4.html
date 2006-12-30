@@ -1,0 +1,140 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    Same as the previous one, but additional the dimensions of the qx.ui.layout.DockLayout are defined as percents here.
+  </div>
+
+  <script type="text/javascript">
+  qx.core.Init.getInstance().defineMain(function()
+  {
+    var d = qx.ui.core.ClientDocument.getInstance();
+
+    var dl1 = new qx.ui.layout.DockLayout;
+    
+    dl1.setTop(48);
+    dl1.setLeft(20);
+    dl1.setRight(335);
+    dl1.setBottom(48);
+    
+    dl1.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    dl1.setBackgroundColor("white");
+    
+    d.add(dl1);
+    
+    
+    
+    var t1 = new qx.ui.layout.HorizontalBoxLayout;
+    t1.setHeight("20%");
+    t1.setBackgroundColor("red");
+    t1.setWidth(null);
+    t1.setVerticalChildrenAlign("middle");
+    t1.setHorizontalChildrenAlign("center");
+    t1.add(new qx.ui.basic.Image("icon/16/clock.png"));
+    dl1.addTop(t1);
+
+    var t2 = new qx.ui.layout.HorizontalBoxLayout;
+    t2.setWidth("20%");
+    t2.setBackgroundColor("yellow");
+    t2.setHeight(null);
+    t2.setVerticalChildrenAlign("middle");
+    t2.setHorizontalChildrenAlign("center");
+    t2.add(new qx.ui.basic.Image("icon/16/clock.png"));
+    dl1.addLeft(t2);
+    
+    var t3 = new qx.ui.layout.HorizontalBoxLayout;
+    t3.setHeight("20%");
+    t3.setBackgroundColor("blue");
+    t3.setWidth(null);
+    t3.setVerticalChildrenAlign("middle");
+    t3.setHorizontalChildrenAlign("center");
+    t3.add(new qx.ui.basic.Image("icon/16/clock.png"));
+    dl1.addBottom(t3);
+
+    var t4 = new qx.ui.layout.HorizontalBoxLayout;
+    t4.setWidth("20%");
+    t4.setBackgroundColor("green");
+    t4.setHeight(null);
+    t4.setVerticalChildrenAlign("middle");
+    t4.setHorizontalChildrenAlign("center");
+    t4.add(new qx.ui.basic.Image("icon/16/clock.png"));
+    dl1.addRight(t4);    
+    
+    
+    
+    
+    var dl2 = new qx.ui.layout.DockLayout;
+    dl2.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    dl1.add(dl2);
+    
+    
+    
+    
+    
+
+
+    var t5 = new qx.ui.layout.HorizontalBoxLayout;
+    t5.setHeight("20%");
+    t5.setBackgroundColor("fuchsia");
+    t5.setWidth(null);
+    t5.setVerticalChildrenAlign("middle");
+    t5.setHorizontalChildrenAlign("center");
+    t5.add(new qx.ui.basic.Image("icon/32/clock.png"));
+    dl2.addTop(t5);
+
+    var t6 = new qx.ui.layout.HorizontalBoxLayout;
+    t6.setWidth("20%");
+    t6.setBackgroundColor("orange");
+    t6.setHeight(null);
+    t6.setVerticalChildrenAlign("middle");
+    t6.setHorizontalChildrenAlign("center");
+    t6.add(new qx.ui.basic.Image("icon/32/clock.png"));
+    dl2.addLeft(t6);
+    
+    var t7 = new qx.ui.layout.HorizontalBoxLayout;
+    t7.setHeight("20%");
+    t7.setBackgroundColor("aqua");
+    t7.setWidth(null);
+    t7.setVerticalChildrenAlign("middle");
+    t7.setHorizontalChildrenAlign("center");
+    t7.add(new qx.ui.basic.Image("icon/32/clock.png"));
+    dl2.addBottom(t7);
+
+    var t8 = new qx.ui.layout.HorizontalBoxLayout;
+    t8.setWidth("20%");
+    t8.setBackgroundColor("lime");
+    t8.setHeight(null);
+    t8.setVerticalChildrenAlign("middle");
+    t8.setHorizontalChildrenAlign("center");
+    t8.add(new qx.ui.basic.Image("icon/32/clock.png"));
+    dl2.addRight(t8); 
+    
+    
+    
+
+    
+    var hb1 = new qx.ui.layout.HorizontalBoxLayout;
+    
+    hb1.setBackgroundColor("silver");
+    hb1.setVerticalChildrenAlign("middle");
+    hb1.setHorizontalChildrenAlign("center");
+    hb1.setBorder(qx.renderer.border.BorderPresets.getInstance().black);
+    hb1.setWidth(null);
+    hb1.setHeight(null);
+    hb1.add(new qx.ui.basic.Image("icon/64/clock.png"));
+    
+    dl2.add(hb1);
+  });
+  </script>
+</body>
+</html>

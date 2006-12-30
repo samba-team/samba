@@ -1,0 +1,240 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+  <script type="text/javascript" src=".qxrpc"></script>
+  <!-- With the above script, the service URL for a J2EE application can be
+       automatically determined, no matter on what path it's deployed. -->
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Test for RPC functionality.</p>
+    <p>
+      This test calls a whole set of functions to test each of the primitive
+      data types.  The comparison results should all end with ": true", and
+      the last test generates an Application Error (#1000).  No other test
+      generates that error, so receiving it means the complete set of tests
+      was run.
+    </p>
+    <p>
+      These functions all use the synchronous interface.  You should not use
+      the synchronous interface because with some browsers, the entire browser
+      environment locks up during a synchronous call.  If the server hangs for
+      a minute or two, so will the browser!  You have been warned.
+    </p>
+  </div>
+
+  <script type="text/javascript">
+//    qx.Settings.setCustomOfClass("qx.io.remote.Exchange", "enableDebug", true);
+    qx.Settings.setCustomOfClass("qx.io.Json", "enableDebug", true);
+
+    qx.core.Init.getInstance().defineMain(function() { var layout1 = new
+    qx.ui.layout.VerticalBoxLayout(); layout1.setTop(40); layout1.setLeft(20);
+    layout1.setSpacing(4);
+
+      layout1.add(new qx.ui.basic.Label("URL:"));
+      var defaultURL = qx.io.remote.Rpc.makeServerURL();
+      if (defaultURL == null) {
+        defaultURL = "/services/";
+      }
+      var url = new qx.ui.form.TextField(defaultURL);
+      layout1.add(url);
+
+      layout1.add(new qx.ui.basic.Label("Service path:"));
+      var service = new qx.ui.form.TextField("qooxdoo.test");
+      layout1.add(service);
+
+      var start = new qx.ui.form.Button("Start test");
+      layout1.add(start);
+
+      var rpc;
+      var mycall = null;
+      var test;
+
+      start.addEventListener("execute", function() {
+        try
+        {
+          var rpc = new qx.io.remote.Rpc(url.getValue(), service.getValue());
+          rpc.setTimeout(10000);
+
+          test = "getCurrentTimestamp";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test);
+          layout1.warn("result: now=" + result.now);
+          layout1.warn("result: jsonDate=" + result.json.toString());
+
+          test = "getInteger";
+          layout1.warn("Calling '" + test + "'");
+          var result = rpc.callSync(test);
+          layout1.warn("result: {" + result + "}");
+          layout1.warn("Returns a number, got " + typeof(result) + ": " + (typeof(result) == "number" && isFinite(result) ? "true" : "false"));
+
+          test = "isInteger";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test, 1);
+          layout1.warn("result: {" + result + "}");
+          layout1.warn("Returns an integer: " + result);
+
+          test = "getString";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test);
+          layout1.warn("result: {" + result + "}");
+          layout1.warn("Returns a string: " + (typeof(result) == "string"));
+
+          test = "isString";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test, "Hello World");
+          layout1.warn("result: {" + result + "}");
+          layout1.warn("Returns a string: " + result);
+
+          test = "getNull";
+          layout1.warn("Calling '" + test + "'");
+          var result = rpc.callSync(test);
+          layout1.warn("result: {" + result + "}");
+          layout1.warn("Returns null: " + (typeof(result) == "object" && result === null ? "true" : "false"));
+
+          test = "isNull";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test, null);
+          layout1.warn("result: {" + result + "}");
+          layout1.warn("Returns null: " + result);
+
+          test = "getArrayInteger";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test);
+          layout1.warn("result: {" + result + "}");
+          layout1.warn("Returns an array: " + ((typeof(result) == "object") && (result instanceof Array)));
+
+          test = "getArrayString";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test);
+          layout1.warn("result: {" + result + "}");
+          layout1.warn("Returns an array: " + ((typeof(result) == "object") && (result instanceof Array)));
+
+          var dataArray = new Array(5);
+
+          for (i=0; i<5; i++)
+          {
+            dataArray[i] = i;
+          };
+
+          test = "isArray";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test, dataArray);
+          layout1.warn("result: {" + result + "}");
+
+          dataArray = new Array(5);
+
+          for (i=0; i<5; i++)
+          {
+            dataArray[i] = "Element " + i;
+          };
+
+          test = "isArray";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test, dataArray);
+          layout1.warn("result: {" + result + "}");
+
+          test = "getFloat";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test);
+          layout1.warn("result: {" + result + "}");
+          layout1.warn("Returns a float: " + (typeof(result) == "number"));
+
+          test = "getObject";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test);
+          layout1.warn("result: {" + result + "}");
+          layout1.warn("Returns an object: " + (typeof(result) == "object"));
+
+          test = "isObject";
+          layout1.warn("Calling '" + test + "'");
+          obj = new Object();
+          obj.s = "Hi there.";
+          obj.n = 23;
+          obj.o = new Object();
+          obj.o.s = "This is a test.";
+          result = rpc.callSync(test, obj);
+          layout1.warn("result: {" + result.toString() + "}");
+          layout1.warn("Returns an object: " + result);
+
+          test = "getTrue";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test);
+          layout1.warn("result: {" + result.toString() + "}");
+          layout1.warn("Returns a boolean = true: " + (typeof(result) == "boolean"));
+
+          test = "getFalse";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test);
+          layout1.warn("result: {" + result.toString() + "}");
+          layout1.warn("Returns a boolean = false: " + (typeof(result) == "boolean"));
+
+          test = "isBoolean";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test, true);
+          layout1.warn("result: {" + result.toString() + "}");
+          layout1.warn("Returns a boolean: " +  result);
+
+          test = "isBoolean";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test, false);
+          layout1.warn("result: {" + result.toString() + "}");
+          layout1.warn("Returns a boolean: " + result);
+
+          Date.prototype.classname = "Date";
+          var date = new Date();
+          test = "getParam";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test, date);
+          layout1.warn("result: {" + result + "}");
+          layout1.warn("Returns a date object, got " + (result.classname == date.classname));
+          layout1.warn("Returns matching time " + date.getTime() + " = " + result.getTime() + " :" + (result.getTime() == date.getTime()));
+
+          dataArray = new Array();
+          dataArray[0] = true;
+          dataArray[1] = false;
+          dataArray[2] = 1;
+          dataArray[3] = 1.1;
+          dataArray[4] = "Hello World";
+          dataArray[5] = new Array(5);
+          dataArray[6] = new Object();
+          dataArray[7] = new Date();
+
+          test = "getParams";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test, dataArray[0], dataArray[1], dataArray[2], dataArray[3], dataArray[4], dataArray[5], dataArray[6], dataArray[7]);
+          layout1.warn("result: {" + result + "}");
+
+          for (i=0; i< dataArray.length; i++)
+          {
+            layout1.warn("Returned parameter (" + i + ") value '" + result[i] + "' matches '" + dataArray[i] + "': " + (result[i].toString() == dataArray[i].toString()));
+            layout1.warn("Returned parameter (" + i + ") type '" + typeof(result[i]) + "' matches '" + typeof(dataArray[i]) + "': " + (typeof(result[i]) == typeof(dataArray[i])));
+          };
+
+          test = "getError";
+          layout1.warn("Calling '" + test + "'");
+          result = rpc.callSync(test);
+          // should never get here; we should receive an exception
+          layout1.warn("ERROR: Should have received an exception!  Got: " + result);
+
+        }
+        catch (ex)
+        {
+          alert("Exception on test " + test + ": " + ex);
+        }
+      });
+
+      var d = qx.ui.core.ClientDocument.getInstance();
+      d.add(layout1);
+    });
+  </script>
+</body>
+</html>

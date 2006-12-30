@@ -1,0 +1,108 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>qooxdoo &raquo; Demo</title>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout.css"/>
+  <!--[if IE]>
+  <link type="text/css" rel="stylesheet" href="../../resource/css/layout_ie.css"/>
+  <![endif]-->
+  <script type="text/javascript" src="../../script/qx.js"></script>
+</head>
+<body>
+  <script type="text/javascript" src="../../script/layout.js"></script>
+
+  <div id="demoDescription">
+    <p>Testfile for check cloning on QxFieldSets.</p>
+  </div>
+
+  <script type="text/javascript">
+    qx.core.Init.getInstance().defineMain(function()
+    {
+      var d = qx.ui.core.ClientDocument.getInstance();
+
+      var fs = new qx.ui.groupbox.GroupBox("My first Fieldset");
+      
+      with(fs) 
+      {
+        setWidth("40%");
+        setBottom(48);
+        setTop(48);
+        setLeft(20);
+        
+        setMaxWidth(350);
+        setMinWidth(250);
+      };
+      
+      
+      
+      var a1 = new qx.ui.basic.Atom("TextField 1");
+      with(a1)
+      {
+        setTop(13);
+        setLeft(0);
+        setWidth("35%");
+      };
+          
+      var i1 = new qx.ui.form.TextField();
+      with(i1)
+      {
+        setTop(10);
+        setRight(0);
+        setWidth("60%");
+      };
+      fs.add(a1, i1);
+      
+      
+      
+      var a2 = new qx.ui.basic.Atom("TextField 2", "icon/16/email.png");
+      with(a2)
+      {
+        setTop(43);
+        setLeft(0);
+        setWidth("35%");
+      };
+      fs.add(a2);
+      
+      var i2 = new qx.ui.form.TextField();
+      with(i2)
+      {
+        setTop(40);
+        setRight(0);
+        setWidth("60%");
+      };
+      fs.add(i2);      
+      
+      
+      
+      var a3 = new qx.ui.basic.Atom("TextField 3");
+      with(a3)
+      {
+        setTop(73);
+        setLeft(0);
+        setWidth("35%");
+      };
+      fs.add(a3);
+      
+      var i3 = new qx.ui.form.TextField();
+      with(i3)
+      {
+        setTop(70);
+        setRight(0);
+        setWidth("60%");
+      };
+      fs.add(i3);      
+      
+      
+      d.add(fs);
+      
+      
+      fsclone = fs.clone(true);     
+      with(fsclone)
+      {
+        setLeft(400);
+        setLegend("My cloned Fieldset");
+      };
+    });
+  </script>
+</body>
+</html>
