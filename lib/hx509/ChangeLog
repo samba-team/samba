@@ -1,3 +1,20 @@
+2006-12-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ca.c: Add dnsname and rfc822 SANs.
+
+	* hxtool.c: Add dnsname and rfc822 SANs.
+
+	* test_ca.in: test adding eku, ku and san to the
+	certificate (https and pk-init)
+
+	* hxtool.c: Add eku, ku and san to the certificate.
+
+	* ca.c: Add eku, ku and san to the certificate.
+
+	* hxtool-commands.in: Add --type and --pk-init-principal
+
+	* ocsp.asn1: remove id-kp-OCSPSigning, its in rfc2459.asn1 now
+	
 2006-12-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ca.c: Add KeyUsage extension.
