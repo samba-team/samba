@@ -219,6 +219,34 @@ out:
     return ret;
 }
     
+int
+hx509_ca_tbs_add_san_hostname(hx509_context context,
+			      hx509_ca_tbs tbs,
+			      const char *dnsname)
+{
+    GeneralName gn;
+
+    memset(&gn, 0, sizeof(gn));
+    gn.element = choice_GeneralName_dNSName;
+    gn.u.dNSName = rk_UNCONST(dnsname);
+    
+    return add_GeneralNames(&tbs->san, &gn);
+}
+
+int
+hx509_ca_tbs_add_san_rfc822name(hx509_context context,
+				hx509_ca_tbs tbs,
+				const char *rfc822Name)
+{
+    GeneralName gn;
+
+    memset(&gn, 0, sizeof(gn));
+    gn.element = choice_GeneralName_rfc822Name;
+    gn.u.rfc822Name = rk_UNCONST(rfc822Name);
+    
+    return add_GeneralNames(&tbs->san, &gn);
+}
+
 
 int
 hx509_ca_tbs_set_subject(hx509_context context,

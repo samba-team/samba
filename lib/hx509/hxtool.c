@@ -1175,6 +1175,22 @@ eval_types(hx509_context context,
 	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_san_pkinit");
     }
     
+    for (i = 0; i < opt->hostname_strings.num_strings; i++) {
+	const char *hostname = opt->hostname_strings.strings[i];
+
+	ret = hx509_ca_tbs_add_san_hostname(context, tbs, hostname);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_san_hostname");
+    }
+
+    for (i = 0; i < opt->email_strings.num_strings; i++) {
+	const char *email = opt->email_strings.strings[i];
+
+	ret = hx509_ca_tbs_add_san_rfc822name(context, tbs, email);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_ca_tbs_add_san_hostname");
+    }
+
     return 0;
 }
 
