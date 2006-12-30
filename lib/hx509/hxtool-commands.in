@@ -427,9 +427,14 @@ command = {
 }
 command = {
 	option = {
-		long = "proxy"
+		long = "issue-ca"
 		type = "flag"
-		help = "Issue proxy certificate"
+		help = "Issue a CA certificate"
+	}
+	option = {
+		long = "issue-proxy"
+		type = "flag"
+		help = "Issue a proxy certificate"
 	}
 	option = {
 		long = "subject"
@@ -440,6 +445,16 @@ command = {
 		long = "ca-certificate"
 		type = "string"
 		help = "Issuing CA certificate"
+	}
+	option = {
+		long = "self-signed"
+		type = "flag"
+		help = "Issuing a self-signed certificate"
+	}
+	option = {
+		long = "ca-private-key"
+		type = "string"
+		help = "Private key for self-signed certificate"
 	}
 	option = {
 		long = "certificate"

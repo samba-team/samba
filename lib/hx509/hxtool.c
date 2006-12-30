@@ -797,6 +797,30 @@ ocsp_print(struct ocsp_print_options *opt, int argc, char **argv)
     return 0;
 }
 
+static int
+read_private_key(const char *fn, hx509_private_key *key)
+{
+    void *data;
+    size_t len;
+    int ret;
+    
+    *key = NULL;
+
+    ret = _hx509_map_file(fn, &data, &len, NULL);
+    if (ret)
+	err(1, "read_private_key: map_file: %s: %d", fn, ret);
+    
+    ret = _hx509_parse_private_key(context,
+				   oid_id_pkcs1_rsaEncryption(),
+				   data,
+				   len,
+				   key);
+    _hx509_unmap_file(data, len);
+    if (ret)
+	errx(1, "read_private_key: _hx509_parse_private_key: %d", ret);
+
+    return 0;
+}
 
 int
 request_create(struct request_create_options *opt, int argc, char **argv)
@@ -811,22 +835,9 @@ request_create(struct request_create_options *opt, int argc, char **argv)
     memset(&key, 0, sizeof(key));
 
     if (opt->key_string) {
-	void *data;
-	size_t len;
-
-	ret = _hx509_map_file(opt->key_string, &data, &len, NULL);
+	ret = read_private_key(opt->key_string, &signer);
 	if (ret)
-	    err(1, "map_file: %s: %d", opt->key_string, ret);
-	
-	ret = _hx509_parse_private_key(context,
-				       oid_id_pkcs1_rsaEncryption(),
-				       data,
-				       len,
-				       &signer);
-	_hx509_unmap_file(data, len);
-	if (ret)
-	    errx(1, "_hx509_parse_private_key: %d", ret);
-
+	    err(1, "read_private_key");
     } else
 	errx(1, "key generation code not written yet");
     
@@ -1201,30 +1212,38 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     hx509_ca_tbs tbs;
     hx509_certs cacerts = NULL;
     hx509_cert signer = NULL, cert = NULL;
+    hx509_private_key private_key = NULL;
     hx509_name subject = NULL;
     SubjectPublicKeyInfo spki;
 
     memset(&spki, 0, sizeof(spki));
 
-    if (opt->proxy_flag) {
+    if (opt->issue_proxy_flag) {
 	printf("no support for proxy cert yet\n");
 	return 0;
     }
-    if (opt->ca_certificate_string == NULL)
-	errx(1, "--ca-certificate argument missing");
+    if (opt->ca_certificate_string == NULL && !opt->self_signed_flag)
+	errx(1, "--ca-certificate argument missing (not using --self-signed)");
+    if (opt->ca_private_key_string == NULL && opt->self_signed_flag)
+	errx(1, "--ca-private-key argument missing (using --self-signed)");
     if (opt->certificate_string == NULL)
 	errx(1, "--certificate argument missing");
-    if (opt->req_string == NULL)
-	errx(1, "--req argument missing");
+    if (opt->req_string == NULL) {
+	if (!opt->self_signed_flag)
+	    errx(1, "--req argument missing");
+    } else {
+	if (opt->ca_private_key_string)
+	    errx(1, "both --req and --ca-private-key used");
+    }
 
-    ret = hx509_certs_init(context, opt->ca_certificate_string, 0,
-			   NULL, &cacerts);
-    if (ret)
-	hx509_err(context, ret, 1,
-		  "hx509_certs_init: %s", opt->ca_certificate_string);
-
-    {
+    if (opt->ca_certificate_string) {
 	hx509_query *q;
+
+	ret = hx509_certs_init(context, opt->ca_certificate_string, 0,
+			       NULL, &cacerts);
+	if (ret)
+	    hx509_err(context, ret, 1,
+		      "hx509_certs_init: %s", opt->ca_certificate_string);
 
 	ret = hx509_query_alloc(context, &q);
 	if (ret)
@@ -1236,6 +1255,17 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	hx509_query_free(context, q);
 	if (ret)
 	    hx509_err(context, ret, 1, "no CA certificate found");
+    }
+
+    if (opt->ca_private_key_string) {
+
+	ret = read_private_key(opt->ca_private_key_string, &private_key);
+	if (ret)
+	    err(1, "read_private_key");
+
+	ret = _hx509_private_key2SPKI(context, private_key, &spki);
+	if (ret)
+	    errx(1, "_hx509_private_key2SPKI: %d\n", ret);
     }
 
     if (opt->req_string) {
@@ -1274,6 +1304,9 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	    hx509_err(context, ret, 1, "hx509_parse_name: %d\n", ret);
     }
 
+    if (subject == NULL)
+	errx(1, "no subject given");
+
     /*
      *
      */
@@ -1292,9 +1325,21 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 
     eval_types(context, tbs, opt);
 
-    ret = hx509_ca_sign(context, tbs, signer, &cert);
-    if (ret)
-	hx509_err(context, ret, 1, "hx509_ca_sign");
+    if (opt->issue_ca_flag) {
+	ret = hx509_ca_tbs_set_ca(context, tbs, -1);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_ca");
+    }
+
+    if (opt->self_signed_flag) {
+	ret = hx509_ca_sign_self(context, tbs, private_key, &cert);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_ca_sign_self");
+    } else {
+	ret = hx509_ca_sign(context, tbs, signer, &cert);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_ca_sign");
+    }
 
     {
 	Certificate *c = _hx509_get_cert(cert);
