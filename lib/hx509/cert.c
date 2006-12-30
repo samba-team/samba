@@ -382,9 +382,9 @@ find_extension_auth_key_id(const Certificate *subject,
 					 ai, &size);
 }
 
-static int
-find_extension_subject_key_id(const Certificate *issuer,
-			      SubjectKeyIdentifier *si)
+int
+_hx509_find_extension_subject_key_id(const Certificate *issuer,
+				     SubjectKeyIdentifier *si)
 {
     const Extension *e;
     size_t size;
@@ -657,7 +657,7 @@ _hx509_cert_is_parent_cmp(const Certificate *subject,
     ret_ai = find_extension_auth_key_id(subject, &ai);
     if (ret_ai && ret_ai != HX509_EXTENSION_NOT_FOUND)
 	return 1;
-    ret_si = find_extension_subject_key_id(issuer, &si);
+    ret_si = _hx509_find_extension_subject_key_id(issuer, &si);
     if (ret_si && ret_si != HX509_EXTENSION_NOT_FOUND)
 	return -1;
 
@@ -666,16 +666,43 @@ _hx509_cert_is_parent_cmp(const Certificate *subject,
     if (ret_ai)
 	goto out;
     if (ret_si) {
-	if (allow_self_signed)
+	if (allow_self_signed) {
 	    diff = 0;
-	else
+	    goto out;
+	} else if (ai.keyIdentifier) {
 	    diff = -1;
-	goto out;
+	    goto out;
+	}
     }
     
-    if (ai.keyIdentifier == NULL) /* XXX */
-	diff = -1; 
-    else
+    if (ai.keyIdentifier == NULL) {
+	Name name;
+
+	if (ai.authorityCertIssuer == NULL)
+	    return -1;
+	if (ai.authorityCertSerialNumber == NULL)
+	    return -1;
+
+	diff = der_heim_integer_cmp(ai.authorityCertSerialNumber, 
+				    &issuer->tbsCertificate.serialNumber);
+	if (diff)
+	    return diff;
+	if (ai.authorityCertIssuer->len != 1)
+	    return -1;
+	if (ai.authorityCertIssuer->val[0].element != choice_GeneralName_directoryName)
+	    return -1;
+	
+	name.element = 
+	    ai.authorityCertIssuer->val[0].u.directoryName.element;
+	name.u.rdnSequence = 
+	    ai.authorityCertIssuer->val[0].u.directoryName.u.rdnSequence;
+
+	diff = _hx509_name_cmp(&issuer->tbsCertificate.subject, 
+			       &name);
+	if (diff)
+	    return diff;
+	diff = 0;
+    } else
 	diff = der_heim_octet_string_cmp(ai.keyIdentifier, &si);
     if (diff)
 	goto out;
@@ -2019,7 +2046,7 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	SubjectKeyIdentifier si;
 	int ret;
 
-	ret = find_extension_subject_key_id(c, &si);
+	ret = _hx509_find_extension_subject_key_id(c, &si);
 	if (ret == 0) {
 	    if (der_heim_octet_string_cmp(&si, q->subject_id) != 0)
 		ret = 1;
