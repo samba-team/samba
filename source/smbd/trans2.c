@@ -4871,6 +4871,13 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 				FILE_CREATE, 0, NULL, &fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
+#if 0
+		/* Do we need to do this here ? Need smbtorture test. JRA. */
+		if (!use_nt_status() && NT_STATUS_EQUAL(
+				status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			status = NT_STATUS_DOS(ERRDOS, ERRfilexists);
+		}
+#endif
 		return ERROR_NT(status);
 	}
 	close_file(fsp, NORMAL_CLOSE);
