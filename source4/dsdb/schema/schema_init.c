@@ -722,8 +722,8 @@ const struct dsdb_class *dsdb_class_by_lDAPDisplayName(const struct dsdb_schema 
 const char *dsdb_lDAPDisplayName_by_id(const struct dsdb_schema *schema,
 				       uint32_t id)
 {
-	struct dsdb_class *a;
-	struct dsdb_class *c;
+	const struct dsdb_attribute *a;
+	const struct dsdb_class *c;
 
 	/* TODO: add binary search */
 	a = dsdb_attribute_by_attributeID_id(schema, id);
