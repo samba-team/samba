@@ -86,4 +86,23 @@ ${hxtool} issue-certificate \
 	  --req="pkcs10-request.der" \
 	  --certificate="cert-ee.der" || exit 1
 
+echo "issue certificate (hostnames)"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
+	  --subject="cn=foo" \
+	  --type="https-server" \
+          --hostname="www.test.h5l.se" \
+          --hostname="ftp.test.h5l.se" \
+	  --req="pkcs10-request.der" \
+	  --certificate="cert-ee.der" || exit 1
+
+echo "issue certificate (email)"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
+	  --subject="cn=foo" \
+          --email="lha@test.h5l.se" \
+          --email="test@test.h5l.se" \
+	  --req="pkcs10-request.der" \
+	  --certificate="cert-ee.der" || exit 1
+
 exit 0
