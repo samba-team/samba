@@ -41,6 +41,7 @@ if ${hxtool} info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
     exit 77
 fi
 
+echo "create certificate request"
 ${hxtool} request-create \
 	 --subject="CN=Love,DC=it,DC=su,DC=se" \
 	 --key=$srcdir/data/key.der \
@@ -57,5 +58,32 @@ echo "verify certificate"
 ${hxtool} verify --missing-revoke \
 	cert:FILE:cert-ee.der \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
+
+echo "issue certificate (with https ekus)"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
+	  --subject="cn=foo" \
+	  --type="https-server" \
+	  --type="https-client" \
+	  --req="pkcs10-request.der" \
+	  --certificate="cert-ee.der" || exit 1
+
+echo "issue certificate (pkinit KDC)"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
+	  --subject="cn=foo" \
+	  --type="pkinit-kdc" \
+          --pk-init-principal="krbtgt/TEST.H5L.SE@TEST.H5L.SE" \
+	  --req="pkcs10-request.der" \
+	  --certificate="cert-ee.der" || exit 1
+
+echo "issue certificate (pkinit client)"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:$srcdir/data/ca.crt,$srcdir/data/ca.key \
+	  --subject="cn=foo" \
+	  --type="pkinit-client" \
+          --pk-init-principal="lha@TEST.H5L.SE" \
+	  --req="pkcs10-request.der" \
+	  --certificate="cert-ee.der" || exit 1
 
 exit 0
