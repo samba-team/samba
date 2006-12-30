@@ -1,5 +1,7 @@
 2006-12-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool-commands.in: Add dnsname and rfc822 SANs.
+
 	* test_ca.in: Test dnsname and rfc822 SANs.
 
 	* ca.c: Add dnsname and rfc822 SANs.
