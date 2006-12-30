@@ -128,4 +128,19 @@ ${hxtool} issue-certificate \
 	  --subject="cn=ca-root" \
 	  --certificate="cert-ca.der" || exit 1
 
+echo "issue proxy certificate"
+${hxtool} issue-certificate \
+	  --ca-certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+	  --issue-proxy \
+	  --req="pkcs10-request.der" \
+	  --certificate="cert-proxy.der" || exit 1
+
+echo "verify proxy cert"
+${hxtool} verify --missing-revoke \
+    --allow-proxy-certificate \
+    cert:FILE:cert-proxy.der \
+    chain:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
+
+
 exit 0
