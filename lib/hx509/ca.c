@@ -63,6 +63,7 @@ hx509_ca_tbs_init(hx509_context context, hx509_ca_tbs *tbs)
     (*tbs)->san.val = NULL;
     (*tbs)->eku.len = 0;
     (*tbs)->eku.val = NULL;
+    (*tbs)->pathLenConstraint = 0;
 
     return 0;
 }
@@ -82,6 +83,16 @@ hx509_ca_tbs_free(hx509_ca_tbs *tbs)
     memset(*tbs, 0, sizeof(**tbs));
     free(*tbs);
     *tbs = NULL;
+}
+
+int
+hx509_ca_tbs_set_ca(hx509_context context,
+		    hx509_ca_tbs tbs,
+		    int pathLenConstraint)
+{
+    tbs->flags.ca = 1;
+    tbs->pathLenConstraint = pathLenConstraint;
+    return 0;
 }
 
 int
@@ -342,6 +353,13 @@ ca_sign(hx509_context context,
 	key_usage = KeyUsage2int(ku);
     }
 
+    if (tbs->flags.ca) {
+	KeyUsage ku;
+	memset(&ku, 0, sizeof(ku));
+	ku.keyCertSign = 1;
+	key_usage |= KeyUsage2int(ku);
+    }
+
     /*
      *
      */
@@ -364,10 +382,10 @@ ca_sign(hx509_context context,
 			       "at the same time");
 	return ret;
     }
-    if (tbs->flags.ca || tbs->flags.proxy) {
+    if (tbs->flags.proxy) {
 	ret = EINVAL;
 	hx509_set_error_string(context, 0, ret, 
-			       "Can only handle EE certs for now");
+			       "Can't handle proxy certs for now");
 	return ret;
     }
 
@@ -400,7 +418,7 @@ ca_sign(hx509_context context,
     if (issuername)
 	ret = copy_Name(issuername, &tbsc->issuer);
     else
-	ret = copy_Name(&tbsc->subject, &tbsc->issuer);
+	ret = hx509_name_to_Name(tbs->subject, &tbsc->issuer);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "Failed to copy issuer name");
 	goto out;
@@ -531,6 +549,36 @@ ca_sign(hx509_context context,
 	    _hx509_abort("internal ASN.1 encoder error");
 	ret = add_extension(context, tbsc, 0,
 			    oid_id_x509_ce_subjectKeyIdentifier(),
+			    &data);
+	free(data.data);
+	if (ret)
+	    goto out;
+    }
+
+    /* Add BasicConstraints */ 
+    if (tbs->flags.ca) {
+	BasicConstraints bc;
+	int aCA = 1;
+	uint32_t path;
+
+	memset(&bc, 0, sizeof(bc));
+
+	bc.cA = &aCA;
+	if (tbs->pathLenConstraint >= 0) {
+	    path = tbs->pathLenConstraint;
+	    bc.pathLenConstraint = &path;
+	}
+
+	ASN1_MALLOC_ENCODE(BasicConstraints, data.data, data.length, 
+			   &bc, &size, ret);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	if (size != data.length)
+	    _hx509_abort("internal ASN.1 encoder error");
+	ret = add_extension(context, tbsc, 0,
+			    oid_id_x509_ce_basicConstraints(),
 			    &data);
 	free(data.data);
 	if (ret)
@@ -684,4 +732,18 @@ out:
     free_AuthorityKeyIdentifier(&ai);
 
     return ret;
+}
+
+int
+hx509_ca_sign_self(hx509_context context,
+		   hx509_ca_tbs tbs,
+		   hx509_private_key signer,
+		   hx509_cert *certificate)
+{
+    return ca_sign(context,
+		   tbs, 
+		   signer,
+		   NULL,
+		   NULL,
+		   certificate);
 }
