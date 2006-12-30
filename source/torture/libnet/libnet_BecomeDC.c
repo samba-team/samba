@@ -27,6 +27,7 @@
 #include "libnet/libnet.h"
 #include "lib/events/events.h"
 #include "dsdb/samdb/samdb.h"
+#include "lib/util/dlinklist.h"
 
 #define TORTURE_NETBIOS_NAME "smbtorturedc"
 
@@ -35,6 +36,11 @@ struct test_become_dc_state {
 	struct test_join *tj;
 	struct cli_credentials *machine_account;
 	struct dsdb_schema *schema;
+
+	struct {
+		struct drsuapi_DsReplicaObjectListItemEx *first_object;
+		struct drsuapi_DsReplicaObjectListItemEx *last_object;
+	} schema_part;
 };
 
 static NTSTATUS test_become_dc_check_options(void *private_data,
@@ -81,6 +87,107 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 
 	DEBUG(0,("Domain Partition[%s]\n",
 		p->domain->dn_str));
+
+	return NT_STATUS_OK;
+}
+
+static WERROR test_object_to_ldb(struct test_become_dc_state *s,
+				 const struct libnet_BecomeDC_StoreChunk *c,
+				 struct drsuapi_DsReplicaObjectListItemEx *obj,
+				 TALLOC_CTX *mem_ctx,
+				 struct ldb_message **_msg)
+{
+	WERROR status;
+	uint32_t i;
+
+	for (i=0; i < obj->object.attribute_ctr.num_attributes; i++) {
+		status = dsdb_attribute_drsuapi_to_ldb(s->schema,
+						       &obj->object.attribute_ctr.attributes[i],
+						       mem_ctx, NULL);
+#if 0 /* ignore the error till all attribute syntaxes have a valid implementation */
+		W_ERROR_NOT_OK_RETURN(status);
+#endif
+	}
+
+	return WERR_OK;
+}
+
+static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
+				  const struct libnet_BecomeDC_StoreChunk *c)
+{
+	WERROR status;
+	struct drsuapi_DsReplicaObjectListItemEx *cur;
+
+	for (cur = s->schema_part.first_object; cur; cur = cur->next_object) {
+		uint32_t i;
+		bool is_attr = false;
+		bool is_class = false;
+
+		for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
+			struct drsuapi_DsReplicaAttribute *a;
+			uint32_t j;
+			const char *oid = NULL;
+
+			a = &cur->object.attribute_ctr.attributes[i];
+			status = dsdb_map_int2oid(s->schema, a->attid, s, &oid);
+			if (!W_ERROR_IS_OK(status)) {
+				return werror_to_ntstatus(status);
+			}
+
+			switch (a->attid) {
+			case DRSUAPI_ATTRIBUTE_objectClass:
+				for (j=0; j < a->value_ctr.uint32.num_values; j++) {
+					uint32_t val = *a->value_ctr.uint32.values[j].value;
+
+					if (val == DRSUAPI_OBJECTCLASS_attributeSchema) {
+						is_attr = true;
+					}
+					if (val == DRSUAPI_OBJECTCLASS_classSchema) {
+						is_class = true;
+					}
+				}
+				break;
+			default:
+				break;
+			}
+		}
+
+		if (is_attr) {
+			struct dsdb_attribute *sa;
+
+			sa = talloc_zero(s->schema, struct dsdb_attribute);
+			NT_STATUS_HAVE_NO_MEMORY(sa);
+
+			status = dsdb_attribute_from_drsuapi(s->schema, &cur->object, s, sa);
+			if (!W_ERROR_IS_OK(status)) {
+				return werror_to_ntstatus(status);
+			}
+
+			DLIST_ADD_END(s->schema->attributes, sa, struct dsdb_attribute *);
+		}
+
+		if (is_class) {
+			struct dsdb_class *sc;
+
+			sc = talloc_zero(s->schema, struct dsdb_class);
+			NT_STATUS_HAVE_NO_MEMORY(sc);
+
+			status = dsdb_class_from_drsuapi(s->schema, &cur->object, s, sc);
+			if (!W_ERROR_IS_OK(status)) {
+				return werror_to_ntstatus(status);
+			}
+
+			DLIST_ADD_END(s->schema->classes, sc, struct dsdb_class *);
+		}
+	}
+
+	for (cur = s->schema_part.first_object; cur; cur = cur->next_object) {
+		struct ldb_message *msg;
+		status = test_object_to_ldb(s, c, cur, s, &msg);
+		if (!W_ERROR_IS_OK(status)) {
+			return werror_to_ntstatus(status);
+		}
+	}
 
 	return NT_STATUS_OK;
 }
@@ -136,72 +243,17 @@ static NTSTATUS test_become_dc_schema_chunk(void *private_data,
 		}
 	}
 
-	for (cur = first_object; cur; cur = cur->next_object) {
-		uint32_t i;
-		bool dn_printed = false;
-		bool is_attr = false;
-		bool is_class = false;
+	if (!s->schema_part.first_object) {
+		s->schema_part.first_object = talloc_steal(s, first_object);
+	} else {
+		s->schema_part.last_object->next_object = talloc_steal(s->schema_part.last_object,
+								       first_object);
+	}
+	for (cur = first_object; cur->next_object; cur = cur->next_object) {}
+	s->schema_part.last_object = cur;
 
-		for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
-			struct drsuapi_DsReplicaAttribute *a;
-			uint32_t j;
-			const char *oid = NULL;
-
-			a = &cur->object.attribute_ctr.attributes[i];
-			status = dsdb_map_int2oid(s->schema, a->attid, s, &oid);
-			if (!W_ERROR_IS_OK(status)) {
-				if (!dn_printed) {
-					DEBUG(0,("%s:\n", cur->object.identifier->dn));
-					dn_printed = true;
-				}
-				DEBUG(0,("\tattr 0x%08X => %s\n", a->attid, win_errstr(status)));
-			}
-
-			switch (a->attid) {
-			case DRSUAPI_ATTRIBUTE_objectClass:
-			case DRSUAPI_ATTRIBUTE_attributeID:
-			case DRSUAPI_ATTRIBUTE_attributeSyntax:
-				for (j=0; j < a->value_ctr.uint32.num_values; j++) {
-					uint32_t val = *a->value_ctr.uint32.values[j].value;
-
-					if (val == DRSUAPI_OBJECTCLASS_attributeSchema) {
-						is_attr = true;
-					}
-					if (val == DRSUAPI_OBJECTCLASS_classSchema) {
-						is_class = true;
-					}
-
-					status = dsdb_map_int2oid(s->schema, val, s, &oid);
-					if (!W_ERROR_IS_OK(status)) {
-						if (!dn_printed) {
-							DEBUG(0,("%s:\n", cur->object.identifier->dn));
-							dn_printed = true;
-						}
-						DEBUG(0,("\tattr 0x%08X => %s value[%u] 0x%08X => %s\n",
-							 a->attid, oid, j, val, win_errstr(status)));
-					}
-				}
-				break;
-			default:
-				break;
-			}
-		}
-
-		if (is_attr) {
-			struct dsdb_attribute sa;
-			status = dsdb_attribute_from_drsuapi(s->schema, &cur->object, s, &sa);
-			if (!W_ERROR_IS_OK(status)) {
-				return werror_to_ntstatus(status);
-			}
-		}
-
-		if (is_class) {
-			struct dsdb_class sc;
-			status = dsdb_class_from_drsuapi(s->schema, &cur->object, s, &sc);
-			if (!W_ERROR_IS_OK(status)) {
-				return werror_to_ntstatus(status);
-			}
-		}
+	if (c->partition->highwatermark.tmp_highest_usn == c->partition->highwatermark.highest_usn) {
+		return test_apply_schema(s, c);
 	}
 
 	return NT_STATUS_OK;
@@ -215,17 +267,21 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t total_object_count;
 	uint32_t object_count;
+	struct drsuapi_DsReplicaObjectListItemEx *first_object;
+	struct drsuapi_DsReplicaObjectListItemEx *cur;
 
 	switch (c->ctr_level) {
 	case 1:
 		mapping_ctr		= &c->ctr1->mapping_ctr;
 		total_object_count	= c->ctr1->total_object_count;
 		object_count		= c->ctr1->object_count;
+		first_object		= c->ctr1->first_object;
 		break;
 	case 6:
 		mapping_ctr		= &c->ctr6->mapping_ctr;
 		total_object_count	= c->ctr6->total_object_count;
 		object_count		= c->ctr6->object_count;
+		first_object		= c->ctr6->first_object;
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
@@ -242,6 +298,14 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	status = dsdb_verify_oid_mappings(s->schema, mapping_ctr);
 	if (!W_ERROR_IS_OK(status)) {
 		return werror_to_ntstatus(status);
+	}
+
+	for (cur = first_object; cur; cur = cur->next_object) {
+		struct ldb_message *msg;
+		status = test_object_to_ldb(s, c, cur, s, &msg);
+		if (!W_ERROR_IS_OK(status)) {
+			return werror_to_ntstatus(status);
+		}
 	}
 
 	return NT_STATUS_OK;
