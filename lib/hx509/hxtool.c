@@ -846,7 +846,7 @@ request_create(struct request_create_options *opt, int argc, char **argv)
     if (opt->subject_string) {
 	hx509_name name = NULL;
 
-	ret = hx509_parse_name(opt->subject_string, &name);
+	ret = hx509_parse_name(context, opt->subject_string, &name);
 	if (ret)
 	    errx(1, "hx509_parse_name: %d\n", ret);
 	_hx509_request_set_name(context, req, name);
@@ -1218,10 +1218,6 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 
     memset(&spki, 0, sizeof(spki));
 
-    if (opt->issue_proxy_flag) {
-	printf("no support for proxy cert yet\n");
-	return 0;
-    }
     if (opt->ca_certificate_string == NULL && !opt->self_signed_flag)
 	errx(1, "--ca-certificate argument missing (not using --self-signed)");
     if (opt->ca_private_key_string == NULL && opt->self_signed_flag)
@@ -1249,7 +1245,9 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	if (ret)
 	    errx(1, "hx509_query_alloc: %d", ret);
 
-	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_KEYCERTSIGN);
+	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+	if (!opt->issue_proxy_flag)
+	    hx509_query_match_option(q, HX509_QUERY_OPTION_KU_KEYCERTSIGN);
 
 	ret = hx509_certs_find(context, cacerts, q, &signer);
 	hx509_query_free(context, q);
@@ -1299,13 +1297,18 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     if (opt->subject_string) {
 	if (subject)
 	    hx509_name_free(&subject);
-	ret = hx509_parse_name(opt->subject_string, &subject);
+	ret = hx509_parse_name(context, opt->subject_string, &subject);
 	if (ret)
 	    hx509_err(context, ret, 1, "hx509_parse_name: %d\n", ret);
     }
 
-    if (subject == NULL)
-	errx(1, "no subject given");
+    if (opt->issue_proxy_flag) {
+	if (subject)
+	    hx509_name_free(&subject);
+    } else {
+	if (subject == NULL)
+	    errx(1, "no subject given");
+    }
 
     /*
      *
@@ -1319,9 +1322,11 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
     if (ret)
 	hx509_err(context, ret, 1, "hx509_ca_tbs_set_spki");
 
-    ret = hx509_ca_tbs_set_subject(context, tbs, subject);
-    if (ret)
-	hx509_err(context, ret, 1, "hx509_ca_tbs_set_subject");
+    if (subject) {
+	ret = hx509_ca_tbs_set_subject(context, tbs, subject);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_subject");
+    }
 
     eval_types(context, tbs, opt);
 
@@ -1329,6 +1334,11 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	ret = hx509_ca_tbs_set_ca(context, tbs, -1);
 	if (ret)
 	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_ca");
+    }
+    if (opt->issue_proxy_flag) {
+	ret = hx509_ca_tbs_set_proxy(context, tbs, 1);
+	if (ret)
+	    hx509_err(context, ret, 1, "hx509_ca_tbs_set_proxy");
     }
 
     if (opt->self_signed_flag) {
