@@ -436,7 +436,7 @@ interface drsuapi
 
 	/* Generic DATA_BLOB values */
 	typedef struct {
-		[range(0,10485760)] uint32 length;
+		[range(0,10485760),value(ndr_size_DATA_BLOB(0,r->data,0))] uint32 length;
 		DATA_BLOB *data;
 	} drsuapi_DsAttributeValueDataBlob;
 
@@ -600,7 +600,7 @@ interface drsuapi
 		[default] drsuapi_DsAttributeValueCtrDataBlob data_blob;
 	} drsuapi_DsReplicaAttributeValueCtr;
 
-	typedef struct {
+	typedef [public] struct {
 		drsuapi_DsAttributeId attid;
 		[switch_is(attid)] drsuapi_DsReplicaAttributeValueCtr value_ctr;
 	} drsuapi_DsReplicaAttribute;
