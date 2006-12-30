@@ -177,7 +177,7 @@ verify_ocsp(hx509_context context,
 	}
 
 	ret = hx509_cert_check_eku(context, signer, 
-				   oid_id_kp_OCSPSigning(), 0);
+				   oid_id_pkix_kp_OCSPSigning(), 0);
 	if (ret)
 	    goto out;
     }
