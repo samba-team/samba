@@ -23,12 +23,27 @@
 #ifndef _DSDB_SCHEMA_H
 #define _DSDB_SCHEMA_H
 
+struct dsdb_attribute;
+struct dsdb_class;
+struct dsdb_schema;
+
 struct dsdb_syntax {
 	const char *name;
 	const char *ldap_oid;
 	uint32_t oMSyntax;
 	struct ldb_val oMObjectClass;
 	const char *attributeSyntax_oid;
+
+	WERROR (*drsuapi_to_ldb)(const struct dsdb_schema *schema,
+				 const struct dsdb_attribute *attr,
+				 const struct drsuapi_DsReplicaAttribute *in,
+				 TALLOC_CTX *mem_ctx,
+				 struct ldb_message_element *out);
+	WERROR (*ldb_to_drsuapi)(const struct dsdb_schema *schema,
+				 const struct dsdb_attribute *attr,
+				 const struct ldb_message_element *in,
+				 TALLOC_CTX *mem_ctx,
+				 struct drsuapi_DsReplicaAttribute *out);
 };
 
 struct dsdb_attribute {

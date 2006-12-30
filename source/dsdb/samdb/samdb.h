@@ -27,6 +27,7 @@ struct auth_session_info;
 struct drsuapi_DsNameInfo1;
 struct drsuapi_DsReplicaObject;
 struct drsuapi_DsReplicaOIDMapping_Ctr;
+struct drsuapi_DsReplicaAttribute;
 
 #include "librpc/gen_ndr/security.h"
 #include "lib/ldb/include/ldb.h"
