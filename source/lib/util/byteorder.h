@@ -73,13 +73,17 @@ reasoning behind them. byteorder.h defines the following macros:
 
 SVAL(buf,pos) - extract a 2 byte SMB value
 IVAL(buf,pos) - extract a 4 byte SMB value
-SVALS(buf,pos) signed version of SVAL()
-IVALS(buf,pos) signed version of IVAL()
+BVAL(buf,pos) - extract a 8 byte SMB value
+SVALS(buf,pos) - signed version of SVAL()
+IVALS(buf,pos) - signed version of IVAL()
+BVALS(buf,pos) - signed version of BVAL()
 
 SSVAL(buf,pos,val) - put a 2 byte SMB value into a buffer
 SIVAL(buf,pos,val) - put a 4 byte SMB value into a buffer
+SBVAL(buf,pos,val) - put a 8 byte SMB value into a buffer
 SSVALS(buf,pos,val) - signed version of SSVAL()
 SIVALS(buf,pos,val) - signed version of SIVAL()
+SBVALS(buf,pos,val) - signed version of SBVAL()
 
 RSVAL(buf,pos) - like SVAL() but for NMB byte ordering
 RSVALS(buf,pos) - like SVALS() but for NMB byte ordering
@@ -218,7 +222,9 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define VWV(vwv) ((vwv)*2)
 
 /* 64 bit macros */
-#define SBVAL(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,((uint64_t)(v))>>32))
 #define BVAL(p, ofs) (IVAL(p,ofs) | (((uint64_t)IVAL(p,(ofs)+4)) << 32))
+#define BVALS(p, ofs) ((int64_t)BVAL(p,ofs))
+#define SBVAL(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,((uint64_t)(v))>>32))
+#define SBVALS(p, ofs, v) (SBVAL(p,ofs,(uint64_t)v))
 
 #endif /* _BYTEORDER_H */
