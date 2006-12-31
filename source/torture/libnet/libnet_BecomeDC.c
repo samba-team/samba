@@ -37,6 +37,8 @@ struct test_become_dc_state {
 	struct cli_credentials *machine_account;
 	struct dsdb_schema *schema;
 
+	struct ldb_context *ldb;
+
 	struct {
 		struct drsuapi_DsReplicaObjectListItemEx *first_object;
 		struct drsuapi_DsReplicaObjectListItemEx *last_object;
@@ -99,16 +101,35 @@ static WERROR test_object_to_ldb(struct test_become_dc_state *s,
 {
 	WERROR status;
 	uint32_t i;
+	struct ldb_message *msg;
 
-	for (i=0; i < obj->object.attribute_ctr.num_attributes; i++) {
+	msg = ldb_msg_new(mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(msg);
+
+	msg->dn			= ldb_dn_new(msg, s->ldb, obj->object.identifier->dn);
+	W_ERROR_HAVE_NO_MEMORY(msg->dn);
+
+	msg->num_elements	= obj->object.attribute_ctr.num_attributes;
+	msg->elements		= talloc_array(msg, struct ldb_message_element,
+					       msg->num_elements);
+	W_ERROR_HAVE_NO_MEMORY(msg->elements);
+
+	for (i=0; i < msg->num_elements; i++) {
 		status = dsdb_attribute_drsuapi_to_ldb(s->schema,
 						       &obj->object.attribute_ctr.attributes[i],
-						       mem_ctx, NULL);
-#if 0 /* ignore the error till all attribute syntaxes have a valid implementation */
+						       msg->elements, &msg->elements[i]);
 		W_ERROR_NOT_OK_RETURN(status);
-#endif
 	}
 
+	if (lp_parm_bool(-1, "become dc", "dump objects", False)) {
+		struct ldb_ldif ldif;
+		fprintf(stdout, "#\n");
+		ldif.changetype = LDB_CHANGETYPE_NONE;
+		ldif.msg = msg;
+		ldb_ldif_write_file(s->ldb, stdout, &ldif);
+	}
+
+	*_msg = msg;
 	return WERR_OK;
 }
 
@@ -334,6 +355,8 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 
 	s->ctx = libnet_context_init(event_context_init(s));
 	s->ctx->cred = cmdline_credentials;
+
+	s->ldb = ldb_init(s);
 
 	ZERO_STRUCT(b);
 	b.in.domain_dns_name		= torture_join_dom_dns_name(s->tj);
