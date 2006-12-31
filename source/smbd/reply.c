@@ -1975,10 +1975,12 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
  code.
 ****************************************************************************/
 
-NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, BOOL has_wild)
+NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
+			  char *name, BOOL has_wild)
 {
 	pstring directory;
 	pstring mask;
+	pstring orig_name;
 	char *p;
 	int count=0;
 	NTSTATUS error = NT_STATUS_OK;
@@ -1989,6 +1991,11 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 	*directory = *mask = 0;
 	
 	rc = unix_convert(name,conn,0,&bad_path,&sbuf);
+
+	/*
+	 * Feel my pain, this code needs rewriting *very* badly! -- vl
+	 */
+	pstrcpy(orig_name, name);
 	
 	p = strrchr_m(name,'/');
 	if (!p) {
@@ -2087,6 +2094,18 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name, B
 	
 	if (count == 0 && NT_STATUS_IS_OK(error)) {
 		error = map_nt_error_from_unix(errno);
+	}
+
+	{
+		char *dir;
+		const char *fname;
+
+		if (parent_dirname_talloc(tmp_talloc_ctx(), orig_name,
+					  &dir, &fname)) {
+			notify_action(conn, dir, fname,
+				      NOTIFY_ACTION_REMOVED);
+			TALLOC_FREE(dir); /* not strictly necessary */
+		}
 	}
 
 	return error;

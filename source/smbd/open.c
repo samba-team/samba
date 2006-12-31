@@ -198,7 +198,8 @@ static void change_dir_owner_to_parent(connection_struct *conn,
 static NTSTATUS open_file(files_struct *fsp,
 			  connection_struct *conn,
 			  const char *parent_dir,
-			  const char *fname,
+			  const char *name,
+			  const char *path,
 			  SMB_STRUCT_STAT *psbuf,
 			  int flags,
 			  mode_t unx_mode,
@@ -227,7 +228,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	if (!CAN_WRITE(conn)) {
 		/* It's a read-only share - fail if we wanted to write. */
 		if(accmode != O_RDONLY) {
-			DEBUG(3,("Permission denied opening %s\n",fname));
+			DEBUG(3,("Permission denied opening %s\n", path));
 			return NT_STATUS_ACCESS_DENIED;
 		} else if(flags & O_CREAT) {
 			/* We don't want to write - but we must make sure that
@@ -253,7 +254,7 @@ static NTSTATUS open_file(files_struct *fsp,
 
 	if ((accmode == O_RDONLY) && ((flags & O_TRUNC) == O_TRUNC)) {
 		DEBUG(10,("open_file: truncate requested on read-only open "
-			  "for file %s\n",fname ));
+			  "for file %s\n", path));
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
 	}
 
@@ -282,15 +283,15 @@ static NTSTATUS open_file(files_struct *fsp,
 
 		/* Don't create files with Microsoft wildcard characters. */
 		if ((local_flags & O_CREAT) && !file_existed &&
-		    ms_has_wild(fname))  {
+		    ms_has_wild(path))  {
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
 		/* Actually do the open */
-		if (!fd_open(conn, fname, fsp, local_flags, unx_mode)) {
+		if (!fd_open(conn, path, fsp, local_flags, unx_mode)) {
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
 				 "(flags=%d)\n",
-				 fname,strerror(errno),local_flags,flags));
+				 path,strerror(errno),local_flags,flags));
 			return map_nt_error_from_unix(errno);
 		}
 
@@ -298,7 +299,7 @@ static NTSTATUS open_file(files_struct *fsp,
 
 			/* Inherit the ACL if required */
 			if (lp_inherit_perms(SNUM(conn))) {
-				inherit_access_acl(conn, parent_dir, fname,
+				inherit_access_acl(conn, parent_dir, path,
 						   unx_mode);
 			}
 
@@ -307,6 +308,9 @@ static NTSTATUS open_file(files_struct *fsp,
 				change_file_owner_to_parent(conn, parent_dir,
 							    fsp);
 			}
+
+			notify_action(conn, parent_dir, name,
+				      NOTIFY_ACTION_ADDED);
 		}
 
 	} else {
@@ -317,13 +321,13 @@ static NTSTATUS open_file(files_struct *fsp,
 		int ret;
 
 		if (fsp->fh->fd == -1) {
-			ret = SMB_VFS_STAT(conn, fname, psbuf);
+			ret = SMB_VFS_STAT(conn, path, psbuf);
 		} else {
 			ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf);
 			/* If we have an fd, this stat should succeed. */
 			if (ret == -1) {
 				DEBUG(0,("Error doing fstat on open file %s "
-					 "(%s)\n", fname,strerror(errno) ));
+					 "(%s)\n", path,strerror(errno) ));
 			}
 		}
 
@@ -365,12 +369,13 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	fsp->is_stat = False;
-	if (conn->aio_write_behind_list &&
-	    is_in_path(fname, conn->aio_write_behind_list, conn->case_sensitive)) {
+	if (conn->aio_write_behind_list
+	    && is_in_path(path, conn->aio_write_behind_list,
+			  conn->case_sensitive)) {
 		fsp->aio_write_behind = True;
 	}
 
-	string_set(&fsp->fsp_name,fname);
+	string_set(&fsp->fsp_name, path);
 	fsp->wcp = NULL; /* Write cache pointer. */
 
 	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
@@ -1579,8 +1584,9 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * open_file strips any O_TRUNC flags itself.
 	 */
 
-	fsp_open = open_file(fsp, conn, parent_dir, fname, psbuf, flags|flags2,
-			     unx_mode, access_mask, open_access_mask);
+	fsp_open = open_file(fsp, conn, parent_dir, newname, fname, psbuf,
+			     flags|flags2, unx_mode, access_mask,
+			     open_access_mask);
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
 		if (lck != NULL) {
@@ -1845,7 +1851,7 @@ NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
 
 	/* note! we must use a non-zero desired access or we don't get
            a real file descriptor. Oh what a twisted web we weave. */
-	status = open_file(fsp, conn, NULL, fname, psbuf, O_WRONLY, 0,
+	status = open_file(fsp, conn, NULL, NULL, fname, psbuf, O_WRONLY, 0,
 			   FILE_WRITE_DATA, FILE_WRITE_DATA);
 
 	/* 

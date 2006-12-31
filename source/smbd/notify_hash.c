@@ -186,6 +186,9 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 	struct change_data data2;
 	int cnto = lp_change_notify_timeout(SNUM(conn));
 
+	DEBUG(10, ("hash_change_notify called for path %s\n", path));
+	return False;
+
 	if (t && cnto <= 0) {
 		/* Change notify turned off on this share.
 		 * Only scan when (t==0) - we think something changed. */

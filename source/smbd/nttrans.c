@@ -1847,6 +1847,17 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf,
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 
+	if (fsp->notify->num_changes > 0) {
+
+		change_notify_reply(inbuf, max_param_count, fsp);
+
+		/*
+		 * change_notify_reply() above has independently sent its
+		 * results
+		 */
+		return -1;
+	}
+
 	if (!change_notify_set(inbuf, fsp, conn, flags, max_param_count)) {
 		return(UNIXERROR(ERRDOS,ERRbadfid));
 	}
