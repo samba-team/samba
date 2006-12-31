@@ -4255,11 +4255,14 @@ dos_attr_parse(SMBCCTX *context,
 			continue;
 		}
 
-                n = strlen(attr_strings.create_time_attr);
-                if (attr_strings.create_time_attr != NULL &&
-                    StrnCaseCmp(tok, attr_strings.create_time_attr, n) == 0) {
-                        dad->create_time = (time_t)strtol(tok+n+1, NULL, 10);
-			continue;
+		if (attr_strings.create_time_attr != NULL) {
+			n = strlen(attr_strings.create_time_attr);
+			if (StrnCaseCmp(tok, attr_strings.create_time_attr,
+					n) == 0) {
+				dad->create_time = (time_t)strtol(tok+n+1,
+								  NULL, 10);
+				continue;
+			}
 		}
 
 		if (StrnCaseCmp(tok, "INODE:", 6) == 0) {
