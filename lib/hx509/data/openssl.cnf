@@ -91,7 +91,7 @@ subjectKeyIdentifier	= hash
 basicConstraints=CA:FALSE
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 subjectKeyIdentifier	= hash
-proxyCertInfo=critical,language:id-ppl-anyLanguage,pathlen:1,policy:text:foo
+proxyCertInfo=critical,language:id-ppl-anyLanguage,pathlen:0,policy:text:foo
 
 [pkinitc_princ_name] 
 realm = EXP:0, GeneralString:TEST.H5L.SE
