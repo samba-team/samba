@@ -443,7 +443,8 @@ static BOOL buf_to_notify_message(void *buf, size_t len,
 				  struct notify_message *msg)
 {
 	if (len < MSG_NOTIFY_MESSAGE_SIZE) {
-		DEBUG(0, ("Got invalid notify message of len %d\n", len));
+		DEBUG(0, ("Got invalid notify message of len %d\n",
+			  (int)len));
 		return False;
 	}
 
