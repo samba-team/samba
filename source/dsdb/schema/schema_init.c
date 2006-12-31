@@ -132,7 +132,7 @@ WERROR dsdb_verify_oid_mappings(const struct dsdb_schema *schema, const struct d
 	return WERR_OK;
 }
 
-WERROR dsdb_map_oid2int(struct dsdb_schema *schema, const char *in, uint32_t *out)
+WERROR dsdb_map_oid2int(const struct dsdb_schema *schema, const char *in, uint32_t *out)
 {
 	uint32_t i;
 
@@ -178,7 +178,7 @@ WERROR dsdb_map_oid2int(struct dsdb_schema *schema, const char *in, uint32_t *ou
 	return WERR_DS_NO_MSDS_INTID;
 }
 
-WERROR dsdb_map_int2oid(struct dsdb_schema *schema, uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
+WERROR dsdb_map_int2oid(const struct dsdb_schema *schema, uint32_t in, TALLOC_CTX *mem_ctx, const char **out)
 {
 	uint32_t i;
 
